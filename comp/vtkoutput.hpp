@@ -46,7 +46,7 @@ namespace ngcomp
     int subdivision;
     int only_element = -1;
     string floatsize = "Double";
-
+    int legacy = 0;
     Array<shared_ptr<ValueField>>
         value_field;
     Array<Vec<D>> points;
@@ -61,7 +61,7 @@ namespace ngcomp
               const Flags &, shared_ptr<MeshAccess>);
 
     VTKOutput(shared_ptr<MeshAccess>, const Array<shared_ptr<CoefficientFunction>> &,
-              const Array<string> &, string, int, int, string);
+              const Array<string> &, string, int, int, string, int);
     virtual ~VTKOutput() { ; }
 
     void ResetArrays();
@@ -72,13 +72,19 @@ namespace ngcomp
     void FillReferenceHex(Array<IntegrationPoint> &ref_coords, Array<INT<ELEMENT_MAXPOINTS + 1>> &ref_elems);
     void FillReferencePrism(Array<IntegrationPoint> &ref_coords, Array<INT<ELEMENT_MAXPOINTS + 1>> &ref_elems);
     // void FillReferenceData3D(Array<IntegrationPoint> & ref_coords, Array<INT<D+1>> & ref_tets);
+    // XML Methods
     void PrintPoints(int *offset, stringstream *appenddata);
     void PrintCells(int *offset, stringstream *appenddata);
     void PrintCellTypes(VorB vb, int *offset, stringstream *appenddata, const BitArray *drawelems = nullptr);
     void PrintFieldData(int *offset, stringstream *appenddata);
+
     void PrintAppended(stringstream *appenddata);
     void PvdFile(string filename, int index);
-
+    // Legacy Methods
+    void PrintPointsLegacy();
+    void PrintCellsLegacy();
+    void PrintCellTypesLegacy(VorB vb, const BitArray *drawelems = nullptr);
+    void PrintFieldDataLegacy();
     virtual void Do(LocalHeap &lh, VorB vb = VOL, const BitArray *drawelems = 0);
   };
 

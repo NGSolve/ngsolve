@@ -20,7 +20,8 @@ namespace ngcomp
                   flags.GetStringFlag("filename", "output"),
                   (int)flags.GetNumFlag("subdivision", 0),
                   (int)flags.GetNumFlag("only_element", -1),
-                  flags.GetStringFlag("floatsize", "Double"))
+                  flags.GetStringFlag("floatsize", "Double"),
+                  flags.GetNumFlag("legacy", 0))
   {
     ;
   }
@@ -29,9 +30,9 @@ namespace ngcomp
   VTKOutput<D>::VTKOutput(shared_ptr<MeshAccess> ama,
                           const Array<shared_ptr<CoefficientFunction>> &a_coefs,
                           const Array<string> &a_field_names,
-                          string a_filename, int a_subdivision, int a_only_element, string a_floatsize)
+                          string a_filename, int a_subdivision, int a_only_element, string a_floatsize, int a_legacy)
       : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
-        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element), floatsize(a_floatsize)
+        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy)
   {
     value_field.SetSize(a_coefs.Size());
     for (int i = 0; i < a_coefs.Size(); i++)
@@ -313,8 +314,103 @@ namespace ngcomp
       }
     }
   }
+  /* ###########################
+     # Legacy Files as Fallback#
+     ###########################*/
+  template <int D>
+  void VTKOutput<D>::PrintPointsLegacy()
+  {
+    *fileout << "POINTS " << points.Size() << " float" << endl;
+    for (auto p : points)
+    {
+      *fileout << p;
+      if (D == 2)
+        *fileout << "\t 0.0";
+      *fileout << endl;
+    }
+  }
 
-  /// output of data points
+  /// output of cells in form vertices
+  template <int D>
+  void VTKOutput<D>::PrintCellsLegacy()
+  {
+    // count number of data for cells, one + number of vertices
+    int ndata = 0;
+    for (auto c : cells)
+    {
+      ndata++;
+      ndata += c[0];
+    }
+    *fileout << "CELLS " << cells.Size() << " " << ndata << endl;
+    for (auto c : cells)
+    {
+      int nv = c[0];
+      *fileout << nv << "\t";
+      for (int i = 0; i < nv; i++)
+        *fileout << c[i + 1] << "\t";
+      *fileout << endl;
+    }
+  }
+
+  /// output of cell types (here only simplices)
+  template <int D>
+  void VTKOutput<D>::PrintCellTypesLegacy(VorB vb, const BitArray *drawelems)
+  {
+    *fileout << "CELL_TYPES " << cells.Size() << endl;
+    int factor = (1 << subdivision) * (1 << subdivision);
+    if (D == 3 && vb == VOL)
+      factor *= (1 << subdivision);
+    for (auto e : ma->Elements(vb))
+    {
+      if (drawelems && !(drawelems->Test(e.Nr())))
+        continue;
+
+      switch (ma->GetElType(e))
+      {
+      case ET_TET:
+        for (int i = 0; i < factor; i++)
+          *fileout << "10 " << endl; //(void)c;
+        break;
+      case ET_QUAD:
+        for (int i = 0; i < factor; i++)
+          *fileout << "9 " << endl;
+        break;
+      case ET_TRIG:
+        for (int i = 0; i < factor; i++)
+          *fileout << "5 " << endl;
+        break;
+      case ET_PRISM:
+        for (int i = 0; i < factor; i++)
+          *fileout << "13 " << endl;
+        break;
+      case ET_HEX:
+        for (int i = 0; i < factor; i++)
+          *fileout << "12 " << endl;
+        break;
+      default:
+        cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
+      }
+    }
+    *fileout << "CELL_DATA " << cells.Size() << endl;
+    *fileout << "POINT_DATA " << points.Size() << endl;
+  }
+
+  /// output of field data (coefficient values)
+  template <int D>
+  void VTKOutput<D>::PrintFieldDataLegacy()
+  {
+    for (auto field : value_field)
+    {
+      *fileout << "SCALARS " << field->Name()
+               << " float " << field->Dimension() << endl
+               << "LOOKUP_TABLE default" << endl;
+
+      for (auto v : *field)
+        *fileout << v << " ";
+      *fileout << endl;
+    }
+  }
+  /// output of data points, XML file format
   template <int D>
   void VTKOutput<D>::PrintPoints(int *offset, stringstream *appenddata)
   {
@@ -567,7 +663,7 @@ namespace ngcomp
     contents << "<Collection>" << endl;
     contents << "<DataSet timestep=\"0\" file=\"" << fname << ".vtu\"/>" << endl;
     for (int k = 1; k <= index; k++)
-      contents << "<DataSet timestep=\"1\" file=\"" << fname << "_" << k << ".vtu\"/>" << endl;
+      contents << "<DataSet timestep=\"" << k << "\" file=\"" << fname << "_" << k << ".vtu\"/>" << endl;
     contents << "</Collection>" << endl;
     contents << "</VTKFile>";
 
@@ -587,13 +683,17 @@ namespace ngcomp
     if (output_cnt > 0)
       filenamefinal << "_" << output_cnt;
     lastoutputname = filenamefinal.str();
-    filenamefinal << ".vtu";
+    if (legacy == 0)
+      filenamefinal << ".vtu";
+    else
+      filenamefinal << ".vtk";
     fileout = make_shared<ofstream>(filenamefinal.str());
     cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
     {
       cout << IM(4) << " ( " << output_cnt << " )";
-      PvdFile(filename, output_cnt);
+      if (legacy == 0)
+        PvdFile(filename, output_cnt);
     }
     cout << IM(4) << ":" << flush;
 
@@ -618,11 +718,20 @@ namespace ngcomp
     FillReferenceHex(ref_vertices_hex, ref_hexes);
 
     // header:
-    *fileout << "<?xml version=\"1.0\"?>" << endl;
+    if (legacy == 0)
+    {
+      *fileout << "<?xml version=\"1.0\"?>" << endl;
 
-    *fileout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
-    *fileout << "<UnstructuredGrid>" << endl;
-
+      *fileout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
+      *fileout << "<UnstructuredGrid>" << endl;
+    }
+    else
+    {
+      *fileout << "# vtk DataFile Version 3.0" << endl;
+      *fileout << "vtk output" << endl;
+      *fileout << "ASCII" << endl;
+      *fileout << "DATASET UNSTRUCTURED_GRID" << endl;
+    }
     int ne = ma->GetNE(vb);
 
     IntRange range = only_element >= 0 ? IntRange(only_element, only_element + 1) : IntRange(ne);
@@ -712,20 +821,29 @@ namespace ngcomp
         cells.Append(new_elem);
       }
     }
-    *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumberOfCells=\"" << cells.Size() << "\">" << endl;
-    PrintPoints(&offs, &appended);
-    *fileout << "<Cells>" << endl;
-    PrintCells(&offs, &appended);
-    PrintCellTypes(vb, &offs, &appended, drawelems);
-    *fileout << "</Cells>" << endl;
-    PrintFieldData(&offs, &appended);
+    if (legacy == 0)
+    {
+      *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumberOfCells=\"" << cells.Size() << "\">" << endl;
+      PrintPoints(&offs, &appended);
+      *fileout << "<Cells>" << endl;
+      PrintCells(&offs, &appended);
+      PrintCellTypes(vb, &offs, &appended, drawelems);
+      *fileout << "</Cells>" << endl;
+      PrintFieldData(&offs, &appended);
 
-    // Footer:
-    *fileout << "</Piece>" << endl;
-    *fileout << "</UnstructuredGrid>" << endl;
-    PrintAppended(&appended);
-    *fileout << "</VTKFile>" << endl;
-
+      // Footer:
+      *fileout << "</Piece>" << endl;
+      *fileout << "</UnstructuredGrid>" << endl;
+      PrintAppended(&appended);
+      *fileout << "</VTKFile>" << endl;
+    }
+    else
+    {
+      PrintPointsLegacy();
+      PrintCellsLegacy();
+      PrintCellTypesLegacy(vb, drawelems);
+      PrintFieldDataLegacy();
+    }
     cout << IM(4) << " Done." << endl;
     cout << "Output Counter: " << output_cnt << endl;
   }
