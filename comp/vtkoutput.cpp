@@ -670,6 +670,7 @@ namespace ngcomp
     ofstream fileout;
     fileout.open(filenamefinal.str(), ofstream::trunc);
     fileout << contents.str();
+    fileout.close();
   }
   template <int D>
   void VTKOutput<D>::Do(LocalHeap &lh, VorB vb, const BitArray *drawelems)
