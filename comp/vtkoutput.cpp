@@ -661,9 +661,9 @@ namespace ngcomp
         << "<?xml version=\"1.0\"?>" << endl;
     contents << "<VTKFile type =\"Collection\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
     contents << "<Collection>" << endl;
-    contents << "<DataSet timestep=\"0\" file=\"" << fname << ".vtu\"/>" << endl;
+    contents << "<DataSet timestep=\"" << times[0] << "\" file=\"" << fname << ".vtu\"/>" << endl;
     for (int k = 1; k <= index; k++)
-      contents << "<DataSet timestep=\"" << k << "\" file=\"" << fname << "_" << k << ".vtu\"/>" << endl;
+      contents << "<DataSet timestep=\"" << times[k] << "\" file=\"" << fname << "_" << k << ".vtu\"/>" << endl;
     contents << "</Collection>" << endl;
     contents << "</VTKFile>";
 
@@ -673,7 +673,7 @@ namespace ngcomp
     fileout.close();
   }
   template <int D>
-  void VTKOutput<D>::Do(LocalHeap &lh, VorB vb, const BitArray *drawelems)
+  void VTKOutput<D>::Do(LocalHeap &lh, double time, VorB vb, const BitArray *drawelems)
   {
     ostringstream filenamefinal;
     stringstream appended;
@@ -688,13 +688,27 @@ namespace ngcomp
       filenamefinal << ".vtu";
     else
       filenamefinal << ".vtk";
+
     fileout = make_shared<ofstream>(filenamefinal.str());
     cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
     {
       cout << IM(4) << " ( " << output_cnt << " )";
+      if (time == -1)
+      {
+        times.push_back(output_cnt);
+      }
+      else
+      {
+        times.push_back(time);
+      }
       if (legacy == 0)
         PvdFile(filename, output_cnt);
+    }
+    else
+    {
+      if (time != -1)
+        times[0] = time;
     }
     cout << IM(4) << ":" << flush;
 

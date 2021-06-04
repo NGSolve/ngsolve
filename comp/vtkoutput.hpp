@@ -31,7 +31,7 @@ namespace ngcomp
   {
   public:
     virtual ~BaseVTKOutput() { ; }
-    virtual void Do(LocalHeap &lh, VorB vb = VOL, const BitArray *drawelems = 0) = 0;
+    virtual void Do(LocalHeap &lh, double time = -1, VorB vb = VOL, const BitArray *drawelems = 0) = 0;
     string lastoutputname = "";
   };
 
@@ -42,6 +42,7 @@ namespace ngcomp
     shared_ptr<MeshAccess> ma = nullptr;
     Array<shared_ptr<CoefficientFunction>> coefs;
     Array<string> fieldnames;
+
     string filename;
     int subdivision;
     int only_element = -1;
@@ -53,7 +54,7 @@ namespace ngcomp
     Array<INT<ELEMENT_MAXPOINTS + 1>> cells;
 
     int output_cnt = 0;
-
+    std::vector<double> times = {0};
     shared_ptr<ofstream> fileout;
 
   public:
@@ -85,7 +86,7 @@ namespace ngcomp
     void PrintCellsLegacy();
     void PrintCellTypesLegacy(VorB vb, const BitArray *drawelems = nullptr);
     void PrintFieldDataLegacy();
-    virtual void Do(LocalHeap &lh, VorB vb = VOL, const BitArray *drawelems = 0);
+    virtual void Do(LocalHeap &lh, double time = -1, VorB vb = VOL, const BitArray *drawelems = 0);
   };
 
   class NumProcVTKOutput : public NumProc

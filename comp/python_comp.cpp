@@ -4041,18 +4041,20 @@ deformation : ngsolve.comp.GridFunction
          py::arg("floatsize") = "Double",
          py::arg("legacy") = 0
          )
-     .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb)
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb)
           { 
-            self->Do(glh,vb);
+            self->Do(glh,time, vb);
             return self->lastoutputname;
           },
+          py::arg("time")=-1,
           py::arg("vb")=VOL,
           py::call_guard<py::gil_scoped_release>())
-     .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb, const BitArray * drawelems)
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb, const BitArray * drawelems)
           { 
-            self->Do(glh, vb, drawelems);
+            self->Do(glh,time, vb, drawelems);
             return self->lastoutputname;
           },
+          py::arg("time")=-1,
           py::arg("vb")=VOL,
           py::arg("drawelems"),
           py::call_guard<py::gil_scoped_release>())
