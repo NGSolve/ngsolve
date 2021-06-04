@@ -3454,6 +3454,7 @@ namespace ngfem
                      FlatMatrix<TSCAL> elmat,
                      LocalHeap & lh) const
   {
+    //TODO: caching. beware of heap resets.
     elmat = 0.0;
 
     if (LocalFacetNr2==-1) throw Exception ("SymbolicFacetBFI: LocalFacetNr2==-1");
@@ -3568,6 +3569,7 @@ namespace ngfem
                     FlatMatrix<TSCAL> elmat,
                     LocalHeap & lh) const
   {
+    //TODO: caching. beware of heap resets.
 
     bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
     const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
@@ -3658,6 +3660,9 @@ namespace ngfem
                              FlatVector<double> elveclin, FlatMatrix<double> elmat,
                              LocalHeap & lh) const
   {
+
+    //TODO: caching. beware of heap resets.
+
     elmat = 0.0;
 
     int maxorder = fel1.Order();
@@ -3764,6 +3769,8 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
+
+    //TODO: caching. beware of heap resets.
     if (simd_evaluate)
       {
         try
@@ -4103,6 +4110,8 @@ namespace ngfem
 			FlatVector<double> elx, FlatVector<double> ely, 
 			LocalHeap & lh) const
   {
+    //TODO: caching. beware of heap resets!
+
     if (simd_evaluate)
       {
         try
@@ -4258,6 +4267,8 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
+    //TODO: caching. beware of heap resets
+
     if (simd_evaluate)
       {
         try
@@ -4673,11 +4684,9 @@ namespace ngfem
     static Timer tmult("SymbolicEnergy::mult", 2);
     size_t tid = TaskManager::GetThreadId();
     ThreadRegionTimer reg(t, tid);
-    
-    HeapReset hr(lh);
 
-
-
+    //TODO: this had to go because it prevented Caching. How to get a similar effect?
+//    HeapReset hr(lh);
     
     FlatMatrix<> dderiv(mir.Size(), 1,lh);
     FlatMatrix<AutoDiffDiff<1,double>> ddval(mir.Size(), 1, lh);
@@ -4706,7 +4715,8 @@ namespace ngfem
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(trial_proxies))
         {
-          HeapReset hr(lh);
+          //TODO: this had to go because it prevented Caching. How to get a similar effect?
+//          HeapReset hr(lh);
           if (!nonzeros_proxies(k1,l1)) continue;
           
           auto proxy1 = trial_proxies[k1];
@@ -4757,7 +4767,8 @@ namespace ngfem
           size_t i = 0;
           for ( ; i < mir.Size(); i+=BS)
             {
-              HeapReset hr(lh);
+              //TODO: this had to go because it prevented Caching. How to get a similar effect?
+//              HeapReset hr(lh);
               int bs = min2(size_t(BS), mir.IR().GetNIP()-i);
               FlatMatrix<double,ColMajor> bbmat1(bs*proxy1->Dimension(), elmat.Width(), lh);              
               FlatMatrix<double,ColMajor> bdbmat1(bs*proxy2->Dimension(), elmat.Width(), lh);
@@ -4863,7 +4874,8 @@ namespace ngfem
             for (int k1 : Range(trial_proxies))
               for (int l1 : Range(trial_proxies))
                 {
-                  HeapReset hr(lh);
+                  //TODO: this had to go because it prevented Caching. How to get a similar effect?
+//                  HeapReset hr(lh);
                   if (!nonzeros_proxies(k1,l1)) continue;
                   if (k1 < l1) continue;
                   auto proxy1 = trial_proxies[k1];
@@ -5099,7 +5111,8 @@ namespace ngfem
                 ely = 0;
                 for (auto proxy : trial_proxies)
                   {
-                    HeapReset hr(lh);
+                    //TODO: this had to go because it prevented Caching. How to get a similar effect?
+//                    HeapReset hr(lh);
                     FlatMatrix<SIMD<double>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
                     FlatMatrix<AutoDiff<1,SIMD<double>>> vals(1, ir.Size(), lh);
                     for (int k = 0; k < proxy->Dimension(); k++)
@@ -5148,7 +5161,8 @@ namespace ngfem
                 
                     for (auto proxy : trial_proxies)
                       {
-                        HeapReset hr(lh);
+                        //TODO: this had to go because it prevented Caching. How to get a similar effect?
+//                        HeapReset hr(lh);
                         FlatMatrix<SIMD<double>> proxyvalues(proxy->Dimension(), mir.Size(), lh);
                         FlatMatrix<AutoDiff<1,SIMD<double>>> vals(1, mir.Size(), lh);
                         for (int k = 0; k < proxy->Dimension(); k++)
@@ -5203,7 +5217,8 @@ namespace ngfem
         
         for (auto proxy : trial_proxies)
           {
-            HeapReset hr(lh);
+            //TODO: this had to go because it prevented Caching. How to get a similar effect?
+//            HeapReset hr(lh);
             FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
             for (int k = 0; k < proxy->Dimension(); k++)
               {
@@ -5257,7 +5272,8 @@ namespace ngfem
             
             for (auto proxy : trial_proxies)
               {
-                HeapReset hr(lh);
+                //TODO: this had to go because it prevented Caching. How to get a similar effect?
+//                HeapReset hr(lh);
                 FlatMatrix<> proxyvalues(mir.Size(), proxy->Dimension(), lh);
                 for (int k = 0; k < proxy->Dimension(); k++)
                   {
