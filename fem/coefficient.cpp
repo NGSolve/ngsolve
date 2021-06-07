@@ -7439,6 +7439,11 @@ public:
     : T_CoefficientFunction<CacheCoefficientFunction>(f->Dimension(), f->IsComplex()),
     func(f)
   {
+    func->TraverseTree([&](CoefficientFunction &nodecf) {
+      if (dynamic_cast<ProxyFunction *>(&nodecf))
+        throw Exception("CacheCoefficientFunction: func to be cache must not contain proxy functions");
+    });
+
     this->SetDimensions (func->Dimensions());
     this->elementwise_constant = func->ElementwiseConstant();
   }
