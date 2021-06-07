@@ -1,6 +1,7 @@
 import numpy as np
 import pathlib
 import pytest
+import re
 from ngsolve import *
 from netgen.csg import *
 ngsglobals.msg_level = 0
@@ -27,11 +28,12 @@ def fes():
     return mk_fes()
 
 
-def line_count(filename):
+def eval_count(filename):
     with open(filename, "r") as lf:
-        lines = list(lf.readlines())
-        print(len(lines))
-    return len(lines)
+        content = lf.read()
+    evals = len(re.findall("======== Evaluate", content))
+    print(evals)
+    return evals
 
 
 def mk_logfile(filename):
@@ -53,19 +55,21 @@ def mk_linear_form(fes, cf):
 
 
 def test_cache_in_linear_form_integrator(fes):
-    L = mk_linear_form(fes, mk_cf(fes))
+    logfile = mk_logfile("test_cache_in_linear_form_integrator_nocache.log")
+    L = mk_linear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
+    baseline = eval_count(logfile)
 
     # covers simd version of LFIntegrator :: T_CalcElementVector (also element_vb != VOL)
     logfile = mk_logfile("test_cache_in_linear_form_integrator_cf.log")
     cL = mk_linear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
     assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert line_count(logfile) == 635
+    assert eval_count(logfile) == 48
 
     # covers non-simd version of LFIntegrator :: T_CalcElementVector (also element_vb != VOL)
     logfile = mk_logfile("test_cache_in_linear_form_integrator_ncf.log")
     cL = mk_linear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
     assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert line_count(logfile) == 773
+    assert eval_count(logfile) == 49
 
 
 def mk_bilinear_form(fes, cf):
@@ -80,19 +84,21 @@ def mk_bilinear_form(fes, cf):
 
 
 def test_cache_in_bilinear_form_integrator(fes):
-    a = mk_bilinear_form(fes, mk_cf(fes))
+    logfile = mk_logfile("test_cache_in_bilinear_form_integrator_nocache.log")
+    a = mk_bilinear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
+    baseline = eval_count(logfile)
 
     # covers simd version of BLFIntegrator :: T_CalcElementMatrixAdd and T_CalcElementMatrixEBAdd
     logfile = mk_logfile("test_cache_in_bilinear_form_integrator_cf.log")
     ca = mk_bilinear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
     assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
-    assert line_count(logfile) == 527
+    assert eval_count(logfile) == 48
 
     # covers non-simd version of BLFIntegrator :: T_CalcElementMatrixAdd and T_CalcElementMatrixEBAdd
     logfile = mk_logfile("test_cache_in_bilinear_form_integrator_ncf.log")
     ca = mk_bilinear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
     assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
-    assert line_count(logfile) == 779
+    assert eval_count(logfile) == 50
 
 
 if __name__ == "__main__":
