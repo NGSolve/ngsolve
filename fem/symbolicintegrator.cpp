@@ -2283,8 +2283,6 @@ namespace ngfem
           // ud.elx = &elveclin;
           // ud.lh = &lh;
 
-          PrecomputeCacheCF(cache_cfs, mir, lh);
-
           for (ProxyFunction * proxy : trial_proxies)
             {
               ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
@@ -2402,8 +2400,6 @@ namespace ngfem
     ud.fel = &fel;
     // ud.elx = &elveclin;
     // ud.lh = &lh;
-
-    PrecomputeCacheCF(cache_cfs, mir, lh);
 
     for (ProxyFunction * proxy : trial_proxies)
       {
@@ -2524,8 +2520,6 @@ namespace ngfem
               const_cast<ElementTransformation&>(trafo).userdata = &ud;
               ud.fel = &fel1;
 
-              PrecomputeCacheCF(cache_cfs, mir, lh);
-
               for (ProxyFunction * proxy : trial_proxies)
                 {
                   ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
@@ -2623,8 +2617,6 @@ namespace ngfem
           ProxyUserData ud(trial_proxies.Size(), lh);          
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel1;
-
-          PrecomputeCacheCF(cache_cfs, mir, lh);
 
           for (ProxyFunction * proxy : trial_proxies)
             {
@@ -3716,8 +3708,6 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
     ud.fel = &fel1;
-
-    PrecomputeCacheCF(cache_cfs, mir1, lh);
 
     // ud.elx = &elveclin;
     // ud.lh = &lh;
