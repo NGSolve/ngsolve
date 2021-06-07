@@ -1996,7 +1996,7 @@ namespace ngla
     static Timer t("SparseMatrix::MultAdd Multivec"); RegionTimer reg(t);
     t.AddFlops (this->NZE()*x.Size());
 
-
+    /*
     task_manager -> CreateJob
       ([&] (TaskInfo & ti)
        {
@@ -2005,7 +2005,13 @@ namespace ngla
          int num_in_part = ti.task_nr % tasks_per_part;
 
          auto myrange = balance[mypart].Split (num_in_part, tasks_per_part);
+         cout << "myrange = " << myrange << endl;
+         cout << "tasknr = " << ti.task_nr << "  ntasks = " << ti.ntasks << endl;
+    */
 
+    ParallelForRange
+      (balance, [&] (IntRange myrange)
+       {
          int i = 0;
          for ( ; i + 4 <= x.Size(); i += 4)
            {
