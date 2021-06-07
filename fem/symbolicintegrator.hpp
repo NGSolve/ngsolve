@@ -944,7 +944,6 @@ public:
     shared_ptr<CoefficientFunction> cf;
     VorB vb;
     Array<ProxyFunction*> trial_proxies;
-    Array<CoefficientFunction*> cache_cfs;
     VorB element_vb;    
 
     Timer timer{"SymbolicEnergy",2};
