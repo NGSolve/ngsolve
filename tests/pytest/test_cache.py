@@ -42,12 +42,13 @@ def mk_logfile(filename):
         logfile.unlink(missing_ok=True)
     return logfile
 
-# TODO: add more cases to cover all possible occurrences of caching (a lot!)
+
+# TODO: add more cases to cover all possible occurrences of caching: still missing: "Trans" versions
 
 
 def mk_linear_form(fes, cf):
-    L = LinearForm(fes)
     test_function = fes.TestFunction()
+    L = LinearForm(fes)
     L += InnerProduct(cf, test_function) * dx
     L += InnerProduct(cf, test_function) * ds(element_boundary=True)
     L.Assemble()
@@ -72,9 +73,36 @@ def test_cache_in_linear_form_integrator(fes):
     assert eval_count(logfile) == 49
 
 
+def mk_facet_linear_form(fes, cf):
+    test_function = fes.TestFunction()
+    L = LinearForm(fes)
+    L += InnerProduct(cf, test_function) * ds(skeleton=True)
+    L.Assemble()
+    return L
+
+
+def test_cache_in_facet_linear_form_integrator(fes):
+    logfile = mk_logfile("test_cache_in_facet_linear_form_integrator_nocache.log")
+    L = mk_facet_linear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
+    baseline = eval_count(logfile)
+
+    # covers possibly existing simd version of FacetLFIntegrator :: T_CalcFacetVector
+    logfile = mk_logfile("test_cache_in_facet_linear_form_integrator_cf.log")
+    cL = mk_facet_linear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
+    assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
+    assert eval_count(logfile) == 12
+
+    # covers non-simd version of FacetLFIntegrator :: T_CalcFacetVector
+    logfile = mk_logfile("test_cache_in_facet_linear_form_integrator_ncf.log")
+    cL = mk_facet_linear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
+    assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
+    # NOTE: currently no simd version exists and the count for simd and non.simd are thus the same
+    assert eval_count(logfile) == 12
+
+
 def mk_bilinear_form(fes, cf):
-    a = BilinearForm(fes)
     trial_function, test_function = fes.TnT()
+    a = BilinearForm(fes)
     a += InnerProduct(cf, trial_function) * \
          InnerProduct(cf, test_function) * dx
     a += InnerProduct(cf, trial_function) * \
@@ -84,24 +112,82 @@ def mk_bilinear_form(fes, cf):
 
 
 def test_cache_in_bilinear_form_integrator(fes):
+    gf = GridFunction(fes)
+    gfvec = gf.vec
+    resvec = gf.vec.Copy()
+    gf.Interpolate(CoefficientFunction((x, y, z)))
+
     logfile = mk_logfile("test_cache_in_bilinear_form_integrator_nocache.log")
     a = mk_bilinear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
+    a.Apply(gfvec, resvec)
     baseline = eval_count(logfile)
 
-    # covers simd version of BLFIntegrator :: T_CalcElementMatrixAdd and T_CalcElementMatrixEBAdd
+    # covers simd version of BLFIntegrator :: T_CalcElementMatrixAdd, T_CalcElementMatrixEBAdd and ApplyMatrix
     logfile = mk_logfile("test_cache_in_bilinear_form_integrator_cf.log")
     ca = mk_bilinear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
-    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
     assert eval_count(logfile) == 48
+    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
+    cresvec = gfvec.Copy()
+    ca.Apply(gfvec, cresvec)
+    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
+    assert eval_count(logfile) == 96
 
-    # covers non-simd version of BLFIntegrator :: T_CalcElementMatrixAdd and T_CalcElementMatrixEBAdd
+    # covers non-simd version of BLFIntegrator :: T_CalcElementMatrixAdd, T_CalcElementMatrixEBAdd and ApplyMatrix
     logfile = mk_logfile("test_cache_in_bilinear_form_integrator_ncf.log")
     ca = mk_bilinear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
     assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
     assert eval_count(logfile) == 50
+    cresvec = gfvec.Copy()
+    ca.Apply(gfvec, cresvec)
+    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
+    assert eval_count(logfile) == 98
+
+
+def mk_facet_bilinear_form(fes, cf):
+    trial_function, test_function = fes.TnT()
+    a = BilinearForm(fes)
+    a += InnerProduct(cf, trial_function) * \
+         InnerProduct(cf, test_function) * ds(skeleton=True)
+    a.Assemble()
+    return a
+
+
+def test_cache_in_facet_bilinear_form_integrator(fes):
+    gf = GridFunction(fes)
+    gfvec = gf.vec
+    resvec = gf.vec.Copy()
+    gf.Interpolate(CoefficientFunction((x, y, z)))
+
+    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_nocache.log")
+    a = mk_facet_bilinear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
+    a.Apply(gfvec, resvec)
+    baseline = eval_count(logfile)
+
+    # covers simd version of FacetBLFIntegrator :: T_CalcFacetMatrix, ApplyFacetMatrix (both "1-element signature")
+    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_cf.log")
+    ca = mk_facet_bilinear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
+    assert eval_count(logfile) == 12
+    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
+    cresvec = gfvec.Copy()
+    ca.Apply(gfvec, cresvec)
+    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
+    assert eval_count(logfile) == 24
+
+    # covers non-simd version of FacetBLFIntegrator :: T_CalcFacetMatrix, ApplyFacetMatrix (both "1-element signature")
+    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_ncf.log")
+    ca = mk_facet_bilinear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
+    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
+    # NOTE: currently no simd version exists and the count for simd and non.simd are thus the same
+    assert eval_count(logfile) == 12
+    cresvec = gfvec.Copy()
+    ca.Apply(gfvec, cresvec)
+    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
+    assert eval_count(logfile) == 25
 
 
 if __name__ == "__main__":
     _fes = mk_fes()
     test_cache_in_linear_form_integrator(_fes)
     test_cache_in_bilinear_form_integrator(_fes)
+    test_cache_in_facet_linear_form_integrator(_fes)
+    test_cache_in_facet_bilinear_form_integrator(_fes)
