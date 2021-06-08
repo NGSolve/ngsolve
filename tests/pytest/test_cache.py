@@ -58,7 +58,7 @@ def eval_count(filename):
 def mk_logfile(filename):
     logfile = pathlib.Path(filename)
     if logfile.exists():
-        logfile.unlink(missing_ok=True)
+        logfile.unlink()
     return logfile
 
 
