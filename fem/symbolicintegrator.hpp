@@ -618,6 +618,8 @@ public:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
     Array<CoefficientFunction*> gridfunction_cfs;
+    Array<CoefficientFunction*> cache_cfs;
+
     VorB vb;
     // bool element_boundary;
     VorB element_vb;
@@ -795,6 +797,7 @@ public:
   {
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
+    Array<CoefficientFunction*> cache_cfs;
     Array<int> test_cum;    // cumulated dimension of proxies
     VorB vb;                // only BND supported by now
     // bool element_boundary;  /// not needed (by now ???)
@@ -838,7 +841,8 @@ public:
   protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> trial_proxies, test_proxies;
-    Array<CoefficientFunction*> gridfunction_cfs;    
+    Array<CoefficientFunction*> gridfunction_cfs;
+    Array<CoefficientFunction*> cache_cfs;
     Array<int> trial_cum, test_cum;   // cumulated dimension of proxies
     VorB vb;
     bool element_boundary;
