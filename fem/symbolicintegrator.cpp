@@ -845,6 +845,8 @@ namespace ngfem
     for (auto proxy : proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
+
+    cache_cfs = FindCacheCF(*cf);
   }
 
   /*
@@ -927,6 +929,7 @@ namespace ngfem
               ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh);
             
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
+            PrecomputeCacheCF(cache_cfs, mir, lh);
 
             // mir.ComputeNormalsAndMeasure (eltype, k);
             
@@ -972,6 +975,7 @@ namespace ngfem
             // NgProfiler::StartThreadTimer(telvec_zero, tid);            
             ProxyUserData ud;
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
+            PrecomputeCacheCF(cache_cfs, mir, lh);
             
             elvec = 0;
             // NgProfiler::StopThreadTimer(telvec_zero, tid);                        
@@ -1017,6 +1021,8 @@ namespace ngfem
         FlatMatrix<SCAL> values(ir.Size(), 1, lh);
         ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
+        PrecomputeCacheCF(cache_cfs, mir, lh);
+
         for (CoefficientFunction * cf : gridfunction_cfs)
           ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
         
@@ -1634,7 +1640,7 @@ namespace ngfem
     
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
-    
+    PrecomputeCacheCF(cache_cfs, mir, lh);
     
     // tstart.Stop();
     // bool symmetric_so_far = true;
@@ -1943,6 +1949,8 @@ namespace ngfem
                   ProxyUserData ud;
                   const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
+                  PrecomputeCacheCF(cache_cfs, mir, lh);
+
                   // mir.ComputeNormalsAndMeasure(eltype, k);
                   
                   for (int k1 : Range(trial_proxies))
@@ -2078,9 +2086,10 @@ namespace ngfem
           
           ProxyUserData ud;
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
-
           // mir.ComputeNormalsAndMeasure(eltype, k);
-          
+
+          PrecomputeCacheCF(cache_cfs, mir, lh);
+
           for (int k1 : Range(trial_proxies))
             for (int l1 : Range(test_proxies))
               {
@@ -2196,6 +2205,8 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size()+test_proxies.Size(), 0, lh);
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
 
+    PrecomputeCacheCF(cache_cfs, mir, lh);
+
     ud.fel = &fel;
 
     FlatVector<> vtrial(fel_trial.GetNDof(), lh);
@@ -2271,6 +2282,7 @@ namespace ngfem
           ud.fel = &fel;
           // ud.elx = &elveclin;
           // ud.lh = &lh;
+
           for (ProxyFunction * proxy : trial_proxies)
             {
               ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
@@ -2388,6 +2400,7 @@ namespace ngfem
     ud.fel = &fel;
     // ud.elx = &elveclin;
     // ud.lh = &lh;
+
     for (ProxyFunction * proxy : trial_proxies)
       {
         ud.AssignMemory (proxy, ir.Size(), proxy->Dimension(), lh);
@@ -2725,6 +2738,8 @@ namespace ngfem
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
 
+          PrecomputeCacheCF(cache_cfs, simd_mir, lh);
+
           for (ProxyFunction * proxy : trial_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
           for (CoefficientFunction * cf : gridfunction_cfs)
@@ -2781,6 +2796,8 @@ namespace ngfem
     IntegrationRule ir = GetIntegrationRule (fel, lh);
 
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+    PrecomputeCacheCF(cache_cfs, mir, lh);
 
     for (ProxyFunction * proxy : trial_proxies)
       ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
@@ -2865,6 +2882,8 @@ namespace ngfem
               ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);              
               const_cast<ElementTransformation&>(trafo).userdata = &ud;
               ud.fel = &fel_trial;
+
+              PrecomputeCacheCF(cache_cfs, mir, lh);
           
               for (ProxyFunction * proxy : trial_proxies)
                 ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
@@ -2926,7 +2945,9 @@ namespace ngfem
         ProxyUserData ud(trial_proxies.Size(), lh);    
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
         ud.fel = &fel_trial;
-    
+
+        PrecomputeCacheCF(cache_cfs, mir, lh);
+
         for (ProxyFunction * proxy : trial_proxies)
           ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
         
@@ -2998,6 +3019,8 @@ namespace ngfem
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
 
+          PrecomputeCacheCF(cache_cfs, simd_mir, lh);
+
           for (ProxyFunction * proxy : test_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh);
           for (CoefficientFunction * cf : gridfunction_cfs)
@@ -3052,6 +3075,8 @@ namespace ngfem
     IntegrationRule ir = GetIntegrationRule (fel, lh);
 
     BaseMappedIntegrationRule & mir = trafo(ir, lh);
+
+    PrecomputeCacheCF(cache_cfs, mir, lh);
 
     for (ProxyFunction * proxy : test_proxies)
       ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
@@ -3136,6 +3161,8 @@ namespace ngfem
               ProxyUserData ud(test_proxies.Size(), gridfunction_cfs.Size(), lh);              
               const_cast<ElementTransformation&>(trafo).userdata = &ud;
               ud.fel = &fel_trial;
+
+              PrecomputeCacheCF(cache_cfs, mir, lh);
           
               for (ProxyFunction * proxy : test_proxies)
                 ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
@@ -3196,6 +3223,8 @@ namespace ngfem
         ProxyUserData ud(test_proxies.Size(), lh);    
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
         ud.fel = &fel_test;
+
+        PrecomputeCacheCF(cache_cfs, mir, lh);
     
         for (ProxyFunction * proxy : test_proxies)
           ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
@@ -3252,6 +3281,7 @@ namespace ngfem
                   test_cum.Append(test_cum.Last()+proxy->Dimension());
                 }
         });
+    cache_cfs = FindCacheCF(*cf);
   }
 
 
@@ -3283,11 +3313,13 @@ namespace ngfem
 
     mir1.SetOtherMIR (&smir);
     smir.SetOtherMIR (&mir1);
-    
+
     // evaluate proxy-values
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
     const_cast<ElementTransformation&>(strafo).userdata = &ud;
+
+    PrecomputeCacheCF(cache_cfs, mir1, lh);
 
     RegionTimer reg(t);
     
@@ -3381,7 +3413,9 @@ namespace ngfem
     for (auto proxy : test_proxies)
       if (proxy->IsOther())
         neighbor_testfunction = true;
-    
+
+    cache_cfs = FindCacheCF(*cf);
+
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(6) << "num trial_proxies " << trial_proxies.Size() << endl;
     cout << IM(6) << "cumulated test_proxy dims  " << test_cum << endl;
@@ -3481,6 +3515,8 @@ namespace ngfem
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
 
+    PrecomputeCacheCF(cache_cfs, mir1, lh);
+
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(test_proxies))
         {
@@ -3559,7 +3595,6 @@ namespace ngfem
                     FlatMatrix<TSCAL> elmat,
                     LocalHeap & lh) const
   {
-
     bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
     const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
     const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
@@ -3585,6 +3620,8 @@ namespace ngfem
     
     ProxyUserData ud;
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+
+    PrecomputeCacheCF(cache_cfs, mir1, lh);
 
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(test_proxies))
@@ -3649,6 +3686,7 @@ namespace ngfem
                              FlatVector<double> elveclin, FlatMatrix<double> elmat,
                              LocalHeap & lh) const
   {
+
     elmat = 0.0;
 
     int maxorder = fel1.Order();
@@ -3670,6 +3708,7 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
     ud.fel = &fel1;
+
     // ud.elx = &elveclin;
     // ud.lh = &lh;
     for (ProxyFunction * proxy : trial_proxies)
@@ -3802,6 +3841,9 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
             const_cast<ElementTransformation&>(trafo1).userdata = &ud;
             ud.fel = &fel1;   // necessary to check remember-map
+
+            PrecomputeCacheCF(cache_cfs, simd_mir1, lh);
+
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh);
             for (CoefficientFunction * cf : gridfunction_cfs)
@@ -3923,6 +3965,9 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
     ud.fel = &fel1;   // necessary to check remember-map
+
+    PrecomputeCacheCF(cache_cfs, mir1, lh);
+
     for (ProxyFunction * proxy : trial_proxies)
       ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
 
@@ -4116,6 +4161,8 @@ namespace ngfem
             ud.fel = &volumefel;   // necessary to check remember-map
             // ud.elx = &elx;
             // ud.lh = &lh;
+
+            PrecomputeCacheCF(cache_cfs, simd_mir, lh);
 	    
 	    size_t ctrace = 0;	    
 	    for (ProxyFunction * proxy : trial_proxies)
@@ -4194,6 +4241,8 @@ namespace ngfem
     const_cast<ElementTransformation&>(eltrans).userdata = &ud;
     ud.fel = &volumefel;   // necessary to check remember-map
     // ud.lh = &lh;
+
+    PrecomputeCacheCF(cache_cfs, mir, lh);
 
     size_t ctrace = 0;
     //copy traces to user memory
@@ -4283,8 +4332,9 @@ namespace ngfem
             ud.fel = &fel1;   // necessary to check remember-map
             // ud.elx = &elx;
             // ud.lh = &lh;
-            
-            
+
+            PrecomputeCacheCF(cache_cfs, mir1, lh);
+
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh);
             
@@ -4378,6 +4428,9 @@ namespace ngfem
     ud.fel = &fel1;   // necessary to check remember-map
     // ud.elx = &elx;
     // ud.lh = &lh;
+
+    PrecomputeCacheCF(cache_cfs, mir1, lh);
+
     for (ProxyFunction * proxy : trial_proxies)
       ud.AssignMemory (proxy, ir_facet.Size(), proxy->Dimension(), lh);
     
@@ -4455,7 +4508,7 @@ namespace ngfem
     nonzeros = Matrix<bool>(trial_cum.Last(), trial_cum.Last());
     nonzeros_proxies = Matrix<bool>(trial_proxies.Size(), trial_proxies.Size());
     nonzeros_proxies = false;
-    
+
     ProxyUserData ud;
     DummyFE<ET_TRIG> dummyfe;
     ud.fel = &dummyfe;
@@ -4660,11 +4713,8 @@ namespace ngfem
     static Timer tmult("SymbolicEnergy::mult", 2);
     size_t tid = TaskManager::GetThreadId();
     ThreadRegionTimer reg(t, tid);
-    
+
     HeapReset hr(lh);
-
-
-
     
     FlatMatrix<> dderiv(mir.Size(), 1,lh);
     FlatMatrix<AutoDiffDiff<1,double>> ddval(mir.Size(), 1, lh);
@@ -5072,10 +5122,10 @@ namespace ngfem
                 ProxyUserData ud(trial_proxies.Size(), lh);        
                 const_cast<ElementTransformation&>(trafo).userdata = &ud;
                 ud.fel = &fel;
-                
+
                 const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule(fel, lh);
                 auto & mir = trafo(ir, lh);
-                
+
                 for (ProxyFunction * proxy : trial_proxies)
                   ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
                 for (ProxyFunction * proxy : trial_proxies)
@@ -5170,10 +5220,10 @@ namespace ngfem
         ProxyUserData ud(trial_proxies.Size(), lh);        
         const_cast<ElementTransformation&>(trafo).userdata = &ud;
         ud.fel = &fel;
-        
+
         const IntegrationRule& ir = GetIntegrationRule(fel, lh);
         BaseMappedIntegrationRule & mir = trafo(ir, lh);
-        
+
         for (ProxyFunction * proxy : trial_proxies)
           ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
         
