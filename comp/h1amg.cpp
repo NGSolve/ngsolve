@@ -542,7 +542,7 @@ namespace ngcomp
       // static Timer t3("h1amg - addelmat calc e-schur");
       // static Timer t5("h1amg - addelmat invert");
 
-      // ThreadRegionTimer reg (t, TaskManager::GetThreadId());
+      // RegionTimer reg (t);
 
       size_t ndof = dnums.Size();
       BitArray used(ndof, lh);
@@ -550,7 +550,7 @@ namespace ngcomp
       FlatMatrix<SCAL> ext_elmat(ndof+1, ndof+1, lh);
 
       {
-        // ThreadRegionTimer reg (t5, TaskManager::GetThreadId());
+        // RegionTimer reg (t5);
         ext_elmat.Rows(0,ndof).Cols(0,ndof) = elmat;
         ext_elmat.Row(ndof) = 1;
         ext_elmat.Col(ndof) = 1;
@@ -559,7 +559,7 @@ namespace ngcomp
       }
 
       {
-        // ThreadRegionTimer reg (t1, TaskManager::GetThreadId());
+        // RegionTimer reg (t1);
         for (size_t i = 0; i < dnums.Size(); i++)
           {
             Mat<2,2,SCAL> ai;
@@ -572,7 +572,7 @@ namespace ngcomp
           }
       }
       {
-        // ThreadRegionTimer reg (t3, TaskManager::GetThreadId());
+        // RegionTimer reg (t3);
       for (size_t i = 0; i < dnums.Size(); i++)
         for (size_t j = 0; j < i; j++)
           {
