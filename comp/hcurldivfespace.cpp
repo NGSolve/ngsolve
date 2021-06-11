@@ -436,26 +436,35 @@ namespace ngcomp
     fine_facet.SetSize(ma->GetNFacets());
     fine_facet = false;
     for(auto el : ma->Elements(VOL))
+    {
+      if (!DefinedOn (el))
+        continue;
       fine_facet[el.Facets()] = true;
+    }
 
     ndof = 0;    
     for(auto i : Range(ma->GetNFacets()))
     {
       first_facet_dof[i] = ndof;
-      if(!fine_facet[i]) continue;
+      if(!fine_facet[i]) 
+      {
+        order_facet[i] = 0;
+        ndof += 1; //lowest order dof exists but is set as UNUSED_DOF. Consistent with hdivhofespace...
+        continue;
+      }
 
       int of = order_facet[i];
       switch(ma->GetFacetType(i))
       {
-      case ET_SEGM:
-        ndof += of + 1; break;
-      case ET_TRIG:
-	ndof += (of + 1)*(of + 2); break;
-      case ET_QUAD:
-	ndof += 2*(of + 1)*(of + 1); break;
-      
-      default:
-        throw Exception("illegal facet type");
+        case ET_SEGM:
+          ndof += of + 1; break;
+        case ET_TRIG:
+          ndof += (of + 1)*(of + 2); break;
+        case ET_QUAD:
+          ndof += 2*(of + 1)*(of + 1); break;
+        
+        default:
+          throw Exception("illegal facet type");
       }
     }
     first_facet_dof.Last() = ndof;
@@ -464,82 +473,87 @@ namespace ngcomp
     for(auto i : Range(ma->GetNE()))
     {
       ElementId ei(VOL, i);
+      if (!DefinedOn (ei))
+      {
+        order_inner[i] = 0;
+        order_trace[i] = 0;
+        first_element_dof[i] = ndof; // should never be touched, hopefully...
+        continue;
+      }
       first_element_dof[i] = ndof;
       int oi = order_inner[i];
       int ot = order_trace[i];
       
       switch(ma->GetElType(ei))
       {
-      case ET_TRIG:
-        ndof += 3*(oi * (oi +1))/2;
-	if (ot>-1)
-	  ndof += (ot + 1) * (ot + 2) / 2;
+        case ET_TRIG:
+          ndof += 3*(oi * (oi +1))/2;
+          if (ot>-1)
+            ndof += (ot + 1) * (ot + 2) / 2;
 
-	if (GGbubbles)
-	  ndof += oi+1;
-	
-        if(discontinuous)
-        {
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-        }
-        break;
-      case ET_QUAD:
-	ndof += (oi+1)*(oi+1);
-	if (oi > 0)
-	  ndof += 2 * (oi+2)*(oi);
-	else
-	  ndof += 2;
-	
-	//ndof += (oi+1)*(oi+1) + (oi + 2) * oi * 2;
-	
-	if (ot>-1)
-	  ndof += (ot + 1) * (ot + 1);
-	
-        if(discontinuous)
-        {
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-        }
-        break;
-		
-      case ET_TET:
-	ndof += 8 * oi * (oi+1)*(oi+2)/6;
-	if(ot>-1)
-	  ndof += (ot + 1)*(ot+2)*(ot+3)/6;
+          if (GGbubbles)
+            ndof += oi+1;
+          
+                if(discontinuous)
+                {
+                  for (auto f : ma->GetElFacets(ei))
+                    ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                }
+                break;
+        case ET_QUAD:
+          ndof += (oi+1)*(oi+1);
+          if (oi > 0)
+            ndof += 2 * (oi+2)*(oi);
+          else
+            ndof += 2;
+          
+          //ndof += (oi+1)*(oi+1) + (oi + 2) * oi * 2;
+          
+          if (ot>-1)
+            ndof += (ot + 1) * (ot + 1);
+          
+                if(discontinuous)
+                {
+                  for (auto f : ma->GetElFacets(ei))
+                    ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                }
+                break;            
+        case ET_TET:
+          ndof += 8 * oi * (oi+1)*(oi+2)/6;
+          if(ot>-1)
+            ndof += (ot + 1)*(ot+2)*(ot+3)/6;
 
-	if (GGbubbles)
-	  ndof += 3*(oi+1)*(oi+2)/2;
-	  //if(!GG)
-	  //  ndof += 3*((oi+1)*oi + oi);	  
-	
-	if(discontinuous)
-        {
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-        }
-	break;
-
+          if (GGbubbles)
+            ndof += 3*(oi+1)*(oi+2)/2;
+            //if(!GG)
+            //  ndof += 3*((oi+1)*oi + oi);	  
+          
+          if(discontinuous)
+                {
+                  for (auto f : ma->GetElFacets(ei))
+                    ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                }
+          break;
       case ET_HEX:	
-	ndof += 2 * (oi+1) * (oi+1) * (oi+1); // + 6 * (oi+1) * (oi+1) * (oi-1);
+          ndof += 2 * (oi+1) * (oi+1) * (oi+1); // + 6 * (oi+1) * (oi+1) * (oi-1);
 
-	if (oi > 0)
-	  ndof += 6 * (oi+2) * (oi+1) * (oi);
-	else
-	  ndof += 6;
-	
-	if(ot>-1)
-	  ndof += (ot+1) * (ot+1) * (ot+1);
-		
-	if(discontinuous)
-        {
-          for (auto f : ma->GetElFacets(ei))
-            ndof += first_facet_dof[f+1] - first_facet_dof[f];            
-        }
-	break;
+          if (oi > 0)
+            ndof += 6 * (oi+2) * (oi+1) * (oi);
+          else
+            ndof += 6;
+          
+          if(ot>-1)
+            ndof += (ot+1) * (ot+1) * (ot+1);
+            
+          if(discontinuous)
+                {
+                  for (auto f : ma->GetElFacets(ei))
+                    ndof += first_facet_dof[f+1] - first_facet_dof[f];            
+                }
+          break;
 
-      default:
-        throw Exception(string("illegal element type = ") + ToString(ma->GetElType(ei)));
+        default:
+          throw Exception(string("illegal element type = ") + ToString(ma->GetElType(ei)));
       }
     }
     first_element_dof.Last() = ndof;    
@@ -575,12 +589,12 @@ namespace ngcomp
     
     Array<int> dnums;
     for (auto facet : Range(ma->GetNFacets()))
-      {
-	GetLoDofNrs(facet,dnums);
-	for( auto dnum : dnums)
-	  {
-	    ctofdof[dnum] = fine_facet[facet] ?  WIREBASKET_DOF : UNUSED_DOF;
-	  }
+      {        
+        GetLoDofNrs(facet,dnums);
+        for( auto dnum : dnums)
+          {
+            ctofdof[dnum] = fine_facet[facet]  ?  WIREBASKET_DOF : UNUSED_DOF;
+          }
       }
     
     Array<int> innerdofs;
@@ -711,113 +725,91 @@ namespace ngcomp
   }
 
 
+ template <ELEMENT_TYPE ET>
+  FiniteElement & HCurlDivFESpace :: T_GetFE (ElementId ei, Allocator & lh) const
+  {
+    int elnr = ei.Nr(); //Volume element nr
+    // Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
+    Ngs_Element ngel = ma->GetElement(ei);  
+    if (!DefinedOn(ngel)) return * new (lh) HCurlDivDummyFE<ET>();
+    
+    auto * fe =  new (lh) HCurlDivFE<ET> (order, GGbubbles);
+    fe->SetVertexNumbers (ngel.Vertices());
+    int ii = 0;
+    for(auto f : ngel.Facets())
+      fe->SetOrderFacet(ii++,order_facet[f]);
+    fe->SetOrderInner(order_inner[ei.Nr()]);
+    fe->SetOrderTrace(order_trace[ei.Nr()]);
+    fe->ComputeNDof();
+    return *fe;
+  }
+
   FiniteElement & HCurlDivFESpace :: GetFE (ElementId ei,Allocator & alloc) const
   {
-    Ngs_Element ngel = ma->GetElement(ei);
+    Ngs_Element ngel = ma->GetElement(ei);       
+
     if (!ei.IsVolume())
     {
       if(!discontinuous)
       {
         auto feseg = new (alloc) HCurlDivSurfaceFE<ET_SEGM> (order);
-	auto fetr = new (alloc) HCurlDivSurfaceFE<ET_TRIG> (order);
-	auto fequ = new (alloc) HCurlDivSurfaceFE<ET_QUAD> (order);
+        auto fetr = new (alloc) HCurlDivSurfaceFE<ET_TRIG> (order);
+        auto fequ = new (alloc) HCurlDivSurfaceFE<ET_QUAD> (order);
 	
+        switch(ma->GetElType(ei))
+        {
+          case ET_SEGM:  
+            feseg->SetVertexNumbers (ngel.Vertices());
+            feseg->SetOrderInner(order_facet[ei.Nr()]);
+            feseg->ComputeNDof();
+            return *feseg;
+          case ET_TRIG:          
+            fetr->SetVertexNumbers (ngel.Vertices());
+            fetr->SetOrderInner(order_facet[ei.Nr()]);
+            fetr->ComputeNDof();
+            return *fetr;
+          case ET_QUAD:          
+            fequ->SetVertexNumbers (ngel.Vertices());
+            fequ->SetOrderInner(order_facet[ei.Nr()]);
+            fequ->ComputeNDof();
+            return *fequ;
+          
+          default:
+            stringstream str;
+            str << "FESpace " << GetClassName()
+              << ", undefined surface eltype " << ma->GetElType(ei)
+              << ", order = " << order << endl;
+            throw Exception (str.str());
+        }
+      }
+      
       switch(ma->GetElType(ei))
       {
-      case ET_SEGM:  
-        feseg->SetVertexNumbers (ngel.Vertices());
-        feseg->SetOrderInner(order_facet[ei.Nr()]);
-        feseg->ComputeNDof();
-        return *feseg;
-      case ET_TRIG:          
-        fetr->SetVertexNumbers (ngel.Vertices());
-        fetr->SetOrderInner(order_facet[ei.Nr()]);
-        fetr->ComputeNDof();
-        return *fetr;
-      case ET_QUAD:          
-        fequ->SetVertexNumbers (ngel.Vertices());
-        fequ->SetOrderInner(order_facet[ei.Nr()]);
-        fequ->ComputeNDof();
-        return *fequ;
-      
-      default:
-        stringstream str;
-        str << "FESpace " << GetClassName()
-          << ", undefined surface eltype " << ma->GetElType(ei)
-          << ", order = " << order << endl;
-        throw Exception (str.str());
-      }
-      }
-      
-      switch(ma->GetElType(ei))
-      {
-      case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
-      case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
-      case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
-      case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
+        case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
+        case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
+        case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
+        case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;
 
-      default:
-        stringstream str;
-        str << "FESpace " << GetClassName()
-          << ", undefined surface eltype " << ma->GetElType(ei)
-          << ", order = " << order << endl;
-        throw Exception (str.str());
+        default:
+          stringstream str;
+          str << "FESpace " << GetClassName()
+            << ", undefined surface eltype " << ma->GetElType(ei)
+            << ", order = " << order << endl;
+          throw Exception (str.str());
       }
     }
+    
 
     switch(ngel.GetType())
-    {
-    case ET_TRIG:
-    {
-      auto fe = new (alloc) HCurlDivFE<ET_TRIG> (order, GGbubbles);
-      fe->SetVertexNumbers (ngel.Vertices());
-      int ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->SetOrderTrace(order_trace[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-    }
-    case ET_QUAD:
-    {
-      auto fe = new (alloc) HCurlDivFE<ET_QUAD> (order, GGbubbles);
-      fe->SetVertexNumbers (ngel.Vertices());
-      int ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->SetOrderTrace(order_trace[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-    }
-    case ET_TET:
-    {
-      auto fe = new (alloc) HCurlDivFE<ET_TET> (order, GGbubbles);
-      fe->SetVertexNumbers (ngel.vertices);
-      int ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->SetOrderTrace(order_trace[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-    }
-    case ET_HEX:
-    {
-      auto fe = new (alloc) HCurlDivFE<ET_HEX> (order, GGbubbles);
-      fe->SetVertexNumbers (ngel.vertices);
-      int ii = 0;
-      for(auto f : ngel.Facets())
-        fe->SetOrderFacet(ii++,order_facet[f]);
-      fe->SetOrderInner(order_inner[ei.Nr()]);
-      fe->SetOrderTrace(order_trace[ei.Nr()]);
-      fe->ComputeNDof();
-      return *fe;
-    }
+    {      
+      case ET_TRIG: return T_GetFE<ET_TRIG> (ei, alloc);      
+      case ET_QUAD: return T_GetFE<ET_QUAD> (ei, alloc);
+      case ET_TET: return T_GetFE<ET_TET>   (ei, alloc);
+      
+      case ET_HEX: return T_GetFE<ET_HEX>   (ei, alloc);
       default:
-      throw Exception(string("HCurlDivFESpace::GetFE: element-type ") +
-        ToString(ngel.GetType()) + " not supported");
+        throw Exception(string("HCurlDivFESpace::GetFE: element-type ") +
+          ToString(ngel.GetType()) + " not supported");
     }
   }
 
@@ -838,8 +830,11 @@ namespace ngcomp
         first_facet_dof[fanr+1]);
   }
   void HCurlDivFESpace :: GetInnerDofNrs (int elnr,Array<int> & dnums) const
-  {
+  {   
     dnums.SetSize0();
+    if (!DefinedOn (ElementId(VOL,elnr))) return;
+
+    // dnums.SetSize0();
     dnums += IntRange (first_element_dof[elnr],
       first_element_dof[elnr+1]);
   }
@@ -858,10 +853,11 @@ namespace ngcomp
   }
 
   void HCurlDivFESpace :: GetDofNrs (ElementId ei,Array<int> & dnums) const
-  {
-    Ngs_Element ngel = ma->GetElement(ei);
-    
+  {        
     dnums.SetSize0();    
+    if (!DefinedOn (ei)) return;
+
+    Ngs_Element ngel = ma->GetElement(ei);
     for(auto f : ngel.Facets())
       dnums += IntRange (first_facet_dof[f],
                          first_facet_dof[f+1]);
