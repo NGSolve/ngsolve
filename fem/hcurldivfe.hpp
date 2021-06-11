@@ -14,7 +14,7 @@
 
 namespace ngfem
 {
-
+  
   template <int DIM>
   class HCurlDivFiniteElement : public FiniteElement
   {
@@ -61,6 +61,47 @@ namespace ngfem
 				     BareSliceMatrix<SIMD<double>> divshapes) const = 0;    
   };
   
+  template <ELEMENT_TYPE ET>
+  class HCurlDivDummyFE : public HCurlDivFiniteElement<ET_trait<ET>::DIM>
+  {
+  public:
+    HCurlDivDummyFE() : HCurlDivFiniteElement<ET_trait<ET>::DIM> (0,0) { ; }
+    virtual ELEMENT_TYPE ElementType() const override { return ET; }
+    virtual void CalcShape (const IntegrationPoint & ip, 
+                               BareSliceMatrix<double> shape) const override { ; }   
+
+    virtual void CalcDivShape (const IntegrationPoint & ip, 
+                               BareSliceMatrix<double> divshape) const override { ; }
+
+    virtual void CalcCurlShape (const IntegrationPoint & ip, 
+                               BareSliceMatrix<double> divshape) const override { ; }
+    
+    virtual void CalcMappedShape (const MappedIntegrationPoint<ET_trait<ET>::DIM,ET_trait<ET>::DIM> & mip,
+      BareSliceMatrix<double> shape) const override { ; }    
+
+    virtual void CalcMappedDivShape (const MappedIntegrationPoint<ET_trait<ET>::DIM,ET_trait<ET>::DIM> & mip,
+      BareSliceMatrix<double> shape) const override { ; }
+
+    virtual void CalcMappedCurlShape (const MappedIntegrationPoint<ET_trait<ET>::DIM,ET_trait<ET>::DIM> & mip,
+      BareSliceMatrix<double> shape) const override { ; }
+
+    virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<ET_trait<ET>::DIM,ET_trait<ET>::DIM>> & mip,
+                                         BareSliceMatrix<SIMD<double>> shapes) const override { ; }
+
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & ir,
+				      BareSliceMatrix<SIMD<double>> shapes) const override { ; }
+    
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                                  BareSliceVector<> coefs,
+                                  BareSliceMatrix<SIMD<double>> values) const override { ; }
+
+    virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                                  BareSliceMatrix<SIMD<double>> values,
+                                  BareSliceVector<> coefs) const override { ; }
+
+    virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+				     BareSliceMatrix<SIMD<double>> divshapes) const override { ; }
+  };
 
   
   template <ELEMENT_TYPE ET> class HCurlDivFE;

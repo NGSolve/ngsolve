@@ -51,6 +51,8 @@ namespace ngcomp
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
     
+    template <ELEMENT_TYPE ET>
+     FiniteElement & T_GetFE (ElementId ei, Allocator & alloc) const;
 
     virtual void GetVertexDofNrs (int vnr, Array<int> & dnums) const override
     {
