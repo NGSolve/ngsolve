@@ -135,9 +135,9 @@ namespace ngbla
                         SliceMatrix<T,ORD> b,
                         SliceMatrix<T,ORD> c)
   {
-    static Timer timer1("SparseCholesky::Factor gemm 1", 2);
-    static Timer timer2("SparseCholesky::Factor gemm 2", 2);
-    static Timer timer3("SparseCholesky::Factor gemm 3", 2);
+    static Timer timer1("SparseCholesky::Factor gemm 1", NoTracing);
+    static Timer timer2("SparseCholesky::Factor gemm 2", NoTracing);
+    static Timer timer3("SparseCholesky::Factor gemm 3", NoTracing);
             
     // if (c.Height() < 10 && c.Width() < 10) //  && a.Width() < 10)
     if (c.Height() < 10 || c.Width() < 10 || a.Width() < 10)
@@ -209,9 +209,9 @@ namespace ngbla
                          SliceMatrix<T,ORD> c,
                          bool symmetric)
   {
-    // static Timer timer1("SparseCholesky::Factor gemm 1", 2);
-    // static Timer timer2("SparseCholesky::Factor gemm 2", 2);
-    // static Timer timer3("SparseCholesky::Factor gemm 3", 2);
+    // static Timer timer1("SparseCholesky::Factor gemm 1", NoTracing);
+    // static Timer timer2("SparseCholesky::Factor gemm 2", NoTracing);
+    // static Timer timer3("SparseCholesky::Factor gemm 3", NoTracing);
 
     /*
     // if (c.Height() < 10 && c.Width() < 10) //  && a.Width() < 10)
@@ -293,7 +293,7 @@ namespace ngbla
         return;
       }
     
-    static Timer t("LDL - Solve L work", 2);
+    static Timer t("LDL - Solve L work", NoTracing);
     t.Start();
     /*
       for (int i = 0; i < L.Height(); i++)
