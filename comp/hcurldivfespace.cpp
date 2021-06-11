@@ -435,7 +435,6 @@ namespace ngcomp
     //Array<bool>
     fine_facet.SetSize(ma->GetNFacets());
     fine_facet = false;
-    cout << "in Update" << endl;
 
     for(auto el : ma->Elements(VOL))
     {
@@ -443,7 +442,6 @@ namespace ngcomp
         continue;
       fine_facet[el.Facets()] = true;
     }
-    cout << "AAAAA" << endl;
     
     ndof = 0;    
     for(auto i : Range(ma->GetNFacets()))
@@ -470,8 +468,6 @@ namespace ngcomp
           throw Exception("illegal facet type");
       }
     }
-
-    cout << "BBBB" << endl;
 
     first_facet_dof.Last() = ndof;
     if(discontinuous) ndof = 0;
@@ -563,7 +559,7 @@ namespace ngcomp
       }
     }
     first_element_dof.Last() = ndof;    
-    cout << "CCCC" << endl;
+    
     if(discontinuous)
       first_facet_dof = 0;
     UpdateCouplingDofArray();
@@ -602,14 +598,13 @@ namespace ngcomp
           {
             ctofdof[dnum] = fine_facet[facet]  ?  WIREBASKET_DOF : UNUSED_DOF;
           }
-      }
-    cout << "DDDD" << endl;
+      }    
     Array<int> innerdofs;
     for(auto e: ma->Elements())
     {   
       if (!DefinedOn (e))
         continue;
-                       
+
       GetInnerDofNrs(e.Nr(), innerdofs);
       int offset = 0;
       int oi = order_inner[e.Nr()];
