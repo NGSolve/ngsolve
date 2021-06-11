@@ -435,13 +435,16 @@ namespace ngcomp
     //Array<bool>
     fine_facet.SetSize(ma->GetNFacets());
     fine_facet = false;
+    cout << "in Update" << endl;
+
     for(auto el : ma->Elements(VOL))
     {
       if (!DefinedOn (el))
         continue;
       fine_facet[el.Facets()] = true;
     }
-
+    cout << "AAAAA" << endl;
+    
     ndof = 0;    
     for(auto i : Range(ma->GetNFacets()))
     {
@@ -467,6 +470,9 @@ namespace ngcomp
           throw Exception("illegal facet type");
       }
     }
+
+    cout << "BBBB" << endl;
+
     first_facet_dof.Last() = ndof;
     if(discontinuous) ndof = 0;
     
@@ -557,6 +563,7 @@ namespace ngcomp
       }
     }
     first_element_dof.Last() = ndof;    
+    cout << "CCCC" << endl;
     if(discontinuous)
       first_facet_dof = 0;
     UpdateCouplingDofArray();
@@ -596,10 +603,13 @@ namespace ngcomp
             ctofdof[dnum] = fine_facet[facet]  ?  WIREBASKET_DOF : UNUSED_DOF;
           }
       }
-    
+    cout << "DDDD" << endl;
     Array<int> innerdofs;
     for(auto e: ma->Elements())
-    {            
+    {   
+      if (!DefinedOn (e))
+        continue;
+                       
       GetInnerDofNrs(e.Nr(), innerdofs);
       int offset = 0;
       int oi = order_inner[e.Nr()];
@@ -608,116 +618,116 @@ namespace ngcomp
       
       
       switch(ma->GetElType(e))
-	{
-	case ET_TRIG:
-	  // if diagonal is addded set lowest order basisfunction  
-	  if(order_trace[e.Nr()]>-1)
-	    {
-	      ctofdof[innerdofs[0]] = INTERFACE_DOF;	      
-	      offset = 1;
-	    }
-	  
-	  for (int dof = offset; dof < innerdofs.Size(); dof++)
-	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
-	    
-	  break;
-	case ET_QUAD:
-	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
-	  offset = 1;
-	  diag_offset = 2 * (oi) + oi*oi + 1;
+      {
+      case ET_TRIG:
+        // if diagonal is addded set lowest order basisfunction  
+        if(order_trace[e.Nr()]>-1)
+          {
+            ctofdof[innerdofs[0]] = INTERFACE_DOF;	      
+            offset = 1;
+          }
+        
+        for (int dof = offset; dof < innerdofs.Size(); dof++)
+          ctofdof[innerdofs[dof]] = LOCAL_DOF;
+          
+        break;
+      case ET_QUAD:
+        ctofdof[innerdofs[0]] = INTERFACE_DOF;
+        offset = 1;
+        diag_offset = 2 * (oi) + oi*oi + 1;
 
-	  for (int dof = offset; dof < diag_offset; dof++)
-		ctofdof[innerdofs[dof]] = LOCAL_DOF;
+        for (int dof = offset; dof < diag_offset; dof++)
+        ctofdof[innerdofs[dof]] = LOCAL_DOF;
 
-	  offset = diag_offset;
-	  
-	  if(order_trace[e.Nr()]>-1)
-	    {	      
-	      ctofdof[innerdofs[offset]] = INTERFACE_DOF;
-	      offset += 1;
-	      diag_offset += 2 * ot + ot*ot + 1;
-	      for (int dof = offset; dof < diag_offset; dof++)
-		ctofdof[innerdofs[dof]] = LOCAL_DOF;
-	    }
-	  offset = diag_offset;
+        offset = diag_offset;
+        
+        if(order_trace[e.Nr()]>-1)
+          {	      
+            ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+            offset += 1;
+            diag_offset += 2 * ot + ot*ot + 1;
+            for (int dof = offset; dof < diag_offset; dof++)
+        ctofdof[innerdofs[dof]] = LOCAL_DOF;
+          }
+        offset = diag_offset;
 
-	  ctofdof[innerdofs[offset]] = INTERFACE_DOF;
-	  ctofdof[innerdofs[offset+1]] = INTERFACE_DOF;
-	  offset += 2;
-	  
-	  for (int dof = offset; dof < innerdofs.Size(); dof++)
-	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
-	    
-	  break;
-	case ET_TET:
-	  diag_offset =  (ot+1)*(ot+2)*(ot+3)/6.0;
-	  if(ot>-1)
-	    {
-	      ctofdof[innerdofs[0]] = INTERFACE_DOF; 
-	      offset = 1;
-	      //for (int dof = offset; dof < diag_offset; dof++)
-	      //ctofdof[innerdofs[dof]] = LOCAL_DOF;
-	    }
-	  for (int dof = offset; dof < innerdofs.Size(); dof++)
-	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
-	  break;
-	  /*
-	  offset = diag_offset;
-	  // in contrast to Hexes and QUADS we do not
-	  // automatically include the highorder inner bubbles
-	  if(oi > 0)
-	    {
-	      ctofdof[innerdofs[offset]] = INTERFACE_DOF;
-	      ctofdof[innerdofs[offset + 1]] = INTERFACE_DOF;
-	      ctofdof[innerdofs[offset + 2]] = INTERFACE_DOF;
-	      ctofdof[innerdofs[offset + 3]] = INTERFACE_DOF;
-	      ctofdof[innerdofs[offset + 4]] = INTERFACE_DOF;
-	      ctofdof[innerdofs[offset + 5]] = INTERFACE_DOF;
-	      offset += 6;
-	    }
-	    
-	  for (int dof = offset; dof < innerdofs.Size(); dof++)
-	    ctofdof[innerdofs[dof]] = LOCAL_DOF;    
-	   
-	    break;*/
+        ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+        ctofdof[innerdofs[offset+1]] = INTERFACE_DOF;
+        offset += 2;
+        
+        for (int dof = offset; dof < innerdofs.Size(); dof++)
+          ctofdof[innerdofs[dof]] = LOCAL_DOF;
+          
+        break;
+      case ET_TET:
+        diag_offset =  (ot+1)*(ot+2)*(ot+3)/6.0;
+        if(ot>-1)
+          {
+            ctofdof[innerdofs[0]] = INTERFACE_DOF; 
+            offset = 1;
+            //for (int dof = offset; dof < diag_offset; dof++)
+            //ctofdof[innerdofs[dof]] = LOCAL_DOF;
+          }
+        for (int dof = offset; dof < innerdofs.Size(); dof++)
+          ctofdof[innerdofs[dof]] = LOCAL_DOF;
+        break;
+        /*
+        offset = diag_offset;
+        // in contrast to Hexes and QUADS we do not
+        // automatically include the highorder inner bubbles
+        if(oi > 0)
+          {
+            ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+            ctofdof[innerdofs[offset + 1]] = INTERFACE_DOF;
+            ctofdof[innerdofs[offset + 2]] = INTERFACE_DOF;
+            ctofdof[innerdofs[offset + 3]] = INTERFACE_DOF;
+            ctofdof[innerdofs[offset + 4]] = INTERFACE_DOF;
+            ctofdof[innerdofs[offset + 5]] = INTERFACE_DOF;
+            offset += 6;
+          }
+          
+        for (int dof = offset; dof < innerdofs.Size(); dof++)
+          ctofdof[innerdofs[dof]] = LOCAL_DOF;    
+        
+          break;*/
 
-	case ET_HEX:
-	  diag_offset = 2 * (oi+1)*(oi+1)*(oi+1);
-	  //dev-diagonal dofs
-	  ctofdof[innerdofs[0]] = INTERFACE_DOF;
-	  ctofdof[innerdofs[1]] = INTERFACE_DOF;	    
-	  offset = 2;
-	  for (int dof = offset; dof <  diag_offset; dof++)
-	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
-	    
-	  offset = diag_offset;
-	  //diagonal dofs 
-	  if(ot>-1)
-	    {	      
-	      ctofdof[innerdofs[offset]] = INTERFACE_DOF;
-	      offset += 1;
-	      diag_offset = offset + (ot+1)*(ot+1)*(ot+1);
-	      for (int dof = offset; dof <  diag_offset; dof++)
-		ctofdof[innerdofs[dof]] = LOCAL_DOF;
-							
-	    }
-	  offset = diag_offset;
-	  ctofdof[innerdofs[offset]] = INTERFACE_DOF;
-	  ctofdof[innerdofs[offset + 1]] = INTERFACE_DOF;
-	  ctofdof[innerdofs[offset + 2]] = INTERFACE_DOF;
-	  ctofdof[innerdofs[offset + 3]] = INTERFACE_DOF;
-	  ctofdof[innerdofs[offset + 4]] = INTERFACE_DOF;
-	  ctofdof[innerdofs[offset + 5]] = INTERFACE_DOF;
-	  
-	  offset +=6;
-	  for (int dof = offset; dof < innerdofs.Size(); dof++)
-	    ctofdof[innerdofs[dof]] = LOCAL_DOF;
-	    
-	  break;
+      case ET_HEX:
+        diag_offset = 2 * (oi+1)*(oi+1)*(oi+1);
+        //dev-diagonal dofs
+        ctofdof[innerdofs[0]] = INTERFACE_DOF;
+        ctofdof[innerdofs[1]] = INTERFACE_DOF;	    
+        offset = 2;
+        for (int dof = offset; dof <  diag_offset; dof++)
+          ctofdof[innerdofs[dof]] = LOCAL_DOF;
+          
+        offset = diag_offset;
+        //diagonal dofs 
+        if(ot>-1)
+          {	      
+            ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+            offset += 1;
+            diag_offset = offset + (ot+1)*(ot+1)*(ot+1);
+            for (int dof = offset; dof <  diag_offset; dof++)
+        ctofdof[innerdofs[dof]] = LOCAL_DOF;
+                  
+          }
+        offset = diag_offset;
+        ctofdof[innerdofs[offset]] = INTERFACE_DOF;
+        ctofdof[innerdofs[offset + 1]] = INTERFACE_DOF;
+        ctofdof[innerdofs[offset + 2]] = INTERFACE_DOF;
+        ctofdof[innerdofs[offset + 3]] = INTERFACE_DOF;
+        ctofdof[innerdofs[offset + 4]] = INTERFACE_DOF;
+        ctofdof[innerdofs[offset + 5]] = INTERFACE_DOF;
+        
+        offset +=6;
+        for (int dof = offset; dof < innerdofs.Size(); dof++)
+          ctofdof[innerdofs[dof]] = LOCAL_DOF;
+          
+        break;
 
-	default:
-	  throw Exception("ElementType "+ToString(ma->GetElType(e))+" not implemented for H(CurlDiv)");
-	}
+      default:
+        throw Exception("ElementType "+ToString(ma->GetElType(e))+" not implemented for H(CurlDiv)");
+      }
       
     }
 
