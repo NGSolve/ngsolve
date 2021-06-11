@@ -593,8 +593,8 @@ namespace ngla
   {
     static Timer factor_timer("SparseCholesky::Factor");
 
-    static Timer timerb("SparseCholesky::Factor - B", 3);
-    static Timer timerc("SparseCholesky::Factor - C", 3);
+    static Timer timerb("SparseCholesky::Factor - B", NoTracing, NoTiming);
+    static Timer timerc("SparseCholesky::Factor - C", NoTracing, NoTiming);
 
     RegionTimer reg (factor_timer);
 
@@ -949,11 +949,11 @@ namespace ngla
     static Timer factor_dense1("SparseCholesky::Factor SPD - setup dense cholesky");
     static Timer factor_dense("SparseCholesky::Factor SPD - dense cholesky");
 
-    // static Timer timerb("SparseCholesky::Factor - B", 2);
+    // static Timer timerb("SparseCholesky::Factor - B", NoTracing);
     // static Timer timerc("SparseCholesky::Factor - merge in rows");
-    // static Timer timercla("SparseCholesky::Factor - merge(lapack)", 2);
-    // static Timer timerc1("SparseCholesky::Factor - merge1", 2);
-    // static Timer timerc2("SparseCholesky::Factor - merge2", 2);
+    // static Timer timercla("SparseCholesky::Factor - merge(lapack)", NoTracing);
+    // static Timer timerc1("SparseCholesky::Factor - merge1", NoTracing);
+    // static Timer timerc2("SparseCholesky::Factor - merge2", NoTracing);
 
     RegionTimer reg (factor_timer);
     

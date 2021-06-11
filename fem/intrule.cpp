@@ -1634,7 +1634,7 @@ namespace ngfem
           SetAllocSize(nip+8);
           SetSize(nip);
 
-          static Timer t ("IntegrationruleTP - compute pts", 2);
+          static Timer t ("IntegrationruleTP - compute pts", NoTracing);
           NgProfiler::RegionTimer reg(t);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)

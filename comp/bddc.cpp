@@ -202,10 +202,10 @@ namespace ngcomp
 		    ElementId id, LocalHeap & lh)
 
     {
-      static Timer timer ("BDDC - Addmatrix", 2);
+      static Timer timer ("BDDC - Addmatrix", NoTracing);
       ThreadRegionTimer reg (timer, TaskManager::GetThreadId());
-      static Timer timer2("BDDC - Add to sparse", 3);
-      static Timer timer3("BDDC - compute", 3);
+      static Timer timer2("BDDC - Add to sparse", NoTracing, NoTiming);
+      static Timer timer3("BDDC - compute", NoTracing, NoTiming);
 
       HeapReset hr(lh);
 
