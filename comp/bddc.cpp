@@ -203,7 +203,7 @@ namespace ngcomp
 
     {
       static Timer timer ("BDDC - Addmatrix", NoTracing);
-      ThreadRegionTimer reg (timer, TaskManager::GetThreadId());
+      RegionTimer reg (timer);
       static Timer timer2("BDDC - Add to sparse", NoTracing, NoTiming);
       static Timer timer3("BDDC - compute", NoTracing, NoTiming);
 
@@ -249,7 +249,7 @@ namespace ngcomp
 
       if (sizei)
 	{      
-          ThreadRegionTimer regcompute (timer3, TaskManager::GetThreadId());
+          RegionTimer regcompute (timer3);
           NgProfiler::AddThreadFlops (timer3, TaskManager::GetThreadId(),
                                       sizei*sizei*sizei + 2*sizei*sizei*sizew);
 
@@ -287,7 +287,7 @@ namespace ngcomp
 	  for (size_t l = 0; l < sizei; l++) d.Col(l) *= el2ifweight[l]; 
 	}
 
-      ThreadRegionTimer regadd (timer2, TaskManager::GetThreadId());
+      RegionTimer regadd (timer2);
       
       FlatArray<int> wbdofs(localwbdofs.Size(), lh);
       FlatArray<int> intdofs(localintdofs.Size(), lh);   

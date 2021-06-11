@@ -500,7 +500,7 @@ namespace ngbla
     INLINE T & Assign (const Expr<TB> & v)
     {
       // static Timer t(string("Ng-std-expr:") + typeid(TOP).name() + typeid(TB).name());
-      // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+      // RegionTimer reg(t);
       
       NETGEN_CHECK_RANGE(Height(), v.Height(), v.Height()+1);
       NETGEN_CHECK_RANGE(Width(), v.Width(), v.Width()+1);

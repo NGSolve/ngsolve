@@ -889,7 +889,7 @@ into the wirebasket.
   FiniteElement & H1HighOrderFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     // size_t tid = TaskManager::GetThreadId();
-    // ThreadRegionTimer reg(tgetfe, tid);
+    // RegionTimer reg(tgetfe;
     
     Ngs_Element ngel = ma->GetElement(ei);
     ELEMENT_TYPE eltype = ngel.GetType();

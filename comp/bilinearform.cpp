@@ -1479,7 +1479,7 @@ namespace ngcomp
 
                          {
                          static Timer elmattimer("calc elmats", NoTracing);
-                         ThreadRegionTimer reg (elmattimer, TaskManager::GetThreadId());
+                         RegionTimer reg (elmattimer);
                          
                          if (printelmat || elmat_ev)
                            {
@@ -1616,7 +1616,7 @@ namespace ngcomp
                              // if (!fespace->CouplingTypeArrayAvailable())
                              // throw Exception ("need coupling types for static condensation");
                              static Timer statcondtimer("static condensation", NoTracing);
-                             ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
+                             RegionTimer regstat (statcondtimer);
                              static Timer statcondtimer2("static condensation 2", NoTracing);
 
                              static Timer statcondtimer_mult("static condensation mult", NoTracing);
@@ -1736,7 +1736,7 @@ namespace ngcomp
                                        ednums1[i] = dnums[odofs1[i]];
                                      
                                      
-                                     ThreadRegionTimer regstat2 (statcondtimer2, TaskManager::GetThreadId());
+                                     RegionTimer regstat2 (statcondtimer2);
 
                                      Array<int> idnums(dim*idnums1.Size(), lh);
                                      Array<int> ednums(dim*ednums1.Size(), lh);
@@ -1807,7 +1807,7 @@ namespace ngcomp
                                      */
 
                                      {
-                                       // ThreadRegionTimer reg (statcondtimer_inv, TaskManager::GetThreadId());
+                                       // RegionTimer reg (statcondtimer_inv);
                                        // RegionTracer rtr(TaskManager::GetThreadId(), statcondtimer_inv);    
                               
                                        // LapackInverse (d);
@@ -1816,7 +1816,7 @@ namespace ngcomp
                                      FlatMatrix<SCAL> he (sizei, sizeo, lh);
 
                                      {
-                                       ThreadRegionTimer reg (statcondtimer_mult, TaskManager::GetThreadId());
+                                       RegionTimer reg (statcondtimer_mult);
                                        NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
                                                                    d.Height()*d.Width()*c.Width());
                                        
@@ -1842,7 +1842,7 @@ namespace ngcomp
                                      
                                      innersolve_ptr->AddElementMatrix(el.Nr(),idnums,idnums,d);
                                      {
-                                       ThreadRegionTimer reg (statcondtimer_mult, TaskManager::GetThreadId());
+                                       RegionTimer reg (statcondtimer_mult);
                                        NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
                                                                    b.Height()*b.Width()*he.Width());
                                        // a += b * he | Lapack;
@@ -3509,7 +3509,7 @@ namespace ngcomp
                  if ((vb == VOL || (!VB_parts[VOL].Size() && vb==BND) ) && (elim_only_hidden || eliminate_internal))
                    {
                      static Timer statcondtimer("static condensation", NoTracing);
-                     ThreadRegionTimer regstat (statcondtimer, TaskManager::GetThreadId());
+                     RegionTimer regstat (statcondtimer);
                      
                      // ArrayMem<int,100> idofs, idofs1, odofs;
                      int i = el.Nr();
@@ -4208,7 +4208,7 @@ namespace ngcomp
                 (*fespace, vb, clh, 
                  [&] (FESpace::Element el, LocalHeap & lh)
                  {
-                   // ThreadRegionTimer reg (timer_loop, TaskManager::GetThreadId());                   
+                   // RegionTimer reg (timer_loop);                   
                    auto & fel = el.GetFE();
                    auto & trafo = el.GetTrafo();
                    auto dnums = el.GetDofs();
@@ -4304,9 +4304,7 @@ namespace ngcomp
     // static Timer timer_applyelmat ("Apply Matrix - elmat");    
 
     static Timer timerDG ("Apply Matrix - DG");
-    constexpr bool do_tracing = false;
-    constexpr bool do_timing = false;
-    using TTimer = Timer<do_tracing, do_timing>;
+    using TTimer = Timer<TNoTracing, TNoTiming>;
     static TTimer timerDGpar ("Apply Matrix - DG par");
     static TTimer timerDGapply ("Apply Matrix - DG par apply");
     static TTimer timerDG1 ("Apply Matrix - DG 1");
@@ -4342,7 +4340,7 @@ namespace ngcomp
                 (*fespace, vb, clh, 
                  [&] (FESpace::Element el, LocalHeap & lh)
                  {
-                   // ThreadRegionTimer reg (timer_loop, TaskManager::GetThreadId());                   
+                   // RegionTimer reg (timer_loop);                   
                    auto & fel = el.GetFE();
                    auto & trafo = el.GetTrafo();
                    auto dnums = el.GetDofs();
@@ -4361,7 +4359,7 @@ namespace ngcomp
                        auto & mapped_trafo = trafo.AddDeformation(bfi->GetDeformation().get(), lh);
 
                        {
-                         // ThreadRegionTimer reg (timer_applyelmat, TaskManager::GetThreadId());
+                         // RegionTimer reg (timer_applyelmat);
                          bfi->ApplyElementMatrix (fel, mapped_trafo, elvecx, elvecy, 0, lh);
                        }
                        
@@ -5510,7 +5508,7 @@ namespace ngcomp
              
              int tid = TaskManager::GetThreadId();
              {
-               ThreadRegionTimer r(tx, tid);
+               RegionTimer r(tx;
                auto fvx = x.FVDouble();
                for (auto i : myrange)
                  {
@@ -5520,7 +5518,7 @@ namespace ngcomp
              }
              
              {
-               ThreadRegionTimer r(tm,tid);
+               RegionTimer r(tm;
                RegionTracer rt(tid, tm);
                NgProfiler::AddThreadFlops(tm, tid, elmat.Height()*elmat.Width()*myrange.Size());
                if (!transpose)
@@ -5529,7 +5527,7 @@ namespace ngcomp
                  temp_y.Rows(myrange) = temp_x.Rows(myrange) * elmat;
              }
              {
-               ThreadRegionTimer r(ty,tid);
+               RegionTimer r(ty;
                for (auto i : myrange)
                  {
                    fesy->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);

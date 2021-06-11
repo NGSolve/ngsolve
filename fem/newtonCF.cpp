@@ -259,7 +259,7 @@ public:
     // static Timer t("NewtonCF::Eval", NoTracing);
     // static Timer t1("NewtonCF::Eval get Jac", NoTracing);
     // static Timer t2("NewtonCF::Eval solve", NoTracing);
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // RegionTracer regtr(TaskManager::GetThreadId(), t);
 
     // cout << "eval minimization" << endl;
@@ -747,7 +747,7 @@ public:
     // static Timer t("MinimizationCF::Eval", NoTracing);
     // static Timer t1("MinimizationCF::Eval get Jac", NoTracing);
     // static Timer t2("MinimizationCF::Eval solve", NoTracing);
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // RegionTracer regtr(TaskManager::GetThreadId(), t);
 
     // cout << "eval minimization" << endl;

@@ -69,7 +69,7 @@ namespace ngla
                    BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     static Timer timer_addelmat_nonsym("SparseMatrix::AddElementMatrix");
-    ThreadRegionTimer reg (timer_addelmat_nonsym, TaskManager::GetThreadId());
+    RegionTimer reg (timer_addelmat_nonsym);
     NgProfiler::AddThreadFlops (timer_addelmat_nonsym, TaskManager::GetThreadId(), dnums1.Size()*dnums2.Size());
     
     ArrayMem<int, 50> map(dnums2.Size());
@@ -673,7 +673,7 @@ namespace ngla
     static Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix");
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", NoTracing);
     // RegionTimer reg (timer);
-    ThreadRegionTimer reg (timer_addelmat, TaskManager::GetThreadId());
+    RegionTimer reg (timer_addelmat);
     NgProfiler::AddThreadFlops (timer_addelmat, TaskManager::GetThreadId(), dnums.Size()*(dnums.Size()+1)/2);    
 
     // ArrayMem<int, 50> map(dnums.Size());
