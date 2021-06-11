@@ -46,7 +46,7 @@ namespace ngcomp
     shared_ptr<MeshAccess> ma;
 
     /// profiling
-    Timer timer;
+    Timer<> timer;
 
     /// keep the object
     bool skipCleanUp; 
@@ -94,8 +94,8 @@ namespace ngcomp
     virtual void PrintReport (ostream & ost) const;
     virtual Array<MemoryUsage> GetMemoryUsage () const;
     
-    Timer & GetTimer () { return timer; }
-    const Timer & GetTimer () const { return timer; }
+    Timer<> & GetTimer () { return timer; }
+    const Timer<> & GetTimer () const { return timer; }
 
     bool SkipCleanUp () { return skipCleanUp; }
     void SetSkipCleanUp (bool skip = true) { skipCleanUp=skip; }

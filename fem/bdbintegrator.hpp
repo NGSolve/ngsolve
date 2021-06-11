@@ -1022,8 +1022,8 @@ public:
 			    FlatMatrix<TSCAL> elmat,
 			    LocalHeap & lh) const
   {
-    static Timer timer (string ("Elementmatrix, ") + Name(), 2);
-    static Timer timer2 (string ("Elementmatrix, ") + Name() + ", Lapack", 3);
+    static Timer timer (string ("Elementmatrix, ") + Name(), NoTracing);
+    static Timer timer2 (string ("Elementmatrix, ") + Name() + ", Lapack", NoTracing, NoTiming);
     RegionTimer reg (timer);
 
     try
@@ -1143,8 +1143,8 @@ public:
 				   FlatMatrix<double> elmat,
 				   LocalHeap & lh) const 
   {
-    // static Timer maintimer (string ("NonlinearBDB, CalcLinearized, ") + this->Name(), 2);
-    // static Timer bdbtimer ("NonlinearBDB, bdb product", 3);
+    // static Timer maintimer (string ("NonlinearBDB, CalcLinearized, ") + this->Name(), NoTracing);
+    // static Timer bdbtimer ("NonlinearBDB, bdb product", NoTracing, NoTiming);
     // RegionTimer reg(maintimer);
 
     try
@@ -1208,8 +1208,8 @@ public:
 			       FlatMatrix<Complex> elmat,
 			       LocalHeap & lh) const 
   {
-    // static Timer maintimer (string ("NonlinearBDB, CalcLinearized<Complex>, ") + this->Name(), 2);
-    // static Timer bdbtimer ("NonlinearBDB, bdb product", 3);
+    // static Timer maintimer (string ("NonlinearBDB, CalcLinearized<Complex>, ") + this->Name(), NoTracing);
+    // static Timer bdbtimer ("NonlinearBDB, bdb product", NoTracing, NoTiming);
     // RegionTimer reg(maintimer);
 
     try

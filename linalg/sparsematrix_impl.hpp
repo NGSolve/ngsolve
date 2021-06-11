@@ -671,7 +671,7 @@ namespace ngla
   AddElementMatrixSymmetric(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
     static Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix");
-    // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", 2);
+    // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", NoTracing);
     // RegionTimer reg (timer);
     ThreadRegionTimer reg (timer_addelmat, TaskManager::GetThreadId());
     NgProfiler::AddThreadFlops (timer_addelmat, TaskManager::GetThreadId(), dnums.Size()*(dnums.Size()+1)/2);    

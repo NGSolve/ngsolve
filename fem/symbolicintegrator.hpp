@@ -946,7 +946,7 @@ public:
     Array<ProxyFunction*> trial_proxies;
     VorB element_vb;    
 
-    Timer timer{"SymbolicEnergy",2};
+    Timer<> timer{"SymbolicEnergy", NoTracing};
     Array<int> trial_cum;     // cumulated dimension of proxies
     Matrix<bool> nonzeros;    // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
