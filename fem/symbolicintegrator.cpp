@@ -1358,7 +1358,7 @@ namespace ngfem
     
   {
     static Timer t(string("SymbolicBFI::CalcElementMatrixAdd")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), NoTracing);
-    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    RegionTimer reg(t);
     // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
     auto save_userdata = trafo.PushUserData(); 
@@ -1366,7 +1366,7 @@ namespace ngfem
     if (element_vb != VOL)
       {
         // static Timer t(string("SymbolicBFI::EB ")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), NoTracing);
-        // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+        // RegionTimer reg(t);
         // RegionTracer regtr(TaskManager::GetThreadId(), t);    
         
         T_CalcElementMatrixEBAdd<SCAL, SCAL_SHAPES, SCAL_RES> (fel, trafo, elmat, lh);
@@ -1430,7 +1430,7 @@ namespace ngfem
                       FlatMatrix<SIMD<SCAL>> diagproxyvalues(dim_proxy1, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL>> val(1, ir.Size(), lh);
                       {
-                        // ThreadRegionTimer regdmat(timer_SymbBFIdmat, TaskManager::GetThreadId());                      
+                        // RegionTimer regdmat(timer_SymbBFIdmat);                      
                       if (!is_diagonal)
                         for (size_t k = 0, kk = 0; k < dim_proxy1; k++)
                           for (size_t l = 0; l < dim_proxy2; l++, kk++)
@@ -1490,7 +1490,7 @@ namespace ngfem
                       // bbmat1 = 0.0;
                       // bbmat2 = 0.0;
                       {
-                        // ThreadRegionTimer regbmat(timer_SymbBFIbmat, TaskManager::GetThreadId());
+                        // RegionTimer regbmat(timer_SymbBFIbmat);
                         proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
                         if (!samediffop)
                           proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
@@ -1585,7 +1585,7 @@ namespace ngfem
                         if (symmetric_so_far)
                         {
                           /*
-                            ThreadRegionTimer regdmult(timer_SymbBFImultsym, TaskManager::GetThreadId());
+                            RegionTimer regdmult(timer_SymbBFImultsym);
                             NgProfiler::AddThreadFlops(timer_SymbBFImultsym, TaskManager::GetThreadId(),
                             SIMD<double>::Size()*2*r2.Size()*(r1.Size()+1)*hbbmat2.Width() / 2);
                           */
@@ -1594,7 +1594,7 @@ namespace ngfem
                       else
                         {
                           /*
-                          ThreadRegionTimer regdmult(timer_SymbBFImult, TaskManager::GetThreadId());
+                          RegionTimer regdmult(timer_SymbBFImult);
                           NgProfiler::AddThreadFlops(timer_SymbBFImult, TaskManager::GetThreadId(),
                                                      SIMD<double>::Size()*2*r2.Size()*r1.Size()*hbbmat2.Width());
                           */
@@ -1991,7 +1991,7 @@ namespace ngfem
                           bbmat1 : FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height()*dim_proxy2, mir.Size(), lh);
 
                         {
-                          // ThreadRegionTimer regbmat(timer_SymbBFIbmat, TaskManager::GetThreadId());
+                          // RegionTimer regbmat(timer_SymbBFIbmat);
                           proxy1->Evaluator()->CalcMatrix(fel_trial, mir, bbmat1);
                           if (!samediffop)
                             proxy2->Evaluator()->CalcMatrix(fel_test, mir, bbmat2);
@@ -2260,8 +2260,7 @@ namespace ngfem
 
     
     static Timer t("symbolicbfi - calclinearized", NoTracing);
-    size_t tid = TaskManager::GetThreadId();
-    ThreadRegionTimer reg(t, tid);
+    RegionTimer reg(t);
     
     // static Timer td("symbolicbfi - calclinearized dmats", NoTracing);
     // RegionTimer reg(t);
@@ -2490,7 +2489,7 @@ namespace ngfem
     static Timer tnosimd("symbolicbfi - calclinearized EB nosimd", NoTracing);
     static Timer td("symbolicbfi - calclinearized EB dmats", NoTracing);
     static Timer tir("symbolicbfi - calclinearized EB intrule", NoTracing);
-    ThreadRegionTimer reg(t, tid);
+    RegionTimer reg(t);
     
     elmat = 0;
     
@@ -2549,7 +2548,7 @@ namespace ngfem
                       for (size_t k = 0, kk = 0; k < proxy1->Dimension(); k++)
                         for (size_t l = 0; l < proxy2->Dimension(); l++, kk++)
                           {
-                            // ThreadRegionTimer reg(td, tid);                            
+                            // RegionTimer reg(td);                            
                             ud.trialfunction = proxy1;
                             ud.trial_comp = k;
                             ud.testfunction = proxy2;
@@ -2601,7 +2600,7 @@ namespace ngfem
         }
 
 
-    ThreadRegionTimer regnosimd(tnosimd, tid);
+    RegionTimer regnosimd(tnosimd);
 
       
     for (int k = 0; k < nfacet; k++)
@@ -2633,8 +2632,7 @@ namespace ngfem
                 HeapReset hr(lh);
                 auto proxy1 = trial_proxies[k1];
                 auto proxy2 = test_proxies[l1];
-                // td.Start();
-                NgProfiler::StartThreadTimer(td, tid);                
+                td.Start(tid);
                 FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
                 
                 for (int k = 0; k < proxy1->Dimension(); k++)
@@ -2654,8 +2652,7 @@ namespace ngfem
                     else
                       proxyvalues(STAR,l,k) = 0.0;
                         
-                // td.Stop();
-                NgProfiler::StopThreadTimer(td, tid);                                
+                td.Stop(tid);
 
                 for (int i = 0; i < mir.Size(); i++)
                   proxyvalues(i,STAR,STAR) *= ir_facet[i].Weight() * mir[i].GetMeasure(); 
@@ -2849,8 +2846,7 @@ namespace ngfem
     // static Timer td("symbolicbfi - Apply EB, evaluate D", NoTracing);
     // static Timer ttrans("symbolicbfi - Apply EB, trans", NoTracing);
     
-    //size_t tid = TaskManager::GetThreadId();    
-    // ThreadRegionTimer reg(t, tid);
+    // RegionTimer reg(t);
     
     ely = 0;
 
@@ -3128,8 +3124,7 @@ namespace ngfem
     // static Timer td("symbolicbfi - Apply EB, evaluate D", NoTracing);
     // static Timer ttrans("symbolicbfi - Apply EB, trans", NoTracing);
     
-    //size_t tid = TaskManager::GetThreadId();    
-    // ThreadRegionTimer reg(t, tid);
+    // RegionTimer reg(t);
     
     ely = 0;
 
@@ -3804,7 +3799,7 @@ namespace ngfem
             static Timer tcoef("SymbolicFacetBFI::Apply - coef", NoTracing);
             static Timer tapplyt("SymbolicFacetBFI::Apply - apply-trans", NoTracing); 
 
-            ThreadRegionTimer reg(tall, TaskManager::GetThreadId());
+            RegionTimer reg(tall);
             // RegionTracer rt(TaskManager::GetThreadId(), tall);
             HeapReset hr(lh);
             // tall.Start();
@@ -4710,8 +4705,7 @@ namespace ngfem
     // Timer & tdmat = const_cast<Timer&> (timer);
     static Timer tbmat("SymbolicEnergy::CalcBMat (nosimd)", NoTracing);
     static Timer tmult("SymbolicEnergy::mult", NoTracing);
-    size_t tid = TaskManager::GetThreadId();
-    ThreadRegionTimer reg(t, tid);
+    RegionTimer reg(t);
 
     HeapReset hr(lh);
     
@@ -4758,8 +4752,8 @@ namespace ngfem
                 ud.test_comp = l;
 
                 {
-                  ThreadRegionTimer reg(tdmat, tid);
-                  NgProfiler::AddThreadFlops (tdmat, tid, 1);
+                  RegionTimer reg(tdmat);
+                  NgProfiler::AddThreadFlops (tdmat, TaskManager::GetThreadId(), 1);
                   if (nonzeros(trial_cum[k1]+k, trial_cum[l1]+l))
                     {
                       cf -> Evaluate (mir, ddval);
@@ -4810,7 +4804,7 @@ namespace ngfem
               
               // elmat += Trans (bbmat2) * bdbmat1 | Lapack;
               // AddABt (Trans(bbmat2), Trans(bdbmat1), elmat);
-              ThreadRegionTimer reg(tmult, tid);                                
+              RegionTimer reg(tmult);                                
               // AddABt (Trans(bbmat2).Rows(r2), Trans(bdbmat1).Rows(r1), part_elmat);
               // part_elmat += Trans(bbmat2).Rows(r2) * bdbmat1.Cols(r1);
 
@@ -4852,13 +4846,12 @@ namespace ngfem
                                                      LocalHeap & lh) const
   {
     static Timer t("SymbolicEnergy::AddLinearizedElementMatrix - simd", NoTracing);
-    size_t tid = TaskManager::GetThreadId();        
     static Timer tdmat("SymbolicEnergy::CalcDMat - simd", NoTracing);
     static Timer tdmat2("SymbolicEnergy::CalcDMat2 - simd", NoTracing);
     static Timer tbmat("SymbolicEnergy::CalcBMat - simd", NoTracing);
     static Timer tmult("SymbolicEnergy::mult - simd", NoTracing);
     
-    ThreadRegionTimer reg(t, tid);
+    RegionTimer reg(t);
 
     ProxyUserData ud(trial_proxies.Size(), lh);    
     const_cast<ElementTransformation&>(trafo).userdata = &ud;
@@ -4910,7 +4903,7 @@ namespace ngfem
                   FlatMatrix<SIMD<double>> proxyvalues2(dim_proxy1*dim_proxy2, mir.Size(), lh);
 
                   {
-                  ThreadRegionTimer reg(tdmat, tid);
+                  RegionTimer reg(tdmat);
                   for (int k = 0; k < dim_proxy1; k++)
                     for (int l = 0; l < dim_proxy2; l++)
                       {
@@ -4968,7 +4961,7 @@ namespace ngfem
                   FlatMatrix<SIMD<double>> hbmat2(elmat.Height(), dim_proxy2*mir.Size(), &bmat2(0,0));
                   */
                   {
-                    ThreadRegionTimer reg(tbmat, tid);
+                    RegionTimer reg(tbmat);
                     proxy1->Evaluator()->CalcMatrix(fel, mir, bmat1);
                   }
 
@@ -4984,7 +4977,7 @@ namespace ngfem
                         }
 
                   {
-                    ThreadRegionTimer reg(tmult, tid);
+                    RegionTimer reg(tmult);
                     if (k1 == l1)
                       {
                         AddABt (hbmat1.Rows(r1), hdbmat1.Rows(r1), elmat.Rows(r1).Cols(r1));
