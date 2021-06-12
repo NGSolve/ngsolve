@@ -2580,13 +2580,16 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
-      STACK_ARRAY(SIMD<double>, mem, ndofi*mir.Size());
-      FlatMatrix<SIMD<double>> shapes(ndofi, mir.Size(), &mem[0]);
-      feli.CalcShape (mir.IR(), shapes);
-
+      feli.CalcShape (mir.IR(), mat.Rows(ndofi));
+      
+      STACK_ARRAY(SIMD<double>, mem, ndofi);
+      FlatVector<SIMD<double>> shapei(ndofi, &mem[0]);
+      
       for (auto i_ip : Range(mir))
         {
           auto col = mat.Col(i_ip);
+          shapei = col.Range(ndofi);
+          
           auto & mip = static_cast<const SIMD<ngfem::MappedIntegrationPoint<DIM_ELEMENT,DIM_SPC>>&>(mir[i_ip]);
           auto trafo = mip.GetJacobianInverse();
 
@@ -2594,7 +2597,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
             {
               size_t offset = DIM_SPACE*k*ndofi;
               for (size_t i = 0; i < feli.GetNDof(); i++, offset += DIM_SPACE)
-                col.Range(offset,offset+DIM_SPACE) = shapes(i,i_ip) * trafo.Row(k);
+                col.Range(offset,offset+DIM_SPACE) = shapei(i) * trafo.Row(k);
 	    }
         }
     }
