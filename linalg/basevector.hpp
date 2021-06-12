@@ -359,7 +359,10 @@ namespace ngla
 	  }
     }
     */
-  
+
+    virtual shared_ptr<BaseVector> GetLocalVector () const 
+    { return const_cast<BaseVector*>(this)->shared_from_this(); }
+    
     virtual void Cumulate () const;
     virtual void Distribute() const;
     virtual PARALLEL_STATUS GetParallelStatus () const;
