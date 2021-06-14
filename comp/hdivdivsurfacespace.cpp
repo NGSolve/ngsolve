@@ -529,6 +529,15 @@ namespace ngcomp
 
   FiniteElement & HDivDivSurfaceSpace::GetFE (ElementId ei, Allocator & lh) const
   {
+    if (!DefinedOn (ei))
+      {
+        return
+          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                      {
+                        return *new (lh) DummyFE<et.ElementType()> ();
+                      });
+      }
+        
     switch (ei.VB())
       {
       case VOL:
