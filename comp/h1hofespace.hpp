@@ -131,6 +131,7 @@ namespace ngcomp
 
   class VectorH1FESpace : public CompoundFESpace
   {
+    bool interleaved;
   public:
     VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                      bool checkflags = false);
@@ -142,6 +143,11 @@ namespace ngcomp
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
     using FESpace::GetOrder;
+
+    virtual void FinalizeUpdate() override;
+
+    void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+    void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
     virtual string GetClassName () const override
     {

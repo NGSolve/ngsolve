@@ -2327,6 +2327,7 @@ into the wirebasket.
       type = "VectorH1";
       Array<string> dirichlet_comp;
       string dirnames[] = { "dirichletx", "dirichlety", "dirichletz" };
+      interleaved = flags.GetDefineFlag("interleaved");
       for (int i = 0; i <  ma->GetDimension(); i++)
         {
           Flags tmpflags = flags;
@@ -2393,7 +2394,8 @@ into the wirebasket.
   DocInfo VectorH1FESpace :: GetDocu ()
   {
     DocInfo docu = CompoundFESpace::GetDocu();
-    
+    docu.Arg("interleaved") = "bool = False\n"
+      "  ordering of dofs changed to x0, y0, z0, x1 ....";
     docu.Arg("dirichletx") = "regexpr\n"
       "  Regular expression string defining the dirichlet boundary\n"
       "  on the first component of VectorH1.\n"
@@ -2424,6 +2426,40 @@ into the wirebasket.
 
     return docu;
   }
+
+  void VectorH1FESpace :: FinalizeUpdate()
+  {
+    CompoundFESpace::FinalizeUpdate();
+
+    if (interleaved)
+      {
+	free_dofs = make_shared<BitArray> (GetNDof());
+	free_dofs->Set();
+
+        size_t dim = spaces.Size();
+	for (int i = 0; i < spaces.Size(); i++)
+	  {
+	    shared_ptr<BitArray> free_dofs_sub = spaces[i]->GetFreeDofs();
+            size_t nd = free_dofs_sub->Size();
+            for (size_t j = 0, jj = i; j < nd; j++, jj+=dim)
+              if (!free_dofs_sub->Test(j))
+                free_dofs->Clear (jj);
+	  }
+
+        for (size_t i = 0; i < ctofdof.Size(); i++)
+          if (ctofdof[i] == UNUSED_DOF)
+            free_dofs->Clear(i);
+
+	dirichlet_dofs = *free_dofs;
+	dirichlet_dofs.Invert();
+
+        external_free_dofs = make_shared<BitArray>(GetNDof());
+        *external_free_dofs = *free_dofs;
+        for (int i = 0; i < ctofdof.Size(); i++)
+          if (ctofdof[i] & CONDENSABLE_DOF)
+            external_free_dofs->Clear(i);
+      }
+  }
     
   void VectorH1FESpace::SetOrder (ELEMENT_TYPE et, TORDER order)
   {
@@ -2445,6 +2481,45 @@ into the wirebasket.
     return 0;
   }
 
+  void VectorH1FESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
+  {
+    if (interleaved)
+      {
+        spaces[0]->GetDofNrs(ei, dnums);
+        int size1 = dnums.Size();
+        int dim = spaces.Size();
+        dnums.SetSize(dim*size1);
+        for (int i = size1-1; i >= 0; i--)
+          {
+            DofId di = dnums[i];
+            for (int j = 0; j < dim; j++)
+              dnums[dim*i+j] = dim*di+j;
+          }
+      }
+    else
+      CompoundFESpace::GetDofNrs(ei, dnums);
+  }
+  
+  void VectorH1FESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
+  {
+    if (interleaved)
+      {
+        spaces[0]->GetDofNrs(ni, dnums);
+        int size1 = dnums.Size();
+        int dim = spaces.Size();
+        dnums.SetSize(dim*size1);
+        for (int i = size1-1; i >= 0; i--)
+          {
+            DofId di = dnums[i];
+            for (int j = 0; j < dim; j++)
+              dnums[dim*i+j] = dim*di+j;
+          }
+      }
+    else
+      CompoundFESpace::GetDofNrs(ni, dnums);
+  }
+
+  
   
   static RegisterFESpace<H1HighOrderFESpace> init ("h1ho");
   static RegisterFESpace<VectorH1FESpace> initvec ("VectorH1");
