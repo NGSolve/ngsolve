@@ -19,7 +19,9 @@ namespace ngcomp
                   flags.GetStringListFlag("fieldnames"),
                   flags.GetStringFlag("filename", "output"),
                   (int)flags.GetNumFlag("subdivision", 0),
-                  (int)flags.GetNumFlag("only_element", -1))
+                  (int)flags.GetNumFlag("only_element", -1),
+                  flags.GetStringFlag("floatsize", "Double"),
+                  flags.GetNumFlag("legacy", 0))
   {
     ;
   }
@@ -28,9 +30,9 @@ namespace ngcomp
   VTKOutput<D>::VTKOutput(shared_ptr<MeshAccess> ama,
                           const Array<shared_ptr<CoefficientFunction>> &a_coefs,
                           const Array<string> &a_field_names,
-                          string a_filename, int a_subdivision, int a_only_element)
+                          string a_filename, int a_subdivision, int a_only_element, string a_floatsize, int a_legacy)
       : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
-        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element)
+        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy)
   {
     value_field.SetSize(a_coefs.Size());
     for (int i = 0; i < a_coefs.Size(); i++)
@@ -312,31 +314,26 @@ namespace ngcomp
       }
     }
   }
-
-  /// output of data points
+  /* ###########################
+     # Legacy Files as Fallback#
+     ###########################*/
   template <int D>
-  void VTKOutput<D>::PrintPoints()
+  void VTKOutput<D>::PrintPointsLegacy()
   {
-    *fileout << "<Points>" << endl;
-    *fileout << "<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"ascii\">" << endl;
+    *fileout << "POINTS " << points.Size() << " float" << endl;
     for (auto p : points)
     {
-      for (int k = 0; k < D; k++)
-        *fileout << p[k] << endl;
+      *fileout << p;
       if (D == 2)
-        *fileout << 0 << endl;
+        *fileout << "\t 0.0";
+      *fileout << endl;
     }
-    *fileout << endl
-             << "</DataArray>" << endl;
-    *fileout << "</Points>" << endl;
   }
 
   /// output of cells in form vertices
   template <int D>
-  void VTKOutput<D>::PrintCells()
+  void VTKOutput<D>::PrintCellsLegacy()
   {
-    stringstream connectivity;
-    stringstream offsets;
     // count number of data for cells, one + number of vertices
     int ndata = 0;
     for (auto c : cells)
@@ -344,30 +341,22 @@ namespace ngcomp
       ndata++;
       ndata += c[0];
     }
-    int offs = 0;
+    *fileout << "CELLS " << cells.Size() << " " << ndata << endl;
     for (auto c : cells)
     {
       int nv = c[0];
-      offs += nv;
-      offsets
-          << offs << endl;
+      *fileout << nv << "\t";
       for (int i = 0; i < nv; i++)
-        connectivity << c[i + 1] << endl;
+        *fileout << c[i + 1] << "\t";
+      *fileout << endl;
     }
-    *fileout << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"ascii\">" << endl;
-    *fileout << connectivity.str() << endl
-             << "</DataArray>" << endl;
-    *fileout << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"ascii\">" << endl;
-
-    *fileout << offsets.str() << endl
-             << "</DataArray>" << endl;
   }
 
   /// output of cell types (here only simplices)
   template <int D>
-  void VTKOutput<D>::PrintCellTypes(VorB vb, const BitArray *drawelems)
+  void VTKOutput<D>::PrintCellTypesLegacy(VorB vb, const BitArray *drawelems)
   {
-    *fileout << "<DataArray type=\"UInt8\" Name=\"types\" format=\"ascii\">" << endl;
+    *fileout << "CELL_TYPES " << cells.Size() << endl;
     int factor = (1 << subdivision) * (1 << subdivision);
     if (D == 3 && vb == VOL)
       factor *= (1 << subdivision);
@@ -380,71 +369,347 @@ namespace ngcomp
       {
       case ET_TET:
         for (int i = 0; i < factor; i++)
-          *fileout << "10" << endl; //(void)c;
+          *fileout << "10 " << endl; //(void)c;
         break;
       case ET_QUAD:
         for (int i = 0; i < factor; i++)
-          *fileout << "9" << endl;
+          *fileout << "9 " << endl;
         break;
       case ET_TRIG:
         for (int i = 0; i < factor; i++)
-          *fileout << "5" << endl;
+          *fileout << "5 " << endl;
         break;
       case ET_PRISM:
         for (int i = 0; i < factor; i++)
-          *fileout << "13" << endl;
+          *fileout << "13 " << endl;
         break;
       case ET_HEX:
         for (int i = 0; i < factor; i++)
-          *fileout << "12" << endl;
+          *fileout << "12 " << endl;
         break;
       default:
         cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
       }
     }
+    *fileout << "CELL_DATA " << cells.Size() << endl;
+    *fileout << "POINT_DATA " << points.Size() << endl;
+  }
+
+  /// output of field data (coefficient values)
+  template <int D>
+  void VTKOutput<D>::PrintFieldDataLegacy()
+  {
+    for (auto field : value_field)
+    {
+      *fileout << "SCALARS " << field->Name()
+               << " float " << field->Dimension() << endl
+               << "LOOKUP_TABLE default" << endl;
+
+      for (auto v : *field)
+        *fileout << v << " ";
+      *fileout << endl;
+    }
+  }
+  /// output of data points, XML file format
+  template <int D>
+  void VTKOutput<D>::PrintPoints(int *offset, stringstream *appenddata)
+  {
+    *fileout << "<Points>" << endl;
+    if (floatsize == "Double")
+    {
+      *fileout << "<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"0\">" << endl;
+    }
+    else
+    {
+      *fileout << "<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"0\">" << endl;
+    }
+    const double valdouble = 0;
+    double wvaldouble = 0;
+    const float val = 0;
+    float wval = 0;
+    stringstream data;
+
+    uint32_t count = 0;
+    if (floatsize == "Double")
+    {
+      for (auto p : points)
+      {
+        for (int k = 0; k < D; k++)
+        {
+          wvaldouble = p[k];
+          data.write((char *)&wvaldouble, sizeof(wvaldouble));
+          count += sizeof(wvaldouble);
+        }
+        if (D == 2)
+        {
+          data.write((char *)&valdouble, sizeof(valdouble));
+          count += sizeof(valdouble);
+        }
+      }
+    }
+    else
+    {
+      for (auto p : points)
+      {
+        for (int k = 0; k < D; k++)
+        {
+          wval = p[k];
+          data.write((char *)&wval, sizeof(wval));
+          count += sizeof(wval);
+        }
+        if (D == 2)
+        {
+          data.write((char *)&val, sizeof(val));
+          count += sizeof(val);
+        }
+      }
+    }
+    appenddata->write((char *)&count, sizeof(uint32_t));
+    *appenddata << data.str();
+    *offset = count + 4;
+    *fileout << endl
+             << "</DataArray>" << endl;
+    *fileout << "</Points>" << endl;
+  }
+  /// output of cells in form vertices
+  template <int D>
+  void VTKOutput<D>::PrintCells(int *offset, stringstream *appenddata)
+  {
+    stringstream connectivity;
+    stringstream offsets;
+    uint32_t sizecon = 0;
+    uint32_t sizeoff = 0;
+    // count number of data for cells, one + number of vertices
+    int32_t ndata = 0;
+    int32_t offs = 0;
+    for (auto c : cells)
+    {
+
+      int nv = c[0];
+      offs += nv;
+      offsets.write((char *)&offs, sizeof(int32_t));
+      sizeoff += sizeof(int32_t);
+      for (int i = 0; i < nv; i++)
+      {
+        connectivity.write((char *)&c[i + 1], sizeof(int));
+        sizecon += sizeof(int);
+      }
+    }
+    *fileout << "<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
+    *fileout
+        << "</DataArray>" << endl;
+    *fileout << "<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\" offset=\"" << *offset + 4 + sizecon << "\">" << endl;
+
+    *fileout
+        << "</DataArray>" << endl;
+    *offset += 8 + sizecon + sizeoff;
+
+    appenddata->write((char *)&sizecon, sizeof(uint32_t));
+    *appenddata << connectivity.str();
+    appenddata->write((char *)&sizeoff, sizeof(uint32_t));
+    *appenddata << offsets.str();
+  }
+
+  /// output of cell types (here only simplices)
+  template <int D>
+  void VTKOutput<D>::PrintCellTypes(VorB vb, int *offset, stringstream *appenddata, const BitArray *drawelems)
+  {
+    *fileout << "<DataArray type=\"UInt8\" Name=\"types\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
+    int factor = (1 << subdivision) * (1 << subdivision);
+    stringstream data;
+    uint32_t sizetypes = 0;
+    uint8_t eltype;
+
+    if (D == 3 && vb == VOL)
+      factor *= (1 << subdivision);
+    for (auto e : ma->Elements(vb))
+    {
+      if (drawelems && !(drawelems->Test(e.Nr())))
+        continue;
+
+      switch (ma->GetElType(e))
+      {
+      case ET_TET:
+        for (int i = 0; i < factor; i++)
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 10;
+          data.write((char *)&eltype, sizeof(uint8_t)); //(void)c;
+        }
+        break;
+      case ET_QUAD:
+        for (int i = 0; i < factor; i++)
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 9;
+          data.write((char *)&eltype, sizeof(uint8_t));
+        }
+        break;
+      case ET_TRIG:
+        for (int i = 0; i < factor; i++)
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 5;
+          data.write((char *)&eltype, sizeof(uint8_t));
+        }
+        break;
+      case ET_PRISM:
+        for (int i = 0; i < factor; i++)
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 13;
+          data.write((char *)&eltype, sizeof(uint8_t));
+        }
+        break;
+      case ET_HEX:
+        for (int i = 0; i < factor; i++)
+        {
+          sizetypes += sizeof(uint8_t);
+          eltype = 12;
+          data.write((char *)&eltype, sizeof(uint8_t));
+        }
+        break;
+      default:
+        cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
+      }
+    }
+    appenddata->write((char *)&sizetypes, sizeof(uint32_t));
+    *appenddata << data.str();
+    *offset += sizetypes + 4;
+
     *fileout << endl
              << "</DataArray>" << endl;
   }
 
   /// output of field data (coefficient values)
   template <int D>
-  void VTKOutput<D>::PrintFieldData()
+  void VTKOutput<D>::PrintFieldData(int *offset, stringstream *appenddata)
   {
     string header = "";
     string content = "";
-    header += "<PointData"; // \"" << field->Name() << "\">" << endl;
-    int k = 0;
+    stringstream data;
+    int32_t fieldsize = 0;
+    header += "<PointData>"; // \"" << field->Name() << "\">" << endl;
+    *fileout << header << endl;
     for (auto field : value_field)
     {
-      if (k == 0)
+      if (floatsize == "Double")
       {
-
-        *fileout << header << ">" << endl;
+        *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
+        //      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"0\">" << endl;
       }
-      *fileout << "<DataArray type=\"Float32\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"ascii\">" << endl;
-
+      else
+      {
+        *fileout << "<DataArray type=\"Float32\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
+      }
+      double temp = 0;
+      float temp2 = 0;
       for (auto v : *field)
-        *fileout << v << endl;
+      {
+        if (floatsize == "Double")
+        {
+          temp = v;
+          //fileout->write((char *)&temp, sizeof(double));
+          data.write((char *)&temp, sizeof(temp));
+          fieldsize += sizeof(temp);
+        }
+        else
+        {
+          temp2 = v;
+          //fileout->write((char *)&temp, sizeof(double));
+          data.write((char *)&temp2, sizeof(temp2));
+          fieldsize += sizeof(temp2);
+        }
+      }
+      *offset += 4 + fieldsize;
+      appenddata->write((char *)&fieldsize, sizeof(int32_t));
+      *appenddata << data.str();
+
+      data.str("");
+      data.clear();
+      fieldsize = 0;
       *fileout << endl;
       *fileout << "</DataArray>" << endl;
-      k++;
     }
     *fileout << "</PointData>" << endl;
   }
-
   template <int D>
-  void VTKOutput<D>::Do(LocalHeap &lh, VorB vb, const BitArray *drawelems)
+  void VTKOutput<D>::PrintAppended(stringstream *appended)
+  {
+    *fileout << "<AppendedData encoding=\"raw\">" << endl
+             << "_";
+    *fileout << appended->str();
+    /*   for (auto field : value_field)
+    {
+      for (auto v : *field)
+      {
+        fileout->write((char *)&v, sizeof(double));
+      }
+    }*/
+    *fileout << endl
+             << "</AppendedData>" << endl;
+  }
+  template <int D>
+  void VTKOutput<D>::PvdFile(string fname, int index)
   {
     ostringstream filenamefinal;
+    stringstream contents;
+
+    filenamefinal << fname << ".pvd";
+
+    contents
+        << "<?xml version=\"1.0\"?>" << endl;
+    contents << "<VTKFile type =\"Collection\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
+    contents << "<Collection>" << endl;
+    contents << "<DataSet timestep=\"" << times[0] << "\" file=\"" << fname << ".vtu\"/>" << endl;
+    for (int k = 1; k <= index; k++)
+      contents << "<DataSet timestep=\"" << times[k] << "\" file=\"" << fname << "_" << k << ".vtu\"/>" << endl;
+    contents << "</Collection>" << endl;
+    contents << "</VTKFile>";
+
+    ofstream fileout;
+    fileout.open(filenamefinal.str(), ofstream::trunc);
+    fileout << contents.str();
+    fileout.close();
+  }
+  template <int D>
+  void VTKOutput<D>::Do(LocalHeap &lh, double time, VorB vb, const BitArray *drawelems)
+  {
+    ostringstream filenamefinal;
+    stringstream appended;
+    vector<int> datalength;
+    int offs = 0;
+
     filenamefinal << filename;
     if (output_cnt > 0)
       filenamefinal << "_" << output_cnt;
     lastoutputname = filenamefinal.str();
-    filenamefinal << ".vtu";
+    if (legacy == 0)
+      filenamefinal << ".vtu";
+    else
+      filenamefinal << ".vtk";
+
     fileout = make_shared<ofstream>(filenamefinal.str());
     cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
+    {
       cout << IM(4) << " ( " << output_cnt << " )";
+      if (time == -1)
+      {
+        times.push_back(output_cnt);
+      }
+      else
+      {
+        times.push_back(time);
+      }
+      if (legacy == 0)
+        PvdFile(filename, output_cnt);
+    }
+    else
+    {
+      if (time != -1)
+        times[0] = time;
+    }
     cout << IM(4) << ":" << flush;
 
     output_cnt++;
@@ -468,11 +733,20 @@ namespace ngcomp
     FillReferenceHex(ref_vertices_hex, ref_hexes);
 
     // header:
-    *fileout << "<?xml version=\"1.0\"?>" << endl;
+    if (legacy == 0)
+    {
+      *fileout << "<?xml version=\"1.0\"?>" << endl;
 
-    *fileout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
-    *fileout << "<UnstructuredGrid>" << endl;
-
+      *fileout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
+      *fileout << "<UnstructuredGrid>" << endl;
+    }
+    else
+    {
+      *fileout << "# vtk DataFile Version 3.0" << endl;
+      *fileout << "vtk output" << endl;
+      *fileout << "ASCII" << endl;
+      *fileout << "DATASET UNSTRUCTURED_GRID" << endl;
+    }
     int ne = ma->GetNE(vb);
 
     IntRange range = only_element >= 0 ? IntRange(only_element, only_element + 1) : IntRange(ne);
@@ -562,20 +836,31 @@ namespace ngcomp
         cells.Append(new_elem);
       }
     }
-    *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumberOfCells=\"" << cells.Size() << "\">" << endl;
-    PrintPoints();
-    *fileout << "<Cells>" << endl;
-    PrintCells();
-    PrintCellTypes(vb, drawelems);
-    *fileout << "</Cells>" << endl;
-    PrintFieldData();
+    if (legacy == 0)
+    {
+      *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumberOfCells=\"" << cells.Size() << "\">" << endl;
+      PrintPoints(&offs, &appended);
+      *fileout << "<Cells>" << endl;
+      PrintCells(&offs, &appended);
+      PrintCellTypes(vb, &offs, &appended, drawelems);
+      *fileout << "</Cells>" << endl;
+      PrintFieldData(&offs, &appended);
 
-    // Footer:
-    *fileout << "</Piece>" << endl;
-    *fileout << "</UnstructuredGrid>" << endl;
-    *fileout << "</VTKFile>" << endl;
-
+      // Footer:
+      *fileout << "</Piece>" << endl;
+      *fileout << "</UnstructuredGrid>" << endl;
+      PrintAppended(&appended);
+      *fileout << "</VTKFile>" << endl;
+    }
+    else
+    {
+      PrintPointsLegacy();
+      PrintCellsLegacy();
+      PrintCellTypesLegacy(vb, drawelems);
+      PrintFieldDataLegacy();
+    }
     cout << IM(4) << " Done." << endl;
+    cout << "Output Counter: " << output_cnt << endl;
   }
 
   NumProcVTKOutput::NumProcVTKOutput(shared_ptr<PDE> apde, const Flags &flags)
