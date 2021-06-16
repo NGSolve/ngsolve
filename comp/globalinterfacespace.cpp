@@ -27,6 +27,30 @@ namespace ngcomp
       }
   }
 
+  template<typename VOLFE>
+  void GlobalInterfaceSpace::ParameterGradDiffOp<VOLFE>::CalcMatrix
+    (const FiniteElement & bfel,
+     const BaseMappedIntegrationPoint & mip,
+     SliceMatrix<double,ColMajor> mat,
+     LocalHeap & lh) const
+  {
+    auto & ip = mip.IP();
+    auto & fel = dynamic_cast<const VOLFE&> (bfel);
+    mat = 0;
+
+    int fnr = ip.FacetNr();
+
+    if (fnr != -1 && fel.bndels[fnr])
+      {
+        throw Exception("Grad diffop not yet implemented for boundary integrals!");
+        return;
+      }
+    if(fnr == -1)
+      {
+        fel.CalcDShape(mip, mat.Row(0));
+      }
+  }
+
   template<typename INTERFACEFE>
   void GlobalInterfaceSpace::InterfaceDiffOp<INTERFACEFE>::CalcMatrix
     (const FiniteElement & fel,
@@ -143,6 +167,26 @@ namespace ngcomp
           }
       }
 
+      void CalcDShape(const BaseMappedIntegrationPoint& mip,
+                      SliceVector<double> dshapes) const
+      {
+        int order = fes->order;
+        double phi = fes->mapping->Evaluate(mip);
+        if(fes->periodic[0])
+          {
+            throw Exception("CalcDShape not implemented for periodic!");
+          }
+        else
+          {
+            AutoDiff<1> adphi(phi, 0);
+            LegendrePolynomial (order, 2*adphi - 1,
+                                SBLambda([&](int i, auto val)
+                                {
+                                  dshapes[i] = val.DValue(0);
+                                }));
+          }
+      }
+
       virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
     };
 
@@ -157,6 +201,7 @@ namespace ngcomp
     
       evaluator[VOL] = make_shared<VolDiffOp<VolFE>>();
       evaluator[BND] = make_shared<InterfaceDiffOp<InterfaceFE>>();
+      additional_evaluators.Set("ParameterGrad", make_shared<ParameterGradDiffOp<VolFE>>());
     }
 
     void Update() override
