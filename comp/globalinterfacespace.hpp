@@ -23,6 +23,19 @@ namespace ngcomp
                        LocalHeap & lh) const override;
     };
 
+    template<typename VOLFE>
+    class ParameterGradDiffOp : public DifferentialOperator
+    {
+    public:
+      ParameterGradDiffOp ()
+        : DifferentialOperator(1, 1, VOL, 0) { ; }
+
+      void CalcMatrix (const FiniteElement & bfel,
+                       const BaseMappedIntegrationPoint & mip,
+                       SliceMatrix<double,ColMajor> mat,
+                       LocalHeap & lh) const override;
+    };
+
     template<typename INTERFACEFE>
     class InterfaceDiffOp : public DifferentialOperator
     {
