@@ -148,7 +148,7 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      // static Timer t("HDivDivFE - DiffOpId", 2);
+      // static Timer t("HDivDivFE - DiffOpId", NoTracing);
       // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
       dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedShape_Matrix (mir, mat);      
@@ -271,7 +271,7 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      // static Timer t("HDivDivFE - DiffOpNormalComponent", 2);
+      // static Timer t("HDivDivFE - DiffOpNormalComponent", NoTracing);
       // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
       dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcShape_NormalComponent (mir, mat);      
@@ -311,7 +311,7 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
-      static Timer t("HDivDivFE - div IP", 2);
+      static Timer t("HDivDivFE - div IP", NoTracing);
       RegionTracer regtr(TaskManager::GetThreadId(), t);    
       
       const HDivDivFiniteElement<D> & fel =
@@ -324,7 +324,7 @@ namespace ngcomp
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
       MAT & mat,LocalHeap & lh)
     {
-      static Timer t("HDivDivFE - div IP 2", 2);
+      static Timer t("HDivDivFE - div IP 2", NoTracing);
       RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
       HeapReset hr(lh);
@@ -344,7 +344,7 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      // static Timer t("HDivDivFE - div IR", 2);
+      // static Timer t("HDivDivFE - div IR", NoTracing);
       // RegionTracer regtr(TaskManager::GetThreadId(), t);
       
       dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedDivShape (mir, mat);      

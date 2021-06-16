@@ -578,7 +578,7 @@ namespace ngfem
     void CalcMappedShape_Matrix2 (const SIMD_MappedIntegrationRule<DIM,DIMSPACE> & mir, 
                                  BareSliceMatrix<SIMD<double>> shapes) const
     {
-      // static Timer t("HDivDivFE - Matrix2", 2);
+      // static Timer t("HDivDivFE - Matrix2", NoTracing);
       // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
       for (size_t i = 0; i < mir.Size(); i++)
@@ -863,9 +863,9 @@ namespace ngfem
         // throw ExceptionNOSIMD(string("HDivDiv - CalcMappedDivShape SIMD only for noncurved elements"));
         for (size_t i = 0; i < mir.Size(); i++)
           {
-            // static Timer t0("HDivDivFE - hesse", 2);
-            // static Timer t1("HDivDivFE - prepare div", 2);
-            // static Timer t2("HDivDivFE - calc div", 2);
+            // static Timer t0("HDivDivFE - hesse", NoTracing);
+            // static Timer t1("HDivDivFE - prepare div", NoTracing);
+            // static Timer t2("HDivDivFE - calc div", NoTracing);
             
             Mat<DIM,DIM,SIMD<double>> jac = mir[i].GetJacobian();
             Mat<DIM,DIM,SIMD<double>> inv_jac = mir[i].GetJacobianInverse();

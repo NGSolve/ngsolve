@@ -72,7 +72,7 @@ namespace ngla
 
     void PrintStatus ( ostream & ost ) const;
 
-    virtual shared_ptr<BaseVector> GetLocalVector () const
+    virtual shared_ptr<BaseVector> GetLocalVector () const override
     { return local_vec; }
     
     virtual void Cumulate () const override; 

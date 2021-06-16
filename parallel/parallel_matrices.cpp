@@ -442,7 +442,10 @@ namespace ngla
   AutoVector ParallelMatrix :: CreateRowVector () const
   {
     auto pd = row_paralleldofs ? row_paralleldofs : paralleldofs;
-    return CreateParallelVector (pd, RowType(op));
+    if (pd)
+      return CreateParallelVector (pd, RowType(op));
+    else
+      return mat->CreateRowVector();
     /*
     if (IsComplex()) {
       if (row_paralleldofs == nullptr)
@@ -466,7 +469,10 @@ namespace ngla
   AutoVector ParallelMatrix :: CreateColVector () const
   {
     auto pd = col_paralleldofs ? col_paralleldofs : paralleldofs;
-    return CreateParallelVector (pd, ColType(op));
+    if (pd)
+      return CreateParallelVector (pd, ColType(op));
+    else
+      return mat->CreateColVector();
     /*
     if (IsComplex()) {
       if (col_paralleldofs==nullptr)
@@ -495,17 +501,20 @@ namespace ngla
 
   void ParallelMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    const auto & xpar = dynamic_cast_ParallelBaseVector(x);
-    auto & ypar = dynamic_cast_ParallelBaseVector(y);
-    if (op & char(2))
+    // const auto & xpar = dynamic_cast_ParallelBaseVector(x);
+    // auto & ypar = dynamic_cast_ParallelBaseVector(y);
+    // if (op & char(2))
+    if (RowType(op) == CUMULATED)
       x.Cumulate();
     else
       x.Distribute();
-    if (op & char(1))
+    // if (op & char(1))
+    if (ColType(op) == CUMULATED)
       y.Cumulate();
     else
       y.Distribute();
-    mat->MultAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
+    //mat->MultAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
+    mat->MultAdd (s, *x.GetLocalVector(), *y.GetLocalVector());
   
     /*
     auto xpar = dynamic_cast<const ParallelBaseVector*> (&x);
@@ -553,17 +562,21 @@ namespace ngla
 
   void ParallelMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    const auto & xpar = dynamic_cast_ParallelBaseVector(x);
-    auto & ypar = dynamic_cast_ParallelBaseVector(y);
-    if (op & char(1))
+    // const auto & xpar = dynamic_cast_ParallelBaseVector(x);
+    // auto & ypar = dynamic_cast_ParallelBaseVector(y);
+    // if (op & char(1))
+    if (ColType(op)==CUMULATED)
       x.Distribute();
     else
       x.Cumulate();
-    if (op & char(2))
+    
+    //if (op & char(2))
+    if (RowType(op)==CUMULATED)
       y.Distribute();
     else
       y.Cumulate();
-    mat->MultTransAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
+    // mat->MultTransAdd (s, *xpar.GetLocalVector(), *ypar.GetLocalVector());
+    mat->MultTransAdd (s, *x.GetLocalVector(), *y.GetLocalVector());
   }
 
   shared_ptr<BaseMatrix> ParallelMatrix :: CreateMatrix () const
