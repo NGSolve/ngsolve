@@ -2672,6 +2672,85 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  NonconformingSurfaceFESpace :: 
+  NonconformingSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
+    : FESpace (ama, flags)
+  {
+    name="NonconformingSurfaceFESpace(nonconforming)";
+    // defined flags
+    DefineDefineFlag("nonconforming");
+    if (parseflags) CheckFlags(flags);
+    
+    // prol = new LinearProlongation(*this);
+    
+
+    // trig = new FE_NcTrig1;
+    // segm = new FE_Segm0;
+      
+    auto one = make_shared<ConstantCoefficientFunction> (1);
+    if (ma->GetDimension() < 3)
+      {
+        throw Exception("NonconformingSurfaceFESpace only for dim=3");
+      }
+    else
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
+        flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
+        flux_evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpGradientBoundary<3>>>();
+        
+	integrator[VOL].reset (new MassIntegrator<3> (new ConstantCoefficientFunction(1)));
+	integrator[BND].reset (new RobinIntegrator<3> (new ConstantCoefficientFunction(1)));
+      }
+
+    if (dimension > 1)
+      {
+	integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
+	integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
+      }
+  }
+
+  NonconformingSurfaceFESpace :: ~NonconformingSurfaceFESpace ()
+  {
+    ;
+  }
+
+  FiniteElement & NonconformingSurfaceFESpace :: GetFE (ElementId ei, Allocator & lh) const
+  {
+    if (ei.IsBoundary())
+      {
+        switch (ma->GetElType(ei))
+          {
+          case ET_TRIG: return *(new (lh) FE_NcTrig1);
+          default: throw Exception ("Element type not available in NonconformingSurfaceFESpace::GetFE, bnd");
+          }
+      }
+    throw Exception ("NonconormingFE: only bnd");
+  }
+  
+  size_t NonconformingSurfaceFESpace :: GetNDof () const throw()
+  {
+    return ma->GetNEdges();
+  }
+
+
+  void NonconformingSurfaceFESpace :: Update()
+  {
+    ctofdof.SetSize (ma->GetNEdges());
+    ctofdof = UNUSED_DOF;
+    for (auto el : ma->Elements(BND))
+      ctofdof[el.Edges()] = WIREBASKET_DOF;
+    
+  }
+
+  void NonconformingSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
+  {
+    dnums = ma->GetElEdges(ei);
+    if (!DefinedOn(ei))
+      dnums = -1;
+  }
+
+
 
 
 
@@ -3921,6 +4000,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   static RegisterFESpace<NodalFESpace> initnodalfes ("nodal");
   static RegisterFESpace<NonconformingFESpace> initncfes ("nonconforming");
+  static RegisterFESpace<NonconformingSurfaceFESpace> initncsurfes ("nonconformingsurface");
 
 }
 

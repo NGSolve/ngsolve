@@ -90,7 +90,7 @@ namespace ngstd
   {
     // static Timer timer_bspline("BSpline::Evaluate");
     // timer_bspline.AddFlops(1);
-    // ThreadRegionTimer reg (timer_bspline, TaskManager::GetThreadId());
+    // RegionTimer reg (timer_bspline);
 
     // for (int m = order-1; m < t.Size()-order+1; m++)
     // for (int m = 0; m < t.Size()-order+1; m++)
@@ -118,7 +118,7 @@ namespace ngstd
                     {
                       // static Timer timer_bspline_cp("BSpline::Evaluate::Copy");
                       // NgProfiler::AddThreadFlops(timer_bspline_cp, TaskManager::GetThreadId(), 1);
-                      // ThreadRegionTimer reg_ev (timer_bspline_cp, TaskManager::GetThreadId());
+                      // RegionTimer reg_ev (timer_bspline_cp);
                       for(int j = 0; j < orderval.value; j++)
                         {
                           hc[j] = c[j + offset];
@@ -130,7 +130,7 @@ namespace ngstd
                     {
                       // static Timer timer_bspline_ev("BSpline::Evaluate::Eval");
                       // NgProfiler::AddThreadFlops(timer_bspline_ev, TaskManager::GetThreadId(), 1);
-                      // ThreadRegionTimer reg_ev (timer_bspline_ev, TaskManager::GetThreadId());
+                      // RegionTimer reg_ev (timer_bspline_ev);
                       Iterate<orderval.value-1> ([&] (auto Pm1) {
                         constexpr int p = Pm1.value + 1;
                         for (int jhc = orderval.value - 1; jhc >= p; jhc--)
@@ -202,7 +202,7 @@ namespace ngstd
             {
               // static Timer timer_bspline_cp("BSpline::Evaluate::Copy");
               // NgProfiler::AddThreadFlops(timer_bspline_cp, TaskManager::GetThreadId(), 1);
-              // ThreadRegionTimer reg_ev (timer_bspline_cp, TaskManager::GetThreadId());
+              // RegionTimer reg_ev (timer_bspline_cp);
               for(int j = 0; j < orderval.value; j++)
                 {
                 hc[j] = SIMD<double>([&](int i) -> double {
@@ -215,7 +215,7 @@ namespace ngstd
             {
               // static Timer timer_bspline_ev("BSpline::Evaluate::Eval");
               // NgProfiler::AddThreadFlops(timer_bspline_ev, TaskManager::GetThreadId(), 1);
-              // ThreadRegionTimer reg_ev (timer_bspline_ev, TaskManager::GetThreadId());
+              // RegionTimer reg_ev (timer_bspline_ev);
 
               //this is a workaround attempt of a MSVC non-conformance with the standard
               // auto *dummyhc = &hc;

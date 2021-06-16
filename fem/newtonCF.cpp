@@ -256,10 +256,10 @@ public:
 
   void Evaluate(const BaseMappedIntegrationRule &mir,
                 BareSliceMatrix<double> values) const override {
-    // static Timer t("NewtonCF::Eval", 2);
-    // static Timer t1("NewtonCF::Eval get Jac", 2);
-    // static Timer t2("NewtonCF::Eval solve", 2);
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // static Timer t("NewtonCF::Eval", NoTracing);
+    // static Timer t1("NewtonCF::Eval get Jac", NoTracing);
+    // static Timer t2("NewtonCF::Eval solve", NoTracing);
+    // RegionTimer reg(t);
     // RegionTracer regtr(TaskManager::GetThreadId(), t);
 
     // cout << "eval minimization" << endl;
@@ -744,10 +744,10 @@ public:
 
   void Evaluate(const BaseMappedIntegrationRule &mir,
                 BareSliceMatrix<double> values) const override {
-    // static Timer t("MinimizationCF::Eval", 2);
-    // static Timer t1("MinimizationCF::Eval get Jac", 2);
-    // static Timer t2("MinimizationCF::Eval solve", 2);
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // static Timer t("MinimizationCF::Eval", NoTracing);
+    // static Timer t1("MinimizationCF::Eval get Jac", NoTracing);
+    // static Timer t2("MinimizationCF::Eval solve", NoTracing);
+    // RegionTimer reg(t);
     // RegionTracer regtr(TaskManager::GetThreadId(), t);
 
     // cout << "eval minimization" << endl;
