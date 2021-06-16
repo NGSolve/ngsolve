@@ -35,8 +35,8 @@ namespace ngcomp
     string inversetype;   //sparsecholesky or pardiso or ....
     string coarsetype;    //general precond.. (e.g. AMG)
 
-    unique_ptr<BaseVector> tmp;
-    unique_ptr<BaseVector> tmp2;
+    shared_ptr<BaseVector> tmp;
+    shared_ptr<BaseVector> tmp2;
 
     shared_ptr<BitArray> wb_free_dofs;
 
@@ -392,8 +392,8 @@ namespace ngcomp
 	  inv_coarse = pwbmat->InverseMatrix(clusters);
 	  cout << IM(3) << "has inverse" << endl << endl;
 	  
-	  tmp = make_unique<VVector<>>(ndof);
-	  tmp2 = make_unique<VVector<>>(ndof);
+	  tmp = make_shared<VVector<>>(ndof);
+	  tmp2 = make_shared<VVector<>>(ndof);
 	}
       else
 	{
