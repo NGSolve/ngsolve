@@ -17,7 +17,7 @@ namespace ngfem
             BareVector<SIMD<double>> values) const
   {
     static Timer t("quad evaluate");
-    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    RegionTimer reg(t);
 
     if (ir.IsTP())
       {
@@ -50,7 +50,7 @@ namespace ngfem
           {
             static Timer t("quad evaluate x");
             static Timer tmult("quad mult x");
-            ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+            RegionTimer reg(t);
 
             STACK_ARRAY(double, mem_shapex, order+1);
             FlatVector<> shapex(order+1, mem_shapex);
@@ -67,7 +67,7 @@ namespace ngfem
             STACK_ARRAY(double, mem_tmp, order+1);
             FlatVector<> tmp(order+1, mem_tmp);
 
-            ThreadRegionTimer regmult(tmult, TaskManager::GetThreadId());
+            RegionTimer regmult(tmult);
             NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), (order+1)*(order+1+nipy));
               
             if (flip)
@@ -81,7 +81,7 @@ namespace ngfem
             static Timer t("quad evaluate y");
             static Timer tmult("quad mult y");
             static Timer tleg("quad mult legendre");
-            // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+            // RegionTimer reg(t);
             NgProfiler::StartThreadTimer (t, TaskManager::GetThreadId());
               
             NgProfiler::StartThreadTimer (tleg, TaskManager::GetThreadId());
@@ -96,7 +96,7 @@ namespace ngfem
             STACK_ARRAY(double, mem_tmp, order+1);
             FlatVector<> tmp(order+1, mem_tmp);
 
-            ThreadRegionTimer regmult(tmult, TaskManager::GetThreadId());
+            RegionTimer regmult(tmult);
             NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), (order+1)*(order+1+nipx));
               
             if (flip)
@@ -118,7 +118,7 @@ namespace ngfem
           {
             static Timer t("quad evaluate xy");
             static Timer tmult("quad mult xy");              
-            ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+            RegionTimer reg(t);
 
             STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
             FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
@@ -136,7 +136,7 @@ namespace ngfem
               
             if (nipx <= nipy)
               {
-                ThreadRegionTimer regmult(tmult, TaskManager::GetThreadId());
+                RegionTimer regmult(tmult);
                 NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), nipx*(order+1)*((order+1)+nipy));
                   
                 STACK_ARRAY(double, mem_tmp, (order+1)*nipx);
@@ -153,7 +153,7 @@ namespace ngfem
                 STACK_ARRAY(double, mem_tmp, (order+1)*nipy);
                 FlatMatrix<> tmp(order+1, nipy, mem_tmp);
 
-                ThreadRegionTimer regmult(tmult, TaskManager::GetThreadId());
+                RegionTimer regmult(tmult);
                 NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), nipy*(order+1)*((order+1)+nipx));
                   
                 if (flip)
@@ -176,7 +176,7 @@ namespace ngfem
             BareSliceVector<> bcoefs) const 
   {
     static Timer t("quad AddTrans");
-    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    RegionTimer reg(t);
 
     if (ir.IsTP())
       {
@@ -206,7 +206,7 @@ namespace ngfem
           {
             static Timer t("quad add trans x");
             static Timer tmult("quad add trans mult x");
-            ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+            RegionTimer reg(t);
 
             STACK_ARRAY(double, mem_shapex, order+1);
             FlatVector<> shapex(order+1, mem_shapex);
@@ -223,7 +223,7 @@ namespace ngfem
             STACK_ARRAY(double, mem_tmp, order+1);
             FlatVector<> tmp(order+1, mem_tmp);
 
-            ThreadRegionTimer regmult(tmult, TaskManager::GetThreadId());
+            RegionTimer regmult(tmult);
             NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), (order+1)*(order+1+nipy));
 
             tmp = shapey * vec_values;
@@ -236,7 +236,7 @@ namespace ngfem
           {
             static Timer t("quad add trans y");
             static Timer tmult("quad add trans mult y");
-            ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+            RegionTimer reg(t);
 
             STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
             FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
@@ -253,7 +253,7 @@ namespace ngfem
             STACK_ARRAY(double, mem_tmp, order+1);
             FlatVector<> tmp(order+1, mem_tmp);
 
-            ThreadRegionTimer regmult(tmult, TaskManager::GetThreadId());
+            RegionTimer regmult(tmult);
             NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), (order+1)*(order+1+nipx));
 
             tmp = shapex * vec_values;
@@ -266,7 +266,7 @@ namespace ngfem
           {
             static Timer t("quad add trans xy");
             static Timer tmult("quad add trans mult xy");              
-            ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+            RegionTimer reg(t);
 
             STACK_ARRAY(SIMD<double>, mem_shapex, (order+1)*irx.Size());
             FlatMatrix<SIMD<double>> simd_shapex(order+1, irx.Size(), mem_shapex);
@@ -284,7 +284,7 @@ namespace ngfem
               
             if (nipx <= nipy)
               {
-                ThreadRegionTimer regmult(tmult, TaskManager::GetThreadId());
+                RegionTimer regmult(tmult);
                 NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), nipx*(order+1)*((order+1)+nipy));
                   
                 STACK_ARRAY(double, mem_tmp, (order+1)*nipx);
@@ -301,7 +301,7 @@ namespace ngfem
                 STACK_ARRAY(double, mem_tmp, (order+1)*nipy);
                 FlatMatrix<> tmp(order+1, nipy, mem_tmp);
 
-                ThreadRegionTimer regmult(tmult, TaskManager::GetThreadId());
+                RegionTimer regmult(tmult);
                 NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), nipy*(order+1)*((order+1)+nipx));
 
                 /*
@@ -349,7 +349,7 @@ namespace ngfem
     static Timer t("hex evaluate");
     static Timer tmult("hex mult");
     static Timer ttrans("hex transpose");                  
-    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    RegionTimer reg(t);
 
     if (ir.IsTP())
       {
@@ -446,7 +446,7 @@ namespace ngfem
     static Timer txyz("hex AddTrans xyz");
     
     static Timer tmult("hex addtrans mult");
-    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    RegionTimer reg(t);
 
     if (ir.IsTP())
       {
@@ -503,11 +503,11 @@ namespace ngfem
                                     nipx*nipy*nipz*(order+1) + nipy*nipz*sqr(order+1) + nipz*ndof);
         NgProfiler::StartThreadTimer (tmult, TaskManager::GetThreadId());                
 
-        int nr = txyz;
-        if (nipx == 1) nr = tx;
-        if (nipy == 1) nr = ty;
-        if (nipz == 1) nr = tz;
-        ThreadRegionTimer reg(nr, TaskManager::GetThreadId());        
+        Timer<> * t = &txyz;
+        if (nipx == 1) t = &tx;
+        if (nipy == 1) t = &ty;
+        if (nipz == 1) t = &tz;
+        RegionTimer reg(*t);        
 
         
         STACK_ARRAY(double, mem0, (order+1)*sqr(order+1));
@@ -544,7 +544,7 @@ namespace ngfem
                 BareSliceVector<> bcoefs) const
   {
     static Timer t("hex AddGradTrans");
-    ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    RegionTimer reg(t);
     auto & ir = mir.IR();
     if (ir.IsTP())
       // if (false)

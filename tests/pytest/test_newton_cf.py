@@ -11,8 +11,7 @@ import netgen
 import pytest
 
 
-@pytest.fixture
-def fes_ir():
+def mk_fes_ir():
     # 'minimal' mesh
     m = netgen.meshing.Mesh(dim=1)
 
@@ -37,6 +36,11 @@ def fes_ir():
 
     fes_ir = IntegrationRuleSpace(mesh, order=int_order)
     return fes_ir
+
+
+@pytest.fixture
+def fes_ir():
+    return mk_fes_ir()
 
 
 def test_scalar_linear_minimization(fes_ir):
@@ -350,3 +354,11 @@ def test_compound_advanced_nonlinear_symmetric(fes_ir):
     assert np.allclose(1/2 * (_res + _res.T), 0)
 
 
+if __name__ == "__main__":
+    _fes_ir = mk_fes_ir()
+    test_scalar_linear_minimization(_fes_ir)
+    test_scalar_nonlinear_minimization(_fes_ir)
+    test_2d_compound_minimization(_fes_ir)
+    test_2d_compound_linear_nonsymmetric(_fes_ir)
+    test_compound_advanced_linear_nonsymmetric(_fes_ir)
+    test_compound_advanced_nonlinear_symmetric(_fes_ir)

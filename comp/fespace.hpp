@@ -1064,6 +1064,31 @@ ANY                  1 1 1 1 | 15
 
 
 
+  ///
+  class NGS_DLL_HEADER NonconformingSurfaceFESpace : public FESpace
+  {
+    ///
+    Array<int> ndlevel;
+
+  public:
+    NonconformingSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
+    virtual ~NonconformingSurfaceFESpace ();
+
+    virtual string GetClassName () const override
+    { return "Nonconforming surface FESpace"; }
+
+    ///
+    void Update() override;
+
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
+    ///
+    virtual size_t GetNDof () const throw() override;
+    ///
+    virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+  };
+
+
+
 
 
 
