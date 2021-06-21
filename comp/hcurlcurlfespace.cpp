@@ -460,7 +460,9 @@ namespace ngcomp
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const HCurlCurlFiniteElement<D-1>&> (fel); }
 
-    template <typename FEL,typename SIP>
+
+
+    /*template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
@@ -472,6 +474,21 @@ namespace ngcomp
           physmat.AsVector() = refmat.Row(i);
           mat.Col(i) = (Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse()).AsVector();
         }
+        }*/
+
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcMappedShape (mip,Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpIdBoundaryHCurlCurl not available for mat ")+typeid(mat).name());
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
@@ -529,7 +546,7 @@ namespace ngcomp
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const HCurlCurlFiniteElement<D-2>&> (fel); }
 
-    template <typename FEL,typename SIP>
+    /*template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
       SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
@@ -541,6 +558,21 @@ namespace ngcomp
           physmat.AsVector() = refmat.Row(i);
           mat.Col(i) = (Trans(mip.GetJacobianInverse())*physmat*mip.GetJacobianInverse()).AsVector();
         }
+        }*/
+
+        template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcMappedShape (mip,Trans(mat));
+    }
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpIdBBoundaryHCurlCurl not available for mat ")+typeid(mat).name());
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
@@ -1076,14 +1108,12 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      size_t size = (bmir.Size()+1)*SIMD<double>::Size()*D*(D-1)/2*D*(D-1)/2;
+      size_t size = bmir.Size()*SIMD<double>::Size()*D*(D-1)/2*D*(D-1)/2;
       STACK_ARRAY(SIMD<double>, mem, size);
       FlatMatrix<SIMD<double>> Q(D*(D-1)/2*D*(D-1)/2, bmir.Size(), mem);
       DiffOpCurvatureHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Q);
       
-      //set zero, can this be improved?
-      for (size_t i = 0; i < D*D*D*D; i++) 
-        y.Row(i).Range(bmir.Size()) = SIMD<double>(0.0);
+      y.AddSize(D*D*D*D, bmir.Size()) = SIMD<double>(0.0);
 
       if constexpr (D==2)
         {
@@ -1247,7 +1277,7 @@ namespace ngcomp
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
 
 
-      size_t size = (bmir.Size()+1)*SIMD<double>::Size()*D*(D-1)/2*D*(D-1)/2;
+      size_t size = bmir.Size()*SIMD<double>::Size()*D*(D-1)/2*D*(D-1)/2;
       STACK_ARRAY(SIMD<double>, mem, size);
       FlatMatrix<SIMD<double>> Q(D*(D-1)/2*D*(D-1)/2, bmir.Size(), mem);
       DiffOpCurvatureHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Q);
@@ -1415,7 +1445,7 @@ namespace ngcomp
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       const HCurlCurlFiniteElement<D> & bfel = static_cast<const HCurlCurlFiniteElement<D>&> (fel);
-      size_t size = (bmir.Size()+1)*SIMD<double>::Size()*D*D*D;
+      size_t size = bmir.Size()*SIMD<double>::Size()*D*D*D;
       STACK_ARRAY(SIMD<double>, mem, 2*size);
       FlatMatrix<SIMD<double>> hchristoffel1(D*D*D, bmir.Size(), &mem[0]);
       FlatMatrix<SIMD<double>> hchristoffel2(D*D*D, bmir.Size(), &mem[size]);
@@ -1855,7 +1885,7 @@ namespace ngcomp
           {
           case ET_SEGM:
             feseg->SetVertexNumbers (ngel.Vertices());
-            feseg->SetOrderInner(order_facet[ei.Nr()][0]);
+            feseg->SetOrderInner(order_edge[ei.Nr()][0]);
             feseg->ComputeNDof();
             return *feseg;
             

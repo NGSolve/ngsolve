@@ -7,8 +7,8 @@ set(HYPRE_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_hypre/src/hyp
 
 ExternalProject_Add(project_hypre
   PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
-  URL "http://computation.llnl.gov/projects/hypre-scalable-linear-solvers-multigrid-methods/download/hypre-2.11.1.tar.gz"
-  URL_MD5 3f02ef8fd679239a6723f60b7f796519
+  URL "https://github.com/hypre-space/hypre/archive/refs/tags/v2.11.1.tar.gz"
+  URL_MD5 28f3928b062c79c2eaf54c0978efcbfb
   CONFIGURE_COMMAND cmake src
   -DCMAKE_POSITION_INDEPENDENT_CODE=ON
   -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}

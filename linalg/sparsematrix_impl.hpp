@@ -68,7 +68,7 @@ namespace ngla
   AddElementMatrix(FlatArray<int> dnums1, FlatArray<int> dnums2, 
                    BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
-    static Timer timer_addelmat_nonsym("SparseMatrix::AddElementMatrix");
+    static Timer timer_addelmat_nonsym("SparseMatrix::AddElementMatrix", NoTracing);
     RegionTimer reg (timer_addelmat_nonsym);
     NgProfiler::AddThreadFlops (timer_addelmat_nonsym, TaskManager::GetThreadId(), dnums1.Size()*dnums2.Size());
     
@@ -670,7 +670,7 @@ namespace ngla
   void SparseMatrixTM<TM> ::
   AddElementMatrixSymmetric(FlatArray<int> dnums, BareSliceMatrix<TSCAL> elmat1, bool use_atomic)
   {
-    static Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix");
+    static Timer timer_addelmat("SparseMatrixSymmetric::AddElementMatrix", NoTracing);
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", NoTracing);
     // RegionTimer reg (timer);
     RegionTimer reg (timer_addelmat);
