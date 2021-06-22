@@ -23,6 +23,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, int ORDER>
   class ScalarFE : public T_ScalarFiniteElement<ScalarFE<ET,ORDER>,ET>
   {
+    typedef T_ScalarFiniteElement<ScalarFE<ET,ORDER>,ET> BASE;
   public:
     INLINE ScalarFE ()
     {
@@ -35,6 +36,41 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     static INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape);
 
+    template<typename Tx, typename TFA>  
+    INLINE void T_CalcDualShape (const TIP<DIM,Tx> ip, TFA & shape) const
+    {
+      if (ORDER == 0)
+        {
+          if (ip.vb == VOL)
+            shape[0] = 1;
+          else
+            shape[0] = 0;
+        }
+      else if (ORDER == 1)
+        {
+          if (int(ip.vb) == ET_trait<ET>::DIM)
+            shape[ip.facetnr] = 1;
+        }
+      else
+        throw Exception (string("CalcDualShape not overloaded for element ") + typeid(*this).name());
+    }
+
+    virtual bool DualityMassDiagonal () const override { return true; }
+    virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const override
+    {
+      diag = 1;
+      return true;
+    }
+
+    
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const override
+    {
+      BASE::Interpolate (trafo, func, coefs, lh);
+    }
+      
+    
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     {
       if (ORDER == 0)
@@ -537,6 +573,9 @@ namespace ngfem
     shape[3] = 1-x-y-z;
   }
 
+    
+  
+
   /*
   class FE_Tet1 : public T_ScalarFiniteElementFO<FE_Tet1,ET_TET,4,1>
   {
@@ -930,8 +969,33 @@ namespace ngfem
 
 
 
-  
+#ifdef FILE_H1LOFE_CPP
+  /*
+  template <ELEMENT_TYPE ET, int ORDER>
+  void ScalarFE<ET,ORDER> :: Interpolate (const ElementTransformation & trafo, 
+                                          const class CoefficientFunction & func, SliceMatrix<> coefs,
+                                          LocalHeap & lh) const 
+  {
+    cout << "scalfe interpol" << endl;
+    BASE::Interpolate (trafo, func, coefs, lh);
+  }
+  */
 
+  template<> 
+  void ScalarFE<ET_TET,1> :: Interpolate (const ElementTransformation & trafo, 
+                                          const class CoefficientFunction & func, SliceMatrix<> coefs,
+                                          LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    IntegrationPoint ipts[] = {
+      { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 }
+    };
+    IntegrationRule ir(4, ipts);
+    auto & mir = trafo(ir, lh);
+    func.Evaluate (mir, coefs);
+  }
+#endif
+  
 
 
 

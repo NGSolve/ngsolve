@@ -17,6 +17,7 @@
 #include "irspace.hpp"
 #include "compressedfespace.hpp"
 #include "../fem/integratorcf.hpp"
+#include "../fem/h1lofe.hpp"
 #include "contact.hpp"
 #include "globalinterfacespace.hpp"
 using namespace ngcomp;

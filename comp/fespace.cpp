@@ -2218,6 +2218,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     : FESpace (ama, flags)
   {
     name="NodalFESpace";
+    type = "nodal";
     
     prol = make_shared<LinearProlongation> (GetMeshAccess());
 

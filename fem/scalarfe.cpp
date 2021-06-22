@@ -498,8 +498,8 @@ namespace ngfem
   {
     if (!DualityMassDiagonal()) return false;
 
-    static Timer td("solve duality - diag");
-    static Timer ts("solve duality - solve");
+    static Timer td("solve duality - diag", NoTracing);
+    static Timer ts("solve duality - solve", NoTracing);
     
     HeapReset hr(lh);
     FlatVector<> diag(ndof, lh), res(ndof, lh);
