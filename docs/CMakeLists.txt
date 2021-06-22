@@ -80,8 +80,8 @@ if (NETGEN_USE_PYTHON)
       endif(USE_MPI)
 
       if(NOT WIN32)
-        add_dependencies(docs link_mylittlengs)
-        add_dependencies(docs_latex link_mylittlengs)
+        add_dependencies(docs_impl link_mylittlengs)
+        add_dependencies(docs_latex_impl link_mylittlengs)
       endif(NOT WIN32)
 
     message("Sphinx found, you can build the documentation with make docu")

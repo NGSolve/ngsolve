@@ -80,7 +80,7 @@ namespace ngfem {
 		double * __restrict__ pb, 
 		double * __restrict__ pc)
   {
-    // static Timer timer (string("Fastmat, M = ")+ToString(M), 2); 
+    // static Timer timer (string("Fastmat, M = ")+ToString(M), NoTracing); 
     // RegionTimer reg (timer);  timer.AddFlops (double(M)*n*n/2);
 
     
@@ -502,7 +502,7 @@ namespace ngfem {
   template <int M> 
   void FastMat (int n, int M2, Complex * pa, Complex * pb, Complex * pc)
   {
-    static Timer timer ("Fastmat, complex", 2);
+    static Timer timer ("Fastmat, complex", NoTracing);
     RegionTimer reg (timer);
     timer.AddFlops (double(M)*n*n/2);
     
@@ -553,7 +553,7 @@ namespace ngfem {
   template <int M> 
   void FastMat (int n, int M2, Complex * pa, double * pb, Complex * pc)
   {
-    static Timer timer ("Fastmat, complex-double", 2);
+    static Timer timer ("Fastmat, complex-double", NoTracing);
     RegionTimer reg (timer);
     timer.AddFlops (double(M)*n*n/2);
     
