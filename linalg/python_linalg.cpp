@@ -785,9 +785,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
   
 
   typedef BaseMatrix BM;
-  // typedef BaseVector BV;
 
-    class BaseMatrixTrampoline : public BaseMatrix {
+  class BaseMatrixTrampoline : public BaseMatrix {
     public:
       using BaseMatrix::BaseMatrix;
       BaseMatrixTrampoline() : BaseMatrix()
@@ -803,23 +802,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             );
       }
 
-#ifdef NONE      
-      int VHeight() const override { 
-        PYBIND11_OVERLOAD_PURE(
-            int, /* Return type */
-            BaseMatrix,      /* Parent class */
-            Height,          /* Name of function */
-            );
-      }
-
-      int VWidth() const override { 
-        PYBIND11_OVERLOAD_PURE(
-            int, /* Return type */
-            BaseMatrix,      /* Parent class */
-            Width,          /* Name of function */
-            );
-      }
-#endif
       tuple<size_t, size_t> Shape() const
       {
         pybind11::gil_scoped_acquire gil; 
@@ -846,68 +828,30 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       
       AutoVector CreateRowVector () const override {
         py::gil_scoped_acquire gil;
-        /*
-        pybind11::function overload = pybind11::get_overload(this, "CreateRowVector");
-        if (overload) {
-          auto vec = py::cast<shared_ptr<BaseVector>> (overload());
-          return vec; // vec->CreateVector();
-        }
-        */
+
         if (auto overload = pybind11::get_overload(this, "CreateRowVector"))
           return py::cast<shared_ptr<BaseVector>> (overload());
         if (auto overload = pybind11::get_overload(this, "CreateVector"))
           return py::cast<shared_ptr<BaseVector>> (overload(false));
         
         throw Exception ("CreateRowVector not overloaded from python");        
-        // python can only create shared_ptr<BaseVector>, create another unique_ptr<vector> from C++
-#ifdef NONE
-        PYBIND11_OVERLOAD_PURE(
-           shared_ptr<BaseVector>, /* Return type */
-           BaseMatrix,             /* Parent class */
-           CreateRowVector,        /* Name of function */
-           );
-#endif
       }
 
       AutoVector CreateColVector () const override {
         py::gil_scoped_acquire gil;
-        // pybind11::function overload = pybind11::get_overload(this, "CreateColVector");
+
         if (auto overload = pybind11::get_overload(this, "CreateColVector"))
           return py::cast<shared_ptr<BaseVector>> (overload());
         if (auto overload = pybind11::get_overload(this, "CreateVector"))
           return py::cast<shared_ptr<BaseVector>> (overload(true));
         throw Exception ("CreateColVector not overloaded from python");        
-#ifdef NONE        
-        PYBIND11_OVERLOAD_PURE(
-           shared_ptr<BaseVector>, /* Return type */
-           BaseMatrix,             /* Parent class */
-           CreateColVector,        /* Name of function */
-           );
-#endif
       }
-
-#ifdef NONE                
-      AutoVector CreateVector () const override {
-        PYBIND11_OVERLOAD_PURE(
-           shared_ptr<BaseVector>, /* Return type */
-           BaseMatrix,             /* Parent class */
-           CreateVector,           /* Name of function */
-           );
-      }
-#endif
 
       void Mult (const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
-        if (auto overload = pybind11::get_overload(this, "Mult")) {
-          auto sx = x.shared_from_this();
-          auto sy = y.shared_from_this();
-          /*
-            this version works also, IFF we used enable_shared_from_this
-          shared_ptr<BaseVector> sx(const_cast<BaseVector*>(&x), NOOP_Deleter);
-          shared_ptr<BaseVector> sy(&y, NOOP_Deleter);
-          */
-          overload(sx,sy);
-        }
+        
+        if (auto overload = pybind11::get_overload(this, "Mult")) 
+          overload(x.shared_from_this(), y.shared_from_this());          
         else
           BaseMatrix::Mult(x,y);
       }
@@ -923,19 +867,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
       void MultAdd (double s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
-        /*
-        pybind11::function overload = pybind11::get_overload(this, "MultAdd");
-        if (overload) {
-          cout << "trampoline multadd" << endl;
-          
-	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
-					   NOOP_Deleter);
-	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
-					   NOOP_Deleter);
-          
-        */
+
         if (auto overload = pybind11::get_overload(this, "MultAdd"))
           overload(s, x.shared_from_this(), y.shared_from_this());
         else
@@ -944,20 +876,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
       void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
-        pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
-        /*
-        if (overload) {
-          cout << "trampoline multtransadd" << endl;
-          
-	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
-					   NOOP_Deleter);
-	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
-					   NOOP_Deleter);
-          overload(s, sx,sy);
-        }
-        */
+
         if (auto overload = pybind11::get_overload(this, "MultTransAdd"))
           overload(s, x.shared_from_this(), y.shared_from_this());
         else
@@ -967,18 +886,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 
       void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
-        /*
-        pybind11::function overload = pybind11::get_overload(this, "MultAdd");
-        if (overload) {
-	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
-					   NOOP_Deleter);
-	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
-					   NOOP_Deleter);
-          overload(s, sx,sy);
-        }
-        */
+
         if (auto overload = pybind11::get_overload(this, "MultAdd"))
           overload(s, x.shared_from_this(), y.shared_from_this());
         else
@@ -986,25 +894,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
       }
       void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override {
         pybind11::gil_scoped_acquire gil;
-        /*
-        pybind11::function overload = pybind11::get_overload(this, "MultTransAdd");
-        if (overload) {
-	  const AutoVector * avecx = dynamic_cast<const AutoVector*>(&x);
-          auto sx = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecx!=NULL)?&(**avecx):&x),
-					   NOOP_Deleter);
-	  const AutoVector * avecy = dynamic_cast<const AutoVector*>(&y);
-          auto sy = shared_ptr<BaseVector>(const_cast<BaseVector*>((avecy!=NULL)?&(**avecy):&y),
-					   NOOP_Deleter);
-          overload(s, sx,sy);
-        }
-        */
+
         if (auto overload = pybind11::get_overload(this, "MultTransAdd"))
           overload(s, x.shared_from_this(), y.shared_from_this());
         else
           BaseMatrix::MultTransAdd(s, x, y);
       }
-
-
     };
   
 
@@ -1036,7 +931,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("nze", [] ( BaseMatrix & self)
                            { return self.NZE(); }, "number of non-zero elements")
     .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
-    // .def("CreateMatrix", &BaseMatrix::CreateMatrix)
 
     .def("GetOperatorInfo", [] (BaseMatrix & self)
          {
