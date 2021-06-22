@@ -137,7 +137,7 @@ ubuntu_avx_build:
   <<: *ubuntu_avx
   <<: *build_linux
 
-ubuntu_avx512_build:
+.ubuntu_avx512_build:
   <<: *ubuntu_avx512
   <<: *build_linux
 
@@ -159,7 +159,7 @@ ubuntu_avx_test:
   <<: *test_linux
   needs: ["ubuntu_avx_build"]
 
-ubuntu_avx512_test:
+.ubuntu_avx512_test:
   <<: *ubuntu_avx512
   <<: *test_linux
   needs: ["ubuntu_avx512_build"]
@@ -185,7 +185,7 @@ linux_cleanup:
   when: always
   allow_failure: true
 
-linux_cleanup_avx512:
+.linux_cleanup_avx512:
   stage: cleanup
   tags:
     - docker

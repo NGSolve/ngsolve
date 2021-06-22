@@ -327,7 +327,7 @@ namespace ngbla
     // typename trait__<ADD,POS,orda,ordb>::TELEM x;  // to get a warning
     
     // static Timer t("NgGEMM unresolved" + ToString(ADD) + ToString(POS) + ToString(orda) + ToString(ordb));
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
     
     if (!ADD)
@@ -349,7 +349,7 @@ namespace ngbla
   template <> INLINE void NgGEMM<false,true> (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     // static Timer t("NgGEMM  MultMatMat");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Width());
 
     MultMatMat (a,b,c);
@@ -361,7 +361,7 @@ namespace ngbla
   template <> INLINE void NgGEMM<true,true> (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     // nstatic Timer t("NgGEMM  AddAB");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Width());
 
     AddAB (a,b,c);
@@ -370,7 +370,7 @@ namespace ngbla
   template <> INLINE void NgGEMM<true,false> (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     // static Timer t("NgGEMM  SubAB");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Width());
 
     SubAB (a,b,c);
@@ -379,7 +379,7 @@ namespace ngbla
   template <> INLINE void NgGEMM<false,false> (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     // static Timer t("NgGEMM  MinusAB");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Width());
 
     MinusMultAB (a, b, c);
@@ -390,7 +390,7 @@ namespace ngbla
   template <> INLINE void NgGEMM<false,false> (SliceMatrix<> a, SliceMatrix<double,ColMajor> b, SliceMatrix<> c)
   {
     // static Timer t("NgGEMM  MinusABt");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
 
     MinusMultABt (a, Trans(b), c);
@@ -399,7 +399,7 @@ namespace ngbla
   template <> INLINE void NgGEMM<false,true> (SliceMatrix<> a, SliceMatrix<double,ColMajor> b, SliceMatrix<> c)
   {
     // static Timer t("NgGEMM  MultABt");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
 
     MultABt (a, Trans(b), c);
@@ -408,7 +408,7 @@ namespace ngbla
   template <> INLINE void NgGEMM<true,false> (SliceMatrix<> a, SliceMatrix<double,ColMajor> b, SliceMatrix<> c)
   {
     // static Timer t("NgGEMM  SubABt");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
 
     SubABt (a, Trans(b), BareSliceMatrix<>(c));
@@ -417,7 +417,7 @@ namespace ngbla
   template <> INLINE void NgGEMM<true,true> (SliceMatrix<> a, SliceMatrix<double,ColMajor> b, SliceMatrix<> c)
   {
     // static Timer t("NgGEMM  AddABt");
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width()*b.Height());
 
     AddABt (a, Trans(b), c);
@@ -468,7 +468,7 @@ namespace ngbla
     // RegionTimer r(t);
     // cout << "generic nggemv , add = " << ADD << ", pos = " << POS << endl;
     // static Timer t("NgGEMV unresolved" + ToString(ADD) + ToString(POS) + ToString(ord));
-    // ThreadRegionTimer reg(t, TaskManager::GetThreadId());
+    // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width());
     
     if (!ADD)

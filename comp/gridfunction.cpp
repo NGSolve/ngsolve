@@ -1288,7 +1288,7 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval 2");
-    static Timer timer ("GFCoeffFunc::Eval-scal", 3);
+    static Timer timer ("GFCoeffFunc::Eval-scal", NoTracing, NoTiming);
     RegionTimer reg (timer);
 
     const ElementTransformation & trafo = ip.GetTransformation();
@@ -1344,7 +1344,7 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> result) const
   {
     LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval complex");
-    // static Timer timer ("GFCoeffFunc::Eval-scal", 3);
+    // static Timer timer ("GFCoeffFunc::Eval-scal", NoTracing, NoTiming);
     // RegionTimer reg (timer);
 
     if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
@@ -1480,7 +1480,7 @@ namespace ngcomp
 
     
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3b");
-    // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
+    // static Timer timer ("GFCoeffFunc::Eval-vec", NoTracing);
     // RegionTimer reg (timer);
 
     const ElementTransformation & trafo = ir.GetTransformation();
@@ -1554,7 +1554,7 @@ namespace ngcomp
 
     
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3c");
-    // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
+    // static Timer timer ("GFCoeffFunc::Eval-vec", NoTracing);
     // RegionTimer reg (timer);
     auto values = bvalues.AddSize(Dimension(), ir.Size());
     const ElementTransformation & trafo = ir.GetTransformation();
@@ -2178,7 +2178,7 @@ namespace ngcomp
 		const double xref[], const double x[], const double dxdxref[],
 		double * values) 
   { 
-    // static Timer t("visgf::GetSurfValue 2");
+    // static Timer t("visgf::GetSurfValue NoTracing");
     // RegionTimer reg(t);
 
     try
@@ -3030,8 +3030,8 @@ namespace ngcomp
       {
     
     
-        // static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", 2); RegionTimer reg(t);
-        // static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", 2);
+        // static Timer t("VisualizeCoefficientFunction::GetMultiSurfValue", NoTracing); RegionTimer reg(t);
+        // static Timer t2("VisualizeCoefficientFunction::GetMultiSurfValue evaluate", NoTracing);
 
     VorB vb = (ma->GetDimension() == 3) ? BND : VOL;
     ElementId ei(vb, selnr);

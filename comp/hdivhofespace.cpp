@@ -68,7 +68,7 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & bmir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      // static Timer t("HDivDivFE - DiffOpNormalComponent", 2);
+      // static Timer t("HDivDivFE - DiffOpNormalComponent", NoTracing);
       // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
       auto & fel = static_cast<const HDivFiniteElement<D>&> (bfel);

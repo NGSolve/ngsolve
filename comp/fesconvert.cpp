@@ -280,7 +280,7 @@ namespace ngcomp
   shared_ptr<BaseMatrix> ConvertOperatorGF (shared_ptr<FESpace> space_a, shared_ptr<FESpace> space_b,
 					  // int inda, int indb,
 					  shared_ptr<DifferentialOperator> diffop, shared_ptr<CoefficientFunction> trial_cf,
-					  VorB vb, const Region * reg, LocalHeap & clh,
+					  VorB vb, const Region * reg, LocalHeap & lh,
 					  shared_ptr<BitArray> range_dofs = nullptr,
 					  bool localop = false, bool parmat = true, bool use_simd = true,
 					  int bonus_intorder_ab = 0, int bonus_intorder_bb = 0)
@@ -359,7 +359,7 @@ namespace ngcomp
     int dima = space_a->GetDimension(), dimb = space_b->GetDimension();
 
     /** element equivalence classes **/
-    LocalHeap lh(10000000);
+    // LocalHeap lh(10000000);
 
     /** #of equivalence classes per element type **/
     Array<short> et_eqc_cnt(ET_HEX+1); et_eqc_cnt = 0;

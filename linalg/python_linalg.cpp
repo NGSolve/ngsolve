@@ -279,12 +279,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                     return bv;
                   }))
     .def_property_readonly("local_vec", [](shared_ptr<BaseVector> self) -> shared_ptr<BaseVector> {
+        return self->GetLocalVector();
+        /*
 #ifdef PARALLEL
 	auto pv = dynamic_cast_ParallelBaseVector (self.get());
 	return (pv==nullptr) ? self : pv->GetLocalVector();
 #else
 	return self;
 #endif
+        */
       } )
     .def(py::pickle([] (const BaseVector& bv)
                     {

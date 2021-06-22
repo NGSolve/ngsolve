@@ -164,15 +164,15 @@ namespace ngla
 
   void MinimumDegreeOrdering :: EliminateMasterVertex (int v)
   {
-    static Timer t("MDO::EliminateMaster", 2);
+    static Timer t("MDO::EliminateMaster", NoTracing);
     /*
-    static Timer t1("MDO::EliminateMaster 1", 2);
-    static Timer t2("MDO::EliminateMaster 2", 2);
-    static Timer t2a("MDO::EliminateMaster 2a", 2);
-    static Timer t2b("MDO::EliminateMaster 2b", 2);
-    static Timer t2c("MDO::EliminateMaster 2c", 2);
-    static Timer t3("MDO::EliminateMaster 3", 2);
-    static Timer t4("MDO::EliminateMaster 4 (calcdeg)", 2);
+    static Timer t1("MDO::EliminateMaster 1", NoTracing);
+    static Timer t2("MDO::EliminateMaster 2", NoTracing);
+    static Timer t2a("MDO::EliminateMaster 2a", NoTracing);
+    static Timer t2b("MDO::EliminateMaster 2b", NoTracing);
+    static Timer t2c("MDO::EliminateMaster 2c", NoTracing);
+    static Timer t3("MDO::EliminateMaster 3", NoTracing);
+    static Timer t4("MDO::EliminateMaster 4 (calcdeg)", NoTracing);
     */
     RegionTimer reg(t);
 
