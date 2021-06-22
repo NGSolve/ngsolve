@@ -108,10 +108,11 @@ namespace ngfem
         size_t ndof = fea[0]->GetNDof();
         size_t dim = fea.Size();
 
-        // Be safe... This case will probably not always be handled correctly
+        // Be safe as the current implementation does not handle this correctly in most cases.
         if (dynamic_cast<const CompoundFiniteElement*>(fea[0]))
           throw Exception("Interpolation is not implement for 'compound of compounds'.");
 
+        // Boils down to restricting the present implementation to compounds of scalar elements only.
         if (dim != func.Dimension())
           throw Exception("Dimensions do not match.");
 
