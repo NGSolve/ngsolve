@@ -12,6 +12,7 @@
 #include <comp.hpp>
 #include <variant>
 #include "../fem/integratorcf.hpp"
+#include "../fem/h1lofe.hpp"
 
 
 namespace ngcomp
