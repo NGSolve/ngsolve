@@ -217,6 +217,12 @@ static shared_ptr<PDE> pde;
     { return GetLibraryVersions().at(library); }
 
     using Archive::operator&;
+    virtual Archive & operator & (std::byte & d)
+    {
+      sock.Tsend(uint8_t(d));
+      return *this;
+    }
+
     virtual Archive & operator & (float & f)
     {
       sock.Tsend(f);
@@ -281,6 +287,14 @@ static shared_ptr<PDE> pde;
     { return vinfo[library]; }
 
     using Archive::operator&;
+    virtual Archive & operator & (std::byte & d)
+    {
+      uint8_t tmp;
+      sock.Trecv (tmp);
+      d = byte(tmp);
+      return *this;
+    }
+
     virtual Archive & operator & (float & f)
     {
       sock.Trecv (f);
@@ -345,6 +359,10 @@ static shared_ptr<PDE> pde;
   public:
     WorkerOutArchive () : Archive(true) { ; }
 
+    virtual Archive & operator & (std::byte & d)
+    {
+      return *this;
+    }
     virtual Archive & operator & (float & f)
     {
       return *this;
