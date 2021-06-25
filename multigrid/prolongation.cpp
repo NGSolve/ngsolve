@@ -819,6 +819,15 @@ namespace ngmg
 	prols[i] -> Update(*cfes[i]);
   }
 
+  size_t CompoundProlongation :: GetNDofLevel (int level)
+  {
+    size_t nd = 0;
+    for (int i = 0; i < prols.Size(); i++)
+      if (prols[i])
+	nd += prols[i] -> GetNDofLevel(level);
+    return nd;
+  }
+  
   shared_ptr<BitArray> CompoundProlongation :: GetInnerDofs (int finelevel) const
   {
     Array<shared_ptr<BitArray>> comp_inner;
