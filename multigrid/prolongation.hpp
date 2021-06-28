@@ -304,6 +304,8 @@ namespace ngmg
   
     ///
     virtual void Update (const FESpace & fes) override;
+    virtual size_t GetNDofLevel (int level) override;
+    
     virtual shared_ptr<BitArray> GetInnerDofs (int finelevel) const override;
 
     void AddProlongation (shared_ptr<Prolongation> prol)
