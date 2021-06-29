@@ -464,7 +464,17 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 
 
   FiniteElement & HDivHighOrderSurfaceFESpace :: GetFE (ElementId ei, Allocator & alloc) const
-  {   
+  {
+
+    if (!DefinedOn (ei))
+      {
+        return
+          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                      {
+                        return *new (alloc) DummyFE<et.ElementType()> ();
+                      });
+      }
+    
      if (ei.IsVolume())
       {
 	throw Exception("No volume elements available");
