@@ -44,7 +44,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
 
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False):
+def MakeStructured2DMesh(quads=True, P0=False,nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False):
     """
     Generate a structured 2D mesh
 
@@ -147,16 +147,36 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
                     el.curved=False
                 mesh.Add(el)
             else:
-                if flip_triangles:
-                    pnum1 = [base,base+1,base+nx+2]
-                    pnum2 = [base,base+nx+2,base+nx+1]
+                if P0:
+                    if flip_triangles:
+                        check = (j==nx-1 and i==0) or (j==0 and i==ny-1);
+                    else:
+                        check = (j==0 and i==0) or (j==nx-1 and i==ny-1);
+                    if check:
+                        pnum1 = [base,base+1,base+nx+2]
+                        pnum2 = [base,base+nx+2,base+nx+1]
+                        elpids1 = [pids[p] for p in pnum1]
+                        elpids2 = [pids[p] for p in pnum2]
+                        mesh.Add(Element2D(idx_dom,elpids1)) 
+                        mesh.Add(Element2D(idx_dom,elpids2))   
+                    else:
+                        pnum1 = [base,base+1,base+nx+1]
+                        pnum2 = [base+1,base+nx+2,base+nx+1]
+                        elpids1 = [pids[p] for p in pnum1]
+                        elpids2 = [pids[p] for p in pnum2]
+                        mesh.Add(Element2D(idx_dom,elpids1)) 
+                        mesh.Add(Element2D(idx_dom,elpids2))   
                 else:
-                    pnum1 = [base,base+1,base+nx+1]
-                    pnum2 = [base+1,base+nx+2,base+nx+1]
-                elpids1 = [pids[p] for p in pnum1]
-                elpids2 = [pids[p] for p in pnum2]
-                mesh.Add(Element2D(idx_dom,elpids1)) 
-                mesh.Add(Element2D(idx_dom,elpids2))                          
+                    if flip_triangles:
+                        pnum1 = [base,base+1,base+nx+2]
+                        pnum2 = [base,base+nx+2,base+nx+1]
+                    else:
+                        pnum1 = [base,base+1,base+nx+1]
+                        pnum2 = [base+1,base+nx+2,base+nx+1]
+                    elpids1 = [pids[p] for p in pnum1]
+                    elpids2 = [pids[p] for p in pnum2]
+                    mesh.Add(Element2D(idx_dom,elpids1)) 
+                    mesh.Add(Element2D(idx_dom,elpids2))                          
 
     for i in range(nx):
         mesh.Add(Element1D([pids[i], pids[i+1]], index=idx_bottom))
