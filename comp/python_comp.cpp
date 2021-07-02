@@ -181,7 +181,7 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
         }
       
       // cout << "create new lh" << endl;
-      return BorrowedLocalHeap(new LocalHeap(global_heapsize, "python-comp lh"), this);
+      return BorrowedLocalHeap(new LocalHeap(global_heapsize, "python-comp lh", true), this);
     }
     
     void ReturnLH (LocalHeap * lh)
