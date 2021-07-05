@@ -12,7 +12,64 @@
 
 namespace ngcomp
 {
-  
+    template <int D>
+  class DiffOpHCurlDivDual : public DiffOp<DiffOpHCurlDivDual<D> >
+  {
+  public:
+    typedef DiffOp<DiffOpHCurlDivDual<D>> BASE;
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
+    
+    static auto & Cast (const FiniteElement & fel) 
+    { return static_cast<const HCurlDivFiniteElement<D>&> (fel); }
+    
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDualShape (mip, Trans(mat));
+    }
+
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      throw Exception(string("DiffOpHCurlDivDual not available for mat ")+typeid(mat).name());
+    }
+
+    // static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+    //                                   const SIMD_BaseMappedIntegrationRule & mir,
+    //                                   BareSliceMatrix<SIMD<double>> mat)
+    // {
+    //   Cast(bfel).CalcDualShape (mir, mat);
+    // }
+
+    // using DiffOp<DiffOpHCurlDivDual<D> >::ApplySIMDIR;    
+    // static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+    //                          BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    // {
+    //   Cast(bfel).EvaluateDual (mir, x, y);
+    // }
+
+    // using DiffOp<DiffOpHCurlDivDual<D> >::AddTransSIMDIR;        
+    // static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+    //                             BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    // {
+    //   Cast(bfel).AddDualTrans (mir, y, x);
+    // }
+   
+  };
+
+
   template <int D, typename FEL = HCurlDivFiniteElement<D> >
   class DiffOpGradientHCurlDiv : public DiffOp<DiffOpGradientHCurlDiv<D> >
   {
@@ -390,6 +447,10 @@ namespace ngcomp
     case 2:
       additional_evaluators.Set ("curl",make_shared<T_DifferentialOperator<DiffOpCurlHCurlDiv<2>>> ());
       additional_evaluators.Set ("grad",make_shared<T_DifferentialOperator<DiffOpGradientHCurlDiv<2>>> ());
+      additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDivDual<2>>> ());
+      break;
+    case 3:
+      additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDivDual<3>>> ());
       break;
     default:
       ;
