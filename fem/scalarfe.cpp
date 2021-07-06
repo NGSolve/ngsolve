@@ -443,26 +443,51 @@ namespace ngfem
     
     FlatMatrix<> elflux(GetNDof(), coefs.Width(), lh);
     elflux = 0.0;
-    
-    for (int el_vb = D; el_vb >= 0; el_vb--)
+
+    try
+    {
+      for (int el_vb = D; el_vb >= 0; el_vb--)
       {
         Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
         for (int locfnr : Range(f2el.GetNFacets()))
-          {
-            SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order());
-            auto & irvol = f2el(locfnr, irfacet, lh);
-            auto & mir = trafo(irvol, lh);
+        {
+          SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order());
+          auto & irvol = f2el(locfnr, irfacet, lh);
+          auto & mir = trafo(irvol, lh);
 
-            FlatMatrix<SIMD<double>> mfluxi(coefs.Width(), mir.IR().Size(), lh);
-            func.Evaluate (mir, mfluxi);
+          FlatMatrix<SIMD<double>> mfluxi(coefs.Width(), mir.IR().Size(), lh);
+          func.Evaluate (mir, mfluxi);
 
-            for (size_t j : Range(mir))
-              mfluxi.Col(j) *= mir[j].IP().Weight();
+          for (size_t j : Range(mir))
+            mfluxi.Col(j) *= mir[j].IP().Weight();
 
-            for (int i = 0; i < coefs.Width(); i++)
-              AddDualTrans (mir.IR(), mfluxi.Row(i), elflux.Col(i));
-          }
+          for (int i = 0; i < coefs.Width(); i++)
+            AddDualTrans (mir.IR(), mfluxi.Row(i), elflux.Col(i));
+        }
       }
+    }
+    catch (ExceptionNOSIMD e)
+    {
+      for (int el_vb = D; el_vb >= 0; el_vb--)
+      {
+        Facet2ElementTrafo f2el (ElementType(), VorB(el_vb));
+        for (int locfnr : Range(f2el.GetNFacets()))
+        {
+          IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * Order());
+          auto & irvol = f2el(locfnr, irfacet, lh);
+          auto & mir = trafo(irvol, lh);
+
+          FlatMatrix<double> mfluxi(coefs.Width(), mir.IR().Size(), lh);
+          func.Evaluate (mir, mfluxi);
+
+          for (size_t j : Range(mir))
+            mfluxi.Col(j) *= mir[j].IP().Weight();
+
+          for (int i = 0; i < coefs.Width(); i++)
+            AddDualTrans (mir.IR(), mfluxi.Row(i), elflux.Col(i));
+        }
+      }
+    }
 
     for (int i = 0; i < coefs.Width(); i++)
       if (!SolveDuality (elflux.Col(i), coefs.Col(i), lh))
