@@ -1102,6 +1102,12 @@ inverse : string
     .def(py::init<shared_ptr<ParallelDofs>>())
     ;
 
+  py::class_<SumMatrix, shared_ptr<SumMatrix>, BaseMatrix> (m, "SumMatrix")
+    .def_property_readonly("matA",  &SumMatrix::SPtrA)
+    .def_property_readonly("matB",  &SumMatrix::SPtrB)
+    ;
+
+  
   py::class_<LoggingMatrix, shared_ptr<LoggingMatrix>, BaseMatrix> (m, "LoggingMatrix")
     .def(py::init<shared_ptr<BaseMatrix>,string,string,optional<NgMPI_Comm>>(),
          py::arg("mat"), py::arg("label"), py::arg("logfile")="stdout", py::arg("comm")=std::nullopt)
@@ -1112,27 +1118,6 @@ inverse : string
     .def(py::init<> ([] (size_t h, size_t w, Matrix<> mat,
                          py::list pycdofs, py::list pyrdofs)
                      {
-                       /*
-                       size_t n = py::len(pyrdofs);
-                       Array<int> entrysize(n);
-                       for (size_t i = 0; i < n; i++)
-                         entrysize[i] = py::len(pyrdofs[i]);
-                       Table<int> rdofs(entrysize);
-                       for (size_t i = 0; i < n; i++)
-                         {
-                           const py::object & obj = pyrdofs[i];
-                           rdofs[i] = makeCArray<int> (obj);
-                         }
-
-                       for (size_t i = 0; i < n; i++)
-                         entrysize[i] = py::len(pycdofs[i]);
-                       Table<int> cdofs(entrysize);
-                       for (size_t i = 0; i < n; i++)
-                         {
-                           const py::object & obj = pycdofs[i];
-                           cdofs[i] = makeCArray<int> (obj);
-                         }
-                       */
                        auto rdofs = makeCTable<int> (pyrdofs);
                        auto cdofs = makeCTable<int> (pycdofs);
                        
@@ -1141,6 +1126,9 @@ inverse : string
                      }),
          py::arg("h"), py::arg("w"), py::arg("matrix"),
          py::arg("col_ind"), py::arg("row_ind"))
+    .def_property_readonly("mat", &ConstantElementByElementMatrix::GetMatrix)
+    .def_property_readonly("row_ind", &ConstantElementByElementMatrix::GetRowDNums)
+    .def_property_readonly("col_ind", &ConstantElementByElementMatrix::GetColDNums)
     ;
 
   m.def("ChebyshevIteration", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,

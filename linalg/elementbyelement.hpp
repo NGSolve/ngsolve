@@ -142,6 +142,10 @@ namespace ngla
     
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+
+    const Matrix<> & GetMatrix() const { return matrix; }
+    const Table<int> & GetRowDNums() const { return row_dnums; }
+    const Table<int> & GetColDNums() const { return col_dnums; }
   };
   
 }
