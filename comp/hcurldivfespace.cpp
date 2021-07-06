@@ -46,26 +46,26 @@ namespace ngcomp
       throw Exception(string("DiffOpHCurlDivDual not available for mat ")+typeid(mat).name());
     }
 
-    // static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-    //                                   const SIMD_BaseMappedIntegrationRule & mir,
-    //                                   BareSliceMatrix<SIMD<double>> mat)
-    // {
-    //   Cast(bfel).CalcDualShape (mir, mat);
-    // }
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {      
+      Cast(bfel).CalcDualShape (mir, mat);
+    }
 
-    // using DiffOp<DiffOpHCurlDivDual<D> >::ApplySIMDIR;    
-    // static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-    //                          BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    // {
-    //   Cast(bfel).EvaluateDual (mir, x, y);
-    // }
+    using DiffOp<DiffOpHCurlDivDual<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {      
+      Cast(bfel).EvaluateDual (mir, x, y);
+    }
 
-    // using DiffOp<DiffOpHCurlDivDual<D> >::AddTransSIMDIR;        
-    // static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-    //                             BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    // {
-    //   Cast(bfel).AddDualTrans (mir, y, x);
-    // }
+    using DiffOp<DiffOpHCurlDivDual<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(bfel).AddDualTrans (mir, y, x);
+    }
    
   };
 
