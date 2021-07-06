@@ -59,6 +59,13 @@ namespace ngfem
 
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
 				     BareSliceMatrix<SIMD<double>> divshapes) const = 0;    
+
+
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const = 0;    
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const = 0;
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const = 0;
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const = 0;
+
   };
   
   template <ELEMENT_TYPE ET>
@@ -101,7 +108,24 @@ namespace ngfem
 
     virtual void CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
 				     BareSliceMatrix<SIMD<double>> divshapes) const override { ; }
+             
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override {;}
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override {;}
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override {;}
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const override {;}
   };
+
+ template <typename T>
+  Mat<2,2,T> DyadProd(Vec<2,T> a, Vec<2,T> b)
+  {
+    return Matrix<T>({{a(0)*b(0), a(0)*b(1)}, {a(1)*b(0), a(1)*b(1)}} );
+  }
+
+  template <typename T>
+  Mat<3,3,T> DyadProd(Vec<3,T> a, Vec<3,T> b)
+  {
+    return Matrix<T>( {{a(0)*b(0), a(0)*b(1), a(0)*b(2)}, {a(1)*b(0), a(1)*b(1), a(1)*b(2)}, {a(2)*b(0), a(2)*b(1), a(2)*b(2)}} );
+  }
 
   
   template <ELEMENT_TYPE ET> class HCurlDivFE;
@@ -609,6 +633,81 @@ namespace ngfem
 	}
     }
 
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override
+    {
+      shape = 0.0;
+      Switch<4-DIM>
+        (bmip.DimSpace()-DIM,[this, &bmip, shape](auto CODIM)
+         {
+           auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
+
+           Cast() -> CalcDualShape2 (mip, SBLambda([&] (size_t nr, auto val)
+                                                   {
+                                                     shape.Row(nr) = val.AsVector();
+                                                   }));
+         });
+      
+    }
+
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this, &bmir, shapes](auto CODIM)
+         {
+           constexpr int DIMSPACE = DIM+CODIM.value;
+           auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+
+           shapes.AddSize(ndof*sqr(DIMSPACE), mir.Size()) = 0.0;
+           for (size_t i = 0; i < mir.Size(); i++)
+             {
+               Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE] (size_t j, auto val)
+                                                          {
+                                                            shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val.AsVector();
+                                                          }));
+             }
+         });
+    }
+    
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
+                             {
+                               constexpr int DIMSPACE = DIM+CODIM.value;
+                               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+                               for (size_t i = 0; i < mir.Size(); i++)
+                                 {
+                                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> sum (SIMD<double>(0.0));
+                                   Cast() -> CalcDualShape2 (mir[i], SBLambda([&sum, coefs] (size_t j, auto val)
+                                                                              {
+                                                                                sum += coefs(j) * val;
+                                                                              }));
+                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                     values(k, i) = sum(k);
+                                 }});
+    }
+    
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
+                             {
+                               constexpr int DIMSPACE = DIM+CODIM.value;
+                               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+                               for (size_t i = 0; i < mir.Size(); i++)
+                                 {
+                                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> value;
+                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                     value(k) = values(k, i);
+                                   
+                                   Cast()-> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, auto val)
+                                                                             {
+                                                                               coefs(j) += HSum(InnerProduct(val,value));
+                                                                             }));
+                                 }});
+    }
+
+
   };
 
  
@@ -664,13 +763,13 @@ namespace ngfem
 
       for (int i = 0; i < 3; i++)
         {
-	  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);	  	  
-          Tx ls = ddlami[e[0]], le = ddlami[e[1]];
+            INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);	  	  
+            Tx ls = ddlami[e[0]], le = ddlami[e[1]];
 	  	 
-	  IntLegNoBubble::EvalMult (maxorder_facet, le-ls, 0.25*le*ls, ha);
+            IntLegNoBubble::EvalMult (maxorder_facet, le-ls, 0.25*le*ls, ha);
 	  
-          for (int l = 0; l <= order_facet[i]; l++)	    
-	    shape[ii++] = Sigma_gradv(ha[l]);	 
+            for (int l = 0; l <= order_facet[i]; l++)	    
+              shape[ii++] = Sigma_gradv(ha[l]);	 
         }
       
       Tx ls = ddlami[0];
@@ -679,17 +778,17 @@ namespace ngfem
       
       //if trace order is not equal -1
       if (ot>-1)
-	{
-	  LegendrePolynomial::Eval(ot, 2*lt-1, v);
-	  for (int i = 0; i <= ot; i++)
-	    shape[ii++] = type4(le, ls, v[i]);
+      {
+        LegendrePolynomial::Eval(ot, 2*lt-1, v);
+        for (int i = 0; i <= ot; i++)
+          shape[ii++] = type4(le, ls, v[i]);
 
-	  IntLegNoBubble::EvalMult (ot, le-lt, 0.25*le*lt, u);
-	  LegendrePolynomial::EvalMult(ot, 2*ls-1, ls, v);
-	  for(int i = 0; i <= ot-1; i++)
-	      for(int j = 0; j+i <= ot-1; j++)       
-		    shape[ii++] = Sigma_gradu_v(u[i],v[j]);	  		  	    
-	}
+        IntLegNoBubble::EvalMult (ot, le-lt, 0.25*le*lt, u);
+        LegendrePolynomial::EvalMult(ot, 2*ls-1, ls, v);
+        for(int i = 0; i <= ot-1; i++)
+            for(int j = 0; j+i <= ot-1; j++)       
+            shape[ii++] = Sigma_gradu_v(u[i],v[j]);	  		  	    
+      }
                   
       IntLegNoBubble::EvalMult (oi, le-lt, 0.25*le*lt, u);
       LegendrePolynomial::EvalMult(oi, 2*ls-1, ls, v);
@@ -698,7 +797,7 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {	  
-	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	  	  
+          shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]);	  	  
         }	
       }
      
@@ -709,45 +808,134 @@ namespace ngfem
       {
         for(int j = 0; j+i <= oi-1; j++)
         {
-	  shape[ii++] = Sigma_gradv(u[i]*v[j]); //divfree!
-	  shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]); 	 
+          shape[ii++] = Sigma_gradv(u[i]*v[j]); //divfree!
+          shape[ii++] = Curlgraduv_graducurlv(u[i],v[j]); 	 
         }	
       }
 
       
       if(GGbubbles)
-	{
-	  /*
-	  IntLegNoBubble::EvalMult (oi, le-ls, 0.25*le*ls, u);
-	  LegendrePolynomial::EvalMult(oi, 2*lt-1, lt, v);
+      {
+        /*
+        IntLegNoBubble::EvalMult (oi, le-ls, 0.25*le*ls, u);
+        LegendrePolynomial::EvalMult(oi, 2*lt-1, lt, v);
 
-	  //in 2 dimensions u[i]*v[oi-1-i] should be a H1_0 bubble
-      
-	  for(int i = 0; i <= oi-1; i++)
-	    {
-	      shape[ii++] = CurlBubble2D(u[i]*v[oi-1-i]);
-	    }
-	  */
-	  //Vector<AutoDiffDiff<2, T> >  l2shape( (oi+1)*(oi+2) / 2 );
-	  
-	  Vector<Tx>  l2shape( (oi+1)*(oi+2) / 2);
-	  DubinerBasis::Eval ( oi , ddlami[0], ddlami[1], l2shape);
+        //in 2 dimensions u[i]*v[oi-1-i] should be a H1_0 bubble
+          
+        for(int i = 0; i <= oi-1; i++)
+          {
+            shape[ii++] = CurlBubble2D(u[i]*v[oi-1-i]);
+          }
+        */
+        //Vector<AutoDiffDiff<2, T> >  l2shape( (oi+1)*(oi+2) / 2 );
+        
+        Vector<Tx>  l2shape( (oi+1)*(oi+2) / 2);
+        DubinerBasis::Eval ( oi , ddlami[0], ddlami[1], l2shape);
 
-	  Vector<Tx>  S(oi+1);
+        Vector<Tx>  S(oi+1);
 
-	  S(0) = l2shape(oi);	    
-	  for ( int i = 1; i<oi+1; i++)
-	      S(i) = l2shape((i+1)*oi-(i-1)*(i)/2);
-	  
-	  Tx b = ddlami[0]*ddlami[1]*ddlami[2];
-	  
-	  for (int i=0; i<oi+1;i++)
-	    {	     
-	      shape[ii++] = GGbubble(S(i), b);
-	    }
-	}
+        S(0) = l2shape(oi);	    
+        for ( int i = 1; i<oi+1; i++)
+            S(i) = l2shape((i+1)*oi-(i-1)*(i)/2);
+        
+        Tx b = ddlami[0]*ddlami[1]*ddlami[2];
+        
+        for (int i=0; i<oi+1;i++)
+          {	     
+            shape[ii++] = GGbubble(S(i), b);
+          }
+      }
             
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      if(GGbubbles)
+        throw Exception ("Hcurldivfe not implementend for TRIG with GGBubbles");
+      
+      auto & ip = mip.IP();
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
+      T x = ip(0), y = ip(1);
+      T lam[3] = { x, y, 1-x-y };
+      Vec<2,T> pnts[3] = { { 1, 0 }, { 0, 1 } , { 0, 0 } };
+      int facetnr = ip.FacetNr();
+
+      int ii = 0;
+
+      if (ip.VB() == BND)
+        { // facet shapes
+          for (int i = 0; i < 3; i++)
+            {
+              int p = order_facet[i];
+              
+              if (i == facetnr)
+                {
+                  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+                  
+                  T xi = lam[e[0]]-lam[e[1]];
+                  Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
+                  
+                  Vec<2,T> nvref = Vec<2,T>(tauref[1],-tauref[0]);
+
+                  // auto nv = L2Norm() / L2Norm() * Trans(mip.GetJacobianInverse())*nvref;            
+                  // see hdivhofe_impl.hpp for explanation
+                  auto nv = L2Norm(nvref) / L2Norm(Trans(mip.GetJacobianInverse())*nvref) * Trans(mip.GetJacobianInverse())*nvref;
+
+                  // tangential vector is also not scaled
+                  auto tv =  mip.GetJacobian()*tauref;
+
+                  // this results in constant element matrices (geometry free!)
+                  // nv and tv do not have norm 1 since the normal vector on the rverence element
+                  // used to define sigma_ref also have not norm 1
+                  auto nt = DyadProd(tv,nv);
+                  
+                  LegendrePolynomial::Eval
+                    (p, xi,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                shape[nr+ii] = val*nt;
+                              }));
+                }
+              ii += (p+1);
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 3; i++)
+            ii += order_facet[i]+1;
+        }
+      if (ip.VB() == VOL)
+        {
+          auto p = order_trace;
+          if( p >= 0 )
+            {
+              DubinerBasis::Eval (p, lam[0], lam[1],
+                                  SBLambda([&] (size_t nr, T val)
+                                           {
+                                             shape[ii++] = val * mip.GetJacobian() * Mat<2,2>({{1,0},{0,1}}) * mip.GetJacobianInverse();                                             
+                                           }));
+            }
+          p = order_inner-1;
+          if( p >= 0 )
+            {
+              DubinerBasis::Eval (p, lam[0], lam[1],
+                                  SBLambda([&] (size_t nr, T val)
+                                           {
+                                            //  shape[ii++] = val*mip.GetMeasure()*Trans(mip.GetJacobianInverse())*Mat<2,2>({{1,0},{0,-1}})*Trans(mip.GetJacobian());
+                                            //  shape[ii++] = val*mip.GetMeasure()*Trans(mip.GetJacobianInverse())*Mat<2,2>({{0,0},{1,0}}) *Trans(mip.GetJacobian());
+                                            //  shape[ii++] = val*mip.GetMeasure()*Trans(mip.GetJacobianInverse())*Mat<2,2>({{0,1},{0,0}}) *Trans(mip.GetJacobian());
+                                            // geometry free volume dual shapes
+                                            // see thesis PL, equation (5.28)
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<2,2>({{1,0},{0,-1}}) * mip.GetJacobianInverse();
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<2,2>({{0,0},{1,0}})  * mip.GetJacobianInverse();
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<2,2>({{0,1},{0,0}})  * mip.GetJacobianInverse();
+                                           }));
+            }
+        }
+
+    }
+
   };
 
 
@@ -915,6 +1103,12 @@ namespace ngfem
 	    }
 	}
     };
+
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hcurldivfe not implementend for element type");
+    }    
   };
   
  template <> class HCurlDivFE<ET_TET> : public T_HCurlDivFE<ET_TET> 
@@ -1077,6 +1271,103 @@ namespace ngfem
 	    }	 
 	}
      };
+     template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      if(GGbubbles)
+        throw Exception ("Hcurldivfe not implementend for TET with GGBubbles");
+      
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
+      auto & ip = mip.IP();
+      T x = ip(0), y = ip(1), z = ip(2);
+      T lam[4] = { x, y, z, 1-x-y-z };
+      Vec<3> pnts[4] = { { 1, 0, 0 }, { 0, 1, 0 } , { 0, 0, 1 }, { 0, 0, 0 } };
+      int facetnr = ip.FacetNr();
+      int ii = 0;
+
+      if (ip.VB() == BND)
+        { // facet shapes
+          for (int i = 0; i < 4; i++)
+            {
+              int p = order_facet[i];
+              
+              if (i == facetnr)
+                {
+                  // INT<4> fav = GetFaceSort (i, vnums);
+                  INT<4> fav = ET_trait<ET_TET>::GetFaceSort (i, vnums);
+                  T xi = lam[fav[1]]-lam[fav[2]];
+                  T eta = lam[fav[1]]-lam[fav[0]];
+                  Vec<3,T> tauref1 = pnts[fav[1]] - pnts[fav[2]];
+                  Vec<3,T> tauref2 = pnts[fav[2]] - pnts[fav[0]];
+                  Vec<3,T> nvref   = Cross(tauref1,tauref2);
+                  Vec<3,T> nv = L2Norm(nvref) / L2Norm(Trans(mip.GetJacobianInverse())*nvref) * Trans(mip.GetJacobianInverse())*nvref;
+                  
+                  auto tv1 =  mip.GetJacobian()*tauref1;
+                  auto tv2 =  mip.GetJacobian()*tauref2;
+                  
+                  auto nt1 = DyadProd(tv1,nv);
+                  auto nt2 = DyadProd(tv2,nv);
+                  
+                  DubinerBasis::Eval
+                    (p, xi, eta,
+                     SBLambda([&] (size_t nr, T val)
+                              {
+                                // shape[nr*2+ii] = val*nt1;
+                                // shape[nr*2+1+ii] = val*nt2;
+                                shape[ii++] = val*nt1;
+                                shape[ii++] = val*nt2;                                
+                              }));
+                }
+              ii += (p+1)*(p+2); //no devision by 2 since we have two basis functions per face
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 4; i++)
+            ii += (order_facet[i]+1) * (order_facet[i]+2);
+        }
+      if (ip.VB() == VOL)
+        {
+          auto p = order_trace;
+          if( p >= 0 )
+            {
+              DubinerBasis3D::Eval (p, lam[0], lam[1], lam[2],
+                                  SBLambda([&] (size_t nr, T val)
+                                           {
+                                             shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{1,0,0},{0,1,0},{0,0,1}}) * mip.GetJacobianInverse();                                             
+                                           }));
+            }
+          p = order_inner-1;
+          if( p >= 0 )
+            {
+              DubinerBasis3D::Eval (p, lam[0], lam[1], lam[2],
+                                  SBLambda([&] (size_t nr, T val)
+                                           {
+                                            // geometry free volume dual shapes
+                                            // see thesis PL, equation (5.28)
+                                            // shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{1.0/3,0,0},{0,-2.0/3,0},{0,0,1.0/3}}) * mip.GetJacobianInverse();
+                                            // shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{-2.0/3,0,0},{0,1.0/3,0},{0,0,1.0/3}}) * mip.GetJacobianInverse();
+                                            // shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{1.0/3,0,0},{1,-2.0/3,0},{0,0,1.0/3}}) * mip.GetJacobianInverse();
+                                            // shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{2.0/3,0,-1},{0,1.0/3,0},{0,0,1.0/3}}) * mip.GetJacobianInverse();
+                                            // shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{-1.0/3,0,0},{-1,2.0/3,0},{0,0,-1.0/3}}) * mip.GetJacobianInverse();
+                                            // shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{-2.0/3,0,0},{-1,1.0/3,0},{-1,0,1.0/3}}) * mip.GetJacobianInverse();
+                                            // shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{-1.0/3,1,0},{0,2.0/3,0},{0,1,-1.0/3}}) * mip.GetJacobianInverse();
+                                            // shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{1.0/3,0,0},{0,1.0/3,0},{0,1,-2.0/3}}) * mip.GetJacobianInverse(); 
+                                            
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{2,0,0},{0,-1,0},{0,0,-1}}) * mip.GetJacobianInverse();
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{-1,0,0},{0,2,0},{0,0,-1}}) * mip.GetJacobianInverse();
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{0,0,1},{0,0,0},{0,0,0}}) * mip.GetJacobianInverse();
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{0,0,0},{0,0,1},{0,0,0}}) * mip.GetJacobianInverse();                                            
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{0,1,0},{0,0,0},{0,0,0}}) * mip.GetJacobianInverse();                                                                                                                                   
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{0,0,0},{0,0,0},{0,1,0}}) * mip.GetJacobianInverse(); 
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{0,0,0},{1,0,0},{0,0,0}}) * mip.GetJacobianInverse();
+                                            shape[ii++] = val * mip.GetJacobian() * Mat<3,3>({{0,0,0},{0,0,0},{1,0,0}}) * mip.GetJacobianInverse();                                            
+                                           }));
+
+            }
+
+        }
+    }
   };
 
   template <> class HCurlDivFE<ET_HEX> : public T_HCurlDivFE<ET_HEX> 
@@ -1233,6 +1524,12 @@ namespace ngfem
       
 	}	  
     };
+    template <typename MIP, typename TFA>
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception ("Hcurldivfe not implementend for element type");
+    }
+
   };
   
   ////////////////////// SURFACE ////////////////////////////
