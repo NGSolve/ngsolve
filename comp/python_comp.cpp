@@ -1233,20 +1233,32 @@ component : int
            return self->RestrictionOperator(comp);
            // return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
          },
-         py::arg("component"), "create embedding operator for this component")
+         py::arg("component"), "create restriction operator onto this component")
 
     
     .def_property_readonly("embeddings", 
                   [](shared_ptr<CompoundFESpace> self)-> py::list
                    { 
                      py::list embeddings(self->GetNSpaces());
-                     for (int i = 0; i < self -> GetNSpaces(); i++) 
+                     for (int i = 0; i < self -> GetNSpaces(); i++)
+                       embeddings[i] = self->EmbeddingOperator(i);                       
+                       /*
                        embeddings[i]= py::cast(make_shared<Embedding> (self->GetNDof(), self->GetRange(i),
                                                                        self->IsComplex()));
+                       */
                      return embeddings;
                    },
                   "returns a list of embeddings for the component spaces")
 
+    .def_property_readonly("restrictions", 
+                  [](shared_ptr<CompoundFESpace> self)-> py::list
+                   { 
+                     py::list restrictions(self->GetNSpaces());
+                     for (int i = 0; i < self -> GetNSpaces(); i++)
+                       restrictions[i] = self->RestrictionOperator(i);                       
+                     return restrictions;
+                   },
+                  "returns a list of restrictions onto the component spaces")
     
     .def_property_readonly("components", 
                            [](shared_ptr<CompoundFESpace> self)
@@ -1259,6 +1271,24 @@ component : int
 
   py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>
     (m,"ProductSpaceAllSame")
+    .def(py::pickle([] (py::object pyfes)
+                    {
+                      auto fes = py::cast<shared_ptr<CompoundFESpaceAllSame>>(pyfes);
+                      auto flags = fes->GetFlags();
+                      return py::make_tuple((*fes)[0], fes->GetNSpaces(), flags, pyfes.attr("__dict__"));
+                    },
+                    [] (py::tuple state)
+                    {
+                      shared_ptr<FESpace> spc1 = state[0].cast<shared_ptr<FESpace>>();
+                      int dim = state[1].cast<int>();
+                      auto fes = make_shared<CompoundFESpaceAllSame>(spc1, dim, state[2].cast<Flags>());
+                      LocalHeap lh (1000000, "FESpace::Update-heap");
+                      fes->Update();
+                      fes->FinalizeUpdate();
+                      py::cast(fes).attr("__dict__") = state[3];
+                      return fes;
+                    }))
+    
     ;
 
   py::class_<MatrixFESpace, shared_ptr<MatrixFESpace>, CompoundFESpace>
