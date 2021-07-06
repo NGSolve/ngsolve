@@ -525,6 +525,9 @@ namespace ngla
     ///
     virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
 
+    auto SPtrA() const { return spbma; }
+    auto SPtrB() const { return spbmb; }
+    
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
 
     virtual AutoVector CreateRowVector () const override
