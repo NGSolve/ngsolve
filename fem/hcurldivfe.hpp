@@ -62,6 +62,10 @@ namespace ngfem
 
 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const = 0;    
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const = 0;
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const = 0;
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const = 0;
+
   };
   
   template <ELEMENT_TYPE ET>
@@ -106,6 +110,9 @@ namespace ngfem
 				     BareSliceMatrix<SIMD<double>> divshapes) const override { ; }
              
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override {;}
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override {;}
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override {;}
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const override {;}
   };
 
  template <typename T>
@@ -640,6 +647,64 @@ namespace ngfem
                                                    }));
          });
       
+    }
+
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> shapes) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this, &bmir, shapes](auto CODIM)
+         {
+           constexpr int DIMSPACE = DIM+CODIM.value;
+           auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+
+           shapes.AddSize(ndof*sqr(DIMSPACE), mir.Size()) = 0.0;
+           for (size_t i = 0; i < mir.Size(); i++)
+             {
+               Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE] (size_t j, auto val)
+                                                          {
+                                                            shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val.AsVector();
+                                                          }));
+             }
+         });
+    }
+    
+    virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
+                             {
+                               constexpr int DIMSPACE = DIM+CODIM.value;
+                               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+                               for (size_t i = 0; i < mir.Size(); i++)
+                                 {
+                                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> sum (SIMD<double>(0.0));
+                                   Cast() -> CalcDualShape2 (mir[i], SBLambda([&sum, coefs] (size_t j, auto val)
+                                                                              {
+                                                                                sum += coefs(j) * val;
+                                                                              }));
+                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                     values(k, i) = sum(k);
+                                 }});
+    }
+    
+    virtual void AddDualTrans (const SIMD_BaseMappedIntegrationRule& bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const override
+    {
+      Switch<4-DIM>
+        (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
+                             {
+                               constexpr int DIMSPACE = DIM+CODIM.value;
+                               auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
+                               for (size_t i = 0; i < mir.Size(); i++)
+                                 {
+                                   Mat<DIMSPACE,DIMSPACE,SIMD<double>> value;
+                                   for (size_t k = 0; k < sqr(DIMSPACE); k++)
+                                     value(k) = values(k, i);
+                                   
+                                   Cast()-> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, auto val)
+                                                                             {
+                                                                               coefs(j) += HSum(InnerProduct(val,value));
+                                                                             }));
+                                 }});
     }
 
 
