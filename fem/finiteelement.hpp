@@ -96,6 +96,8 @@ namespace ngfem
     /// pointers to the components
     // ArrayMem<const FiniteElement*,10> fea;
     FlatArray<const FiniteElement*> fea;
+    bool all_the_same{true};
+
   public:
     /// initialize with pointers to components, copy pointers
     CompoundFiniteElement (FlatArray<const FiniteElement*> afea);
