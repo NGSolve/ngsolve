@@ -128,6 +128,19 @@ def test_pickle_compoundfespace():
     errorflux = sqrt(Integrate((flux1[0]-flux2[0])*(flux1[0]-flux2[0])+(flux1[1]-flux2[1])*(flux1[1]-flux2[1]),mesh))
     assert error < 1e-14 and errorflux < 1e-14
 
+def test_pickle_allsamespace():
+    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.2))
+
+    fes1 = H1(mesh, order=1)
+
+    fes = fes1**3
+
+    gfu = GridFunction(fes)
+    gfu.Set ( (x,y,z) )
+    data = pickle.dumps(gfu)
+    gfu2 = pickle.loads(data)
+    assert Integrate(Norm(gfu - gfu2), mesh) < 1e-14
+
 @pytest.mark.parametrize("phase", [None, [-1]*10, [1J]*10])
 def test_pickle_periodic(phase):
     periodic = SplineGeometry()
