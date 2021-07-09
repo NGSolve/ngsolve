@@ -119,8 +119,11 @@ class LinearSolver(BaseMatrix):
         if self.residuals[0] != 0:
             logerrstop = log(self._final_residual)
             logerrfirst = log(self.residuals[0])
-            _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
-                                          (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
+            if residual == 0:
+                _SetThreadPercentage(100)
+            else:
+                _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
+                                              (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
         if self.printrates:
             print("\33[2K{} iteration {}, residual = {}".format(self.name, self.iterations, residual), end="\n" if isinstance(self.printrates, bool) else self.printrates)
             if self.iterations == self.maxiter and residual > self._final_residual:
