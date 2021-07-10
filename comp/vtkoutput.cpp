@@ -20,8 +20,8 @@ namespace ngcomp
                   flags.GetStringFlag("filename", "output"),
                   (int)flags.GetNumFlag("subdivision", 0),
                   (int)flags.GetNumFlag("only_element", -1),
-                  flags.GetStringFlag("floatsize", "Double"),
-                  flags.GetNumFlag("legacy", 0))
+                  flags.GetStringFlag("floatsize", "double"),
+                  flags.GetDefineFlag("legacy"))
   {
     ;
   }
@@ -30,10 +30,13 @@ namespace ngcomp
   VTKOutput<D>::VTKOutput(shared_ptr<MeshAccess> ama,
                           const Array<shared_ptr<CoefficientFunction>> &a_coefs,
                           const Array<string> &a_field_names,
-                          string a_filename, int a_subdivision, int a_only_element, string a_floatsize, int a_legacy)
+                          string a_filename, int a_subdivision, int a_only_element, 
+                          string a_floatsize, bool a_legacy)
       : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
         filename(a_filename), subdivision(a_subdivision), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy)
   {
+    if ((floatsize != "double") && (floatsize != "float") && (floatsize != "single"))
+      cout << IM(1) << "VTKOutput: floatsize is not int {\"double\",\"single\",\"float\"}. Using \"float|single\".";
     value_field.SetSize(a_coefs.Size());
     for (int i = 0; i < a_coefs.Size(); i++)
       if (fieldnames.Size() > i)
@@ -415,7 +418,7 @@ namespace ngcomp
   void VTKOutput<D>::PrintPoints(int *offset, stringstream *appenddata)
   {
     *fileout << "<Points>" << endl;
-    if (floatsize == "Double")
+    if (floatsize == "double")
     {
       *fileout << "<DataArray type=\"Float64\" Name=\"Points\" NumberOfComponents=\"" << 3 << "\" format=\"appended\" offset=\"0\">" << endl;
     }
@@ -430,7 +433,7 @@ namespace ngcomp
     stringstream data;
 
     uint32_t count = 0;
-    if (floatsize == "Double")
+    if (floatsize == "double")
     {
       for (auto p : points)
       {
@@ -593,7 +596,7 @@ namespace ngcomp
     *fileout << header << endl;
     for (auto field : value_field)
     {
-      if (floatsize == "Double")
+      if (floatsize == "double")
       {
         *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
         //      *fileout << "<DataArray type=\"Float64\" Name=\"" << field->Name() << "\" NumberOfComponents=\"" << field->Dimension() << "\" format=\"appended\" offset=\"0\">" << endl;
@@ -606,7 +609,7 @@ namespace ngcomp
       float temp2 = 0;
       for (auto v : *field)
       {
-        if (floatsize == "Double")
+        if (floatsize == "double")
         {
           temp = v;
           //fileout->write((char *)&temp, sizeof(double));
@@ -684,7 +687,7 @@ namespace ngcomp
     if (output_cnt > 0)
       filenamefinal << "_" << output_cnt;
     lastoutputname = filenamefinal.str();
-    if (legacy == 0)
+    if (!legacy)
       filenamefinal << ".vtu";
     else
       filenamefinal << ".vtk";
@@ -693,7 +696,7 @@ namespace ngcomp
     cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
     {
-      cout << IM(4) << " ( " << output_cnt << " )";
+      //cout << IM(4) << " ( " << output_cnt << " )";
       if (time == -1)
       {
         times.push_back(output_cnt);
@@ -702,7 +705,7 @@ namespace ngcomp
       {
         times.push_back(time);
       }
-      if (legacy == 0)
+      if (!legacy)
         PvdFile(filename, output_cnt);
     }
     else
@@ -733,7 +736,7 @@ namespace ngcomp
     FillReferenceHex(ref_vertices_hex, ref_hexes);
 
     // header:
-    if (legacy == 0)
+    if (!legacy)
     {
       *fileout << "<?xml version=\"1.0\"?>" << endl;
 
@@ -836,7 +839,7 @@ namespace ngcomp
         cells.Append(new_elem);
       }
     }
-    if (legacy == 0)
+    if (!legacy)
     {
       *fileout << "<Piece NumberOfPoints=\"" << points.Size() << "\" NumberOfCells=\"" << cells.Size() << "\">" << endl;
       PrintPoints(&offs, &appended);
@@ -860,7 +863,7 @@ namespace ngcomp
       PrintFieldDataLegacy();
     }
     cout << IM(4) << " Done." << endl;
-    cout << "Output Counter: " << output_cnt << endl;
+    //cout << IM(4) << " [ VTKOutput Counter: " << output_cnt << ""]" << endl;
   }
 
   NumProcVTKOutput::NumProcVTKOutput(shared_ptr<PDE> apde, const Flags &flags)

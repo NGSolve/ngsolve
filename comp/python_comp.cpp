@@ -4152,7 +4152,8 @@ deformation : ngsolve.comp.GridFunction
 
    py::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>>(m, "VTKOutput")
     .def(py::init([] (shared_ptr<MeshAccess> ma, py::list coefs_list,
-                      py::list names_list, string filename, int subdivision, int only_element, string floatsize, int legacy)
+                      py::list names_list, string filename, int subdivision, 
+                      int only_element, string floatsize, bool legacy)
          -> shared_ptr<BaseVTKOutput>
          {
            Array<shared_ptr<CoefficientFunction> > coefs
@@ -4166,14 +4167,45 @@ deformation : ngsolve.comp.GridFunction
              ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy);
            return ret;
          }),
-         py::arg("ma"),
+         py::arg("mesh"),
          py::arg("coefs")= py::list(),
          py::arg("names") = py::list(),
          py::arg("filename") = "vtkout",
          py::arg("subdivision") = 0,
          py::arg("only_element") = -1,
-         py::arg("floatsize") = "Double",
-         py::arg("legacy") = 0
+         py::arg("floatsize") = "double",
+         py::arg("legacy") = false,
+         docu_string(R"raw_string(
+VTK output class. Allows to put mesh and field information of several CoefficientFunctions into a VTK file.
+(Can be used by independent visualization software, e.g. ParaView).
+
+Parameters:
+
+mesh : 
+  mesh (Note: if a deformation is set, the output will be w.r.t. the deformed state of the mesh)
+
+coefs: list of CoefficientFunctions
+  list of CFs that are stored as fields in the Paraview output
+
+names : list of strings
+  labels for the fields that are put in the output file
+
+filename : string (default: \"output\")
+  name of the output file ( .vtu file ending is added or .vtk file ending is added (legacy mode) )  
+
+subdivision : int
+  Number of subdivision (bisections in each direction) that are applied
+  (Note that only vertex values are stored otherwise rendering the output information piecewise linear only)
+
+only_element : int
+  only work on one specific element (default: -1 which means `draw all elements`)
+
+floatsize : string in {\"single\", \"double\" }   object
+  defines the precision of the output data (default is \"double\", \"single\" can be used to reduce output)
+
+legacy : bool (default: False)
+  defines if legacy-VTK output shall be used 
+            .)raw_string")
          )
      .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb)
           { 
@@ -4182,7 +4214,23 @@ deformation : ngsolve.comp.GridFunction
           },
           py::arg("time")=-1,
           py::arg("vb")=VOL,
-          py::call_guard<py::gil_scoped_release>())
+          py::call_guard<py::gil_scoped_release>(),
+         docu_string(R"raw_string(
+Write mesh and fields to file. When called several times on the same object
+an index is added to the output file name. A meta file (.pvd) is written 
+(unless in legacy mode).
+
+Returns string of the output filename.
+
+Parameters:
+
+time : 
+  associate a time to the current output
+
+vb: VOL_or_BND (default VOL)
+  defines if output is done on the volume (VOL) or surface mesh (BND).
+            .)raw_string")          
+          )
      .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb, const BitArray * drawelems)
           { 
             self->Do(glh,time, vb, drawelems);
@@ -4191,7 +4239,26 @@ deformation : ngsolve.comp.GridFunction
           py::arg("time")=-1,
           py::arg("vb")=VOL,
           py::arg("drawelems"),
-          py::call_guard<py::gil_scoped_release>())
+          py::call_guard<py::gil_scoped_release>(),
+         docu_string(R"raw_string(
+Write mesh and fields to file. When called several times on the same object
+an index is added to the output file name. A meta file (.pvd) is written 
+(unless in legacy mode).
+
+Returns string of the output filename.
+
+Parameters:
+
+time : 
+  associate a time to the current output (default: output counter)
+
+vb: VOL_or_BND (default VOL)
+  defines if output is done on the volume (VOL) or surface mesh (BND).
+
+drawelems: BitArray
+  defines the submesh (set of elements) that are (only) used for drawing. 
+            .)raw_string")          
+          )
      ;
    
    m.def("PatchwiseSolve",
