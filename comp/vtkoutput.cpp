@@ -738,7 +738,7 @@ namespace ngcomp
 
     if (!legacy)
     { 
-      if ((comm.Size()==1 and output_cnt > 1) || (comm.Size() > 1 && comm.Rank()==0))
+      if ((comm.Size()==1 && output_cnt > 1) || (comm.Size() > 1 && comm.Rank()==0))
         PvdFile(filename, output_cnt);
     } 
 
