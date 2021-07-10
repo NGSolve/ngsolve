@@ -4167,7 +4167,7 @@ deformation : ngsolve.comp.GridFunction
              ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy);
            return ret;
          }),
-         py::arg("mesh"),
+         py::arg("ma"),
          py::arg("coefs")= py::list(),
          py::arg("names") = py::list(),
          py::arg("filename") = "vtkout",
@@ -4179,9 +4179,12 @@ deformation : ngsolve.comp.GridFunction
 VTK output class. Allows to put mesh and field information of several CoefficientFunctions into a VTK file.
 (Can be used by independent visualization software, e.g. ParaView).
 
+When run in parallel, rank 0 stores no vtk output, but writes the pvd-file that links all parallel
+output together.
+
 Parameters:
 
-mesh : 
+ma : ngsolve mesh
   mesh (Note: if a deformation is set, the output will be w.r.t. the deformed state of the mesh)
 
 coefs: list of CoefficientFunctions
@@ -4191,7 +4194,10 @@ names : list of strings
   labels for the fields that are put in the output file
 
 filename : string (default: \"output\")
-  name of the output file ( .vtu file ending is added or .vtk file ending is added (legacy mode) )  
+  name of the output file ( .vtu file ending is added or .vtk file ending is added (legacy mode) ).
+  If run in parallel, the suffix \"_procxyz\" is added (xyz a number). 
+  If output is written several times, the ending \"_stepxyz\" is added (xyz a counter). 
+  If run in parallel or the output is called several times a meta file with ending .pvd is also generated for convenience.
 
 subdivision : int
   Number of subdivision (bisections in each direction) that are applied
