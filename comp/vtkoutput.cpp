@@ -664,9 +664,27 @@ namespace ngcomp
         << "<?xml version=\"1.0\"?>" << endl;
     contents << "<VTKFile type =\"Collection\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
     contents << "<Collection>" << endl;
-    contents << "<DataSet timestep=\"" << times[0] << "\" file=\"" << fname << ".vtu\"/>" << endl;
-    for (int k = 1; k <= index; k++)
-      contents << "<DataSet timestep=\"" << times[k] << "\" file=\"" << fname << "_" << k << ".vtu\"/>" << endl;
+    auto comm = ma->GetCommunicator();
+    for (int l = comm.Size() == 1 ? 0 : 1; l < comm.Size(); l++)
+    { 
+      contents << "<DataSet timestep=\"" << times[0] << "\"";
+      if (comm.Size() > 1)
+        contents << " part=\"" << l << "\"";
+      contents << " file=\"" << fname;
+      if (comm.Size() > 1)
+        contents << "_proc" << l; 
+      contents << ".vtu\"/>" << endl;
+      for (int k = 1; k < index; k++)
+      { 
+        contents << "<DataSet timestep=\"" << times[k] << "\"";
+        if (comm.Size() > 1)
+          contents << " part=\"" << l << "\"";
+        contents << " file=\"" << fname;
+        if (comm.Size() > 1)
+          contents << "_proc" << l; 
+        contents << "_step" << setw(5) << setfill('0') << k << ".vtu\"/>" << endl;
+      } 
+    } 
     contents << "</Collection>" << endl;
     contents << "</VTKFile>";
 
@@ -684,16 +702,21 @@ namespace ngcomp
     int offs = 0;
 
     filenamefinal << filename;
+
+    auto comm = ma->GetCommunicator();
+    if (comm.Size() > 1)
+      filenamefinal << "_proc" << comm.Rank();
     if (output_cnt > 0)
-      filenamefinal << "_" << output_cnt;
+      filenamefinal << "_step" << setw(5) << setfill('0') << output_cnt;
     lastoutputname = filenamefinal.str();
     if (!legacy)
       filenamefinal << ".vtu";
     else
       filenamefinal << ".vtk";
 
-    fileout = make_shared<ofstream>(filenamefinal.str());
-    cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
+
+    if ((comm.Size() == 1) || (comm.Rank() > 0) )
+      cout << IM(4) << " Writing VTK-Output (" << lastoutputname << ")";
     if (output_cnt > 0)
     {
       //cout << IM(4) << " ( " << output_cnt << " )";
@@ -705,17 +728,27 @@ namespace ngcomp
       {
         times.push_back(time);
       }
-      if (!legacy)
-        PvdFile(filename, output_cnt);
     }
     else
     {
       if (time != -1)
         times[0] = time;
     }
-    cout << IM(4) << ":" << flush;
-
     output_cnt++;
+
+    if (!legacy)
+    { 
+      if ((comm.Size()==1 and output_cnt > 1) || (comm.Size() > 1 && comm.Rank()==0))
+        PvdFile(filename, output_cnt);
+    } 
+
+    if ((comm.Size() == 1) || (comm.Rank() > 0) )
+      cout << IM(4) << ":" << flush;
+    else
+      return;
+
+    fileout = make_shared<ofstream>(filenamefinal.str());
+
 
     ResetArrays();
 
