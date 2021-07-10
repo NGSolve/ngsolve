@@ -14,11 +14,15 @@ v = FESpace(type="hdivho",mesh=mesh, order=1, dirichlet=[1,2,3])
 
 u = GridFunction (space=v)
 
-vtk = VTKOutput(mesh=mesh,coefs=[u],names=["sol"],filename="vtkout",subdivision=3,floatsize="single",legacy=False)
+vtk = VTKOutput(mesh,coefs=[u],names=["sol"],filename="vtkout",subdivision=3,
+                floatsize="single",legacy=False)
 for i in range(13,26):
     u.vec[:]=0.0
     u.vec[i]=1.0
     outputfilename = vtk.Do(time=i/100)
-    print("VTKOutput has been generated in", outputfilename)
+
+vtk2 = VTKOutput(mesh,coefs=[u],names=["sol"],filename="another_vtkout",subdivision=3,
+                floatsize="double",legacy=False)
+vtk2.Do()                
 
 Draw (u)
