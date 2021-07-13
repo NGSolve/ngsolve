@@ -1080,7 +1080,7 @@ global system.
                          }
                        else
                          {
-                           throw Exception ("L2HighOrderFESpace::ApplyM for curved not available");
+                           // throw Exception ("L2HighOrderFESpace::ApplyM for curved not available");
 
                            SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
                            auto & mir = trafo(ir, lh);
@@ -1088,14 +1088,14 @@ global system.
                            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
                            if (rho) rho->Evaluate (mir, rhovals);
 
-                           for (int i = 0; i < melx.Height(); i++)
-                             melx.Row(i) /= diag_mass(i);
+                           // for (int i = 0; i < melx.Height(); i++)
+                           // melx.Row(i) /= diag_mass(i);
                            for (int comp = 0; comp < dimension; comp++)
                              {
                                fel.Evaluate (ir, melx.Col(comp), pntvals);
                                if (rho)
                                  for (size_t i = 0; i < ir.Size(); i++)
-                                   pntvals(i) *= ir[i].Weight() / (mir[i].GetMeasure() * rhovals(0,i));
+                                   pntvals(i) *= ir[i].Weight() * mir[i].GetMeasure() * rhovals(0,i);
                                else
                                  for (size_t i = 0; i < ir.Size(); i++)
                                    pntvals(i) *= ir[i].Weight() / mir[i].GetMeasure();
@@ -1103,8 +1103,8 @@ global system.
                                melx.Col(comp) = 0.0;
                                fel.AddTrans (ir, pntvals, melx.Col(comp));
                              }
-                           for (int i = 0; i < melx.Height(); i++)
-                             melx.Row(i) /= diag_mass(i);
+                           // for (int i = 0; i < melx.Height(); i++)
+                           // melx.Row(i) /= diag_mass(i);
                          }
                        NgProfiler::StopThreadTimer(tcalc, tid);
 
