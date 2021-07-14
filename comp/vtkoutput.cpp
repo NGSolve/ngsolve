@@ -657,7 +657,8 @@ namespace ngcomp
   {
     ostringstream filenamefinal;
     stringstream contents;
-
+    std::string fnamepart;
+    fnamepart = fname.substr(str.find_last_of("/\\")+1);
     filenamefinal << fname << ".pvd";
 
     contents
@@ -670,7 +671,7 @@ namespace ngcomp
       contents << "<DataSet timestep=\"" << times[0] << "\"";
       if (comm.Size() > 1)
         contents << " part=\"" << l << "\"";
-      contents << " file=\"" << fname;
+      contents << " file=\"" << fnamepart;
       if (comm.Size() > 1)
         contents << "_proc" << l; 
       contents << ".vtu\"/>" << endl;
@@ -679,7 +680,7 @@ namespace ngcomp
         contents << "<DataSet timestep=\"" << times[k] << "\"";
         if (comm.Size() > 1)
           contents << " part=\"" << l << "\"";
-        contents << " file=\"" << fname;
+        contents << " file=\"" << fnamepart;
         if (comm.Size() > 1)
           contents << "_proc" << l; 
         contents << "_step" << setw(5) << setfill('0') << k << ".vtu\"/>" << endl;
