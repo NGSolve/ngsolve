@@ -698,7 +698,7 @@ ANY                  1 1 1 1 | 15
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
 
-    virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace) const
+    virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const
     { throw Exception("GetTraceOperator not overloaded"); }
 
     virtual shared_ptr<BaseMatrix> ConvertL2Operator (shared_ptr<FESpace> l2space) const;

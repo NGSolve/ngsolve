@@ -1064,7 +1064,7 @@ rho : ngsolve.fem.CoefficientFunction
     .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
                                bool avg) -> shared_ptr<BaseMatrix>
           {
-            return self->GetTraceOperator(tracespace);
+            return self->GetTraceOperator(tracespace, avg);
             // return make_shared<ApplyTrace> (self, tracespace, avg, glh);             
           }, py::arg("tracespace"), py::arg("average"))
     .def ("ConvertL2Operator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> l2space)
