@@ -1147,7 +1147,7 @@ global system.
 
 
   shared_ptr<BaseMatrix> L2HighOrderFESpace ::
-  GetTraceOperator (shared_ptr<FESpace> tracespace) const
+  GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const
   {
     LocalHeap lh(1000000);
     Array<short> classnr(ma->GetNE());
@@ -1170,6 +1170,14 @@ global system.
 
     // size_t ne = ma->GetNE();
 
+    shared_ptr<VVector<double>> cnt;
+    if (avg)
+      {
+        cnt = make_shared<VVector<double>>(tracespace->GetNDof());
+        *cnt = 0;
+      }
+
+    
     for (auto elclass_inds : table)
       {
         if (elclass_inds.Size() == 0) continue;
@@ -1192,6 +1200,10 @@ global system.
             tracespace->GetDofNrs(ei, dnumsy);
             xdofs[i] = dnumsx;
             ydofs[i] = dnumsy;
+            
+            if (avg)
+              for (auto d : dnumsy)
+                (*cnt)(d) += 1;
           }
 
         auto mat = make_shared<ConstantElementByElementMatrix>
@@ -1203,6 +1215,18 @@ global system.
         else
           sum = mat;
       }
+
+    if (avg)
+      {
+        for (size_t i : Range(cnt->Size()))
+          if ( (*cnt)(i) != 0)
+            (*cnt)(i) = 1 / (*cnt)(i);
+
+        auto diag = make_shared<DiagonalMatrix<double>> (cnt);
+        sum = make_shared<ProductMatrix> (diag, sum);
+      }
+
+      
     return sum;
   }
 
