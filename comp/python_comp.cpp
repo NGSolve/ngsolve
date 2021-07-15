@@ -141,7 +141,8 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
   ExportNgcompMesh(m);
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  static size_t global_heapsize = 10000000;
+  static size_t global_heapsize =
+    (sizeof(size_t) == 8) ? 100000000 : 10000000;
   static LocalHeap glh(global_heapsize, "python-comp lh", true);
 
   class LocalHeapProvider
@@ -1063,7 +1064,7 @@ rho : ngsolve.fem.CoefficientFunction
     .def ("TraceOperator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> tracespace,
                                bool avg) -> shared_ptr<BaseMatrix>
           {
-            return self->GetTraceOperator(tracespace);
+            return self->GetTraceOperator(tracespace, avg);
             // return make_shared<ApplyTrace> (self, tracespace, avg, glh);             
           }, py::arg("tracespace"), py::arg("average"))
     .def ("ConvertL2Operator", [] (shared_ptr<FESpace> self, shared_ptr<FESpace> l2space)
