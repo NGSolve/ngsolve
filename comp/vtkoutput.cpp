@@ -658,7 +658,7 @@ namespace ngcomp
     ostringstream filenamefinal;
     stringstream contents;
     std::string fnamepart;
-    fnamepart = fname.substr(str.find_last_of("/\\")+1);
+    fnamepart = fname.substr(fname.find_last_of("/\\")+1);
     filenamefinal << fname << ".pvd";
 
     contents
