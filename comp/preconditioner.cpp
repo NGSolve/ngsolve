@@ -832,7 +832,7 @@ namespace ngcomp
     if(flags.AnyFlagDefined("blockcreator"))
       {
         blockcreator = std::any_cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(flags.GetAnyFlag("blockcreator"));
-        cout << "local pre, got blockcreator" << endl;
+        cout << IM(3) << "local pre, got blockcreator" << endl;
       }
   }
 
