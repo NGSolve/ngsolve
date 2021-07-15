@@ -226,7 +226,7 @@ namespace ngfem
     static bool first_time = true;
     if (first_time)
       {
-        cout << "WARNING: base class, assemble diag is highly inefficient" << endl;
+        // cout << "WARNING: base class, assemble diag is highly inefficient" << endl;
         first_time = false;
       }
 

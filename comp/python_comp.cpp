@@ -2849,12 +2849,12 @@ integrator : ngsolve.fem.LFI
                // if (auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(bc))
                if (py::function pyf=bc; pyf.is_cpp_function())
                  {
-                   cout << "it's a C++ function" << endl;
+                   // cout << "it's a C++ function" << endl;
                    auto func = py::cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(pyf.cpp_function());
-                   cout << "have func object, type(func) = " << typeid(func).name() << endl;
-                   cout << "type cppfunc = " << typeid(pyf.cpp_function()).name() << endl;
+                   // cout << "have func object, type(func) = " << typeid(func).name() << endl;
+                   // cout << "type cppfunc = " << typeid(pyf.cpp_function()).name() << endl;
                    typedef shared_ptr<Table<DofId>>(*callbackfunc)(const FESpace &);
-                   cout << "func-ptr = " << func.target<callbackfunc>() << endl;
+                   // cout << "func-ptr = " << func.target<callbackfunc>() << endl;
                    // cout << "function pointer " << (void*)(*func.target<callbackfunc>()) << endl;
 
                    flags.SetFlag("blockcreator", func);
