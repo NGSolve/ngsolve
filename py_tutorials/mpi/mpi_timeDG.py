@@ -61,6 +61,7 @@ if do_vtk:
     if rank==0 and not os.path.exists(output_path):
         os.mkdir(output_path)
     comm.Barrier() #wait until master has created the directory!!
+    vtk = VTKOutput(ma=mesh,coefs=[u],names=["sol"],filename=output_path+"/vtkout",subdivision=2)
 
 with TaskManager():
     while t < tend:
@@ -72,8 +73,7 @@ with TaskManager():
         t += tau
 
         if count%vtk_interval==0 and do_vtk:
-            vtk = VTKOutput(ma=mesh,coefs=[u],names=["sol"],filename=output_path+"/vtkout_p"+str(rank)+"_n"+str(int(count/vtk_interval)),subdivision=2)
-            vtk.Do()
+            vtk.Do(time=t)
         count = count+1;
 
         comm.Barrier()

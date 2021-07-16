@@ -93,7 +93,7 @@ if rank==0 and not os.path.exists(output_path):
 comm.Barrier() #wait until master has created the directory!!
 
 if do_vtk:
-    vtk = VTKOutput(ma=mesh,coefs=[velocity],names=["u"],filename=output_path+"/vtkout_p"+str(rank)+"_n0",subdivision=1)
+    vtk = VTKOutput(ma=mesh,coefs=[velocity],names=["u"],filename=output_path+"/vtkout",subdivision=2)
     vtk.Do()
 
 count = 1;
@@ -108,10 +108,7 @@ with TaskManager():
         gfu.vec.data -= tau * inv * res
 
         if count%vtk_interval==0 and do_vtk:
-            file_name = output_path+"/vtkout_p"+str(rank)+"_n"+str(int(count/vtk_interval));
-            print("rank "+str(rank)+", output to "+file_name)
-            vtk = VTKOutput(ma=mesh,coefs=[velocity],names=["u"],filename=file_name,subdivision=1)
-            vtk.Do()
+            vtk.Do(time = t)
         count = count+1;
 
         t = t + tau

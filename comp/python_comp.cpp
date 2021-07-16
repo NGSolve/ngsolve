@@ -4153,7 +4153,8 @@ deformation : ngsolve.comp.GridFunction
 
    py::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>>(m, "VTKOutput")
     .def(py::init([] (shared_ptr<MeshAccess> ma, py::list coefs_list,
-                      py::list names_list, string filename, int subdivision, int only_element)
+                      py::list names_list, string filename, int subdivision, 
+                      int only_element, string floatsize, bool legacy)
          -> shared_ptr<BaseVTKOutput>
          {
            Array<shared_ptr<CoefficientFunction> > coefs
@@ -4162,9 +4163,9 @@ deformation : ngsolve.comp.GridFunction
              = makeCArray<string> (names_list);
            shared_ptr<BaseVTKOutput> ret;
            if (ma->GetDimension() == 2)
-             ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element);
+             ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy);
            else
-             ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element);
+             ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy);
            return ret;
          }),
          py::arg("ma"),
@@ -4172,23 +4173,99 @@ deformation : ngsolve.comp.GridFunction
          py::arg("names") = py::list(),
          py::arg("filename") = "vtkout",
          py::arg("subdivision") = 0,
-         py::arg("only_element") = -1
+         py::arg("only_element") = -1,
+         py::arg("floatsize") = "double",
+         py::arg("legacy") = false,
+         docu_string(R"raw_string(
+VTK output class. Allows to put mesh and field information of several CoefficientFunctions into a VTK file.
+(Can be used by independent visualization software, e.g. ParaView).
+
+When run in parallel, rank 0 stores no vtk output, but writes the pvd-file that links all parallel
+output together.
+
+Parameters:
+
+ma : ngsolve mesh
+  mesh (Note: if a deformation is set, the output will be w.r.t. the deformed state of the mesh)
+
+coefs: list of CoefficientFunctions
+  list of CFs that are stored as fields in the Paraview output
+
+names : list of strings
+  labels for the fields that are put in the output file
+
+filename : string (default: \"output\")
+  name of the output file ( .vtu file ending is added or .vtk file ending is added (legacy mode) ).
+  If run in parallel, the suffix \"_procxyz\" is added (xyz a number). 
+  If output is written several times, the ending \"_stepxyz\" is added (xyz a counter). 
+  If run in parallel or the output is called several times a meta file with ending .pvd is also generated for convenience.
+
+subdivision : int
+  Number of subdivision (bisections in each direction) that are applied
+  (Note that only vertex values are stored otherwise rendering the output information piecewise linear only)
+
+only_element : int
+  only work on one specific element (default: -1 which means `draw all elements`)
+
+floatsize : string in {\"single\", \"double\" }   object
+  defines the precision of the output data (default is \"double\", \"single\" can be used to reduce output)
+
+legacy : bool (default: False)
+  defines if legacy-VTK output shall be used 
+            .)raw_string")
          )
-     .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb)
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb)
           { 
-            self->Do(glh,vb);
+            self->Do(glh,time, vb);
             return self->lastoutputname;
           },
+          py::arg("time")=-1,
           py::arg("vb")=VOL,
-          py::call_guard<py::gil_scoped_release>())
-     .def("Do", [](shared_ptr<BaseVTKOutput> self, VorB vb, const BitArray * drawelems)
+          py::call_guard<py::gil_scoped_release>(),
+         docu_string(R"raw_string(
+Write mesh and fields to file. When called several times on the same object
+an index is added to the output file name. A meta file (.pvd) is written 
+(unless in legacy mode).
+
+Returns string of the output filename.
+
+Parameters:
+
+time : 
+  associate a time to the current output
+
+vb: VOL_or_BND (default VOL)
+  defines if output is done on the volume (VOL) or surface mesh (BND).
+            .)raw_string")          
+          )
+     .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb, const BitArray * drawelems)
           { 
-            self->Do(glh, vb, drawelems);
+            self->Do(glh,time, vb, drawelems);
             return self->lastoutputname;
           },
+          py::arg("time")=-1,
           py::arg("vb")=VOL,
           py::arg("drawelems"),
-          py::call_guard<py::gil_scoped_release>())
+          py::call_guard<py::gil_scoped_release>(),
+         docu_string(R"raw_string(
+Write mesh and fields to file. When called several times on the same object
+an index is added to the output file name. A meta file (.pvd) is written 
+(unless in legacy mode).
+
+Returns string of the output filename.
+
+Parameters:
+
+time : 
+  associate a time to the current output (default: output counter)
+
+vb: VOL_or_BND (default VOL)
+  defines if output is done on the volume (VOL) or surface mesh (BND).
+
+drawelems: BitArray
+  defines the submesh (set of elements) that are (only) used for drawing. 
+            .)raw_string")          
+          )
      ;
    
    m.def("PatchwiseSolve",
