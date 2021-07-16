@@ -85,5 +85,5 @@ if do_vtk:
         os.mkdir(output_path)
     comm.Barrier() #wait until master has created the directory!!
 
-    vtk = VTKOutput(ma=mesh, coefs=[u], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
+    vtk = VTKOutput(mesh, coefs=[u], names=["sol"], filename=output_path+"/vtkout", subdivision=2)
     vtk.Do()

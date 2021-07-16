@@ -81,7 +81,7 @@ if do_vtk:
     if rank==0 and not os.path.exists(output_path):
         os.mkdir(output_path)
     comm.Barrier() #wait until master has created the directory!!
-    vtk = VTKOutput(ma=mesh, coefs=[u.Deriv()], names=["sol"], filename=output_path+"/vtkout_p"+str(rank), subdivision=2)
+    vtk = VTKOutput(ma=mesh, coefs=[u.Deriv()], names=["sol"], filename=output_path+"/vtkout", subdivision=2)
     vtk.Do()
 
 #Draw (u.Deriv(), mesh, "B-field", draw_surf=False)
