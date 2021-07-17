@@ -130,7 +130,7 @@ namespace ngla
 
   template<class TM>
   PardisoInverseTM<TM> :: 
-  PardisoInverseTM (const SparseMatrixTM<TM> & a, 
+  PardisoInverseTM (shared_ptr<const SparseMatrixTM<TM>> a,
 		    shared_ptr<BitArray> ainner,
 		    shared_ptr<const Array<int>> acluster,
 		    int asymmetric)
@@ -167,8 +167,8 @@ namespace ngla
     if (inner && cluster)
       throw Exception("PardisoInverse: Cannot use inner and cluster");
 
-    if ( (inner && inner->Size() < a.Height()) ||
-	 (cluster && cluster->Size() < a.Height() ) )
+    if ( (inner && inner->Size() < a->Height()) ||
+	 (cluster && cluster->Size() < a->Height() ) )
       {
 	cout << "PardisoInverse: Size of inner/cluster does not match matrix size!" << endl;
 	throw Exception("Invalid parameters inner/cluster. Thrown by PardisoInverse.");
@@ -182,10 +182,10 @@ namespace ngla
 
 
     entrysize = mat_traits<TM>::HEIGHT; 
-    height = a.Height() * entrysize;
+    height = a->Height() * entrysize;
 
-    *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
-    spd = ( a.GetInverseType() == PARDISOSPD ) ? 1 : 0;
+    *testout << "matrix.InverseTpye = " <<  a->GetInverseType() << endl;
+    spd = ( a->GetInverseType() == PARDISOSPD ) ? 1 : 0;
 
     integer maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error = 0;
     integer * params = const_cast <integer*> (&hparams[0]);
@@ -234,11 +234,11 @@ namespace ngla
     SetMatrixType();
 
     if (inner)
-      GetPardisoMatrix (a, SubsetFree (*inner));
+      GetPardisoMatrix (*a, SubsetFree (*inner));
     else if (cluster)
-      GetPardisoMatrix (a, SubsetCluster (*cluster));
+      GetPardisoMatrix (*a, SubsetCluster (*cluster));
     else
-      GetPardisoMatrix (a, SubsetAll());
+      GetPardisoMatrix (*a, SubsetAll());
 
     nze = rowstart[compressed_height];
 

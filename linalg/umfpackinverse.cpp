@@ -62,7 +62,7 @@ namespace ngla
 
   template<class TM>
   UmfpackInverseTM<TM> ::
-  UmfpackInverseTM (const SparseMatrixTM<TM> & a,
+  UmfpackInverseTM (shared_ptr<const SparseMatrixTM<TM>> a,
 		    shared_ptr<BitArray> ainner,
 		    shared_ptr<const Array<int>> acluster,
 		    int asymmetric)
@@ -80,8 +80,8 @@ namespace ngla
     if (inner && cluster)
       throw Exception("UmfpackInverse: Cannot use inner and cluster");
 
-    if ( (inner && inner->Size() < a.Height()) ||
-	 (cluster && cluster->Size() < a.Height() ) )
+    if ( (inner && inner->Size() < a->Height()) ||
+	 (cluster && cluster->Size() < a->Height() ) )
       {
 	cout << "UmfpackInverse: Size of inner/cluster does not match matrix size!" << endl;
 	throw Exception("Invalid parameters inner/cluster. Thrown by UmfpackInverse.");
@@ -95,16 +95,16 @@ namespace ngla
 
 
     entrysize = mat_traits<TM>::HEIGHT;
-    height = a.Height() * entrysize;
+    height = a->Height() * entrysize;
 
-    *testout << "matrix.InverseTpye = " <<  a.GetInverseType() << endl;
+    *testout << "matrix.InverseTpye = " <<  a->GetInverseType() << endl;
 
     if (inner)
-      GetUmfpackMatrix (a, SubsetFree (*inner));
+      GetUmfpackMatrix (*a, SubsetFree (*inner));
     else if (cluster)
-      GetUmfpackMatrix (a, SubsetCluster (*cluster));
+      GetUmfpackMatrix (*a, SubsetCluster (*cluster));
     else
-      GetUmfpackMatrix (a, SubsetAll());
+      GetUmfpackMatrix (*a, SubsetAll());
 
     nze = rowstart[compressed_height];
 
@@ -561,7 +561,7 @@ namespace ngla
   {
     cout << IM(3) << "call umfpack update..." << flush;
 
-    auto castmatrix = dynamic_pointer_cast<SparseMatrix<TM>>(matrix.lock());
+    auto castmatrix = dynamic_pointer_cast<const SparseMatrix<TM>>(matrix.lock());
 
     if (inner)
       GetUmfpackMatrix (*castmatrix, SubsetFree (*inner));

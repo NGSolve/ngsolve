@@ -28,7 +28,12 @@ namespace ngla
 
   // ngstd::BlockAllocator CliqueEl :: ball(sizeof (CliqueEl));
 
-
+  void MDOVertex::DoArchive(Archive& ar)
+  {
+    ar & master & nextminion & numminions & numcliques & eliminated
+      & used & flag & nconnected;
+    ar.Do(connected, nconnected);
+  }
   
   MinimumDegreeOrdering :: MinimumDegreeOrdering (int an)
     :  n(an), 
@@ -57,7 +62,47 @@ namespace ngla
                       });
   }
 
-
+  void MinimumDegreeOrdering::DoArchive(Archive & ar)
+  {
+    ar & n & nused & order & blocknr & vertices & priqueue;
+    if(ar.Output())
+      {
+        ar << cliques.Size();
+        for(auto clique : cliques)
+          ar << clique->vnr << clique->eliminate << clique->Flag();
+        for(auto clique : cliques)
+          if(clique)
+            {
+              ar << cliques.Pos(clique->next);
+              ar << cliques.Pos(clique->nextcl);
+              ar << cliques.Pos(clique->clmaster);
+            }
+      }
+    else
+      {
+        size_t clique_size;
+        ar & clique_size;
+        cliques.SetSize(clique_size);
+        for(auto i : Range(clique_size))
+          {
+            int vnr;
+            bool flag, eliminate;
+            ar & vnr & eliminate & flag;
+            cliques[i] = new(ball) CliqueEl(vnr);
+            cliques[i]->SetFlag(flag);
+            cliques[i]->eliminate = eliminate;
+          }
+        for(auto clique : cliques)
+          if(clique)
+            {
+              size_t next, nextcl, clmaster;
+              ar & next & nextcl & clmaster;
+              clique->next = cliques[next];
+              clique->nextcl = cliques[nextcl];
+              clique->clmaster = cliques[clmaster];
+            }
+      }
+  }
 
   void MinimumDegreeOrdering :: AddEdge (int v1, int v2)
   {
@@ -736,6 +781,11 @@ namespace ngla
   MDOPriorityQueue :: ~MDOPriorityQueue ()
   {
     ;
+  }
+
+  void MDOPriorityQueue::DoArchive(Archive &ar)
+  {
+    ar & list & first_in_class;
   }
 
   int MDOPriorityQueue :: MinDegree () const

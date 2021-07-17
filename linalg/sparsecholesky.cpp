@@ -115,14 +115,26 @@ namespace ngla
 
 
 
+  void SparseFactorization::DoArchive(Archive& ar)
+  {
+    ar & inner & smooth_is_projection;
+    if(ar.Output())
+      ar << const_pointer_cast<Array<int>>(cluster);
+    else
+      {
+        shared_ptr<Array<int>> cl;
+        ar & cl;
+        cluster = cl;
+      }
+  }
 
   template <class TM>
   SparseCholeskyTM<TM> :: 
-  SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
+  SparseCholeskyTM (shared_ptr<const SparseMatrixTM<TM>> a,
                     shared_ptr<BitArray> ainner,
                     shared_ptr<const Array<int>> acluster,
                     bool allow_refactor)
-    : SparseFactorization (a, ainner, acluster), mat(a)
+    : SparseFactorization (a, ainner, acluster)
   { 
     static Timer t("SparseCholesky - total");
     static Timer ta("SparseCholesky - allocate");
@@ -144,9 +156,9 @@ namespace ngla
 
     // (*testout) << "matrix = " << a << endl;
     // (*testout) << "diag a = ";
-    // for ( int i=0; i<a.Height(); i++ ) (*testout) << i << ", " << a(i,i) << endl;
+    // for ( int i=0; i<a->Height(); i++ ) (*testout) << i << ", " << a(i,i) << endl;
 
-    int n = a.Height();
+    int n = a->Height();
     height = n;
 
     int printstat = 0;
@@ -175,9 +187,9 @@ namespace ngla
     
     if (!inner && !cluster)
       for (int i = 0; i < n; i++)
-	for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+	for (int j = 0; j < a->GetRowIndices(i).Size(); j++)
 	  {
-	    int col = a.GetRowIndices(i)[j];
+	    int col = a->GetRowIndices(i)[j];
 	    if (col <= i)
 	      mdo->AddEdge (i, col);
 	  }
@@ -186,14 +198,14 @@ namespace ngla
       {
         for (int i = 0; i < n; i++)
           if (inner->Test(i))
-            for (auto col : a.GetRowIndices(i))
+            for (auto col : a->GetRowIndices(i))
               if (col <= i)
                 if (inner->Test(col)) //  || i==col)
                   mdo->AddEdge (i, col);
             /*
-            for (int j = 0; j < a.GetRowIndices(i).Size(); j++)
+            for (int j = 0; j < a->GetRowIndices(i).Size(); j++)
               {
-                int col = a.GetRowIndices(i)[j];
+                int col = a->GetRowIndices(i)[j];
                 if (col <= i)
                 if (inner->Test(col)) //  || i==col)
                 mdo->AddEdge (i, col);
@@ -204,7 +216,7 @@ namespace ngla
     else 
       for (int i = 0; i < n; i++)
 	{
-	  FlatArray<int> row = a.GetRowIndices(i);
+	  FlatArray<int> row = a->GetRowIndices(i);
 	  for (int j = 0; j < row.Size(); j++)
 	    {
 	      int col = row[j];
@@ -217,7 +229,7 @@ namespace ngla
     
     /*
     for (int i = 0; i < n; i++)
-      if (a.GetPositionTest (i,i) == numeric_limits<size_t>::max())
+      if (a->GetPositionTest (i,i) == numeric_limits<size_t>::max())
 	{
 	  mdo->AddEdge (i, i);
 	  *testout << "add unsused position " << i << endl;
@@ -263,7 +275,7 @@ namespace ngla
 	     << double (endtime - starttime) / CLOCKS_PER_SEC << " secs" << endl;
     
     starttime = endtime;
-    FactorNew(a);
+    FactorNew(*a);
     /*
 #ifdef LAPACK
     if (a.IsSPD())
@@ -526,9 +538,16 @@ namespace ngla
     }
   }
   
-
-
-
+  template<typename TM>
+  void SparseCholeskyTM<TM>::DoArchive(Archive& ar)
+  {
+    SparseFactorization::DoArchive(ar);
+    ar & height & nused & nze & order & inv_order & lfact
+      & firstinrow & diag & rowindex2 & firstinrow_ri &
+      blocknrs & blocks & block_dependency & microtasks
+      & micro_dependency & micro_dependency_trans & mdo
+      & maxrow;
+  }
 
   template <class TM>
   void SparseCholeskyTM<TM> :: 
@@ -2004,7 +2023,7 @@ namespace ngla
     static Timer t("SparseCholesky::Smooth");
     RegionTimer reg(t);
 
-    if (dynamic_cast<const SparseMatrixSymmetric<TM,TV>*> (&(this->mat)))
+    if(dynamic_pointer_cast<const SparseMatrixSymmetric<TM,TV>>(this->matrix.lock()))
       {
         // use the original one ...
         SparseFactorization::Smooth(u,f,y);
@@ -2015,7 +2034,10 @@ namespace ngla
     FlatVector<TVX> fy = y.FV<TVX> ();
     
     Vector<TVX> hy(this->nused);
-    auto & hmat = dynamic_cast<const SparseMatrix<TM,TV,TV>&> (this->mat);
+    auto spmat = dynamic_pointer_cast<const SparseMatrix<TM,TV,TV>> (this->matrix.lock());
+    if(!spmat)
+      throw Exception("A matrix not available any more, needed for Smooth!");
+    auto & hmat = *spmat;
     
     ParallelFor (this->nused, [&] (int i)
                  {
@@ -2035,10 +2057,10 @@ namespace ngla
 
 
   SparseFactorization ::     
-  SparseFactorization (const BaseSparseMatrix & amatrix,
+  SparseFactorization (shared_ptr<const BaseSparseMatrix> amatrix,
 		       shared_ptr<BitArray> ainner,
 		       shared_ptr<const Array<int>> acluster)
-    : matrix(const_cast<BaseSparseMatrix&>(amatrix).SharedFromThis<BaseSparseMatrix>()),
+    : matrix(amatrix),
       inner(ainner), cluster(acluster)
   { 
     smooth_is_projection = true;
@@ -2209,6 +2231,9 @@ namespace ngla
 
 
 
+
+  static RegisterClassForArchive<SparseCholesky<double>, SparseCholeskyTM<double>> regscd;
+  static RegisterClassForArchive<SparseCholesky<Complex>, SparseCholeskyTM<Complex>> regscc;
 
 
   template class SparseCholesky<double>;

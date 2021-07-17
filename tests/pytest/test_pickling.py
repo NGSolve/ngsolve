@@ -256,6 +256,22 @@ def test_pickle_CoefficientFunctions():
     np.allclose(lcfs[29](mp), compiled_vals)
     np.allclose(lcfs[30](mp), compiled_vals)
 
+def test_pickle_sparsecholesky():
+    mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))
+    fes = H1(mesh, order=2, dirichlet=".*")
+    u,v = fes.TnT()
+    a = BilinearForm(grad(u) * grad(v) * dx).Assemble()
+    f = LinearForm(v * dx).Assemble()
+    inv = a.mat.Inverse(fes.FreeDofs(), inverse="sparsecholesky")
+    u = GridFunction(fes)
+    u2 = GridFunction(fes)
+    data = pickle.dumps(inv)
+    inv2 = pickle.loads(data)
+    u.vec.data = inv * f.vec
+    u2.vec.data = inv2 * f.vec - u.vec
+    assert Norm(u2.vec) < 1e-16
+
+
 if __name__ == "__main__":
     test_pickle_volume_fespaces()
     test_pickle_surface_fespaces()
