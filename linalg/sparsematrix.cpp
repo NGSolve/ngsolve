@@ -1921,14 +1921,14 @@ namespace ngla
     else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
         if(is_pardiso_available)
-          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), subset, nullptr, 1);
         else
           throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {
 #ifdef USE_UMFPACK
-	return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (*this, subset, nullptr, 1);
+	return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), subset, nullptr, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
 #endif
@@ -1942,7 +1942,7 @@ namespace ngla
 #endif
       }
     else
-      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, subset);
+      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), subset);
   }
 
   template <class TM, class TV>
@@ -1962,14 +1962,14 @@ namespace ngla
     else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
       {
         if(is_pardiso_available)
-          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
+          return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), nullptr, clusters, 1);
         else
           throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
       }
     else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
       {
 #ifdef USE_UMFPACK
-	return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters, 1);
+	return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), nullptr, clusters, 1);
 #else
 	throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
 #endif
@@ -1983,7 +1983,7 @@ namespace ngla
 #endif
       }
     else
-      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
+      return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), nullptr, clusters);
   }
 
 

@@ -121,7 +121,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ///
-    PardisoInverseTM (const SparseMatrixTM<TM> & a, 
+    PardisoInverseTM (shared_ptr<const SparseMatrixTM<TM>> a,
 		      shared_ptr<BitArray> ainner = nullptr,
 		      shared_ptr<const Array<int>> acluster = nullptr,
 		      int symmetric = 0);
@@ -168,7 +168,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ///
-    PardisoInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a, 
+    PardisoInverse (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> a,
 		    shared_ptr<BitArray> ainner = nullptr,
 		    shared_ptr<const Array<int>> acluster = nullptr,
 		    int symmetric = 0)
