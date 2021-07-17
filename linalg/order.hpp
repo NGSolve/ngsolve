@@ -20,12 +20,17 @@ namespace ngla
   {
     struct entry { 
       int degree, prev, next;
+      void DoArchive(Archive& ar) { ar & degree & prev & next; }
     };
     Array<entry> list;
     Array<int> first_in_class;
   public:
     MDOPriorityQueue (int size, int maxdeg);
+    MDOPriorityQueue () {}
     ~MDOPriorityQueue ();
+
+    void DoArchive(Archive& ar);
+
     int MinDegree () const;
     int GetDegree (int nr) const { return list[nr].degree; }
     void SetDegree (int nr, int deg);
@@ -69,6 +74,8 @@ namespace ngla
     MDOVertex(int ma)  { Init (ma); }
     ///
     ~MDOVertex()   { ; }
+
+    void DoArchive(Archive& ar);
 
     /// 
     void Init (int ma)
@@ -152,7 +159,11 @@ namespace ngla
   public:
     ///
     MinimumDegreeOrdering (int an);
-    ///
+    /// for archive
+    MinimumDegreeOrdering() : ball(sizeof(CliqueEl), 1000) {}
+
+    void DoArchive(Archive& archive);
+
     void AddEdge (int v1, int v2);
     ///
     void PrintCliques ();

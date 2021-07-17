@@ -52,7 +52,7 @@ namespace ngla
   public:
 
     ///
-    UmfpackInverseTM (const SparseMatrixTM<TM> & a,
+    UmfpackInverseTM (shared_ptr<const SparseMatrixTM<TM>> a,
 		      shared_ptr<BitArray> ainner = nullptr,
 		      shared_ptr<const Array<int>> acluster = nullptr,
 		      int symmetric = 0);
@@ -99,7 +99,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ///
-    UmfpackInverse (const SparseMatrix<TM,TV_ROW,TV_COL> & a,
+    UmfpackInverse (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> a,
 		    shared_ptr<BitArray> ainner = nullptr,
 		    shared_ptr<const Array<int>> acluster = nullptr,
 		    int symmetric = 0)
