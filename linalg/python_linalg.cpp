@@ -1334,8 +1334,12 @@ inverse : string
          "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
     ;
 
-  py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d");
-  py::class_<SparseCholesky<Complex>, shared_ptr<SparseCholesky<Complex>>, SparseFactorization> (m, "SparseCholesky_c");
+  py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d")
+    .def(NGSPickle<SparseCholesky<double>>())
+    ;
+  py::class_<SparseCholesky<Complex>, shared_ptr<SparseCholesky<Complex>>, SparseFactorization> (m, "SparseCholesky_c")
+    .def(NGSPickle<SparseCholesky<Complex>>())
+    ;
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
     .def(py::init<shared_ptr<BitArray>,bool>(),

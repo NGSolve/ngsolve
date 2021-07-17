@@ -17,15 +17,18 @@ namespace ngla
   class NGS_DLL_HEADER SparseFactorization : public BaseMatrix
   { 
   protected:
-    weak_ptr<BaseSparseMatrix> matrix;
+    weak_ptr<const BaseSparseMatrix> matrix;
     shared_ptr<BitArray> inner;
     shared_ptr<const Array<int>> cluster;
     bool smooth_is_projection;
 
   public:
-    SparseFactorization (const BaseSparseMatrix & amatrix,
+    SparseFactorization (shared_ptr<const BaseSparseMatrix> amatrix,
 			 shared_ptr<BitArray> ainner,
 			 shared_ptr<const Array<int>> acluster);
+    SparseFactorization() {}
+
+    void DoArchive(Archive& ar) override;
 
     virtual bool IsComplex() const override { return matrix.lock()->IsComplex(); }
 
@@ -108,6 +111,10 @@ namespace ngla
       BT type;
       int bblock;
       int nbblocks;
+      void DoArchive(Archive& ar)
+      {
+        ar & blocknr & type & bblock & nbblocks;
+      }
     };
   protected:
     
@@ -123,26 +130,29 @@ namespace ngla
     int maxrow;
 
     // the original matrix
-    const SparseMatrixTM<TM> & mat;
+    // const SparseMatrixTM<TM> & mat;
 
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL_MAT;
 
     ///
-    SparseCholeskyTM (const SparseMatrixTM<TM> & a, 
-                                     shared_ptr<BitArray> ainner = nullptr,
-                                     shared_ptr<const Array<int>> acluster = nullptr,
-                                     bool allow_refactor = 0);
+    SparseCholeskyTM (shared_ptr<const SparseMatrixTM<TM>> a,
+                      shared_ptr<BitArray> ainner = nullptr,
+                      shared_ptr<const Array<int>> acluster = nullptr,
+                      bool allow_refactor = 0);
+    SparseCholeskyTM() {}
     ///
     virtual ~SparseCholeskyTM ();
     ///
-    int VHeight() const { return height; }
+    int VHeight() const override { return height; }
     ///
-    int VWidth() const { return height; }
+    int VWidth() const override { return height; }
     ///
     void Allocate (const Array<int> & aorder, 
 		   const Array<MDOVertex> & vertices,
 		   const int * blocknr);
+
+    void DoArchive(Archive& ar) override;
     ///
     void Factor (); 
 #ifdef LAPACK
@@ -151,11 +161,11 @@ namespace ngla
     void FactorSPD1 (T dummy); 
 #endif
 
-    virtual bool SupportsUpdate() const { return true; }     
-    virtual void Update()
+    virtual bool SupportsUpdate() const override { return true; }
+    virtual void Update() override
     {
       // FactorNew (dynamic_cast<const SparseMatrix<TM>&> (*matrix.lock().get()));
-      auto castmatrix = dynamic_pointer_cast<SparseMatrix<TM>>(matrix.lock());
+      auto castmatrix = dynamic_pointer_cast<const SparseMatrix<TM>>(matrix.lock());
       FactorNew (*castmatrix);
     }
     ///
@@ -170,14 +180,14 @@ namespace ngla
     **/
     // virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
     ///
-    virtual ostream & Print (ostream & ost) const;
+    virtual ostream & Print (ostream & ost) const override;
 
-    virtual Array<MemoryUsage> GetMemoryUsage () const
+    virtual Array<MemoryUsage> GetMemoryUsage () const override
     {
       return { MemoryUsage ("SparseChol", nze*sizeof(TM), 1) };
     }
 
-    virtual size_t NZE () const { return nze; }
+    virtual size_t NZE () const override { return nze; }
     ///
     void Set (int i, int j, const TM & val);
     ///
@@ -235,11 +245,12 @@ namespace ngla
     typedef typename mat_traits<TV_ROW>::TSCAL TSCAL_VEC;
 
     
-    SparseCholesky (const SparseMatrixTM<TM> & a, 
+    SparseCholesky (shared_ptr<const SparseMatrixTM<TM>> a,
 		    shared_ptr<BitArray> ainner = nullptr,
 		    shared_ptr<const Array<int>> acluster = nullptr,
 		    bool allow_refactor = 0)
       : SparseCholeskyTM<TM> (a, ainner, acluster, allow_refactor) { ; }
+    SparseCholesky() {}
 
     ///
     virtual ~SparseCholesky () { ; }
