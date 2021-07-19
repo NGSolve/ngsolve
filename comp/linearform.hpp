@@ -14,6 +14,10 @@ namespace ngcomp
       Linearform
   */
 
+
+  
+
+  
   class NGS_DLL_HEADER LinearForm : public NGS_Object
   {
   protected:
@@ -22,7 +26,7 @@ namespace ngcomp
     ///
     Array<shared_ptr<LinearFormIntegrator>> parts;
     Array<shared_ptr<LinearFormIntegrator>> VB_parts[4];
-    Array<shared_ptr<PointEvaluationFunctional>> pnteval;
+    Array<shared_ptr<class PointEvaluationFunctional>> pnteval;
     /// do the integration on independent meshes
     bool independent;
     /// print the assembled vector to testout
@@ -238,6 +242,21 @@ namespace ngcomp
   extern NGS_DLL_HEADER shared_ptr<LinearForm> CreateLinearForm (shared_ptr<FESpace> space,
                                                                  const string & name,
                                                                  const Flags & flags);
+
+
+  class PointEvaluationFunctional
+  {
+  public:
+    shared_ptr<CoefficientFunction> cf;
+    Vector<> point;
+  public:
+    PointEvaluationFunctional (shared_ptr<CoefficientFunction> acf,
+                               Vector<> apoint)
+      : cf(acf), point(apoint) { }
+    
+    SparseVector Assemble() const;
+  };
+  
 
 }
 

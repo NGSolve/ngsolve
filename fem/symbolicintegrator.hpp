@@ -1009,16 +1009,6 @@ public:
   };
   
 
-class PointEvaluationFunctional
-{
-public:
-  shared_ptr<CoefficientFunction> cf;
-  Vector<> point;
-public:
-  PointEvaluationFunctional (shared_ptr<CoefficientFunction> acf,
-                             Vector<> apoint)
-    : cf(acf), point(apoint) { }
-};
 
 
 }
