@@ -657,6 +657,16 @@ complex : bool
         return m;
       });
 
+
+    py::class_<SparseVector> (m, "SparseVector")
+      .def(py::init( [] (int n) { return new SparseVector(n); }))
+      .def("__str__", &ToString<SparseVector>)
+      .def("__setitem__", [](SparseVector & self, size_t i, double v) { self[i] = v; })
+      .def("__getitem__", [](SparseVector & self, size_t i) { return self[i]; })
+      .def("InnerProduct", &SparseVector::InnerProduct)
+      ;
+      
+
     
     m.def("InnerProduct",
              [] (py::object x, py::object y, py::kwargs kw) -> py::object
