@@ -853,4 +853,77 @@ namespace ngcomp
   template class T_LinearForm<Complex>;
 
   // template class T_LinearForm< Vec<3> >;
+
+
+
+  
+  SparseVector PointEvaluationFunctional :: Assemble() const
+  {
+    typedef double SCAL;  // only real for the moment ...
+    
+    LocalHeap lh(10000);
+    shared_ptr<FESpace> fespace;
+    shared_ptr<MeshAccess> ma;
+    
+    cf->TraverseTree
+      ([&] (CoefficientFunction& cf)
+       {
+         if (auto * proxy = dynamic_cast<ProxyFunction*> (&cf))
+           {
+             fespace = proxy->GetFESpace();
+             ma = fespace->GetMeshAccess();
+           }
+       });
+
+    if (!fespace)
+      throw Exception("PointFunctional does not have Testfunction");
+    
+    SparseVector sv(fespace->GetNDof());
+    
+
+    
+    IntegrationPoint ip;
+    auto elnr = ma->FindElementOfPoint(point, ip, false);
+
+    ElementId ei(VOL, elnr);
+    auto & trafo = ma->GetTrafo(ei, lh);
+    auto & fel = fespace->GetFE(ei, lh);
+    Array<int> dnums(fel.GetNDof(), lh);
+    fespace->GetDofNrs(ei, dnums);
+    
+    IntegrationRule ir (1, &ip);
+    auto & mir = trafo(ir, lh);
+    
+    cf->TraverseTree
+      ([&] (CoefficientFunction& cfi)
+       {
+         if (auto * proxy = dynamic_cast<ProxyFunction*> (&cfi))
+           {
+             FlatVector<SCAL> elvec(dnums.Size()*fespace->GetDimension(), lh);
+             FlatMatrix<SCAL> values(1, 1, lh);
+             ProxyUserData ud;
+             const_cast<ElementTransformation&>(trafo).userdata = &ud;
+             
+             elvec = 0;
+             
+             FlatMatrix<SCAL> proxyvalues(1, proxy->Dimension(), lh);
+             for (int k = 0; k < proxy->Dimension(); k++)
+               {
+                 ud.testfunction = proxy;
+                 ud.test_comp = k;
+                 
+                 cf -> Evaluate (mir, values);
+                 proxyvalues(0,k) = values(0,0);
+               }
+             proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec, lh);
+             
+             // AddElementVector (dnums, elvec);
+             for (size_t i = 0; i < dnums.Size(); i++)
+               sv[dnums[i]] = elvec[i];
+           }
+       });
+    
+    return sv;
+  }
+  
 }

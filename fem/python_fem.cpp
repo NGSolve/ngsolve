@@ -835,7 +835,7 @@ val : can be one of the following:
              pnt = Vector<>{ x, y.value_or(0) };
            else
              pnt = Vector<>{ x };
-           return make_shared<PointEvaluationFunctional>(self, pnt);
+           return make_shared<ngcomp::PointEvaluationFunctional>(self, pnt);
          }, py::arg("x"), py::arg("y")=nullopt, py::arg("z")=nullopt)
     .def_property_readonly("dim",
          [] (CF& self) { return self.Dimension(); } ,
@@ -1399,7 +1399,9 @@ maxiter: int
   py::implicitly_convertible<py::list, CoefficientFunction>();
 
   
-  py::class_<PointEvaluationFunctional, shared_ptr<PointEvaluationFunctional>> (m, "PointEvaluationFunctional");
+  py::class_<ngcomp::PointEvaluationFunctional, shared_ptr<ngcomp::PointEvaluationFunctional>> (m, "PointEvaluationFunctional")
+    .def("Assemble", &ngcomp::PointEvaluationFunctional::Assemble)
+    ;
 
   
   if(have_numpy)
