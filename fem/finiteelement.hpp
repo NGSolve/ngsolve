@@ -126,12 +126,46 @@ namespace ngfem
       for (auto pfel : fea)
         const_cast<FiniteElement*>(pfel) -> SetVertexNumbers(vnums);
     }
-    
+
+    virtual void Interpolate (const ElementTransformation & trafo,
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const override;
+
+    virtual void Print (ostream & ost) const override;
+  };
+
+  class NGS_DLL_HEADER VectorFiniteElement : public FiniteElement
+  {
+  protected:
+    /// pointers to the components
+    // ArrayMem<const FiniteElement*,10> fea;
+    const FiniteElement& scalar_fe;
+    const int dim;
+
+  public:
+
+    VectorFiniteElement (const FiniteElement& ascalar_fe, int adim);
+
+    HD virtual ELEMENT_TYPE ElementType() const override { return scalar_fe.ElementType(); }
+    /// number of components
+    int GetNComponents() const { return dim; }
+
+    /// select i-th component
+    const FiniteElement & operator[] (int i) const { return scalar_fe; }
+
+    /// dof range of comp-th component
+    IntRange GetRange (int comp) const;
+
+    /// the name of the element family
+    virtual string ClassName() const override { return "VectorFiniteElement"; }
+
+    virtual void SetVertexNumbers (FlatArray<int> vnums) override;
+
     virtual void Print (ostream & ost) const override;
 
-    virtual void Interpolate (const ElementTransformation & trafo, 
+    virtual void Interpolate (const ElementTransformation & trafo,
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
-                              LocalHeap & lh) const override; 
+                              LocalHeap & lh) const override;
   };
 
   // a pair of 2 elements
