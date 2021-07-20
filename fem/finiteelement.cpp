@@ -103,8 +103,7 @@ namespace ngfem
                                              const CoefficientFunction & func, SliceMatrix<> coefs,
                                              LocalHeap & lh) const
   {
-    // test not working correctly, only causes tests to fail
-    // if (all_the_same)
+    if (all_the_same)
       {
         size_t ndof = fea[0]->GetNDof();
         size_t dim = fea.Size();
@@ -126,10 +125,8 @@ namespace ngfem
           for (int j = 0; j < temp.Height(); j++, ii++)
             coefs(ii,0) = temp(j,i);
       }
-    /*
     else
       throw Exception("Interpolation only implemented for a compound of identical elements.");
-    */
 
     //  TODO: For this to work, one might need to split func into appropriate pieces
     //   (components, slicing) which are then given to the sub-elements for
