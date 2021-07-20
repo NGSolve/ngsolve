@@ -2115,7 +2115,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat = 0.0;
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       for (int i = 0; i < DIM_ELEMENT; i++)
@@ -2133,7 +2133,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
 
       size_t ndofi = feli.GetNDof();
@@ -2165,7 +2165,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       // RegionTracer rt(TaskManager::GetThreadId(), t);
 
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2197,7 +2197,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       // RegionTracer rt(TaskManager::GetThreadId(), t);
 
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2231,7 +2231,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -2243,7 +2243,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -2272,7 +2272,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
+      auto & bfel = static_cast<const VectorFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
 
       int ndofi = feli.GetNDof();
@@ -2290,7 +2290,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
 
       size_t ndofi = feli.GetNDof();
@@ -2323,7 +2323,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
       y.AddSize(3,mir.Size()) = SIMD<double>(0.0);
@@ -2349,7 +2349,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2392,7 +2392,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
+      auto & bfel = static_cast<const VectorFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
 
       int ndofi = feli.GetNDof();
@@ -2442,7 +2442,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
 
       size_t ndofi = feli.GetNDof();
@@ -2473,7 +2473,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2507,7 +2507,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_SPACE,DIM_SPACE>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2583,7 +2583,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat = 0.0;
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       for (int i = 0; i < DIM_SPACE; i++)
@@ -2600,7 +2600,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2632,7 +2632,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2657,7 +2657,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2700,7 +2700,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
+      auto & bfel = static_cast<const VectorFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
       mat = 0;
 
@@ -2724,7 +2724,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
       y.AddSize(3,mir.Size()) = SIMD<double>(0.0);
@@ -2750,7 +2750,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<3,3>&> (bmir);
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       size_t ndofi = feli.GetNDof();
 
@@ -2785,7 +2785,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      auto & bfel = static_cast<const CompoundFiniteElement&> (fel);
+      auto & bfel = static_cast<const VectorFiniteElement&> (fel);
       mat = 0.0;
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
       for (int i = 0; i < 2; i++)
@@ -2891,6 +2891,10 @@ One can evaluate the vector-valued function, and one can take the gradient.
       additional_evaluators.Set("dual", evaluator[VOL]);
     }
 
+  FiniteElement & VectorL2FESpace ::GetFE (ElementId ei, Allocator & alloc) const
+  {
+    return *new (alloc) VectorFiniteElement (spaces[0]->GetFE(ei, alloc), spaces.Size());
+  }
 
   void VectorL2FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
@@ -3055,7 +3059,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
       (*this, VOL, lh,
        [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
        {
-         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & fel = static_cast<const VectorFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
 
@@ -3182,7 +3186,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
       (*this, VOL, lh,
        [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
        {
-         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & fel = static_cast<const VectorFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
 
@@ -3261,7 +3265,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
       (*this, VOL, lh,
        [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
        {
-         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & fel = static_cast<const VectorFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
 
@@ -3350,7 +3354,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
       (*this, VOL, lh,
        [&rho, &vec, def,this] (FESpace::Element el, LocalHeap & lh)
        {
-         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & fel = static_cast<const VectorFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
 
@@ -3438,7 +3442,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
       (*this, VOL, lh,
        [&rho, &vec, def,this] (FESpace::Element el, LocalHeap & lh)
        {
-         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & fel = static_cast<const VectorFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
 
@@ -3525,7 +3529,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
       (*this, VOL, lh,
        [&rho, &vec,this] (FESpace::Element el, LocalHeap & lh)
        {
-         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & fel = static_cast<const VectorFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
 
@@ -3664,6 +3668,11 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     // additional_evaluators.Set("dual", evaluator[VOL]);
   }
 
+  FiniteElement & TangentialSurfaceL2FESpace ::GetFE (ElementId ei, Allocator & alloc) const
+  {
+    return *new (alloc) VectorFiniteElement (spaces[0]->GetFE(ei, alloc), spaces.Size());
+  }
+
 
   void TangentialSurfaceL2FESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
@@ -3700,7 +3709,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     // IterateElements (*this, BND, lh,
     for (auto el : Elements(BND))
       {
-        auto & cfel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+        auto & cfel = static_cast<const VectorFiniteElement&>(el.GetFE());
         auto & fel = static_cast<const BaseScalarFiniteElement&>(cfel[0]);
         // auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
         const ElementTransformation & trafo = el.GetTrafo();
@@ -3811,7 +3820,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       (*this, BND, lh,
        [&rho, &vec, def, this] (FESpace::Element el, LocalHeap & lh)
        {
-         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & fel = static_cast<const VectorFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
 
@@ -3938,7 +3947,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       (*this, BND, lh,
        [&rho, &vec, def,this] (FESpace::Element el, LocalHeap & lh)
        {
-         auto & fel = static_cast<const CompoundFiniteElement&>(el.GetFE());
+         auto & fel = static_cast<const VectorFiniteElement&>(el.GetFE());
          auto & feli = static_cast<const BaseScalarFiniteElement&>(fel[0]);
          const ElementTransformation & trafo = el.GetTrafo();
 

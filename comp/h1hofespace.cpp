@@ -155,7 +155,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat = 0.0;
       for (int i = 0; i < DIM_SPACE; i++)
         {
@@ -2187,7 +2187,7 @@ into the wirebasket.
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & bmat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & fel_u = static_cast<const ScalarFiniteElement<DIM_SPACE>&> (fel[0]);
       
       int order = fel_u.Order();
@@ -2390,6 +2390,11 @@ into the wirebasket.
           break;
         }
     }
+
+  FiniteElement & VectorH1FESpace :: GetFE (ElementId ei, Allocator & alloc) const
+  {
+    return *new (alloc) VectorFiniteElement (spaces[0]->GetFE(ei, alloc), spaces.Size());
+  }
 
   DocInfo VectorH1FESpace :: GetDocu ()
   {
