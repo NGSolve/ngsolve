@@ -1303,6 +1303,10 @@ ANY                  1 1 1 1 | 15
                             bool checkflags = false);
     virtual string GetClassName () const override;
 
+    virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override {
+      return *new (alloc) VectorFiniteElement (spaces[0]->GetFE(ei, alloc), spaces.Size());
+    }
+
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
     {
       return spaces[0]->GetDualShapeNodes(vb);
@@ -1364,7 +1368,11 @@ ANY                  1 1 1 1 | 15
     {
       return "Vector"+ (*this)[0]->GetClassName();
     }
-    
+
+    FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override {
+        return *new (alloc) VectorFiniteElement (spaces[0]->GetFE(ei, alloc), spaces.Size());
+    }
+
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override
     {
       return spaces[0]->GetDualShapeNodes(vb);

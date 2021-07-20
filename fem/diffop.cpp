@@ -833,7 +833,7 @@ namespace ngfem
               SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
 
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();
@@ -849,7 +849,7 @@ namespace ngfem
               const SIMD_BaseMappedIntegrationRule & mir,
               BareSliceMatrix<SIMD<double>> bmat) const
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel);
     auto & feli = fel[0]; 
 
     size_t ndi = feli.GetNDof();
@@ -882,7 +882,7 @@ namespace ngfem
          FlatVector<double> flux,
          LocalHeap & lh) const
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();    
 
@@ -897,7 +897,7 @@ namespace ngfem
          BareSliceVector<double> x, 
          BareSliceMatrix<SIMD<double>> flux) const
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();    
 
@@ -913,7 +913,7 @@ namespace ngfem
               BareSliceVector<double> x, 
               LocalHeap & lh) const
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();    
 
@@ -928,7 +928,7 @@ namespace ngfem
               BareSliceVector<Complex> x, 
               LocalHeap & lh) const
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();    
 
@@ -943,7 +943,7 @@ namespace ngfem
             BareSliceMatrix<SIMD<double>> flux,
             BareSliceVector<double> x) const
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();
     
@@ -957,7 +957,7 @@ namespace ngfem
             BareSliceMatrix<SIMD<Complex>> flux,
             BareSliceVector<Complex> x) const
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();
     
@@ -1007,7 +1007,7 @@ namespace ngfem
               SliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
-    auto & fel = static_cast<const CompoundFiniteElement&> (bfel)[0];
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
 
     size_t ndi = fel.GetNDof();
     size_t dimi = 1;  // diffop->Dim();

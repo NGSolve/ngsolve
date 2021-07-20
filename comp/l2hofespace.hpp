@@ -228,6 +228,8 @@ namespace ngcomp
   public:
     VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
 
+    FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
+
     static DocInfo GetDocu ();
     
     void GetDofNrs (ElementId ei, Array<int> & dnums) const override;
@@ -285,6 +287,8 @@ namespace ngcomp
     bool piola;
   public:
     TangentialSurfaceL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
+
+    FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
     static DocInfo GetDocu ();
     
