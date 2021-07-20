@@ -122,7 +122,7 @@
       : ApplyMass(afes, arho, false, adef, alh)
     {
       auto & fe = fes->GetFE(ElementId(VOL, 0), alh);
-      auto & cfe = static_cast<const CompoundFiniteElement&>(fe);
+      auto & cfe = static_cast<const VectorFiniteElement&>(fe);
       auto & cfei = static_cast<const BaseScalarFiniteElement&>(cfe[0]);
       
       diag_mass = Vector<double>(cfei.GetNDof());

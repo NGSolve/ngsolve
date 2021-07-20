@@ -103,8 +103,7 @@ namespace ngfem
                                              const CoefficientFunction & func, SliceMatrix<> coefs,
                                              LocalHeap & lh) const
   {
-    // test not working correctly, only causes tests to fail
-    // if (all_the_same)
+    if (all_the_same)
       {
         size_t ndof = fea[0]->GetNDof();
         size_t dim = fea.Size();
@@ -126,10 +125,8 @@ namespace ngfem
           for (int j = 0; j < temp.Height(); j++, ii++)
             coefs(ii,0) = temp(j,i);
       }
-    /*
     else
       throw Exception("Interpolation only implemented for a compound of identical elements.");
-    */
 
     //  TODO: For this to work, one might need to split func into appropriate pieces
     //   (components, slicing) which are then given to the sub-elements for
@@ -141,6 +138,46 @@ namespace ngfem
     //   (IRs do not have a comparison operator).
   }
 
+
+  VectorFiniteElement :: VectorFiniteElement (const FiniteElement& ascalar_fe, int adim)
+    : FiniteElement{ascalar_fe.GetNDof() * adim, ascalar_fe.Order()},
+        scalar_fe{ascalar_fe}, dim{adim} {}
+
+  IntRange VectorFiniteElement :: GetRange (int comp) const
+  {
+    int base = scalar_fe.GetNDof() * comp;
+    return IntRange (base, base + scalar_fe.GetNDof());
+  }
+
+  void VectorFiniteElement :: SetVertexNumbers (FlatArray<int> vnums)
+  {
+    const_cast<FiniteElement&>(scalar_fe).SetVertexNumbers(vnums);
+  }
+
+  void VectorFiniteElement :: Interpolate (const ElementTransformation & trafo,
+                                             const CoefficientFunction & func, SliceMatrix<> coefs,
+                                             LocalHeap & lh) const
+  {
+        // Boils down to restricting the present implementation to compounds of scalar elements only.
+        if (dim != func.Dimension())
+          throw Exception("Dimensions do not match.");
+
+        size_t sndof = scalar_fe.GetNDof();
+        STACK_ARRAY(double, mem, sndof * dim);
+        FlatMatrix temp(sndof, static_cast<const size_t>(dim), &mem[0]);
+        scalar_fe.Interpolate (trafo, func, temp, lh);
+
+        // now we need to transpose, not sure if we stay with that
+        for (int i = 0, ii=0; i < temp.Width(); i++)
+          for (int j = 0; j < temp.Height(); j++, ii++)
+            coefs(ii,0) = temp(j,i);
+  }
+
+  void VectorFiniteElement :: Print (ostream & ost) const
+  {
+    ost << "VectorFiniteElement of dimension " << to_string(dim)  << endl;
+    scalar_fe.Print(ost);
+  }
 
 
   SymMatrixFiniteElement :: SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim, bool adeviatoric)

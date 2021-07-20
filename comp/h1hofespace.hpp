@@ -136,6 +136,8 @@ namespace ngcomp
     VectorH1FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                      bool checkflags = false);
 
+    FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
+
     static DocInfo GetDocu ();
 
     virtual void SetOrder (ELEMENT_TYPE et, TORDER order) override;

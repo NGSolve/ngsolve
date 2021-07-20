@@ -3779,13 +3779,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FiniteElement & MatrixFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
+    const FiniteElement &fe0 = spaces[0]->GetFE(ei, alloc);
     if (!symmetric)
-      return CompoundFESpace :: GetFE(ei, alloc);
+      return *new (alloc) VectorFiniteElement(fe0, static_cast<int>(spaces.Size()));
     else
-      {
-        const FiniteElement & fe0 = spaces[0]->GetFE(ei, alloc);
-        return *new (alloc) SymMatrixFiniteElement(fe0, vdim, deviatoric);
-      }
+      return *new (alloc) SymMatrixFiniteElement(fe0, vdim, deviatoric);
   }
 
 
