@@ -1295,8 +1295,8 @@ wait : bool
               + string(py::str(startingpoint))
               + " to a CoefficientFunction");
         },
-        py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-8,
-        py::arg("rtol") = 0.0, py::arg("maxiter") = 10, docu_string(R"raw_string(
+        py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-6,
+        py::arg("rtol") = 0.0, py::arg("maxiter") = 20, docu_string(R"raw_string(
 Creates a CoefficientFunction that returns the solution to a minimization problem.
 Convergence failure is indicated by returning NaN(s).
 
@@ -1368,7 +1368,7 @@ maxiter: int
               + string(py::str(startingpoint))
               + " to a CoefficientFunction");
       },
-      py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-8,
+      py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-6,
       py::arg("rtol") = 0.0, py::arg("maxiter") = 10, docu_string(R"raw_string(
 Creates a CoefficientFunction that returns the solution to a nonlinear problem.
 Convergence failure is indicated by returning NaN(s).
