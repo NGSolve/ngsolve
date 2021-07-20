@@ -2040,7 +2040,7 @@ namespace ngfem
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
 
       y.AddSize(1, mir.Size()) = SIMD<double>(0.0);
@@ -2058,7 +2058,7 @@ namespace ngfem
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
 
       ArrayMem<SIMD<double>,100> mem(DIM_SPC*mir.Size());
@@ -2124,7 +2124,7 @@ namespace ngfem
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
 
       y.AddSize(1, mir.Size()) = SIMD<double>(0.0);
@@ -2142,7 +2142,7 @@ namespace ngfem
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
 
       ArrayMem<SIMD<double>,100> mem(DIM_SPC*mir.Size());
