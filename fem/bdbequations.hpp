@@ -1750,7 +1750,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat = 0.0;
       for (int i = 0; i < DIM_SPC; i++)
         {
@@ -1763,7 +1763,7 @@ namespace ngfem
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat.AddSize(DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
       for (int i = 0; i < DIM_SPC; i++)
         {
@@ -1776,7 +1776,7 @@ namespace ngfem
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -1788,7 +1788,7 @@ namespace ngfem
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -1827,7 +1827,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
 
       HeapReset hr(lh);
@@ -1842,7 +1842,7 @@ namespace ngfem
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> bmat)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       /*
       mat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size()) = 0.0;
       for (int i = 0; i < DIM_SPC; i++)
@@ -1874,7 +1874,7 @@ namespace ngfem
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -1886,7 +1886,7 @@ namespace ngfem
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -1921,7 +1921,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
 
       HeapReset hr(lh);
@@ -1937,7 +1937,7 @@ namespace ngfem
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> bmat)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       auto mat = bmat.AddSize(DIM_SPC*DIM_SPC*bfel.GetNDof(), mir.Size());
       mat = 0.0;      
@@ -1959,7 +1959,7 @@ namespace ngfem
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -1971,7 +1971,7 @@ namespace ngfem
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -2007,7 +2007,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
       
       mat = 0.0;
@@ -2024,7 +2024,7 @@ namespace ngfem
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> bmat)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       
       auto mat = bmat.AddSize(bfel.GetNDof(), mir.Size());
@@ -2090,7 +2090,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
       
       mat = 0.0;
@@ -2107,7 +2107,7 @@ namespace ngfem
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> bmat)
     {
-      auto & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       
       auto mat = bmat.AddSize(bfel.GetNDof(), mir.Size());

@@ -249,7 +249,7 @@ namespace ngcomp
       this->iscurved = true;
 
       auto & bfel = deform->GetFESpace()->GetFE(ei, lh);
-      auto cfel = dynamic_cast<CompoundFiniteElement*> (&bfel);
+      auto cfel = dynamic_cast<VectorFiniteElement*> (&bfel);
       if (cfel) // VectorH1
         {
           fel = dynamic_cast<const ScalarFiniteElement<DIMS>*> (&(*cfel)[0]);
