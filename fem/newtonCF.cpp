@@ -8,9 +8,26 @@
 #include <fem.hpp>
 #include <ngstd.hpp>
 
+
+namespace std {
+    
+// iterator traits: for compatibility with the std c++ iterator library
+// This is only a workaround for presently missing bits in netgen's array.hpp.
+template<typename T>
+struct iterator_traits<ngcore::ArrayRangeIterator<T>> {
+  using difference_type = T;
+  using value_type = T;
+  using pointer_type = void;
+  using reference = T;
+  using iterator_category = input_iterator_tag;
+};
+
+}
+
 namespace ngfem {
 
 namespace {
+
 template <typename T> auto LInfNorm(const T &array) -> auto {
   using number_t = remove_reference_t<remove_cv_t<decltype(*(array.Data()))>>;
   number_t s = 0;
@@ -35,6 +52,23 @@ int proxy_dof_dimension(const ProxyFunction *proxy) {
     return vsemb->Width();
   else
     return proxy->Dimension();
+}
+
+template<typename vec_t>
+bool converged(const vec_t &vec, double tol, double res_0 = 0, double rtol = 0) {
+  const double res = LInfNorm(vec);
+  return res <= tol || (res_0 > 0 && (res / res_0) <= rtol);
+}
+
+template<typename vec_t, typename res_blocks_t>
+bool all_converged(const vec_t &vec_blocks, double tol,
+                   const res_blocks_t &res_0_blocks, double rtol) {
+  auto block_range = Range(vec_blocks);
+  return std::all_of(begin(block_range), end(block_range),
+                     [=](const auto &block) {
+                       return converged(vec_blocks[block].AsVector(),
+                                        tol, res_0_blocks[block], rtol);
+                     });
 }
 
 } // namespace
@@ -64,7 +98,7 @@ class NewtonCF : public CoefficientFunction {
 
   // Same parameters as for scipy's newton
   // Alternatively, could one think of ParameterCFs here?
-  double tol{1e-8};
+  double tol{1e-6};
   double rtol{0.0};
   int maxiter{10};
 
@@ -285,12 +319,13 @@ public:
     // Prepare data structures for blocks
     const auto nblocks = proxies.Size();
     FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
-    FlatArray<FlatMatrix<double>> w_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> xold_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> val_blocks(nblocks, lh);
     FlatArray<FlatMatrix<AutoDiff<1, double>>> dval_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> deriv_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> res_blocks(nblocks, lh);
+    FlatArray<double> res_0_blocks(nblocks, lh);
+    FlatArray<double> res_0_qp(mir.Size(), lh);
     FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks, lh);
 
     // These are only "independent" for blocks having "vsemb"; otherwise just
@@ -298,11 +333,13 @@ public:
     FlatArray<FlatMatrix<double>> rhs_blocks(nblocks, lh);
     FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks, lh);
 
+    res_0_blocks = 0;
+    res_0_qp = 0;
+
     for (int i : Range(nblocks)) {
       const auto proxy = proxies[i];
       xk_blocks[i].Assign(ud.GetMemory(proxy));
       xold_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
-      w_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       val_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       dval_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       deriv_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
@@ -337,18 +374,6 @@ public:
     FlatVector<> rhs(numeric_dim, lh);
     FlatVector<> sol(numeric_dim, lh);
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
-
-    const auto converged = [&](const auto &rhs_vec, double res_0 = 0) {
-      const auto res = LInfNorm(rhs_vec);
-      return res <= tol || (res_0 > 0 && (res / res_0) <= rtol);
-    };
-
-    const auto all_converged = [&](const auto &rhs_blocks, double res_0 = 0) {
-      return std::all_of(begin(rhs_blocks), end(rhs_blocks),
-                         [=](const auto &block) {
-                           return converged(block.AsVector(), res_0);
-                         });
-    };
 
     const auto distribute_vec_to_blocks = [&](const auto &src,
                                               auto &dest) -> void {
@@ -464,7 +489,7 @@ public:
           offset1 += rhsb.Size();
         }
 
-        if (converged(rhs)) {
+        if (converged(rhs, tol, res_0_qp[qi], rtol)) {
           w.Row(qi) = 0;
           continue;
         }
@@ -532,27 +557,36 @@ public:
 
     calc_residuals();
 
-    //    cout << "(pre) rhs blocks: " << rhs_blocks;
+    for (auto block : Range(nblocks))
+      res_0_blocks[block] = LInfNorm(rhs_blocks[block].AsVector());
 
+    for (auto qi : Range(mir.Size()))
+      for (auto block : Range(nblocks))
+        res_0_qp[qi] = max(LInfNorm(rhs_blocks[block].Row(qi)), res_0_qp[qi]);
+
+//  cout << "(pre) rhs blocks: " << rhs_blocks;
+
+    bool success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
     for (int step : Range(maxiter)) {
-      if (all_converged(rhs_blocks))
+      if (success)
         break;
 
       calc_linearizations();
       compute_increments();
 
       xk -= w;
-      // cout << "xk: " << xk << endl;
+//    cout << "xk: " << xk << endl;
       distribute_vec_to_blocks(xk, xk_blocks);
       calc_residuals();
-      //      cout << "\nstep: " << step << "\n"
-      //           << "rhs blocks: " << rhs_blocks;
+      success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
+//    cout << "\nstep: " << step << "\n"
+//         << "rhs blocks: " << rhs_blocks;
     }
 
-    //    cout << "rhs blocks (final): " << rhs_blocks;
-    // cout << "xk (final): " << xk << endl;
+//     cout << "rhs blocks (final): " << rhs_blocks;
+//     cout << "xk (final): " << xk << endl;
 
-    if (!all_converged(rhs_blocks))
+    if (!success)
       xk = numeric_limits<double>::quiet_NaN();
 
     // cout << "result = " << xk << endl;
@@ -578,9 +612,9 @@ class MinimizationCF : public CoefficientFunction {
 
   // Same parameters as for scipy's newton
   // Alternatively, could one think of ParameterCFs here?
-  double tol{1e-8};
+  double tol{1e-6};
   double rtol{0.0};
-  int maxiter{10};
+  int maxiter{20};
 
 public:
   MinimizationCF(shared_ptr<CoefficientFunction> aexpression,
@@ -769,10 +803,11 @@ public:
     // Prepare data structures for blocks
     const auto nblocks = proxies.Size();
     FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
-    FlatArray<FlatMatrix<double>> w_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> xold_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> diags_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> res_blocks(nblocks, lh);
+    FlatArray<double> res_0_blocks(nblocks, lh);
+    FlatArray<double> res_0_qp(mir.Size(), lh);
     FlatArray<FlatTensor<3>> lin_blocks(nblocks * nblocks, lh);
 
     // These are only "independent" for blocks having "vsemb"; otherwise just
@@ -780,11 +815,13 @@ public:
     FlatArray<FlatMatrix<double>> rhs_blocks(nblocks, lh);
     FlatArray<FlatTensor<3>> lhs_blocks(nblocks * nblocks, lh);
 
+    res_0_blocks = 0;
+    res_0_qp = 0;
+
     for (int i : Range(nblocks)) {
       const auto proxy = proxies[i];
       xk_blocks[i].Assign(ud.GetMemory(proxy));
       xold_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
-      w_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       diags_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
       res_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
 
@@ -817,18 +854,6 @@ public:
     FlatVector<> rhs(numeric_dim, lh);
     FlatVector<> sol(numeric_dim, lh);
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
-
-    const auto converged = [&](const auto &rhs_vec, double res_0 = 0) {
-      const auto res = LInfNorm(rhs_vec);
-      return res <= tol || (res_0 > 0 && (res / res_0) <= rtol);
-    };
-
-    const auto all_converged = [&](const auto &rhs_blocks, double res_0 = 0) {
-      return std::all_of(begin(rhs_blocks), end(rhs_blocks),
-                         [=](const auto &block) {
-                           return converged(block.AsVector(), res_0);
-                         });
-    };
 
     const auto distribute_vec_to_blocks = [&](const auto &src,
                                               auto &dest) -> void {
@@ -983,7 +1008,7 @@ public:
           offset1 += rhsb.Size();
         }
 
-        if (converged(rhs)) {
+        if (converged(rhs, tol, res_0_qp[qi], rtol)) {
           w.Row(qi) = 0;
           continue;
         }
@@ -1012,10 +1037,12 @@ public:
       }
     };
 
-    const auto linesearch = [&](auto &ud) -> void {
+    const auto linesearch = [&]() -> bool {
       xold = xk;// linesearch
       double alpha = 1;
+      double alpha_min = 1e-10;
       double newenergy = energy + 1;
+      double energy_eps = 1e-10;
 
       auto proxy = proxies[0];
       ud.trialfunction = proxy;
@@ -1024,7 +1051,8 @@ public:
       ud.test_comp = 0;
 
       // cout << "w = " << endl << w << endl;
-      while (newenergy > energy && alpha > 1e-10) {
+      double energy_limit = energy + energy_eps * abs(energy);
+      while (newenergy > energy_limit && alpha > alpha_min) {
         xk = xold - alpha * w;
         distribute_vec_to_blocks(xk, xk_blocks);
 
@@ -1037,6 +1065,8 @@ public:
         // cout << "alpha = " << alpha << ", newen = " << newenergy << endl;
         alpha /= 2;
       }
+
+      return !(newenergy > energy_limit);
     };
 
     const auto merge_xk_blocks = [&]() -> void {
@@ -1068,14 +1098,26 @@ public:
     // The actual algorithm
 //    cout << "\n" << "start newton loop" << "\n";
     calc_energy_rhs_and_diags();
-    for (int step = 0; step < maxiter; step++) {
-      if (all_converged(rhs_blocks))
+
+    for (auto block : Range(nblocks))
+      res_0_blocks[block] = LInfNorm(rhs_blocks[block].AsVector());
+
+    for (auto qi : Range(mir.Size()))
+      for (auto block : Range(nblocks))
+        res_0_qp[qi] = max(LInfNorm(rhs_blocks[block].Row(qi)), res_0_qp[qi]);
+
+
+    bool success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
+    for (int step : Range(maxiter)) {
+      if (success)
         break;
 
       calc_off_diagonals();
       compute_newton_step();
-      linesearch(ud);
+      if (!linesearch())
+        break;
       calc_energy_rhs_and_diags();
+      success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
 //      cout << "newton step " << step + 1 << endl;
     }
 
@@ -1084,7 +1126,7 @@ public:
 //
 //    cout << "MinimizationCF done" << "\n\n";
 
-    if (!all_converged(rhs_blocks))
+    if (!success)
       xk = numeric_limits<double>::quiet_NaN();
 
     // cout << "result = " << xk << endl;
