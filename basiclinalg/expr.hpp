@@ -323,6 +323,8 @@ namespace ngbla
     size_t Height() const { return Spec().T::Height(); }
     size_t Width() const { return Spec().T::Width(); }
 
+    auto Shape() const { return std::tuple(Height(), Width()); }
+
     // INLINE auto operator() (int i) const -> decltype (this->Spec()(i)) { return this->Spec()(i); }
     // INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }
 

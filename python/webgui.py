@@ -128,6 +128,9 @@ timer2list = ngs.Timer("timer2 - make list")
 timer3list = ngs.Timer("timer3 - make list")
 timer4 = ngs.Timer("func")
 
+timer3multnumpy = ngs.Timer("timer3 mul numpy")
+timer3multngs = ngs.Timer("timer3 mul ngs")
+
     
 def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None, region=True):
     timer.Start()
@@ -305,14 +308,34 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         timer3minmax.Start()
         funcmin = np.min(pmat[:,3])
         funcmax = np.max(pmat[:,3])
+        timer3minmax.Stop()
         pmin = np.min(pmat[:,0:3], axis=0)
         pmax = np.max(pmat[:,0:3], axis=0)
         mesh_center = (pmin+pmax)/2
         mesh_radius = np.linalg.norm(pmax-pmin)/2
-        timer3minmax.Stop()
 
+        timer3minmax.Start()
+        funcmin,funcmax = ngs.Vector(pmat[:,3]).MinMax()
+        timer3minmax.Stop()
+        
+        
         pmat = pmat.reshape(-1, len(ir_trig), 4)
+
+        timer3multnumpy.Start()
+        # want to replace numpy mult
         BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
+        timer3multnumpy.Stop()
+
+        if True:
+          BezierPnts = np.zeros( (len(ir_trig), pmat.shape[0], 4) )
+          ngsmat = ngs.Matrix(pmat.shape[0], pmat.shape[1])
+          for i in range(4):
+            # BezierPnts[:,:,i] =  (ngs.Matrix(pmat[:,:,i]) * iBvals_trig.T).T
+            # ngsmat = ngs.Matrix(pmat[:,:,i]) # slow 
+            np.array(ngsmat, copy=False)[:,:] = pmat[:,:,i]
+            timer3multngs.Start()
+            BezierPnts[:,:,i] =  (ngsmat * iBvals_trig.T).T   # ngs-mult
+            timer3multngs.Stop()
 
         timer3list.Start()        
         for i in range(ndtrig):
