@@ -822,8 +822,9 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                                if (auto vb = get_if<VorB>(&vb_or_reg); vb)
                                {
                                  constexpr int nt = 16;
-                                 array<size_t,nt> cnt;
-                                 TaskManager::CreateJob ([&] (TaskInfo & ti)
+                                 // array<size_t,nt> cnt;
+                                 size_t cnt[nt];
+                                 ParallelJob ([&] (TaskInfo & ti)
                                               {
                                                 size_t mycnt = 0;
                                                 auto myrange = Range(self->GetNE(*vb)).Split (ti.task_nr, ti.ntasks);
@@ -840,7 +841,7 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                                    }
 
                                  points.SetSize(totcnt);
-                                 TaskManager::CreateJob ([&] (TaskInfo & ti)
+                                 ParallelJob ([&] (TaskInfo & ti)
                                               {
                                                 size_t i = cnt[ti.task_nr];
                                                 auto myrange = Range(self->GetNE(*vb)).Split (ti.task_nr, ti.ntasks);
