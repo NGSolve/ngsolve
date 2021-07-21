@@ -332,6 +332,7 @@ void PyMatAccess( TCLASS &c )
         c.def("Width", &TMAT::Width, "Return width of matrix" );
         c.def_property_readonly("h", py::cpp_function(&TMAT::Height ), "Height of the matrix");
         c.def_property_readonly("w", py::cpp_function(&TMAT::Width ), "Width of the matrix");
+        c.def_property_readonly("shape", &TMAT::Shape, "Shape of the matrix");
         c.def_property_readonly("T", py::cpp_function([](TMAT &self) { return TNEW(Trans(self)); } ), "return transpose of matrix" );
         c.def_property_readonly("A", py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ), "Returns matrix as vector" );
         c.def("__len__", []( TMAT& self) { return self.Height();}, "Return height of matrix"  );
@@ -376,6 +377,17 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     ExportVector< FVD, VD, double>(m, "FlatVectorD")
         .def(py::init<size_t, double *>())
         .def("Range",    static_cast</* const */ FVD (FVD::*)(size_t,size_t) const> (&FVD::Range ) )
+      .def("MinMax", [](FVD vec)
+           {
+             double mi = std::numeric_limits<double>::max();
+             double ma = std::numeric_limits<double>::min();
+             for (size_t i = 0; i < vec.Size(); i++)
+               {
+                 mi = min(mi, vec[i]);
+                 ma = max(ma, vec[i]);
+               }
+             return tuple(mi,ma);
+           })
       ;
     ExportVector< FVC, VC, Complex>(m, "FlatVectorC")
         .def(py::self*=double())
@@ -435,7 +447,31 @@ complex : bool
 //        input list of values
 // )raw_string")
 //            );
-
+    
+    m.def("Vector", [] (py::buffer b)
+          {
+            // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+            
+            py::buffer_info info = b.request();
+            if (info.ndim != 1)
+              throw std::runtime_error("Vector needs buffer of dimension 1");
+            
+            if (info.format == py::format_descriptor<double>::format())
+              {
+                size_t stride = info.strides[0] / (py::ssize_t)sizeof(double);
+                SliceVector<double> sv(info.shape[0], stride, static_cast<double*>(info.ptr));
+                return py::cast(Vector<double> (sv));
+              }
+            else if (info.format == py::format_descriptor<Complex>::format())
+              {
+                size_t stride = info.strides[0] / (py::ssize_t)sizeof(Complex);
+                SliceVector<Complex> sv(info.shape[0], stride, static_cast<Complex*>(info.ptr));
+                return py::cast(Vector<Complex> (sv));
+              }
+            else
+              throw std::runtime_error("only double or Complex vectors from py::buffer supported");
+          });
+          
     m.def("Vector", [] (const std::vector<double> & values)
       {
         Vector<double> v(values.size());
