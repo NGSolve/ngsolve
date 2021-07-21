@@ -119,6 +119,7 @@ class WebGLScene(BaseWebGuiScene):
 bezier_trig_trafos = { }  # cache trafos for different orders
 
 timer = ngs.Timer("BuildRenderData")
+timer2map = ngs.Timer("edges map")
 timer2 = ngs.Timer("edges")
 timermult = ngs.Timer("timer2 - mult")
 timer3 = ngs.Timer("els")
@@ -225,12 +226,20 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         if region and region.VB() == vb:
             vb = region
         cf = func1 if draw_surf else func0
+        timer2map.Start()
         pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
+        timer2map.Stop()
         pmat = cf(pts)
 
         timermult.Start()
         pmat = pmat.reshape(-1, og+1, 4)
-        BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
+        if False:
+            BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
+        else:
+            BezierPnts = np.zeros( (og+1, pmat.shape[0], 4) )
+            for i in range(4):
+                ngsmat = ngs.Matrix(pmat[:,:,i]) 
+                BezierPnts[:,:,i] = iBvals * ngsmat.T
         timermult.Stop()
         
         timer2list.Start()        
@@ -324,20 +333,16 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         
         pmat = pmat.reshape(-1, len(ir_trig), 4)
 
-        timer3multnumpy.Start()
-        # want to replace numpy mult
-        BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
-        timer3multnumpy.Stop()
-
-        if True:
-          BezierPnts = np.zeros( (len(ir_trig), pmat.shape[0], 4) )
-          ngsmat = ngs.Matrix(pmat.shape[0], pmat.shape[1])
-          for i in range(4):
-            # BezierPnts[:,:,i] =  (ngs.Matrix(pmat[:,:,i]) * iBvals_trig.T).T
-            # ngsmat = ngs.Matrix(pmat[:,:,i]) # slow 
-            np.array(ngsmat, copy=False)[:,:] = pmat[:,:,i]
+        if False:
+            timer3multnumpy.Start()
+            BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
+            timer3multnumpy.Stop()
+        else:
             timer3multngs.Start()
-            BezierPnts[:,:,i] =  (ngsmat * iBvals_trig.T).T   # ngs-mult
+            BezierPnts = np.zeros( (len(ir_trig), pmat.shape[0], 4) )
+            for i in range(4):
+                ngsmat = ngs.Matrix(pmat[:,:,i]) 
+                BezierPnts[:,:,i] = iBvals_trig * ngsmat.T
             timer3multngs.Stop()
 
         timer3list.Start()        
