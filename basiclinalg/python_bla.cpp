@@ -696,6 +696,46 @@ complex : bool
 )raw_string")
            );
 
+
+    m.def("Matrix", [] (py::buffer b, bool copy)
+          {
+            // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
+            
+            py::buffer_info info = b.request();
+            if (info.ndim != 2)
+              throw std::runtime_error("Matrix needs buffer of dimension 2");
+            
+            if (info.format == py::format_descriptor<double>::format())
+              {
+                size_t sh = info.strides[0] / (py::ssize_t)sizeof(double);
+                size_t sw = info.strides[1] / (py::ssize_t)sizeof(double);                
+                DoubleSliceMatrix<double> dsm(info.shape[0], info.shape[1], sh, sw, static_cast<double*>(info.ptr));
+                if (copy)
+                  return py::cast(Matrix<double> (dsm));
+                else
+                  {
+                    throw Exception("copy=False not supported");
+                    /*
+                    auto pyvec = py::cast(sv);
+                    // py::detail::add_patient(pyvec.ptr(), b.ptr());
+                    py::detail::keep_alive_impl(pyvec, b);
+                    return pyvec;
+                    */
+                  }
+              }
+            /*
+            else if (info.format == py::format_descriptor<Complex>::format())
+              {
+                size_t stride = info.strides[0] / (py::ssize_t)sizeof(Complex);
+                SliceVector<Complex> sv(info.shape[0], stride, static_cast<Complex*>(info.ptr));
+                return py::cast(Vector<Complex> (sv));
+              }
+            */
+            else
+              throw std::runtime_error("only double matrix from py::buffer supported");
+          }, py::arg("buffer"), py::arg("copy")=true);
+    
+    
     m.def("Matrix", [] (const std::vector<std::vector<double>> & values)
       {
         Matrix<double> m(values.size(), values[0].size());
