@@ -821,9 +821,41 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
 
                                if (auto vb = get_if<VorB>(&vb_or_reg); vb)
                                {
+                                 constexpr int nt = 16;
+                                 array<size_t,nt> cnt;
+                                 ParallelJob ([&] (TaskInfo & ti)
+                                              {
+                                                size_t mycnt = 0;
+                                                auto myrange = Range(self->GetNE(*vb)).Split (ti.task_nr, ti.ntasks);
+                                                for (size_t nr : myrange)
+                                                  mycnt += rules[self->GetElType( { *vb, nr })].Size();
+                                                cnt[ti.task_nr] = mycnt;
+                                              }, nt);
+                                 size_t totcnt = 0;
+                                 for (size_t i = 0; i < nt; i++)
+                                   {
+                                     auto tmp = cnt[i];
+                                     cnt[i] = totcnt;
+                                     totcnt += tmp;
+                                   }
+
+                                 points.SetSize(totcnt);
+                                 ParallelJob ([&] (TaskInfo & ti)
+                                              {
+                                                size_t i = cnt[ti.task_nr];
+                                                auto myrange = Range(self->GetNE(*vb)).Split (ti.task_nr, ti.ntasks);
+                                                for (size_t nr : myrange)
+                                                  for(const auto& p : rules[self->GetElType( { *vb, nr })])
+                                                    points[i++] = {p(0), p(1), p(2), self, *vb, int(nr)};
+                                              }, nt);
+                                 
+                                 /*
+                                 size_t i = 0;
                                  for(auto el : self->Elements(*vb))
                                    for(const auto& p : rules[el.GetType()])
-                                     points.Append({p(0), p(1), p(2), self, *vb, int(el.Nr())});
+                                     // points.Append({p(0), p(1), p(2), self, *vb, int(el.Nr())});
+                                     points[i++] = {p(0), p(1), p(2), self, *vb, int(el.Nr())};
+                                 */
                                }
 
                                if (auto reg = get_if<Region>(&vb_or_reg); reg)

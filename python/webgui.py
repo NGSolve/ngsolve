@@ -238,8 +238,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         else:
             BezierPnts = np.zeros( (og+1, pmat.shape[0], 4) )
             for i in range(4):
-                ngsmat = ngs.Matrix(pmat[:,:,i]) 
-                BezierPnts[:,:,i] = iBvals * ngsmat.T
+                ngsmat = ngs.Matrix(pmat[:,:,i].transpose()) 
+                BezierPnts[:,:,i] = iBvals * ngsmat
         timermult.Stop()
         
         timer2list.Start()        
@@ -341,8 +341,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             timer3multngs.Start()
             BezierPnts = np.zeros( (len(ir_trig), pmat.shape[0], 4) )
             for i in range(4):
-                ngsmat = ngs.Matrix(pmat[:,:,i]) 
-                BezierPnts[:,:,i] = iBvals_trig * ngsmat.T
+                ngsmat = ngs.Matrix(pmat[:,:,i].transpose())
+                BezierPnts[:,:,i] = iBvals_trig * ngsmat
             timer3multngs.Stop()
 
         timer3list.Start()        
