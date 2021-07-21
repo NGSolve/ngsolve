@@ -323,7 +323,19 @@ void PyMatAccess( TCLASS &c )
                 py::cpp_function([](TMAT &self, const FlatVector<TSCAL> &v) { self.Diag() = v; }));
         c.def("__add__" , [](TMAT &self, TMAT &m) { return TNEW(self+m); }, py::arg("mat") );
         c.def("__sub__" , [](TMAT &self, TMAT &m) { return TNEW(self-m); }, py::arg("mat") );
-        c.def("__mul__" , [](TMAT &self, TMAT &m) { return TNEW(self*m); }, py::arg("mat") );
+        c.def("__mul__" , [](TMAT &self, TMAT &m)
+              {
+                // return TNEW(self*m);
+                TNEW res(self.Height(), m.Width());
+                if (res.Width() > 1000)
+                  ParallelForRange(res.Width(), [&](IntRange r)
+                                   {
+                                     res.Cols(r) = self*m.Cols(r);
+                                   });
+                else
+                  res = self*m;
+                return res;
+              }, py::arg("mat") );
         c.def("__mul__" , [](TMAT &self, FlatVector<TSCAL> &v) { return Vector<TSCAL>(self*v); }, py::arg("vec") );
         c.def("__mul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); }, py::arg("values") );
         c.def("__rmul__" , [](TMAT &self, TSCAL s) { return TNEW(s*self); }, py::arg("value") );
@@ -711,7 +723,21 @@ complex : bool
                 size_t sw = info.strides[1] / (py::ssize_t)sizeof(double);                
                 DoubleSliceMatrix<double> dsm(info.shape[0], info.shape[1], sh, sw, static_cast<double*>(info.ptr));
                 if (copy)
-                  return py::cast(Matrix<double> (dsm));
+                  {
+                    static Timer t("copy from doubleslice"); RegionTimer reg(t);
+                    Matrix<double> m(dsm.Height(), dsm.Width());
+                    if (dsm.Width() > 1000)
+                      {
+                        ParallelForRange (dsm.Width(), [&](auto r)
+                                          {
+                                            m.Cols(r) = dsm.Cols(r);
+                                          });
+                      }
+                    else
+                      m = dsm;
+                    // return py::cast(Matrix<double> (dsm));
+                    return py::cast(move(m));
+                  }
                 else
                   {
                     throw Exception("copy=False not supported");

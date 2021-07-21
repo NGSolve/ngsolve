@@ -492,7 +492,7 @@ namespace ngbla
     
     /// move matrix
     INLINE Matrix (Matrix && m2)
-      : FlatMatrix<T> (m2.h, m2.w, m2.data)
+      : FlatMatrix<T,ORD> (m2.h, m2.w, m2.data)
     { m2.data = nullptr; m2.w = 0; m2.h = 0; } 
 
     /// allocate and compute 
@@ -1990,11 +1990,11 @@ namespace ngbla
   {
   protected:
     /// the height
-    int h;
+    size_t h;
     /// the width
-    int w;
+    size_t w;
     /// the distance
-    int distr, distc;
+    size_t distr, distc;
     /// the data
     T * data;
   public:
@@ -2019,14 +2019,14 @@ namespace ngbla
     /// assign constant
     DoubleSliceMatrix & operator= (TSCAL s) throw()
     {
-      for (int i = 0; i < h; i++)
-        for (int j = 0; j < w; j++)
+      for (size_t i = 0; i < h; i++)
+        for (size_t j = 0; j < w; j++)
           data[i*distr+j*distc] = s;
       return *this;
     }
 
     /// access operator
-    TELEM & operator() (int i, int j) const
+    TELEM & operator() (size_t i, size_t j) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
       NETGEN_CHECK_RANGE(j, 0, Width());
@@ -2034,25 +2034,24 @@ namespace ngbla
     }
 
     /// access operator, linear access
-    TELEM & operator() (int i) const
+    TELEM & operator() (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
-    int Height () const throw() { return h; }
-    int Width () const throw() { return w; }
-    int DistRow () const { return distr; }
-    int DistCol () const { return distc; }
+    size_t Height () const throw() { return h; }
+    size_t Width () const throw() { return w; }
+    size_t DistRow () const { return distr; }
+    size_t DistCol () const { return distc; }
     T * Data () const { return data; }
 
-    /*
-    const DoubleSliceMatrix Rows (int first, int next) const
+    const DoubleSliceMatrix Rows (size_t first, size_t next) const
     {
       return DoubleSliceMatrix (next-first, w, distr, distc, data+first*distr);
     }
 
-    const DoubleSliceMatrix<T> Cols (int first, int next) const
+    const DoubleSliceMatrix<T> Cols (size_t first, size_t next) const
     {
       return DoubleSliceMatrix<T> (h, next-first, distr, distc, data+first*distc);
     }
@@ -2066,8 +2065,6 @@ namespace ngbla
     {
       return Cols(range.First(), range.Next());
     }
-    */
-
   };
 
 
