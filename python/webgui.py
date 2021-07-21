@@ -305,19 +305,22 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
 
         pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
-        timer3minmax.Start()
-        funcmin = np.min(pmat[:,3])
-        funcmax = np.max(pmat[:,3])
-        timer3minmax.Stop()
-        pmin = np.min(pmat[:,0:3], axis=0)
-        pmax = np.max(pmat[:,0:3], axis=0)
-        mesh_center = (pmin+pmax)/2
-        mesh_radius = np.linalg.norm(pmax-pmin)/2
 
-        timer3minmax.Start()
-        funcmin,funcmax = ngs.Vector(pmat[:,3]).MinMax()
-        timer3minmax.Stop()
         
+        timer3minmax.Start()
+        if False:
+            funcmin = np.min(pmat[:,3])
+            funcmax = np.max(pmat[:,3])
+            pmin = np.min(pmat[:,0:3], axis=0)
+            pmax = np.max(pmat[:,0:3], axis=0)
+        else:
+            pmima = [ngs.Vector(pmat[:,i], copy=False).MinMax() for i in range(3)]
+            pmin, pmax = [ngs.Vector(p) for p in zip(*pmima)]
+            funcmin,funcmax = ngs.Vector(pmat[:,3], copy=False).MinMax()
+        timer3minmax.Stop()
+
+        mesh_center = 0.5*(pmin+pmax)
+        mesh_radius = np.linalg.norm(pmax-pmin)/2
         
         pmat = pmat.reshape(-1, len(ir_trig), 4)
 

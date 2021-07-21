@@ -397,6 +397,18 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
     ExportVector< SVD, VD, double>(m, "SliceVectorD")
         .def("Range",    static_cast<const SVD (SVD::*)(size_t,size_t) const> (&SVD::Range ) )
+      .def("MinMax", [](SVD vec)
+           {
+             double mi = std::numeric_limits<double>::max();
+             double ma = std::numeric_limits<double>::min();
+             for (size_t i = 0; i < vec.Size(); i++)
+               {
+                 mi = min(mi, vec[i]);
+                 ma = max(ma, vec[i]);
+               }
+             return tuple(mi,ma);
+           })
+      
         ;
     ExportVector< SVC, VC, Complex>(m, "SliceVectorC")
         .def("Range",    static_cast<const SVC (SVC::*)(size_t,size_t) const> (&SVC::Range ) )
@@ -448,7 +460,7 @@ complex : bool
 // )raw_string")
 //            );
     
-    m.def("Vector", [] (py::buffer b)
+    m.def("Vector", [] (py::buffer b, bool copy)
           {
             // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html
             
@@ -460,7 +472,15 @@ complex : bool
               {
                 size_t stride = info.strides[0] / (py::ssize_t)sizeof(double);
                 SliceVector<double> sv(info.shape[0], stride, static_cast<double*>(info.ptr));
-                return py::cast(Vector<double> (sv));
+                if (copy)
+                  return py::cast(Vector<double> (sv));
+                else
+                  {
+                    auto pyvec = py::cast(sv);
+                    // py::detail::add_patient(pyvec.ptr(), b.ptr());
+                    py::detail::keep_alive_impl(pyvec, b);
+                    return pyvec;
+                  }
               }
             else if (info.format == py::format_descriptor<Complex>::format())
               {
@@ -470,7 +490,7 @@ complex : bool
               }
             else
               throw std::runtime_error("only double or Complex vectors from py::buffer supported");
-          });
+          }, py::arg("buffer"), py::arg("copy")=true);
           
     m.def("Vector", [] (const std::vector<double> & values)
       {
