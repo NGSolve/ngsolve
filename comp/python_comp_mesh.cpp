@@ -823,7 +823,7 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                                {
                                  constexpr int nt = 16;
                                  array<size_t,nt> cnt;
-                                 ParallelJob ([&] (TaskInfo & ti)
+                                 ParallelJob ([&] (TaskInfo ti)
                                               {
                                                 size_t mycnt = 0;
                                                 auto myrange = Range(self->GetNE(*vb)).Split (ti.task_nr, ti.ntasks);
@@ -840,7 +840,7 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                                    }
 
                                  points.SetSize(totcnt);
-                                 ParallelJob ([&] (TaskInfo & ti)
+                                 ParallelJob ([&] (TaskInfo ti)
                                               {
                                                 size_t i = cnt[ti.task_nr];
                                                 auto myrange = Range(self->GetNE(*vb)).Split (ti.task_nr, ti.ntasks);
