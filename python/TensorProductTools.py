@@ -165,7 +165,7 @@ def AddSurfElements2D(tpmesh,mesh1,mesh2):
             vert_loc = elx.vertices
             vert_glob = []
             for vx in vert_loc:
-                vert_glob.append(PointId((vx.nr-1)*len(ngm2.Points())+1))
+                vert_glob = [PointId((vx.nr-1)*len(ngm2.Points())+1)] + vert_glob
             tpmesh.Add(Element2D(1,vert_glob))
         els1 = ngm1.Elements1D()
         for elx in els1:
