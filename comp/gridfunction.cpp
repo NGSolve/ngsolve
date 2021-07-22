@@ -1696,7 +1696,7 @@ namespace ngcomp
       {
         const CoefficientFunction * me = this;
         bool Eulerian = diffshape->Eulerian_gridfunctions.Contains(me);
-        cout << "diff GF is " << (Eulerian ? "Eulrian" : "Lagrange") << endl;
+        //cout << "diff GF is " << (Eulerian ? "Eulrian" : "Lagrange") << endl;
         for (int i = 0; i < 4; i++)
           if (diffop[i])
             return diffop[i]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir, Eulerian);

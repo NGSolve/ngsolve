@@ -101,7 +101,7 @@ namespace ngfem
       auto bsdivdir = InnerProduct(sgrad*tang,tang);
 
       DiffShapeCF shape;
-      cout << "should add Eulerian here" << endl;
+      //cout << "should add Eulerian here" << endl;
       
       for (auto & icf : icfs)
         {
