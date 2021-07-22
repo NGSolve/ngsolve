@@ -90,6 +90,10 @@ def DomainConstantCF(values):
     return CoefficientFunction(values)
 
 
+def Deviatoric(mat):
+    return mat - 1/mat.dims[0]*Trace(mat)*Id(mat.dims[0])
+
+
 def PyId(dim):
     return CoefficientFunction( tuple( [1 if i==j else 0 for i in range(dim) for j in range(dim)]), dims=(dim,dim) )
 
