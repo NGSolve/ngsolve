@@ -21,6 +21,12 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                       int sd, bool autoscale, double min, double max,
                       bool draw_vol, bool draw_surf, bool reset, py::kwargs kwargs)
               {
+                if (name.find(" " , 0) != -1)
+                  throw Exception("In Draw: name must not contain spaces");
+
+                if (cf == nullptr)
+                  throw Exception("In Draw: invalid object to draw");
+                
                 if (reset)
                   {
                     Ng_TclCmd ("set ::visoptions.deformation 0;\n");
