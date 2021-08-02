@@ -4106,7 +4106,7 @@ namespace ngcore
   CalcHesse (Vec<DIMR,Mat<DIMS,DIMS,SIMD<double>>> & ddx) const
   {
     double eps = 1e-6;
-    LocalHeapMem<10000> lh("calchesse");
+    LocalHeapMem<2500*SIMD<double>::Size()> lh("calchesse");
     ngfem::SIMD_IntegrationRule ir(2*SIMD<double>::Size(), lh);  // number of scalar pnts
     
     for (int dir = 0; dir < DIMS; dir++)
