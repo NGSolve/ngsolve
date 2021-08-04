@@ -1059,6 +1059,7 @@ val : can be one of the following:
                return res;
            }, py::arg("exponent") )
     .def ("__pow__", [m] (shared_ptr<CF> c1, double c2) { return m.attr("pow")(c1, c2); })
+    .def ("__rpow__", [m] (shared_ptr<CF> c1, double c2) { return m.attr("pow")(c2, c1); })
     .def ("__pow__", [m] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return m.attr("pow")(c1, c2); })
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
@@ -1427,6 +1428,8 @@ maxiter: int
                                    {
                                      HeapReset hr(lh);
                                      auto& mp = pts(i);
+                                     if(mp.nr == -1)
+                                       throw Exception("Meshpoint " + to_string(i) + " not in mesh!");
                                      auto ei = ElementId(mp.vb, mp.nr);
                                      auto& trafo = mp.mesh->GetTrafo(ei, lh);
                                      ir.SetSize(0);
@@ -1455,6 +1458,8 @@ maxiter: int
                                    {
                                      HeapReset hr(lh);
                                      auto& mp = pts(i);
+                                     if(mp.nr == -1)
+                                       throw Exception("Meshpoint " + to_string(i) + " not in mesh!");
                                      auto ei = ElementId(mp.vb, mp.nr);
                                      auto& trafo = mp.mesh->GetTrafo(ei, lh);
                                      ir.SetSize(0);
