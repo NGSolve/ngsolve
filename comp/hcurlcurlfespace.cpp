@@ -723,7 +723,7 @@ namespace ngcomp
   };
   
   /// Christoffel Symbol of first kind for HCurlCurl
-  // Gamma_ijk saved in offset order k*D*D+j*D+i
+  // Gamma_ijk saved in offset order i*D*D+j*D+k
   // Christoffel Symbol of first kind is symmetric w.r.t. first two indices: Gamma_ijk=Gamma_jik
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpChristoffelHCurlCurl : public DiffOp<DiffOpChristoffelHCurlCurl<D> >
@@ -764,7 +764,7 @@ namespace ngcomp
             for (size_t l=0; l<nd_u; l++)
               {
                 //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
-                mat(k*D*D+j*D+i,l) = 0.5*(bmat(l,i*D*D+(D*k+j))+bmat(l,j*D*D+(D*i+k))-bmat(l,k*D*D+(D*i+j)));
+                mat(i*D*D+j*D+k,l) = 0.5*(bmat(l,i*D*D+(D*k+j))+bmat(l,j*D*D+(D*i+k))-bmat(l,k*D*D+(D*i+j)));
               }
     }
 
@@ -799,7 +799,7 @@ namespace ngcomp
           for (size_t k=0; k<D; k++)
             {
               //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
-              y(k*D*D+j*D+i) = 0.5*(hdv(i*D*D+(D*k+j))+hdv(j*D*D+(D*i+k))-hdv(k*D*D+(D*i+j)));
+              y(i*D*D+j*D+k) = 0.5*(hdv(i*D*D+(D*k+j))+hdv(j*D*D+(D*i+k))-hdv(k*D*D+(D*i+j)));
             }
     }
 
@@ -848,7 +848,7 @@ namespace ngcomp
           for (size_t k=0; k<D; k++)
             {
               //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
-              y.Row(k*D*D+j*D+i).Range(bmir.Size()) = 0.5*(hdv.Row(i*D*D+(D*k+j))+hdv.Row(j*D*D+(D*i+k))-hdv.Row(k*D*D+(D*i+j)));
+              y.Row(i*D*D+j*D+k).Range(bmir.Size()) = 0.5*(hdv.Row(i*D*D+(D*k+j))+hdv.Row(j*D*D+(D*i+k))-hdv.Row(k*D*D+(D*i+j)));
             }
 
     }
@@ -862,7 +862,7 @@ namespace ngcomp
 
 
   /// Christoffel Symbol of second kind for HCurlCurl
-  // Gamma_ij^k=g^kl Gamma_ijl saved in offset order k*D*D+j*D+i
+  // Gamma_ij^k=g^kl Gamma_ijl saved in offset order i*D*D+j*D+k
   // Christoffel Symbol of second kind is symmetric w.r.t. first two indices: Gamma_ij^k=Gamma_ji^k
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpChristoffel2HCurlCurl : public DiffOp<DiffOpChristoffel2HCurlCurl<D> >
@@ -918,17 +918,17 @@ namespace ngcomp
       
       Vec<D*D*D,TSCAL> hdv;
       DiffOpChristoffelHCurlCurl<D>::Apply(fel, mip, x, hdv, lh);
-      
-      for (size_t i=0; i<D; i++)
-        for (size_t jk=0; jk<D*D; jk++)
+
+      for (size_t ij=0; ij<D*D; ij++)
+        for (size_t k=0; k<D; k++)
           {
             TSCAL sum = 0;
             for (size_t p=0; p<D; p++)
               {
                 // Gamma_jk^i=g^ip Gamma_jkp
-                sum += invmat(i,p)*hdv(p*D*D+jk);
+                sum += invmat(k,p)*hdv(ij*D+p);
               }
-            y(i*D*D+jk) = sum;
+            y(ij*D+k) = sum;
           }
     }
 
@@ -969,14 +969,15 @@ namespace ngcomp
           Mat<D,D,SIMD<double>> invG = Inv(G_m);
 
           auto christoffel1_m = hchristoffel1.Col(m);
+
           
-          for (size_t i=0; i<D; i++)
-            for (size_t jk=0; jk<D*D; jk++)
+          for (size_t ij=0; ij<D*D; ij++)
+            for (size_t k=0; k<D; k++)
               {
                 SIMD<double> sum(0);
                 for (size_t p=0; p<D; p++)
-                  sum += invG(i,p)*christoffel1_m(p*D*D+jk);
-                y(i*D*D+jk,m) = sum;
+                  sum += invG(k,p)*christoffel1_m(ij*D+p);
+                y(ij*D+k,m) = sum;
               }
         }
     }
@@ -1371,13 +1372,13 @@ namespace ngcomp
           bfel.EvaluateMappedShape (mip, x, G);
           Mat<D,D,TSCAL> invG = Inv(G);      
           
-          for (size_t i=0; i<D; i++)
-            for (size_t jk=0; jk<D*D; jk++)
+          for (size_t ij=0; ij<D*D; ij++)
+            for (size_t k=0; k<D; k++)
               {
-                TSCAL sum = 0; 
+                TSCAL sum = 0;
                 for (size_t p=0; p<D; p++)
-                  sum += invG(i,p)*hchristoffel1(p*D*D+jk);
-                hchristoffel2(i*D*D+jk) = sum;
+                  sum += invG(k,p)*hchristoffel1(ij*D+p);
+                hchristoffel2(ij*D+k) = sum;
               }
           
           if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
@@ -1387,8 +1388,8 @@ namespace ngcomp
               y(0) *= -0.5;
               for (size_t q=0; q<D; q++)
                 {
-                  y(0) += hchristoffel2(q*D*D+0*D+1)*hchristoffel1(q*D*D+0*D+1);
-                  y(0) -= hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+0*D+0);
+                  y(0) += hchristoffel2(1*D*D+0*D+q)*hchristoffel1(1*D*D+0*D+q);
+                  y(0) -= hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
                 }
             }
           else // Exploit that only 6 independent numbers are involved
@@ -1408,23 +1409,23 @@ namespace ngcomp
               //nonlinear christoffelpart
               for (size_t q=0; q<D; q++)
                 {
-                  y(2*D+2) -= hchristoffel2(q*D*D+0*D+1)*hchristoffel1(q*D*D+0*D+1);
-                  y(2*D+2) += hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+0*D+0);
+                  y(2*D+2) -= hchristoffel2(1*D*D+0*D+q)*hchristoffel1(1*D*D+0*D+q);
+                  y(2*D+2) += hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
 
-                  y(1*D+2) += hchristoffel2(q*D*D+1*D+0)*hchristoffel1(q*D*D+2*D+0);
-                  y(1*D+2) -= hchristoffel2(q*D*D+1*D+2)*hchristoffel1(q*D*D+0*D+0);
+                  y(1*D+2) += hchristoffel2(0*D*D+1*D+q)*hchristoffel1(0*D*D+2*D+q);
+                  y(1*D+2) -= hchristoffel2(2*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
 
-                  y(0*D+2) -= hchristoffel2(q*D*D+1*D+1)*hchristoffel1(q*D*D+2*D+0);
-                  y(0*D+2) += hchristoffel2(q*D*D+1*D+2)*hchristoffel1(q*D*D+1*D+0);
+                  y(0*D+2) -= hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+2*D+q);
+                  y(0*D+2) += hchristoffel2(2*D*D+1*D+q)*hchristoffel1(0*D*D+1*D+q);
 
-                  y(1*D+1) -= hchristoffel2(q*D*D+2*D+0)*hchristoffel1(q*D*D+2*D+0);
-                  y(1*D+1) += hchristoffel2(q*D*D+2*D+2)*hchristoffel1(q*D*D+0*D+0);
+                  y(1*D+1) -= hchristoffel2(0*D*D+2*D+q)*hchristoffel1(0*D*D+2*D+q);
+                  y(1*D+1) += hchristoffel2(2*D*D+2*D+q)*hchristoffel1(0*D*D+0*D+q);
 
-                  y(0*D+1) += hchristoffel2(q*D*D+2*D+1)*hchristoffel1(q*D*D+2*D+0);
-                  y(0*D+1) -= hchristoffel2(q*D*D+2*D+2)*hchristoffel1(q*D*D+1*D+0);
+                  y(0*D+1) += hchristoffel2(1*D*D+2*D+q)*hchristoffel1(0*D*D+2*D+q);
+                  y(0*D+1) -= hchristoffel2(2*D*D+2*D+q)*hchristoffel1(0*D*D+1*D+q);
 
-                  y(0*D+0) -= hchristoffel2(q*D*D+2*D+1)*hchristoffel1(q*D*D+2*D+1);
-                  y(0*D+0) += hchristoffel2(q*D*D+2*D+2)*hchristoffel1(q*D*D+1*D+1);
+                  y(0*D+0) -= hchristoffel2(1*D*D+2*D+q)*hchristoffel1(1*D*D+2*D+q);
+                  y(0*D+0) += hchristoffel2(2*D*D+2*D+q)*hchristoffel1(1*D*D+1*D+q);
                 }
 
               // symmetry
@@ -1465,15 +1466,15 @@ namespace ngcomp
           Mat<D,D,SIMD<double>> invG = Inv(G_m);      
 
           auto christoffel1_m = hchristoffel1.Col(m);
-          for (size_t i=0; i<D; i++)
-            for (size_t jk=0; jk<D*D; jk++)
-                {
-                  //ip schleife?
-                  SIMD<double> sum = 0; 
-                  for (size_t p=0; p<D; p++)
-                    sum += invG(i,p)*christoffel1_m(p*D*D+jk);
-                  hchristoffel2(i*D*D+jk,m) = sum;
-                }
+          for (size_t ij=0; ij<D*D; ij++)
+            for (size_t k=0; k<D; k++)
+              {
+                SIMD<double> sum(0);
+                for (size_t p=0; p<D; p++)
+                  sum += invG(k,p)*christoffel1_m(ij*D+p);
+                hchristoffel2(ij*D+k,m) = sum;
+              }
+
         }
       if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
         {
@@ -1484,8 +1485,8 @@ namespace ngcomp
             {
               for (size_t m = 0; m < bmir.Size(); m++)
                 {
-                  y(0,m) += hchristoffel2(q*D*D+0*D+1,m)*hchristoffel1(q*D*D+0*D+1,m);
-                  y(0,m) -= hchristoffel2(q*D*D+1*D+1,m)*hchristoffel1(q*D*D+0*D+0,m);
+                  y(0,m) += hchristoffel2(1*D*D+0*D+q,m)*hchristoffel1(1*D*D+0*D+q,m);
+                  y(0,m) -= hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                 }
             }
         }
@@ -1507,23 +1508,23 @@ namespace ngcomp
             {
               for (size_t m = 0; m < bmir.Size(); m++)
                 {
-                  y(2*D+2,m) -= hchristoffel2(q*D*D+0*D+1,m)*hchristoffel1(q*D*D+0*D+1,m);
-                  y(2*D+2,m) += hchristoffel2(q*D*D+1*D+1,m)*hchristoffel1(q*D*D+0*D+0,m);
+                  y(2*D+2,m) -= hchristoffel2(1*D*D+0*D+q,m)*hchristoffel1(1*D*D+0*D+q,m);
+                  y(2*D+2,m) += hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                   
-                  y(1*D+2,m) += hchristoffel2(q*D*D+1*D+0,m)*hchristoffel1(q*D*D+2*D+0,m);
-                  y(1*D+2,m) -= hchristoffel2(q*D*D+1*D+2,m)*hchristoffel1(q*D*D+0*D+0,m);
+                  y(1*D+2,m) += hchristoffel2(0*D*D+1*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
+                  y(1*D+2,m) -= hchristoffel2(2*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                   
-                  y(0*D+2,m) -= hchristoffel2(q*D*D+1*D+1,m)*hchristoffel1(q*D*D+2*D+0,m);
-                  y(0*D+2,m) += hchristoffel2(q*D*D+1*D+2,m)*hchristoffel1(q*D*D+1*D+0,m);
+                  y(0*D+2,m) -= hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
+                  y(0*D+2,m) += hchristoffel2(2*D*D+1*D+q,m)*hchristoffel1(0*D*D+1*D+q,m);
                   
-                  y(1*D+1,m) -= hchristoffel2(q*D*D+2*D+0,m)*hchristoffel1(q*D*D+2*D+0,m);
-                  y(1*D+1,m) += hchristoffel2(q*D*D+2*D+2,m)*hchristoffel1(q*D*D+0*D+0,m);
+                  y(1*D+1,m) -= hchristoffel2(0*D*D+2*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
+                  y(1*D+1,m) += hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                   
-                  y(0*D+1,m) += hchristoffel2(q*D*D+2*D+1,m)*hchristoffel1(q*D*D+2*D+0,m);
-                  y(0*D+1,m) -= hchristoffel2(q*D*D+2*D+2,m)*hchristoffel1(q*D*D+1*D+0,m);
+                  y(0*D+1,m) += hchristoffel2(1*D*D+2*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
+                  y(0*D+1,m) -= hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(0*D*D+1*D+q,m);
               
-                  y(0*D+0,m) -= hchristoffel2(q*D*D+2*D+1,m)*hchristoffel1(q*D*D+2*D+1,m);
-                  y(0*D+0,m) += hchristoffel2(q*D*D+2*D+2,m)*hchristoffel1(q*D*D+1*D+1,m);
+                  y(0*D+0,m) -= hchristoffel2(1*D*D+2*D+q,m)*hchristoffel1(1*D*D+2*D+q,m);
+                  y(0*D+0,m) += hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(1*D*D+1*D+q,m);
                 }
             }
           
