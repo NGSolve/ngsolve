@@ -90,7 +90,7 @@ def DomainConstantCF(values):
     return CoefficientFunction(values)
 
 
-def Deviatoric(mat):
+def Deviator(mat):
     return mat - 1/mat.dims[0]*Trace(mat)*Id(mat.dims[0])
 
 
