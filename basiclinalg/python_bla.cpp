@@ -749,14 +749,28 @@ complex : bool
                     */
                   }
               }
-            /*
             else if (info.format == py::format_descriptor<Complex>::format())
               {
+                size_t sh = info.strides[0] / (py::ssize_t)sizeof(Complex);
+                size_t sw = info.strides[1] / (py::ssize_t)sizeof(Complex);                
+                DoubleSliceMatrix<Complex> dsm(info.shape[0], info.shape[1], sh, sw, static_cast<Complex*>(info.ptr));
+                if (copy)
+                  {
+                    Matrix<Complex> m(dsm.Height(), dsm.Width());
+                    m = dsm;
+                    return py::cast(move(m));
+                  }
+                else
+                  {
+                    throw Exception("copy=False not supported");
+                  }
+                
+                /*
                 size_t stride = info.strides[0] / (py::ssize_t)sizeof(Complex);
                 SliceVector<Complex> sv(info.shape[0], stride, static_cast<Complex*>(info.ptr));
                 return py::cast(Vector<Complex> (sv));
+                */
               }
-            */
             else
               throw std::runtime_error("only double matrix from py::buffer supported");
           }, py::arg("buffer"), py::arg("copy")=true);

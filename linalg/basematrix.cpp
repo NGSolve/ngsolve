@@ -484,10 +484,10 @@ namespace ngla
   shared_ptr<BaseMatrix> TransposeOperator (shared_ptr<BaseMatrix> mat)
   {
     if (auto emb = dynamic_pointer_cast<Embedding> (mat))
-      return make_shared<EmbeddingTranspose> (emb->Height(), emb->GetRange());
+      return make_shared<EmbeddingTranspose> (emb->Height(), emb->GetRange(), emb->IsComplex());
 
     if (auto emb = dynamic_pointer_cast<EmbeddingTranspose> (mat))
-      return make_shared<Embedding> (emb->Width(), emb->GetRange());
+      return make_shared<Embedding> (emb->Width(), emb->GetRange(), emb->IsComplex());
 
     if (auto parmat = dynamic_pointer_cast<ParallelMatrix> (mat))
       return make_shared<ParallelMatrix> (TransposeOperator(parmat->GetMatrix()),
