@@ -115,3 +115,27 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
     return lams, uvecs
 
 
+
+
+def Arnoldi (mat, tol=1e-10, maxiter=200):
+    H = Matrix(maxiter,maxiter, complex=mat.is_complex)
+    H[:,:] = 0
+    v = mat.CreateVector(colvector=False)
+    abv = MultiVector(v, 0)
+    v.SetRandom()
+    v /= Norm(v)
+
+    for i in range(maxiter):
+        abv.Append(v)
+        v = (mat*v).Evaluate()
+        for j in range(i+1):
+            H[j,i] = InnerProduct(v, abv[j])
+            v -= H[j,i]*abv[j]
+        if i+1 < maxiter:
+            H[i+1,i] = Norm(v)
+        v = 1/Norm(v)*v
+
+    lam,ev = scipy.linalg.eig(H)
+    return Vector(lam), (abv*Matrix(ev)).Evaluate()
+    
+    
