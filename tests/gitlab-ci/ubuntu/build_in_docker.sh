@@ -39,8 +39,6 @@ cd
 mkdir -p build/ngsolve
 cd build/ngsolve
 
-pip3 install numpy scipy matplotlib
-
 if [ "$IMAGE_NAME" == "avx" ]
 then
     apt-get upgrade -y
