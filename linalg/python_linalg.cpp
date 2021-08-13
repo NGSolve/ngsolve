@@ -1195,7 +1195,8 @@ inverse : string
     .def("InnerProduct", [](DynamicVectorExpression v1, BaseVector & v2)
          { auto v = v1.Evaluate();
            return InnerProduct<double> (v, v2); })
-
+    .def("Norm", [](DynamicVectorExpression v1)
+         { return v1.Evaluate().L2Norm(); })
     .def("Evaluate", [](DynamicVectorExpression expr)
          {
            return shared_ptr<BaseVector> (expr.Evaluate());
