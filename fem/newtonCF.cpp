@@ -161,33 +161,35 @@ public:
     else if (proxies.Size() > 1) {
       // Check whether all proxies belong to a compound FE space and put them in
       // order
-      Array<ProxyFunction *> sorted_proxies(proxies.Size());
-      sorted_proxies = nullptr;
-      Array<const DifferentialOperator *> diffops(proxies.Size());
-      diffops = nullptr;
+      std::map<int, ProxyFunction *> sorted_proxies{};
+      std::map<int, const DifferentialOperator *> diffops{};
       //      cout << "\n" << "sorted proxies " << sorted_proxies
       //           << "\n" << "diffops " << diffops << endl;
 
       for (const auto proxy : proxies) {
-        const auto evaluator =
-            dynamic_cast<const CompoundDifferentialOperator *>(
-                proxy->Evaluator().get());
-        if (!evaluator) {
-          throw Exception(
-              "NewtonCF: More than one proxy has been found but not all proxy "
-              "evaluators are of type CompoundDifferentialOperator");
-        } else {
-          if (sorted_proxies[evaluator->Component()] ||
-              std::find(cbegin(diffops), cend(diffops), evaluator) !=
+          const auto evaluator =
+                  dynamic_cast<const CompoundDifferentialOperator *>(
+                          proxy->Evaluator().get());
+          if (!evaluator) {
+              throw Exception(
+                      "MinimizationCF: More than one proxy has been found but not all "
+                      "proxy "
+                      "evaluators are of type CompoundDifferentialOperator");
+          } else {
+              if (sorted_proxies[evaluator->Component()] ||
+                  std::find_if(cbegin(diffops), cend(diffops), [&](const auto& pair){return pair.second == evaluator;}) !=
                   cend(diffops))
-            throw Exception("NewtonCF: A proxy evaluator (component) has been "
-                            "detected twice");
-          diffops[evaluator->Component()] = evaluator;
-          sorted_proxies[evaluator->Component()] = proxy;
-        }
+                  throw Exception(
+                          "MinimizationCF: A proxy evaluator (component) has been "
+                          "detected twice");
+              diffops[evaluator->Component()] = evaluator;
+              sorted_proxies[evaluator->Component()] = proxy;
+          }
       }
       // Copy over...
-      std::copy(begin(sorted_proxies), end(sorted_proxies), begin(proxies));
+      for (int i1 = 0, i2 = 0; i1 < sorted_proxies.size(); ++i1)
+          if  (auto proxy = sorted_proxies[i1])
+              proxies[i2++] = proxy;
     }
 
     // Process proxy dimensions
@@ -246,9 +248,13 @@ public:
       for (int i : Range(proxies)) {
         if (!startingpoints[i])
           startingpoints[i] = ZeroCF(proxies[i]->Dimensions());
-        else if (!(proxies[i]->Dimensions() == startingpoints[i]->Dimensions()))
-          throw Exception(std::string("NewtonCF: Dimensions of component ") +
-                          std::to_string(i) + " do not agree");
+        else if (!(proxies[i]->Dimensions() == startingpoints[i]->Dimensions())) {
+            std::stringstream sstr{};
+            sstr << "NewtonCF: Dimensions of startingpoint "
+                    "and proxy component " << i << " do not agree ("
+                 << startingpoints[i]->Dimensions() << " != " << proxies[i]->Dimensions();
+            throw Exception(sstr.str());
+        }
       }
     } else if (startingpoints.Size() == 1) {
       if (startingpoints[0]->Dimension() != full_dim)
@@ -647,10 +653,8 @@ public:
     else if (proxies.Size() > 1) {
       // Check whether all proxies belong to a compound FE space and put them in
       // order
-      Array<ProxyFunction *> sorted_proxies(proxies.Size());
-      sorted_proxies = nullptr;
-      Array<const DifferentialOperator *> diffops(proxies.Size());
-      diffops = nullptr;
+      std::map<int, ProxyFunction *> sorted_proxies{};
+      std::map<int, const DifferentialOperator *> diffops{};
       //      cout << "\n" << "sorted proxies " << sorted_proxies
       //           << "\n" << "diffops " << diffops << endl;
 
@@ -665,7 +669,7 @@ public:
               "evaluators are of type CompoundDifferentialOperator");
         } else {
           if (sorted_proxies[evaluator->Component()] ||
-              std::find(cbegin(diffops), cend(diffops), evaluator) !=
+              std::find_if(cbegin(diffops), cend(diffops), [&](const auto& pair){return pair.second == evaluator;}) !=
                   cend(diffops))
             throw Exception(
                 "MinimizationCF: A proxy evaluator (component) has been "
@@ -675,7 +679,9 @@ public:
         }
       }
       // Copy over...
-      std::copy(begin(sorted_proxies), end(sorted_proxies), begin(proxies));
+      for (int i1 = 0, i2 = 0; i1 < sorted_proxies.size(); ++i1)
+        if  (auto proxy = sorted_proxies[i1])
+            proxies[i2++] = proxy;
     }
 
     // Process proxy dimensions
@@ -732,11 +738,13 @@ public:
           if (!startingpoints[i])
             startingpoints[i] = ZeroCF(proxies[i]->Dimensions());
           else if (!(proxies[i]->Dimensions() ==
-                     startingpoints[i]->Dimensions()))
-            throw Exception(
-                std::string("MinimizationCF: Dimensions of startingpoint "
-                            "and proxy component ") +
-                std::to_string(i) + " do not agree");
+                     startingpoints[i]->Dimensions())) {
+            std::stringstream sstr{};
+            sstr << "MinimizationCF: Dimensions of startingpoint "
+                    "and proxy component " << i << " do not agree ("
+                    << startingpoints[i]->Dimensions() << " != " << proxies[i]->Dimensions();
+            throw Exception(sstr.str());
+          }
         }
     } else if (startingpoints.Size() == 1) {
         if (startingpoints[0]->Dimension() != full_dim)

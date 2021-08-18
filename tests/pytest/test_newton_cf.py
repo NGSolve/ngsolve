@@ -136,6 +136,54 @@ def test_2d_compound_minimization(fes_ir):
     assert np.allclose(uvec2.vec.FV().NumPy(), 0)
 
 
+def test_partial_compound_minimization(fes_ir):
+    # Tests the case when only some components of a space take part in minimization.
+    fes = fes_ir * fes_ir * fes_ir
+    fes_vec = fes_ir * fes_ir ** 2
+    fes_vec2 = fes_ir ** 2
+
+    U = GridFunction(fes)
+    u_0, u_1, u_2 = U.components
+    u = CoefficientFunction((u_1, u_2))
+    du_0, du1, du2 = fes.TrialFunction()
+
+    Uvec = GridFunction(fes_vec)
+    uvec = Uvec.components[1]
+    dUvec = fes_vec.TrialFunction()
+    duvec = dUvec[1]
+    uvec2 = GridFunction(fes_vec2)
+
+    du = CoefficientFunction((du1, du2))
+    a = CoefficientFunction((2 / 3, 1))
+    M = CoefficientFunction((2, 1 / 2, 1 / 2, 4), dims=(2, 2))
+
+    def pot_func(u):
+        return 1 / 2 * InnerProduct(M, OuterProduct(u, u)) + 4 * InnerProduct(u, a)
+
+    def res_func(u):
+        return M * u + 4 * a
+
+    eq = res_func(du)
+    check = res_func(uvec2)
+    pot = pot_func(duvec)
+
+    expected = np.array([-1.11827957, -0.86021505])
+
+    U.Interpolate(CoefficientFunction((0, 3, 3)))
+    uvec.Interpolate(CoefficientFunction((3, 3)))
+    ncf = NewtonCF(eq, u, maxiter=1)
+    uvec2.Interpolate(ncf)
+    assert np.allclose(uvec2.vec.FV().NumPy(), expected, atol=1e-8, rtol=0)
+
+    uvec.Interpolate(CoefficientFunction((3, 3)))
+    mcf = MinimizationCF(pot, uvec, maxiter=1)
+    uvec2.Interpolate(mcf)
+    assert np.allclose(uvec2.vec.FV().NumPy(), expected, atol=1e-8, rtol=0)
+
+    uvec2.Interpolate(check)
+    assert np.allclose(uvec2.vec.FV().NumPy(), 0)
+
+
 def test_2d_compound_linear_nonsymmetric(fes_ir):
     fes = fes_ir * fes_ir
     u = GridFunction(fes)
@@ -376,6 +424,7 @@ if __name__ == "__main__":
     test_scalar_linear_minimization(_fes_ir)
     test_scalar_nonlinear_minimization(_fes_ir)
     test_2d_compound_minimization(_fes_ir)
+    test_partial_compound_minimization(_fes_ir)
     test_2d_compound_linear_nonsymmetric(_fes_ir)
     test_compound_advanced_linear_nonsymmetric(_fes_ir)
     test_compound_advanced_nonlinear_symmetric(_fes_ir)
