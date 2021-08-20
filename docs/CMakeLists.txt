@@ -38,6 +38,7 @@ if (NETGEN_USE_PYTHON)
       @ONLY)
 
     add_custom_target(docs_impl
+      COMMAND
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_RST_FORMAT=1
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_OUT_DIR="${SPHINX_OUTPUT_DIR}/html"
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_SRC_DIR="${CMAKE_CURRENT_SOURCE_DIR}"
@@ -47,6 +48,9 @@ if (NETGEN_USE_PYTHON)
       -d "${SPHINX_CACHE_DIR}"
       "${CMAKE_CURRENT_SOURCE_DIR}"
       "${SPHINX_OUTPUT_DIR}/html"
+      COMMAND
+      # copy webgui.js to html/_static/
+      ${NETGEN_PYTHON_EXECUTABLE} -m webgui_jupyter_widgets.webgui_js "${CMAKE_CURRENT_BINARY_DIR}/html/_static/webgui.js"
       COMMENT "Building HTML documentation with Sphinx"
       )
 
