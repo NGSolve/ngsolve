@@ -158,6 +158,7 @@ html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = ['@CMAKE_CURRENT_SOURCE_DIR@/_static']
 
+html_js_files = ['webgui_jupyter_widgets.js', 'webgui.js']
 
 # -- Options for HTMLHelp output ------------------------------------------
 
