@@ -206,7 +206,7 @@ namespace ngla {
       res.Add (*vec, hmat);
     }
 
-    size_t Size() const override { return vec->Size(); }
+    size_t Size() const override { return mat.Width(); } // vec->Size(); }
     shared_ptr<BaseVector> CreateVector() const override
     {
       return vec->RefVec()->CreateVector();
