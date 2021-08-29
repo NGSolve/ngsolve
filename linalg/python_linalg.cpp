@@ -953,7 +953,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             return shared_ptr<BaseVector>(self.CreateColVector());
           else
             return shared_ptr<BaseVector>(self.CreateRowVector());
-        }, py::arg("colvector") )
+        }, py::arg("colvector")=false )
     
     .def("AsVector", [] (BM & m)
                                       {

@@ -348,6 +348,11 @@ void PyMatAccess( TCLASS &c )
         c.def_property_readonly("T", py::cpp_function([](TMAT &self) { return TNEW(Trans(self)); } ), "return transpose of matrix" );
         c.def_property_readonly("A", py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ), "Returns matrix as vector" );
         c.def("__len__", []( TMAT& self) { return self.Height();}, "Return height of matrix"  );
+        c.def("Identity", [](TMAT & self) {
+            if (self.Height() != self.Width()) throw Exception("Identity requires a square matrix");
+            Matrix<TSCAL> res(self.Height());
+            res = Identity(self.Height());
+            return res; });
 }
 
 
@@ -405,6 +410,14 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         .def(py::self*=double())
         .def(py::init<size_t, Complex *>())
         .def("Range",    static_cast</* const */ FVC (FVC::*)(size_t,size_t) const> (&FVC::Range ) )
+      .def_property("real", [] (FVC & self)
+                    { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); },
+                    [] (FVC & self, double val)
+                    { SliceVector<double> (self.Size(), 2, (double*)self.Data()+1) = val; })
+      .def_property("imag", [] (FVC & self)
+                    { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); },
+                    [] (FVC & self, double val)
+                    { SliceVector<double> (self.Size(), 2, (double*)self.Data()+1) = val; })
         ;
 
     ExportVector< SVD, VD, double>(m, "SliceVectorD")
@@ -685,12 +698,13 @@ vals : tuple
                     { return self(i[0].cast<size_t>(),i[1].cast<size_t>()); });
 
     m.def("Matrix",
-            [] (int h, int w, bool is_complex) {
-                if(is_complex) return py::cast(Matrix<Complex>(h,w));
-                else return py::cast(Matrix<double>(h,w));
-                },
-            py::arg("height"), 
-            py::arg("width"), 
+          [] (int h, optional<int> ow, bool is_complex) {
+            int w = ow.value_or (h);
+            if(is_complex) return py::cast(Matrix<Complex>(h,w));
+            else return py::cast(Matrix<double>(h,w));
+          },
+          py::arg("height"), 
+          py::arg("width")=nullopt, 
           py::arg("complex")=false, docu_string(R"raw_string(
 Creates a matrix of given height and width.
 
