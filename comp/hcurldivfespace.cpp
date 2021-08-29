@@ -794,7 +794,7 @@ namespace ngcomp
  template <ELEMENT_TYPE ET>
   FiniteElement & HCurlDivFESpace :: T_GetFE (ElementId ei, Allocator & lh) const
   {
-    int elnr = ei.Nr(); //Volume element nr
+    // int elnr = ei.Nr(); //Volume element nr
     // Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
     Ngs_Element ngel = ma->GetElement(ei);  
     if (!DefinedOn(ngel)) return * new (lh) HCurlDivDummyFE<ET>();
