@@ -573,7 +573,7 @@ public:
 //  cout << "(pre) rhs blocks: " << rhs_blocks;
 
     bool success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
-    for (int step : Range(maxiter)) {
+    for ([[maybe_unused]] int step : Range(maxiter)) {
       if (success)
         break;
 
@@ -1116,7 +1116,7 @@ public:
 
 
     bool success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
-    for (int step : Range(maxiter)) {
+    for ([[maybe_unused]] int step : Range(maxiter)) {
       if (success)
         break;
 

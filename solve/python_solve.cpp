@@ -515,15 +515,15 @@ void ExportVisFunctions(py::module &m) {
                         IntegrationRule &ir = irs[el.GetType()];
                         auto & mir = GetMappedIR(ma, el, ir, lh);
                         // normals of corner vertices
-                        for (auto j : ngcomp::Range(2)) {
-                            for (auto i : Range(3))
+                        for ([[maybe_unused]] auto j : ngcomp::Range(2)) {
+                          for ([[maybe_unused]] auto i : Range(3))
                                 vertices.Append(0.0);
                         }
                         // mapped coordinates of midpoint (for P2 interpolation)
                         auto p = mir[2].GetPoint();
                         for (auto i : Range(p.Size()))
                             vertices.Append(p[i]);
-                        for (auto i : IntRange(p.Size(),3ULL))
+                        for ([[maybe_unused]] auto i : IntRange(p.Size(),3ULL))
                             vertices.Append(0.0);
                     }
                 }
@@ -564,7 +564,7 @@ void ExportVisFunctions(py::module &m) {
                             auto p = mir[j].GetPoint();
                             for (auto i : Range(p.Size()))
                                 vertices.Append(p[i]);
-                            for (auto i : IntRange(p.Size(),3ULL))
+                            for ([[maybe_unused]] auto i : IntRange(p.Size(),3ULL))
                                 vertices.Append(0.0);
                         }
                     }
