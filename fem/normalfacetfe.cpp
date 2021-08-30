@@ -506,6 +506,7 @@ namespace ngfem
     Tx xi  = sigma[f[0]]-sigma[f[1]];
     Tx eta = sigma[f[0]]-sigma[f[3]];
     lam_f = Cross(xi,eta);
+    lam_f.Value() = 1;
     shape[ii++] = wDu_Cross_Dv(eta, xi, -0.25*lam_f);
 
 

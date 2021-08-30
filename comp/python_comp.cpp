@@ -2331,16 +2331,25 @@ space : ngsolve.FESpace
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, bf_class);
                     shared_ptr<FESpace> trial_space, test_space;
+                    bool found_trial=false, found_test=false;
                     for (auto igl : *igls)
                       igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
                               if (proxy->IsTrialFunction())
-                                trial_space = proxy->GetFESpace();
+                                {
+                                  found_trial = true;
+                                  trial_space = proxy->GetFESpace();
+                                }
                               else
-                                test_space = proxy->GetFESpace();
+                                {
+                                  found_test = true;
+                                  test_space = proxy->GetFESpace();
+                                }
                             }
                         });
+                    if ( !found_trial || !found_test)
+                      throw Exception("BilinearForm must have Trial- and TestFunction");
                     auto biform = (trial_space == test_space) ?
                       CreateBilinearForm (trial_space, "biform_from_py", flags)
                       :
@@ -2702,16 +2711,22 @@ flags : dict
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, lf_class);
                     shared_ptr<FESpace> test_space;
+                    bool found = false;
                     for (auto igl : *igls)
                       igl->cf -> TraverseTree ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
                             {
                               if (proxy->IsTrialFunction())
-                                throw Exception("Linearform should not have TrialFunction");
+                                throw Exception("Linearform must not have TrialFunction");
                               else
-                                test_space = proxy->GetFESpace();
+                                {
+                                  found = true;
+                                  test_space = proxy->GetFESpace();
+                                }
                             }
                         });
+                    if (!found) throw Exception("Linearform must have TestFunction");
+                    
                     auto liform = CreateLinearForm (test_space, "liform_from_py", flags);
                     py::cast(liform) += py::cast(igls);
                     liform->AllocateVector();

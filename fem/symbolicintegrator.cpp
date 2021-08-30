@@ -5348,6 +5348,13 @@ namespace ngfem
 
   shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator()
   {
+    cf -> TraverseTree ([&] (CoefficientFunction& cf) {
+                          if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
+                            {
+                              if (proxy->IsTrialFunction())
+                                throw Exception("In MakeLinearFormIntegrator: must not have TrialFunction");
+                            }
+                        });
     shared_ptr<LinearFormIntegrator> lfi;
     if (!dx.skeleton)
       lfi =  make_shared<SymbolicLinearFormIntegrator> (cf, dx.vb, dx.element_vb);
