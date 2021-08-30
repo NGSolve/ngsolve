@@ -1485,7 +1485,7 @@ namespace ngbla
     size_t wa = a.Width();
 
     TAddABt2 (min2(bs, wa), a.Height(), b.Height(),
-              &a(0), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist(),
+              a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist(),
               [] (auto c, auto ab) { return -ab; });
 
     if (wa > bs)
