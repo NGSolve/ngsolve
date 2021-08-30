@@ -346,7 +346,10 @@ void PyMatAccess( TCLASS &c )
         c.def_property_readonly("w", py::cpp_function(&TMAT::Width ), "Width of the matrix");
         c.def_property_readonly("shape", &TMAT::Shape, "Shape of the matrix");
         c.def_property_readonly("T", py::cpp_function([](TMAT &self) { return TNEW(Trans(self)); } ), "return transpose of matrix" );
-        c.def_property_readonly("A", py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ), "Returns matrix as vector" );
+        c.def_property("A",
+                       py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ),
+                       py::cpp_function([](TMAT &self, Vector<TSCAL> v) { FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) = v; } ),                       
+                       "Returns matrix as vector" );
         c.def("__len__", []( TMAT& self) { return self.Height();}, "Return height of matrix"  );
         c.def("Identity", [](TMAT & self) {
             if (self.Height() != self.Width()) throw Exception("Identity requires a square matrix");
@@ -421,7 +424,8 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
 
     ExportVector< SVD, VD, double>(m, "SliceVectorD")
-        .def("Range",    static_cast<const SVD (SVD::*)(size_t,size_t) const> (&SVD::Range ) )
+      .def(py::init<FlatVector<double>>())
+      .def("Range",    static_cast<const SVD (SVD::*)(size_t,size_t) const> (&SVD::Range ) )
       .def("MinMax", [](SVD vec)
            {
              double mi = std::numeric_limits<double>::max();
@@ -441,6 +445,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         ;
 
     py::class_<VD, FVD> cvd(m, "VectorD", py::buffer_protocol());
+    cvd.def(py::init<SliceVector<double>>());
     cvd.def(py::init( [] (int n) { return new VD(n); }));
     PyDefVecBuffer<VD>(cvd);
     ExportImmediateOperators<VD, double>(cvd);
@@ -533,6 +538,8 @@ complex : bool
         return v;
       });
 
+
+    
 /*
     m.def("Vector",
             [] (py::list values) -> py::object {
@@ -826,6 +833,9 @@ complex : bool
              [] (py::object x) -> py::object
           { return py::object(x.attr("Norm")) (); }, py::arg("x"),"Compute Norm");
 
+    py::implicitly_convertible<Vector<double>, SliceVector<double>>();
+    py::implicitly_convertible<SliceVector<double>, Vector<double>>();
+    
     m.def("__timing__", &ngbla::Timing, py::arg("what"), py::arg("n"), py::arg("m"), py::arg("k"), py::arg("lapack")=false, py::arg("maxits")=size_t(1e10));
     m.def("CheckPerformance",
              [] (size_t n, size_t m, size_t k)

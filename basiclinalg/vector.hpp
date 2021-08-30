@@ -1466,10 +1466,10 @@ namespace ngbla
     T* Data() const { return data; }
 
     [[deprecated("Use Range(0,size) instead!")]]                
-    SliceVector<T,size_t> AddSize(size_t size) const
+    SliceVector<T> AddSize(size_t size) const
     {
       NETGEN_CHECK_RANGE(size, Height(), Height()+1);
-      return SliceVector<T,size_t> (size, dist, data);
+      return SliceVector<T> (size, dist, data);
     }
     
     T & operator() (size_t i) const
