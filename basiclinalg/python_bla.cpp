@@ -413,18 +413,18 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
         .def(py::self*=double())
         .def(py::init<size_t, Complex *>())
         .def("Range",    static_cast</* const */ FVC (FVC::*)(size_t,size_t) const> (&FVC::Range ) )
-      .def_property("real", [] (FVC & self)
-                    { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); },
+      .def_property("real", py::cpp_function([] (FVC & self)
+                    { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); }, py::keep_alive<0,1>()),
                     [] (FVC & self, double val)
                     { SliceVector<double> (self.Size(), 2, (double*)self.Data()+1) = val; })
-      .def_property("imag", [] (FVC & self)
-                    { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); },
+      .def_property("imag", py::cpp_function([] (FVC & self)
+                    { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); }, py::keep_alive<0,1>()),
                     [] (FVC & self, double val)
                     { SliceVector<double> (self.Size(), 2, (double*)self.Data()+1) = val; })
         ;
 
     ExportVector< SVD, VD, double>(m, "SliceVectorD")
-      .def(py::init<FlatVector<double>>())
+      .def(py::init<FlatVector<double>>(), py::keep_alive<0,1>())
       .def("Range",    static_cast<const SVD (SVD::*)(size_t,size_t) const> (&SVD::Range ) )
       .def("MinMax", [](SVD vec)
            {
