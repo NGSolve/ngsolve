@@ -18,10 +18,7 @@ cmake $SRC_DIR \
       -DENABLE_UNIT_TESTS=ON \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX} \
-      -DUSE_OCC=ON \
-      -DOCC_LIBRARY=/usr/local/opt/opencascade-7.4.0/lib/libTKernel.a \
-      -DOCC_INCLUDE_DIR=/usr/local/opt/opencascade-7.4.0/include/opencascade \
-      -DOCC_LINK_FREETYPE=ON
+      -DUSE_OCC=ON
 
 make -j5 install
 
