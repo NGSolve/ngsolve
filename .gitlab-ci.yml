@@ -326,7 +326,7 @@ deploy_github:
   script:
     - git remote add github git@github.com:NGSolve/ngsolve.git || true
     - git remote update
-    - git checkout master
+    - git checkout --track origin/master
     - git pull origin master
     - git push github master
   only:
