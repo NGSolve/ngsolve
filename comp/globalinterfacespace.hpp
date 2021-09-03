@@ -8,7 +8,7 @@ namespace ngcomp
   protected:
     shared_ptr<CoefficientFunction> mapping;
     int order;
-    bool periodic[2]; // periodic x/ periodic y
+    bool periodic[2]; // periodic u/ periodic v
 
     template<typename VOLFE>
     class VolDiffOp : public DifferentialOperator
@@ -51,6 +51,16 @@ namespace ngcomp
 
   public:
     GlobalInterfaceSpace(shared_ptr<MeshAccess> ama, const Flags& flags);
+
+    static DocInfo GetDocu()
+    {
+      auto docu = FESpace::GetDocu();
+      docu.Arg("mapping") = "Mapping for global interface space.";
+      docu.Arg("periodic") = "Periodic global interface space (in 2d in x and y direction).";
+      docu.Arg("periodicu") = "Periodic u-dir (local coordinate system) global interface space.";
+      docu.Arg("periodicv") = "Periodic v-dir (local coordinate system) global interface space.";
+      return docu;
+    }
   };
 
   shared_ptr<GlobalInterfaceSpace> CreateGlobalInterfaceSpace
