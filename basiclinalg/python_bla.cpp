@@ -418,9 +418,9 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
                     [] (FVC & self, double val)
                     { SliceVector<double> (self.Size(), 2, (double*)self.Data()+1) = val; })
       .def_property("imag", py::cpp_function([] (FVC & self)
-                    { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); }, py::keep_alive<0,1>()),
+                    { return SliceVector<double> (self.Size(), 2, ((double*)self.Data())+1); }, py::keep_alive<0,1>()),
                     [] (FVC & self, double val)
-                    { SliceVector<double> (self.Size(), 2, (double*)self.Data()+1) = val; })
+                    { SliceVector<double> (self.Size(), 2, ((double*)self.Data())+1) = val; })
         ;
 
     ExportVector< SVD, VD, double>(m, "SliceVectorD")
