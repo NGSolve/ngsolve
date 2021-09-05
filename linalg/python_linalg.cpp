@@ -689,9 +689,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           Vector<> ones(n); ones = 1;
           v2.AssignTo (ones, *selfr);
       })
-    .def("__setitem__", [](MultiVector & self, std::vector<int> inds, MultiVector & y) {
+    .def("__setitem__", [](MultiVector & self, std::vector<int> inds, MultiVector & v2) {
+        auto selfr = self.SubSet(ArrayFromVector(inds));
+        *selfr = v2; })
+        /*
         return *self.SubSet(ArrayFromVector(inds));
       })
+        */
     .def("__setitem__", [](MultiVector & self, std::vector<int> inds, const MultiVectorExpr & v2) {
         auto selfr = self.SubSet(ArrayFromVector(inds));
         *selfr = v2; })
