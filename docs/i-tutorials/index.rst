@@ -141,7 +141,9 @@ Whetting the Appetite
    unit-4.1.2-csg2d/csg2d.ipynb
    unit-4.2-csg/csg.ipynb
    unit-4.3-manualmesh/manualmeshing.ipynb 
-   unit-4.4-occ/occ.ipynb 
+   unit-4.4-occ/occ.ipynb
+   unit-4.4-occ/bottle.ipynb
+   unit-4.4-occ/workplane.ipynb               
 
 
 5. MPI - Parallelization
