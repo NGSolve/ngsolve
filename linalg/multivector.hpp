@@ -176,7 +176,13 @@ namespace ngla {
     shared_ptr<MultiVector> vec;
   public:
     MultiVecMatrixExpr (Matrix<T> amat, shared_ptr<MultiVector> avec)
-      : mat(amat), vec(avec) { ; }
+      : mat(amat), vec(avec)
+    {
+      if (vec->Size() != mat.Height())
+        throw Exception("Multivector * Matrix don't fit: mv.size = "+ToString(vec->Size())+
+                        ", matrix.height = " + ToString(mat.Height()));
+      
+    }
 
     void AssignTo (FlatVector<double> s, MultiVector & res) const override
     {
@@ -383,8 +389,10 @@ namespace ngla {
 
 
   inline shared_ptr<MultiVectorExpr> operator+ (shared_ptr<MultiVectorExpr> e1,
-                                         shared_ptr<MultiVectorExpr> e2)
+                                                shared_ptr<MultiVectorExpr> e2)
   {
+    if (e1->Size() != e2->Size())
+      throw Exception("MultiVector+ sizes don't fit: " + ToString(e1->Size()) + " != " + ToString(e2->Size()));
     return make_shared<SumMultiVectorExpr> (e1,e2);
   }
                                          
