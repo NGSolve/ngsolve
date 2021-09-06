@@ -54,7 +54,7 @@ inline void * operator new[] (size_t cnt)
 
 namespace ngstd
 {
-  NGS_DLL_HEADER extern int printmessage_importance;
+  // NGS_DLL_HEADER extern int printmessage_importance;
   NGS_DLL_HEADER extern const std::string ngsolve_version;
 }
 
@@ -109,7 +109,7 @@ namespace ngstd
 } // namespace ngstd
 
 #include "ngs_utils.hpp"
-#include "ngsstream.hpp"  
+// #include "ngsstream.hpp"  
 #include "templates.hpp"
 
 #include "simd_complex.hpp"
