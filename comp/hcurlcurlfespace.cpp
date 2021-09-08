@@ -598,6 +598,38 @@ namespace ngcomp
     
   };
 
+    template<int D>
+  class DiffOpEdgeTTComponentHCurlCurl: public DiffOp<DiffOpEdgeTTComponentHCurlCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+    enum { DIM_STRESS = D*D };
+
+    
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT & mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      const HCurlCurlFiniteElement<D> & fel = static_cast<const HCurlCurlFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,D*D,lh);
+      Vec<D> t = sip.GetTV();
+      Mat<D,D> mati;
+      fel.CalcMappedShape(sip,shape);
+      for(int i=0; i<nd; i++)
+        {
+          for(int j = 0; j < D*D; j++)
+            mati(j) = shape(i,j);
+          mat.Col(i) = InnerProduct(mati * t, t);
+        }
+    }
+  };
+
 
   
 
@@ -1594,6 +1626,9 @@ namespace ngcomp
         additional_evaluators.Set ("Ricci", make_shared<T_DifferentialOperator<DiffOpRicciHCurlCurl<3>>> ());
         additional_evaluators.Set ("inc", make_shared<T_DifferentialOperator<DiffOpIncHCurlCurl<3>>> ());
         additional_evaluators.Set ("curvature", make_shared<T_DifferentialOperator<DiffOpCurvatureHCurlCurl<3>>> ());
+        additional_evaluators.Set ("edgettcomponent", make_shared<T_DifferentialOperator<DiffOpEdgeTTComponentHCurlCurl<3>>> ());
+
+        
 	break;
       default:
         ;
