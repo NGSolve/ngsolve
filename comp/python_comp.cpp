@@ -4294,6 +4294,8 @@ drawelems: BitArray
    m.def("Interpolate", 
          [] (shared_ptr<CoefficientFunction> cf, shared_ptr<FESpace> fes, int bonus_intorder)
          {
+           if (!fes)
+             throw Exception("In Interpolate: invalid space");
            return InterpolateCF(cf, fes, bonus_intorder);
          }, py::arg("cf"), py::arg("space"), py::arg("bonus_intorder")=0,
          docu_string(R"raw_string(Interpolate a CoefficientFunction into the finite element space.
