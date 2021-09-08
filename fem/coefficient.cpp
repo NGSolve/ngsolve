@@ -107,13 +107,13 @@ namespace ngfem
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   Operator (const string & name) const
   {
-    throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
+    throw Exception(string("Operator ") + name + string(" not overloaded for CF ")+typeid(*this).name());
   }
 
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   Operator (shared_ptr<DifferentialOperator> diffop) const
   {
-    throw Exception(string("Operator not overloaded for CF ")+typeid(*this).name());
+    throw Exception(string("Operator ") + diffop->Name() + string(" not overloaded for CF ")+typeid(*this).name());
   }
 
   void CoefficientFunction :: SetSpaceDim (int adim)
