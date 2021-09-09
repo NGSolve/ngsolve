@@ -775,7 +775,12 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
            ma.SetElOrder(id.Nr(), order);
          }, py::arg("eid"), py::arg("order"), "For backward compatibility, not recommended to use")
     
-    .def("Curve", &MeshAccess::Curve,
+    .def("Curve", //  &MeshAccess::Curve,
+         [] (MeshAccess * self, int order)
+         {
+           self->Curve(order);
+           return self;
+         },
          py::arg("order"),
          "Curve the mesh elements for geometry approximation of given order")
 
