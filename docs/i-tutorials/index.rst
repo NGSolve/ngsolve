@@ -73,7 +73,8 @@ Whetting the Appetite
 
    wta/poisson.ipynb
    wta/adaptivity.ipynb
-   wta/maxwell.ipynb
+   wta/maxwell.ipynb 
+   wta/coil.ipynb 
    wta/navierstokes.ipynb
    wta/elasticity.ipynb
 
