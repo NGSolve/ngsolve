@@ -92,7 +92,7 @@ def GetVolumeFraction(psi0, psi1, psi2, EPS):
                 s = 1-s
         else:
             print(psi0, psi1, psi2)
-            input("should not happen1")
+            print("should not happen1")
     else:       #all three values are below EPS
         print(psi0, psi1, psi2)
         s=GetVolumeFraction(100*psi0, 100*psi1, 100*psi2, EPS) #0.5       #whatever...?
