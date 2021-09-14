@@ -179,18 +179,19 @@ Whetting the Appetite
 
 
 7.  Shape- and Topology Optimization
+=========================
 Peter Gangl and Kevin Sturm
 
 .. toctree::
     :maxdepth: 1
 
-  unit-7-optimization/01_Shape_Derivative_Levelset.ipynb
-  unit-7-optimization/02_Shape_Derivative_Laplace.ipynb
-  unit-7-optimization/03_Shape_Derivative_Laplace_SemiAuto.ipynb
-  unit-7-optimization/03a_Shape_Derivative_Laplace_SemiAuto.ipynb
-  unit-7-optimization/03b_Shape_Derivative_Laplace_FullyAuto.ipynb
+   unit-7-optimization/01_Shape_Derivative_Levelset.ipynb
+   unit-7-optimization/02_Shape_Derivative_Laplace.ipynb
+   unit-7-optimization/03_Shape_Derivative_Laplace_SemiAuto.ipynb
+   unit-7-optimization/03a_Shape_Derivative_Laplace_SemiAuto.ipynb
+   unit-7-optimization/03b_Shape_Derivative_Laplace_FullyAuto.ipynb
 
-  unit-7-optimization/04_Topological_Derivative_Levelset.ipynb
-  unit-7-optimization/05_Topological_Derivative_Transmission.ipynb
+   unit-7-optimization/04_Topological_Derivative_Levelset.ipynb
+   unit-7-optimization/05_Topological_Derivative_Transmission.ipynb
 
 
