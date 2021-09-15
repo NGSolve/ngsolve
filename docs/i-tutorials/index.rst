@@ -183,7 +183,7 @@ Whetting the Appetite
 Peter Gangl and Kevin Sturm
 
 .. toctree::
-    :maxdepth: 1
+   :maxdepth: 1
 
    unit-7-optimization/01_Shape_Derivative_Levelset.ipynb
    unit-7-optimization/02_Shape_Derivative_Laplace.ipynb
