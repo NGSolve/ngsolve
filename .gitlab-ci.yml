@@ -358,6 +358,26 @@ deploy_nightly:
     - tags
   environment: deploy_nigthly
 
+deploy_win:
+  stage: deploy
+  tags:
+    - linux
+    - docker
+  script:
+    - source tests/gitlab-ci/deploy/win.sh
+  when: manual
+  needs: ["win_build"]
+
+deploy_mac:
+  stage: deploy
+  tags:
+    - linux
+    - docker
+  script:
+    - source tests/gitlab-ci/deploy/mac.sh
+  when: manual
+  needs: ["mac_build"]
+
 ############################################
 # Conda package builds
 
