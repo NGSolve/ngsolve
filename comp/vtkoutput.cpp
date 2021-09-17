@@ -483,7 +483,7 @@ namespace ngcomp
     uint32_t sizecon = 0;
     uint32_t sizeoff = 0;
     // count number of data for cells, one + number of vertices
-    int32_t ndata = 0;
+    // int32_t ndata = 0;
     int32_t offs = 0;
     for (auto c : cells)
     {
