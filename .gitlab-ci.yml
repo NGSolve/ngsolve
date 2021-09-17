@@ -321,8 +321,7 @@ clang_no_fp_timings:
 deploy_github:
   stage: deploy
   tags:
-    - linux
-    - docker
+    - deploy
   script:
     - git remote add github git@github.com:NGSolve/ngsolve.git || true
     - git remote update
@@ -335,8 +334,7 @@ deploy_github:
 deploy_release:
   stage: deploy
   tags:
-    - linux
-    - docker
+    - deploy
   script:
     - git remote add github git@github.com:NGSolve/ngsolve.git || true
     - git push github $CI_BUILD_TAG
@@ -348,8 +346,7 @@ deploy_release:
 deploy_nightly:
   stage: deploy
   tags:
-    - linux
-    - docker
+    - deploy
   script:
     - source tests/gitlab-ci/deploy/nightly.sh
   only:
@@ -361,8 +358,7 @@ deploy_nightly:
 deploy_win:
   stage: deploy
   tags:
-    - linux
-    - docker
+    - deploy
   script:
     - source tests/gitlab-ci/deploy/win.sh
   when: manual
@@ -371,8 +367,7 @@ deploy_win:
 deploy_mac:
   stage: deploy
   tags:
-    - linux
-    - docker
+    - deploy
   script:
     - source tests/gitlab-ci/deploy/mac.sh
   when: manual
