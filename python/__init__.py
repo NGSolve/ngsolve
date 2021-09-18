@@ -48,6 +48,8 @@ from . import solvers
 
 CF = CoefficientFunction
 
+from math import pi
+
 from builtins import sum as builtin_sum
 def sum(iterable, start=None):
     """NGSolve sum function that uses the first element of an iterable as
