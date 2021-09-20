@@ -973,8 +973,12 @@ namespace ngfem
             // NgProfiler::StopThreadTimer(telvec_mapping, tid);
             
             // NgProfiler::StartThreadTimer(telvec_zero, tid);            
-            ProxyUserData ud;
+            // ProxyUserData ud;
+            ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
+            for (CoefficientFunction * cf : gridfunction_cfs)
+              ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
+            
             PrecomputeCacheCF(cache_cfs, mir, lh);
             
             elvec = 0;
