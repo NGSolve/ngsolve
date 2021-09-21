@@ -173,7 +173,11 @@ namespace ngfem
     NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const
     { throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans not overloaded")+typeid(*this).name()); }
+    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
+                                              BareSliceVector<Complex> coefs) const
+    { throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans complex not overloaded")+typeid(*this).name()); }      
 
+    
     NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const;
 
     NGS_DLL_HEADER virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const;

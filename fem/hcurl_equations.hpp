@@ -336,6 +336,12 @@ namespace ngfem
        static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
     }    
 
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
+    {
+       static_cast<const FEL&> (fel).AddCurlTrans (mir, y, x);
+    }    
+
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
                shared_ptr<CoefficientFunction> dir,
