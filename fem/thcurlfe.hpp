@@ -97,10 +97,7 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
                                                  BareSliceVector<> coefs) const override;
     HD NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
-                                                 BareSliceVector<Complex> coefs) const;  // actually not in base-class !!!!
-
-
-    
+                                                 BareSliceVector<Complex> coefs) const override; 
   };
 
 
