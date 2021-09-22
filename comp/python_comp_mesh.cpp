@@ -313,7 +313,7 @@ nr : int
   
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
+  auto cls_region = py::class_<Region> (m, "Region", "a subset of volume or boundary elements")
     .def(py::init<shared_ptr<MeshAccess>,VorB,string>(), py::arg("mesh"), py::arg("vb"), py::arg("name"))
     .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
     .def("Mask",[](Region & reg) { return reg.MaskPtr(); }, "BitArray mask of the region")
@@ -348,6 +348,24 @@ nr : int
     .def(py::self * string())
     .def(~py::self)
     ;
+  PyDefVectorized(cls_region, "__call__",
+                  [](Region* reg, double x, double y, double z)
+                  {
+                    if(reg->VB() == BBND || reg->VB() == BBBND)
+                      throw Exception("Evaluate on BBND and BBBND regions not implemented!");
+                    IntegrationPoint ip;
+                    int elnr;
+                    Array<int> indices;
+                    auto nmesh = reg->Mesh()->GetNetgenMesh();
+                    for(auto i : Range(nmesh->GetNFD()))
+                      if(reg->Mask().Test(nmesh->GetFaceDescriptor(i+1).BCProperty()-1))
+                        indices.Append(i);
+                    if(reg->VB() == VOL)
+                      elnr = reg->Mesh()->FindElementOfPoint(Vec<3>(x, y, z), ip, true, &indices);
+                    else
+                      elnr = reg->Mesh()->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true, &indices);
+                    return MeshPoint { ip(0), ip(1), ip(2), reg->Mesh().get(), reg->VB(), elnr };
+                  });
 
   py::implicitly_convertible <Region, BitArray> ();
 
