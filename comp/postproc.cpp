@@ -387,7 +387,8 @@ namespace ngcomp
                   const Region * reg, 
 		  DifferentialOperator * diffop,
 		  LocalHeap & clh,
-                  bool dualdiffop = false, bool use_simd = true, int mdcomp = 0)
+                  bool dualdiffop = false, bool use_simd = true, int mdcomp = 0,
+                  optional<shared_ptr<BitArray>> definedonelements = nullopt)
   {
     static Timer sv("timer setvalues"); RegionTimer r(sv);
 
@@ -469,6 +470,8 @@ namespace ngcomp
           (*fes, vb, clh, 
            [&] (FESpace::Element ei, LocalHeap & lh)
            {
+             if (definedonelements.has_value() && !definedonelements.value()->Test(ei.Nr()))
+                 return
              progress.Update ();
              
              if (reg)
@@ -681,6 +684,8 @@ namespace ngcomp
           (*fes, vb, clh, 
            [&] (FESpace::Element ei, LocalHeap & lh)
            {
+             if (definedonelements.has_value() && !definedonelements.value()->Test(ei.Nr()))
+                 return
              progress.Update ();
              
              if (reg)
@@ -883,12 +888,13 @@ namespace ngcomp
 				 LocalHeap & clh,
                                  bool dualdiffop,
                                  bool use_simd,
-                                 int mdcomp)
+                                 int mdcomp,
+                                 optional<shared_ptr<BitArray>> definedonelements)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp);
+      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements);
     else
-      SetValues<double> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp);
+      SetValues<double> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements);
   }
 
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
@@ -896,12 +902,13 @@ namespace ngcomp
 				 const Region & reg, 
 				 DifferentialOperator * diffop,
 				 LocalHeap & clh,
-                                 bool dualdiffop, bool use_simd, int mdcomp)
+                                 bool dualdiffop, bool use_simd, int mdcomp,
+                                 optional<shared_ptr<BitArray>> definedonelements)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp);
+      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements);
     else
-      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp);
+      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements);
   }
 
 

@@ -1920,7 +1920,7 @@ parallel : bool
 )raw_string"))
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB vb, py::object definedon, bool dualdiffop, bool use_simd, int mdcomp)
+            VorB vb, py::object definedon, bool dualdiffop, bool use_simd, int mdcomp, optional<shared_ptr<BitArray>> definedonelements)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
             Region * reg = nullptr;
@@ -1935,16 +1935,18 @@ parallel : bool
               return;
             }            
             if (reg)
-              SetValues (cf, *self, *reg, NULL, glh, dualdiffop, use_simd, mdcomp);
+              SetValues (cf, *self, *reg, NULL, glh, dualdiffop, use_simd, mdcomp, definedonelements);
             else
-              SetValues (cf, *self, vb, NULL, glh, dualdiffop, use_simd, mdcomp);
+              SetValues (cf, *self, vb, NULL, glh, dualdiffop, use_simd, mdcomp, definedonelements);
          },
          py::arg("coefficient"),
          py::arg("VOL_or_BND")=VOL,
          py::arg("definedon")=DummyArgument(),
 	 py::arg("dual")=false,
          py::arg("use_simd")=true,
-         py::arg("mdcomp")=0, docu_string(R"raw_string(
+         py::arg("mdcomp")=0, 
+         py::arg("definedonelements")=nullopt, 
+         docu_string(R"raw_string(
 Set values
 
 Parameters:
