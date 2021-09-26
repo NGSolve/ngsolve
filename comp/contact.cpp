@@ -995,13 +995,13 @@ namespace ngcomp
             });
        });
 
-    m_trafo.AddDeformation(deformation, lh);
-    m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
+    // m_trafo.AddDeformation(deformation, lh);
+    m_trafo.AddDeformation(deformation, lh)(pair.master_ip, lh).IntegrationRuleFromPoint
       ([&](const BaseMappedIntegrationRule& m_mir)
        {
          auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         s_trafo.AddDeformation(deformation, lh);
-         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
+         // s_trafo.AddDeformation(deformation, lh);
+         s_trafo.AddDeformation(deformation, lh)(pair.other_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
               auto& fel = fes->GetFE(pair.master_el, lh);
@@ -1042,13 +1042,13 @@ namespace ngcomp
             });
        });
 
-    m_trafo.AddDeformation(deformation, lh);
-    m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
+    // m_trafo.AddDeformation(deformation, lh);
+    m_trafo.AddDeformation(deformation, lh)(pair.master_ip, lh).IntegrationRuleFromPoint
       ([&](const BaseMappedIntegrationRule& m_mir)
        {
          auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         s_trafo.AddDeformation(deformation, lh);
-         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
+         // s_trafo.AddDeformation(deformation, lh);
+         s_trafo.AddDeformation(deformation, lh)(pair.other_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
               auto& fel = fes->GetFE(pair.master_el, lh);
@@ -1090,13 +1090,13 @@ namespace ngcomp
             });
        });
 
-    m_trafo.AddDeformation(deformation, lh);
-    m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
+    // m_trafo.AddDeformation(deformation, lh);
+    m_trafo.AddDeformation(deformation, lh)(pair.master_ip, lh).IntegrationRuleFromPoint
       ([&](const BaseMappedIntegrationRule& m_mir)
        {
          auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         s_trafo.AddDeformation(deformation, lh);
-         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
+         // s_trafo.AddDeformation(deformation, lh);
+         s_trafo.AddDeformation(deformation, lh)(pair.other_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
               auto& fel = fes->GetFE(pair.master_el, lh);
