@@ -332,12 +332,14 @@ namespace ngcomp
   void BilinearForm :: AddSpecialElement (unique_ptr<SpecialElement> spel)
   {
     specialelements.Append (std::move(spel));
+    special_element_coloring = nullptr;
     specialelements_timestamp = GetNextTimeStamp();
   }
 
   void BilinearForm :: DeleteSpecialElement(size_t index)
   {
     specialelements.DeleteElement(index);
+    special_element_coloring = nullptr;    
     specialelements_timestamp = GetNextTimeStamp();
   }
 
@@ -346,7 +348,110 @@ namespace ngcomp
     // for(auto el : specialelements)
     // delete el;
     specialelements.DeleteAll();
+    special_element_coloring = nullptr;    
     specialelements_timestamp = GetNextTimeStamp();
+  }
+
+  Table<int> & BilinearForm :: SpecialElementColoring() const
+  {
+    if (!special_element_coloring)
+      {
+        cout << "building special element coloring" << endl;
+        NETGEN_TIMER_FROM_HERE("SpecialElementColoring");
+
+        size_t ndof = GetTestSpace()->GetNDof();
+        Array<MyMutex> locks(ndof);
+
+        Array<int> col(specialelements.Size());
+        col = -1;
+
+        int maxcolor = 0;
+        
+        int basecol = 0;
+        Array<unsigned int> mask(ndof);
+
+        atomic<int> found(0);
+        size_t cnt = specialelements.Size();
+
+        while (found < cnt)
+          {
+            ParallelForRange
+              (mask.Size(),
+               [&] (IntRange myrange) { mask[myrange] = 0; });
+            
+            // size_t ne = ma->GetNE(vb);
+            
+            ParallelForRange
+              (specialelements.Size(), [&] (IntRange myrange)
+               {
+                 Array<DofId> dofs;
+                 size_t myfound = 0;
+                 
+                 for (size_t nr : myrange)
+                   {
+                     // ElementId el = { vb, nr };
+                     // if (!DefinedOn(el)) continue;
+                     if (col[nr] >= 0) continue;
+                     
+                     unsigned check = 0;
+                     specialelements[nr]->GetDofNrs(dofs);
+                     
+                     for (int i = dofs.Size()-1; i >= 0; i--)
+                       if (!IsRegularDof(dofs[i])) dofs.DeleteElement(i);
+                     QuickSort (dofs);   // sort to avoid dead-locks
+                     
+                     for (auto d : dofs) 
+                       locks[d].lock();
+                     
+                     for (auto d : dofs) 
+                       check |= mask[d];
+                     
+                     if (check != UINT_MAX) // 0xFFFFFFFF)
+                       {
+                         myfound++;
+                         unsigned checkbit = 1;
+                         int color = basecol;
+                         while (check & checkbit)
+                           {
+                             color++;
+                             checkbit *= 2;
+                           }
+                         
+                         col[nr] = color;
+                         if (color > maxcolor) maxcolor = color;
+                         
+                         for (auto d : dofs) 
+                           mask[d] |= checkbit;
+                       }
+                     
+                     for (auto d : dofs) 
+                       locks[d].unlock();
+                   }
+                 found += myfound;
+               });
+                 
+            basecol += 8*sizeof(unsigned int); // 32;
+          }
+
+        Array<int> cntcol(maxcolor+1);
+        cntcol = 0;
+
+        // for (ElementId el : Elements(vb))
+        for (int nr : Range(specialelements))
+          cntcol[col[nr]]++;
+        
+        special_element_coloring = make_unique<Table<int>> (cntcol);
+        Table<int> & coloring = *special_element_coloring;
+
+	cntcol = 0;
+        for (int nr : Range(specialelements))          
+          coloring[col[nr]][cntcol[col[nr]]++] = nr;
+        
+        cout << "needed " << maxcolor+1 << " colors for special elements" << endl;
+        cout << "coloring = " << coloring << endl;
+      }        
+
+    return *special_element_coloring;
   }
 
   
@@ -1251,7 +1356,7 @@ namespace ngcomp
               //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
               //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
                               
-              AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat, ElementId(BND,i), lh);
+              AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat, ElementId(BND,i), false, lh);
             }
           }
         });
@@ -1897,7 +2002,7 @@ namespace ngcomp
                              *testout<< "elem " << el << ", elmat = " << endl << sum_elmat << endl;
                            }
                          
-                         AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
+                         AddElementMatrix (dnums, dnums, sum_elmat, el, false, lh);
 			 
                          for (auto pre : preconditioners)
                            pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
@@ -2050,8 +2155,8 @@ namespace ngcomp
                                        }
                                      
                                      {
-                                       lock_guard<mutex> guard(addelemfacbnd_mutex);
-                                       AddElementMatrix (dnums, dnums, elmat, ElementId(VOL,el1), lh);
+                                       // lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                       AddElementMatrix (dnums, dnums, elmat, ElementId(VOL,el1), true, lh);
                                      }
                                    } //end for (numintegrators)
                                  continue;
@@ -2223,9 +2328,9 @@ namespace ngcomp
                                          compressed_elmat(dim*dnums_to_compressed[i]+di,dim*dnums_to_compressed[j]+dj) += elmat(i*dim+di,j*dim+dj);
 
                                  {
-                                   lock_guard<mutex> guard(addelemfacin_mutex);
+                                   // lock_guard<mutex> guard(addelemfacin_mutex);
                                    AddElementMatrix (compressed_dnums, compressed_dnums, compressed_elmat,
-                                                     ElementId(BND,el1), lh);
+                                                     ElementId(BND,el1), true, lh);
                                  }
                                }
                            }
@@ -2348,8 +2453,8 @@ namespace ngcomp
                               //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                               //                        cout << "dnums " << dnums << " elmat " << elmat << endl; 
                               {
-                                lock_guard<mutex> guard(addelemfacbnd_mutex);
-                                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+                                // lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), true, lh);
                               }
                             }//end for (numintegrators)
                         }//end for nse                  
@@ -2401,13 +2506,13 @@ namespace ngcomp
                   el.CalcElementMatrix (elmat, lh);
                   
                   {
-                    lock_guard<mutex> guard(printmatspecel2_mutex);
+                    // lock_guard<mutex> guard(printmatspecel2_mutex);
                     if (check_unused)
                       for (int j = 0; j < dnums.Size(); j++)
                         if (IsRegularDof(dnums[j]))
                           useddof[dnums[j]] = true;
                     
-                    AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+                    AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), true, lh);
                   }
                   
                   assembledspecialelements = true;
@@ -2433,7 +2538,7 @@ namespace ngcomp
                 for (int i = 0; i < ndof; i++)
                   {
                     dnums[0] = i; 
-                    AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
+                    AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
                   }
               }
             if (unuseddiag != 0 && check_unused)
@@ -2445,7 +2550,7 @@ namespace ngcomp
                   if (!useddof[i])
                     {
                       dnums[0] = i;
-                      AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
+                      AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
                     }
               }
             
@@ -2530,7 +2635,7 @@ namespace ngcomp
                          bfi->CalcElementMatrix (fel, mapped_trafo, elmat, lh);
                          fespace->TransformMat(ei, elmat, TRANSFORM_MAT_RIGHT);
                          fespace2->TransformMat(ei, elmat, TRANSFORM_MAT_LEFT);
-                         AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
+                         AddElementMatrix (dnums2, dnums1, elmat, ei, false, lh);
                        }
                    });
             
@@ -2823,7 +2928,7 @@ namespace ngcomp
                           // cout << "compressed_dnums_test:" << compressed_dnums_test << endl;
                           // cout << "compressed_dnums_trial:" << compressed_dnums_trial << endl;
                           
-                          AddElementMatrix (compressed_dnums_test, compressed_dnums_trial, compressed_elmat, ElementId(BND,i), lh);
+                          AddElementMatrix (compressed_dnums_test, compressed_dnums_trial, compressed_elmat, ElementId(BND,i), false, lh);
                         }
                       }
                     });
@@ -2967,8 +3072,8 @@ namespace ngcomp
                               //                      if(fabs(elmat(k,k)) < 1e-7 && dnums[k] != -1)
                               //                        cout << "dnums " << dnums << " elmat " << elmat << endl;
                               {
-                                lock_guard<mutex> guard(addelemfacbnd_mutex);
-                                AddElementMatrix (dnums_test, dnums_trial, elmat, ElementId(BND,i), lh);
+                                // lock_guard<mutex> guard(addelemfacbnd_mutex);
+                                AddElementMatrix (dnums_test, dnums_trial, elmat, ElementId(BND,i), true, lh);
                               }
                             }//end for (numintegrators)
                         }//end for nse
@@ -3260,7 +3365,7 @@ namespace ngcomp
                            fespace->Transform (i, true, elmat, TRANSFORM_MAT_RIGHT);
                            fespace2->Transform (i, true, elmat, TRANSFORM_MAT_LEFT);
                          */
-                         AddElementMatrix (dnums2, dnums1, elmat, ei, lh);
+                         AddElementMatrix (dnums2, dnums1, elmat, ei, false, lh);
                        }
                    });
             return;
@@ -3686,7 +3791,7 @@ namespace ngcomp
                    }
                  
 
-                 AddElementMatrix (dnums, dnums, sum_elmat, el, lh);
+                 AddElementMatrix (dnums, dnums, sum_elmat, el, false, lh);
 
                  for (auto pre : preconditioners)
                    pre -> AddElementMatrix (dnums, sum_elmat, el, lh);
@@ -3710,6 +3815,8 @@ namespace ngcomp
 
         timerspecial.Start();
         static mutex specel_mutex;
+
+        // auto& secoloring = SpecialElementColoring();   // needs more testing 
         ParallelForRange(IntRange(specialelements.Size()), [&](IntRange r)
         {
           LocalHeap lh = clh.Split();
@@ -3725,11 +3832,11 @@ namespace ngcomp
               el.CalcLinearizedElementMatrix(elvec, elmat, lh);
 
               {
-                lock_guard<mutex> guard(specel_mutex);
+                // lock_guard<mutex> guard(specel_mutex);
                 for (int j = 0; j < dnums.Size(); j++)
                   if (IsRegularDof(dnums[j]))
                     useddof[dnums[j]] = true;
-                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), lh);
+                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), true, lh);
               }
             }
         });
@@ -3749,7 +3856,7 @@ namespace ngcomp
             for (int i = 0; i < ndof; i++)
               {
                 dnums[0] = i; 
-                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
+                AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
               }
           }
         if (unuseddiag != 0)
@@ -3760,7 +3867,7 @@ namespace ngcomp
               if (!useddof[i])
                 {
                   dnums[0] = i;
-                  AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), clh);
+                  AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
                 }
           }
       
@@ -5961,10 +6068,10 @@ namespace ngcomp
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
                     BareSliceMatrix<TSCAL> elmat,
-                    ElementId id,
+                    ElementId id, bool addatomic, 
                     LocalHeap & lh) 
   {
-    mymatrix -> TMATRIX::AddElementMatrix (dnums1, dnums2, elmat, this->fespace->HasAtomicDofs());
+    mymatrix -> TMATRIX::AddElementMatrix (dnums1, dnums2, elmat, addatomic || this->fespace->HasAtomicDofs());
   }
 
 
@@ -6119,10 +6226,10 @@ namespace ngcomp
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
                     BareSliceMatrix<TSCAL> elmat,
-                    ElementId id, 
+                    ElementId id, bool addatomic,
                     LocalHeap & lh) 
   {
-    mymatrix -> TMATRIX::AddElementMatrixSymmetric (dnums1, elmat, this->fespace->HasAtomicDofs());
+    mymatrix -> TMATRIX::AddElementMatrixSymmetric (dnums1, elmat, addatomic || this->fespace->HasAtomicDofs());
   }
 
 
@@ -6239,18 +6346,20 @@ namespace ngcomp
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
                     BareSliceMatrix<TSCAL> elmat,
-                    ElementId id, 
+                    ElementId id, bool addatomic, 
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
 
+    if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
+    
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
         {
           TM & mij = mat(dnums1[i]); // , dnums1[i]);
           int hi = Height (mij);
           int wi = Width (mij);
-          
+
           for (int k = 0; k < hi; k++)
             for (int l = 0; l < wi; l++)
               mij(k,l) += elmat(i*hi+k, i*wi+l);
@@ -6264,11 +6373,13 @@ namespace ngcomp
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
                     BareSliceMatrix<double> elmat,
-                    ElementId id, 
+                    ElementId id, bool addatomic,
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
 
+    if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
+    
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
         mat(dnums1[i]) += elmat(i, i);
@@ -6282,11 +6393,14 @@ namespace ngcomp
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
                     BareSliceMatrix<Complex> elmat,
-                    ElementId id, 
+                    ElementId id, bool addatomic,
                     LocalHeap & lh) 
   {
     TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
 
+
+    if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
+    
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
         mat(dnums1[i]) += elmat(i, i);
@@ -6970,11 +7084,13 @@ namespace ngcomp
   AddElementMatrix (FlatArray<int> dnums1,
                     FlatArray<int> dnums2,
                     BareSliceMatrix<SCAL> elmat,
-                    ElementId id,
+                    ElementId id, bool addatomic,
                     LocalHeap & lh)
   {
     int nr = id.Nr();
     if (id.IsBoundary()) nr += this->ma->GetNE();
+
+    if (addatomic) throw Exception ("atomic add for EBE Matrix not implemented");    
     dynamic_cast<ElementByElementMatrix<SCAL>&> (this->GetMatrix()).AddElementMatrix (nr, dnums1, dnums2, elmat);
   }
   

@@ -82,6 +82,8 @@ namespace ngcomp
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<unique_ptr<SpecialElement>> specialelements;
+    mutable unique_ptr<Table<int>> special_element_coloring;
+    
     size_t specialelements_timestamp = 0;
 
     
@@ -114,7 +116,7 @@ namespace ngcomp
     Array<void*> precomputed_data;
     /// output of norm of matrix entries
     bool checksum;
-    
+
     mutable std::map<size_t, Matrix<>> precomputed;
   public:
     /// generate a bilinear-form
@@ -188,7 +190,8 @@ namespace ngcomp
     auto & GetSpecialElements() const { return specialelements; }
     void DeleteSpecialElement(size_t index);
     void DeleteSpecialElements();
-
+    Table<int> & SpecialElementColoring() const;
+    
     /// for static condensation of internal bubbles
     void SetLinearForm (LinearForm * alf) { linearform = alf; }
     
@@ -571,7 +574,7 @@ namespace ngcomp
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
                                    BareSliceMatrix<SCAL> elmat,
-				   ElementId id, 
+				   ElementId id, bool addatomic,
 				   LocalHeap & lh) = 0;
 
     /*
@@ -670,7 +673,7 @@ namespace ngcomp
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
 				   BareSliceMatrix<TSCAL> elmat,
-				   ElementId id, 
+				   ElementId id, bool addatomic, 
 				   LocalHeap & lh) override;
 
     virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const override;
@@ -708,7 +711,7 @@ namespace ngcomp
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
                                    BareSliceMatrix<TSCAL> elmat,
-				   ElementId id, 
+				   ElementId id, bool addatomic, 
 				   LocalHeap & lh) override;
     /*
     virtual void ApplyElementMatrix(const BaseVector & x,
@@ -750,7 +753,7 @@ namespace ngcomp
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
                                    BareSliceMatrix<TSCAL> elmat,
-				   ElementId id, 
+				   ElementId id, bool addatomic,
 				   LocalHeap & lh)
     {
       throw Exception ("AddElementMatrix for non-assemble biform called");
@@ -802,7 +805,7 @@ namespace ngcomp
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
 				   BareSliceMatrix<TSCAL> elmat,
-				   ElementId id, 
+				   ElementId id, bool addatomic, 
 				   LocalHeap & lh);
 
     virtual void AddDiagElementMatrix (const Array<int> & dnums1,
@@ -1012,7 +1015,7 @@ namespace ngcomp
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
                                    BareSliceMatrix<SCAL> elmat,
-                                   ElementId id, 
+                                   ElementId id, bool addatomic,
                                    LocalHeap & lh) override;    
   };
   
