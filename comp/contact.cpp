@@ -439,129 +439,135 @@ namespace ngcomp
     fes = trial_proxies[0]->GetFESpace();
   }
 
-  double ContactEnergy::CalcEnergy(const FiniteElement& m_fel,
-                                   const FiniteElement& s_fel,
-                                   const BaseMappedIntegrationRule& m_mir,
+  double ContactEnergy::CalcEnergy(const FiniteElement& primary_fel,
+                                   const FiniteElement& secondary_fel,
+                                   const BaseMappedIntegrationRule& primary_mir,
                                    FlatVector<double> elx,
                                    LocalHeap& lh)
   {
     ProxyUserData ud(trial_proxies.Size(), lh);
-    const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
-    ud.fel = & m_fel;
+    const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
+    ud.fel = & primary_fel;
 
     for(auto proxy : trial_proxies)
       {
-        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * m_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * m_fel.GetNDof());
+        IntRange trial_range = proxy->IsOther() ?
+          IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size())
+          : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
         ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
         if(proxy->IsOther())
-          proxy->Evaluator()->Apply(s_fel, *m_mir.GetOtherMIR(), elx.Range(trial_range),
+          proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
         else
-          proxy->Evaluator()->Apply(m_fel, m_mir, elx.Range(trial_range),
+          proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
       }
 
-    FlatMatrix<> values(m_mir.Size(), 1, lh);
-    cf->Evaluate(m_mir, values);
+    FlatMatrix<> values(primary_mir.Size(), 1, lh);
+    cf->Evaluate(primary_mir, values);
 
     double sum = 0.;
-    for (int i = 0; i < m_mir.Size(); i++)
-      sum += m_mir[i].GetWeight() * values(i,0);
+    for (int i = 0; i < primary_mir.Size(); i++)
+      sum += primary_mir[i].GetWeight() * values(i,0);
     return sum;
   }
 
-  void ContactEnergy::ApplyAdd(const FiniteElement& m_fel,
-                               const FiniteElement& s_fel,
-                               const BaseMappedIntegrationRule& m_mir,
+  void ContactEnergy::ApplyAdd(const FiniteElement& primary_fel,
+                               const FiniteElement& secondary_fel,
+                               const BaseMappedIntegrationRule& primary_mir,
                                FlatVector<double> elx,
                                FlatVector<double> ely,
                                LocalHeap& lh)
   {
     ProxyUserData ud(trial_proxies.Size(), lh);
-    const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
-    ud.fel = & m_fel;
+    const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
+    ud.fel = & primary_fel;
 
     for(auto proxy : trial_proxies)
       {
-        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * m_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * m_fel.GetNDof());
+        IntRange trial_range = proxy->IsOther() ?
+          IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size())
+          : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
         ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
         if(proxy->IsOther())
-          proxy->Evaluator()->Apply(s_fel, *m_mir.GetOtherMIR(), elx.Range(trial_range),
+          proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
         else
-          proxy->Evaluator()->Apply(m_fel, m_mir, elx.Range(trial_range),
+          proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
       }
 
     FlatVector<> ely1(ely.Size(), lh);
-    FlatMatrix<AutoDiff<1>> dval(m_mir.Size(), 1, lh);
+    FlatMatrix<AutoDiff<1>> dval(primary_mir.Size(), 1, lh);
 
     for (auto proxy : trial_proxies)
       {
         HeapReset hr(lh);
-        FlatMatrix<> proxyvalues(m_mir.Size(), proxy->Dimension(), lh);
+        FlatMatrix<> proxyvalues(primary_mir.Size(), proxy->Dimension(), lh);
         for (int k = 0; k < proxy->Dimension(); k++)
           {
             ud.trialfunction = proxy;
             ud.trial_comp = k;
-            cf -> Evaluate (m_mir, dval);
-            for (size_t i = 0; i < m_mir.Size(); i++)
+            cf -> Evaluate (primary_mir, dval);
+            for (size_t i = 0; i < primary_mir.Size(); i++)
               proxyvalues(i,k) = dval(i,0).DValue(0);
           }
 
-        for (int i = 0; i < m_mir.Size(); i++)
-          proxyvalues.Row(i) *= m_mir[i].GetWeight();
+        for (int i = 0; i < primary_mir.Size(); i++)
+          proxyvalues.Row(i) *= primary_mir[i].GetWeight();
 
-        IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*m_fel.GetNDof(), ely.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*m_fel.GetNDof());
+        IntRange test_range  = proxy->IsOther() ?
+          IntRange(proxy->Evaluator()->BlockDim()*primary_fel.GetNDof(), ely.Size())
+          : IntRange(0, proxy->Evaluator()->BlockDim()*primary_fel.GetNDof());
         ely1 = 0.;
         if(proxy->IsOther())
-          proxy->Evaluator()->ApplyTrans(s_fel, *m_mir.GetOtherMIR(), proxyvalues, ely1.Range(test_range), lh);
+          proxy->Evaluator()->ApplyTrans(secondary_fel, *primary_mir.GetOtherMIR(), proxyvalues, ely1.Range(test_range), lh);
         else
-          proxy->Evaluator()->ApplyTrans(m_fel, m_mir, proxyvalues, ely1.Range(test_range), lh);
+          proxy->Evaluator()->ApplyTrans(primary_fel, primary_mir, proxyvalues, ely1.Range(test_range), lh);
         ely += ely1;
       }
   }
 
-  void ContactEnergy::CalcLinearizedAdd(const FiniteElement& m_fel,
-                                        const FiniteElement& s_fel,
-                                        const BaseMappedIntegrationRule& m_mir,
+  void ContactEnergy::CalcLinearizedAdd(const FiniteElement& primary_fel,
+                                        const FiniteElement& secondary_fel,
+                                        const BaseMappedIntegrationRule& primary_mir,
                                         FlatVector<double> elx,
                                         FlatMatrix<double> elmat,
                                         LocalHeap& lh)
   {
     HeapReset hr(lh);
     ProxyUserData ud(trial_proxies.Size(), lh);
-    const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
-    ud.fel = & m_fel;
+    const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
+    ud.fel = & primary_fel;
 
     for(auto proxy : trial_proxies)
       {
-        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * m_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * m_fel.GetNDof());
+        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
         ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
         if(proxy->IsOther())
-          proxy->Evaluator()->Apply(s_fel, *m_mir.GetOtherMIR(), elx.Range(trial_range),
+          proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
         else
-          proxy->Evaluator()->Apply(m_fel, m_mir, elx.Range(trial_range),
+          proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
       }
 
-    FlatMatrix<> dderiv(m_mir.Size(), 1,lh);
-    FlatMatrix<AutoDiffDiff<1,double>> ddval(m_mir.Size(), 1, lh);
+    FlatMatrix<> dderiv(primary_mir.Size(), 1,lh);
+    FlatMatrix<AutoDiffDiff<1,double>> ddval(primary_mir.Size(), 1, lh);
 
     FlatArray<FlatMatrix<>> diags(trial_proxies.Size(), lh);
     for (int k1 : Range(trial_proxies))
       {
         auto proxy = trial_proxies[k1];
-        diags[k1].AssignMemory(m_mir.Size(), proxy->Dimension(), lh);
+        diags[k1].AssignMemory(primary_mir.Size(), proxy->Dimension(), lh);
         for (int k = 0; k < proxy->Dimension(); k++)
           {
             ud.trialfunction = proxy;
             ud.trial_comp = k;
             ud.testfunction = proxy;
             ud.test_comp = k;
-            cf -> Evaluate (m_mir, ddval);
-            for (size_t i = 0; i < m_mir.Size(); i++)
+            cf -> Evaluate (primary_mir, ddval);
+            for (size_t i = 0; i < primary_mir.Size(); i++)
               diags[k1](i,k) = ddval(i,0).DDValue(0);
           }
       }
@@ -574,7 +580,7 @@ namespace ngcomp
           auto proxy1 = trial_proxies[k1];
           auto proxy2 = trial_proxies[l1];
 
-          FlatTensor<3> proxyvalues(lh, m_mir.Size(), proxy2->Dimension(), proxy1->Dimension());
+          FlatTensor<3> proxyvalues(lh, primary_mir.Size(), proxy2->Dimension(), proxy1->Dimension());
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
               {
@@ -584,8 +590,8 @@ namespace ngcomp
                 ud.test_comp = l;
 
                 {
-                  cf -> Evaluate (m_mir, ddval);
-                  for (size_t i = 0; i < m_mir.Size(); i++)
+                  cf -> Evaluate (primary_mir, ddval);
+                  for (size_t i = 0; i < primary_mir.Size(); i++)
                     dderiv(i,0) = ddval(i,0).DDValue(0);
                 }
                 proxyvalues(STAR,l,k) = dderiv.Col(0);
@@ -598,25 +604,25 @@ namespace ngcomp
                   }
               }
 
-          for (int i = 0; i < m_mir.Size(); i++)
-            proxyvalues(i,STAR,STAR) *= m_mir[i].GetWeight();
+          for (int i = 0; i < primary_mir.Size(); i++)
+            proxyvalues(i,STAR,STAR) *= primary_mir[i].GetWeight();
 
-          IntRange trial_range  = proxy1->IsOther() ? IntRange(proxy1->Evaluator()->BlockDim()*m_fel.GetNDof(), elmat.Width()) : IntRange(0, proxy1->Evaluator()->BlockDim()*m_fel.GetNDof());
-          IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*m_fel.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*m_fel.GetNDof());
+          IntRange trial_range  = proxy1->IsOther() ? IntRange(proxy1->Evaluator()->BlockDim()*primary_fel.GetNDof(), elmat.Width()) : IntRange(0, proxy1->Evaluator()->BlockDim()*primary_fel.GetNDof());
+          IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*primary_fel.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*primary_fel.GetNDof());
 
           auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
 
 
-          int bs = m_mir.Size();
+          int bs = primary_mir.Size();
           FlatMatrix<double,ColMajor> bdbmat1(bs*proxy2->Dimension(), loc_elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bbmat2(bs*proxy2->Dimension(), loc_elmat.Height(), lh);
 
           bdbmat1 = 0.;
           bbmat2 = 0.;
 
-          const auto& s_mir = *m_mir.GetOtherMIR();
+          const auto& s_mir = *primary_mir.GetOtherMIR();
 
           for (size_t j = 0; j < bs; j++)
             {
@@ -625,13 +631,13 @@ namespace ngcomp
 
               {
                 if(proxy1->IsOther())
-                  proxy1->Evaluator()->CalcMatrix(s_fel, s_mir[ii], bmat1, lh);
+                  proxy1->Evaluator()->CalcMatrix(secondary_fel, s_mir[ii], bmat1, lh);
                 else
-                  proxy1->Evaluator()->CalcMatrix(m_fel, m_mir[ii], bmat1, lh);
+                  proxy1->Evaluator()->CalcMatrix(primary_fel, primary_mir[ii], bmat1, lh);
                 if(proxy2->IsOther())
-                  proxy2->Evaluator()->CalcMatrix(s_fel, s_mir[ii], bmat2, lh);
+                  proxy2->Evaluator()->CalcMatrix(secondary_fel, s_mir[ii], bmat2, lh);
                 else
-                  proxy2->Evaluator()->CalcMatrix(m_fel, m_mir[ii], bmat2, lh);
+                  proxy2->Evaluator()->CalcMatrix(primary_fel, primary_mir[ii], bmat2, lh);
               }
 
               bdbmat1.Rows(r3) = proxyvalues(ii,STAR,STAR) * bmat1;
@@ -658,84 +664,84 @@ namespace ngcomp
     fes = trial_proxies[0]->GetFESpace();
   }
 
-  void ContactIntegrator::ApplyAdd(const FiniteElement& m_fel,
-                                   const FiniteElement& s_fel,
-                                   const BaseMappedIntegrationRule& m_mir,
+  void ContactIntegrator::ApplyAdd(const FiniteElement& primary_fel,
+                                   const FiniteElement& secondary_fel,
+                                   const BaseMappedIntegrationRule& primary_mir,
                                    FlatVector<double> elx,
                                    FlatVector<double> ely,
                                    LocalHeap& lh)
   {
     HeapReset hr(lh);
     ProxyUserData ud(trial_proxies.Size(), lh);
-    const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
-    ud.fel = & m_fel;
+    const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
+    ud.fel = & primary_fel;
 
     for(auto proxy : trial_proxies)
       {
-        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * m_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * m_fel.GetNDof());
+        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
         ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
         if(proxy->IsOther())
-          proxy->Evaluator()->Apply(s_fel, *m_mir.GetOtherMIR(), elx.Range(trial_range),
+          proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
         else
-          proxy->Evaluator()->Apply(m_fel, m_mir, elx.Range(trial_range),
+          proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
       }
 
     FlatVector ely1(ely.Size(), lh);
-    FlatMatrix<> val(m_mir.Size(), 1, lh);
+    FlatMatrix<> val(primary_mir.Size(), 1, lh);
 
     for (auto proxy : test_proxies)
       {
         HeapReset hr(lh);
-        FlatMatrix<> proxyvalues(m_mir.Size(), proxy->Dimension(), lh);
+        FlatMatrix<> proxyvalues(primary_mir.Size(), proxy->Dimension(), lh);
         for (int k = 0; k < proxy->Dimension(); k++)
           {
             ud.testfunction = proxy;
             ud.test_comp = k;
-            cf -> Evaluate (m_mir, val);
+            cf -> Evaluate (primary_mir, val);
             proxyvalues.Col(k) = val.Col(0);
           }
 
-        for (int i = 0; i < m_mir.Size(); i++)
-          proxyvalues.Row(i) *= m_mir[i].GetWeight();
+        for (int i = 0; i < primary_mir.Size(); i++)
+          proxyvalues.Row(i) *= primary_mir[i].GetWeight();
 
-        IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*m_fel.GetNDof(), ely.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*m_fel.GetNDof());
+        IntRange test_range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*primary_fel.GetNDof(), ely.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*primary_fel.GetNDof());
         ely1 = 0.;
         if(proxy->IsOther())
-          proxy->Evaluator()->ApplyTrans(s_fel, *m_mir.GetOtherMIR(), proxyvalues, ely1.Range(test_range), lh);
+          proxy->Evaluator()->ApplyTrans(secondary_fel, *primary_mir.GetOtherMIR(), proxyvalues, ely1.Range(test_range), lh);
         else
-          proxy->Evaluator()->ApplyTrans(m_fel, m_mir, proxyvalues, ely1.Range(test_range), lh);
+          proxy->Evaluator()->ApplyTrans(primary_fel, primary_mir, proxyvalues, ely1.Range(test_range), lh);
         ely += ely1;
       }
   }
 
-  void ContactIntegrator::CalcLinearizedAdd(const FiniteElement& m_fel,
-                                            const FiniteElement& s_fel,
-                                            const BaseMappedIntegrationRule& m_mir,
+  void ContactIntegrator::CalcLinearizedAdd(const FiniteElement& primary_fel,
+                                            const FiniteElement& secondary_fel,
+                                            const BaseMappedIntegrationRule& primary_mir,
                                             FlatVector<double> elx,
                                             FlatMatrix<double> elmat,
                                             LocalHeap& lh)
   {
     HeapReset hr(lh);
     ProxyUserData ud(trial_proxies.Size(), lh);
-    const_cast<ElementTransformation&>(m_mir.GetTransformation()).userdata = &ud;
-    ud.fel = & m_fel;
+    const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
+    ud.fel = & primary_fel;
 
     for(auto proxy : trial_proxies)
       {
-        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * m_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * m_fel.GetNDof());
+        IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
         ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
         if(proxy->IsOther())
-          proxy->Evaluator()->Apply(s_fel, *m_mir.GetOtherMIR(), elx.Range(trial_range),
+          proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
         else
-          proxy->Evaluator()->Apply(m_fel, m_mir, elx.Range(trial_range),
+          proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
       }
 
-    FlatMatrix<> dderiv(m_mir.Size(), 1,lh);
-    FlatMatrix<AutoDiff<1>> dval(m_mir.Size(), 1, lh);
+    FlatMatrix<> dderiv(primary_mir.Size(), 1,lh);
+    FlatMatrix<AutoDiff<1>> dval(primary_mir.Size(), 1, lh);
 
     for (int k1 : Range(trial_proxies))
       for (int l1 : Range(test_proxies)) // ss
@@ -745,7 +751,7 @@ namespace ngcomp
           auto proxy1 = trial_proxies[k1];
           auto proxy2 = test_proxies[l1];
 
-          FlatTensor<3> proxyvalues(lh, m_mir.Size(), proxy2->Dimension(), proxy1->Dimension());
+          FlatTensor<3> proxyvalues(lh, primary_mir.Size(), proxy2->Dimension(), proxy1->Dimension());
           for (int k = 0; k < proxy1->Dimension(); k++)
             for (int l = 0; l < proxy2->Dimension(); l++)
               {
@@ -754,29 +760,29 @@ namespace ngcomp
                 ud.testfunction = proxy2;
                 ud.test_comp = l;
 
-                cf -> Evaluate (m_mir, dval);
-                for (size_t i = 0; i < m_mir.Size(); i++)
+                cf -> Evaluate (primary_mir, dval);
+                for (size_t i = 0; i < primary_mir.Size(); i++)
                   proxyvalues(i,l,k) = dval(i,0).DValue(0);
               }
 
-          for (int i = 0; i < m_mir.Size(); i++)
-            proxyvalues(i,STAR,STAR) *= m_mir[i].GetWeight();
+          for (int i = 0; i < primary_mir.Size(); i++)
+            proxyvalues(i,STAR,STAR) *= primary_mir[i].GetWeight();
 
-          IntRange trial_range  = proxy1->IsOther() ? IntRange(proxy1->Evaluator()->BlockDim()*m_fel.GetNDof(), elmat.Width()) : IntRange(0, proxy1->Evaluator()->BlockDim()*m_fel.GetNDof());
-          IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*m_fel.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*m_fel.GetNDof());
+          IntRange trial_range  = proxy1->IsOther() ? IntRange(proxy1->Evaluator()->BlockDim()*primary_fel.GetNDof(), elmat.Width()) : IntRange(0, proxy1->Evaluator()->BlockDim()*primary_fel.GetNDof());
+          IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*primary_fel.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*primary_fel.GetNDof());
 
           auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
           FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
 
-          int bs = m_mir.Size();
+          int bs = primary_mir.Size();
           FlatMatrix<double,ColMajor> bdbmat1(bs*proxy2->Dimension(), loc_elmat.Width(), lh);
           FlatMatrix<double,ColMajor> bbmat2(bs*proxy2->Dimension(), loc_elmat.Height(), lh);
 
           bdbmat1 = 0.;
           bbmat2 = 0.;
 
-          const auto& s_mir = *m_mir.GetOtherMIR();
+          const auto& s_mir = *primary_mir.GetOtherMIR();
 
           for (size_t j = 0; j < bs; j++)
             {
@@ -785,13 +791,13 @@ namespace ngcomp
 
               {
                 if(proxy1->IsOther())
-                  proxy1->Evaluator()->CalcMatrix(s_fel, s_mir[ii], bmat1, lh);
+                  proxy1->Evaluator()->CalcMatrix(secondary_fel, s_mir[ii], bmat1, lh);
                 else
-                  proxy1->Evaluator()->CalcMatrix(m_fel, m_mir[ii], bmat1, lh);
+                  proxy1->Evaluator()->CalcMatrix(primary_fel, primary_mir[ii], bmat1, lh);
                 if(proxy2->IsOther())
-                  proxy2->Evaluator()->CalcMatrix(s_fel, s_mir[ii], bmat2, lh);
+                  proxy2->Evaluator()->CalcMatrix(secondary_fel, s_mir[ii], bmat2, lh);
                 else
-                  proxy2->Evaluator()->CalcMatrix(m_fel, m_mir[ii], bmat2, lh);
+                  proxy2->Evaluator()->CalcMatrix(primary_fel, primary_mir[ii], bmat2, lh);
               }
 
               bdbmat1.Rows(r3) = proxyvalues(ii,STAR,STAR) * bmat1;
@@ -837,10 +843,10 @@ namespace ngcomp
 
 #if NETGEN_USE_GUI
     glBegin (GL_LINES);
-    for (auto i : Range(master_points.Size()))
+    for (auto i : Range(primary_points.Size()))
       {
-        auto & mp = master_points[i];
-        auto & sp = other_points[i];
+        auto & mp = primary_points[i];
+        auto & sp = secondary_points[i];
         glVertex3d (mp(0), mp(1), mp(2));
         glVertex3d (sp(0), sp(1), sp(2));
       }
@@ -852,12 +858,20 @@ namespace ngcomp
                                   bool deformed)
   {
     energies.Append(make_shared<ContactEnergy>(form, deformed));
+    if (deformed)
+      deformed_energies.Append (energies.Last());
+    else
+      undeformed_energies.Append (energies.Last());
   }
 
   void ContactBoundary::AddIntegrator(shared_ptr<CoefficientFunction> form,
                                       bool deformed)
   {
     integrators.Append(make_shared<ContactIntegrator>(form, deformed));
+    if (deformed)
+      deformed_integrators.Append (integrators.Last());
+    else
+      undeformed_integrators.Append (integrators.Last());
   }
 
   void ContactBoundary::Update(shared_ptr<GridFunction> displacement_,
@@ -877,8 +891,8 @@ namespace ngcomp
 
     if(draw_pairs)
     {
-      other_points.SetSize(0);
-      master_points.SetSize(0);
+      secondary_points.SetSize(0);
+      primary_points.SetSize(0);
     }
 
     auto displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", displacement_->GetFlags());
@@ -937,14 +951,14 @@ namespace ngcomp
                                 HeapReset hr(lh);
                                 auto & t1_def = trafo.AddDeformation(displacement.get(), lh);
                                 Vec<3> p1 = 0;
-                                t1_def.CalcPoint(pair->master_ip, p1);
-                                master_points.Append(p1);
+                                t1_def.CalcPoint(pair->primary_ip, p1);
+                                primary_points.Append(p1);
 
-                                auto & t2 = mesh->GetTrafo(pair->other_el, lh);
+                                auto & t2 = mesh->GetTrafo(pair->secondary_el, lh);
                                 auto & t2_def = t2.AddDeformation(displacement.get(), lh);
                                 Vec<3> p2 = 0;
-                                t2_def.CalcPoint(pair->other_ip, p2);
-                                other_points.Append(p2);
+                                t2_def.CalcPoint(pair->secondary_ip, p2);
+                                secondary_points.Append(p2);
                               }
                             }
                         }
@@ -965,9 +979,9 @@ namespace ngcomp
   template<int DIM>
   void ContactElement<DIM>::GetDofNrs(Array<DofId>& dnums) const
   {
-    fes->GetDofNrs(pair.master_el, dnums);
+    fes->GetDofNrs(pair.primary_el, dnums);
     Array<DofId> s_dofs;
-    fes->GetDofNrs(pair.other_el, s_dofs);
+    fes->GetDofNrs(pair.secondary_el, s_dofs);
     dnums += s_dofs;
   }
 
@@ -977,42 +991,62 @@ namespace ngcomp
   {
     if(cb->GetIntegrators().Size())
       throw Exception("Energy does not work with contact integrators!");
-    auto& m_trafo = fes->GetMeshAccess()->GetTrafo(pair.master_el, lh);
-    double energy = 0.;
-    m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& m_mir)
-       {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
-           ([&](const BaseMappedIntegrationRule& s_mir)
-            {
-              auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.other_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
-              for(const auto& ce : cb->GetEnergies())
-                if(!ce->IsDeformed())
-                  energy += ce->CalcEnergy(fel, s_fel, m_mir, elx, lh);
-            });
-       });
+    
+    auto& primary_trafo = fes->GetMeshAccess()->GetTrafo(pair.primary_el, lh);
+    auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
+    auto& primary_deformed_trafo = primary_trafo.AddDeformation(deformation, lh);
+    auto& secondary_deformed_trafo = secondary_trafo.AddDeformation(deformation, lh);
 
-    // m_trafo.AddDeformation(deformation, lh);
-    m_trafo.AddDeformation(deformation, lh)(pair.master_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& m_mir)
+    IntegrationRule primary_ir(1, &const_cast<IntegrationPoint&>(pair.primary_ip));
+    IntegrationRule secondary_ir(1, &const_cast<IntegrationPoint&>(pair.secondary_ip));
+
+    auto& primary_fel = fes->GetFE(pair.primary_el, lh);
+    auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+    
+    double energy = 0.;
+
+    for (bool def : { false, true })
+      {
+        auto& energies = cb->GetEnergies(def);
+        if (energies.Size())
+          {
+            MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
+            MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
+            primary_mir.SetOtherMIR(&secondary_mir);
+            for(const auto& ce : energies) 
+              energy += ce->CalcEnergy(primary_fel, secondary_fel, primary_mir, elx, lh);
+          }
+      }
+    /*
+      IntegrationRule primary_ir(1, &const_cast<IntegrationPoint&>(pair.primary_ip));
+      MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, primary_trafo, lh);
+        
+      IntegrationRule secondary_ir(1, &const_cast<IntegrationPoint&>(pair.secondary_ip));
+      MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, secondary_trafo, lh);
+      
+      auto& primary_fel = fes->GetFE(pair.primary_el, lh);
+      auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+      primary_mir.SetOtherMIR(&secondary_mir);
+      for(const auto& ce : cb->GetEnergies())
+      if(!ce->IsDeformed())
+      energy += ce->CalcEnergy(primary_fel, secondary_fel, primary_mir, elx, lh);
+
+        
+    primary_trafo.AddDeformation(deformation, lh)(pair.primary_ip, lh).IntegrationRuleFromPoint
+      ([&](const BaseMappedIntegrationRule& primary_mir)
        {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         // s_trafo.AddDeformation(deformation, lh);
-         s_trafo.AddDeformation(deformation, lh)(pair.other_ip, lh).IntegrationRuleFromPoint
+         secondary_trafo.AddDeformation(deformation, lh)(pair.secondary_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
-              auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.other_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
+              auto& fel = fes->GetFE(pair.primary_el, lh);
+              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 if(ce->IsDeformed())
-                  energy += ce->CalcEnergy(fel, s_fel, m_mir, elx, lh);
+                  energy += ce->CalcEnergy(fel, secondary_fel, primary_mir, elx, lh);
             });
        });
-
+        */
     return energy;
   }
 
@@ -1021,47 +1055,79 @@ namespace ngcomp
                                   FlatVector<double> ely,
                                   LocalHeap& lh) const
   {
-    auto& m_trafo = fes->GetMeshAccess()->GetTrafo(pair.master_el, lh);
+    // NETGEN_TIMER_FROM_HERE("ContactElement::Apply");    
     ely = 0.;
-    m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& m_mir)
+
+    auto& primary_trafo = fes->GetMeshAccess()->GetTrafo(pair.primary_el, lh);
+    auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
+    auto& primary_deformed_trafo = primary_trafo.AddDeformation(deformation, lh);
+    auto& secondary_deformed_trafo = secondary_trafo.AddDeformation(deformation, lh);
+
+    IntegrationRule primary_ir(1, &const_cast<IntegrationPoint&>(pair.primary_ip));
+    IntegrationRule secondary_ir(1, &const_cast<IntegrationPoint&>(pair.secondary_ip));
+
+    auto& primary_fel = fes->GetFE(pair.primary_el, lh);
+    auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+    
+    for (bool def : { false, true })
+      {
+        auto& energies = cb->GetEnergies(def);
+        auto& integrators = cb->GetIntegrators(def);
+        if (energies.Size() || integrators.Size())
+          {
+            MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
+            MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
+            primary_mir.SetOtherMIR(&secondary_mir);
+
+            for(const auto& ci : integrators)
+              ci->ApplyAdd(primary_fel, secondary_fel, primary_mir, elx, ely, lh);
+            for(const auto& ce : energies)
+              ce->ApplyAdd(primary_fel, secondary_fel, primary_mir, elx, ely, lh);
+          }
+      }
+
+    
+    /*
+    primary_trafo(pair.primary_ip, lh).IntegrationRuleFromPoint
+      ([&](const BaseMappedIntegrationRule& primary_mir)
        {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
+         auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
+         secondary_trafo(pair.secondary_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
-              auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.other_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
+              auto& fel = fes->GetFE(pair.primary_el, lh);
+              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 if(!ce->IsDeformed())
-                  ce->ApplyAdd(fel, s_fel, m_mir, elx, ely, lh);
+                  ce->ApplyAdd(fel, secondary_fel, primary_mir, elx, ely, lh);
               for(const auto& ci : cb->GetIntegrators())
                 if(!ci->IsDeformed())
-                  ci->ApplyAdd(fel, s_fel, m_mir, elx, ely, lh);
+                  ci->ApplyAdd(fel, secondary_fel, primary_mir, elx, ely, lh);
             });
        });
 
-    // m_trafo.AddDeformation(deformation, lh);
-    m_trafo.AddDeformation(deformation, lh)(pair.master_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& m_mir)
+    // primary_trafo.AddDeformation(deformation, lh);
+    primary_trafo.AddDeformation(deformation, lh)(pair.primary_ip, lh).IntegrationRuleFromPoint
+      ([&](const BaseMappedIntegrationRule& primary_mir)
        {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         // s_trafo.AddDeformation(deformation, lh);
-         s_trafo.AddDeformation(deformation, lh)(pair.other_ip, lh).IntegrationRuleFromPoint
+         auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
+         // secondary_trafo.AddDeformation(deformation, lh);
+         secondary_trafo.AddDeformation(deformation, lh)(pair.secondary_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
-              auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.other_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
+              auto& fel = fes->GetFE(pair.primary_el, lh);
+              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 if(ce->IsDeformed())
-                  ce->ApplyAdd(fel, s_fel, m_mir, elx, ely, lh);
+                  ce->ApplyAdd(fel, secondary_fel, primary_mir, elx, ely, lh);
               for(const auto& ci : cb->GetIntegrators())
                 if(ci->IsDeformed())
-                  ci->ApplyAdd(fel, s_fel, m_mir, elx, ely, lh);
+                  ci->ApplyAdd(fel, secondary_fel, primary_mir, elx, ely, lh);
             });
        });
+    */
   }
 
   template<int DIM>
@@ -1069,48 +1135,81 @@ namespace ngcomp
                                                         FlatMatrix<double> elmat,
                                                         LocalHeap& lh) const
   {
-    auto& m_trafo = fes->GetMeshAccess()->GetTrafo(pair.master_el, lh);
+    // NETGEN_TIMER_FROM_HERE("ContactElement::CalcLinearizedElementMatrix");
+    
     elmat = 0.;
-    m_trafo(pair.master_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& m_mir)
+
+    auto& primary_trafo = fes->GetMeshAccess()->GetTrafo(pair.primary_el, lh);
+    auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
+    auto& primary_deformed_trafo = primary_trafo.AddDeformation(deformation, lh);
+    auto& secondary_deformed_trafo = secondary_trafo.AddDeformation(deformation, lh);
+
+    IntegrationRule primary_ir(1, &const_cast<IntegrationPoint&>(pair.primary_ip));
+    IntegrationRule secondary_ir(1, &const_cast<IntegrationPoint&>(pair.secondary_ip));
+
+    auto& primary_fel = fes->GetFE(pair.primary_el, lh);
+    auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+    
+    for (bool def : { false, true })
+      {
+        auto& energies = cb->GetEnergies(def);
+        auto& integrators = cb->GetIntegrators(def);
+        if (energies.Size() || integrators.Size())
+          {
+            MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
+            MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
+            primary_mir.SetOtherMIR(&secondary_mir);
+
+            for(const auto& ci : integrators)
+              ci->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
+            for(const auto& ce : energies)
+              ce->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
+          }
+      }
+
+
+    
+    /*
+    primary_trafo(pair.primary_ip, lh).IntegrationRuleFromPoint
+      ([&](const BaseMappedIntegrationRule& primary_mir)
        {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         s_trafo(pair.other_ip, lh).IntegrationRuleFromPoint
+         auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
+         secondary_trafo(pair.secondary_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
-              auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.other_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
+              auto& fel = fes->GetFE(pair.primary_el, lh);
+              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 if(!ce->IsDeformed())
-                  ce->CalcLinearizedAdd(fel, s_fel, m_mir, elx, elmat, lh);
+                  ce->CalcLinearizedAdd(fel, secondary_fel, primary_mir, elx, elmat, lh);
               for(const auto& ci : cb->GetIntegrators())
                 if(!ci->IsDeformed())
-                  ci->CalcLinearizedAdd(fel, s_fel, m_mir, elx, elmat, lh);
+                  ci->CalcLinearizedAdd(fel, secondary_fel, primary_mir, elx, elmat, lh);
             });
        });
 
-    // m_trafo.AddDeformation(deformation, lh);
-    m_trafo.AddDeformation(deformation, lh)(pair.master_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& m_mir)
+    // primary_trafo.AddDeformation(deformation, lh);
+    primary_trafo.AddDeformation(deformation, lh)(pair.primary_ip, lh).IntegrationRuleFromPoint
+      ([&](const BaseMappedIntegrationRule& primary_mir)
        {
-         auto& s_trafo = fes->GetMeshAccess()->GetTrafo(pair.other_el, lh);
-         // s_trafo.AddDeformation(deformation, lh);
-         s_trafo.AddDeformation(deformation, lh)(pair.other_ip, lh).IntegrationRuleFromPoint
+         auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
+         // secondary_trafo.AddDeformation(deformation, lh);
+         secondary_trafo.AddDeformation(deformation, lh)(pair.secondary_ip, lh).IntegrationRuleFromPoint
            ([&](const BaseMappedIntegrationRule& s_mir)
             {
-              auto& fel = fes->GetFE(pair.master_el, lh);
-              auto& s_fel = fes->GetFE(pair.other_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(m_mir).SetOtherMIR(&s_mir);
+              auto& fel = fes->GetFE(pair.primary_el, lh);
+              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
+              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
               for(const auto& ce : cb->GetEnergies())
                 if(ce->IsDeformed())
-                  ce->CalcLinearizedAdd(fel, s_fel, m_mir, elx, elmat, lh);
+                  ce->CalcLinearizedAdd(fel, secondary_fel, primary_mir, elx, elmat, lh);
               for(const auto& ci : cb->GetIntegrators())
                 if(ci->IsDeformed())
-                  ci->CalcLinearizedAdd(fel, s_fel, m_mir, elx, elmat, lh);
+                  ci->CalcLinearizedAdd(fel, secondary_fel, primary_mir, elx, elmat, lh);
             });
        });
-
+    */
   }
 
   template class ContactElement<2>;

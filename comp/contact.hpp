@@ -8,8 +8,8 @@ namespace ngcomp
   template<int DIM>
   struct ContactPair
   {
-    ElementId master_el, other_el;
-    IntegrationPoint master_ip, other_ip;
+    ElementId primary_el, secondary_el;
+    IntegrationPoint primary_ip, secondary_ip;
   };
 
   class GapFunction : public CoefficientFunctionNoDerivative
@@ -22,9 +22,9 @@ namespace ngcomp
     double h;
 
   public:
-    GapFunction( shared_ptr<MeshAccess> ma_, Region master_, Region other_)
+    GapFunction( shared_ptr<MeshAccess> ma_, Region primary_, Region secondary_)
       : CoefficientFunctionNoDerivative(ma_->GetDimension()),
-        ma(ma_), master(master_), other(other_)
+        ma(ma_), master(primary_), other(secondary_)
     { }
 
     virtual void Update(shared_ptr<GridFunction> gf, int intorder_, double h_) = 0;
@@ -36,8 +36,8 @@ namespace ngcomp
   {
     unique_ptr<netgen::BoxTree<DIM, int>> searchtree;
   public:
-    T_GapFunction( shared_ptr<MeshAccess> mesh_, Region master_, Region other_)
-      : GapFunction(mesh_, master_, other_)
+    T_GapFunction( shared_ptr<MeshAccess> mesh_, Region primary_, Region secondary_)
+      : GapFunction(mesh_, primary_, secondary_)
     { }
 
     void Update(shared_ptr<GridFunction> gf, int intorder_, double h) override;
@@ -148,15 +148,15 @@ namespace ngcomp
     shared_ptr<GapFunction> gap;
     shared_ptr<CoefficientFunction> normal;
     Region master, other;
-    Array<shared_ptr<ContactEnergy>> energies;
-    Array<shared_ptr<ContactIntegrator>> integrators;
+    Array<shared_ptr<ContactEnergy>> energies, undeformed_energies, deformed_energies;
+    Array<shared_ptr<ContactIntegrator>> integrators, undeformed_integrators, deformed_integrators;
     shared_ptr<FESpace> fes_displacement;
     shared_ptr<FESpace> fes;
 
     // For visualization only
     bool draw_pairs = false;
-    Array<Vec<3>> master_points;
-    Array<Vec<3>> other_points;
+    Array<Vec<3>> primary_points;
+    Array<Vec<3>> secondary_points;
   public:
     void Draw();
     ContactBoundary(Region _master, Region _other, bool draw_pairs = false);
@@ -177,7 +177,9 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> Gap() const { return gap; }
     shared_ptr<CoefficientFunction> Normal() const { return normal; }
     const auto& GetEnergies() const { return energies; }
+    const auto& GetEnergies(bool def) const { return def ? deformed_energies : undeformed_energies; }    
     const auto& GetIntegrators() const { return integrators; }
+    const auto& GetIntegrators(bool def) const { return def ? deformed_integrators : undeformed_integrators; }    
     shared_ptr<FESpace> GetFESpace() const { return fes; }
   };
 
