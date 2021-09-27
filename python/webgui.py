@@ -160,6 +160,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         d['deformation'] = deformation
         deformation = None
 
+    func0 = None
     func2 = None
     if func and func.is_complex:
         d['is_complex'] = True
@@ -177,16 +178,21 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         # no function at all -> we are just drawing a mesh, eval mesh element index instead
         mats = mesh.GetMaterials()
         bnds = mesh.GetBoundaries()
+        bbnds = mesh.GetBBoundaries()
         nmats = len(mesh.GetMaterials())
         nbnds = len(mesh.GetBoundaries())
-        n = max(nmats, nbnds)
+        n = max(nmats, nbnds, len(bbnds))
         func1 = ngs.CoefficientFunction(list(range(n)))
         n_regions = [0, 0, nmats, nbnds]
         d['mesh_regions_2d'] = n_regions[mesh.dim]
         d['mesh_regions_3d'] = nmats if mesh.dim==3 else 0
+        d['names'] = bnds if mesh.dim==3 else mats
+        d['edge_names'] = bbnds if mesh.dim==3 else bnds
         d['funcdim'] = 0
-    func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
-    func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, 0.0 ) )
+        func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
+        func0 = func1
+    if func0 = None:
+        func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, 0.0 ) )
     if deformation is not None:
         func1 += ngs.CoefficientFunction((deformation, 0.0))
         func0 += ngs.CoefficientFunction((deformation, 0.0))
