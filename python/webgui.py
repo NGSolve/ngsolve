@@ -191,7 +191,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         d['funcdim'] = 0
         func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
         func0 = func1
-    if func0 = None:
+    if func0 is None:
         func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, 0.0 ) )
     if deformation is not None:
         func1 += ngs.CoefficientFunction((deformation, 0.0))
