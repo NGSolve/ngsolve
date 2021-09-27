@@ -189,10 +189,14 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         d['names'] = bnds if mesh.dim==3 else mats
         d['edge_names'] = bbnds if mesh.dim==3 else bnds
         d['funcdim'] = 0
-        func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
         func0 = func1
+
     if func0 is None:
-        func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, 0.0 ) )
+        func0 = ngs.CoefficientFunction( 0.0 )
+
+    func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
+    func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func0 ) )
+
     if deformation is not None:
         func1 += ngs.CoefficientFunction((deformation, 0.0))
         func0 += ngs.CoefficientFunction((deformation, 0.0))
