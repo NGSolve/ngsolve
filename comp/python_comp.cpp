@@ -366,6 +366,7 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                                ret.push_back ( make_tuple(mui.Name(), mui.NBytes(), mui.NBlocks()));
                              return ret;
                            })
+    .def_property_readonly("flags", &NGS_Object::GetFlags)
     ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
