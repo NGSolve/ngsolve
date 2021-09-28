@@ -1674,6 +1674,10 @@ active_dofs : BitArray or None
            self.SetActiveDofs(active_dofs);
          },
          py::arg("dofs"))
+    .def("GetActiveDofs", [](CompressedFESpace& self)
+    {
+      return self.GetActiveDofs();
+    })
     .def("GetBaseSpace", [](CompressedFESpace & self)
          {
            return self.GetBaseSpace();
