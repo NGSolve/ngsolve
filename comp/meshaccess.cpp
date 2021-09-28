@@ -7,6 +7,7 @@
 /* 
    Access to fe mesh
 */
+#include <core/register_archive.hpp>
 #ifdef NGS_PYTHON
 #include <core/python_ngcore.hpp>
 #endif // NGS_PYTHON
@@ -2606,6 +2607,7 @@ namespace ngcomp
   }
   
 static RegisterClassForArchive<BoundaryFromVolumeCoefficientFunction, CoefficientFunction> regbfvcf;
+static RegisterClassForArchive<Region> regregion;
 
 }
 
