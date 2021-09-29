@@ -8,6 +8,7 @@
    Finite Element Coefficient Function
 */
 
+#include <core/register_archive.hpp>
 #include <fem.hpp>
 #include <../ngstd/evalfunc.hpp>
 #include <algorithm>

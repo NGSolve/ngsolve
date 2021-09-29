@@ -2,6 +2,7 @@
 #define PYTHON_FEM_HPP___
 #ifdef NGS_PYTHON
 
+#include <core/register_archive.hpp>
 #include <fem.hpp>
 
 namespace ngfem
