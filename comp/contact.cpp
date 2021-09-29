@@ -454,7 +454,7 @@ namespace ngcomp
         IntRange trial_range = proxy->IsOther() ?
           IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size())
           : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
-        ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
+        ud.AssignMemory(proxy, primary_mir.Size(), proxy->Dimension(), lh);
         if(proxy->IsOther())
           proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
@@ -488,7 +488,7 @@ namespace ngcomp
         IntRange trial_range = proxy->IsOther() ?
           IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size())
           : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
-        ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
+        ud.AssignMemory(proxy, primary_mir.Size(), proxy->Dimension(), lh);
         if(proxy->IsOther())
           proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
@@ -543,7 +543,7 @@ namespace ngcomp
     for(auto proxy : trial_proxies)
       {
         IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
-        ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
+        ud.AssignMemory(proxy, primary_mir.Size(), proxy->Dimension(), lh);
         if(proxy->IsOther())
           proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
@@ -679,7 +679,7 @@ namespace ngcomp
     for(auto proxy : trial_proxies)
       {
         IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
-        ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
+        ud.AssignMemory(proxy, primary_mir.Size(), proxy->Dimension(), lh);
         if(proxy->IsOther())
           proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
@@ -731,7 +731,7 @@ namespace ngcomp
     for(auto proxy : trial_proxies)
       {
         IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
-        ud.AssignMemory(proxy, 1, proxy->Dimension(), lh);
+        ud.AssignMemory(proxy, primary_mir.Size(), proxy->Dimension(), lh);
         if(proxy->IsOther())
           proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
