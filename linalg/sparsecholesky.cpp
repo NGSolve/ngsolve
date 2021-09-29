@@ -6,6 +6,7 @@
 /* Date:   18. Nov. 2001                                                   */
 /* *************************************************************************/
 
+#include <core/register_archive.hpp>
 #include <la.hpp>
 
 #include <core/concurrentqueue.h>
