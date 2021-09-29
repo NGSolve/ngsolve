@@ -924,6 +924,8 @@ namespace ngcomp
                      auto cont_el = dynamic_cast<ContactElement<DIM>*>(specialels[index].get());
                      if(cont_el && cont_el->GetContactBoundary() == this)
                        bf->DeleteSpecialElement(index);
+
+                     else
                      {
                        auto cont_el = dynamic_cast<MPContactElement<DIM>*>(specialels[index].get());
                        if(cont_el && cont_el->GetContactBoundary() == this)
