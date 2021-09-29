@@ -211,6 +211,41 @@ namespace ngcomp
     ContactBoundary* GetContactBoundary() const
     { return cb; }
   };
+
+
+  template<int DIM>
+  class MPContactElement : public SpecialElement
+  {
+    // ContactPair<DIM> pair;
+    ElementId primary_ei, secondary_ei;
+    IntegrationRule primary_ir, secondary_ir;
+    ContactBoundary* cb;
+    FESpace* fes;
+    GridFunction* deformation;
+  public:
+    MPContactElement(ElementId primary_ei, ElementId secondary_ei,
+                     IntegrationRule primary_ir, IntegrationRule secondary_ir,
+                     ContactBoundary* _cb,
+                     GridFunction* deformation);
+
+    void GetDofNrs(Array<DofId>& dnums) const override;
+
+    double Energy(FlatVector<double> elx,
+                  LocalHeap& lh) const override;
+
+    void Apply(FlatVector<double> elx,
+               FlatVector<double> ely,
+               LocalHeap& lh) const override;
+
+    void CalcLinearizedElementMatrix(FlatVector<double> elx,
+                                     FlatMatrix<double> elmat,
+                                     LocalHeap& lh) const override;
+
+    ContactBoundary* GetContactBoundary() const
+    { return cb; }
+  };
+
+  
 } // namespace ngcomp
 
 #endif // NGSOLVE_CONTACT_HPP
