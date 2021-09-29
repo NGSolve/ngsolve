@@ -948,6 +948,7 @@ namespace ngcomp
 
                       // #define MULTIPOINT
 #ifdef MULTIPOINT
+                      FlatArray<IntegrationPoint> this_ir(ir.Size(), lh);
                       FlatArray<IntegrationPoint> other_ir(ir.Size(), lh);
                       FlatArray<size_t> other_nr(ir.Size(), lh);
 
@@ -957,6 +958,7 @@ namespace ngcomp
                           auto pair = tgap->CreateContactPair(mip, lh);
                           if (pair.has_value())
                             {
+                              this_ir[cntpair] =  (*pair).primary_ip;
                               other_ir[cntpair] = (*pair).secondary_ip;
                               other_nr[cntpair] = (*pair).secondary_el.Nr();
                               cntpair++;
@@ -984,7 +986,7 @@ namespace ngcomp
                           IntegrationRule secondary_ir;
                           for (int i = first; i < next; i++)
                             {
-                              primary_ir.AddIntegrationPoint (ir[index[i]]);
+                              primary_ir.AddIntegrationPoint (this_ir[index[i]]);
                               secondary_ir.AddIntegrationPoint (other_ir[index[i]]);
                             }
                           lock_guard<mutex> guard(add_mutex);
