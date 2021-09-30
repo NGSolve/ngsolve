@@ -42,7 +42,8 @@ namespace ngcomp
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
 		  LocalHeap & clh,
                   bool dualdiffop = false, bool use_simd = true, int mdcomp=0,
-                  optional<shared_ptr<BitArray>> definedonelements = nullopt);
+                  optional<shared_ptr<BitArray>> definedonelements = nullopt,
+                  int bonus_intorder=0);
   
   extern NGS_DLL_HEADER 
   void SetValues (shared_ptr<CoefficientFunction> coef,
@@ -51,7 +52,8 @@ namespace ngcomp
 		  DifferentialOperator * diffop,   // NULL is FESpace evaluator
 		  LocalHeap & clh,
                   bool dualdiffop = false, bool use_simd = true, int mdcomp=0,
-                  optional<shared_ptr<BitArray>> definedonelements = nullopt);
+                  optional<shared_ptr<BitArray>> definedonelements = nullopt,
+                  int bonus_intorder=0);
   
 
   template <class SCAL>
