@@ -388,7 +388,8 @@ namespace ngcomp
 		  DifferentialOperator * diffop,
 		  LocalHeap & clh,
                   bool dualdiffop = false, bool use_simd = true, int mdcomp = 0,
-                  optional<shared_ptr<BitArray>> definedonelements = nullopt)
+                  optional<shared_ptr<BitArray>> definedonelements = nullopt,
+                  int bonus_intorder = 0)
   {
     static Timer sv("timer setvalues"); RegionTimer r(sv);
 
@@ -508,7 +509,7 @@ namespace ngcomp
 			 Facet2ElementTrafo f2el (fel.ElementType(), el_vb);
 			 for (int locfnr : Range(f2el.GetNFacets()))
 			   {
-			     SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+			     SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order()+bonus_intorder);
 			     auto & irvol = f2el(locfnr, irfacet, lh);
 			     auto & mir = eltrans(irvol, lh);
 
@@ -587,7 +588,7 @@ namespace ngcomp
 		 for (int locfnr : Range(f2el.GetNFacets()))
                    {
                      HeapReset hr(lh);
-                     IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order());
+                     IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * fel.Order() + bonus_intorder);
                      auto & irvol = f2el(locfnr, irfacet, lh);
                      auto & mir = eltrans(irvol, lh);
                      // mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
@@ -712,7 +713,7 @@ namespace ngcomp
                {
                  try
                    {
-                     SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+                     SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order() + bonus_intorder);
                      FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, ir.Size(), lh);
                      
                      auto & mir = eltrans(ir, lh);
@@ -784,7 +785,7 @@ namespace ngcomp
                    }
                }
              
-             IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+             IntegrationRule ir(fel.ElementType(), 2*fel.Order() + bonus_intorder);
              FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
              
              BaseMappedIntegrationRule & mir = eltrans(ir, lh);
@@ -889,12 +890,13 @@ namespace ngcomp
                                  bool dualdiffop,
                                  bool use_simd,
                                  int mdcomp,
-                                 optional<shared_ptr<BitArray>> definedonelements)
+                                 optional<shared_ptr<BitArray>> definedonelements,
+                                 int bonus_intorder)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements);
+      SetValues<Complex> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
     else
-      SetValues<double> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements);
+      SetValues<double> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
   }
 
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
@@ -903,12 +905,13 @@ namespace ngcomp
 				 DifferentialOperator * diffop,
 				 LocalHeap & clh,
                                  bool dualdiffop, bool use_simd, int mdcomp,
-                                 optional<shared_ptr<BitArray>> definedonelements)
+                                 optional<shared_ptr<BitArray>> definedonelements,
+                                 int bonus_intorder)
   {
     if (u.GetFESpace()->IsComplex())
-      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements);
+      SetValues<Complex> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
     else
-      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements);
+      SetValues<double> (coef, u, reg.VB(), &reg, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
   }
 
 

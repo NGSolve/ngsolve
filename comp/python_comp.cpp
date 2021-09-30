@@ -1921,7 +1921,7 @@ parallel : bool
 )raw_string"))
     .def("Set", 
          [](shared_ptr<GF> self, spCF cf,
-            VorB vb, py::object definedon, bool dualdiffop, bool use_simd, int mdcomp, optional<shared_ptr<BitArray>> definedonelements)
+            VorB vb, py::object definedon, bool dualdiffop, bool use_simd, int mdcomp, optional<shared_ptr<BitArray>> definedonelements, int bonus_intorder)
          {
            shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
             Region * reg = nullptr;
@@ -1936,9 +1936,9 @@ parallel : bool
               return;
             }            
             if (reg)
-              SetValues (cf, *self, *reg, NULL, glh, dualdiffop, use_simd, mdcomp, definedonelements);
+              SetValues (cf, *self, *reg, NULL, glh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
             else
-              SetValues (cf, *self, vb, NULL, glh, dualdiffop, use_simd, mdcomp, definedonelements);
+              SetValues (cf, *self, vb, NULL, glh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
          },
          py::arg("coefficient"),
          py::arg("VOL_or_BND")=VOL,
@@ -1946,7 +1946,8 @@ parallel : bool
 	 py::arg("dual")=false,
          py::arg("use_simd")=true,
          py::arg("mdcomp")=0, 
-         py::arg("definedonelements")=nullopt, 
+         py::arg("definedonelements")=nullopt,
+         py::arg("bonus_intorder")=0,
          docu_string(R"raw_string(
 Set values
 
@@ -1967,6 +1968,15 @@ dual : bool
 
 use_simd : bool
   If set to false does not use SIMD (for debugging).
+
+mdcomp : int
+  .
+
+definedonelements : nullopt
+  .
+
+bonus_intorder : int
+  Increase numerical integration order.
 
 )raw_string"))
 
