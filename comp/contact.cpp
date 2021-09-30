@@ -948,7 +948,7 @@ namespace ngcomp
                       MappedIntegrationRule<DIM-1, DIM> mir(ir, trafo, lh);
 
 
-                      // #define MULTIPOINT
+#define MULTIPOINT
 #ifdef MULTIPOINT
                       FlatArray<IntegrationPoint> this_ir(ir.Size(), lh);
                       FlatArray<IntegrationPoint> other_ir(ir.Size(), lh);
@@ -1381,7 +1381,7 @@ namespace ngcomp
                                                         FlatMatrix<double> elmat,
                                                         LocalHeap& lh) const
   {
-    // NETGEN_TIMER_FROM_HERE("ContactElement::CalcLinearizedElementMatrix");
+    // NETGEN_TIMER_FROM_HERE("MPContactElement::CalcLinearizedElementMatrix");
     
     elmat = 0.;
 
