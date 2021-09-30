@@ -966,7 +966,7 @@ namespace ngcomp
                               cntpair++;
                             }
                         }
-                      cout << "other_nr = " << other_nr << endl;
+                      // cout << "other_nr = " << other_nr << endl;
                       
                       FlatArray<int> index(cntpair, lh);
                       for (int i : Range(cntpair))
@@ -974,7 +974,7 @@ namespace ngcomp
 
                       QuickSort (index, [&] (auto i1, auto i2) { return other_nr[i1] < other_nr[i2]; });
                       
-                      cout << "index = " << index << endl;
+                      // cout << "index = " << index << endl;
                       
                       int first = 0;
                       while (first < cntpair)
@@ -982,7 +982,7 @@ namespace ngcomp
                           int next = first;
                           while (next < cntpair && other_nr[index[next]] == other_nr[index[first]])
                             next++;
-                          cout << "interval = [" << first << ", " << next << ")" << endl;
+                          // cout << "interval = [" << first << ", " << next << ")" << endl;
                           
                           IntegrationRule primary_ir;
                           IntegrationRule secondary_ir;
