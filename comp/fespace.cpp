@@ -3698,6 +3698,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                           bool checkflags)
     : CompoundFESpace (space->GetMeshAccess(), flags)
   {
+    order = space->GetOrder();
     for (int i = 0; i < dim; i++)
       AddSpace (space);
     
@@ -3728,6 +3729,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                  bool checkflags)
     : CompoundFESpace (space->GetMeshAccess(), flags), vdim(avdim)
   {
+    order = space->GetOrder();    
     symmetric = flags.GetDefineFlag("symmetric");
     deviatoric = flags.GetDefineFlag("deviatoric");
 
