@@ -67,9 +67,25 @@ namespace ngfem
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
                               LocalHeap & lh) const override
     {
-      BASE::Interpolate (trafo, func, coefs, lh);
+      if (auto ipts = GetNodalPoints(); ipts.Size())
+        {
+          HeapReset hr(lh);
+          // IntegrationPoint ipts[] = {
+          // { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 }
+          // };
+          IntegrationRule ir(ipts.Size(), ipts.Data());
+          auto & mir = trafo(ir, lh);
+          func.Evaluate (mir, coefs);
+        }
+      else
+        BASE::Interpolate (trafo, func, coefs, lh);
     }
-      
+
+    FlatArray<IntegrationPoint> GetNodalPoints() const
+    {
+      return { 0, nullptr };
+    }
+    
     
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     {
@@ -573,9 +589,6 @@ namespace ngfem
     shape[3] = 1-x-y-z;
   }
 
-    
-  
-
   /*
   class FE_Tet1 : public T_ScalarFiniteElementFO<FE_Tet1,ET_TET,4,1>
   {
@@ -596,12 +609,14 @@ namespace ngfem
   */
 
   ///
-  class FE_Tet2 : public T_ScalarFiniteElementFO<FE_Tet2,ET_TET,10,2>
+  // class FE_Tet2 : public T_ScalarFiniteElementFO<FE_Tet2,ET_TET,10,2>
+  // public:
+  //  template<typename Tx, typename TFA>  
+  //  static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape)
+  
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_TET,2> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
   {
-  public:
-    template<typename Tx, typename TFA>  
-    static INLINE void T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
-    {
       Tx x = ip.x;
       Tx y = ip.y;
       Tx z = ip.z;
@@ -618,7 +633,6 @@ namespace ngfem
       shape[7] = 4 * y * z;
       shape[8] = 4 * y * lam4;
       shape[9] = 4 * z * lam4;
-    }
   };
 
 
@@ -981,6 +995,30 @@ namespace ngfem
   }
   */
 
+  template<>
+  FlatArray<IntegrationPoint> ScalarFE<ET_TET,1> :: GetNodalPoints() const
+  {
+    static IntegrationPoint ipts[] = {
+      { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 }
+    };
+
+    return { 4, &ipts[0] };
+  }
+
+  template<>
+  FlatArray<IntegrationPoint> ScalarFE<ET_TET,2> :: GetNodalPoints() const
+  {
+    static IntegrationPoint ipts[] = {
+      { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 },
+      { 0.5, 0.5, 0 }, { 0.5, 0, 0.5 }, { 0.5, 0, 0 },
+      { 0, 0.5, 0.5 }, { 0, 0.5, 0 }, { 0, 0, 0.5 } 
+    };
+
+    return { 10, &ipts[0] };
+  }
+
+
+  
   template<> 
   void ScalarFE<ET_TET,1> :: Interpolate (const ElementTransformation & trafo, 
                                           const class CoefficientFunction & func, SliceMatrix<> coefs,
@@ -1035,7 +1073,8 @@ namespace ngfem
   H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TET,0>,ET_TET>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TET,1>,ET_TET>;
   // H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Tet1,ET_TET>;
-  H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Tet2,ET_TET>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_TET,2>,ET_TET>;  
+  // H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Tet2,ET_TET>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Tet2HB,ET_TET>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_NcTet1,ET_TET>;
 
@@ -1103,7 +1142,7 @@ namespace ngfem
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TET,0>,ET_TET,1,0>;
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<ScalarFE<ET_TET,1>,ET_TET,4,1>;
   // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Tet1,ET_TET,4,1>;
-  H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Tet2,ET_TET,10,2>;
+  // H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Tet2,ET_TET,10,2>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_Tet2HB,ET_TET,10,2>;
   H1LOFE_EXTERN template class T_ScalarFiniteElementFO<FE_NcTet1,ET_TET,4,1>;
 
@@ -1137,6 +1176,7 @@ namespace ngfem
 
   H1LOFE_EXTERN template class ScalarFE<ET_TET,0>;
   H1LOFE_EXTERN template class ScalarFE<ET_TET,1>;
+  H1LOFE_EXTERN template class ScalarFE<ET_TET,2>;
 
   H1LOFE_EXTERN template class ScalarFE<ET_PRISM,0>;
   H1LOFE_EXTERN template class ScalarFE<ET_PRISM,1>;
