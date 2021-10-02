@@ -3701,6 +3701,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     order = space->GetOrder();
     for (int i = 0; i < dim; i++)
       AddSpace (space);
+
+    // interleaved: not yet implemented, will copy from VectorH1
+    interleaved = flags.GetDefineFlag("interleaved");  
     
     for (auto vb : { VOL, BND, BBND, BBBND })
       {
