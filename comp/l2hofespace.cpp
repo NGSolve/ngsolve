@@ -1177,7 +1177,7 @@ global system.
         *cnt = 0;
       }
 
-    
+
     for (auto elclass_inds : table)
       {
         if (elclass_inds.Size() == 0) continue;
@@ -1200,7 +1200,7 @@ global system.
             tracespace->GetDofNrs(ei, dnumsy);
             xdofs[i] = dnumsx;
             ydofs[i] = dnumsy;
-            
+
             if (avg)
               for (auto d : dnumsy)
                 (*cnt)(d) += 1;
@@ -1226,7 +1226,7 @@ global system.
         sum = make_shared<ProductMatrix> (diag, sum);
       }
 
-      
+
     return sum;
   }
 
@@ -1682,7 +1682,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           }
         else
           {
-            Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());            
+            Ngs_Element ngel = ma->GetElement<2,BND> (ei.Nr());
             // SwitchET generates an "internal compiler error" on MSVC 2019 14.28.29910
             if(ngel.GetType()==ET_TRIG)
             {
@@ -2467,7 +2467,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         }
     }
     */
-    
+
     using DiffOp<DiffOpGradVectorL2Piola>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
@@ -2499,7 +2499,37 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       if (!mir.GetTransformation().IsCurvedElement())
         return;
 
-      // For curved elements part is still missing
+      STACK_ARRAY(SIMD<double>, mem2, DIM_SPC*mir.Size());
+      FlatMatrix<SIMD<double>> val(DIM_SPC, mir.Size(), &mem2[0]);
+      val = SIMD<double>(0.0);
+
+      for (size_t k = 0; k < DIM_SPC; k++) {
+        feli.Evaluate(mir.IR(),  x.Range(k*ndofi, (k+1)*ndofi), val.Row(k));
+      }
+
+      for (size_t ip = 0; ip < mir.Size(); ip++)
+        {
+          auto jac = mir[ip].GetJacobian();
+          auto inv = mir[ip].GetJacobianInverse();
+          auto invJ = 1/mir[ip].GetJacobiDet();
+          Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC,SIMD<double>>> hesse;
+          mir[ip].CalcHesse(hesse);
+
+          Vec<DIM_SPC, Mat<DIM_SPC,DIM_SPC,SIMD<double>>> invjac_hesse;
+          for (int i = 0; i < DIM_SPC; i++)
+            invjac_hesse(i) = Trans(inv) * hesse(i);
+
+          Vec<DIM_SPC,SIMD<double>> inv_hesse = SIMD<double>(0.0);
+          for (int i = 0; i < DIM_SPC; i++)
+            for (int j = 0; j < DIM_SPC; j++)
+              inv_hesse(i) += invjac_hesse(j)(j,i);
+          inv_hesse = Trans(inv) * inv_hesse;
+
+          for (int i = 0; i < DIM_SPC; i++)
+            for (int j = 0; j < DIM_SPC; j++)
+              for (int k = 0; k < DIM_SPC; k++)
+                y(i*DIM_SPC+j,ip) += invJ * (invjac_hesse(i)(j,k)-inv_hesse(j)*jac(i,k)) * val(k,ip);
+        }
     }
 
     using DiffOp<DiffOpGradVectorL2Piola>::AddTransSIMDIR;
@@ -2605,15 +2635,15 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       size_t ndofi = feli.GetNDof();
 
       feli.CalcShape (mir.IR(), mat.Rows(ndofi));
-      
+
       STACK_ARRAY(SIMD<double>, mem, ndofi);
       FlatVector<SIMD<double>> shapei(ndofi, &mem[0]);
-      
+
       for (auto i_ip : Range(mir))
         {
           auto col = mat.Col(i_ip);
           shapei = col.Range(ndofi);
-          
+
           auto & mip = static_cast<const SIMD<ngfem::MappedIntegrationPoint<DIM_ELEMENT,DIM_SPC>>&>(mir[i_ip]);
           auto trafo = mip.GetJacobianInverse();
 
