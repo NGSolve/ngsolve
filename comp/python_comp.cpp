@@ -1272,7 +1272,15 @@ component : int
     ;
 
   py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>
-    (m,"ProductSpaceAllSame")
+    (m,"VectorValued")
+    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim) {
+          Flags flags;
+          int sdim = optdim.value_or (space->GetSpatialDimension());
+          auto vecspace = make_shared<CompoundFESpaceAllSame> (space, sdim, flags);
+          vecspace->Update();
+          vecspace->FinalizeUpdate();
+          return vecspace;
+        }),py::arg("space"), py::arg("dim")=nullopt)
     .def(py::pickle([] (py::object pyfes)
                     {
                       auto fes = py::cast<shared_ptr<CompoundFESpaceAllSame>>(pyfes);

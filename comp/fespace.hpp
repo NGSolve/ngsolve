@@ -1298,6 +1298,7 @@ ANY                  1 1 1 1 | 15
 
   class NGS_DLL_HEADER CompoundFESpaceAllSame : public CompoundFESpace
   {
+    bool interleaved;
   public:
     CompoundFESpaceAllSame (shared_ptr<FESpace> space, int dim, const Flags & flags,
                             bool checkflags = false);
