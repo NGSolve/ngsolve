@@ -1005,6 +1005,27 @@ val : can be one of the following:
          }, py::arg("components"))
 
     
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<shared_ptr<CF>, shared_ptr<CF>> vectors)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 2)
+             throw py::index_error();
+           
+           auto [v0,v1] = vectors;
+           return MakeVectorContractionCoefficientFunction (self, Array{v0,v1});
+         })
+    
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<shared_ptr<CF>, shared_ptr<CF>, shared_ptr<CF>> vectors)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 3)
+             throw py::index_error();
+           
+           auto [v0,v1,v2] = vectors;
+           return MakeVectorContractionCoefficientFunction (self, Array{v0,v1,v2});
+         })
+
+    
     
 
     // coefficient expressions

@@ -4907,6 +4907,203 @@ MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first,
 
 
 
+// ********************** VectorContractionCoefficientFunction **********************
+
+  
+class VectorContractionCoefficientFunction : public T_CoefficientFunction<VectorContractionCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  typedef T_CoefficientFunction<VectorContractionCoefficientFunction> BASE;
+  Array<shared_ptr<CoefficientFunction>> vectors;
+public:
+  VectorContractionCoefficientFunction() = default;
+  VectorContractionCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                        Array<shared_ptr<CoefficientFunction>> avectors)
+    : BASE(1, ac1->IsComplex()), c1(ac1), vectors(move(avectors))
+  {
+    elementwise_constant = c1->ElementwiseConstant();
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1) & vectors;
+  }
+
+  /*
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    auto dims1 = c1->Dimensions();
+
+    if(num.Size()==1)
+      {
+        for (int i = 0; i < num[0]; i++)
+         {
+            int i1,k1;
+            auto comp = first+i*dist[0];
+            GetIndex(dims1, comp, i1, k1);
+            code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
+          }
+      }
+
+    if(num.Size()==2)
+      {
+        for (int i = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+             {
+                int i1,j1;
+                auto comp = first+i*dist[0]+j*dist[1];
+                GetIndex(dims1, comp, i1, j1);
+                code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
+              }
+      }
+  }
+  */
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    for (auto v : vectors)
+      v->TraverseTree (func);
+    func(*this);
+  }
+
+  /*
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
+  */
+  
+  using BASE::Evaluate;
+
+  
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    STACK_ARRAY(T, hmem, ir.Size()*c1->Dimension());
+    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), &hmem[0]);
+    STACK_ARRAY(T, hmem2, ir.Size()*c1->Dimension());  // 
+    
+    c1->Evaluate (ir, temp);
+
+    size_t nv = ir.Size();
+    size_t actdim = c1->Dimension();
+
+    for (int dir = 0; dir < vectors.Size(); dir++)
+      {
+        FlatMatrix<T,ORD> vi(vectors[dir]->Dimension(), ir.Size(), &hmem2[0]);
+        vectors[dir]->Evaluate(ir, vi);
+
+        size_t newdim = actdim / vi.Height();
+        for (size_t i = 0; i < newdim; i++)
+          temp.Row(i) = pw_mult(temp.Row(i), vi.Row(0));
+        for (size_t j = 1; j < vi.Height(); j++)
+          for (size_t i = 0; i < newdim; i++)
+            temp.Row(i) += pw_mult(temp.Row(j*newdim+i), vi.Row(j));
+
+        /*
+        for (size_t k = 0; k < nv; k++)
+          for (size_t i = 0; i < newdim; i++)
+            {
+              T sum{0.0};
+              for (size_t j = 0; j < vi.Height(); j++)
+                sum += temp(i+j*newdim, k) * vi(j,k);
+              temp(i,k) = sum;
+            }
+        */
+        actdim = newdim;
+      }
+    for (size_t k = 0; k < nv; k++)
+      values(0,k) = temp(0,k);
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    throw Exception ("vector contraction in-out not implemented");
+    /*
+    auto in0 = input[0];
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values.Row(i).Range(ir.Size()) = in0.Row(first+i*dist[0]);
+        break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]);
+        break;
+        
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+    */
+  }
+
+  /*
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return MakeVectorContractionCoefficientFunction (c1->Diff(var, dir), first, Array<int> (num), Array<int> (dist));
+  }  
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values(i) = v1(first+i*dist[0]);
+        break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values(ii) = v1(first+i*dist[0]+j*dist[1]);
+        break;
+
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    c1->NonZeroPattern (ud, values);
+    switch (num.Size())
+      {
+      case 1:
+        for (int i = 0; i < num[0]; i++)
+          values(i) = values(first+i*dist[0]);
+        break;
+      case 2:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++, ii++)
+            values(ii) = values(first+i*dist[0]+j*dist[1]);
+        break;
+      default:
+        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+      }
+  }
+  */
+};
+
+shared_ptr<CoefficientFunction>
+MakeVectorContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                          Array<shared_ptr<CoefficientFunction>> vectors)
+{
+  return make_shared<VectorContractionCoefficientFunction> (c1, move(vectors));
+}
+
+
+
 
 
 
