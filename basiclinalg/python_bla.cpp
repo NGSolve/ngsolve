@@ -10,6 +10,9 @@ void PyDefVecBuffer( TCLASS & c )
 {
     typedef typename T::TSCAL TSCAL;
     c.def_buffer([](T &self) -> py::buffer_info {
+        // cout << "create PyDefVecBuffer, type = " << typeid(T).name() << endl;
+        // cout << "dist = " << self.Addr(1) - self.Addr(0) << endl;
+        
         return py::buffer_info(
             self.Data(),                                     /* Pointer to buffer */
             sizeof(TSCAL),                                /* Size of one scalar */
@@ -22,7 +25,9 @@ void PyDefVecBuffer( TCLASS & c )
     c.def("NumPy", [] (py::object & self) {
         // T& fv = py::cast<T&>(self);
         auto numpy = py::module::import("numpy");
-        auto frombuffer = numpy.attr("frombuffer");
+        // auto frombuffer = numpy.attr("frombuffer");
+        // return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype());
+        auto frombuffer = numpy.attr("asarray");
         return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype());
       }, "Return NumPy object");
 }
@@ -44,8 +49,10 @@ void PyDefMatBuffer( TCLASS & c )
     c.def("NumPy", [] (py::object & self) {
         T& fv = py::cast<T&>(self);
         auto numpy = py::module::import("numpy");
-        auto frombuffer = numpy.attr("frombuffer");
-        return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype()).attr("reshape")(fv.Height(),fv.Width());
+        // auto frombuffer = numpy.attr("frombuffer");
+        // return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype()).attr("reshape")(fv.Height(),fv.Width());
+        auto frombuffer = numpy.attr("asarray");
+        return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype());
       }, "Return NumPy object");
 }
 
