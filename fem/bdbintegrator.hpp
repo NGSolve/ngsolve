@@ -951,9 +951,12 @@ public:
                              elmat);
                     break;
                   case 3:
+                    /*
                     FastMat (FlatMatrixFixHeight<3,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
                              FlatMatrixFixHeight<3,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
                              elmat);
+                    */
+                    FastMat (bdbmat.Rows<3>(j), bbmat.Rows<3>(j), elmat);
                     break;
                   case 4:
                     FastMat (FlatMatrixFixHeight<4,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
