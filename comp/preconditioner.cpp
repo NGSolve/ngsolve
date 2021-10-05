@@ -1197,7 +1197,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 	MappedIntegrationPoint<3,3> sip(ip, eltrans);
 
 	double vol = ma->ElementVolume (i);
-	double vale = Evaluate (*coefe, sip);
+	double vale = ngfem::Evaluate (*coefe, sip);
 
 	for (int j = 0; j < ednums.Size(); j++)
 	  weighte[ednums[j]] += vale * vol / sqr (hi[ednums[j]]);
@@ -1205,7 +1205,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 	if (hcurl)
 	  {
 	    auto fanums = ma->GetElFaces (ei);
-	    double valf = Evaluate (*coeff, sip);
+	    double valf = ngfem::Evaluate (*coeff, sip);
 	    for (int j = 0; j < fanums.Size(); j++)
 	      weightf[fanums[j]] += valf * vol / sqr (ai[fanums[j]]);
 	  }
@@ -1223,7 +1223,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 	  MappedIntegrationPoint<2,3> sip(ip, eltrans);
 
 	  double vol = ma->SurfaceElementVolume (i);
-	  double vale = Evaluate (*coefse, sip);
+	  double vale = ngfem::Evaluate (*coefse, sip);
 
 	  for (int j = 0; j < ednums.Size(); j++)
 	    weighte[ednums[j]] += vale * vol / sqr (hi[ednums[j]]);

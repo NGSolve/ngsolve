@@ -37,6 +37,13 @@ namespace ngla
     AutoVector CreateColVector() const override
     { throw Exception("CreateColVector not implemented for Projector!"); }
 
+    AutoVector Evaluate(BaseVector & v) const override
+    {
+      auto res = v.CreateVector();
+      Mult (v, res);
+      return res;
+    }
+    
   };
 
 
