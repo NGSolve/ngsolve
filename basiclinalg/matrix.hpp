@@ -1280,7 +1280,7 @@ namespace ngbla
     }
 
     const SliceMatrix<T,ColMajor>
-    Rows (int first, int next) const
+    Rows (size_t first, size_t next) const
     { 
       return SliceMatrix<T,ColMajor> (next-first, w, SLICE, data+first);
     }
@@ -1291,6 +1291,12 @@ namespace ngbla
       return Rows (range.First(), range.Next());
     }
 
+    template <size_t ROWS>
+    auto Rows(size_t first)
+    {
+      return FlatMatrixFixHeight<ROWS,T,SLICE> (w, data+first);
+    }
+    
     operator FlatMatrix<T,ColMajor> () const
     {
       static_assert(H==SLICE, "MatrixFixHeight to FlatMatrix, but slice != height");
