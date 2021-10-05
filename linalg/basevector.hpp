@@ -1181,6 +1181,12 @@ namespace ngla
     DynamicBaseExpression () { } 
     virtual ~DynamicBaseExpression() { }
     virtual AutoVector CreateVector() const = 0;
+    virtual AutoVector Evaluate() const
+    {
+      auto vec = CreateVector();
+      AssignTo (1, vec);
+      return vec;
+    }
     virtual void AssignTo (double s, BaseVector & v2) const = 0;
     virtual void AddTo (double s, BaseVector & v2) const = 0;
     virtual void AssignTo (Complex s, BaseVector & v2) const = 0;
@@ -1315,9 +1321,12 @@ namespace ngla
 
     AutoVector Evaluate() const
     {
+      return ve->Evaluate();
+      /*
       auto vec = ve->CreateVector();
       ve->AssignTo (1, vec);
       return vec;
+      */
     }
     
     void AssignTo (double s, BaseVector & v2) const

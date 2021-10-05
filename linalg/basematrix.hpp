@@ -90,6 +90,13 @@ namespace ngla
     [[deprecated("use CreateRowVector or CreateColVector instead")]]
     virtual AutoVector CreateVector () const;
 
+    virtual AutoVector Evaluate(BaseVector & v) const 
+    {
+      auto res = CreateColVector();
+      Mult (v, res);
+      return res;
+    }
+    
     /// y = matrix * x. 
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     ///
@@ -257,6 +264,16 @@ namespace ngla
 
     AutoVector CreateVector() const override
     { return m->CreateColVector(); }    
+
+    AutoVector Evaluate() const override
+    {
+      return m->Evaluate(*v);
+      /*
+      auto vec = CreateVector();
+      AssignTo (1, vec);
+      return vec;
+      */
+    }
     
     void AssignTo (double s, BaseVector & v2) const override
     {
