@@ -1971,12 +1971,15 @@ weights : list
                 ip.SetNr(i);
                 for (int j = 0; j < len(pnt); j++)
                   ip(j) = py::extract<double> (py::tuple(pnt)[j])();
-                ip.SetWeight(py::extract<double> (weights[i])());
+                if(weights.size() == 0)
+                  ip.SetWeight(0.);
+                else
+                  ip.SetWeight(py::extract<double> (weights[i])());
                 ir -> Append (ip);
               }
             return ir;
           }),
-         py::arg("points"), py::arg("weights"))
+         py::arg("points"), py::arg("weights") = py::list())
     .def("__str__", &ToString<IntegrationRule>)
     .def("__getitem__", [](IntegrationRule & ir, int nr)
                                         {
