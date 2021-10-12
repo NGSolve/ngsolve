@@ -47,7 +47,7 @@ void PyDefMatBuffer( TCLASS & c )
         );
     });
     c.def("NumPy", [] (py::object & self) {
-        T& fv = py::cast<T&>(self);
+        // T& fv = py::cast<T&>(self);
         auto numpy = py::module::import("numpy");
         // auto frombuffer = numpy.attr("frombuffer");
         // return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype()).attr("reshape")(fv.Height(),fv.Width());
