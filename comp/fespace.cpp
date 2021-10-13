@@ -3774,6 +3774,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       type = "Matrix"+(*this)[0]->type;
     */
     type = string((symmetric) ? "Sym" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->type;
+
+    for (VorB vb : {VOL, BND, BBND, BBBND})
+      definedon[vb] = space->DefinedOn(vb);
   }
   
   string MatrixFESpace :: GetClassName () const
