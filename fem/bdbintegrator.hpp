@@ -163,7 +163,7 @@ public:
                 FlatMatrixFixHeight<H,T2,DIST> b,
                 FlatMatrix<T3> c)
   {
-    FastMat<H> (a.Width(), DIST, &a(0,0), &b(0,0), &c(0,0));
+    FastMat<H> (a.Width(), DIST, a.Data(), b.Data(), c.Data());
   }
   
   
@@ -934,21 +934,30 @@ public:
                 int rd = rest*DIM_DMAT;
 
                 for ( ; j <= rd-8; j += 8)
+                  /*
                   FastMat (FlatMatrixFixHeight<8,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
                            FlatMatrixFixHeight<8,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
                            elmat);
+                  */
+                  FastMat(bdbmat.template Rows<8>(j), bbmat.template Rows<8>(j), elmat);
 
                 switch (rd - j)
                   {
                   case 1:
+                    /*
                     FastMat (FlatMatrixFixHeight<1,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
                              FlatMatrixFixHeight<1,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
                              elmat);
+                    */
+                    FastMat(bdbmat.template Rows<1>(j), bbmat.template Rows<1>(j), elmat);
                     break;
                   case 2:
+                    /*
                     FastMat (FlatMatrixFixHeight<2,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
                              FlatMatrixFixHeight<2,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
                              elmat);
+                    */
+                    FastMat(bdbmat.template Rows<2>(j), bbmat.template Rows<2>(j), elmat);
                     break;
                   case 3:
                     /*
@@ -959,24 +968,36 @@ public:
                     FastMat (bdbmat.template Rows<3>(j), bbmat.template Rows<3>(j), elmat);
                     break;
                   case 4:
+                    /*
                     FastMat (FlatMatrixFixHeight<4,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
                              FlatMatrixFixHeight<4,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
                              elmat);
+                    */
+                    FastMat(bdbmat.template Rows<4>(j), bbmat.template Rows<4>(j), elmat);
                     break;
                   case 5:
+                    /*
                     FastMat (FlatMatrixFixHeight<5,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
                              FlatMatrixFixHeight<5,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
                              elmat);
+                    */
+                    FastMat(bdbmat.template Rows<5>(j), bbmat.template Rows<5>(j), elmat);
                     break;
                   case 6:
+                    /*
                     FastMat (FlatMatrixFixHeight<6,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
                              FlatMatrixFixHeight<6,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
                              elmat);
+                    */
+                    FastMat(bdbmat.template Rows<6>(j), bbmat.template Rows<6>(j), elmat);
                     break;
                   case 7:
+                    /*
                     FastMat (FlatMatrixFixHeight<7,TSCAL, ROUNDUP> (ndof*DIM, &bdbmat(j)), 
                              FlatMatrixFixHeight<7,double, ROUNDUP> (ndof*DIM, &bbmat(j)), 
                              elmat);
+                    */
+                    FastMat(bdbmat.template Rows<7>(j), bbmat.template Rows<7>(j), elmat);
                     break;
                   default:
                     ;
