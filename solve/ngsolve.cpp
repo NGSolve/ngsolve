@@ -27,7 +27,12 @@ namespace netgen
     DLL_HEADER extern bool netgen_executable_started;
 }
 
-using namespace netgen;
+using netgen::Ng_Tcl_SetResult;
+using netgen::Ng_Tcl_CreateCommand;
+using netgen::NG_TCL_OK;
+using netgen::NG_TCL_ERROR;
+using netgen::NG_TCL_STATIC;
+using netgen::NG_TCL_VOLATILE;
 
 #ifdef SOCKETS
 #include "markus/jobmanager.hpp"
