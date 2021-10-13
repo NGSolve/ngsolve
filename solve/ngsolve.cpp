@@ -11,18 +11,13 @@
 #include <solve.hpp>
 #include <parallelngs.hpp>
 
-#include <tcl.h>
-#if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
-#define tcl_const const
-#else
-#define tcl_const
-#endif
-
 #include <thread>
+#include <ngtcl.hpp>
 
 using namespace std;
 using namespace ngsolve;
 
+typedef void *ClientData;
 
 #include <nginterface.h>
 
@@ -31,6 +26,8 @@ namespace netgen
     DLL_HEADER extern string ngdir;
     DLL_HEADER extern bool netgen_executable_started;
 }
+
+using namespace netgen;
 
 #ifdef SOCKETS
 #include "markus/jobmanager.hpp"
@@ -111,19 +108,19 @@ void SpawnPython ()
 
 int NGS_PrintRegistered (ClientData clientData,
 			 Tcl_Interp * interp,
-			 int argc, tcl_const char *argv[])
+			 int argc, const char *argv[])
 {
   ngfem::GetIntegrators().Print (cout);
   ngsolve::GetNumProcs().Print (cout);
   ngsolve::GetFESpaceClasses().Print (cout);
   ngsolve::GetPreconditionerClasses().Print (cout);
 
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 int NGS_Help (ClientData clientData,
 	      Tcl_Interp * interp,
-	      int argc, tcl_const char *argv[])
+	      int argc, const char *argv[])
 {
   if (argc >= 2)
     {
@@ -145,8 +142,8 @@ int NGS_Help (ClientData clientData,
 	  for (int ii = 0; ii < npi.Size(); ii++)
 	    str << npi[sort[ii]]->name << " ";
 
-	  Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
-	  return TCL_OK;
+	  Ng_Tcl_SetResult (interp, (char*)str.str().c_str(), NG_TCL_VOLATILE);
+	  return NG_TCL_OK;
 	}
 
       stringstream str;
@@ -193,9 +190,9 @@ int NGS_Help (ClientData clientData,
 	}
 
       cout << str.str();
-      Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
+      Ng_Tcl_SetResult (interp, (char*)str.str().c_str(), NG_TCL_VOLATILE);
     }
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
@@ -481,13 +478,13 @@ void * SocketThread (void * data)
 
 int NGS_LoadPDE (ClientData clientData,
 		 Tcl_Interp * interp,
-		 int argc, tcl_const char *argv[])
+		 int argc, const char *argv[])
 {
 
   if (Ng_IsRunning())
     {
-      Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
-      return TCL_ERROR;
+      Ng_Tcl_SetResult (interp, (char*)"Thread already running", NG_TCL_STATIC);
+      return NG_TCL_ERROR;
     }
 
   if (argc >= 2)
@@ -538,8 +535,8 @@ int NGS_LoadPDE (ClientData clientData,
 
 	  ostringstream ost;
 	  ost << "Exception in NGS_LoadPDE: \n " << e.What() << endl;
-	  Tcl_SetResult (interp, (char*)ost.str().c_str(), TCL_VOLATILE);
-	  return TCL_ERROR;
+	  Ng_Tcl_SetResult (interp, (char*)ost.str().c_str(), NG_TCL_VOLATILE);
+	  return NG_TCL_ERROR;
 	}
       catch (exception & e)
 	{
@@ -549,23 +546,23 @@ int NGS_LoadPDE (ClientData clientData,
 	}
 
     }
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
 int NGS_LoadPy (ClientData clientData,
 		Tcl_Interp * interp,
-		int argc, tcl_const char *argv[])
+		int argc, const char *argv[])
 {
   if(!netgen::netgen_executable_started) {
-      Tcl_SetResult (interp, (char*)"This feature is not available when running from Python", TCL_STATIC);
-      return TCL_ERROR;
+      Ng_Tcl_SetResult (interp, (char*)"This feature is not available when running from Python", NG_TCL_STATIC);
+      return NG_TCL_ERROR;
   }
 
   if (Ng_IsRunning())
     {
-      Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
-      return TCL_ERROR;
+      Ng_Tcl_SetResult (interp, (char*)"Thread already running", NG_TCL_STATIC);
+      return NG_TCL_ERROR;
     }
 
   if (argc >= 2)
@@ -616,7 +613,7 @@ int NGS_LoadPy (ClientData clientData,
 	  cout << "want to load python file, but python not enabled" << endl;	  
 #endif
 	  
-	  return TCL_OK;
+	  return NG_TCL_OK;
 	}
       catch (Exception & e)
 	{
@@ -625,13 +622,13 @@ int NGS_LoadPy (ClientData clientData,
 	  
 	  ostringstream ost;
 	  ost << "Exception in NGS_LoadPDE: \n " << e.What() << endl;
-	  Tcl_SetResult (interp, (char*)ost.str().c_str(), TCL_VOLATILE);
-	  return TCL_ERROR;
+	  Ng_Tcl_SetResult (interp, (char*)ost.str().c_str(), NG_TCL_VOLATILE);
+	  return NG_TCL_ERROR;
 	}
 
     }
-  Tcl_SetResult (interp, (char*)"no filename", TCL_STATIC);  
-  return TCL_ERROR;
+  Ng_Tcl_SetResult (interp, (char*)"no filename", NG_TCL_STATIC);
+  return NG_TCL_ERROR;
 }
 
 
@@ -679,12 +676,12 @@ void * SolveBVP(void *)
 
 int NGS_SolvePDE (ClientData clientData,
 		  Tcl_Interp * interp,
-		  int argc, tcl_const char *argv[])
+		  int argc, const char *argv[])
 {
   if (Ng_IsRunning())
     {
-      Tcl_SetResult (interp, (char*)"Thread already running", TCL_STATIC);
-      return TCL_ERROR;
+      Ng_Tcl_SetResult (interp, (char*)"Thread already running", NG_TCL_STATIC);
+      return NG_TCL_ERROR;
     }
 
   cout << "Solve PDE" << endl;
@@ -694,13 +691,13 @@ int NGS_SolvePDE (ClientData clientData,
 
   RunParallel (SolveBVP, NULL);
 
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
 int NGS_EnterCommand (ClientData clientData,
                       Tcl_Interp * interp,
-                      int argc, tcl_const char *argv[])
+                      int argc, const char *argv[])
 {
   cout << "Enter command: ";
   string st;
@@ -720,7 +717,7 @@ int NGS_EnterCommand (ClientData clientData,
       pde->PrintReport (*testout);
     }
 
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
@@ -728,7 +725,7 @@ int NGS_EnterCommand (ClientData clientData,
 
 int NGS_PrintPDE (ClientData clientData,
 		  Tcl_Interp * interp,
-		  int argc, tcl_const char *argv[])
+		  int argc, const char *argv[])
 {
   if (pde)
     {
@@ -751,63 +748,63 @@ int NGS_PrintPDE (ClientData clientData,
 	  else if (strcmp (argv[1], "numprocs") == 0)
 	    pde->GetNumProc (argv[2])->PrintReport(cout);
 	}
-      return TCL_OK;
+      return NG_TCL_OK;
     }
-  Tcl_SetResult (interp, (char*)"No pde loaded", TCL_STATIC);
-  return TCL_ERROR;
+  Ng_Tcl_SetResult (interp, (char*)"No pde loaded", NG_TCL_STATIC);
+  return NG_TCL_ERROR;
 }
 
 int NGS_SaveSolution (ClientData clientData,
 		      Tcl_Interp * interp,
-		      int argc, tcl_const char *argv[])
+		      int argc, const char *argv[])
 {
   if (argc >= 2)
     {
       if (pde)
 	{
 	  pde->SaveSolution (argv[1],(argc >= 3 && atoi(argv[2])));
-	  return TCL_OK;
+	  return NG_TCL_OK;
 	}
     }
-  Tcl_SetResult (interp, (char*)"Cannot save solution", TCL_STATIC);
-  return TCL_ERROR;
+  Ng_Tcl_SetResult (interp, (char*)"Cannot save solution", NG_TCL_STATIC);
+  return NG_TCL_ERROR;
 }
 
 
 int NGS_LoadSolution (ClientData clientData,
 		      Tcl_Interp * interp,
-		      int argc, tcl_const char *argv[])
+		      int argc, const char *argv[])
 {
   if (argc >= 2 && pde)
     {
       pde->LoadSolution (argv[1], (argc >= 3 && atoi(argv[2])));
-      return TCL_OK;
+      return NG_TCL_OK;
     }
 
-  Tcl_SetResult (interp, (char*)"Cannot load solution", TCL_STATIC);
-  return TCL_ERROR;
+  Ng_Tcl_SetResult (interp, (char*)"Cannot load solution", NG_TCL_STATIC);
+  return NG_TCL_ERROR;
 }
 
 
 
 int NGS_DumpPDE (ClientData clientData,
 		      Tcl_Interp * interp,
-		      int argc, tcl_const char *argv[])
+		      int argc, const char *argv[])
 {
   if (argc >= 2 && pde)
     {
       TextOutArchive archive (argv[1]);
       pde->DoArchive (archive);
-      return TCL_OK;
+      return NG_TCL_OK;
     }
 
-  Tcl_SetResult (interp, (char*)"Dump error", TCL_STATIC);
-  return TCL_ERROR;
+  Ng_Tcl_SetResult (interp, (char*)"Dump error", NG_TCL_STATIC);
+  return NG_TCL_ERROR;
 }
 
 int NGS_RestorePDE (ClientData clientData,
                     Tcl_Interp * interp,
-                    int argc, tcl_const char *argv[])
+                    int argc, const char *argv[])
 {
   if (argc >= 2)
     {
@@ -822,17 +819,17 @@ int NGS_RestorePDE (ClientData clientData,
         pyenv["pde"] = py::cast(pde);
       }
 #endif
-      return TCL_OK;
+      return NG_TCL_OK;
     }
 
-  Tcl_SetResult (interp, (char*)"Dump error", TCL_STATIC);
-  return TCL_ERROR;
+  Ng_Tcl_SetResult (interp, (char*)"Dump error", NG_TCL_STATIC);
+  return NG_TCL_ERROR;
 }
 
 
 int NGS_SocketLoad (ClientData clientData,
                     Tcl_Interp * interp,
-                    int argc, tcl_const char *argv[])
+                    int argc, const char *argv[])
 {
   if (argc >= 2)
     {
@@ -860,36 +857,36 @@ int NGS_SocketLoad (ClientData clientData,
 	  }
 #endif
 
-          return TCL_OK;
+          return NG_TCL_OK;
         }
       catch (SocketException & e)
         {
           cout << "caught SocketException : " << e.What() << endl;
-          Tcl_SetResult (interp, (char*) e.What().c_str(), TCL_VOLATILE);
-          return TCL_ERROR;
+          Ng_Tcl_SetResult (interp, (char*) e.What().c_str(), NG_TCL_VOLATILE);
+          return NG_TCL_ERROR;
         }
 #endif
     }
 
-  Tcl_SetResult (interp, (char*)"load socket error", TCL_STATIC);
-  return TCL_ERROR;
+  Ng_Tcl_SetResult (interp, (char*)"load socket error", NG_TCL_STATIC);
+  return NG_TCL_ERROR;
 }
 
 
 int NGS_PythonShell (ClientData clientData,
                     Tcl_Interp * interp,
-                    int argc, tcl_const char *argv[])
+                    int argc, const char *argv[])
 {
   if(!netgen::netgen_executable_started) {
-      Tcl_SetResult (interp, (char*)"This feature is not available when running from Python", TCL_STATIC);
-      return TCL_ERROR;
+      Ng_Tcl_SetResult (interp, (char*)"This feature is not available when running from Python", NG_TCL_STATIC);
+      return NG_TCL_ERROR;
   }
 #ifdef NGS_PYTHON
   SpawnPython();
-  return TCL_OK;
+  return NG_TCL_OK;
 #else
   cerr << "Sorry, you have to compile ngsolve with Python" << endl;
-  return TCL_ERROR;
+  return NG_TCL_ERROR;
 #endif
 }
 
@@ -897,23 +894,23 @@ int NGS_PythonShell (ClientData clientData,
 
 int NGS_PrintMemoryUsage (ClientData clientData,
 			  Tcl_Interp * interp,
-			  int argc, tcl_const char *argv[])
+			  int argc, const char *argv[])
 {
   // netgen::BaseMoveableMem::Print ();
   
   // netgen::BaseDynamicMem::Print ();
 
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
 
 int NGS_PrintTiming (ClientData clientData,
 		     Tcl_Interp * interp,
-		     int argc, tcl_const char *argv[])
+		     int argc, const char *argv[])
 {
   ngstd::NgProfiler::Print (stdout);
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
@@ -921,7 +918,7 @@ int NGS_PrintTiming (ClientData clientData,
 
 int NGS_GetData (ClientData clientData,
 		 Tcl_Interp * interp,
-		 int argc, tcl_const char *argv[])
+		 int argc, const char *argv[])
 {
   static char buf[1000];
   buf[0] = 0;
@@ -1136,8 +1133,8 @@ int NGS_GetData (ClientData clientData,
       sprintf (buf, "0");
     }
   str << buf;
-  Tcl_SetResult (interp, (char*)str.str().c_str(), TCL_VOLATILE);
-  return TCL_OK;
+  Ng_Tcl_SetResult (interp, (char*)str.str().c_str(), NG_TCL_VOLATILE);
+  return NG_TCL_OK;
 }
 
 
@@ -1158,13 +1155,13 @@ void * PlayAnim(void *)
 
 int NGS_PlayAnim (ClientData clientData,
 		  Tcl_Interp * interp,
-		  int argc, tcl_const char *argv[])
+		  int argc, const char *argv[])
 {
   /*
   if (running)
     {
-      Tcl_SetResult (interp, "Thread already running", TCL_STATIC);
-      return TCL_ERROR;
+      Ng_Tcl_SetResult (interp, "Thread already running", NG_TCL_STATIC);
+      return NG_TCL_ERROR;
     }
   running = 1;
   */
@@ -1179,7 +1176,7 @@ int NGS_PlayAnim (ClientData clientData,
     }
   PlayAnimFile(name, speed, maxcnt);
   //  RunParallel (PlayAnim, NULL);
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 #endif
 
@@ -1189,7 +1186,7 @@ int NGS_PlayAnim (ClientData clientData,
 
 int NGS_Set (ClientData clientData,
 	     Tcl_Interp * interp,
-	     int argc, tcl_const char *argv[])
+	     int argc, const char *argv[])
 {
   if (argc >= 3 && strcmp (argv[1], "time") == 0)
     {
@@ -1200,7 +1197,7 @@ int NGS_Set (ClientData clientData,
 	  pde->GetVariable ("t", 1) = time;
 	}
     }
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
@@ -1222,7 +1219,7 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
   MyMPI_SendCmd ("ngs_exit", MPI_COMM_WORLD);
 #endif
   pde.reset();
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
@@ -1341,79 +1338,24 @@ if(is_pardiso_available)
 #endif
 
 
-  Tcl_CreateCommand (interp, "NGS_PrintRegistered", NGS_PrintRegistered,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
+  Ng_Tcl_CreateCommand (interp, "NGS_PrintRegistered", NGS_PrintRegistered);
+  Ng_Tcl_CreateCommand (interp, "NGS_Help", NGS_Help);
+  Ng_Tcl_CreateCommand (interp, "NGS_LoadPDE", NGS_LoadPDE);
+  Ng_Tcl_CreateCommand (interp, "NGS_LoadPy", NGS_LoadPy);
+  Ng_Tcl_CreateCommand (interp, "NGS_SolvePDE", NGS_SolvePDE);
+  Ng_Tcl_CreateCommand (interp, "NGS_EnterCommand", NGS_EnterCommand);
+  Ng_Tcl_CreateCommand (interp, "NGS_PrintPDE", NGS_PrintPDE);
+  Ng_Tcl_CreateCommand (interp, "NGS_SaveSolution", NGS_SaveSolution);
+  Ng_Tcl_CreateCommand (interp, "NGS_LoadSolution", NGS_LoadSolution);
+  Ng_Tcl_CreateCommand (interp, "NGS_DumpPDE", NGS_DumpPDE);
+  Ng_Tcl_CreateCommand (interp, "NGS_RestorePDE", NGS_RestorePDE);
+  Ng_Tcl_CreateCommand (interp, "NGS_SocketLoad", NGS_SocketLoad);
+  Ng_Tcl_CreateCommand (interp, "NGS_PythonShell", NGS_PythonShell);
+  Ng_Tcl_CreateCommand (interp, "NGS_PrintMemoryUsage", NGS_PrintMemoryUsage);
+  Ng_Tcl_CreateCommand (interp, "NGS_PrintTiming", NGS_PrintTiming);
 
-  Tcl_CreateCommand (interp, "NGS_Help", NGS_Help,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_LoadPDE", NGS_LoadPDE,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_LoadPy", NGS_LoadPy,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_SolvePDE", NGS_SolvePDE,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_EnterCommand", NGS_EnterCommand,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_PrintPDE", NGS_PrintPDE,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_SaveSolution", NGS_SaveSolution,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_LoadSolution", NGS_LoadSolution,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_DumpPDE", NGS_DumpPDE,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_RestorePDE", NGS_RestorePDE,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_SocketLoad", NGS_SocketLoad,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-
-  Tcl_CreateCommand (interp, "NGS_PythonShell", NGS_PythonShell,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_PrintMemoryUsage", NGS_PrintMemoryUsage,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_PrintTiming", NGS_PrintTiming,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-
-
-
-
-  Tcl_CreateCommand (interp, "NGS_GetData", NGS_GetData,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
-  Tcl_CreateCommand (interp, "NGS_Set", NGS_Set,
-		     (ClientData)NULL,
-		     (Tcl_CmdDeleteProc*) NULL);
-
+  Ng_Tcl_CreateCommand (interp, "NGS_GetData", NGS_GetData);
+  Ng_Tcl_CreateCommand (interp, "NGS_Set", NGS_Set);
 
   /*
   const Array<NumProcs::NumProcInfo*> & npi = GetNumProcs().GetNumProcs();
@@ -1447,7 +1389,7 @@ if(is_pardiso_available)
 
 
 
-  return TCL_OK;
+  return NG_TCL_OK;
 }
 
 
