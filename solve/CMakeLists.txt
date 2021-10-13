@@ -34,17 +34,8 @@ target_link_libraries( solve ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:n
 install( TARGETS solve ${ngs_install_dir} )
 
 if (NETGEN_USE_GUI)
-    add_library( ngsolve SHARED
-            ${ngsolve_object_libs}
-            ngsolve.cpp shapetester.cpp 
-            )
-
-    target_include_directories(ngsolve PRIVATE ${NETGEN_TCL_INCLUDE_PATH})
+    add_library( ngsolve SHARED ${ngsolve_object_libs} ngsolve.cpp)
     target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES})
-
-    if(NOT APPLE)
-        target_link_libraries( ngsolve PRIVATE ${NETGEN_TCL_LIBRARY} ${NETGEN_TK_LIBRARY} )
-    endif(NOT APPLE)
 
 else (NETGEN_USE_GUI)
     if(WIN32) # libngsolve.dll is the only ngsolve library on windows -> also build it without GUI
