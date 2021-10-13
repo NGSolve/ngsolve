@@ -428,7 +428,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
           points = p1_tets[eltype]
           if order3d>1:
             points = makeP2Tets( points )
-          intrules[eltype] = ngs.IntegrationRule( sum(points, start=[]) )
+          intrules[eltype] = ngs.IntegrationRule( sum(points, []) )
 
         pts = mesh.MapToAllElements(intrules, ngs.VOL)
             
