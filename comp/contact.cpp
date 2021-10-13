@@ -257,8 +257,6 @@ namespace ngcomp
     h = h_;
 
     displacement = displacement_;
-    auto fes = displacement->GetFESpace();
-    intorder2 = 10*fes->GetOrder();
 
     LocalHeap lh(1000000, "T_GapFunction::Update");
     netgen::Box<DIM> bbox{netgen::Box<DIM>::EMPTY_BOX};
@@ -874,10 +872,13 @@ namespace ngcomp
       undeformed_integrators.Append (integrators.Last());
   }
 
-  void ContactBoundary::Update(shared_ptr<GridFunction> displacement_,
-                               shared_ptr<BilinearForm> bf,
-                               int intorder, double h)
+  void ContactBoundary::
+  Update(shared_ptr<GridFunction> displacement_,
+         shared_ptr<BilinearForm> bf,
+         int intorder, double h)
   {
+    if(!displacement_ && !bf)
+      throw Exception("Either displacement or BilinearForm needed in ContactBoundary update!");
     if(!fes)
       {
         if(bf)
@@ -887,7 +888,8 @@ namespace ngcomp
       }
     if(bf && (bf->GetFESpace().get() != fes.get()))
       throw Exception("BilinearForm on different space as given to ContactBoundary!");
-    fes_displacement = displacement_->GetFESpace();
+    if(displacement_)
+      fes_displacement = displacement_->GetFESpace();
 
     if(draw_pairs)
     {
@@ -895,11 +897,15 @@ namespace ngcomp
       primary_points.SetSize(0);
     }
 
-    auto displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", displacement_->GetFlags());
-    displacement->Update();
-    displacement->GetVector() = displacement_->GetVector();
+    shared_ptr<GridFunction> displacement = nullptr;
+    if(displacement_)
+      {
+        displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", displacement_->GetFlags());
+        displacement->Update();
+        displacement->GetVector() = displacement_->GetVector();
+      }
     gap->Update(displacement, intorder, h);
-    auto mesh = displacement->GetFESpace()->GetMeshAccess();
+    auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       static_pointer_cast<DisplacedNormal<2>>(normal)->Update(displacement);
     else
