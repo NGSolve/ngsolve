@@ -496,6 +496,8 @@ ANY                  1 1 1 1 | 15
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 
+    auto & DefinedOn(VorB vb) const { return definedon[vb]; }
+    
     bool DefinedOn(VorB vb, int domnr) const
     { return !definedon[vb].Size() || definedon[vb][domnr]; }
 
