@@ -394,59 +394,62 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         values = []
         tets = []
 
-        if order3d==1:
-            ipts = [(1,0,0), (0,1,0), (0,0,1), (0,0,0)]
-            ir_tet = ngs.IntegrationRule( ipts, [0]*len(ipts) )
+        midpoint = lambda p0, p1: tuple((0.5*(p0[i]+p1[i]) for i in range(3)))
 
+        def makeP2Tets( p1_tets ):
+            p2_tets = []
+            for tet in p1_tets:
+                tet.append( midpoint(tet[0], tet[3]) )
+                tet.append( midpoint(tet[1], tet[3]) )
+                tet.append( midpoint(tet[2], tet[3]) )
+                tet.append( midpoint(tet[0], tet[1]) )
+                tet.append( midpoint(tet[0], tet[2]) )
+                tet.append( midpoint(tet[1], tet[2]) )
+                p2_tets.append(tet)
+            return p2_tets
 
-            ipts = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
-                         [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
-                         [(1,0,1), (0,1,1), (1,0,0), (0,0,1)])
-            ir_prism = ngs.IntegrationRule( ipts, [0]*len(ipts) )
+        # divide any element into tets
+        p1_tets = {}
+        p1_tets[ngs.ET.TET]   = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)]]
+        p1_tets[ngs.ET.PYRAMID]=[[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
+                                 [(1,0,0), (0,1,0), (0,0,1), (1,1,0)]]
+        p1_tets[ngs.ET.PRISM] = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
+                                 [(0,0,1), (0,1,0), (0,1,1), (1,0,0)],
+                                 [(1,0,1), (0,1,1), (1,0,0), (0,0,1)]]
+        p1_tets[ngs.ET.HEX]   = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
+                                 [(0,1,1), (1,1,1), (1,1,0), (1,0,1)],
+                                 [(1,0,1), (0,1,1), (1,0,0), (0,0,1)],
+                                 [(0,1,1), (1,1,0), (0,1,0), (1,0,0)],
+                                 [(0,0,1), (0,1,0), (0,1,1), (1,0,0)],
+                                 [(1,0,1), (1,1,0), (0,1,1), (1,0,0)]]
 
+        intrules = {}
+        for eltype in p1_tets:
+          points = p1_tets[eltype]
+          if order3d>1:
+            points = makeP2Tets( points )
+          intrules[eltype] = ngs.IntegrationRule( sum(points, start=[]) )
 
-            ipts_hex = ([(1,0,0), (0,1,0), (0,0,1), (0,0,0)] +
-                         [(0,1,1), (1,1,1), (1,1,0), (1,0,1)] +
-                         [(1,0,1), (0,1,1), (1,0,0), (0,0,1)] +
-                         [(0,1,1), (1,1,0), (0,1,0), (1,0,0)] +
-                         [(0,0,1), (0,1,0), (0,1,1), (1,0,0)] +
-                         [(1,0,1), (1,1,0), (0,1,1), (1,0,0)] )
-            ir_hex = ngs.IntegrationRule( ipts_hex, [0]*len(ipts_hex) )
-            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet, ngs.ET.PRISM: ir_prism, ngs.ET.HEX: ir_hex }, ngs.VOL)
+        pts = mesh.MapToAllElements(intrules, ngs.VOL)
             
-            
-        else:
-            # TODO: make prism
-            ir_tet = ngs.IntegrationRule( [
-                (1,0,0),
-                (0,1,0),
-                (0,0,1),
-                (0,0,0),
-                (0.5,0,0),
-                (0,0.5,0),
-                (0,0,0.5),
-                (0.5,0.5,0),
-                (0.5,0,0.5),
-                (0,0.5,0.5) ],
-                [0]*10 )
-            pts = mesh.MapToAllElements({ngs.ET.TET: ir_tet}, ngs.VOL)
-
         pmat = func1(pts)
 
+        np_per_tet = len(intrules[ngs.ET.TET])
+
         ne = mesh.GetNE(ngs.VOL)
-        pmat = pmat.reshape(-1, len(ir_tet), 4)
+        pmat = pmat.reshape(-1, np_per_tet, 4)
         
         funcmin = min(funcmin, np.min(pmat[:,:,3]))
         funcmax = max(funcmax, np.max(pmat[:,:,3]))
         points3d = []
-        for i in range(len(ir_tet)):
+        for i in range(np_per_tet):
             points3d.append(encodeData(pmat[:,i,:]))
 
         if func2:
-            pmat = func2(pts).reshape(-1, len(ir_tet)//2, 4)
+            pmat = func2(pts).reshape(-1, np_per_tet//2, 4)
             funcmin = min(funcmin, np.min(pmat))
             funcmax = max(funcmax, np.max(pmat))
-            for i in range(len(ir_tet)//2):
+            for i in range(np_per_tet//2):
                 points3d.append(encodeData(pmat[:,i,:]))
         d['points3d'] = points3d
     if func:
