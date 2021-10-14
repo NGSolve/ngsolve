@@ -35,7 +35,7 @@ install( TARGETS solve ${ngs_install_dir} )
 
 if (NETGEN_USE_GUI)
     add_library( ngsolve SHARED ${ngsolve_object_libs} ngsolve.cpp)
-    target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES})
+    target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES} PUBLIC gui)
 
 else (NETGEN_USE_GUI)
     if(WIN32) # libngsolve.dll is the only ngsolve library on windows -> also build it without GUI
