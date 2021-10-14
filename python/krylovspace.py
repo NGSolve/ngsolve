@@ -5,6 +5,13 @@ from typing import Optional, Callable, Union
 import logging
 from netgen.libngpy._meshing import _PushStatus, _GetStatus, _SetThreadPercentage
 from math import log
+import os
+
+
+if os.name == "nt":
+    _clear_line_command = ""
+else:
+    _clear_line_command = "\33[2K"
 
 linear_solver_param_doc = """
 mat : BaseMatrix
@@ -125,12 +132,12 @@ class LinearSolver(BaseMatrix):
                 _SetThreadPercentage(100.*max(self.iterations/self.maxiter,
                                               (log(residual)-logerrfirst)/(logerrstop - logerrfirst)))
         if self.printrates:
-            print("\33[2K{} iteration {}, residual = {}     ".format(self.name, self.iterations, residual), end="\n" if isinstance(self.printrates, bool) else self.printrates)
+            print("{}{} iteration {}, residual = {}     ".format(_clear_line_command, self.name, self.iterations, residual), end="\n" if isinstance(self.printrates, bool) else self.printrates)
             if self.iterations == self.maxiter and residual > self._final_residual:
-                print("\33[2KWARNING: {} did not converge to TOL".format(self.name))
+                print("{}WARNING: {} did not converge to TOL".format(_clear_line_command, self.name))
         is_converged = self.iterations >= self.maxiter or residual <= self._final_residual
         if is_converged and self.printrates == "\r":
-            print("\33[2K{} {}converged in {} iterations to residual {}".format(self.name, "NOT " if residual >= self._final_residual else "", self.iterations, residual))
+            print("{}{} {}converged in {} iterations to residual {}".format(_clear_line_command, self.name, "NOT " if residual >= self._final_residual else "", self.iterations, residual))
         return is_converged
 
 class CGSolver(LinearSolver):
