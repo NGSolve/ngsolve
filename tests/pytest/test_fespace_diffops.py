@@ -19,15 +19,7 @@ def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffo
         gf.Set(cf, dual=False, definedon=dx_bbnd)
         assert sqrt(Integrate(InnerProduct(gf-ttrace(cf),gf-ttrace(cf)), mesh, definedon=dx_bbnd)) < 1e-10
     if trace:
-        print ("setting cf, space = ", space)
-        if space == H1:
-            print ("is H1")
         gf.Set(cf, dual=False, definedon=dx_bnd)
-        if space == H1:        
-            Draw (gf)
-            input ("has set")
-        print ("has set")
-        print ("int-error = ", sqrt(Integrate(InnerProduct(gf-trace(cf),gf-trace(cf)), mesh, definedon=dx_bnd)))
         assert sqrt(Integrate(InnerProduct(gf-trace(cf),gf-trace(cf)), mesh, definedon=dx_bnd)) < 1e-10
     if idop:
         for dual in set_dual:
@@ -134,9 +126,7 @@ def test_fespaces_surface():
 
     # unstructured trig surface mesh (surface could be curved?)
     mesh = MakeStructuredSurfaceMesh(quads=False, nx=3, ny=3, mapping = lambda x,y,z : ( (x-0.5), (y-0.5), (x-0.5)**2*(0.7+0.2*y)-(y-0.5)**2) )
-    print ("test H1")
     Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad", "hesseboundary"], vb=BND, set_dual=[True,False])
-    print ("test H1 is back")
     Test(mesh=mesh, space=VectorH1, order=2, trace = lambda cf : cf, diffops=["Grad","div"], vb=BND, set_dual=[True,False])
     Test(mesh=mesh, space=SurfaceL2, order=2, diffops=None, vb=BND, set_dual=[False])
     Test(mesh=mesh, space=HCurl, order=2, idop = lambda cf : Ptau_3d*cf, trace = lambda cf : Pt_3d*cf, diffops=None, vb=BND, set_dual=[True,False])
