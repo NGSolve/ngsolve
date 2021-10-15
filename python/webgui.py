@@ -146,7 +146,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     d['ngsolve_version'] = ngs.__version__
     d['mesh_dim'] = mesh.dim
     # order = order or mesh.GetCurveOrder()
-    if (not func) and (mesh.GetCurveOrder()==1):
+    if (not func) and (mesh.GetCurveOrder()==1) and (mesh.nv==len(mesh.ngmesh.Points())):
         order=1
     order2d = min(order, 3)
     order3d = min(order, 2)
