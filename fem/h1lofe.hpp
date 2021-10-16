@@ -676,10 +676,10 @@ namespace ngfem
       Tx z = ip.z;
       Tx lam4 = 1-x-y-z;
     
-      shape[0] = 1-2*x;
-      shape[1] = 1-2*y;
-      shape[2] = 1-2*z;
-      shape[3] = 1-2*lam4;
+      shape[0] = 1-3*x;
+      shape[1] = 1-3*y;
+      shape[2] = 1-3*z;
+      shape[3] = 1-3*lam4;
     }
   };
 
