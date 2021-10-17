@@ -31,7 +31,14 @@ namespace ngfem
     if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
       return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
-    try { return make_shared<ConstantCoefficientFunction> (val.cast<double>()); }
+    try
+      {
+        double value = val.cast<double>();
+        if (value)
+          return make_shared<ConstantCoefficientFunction> (value);
+        else
+          return ZeroCF(Array<int>());
+      }
     catch(py::cast_error) {}
     try { return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()); }
     catch(py::cast_error) {}
