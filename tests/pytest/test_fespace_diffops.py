@@ -33,9 +33,9 @@ def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffo
             except:
                 gfdiffop = None
             if gfdiffop:
-                assert sqrt(Integrate( InnerProduct(gfdiffop-cfdiffop,gfdiffop-cfdiffop), mesh, definedon=dx_vol)) < 2e-8
+                assert sqrt(Integrate( InnerProduct(gfdiffop-cfdiffop,gfdiffop-cfdiffop), mesh, definedon=dx_vol)) < 5e-8
             else:
-                assert sqrt(Integrate( InnerProduct(gf.Operator(diffop,vb)-cfdiffop,gf.Operator(diffop,vb)-cfdiffop), mesh, definedon=dx_vol)) < 2e-8
+                assert sqrt(Integrate( InnerProduct(gf.Operator(diffop,vb)-cfdiffop,gf.Operator(diffop,vb)-cfdiffop), mesh, definedon=dx_vol)) < 5e-8
     return
 
 
@@ -53,7 +53,7 @@ def test_fespaces_2d():
     Test(mesh=mesh, space=HCurl, order=2, trace = lambda cf : Ptau_2d*cf, diffops=["curl","Grad"], vb=VOL, set_dual=[True,False])
     Test(mesh=mesh, space=HDiv, order=2, trace = lambda cf : Pn_2d*cf, diffops=["div","Grad"], vb=VOL, set_dual=[True,False])
     Test(mesh=mesh, space=HDivDiv, order=2, trace = lambda cf : Pn_2d*cf*Pn_2d, diffops=["div"], vb=VOL, set_dual=[False], sym=True)
-    Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_2d*cf*Ptau_2d, diffops=["curl","inc"], vb=VOL, set_dual=[False], sym=True)
+    Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_2d*cf*Ptau_2d, diffops=["curl","inc", "christoffel","christoffel2"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlDiv, order=2, trace = lambda cf : Ptau_2d*cf*Pn_2d, diffops=["div","curl"], vb=VOL, set_dual=[False], dev=True)
     Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
     Test(mesh=mesh, space=VectorFacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
@@ -91,7 +91,7 @@ def test_fespaces_3d():
     Test(mesh=mesh, space=HCurl, order=2, trace = lambda cf : Ptau_3d*cf, diffops=["curl","Grad"], vb=VOL, set_dual=[True,False])
     Test(mesh=mesh, space=HDiv, order=2, trace = lambda cf : Pn_3d*cf, diffops=["div","Grad"], vb=VOL, set_dual=[True,False])
     Test(mesh=mesh, space=HDivDiv, order=2, trace = lambda cf : Pn_3d*cf*Pn_3d, diffops=["div"], vb=VOL, set_dual=[False], sym=True)
-    Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_3d*cf*Ptau_3d, diffops=["curl","inc"], vb=VOL, set_dual=[False], sym=True)
+    Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_3d*cf*Ptau_3d, diffops=["curl","inc","christoffel","christoffel2"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlDiv, order=2, trace = lambda cf : Ptau_3d*cf*Pn_3d, diffops=["div"], vb=VOL, set_dual=[False], dev=True)
     Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
     Test(mesh=mesh, space=VectorFacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)

@@ -4832,6 +4832,13 @@ public:
             for (size_t k = 0; k < nv; k++)
               values(ii,k) = temp(first+i*dist[0]+j*dist[1], k);
         break;
+      case 3:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+            for (int l = 0; l < num[2]; l++, ii++)
+              for (size_t k = 0; k < nv; k++)
+                values(ii,k) = temp(first+i*dist[0]+j*dist[1]+l*dist[2], k);
+        break;
         
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
@@ -4854,6 +4861,12 @@ public:
         for (int i = 0, ii = 0; i < num[0]; i++)
           for (int j = 0; j < num[1]; j++, ii++)
             values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]);
+        break;
+      case 3:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+            for (int k = 0; k < num[2]; k++, ii++)
+            values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]+k*dist[2]);
         break;
         
       default:
@@ -4884,6 +4897,12 @@ public:
           for (int j = 0; j < num[1]; j++, ii++)
             values(ii) = v1(first+i*dist[0]+j*dist[1]);
         break;
+      case 3:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+            for (int k = 0; k < num[2]; k++, ii++)
+              values(ii) = v1(first+i*dist[0]+j*dist[1]+k*dist[2]);
+        break;
 
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
@@ -4905,6 +4924,12 @@ public:
         for (int i = 0, ii = 0; i < num[0]; i++)
           for (int j = 0; j < num[1]; j++, ii++)
             values(ii) = values(first+i*dist[0]+j*dist[1]);
+        break;
+      case 3:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+            for (int k = 0; k < num[2]; k++, ii++)
+            values(ii) = values(first+i*dist[0]+j*dist[1]+k*dist[2]);
         break;
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
