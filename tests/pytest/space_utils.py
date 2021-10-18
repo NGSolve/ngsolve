@@ -24,7 +24,7 @@ def GetDiffOp(name, order, dim=1, dims=[], sym=False, dev=False, vb=VOL):
             elif dim == 3:
                 return CF( (x**order-3*y**order,z**order+(x*y)**(int(order/2)), (x*z)**(int(order/2))+(y*z)**(int(order/2))+(x*y*z)**(int(order/3))) )
         elif len(dims) == 2:
-            cf = CF( tuple( [xvec[i]**order - 3*xvec[j]**order + 5*(xvec[(i+1)%dim]*xvec[(j+2)%dim])**int(order/2) + (4 if i == j else 0) + (1/3*xvec[(i+1)%dim]**2 if i == 0 and j == 0 else 0) for i in range(dim) for j in range(dim)]), dims=(dim,dim) )
+            cf = 10*Id(dim) + 0.1*CF( tuple( [xvec[i]**order - 3*xvec[j]**order + 5*(xvec[(i+1)%dim]*xvec[(j+2)%dim])**int(order/2) + (4 if i == j else 0) + (1/3*xvec[(i+1)%dim]**2 if i == 0 and j == 0 else 0) for i in range(dim) for j in range(dim)]), dims=(dim,dim) )
             if sym: cf = Sym(cf)
             if dev: cf = Deviator(cf)
             return cf
@@ -94,6 +94,12 @@ def GetDiffOp(name, order, dim=1, dims=[], sym=False, dev=False, vb=VOL):
             return (-(cfgrad*n)*Grad(n) - OuterProduct(n,Grad(n)*cfgrad) + Ptau_3d*cfhesse)*Ptau_3d
         else:
             raise Exception("hesseboundary only for scalar implemented yet!")
+    elif name == "christoffel":
+        cfgrad  = GetDiffOp("grad", order, dim, dims, sym, dev, vb=VOL)
+        return 0.5*CF( tuple( [ cfgrad[i,j+dim*k] + cfgrad[j,i+dim*k]-cfgrad[k,i+dim*j] ] for i in range(dim) for j in range(dim) for k in range(dim) ), dims=(dim,dim,dim) )
+    elif name == "christoffel2":
+        chr1  = GetDiffOp("christoffel", order, dim, dims, sym, dev, vb=VOL)
+        return CF( (CF( (chr1),dims=(dim**2,dim))*Inv(GetDiffOp("id", order, dim, dims, sym, dev, vb=VOL))), dims=(dim,dim,dim) )
     else:
         raise Exception("In GetDiffOp: Something went wrong: name =", name, ", order =", order, ", dim =", dim, ", dim =", dims, ", sym =", sym, ", dev =", dev, ", vb =", vb)
 
