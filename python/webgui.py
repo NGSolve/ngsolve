@@ -7,6 +7,16 @@ import os
 from webgui_jupyter_widgets import BaseWebGuiScene, encodeData, WebGuiDocuWidget
 import webgui_jupyter_widgets.widget as wg
 
+def updatePMinMax( pmat, pmima=None ):
+    pmima_new = [ngs.Vector(pmat[:,i], copy=False).MinMax() for i in range(3)]
+
+    if pmima is not None:
+        for i in range(3):
+            minmax = ( min(pmima[i][0], pmima_new[i][0]), max(pmima[i][1], pmima_new[i][1]) )
+            pmima_new[i] = minmax
+
+    return pmima_new
+
 class WebGLScene(BaseWebGuiScene):
     def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_):
         from IPython.display import display, Javascript
@@ -241,6 +251,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         timer2map.Stop()
         pmat = cf(pts)
 
+        pmima = updatePMinMax(pmat)
+
         timermult.Start()
         pmat = pmat.reshape(-1, og+1, 4)
         if False:
@@ -277,6 +289,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             vb = region
         pts = mesh.MapToAllElements(ir_seg, vb)
         pmat = func0(pts)
+        pmima = updatePMinMax(pmat)
         pmat = pmat.reshape(-1, og+1, 4)
         edge_data = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
         edges = []
@@ -327,17 +340,11 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
         
         timer3minmax.Start()
-        if False:
-            funcmin = np.min(pmat[:,3])
-            funcmax = np.max(pmat[:,3])
-            pmin = np.min(pmat[:,0:3], axis=0)
-            pmax = np.max(pmat[:,0:3], axis=0)
-        else:
-            pmima = [ngs.Vector(pmat[:,i], copy=False).MinMax() for i in range(3)]
-            pmin, pmax = [ngs.Vector(p) for p in zip(*pmima)]
-            funcmin,funcmax = ngs.Vector(pmat[:,3], copy=False).MinMax()
+        pmima = updatePMinMax(pmat, pmima)
+        funcmin,funcmax = ngs.Vector(pmat[:,3], copy=False).MinMax()
         timer3minmax.Stop()
 
+        pmin, pmax = [ngs.Vector(p) for p in zip(*pmima)]
         mesh_center = 0.5*(pmin+pmax)
         mesh_radius = np.linalg.norm(pmax-pmin)/2
         
