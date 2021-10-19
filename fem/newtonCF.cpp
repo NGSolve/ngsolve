@@ -382,7 +382,7 @@ public:
     FlatMatrix<AutoDiff<1, double>> dval(mir.Size(), full_dim, lh);
 
     FlatVector<> rhs(numeric_dim, lh);
-    FlatVector<> sol(numeric_dim, lh);
+    FlatArray<int> p(numeric_dim, lh);
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
 
     const auto distribute_vec_to_blocks = [&](const auto &src,
@@ -506,8 +506,11 @@ public:
 
         //        cout << "RHS: " << rhs << endl;
         //        cout << "LHS: " << lhs << endl;
-        CalcInverse(lhs);
-        sol = lhs * rhs;
+
+        p = 0;
+        CalcLU (lhs, p);
+        SolveFromLU (lhs, p, SliceMatrix<double, ColMajor>(rhs.Size(), 1, rhs.Size(), rhs.Data()));
+        auto &sol = rhs;
 
         // Handle VS-embedding
         auto &wi = w.Row(qi);
@@ -868,7 +871,7 @@ public:
     FlatMatrix<> xold(mir.Size(), full_dim, lh);
     FlatMatrix<> w(mir.Size(), full_dim, lh);
     FlatVector<> rhs(numeric_dim, lh);
-    FlatVector<> sol(numeric_dim, lh);
+    FlatArray<int> p(numeric_dim, lh);
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
 
     const auto distribute_vec_to_blocks = [&](const auto &src,
@@ -1031,8 +1034,11 @@ public:
 
 //        cout << "RHS: " << rhs << endl;
 //        cout << "LHS: " << lhs << endl;
-        CalcInverse(lhs);
-        sol = lhs * rhs;
+
+        p = 0;
+        CalcLU (lhs, p);
+        SolveFromLU (lhs, p, SliceMatrix<double, ColMajor>(rhs.Size(), 1, rhs.Size(), rhs.Data()));
+        auto &sol = rhs;
 
         // Handle VS-embedding
         auto &wi = w.Row(qi);
