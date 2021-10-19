@@ -114,6 +114,9 @@ namespace ngcomp
     for (auto i : Range(ma->GetNE()))
       {
         firsteldof[i] = ndof;
+        if (!DefinedOn(ElementId(VOL, i)))
+            continue;
+
         IntegrationRule ir(ma->GetElType( { VOL, i } ), 2*order);
         ndof += ir.Size();
       }
@@ -145,7 +148,7 @@ namespace ngcomp
   
   void IntegrationRuleSpace::GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if (ei.VB() == VOL)
+    if (ei.VB() == VOL && DefinedOn(ei))
       dnums = IntRange(firsteldof[ei.Nr()], firsteldof[ei.Nr()+1]);
     else
       dnums.SetSize0();
@@ -188,6 +191,9 @@ namespace ngcomp
     for (auto i : Range(ma->GetNSE()))
       {
         firsteldof[i] = ndof;
+        if (!DefinedOn(ElementId(BND, i)))
+            continue;
+
         IntegrationRule ir(ma->GetElType( { BND, i } ), 2*order);
         ndof += ir.Size();
       }
@@ -219,7 +225,7 @@ namespace ngcomp
   
   void IntegrationRuleSpaceSurface::GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if (ei.VB() == BND)
+    if (ei.VB() == BND && DefinedOn(ei))
       dnums = IntRange(firsteldof[ei.Nr()], firsteldof[ei.Nr()+1]);
     else
       dnums.SetSize0();
