@@ -53,12 +53,12 @@ def test_scalar_linear_minimization(fes_ir):
     expected = np.array([1 / 4])
 
     u.Interpolate(CoefficientFunction(3))
-    ncf = NewtonCF(eq, u)
+    ncf = NewtonCF(eq.Compile(realcompile=True, wait=True, maxderiv=1), u, maxiter=2)
     u.Interpolate(ncf)
     assert np.allclose(u.vec.FV().NumPy(), expected, atol=1e-14, rtol=0)
 
     u.Interpolate(CoefficientFunction(3))
-    mcf = MinimizationCF(pot, u)
+    mcf = MinimizationCF(pot.Compile(realcompile=True, wait=True, maxderiv=2), u, maxiter=2)
     u.Interpolate(mcf)
     assert np.allclose(u.vec.FV().NumPy(), expected, atol=1e-14, rtol=0)
 
