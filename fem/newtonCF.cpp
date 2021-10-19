@@ -322,6 +322,10 @@ public:
     for (ProxyFunction *proxy : proxies)
       ud.AssignMemory(proxy, mir.Size(), proxy->Dimension(), lh);
 
+    // needed for evaluation of compiled expressions
+    DummyFE<ET_TRIG> dummyfe;
+    ud.fel = &dummyfe;
+
     // Prepare data structures for blocks
     const auto nblocks = proxies.Size();
     FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
@@ -807,6 +811,10 @@ public:
 
     for (ProxyFunction *proxy : proxies)
       ud.AssignMemory(proxy, mir.Size(), proxy->Dimension(), lh);
+
+    // needed for evaluation of compiled expressions
+    DummyFE<ET_TRIG> dummyfe;
+    ud.fel = &dummyfe;
 
     // Prepare data structures for blocks
     const auto nblocks = proxies.Size();
