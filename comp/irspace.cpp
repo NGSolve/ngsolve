@@ -148,7 +148,7 @@ namespace ngcomp
   
   void IntegrationRuleSpace::GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if (ei.VB() == VOL && DefinedOn(ei))
+    if (ei.VB() == VOL)
       dnums = IntRange(firsteldof[ei.Nr()], firsteldof[ei.Nr()+1]);
     else
       dnums.SetSize0();
@@ -225,7 +225,7 @@ namespace ngcomp
   
   void IntegrationRuleSpaceSurface::GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if (ei.VB() == BND && DefinedOn(ei))
+    if (ei.VB() == BND)
       dnums = IntRange(firsteldof[ei.Nr()], firsteldof[ei.Nr()+1]);
     else
       dnums.SetSize0();
