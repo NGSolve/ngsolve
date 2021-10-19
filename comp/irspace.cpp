@@ -114,6 +114,9 @@ namespace ngcomp
     for (auto i : Range(ma->GetNE()))
       {
         firsteldof[i] = ndof;
+        if (!DefinedOn(ElementId(VOL, i)))
+            continue;
+
         IntegrationRule ir(ma->GetElType( { VOL, i } ), 2*order);
         ndof += ir.Size();
       }
@@ -188,6 +191,9 @@ namespace ngcomp
     for (auto i : Range(ma->GetNSE()))
       {
         firsteldof[i] = ndof;
+        if (!DefinedOn(ElementId(BND, i)))
+            continue;
+
         IntegrationRule ir(ma->GetElType( { BND, i } ), 2*order);
         ndof += ir.Size();
       }
