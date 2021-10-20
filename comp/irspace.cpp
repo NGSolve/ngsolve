@@ -65,13 +65,15 @@ namespace ngcomp
       int i = 0;
       constexpr int SW = SIMD<double>::Size();
       int ndof = fel.GetNDof();
-      for ( ; i*SW < ndof; i++)
-        y(0,i) = SIMD<double>(&x(SW*i), ndof-SW*i);
-      /*
-      cout << "ApplySIMDIR: " << endl
-           << "x = " << x.Range(fel.GetNDof()) << endl
-           << "y = " << y.AddSize(1,mir.Size()) << endl;
-      */
+      // range of safe access
+      for ( ; (i + 1) * SW <= ndof; i++)
+        y(0, i) = SIMD<double>(&x(SW*i));
+
+      // handle possible overhead
+      if (const int mask = ndof - SW * i; mask != 0)
+        y(0, i) = If(mask, SIMD<double>(&x(SW*i, mask)), SIMD<double>(x(ndof - 1)));
+
+      // cout << "y (final) " << y << endl;
     }
 
     using DiffOp<IRDiffOp> :: AddTransSIMDIR;    
@@ -112,6 +114,9 @@ namespace ngcomp
     for (auto i : Range(ma->GetNE()))
       {
         firsteldof[i] = ndof;
+        if (!DefinedOn(ElementId(VOL, i)))
+            continue;
+
         IntegrationRule ir(ma->GetElType( { VOL, i } ), 2*order);
         ndof += ir.Size();
       }
@@ -186,6 +191,9 @@ namespace ngcomp
     for (auto i : Range(ma->GetNSE()))
       {
         firsteldof[i] = ndof;
+        if (!DefinedOn(ElementId(BND, i)))
+            continue;
+
         IntegrationRule ir(ma->GetElType( { BND, i } ), 2*order);
         ndof += ir.Size();
       }

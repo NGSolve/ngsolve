@@ -31,7 +31,14 @@ namespace ngfem
     if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
       return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
 
-    try { return make_shared<ConstantCoefficientFunction> (val.cast<double>()); }
+    try
+      {
+        double value = val.cast<double>();
+        if (value)
+          return make_shared<ConstantCoefficientFunction> (value);
+        else
+          return ZeroCF(Array<int>());
+      }
     catch(py::cast_error) {}
     try { return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()); }
     catch(py::cast_error) {}
@@ -988,6 +995,26 @@ val : can be one of the following:
            return MakeComponentCoefficientFunction (self, comp);
          }, py::arg("components"))
 
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,py::slice,py::slice> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 3)
+             throw py::index_error();
+           
+           auto [inds1,inds2,inds3] = comps;
+           size_t start1, step1, n1;
+           InitSlice( inds1, dims[0], start1, step1, n1 );
+           size_t start2, step2, n2;
+           InitSlice( inds2, dims[1], start2, step2, n2 );
+           size_t start3, step3, n3;
+           InitSlice( inds3, dims[2], start3, step3, n3 );
+
+           int first = (start1*dims[1]+start2)*dims[2]+start3;
+           Array<int> num = { int(n1), int(n2), int(n3) };
+           Array<int> dist = { int(step1)*dims[1]*dims[2], int(step2)*dims[2], int(step3) };
+
+           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+         }, py::arg("components"))
     
     .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int,int,int> comps)
          {
@@ -1002,6 +1029,29 @@ val : can be one of the following:
            
            int comp = ((c1 * dims[1] + c2) * dims[2] + c3) * dims[3] + c4;
            return MakeComponentCoefficientFunction (self, comp);
+         }, py::arg("components"))
+
+    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,py::slice,py::slice,py::slice> comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 4)
+             throw py::index_error();
+           
+           auto [inds1,inds2,inds3,inds4] = comps;
+           size_t start1, step1, n1;
+           InitSlice( inds1, dims[0], start1, step1, n1 );
+           size_t start2, step2, n2;
+           InitSlice( inds2, dims[1], start2, step2, n2 );
+           size_t start3, step3, n3;
+           InitSlice( inds3, dims[2], start3, step3, n3 );
+           size_t start4, step4, n4;
+           InitSlice( inds4, dims[3], start4, step4, n4 );
+
+           int first = ((start1*dims[1]+start2)*dims[2]+start3)*dims[3] + start4;
+           Array<int> num = { int(n1), int(n2), int(n3), int(n4) };
+           Array<int> dist = { int(step1)*dims[1]*dims[2]*dims[3], int(step2)*dims[2]*dims[3], int(step3)*dims[3], int(step4) };
+
+           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
          }, py::arg("components"))
 
     

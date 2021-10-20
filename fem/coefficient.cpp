@@ -4712,6 +4712,21 @@ MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
 {
   if (c1->GetDescription() == "ZeroCF")
     return ZeroCF( Array<int>({}) );
+
+  if (c1->GetDescription() == "VectorialCoefficientFunction")
+  {
+    int ci = 0;
+    int dim = 0;
+    auto coefs = c1->InputCoefficientFunctions();
+    while(dim<=comp)
+    {
+      int dim_last = dim;
+      dim += coefs[ci]->Dimension();
+      if(dim>comp)
+        return MakeComponentCoefficientFunction( coefs[ci], comp-dim_last );
+      ci++;
+    }
+  }
   return make_shared<ComponentCoefficientFunction> (c1, comp);
 }
 
@@ -4817,6 +4832,13 @@ public:
             for (size_t k = 0; k < nv; k++)
               values(ii,k) = temp(first+i*dist[0]+j*dist[1], k);
         break;
+      case 3:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+            for (int l = 0; l < num[2]; l++, ii++)
+              for (size_t k = 0; k < nv; k++)
+                values(ii,k) = temp(first+i*dist[0]+j*dist[1]+l*dist[2], k);
+        break;
         
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
@@ -4839,6 +4861,12 @@ public:
         for (int i = 0, ii = 0; i < num[0]; i++)
           for (int j = 0; j < num[1]; j++, ii++)
             values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]);
+        break;
+      case 3:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+            for (int k = 0; k < num[2]; k++, ii++)
+            values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]+k*dist[2]);
         break;
         
       default:
@@ -4869,6 +4897,12 @@ public:
           for (int j = 0; j < num[1]; j++, ii++)
             values(ii) = v1(first+i*dist[0]+j*dist[1]);
         break;
+      case 3:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+            for (int k = 0; k < num[2]; k++, ii++)
+              values(ii) = v1(first+i*dist[0]+j*dist[1]+k*dist[2]);
+        break;
 
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
@@ -4890,6 +4924,12 @@ public:
         for (int i = 0, ii = 0; i < num[0]; i++)
           for (int j = 0; j < num[1]; j++, ii++)
             values(ii) = values(first+i*dist[0]+j*dist[1]);
+        break;
+      case 3:
+        for (int i = 0, ii = 0; i < num[0]; i++)
+          for (int j = 0; j < num[1]; j++)
+            for (int k = 0; k < num[2]; k++, ii++)
+            values(ii) = values(first+i*dist[0]+j*dist[1]+k*dist[2]);
         break;
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
