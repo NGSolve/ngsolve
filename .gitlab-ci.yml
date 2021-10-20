@@ -94,6 +94,7 @@ win_avx_cleanup:
     - linux
     - docker
     - avx
+    - bash
 
 .template_ubuntu_avx: &ubuntu_avx
   <<: *ubuntu
@@ -180,6 +181,7 @@ linux_cleanup:
     - linux
     - docker
     - avx
+    - bash
   script:
     - source tests/gitlab-ci/ubuntu/cleanup.sh
   when: always
@@ -399,6 +401,7 @@ conda_linux:
     - linux
     - docker
     - avx
+    - bash
   script:
     - export PATH="/home/gitlab-runner/miniconda3/bin:$PATH"
     - conda build purge

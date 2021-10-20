@@ -255,6 +255,8 @@ namespace ngcomp
        {
          if (reg)
            if (!reg->Mask().Test(el.GetIndex())) return;
+         
+         if (!fes->DefinedOn(el)) return;
 
          const FiniteElement & fel = fes->GetFE (el, lh);
          int ndof = fel.GetNDof();
