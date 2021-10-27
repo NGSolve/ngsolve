@@ -3404,6 +3404,7 @@ integrator : ngsolve.fem.LFI
                    if (element_wise)
                      element_sum(el.Nr()) = hsum(0);
                  });
+              py::gil_scoped_acquire aq;
               py::object result;
               if (region_wise) {
 #ifdef PARALLEL
@@ -3503,6 +3504,7 @@ integrator : ngsolve.fem.LFI
                      element_sum(el.Nr()) = hsum(0);
                  });
               
+              py::gil_scoped_acquire aq;
               py::object result;
               if (region_wise) {
 #ifdef PARALLEL
