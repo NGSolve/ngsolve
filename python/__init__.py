@@ -9,6 +9,25 @@ ngsolve.bla .... simple vectors and matrices
 ngsolve.fem .... finite elements and integrators
 ngsolve.comp ... function spaces, forms
 """
+import pkg_resources
+import ctypes
+import os.path
+
+from . import config
+
+if config.is_python_package and config.USE_MKL:
+    import sys
+    if 'darwin' in sys.platform:
+        pass
+    elif 'linux' in sys.platform:
+        _mkl = pkg_resources.get_distribution('mkl')
+        _mkl_rt = _mkl.get_resource_filename('mkl','../../libmkl_rt.so.1')
+        ctypes.CDLL(_mkl_rt)
+    elif 'win' in sys.platform:
+        _mkl = pkg_resources.get_distribution('mkl')
+        _mkl_rt = os.path.abspath(_mkl.get_resource_filename('mkl','../../Library/bin/mkl_rt.1.dll'))
+        ctypes.CDLL(_mkl_rt)
+
 import netgen
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 

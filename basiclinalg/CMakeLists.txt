@@ -2,27 +2,20 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_executable(kernel_generator generate_mat_kernels.cpp)
 
-target_link_libraries(kernel_generator PUBLIC ngcore)
-
-target_compile_definitions(kernel_generator PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
-target_compile_definitions(kernel_generator PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
-target_compile_options(kernel_generator PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-if(NETGEN_BUILD_FOR_CONDA)
-  target_link_libraries(kernel_generator PUBLIC ${NETGEN_PYTHON_LIBRARIES})
-endif()
-
-if(WIN32)
-    # run kernel genrator in NETGEN_BINARY_DIR on Windows to find linked .dll files
-    set(cwd ${NETGEN_BINARY_DIR})
-else()
-    set(cwd .)
-endif()
+target_compile_definitions(kernel_generator PUBLIC
+    ${NGSOLVE_COMPILE_DEFINITIONS}
+    ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE}
+    ${ngcore_compile_definitions}
+)
+target_compile_options(kernel_generator PUBLIC
+    ${NGSOLVE_COMPILE_OPTIONS}
+    ${ngcore_compile_options}
+)
 
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
   COMMAND kernel_generator "${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp"
   DEPENDS kernel_generator
-  WORKING_DIRECTORY ${cwd}
-  )
+)
 
 add_custom_target(kernel_generated DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp)
 
@@ -35,7 +28,7 @@ add_library(ngbla ${NGS_LIB_TYPE}
 
 add_dependencies(ngbla kernel_generated)
 
-target_include_directories(ngbla PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
+target_include_directories(ngbla PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 target_compile_definitions(ngbla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 
 target_link_libraries(ngbla PUBLIC ngstd ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>")
