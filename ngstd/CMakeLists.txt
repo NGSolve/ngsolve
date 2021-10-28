@@ -14,7 +14,7 @@ endif(NOT WIN32)
 target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(ngstd PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(ngstd PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
-target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS} PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS})
+target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS} )
 
 add_dependencies( ngstd generate_version_file )
 

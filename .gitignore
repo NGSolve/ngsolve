@@ -16,3 +16,5 @@ ng*.html
 ng*.trace
 *.vtk
 .ipynb_checkpoints/
+dist
+_skbuild
