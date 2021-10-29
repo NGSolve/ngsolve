@@ -344,7 +344,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  AddDualTrans (const IntegrationRule & ir, BareVector<double> values,
+  AddDualTrans (const IntegrationRule & ir, BareSliceVector<double> values,
             BareSliceVector<> coefs) const
   {
     FlatArray<IntegrationPoint> hir = ir;
