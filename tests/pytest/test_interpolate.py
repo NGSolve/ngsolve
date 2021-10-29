@@ -6,7 +6,7 @@ import numpy as np
 
 
 def mk_2d_mesh():
-    return Mesh(unit_square.GenerateMesh())
+    return Mesh(unit_square.GenerateMesh(maxh=0.5))
 
 @pytest.fixture
 def mesh2d():
@@ -71,11 +71,12 @@ def test_SymMatrixValuedL2(mesh2d):
 
 def test_SymDevMatrixValuedL2(mesh2d):
     mesh = mesh2d
-    space = MatrixValued(L2(mesh, order=2), dim=2, symmetric=True, deviatoric=True)
+    space = MatrixValued(L2(mesh, order=2), dim=3, symmetric=True, deviatoric=True)
 
     def _expr(x, y):
-        return ((6 * x**2 + 4 * y**2, y**1 - 1.5 * x**2),
-                (y**1 - 1.5 * x**2, -6 * x**2 - 4 * y**2))
+        return ((6 * x**2 + 4 * y**2, y**1 - 1.5 * x**2, y**2 - 1.5 * x**2),
+                (y**1 - 1.5 * x**2, 1 * x**2 - 5 * y**2 + 3*x*y, 0),
+                (y**2 - 1.5 * x**2, 0, -7 * x**2 + 1 * y**2 - 3*x*y))
 
     def _check(gf):
         return np.allclose(gf(mesh(0.5, 0.5)), np.array(_expr(0.5, 0.5)).flatten(), atol=1e-10, rtol=1e-10)
