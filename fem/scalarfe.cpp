@@ -290,7 +290,7 @@ namespace ngfem
     throw Exception (string("CalcDualShape not overloaded for element ") + typeid(*this).name());
   }
   
-  void BaseScalarFiniteElement :: AddDualTrans (const IntegrationRule & ir, BareVector<double> values, BareSliceVector<> coefs) const
+  void BaseScalarFiniteElement :: AddDualTrans (const IntegrationRule & ir, BareSliceVector<double> values, BareSliceVector<> coefs) const
   {
     throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());    
   }
@@ -477,14 +477,14 @@ namespace ngfem
           auto & irvol = f2el(locfnr, irfacet, lh);
           auto & mir = trafo(irvol, lh);
 
-          FlatMatrix<double> mfluxi(coefs.Width(), mir.IR().Size(), lh);
+          FlatMatrix<double> mfluxi(mir.IR().Size(), coefs.Width(), lh);
           func.Evaluate (mir, mfluxi);
 
           for (size_t j : Range(mir))
-            mfluxi.Col(j) *= mir[j].IP().Weight();
+            mfluxi.Row(j) *= mir[j].IP().Weight();
 
           for (int i = 0; i < coefs.Width(); i++)
-            AddDualTrans (mir.IR(), mfluxi.Row(i), elflux.Col(i));
+            AddDualTrans (mir.IR(), mfluxi.Col(i), elflux.Col(i));
         }
       }
     }
