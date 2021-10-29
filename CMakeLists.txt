@@ -147,10 +147,13 @@ include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 if(NETGEN_USE_GUI)
+  if(NOT NGSOLVE_INSTALL_DIR_TCL)
+      set(NGSOLVE_INSTALL_DIR_TCL ${NGSOLVE_INSTALL_DIR_BIN})
+  endif()
   configure_file(${CMAKE_CURRENT_SOURCE_DIR}/ngsolve.tcl
     ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl @ONLY)
 
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve)
+  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/ngsolve.tcl DESTINATION ${NGSOLVE_INSTALL_DIR_TCL} COMPONENT ngsolve)
 endif(NETGEN_USE_GUI)
 
 string(TOLOWER "${CMAKE_BUILD_TYPE}" CMAKE_BUILD_TYPE_LOWER)
@@ -277,9 +280,13 @@ add_library(netgen_python INTERFACE )
 install( TARGETS netgen_python ${ngs_install_dir} )
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
-    target_include_directories(netgen_python INTERFACE ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
-    if(NOT NETGEN_BUILD_FOR_CONDA)
+    if(BUILD_FOR_CONDA AND NOT WIN32)
+        find_package(PythonInterp 3 REQUIRED)
+        find_package(PythonLibs 3 REQUIRED)
+        target_include_directories(netgen_python INTERFACE ${PYTHON_INCLUDE_DIR})
+    else()
         target_link_libraries(netgen_python INTERFACE ${NETGEN_PYTHON_LIBRARIES})
+        target_include_directories(netgen_python INTERFACE ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
     endif()
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/python/config.py.in"

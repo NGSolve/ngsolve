@@ -5,12 +5,6 @@
 
 #ifdef TCL
 extern "C" void Ng_TclCmd(string);
-#include <tcl.h>
-#if TCL_MAJOR_VERSION==8 && TCL_MINOR_VERSION>=4
-#define tcl_const const
-#else
-#define tcl_const
-#endif
 #endif
 
 
@@ -1443,30 +1437,11 @@ namespace ngcomp
   {
 #ifdef TCL
     Ng_TclCmd(str);
-//     if (!tcl_interpreter) return;
-//     ::Tcl_Eval (tcl_interpreter, str.c_str());
 #else
     cout << "sorry, no Tcl" << endl;
 #endif
     
-    /*
-      // for non-const tcl_eval (Tcl 8.3)
-    char *dummy; 
-    dummy = new char[str.size()+1];
-    strcpy(dummy, str.c_str());
-    
-    ::Tcl_Eval (tcl_interpreter, dummy);
-
-    delete [] dummy;
-    */
   }
-
-  /*
-  void PDE :: Tcl_CreateCommand(Tcl_Interp *interp,
-			   CONST char *cmdName, Tcl_CmdProc *proc,
-			   ClientData clientData,
-			   Tcl_CmdDeleteProc *deleteProc);
-  */
 
 
 #ifdef ASTRID
