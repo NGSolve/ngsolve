@@ -1,10 +1,3 @@
-/*********************************************************************/
-/* File:   myFESpace.cpp                                             */
-/* Author: Joachim Schoeberl                                         */
-/* Date:   26. Apr. 2009                                             */
-/*********************************************************************/
-
-
 /*
 
 My own FESpace for linear and quadratic triangular elements.
@@ -16,8 +9,6 @@ element, and the global mesh.
 
 
 #include <comp.hpp>    // provides FESpace, ...
-// #include <h1lofe.hpp>
-// #include <regex>
 #include <python_comp.hpp>
 #include "myElement.hpp"
 #include "myFESpace.hpp"
@@ -44,7 +35,7 @@ namespace ngcomp
     else
       cout << "You have chosen second order elements" << endl;
 
-    // needed for symbolic integrators and to draw solution
+    // diffops are needed for function evaluation and evaluation of the gradient:
     evaluator[VOL] = make_shared<T_DifferentialOperator<MyDiffOpId>>();
     flux_evaluator[VOL] = make_shared<T_DifferentialOperator<MyDiffOpGradient>>();
   }
@@ -52,6 +43,11 @@ namespace ngcomp
   DocInfo MyFESpace :: GetDocu()
   {
     auto docu = FESpace::GetDocu();
+    docu.short_docu = "My own FESpace.";
+    docu.long_docu =
+      R"raw_string(My own FESpace provides first and second order triangular elements.
+)raw_string";      
+      
     docu.Arg("secondorder") = "bool = False\n"
       "  Use second order basis functions";
     return docu;
@@ -74,25 +70,29 @@ namespace ngcomp
     SetNDof (ndof);
   }
 
+  /*
+    returns dof-numbers of element with ElementId ei
+    element may be a volume element, or boundary element
+  */
   void MyFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
-    // returns dofs of element ei
-    // may be a volume triangle or boundary segment
-
     dnums.SetSize(0);
 
     // first dofs are vertex numbers:
-    for (auto v : ma->GetElVertices(ei))
+    for (auto v : ma->GetElement(ei).Vertices())
       dnums.Append (v);
 
     if (secondorder)
       {
         // more dofs on edges:
-        for (auto e : ma->GetElEdges(ei))
+        for (auto e : ma->GetElement(ei).Edges())
           dnums.Append (nvert+e);
       }
   }
 
+  /*
+    Allocate finite element class, using custom allocator alloc
+  */
   FiniteElement & MyFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     if (ei.IsVolume())
@@ -103,7 +103,7 @@ namespace ngcomp
           return * new (alloc) MyQuadraticTrig;
       }
     else
-      throw Exception("Boundary elements not implemented yet!");
+      throw Exception("Boundary elements not implemented yet (->your exercise)");
     // else
     //   {
     //     if (!secondorder)
@@ -113,14 +113,8 @@ namespace ngcomp
     //   }
   }
 
-  /*
-    register fe-spaces
-    Object of type MyFESpace can be defined in the pde-file via
-    "define fespace v -type=myfespace"
-  */
-
-  static RegisterFESpace<MyFESpace> initifes ("myfespace");
 }
+
 
 void ExportMyFESpace(py::module m)
 {

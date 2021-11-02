@@ -12,14 +12,13 @@ My own simple first and second order triangular finite elements
 
 
 #include <fem.hpp>
-#include <python_ngstd.hpp>
 #include "myElement.hpp"
 
 
 namespace ngfem
 {
   void MyLinearTrig :: CalcShape (const IntegrationPoint & ip,
-                                  BareSliceVector<> shape) const
+                                  SliceVector<> shape) const
   {
     // coordinates in reference elements
     double x = ip(0);
@@ -27,7 +26,8 @@ namespace ngfem
 
     /*
       Vertex coordinates have been defined to be (1,0), (0,1), (0,0)
-      see ElementTopology::GetVertices(ET_TRIG)
+      see file fem/elementtopology.cpp, 
+      ElementTopology::GetVertices(ET_TRIG)
      */
 
     // define shape functions
@@ -37,10 +37,10 @@ namespace ngfem
   }
 
   void MyLinearTrig :: CalcDShape (const IntegrationPoint & ip,
-                                   BareSliceMatrix<> dshape) const
+                                   SliceMatrix<> dshape) const
 
   {
-    // matrix of derivatives:
+    // ndof times 2 - matrix of derivatives:
 
     dshape(0,0) = 1;
     dshape(0,1) = 0;
@@ -51,7 +51,7 @@ namespace ngfem
   }
 
   void MyQuadraticTrig :: CalcShape (const IntegrationPoint & ip,
-                                     BareSliceVector<> shape) const
+                                     SliceVector<> shape) const
   {
     // now, use barycentric coordinates x, y, 1-x-y:
     double lam[3] = { ip(0), ip(1), 1-ip(0)-ip(1) };
@@ -74,7 +74,7 @@ namespace ngfem
 
 
   void MyQuadraticTrig :: CalcDShape (const IntegrationPoint & ip,
-                                      BareSliceMatrix<> dshape) const
+                                      SliceMatrix<> dshape) const
 
   {
     // Use automatic (exact !) differentiation with overloaded data-types

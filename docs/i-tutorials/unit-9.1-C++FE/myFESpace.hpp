@@ -1,11 +1,6 @@
 #ifndef FILE_MYFESPACE_HPP
 #define FILE_MYFESPACE_HPP
 
-/*********************************************************************/
-/* File:   myFESpace.hpp                                             */
-/* Author: Joachim Schoeberl                                         */
-/* Date:   26. Apr. 2009                                             */
-/*********************************************************************/
 
 /*
 
@@ -27,20 +22,24 @@ namespace ngcomp
   public:
     /*
       constructor. 
-      Arguments are the access to the mesh data structure,
-      and the flags from the define command in the pde-file
-      or the kwargs in the Python constructor.
+      Arguments are the MeshAccess view of the mesh data structure,
+      and the kwargs from the Python constructor converted to C++ Flags.
     */
     MyFESpace (shared_ptr<MeshAccess> ama, const Flags & flags);
 
     // a name for our new fe-space
     string GetClassName () const override { return "MyFESpace"; }
 
+    // documentation
     static DocInfo GetDocu();
 
+    // organzize the FESpace, called after every mesh update
     void Update() override;
     
+    // dof-numbers for element-id ei
     void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+    
+    // generate FiniteElement for element-id ei
     FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
     // some new functionality our space should have in Python

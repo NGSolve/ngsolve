@@ -8,81 +8,82 @@
 namespace ngfem
 {
   /* 
-     DiffOps are the static polymorphism classes implementing
-     Operators for GridFunctions and Test- and TrialFunctions.
-     They only have static member functions and are never created
-     but only used as a template argument for DifferentialOperators.
-     They use CRTP for "static virtual" methods.
-     DifferentialOperator is the runtime polymorphism class wrapping
-     them. Use T_DifferentialOperator<DiffOp> as a coupling
-     mechanism.
+     DiffOps provide the link between function evaluation, and finite elements.
+     Different DiffOps evaluate either shape functions, or derivatives.
+     Typically, a FiniteElementSpace creates a DiffOp to for function evaluation, 
+     and for the canonical derivative, as well as DiffOps for evaluation at the
+     boundary. These DiffOps are used when evaluating GridFunctions, and setting 
+     up element-matrices from trial- and test-functions.
+     DiffOps use static polymorphism, aka Curiously Recurring Template Pattern (CRTP).
    */
 
-  // Our implementation of the identity
+  // Our implementation of the identity operator, in two space dimensions.
   class MyDiffOpId : public DiffOp<MyDiffOpId>
   {
   public:
-    // ******************** Necessary stuff *************************
+    // some constants for the diffop:
     
-    static constexpr int DIM = 1; // dimension of the input
+    static constexpr int DIM = 1;       // dimension of the input
     static constexpr int DIM_SPACE = 2; // dimension of the space
-    static constexpr int DIM_ELEMENT = 2; // dimension of the element
-    static constexpr int DIM_DMAT = 1; // dimension of the output
+    static constexpr int DIM_ELEMENT = 2; // spatial dimension of the element
+    static constexpr int DIM_DMAT = 1;  // dimension of the output
     static constexpr int DIFFORDER = 0; // order of differentiation
 
+    // upcast to our element
+    static const MyBaseElement& Cast(const FiniteElement& fel)
+    { return dynamic_cast<const MyBaseElement&> (fel); }
+
+    // fill evaluation matrix of dimension 1 times fel.ndof 
+    // the input mip is a mapped integration point, which has also
+    // access to the integration point on the reference element
     template<typename MIP, typename MAT>
-    static void GenerateMatrix(const FiniteElement& fel, const MIP& mip,
-                               MAT& mat, LocalHeap& lh)
+    static void GenerateMatrix(const FiniteElement & fel, const MIP & mip,
+                               MAT & mat, LocalHeap & lh)
     {
-      HeapReset hr(lh);
       Cast(fel).CalcShape(mip.IP(), mat.Row(0));
     }
 
-    // ******************** Helper function ***************************
-    static const MyBaseElement& Cast(const FiniteElement& fel)
-    { return static_cast<const MyBaseElement&> (fel); }
-
-
-    // ******************** Performance improvements *******************
-    // ...
+    // can overload more functionality for performance optimization,
+    // like evaluation in the whole integration rule
   };
 
-    // Our implementation of the gradient of a function
+    
+  // Gradient DiffOp: implements the chain rule for mapping gradients
+  // from the reference element to the pysical element
   class MyDiffOpGradient : public DiffOp<MyDiffOpGradient>
   {
-  public:
-    // ******************** Necessary stuff *************************
-    
-    static constexpr int DIM = 1; // dimension of the input
+  public:    
+    static constexpr int DIM = 1;       // dimension of the input
     static constexpr int DIM_SPACE = 2; // dimension of the space
     static constexpr int DIM_ELEMENT = 2; // dimension of the element
-    static constexpr int DIM_DMAT = 2; // dimension of the output
+    static constexpr int DIM_DMAT = 2;  // dimension of the output
     static constexpr int DIFFORDER = 1; // order of differentiation
     
     // so that you can call grad(u)
     static string Name() { return "grad"; }
 
+    static const MyBaseElement& Cast(const FiniteElement & fel)
+    { return static_cast<const MyBaseElement&> (fel); }
+
+    // computes the 2 times ndof evaluation matrix
     template<typename MIP, typename MAT>
-    static void GenerateMatrix(const FiniteElement& fel, const MIP& mip,
-                               MAT& mat, LocalHeap& lh)
+    static void GenerateMatrix(const FiniteElement & fel, const MIP & mip,
+                               MAT & mat, LocalHeap & lh)
     {
-      // We need to compute the gradient on the reference element and
-      // then transform it to the using the jacobian of the mapped
-      // integration point
+      // the gradient on the physical element follows by the chain-rule
+      // from the gradient on the reference element
+      // F is the Jacobian matrix of the mapping
+      // (phi_i)' = (phiref_i)' F^{-1}
+
+      // The LocalHeap provides cheap dynamic memory allocation
+      // for temporary matrices
       HeapReset hr(lh);
-      // create a temporary matrix on the local heap
-      FlatMatrixFixWidth<2> dshape(fel.GetNDof(), lh);
+      FlatMatrix<double> dshape(fel.GetNDof(), 2, lh);
+      
+      // gradients of basis functions on the reference element
       Cast(fel).CalcDShape(mip.IP(), dshape);
       mat = Trans(dshape * mip.GetJacobianInverse());
     }
-
-    // ******************** Helper function ***************************
-    static const MyBaseElement& Cast(const FiniteElement& fel)
-    { return static_cast<const MyBaseElement&> (fel); }
-
-
-    // ******************** Performance improvements *******************
-    // ...
   };
 }
 #endif // FILE_MYDIFFOP_HPP
