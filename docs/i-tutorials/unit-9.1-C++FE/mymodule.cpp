@@ -1,18 +1,9 @@
 #include <comp.hpp>
-using namespace ngcomp;
-using namespace ngfem;
 #include <python_comp.hpp>
 
-#include "myFESpace.hpp"
+using namespace ngcomp;
 
-/*
-PYBIND11_MODULE(mymodule,m) {
-  // import ngsolve such that python base classes are defined
-  auto ngs = py::module::import("ngsolve");
-  
-  ExportMyFESpace(m);
-}
-*/
+#include "myFESpace.hpp"
 
    
 extern "C" void mymodule(py::object & res) {
