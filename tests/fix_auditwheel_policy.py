@@ -16,6 +16,7 @@ additional_libs = [
         "libfreetype.so.6.14.0",
         "libgeom2d.so",
         "libgeom2dvis.so",
+        "libgui.so",
         "libinterface.so",
         "libmesh.so",
         "libmkl_rt.so.1",
