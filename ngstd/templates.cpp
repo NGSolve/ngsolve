@@ -43,6 +43,25 @@ namespace ngstd
       cerr << "         version " << ng_version.to_string() << " is loaded at run-time!!!" << endl;
       cerr << "================================================================" << endl;
     }
+#ifdef NETGEN_ENABLE_CHECK_RANGE
+    const bool ngs_check_range = true;
+#else  // NETGEN_ENABLE_CHECK_RANGE
+    const bool ngs_check_range = false;
+#endif // NETGEN_ENABLE_CHECK_RANGE
+    const bool ng_check_range = IsRangeCheckEnabled();
+
+    const int ngs_simd_width = GetDefaultSIMDSize();
+    const int ng_simd_width = GetCompiledSIMDSize();
+
+    if(ngs_check_range != ng_check_range || ngs_simd_width != ng_simd_width)
+    {
+        stringstream s;
+        s << "Incompatible version of Netgen loaded!" << endl;
+        s << "Range checks enabled (Negen, NGSolve): " << ng_check_range << "\t" << ngs_check_range << endl;
+        s << "SIMD width (Negen, NGSolve):           " << ng_simd_width << "\t" << ngs_simd_width << endl;
+        throw runtime_error(s.str());
+    }
+
     return true;
   }();
 }
