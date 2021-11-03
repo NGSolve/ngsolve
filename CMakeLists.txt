@@ -396,11 +396,22 @@ endforeach()
 
 file(RELATIVE_PATH BIN_TO_INC_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_INCLUDE_DIR})
 if(WIN32)
-  set( ngscxx_set_script_dir "set NGSCXX_DIR=%~dp0" )
+  get_filename_component(VC_BIN_DIR ${CMAKE_CXX_COMPILER} PATH)
+  find_file(VCVARSALL vcvarsall.bat PATHS ${VC_BIN_DIR}/../../ ${VC_BIN_DIR}/../../../../../../Auxiliary/Build/)
+  set( ngscxx_set_script_dir "\
+set NGSCXX_DIR=%~dp0
+call \"${VCVARSALL}\" amd64
+" )
   set( ngscxx_includes "${ngscxx_includes} /I\"%NGSCXX_DIR%/${BIN_TO_INC_RELPATH}\"" )
   set( ngscxx_includes "${ngscxx_includes} /I\"%NGSCXX_DIR%/${BIN_TO_INC_RELPATH}/include\"" )
 else()
-  set( ngscxx_set_script_dir "NGSCXX_DIR=$( cd $(dirname $0); pwd )" )
+  set( ngscxx_set_script_dir "\
+NGSCXX_DIR=$( cd $(dirname $0); pwd )
+if [ -f ${CMAKE_CXX_COMPILER} ]
+  then NGSCXX=${CMAKE_CXX_COMPILER}
+  else NGSCXX=c++
+fi
+")
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}" )
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}/include" )
   find_program(BASH bash REQUIRED)
@@ -465,19 +476,17 @@ endif()
 
 if(WIN32)
     set(NGSCXX_COMMAND ngscxx.bat)
-    get_filename_component(VC_BIN_DIR ${CMAKE_CXX_COMPILER} PATH)
-    find_file(VCVARSALL vcvarsall.bat PATHS ${VC_BIN_DIR}/../../ ${VC_BIN_DIR}/../../../../../../Auxiliary/Build/)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat
-                  CONTENT "${ngscxx_set_script_dir}\n call \"${VCVARSALL}\" amd64\ncl /c ${ngscxx_flags} ${ngscxx_includes} %*\n"
+                  CONTENT "${ngscxx_set_script_dir}\n cl /c ${ngscxx_flags} ${ngscxx_includes} %*\n"
                   CONDITION $<CONFIG:${CMAKE_BUILD_TYPE}>
                   )
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
-                  CONTENT "${ngscxx_set_script_dir}\n call \"${VCVARSALL}\" amd64\n${ngsld_header}\nlink /DLL %* ${ngsld_flags}\n")
+                  CONTENT "${ngscxx_set_script_dir}\n ${ngsld_header}\nlink /DLL %* ${ngsld_flags}\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 else(WIN32)
     set(NGSCXX_COMMAND ngscxx)
-    set(ngscxx_compile_command "${CMAKE_CXX_COMPILER} ${ngscxx_flags} ${ngscxx_includes} $*")
+    set(ngscxx_compile_command "$NGSCXX ${ngscxx_flags} ${ngscxx_includes} $*")
     if(CCACHE_FOUND)
       set(ngscxx_compile_command "
 if [ -f ${CCACHE_FOUND} ]
@@ -486,10 +495,10 @@ if [ -f ${CCACHE_FOUND} ]
 fi")
     endif(CCACHE_FOUND)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngscxx
-                  CONTENT "${ngscxx_header} ${ngscxx_compile_command}\n"
+                  CONTENT "${ngscxx_header}\n${ngscxx_compile_command}\n"
                   CONDITION $<COMPILE_LANGUAGE:CXX>
                   )
-    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld CONTENT "${ngsld_header} ${CMAKE_CXX_COMPILER} ${ngsld_flags} $*\n")
+    file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld CONTENT "${ngsld_header}\n$NGSCXX ${ngsld_flags} $*\n")
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
     install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 endif(WIN32)
