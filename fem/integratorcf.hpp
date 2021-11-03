@@ -33,6 +33,7 @@ namespace ngfem
   public:
     shared_ptr<CoefficientFunction> cf;
     DifferentialSymbol dx;
+    shared_ptr<Integral> linearization;
     Integral (shared_ptr<CoefficientFunction> _cf,
               DifferentialSymbol _dx)
       : cf(_cf), dx(_dx) { ; }
@@ -67,6 +68,7 @@ namespace ngfem
   {
   public:
     Array<shared_ptr<Integral>> icfs;
+    Array<shared_ptr<Integral>> linearization_icfs;
     
     SumOfIntegrals() = default;
     SumOfIntegrals (shared_ptr<Integral> icf)
