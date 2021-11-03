@@ -674,6 +674,7 @@ public:
     int trial_difforder, test_difforder;
     bool is_symmetric;
     bool has_interpolate; // is there an interpolate in the expression tree ? 
+    shared_ptr<BilinearFormIntegrator> linearization;
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                                    VorB aelement_boundary);
@@ -690,6 +691,8 @@ public:
     // virtual SIMD_IntegrationRule Get_SIMD_IntegrationRuleEB (const FiniteElement & fel, int facetnr, LocalHeap & lh) const;
     
     virtual int GetDimension() const override { return trial_proxies[0]->Evaluator()->BlockDim(); }
+    void SetLinearization(shared_ptr<BilinearFormIntegrator> _lin)
+    { linearization = _lin; }
 
     NGS_DLL_HEADER virtual void 
     CalcElementMatrix (const FiniteElement & fel,
@@ -744,6 +747,20 @@ public:
 				 FlatVector<double> elveclin,
                                  FlatMatrix<double> elmat,
                                  LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void
+    CalcLinearizedElementMatrix (const FiniteElement & fel,
+                                 const ElementTransformation & trafo,
+				 FlatVector<Complex> elveclin,
+                                 FlatMatrix<Complex> elmat,
+                                 LocalHeap & lh) const override;
+
+    template<typename SCAL> void
+    T_CalcLinearizedElementMatrixFrozen (const FiniteElement & fel,
+                                         const ElementTransformation & trafo,
+                                         FlatVector<SCAL> elveclin,
+                                         FlatMatrix<SCAL> elmat,
+                                         LocalHeap & lh) const;
 
     template <typename SCAL, typename SCAL_SHAPES>
     void T_CalcLinearizedElementMatrixEB (const FiniteElement & fel,

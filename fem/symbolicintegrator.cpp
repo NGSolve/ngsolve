@@ -2238,6 +2238,21 @@ namespace ngfem
         }
   }
 
+  void
+  SymbolicBilinearFormIntegrator ::
+  CalcLinearizedElementMatrix (const FiniteElement & fel,
+                               const ElementTransformation & trafo,
+                               FlatVector<Complex> elveclin,
+                               FlatMatrix<Complex> elmat,
+                               LocalHeap & lh) const
+  {
+    if(linearization)
+      {
+        T_CalcLinearizedElementMatrixFrozen(fel, trafo, elveclin, elmat, lh);
+        return;
+      }
+    CalcElementMatrix(fel, trafo, elmat, lh);
+  }
   
   void 
   SymbolicBilinearFormIntegrator ::
@@ -2247,6 +2262,11 @@ namespace ngfem
                                FlatMatrix<double> elmat,
                                LocalHeap & lh) const
   {
+    if(linearization)
+      {
+        T_CalcLinearizedElementMatrixFrozen(fel, trafo, elveclin, elmat, lh);
+        return;
+      }
     auto save_userdata = trafo.PushUserData();
     
     
@@ -2694,15 +2714,16 @@ namespace ngfem
         }
   }
 
-
-
-
-
-
-
-
-
-  
+  template<typename SCAL>
+  void SymbolicBilinearFormIntegrator ::
+  T_CalcLinearizedElementMatrixFrozen (const FiniteElement & fel,
+                                       const ElementTransformation & trafo, 
+                                       FlatVector<SCAL> elveclin,
+                                       FlatMatrix<SCAL> elmat,
+                                       LocalHeap & lh) const
+    {
+      linearization->CalcElementMatrix(fel, trafo, elmat, lh);
+    }
   
   void
   SymbolicBilinearFormIntegrator :: ApplyElementMatrix (const FiniteElement & fel, 
@@ -5346,6 +5367,9 @@ namespace ngfem
       bfi->SetDefinedOnElements(dx.definedonelements);
     for (auto both : dx.userdefined_intrules)
       bfi->SetIntegrationRule(both.first, *both.second);
+
+    if(linearization)
+      dynamic_pointer_cast<SymbolicBilinearFormIntegrator>(bfi)->SetLinearization(linearization->MakeBilinearFormIntegrator());
 
     return bfi;
   }

@@ -2293,6 +2293,20 @@ diffop : ngsolve.fem.DifferentialOperator
     .def(py::self + py::self)
     .def(py::self - py::self)
     .def(float() * py::self)
+    .def_property("linearization",
+                  [](const SumOfIntegrals& ints)
+                  {
+                    if(ints.icfs.Size() > 1)
+                      throw Exception("linearization property only availaible for single integrals!");
+                  },
+                  [](SumOfIntegrals& ints, shared_ptr<SumOfIntegrals> linearization)
+                  {
+                    if(ints.icfs.Size() > 1)
+                      throw Exception("linearization property only availaible for single integrals!");
+                    if(linearization->icfs.Size() > 1)
+                      throw Exception("linearization property only availaible for single integrals!");
+                    ints.icfs[0]->linearization = linearization->icfs[0];
+                  })
     .def("__len__", [](shared_ptr<SumOfIntegrals> igls)
          { return igls->icfs.Size(); })
     .def ("__getitem__", [](shared_ptr<SumOfIntegrals> igls, int nr)
