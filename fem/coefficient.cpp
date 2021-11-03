@@ -5388,7 +5388,10 @@ public:
     for(auto cf : aci)
       if (cf && cf->GetDescription() != "ZeroCF")
         return make_shared<DomainWiseCoefficientFunction> (move (aci));
-    return ZeroCF(Array<int>({static_cast<int>(aci.Size())}));
+    for(auto cf : aci)
+      if(cf)
+        return ZeroCF(cf->Dimensions());
+    return nullptr;
   }
 
 
