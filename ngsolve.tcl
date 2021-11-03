@@ -3,7 +3,8 @@ if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
   set current_script_dir [file dirname [dict get [info frame 0] file]]
   if { [catch { load $current_script_dir/@BIN_TO_LIB_RELPATH@/libngsolve[info sharedlibextension] ngsolve } result2 ] } {
     puts "cannot load ngsolve" 
-    puts "error: $result"
+    puts "error1: $result"
+    puts "error2: $result2"
   }
 } 
 
