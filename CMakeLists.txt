@@ -418,7 +418,7 @@ fi
 endif()
 
 # linker flags
-if(USE_MKL AND NOT INSTALL_DEPENDENCIES AND NOT MKL_STATIC)
+if(USE_MKL AND NOT INSTALL_DEPENDENCIES AND NOT MKL_STATIC AND WIN32)
     set( ngsld_flags "${ngsld_flags} ${MKL_LINK_FLAGS}" )
 endif()
 
