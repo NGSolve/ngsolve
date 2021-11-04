@@ -6,6 +6,29 @@ set (DEPENDENCIES)
 set (LAPACK_PROJECTS)
 set (NETGEN_CMAKE_ARGS "" CACHE INTERNAL "")
 set (NGSOLVE_CMAKE_ARGS "" CACHE INTERNAL "")
+set (SUBPROJECT_CMAKE_ARGS "" CACHE INTERNAL "")
+
+set (SUBPROJECT_ARGS
+    LIST_SEPARATOR |
+    PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
+)
+
+# only show output on failure in ci-builds
+if(DEFINED ENV{CI})
+    set (SUBPROJECT_ARGS
+        LOG_DOWNLOAD ON
+        LOG_BUILD ON
+        LOG_INSTALL ON
+        LOG_CONFIGURE ON
+    )
+    if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.14.0")
+        set (SUBPROJECT_ARGS
+            ${SUBPROJECT_ARGS}
+            LOG_OUTPUT_ON_FAILURE ON
+            LOG_MERGED_STDOUTERR ON
+        )
+    endif()
+endif()
 
 # propagate all variables set on the command line using cmake -DFOO=BAR
 # to Netgen and NGSolve subprojects
@@ -43,6 +66,24 @@ else()
 endif()
 
 #######################################################################
+
+set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_OSX_DEPLOYMENT_TARGET)
+set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_OSX_SYSROOT)
+set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_OSX_ARCHITECTURES)
+set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_C_COMPILER)
+set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_CXX_COMPILER)
+set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_BUILD_TYPE)
+
+set(SUBPROJECT_CMAKE_ARGS "${SUBPROJECT_CMAKE_ARGS};-DCMAKE_POSITION_INDEPENDENT_CODE=ON" CACHE INTERNAL "")
+
+if(USE_CCACHE)
+  find_program(CCACHE_FOUND NAMES ccache ccache.bat)
+  if(CCACHE_FOUND)
+      set(SUBPROJECT_CMAKE_ARGS "${SUBPROJECT_CMAKE_ARGS};-DCMAKE_CXX_COMPILER_LAUNCHER=${CCACHE_FOUND}" CACHE INTERNAL "")
+  endif()
+endif()
+
+#######################################################################
 if(NETGEN_DIR)
   message(STATUS "Looking for NetgenConfig.cmake...")
   find_package(Netgen REQUIRED CONFIG HINTS ${NETGEN_DIR} ${NETGEN_DIR}/lib/cmake ${NETGEN_DIR}/share/cmake $ENV{NETGENDIR}/../share/cmake)
@@ -70,13 +111,6 @@ else(NETGEN_DIR)
 
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS
-    CMAKE_CXX_COMPILER
-    CMAKE_C_COMPILER
-    CMAKE_BUILD_TYPE
-
-    CMAKE_OSX_DEPLOYMENT_TARGET
-    CMAKE_OSX_SYSROOT
-
     CMAKE_INSTALL_PREFIX
     INSTALL_DEPENDENCIES
     INSTALL_PROFILES
@@ -98,6 +132,7 @@ else(NETGEN_DIR)
   ExternalProject_Add (netgen_project
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
+    ${SUBPROJECT_ARGS}
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ${COMMON_BUILD_COMMAND}
     INSTALL_COMMAND ""
@@ -138,9 +173,9 @@ if (USE_LAPACK)
     if(NOT LAPACK_LIBRARIES)
       if(WIN32)
         ExternalProject_Add(win_download_lapack
-          PREFIX ${CMAKE_CURRENT_BINARY_DIR}/tcl
           URL "https://github.com/NGSolve/ngsolve_dependencies/releases/download/v1.0.0/lapack64.zip"
           URL_MD5 635432b6b41f23177b9116d4323c978c
+          ${SUBPROJECT_ARGS}
           UPDATE_COMMAND "" # Disable update
           BUILD_IN_SOURCE 1
           CONFIGURE_COMMAND ""
@@ -168,16 +203,11 @@ if(USE_UMFPACK)
     ExternalProject_Add(
       suitesparse
       DEPENDS ${LAPACK_PROJECTS}
-      PREFIX ${CMAKE_CURRENT_BINARY_DIR}/umfpack
       GIT_REPOSITORY https://github.com/jlblancoc/suitesparse-metis-for-windows.git
       GIT_TAG 1618fd16ea34be287c0fbc32789ca280012a9280
+      ${SUBPROJECT_ARGS}
       CMAKE_ARGS
-          -DCMAKE_CXX_COMPILER=${CMAKE_CXX_COMPILER}
-          -DCMAKE_C_COMPILER=${CMAKE_C_COMPILER}
           -DCMAKE_INSTALL_PREFIX=${UMFPACK_DIR}
-          -DCMAKE_OSX_DEPLOYMENT_TARGET=${CMAKE_OSX_DEPLOYMENT_TARGET}
-          -DCMAKE_OSX_SYSROOT=${CMAKE_OSX_SYSROOT}
-          -DCMAKE_POSITION_INDEPENDENT_CODE=ON
           -DSHARED=OFF
           -DBUILD_METIS=OFF
           -DLAPACK_FOUND=FALSE # Use blas/lapack found by ngsolve
@@ -185,10 +215,8 @@ if(USE_UMFPACK)
           -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES}
           -DSUITESPARSE_INSTALL_PREFIX=${UMFPACK_DIR}
           -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON
+         ${SUBPROJECT_CMAKE_ARGS}
       UPDATE_COMMAND ""
-      LOG_DOWNLOAD 1
-      LOG_BUILD 1
-      LOG_INSTALL 1
       )
     list(APPEND DEPENDENCIES suitesparse)
   endif()
@@ -217,12 +245,7 @@ endif(USE_MUMPS AND NOT MUMPS_DIR)
 #######################################################################
 # propagate cmake variables to NGSolve subproject
 set_vars( NGSOLVE_CMAKE_ARGS
-  CMAKE_CXX_COMPILER
-  CMAKE_C_COMPILER
-  CMAKE_BUILD_TYPE
   CMAKE_INSTALL_PREFIX
-  CMAKE_OSX_DEPLOYMENT_TARGET
-  CMAKE_OSX_SYSROOT
 
   USE_LAPACK
   USE_MPI
@@ -247,18 +270,19 @@ set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAK
 
 set(NGSOLVE_PREFIX_PATH ${CMAKE_INSTALL_PREFIX} ${CMAKE_PREFIX_PATH})
 
-if(DEFINED ENV{CI} AND WIN32)
-    set(log_output LOG_BUILD ON LOG_MERGED_STDOUTERR ON LOG_OUTPUT_ON_FAILURE ON)
-endif()
-
+string(REPLACE ";" "|" NGSOLVE_PREFIX_PATH_ALT_SEP "${NGSOLVE_PREFIX_PATH}")
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
-  CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS} -DUSE_SUPERBUILD=OFF -DCMAKE_PREFIX_PATH=${NGSOLVE_PREFIX_PATH}
+  CMAKE_ARGS
+         ${NGSOLVE_CMAKE_ARGS}
+         -DUSE_SUPERBUILD=OFF
+         -DCMAKE_PREFIX_PATH=${NGSOLVE_PREFIX_PATH}
+         ${SUBPROJECT_CMAKE_ARGS}
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
   BUILD_COMMAND ${COMMON_BUILD_COMMAND}
-  ${log_output}
+  ${SUBPROJECT_ARGS}
   )
 
 
