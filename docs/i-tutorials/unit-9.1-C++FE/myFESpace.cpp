@@ -121,7 +121,7 @@ void ExportMyFESpace(py::module m)
   cout << "called ExportMyFESpace" << endl;
   using namespace ngcomp;
 
-  ExportFESpace<MyFESpace>(m, "MyFESpace")
+  ExportFESpace<MyFESpace>(m, "MyFESpace", true)
     .def("GetNVert", &MyFESpace::GetNVert)
     ;
 }
