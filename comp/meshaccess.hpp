@@ -467,6 +467,7 @@ namespace ngcomp
     const string & GetMaterial(ElementId ei) const
     { return GetElement(ei).GetMaterial(); }
     
+    // const string & GetMaterial(VorB vb, int region_nr) const
     const string & GetMaterial(VorB vb, int region_nr) const
     {
       switch (vb)
@@ -488,31 +489,31 @@ namespace ngcomp
     
     /// the material of the element
     [[deprecated("Use GetMaterial with ElementId(VOL, elnr) instead!")]]        
-    string GetElMaterial (int elnr) const
+    const string & GetElMaterial (int elnr) const
     { return GetMaterial(ElementId(VOL, elnr)); }
       // { return Ng_GetElementMaterial (elnr+1); }
 
     /// the material of the sub-domain
     [[deprecated("Use GetMaterial(VOL, region_nr) instead!")]]                
-    string GetDomainMaterial (int domnr) const
+    const string & GetDomainMaterial (int domnr) const
       { return GetMaterial(VOL, domnr); }
       // { return Ng_GetDomainMaterial (domnr+1); }
       
 
     /// the boundary condition name of surface element
     [[deprecated("Use GetMaterial with ElementId(BND, elnr) instead!")]]            
-    string GetSElBCName (int selnr) const
+    const string & GetSElBCName (int selnr) const
     { return GetMaterial(ElementId(BND, selnr)); }      
       // { return Ng_GetSurfaceElementBCName (selnr+1); }
 
     /// the boundary condition name of boundary condition number
     [[deprecated("Use GetMaterial(BND, region_nr) instead!")]]            
-    string GetBCNumBCName (int bcnr) const
+    const string & GetBCNumBCName (int bcnr) const
       { return GetMaterial(BND, bcnr); }      
     // { return Ng_GetBCNumBCName (bcnr); }
 
     [[deprecated("Use GetMaterial(BBND, region_nr) instead!")]]                
-    string GetCD2NumCD2Name (int cd2nr) const
+    const string & GetCD2NumCD2Name (int cd2nr) const
       { return GetMaterial(BBND, cd2nr); }      
     // { return Ng_GetCD2NumCD2Name (cd2nr); }
 
