@@ -136,5 +136,19 @@ void NGS_Object :: PrintReport (ostream & ost) const
     return Array<MemoryUsage>();
   }
   
- 
+
+  string DocInfo :: GetPythonDocString() const
+  {
+    string docstring = short_docu + "\n\n" + long_docu;
+
+    if (arguments.size())
+      {
+        docstring += "\nKeyword arguments can be:\n\n";
+        for (auto & flagdoc : arguments)
+          docstring += get<0> (flagdoc) + ": " + get<1> (flagdoc) + "\n";
+      }
+    return docstring;
+  }
+
+  
 } // namespace
