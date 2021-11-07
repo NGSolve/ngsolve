@@ -249,7 +249,7 @@ namespace ngbla
             int nr = (c.Height()+BH-1) / BH;
             int nc = (c.Width()+BW-1) / BW;
             task_manager -> CreateJob
-                           ( [a,b,c,diag,nr,BH,BW,symmetric] (const TaskInfo & ti)
+                           ( [a,b,c,diag,nr,symmetric] (const TaskInfo & ti)
                            {
                              size_t br = ti.task_nr % nr;
                              size_t bc = ti.task_nr / nr;
