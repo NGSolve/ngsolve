@@ -14,7 +14,6 @@ My own simple first and second order triangular finite elements
 #include <fem.hpp>
 #include "myElement.hpp"
 
-
 namespace ngfem
 {
   void MyLinearTrig :: CalcShape (const IntegrationPoint & ip,
@@ -26,7 +25,8 @@ namespace ngfem
 
     /*
       Vertex coordinates have been defined to be (1,0), (0,1), (0,0)
-      see file fem/elementtopology.cpp, 
+      see file 
+      https://github.com/NGSolve/ngsolve/blob/master/fem/elementtopology.cpp
       ElementTopology::GetVertices(ET_TRIG)
      */
 
