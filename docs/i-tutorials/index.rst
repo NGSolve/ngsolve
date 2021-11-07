@@ -202,6 +202,7 @@ C. Lehrenfeld
 coming soon ...   
 
 9. Extending by C++ programming
+=========================
 
 .. toctree::
    :maxdepth: 1
