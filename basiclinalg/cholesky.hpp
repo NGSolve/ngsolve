@@ -244,8 +244,12 @@ namespace ngbla
             // timer3.Start();
             // int nr = c.Height()/128+1;
             // int nc = c.Width()/128+1;
-            constexpr int BH = 96;
-            constexpr int BW = 128;
+            
+            // constexpr int BH = 96;
+            // constexpr int BW = 128;
+            // avoid warning for capturing constexpr int, but still needed on MSVC 19.16
+            IC<96> BH;
+            IC<128> BW;
             int nr = (c.Height()+BH-1) / BH;
             int nc = (c.Width()+BW-1) / BW;
             task_manager -> CreateJob
