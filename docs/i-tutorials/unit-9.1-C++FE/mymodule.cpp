@@ -1,7 +1,7 @@
 #include <comp.hpp>
 #include <python_comp.hpp>
 
-using namespace ngcomp;
+// using namespace ngcomp;
 
 #include "myElement.cpp"
 #include "myFESpace.cpp"

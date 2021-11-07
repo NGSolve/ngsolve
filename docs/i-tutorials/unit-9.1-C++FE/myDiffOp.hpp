@@ -29,9 +29,7 @@ namespace ngfem
     static constexpr int DIM_DMAT = 1;  // dimension of the output
     static constexpr int DIFFORDER = 0; // order of differentiation
 
-    // upcast to our element
-    static const MyBaseElement& Cast(const FiniteElement& fel)
-    { return dynamic_cast<const MyBaseElement&> (fel); }
+    static bool SupportsVB (VorB checkvb) { return true; } // can do VOL and BND terms
 
     // fill evaluation matrix of dimension 1 times fel.ndof 
     // the input mip is a mapped integration point, which has also
@@ -40,12 +38,14 @@ namespace ngfem
     static void GenerateMatrix(const FiniteElement & fel, const MIP & mip,
                                MAT & mat, LocalHeap & lh)
     {
-      Cast(fel).CalcShape(mip.IP(), mat.Row(0));
+      dynamic_cast<const MyBaseElement&> (fel).CalcShape(mip.IP(), mat.Row(0));
     }
 
     // can overload more functionality for performance optimization,
     // like evaluation in the whole integration rule
   };
+    
+   
 
     
   // Gradient DiffOp: implements the chain rule for mapping gradients
