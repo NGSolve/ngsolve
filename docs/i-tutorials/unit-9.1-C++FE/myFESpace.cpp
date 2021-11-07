@@ -10,6 +10,7 @@ element, and the global mesh.
 
 #include <comp.hpp>    // provides FESpace, ...
 #include <python_comp.hpp>
+
 #include "myElement.hpp"
 #include "myFESpace.hpp"
 #include "myDiffOp.hpp"
@@ -17,15 +18,21 @@ element, and the global mesh.
 
 namespace ngcomp
 {
-
+    
+  /*
+     the MeshAccess object provides information about the finite element mesh,
+     see: https://github.com/NGSolve/ngsolve/blob/master/comp/meshaccess.hpp
+          
+     base class FESpace is here:
+     https://github.com/NGSolve/ngsolve/blob/master/comp/fespace.hpp
+  */
+    
   MyFESpace :: MyFESpace (shared_ptr<MeshAccess> ama, const Flags & flags)
     : FESpace (ama, flags)
   {
     cout << "Constructor of MyFESpace" << endl;
     cout << "Flags = " << flags << endl;
 
-    // this is needed for pickling and needs to be the same as used in
-    // RegisterFESpace later
     type = "myfespace";
 
     secondorder = flags.GetDefineFlag ("secondorder");
@@ -95,22 +102,17 @@ namespace ngcomp
   */
   FiniteElement & MyFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
-    if (ei.IsVolume())
+    switch (ma->GetElement(ei).GetType())
       {
-        if (!secondorder)
-          return * new (alloc) MyLinearTrig;
-        else
-          return * new (alloc) MyQuadraticTrig;
+        case ET_TRIG:
+          if (!secondorder)
+            return * new (alloc) MyLinearTrig;
+          else
+            return * new (alloc) MyQuadraticTrig;
+        default:
+          throw Exception("Element of type "+ToString(ma->GetElement(ei).GetType()) + 
+                               " not implemented");
       }
-    else
-      throw Exception("Boundary elements not implemented yet (->your exercise)");
-    // else
-    //   {
-    //     if (!secondorder)
-    //       return * new (alloc) MyLinearSegm;
-    //     else
-    //       return * new (alloc) MyQuadraticSegm;
-    //   }
   }
 
 }
@@ -122,6 +124,7 @@ void ExportMyFESpace(py::module m)
   using namespace ngcomp;
 
   ExportFESpace<MyFESpace>(m, "MyFESpace", true)
-    .def("GetNVert", &MyFESpace::GetNVert)
+    .def("GetNVert", &MyFESpace::GetNVert, 
+            "return number of vertices")
     ;
 }
