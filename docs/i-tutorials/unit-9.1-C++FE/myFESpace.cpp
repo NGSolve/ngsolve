@@ -44,6 +44,7 @@ namespace ngcomp
 
     // diffops are needed for function evaluation and evaluation of the gradient:
     evaluator[VOL] = make_shared<T_DifferentialOperator<MyDiffOpId>>();
+    // evaluator[BND] = make_shared<T_DifferentialOperator<MyDiffOpId>>(); 
     flux_evaluator[VOL] = make_shared<T_DifferentialOperator<MyDiffOpGradient>>();
   }
 
@@ -110,8 +111,8 @@ namespace ngcomp
           else
             return * new (alloc) MyQuadraticTrig;
         default:
-          throw Exception("Element of type "+ToString(ma->GetElement(ei).GetType()) + 
-                               " not implemented");
+          throw Exception("MyFESpace: Element of type "+ToString(ma->GetElement(ei).GetType()) + 
+                               " not available\n");
       }
   }
 
@@ -120,8 +121,9 @@ namespace ngcomp
 
 void ExportMyFESpace(py::module m)
 {
-  cout << "called ExportMyFESpace" << endl;
   using namespace ngcomp;
+
+  cout << "called ExportMyFESpace" << endl;
 
   ExportFESpace<MyFESpace>(m, "MyFESpace", true)
     .def("GetNVert", &MyFESpace::GetNVert, 

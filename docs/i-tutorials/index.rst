@@ -195,3 +195,15 @@ Peter Gangl and Kevin Sturm
    unit-7-optimization/05_Topological_Derivative_Transmission.ipynb
 
 
+8.  Extended Finite Elements
+=========================
+C. Lehrenfeld
+
+coming soon ...   
+
+9. Extending by C++ programming
+
+.. toctree::
+   :maxdepth: 1
+
+   unit-9.1-C++FE/CppExtension.ipynb
