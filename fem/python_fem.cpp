@@ -988,78 +988,45 @@ val : can be one of the following:
 
            auto [comp0,comp1,comp2] = comps;
            Array<py::object> components = {comp0, comp1, comp2}; 
-
-           Array<bool> isslice = {false,false,false};
-           Array<int> cs = {0,0,0};
-           Array<py::slice> slices = {py::slice(0,0,1),py::slice(0,0,1),py::slice(0,0,1)};
            int numslice = 0;
+           int first = 0;
+           Array<int> num;
+           Array<int> dist;
+
            for (auto i : Range(3))
-             if (py::extract<int> (components[i]).check())
+             {
+               if (py::extract<int> (components[i]).check())
                {
-                 cs[i] = components[i].cast<int>();
-                 if (cs[i] < 0 || cs[i] >= dims[i])
-                   throw py::index_error();
+                 int c = components[i].cast<int>();
+                 if (c < 0 || c >= dims[i]) throw py::index_error();
+                 for (auto j : Range(dist.Size()))
+                     dist[j] *= dims[i];
+
+                 first *= dims[i];
+                 first += c;
                }
              else if (py::extract<py::slice> (components[i]).check())
                {
-                 slices[i] = components[i].cast<py::slice>();
-                 isslice[i] = true;
+                 py::slice slice = components[i].cast<py::slice>();
                  numslice++;
+                 size_t start, step, n; 
+                 InitSlice( slice, dims[i], start, step, n );
+                 num.Append( int(n) );
+                 for (auto j : Range(dist.Size()))
+                   dist[j] *= dims[i];
+                 dist.Append( int(step) );
+
+                 first *= dims[i];
+                 first += start;
                }
              else
                throw Exception("Invalid object. Only integers and slices are allowed");
-           
-           size_t start1=0, step1=0, n1=0;           
-           size_t start2=0, step2=0, n2=0;
-           size_t start3=0, step3=0, n3=0;
-           if (isslice[0])
-             InitSlice( slices[0], dims[0], start1, step1, n1 );
-           if (isslice[1])
-             InitSlice( slices[1], dims[1], start2, step2, n2 );
-           if (isslice[2])
-             InitSlice( slices[2], dims[2], start3, step3, n3 );
-
-           int first = ((start1+cs[0])*dims[1]+(start2+cs[1]))*dims[2]+(start3+cs[2]);
-           switch (numslice)
-             {
-             case 0:
-               return MakeComponentCoefficientFunction (self, first);
-             case 1:
-               {
-                 Array<int> num = { int(n1+n2+n3) };
-                 Array<int> dist = { int((step1*dims[1]+step2)*dims[2]+step3) };
-                 return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-               }
-             case 2:
-               {
-                 if (n1 == 0)
-                   {
-                     Array<int> num = { int(n2),int(n3) };
-                     Array<int> dist = { int(step2)*dims[2], int(step3) };
-                     return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-                   }
-                 else if (n2 == 0)
-                   {
-                     Array<int> num = { int(n1),int(n3) };
-                     Array<int> dist = { int(step1)*dims[1]*dims[2], int(step3) };
-                     return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-                   }
-                 else // n3 == 0
-                   {
-                     Array<int> num = { int(n1),int(n2) };
-                     Array<int> dist = { int(step1)*dims[1]*dims[2], int(step2)*dims[2] };
-                     return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-                   }
-               }
-             case 3:
-               {
-                 Array<int> num = { int(n1), int(n2), int(n3) };
-                 Array<int> dist = { int(step1)*dims[1]*dims[2], int(step2)*dims[2], int(step3) };
-                 return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-               }
-             default:
-               throw Exception("something went wrong");
              }
+
+           if (numslice == 0)
+             return MakeComponentCoefficientFunction (self, first);
+           else
+             return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
 
          }, py::arg("components"))
 
