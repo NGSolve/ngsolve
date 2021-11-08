@@ -9,7 +9,6 @@ set (NGSOLVE_CMAKE_ARGS "" CACHE INTERNAL "")
 set (SUBPROJECT_CMAKE_ARGS "" CACHE INTERNAL "")
 
 set (SUBPROJECT_ARGS
-    LIST_SEPARATOR |
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
 )
 
@@ -30,6 +29,15 @@ if(DEFINED ENV{CI})
     endif()
 endif()
 
+macro(set_vars VAR_OUT)
+  foreach(varname ${ARGN})
+    if(NOT "${${varname}}" STREQUAL "")
+      string(REPLACE ";" "|" varvalue "${${varname}}" )
+      set(${VAR_OUT} ${${VAR_OUT}};-D${varname}=${varvalue} CACHE INTERNAL "")
+    endif()
+  endforeach()
+endmacro()
+
 # propagate all variables set on the command line using cmake -DFOO=BAR
 # to Netgen and NGSolve subprojects
 get_cmake_property(CACHE_VARS CACHE_VARIABLES)
@@ -37,21 +45,12 @@ foreach(CACHE_VAR ${CACHE_VARS})
   get_property(CACHE_VAR_HELPSTRING CACHE ${CACHE_VAR} PROPERTY HELPSTRING)
   if(CACHE_VAR_HELPSTRING STREQUAL "No help, variable specified on the command line.")
     get_property(CACHE_VAR_TYPE CACHE ${CACHE_VAR} PROPERTY TYPE)
-    set(NETGEN_CMAKE_ARGS ${NETGEN_CMAKE_ARGS};-D${CACHE_VAR}:${CACHE_VAR_TYPE}=${${CACHE_VAR}} CACHE INTERNAL "")
-    set(NGSOLVE_CMAKE_ARGS ${NGSOLVE_CMAKE_ARGS};-D${CACHE_VAR}:${CACHE_VAR_TYPE}=${${CACHE_VAR}} CACHE INTERNAL "")
+    set_vars(NETGEN_CMAKE_ARGS ${CACHE_VAR})
+    set_vars(NGSOLVE_CMAKE_ARGS ${CACHE_VAR})
   endif()
 endforeach()
 
 set(NETGEN_DIR CACHE PATH "Path where Netgen is already installed. Setting this variable will skip the Netgen build and override the setting of CMAKE_INSTALL_PREFIX")
-
-macro(set_vars VAR_OUT)
-  foreach(varname ${ARGN})
-    if(NOT "${${varname}}" STREQUAL "")
-      string(REPLACE ";" "$<SEMICOLON>" varvalue "${${varname}}" )
-      set(${VAR_OUT} ${${VAR_OUT}};-D${varname}=${varvalue} CACHE INTERNAL "")
-    endif()
-  endforeach()
-endmacro()
 
 macro(set_flags_vars OUTPUT_VAR )
   foreach(varname ${ARGN})
@@ -59,20 +58,16 @@ macro(set_flags_vars OUTPUT_VAR )
   endforeach()
 endmacro()
 
-if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
-  set(COMMON_BUILD_COMMAND $(MAKE) --silent )
-else()
-  set(COMMON_BUILD_COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} )
-endif()
-
 #######################################################################
 
-set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_OSX_DEPLOYMENT_TARGET)
-set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_OSX_SYSROOT)
-set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_OSX_ARCHITECTURES)
-set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_C_COMPILER)
-set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_CXX_COMPILER)
-set_vars(SUBPROJECT_CMAKE_ARGS CMAKE_BUILD_TYPE)
+set_vars(SUBPROJECT_CMAKE_ARGS
+    CMAKE_OSX_DEPLOYMENT_TARGET
+    CMAKE_OSX_SYSROOT
+    CMAKE_OSX_ARCHITECTURES
+    CMAKE_C_COMPILER
+    CMAKE_CXX_COMPILER
+    CMAKE_BUILD_TYPE
+)
 
 set(SUBPROJECT_CMAKE_ARGS "${SUBPROJECT_CMAKE_ARGS};-DCMAKE_POSITION_INDEPENDENT_CODE=ON" CACHE INTERNAL "")
 
@@ -96,7 +91,6 @@ else(NETGEN_DIR)
   execute_process(COMMAND ${CMAKE_COMMAND} -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_start ALL ${CMAKE_COMMAND} -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_stop ALL ${CMAKE_COMMAND} -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
-  set (NETGEN_CMAKE_ARGS)
 
   if (USE_MPI AND NOT METIS_DIR)
     # hard-coded path to self-built metis
@@ -119,7 +113,6 @@ else(NETGEN_DIR)
     USE_NATIVE_ARCH
     ENABLE_UNIT_TESTS
     BUILD_STUB_FILES
-
     METIS_DIR
     )
 
@@ -132,9 +125,11 @@ else(NETGEN_DIR)
   ExternalProject_Add (netgen_project
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
+    LIST_SEPARATOR |
     ${SUBPROJECT_ARGS}
-    CONFIGURE_COMMAND ""
-    BUILD_COMMAND ${COMMON_BUILD_COMMAND}
+    CMAKE_ARGS
+        ${NETGEN_CMAKE_ARGS}
+        ${SUBPROJECT_CMAKE_ARGS}
     INSTALL_COMMAND ""
   )
 
@@ -274,6 +269,7 @@ string(REPLACE ";" "|" NGSOLVE_PREFIX_PATH_ALT_SEP "${NGSOLVE_PREFIX_PATH}")
 ExternalProject_Add (ngsolve
   DEPENDS ${DEPENDENCIES} ${LAPACK_PROJECTS}
   SOURCE_DIR ${PROJECT_SOURCE_DIR}
+  LIST_SEPARATOR |
   CMAKE_ARGS
          ${NGSOLVE_CMAKE_ARGS}
          -DUSE_SUPERBUILD=OFF
@@ -281,7 +277,6 @@ ExternalProject_Add (ngsolve
          ${SUBPROJECT_CMAKE_ARGS}
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
-  BUILD_COMMAND ${COMMON_BUILD_COMMAND}
   ${SUBPROJECT_ARGS}
   )
 
