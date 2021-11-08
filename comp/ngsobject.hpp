@@ -24,7 +24,7 @@ namespace ngcomp
       return get<1> (arguments.back());
     }
 
-    string GetPythonDocString() const;
+    NGS_DLL_HEADER string GetPythonDocString() const;
   };
 
 
