@@ -314,6 +314,7 @@ namespace ngcomp
             elbox.Add(p);
           }
 
+        elbox.Scale(1.1);
         searchtree->Insert(elbox, el2.Nr());
       }
   }
@@ -904,7 +905,7 @@ namespace ngcomp
         displacement->Update();
         displacement->GetVector() = displacement_->GetVector();
       }
-    gap->Update(displacement, intorder, h);
+    gap->Update(displacement, intorder*5, h);
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       static_pointer_cast<DisplacedNormal<2>>(normal)->Update(displacement);
