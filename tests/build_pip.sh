@@ -22,11 +22,11 @@ do
     auditwheel repair ngsolve*-cp${pyversion}-*.whl
     rm ngsolve-*.whl
 
-    #rm -rf _skbuild
-    #$PYDIR/pip install -i https://test.pypi.org/simple/ netgen-mesher-avx2==$NETGEN_VERSION
-    #NETGEN_ARCH=avx2 $PYDIR/pip wheel --use-feature=in-tree-build --extra-index-url https://test.pypi.org/simple/ .
-    #auditwheel repair ngsolve_avx2*-cp${pyversion}-*.whl
-    #rm ngsolve_avx2-*.whl
+    rm -rf _skbuild
+    $PYDIR/pip install -i https://test.pypi.org/simple/ netgen-mesher-avx2==$NETGEN_VERSION
+    NETGEN_ARCH=avx2 $PYDIR/pip wheel --use-feature=in-tree-build --extra-index-url https://test.pypi.org/simple/ .
+    auditwheel repair ngsolve_avx2*-cp${pyversion}-*.whl
+    rm ngsolve_avx2-*.whl
 
     $PYDIR/pip install --extra-index-url https://test.pypi.org/simple/ wheelhouse/ngsolve*-cp${pyversion}-*.whl
     $PYDIR/python3 -c 'import ngsolve'
