@@ -30,8 +30,8 @@ do
     auditwheel repair ngsolve_avx2*-cp${pyversion}-*.whl
     rm ngsolve_avx2-*.whl
 
-    $PYDIR/pip install --extra-index-url https://test.pypi.org/simple/ wheelhouse/ngsolve-avx2-*-cp${pyversion}-*.whl
-    $PYDIR/python3 -c 'import ngsolve'
+    #$PYDIR/pip install --extra-index-url https://test.pypi.org/simple/ wheelhouse/ngsolve-avx2-*-cp${pyversion}-*.whl
+    #$PYDIR/python3 -c 'import ngsolve'
     #cd ../tests/pytest
     #$PYDIR/python3 -m pytest
 done
