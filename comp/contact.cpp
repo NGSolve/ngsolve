@@ -942,6 +942,7 @@ namespace ngcomp
 
                  auto tgap = static_pointer_cast<T_GapFunction<DIM>>(gap);
                  static mutex add_mutex;
+                 static mutex add_draw_mutex;
                  auto& mask = master.Mask();
                  mesh->IterateElements
                    (master.VB(), lh,
@@ -971,6 +972,23 @@ namespace ngcomp
                               other_ir[cntpair] = (*pair).secondary_ip;
                               other_nr[cntpair] = (*pair).secondary_el.Nr();
                               cntpair++;
+
+                              if(draw_pairs)
+                                {
+                                  HeapReset hr(lh);
+                                  auto & t1_def = trafo.AddDeformation(displacement.get(), lh);
+                                  Vec<3> p1 = 0;
+                                  t1_def.CalcPoint(pair->primary_ip, p1);
+
+                                  auto & t2 = mesh->GetTrafo(pair->secondary_el, lh);
+                                  auto & t2_def = t2.AddDeformation(displacement.get(), lh);
+                                  Vec<3> p2 = 0;
+                                  t2_def.CalcPoint(pair->secondary_ip, p2);
+
+                                  lock_guard<mutex> guard(add_draw_mutex);
+                                  primary_points.Append(p1);
+                                  secondary_points.Append(p2);
+                                }
                             }
                         }
                       // cout << "other_nr = " << other_nr << endl;
