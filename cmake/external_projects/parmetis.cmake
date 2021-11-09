@@ -11,20 +11,19 @@ find_file(MPI_H_FILE mpi.h REQUIRED PATHS ${MPI_C_INCLUDE_PATH} ${MPI_C_HEADER_D
 get_filename_component(MPI_HDIR ${MPI_H_FILE} DIRECTORY)
 
 ExternalProject_Add(project_parmetis
-  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
 #  URL "http://glaros.dtc.umn.edu/gkhome/fetch/sw/parmetis/parmetis-4.0.3.tar.gz"
   URL "https://github.com/NGSolve/ngsolve_dependencies/releases/download/v1.0.0/parmetis-4.0.3.tar.gz"
   URL_MD5 f69c479586bf6bb7aff6a9bc0c739628
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
   PATCH_COMMAND patch -p1 -i ${CMAKE_CURRENT_LIST_DIR}/parmetis.patch
+  ${SUBPROJECT_ARGS}
+  SOURCE_DIR ${PARMETIS_SRC_DIR}
   CMAKE_ARGS
-	 -DCMAKE_POSITION_INDEPENDENT_CODE=ON
+          ${SUBPROJECT_CMAKE_ARGS}
          -DMPI_INCLUDE_PATH=${MPI_HDIR}
-	 -DGKLIB_PATH=${PARMETIS_SRC_DIR}/metis/GKlib
+         -DGKLIB_PATH=${PARMETIS_SRC_DIR}/metis/GKlib
          -DMETIS_PATH=${PARMETIS_SRC_DIR}/metis/
          -DCMAKE_INSTALL_PREFIX=${PARMETIS_DIR}
-         -DCMAKE_C_COMPILER=${MPI_C_COMPILER}
-         -DCMAKE_CXX_COMPILER=${MPI_CXX_COMPILER}
          -DMETIS_INSTALL=ON
   UPDATE_COMMAND "" # Disable update
   )
