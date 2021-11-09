@@ -20,6 +20,7 @@
 #include "../fem/h1lofe.hpp"
 #include "contact.hpp"
 #include "globalinterfacespace.hpp"
+#include "globalspace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -1384,6 +1385,21 @@ component : int
   //   .def("Range", &CompoundFESpace::GetRange)
   //   ;
 
+  auto export_global = ExportFESpace<GlobalSpace> (m, "GlobalSpace");
+  export_global.def_static("__special_treated_flags__", [fes_class] ()
+                           {
+                             py::dict special = fes_class.attr("__special_treated_flags__")();
+                             special["basis"] = py::cpp_function
+                               ([] (py::object pybasis, Flags* flags, py::list info)
+                                {
+                                  auto cppbasis = py::cast<shared_ptr<CoefficientFunction>>(pybasis);
+                                  flags -> SetFlag("basis", std::any(cppbasis));
+                                });
+                             return special;
+                           });
+
+
+  
   py::class_<PeriodicFESpace, shared_ptr<PeriodicFESpace>, FESpace>(m, "Periodic",
 	docu_string(R"delimiter(Periodic or quasi-periodic Finite Element Spaces.
 The periodic fespace is a wrapper around a standard fespace with an 
