@@ -3022,6 +3022,9 @@ integrator : ngsolve.fem.LFI
                   mg_flags["coarsesmoothingsteps"] = "int = 1\n"
                     "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
                   mg_flags["updatealways"] = "bool = False\n";
+                  mg_flags["blocktype"] = "str = vertexpatch\n"
+                    "  Blocktype used in compound FESpace for smoothing\n"
+                    "  blocks. Options: vertexpatch, edgepatch";
                   return mg_flags;
                 })
 
