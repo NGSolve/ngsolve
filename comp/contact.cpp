@@ -913,7 +913,7 @@ namespace ngcomp
         displacement->Update();
         displacement->GetVector() = displacement_->GetVector();
       }
-    gap->Update(displacement, intorder*5, h);
+    gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h);
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       static_pointer_cast<DisplacedNormal<2>>(normal)->Update(displacement);
