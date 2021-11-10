@@ -270,21 +270,25 @@ namespace ngcomp
         auto & trafo2 = ma->GetTrafo (el2, lh);
         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
-        IntegrationRule ir2(trafo2.GetElementType(), intorder2);
-        MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
-        MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
+        IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
+        for(auto ir2 : ir2_.Split())
+        {
+            HeapReset hr(lh);
+            MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
+            MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
 
-        netgen::Box<DIM> el_box{netgen::Box<DIM>::EMPTY_BOX};
-        for (auto & mip : mir2_def)
-          {
-            netgen::Point<DIM> p;
-            for (int j = 0; j < DIM; j++)
-              p(j) = mip.GetPoint()(j);
-            bbox.Add(p);
-            if(h==0.0)
-              el_box.Add(p);
-          }
-        maxh = max(maxh, el_box.Diam());
+            netgen::Box<DIM> el_box{netgen::Box<DIM>::EMPTY_BOX};
+            for (auto & mip : mir2_def)
+              {
+                netgen::Point<DIM> p;
+                for (int j = 0; j < DIM; j++)
+                  p(j) = mip.GetPoint()(j);
+                bbox.Add(p);
+                if(h==0.0)
+                  el_box.Add(p);
+              }
+            maxh = max(maxh, el_box.Diam());
+        }
       }
 
     // Default-value for h is 2 * maximum_element_diameter
@@ -301,21 +305,25 @@ namespace ngcomp
         auto & trafo2 = ma->GetTrafo (el2, lh);
         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
-        IntegrationRule ir2(trafo2.GetElementType(), intorder2);
-        MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
-        MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
-
-        netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
-        for (auto & mip : mir2_def)
+        IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
+        for(auto ir2 : ir2_.Split())
           {
-            netgen::Point<DIM> p;
-            for (int j = 0; j < DIM; j++)
-              p(j) = mip.GetPoint()(j);
-            elbox.Add(p);
-          }
+            HeapReset hr(lh);
+            MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
+            MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
 
-        elbox.Scale(1.1);
-        searchtree->Insert(elbox, el2.Nr());
+            netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
+            for (auto & mip : mir2_def)
+              {
+                netgen::Point<DIM> p;
+                for (int j = 0; j < DIM; j++)
+                  p(j) = mip.GetPoint()(j);
+                elbox.Add(p);
+              }
+
+            elbox.Scale(1.1);
+            searchtree->Insert(elbox, el2.Nr());
+        }
       }
   }
 
@@ -905,7 +913,7 @@ namespace ngcomp
         displacement->Update();
         displacement->GetVector() = displacement_->GetVector();
       }
-    gap->Update(displacement, intorder*5, h);
+    gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h);
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       static_pointer_cast<DisplacedNormal<2>>(normal)->Update(displacement);
@@ -928,16 +936,9 @@ namespace ngcomp
                  for(auto i : Range(specialels))
                    {
                      auto index = last-i;
-                     auto cont_el = dynamic_cast<ContactElement<DIM>*>(specialels[index].get());
+                     auto cont_el = dynamic_cast<MPContactElement<DIM>*>(specialels[index].get());
                      if(cont_el && cont_el->GetContactBoundary() == this)
                        bf->DeleteSpecialElement(index);
-
-                     else
-                     {
-                       auto cont_el = dynamic_cast<MPContactElement<DIM>*>(specialels[index].get());
-                       if(cont_el && cont_el->GetContactBoundary() == this)
-                         bf->DeleteSpecialElement(index);
-                     }
                    }
 
                  auto tgap = static_pointer_cast<T_GapFunction<DIM>>(gap);
@@ -955,9 +956,6 @@ namespace ngcomp
                       IntegrationRule ir(trafo.GetElementType(), intorder);
                       MappedIntegrationRule<DIM-1, DIM> mir(ir, trafo, lh);
 
-
-#define MULTIPOINT
-#ifdef MULTIPOINT
                       FlatArray<IntegrationPoint> this_ir(ir.Size(), lh);
                       FlatArray<IntegrationPoint> other_ir(ir.Size(), lh);
                       FlatArray<size_t> other_nr(ir.Size(), lh);
@@ -1023,33 +1021,6 @@ namespace ngcomp
                                                  this, displacement.get()));
                           first = next;
                         }
-                      
-                      
-#else
-                      for(const auto& mip : mir)
-                        {
-                          auto pair = tgap->CreateContactPair(mip, lh);
-                          if(pair.has_value())
-                            {
-                              lock_guard<mutex> guard(add_mutex);
-                              bf->AddSpecialElement(make_unique<ContactElement<DIM>>(*pair, this, displacement.get()));
-                              if(draw_pairs)
-                              {
-                                HeapReset hr(lh);
-                                auto & t1_def = trafo.AddDeformation(displacement.get(), lh);
-                                Vec<3> p1 = 0;
-                                t1_def.CalcPoint(pair->primary_ip, p1);
-                                primary_points.Append(p1);
-
-                                auto & t2 = mesh->GetTrafo(pair->secondary_el, lh);
-                                auto & t2_def = t2.AddDeformation(displacement.get(), lh);
-                                Vec<3> p2 = 0;
-                                t2_def.CalcPoint(pair->secondary_ip, p2);
-                                secondary_points.Append(p2);
-                              }
-                            }
-                        }
-#endif // MULTIPOINT
                     });
                }
            });
@@ -1057,258 +1028,6 @@ namespace ngcomp
   }
 
 
-
-  
-  template<int DIM>
-  ContactElement<DIM>::ContactElement(const ContactPair<DIM>& _pair,
-                                      ContactBoundary* _cb,
-                                      GridFunction* _deformation)
-    : pair(_pair), cb(_cb), fes(_cb->GetFESpace().get()), deformation(_deformation)
-  {
-  }
-
-  template<int DIM>
-  void ContactElement<DIM>::GetDofNrs(Array<DofId>& dnums) const
-  {
-    fes->GetDofNrs(pair.primary_el, dnums);
-    Array<DofId> s_dofs;
-    fes->GetDofNrs(pair.secondary_el, s_dofs);
-    dnums += s_dofs;
-  }
-
-  template<int DIM>
-  double ContactElement<DIM>::Energy(FlatVector<double> elx,
-                                     LocalHeap& lh) const
-  {
-    if(cb->GetIntegrators().Size())
-      throw Exception("Energy does not work with contact integrators!");
-    
-    auto& primary_trafo = fes->GetMeshAccess()->GetTrafo(pair.primary_el, lh);
-    auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
-    auto& primary_deformed_trafo = primary_trafo.AddDeformation(deformation, lh);
-    auto& secondary_deformed_trafo = secondary_trafo.AddDeformation(deformation, lh);
-
-    IntegrationRule primary_ir(1, &const_cast<IntegrationPoint&>(pair.primary_ip));
-    IntegrationRule secondary_ir(1, &const_cast<IntegrationPoint&>(pair.secondary_ip));
-
-    auto& primary_fel = fes->GetFE(pair.primary_el, lh);
-    auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-    
-    double energy = 0.;
-
-    for (bool def : { false, true })
-      {
-        auto& energies = cb->GetEnergies(def);
-        if (energies.Size())
-          {
-            MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
-            MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
-            primary_mir.SetOtherMIR(&secondary_mir);
-            for(const auto& ce : energies) 
-              energy += ce->CalcEnergy(primary_fel, secondary_fel, primary_mir, elx, lh);
-          }
-      }
-    /*
-      IntegrationRule primary_ir(1, &const_cast<IntegrationPoint&>(pair.primary_ip));
-      MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, primary_trafo, lh);
-        
-      IntegrationRule secondary_ir(1, &const_cast<IntegrationPoint&>(pair.secondary_ip));
-      MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, secondary_trafo, lh);
-      
-      auto& primary_fel = fes->GetFE(pair.primary_el, lh);
-      auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-      primary_mir.SetOtherMIR(&secondary_mir);
-      for(const auto& ce : cb->GetEnergies())
-      if(!ce->IsDeformed())
-      energy += ce->CalcEnergy(primary_fel, secondary_fel, primary_mir, elx, lh);
-
-        
-    primary_trafo.AddDeformation(deformation, lh)(pair.primary_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& primary_mir)
-       {
-         secondary_trafo.AddDeformation(deformation, lh)(pair.secondary_ip, lh).IntegrationRuleFromPoint
-           ([&](const BaseMappedIntegrationRule& s_mir)
-            {
-              auto& fel = fes->GetFE(pair.primary_el, lh);
-              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
-              for(const auto& ce : cb->GetEnergies())
-                if(ce->IsDeformed())
-                  energy += ce->CalcEnergy(fel, secondary_fel, primary_mir, elx, lh);
-            });
-       });
-        */
-    return energy;
-  }
-
-  template<int DIM>
-  void ContactElement<DIM>::Apply(FlatVector<double> elx,
-                                  FlatVector<double> ely,
-                                  LocalHeap& lh) const
-  {
-    // NETGEN_TIMER_FROM_HERE("ContactElement::Apply");    
-    ely = 0.;
-
-    auto& primary_trafo = fes->GetMeshAccess()->GetTrafo(pair.primary_el, lh);
-    auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
-    auto& primary_deformed_trafo = primary_trafo.AddDeformation(deformation, lh);
-    auto& secondary_deformed_trafo = secondary_trafo.AddDeformation(deformation, lh);
-
-    IntegrationRule primary_ir(1, &const_cast<IntegrationPoint&>(pair.primary_ip));
-    IntegrationRule secondary_ir(1, &const_cast<IntegrationPoint&>(pair.secondary_ip));
-
-    auto& primary_fel = fes->GetFE(pair.primary_el, lh);
-    auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-    
-    for (bool def : { false, true })
-      {
-        auto& energies = cb->GetEnergies(def);
-        auto& integrators = cb->GetIntegrators(def);
-        if (energies.Size() || integrators.Size())
-          {
-            MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
-            MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
-            primary_mir.SetOtherMIR(&secondary_mir);
-
-            for(const auto& ci : integrators)
-              ci->ApplyAdd(primary_fel, secondary_fel, primary_mir, elx, ely, lh);
-            for(const auto& ce : energies)
-              ce->ApplyAdd(primary_fel, secondary_fel, primary_mir, elx, ely, lh);
-          }
-      }
-
-    
-    /*
-    primary_trafo(pair.primary_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& primary_mir)
-       {
-         auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
-         secondary_trafo(pair.secondary_ip, lh).IntegrationRuleFromPoint
-           ([&](const BaseMappedIntegrationRule& s_mir)
-            {
-              auto& fel = fes->GetFE(pair.primary_el, lh);
-              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
-              for(const auto& ce : cb->GetEnergies())
-                if(!ce->IsDeformed())
-                  ce->ApplyAdd(fel, secondary_fel, primary_mir, elx, ely, lh);
-              for(const auto& ci : cb->GetIntegrators())
-                if(!ci->IsDeformed())
-                  ci->ApplyAdd(fel, secondary_fel, primary_mir, elx, ely, lh);
-            });
-       });
-
-    // primary_trafo.AddDeformation(deformation, lh);
-    primary_trafo.AddDeformation(deformation, lh)(pair.primary_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& primary_mir)
-       {
-         auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
-         // secondary_trafo.AddDeformation(deformation, lh);
-         secondary_trafo.AddDeformation(deformation, lh)(pair.secondary_ip, lh).IntegrationRuleFromPoint
-           ([&](const BaseMappedIntegrationRule& s_mir)
-            {
-              auto& fel = fes->GetFE(pair.primary_el, lh);
-              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
-              for(const auto& ce : cb->GetEnergies())
-                if(ce->IsDeformed())
-                  ce->ApplyAdd(fel, secondary_fel, primary_mir, elx, ely, lh);
-              for(const auto& ci : cb->GetIntegrators())
-                if(ci->IsDeformed())
-                  ci->ApplyAdd(fel, secondary_fel, primary_mir, elx, ely, lh);
-            });
-       });
-    */
-  }
-
-  template<int DIM>
-  void ContactElement<DIM>::CalcLinearizedElementMatrix(FlatVector<double> elx,
-                                                        FlatMatrix<double> elmat,
-                                                        LocalHeap& lh) const
-  {
-    // NETGEN_TIMER_FROM_HERE("ContactElement::CalcLinearizedElementMatrix");
-    
-    elmat = 0.;
-
-    auto& primary_trafo = fes->GetMeshAccess()->GetTrafo(pair.primary_el, lh);
-    auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
-    auto& primary_deformed_trafo = primary_trafo.AddDeformation(deformation, lh);
-    auto& secondary_deformed_trafo = secondary_trafo.AddDeformation(deformation, lh);
-
-    IntegrationRule primary_ir(1, &const_cast<IntegrationPoint&>(pair.primary_ip));
-    IntegrationRule secondary_ir(1, &const_cast<IntegrationPoint&>(pair.secondary_ip));
-
-    auto& primary_fel = fes->GetFE(pair.primary_el, lh);
-    auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-    
-    for (bool def : { false, true })
-      {
-        auto& energies = cb->GetEnergies(def);
-        auto& integrators = cb->GetIntegrators(def);
-        if (energies.Size() || integrators.Size())
-          {
-            MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
-            MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
-            primary_mir.SetOtherMIR(&secondary_mir);
-
-            for(const auto& ci : integrators)
-              ci->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
-            for(const auto& ce : energies)
-              ce->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
-          }
-      }
-
-
-    
-    /*
-    primary_trafo(pair.primary_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& primary_mir)
-       {
-         auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
-         secondary_trafo(pair.secondary_ip, lh).IntegrationRuleFromPoint
-           ([&](const BaseMappedIntegrationRule& s_mir)
-            {
-              auto& fel = fes->GetFE(pair.primary_el, lh);
-              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
-              for(const auto& ce : cb->GetEnergies())
-                if(!ce->IsDeformed())
-                  ce->CalcLinearizedAdd(fel, secondary_fel, primary_mir, elx, elmat, lh);
-              for(const auto& ci : cb->GetIntegrators())
-                if(!ci->IsDeformed())
-                  ci->CalcLinearizedAdd(fel, secondary_fel, primary_mir, elx, elmat, lh);
-            });
-       });
-
-    // primary_trafo.AddDeformation(deformation, lh);
-    primary_trafo.AddDeformation(deformation, lh)(pair.primary_ip, lh).IntegrationRuleFromPoint
-      ([&](const BaseMappedIntegrationRule& primary_mir)
-       {
-         auto& secondary_trafo = fes->GetMeshAccess()->GetTrafo(pair.secondary_el, lh);
-         // secondary_trafo.AddDeformation(deformation, lh);
-         secondary_trafo.AddDeformation(deformation, lh)(pair.secondary_ip, lh).IntegrationRuleFromPoint
-           ([&](const BaseMappedIntegrationRule& s_mir)
-            {
-              auto& fel = fes->GetFE(pair.primary_el, lh);
-              auto& secondary_fel = fes->GetFE(pair.secondary_el, lh);
-              const_cast<BaseMappedIntegrationRule&>(primary_mir).SetOtherMIR(&s_mir);
-              for(const auto& ce : cb->GetEnergies())
-                if(ce->IsDeformed())
-                  ce->CalcLinearizedAdd(fel, secondary_fel, primary_mir, elx, elmat, lh);
-              for(const auto& ci : cb->GetIntegrators())
-                if(ci->IsDeformed())
-                  ci->CalcLinearizedAdd(fel, secondary_fel, primary_mir, elx, elmat, lh);
-            });
-       });
-    */
-  }
-
-  template class ContactElement<2>;
-  template class ContactElement<3>;
-
-
-
-  
   template<int DIM>
   MPContactElement<DIM>::MPContactElement(ElementId aprimary_ei, ElementId asecondary_ei,
                                           IntegrationRule aprimary_ir, IntegrationRule asecondary_ir,
