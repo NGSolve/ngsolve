@@ -270,21 +270,25 @@ namespace ngcomp
         auto & trafo2 = ma->GetTrafo (el2, lh);
         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
-        IntegrationRule ir2(trafo2.GetElementType(), intorder2);
-        MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
-        MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
+        IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
+        for(auto ir2 : ir2_.Split())
+        {
+            HeapReset hr(lh);
+            MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
+            MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
 
-        netgen::Box<DIM> el_box{netgen::Box<DIM>::EMPTY_BOX};
-        for (auto & mip : mir2_def)
-          {
-            netgen::Point<DIM> p;
-            for (int j = 0; j < DIM; j++)
-              p(j) = mip.GetPoint()(j);
-            bbox.Add(p);
-            if(h==0.0)
-              el_box.Add(p);
-          }
-        maxh = max(maxh, el_box.Diam());
+            netgen::Box<DIM> el_box{netgen::Box<DIM>::EMPTY_BOX};
+            for (auto & mip : mir2_def)
+              {
+                netgen::Point<DIM> p;
+                for (int j = 0; j < DIM; j++)
+                  p(j) = mip.GetPoint()(j);
+                bbox.Add(p);
+                if(h==0.0)
+                  el_box.Add(p);
+              }
+            maxh = max(maxh, el_box.Diam());
+        }
       }
 
     // Default-value for h is 2 * maximum_element_diameter
@@ -301,21 +305,25 @@ namespace ngcomp
         auto & trafo2 = ma->GetTrafo (el2, lh);
         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
-        IntegrationRule ir2(trafo2.GetElementType(), intorder2);
-        MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
-        MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
-
-        netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
-        for (auto & mip : mir2_def)
+        IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
+        for(auto ir2 : ir2_.Split())
           {
-            netgen::Point<DIM> p;
-            for (int j = 0; j < DIM; j++)
-              p(j) = mip.GetPoint()(j);
-            elbox.Add(p);
-          }
+            HeapReset hr(lh);
+            MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
+            MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
 
-        elbox.Scale(1.1);
-        searchtree->Insert(elbox, el2.Nr());
+            netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
+            for (auto & mip : mir2_def)
+              {
+                netgen::Point<DIM> p;
+                for (int j = 0; j < DIM; j++)
+                  p(j) = mip.GetPoint()(j);
+                elbox.Add(p);
+              }
+
+            elbox.Scale(1.1);
+            searchtree->Insert(elbox, el2.Nr());
+        }
       }
   }
 
