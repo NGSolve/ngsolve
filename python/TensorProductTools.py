@@ -149,9 +149,12 @@ def AddSurfElements1D(tpmesh,mesh1,mesh2):
         tpmesh.Add(Element1D(elpids2))       
 
 def AddSurfElements2D(tpmesh,mesh1,mesh2):
+    if mesh1.dim==2:
     ngm1 = mesh1.ngmesh;
     ngm2 = mesh2.ngmesh;
-    if mesh1.dim==2:
+    else:
+        ngm1 = mesh2.ngmesh;
+        ngm2 = mesh1.ngmesh;
         els1 = ngm1.Elements2D()
         els2 = ngm2.Elements1D()
         tpmesh.Add (FaceDescriptor(surfnr=1,domin=1,bc=1))
@@ -179,32 +182,5 @@ def AddSurfElements2D(tpmesh,mesh1,mesh2):
                             PointId((vx[1].nr-1)*len(ngm2.Points())+vy[1].nr),
                             PointId((vx[0].nr-1)*len(ngm2.Points())+vy[1].nr),
                             PointId((vx[0].nr-1)*len(ngm2.Points())+vy[0].nr)]
-                tpmesh.Add(Element2D(1,vert_glob))
-    else:
-        els1 = ngm1.Elements1D()
-        els2 = ngm2.Elements2D()
-        tpmesh.Add (FaceDescriptor(surfnr=1,domin=1,bc=1))
-        for ely in els2:
-            vert_loc = ely.vertices
-            vert_glob = []
-            for vy in vert_loc:
-                vert_glob.append(PointId((vy.nr)+(len(ngm1.Points())-1)*(len(ngm2.Points()))))
-            tpmesh.Add(Element2D(1,vert_glob))
-        for ely in els2:
-            vert_loc = ely.vertices
-            vert_glob = []
-            for vy in reversed(vert_loc):
-                vert_glob.append(PointId( vy.nr))
-            tpmesh.Add(Element2D(1,vert_glob))
-        els2 = ngm2.Elements1D()
-        for elx in els1:
-            for ely in els2:
-                vert_glob=[]
-                vx = elx.vertices
-                vy = ely.vertices
-                vert_glob = [PointId((vx[0].nr-1)*len(ngm2.Points())+vy[0].nr),
-                             PointId((vx[0].nr-1)*len(ngm2.Points())+vy[1].nr),
-                             PointId((vx[1].nr-1)*len(ngm2.Points())+vy[1].nr),
-                             PointId((vx[1].nr-1)*len(ngm2.Points())+vy[0].nr)]
                 tpmesh.Add(Element2D(1,vert_glob))
     return tpmesh
