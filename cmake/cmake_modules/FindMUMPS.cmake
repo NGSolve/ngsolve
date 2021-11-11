@@ -11,15 +11,16 @@ if(EXISTS ${MUMPS_DIR}/include/zmumps_c.h)
     find_library(LIB_PARMETIS parmetis HINTS ${PARMETIS_DIR}/lib REQUIRED)
     find_library(LIB_METIS metis HINTS ${PARMETIS_DIR}/lib REQUIRED)
     
-    if (NOT ${USE_MKL})
+    if (NOT USE_MKL)
         find_library(LIB_SCALAPACK scalapack HINTS ${SCALAPACK_DIR}/lib REQUIRED)
     endif()
-
-    if ("${LIB_PORD}" MATCHES ".*NOTFOUND")
-       set(LIB_PORD "")
-    endif() 
     
-    set(MUMPS_LIBRARIES "${LIB_MUMPS_D};${LIB_MUMPS_Z};${LIB_MUMPS_COMMON};${LIB_PORD};${LIB_PARMETIS};${LIB_METIS};${LIB_SCALAPACK}")
+    set(MUMPS_LIBRARIES ${LIB_MUMPS_D} ${LIB_MUMPS_Z} ${LIB_MUMPS_COMMON} ${LIB_PARMETIS} ${LIB_METIS} ${LIB_SCALAPACK})
+
+    if (LIB_PORD)
+       list(APPEND MUMPS_LIBRARIES ${LIB_PORD})
+    endif()
+    
 endif(EXISTS ${MUMPS_DIR}/include/zmumps_c.h)
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(MUMPS DEFAULT_MSG MUMPS_LIBRARIES MUMPS_INCLUDES)
