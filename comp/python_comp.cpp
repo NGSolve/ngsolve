@@ -1386,6 +1386,11 @@ component : int
   //   ;
 
   auto export_global = ExportFESpace<GlobalSpace> (m, "GlobalSpace");
+  export_global.def("AddOperator", [](shared_ptr<GlobalSpace> space, string name,
+                                      VorB vb, shared_ptr<CoefficientFunction> dbasis)
+                    {
+                      space->AddOperator(name, vb, dbasis);
+                    });
   export_global.def_static("__special_treated_flags__", [fes_class] ()
                            {
                              py::dict special = fes_class.attr("__special_treated_flags__")();
