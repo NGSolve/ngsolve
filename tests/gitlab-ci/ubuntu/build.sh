@@ -8,6 +8,7 @@ mkdir logs
 docker run \
       --cidfile ngsolve_${CI_PIPELINE_ID}_${IMAGE_NAME}.id \
       -e MKLROOT=/opt/intel/mkl \
+      -e CI=$CI \
       -e CI_BUILD_REF=$CI_BUILD_REF \
       -e CI_PIPELINE_ID=$CI_PIPELINE_ID \
       -e IMAGE_NAME=$IMAGE_NAME \

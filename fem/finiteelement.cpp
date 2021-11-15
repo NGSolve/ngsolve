@@ -97,8 +97,15 @@ namespace ngfem
       (*this)[i].Print (ost);
   }
 
-
-
+  bool CompoundFiniteElement :: ComplexShapes() const
+  {
+    for (int i = 0; i < fea.Size(); i++)
+      if (fea[i]->ComplexShapes())
+        return true;
+    return false;
+  }
+  
+  
   void CompoundFiniteElement :: Interpolate (const ElementTransformation & trafo, 
                                              const CoefficientFunction & func, SliceMatrix<> coefs,
                                              LocalHeap & lh) const

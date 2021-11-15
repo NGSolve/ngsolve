@@ -6,10 +6,11 @@ set(HYPRE_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_parmetis/
 set(HYPRE_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_hypre/src/hypre)
 
 ExternalProject_Add(project_hypre
-  PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
+  ${SUBPROJECT_ARGS}
   URL "https://github.com/hypre-space/hypre/archive/refs/tags/v2.11.1.tar.gz"
   URL_MD5 28f3928b062c79c2eaf54c0978efcbfb
-  CMAKE_ARGS ${SUBPROJECT_CMAKE_ARGS}
+  CMAKE_ARGS
+          ${SUBPROJECT_CMAKE_ARGS}
   BUILD_IN_SOURCE 1
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
   CONFIGURE_COMMAND cmake ${SUBPROJECT_CMAKE_ARGS} src
