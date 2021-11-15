@@ -184,36 +184,6 @@ namespace ngcomp
   };
 
   template<int DIM>
-  class ContactElement : public SpecialElement
-  {
-    ContactPair<DIM> pair;
-    ContactBoundary* cb;
-    FESpace* fes;
-    GridFunction* deformation;
-  public:
-    ContactElement(const ContactPair<DIM>& _pair,
-                   ContactBoundary* _cb,
-                   GridFunction* deformation);
-
-    void GetDofNrs(Array<DofId>& dnums) const override;
-
-    double Energy(FlatVector<double> elx,
-                  LocalHeap& lh) const override;
-
-    void Apply(FlatVector<double> elx,
-               FlatVector<double> ely,
-               LocalHeap& lh) const override;
-
-    void CalcLinearizedElementMatrix(FlatVector<double> elx,
-                                     FlatMatrix<double> elmat,
-                                     LocalHeap& lh) const override;
-
-    ContactBoundary* GetContactBoundary() const
-    { return cb; }
-  };
-
-
-  template<int DIM>
   class MPContactElement : public SpecialElement
   {
     // ContactPair<DIM> pair;

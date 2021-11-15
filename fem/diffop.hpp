@@ -44,7 +44,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     { 
-      cout << "bad function calling" << endl;
+      cout << "DIFFOP::GenerateMatrix should not be here, diffop = " << typeid(DOP).name() << endl;
     }
 
     /// tbd

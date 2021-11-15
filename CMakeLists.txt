@@ -407,6 +407,7 @@ call \"${VCVARSALL}\" amd64
 else()
   set( ngscxx_set_script_dir "\
 NGSCXX_DIR=$( cd $(dirname $0); pwd )
+PY_INCLUDE_FLAGS=-I$(python3 -c\"import sysconfig;print(sysconfig.get_path('include'))\")
 if [ -f ${CMAKE_CXX_COMPILER} ]
   then NGSCXX=${CMAKE_CXX_COMPILER}
   else NGSCXX=c++
@@ -414,6 +415,7 @@ fi
 ")
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}" )
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}/include" )
+  set( ngscxx_includes "${ngscxx_includes} \$PY_INCLUDE_FLAGS" )
   find_program(BASH bash REQUIRED)
 endif()
 
