@@ -13,6 +13,7 @@ ExternalProject_Add(project_hypre
           ${SUBPROJECT_CMAKE_ARGS}
   BUILD_IN_SOURCE 1
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
+  CONFIGURE_COMMAND cmake ${SUBPROJECT_CMAKE_ARGS} src
   PATCH_COMMAND ""
   UPDATE_COMMAND "" # Disable update
   )

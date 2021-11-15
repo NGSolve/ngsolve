@@ -24,8 +24,9 @@ endif()
 target_link_libraries(ngla ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 
 target_link_libraries(ngla PUBLIC ngbla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>"
-${MUMPS_LIBRARIES} ${SCALAPACK_LIBRARY} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
+    ${MUMPS_LIBRARIES} ${MPI_Fortran_LIBRARIES} ${MPI_CXX_LIBRARIES})
 install( TARGETS ngla ${ngs_install_dir} )
+
 if(USE_MUMPS)
     # Create dummy fortran lib
     # This forces cmake to link fortran runtime libraries to ngla
