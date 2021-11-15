@@ -15,9 +15,6 @@ endif(NOT PARMETIS_DIR)
 set(MUMPS_SRC_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/src/project_mumps)
 set(MUMPS_DIR ${MUMPS_SRC_DIR})
 
-message(STATUS, "LIST_DIR==${CMAKE_CURRENT_LIST_DIR}   CBD == ${CMAKE_CURRENT_BINARY_DIR}")
-message(STATUS, "SPAS = ${SUBPROJECT_ARGS}")
-
 configure_file(${CMAKE_CURRENT_LIST_DIR}/mumps.inc ${CMAKE_CURRENT_BINARY_DIR}/dependencies/Makefile_mumps.inc)
 
 ExternalProject_Add(project_mumps
