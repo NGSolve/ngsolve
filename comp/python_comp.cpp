@@ -20,6 +20,7 @@
 #include "../fem/h1lofe.hpp"
 #include "contact.hpp"
 #include "globalinterfacespace.hpp"
+#include "globalspace.hpp"
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -1384,6 +1385,26 @@ component : int
   //   .def("Range", &CompoundFESpace::GetRange)
   //   ;
 
+  auto export_global = ExportFESpace<GlobalSpace> (m, "GlobalSpace");
+  export_global.def("AddOperator", [](shared_ptr<GlobalSpace> space, string name,
+                                      VorB vb, shared_ptr<CoefficientFunction> dbasis)
+                    {
+                      space->AddOperator(name, vb, dbasis);
+                    });
+  export_global.def_static("__special_treated_flags__", [fes_class] ()
+                           {
+                             py::dict special = fes_class.attr("__special_treated_flags__")();
+                             special["basis"] = py::cpp_function
+                               ([] (py::object pybasis, Flags* flags, py::list info)
+                                {
+                                  auto cppbasis = py::cast<shared_ptr<CoefficientFunction>>(pybasis);
+                                  flags -> SetFlag("basis", std::any(cppbasis));
+                                });
+                             return special;
+                           });
+
+
+  
   py::class_<PeriodicFESpace, shared_ptr<PeriodicFESpace>, FESpace>(m, "Periodic",
 	docu_string(R"delimiter(Periodic or quasi-periodic Finite Element Spaces.
 The periodic fespace is a wrapper around a standard fespace with an 
@@ -2293,6 +2314,20 @@ diffop : ngsolve.fem.DifferentialOperator
     .def(py::self + py::self)
     .def(py::self - py::self)
     .def(float() * py::self)
+    .def_property("linearization",
+                  [](const SumOfIntegrals& ints)
+                  {
+                    if(ints.icfs.Size() > 1)
+                      throw Exception("linearization property only availaible for single integrals!");
+                  },
+                  [](SumOfIntegrals& ints, shared_ptr<SumOfIntegrals> linearization)
+                  {
+                    if(ints.icfs.Size() > 1)
+                      throw Exception("linearization property only availaible for single integrals!");
+                    if(linearization->icfs.Size() > 1)
+                      throw Exception("linearization property only availaible for single integrals!");
+                    ints.icfs[0]->linearization = linearization->icfs[0];
+                  })
     .def("__len__", [](shared_ptr<SumOfIntegrals> igls)
          { return igls->icfs.Size(); })
     .def ("__getitem__", [](shared_ptr<SumOfIntegrals> igls, int nr)
@@ -2992,6 +3027,9 @@ integrator : ngsolve.fem.LFI
                   mg_flags["coarsesmoothingsteps"] = "int = 1\n"
                     "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
                   mg_flags["updatealways"] = "bool = False\n";
+                  mg_flags["blocktype"] = "str = vertexpatch\n"
+                    "  Blocktype used in compound FESpace for smoothing\n"
+                    "  blocks. Options: vertexpatch, edgepatch";
                   return mg_flags;
                 })
 

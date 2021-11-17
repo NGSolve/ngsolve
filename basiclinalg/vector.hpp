@@ -15,7 +15,7 @@ namespace ngbla
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
   template <class T = double> class Vector;
-  template <class T = double, class TIND = size_t> class SliceVector;
+  template <class T = double> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
 
 
@@ -1172,14 +1172,14 @@ namespace ngbla
 
   // Template helper for the SliceVector from Vec constructor
   // to prevent range checks from triggering on call to v(0) for empty v
-  template <typename T, typename TIND, int D>
+  template <typename T, int D>
   struct SliceVecFromVecHelper
   {
     static T *ptr(Vec<D,T> & v) { return &v(0); }
   };
 
-  template <typename T, typename TIND>
-  struct SliceVecFromVecHelper<T, TIND, 0>
+  template <typename T>
+  struct SliceVecFromVecHelper<T, 0>
   {
     static T *ptr(Vec<0,T> &) { return nullptr; }
   };
@@ -1189,14 +1189,14 @@ namespace ngbla
      Has size and generic data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T, typename TIND>
-  class SliceVector : public CMCPMatExpr<SliceVector<T,TIND> > 
+  template <typename T>
+  class SliceVector : public CMCPMatExpr<SliceVector<T> > 
   {
   protected:
     /// vector size
-    TIND s;
+    size_t s;
     /// distance between entries
-    TIND dist;
+    size_t dist;
     /// the data
     T *  __restrict data;
   public:
@@ -1209,7 +1209,7 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     /// set size, distance and memory
-    INLINE SliceVector (TIND as, TIND ad, T * adata) 
+    INLINE SliceVector (size_t as, size_t ad, T * adata) 
       : s(as), dist(ad), data(adata) { ; }
     
     /// SV from FlatVector
@@ -1219,7 +1219,7 @@ namespace ngbla
     /// SV from Vec
     template <int D>
     INLINE SliceVector (Vec<D,T> & v)
-      : s(D), dist(1), data(SliceVecFromVecHelper<T, TIND, D>::ptr(v)) { ; }
+      : s(D), dist(1), data(SliceVecFromVecHelper<T, D>::ptr(v)) { ; }
 
     ///
     template <int D>

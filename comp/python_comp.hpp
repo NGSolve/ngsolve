@@ -53,11 +53,12 @@ namespace ngcomp
   };
 
   template <typename FES, typename BASE=FESpace>
-  auto ExportFESpace (py::module & m, string pyname)
+  auto ExportFESpace (py::module & m, string pyname, bool module_local = false)
   {
     auto docu = FES::GetDocu();
-    string docuboth = docu.short_docu + "\n\n" + docu.long_docu;
-    auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str(), docuboth.c_str());
+    string docstring = docu.GetPythonDocString();
+    // string docuboth = docu.short_docu + "\n\n" + docu.long_docu;
+    auto pyspace = py::class_<FES, shared_ptr<FES>,BASE> (m, pyname.c_str(), docstring.c_str(), py::module_local(module_local));
 
     pyspace
       .def(py::init([pyspace](shared_ptr<MeshAccess> ma, bool autoupdate, py::kwargs kwargs)
@@ -91,7 +92,7 @@ namespace ngcomp
                                             flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
                                           return flags_doc;
                                          });
-      
+    
     return pyspace;
   }
 }

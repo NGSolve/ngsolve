@@ -22,15 +22,15 @@ namespace ngbla
      Has height, width and data-pointer. 
      No memory allocation/deallocation. User must provide memory.
   */
-  template <typename T, ORDERING ORD, typename TIND>
-  class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD,TIND> >
+  template <typename T, ORDERING ORD>
+  class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD> >
                      // class FlatMatrix : public CMCPMatExpr<FlatMatrix<T> >
   {
   protected:
     /// the height
-    TIND h;
+    size_t h;
     /// the width
-    TIND w;
+    size_t w;
     /// the data
     T * __restrict data;
   public:
@@ -45,19 +45,19 @@ namespace ngbla
     INLINE FlatMatrix () = default; // { ; }
   
     /// set height, width, and mem
-    INLINE FlatMatrix (TIND ah, TIND aw, T * adata) 
+    INLINE FlatMatrix (size_t ah, size_t aw, T * adata) 
       : h(ah), w(aw), data(adata) { ; }
   
     /// set height = width, and mem
-    INLINE FlatMatrix (TIND ah, T * adata) 
+    INLINE FlatMatrix (size_t ah, T * adata) 
       : h(ah), w(ah), data(adata) { ; }
 
     /// allocates at local heap
-    INLINE FlatMatrix (TIND ah, TIND aw, LocalHeap & lh) 
+    INLINE FlatMatrix (size_t ah, size_t aw, LocalHeap & lh) 
       : h(ah), w(aw), data (lh.Alloc<T>(ah*aw)) { ; }
   
     /// allocates at local heap
-    INLINE FlatMatrix (TIND ah, LocalHeap & lh) 
+    INLINE FlatMatrix (size_t ah, LocalHeap & lh) 
       : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
@@ -74,7 +74,7 @@ namespace ngbla
       w = m2.A().Width();
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (h*w);
-      CMCPMatExpr<FlatMatrix<T,ORD,TIND> >::operator= (m2.A());
+      CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2.A());
     }
 
     /// useful to put FlatMatrix over other matrix
@@ -94,7 +94,7 @@ namespace ngbla
     // ~FlatMatrix () throw() { ; }
 
     /// set size, and assign mem
-    INLINE void AssignMemory (TIND ah, TIND aw, LocalHeap & lh)  
+    INLINE void AssignMemory (size_t ah, size_t aw, LocalHeap & lh)  
     {
       h = ah;
       w = aw;
@@ -102,7 +102,7 @@ namespace ngbla
     }
   
     /// set size, and assign mem
-    INLINE void AssignMemory (TIND ah, TIND aw, T * mem) throw()
+    INLINE void AssignMemory (size_t ah, size_t aw, T * mem) throw()
     {
       h = ah;
       w = aw;
@@ -165,19 +165,19 @@ namespace ngbla
 
     INLINE T * Data () const { return data; }
     
-    INLINE const FlatVector<T> Row (TIND i) const
+    INLINE const FlatVector<T> Row (size_t i) const
     {
-      return FlatVector<T> (w, &data[i*w]);
+      return FlatVector<T> (w, data+i*w);
     }
 
-    INLINE const SliceVector<T,TIND> Col (size_t i) const
+    INLINE const SliceVector<T> Col (size_t i) const
     {
-      return SliceVector<T,TIND> (h, w, &data[i]);
+      return SliceVector<T> (h, w, data+i);
     }
 
-    INLINE const SliceVector<T,TIND> Diag () const
+    INLINE const SliceVector<T> Diag () const
     {
-      return SliceVector<T,TIND> (h, w+1, &data[0]);
+      return SliceVector<T> (h, w+1, &data[0]);
     }
 
     const SliceVector<T> Diag (int offset) const
@@ -248,12 +248,12 @@ namespace ngbla
 
 
 
-  template <typename T, typename TIND>
-  class FlatMatrix<T,ColMajor,TIND> : public CMCPMatExpr<FlatMatrix<T,ColMajor,TIND> >
+  template <typename T>
+  class FlatMatrix<T,ColMajor> : public CMCPMatExpr<FlatMatrix<T,ColMajor> >
   {
   protected:
-    TIND h;
-    TIND w;
+    size_t h;
+    size_t w;
     T * __restrict data;
   public:
     enum { IS_LINEAR = 0 };
