@@ -18,7 +18,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         periodic.cpp discontinuous.cpp hidden.cpp reorderedfespace.cpp
         hypre_ams_precond.cpp facetsurffespace.cpp
         compressedfespace.cpp
-        globalinterfacespace.cpp
+        globalinterfacespace.cpp globalspace.cpp
         ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp
         ../multigrid/smoother.cpp contact.cpp localsolve.cpp interpolate.cpp
         )
@@ -43,7 +43,7 @@ install( FILES
         pde.hpp numproc.hpp irspace.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp hidden.hpp reorderedfespace.hpp
         hypre_ams_precond.hpp facetsurffespace.hpp
-        compressedfespace.hpp
+        compressedfespace.hpp globalinterfacespace.hpp globalspace.hpp
         python_comp.hpp fesconvert.hpp contact.hpp interpolate.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel

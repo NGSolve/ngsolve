@@ -82,7 +82,11 @@ namespace ngfem
       }
     else
       {
-        throw Exception ("cannot do complex matrix for real mip");
+        const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+          static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
+        GenerateMatrix_PMLWrapper<DIFFOP::SUPPORT_PML>::template GenerateMatrix<DIFFOP> (bfel, mip, mat, lh);        
+        // DIFFOP::GenerateMatrix (bfel, mip, mat, lh);        
+        // throw Exception ("cannot do complex matrix for real mip");
         // ThrowException ("cannot do complex matrix for real mip");
       }
   }

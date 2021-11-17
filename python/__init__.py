@@ -93,9 +93,10 @@ def _add_flags_doc(module):
             flags_doc = instance.__flags_doc__()
             if instance.__doc__ == None:
                 instance.__doc__ = ""
-            instance.__doc__ += "\n Keyword arguments can be:\n"
-            for name in flags_doc:
-                instance.__doc__ += name + ": " + flags_doc[name] + "\n"
+            if not "Keyword arguments can be" in instance.__doc__:
+                instance.__doc__ += "\n Keyword arguments can be:\n"
+                for name in flags_doc:
+                    instance.__doc__ += name + ": " + flags_doc[name] + "\n"
         except AttributeError:
             pass
 

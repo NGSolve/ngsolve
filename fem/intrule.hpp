@@ -694,6 +694,31 @@ namespace ngfem
     }
     int Dim() const { return dimension; }
     void SetDim (int dim) { dimension = dim; }
+
+    struct IntegrationRuleSplitArray
+    {
+        const IntegrationRule & ir;
+        static constexpr size_t BS=128;
+        size_t size;
+
+        IntegrationRuleSplitArray(const IntegrationRule & ir_)
+        : ir(ir_)
+        {
+            size = (ir.Size()+BS-1)/BS;
+        }
+
+        IntegrationRule operator[](size_t i) const
+        {
+            size_t first = i*BS;
+            size_t next = min((i+1)*BS, ir.Size());
+            return ir.Range(first, next);
+        }
+
+        auto begin() const { return AOWrapperIterator(*this, 0); }
+        auto end() const { return AOWrapperIterator(*this, size); }
+    };
+
+    IntegrationRuleSplitArray Split() { return *this; }
   };
 
   NGS_DLL_HEADER ostream & operator<< (ostream & ost, const IntegrationRule & ir);

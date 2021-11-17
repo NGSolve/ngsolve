@@ -23,6 +23,8 @@ namespace ngcomp
       arguments.push_back ( tuple<string,string> (name, "none") );
       return get<1> (arguments.back());
     }
+
+    NGS_DLL_HEADER string GetPythonDocString() const;
   };
 
 
