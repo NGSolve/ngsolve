@@ -118,7 +118,6 @@ namespace ngcomp
       }
       if constexpr (DIMS==2)
       {
-        // TODO: Handle quad elements
         auto getDist = [&] ( auto l )
         {
           Vec<DIMR> p;
@@ -126,8 +125,14 @@ namespace ngcomp
           return L2Norm2( p-pmaster );
         };
 
-        // check corner points
-        ArrayMem<Vec<DIMS>, 5> points{ {0,0}, {0,1}, {1,0} };
+        // check corner points and edges separately
+        ArrayMem<Vec<DIMS>, 4> points;
+        auto eltype = trafo.GetElementType();
+        if(eltype==ET_TRIG)
+            points = { {0,0}, {0,1}, {1,0} };
+        else if(eltype==ET_QUAD)
+            points = { {0,0}, {0,1}, {1,1}, {1,0} };
+
         for (Vec<DIMS> lam : points)
         {
           // auto d = t2(lam);
@@ -154,18 +159,13 @@ namespace ngcomp
 
         auto l = t2.CalcMinimum();
 
-        if(l[0]>0 && l[1]>0 && l[0]<1 && l[1]<1 && l[0]+l[1]<1)
+        if(l[0]>0 && l[1]>0 && l[0]<1 && l[1]<1 && (l[0]+l[1]<1 || eltype==ET_QUAD))
             checkLam(l);
 
-        if(t2.CalcMinimumOnSegment( {0,0}, {1,0}, l ))
-            checkLam(l);
-
-        if(t2.CalcMinimumOnSegment( {1,0}, {0,1}, l ))
-            checkLam(l);
-
-        if(t2.CalcMinimumOnSegment( {0,1}, {0,0}, l ))
-            checkLam(l);
-
+        auto npoints = points.Size();
+        for(auto i : Range(npoints))
+            if(t2.CalcMinimumOnSegment( points[i], points[(i+1)%npoints], l ))
+                checkLam(l);
       }
     }
 
