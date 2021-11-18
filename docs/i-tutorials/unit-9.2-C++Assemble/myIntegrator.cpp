@@ -10,6 +10,73 @@ My own simple integrators for the Poisson Equation
 
 namespace ngfem
 {
+
+
+
+  /*
+    Calculates the element vector.
+
+    Input is:
+    the finite element: fel 
+    the geometry of the element: eltrans
+    
+    Output is:
+    the element vector: elvec
+    
+    Efficient memorymanagement is provided my locheap
+  */
+  void MySourceIntegrator ::
+  CalcElementVector (const FiniteElement & base_fel,
+		     const ElementTransformation & eltrans, 
+		     FlatVector<double> elvec,
+		     LocalHeap & lh) const
+  {
+    /*
+      tell the compiler that we are expecting a scalar element,
+      if not, an exception will be raised
+    */
+    auto & fel = dynamic_cast<const BaseScalarFiniteElement&> (base_fel);
+
+    // number of degrees of freedom on element    
+    int ndof = fel.GetNDof();
+
+    elvec = 0;
+
+    FlatVector<> shape(ndof, lh); 
+
+    /*
+      get integration rule for element geometry, 
+      integration order is 2 times element order
+    */
+    IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+
+    // loop over integration points    
+    for (int i = 0 ; i < ir.GetNIP(); i++)
+      {
+        // calculate the mapped integration point from eltrans - mapping
+        MappedIntegrationPoint<2,2> mip(ir[i], eltrans);
+
+        // coef_f(x)
+        double f = coef_f -> Evaluate (mip);
+
+        // calculate shape functions 
+        fel.CalcShape (ir[i], shape);
+        
+        // integration weight and Jacobi determinant
+        double fac = mip.IP().Weight() * mip.GetMeasure();
+
+        // elvec_{i} += (fac*f) shape_i
+        elvec += (fac*f) * shape;
+      }     
+  }
+
+
+
+
+
+
+
+
   
   /*
     Calculates the element matrix.
@@ -23,6 +90,7 @@ namespace ngfem
     
     Efficient memory management is provided my locheap
   */
+  
   void MyLaplaceIntegrator ::
   CalcElementMatrix (const FiniteElement & base_fel,
 		     const ElementTransformation & eltrans, 
@@ -35,7 +103,7 @@ namespace ngfem
     */
     auto & fel = dynamic_cast<const BaseScalarFiniteElement &> (base_fel);
 
-    // number of element basis functions:
+    // number of degrees of freedom on element
     int ndof = fel.GetNDof();
 
     elmat = 0;
@@ -52,7 +120,8 @@ namespace ngfem
     // loop over integration points
     for (int i = 0 ; i < ir.GetNIP(); i++)
       {
-        // calculate Jacobi matrix in the integration point
+        // calculate the mapped integration point from eltrans - mapping,
+        // and the Jacobi matrix as well
         MappedIntegrationPoint<2,2> mip(ir[i], eltrans);
 
         // lambda(x)
@@ -75,49 +144,5 @@ namespace ngfem
       }     
   }
 
-  /*
-    Calculates the element vector.
-
-    Input is:
-    the finite element: fel 
-    the geometry of the element: eltrans
-    
-    Output is:
-    the element vector: elvec
-    
-    Efficient memorymanagement is provided my locheap
-  */
-  void MySourceIntegrator ::
-  CalcElementVector (const FiniteElement & base_fel,
-		     const ElementTransformation & eltrans, 
-		     FlatVector<double> elvec,
-		     LocalHeap & lh) const
-  {
-    auto & fel = dynamic_cast<const BaseScalarFiniteElement&> (base_fel);
-
-    int ndof = fel.GetNDof();
-
-    elvec = 0;
-
-    FlatVector<> shape(ndof, lh); 
-
-    IntegrationRule ir(fel.ElementType(), 2*fel.Order());
-
-    for (int i = 0 ; i < ir.GetNIP(); i++)
-      {
-        MappedIntegrationPoint<2,2> mip(ir[i], eltrans);
-
-        double f = coef_f -> Evaluate (mip);
-
-        // calculate shape functions 
-        fel.CalcShape (ir[i], shape);
-        
-        // integration weight and Jacobi determinant
-        double fac = mip.IP().Weight() * mip.GetMeasure();
-
-        // elvec_{i} += (fac*f) shape_i
-        elvec += (fac*f) * shape;
-      }     
-  }
 }
 
