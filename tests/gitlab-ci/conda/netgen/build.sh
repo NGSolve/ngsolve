@@ -1,5 +1,5 @@
 #!/bin/bash
-export OSX_DEPLOYMENT_TARGET=10.14
+export OSX_DEPLOYMENT_TARGET=10.15
 
 PLATFORM=`python -c "import platform; print(platform.system())"`
 if [ "$PLATFORM" = "Darwin" ]
@@ -16,8 +16,8 @@ cd build_netgen
 
 cmake -G "Unix Makefiles" \
   -DUSE_CCACHE=ON \
-  -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX10.14.sdk \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.14 \
+  -DCMAKE_OSX_SYSROOT=/Library/Developer/CommandLineTools/SDKs/MacOSX10.15.sdk \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
   -DCMAKE_BUILD_TYPE=Release \
   -DCMAKE_PREFIX_PATH=${PREFIX} \
   -DCMAKE_INSTALL_PREFIX=${PREFIX} \
