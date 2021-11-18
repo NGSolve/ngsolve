@@ -16,6 +16,30 @@ My own simple integrators for the Poisson Equation
 
 namespace ngfem
 {
+
+
+  // integrator for \int f v dx
+  class MySourceIntegrator : public LinearFormIntegrator
+  {
+    shared_ptr<CoefficientFunction> coef_f;
+  public:
+    MySourceIntegrator (shared_ptr<CoefficientFunction> coef)
+      : coef_f(coef) { ; }
+
+    string Name () const override { return "MySource"; }
+
+    VorB VB() const override { return VOL; }
+    
+    // Calculates the right hand side element vector
+    void CalcElementVector (const FiniteElement & fel,
+                            const ElementTransformation & eltrans, 
+                            FlatVector<double> elvec,
+                            LocalHeap & lh) const override;
+  };
+
+
+
+
   
   // integrator for \int \lambda(x) \nabla u \nabla v dx
   class MyLaplaceIntegrator : public BilinearFormIntegrator
@@ -37,26 +61,6 @@ namespace ngfem
                             LocalHeap & lh) const override;
   };
 
-  // integrator for \int f v dx
-  class MySourceIntegrator : public LinearFormIntegrator
-  {
-    shared_ptr<CoefficientFunction> coef_f;
-  public:
-    MySourceIntegrator (shared_ptr<CoefficientFunction> coef)
-      : coef_f(coef) { ; }
-
-    string Name () const override { return "MySource"; }
-
-    VorB VB() const override { return VOL; }
-    
-    // Calculates the right hand side element vector
-    void CalcElementVector (const FiniteElement & fel,
-                            const ElementTransformation & eltrans, 
-                            FlatVector<double> elvec,
-                            LocalHeap & lh) const override;
-  };
 }
 
-#include <python_ngstd.hpp>
-void ExportMyIntegrator(py::module m);
 #endif

@@ -14,8 +14,8 @@
 
 namespace ngcomp
 {
-  shared_ptr<BaseSparseMatrix> MyAssemble(shared_ptr<FESpace> fes,
-                                          shared_ptr<BilinearFormIntegrator> bfi)
+  shared_ptr<BaseSparseMatrix> MyAssembleMatrix(shared_ptr<FESpace> fes,
+                                                shared_ptr<BilinearFormIntegrator> bfi)
   {
     cout << "We assemble matrix" << endl;
 
