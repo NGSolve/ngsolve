@@ -1739,6 +1739,12 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   MakeVectorContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
                                             Array<shared_ptr<CoefficientFunction>> vectors);
 
+  // contract index'th index with vector
+  // cf_i_0, .., i_ind-1, k, i_ind+1, i_dim  v_k
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeSingleContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                            shared_ptr<CoefficientFunction> vec,
+                                            int index);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeCoordinateCoefficientFunction (int comp);
