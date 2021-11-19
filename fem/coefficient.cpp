@@ -5146,6 +5146,145 @@ MakeVectorContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
 
 
 
+// ********************** SingleContractionCoefficientFunction **********************
+
+  
+class SingleContractionCoefficientFunction : public T_CoefficientFunction<SingleContractionCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  typedef T_CoefficientFunction<SingleContractionCoefficientFunction> BASE;
+  shared_ptr<CoefficientFunction> vec;
+  int index, dimbefore, dimafter;
+public:
+  SingleContractionCoefficientFunction() = default;
+  SingleContractionCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                        shared_ptr<CoefficientFunction> avec,
+                                        int aindex)
+    : BASE(ac1->Dimension()/avec->Dimension(), ac1->IsComplex()),
+      c1(ac1), vec(avec), index(aindex)
+  {
+    cout << "in single contraction constructor" << endl;
+    elementwise_constant = c1->ElementwiseConstant() && vec->ElementwiseConstant();
+    dimbefore = 1;
+    dimafter = 1;
+    Array<int> dims;
+    dims.SetSize(c1->Dimensions().Size()-1);
+    for (int j = 0; j < index; j++)
+      {
+        dims[j] = c1->Dimensions()[j];
+        dimbefore *= dims[j];
+      }
+    for (int j = index; j < dims.Size(); j++)
+      {
+        dims[j] = c1->Dimensions()[j+1];
+        dimafter *= dims[j];
+      }
+    SetDimensions(dims);
+    cout << "dims = " << dims << endl;
+    cout << "constructor done" << endl;
+  }
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1) & vec;
+  }
+
+  /*
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  */
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    vec->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1, vec }); }
+  
+  using BASE::Evaluate;
+
+  
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> hvalues) const
+  {
+    STACK_ARRAY(T, hmem, ir.Size()*c1->Dimension());
+    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), &hmem[0]);
+    c1->Evaluate (ir, temp);
+
+    STACK_ARRAY(T, hmem2, ir.Size()*vec->Dimension());
+    FlatMatrix<T,ORD> vi(vec->Dimension(), ir.Size(), &hmem2[0]);
+    vec->Evaluate(ir, vi);
+
+    size_t nv = ir.Size();
+
+    auto values = hvalues.AddSize(Dimension(), nv);
+    values = T(0);
+
+    for (int i = 0, ii = 0; i < dimbefore; i++)
+      for (int j = 0; j < vec->Dimension(); j++)
+        for (int k = 0; k < dimafter; k++, ii++)
+          values.Row(i*dimafter+k) += pw_mult(vi.Row(j), temp.Row(ii));
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> hvalues) const
+  {
+    auto temp = input[0];
+    auto vi = input[1];
+    
+    size_t nv = ir.Size();
+
+    auto values = hvalues.AddSize(Dimension(), nv);
+    values = T(0);
+
+    for (int i = 0, ii = 0; i < dimbefore; i++)
+      for (int j = 0; j < vec->Dimension(); j++)
+        for (int k = 0; k < dimafter; k++, ii++)
+          values.Row(i*dimafter+k) += pw_mult(vi.Row(j), temp.Row(ii));
+  }
+
+  /*
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return MakeVectorContractionCoefficientFunction (c1->Diff(var, dir), first, Array<int> (num), Array<int> (dist));
+  }  
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+  }
+  */
+};
+
+shared_ptr<CoefficientFunction>
+MakeSingleContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                          shared_ptr<CoefficientFunction> vec,
+                                          int index)
+{
+  return make_shared<SingleContractionCoefficientFunction> (c1, vec, index);
+}
+
+
+
+
+
+
+
+
+
 
 // ************************ DomainWiseCoefficientFunction *************************************
 

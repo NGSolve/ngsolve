@@ -992,7 +992,7 @@ val : can be one of the following:
            int first = 0;
            Array<int> num;
            Array<int> dist;
-
+           int numcontracted = 0;
            for (auto i : Range(3))
              {
                if (py::extract<int> (components[i]).check())
@@ -1004,6 +1004,14 @@ val : can be one of the following:
 
                  first *= dims[i];
                  first += c;
+               }
+             else if (py::extract<shared_ptr<CoefficientFunction>> (components[i]).check())
+               {
+                 cout << "make a single contraction" << endl;
+                 shared_ptr<CoefficientFunction> vec = components[i].cast<shared_ptr<CoefficientFunction>>();
+                 self = MakeSingleContractionCoefficientFunction (self, vec, i-numcontracted);
+                 cout << "have single contraction" << endl;
+                 numcontracted++;
                }
              else if (py::extract<py::slice> (components[i]).check())
                {
