@@ -5163,7 +5163,6 @@ public:
     : BASE(ac1->Dimension()/avec->Dimension(), ac1->IsComplex()),
       c1(ac1), vec(avec), index(aindex)
   {
-    cout << "in single contraction constructor" << endl;
     elementwise_constant = c1->ElementwiseConstant() && vec->ElementwiseConstant();
     dimbefore = 1;
     dimafter = 1;
@@ -5180,8 +5179,6 @@ public:
         dimafter *= dims[j];
       }
     SetDimensions(dims);
-    cout << "dims = " << dims << endl;
-    cout << "constructor done" << endl;
   }
 
   void DoArchive(Archive& ar) override
