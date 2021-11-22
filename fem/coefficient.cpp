@@ -4713,6 +4713,9 @@ MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
   if (c1->GetDescription() == "ZeroCF")
     return ZeroCF( Array<int>({}) );
 
+  if (c1->GetDescription() == "unary operation ' '")
+    return MakeComponentCoefficientFunction(c1->InputCoefficientFunctions()[0], comp);
+
   if (c1->GetDescription() == "VectorialCoefficientFunction")
   {
     int ci = 0;
@@ -4721,6 +4724,8 @@ MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
     while(dim<=comp)
     {
       int dim_last = dim;
+      if(dim == comp && coefs[ci]->Dimension() == 1)
+        return coefs[ci];
       dim += coefs[ci]->Dimension();
       if(dim>comp)
         return MakeComponentCoefficientFunction( coefs[ci], comp-dim_last );
