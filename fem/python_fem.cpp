@@ -1007,10 +1007,11 @@ val : can be one of the following:
                }
              else if (py::extract<shared_ptr<CoefficientFunction>> (components[i]).check())
                {
-                 cout << "make a single contraction" << endl;
                  shared_ptr<CoefficientFunction> vec = components[i].cast<shared_ptr<CoefficientFunction>>();
+                 if ( vec->Dimensions().Size() != 1 || vec->Dimensions()[0] != self->Dimensions()[i-numcontracted] )
+                   throw py::index_error();
+                 
                  self = MakeSingleContractionCoefficientFunction (self, vec, i-numcontracted);
-                 cout << "have single contraction" << endl;
                  numcontracted++;
                }
              else if (py::extract<py::slice> (components[i]).check())
