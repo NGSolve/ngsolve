@@ -270,7 +270,6 @@ public:
     sub.SetSize(args...);
   }
 
-  /// TODO: Still problems!
   /// copy data and sub pointers
   INLINE FlatTensor & Assign (const FlatTensor & m) throw()
   {
@@ -280,17 +279,12 @@ public:
     return *this;
   }
 
-  //TODO: is this feasible? Still problems!
   /// set size, and assign mem
   template<typename ... ARG>
   INLINE void AssignMemory (LocalHeap & lh, size_t s, ARG ... args) throw ()
   {
     FlatTensor tmp{lh, s, args...};
     Assign(tmp);
-//    FlatTensor tmp{args...};
-//    Assign(tmp);
-//    size_t totsize = tmp->GetTotalSize();
-//    this->Data() = lh.Alloc<T>(totsize);
   }
   
   /// set size, and assign mem
@@ -341,21 +335,6 @@ public:
   {
     this->data = m.data;
   }
-
-//  //TODO: is this required?
-//  /// set size, and assign mem
-//  template<typename ... ARG>
-//  INLINE void AssignMemory (LocalHeap & lh, size_t s, ARG ... args) throw ()
-//  {
-//    this->Data() = lh.Alloc<T>(this->GetSize());
-//  }
-//
-//  /// set size, and assign mem
-//  template<typename ... ARG>
-//  INLINE void AssignMemory (T * mem, size_t s, ARG ... args) throw()
-//  {
-//    this->Data() = mem;
-//  }
 };
 
 
