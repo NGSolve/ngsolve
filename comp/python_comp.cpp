@@ -383,6 +383,8 @@ when building the system matrices.
 
 )raw_string"))
     .def(py::init([](spProxy self) { return self; }))
+    .def_property_readonly("space", [](ProxyFunction & self) { return self.GetFESpace(); },
+                           "the finite element space")
     .def("Deriv", 
          [](const spProxy self)
          { return self->Deriv(); },
