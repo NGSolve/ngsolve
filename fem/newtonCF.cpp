@@ -73,16 +73,6 @@ bool all_converged(const vec_t &vec_blocks, double tol,
 
 } // namespace
 
-// TODO: (general)
-//  * Interpolation into generic compound spaces does not work as expected
-//     (only one component is respected)
-//  * How to handle consistent linearizations? This is probably a bigger topic
-//     because there is also no support for nonlinear equations at the FEM level
-//     (only nonlinear energies...). One could mix the linearization from an
-//     incremental variational principle with the evolution of via a general
-//     nonlinear equation. The effect on the convergence might not be huge in
-//     most cases. If it is, a smaller time step might be a good idea anyway.
-
 class NewtonCF : public CoefficientFunction {
   shared_ptr<CoefficientFunction> expression;
   Array<shared_ptr<CoefficientFunction>> startingpoints{};
@@ -166,13 +156,27 @@ public:
       //      cout << "\n" << "sorted proxies " << sorted_proxies
       //           << "\n" << "diffops " << diffops << endl;
 
+      const auto compound_space = [](const auto& proxy) {
+          return static_cast<void*>(proxy->GetFESpace().get());
+      };
+      const auto space = compound_space(proxies[0]);
+      if (!space)
+          throw Exception(
+                  "NewtonCF: More than one proxy has been found but not all "
+                  "belong to a CompoundFESpace.");
+
       for (const auto proxy : proxies) {
+          if (space != compound_space(proxy))
+              throw Exception(
+                      "NewtonCF: More than one proxy has been found but not all "
+                      "belong to the same a CompoundFESpace.");
+
           const auto evaluator =
                   dynamic_cast<const CompoundDifferentialOperator *>(
                           proxy->Evaluator().get());
           if (!evaluator) {
               throw Exception(
-                      "MinimizationCF: More than one proxy has been found but not all "
+                      "NewtonCF: More than one proxy has been found but not all "
                       "proxy "
                       "evaluators are of type CompoundDifferentialOperator");
           } else {
@@ -180,7 +184,7 @@ public:
                   std::find_if(cbegin(diffops), cend(diffops), [&](const auto& pair){return pair.second == evaluator;}) !=
                   cend(diffops))
                   throw Exception(
-                          "MinimizationCF: A proxy evaluator (component) has been "
+                          "NewtonCF: A proxy evaluator (component) has been "
                           "detected twice");
               diffops[evaluator->Component()] = evaluator;
               sorted_proxies[evaluator->Component()] = proxy;
@@ -211,34 +215,10 @@ public:
                       "trial functions (=" +
                       to_string(full_dim) + ")");
 
+
     // Process startingpoints
 
-    /*
-      // if we want that we should move it to comp - level ???
-    // Handle GF on CompoundFESpace
-    if (astartingpoints.Size() == 1 && astartingpoints[0]->Dimension() == 1 &&
-        proxies.Size() > 1) {
-      const auto startingpoint_gf =
-          dynamic_pointer_cast<ngcomp::GridFunction>(astartingpoints[0]);
-      if (!startingpoint_gf)
-        throw Exception("NewtonCF: number of trial functions greater than one "
-                        "requires a GridFunction with corresponding components "
-                        "as starting point");
-
-      if (proxies.Size() != startingpoint_gf->GetNComponents())
-        throw Exception(string("NewtonCF: number of proxies (=") +
-                        to_string(proxies.Size()) +
-                        ") does not match the number "
-                        "of components of the 'startingpoint' (=" +
-                        to_string(startingpoint_gf->GetNComponents()) + ")");
-
-      startingpoints.DeleteAll();
-      for (int i : Range(startingpoint_gf->GetNComponents()))
-        startingpoints.Append(startingpoint_gf->GetComponent(i));
-
-    } else
-    */
-      startingpoints = astartingpoints;
+    startingpoints = astartingpoints;
 
     // Check dimensions and/or fill empty startingpoints
     if (startingpoints.Size() == 0) {
@@ -665,7 +645,21 @@ public:
       //      cout << "\n" << "sorted proxies " << sorted_proxies
       //           << "\n" << "diffops " << diffops << endl;
 
+      const auto compound_space = [](const auto& proxy) {
+          return static_cast<void*>(proxy->GetFESpace().get());
+      };
+      const auto space = compound_space(proxies[0]);
+      if (!space)
+        throw Exception(
+                "MinimizationCF: More than one proxy has been found but not all "
+                "belong to a CompoundFESpace.");
+
       for (const auto proxy : proxies) {
+        if (space != compound_space(proxy))
+          throw Exception(
+                  "MinimizationCF: More than one proxy has been found but not all "
+                  "belong to the same a CompoundFESpace.");
+
         const auto evaluator =
             dynamic_cast<const CompoundDifferentialOperator *>(
                 proxy->Evaluator().get());
@@ -706,35 +700,10 @@ public:
     if (expression->Dimension() != 1)
       throw Exception(string("MinimizationCF: only scalar expressions are allowed"));
 
+
     // Process startingpoints
 
-    /*
-      // then we shold move to to comp level ???
-    // Handle GF on CompoundFESpace
-    if (astartingpoints.Size() == 1 && astartingpoints[0]->Dimension() == 1 &&
-        proxies.Size() > 1) {
-        const auto startingpoint_gf =
-            dynamic_pointer_cast<ngcomp::GridFunction>(astartingpoints[0]);
-        if (!startingpoint_gf)
-          throw Exception(
-              "MinimizationCF: number of trial functions greater than one "
-              "requires a GridFunction with corresponding components "
-              "as starting point");
-
-        if (proxies.Size() != startingpoint_gf->GetNComponents())
-          throw Exception(string("MinimizationCF: number of proxies (=") +
-                          to_string(proxies.Size()) +
-                          ") does not match the number "
-                          "of components of the 'startingpoint' (=" +
-                          to_string(startingpoint_gf->GetNComponents()) + ")");
-
-        startingpoints.DeleteAll();
-        for (int i : Range(startingpoint_gf->GetNComponents()))
-          startingpoints.Append(startingpoint_gf->GetComponent(i));
-
-    } else
-    */
-      startingpoints = astartingpoints;
+    startingpoints = astartingpoints;
 
     // Check dimensions and/or fill empty startingpoints
     if (startingpoints.Size() == 0) {
