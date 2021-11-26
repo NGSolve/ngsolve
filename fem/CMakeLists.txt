@@ -48,7 +48,8 @@ install( FILES
         recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	
         specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp normalfacetfe.hpp
         hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	
-        hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp l2hofe_impl.hpp
+        hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp
+        l2hofe_impl.hpp hcurlcurlfe.hpp
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp tpdiffop.hpp tpintrule.hpp
         thcurlfe_impl.hpp symbolicintegrator.hpp hcurlhdiv_dshape.hpp code_generation.hpp 
         tensorproductintegrator.hpp fe_interfaces.hpp python_fem.hpp
