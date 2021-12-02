@@ -16,7 +16,7 @@ def test_convection1d_dg():
 
     m.Add (meshing.Element0D (pnums[0], index=1))
     m.Add (meshing.Element0D (pnums[nel], index=2))
-    m.AddPointIdentification(pnums[0],pnums[nel],identnr=1,type=2)
+    m.AddPointIdentification(pnums[0],pnums[nel],identnr=1,type=meshing.IdentificationType.PERIODIC)
 
     mesh = Mesh (m)
 
