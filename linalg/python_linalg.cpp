@@ -1575,7 +1575,8 @@ maxsteps : int
   
   m.def("ArnoldiSolver", [](shared_ptr<BaseMatrix> mata, shared_ptr<BaseMatrix> matm,
                             shared_ptr<BitArray> freedofs,
-                            py::list vecs, Complex shift)
+                            py::list vecs, Complex shift,
+                            optional<string> inverse)
         {
           int nev;
           {
@@ -1590,7 +1591,7 @@ maxsteps : int
             {
               Arnoldi<Complex> arnoldi (mata, matm, freedofs);
               arnoldi.SetShift (shift);
-              
+              arnoldi.SetInverseType (inverse);
               Array<shared_ptr<BaseVector>> evecs(nev);
                                                   
               Array<Complex> lam(nev);
@@ -1613,6 +1614,7 @@ maxsteps : int
               if (shift.imag())
                 throw Exception("Only real shifts allowed for real arnoldi");
               arnoldi.SetShift (shift.real());
+              arnoldi.SetInverseType (inverse);
               
               Array<shared_ptr<BaseVector>> evecs(nev);
               
@@ -1631,7 +1633,7 @@ maxsteps : int
               return vlam;
             }
         },
-          py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(),
+        py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), py::arg("inverse")=nullopt,
         py::call_guard<py::gil_scoped_release>(),
         docu_string(R"raw_string(
 Shift-and-invert Arnoldi eigenvalue solver
