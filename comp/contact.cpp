@@ -295,6 +295,7 @@ namespace ngcomp
     if(h==0.0)
       h = 2*maxh;
 
+    bbox.Scale(2); // make sure we don't add boxes outside of tree bounding box
     searchtree = make_unique<netgen::BoxTree<DIM, int>>(bbox);
     for (Ngs_Element el2 : ma->Elements(BND))
       {
@@ -306,13 +307,13 @@ namespace ngcomp
         auto & trafo2_def = trafo2.AddDeformation(displacement.get(), lh);
 
         IntegrationRule ir2_(trafo2.GetElementType(), intorder2);
+        netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
         for(auto ir2 : ir2_.Split())
           {
             HeapReset hr(lh);
             MappedIntegrationRule<DIM-1, DIM> mir2(ir2, trafo2, lh);
             MappedIntegrationRule<DIM-1, DIM> mir2_def(ir2, trafo2_def, lh);
 
-            netgen::Box<DIM> elbox{netgen::Box<DIM>::EMPTY_BOX};
             for (auto & mip : mir2_def)
               {
                 netgen::Point<DIM> p;
@@ -321,9 +322,9 @@ namespace ngcomp
                 elbox.Add(p);
               }
 
-            elbox.Scale(1.1);
-            searchtree->Insert(elbox, el2.Nr());
         }
+        elbox.Scale(1.1);
+        searchtree->Insert(elbox, el2.Nr());
       }
   }
 
