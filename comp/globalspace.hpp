@@ -15,13 +15,13 @@ namespace ngcomp
     static int CalcDim(shared_ptr<CoefficientFunction> basis)
     {
       auto dims = basis->Dimensions();
-      return (dims.Size() == 1) ? dims[0] : dims[1];
+      return dims[0]; 
     }
 
     static int CalcVecDim(shared_ptr<CoefficientFunction> basis)
     {
       auto dims = basis->Dimensions();
-      return (dims.Size() == 1) ? 1 : dims[0];
+      return (dims.Size() == 1) ? 1 : dims[1];
     }
     
     class FE : public FiniteElement
@@ -44,6 +44,8 @@ namespace ngcomp
       VolDiffOp (shared_ptr<CoefficientFunction> abasis, VorB vb = VOL)
         : DifferentialOperator(CalcVecDim(abasis), 1, vb, 0), basis(abasis),
           dim(CalcDim(abasis)), vecdim(CalcVecDim(abasis)) { ; }
+
+      virtual bool SupportsVB (VorB checkvb) const override { return true; }
 
       void CalcMatrix (const FiniteElement & bfel,
                        const BaseMappedIntegrationPoint & mip,
