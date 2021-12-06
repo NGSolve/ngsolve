@@ -30,7 +30,7 @@ namespace ngla
     shared_ptr<BaseMatrix> b;
     shared_ptr<BitArray> freedofs;
     SCAL shift;
-
+    optional<string> inversetype;
   public:
     Arnoldi (shared_ptr<BaseMatrix> aa, shared_ptr<BaseMatrix> ab, shared_ptr<BitArray> afreedofs = nullptr)
       : a(aa), b(ab), freedofs(afreedofs)
@@ -40,6 +40,8 @@ namespace ngla
 
     void SetShift (SCAL ashift)
     { shift = ashift; }
+    void SetInverseType (optional<string> ainv)
+    { inversetype = ainv; }
 
     void Calc (int numval, Array<Complex> & lam, int nev, 
                Array<shared_ptr<BaseVector>> & evecs, 

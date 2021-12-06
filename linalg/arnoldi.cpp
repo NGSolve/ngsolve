@@ -44,7 +44,11 @@ namespace ngla
     mat_shift->AsVector() = a->AsVector() - shift*b->AsVector();  
     shared_ptr<BaseMatrix> inv;
     if (!pre)
-      inv = mat_shift->InverseMatrix (freedofs);
+      {
+        if (inversetype)
+          mat_shift -> SetInverseType(*inversetype);
+        inv = mat_shift->InverseMatrix (freedofs);
+      }
     else
       {
         auto itso = make_shared<GMRESSolver<double>> (mat_shift, pre);
