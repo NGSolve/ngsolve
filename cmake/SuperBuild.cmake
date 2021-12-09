@@ -58,6 +58,11 @@ macro(set_flags_vars OUTPUT_VAR )
   endforeach()
 endmacro()
 
+if(${CMAKE_GENERATOR} STREQUAL "Unix Makefiles")
+  set(COMMON_BUILD_COMMAND $(MAKE) --silent )
+else()
+  set(COMMON_BUILD_COMMAND ${CMAKE_COMMAND} --build . --config ${CMAKE_BUILD_TYPE} )
+endif()
 #######################################################################
 
 set_vars(SUBPROJECT_CMAKE_ARGS
@@ -127,6 +132,7 @@ else(NETGEN_DIR)
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
     LIST_SEPARATOR |
     ${SUBPROJECT_ARGS}
+    BUILD_COMMAND ${COMMON_BUILD_COMMAND}
     CMAKE_ARGS
         ${NETGEN_CMAKE_ARGS}
         ${SUBPROJECT_CMAKE_ARGS}
@@ -277,6 +283,7 @@ ExternalProject_Add (ngsolve
          ${SUBPROJECT_CMAKE_ARGS}
   INSTALL_COMMAND ""
   BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/ngsolve
+  BUILD_COMMAND ${COMMON_BUILD_COMMAND}
   ${SUBPROJECT_ARGS}
   )
 
