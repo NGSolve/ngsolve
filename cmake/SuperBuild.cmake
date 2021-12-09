@@ -130,6 +130,7 @@ else(NETGEN_DIR)
   ExternalProject_Add (netgen_project
     SOURCE_DIR ${PROJECT_SOURCE_DIR}/external_dependencies/netgen
     BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR}/netgen
+    CONFIGURE_COMMAND ""
     LIST_SEPARATOR |
     ${SUBPROJECT_ARGS}
     BUILD_COMMAND ${COMMON_BUILD_COMMAND}
