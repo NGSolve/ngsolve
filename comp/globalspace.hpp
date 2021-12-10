@@ -15,13 +15,13 @@ namespace ngcomp
     static int CalcDim(shared_ptr<CoefficientFunction> basis)
     {
       auto dims = basis->Dimensions();
-      return dims[0]; 
+      return (dims.Size() == 0) ? 1 : dims[0]; 
     }
 
     static int CalcVecDim(shared_ptr<CoefficientFunction> basis)
     {
       auto dims = basis->Dimensions();
-      return (dims.Size() == 1) ? 1 : dims[1];
+      return (dims.Size() <= 1) ? 1 : dims[1];
     }
     
     class FE : public FiniteElement
