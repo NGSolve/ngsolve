@@ -2854,6 +2854,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
       "  dofs within one scalar component are together.";
     docu.Arg("hide_all_dofs") = "bool = False\n"
       "  all dofs are condensed without a global dofnr";
+    docu.Arg("lowest_order_wb") = "bool = False\n"
+      "  Keep lowest order dof in WIRE_BASKET";
 
     return docu;
   }
