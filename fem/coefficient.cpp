@@ -5551,7 +5551,7 @@ public:
   OtherCoefficientFunction() = default;
   OtherCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : BASE(ac1->Dimension(), ac1->IsComplex()), c1(ac1)
-  { ; }
+  { SetDimensions(ac1->Dimensions()); }
 
   void DoArchive(Archive& ar) override
   {
