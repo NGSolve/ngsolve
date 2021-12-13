@@ -4504,6 +4504,26 @@ If `maxdist` == 0. then 2*meshsize is used.
 )delimiter")
      .def_property_readonly("gap", &ContactBoundary::Gap)
      .def_property_readonly("normal", &ContactBoundary::Normal)
+     .def("_GetWebguiData", [] (shared_ptr<ContactBoundary> contact) {
+             auto [primary_points, secondary_points] = contact->GetDrawingPairs();
+             std::vector<double> p;
+             p.reserve(primary_points.Size()*6);
+
+             for(auto i : Range(primary_points))
+             {
+                 for(auto d : Range(3))
+                     p.push_back(primary_points[i][d]);
+                 for(auto d : Range(3))
+                     p.push_back(secondary_points[i][d]);
+             }
+
+             py::dict gap_data;
+             gap_data["type"] = "lines";
+             gap_data["color"] = "black";
+             gap_data["name"] = "Contact Pairs";
+             gap_data["position"] = py::cast(p);
+             return gap_data;
+     })
      ;
 
   /////////////////////////////////////////////////////////////////////////////////////
