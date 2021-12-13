@@ -8,7 +8,7 @@ from webgui_jupyter_widgets import BaseWebGuiScene, encodeData, WebGuiDocuWidget
 import webgui_jupyter_widgets.widget as wg
 
 def updatePMinMax( pmat, pmima=None ):
-    pmima_new = [ngs.Vector(pmat[:,i], copy=False).MinMax() for i in range(3)]
+    pmima_new = [ngs.Vector(pmat[:,i], copy=False).MinMax(ignore_inf=True) for i in range(3)]
 
     if pmima is not None:
         for i in range(3):
@@ -16,6 +16,15 @@ def updatePMinMax( pmat, pmima=None ):
             pmima_new[i] = minmax
 
     return pmima_new
+
+def getMinMax( vals, fmin=None, fmax=None ):
+    funcmin,funcmax = ngs.Vector(vals, copy=False).MinMax(True)
+    if fmin is not None:
+        funcmin = min(funcmin, fmin)
+    if fmax is not None:
+        funcmax = max(funcmax, fmax)
+    return funcmin, funcmax
+
 
 class WebGLScene(BaseWebGuiScene):
     def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_, objects):
@@ -349,7 +358,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         
         timer3minmax.Start()
         pmima = updatePMinMax(pmat, pmima)
-        funcmin,funcmax = ngs.Vector(pmat[:,3], copy=False).MinMax()
+        funcmin,funcmax = getMinMax(pmat[:,3])
         timer3minmax.Stop()
 
         pmin, pmax = [ngs.Vector(p) for p in zip(*pmima)]
@@ -380,8 +389,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
             pmat = pmat.reshape(-1, len(ir_trig), 2)
 
-            funcmin = min(funcmin, np.min(pmat))
-            funcmax = max(funcmax, np.max(pmat))
+            funcmin, funcmax = getMinMax(pmat)
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
             if og==1:
                 for i in range(ndtrig):
@@ -454,16 +462,14 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         ne = mesh.GetNE(ngs.VOL)
         pmat = pmat.reshape(-1, np_per_tet, 4)
         
-        funcmin = min(funcmin, np.min(pmat[:,:,3]))
-        funcmax = max(funcmax, np.max(pmat[:,:,3]))
+        funcmin, funcmax = getMinMax(pmat[:,:,3].flatten(), funcmin, funcmax)
         points3d = []
         for i in range(np_per_tet):
             points3d.append(encodeData(pmat[:,i,:]))
 
         if func2:
             pmat = func2(pts).reshape(-1, np_per_tet//2, 4)
-            funcmin = min(funcmin, np.min(pmat))
-            funcmax = max(funcmax, np.max(pmat))
+            funcmin, funcmax = getMinMax(pmat, funcmin, funcmax)
             for i in range(np_per_tet//2):
                 points3d.append(encodeData(pmat[:,i,:]))
         d['points3d'] = points3d
