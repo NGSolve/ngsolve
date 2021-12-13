@@ -181,6 +181,7 @@ namespace ngcomp
     const auto& GetIntegrators() const { return integrators; }
     const auto& GetIntegrators(bool def) const { return def ? deformed_integrators : undeformed_integrators; }    
     shared_ptr<FESpace> GetFESpace() const { return fes; }
+    tuple<FlatArray<Vec<3>>, FlatArray<Vec<3>>> GetDrawingPairs() { return {primary_points, secondary_points}; }
   };
 
   template<int DIM>

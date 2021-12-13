@@ -404,17 +404,19 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     ExportVector< FVD, VD, double>(m, "FlatVectorD")
         .def(py::init<size_t, double *>())
         .def("Range",    static_cast</* const */ FVD (FVD::*)(size_t,size_t) const> (&FVD::Range ) )
-      .def("MinMax", [](FVD vec)
+      .def("MinMax", [](FVD vec, bool ignore_inf)
            {
              double mi = std::numeric_limits<double>::max();
              double ma = std::numeric_limits<double>::min();
              for (size_t i = 0; i < vec.Size(); i++)
                {
+                 if(ignore_inf && std::isinf(vec[i]))
+                   continue;
                  mi = min(mi, vec[i]);
                  ma = max(ma, vec[i]);
                }
              return tuple(mi,ma);
-           })
+           }, py::arg("ignore_inf")=false)
       ;
     ExportVector< FVC, VC, Complex>(m, "FlatVectorC")
         .def(py::self*=double())
@@ -433,17 +435,19 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     ExportVector< SVD, VD, double>(m, "SliceVectorD")
       .def(py::init<FlatVector<double>>(), py::keep_alive<0,1>())
       .def("Range",    static_cast<const SVD (SVD::*)(size_t,size_t) const> (&SVD::Range ) )
-      .def("MinMax", [](SVD vec)
+      .def("MinMax", [](SVD vec, bool ignore_inf)
            {
              double mi = std::numeric_limits<double>::max();
              double ma = std::numeric_limits<double>::min();
              for (size_t i = 0; i < vec.Size(); i++)
                {
+                 if(ignore_inf && std::isinf(vec[i]))
+                   continue;
                  mi = min(mi, vec[i]);
                  ma = max(ma, vec[i]);
                }
              return tuple(mi,ma);
-           })
+           }, py::arg("ignore_inf")=false)
       
         ;
     ExportVector< SVC, VC, Complex>(m, "SliceVectorC")
