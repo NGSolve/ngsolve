@@ -21,7 +21,7 @@ $netgen_version=(& $py\python.exe tests\get_python_version_string_from_git.py ex
 $env:PATH += ";$env:CI_PROJECT_DIR\venv\bin"
 python --version
 
-pip3 install scikit-build wheel numpy twine mkl-devel mkl
+pip3 install scikit-build wheel numpy twine mkl-devel==2021.* mkl==2021.*
 pip3 install -i https://test.pypi.org/simple/ netgen-mesher==$netgen_version
 python setup.py bdist_wheel -G"Visual Studio 16 2019"
 python -m twine upload --repository testpypi dist\*.whl
