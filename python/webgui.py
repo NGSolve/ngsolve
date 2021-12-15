@@ -389,7 +389,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
             pmat = pmat.reshape(-1, len(ir_trig), 2)
 
-            funcmin, funcmax = getMinMax(pmat)
+            funcmin, funcmax = getMinMax(pmat.flatten(), funcmin, funcmax)
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
             if og==1:
                 for i in range(ndtrig):
@@ -469,7 +469,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
         if func2:
             pmat = func2(pts).reshape(-1, np_per_tet//2, 4)
-            funcmin, funcmax = getMinMax(pmat, funcmin, funcmax)
+            funcmin, funcmax = getMinMax(pmat.flatten(), funcmin, funcmax)
             for i in range(np_per_tet//2):
                 points3d.append(encodeData(pmat[:,i,:]))
         d['points3d'] = points3d
