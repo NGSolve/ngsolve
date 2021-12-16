@@ -826,7 +826,7 @@ namespace ngfem
        auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM1>&> (bmir);
        for (size_t i = 0; i < mir.Size(); i++)
          {
-           SIMD<double> * pdshapes = &dshapes(0,i);
+           SIMD<double> * pdshapes = dshapes.Col(i).Data();
            size_t dist = dshapes.Dist();
             
            // TIP<DIM,AutoDiff<DIM1,SIMD<double>>> adp = GetTIP(mir[i]);
