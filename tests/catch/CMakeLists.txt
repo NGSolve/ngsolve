@@ -8,7 +8,7 @@ add_custom_target(unit_tests)
 # Build catch_main test object
 include_directories(${CATCH_INCLUDE_DIR})
 add_library(catch_main STATIC main.cpp)
-set_target_properties(catch_main PROPERTIES CXX_STANDARD 11)
+set_target_properties(catch_main PROPERTIES CXX_STANDARD 17)
 add_dependencies(unit_tests catch_main)
 add_dependencies(catch_main project_catch)
 

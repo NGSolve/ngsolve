@@ -1,5 +1,5 @@
 
-#include "catch.hpp"
+#include <catch.hpp>
 #include <fem.hpp>
 
 using namespace ngfem;
