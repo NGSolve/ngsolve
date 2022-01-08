@@ -17,6 +17,7 @@ namespace ngbla
   template <class T = double> class Vector;
   template <class T = double> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
+  template <int S, int DIST, typename T> class FlatSliceVec;
 
 
   /**
@@ -824,6 +825,12 @@ namespace ngbla
       (*this) = v;
     }
 
+    template <int D>
+    INLINE Vec(FlatSliceVec<S,D,T> fsv)
+    {
+      for (int i = 0; i < S; i++)
+        data[i] = fsv(i);
+    }
 
     // Helper function for variadic constructor
     template <int I, class... T2>
@@ -1006,21 +1013,34 @@ namespace ngbla
   };
 
 
+  
+  template <typename T> struct ConstVecSize { static constexpr int SIZE = -1; }; 
+  template <int S, typename T> struct ConstVecSize<Vec<S,T>> { static constexpr int SIZE = S; };
+  template <int S, typename T> struct ConstVecSize<FlatVec<S,T>> { static constexpr int SIZE = S; };
+  template <int S, int D, typename T> struct ConstVecSize<FlatSliceVec<S,D,T>> { static constexpr int SIZE = S; };
+  template <typename T>
+  constexpr auto ConstVectorSize() { return ConstVecSize<T>::SIZE; }
+      
+  /// cross product
+  template <typename TA, typename TB,
+            // std::enable_if_t<ConstVecSize<TA>::SIZE == 3, bool> = true,
+            std::enable_if_t<ConstVectorSize<TA>() == 3, bool> = true,
+            std::enable_if_t<ConstVectorSize<TB>() == 3, bool> = true>
+  INLINE auto Cross (const TA & a, const TB & b)
+  {
+    typedef decltype (a(0)*b(0)) T;
+    return Vec<3,T>({ a(1)*b(2)-a(2)*b(1), a(2)*b(0)-a(0)*b(2), a(0)*b(1)-a(1)*b(0) });
+  }
 
-
+  /*
   /// cross product
   template <typename S>
   INLINE Vec<3,S> Cross (const Vec<3,S> & a, const Vec<3,S> & b)
   {
-    /*
-    Vec<3,S> prod;
-    prod(0) = a(1) * b(2) - a(2) * b(1);
-    prod(1) = a(2) * b(0) - a(0) * b(2);
-    prod(2) = a(0) * b(1) - a(1) * b(0);
-    return prod;
-    */
     return Vec<3,S>({ a(1)*b(2)-a(2)*b(1), a(2)*b(0)-a(0)*b(2), a(0)*b(1)-a(1)*b(0) });
   }
+  */
+
 
   template <typename S>
   INLINE Vec<1,S> Cross (const Vec<2,S> & a, const Vec<2,S> & b)
@@ -1170,6 +1190,125 @@ namespace ngbla
   }
 
 
+
+
+
+  /**
+     A pointer to a vector of fixed size.
+  */
+  template <int S, int D, typename T = double>
+  class FlatSliceVec : public CMCPMatExpr<FlatSliceVec<S,D,T> > 
+  {
+    /// the values
+    T *  __restrict data;
+  public:
+    /// type of the elements
+    typedef T TELEM;
+    /// is the element double or complex ?
+    typedef typename mat_traits<T>::TSCAL TSCAL;
+    /// a vec is a S times 1 matrix, the according colume vector
+    typedef Vec<S, typename mat_traits<T>::TV_COL> TV_COL;
+    /// a vec is a S times 1 matrix, the according row vector
+    typedef Vec<1, typename mat_traits<T>::TV_ROW> TV_ROW;
+
+    enum { SIZE = S };
+    /// height of matrix
+    enum { HEIGHT = S };
+    /// with of matrix
+    enum { WIDTH  = 1 };
+
+    /// constructor
+    INLINE FlatSliceVec (T * adata) : data(adata) { ; }
+
+    /// copy vector
+    INLINE auto operator= (const FlatSliceVec & v) const
+    {
+      for (int i = 0; i < S; i++)
+	data[i*D] = v.data[i*D];
+      return *this;
+    }
+    
+    /// assign scalar value
+    INLINE auto operator= (TSCAL scal) const
+    {
+      for (int i = 0; i < S; i++)
+	data[i*D] = scal;
+      return *this;
+    }
+
+    /// assign expression
+    template<typename TB>
+    INLINE auto operator= (const Expr<TB> & v) const
+    {
+      for (int i = 0; i < S; i++)
+	data[i*D] = v.Spec()(i,0);
+      return *this;
+    }
+
+    template<typename TB>
+    INLINE auto operator+= (const Expr<TB> & v) const
+    {
+      for (int i = 0; i < S; i++)
+	data[i*D] += v.Spec()(i,0);
+      return *this;
+    }
+
+    operator Vec<S,T>() const
+    {
+      Vec<S,T> ret;
+      for (int i = 0; i < S; i++)
+        ret(i) = data[i*D];
+      return ret;
+    }
+    
+    /// access vector
+    INLINE TELEM & operator() (int i) const 
+    {
+      NETGEN_CHECK_RANGE(i,0,Size());
+      return data[i*D]; 
+    }
+
+    /// access vector
+    INLINE TELEM & operator[] (int i) const 
+    {
+      NETGEN_CHECK_RANGE(i,0,Size());
+      return data[i*D]; 
+    }
+
+    /// access vector
+    INLINE TELEM & operator() (int i, int j) const 
+    {
+      NETGEN_CHECK_RANGE(i,0,Size());
+      return data[i*D]; 
+    }
+
+    // INLINE /* const */ FlatVector<T> Range(int first, int next) const
+    // { return FlatVector<T> (next-first, data+first); }
+
+    /// vector size
+    INLINE constexpr int Size () const { return S; }
+    /// corresponding matrix height
+    INLINE constexpr int Height () const { return S; }
+    /// corresponding matrix with
+    INLINE constexpr int Width () const { return 1; }
+  };
+
+  /// output vector.
+  template<int S, int D, typename T>
+  inline ostream & operator<< (ostream & ost, const FlatSliceVec<S,D,T> & v)
+  {
+    for (int i = 0; i < S; i++)
+      ost << " " << setw(7) << v(i*D);
+    return ost;
+  }
+
+
+
+
+
+
+
+  
   // Template helper for the SliceVector from Vec constructor
   // to prevent range checks from triggering on call to v(0) for empty v
   template <typename T, int D>

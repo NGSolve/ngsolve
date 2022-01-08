@@ -707,15 +707,22 @@ namespace ngbla
     }
 
     ///
-    INLINE const FixSliceVector<W,T> Col (size_t i) 
+    INLINE auto Col (size_t i) 
     {
-      return FixSliceVector<W,T> (H, &(*this)(0,i));
+      // return FixSliceVector<W,T> (H, &(*this)(0,i));
+      return FlatSliceVec<H,W,T> (&(*this)(0,i));
     }
 
     ///
+    /*
     INLINE const FixSliceVector<W,const T> Col (size_t i) const
     {
       return FixSliceVector<W,const T> (H, &(*this)(0,i));
+    }
+    */
+    INLINE const FlatSliceVec<H,W,const T> Col (size_t i) const
+    {
+      return FlatSliceVec<H,W,const T> (&(*this)(0,i));
     }
 
     auto AsVector() 

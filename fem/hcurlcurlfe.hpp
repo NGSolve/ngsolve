@@ -16,9 +16,14 @@ namespace ngfem
     // return 0.5 * ( Cof(A+B) - Cof(A-B) );
 
     Mat<3,3,T> prod;
+    /*
     prod.Col(0) = Cross(Vec<3,T>(A.Col(1)), Vec<3,T>(B.Col(2))) - Cross(Vec<3,T>(A.Col(2)), Vec<3,T>(B.Col(1)));
     prod.Col(1) = Cross(Vec<3,T>(A.Col(2)), Vec<3,T>(B.Col(0))) - Cross(Vec<3,T>(A.Col(0)), Vec<3,T>(B.Col(2)));
     prod.Col(2) = Cross(Vec<3,T>(A.Col(0)), Vec<3,T>(B.Col(1))) - Cross(Vec<3,T>(A.Col(1)), Vec<3,T>(B.Col(0)));
+    */
+    prod.Col(0) = Cross(A.Col(1), B.Col(2)) - Cross(A.Col(2), B.Col(1));
+    prod.Col(1) = Cross(A.Col(2), B.Col(0)) - Cross(A.Col(0), B.Col(2));
+    prod.Col(2) = Cross(A.Col(0), B.Col(1)) - Cross(A.Col(1), B.Col(0));
     return prod;
   }
   
@@ -27,7 +32,8 @@ namespace ngfem
   {
     Mat<3,3,T> result;
     for (int j = 0; j < 3; j++)
-      result.Col(j) = Cross(v, Vec<3,T>(A.Col(j)));
+      // result.Col(j) = Cross(v, Vec<3,T>(A.Col(j)));
+      result.Col(j) = Cross(v, A.Col(j));
     return result;
   }
 
@@ -36,7 +42,8 @@ namespace ngfem
   {
     Mat<3,3,T> result;
     for (int j = 0; j < 3; j++)
-      result.Row(j) = Cross(Vec<3,T>(A.Row(j)),v);
+      // result.Row(j) = Cross(Vec<3,T>(A.Row(j)),v);
+      result.Row(j) = Cross(A.Row(j), v);
     return result;
   }
   
@@ -133,6 +140,9 @@ namespace ngfem
   //     return T(0.0);
   // }
 
+
+  
+  /*
   template <typename T>
   Mat<1,1,T> DyadProd(Vec<1,T> a, Vec<1,T> b)
   {
@@ -165,6 +175,27 @@ namespace ngfem
   Mat<1,1,T> SymDyadProd(Vec<1,T> a, Vec<1,T> b)
   {
     return Matrix<T>( {{a(0)*b(0)}} );
+  }
+  */
+
+  template <int H, int W, typename T>
+  Mat<H,W,T> DyadProd(Vec<H,T> a, Vec<W,T> b)
+  {
+    Mat<H,W,T> m;
+    for (int i = 0; i < H; i++)
+      for (int j = 0; j < W; j++)
+        m(i,j) = a(i)*b(j);
+    return m;
+  }
+  
+  template <int S, typename T>
+  Mat<S,S,T> SymDyadProd(Vec<S,T> a, Vec<S,T> b)
+  {
+    Mat<S,S,T> m;
+    for (int i = 0; i < S; i++)
+      for (int j = 0; j < S; j++)
+        m(i,j) = a(i)*b(j)+a(j)*b(i);
+    return m;
   }
 
 
