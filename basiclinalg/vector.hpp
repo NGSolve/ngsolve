@@ -1014,18 +1014,19 @@ namespace ngbla
 
 
   
-  template <typename T> struct ConstVecSize { static constexpr int SIZE = -1; }; 
-  template <int S, typename T> struct ConstVecSize<Vec<S,T>> { static constexpr int SIZE = S; };
-  template <int S, typename T> struct ConstVecSize<FlatVec<S,T>> { static constexpr int SIZE = S; };
-  template <int S, int D, typename T> struct ConstVecSize<FlatSliceVec<S,D,T>> { static constexpr int SIZE = S; };
+  template <typename T> struct ConstVecSize { static constexpr int VSIZE = -1; }; 
+  template <int S, typename T> struct ConstVecSize<Vec<S,T>> { static constexpr int VSIZE = S; };
+  template <int S, typename T> struct ConstVecSize<FlatVec<S,T>> { static constexpr int VSIZE = S; };
+  template <int S, int D, typename T> struct ConstVecSize<FlatSliceVec<S,D,T>> { static constexpr int VSIZE = S; };
   template <typename T>
-  constexpr auto ConstVectorSize() { return ConstVecSize<T>::SIZE; }
+  constexpr auto ConstVectorSize() { return ConstVecSize<T>::VSIZE; }
       
-  /// cross product
+  /// cross product of 3-vectors
   template <typename TA, typename TB,
-            // std::enable_if_t<ConstVecSize<TA>::SIZE == 3, bool> = true,
-            std::enable_if_t<ConstVectorSize<TA>() == 3, bool> = true,
-            std::enable_if_t<ConstVectorSize<TB>() == 3, bool> = true>
+            // std::enable_if_t<ConstVectorSize<TA>() == 3, bool> = true,
+            // std::enable_if_t<ConstVectorSize<TB>() == 3, bool> = true>
+            std::enable_if_t<ConstVecSize<TA>::VSIZE == 3, bool> = true,
+            std::enable_if_t<ConstVecSize<TB>::VSIZE == 3, bool> = true>
   INLINE auto Cross (const TA & a, const TB & b)
   {
     typedef decltype (a(0)*b(0)) T;
