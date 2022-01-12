@@ -16,10 +16,13 @@ namespace ngla
 {
   
   template <typename SCAL>
-  void Arnoldi<SCAL>::Calc (int numval, Array<Complex> & lam, int numev, 
+  void Arnoldi<SCAL>::Calc (int inumval, Array<Complex> & lam, int inumev, 
                             Array<shared_ptr<BaseVector>> & hevecs, 
                             shared_ptr<BaseMatrix> pre) const
-  { 
+  {
+    size_t numval = inumval;
+    size_t numev = inumev;
+    
     static Timer t("arnoldi");    
     static Timer t2("arnoldi - orthogonalize");    
     static Timer t3("arnoldi - compute large vectors");
@@ -31,8 +34,8 @@ namespace ngla
     auto hva = a->CreateColVector();
     auto hvm = a->CreateColVector();
    
-    int n = hv.template FV<SCAL>().Size();    
-    int m = min2 (numval, n);
+    size_t n = hv.template FV<SCAL>().Size();
+    size_t m = min2 (numval, n);
 
 
     Matrix<SCAL> matH(m);
@@ -119,8 +122,8 @@ namespace ngla
       
     t2.Stop();
     t2.AddFlops (double(n)*m*m);
-    cout << "n = " << n << ", m = " << m << " n*m*m = " << n*m*m << endl;
-    cout << IM(1) << "\ri = " << m << "/" << m << endl;	    
+    cout << IM(3) << "n = " << n << ", m = " << m << " n*m*m = " << n*m*m << endl;
+    cout << IM(3) << "\ri = " << m << "/" << m << endl;
 
 	    
     Vector<Complex> lami(m);
