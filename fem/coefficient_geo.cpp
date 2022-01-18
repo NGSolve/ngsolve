@@ -226,6 +226,10 @@ namespace ngfem
     }
     
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+
+      if (consistent)
+        throw Exception("consistent tangent does not support Compile(True) yet");
+        
         string miptype;
         if(code.is_simd)
           miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
