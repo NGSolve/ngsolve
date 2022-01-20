@@ -6886,11 +6886,15 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
             compile_func();
         else
         {
-          try {
-            std::thread( compile_func ).detach();
-          } catch (const std::exception &e) {
-              cerr << IM(3) << "Compilation of CoefficientFunction failed: " << e.what() << endl;
-          }
+          std::thread(
+            [=](){
+              try {compile_func();}
+              catch (const std::exception &e) {
+                cout << "error: compilation to cpp failed" << endl;
+                cerr << IM(3) << "Compilation of CoefficientFunction failed: " << e.what() << endl;
+              }
+            }
+          ).detach();
         }
     }
 
