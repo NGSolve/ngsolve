@@ -2443,7 +2443,10 @@ space : ngsolve.FESpace
                      py::arg("printelmat") = "bool = False\n"
                      "  Write element matrices to testout file",
                      py::arg("symmetric") = "bool = False\n"
-                     "  If set true, only half the matrix is stored",
+                     "  BilinearForm is symmetric.\n"
+                     "  does not imply symmetric_storage, as used to be earlier\n",
+                     py::arg("symmetric_storage") = "bool = False\n"
+                     "  Store only lower triangular part of sparse matrix.",
                      py::arg("nonassemble") = "bool = False\n"
                      "  BilinearForm will not allocate memory for assembling.\n"
                      "  optimization feature for (nonlinear) problems where the\n"
@@ -2454,7 +2457,7 @@ space : ngsolve.FESpace
                      "  of the matrix on the finest grid. This is needed to use the multigrid\n"
                      "  preconditioner with a changing bilinearform.",
 		     py::arg("nonsym_storage") = "bool = False\n"
-		     "  The full matrix is stored, even if the symmetric flag is set.",
+		     "  (deprecated) The full matrix is stored, even if the symmetric flag is set.",
                      py::arg("diagonal") = "bool = False\n"
                      "  Stores only the diagonal of the matrix.",
                      py::arg("geom_free") = "bool = False\n"
