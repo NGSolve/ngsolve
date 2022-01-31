@@ -552,6 +552,17 @@ kwargs : kwargs
                       fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
                     fes->Update();
                     fes->FinalizeUpdate();
+
+                    if (flags.GetDefineFlag("autoupdate"))
+                      {
+                        auto fesptr = fes.get();
+                        spaces[0]->GetMeshAccess()->updateSignal.Connect(fesptr, [fesptr]()
+                                                         {
+                                                           fesptr->Update();
+                                                           fesptr->FinalizeUpdate();
+                                                         });
+                      }
+                    
                     return fes;
                     //                              py::cast(*instance).attr("flags") = bpflags;
                   }),
@@ -567,6 +578,15 @@ kwargs : kwargs
                     auto fes = CreateFESpace (type, ma, flags);
                     fes->Update();
                     fes->FinalizeUpdate();
+                    if (flags.GetDefineFlag("autoupdate"))
+                      {
+                        auto fesptr = fes.get();
+                        ma->updateSignal.Connect(fesptr, [fesptr]()
+                                                         {
+                                                           fesptr->Update();
+                                                           fesptr->FinalizeUpdate();
+                                                         });
+                      }
                     return fes;
                   }),
                   py::arg("type"), py::arg("mesh"),
