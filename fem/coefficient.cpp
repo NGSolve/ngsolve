@@ -4918,23 +4918,23 @@ public:
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
-    c1->NonZeroPattern (ud, values);
+    c1->NonZeroPattern (ud, input[0]);
     switch (num.Size())
       {
       case 1:
         for (int i = 0; i < num[0]; i++)
-          values(i) = values(first+i*dist[0]);
+          values(i) = input[0](first+i*dist[0]);
         break;
       case 2:
         for (int i = 0, ii = 0; i < num[0]; i++)
           for (int j = 0; j < num[1]; j++, ii++)
-            values(ii) = values(first+i*dist[0]+j*dist[1]);
+            values(ii) = input[0](first+i*dist[0]+j*dist[1]);
         break;
       case 3:
         for (int i = 0, ii = 0; i < num[0]; i++)
           for (int j = 0; j < num[1]; j++)
             for (int k = 0; k < num[2]; k++, ii++)
-            values(ii) = values(first+i*dist[0]+j*dist[1]+k*dist[2]);
+            values(ii) = input[0](first+i*dist[0]+j*dist[1]+k*dist[2]);
         break;
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
