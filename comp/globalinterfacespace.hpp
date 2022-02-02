@@ -66,7 +66,7 @@ namespace ngcomp
   shared_ptr<GlobalInterfaceSpace> CreateGlobalInterfaceSpace
     (shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> mapping,
      optional<Region> definedon, bool periodic, bool periodicu,
-     bool periodicv, int order);
+     bool periodicv, int order, bool complex);
 } // namespace ngcomp
 
 #endif // NGSOLVE_GLOBALINTERFACESPACE_HPP
