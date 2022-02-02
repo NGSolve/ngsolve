@@ -1775,17 +1775,18 @@ active_dofs : BitArray or None
                       shared_ptr<CoefficientFunction> mapping,
                       optional<Region> definedon,
                       bool periodic, bool periodicu, bool periodicv,
-                      int order)
+                      int order, bool complex)
      {
        auto fes = CreateGlobalInterfaceSpace(ma, mapping, definedon,
                                              periodic, periodicu,
-                                             periodicv, order);
+                                             periodicv, order,
+                                             complex);
        fes->Update();
        fes->FinalizeUpdate();
        return fes;
      }), "mesh"_a, "mapping"_a, "definedon"_a = nullopt,
           "periodic"_a = false, "periodicu"_a = false,
-          "periodicv"_a = false, "order"_a = 3)
+          "periodicv"_a = false, "order"_a = 3, "complex"_a = false)
      ;
 
 
