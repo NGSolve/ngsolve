@@ -39,7 +39,8 @@ CMake options for building Netgen/NGSolve
    |                             |        |                   |                                                     |
    |                             |        |                   |   sudo apt-add-repository universe                  |
    |                             |        |                   |   sudo apt-get update                               |
-   |                             |        |                   |   sudo apt-get install liboce-ocaf-dev              |
+   |                             |        |                   |   sudo apt-get install libocct-data-exchange-dev    |
+   |                             |        |                   |                        libocct-draw-dev occt-misc   |
    +                             +        +-------------------+-----------------------------------------------------+
    |                             |        | Windows           | A precompiled version is downloaded and used.       |
    +-----------------------------+--------+-------------------+-----------------------------------------------------+

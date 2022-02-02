@@ -1947,17 +1947,19 @@ namespace ngcomp
               return *fequ;
               }
             
+            case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; break;
+            
           default:
             stringstream str;
             str << "FESpace " << GetClassName()
                 << ", undefined surface eltype " << ma->GetElType(ei)
                 << ", order = " << order << endl;
-            throw Exception (str.str());
+                throw Exception (str.str());
           }
       }
       switch(ma->GetElType(ei))
         {
-        case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
+        case ET_POINT: return *new (alloc) DummyFE<ET_POINT>; break;
         case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>; break;
         case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>; break;
         case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>; break;

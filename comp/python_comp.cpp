@@ -552,6 +552,17 @@ kwargs : kwargs
                       fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
                     fes->Update();
                     fes->FinalizeUpdate();
+
+                    if (flags.GetDefineFlag("autoupdate"))
+                      {
+                        auto fesptr = fes.get();
+                        spaces[0]->GetMeshAccess()->updateSignal.Connect(fesptr, [fesptr]()
+                                                         {
+                                                           fesptr->Update();
+                                                           fesptr->FinalizeUpdate();
+                                                         });
+                      }
+                    
                     return fes;
                     //                              py::cast(*instance).attr("flags") = bpflags;
                   }),
@@ -567,6 +578,15 @@ kwargs : kwargs
                     auto fes = CreateFESpace (type, ma, flags);
                     fes->Update();
                     fes->FinalizeUpdate();
+                    if (flags.GetDefineFlag("autoupdate"))
+                      {
+                        auto fesptr = fes.get();
+                        ma->updateSignal.Connect(fesptr, [fesptr]()
+                                                         {
+                                                           fesptr->Update();
+                                                           fesptr->FinalizeUpdate();
+                                                         });
+                      }
                     return fes;
                   }),
                   py::arg("type"), py::arg("mesh"),
@@ -1755,17 +1775,18 @@ active_dofs : BitArray or None
                       shared_ptr<CoefficientFunction> mapping,
                       optional<Region> definedon,
                       bool periodic, bool periodicu, bool periodicv,
-                      int order)
+                      int order, bool complex)
      {
        auto fes = CreateGlobalInterfaceSpace(ma, mapping, definedon,
                                              periodic, periodicu,
-                                             periodicv, order);
+                                             periodicv, order,
+                                             complex);
        fes->Update();
        fes->FinalizeUpdate();
        return fes;
      }), "mesh"_a, "mapping"_a, "definedon"_a = nullopt,
           "periodic"_a = false, "periodicu"_a = false,
-          "periodicv"_a = false, "order"_a = 3)
+          "periodicv"_a = false, "order"_a = 3, "complex"_a = false)
      ;
 
 
