@@ -4596,6 +4596,10 @@ public:
     BASE::DoArchive(ar);
     ar.Shallow(c1) & dim1 & comp;
   }
+
+  virtual string GetDescription () const override
+  { return "ComponentCoefficientFunction " + ToString(comp); }
+
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -4778,7 +4782,7 @@ public:
           }
       }
 
-    if(num.Size()==2)
+    else if(num.Size()==2)
       {
         for (int i = 0; i < num[0]; i++)
           for (int j = 0; j < num[1]; j++)
@@ -4789,6 +4793,8 @@ public:
                 code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
               }
       }
+    else
+      throw Exception("SubTensorCF codegeneration for dim >= 3 not supported");
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
