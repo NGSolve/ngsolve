@@ -89,7 +89,7 @@ namespace ngfem
         auto tip2 = GetTIP<DIM>(hir[i+1]);
         TIP<DIM,MultiSIMD<2,double>> tip(tip1,tip2);
         
-        double * pcoefs = &coefs(0);
+        double * pcoefs = coefs.Data();
         size_t dist = coefs.Dist();
         T_CalcShape (tip, 
                      SBLambda ( [&](size_t j, MultiSIMD<2,double> shape)
