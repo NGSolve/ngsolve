@@ -87,15 +87,6 @@ namespace ngcomp
 lot of new non-zero entries in the matrix!\n" << endl;
     // else *testout << "\n (" << order << ") flag dgjumps is not used!" << endl;
 
-    if (autoupdate)
-      {
-        ma->updateSignal.Connect(this, [this]()
-          {
-            this->Update();
-            this->FinalizeUpdate();
-          });
-      }
-
     if(flags.NumListFlagDefined("directsolverdomains"))
       {
 	directsolverclustered.SetSize(ama->GetNDomains());

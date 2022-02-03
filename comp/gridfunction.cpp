@@ -86,8 +86,6 @@ namespace ngcomp
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
     autoupdate = flags.GetDefineFlag ("autoupdate");
-    if (autoupdate)
-      fes->updateSignal.Connect(this, [this]() { this->Update(); });
 
     auto comp_space = dynamic_pointer_cast<CompoundFESpace>(fespace);
     if(comp_space)
