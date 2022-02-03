@@ -172,6 +172,9 @@ namespace ngfem
       for (int d : dims) dimension *= d;
     }
 
+    // creates a wrapper with new shape
+    shared_ptr<CoefficientFunction> Reshape (FlatArray<int> adims) const;
+    
     int SpaceDim () const { return spacedim; } 
     void SetSpaceDim (int adim);
     
@@ -1788,6 +1791,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   inline shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1)
   { return (-1) * c1; }
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> CreateWrapperCF (shared_ptr<CoefficientFunction> cf);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> ConjCF (shared_ptr<CoefficientFunction> c1);
