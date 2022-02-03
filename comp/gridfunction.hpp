@@ -115,6 +115,8 @@ namespace ngcomp
     shared_ptr<FESpace> fespace;
     /// should we do a prolongation from one multigrid-level to the next ?
     bool nested;
+    /// should the GF be updated automatically on an update of the underliying space?
+    bool autoupdate;
     /// should we visualize the gridfunction ?
     bool visual;
     /// how many functions
@@ -139,6 +141,8 @@ namespace ngcomp
     virtual ~GridFunction ();
     ///
     virtual void Update ();
+    ///
+    bool DoesAutoUpdate () const { return autoupdate; }
     ///
     virtual void DoArchive (Archive & archive) override;
     ///  
