@@ -35,41 +35,51 @@ netgen_name = netgen.config.NETGEN_PYTHON_PACKAGE_NAME
 name = netgen_name.replace("netgen-mesher", "ngsolve") # keep -avx2 suffix
 
 netgen_version = netgen.config.NETGEN_VERSION_PYTHON
-netgen_dir = os.path.abspath(os.path.join(netgen.__file__, '../'*(len(py_install_dir.split('/'))+2)))
+root_dir = os.path.abspath(os.path.join(netgen.__file__, '../'*(len(py_install_dir.split('/'))+2)))
+
+if netgen.config.NG_INSTALL_DIR_CMAKE.startswith('netgen'):
+    netgen_dir = os.path.abspath(os.path.join(os.path.dirname(netgen.__file__), 'cmake'))
+else:
+    netgen_dir = root_dir
 
 install_requires = [
         f'{netgen_name} == {netgen_version}',
     ]
 
+use_umfpack = 'ON' if 'darwin' in sys.platform else 'OFF'
+
 _cmake_args = [
-    f'-DNETGEN_DIR={netgen_dir}',    
+    f'-DNETGEN_DIR={netgen_dir}',
     '-DUSE_SUPERBUILD:BOOL=ON',
     '-DCMAKE_BUILD_TYPE=Release',
     '-DBUILD_FOR_CONDA=ON',
-    '-DUSE_UMFPACK=OFF',
+    '-DBUILD_STUB_FILES=OFF',
+    f'-DUSE_UMFPACK={use_umfpack}',
     f'-DNGSOLVE_VERSION_PYTHON={version}',
 ]
 
 if 'NETGEN_CCACHE' in os.environ:
   _cmake_args += ['-DUSE_CCACHE=ON']
 
+packages=['netgen', 'ngsolve']
 
 if 'darwin' in sys.platform:
     pass
 elif 'linux' in sys.platform:
     _cmake_args += [
         '-DUSE_MKL:BOOL=ON',
-        f'-DMKL_ROOT:PATH={netgen_dir}',
-        f'-DMKL_LIBRARY:PATH={netgen_dir}/lib/libmkl_rt.so.1',
-        f'-DMKL_INCLUDE_DIR:PATH={netgen_dir}/include',
+        f'-DMKL_ROOT:PATH={root_dir}',
+        f'-DMKL_LIBRARY:PATH={root_dir}/lib/libmkl_rt.so.1',
+        f'-DMKL_INCLUDE_DIR:PATH={root_dir}/include',
     ]
     install_requires.append('mkl == 2021.*')
+    packages = []
 elif 'win' in sys.platform:
     _cmake_args += [
         '-DUSE_MKL:BOOL=ON',
-        f'-DMKL_ROOT:PATH={netgen_dir}',
-        f'-DMKL_LIBRARY:PATH={netgen_dir}/Library/lib/mkl_rt.lib',
-        f'-DMKL_INCLUDE_DIR:PATH={netgen_dir}/Library/include',
+        f'-DMKL_ROOT:PATH={root_dir}',
+        f'-DMKL_LIBRARY:PATH={root_dir}/Library/lib/mkl_rt.lib',
+        f'-DMKL_INCLUDE_DIR:PATH={root_dir}/Library/include',
         f'-DNGSOLVE_INSTALL_DIR_TCL:PATH=Scripts',
     ]
     install_requires.append('mkl == 2021.*')
@@ -83,11 +93,11 @@ setup(
     description="NGSolve",
     author='The NGSolve team',
     license="LGPL2.1",
-    packages=['ngsolve'],
-    package_dir={'ngsolve': 'python'},
+    packages=packages,
+    # package_dir={'ngsolve': 'python'},
     install_requires=install_requires,
     tests_require=['pytest','scipy','numpy'],
-    include_package_data=True,
+    # include_package_data=True,
     cmake_process_manifest_hook=install_filter,
     cmake_args=_cmake_args,
     setup_requires=setup_requires

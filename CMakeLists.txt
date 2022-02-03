@@ -132,7 +132,9 @@ endif (ADDITIONAL_PATHS)
 #######################################################################
 # use rpath
 set(CMAKE_MACOSX_RPATH TRUE)
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+if(NOT BUILD_FOR_CONDA)
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
 set(CMAKE_INSTALL_RPATH "${NETGEN_RPATH_TOKEN};${NETGEN_RPATH_TOKEN}/${NETGEN_RPATH}")
 
 #######################################################################

@@ -37,4 +37,4 @@ do
 done
 
 $PYDIR/pip install -U twine
-$PYDIR/twine upload --repository testpypi wheelhouse/*manylinux*.whl
+$PYDIR/twine upload wheelhouse/*manylinux*.whl
