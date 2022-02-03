@@ -104,7 +104,8 @@ namespace ngfem
     int newdim = 1;
     for (int d : adims) newdim *= d;
     if (newdim != this->dimension)
-      throw Exception("Reshape dim does not fit current dimension");
+      throw Exception("Reshape dim "+ToString(newdim)+
+                      " does not fit current dimension "+ToString(this->dimension));
     
     auto wrapper = CreateWrapperCF(const_cast<CoefficientFunction*>(this)->shared_from_this());
     wrapper->SetDimensions(adims);
@@ -123,8 +124,20 @@ namespace ngfem
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
     else
       {
-        if (this->Dimension() != 1)
-          throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
+        if (this->Dimensions().Size() != 0)
+          {
+            // throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
+            Array<shared_ptr<CoefficientFunction>> comps(this->Dimension());
+            for (int i = 0; i < comps.Size(); i++)
+              comps[i] = MakeComponentCoefficientFunction
+                (const_cast<CoefficientFunction*>(this)->shared_from_this(), i)->Diff(var);
+            auto dvec = MakeVectorialCoefficientFunction (move(comps));
+            Array<int> dims;
+            dims += this->Dimensions();
+            dims += var->Dimensions();
+            dvec->SetDimensions(dims);
+            return dvec;
+          }
         int dim = var->Dimension();
         Array<shared_ptr<CoefficientFunction>> ddi(dim), ei(dim);
         auto zero = ZeroCF(Array<int>());//make_shared<ConstantCoefficientFunction>(0);
@@ -1901,11 +1914,21 @@ public:
   }
 
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
-                                          shared_ptr<CoefficientFunction> dir) const override
+                                        shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
     return InnerProduct(c1->Diff(var,dir),c2) + InnerProduct(c1,c2->Diff(var,dir));
-    // return c1->Diff(var,dir)*c2 + c1 * c2->Diff(var,dir);
+  }
+  
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var) const override
+  {
+    // if (this == var) return dir;
+    // return InnerProduct(c1->Diff(var),c2) + InnerProduct(c1,c2->Diff(var,dir));
+    auto vc1 = c1->Reshape( Array<int> ( { c1->Dimension() }));
+    auto vc2 = c2->Reshape( Array<int> ( { c2->Dimension() }));
+    auto dvc1 = vc1->Diff (var);
+    auto dvc2 = vc2->Diff (var);
+    return TransposeCF(dvc1)*vc2 + TransposeCF(dvc2)*vc1;
   }
   
 
