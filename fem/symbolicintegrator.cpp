@@ -1237,6 +1237,7 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
 
     dcf_dtest.SetSize(test_proxies.Size());
+    /*
       // comment in for experimental new Apply
     for (int i = 0; i < test_proxies.Size(); i++)
       {
@@ -1250,6 +1251,7 @@ namespace ngfem
             cout << "dcf_dtest has thrown exception " << e.What() << endl;
           }
       }
+    */
   }
 
 
