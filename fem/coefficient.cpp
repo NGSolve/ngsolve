@@ -2043,11 +2043,27 @@ public:
   {
     // if (this == var) return dir;
     // return InnerProduct(c1->Diff(var),c2) + InnerProduct(c1,c2->Diff(var,dir));
+    shared_ptr<CoefficientFunction> dv1v2, dv2v1;
+
     auto vc1 = c1->Reshape( Array<int> ( { c1->Dimension() }));
     auto vc2 = c2->Reshape( Array<int> ( { c2->Dimension() }));
-    auto dvc1 = vc1->Diff (var);
-    auto dvc2 = vc2->Diff (var);
-    return TransposeCF(dvc1)*vc2 + TransposeCF(dvc2)*vc1;
+       
+    if (c1.get() == var)
+      dv1v2 = c2;
+    else
+      {
+        auto dvc1 = vc1->Diff (var);
+        dv1v2 = TransposeCF(dvc1)*vc2;
+      }
+
+    if (c2.get() == var)
+      dv2v1 = c1;
+    else
+      {
+        auto dvc2 = vc2->Diff (var);
+        dv2v1 = TransposeCF(dvc2)*vc1;
+      }
+    return dv1v2 + dv2v1;
   }
   
 
