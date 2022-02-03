@@ -157,6 +157,11 @@ namespace ngfem
     else
       return ZeroCF(Dimensions());
   }
+
+  bool CoefficientFunction :: IsZeroCF() const
+  {
+    return this->GetDescription() == "ZeroCF";
+  }
   
   
   void CoefficientFunction :: TraverseTree (const function<void(CoefficientFunction&)> & func)
@@ -1113,6 +1118,7 @@ public:
     return "ZeroCF";
   }
 
+  virtual bool IsZeroCF() const { return true; }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {

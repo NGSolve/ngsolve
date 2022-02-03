@@ -1237,21 +1237,19 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
 
     dcf_dtest.SetSize(test_proxies.Size());
-    /*
       // comment in for experimental new Apply
     for (int i = 0; i < test_proxies.Size(); i++)
       {
         try
           {
             dcf_dtest[i] = cf->Diff(test_proxies[i]);
+            cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
           }
         catch (Exception e)
           {
             cout << "dcf_dtest has thrown exception " << e.What() << endl;
           }
       }
-    */
-    
   }
 
 
