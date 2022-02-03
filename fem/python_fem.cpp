@@ -1195,6 +1195,9 @@ cf : ngsolve.CoefficientFunction
           {
             if (dir)
               return coef->Diff(var.get(), dir);
+            else
+              return coef->Diff(var.get());
+            /*
             if (var->Dimension() == 1)
               return coef->Diff(var.get(), make_shared<ConstantCoefficientFunction>(1));
             else
@@ -1217,6 +1220,7 @@ cf : ngsolve.CoefficientFunction
                 dvec->SetDimensions(var->Dimensions());
                 return dvec;
               }
+            */
           },
           "Compute directional derivative with respect to variable",
           py::arg("variable"), py::arg("direction")=nullptr)

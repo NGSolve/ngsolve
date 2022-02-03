@@ -105,6 +105,33 @@ namespace ngfem
     throw Exception(string("Diff not implemented for CF ")+typeid(*this).name());
   }
 
+  shared_ptr<CoefficientFunction> CoefficientFunction :: Diff (const CoefficientFunction * var) const
+  {
+    if (var->Dimension() == 1)
+      return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
+    else
+      {
+        if (this->Dimension() != 1)
+          throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
+        int dim = var->Dimension();
+        Array<shared_ptr<CoefficientFunction>> ddi(dim), ei(dim);
+        auto zero = ZeroCF(Array<int>());//make_shared<ConstantCoefficientFunction>(0);
+        auto one =  make_shared<ConstantCoefficientFunction>(1);
+        for (int i = 0; i < dim; i++)
+          {
+            ei = zero;
+            ei[i] = one;
+            auto vec = MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>>(ei));
+            vec->SetDimensions(var->Dimensions());
+            ddi[i] = this->Diff(var, vec);
+          }
+        auto dvec = MakeVectorialCoefficientFunction (move(ddi));
+        dvec->SetDimensions(var->Dimensions());
+        return dvec;
+      }
+  }
+
+  
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   Operator (const string & name) const
   {
@@ -6604,6 +6631,10 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     lib_function_complex compiled_function_complex = nullptr;
     lib_function_simd_complex compiled_function_simd_complex = nullptr;
 
+    bool _real_compile = false;
+    int _maxderiv = 2;
+    bool _wait = false;
+    
   public:
     CompiledCoefficientFunction() = default;
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
@@ -6735,13 +6766,17 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
       auto diff_cf = cf->Diff(var, dir);
-      return Compile (diff_cf, false, 0, 0);
+      // return Compile (diff_cf, false, 0, 0);
+      return Compile (diff_cf, _real_compile, _maxderiv, _wait);
     }
 
     
-    
     void RealCompile(int maxderiv, bool wait)
     {
+      _real_compile = true;
+      _maxderiv = maxderiv;
+      _wait = wait;
+      
         std::vector<string> link_flags;
         if(cf->IsComplex())
             maxderiv = 0;

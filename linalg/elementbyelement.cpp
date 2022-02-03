@@ -894,7 +894,7 @@ namespace ngla
   
   void ConstantElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer t("ConstantEBE mult");
+    static Timer t("ConstantEBE mult add");
     static Timer tcol("ConstantEBE mult coloring");
     static Timer tpmult("ConstantEBE mult parallel mult");
 
@@ -933,7 +933,7 @@ namespace ngla
                      hx.Row(i) = fx(row_dnums[col[bi+i]]);
                    
                    {
-                     RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                     // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
                      hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
                    }
                    
@@ -969,9 +969,9 @@ namespace ngla
                  for (size_t i = 0; i < num; i++)
                    hx.Row(i) = fx(row_dnums[bi+i]);
                  {
-                   NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
-                   RegionTimer reg(tpmult);
-                   RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                   // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                   // RegionTimer reg(tpmult);
+                   // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
                    hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
                  }
                  for (size_t i = 0; i < num; i++)
@@ -983,7 +983,7 @@ namespace ngla
   
   void ConstantElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer t("ConstantEBE mult trans");
+    static Timer t("ConstantEBE mult trans add");
     static Timer tcol("ConstantEBE mult trans coloring");
     static Timer tpmult("ConstantEBE mult trans mult");    
 
@@ -1011,9 +1011,9 @@ namespace ngla
                      hx.Row(i) = fx(col_dnums[col[bi+i]]);
                    
                    {
-                     NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
-                     RegionTimer reg(tpmult);
-                     RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                     // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                     // RegionTimer reg(tpmult);
+                     // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
                      hy.Rows(0, num) = hx.Rows(0, num) * matrix;
                    }
                    
@@ -1041,9 +1041,9 @@ namespace ngla
                    hx.Row(i) = fx(col_dnums[bi+i]);
                  
                  {
-                   NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
-                   RegionTimer reg(tpmult);
-                   RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                   // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                   // RegionTimer reg(tpmult);
+                   // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
                    
                    hy.Rows(0, num) = hx.Rows(0, num) * matrix;
                  }

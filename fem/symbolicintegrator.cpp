@@ -1235,6 +1235,23 @@ namespace ngfem
     for (auto proxy : test_proxies)
       test_difforder = min2(test_difforder, proxy->Evaluator()->DiffOrder());
     if (trial_proxies.Size() == 0) trial_difforder = 0;
+
+    dcf_dtest.SetSize(test_proxies.Size());
+    /*
+      // comment in for experimental new Apply
+    for (int i = 0; i < test_proxies.Size(); i++)
+      {
+        try
+          {
+            dcf_dtest[i] = cf->Diff(test_proxies[i]);
+          }
+        catch (Exception e)
+          {
+            cout << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+      }
+    */
+    
   }
 
 
@@ -2744,8 +2761,12 @@ namespace ngfem
     if (simd_evaluate)
       try
         {
-          // static Timer tall("SymbolicBFI::Apply - all", 4); RegionTimer rall(tall);
-
+          static Timer tall("SymbolicBFI::Apply - all SIMD");
+          static Timer tpre("SymbolicBFI::Apply - precomput SIMD");
+          static Timer teval("SymbolicBFI::Apply - evaluate SIMD");
+          static Timer taddBt("SymbolicBFI::Apply - addBt SIMD");          
+          RegionTimer rall(tall);
+ 
           bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
           const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
           const FiniteElement & fel_trial = is_mixed ? mixedfe->FETrial() : fel;
@@ -2760,6 +2781,8 @@ namespace ngfem
           const_cast<ElementTransformation&>(trafo).userdata = &ud;
           ud.fel = &fel;
 
+          {
+          RegionTimer rpre(tpre);          
           PrecomputeCacheCF(cache_cfs, simd_mir, lh);
 
           for (ProxyFunction * proxy : trial_proxies)
@@ -2769,27 +2792,39 @@ namespace ngfem
           
           for (ProxyFunction * proxy : trial_proxies)
             proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); 
+          }
           
           ely = 0;
-          for (auto proxy : test_proxies)
+          // for (auto proxy : test_proxies)
+          for (auto i : Range(test_proxies))
             {
+              auto proxy = test_proxies[i];
+              
               HeapReset hr(lh);
 
               FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir.Size(), lh);
-              for (int k = 0; k < proxy->Dimension(); k++)
-                {
-                  ud.testfunction = proxy;
-                  ud.test_comp = k;
-                  cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));
-                }
+              {
+              RegionTimer reval(teval);
 
+              if (dcf_dtest[i])
+                dcf_dtest[i]->Evaluate (simd_mir, simd_proxyvalues);
+              else
+                for (int k = 0; k < proxy->Dimension(); k++)
+                  {
+                    ud.testfunction = proxy;
+                    ud.test_comp = k;
+                    cf -> Evaluate (simd_mir, simd_proxyvalues.Rows(k,k+1));
+                  }
+              }
+              
               for (size_t i = 0; i < simd_proxyvalues.Height(); i++)
                 {
                   auto row = simd_proxyvalues.Row(i);
                   for (size_t j = 0; j < row.Size(); j++)
                     row(j) *= simd_mir[j].GetWeight(); //  * simd_ir[j].Weight();
                 }
-              
+
+              RegionTimer rBt(taddBt);          
               proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); 
             }
           return;

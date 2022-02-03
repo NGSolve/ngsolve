@@ -675,6 +675,7 @@ public:
     bool is_symmetric;
     bool has_interpolate; // is there an interpolate in the expression tree ? 
     shared_ptr<BilinearFormIntegrator> linearization;
+    Array<shared_ptr<CoefficientFunction>> dcf_dtest;  // derivatives by test-functions
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                                    VorB aelement_boundary);
