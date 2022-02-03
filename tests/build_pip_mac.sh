@@ -11,9 +11,9 @@ $PYDIR/python3 --version
 $PYDIR/python3 -m venv ../venv_ngs
 
 source ../venv_ngs/bin/activate
-pip install numpy twine scikit-build wheel
+$PYDIR/pip3 install numpy twine scikit-build wheel
 
 export CMAKE_OSX_ARCHITECTURES='arm64;x86_64'
-pip install -i https://test.pypi.org/simple/ netgen-mesher==$NETGEN_VERSION
-python setup.py bdist_wheel --plat-name macosx-10.14-universal2 -j10
-python -m twine upload --repository testpypi dist/*.whl
+$PYDIR/pip3 install -i https://test.pypi.org/simple/ netgen-mesher==$NETGEN_VERSION
+$PYDIR/python3 setup.py bdist_wheel --plat-name macosx-10.15-universal2 -j10
+$PYDIR/python3 -m twine upload dist/*.whl

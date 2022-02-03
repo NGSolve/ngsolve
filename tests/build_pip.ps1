@@ -24,4 +24,4 @@ python --version
 pip3 install scikit-build wheel numpy twine mkl-devel==2021.* mkl==2021.*
 pip3 install -i https://test.pypi.org/simple/ netgen-mesher==$netgen_version
 python setup.py bdist_wheel -G"Visual Studio 16 2019"
-python -m twine upload --repository testpypi dist\*.whl
+python -m twine upload dist\*.whl
