@@ -7015,6 +7015,14 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       return Compile (diff_cf, _real_compile, _maxderiv, _wait);
     }
 
+    virtual shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var) const override
+    {
+      auto diff_cf = cf->Diff(var);
+      // return Compile (diff_cf, false, 0, 0);
+      return Compile (diff_cf, _real_compile, _maxderiv, _wait);
+    }
+
     
     void RealCompile(int maxderiv, bool wait)
     {
