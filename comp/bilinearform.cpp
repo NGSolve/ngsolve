@@ -4408,7 +4408,7 @@ namespace ngcomp
                                 string("Apply Matrix - cd3") };
 
     // static Timer timer_loop ("Apply Matrix - all loop elmat");
-    // static Timer timer_applyelmat ("Apply Matrix - elmat");    
+    static Timer timer_applyelmat ("Apply Matrix - elmat");    
 
     static Timer timerDG ("Apply Matrix - DG");
     using TTimer = Timer<TNoTracing, TNoTiming>;
@@ -4466,7 +4466,7 @@ namespace ngcomp
                        auto & mapped_trafo = trafo.AddDeformation(bfi->GetDeformation().get(), lh);
 
                        {
-                         // RegionTimer reg (timer_applyelmat);
+                         RegionTimer reg (timer_applyelmat);
                          bfi->ApplyElementMatrix (fel, mapped_trafo, elvecx, elvecy, 0, lh);
                        }
                        

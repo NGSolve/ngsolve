@@ -234,6 +234,9 @@ namespace ngfem
 
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
+    virtual shared_ptr<CoefficientFunction>
+      Diff (const CoefficientFunction * var) const;
+
 
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
     virtual shared_ptr<CoefficientFunction> Operator (shared_ptr<class DifferentialOperator> diffop) const;
