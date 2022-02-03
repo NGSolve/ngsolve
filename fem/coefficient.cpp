@@ -1478,6 +1478,11 @@ public:
     return scal * c1->Diff(var, dir);
   }
   
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var) const override
+  {
+    // if (this == var) return dir;
+    return scal * c1->Diff(var);
+  }
 };
 
 
