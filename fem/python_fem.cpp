@@ -177,32 +177,6 @@ cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
 
 
 
-struct GenericIdentity {
-  template <typename T> T operator() (T x) const { return x; }
-  static string Name() { return  " "; }
-  void DoArchive(Archive& ar) {}
-};
-template <>
-shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericIdentity>::Diff(const CoefficientFunction * var,
-                                      shared_ptr<CoefficientFunction> dir) const
-{
-  if (var == this) return dir;
-  auto hcf = c1->Diff(var, dir);
-  if (! (this->Dimensions() == hcf->Dimensions()) )
-    { // reshaping requires wrapper, e.g. for code generation
-      hcf = UnaryOpCF (hcf, GenericIdentity{}, " ");
-      hcf->SetDimensions(Dimensions());
-    }
-  return hcf;
-}
-
-template <>
-shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
-{
-  return c1->Operator(name);
-}
 
 
 struct GenericSin {
@@ -683,7 +657,7 @@ direction : int
   ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
   ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
   // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
-  ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
+  // ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians", "y", "x");
   ExportStdMathFunction2<GenericPow>(m, "pow", "Power function");
@@ -768,11 +742,12 @@ val : can be one of the following:
           
           py::extract<shared_ptr<CF>> ecf(val);
           if (ecf.check())
-            coef = UnaryOpCF (ecf(), GenericIdentity{}, " ");
+            // coef = UnaryOpCF (ecf(), GenericIdentity{}, " ");
+            coef = CreateWrapperCF(ecf()); // to have a different object from input
           else
             coef = MakeCoefficient(val);
-          if(dims.has_value())
-            {
+          if(dims.has_value())  
+            { // can now reshape without additional wrapper
               auto cdims = makeCArray<int> (*dims);
               int dimension = 1;
               for (int d : cdims) dimension *= d;
@@ -855,7 +830,8 @@ val : can be one of the following:
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
                   [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
-    
+    .def("Reshape", [] (shared_ptr<CF> self, py::tuple tup) { return self->Reshape(makeCArray<int>(tup)); } ,
+         "reshape CF:  (dim) for vector, (h,w) for matrix")
     .def_property_readonly("is_complex",
                            [] (CF &  self) { return self.IsComplex(); },
                            "is CoefficientFunction complex-valued ?")

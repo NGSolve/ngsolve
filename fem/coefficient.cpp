@@ -99,6 +99,18 @@ namespace ngfem
     return typeid(*this).name();
   }    
 
+  shared_ptr<CoefficientFunction> CoefficientFunction :: Reshape (FlatArray<int> adims) const
+  {
+    int newdim = 1;
+    for (int d : adims) newdim *= d;
+    if (newdim != this->dimension)
+      throw Exception("Reshape dim does not fit current dimension");
+    
+    auto wrapper = CreateWrapperCF(const_cast<CoefficientFunction*>(this)->shared_from_this());
+    wrapper->SetDimensions(adims);
+    return wrapper;
+  }
+  
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
   {
@@ -1118,7 +1130,7 @@ public:
     return "ZeroCF";
   }
 
-  virtual bool IsZeroCF() const { return true; }
+  virtual bool IsZeroCF() const override { return true; }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
@@ -4403,6 +4415,40 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       return c1;
     return UnaryOpCF(c1, GenericConj(), GenericConj::Name());
   }
+
+
+struct GenericIdentity {
+  template <typename T> T operator() (T x) const { return x; }
+  static string Name() { return  " "; }
+  void DoArchive(Archive& ar) {}
+};
+template <>
+shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericIdentity>::Diff(const CoefficientFunction * var,
+                                      shared_ptr<CoefficientFunction> dir) const
+{
+  if (var == this) return dir;
+  auto hcf = c1->Diff(var, dir);
+  if (! (this->Dimensions() == hcf->Dimensions()) )
+    { // reshaping requires wrapper, e.g. for code generation
+      hcf = UnaryOpCF (hcf, GenericIdentity{}, " ");
+      hcf->SetDimensions(Dimensions());
+    }
+  return hcf;
+}
+
+template <>
+shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
+{
+  return c1->Operator(name);
+}
+
+  shared_ptr<CoefficientFunction> CreateWrapperCF (shared_ptr<CoefficientFunction> cf)
+  {
+    return UnaryOpCF (cf, GenericIdentity{}, " ");
+  }
+
 
   shared_ptr<CoefficientFunction> InnerProduct (shared_ptr<CoefficientFunction> c1,
                                                 shared_ptr<CoefficientFunction> c2)
