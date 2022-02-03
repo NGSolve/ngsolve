@@ -37,8 +37,6 @@ namespace ngcomp
 }
 
 
-
-
 class PyNumProc : public NumProc
 {
 public:
@@ -564,6 +562,7 @@ kwargs : kwargs
                     fes->FinalizeUpdate();
                     if (!spaces[0]->DoesAutoUpdate())
                         fes->SetDoSubspaceUpdate(true);
+                    connect_auto_update(fes.get());
                     return shared_ptr<FESpace>{fes};
                     //                              py::cast(*instance).attr("flags") = bpflags;
                   }),
@@ -579,6 +578,7 @@ kwargs : kwargs
                     auto fes = CreateFESpace (type, ma, flags);
                     fes->Update();
                     fes->FinalizeUpdate();
+                    connect_auto_update(fes.get());
                     return fes;
                   }),
                   py::arg("type"), py::arg("mesh"),
@@ -962,7 +962,7 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 
     .def_property_readonly("couplingtype", [] (shared_ptr<FESpace> self)
                            { return FlatArray<COUPLING_TYPE>(self->CouplingTypes()); })
-    .def_property_readonly("autoupdate", [] (shared_ptr<FESpace> self) {self->DoesAutoUpdate();})
+    .def_property_readonly("autoupdate", [] (shared_ptr<FESpace> self) {return self->DoesAutoUpdate();})
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
             auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
@@ -1117,7 +1117,7 @@ rho : ngsolve.fem.CoefficientFunction
         flags.SetFlag ("dgjumps", space1->UsesDGCoupling() || space2->UsesDGCoupling());
 
         if (space1->DoesAutoUpdate() != space2->DoesAutoUpdate())
-            throw Exception("Both spaces need same autoupdate setting.");
+          throw Exception("Both spaces need same autoupdate setting.");
         flags.SetFlag ("autoupdate", space1->DoesAutoUpdate());
 
         if(space1->LowOrderFESpacePtr() && space2->LowOrderFESpacePtr())
@@ -1137,7 +1137,8 @@ rho : ngsolve.fem.CoefficientFunction
         productspace->Update();
         productspace->FinalizeUpdate();
         if (!space1->DoesAutoUpdate())
-            productspace->SetDoSubspaceUpdate(true);
+          productspace->SetDoSubspaceUpdate(true);
+        connect_auto_update(productspace.get());
         return productspace;
       })
 
@@ -1153,7 +1154,8 @@ rho : ngsolve.fem.CoefficientFunction
         productspace->Update();
         productspace->FinalizeUpdate();
         if (!space->DoesAutoUpdate())
-            productspace->SetDoSubspaceUpdate(true);
+          productspace->SetDoSubspaceUpdate(true);
+        connect_auto_update(productspace.get());
         return productspace;
       })
 
@@ -1212,6 +1214,7 @@ rho : ngsolve.fem.CoefficientFunction
           fes->FinalizeUpdate();
           if (!autoupdate)
             fes->SetDoSubspaceUpdate(true);
+          connect_auto_update(fes.get());
           return fes;
         }))
     .def(py::pickle([] (py::object pyfes)
@@ -1311,7 +1314,8 @@ component : int
           vecspace->Update();
           vecspace->FinalizeUpdate();
           if (!space->DoesAutoUpdate())
-              vecspace->SetDoSubspaceUpdate(true);
+            vecspace->SetDoSubspaceUpdate(true);
+          connect_auto_update(vecspace.get());
           return vecspace;
         }),py::arg("space"), py::arg("dim")=nullopt)
     .def(py::pickle([] (py::object pyfes)
@@ -1347,7 +1351,8 @@ component : int
           matspace->Update();
           matspace->FinalizeUpdate();
           if (!space->DoesAutoUpdate())
-              matspace->SetDoSubspaceUpdate(true);
+            matspace->SetDoSubspaceUpdate(true);
+          connect_auto_update(matspace.get());
           return matspace;
         }),py::arg("space"), py::arg("dim")=nullopt, py::arg("symmetric")=false, py::arg("deviatoric")=false)
     ;
@@ -1500,6 +1505,8 @@ used_idnrs : list of int = None
                       perfes = make_shared<PeriodicFESpace>(fes,flags,a_used_idnrs);
                     perfes->Update();
                     perfes->FinalizeUpdate();
+                    // MR: is autoupdate contained in flags?
+                    connect_auto_update(perfes.get());
                     return perfes;
                   }), py::arg("fespace"), py::arg("phase")=nullopt,
                   py::arg("use_idnrs")=py::list())
@@ -1578,10 +1585,13 @@ BND : boolean or None
   disc_class
     .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
                   {
-                    auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);          
+                    auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);
+                    // MR: Is this logic correct or should it be required that fes does autoupdate?
+                    flags.SetFlag("autoupdate", flags.GetDefineFlagX("autoupdate").IsTrue() || fes->DoesAutoUpdate());
                     auto dcfes = make_shared<DiscontinuousFESpace>(fes, flags);
                     dcfes->Update();
                     dcfes->FinalizeUpdate();
+                    connect_auto_update(dcfes.get());
                     return dcfes;
                   }), py::arg("fespace"))
     /*
@@ -1640,9 +1650,12 @@ fespace : ngsolve.comp.FESpace
     .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);          
+                    // MR: Is this logic correct or should it be required that fes does autoupdate?
+                    flags.SetFlag("autoupdate", flags.GetDefineFlagX("autoupdate").IsTrue() || fes->DoesAutoUpdate());
                     auto hiddenfes = make_shared<HiddenFESpace>(fes, flags);
                     hiddenfes->Update();
                     hiddenfes->FinalizeUpdate();
+                    connect_auto_update(hiddenfes.get());
                     return hiddenfes;
                   }), py::arg("fespace"))
     ;
@@ -1656,9 +1669,12 @@ fespace : ngsolve.comp.FESpace
     .def(py::init([] (shared_ptr<FESpace> & fes)
                   {
                     Flags flags = fes->GetFlags();
+                    // MR: Is this logic correct or should it be required that fes does autoupdate?
+                    flags.SetFlag("autoupdate", flags.GetDefineFlagX("autoupdate").IsTrue() || fes->DoesAutoUpdate());
                     auto refes = make_shared<ReorderedFESpace>(fes, flags);
                     refes->Update();
                     refes->FinalizeUpdate();
+                    connect_auto_update(refes.get());
                     return refes;
                   }), py::arg("fespace"))
     /*
@@ -1732,6 +1748,8 @@ active_dofs : BitArray or None
                       dynamic_pointer_cast<CompressedFESpace>(ret)->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
                     ret->Update();
                     ret->FinalizeUpdate();
+                    // MR: Does ret "inherit" the autoupdate from "fes"
+                    connect_auto_update(ret.get());
                     return ret;                    
                   }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
     .def("SetActiveDofs", [](CompressedFESpace & self, shared_ptr<BitArray> active_dofs)
@@ -1865,6 +1883,7 @@ active_dofs : BitArray or None
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
+      connect_auto_update(gf.get());
       return gf;
     }), py::arg("space"), py::arg("name")="gfu",
          "creates a gridfunction in finite element space")
@@ -1941,6 +1960,7 @@ active_dofs : BitArray or None
                            "the finite element space")
     .def("Update", [](GF& self) { self.Update(); },
          "update vector size to finite element space dimension after mesh refinement")
+    .def_property_readonly("autoupdate", [] (shared_ptr<GridFunction> self) {return self->DoesAutoUpdate();})
     
     .def("Save", [](GF& self, string filename, bool parallel)
          {
