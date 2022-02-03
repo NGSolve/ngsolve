@@ -1625,6 +1625,10 @@ public:
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
 
+  virtual shared_ptr<CoefficientFunction>
+  Diff (const CoefficientFunction * var) const override
+  { return BASE::Diff(var); }
+
   /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,
@@ -1812,6 +1816,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> UnitCF (int dim, int coord);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
