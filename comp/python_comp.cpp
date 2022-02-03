@@ -537,6 +537,15 @@ kwargs : kwargs
                     flags.SetFlag("dgjumps", dgjumps);
                     if (spaces.Size() == 0)
                       throw Exception("Compound space must have at least one space");
+
+                    bool autoupdate = spaces[0]->DoesAutoUpdate();
+                    for (auto space : spaces)
+                      {
+                        if (space->DoesAutoUpdate() != autoupdate)
+                          throw Exception("All spaces must have the same autoupdate setting.");
+                      }
+                    flags.SetFlag("autoupdate", autoupdate || flags.GetDefineFlagX("autoupdate").IsTrue());
+
                     int dim = spaces[0]->GetDimension();
                     for (auto space : spaces)
                       if (space->GetDimension() != dim)
@@ -548,22 +557,14 @@ kwargs : kwargs
                         throw Exception("Compound space of spaces with complex and real spaces is not allowed");
                     if (is_complex)
                       flags.SetFlag ("complex");
-                    shared_ptr<FESpace>
-                      fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+                    shared_ptr<CompoundFESpace>
+                            fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
+                    fes->SetDoSubspaceUpdate(false);
                     fes->Update();
                     fes->FinalizeUpdate();
-
-                    if (flags.GetDefineFlag("autoupdate"))
-                      {
-                        auto fesptr = fes.get();
-                        spaces[0]->GetMeshAccess()->updateSignal.Connect(fesptr, [fesptr]()
-                                                         {
-                                                           fesptr->Update();
-                                                           fesptr->FinalizeUpdate();
-                                                         });
-                      }
-                    
-                    return fes;
+                    if (!spaces[0]->DoesAutoUpdate())
+                        fes->SetDoSubspaceUpdate(true);
+                    return shared_ptr<FESpace>{fes};
                     //                              py::cast(*instance).attr("flags") = bpflags;
                   }),
                   py::arg("spaces"),
@@ -578,15 +579,6 @@ kwargs : kwargs
                     auto fes = CreateFESpace (type, ma, flags);
                     fes->Update();
                     fes->FinalizeUpdate();
-                    if (flags.GetDefineFlag("autoupdate"))
-                      {
-                        auto fesptr = fes.get();
-                        ma->updateSignal.Connect(fesptr, [fesptr]()
-                                                         {
-                                                           fesptr->Update();
-                                                           fesptr->FinalizeUpdate();
-                                                         });
-                      }
                     return fes;
                   }),
                   py::arg("type"), py::arg("mesh"),
@@ -970,7 +962,7 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
 
     .def_property_readonly("couplingtype", [] (shared_ptr<FESpace> self)
                            { return FlatArray<COUPLING_TYPE>(self->CouplingTypes()); })
-    
+    .def_property_readonly("autoupdate", [] (shared_ptr<FESpace> self) {self->DoesAutoUpdate();})
     .def ("GetFE", [](shared_ptr<FESpace> self, ElementId ei) -> py::object
           {
             auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
@@ -1123,6 +1115,11 @@ rho : ngsolve.fem.CoefficientFunction
         if (is_complex) flags.SetFlag("complex");
         flags.SetFlag ("dim", dim);
         flags.SetFlag ("dgjumps", space1->UsesDGCoupling() || space2->UsesDGCoupling());
+
+        if (space1->DoesAutoUpdate() != space2->DoesAutoUpdate())
+            throw Exception("Both spaces need same autoupdate setting.");
+        flags.SetFlag ("autoupdate", space1->DoesAutoUpdate());
+
         if(space1->LowOrderFESpacePtr() && space2->LowOrderFESpacePtr())
           flags.SetFlag("low_order_space");
         auto productspace = make_shared<CompoundFESpace> (space1->GetMeshAccess(), flags);
@@ -1139,7 +1136,8 @@ rho : ngsolve.fem.CoefficientFunction
         productspace->SetDoSubspaceUpdate(false);
         productspace->Update();
         productspace->FinalizeUpdate();
-        productspace->SetDoSubspaceUpdate(true);
+        if (!space1->DoesAutoUpdate())
+            productspace->SetDoSubspaceUpdate(true);
         return productspace;
       })
 
@@ -1149,11 +1147,13 @@ rho : ngsolve.fem.CoefficientFunction
         Flags flags;
         if (is_complex) flags.SetFlag("complex");
         flags.SetFlag ("dim", dim);
+        flags.SetFlag ("autoupdate", space->DoesAutoUpdate());
         auto productspace = make_shared<CompoundFESpaceAllSame> (space, p, flags);
         productspace->SetDoSubspaceUpdate(false);
         productspace->Update();
         productspace->FinalizeUpdate();
-        productspace->SetDoSubspaceUpdate(true);
+        if (!space->DoesAutoUpdate())
+            productspace->SetDoSubspaceUpdate(true);
         return productspace;
       })
 
@@ -1201,11 +1201,17 @@ rho : ngsolve.fem.CoefficientFunction
           if (is_complex)
             flags.SetFlag ("complex");
 
+          bool autoupdate = spaces[0]->DoesAutoUpdate();
+          for (auto space : spaces)
+            if (space->DoesAutoUpdate() != autoupdate)
+                throw Exception("All spaces must have the same autoupdate setting.");
+
           auto fes = make_shared<CompoundFESpace> (spaces[0]->GetMeshAccess(), spaces, flags);
           fes->SetDoSubspaceUpdate(false);
           fes->Update();
           fes->FinalizeUpdate();
-          fes->SetDoSubspaceUpdate(true);
+          if (!autoupdate)
+            fes->SetDoSubspaceUpdate(true);
           return fes;
         }))
     .def(py::pickle([] (py::object pyfes)
@@ -1298,10 +1304,14 @@ component : int
     (m,"VectorValued")
     .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim) {
           Flags flags;
+          flags.SetFlag("autoupdate", space->DoesAutoUpdate());
           int sdim = optdim.value_or (space->GetSpatialDimension());
           auto vecspace = make_shared<CompoundFESpaceAllSame> (space, sdim, flags);
+          vecspace->SetDoSubspaceUpdate(false);
           vecspace->Update();
           vecspace->FinalizeUpdate();
+          if (!space->DoesAutoUpdate())
+              vecspace->SetDoSubspaceUpdate(true);
           return vecspace;
         }),py::arg("space"), py::arg("dim")=nullopt)
     .def(py::pickle([] (py::object pyfes)
@@ -1330,10 +1340,14 @@ component : int
           Flags flags;
           if (symmetric) flags.SetFlag("symmetric");
           if (deviatoric) flags.SetFlag("deviatoric");
+          flags.SetFlag("autoupdate", space->DoesAutoUpdate());
           int sdim = optdim.value_or (space->GetSpatialDimension());
           auto matspace = make_shared<MatrixFESpace> (space, sdim, flags);
+          matspace->SetDoSubspaceUpdate(false);
           matspace->Update();
           matspace->FinalizeUpdate();
+          if (!space->DoesAutoUpdate())
+              matspace->SetDoSubspaceUpdate(true);
           return matspace;
         }),py::arg("space"), py::arg("dim")=nullopt, py::arg("symmetric")=false, py::arg("deviatoric")=false)
     ;
@@ -1844,20 +1858,15 @@ active_dofs : BitArray or None
   auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr());
   gf_class
-    .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name, bool autoupdate,
+    .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name,
                                  py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, gf_class);
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
-      if(autoupdate)
-        {
-          auto gfptr = gf.get();
-          fes->updateSignal.Connect(gfptr, [gfptr]() { gfptr->Update(); });
-        }
       return gf;
-    }), py::arg("space"), py::arg("name")="gfu", py::arg("autoupdate")=false,
+    }), py::arg("space"), py::arg("name")="gfu",
          "creates a gridfunction in finite element space")
     .def_static("__flags_doc__", [] ()
                 {
@@ -1866,8 +1875,10 @@ active_dofs : BitArray or None
                      py::arg("multidim") = "\n"
                      " Multidimensional GridFunction",
                      py::arg("nested") = "bool = False\n"
-		     " Generates prolongation matrices for each mesh level and prolongates\n"
-		     " the solution onto the finer grid after a refinement."
+		             " Generates prolongation matrices for each mesh level and prolongates\n"
+		             " the solution onto the finer grid after a refinement.",
+                     py::arg("autoupdate") = "\n"
+                     " Automatically update on FE space update"
                      );
                 })
     .def(py::pickle([] (const GridFunction& gf)
