@@ -189,7 +189,11 @@ cl_UnaryOpCF<GenericIdentity>::Diff(const CoefficientFunction * var,
 {
   if (var == this) return dir;
   auto hcf = c1->Diff(var, dir);
-  hcf->SetDimensions(Dimensions());
+  if (! (this->Dimensions() == hcf->Dimensions()) )
+    { // reshaping requires wrapper, e.g. for code generation
+      hcf = UnaryOpCF (hcf, GenericIdentity{}, " ");
+      hcf->SetDimensions(Dimensions());
+    }
   return hcf;
 }
 

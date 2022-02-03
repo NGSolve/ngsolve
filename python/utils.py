@@ -142,8 +142,8 @@ def PySkew(m):
     return 0.5*(m-m.trans)
 
 def OuterProduct(a, b):
-    return CoefficientFunction( (a,), dims=(a.dim,1)) * CoefficientFunction( (b,), dims=(b.dim,1)).trans
-    # return CoefficientFunction(a, dims=(a.dim,1)) * CoefficientFunction(b, dims=(1, b.dim))
+    # return CoefficientFunction( (a,), dims=(a.dim,1)) * CoefficientFunction( (b,), dims=(b.dim,1)).trans
+    return CoefficientFunction(a, dims=(a.dim,1)) * CoefficientFunction(b, dims=(1, b.dim))
 
 def TimeFunction(func, name=None):
     name = name or func.__qualname__

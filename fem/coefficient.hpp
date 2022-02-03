@@ -199,6 +199,7 @@ namespace ngfem
     }
 
     bool ElementwiseConstant () const { return elementwise_constant; }
+    virtual bool IsZeroCF() const;
     // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
 
     /*
