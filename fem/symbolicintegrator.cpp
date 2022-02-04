@@ -1237,21 +1237,20 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
 
     dcf_dtest.SetSize(test_proxies.Size());
-    /*
-      // comment in for experimental new Apply
+
+    // comment in for experimental new Apply
     for (int i = 0; i < test_proxies.Size(); i++)
       {
         try
           {
             dcf_dtest[i] = cf->Diff(test_proxies[i]);
-            cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
           }
         catch (Exception e)
           {
-            cout << "dcf_dtest has thrown exception " << e.What() << endl;
+            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
           }
       }
-    */
   }
 
 
@@ -2950,8 +2949,10 @@ namespace ngfem
                 proxy->Evaluator()->Apply(fel_trial, mir, elx, ud.GetAMemory(proxy)); 
           
               // NgProfiler::StopThreadTimer(teval, tid);
-              for (auto proxy : test_proxies)
+              // for (auto proxy : test_proxies)
+              for (auto i : Range(test_proxies))
                 {
+                  auto proxy = test_proxies[i];
                   HeapReset hr(lh);
                   // NgProfiler::StartThreadTimer(td, tid);
                   FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);
@@ -3471,6 +3472,22 @@ namespace ngfem
 
     cache_cfs = FindCacheCF(*cf);
 
+    // comment in for experimental new Apply
+    dcf_dtest.SetSize(test_proxies.Size());
+    for (int i = 0; i < test_proxies.Size(); i++)
+      {
+        try
+          {
+            dcf_dtest[i] = cf->Diff(test_proxies[i]);
+            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+          }
+        catch (Exception e)
+          {
+            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+      }
+
+    
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(6) << "num trial_proxies " << trial_proxies.Size() << endl;
     cout << IM(6) << "cumulated test_proxy dims  " << test_cum << endl;
@@ -3922,18 +3939,23 @@ namespace ngfem
             // tapply.Stop();
 
             // RegionTracer rtapplyt(TaskManager::GetThreadId(), tapplyt);            
-            for (auto proxy : test_proxies)
+            // for (auto proxy : test_proxies)
+            for (auto i : Range(test_proxies))
               {
+                auto proxy = test_proxies[i];
                 HeapReset hr(lh);
                 // tcoef.Start();
                 FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.Size(), lh);        
-                
-                for (int k = 0; k < proxy->Dimension(); k++)
-                  {
-                    ud.testfunction = proxy;
-                    ud.test_comp = k;
-                    cf -> Evaluate (simd_mir1, simd_proxyvalues.Rows(k,k+1));
-                  }
+
+                if (dcf_dtest[i])
+                  dcf_dtest[i]->Evaluate (simd_mir1, simd_proxyvalues);
+                else
+                  for (int k = 0; k < proxy->Dimension(); k++)
+                    {
+                      ud.testfunction = proxy;
+                      ud.test_comp = k;
+                      cf -> Evaluate (simd_mir1, simd_proxyvalues.Rows(k,k+1));
+                    }
                 
                 for (int i = 0; i < simd_proxyvalues.Height(); i++)
                   {
