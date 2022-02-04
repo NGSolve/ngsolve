@@ -170,6 +170,8 @@ void ExportSparseMatrix(py::module m)
 
     .def("__matmul__", [] (const SparseMatrix<double> & a, const SparseMatrix<double> & b)
          { return MatMult(a,b); }, py::arg("mat"))
+    .def("__matmul__", [] (const SparseMatrix<std::complex<double>> & a, const SparseMatrix<std::complex<double>> & b)
+         ->shared_ptr<BaseMatrix> { return MatMult(a,b); }, py::arg("mat"))
     .def("__matmul__", [](shared_ptr<SparseMatrix<T>> a, shared_ptr<BaseMatrix> mb)
          ->shared_ptr<BaseMatrix> { return make_shared<ProductMatrix> (a, mb); }, py::arg("mat"))
     ;
