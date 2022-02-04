@@ -1818,7 +1818,7 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims);
 
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> UnitCF (int dim, int coord);
+  shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
