@@ -146,7 +146,7 @@ namespace ngfem
           {
             ei = zero;
             ei[i] = one;
-            auto vec = UnitCF(dim,i);//MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>>(ei));
+            auto vec = UnitVectorCF(dim,i);//MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>>(ei));
             vec->SetDimensions(var->Dimensions());
             ddi[i] = this->Diff(var, vec);
           }
@@ -1141,7 +1141,7 @@ public:
 
   virtual string GetDescription() const override
   {
-    return "UnitCF";
+    return "UnitVectorCF " + ToString(coord);
   }
 
 
@@ -1165,7 +1165,7 @@ public:
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     if (Dimension() > 1)
-      throw Exception ("UnitCF:: scalar evaluate for non scalar called");
+      throw Exception ("UnitVectorCF:: scalar evaluate for non scalar called");
     return 1.0;
   }
  
@@ -4651,10 +4651,15 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
           c2 = conj;
       }
 
-    if (c1->GetDescription() == "UnitCF")
-      return MakeComponentCoefficientFunction(move(c2),static_cast<UnitVectorCoefficientFunction*>(c1.get())->GetCoordinate());
-    if (c2->GetDescription() == "UnitCF")
-      return MakeComponentCoefficientFunction(move(c1),static_cast<UnitVectorCoefficientFunction*>(c2.get())->GetCoordinate());
+    // if (c1->GetDescription() == "UnitCF")
+    // if (typeid(*c1) == typeid(UnitVectorCoefficientFunctionX))
+    if (auto uv = dynamic_pointer_cast<UnitVectorCoefficientFunction>(c1))
+      return MakeComponentCoefficientFunction(c2, uv->GetCoordinate());
+    
+    // if (c2->GetDescription() == "UnitCF")
+    // return MakeComponentCoefficientFunction(move(c1),static_cast<UnitVectorCoefficientFunction*>(c2.get())->GetCoordinate());
+    if (auto uv = dynamic_pointer_cast<UnitVectorCoefficientFunction>(c2))
+      return MakeComponentCoefficientFunction(c1, uv->GetCoordinate());
 
     if (c1 == c2)
       {
@@ -4721,7 +4726,7 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     return make_shared<IdentityCoefficientFunction> (dim);
   }
 
-  shared_ptr<CoefficientFunction> UnitCF (int dim, int coord)
+  shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord)
   {
     return make_shared<UnitVectorCoefficientFunction> (dim, coord);
   }
