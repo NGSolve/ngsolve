@@ -122,16 +122,80 @@ namespace ngfem
     return "Complex"+ToLiteral(val);
   }
 
+  /*
   inline CodeExpr Var(string name, int i, int j=0, int k=0)
   {
     return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
+  */
+  inline CodeExpr Var(string name, int i)
+  {
+    return CodeExpr(name + '_' + ToLiteral(i));
+  }
+  inline CodeExpr Var(string name, int i, int j)
+  {
+    return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j));
+  }
+  inline CodeExpr Var(string name, int i, int j, int k)
+  {
+    return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
+  }
 
+  // linear index of tensor of dimensions dims
+  inline CodeExpr Var(string name, int i, int index, FlatArray<int> dims)
+  {
+    ArrayMem<int,8> ind(dims.Size());
+    for (int j = dims.Size()-1; j >= 0; j--)
+      {
+        ind[j] = index % dims[j];
+        index /= dims[j];
+      }
+    string str = name + '_' + ToLiteral(i);
+    for (int j = 0; j < ind.Size(); j++)
+      str += '_' + ToLiteral(ind[j]);
+    return CodeExpr(str);
+  }
+
+
+  
+  /*
   inline CodeExpr Var(int i, int j=0, int k=0)
   {
     return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
+  */
+  inline CodeExpr Var(int i)
+  {
+    return CodeExpr("var_" + ToLiteral(i));
+  }
 
+  inline CodeExpr Var(int i, int j)
+  {
+    return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j));
+  }
+
+  inline CodeExpr Var(int i, int j, int k)
+  {
+    return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
+  }
+  
+  // linear index of tensor of dimensions dims
+  inline CodeExpr Var(int i, int index, FlatArray<int> dims)
+  {
+    ArrayMem<int,8> ind(dims.Size());
+    for (int j = dims.Size()-1; j >= 0; j--)
+      {
+        ind[j] = index % dims[j];
+        index /= dims[j];
+      }
+    string str = "var_" + ToLiteral(i);
+    for (int j = 0; j < ind.Size(); j++)
+      str += '_' + ToLiteral(ind[j]);
+    return CodeExpr(str);
+      // return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
+  }
+
+  
   template<typename TFunc>
   void TraverseDimensions( FlatArray<int> dims, const TFunc &func)
 
