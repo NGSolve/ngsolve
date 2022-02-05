@@ -238,8 +238,9 @@ namespace ngfem
 
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
+    // returns Jacobi-matrix (possible as higher order tensor)
     virtual shared_ptr<CoefficientFunction>
-      Diff (const CoefficientFunction * var) const;
+      DiffJacobi (const CoefficientFunction * var) const;
 
 
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
@@ -1626,8 +1627,8 @@ public:
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
 
   virtual shared_ptr<CoefficientFunction>
-  Diff (const CoefficientFunction * var) const override
-  { return BASE::Diff(var); }
+  DiffJacobi (const CoefficientFunction * var) const override
+  { return BASE::DiffJacobi(var); }
 
   /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,

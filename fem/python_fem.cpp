@@ -1176,7 +1176,7 @@ cf : ngsolve.CoefficientFunction
             if (dir)
               return coef->Diff(var.get(), dir);
             else
-              return coef->Diff(var.get());
+              return coef->DiffJacobi(var.get());
             /*
             if (var->Dimension() == 1)
               return coef->Diff(var.get(), make_shared<ConstantCoefficientFunction>(1));

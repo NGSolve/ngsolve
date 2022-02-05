@@ -118,7 +118,7 @@ namespace ngfem
     throw Exception(string("Diff not implemented for CF ")+typeid(*this).name());
   }
 
-  shared_ptr<CoefficientFunction> CoefficientFunction :: Diff (const CoefficientFunction * var) const
+  shared_ptr<CoefficientFunction> CoefficientFunction :: DiffJacobi (const CoefficientFunction * var) const
   {
     if (var->Dimension() == 1)
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
@@ -130,7 +130,7 @@ namespace ngfem
             Array<shared_ptr<CoefficientFunction>> comps(this->Dimension());
             for (int i = 0; i < comps.Size(); i++)
               comps[i] = MakeComponentCoefficientFunction
-                (const_cast<CoefficientFunction*>(this)->shared_from_this(), i)->Diff(var);
+                (const_cast<CoefficientFunction*>(this)->shared_from_this(), i)->DiffJacobi(var);
             auto dvec = MakeVectorialCoefficientFunction (move(comps));
             Array<int> dims;
             dims += this->Dimensions();
@@ -1478,10 +1478,13 @@ public:
     return scal * c1->Diff(var, dir);
   }
   
-  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var) const override
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
-    // if (this == var) return dir;
-    return scal * c1->Diff(var);
+    if (this == var)
+      // return dir;
+      throw Exception ("ScaleCF::DiffJacobi - diff by me not implemented");
+
+    return scal * c1->DiffJacobi(var);
   }
 };
 
@@ -1689,7 +1692,7 @@ public:
   }
 
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
-                                          shared_ptr<CoefficientFunction> dir) const override
+                                        shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
     return c1->Diff(var,dir)*c2 + c1 * c2->Diff(var,dir);
@@ -2044,9 +2047,11 @@ public:
     return InnerProduct(c1->Diff(var,dir),c2) + InnerProduct(c1,c2->Diff(var,dir));
   }
   
-  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var) const override
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
-    // if (this == var) return dir;
+    if (this == var)
+      throw Exception ("T_MultMult::DifJacobi - diff by me not implemented");
+      // return dir;
     // return InnerProduct(c1->Diff(var),c2) + InnerProduct(c1,c2->Diff(var,dir));
     shared_ptr<CoefficientFunction> dv1v2, dv2v1;
     int dimip = c1->Dimension();
@@ -2059,7 +2064,7 @@ public:
       dv1v2 = c2;
     else
       {
-        auto dvc1 = vc1->Diff (var);
+        auto dvc1 = vc1->DiffJacobi (var);
         dv1v2 = TransposeCF(dvc1->Reshape(Array<int> ({dimip, dimvar})))*vc2;
         dv1v2 = dv1v2 -> Reshape (var->Dimensions());
       }
@@ -2068,7 +2073,7 @@ public:
       dv2v1 = c1;
     else
       {
-        auto dvc2 = vc2->Diff (var);
+        auto dvc2 = vc2->DiffJacobi (var);
         dv2v1 = TransposeCF(dvc2->Reshape(Array<int> ({dimip, dimvar})))*vc1;
         dv2v1 = dv2v1 -> Reshape (var->Dimensions());        
       }
@@ -4389,9 +4394,9 @@ cl_BinaryOpCF<GenericPlus>::Diff(const CoefficientFunction * var,
 
 template <> 
 shared_ptr<CoefficientFunction>
-cl_BinaryOpCF<GenericPlus>::Diff(const CoefficientFunction * var) const
+cl_BinaryOpCF<GenericPlus>::DiffJacobi(const CoefficientFunction * var) const
 {
-  return c1->Diff(var) + c2->Diff(var);
+  return c1->DiffJacobi(var) + c2->DiffJacobi(var);
 }
 
 template <> 
@@ -4428,9 +4433,9 @@ cl_BinaryOpCF<GenericMinus>::Diff(const CoefficientFunction * var,
 
 template <> 
 shared_ptr<CoefficientFunction>
-cl_BinaryOpCF<GenericMinus>::Diff(const CoefficientFunction * var) const
+cl_BinaryOpCF<GenericMinus>::DiffJacobi(const CoefficientFunction * var) const
 {
-  return c1->Diff(var) - c2->Diff(var);
+  return c1->DiffJacobi(var) - c2->DiffJacobi(var);
 }
 
 
@@ -7028,9 +7033,9 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     }
 
     virtual shared_ptr<CoefficientFunction>
-    Diff (const CoefficientFunction * var) const override
+    DiffJacobi (const CoefficientFunction * var) const override
     {
-      auto diff_cf = cf->Diff(var);
+      auto diff_cf = cf->DiffJacobi(var);
       // return Compile (diff_cf, false, 0, 0);
       return Compile (diff_cf, _real_compile, _maxderiv, _wait);
     }
