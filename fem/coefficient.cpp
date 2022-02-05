@@ -4919,10 +4919,13 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    /*
     auto dims = c1->Dimensions();
     int i,j;
     GetIndex(dims, comp, i, j);
     code.body += Var(index).Assign( Var(inputs[0], i, j ));
+    */
+    code.body += Var(index).Assign( Var(inputs[0], comp, c1->Dimensions() ));    
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -5086,15 +5089,16 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     auto dims1 = c1->Dimensions();
-
+    
     if(num.Size()==1)
       {
         for (int i = 0; i < num[0]; i++)
          {
-            int i1,k1;
+           // int i1,k1;
             auto comp = first+i*dist[0];
-            GetIndex(dims1, comp, i1, k1);
-            code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
+            // GetIndex(dims1, comp, i1, k1);
+            // code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
+            code.body += Var(index, i).Assign( Var(inputs[0], comp, dims1 ));
           }
       }
 
@@ -5103,11 +5107,12 @@ public:
         for (int i = 0; i < num[0]; i++)
           for (int j = 0; j < num[1]; j++)
              {
-                int i1,j1;
-                auto comp = first+i*dist[0]+j*dist[1];
-                GetIndex(dims1, comp, i1, j1);
-                code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
-              }
+               // int i1,j1;
+               auto comp = first+i*dist[0]+j*dist[1];
+               // GetIndex(dims1, comp, i1, j1);
+               // code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
+               code.body += Var(index, i, j).Assign( Var(inputs[0], comp, dims1));
+             }
       }
     else
       throw Exception("SubTensorCF codegeneration for dim >= 3 not supported");
@@ -5668,24 +5673,36 @@ public:
     code.body += "// DomainWiseCoefficientFunction:\n";
     string type = "decltype(0.0";
     for(int in : inputs)
-        type += "+decltype("+Var(in).S()+")()";
+      type += "+decltype("+Var(in,0,Dimensions()).S()+")()";
     type += ")";
+    /*
     TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Declare(type);
     });
+    */
+    for (int i = 0; i < Dimension(); i++)
+      code.body += Var(index,i,this->Dimensions()).Declare(type);
     code.body += "switch(domain_index) {\n";
     for(int domain : Range(inputs))
     {
         code.body += "case " + ToLiteral(domain) + ": \n";
+        /*
         TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
             code.body += "  "+Var(index, i, j).Assign(Var(inputs[domain], i, j), false);
         });
+        */
+        for (int i = 0; i < Dimension(); i++)
+          code.body += "  "+Var(index, i, Dimensions()).Assign(Var(inputs[domain], i, Dimensions()), false);          
         code.body += "  break;\n";
     }
     code.body += "default: \n";
+    /*
     TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
         code.body += "  "+Var(index, i, j).Assign(string("0.0"), false);
     });
+    */
+    for (int i = 0; i < Dimension(); i++)
+      code.body += "  "+Var(index, i, Dimensions()).Assign(string("0.0"), false);      
     code.body += "  break;\n";
     code.body += "}\n";
   }
