@@ -55,15 +55,23 @@ namespace ngfem
     code.header += Code::Map(mycode, variables);
     if(code.is_simd)
       {
+        /*
         TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
             code.body += Var(index,i,j).Assign(values.S()+"("+ToString(ind)+",i)");
           });
+        */
+        for (int i = 0; i < Dimension(); i++)
+          code.body += Var(index,i,Dimensions()).Assign(values.S()+"("+ToString(i)+",i)");          
       }
     else
       {
+        /*
         TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
             code.body += Var(index,i,j).Assign(values.S()+"(i,"+ToString(ind)+")");
           });
+        */
+        for (int i = 0; i < Dimension(); i++)
+          code.body += Var(index,i,Dimensions()).Assign(values.S()+"(i,"+ToString(i)+")");
       }
   }
 
@@ -124,6 +132,7 @@ namespace ngfem
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
     else
       {
+        cout << "DiffJacobi for CoefficientFunction, type = " << typeid(*this).name() << endl;
         if (this->Dimensions().Size() != 0)
           {
             // throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
@@ -342,6 +351,14 @@ namespace ngfem
     code.body += Var(index).Declare(code.res_type);
     code.body += Var(index).Assign(Var(val), false);
   }
+
+  
+  shared_ptr<CoefficientFunction>
+  ConstantCoefficientFunction :: DiffJacobi (const CoefficientFunction * var) const
+  {
+    return ZeroCF(var->Dimensions());
+  }
+
   
   ///
   ConstantCoefficientFunctionC ::   
@@ -1154,10 +1171,13 @@ public:
   {
     for (int i : Range(Dimension()))
         {
+          /*
           if (i == coord)
-            code.body += Var(index,i).Assign(string("1.0"));
+            code.body += Var(index,i, Dimensions()).Assign(string("1.0"));
           else
-            code.body += Var(index,i).Assign(string("0.0"));
+            code.body += Var(index,i, Dimensions()).Assign(string("0.0"));
+          */
+          code.body += Var(index,i, Dimensions()).Assign(string( (i==coord) ? "1.0" : "0.0"));          
         }
   }
 
@@ -1221,7 +1241,7 @@ public:
   }
   
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
-                                          shared_ptr<CoefficientFunction> dir) const override
+                                        shared_ptr<CoefficientFunction> dir) const override
   {
     return ZeroCF(Dimensions());
   }
@@ -1271,9 +1291,13 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    /*
     TraverseDimensions( Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign(string("0.0"));
     });
+    */
+    for (int i = 0; i < Dimension(); i++)
+      code.body += Var(index,i,this->Dimensions()).Assign(string("0.0"));      
   }
 
   using T_CoefficientFunction<ZeroCoefficientFunction>::Evaluate;
@@ -1376,9 +1400,13 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    /*
     TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
         code.body += Var(index,i,j).Assign(Var(scal) * Var(inputs[0],i,j));
     });
+    */
+    for (int i = 0; i < Dimension(); i++)
+      code.body += Var(index,i,this->Dimensions()).Assign(Var(scal) * Var(inputs[0],i,c1->Dimensions()));      
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1942,11 +1970,15 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     CodeExpr result;
+    /*
     TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
         int i2, j2;
         GetIndex( c2->Dimensions(), ind, i2, j2 );
         result += Var(inputs[0],i,j) * Var(inputs[1],i2,j2);
     });
+    */
+    for (int i = 0; i < c1->Dimension(); i++)
+      result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[1], i, c2->Dimensions());
     code.body += Var(index).Assign(result.S());
   }
 
@@ -4347,7 +4379,7 @@ public:
   }
 
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
-                                          shared_ptr<CoefficientFunction> dir) const override
+                                        shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
     return TraceCF(c1->Diff(var, dir));
@@ -6618,6 +6650,7 @@ public:
     int input = 0;
     int input_index = 0;
     FlatArray<int> dims = Dimensions();
+    /*
     TraverseDimensions( dims, [&](int ind, int i, int j) {
 	auto cfi = ci[input];
         int i1, j1;
@@ -6630,6 +6663,19 @@ public:
             input_index = 0;
         }
     });
+    */
+    for (int i = 0; i < Dimension(); i++)
+      {
+        auto cfi = ci[input];
+        code.body += Var(index, i, this->Dimensions())
+          .Assign(Var(inputs[input], input_index, cfi->Dimensions()));
+        input_index++;
+        if (input_index == cfi->Dimension() )
+          {
+            input++;
+            input_index = 0;
+          }
+      }
 
   }
 
@@ -7087,6 +7133,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
             // set results
             string scal_type = cf->IsComplex() ? "Complex" : "double";
             int ii = 0;
+#ifdef OLD
             TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
                  code.body += Var(steps.Size(),i,j).Declare(res_type);
                  code.body += Var(steps.Size(),i,j).Assign(Var(steps.Size()-1,i,j),false);
@@ -7111,6 +7158,32 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
                  }
                  ii++;
             });
+#endif
+            for (int ind = 0; ind < cf->Dimension(); ind++) {
+              code.body += Var(steps.Size(),ind,cf->Dimensions()).Declare(res_type);
+              code.body += Var(steps.Size(),ind,cf->Dimensions()).Assign(Var(steps.Size()-1,ind, cf->Dimensions()),false);
+              string sget = "(i," + ToLiteral(ii) + ") =";
+              if(simd) sget = "(" + ToLiteral(ii) + ",i) =";
+              
+              // for (auto ideriv : Range(simd ? 1 : deriv+1))
+              for (auto ideriv : Range(1))
+                {
+                  code.body += parameters[ideriv] + sget + Var(steps.Size(),ind,cf->Dimensions()).code;
+                  /*
+                    if(deriv>=1 && !simd)
+                    {
+                    code.body += ".";
+                    if(ideriv==2) code.body += "D";
+                    if(ideriv>=1) code.body += "DValue(0)";
+                    else code.body += "Value()";
+                    }
+                  */
+                  // if(simd) code.body +=".Data()";
+                  code.body += ";\n";
+                }
+              ii++;
+            };
+            
 
             if(code.header.find("gridfunction_local_heap") != std::string::npos)
             {
