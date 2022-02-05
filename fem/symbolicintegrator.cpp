@@ -1243,7 +1243,7 @@ namespace ngfem
       {
         try
           {
-            dcf_dtest[i] = cf->Diff(test_proxies[i]);
+            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
             // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
           }
         catch (Exception e)
@@ -3478,7 +3478,7 @@ namespace ngfem
       {
         try
           {
-            dcf_dtest[i] = cf->Diff(test_proxies[i]);
+            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
             // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
           }
         catch (Exception e)
