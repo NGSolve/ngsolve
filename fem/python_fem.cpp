@@ -16,6 +16,8 @@ using ngfem::ELEMENT_TYPE;
 #include "voxelcoefficientfunction.hpp"
 
 #include "tpintrule.hpp"
+#include "coefficient_stdmath.hpp"
+
 namespace ngfem
 {
   extern SymbolTable<double> * constant_table_for_FEM;
@@ -179,16 +181,6 @@ cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
 
 
 
-struct GenericSin {
-  template <typename T> T operator() (T x) const { return sin(x); }
-  static string Name() { return "sin"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericCos {
-  template <typename T> T operator() (T x) const { return cos(x); }
-  static string Name() { return "cos"; }
-  void DoArchive(Archive& ar) {}
-};
 struct GenericTan {
   template <typename T> T operator() (T x) const { return tan(x); }
   static string Name() { return "tan"; }
@@ -202,16 +194,6 @@ struct GenericSinh {
 struct GenericCosh {
   template <typename T> T operator() (T x) const { return cosh(x); }
   static string Name() { return "cosh"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericExp {
-  template <typename T> T operator() (T x) const { return exp(x); }
-  static string Name() { return "exp"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericLog {
-  template <typename T> T operator() (T x) const { return log(x); }
-  static string Name() { return "log"; }
   void DoArchive(Archive& ar) {}
 };
 struct GenericATan {
@@ -304,23 +286,6 @@ struct GenericPow {
 };
 
 
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericSin>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return UnaryOpCF(c1, GenericCos(), "cos") * c1->Diff(var, dir);
-  return CWMult (UnaryOpCF(c1, GenericCos(), "cos"), c1->Diff(var, dir));
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericCos>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Diff(var, dir);
-  return CWMult (-1 * UnaryOpCF(c1, GenericSin(), "sin"),  c1->Diff(var, dir));
-}
 
 template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericTan>::Diff(const CoefficientFunction * var,
@@ -348,36 +313,6 @@ cl_UnaryOpCF<GenericCosh>::Diff(const CoefficientFunction * var,
   return CWMult (UnaryOpCF(c1, GenericSinh(), "sinh"), c1->Diff(var, dir));
 }
 
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericExp>::Diff(const CoefficientFunction * var,
-                               shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return UnaryOpCF(c1, GenericExp(), "exp") * c1->Diff(var, dir);
-  return CWMult (UnaryOpCF(c1, GenericExp(), "exp"), c1->Diff(var, dir));
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericExp>::DiffJacobi(const CoefficientFunction * var) const
-{
-  if (this == var) return make_shared<ConstantCoefficientFunction> (1);
-  return const_cast<cl_UnaryOpCF<GenericExp>*>(this)->shared_from_this() * c1->DiffJacobi(var);
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericLog>::Diff(const CoefficientFunction * var,
-                               shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return c1->Diff(var, dir) / c1;
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericLog>::DiffJacobi(const CoefficientFunction * var) const
-{
-  if (this == var) return make_shared<ConstantCoefficientFunction>(1);
-  return make_shared<ConstantCoefficientFunction>(1.0)/c1 * c1->DiffJacobi(var);
-}
 
 
 template <> shared_ptr<CoefficientFunction>
@@ -393,15 +328,17 @@ cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
+  // return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
+  return LogCF(c1)*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
 }
 
 template <> shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPow>::DiffJacobi(const CoefficientFunction * var) const
 {
   if (this == var) return make_shared<ConstantCoefficientFunction>(1);
-  auto loga = UnaryOpCF( c1, GenericLog(), "log");
-  auto exp_b_loga = UnaryOpCF(c2*loga, GenericExp(), "exp");
+  /// auto loga = UnaryOpCF( c1, GenericLog(), "log");
+  // auto exp_b_loga = UnaryOpCF(c2*loga, MakeSGenericExp(), "exp");
+  auto exp_b_loga = ExpCF(c2*LogCF(c1));
   return exp_b_loga->DiffJacobi(var);
 }
 
@@ -668,13 +605,13 @@ direction : int
   };
 
   
-  ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
-  ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
+  ExportStdMathFunction<GenericSin>(m, "sin", &SinCF, "Sine of argument in radians");
+  ExportStdMathFunction<GenericCos>(m, "cos", &CosCF, "Cosine of argument in radians");
   ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
   ExportStdMathFunction<GenericSinh>(m, "sinh", "Hyperbolic sine of argument in radians");
   ExportStdMathFunction<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument in radians");
-  ExportStdMathFunction<GenericExp>(m, "exp", "Exponential function");
-  ExportStdMathFunction<GenericLog>(m, "log", "Logarithm function");
+  ExportStdMathFunction<GenericExp>(m, "exp", &ExpCF, "Exponential function");
+  ExportStdMathFunction<GenericLog>(m, "log", &LogCF, "Logarithm function");
   ExportStdMathFunction<GenericATan>(m, "atan", "Inverse tangent in radians");
   ExportStdMathFunction<GenericACos>(m, "acos", "Inverse cosine in radians");
   ExportStdMathFunction<GenericASin>(m, "asin", "Inverse sine in radians");

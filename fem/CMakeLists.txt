@@ -14,7 +14,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         l2hofe_trig.cpp l2hofe_segm.cpp l2hofe_tet.cpp l2hofetp.cpp hcurlhofe.cpp
         hcurlhofe_hex.cpp hcurlhofe_tet.cpp hcurlhofe_prism.cpp hcurlhofe_pyramid.cpp
         hcurlfe.cpp vectorfacetfe.cpp normalfacetfe.cpp hdivhofe.cpp recursive_pol_trig.cpp
-        coefficient.cpp coefficient_geo.cpp integrator.cpp specialelement.cpp elementtopology.cpp
+        coefficient.cpp coefficient_geo.cpp coefficient_stdmath.cpp integrator.cpp specialelement.cpp elementtopology.cpp
         intrule.cpp fastmat.cpp finiteelement.cpp elementtransformation.cpp
         scalarfe.cpp generic_recpol.cpp hdivfe.cpp recursive_pol.cpp
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
@@ -39,7 +39,8 @@ install( TARGETS ngfem ${ngs_install_dir} )
 
 install( FILES
         bdbequations.hpp hcurl_equations.hpp		
-        elasticity_equations.hpp diffop.hpp bdbintegrator.hpp coefficient.hpp
+        elasticity_equations.hpp diffop.hpp bdbintegrator.hpp
+        coefficient.hpp coefficient_stdmath.hpp
         elementtopology.hpp elementtransformation.hpp facetfe.hpp	
         facethofe.hpp fastmat.hpp fem.hpp finiteelement.hpp generic_recpol.hpp	
         h1hofefo.hpp h1hofefo_impl.hpp h1hofe.hpp h1lofe.hpp hcurlfe.hpp

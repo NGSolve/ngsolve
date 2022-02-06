@@ -32,6 +32,27 @@ namespace ngfem
               }, py::arg("x"), description.c_str());
   }
 
+  template <typename FUNC>
+  void ExportStdMathFunction(py::module &m, string name,
+                             shared_ptr<CoefficientFunction> (*cffunc)(shared_ptr<CoefficientFunction>),
+                             string description)
+  {
+    m.def (name.c_str(), [name,cffunc] (py::object x) -> py::object
+              {
+                FUNC func;
+                py::extract<double> ed(x);
+                if (ed.check()) return py::cast(func(ed()));
+                if (py::extract<Complex> (x).check())
+                  return py::cast(func(py::extract<Complex> (x)()));
+                if (py::extract<shared_ptr<CoefficientFunction>>(x).check())
+                  {
+                    auto coef = py::extract<shared_ptr<CoefficientFunction>>(x)();
+                    return py::cast((*cffunc)(coef));
+                  }
+                throw py::type_error (string("can't compute math-function, type = ") + name);
+              }, py::arg("x"), description.c_str());
+  }
+  
 
   template <typename FUNC>
   void ExportStdMathFunction2(py::module &m, string name, string description, string arg0="x", string arg1="y")
