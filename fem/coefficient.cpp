@@ -4816,6 +4816,10 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
       return make_shared<ZeroCoefficientFunction> ();
   }
 
+  shared_ptr<CoefficientFunction> ConstantCF (double val)
+  {
+    return make_shared<ConstantCoefficientFunction>(val);
+  }
 
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef)
   {
@@ -4927,6 +4931,10 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     return BinaryOpCF (c1, c2, gen_div, "/");
   }
 
+  shared_ptr<CoefficientFunction> operator/ (double val, shared_ptr<CoefficientFunction> c2)
+  {
+    return ConstantCF(val) / c2;
+  }
   
 class ComponentCoefficientFunction : public T_CoefficientFunction<ComponentCoefficientFunction>
 {

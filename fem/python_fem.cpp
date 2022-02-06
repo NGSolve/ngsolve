@@ -181,67 +181,6 @@ cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
 
 
 
-struct GenericTan {
-  template <typename T> T operator() (T x) const { return tan(x); }
-  static string Name() { return "tan"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericSinh {
-  template <typename T> T operator() (T x) const { return sinh(x); }
-  static string Name() { return "sinh"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericCosh {
-  template <typename T> T operator() (T x) const { return cosh(x); }
-  static string Name() { return "cosh"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericATan {
-  template <typename T> T operator() (T x) const { return atan(x); }
-  static string Name() { return "atan"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericACos {
-  template <typename T> T operator() (T x) const { return acos(x); }
-  // double operator() (double x) const { return acos(x); }
-  // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
-  SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("acos not available for SIMD<complex>"); }
-  static string Name() { return "acos"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericASin {
-  template <typename T> T operator() (T x) const { return asin(x); }
-  // double operator() (double x) const { return acos(x); }
-  // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
-  SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("asin not available for SIMD<complex>"); }
-  static string Name() { return "asin"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericSqrt {
-  template <typename T> T operator() (T x) const { return sqrt(x); }
-  static string Name() { return "sqrt"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericFloor {
-  template <typename T> T operator() (T x) const { return floor(x); }
-  Complex operator() (Complex x) const { throw Exception("no floor for Complex"); }  
-  // SIMD<double> operator() (SIMD<double> x) const { throw ExceptionNOSIMD("no floor for simd"); }
-  SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no floor for simd"); }  
-  // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no floor for AD"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no floor for ADD"); }
-  static string Name() { return "floor"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericCeil {
-  template <typename T> T operator() (T x) const { return ceil(x); }
-  Complex operator() (Complex x) const { throw Exception("no ceil for Complex"); }  
-  // SIMD<double> operator() (SIMD<double> x) const { throw ExceptionNOSIMD("no ceil for simd"); }
-  SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no ceil for simd"); }  
-  // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no ceil for AD"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no ceil for ADD"); }
-  static string Name() { return "ceil"; }
-  void DoArchive(Archive& ar) {}
-};
 
 /*
 struct GenericConj {
@@ -287,41 +226,6 @@ struct GenericPow {
 
 
 
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericTan>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(1) / (UnaryOpCF(c1, GenericCos(), "cos")*UnaryOpCF(c1, GenericCos(), "cos")) * c1->Diff(var, dir);
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericSinh>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return UnaryOpCF(c1, GenericCosh(), "cosh") * c1->Diff(var, dir);
-  return CWMult (UnaryOpCF(c1, GenericCosh(), "cosh"), c1->Diff(var, dir));
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericCosh>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return UnaryOpCF(c1, GenericSinh(), "sinh") * c1->Diff(var, dir);
-  return CWMult (UnaryOpCF(c1, GenericSinh(), "sinh"), c1->Diff(var, dir));
-}
-
-
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericSqrt>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(0.5)/UnaryOpCF(c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
-}
 
 template <> shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
@@ -342,30 +246,6 @@ cl_BinaryOpCF<GenericPow>::DiffJacobi(const CoefficientFunction * var) const
   return exp_b_loga->DiffJacobi(var);
 }
 
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericASin>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1 * c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(-1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1*c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericATan>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(1) / (c1*c1 + make_shared<ConstantCoefficientFunction>(1)) * c1->Diff(var, dir);
-}
 
 
 
@@ -607,17 +487,17 @@ direction : int
   
   ExportStdMathFunction<GenericSin>(m, "sin", &SinCF, "Sine of argument in radians");
   ExportStdMathFunction<GenericCos>(m, "cos", &CosCF, "Cosine of argument in radians");
-  ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
-  ExportStdMathFunction<GenericSinh>(m, "sinh", "Hyperbolic sine of argument in radians");
-  ExportStdMathFunction<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument in radians");
+  ExportStdMathFunction<GenericTan>(m, "tan", &TanCF, "Tangent of argument in radians");
+  ExportStdMathFunction<GenericSinh>(m, "sinh", &SinhCF, "Hyperbolic sine of argument in radians");
+  ExportStdMathFunction<GenericCosh>(m, "cosh", &CoshCF, "Hyperbolic cosine of argument in radians");
   ExportStdMathFunction<GenericExp>(m, "exp", &ExpCF, "Exponential function");
   ExportStdMathFunction<GenericLog>(m, "log", &LogCF, "Logarithm function");
-  ExportStdMathFunction<GenericATan>(m, "atan", "Inverse tangent in radians");
-  ExportStdMathFunction<GenericACos>(m, "acos", "Inverse cosine in radians");
-  ExportStdMathFunction<GenericASin>(m, "asin", "Inverse sine in radians");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt", "Square root function");
-  ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
-  ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
+  ExportStdMathFunction<GenericATan>(m, "atan", &ATanCF, "Inverse tangent in radians");
+  ExportStdMathFunction<GenericACos>(m, "acos", &ACosCF, "Inverse cosine in radians");
+  ExportStdMathFunction<GenericASin>(m, "asin", &ASinCF, "Inverse sine in radians");
+  ExportStdMathFunction<GenericSqrt>(m, "sqrt", &SqrtCF, "Square root function");
+  ExportStdMathFunction<GenericFloor>(m, "floor", &FloorCF, "Round to next lower integer");
+  ExportStdMathFunction<GenericCeil>(m, "ceil", &CeilCF, "Round to next greater integer");
   // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
   // ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
