@@ -173,6 +173,12 @@ namespace ngcore
   inline SIMD<Complex> atan (SIMD<Complex> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return atan(c); }); }
 
+  inline SIMD<Complex> acos (SIMD<Complex> x)
+  { return SIMDComplexWrapper (x, [](Complex c) { return acos(c); }); }
+
+  inline SIMD<Complex> asin (SIMD<Complex> x)
+  { return SIMDComplexWrapper (x, [](Complex c) { return asin(c); }); }
+
   inline SIMD<Complex> cosh (SIMD<Complex> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return cosh(c); }); }
   

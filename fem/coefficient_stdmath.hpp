@@ -34,19 +34,15 @@ namespace ngfem
     static string Name() { return "atan"; }
     void DoArchive(Archive& ar) {}
   };
+  
   struct GenericACos {
     template <typename T> T operator() (T x) const { return acos(x); }
-    // double operator() (double x) const { return acos(x); }
-    // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
-    SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("acos not available for SIMD<complex>"); }
     static string Name() { return "acos"; }
     void DoArchive(Archive& ar) {}
   };
+  
   struct GenericASin {
     template <typename T> T operator() (T x) const { return asin(x); }
-    // double operator() (double x) const { return acos(x); }
-    // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
-    SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("asin not available for SIMD<complex>"); }
     static string Name() { return "asin"; }
     void DoArchive(Archive& ar) {}
   };
@@ -108,26 +104,25 @@ struct GenericCeil {
 
   
   
-  shared_ptr<CoefficientFunction> SqrtCF(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> sqrt(shared_ptr<CoefficientFunction> x);  
   
-  shared_ptr<CoefficientFunction> SinCF(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> CosCF(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> TanCF(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> sin(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> cos(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> tan(shared_ptr<CoefficientFunction> x);  
 
-  shared_ptr<CoefficientFunction> ASinCF(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> ACosCF(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> ATanCF(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> asin(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> acos(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> atan(shared_ptr<CoefficientFunction> x);  
 
-  shared_ptr<CoefficientFunction> SinhCF(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> CoshCF(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> sinh(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> cosh(shared_ptr<CoefficientFunction> x);  
   
-  shared_ptr<CoefficientFunction> ExpCF(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> LogCF(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> exp(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> log(shared_ptr<CoefficientFunction> x);  
 
 
-
-  shared_ptr<CoefficientFunction> FloorCF(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> CeilCF(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> floor(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> ceil(shared_ptr<CoefficientFunction> x);  
 }
 
 

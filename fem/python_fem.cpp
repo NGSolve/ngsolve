@@ -233,7 +233,7 @@ cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
 {
   if (this == var) return dir;
   // return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
-  return LogCF(c1)*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
+  return log(c1)*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
 }
 
 template <> shared_ptr<CoefficientFunction>
@@ -242,7 +242,7 @@ cl_BinaryOpCF<GenericPow>::DiffJacobi(const CoefficientFunction * var) const
   if (this == var) return make_shared<ConstantCoefficientFunction>(1);
   /// auto loga = UnaryOpCF( c1, GenericLog(), "log");
   // auto exp_b_loga = UnaryOpCF(c2*loga, MakeSGenericExp(), "exp");
-  auto exp_b_loga = ExpCF(c2*LogCF(c1));
+  auto exp_b_loga = exp(c2*log(c1));
   return exp_b_loga->DiffJacobi(var);
 }
 
@@ -485,19 +485,19 @@ direction : int
   };
 
   
-  ExportStdMathFunction<GenericSin>(m, "sin", &SinCF, "Sine of argument in radians");
-  ExportStdMathFunction<GenericCos>(m, "cos", &CosCF, "Cosine of argument in radians");
-  ExportStdMathFunction<GenericTan>(m, "tan", &TanCF, "Tangent of argument in radians");
-  ExportStdMathFunction<GenericSinh>(m, "sinh", &SinhCF, "Hyperbolic sine of argument in radians");
-  ExportStdMathFunction<GenericCosh>(m, "cosh", &CoshCF, "Hyperbolic cosine of argument in radians");
-  ExportStdMathFunction<GenericExp>(m, "exp", &ExpCF, "Exponential function");
-  ExportStdMathFunction<GenericLog>(m, "log", &LogCF, "Logarithm function");
-  ExportStdMathFunction<GenericATan>(m, "atan", &ATanCF, "Inverse tangent in radians");
-  ExportStdMathFunction<GenericACos>(m, "acos", &ACosCF, "Inverse cosine in radians");
-  ExportStdMathFunction<GenericASin>(m, "asin", &ASinCF, "Inverse sine in radians");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt", &SqrtCF, "Square root function");
-  ExportStdMathFunction<GenericFloor>(m, "floor", &FloorCF, "Round to next lower integer");
-  ExportStdMathFunction<GenericCeil>(m, "ceil", &CeilCF, "Round to next greater integer");
+  ExportStdMathFunction_<GenericSin>(m, "sin", "Sine of argument in radians");
+  ExportStdMathFunction_<GenericCos>(m, "cos", "Cosine of argument in radians");
+  ExportStdMathFunction_<GenericTan>(m, "tan", "Tangent of argument in radians");
+  ExportStdMathFunction_<GenericSinh>(m, "sinh", "Hyperbolic sine of argument in radians");
+  ExportStdMathFunction_<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument in radians");
+  ExportStdMathFunction_<GenericExp>(m, "exp", "Exponential function");
+  ExportStdMathFunction_<GenericLog>(m, "log", "Logarithm function");
+  ExportStdMathFunction_<GenericATan>(m, "atan", "Inverse tangent in radians");
+  ExportStdMathFunction_<GenericACos>(m, "acos", "Inverse cosine in radians");
+  ExportStdMathFunction_<GenericASin>(m, "asin", "Inverse sine in radians");
+  ExportStdMathFunction_<GenericSqrt>(m, "sqrt", "Square root function");
+  ExportStdMathFunction_<GenericFloor>(m, "floor", "Round to next lower integer");
+  ExportStdMathFunction_<GenericCeil>(m, "ceil", "Round to next greater integer");
   // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
   // ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
