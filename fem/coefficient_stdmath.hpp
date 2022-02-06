@@ -103,7 +103,7 @@ struct GenericCeil {
 
 
   
-  
+  using std::sqrt;
   shared_ptr<CoefficientFunction> sqrt(shared_ptr<CoefficientFunction> x);  
   
   shared_ptr<CoefficientFunction> sin(shared_ptr<CoefficientFunction> x);  
@@ -111,7 +111,8 @@ struct GenericCeil {
   shared_ptr<CoefficientFunction> tan(shared_ptr<CoefficientFunction> x);  
 
   shared_ptr<CoefficientFunction> asin(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> acos(shared_ptr<CoefficientFunction> x);  
+  shared_ptr<CoefficientFunction> acos(shared_ptr<CoefficientFunction> x);
+  using std::atan;
   shared_ptr<CoefficientFunction> atan(shared_ptr<CoefficientFunction> x);  
 
   shared_ptr<CoefficientFunction> sinh(shared_ptr<CoefficientFunction> x);  
