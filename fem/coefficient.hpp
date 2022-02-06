@@ -1343,6 +1343,9 @@ public:
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("unarycf "+name+" does not provide a derivative"); }
 
+  virtual shared_ptr<CoefficientFunction>
+  DiffJacobi (const CoefficientFunction * var) const override
+  { return BASE::DiffJacobi(var); }
 
   
   /*

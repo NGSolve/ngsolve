@@ -358,12 +358,27 @@ cl_UnaryOpCF<GenericExp>::Diff(const CoefficientFunction * var,
 }
 
 template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericExp>::DiffJacobi(const CoefficientFunction * var) const
+{
+  if (this == var) return make_shared<ConstantCoefficientFunction> (1);
+  return const_cast<cl_UnaryOpCF<GenericExp>*>(this)->shared_from_this() * c1->DiffJacobi(var);
+}
+
+template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericLog>::Diff(const CoefficientFunction * var,
                                shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
   return c1->Diff(var, dir) / c1;
 }
+
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericLog>::DiffJacobi(const CoefficientFunction * var) const
+{
+  if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+  return make_shared<ConstantCoefficientFunction>(1.0)/c1 * c1->DiffJacobi(var);
+}
+
 
 template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericSqrt>::Diff(const CoefficientFunction * var,
@@ -380,6 +395,16 @@ cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
   if (this == var) return dir;
   return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
 }
+
+template <> shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericPow>::DiffJacobi(const CoefficientFunction * var) const
+{
+  if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+  auto loga = UnaryOpCF( c1, GenericLog(), "log");
+  auto exp_b_loga = UnaryOpCF(c2*loga, GenericExp(), "exp");
+  return exp_b_loga->DiffJacobi(var);
+}
+
 
 template <> shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericASin>::Diff(const CoefficientFunction * var,

@@ -3791,8 +3791,22 @@ public:
                                           shared_ptr<CoefficientFunction> dir) const override
   {
     if (this == var) return dir;
-    return DeterminantCF(c1) * InnerProduct( TransposeCF(InverseCF(c1)), c1->Diff(var,dir) );
-  }  
+    // return DeterminantCF(c1) * InnerProduct( TransposeCF(InverseCF(c1)), c1->Diff(var,dir) );
+    return InnerProduct( CofactorCF(c1), c1->Diff(var,dir) );
+  }
+
+  shared_ptr<CoefficientFunction>
+  DiffJacobi (const CoefficientFunction * var) const override
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    if (c1.get() == var) return CofactorCF (c1);
+    auto input = c1->InputCoefficientFunctions();
+    if (input.Size() == 0) return ZeroCF(c1->Dimensions());
+    cout << IM(5) << "DeterminantCF::DiffJacobi, c1 desc= " << c1->GetDescription() << endl;
+    return CoefficientFunction::DiffJacobi(var);
+  }
+
+  
 };
 
 
@@ -4384,6 +4398,20 @@ public:
     if (this == var) return dir;
     return TraceCF(c1->Diff(var, dir));
   }
+
+  shared_ptr<CoefficientFunction>
+  DiffJacobi (const CoefficientFunction * var) const override
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    if (c1.get() == var) return IdentityCF (c1->Dimensions()[0]);
+    auto input = c1->InputCoefficientFunctions();
+    if (input.Size() == 0) return ZeroCF(c1->Dimensions());
+    if (c1->GetDescription()=="binary operation '-'")
+      return TraceCF(input[0])->DiffJacobi(var) - TraceCF(input[1])->DiffJacobi(var);
+    cout << "Trace::DiffJacobi, c1 desc= " << c1->GetDescription() << endl;
+    return CoefficientFunction::DiffJacobi(var);
+  }
+  
 };
 
 
@@ -4525,6 +4553,15 @@ cl_BinaryOpCF<GenericMult>::Diff(const CoefficientFunction * var,
   return CWMult (c1->Diff(var,dir), c2) + 
     CWMult(c1, c2->Diff(var,dir));
 }
+
+template <> 
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericMult>::DiffJacobi(const CoefficientFunction * var) const
+{
+  if (var == this) return make_shared<ConstantCoefficientFunction>(1);
+  return c1 * c2->DiffJacobi(var) + c2 * c1->DiffJacobi(var);
+}
+
 
 
 
