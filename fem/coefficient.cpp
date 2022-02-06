@@ -132,7 +132,7 @@ namespace ngfem
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
     else
       {
-        cout << "DiffJacobi for CoefficientFunction, type = " << typeid(*this).name() << endl;
+        cout << IM(5) << "DiffJacobi for CoefficientFunction, type = " << typeid(*this).name() << endl;
         if (this->Dimensions().Size() != 0)
           {
             // throw Exception("cannot differentiate vectorial CFs by vectrial CFs");
@@ -1647,9 +1647,13 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    /*
     TraverseDimensions( c2->Dimensions(), [&](int ind, int i, int j) {
       code.body += Var(index,i,j).Assign( Var(inputs[0]) * Var(inputs[1],i,j) );
     });
+    */
+    for (int i = 0; i < Dimension(); i++)
+      code.body += Var(index,i,Dimensions()).Assign( Var(inputs[0]) * Var(inputs[1],i,Dimensions()) );      
   }
 
   using BASE::Evaluate;
@@ -6250,29 +6254,53 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
 
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
+      /*
       auto cast_value = [&] (int input, int i, int j) {
           return code.res_type + "(" + Var(inputs[input], i, j).S() + ")";
       };
+      */
+      auto cast_value = [&] (int input, int i, FlatArray<int> dims) {
+        return code.res_type + "(" + Var(inputs[input], i, dims).S() + ")";
+      };
 
       auto var_if = Var(inputs[0]);
+      /*
       TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
           code.body += Var(index,i,j).Declare(code.res_type);
       });
+      */
+      for (int i = 0; i < cf_then->Dimension(); i++)
+        code.body += Var(index,i,cf_then->Dimensions()).Declare(code.res_type);        
 
       if(code.is_simd) {
+        /*
         TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
             // cast all input parameters of IfPos to enforce the right overload (f.i. intermediate results could be double instead of AutoDiff<>)
             code.body += Var(index,i,j).Assign("IfPos("+cast_value(0, 0, 0) + ',' + cast_value(1, i, j) + ',' + cast_value(2, i, j)+')', false);
         });
+        */
+        for (int i = 0; i < cf_then->Dimension(); i++)
+            // cast all input parameters of IfPos to enforce the right overload (f.i. intermediate results could be double instead of AutoDiff<>)
+          code.body += Var(index,i,cf_then->Dimensions()).Assign("IfPos("+cast_value(0, 0, cf_if->Dimensions()) + ',' + cast_value(1, i, cf_then->Dimensions()) +
+                                                                 ',' + cast_value(2, i, cf_else->Dimensions())+')', false);
       } else {
         code.body += "if (" + var_if.S() + ">0.0) {\n";
+        /*
         TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
             code.body += Var(index,i,j).Assign( Var(inputs[1],i,j), false );
         });
+        */
+        for (int i = 0; i < cf_then->Dimension(); i++)
+          code.body += Var(index,i,cf_then->Dimensions()).Assign( Var(inputs[1],i,cf_then->Dimensions()), false );          
         code.body += "} else {\n";
+        /*
         TraverseDimensions( cf_then->Dimensions(), [&](int ind, int i, int j) {
             code.body += Var(index,i,j).Assign( Var(inputs[2],i,j), false );
         });
+        */
+        for (int i = 0; i < cf_then->Dimension(); i++)
+          code.body += Var(index,i,cf_then->Dimensions()).Assign( Var(inputs[2],i,cf_then->Dimensions()), false );          
+        
         code.body += "}\n";
       }
     }
