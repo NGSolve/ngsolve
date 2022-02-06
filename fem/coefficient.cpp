@@ -1801,11 +1801,15 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     CodeExpr result;
+    /*
     TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
         int i2, j2;
         GetIndex( c2->Dimensions(), ind, i2, j2 );
         result += Var(inputs[0],i,j) * Var(inputs[1],i2,j2);
     });
+    */
+    for (int i = 0; i < c1->Dimension(); i++)
+      result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[1], i, c2->Dimensions());
     code.body += Var(index).Assign(result.S());
   }
 
@@ -2204,9 +2208,13 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     CodeExpr result;
+    /*
     TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
         result += Var(inputs[0],i,j) * Var(inputs[0],i,j);
     });
+    */
+    for (int i = 0; i < c1->Dimension(); i++)
+      result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[0], i, c1->Dimensions());
     code.body += Var(index).Assign(result.S());
   }
 
