@@ -1837,10 +1837,16 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> operator/ (double val, shared_ptr<CoefficientFunction> c2);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> IdentityCF (int dim);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> ConstantCF (double val);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord);

@@ -12,6 +12,17 @@
 namespace ngfem
 {
 
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericSqrt>::Diff(const CoefficientFunction * var,
+                                  shared_ptr<CoefficientFunction> dir) const
+  {
+    if (this == var) return dir;
+    return CWMult (0.5/SqrtCF(c1), c1->Diff(var, dir));
+  }
+  
+
+  
   template <> shared_ptr<CoefficientFunction>
   cl_UnaryOpCF<GenericSin>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
@@ -22,8 +33,6 @@ namespace ngfem
     return CWMult (CosCF(c1), c1->Diff(var, dir));
   }
   
-
-
   
   
   template <> shared_ptr<CoefficientFunction>
@@ -37,6 +46,70 @@ namespace ngfem
   }
   
 
+
+  
+  
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericTan>::Diff(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+  {
+    if (this == var) return dir;
+    return 1.0 / (UnaryOpCF(c1, GenericCos(), "cos")*UnaryOpCF(c1, GenericCos(), "cos")) * c1->Diff(var, dir);
+  }
+  
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericASin>::Diff(const CoefficientFunction * var,
+                                  shared_ptr<CoefficientFunction> dir) const
+  {
+    if (this == var) return dir;
+    return make_shared<ConstantCoefficientFunction>(1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1 * c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
+  }
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
+                                  shared_ptr<CoefficientFunction> dir) const
+  {
+    if (this == var) return dir;
+    return make_shared<ConstantCoefficientFunction>(-1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1*c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
+  }
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericATan>::Diff(const CoefficientFunction * var,
+                                  shared_ptr<CoefficientFunction> dir) const
+  {
+    if (this == var) return dir;
+    return make_shared<ConstantCoefficientFunction>(1) / (c1*c1 + make_shared<ConstantCoefficientFunction>(1)) * c1->Diff(var, dir);
+  }
+
+  
+
+
+  
+
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericSinh>::Diff(const CoefficientFunction * var,
+                                  shared_ptr<CoefficientFunction> dir) const
+  {
+    if (this == var) return dir;
+    // return UnaryOpCF(c1, GenericCosh(), "cosh") * c1->Diff(var, dir);
+    // return CWMult (UnaryOpCF(c1, GenericCosh(), "cosh"), c1->Diff(var, dir));
+    return CWMult (CoshCF(c1), c1->Diff(var, dir));
+  }
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericCosh>::Diff(const CoefficientFunction * var,
+                                  shared_ptr<CoefficientFunction> dir) const
+  {
+    if (this == var) return dir;
+    // return UnaryOpCF(c1, GenericSinh(), "sinh") * c1->Diff(var, dir);
+    // return CWMult (UnaryOpCF(c1, GenericSinh(), "sinh"), c1->Diff(var, dir));
+    return CWMult (SinhCF(c1), c1->Diff(var, dir));  
+  }
+
+
+  
 
   
   template <> shared_ptr<CoefficientFunction>
@@ -89,11 +162,11 @@ namespace ngfem
   }
 
   
-  
-  shared_ptr<CoefficientFunction> ExpCF(shared_ptr<CoefficientFunction> x)
+  shared_ptr<CoefficientFunction> SqrtCF(shared_ptr<CoefficientFunction> x)
   {
-    return MakeStdMathFunction<GenericExp>(x);
+    return MakeStdMathFunction<GenericSqrt>(x);
   }
+
   shared_ptr<CoefficientFunction> SinCF(shared_ptr<CoefficientFunction> x)
   {
     return MakeStdMathFunction<GenericSin>(x);
@@ -102,9 +175,53 @@ namespace ngfem
   {
     return MakeStdMathFunction<GenericCos>(x);
   }
+  shared_ptr<CoefficientFunction> TanCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericTan>(x);
+  }
+
+  shared_ptr<CoefficientFunction> ASinCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericASin>(x);
+  }
+  shared_ptr<CoefficientFunction> ACosCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericACos>(x);
+  }
+  shared_ptr<CoefficientFunction> ATanCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericATan>(x);
+  }
+
+
+
+  shared_ptr<CoefficientFunction> SinhCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericSinh>(x);
+  }
+  shared_ptr<CoefficientFunction> CoshCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericCosh>(x);
+  }
+
+  
+  
+  shared_ptr<CoefficientFunction> ExpCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericExp>(x);
+  }
   shared_ptr<CoefficientFunction> LogCF(shared_ptr<CoefficientFunction> x)
   {
     return MakeStdMathFunction<GenericLog>(x);
+  }
+
+  shared_ptr<CoefficientFunction> FloorCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericFloor>(x);
+  }
+  shared_ptr<CoefficientFunction> CeilCF(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericCeil>(x);
   }
 
   
