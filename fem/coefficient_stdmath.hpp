@@ -105,24 +105,41 @@ struct GenericCeil {
   
   using std::sqrt;
   shared_ptr<CoefficientFunction> sqrt(shared_ptr<CoefficientFunction> x);  
+
+  using std::sin;
+  shared_ptr<CoefficientFunction> sin(shared_ptr<CoefficientFunction> x);
+
+  using std::cos;
+  shared_ptr<CoefficientFunction> cos(shared_ptr<CoefficientFunction> x);
   
-  shared_ptr<CoefficientFunction> sin(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> cos(shared_ptr<CoefficientFunction> x);  
+  using std::tan;
   shared_ptr<CoefficientFunction> tan(shared_ptr<CoefficientFunction> x);  
 
-  shared_ptr<CoefficientFunction> asin(shared_ptr<CoefficientFunction> x);  
+  using std::asin;  
+  shared_ptr<CoefficientFunction> asin(shared_ptr<CoefficientFunction> x);
+
+  using std::acos;  
   shared_ptr<CoefficientFunction> acos(shared_ptr<CoefficientFunction> x);
+  
   using std::atan;
   shared_ptr<CoefficientFunction> atan(shared_ptr<CoefficientFunction> x);  
 
-  shared_ptr<CoefficientFunction> sinh(shared_ptr<CoefficientFunction> x);  
-  shared_ptr<CoefficientFunction> cosh(shared_ptr<CoefficientFunction> x);  
+  using std::asinh;    
+  shared_ptr<CoefficientFunction> sinh(shared_ptr<CoefficientFunction> x);
   
-  shared_ptr<CoefficientFunction> exp(shared_ptr<CoefficientFunction> x);  
+  using std::acosh;
+  shared_ptr<CoefficientFunction> cosh(shared_ptr<CoefficientFunction> x);  
+
+  using std::exp;
+  shared_ptr<CoefficientFunction> exp(shared_ptr<CoefficientFunction> x);
+  
+  using std::log;
   shared_ptr<CoefficientFunction> log(shared_ptr<CoefficientFunction> x);  
 
+  using std::floor;
+  shared_ptr<CoefficientFunction> floor(shared_ptr<CoefficientFunction> x);
 
-  shared_ptr<CoefficientFunction> floor(shared_ptr<CoefficientFunction> x);  
+  using std::ceil;        
   shared_ptr<CoefficientFunction> ceil(shared_ptr<CoefficientFunction> x);  
 }
 
