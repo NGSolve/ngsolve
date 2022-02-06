@@ -124,10 +124,10 @@ struct GenericCeil {
   using std::atan;
   shared_ptr<CoefficientFunction> atan(shared_ptr<CoefficientFunction> x);  
 
-  using std::asinh;    
+  using std::sinh;    
   shared_ptr<CoefficientFunction> sinh(shared_ptr<CoefficientFunction> x);
   
-  using std::acosh;
+  using std::cosh;
   shared_ptr<CoefficientFunction> cosh(shared_ptr<CoefficientFunction> x);  
 
   using std::exp;
