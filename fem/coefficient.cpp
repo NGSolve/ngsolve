@@ -5372,6 +5372,33 @@ MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first,
 }
 
 
+shared_ptr<CoefficientFunction>
+MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Array<int> ordering)
+{
+  auto dims1 = c1->Dimensions();
+  if (dims1.Size() != ordering.Size())
+    throw Exception("TensorTranspose - tensor dimensions don't match");
+
+  Array<int> dist1(dims1.Size());
+  int disti = 1;
+  for (int i = dims1.Size()-1; i--; i >= 0)
+    {
+      dist1[i] = disti;
+      disti *= dims1[i];
+    }
+  
+  Array<int> dims(dims1.Size()), dist(dims1.Size());
+  for (int i = 0; i < dims.Size(); i++)
+    {
+      if (ordering[i] < 0 || ordering[i] >= dims1.Size())
+        throw Exception ("ordering out of range");
+      dims[i] = dims1[ordering[i]];
+      dist[i] = dist1[ordering[i]];
+    }
+  
+  return MakeSubTensorCoefficientFunction (c1, 0, std::move(dims), std::move(dist));
+}
+
 
 
 // ********************** VectorContractionCoefficientFunction **********************
