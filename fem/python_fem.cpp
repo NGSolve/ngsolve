@@ -16,6 +16,8 @@ using ngfem::ELEMENT_TYPE;
 #include "voxelcoefficientfunction.hpp"
 
 #include "tpintrule.hpp"
+#include "coefficient_stdmath.hpp"
+
 namespace ngfem
 {
   extern SymbolTable<double> * constant_table_for_FEM;
@@ -158,13 +160,7 @@ cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, in
   s << "reinterpret_cast<BSpline*>(" << code.AddPointer(lam.sp.get()) << ")";
   code.body += Var(index,0,1).Assign(s.str());
   
-  TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
-      int i1, j1;
-      GetIndex( c1->Dimensions(), ind, i1, j1 );
-      code.body += Var(index).Assign(
-                                               Var(inputs[0],i1,j1).Func(Var(index,0,1).S()+"->operator()"));
-    });
-
+  Var(index).Assign( Var(inputs[0],0,c1->Dimensions()).Func(Var(index,0,1).S()+"->operator()"));
 }
 
 template <> shared_ptr<CoefficientFunction>
@@ -177,115 +173,8 @@ cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
 
 
 
-struct GenericIdentity {
-  template <typename T> T operator() (T x) const { return x; }
-  static string Name() { return  " "; }
-  void DoArchive(Archive& ar) {}
-};
-template <>
-shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericIdentity>::Diff(const CoefficientFunction * var,
-                                      shared_ptr<CoefficientFunction> dir) const
-{
-  if (var == this) return dir;
-  auto hcf = c1->Diff(var, dir);
-  if (! (this->Dimensions() == hcf->Dimensions()) )
-    { // reshaping requires wrapper, e.g. for code generation
-      hcf = UnaryOpCF (hcf, GenericIdentity{}, " ");
-      hcf->SetDimensions(Dimensions());
-    }
-  return hcf;
-}
-
-template <>
-shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
-{
-  return c1->Operator(name);
-}
 
 
-struct GenericSin {
-  template <typename T> T operator() (T x) const { return sin(x); }
-  static string Name() { return "sin"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericCos {
-  template <typename T> T operator() (T x) const { return cos(x); }
-  static string Name() { return "cos"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericTan {
-  template <typename T> T operator() (T x) const { return tan(x); }
-  static string Name() { return "tan"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericSinh {
-  template <typename T> T operator() (T x) const { return sinh(x); }
-  static string Name() { return "sinh"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericCosh {
-  template <typename T> T operator() (T x) const { return cosh(x); }
-  static string Name() { return "cosh"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericExp {
-  template <typename T> T operator() (T x) const { return exp(x); }
-  static string Name() { return "exp"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericLog {
-  template <typename T> T operator() (T x) const { return log(x); }
-  static string Name() { return "log"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericATan {
-  template <typename T> T operator() (T x) const { return atan(x); }
-  static string Name() { return "atan"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericACos {
-  template <typename T> T operator() (T x) const { return acos(x); }
-  // double operator() (double x) const { return acos(x); }
-  // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
-  SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("acos not available for SIMD<complex>"); }
-  static string Name() { return "acos"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericASin {
-  template <typename T> T operator() (T x) const { return asin(x); }
-  // double operator() (double x) const { return acos(x); }
-  // template <typename T> T operator() (T x) const { throw Exception("acos not available"); }
-  SIMD<Complex> operator() (SIMD<Complex> x) const { throw Exception("asin not available for SIMD<complex>"); }
-  static string Name() { return "asin"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericSqrt {
-  template <typename T> T operator() (T x) const { return sqrt(x); }
-  static string Name() { return "sqrt"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericFloor {
-  template <typename T> T operator() (T x) const { return floor(x); }
-  Complex operator() (Complex x) const { throw Exception("no floor for Complex"); }  
-  // SIMD<double> operator() (SIMD<double> x) const { throw ExceptionNOSIMD("no floor for simd"); }
-  SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no floor for simd"); }  
-  // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no floor for AD"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no floor for ADD"); }
-  static string Name() { return "floor"; }
-  void DoArchive(Archive& ar) {}
-};
-struct GenericCeil {
-  template <typename T> T operator() (T x) const { return ceil(x); }
-  Complex operator() (Complex x) const { throw Exception("no ceil for Complex"); }  
-  // SIMD<double> operator() (SIMD<double> x) const { throw ExceptionNOSIMD("no ceil for simd"); }
-  SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no ceil for simd"); }  
-  // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no ceil for AD"); }
-  AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no ceil for ADD"); }
-  static string Name() { return "ceil"; }
-  void DoArchive(Archive& ar) {}
-};
 
 /*
 struct GenericConj {
@@ -330,106 +219,27 @@ struct GenericPow {
 };
 
 
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericSin>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return UnaryOpCF(c1, GenericCos(), "cos") * c1->Diff(var, dir);
-  return CWMult (UnaryOpCF(c1, GenericCos(), "cos"), c1->Diff(var, dir));
-}
 
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericCos>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return -1 * UnaryOpCF(c1, GenericSin(), "sin") * c1->Diff(var, dir);
-  return CWMult (-1 * UnaryOpCF(c1, GenericSin(), "sin"),  c1->Diff(var, dir));
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericTan>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(1) / (UnaryOpCF(c1, GenericCos(), "cos")*UnaryOpCF(c1, GenericCos(), "cos")) * c1->Diff(var, dir);
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericSinh>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return UnaryOpCF(c1, GenericCosh(), "cosh") * c1->Diff(var, dir);
-  return CWMult (UnaryOpCF(c1, GenericCosh(), "cosh"), c1->Diff(var, dir));
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericCosh>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return UnaryOpCF(c1, GenericSinh(), "sinh") * c1->Diff(var, dir);
-  return CWMult (UnaryOpCF(c1, GenericSinh(), "sinh"), c1->Diff(var, dir));
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericExp>::Diff(const CoefficientFunction * var,
-                               shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  // return UnaryOpCF(c1, GenericExp(), "exp") * c1->Diff(var, dir);
-  return CWMult (UnaryOpCF(c1, GenericExp(), "exp"), c1->Diff(var, dir));
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericLog>::Diff(const CoefficientFunction * var,
-                               shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return c1->Diff(var, dir) / c1;
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericSqrt>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(0.5)/UnaryOpCF(c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
-}
 
 template <> shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
                                  shared_ptr<CoefficientFunction> dir) const
 {
   if (this == var) return dir;
-  return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
+  // return UnaryOpCF(c1,GenericLog(),"log")*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
+  return log(c1)*c2->Diff(var, dir)*BinaryOpCF(c1,c2,GenericPow(), "pow") + c2*c1->Diff(var,dir)/c1*BinaryOpCF(c1,c2,GenericPow(), "pow");
 }
 
 template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericASin>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
+cl_BinaryOpCF<GenericPow>::DiffJacobi(const CoefficientFunction * var) const
 {
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1 * c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
+  if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+  /// auto loga = UnaryOpCF( c1, GenericLog(), "log");
+  // auto exp_b_loga = UnaryOpCF(c2*loga, MakeSGenericExp(), "exp");
+  auto exp_b_loga = exp(c2*log(c1));
+  return exp_b_loga->DiffJacobi(var);
 }
 
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(-1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1*c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
-}
-
-template <> shared_ptr<CoefficientFunction>
-cl_UnaryOpCF<GenericATan>::Diff(const CoefficientFunction * var,
-                                 shared_ptr<CoefficientFunction> dir) const
-{
-  if (this == var) return dir;
-  return make_shared<ConstantCoefficientFunction>(1) / (c1*c1 + make_shared<ConstantCoefficientFunction>(1)) * c1->Diff(var, dir);
-}
 
 
 
@@ -669,21 +479,21 @@ direction : int
   };
 
   
-  ExportStdMathFunction<GenericSin>(m, "sin", "Sine of argument in radians");
-  ExportStdMathFunction<GenericCos>(m, "cos", "Cosine of argument in radians");
-  ExportStdMathFunction<GenericTan>(m, "tan", "Tangent of argument in radians");
-  ExportStdMathFunction<GenericSinh>(m, "sinh", "Hyperbolic sine of argument in radians");
-  ExportStdMathFunction<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument in radians");
-  ExportStdMathFunction<GenericExp>(m, "exp", "Exponential function");
-  ExportStdMathFunction<GenericLog>(m, "log", "Logarithm function");
-  ExportStdMathFunction<GenericATan>(m, "atan", "Inverse tangent in radians");
-  ExportStdMathFunction<GenericACos>(m, "acos", "Inverse cosine in radians");
-  ExportStdMathFunction<GenericASin>(m, "asin", "Inverse sine in radians");
-  ExportStdMathFunction<GenericSqrt>(m, "sqrt", "Square root function");
-  ExportStdMathFunction<GenericFloor>(m, "floor", "Round to next lower integer");
-  ExportStdMathFunction<GenericCeil>(m, "ceil", "Round to next greater integer");
+  ExportStdMathFunction_<GenericSin>(m, "sin", "Sine of argument in radians");
+  ExportStdMathFunction_<GenericCos>(m, "cos", "Cosine of argument in radians");
+  ExportStdMathFunction_<GenericTan>(m, "tan", "Tangent of argument in radians");
+  ExportStdMathFunction_<GenericSinh>(m, "sinh", "Hyperbolic sine of argument in radians");
+  ExportStdMathFunction_<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument in radians");
+  ExportStdMathFunction_<GenericExp>(m, "exp", "Exponential function");
+  ExportStdMathFunction_<GenericLog>(m, "log", "Logarithm function");
+  ExportStdMathFunction_<GenericATan>(m, "atan", "Inverse tangent in radians");
+  ExportStdMathFunction_<GenericACos>(m, "acos", "Inverse cosine in radians");
+  ExportStdMathFunction_<GenericASin>(m, "asin", "Inverse sine in radians");
+  ExportStdMathFunction_<GenericSqrt>(m, "sqrt", "Square root function");
+  ExportStdMathFunction_<GenericFloor>(m, "floor", "Round to next lower integer");
+  ExportStdMathFunction_<GenericCeil>(m, "ceil", "Round to next greater integer");
   // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
-  ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
+  // ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians", "y", "x");
   ExportStdMathFunction2<GenericPow>(m, "pow", "Power function");
@@ -768,11 +578,12 @@ val : can be one of the following:
           
           py::extract<shared_ptr<CF>> ecf(val);
           if (ecf.check())
-            coef = UnaryOpCF (ecf(), GenericIdentity{}, " ");
+            // coef = UnaryOpCF (ecf(), GenericIdentity{}, " ");
+            coef = CreateWrapperCF(ecf()); // to have a different object from input
           else
             coef = MakeCoefficient(val);
-          if(dims.has_value())
-            {
+          if(dims.has_value())  
+            { // can now reshape without additional wrapper
               auto cdims = makeCArray<int> (*dims);
               int dimension = 1;
               for (int d : cdims) dimension *= d;
@@ -855,7 +666,8 @@ val : can be one of the following:
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
                   [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
-    
+    .def("Reshape", [] (shared_ptr<CF> self, py::tuple tup) { return self->Reshape(makeCArray<int>(tup)); } ,
+         "reshape CF:  (dim) for vector, (h,w) for matrix")
     .def_property_readonly("is_complex",
                            [] (CF &  self) { return self.IsComplex(); },
                            "is CoefficientFunction complex-valued ?")
@@ -1200,7 +1012,7 @@ cf : ngsolve.CoefficientFunction
             if (dir)
               return coef->Diff(var.get(), dir);
             else
-              return coef->Diff(var.get());
+              return coef->DiffJacobi(var.get());
             /*
             if (var->Dimension() == 1)
               return coef->Diff(var.get(), make_shared<ConstantCoefficientFunction>(1));
@@ -1297,6 +1109,10 @@ cf : ngsolve.CoefficientFunction
                       return TransposeCF(coef);
                     },
                    "transpose of matrix-valued CF")
+    .def ("TensorTranspose", [](shared_ptr<CF> coef, py::tuple ordering)
+          {
+            return MakeTensorTransposeCoefficientFunction (coef, makeCArray<int>(ordering));
+          })
     .def_property_readonly ("real", [](shared_ptr<CF> coef) { return Real(coef); }, "real part of CF")
     .def_property_readonly ("imag", [](shared_ptr<CF> coef) { return Imag(coef); }, "imaginary part of CF")
 
