@@ -160,13 +160,7 @@ cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, in
   s << "reinterpret_cast<BSpline*>(" << code.AddPointer(lam.sp.get()) << ")";
   code.body += Var(index,0,1).Assign(s.str());
   
-  TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
-      int i1, j1;
-      GetIndex( c1->Dimensions(), ind, i1, j1 );
-      code.body += Var(index).Assign(
-                                               Var(inputs[0],i1,j1).Func(Var(index,0,1).S()+"->operator()"));
-    });
-
+  Var(index).Assign( Var(inputs[0],0,c1->Dimensions()).Func(Var(index,0,1).S()+"->operator()"));
 }
 
 template <> shared_ptr<CoefficientFunction>
