@@ -1249,7 +1249,7 @@ public:
   
   ZeroCoefficientFunction (int dim) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
   {
-    SetDimension(dim);
+    SetDimensions(Array({dim}));
   }
 
   ZeroCoefficientFunction (int dim1, int dim2) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
@@ -6757,10 +6757,14 @@ public:
   shared_ptr<CoefficientFunction>
   MakeVectorialCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
   {
+    int totdim = 0;
     for (auto cf : aci)
       if (!cf->IsZeroCF())
         return make_shared<VectorialCoefficientFunction> (move (aci));
-    return ZeroCF( Array<int>( {static_cast<int>(aci.Size())}) );
+      else
+        totdim += cf->Dimension();
+    
+    return ZeroCF( Array<int>( {totdim} ));
   }
 
 
