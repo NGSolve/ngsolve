@@ -5126,6 +5126,7 @@ class SubTensorCoefficientFunction : public T_CoefficientFunction<SubTensorCoeff
   int first;
   Array<int> num, dist;
   typedef T_CoefficientFunction<SubTensorCoefficientFunction> BASE;
+  Array<int> mapping; // output index -> input index
 public:
   SubTensorCoefficientFunction() = default;
   SubTensorCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
@@ -5135,6 +5136,19 @@ public:
     SetDimensions(anum);
     dim1 = c1->Dimension();    
     elementwise_constant = c1->ElementwiseConstant();
+    
+    for (int i = 0; i < Dimension(); i++)
+      {
+        int index = i;
+        int inputindex = first;
+        for (int j = num.Size()-1; j >= 0; j--)
+          {
+            int indexj = index % num[j];
+            inputindex += indexj*dist[j];
+            index /= num[j];
+          }
+        mapping.Append (inputindex);
+      }
   }
 
   void DoArchive(Archive& ar) override
@@ -5207,7 +5221,20 @@ public:
     FlatMatrix<T,ORD> temp(dim1, ir.Size(), &hmem[0]);
     
     c1->Evaluate (ir, temp);
-    size_t nv = ir.Size();
+    // size_t nv = ir.Size();
+
+    for (size_t i = 0; i < mapping.Size(); i++)
+      values.Row(i).Range(ir.Size()) = temp.Row(mapping[i]);
+      /*
+      {
+        size_t inputindex = mapping[i];
+        for (size_t k = 0; k < nv; k++)
+          values(i,k) = temp(inputindex, k);
+      }
+      */
+
+      
+    /*
     switch (num.Size())
       {
       case 1:
@@ -5232,6 +5259,7 @@ public:
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
       }
+    */
   }
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -5240,6 +5268,12 @@ public:
                    BareSliceMatrix<T,ORD> values) const
   {
     auto in0 = input[0];
+    cout << "sub-tensor, t_evaluate input" << endl;
+    // not yet tested
+    for (size_t i = 0; i < mapping.Size(); i++)
+      values.Row(i).Range(ir.Size()) = in0.Row(mapping[i]);
+
+    /*
     switch (num.Size())
       {
       case 1:
@@ -5261,6 +5295,7 @@ public:
       default:
         throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
       }
+    */
   }
   
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
@@ -5400,10 +5435,14 @@ public:
     func(*this);
   }
 
-  /*
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
-  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
-  */
+  {
+    
+    Array<shared_ptr<CoefficientFunction>> inputs;
+    inputs.Append(c1);
+    inputs += vectors;
+    return inputs;
+  }
   
   using BASE::Evaluate;
 
@@ -5453,25 +5492,32 @@ public:
                    FlatArray<BareSliceMatrix<T,ORD>> input,                       
                    BareSliceMatrix<T,ORD> values) const
   {
-    throw Exception ("vector contraction in-out not implemented");
-    /*
-    auto in0 = input[0];
-    switch (num.Size())
+    STACK_ARRAY(T, hmem, ir.Size()*c1->Dimension());
+    FlatMatrix<T,ORD> temp(c1->Dimension(), ir.Size(), &hmem[0]);
+    
+    // c1->Evaluate (ir, temp);
+    temp = input[0];
+
+    size_t nv = ir.Size();
+    size_t actdim = c1->Dimension();
+
+    for (int dir = 0; dir < vectors.Size(); dir++)
       {
-      case 1:
-        for (int i = 0; i < num[0]; i++)
-          values.Row(i).Range(ir.Size()) = in0.Row(first+i*dist[0]);
-        break;
-      case 2:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++, ii++)
-            values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]);
-        break;
-        
-      default:
-        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+        // FlatMatrix<T,ORD> vi(vectors[dir]->Dimension(), ir.Size(), &hmem2[0]);
+        // vectors[dir]->Evaluate(ir, vi);
+        auto vi = input[dir+1].AddSize(vectors[dir]->Dimension(), ir.Size());
+          
+        size_t newdim = actdim / vi.Height();
+        for (size_t i = 0; i < newdim; i++)
+          temp.Row(i) = pw_mult(temp.Row(i), vi.Row(0));
+        for (size_t j = 1; j < vi.Height(); j++)
+          for (size_t i = 0; i < newdim; i++)
+            temp.Row(i) += pw_mult(temp.Row(j*newdim+i), vi.Row(j));
+
+        actdim = newdim;
       }
-    */
+    for (size_t k = 0; k < nv; k++)
+      values(0,k) = temp(0,k);
   }
 
   /*
