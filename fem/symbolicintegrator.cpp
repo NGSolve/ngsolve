@@ -179,6 +179,7 @@ namespace ngfem
     }
     header += "}\n";
 
+    /*
     TraverseDimensions( dims, [&](int ind, int i, int j) {
         header += Var("comp", index,i,j).Declare("{scal_type}", 0.0);
         if(!testfunction && code.deriv==2)
@@ -190,15 +191,37 @@ namespace ngfem
           header += "if({ud}->{comp_string}=="+ToLiteral(ind)+" && {ud}->{func_string} == {this})\n";
         header += Var("comp", index,i,j).S() + string("{get_component}") + " = 1.0;\n";
     });
+    */
+    for (int i = 0; i < this->Dimension(); i++) {
+      header += Var("comp", index,i,this->Dimensions()).Declare("{scal_type}", 0.0);
+        if(!testfunction && code.deriv==2)
+          {
+          header += "if(( ({ud}->trialfunction == {this}) && ({ud}->trial_comp=="+ToLiteral(i)+"))\n"+
+          " ||  (({ud}->testfunction == {this}) && ({ud}->test_comp=="+ToLiteral(i)+")))\n";
+        }
+        else
+          header += "if({ud}->{comp_string}=="+ToLiteral(i)+" && {ud}->{func_string} == {this})\n";
+        header += Var("comp", index,i,this->Dimensions()).S() + string("{get_component}") + " = 1.0;\n";
+    }
+    
     string body = "";
+    
+    /*
+      TraverseDimensions( dims, [&](int ind, int i, int j) {
+      body += Var(index, i,j).Declare("{scal_type}", 0.0);
+      body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
+      });
+    */
+    
+    for (int i = 0; i < this->Dimension(); i++) {
+      body += Var(index, i, this->Dimensions()).Declare("{scal_type}", 0.0);
+      body += Var(index, i, this->Dimensions()).Assign(CodeExpr("0.0"), false);
+    }
 
-    TraverseDimensions( dims, [&](int ind, int i, int j) {
-        body += Var(index, i,j).Declare("{scal_type}", 0.0);
-        body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
-    });
-
+  
     if(!testfunction) {
       body += "if ({ud}->fel) {\n";
+      /*
       TraverseDimensions( dims, [&](int ind, int i, int j) {
           string var = Var(index, i,j);
           if(code.deriv)
@@ -211,6 +234,20 @@ namespace ngfem
 
           body += var + " = " + values + ";\n";
       });
+      */
+      for (int i = 0; i < Dimension(); i++) {
+        string var = Var(index, i, this->Dimensions());
+        if(code.deriv)
+          var += ".Value()";
+        string values = "{values}";
+        if(code.is_simd)
+          values += "(" + ToLiteral(i) + ",i)";
+        else
+          values += "(i," + ToLiteral(i) + ")";
+        
+        body += var + " = " + values + ";\n";
+      }
+      
       if(code.deriv)
         body += "}\n";
       else
@@ -218,16 +255,31 @@ namespace ngfem
     }
     body += "{\n";
     if(testfunction)
+      /*
       TraverseDimensions( dims, [&](int ind, int i, int j) {
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
         if(code.deriv==1) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
         if(code.deriv==2) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
       });
+      */
+      for (int i = 0; i < Dimension(); i++) {
+        if(code.deriv==0) body += Var(index,i,Dimensions()).Assign( Var("comp", index,i,Dimensions()), false );
+        if(code.deriv==1) body += Var(index,i,Dimensions()).Assign( Var("comp", index,i,Dimensions()), false );
+        if(code.deriv==2) body += Var(index,i,Dimensions()).Call("DValue","0")
+                            .Assign( Var("comp", index,i, Dimensions()).Call("DValue","0"), false );
+      }
     else
+      /*
       TraverseDimensions( dims, [&](int ind, int i, int j) {
         if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
         if(code.deriv>=1) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
       });
+      */
+      for (int i = 0; i < this->Dimension(); i++) {
+        if(code.deriv==0) body += Var(index,i,Dimensions()).Assign( Var("comp", index,i,Dimensions()), false );
+        if(code.deriv>=1) body += Var(index,i,Dimensions()).Call("DValue","0").Assign( Var("comp", index,i,Dimensions()).Call("DValue","0"), false );
+      };
+  
     body += "}\n";
 
     string func_string = testfunction ? "testfunction" : "trialfunction";
@@ -1237,17 +1289,18 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
 
     dcf_dtest.SetSize(test_proxies.Size());
-      // comment in for experimental new Apply
+
+    // comment in for experimental new Apply
     for (int i = 0; i < test_proxies.Size(); i++)
       {
         try
           {
-            dcf_dtest[i] = cf->Diff(test_proxies[i]);
-            cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
+            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
           }
         catch (Exception e)
           {
-            cout << "dcf_dtest has thrown exception " << e.What() << endl;
+            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
           }
       }
   }
@@ -2948,8 +3001,10 @@ namespace ngfem
                 proxy->Evaluator()->Apply(fel_trial, mir, elx, ud.GetAMemory(proxy)); 
           
               // NgProfiler::StopThreadTimer(teval, tid);
-              for (auto proxy : test_proxies)
+              // for (auto proxy : test_proxies)
+              for (auto i : Range(test_proxies))
                 {
+                  auto proxy = test_proxies[i];
                   HeapReset hr(lh);
                   // NgProfiler::StartThreadTimer(td, tid);
                   FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), ir_facet.Size(), lh);
@@ -3469,6 +3524,22 @@ namespace ngfem
 
     cache_cfs = FindCacheCF(*cf);
 
+    // comment in for experimental new Apply
+    dcf_dtest.SetSize(test_proxies.Size());
+    for (int i = 0; i < test_proxies.Size(); i++)
+      {
+        try
+          {
+            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
+            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+          }
+        catch (Exception e)
+          {
+            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+      }
+
+    
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
     cout << IM(6) << "num trial_proxies " << trial_proxies.Size() << endl;
     cout << IM(6) << "cumulated test_proxy dims  " << test_cum << endl;
@@ -3920,18 +3991,23 @@ namespace ngfem
             // tapply.Stop();
 
             // RegionTracer rtapplyt(TaskManager::GetThreadId(), tapplyt);            
-            for (auto proxy : test_proxies)
+            // for (auto proxy : test_proxies)
+            for (auto i : Range(test_proxies))
               {
+                auto proxy = test_proxies[i];
                 HeapReset hr(lh);
                 // tcoef.Start();
                 FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir_facet.Size(), lh);        
-                
-                for (int k = 0; k < proxy->Dimension(); k++)
-                  {
-                    ud.testfunction = proxy;
-                    ud.test_comp = k;
-                    cf -> Evaluate (simd_mir1, simd_proxyvalues.Rows(k,k+1));
-                  }
+
+                if (dcf_dtest[i])
+                  dcf_dtest[i]->Evaluate (simd_mir1, simd_proxyvalues);
+                else
+                  for (int k = 0; k < proxy->Dimension(); k++)
+                    {
+                      ud.testfunction = proxy;
+                      ud.test_comp = k;
+                      cf -> Evaluate (simd_mir1, simd_proxyvalues.Rows(k,k+1));
+                    }
                 
                 for (int i = 0; i < simd_proxyvalues.Height(); i++)
                   {

@@ -172,6 +172,9 @@ namespace ngfem
       for (int d : dims) dimension *= d;
     }
 
+    // creates a wrapper with new shape
+    shared_ptr<CoefficientFunction> Reshape (FlatArray<int> adims) const;
+    
     int SpaceDim () const { return spacedim; } 
     void SetSpaceDim (int adim);
     
@@ -235,8 +238,9 @@ namespace ngfem
 
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
+    // returns Jacobi-matrix (possible as higher order tensor)
     virtual shared_ptr<CoefficientFunction>
-      Diff (const CoefficientFunction * var) const;
+      DiffJacobi (const CoefficientFunction * var) const;
 
 
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
@@ -667,6 +671,9 @@ namespace ngfem
     {
       values = AutoDiffDiff<1,bool> (val != 0.0);
     }
+
+    virtual shared_ptr<CoefficientFunction>
+      DiffJacobi (const CoefficientFunction * var) const override;
   };
 
 
@@ -1222,11 +1229,9 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
-        int i1, j1;
-        GetIndex( c1->Dimensions(), ind, i1, j1 );
-        code.body += Var(index,i,j).Assign( Var(inputs[0],i1,j1).Func(name) );
-        });
+    for (int i = 0; i < this->Dimension(); i++)
+      code.body += Var(index, i, this->Dimensions())
+        .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name) );
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1331,6 +1336,9 @@ public:
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("unarycf "+name+" does not provide a derivative"); }
 
+  virtual shared_ptr<CoefficientFunction>
+  DiffJacobi (const CoefficientFunction * var) const override
+  { return BASE::DiffJacobi(var); }
 
   
   /*
@@ -1452,19 +1460,17 @@ public:
   }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
-        int i2,j2;
-        GetIndex(c2->Dimensions(), ind, i2, j2);
+    for (int i = 0; i < this->Dimension(); i++)
+      {
+        auto op1 = Var(inputs[0], i, c1->Dimensions()).S();
+        auto op2 = Var(inputs[1], i, c2->Dimensions()).S();
         string expr;
-        auto op1 = Var(inputs[0],i,j).S();
-        auto op2 = Var(inputs[1],i2,j2).S();
-
         if(opname.size()>2) // atan2, pow, etc.
-            expr = opname + '(' + op1 + ',' + op2 + ')';
+          expr = opname + '(' + op1 + ',' + op2 + ')';
         else // +,-,*,/, etc.
-            expr = op1 + ' ' + opname + ' ' + op2;
-        code.body += Var(index,i,j).Assign( expr );
-    });
+          expr = op1 + ' ' + opname + ' ' + op2;
+        code.body += Var(index,i,this->Dimensions()).Assign( expr );
+      }
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1622,6 +1628,10 @@ public:
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
 
+  virtual shared_ptr<CoefficientFunction>
+  DiffJacobi (const CoefficientFunction * var) const override
+  { return BASE::DiffJacobi(var); }
+
   /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<bool> nonzero,
@@ -1738,6 +1748,10 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1,
                                     int first, Array<int> num, Array<int> dist);
 
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Array<int> ordering);
+
+
   // cf_ijk v0_i v1_j v2_k
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeVectorContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
@@ -1790,6 +1804,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   { return (-1) * c1; }
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> CreateWrapperCF (shared_ptr<CoefficientFunction> cf);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> ConjCF (shared_ptr<CoefficientFunction> c1);
 
   NGS_DLL_HEADER
@@ -1802,10 +1819,19 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> operator/ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> operator/ (double val, shared_ptr<CoefficientFunction> c2);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> IdentityCF (int dim);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> ConstantCF (double val);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);

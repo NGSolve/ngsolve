@@ -48,7 +48,24 @@ namespace ngcomp
 
   };
 
+  class BlockDifferentialOperatorTransGrad : public BlockDifferentialOperatorTrans
+  {
+  public:
+    using BlockDifferentialOperatorTrans::BlockDifferentialOperatorTrans;
+    
+    virtual void
+    AddTrans (const FiniteElement & fel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              BareSliceMatrix<SIMD<double>> flux,
+              BareSliceVector<double> x) const
+    {
+      // BlockDifferentialOperatorTrans::AddTrans(fel, mir, flux, x);
+      static_cast<const BaseScalarFiniteElement&> (fel).
+        AddGradTrans(mir, flux, SliceMatrix<double> (fel.GetNDof(), dim, dim, x.Data()));
+    }
+  };
 
+  
 
   /// Identity
   template <int DIM_EL, int DIM_SPC>
@@ -282,7 +299,8 @@ namespace ngcomp
       {
         evaluator[VOL] = make_shared<BlockDifferentialOperatorId> (evaluator[VOL], dimension);
         // evaluator[VOL] = make_shared<BlockDifferentialOperator> (evaluator[VOL], dimension);
-        additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
+        // additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTrans>(flux_evaluator[VOL], dimension));
+        additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTransGrad>(flux_evaluator[VOL], dimension));        
 	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
 	// evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
         /*

@@ -865,6 +865,7 @@ public:
     VorB vb;
     bool element_boundary;
     bool neighbor_testfunction;
+    Array<shared_ptr<CoefficientFunction>> dcf_dtest;  // derivatives by test-functions    
   public:
     NGS_DLL_HEADER SymbolicFacetBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb, bool aelement_boundary);
 

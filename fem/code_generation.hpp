@@ -122,39 +122,80 @@ namespace ngfem
     return "Complex"+ToLiteral(val);
   }
 
+  /*
   inline CodeExpr Var(string name, int i, int j=0, int k=0)
   {
     return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
+  */
+  inline CodeExpr Var(string name, int i)
+  {
+    return CodeExpr(name + '_' + ToLiteral(i));
+  }
+  inline CodeExpr Var(string name, int i, int j)
+  {
+    return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j));
+  }
+  inline CodeExpr Var(string name, int i, int j, int k)
+  {
+    return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
+  }
 
+  // linear index of tensor of dimensions dims
+  inline CodeExpr Var(string name, int i, int index, FlatArray<int> dims)
+  {
+    ArrayMem<int,8> ind(dims.Size());
+    for (int j = dims.Size()-1; j >= 0; j--)
+      {
+        ind[j] = index % dims[j];
+        index /= dims[j];
+      }
+    string str = name + '_' + ToLiteral(i);
+    for (int j = 0; j < ind.Size(); j++)
+      str += '_' + ToLiteral(ind[j]);
+    return CodeExpr(str);
+  }
+
+
+  
+  /*
   inline CodeExpr Var(int i, int j=0, int k=0)
   {
     return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
-
-  template<typename TFunc>
-  void TraverseDimensions( FlatArray<int> dims, const TFunc &func)
-
+  */
+  inline CodeExpr Var(int i)
   {
-    switch(dims.Size())
-    {
-      case 0:
-        func(0,0,0);
-        break;
-      case 1:
-        for (int i : Range(max2(1, dims[0])))
-          func(i,i,0);
-        break;
-      case 2:
-        for (int i : Range(max2(1, dims[0])))
-          for (int j : Range(max2(1, dims[1])))
-            func(i*dims[1]+j, i, j);
-        break;
-      default:
-        throw Exception("TraverseDimensions: too many dimensions!");
-    }
+    return CodeExpr("var_" + ToLiteral(i));
   }
 
+  inline CodeExpr Var(int i, int j)
+  {
+    return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j));
+  }
+
+  inline CodeExpr Var(int i, int j, int k)
+  {
+    return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
+  }
+  
+  // linear index of tensor of dimensions dims
+  inline CodeExpr Var(int i, int index, FlatArray<int> dims)
+  {
+    ArrayMem<int,8> ind(dims.Size());
+    for (int j = dims.Size()-1; j >= 0; j--)
+      {
+        ind[j] = index % dims[j];
+        index /= dims[j];
+      }
+    string str = "var_" + ToLiteral(i);
+    for (int j = 0; j < ind.Size(); j++)
+      str += '_' + ToLiteral(ind[j]);
+    return CodeExpr(str);
+      // return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
+  }
+
+  
   inline void GetIndex( FlatArray<int> dims, int i, int &iout, int &jout )
   {
     iout = jout = 0;
