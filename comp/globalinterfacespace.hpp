@@ -9,6 +9,7 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> mapping;
     int order;
     bool periodic[2]; // periodic u/ periodic v
+    bool polar; // using basis for polar coordinates
 
     template<typename VOLFE>
     class VolDiffOp : public DifferentialOperator
@@ -59,6 +60,7 @@ namespace ngcomp
       docu.Arg("periodic") = "Periodic global interface space (in 2d in x and y direction).";
       docu.Arg("periodicu") = "Periodic u-dir (local coordinate system) global interface space.";
       docu.Arg("periodicv") = "Periodic v-dir (local coordinate system) global interface space.";
+      docu.Arg("polar") = "Polar mapping (r, phi). Uses stable basis for singularity in origin. Automatically sets first argument (r) not periodic and second (phi) periodic. Mapping must be to [0,1]x[-pi, pi)";
       return docu;
     }
   };
@@ -66,7 +68,7 @@ namespace ngcomp
   shared_ptr<GlobalInterfaceSpace> CreateGlobalInterfaceSpace
     (shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> mapping,
      optional<Region> definedon, bool periodic, bool periodicu,
-     bool periodicv, int order, bool complex);
+     bool periodicv, int order, bool complex, bool polar);
 } // namespace ngcomp
 
 #endif // NGSOLVE_GLOBALINTERFACESPACE_HPP
