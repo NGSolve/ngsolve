@@ -542,7 +542,7 @@ kwargs : kwargs
                         if (space->DoesAutoUpdate() != autoupdate)
                           throw Exception("All spaces must have the same autoupdate setting.");
                       }
-                    flags.SetFlag("autoupdate", autoupdate || flags.GetDefineFlagX("autoupdate").IsTrue());
+                    flags.SetFlag("autoupdate", autoupdate || flags.GetDefineFlag("autoupdate"));
 
                     int dim = spaces[0]->GetDimension();
                     for (auto space : spaces)
@@ -1305,9 +1305,9 @@ component : int
 
   py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>
     (m,"VectorValued")
-    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim) {
+    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim, bool autoupdate) {
           Flags flags;
-          flags.SetFlag("autoupdate", space->DoesAutoUpdate());
+          flags.SetFlag("autoupdate", autoupdate || space->DoesAutoUpdate());
           int sdim = optdim.value_or (space->GetSpatialDimension());
           auto vecspace = make_shared<CompoundFESpaceAllSame> (space, sdim, flags);
           vecspace->SetDoSubspaceUpdate(false);
@@ -1317,7 +1317,7 @@ component : int
             vecspace->SetDoSubspaceUpdate(true);
           connect_auto_update(vecspace.get());
           return vecspace;
-        }),py::arg("space"), py::arg("dim")=nullopt)
+        }),py::arg("space"), py::arg("dim")=nullopt, py::arg("autoupdate")=false)
     .def(py::pickle([] (py::object pyfes)
                     {
                       auto fes = py::cast<shared_ptr<CompoundFESpaceAllSame>>(pyfes);
@@ -1340,11 +1340,12 @@ component : int
 
   py::class_<MatrixFESpace, shared_ptr<MatrixFESpace>, CompoundFESpace>
     (m,"MatrixValued")
-    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim, bool symmetric, bool deviatoric) {
+    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim, bool symmetric, bool deviatoric,
+            bool autoupdate) {
           Flags flags;
           if (symmetric) flags.SetFlag("symmetric");
           if (deviatoric) flags.SetFlag("deviatoric");
-          flags.SetFlag("autoupdate", space->DoesAutoUpdate());
+          flags.SetFlag("autoupdate", autoupdate || space->DoesAutoUpdate());
           int sdim = optdim.value_or (space->GetSpatialDimension());
           auto matspace = make_shared<MatrixFESpace> (space, sdim, flags);
           matspace->SetDoSubspaceUpdate(false);
@@ -1354,7 +1355,8 @@ component : int
             matspace->SetDoSubspaceUpdate(true);
           connect_auto_update(matspace.get());
           return matspace;
-        }),py::arg("space"), py::arg("dim")=nullopt, py::arg("symmetric")=false, py::arg("deviatoric")=false)
+        }), py::arg("space"), py::arg("dim")=nullopt, py::arg("symmetric")=false, py::arg("deviatoric")=false,
+        py::arg("autoupdate")=false)
     ;
   
   ExportFESpace<HCurlHighOrderFESpace> (m, "HCurl")
@@ -1503,9 +1505,9 @@ used_idnrs : list of int = None
                       }
                     else
                       perfes = make_shared<PeriodicFESpace>(fes,flags,a_used_idnrs);
+                    // MR: Note that PeriodicFESpace always updates the wrapped space
                     perfes->Update();
                     perfes->FinalizeUpdate();
-                    // MR: is autoupdate contained in flags?
                     connect_auto_update(perfes.get());
                     return perfes;
                   }), py::arg("fespace"), py::arg("phase")=nullopt,
@@ -1586,9 +1588,9 @@ BND : boolean or None
     .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);
-                    // MR: Is this logic correct or should it be required that fes does autoupdate?
-                    flags.SetFlag("autoupdate", flags.GetDefineFlagX("autoupdate").IsTrue() || fes->DoesAutoUpdate());
+                    flags.SetFlag("autoupdate", flags.GetDefineFlag("autoupdate") || fes->DoesAutoUpdate());
                     auto dcfes = make_shared<DiscontinuousFESpace>(fes, flags);
+                    // MR: Note that dcfes updates the wrapped space!
                     dcfes->Update();
                     dcfes->FinalizeUpdate();
                     connect_auto_update(dcfes.get());
@@ -1650,8 +1652,8 @@ fespace : ngsolve.comp.FESpace
     .def(py::init([disc_class] (shared_ptr<FESpace> & fes, py::kwargs kwargs)
                   {
                     auto flags = CreateFlagsFromKwArgs(kwargs, disc_class);          
-                    // MR: Is this logic correct or should it be required that fes does autoupdate?
-                    flags.SetFlag("autoupdate", flags.GetDefineFlagX("autoupdate").IsTrue() || fes->DoesAutoUpdate());
+                    // MR: Note that HiddenFESpace always updates the wrapped space!
+                    flags.SetFlag("autoupdate", flags.GetDefineFlag("autoupdate") || fes->DoesAutoUpdate());
                     auto hiddenfes = make_shared<HiddenFESpace>(fes, flags);
                     hiddenfes->Update();
                     hiddenfes->FinalizeUpdate();
@@ -1669,8 +1671,6 @@ fespace : ngsolve.comp.FESpace
     .def(py::init([] (shared_ptr<FESpace> & fes)
                   {
                     Flags flags = fes->GetFlags();
-                    // MR: Is this logic correct or should it be required that fes does autoupdate?
-                    flags.SetFlag("autoupdate", flags.GetDefineFlagX("autoupdate").IsTrue() || fes->DoesAutoUpdate());
                     auto refes = make_shared<ReorderedFESpace>(fes, flags);
                     refes->Update();
                     refes->FinalizeUpdate();
@@ -1748,7 +1748,6 @@ active_dofs : BitArray or None
                       dynamic_pointer_cast<CompressedFESpace>(ret)->SetActiveDofs(py::extract<shared_ptr<BitArray>>(active_dofs)());
                     ret->Update();
                     ret->FinalizeUpdate();
-                    // MR: Does ret "inherit" the autoupdate from "fes"
                     connect_auto_update(ret.get());
                     return ret;                    
                   }), py::arg("fespace"), py::arg("active_dofs")=DummyArgument())
@@ -1794,8 +1793,11 @@ active_dofs : BitArray or None
                 for (int i = 0; i < compspace->GetNSpaces(); i++)
                   spaces[i] = make_shared<CompressedFESpace> ((*compspace)[i]);
                 auto ret = make_shared<CompoundFESpace>(compspace->GetMeshAccess(),spaces, compspace->GetFlags());
+                ret->SetDoSubspaceUpdate(false);
                 ret->Update();
                 ret->FinalizeUpdate();
+                if (!spaces[0]->DoesAutoUpdate())
+                  ret->SetDoSubspaceUpdate(true);
                 return ret;
               }
              }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
