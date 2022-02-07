@@ -862,7 +862,7 @@ namespace ngcomp
   {
     // func->PrintReport(cout);
 
-    if (func->GetDescription() == "ZeroCF")
+    if (func->IsZeroCF())
       return func;
 
     bool has_trial = false, has_test = false;
