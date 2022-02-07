@@ -5381,7 +5381,7 @@ MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Arra
 
   Array<int> dist1(dims1.Size());
   int disti = 1;
-  for (int i = dims1.Size()-1; i--; i >= 0)
+  for (int i = dims1.Size()-1; i >= 0; i--)
     {
       dist1[i] = disti;
       disti *= dims1[i];
