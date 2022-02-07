@@ -145,6 +145,9 @@ namespace ngcomp
                   shapes(j++) = shapeu[k];
                 for(auto k : Range(1, order+1))
                   {
+                    JacobiPolynomialAlpha jac(k);
+                    jac.Eval(order/2, 1 - 2 * phi[0]*phi[0], shapeu);
+
                     for(auto p : Range((order-k)/2+1))
                       {
                         shapes(j++) = shapev[2*(k-1)] * pow(phi[0], k) * shapeu[p];
