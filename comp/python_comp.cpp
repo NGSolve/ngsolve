@@ -1793,11 +1793,11 @@ active_dofs : BitArray or None
                 for (int i = 0; i < compspace->GetNSpaces(); i++)
                   spaces[i] = make_shared<CompressedFESpace> ((*compspace)[i]);
                 auto ret = make_shared<CompoundFESpace>(compspace->GetMeshAccess(),spaces, compspace->GetFlags());
-                ret->SetDoSubspaceUpdate(false);
+                // do not deactivate SubSpaceUpdate here
                 ret->Update();
                 ret->FinalizeUpdate();
-                if (!spaces[0]->DoesAutoUpdate())
-                  ret->SetDoSubspaceUpdate(true);
+                if (spaces[0]->DoesAutoUpdate())
+                  ret->SetDoSubspaceUpdate(false);
                 return ret;
               }
              }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
