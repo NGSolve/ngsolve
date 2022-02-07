@@ -1229,13 +1229,6 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    /*
-    TraverseDimensions( this->Dimensions(), [&](int ind, int i, int j) {
-        int i1, j1;
-        GetIndex( c1->Dimensions(), ind, i1, j1 );
-        code.body += Var(index,i,j).Assign( Var(inputs[0],i1,j1).Func(name) );
-        });
-    */
     for (int i = 0; i < this->Dimension(); i++)
       code.body += Var(index, i, this->Dimensions())
         .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name) );
@@ -1467,21 +1460,6 @@ public:
   }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    /*
-    TraverseDimensions( c1->Dimensions(), [&](int ind, int i, int j) {
-        int i2,j2;
-        GetIndex(c2->Dimensions(), ind, i2, j2);
-        string expr;
-        auto op1 = Var(inputs[0],i,j).S();
-        auto op2 = Var(inputs[1],i2,j2).S();
-
-        if(opname.size()>2) // atan2, pow, etc.
-            expr = opname + '(' + op1 + ',' + op2 + ')';
-        else // +,-,*,/, etc.
-            expr = op1 + ' ' + opname + ' ' + op2;
-        code.body += Var(index,i,j).Assign( expr );
-    });
-    */
     for (int i = 0; i < this->Dimension(); i++)
       {
         auto op1 = Var(inputs[0], i, c1->Dimensions()).S();

@@ -196,29 +196,6 @@ namespace ngfem
   }
 
   
-  template<typename TFunc>
-  void TraverseDimensions( FlatArray<int> dims, const TFunc &func)
-
-  {
-    switch(dims.Size())
-    {
-      case 0:
-        func(0,0,0);
-        break;
-      case 1:
-        for (int i : Range(max2(1, dims[0])))
-          func(i,i,0);
-        break;
-      case 2:
-        for (int i : Range(max2(1, dims[0])))
-          for (int j : Range(max2(1, dims[1])))
-            func(i*dims[1]+j, i, j);
-        break;
-      default:
-        throw Exception("TraverseDimensions: too many dimensions!");
-    }
-  }
-
   inline void GetIndex( FlatArray<int> dims, int i, int &iout, int &jout )
   {
     iout = jout = 0;
