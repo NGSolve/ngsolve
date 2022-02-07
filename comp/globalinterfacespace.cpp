@@ -68,6 +68,7 @@ namespace ngcomp
   {
     order = int(flags.GetNumFlag("order", 3));
     periodic[0] = periodic[1] = false;
+    polar = flags.GetDefineFlag("polar");
     if(flags.GetDefineFlag("periodic"))
       periodic[0] = periodic[1] = true;
     if(flags.GetDefineFlag("periodicu"))
@@ -108,6 +109,8 @@ namespace ngcomp
         int order = fes->GetOrder();
         if constexpr(DIM ==1)
           {
+            if(fes->polar)
+              throw Exception("Polar coordinates need 2 dimensional mapping!");
             double phi = fes->mapping -> Evaluate(mip);
             if(fes->periodic[0])
               {
@@ -127,39 +130,66 @@ namespace ngcomp
           {
             Vec<2, double> phi;
             fes->mapping->Evaluate(mip, FlatVector<double>(2, &phi[0]));
-            ArrayMem<double, 20> shapeu(fes->periodic[0] ? 2*order+1 : order+1), shapev(fes->periodic[1] ? 2*order+1 : order+1);
-
-            if(fes->periodic[0])
+            if(fes->polar)
               {
-                shapeu[0] = 1;
+                ArrayMem<double, 20> shapeu(order/2+1), shapev(2*order);
+                LegendrePolynomial(order/2, -1 + 2 * phi[0]*phi[0],
+                                   shapeu);
                 for(auto i : Range(1, order+1))
                   {
-                    shapeu[2*i-1] = cos(i*phi[0]);
-                    shapeu[2*i  ] = sin(i*phi[0]);
+                    shapev[2*(i-1)] = cos(i*phi[1]);
+                    shapev[2*(i-1)+1] = sin(i*phi[1]);
+                  }
+                int j = 0;
+                for(auto k : Range(order/2 + 1))
+                  shapes(j++) = shapeu[k];
+                for(auto k : Range(1, order+1))
+                  {
+                    for(auto p : Range((order-k)/2+1))
+                      {
+                        shapes(j++) = shapev[2*(k-1)] * pow(phi[0], k) * shapeu[p];
+                        shapes(j++) = shapev[2*(k-1)+1] * pow(phi[0], k) * shapeu[p];
+                      }
                   }
               }
             else
               {
-                LegendrePolynomial(order, -1 + 2 * phi[0], shapeu);
-              }
+                int ndof1 = fes->periodic[0] ? 2*order+1 : order+1;
+                int ndof2 = fes->periodic[1] ? 2*order+1 : order+1;
+                ArrayMem<double, 20> shapeu(ndof1), shapev(ndof2);
 
-            if(fes->periodic[1])
-              {
-                shapev[0] = 1;
-                for(auto i : Range(1, order+1))
+                if(fes->periodic[0])
                   {
-                    shapev[2*i-1] = cos(i*phi[1]);
-                    shapev[2*i  ] = sin(i*phi[1]);
+                    shapeu[0] = 1;
+                    for(auto i : Range(1, order+1))
+                      {
+                        shapeu[2*i-1] = cos(i*phi[0]);
+                        shapeu[2*i  ] = sin(i*phi[0]);
+                      }
                   }
-              }
-            else
-              {
-                LegendrePolynomial(order, -1 + 2 * phi[1], shapev);
-              }
+                else
+                  {
+                    LegendrePolynomial(order, -1 + 2 * phi[0], shapeu);
+                  }
 
-            for(auto i : Range(shapeu.Size()))
-              for(auto j : Range(shapev.Size()))
-                shapes(i * shapev.Size() + j) = shapeu[i] * shapev[j];
+                if(fes->periodic[1])
+                  {
+                    shapev[0] = 1;
+                    for(auto i : Range(1, order+1))
+                      {
+                        shapev[2*i-1] = cos(i*phi[1]);
+                        shapev[2*i  ] = sin(i*phi[1]);
+                      }
+                  }
+                else
+                  {
+                    LegendrePolynomial(order, -1 + 2 * phi[1], shapev);
+                  }
+
+                for(auto i : Range(shapeu.Size()))
+                  for(auto j : Range(shapev.Size()))
+                    shapes(i * shapev.Size() + j) = shapeu[i] * shapev[j];
+              }
           }
       }
     };
@@ -206,7 +236,15 @@ namespace ngcomp
             if constexpr(DIM ==1)
               ndof = fes->periodic[0] ? 2*order+1 : order+1;
             else // DIM == 2
-              ndof = (fes->periodic[0] ? 2*order+1 : order+1) * (fes->periodic[1] ? 2*order+1 : order+1);
+              {
+                ndof = (fes->periodic[0] ? 2*order+1 : order+1) * (fes->periodic[1] ? 2*order+1 : order+1);
+                if(fes->polar)
+                  {
+                    ndof = order/2+1;
+                    for(auto k : Range(1, order+1))
+                      ndof += 2*((order-k)/2 + 1);
+                  }
+              }
           }
         else
           ndof = 0;
@@ -253,7 +291,17 @@ namespace ngcomp
       if(DIM == 1)
         SetNDof(periodic[0] ? 2*order+1 : order+1);
       else // DIM == 2
-        SetNDof((periodic[0] ? 2*order+1 : order+1) * (periodic[1] ? 2*order+1 : order+1));
+        {
+          if(polar)
+            {
+              int ndof = order/2+1;
+              for(auto k : Range(1, order+1))
+                ndof += 2*((order-k)/2 + 1);
+              SetNDof(ndof);
+            }
+          else
+            SetNDof((periodic[0] ? 2*order+1 : order+1) * (periodic[1] ? 2*order+1 : order+1));
+        }
     
       evaluator[VOL] = make_shared<VolDiffOp<VolFE>>();
       evaluator[BND] = make_shared<InterfaceDiffOp<InterfaceFE>>();
@@ -351,7 +399,7 @@ namespace ngcomp
   shared_ptr<GlobalInterfaceSpace> CreateGlobalInterfaceSpace
     (shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> mapping,
      optional<Region> definedon, bool periodic, bool periodicu,
-     bool periodicv, int order, bool complex)
+     bool periodicv, int order, bool complex, bool polar)
   {
     Flags flags;
     if(complex)
@@ -365,6 +413,11 @@ namespace ngcomp
       flags.SetFlag("periodicv");
     if(definedon.has_value())
         flags.SetFlag("definedon", definedon.value());
+    if(polar)
+      {
+        flags.SetFlag("polar");
+        flags.SetFlag("periodicv");
+      }
     flags.SetFlag("order", order);
     if(mapping->Dimension() == 1)
       return make_shared<GlobalInterfaceSpaceD<1>>(ma, flags);
