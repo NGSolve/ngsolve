@@ -1770,6 +1770,10 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1,
                                     int first, Array<int> num, Array<int> dist);
 
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Array<int> ordering);
+
+
   // cf_ijk v0_i v1_j v2_k
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeVectorContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,

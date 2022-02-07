@@ -1115,6 +1115,10 @@ cf : ngsolve.CoefficientFunction
                       return TransposeCF(coef);
                     },
                    "transpose of matrix-valued CF")
+    .def ("TensorTranspose", [](shared_ptr<CF> coef, py::tuple ordering)
+          {
+            return MakeTensorTransposeCoefficientFunction (coef, makeCArray<int>(ordering));
+          })
     .def_property_readonly ("real", [](shared_ptr<CF> coef) { return Real(coef); }, "real part of CF")
     .def_property_readonly ("imag", [](shared_ptr<CF> coef) { return Imag(coef); }, "imaginary part of CF")
 
