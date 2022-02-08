@@ -1475,9 +1475,10 @@ used_idnrs : list of int = None
 
 )delimiter"))
     .def(py::init([] (shared_ptr<FESpace> & fes,
-                      optional<py::list> phase, py::object use_idnrs )
+                      optional<py::list> phase, py::object use_idnrs, bool autoupdate)
                   {
                     Flags flags = fes->GetFlags();
+                    flags.SetFlag("autoupdate", autoupdate || fes->DoesAutoUpdate());
                     shared_ptr<Array<int>> a_used_idnrs;
                     if(py::extract<py::list>(use_idnrs).check())
                       a_used_idnrs = make_shared<Array<int>>(makeCArray<int>(py::extract<py::list>(use_idnrs)()));
@@ -1511,7 +1512,7 @@ used_idnrs : list of int = None
                     connect_auto_update(perfes.get());
                     return perfes;
                   }), py::arg("fespace"), py::arg("phase")=nullopt,
-                  py::arg("use_idnrs")=py::list())
+                  py::arg("use_idnrs")=py::list(), py::arg("autoupdate")=false)
     .def(py::pickle([](const PeriodicFESpace* per_fes)
                     {
                       py::list idnrs;
@@ -1668,15 +1669,17 @@ fespace : ngsolve.comp.FESpace
 	docu_string(R"delimiter(Reordered Finite Element Spaces.
 ...
 )delimiter"))
-    .def(py::init([] (shared_ptr<FESpace> & fes)
+    .def(py::init([] (shared_ptr<FESpace> & fes, bool autoupdate)
                   {
                     Flags flags = fes->GetFlags();
+                    flags.SetFlag("autoupdate", autoupdate || fes->DoesAutoUpdate());
                     auto refes = make_shared<ReorderedFESpace>(fes, flags);
+                    // MR: Update() always updates wrapped space
                     refes->Update();
                     refes->FinalizeUpdate();
                     connect_auto_update(refes.get());
                     return refes;
-                  }), py::arg("fespace"))
+                  }), py::arg("fespace"), py::arg("autoupdate")=false)
     /*
     .def(py::pickle([](const PeriodicFESpace* per_fes)
                     {
@@ -1798,9 +1801,10 @@ active_dofs : BitArray or None
                 ret->FinalizeUpdate();
                 if (spaces[0]->DoesAutoUpdate())
                   ret->SetDoSubspaceUpdate(false);
+                connect_auto_update(ret.get());
                 return ret;
               }
-             }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
+            }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
 
    py::class_<GlobalInterfaceSpace, shared_ptr<GlobalInterfaceSpace>,
               FESpace>
@@ -1809,19 +1813,19 @@ active_dofs : BitArray or None
                       shared_ptr<CoefficientFunction> mapping,
                       optional<Region> definedon,
                       bool periodic, bool periodicu, bool periodicv,
-                      int order, bool complex, bool polar)
+                      int order, bool complex, bool polar, bool autoupdate)
      {
        auto fes = CreateGlobalInterfaceSpace(ma, mapping, definedon,
                                              periodic, periodicu,
                                              periodicv, order,
-                                             complex, polar);
+                                             complex, polar, autoupdate);
        fes->Update();
        fes->FinalizeUpdate();
        return fes;
      }), "mesh"_a, "mapping"_a, "definedon"_a = nullopt,
           "periodic"_a = false, "periodicu"_a = false,
           "periodicv"_a = false, "order"_a = 3, "complex"_a = false,
-          "polar"_a = false)
+          "polar"_a = false, "autoupdate"_a = false)
      ;
 
 
