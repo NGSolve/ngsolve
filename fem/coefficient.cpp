@@ -1489,9 +1489,11 @@ public:
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
     if (this == var)
-      // return dir;
-      throw Exception ("ScaleCF::DiffJacobi - diff by me not implemented");
-
+      {
+        auto cf = IdentityCF(this->Dimension());
+        cf->SetDimensions( Array<int> (Dimensions()+Dimensions()) );
+        return cf;
+      }
     return scal * c1->DiffJacobi(var);
   }
 };
