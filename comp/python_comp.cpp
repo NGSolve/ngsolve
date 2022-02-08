@@ -1821,6 +1821,7 @@ active_dofs : BitArray or None
                                              complex, polar, autoupdate);
        fes->Update();
        fes->FinalizeUpdate();
+       connect_auto_update(fes.get());
        return fes;
      }), "mesh"_a, "mapping"_a, "definedon"_a = nullopt,
           "periodic"_a = false, "periodicu"_a = false,
