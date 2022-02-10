@@ -1557,6 +1557,11 @@ namespace ngla
   {
     return MatMult<double, double, double>(mata, matb);
   }
+  shared_ptr<SparseMatrixTM<std::complex<double>>> MatMult (const SparseMatrixTM<std::complex<double>> & mata,
+                                              const SparseMatrixTM<std::complex<double>> & matb)
+  {
+    return MatMult<std::complex<double>, std::complex<double>, std::complex<double>>(mata, matb);
+  }
 
   template <class TM, class TV>
   shared_ptr<BaseSparseMatrix>

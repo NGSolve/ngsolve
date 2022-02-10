@@ -799,6 +799,8 @@ namespace ngla
 
   NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
   MatMult (const SparseMatrixTM<double> & mata, const SparseMatrixTM<double> & matb);
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<std::complex<double>>>
+  MatMult (const SparseMatrixTM<std::complex<double>> & mata, const SparseMatrixTM<std::complex<double>> & matb);
 
 #ifdef GOLD
 #include <sparsematrix_spec.hpp>
