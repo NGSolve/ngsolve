@@ -40,7 +40,7 @@ install( FILES
         l2hofespace.hpp hdivdivsurfacespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
         postproc.hpp preconditioner.hpp vectorfacetfespace.hpp
         normalfacetfespace.hpp normalfacetsurfacefespace.hpp hypre_precond.hpp h1amg.hpp
-        pde.hpp numproc.hpp irspace.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
+        pde.hpp numproc.hpp irspace.hpp h1lumping.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp hidden.hpp reorderedfespace.hpp
         hypre_ams_precond.hpp facetsurffespace.hpp
         compressedfespace.hpp globalinterfacespace.hpp globalspace.hpp
