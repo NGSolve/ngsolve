@@ -12,7 +12,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
         preconditioner.cpp vectorfacetfespace.cpp
         normalfacetfespace.cpp normalfacetsurfacefespace.cpp
-        numberfespace.cpp irspace.cpp bddc.cpp h1amg.cpp
+        numberfespace.cpp irspace.cpp h1lumping.cpp bddc.cpp h1amg.cpp
         hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp hcurlcurlfespace.cpp tpfes.cpp hcurldivfespace.cpp fesconvert.cpp
         python_comp.cpp python_comp_mesh.cpp ../fem/python_fem.cpp basenumproc.cpp pde.cpp pdeparser.cpp vtkoutput.cpp
         periodic.cpp discontinuous.cpp hidden.cpp reorderedfespace.cpp

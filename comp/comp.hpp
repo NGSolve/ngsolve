@@ -73,6 +73,7 @@ namespace ngcomp
 #include "hcurlhofespace.hpp" 
 #include "facetfespace.hpp" 
 #include "vectorfacetfespace.hpp"
+#include "h1lumping.hpp"
 #include "periodic.hpp"
 #include "discontinuous.hpp"
 #include "hidden.hpp"

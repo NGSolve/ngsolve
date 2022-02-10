@@ -1368,6 +1368,9 @@ component : int
   ExportFESpace<IntegrationRuleSpaceSurface> (m, "IntegrationRuleSpaceSurface")
     .def("GetIntegrationRules", &IntegrationRuleSpaceSurface::GetIntegrationRules)
     ;
+  ExportFESpace<H1LumpingFESpace> (m, "H1LumpingFESpace")
+    .def("GetIntegrationRules", &H1LumpingFESpace::GetIntegrationRules)
+    ;
     
 
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
