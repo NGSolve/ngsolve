@@ -6,7 +6,7 @@ namespace ngcomp
 
   class H1LumpingFESpace : public FESpace
   {
-    size_t nvert, nedge;
+    size_t nvert, nedge, nface;
   public:
     H1LumpingFESpace (shared_ptr<MeshAccess> ama, const Flags & flags);
     
