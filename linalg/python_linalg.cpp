@@ -170,6 +170,8 @@ void ExportSparseMatrix(py::module m)
 
     .def("__matmul__", [] (const SparseMatrix<double> & a, const SparseMatrix<double> & b)
          { return MatMult(a,b); }, py::arg("mat"))
+    .def("__matmul__", [] (const SparseMatrix<std::complex<double>> & a, const SparseMatrix<std::complex<double>> & b)
+         ->shared_ptr<BaseMatrix> { return MatMult(a,b); }, py::arg("mat"))
     .def("__matmul__", [](shared_ptr<SparseMatrix<T>> a, shared_ptr<BaseMatrix> mb)
          ->shared_ptr<BaseMatrix> { return make_shared<ProductMatrix> (a, mb); }, py::arg("mat"))
     ;
@@ -327,6 +329,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            return shared_ptr<BaseVector>(newvec);
          }, py::arg("copy")=false,
          "creates a new vector of same type, contents is undefined if copy is false")
+
+    .def("CreateVectors", [] (BaseVector & self, int num)
+         {
+           std::vector<shared_ptr<BaseVector>> vecs;
+           for (int i : Range(num))
+             vecs.push_back(self.CreateVector());
+           return vecs;
+         }, py::arg("num"),
+         "creates a num new vector of same type, contents is undefined")
     
     .def("Copy", [] (BaseVector & self)
          {
@@ -626,6 +637,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         exp->AssignTo(ones, *mv);
         return mv;
       })
+    .def("InnerProduct",[](py::object x, py::object y)
+         { return x.attr("Evaluate")().attr("InnerProduct")(y); })
     ;
 
   py::class_<MultiVector, MultiVectorExpr, shared_ptr<MultiVector>> (m, "MultiVector")
@@ -741,6 +754,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           else
             return py::cast(x.InnerProductC(y, conjugate));
         }, py::arg("other"), py::arg("conjugate")=py::cast(true))
+    .def("InnerProduct", [](MultiVector & x, BaseVector & y, bool conjugate)
+        { 
+          if( !x.IsComplex() )
+            return py::cast(x.InnerProductD(y));
+          else
+            return py::cast(x.InnerProductC(y, conjugate));
+        }, py::arg("other"), py::arg("conjugate")=py::cast(true))
+
     .def("InnerProduct", [](MultiVector & x, MultiVectorExpr & y, bool conjugate)
         { 
           if( !x.IsComplex() )

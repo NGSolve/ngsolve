@@ -3578,7 +3578,12 @@ namespace ngfem
                    FlatMatrix<Complex> elmat,
                    LocalHeap & lh) const
   {
-    T_CalcFacetMatrix(volumefel1, LocalFacetNr1, eltrans1, ElVertices1,
+      if (volumefel1.ComplexShapes() && volumefel2.ComplexShapes())
+    T_CalcFacetMatrix<Complex,Complex>(volumefel1, LocalFacetNr1, eltrans1, ElVertices1,
+                      volumefel2, LocalFacetNr2, eltrans2, ElVertices2,
+                      elmat, lh);
+      else
+    T_CalcFacetMatrix<Complex,double>(volumefel1, LocalFacetNr1, eltrans1, ElVertices1,
                       volumefel2, LocalFacetNr2, eltrans2, ElVertices2,
                       elmat, lh);
   }
@@ -3590,11 +3595,15 @@ namespace ngfem
                    FlatMatrix<Complex> elmat,
                    LocalHeap & lh) const
   {
-    T_CalcFacetMatrix(volumefel, LocalFacetNr, eltrans, ElVertices,
+      if (volumefel.ComplexShapes())
+    T_CalcFacetMatrix<Complex,Complex>(volumefel, LocalFacetNr, eltrans, ElVertices,
+                      seltrans, SElVertices, elmat, lh);
+      else
+    T_CalcFacetMatrix<Complex,double>(volumefel, LocalFacetNr, eltrans, ElVertices,
                       seltrans, SElVertices, elmat, lh);
   }
 
-  template<typename TSCAL>
+  template<typename TSCAL, typename SCAL_SHAPES>
   void SymbolicFacetBilinearFormIntegrator ::
   T_CalcFacetMatrix (const FiniteElement & fel1, int LocalFacetNr1,
                      const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
@@ -3675,8 +3684,8 @@ namespace ngfem
           IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*fel1_test.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*fel1_test.GetNDof());
 
           auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
-          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
-          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
+          FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
+          FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
 
           constexpr size_t BS = 16;
           for (size_t i = 0; i < mir1.Size(); i+=BS)
@@ -3711,7 +3720,7 @@ namespace ngfem
         }
   }
 
-  template<typename TSCAL>
+  template<typename TSCAL, typename SCAL_SHAPES>
   void SymbolicFacetBilinearFormIntegrator ::
   T_CalcFacetMatrix(const FiniteElement & fel1, int LocalFacetNr1,
                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
@@ -3774,8 +3783,8 @@ namespace ngfem
           for (size_t i = 0; i < mir1.Size(); i++)
             proxyvalues(i,STAR,STAR) *=  mir1[i].GetMeasure() * ir_facet[i].Weight();
 
-          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
-          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+          FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+          FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
           constexpr size_t BS = 16;          
           for (size_t i = 0; i < mir1.Size(); i+=BS)
