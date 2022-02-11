@@ -648,6 +648,21 @@ INLINE AutoDiffDiff<D, SCAL> cosh (AutoDiffDiff<D, SCAL> x)
   return res;
 }
 
+template <int D, typename SCAL>
+INLINE AutoDiffDiff<D, SCAL> erf (AutoDiffDiff<D, SCAL> x)
+{
+  AutoDiffDiff<D, SCAL> res;
+  SCAL derf = 2. / sqrt(M_PI) * exp(- x.Value() * x.Value());
+  
+  res.Value() = erf(x.Value());
+  for (int k = 0; k < D; k++)
+    res.DValue(k) = - derf * x.DValue(k);
+  for (int k = 0; k < D; k++)
+    for (int l = 0; l < D; l++)
+      res.DDValue(k,l) = derf * (x.DDValue(k, l) - 2 * x.Value() * x.DValue(k) * x.DValue(l));
+  return res;
+}
+
 using std::floor;
 template<int D, typename SCAL>
 INLINE AutoDiffDiff<D,SCAL> floor (const AutoDiffDiff<D,SCAL> & x)
