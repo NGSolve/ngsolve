@@ -146,7 +146,13 @@ namespace ngfem
   }
 
 
-
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericErf>::Diff(const CoefficientFunction * var,
+                                 shared_ptr<CoefficientFunction> dir) const
+  {
+    if (this == var) return dir;
+    return CWMult (2. / sqrt(M_PI) * exp(- c1 * c1), c1->Diff(var, dir));
+  }
 
 
   
@@ -203,8 +209,6 @@ namespace ngfem
   {
     return MakeStdMathFunction<GenericCosh>(x);
   }
-
-  
   
   shared_ptr<CoefficientFunction> exp(shared_ptr<CoefficientFunction> x)
   {
@@ -214,6 +218,11 @@ namespace ngfem
   {
     return MakeStdMathFunction<GenericLog>(x);
   }
+
+   shared_ptr<CoefficientFunction> erf(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericErf>(x);
+  } 
 
   shared_ptr<CoefficientFunction> floor(shared_ptr<CoefficientFunction> x)
   {

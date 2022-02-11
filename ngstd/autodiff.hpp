@@ -519,6 +519,13 @@ INLINE AutoDiffVec<D,SCAL> cosh (AutoDiffVec<D,SCAL> x)
   return res;
 }
 
+using std::erf;
+template <int D, typename SCAL>
+INLINE AutoDiffVec<D,SCAL> erf (AutoDiffVec<D,SCAL> x)
+{
+  return erf(AutoDiffRec<D,SCAL>(x));
+}
+
 using std::floor;
 template<int D, typename SCAL>
 INLINE AutoDiffVec<D,SCAL> floor (const AutoDiffVec<D,SCAL> & x)
@@ -998,6 +1005,12 @@ INLINE AutoDiffVec<D,SCAL> asin (AutoDiffVec<D,SCAL> x)
   auto cosh (AutoDiffRec<D,SCAL> x)
   {
     return AutoDiffRec<D,SCAL> (cosh(x.Rec()), sinh(x.Value())*x.Last());
+  }
+
+  template <int D, typename SCAL>
+  auto erf (AutoDiffRec<D,SCAL> x)
+  {
+    return AutoDiffRec<D,SCAL> (erf(x.Rec()), 2. / sqrt(M_PI) * exp(- x.Value() * x.Value())*x.Last());
   }
 
   template <int D, typename SCAL>

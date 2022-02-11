@@ -5223,7 +5223,7 @@ public:
                    BareSliceMatrix<T,ORD> values) const
   {
     auto in0 = input[0];
-    cout << "sub-tensor, t_evaluate input" << endl;
+    // cout << "sub-tensor, t_evaluate input" << endl;
     // not yet tested
     for (size_t i = 0; i < mapping.Size(); i++)
       values.Row(i).Range(ir.Size()) = in0.Row(mapping[i]);

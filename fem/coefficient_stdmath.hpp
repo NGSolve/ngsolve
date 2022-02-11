@@ -77,6 +77,13 @@ namespace ngfem
   };
 
 
+  struct GenericErf {
+    template <typename T> T operator() (T x) const { return erf(x); }
+    Complex operator() (Complex x) const { throw Exception("no erf for Complex"); }
+    SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no erf for simd(complex)"); }  
+    static string Name() { return "erf"; }
+    void DoArchive(Archive& ar) {}
+  };
 
 
 
@@ -135,6 +142,9 @@ struct GenericCeil {
   
   using std::log;
   shared_ptr<CoefficientFunction> log(shared_ptr<CoefficientFunction> x);  
+
+  using std::erf;
+  shared_ptr<CoefficientFunction> erf(shared_ptr<CoefficientFunction> x);  
 
   using std::floor;
   shared_ptr<CoefficientFunction> floor(shared_ptr<CoefficientFunction> x);
