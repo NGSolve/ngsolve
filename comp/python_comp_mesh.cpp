@@ -13,6 +13,24 @@ inline auto Nr2Edge(size_t nr) {  return NodeId(NT_EDGE,nr); };
 inline auto Nr2Face(size_t nr) {  return NodeId(NT_FACE,nr); };
 inline auto Nr2VolElement(size_t nr) {  return ElementId(VOL,nr); };
 
+  class LocalHCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    shared_ptr<netgen::LocalH> loch;
+    LocalHCF (shared_ptr<netgen::LocalH> loch_ ) :
+        CoefficientFunctionNoDerivative(1, false),
+        loch(loch_)
+      { ; }
+
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+       auto p = ip.GetPoint();
+       return loch->GetH({p[0], p[1], p[2]});
+    }
+
+      using CoefficientFunctionNoDerivative::Evaluate;
+  };
+
 void ExportPml(py::module &m);
 
 void ExportNgcompMesh (py::module &m)
@@ -724,6 +742,10 @@ values. Optional last argument (default) is the value for not given boundaries.
 >>> penalty = mesh.BoundaryCF({ "top" : 1e6 }, default=0)
 will create a CF being 1e6 on the top boundary and 0. elsewhere.
 )delimiter")
+    .def("LocalHCF", [](MeshAccess& self) -> shared_ptr<CoefficientFunction>
+            {
+              return make_shared<LocalHCF>( self.GetNetgenMesh()->GetLocalH() );
+            })
 
     // TODO: explain how to mark elements
     .def("Refine",
