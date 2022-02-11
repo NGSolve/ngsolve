@@ -19,6 +19,7 @@ else()
     string(REGEX REPLACE "^ngsolve_(.*)" "\\1" git_version_string "${git_version_string}")
   endif()
 endif()
+string(STRIP ${git_version_string} git_version_string)
 
 string(REGEX REPLACE "^v([0-9]+)\\..*" "\\1" NGSOLVE_VERSION_MAJOR "${git_version_string}")
 string(REGEX REPLACE "^v[0-9]+\\.([0-9]+).*" "\\1" NGSOLVE_VERSION_MINOR "${git_version_string}")
