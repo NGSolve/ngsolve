@@ -941,7 +941,7 @@ public:
                       LocalHeap & lh) const;
 
   private:
-    template<typename TSCAL>
+    template<typename TSCAL, typename SCAL_SHAPES = double>
     void T_CalcFacetMatrix(const FiniteElement & volumefel1, int LocalFacetNr1,
                            const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
                            const FiniteElement & volumefel2, int LocalFacetNr2,
@@ -949,7 +949,7 @@ public:
                            FlatMatrix<TSCAL> elmat,
                            LocalHeap & lh) const;
 
-    template<typename TSCAL>
+    template<typename TSCAL, typename SCAL_SHAPES = double>
     void T_CalcFacetMatrix(const FiniteElement & volumefel, int LocalFacetNr,
                            const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                            const ElementTransformation & seltrans, FlatArray<int> & SElVertices,  
