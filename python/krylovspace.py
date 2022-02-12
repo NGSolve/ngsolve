@@ -1,6 +1,6 @@
 
 from ngsolve import Projector, Norm, TimeFunction, BaseMatrix, Preconditioner, InnerProduct, \
-    Norm, sqrt, Vector, Matrix, BaseVector, BitArray
+    Norm, sqrt, Vector, Matrix, BaseVector, BlockVector, BitArray
 from typing import Optional, Callable, Union
 import logging
 from netgen.libngpy._meshing import _PushStatus, _GetStatus, _SetThreadPercentage
@@ -888,3 +888,70 @@ printrates : bool = True
                          callback_sol=callback, restart=restart,
                          printrates=printrates)
     return solver.Solve(rhs=b, sol=x)
+
+
+
+
+from ngsolve.la import EigenValues_Preconditioner
+def BramblePasciakCG(A, B, C, f, g, preA, preS, maxit=1000, tol=1e-8, \
+                         printrates=False):
+    lam = EigenValues_Preconditioner(A,preA)
+    print ("lammin/lammax = ", lam[0], '/', lam[-1])
+    preA = 1.2/lam[0]*preA   # scaling
+
+    printeol = "\n"
+    if isinstance(printrates, str):
+        printeol = printrates
+        printrates = True
+        
+
+    
+    x = BlockVector([f.CreateVector(), g.CreateVector()])
+    w,r,p,ap = [x.CreateVector() for i in range(4)]
+    
+    # r.data = b
+    # p.data = pre*r
+    pru = (preA * f).Evaluate()
+    r[0].data = A*pru - f
+    r[1].data = B*pru - g
+    p[0].data = pru    
+    p[1].data = preS*r[1]
+    
+    wrn = InnerProduct(r,p)
+    err0 = sqrt(wrn)
+        
+    x[:] = 0
+    for it in range(maxit):
+        # ap.data = A * p
+        hv = (A * p[0] + B.T * p[1]).Evaluate()
+        papu = (preA * hv).Evaluate()
+        ap[0].data = A * papu - hv
+        ap[1].data = B * (papu - p[0])
+        if C is not None:
+            ap[1].data += C * p[1]
+        
+        pap = InnerProduct(p, ap)
+        wr = wrn
+        alpha = wr / pap
+        
+        x += alpha * p
+        r -= alpha * ap
+        pru -= alpha * papu
+
+        # w.data = pre*r
+        w[0].data = pru
+        w[1].data = preS * r[1]
+        
+        wrn = InnerProduct(w, r)
+        err = sqrt(wrn)
+        if printrates==True:
+            print ("Iteration",it,"err=",err,"    ",end=printeol)
+        if err < tol * err0: break
+            
+        beta = wrn / wr
+        
+        p *= beta
+        p.data += w 
+    
+    return x[0], x[1]
+
