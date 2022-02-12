@@ -790,7 +790,8 @@ namespace ngcomp
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef typename mat_traits<TM>::TV_COL TV_COL;
     typedef DiagonalMatrix<TM> TMATRIX;
-
+    shared_ptr<TMATRIX> mymatrix;
+    
   protected:
 
   public:
