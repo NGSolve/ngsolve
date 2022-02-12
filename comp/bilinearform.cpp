@@ -6299,15 +6299,6 @@ namespace ngcomp
       return;
 
     size_t ndof = this->fespace->GetNDof();
-    /*
-    MatrixGraph * graph = new MatrixGraph (ndof, 1);
-    for (int i = 0; i < ndof; i++)
-      graph->CreatePosition (i, i);
-
-    // graphs.Append (graph);
-    this->mats.Append (make_shared<SparseMatrixSymmetric<TM>> (*graph, 1));
-    delete graph;
-    */
 
     mymatrix = make_shared<DiagonalMatrix<TM>> (ndof);
     
@@ -6316,8 +6307,6 @@ namespace ngcomp
       mat = make_shared<ParallelMatrix> (mat, this->GetTrialSpace()->GetParallelDofs(),
                                          this->GetTestSpace()->GetParallelDofs());
     this->mats.Append (mat);
-    
-    //this->mats.Append (mymatrix);
     
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
@@ -6357,8 +6346,6 @@ namespace ngcomp
                     ElementId id, bool addatomic, 
                     LocalHeap & lh) 
   {
-    // TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
-
     if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
     
     for (int i = 0; i < dnums1.Size(); i++)
@@ -6384,8 +6371,6 @@ namespace ngcomp
                     ElementId id, bool addatomic,
                     LocalHeap & lh) 
   {
-    // TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
-
     if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
     
     for (int i = 0; i < dnums1.Size(); i++)
@@ -6404,84 +6389,12 @@ namespace ngcomp
                     ElementId id, bool addatomic,
                     LocalHeap & lh) 
   {
-    // TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
-
-
     if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
     
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
         (*mymatrix)(dnums1[i]) += elmat(i, i);
   }
-
-
-#ifdef VERYOLD
-  template <class TM >
-  void T_BilinearFormDiagonal<TM>::ApplyElementMatrix(const BaseVector & x,
-                                                      BaseVector & y,
-                                                      const TSCAL & val,
-                                                      const Array<int> & dnums,
-                                                      const ElementTransformation & eltrans,
-                                                      const int elnum,
-                                                      const int type,
-                                                      int & cnt,
-                                                      LocalHeap & lh,
-                                                      const FiniteElement * fel,
-                                                      const SpecialElement * sel) const
-  {
-    typedef typename mat_traits<TM>::TV_ROW TV_ROW;
-    typedef typename mat_traits<TM>::TV_COL TV_COL;
-
-    FlatVector<typename mat_traits<TV_ROW>::TSCAL> elvecx (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
-    FlatVector<typename mat_traits<TV_COL>::TSCAL> elvecy (dnums.Size() * this->GetFESpace()->GetDimension(), lh);
-                      
-    x.GetIndirect (dnums, elvecx);
-
-    if(type == 0 || type == 1)
-      {
-        ElementId ei(VorB(type), elnum);
-        this->fespace->TransformVec (ei, elvecx, TRANSFORM_SOL);
-
-        for (int j = 0; j < this->NumIntegrators(); j++)
-          {
-            BilinearFormIntegrator & bfi = *this->parts[j];
-            if (bfi.SkeletonForm()) continue;
-            if (type == 0 && bfi.BoundaryForm()) continue;
-            if (type == 0 && !bfi.DefinedOn (this->ma->GetElIndex (elnum))) continue;
-            if (type == 1 && !bfi.BoundaryForm()) continue;
-            
-            
-            static Timer elementtimer ("Element matrix application");
-            elementtimer.Start();
-            
-            if (this->precompute)
-              bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, this->precomputed_data[cnt++], lh);
-            else
-              bfi.ApplyElementMatrix (*fel, eltrans, elvecx, elvecy, 0, lh);
-
-            elementtimer.Stop();
-            
-            /*
-              testout->precision (12);
-              (*testout) << "el " << i << ", dom = " << ma->GetElIndex(i) << ",integrator = " << typeid(bfi).name() << endl
-              << "elx = " << elvecx 
-              << "ely = " << elvecy << endl;
-            */
-            BilinearForm::GetFESpace()->TransformVec (ei, elvecy, TRANSFORM_RHS);
-        
-            elvecy *= val;
-            y.AddIndirect (dnums, elvecy);
-          }
-      }
-    else if (type == 2)
-      {
-        sel->Apply (elvecx, elvecy, lh);
-        elvecy *= val;
-        y.AddIndirect (dnums, elvecy);
-      }
-                      
-  }
-#endif
 
 
   template <class TM>
@@ -6518,8 +6431,6 @@ namespace ngcomp
                         bool inner_element, int elnr,
                         LocalHeap & lh) 
   {
-    // TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
-
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
         (*mymatrix)(dnums1[i]) += diag(i);
@@ -6532,11 +6443,9 @@ namespace ngcomp
                         bool inner_element, int elnr,
                         LocalHeap & lh) 
   {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
-
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i]) += diag(i);
+        (*mymatrix)(dnums1[i]) += diag(i);
   }
 
 
