@@ -895,15 +895,16 @@ printrates : bool = True
 from ngsolve.la import EigenValues_Preconditioner
 def BramblePasciakCG(A, B, C, f, g, preA, preS, maxit=1000, tol=1e-8, \
                          printrates=False):
-    lam = EigenValues_Preconditioner(A,preA)
-    print ("lammin/lammax = ", lam[0], '/', lam[-1])
-    preA = 1.2/lam[0]*preA   # scaling
 
     printeol = "\n"
     if isinstance(printrates, str):
         printeol = printrates
         printrates = True
-        
+
+    lam = EigenValues_Preconditioner(A,preA)
+    if printrates==True:
+        print ("lammin/lammax = ", lam[0], '/', lam[-1])
+    preA = 1.2/lam[0]*preA   # scaling
 
     
     x = BlockVector([f.CreateVector(), g.CreateVector()])
