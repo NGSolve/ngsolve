@@ -6309,7 +6309,15 @@ namespace ngcomp
     delete graph;
     */
 
-    this->mats.Append (make_shared<DiagonalMatrix<TM>> (ndof));
+    mymatrix = make_shared<DiagonalMatrix<TM>> (ndof);
+    
+    shared_ptr<BaseMatrix> mat = mymatrix;
+    if (this->GetFESpace()->IsParallel())
+      mat = make_shared<ParallelMatrix> (mat, this->GetTrialSpace()->GetParallelDofs(),
+                                         this->GetTestSpace()->GetParallelDofs());
+    this->mats.Append (mat);
+    
+    //this->mats.Append (mymatrix);
     
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
@@ -6349,14 +6357,14 @@ namespace ngcomp
                     ElementId id, bool addatomic, 
                     LocalHeap & lh) 
   {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
+    // TMATRIX & mat = dynamic_cast<TMATRIX&> (*this->mats.Last());
 
     if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
     
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
         {
-          TM & mij = mat(dnums1[i]); // , dnums1[i]);
+          TM & mij = (*mymatrix)(dnums1[i]); // , dnums1[i]);
           int hi = Height (mij);
           int wi = Width (mij);
 
@@ -6376,13 +6384,13 @@ namespace ngcomp
                     ElementId id, bool addatomic,
                     LocalHeap & lh) 
   {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
+    // TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
 
     if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
     
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i]) += elmat(i, i);
+        (*mymatrix)(dnums1[i]) += elmat(i, i);
   }
 
 
@@ -6396,14 +6404,14 @@ namespace ngcomp
                     ElementId id, bool addatomic,
                     LocalHeap & lh) 
   {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
+    // TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix()); 
 
 
     if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
     
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i]) += elmat(i, i);
+        (*mymatrix)(dnums1[i]) += elmat(i, i);
   }
 
 
@@ -6510,11 +6518,11 @@ namespace ngcomp
                         bool inner_element, int elnr,
                         LocalHeap & lh) 
   {
-    TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
+    // TMATRIX & mat = dynamic_cast<TMATRIX&> (GetMatrix());
 
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
-        mat(dnums1[i]) += diag(i);
+        (*mymatrix)(dnums1[i]) += diag(i);
   }
 
   ///

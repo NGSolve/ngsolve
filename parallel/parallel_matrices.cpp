@@ -618,6 +618,34 @@ namespace ngla
 
   shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (shared_ptr<BitArray> subset) const
   {
+    if (auto diagmat = dynamic_pointer_cast<DiagonalMatrix<double>>(mat))
+      {
+        auto locinv = make_shared<DiagonalMatrix<double>>(diagmat->Height());
+        auto vec = diagmat->AsVector().FV<double>();
+        auto invvec = locinv->AsVector().FV<double>();
+
+        invvec = vec;
+        ParallelVFlatVector<double> parinvvec (invvec.Size(), invvec.Data(),
+                                               this->col_paralleldofs, DISTRIBUTED);
+        parinvvec.Cumulate();
+        if (subset)
+          {
+            for (size_t i : Range(diagmat->Height()))
+              if (subset->Test(i))
+                invvec(i) = 1.0/invvec(i);
+              else
+                invvec(i) = 0;
+          }
+        else
+          for (size_t i : Range(diagmat->Height()))
+            invvec(i) = 1.0/invvec(i);
+
+        return make_shared<ParallelMatrix> (locinv,
+                                            this->col_paralleldofs, this->row_paralleldofs,
+                                            D2D);
+      }
+
+    
     shared_ptr<BaseMatrix> inv;
 
     Iterate<MAX_SYS_DIM> ( [&](auto i) -> void {
