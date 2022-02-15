@@ -637,9 +637,9 @@ namespace ngbla
       constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
 
       auto veca = prod.Spec().A();
-      auto mata = FlatMatrix<typename TA::TELEM>(veca.Height(), 1, &veca(0));
+      auto mata = FlatMatrix<typename TA::TELEM>(veca.Height(), 1, veca.Data());
       auto vecb = prod.Spec().B().A();
-      auto matb = FlatMatrix<typename TB::TELEM>(1, vecb.Height(), &vecb(0));
+      auto matb = FlatMatrix<typename TB::TELEM>(1, vecb.Height(), vecb.Data());
       
       NgGEMM<ADD,POS> (SliceMatrix<typename TA::TELEM>(mata),
                        SliceMatrix<typename TB::TELEM>(matb), Spec());
