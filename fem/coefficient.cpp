@@ -3212,6 +3212,9 @@ public:
   {
     BASE::DoArchive(ar);
   }
+
+  virtual string GetDescription () const override
+  { return "Identity matrix"; }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
@@ -3628,6 +3631,10 @@ public:
       throw Exception("Determinant of non-symmetric matrix called");
   }
 
+  virtual string GetDescription () const override
+  { return "Determinant"; }
+
+  
   void DoArchive(Archive& ar) override
   {
     BASE::DoArchive(ar);
@@ -4375,7 +4382,7 @@ public:
     if (input.Size() == 0) return ZeroCF(c1->Dimensions());
     if (c1->GetDescription()=="binary operation '-'")
       return TraceCF(input[0])->DiffJacobi(var) - TraceCF(input[1])->DiffJacobi(var);
-    cout << "Trace::DiffJacobi, c1 desc= " << c1->GetDescription() << endl;
+    // cout << "Trace::DiffJacobi, c1 desc= " << c1->GetDescription() << endl;
     return CoefficientFunction::DiffJacobi(var);
   }
   
