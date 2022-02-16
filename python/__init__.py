@@ -43,7 +43,7 @@ from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
 from .fem import BFI, LFI, CoefficientFunction, Parameter, ParameterC, ET, \
     POINT, SEGM, TRIG, QUAD, TET, PRISM, PYRAMID, HEX, CELL, FACE, EDGE, \
     VERTEX, FACET, ELEMENT, sin, cos, tan, atan, acos, asin, sinh, cosh, \
-    exp, log, sqrt, floor, ceil, Conj, atan2, pow, Sym, Skew, Id, Trace, Inv, Det, Cof, Cross, \
+    exp, log, sqrt, erf, floor, ceil, Conj, atan2, pow, Sym, Skew, Id, Trace, Inv, Det, Cof, Cross, \
     specialcf, BlockBFI, BlockLFI, CompoundBFI, CompoundLFI, BSpline, \
     IntegrationRule, IfPos, VoxelCoefficient, CacheCF, PlaceholderCF
 from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \

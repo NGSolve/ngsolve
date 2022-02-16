@@ -490,6 +490,7 @@ direction : int
   ExportStdMathFunction_<GenericACos>(m, "acos", "Inverse cosine in radians");
   ExportStdMathFunction_<GenericASin>(m, "asin", "Inverse sine in radians");
   ExportStdMathFunction_<GenericSqrt>(m, "sqrt", "Square root function");
+  ExportStdMathFunction_<GenericErf>(m, "erf", "Error function");
   ExportStdMathFunction_<GenericFloor>(m, "floor", "Round to next lower integer");
   ExportStdMathFunction_<GenericCeil>(m, "ceil", "Round to next greater integer");
   // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
