@@ -1490,6 +1490,9 @@ public:
   {
     if (this == var)
       {
+        if (this -> Dimension() == 1)
+            return make_shared<ConstantCoefficientFunction>(1);
+
         auto cf = IdentityCF(this->Dimension());
         cf->SetDimensions( Array<int> (Dimensions()+Dimensions()) );
         return cf;
