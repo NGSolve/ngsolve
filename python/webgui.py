@@ -157,7 +157,6 @@ timer3multngs = ngs.Timer("timer3 mul ngs")
 def GetNodalP1Data(mesh, cf, cf2=None):
     if cf2 is not None:
         cf = ngs.CF((cf,cf2))
-    print("got cf", cf, "dim" , cf.dim)
     timerp1.Start()
     fes = ngs.NodalFESpace(mesh, order=1)**cf.dim
     gfu = ngs.GridFunction(fes)
@@ -176,9 +175,6 @@ def GetNodalP1Data(mesh, cf, cf2=None):
 
     segments = mesh.ngmesh._getSegments()
     wireframe = mesh.ngmesh._getWireframe()
-
-    print('segments', segments)
-    print('wireframe', wireframe)
 
     d = {}
     d['vertices'] = encodeData(vertices, dtype=np.float32)
