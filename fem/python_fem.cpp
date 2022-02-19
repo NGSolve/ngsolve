@@ -669,6 +669,13 @@ val : can be one of the following:
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
     .def("Reshape", [] (shared_ptr<CF> self, py::tuple tup) { return self->Reshape(makeCArray<int>(tup)); } ,
          "reshape CF:  (dim) for vector, (h,w) for matrix")
+    .def("ExtendDimension", [] (shared_ptr<CF> self, py::tuple dims, optional<py::tuple> pos, optional<py::tuple> stride) {
+        Array<int> cpos, cstride;
+        if (stride) cstride = makeCArray<int>(*stride);
+        if (pos) cpos = makeCArray<int>(*pos);
+        return MakeExtendDimensionCoefficientFunction(self, makeCArray<int>(dims),
+                                                  move(cpos), move(cstride)); } ,
+      "Extend shape by 0-padding", py::arg("dims"), py::arg("pos")=nullopt, py::arg("stride")=nullopt)
     .def_property_readonly("is_complex",
                            [] (CF &  self) { return self.IsComplex(); },
                            "is CoefficientFunction complex-valued ?")

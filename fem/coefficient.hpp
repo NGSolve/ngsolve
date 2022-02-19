@@ -1749,6 +1749,10 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
                                     int first, Array<int> num, Array<int> dist);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeExtendDimensionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                      Array<int> dims, Array<int> pos, Array<int> stride);
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Array<int> ordering);
 
 

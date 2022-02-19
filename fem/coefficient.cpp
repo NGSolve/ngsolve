@@ -3969,7 +3969,7 @@ public:
     if (dims_c1.Size() != 2)
       throw Exception("Sym of non-matrix called");
     if (dims_c1[0] != dims_c1[1])
-      throw Exception("Sym of non-symmetric matrix called");
+      throw Exception("Sym of non-square matrix called");
     
     SetDimensions (ngstd::INT<2> (dims_c1[0], dims_c1[0]) );
   }
@@ -3986,6 +3986,9 @@ public:
     func(*this);
   }
 
+  virtual string GetDescription () const override
+  { return "symmetric"; }
+
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       FlatArray<int> hdims = Dimensions();        
       for (int i : Range(hdims[0]))
@@ -3996,28 +3999,6 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 } ); }  
 
-  /*
-  virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
-                               FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
-  {
-    //cout << "nonzero, rec" << endl;
-    int hd = Dimensions()[0];    
-    c1->NonZeroPattern (ud, nonzero, nonzero_deriv, nonzero_dderiv);
-    //cout << "non-zero input " << nonzero << endl;
-    for (int i = 0; i < hd; i++)
-      for (int j = 0; j < hd; j++)
-        {
-          int ii = i*hd+j;
-          int jj = j*hd+i;
-          nonzero(ii) |= nonzero(jj);
-          nonzero_deriv(ii) |= nonzero_deriv(jj);
-          nonzero_dderiv(ii) |= nonzero_dderiv(jj);
-        }
-    //cout << "non-zero result " << nonzero << endl;    
-  }
-  */
-
-  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
@@ -4110,7 +4091,7 @@ public:
     if (dims_c1.Size() != 2)
       throw Exception("Skew of non-matrix called");
     if (dims_c1[0] != dims_c1[1])
-      throw Exception("Skew of non-symmetric matrix called");
+      throw Exception("Skew of non-square matrix called");
     
     SetDimensions (ngstd::INT<2> (dims_c1[0], dims_c1[0]) );
   }
@@ -4127,6 +4108,9 @@ public:
     func(*this);
   }
 
+  virtual string GetDescription () const override
+  { return "skew"; }
+  
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       FlatArray<int> hdims = Dimensions();        
       for (int i : Range(hdims[0]))
@@ -5364,6 +5348,164 @@ MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Arra
   return MakeSubTensorCoefficientFunction (c1, 0, std::move(dims), std::move(dist));
 }
 
+// ********************** ExtendDimensionCoefficientFunction ***************************
+
+  
+class ExtendDimensionCoefficientFunction : public T_CoefficientFunction<ExtendDimensionCoefficientFunction>
+{
+  shared_ptr<CoefficientFunction> c1;
+  typedef T_CoefficientFunction<ExtendDimensionCoefficientFunction> BASE;
+  Array<int> mapping; // input index -> output index
+  Array<int> dims, pos, stride;
+  int dim1;
+public:
+  ExtendDimensionCoefficientFunction() = default;
+  ExtendDimensionCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                  Array<int> adims, Array<int> apos, Array<int> astride)
+    : BASE(1, ac1->IsComplex()), c1(ac1), dims(adims), pos(apos), stride(astride)
+  {
+    SetDimensions(dims);
+    elementwise_constant = c1->ElementwiseConstant();
+
+    auto dims1 = c1->Dimensions();
+    dim1 = c1->Dimension();
+      
+    if (dims1.Size() != dims.Size())
+      throw Exception("ExtendDimension needs same tensordimension");
+
+    for (int i = pos.Size(); i < dims.Size(); i++)
+      pos.Append(0);
+    for (int i = stride.Size(); i < dims.Size(); i++)
+      stride.Append(1);
+    
+    int firstoutput = pos[0];
+    for (int i = 1; i < dims.Size(); i++)
+      {
+        firstoutput *= dims[i];
+        firstoutput += pos[i];
+      }
+    for (int i = 0; i < c1->Dimension(); i++)
+      {
+        int index = i;
+        int outputindex = firstoutput;
+        int outputdist = 1;
+        for (int j = dims1.Size()-1; j >= 0; j--)
+          {
+            int indexj = index % dims1[j];
+            outputindex += indexj * outputdist;
+            outputdist *= dims[j];
+            index /= dims1[j];
+          }
+        if (outputindex > Dimension())
+          throw Exception("illegal ouptut index "+ToString(outputindex));
+        mapping.Append (outputindex);
+      }
+    // cout << "output indices = " << mapping << endl;
+  }
+
+  
+
+  void DoArchive(Archive& ar) override
+  {
+    BASE::DoArchive(ar);
+    ar.Shallow(c1) & mapping & dim1;
+  }
+
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    auto dims1 = c1->Dimensions();
+
+    Array<int> imapping(Dimension());
+    imapping = -1;
+    for (auto i : mapping.Range())
+      imapping[mapping[i]] = i;
+
+    for (int i = 0; i < imapping.Size(); i++)
+      if (imapping[i] == -1)
+        code.body += Var(index, i, Dimensions()).Assign( string("0.0"));
+      else
+        code.body += Var(index, i, Dimensions()).Assign( Var(inputs[0], imapping[i], dims1));
+  }
+
+  
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    c1->TraverseTree (func);
+    func(*this);
+  }
+
+  virtual string GetDescription () const override
+  { return "extend-dimension"; }
+  
+  virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+  { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
+
+  
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+  {
+    STACK_ARRAY(T, hmem, ir.Size()*dim1);
+    FlatMatrix<T,ORD> temp(dim1, ir.Size(), &hmem[0]);
+    
+    c1->Evaluate (ir, temp);
+
+    values.AddSize(Dimension(), ir.Size()) = T(0.0);
+    for (size_t i = 0; i < mapping.Size(); i++)
+      values.Row(mapping[i]).Range(ir.Size()) = temp.Row(i);
+  }
+
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    auto in0 = input[0];
+    values.AddSize(Dimension(), ir.Size()) = T(0.0);
+    
+    for (size_t i = 0; i < mapping.Size(); i++)
+      values.Row(mapping[i]).Range(ir.Size()) = in0.Row(i);
+  }
+
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    if (this == var) return dir;
+    return MakeExtendDimensionCoefficientFunction (c1->Diff(var, dir), Array<int> (dims), Array<int> (pos),
+                                               Array<int>(stride));
+  }  
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
+    c1->NonZeroPattern (ud, v1);
+    values = false;
+    for (int i = 0; i < mapping.Size(); i++)
+      values[mapping[i]] = v1[i];
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
+                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+  {
+    auto in0 = input[0];
+    values = false;
+    for (int i = 0; i < mapping.Size(); i++)
+      values[mapping[i]] = in0[i];
+  }
+  
+};
+
+shared_ptr<CoefficientFunction>
+MakeExtendDimensionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                    Array<int> dims, Array<int> pos, Array<int> stride)
+{
+  if (c1->IsZeroCF())
+    return ZeroCF(dims);
+  return make_shared<ExtendDimensionCoefficientFunction> (c1, move(dims), move(pos), move(stride));
+}
 
 
 // ********************** VectorContractionCoefficientFunction **********************
@@ -6749,7 +6891,6 @@ public:
   {
     int input = 0;
     int input_index = 0;
-    FlatArray<int> dims = Dimensions();
     for (int i = 0; i < Dimension(); i++)
       {
         auto cfi = ci[input];
