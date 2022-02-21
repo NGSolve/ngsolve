@@ -49,6 +49,7 @@ class WebGLScene(BaseWebGuiScene):
         self.nodal_p1 = nodal_p1
 
         self.deformation = deformation
+        self.encoding = 'b64'
 
         if isinstance(mesh, ngs.comp.Region):
             self.region = mesh
@@ -57,8 +58,9 @@ class WebGLScene(BaseWebGuiScene):
             self.region = None
 
     def GetData(self, set_minmax=True):
+        encoding = self.encoding
         import json
-        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1)
+        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding)
 
         if isinstance(self.cf, ngs.GridFunction) and len(self.cf.vecs)>1:
             # multidim gridfunction - generate data for each component
@@ -79,7 +81,7 @@ class WebGLScene(BaseWebGuiScene):
                 if md_deformation:
                     deformation.vec.data = self.deformation.vecs[i]
 
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1))
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding))
             d['multidim_data'] = data
             d['multidim_interpolate'] = self.interpolate_multidim
             d['multidim_animate'] = self.animate
@@ -154,7 +156,7 @@ timer4 = ngs.Timer("func")
 timer3multnumpy = ngs.Timer("timer3 mul numpy")
 timer3multngs = ngs.Timer("timer3 mul ngs")
 
-def GetNodalP1Data(mesh, cf, cf2=None):
+def GetNodalP1Data(encode, mesh, cf, cf2=None):
     if cf2 is not None:
         cf = ngs.CF((cf,cf2))
     timerp1.Start()
@@ -167,22 +169,20 @@ def GetNodalP1Data(mesh, cf, cf2=None):
     fmin, fmax = ngs.Vector(function_values, copy=False).MinMax(True)
     vertices = np.array(mesh.ngmesh._getVertices(), dtype=np.float32)
 
-    pmat = vertices.reshape(-1,len(vertices)//3)
-    pmin = pmat.min(axis=1)
-    pmax = pmat.max(axis=1)
+    pmat = vertices.reshape(-1, 3)
+    pmin = pmat.min(axis=0)
+    pmax = pmat.max(axis=0)
     mesh_center = list(np.array(0.5*(pmin+pmax), dtype=np.float64))
     mesh_radius = float(np.linalg.norm(pmax-pmin)/2)
 
     segments = mesh.ngmesh._getSegments()
-    wireframe = mesh.ngmesh._getWireframe()
 
     d = {}
-    d['vertices'] = encodeData(vertices, dtype=np.float32)
-    d['nodal_function_values'] = encodeData(function_values)
-    d['trigs'] = encodeData(np.array(mesh.ngmesh._get2dElementsAsTriangles(), dtype=np.int32), dtype=np.int32)
-    d['tets'] = encodeData(np.array(mesh.ngmesh._get3dElementsAsTets(), dtype=np.int32), dtype=np.int32)
-    d['wireframe'] = encodeData(np.array(wireframe, dtype=np.int32), dtype=np.int32)
-    d['segs'] = encodeData(np.array(segments, dtype=np.int32), dtype=np.int32)
+    d['vertices'] = encode(vertices, dtype=np.float32)
+    d['nodal_function_values'] = encode(function_values, dtype=np.float32)
+    d['trigs'] = encode(np.array(mesh.ngmesh._get2dElementsAsTriangles(), dtype=np.int32))
+    d['tets'] = encode(np.array(mesh.ngmesh._get3dElementsAsTets(), dtype=np.int32))
+    d['segs'] = encode(np.array(segments, dtype=np.int32))
     d['mesh_center'] = mesh_center
     d['mesh_radius'] = mesh_radius
     d['funcmin'] = fmin
@@ -190,10 +190,19 @@ def GetNodalP1Data(mesh, cf, cf2=None):
 
     timerp1.Stop()
     return d
-
     
-def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None, region=True, objects=[], nodal_p1=False):
+    
+def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None, region=True, objects=[], nodal_p1=False, encoding='b64'):
     timer.Start()
+
+    import inspect
+    # stay backwards-compatible with older verisons of webgui_jupyter_widgets
+    if 'encoding' in inspect.signature(encodeData).parameters:
+        def encode(*args, **kwargs):
+            return encodeData(*args, **kwargs, encoding=encoding)
+    else:
+        def encode(*args, **kwargs):
+            return encodeData(*args, **kwargs)
 
     if isinstance(deformation, ngs.CoefficientFunction) and deformation.dim==2:
         deformation = ngs.CoefficientFunction((deformation, 0.0))
@@ -264,7 +273,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     d['show_mesh'] = order2d>0
 
     if order==1 and nodal_p1:
-        d.update(GetNodalP1Data(mesh, func1, func2))
+        d.update(GetNodalP1Data(encode, mesh, func1, func2))
         timer.Stop()
         return d
 
@@ -326,7 +335,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         
         timer2list.Start()        
         for i in range(og+1):
-            Bezier_points.append(encodeData(BezierPnts[i]))
+            Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
         timer2list.Stop()        
 
         if func2 and draw_surf:
@@ -337,7 +346,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             timermult.Stop()
             timer2list.Start()        
             for i in range(og+1):
-                Bezier_points.append(encodeData(BezierPnts[i]))
+                Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
             timer2list.Stop()        
 
         d['Bezier_points'] = Bezier_points
@@ -354,7 +363,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         edge_data = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
         edges = []
         for i in range(og+1):
-            edges.append(encodeData(edge_data[i]))
+            edges.append(encode(edge_data[i], dtype=np.float32))
         d['edges'] = edges
 
         timer2.Stop()
@@ -424,7 +433,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
         timer3list.Start()        
         for i in range(ndtrig):
-            Bezier_points.append(encodeData(BezierPnts[i]))
+            Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
         timer3list.Stop()        
 
         if func2 and draw_surf:
@@ -436,12 +445,12 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
             if og==1:
                 for i in range(ndtrig):
-                    Bezier_points.append(encodeData(BezierPnts[i]))
+                    Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
             else:
                 BezierPnts = BezierPnts.transpose((1,0,2)).reshape(-1, len(ir_trig)//2, 4).transpose((1,0,2))
 
                 for i in range(ndtrig//2):
-                    Bezier_points.append(encodeData(BezierPnts[i]))
+                    Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
 
         d['Bezier_trig_points'] = Bezier_points    
         d['mesh_center'] = list(mesh_center)
@@ -508,13 +517,13 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         funcmin, funcmax = getMinMax(pmat[:,:,3].flatten(), funcmin, funcmax)
         points3d = []
         for i in range(np_per_tet):
-            points3d.append(encodeData(pmat[:,i,:]))
+            points3d.append(encode(pmat[:,i,:], dtype=np.float32))
 
         if func2:
             pmat = func2(pts).reshape(-1, np_per_tet//2, 4)
             funcmin, funcmax = getMinMax(pmat.flatten(), funcmin, funcmax)
             for i in range(np_per_tet//2):
-                points3d.append(encodeData(pmat[:,i,:]))
+                points3d.append(encode(pmat[:,i,:], dtype=np.float32))
         d['points3d'] = points3d
     if func:
         d['funcmin'] = funcmin
