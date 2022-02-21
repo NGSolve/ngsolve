@@ -996,6 +996,16 @@ namespace ngfem
   */
 
   template<>
+  FlatArray<IntegrationPoint> ScalarFE<ET_TRIG,1> :: GetNodalPoints() const
+  {
+    static IntegrationPoint ipts[] = {
+      { 1., 0. }, { 0., 1. }, { 0., 0. }
+    };
+
+    return { 3, &ipts[0] };
+  }
+
+  template<>
   FlatArray<IntegrationPoint> ScalarFE<ET_TET,1> :: GetNodalPoints() const
   {
     static IntegrationPoint ipts[] = {
@@ -1016,7 +1026,6 @@ namespace ngfem
 
     return { 10, &ipts[0] };
   }
-
 
   
   template<> 
