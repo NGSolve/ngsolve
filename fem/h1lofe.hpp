@@ -70,9 +70,6 @@ namespace ngfem
       if (auto ipts = GetNodalPoints(); ipts.Size())
         {
           HeapReset hr(lh);
-          // IntegrationPoint ipts[] = {
-          // { 1, 0, 0 }, { 0, 1, 0 }, { 0, 0, 1 }, { 0, 0, 0 }
-          // };
           IntegrationRule ir(ipts.Size(), ipts.Data());
           auto & mir = trafo(ir, lh);
           func.Evaluate (mir, coefs);
@@ -984,16 +981,6 @@ namespace ngfem
 
 
 #ifdef FILE_H1LOFE_CPP
-  /*
-  template <ELEMENT_TYPE ET, int ORDER>
-  void ScalarFE<ET,ORDER> :: Interpolate (const ElementTransformation & trafo, 
-                                          const class CoefficientFunction & func, SliceMatrix<> coefs,
-                                          LocalHeap & lh) const 
-  {
-    cout << "scalfe interpol" << endl;
-    BASE::Interpolate (trafo, func, coefs, lh);
-  }
-  */
 
   template<>
   FlatArray<IntegrationPoint> ScalarFE<ET_TRIG,1> :: GetNodalPoints() const
@@ -1027,7 +1014,7 @@ namespace ngfem
     return { 10, &ipts[0] };
   }
 
-  
+  /*
   template<> 
   void ScalarFE<ET_TET,1> :: Interpolate (const ElementTransformation & trafo, 
                                           const class CoefficientFunction & func, SliceMatrix<> coefs,
@@ -1041,6 +1028,7 @@ namespace ngfem
     auto & mir = trafo(ir, lh);
     func.Evaluate (mir, coefs);
   }
+  */
 #endif
   
 
