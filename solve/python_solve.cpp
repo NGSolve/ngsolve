@@ -14,16 +14,18 @@ extern void ExportDrawFlux(py::module &m);
 void ExportVisFunctions(py::module &m);
 
 void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
+    m.def ("__Cleanup", []()
+            {
+              GetPreconditionerClasses().Cleanup();
+            }
+    );
 
     m.def ("Tcl_Eval", &Ng_TclCmd);
 
     m.def ("Draw", [](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                       int sd, bool autoscale, double min, double max,
-                      bool draw_vol, bool draw_surf, bool reset, py::kwargs kwargs)
+                      bool draw_vol, bool draw_surf, bool reset, string title, string number_format, string unit, py::kwargs kwargs)
               {
-                if (name.find(" " , 0) != -1)
-                  throw Exception("In Draw: name must not contain spaces");
-
                 if (cf == nullptr)
                   throw Exception("In Draw: invalid object to draw");
                 
@@ -45,7 +47,10 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
 
-                soldata.name = (char*)name.c_str();
+                soldata.name = name;
+                soldata.title = title;
+                soldata.number_format = number_format;
+                soldata.unit = unit;
                 soldata.data = 0;
                 soldata.components = cf -> Dimension();
                 if (cf->IsComplex()) soldata.components *= 2;
@@ -64,10 +69,10 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 Ng_SetSolutionData (&soldata);
 
                 if (cf->Dimension() == 1)
-                  Ng_TclCmd (string("set ::visoptions.scalfunction ")+name+":1;\n");
+                  Ng_TclCmd (string("set ::visoptions.scalfunction \"")+name+":1\";\n");
                 else
                   if (cf->Dimension() == 3 || cf->Dimension() == ma->GetDimension())
-                    Ng_TclCmd (string("set ::visoptions.vecfunction ")+name+";\n");
+                    Ng_TclCmd (string("set ::visoptions.vecfunction \"")+name+"\";\n");
 
                 Ng_TclCmd (string("set ::visoptions.subdivisions ")+ToString(sd)+";\n");
 		Ng_TclCmd ("set ::visoptions.autoscale "+ToString(autoscale)+";\n");
@@ -85,6 +90,9 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
               py::arg("draw_vol")=true,
            py::arg("draw_surf")=true,
            py::arg("reset")=false,
+           py::arg("title")="",
+           py::arg("number_format")="%.3e",
+           py::arg("unit")="",
            docu_string(R"raw_string(
 Parameters:
 
@@ -114,6 +122,15 @@ draw_vol : bool
 
 draw_surf : bool
   input draw surface
+
+title : string
+  printed on top of colormap
+
+number_format : string
+  printf-style format string for numbers under colormap
+
+unit : string
+  string (ASCII only) to print after maximum value of colormap
 
 )raw_string")
              );
@@ -820,8 +837,8 @@ void ExportVisFunctions(py::module &m) {
               auto tm = task_manager;
               task_manager = nullptr;
               LocalHeap lh(10000000, "GetValues");
-              int dim = ma->GetDimension();
-              if(vb==BND) dim-=1;
+              // int dim = ma->GetDimension();
+              // if(vb==BND) dim-=1;
 
               map<ngfem::ELEMENT_TYPE, SIMD_IntegrationRule> simd_irs;
               for (auto & p : irs ) {
@@ -879,7 +896,7 @@ void ExportVisFunctions(py::module &m) {
                           else
                             GetValues<SIMD<double>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag, min_local, max_local, covariant);
                         }
-                      catch(ExceptionNOSIMD e)
+                      catch(const ExceptionNOSIMD& e)
                         {
                           use_simd = false;
                         }

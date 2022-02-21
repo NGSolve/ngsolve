@@ -176,7 +176,8 @@ namespace ngcomp
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
     order =  int (flags.GetNumFlag ("order",0)); 
-
+    nodal = flags.GetDefineFlag("nodalbasis");
+    
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
       var_order = 1; 
     
@@ -244,6 +245,10 @@ namespace ngcomp
       {
         integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
+        
+        for (auto vb : { VOL,BND, BBND, BBBND })
+          if (evaluator[vb])
+            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
       }
 
     additional_evaluators.Set ("dual", evaluator[VOL]);
@@ -586,7 +591,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
 
-    FacetFE<ET> * fe =  new (alloc) FacetFE<ET> ();
+    FacetFE<ET> * fe =  new (alloc) FacetFE<ET> (nodal);
     fe -> SetVertexNumbers (ngel.Vertices());
     fe -> SetOrder(0);
     if (ET_trait<ET>::DIM >= 2)

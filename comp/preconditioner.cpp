@@ -3,6 +3,7 @@
 // #include <solve.hpp>
 #include <parallelngs.hpp>
 
+
 namespace ngcomp
 {
   using namespace ngmg;
@@ -283,7 +284,7 @@ namespace ngcomp
       throw Exception ("smoother could not be allocated"); 
 
     auto prol = lo_fes->GetProlongation();
-    mgp = make_shared<MultigridPreconditioner> (*ma, *lo_fes, *lo_bfa, sm, prol);
+    mgp = make_shared<MultigridPreconditioner> (lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
@@ -382,7 +383,7 @@ namespace ngcomp
 
     auto prol = lo_fes->GetProlongation();
 
-    mgp = make_shared<MultigridPreconditioner> (*ma, *lo_fes, *lo_bfa, sm, prol);
+    mgp = make_shared<MultigridPreconditioner> (lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
@@ -1291,8 +1292,9 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   PreconditionerClasses::PreconditionerInfo::
   PreconditionerInfo (const string & aname,
 		      function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
-                      function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf)
-    : name(aname), creator(acreator), creatorbf(acreatorbf)
+                      function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf,
+                      DocInfo adocinfo)
+    : name(aname), creator(acreator), creatorbf(acreatorbf), docinfo(adocinfo)
   {
     ;
   }
@@ -1304,9 +1306,10 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   void PreconditionerClasses :: 
   AddPreconditioner (const string & aname,
                      function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
-                     function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf)
+                     function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf,
+                     DocInfo docinfo)
   {
-    prea.Append (make_unique<PreconditionerInfo>(aname, acreator, acreatorbf));
+    prea.Append (make_unique<PreconditionerInfo>(aname, acreator, acreatorbf, docinfo));
   }
 
   const PreconditionerClasses::PreconditionerInfo * 
@@ -1325,6 +1328,11 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
     ost << setw(20) << "Name" << endl;
     for (int i = 0; i < prea.Size(); i++)
       ost << setw(20) << prea[i]->name << endl;
+  }
+
+  void PreconditionerClasses :: Cleanup ()
+  {
+      prea.DeleteAll();
   }
 
  

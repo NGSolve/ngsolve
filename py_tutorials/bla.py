@@ -19,7 +19,7 @@ for i in range(m):
 
 # Arithmetic
 y = A*x
-z = 5*A*x + 7*y - A*5*(x-y)
+z = 5*A*x + 7*y - A*(x-y[0:m])
 
 
 # Get third row as Vector

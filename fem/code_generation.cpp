@@ -3,9 +3,13 @@
 #include<l2hofe_impl.hpp>
 #include<l2hofefo.hpp>
 #include<regex>
+#include<cstdio>
 
 namespace ngfem
 {
+  bool code_uses_tensors = false;
+
+  
     atomic<unsigned> Code::id_counter{0};
 
     void Code::AddLinkFlag(string flag)
@@ -16,7 +20,7 @@ namespace ngfem
 
     string Code::AddPointer(const void *p)
     {
-        string name = "compiled_code_pointer" + ToString(id_counter++); 
+        string name = "compiled_code_pointer" + ToString(id_counter++);
         top += "extern \"C\" void* " + name + ";\n";
         stringstream s_ptr;
 #ifdef WIN32
@@ -27,59 +31,107 @@ namespace ngfem
         return name;
     }
 
-    unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &link_flags )
+  void Code :: Declare (string type, int i, FlatArray<int> dims)
+  {
+    if (code_uses_tensors)
+      {
+        body += "Tens<" + type;
+        for (int j = 0; j < dims.Size(); j++)
+          body += ',' + ToLiteral(dims[j]);
+        body += "> var_" + ToLiteral(i) + ";\n";
+      }
+    else
+      {
+        size_t prod=1;
+        for (auto d : dims) prod *= d;
+        for (int j = 0; j < prod; j ++)
+          body += type + Var(" var", i, j, dims).S() + ";\n";
+        
+        /*
+          body += type + " var_" + ToLiteral(i);
+          for (int j = 0; j < dims.Size(); j++)
+          body += '_' + ToLiteral(dims[j]);
+          body += ";\n";
+        */
+      }
+  }
+  
+  
+    unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files )
     {
       static int counter = 0;
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");
       string object_files;
-      int i = 0;
-      string prefix = "code" + ToString(counter++);
-      for(string code : codes) {
-        string file_prefix = prefix+"_"+ToString(i++);
-        ofstream codefile(file_prefix+".cpp");
-        codefile << code;
-        codefile.close();
+      int rank = 0;
+#ifdef PARALLEL
+      rank = ngcore::NgMPI_Comm(MPI_COMM_WORLD).Rank();
+#endif // PARALLEL
+      filesystem::path lib_dir;
+#ifdef WIN32
+      lib_dir = filesystem::path(std::tmpnam(nullptr)).concat("_ngsolve_"+ToString(rank)+"_"+ToString(counter++));
+#else // WIN32
+      string tmp_template = filesystem::temp_directory_path().append("ngsolve_tmp_"+ToString(rank)+"_"+ToString(counter++)+"_XXXXXX");
+      if(mkdtemp(&tmp_template[0])==nullptr)
+          throw Exception("could not create temporary directory");
+
+      lib_dir = tmp_template;
+#endif // WIN32
+      string chdir_cmd = "cd " + lib_dir.string() + " && ";
+      filesystem::create_directories(lib_dir);
+      for(auto i : Range(codes.size())) {
+        filesystem::path src_file;
+        if(std::holds_alternative<filesystem::path>(codes[i]))
+            src_file = filesystem::absolute(std::get<filesystem::path>(codes[i]));
+        else
+        {
+            string code = std::get<string>(codes[i]);
+            src_file = filesystem::path(lib_dir).append("code_" + ToString(i) + ".cpp");
+            ofstream codefile(src_file);
+            codefile << code;
+            codefile.close();
+        }
         cout << IM(3) << "compiling..." << endl;
         tcompile.Start();
 #ifdef WIN32
-        string scompile = "cmd /C \"ngscxx.bat " + file_prefix + ".cpp\"";
-        object_files += file_prefix+".obj ";
-#else
-        string scompile = "ngscxx -c " + file_prefix + ".cpp -o " + file_prefix + ".o";
-        object_files += file_prefix+".o ";
-#endif
-        int err = system(scompile.c_str());
+        string scompile = "cmd /C \"ngscxx.bat " + src_file.string();
+        object_files += " " + filesystem::path(src_file).replace_extension(".obj ").string();
+#else // WIN32
+        auto obj_file = " " + filesystem::path(src_file).replace_extension(".o").string();
+        string scompile = "ngscxx -c " + src_file.string() + " -o " + obj_file;
+        object_files += obj_file;
+#endif // WIN32
+        int err = system((chdir_cmd + scompile).c_str());
         if (err) throw Exception ("problem calling compiler");
         tcompile.Stop();
       }
 
       cout << IM(3) << "linking..." << endl;
       tlink.Start();
+      auto lib_file = filesystem::path(lib_dir).append("library");
 #ifdef WIN32
-      string slink = "cmd /C \"ngsld.bat /OUT:" + prefix+".dll " + object_files;
+      lib_file.concat(".dll");
+      string slink = "cmd /C \"ngsld.bat /OUT:" + lib_file.string() + " " + object_files;
       for (auto flag : link_flags)
         slink += " "+flag;
       slink += " \"";
-#else
-      string slink = "ngsld -shared " + object_files + " -o " + prefix + ".so -lngstd -lngbla -lngfem -lngcomp -lngcore";
+#else // WIN32
+      lib_file.concat(".so");
+      string slink = "ngsld -shared " + object_files + " -o " + lib_file.string() + " -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore";
       for (auto flag : link_flags)
         slink += " "+flag;
-#endif
-      int err = system(slink.c_str());
+#endif // WIN32
+      int err = system((chdir_cmd + slink).c_str());
       if (err) throw Exception ("problem calling linker");      
       tlink.Stop();
       cout << IM(3) << "done" << endl;
-      auto library = make_unique<SharedLibrary>();
-#ifdef WIN32
-      library->Load(prefix+".dll");
-#else
-      char *temp = getcwd(nullptr, 0);
-      string cwd(temp);
-      free(temp);
-      library->Load(cwd+"/"+prefix+".so");
-#endif
-      return library;
+      if(keep_files)
+      {
+          cout << IM(2) << "keeping generated files at " << lib_dir.string() << endl;
+          return make_unique<SharedLibrary>(lib_file);
+      }
+      else
+          return make_unique<SharedLibrary>(lib_file, lib_dir);
     }
 
     namespace detail {

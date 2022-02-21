@@ -134,7 +134,7 @@ namespace ngcomp
       size_t num_edges = edge_weights.Size();
       size_t num_vertices = vertex_weights.Size();
 
-      cout << "H1AMG: level = " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
+      cout << IM(3) << "H1AMG: level = " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
 
       size = mat->Height();
 
@@ -503,7 +503,9 @@ namespace ngcomp
     virtual void FinalizeLevel (const BaseMatrix * matrix) override
     {
       auto smat = dynamic_pointer_cast<SparseMatrixTM<SCAL>> (const_cast<BaseMatrix*>(matrix)->shared_from_this());
-
+      if (!smat)
+        throw Exception(string("H1AMG: expected a matrix of type ") + typeid(SparseMatrixTM<SCAL>).name()
+                        + ", but got a matrix of type "+typeid(*matrix).name());
       size_t num_vertices = matrix->Height();
       size_t num_edges = edge_weights_ht.Used();
 

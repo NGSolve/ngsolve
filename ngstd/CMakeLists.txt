@@ -3,8 +3,8 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 add_library( ngstd ${NGS_LIB_TYPE}
         blockalloc.cpp evalfunc.cpp templates.cpp
         stringops.cpp statushandler.cpp
-        cuda_ngstd.cpp python_ngstd.cpp
-        bspline.cpp
+        python_ngstd.cpp
+        bspline.cpp ngs_utils.cpp
         )
 
 if(NOT WIN32)
@@ -30,7 +30,7 @@ install( FILES
         memusage.hpp ngstd.hpp
         stringops.hpp templates.hpp
         statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
-        polorder.hpp sockets.hpp cuda_ngstd.hpp
+        polorder.hpp sockets.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
         bspline.hpp simd_complex.hpp sample_sort.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}

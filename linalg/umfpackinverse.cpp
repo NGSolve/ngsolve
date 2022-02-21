@@ -69,6 +69,8 @@ namespace ngla
     : SparseFactorization (a, ainner, acluster)
   {
     static Timer timer("Umfpack Inverse");
+    static Timer timer_sym("Umfpack Inverse symbolic");
+    static Timer timer_num("Umfpack Inverse numeric");
     RegionTimer reg (timer);
 
 
@@ -134,11 +136,16 @@ namespace ngla
               }
             else
               {
+                timer_sym.Start();
                 status = umfpack_dl_symbolic ( compressed_height, compressed_height, rowstart.Data(), indices.Data(), data, &Symbolic, Control, Info );
+                timer_sym.Stop();
                 umfpack_dl_report_status( nullptr, status );
                 if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Symbolic factorization failed.");
-                
+
+                timer_num.Start();                
                 status = umfpack_dl_numeric (rowstart.Data(), indices.Data(), data, Symbolic, &Numeric, nullptr, nullptr );
+                timer_num.Stop();                
+                
                 umfpack_dl_report_status( nullptr, status );
                 if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Numeric factorization failed.");
               }

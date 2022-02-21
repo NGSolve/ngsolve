@@ -8,9 +8,13 @@
 /*********************************************************************/
 
 #include <map>
+#include <variant>
+
 
 namespace ngfem
 {
+  extern bool code_uses_tensors;
+
   template <typename T>
   inline string ToLiteral(const T & val)
   {
@@ -67,6 +71,8 @@ namespace ngfem
       }
       return code;
     }
+
+    void Declare (string type, int i, FlatArray<int> dims);
   };
 
   struct CodeExpr
@@ -130,15 +136,30 @@ namespace ngfem
   */
   inline CodeExpr Var(string name, int i)
   {
-    return CodeExpr(name + '_' + ToLiteral(i));
+    /*
+    if (code_uses_tensors)
+      return CodeExpr(name + '_' + ToLiteral(i) + "()");
+    else
+    */
+      return CodeExpr(name + '_' + ToLiteral(i));
   }
   inline CodeExpr Var(string name, int i, int j)
   {
-    return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j));
+    /*
+    if (code_uses_tensors)
+      return CodeExpr(name + '_' + ToLiteral(i) + '(' + ToLiteral(j) + ')');
+    else
+    */
+      return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j));
   }
   inline CodeExpr Var(string name, int i, int j, int k)
   {
-    return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
+    /*
+    if (code_uses_tensors)
+      return CodeExpr(name + '_' + ToLiteral(i) + '(' + ToLiteral(j) + ',' + ToLiteral(k) + ')');
+    else
+    */
+      return CodeExpr(name + '_' + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
 
   // linear index of tensor of dimensions dims
@@ -150,10 +171,26 @@ namespace ngfem
         ind[j] = index % dims[j];
         index /= dims[j];
       }
-    string str = name + '_' + ToLiteral(i);
-    for (int j = 0; j < ind.Size(); j++)
-      str += '_' + ToLiteral(ind[j]);
-    return CodeExpr(str);
+    /*
+    if (code_uses_tensors)
+      {
+        string str = name + '_' + ToLiteral(i) + "(";
+        for (int j = 0; j < ind.Size(); j++)
+          {
+            if (j > 0) str += ',';
+            str += ToLiteral(ind[j]);
+          }
+        str += ")";
+        return CodeExpr(str);
+      }
+    else
+    */
+      {
+        string str = name + '_' + ToLiteral(i);
+        for (int j = 0; j < ind.Size(); j++)
+          str += '_' + ToLiteral(ind[j]);
+        return CodeExpr(str);
+      }
   }
 
 
@@ -166,17 +203,26 @@ namespace ngfem
   */
   inline CodeExpr Var(int i)
   {
-    return CodeExpr("var_" + ToLiteral(i));
+    if (code_uses_tensors)
+      return CodeExpr("var_" + ToLiteral(i) + "()");
+    else
+      return CodeExpr("var_" + ToLiteral(i));
   }
 
   inline CodeExpr Var(int i, int j)
   {
-    return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j));
+    if (code_uses_tensors)
+      return CodeExpr("var_" + ToLiteral(i) + '(' + ToLiteral(j) + ')');
+    else
+      return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j));
   }
 
   inline CodeExpr Var(int i, int j, int k)
   {
-    return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
+    if (code_uses_tensors)
+      return CodeExpr("var_" + ToLiteral(i) + '(' + ToLiteral(j) + ',' + ToLiteral(k) + ')');
+    else
+      return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
   
   // linear index of tensor of dimensions dims
@@ -188,10 +234,25 @@ namespace ngfem
         ind[j] = index % dims[j];
         index /= dims[j];
       }
-    string str = "var_" + ToLiteral(i);
-    for (int j = 0; j < ind.Size(); j++)
-      str += '_' + ToLiteral(ind[j]);
-    return CodeExpr(str);
+
+    if (code_uses_tensors)
+      {
+        string str = "var_" + ToLiteral(i) + "(";
+        for (int j = 0; j < ind.Size(); j++)
+          {
+            if (j > 0) str += ',';
+            str += ToLiteral(ind[j]);
+          }
+        str += ")";
+        return CodeExpr(str);
+      }
+    else
+      {
+        string str = "var_" + ToLiteral(i);
+        for (int j = 0; j < ind.Size(); j++)
+          str += '_' + ToLiteral(ind[j]);
+        return CodeExpr(str);
+      }
       // return CodeExpr("var_" + ToLiteral(i) + '_' + ToLiteral(j) + '_' + ToLiteral(k));
   }
 
@@ -218,7 +279,7 @@ namespace ngfem
     }
   }
 
-  unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &libraries );
+  unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files = false );
   namespace detail {
       string GenerateL2ElementCode(int order);
   }

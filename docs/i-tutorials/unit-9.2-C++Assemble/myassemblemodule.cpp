@@ -24,7 +24,9 @@ extern "C" void mymodule(py::object & res) {
     .def(py::init<shared_ptr<CoefficientFunction>>())
     ;
   
-  m.def ("MyAssembleMatrix", &ngcomp::MyAssembleMatrix);
+  m.def ("MyAssembleMatrix",
+         &ngcomp::MyAssembleMatrix,
+         py::arg("fes"),py::arg("integrator"), py::arg("parallel")=false);
   
   res = m;    
 }    

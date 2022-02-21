@@ -619,6 +619,7 @@ public:
     Array<ProxyFunction*> proxies;
     Array<CoefficientFunction*> gridfunction_cfs;
     Array<CoefficientFunction*> cache_cfs;
+    Array<shared_ptr<CoefficientFunction>> dcf_dtest;
 
     VorB vb;
     // bool element_boundary;
@@ -676,6 +677,7 @@ public:
     bool has_interpolate; // is there an interpolate in the expression tree ? 
     shared_ptr<BilinearFormIntegrator> linearization;
     Array<shared_ptr<CoefficientFunction>> dcf_dtest;  // derivatives by test-functions
+    Matrix<shared_ptr<CoefficientFunction>> ddcf_dtest_dtrial;  // derivatives by test- and trial-functions
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                                    VorB aelement_boundary);
@@ -969,6 +971,7 @@ public:
     Array<int> trial_cum;     // cumulated dimension of proxies
     Matrix<bool> nonzeros;    // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
+    Array<shared_ptr<CoefficientFunction>> dcf, ddcf;
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, VorB aelement_vb);

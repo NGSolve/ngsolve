@@ -5,12 +5,12 @@ import netgen.meshing as meshing
 from ngsolve.meshes import MakeStructured2DMesh,MakeStructured3DMesh, MakeStructuredSurfaceMesh
 from space_utils import *
 
-def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffops=None, vb=VOL, set_dual=[False], addorder=0, sym=False, dev=False, facet=False):
-    fes = space(mesh, order=order+addorder)
+def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffops=None, vb=VOL, set_dual=[False], addorder=0, sym=False, dev=False, facet=False, **kwargs):
+    fes = space(mesh, order=order+addorder, dim=kwargs.get("dim", 1))
     gf = GridFunction(fes)
 
     cf = GetDiffOp("id", order, dim=mesh.dim, dims=gf.dims, sym=sym, dev=dev, vb=vb)
-
+    
     dx_vol  = mesh.Materials(".*")   if vb==VOL else mesh.Boundaries(".*")
     dx_bnd  = mesh.Boundaries(".*")  if vb==VOL else mesh.BBoundaries(".*")
     dx_bbnd = mesh.BBoundaries(".*") if vb==VOL else mesh.BBBoundaries(".*")
@@ -20,11 +20,11 @@ def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffo
         assert sqrt(Integrate(InnerProduct(gf-ttrace(cf),gf-ttrace(cf)), mesh, definedon=dx_bbnd)) < 1e-10
     if trace:
         gf.Set(cf, dual=False, definedon=dx_bnd)
-        assert sqrt(Integrate(InnerProduct(gf-trace(cf),gf-trace(cf)), mesh, definedon=dx_bnd)) < 1e-10
+        assert sqrt(Integrate(InnerProduct(idop(gf)-trace(cf),idop(gf)-trace(cf)), mesh, definedon=dx_bnd)) < 1e-10
     if idop:
         for dual in set_dual:
             gf.Set(cf, dual=dual, definedon=dx_vol)
-            assert sqrt(Integrate(InnerProduct(gf-idop(cf),gf-idop(cf))*dx(definedon=dx_vol,element_boundary=facet), mesh)) < 1e-10
+            assert sqrt(Integrate(InnerProduct(idop(gf)-idop(cf),idop(gf)-idop(cf))*dx(definedon=dx_vol,element_boundary=facet), mesh)) < 1e-10
     if diffops:
         for diffop in diffops:
             cfdiffop = GetDiffOp(diffop.lower(), order, dim=mesh.dim, dims=gf.dims, sym=sym, dev=dev, vb=vb)
@@ -47,6 +47,7 @@ def test_fespaces_2d():
     # unstructured trig mesh
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3,quad_dominated=False))
     Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["hesse", "Grad"], vb=VOL, set_dual=[True,False])
+    Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad"], vb=VOL, set_dual=[True,False], dim=2)
     Test(mesh=mesh, space=VectorH1, order=2, trace = lambda cf : cf, diffops=["hesse", "div", "Grad"], vb=VOL, set_dual=[True,False])
     Test(mesh=mesh, space=L2, order=2, diffops=["Grad","hesse"], vb=VOL, set_dual=[False])
     Test(mesh=mesh, space=VectorL2, order=2, diffops=["Grad"], vb=VOL, set_dual=[False])
@@ -56,9 +57,10 @@ def test_fespaces_2d():
     Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_2d*cf*Ptau_2d, diffops=["curl","inc", "christoffel","christoffel2"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlDiv, order=2, trace = lambda cf : Ptau_2d*cf*Pn_2d, diffops=["div","curl"], vb=VOL, set_dual=[False], dev=True)
     Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
+    Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True, dim=2)
     Test(mesh=mesh, space=VectorFacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
-    Test(mesh=mesh, space=NormalFacetFESpace, order=2, trace = lambda cf : Pn_2d*cf, vb=VOL, set_dual=[], facet=True)# dual=True: netgen.libngpy._meshing.NgException: normal-facet element evaluated not at BND
-    #Test(mesh=mesh, space=TangentialFacetFESpace, order=2, idop = lambda cf : Ptau_2d*cf, trace = lambda cf : Ptau_2d*cf, vb=VOL, set_dual=[True], facet=True) #idop not Ptau*cf?
+    Test(mesh=mesh, space=NormalFacetFESpace, order=2, idop = lambda cf : Pn_2d*cf, trace = lambda cf : Pn_2d*cf, vb=VOL, set_dual=[True], facet=True)
+    Test(mesh=mesh, space=TangentialFacetFESpace, order=2, idop = lambda cf : Ptau_2d*cf, trace = lambda cf : Ptau_2d*cf, vb=VOL, set_dual=[True], facet=True)
     
     """
     # unstructured (= non-affine) quad mesh
@@ -85,6 +87,7 @@ def test_fespaces_3d():
     mesh = MakeStructured3DMesh(hexes=False, nx=2,ny=2,nz=2, prism=False, mapping = lambda x,y,z : (x*(0.4+0.4*y)**2,0.75*y,1.25*z) )
 
     Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["hesse", "Grad"], vb=VOL, set_dual=[True,False])
+    Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad"], vb=VOL, set_dual=[True,False], dim=3)
     Test(mesh=mesh, space=VectorH1, order=2, trace = lambda cf : cf, diffops=["hesse", "div", "Grad"], vb=VOL, set_dual=[True,False])
     Test(mesh=mesh, space=L2, order=2, diffops=["Grad","hesse"], vb=VOL, set_dual=[False])
     Test(mesh=mesh, space=VectorL2, order=2, diffops=["Grad"], vb=VOL, set_dual=[False])
@@ -94,8 +97,9 @@ def test_fespaces_3d():
     Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_3d*cf*Ptau_3d, diffops=["curl","inc","christoffel","christoffel2"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlDiv, order=2, trace = lambda cf : Ptau_3d*cf*Pn_3d, diffops=["div"], vb=VOL, set_dual=[False], dev=True)
     Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
+    Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True, dim=3)
     Test(mesh=mesh, space=VectorFacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
-    Test(mesh=mesh, space=NormalFacetFESpace, order=2, trace = lambda cf : Pn_3d*cf, vb=VOL, set_dual=[], facet=True)
+    Test(mesh=mesh, space=NormalFacetFESpace, order=2, idop = lambda cf : Pn_3d*cf, trace = lambda cf : Pn_3d*cf, vb=VOL, set_dual=[], facet=True)# dual=True: missing TET element for CalcDual
     
     
     """
@@ -120,21 +124,26 @@ def test_fespaces_3d():
 def test_fespaces_surface():
     n_3d = specialcf.normal(3)
     t_3d = specialcf.tangential(3)
+    mu_3d = Cross(n_3d,t_3d)
     Ptau_3d = Id(3) - OuterProduct(n_3d,n_3d)
     Pn_3d = OuterProduct(n_3d,n_3d)
     Pt_3d = OuterProduct(t_3d,t_3d)
+    Pmu_3d = OuterProduct(mu_3d,mu_3d)
 
     # unstructured trig surface mesh (surface could be curved?)
     mesh = MakeStructuredSurfaceMesh(quads=False, nx=3, ny=3, mapping = lambda x,y,z : ( (x-0.5), (y-0.5), (x-0.5)**2*(0.7+0.2*y)-(y-0.5)**2) )
     Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad", "hesseboundary"], vb=BND, set_dual=[True,False])
+    Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad"], vb=BND, set_dual=[True,False],dim=3)
     Test(mesh=mesh, space=VectorH1, order=2, trace = lambda cf : cf, diffops=["Grad","div"], vb=BND, set_dual=[True,False])
     Test(mesh=mesh, space=SurfaceL2, order=2, diffops=None, vb=BND, set_dual=[False])
     Test(mesh=mesh, space=HCurl, order=2, idop = lambda cf : Ptau_3d*cf, trace = lambda cf : Pt_3d*cf, diffops=None, vb=BND, set_dual=[True,False])
     Test(mesh=mesh, space=HCurlCurl, order=2, idop = lambda cf : Ptau_3d*cf*Ptau_3d, trace = lambda cf : Pt_3d*cf*Pt_3d, diffops=None, vb=BND, set_dual=[True,False], sym=True)
     Test(mesh=mesh, space=FacetSurface, order=2, trace = lambda cf : cf, diffops=None, vb=BND, set_dual=[True], facet=True)
+    Test(mesh=mesh, space=FacetSurface, order=2, trace = lambda cf : cf, diffops=None, vb=BND, set_dual=[True], facet=True, dim=3)
+    Test(mesh=mesh, space=VectorFacetSurface, order=2, trace = lambda cf : cf, diffops=None, vb=BND, set_dual=[True], facet=True)
     
-    #Test(mesh=mesh, space=NormalFacetSurface, order=2, diffops=None, vb=BND, set_dual=[True], facet=True) #no dual diffop
-    ##Test(mesh=mesh, space=HDivSurface, order=0, idop = lambda cf : Ptau_3d*cf, trace = None, diffops=None, vb=BND, set_dual=[True], addorder=0)
+    #Test(mesh=mesh, space=NormalFacetSurface, order=2, idop = lambda cf : Pmu_3d*cf, diffops=None, vb=BND, set_dual=[True], facet=True) #no dual diffop
+    #Test(mesh=mesh, space=HDivSurface, order=0, idop = lambda cf : Ptau_3d*cf, trace = None, diffops=None, vb=BND, set_dual=[False], addorder=0)
     
     """
     # unstructured quad surface mesh (surface could be curved?)

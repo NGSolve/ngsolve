@@ -76,7 +76,8 @@ Whetting the Appetite
    wta/maxwell.ipynb 
    wta/coil.ipynb 
    wta/navierstokes.ipynb
-   wta/elasticity.ipynb
+   wta/elasticity.ipynb 
+   wta/elasticity3D.ipynb 
 
    
 1. Getting started
@@ -94,6 +95,7 @@ Whetting the Appetite
    unit-1.7-helmholtz/helmholtz.ipynb
    unit-1.7-helmholtz/pml.ipynb
    unit-1.8-meshtopology/meshtopology.ipynb
+   unit-1.9-taskmanager/taskmanager.ipynb
    
 2. Advanced Topics
 ==================
@@ -176,10 +178,13 @@ Whetting the Appetite
     unit-6.1.2-surfacepde/surface_pdes.ipynb
     unit-6.1.3-rmplate/Reissner_Mindlin_plate.ipynb
     unit-6.1.4-shells/shell.ipynb
+    
+    unit-6.2-contact/contact.ipynb 
+    unit-6.3-plasticity/plasticity.ipynb
 
 
 7.  Shape- and Topology Optimization
-=========================
+=====================================
 Peter Gangl and Kevin Sturm
 
 .. toctree::
@@ -196,15 +201,19 @@ Peter Gangl and Kevin Sturm
 
 
 8.  Extended Finite Elements
-=========================
+=============================
 C. Lehrenfeld
 
 coming soon ...   
 
 9. Extending by C++ programming
-=========================
+===============================
 
 .. toctree::
    :maxdepth: 1
 
    unit-9.1-C++FE/CppExtension.ipynb
+   unit-9.2-C++Assemble/cppassembling.ipynb
+   unit-9.3-highorder/highorder.ipynb
+   
+   

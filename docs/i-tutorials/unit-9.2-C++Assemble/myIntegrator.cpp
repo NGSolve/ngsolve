@@ -27,9 +27,9 @@ namespace ngfem
   */
   void MySourceIntegrator ::
   CalcElementVector (const FiniteElement & base_fel,
-		     const ElementTransformation & eltrans, 
-		     FlatVector<double> elvec,
-		     LocalHeap & lh) const
+                     const ElementTransformation & eltrans, 
+                     FlatVector<double> elvec,
+                     LocalHeap & lh) const
   {
     /*
       tell the compiler that we are expecting a scalar element,
@@ -93,9 +93,9 @@ namespace ngfem
   
   void MyLaplaceIntegrator ::
   CalcElementMatrix (const FiniteElement & base_fel,
-		     const ElementTransformation & eltrans, 
-		     FlatMatrix<double> elmat,
-		     LocalHeap & lh) const
+                     const ElementTransformation & eltrans, 
+                     FlatMatrix<double> elmat,
+                     LocalHeap & lh) const
   {
     /*
       tell the compiler that we are expecting a scalar element,

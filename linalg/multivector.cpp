@@ -289,18 +289,88 @@ namespace ngla {
   }
 
 
-
-  void MultiVector :: AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ipmat)
+  void MultiVector :: AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ipmat,
+                                           bool parallel, int iterations)
   {
-    vecs.Append (v->CreateVector());
-    *vecs.Last() = *v;
-
-    if (IsComplex())    
-      this->T_Orthogonalize<Complex> (ipmat);
+    if (!IsComplex())
+      this->T_AppendOrthogonalize<double> (v, ipmat, parallel, iterations);
     else
-      this->T_Orthogonalize<double> (ipmat);
+      this->T_AppendOrthogonalize<Complex> (v, ipmat, parallel, iterations);
   }
+  
+  template <typename T>
+  Vector<T> MultiVector :: T_AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ipmat,
+                                           bool parallel, int iterations)
+  {
+    size_t osize = this->Size();
+    Vector<T> R(osize+1);
+    R = 0;
+    auto oldR = R.Range(0, osize);
+    auto hv = v->CreateVector();
+    hv = *v;
 
+    // if (!IsComplex())
+    // {
+        if (!ipmat)
+          {
+            for (int j = 0; j < iterations; j++)
+              {
+                if (parallel)
+                  {
+                    // Vector<T> prod = -this->InnerProduct<T> (hv);
+                    Vector<T> prod = -this->T_InnerProduct<T> (hv);
+                    Axpy (prod, *this, hv);
+                    oldR -= prod;
+                  }
+                else
+                  {
+                    for (int i = 0; i < osize; i++)
+                      {
+                        T ip = -InnerProduct<T> (*(*this)[i], hv);
+                        hv += ip * *(*this)[i];
+                        R(i) -= ip;
+                      }
+                  }
+              }
+            
+            double norm = hv.L2Norm();
+            R(osize) = norm;
+            hv /= norm;
+          }
+        else
+          {
+            auto hv2 = v->CreateVector();              
+            for (int j = 0; j < iterations; j++)          
+              {
+                if (parallel)
+                  {
+                    hv2 = *ipmat * hv;
+                    Vector<T> prod = -this->T_InnerProduct<T> (hv2);
+                    Axpy (prod, *this, hv);
+                    oldR -= prod;                    
+                  }
+                else
+                  {
+                    for (int i = 0; i < this->Size(); i++)
+                      {
+                        hv2 = *ipmat * hv;
+                        T ip = -::InnerProduct<T> (*(*this)[i], hv2);
+                        hv += ip * *(*this)[i];
+                        R(i) -= ip;                        
+                      }
+                  }
+              }
+            hv2 = *ipmat * hv;
+            // double norm = sqrt(InnerProduct(hv, hv2));
+            double norm = sqrt(fabs(InnerProduct<T>(hv, hv2)));
+            R(osize) = norm;            
+            hv /= norm;
+          }
+        // }
+    vecs.Append (hv);
+    return R;
+  }
+  
   void MultiVector :: SetScalar (double s)
   {
     for (auto & vec : vecs) 

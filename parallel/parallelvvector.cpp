@@ -224,7 +224,7 @@ namespace ngla
     static Timer t("ParallelVector - Cumulate");
     RegionTimer reg(t);
     
-#ifdef PARALLEL
+    // #ifdef PARALLEL
     if (status != DISTRIBUTED) return;
     
     // int ntasks = paralleldofs->GetNTasks();
@@ -254,7 +254,7 @@ namespace ngla
       } 
 
     SetStatus(CUMULATED);
-#endif
+    // #endif
   }
   
 
@@ -576,6 +576,73 @@ namespace ngla
     */
   }
 
+  class ParallelMultiVector : public MultiVector
+  {
+    shared_ptr<ParallelDofs> paralleldofs;    
+    
+  public:
+    ParallelMultiVector (shared_ptr<BaseVector> v, size_t cnt)
+      : MultiVector(v, cnt)
+    {
+      paralleldofs = dynamic_cast<ParallelBaseVector&>(*v).GetParallelDofs();
+    }
+
+    void MakeSameStatus () const
+    {
+      if (Size() == 0) return;
+      if ((*this)[0] -> GetParallelStatus() == DISTRIBUTED)
+        for (int i = 1; i < Size(); i++)
+          (*this)[i]->Distribute();
+
+      if ((*this)[0] -> GetParallelStatus() == CUMULATED)
+        for (int i = 1; i < Size(); i++)
+          (*this)[i]->Cumulate();
+    }
+                         
+    Matrix<> InnerProductD (const MultiVector & v2) const override
+    {
+      Matrix<double> res(Size(), v2.Size());
+      if (res.Height()*res.Width()==0) return res;
+      
+      auto status1 = (*this)[0] -> GetParallelStatus();
+      auto status2 = (v2)[0] -> GetParallelStatus();
+
+      if (auto pv2 = dynamic_cast<const ParallelMultiVector*>(&v2))
+        if ( ((status1 == CUMULATED) && (status2 == DISTRIBUTED)) ||
+             ((status2 == CUMULATED) && (status1 == DISTRIBUTED)) )
+          {
+            ArrayMem<double*,32> ptrs1(Size());
+            ArrayMem<double*,32> ptrs2(v2.Size());
+            MakeSameStatus();
+            pv2->MakeSameStatus();
+            
+            for (int i = 0; i < Size(); i++)
+              ptrs1[i] = (*this)[i]->FVDouble().Data();
+            for (int i = 0; i < v2.Size(); i++)
+              ptrs2[i] = v2[i]->FVDouble().Data();
+            
+            ngbla::PairwiseInnerProduct((*this)[0]->FVDouble().Size(), ptrs1, ptrs2, res);
+            
+            paralleldofs->GetCommunicator()
+              .AllReduce(FlatArray(res.Height()*res.Width(), res.Data()), MPI_SUM);
+            
+            return res;
+          }
+
+      // fallback
+      return MultiVector::InnerProductD(v2);
+    }
+
+    
+  };
+
+  
+  template <typename SCAL>  
+  unique_ptr<MultiVector> S_ParallelBaseVectorPtr<SCAL> ::
+  CreateMultiVector (size_t cnt) const
+  {
+    return make_unique<ParallelMultiVector> (CreateVector(), cnt);
+  }
 
 
   template <typename SCAL>

@@ -12,28 +12,64 @@
 namespace ngbla
 {
 
-  extern NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  // vector ops
+
+  template <typename T1, typename T2>
+  void CopyVector (FlatVector<T1> src, FlatVector<T2> dest)
+  {
+    for (size_t i : Range(dest))
+      dest[i] = src[i];
+  }
+
+  template <typename T1, typename T2>
+  void CopyVector (SliceVector<T1> src, SliceVector<T2> dest)
+  {
+    for (size_t i : Range(dest))
+      dest[i] = src[i];
+  }
+
+  extern NGS_DLL_HEADER void CopyVector (FlatVector<double> src, FlatVector<double> dest);
+  extern NGS_DLL_HEADER void CopyVector (SliceVector<double> src, SliceVector<double> dest);
+
+
+  template <typename T0, typename T1, typename T2>
+  void AddVector (T0 alpha, FlatVector<T1> src, FlatVector<T2> dest)
+  {
+    for (size_t i : Range(dest))
+      dest[i] += alpha*src[i];
+  }
+
+  template <typename T0, typename T1, typename T2>
+  void AddVector (T0 alpha, SliceVector<T1> src, SliceVector<T2> dest)
+  {
+    for (size_t i : Range(dest))
+      dest[i] += alpha*src[i];
+  }
+
+  extern NGS_DLL_HEADER void AddVector (double alpha, FlatVector<double> src, FlatVector<double> dest);
+  extern NGS_DLL_HEADER void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest);
+
+
+
+  
+
   typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[26];
+  
   INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    size_t dsx = x.Size();
-    if (dsx >= std::size(dispatch_matvec))
-      dsx = std::size(dispatch_matvec)-1;
+    size_t dsx = min(x.Size(), std::size(dispatch_matvec)-1);
     (*dispatch_matvec[dsx])  (a, x, y);    
   }
 
 
-  extern NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
   typedef void (*pmultadd_matvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmultadd_matvec dispatch_addmatvec[25];
+  
   INLINE void MultAddMatVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    size_t sx = x.Size();
-    if (sx <= 24)
-      (*dispatch_addmatvec[sx])  (s, a, x, y);
-    else
-      MultAddMatVec_intern (s, a, x, y);
+    size_t dsx = min(x.Size(), std::size(dispatch_addmatvec)-1);    
+    (*dispatch_addmatvec[dsx])  (s, a, x, y);    
   }
 
 
@@ -66,6 +102,10 @@ namespace ngbla
   }
 
 
+  INLINE void MultAddMatVec (double s, BareSliceMatrix<double, ColMajor> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatTransVec (s, Trans(a), x, y);
+  }
 
 
   
@@ -519,7 +559,8 @@ namespace ngbla
   }
 
   
-  extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits);
+  extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k,
+                                            bool lapack, bool doubleprec, size_t maxits);
 
 
   double MatKernelMaskedScalAB (size_t n,

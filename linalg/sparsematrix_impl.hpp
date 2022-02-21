@@ -47,15 +47,30 @@ namespace ngla
   template <class TM>
   shared_ptr<SparseMatrixTM<TM>> SparseMatrixTM<TM> ::
   CreateFromCOO (FlatArray<int> indi, FlatArray<int> indj,
-                 FlatArray<TSCAL> val, size_t h, size_t w)
+                 FlatArray<TM> val, size_t h, size_t w)
   {
+    static Timer t("SparseMatrix::CreateFromCOO"); RegionTimer r(t);
     Array<int> cnt(h);
+
+    /*
     cnt = 0;
     for (auto i : indi) cnt[i]++;
+    */
 
+    DynamicTable<int> tab(h);
+    for (size_t i = 0; i < indi.Size(); i++)
+      tab.AddUnique(indi[i], indj[i]);
+    for (size_t i = 0; i < h; i++)
+      cnt[i] = tab.EntrySize(i);
+    
     auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
     for (auto k : ngstd::Range(indi))
-      (*matrix)(indi[k], indj[k]) = val[k];
+      matrix->CreatePosition(indi[k], indj[k]);
+    matrix->SetZero();
+
+    for (auto k : ngstd::Range(indi))
+      (*matrix)(indi[k], indj[k]) += val[k];
+
     return matrix;
   }
   
@@ -140,7 +155,7 @@ namespace ngla
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("SparseMatrix::MultAdd"); RegionTimer reg(t);
-    t.AddFlops (this->NZE());
+    t.AddFlops (this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(double)));
 
     ParallelForRange
       (balance, [&] (IntRange myrange)
@@ -423,7 +438,26 @@ namespace ngla
     }
   }
 
-
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseSparseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  DeleteZeroElements(double tol) const
+  {
+    Array<int> indi, indj;
+    Array<TM> val;
+    for (auto i : Range(this->Height()))
+      {
+        for (auto j : Range(firsti[i], firsti[i+1]))
+          {
+            if (ngbla::L2Norm2(data[j]) > tol*tol)
+              {
+                indi.Append (i);
+                indj.Append (colnr[j]);
+                val.Append (data[j]);
+              }
+          }
+      }
+    return this->CreateFromCOO(indi, indj, val, this->Height(), this->Width());
+  }
 
   template <class TM>
   ostream & SparseMatrixTM<TM> ::
@@ -627,6 +661,32 @@ namespace ngla
     return cmat;
   }
 
+
+  
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseSparseMatrix> SparseMatrix<TM, TV_ROW, TV_COL> ::
+  Reorder (const Array<size_t> & reorder) const
+  {
+    Array<size_t> inv_reorder(reorder.Size());
+    for (size_t i : Range(reorder))
+      inv_reorder[reorder[i]] = i;
+                              
+    Array<int> cnt(this->Height());
+    for (size_t i : Range(cnt))
+      cnt[i] = this->GetRowIndices(reorder[i]).Size();
+    auto newmat = make_shared<SparseMatrix>(cnt);
+    for (size_t i : Range(cnt))
+      for (auto col : this->GetRowIndices(reorder[i]))
+        newmat->CreatePosition(i, inv_reorder[col]);
+          
+    for (size_t i : Range(cnt))
+      for (auto col : this->GetRowIndices(reorder[i]))
+        (*newmat)(i, inv_reorder[col]) = (*this)(reorder[i], col);
+    
+    return newmat;
+  }
+
+  
   template <class TM>
   shared_ptr<BaseSparseMatrix> SparseMatrixTM<TM> ::
   CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>(const Array<int>&,int)> & creator) const

@@ -76,9 +76,9 @@ namespace ngcomp
     // loop over elements
     Array<shared_ptr<FacetBilinearFormIntegrator>> elementwise_skeleton_parts;
 
-#ifdef PARALLEL
+    // #ifdef PARALLEL
     Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;
-#endif
+    // #endif
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<unique_ptr<SpecialElement>> specialelements;
@@ -440,54 +440,39 @@ namespace ngcomp
   {
   protected:
 
+    // have parallel wrapper for distributed meshes:
     shared_ptr<BaseMatrix> harmonicext;
     shared_ptr<BaseMatrix> harmonicexttrans; 
     shared_ptr<BaseMatrix> innersolve;
     shared_ptr<BaseMatrix> innermatrix;
 
+    // local operators:
     ElementByElementMatrix<SCAL> *harmonicext_ptr, *harmonicexttrans_ptr, *innersolve_ptr, *innermatrix_ptr;
 
     
-#ifdef PARALLEL
     //data for mpi-facets; only has data if there are relevant integrators in the BLF!
     mutable bool have_mpi_facet_data = false;
     mutable Array<int> os_per;
     mutable Table<SCAL> send_table;
     mutable Table<SCAL> recv_table;
-#endif
-    
     
         
   public:
-    /// 
+    ///
+    /*
     S_BilinearForm (shared_ptr<FESpace> afespace, const string & aname,
 		    const Flags & flags)
-      : BilinearForm (afespace, aname, flags) 
-    { 
-      /*
-      harmonicext = NULL;
-      harmonicexttrans = NULL;
-      innersolve = NULL;
-      innermatrix = NULL;
-      */
-    }
+      : BilinearForm (afespace, aname, flags)  { } 
 
     ///
     S_BilinearForm (shared_ptr<FESpace> afespace, 
 		    shared_ptr<FESpace> afespace2,
 		    const string & aname, const Flags & flags)
-      : BilinearForm (afespace, afespace2, aname, flags) 
-    {
-      /*
-      harmonicext = NULL;
-      harmonicexttrans = NULL;
-      innersolve = NULL;
-      innermatrix = NULL;
-      */
-    }
-
-
-    ~S_BilinearForm();
+      : BilinearForm (afespace, afespace2, aname, flags) { } 
+    */
+    using BilinearForm::BilinearForm;
+    
+    virtual ~S_BilinearForm();
 
     ///
     void AddMatrix1 (SCAL val, const BaseVector & x,
@@ -497,7 +482,7 @@ namespace ngcomp
                       BaseVector & y, bool transpose, LocalHeap & lh) const;
 
     virtual void AddMatrix (double val, const BaseVector & x,
-                           BaseVector & y, LocalHeap & lh) const
+                           BaseVector & y, LocalHeap & lh) const override
     {
       x.Cumulate();
       y.Distribute();
@@ -509,7 +494,7 @@ namespace ngcomp
                              BaseVector & y, LocalHeap & lh) const;
 
     virtual void AddMatrix (Complex val, const BaseVector & x,
-                           BaseVector & y, LocalHeap & lh) const
+                           BaseVector & y, LocalHeap & lh) const override
     {
       x.Cumulate();
       y.Distribute();
@@ -518,12 +503,10 @@ namespace ngcomp
     }
 
     virtual void AddMatrixTrans (double val, const BaseVector & x,
-                                 BaseVector & y, LocalHeap & lh) const;
+                                 BaseVector & y, LocalHeap & lh) const override;
 
-    virtual void LapackEigenSystem(FlatMatrix<SCAL> & elmat, LocalHeap & lh) const 
-    {
-      ;
-    }
+    virtual void LapackEigenSystem(FlatMatrix<SCAL> & elmat, LocalHeap & lh) const;
+    // { ; }
   
     void ApplyLinearizedMatrixAdd1 (SCAL val,
 				    const BaseVector & lin,
@@ -533,7 +516,7 @@ namespace ngcomp
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y, LocalHeap & lh) const
+					   BaseVector & y, LocalHeap & lh) const override
     {
       lin.Cumulate();
       x.Cumulate();
@@ -545,7 +528,7 @@ namespace ngcomp
     virtual void ApplyLinearizedMatrixAdd (Complex val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y, LocalHeap & lh) const
+					   BaseVector & y, LocalHeap & lh) const override
     {
       lin.Cumulate();
       x.Cumulate();
@@ -555,21 +538,21 @@ namespace ngcomp
     }
   
 
-    virtual double Energy (const BaseVector & x, LocalHeap & lh) const;
+    virtual double Energy (const BaseVector & x, LocalHeap & lh) const override;
 
-    virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const;
+    virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const override;
 
-    virtual void ModifyRHS (BaseVector & fd) const;
+    virtual void ModifyRHS (BaseVector & fd) const override;
 
     ///
-    virtual void DoAssemble (LocalHeap & lh);
+    virtual void DoAssemble (LocalHeap & lh) override;
     virtual void Assemble_facetwise_skeleton_parts_VOL (Array<bool>& useddof, size_t & gcnt, LocalHeap & lh, const BaseVector * lin = nullptr);
     ///
     // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///
     virtual void AssembleLinearization (const BaseVector & lin,
 					LocalHeap & lh, 
-					bool reallocate = 0);
+					bool reallocate = 0) override;
     ///
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
@@ -598,22 +581,22 @@ namespace ngcomp
 				       LocalHeap & lh);
 
 
-    shared_ptr<BaseMatrix> GetHarmonicExtension () const 
+    shared_ptr<BaseMatrix> GetHarmonicExtension () const override
     { 
       return harmonicext; 
     }
     ///  
-    shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const
+    shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const override
     { 
       return harmonicexttrans; 
     }
     ///  
-    shared_ptr<BaseMatrix> GetInnerSolve () const
+    shared_ptr<BaseMatrix> GetInnerSolve () const override
     { 
       return innersolve; 
     }
     ///  
-    shared_ptr<BaseMatrix> GetInnerMatrix () const
+    shared_ptr<BaseMatrix> GetInnerMatrix () const override
     { 
       return innermatrix; 
     }
@@ -631,7 +614,7 @@ namespace ngcomp
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
     */
-    virtual void AllocateInternalMatrices ();
+    virtual void AllocateInternalMatrices () override;
   };
 
 
@@ -647,6 +630,7 @@ namespace ngcomp
   protected:
 
   public:
+    /*
     ///
     T_BilinearForm (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags);
     ///
@@ -654,8 +638,10 @@ namespace ngcomp
 		    shared_ptr<FESpace> afespace2,
 		    const string & aname,
 		    const Flags & flags);
+    */
+    using S_BilinearForm<TSCAL> :: S_BilinearForm;
     ///
-    virtual ~T_BilinearForm ();
+    virtual ~T_BilinearForm () { };
 
     ///
     virtual shared_ptr<BilinearForm> GetLowOrderBilinearForm() override;
@@ -676,7 +662,7 @@ namespace ngcomp
 				   ElementId id, bool addatomic, 
 				   LocalHeap & lh) override;
 
-    virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const override;
+    // virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const override;
   };
 
 
@@ -733,6 +719,53 @@ namespace ngcomp
   };
 
 
+
+  template <class TSCAL>
+  class NGS_DLL_HEADER T_BilinearFormDynBlocks : public S_BilinearForm<TSCAL>
+  {
+  public:
+    typedef SparseBlockMatrix<TSCAL> TMATRIX;
+    shared_ptr<TMATRIX> mymatrix;
+    size_t blockheight, blockwidth;
+  protected:
+
+  public:
+    T_BilinearFormDynBlocks (shared_ptr<FESpace> afespace, 
+                             const string & aname, const Flags & flags)
+      : S_BilinearForm<TSCAL> (afespace, aname, flags),
+      blockheight(afespace->GetDimension()),
+      blockwidth(afespace->GetDimension()) { } 
+    
+    T_BilinearFormDynBlocks (shared_ptr<FESpace> afespace, 
+                             shared_ptr<FESpace> afespace2,
+                             const string & aname, const Flags & flags)
+      : S_BilinearForm<TSCAL> (afespace, afespace2, aname, flags),
+      blockheight(afespace2->GetDimension()),
+      blockwidth(afespace->GetDimension()) { } 
+    
+    virtual ~T_BilinearFormDynBlocks () { };
+
+    virtual shared_ptr<BilinearForm> GetLowOrderBilinearForm() override;
+
+    virtual void AllocateMatrix () override;
+    virtual unique_ptr<BaseVector> CreateRowVector() const override;
+    virtual unique_ptr<BaseVector> CreateColVector() const override;
+
+    virtual void CleanUpLevel() override;
+
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+				   FlatArray<int> dnums2,
+				   BareSliceMatrix<TSCAL> elmat,
+				   ElementId id, bool addatomic, 
+				   LocalHeap & lh) override;
+  };
+
+
+
+
+
+
+  
 
   template <class TSCAL>
   class NGS_DLL_HEADER S_BilinearFormNonAssemble : public S_BilinearForm<TSCAL>

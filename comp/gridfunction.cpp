@@ -85,6 +85,8 @@ namespace ngcomp
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
+    autoupdate = flags.GetDefineFlag ("autoupdate");
+
     auto comp_space = dynamic_pointer_cast<CompoundFESpace>(fespace);
     if(comp_space)
       for([[maybe_unused]] auto i : Range(comp_space->GetNSpaces()))
@@ -104,7 +106,7 @@ namespace ngcomp
 
   void GridFunction :: DoArchive (Archive & archive)
   {
-    archive & nested & visual & multidim & level_updated;
+    archive & nested & autoupdate & visual & multidim & level_updated;
     archive & cacheblocksize;
 
     if (archive.Input()) Update();
@@ -196,7 +198,8 @@ namespace ngcomp
   {
     ost << "gridfunction '" << GetName() << "' on space '" 
         << fespace->GetName() << "'\n"
-	<< "nested = " << nested << endl;
+	<< "nested = " << nested << "\n"
+    << "autoupdate = " << autoupdate << endl;
   }
 
   Array<MemoryUsage> GridFunction :: GetMemoryUsage () const
@@ -260,17 +263,18 @@ namespace ngcomp
 
          const FiniteElement & fel = fes->GetFE (el, lh);
          int ndof = fel.GetNDof();
+         int fesdim = fespace->GetDimension();
          // int dimcf = cf.Dimension();
          const ElementTransformation & eltrans = ma->GetTrafo (el, lh); 
          
-         FlatVector<> elvec(ndof, lh), elvec1(ndof, lh);
+         FlatVector<> elvec(ndof*fesdim, lh), elvec1(ndof*fesdim, lh);
 
          // GetElementVector (mdcomp, el.GetDofs(), elvec1);
          // cout << "elvec, before: " << endl << elvec1 << endl;
          
          // fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof/dimcf, dimcf), lh);
-         fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, 1), lh);
-         // cout << "elvec, minmizer: " << endl << elvec << endl;
+         fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, fesdim), lh);
+         // cout << "elvec: " << endl << elvec << endl;
          
          fes->TransformVec (el, elvec, TRANSFORM_SOL_INVERSE);
 
@@ -481,8 +485,15 @@ namespace ngcomp
 
   
   template <class SCAL>
-  void S_GridFunction<SCAL> :: Load (istream & ist)
+  void S_GridFunction<SCAL> :: Load (istream & ist, int mdcomp)
   {
+    if (mdcomp == -1)
+      {
+        for (int comp = 0; comp < GetMultiDim(); comp++)
+          Load (ist, comp);
+        return;
+      }
+    
     auto comm = ma->GetCommunicator();
     if (comm.Size() == 1)
       { 
@@ -535,7 +546,7 @@ namespace ngcomp
 		  if (ist.good())
 		    LoadBin<SCAL>(ist, elvec(k));			
 	  
-		SetElementVector (dnums, elvec);
+		SetElementVector (mdcomp, dnums, elvec);
 	      }
 	  }
       }
@@ -544,10 +555,10 @@ namespace ngcomp
       {  
 	GetVector() = 0.0;
 	GetVector().SetParallelStatus (DISTRIBUTED);    
-	LoadNodeType<1,NT_VERTEX> (ist);
-	LoadNodeType<2,NT_EDGE> (ist);
-	LoadNodeType<4,NT_FACE> (ist);
-	LoadNodeType<8,NT_CELL> (ist);
+	LoadNodeType<1,NT_VERTEX> (ist, mdcomp);
+	LoadNodeType<2,NT_EDGE> (ist, mdcomp);
+	LoadNodeType<4,NT_FACE> (ist, mdcomp);
+	LoadNodeType<8,NT_CELL> (ist, mdcomp);
 	GetVector().Cumulate();
       }
 #endif
@@ -555,7 +566,7 @@ namespace ngcomp
 
 
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
-  void  S_GridFunction<SCAL> :: LoadNodeType (istream & ist) 
+  void  S_GridFunction<SCAL> :: LoadNodeType (istream & ist, int mdcomp) 
   {
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
@@ -616,7 +627,7 @@ namespace ngcomp
 	    for (int j = 0; j < elvec.Size(); j++)
 	      elvec(j) = loc_data[cnt++];
 	    
-	    SetElementVector (dnums, elvec);
+	    SetElementVector (mdcomp, dnums, elvec);
 	  }
       }
     else
@@ -693,8 +704,17 @@ namespace ngcomp
 
 
   template <class SCAL>
-  void S_GridFunction<SCAL> :: Save (ostream & ost) const
+  void S_GridFunction<SCAL> :: Save (ostream & ost, int mdcomp) const
   {
+    if (mdcomp == -1)
+      {
+        for (int comp = 0; comp < GetMultiDim(); comp++)
+          Save (ost, comp);
+        return;
+      }
+    
+
+    
     auto comm = ma->GetCommunicator();
     int ntasks = comm.Size();
     const FESpace & fes = *GetFESpace();
@@ -744,7 +764,7 @@ namespace ngcomp
 	      {
 		fes.GetDofNrs (NodeId(nt, compress[index[i]]),  dnums); 
 		Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
-		GetElementVector (dnums, elvec);
+		GetElementVector (mdcomp, dnums, elvec);
 		
 		for (int j = 0; j < elvec.Size(); j++)
 		  SaveBin<SCAL>(ost, elvec(j));			
@@ -754,11 +774,11 @@ namespace ngcomp
 #ifdef PARALLEL	 
     else
       {  
-	GetVector().Cumulate();        
-	SaveNodeType<1,NT_VERTEX>(ost);
-	SaveNodeType<2,NT_EDGE>  (ost);
-	SaveNodeType<4,NT_FACE>  (ost);
-	SaveNodeType<8,NT_CELL>  (ost);
+	GetVector(mdcomp).Cumulate();        
+	SaveNodeType<1,NT_VERTEX>(ost, mdcomp);
+	SaveNodeType<2,NT_EDGE>  (ost, mdcomp);
+	SaveNodeType<4,NT_FACE>  (ost, mdcomp);
+	SaveNodeType<8,NT_CELL>  (ost, mdcomp);
       }
 #endif
   }
@@ -767,7 +787,7 @@ namespace ngcomp
 
 
 
-#ifdef PARALLEL
+#ifdef PARALLELxxx
   template <typename T>
   inline void MyMPI_Gather (T d, MPI_Comm comm /* = ngs_comm */)
   {
@@ -792,7 +812,7 @@ namespace ngcomp
 
 
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
-  void S_GridFunction<SCAL> :: SaveNodeType (ostream & ost) const
+  void S_GridFunction<SCAL> :: SaveNodeType (ostream & ost, int mdcomp) const
   {
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
@@ -836,14 +856,14 @@ namespace ngcomp
 	    nodenums.Append(points);
 	    
 	    Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
-	    GetElementVector (dnums, elvec);
+	    GetElementVector (mdcomp, dnums, elvec);
 	    
 	    for (int j = 0; j < elvec.Size(); j++)
 	      data.Append(elvec(j));
 	  }    
 
-	MyMPI_Gather (nodenums.Size(), comm);
-	MyMPI_Gather (data.Size(), comm);
+	comm.Gather (nodenums.Size());
+	comm.Gather (data.Size());
         
 	comm.Send(nodenums,0,22);
 	comm.Send(data,0,23);
@@ -854,8 +874,8 @@ namespace ngcomp
 	Array<Vec<2,int> > positions(0);
 
 	Array<size_t> size_nodes(ntasks), size_data(ntasks);
-	MyMPI_GatherRoot (size_nodes, comm);
-	MyMPI_GatherRoot (size_data, comm);
+	comm.GatherRoot (size_nodes);
+	comm.GatherRoot (size_data);
 
 	Array<MPI_Request> requests;
 
@@ -1045,14 +1065,10 @@ namespace ngcomp
 	    
 	    shared_ptr<BaseVector> ovec = vec[i];
 	
-#ifdef PARALLEL
-	    // if ( this->GetFESpace()->GetParallelDofs() )
             if ( this->GetFESpace()->IsParallel() )
 	      vec[i] = make_shared<S_ParallelBaseVectorPtr<TSCAL>> (ndof, this->GetFESpace()->GetDimension()*this->cacheblocksize,
 								    this->GetFESpace()->GetParallelDofs(), CUMULATED);
 	    else
-#endif
- 	      // vec[i] = make_shared<VVector<TV>> (ndof);
               vec[i] = make_shared<S_BaseVectorPtr<TSCAL>> (ndof, this->GetFESpace()->GetDimension()*this->cacheblocksize);
             
 	    *vec[i] = TSCAL(0);
@@ -1142,6 +1158,8 @@ namespace ngcomp
 
     for (auto vb : { VOL, BND, BBND, BBBND })
       diffop[vb] = gf->GetFESpace()->GetEvaluator(vb);
+
+    SetVariable(true);
   }
 
   GridFunctionCoefficientFunction :: 
@@ -1161,6 +1179,8 @@ namespace ngcomp
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
+
+    SetVariable(true);
   }
 
   GridFunctionCoefficientFunction :: 
@@ -1187,6 +1207,8 @@ namespace ngcomp
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
+
+    SetVariable(true);
   }
   
   GridFunctionCoefficientFunction :: 
@@ -1204,6 +1226,8 @@ namespace ngcomp
     else if (bfi->VB() == BND)
       diffop = make_shared<CalcFluxDifferentialOperator> (bfi, false);      
     */
+
+    SetVariable(true);
   }
 
 
@@ -1696,12 +1720,12 @@ namespace ngcomp
     // if (var == shape.get())
     if (auto diffshape = dynamic_cast<const DiffShapeCF*>(var))                
       {
-        const CoefficientFunction * me = this;
+        auto me = const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this();
         bool Eulerian = diffshape->Eulerian_gridfunctions.Contains(me);
         //cout << "diff GF is " << (Eulerian ? "Eulrian" : "Lagrange") << endl;
         for (int i = 0; i < 4; i++)
           if (diffop[i])
-            return diffop[i]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir, Eulerian);
+            return diffop[i]->DiffShape (me, dir, Eulerian);
         throw Exception("don't have any diffop for shape-derivative");
       }
     
@@ -2520,7 +2544,7 @@ namespace ngcomp
 	  averages[i] /= volumes[i];
       }
       }
-    catch (Exception e)
+    catch (const Exception& e)
       {
         cerr << "Caught exception in VisualizeGF::Analyze: " << e.What() << endl;
       }
@@ -2711,7 +2735,7 @@ namespace ngcomp
 
     delete [] val;
       }
-    catch (Exception e)
+    catch (const Exception& e)
       {
         cerr << "Caught exception in VisualizeGF::Analyze2: " << e.What() << endl;
       }

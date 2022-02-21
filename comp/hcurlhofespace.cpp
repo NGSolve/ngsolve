@@ -511,7 +511,8 @@ namespace ngcomp
 
   void HCurlHighOrderFESpace :: UpdateDofTables()
   {
-    if (order_policy == VARIABLE_ORDER)
+    // if (order_policy == VARIABLE_ORDER)
+    if(false)
       {
         int dim = ma->GetDimension();
         size_t nedge = ma->GetNEdges(); 
@@ -1040,7 +1041,8 @@ namespace ngcomp
   template <ELEMENT_TYPE ET>
   FiniteElement & HCurlHighOrderFESpace :: T_GetFE (ElementId ei, Allocator & lh) const
   {
-    if (order_policy == VARIABLE_ORDER)
+    // if (order_policy == VARIABLE_ORDER)
+    if(false)
       {
         // cout << "ei = " << ei << endl;
         Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (ei.Nr());
@@ -1487,7 +1489,8 @@ namespace ngcomp
         dnums.Append (edge);
     
     // new style
-    if (order_policy == VARIABLE_ORDER && ma->GetDimension() >= 2)
+    // if (order_policy == VARIABLE_ORDER && ma->GetDimension() >= 2)
+    if(false)
       {
         for (auto edge : ngel.Edges())
           dnums += GetEdgeDofs(edge);

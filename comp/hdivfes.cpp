@@ -39,6 +39,7 @@ namespace ngcomp
   }
   */
 
+  
   RaviartThomasFESpace :: RaviartThomasFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags)
   : FESpace (ama, flags)
   {
@@ -140,20 +141,23 @@ namespace ngcomp
   
   void RaviartThomasFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if(ei.VB()==VOL)
+    if(ei.VB()==VOL || ei.VB()==BND)
       {
+        /*
 	Array<int> forient(6);
-	
 	if (ma->GetDimension() == 2)
 	  ma->GetElEdges (ei.Nr(), dnums, forient);
 	else
 	  ma->GetElFaces (ei.Nr(), dnums, forient);
-	
+        */
+        dnums = ma->GetElement(ei).Facets();
+        
 	if (!DefinedOn (ei))
 	  dnums = -1;
         return;
       }
 
+    /*
     if(ei.VB()==BND)
       {
 	if (ma->GetDimension() == 2)
@@ -161,14 +165,14 @@ namespace ngcomp
 	    int eoa[12];
 	    Array<int> eorient(12, eoa);
 	    ma->GetSElEdges (ei.Nr(), dnums, eorient);
-	    
 	    if (!DefinedOn(ei))
 	      dnums = -1;
             
           }
     // (*testout) << "el = " << elnr << ", dofs = " << dnums << endl;
       }
-  
+    */
+    
     if(ei.VB()==BBND || ei.VB()==BBBND)
       {
         dnums.SetSize0();
@@ -202,12 +206,12 @@ namespace ngcomp
   {
     int nd = 3;
     bool boundary = (ei.VB() == BND);
-    size_t elnr = ei.Nr();
+    // size_t elnr = ei.Nr();
     if (boundary) return;
 
     Vector<> fac(nd);
     
-    GetTransformationFactors (elnr, fac);
+    GetTransformationFactors (ei, fac);
     
     int i, j, k, l;
     
@@ -243,7 +247,7 @@ namespace ngcomp
 
     Vector<> fac(nd);
     
-    GetTransformationFactors (elnr, fac);
+    GetTransformationFactors (ei, fac);
     
     if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL) || (tt & TRANSFORM_SOL_INVERSE))
       {
@@ -254,15 +258,26 @@ namespace ngcomp
   }
   
   void RaviartThomasFESpace ::
-  GetTransformationFactors (int elnr, FlatVector<> & fac) const
+  GetTransformationFactors (ElementId ei, FlatVector<> fac) const
   {
-    Array<int> edge_nums, edge_orient;
-    
-    fac = 1;
+    auto vnums = ma->GetElVertices(ei);
 
-    ma->GetElEdges (elnr, edge_nums, edge_orient);
-    for (int i = 0; i < 3; i++)
+    /*
+    for (auto [i,e] : Enumerate(ET_trait<ET_TRIG>::edges))
+      fac[i] = vnums[e[0]] > vnums[e[1]] ? 1 : -1;
+    */
+    
+    for (auto [e,fi] : Zip(ET_trait<ET_TRIG>::edges, fac))
+      fi = vnums[e[0]] > vnums[e[1]] ? 1 : -1;
+    
+    
+    /*
+      // old
+      Array<int> edge_nums, edge_orient;
+      ma->GetElEdges (elnr, edge_nums, edge_orient);
+      for (int i = 0; i < 3; i++)
       fac(i) = edge_orient[i];
+    */
   }
 
 

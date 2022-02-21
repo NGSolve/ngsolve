@@ -321,7 +321,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
     .def("__len__", [] (BaseVector &self) { return self.Size(); })
     .def_property_readonly("is_complex", &BaseVector::IsComplex)
-
+    .def_property_readonly ("comm", [](const BaseVector & self) { return self.GetCommunicator(); })
+    
     .def("CreateVector", [] (BaseVector & self, bool copy)
          {
            auto newvec = self.CreateVector();
@@ -333,7 +334,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("CreateVectors", [] (BaseVector & self, int num)
          {
            std::vector<shared_ptr<BaseVector>> vecs;
-           for (int i : Range(num))
+           for ([[maybe_unused]] auto i : Range(num))
              vecs.push_back(self.CreateVector());
            return vecs;
          }, py::arg("num"),
@@ -642,11 +643,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     ;
 
   py::class_<MultiVector, MultiVectorExpr, shared_ptr<MultiVector>> (m, "MultiVector")
-    // .def(py::init<shared_ptr<BaseVector>,size_t>([] ))
-    .def(py::init<>([] (shared_ptr<BaseVector> bv, size_t cnt) { return bv->CreateMultiVector(cnt); } ))
+    .def(py::init<>([] (shared_ptr<BaseVector> bv, size_t cnt) {
+          return bv->CreateMultiVector(cnt); } ))
     .def(py::init<size_t,size_t,bool>())
     .def("__len__", &MultiVector::Size)
-    // .def("__getitem__", &MultiVector::operator[])
     .def("__getitem__",
          [](MultiVector & self, int ind )
          {
@@ -662,12 +662,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           throw Exception ("slices with non-unit distance not allowed");
         return shared_ptr<MultiVector>(self.Range(IntRange(start, start+n)));
       })
-    /*
-    .def("__getitem__", [](MultiVector & self, std::vector<int> inds) {
-        return shared_ptr<MultiVector>(self.SubSet(ArrayFromVector(inds)));
-      })
-    */
-    .def("__getitem__", [](MultiVector & self, Array<int> inds) {
+    .def("__getitem__", [](MultiVector & self, const Array<int> & inds) {
         return shared_ptr<MultiVector>(self.SubSet(inds));
       })
     .def("__setitem__", [](MultiVector & x, int nr, DynamicVectorExpression & expr)
@@ -735,8 +730,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Expand", &MultiVector::Extend, "deprecated, use Extend instead")
     .def("Extend", &MultiVector::Extend)
     .def("Append", &MultiVector::Append)
-    .def("AppendOrthogonalize", &MultiVector::AppendOrthogonalize,
-         py::arg("vec"), py::arg("ipmat")=nullptr,
+    .def("AppendOrthogonalize", [](MultiVector & mv, shared_ptr<BaseVector> v, BaseMatrix * ip, bool parallel, int iterations)
+         {
+           if (!mv.IsComplex())
+             return py::cast(mv.T_AppendOrthogonalize<double>(v, ip, parallel, iterations));
+           else
+             return py::cast(mv.T_AppendOrthogonalize<Complex>(v, ip, parallel, iterations));
+         },
+         py::arg("vec"), py::arg("ipmat")=nullptr, py::arg("parallel")=true, py::arg("iterations")=2,
          "assumes that existing vectors are orthogonal, and orthogonalize new vector against existing vectors")
     .def("Replace", [](MultiVector & x, int ind, shared_ptr<BaseVector> v2)
          {
@@ -799,14 +800,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          -> shared_ptr<MultiVectorExpr>
          { return make_shared<MultiVecMatrixExpr<Complex>>(a, x); })
     ;
-    /*
-    // not taken, thus moved to BaseMatrix
-    .def("__rmul__", [](shared_ptr<MultiVector> x, shared_ptr<BaseMatrix> mat)
-         -> shared_ptr<MultiVectorExpr>
-         {
-           return make_shared<MatMultiVecExpr> (mat, x); 
-         })
-    */
   
 
   typedef BaseMatrix BM;
@@ -819,12 +812,19 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             static_assert( sizeof(BaseMatrix)==sizeof(BaseMatrixTrampoline), "slkdf");
           }
 
-      bool IsComplex() const override { 
+      bool IsComplex() const override {
+        pybind11::gil_scoped_acquire gil;         
+        if (auto overload = pybind11::get_overload(this, "IsComplex"))
+          return py::cast<bool> (overload());
+        return false;
+
+#ifdef OLD
         PYBIND11_OVERLOAD_PURE(
             bool, /* Return type */
             BaseMatrix,      /* Parent class */
             IsComplex,          /* Name of function */
             );
+#endif        
       }
 
       tuple<size_t, size_t> Shape() const
@@ -956,7 +956,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("nze", [] ( BaseMatrix & self)
                            { return self.NZE(); }, "number of non-zero elements")
     .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
-
+    .def_property_readonly ("comm", [](const BaseVector & self) { return self.GetCommunicator(); })
+    
     .def("GetOperatorInfo", [] (BaseMatrix & self)
          {
            stringstream str;
@@ -1049,12 +1050,14 @@ inverse : string
          { return ComposeOperators (ma, mb); }, py::arg("mat"))
     
     .def("__add__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
-         { return make_shared<SumMatrix> (ma, mb, 1, 1); }, py::arg("mat"))
+         { return AddOperators (ma, mb, 1, 1); }, py::arg("mat"))
+    // { return make_shared<SumMatrix> (ma, mb, 1, 1); }, py::arg("mat"))
     .def("__radd__", [](shared_ptr<BM> ma, int i) {
         if (i != 0) throw Exception("can only add integer 0 to BaseMatrix (for Python sum(list))");
         return ma; })
     .def("__sub__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
-         { return make_shared<SumMatrix> (ma, mb, 1, -1); }, py::arg("mat"))
+         { return AddOperators (ma, mb, 1, -1); }, py::arg("mat"))        
+    // { return make_shared<SumMatrix> (ma, mb, 1, -1); }, py::arg("mat"))
     .def("__rmul__", [](shared_ptr<BM> ma, double a)->shared_ptr<BaseMatrix>
          { return make_shared<VScaleMatrix<double>> (ma, a); }, py::arg("value"))
     .def("__rmul__", [](shared_ptr<BM> ma, Complex a)->shared_ptr<BaseMatrix>
@@ -1081,18 +1084,63 @@ inverse : string
            *y = *mat * *x;
            return y;
          })
+
+    .def("ToDense", [](BM & m)
+         {
+           auto vecx = m.CreateRowVector();
+           auto vecy = m.CreateColVector();
+           
+           if (!m.IsComplex())
+             {
+               Matrix<double> dmat(m.Height(), m.Width());
+               auto fx = vecx.FV<double>();
+               auto fy = vecy.FV<double>();
+               for (int i = 0; i < fx.Size(); i++)
+                 {
+                   fx = 0;
+                   fx(i) = 1;
+                   vecy = m * vecx;
+                   dmat.Col(i) = fy;
+                 }
+               return py::cast(dmat);
+             }
+           else
+             {
+               Matrix<Complex> dmat(m.Height(), m.Width());
+               auto fx = vecx.FV<Complex>();
+               auto fy = vecy.FV<Complex>();
+               for (int i = 0; i < fx.Size(); i++)
+                 {
+                   fx = 0;
+                   fx(i) = 1;
+                   vecy = m * vecx;
+                   dmat.Col(i) = fy;
+                 }
+               return py::cast(dmat);
+             }
+         })
     
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
+    .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
     ;
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")
     
-    .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba) 
-         { return m.CreateJacobiPrecond(ba); }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("freedofs") = shared_ptr<BitArray>())
+    .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba,
+                              bool GS) 
+         {
+           if (GS)
+             return py::cast(make_shared<SymmetricGaussSeidelPrecond>(m, ba));
+           else
+             return py::cast(m.CreateJacobiPrecond(ba));
+         },
+         py::call_guard<py::gil_scoped_release>(),
+         py::arg("freedofs") = shared_ptr<BitArray>(),
+         py::arg("GS") = false)
     
-    .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks, bool parallel)
+    .def("CreateBlockSmoother", [](shared_ptr<BaseSparseMatrix> m, py::object blocks, bool parallel,
+                                   bool GS) 
          {
            shared_ptr<Table<int>> blocktable;
            {
@@ -1114,8 +1162,16 @@ inverse : string
                    row[j++] = val.cast<int>();
                }
            }
-           return m.CreateBlockJacobiPrecond (blocktable, nullptr, parallel);
-         }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"), py::arg("parallel")=false)
+           if (GS)
+             return py::cast(make_shared<SymmetricBlockGaussSeidelPrecond>(m, blocktable));  
+           else
+             return py::cast(m->CreateBlockJacobiPrecond (blocktable, nullptr, parallel));
+         }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"), py::arg("parallel")=false,
+         py::arg("GS")=false)
+    .def("DeleteZeroElements", [](shared_ptr<BaseSparseMatrix> m, double tol)->shared_ptr<BaseSparseMatrix>
+         {
+           return m -> DeleteZeroElements(tol);
+         })
      ;
   
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
@@ -1226,6 +1282,10 @@ inverse : string
          {
            return shared_ptr<BaseVector> (expr.Evaluate());
          }, "create vector and evaluate expression into it")
+    .def("CreateVector", [](DynamicVectorExpression expr)
+         {
+           return shared_ptr<BaseVector> (expr.CreateVector());
+         }, "create vector")
   ;
 
   py::implicitly_convertible<BaseVector, DynamicVectorExpression>();
@@ -1384,6 +1444,31 @@ inverse : string
            return mv;
          },
          "project vector inline")
+    .def("CreateSparseMatrix", [](const Projector & proj)
+         {
+           Array<int> indi(proj.Height()), indj(proj.Width());
+           Array<double> vals(proj.Height());
+           for (int i : Range(proj.Height()))
+             {
+               indi[i] = i;
+               indj[i] = i;
+             }
+           auto mask = proj.Mask();
+           if (proj.KeepValues())
+             {
+               vals = false;
+               for (int i : Range(proj.Height()))
+                 if ( (*mask)[i] ) vals[i] = true;
+             }
+           else
+             {
+               vals = false;
+               for (int i : Range(proj.Height()))
+                 if ( !(*mask)[i] ) vals[i] = true;
+             }
+           return SparseMatrix<double>::CreateFromCOO (indi, indj, vals, proj.Height(), proj.Height());           
+         },
+         "create a spasre matrix from projector")
     ;
   
   py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
@@ -1686,7 +1771,7 @@ shift : object
   m.def("DoArchive" , [](shared_ptr<Archive> & arch, BaseMatrix & mat)
                                          { cout << "output basematrix" << endl;
                                            mat.DoArchive(*arch); return arch; });
-                                           
+
 }
 
 

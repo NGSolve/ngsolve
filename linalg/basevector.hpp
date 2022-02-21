@@ -367,7 +367,7 @@ namespace ngla
     virtual void Distribute() const;
     virtual PARALLEL_STATUS GetParallelStatus () const;
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const;
-
+    virtual optional<NgMPI_Comm> GetCommunicator() const { return nullopt; }
     const MemoryTracer& GetMemoryTracer() const { return mt; }
   private:
   MemoryTracer mt = { "BaseVector" };
@@ -1327,6 +1327,11 @@ namespace ngla
       ve->AssignTo (1, vec);
       return vec;
       */
+    }
+
+    AutoVector CreateVector() const
+    {
+      return ve->CreateVector();
     }
     
     void AssignTo (double s, BaseVector & v2) const

@@ -28,13 +28,26 @@ namespace ngfem
   CalcElementMatrix(FlatMatrix<double> elmat,
                     LocalHeap & lh) const
   {
-    cerr << "SpecialElement::Assemble not implementd" << endl;
+    throw Exception ("SpecialElement::CalcMat not implemented");        
   }
   void SpecialElement ::
   CalcElementVector(FlatVector<double> elvec,
                     LocalHeap & lh) const
   {
-    cerr << "SpecialElement::Assemble not implementd" << endl;
+    throw Exception ("SpecialElement::CalcVec not implemented");            
+  }
+
+  void SpecialElement ::
+  CalcElementMatrix(FlatMatrix<Complex> elmat,
+                    LocalHeap & lh) const
+  {
+    throw Exception ("SpecialElement::CalcMat complex not implemented");    
+  }
+  void SpecialElement ::
+  CalcElementVector(FlatVector<Complex> elvec,
+                    LocalHeap & lh) const
+  {
+    throw Exception ("SpecialElement::CalcVec complex not implemented");
   }
   
 }

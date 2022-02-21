@@ -159,3 +159,11 @@ def TimeFunction(func, name=None):
 
 def Normalize (v):
     return 1/Norm(v) * v
+
+
+
+def printmaster (*args):
+    from mpi4py.MPI import COMM_WORLD
+    if COMM_WORLD.rank == 0:
+        print (*args)
+        

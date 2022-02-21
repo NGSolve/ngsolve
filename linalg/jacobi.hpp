@@ -23,6 +23,22 @@ namespace ngla
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b) const = 0;
   };
 
+
+  class SymmetricGaussSeidelPrecond : virtual public BaseMatrix
+  {
+    shared_ptr<BaseJacobiPrecond> jac;
+  public:
+    SymmetricGaussSeidelPrecond (const BaseSparseMatrix & mat, shared_ptr<BitArray> freedofs);
+    int VHeight() const override { return jac->VHeight(); }
+    int VWidth() const override { return jac->VHeight(); }
+
+    void Mult (const BaseVector & x, BaseVector & y) const override;
+    
+    AutoVector CreateRowVector() const override { return jac->CreateRowVector(); }
+    AutoVector CreateColVector() const override { return jac->CreateColVector(); }
+  };
+
+  
   /// A Jaboci preconditioner for general sparse matrices
   template <class TM, class TV_ROW, class TV_COL>
   class JacobiPrecond : virtual public BaseJacobiPrecond,

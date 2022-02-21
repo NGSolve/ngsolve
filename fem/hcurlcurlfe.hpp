@@ -750,7 +750,7 @@ namespace ngfem
                                   BareSliceMatrix<double> shapes) const override
     {
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-      if constexpr (ET == ET_TET || ET == ET_TRIG)
+      if constexpr (ET == ET_TET || ET == ET_TRIG || ET == ET_QUAD)
                      Cast() -> T_CalcShape (GetTIPHesse(mip),SBLambda([shapes](int nr,auto val)
                                                                        {
                                                                          if constexpr (DIM==3)
@@ -770,7 +770,7 @@ namespace ngfem
       auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
 
       Mat<DIM*(DIM-1)/2,DIM*(DIM-1)/2> sum = 0.0;
-      if constexpr (ET == ET_TET || ET == ET_TRIG)
+      if constexpr (ET == ET_TET || ET == ET_TRIG || ET == ET_QUAD)
                      Cast() -> T_CalcShape (GetTIPHesse(mip),SBLambda([coefs, &sum](int nr,auto val)
                                                                        {
                                                                          sum += coefs(nr) * Mat<DIM*(DIM-1)/2,DIM*(DIM-1)/2>(val.Inc());
@@ -787,7 +787,7 @@ namespace ngfem
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
       for (size_t i = 0; i < mir.Size(); i++)
         {
-          if constexpr (ET == ET_TET || ET == ET_TRIG)
+          if constexpr (ET == ET_TET || ET == ET_TRIG || ET == ET_QUAD)
                      {
                        Cast() -> T_CalcShape (GetTIPHesse(mir[i]),SBLambda([shapes,i](int j,auto val)
                                                                          {
@@ -824,7 +824,7 @@ namespace ngfem
                        for (size_t k = 0; k < sqr(DIM); k++)
                          values(k,i) = summat(k);
                      }
-          if constexpr (ET == ET_TRIG && DIM == 2)
+          if constexpr ((ET == ET_TRIG || ET == ET_QUAD) && DIM == 2)
                      {
                        SIMD<double> summat(0);
                        Cast() -> T_CalcShape (GetTIPHesse(mir[i]),
@@ -1952,8 +1952,8 @@ namespace ngfem
                   T eta = lam[fav[1]];
                   
                   Matrix<T> F(3,2);
-                  F.Cols(0,1) = adxi;
-                  F.Cols(1,2) = adeta;
+                  F.Col(0) = adxi;
+                  F.Col(1) = adeta;
 		 
                   Matrix<T> Ftmp(2,2);
                   Ftmp = Trans(F)*F;

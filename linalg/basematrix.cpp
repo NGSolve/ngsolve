@@ -330,7 +330,19 @@ namespace ngla
     return "";
   }
 
+  std::map<type_index, function<shared_ptr<BaseMatrix>(const BaseMatrix&)>> BaseMatrix::devmatcreator;
 
+  shared_ptr<BaseMatrix> BaseMatrix :: CreateDeviceMatrix() const
+  {
+    auto it = devmatcreator.find(typeid(*this));
+    if (it == devmatcreator.end()) return nullptr;
+
+    cout << IM(7) << "DeviceMatrix creator function for type " << typeid(*this).name() << endl;
+    return (*it).second(*this);
+  }
+
+
+  
   BaseMatrix::OperatorInfo BaseMatrix :: GetOperatorInfo () const
   {
     OperatorInfo info;
@@ -473,13 +485,37 @@ namespace ngla
         else
           {
             cerr << "illegal operator composition" << endl;
+            cerr << "optyp A = " << int(para->GetOpType()) << endl;
+            cerr << "optyp B = " << int(parb->GetOpType()) << endl;
+            auto & locmata = *para->GetMatrix();
+            auto & locmatb = *parb->GetMatrix();
+            cerr << "type a parallelmat of = " << typeid(locmata).name()
+                 << ", type b = " <<typeid(locmatb).name() << endl;
           }
       }
-
     
     return make_shared<ProductMatrix> (a, b);
   }
 
+  shared_ptr<BaseMatrix> AddOperators (shared_ptr<BaseMatrix> a,
+                                       shared_ptr<BaseMatrix> b,
+                                       double faca, double facb)
+  {
+    auto para = dynamic_pointer_cast<ParallelMatrix> (a);
+    auto parb = dynamic_pointer_cast<ParallelMatrix> (b);
+    if (para && parb)
+      {
+        if (para->GetOpType() == parb->GetOpType())
+          return make_shared<ParallelMatrix> (AddOperators (para->GetMatrix(), parb->GetMatrix(), faca, facb), 
+                                              para->GetRowParallelDofs(),
+                                              para->GetColParallelDofs(),
+                                              para->GetOpType());
+
+        cerr << "Adding parallel matrices of different types, type a = "
+             << int(para->GetOpType()) << ", type b = " << int(parb->GetOpType()) << endl;
+      }
+    return make_shared<SumMatrix> (a, b, faca, facb);
+  }
 
   shared_ptr<BaseMatrix> TransposeOperator (shared_ptr<BaseMatrix> mat)
   {

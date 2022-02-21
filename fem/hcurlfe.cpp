@@ -167,6 +167,25 @@ namespace ngfem
     throw ExceptionNOSIMD(string("SIMD - HCurlFE::CalcShape not overloaded, et = ")
                           + typeid(*this).name());
   }
+
+
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  Evaluate (const IntegrationRule & ir, BareSliceVector<> coefs, SliceMatrix<> values) const
+  {
+    LocalHeapMem<100000> lhdummy("hcurlfe-lh");
+    for (int i = 0; i < ir.Size(); i++)
+      values.Row(i) = EvaluateShape (ir[i], coefs, lhdummy);
+  }
+  
+  template <int D>
+  void HCurlFiniteElement<D> ::
+  Evaluate (const MappedIntegrationRule<D,D> & mir, BareSliceVector<> coefs, SliceMatrix<> values) const
+  {
+    LocalHeapMem<100000> lhdummy("hcurlfe-lh");
+    for (int i = 0; i < mir.Size(); i++)
+      values.Row(i) = Trans(mir[i].GetJacobianInverse()) * EvaluateShape (mir[i].IP(), coefs, lhdummy);
+  }
   
 
   /// compute curl of shape
@@ -215,7 +234,7 @@ namespace ngfem
   void HCurlFiniteElement<D> ::
   EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const
   {
-    LocalHeapMem<1000> lhdummy("hcurlfe-lh");
+    LocalHeapMem<10000> lhdummy("hcurlfe-lh");
     for (int i = 0; i < ir.Size(); i++)
       curl.Row(i) = EvaluateCurlShape (ir[i], coefs, lhdummy);
   }
@@ -266,17 +285,18 @@ namespace ngfem
     constexpr int DIMC = D*(D-1)/2;
     Matrix<> shape(GetNDof(),D);
     Vector<> coefs(GetNDof());
-    Vector<> values(ir.Size());
+    Matrix<> values(ir.Size(), D);
     Matrix<> dvalues(ir.Size(), DIMC);
     Matrix<SIMD<double>> avalues(D,simdir.Size());
     Matrix<SIMD<double>> advalues(DIMC, simdir.Size());
     Matrix<SIMD<double>> simd_shapes(DIMC*GetNDof(), simdir.Size());
     FE_ElementTransformation<D,D> trafo(ElementType());
-    static LocalHeap lh (10000000, "FE - Timing");
+
+    LocalHeap lh (10000000, "FE - Timing");
     HeapReset hr(lh);
     // auto & mir = trafo(ir, lh);
     auto & simdmir = trafo(simdir, lh);
-    
+
     coefs = 1;
     
     double maxtime = 0.5;
@@ -289,25 +309,31 @@ namespace ngfem
                      });
     timings.push_back(make_tuple("CalcShape", time/D/steps*1e9/GetNDof()));
 
-    time = RunTiming([&]() {
-                     for (size_t i = 0; i < steps; i++)
-                       this -> CalcMappedShape(simdmir, simd_shapes);
-                     });
-    timings.push_back(make_tuple("CalcShape (SIMD)", time/D/steps*1e9/(simdir.GetNIP()*GetNDof())));
+    try
+      {
+        time = RunTiming([&]() {
+            for (size_t i = 0; i < steps; i++)
+              this -> CalcMappedShape(simdmir, simd_shapes);
+          });
+        timings.push_back(make_tuple("CalcShape (SIMD)", time/D/steps*1e9/(simdir.GetNIP()*GetNDof())));
+      }
+    catch (const ExceptionNOSIMD& e) { };
 
-    /*
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
                        this -> Evaluate(ir, coefs, values);
                      }, maxtime);
-    timings.push_back(make_tuple("Evaluate",time/steps*1e9/(GetNDof()*ir.GetNIP())));
-    */
+    timings.push_back(make_tuple("Evaluate",time/D/steps*1e9/(GetNDof()*ir.GetNIP())));
     
-    time = RunTiming([&]() {
-                     for (size_t i = 0; i < steps; i++)
-                       this -> Evaluate(simdmir, coefs, avalues);
-                     }, maxtime);
-    timings.push_back(make_tuple("Evaluate(SIMD)", time/D/steps*1e9/(GetNDof()*ir.GetNIP())));
+    try
+      {
+        time = RunTiming([&]() {
+            for (size_t i = 0; i < steps; i++)
+              this -> Evaluate(simdmir, coefs, avalues);
+          }, maxtime);
+        timings.push_back(make_tuple("Evaluate(SIMD)", time/D/steps*1e9/(GetNDof()*ir.GetNIP())));
+      }
+    catch (const ExceptionNOSIMD& e) { };
 
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
@@ -315,12 +341,17 @@ namespace ngfem
                      }, maxtime);
     timings.push_back(make_tuple("Evaluate Curl", time/DIMC/steps*1e9/(D*GetNDof()*ir.GetNIP())));
 
-    time = RunTiming([&]() {
-                     for (size_t i = 0; i < steps; i++)
-                       this -> EvaluateCurl(simdmir, coefs, advalues);
-                     }, maxtime);
-    timings.push_back(make_tuple("Evaluate Curl(SIMD)", time/DIMC/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+    try
+      {
+        time = RunTiming([&]() {
+            for (size_t i = 0; i < steps; i++)
+              this -> EvaluateCurl(simdmir, coefs, advalues);
+          }, maxtime);
+        timings.push_back(make_tuple("Evaluate Curl(SIMD)", time/DIMC/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+      }
+    catch (const ExceptionNOSIMD& e) { };
 
+    
     /*
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
@@ -328,13 +359,17 @@ namespace ngfem
                      }, maxtime);
     timings.push_back(make_tuple("Evaluate Trans", time/steps*1e9/(GetNDof()*ir.GetNIP())));
     */
-    
-    time = RunTiming([&]() {
-                     for (size_t i = 0; i < steps; i++)
-                       this -> AddTrans(simdmir, avalues, coefs);
-                     }, maxtime);
-    timings.push_back(make_tuple("Evaluate Trans (SIMD)", time/D/steps*1e9/(GetNDof()*ir.GetNIP())));
 
+    try
+      {
+        time = RunTiming([&]() {
+            for (size_t i = 0; i < steps; i++)
+              this -> AddTrans(simdmir, avalues, coefs);
+          }, maxtime);
+        timings.push_back(make_tuple("Evaluate Trans (SIMD)", time/D/steps*1e9/(GetNDof()*ir.GetNIP())));
+      }
+    catch (const ExceptionNOSIMD& e) { };
+    
     /*
     time = RunTiming([&]() {
                      for (size_t i = 0; i < steps; i++)
@@ -342,12 +377,16 @@ namespace ngfem
                      }, maxtime);
     timings.push_back(make_tuple("Evaluate Trans Curl", time/steps*1e9/(D*GetNDof()*ir.GetNIP())));
     */
-    
-    time = RunTiming([&]() {
-                     for (size_t i = 0; i < steps; i++)
-                       this -> AddCurlTrans(simdmir, advalues, coefs);
-                     }, maxtime);
-    timings.push_back(make_tuple("Evaluate Trans Curl(SIMD)", time/DIMC/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+
+    try
+      {
+        time = RunTiming([&]() {
+            for (size_t i = 0; i < steps; i++)
+              this -> AddCurlTrans(simdmir, advalues, coefs);
+          }, maxtime);
+        timings.push_back(make_tuple("Evaluate Trans Curl(SIMD)", time/DIMC/steps*1e9/(D*GetNDof()*ir.GetNIP())));
+      }
+    catch (const ExceptionNOSIMD& e) { };
 
     return timings;
   }

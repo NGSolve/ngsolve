@@ -182,10 +182,19 @@ namespace ngcomp {
   MakeProxyFunction (bool testfunction,
                      const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const 
   {
+    /*
     auto proxy = GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
     shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<PeriodicFESpace*>(this)->shared_from_this());
     proxy.SetFESpace(fes);
     return proxy;
+    */
+    return GetBaseSpace()->MakeProxyFunction (testfunction,
+                                              [&] (shared_ptr<ProxyFunction> proxy)
+                                                {
+                                                  shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<PeriodicFESpace*>(this)->shared_from_this());
+                                                  proxy->SetFESpace(fes);
+                                                  return addblock (proxy);
+                                                });
   }
   
   
