@@ -970,6 +970,23 @@ namespace ngcomp
     nnodes[NT_ELEMENT] = nnodes[StdNodeType (NT_ELEMENT, dim)];
     nnodes[NT_FACET] = nnodes[StdNodeType (NT_FACET, dim)];
 
+    for (auto & p : trafo_jumptable) p = nullptr;
+    Iterate<4> ([&](auto DIM)
+                {
+                  if (DIM.value == dim)
+                    {
+                      if constexpr (DIM.value >= 1)
+                                     {
+                                       trafo_jumptable[VOL] = &MeshAccess::GetTrafoDim<DIM>;
+                                       trafo_jumptable[BND] = &MeshAccess::GetSTrafoDim<DIM>;
+                                     }
+                      if constexpr (DIM.value >= 2)
+                                     trafo_jumptable[BBND] = &MeshAccess::GetCD2TrafoDim<DIM>;
+                    }
+                });
+    
+
+    
     int & ndomains = nregions[0];    
     ndomains = -1;
     // int ne = GetNE();
@@ -1730,7 +1747,7 @@ namespace ngcomp
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BBND,2> ei, Allocator & lh) const;
   template <> ElementTransformation & MeshAccess :: GetTrafo (T_ElementId<BBND,3> ei, Allocator & lh) const;
 
-  ngfem::ElementTransformation & MeshAccess :: GetTrafo (ElementId ei, Allocator & lh) const
+  ngfem::ElementTransformation & MeshAccess :: GetTrafoOld (ElementId ei, Allocator & lh) const
   {
     auto elnr = ei.Nr();
     VorB vb = ei.VB(); 
