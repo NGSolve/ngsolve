@@ -14,12 +14,13 @@
 namespace ngmg
 {
   MultigridPreconditioner ::
-  MultigridPreconditioner (const MeshAccess & ama,
-			   const FESpace & afespace,
-			   const BilinearForm & abiform,
+  MultigridPreconditioner (// const MeshAccess & ama,
+			   // const FESpace & afespace,
+			   shared_ptr<BilinearForm> abiform,
 			   shared_ptr<Smoother> asmoother,
 			   shared_ptr<Prolongation> aprolongation)
-    : BaseMatrix (), ma(ama), fespace(afespace), biform(abiform), 
+    : BaseMatrix (), biform(abiform),
+      ma(biform->GetFESpace()->GetMeshAccess()),
       smoother(asmoother), prolongation(aprolongation)
   {
     if (!prolongation)
@@ -32,7 +33,7 @@ namespace ngmg
     SetCoarseType (EXACT_COARSE);
     SetCoarseSmoothingSteps (1);
 
-    SetUpdateAll (biform.UseGalerkin());
+    SetUpdateAll (biform->UseGalerkin());
     SetUpdateAlways (0);
     checksumcgpre = -17;
 
@@ -86,15 +87,16 @@ namespace ngmg
   void MultigridPreconditioner :: Update ()
   {
     bool haveall;
-    for (int i = 0; i < biform.GetNLevels(); i++)
-      if (!biform.GetMatrixPtr(i)) haveall = false;
-    if (!haveall && biform.GetNLevels() > 1 && biform.GetMatrixPtr())
-      const_cast<BilinearForm&>(biform).GalerkinProjection();
+    for (int i = 0; i < biform->GetNLevels(); i++)
+      if (!biform->GetMatrixPtr(i)) haveall = false;
+    if (!haveall && biform->GetNLevels() > 1 && biform->GetMatrixPtr())
+      // const_cast<BilinearForm&>(biform).GalerkinProjection();
+      biform->GalerkinProjection();
     
     if ( smoother )
       smoother->Update(update_always);
     if (prolongation)
-      prolongation->Update(fespace);
+      prolongation->Update(*biform->GetFESpace());
 
 
     //  coarsegridpre = biform.GetMatrix(1).CreateJacobiPrecond();
@@ -102,7 +104,7 @@ namespace ngmg
 
     //cout << "updateall " << updateall << endl;
 
-    if (biform.GetNLevels() == 1 || updateall || coarsegridpre == nullptr)
+    if (biform->GetNLevels() == 1 || updateall || coarsegridpre == nullptr)
       {
 	//cout << coarsetype << " ?= " << EXACT_COARSE << ", id=" << id << endl;
 
@@ -118,15 +120,15 @@ namespace ngmg
 	      checksumcgpre = checksum;
 	    */
 
-	    shared_ptr<BitArray> freedofs = fespace.GetFreeDofs();
+	    shared_ptr<BitArray> freedofs = biform->GetFESpace()->GetFreeDofs();
             
 	    if (!freedofs)
 	      coarsegridpre =
-		dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(0)) .InverseMatrix();
+		dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix();
 	    else
 	      {
 		coarsegridpre =
-		  dynamic_cast<const BaseSparseMatrix&> (biform.GetMatrix(0)) .InverseMatrix(freedofs);
+		  dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix(freedofs);
 	      }
 
             GetMemoryTracer().Track(*coarsegridpre, "CoarseInverse");
@@ -149,17 +151,17 @@ namespace ngmg
       }
     //  SetSymmetric (biform.GetMatrix(1).Symmetric());
     if (harmonic_extension_prolongation)
-      if (he_prolongation.Size() < ma.GetNLevels() && prolongation)
+      if (he_prolongation.Size() < ma->GetNLevels() && prolongation)
         {
-          he_prolongation.SetSize(ma.GetNLevels());
+          he_prolongation.SetSize(ma->GetNLevels());
           
-          int level = ma.GetNLevels()-1;
+          int level = ma->GetNLevels()-1;
           
           shared_ptr<BitArray> innerdof;
           if (level > 0) innerdof = prolongation->GetInnerDofs(level);
           
           if (innerdof)
-            he_prolongation[level] = biform.GetMatrixPtr()->InverseMatrix(innerdof);
+            he_prolongation[level] = biform->GetMatrixPtr()->InverseMatrix(innerdof);
         }
   }
   
@@ -172,7 +174,7 @@ namespace ngmg
     try
       {
 	y = 0;
-	MGM (ma.GetNLevels()-1, y, x);
+	MGM (ma->GetNLevels()-1, y, x);
       }
     catch (Exception & e)
       {
@@ -214,7 +216,7 @@ namespace ngmg
 	    }
 	  case CG_COARSE:
 	    {
-	      CGSolver<double> inv (biform.GetMatrixPtr (1));
+	      CGSolver<double> inv (biform->GetMatrixPtr (1));
 	      u = inv * f;
 	      break;
 	    }
@@ -244,9 +246,10 @@ namespace ngmg
 
 	    smoother->PreSmooth (level, u, f, smoothingsteps * incsm);
 	    //smoother->PreSmoothResiduum (level, u, f, *d, smoothingsteps * incsm);
-	    
-	    auto dt = d.Range (0, fespace.GetNDofLevel(level-1));
-	    auto wt = w.Range (0, fespace.GetNDofLevel(level-1));
+
+            size_t ndofc = biform->GetFESpace()->GetNDofLevel(level-1);
+	    auto dt = d.Range (0, ndofc);
+	    auto wt = w.Range (0, ndofc);
 
 
 	    smoother->Residuum (level, u, f, d);

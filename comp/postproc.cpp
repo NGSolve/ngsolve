@@ -422,16 +422,18 @@ namespace ngcomp
 
 	/** Test-Proxy (dual) **/
 	auto dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
+        auto single_dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
         
         for (VorB avb = VOL; avb < vb; avb++) {
 	  dual_evaluator = dual_evaluator->GetTrace();
+          single_dual_evaluator = single_dual_evaluator->GetTrace();
 	  if ( dual_evaluator == nullptr )
 	    { throw Exception(fes->GetClassName() + string(" has no dual trace operator for vb = ") + \
 			      to_string(avb) + string(" -> ") + to_string(avb + 1) + string("!")); }
 	}
         if (dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator))
-          dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
-	auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
+          single_dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
+	auto dual = make_shared<ProxyFunction>(fes, true, false, single_dual_evaluator,
 					       nullptr, nullptr, nullptr, nullptr, nullptr);
         /** Set up integrators - may need integrators for multiple node-types **/
         Array<shared_ptr<BilinearFormIntegrator>> bli;
@@ -490,7 +492,7 @@ namespace ngcomp
              
              // Array<int> dnums(fel.GetNDof(), lh);
              // fes.GetDofNrs (ei, dnums);
-             
+
              FlatVector<SCAL> elflux(fel.GetNDof() * dim, lh);
              FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
              
@@ -517,11 +519,17 @@ namespace ngcomp
 			     coef->Evaluate (mir, mfluxi);
 			     for (size_t j : Range(mir))
 			       mfluxi.Col(j) *= mir[j].GetWeight(); 
-			     dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
+
+                             dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
+                             
 			   }
 		       }
 
-                     if (!fel.SolveDuality (elflux, elfluxi, lh))
+                     bool result=true;
+                     for ( auto j : Range(dim) )
+                       result = fel.SolveDuality (elflux.Slice (j,dim), elfluxi.Slice (j,dim), lh);
+                     
+                     if (!result)
                        {
                          /** Calc Element Matrix **/
                          FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
@@ -551,7 +559,7 @@ namespace ngcomp
                      
                      return;
                    }
-                 catch (ExceptionNOSIMD e)
+                 catch (const ExceptionNOSIMD& e)
                    {
                      use_simd = false;
 		     for (auto sbfi : single_bli)
@@ -604,8 +612,11 @@ namespace ngcomp
                      elflux += elfluxadd;
                    }
                }
-
-             if (!fel.SolveDuality (elflux, elfluxi, lh))
+             bool result=true;
+             for ( auto j : Range(dim) )
+               result = fel.SolveDuality (elflux.Slice (j,dim), elfluxi.Slice (j,dim), lh);
+             
+             if (!result)
                {
                  /** Calc Element Matrix **/
                  FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
@@ -778,7 +789,7 @@ namespace ngcomp
                      
                      return;
                    }
-                 catch (ExceptionNOSIMD e)
+                 catch (const ExceptionNOSIMD& e)
                    {
                      use_simd = false;
                      cout << IM(4) << "Warning: switching to std evalution in SetValues since: " << e.What() << endl;
@@ -950,7 +961,7 @@ namespace ngcomp
     Array<int> dnums;
     Array<int> dnumsflux;
 
-    double sum = 0;
+    // double sum = 0;
     for (int i = 0; i < ne; i++)
       {
         ElementId ei(vb,i);
@@ -1004,7 +1015,7 @@ namespace ngcomp
 	    fabs (InnerProduct (mfluxi.Row(j), mfluxi2.Row(j)));
 
 	err(i) += elerr;
-	sum += elerr;
+	// sum += elerr;
       }
     ma->PopStatus ();
   }
@@ -1097,7 +1108,7 @@ namespace ngcomp
     Array<int> dnums1;
     Array<int> dnums2;
 
-    double sum = 0;
+    // double sum = 0;
     for (int i = 0; i < ne; i++)
       {
         ElementId ei(bound1 ? BND : VOL, i);
@@ -1150,7 +1161,7 @@ namespace ngcomp
 	  }
 
 	diff(i) += elerr;
-	sum += elerr;
+	// sum += elerr;
       }
     // cout << "difference = " << sqrt(sum) << endl;
     ma->PopStatus ();
@@ -1561,7 +1572,7 @@ namespace ngfem
                      if (element_wise.Size())
                        element_wise(el.Nr()) += hsum;
                    }
-                 catch (ExceptionNOSIMD e)
+                 catch (const ExceptionNOSIMD& e)
                    {
                      this_simd = false;
                      use_simd = false;
@@ -1630,7 +1641,7 @@ namespace ngfem
                  if (element_wise.Size())
                  element_wise(el.Nr()) += hsum;
                  }
-                 catch (ExceptionNOSIMD e)
+                 catch (const ExceptionNOSIMD& e)
                  {
                      this_simd = false;
                      use_simd = false;

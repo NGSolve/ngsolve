@@ -12,7 +12,7 @@
 #include <parallelngs.hpp>
 
 #include <thread>
-#include <ngtcl.hpp>
+#include <meshing/visual_interface.hpp>
 
 using namespace std;
 using namespace ngsolve;
@@ -31,8 +31,14 @@ using netgen::Ng_Tcl_SetResult;
 using netgen::Ng_Tcl_CreateCommand;
 using netgen::NG_TCL_OK;
 using netgen::NG_TCL_ERROR;
+/*
 using netgen::NG_TCL_STATIC;
 using netgen::NG_TCL_VOLATILE;
+*/
+#define NG_TCL_VOLATILE		((Tcl_FreeProc *) 1)
+#define NG_TCL_STATIC		((Tcl_FreeProc *) 0)
+#define NG_TCL_DYNAMIC		((Tcl_FreeProc *) 3)
+
 
 #ifdef SOCKETS
 #include "markus/jobmanager.hpp"
@@ -496,8 +502,10 @@ int NGS_LoadPDE (ClientData clientData,
     {
       try
 	{
+#ifdef PARALLEL_GL
 	  MyMPI_SendCmd ("ngs_pdefile", MPI_COMM_WORLD);
-
+#endif
+          
 	  pde = make_shared<ngsolve::PDE>();
           pde->SetTclInterpreter (interp);
 
@@ -578,7 +586,7 @@ int NGS_LoadPy (ClientData clientData,
 	  cout << "(should) load python file '" << filename << "'" << endl;
 
 #ifdef NGS_PYTHON
-#ifdef PARALLEL
+#ifdef PARALLEL_GL
 	  stringstream buf;
 	  buf << "ngs_py " << ifstream(filename).rdbuf();
 	  MyMPI_SendCmd (buf.str().c_str(), MPI_COMM_WORLD);
@@ -692,8 +700,10 @@ int NGS_SolvePDE (ClientData clientData,
   cout << "Solve PDE" << endl;
   Ng_SetRunning (1);
 
+#ifdef PARALLEL_GL
   MyMPI_SendCmd ("ngs_solvepde", MPI_COMM_WORLD);
-
+#endif
+  
   RunParallel (SolveBVP, NULL);
 
   return NG_TCL_OK;

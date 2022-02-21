@@ -128,6 +128,15 @@ namespace ngfem
       y.Range(0,fel.GetNDof()) = shape * x;
     }
 
+    using DiffOp<DiffOpIdEdge<D, FEL> >::ApplyIR;
+    template <class MIR>
+    static void ApplyIR (const FiniteElement & fel, const MIR & mir,
+			 BareSliceVector<double> x, SliceMatrix<double> y,
+			 LocalHeap & lh)
+    {
+      static_cast<const FEL&> (fel).Evaluate (mir, x, y);
+    }
+
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
@@ -578,8 +587,8 @@ namespace ngfem
     {
       if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdBoundaryEdge");      
       int dim = dir->Dimension();
-      auto n = NormalVectorCF(dim);
-      n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+      auto n = NormalVectorCF(dim) -> Reshape(Array<int> ( { dim, 1 } ));
+      //n -> SetDimensions( Array<int> ( { dim, 1 } ) );
       auto Pn = n * TransposeCF(n);
       
       return (2*SymmetricCF(Pn * dir->Operator("Gradboundary"))
@@ -676,7 +685,7 @@ public:
 			  LocalHeap & lh)
   {
     y.Range(0,fel.GetNDof()) =
-      ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
+      ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh).AsVector();
   }
 
   static shared_ptr<CoefficientFunction>

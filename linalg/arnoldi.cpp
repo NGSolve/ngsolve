@@ -135,9 +135,9 @@ namespace ngla
     evecs = Complex (0.0);
     lami = Complex (0.0);
 
-    cout << "Solve Hessenberg evp with Lapack ... " << flush;
+    cout << IM(5) << "Solve Hessenberg evp with Lapack ... " << flush;
     LapackHessenbergEP (matH.Height(), &matHt(0,0), &lami(0), &evecs(0,0));
-    cout << "done" << endl;
+    cout << IM(5) << "done" << endl;
 	    
     for (int i = 0; i < m; i++)
       lami(i) =  1.0 / lami(i) + shift;

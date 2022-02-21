@@ -49,8 +49,8 @@ namespace ngfem
     virtual Complex Integrate (const ngcomp::MeshAccess & ma,
                                FlatVector<Complex> element_wise);
     
-    virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator();
-    virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator();
+    virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator() const;
+    virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator() const;
   };
   
   inline Integral operator* (double fac, const Integral & cf)
@@ -98,8 +98,7 @@ namespace ngfem
       auto sgrad = dynamic_pointer_cast<ProxyFunction>(grad)->Trace();
       auto sdivdir = TraceCF(sgrad);
 
-      auto tang = TangentialVectorCF(dir->Dimension(), false);
-      tang -> SetDimensions( Array<int> ( { dir->Dimension(), 1 } ) );
+      auto tang = TangentialVectorCF(dir->Dimension(), false) -> Reshape(dir->Dimension(), 1);
       auto bsdivdir = InnerProduct(sgrad*tang,tang);
 
       DiffShapeCF shape;
@@ -134,11 +133,11 @@ namespace ngfem
 
     
     shared_ptr<SumOfIntegrals>
-    Compile (bool realcompile, bool wait) const
+    Compile (bool realcompile, bool wait, bool keep_files) const
     {
       auto compiled = make_shared<SumOfIntegrals>();
       for (auto & icf : icfs)
-        compiled->icfs += make_shared<Integral> (::ngfem::Compile (icf->cf, realcompile, 2, wait), icf->dx);
+        compiled->icfs += make_shared<Integral> (::ngfem::Compile (icf->cf, realcompile, 2, wait, keep_files), icf->dx);
       return compiled;
     }
 
@@ -182,9 +181,9 @@ namespace ngfem
     shared_ptr<SumOfIntegrals> igls;
     Variation (shared_ptr<SumOfIntegrals> _igls) : igls(_igls) { ; }
     
-    auto Compile (bool realcompile, bool wait) const
+    auto Compile (bool realcompile, bool wait, bool keep_files) const
     {
-      return Variation(igls->Compile(realcompile, wait));
+      return Variation(igls->Compile(realcompile, wait, keep_files));
     }
   };
   

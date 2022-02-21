@@ -2,7 +2,7 @@ mkdir %SRC_DIR%
 xcopy . %SRC_DIR%\ /O /X /E /H /K /Q
 cd %SRC_DIR%
 
-pip3 install pybind11-stubgen==0.5
+pip3 install --upgrade pybind11-stubgen
 
 git submodule update --init --recursive
 IF %errorlevel% NEQ 0 exit /b %errorlevel%
@@ -19,9 +19,9 @@ cmake %SRC_DIR% ^
         -DUSE_NATIVE_ARCH=%NG_USE_NATIVE_ARCH% ^
         -DUSE_CGNS=ON ^
         -DUSE_OCC=ON ^
-        -DOpenCASCADE_DIR=C:/occ75 ^
-        -DOpenCasCade_DIR=C:/occ75 ^
-        -DCMAKE_PREFIX_PATH=C:/occ75 ^
+        -DOpenCASCADE_DIR=C:/occ76 ^
+        -DOpenCasCade_DIR=C:/occ76 ^
+        -DCMAKE_PREFIX_PATH=C:/occ76 ^
         -DUSE_CCACHE=ON ^
         -DUSE_MKL=ON ^
         -DMKL_STATIC=ON ^

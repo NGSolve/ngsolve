@@ -17,6 +17,7 @@ namespace ngcomp
   protected:
     Array<DofId> dofmap;
     shared_ptr<FESpace> space;
+    shared_ptr<Table<DofId>> clusters;
     
   public:
     ReorderedFESpace (shared_ptr<FESpace> space, const Flags & flags);
@@ -41,6 +42,9 @@ namespace ngcomp
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
+    auto GetClusters() const { return clusters; }
+
+    
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
     { return space->GetAdditionalEvaluators (); }
 

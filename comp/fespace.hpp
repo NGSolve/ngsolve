@@ -126,6 +126,9 @@ ANY                  1 1 1 1 | 15
     /// couple (all) neighbouring degrees of freedom (like for jump terms of dg-methods)?
     bool dgjumps;
 
+    /// whether the space should update itself on changes to the mesh
+    bool autoupdate;
+
     /// debug output to testout
     bool print; 
 
@@ -496,6 +499,8 @@ ANY                  1 1 1 1 | 15
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
 
+    bool DoesAutoUpdate () const { return autoupdate; };
+
     auto & DefinedOn(VorB vb) const { return definedon[vb]; }
     
     bool DefinedOn(VorB vb, int domnr) const
@@ -653,7 +658,8 @@ ANY                  1 1 1 1 | 15
   
   
     /// Returns multigrid-prolongation
-    virtual shared_ptr<Prolongation> GetProlongation () const { return prol; }
+    virtual shared_ptr<Prolongation> GetProlongation () const;
+    // { return prol; }
     /// Set multigrid prolongation
     // void SetProlongation (ngmg::Prolongation * aprol)
     // { prol = aprol; }
@@ -672,8 +678,8 @@ ANY                  1 1 1 1 | 15
     }
 
 
-    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const
-    { return additional_evaluators; } 
+    virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const;
+      // { return additional_evaluators; } 
 
 
     shared_ptr<BilinearFormIntegrator> GetIntegrator (VorB vb = VOL) const;
@@ -700,17 +706,15 @@ ANY                  1 1 1 1 | 15
     virtual void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
 
-    virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const
-    { throw Exception("GetTraceOperator not overloaded"); }
+    virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const;
 
     virtual shared_ptr<BaseMatrix> ConvertL2Operator (shared_ptr<FESpace> l2space) const;
     
     virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
-                           LocalHeap & lh) const
-    { throw Exception("GetTrace not overloaded"); }
+                           LocalHeap & lh) const;
+    
     virtual void GetTraceTrans (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
-                                LocalHeap & lh) const
-    { throw Exception("GetTrace not overloaded"); }
+                                LocalHeap & lh) const;
     
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
     virtual void UpdateParallelDofs ();

@@ -47,6 +47,8 @@ namespace ngcomp
     
     virtual size_t GetNDof() const throw() override { return ndof; }
 
+    virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
+
 
     virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
     

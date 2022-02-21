@@ -235,7 +235,7 @@ namespace ngcomp
     if (use_simd) {
       it_els([&](FESpace::Element & ei, LocalHeap & lh) {
 	  try { fill_lam(ei, lh); }
-	  catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
+	  catch (const ExceptionNOSIMD& e) { /** Turn off SIMD and continue **/
 	    for (auto bfi : ab_bfis)
 	      { bfi->SetSimdEvaluate(false); }
 	    for (auto bfi : bb_bfis)
@@ -404,7 +404,7 @@ namespace ngcomp
     auto simd_guard = [&](auto some_lam) {
       if (use_simd) {
 	try { some_lam(); }
-	catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
+	catch (const ExceptionNOSIMD& e) { /** Turn off SIMD and continue **/
 	  for (auto bfi : ab_bfis)
 	    { bfi->SetSimdEvaluate(false); }
 	  for (auto bfi : bb_bfis)

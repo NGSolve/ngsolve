@@ -60,7 +60,7 @@ namespace ngcomp
     virtual void VTransformVC (ElementId ei, 
 			       const SliceVector<Complex> vec, TRANSFORM_TYPE tt) const override { ; }
 
-    void GetTransformationFactors (int elnr, FlatVector<> & fac) const;
+    void GetTransformationFactors (ElementId ei, FlatVector<> fac) const;
 
     virtual string GetClassName () const override
     {

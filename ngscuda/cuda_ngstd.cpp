@@ -1,7 +1,9 @@
 #ifdef CUDA
 
 #include <ngstd.hpp>
+#include <cuda_ngstd.hpp>
 
+using namespace std;
 
 namespace ngs_cuda
 {
@@ -37,13 +39,16 @@ namespace ngs_cuda
     int devCount;
     printf("CUDA Device Query...\n"); 
     cudaGetDeviceCount(&devCount);
-    printf("There are %d CUDA devices.\n", devCount);
+    if (devCount == 1)
+      printf("There is %d CUDA device.\n", devCount);
+    else
+      printf("There are %d CUDA devices.\n", devCount);
 
     for (int i = 0; i < devCount; ++i)
       {
-	// Get device properties
-	cudaDeviceProp devProp;
-	cudaGetDeviceProperties(&devProp, i);
+  // Get device properties
+  cudaDeviceProp devProp;
+  cudaGetDeviceProperties(&devProp, i);
 
         if (verbose == 1)
           {

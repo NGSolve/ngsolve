@@ -1,3 +1,4 @@
+
 #ifndef FILE_MGPRE
 #define FILE_MGPRE
 
@@ -25,23 +26,16 @@ namespace ngmg
   {
 
   public:
-    ///
     enum COARSETYPE { EXACT_COARSE, CG_COARSE, SMOOTHING_COARSE, USER_COARSE };
 
   private:
-    ///
-    const MeshAccess & ma;
-    ///
-    const FESpace & fespace;
-    ///
-    const BilinearForm & biform;
+    shared_ptr<BilinearForm> biform;
+    shared_ptr<MeshAccess> ma;
   
-    ///
     shared_ptr<Smoother> smoother;
-    ///
     shared_ptr<Prolongation> prolongation;
-    ///
     shared_ptr<BaseMatrix> coarsegridpre;
+    
     ///
     double checksumcgpre;
     ///
@@ -59,15 +53,14 @@ namespace ngmg
     Array<shared_ptr<BaseMatrix>> he_prolongation;
   public:
     ///
-    MultigridPreconditioner (const MeshAccess & ama,
-			     const FESpace & afespace,
-			     const BilinearForm & abiform,
+    MultigridPreconditioner (shared_ptr<BilinearForm> abiform,
 			     shared_ptr<Smoother> asmoother,
 			     shared_ptr<Prolongation> aprolongation);
     ///
     ~MultigridPreconditioner ();
     ///
-    virtual bool IsComplex() const override { return fespace.IsComplex(); }
+    virtual bool IsComplex() const override
+    { return biform->GetFESpace()->IsComplex(); }
 
     ///
     void SetSmoothingSteps (int sstep);
@@ -100,9 +93,9 @@ namespace ngmg
 	      const BaseVector & f, int incsm = 1) const;
     ///
     AutoVector CreateRowVector () const override
-    { return biform.GetMatrix().CreateColVector(); }
+    { return biform->GetMatrix().CreateColVector(); }
     AutoVector CreateColVector () const override
-    { return biform.GetMatrix().CreateRowVector(); }
+    { return biform->GetMatrix().CreateRowVector(); }
   
     ///
     const Smoother & GetSmoother() const
@@ -117,12 +110,12 @@ namespace ngmg
 
     virtual int VHeight() const override
     {
-      return biform.GetMatrix().Height();
+      return biform->GetMatrix().Height();
     }
 
     virtual int VWidth() const override
     {
-      return biform.GetMatrix().VWidth();
+      return biform->GetMatrix().VWidth();
     }
 
     virtual Array<MemoryUsage> GetMemoryUsage () const override;

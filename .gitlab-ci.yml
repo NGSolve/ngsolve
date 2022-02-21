@@ -8,8 +8,8 @@ stages:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  UBUNTU_VERSION_LATEST: "21.10"
-  UBUNTU_VERSION_LTS: "20.04"
+  UBUNTU_VERSION_LATEST: "rolling"
+  UBUNTU_VERSION_LTS: "latest"
 
 ############################################
 # Windows
@@ -379,7 +379,7 @@ deploy_mac:
 ############################################
 # Conda package builds
 
-conda_win:
+.conda_win:
   <<: *win
   stage: deploy
   script:
@@ -396,7 +396,7 @@ conda_win:
     - schedules
     - tags
 
-conda_linux:
+.conda_linux:
   stage: deploy
   tags:
     - linux
@@ -417,7 +417,7 @@ conda_linux:
     - schedules
     - tags
 
-conda_mac:
+.conda_mac:
   stage: deploy
   tags:
     - mac
@@ -437,7 +437,7 @@ conda_mac:
     - tags
 
 pip_linux:
-  image: quay.io/pypa/manylinux2014_x86_64
+  image: sameli/manylinux2014_x86_64_cuda_11
   stage: build
   tags:
     - pip

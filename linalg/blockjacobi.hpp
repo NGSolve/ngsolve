@@ -102,6 +102,28 @@ namespace ngla
   };
 
 
+  class SymmetricBlockGaussSeidelPrecond : virtual public BaseMatrix
+  {
+    shared_ptr<BaseBlockJacobiPrecond> jac;
+  public:
+    SymmetricBlockGaussSeidelPrecond (shared_ptr<const BaseSparseMatrix> mat, shared_ptr<Table<int>> blocktable)
+      : jac(mat->CreateBlockJacobiPrecond(blocktable)) { }
+
+    int VHeight() const override { return jac->VHeight(); }
+    int VWidth() const override { return jac->VHeight(); }
+
+    void Mult (const BaseVector & x, BaseVector & y) const override
+    {
+      y = 0;
+      jac->GSSmooth (y, x);
+      jac->GSSmoothBack (y, x);
+    }
+    
+    AutoVector CreateRowVector() const override { return jac->CreateRowVector(); }
+    AutoVector CreateColVector() const override { return jac->CreateColVector(); }
+  };
+
+  
 
 
   /**
@@ -114,7 +136,8 @@ namespace ngla
   {
   protected:
     /// a reference to the matrix
-    const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
+    // const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
+    shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> mat;
     /// inverses of the small blocks
     Array<FlatMatrix<TM>> invdiag;
     /// the data for the inverses
@@ -126,18 +149,18 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ///
-    BlockJacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
+    BlockJacobiPrecond (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
 			shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags = false);
     ///
     virtual ~BlockJacobiPrecond ();
 
-    int Height() const { return mat.Height(); }
-    int VHeight() const override { return mat.Height(); }
-    int Width() const { return mat.Width(); }
-    int VWidth() const override { return mat.Width(); }
+    int Height() const { return mat->Height(); }
+    int VHeight() const override { return mat->Height(); }
+    int Width() const { return mat->Width(); }
+    int VWidth() const override { return mat->Width(); }
 
-    AutoVector CreateRowVector() const override { return mat.CreateColVector(); }
-    AutoVector CreateColVector() const override { return mat.CreateRowVector(); }
+    AutoVector CreateRowVector() const override { return mat->CreateColVector(); }
+    AutoVector CreateColVector() const override { return mat->CreateRowVector(); }
     
     ///
     void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
@@ -157,7 +180,7 @@ namespace ngla
                            BaseVector & res, int steps = 1) const  override
     {
       GSSmooth (x, b, steps);
-      res = b - mat * x;
+      res = b - (*mat) * x;
     }
 
     ///
@@ -196,7 +219,7 @@ namespace ngla
     virtual public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    const SparseMatrixSymmetric<TM,TV> & mat;
+    shared_ptr<const SparseMatrixSymmetric<TM,TV>> mat;
 
     // 
     enum { NBLOCKS = 20 };
@@ -214,7 +237,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
   
     ///
-    NGS_DLL_HEADER BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
+    NGS_DLL_HEADER BlockJacobiPrecondSymmetric (shared_ptr<const SparseMatrixSymmetric<TM,TV>> amat, 
                                                 shared_ptr<Table<int>> ablocktable);
     
     /*
@@ -241,14 +264,14 @@ namespace ngla
     void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
 
     ///
-    AutoVector CreateRowVector () const override { return mat.CreateColVector(); }
-    AutoVector CreateColVector () const override { return mat.CreateRowVector(); }
+    AutoVector CreateRowVector () const override { return mat->CreateColVector(); }
+    AutoVector CreateColVector () const override { return mat->CreateRowVector(); }
 
 
-    int Height() const { return mat.Height(); }
-    int VHeight() const override { return mat.Height(); }
-    int Width() const { return mat.Width(); }
-    int VWidth() const override { return mat.Width(); }
+    int Height() const { return mat->Height(); }
+    int VHeight() const override { return mat->Height(); }
+    int Width() const { return mat->Width(); }
+    int VWidth() const override { return mat->Width(); }
 
 
     ///

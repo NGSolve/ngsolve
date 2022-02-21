@@ -219,6 +219,10 @@ namespace ngcomp
     int nlevels;
 
     int nregions[4];
+
+    //ngfem::ElementTransformation & GetTrafoDim (size_t elnr, Allocator & lh) const;
+    typedef ngfem::ElementTransformation & (MeshAccess::*pfunc) (size_t elnr, Allocator & lh) const;    
+    pfunc trafo_jumptable[4];
     
     /// max domain index
     // int & ndomains = nregions[0];
@@ -745,7 +749,7 @@ namespace ngcomp
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetElement(ElementId(BND,selnr)).Vertices(); }
 
-    [[deprecated("Use enums = GetElEdges(ElementId) instead! ")]]    
+    // [[deprecated("Use enums = GetElEdges(ElementId) instead! ")]]    
     void GetElEdges (ElementId ei, Array<int> & ednums) const
     { ednums = GetElement(ei).Edges(); }
 
@@ -757,6 +761,7 @@ namespace ngcomp
     { ednums = GetElement(ElementId(VOL,elnr)).Edges(); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
+    // [[deprecated("Use GetElEdges(ElementId) instead!")]]                
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the edges of a boundary element
@@ -765,10 +770,11 @@ namespace ngcomp
     { ednums = ArrayObject (GetElement(ElementId(BND,selnr)).edges); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
+    // [[deprecated("Use GetElEdges(ElementId) instead, orient is deprecated!")]]
     void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the faces of an element
-    [[deprecated("Use fanums = GetElFaces(ElementId) instead!")]]        
+    // [[deprecated("Use fanums = GetElFaces(ElementId) instead!")]]        
     void GetElFaces (ElementId ei, Array<int> & fnums) const
     { fnums = GetElement(ei).Faces(); }
 
@@ -781,12 +787,14 @@ namespace ngcomp
     { fnums = GetElement(ElementId(VOL,elnr)).Faces(); }
 
     // returns face numbers and face orientation of an element. (old style function)
+    // [[deprecated("Use GetElFaces(ElementId) instead!")]]                        
     void GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const;
 
     /// returns face number of surface element
     int GetSElFace (int selnr) const;
 
     // returns face number and orientation of surface element
+    // [[deprecated("orientation is deprecated! use GetSElFace(nr) instead")]]
     void GetSElFace (int selnr, int & fnum, int & orient) const;
 
     /// returns vertex numbers of face
@@ -1027,7 +1035,16 @@ namespace ngcomp
         return GetTrafo(ElementId(vb, elnr),lh);
       }
     
-    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const;
+    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const
+    {
+      auto ptr = trafo_jumptable[ei.VB()];
+      if (ptr)
+        return (this->*ptr)(ei.Nr(),lh);
+      else
+        return GetTrafoOld(ei, lh);
+    }
+    
+    ngfem::ElementTransformation & GetTrafoOld (ElementId ei, Allocator & lh) const;
     
     template <int DIM>
       ngfem::ElementTransformation & GetTrafoDim (size_t elnr, Allocator & lh) const;
@@ -1035,6 +1052,8 @@ namespace ngcomp
       ngfem::ElementTransformation & GetSTrafoDim (size_t elnr, Allocator & lh) const;
     template <int DIM>
       ngfem::ElementTransformation & GetCD2TrafoDim (size_t elnr, Allocator & lh) const;
+    template <int DIM>
+      ngfem::ElementTransformation & GetCD3TrafoDim (size_t elnr, Allocator & lh) const;
     
     template <VorB VB,int DIM>
       ngfem::ElementTransformation & GetTrafo (T_ElementId<VB,DIM> ei, Allocator & lh) const

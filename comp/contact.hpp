@@ -208,6 +208,10 @@ namespace ngcomp
                FlatVector<double> ely,
                LocalHeap& lh) const override;
 
+    void CalcElementMatrix(FlatMatrix<double> elmat,
+                           LocalHeap& lh) const override;
+
+    
     void CalcLinearizedElementMatrix(FlatVector<double> elx,
                                      FlatMatrix<double> elmat,
                                      LocalHeap& lh) const override;

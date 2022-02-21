@@ -1351,7 +1351,7 @@ namespace ngcomp {
 
     // new definition of gradient edges
 
-    Array<int> enums, fnums, forient;
+    Array<int> enums, fnums; // , forient;
 
     gradientedge.SetSize(ned);
     gradientedge = 1;
@@ -1430,7 +1430,7 @@ namespace ngcomp {
       }
 
     fnums.SetSize(1);
-    forient.SetSize(1);
+    // forient.SetSize(1);
     (*testout) << "gradientboundaries = " << endl << gradientboundaries << endl;
     if (gradientboundaries.Size())
       for (i = 0; i < nse; i++)
@@ -1441,7 +1441,8 @@ namespace ngcomp {
 	      auto enums = ma->GetElEdges (sei);
 	      for (j = 0; j < enums.Size(); j++)
 		gradientedge[enums[j]] = 1;
-	      ma->GetSElFace (i, fnums[0], forient[0]);
+	      // ma->GetSElFace (i, fnums[0], forient[0]);
+              fnums[0] = ma->GetSElFace (i);
 	      gradientface[fnums[0]] = 1;
 	    }
 	}

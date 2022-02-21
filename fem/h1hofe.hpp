@@ -16,8 +16,6 @@ namespace ngfem
   template <ELEMENT_TYPE ET> class H1HighOrderFE_Shape;
 
 
-
-
   /**
      High order finite elements for H1.  These are the actual finite
      element classes to be used.  
@@ -50,25 +48,20 @@ namespace ngfem
 
     typedef unsigned char TORDER;
 
-    // using VertexOrientedFE<ET>::vnums;
-
     /// order of edge shapes
-    Vec<N_EDGE, TORDER> order_edge; 
+    std::array<TORDER, N_EDGE> order_edge; 
 
     /// order of face shapes
-    Vec<N_FACE, INT<2,TORDER> > order_face; 
+    std::array<INT<2,TORDER>, N_FACE> order_face; 
 
     /// order of internal shapes (3d only)
-    Vec<N_CELL, INT<3,TORDER> > order_cell;
+    std::array<INT<3,TORDER>, N_CELL > order_cell;
     
     bool nodalp2 = false;
 
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;    
     using ET_trait<ET>::ElementType;
-    // using VertexOrientedFE<ET>::SetVertexNumbers;
-    // using VertexOrientedFE<ET>::SetVertexNumber;
-    // using VertexOrientedFE<ET>::GetVertexOrientedEdge;
     
     INLINE void SetNodalp2() { nodalp2 = true; }
     
@@ -97,7 +90,6 @@ namespace ngfem
     /// set edge order for edge nr
     void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
 
-
     /// set isotropic or anisotropic face orders
     template <typename TA>
     void SetOrderFace (const TA & of)
@@ -105,7 +97,6 @@ namespace ngfem
 
     /// set anisotropic face order for face nr
     void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
-
 
     /// set anisotropic cell order
     void SetOrderCell (INT<3> oi)  { order_cell[0] = oi; }

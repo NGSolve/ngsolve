@@ -132,7 +132,8 @@ namespace ngla
 
     void SetParallelDofs (shared_ptr<ParallelDofs> pardofs) { paralleldofs = pardofs; }
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
-
+    virtual optional<NgMPI_Comm> GetCommunicator() const { return nullopt; }
+    
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const;
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
@@ -151,6 +152,16 @@ namespace ngla
     
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const;
     void PrintOperatorInfo (ostream & ost, int level = 0) const;
+
+    
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const;
+    static std::map<type_index, function<shared_ptr<BaseMatrix>(const BaseMatrix&)>> devmatcreator;
+    static void RegisterDeviceMatrixCreator (type_index type,
+                                             function<shared_ptr<BaseMatrix>(const BaseMatrix&)> creator)
+    {
+      devmatcreator[type] = creator;
+    }
+    
   private:
     BaseMatrix & operator= (const BaseMatrix & m2) { return *this; }
 
@@ -658,6 +669,12 @@ namespace ngla
       bmb.Print(ost);
       return ost;
     }
+
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
+    {
+      return make_shared<SumMatrix>(bma.CreateDeviceMatrix(), bmb.CreateDeviceMatrix(), a, b);
+    }
+
   };
 
 
@@ -813,6 +830,10 @@ namespace ngla
   // ....
   shared_ptr<BaseMatrix> ComposeOperators (shared_ptr<BaseMatrix> a,
                                            shared_ptr<BaseMatrix> b);
+  
+  shared_ptr<BaseMatrix> AddOperators (shared_ptr<BaseMatrix> a,
+                                       shared_ptr<BaseMatrix> b,
+                                       double faca, double facb);
 
   shared_ptr<BaseMatrix> TransposeOperator (shared_ptr<BaseMatrix> mat);
   

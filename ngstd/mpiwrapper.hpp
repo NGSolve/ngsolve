@@ -1,3 +1,5 @@
+not needed anymore
+
 #ifndef FILE_MPIWRAPPER
 #define FILE_MPIWRAPPER
 
@@ -7,20 +9,24 @@
 /* Date:   2007,2011                                                      */
 /* ************************************************************************/
 
+
 namespace ngstd
 {
 
   using ngcore::NgMPI_Comm;
-  
 
-#ifdef PARALLEL
-  
   enum { MPI_TAG_CMD = 110 };
   enum { MPI_TAG_SOLVE = 1110 };
 
   
+
+#ifdef PARALLEL
+  
+  
   /** --- blocking P2P --- **/
 
+  
+  [[deprecated("do we still send commands?")]]                      
   INLINE void MyMPI_SendCmd (const char * cmd, NgMPI_Comm comm)
   {
     int ntasks = comm.Size(); 
@@ -28,6 +34,8 @@ namespace ngstd
     for (int dest = 1; dest < ntasks; dest++)
       MPI_Send( (void*)cmd, (strlen(cmd)+1), MPI_CHAR, dest, MPI_TAG_CMD, MPI_COMM_WORLD);
   }
+  
+  [[deprecated("do we still send commands?")]]                      
   INLINE void MyMPI_Recv (string & s, int src, int tag /* = MPI_TAG_SOLVE */, MPI_Comm comm)
   {
     MPI_Status status;
@@ -39,7 +47,7 @@ namespace ngstd
   }
 
   
-
+  /*
 class MyMPI
 {
   bool initialized_by_me;
@@ -69,27 +77,20 @@ public:
       MPI_Finalize ();
   }
 };
-
+  */
 
 #else
-  using ngcore::MPI_Comm;
   using ngcore::MPI_COMM_WORLD;
 
-  enum { MPI_TAG_CMD = 110 };
-  enum { MPI_TAG_SOLVE = 1110 };
-  
-  // typedef int MPI_Comm;
-  // typedef int MPI_Datatype;
-  // typedef int MPI_Request;
-
   INLINE void MyMPI_SendCmd (const char * cmd, MPI_Comm comm) { ; }
-  
+
+  /*
   class MyMPI
   {
   public:
     MyMPI(int argc, char ** argv) { ; }
   };
-
+  */
 #endif
 }
 

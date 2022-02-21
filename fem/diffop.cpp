@@ -247,7 +247,7 @@ namespace ngfem
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
-    size_t nd = fel.GetNDof();
+    size_t nd = fel.GetNDof() * BlockDim();
     FlatVector<double> hx(nd, lh);
     x.Range(0,nd) = 0.0;
     for (int i = 0; i < mir.Size(); i++)
@@ -265,7 +265,7 @@ namespace ngfem
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
-    size_t nd = fel.GetNDof();
+    size_t nd = fel.GetNDof() * BlockDim();
     FlatVector<Complex> hx(nd, lh);
     x.Range(0,nd) = 0.0;
     for (int i = 0; i < mir.Size(); i++)
@@ -335,7 +335,7 @@ namespace ngfem
           });
         timings.push_back(make_tuple("SIMD - CalcBMatrix", time/steps*1e9/(bmat.Height()*bmat.Width())));
       }
-    catch (ExceptionNOSIMD e) { ; } 
+    catch (const ExceptionNOSIMD& e) { ; }
 
 
     coefs = 1;
@@ -347,7 +347,7 @@ namespace ngfem
           });
         timings.push_back(make_tuple("SIMD - Appy", time/steps*1e9/(bmat.Height()*bmat.Width())));
       }
-    catch (ExceptionNOSIMD e) { ; } 
+    catch (const ExceptionNOSIMD& e) { ; }
 
     simd_values = SIMD<double> (1.0);
     coefs = 0.0;
@@ -359,7 +359,7 @@ namespace ngfem
           });
         timings.push_back(make_tuple("SIMD - AppyTrans", time/steps*1e9/(bmat.Height()*bmat.Width())));
       }
-    catch (ExceptionNOSIMD e) { ; } 
+    catch (const ExceptionNOSIMD& e) { ; }
 
 
 
@@ -985,8 +985,8 @@ namespace ngfem
     Array<shared_ptr<CoefficientFunction>> cflist(dim);
     for (int i = 0; i < dim; i++)
       cflist[i] = diffop->DiffShape(proxys[i], dir, Eulerian);
-    auto result = MakeVectorialCoefficientFunction(move(cflist));
-    result->SetDimensions( Array({dim,diffop->Dim()}) );
+    auto result = MakeVectorialCoefficientFunction(move(cflist)) -> Reshape(Array({dim,diffop->Dim()}));
+    //result->SetDimensions( Array({dim,diffop->Dim()}) );
 
     return result;
   }

@@ -43,7 +43,7 @@ endmacro()
 get_cmake_property(CACHE_VARS CACHE_VARIABLES)
 foreach(CACHE_VAR ${CACHE_VARS})
   get_property(CACHE_VAR_HELPSTRING CACHE ${CACHE_VAR} PROPERTY HELPSTRING)
-  if(CACHE_VAR_HELPSTRING STREQUAL "No help, variable specified on the command line.")
+  if(CACHE_VAR_HELPSTRING STREQUAL "No help, variable specified on the command line." AND NOT CACHE_VAR STREQUAL "CMAKE_OSX_ARCHITECTURES")
     get_property(CACHE_VAR_TYPE CACHE ${CACHE_VAR} PROPERTY TYPE)
     set_vars(NETGEN_CMAKE_ARGS ${CACHE_VAR})
     set_vars(NGSOLVE_CMAKE_ARGS ${CACHE_VAR})
@@ -68,7 +68,6 @@ endif()
 set_vars(SUBPROJECT_CMAKE_ARGS
     CMAKE_OSX_DEPLOYMENT_TARGET
     CMAKE_OSX_SYSROOT
-    CMAKE_OSX_ARCHITECTURES
     CMAKE_C_COMPILER
     CMAKE_CXX_COMPILER
     CMAKE_BUILD_TYPE
@@ -148,7 +147,7 @@ else(NETGEN_DIR)
   list(APPEND DEPENDENCIES install_netgen)
 
   message("\n\nConfigure Netgen from submodule...")
-  execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
+  execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${SUBPROJECT_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
 endif(NETGEN_DIR)
 
 #######################################################################

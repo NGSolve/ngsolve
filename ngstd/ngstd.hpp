@@ -127,7 +127,7 @@ namespace ngstd
 #include "stringops.hpp"
 #include "statushandler.hpp"
 
-#include "mpiwrapper.hpp"
+// #include "mpiwrapper.hpp"
 #ifndef WIN32
 #include "sockets.hpp"
 #endif
@@ -139,7 +139,15 @@ namespace ngstd
 #else
   const char dirslash = '/';
 #endif
+
+  
+  using ngcore::NgMPI_Comm;
+  enum { MPI_TAG_CMD = 110 };
+  enum { MPI_TAG_SOLVE = 1110 };
 }
+
+
+
 
 
 inline void NOOP_Deleter(void *) { ; }
@@ -150,7 +158,5 @@ inline void NOOP_Deleter(void *) { ; }
 #endif
 
 
-
-#include "cuda_ngstd.hpp"
 
 #endif

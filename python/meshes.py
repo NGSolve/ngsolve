@@ -44,7 +44,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
 
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False, boundarylayer=None, hppnts=None):
     """
     Generate a structured 2D mesh
 
@@ -78,7 +78,13 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
       List of bbnd names as strings. Size must coincide with size of bbpts. Otherwise an Exception is thrown.
 
     flip_triangles : bool
-      If set tot True together with quads=False the quads are cut the other way round
+      If set to True together with quads=False the quads are cut the other way round
+
+    boundarylayer : dict
+      If not None it expects a dictionary of the form { "boundaryname" : [t1,...,tn] } where ti denote the thickness of layer i. The number of layers are included in nx/ny. After the layers are placed the remaining number of cells are used to divide the remaining grid uniformly.
+
+    hppnts : list
+      If not None it expects a list of the form [ (px1,py1, hpref1), (px2,py2, hpref2), ... ] where px,py are the point coordinates which have to be resolved in the mesh and hpref the refinement factor
 
     Returns
     -------
@@ -98,6 +104,8 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
         for i in range(len(bbpts)):
             found.append(False)
             indbbpts.append(None)
+    foundhp = [ False for i in hppnts] if hppnts else []
+        
 
     pids = []
     if periodic_y:
@@ -106,11 +114,30 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
     if periodic_x:        
         minionj = []
         masterj = []
+        
+    numlayerleft  = len(boundarylayer["left"]) if (boundarylayer and boundarylayer.get("left")) else 0
+    numlayerright = len(boundarylayer["right"]) if (boundarylayer and boundarylayer.get("right")) else 0
+    numlayertop   = len(boundarylayer["top"]) if (boundarylayer and boundarylayer.get("top")) else 0
+    numlayerbot   = len(boundarylayer["bottom"]) if (boundarylayer and boundarylayer.get("bottom")) else 0
+
+    thicknessleft  = [0]
+    thicknessright = [0]
+    thicknesstop   = [0]
+    thicknessbot   = [0]
+    for i in range(numlayerleft):
+        thicknessleft.append(thicknessleft[-1]+boundarylayer["left"][i])
+    for i in range(numlayerright):
+        thicknessright.append(thicknessright[-1]+boundarylayer["right"][i])
+    for i in range(numlayertop):
+        thicknesstop.append(thicknesstop[-1]+boundarylayer["top"][i])
+    for i in range(numlayerbot):
+        thicknessbot.append(thicknessbot[-1]+boundarylayer["bottom"][i])
+
+        
     for i in range(ny+1):
         for j in range(nx+1):
-            x,y = j/nx, i/ny
-            # if mapping:
-            #    x,y = mapping(x,y)
+            x = thicknessleft[j] if j < numlayerleft else ((thicknessleft[-1]+(j-numlayerleft)/(nx-numlayerleft-numlayerright)*(1-thicknessleft[-1]-thicknessright[-1])) if j < nx-numlayerright else 1-thicknessright[nx-j])
+            y = thicknessbot[i] if i < numlayerbot else ((thicknessbot[-1]+(i-numlayerbot)/(ny-numlayerbot-numlayertop)*(1-thicknessbot[-1]-thicknesstop[-1])) if i< ny-numlayertop else 1-thicknesstop[ny-i])
             pids.append(mesh.Add (MeshPoint(Pnt(x,y,0))))
             if periodic_y:
                 if i == 0:
@@ -194,10 +221,21 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
     for k in range(len(found)):
         if found[k] == False:
             raise Exception("bbpnt[",k,"] not in structured mesh!")
-
     for i in range(len(indbbpts)):
         mesh.Add(Element0D(indbbpts[i], index=i+1))
         mesh.SetCD2Name(i+1, bbnames[i])
+
+    for k in range(len(foundhp)):
+        i = 0
+        for p in mesh.Points():
+            if abs(p.p[0]-hppnts[k][0])+abs(p.p[1]-hppnts[k][1]) < 1e-6:
+                mesh.AddSingularity(pids[i],hppnts[k][-1])
+                foundhp[k] = True
+            i += 1
+    for k in range(len(foundhp)):
+        if foundhp[k] == False:
+            raise Exception("hppnts[",k,"] not in structured mesh!")
+    
             
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh

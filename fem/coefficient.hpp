@@ -16,13 +16,16 @@ namespace ngfem
   class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this_virtual<CoefficientFunction>
   {
   private:
-    int dimension = 1;
+    size_t dimension = 1;
     Array<int> dims;
   protected:
     bool elementwise_constant = false;
     bool is_complex = false;
     int spacedim = -1;  // needed for grad(x), grad(1), ...
+    string description;
+    bool is_variable = false;  // variables cannot be optimized away (e.g. for differentiation)
   public:
+    typedef std::map<shared_ptr<CoefficientFunction>, shared_ptr<CoefficientFunction>> T_DJC; // DiffJacobi Cache type
     // default constructor for archive
     CoefficientFunction() = default;
     CoefficientFunction (int adimension, bool ais_complex = false)
@@ -37,7 +40,7 @@ namespace ngfem
       if (dimension <= 1)
         dims = Array<int> (0);
       else
-        dims = Array<int> ( { dimension } );
+        dims = Array<int> ( { int(dimension) } );
     }
     
     ///
@@ -162,7 +165,7 @@ namespace ngfem
     }
 
     bool IsComplex() const { return is_complex; }
-    int Dimension() const { return dimension; }
+    size_t Dimension() const { return dimension; }
     FlatArray<int> Dimensions() const { return dims; }
     
     void SetDimensions (FlatArray<int> adims)
@@ -174,6 +177,13 @@ namespace ngfem
 
     // creates a wrapper with new shape
     shared_ptr<CoefficientFunction> Reshape (FlatArray<int> adims) const;
+    shared_ptr<CoefficientFunction> Reshape (int s) const
+    { return Reshape( Array<int>( { s } )); }    
+    shared_ptr<CoefficientFunction> Reshape (int h, int w) const
+    { return Reshape( Array<int>( { h, w } )); }
+
+    shared_ptr<CoefficientFunction> Transpose () const;    
+    shared_ptr<CoefficientFunction> TensorTranspose (int i, int j) const;
     
     int SpaceDim () const { return spacedim; } 
     void SetSpaceDim (int adim);
@@ -235,12 +245,17 @@ namespace ngfem
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetDescription () const;
+    void SetDescription (string desc) { description = desc; }
 
+
+    bool IsVariable() const { return is_variable; }
+    void SetVariable (bool var = true) { is_variable = var; }
+    
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
     // returns Jacobi-matrix (possible as higher order tensor)
     virtual shared_ptr<CoefficientFunction>
-      DiffJacobi (const CoefficientFunction * var) const;
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const;
 
 
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
@@ -426,6 +441,10 @@ namespace ngfem
     
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
+
+    virtual shared_ptr<CoefficientFunction>
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
+
   };
 
 
@@ -557,6 +576,7 @@ namespace ngfem
     ///
     double val;
     typedef T_CoefficientFunction<ConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
+    using BASE::T_DJC;
   public:
     ///
     ConstantCoefficientFunction() = default;
@@ -673,7 +693,7 @@ namespace ngfem
     }
 
     virtual shared_ptr<CoefficientFunction>
-      DiffJacobi (const CoefficientFunction * var) const override;
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
   };
 
 
@@ -1199,6 +1219,7 @@ namespace ngfem
   OP lam;
   string name;
   typedef  T_CoefficientFunction<cl_UnaryOpCF<OP>> BASE;
+  using typename BASE::T_DJC;
 public:
   cl_UnaryOpCF() = default;
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
@@ -1209,6 +1230,7 @@ public:
   {
     this->SetDimensions (c1->Dimensions());
     this->elementwise_constant = c1->ElementwiseConstant();
+    this->SetDescription(string("unary operation '")+name+"'");
   }
 
   virtual void DoArchive (Archive & archive) override
@@ -1217,11 +1239,12 @@ public:
     archive.Shallow(c1) & name & lam;
   }
 
+  /*
   virtual string GetDescription () const override
   {
     return string("unary operation '")+name+"'";
   }
-
+  */
   virtual bool DefinedOn (const ElementTransformation & trafo) override
   { return c1->DefinedOn(trafo); } 
 
@@ -1229,9 +1252,16 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    for (int i = 0; i < this->Dimension(); i++)
-      code.body += Var(index, i, this->Dimensions())
-        .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name) );
+    code.Declare (code.res_type, index, this->Dimensions());
+    if (code_uses_tensors)
+      {
+        code.body += "for (size_t i = 0; i < "+ToString(this->Dimension())+"; i++)\n";
+        code.body += "var_"+ToString(index)+"[i] = "+name+"( var_"+ToString(inputs[0])+"[i]);\n";
+      }
+    else
+      for (int i = 0; i < this->Dimension(); i++)
+        code.body += Var(index, i, this->Dimensions())
+          .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name), false);
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1337,8 +1367,8 @@ public:
   { throw Exception ("unarycf "+name+" does not provide a derivative"); }
 
   virtual shared_ptr<CoefficientFunction>
-  DiffJacobi (const CoefficientFunction * var) const override
-  { return BASE::DiffJacobi(var); }
+  DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  { return BASE::DiffJacobi(var, cache); }
 
   
   /*
@@ -1428,7 +1458,8 @@ public:
   using BASE::Dimension;
   using BASE::SetDimension;
   using BASE::SetDimensions;
-  using BASE::Evaluate;  
+  using BASE::Evaluate;
+  using typename BASE::T_DJC;    
 public:
   cl_BinaryOpCF() = default;
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
@@ -1460,16 +1491,37 @@ public:
   }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    for (int i = 0; i < this->Dimension(); i++)
+    code.Declare (code.res_type, index, this->Dimensions());
+
+    if (code_uses_tensors)
       {
-        auto op1 = Var(inputs[0], i, c1->Dimensions()).S();
-        auto op2 = Var(inputs[1], i, c2->Dimensions()).S();
-        string expr;
+        code.body += "for (int i = 0; i < "+ToString(this->Dimension())+"; i++)\n";
+        code.body += "var_" + ToString(index) + "[i] = ";
         if(opname.size()>2) // atan2, pow, etc.
-          expr = opname + '(' + op1 + ',' + op2 + ')';
-        else // +,-,*,/, etc.
-          expr = op1 + ' ' + opname + ' ' + op2;
-        code.body += Var(index,i,this->Dimensions()).Assign( expr );
+          {
+            code.body += opname + '(' + "var_" + ToString(inputs[0]) + "[i],";
+            code.body += "var_" + ToString(inputs[1]) + "[i]); \n";            
+          }
+        else
+          {
+            code.body += "var_" + ToString(inputs[0]) + "[i]" + opname;
+            code.body += "var_" + ToString(inputs[1]) + "[i]; \n";
+          }
+      }
+
+    else
+      {
+        for (int i = 0; i < this->Dimension(); i++)
+          {
+            auto op1 = Var(inputs[0], i, c1->Dimensions()).S();
+            auto op2 = Var(inputs[1], i, c2->Dimensions()).S();
+            string expr;
+            if(opname.size()>2) // atan2, pow, etc.
+              expr = opname + '(' + op1 + ',' + op2 + ')';
+            else // +,-,*,/, etc.
+              expr = op1 + ' ' + opname + ' ' + op2;
+            code.body += Var(index,i,this->Dimensions()).Assign( expr, false );
+          }
       }
   }
 
@@ -1629,8 +1681,8 @@ public:
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
 
   virtual shared_ptr<CoefficientFunction>
-  DiffJacobi (const CoefficientFunction * var) const override
-  { return BASE::DiffJacobi(var); }
+  DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  { return BASE::DiffJacobi(var, cache); }
 
   /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -1717,8 +1769,10 @@ public:
   class DiffShapeCF : public ConstantCoefficientFunction
   {
   public:
-    DiffShapeCF() : ConstantCoefficientFunction(1) { }
-    Array<const CoefficientFunction*> Eulerian_gridfunctions;
+    DiffShapeCF() : ConstantCoefficientFunction(1) {
+      SetVariable();
+    }
+    Array<shared_ptr<CoefficientFunction>> Eulerian_gridfunctions;
   };
 
 
@@ -1749,8 +1803,17 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
                                     int first, Array<int> num, Array<int> dist);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeExtendDimensionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                      Array<int> dims, Array<int> pos, Array<int> stride);
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Array<int> ordering);
 
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, int i1, int i2);
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeTensorTraceCoefficientFunction (shared_ptr<CoefficientFunction> c1, int i1, int i2);
 
   // cf_ijk v0_i v1_j v2_k
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
@@ -1825,6 +1888,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> IdentityCF (int dim);
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims);
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims);
 
   NGS_DLL_HEADER
@@ -1834,7 +1900,27 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord);
 
   NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> LeviCivitaCF(int dimension);
+
+  NGS_DLL_HEADER
+  shared_ptr <CoefficientFunction> EinsumCF(const string &index_signature,
+                                            const Array <shared_ptr<CoefficientFunction>>& cfs,
+                                            const map<string, bool> &options = {});
+
+  NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> ReshapeCF (shared_ptr<CoefficientFunction> coef,
+                                             FlatArray<int> adims);
+
+  INLINE
+  shared_ptr<CoefficientFunction> ReshapeCF (shared_ptr<CoefficientFunction> coef, int s)  
+  { return ReshapeCF (std::move(coef), Array<int>{s}); }
+
+  INLINE
+  shared_ptr<CoefficientFunction> ReshapeCF (shared_ptr<CoefficientFunction> coef, int h, int w)  
+  { return ReshapeCF (std::move(coef), Array<int>{h,w}); }
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> InverseCF (shared_ptr<CoefficientFunction> coef);
@@ -1877,30 +1963,32 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
                        shared_ptr<CoefficientFunction> startingpoint,
                        std::optional<double> atol, std::optional<double> rtol,
-                       std::optional<int> maxiter);
+                       std::optional<int> maxiter, std::optional<bool> allow_fail);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
                        const Array<shared_ptr<CoefficientFunction>> &startingpoints,
                        std::optional<double> tol, std::optional<double> rtol,
-                       std::optional<int> maxiter);
+                       std::optional<int> maxiter, std::optional<bool> allow_fail);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   CreateNewtonCF (shared_ptr<CoefficientFunction> expression,
                   shared_ptr<CoefficientFunction> startingpoint,
                   std::optional<double> atol,
                   std::optional<double> rtol,
-                  std::optional<int> maxiter);
+                  std::optional<int> maxiter,
+                  std::optional<bool> allow_fail);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   CreateNewtonCF (shared_ptr<CoefficientFunction> expression,
                   const Array<shared_ptr<CoefficientFunction>> &startingpoints,
                   std::optional<double> tol,
                   std::optional<double> rtol,
-                  std::optional<int> maxiter);
+                  std::optional<int> maxiter,
+                  std::optional<bool> allow_fail);
 
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false);
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile=false, int maxderiv=2, bool wait=false, bool keep_files=false);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> LoggingCF (shared_ptr<CoefficientFunction> func, string logfile="stdout");

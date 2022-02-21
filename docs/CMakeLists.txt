@@ -37,7 +37,7 @@ if (NETGEN_USE_PYTHON)
       "${BINARY_BUILD_DIR}/conf.py"
       @ONLY)
 
-    add_custom_target(docs_impl
+    add_custom_target(docs
       COMMAND
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_RST_FORMAT=1
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_OUT_DIR="${SPHINX_OUTPUT_DIR}/html"
@@ -54,7 +54,7 @@ if (NETGEN_USE_PYTHON)
       COMMENT "Building HTML documentation with Sphinx"
       )
 
-    add_custom_target(docs_latex_impl
+    add_custom_target(docs_latex
       ${CMAKE_COMMAND} -E env NETGEN_DOCUMENTATION_RST_FORMAT=1
     	${SPHINX_EXECUTABLE}
     	-q -b latex
@@ -64,28 +64,9 @@ if (NETGEN_USE_PYTHON)
     	"${SPHINX_OUTPUT_DIR}/latex"
     	COMMENT "Building Latex documentation with Sphinx")
 
-      if(USE_MPI)
-        add_custom_target(start_ipyparallel
-          COMMAND nohup ipcluster start --engines=MPI -n 4 --profile=mpi --debug &
-          USES_TERMINAL)
-        add_dependencies(docs_impl start_ipyparallel)
-        add_dependencies(docs_latex_impl start_ipyparallel)
-        add_custom_target(docs
-          COMMAND pkill ipcluster
-          DEPENDS docs_impl)
-        add_custom_target(docs_latex
-          COMMAND pkill ipcluster
-          DEPENDS docs_latex_impl)
-      else(USE_MPI)
-        add_custom_target(docs
-          DEPENDS docs_impl)
-        add_custom_target(docs_latex
-          DEPENDS docs_latex_impl)
-      endif(USE_MPI)
-
       if(NOT WIN32)
-        add_dependencies(docs_impl link_mylittlengs)
-        add_dependencies(docs_latex_impl link_mylittlengs)
+        add_dependencies(docs link_mylittlengs)
+        add_dependencies(docs_latex link_mylittlengs)
       endif(NOT WIN32)
 
     message("Sphinx found, you can build the documentation with make docu")

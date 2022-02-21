@@ -27,7 +27,7 @@ def getMinMax( vals, fmin=None, fmax=None ):
 
 
 class WebGLScene(BaseWebGuiScene):
-    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_, objects):
+    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, intpoints, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_, objects, nodal_p1, settings={}):
         from IPython.display import display, Javascript
         import threading
         self.cf = cf
@@ -46,8 +46,12 @@ class WebGLScene(BaseWebGuiScene):
         self.eval_function = eval_function
         self.eval_ = eval_
         self.objects = objects
+        self.nodal_p1 = nodal_p1
+        self.settings = settings
 
+        self.intpoints = intpoints
         self.deformation = deformation
+        self.encoding = 'b64'
 
         if isinstance(mesh, ngs.comp.Region):
             self.region = mesh
@@ -56,8 +60,9 @@ class WebGLScene(BaseWebGuiScene):
             self.region = None
 
     def GetData(self, set_minmax=True):
+        encoding = self.encoding
         import json
-        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation, region=self.region, objects=self.objects)
+        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=self.deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings)
 
         if isinstance(self.cf, ngs.GridFunction) and len(self.cf.vecs)>1:
             # multidim gridfunction - generate data for each component
@@ -78,7 +83,7 @@ class WebGLScene(BaseWebGuiScene):
                 if md_deformation:
                     deformation.vec.data = self.deformation.vecs[i]
 
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation, region=self.region, objects=self.objects))
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings))
             d['multidim_data'] = data
             d['multidim_interpolate'] = self.interpolate_multidim
             d['multidim_animate'] = self.animate
@@ -139,6 +144,7 @@ class WebGLScene(BaseWebGuiScene):
 bezier_trig_trafos = { }  # cache trafos for different orders
 
 timer = ngs.Timer("BuildRenderData")
+timerp1 = ngs.Timer("GetNodalP1Data")
 timer2map = ngs.Timer("edges map")
 timer2 = ngs.Timer("edges")
 timermult = ngs.Timer("timer2 - mult")
@@ -152,9 +158,53 @@ timer4 = ngs.Timer("func")
 timer3multnumpy = ngs.Timer("timer3 mul numpy")
 timer3multngs = ngs.Timer("timer3 mul ngs")
 
+def GetNodalP1Data(encode, mesh, cf, cf2=None):
+    if cf2 is not None:
+        cf = ngs.CF((cf,cf2))
+    timerp1.Start()
+    fes = ngs.NodalFESpace(mesh, order=1)**cf.dim
+    gfu = ngs.GridFunction(fes)
+    gfu.Interpolate(cf, ngs.BND)
+    function_values = gfu.vec.FV().NumPy()
+    nvert = mesh.nv
+    function_values = function_values.reshape(-1, nvert).transpose().flatten()
+    fmin, fmax = ngs.Vector(function_values, copy=False).MinMax(True)
+    vertices = np.array(mesh.ngmesh._getVertices(), dtype=np.float32)
+
+    pmat = vertices.reshape(-1, 3)
+    pmin = pmat.min(axis=0)
+    pmax = pmat.max(axis=0)
+    mesh_center = list(np.array(0.5*(pmin+pmax), dtype=np.float64))
+    mesh_radius = float(np.linalg.norm(pmax-pmin)/2)
+
+    segments = mesh.ngmesh._getSegments()
+
+    d = {}
+    d['vertices'] = encode(vertices, dtype=np.float32)
+    d['nodal_function_values'] = encode(function_values, dtype=np.float32)
+    d['trigs'] = encode(np.array(mesh.ngmesh._get2dElementsAsTriangles(), dtype=np.int32))
+    d['tets'] = encode(np.array(mesh.ngmesh._get3dElementsAsTets(), dtype=np.int32))
+    d['segs'] = encode(np.array(segments, dtype=np.int32))
+    d['mesh_center'] = mesh_center
+    d['mesh_radius'] = mesh_radius
+    d['funcmin'] = fmin
+    d['funcmax'] = fmax
+
+    timerp1.Stop()
+    return d
     
-def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None, region=True, objects=[]):
+    
+def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoints=None, deformation=None, region=True, objects=[], nodal_p1=False, encoding='b64', settings={}):
     timer.Start()
+
+    import inspect
+    # stay backwards-compatible with older verisons of webgui_jupyter_widgets
+    if 'encoding' in inspect.signature(encodeData).parameters:
+        def encode(*args, **kwargs):
+            return encodeData(*args, **kwargs, encoding=encoding)
+    else:
+        def encode(*args, **kwargs):
+            return encodeData(*args, **kwargs)
 
     if isinstance(deformation, ngs.CoefficientFunction) and deformation.dim==2:
         deformation = ngs.CoefficientFunction((deformation, 0.0))
@@ -163,6 +213,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     #TODO: subdivision
 
     d = {}
+    d['gui_settings'] = settings
     d['ngsolve_version'] = ngs.__version__
     d['mesh_dim'] = mesh.dim
     # order = order or mesh.GetCurveOrder()
@@ -221,6 +272,16 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     if func0 is None:
         func0 = ngs.CoefficientFunction( 0.0 )
 
+    d['show_wireframe'] = order2d>0
+    d['show_mesh'] = order2d>0
+
+    if order==1 and nodal_p1:
+        d.update(GetNodalP1Data(encode, mesh, func1, func2))
+        if '_override_data' in settings:
+            d.update(settings['_override_data'])
+        timer.Stop()
+        return d
+
     func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
     func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func0 ) )
 
@@ -228,12 +289,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         func1 += ngs.CoefficientFunction((deformation, 0.0))
         func0 += ngs.CoefficientFunction((deformation, 0.0))
 
-    d['show_wireframe'] = False
-    d['show_mesh'] = False
     if order2d>0:
         og = order2d
-        d['show_wireframe'] = True
-        d['show_mesh'] = True
         timer2.Start()
 
         timer3Bvals.Start()
@@ -283,7 +340,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         
         timer2list.Start()        
         for i in range(og+1):
-            Bezier_points.append(encodeData(BezierPnts[i]))
+            Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
         timer2list.Stop()        
 
         if func2 and draw_surf:
@@ -294,7 +351,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             timermult.Stop()
             timer2list.Start()        
             for i in range(og+1):
-                Bezier_points.append(encodeData(BezierPnts[i]))
+                Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
             timer2list.Stop()        
 
         d['Bezier_points'] = Bezier_points
@@ -311,7 +368,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         edge_data = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
         edges = []
         for i in range(og+1):
-            edges.append(encodeData(edge_data[i]))
+            edges.append(encode(edge_data[i], dtype=np.float32))
         d['edges'] = edges
 
         timer2.Stop()
@@ -351,7 +408,10 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
         if region and region.VB() == vb:
             vb = region
-        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
+        if intpoints is not None:
+            pts = mesh.MapToAllElements(intpoints, vb)
+        else:
+            pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
 
         pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
 
@@ -381,7 +441,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
 
         timer3list.Start()        
         for i in range(ndtrig):
-            Bezier_points.append(encodeData(BezierPnts[i]))
+            Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
         timer3list.Stop()        
 
         if func2 and draw_surf:
@@ -393,12 +453,12 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
             if og==1:
                 for i in range(ndtrig):
-                    Bezier_points.append(encodeData(BezierPnts[i]))
+                    Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
             else:
                 BezierPnts = BezierPnts.transpose((1,0,2)).reshape(-1, len(ir_trig)//2, 4).transpose((1,0,2))
 
                 for i in range(ndtrig//2):
-                    Bezier_points.append(encodeData(BezierPnts[i]))
+                    Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
 
         d['Bezier_trig_points'] = Bezier_points    
         d['mesh_center'] = list(mesh_center)
@@ -453,7 +513,10 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
             points = makeP2Tets( points )
           intrules[eltype] = ngs.IntegrationRule( sum(points, []) )
 
-        pts = mesh.MapToAllElements(intrules, ngs.VOL)
+        if intpoints is not None:
+            pts = mesh.MapToAllElements(intpoints, ngs.VOL)            
+        else:
+            pts = mesh.MapToAllElements(intrules, ngs.VOL)
             
         pmat = func1(pts)
 
@@ -465,22 +528,24 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         funcmin, funcmax = getMinMax(pmat[:,:,3].flatten(), funcmin, funcmax)
         points3d = []
         for i in range(np_per_tet):
-            points3d.append(encodeData(pmat[:,i,:]))
+            points3d.append(encode(pmat[:,i,:], dtype=np.float32))
 
         if func2:
             pmat = func2(pts).reshape(-1, np_per_tet//2, 4)
             funcmin, funcmax = getMinMax(pmat.flatten(), funcmin, funcmax)
             for i in range(np_per_tet//2):
-                points3d.append(encodeData(pmat[:,i,:]))
+                points3d.append(encode(pmat[:,i,:], dtype=np.float32))
         d['points3d'] = points3d
     if func:
         d['funcmin'] = funcmin
         d['funcmax'] = funcmax
+    if '_override_data' in settings:
+        d.update(settings['_override_data'])
     timer4.Stop()
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[]):
+def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, intpoints=None, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[], nodal_p1=False, settings={}):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -493,7 +558,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects)
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, intpoints=intpoints, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects, nodal_p1=nodal_p1, settings=settings)
     if wg._IN_IPYTHON:
         if wg._IN_GOOGLE_COLAB:
             from IPython.display import display, HTML
@@ -509,7 +574,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         return scene
 
 
-def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[]):
+def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, intpoints=None, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[], nodal_p1=False, settings={}):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -522,7 +587,7 @@ def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=Non
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects)
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, intpoints=intpoints, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects, nodal_p1=nodal_p1, settings=settings)
     import json
 
     docu_path = os.environ['NETGEN_DOCUMENTATION_OUT_DIR']

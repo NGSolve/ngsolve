@@ -410,22 +410,22 @@ global system.
     FESpace::Update();
     if(low_order_space) low_order_space -> Update();
 
-    nel = ma->GetNE();
+    // nel = ma->GetNE();
 
     bool first_update = GetTimeStamp() < ma->GetTimeStamp();
     if (first_update) timestamp = NGS_Object::GetNextTimeStamp();
 
     if (first_update)
       {
-	order_inner.SetSize(nel);
+	order_inner.SetSize(ma->GetNE());
 
 	order_inner = INT<3>(order);
 
 	if(var_order)
-	  for(int i = 0; i < nel; i++)
-	    order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
-
-	for(int i = 0; i < nel; i++)
+	  for (auto i : Range(ma->GetNE()))
+            order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
+        
+        for (auto i : Range(ma->GetNE()))
 	  {
 	    ElementId ei(VOL,i);
 	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
@@ -438,10 +438,11 @@ global system.
       }
 
     UpdateDofTables();
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-
+    */
     if(low_order_space) prol->Update(*this);
 
     UpdateCouplingDofArray();
@@ -468,9 +469,9 @@ global system.
 
   void L2HighOrderFESpace :: UpdateDofTables()
   {
-    ndof = all_dofs_together ? 0 : nel;
-    first_element_dof.SetSize(nel+1);
-    for (int i = 0; i < nel; i++)
+    size_t ndof = all_dofs_together ? 0 : ma->GetNE();
+    first_element_dof.SetSize(ma->GetNE()+1);
+    for (auto i : Range(ma->GetNE()))
       {
 	first_element_dof[i] = ndof;
 	INT<3> pi = order_inner[i];
@@ -504,15 +505,17 @@ global system.
 	if (!all_dofs_together)
 	  ndof--; // subtract constant
       }
-    first_element_dof[nel] = ndof;
+    first_element_dof[ma->GetNE()] = ndof;
 
     if(print)
       *testout << " first_element dof (l2hofe) " << first_element_dof << endl;
 
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-
+    */
+    SetNDof(ndof);
     prol->Update(*this);
   }
 
@@ -602,7 +605,7 @@ global system.
                [&alloc] (auto et) -> FiniteElement&
                { return * new (alloc) DummyFE<et.ElementType()>; });
           }
-        catch (Exception e)
+        catch (const Exception& e)
           {
             throw Exception("illegal element type in L2::GetSurfaceFE");
           }
@@ -755,6 +758,7 @@ global system.
   //     }
   // }
 
+  /*
   size_t L2HighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
@@ -764,7 +768,7 @@ global system.
   {
     return ndlevel[level];
   }
-
+  */
 
   void L2HighOrderFESpace :: GetDofRanges (ElementId ei, Array<IntRange> & dranges) const
   {
@@ -855,18 +859,18 @@ global system.
   shared_ptr<Table<int>> L2HighOrderFESpace ::
   CreateSmoothingBlocks (const Flags & precflags) const
   {
-    int i, j, first;
+    size_t nel = ma->GetNE();
     Array<int> cnt(nel);
     cnt = 0;
-    for (i = 0; i < nel; i++)
+    for (size_t i = 0; i < nel; i++)
       cnt[i] = first_element_dof[i+1]-first_element_dof[i];
 
     Table<int> table(cnt);
 
-    for (i = 0; i < nel; i++)
+    for (size_t i = 0; i < nel; i++)
       {
-	first = first_element_dof[i];
-	for (j = 0; j < cnt[i]; j++)
+	size_t first = first_element_dof[i];
+	for (size_t j = 0; j < cnt[i]; j++)
 	  table[i][j] = first+j;
       }
     return make_shared<Table<int>> (table);

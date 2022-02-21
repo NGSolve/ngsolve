@@ -15,7 +15,7 @@ namespace ngbla
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
   template <class T = double> class Vector;
-  template <class T = double> class SliceVector;
+  // template <class T> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
   template <int S, int DIST, typename T> class FlatSliceVec;
 
@@ -112,8 +112,11 @@ namespace ngbla
     INLINE const FlatVector & operator= (const FlatVector & v) const
     {
       NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
+      /*
       for (auto i : ngstd::Range(size))
 	data[i] = v(i);
+      */
+      CopyVector (v, *this);
       return *this;
     }
 
@@ -150,6 +153,9 @@ namespace ngbla
       return *this;
     }
 
+    FlatVector<T> View() const { return FlatVector<T>(*this); }     
+    tuple<size_t> Shape() const { return { size }; }
+    
     /*  // prevents bla pattern matching
     template<typename TB>
     INLINE const FlatVector & operator+= (const Expr<TB> & v) const
@@ -215,6 +221,7 @@ namespace ngbla
     /// vector is matrix of height size
     INLINE size_t Height () const { return size; }
 
+
     /// vector is matrix of with 1
     INLINE constexpr size_t Width () const { return 1; }
     
@@ -227,7 +234,7 @@ namespace ngbla
       return SliceVector<T> (size/dist2, dist2, data+first);
     }
 
-    INLINE FlatMatrix<T> AsMatrix (size_t h, size_t w)
+    INLINE const FlatMatrix<T> AsMatrix (size_t h, size_t w) const
     {
       return FlatMatrix<T> (h,w, data);
     }
@@ -312,6 +319,9 @@ namespace ngbla
     }
     */
 
+    auto View() const { return FlatVector(*this); }         
+    tuple<size_t> Shape() const { return { size }; }
+    
     /// assign memory for vector on local heap
     void AssignMemory (size_t as, LocalHeap & lh) 
     {
@@ -805,12 +815,20 @@ namespace ngbla
     /// constructor, no initialization
     INLINE Vec () { ; }
     /// copy vector
+    /*
     INLINE Vec (const Vec & v) : MatExpr<Vec> ()
     {
       for (size_t i = 0; i < S; i++)
 	data[i] = v.data[i];
     }
+    */
+    
+    Vec (const Vec &) = default;
+    auto & HTData() const { return data; }                                    
+    template <typename T2>
+    Vec (const Vec<S,T2> & v2) : data(v2.HTData()) { ; }
 
+    
     /// initialize with values
     INLINE Vec (const TELEM & scal)
     {
@@ -887,6 +905,11 @@ namespace ngbla
       return *this;
     }
 
+    // auto View() const { return FlatVec(const_cast<Vec&>(*this)); }
+    // auto View() const { return Vec(*this); }
+    auto View() const { return Vec<S,const T>{*this}; }    
+    tuple<size_t> Shape() const { return { S }; }
+    
     /// access vector
     INLINE TELEM & operator() (size_t i) 
     {
@@ -956,6 +979,8 @@ namespace ngbla
     INLINE Vec (T d) { ; }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
+    auto View() const { return Vec(*this); }
+    tuple<size_t> Shape() const { return { 0 }; }    
     INLINE constexpr size_t Size() const { return 0; }
     INLINE constexpr size_t Height() const { return 0; }
     INLINE constexpr size_t Width() const { return 1; }
@@ -1070,11 +1095,19 @@ namespace ngbla
   }
 
 
-  template<int S, typename TB>
-  INLINE Vec<S> & operator+= (Vec<S> & v, const Expr<TB> & v2)
+  template<int S, typename T, typename TB>
+  INLINE Vec<S,T> & operator+= (Vec<S,T> & v, const Expr<TB> & v2)
   {
     for (int i = 0; i < S; i++)
       v(i) += v2.Spec()(i,0);
+    return v;
+  }
+
+  template<int S, typename T, typename TB>
+  INLINE Vec<S,T> & operator-= (Vec<S,T> & v, const Expr<TB> & v2)
+  {
+    for (int i = 0; i < S; i++)
+      v(i) -= v2.Spec()(i,0);
     return v;
   }
 
@@ -1141,6 +1174,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatVec(*this); }         
+    tuple<size_t> Shape() const { return { S }; }
+    
     template<typename TB>
     INLINE const FlatVec & operator+= (const Expr<TB> & v) const
     {
@@ -1246,6 +1282,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatSliceVec(*this); } 
+    tuple<size_t> Shape() const { return { S }; }
+    
     template<typename TB>
     INLINE auto operator+= (const Expr<TB> & v) const
     {
@@ -1390,7 +1429,10 @@ namespace ngbla
       return *this;
     }
 
-
+    // auto View() const { return SliceVector(*this); }
+    auto View() const { return *this; }
+    tuple<size_t> Shape() const { return { s }; }
+    
     template<typename TB>
     INLINE const SliceVector & operator+= (const Expr<TB> & v) const
     {
@@ -1542,6 +1584,9 @@ namespace ngbla
 	data[i] = v(i);
       return *this;
     }
+
+    auto View() const { return BareVector(*this); } 
+    tuple<size_t> Shape() const { return { DummySize::Height() }; }
     
     FlatVector<T> AddSize(size_t size) const
     {
@@ -1605,6 +1650,9 @@ namespace ngbla
     size_t Dist () const { return dist; }
     T* Data() const { return data; }
 
+    auto View() const { return BareSliceVector(*this); }
+    tuple<size_t> Shape() const { return { DummySize::Height() }; }
+    
     [[deprecated("Use Range(0,size) instead!")]]                
     SliceVector<T> AddSize(size_t size) const
     {
@@ -1714,7 +1762,9 @@ namespace ngbla
       return *this;
     }
 
-
+    auto View() const { return *this; }
+    tuple<size_t> Shape() const { return { s }; }
+    
     template<typename TB>
     INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
     {
@@ -1977,6 +2027,29 @@ namespace ngbla
     return res;
   }
 
+  template <int S, int D, typename T>
+  INLINE auto operator* (double a, FlatSliceVec<S,D,T> vec) 
+    -> Vec<S, decltype(RemoveConst(a*vec(0)))>
+  {
+    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+
+
+  template <int S, int D, typename T>
+  INLINE auto operator* (Complex a, FlatSliceVec<S,D,T> vec) 
+    -> Vec<S, decltype(RemoveConst(a*vec(0)))>
+  {
+    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+
 
   template <int S, typename T>
   INLINE auto operator+ (FlatVec<S,T> x, FlatVec<S,T> y) -> Vec<S,T>
@@ -2011,7 +2084,6 @@ namespace ngbla
   }
   
 
-  
 }
 
 namespace ngstd

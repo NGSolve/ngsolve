@@ -2054,7 +2054,7 @@ namespace ngfem
 
 
 
-
+  ComplexLinearFormIntegrator :: ~ComplexLinearFormIntegrator() { }
 
 
 
@@ -2314,7 +2314,7 @@ namespace ngfem
                 {
                   alfi[spacedim] = lfis[i] -> creator(coeffs);
                 }
-              catch (Exception e)
+              catch (const Exception& e)
                 {
                   // creates lfi only if dimension of coef-function fits
                 }

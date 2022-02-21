@@ -1,5 +1,9 @@
 puts "loading ngsolve library"
-if { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
+
+# netgen_library_dir is set from python in pip packages
+if { [ info exists netgen_library_dir ] } {
+    load $netgen_library_dir/libngsolve[info sharedlibextension] ngsolve
+} elseif { [catch { load libngsolve[info sharedlibextension] ngsolve } result ] } {
   set current_script_dir [file dirname [dict get [info frame 0] file]]
   if { [catch { load $current_script_dir/@BIN_TO_LIB_RELPATH@/libngsolve[info sharedlibextension] ngsolve } result2 ] } {
     puts "cannot load ngsolve" 

@@ -13,7 +13,7 @@
 
 namespace ngfem
 {
-
+  bool symbolic_integrator_uses_diff = false;
   
   ProxyFunction ::
   ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
@@ -60,6 +60,8 @@ namespace ngfem
     else
       throw Exception("a proxy needs at least one evaluator");
     elementwise_constant = true;
+
+    SetVariable(true);
   }
 
   string ProxyFunction :: GetDescription () const
@@ -150,8 +152,8 @@ namespace ngfem
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    auto dims = Dimensions();
-
+    // auto dims = Dimensions();
+    
     string header = "\n\
     {flatmatrix} {values};\n\
     ProxyUserData * {ud} = (ProxyUserData*)mir.GetTransformation().userdata;\n\
@@ -212,9 +214,18 @@ namespace ngfem
       body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
       });
     */
+
+    if (code_uses_tensors)
+      {
+        body += "Tens<" + code.res_type;
+        for (auto d : this->Dimensions())
+          body += ',' + ToLiteral(d);
+        body += "> var_" + ToLiteral(index) + ";\n";
+      }
     
     for (int i = 0; i < this->Dimension(); i++) {
-      body += Var(index, i, this->Dimensions()).Declare("{scal_type}", 0.0);
+      if (!code_uses_tensors)
+        body += Var(index, i, this->Dimensions()).Declare("{scal_type}", 0.0);   // why do we initizlize ? 
       body += Var(index, i, this->Dimensions()).Assign(CodeExpr("0.0"), false);
     }
 
@@ -899,6 +910,23 @@ namespace ngfem
         throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
 
     cache_cfs = FindCacheCF(*cf);
+    
+    dcf_dtest.SetSize(proxies.Size());
+
+    if (symbolic_integrator_uses_diff)
+      for (auto i : Range(proxies))
+      {
+        try
+          {
+            CoefficientFunction::T_DJC cache;
+            dcf_dtest[i] = cf->DiffJacobi(proxies[i], cache);
+            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+          }
+        catch (const Exception& e)
+          {
+              cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+      }
   }
 
   /*
@@ -987,21 +1015,26 @@ namespace ngfem
             
             FlatVector<SCAL> elvec1(elvec.Size(), lh);
             FlatMatrix<SCAL> val(mir.Size(), 1,lh);
-            for (auto proxy : proxies)
+            for (auto j : Range(proxies))
               {
                 HeapReset hr(lh);
+                auto proxy = proxies[j];
                 FlatMatrix<SCAL> proxyvalues(mir.Size(), proxy->Dimension(), lh);
-                for (int k = 0; k < proxy->Dimension(); k++)
-                  {
-                    ud.testfunction = proxy;
-                    ud.test_comp = k;
-                    cf -> Evaluate (mir, val);
-                    proxyvalues.Col(k) = val.Col(0);
-                  }
+
+                if (dcf_dtest[j])
+                    dcf_dtest[j]->Evaluate (mir, proxyvalues);
+                else
+                  for (int k = 0; k < proxy->Dimension(); k++)
+                    {
+                      ud.testfunction = proxy;
+                      ud.test_comp = k;
+                      cf -> Evaluate (mir, val);
+                      proxyvalues.Col(k) = val.Col(0);
+                    }
                 
-                for (size_t i = 0; i < mir.Size(); i++)
+                for (auto i : Range(mir))
+                    proxyvalues.Row(i) *= ir_facet[i].Weight() * mir[i].GetMeasure();
                   // proxyvalues.Row(i) *= ir_facet[i].Weight() * measure(i);
-                  proxyvalues.Row(i) *= ir_facet[i].Weight() * mir[i].GetMeasure();
                 
                 proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
                 elvec += elvec1;
@@ -1035,19 +1068,29 @@ namespace ngfem
             
             elvec = 0;
             // NgProfiler::StopThreadTimer(telvec_zero, tid);                        
-            for (auto proxy : proxies)
+            for (auto j : Range(proxies))
               {
                 // NgProfiler::StartThreadTimer(telvec_dvec, tid);
+                auto proxy = proxies[j];
                 FlatMatrix<SIMD<SCAL>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
-                for (size_t k = 0; k < proxy->Dimension(); k++)
-                  {
-                    ud.testfunction = proxy;
-                    ud.test_comp = k;
+                if (dcf_dtest[j])
+                  dcf_dtest[j]->Evaluate (mir, proxyvalues);
+                else
+                  for (size_t k = 0; k < proxy->Dimension(); k++)
+                    {
+                      ud.testfunction = proxy;
+                      ud.test_comp = k;
+
+                      cf -> Evaluate (mir, proxyvalues.Rows(k,k+1));
+                    }
                     
-                    cf -> Evaluate (mir, proxyvalues.Rows(k,k+1));
-                    for (size_t i = 0; i < mir.Size(); i++)
-                      proxyvalues(k,i) *= mir[i].GetWeight();
+                for (auto i : Range(proxyvalues.Height()))
+                  {
+                    auto row = proxyvalues.Row(i);
+                    for (auto j : Range(row.Size()))
+                      row(j) *= mir[j].GetWeight();
                   }
+                    
                 // NgProfiler::StopThreadTimer(telvec_dvec, tid);
                 
                 // NgProfiler::StartThreadTimer(telvec_applytrans, tid);                                
@@ -1056,7 +1099,7 @@ namespace ngfem
               }
             // NgProfiler::StopThreadTimer(telvec, tid);
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << e.What() << endl
                  << "switching back to standard evaluation" << endl;
@@ -1083,18 +1126,24 @@ namespace ngfem
           ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
         
         elvec = 0;
-        for (auto proxy : proxies)
+        for (auto j : Range(proxies))
           {
+            auto proxy = proxies[j];
             FlatMatrix<SCAL> proxyvalues(ir.Size(), proxy->Dimension(), lh);
-            for (int k = 0; k < proxy->Dimension(); k++)
-              {
-                ud.testfunction = proxy;
-                ud.test_comp = k;
+            if (dcf_dtest[j])
+              dcf_dtest[j]->Evaluate (mir, proxyvalues);
+            else
+              for (int k = 0; k < proxy->Dimension(); k++)
+                {
+                  ud.testfunction = proxy;
+                  ud.test_comp = k;
+                  cf -> Evaluate (mir, values);
+                  proxyvalues.Col(k) = values.Col(0);
+                }
                 
-                cf -> Evaluate (mir, values);
-                for (int i = 0; i < mir.Size(); i++)
-                  proxyvalues(i,k) = mir[i].GetWeight() * values(i,0);
-              }
+            for (int i = 0; i < mir.Size(); i++)
+              proxyvalues.Row(i) *= mir[i].GetWeight();
+                
             proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
             elvec += elvec1;
           }
@@ -1203,11 +1252,11 @@ namespace ngfem
     Vector<AutoDiffDiff<1,bool>> nzvec(1);
     int k = 0;
     for (int k1 : test_proxies.Range())
-      for (int k2 : Range(0,test_proxies[k1]->Dimension()))
+      for (int k2 : Range(test_proxies[k1]->Dimension()))
         {
           int l = 0;
           for (int l1 : trial_proxies.Range())
-            for (int l2 : Range(0,trial_proxies[l1]->Dimension()))
+            for (int l2 : Range(trial_proxies[l1]->Dimension()))
               {
                 ud.trialfunction = trial_proxies[l1];
                 ud.trial_comp = l2;
@@ -1226,11 +1275,11 @@ namespace ngfem
     ud.eval_deriv = 1;
     k = 0;
     for (int k1 : test_proxies.Range())
-      for (int k2 : Range(0,test_proxies[k1]->Dimension()))
+      for (int k2 : Range(test_proxies[k1]->Dimension()))
         {
           int l = 0;
           for (int l1 : trial_proxies.Range())
-            for (int l2 : Range(0,trial_proxies[l1]->Dimension()))
+            for (int l2 : Range(trial_proxies[l1]->Dimension()))
               {
                 ud.trialfunction = trial_proxies[l1];
                 ud.trial_comp = l2;
@@ -1289,18 +1338,35 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
 
     dcf_dtest.SetSize(test_proxies.Size());
+    ddcf_dtest_dtrial.SetSize(test_proxies.Size(), trial_proxies.Size());
 
-    // comment in for experimental new Apply
-    for (int i = 0; i < test_proxies.Size(); i++)
+    if (symbolic_integrator_uses_diff)
       {
-        try
+        for (auto i : Range(test_proxies))
           {
-            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
-            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
-          }
-        catch (Exception e)
-          {
-            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+            try
+              {
+                CoefficientFunction::T_DJC cache;
+                dcf_dtest[i] = cf->DiffJacobi(test_proxies[i], cache);
+              }
+            catch (const Exception& e)
+              {
+                cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+              }
+
+            for (auto j : Range(trial_proxies))
+              {
+                if (dcf_dtest[i])
+                  try
+                    {
+                      CoefficientFunction::T_DJC cache2;
+                        ddcf_dtest_dtrial(i, j) = dcf_dtest[i]->DiffJacobi(trial_proxies[j], cache2);
+                    }
+                  catch (const Exception& e)
+                    {
+                      cout << IM(5) << "ddcf_dtest_dtrial has thrown exception " << e.What() << endl;
+                    }
+              }
           }
       }
   }
@@ -1430,6 +1496,8 @@ namespace ngfem
     
   {
     static Timer t(string("SymbolicBFI::CalcElementMatrixAdd")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), NoTracing);
+//    static Timer tdmat("SymbolicBFI::CalcDMat - simd", NoTracing);
+//    static Timer tmult("SymbolicBFI::mult - simd", NoTracing);
     RegionTimer reg(t);
     // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
@@ -1501,37 +1569,70 @@ namespace ngfem
                       FlatMatrix<SIMD<SCAL>> proxyvalues(dim_proxy1*dim_proxy2, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL>> diagproxyvalues(dim_proxy1, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL>> val(1, ir.Size(), lh);
-                      {
-                        // RegionTimer regdmat(timer_SymbBFIdmat);                      
-                      if (!is_diagonal)
-                        for (size_t k = 0, kk = 0; k < dim_proxy1; k++)
-                          for (size_t l = 0; l < dim_proxy2; l++, kk++)
+
+                      IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                      IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
+                      SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
+
+                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width() * dim_proxy1, ir.Size(), lh);
+                      FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width() * dim_proxy2, ir.Size(), lh);
+                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 =
+                              samediffop ?
+                                bbmat1
+                                :
+                                FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height() * dim_proxy2, ir.Size(), lh);
+
+                      FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2 * ir.Size(), bdbmat1.Data());
+                      FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2 * ir.Size(), bbmat2.Data());
+
+                      if (ddcf_dtest_dtrial(l1nr, k1nr))
+                        {
+//                          RegionTimer regdmat(tdmat);
+//                          cout << "use ddcf_dtest_dtrial" << endl;
+                          ddcf_dtest_dtrial(l1nr, k1nr)->Evaluate(mir, proxyvalues);
+
+                          if (is_diagonal)
+                            for (auto k : Range(dim_proxy1))
+                              diagproxyvalues.Row(k) = proxyvalues.Row(k*(dim_proxy1 + 1));
+                        }
+                      else
+                        {
+//                          RegionTimer regdmat(tdmat);
+                          if (!is_diagonal)
                             {
-                              if (nonzeros(l1+l, k1+k))
+                              for (size_t k = 0, kk = 0; k < dim_proxy1; k++)
+                                for (size_t l = 0; l < dim_proxy2; l++, kk++)
+                                  {
+                                    if (nonzeros(l1+l, k1+k))
+                                      {
+                                        ud.trialfunction = proxy1;
+                                        ud.trial_comp = k;
+                                        ud.testfunction = proxy2;
+                                        ud.test_comp = l;
+
+                                        cf -> Evaluate(mir, proxyvalues.Rows(kk,kk+1));
+                                      }
+                                    else;
+                                      // proxyvalues.Row(kk) = 0.0;
+                                  }
+                            }
+                          else
+                            {
+                              for (size_t k = 0; k < dim_proxy1; k++)
                                 {
                                   ud.trialfunction = proxy1;
                                   ud.trial_comp = k;
                                   ud.testfunction = proxy2;
-                                  ud.test_comp = l;
-                                  
-                                  cf -> Evaluate (mir, proxyvalues.Rows(kk,kk+1));
+                                  ud.test_comp = k;
+
+                                  cf -> Evaluate (mir, diagproxyvalues.Rows(k,k+1));
                                 }
-                              else
-                                ; 
-                                // proxyvalues.Row(kk) = 0.0;
                             }
-                      else
-                        for (size_t k = 0; k < dim_proxy1; k++)
-                          {
-                            ud.trialfunction = proxy1;
-                            ud.trial_comp = k;
-                            ud.testfunction = proxy2;
-                            ud.test_comp = k;
-                            
-                            cf -> Evaluate (mir, diagproxyvalues.Rows(k,k+1));
-                          }
-                      // td.Stop();
-                      }
+                          // td.Stop();
+                        }
+
+
+
                       // NgProfiler::StartThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());
                       FlatVector<SIMD<double>> weights(ir.Size(), lh);
                       if (!is_diagonal)
@@ -1541,22 +1642,6 @@ namespace ngfem
                       else
                         for (size_t i = 0; i < ir.Size(); i++)
                           diagproxyvalues.Col(i) *= mir[i].GetWeight();
-                      
-
-                      IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
-                      IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                      SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
-
-                          
-                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width()*dim_proxy1, ir.Size(), lh);
-                      FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width()*dim_proxy2, ir.Size(), lh);
-                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 = samediffop ?
-                        bbmat1 : FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height()*dim_proxy2, ir.Size(), lh);
-                      
-                      FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2*ir.Size(),
-                                                      bdbmat1.Data());
-                      FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*ir.Size(),
-                                                            bbmat2.Data());
 
                       // NgProfiler::StopThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());
                       // bbmat1 = 0.0;
@@ -1623,12 +1708,13 @@ namespace ngfem
                                     hbdbmat1.Col(i).Range(r1) += hproxyvalues(i) * hbbmat1.Col(i).Range(r1);
                                 }
                           */
-
+//                          RegionTimer regmult(tmult);
                           for (size_t j = 0; j < dim_proxy2; j++)
                             for (size_t k = 0; k < dim_proxy1; k++)
                               if (nonzeros(l1+j, k1+k))
                                 {
-                                  auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
+                                  auto proxyvalues_jk = symbolic_integrator_uses_diff ?
+                                          proxyvalues.Row(j*dim_proxy1+k) : proxyvalues.Row(k*dim_proxy2+j);
                                   auto bbmat1_k = bbmat1.RowSlice(k, dim_proxy1).Rows(r1);
                                   auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
 
@@ -1695,7 +1781,7 @@ namespace ngfem
           // ir.NothingToDelete();
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -1743,48 +1829,64 @@ namespace ngfem
                 FlatTensor<3,SCAL> proxyvalues(lh, mir.Size(), proxy1->Dimension(), proxy2->Dimension());
                 FlatVector<SCAL> diagproxyvalues(mir.Size()*proxy1->Dimension(), lh);
                 FlatMatrix<SCAL> val(mir.Size(), 1, lh);
-                
-                
-                if (!is_diagonal)
-                  for (int k = 0; k < proxy1->Dimension(); k++)
-                    for (int l = 0; l < proxy2->Dimension(); l++)
-                      {
-                        if (nonzeros(l1+l, k1+k))
-                          {
-                            if (k != l) is_diagonal = false;
-                            is_nonzero = true;
-                            ud.trialfunction = proxy1;
-                            ud.trial_comp = k;
-                            ud.testfunction = proxy2;
-                            ud.test_comp = l;
-                            
-                            cf -> Evaluate (mir, val);
-                            proxyvalues(STAR,k,l) = val.Col(0);
-                          }
-                        else
-                          proxyvalues(STAR,k,l) = 0.0;
-                      }
-                else
-                  for (int k = 0; k < proxy1->Dimension(); k++)
-                    {
-                      ud.trialfunction = proxy1;
-                      ud.trial_comp = k;
-                      ud.testfunction = proxy2;
-                      ud.test_comp = k;
 
-                      if (!elementwise_constant)
+                IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
+                SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
+                FlatMatrix<SCAL_SHAPES, ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+                FlatMatrix<SCAL_SHAPES, ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+
+                if (ddcf_dtest_dtrial(l1nr, k1nr))
+                  {
+//                    cout << "use ddcf_dtest_dtrial (NO SIMD)" << endl;
+                    // TODO: optimize for element-wise constant case?
+                    FlatMatrix<SCAL> mproxyvalues(mir.Size(), proxy1->Dimension() * proxy2->Dimension(),
+                                                  proxyvalues.Data());
+                    ddcf_dtest_dtrial(l1nr, k1nr)->Evaluate(mir, mproxyvalues);
+                    if (is_diagonal)
+                        for (auto k: Range(proxy1->Dimension()))
+                            diagproxyvalues.Slice(k, proxy1->Dimension()) = proxyvalues(STAR, k, k);
+                  }
+                else
+                  {
+                    if (!is_diagonal)
+                      for (int k = 0; k < proxy1->Dimension(); k++)
+                        for (int l = 0; l < proxy2->Dimension(); l++)
+                          {
+                            if (nonzeros(l1+l, k1+k))
+                              {
+                                ud.trialfunction = proxy1;
+                                ud.trial_comp = k;
+                                ud.testfunction = proxy2;
+                                ud.test_comp = l;
+
+                                cf -> Evaluate (mir, val);
+                                proxyvalues(STAR,k,l) = val.Col(0);
+                              }
+                            else
+                              proxyvalues(STAR,k,l) = 0.0;
+                          }
+                    else
+                      for (int k = 0; k < proxy1->Dimension(); k++)
                         {
-                          cf -> Evaluate (mir, val);
-                          diagproxyvalues.Slice(k, proxy1->Dimension()) = val.Col(0);
+                          ud.trialfunction = proxy1;
+                          ud.trial_comp = k;
+                          ud.testfunction = proxy2;
+                          ud.test_comp = k;
+
+                          if (!elementwise_constant)
+                            {
+                              cf -> Evaluate (mir, val);
+                              diagproxyvalues.Slice(k, proxy1->Dimension()) = val.Col(0);
+                            }
+                          else
+                            {
+                              cf -> Evaluate (mir[0], val.Row(0));
+                              diagproxyvalues.Slice(k, proxy1->Dimension()) = val(0,0);
+                            }
                         }
-                      else
-                        {
-                          cf -> Evaluate (mir[0], val.Row(0));
-                          diagproxyvalues.Slice(k, proxy1->Dimension()) = val(0,0);
-                        }
-                    }
-            
-                // td.Stop();
+                  }
+                  // td.Stop();
 
                 if (!mir.IsComplex())
                   {
@@ -1805,13 +1907,7 @@ namespace ngfem
                         diagproxyvalues.Range(proxy1->Dimension()*IntRange(i,i+1)) *=
                           static_cast<const ScalMappedIntegrationPoint<SCAL>&> (mir[i]).GetJacobiDet()*ir[i].Weight();
                   }
-                IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
-                IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
-                FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
-                FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
-                
                 constexpr size_t BS = 16;
                 for (size_t i = 0; i < mir.Size(); i+=BS)
                   {
@@ -1925,7 +2021,7 @@ namespace ngfem
               T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
           }
       }
-    catch (ExceptionNOSIMD e)  // retry with simd_evaluate is off
+    catch (const ExceptionNOSIMD& e)  // retry with simd_evaluate is off
       {
         elmat = 0.0;
         bool symmetric_so_far = true;        
@@ -2137,7 +2233,7 @@ namespace ngfem
               return;
             }
           
-          catch (ExceptionNOSIMD e)
+          catch (const ExceptionNOSIMD& e)
             {
               cout << IM(6) << e.What() << endl
                    << "switching to scalar evaluation, may be a problem with Add" << endl;
@@ -2470,7 +2566,7 @@ namespace ngfem
           */
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation in CalcLinearized" << endl;
@@ -2576,7 +2672,7 @@ namespace ngfem
                                    FlatMatrix<double> elmat,
                                    LocalHeap & lh) const
   {
-    size_t tid = TaskManager::GetThreadId();    
+    // size_t tid = TaskManager::GetThreadId();    
     static Timer t("symbolicbfi - calclinearized EB", NoTracing);
     static Timer tnosimd("symbolicbfi - calclinearized EB nosimd", NoTracing);
     static Timer td("symbolicbfi - calclinearized EB dmats", NoTracing);
@@ -2682,7 +2778,7 @@ namespace ngfem
 
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation in CalcLinearizedEB" << endl;
@@ -2724,7 +2820,7 @@ namespace ngfem
                 HeapReset hr(lh);
                 auto proxy1 = trial_proxies[k1];
                 auto proxy2 = test_proxies[l1];
-                td.Start(tid);
+                // td.Start(tid);
                 FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
                 
                 for (int k = 0; k < proxy1->Dimension(); k++)
@@ -2744,7 +2840,7 @@ namespace ngfem
                     else
                       proxyvalues(STAR,l,k) = 0.0;
                         
-                td.Stop(tid);
+                // td.Stop(tid);
 
                 for (int i = 0; i < mir.Size(); i++)
                   proxyvalues(i,STAR,STAR) *= ir_facet[i].Weight() * mir[i].GetMeasure(); 
@@ -2816,7 +2912,7 @@ namespace ngfem
           static Timer tpre("SymbolicBFI::Apply - precomput SIMD");
           static Timer teval("SymbolicBFI::Apply - evaluate SIMD");
           static Timer taddBt("SymbolicBFI::Apply - addBt SIMD");          
-          RegionTimer rall(tall);
+          // RegionTimer rall(tall);
  
           bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
           const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
@@ -2833,7 +2929,7 @@ namespace ngfem
           ud.fel = &fel;
 
           {
-          RegionTimer rpre(tpre);          
+            // RegionTimer rpre(tpre);          
           PrecomputeCacheCF(cache_cfs, simd_mir, lh);
 
           for (ProxyFunction * proxy : trial_proxies)
@@ -2855,7 +2951,7 @@ namespace ngfem
 
               FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir.Size(), lh);
               {
-              RegionTimer reval(teval);
+                // RegionTimer reval(teval);
 
               if (dcf_dtest[i])
                 dcf_dtest[i]->Evaluate (simd_mir, simd_proxyvalues);
@@ -2875,13 +2971,13 @@ namespace ngfem
                     row(j) *= simd_mir[j].GetWeight(); //  * simd_ir[j].Weight();
                 }
 
-              RegionTimer rBt(taddBt);          
+              // RegionTimer rBt(taddBt);          
               proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); 
             }
           return;
         }
     
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -3030,7 +3126,7 @@ namespace ngfem
             }
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -3163,7 +3259,7 @@ namespace ngfem
           return;
         }
     
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -3308,7 +3404,7 @@ namespace ngfem
             }
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -3526,18 +3622,20 @@ namespace ngfem
 
     // comment in for experimental new Apply
     dcf_dtest.SetSize(test_proxies.Size());
-    for (int i = 0; i < test_proxies.Size(); i++)
-      {
-        try
-          {
-            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
-            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
-          }
-        catch (Exception e)
-          {
+    if (symbolic_integrator_uses_diff)    
+      for (int i = 0; i < test_proxies.Size(); i++)
+        {
+          try
+            {
+              CoefficientFunction::T_DJC cache;              
+              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i], cache);
+              // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+            }
+          catch (const Exception& e)
+            {
             cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
-          }
-      }
+            }
+        }
 
     
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
@@ -3927,6 +4025,15 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
+    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
+    const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
+    bool is_mixedfe2 = typeid(fel2) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe2 = static_cast<const MixedFiniteElement*> (&fel2);
+    const FiniteElement & fel2_trial = is_mixedfe2 ? mixedfe2->FETrial() : fel2;
+    const FiniteElement & fel2_test = is_mixedfe2 ? mixedfe2->FETest() : fel2;
+
     if (simd_evaluate)
       {
         try
@@ -3946,7 +4053,7 @@ namespace ngfem
             
             ely = 0;
             
-            int maxorder = max2 (fel1.Order(), fel2.Order());
+            int maxorder = max2(max2 (fel1_trial.Order(), fel1_test.Order()), max2 (fel2_trial.Order(), fel2_test.Order()));
             
             auto eltype1 = trafo1.GetElementType();
             auto eltype2 = trafo2.GetElementType();
@@ -3973,7 +4080,7 @@ namespace ngfem
             // evaluate proxy-values
             ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
             const_cast<ElementTransformation&>(trafo1).userdata = &ud;
-            ud.fel = &fel1;   // necessary to check remember-map
+            ud.fel = &fel1_trial;   // necessary to check remember-map
 
             PrecomputeCacheCF(cache_cfs, simd_mir1, lh);
 
@@ -3988,13 +4095,13 @@ namespace ngfem
             for (ProxyFunction * proxy : trial_proxies)
               {
                 IntRange trial_range  = proxy->IsOther() ?
-                  IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) :
-                  IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
+                  IntRange(proxy->Evaluator()->BlockDim()*fel1_trial.GetNDof(), elx.Size()) :
+                  IntRange(0, proxy->Evaluator()->BlockDim()*fel1_trial.GetNDof());
                 
                 if (proxy->IsOther())
-                  proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy));
+                  proxy->Evaluator()->Apply(fel2_trial, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy));
                 else
-                  proxy->Evaluator()->Apply(fel1, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy));
+                  proxy->Evaluator()->Apply(fel1_trial, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy));
                 // tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
               }
             // tapply.Stop();
@@ -4026,20 +4133,20 @@ namespace ngfem
                   }
                 // tcoef.Stop();
                 // tapplyt.Start();
-                IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
+                IntRange test_range  = proxy->IsOther() ? IntRange(fel1_test.GetNDof(), elx.Size()) : IntRange(0, fel1_test.GetNDof());
                 int blockdim = proxy->Evaluator()->BlockDim();
                 test_range = blockdim * test_range;
                 
                 if (proxy->IsOther())
-                  proxy->Evaluator()->AddTrans(fel2, simd_mir2, simd_proxyvalues, ely.Range(test_range));
+                  proxy->Evaluator()->AddTrans(fel2_test, simd_mir2, simd_proxyvalues, ely.Range(test_range));
                 else
-                  proxy->Evaluator()->AddTrans(fel1, simd_mir1, simd_proxyvalues, ely.Range(test_range));
+                  proxy->Evaluator()->AddTrans(fel1_test, simd_mir1, simd_proxyvalues, ely.Range(test_range));
                 // tapplyt.AddFlops (test_range.Size() * simd_ir_facet_vol1.GetNIP());                
                 // tapplyt.Stop();
               }
             // tall.Stop();
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << "caught in SymbolicFacetInegtrator::Apply: " << endl
                  << e.What() << endl;
@@ -4218,7 +4325,7 @@ namespace ngfem
 
 	    return;
 	  }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
                  << e.What() << endl;
@@ -4351,7 +4458,7 @@ namespace ngfem
 		  proxy->Evaluator()->AddTrans(volumefel, simd_mir, simd_proxyvalues, ely.Range(test_range));
 		}
 	  }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
                  << e.What() << endl;
@@ -4436,6 +4543,10 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
+    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
+    const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
     if (simd_evaluate)
       {
         try
@@ -4446,7 +4557,7 @@ namespace ngfem
             
             ely = 0;
             
-            int maxorder = fel1.Order();
+            int maxorder = max2 (fel1_trial.Order(), fel1_test.Order());
             
             auto eltype1 = trafo1.GetElementType();
             auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
@@ -4467,7 +4578,7 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), lh);
             const_cast<ElementTransformation&>(trafo1).userdata = &ud;
             const_cast<ElementTransformation&>(strafo).userdata = &ud;
-            ud.fel = &fel1;   // necessary to check remember-map
+            ud.fel = &fel1_trial;   // necessary to check remember-map
             // ud.elx = &elx;
             // ud.lh = &lh;
 
@@ -4478,7 +4589,7 @@ namespace ngfem
             
             for (ProxyFunction * proxy : trial_proxies)
               if (! (proxy->IsOther() && proxy->BoundaryValues()) )
-                proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetAMemory(proxy));
+                proxy->Evaluator()->Apply(fel1_trial, mir1, elx, ud.GetAMemory(proxy));
             
             for (ProxyFunction * proxy : trial_proxies)
               if (proxy->IsOther() && proxy->BoundaryValues())
@@ -4509,11 +4620,11 @@ namespace ngfem
                 if (proxy->IsOther() && proxy->BoundaryValues())
                   ; // nothing to do 
                 else
-                  proxy->Evaluator()->AddTrans(fel1, mir1, proxyvalues, ely);
+                  proxy->Evaluator()->AddTrans(fel1_test, mir1, proxyvalues, ely);
               }
             
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << "caught in SymbolicFacetInegtrator::ApplyBnd: " << endl
                  << e.What() << endl;
@@ -4542,7 +4653,7 @@ namespace ngfem
     
     FlatVector<> ely1(ely.Size(), lh);
 
-    int maxorder = fel1.Order();
+    int maxorder = max2 (fel1_trial.Order(), fel1_test.Order());
 
     auto eltype1 = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
@@ -4563,7 +4674,7 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
     const_cast<ElementTransformation&>(strafo).userdata = &ud;
-    ud.fel = &fel1;   // necessary to check remember-map
+    ud.fel = &fel1_trial;   // necessary to check remember-map
     // ud.elx = &elx;
     // ud.lh = &lh;
 
@@ -4574,7 +4685,7 @@ namespace ngfem
     
     for (ProxyFunction * proxy : trial_proxies)
       if (! (proxy->IsOther() && proxy->BoundaryValues()))
-        proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetMemory(proxy), lh);
+        proxy->Evaluator()->Apply(fel1_trial, mir1, elx, ud.GetMemory(proxy), lh);
 
     for (ProxyFunction * proxy : trial_proxies)    
       if (proxy->IsOther() && proxy->BoundaryValues())
@@ -4605,7 +4716,7 @@ namespace ngfem
         if (proxy->IsOther() && proxy->BoundaryValues())
           ;  // nothing to do 
         else
-          proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1, lh);
+          proxy->Evaluator()->ApplyTrans(fel1_trial, mir1, proxyvalues, ely1, lh);
         ely += ely1;
       }
   }
@@ -4653,11 +4764,11 @@ namespace ngfem
     Vector<AutoDiffDiff<1,bool>> nzvec(1);
     int k = 0;
     for (int k1 : trial_proxies.Range())
-      for (int k2 : Range(0,trial_proxies[k1]->Dimension()))
+      for (int k2 : Range(trial_proxies[k1]->Dimension()))
         {
           int l = 0;
           for (int l1 : trial_proxies.Range())
-            for (int l2 : Range(0,trial_proxies[l1]->Dimension()))
+            for (int l2 : Range(trial_proxies[l1]->Dimension()))
               {
                 ud.trialfunction = trial_proxies[l1];
                 ud.trial_comp = l2;
@@ -4683,6 +4794,41 @@ namespace ngfem
           }
         cout << IM(6) << endl;
       }
+
+
+
+    
+    dcf.SetSize(trial_proxies.Size());
+    ddcf.SetSize(sqr(trial_proxies.Size()));    
+    if (symbolic_integrator_uses_diff)
+      {
+        try
+          {
+            cout << IM(5) << "cf = " << *cf << endl;
+            for (int i = 0; i < trial_proxies.Size(); i++)
+              {
+                CoefficientFunction::T_DJC cache;                
+                auto diffi = cf->DiffJacobi(trial_proxies[i], cache);
+                dcf[i] = diffi;
+                cout << IM(5) << "diffi = " << *diffi << endl;
+                /*
+                  // compile time too long, at the moment
+                for (int j = 0; j < trial_proxies.Size(); j++)
+                  {
+                    // cout << "diff_" << i << "," << j << " = " << endl;
+                    CoefficientFunction::T_DJC cache;                                    
+                    ddcf[i*trial_proxies.Size()+j] = diffi->DiffJacobi(trial_proxies[j], cache);
+                    cout << IM(5) <<  "ddcf = " << *ddcf[i*trial_proxies.Size()+j] << endl;
+                  }
+                */
+              }
+          }
+        catch (const Exception& e)
+          {
+            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+      }
+    
     cout << IM(6) << "nonzero: " << cnt << "/" << sqr(nonzeros.Height()) << endl;
     cout << IM(6) << "nonzero-proxies: " << endl << nonzeros_proxies << endl;
   }
@@ -4767,7 +4913,7 @@ namespace ngfem
               }
           }
 
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << e.What() << endl
                  << "switching back to standard evaluation (in SymbolicEnergy::CalcLinearized)" << endl;
@@ -5047,6 +5193,31 @@ namespace ngfem
 
                   {
                   RegionTimer reg(tdmat);
+
+                  /*
+                  if (ddcf[k1*trial_proxies.Size()+l1])
+                    {
+                      ddcf[k1*trial_proxies.Size()+l1]->Evaluate(mir, proxyvalues2);
+                    }
+                  */
+                  if (dcf[k1])
+                    {
+                      HeapReset hr(lh);
+                      FlatMatrix<AutoDiff<1,SIMD<double>>> dval(dim_proxy1, mir.Size(), lh);
+                      for (int l = 0; l < dim_proxy2; l++)
+                        {
+                          ud.trialfunction = proxy2;
+                          ud.trial_comp = l;
+                        
+                          dcf[k1] -> Evaluate (mir, dval);
+                          
+                          for (int k = 0; k < dim_proxy1; k++)
+                            for (auto i : Range(mir.Size()))
+                              proxyvalues2(k*dim_proxy2+l,i) = dval(k,i).DValue(0);
+                        }
+                    }
+                  else
+                  
                   for (int k = 0; k < dim_proxy1; k++)
                     for (int l = 0; l < dim_proxy2; l++)
                       {
@@ -5167,7 +5338,7 @@ namespace ngfem
               sum += mir[i].GetWeight() * values(0, i);
             return HSum(sum);
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << e.What() << endl
                  << "switching back to standard evaluation (in SymbolicEnergy::Energy)" << endl;
@@ -5337,7 +5508,7 @@ namespace ngfem
                   }
               }
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << e.What() << endl
                  << "switching back to standard evaluation (in SymbolicEnergy::CalcLinearized)" << endl;              
@@ -5448,7 +5619,7 @@ namespace ngfem
   }
 
 
-  shared_ptr<BilinearFormIntegrator> Integral :: MakeBilinearFormIntegrator()
+  shared_ptr<BilinearFormIntegrator> Integral :: MakeBilinearFormIntegrator() const
   {
     // check for DG terms
     bool has_other = false;
@@ -5492,7 +5663,7 @@ namespace ngfem
     return bfi;
   }
 
-  shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator()
+  shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator() const
   {
     cf -> TraverseTree ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))

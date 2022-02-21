@@ -1,11 +1,6 @@
 #ifndef FILE_MYINTEGRATOR_HPP
 #define FILE_MYINTEGRATOR_HPP
 
-/*********************************************************************/
-/* File:   myIntegrator.hpp                                          */
-/* Author: Joachim Schoeberl                                         */
-/* Date:   26. Apr. 2009                                             */
-/*********************************************************************/
 
 /*
   
@@ -30,7 +25,7 @@ namespace ngfem
 
     VorB VB() const override { return VOL; }
     
-    // Calculates the right hand side element vector
+    // Calculates the element source vector
     void CalcElementVector (const FiniteElement & fel,
                             const ElementTransformation & eltrans, 
                             FlatVector<double> elvec,

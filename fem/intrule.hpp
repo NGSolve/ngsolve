@@ -864,6 +864,14 @@ namespace ngfem
   NGS_DLL_HEADER extern 
   void ComputeGaussLobattoRule (int n, Array<double>& xi, Array<double>& wi);
 
+  /**
+     Gauss-Lobatto Rule with n points on interval [0,1].
+     Contains 0 as points
+     exact for polynomials up to order 2n-2
+   */
+  NGS_DLL_HEADER extern 
+  void ComputeGaussRadauRule (int n, Array<double>& xi, Array<double>& wi);
+
 
   /**
      Computes Gauss-Hermite integration rule.
@@ -1675,6 +1683,13 @@ namespace ngcore
     SIMD<double> & Weight() { return weight; }
     ngfem::IntegrationPoint operator[] (size_t i) const
     { return ngfem::IntegrationPoint(x[0][i], x[1][i], x[2][i], weight[i]); }
+
+    template<int I>
+    auto Get()
+    {
+      static_assert(I>=0 && I<SIMD<double>::Size(), "Index out of range");
+      return (*this)[I];
+    }
 
     int FacetNr() const { return facetnr; }
     void SetFacetNr (int afacetnr, ngfem::VorB avb = ngfem::BND)

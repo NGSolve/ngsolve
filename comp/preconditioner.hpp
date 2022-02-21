@@ -53,16 +53,22 @@ namespace ngcomp
     ///
     virtual void CleanUpLevel () { ; }
     ///
-    virtual const BaseMatrix & GetMatrix() const
+    virtual const BaseMatrix & GetMatrix() const = 0;
+    /*
     {
       return *this; 
     }
-    
-    virtual shared_ptr<BaseMatrix> GetMatrixPtr() 
+    */
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
     {
       return BaseMatrix::SharedFromThis<BaseMatrix>();
     }
 
+    shared_ptr<BilinearForm> GetBilinearForm() const
+    {
+      return bf.lock();
+    }
+    
     virtual bool IsComplex() const override { return GetMatrix().IsComplex(); }
         
     ///
@@ -71,6 +77,24 @@ namespace ngcomp
       GetMatrix().Mult(x, y);
     }
 
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      GetMatrix().MultAdd(s, x, y);
+    }
+
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override
+    {
+      GetMatrix().MultTrans(x, y);
+    }
+
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      GetMatrix().MultTransAdd(s, x, y);
+    }
+
+
+
+    
     virtual void InitLevel (shared_ptr<BitArray> freedofs = NULL) { ; }
     virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL) { ; }
     virtual void AddElementMatrix (FlatArray<int> dnums,
@@ -403,9 +427,12 @@ namespace ngcomp
       string name;
       function<shared_ptr<Preconditioner>(const PDE&, const Flags&, const string&)> creator;
       function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> creatorbf;
+      DocInfo docinfo;
+      
       PreconditionerInfo (const string & aname,
 			  function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
-                          function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags &, const string)> acreateorbf);
+                          function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags &, const string)> acreateorbf,
+                          DocInfo adocinfo);
     };
   
     Array<unique_ptr<PreconditionerInfo>> prea;
@@ -415,12 +442,14 @@ namespace ngcomp
 
     void AddPreconditioner (const string & aname, 
 			    function<shared_ptr<Preconditioner>(const PDE&, const Flags&, const string&)> acreator,
-			    function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags&, const string)> createorbf);
+			    function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags&, const string)> createorbf,
+                            DocInfo docinfo = DocInfo());
       
     const Array<unique_ptr<PreconditionerInfo>> & GetPreconditioners() { return prea; }
     const PreconditionerInfo * GetPreconditioner(const string & name);
 
     void Print (ostream & ost) const;
+    void Cleanup();
   };
  
   extern NGS_DLL_HEADER PreconditionerClasses & GetPreconditionerClasses ();

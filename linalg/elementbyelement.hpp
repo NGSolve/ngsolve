@@ -147,7 +147,37 @@ namespace ngla
     const Table<int> & GetRowDNums() const { return row_dnums; }
     const Table<int> & GetColDNums() const { return col_dnums; }
   };
+
+  class NGS_DLL_HEADER StructuredElementByElementMatrix : public BaseMatrix
+  {
+    size_t num;
+    Matrix<> matrix;
+  public:
+    StructuredElementByElementMatrix (size_t anum, Matrix<> amatrix)
+      : num(anum), matrix(amatrix) { ; } 
+    
+    virtual int VHeight() const override { return num*matrix.Height(); }
+    virtual int VWidth() const override { return num*matrix.Width(); }
+    
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    
+    virtual AutoVector CreateRowVector () const override
+    {
+      return make_unique<VVector<>> (num*matrix.Width());
+    }
+      
+    virtual AutoVector CreateColVector () const override
+    {
+      return make_unique<VVector<>> (num*matrix.Height());
+    }
+
+    const Matrix<> & GetMatrix() const { return matrix; }
+  };
   
+
 }
 
 #endif

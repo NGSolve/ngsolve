@@ -136,7 +136,7 @@ namespace ngla
 
     // full col-index array
     FlatArray<int> GetColIndices() const { return colnr; }
-
+    
     // col-indices of the i-th row
     FlatArray<int> GetRowIndices(size_t i) const
     { return FlatArray<int> (firsti[i+1]-firsti[i], colnr+firsti[i]); }      
@@ -258,6 +258,11 @@ namespace ngla
       throw Exception ("BaseSparseMatrix::Restrict");
     }
 
+    virtual shared_ptr<BaseSparseMatrix> Reorder (const Array<size_t> & reorder) const
+    {
+      throw Exception ("BaseSparseMatrix::Reorder");
+    }
+    
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override
     {
 
@@ -275,6 +280,11 @@ namespace ngla
     bool IsSPD () const { return spd; }
     virtual size_t NZE () const override { return nze; }
     virtual tuple<int,int> EntrySizes() const = 0;
+
+    virtual shared_ptr<BaseSparseMatrix> DeleteZeroElements(double tol) const
+    {
+      throw Exception ("DeleteZeroElements not overloaded");
+    }
   };
 
   
@@ -334,7 +344,7 @@ namespace ngla
   
   /// A general, sparse matrix
   template<class TM>
-  class  NGS_DLL_HEADER SparseMatrixTM : public S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL>
+  class NGS_DLL_HEADER SparseMatrixTM : public S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL>
     // public BaseSparseMatrix, public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
@@ -434,7 +444,7 @@ namespace ngla
     }
 
     static shared_ptr<SparseMatrixTM> CreateFromCOO (FlatArray<int> i, FlatArray<int> j,
-                                                     FlatArray<TSCAL> val, size_t h, size_t w);
+                                                     FlatArray<TM> val, size_t h, size_t w);
       
     virtual ~SparseMatrixTM ();
 
@@ -569,7 +579,13 @@ namespace ngla
 	  throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
 	  return nullptr;
 	}
-      else return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks, parallel);
+      else
+        // return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks, parallel);
+
+        return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>>
+          ( dynamic_pointer_cast<const SparseMatrix>
+            (this->shared_from_this()),
+            blocks, parallel);
     }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
@@ -578,12 +594,16 @@ namespace ngla
     virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
 					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const override;
     
+    virtual shared_ptr<BaseSparseMatrix> Reorder (const Array<size_t> & reorder) const override;
+    
     virtual shared_ptr<BaseSparseMatrix> CreateTranspose() const override
     {
       return this->CreateTransposeTM
         ( [](const Array<int> & elsperrow, int width) -> shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>
           { return make_shared<SparseMatrix<decltype(Trans(TM())), TV_COL, TV_ROW>> (elsperrow, width); } );
     }
+
+    virtual shared_ptr<BaseSparseMatrix> DeleteZeroElements(double tol) const override;
     
     ///
     inline TVY RowTimesVector (int row, const FlatVector<TVX> vec) const
@@ -722,7 +742,11 @@ namespace ngla
                                 bool parallel  = 1,
                                 shared_ptr<BitArray> freedofs = NULL) const override
     { 
-      return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
+      // return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
+      return make_shared<BlockJacobiPrecondSymmetric<TM,TV>>
+        ( dynamic_pointer_cast<const SparseMatrixSymmetric>
+          (this->shared_from_this()),
+          blocks);
     }
 
 
@@ -863,6 +887,88 @@ namespace ngla
 
 #endif
 
+
+
+  template <typename TSCAL>
+  class NGS_DLL_HEADER SparseBlockMatrix : public S_BaseSparseMatrix<TSCAL>
+  {
+    size_t bheight, bwidth;
+    NumaDistributedArray<TSCAL> data;
+    
+    typedef S_BaseSparseMatrix<TSCAL> BASE;
+    using BASE::firsti;
+    using BASE::colnr;
+    using BASE::owner;
+    using BASE::size;
+    using BASE::width;
+    using BASE::nze;
+    using BASE::balance;
+    using BASE::asvec;
+    
+  public:
+    using BASE::CreatePosition;
+    using BASE::GetPositionTest;
+    using BASE::FindSameNZE;
+    using BASE::SetEntrySize;
+    using BASE::AsVector;
+    
+    SparseBlockMatrix (const MatrixGraph & agraph, size_t abheight, size_t abwidth, bool stealgraph)
+      : BASE (agraph, stealgraph), bheight(abheight), bwidth(abwidth),
+      data(nze*bheight*bwidth)
+        { 
+          SetEntrySize (bheight, bwidth, bheight*bwidth);
+          asvec.AssignMemory (nze*bheight*bwidth, (void*)data.Addr(0));
+          // FindSameNZE();
+          GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
+                                  data, "data");
+          GetMemoryTracer().SetName("SparseMatrix");
+        }
+    
+    tuple<int,int> EntrySizes() const override { return { bheight, bwidth }; }
+    
+    AutoVector CreateRowVector () const override
+    {
+      return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->width, this->bwidth));
+    }
+    
+    AutoVector CreateColVector () const override
+    {
+      return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->size, this->bheight));
+    }
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    
+    void SetZero() override
+    {
+      data = TSCAL(0);
+    }
+    
+    virtual void AddElementMatrix(FlatArray<int> dnums1, 
+                                  FlatArray<int> dnums2, 
+                                  BareSliceMatrix<TSCAL> elmat,
+                                  bool use_atomic = false);
+
+    ostream & Print (ostream & ost) const override;
+
+    
+    const MemoryTracer & GetMemoryTracer() const
+    {
+      return mem_tracer;
+    }
+    
+  private:
+    MemoryTracer mem_tracer =
+      {"MatrixGraph",
+       colnr, "colnr",
+       firsti, "firsti"
+       // same_nze, "same_nze"
+      };
+    
+  };
+
+
+  
 
 }
 

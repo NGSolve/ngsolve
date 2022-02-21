@@ -2,14 +2,12 @@
 
 #include "contact.hpp"
 
+#undef NETGEN_USE_GUI // TODO: implement interface in netgen to draw lines (to avoid linking opengl here)
+
 #if NETGEN_USE_GUI
 #include <incopengl.hpp>
-
-namespace netgen
-{
-  DLL_HEADER void AddUserVisualizationObject (UserVisualizationObject * vis);
-  DLL_HEADER void DeleteUserVisualizationObject (UserVisualizationObject * vis);
-}
+#include <visual.hpp>
+#include <visualization/vssolution.hpp>
 #endif // NETGEN_USE_GUI
 
 
@@ -910,11 +908,17 @@ namespace ngcomp
     shared_ptr<GridFunction> displacement = nullptr;
     if(displacement_)
       {
-        displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", displacement_->GetFlags());
+        auto flags = displacement_->GetFlags();
+        flags.SetFlag("novisual");
+        displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", flags);
         displacement->Update();
         displacement->GetVector() = displacement_->GetVector();
       }
-    gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h);
+    if (displacement)
+      gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h);
+    else
+      gap->Update(nullptr, 10, h);
+      
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       static_pointer_cast<DisplacedNormal<2>>(normal)->Update(displacement);
@@ -1121,6 +1125,18 @@ namespace ngcomp
       }
   }
 
+
+  template<int DIM>
+  void MPContactElement<DIM>::CalcElementMatrix(FlatMatrix<double> elmat,
+                                                LocalHeap& lh) const
+  {
+    HeapReset hr(lh);
+    FlatVector elx(elmat.Height(), lh);
+    elx = 0;
+    CalcLinearizedElementMatrix (elx, elmat, lh);
+  }
+
+  
   template<int DIM>
   void MPContactElement<DIM>::CalcLinearizedElementMatrix(FlatVector<double> elx,
                                                         FlatMatrix<double> elmat,

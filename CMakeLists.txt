@@ -12,7 +12,7 @@ endif(WIN32)
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
 option( USE_LAPACK       "build ngsolve with LAPACK" ON)
-# option( USE_CUDA         "enable CUDA GPU support")
+option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
 option( USE_HYPRE        "enable HYPRE support")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
@@ -132,7 +132,9 @@ endif (ADDITIONAL_PATHS)
 #######################################################################
 # use rpath
 set(CMAKE_MACOSX_RPATH TRUE)
-SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+if(NOT BUILD_FOR_CONDA)
+    set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+endif()
 set(CMAKE_INSTALL_RPATH "${NETGEN_RPATH_TOKEN};${NETGEN_RPATH_TOKEN}/${NETGEN_RPATH}")
 
 #######################################################################
@@ -181,7 +183,6 @@ else(WIN32)
     list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
 endif(WIN32)
 if(APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS MSG_NOSIGNAL=0)
 endif(APPLE)
 
@@ -217,15 +218,6 @@ if (USE_LAPACK)
     endif()
     target_link_libraries(ngs_lapack INTERFACE "${LAPACK_LIBRARIES}")
 endif (USE_LAPACK)
-
-#######################################################################
-if (USE_CUDA)
-    find_package(CUDA)
-    set(CUDA_SEPARABLE_COMPILATION ON)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++17;-O2;-DUSE_MYCOMPLEX;-DHD="__host__ __device__")
-    set(CUDA_OPTIONS -Xcompiler -fPIC)
-    SET (EXTRA_LIBS ${EXTRA_LIBS} cudart cublas cusparse)
-endif (USE_CUDA)
 
 #######################################################################
 set(MAX_SYS_DIM "3" CACHE STRING "Maximum compile-time size of SparseMatrix entries.")
@@ -375,6 +367,11 @@ endforeach()
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" build_type_name)
 set(ngscxx_flags "${${build_type_name}} ${CMAKE_CXX_FLAGS} ${ngscxx_define_flags}")
 
+if(WIN32)
+  string(REPLACE "/Zi " " " ngscxx_flags ${ngscxx_flags})
+endif(WIN32)
+
+
 foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} )
     set(ngscxx_flags "${ngscxx_flags} ${opt}")
 endforeach()
@@ -412,6 +409,7 @@ if [ -f ${CMAKE_CXX_COMPILER} ]
   then NGSCXX=${CMAKE_CXX_COMPILER}
   else NGSCXX=c++
 fi
+export CCACHE_NOHASHDIR=1
 ")
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}" )
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}/include" )
@@ -538,6 +536,9 @@ add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
 add_subdirectory(docs)
+if(USE_CUDA)
+    add_subdirectory(ngscuda)
+endif(USE_CUDA)
 
 
 

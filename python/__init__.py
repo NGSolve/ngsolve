@@ -11,24 +11,26 @@ ngsolve.comp ... function spaces, forms
 """
 import pkg_resources
 import ctypes
-import os.path
+import atexit
+import os, sys
 
 from . import config
 
+import netgen
+
+if config.is_python_package and sys.platform.startswith('win'):
+    os.add_dll_directory(os.path.dirname(netgen.__file__))
+
 if config.is_python_package and config.USE_MKL:
-    import sys
-    if 'darwin' in sys.platform:
-        pass
-    elif 'linux' in sys.platform:
+    if sys.platform == 'linux':
         _mkl = pkg_resources.get_distribution('mkl')
         _mkl_rt = _mkl.get_resource_filename('mkl','../../libmkl_rt.so.1')
         ctypes.CDLL(_mkl_rt)
-    elif 'win' in sys.platform:
+    elif sys.platform.startswith('win'):
         _mkl = pkg_resources.get_distribution('mkl')
         _mkl_rt = os.path.abspath(_mkl.get_resource_filename('mkl','../../Library/bin/mkl_rt.1.dll'))
         ctypes.CDLL(_mkl_rt)
 
-import netgen
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
 from netgen import Redraw
@@ -54,16 +56,22 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     NormalFacetFESpace, NormalFacetSurface, \
     FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
     NodalFESpace, VectorNodalFESpace, H1LumpingFESpace, \
-    NumberSpace, Periodic, Discontinuous, Hidden, MatrixValued, Compress, \
+    NumberSpace, Periodic, Discontinuous, Hidden, VectorValued, MatrixValued, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Interpolate, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
-    SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
+    SymbolicEnergy, Mesh, NodeId, ConvertOperator, ORDER_POLICY, VTKOutput, SetHeapSize, \
     SetTestoutFile, ngsglobals, pml, MPI_Init, ContactBoundary, PatchwiseSolve
 from .solve import BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTrace, \
-    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize
+    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize, printmaster
 from . import solvers
+
+
+try:
+    from netgen.occ import unit_square, unit_cube
+except:
+    pass
 
 CF = CoefficientFunction
 
@@ -130,3 +138,6 @@ def _jupyter_nbextension_paths():
             "require": "ngsolve_jupyter_widgets/extension",
         }
     ]
+
+atexit.register(solve.__Cleanup)
+

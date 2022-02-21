@@ -1055,6 +1055,37 @@ namespace ngla
       }
   }
 
-
+  void StructuredElementByElementMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    auto hx = x.FV<double>().AsMatrix(num, matrix.Width());
+    auto hy = y.FV<double>().AsMatrix(num, matrix.Height());
+    ParallelForRange (hx.Height(), [&](IntRange myrange) {
+        hy.Rows(myrange) = hx.Rows(myrange) * Trans(matrix); });
+  }
   
+  void StructuredElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto hx = x.FV<double>().AsMatrix(num, matrix.Width());
+    auto hy = y.FV<double>().AsMatrix(num, matrix.Height());
+    Matrix tmp = s * Trans(matrix);
+    ParallelForRange (hx.Height(), [&](IntRange myrange) {
+        hy.Rows(myrange) += hx.Rows(myrange) * tmp; });
+  }
+
+  void StructuredElementByElementMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    auto hx = x.FV<double>().AsMatrix(num, matrix.Height());
+    auto hy = y.FV<double>().AsMatrix(num, matrix.Width());
+    ParallelForRange (hx.Height(), [&](IntRange myrange) {
+        hy.Rows(myrange) = hx.Rows(myrange) * matrix; });
+  }
+  
+  void StructuredElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto hx = x.FV<double>().AsMatrix(num, matrix.Height());
+    auto hy = y.FV<double>().AsMatrix(num, matrix.Width());
+    Matrix tmp = s * matrix;
+    ParallelForRange (hx.Height(), [&](IntRange myrange) {
+        hy.Rows(myrange) += hx.Rows(myrange) * tmp; });
+  }
 }

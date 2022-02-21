@@ -206,7 +206,7 @@ conjugate : bool = False
             s.data += w
 
         
-def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False, callback=None):
+def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False, callback=None, **kwargs):
     """preconditioned conjugate gradient method
 
 
@@ -247,8 +247,8 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
       Solution vector of the CG method.
 
     """
-    solver = CGSolver(mat=mat, pre=pre, conjugate=conjugate, tol=tol, maxsteps=maxsteps,
-                      callback=callback, printrates=printrates)
+    solver = CGSolver(mat=mat, pre=pre, conjugate=conjugate, tol=tol, maxiter=maxsteps,
+                      callback=callback, printrates=printrates, **kwargs)
     solver.Solve(rhs=rhs, sol=sol, initialize=initialize)
     return solver.sol
 
@@ -720,8 +720,9 @@ restart : int = None
                  **kwargs):
         super().__init__(*args, **kwargs)
         if innerproduct is not None:
-            self.innnerproduct = innerproduct
+            self.innerproduct = innerproduct
             self.norm = lambda x: sqrt(innerproduct(x,x).real)
+            self.restart = restart
         else:
             self.innerproduct = lambda x, y: y.InnerProduct(x, conjugate=True)
             self.norm = Norm

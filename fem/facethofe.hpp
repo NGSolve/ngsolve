@@ -27,11 +27,12 @@ namespace ngfem
     using FacetVolumeFiniteElement<ET_trait<ET>::DIM>::facet_order;
     using VertexOrientedFE<ET>::vnums;
     using VertexOrientedFE<ET>::GetVertexOrientedEdge;
-    using VertexOrientedFE<ET>::GetVertexOrientedFace;    
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;
+    bool nodal;
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
   public:
-    FacetFE () { ; }
+    FacetFE (bool anodal = false) : nodal(anodal) { ; }
 
     virtual ELEMENT_TYPE ElementType() const override { return ET; }
     
