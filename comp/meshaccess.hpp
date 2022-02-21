@@ -219,6 +219,10 @@ namespace ngcomp
     int nlevels;
 
     int nregions[4];
+
+    //ngfem::ElementTransformation & GetTrafoDim (size_t elnr, Allocator & lh) const;
+    typedef ngfem::ElementTransformation & (MeshAccess::*pfunc) (size_t elnr, Allocator & lh) const;    
+    pfunc trafo_jumptable[4];
     
     /// max domain index
     // int & ndomains = nregions[0];
@@ -1027,7 +1031,16 @@ namespace ngcomp
         return GetTrafo(ElementId(vb, elnr),lh);
       }
     
-    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const;
+    ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const
+    {
+      auto ptr = trafo_jumptable[ei.VB()];
+      if (ptr)
+        return (this->*ptr)(ei.Nr(),lh);
+      else
+        return GetTrafoOld(ei, lh);
+    }
+    
+    ngfem::ElementTransformation & GetTrafoOld (ElementId ei, Allocator & lh) const;
     
     template <int DIM>
       ngfem::ElementTransformation & GetTrafoDim (size_t elnr, Allocator & lh) const;
@@ -1035,6 +1048,8 @@ namespace ngcomp
       ngfem::ElementTransformation & GetSTrafoDim (size_t elnr, Allocator & lh) const;
     template <int DIM>
       ngfem::ElementTransformation & GetCD2TrafoDim (size_t elnr, Allocator & lh) const;
+    template <int DIM>
+      ngfem::ElementTransformation & GetCD3TrafoDim (size_t elnr, Allocator & lh) const;
     
     template <VorB VB,int DIM>
       ngfem::ElementTransformation & GetTrafo (T_ElementId<VB,DIM> ei, Allocator & lh) const
