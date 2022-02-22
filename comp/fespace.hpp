@@ -126,6 +126,9 @@ ANY                  1 1 1 1 | 15
     /// couple (all) neighbouring degrees of freedom (like for jump terms of dg-methods)?
     bool dgjumps;
 
+    /// whether the space should update itself on changes to the mesh
+    bool autoupdate;
+
     /// debug output to testout
     bool print; 
 
@@ -495,6 +498,8 @@ ANY                  1 1 1 1 | 15
     virtual void GetGlobalDofNrs (int gnr, Array<DofId> & dnums) const;
 
     virtual bool UsesDGCoupling () const throw() { return dgjumps; };
+
+    bool DoesAutoUpdate () const { return autoupdate; };
 
     auto & DefinedOn(VorB vb) const { return definedon[vb]; }
     

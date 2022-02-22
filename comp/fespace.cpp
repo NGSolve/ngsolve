@@ -41,6 +41,7 @@ namespace ngcomp
     DefineNumFlag ("definedonbound");
     DefineStringListFlag ("definedonbound");
     DefineDefineFlag("dgjumps");
+    DefineDefineFlag("autoupdate");
 
     order = int (flags.GetNumFlag ("order", 1));
 
@@ -78,13 +79,14 @@ namespace ngcomp
     timing = flags.GetDefineFlag("timing");
     print = flags.GetDefineFlag("print");
     dgjumps = flags.GetDefineFlag("dgjumps");
+    autoupdate = flags.GetDefineFlag("autoupdate");
     no_low_order_space = flags.GetDefineFlagX("low_order_space").IsFalse() ||
       flags.GetDefineFlag("no_low_order_space");
     if (dgjumps) 
       *testout << "ATTENTION: flag dgjumps is used!\n This leads to a \
 lot of new non-zero entries in the matrix!\n" << endl;
     // else *testout << "\n (" << order << ") flag dgjumps is not used!" << endl;
-    
+
     if(flags.NumListFlagDefined("directsolverdomains"))
       {
 	directsolverclustered.SetSize(ama->GetNDomains());
@@ -415,6 +417,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
       "  since the dofs have a different coupling then and this changes the sparsity\n"
       "  pattern of matrices.";
+    docu.Arg("autoupdate") = "bool = False\n"
+      "  Automatically update on a change to the mesh.";
     docu.Arg("low_order_space") = "bool = True\n"
       "  Generate a lowest order space together with the high-order space,\n"
       "  needed for some preconditioners.";
@@ -1335,6 +1339,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	<< "order = " << order << endl
 	<< "dim   = " << dimension << endl
 	<< "dgjmps= " << dgjumps << endl
+    << "autoupdate= " << autoupdate << endl
 	<< "complex = " << iscomplex << endl;
     ost << "definedon = " << definedon[VOL] << endl;
     ost << "definedon boundary = " << definedon[BND] << endl;
@@ -1357,7 +1362,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void FESpace :: DoArchive (Archive & archive)
   {
-    archive & order & dimension & iscomplex & dgjumps & print & level_updated;
+    archive & order & dimension & iscomplex & dgjumps & autoupdate & print & level_updated;
     archive & definedon[VOL] & definedon[BND] & definedon[BBND];
     archive & dirichlet_boundaries & dirichlet_dofs & free_dofs & external_free_dofs;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;

@@ -85,6 +85,8 @@ namespace ngcomp
     nested = flags.GetDefineFlag ("nested");
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
+    autoupdate = flags.GetDefineFlag ("autoupdate");
+
     auto comp_space = dynamic_pointer_cast<CompoundFESpace>(fespace);
     if(comp_space)
       for([[maybe_unused]] auto i : Range(comp_space->GetNSpaces()))
@@ -104,7 +106,7 @@ namespace ngcomp
 
   void GridFunction :: DoArchive (Archive & archive)
   {
-    archive & nested & visual & multidim & level_updated;
+    archive & nested & autoupdate & visual & multidim & level_updated;
     archive & cacheblocksize;
 
     if (archive.Input()) Update();
@@ -196,7 +198,8 @@ namespace ngcomp
   {
     ost << "gridfunction '" << GetName() << "' on space '" 
         << fespace->GetName() << "'\n"
-	<< "nested = " << nested << endl;
+	<< "nested = " << nested << "\n"
+    << "autoupdate = " << autoupdate << endl;
   }
 
   Array<MemoryUsage> GridFunction :: GetMemoryUsage () const
