@@ -402,7 +402,7 @@ namespace ngcomp
   shared_ptr<GlobalInterfaceSpace> CreateGlobalInterfaceSpace
     (shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> mapping,
      optional<Region> definedon, bool periodic, bool periodicu,
-     bool periodicv, int order, bool complex, bool polar)
+     bool periodicv, int order, bool complex, bool polar, bool autoupdate)
   {
     Flags flags;
     if(complex)
@@ -421,6 +421,8 @@ namespace ngcomp
         flags.SetFlag("polar");
         flags.SetFlag("periodicv");
       }
+    if(autoupdate)
+      flags.SetFlag("autoupdate");
     flags.SetFlag("order", order);
     if(mapping->Dimension() == 1)
       return make_shared<GlobalInterfaceSpaceD<1>>(ma, flags);
