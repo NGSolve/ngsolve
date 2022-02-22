@@ -25,7 +25,7 @@ inline auto Nr2VolElement(size_t nr) {  return ElementId(VOL,nr); };
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     {
        auto p = ip.GetPoint();
-       return loch->GetH({p[0], p[1], p[2]});
+       return loch->GetH({p[0], p[1], p.Size()>2 ? p[2] : 0.0 });
     }
 
       using CoefficientFunctionNoDerivative::Evaluate;
