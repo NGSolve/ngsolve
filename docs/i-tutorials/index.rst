@@ -176,6 +176,9 @@ Whetting the Appetite
     unit-6.1.2-surfacepde/surface_pdes.ipynb
     unit-6.1.3-rmplate/Reissner_Mindlin_plate.ipynb
     unit-6.1.4-shells/shell.ipynb
+    
+    unit-6.2-contact/contact.ipynb 
+    unit-6.3-plasticity/plasticity.ipynb
 
 
 7.  Shape- and Topology Optimization
