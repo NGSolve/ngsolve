@@ -208,3 +208,6 @@ coming soon ...
    :maxdepth: 1
 
    unit-9.1-C++FE/CppExtension.ipynb
+   unit-9.2-C++Assemble/cppassembling.ipynb
+   unit-9.3-highorder/highorder.ipynb
+   
