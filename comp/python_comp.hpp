@@ -53,7 +53,7 @@ namespace ngcomp
     return dynamic_pointer_cast<FESPACE>(fes);
   };
 
-  void connect_auto_update(FESpace* fes) {
+  inline void connect_auto_update(FESpace* fes) {
     if (fes->weak_from_this().expired())
       throw Exception("Given pointer is not managed by a shared ptr.");
     if (fes->DoesAutoUpdate())
@@ -64,7 +64,7 @@ namespace ngcomp
                                                  });
   }
 
-  void connect_auto_update(GridFunction* gf) {
+  inline void connect_auto_update(GridFunction* gf) {
     if (gf->weak_from_this().expired())
       throw Exception("Given pointer is not managed by a shared ptr.");
     if (gf->DoesAutoUpdate())
