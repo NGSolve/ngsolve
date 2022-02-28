@@ -95,6 +95,8 @@ if [ "$IMAGE_NAME" == "avx" ]
 then
   ## build and upload docu to server
 
+  # fix links like /edit/some_file.cpp to work with nbsphinx (removing the /edit/ part)
+  sed -i 's/\/edit\///g' ~/src/ngsolve/docs/i-tutorials/*/*.ipynb
 
   export NGS_NUM_THREADS=4
   echo "build docu"
