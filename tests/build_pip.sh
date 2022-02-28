@@ -15,18 +15,18 @@ do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
     $PYDIR/pip install -U pytest-check numpy wheel scikit-build mkl==2021.* mkl-devel==2021.*
-    $PYDIR/pip install -i https://test.pypi.org/simple/ netgen-mesher==$NETGEN_VERSION
+    $PYDIR/pip install netgen-mesher==$NETGEN_VERSION
 
     rm -rf _skbuild
-    $PYDIR/pip wheel --use-feature=in-tree-build --extra-index-url https://test.pypi.org/simple/ .
+    $PYDIR/pip wheel --use-feature=in-tree-build .
     auditwheel repair ngsolve*-cp${pyversion}-*.whl
     rm ngsolve-*.whl
     $PYDIR/pip uninstall -y netgen-mesher
 
 
     rm -rf _skbuild
-    $PYDIR/pip install -i https://test.pypi.org/simple/ netgen-mesher-avx2==$NETGEN_VERSION
-    NETGEN_ARCH=avx2 $PYDIR/pip wheel --use-feature=in-tree-build --extra-index-url https://test.pypi.org/simple/ .
+    $PYDIR/pip install netgen-mesher-avx2==$NETGEN_VERSION
+    NETGEN_ARCH=avx2 $PYDIR/pip wheel --use-feature=in-tree-build .
     auditwheel repair ngsolve_avx2*-cp${pyversion}-*.whl
     rm ngsolve_avx2-*.whl
 
