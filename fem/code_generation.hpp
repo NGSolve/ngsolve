@@ -218,7 +218,7 @@ namespace ngfem
     }
   }
 
-  unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &libraries );
+  unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &libraries, bool keep_files = false );
   namespace detail {
       string GenerateL2ElementCode(int order);
   }
