@@ -14,6 +14,11 @@ extern void ExportDrawFlux(py::module &m);
 void ExportVisFunctions(py::module &m);
 
 void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
+    m.def ("__Cleanup", []()
+            {
+              GetPreconditionerClasses().Cleanup();
+            }
+    );
 
     m.def ("Tcl_Eval", &Ng_TclCmd);
 
