@@ -421,6 +421,7 @@ namespace ngcomp
     const PreconditionerInfo * GetPreconditioner(const string & name);
 
     void Print (ostream & ost) const;
+    void Cleanup();
   };
  
   extern NGS_DLL_HEADER PreconditionerClasses & GetPreconditionerClasses ();
