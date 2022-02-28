@@ -12,6 +12,7 @@ ngsolve.comp ... function spaces, forms
 import pkg_resources
 import ctypes
 import os.path
+import atexit
 
 from . import config
 
@@ -130,3 +131,6 @@ def _jupyter_nbextension_paths():
             "require": "ngsolve_jupyter_widgets/extension",
         }
     ]
+
+atexit.register(solve.__Cleanup)
+

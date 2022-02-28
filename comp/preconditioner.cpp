@@ -1327,6 +1327,11 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
       ost << setw(20) << prea[i]->name << endl;
   }
 
+  void PreconditionerClasses :: Cleanup ()
+  {
+      prea.DeleteAll();
+  }
+
  
   PreconditionerClasses & GetPreconditionerClasses ()
   {
