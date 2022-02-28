@@ -7318,7 +7318,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     }
 
     
-    void RealCompile(int maxderiv, bool wait)
+    void RealCompile(int maxderiv, bool wait, bool keep_files)
     {
       _real_compile = true;
       _maxderiv = maxderiv;
@@ -7473,8 +7473,8 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         }
 
         auto self = dynamic_pointer_cast<CompiledCoefficientFunction>(shared_from_this());
-        auto compile_func = [self, codes, link_flags, maxderiv] () {
-              self->library = CompileCode( codes, link_flags );
+        auto compile_func = [self, codes, link_flags, maxderiv, keep_files] () {
+              self->library = CompileCode( codes, link_flags, keep_files );
               if(self->cf->IsComplex())
               {
                   self->compiled_function_simd_complex = self->library->GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
@@ -8328,12 +8328,12 @@ class RealCF : public CoefficientFunctionNoDerivative
     return make_shared<ImagCF>(cf);
   }
 
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait)
+  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait, bool keep_files)
   {
     auto compiledcf = dynamic_pointer_cast<CompiledCoefficientFunction>(c);
     auto cf = compiledcf ? compiledcf : make_shared<CompiledCoefficientFunction> (c);
     if(realcompile)
-      cf->RealCompile(maxderiv, wait);
+      cf->RealCompile(maxderiv, wait, keep_files);
     return cf;
   }
 
