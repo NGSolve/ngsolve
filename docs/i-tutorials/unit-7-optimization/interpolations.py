@@ -3,8 +3,6 @@ import numpy as np
 #returns volume fraction of negative part of triangle
 def GetVolumeFraction(psi0, psi1, psi2, EPS):
 
-    #print(abs(psi0), abs(psi1), abs(psi2))
-    #exit()
     if psi0 < -EPS and psi1 < -EPS and psi2 < -EPS:
         return 1
     elif psi0 > EPS and psi1 > EPS and psi2 > EPS:
@@ -75,7 +73,6 @@ def GetVolumeFraction(psi0, psi1, psi2, EPS):
         else:
             s=1
         return s
-            
          
     if abs(psi0)>=EPS and abs(psi1)>=EPS and abs(psi2)>=EPS:    
         if np.sign(psi1) == np.sign(psi2) and np.sign(psi0) != np.sign(psi1):
@@ -92,11 +89,10 @@ def GetVolumeFraction(psi0, psi1, psi2, EPS):
                 s = 1-s
         else:
             print(psi0, psi1, psi2)
-            print("should not happen1")
+            print("Error. This should not happen.")
     else:       #all three values are below EPS
         print(psi0, psi1, psi2)
-        s=GetVolumeFraction(100*psi0, 100*psi1, 100*psi2, EPS) #0.5       #whatever...?
-        print("should not happen2. TODO: Reinitialize level set function as signed distance function")
+        print("Error. This shoul not happen. Think about re-initializing your level set function as a signed distance function.")
     return s
         
         
@@ -115,14 +111,6 @@ def InterpolateLevelSetToElems(levelset_p1, val1, val2, func_p0, mesh, EPS ):
         elif psi0>0 and psi1>0 and psi2 > 0:
             func_p0.vec[i] = val2
         else:
-            #s = GetVolumeFraction(psi0, psi1, psi2)  #s... volume fraction of negative part of triangle
-            s = GetVolumeFraction(psi0, psi1, psi2,EPS)  #s... volume fraction of negative part of triangle
+            s = GetVolumeFraction(psi0, psi1, psi2, EPS)  #s... volume fraction of negative part of triangle
             nCutElems += 1
             func_p0.vec[i] = val2 + s*(val1-val2) #== s*val1 + (1-s)*val2
-    #print("nCutElems = ", nCutElems)
-    
-def getElemArea(p1, p2, p3):
-    x1, y1 = p1[0], p1[1]
-    x2, y2 = p2[0], p2[1]
-    x3, y3 = p3[0], p3[1]
-    return abs(0.5 * (((x2-x1)*(y3-y1))-((x3-x1)*(y2-y1))))
