@@ -190,7 +190,8 @@ namespace ngla
     // virtual void  RecvVec ( int dest );
     virtual void AddRecvValues( int sender ) override;
     virtual AutoVector CreateVector () const override;
-
+    virtual unique_ptr<MultiVector> CreateMultiVector (size_t cnt) const override;
+    
     virtual double L2Norm () const override;
   };
  

@@ -642,11 +642,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     ;
 
   py::class_<MultiVector, MultiVectorExpr, shared_ptr<MultiVector>> (m, "MultiVector")
-    // .def(py::init<shared_ptr<BaseVector>,size_t>([] ))
-    .def(py::init<>([] (shared_ptr<BaseVector> bv, size_t cnt) { return bv->CreateMultiVector(cnt); } ))
+    .def(py::init<>([] (shared_ptr<BaseVector> bv, size_t cnt) {
+          return bv->CreateMultiVector(cnt); } ))
     .def(py::init<size_t,size_t,bool>())
     .def("__len__", &MultiVector::Size)
-    // .def("__getitem__", &MultiVector::operator[])
     .def("__getitem__",
          [](MultiVector & self, int ind )
          {
@@ -662,11 +661,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
           throw Exception ("slices with non-unit distance not allowed");
         return shared_ptr<MultiVector>(self.Range(IntRange(start, start+n)));
       })
-    /*
-    .def("__getitem__", [](MultiVector & self, std::vector<int> inds) {
-        return shared_ptr<MultiVector>(self.SubSet(ArrayFromVector(inds)));
-      })
-    */
     .def("__getitem__", [](MultiVector & self, const Array<int> & inds) {
         return shared_ptr<MultiVector>(self.SubSet(inds));
       })
@@ -799,14 +793,6 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
          -> shared_ptr<MultiVectorExpr>
          { return make_shared<MultiVecMatrixExpr<Complex>>(a, x); })
     ;
-    /*
-    // not taken, thus moved to BaseMatrix
-    .def("__rmul__", [](shared_ptr<MultiVector> x, shared_ptr<BaseMatrix> mat)
-         -> shared_ptr<MultiVectorExpr>
-         {
-           return make_shared<MatMultiVecExpr> (mat, x); 
-         })
-    */
   
 
   typedef BaseMatrix BM;
