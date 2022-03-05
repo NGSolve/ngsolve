@@ -49,8 +49,8 @@ namespace ngfem
     virtual Complex Integrate (const ngcomp::MeshAccess & ma,
                                FlatVector<Complex> element_wise);
     
-    virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator();
-    virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator();
+    virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator() const;
+    virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator() const;
   };
   
   inline Integral operator* (double fac, const Integral & cf)
