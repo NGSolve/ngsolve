@@ -951,47 +951,43 @@ namespace ngla
   }
 
 
+  
+  /* ********************** BaseVectorPtr - Multivector ************** */
 
-
-  class BaseVectorPtrMV : public MultiVector
+  unique_ptr<MultiVector> BaseVectorPtrMV :: Range(IntRange r) const 
   {
-  public:
-    using MultiVector::MultiVector;
+    auto mv2 = make_unique<BaseVectorPtrMV>(refvec, 0);
+    for (auto i : r)
+      mv2->vecs.Append (vecs[i]);
+    return mv2;
+  }
 
-    unique_ptr<MultiVector> Range(IntRange r) const override
-    {
-      auto mv2 = make_unique<BaseVectorPtrMV>(refvec, 0);
-      for (auto i : r)
-        mv2->vecs.Append (vecs[i]);
-      return mv2;
-    }
+  void BaseVectorPtrMV :: SetScalar (double s) 
+  {
+    static Timer t("BaseVector-MV :: SetScalar");
+    RegionTimer reg(t);
+    
+    ParallelForRange
+      (refvec->FVDouble().Size(), [&] (IntRange myrange)
+       {
+         for (int i = 0; i < Size(); i++)
+           vecs[i]->FVDouble().Range(myrange) = s;
+       });
+  }
 
-    void SetScalar (double s) override
-    {
-      static Timer t("BaseVector-MV :: SetScalar");
-      RegionTimer reg(t);
-      
-      ParallelForRange
-        (refvec->FVDouble().Size(), [&] (IntRange myrange)
-         {
-           for (int i = 0; i < Size(); i++)
-             vecs[i]->FVDouble().Range(myrange) = s;
-         });
-    }
+  void BaseVectorPtrMV :: Add (const MultiVector & v2, FlatMatrix<double> mat) 
+  {
+    static Timer t("BaseVector-MV :: mult mat");
+    RegionTimer reg(t);
+    t.AddFlops (mat.Height()*mat.Width()*this->RefVec()->FVDouble().Size());
 
-    void Add (const MultiVector & v2, FlatMatrix<double> mat) override
-    {
-      static Timer t("BaseVector-MV :: mult mat");
-      RegionTimer reg(t);
-      t.AddFlops (mat.Height()*mat.Width()*this->RefVec()->FVDouble().Size());
+    size_t n = refvec->FVDouble().Size();
 
-      size_t n = refvec->FVDouble().Size();
+    size_t BBH = 256;
+    size_t AH = 512;
+    size_t BH = 128;
 
-      size_t BBH = 256;
-      size_t AH = 512;
-      size_t BH = 128;
-
-      ParallelFor(1 + n / BBH, [&] (int i) {
+    ParallelFor(1 + n / BBH, [&] (int i) {
 
         int i0 = BBH * i;
         int is = min(BBH, n - i0);
@@ -1008,13 +1004,13 @@ namespace ngla
             ppx[ell] = (*this)[j0 + ell]->FVDouble().Addr(i0);
           }
 
-            for (int k0 = 0; k0 < v2.Size(); k0+=BH) {
-              int ks = min(BH, v2.Size() - k0);
+          for (int k0 = 0; k0 < v2.Size(); k0+=BH) {
+            int ks = min(BH, v2.Size() - k0);
 
-              // get pointers of second multivector
-              for (int ell = 0; ell < ks; ell++) {
-                ppy[ell] = v2[k0 + ell]->FVDouble().Addr(i0);
-              }
+            // get pointers of second multivector
+            for (int ell = 0; ell < ks; ell++) {
+              ppy[ell] = v2[k0 + ell]->FVDouble().Addr(i0);
+            }
 
             MultiVectorAdd(is, FlatArray(js, ppx), FlatArray(ks, ppy), SliceMatrix(ks, js, mat.Width(), &mat(k0,j0)));
           }
@@ -1023,23 +1019,23 @@ namespace ngla
 
       });
 
-    }
+  }
 
 
-    void Add (const MultiVector & v2, FlatMatrix<Complex> mat) override
-    {
-      static Timer t("BaseVector-MV :: mult mat complex");
-      RegionTimer reg(t);
-      t.AddFlops (4*mat.Height()*mat.Width()*this->RefVec()->FVComplex().Size());
+  void BaseVectorPtrMV :: Add (const MultiVector & v2, FlatMatrix<Complex> mat) 
+  {
+    static Timer t("BaseVector-MV :: mult mat complex");
+    RegionTimer reg(t);
+    t.AddFlops (4*mat.Height()*mat.Width()*this->RefVec()->FVComplex().Size());
 
-      size_t n = refvec->FVComplex().Size();
+    size_t n = refvec->FVComplex().Size();
 
-      size_t BBH = 128;
-      size_t AH = 256;
-      size_t BH = 128;
+    size_t BBH = 128;
+    size_t AH = 256;
+    size_t BH = 128;
 
 
-      ParallelFor(1 + n / BBH, [&] (int i) {
+    ParallelFor(1 + n / BBH, [&] (int i) {
 
         int i0 = BBH * i;
         int is = min(BBH, n - i0);
@@ -1072,40 +1068,40 @@ namespace ngla
 
       });
 
-    }
+  }
 
 
     
-    Vector<> InnerProductD (const BaseVector & v2) const override
-    {
-      static Timer t("BaseVector-MV :: InnerProduct - vec");
-      t.AddFlops (Size()*this->RefVec()->FVDouble().Size());
-      RegionTimer reg(t);
+  Vector<> BaseVectorPtrMV :: InnerProductD (const BaseVector & v2) const 
+  {
+    static Timer t("BaseVector-MV :: InnerProduct - vec");
+    t.AddFlops (Size()*this->RefVec()->FVDouble().Size());
+    RegionTimer reg(t);
 
-      Vector<> ip(Size());
-      ParallelFor (Size(), [&] (int nr)
-                   {
-                     ip(nr) = ngbla::InnerProduct ((*this)[nr]->FVDouble(), v2.FVDouble());
-                   });
-      return ip;
-    }
+    Vector<> ip(Size());
+    ParallelFor (Size(), [&] (int nr)
+                 {
+                   ip(nr) = ngbla::InnerProduct ((*this)[nr]->FVDouble(), v2.FVDouble());
+                 });
+    return ip;
+  }
 
-    Matrix<> InnerProductD (const MultiVector & v2) const override
-    {
-      static Timer t("BaseVector-MultiVector::InnerProductD");
-      RegionTimer reg(t);
-      t.AddFlops (Size()*v2.Size()*this->RefVec()->FVDouble().Size());
+  Matrix<> BaseVectorPtrMV :: InnerProductD (const MultiVector & v2) const 
+  {
+    static Timer t("BaseVector-MultiVector::InnerProductD");
+    RegionTimer reg(t);
+    t.AddFlops (Size()*v2.Size()*this->RefVec()->FVDouble().Size());
 
-      size_t n = this->RefVec()->FVDouble().Size();
+    size_t n = this->RefVec()->FVDouble().Size();
 
-      Matrix<double> res(Size(), v2.Size());
-      res = 0;
+    Matrix<double> res(Size(), v2.Size());
+    res = 0;
 
-      constexpr size_t BBH = 512;
-      constexpr size_t BH = 256;
-      constexpr size_t AH = 256;
+    constexpr size_t BBH = 512;
+    constexpr size_t BH = 256;
+    constexpr size_t AH = 256;
 
-      ParallelFor ( 1 + n / BBH, [&] (int i) {
+    ParallelFor ( 1 + n / BBH, [&] (int i) {
 
         int i0 = BBH * i;
         int is = min(BBH, n - i0);
@@ -1147,28 +1143,28 @@ namespace ngla
 
       });
 
-      return res;
+    return res;
 
-    }
+  }
 
-    Matrix<Complex> InnerProductC (const MultiVector & v2, bool conjugate) const override
-    {
-      static Timer t("BaseVector-MultiVector::InnerProductC");
-      RegionTimer reg(t);
-      t.AddFlops (4*Size()*v2.Size()*this->RefVec()->FVComplex().Size());
+  Matrix<Complex> BaseVectorPtrMV :: InnerProductC (const MultiVector & v2, bool conjugate) const 
+  {
+    static Timer t("BaseVector-MultiVector::InnerProductC");
+    RegionTimer reg(t);
+    t.AddFlops (4*Size()*v2.Size()*this->RefVec()->FVComplex().Size());
 
-      size_t n = this->RefVec()->FVComplex().Size();
+    size_t n = this->RefVec()->FVComplex().Size();
 
-      Matrix<Complex> res(Size(), v2.Size());
-      res = 0. + 0i;
+    Matrix<Complex> res(Size(), v2.Size());
+    res = 0. + 0i;
 
-      constexpr size_t BBH = 256;
-      constexpr size_t BH = 256;
+    constexpr size_t BBH = 256;
+    constexpr size_t BH = 256;
 
-      // first multivector is split to avoid stack overflow when allocating ppx
-      constexpr size_t AH = 256;
+    // first multivector is split to avoid stack overflow when allocating ppx
+    constexpr size_t AH = 256;
 
-      ParallelFor ( 1 + n / BBH, [&] (int i) {
+    ParallelFor ( 1 + n / BBH, [&] (int i) {
 
         int i0 = BBH * i;
         int is = min(BBH, n - i0);
@@ -1211,11 +1207,8 @@ namespace ngla
       });
 
 
-      return res;
-    }
-
-
-  };
+    return res;
+  }
 
   template <typename TSCAL>  
   unique_ptr<MultiVector> S_BaseVectorPtr<TSCAL> ::

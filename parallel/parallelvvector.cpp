@@ -576,6 +576,19 @@ namespace ngla
     */
   }
 
+  class ParallelMultiVector : public MultiVector
+  {
+  public:
+    using MultiVector::MultiVector;
+  };
+
+  
+  template <typename SCAL>  
+  unique_ptr<MultiVector> S_ParallelBaseVectorPtr<SCAL> ::
+  CreateMultiVector (size_t cnt) const
+  {
+    return make_unique<ParallelMultiVector> (CreateVector(), cnt);
+  }
 
 
   template <typename SCAL>

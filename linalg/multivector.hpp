@@ -129,6 +129,26 @@ namespace ngla {
     virtual shared_ptr<BaseVector> CreateVector() const override;
     virtual void CalcComponent(size_t nr, BaseVector & bv) const override;
   };
+
+
+
+  
+  class BaseVectorPtrMV : public MultiVector
+  {
+  public:
+    using MultiVector::MultiVector;
+
+    unique_ptr<MultiVector> Range(IntRange r) const override;
+    void SetScalar (double s) override;
+    void Add (const MultiVector & v2, FlatMatrix<double> mat) override;
+    void Add (const MultiVector & v2, FlatMatrix<Complex> mat) override;
+    Vector<> InnerProductD (const BaseVector & v2) const override;
+    Matrix<> InnerProductD (const MultiVector & v2) const override;
+    Matrix<Complex> InnerProductC (const MultiVector & v2, bool conjugate) const override;    
+  };
+  
+    
+
   
 
   template <class T>
