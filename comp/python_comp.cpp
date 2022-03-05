@@ -2370,6 +2370,8 @@ diffop : ngsolve.fem.DifferentialOperator
   py::class_<Integral, shared_ptr<Integral>> (m, "Integral")
     .def_property_readonly("coef", [] (shared_ptr<Integral> igl) { return igl->cf; })
     .def_property_readonly("symbol", [] (shared_ptr<Integral> igl) { return igl->dx; })
+    .def("MakeBFI", [](const Integral & igl) { return igl.MakeBilinearFormIntegrator(); })
+    .def("MakeLFI", [](const Integral & igl) { return igl.MakeLinearFormIntegrator(); })
     .def("__radd__", [](shared_ptr<Integral> igl, int i) {
         if (i != 0) throw Exception("can only add integer 0 to Integral (for Python sum(list))");
         return make_shared<SumOfIntegrals>(igl); })
@@ -2397,6 +2399,7 @@ diffop : ngsolve.fem.DifferentialOperator
          { return igls->icfs.Size(); })
     .def ("__getitem__", [](shared_ptr<SumOfIntegrals> igls, int nr)
           {
+            if (nr < 0) nr += igls->icfs.Size();
             if (nr < 0 || nr >= igls->icfs.Size())
               throw py::index_error();
             return igls->icfs[nr];

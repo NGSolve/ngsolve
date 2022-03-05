@@ -5448,7 +5448,7 @@ namespace ngfem
   }
 
 
-  shared_ptr<BilinearFormIntegrator> Integral :: MakeBilinearFormIntegrator()
+  shared_ptr<BilinearFormIntegrator> Integral :: MakeBilinearFormIntegrator() const
   {
     // check for DG terms
     bool has_other = false;
@@ -5492,7 +5492,7 @@ namespace ngfem
     return bfi;
   }
 
-  shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator()
+  shared_ptr<LinearFormIntegrator> Integral :: MakeLinearFormIntegrator() const
   {
     cf -> TraverseTree ([&] (CoefficientFunction& cf) {
                           if (auto * proxy = dynamic_cast<ProxyFunction*>(&cf))
