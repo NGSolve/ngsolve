@@ -578,8 +578,47 @@ namespace ngla
 
   class ParallelMultiVector : public MultiVector
   {
+    shared_ptr<ParallelDofs> paralleldofs;    
+    
   public:
-    using MultiVector::MultiVector;
+    ParallelMultiVector (shared_ptr<BaseVector> v, size_t cnt)
+      : MultiVector(v, cnt)
+    {
+      paralleldofs = dynamic_cast<ParallelBaseVector&>(*v).GetParallelDofs();
+    }
+                         
+    Matrix<> InnerProductD (const MultiVector & v2) const override
+    {
+      Matrix<double> res(Size(), v2.Size());
+      if (res.Height()*res.Width()==0) return res;
+      
+      auto status1 = (*this)[0] -> GetParallelStatus();
+      auto status2 = (v2)[0] -> GetParallelStatus();
+
+      if ( (status1 == CUMULATED) && (status2 == DISTRIBUTED) ||
+           (status2 == CUMULATED) && (status1 == DISTRIBUTED) )
+        {
+          ArrayMem<double*,32> ptrs1(Size());
+          ArrayMem<double*,32> ptrs2(v2.Size());
+          
+          for (int i = 0; i < Size(); i++)
+            ptrs1[i] = (*this)[i]->FVDouble().Data();
+          for (int i = 0; i < v2.Size(); i++)
+            ptrs2[i] = v2[i]->FVDouble().Data();
+
+          ngbla::PairwiseInnerProduct((*this)[0]->FVDouble().Size(), ptrs1, ptrs2, res);
+
+          paralleldofs->GetCommunicator()
+            .AllReduce(FlatArray(res.Height()*res.Width(), res.Data()), MPI_SUM);
+          
+          return res;
+        }
+
+      // fallback
+      return MultiVector::InnerProductD(v2);
+    }
+
+    
   };
 
   
