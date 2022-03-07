@@ -76,7 +76,8 @@ Whetting the Appetite
    wta/maxwell.ipynb 
    wta/coil.ipynb 
    wta/navierstokes.ipynb
-   wta/elasticity.ipynb
+   wta/elasticity.ipynb 
+   wta/elasticity3D.ipynb 
 
    
 1. Getting started
