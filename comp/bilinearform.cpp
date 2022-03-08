@@ -4797,6 +4797,7 @@ namespace ngcomp
 	if (comm.Size() > 1 && mpi_facet_parts.Size())
 	  {
 	    RegionTimer rt(timerDGparallelfacets);
+        HeapReset hr(clh);
 	    
 	    //cout << "apply parallel DG facets, " << elementwise_skeleton_parts.Size() << " el-bound and " << facetwise_skeleton_parts[VOL].Size() << " facet parts" << ", " << mpi_facet_parts.Size() << " total parts " << endl;
 
