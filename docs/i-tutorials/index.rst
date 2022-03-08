@@ -95,6 +95,7 @@ Whetting the Appetite
    unit-1.7-helmholtz/helmholtz.ipynb
    unit-1.7-helmholtz/pml.ipynb
    unit-1.8-meshtopology/meshtopology.ipynb
+   unit-1.9-taskmanager/taskmanager.ipynb
    
 2. Advanced Topics
 ==================
