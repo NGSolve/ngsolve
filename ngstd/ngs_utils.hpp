@@ -13,10 +13,12 @@
 #include <dlfcn.h>
 #endif //WIN32
 
+#include <filesystem>
+#include <string>
 
 namespace ngstd
 {
-
+  using namespace std;
   
   template <typename T>
   INLINE T RemoveConst (const T & x)
@@ -33,28 +35,23 @@ namespace ngstd
   // Class to handle/load shared libraries
   class SharedLibrary
   {
-    string lib_name;
+    filesystem::path lib_name;
+    optional<filesystem::path> directory_to_delete = nullopt;
 
 #ifdef WIN32
-    HINSTANCE lib;
+    HINSTANCE lib = nullptr;
 #else // WIN32
-    void *lib;
+    void *lib = nullptr;
 #endif // WIN32
 
   public:
-    SharedLibrary() : lib(nullptr) {}
-    SharedLibrary(string lib_name_) : lib(nullptr)
-    {
-      Load(lib_name_);
-    }
+    SharedLibrary() = default;
+    SharedLibrary(const filesystem::path & lib_name_, optional<filesystem::path> directory_to_delete_ = nullopt );
 
     SharedLibrary(const SharedLibrary &) = delete;
     SharedLibrary & operator =(const SharedLibrary &) = delete;
 
-    ~SharedLibrary()
-    {
-      Unload();
-    }
+    ~SharedLibrary();
 
     template <typename TFunc>
     TFunc GetFunction( string func_name )
@@ -62,45 +59,9 @@ namespace ngstd
       return reinterpret_cast<TFunc>(GetRawFunction(func_name));
     }
 
-    void Load( string alib_name )
-    {
-      Unload();
-      lib_name = alib_name;
-#ifdef WIN32
-      lib = LoadLibrary(lib_name.c_str());
-      if (!lib) throw std::runtime_error(string("Could not load library ") + lib_name);
-#else // WIN32
-      lib = dlopen(lib_name.c_str(), RTLD_NOW);
-      if(lib == nullptr) throw std::runtime_error(dlerror());
-#endif // WIN32
-    }
-
-    void Unload() {
-      if(lib)
-      {
-#ifdef WIN32
-        FreeLibrary(lib);
-#else // WIN32
-        int rc = dlclose(lib);
-        if(rc != 0) cerr << "Failed to close library " << lib_name << endl;
-#endif // WIN32
-      }
-    }
-
-    void* GetRawFunction( string func_name )
-    {
-#ifdef WIN32
-      void* func = GetProcAddress(lib, func_name.c_str());
-      if(func == nullptr)
-        throw std::runtime_error(string("Could not find function ") + func_name + " in library " + lib_name);
-#else // WIN32
-      void* func = dlsym(lib, func_name.c_str());
-      if(func == nullptr)
-          throw std::runtime_error(dlerror());
-#endif // WIN32
-
-      return func;
-    }
+    void Load( const filesystem::path & lib_name_ );
+    void Unload();
+    void* GetRawFunction( string func_name );
   };
 }
 namespace std

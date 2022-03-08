@@ -4,7 +4,7 @@ add_library( ngstd ${NGS_LIB_TYPE}
         blockalloc.cpp evalfunc.cpp templates.cpp
         stringops.cpp statushandler.cpp
         cuda_ngstd.cpp python_ngstd.cpp
-        bspline.cpp
+        bspline.cpp ngs_utils.cpp
         )
 
 if(NOT WIN32)

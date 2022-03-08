@@ -1128,11 +1128,13 @@ cf : ngsolve.CoefficientFunction
           { return Freeze(coef); },
           "don't differentiate this expression")
 
-    .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait)
+    .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait, bool keep_files)
            { return Compile (coef, realcompile, maxderiv, wait); },
            py::arg("realcompile")=false,
            py::arg("maxderiv")=2,
-          py::arg("wait")=false, py::call_guard<py::gil_scoped_release>(), docu_string(R"raw_string(
+          py::arg("wait")=false,
+          py::arg("keep_files")=false,
+          py::call_guard<py::gil_scoped_release>(), docu_string(R"raw_string(
 Compile list of individual steps, experimental improvement for deep trees
 
 Parameters:
@@ -1145,6 +1147,9 @@ maxderiv : int
 
 wait : bool
   True -> Waits until the previous Compile call is finished before start compiling
+
+keep_files : bool
+  True -> Keep temporary files
 
 )raw_string"))
 
