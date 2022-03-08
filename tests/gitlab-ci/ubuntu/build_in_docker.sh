@@ -18,6 +18,7 @@ fi
 
 if [ "$IMAGE_NAME" == "avx" ] || [ "$IMAGE_NAME" == "avx512" ]
 then
+  export CMAKE_ARGS="$CMAKE_ARGS -DBUILD_OCC=ON"
   export USE_NATIVE_ARCH="ON"
 else
   export USE_NATIVE_ARCH="OFF"
