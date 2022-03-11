@@ -3,6 +3,8 @@ set -e
 yum -y update
 yum -y install ninja-build fontconfig-devel tk-devel tcl-devel libXmu-devel mesa-libGLU-devel ccache
 
+cd external_dependencies/netgen && git remote update && cd ../..
+
 rm -rf wheelhouse
 py=/opt/python/cp39-cp39/bin/python 
 export NETGEN_VERSION=`$py tests/get_python_version_string_from_git.py external_dependencies/netgen`
