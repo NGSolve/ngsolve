@@ -1,6 +1,8 @@
 set -e
 rm -rf _skbuild dist ../venv_ngs
 
+cd external_dependencies/netgen && git remote update && cd ../..
+
 export PATH=/Applications/CMake.app/Contents/bin:$PATH
 export NETGEN_CCACHE=1
 

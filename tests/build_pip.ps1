@@ -13,6 +13,10 @@ if (test-path ..\venv_ngs) {
 
 $env:NETGEN_CCACHE = 1
 
+cd external_dependencies\netgen
+git remote update
+cd ..\..
+
 $py=$args[0]
 $netgen_version=(& $py\python.exe tests\get_python_version_string_from_git.py external_dependencies\netgen)
 
