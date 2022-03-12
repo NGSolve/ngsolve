@@ -9,6 +9,29 @@
 
 namespace ngla
 {
+
+
+  
+  SymmetricGaussSeidelPrecond ::
+  SymmetricGaussSeidelPrecond (const BaseSparseMatrix & mat, shared_ptr<BitArray> freedofs)
+  {
+    jac = mat.CreateJacobiPrecond(freedofs);
+  }
+  
+  void SymmetricGaussSeidelPrecond ::
+  Mult (const BaseVector & x, BaseVector & y) const
+  {
+    y = 0;
+    jac->GSSmooth (y, x);
+    jac->GSSmoothBack (y, x);
+  } 
+
+
+
+
+
+
+  
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> ::
   JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
