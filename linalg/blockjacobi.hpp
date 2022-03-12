@@ -102,6 +102,28 @@ namespace ngla
   };
 
 
+  class SymmetricBlockGaussSeidelPrecond : virtual public BaseMatrix
+  {
+    shared_ptr<BaseBlockJacobiPrecond> jac;
+  public:
+    SymmetricBlockGaussSeidelPrecond (const BaseSparseMatrix & mat, shared_ptr<Table<int>> blocktable)
+      : jac(mat.CreateBlockJacobiPrecond(blocktable)) { }
+
+    int VHeight() const override { return jac->VHeight(); }
+    int VWidth() const override { return jac->VHeight(); }
+
+    void Mult (const BaseVector & x, BaseVector & y) const override
+    {
+      y = 0;
+      jac->GSSmooth (y, x);
+      jac->GSSmoothBack (y, x);
+    }
+    
+    AutoVector CreateRowVector() const override { return jac->CreateRowVector(); }
+    AutoVector CreateColVector() const override { return jac->CreateColVector(); }
+  };
+
+  
 
 
   /**

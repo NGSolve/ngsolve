@@ -59,7 +59,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     NumberSpace, Periodic, Discontinuous, Hidden, MatrixValued, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Interpolate, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
-    SymbolicEnergy, Mesh, NodeId, ORDER_POLICY, VTKOutput, SetHeapSize, \
+    SymbolicEnergy, Mesh, NodeId, ConvertOperator, ORDER_POLICY, VTKOutput, SetHeapSize, \
     SetTestoutFile, ngsglobals, pml, MPI_Init, ContactBoundary, PatchwiseSolve
 from .solve import BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
