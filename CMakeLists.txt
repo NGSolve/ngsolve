@@ -414,6 +414,7 @@ if [ -f ${CMAKE_CXX_COMPILER} ]
   then NGSCXX=${CMAKE_CXX_COMPILER}
   else NGSCXX=c++
 fi
+export CCACHE_NOHASHDIR=1
 ")
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}" )
   set( ngscxx_includes "${ngscxx_includes} -I\$NGSCXX_DIR/${BIN_TO_INC_RELPATH}/include" )

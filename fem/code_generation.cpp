@@ -17,7 +17,7 @@ namespace ngfem
 
     string Code::AddPointer(const void *p)
     {
-        string name = "compiled_code_pointer" + ToString(id_counter++); 
+        string name = "compiled_code_pointer" + ToString(id_counter++);
         top += "extern \"C\" void* " + name + ";\n";
         stringstream s_ptr;
 #ifdef WIN32
@@ -28,7 +28,7 @@ namespace ngfem
         return name;
     }
 
-    unique_ptr<SharedLibrary> CompileCode(const std::vector<string> &codes, const std::vector<string> &link_flags, bool keep_files )
+    unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files )
     {
       static int counter = 0;
       static ngstd::Timer tcompile("CompiledCF::Compile");
@@ -43,16 +43,25 @@ namespace ngfem
       lib_dir = filesystem::path(std::tmpnam(nullptr)).concat("_ngsolve_"+ToString(rank)+"_"+ToString(counter++));
 #else // WIN32
       string tmp_template = filesystem::temp_directory_path().append("ngsolve_tmp_"+ToString(rank)+"_"+ToString(counter++)+"_XXXXXX");
-      mkdtemp(&tmp_template[0]);
+      if(mkdtemp(&tmp_template[0])==nullptr)
+          throw Exception("could not create temporary directory");
+
       lib_dir = tmp_template;
 #endif // WIN32
       string chdir_cmd = "cd " + lib_dir.string() + " && ";
       filesystem::create_directories(lib_dir);
       for(auto i : Range(codes.size())) {
-        auto src_file = filesystem::path(lib_dir).append("code_" + ToString(i) + ".cpp");
-        ofstream codefile(src_file);
-        codefile << codes[i];
-        codefile.close();
+        filesystem::path src_file;
+        if(std::holds_alternative<filesystem::path>(codes[i]))
+            src_file = filesystem::absolute(std::get<filesystem::path>(codes[i]));
+        else
+        {
+            string code = std::get<filesystem::path>(codes[i]);
+            src_file = filesystem::path(lib_dir).append("code_" + ToString(i) + ".cpp");
+            ofstream codefile(src_file);
+            codefile << code;
+            codefile.close();
+        }
         cout << IM(3) << "compiling..." << endl;
         tcompile.Start();
 #ifdef WIN32

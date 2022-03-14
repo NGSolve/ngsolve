@@ -2716,7 +2716,7 @@ Parameters:
 code: c++ code snippet ( add_header=True ) or a complete .cpp file ( add_header=False )
 
 init_function_name (default = "init"): Function, which is called after the compiled code is loaded. The prototype must match:
-extern "C" void init_function_name(py::object & res);
+extern "C" void init_function_name(pybind11::object & res);
 
 add_header (default = True): wrap the code snippet with the template
 )raw_string" + header + footer;
@@ -2727,13 +2727,6 @@ add_header (default = True): wrap the code snippet with the template
            py::object result;
            typedef void (*init_function_type)(py::object & res);
 
-           if(add_header)
-             code = header + code + footer;
-
-           std::vector<string> libraries;
-#ifdef WIN32
-           libraries.push_back("%PYTHON_LIBRARY%");
-#endif
            auto library = CompileCode( {code}, {""} );
            auto func = library->GetFunction<init_function_type>(init_function_name);
            func(result);
@@ -2744,6 +2737,31 @@ add_header (default = True): wrap the code snippet with the template
        py::arg("init_function_name")="init",
        py::arg("add_header")=true,
        docu.c_str()
+    );
+  m.def("CompilePythonModule",
+       [](filesystem::path file, string init_function_name)
+       {
+           py::object result;
+           typedef void (*init_function_type)(py::object & res);
+
+           auto library = CompileCode( {file}, {""} );
+           auto func = library->GetFunction<init_function_type>(init_function_name);
+           func(result);
+           library.release(); // TODO: bind lifetime of "library" to python object "result"
+           return result;
+       },
+       py::arg("file"),
+       py::arg("init_function_name")="init",
+R"raw_string(
+Utility function to compile a c++ file with python bindings at run-time.
+
+Parameters:
+
+file: c++ code file (type: pathlib.Path)
+
+init_function_name (default = "init"): Function, which is called after the compiled code is loaded. The prototype must match:
+extern "C" void init_function_name(pybind11::object & res);
+)raw_string"
     );
 
 

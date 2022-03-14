@@ -7464,7 +7464,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         }
         s << "}" << endl;
         string file_code = top_code + s.str();
-        std::vector<string> codes;
+        std::vector<std::variant<filesystem::path, string>> codes;
         codes.push_back(file_code);
         if(pointer_code.size()) {
           pointer_code = "extern \"C\" {\n" + pointer_code;
