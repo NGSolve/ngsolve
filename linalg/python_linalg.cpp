@@ -1075,19 +1075,19 @@ inverse : string
     (m, "BaseSparseMatrix", "sparse matrix of any type")
     
     .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba,
-                              bool GS) -> shared_ptr<BaseMatrix>
+                              bool GS) 
          {
            if (GS)
-             return make_shared<SymmetricGaussSeidelPrecond>(m, ba);
+             return py::cast(make_shared<SymmetricGaussSeidelPrecond>(m, ba));
            else
-             return m.CreateJacobiPrecond(ba);
+             return py::cast(m.CreateJacobiPrecond(ba));
          },
          py::call_guard<py::gil_scoped_release>(),
          py::arg("freedofs") = shared_ptr<BitArray>(),
          py::arg("GS") = false)
     
     .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks, bool parallel,
-                                   bool GS) -> shared_ptr<BaseMatrix>
+                                   bool GS) 
          {
            shared_ptr<Table<int>> blocktable;
            {
@@ -1110,9 +1110,9 @@ inverse : string
                }
            }
            if (GS)
-             return make_shared<SymmetricBlockGaussSeidelPrecond>(m, blocktable);             
+             return py::cast(make_shared<SymmetricBlockGaussSeidelPrecond>(m, blocktable));  
            else
-             return m.CreateBlockJacobiPrecond (blocktable, nullptr, parallel);
+             return py::cast(m.CreateBlockJacobiPrecond (blocktable, nullptr, parallel));
          }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"), py::arg("parallel")=false,
          py::arg("GS")=false)
      ;
