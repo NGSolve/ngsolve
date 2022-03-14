@@ -627,6 +627,32 @@ namespace ngla
     return cmat;
   }
 
+
+  
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseSparseMatrix> SparseMatrix<TM, TV_ROW, TV_COL> ::
+  Reorder (const Array<size_t> & reorder) const
+  {
+    Array<size_t> inv_reorder(reorder.Size());
+    for (size_t i : Range(reorder))
+      inv_reorder[reorder[i]] = i;
+                              
+    Array<int> cnt(this->Height());
+    for (size_t i : Range(cnt))
+      cnt[i] = this->GetRowIndices(reorder[i]).Size();
+    auto newmat = make_shared<SparseMatrix>(cnt);
+    for (size_t i : Range(cnt))
+      for (auto col : this->GetRowIndices(reorder[i]))
+        newmat->CreatePosition(i, inv_reorder[col]);
+          
+    for (size_t i : Range(cnt))
+      for (auto col : this->GetRowIndices(reorder[i]))
+        (*newmat)(i, inv_reorder[col]) = (*this)(reorder[i], col);
+    
+    return newmat;
+  }
+
+  
   template <class TM>
   shared_ptr<BaseSparseMatrix> SparseMatrixTM<TM> ::
   CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>(const Array<int>&,int)> & creator) const
