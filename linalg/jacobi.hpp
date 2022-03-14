@@ -36,7 +36,6 @@ namespace ngla
     
     AutoVector CreateRowVector() const override { return jac->CreateRowVector(); }
     AutoVector CreateColVector() const override { return jac->CreateColVector(); }
-
   };
 
   
