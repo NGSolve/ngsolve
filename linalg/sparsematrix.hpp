@@ -258,6 +258,11 @@ namespace ngla
       throw Exception ("BaseSparseMatrix::Restrict");
     }
 
+    virtual shared_ptr<BaseSparseMatrix> Reorder (const Array<size_t> & reorder) const
+    {
+      throw Exception ("BaseSparseMatrix::Reorder");
+    }
+    
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override
     {
 
@@ -577,6 +582,8 @@ namespace ngla
 
     virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
 					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const override;
+    
+    virtual shared_ptr<BaseSparseMatrix> Reorder (const Array<size_t> & reorder) const override;
     
     virtual shared_ptr<BaseSparseMatrix> CreateTranspose() const override
     {
