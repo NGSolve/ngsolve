@@ -2727,6 +2727,9 @@ add_header (default = True): wrap the code snippet with the template
            py::object result;
            typedef void (*init_function_type)(py::object & res);
 
+           if(add_header)
+             code = header + code + footer;
+
            auto library = CompileCode( {code}, {""} );
            auto func = library->GetFunction<init_function_type>(init_function_name);
            func(result);

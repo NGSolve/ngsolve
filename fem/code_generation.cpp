@@ -56,7 +56,7 @@ namespace ngfem
             src_file = filesystem::absolute(std::get<filesystem::path>(codes[i]));
         else
         {
-            string code = std::get<filesystem::path>(codes[i]);
+            string code = std::get<string>(codes[i]);
             src_file = filesystem::path(lib_dir).append("code_" + ToString(i) + ".cpp");
             ofstream codefile(src_file);
             codefile << code;
