@@ -1683,6 +1683,7 @@ fespace : ngsolve.comp.FESpace
                     connect_auto_update(refes.get());
                     return refes;
                   }), py::arg("fespace"), py::arg("autoupdate")=false)
+    .def("GetClusters", &ReorderedFESpace::GetClusters)
     /*
     .def(py::pickle([](const PeriodicFESpace* per_fes)
                     {
