@@ -14,6 +14,7 @@ namespace ngcomp {
   {
     type = "Reordered" + space->type;
     evaluator[VOL] = space->GetEvaluator(VOL);
+    evaluator[BND] = space->GetEvaluator(BND);
     flux_evaluator[VOL] = space->GetFluxEvaluator(VOL);
     integrator[VOL] = space->GetIntegrator(VOL);
     
@@ -54,11 +55,12 @@ namespace ngcomp {
     Array<int> elgroup(ma->GetNE());
     dofgroup = -1;
     elgroup = -1;
-    int ngroups = 100;
-    int step = ma->GetNE() / ngroups;
-    if (step == 0) step = 1;
+    // int ngroups = 100;
+    // int step = ma->GetNE() / ngroups;
+    // if (step == 0) step = 1;
+    int step = 20;
     // select seed elements
-    ngroups = 0;
+    int ngroups = 0;
     for (int elnr = 0; elnr < ma->GetNE(); elnr += step, ngroups++)
       {
         elgroup[elnr] = ngroups;
@@ -100,6 +102,18 @@ namespace ngcomp {
     ctofdof.SetSize(ndof);
     for (auto i : Range(ndof))
       ctofdof[dofmap[i]] = space->GetDofCouplingType(i);
+
+    {
+      // build cluster table
+      Array<int> cnt(ngroups);
+      cnt = 0;
+      for (DofId d = 0; d < ndof; d++)
+        cnt[dofgroup[d]]++;
+      clusters = make_shared<Table<int>> (cnt);
+      cnt = 0;
+      for (DofId d = 0; d < ndof; d++)
+        (*clusters)[dofgroup[d]][cnt[dofgroup[d]]++] = dofmap[d];
+    }
   }
            
 
