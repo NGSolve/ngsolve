@@ -18,7 +18,8 @@ namespace ngfem
   class cl_NormalVectorCF : public CoefficientFunctionNoDerivative
   {
   public:
-    cl_NormalVectorCF () : CoefficientFunctionNoDerivative(D,false) { ; }
+    cl_NormalVectorCF () : CoefficientFunctionNoDerivative(D,false)
+    { SetDimensions(Array<int>( { D } )); }
     // virtual int Dimension() const { return D; }
 
     virtual string GetDescription() const override
