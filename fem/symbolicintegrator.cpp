@@ -2724,7 +2724,7 @@ namespace ngfem
                 HeapReset hr(lh);
                 auto proxy1 = trial_proxies[k1];
                 auto proxy2 = test_proxies[l1];
-                td.Start(tid);
+                // td.Start(tid);
                 FlatTensor<3> proxyvalues(lh, mir.Size(), proxy2->Dimension(), proxy1->Dimension());
                 
                 for (int k = 0; k < proxy1->Dimension(); k++)
@@ -2744,7 +2744,7 @@ namespace ngfem
                     else
                       proxyvalues(STAR,l,k) = 0.0;
                         
-                td.Stop(tid);
+                // td.Stop(tid);
 
                 for (int i = 0; i < mir.Size(); i++)
                   proxyvalues(i,STAR,STAR) *= ir_facet[i].Weight() * mir[i].GetMeasure(); 
@@ -2816,7 +2816,7 @@ namespace ngfem
           static Timer tpre("SymbolicBFI::Apply - precomput SIMD");
           static Timer teval("SymbolicBFI::Apply - evaluate SIMD");
           static Timer taddBt("SymbolicBFI::Apply - addBt SIMD");          
-          RegionTimer rall(tall);
+          // RegionTimer rall(tall);
  
           bool is_mixed = typeid(fel) == typeid(const MixedFiniteElement&);
           const MixedFiniteElement * mixedfe = static_cast<const MixedFiniteElement*> (&fel);    
@@ -2833,7 +2833,7 @@ namespace ngfem
           ud.fel = &fel;
 
           {
-          RegionTimer rpre(tpre);          
+            // RegionTimer rpre(tpre);          
           PrecomputeCacheCF(cache_cfs, simd_mir, lh);
 
           for (ProxyFunction * proxy : trial_proxies)
@@ -2855,7 +2855,7 @@ namespace ngfem
 
               FlatMatrix<SIMD<double>> simd_proxyvalues(proxy->Dimension(), simd_ir.Size(), lh);
               {
-              RegionTimer reval(teval);
+                // RegionTimer reval(teval);
 
               if (dcf_dtest[i])
                 dcf_dtest[i]->Evaluate (simd_mir, simd_proxyvalues);
@@ -2875,7 +2875,7 @@ namespace ngfem
                     row(j) *= simd_mir[j].GetWeight(); //  * simd_ir[j].Weight();
                 }
 
-              RegionTimer rBt(taddBt);          
+              // RegionTimer rBt(taddBt);          
               proxy->Evaluator()->AddTrans(fel_test, simd_mir, simd_proxyvalues, ely); 
             }
           return;

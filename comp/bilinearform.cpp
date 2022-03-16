@@ -4466,7 +4466,7 @@ namespace ngcomp
                        auto & mapped_trafo = trafo.AddDeformation(bfi->GetDeformation().get(), lh);
 
                        {
-                         RegionTimer reg (timer_applyelmat);
+                         // RegionTimer reg (timer_applyelmat);
                          bfi->ApplyElementMatrix (fel, mapped_trafo, elvecx, elvecy, 0, lh);
                        }
                        
