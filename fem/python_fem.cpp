@@ -1129,7 +1129,7 @@ cf : ngsolve.CoefficientFunction
           "don't differentiate this expression")
 
     .def ("Compile", [] (shared_ptr<CF> coef, bool realcompile, int maxderiv, bool wait, bool keep_files)
-           { return Compile (coef, realcompile, maxderiv, wait); },
+           { return Compile (coef, realcompile, maxderiv, wait, keep_files); },
            py::arg("realcompile")=false,
            py::arg("maxderiv")=2,
           py::arg("wait")=false,

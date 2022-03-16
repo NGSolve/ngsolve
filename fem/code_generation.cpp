@@ -97,7 +97,10 @@ namespace ngfem
       tlink.Stop();
       cout << IM(3) << "done" << endl;
       if(keep_files)
+      {
+          cout << IM(2) << "keeping generated files at " << lib_dir.string() << endl;
           return make_unique<SharedLibrary>(lib_file);
+      }
       else
           return make_unique<SharedLibrary>(lib_file, lib_dir);
     }
