@@ -97,7 +97,7 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
         vecs[num:2*num] = pre * vecs[0:num]
         vecs[0:num] = uvecs
         
-        vecs.Orthogonalize() # matm)
+        vecs.Orthogonalize(matm)
 
         # hv[:] = mata * vecs
         # asmall = InnerProduct (vecs, hv)
