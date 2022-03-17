@@ -101,8 +101,8 @@ then
 
   export NGS_NUM_THREADS=4
   echo "build docu"
-  ipython profile create --parallel --profile=mpi
-  echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_mpi/ipcluster_config.py
+  ipython profile create --parallel --profile=default
+  echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_default/ipcluster_config.py
   jupyter nbextension install --py widgetsnbextension
   jupyter nbextension enable --py widgetsnbextension
   jupyter nbextension install --py webgui_jupyter_widgets
