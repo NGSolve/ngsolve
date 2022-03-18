@@ -786,7 +786,7 @@ namespace ngcomp
 
 
 
-#ifdef PARALLEL
+#ifdef PARALLELxxx
   template <typename T>
   inline void MyMPI_Gather (T d, MPI_Comm comm /* = ngs_comm */)
   {
@@ -861,8 +861,8 @@ namespace ngcomp
 	      data.Append(elvec(j));
 	  }    
 
-	MyMPI_Gather (nodenums.Size(), comm);
-	MyMPI_Gather (data.Size(), comm);
+	comm.Gather (nodenums.Size());
+	comm.Gather (data.Size());
         
 	comm.Send(nodenums,0,22);
 	comm.Send(data,0,23);
@@ -873,8 +873,8 @@ namespace ngcomp
 	Array<Vec<2,int> > positions(0);
 
 	Array<size_t> size_nodes(ntasks), size_data(ntasks);
-	MyMPI_GatherRoot (size_nodes, comm);
-	MyMPI_GatherRoot (size_data, comm);
+	comm.GatherRoot (size_nodes);
+	comm.GatherRoot (size_data);
 
 	Array<MPI_Request> requests;
 
