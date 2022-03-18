@@ -281,9 +281,9 @@ namespace ngcomp
     { vec[comp] -> SetIndirect (dnums, elvec); }
 
 
-
-    virtual void Load (istream & ist) = 0;
-    virtual void Save (ostream & ost) const = 0;
+    // multidim component, if -1 then all components are loaded/saved
+    virtual void Load (istream & ist, int mdcomp = -1) = 0;
+    virtual void Save (ostream & ost, int mdcomp = -1) const = 0;
     using NGS_Object::shared_from_this;
   };
 
@@ -314,15 +314,14 @@ namespace ngcomp
 		    const Flags & flags = Flags());
       
     // parallel Load/Save by Martin Huber and Lothar Nannen 
-    virtual void Load (istream & ist);
-    virtual void Save (ostream & ost) const;
+    virtual void Load (istream & ist, int mdcomp);
+    virtual void Save (ostream & ost, int mdcomp) const;
 
     virtual void Update ();
 
   private:
-    template <int N, NODE_TYPE NT> void LoadNodeType (istream & ist);
-
-    template <int N, NODE_TYPE NT> void SaveNodeType (ostream & ost) const;
+    template <int N, NODE_TYPE NT> void LoadNodeType (istream & ist, int mdcomp);
+    template <int N, NODE_TYPE NT> void SaveNodeType (ostream & ost, int mdcomp) const;
   };
 
 
@@ -376,8 +375,8 @@ namespace ngcomp
     ComponentGridFunction (shared_ptr<GridFunction> agf_parent, int acomp);
     ~ComponentGridFunction () override;
     void Update () override;
-    void Load(istream& ist) override { throw Exception("Load not implemented for ComponentGF"); }
-    void Save(ostream& ost) const override { throw Exception("Save not implemented for ComponentGF"); }
+    void Load(istream& ist, int mdcomp) override { throw Exception("Load not implemented for ComponentGF"); }
+    void Save(ostream& ost, int mdcomp) const override { throw Exception("Save not implemented for ComponentGF"); }
     shared_ptr<GridFunction> GetParent() const { return gf_parent; }
     int GetComponent() const { return comp; }
   };

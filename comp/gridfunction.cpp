@@ -484,8 +484,15 @@ namespace ngcomp
 
   
   template <class SCAL>
-  void S_GridFunction<SCAL> :: Load (istream & ist)
+  void S_GridFunction<SCAL> :: Load (istream & ist, int mdcomp)
   {
+    if (mdcomp == -1)
+      {
+        for (int comp = 0; comp < GetMultiDim(); comp++)
+          Load (ist, comp);
+        return;
+      }
+    
     auto comm = ma->GetCommunicator();
     if (comm.Size() == 1)
       { 
@@ -538,7 +545,7 @@ namespace ngcomp
 		  if (ist.good())
 		    LoadBin<SCAL>(ist, elvec(k));			
 	  
-		SetElementVector (dnums, elvec);
+		SetElementVector (mdcomp, dnums, elvec);
 	      }
 	  }
       }
@@ -547,10 +554,10 @@ namespace ngcomp
       {  
 	GetVector() = 0.0;
 	GetVector().SetParallelStatus (DISTRIBUTED);    
-	LoadNodeType<1,NT_VERTEX> (ist);
-	LoadNodeType<2,NT_EDGE> (ist);
-	LoadNodeType<4,NT_FACE> (ist);
-	LoadNodeType<8,NT_CELL> (ist);
+	LoadNodeType<1,NT_VERTEX> (ist, mdcomp);
+	LoadNodeType<2,NT_EDGE> (ist, mdcomp);
+	LoadNodeType<4,NT_FACE> (ist, mdcomp);
+	LoadNodeType<8,NT_CELL> (ist, mdcomp);
 	GetVector().Cumulate();
       }
 #endif
@@ -558,7 +565,7 @@ namespace ngcomp
 
 
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
-  void  S_GridFunction<SCAL> :: LoadNodeType (istream & ist) 
+  void  S_GridFunction<SCAL> :: LoadNodeType (istream & ist, int mdcomp) 
   {
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
@@ -619,7 +626,7 @@ namespace ngcomp
 	    for (int j = 0; j < elvec.Size(); j++)
 	      elvec(j) = loc_data[cnt++];
 	    
-	    SetElementVector (dnums, elvec);
+	    SetElementVector (mdcomp, dnums, elvec);
 	  }
       }
     else
@@ -696,8 +703,17 @@ namespace ngcomp
 
 
   template <class SCAL>
-  void S_GridFunction<SCAL> :: Save (ostream & ost) const
+  void S_GridFunction<SCAL> :: Save (ostream & ost, int mdcomp) const
   {
+    if (mdcomp == -1)
+      {
+        for (int comp = 0; comp < GetMultiDim(); comp++)
+          Save (ost, comp);
+        return;
+      }
+    
+
+    
     auto comm = ma->GetCommunicator();
     int ntasks = comm.Size();
     const FESpace & fes = *GetFESpace();
@@ -747,7 +763,7 @@ namespace ngcomp
 	      {
 		fes.GetDofNrs (NodeId(nt, compress[index[i]]),  dnums); 
 		Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
-		GetElementVector (dnums, elvec);
+		GetElementVector (mdcomp, dnums, elvec);
 		
 		for (int j = 0; j < elvec.Size(); j++)
 		  SaveBin<SCAL>(ost, elvec(j));			
@@ -757,11 +773,11 @@ namespace ngcomp
 #ifdef PARALLEL	 
     else
       {  
-	GetVector().Cumulate();        
-	SaveNodeType<1,NT_VERTEX>(ost);
-	SaveNodeType<2,NT_EDGE>  (ost);
-	SaveNodeType<4,NT_FACE>  (ost);
-	SaveNodeType<8,NT_CELL>  (ost);
+	GetVector(mdcomp).Cumulate();        
+	SaveNodeType<1,NT_VERTEX>(ost, mdcomp);
+	SaveNodeType<2,NT_EDGE>  (ost, mdcomp);
+	SaveNodeType<4,NT_FACE>  (ost, mdcomp);
+	SaveNodeType<8,NT_CELL>  (ost, mdcomp);
       }
 #endif
   }
@@ -795,7 +811,7 @@ namespace ngcomp
 
 
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
-  void S_GridFunction<SCAL> :: SaveNodeType (ostream & ost) const
+  void S_GridFunction<SCAL> :: SaveNodeType (ostream & ost, int mdcomp) const
   {
 #ifdef PARALLEL
     auto comm = ma->GetCommunicator();
@@ -839,7 +855,7 @@ namespace ngcomp
 	    nodenums.Append(points);
 	    
 	    Vector<SCAL> elvec(dnums.Size()*fes.GetDimension());
-	    GetElementVector (dnums, elvec);
+	    GetElementVector (mdcomp, dnums, elvec);
 	    
 	    for (int j = 0; j < elvec.Size(); j++)
 	      data.Append(elvec(j));
