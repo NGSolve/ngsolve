@@ -43,8 +43,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
         mesh.AddPointIdentification(pids[0],pids[n],1,2)
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
-
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False,criss_cross=True,ABF=False,ABF_height=0.5):
     """
     Generate a structured 2D mesh
 
@@ -86,6 +85,7 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
       Returns generated 2D NGSolve mesh
 
     """
+
     mesh = Mesh()
     mesh.dim=2
 
@@ -100,6 +100,7 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
             indbbpts.append(None)
 
     pids = []
+    cids = []
     if periodic_y:
         minioni = []
         masteri = []
@@ -108,10 +109,19 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
         masterj = []
     for i in range(ny+1):
         for j in range(nx+1):
-            x,y = j/nx, i/ny
+            if ABF:
+                if i == 0 or i == ny or j==0 or j==nx:
+                    x,y = j/nx, i/ny;
+                else:
+                    x,y = j/nx, i/ny+(i%2)*(j%2)*ABF_height/ny;
+
+            else:
+                x,y = j/nx, i/ny
             # if mapping:
             #    x,y = mapping(x,y)
-            pids.append(mesh.Add (MeshPoint(Pnt(x,y,0))))
+            pids.append(mesh.Add(MeshPoint(Pnt(x,y,0))))
+            if criss_cross:
+                cids.append(mesh.Add (MeshPoint(Pnt(j/nx+0.5/nx, i/ny+0.5/ny,0))))
             if periodic_y:
                 if i == 0:
                     minioni.append(pids[-1])
@@ -150,13 +160,27 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
                 if flip_triangles:
                     pnum1 = [base,base+1,base+nx+2]
                     pnum2 = [base,base+nx+2,base+nx+1]
+                    elpids1 = [pids[p] for p in pnum1]
+                    elpids2 = [pids[p] for p in pnum2]
+                    mesh.Add(Element2D(idx_dom,elpids1)) 
+                    mesh.Add(Element2D(idx_dom,elpids2))                          
+                elif criss_cross:
+                    elpids1 = [pids[base],cids[base],pids[base+nx+1]]
+                    elpids2 = [pids[base+nx+1],cids[base],pids[base+nx+2]]
+                    elpids3 = [pids[base+nx+2],cids[base],pids[base+1]]
+                    elpids4 = [pids[base+1],cids[base],pids[base]]
+
+                    mesh.Add(Element2D(idx_dom,elpids1)) 
+                    mesh.Add(Element2D(idx_dom,elpids2))                          
+                    mesh.Add(Element2D(idx_dom,elpids3)) 
+                    mesh.Add(Element2D(idx_dom,elpids4))                          
                 else:
                     pnum1 = [base,base+1,base+nx+1]
                     pnum2 = [base+1,base+nx+2,base+nx+1]
-                elpids1 = [pids[p] for p in pnum1]
-                elpids2 = [pids[p] for p in pnum2]
-                mesh.Add(Element2D(idx_dom,elpids1)) 
-                mesh.Add(Element2D(idx_dom,elpids2))                          
+                    elpids1 = [pids[p] for p in pnum1]
+                    elpids2 = [pids[p] for p in pnum2]
+                    mesh.Add(Element2D(idx_dom,elpids1)) 
+                    mesh.Add(Element2D(idx_dom,elpids2))                          
 
     for i in range(nx):
         mesh.Add(Element1D([pids[i], pids[i+1]], index=idx_bottom))
