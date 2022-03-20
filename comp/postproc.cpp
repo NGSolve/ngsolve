@@ -950,7 +950,7 @@ namespace ngcomp
     Array<int> dnums;
     Array<int> dnumsflux;
 
-    double sum = 0;
+    // double sum = 0;
     for (int i = 0; i < ne; i++)
       {
         ElementId ei(vb,i);
@@ -1004,7 +1004,7 @@ namespace ngcomp
 	    fabs (InnerProduct (mfluxi.Row(j), mfluxi2.Row(j)));
 
 	err(i) += elerr;
-	sum += elerr;
+	// sum += elerr;
       }
     ma->PopStatus ();
   }
@@ -1097,7 +1097,7 @@ namespace ngcomp
     Array<int> dnums1;
     Array<int> dnums2;
 
-    double sum = 0;
+    // double sum = 0;
     for (int i = 0; i < ne; i++)
       {
         ElementId ei(bound1 ? BND : VOL, i);
@@ -1150,7 +1150,7 @@ namespace ngcomp
 	  }
 
 	diff(i) += elerr;
-	sum += elerr;
+	// sum += elerr;
       }
     // cout << "difference = " << sqrt(sum) << endl;
     ma->PopStatus ();

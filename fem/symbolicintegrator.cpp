@@ -150,7 +150,7 @@ namespace ngfem
   void ProxyFunction ::
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    auto dims = Dimensions();
+    // auto dims = Dimensions();
 
     string header = "\n\
     {flatmatrix} {values};\n\
@@ -2576,7 +2576,7 @@ namespace ngfem
                                    FlatMatrix<double> elmat,
                                    LocalHeap & lh) const
   {
-    size_t tid = TaskManager::GetThreadId();    
+    // size_t tid = TaskManager::GetThreadId();    
     static Timer t("symbolicbfi - calclinearized EB", NoTracing);
     static Timer tnosimd("symbolicbfi - calclinearized EB nosimd", NoTracing);
     static Timer td("symbolicbfi - calclinearized EB dmats", NoTracing);

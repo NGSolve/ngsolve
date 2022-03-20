@@ -813,6 +813,10 @@ namespace ngla
   // ....
   shared_ptr<BaseMatrix> ComposeOperators (shared_ptr<BaseMatrix> a,
                                            shared_ptr<BaseMatrix> b);
+  
+  shared_ptr<BaseMatrix> AddOperators (shared_ptr<BaseMatrix> a,
+                                       shared_ptr<BaseMatrix> b,
+                                       double faca, double facb);
 
   shared_ptr<BaseMatrix> TransposeOperator (shared_ptr<BaseMatrix> mat);
   
