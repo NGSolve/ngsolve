@@ -825,8 +825,8 @@ void ExportVisFunctions(py::module &m) {
               auto tm = task_manager;
               task_manager = nullptr;
               LocalHeap lh(10000000, "GetValues");
-              int dim = ma->GetDimension();
-              if(vb==BND) dim-=1;
+              // int dim = ma->GetDimension();
+              // if(vb==BND) dim-=1;
 
               map<ngfem::ELEMENT_TYPE, SIMD_IntegrationRule> simd_irs;
               for (auto & p : irs ) {

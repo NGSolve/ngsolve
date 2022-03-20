@@ -805,12 +805,19 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
             static_assert( sizeof(BaseMatrix)==sizeof(BaseMatrixTrampoline), "slkdf");
           }
 
-      bool IsComplex() const override { 
+      bool IsComplex() const override {
+        pybind11::gil_scoped_acquire gil;         
+        if (auto overload = pybind11::get_overload(this, "IsComplex"))
+          return py::cast<bool> (overload());
+        return false;
+
+#ifdef OLD
         PYBIND11_OVERLOAD_PURE(
             bool, /* Return type */
             BaseMatrix,      /* Parent class */
             IsComplex,          /* Name of function */
             );
+#endif        
       }
 
       tuple<size_t, size_t> Shape() const
@@ -1035,12 +1042,14 @@ inverse : string
          { return ComposeOperators (ma, mb); }, py::arg("mat"))
     
     .def("__add__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
-         { return make_shared<SumMatrix> (ma, mb, 1, 1); }, py::arg("mat"))
+         { return AddOperators (ma, mb, 1, 1); }, py::arg("mat"))
+    // { return make_shared<SumMatrix> (ma, mb, 1, 1); }, py::arg("mat"))
     .def("__radd__", [](shared_ptr<BM> ma, int i) {
         if (i != 0) throw Exception("can only add integer 0 to BaseMatrix (for Python sum(list))");
         return ma; })
     .def("__sub__", [](shared_ptr<BM> ma, shared_ptr<BM> mb)->shared_ptr<BaseMatrix>
-         { return make_shared<SumMatrix> (ma, mb, 1, -1); }, py::arg("mat"))
+         { return AddOperators (ma, mb, 1, -1); }, py::arg("mat"))        
+    // { return make_shared<SumMatrix> (ma, mb, 1, -1); }, py::arg("mat"))
     .def("__rmul__", [](shared_ptr<BM> ma, double a)->shared_ptr<BaseMatrix>
          { return make_shared<VScaleMatrix<double>> (ma, a); }, py::arg("value"))
     .def("__rmul__", [](shared_ptr<BM> ma, Complex a)->shared_ptr<BaseMatrix>

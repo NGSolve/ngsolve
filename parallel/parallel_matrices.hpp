@@ -17,6 +17,20 @@ namespace ngla
                                C2D = 2,   // 10
                                C2C = 3 }; // 11
 
+  inline ostream & operator<< (ostream & ost, PARALLEL_OP op)
+  {
+    switch (op)
+      {
+      case D2D: ost << "D2D"; break;
+      case D2C: ost << "D2C"; break;
+      case C2D: ost << "C2D"; break;
+      case C2C: ost << "C2C"; break;
+      default: ost << "undefined parallelop";
+      }
+    return ost;
+  }
+
+  
   inline PARALLEL_STATUS RowType (PARALLEL_OP op)
   {
     if (op == C2D || op == C2C)

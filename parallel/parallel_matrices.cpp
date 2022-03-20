@@ -431,7 +431,7 @@ namespace ngla
   BaseMatrix::OperatorInfo ParallelMatrix :: GetOperatorInfo () const
   {
     OperatorInfo info;
-    info.name = "ParallelMatrix, optype = " + ToString(RowType(op)) + " --> " + ToString(ColType(op));
+    info.name = "ParallelMatrix, optype = " + ToString(GetOpType());
     info.height = Height();
     info.width = Width();
     info.childs += mat.get();

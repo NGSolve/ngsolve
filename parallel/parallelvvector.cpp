@@ -608,8 +608,8 @@ namespace ngla
       auto status2 = (v2)[0] -> GetParallelStatus();
 
       if (auto pv2 = dynamic_cast<const ParallelMultiVector*>(&v2))
-        if ( (status1 == CUMULATED) && (status2 == DISTRIBUTED) ||
-             (status2 == CUMULATED) && (status1 == DISTRIBUTED) )
+        if ( ((status1 == CUMULATED) && (status2 == DISTRIBUTED)) ||
+             ((status2 == CUMULATED) && (status1 == DISTRIBUTED)) )
           {
             ArrayMem<double*,32> ptrs1(Size());
             ArrayMem<double*,32> ptrs2(v2.Size());
