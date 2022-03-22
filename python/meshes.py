@@ -43,7 +43,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
         mesh.AddPointIdentification(pids[0],pids[n],1,2)
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False,criss_cross=True,ABF=False,ABF_height=0.5):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False,criss_cross=True,ABF=False,ABF_height=0.5,comm=None):
     """
     Generate a structured 2D mesh
 
@@ -222,9 +222,15 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
     for i in range(len(indbbpts)):
         mesh.Add(Element0D(indbbpts[i], index=i+1))
         mesh.SetCD2Name(i+1, bbnames[i])
-            
-    ngsmesh = ngsolve.Mesh(mesh)
-    return ngsmesh
+    if comm is not None:
+        if comm.rank == 0:
+            ngmesh = mesh.Distribute(comm)
+        else:
+            ngmesh = Mesh.Receive(comm)
+        return ngsolve.Mesh(ngmesh)
+    else:
+        ngsmesh = ngsolve.Mesh(mesh)
+        return ngsmesh
 
 def MakeQuadMesh(nx=10, ny=10, periodic_x=False, periodic_y=False, mapping = None):
     """
