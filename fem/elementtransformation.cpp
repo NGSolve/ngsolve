@@ -183,8 +183,8 @@ namespace ngfem
     SIMD_MappedIntegrationRule<DIMS,DIMR> & mir = 
       static_cast<SIMD_MappedIntegrationRule<DIMS,DIMR> &>(bmir);
     
-    constexpr int SIMD_SIZE = SIMD<IntegrationPoint>::Size();
-    Vector<> shapes(ir.Size()*SIMD_SIZE);
+    constexpr int SW = SIMD<IntegrationPoint>::Size();
+    Vector<> shapes(ir.Size()*SW);
     MatrixFixWidth<DIMS> grad(shapes.Size());
 
     for (int j = 0; j < DIMR; j++)
@@ -193,7 +193,7 @@ namespace ngfem
         for (int k = 0; k < ir.Size(); k++)
           {
             auto simd_ip = ir[k];
-            for (int k2 = 0; k2 < SIMD_SIZE; k2++)
+            for (int k2 = 0; k2 < SW; k2++)
               {
                 shapes(k*simd_ip.Size()+k2) = fel->Evaluate(simd_ip[k2], pointmat.Row(j));
                 grad.Row(k*simd_ip.Size()+k2) = fel->EvaluateGrad(simd_ip[k2], pointmat.Row(j));
@@ -202,9 +202,9 @@ namespace ngfem
 
 	for (int i = 0; i < ir.Size(); i++)
 	  {
-	    mir[i].Point()(j) = &shapes(i*SIMD_SIZE);
+	    mir[i].Point()(j) = &shapes(i*SW);
             for (int k = 0; k < DIMS; k++)
-              mir[i].Jacobian()(j,k) = [&](int i2) { return grad(SIMD_SIZE*i+i2, k); };
+              mir[i].Jacobian()(j,k) = [&](int i2) { return grad(SW*i+i2, k); };
 	  }
       }
 
