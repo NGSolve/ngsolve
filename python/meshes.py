@@ -43,7 +43,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
         mesh.AddPointIdentification(pids[0],pids[n],1,2)
     ngsmesh = ngsolve.Mesh(mesh)
     return ngsmesh
-def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False,criss_cross=True,ABF=False,ABF_height=0.5,comm=None):
+def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x=False, periodic_y=False, mapping = None, bbpts=None, bbnames=None, flip_triangles=False,criss_cross=False,ABF=False,ABF_height=0.5,comm=None):
     """
     Generate a structured 2D mesh
 
@@ -77,7 +77,14 @@ def MakeStructured2DMesh(quads=True, nx=10, ny=10, secondorder=False, periodic_x
       List of bbnd names as strings. Size must coincide with size of bbpts. Otherwise an Exception is thrown.
 
     flip_triangles : bool
-      If set tot True together with quads=False the quads are cut the other way round
+      If set tot True together with quads=False the quads are cut the other way round.
+    criss_cross: bool
+      If set to on and quads option is false trhen a criss-cross mesh is generated.
+    ABF: Bool
+      Generate an Arnold-Boffi-Falk mesh, in patricular one can greate more or less degenerate element using the value ABF_height.
+    comm: MPI.COMM
+      If not None it uses what it recive as the MPI comunicator to distribute the mesh.
+
 
     Returns
     -------
