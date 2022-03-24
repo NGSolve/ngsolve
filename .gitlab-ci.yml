@@ -379,7 +379,7 @@ deploy_mac:
 ############################################
 # Conda package builds
 
-conda_win:
+.conda_win:
   <<: *win
   stage: deploy
   script:
@@ -396,7 +396,7 @@ conda_win:
     - schedules
     - tags
 
-conda_linux:
+.conda_linux:
   stage: deploy
   tags:
     - linux
@@ -417,7 +417,7 @@ conda_linux:
     - schedules
     - tags
 
-conda_mac:
+.conda_mac:
   stage: deploy
   tags:
     - mac
