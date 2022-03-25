@@ -914,7 +914,11 @@ namespace ngcomp
         displacement->Update();
         displacement->GetVector() = displacement_->GetVector();
       }
-    gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h);
+    if (displacement)
+      gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h);
+    else
+      gap->Update(nullptr, 10, h);
+      
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
       static_pointer_cast<DisplacedNormal<2>>(normal)->Update(displacement);
@@ -1121,6 +1125,18 @@ namespace ngcomp
       }
   }
 
+
+  template<int DIM>
+  void MPContactElement<DIM>::CalcElementMatrix(FlatMatrix<double> elmat,
+                                                LocalHeap& lh) const
+  {
+    HeapReset hr(lh);
+    FlatVector elx(elmat.Height(), lh);
+    elx = 0;
+    CalcLinearizedElementMatrix (elx, elmat, lh);
+  }
+
+  
   template<int DIM>
   void MPContactElement<DIM>::CalcLinearizedElementMatrix(FlatVector<double> elx,
                                                         FlatMatrix<double> elmat,
