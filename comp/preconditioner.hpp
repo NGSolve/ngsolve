@@ -422,9 +422,12 @@ namespace ngcomp
       string name;
       function<shared_ptr<Preconditioner>(const PDE&, const Flags&, const string&)> creator;
       function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> creatorbf;
+      DocInfo docinfo;
+      
       PreconditionerInfo (const string & aname,
 			  function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
-                          function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags &, const string)> acreateorbf);
+                          function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags &, const string)> acreateorbf,
+                          DocInfo adocinfo);
     };
   
     Array<unique_ptr<PreconditionerInfo>> prea;
@@ -434,7 +437,8 @@ namespace ngcomp
 
     void AddPreconditioner (const string & aname, 
 			    function<shared_ptr<Preconditioner>(const PDE&, const Flags&, const string&)> acreator,
-			    function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags&, const string)> createorbf);
+			    function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>, const Flags&, const string)> createorbf,
+                            DocInfo docinfo = DocInfo());
       
     const Array<unique_ptr<PreconditionerInfo>> & GetPreconditioners() { return prea; }
     const PreconditionerInfo * GetPreconditioner(const string & name);
