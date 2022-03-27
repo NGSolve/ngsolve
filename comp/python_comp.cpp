@@ -3135,7 +3135,7 @@ integrator : ngsolve.fem.LFI
       shared_ptr<BaseMatrix> dummy_sp(const_cast<BaseMatrix*>(amat), NOOP_Deleter);
 
       py::gil_scoped_acquire agil;
-      premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs));
+      premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs, flags));
     }
 
     void Update() override
@@ -3170,7 +3170,7 @@ integrator : ngsolve.fem.LFI
   };
 
 
-  m.def("RegisterPreconditioner", [] (string name, py::object makepre)
+  m.def("RegisterPreconditioner", [] (string name, py::object makepre, py::dict docflags)
     {
       // cout << "register Python preconditioner " << name << endl;
       
@@ -3182,8 +3182,11 @@ integrator : ngsolve.fem.LFI
           return make_shared<PythonPreconditioner> (bfa, flags, makepre);
         };
 
+      DocInfo docinfo;
+      for (auto [key,value] : docflags)
+        docinfo.Arg(py::cast<string>(key)) = py::cast<string>(value);
       GetPreconditionerClasses().AddPreconditioner (name, nullptr, creator_function);
-    }, py::arg("name"), py::arg("makepre"), "register creator-function makepre(BaseMatrix,FreeDofs)->BaseMatrix");
+    }, py::arg("name"), py::arg("makepre"), py::arg("docflags") = py::dict(), "register creator-function makepre(BaseMatrix,FreeDofs)->BaseMatrix");
   
   
   //////////////////////////////////////////////////////////////////////////////////////////

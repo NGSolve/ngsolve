@@ -1291,8 +1291,9 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   PreconditionerClasses::PreconditionerInfo::
   PreconditionerInfo (const string & aname,
 		      function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
-                      function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf)
-    : name(aname), creator(acreator), creatorbf(acreatorbf)
+                      function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf,
+                      DocInfo adocinfo)
+    : name(aname), creator(acreator), creatorbf(acreatorbf), docinfo(adocinfo)
   {
     ;
   }
@@ -1304,9 +1305,10 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   void PreconditionerClasses :: 
   AddPreconditioner (const string & aname,
                      function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
-                     function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf)
+                     function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf,
+                     DocInfo docinfo)
   {
-    prea.Append (make_unique<PreconditionerInfo>(aname, acreator, acreatorbf));
+    prea.Append (make_unique<PreconditionerInfo>(aname, acreator, acreatorbf, docinfo));
   }
 
   const PreconditionerClasses::PreconditionerInfo * 
