@@ -53,12 +53,13 @@ namespace ngcomp
     ///
     virtual void CleanUpLevel () { ; }
     ///
-    virtual const BaseMatrix & GetMatrix() const
+    virtual const BaseMatrix & GetMatrix() const = 0;
+    /*
     {
       return *this; 
     }
-    
-    virtual shared_ptr<BaseMatrix> GetMatrixPtr() 
+    */
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
     {
       return BaseMatrix::SharedFromThis<BaseMatrix>();
     }
@@ -71,6 +72,24 @@ namespace ngcomp
       GetMatrix().Mult(x, y);
     }
 
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      GetMatrix().MultAdd(s, x, y);
+    }
+
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override
+    {
+      GetMatrix().MultTrans(x, y);
+    }
+
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    {
+      GetMatrix().MultTransAdd(s, x, y);
+    }
+
+
+
+    
     virtual void InitLevel (shared_ptr<BitArray> freedofs = NULL) { ; }
     virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL) { ; }
     virtual void AddElementMatrix (FlatArray<int> dnums,
