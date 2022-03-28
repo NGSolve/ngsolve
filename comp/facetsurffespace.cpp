@@ -22,6 +22,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    static INT<0> GetDimensions() { return INT<0>(); };
 
     static bool SupportsVB (VorB checkvb) { return true; }
 
@@ -74,6 +75,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    static INT<0> GetDimensions() { return INT<0>(); };
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -327,6 +329,15 @@ namespace ngcomp
     {
       throw Exception("FacetSurfaceFESpace only implemented for 2d and 3d");
     }
+
+    if (dimension > 1)
+      {
+        integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
+        
+        for (auto vb : { VOL,BND, BBND, BBBND })
+          if (evaluator[vb])
+            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+      }
 
     additional_evaluators.Set ("dual", evaluator[VOL]);
     //additional_evaluators.Set ("dual", evaluator[BND]);
