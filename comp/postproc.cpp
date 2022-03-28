@@ -422,16 +422,18 @@ namespace ngcomp
 
 	/** Test-Proxy (dual) **/
 	auto dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
+        auto single_dual_evaluator = fes->GetAdditionalEvaluators()["dual"];
         
         for (VorB avb = VOL; avb < vb; avb++) {
 	  dual_evaluator = dual_evaluator->GetTrace();
+          single_dual_evaluator = single_dual_evaluator->GetTrace();
 	  if ( dual_evaluator == nullptr )
 	    { throw Exception(fes->GetClassName() + string(" has no dual trace operator for vb = ") + \
 			      to_string(avb) + string(" -> ") + to_string(avb + 1) + string("!")); }
 	}
         if (dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator))
-          dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
-	auto dual = make_shared<ProxyFunction>(fes, true, false, dual_evaluator,
+          single_dual_evaluator = dynamic_pointer_cast<BlockDifferentialOperator>(dual_evaluator)->BaseDiffOp();
+	auto dual = make_shared<ProxyFunction>(fes, true, false, single_dual_evaluator,
 					       nullptr, nullptr, nullptr, nullptr, nullptr);
         /** Set up integrators - may need integrators for multiple node-types **/
         Array<shared_ptr<BilinearFormIntegrator>> bli;
@@ -490,7 +492,7 @@ namespace ngcomp
              
              // Array<int> dnums(fel.GetNDof(), lh);
              // fes.GetDofNrs (ei, dnums);
-             
+
              FlatVector<SCAL> elflux(fel.GetNDof() * dim, lh);
              FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
              
@@ -517,11 +519,17 @@ namespace ngcomp
 			     coef->Evaluate (mir, mfluxi);
 			     for (size_t j : Range(mir))
 			       mfluxi.Col(j) *= mir[j].GetWeight(); 
-			     dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
+
+                             dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
+                             
 			   }
 		       }
 
-                     if (!fel.SolveDuality (elflux, elfluxi, lh))
+                     bool result=true;
+                     for ( auto j : Range(dim) )
+                       result = fel.SolveDuality (elflux.Slice (j,dim), elfluxi.Slice (j,dim), lh);
+                     
+                     if (!result)
                        {
                          /** Calc Element Matrix **/
                          FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
@@ -604,8 +612,11 @@ namespace ngcomp
                      elflux += elfluxadd;
                    }
                }
-
-             if (!fel.SolveDuality (elflux, elfluxi, lh))
+             bool result=true;
+             for ( auto j : Range(dim) )
+               result = fel.SolveDuality (elflux.Slice (j,dim), elfluxi.Slice (j,dim), lh);
+             
+             if (!result)
                {
                  /** Calc Element Matrix **/
                  FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
