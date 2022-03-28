@@ -5,12 +5,12 @@ import netgen.meshing as meshing
 from ngsolve.meshes import MakeStructured2DMesh,MakeStructured3DMesh, MakeStructuredSurfaceMesh
 from space_utils import *
 
-def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffops=None, vb=VOL, set_dual=[False], addorder=0, sym=False, dev=False, facet=False):
-    fes = space(mesh, order=order+addorder)
+def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffops=None, vb=VOL, set_dual=[False], addorder=0, sym=False, dev=False, facet=False, **kwargs):
+    fes = space(mesh, order=order+addorder, dim=kwargs.get("dim", 1))
     gf = GridFunction(fes)
 
     cf = GetDiffOp("id", order, dim=mesh.dim, dims=gf.dims, sym=sym, dev=dev, vb=vb)
-
+    
     dx_vol  = mesh.Materials(".*")   if vb==VOL else mesh.Boundaries(".*")
     dx_bnd  = mesh.Boundaries(".*")  if vb==VOL else mesh.BBoundaries(".*")
     dx_bbnd = mesh.BBoundaries(".*") if vb==VOL else mesh.BBBoundaries(".*")
@@ -47,6 +47,7 @@ def test_fespaces_2d():
     # unstructured trig mesh
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3,quad_dominated=False))
     Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["hesse", "Grad"], vb=VOL, set_dual=[True,False])
+    Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad"], vb=VOL, set_dual=[True,False], dim=2)
     Test(mesh=mesh, space=VectorH1, order=2, trace = lambda cf : cf, diffops=["hesse", "div", "Grad"], vb=VOL, set_dual=[True,False])
     Test(mesh=mesh, space=L2, order=2, diffops=["Grad","hesse"], vb=VOL, set_dual=[False])
     Test(mesh=mesh, space=VectorL2, order=2, diffops=["Grad"], vb=VOL, set_dual=[False])
@@ -56,6 +57,7 @@ def test_fespaces_2d():
     Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_2d*cf*Ptau_2d, diffops=["curl","inc", "christoffel","christoffel2"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlDiv, order=2, trace = lambda cf : Ptau_2d*cf*Pn_2d, diffops=["div","curl"], vb=VOL, set_dual=[False], dev=True)
     Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
+    Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True, dim=2)
     Test(mesh=mesh, space=VectorFacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
     Test(mesh=mesh, space=NormalFacetFESpace, order=2, trace = lambda cf : Pn_2d*cf, vb=VOL, set_dual=[], facet=True)# dual=True: netgen.libngpy._meshing.NgException: normal-facet element evaluated not at BND
     #Test(mesh=mesh, space=TangentialFacetFESpace, order=2, idop = lambda cf : Ptau_2d*cf, trace = lambda cf : Ptau_2d*cf, vb=VOL, set_dual=[True], facet=True) #idop not Ptau*cf?
@@ -85,6 +87,7 @@ def test_fespaces_3d():
     mesh = MakeStructured3DMesh(hexes=False, nx=2,ny=2,nz=2, prism=False, mapping = lambda x,y,z : (x*(0.4+0.4*y)**2,0.75*y,1.25*z) )
 
     Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["hesse", "Grad"], vb=VOL, set_dual=[True,False])
+    Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad"], vb=VOL, set_dual=[True,False], dim=3)
     Test(mesh=mesh, space=VectorH1, order=2, trace = lambda cf : cf, diffops=["hesse", "div", "Grad"], vb=VOL, set_dual=[True,False])
     Test(mesh=mesh, space=L2, order=2, diffops=["Grad","hesse"], vb=VOL, set_dual=[False])
     Test(mesh=mesh, space=VectorL2, order=2, diffops=["Grad"], vb=VOL, set_dual=[False])
@@ -94,6 +97,7 @@ def test_fespaces_3d():
     Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_3d*cf*Ptau_3d, diffops=["curl","inc","christoffel","christoffel2"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlDiv, order=2, trace = lambda cf : Ptau_3d*cf*Pn_3d, diffops=["div"], vb=VOL, set_dual=[False], dev=True)
     Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
+    Test(mesh=mesh, space=FacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True, dim=3)
     Test(mesh=mesh, space=VectorFacetFESpace, order=2, trace = lambda cf : cf, vb=VOL, set_dual=[True], facet=True)
     Test(mesh=mesh, space=NormalFacetFESpace, order=2, trace = lambda cf : Pn_3d*cf, vb=VOL, set_dual=[], facet=True)
     
@@ -127,11 +131,14 @@ def test_fespaces_surface():
     # unstructured trig surface mesh (surface could be curved?)
     mesh = MakeStructuredSurfaceMesh(quads=False, nx=3, ny=3, mapping = lambda x,y,z : ( (x-0.5), (y-0.5), (x-0.5)**2*(0.7+0.2*y)-(y-0.5)**2) )
     Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad", "hesseboundary"], vb=BND, set_dual=[True,False])
+    Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["Grad"], vb=BND, set_dual=[True,False],dim=3)
     Test(mesh=mesh, space=VectorH1, order=2, trace = lambda cf : cf, diffops=["Grad","div"], vb=BND, set_dual=[True,False])
     Test(mesh=mesh, space=SurfaceL2, order=2, diffops=None, vb=BND, set_dual=[False])
     Test(mesh=mesh, space=HCurl, order=2, idop = lambda cf : Ptau_3d*cf, trace = lambda cf : Pt_3d*cf, diffops=None, vb=BND, set_dual=[True,False])
     Test(mesh=mesh, space=HCurlCurl, order=2, idop = lambda cf : Ptau_3d*cf*Ptau_3d, trace = lambda cf : Pt_3d*cf*Pt_3d, diffops=None, vb=BND, set_dual=[True,False], sym=True)
     Test(mesh=mesh, space=FacetSurface, order=2, trace = lambda cf : cf, diffops=None, vb=BND, set_dual=[True], facet=True)
+    Test(mesh=mesh, space=FacetSurface, order=2, trace = lambda cf : cf, diffops=None, vb=BND, set_dual=[True], facet=True, dim=3)
+    Test(mesh=mesh, space=VectorFacetSurface, order=2, trace = lambda cf : cf, diffops=None, vb=BND, set_dual=[True], facet=True)
     
     #Test(mesh=mesh, space=NormalFacetSurface, order=2, diffops=None, vb=BND, set_dual=[True], facet=True) #no dual diffop
     ##Test(mesh=mesh, space=HDivSurface, order=0, idop = lambda cf : Ptau_3d*cf, trace = None, diffops=None, vb=BND, set_dual=[True], addorder=0)
