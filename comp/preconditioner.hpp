@@ -64,6 +64,11 @@ namespace ngcomp
       return BaseMatrix::SharedFromThis<BaseMatrix>();
     }
 
+    shared_ptr<BilinearForm> GetBilinearForm() const
+    {
+      return bf.lock();
+    }
+    
     virtual bool IsComplex() const override { return GetMatrix().IsComplex(); }
         
     ///
