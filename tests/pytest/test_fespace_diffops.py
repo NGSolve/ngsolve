@@ -8,11 +8,9 @@ from space_utils import *
 def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffops=None, vb=VOL, set_dual=[False], addorder=0, sym=False, dev=False, facet=False, **kwargs):
     fes = space(mesh, order=order+addorder, dim=kwargs.get("dim", 1))
     gf = GridFunction(fes)
-    print("space = ", space)
-    print("gf.dims = ", gf.dims)
-    cf = GetDiffOp("id", order, dim=mesh.dim, dims=gf.dims, sym=sym, dev=dev, vb=vb)
-    print("cf dims = ", cf.dims)
 
+    cf = GetDiffOp("id", order, dim=mesh.dim, dims=gf.dims, sym=sym, dev=dev, vb=vb)
+    
     dx_vol  = mesh.Materials(".*")   if vb==VOL else mesh.Boundaries(".*")
     dx_bnd  = mesh.Boundaries(".*")  if vb==VOL else mesh.BBoundaries(".*")
     dx_bbnd = mesh.BBoundaries(".*") if vb==VOL else mesh.BBBoundaries(".*")
