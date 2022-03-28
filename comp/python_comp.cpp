@@ -36,6 +36,11 @@ namespace ngcomp
                        LocalHeap & lh);
 }
 
+namespace ngfem
+{
+  extern bool symbolic_integrator_uses_diff;
+}
+
 
 class PyNumProc : public NumProc
 {
@@ -345,6 +350,17 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
 				  {
                                     TaskManager::SetNumThreads (numthreads);
                                   })
+
+    .def_property("symbolic_integrator_uses_diff",
+                  [] (GlobalDummyVariables&)
+                  {
+                    return symbolic_integrator_uses_diff;
+                  },
+                  [] (GlobalDummyVariables&, bool val)
+                  {
+                    symbolic_integrator_uses_diff = val;
+                  }, "New treatment of symobolic forms using differentiation by proxies")
+                  
     ;
 
   m.attr("ngsglobals") = py::cast(&globvar);
@@ -3121,26 +3137,38 @@ integrator : ngsolve.fem.LFI
   protected:
     shared_ptr<BitArray> freedofs;
     py::object creator;
-    const BaseMatrix *  mat;
+    shared_ptr<const BaseMatrix>  mat;
     shared_ptr<BaseMatrix> premat;
   public:
     PythonPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & flags,
                           py::object acreator)
-      : Preconditioner(bfa, flags), creator(acreator) { }
+      : Preconditioner(bfa, flags), creator(acreator)
+    {
+      if (bfa->GetMatrixPtr())
+        Update();
+    }
     void InitLevel (shared_ptr<BitArray> afreedofs) override
     { freedofs = afreedofs; }
     void FinalizeLevel (const ngla::BaseMatrix * amat) override
     {
-      mat = amat;
-      shared_ptr<BaseMatrix> dummy_sp(const_cast<BaseMatrix*>(amat), NOOP_Deleter);
-
+      // mat = amat;
+      // shared_ptr<BaseMatrix> dummy_sp(const_cast<BaseMatrix*>(amat), NOOP_Deleter);
+      mat = amat->shared_from_this();
+      
       py::gil_scoped_acquire agil;
-      premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs, flags));
+      // premat = py::cast<shared_ptr<BaseMatrix>> (creator(dummy_sp, freedofs, flags));
+      premat = py::cast<shared_ptr<BaseMatrix>> (creator(mat, freedofs, flags));
     }
 
     void Update() override
     {
-      cout << "update pre" << endl;
+      // cout << "update pre" << endl;
+      auto bfa = GetBilinearForm();
+      freedofs = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
+      mat = bfa->GetMatrixPtr();
+
+      py::gil_scoped_acquire agil;
+      premat = py::cast<shared_ptr<BaseMatrix>> (creator(mat, freedofs, flags));
     }
 
     const BaseMatrix & GetAMatrix() const override

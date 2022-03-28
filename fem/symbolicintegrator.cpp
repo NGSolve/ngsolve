@@ -13,7 +13,7 @@
 
 namespace ngfem
 {
-
+  bool symbolic_integrator_uses_diff = false;
   
   ProxyFunction ::
   ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
@@ -1291,18 +1291,19 @@ namespace ngfem
     dcf_dtest.SetSize(test_proxies.Size());
 
     // comment in for experimental new Apply
-    for (int i = 0; i < test_proxies.Size(); i++)
-      {
-        try
-          {
-            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
-            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
-          }
-        catch (Exception e)
-          {
-            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
-          }
-      }
+    if (symbolic_integrator_uses_diff)
+      for (int i = 0; i < test_proxies.Size(); i++)
+        {
+          try
+            {
+              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
+              // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+            }
+          catch (Exception e)
+            {
+              cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+            }
+        }
   }
 
 
@@ -3526,18 +3527,19 @@ namespace ngfem
 
     // comment in for experimental new Apply
     dcf_dtest.SetSize(test_proxies.Size());
-    for (int i = 0; i < test_proxies.Size(); i++)
-      {
-        try
-          {
-            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
-            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
-          }
-        catch (Exception e)
-          {
+    if (symbolic_integrator_uses_diff)    
+      for (int i = 0; i < test_proxies.Size(); i++)
+        {
+          try
+            {
+              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
+              // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+            }
+          catch (Exception e)
+            {
             cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
-          }
-      }
+            }
+        }
 
     
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
