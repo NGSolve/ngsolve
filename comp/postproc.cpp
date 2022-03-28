@@ -425,6 +425,7 @@ namespace ngcomp
         
         for (VorB avb = VOL; avb < vb; avb++) {
 	  dual_evaluator = dual_evaluator->GetTrace();
+          diffop = dual_evaluator.get();
 	  if ( dual_evaluator == nullptr )
 	    { throw Exception(fes->GetClassName() + string(" has no dual trace operator for vb = ") + \
 			      to_string(avb) + string(" -> ") + to_string(avb + 1) + string("!")); }
@@ -457,7 +458,7 @@ namespace ngcomp
 	if ( !bli.Size() )
 	  { throw Exception("Error in SetValues: No dual shape Integrators!"); }
 
-        int dimflux = dual_evaluator->Dim();
+        int dimflux = diffop->Dim();
         
         if (coef -> Dimension() != dimflux)
           throw Exception(string("Error in SetValues: gridfunction-dim = ") + ToString(dimflux) +
@@ -517,11 +518,12 @@ namespace ngcomp
 			     coef->Evaluate (mir, mfluxi);
 			     for (size_t j : Range(mir))
 			       mfluxi.Col(j) *= mir[j].GetWeight(); 
-			     dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
+			     //dual_evaluator -> AddTrans (fel, mir, mfluxi, elflux);
+                             fes->GetAdditionalEvaluators()["dual"] -> AddTrans (fel, mir, mfluxi, elflux);
 			   }
 		       }
 
-                     if (!fel.SolveDuality (elflux, elfluxi, lh))
+                     if (true)//!fel.SolveDuality (elflux, elfluxi, lh))
                        {
                          /** Calc Element Matrix **/
                          FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
@@ -600,12 +602,13 @@ namespace ngcomp
                        mfluxi.Row(j) *= mir[j].GetWeight();
                      FlatVector<SCAL> elfluxadd(fel.GetNDof() * dim, lh); elfluxadd = 0;
                      
-                     dual_evaluator -> ApplyTrans (fel, mir, mfluxi, elfluxadd, lh);
+                     //dual_evaluator -> ApplyTrans (fel, mir, mfluxi, elfluxadd, lh);
+                     fes->GetAdditionalEvaluators()["dual"] -> ApplyTrans (fel, mir, mfluxi, elfluxadd, lh);
                      elflux += elfluxadd;
                    }
                }
 
-             if (!fel.SolveDuality (elflux, elfluxi, lh))
+             if (true)//!fel.SolveDuality (elflux, elfluxi, lh))
                {
                  /** Calc Element Matrix **/
                  FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
