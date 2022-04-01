@@ -879,7 +879,7 @@ val : can be one of the following:
            return MakeComponentCoefficientFunction (self, comp);
          }, py::arg("components"))
 
-    
+
 
     .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,py::slice,py::slice,py::slice> comps)
          {
@@ -904,7 +904,58 @@ val : can be one of the following:
            return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
          }, py::arg("components"))
 
-    
+    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, py::args comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (comps.size() != dims.Size())
+               throw py::index_error();
+
+           int numslice = 0;
+           int first = 0;
+           Array<int> num;
+           Array<int> dist;
+           int numcontracted = 0;
+           for (auto i : Range(comps.size())) {
+               if (py::extract<int>(comps[i]).check()) {
+                   int c = comps[i].cast<int>();
+                   if (c < 0 || c >= dims[i])
+                       throw py::index_error();
+                   for (auto j : Range(dist.Size()))
+                       dist[j] *= dims[i];
+
+                   first *= dims[i];
+                   first += c;
+               } else if (py::extract<shared_ptr<CoefficientFunction>>(comps[i]).check()) {
+                   shared_ptr<CoefficientFunction> vec =
+                           comps[i].cast<shared_ptr<CoefficientFunction>>();
+                   if (vec->Dimensions().Size() != 1 ||
+                       vec->Dimensions()[0] != self->Dimensions()[i - numcontracted])
+                       throw py::index_error();
+
+                   self = MakeSingleContractionCoefficientFunction(self, vec, i - numcontracted);
+                   numcontracted++;
+               } else if (py::extract<py::slice>(comps[i]).check()) {
+                   py::slice slice = comps[i].cast<py::slice>();
+                   numslice++;
+                   size_t start, step, n;
+                   InitSlice(slice, dims[i], start, step, n);
+                   num.Append(int(n));
+                   for (auto j : Range(dist.Size()))
+                       dist[j] *= dims[i];
+                   dist.Append(int(step));
+
+                   first *= dims[i];
+                   first += start;
+               } else
+                   throw Exception("Invalid object. Only integers and slices are allowed");
+           }
+
+           if (numslice == 0)
+               return MakeComponentCoefficientFunction(self, first);
+           else
+               return MakeSubTensorCoefficientFunction(self, first, move(num), move(dist));
+         })
+
     .def("__getitem__",  [](shared_ptr<CF> self, tuple<shared_ptr<CF>, shared_ptr<CF>> vectors)
          {
            FlatArray<int> dims = self->Dimensions();
@@ -1175,7 +1226,11 @@ keep_files : bool
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
-  m.def("Id", [] (int dim) { return IdentityCF(dim); }, "Identity matrix of given dimension");
+  m.def("Id", [] (int dim, int order) { return IdentityCF(dim, order); }, py::arg("dim"), py::arg("tensor_order") = 2,
+        "Identity matrix of given dimension");
+  m.def("Id", [] (Array<int> dims) { return IdentityCF(dims); }, py::arg("dims"),
+        "Identity tensor for a space with dimensions 'dims', ie. the result is of 'dims + dims'");
+  m.def("Zero", [] (Array<int> dims) { return ZeroCF(dims); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });

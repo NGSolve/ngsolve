@@ -1257,6 +1257,11 @@ public:
     SetDimensions(Array( {dim1,dim2} ));
   }
 
+  ZeroCoefficientFunction (FlatArray<int> dims) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
+  {
+    SetDimensions(dims);
+  }
+
   void DoArchive (Archive & archive) override
   {
     BASE::DoArchive(archive);
@@ -3203,11 +3208,22 @@ class IdentityCoefficientFunction : public T_CoefficientFunction<IdentityCoeffic
 {
   using BASE = T_CoefficientFunction<IdentityCoefficientFunction>;
 public:
-  IdentityCoefficientFunction (int dim)
+  IdentityCoefficientFunction (int dim, int order=2)
     : T_CoefficientFunction<IdentityCoefficientFunction>(1, false)
   {
-    SetDimensions (ngstd::INT<2> (dim, dim) );
+    Array<int> dims(order);
+    dims = dim;
+    SetDimensions (dims);
   }
+
+  IdentityCoefficientFunction (FlatArray<int> adims)
+    : T_CoefficientFunction<IdentityCoefficientFunction>(1, false)
+  {
+    Array<int> dims{adims};
+    dims.Append(adims);
+    SetDimensions (dims);
+  }
+
   // For archive
   IdentityCoefficientFunction() = default;
 
@@ -4748,7 +4764,7 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
 
   shared_ptr<CoefficientFunction> CrossProduct (shared_ptr<CoefficientFunction> c1,
-                                              shared_ptr<CoefficientFunction> c2)
+                                                shared_ptr<CoefficientFunction> c2)
   {
     if (c1->IsZeroCF() || c2->IsZeroCF())
       return ZeroCF( c1->Dimensions() );
@@ -4756,9 +4772,14 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     return make_shared<CrossProductCoefficientFunction> (c1, c2);
   }
 
-  shared_ptr<CoefficientFunction> IdentityCF (int dim)
+  shared_ptr<CoefficientFunction> IdentityCF (int dim, int order)
   {
-    return make_shared<IdentityCoefficientFunction> (dim);
+    return make_shared<IdentityCoefficientFunction> (dim, order);
+  }
+
+  shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims)
+  {
+    return make_shared<IdentityCoefficientFunction> (dims);
   }
 
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord)
@@ -4766,15 +4787,9 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     return make_shared<UnitVectorCoefficientFunction> (dim, coord);
   }
 
-
   shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims)
   {
-    if (dims.Size() == 2)
-      return make_shared<ZeroCoefficientFunction> (dims[0], dims[1]);
-    else if (dims.Size() == 1)
-      return make_shared<ZeroCoefficientFunction> (dims[0]);
-    else
-      return make_shared<ZeroCoefficientFunction> ();
+    return make_shared<ZeroCoefficientFunction> (dims);
   }
 
   shared_ptr<CoefficientFunction> ConstantCF (double val)

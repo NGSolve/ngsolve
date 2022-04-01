@@ -1826,7 +1826,10 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> operator/ (double val, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> IdentityCF (int dim);
+  shared_ptr<CoefficientFunction> IdentityCF (int dim, int order = 2);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims);
@@ -1836,6 +1839,14 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> LeviCivitaCF(int dimension);
+
+  NGS_DLL_HEADER
+  shared_ptr <CoefficientFunction> EinsumCF(const string &index_signature,
+                                            const Array <shared_ptr<CoefficientFunction>>& cfs,
+                                            const map<string, bool> &options = {});
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);

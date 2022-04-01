@@ -22,7 +22,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         h1hofe_segm.cpp h1hofe_trig.cpp hdivdivfe.cpp hcurlcurlfe.cpp symbolicintegrator.cpp tpdiffop.cpp
         newtonCF.cpp tensorproductintegrator.cpp code_generation.cpp
         voxelcoefficientfunction.cpp
-        )
+        tensorcoefficient.cpp tensorcoefficient.hpp)
 
 if(USE_CUDA)
     cuda_add_library( cuda_fem STATIC
