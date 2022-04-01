@@ -80,8 +80,12 @@ namespace ngfem
         << (IsComplex() ? " complex" : " real");
     if (Dimensions().Size() == 1)
       ost << ", dim=" << Dimension();
-    else if (Dimensions().Size() == 2)
-      ost << ", dims = " << Dimensions()[0] << " x " << Dimensions()[1];
+    else if (Dimensions().Size() >= 2)
+      {
+        ost << ", dims = " << Dimensions()[0]; //  << " x " << Dimensions()[1];
+        for (int j = 1; j < Dimensions().Size(); j++)
+          ost << " x " << Dimensions()[j];
+      }
     ost << endl;
 
     Array<shared_ptr<CoefficientFunction>> input = InputCoefficientFunctions();
@@ -122,6 +126,14 @@ namespace ngfem
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
     else
       {
+        if (this == var)
+          {
+            Array<int> dims;
+            dims += this->Dimensions();
+            dims += this->Dimensions();
+            return IdentityCF(Dimension()) -> Reshape(dims);
+          }
+        
         cout << IM(5) << "DiffJacobi for CoefficientFunction, type = " << typeid(*this).name() << endl;
         if (this->Dimensions().Size() != 0)
           {
@@ -3489,6 +3501,10 @@ public:
     BASE::DoArchive(ar);
     ar.Shallow(c1);
   }
+
+  virtual string GetDescription () const override
+  { return "inverse"; }
+
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
@@ -3610,7 +3626,24 @@ public:
   {
     if (this == var) return dir;
     return (-1)*InverseCF(c1) * c1->Diff(var,dir) * InverseCF(c1);
-  }  
+  }
+
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
+  {
+    if (this == var)
+      return IdentityCF(D*D) -> Reshape( Array<int> { D, D, D, D } );        
+
+    auto diffc1 = c1->DiffJacobi(var);
+    // auto inv1 = InverseCF(c1);
+    auto inv1 = const_cast<InverseCoefficientFunction*>(this)->shared_from_this();
+
+    auto prod1 = -inv1 * diffc1->Reshape( Array<int> { D, D*D*D } );
+    auto prod1r = prod1 -> Reshape( Array<int> { D, D, D, D } );
+    auto trans = MakeTensorTransposeCoefficientFunction(prod1r, Array<int> { 1, 0, 2, 3 });
+    auto prod2 = TransposeCF(inv1) * trans -> Reshape( Array<int> {D, D*D*D} );
+    auto prod2r = prod2 -> Reshape( Array<int> { D, D, D, D } );
+    return MakeTensorTransposeCoefficientFunction(prod2r, Array<int> { 1, 0, 2, 3 });    
+  }
 };
 
 
@@ -5106,6 +5139,11 @@ public:
     ar.Shallow(c1) & dim1 & first & num & dist;
   }
 
+  virtual string GetDescription () const override
+  { return "subtensor"; }
+  
+
+  
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     auto dims1 = c1->Dimensions();
