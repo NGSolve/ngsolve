@@ -4112,7 +4112,17 @@ public:
       }
     else
       throw Exception("CofactorCF diff only implemented for dim <=3");
-  }  
+  }
+
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
+  {
+    if (this == var)
+      return IdentityCF(D*D) -> Reshape( Array<int> { D, D, D, D } );
+
+    return (DeterminantCF(c1) * InverseCF(c1)->Transpose() ) -> DiffJacobi(var);
+  }
+
+  
 };
 
 
@@ -4715,6 +4725,21 @@ cl_BinaryOpCF<GenericDiv>::Diff(const CoefficientFunction * var,
   return (CWMult (c1->Diff(var,dir), c2) - CWMult (c1, c2->Diff(var,dir))) / CWMult (c2, c2);
 }
 
+template <> 
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericDiv>::DiffJacobi(const CoefficientFunction * var) const
+{
+  if (Dimensions().Size() > 0)
+    return CoefficientFunction::DiffJacobi(var);
+  
+  if (var == this)
+    return make_shared<ConstantCoefficientFunction>(1);
+  
+  return (c2*c1->DiffJacobi(var) - c1*c2->DiffJacobi(var)) / (c2*c2);
+}
+
+
+
 
 shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2)
   {
@@ -5207,8 +5232,6 @@ public:
     return MakeComponentCoefficientFunction (c1->Diff(var, dir), comp);
   }  
 
-  /*
-    // infinite recursion as long as base class CoefficientFunction makes components
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
     if (this == var) return make_shared<ConstantCoefficientFunction>(1);
@@ -5223,8 +5246,6 @@ public:
       }
     return MakeSubTensorCoefficientFunction(diffc1, comp*var->Dimension(), move(vardims), move(dist));
   }  
-  */
-
   
   
   /*
@@ -5477,6 +5498,40 @@ public:
     return MakeSubTensorCoefficientFunction (c1->Diff(var, dir), first, Array<int> (num), Array<int> (dist));
   }  
 
+
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
+  {
+    Array<int> dimres { this->Dimensions() };
+    dimres += var->Dimensions();
+    
+    if (this == var)
+      return IdentityCF(Dimension()) -> Reshape(dimres);
+    
+    auto diffc1 = c1->DiffJacobi(var);
+
+    
+    int vardim = var->Dimension();
+    Array<int> vardims = Array<int> (var->Dimensions());
+    Array<int> dist(vardims.Size());
+    int prod = 1;
+    for (int i = dist.Size()-1; i >= 0; i--)
+      {
+        dist[i] = prod;
+        prod *= vardims[i];
+      }
+    Array<int> firstdist { this -> dist };
+    for (auto & fd : firstdist)
+      fd *= vardim;
+      
+    Array<int> alldist { firstdist + dist };
+    
+    return MakeSubTensorCoefficientFunction(diffc1, first*vardim, move(dimres), move(alldist));
+  }  
+  
+
+
+
+  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
