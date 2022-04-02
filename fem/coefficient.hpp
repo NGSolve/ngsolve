@@ -174,6 +174,13 @@ namespace ngfem
 
     // creates a wrapper with new shape
     shared_ptr<CoefficientFunction> Reshape (FlatArray<int> adims) const;
+    shared_ptr<CoefficientFunction> Reshape (int s) const
+    { return Reshape( Array<int>( { s } )); }    
+    shared_ptr<CoefficientFunction> Reshape (int h, int w) const
+    { return Reshape( Array<int>( { h, w } )); }
+
+    shared_ptr<CoefficientFunction> Transpose () const;    
+    shared_ptr<CoefficientFunction> TensorTranspose (int i, int j) const;
     
     int SpaceDim () const { return spacedim; } 
     void SetSpaceDim (int adim);
@@ -1754,6 +1761,9 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Array<int> ordering);
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, int i1, int i2);
 
 
   // cf_ijk v0_i v1_j v2_k
