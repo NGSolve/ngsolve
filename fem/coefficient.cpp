@@ -1673,6 +1673,16 @@ public:
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
+  virtual string GetDescription () const override
+  {
+    switch (Dimensions().Size())
+      {
+      case 1: return "scalar-vector multiply";
+      case 2: return "scalar-matrix multiply";    
+      default: return "scalar-tensor multiply";
+      }
+  }
+  
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     for (int i = 0; i < Dimension(); i++)
@@ -3977,6 +3987,9 @@ public:
     BASE::DoArchive(ar);
     ar.Shallow(c1);
   }
+
+  virtual string GetDescription () const override
+  { return "cofactor"; }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
