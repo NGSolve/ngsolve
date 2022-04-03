@@ -7,13 +7,16 @@
 /* Date:   01. Apr. 2022                                             */
 /*********************************************************************/
 
-#include "coefficient.hpp"
+#include "fem.hpp"
 
 
 namespace ngfem {
 
     namespace tensor_internal {
-
+        using namespace ngcore;
+        using namespace ngstd;
+        using namespace ngbla;
+        
         struct Index {
             char symbol;
             size_t pos;
@@ -82,10 +85,8 @@ namespace ngfem {
 
         Array <size_t> split(size_t full_index, const MultiIndex &multi_idx);
 
-        Array <size_t> split2(size_t full_index, const MultiIndex &multi_idx);
-
-        Array <MultiIndex> compute_index_sets(const string &index_signature,
-                                              const Array <shared_ptr<CoefficientFunction>> &cfs);
+        Array <MultiIndex> compute_multi_indices(const string &index_signature,
+                                                 const Array <shared_ptr<CoefficientFunction>> &cfs);
 
         template<class ForwardIt>
         bool is_even_iota_permutation(ForwardIt first, ForwardIt last, size_t base = 0) {
@@ -120,11 +121,238 @@ namespace ngfem {
 
         string new_index_symbols(string existing, size_t nnew = 1);
 
-        string tensor_product_signature(shared_ptr <CoefficientFunction> cf);
+        optional<string> substitute_id_index(
+            string signature, pair<char, char> id_indices, size_t id_pos,
+            const FlatArray<bool> marked_for_removal, bool recurse = false);
 
-        bool is_tensor_product(shared_ptr <CoefficientFunction> cf);
+        vector<string> split_signature(string input);
 
         Vector<bool> nonzero_pattern(shared_ptr <CoefficientFunction> cf);
+
+        pair<string, Array<shared_ptr<CoefficientFunction>>>
+        optimize_identities(string, const Array<shared_ptr<CoefficientFunction>>& cfs,
+                            const map<string, bool> &options);
+
+        class LeviCivitaCoefficientFunction
+            : public T_CoefficientFunction<LeviCivitaCoefficientFunction> {
+          using BASE = T_CoefficientFunction<LeviCivitaCoefficientFunction>;
+
+          int dim = 0;
+          MultiIndex mi{};
+
+        public:
+          LeviCivitaCoefficientFunction() = default;
+
+          LeviCivitaCoefficientFunction(int adim);
+
+          virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override {
+            func(*this);
+          }
+
+          virtual string GetDescription() const override { return string("Levi-Civita Symbol"); }
+
+          void DoArchive(Archive &ar) override { BASE::DoArchive(ar); }
+
+          virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+            GenerateCode(code, inputs, index, false);
+          }
+
+          virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index,
+                                    bool skip_zeroes = true) const;
+
+          virtual void NonZeroPattern(const class ProxyUserData &ud,
+                                      FlatVector<AutoDiffDiff<1, bool>> values) const override;
+
+          virtual void NonZeroPattern(const class ProxyUserData &ud,
+                                      FlatArray<FlatVector<AutoDiffDiff<1, bool>>> input,
+                                      FlatVector<AutoDiffDiff<1, bool>> values) const override;
+
+          using BASE::Evaluate;
+
+          virtual double Evaluate(const BaseMappedIntegrationPoint &ip) const override;
+
+          template<typename MIR, typename T, ORDERING ORD>
+          void T_Evaluate(const MIR &ir, BareSliceMatrix<T, ORD> values) const
+          {
+            auto val = T(0.0);
+            values.AddSize(Dimension(), ir.Size()) = val;
+            auto ir_size = ir.Size();
+            for (size_t I: Range(Dimension())) {
+              const auto I_array = split(I, mi);
+              if (is_even_iota_permutation(I_array.begin(), I_array.end()))
+                val = 1.0;
+              else if (is_odd_iota_permutation(I_array.begin(), I_array.end()))
+                val = -1.0;
+              else
+                continue;
+              for (auto q: Range(ir_size))
+                values(I, q) = val;
+            }
+          }
+
+          template<typename MIR, typename T, ORDERING ORD>
+          void T_Evaluate(const MIR &ir, FlatArray<BareSliceMatrix<T, ORD>> input,
+                          BareSliceMatrix<T, ORD> values) const
+          {
+            T_Evaluate(ir, values);
+          }
+
+
+          shared_ptr<CoefficientFunction> Diff(const CoefficientFunction *var,
+                                               shared_ptr<CoefficientFunction> dir) const override;
+
+          shared_ptr<CoefficientFunction> DiffJacobi(const CoefficientFunction *var) const override;
+        };
+
+        class EinsumCoefficientFunction
+            : public T_CoefficientFunction<EinsumCoefficientFunction>
+        {
+          using BASE = T_CoefficientFunction<EinsumCoefficientFunction>;
+
+          Array<shared_ptr<CoefficientFunction>> cfs{};
+          shared_ptr<CoefficientFunction> node{};
+          string index_signature{};
+          size_t max_mem{0};
+          map<string, bool> options;
+          Array<Vector<bool>> nz_inputs{};
+          Vector<bool> nz_result{};
+          Vector<bool> nz_all{};
+          Matrix<int> index_maps{};
+
+          string original_index_signature{};
+          Array<shared_ptr<CoefficientFunction>> original_inputs{};
+
+          string expanded_index_signature{};
+          Array<shared_ptr<CoefficientFunction>> expanded_inputs{};
+
+        public:
+          EinsumCoefficientFunction() = default;
+
+          EinsumCoefficientFunction(const string &aindex_signature,
+                                    const Array<shared_ptr<CoefficientFunction>> &acfs,
+                                    const map<string, bool> &aoptions);
+
+          virtual shared_ptr<EinsumCoefficientFunction> Optimize(const map<string, bool> &aoptions) const;
+
+          const string &IndexSignature() const { return index_signature; }
+
+          const string &ExpandedIndexSignature() const {return expanded_index_signature;}
+
+          const string &OriginalIndexSignature() const {return original_index_signature;}
+
+          virtual Array<shared_ptr<CoefficientFunction>>
+          InputCoefficientFunctions() const override
+          {
+            if (node)
+              return node->InputCoefficientFunctions();
+            return Array<shared_ptr<CoefficientFunction>>{cfs};
+          }
+
+          Array<shared_ptr<CoefficientFunction>>
+          ExpandedInputCoefficientFunctions() const
+          {
+            return Array<shared_ptr<CoefficientFunction>>{expanded_inputs};
+          }
+
+          Array<shared_ptr<CoefficientFunction>>
+          OriginalInputCoefficientFunctions() const
+          {
+            return Array<shared_ptr<CoefficientFunction>>{original_inputs};
+          }
+
+          virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override {
+            for_each(cfs.begin(), cfs.end(), [&](const auto &cf) { cf->TraverseTree(func); });
+            func(*this);
+          }
+
+          virtual string GetDescription() const override;
+
+          virtual void DoArchive(Archive &ar) override {
+            BASE::DoArchive(ar);
+            for_each(cfs.begin(), cfs.end(), [&](auto cf) { ar.Shallow(cf); });
+          }
+
+          virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+            GenerateCode(code, inputs, index, false);
+          }
+
+          virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index,
+                                    bool skip_zeroes = true) const;
+
+          virtual void NonZeroPattern(const class ProxyUserData &ud,
+                                      FlatVector<AutoDiffDiff<1, bool>> values) const;
+
+          virtual void NonZeroPattern(const class ProxyUserData &ud,
+                                      FlatArray<FlatVector<AutoDiffDiff<1, bool>>> input,
+                                      FlatVector<AutoDiffDiff<1, bool>> values) const;
+
+          using BASE::Evaluate;
+
+          virtual double Evaluate(const BaseMappedIntegrationPoint &ip) const override {
+            if (Dimension() == 1)
+              return BASE::Evaluate(ip);
+            throw Exception("TensorProductCF scalar evaluate called for non-scalar result");
+          }
+
+          template<typename MIR, typename T, ORDERING ORD>
+          void T_Evaluate(const MIR &ir, BareSliceMatrix<T, ORD> values) const
+          {
+            if (node) {
+              node->Evaluate(ir, values);
+              return;
+            }
+
+            ArrayMem<T, 1000> mem(max_mem);
+            T *mem_pos = mem.Data();
+            Array<FlatMatrix<T, ORD>> tmp_arrays(cfs.Size());
+            for (size_t i: Range(cfs)) {
+              tmp_arrays[i].AssignMemory(cfs[i]->Dimension(), ir.Size(), mem_pos);
+              mem_pos += tmp_arrays[i].Height() * tmp_arrays[i].Width();
+              cfs[i]->Evaluate(ir, tmp_arrays[i]);
+            }
+
+            values.AddSize(Dimension(), ir.Size()) = T(0.0);
+            const auto cres = cfs.Size();
+            for (size_t I: Range(index_maps.Height())) {
+              const auto& I_map = index_maps.Row(I);
+              for (int q: Range(ir)) {
+                T tmp(1.0);
+                for (size_t i: Range(tmp_arrays))
+                  tmp *= tmp_arrays[i](I_map(i), q);
+                values(I_map(cres), q) += tmp;
+              }
+            }
+          }
+
+          template<typename MIR, typename T, ORDERING ORD>
+          void T_Evaluate(const MIR &ir, FlatArray<BareSliceMatrix<T, ORD>> input,
+                          BareSliceMatrix<T, ORD> values) const
+          {
+            if (node) {
+              node->Evaluate(ir, input, values);
+              return;
+            }
+
+            values.AddSize(Dimension(), ir.Size()) = T(0.0);
+            const auto cres = cfs.Size();
+            for (size_t I: Range(index_maps.Height())) {
+              const auto& I_map = index_maps.Row(I);
+              for (int q: Range(ir)) {
+                T tmp(1.0);
+                for (size_t i: Range(input))
+                  tmp *= input[i](I_map(i), q);
+                values(I_map(cres), q) += tmp;
+              }
+            }
+          }
+
+          virtual shared_ptr<CoefficientFunction> Diff(
+              const CoefficientFunction *var,
+              shared_ptr<CoefficientFunction> dir) const override;
+
+          virtual shared_ptr<CoefficientFunction> DiffJacobi(
+              const CoefficientFunction *var) const override;
+        };
     }
 
 } // namespace ngfem
