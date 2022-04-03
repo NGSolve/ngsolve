@@ -3313,7 +3313,7 @@ public:
   {
     Array<int> dims(order);
     dims = dim;
-    SetDimensions (dims);
+    SetDimensions(dims);
   }
 
   IdentityCoefficientFunction (Array<int> adims)
@@ -4995,7 +4995,7 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
   shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims)
   {
-    return make_shared<IdentityCoefficientFunction> (dims);
+    return make_shared<IdentityCoefficientFunction> (Array<int>{dims});
   }
 
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord)
