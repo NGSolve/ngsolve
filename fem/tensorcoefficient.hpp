@@ -126,9 +126,31 @@ namespace ngfem {
             const FlatArray<bool> marked_for_removal, bool recurse = false);
 
         vector<string> split_signature(string input);
+        
+        string form_index_signature(const vector<string>& parts);
 
         Vector<bool> nonzero_pattern(shared_ptr <CoefficientFunction> cf);
 
+        pair<string, Array<shared_ptr<CoefficientFunction>>>
+        flatten_einsum(string signature,
+                       const Array<shared_ptr<CoefficientFunction>>& cfs,
+                       const map<string, bool> &options);
+        
+        shared_ptr<CoefficientFunction>
+        optimize_blas(const string signature,
+                      const Array<shared_ptr<CoefficientFunction>>& cfs,
+                      [[maybe_unused]] const map<string, bool> &options);
+        
+        shared_ptr<CoefficientFunction>
+        optimize_path(const string &signature,
+                      const Array<shared_ptr<CoefficientFunction>>& input_cfs,
+                      const map<string, bool> &aoptions);
+        
+        pair<string, Array<shared_ptr<CoefficientFunction>>>
+        expand_higher_order_identities(string signature,
+                       const Array<shared_ptr<CoefficientFunction>>& cfs,
+                       [[maybe_unused]] const map<string, bool> &options);
+        
         pair<string, Array<shared_ptr<CoefficientFunction>>>
         optimize_identities(string, const Array<shared_ptr<CoefficientFunction>>& cfs,
                             const map<string, bool> &options);

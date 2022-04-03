@@ -1228,9 +1228,9 @@ keep_files : bool
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
   m.def("Id", [] (int dim, int order) { return IdentityCF(dim, order); }, py::arg("dim"), py::arg("tensor_order") = 2,
         "Identity matrix of given dimension");
-  m.def("Id", [] (Array<int> dims) { return IdentityCF(dims); }, py::arg("dims"),
+  m.def("Id", [] (const Array<int>& dims) { return IdentityCF(dims); }, py::arg("dims"),
         "Identity tensor for a space with dimensions 'dims', ie. the result is of 'dims + dims'");
-  m.def("Zero", [] (Array<int> dims) { return ZeroCF(dims); });
+  m.def("Zero", [] (const Array<int>& dims) { return ZeroCF(move(dims)); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
@@ -1309,6 +1309,37 @@ maxiter: int
 
 )raw_string"));
 
+  
+  m.def("Einsum", [](string index_signature, py::args args, const py::kwargs &kwargs) {
+            Array<shared_ptr<CoefficientFunction>> cfs(args.size());
+            for (auto i : Range(cfs.Size()))
+                cfs[i] = py::extract<shared_ptr<CoefficientFunction>>(args[i])();
+            map<string, bool> options{};
+            for (const auto kv : kwargs)
+                options[py::extract<string>(kv.first)()] = py::extract<bool>(kv.second)();
+            return EinsumCF(move(index_signature), move(cfs), options);
+        }, py::arg("einsum_signature"), docu_string(R"raw_string(
+Generic tensor product in the spirit of numpy's \"einsum\" feature.
+
+Parameters:
+
+einsum_signature: str
+  specification of the tensor product in numpy's "einsum" notation
+  
+args: 
+  CoefficientFunctions
+  
+kwargs:
+  "expand_einsum" (true) -- expand nested "einsums" for later optimization
+  "optimize_path" (false) -- try to reorder product for greater efficiency
+  "optimize_identities" (false) -- try to eliminate identity tensors
+  "use_blas_ops" (false) -- fall back to existing CFs implementing certain blas operations where possible
+  "optimize_transpose" (false) -- try to use existing Tranpose and TensorTranspose operations
+
+)raw_string"));
+  
+  m.def("LeviCivitaSymbol", &LeviCivitaCF);
+  
   m.def("NewtonCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
                        optional<double> rtol, optional<int> maxiter){
 

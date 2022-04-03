@@ -222,6 +222,7 @@ namespace ngfem {
                 new_part += item;
             }
           parts.push_back(new_part);
+          return move(parts);
         }
 
         optional<string> substitute_id_index(string signature, pair<char, char> id_indices,
@@ -332,17 +333,6 @@ namespace ngfem {
                 auto nested_inputs = cfi->ExpandedInputCoefficientFunctions();
                 new_cfs.Append(nested_inputs);
               }
-            else if (get_option(options, "expand_higher_order_identity_tensors", true) &&
-                     cfs[i]->GetDescription() == identity_descr)
-            {
-              auto dims = cfs[i]->Dimensions();
-              string new_part{};
-              for (size_t j: Range(dims.Size() / 2)) {
-                new_cfs.Append(IdentityCF(dims[j]));
-                new_part += parts[i][j] + parts[i][j + dims.Size() / 2];
-              }
-              parts[i] = new_part;
-            }
             else
               new_cfs.Append(cfs[i]);
 
