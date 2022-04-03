@@ -47,7 +47,13 @@ namespace ngla
 
     virtual PARALLEL_STATUS GetParallelStatus () const override { return Status(); }
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const override { SetStatus (stat); }
-
+    virtual optional<NgMPI_Comm> GetCommunicator() const override
+    {
+      if (paralleldofs)
+        return paralleldofs->GetCommunicator();
+      else
+        return nullopt;
+    }
 
 
     virtual shared_ptr<ParallelDofs> GetParallelDofs () const

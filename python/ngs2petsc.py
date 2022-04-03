@@ -4,9 +4,6 @@ from mpi4py import MPI
 import numpy as np
 
 def CreatePETScMatrix (ngs_mat, freedofs=None):
-    pardofs = ngs_mat.row_pardofs
-    comm = pardofs.comm.mpi4py
-
     locmat = ngs_mat.local_mat
     eh, ew = locmat.entrysizes
     if eh != ew: raise Exception ("only square entries are allowed")
@@ -20,6 +17,10 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
         locfree = np.flatnonzero(freedofs).astype(psc.IntType)
         isfree_loc = psc.IS().createBlock(indices=locfree, bsize=eh)
         apsc_loc = apsc_loc.createSubMatrices(isfree_loc)[0]
+
+        
+    pardofs = ngs_mat.row_pardofs
+    comm = pardofs.comm.mpi4py
 
     
     globnums, nglob = pardofs.EnumerateGlobally(freedofs)

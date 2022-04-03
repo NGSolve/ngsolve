@@ -106,6 +106,13 @@ namespace ngla
     shared_ptr<ParallelDofs> GetColParallelDofs () const { return col_paralleldofs; }
 
     PARALLEL_OP GetOpType () const { return op; }
+    virtual optional<NgMPI_Comm> GetCommunicator() const override
+    {
+      if (row_paralleldofs)
+        return row_paralleldofs->GetCommunicator();
+      else
+        return nullopt;
+    }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = 0) const override;
     template <typename TM>
