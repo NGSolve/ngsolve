@@ -132,7 +132,8 @@ namespace ngla
 
     void SetParallelDofs (shared_ptr<ParallelDofs> pardofs) { paralleldofs = pardofs; }
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
-
+    virtual optional<NgMPI_Comm> GetCommunicator() const { return nullopt; }
+    
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const;
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
