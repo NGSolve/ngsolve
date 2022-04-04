@@ -106,7 +106,7 @@ namespace ngfem {
           stringstream signature{};
           // note: last of parts refers to result
           for (auto i : Range(parts.size() - 1))
-            signature << (i == 0 ? parts[i] : string{","}) + parts[i];
+            signature << (i == 0 ? "" : ",") << parts[i];
 
           signature << "->" << parts.back();
           return signature.str();
@@ -205,23 +205,47 @@ namespace ngfem {
           return res_dims;
         }
 
+        string sanitize_signature(string signature)
+        {
+          if (signature.find("->") == string::npos)
+          {
+            map<char, size_t> symbol_count{};
+            for (auto c: signature)
+            {
+              if (c == ',' || c == '-' || c == '>' || c == '\0')
+                continue;
+              if (symbol_count.count(c) == 0)
+                symbol_count[c] = 0;
+              symbol_count[c]++;
+            }
+            for (auto item : symbol_count)
+              if (item.second != 2)
+                throw NG_EXCEPTION("Signature does not contain '->'. ATM, this "
+                                   "is only allowed if each index appears "
+                                   "exactly twice.");
+            signature += "->";
+          }
+          return move(signature);
+        }
+
         vector<string> split_signature(string signature)
         {
+          signature = sanitize_signature(signature);
           vector<string> parts{};
-          string new_part{};
+          stringstream new_part{};
           for (auto item: signature)
             {
               if (item == ',' || item == '-')
                 {
-                  parts.push_back(new_part);
-                  new_part.clear();
+                  parts.push_back(new_part.str());
+                  new_part = stringstream{};
                 }
               else if (item == '>' || item == '\0')
                 continue;
               else
-                new_part += item;
+                new_part << item;
             }
-          parts.push_back(new_part);
+          parts.push_back(new_part.str());
           return move(parts);
         }
 
@@ -356,12 +380,13 @@ namespace ngfem {
             if (cfs[i]->GetDescription() == identity_descr)
             {
               auto dims = cfs[i]->Dimensions();
-              string new_part{};
+              stringstream new_part{};
               for (size_t j: Range(dims.Size() / 2)) {
                 new_cfs.Append(IdentityCF(dims[j]));
-                new_part += parts[i][j] + parts[i][j + dims.Size() / 2];
+                new_part << (j > 0 ? "," : "")
+                         << parts[i][j] << parts[i][j + dims.Size() / 2];
               }
-              parts[i] = new_part;
+              parts[i] = new_part.str();
             }
             else
               new_cfs.Append(cfs[i]);
@@ -380,14 +405,22 @@ namespace ngfem {
           Array<shared_ptr<CoefficientFunction>> new_cfs;
           new_cfs.SetAllocSize(cfs.Size());
           auto parts = split_signature(signature);
+          map<size_t, shared_ptr<CoefficientFunction>> cf_subs{};
 
           // detect identity tensors that can be removed
           Array<bool> remove(cfs.Size());
           remove = false;
           for (size_t i: Range(cfs))
           {
-            if (cfs[i]->GetDescription() == identity_descr)
-              if (auto new_signature =
+            if (cfs[i]->GetDescription() == identity_descr &&
+                cfs[i]->Dimensions().Size() == 2)
+              if (parts[i][0] == parts[i][1] &&
+                  parts.back().find(parts[i]) == string::npos)
+              {
+                parts[i] = parts[i][0];
+                cf_subs[i] = ConstantCF(cfs[i]->Dimensions()[0]);
+              }
+              else if (auto new_signature =
                       substitute_id_index(signature,
                                           {parts[i][0], parts[i][1]}, i,
                                           remove, true); new_signature)
@@ -409,15 +442,17 @@ namespace ngfem {
 
           // remove corresponding cfs
           for (size_t i: Range(cfs))
-            if (!remove[i])
+            if (cf_subs.count(i))
+              new_cfs.Append(cf_subs[i]);
+            else if (!remove[i])
               new_cfs.Append(cfs[i]);
 
-          return {move(form_index_signature(parts)), move(new_cfs)};
+          return {move(form_index_signature(new_parts)), move(new_cfs)};
         }
 
 
         shared_ptr<CoefficientFunction>
-        optimize_blas(const string signature,
+        optimize_legacy(const string& signature,
                       const Array<shared_ptr<CoefficientFunction>>& cfs,
                       [[maybe_unused]] const map<string, bool> &options) {
 
@@ -430,7 +465,7 @@ namespace ngfem {
             }
 
           const auto identity_descr = IdentityCF(1)->GetDescription();
-          cout << "TP: trying to detect some BLAS operations" << endl;
+          cout << "TP: trying to detect some 'legacy' operations" << endl;
 
           const bool optimize_identities =
               get_option(options, "optimize_identities", true);
@@ -438,28 +473,43 @@ namespace ngfem {
           // Trace
           if (cfs.Size() == 1 && index_sets[0].Size() == 2) {
             if (index_sets[0][0].symbol == index_sets[0][1].symbol && index_sets[1].Size() == 0)
+            {
+              cout << "EinsumCF: detected trace" << endl;
               return TraceCF(cfs[0]);
+            }
           }
 
           // Transpose
-          if (cfs.Size() == 1 && index_sets[0].Size() == 2 && index_sets[1].Size() == 2) {
-            if (index_sets[0][0].symbol != index_sets[0][1].symbol &&
-                index_sets[1][0].symbol == index_sets[0][1].symbol)
-              return TransposeCF(cfs[0]);
-          }
+          if (cfs.Size() == 1)
+            return optimize_transpose(signature, cfs, options);
 
           // Mat * Vec
           if (cfs.Size() == 2 && index_sets[0].Size() == 2 && index_sets[1].Size() == 1 &&
-              index_sets[2].Size() == 1 && index_sets[0][0].symbol != index_sets[0][1].symbol &&
-              index_sets[1][0].symbol == index_sets[0][1].symbol) {
-            // NOTE: no other way to detect identity!
-            if (cfs[0]->GetDescription() == identity_descr &&
-                optimize_identities) {
-              cout << "EinsumCF: detected I * vec" << endl;
-              return cfs[1];
+              index_sets[2].Size() == 1 && index_sets[0][0].symbol != index_sets[0][1].symbol) {
+            if (index_sets[1][0].symbol == index_sets[0][1].symbol)
+            {
+              // NOTE: no other way to detect identity!
+              if (cfs[0]->GetDescription() == identity_descr &&
+                  optimize_identities)
+              {
+                cout << "EinsumCF: detected I * vec" << endl;
+                return cfs[1];
+              }
+              cout << "EinsumCF: detected Mat * Vec" << endl;
+              return cfs[0] * cfs[1];
             }
-            cout << "EinsumCF: detected Mat * Vec" << endl;
-            return cfs[0] * cfs[1];
+            else if (index_sets[1][0].symbol == index_sets[0][0].symbol)
+            {
+              // NOTE: no other way to detect identity!
+              if (cfs[0]->GetDescription() == identity_descr &&
+                  optimize_identities)
+              {
+                cout << "EinsumCF: detected I * vec" << endl;
+                return cfs[1];
+              }
+              cout << "EinsumCF: detected Mat.trans * Vec" << endl;
+              return TransposeCF(cfs[0]) * cfs[1];
+            }
           }
 
           // Mat * Mat
@@ -478,13 +528,15 @@ namespace ngfem {
               int i1 = ij_jk ? 1 : 0;
 
               if (cfs[i0]->GetDescription() == identity_descr &&
-                  optimize_identities) {
+                  optimize_identities)
+              {
                 cout << "EinsumCF: detected I * Mat" << endl;
                 return cfs[i1];
               }
 
               if (cfs[i1]->GetDescription() == identity_descr &&
-                  optimize_identities) {
+                  optimize_identities)
+              {
                 cout << "EinsumCF: detected Mat * I" << endl;
                 return cfs[i0];
               }
@@ -538,6 +590,34 @@ namespace ngfem {
             return cfs[0] * TransposeCF(cfs[1]);
           }
           return {};
+        }
+
+        shared_ptr<CoefficientFunction>
+        optimize_transpose(const string& signature,
+                           const Array<shared_ptr<CoefficientFunction>>& cfs,
+                           [[maybe_unused]] const map<string, bool> &aoptions)
+        {
+          const auto parts = split_signature(signature);
+          if (set<char>{parts[0].begin(), parts[0].end()}.size() != parts[0].size() ||
+              set<char>{parts[1].begin(), parts[1].end()}.size() != parts[1].size())
+            return {};
+          else if (parts[0] == parts[1])
+            return cfs[0];
+          else if (parts[0].size() == 2)
+          {
+            cout << "EinsumCF: detected transpose" << endl;
+            return TransposeCF(cfs[0]);
+          }
+          else
+          {
+            cout << "EinsumCF: detected tensor transpose" << endl;
+            Array<int> ordering;
+            ordering.SetSize(cfs[0]->Dimensions().Size());
+            for (auto i : Range(ordering))
+              ordering[i] = parts[1].find(parts[0][i]);
+            return MakeTensorTransposeCoefficientFunction(cfs[0],
+                                                          move(ordering));
+          }
         }
 
         shared_ptr<CoefficientFunction>
@@ -724,9 +804,10 @@ namespace ngfem {
                 tie(original_index_signature, original_inputs);
 
 
-          if (original_inputs.Size() == 2 &&
-              get_option(options, "use_blas_ops", false))
-            node = optimize_blas(original_index_signature, original_inputs, options);
+          if (original_inputs.Size() < 3 &&
+              get_option(options, "use_legacy_ops", false))
+            node = optimize_legacy(original_index_signature, original_inputs,
+                                   options);
 
           if (!node) {
             if (get_option(options, "optimize_path", false))
@@ -748,25 +829,8 @@ namespace ngfem {
             else
               tie (index_signature, cfs) = {original_index_signature, original_inputs};
 
-            const auto parts = split_signature(index_signature);
-            if (cfs.Size() == 1 &&
-                parts[0].size() != parts[1].size() &&
-                get_option(options, "optimize_transpose", false))
-            {
-              if (parts[0] == parts[1])
-                node = cfs[0];
-              else if (parts[0].size() == 2)
-                node = TransposeCF(cfs[0]);
-              else
-              {
-                Array<int> ordering;
-                ordering.SetSize(cfs[0]->Dimensions().Size());
-                for (auto i : Range(ordering))
-                  ordering[0] = parts[1].find(parts[0]);
-                node = MakeTensorTransposeCoefficientFunction(cfs[0],
-                                                              move(ordering));
-              }
-            }
+            if (cfs.Size() < 3 && get_option(options, "use_legacy_ops", false))
+              node = optimize_legacy(index_signature, cfs, options);
           }
 
           if (node)
@@ -800,8 +864,9 @@ namespace ngfem {
               nz_inputs[i] = nonzero_pattern(cfs[i]);
             }
 
-            nz_result = nonzero_pattern(this);
             nz_all.SetSize(index_maps.Height());
+            nz_all = true;
+            nz_result = nonzero_pattern(this);
 
             for (size_t I: Range(index_maps.Height())) {
               const auto I_map = index_maps.Row(I);
@@ -820,12 +885,13 @@ namespace ngfem {
         }
 
         string EinsumCoefficientFunction::GetDescription() const {
-          string descr = "EinsumCF ";
-          descr += index_signature;
+          stringstream descr{};
+          descr << "EinsumCF " << original_index_signature;
+
           if (node)
-            return node->GetDescription() + "[ optimization of " + descr + "]";
-          else
-            return descr;
+            descr << " with optimized node " << node->GetDescription();
+
+          return descr.str();
         }
 
         void EinsumCoefficientFunction::GenerateCode(
@@ -911,7 +977,7 @@ namespace ngfem {
           }
         }
 
-        void EinsumCoefficientFunction::NonZeroPattern(
+        void EinsumCoefficientFunction::  NonZeroPattern(
             const class ProxyUserData &ud,
             FlatVector<AutoDiffDiff<1, bool>> values) const
         {
