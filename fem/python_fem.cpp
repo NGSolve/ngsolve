@@ -1333,8 +1333,7 @@ kwargs:
   "expand_einsum" (true) -- expand nested "einsums" for later optimization
   "optimize_path" (false) -- try to reorder product for greater efficiency
   "optimize_identities" (false) -- try to eliminate identity tensors
-  "use_blas_ops" (false) -- fall back to existing CFs implementing certain blas operations where possible
-  "optimize_transpose" (false) -- try to use existing Tranpose and TensorTranspose operations
+  "use_legacy_ops" (false) -- fall back to existing CFs implementing certain blas operations where possible
 
 )raw_string"));
   

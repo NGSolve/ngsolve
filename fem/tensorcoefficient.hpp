@@ -137,10 +137,15 @@ namespace ngfem {
                        const map<string, bool> &options);
         
         shared_ptr<CoefficientFunction>
-        optimize_blas(const string signature,
+        optimize_legacy(const string& signature,
                       const Array<shared_ptr<CoefficientFunction>>& cfs,
-                      [[maybe_unused]] const map<string, bool> &options);
-        
+                      const map<string, bool> &options);
+
+        shared_ptr<CoefficientFunction>
+        optimize_transpose(const string& signature,
+                           const Array<shared_ptr<CoefficientFunction>>& cfs,
+                           const map<string, bool> &aoptions);
+
         shared_ptr<CoefficientFunction>
         optimize_path(const string &signature,
                       const Array<shared_ptr<CoefficientFunction>>& input_cfs,
@@ -280,6 +285,11 @@ namespace ngfem {
           OriginalInputCoefficientFunctions() const
           {
             return Array<shared_ptr<CoefficientFunction>>{original_inputs};
+          }
+
+          shared_ptr<CoefficientFunction> OptimizedNode() const
+          {
+            return node;
           }
 
           virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override {
