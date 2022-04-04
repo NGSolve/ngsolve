@@ -5,8 +5,8 @@
 /*********************************************************************/
 
 #include <cmath>
-#include <ngstd.hpp>
-#include <python_ngstd.hpp>
+#include "../ngstd/ngstd.hpp"
+#include "../ngstd/python_ngstd.hpp"
 
 #include "tensorcoefficient.hpp"
 
