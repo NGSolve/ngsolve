@@ -939,8 +939,8 @@ val : can be one of the following:
                  ellipse_pos = i;
                }
 
-           if (ellipse_count != 1)
-               throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
+           if (ellipse_count > 1)
+             throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
 
            py::list new_comps{};
            for (auto i : Range(comps.size()))
@@ -954,7 +954,7 @@ val : can be one of the following:
            comps = py::tuple(new_comps);
 
            if (comps.size() != dims.Size())
-             throw py::index_error();
+             throw Exception("Too few indices or slices. Maybe use an ellipse '...'");
 
              // detect full contractions beforehand
            Array<shared_ptr<CoefficientFunction>> vecs;
