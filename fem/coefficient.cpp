@@ -5375,33 +5375,35 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     auto dims1 = c1->Dimensions();
+    for (size_t i = 0; i < mapping.Size(); i++)
+      code.body += Var(index, i, num).Assign( Var(inputs[0], mapping[i], dims1));
     
-    if(num.Size()==1)
-      {
-        for (int i = 0; i < num[0]; i++)
-         {
-           // int i1,k1;
-            auto comp = first+i*dist[0];
-            // GetIndex(dims1, comp, i1, k1);
-            // code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
-            code.body += Var(index, i).Assign( Var(inputs[0], comp, dims1 ));
-          }
-      }
-
-    else if(num.Size()==2)
-      {
-        for (int i = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++)
-             {
-               // int i1,j1;
-               auto comp = first+i*dist[0]+j*dist[1];
-               // GetIndex(dims1, comp, i1, j1);
-               // code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
-               code.body += Var(index, i, j).Assign( Var(inputs[0], comp, dims1));
-             }
-      }
-    else
-      throw Exception("SubTensorCF codegeneration for dim >= 3 not supported");
+//    if(num.Size()==1)
+//      {
+//        for (int i = 0; i < num[0]; i++)
+//         {
+//           // int i1,k1;
+//            auto comp = first+i*dist[0];
+//            // GetIndex(dims1, comp, i1, k1);
+//            // code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
+//            code.body += Var(index, i).Assign( Var(inputs[0], comp, dims1 ));
+//          }
+//      }
+//
+//    else if(num.Size()==2)
+//      {
+//        for (int i = 0; i < num[0]; i++)
+//          for (int j = 0; j < num[1]; j++)
+//             {
+//               // int i1,j1;
+//               auto comp = first+i*dist[0]+j*dist[1];
+//               // GetIndex(dims1, comp, i1, j1);
+//               // code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
+//               code.body += Var(index, i, j).Assign( Var(inputs[0], comp, dims1));
+//             }
+//      }
+//    else
+//      throw Exception(string("SubTensorCF codegeneration for order ") + ToString(num.Size()) + " not supported");
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -5559,27 +5561,29 @@ public:
   {
     Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
     c1->NonZeroPattern (ud, v1);
-    switch (num.Size())
-      {
-      case 1:
-        for (int i = 0; i < num[0]; i++)
-          values(i) = v1(first+i*dist[0]);
-        break;
-      case 2:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++, ii++)
-            values(ii) = v1(first+i*dist[0]+j*dist[1]);
-        break;
-      case 3:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++)
-            for (int k = 0; k < num[2]; k++, ii++)
-              values(ii) = v1(first+i*dist[0]+j*dist[1]+k*dist[2]);
-        break;
-
-      default:
-        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
-      }
+    for (size_t i = 0; i < mapping.Size(); i++)
+      values(i) = v1(mapping[i]);
+//    switch (num.Size())
+//      {
+//      case 1:
+//        for (int i = 0; i < num[0]; i++)
+//          values(i) = v1(first+i*dist[0]);
+//        break;
+//      case 2:
+//        for (int i = 0, ii = 0; i < num[0]; i++)
+//          for (int j = 0; j < num[1]; j++, ii++)
+//            values(ii) = v1(first+i*dist[0]+j*dist[1]);
+//        break;
+//      case 3:
+//        for (int i = 0, ii = 0; i < num[0]; i++)
+//          for (int j = 0; j < num[1]; j++)
+//            for (int k = 0; k < num[2]; k++, ii++)
+//              values(ii) = v1(first+i*dist[0]+j*dist[1]+k*dist[2]);
+//        break;
+//
+//      default:
+////        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+//      }
   }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -5587,26 +5591,28 @@ public:
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     c1->NonZeroPattern (ud, input[0]);
-    switch (num.Size())
-      {
-      case 1:
-        for (int i = 0; i < num[0]; i++)
-          values(i) = input[0](first+i*dist[0]);
-        break;
-      case 2:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++, ii++)
-            values(ii) = input[0](first+i*dist[0]+j*dist[1]);
-        break;
-      case 3:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++)
-            for (int k = 0; k < num[2]; k++, ii++)
-            values(ii) = input[0](first+i*dist[0]+j*dist[1]+k*dist[2]);
-        break;
-      default:
-        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
-      }
+    for (size_t i = 0; i < mapping.Size(); i++)
+      values(i) = input[0](mapping[i]);
+//    switch (num.Size())
+//      {
+//      case 1:
+//        for (int i = 0; i < num[0]; i++)
+//          values(i) = input[0](first+i*dist[0]);
+//        break;
+//      case 2:
+//        for (int i = 0, ii = 0; i < num[0]; i++)
+//          for (int j = 0; j < num[1]; j++, ii++)
+//            values(ii) = input[0](first+i*dist[0]+j*dist[1]);
+//        break;
+//      case 3:
+//        for (int i = 0, ii = 0; i < num[0]; i++)
+//          for (int j = 0; j < num[1]; j++)
+//            for (int k = 0; k < num[2]; k++, ii++)
+//            values(ii) = input[0](first+i*dist[0]+j*dist[1]+k*dist[2]);
+//        break;
+//      default:
+//        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
+//      }
 
   }
 };
