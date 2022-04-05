@@ -692,23 +692,23 @@ val : can be one of the following:
                                          },
          py::arg("comp"),
          "returns component comp of vectorial CF")
-    .def("__getitem__",  [](shared_ptr<CF> self, py::slice inds)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 1)
-             throw py::index_error();
-
-           size_t start, step, n;
-           InitSlice( inds, dims[0], start, step, n );
-           int first = start;
-           Array<int> num = { int(n) };
-           Array<int> dist = { int(step) };
-           /*
-             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
-             throw py::index_error();
-           */
-           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-         }, py::arg("components"))
+//    .def("__getitem__",  [](shared_ptr<CF> self, py::slice inds)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 1)
+//             throw py::index_error();
+//
+//           size_t start, step, n;
+//           InitSlice( inds, dims[0], start, step, n );
+//           int first = start;
+//           Array<int> num = { int(n) };
+//           Array<int> dist = { int(step) };
+//           /*
+//             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+//             throw py::index_error();
+//           */
+//           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+//         }, py::arg("components"))
 
     /*
     .def("__getitem__",  [](shared_ptr<CF> self, py::tuple comps)
@@ -931,7 +931,7 @@ val : can be one of the following:
 
            // process ellipses
            size_t ellipse_count = 0;
-           size_t ellipse_pos;
+           size_t ellipse_pos = 0;
            for (auto i : Range(comps.size()))
              if (py::extract<py::ellipsis>(comps[i]).check())
                {
@@ -940,23 +940,26 @@ val : can be one of the following:
                }
 
            if (ellipse_count > 1)
-             throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
-
-           py::list new_comps{};
-           for (auto i : Range(comps.size()))
+              throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
+           else if (ellipse_count == 1)
              {
-               if (i == ellipse_pos)
-                 for (auto j : Range(dims.Size() - comps.size() + 1))
-                   new_comps.append(py::slice(0, dims[ellipse_pos + j], 1));
-               else
-                 new_comps.append(comps[i]);
+               py::list new_comps{};
+               for (auto i : Range(comps.size()))
+                 {
+                   if (i == ellipse_pos)
+                       for (auto j : Range(dims.Size() - comps.size() + 1))
+                           new_comps.append(py::slice(0, dims[ellipse_pos + j], 1));
+                   else
+                       new_comps.append(comps[i]);
+                 }
+               comps = py::tuple(new_comps);
              }
-           comps = py::tuple(new_comps);
+//           cout << "comps: " << comps << endl;
 
            if (comps.size() != dims.Size())
              throw Exception("Too few indices or slices. Maybe use an ellipse '...'");
 
-             // detect full contractions beforehand
+           // detect full contractions beforehand
            Array<shared_ptr<CoefficientFunction>> vecs;
            vecs.SetAllocSize(comps.size());
            for (auto i : Range(comps.size()))
