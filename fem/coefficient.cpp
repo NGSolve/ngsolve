@@ -175,9 +175,11 @@ namespace ngfem
 
   shared_ptr<CoefficientFunction> CoefficientFunction :: DiffJacobi (const CoefficientFunction * var) const
   {
+    /*
     if (var->Dimensions().Size() == 0)
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
     else
+    */
       {
         Array<int> resultdims;
         resultdims += this->Dimensions();
