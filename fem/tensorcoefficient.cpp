@@ -634,6 +634,7 @@ namespace ngfem {
 
           map<string, bool> options = aoptions;
           options["optimize_path"] = false;
+          options["expand_einsum"] = false;
 
           namespace py = pybind11;
 
@@ -825,8 +826,10 @@ namespace ngfem {
                     expanded_index_signature, expanded_inputs, options);
                 tie(index_signature, cfs) = optimize_identities(
                     index_signature, cfs, options);
+                node = optimize_path(index_signature, cfs, options);
               }
-              node = optimize_path(index_signature, cfs, options);
+              else
+                node = optimize_path(expanded_index_signature, expanded_inputs, options);
             }
             else if (get_option(options, "optimize_identities", false))
             {
