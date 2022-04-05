@@ -928,15 +928,35 @@ val : can be one of the following:
     .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, py::tuple comps)
          {
            FlatArray<int> dims = self->Dimensions();
-           if (comps.size() > dims.Size())
-               throw py::index_error();
 
-           py::list slices{};
-           for ([[maybe_unused]] auto i : Range(dims.Size() - comps.size()))
-               slices.append(py::slice(0, dims[comps.size() + i], 1));
-           comps = comps + py::tuple(slices);
+           // process ellipses
+           size_t ellipse_count = 0;
+           size_t ellipse_pos;
+           for (auto i : Range(comps.size()))
+             if (py::extract<py::ellipsis>(comps[i]).check())
+               {
+                 ellipse_count++;
+                 ellipse_pos = i;
+               }
 
-           // detect full contractions beforehand
+           if (ellipse_count != 1)
+               throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
+
+           py::list new_comps{};
+           for (auto i : Range(comps.size()))
+             {
+               if (i == ellipse_pos)
+                 for (auto j : Range(dims.Size() - comps.size() + 1))
+                   new_comps.append(py::slice(0, dims[ellipse_pos + j], 1));
+               else
+                 new_comps.append(comps[i]);
+             }
+           comps = py::tuple(new_comps);
+
+           if (comps.size() != dims.Size())
+             throw py::index_error();
+
+             // detect full contractions beforehand
            Array<shared_ptr<CoefficientFunction>> vecs;
            vecs.SetAllocSize(comps.size());
            for (auto i : Range(comps.size()))
@@ -996,7 +1016,7 @@ val : can be one of the following:
                    first += start;
                  }
                else
-                 throw Exception("Invalid object. Only integers and slices are allowed");
+                 throw Exception("Invalid object. Only integers, slices and (single) ellipses are allowed");
              }
 
            if (numslice == 0)
