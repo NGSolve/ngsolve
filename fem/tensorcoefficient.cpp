@@ -1082,6 +1082,7 @@ namespace ngfem {
                    << "Trying again with a broken-down EinsumCF." << endl;
               auto opts = options;
               opts["optimize_path"] = true;
+              opts["expand_einsum"] = false;
               return Optimize(options)->DiffJacobi(var);
             }
             throw e;
