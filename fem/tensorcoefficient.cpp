@@ -293,33 +293,36 @@ namespace ngfem {
         }
 
         string
-        expand_einsum_part(string signature, string nested_signature, size_t pos)
+        expand_einsum_part(string target_signature_part, const string& nested_signature, const string& used_symbols)
         {
-          auto parts = split_signature(signature);
-          auto result_target = parts.at(pos);
-
           auto parts_nested = split_signature(nested_signature);
           auto result_nested = parts_nested.back();
 
-          if (result_nested.size() != result_target.size())
+          if (result_nested.size() != target_signature_part.size())
             throw NG_EXCEPTION("Incompatible multi-indices");
 
-          map<char, char> symbol_map{};
-          for (auto i : Range(result_target.size()))
-            if (result_nested[i] != result_target[i])
-              symbol_map[result_nested[i]] = result_target[i];
+          map<char, char> symbol_map{{',', ','}};
+          for (auto i : Range(target_signature_part.size()))
+            if (result_nested[i] != target_signature_part[i])
+              symbol_map[result_nested[i]] = target_signature_part[i];
             else
               symbol_map[result_nested[i]] = result_nested[i];
 
           stringstream relabel{};
-          for (auto part : parts_nested)
+          for (const auto& part : parts_nested)
             for (auto item : part)
-              if (signature.find(item) != string::npos)
-                relabel << item;
-              else
-                symbol_map[item] = item;
+              {
+                if (symbol_map.find(item) != symbol_map.end())
+                  continue;
+
+                if (used_symbols.find(item) != string::npos)
+                  relabel << item;
+                else
+                  symbol_map[item] = item;
+              }
+
           string relabel_str = relabel.str();
-          string new_symbols = new_index_symbols(signature, relabel_str.size());
+          string new_symbols = new_index_symbols(used_symbols, relabel_str.size());
 
           for (auto i : Range(relabel_str.size()))
             symbol_map[relabel_str[i]] = new_symbols[i];
@@ -333,7 +336,8 @@ namespace ngfem {
               new_part << symbol_map[c];
             }
 
-          return new_part.str();
+          string new_part_str = new_part.str();
+          return new_part_str;
         }
 
         pair<string, Array<shared_ptr<CoefficientFunction>>>
@@ -349,11 +353,14 @@ namespace ngfem {
           cout << "TP: flatten einsum CF (no recursion)" << endl;
           auto parts = split_signature(signature);
 
+          string used_symbols = signature;
+
           for (auto i : Range(cfs))
             if (auto cfi = dynamic_pointer_cast<EinsumCoefficientFunction>(cfs[i]); cfi)
               {
                 auto nested_signature = cfi->ExpandedIndexSignature();
-                parts[i] = expand_einsum_part(signature, nested_signature, i);
+                parts[i] = expand_einsum_part(parts[i], nested_signature, used_symbols);
+                used_symbols += parts[i];
                 auto nested_inputs = cfi->ExpandedInputCoefficientFunctions();
                 new_cfs.Append(nested_inputs);
               }
@@ -415,7 +422,7 @@ namespace ngfem {
             if (cfs[i]->GetDescription() == identity_descr &&
                 cfs[i]->Dimensions().Size() == 2)
               if (parts[i][0] == parts[i][1] &&
-                  parts.back().find(parts[i]) == string::npos)
+                  parts.back().find(parts[i][0]) == string::npos)
               {
                 parts[i] = parts[i][0];
                 cf_subs[i] = ConstantCF(cfs[i]->Dimensions()[0]);
