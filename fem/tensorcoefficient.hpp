@@ -292,8 +292,10 @@ namespace ngfem {
             return node;
           }
 
-          virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override {
-            for_each(cfs.begin(), cfs.end(), [&](const auto &cf) { cf->TraverseTree(func); });
+          virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override
+          {
+            const auto incfs = InputCoefficientFunctions();
+            for_each(incfs.begin(), incfs.end(), [&](const auto &cf) { cf->TraverseTree(func); });
             func(*this);
           }
 
