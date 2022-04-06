@@ -690,7 +690,7 @@ val : can be one of the following:
                                              throw py::index_error();
                                            return MakeComponentCoefficientFunction (self, comp);
                                          },
-         py::arg("comp"),         
+         py::arg("comp"),
          "returns component comp of vectorial CF")
     .def("__getitem__",  [](shared_ptr<CF> self, py::slice inds)
          {
@@ -728,195 +728,262 @@ val : can be one of the following:
                                            return MakeComponentCoefficientFunction (self, comp);
                                          }, py::arg("components"))
     */
-    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int> comps)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 2)
-             throw py::index_error();
-           
-           auto [c1,c2] = comps;
-           if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
-             throw py::index_error();
-           
-           int comp = c1 * dims[1] + c2;
-           return MakeComponentCoefficientFunction (self, comp);
-         }, py::arg("components"))
+//    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int> comps)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 2)
+//             throw py::index_error();
+//
+//           auto [c1,c2] = comps;
+//           if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+//             throw py::index_error();
+//
+//           int comp = c1 * dims[1] + c2;
+//           return MakeComponentCoefficientFunction (self, comp);
+//         }, py::arg("components"))
+//
+//    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,int> comps)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 2)
+//             throw py::index_error();
+//
+//           auto [inds,c2] = comps;
+//           size_t start, step, n;
+//           InitSlice( inds, dims[0], start, step, n );
+//           int first = start*dims[1]+c2;
+//           Array<int> num = { int(n) };
+//           Array<int> dist = { int(step)*dims[1] };
+//           /*
+//             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+//             throw py::index_error();
+//           */
+//           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+//         }, py::arg("components"))
     
-    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,int> comps)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 2)
-             throw py::index_error();
-           
-           auto [inds,c2] = comps;
-           size_t start, step, n;
-           InitSlice( inds, dims[0], start, step, n );
-           int first = start*dims[1]+c2;
-           Array<int> num = { int(n) };
-           Array<int> dist = { int(step)*dims[1] };
-           /*
-             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
-             throw py::index_error();
-           */
-           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-         }, py::arg("components"))
+//    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,py::slice> comps)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 2)
+//             throw py::index_error();
+//
+//           auto [c1,inds] = comps;
+//           size_t start, step, n;
+//           InitSlice( inds, dims[1], start, step, n );
+//           // cout << "get row " << c1 << ", start=" << start << ", step = " << step << ", n = " << n << endl;
+//           int first = start+c1*dims[1];
+//           Array<int> num = { int(n) };
+//           Array<int> dist = { int(step) };
+//           /*
+//             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+//             throw py::index_error();
+//           */
+//           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+//         }, py::arg("components"))
     
-    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,py::slice> comps)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 2)
-             throw py::index_error();
-           
-           auto [c1,inds] = comps;
-           size_t start, step, n;
-           InitSlice( inds, dims[1], start, step, n );
-           // cout << "get row " << c1 << ", start=" << start << ", step = " << step << ", n = " << n << endl;
-           int first = start+c1*dims[1];
-           Array<int> num = { int(n) };
-           Array<int> dist = { int(step) };
-           /*
-             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
-             throw py::index_error();
-           */
-           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-         }, py::arg("components"))
+//    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,py::slice> comps)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 2)
+//             throw py::index_error();
+//
+//           auto [inds1,inds2] = comps;
+//           size_t start1, step1, n1;
+//           InitSlice( inds1, dims[0], start1, step1, n1 );
+//           size_t start2, step2, n2;
+//           InitSlice( inds2, dims[1], start2, step2, n2 );
+//
+//           int first = start1*dims[1]+start2;
+//           Array<int> num = { int(n1), int(n2) };
+//           Array<int> dist = { int(step1)*dims[1], int(step2) };
+//           /*
+//             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+//             throw py::index_error();
+//           */
+//           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+//         }, py::arg("components"))
     
-    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,py::slice> comps)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 2)
-             throw py::index_error();
-           
-           auto [inds1,inds2] = comps;
-           size_t start1, step1, n1;
-           InitSlice( inds1, dims[0], start1, step1, n1 );
-           size_t start2, step2, n2;
-           InitSlice( inds2, dims[1], start2, step2, n2 );
 
-           int first = start1*dims[1]+start2;
-           Array<int> num = { int(n1), int(n2) };
-           Array<int> dist = { int(step1)*dims[1], int(step2) };
-           /*
-             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
-             throw py::index_error();
-           */
-           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-         }, py::arg("components"))
+//        .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::object,py::object,py::object> comps)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 3)
+//             throw py::index_error();
+//
+//           auto [comp0,comp1,comp2] = comps;
+//           Array<py::object> components = {comp0, comp1, comp2};
+//           int numslice = 0;
+//           int first = 0;
+//           Array<int> num;
+//           Array<int> dist;
+//           int numcontracted = 0;
+//           for (auto i : Range(3))
+//             {
+//               if (py::extract<int> (components[i]).check())
+//               {
+//                 int c = components[i].cast<int>();
+//                 if (c < 0 || c >= dims[i]) throw py::index_error();
+//                 for (auto j : Range(dist.Size()))
+//                     dist[j] *= dims[i];
+//
+//                 first *= dims[i];
+//                 first += c;
+//               }
+//             else if (py::extract<shared_ptr<CoefficientFunction>> (components[i]).check())
+//               {
+//                 shared_ptr<CoefficientFunction> vec = components[i].cast<shared_ptr<CoefficientFunction>>();
+//                 if ( vec->Dimensions().Size() != 1 || vec->Dimensions()[0] != self->Dimensions()[i-numcontracted] )
+//                   throw py::index_error();
+//
+//                 self = MakeSingleContractionCoefficientFunction (self, vec, i-numcontracted);
+//                 numcontracted++;
+//               }
+//             else if (py::extract<py::slice> (components[i]).check())
+//               {
+//                 py::slice slice = components[i].cast<py::slice>();
+//                 numslice++;
+//                 size_t start, step, n;
+//                 InitSlice( slice, dims[i], start, step, n );
+//                 num.Append( int(n) );
+//                 for (auto j : Range(dist.Size()))
+//                   dist[j] *= dims[i];
+//                 dist.Append( int(step) );
+//
+//                 first *= dims[i];
+//                 first += start;
+//               }
+//             else
+//               throw Exception("Invalid object. Only integers and slices are allowed");
+//             }
+//
+//           if (numslice == 0)
+//             return MakeComponentCoefficientFunction (self, first);
+//           else
+//             return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+//
+//         }, py::arg("components"))
+
+    
+//    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int,int,int> comps)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 4)
+//             throw py::index_error();
+//
+//           auto [c1,c2,c3,c4] = comps;
+//           if (c1 < 0 || c2 < 0 || c3 < 0 || c4 < 0 ||
+//               c1 >= dims[0] || c2 >= dims[1] || c3 >= dims[2] || c4 >= dims[3])
+//             throw py::index_error();
+//
+//           int comp = ((c1 * dims[1] + c2) * dims[2] + c3) * dims[3] + c4;
+//           return MakeComponentCoefficientFunction (self, comp);
+//         }, py::arg("components"))
+
     
 
-        .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::object,py::object,py::object> comps)
+//    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,py::slice,py::slice,py::slice> comps)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 4)
+//             throw py::index_error();
+//
+//           auto [inds1,inds2,inds3,inds4] = comps;
+//           size_t start1, step1, n1;
+//           InitSlice( inds1, dims[0], start1, step1, n1 );
+//           size_t start2, step2, n2;
+//           InitSlice( inds2, dims[1], start2, step2, n2 );
+//           size_t start3, step3, n3;
+//           InitSlice( inds3, dims[2], start3, step3, n3 );
+//           size_t start4, step4, n4;
+//           InitSlice( inds4, dims[3], start4, step4, n4 );
+//
+//           int first = ((start1*dims[1]+start2)*dims[2]+start3)*dims[3] + start4;
+//           Array<int> num = { int(n1), int(n2), int(n3), int(n4) };
+//           Array<int> dist = { int(step1)*dims[1]*dims[2]*dims[3], int(step2)*dims[2]*dims[3], int(step3)*dims[3], int(step4) };
+//
+//           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+//         }, py::arg("components"))
+
+    
+//    .def("__getitem__",  [](shared_ptr<CF> self, tuple<shared_ptr<CF>, shared_ptr<CF>> vectors)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 2)
+//             throw py::index_error();
+//
+//           auto [v0,v1] = vectors;
+//           return MakeVectorContractionCoefficientFunction (self, Array{v0,v1});
+//         })
+//
+//    .def("__getitem__",  [](shared_ptr<CF> self, tuple<shared_ptr<CF>, shared_ptr<CF>, shared_ptr<CF>> vectors)
+//         {
+//           FlatArray<int> dims = self->Dimensions();
+//           if (dims.Size() != 3)
+//             throw py::index_error();
+//
+//           auto [v0,v1,v2] = vectors;
+//           return MakeVectorContractionCoefficientFunction (self, Array{v0,v1,v2});
+//         })
+
+    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, py::tuple comps)
          {
            FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 3)
-             throw py::index_error();
 
-           auto [comp0,comp1,comp2] = comps;
-           Array<py::object> components = {comp0, comp1, comp2}; 
-           int numslice = 0;
-           int first = 0;
-           Array<int> num;
-           Array<int> dist;
-           int numcontracted = 0;
-           for (auto i : Range(3))
+           // process ellipses
+           size_t ellipse_count = 0;
+           size_t ellipse_pos = 0;
+           for (auto i : Range(comps.size()))
+             if (py::extract<py::ellipsis>(comps[i]).check())
+               {
+                 ellipse_count++;
+                 ellipse_pos = i;
+               }
+
+           if (ellipse_count > 1)
+              throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
+           else if (ellipse_count == 1)
              {
-               if (py::extract<int> (components[i]).check())
-               {
-                 int c = components[i].cast<int>();
-                 if (c < 0 || c >= dims[i]) throw py::index_error();
-                 for (auto j : Range(dist.Size()))
-                     dist[j] *= dims[i];
-
-                 first *= dims[i];
-                 first += c;
-               }
-             else if (py::extract<shared_ptr<CoefficientFunction>> (components[i]).check())
-               {
-                 shared_ptr<CoefficientFunction> vec = components[i].cast<shared_ptr<CoefficientFunction>>();
-                 if ( vec->Dimensions().Size() != 1 || vec->Dimensions()[0] != self->Dimensions()[i-numcontracted] )
-                   throw py::index_error();
-                 
-                 self = MakeSingleContractionCoefficientFunction (self, vec, i-numcontracted);
-                 numcontracted++;
-               }
-             else if (py::extract<py::slice> (components[i]).check())
-               {
-                 py::slice slice = components[i].cast<py::slice>();
-                 numslice++;
-                 size_t start, step, n; 
-                 InitSlice( slice, dims[i], start, step, n );
-                 num.Append( int(n) );
-                 for (auto j : Range(dist.Size()))
-                   dist[j] *= dims[i];
-                 dist.Append( int(step) );
-
-                 first *= dims[i];
-                 first += start;
-               }
-             else
-               throw Exception("Invalid object. Only integers and slices are allowed");
+               py::list new_comps{};
+               for (auto i : Range(comps.size()))
+                 {
+                   if (i == ellipse_pos)
+                       for (auto j : Range(dims.Size() - comps.size() + 1))
+                           new_comps.append(py::slice(0, dims[ellipse_pos + j], 1));
+                   else
+                       new_comps.append(comps[i]);
+                 }
+               comps = py::tuple(new_comps);
              }
+//           cout << "comps: " << comps << endl;
 
-           if (numslice == 0)
-             return MakeComponentCoefficientFunction (self, first);
-           else
-             return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-
-         }, py::arg("components"))
-
-    
-    .def("__getitem__",  [](shared_ptr<CF> self, tuple<int,int,int,int> comps)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 4)
-             throw py::index_error();
-           
-           auto [c1,c2,c3,c4] = comps;
-           if (c1 < 0 || c2 < 0 || c3 < 0 || c4 < 0 ||
-               c1 >= dims[0] || c2 >= dims[1] || c3 >= dims[2] || c4 >= dims[3])
-             throw py::index_error();
-           
-           int comp = ((c1 * dims[1] + c2) * dims[2] + c3) * dims[3] + c4;
-           return MakeComponentCoefficientFunction (self, comp);
-         }, py::arg("components"))
-
-
-
-    .def("__getitem__",  [](shared_ptr<CF> self, tuple<py::slice,py::slice,py::slice,py::slice> comps)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 4)
-             throw py::index_error();
-           
-           auto [inds1,inds2,inds3,inds4] = comps;
-           size_t start1, step1, n1;
-           InitSlice( inds1, dims[0], start1, step1, n1 );
-           size_t start2, step2, n2;
-           InitSlice( inds2, dims[1], start2, step2, n2 );
-           size_t start3, step3, n3;
-           InitSlice( inds3, dims[2], start3, step3, n3 );
-           size_t start4, step4, n4;
-           InitSlice( inds4, dims[3], start4, step4, n4 );
-
-           int first = ((start1*dims[1]+start2)*dims[2]+start3)*dims[3] + start4;
-           Array<int> num = { int(n1), int(n2), int(n3), int(n4) };
-           Array<int> dist = { int(step1)*dims[1]*dims[2]*dims[3], int(step2)*dims[2]*dims[3], int(step3)*dims[3], int(step4) };
-
-           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-         }, py::arg("components"))
-
-    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, py::args comps)
-         {
-           FlatArray<int> dims = self->Dimensions();
            if (comps.size() != dims.Size())
-               throw py::index_error();
+             throw Exception("Too few indices or slices. Maybe use an ellipse '...'");
+
+           // detect full contractions beforehand
+           Array<shared_ptr<CoefficientFunction>> vecs;
+           vecs.SetAllocSize(comps.size());
+           for (auto i : Range(comps.size()))
+               if (!py::extract<int>(comps[i]).check() && // prevent conversion from int to Constant CF
+                   py::extract<shared_ptr<CoefficientFunction>>(comps[i]).check())
+                 {
+                   shared_ptr<CoefficientFunction> vec = comps[i].cast<shared_ptr<CoefficientFunction>>();
+                   if (vec->Dimensions().Size() != 1 ||
+                       vec->Dimensions()[0] != self->Dimensions()[i])
+                       throw py::index_error();
+                   vecs.Append(vec);
+                 }
+           if (vecs.Size() == dims.Size())
+               return MakeVectorContractionCoefficientFunction (self, move(vecs));
 
            int numslice = 0;
            int first = 0;
            Array<int> num;
            Array<int> dist;
            int numcontracted = 0;
-           for (auto i : Range(comps.size())) {
-               if (py::extract<int>(comps[i]).check()) {
+           for (auto i : Range(comps.size()))
+             {
+               if (py::extract<int>(comps[i]).check())
+                 {
                    int c = comps[i].cast<int>();
                    if (c < 0 || c >= dims[i])
                        throw py::index_error();
@@ -925,7 +992,9 @@ val : can be one of the following:
 
                    first *= dims[i];
                    first += c;
-               } else if (py::extract<shared_ptr<CoefficientFunction>>(comps[i]).check()) {
+                 }
+               else if (py::extract<shared_ptr<CoefficientFunction>>(comps[i]).check())
+                 {
                    shared_ptr<CoefficientFunction> vec =
                            comps[i].cast<shared_ptr<CoefficientFunction>>();
                    if (vec->Dimensions().Size() != 1 ||
@@ -934,7 +1003,9 @@ val : can be one of the following:
 
                    self = MakeSingleContractionCoefficientFunction(self, vec, i - numcontracted);
                    numcontracted++;
-               } else if (py::extract<py::slice>(comps[i]).check()) {
+                 }
+               else if (py::extract<py::slice>(comps[i]).check())
+                 {
                    py::slice slice = comps[i].cast<py::slice>();
                    numslice++;
                    size_t start, step, n;
@@ -946,38 +1017,17 @@ val : can be one of the following:
 
                    first *= dims[i];
                    first += start;
-               } else
-                   throw Exception("Invalid object. Only integers and slices are allowed");
-           }
+                 }
+               else
+                 throw Exception("Invalid object. Only integers, slices and (single) ellipses are allowed");
+             }
 
            if (numslice == 0)
-               return MakeComponentCoefficientFunction(self, first);
+             return MakeComponentCoefficientFunction(self, first);
            else
-               return MakeSubTensorCoefficientFunction(self, first, move(num), move(dist));
+             return MakeSubTensorCoefficientFunction(self, first, move(num), move(dist));
          })
 
-    .def("__getitem__",  [](shared_ptr<CF> self, tuple<shared_ptr<CF>, shared_ptr<CF>> vectors)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 2)
-             throw py::index_error();
-           
-           auto [v0,v1] = vectors;
-           return MakeVectorContractionCoefficientFunction (self, Array{v0,v1});
-         })
-    
-    .def("__getitem__",  [](shared_ptr<CF> self, tuple<shared_ptr<CF>, shared_ptr<CF>, shared_ptr<CF>> vectors)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 3)
-             throw py::index_error();
-           
-           auto [v0,v1,v2] = vectors;
-           return MakeVectorContractionCoefficientFunction (self, Array{v0,v1,v2});
-         })
-
-    
-    
 
     // coefficient expressions
     .def ("__add__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return c1+c2; }, py::arg("cf") )

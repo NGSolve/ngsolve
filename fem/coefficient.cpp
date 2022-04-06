@@ -175,9 +175,11 @@ namespace ngfem
 
   shared_ptr<CoefficientFunction> CoefficientFunction :: DiffJacobi (const CoefficientFunction * var) const
   {
+    /*
     if (var->Dimensions().Size() == 0)
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
     else
+    */
       {
         Array<int> resultdims;
         resultdims += this->Dimensions();
@@ -5375,35 +5377,8 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     auto dims1 = c1->Dimensions();
-    for (size_t i = 0; i < mapping.Size(); i++)
+    for (auto i : Range(mapping))
       code.body += Var(index, i, num).Assign( Var(inputs[0], mapping[i], dims1));
-    
-//    if(num.Size()==1)
-//      {
-//        for (int i = 0; i < num[0]; i++)
-//         {
-//           // int i1,k1;
-//            auto comp = first+i*dist[0];
-//            // GetIndex(dims1, comp, i1, k1);
-//            // code.body += Var(index, i).Assign( Var(inputs[0], i1, k1 ));
-//            code.body += Var(index, i).Assign( Var(inputs[0], comp, dims1 ));
-//          }
-//      }
-//
-//    else if(num.Size()==2)
-//      {
-//        for (int i = 0; i < num[0]; i++)
-//          for (int j = 0; j < num[1]; j++)
-//             {
-//               // int i1,j1;
-//               auto comp = first+i*dist[0]+j*dist[1];
-//               // GetIndex(dims1, comp, i1, j1);
-//               // code.body += Var(index, i, j).Assign( Var(inputs[0], i1, j1 ));
-//               code.body += Var(index, i, j).Assign( Var(inputs[0], comp, dims1));
-//             }
-//      }
-//    else
-//      throw Exception(string("SubTensorCF codegeneration for order ") + ToString(num.Size()) + " not supported");
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -5438,45 +5413,8 @@ public:
     FlatMatrix<T,ORD> temp(dim1, ir.Size(), &hmem[0]);
     
     c1->Evaluate (ir, temp);
-    // size_t nv = ir.Size();
-
     for (size_t i = 0; i < mapping.Size(); i++)
       values.Row(i).Range(ir.Size()) = temp.Row(mapping[i]);
-      /*
-      {
-        size_t inputindex = mapping[i];
-        for (size_t k = 0; k < nv; k++)
-          values(i,k) = temp(inputindex, k);
-      }
-      */
-
-      
-    /*
-    switch (num.Size())
-      {
-      case 1:
-        for (int i = 0; i < num[0]; i++)
-          for (size_t k = 0; k < nv; k++)
-            values(i,k) = temp(first+i*dist[0], k);
-        break;
-      case 2:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++, ii++)
-            for (size_t k = 0; k < nv; k++)
-              values(ii,k) = temp(first+i*dist[0]+j*dist[1], k);
-        break;
-      case 3:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++)
-            for (int l = 0; l < num[2]; l++, ii++)
-              for (size_t k = 0; k < nv; k++)
-                values(ii,k) = temp(first+i*dist[0]+j*dist[1]+l*dist[2], k);
-        break;
-        
-      default:
-        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
-      }
-    */
   }
 
   template <typename MIR, typename T, ORDERING ORD>
@@ -5485,34 +5423,8 @@ public:
                    BareSliceMatrix<T,ORD> values) const
   {
     auto in0 = input[0];
-    // cout << "sub-tensor, t_evaluate input" << endl;
-    // not yet tested
-    for (size_t i = 0; i < mapping.Size(); i++)
+    for (auto i : Range(mapping))
       values.Row(i).Range(ir.Size()) = in0.Row(mapping[i]);
-
-    /*
-    switch (num.Size())
-      {
-      case 1:
-        for (int i = 0; i < num[0]; i++)
-          values.Row(i).Range(ir.Size()) = in0.Row(first+i*dist[0]);
-        break;
-      case 2:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++, ii++)
-            values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]);
-        break;
-      case 3:
-        for (int i = 0, ii = 0; i < num[0]; i++)
-          for (int j = 0; j < num[1]; j++)
-            for (int k = 0; k < num[2]; k++, ii++)
-            values.Row(ii).Range(ir.Size()) = in0.Row(first+i*dist[0]+j*dist[1]+k*dist[2]);
-        break;
-        
-      default:
-        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
-      }
-    */
   }
   
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
@@ -5553,67 +5465,23 @@ public:
   }  
   
 
-
-
-  
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
     c1->NonZeroPattern (ud, v1);
-    for (size_t i = 0; i < mapping.Size(); i++)
+    for (auto i : Range(mapping))
       values(i) = v1(mapping[i]);
-//    switch (num.Size())
-//      {
-//      case 1:
-//        for (int i = 0; i < num[0]; i++)
-//          values(i) = v1(first+i*dist[0]);
-//        break;
-//      case 2:
-//        for (int i = 0, ii = 0; i < num[0]; i++)
-//          for (int j = 0; j < num[1]; j++, ii++)
-//            values(ii) = v1(first+i*dist[0]+j*dist[1]);
-//        break;
-//      case 3:
-//        for (int i = 0, ii = 0; i < num[0]; i++)
-//          for (int j = 0; j < num[1]; j++)
-//            for (int k = 0; k < num[2]; k++, ii++)
-//              values(ii) = v1(first+i*dist[0]+j*dist[1]+k*dist[2]);
-//        break;
-//
-//      default:
-////        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
-//      }
   }
+
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     c1->NonZeroPattern (ud, input[0]);
-    for (size_t i = 0; i < mapping.Size(); i++)
+    for (auto i : Range(mapping))
       values(i) = input[0](mapping[i]);
-//    switch (num.Size())
-//      {
-//      case 1:
-//        for (int i = 0; i < num[0]; i++)
-//          values(i) = input[0](first+i*dist[0]);
-//        break;
-//      case 2:
-//        for (int i = 0, ii = 0; i < num[0]; i++)
-//          for (int j = 0; j < num[1]; j++, ii++)
-//            values(ii) = input[0](first+i*dist[0]+j*dist[1]);
-//        break;
-//      case 3:
-//        for (int i = 0, ii = 0; i < num[0]; i++)
-//          for (int j = 0; j < num[1]; j++)
-//            for (int k = 0; k < num[2]; k++, ii++)
-//            values(ii) = input[0](first+i*dist[0]+j*dist[1]+k*dist[2]);
-//        break;
-//      default:
-//        throw Exception("subtensor of order "+ToString(num.Size())+" not supported");
-//      }
-
   }
 };
 
