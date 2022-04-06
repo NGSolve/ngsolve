@@ -321,7 +321,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("size", py::cpp_function( [] (BaseVector &self) { return self.Size(); } ) )
     .def("__len__", [] (BaseVector &self) { return self.Size(); })
     .def_property_readonly("is_complex", &BaseVector::IsComplex)
-
+    .def_property_readonly ("comm", [](const BaseVector & self) { return self.GetCommunicator(); })
+    
     .def("CreateVector", [] (BaseVector & self, bool copy)
          {
            auto newvec = self.CreateVector();
@@ -949,7 +950,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def_property_readonly("nze", [] ( BaseMatrix & self)
                            { return self.NZE(); }, "number of non-zero elements")
     .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
-
+    .def_property_readonly ("comm", [](const BaseVector & self) { return self.GetCommunicator(); })
+    
     .def("GetOperatorInfo", [] (BaseMatrix & self)
          {
            stringstream str;

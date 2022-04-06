@@ -244,6 +244,10 @@ namespace ngcomp
       {
         integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
         integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
+        
+        for (auto vb : { VOL,BND, BBND, BBBND })
+          if (evaluator[vb])
+            evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
       }
 
     additional_evaluators.Set ("dual", evaluator[VOL]);

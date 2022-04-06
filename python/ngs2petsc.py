@@ -4,9 +4,6 @@ from mpi4py import MPI
 import numpy as np
 
 def CreatePETScMatrix (ngs_mat, freedofs=None):
-    pardofs = ngs_mat.row_pardofs
-    comm = pardofs.comm.mpi4py
-
     locmat = ngs_mat.local_mat
     eh, ew = locmat.entrysizes
     if eh != ew: raise Exception ("only square entries are allowed")
@@ -20,6 +17,10 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
         locfree = np.flatnonzero(freedofs).astype(psc.IntType)
         isfree_loc = psc.IS().createBlock(indices=locfree, bsize=eh)
         apsc_loc = apsc_loc.createSubMatrices(isfree_loc)[0]
+
+        
+    pardofs = ngs_mat.row_pardofs
+    comm = pardofs.comm.mpi4py
 
     
     globnums, nglob = pardofs.EnumerateGlobally(freedofs)
@@ -87,38 +88,57 @@ class VectorMapping:
 
     
 class PETScPreconditioner(ngs.BaseMatrix):
-    def __init__(self,mat,freedofs=None):
+    def __init__(self,mat,freedofs=None, flags=None):
         ngs.BaseMatrix.__init__(self)
         self.ngsmat = mat
         self.vecmap = VectorMapping (mat.row_pardofs, freedofs)
         self.mat = CreatePETScMatrix (mat, freedofs)
-
         self.precond = psc.PC().create()
-        self.precond.setType("gamg")
+        if flags["pctype"]:
+            self.precond.setType(flags["pctype"])            
+        else:
+            self.precond.setType("gamg")
         self.precond.setOperators(self.mat)
+        if flags["levels"]:
+            self.precond.setGAMGLevels(flags["levels"])
         self.precond.setUp()
         self.pscx, self.pscy = self.mat.createVecs()
-        
-    def Height(self):
-        return self.ngsmat.height
-    def Width(self):
-        return self.ngsmat.width
-    def CreateRowVector(self):
-        return self.ngsmat.CreateColVector()
-    def CreateColVector(self):
-        return self.ngsmat.CreateRowVector()
+
+    def Shape(self):
+        return self.ngsmat.shape
+    def CreateVector(self,col):
+        return self.ngsmat.CreateVector(not col)
+    # def Height(self):
+    #    return self.ngsmat.height
+    # def Width(self):
+    #    return self.ngsmat.width
+    # def CreateRowVector(self):
+    #    return self.ngsmat.CreateColVector()
+    # def CreateColVector(self):
+    #    return self.ngsmat.CreateRowVector()
     
-    def Mult(self, x,y):
+    def Mult(self,x,y):
         self.vecmap.N2P(x,self.pscx)
         self.precond.apply(self.pscx, self.pscy)
         self.vecmap.P2N(self.pscy, y)
         
+    def MultTrans(self,x,y):
+        self.vecmap.N2P(x,self.pscx)
+        self.precond.applyTranspose(self.pscx, self.pscy)
+        self.vecmap.P2N(self.pscy, y)
+        
 
-def MakePreconditioner(mat, freedofs):
-    return PETScPreconditioner(mat, freedofs)
+def MakePETScPreconditioner(mat, freedofs, flags):
+    return PETScPreconditioner(mat, freedofs, flags)
+
 
 from ngsolve.comp import RegisterPreconditioner
-RegisterPreconditioner ("gamg", MakePreconditioner)
+RegisterPreconditioner ("gamg", MakePETScPreconditioner)
+RegisterPreconditioner ("petsc", MakePETScPreconditioner, docflags = { \
+                "pctype" : "type of PETSc preconditioner",
+                "levels" : "AMG levels" })
+
+
 
 
     

@@ -22,6 +22,7 @@ namespace ngfem
     bool elementwise_constant = false;
     bool is_complex = false;
     int spacedim = -1;  // needed for grad(x), grad(1), ...
+    string description;
   public:
     // default constructor for archive
     CoefficientFunction() = default;
@@ -174,6 +175,13 @@ namespace ngfem
 
     // creates a wrapper with new shape
     shared_ptr<CoefficientFunction> Reshape (FlatArray<int> adims) const;
+    shared_ptr<CoefficientFunction> Reshape (int s) const
+    { return Reshape( Array<int>( { s } )); }    
+    shared_ptr<CoefficientFunction> Reshape (int h, int w) const
+    { return Reshape( Array<int>( { h, w } )); }
+
+    shared_ptr<CoefficientFunction> Transpose () const;    
+    shared_ptr<CoefficientFunction> TensorTranspose (int i, int j) const;
     
     int SpaceDim () const { return spacedim; } 
     void SetSpaceDim (int adim);
@@ -235,6 +243,7 @@ namespace ngfem
     virtual void PrintReport (ostream & ost) const;
     virtual void PrintReportRec (ostream & ost, int level) const;
     virtual string GetDescription () const;
+    void SetDescription (string desc) { description = desc; }
 
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
@@ -1209,6 +1218,7 @@ public:
   {
     this->SetDimensions (c1->Dimensions());
     this->elementwise_constant = c1->ElementwiseConstant();
+    this->SetDescription(string("unary operation '")+name+"'");
   }
 
   virtual void DoArchive (Archive & archive) override
@@ -1217,11 +1227,12 @@ public:
     archive.Shallow(c1) & name & lam;
   }
 
+  /*
   virtual string GetDescription () const override
   {
     return string("unary operation '")+name+"'";
   }
-
+  */
   virtual bool DefinedOn (const ElementTransformation & trafo) override
   { return c1->DefinedOn(trafo); } 
 
@@ -1755,6 +1766,11 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Array<int> ordering);
 
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, int i1, int i2);
+
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeTensorTraceCoefficientFunction (shared_ptr<CoefficientFunction> c1, int i1, int i2);
 
   // cf_ijk v0_i v1_j v2_k
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
@@ -1839,6 +1855,18 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TransposeCF (shared_ptr<CoefficientFunction> coef);
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> ReshapeCF (shared_ptr<CoefficientFunction> coef,
+                                             FlatArray<int> adims);
+
+  INLINE
+  shared_ptr<CoefficientFunction> ReshapeCF (shared_ptr<CoefficientFunction> coef, int s)  
+  { return ReshapeCF (std::move(coef), Array<int>{s}); }
+
+  INLINE
+  shared_ptr<CoefficientFunction> ReshapeCF (shared_ptr<CoefficientFunction> coef, int h, int w)  
+  { return ReshapeCF (std::move(coef), Array<int>{h,w}); }
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> InverseCF (shared_ptr<CoefficientFunction> coef);
