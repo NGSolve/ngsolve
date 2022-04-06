@@ -692,23 +692,23 @@ val : can be one of the following:
                                          },
          py::arg("comp"),
          "returns component comp of vectorial CF")
-//    .def("__getitem__",  [](shared_ptr<CF> self, py::slice inds)
-//         {
-//           FlatArray<int> dims = self->Dimensions();
-//           if (dims.Size() != 1)
-//             throw py::index_error();
-//
-//           size_t start, step, n;
-//           InitSlice( inds, dims[0], start, step, n );
-//           int first = start;
-//           Array<int> num = { int(n) };
-//           Array<int> dist = { int(step) };
-//           /*
-//             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
-//             throw py::index_error();
-//           */
-//           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
-//         }, py::arg("components"))
+    .def("__getitem__",  [](shared_ptr<CF> self, py::slice inds)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 1)
+             throw py::index_error();
+
+           size_t start, step, n;
+           InitSlice( inds, dims[0], start, step, n );
+           int first = start;
+           Array<int> num = { int(n) };
+           Array<int> dist = { int(step) };
+           /*
+             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+             throw py::index_error();
+           */
+           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+         }, py::arg("components"))
 
     /*
     .def("__getitem__",  [](shared_ptr<CF> self, py::tuple comps)
