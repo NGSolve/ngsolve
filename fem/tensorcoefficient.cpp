@@ -426,6 +426,7 @@ namespace ngfem {
               {
                 parts[i] = parts[i][0];
                 cf_subs[i] = ConstantCF(cfs[i]->Dimensions()[0]);
+                cf_subs[i]->SetDimensions(Array<int>{1});
               }
               else if (auto new_signature =
                       substitute_id_index(signature,
@@ -811,47 +812,42 @@ namespace ngfem {
             tie(expanded_index_signature, expanded_inputs) =
                 tie(original_index_signature, original_inputs);
 
-
-          if (original_inputs.Size() < 3 &&
-              get_option(options, "use_legacy_ops", false))
-            node = optimize_legacy(original_index_signature, original_inputs,
-                                   options);
-
-          if (!node) {
-            if (get_option(options, "optimize_path", false))
+          if (get_option(options, "optimize_path", false))
+          {
+            if (get_option(options, "optimize_identities", false))
             {
-              if (get_option(options, "optimize_identities", false))
-              {
-                tie(index_signature, cfs) = expand_higher_order_identities(
-                    expanded_index_signature, expanded_inputs, options);
-                tie(index_signature, cfs) = optimize_identities(
-                    index_signature, cfs, options);
-                node = optimize_path(index_signature, cfs, options);
-              }
-              else
-                node = optimize_path(expanded_index_signature, expanded_inputs, options);
-            }
-            else if (get_option(options, "optimize_identities", false))
-            {
-              tie(index_signature, cfs) = expand_higher_order_identities(original_index_signature, original_inputs, options);
-              tie(index_signature, cfs) = optimize_identities(index_signature, cfs, options);
+              tie(index_signature, cfs) = expand_higher_order_identities(
+                  expanded_index_signature, expanded_inputs, options);
+              tie(index_signature, cfs) = optimize_identities(
+                  index_signature, cfs, options);
+              node = optimize_path(index_signature, cfs, options);
             }
             else
-              tie (index_signature, cfs) = {original_index_signature, original_inputs};
-
-            if (cfs.Size() < 3 && get_option(options, "use_legacy_ops", false))
-              node = optimize_legacy(index_signature, cfs, options);
+              node = optimize_path(expanded_index_signature, expanded_inputs, options);
           }
+          else if (get_option(options, "optimize_identities", false))
+          {
+            tie(index_signature, cfs) = expand_higher_order_identities(original_index_signature, original_inputs, options);
+            tie(index_signature, cfs) = optimize_identities(index_signature, cfs, options);
+          }
+          else
+            tie (index_signature, cfs) = {original_index_signature, original_inputs};
+
+          if (!node && cfs.Size() < 3 && get_option(options, "use_legacy_ops", false))
+            node = optimize_legacy(index_signature, cfs, options);
+
 
           if (node)
             SetDimensions(node->Dimensions());
           else
           {
+            // compute index mappings and nonzero patterns
             const auto index_sets = compute_multi_indices(index_signature, cfs);
             const auto& RI = index_sets[cfs.Size()];
             const auto& FI = index_sets[cfs.Size() + 1];
 
-            if (RI.Size() > 0) {
+            if (RI.Size() > 0)
+            {
               const auto dims = index_dimensions(RI);
               SetDimensions(dims);
             }
@@ -859,42 +855,81 @@ namespace ngfem {
             for (size_t i: Range(cfs))
               max_mem += index_sets[i].TotalDim();
 
-            index_maps.SetSize(FI.TotalDim(), cfs.Size() + 1);
-            const auto cres = cfs.Size();
-            for (size_t I: Range(index_maps.Height())) {
-              const auto I_array = split(I, FI);
-              index_maps(I, cres) = join(I_array, RI);
-              for (size_t i: Range(cfs)) {
-                index_maps(I, i) = join(I_array, index_sets[i]);
-              }
-            }
+            index_maps = build_index_maps(index_sets, {});
 
             nz_inputs.SetSize(cfs.Size());
-            for (size_t i: Range(cfs)) {
+            for (size_t i: Range(cfs))
               nz_inputs[i] = nonzero_pattern(cfs[i]);
-            }
 
             nz_all.SetSize(index_maps.Height());
             nz_all = true;
             nz_result = nonzero_pattern(this);
+            const auto cres = cfs.Size();
 
-            for (size_t I: Range(index_maps.Height())) {
+            for (size_t I: Range(index_maps.Height()))
+            {
               const auto I_map = index_maps.Row(I);
-              if (!nz_result(I_map(cres))) {
+              if (!nz_result(I_map(cres)))
+              {
                 nz_all(I) = false;
                 continue;
               }
-              for (size_t i: Range(cfs)) {
-                if (!nz_inputs[i](I_map(i))) {
+              for (size_t i: Range(cfs))
+                if (!nz_inputs[i](I_map(i)))
+                {
                   nz_all(I) = false;
                   continue;
                 }
-              }
             }
+
+            if (get_option(options, "sparse_evaluation", true))
+              sparse_index_maps = build_index_maps(index_sets, nz_all);
+
           }
         }
 
-        string EinsumCoefficientFunction::GetDescription() const {
+        Matrix<int> EinsumCoefficientFunction::build_index_maps(
+                const Array<MultiIndex>& index_sets, const optional<Vector<bool>>& nz_pattern)
+        {
+          Matrix<int> imaps;
+
+          const auto& RI = index_sets[cfs.Size()];
+          const auto& FI = index_sets[cfs.Size() + 1];
+          const auto cres = cfs.Size();
+
+          if (!nz_pattern)
+          {
+              imaps.SetSize(FI.TotalDim(), cfs.Size() + 1);
+              for (size_t I: Range(imaps.Height()))
+              {
+                  const auto I_array = split(I, FI);
+                  imaps(I, cres) = join(I_array, RI);
+                  for (size_t i: Range(cfs))
+                      imaps(I, i) = join(I_array, index_sets[i]);
+              }
+          }
+          else
+          {
+              auto nnz = count(nz_pattern->Data(), nz_pattern->Data() + nz_pattern->Size(), true);
+              imaps.SetSize(nnz, cfs.Size() + 1);
+              size_t nzi = 0;
+              for (size_t I: Range(FI.TotalDim()))
+              {
+                  if (!(*nz_pattern)[I])
+                      continue;
+
+                  const auto I_array = split(I, FI);
+                  imaps(nzi, cres) = join(I_array, RI);
+                  for (size_t i: Range(cfs))
+                      imaps(nzi, i) = join(I_array, index_sets[i]);
+                  ++nzi;
+              }
+          }
+          return imaps;
+        }
+
+        string EinsumCoefficientFunction::GetDescription() const
+        {
           stringstream descr{};
           descr << "EinsumCF " << original_index_signature;
 
@@ -987,7 +1022,7 @@ namespace ngfem {
           }
         }
 
-        void EinsumCoefficientFunction::  NonZeroPattern(
+        void EinsumCoefficientFunction::NonZeroPattern(
             const class ProxyUserData &ud,
             FlatVector<AutoDiffDiff<1, bool>> values) const
         {

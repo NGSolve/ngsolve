@@ -240,11 +240,12 @@ namespace ngfem {
           shared_ptr<CoefficientFunction> node{};
           string index_signature{};
           size_t max_mem{0};
-          map<string, bool> options;
+          map<string, bool> options{};
           Array<Vector<bool>> nz_inputs{};
           Vector<bool> nz_result{};
           Vector<bool> nz_all{};
           Matrix<int> index_maps{};
+          Matrix<int> sparse_index_maps{};
 
           string original_index_signature{};
           Array<shared_ptr<CoefficientFunction>> original_inputs{};
@@ -259,6 +260,10 @@ namespace ngfem {
                                     const Array<shared_ptr<CoefficientFunction>> &acfs,
                                     const map<string, bool> &aoptions);
 
+        private:
+          Matrix<int> build_index_maps(const Array<MultiIndex>& index_sets, const optional<Vector<bool>>& nz_pattern);
+
+        public:
           virtual shared_ptr<EinsumCoefficientFunction> Optimize(const map<string, bool> &aoptions) const;
 
           const string &IndexSignature() const { return index_signature; }
@@ -347,8 +352,10 @@ namespace ngfem {
 
             values.AddSize(Dimension(), ir.Size()) = T(0.0);
             const auto cres = cfs.Size();
-            for (size_t I: Range(index_maps.Height())) {
-              const auto& I_map = index_maps.Row(I);
+
+            const auto& I_maps = sparse_index_maps.Height() > 0 ? sparse_index_maps : index_maps;
+            for (size_t I: Range(I_maps.Height())) {
+              const auto& I_map = I_maps.Row(I);
               for (int q: Range(ir)) {
                 T tmp(1.0);
                 for (size_t i: Range(tmp_arrays))
@@ -369,8 +376,11 @@ namespace ngfem {
 
             values.AddSize(Dimension(), ir.Size()) = T(0.0);
             const auto cres = cfs.Size();
-            for (size_t I: Range(index_maps.Height())) {
-              const auto& I_map = index_maps.Row(I);
+
+            const auto& I_maps = sparse_index_maps.Height() > 0 ? sparse_index_maps : index_maps;
+            for (size_t I: Range(I_maps.Height()))
+            {
+              const auto& I_map = I_maps.Row(I);
               for (int q: Range(ir)) {
                 T tmp(1.0);
                 for (size_t i: Range(input))
