@@ -1092,6 +1092,8 @@ namespace ngfem {
 
             dres = dres + EinsumCF(index_signature, new_inputs, options);
           }
+          // TODO: great potential for optimization when equivalent objects are
+          //  identified in Compile
           return dres;
         }
 
@@ -1099,10 +1101,6 @@ namespace ngfem {
         EinsumCoefficientFunction::DiffJacobi(
             const CoefficientFunction *var) const
         {
-          // TODO: really this way?
-          if (node)
-            return node->DiffJacobi(var);
-
           if (this == var)
             return IdentityCF(Dimensions());
 
@@ -1143,9 +1141,11 @@ namespace ngfem {
             auto new_parts{parts};
             new_parts[i] = parts[i] + new_symbols;
             new_parts.back() += new_symbols;
-            dres = dres + EinsumCF(form_index_signature(parts), new_inputs, options);
+            dres = dres + EinsumCF(form_index_signature(new_parts), new_inputs, options);
           }
 
+          // TODO: great potential for optimization when equivalent objects are
+          //  identified in Compile
           return dres;
         }
 
