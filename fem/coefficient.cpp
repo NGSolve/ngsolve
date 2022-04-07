@@ -5383,7 +5383,31 @@ public:
     SetDimensions(anum);
     dim1 = c1->Dimension();    
     elementwise_constant = c1->ElementwiseConstant();
-    SetDescription("subtensor");
+
+    stringstream descr{};
+    auto append_array_str = [&](const auto& array) {
+      bool append{false};
+      auto array_str = ToString(array);
+      for (auto c : array_str)
+        if (c == ':')
+          append = true;
+        else if (c == '\n')
+          {
+            descr << ',';
+            append = false;
+          }
+        else if (append)
+          descr << c;
+        else
+          continue;
+    };
+
+    descr << "subtensor [ first: " << first << ", num: (";
+    append_array_str(num);
+    descr << "), dist: (";
+    append_array_str(dist);
+    descr << ") ]";
+    SetDescription(descr.str());
     
     for (int i = 0; i < Dimension(); i++)
       {
