@@ -2927,7 +2927,9 @@ public:
     
     auto diffc1_trans = diffc1 -> TensorTranspose( 0, 1 ) -> Reshape( inner_dim, h*dimvar );
     auto prod1 = c2->Transpose() * diffc1_trans;
-    auto prod1trans = prod1->Reshape(dimres) -> TensorTranspose( 0, 1 );
+    Array<int> dimtmp{w, h};
+    dimtmp += var->Dimensions();
+    auto prod1trans = prod1->Reshape(dimtmp) -> TensorTranspose( 0, 1 );
     
     auto diffc2_trans = diffc2 -> Reshape( Array<int>{inner_dim,w*dimvar} );
     auto prod2 = c1 * diffc2_trans;
@@ -3754,7 +3756,7 @@ public:
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
     if (this == var)
-      return IdentityCF(D*D) -> Reshape( Array<int> { D, D, D, D } );        
+      return IdentityCF(D*D) -> Reshape( Array<int> { D, D, D, D } );
 
     auto diffc1 = c1->DiffJacobi(var);
     auto inv1 = const_cast<InverseCoefficientFunction*>(this)->shared_from_this();
@@ -4108,7 +4110,7 @@ public:
         return  0.5*(2*TraceCF(c1)*TraceCF(c1->Diff(var,dir)) - TraceCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir)))*IdentityCF(3)- TraceCF(c1->Diff(var,dir))*TransposeCF(c1) - TraceCF(c1)*TransposeCF(c1->Diff(var,dir)) + TransposeCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir));
       }
     else
-      throw Exception("CofactorCF diff only implemented for dim <=3");
+      throw Exception("CofactorCF Diff only implemented for dim <=3");
   }
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
