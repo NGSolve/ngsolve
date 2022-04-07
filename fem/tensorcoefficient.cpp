@@ -293,7 +293,7 @@ namespace ngfem {
         }
 
         string
-        expand_einsum_part(string target_signature_part, const string& nested_signature, const string& used_symbols)
+        expand_einsum_part(string target_signature_part, const string& nested_signature, string used_symbols)
         {
           auto parts_nested = split_signature(nested_signature);
           auto result_nested = parts_nested.back();
@@ -318,7 +318,10 @@ namespace ngfem {
                 if (used_symbols.find(item) != string::npos)
                   relabel << item;
                 else
-                  symbol_map[item] = item;
+                  {
+                    symbol_map[item] = item;
+                    used_symbols += item;
+                  }
               }
 
           string relabel_str = relabel.str();
@@ -350,7 +353,7 @@ namespace ngfem {
           Array<shared_ptr<CoefficientFunction>> new_cfs;
           new_cfs.SetAllocSize(cfs.Size());
 
-          cout << "TP: flatten einsum CF (no recursion)" << endl;
+          cout << IM(5) << "EinsumCF: flatten einsum CF (no recursion)" << endl;
           auto parts = split_signature(signature);
 
           string used_symbols = signature;
@@ -380,7 +383,7 @@ namespace ngfem {
           Array<shared_ptr<CoefficientFunction>> new_cfs;
           new_cfs.SetAllocSize(cfs.Size());
 
-          cout << "TP: expand higher-order identities" << endl;
+          cout << IM(5) << "EinsumCF: expand higher-order identities" << endl;
           auto parts = split_signature(signature);
 
           for (auto i : Range(cfs))
@@ -473,7 +476,7 @@ namespace ngfem {
             }
 
           const auto identity_descr = IdentityCF(1)->GetDescription();
-          cout << "TP: trying to detect some 'legacy' operations" << endl;
+          cout << IM(5) << "EinsumCF: trying to detect some 'legacy' operations" << endl;
 
           const bool optimize_identities =
               get_option(options, "optimize_identities", true);
@@ -482,7 +485,7 @@ namespace ngfem {
           if (cfs.Size() == 1 && index_sets[0].Size() == 2) {
             if (index_sets[0][0].symbol == index_sets[0][1].symbol && index_sets[1].Size() == 0)
             {
-              cout << "EinsumCF: detected trace" << endl;
+              cout << IM(5) << "EinsumCF: detected trace" << endl;
               return TraceCF(cfs[0]);
             }
           }
@@ -500,10 +503,10 @@ namespace ngfem {
               if (cfs[0]->GetDescription() == identity_descr &&
                   optimize_identities)
               {
-                cout << "EinsumCF: detected I * vec" << endl;
+                cout << IM(5) << "EinsumCF: detected I * vec" << endl;
                 return cfs[1];
               }
-              cout << "EinsumCF: detected Mat * Vec" << endl;
+              cout << IM(5) << "EinsumCF: detected Mat * Vec" << endl;
               return cfs[0] * cfs[1];
             }
             else if (index_sets[1][0].symbol == index_sets[0][0].symbol)
@@ -512,10 +515,10 @@ namespace ngfem {
               if (cfs[0]->GetDescription() == identity_descr &&
                   optimize_identities)
               {
-                cout << "EinsumCF: detected I * vec" << endl;
+                cout << IM(5) << "EinsumCF: detected I * vec" << endl;
                 return cfs[1];
               }
-              cout << "EinsumCF: detected Mat.trans * Vec" << endl;
+              cout << IM(5) << "EinsumCF: detected Mat.trans * Vec" << endl;
               return TransposeCF(cfs[0]) * cfs[1];
             }
           }
@@ -538,18 +541,18 @@ namespace ngfem {
               if (cfs[i0]->GetDescription() == identity_descr &&
                   optimize_identities)
               {
-                cout << "EinsumCF: detected I * Mat" << endl;
+                cout << IM(5) << "EinsumCF: detected I * Mat" << endl;
                 return cfs[i1];
               }
 
               if (cfs[i1]->GetDescription() == identity_descr &&
                   optimize_identities)
               {
-                cout << "EinsumCF: detected Mat * I" << endl;
+                cout << IM(5) << "EinsumCF: detected Mat * I" << endl;
                 return cfs[i0];
               }
 
-              cout << "EinsumCF: detected Mat * Mat" << endl;
+              cout << IM(5) << "EinsumCF: detected Mat * Mat" << endl;
               return cfs[i0] * cfs[i1];
             }
           }
@@ -562,17 +565,17 @@ namespace ngfem {
               index_sets[2][0].symbol == index_sets[0][1].symbol) {
             if (cfs[0]->GetDescription() == identity_descr &&
                 optimize_identities) {
-              cout << "EinsumCF: detected I * Mat" << endl;
+              cout << IM(5) << "EinsumCF: detected I * Mat" << endl;
               return cfs[1];
             }
 
             if (cfs[1]->GetDescription() == identity_descr &&
                 optimize_identities) {
-              cout << "EinsumCF: detected Mat.trans * I" << endl;
+              cout << IM(5) << "EinsumCF: detected Mat.trans * I" << endl;
               return TransposeCF(cfs[0]);
             }
 
-            cout << "EinsumCF: detected Mat.trans * Mat" << endl;
+            cout << IM(5) << "EinsumCF: detected Mat.trans * Mat" << endl;
             return TransposeCF(cfs[0]) * cfs[1];
           }
 
@@ -584,17 +587,17 @@ namespace ngfem {
               index_sets[2][0].symbol == index_sets[0][0].symbol) {
             if (cfs[0]->GetDescription() == identity_descr &&
                 optimize_identities) {
-              cout << "EinsumCF: detected I * Mat.trans" << endl;
+              cout << IM(5) << "EinsumCF: detected I * Mat.trans" << endl;
               return TransposeCF(cfs[1]);
             }
 
             if (cfs[1]->GetDescription() == identity_descr &&
                 optimize_identities) {
-              cout << "EinsumCF: detected Mat * I" << endl;
+              cout << IM(5) << "EinsumCF: detected Mat * I" << endl;
               return cfs[0];
             }
 
-            cout << "EinsumCF: detected Mat * Mat.trans" << endl;
+            cout << IM(5) << "EinsumCF: detected Mat * Mat.trans" << endl;
             return cfs[0] * TransposeCF(cfs[1]);
           }
           return {};
@@ -613,12 +616,12 @@ namespace ngfem {
             return cfs[0];
           else if (parts[0].size() == 2)
           {
-            cout << "EinsumCF: detected transpose" << endl;
+            cout << IM(5) << "EinsumCF: detected transpose" << endl;
             return TransposeCF(cfs[0]);
           }
           else
           {
-            cout << "EinsumCF: detected tensor transpose" << endl;
+            cout << IM(5) << "EinsumCF: detected tensor transpose" << endl;
             Array<int> ordering;
             ordering.SetSize(cfs[0]->Dimensions().Size());
             for (auto i : Range(ordering))
@@ -1133,9 +1136,9 @@ namespace ngfem {
 
           auto parts = split_signature(original_index_signature);
 
-          for (size_t i: Range(cfs.Size())) {
+          for (size_t i: Range(original_inputs.Size())) {
             auto new_inputs{original_inputs};
-            new_inputs[i] = cfs[i]->DiffJacobi(var);
+            new_inputs[i] = original_inputs[i]->DiffJacobi(var);
             if (new_inputs[i]->IsZeroCF())
               continue;
             auto new_parts{parts};
