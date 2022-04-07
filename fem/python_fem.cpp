@@ -697,7 +697,7 @@ val : can be one of the following:
            FlatArray<int> dims = self->Dimensions();
            if (dims.Size() != 1)
              throw py::index_error();
-           
+
            size_t start, step, n;
            InitSlice( inds, dims[0], start, step, n );
            int first = start;

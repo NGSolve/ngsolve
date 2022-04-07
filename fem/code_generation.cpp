@@ -88,7 +88,7 @@ namespace ngfem
       slink += " \"";
 #else // WIN32
       lib_file.concat(".so");
-      string slink = "ngsld -shared " + object_files + " -o " + lib_file.string() + " -lngstd -lngbla -lngfem -lngcomp -lngcore";
+      string slink = "ngsld -shared " + object_files + " -o " + lib_file.string() + " -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore";
       for (auto flag : link_flags)
         slink += " "+flag;
 #endif // WIN32
