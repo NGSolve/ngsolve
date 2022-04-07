@@ -3317,6 +3317,7 @@ public:
   {
     SetDimensions (ngstd::INT<2> (dim, dim) );
   }
+
   // For archive
   IdentityCoefficientFunction() = default;
 
@@ -4973,7 +4974,7 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
 
   shared_ptr<CoefficientFunction> CrossProduct (shared_ptr<CoefficientFunction> c1,
-                                              shared_ptr<CoefficientFunction> c2)
+                                                shared_ptr<CoefficientFunction> c2)
   {
     if (c1->IsZeroCF() || c2->IsZeroCF())
       return ZeroCF( c1->Dimensions() );
@@ -4981,9 +4982,59 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     return make_shared<CrossProductCoefficientFunction> (c1, c2);
   }
 
-  shared_ptr<CoefficientFunction> IdentityCF (int dim)
+  shared_ptr<CoefficientFunction> IdentityCF (int dim, int order)
   {
-    return make_shared<IdentityCoefficientFunction> (dim);
+     if (order % 2 != 0)
+         throw NG_EXCEPTION("order of IdentityCF must be even");
+     if (order == 2)
+       return make_shared<IdentityCoefficientFunction> (dim);
+
+     Array<int> dims(order / 2);
+     dims = dim;
+     return IdentityCF(dims);
+  }
+
+  shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims)
+  {
+    map<int, shared_ptr<CoefficientFunction>> Id_map;
+    Array<shared_ptr<CoefficientFunction>> Id_cfs;
+    Id_cfs.SetAllocSize(dims.Size());
+    stringstream signature{};
+    char c1 = 'A';
+    char c2 = 'a';
+    for (auto d : dims)
+    {
+      if (Id_map.find(d) == Id_map.end())
+        Id_map[d] = IdentityCF(d);
+
+      Id_cfs.Append(Id_map[d]);
+
+      if (c1 > 'Z')
+        throw NG_EXCEPTION("IdentityCF: out of symbols for higher-order identity tensor");
+
+      signature << c1++;
+      signature << c2++;
+      if (Id_cfs.Size() < Id_cfs.AllocSize())
+        signature << ",";
+    }
+
+    stringstream result_indices{};
+    c1 = 'A';
+    for (auto i : Range(dims.Size()))
+      result_indices << c1++;
+    c1 = 'a';
+    for (auto i : Range(dims.Size()))
+      result_indices << c1++;
+
+    signature << "->" << result_indices.str();
+    return EinsumCF(signature.str(), Id_cfs);
+//    int dim = 1;
+//    for (auto d : dims)
+//      dim *= d;
+//    Array<int> tensor_dims;
+//    tensor_dims.Append(dims);
+//    tensor_dims.Append(dims);
+//    return make_shared<IdentityCoefficientFunction> (dim) -> Reshape(tensor_dims);
   }
 
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord)
@@ -5332,7 +5383,31 @@ public:
     SetDimensions(anum);
     dim1 = c1->Dimension();    
     elementwise_constant = c1->ElementwiseConstant();
-    SetDescription("subtensor");
+
+    stringstream descr{};
+    auto append_array_str = [&](const auto& array) {
+      bool append{false};
+      auto array_str = ToString(array);
+      for (auto c : array_str)
+        if (c == ':')
+          append = true;
+        else if (c == '\n')
+          {
+            descr << ',';
+            append = false;
+          }
+        else if (append)
+          descr << c;
+        else
+          continue;
+    };
+
+    descr << "subtensor [ first: " << first << ", num: (";
+    append_array_str(num);
+    descr << "), dist: (";
+    append_array_str(dist);
+    descr << ") ]";
+    SetDescription(descr.str());
     
     for (int i = 0; i < Dimension(); i++)
       {
