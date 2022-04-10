@@ -205,7 +205,7 @@ namespace ngla
 
 
   template <typename T = double>
-  class ParallelVVector : public VVector<T>, 
+  class ParallelVVector : // public VVector<T>, 
 			  public S_ParallelBaseVectorPtr<typename mat_traits<T>::TSCAL>
   {
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -218,14 +218,14 @@ namespace ngla
     [[deprecated("too much info, use ParallelVVector(pardofs) instead")]]
     explicit ParallelVVector (int as, shared_ptr<ParallelDofs> aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
-      : S_BaseVectorPtr<TSCAL> (as, ES), VVector<T> (as), 
+    : S_BaseVectorPtr<TSCAL> (as, ES), // VVector<T> (as), 
 	S_ParallelBaseVectorPtr<TSCAL> (as, ES, aparalleldofs, astatus)
     { local_vec = make_shared<VFlatVector<T>>(as, (T*)pdata); }
 
     explicit ParallelVVector (shared_ptr<ParallelDofs> aparalleldofs,
 			      PARALLEL_STATUS astatus = CUMULATED)
       : S_BaseVectorPtr<TSCAL> (aparalleldofs->GetNDofLocal(), ES), 
-	VVector<T> (aparalleldofs->GetNDofLocal()), 
+      // VVector<T> (aparalleldofs->GetNDofLocal()), 
 	S_ParallelBaseVectorPtr<TSCAL> (aparalleldofs->GetNDofLocal(), ES, aparalleldofs, astatus)
     { local_vec = make_shared<VFlatVector<T>>(aparalleldofs->GetNDofLocal(), (T*)pdata); }
 
