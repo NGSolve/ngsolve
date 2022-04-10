@@ -579,7 +579,12 @@ namespace ngcomp
   }
 
   
-
+  template <typename SCAL>
+  void S_LinearForm<SCAL> :: CleanUpLevel ()
+  {
+    vec.reset();
+    this -> allocated = false;
+  }
 
 
   template <class SCAL>
@@ -707,12 +712,6 @@ namespace ngcomp
 
 
 
-  template <typename TV>
-  void T_LinearForm<TV> :: CleanUpLevel ()
-  {
-    vec.reset();
-    this -> allocated = false;
-  }
 
 
   template <typename TV>
@@ -720,7 +719,7 @@ namespace ngcomp
   AddElementVector (FlatArray<int> dnums, FlatVector<TSCAL> elvec,
 		    int cachecomp) 
   {
-    FlatVector<TV> fv = vec->FV();
+    FlatVector<TV> fv = vec->template FV<TV>();
     if(cachecomp < 0)
       {
         Scalar2ElemVector<TV, TSCAL> ev(elvec);
@@ -757,7 +756,7 @@ namespace ngcomp
   SetElementVector (FlatArray<int> dnums,
 		    FlatVector<TSCAL> elvec) 
   {
-    FlatVector<TV> fv = vec->FV();
+    FlatVector<TV> fv = vec->template FV<TV>();
     for (int k = 0; k < dnums.Size(); k++)
       if (IsRegularDof(dnums[k]))
 	for (int j = 0; j < HEIGHT; j++)
@@ -785,7 +784,7 @@ namespace ngcomp
   GetElementVector (FlatArray<int> dnums,
 		    FlatVector<TSCAL> elvec) const
   {
-    FlatVector<TV> fv = vec->FV();
+    FlatVector<TV> fv = vec->template FV<TV>();
     for (int k = 0; k < dnums.Size(); k++)
       if (IsRegularDof(dnums[k]))
 	for (int j = 0; j < HEIGHT; j++)
