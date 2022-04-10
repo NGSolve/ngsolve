@@ -579,8 +579,31 @@ namespace ngcomp
   }
 
   
+  template <typename SCAL>
+  void S_LinearForm<SCAL> :: CleanUpLevel ()
+  {
+    vec.reset();
+    this -> allocated = false;
+  }
 
+  template <typename SCAL>
+  void S_LinearForm<SCAL> ::
+  SetElementVector (FlatArray<int> dnums,
+		    FlatVector<SCAL> elvec) 
+  {
+    vec -> SetIndirect (dnums, elvec);
+  }
 
+  template <typename SCAL>
+  void S_LinearForm<SCAL> ::
+  GetElementVector (FlatArray<int> dnums,
+		    FlatVector<SCAL> elvec) const
+  {
+    vec -> GetIndirect (dnums, elvec);
+  }
+
+  
+  
 
   template <class SCAL>
   void S_LinearForm<SCAL> :: AssembleIndependent (LocalHeap & lh)
@@ -686,33 +709,38 @@ namespace ngcomp
   }
 
 
+  /*
   template <typename TV>
   T_LinearForm<TV> :: ~T_LinearForm () { ; }
-
+  */
+  
 
   template <typename TV>
   void T_LinearForm<TV> :: AllocateVector ()
   {
-    // delete vec;
-    // using this::fespace;
     auto fes = this->fespace;
+
+    /*
     if ( fes->IsParallel() )
       vec = make_shared<ParallelVVector<TV>> (fes->GetNDof(), 
                                               fes->GetParallelDofs(), DISTRIBUTED);
     else
       vec = make_shared<VVector<TV>> (fes->GetNDof());
+    */
+    if ( fes->IsParallel() )
+      vec = make_shared<S_ParallelBaseVectorPtr<TSCAL>> (fes->GetNDof(),
+                                                         fes->GetDimension()*this->cacheblocksize,
+                                                         fes->GetParallelDofs(), DISTRIBUTED);
+    else
+      vec = make_shared<S_BaseVectorPtr<TSCAL>> (fes->GetNDof(),
+                                                 fes->GetDimension()*this->cacheblocksize);
+      
     (*vec) = TSCAL(0);
     vec->SetParallelStatus (DISTRIBUTED);
   }
 
 
 
-  template <typename TV>
-  void T_LinearForm<TV> :: CleanUpLevel ()
-  {
-    vec.reset();
-    this -> allocated = false;
-  }
 
 
   template <typename TV>
@@ -720,7 +748,7 @@ namespace ngcomp
   AddElementVector (FlatArray<int> dnums, FlatVector<TSCAL> elvec,
 		    int cachecomp) 
   {
-    FlatVector<TV> fv = vec->FV();
+    FlatVector<TV> fv = vec->template FV<TV>();
     if(cachecomp < 0)
       {
         Scalar2ElemVector<TV, TSCAL> ev(elvec);
@@ -752,12 +780,13 @@ namespace ngcomp
     vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
   }
 
+  /*
   template <typename TV>
   void T_LinearForm<TV> ::
   SetElementVector (FlatArray<int> dnums,
 		    FlatVector<TSCAL> elvec) 
   {
-    FlatVector<TV> fv = vec->FV();
+    FlatVector<TV> fv = vec->template FV<TV>();
     for (int k = 0; k < dnums.Size(); k++)
       if (IsRegularDof(dnums[k]))
 	for (int j = 0; j < HEIGHT; j++)
@@ -777,7 +806,6 @@ namespace ngcomp
   {
     vec -> SetIndirect (dnums, elvec);
   }
-  
 
 
   template <typename TV>
@@ -785,7 +813,7 @@ namespace ngcomp
   GetElementVector (FlatArray<int> dnums,
 		    FlatVector<TSCAL> elvec) const
   {
-    FlatVector<TV> fv = vec->FV();
+    FlatVector<TV> fv = vec->template FV<TV>();
     for (int k = 0; k < dnums.Size(); k++)
       if (IsRegularDof(dnums[k]))
 	for (int j = 0; j < HEIGHT; j++)
@@ -805,7 +833,7 @@ namespace ngcomp
   {
     vec -> GetIndirect (dnums, elvec);
   }
-  
+  */
 
 
   ComponentLinearForm :: ComponentLinearForm (shared_ptr<LinearForm> abase_lf, int acomp, int ancomp)

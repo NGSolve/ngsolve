@@ -22,7 +22,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         h1hofe_segm.cpp h1hofe_trig.cpp hdivdivfe.cpp hcurlcurlfe.cpp symbolicintegrator.cpp tpdiffop.cpp
         newtonCF.cpp tensorproductintegrator.cpp code_generation.cpp
         voxelcoefficientfunction.cpp
-        )
+        tensorcoefficient.cpp tensorcoefficient.hpp)
 
 if(USE_CUDA)
     cuda_add_library( cuda_fem STATIC
@@ -53,7 +53,7 @@ install( FILES
         l2hofe_impl.hpp hcurlcurlfe.hpp
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp tpdiffop.hpp tpintrule.hpp
         thcurlfe_impl.hpp symbolicintegrator.hpp hcurlhdiv_dshape.hpp code_generation.hpp 
-        tensorproductintegrator.hpp fe_interfaces.hpp python_fem.hpp
+        tensorcoefficient.hpp tensorproductintegrator.hpp fe_interfaces.hpp python_fem.hpp
         voxelcoefficientfunction.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel

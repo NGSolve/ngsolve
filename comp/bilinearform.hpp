@@ -440,11 +440,13 @@ namespace ngcomp
   {
   protected:
 
+    // have parallel wrapper for distributed meshes:
     shared_ptr<BaseMatrix> harmonicext;
     shared_ptr<BaseMatrix> harmonicexttrans; 
     shared_ptr<BaseMatrix> innersolve;
     shared_ptr<BaseMatrix> innermatrix;
 
+    // local operators:
     ElementByElementMatrix<SCAL> *harmonicext_ptr, *harmonicexttrans_ptr, *innersolve_ptr, *innermatrix_ptr;
 
     
@@ -459,34 +461,20 @@ namespace ngcomp
     
         
   public:
-    /// 
+    ///
+    /*
     S_BilinearForm (shared_ptr<FESpace> afespace, const string & aname,
 		    const Flags & flags)
-      : BilinearForm (afespace, aname, flags) 
-    { 
-      /*
-      harmonicext = NULL;
-      harmonicexttrans = NULL;
-      innersolve = NULL;
-      innermatrix = NULL;
-      */
-    }
+      : BilinearForm (afespace, aname, flags)  { } 
 
     ///
     S_BilinearForm (shared_ptr<FESpace> afespace, 
 		    shared_ptr<FESpace> afespace2,
 		    const string & aname, const Flags & flags)
-      : BilinearForm (afespace, afespace2, aname, flags) 
-    {
-      /*
-      harmonicext = NULL;
-      harmonicexttrans = NULL;
-      innersolve = NULL;
-      innermatrix = NULL;
-      */
-    }
-
-
+      : BilinearForm (afespace, afespace2, aname, flags) { } 
+    */
+    using BilinearForm::BilinearForm;
+    
     ~S_BilinearForm();
 
     ///
@@ -520,10 +508,8 @@ namespace ngcomp
     virtual void AddMatrixTrans (double val, const BaseVector & x,
                                  BaseVector & y, LocalHeap & lh) const;
 
-    virtual void LapackEigenSystem(FlatMatrix<SCAL> & elmat, LocalHeap & lh) const 
-    {
-      ;
-    }
+    virtual void LapackEigenSystem(FlatMatrix<SCAL> & elmat, LocalHeap & lh) const;
+    // { ; }
   
     void ApplyLinearizedMatrixAdd1 (SCAL val,
 				    const BaseVector & lin,
@@ -647,6 +633,7 @@ namespace ngcomp
   protected:
 
   public:
+    /*
     ///
     T_BilinearForm (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags);
     ///
@@ -654,8 +641,10 @@ namespace ngcomp
 		    shared_ptr<FESpace> afespace2,
 		    const string & aname,
 		    const Flags & flags);
+    */
+    using S_BilinearForm<TSCAL> :: S_BilinearForm;
     ///
-    virtual ~T_BilinearForm ();
+    virtual ~T_BilinearForm () { };
 
     ///
     virtual shared_ptr<BilinearForm> GetLowOrderBilinearForm() override;
@@ -676,7 +665,7 @@ namespace ngcomp
 				   ElementId id, bool addatomic, 
 				   LocalHeap & lh) override;
 
-    virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const override;
+    // virtual void LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const override;
   };
 
 

@@ -147,23 +147,28 @@ namespace ngcomp
   template <class SCAL>
   class NGS_DLL_HEADER S_LinearForm : public LinearForm
   {
+  protected:
+    shared_ptr<BaseVector> vec;    
+    
   public:
     typedef SCAL TSCAL;
-
-    ///
     using LinearForm::LinearForm;
 
+    virtual BaseVector & GetVector () const override { return *vec; }
+    virtual shared_ptr<BaseVector> GetVectorPtr () const override { return vec; }
+
+    virtual void CleanUpLevel() override;    
     ///
     virtual void AddElementVector (FlatArray<int> dnums,
                                    FlatVector<SCAL> elvec,
-                                   int cachecomp = -1) = 0;
+                                   int cachecomp = -1) override = 0;
     virtual void SetElementVector (FlatArray<int> dnums,
-                                   FlatVector<SCAL> elvec) = 0;
+                                   FlatVector<SCAL> elvec) override;
     virtual void GetElementVector (FlatArray<int> dnums,
-				   FlatVector<SCAL> elvec) const = 0;
+				   FlatVector<SCAL> elvec) const override;
 
     ///
-    virtual void Assemble (LocalHeap & lh);
+    virtual void Assemble (LocalHeap & lh) override;
     void AssembleIndependent (LocalHeap & lh);
   };
 
@@ -177,40 +182,41 @@ namespace ngcomp
   class NGS_DLL_HEADER T_LinearForm : public S_LinearForm<typename mat_traits<TV>::TSCAL>
   {
     ///
-    shared_ptr<VVector<TV>> vec;
+    // shared_ptr<VVector<TV>> vec;
     typedef S_LinearForm<typename mat_traits<TV>::TSCAL> BASE;
+    using BASE::vec;
   public:
 
     typedef typename mat_traits<TV>::TSCAL TSCAL;
     enum { HEIGHT = mat_traits<TV>::HEIGHT };
 
     ///
-    //using S_LinearForm<TSCAL>::S_LinearForm;
-    
+    using S_LinearForm<TSCAL>::S_LinearForm;
+
+    /*
     T_LinearForm(shared_ptr<FESpace> afespace, const string & aname,
         const Flags & flags)
         : BASE(afespace, aname, flags) { ; }
-    
+    */
     ///
-    virtual ~T_LinearForm ();
+    virtual ~T_LinearForm () { };
 
-    ///
-    virtual BaseVector & GetVector () const override { return *vec; }
-    virtual shared_ptr<BaseVector> GetVectorPtr () const override { return vec; }
 
     ///
     virtual void AllocateVector () override;
     ///
-    virtual void CleanUpLevel() override;
+    // virtual void CleanUpLevel() override;
 
     ///
     virtual void AddElementVector (FlatArray<int> dnums,
 				   FlatVector<TSCAL> elvec,
                                    int cachecomp = -1) override;
+    /*
     virtual void SetElementVector (FlatArray<int> dnums,
                                    FlatVector<TSCAL> elvec) override;
     virtual void GetElementVector (FlatArray<int> dnums,
 				   FlatVector<TSCAL> elvec) const override;
+    */
   };
 
 
