@@ -586,6 +586,24 @@ namespace ngcomp
     this -> allocated = false;
   }
 
+  template <typename SCAL>
+  void S_LinearForm<SCAL> ::
+  SetElementVector (FlatArray<int> dnums,
+		    FlatVector<SCAL> elvec) 
+  {
+    vec -> SetIndirect (dnums, elvec);
+  }
+
+  template <typename SCAL>
+  void S_LinearForm<SCAL> ::
+  GetElementVector (FlatArray<int> dnums,
+		    FlatVector<SCAL> elvec) const
+  {
+    vec -> GetIndirect (dnums, elvec);
+  }
+
+  
+  
 
   template <class SCAL>
   void S_LinearForm<SCAL> :: AssembleIndependent (LocalHeap & lh)
@@ -691,21 +709,32 @@ namespace ngcomp
   }
 
 
+  /*
   template <typename TV>
   T_LinearForm<TV> :: ~T_LinearForm () { ; }
-
+  */
+  
 
   template <typename TV>
   void T_LinearForm<TV> :: AllocateVector ()
   {
-    // delete vec;
-    // using this::fespace;
     auto fes = this->fespace;
+
+    /*
     if ( fes->IsParallel() )
       vec = make_shared<ParallelVVector<TV>> (fes->GetNDof(), 
                                               fes->GetParallelDofs(), DISTRIBUTED);
     else
       vec = make_shared<VVector<TV>> (fes->GetNDof());
+    */
+    if ( fes->IsParallel() )
+      vec = make_shared<S_ParallelBaseVectorPtr<TSCAL>> (fes->GetNDof(),
+                                                         fes->GetDimension()*this->cacheblocksize,
+                                                         fes->GetParallelDofs(), DISTRIBUTED);
+    else
+      vec = make_shared<S_BaseVectorPtr<TSCAL>> (fes->GetNDof(),
+                                                 fes->GetDimension()*this->cacheblocksize);
+      
     (*vec) = TSCAL(0);
     vec->SetParallelStatus (DISTRIBUTED);
   }
@@ -751,6 +780,7 @@ namespace ngcomp
     vec -> AddIndirect (dnums, elvec, fespace->HasAtomicDofs());
   }
 
+  /*
   template <typename TV>
   void T_LinearForm<TV> ::
   SetElementVector (FlatArray<int> dnums,
@@ -776,7 +806,6 @@ namespace ngcomp
   {
     vec -> SetIndirect (dnums, elvec);
   }
-  
 
 
   template <typename TV>
@@ -804,7 +833,7 @@ namespace ngcomp
   {
     vec -> GetIndirect (dnums, elvec);
   }
-  
+  */
 
 
   ComponentLinearForm :: ComponentLinearForm (shared_ptr<LinearForm> abase_lf, int acomp, int ancomp)
