@@ -1065,14 +1065,10 @@ namespace ngcomp
 	    
 	    shared_ptr<BaseVector> ovec = vec[i];
 	
-#ifdef PARALLEL
-	    // if ( this->GetFESpace()->GetParallelDofs() )
             if ( this->GetFESpace()->IsParallel() )
 	      vec[i] = make_shared<S_ParallelBaseVectorPtr<TSCAL>> (ndof, this->GetFESpace()->GetDimension()*this->cacheblocksize,
 								    this->GetFESpace()->GetParallelDofs(), CUMULATED);
 	    else
-#endif
- 	      // vec[i] = make_shared<VVector<TV>> (ndof);
               vec[i] = make_shared<S_BaseVectorPtr<TSCAL>> (ndof, this->GetFESpace()->GetDimension()*this->cacheblocksize);
             
 	    *vec[i] = TSCAL(0);
