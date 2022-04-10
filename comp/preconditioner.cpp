@@ -3,6 +3,7 @@
 // #include <solve.hpp>
 #include <parallelngs.hpp>
 
+
 namespace ngcomp
 {
   using namespace ngmg;
@@ -283,7 +284,7 @@ namespace ngcomp
       throw Exception ("smoother could not be allocated"); 
 
     auto prol = lo_fes->GetProlongation();
-    mgp = make_shared<MultigridPreconditioner> (*ma, *lo_fes, *lo_bfa, sm, prol);
+    mgp = make_shared<MultigridPreconditioner> (lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
@@ -382,7 +383,7 @@ namespace ngcomp
 
     auto prol = lo_fes->GetProlongation();
 
-    mgp = make_shared<MultigridPreconditioner> (*ma, *lo_fes, *lo_bfa, sm, prol);
+    mgp = make_shared<MultigridPreconditioner> (lo_bfa, sm, prol);
     mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
     mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
     mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
