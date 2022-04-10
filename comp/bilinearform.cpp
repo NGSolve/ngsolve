@@ -5918,6 +5918,7 @@ namespace ngcomp
   template class S_BilinearForm<double>;
   template class S_BilinearForm<Complex>;
 
+  /*
   template <class TM, class TV>
   T_BilinearForm<TM,TV>::
   T_BilinearForm (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
@@ -5935,7 +5936,9 @@ namespace ngcomp
 
   template <class TM, class TV>
   T_BilinearForm<TM,TV>:: ~T_BilinearForm () { }
+  */
 
+  
   template <class TM, class TV>
     shared_ptr<BilinearForm>  T_BilinearForm<TM,TV>::
     GetLowOrderBilinearForm()
@@ -5983,14 +5986,10 @@ namespace ngcomp
 
     this->mats.SetSize(this->ma->GetNLevels());
     this->mats.Last() = mat;
-    // this->mats.Append (mat);
-
-    // delete graph;
 
     if (!this->multilevel || this->low_order_bilinear_form)
       for (int i = 0; i < this->mats.Size()-1; i++)
         this->mats[i].reset();
-
 
     this->AllocateInternalMatrices();
   }
@@ -6015,9 +6014,10 @@ namespace ngcomp
     auto afespace = this->GetTrialSpace();
     
     if (afespace->IsParallel())
-      return make_unique<ParallelVVector<TV>> (afespace->GetNDof(), afespace->GetParallelDofs());
+      return make_unique<ParallelVVector<TV>> (afespace->GetParallelDofs());
     else
       return make_unique<VVector<TV>> (afespace->GetNDof());
+    // return make_unique<S_BaseVectorPtr<TSCAL>> (afespace->GetNDof(), sizeof(TV)/sizeof(TSCAL));
   }
   
   template <class TM, class TV>
@@ -6033,8 +6033,7 @@ namespace ngcomp
 
 
 
-
-
+  /*
   template <class TM, class TS>
   inline void AddPartOfElementMatrix(TM & dest, const FlatMatrix<TS> & source,
                                      const int start1, const int start2)
@@ -6062,7 +6061,8 @@ namespace ngcomp
   {
     dest += source(start1, start2);
   }
-    
+  */
+  
   
   template <class TM, class TV>
   void T_BilinearForm<TM,TV>::
@@ -6076,8 +6076,8 @@ namespace ngcomp
   }
 
 
-  template <class TM, class TV>
-  void T_BilinearForm<TM,TV>::LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const 
+  template <class TSCAL>
+  void S_BilinearForm<TSCAL>::LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const 
   {
     if (!this->symmetric || this->fespace->IsComplex())
       {
@@ -6742,26 +6742,6 @@ namespace ngcomp
 
     prod = 0;
     bf -> AddMatrix (1, v, prod, lh);
-
-    /*
-    bool done = false;
-    static int lh_size = 10*1000*1000;
-    
-    while(!done && lh_size < 1000*1000*1000)
-      {
-        try
-          {
-            // LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-            bf -> AddMatrix (1, v, prod, lh);
-            done = true;
-          }            
-        catch (LocalHeapOverflow lhex)
-          {
-            lh_size *= 5;
-            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
-          }
-      }    
-    */
     
     prod.SetParallelStatus (DISTRIBUTED);
   }
@@ -6773,27 +6753,6 @@ namespace ngcomp
     prod.Distribute();
 
     bf -> AddMatrix (val, v, prod, lh);
-    /*
-    bool done = false;
-    static int lh_size = 10*1000*1000;
-    
-    while(!done && lh_size < 1000*1000*1000)
-      {
-        try
-          {
-            static Timer t("BilinearFormApplication"); RegionTimer r(t);
-            // LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-            bf -> AddMatrix (val, v, prod, lh);
-            done = true;
-          }            
-        catch (LocalHeapOverflow lhex)
-          {
-            lh_size *= 5;
-            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
-          }
-      }    
-    */
-    
   }
 
   void BilinearFormApplication :: 
@@ -6803,25 +6762,6 @@ namespace ngcomp
     prod.Distribute();
 
     bf -> AddMatrix (val, v, prod, lh);
-    /*
-    bool done = false;
-    static int lh_size = 10*1000*1000;
-    
-    while(!done && lh_size < 1000*1000*1000)
-      {
-        try
-          {
-            // LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-            bf -> AddMatrix (val, v, prod, lh);
-            done = true;
-          }            
-        catch (LocalHeapOverflow lhex)
-          {
-            lh_size *= 5;
-            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
-          }
-      }    
-    */
   }
 
   void BilinearFormApplication :: 
@@ -6831,25 +6771,6 @@ namespace ngcomp
     prod.Distribute();
 
     bf -> AddMatrixTrans (val, v, prod, lh);
-    /*
-    bool done = false;
-    static int lh_size = 10*1000*1000;
-    
-    while(!done && lh_size < 1000*1000*1000)
-      {
-        try
-          {
-            // LocalHeap lh(lh_size*TaskManager::GetMaxThreads(), "biform-AddMatrix - Heap");
-            bf -> AddMatrixTrans (val, v, prod, lh);
-            done = true;
-          }            
-        catch (LocalHeapOverflow lhex)
-          {
-            lh_size *= 5;
-            cerr << "Trying automatic heapsize increase to " << lh_size << endl;
-          }
-      }    
-    */
   }
 
   shared_ptr<BilinearForm> CreateBilinearForm (shared_ptr<FESpace> space,
