@@ -5644,7 +5644,7 @@ public:
     dim1 = c1->Dimension();
       
     if (dims1.Size() != dims.Size())
-      throw Exception("ExtendDimension needs same tensordimension");
+      throw Exception("ExtendDimension needs same tensor dimension");
 
     for (int i = pos.Size(); i < dims.Size(); i++)
       pos.Append(0);
@@ -5747,7 +5747,16 @@ public:
     if (this == var) return dir;
     return MakeExtendDimensionCoefficientFunction (c1->Diff(var, dir), Array<int> (dims), Array<int> (pos),
                                                Array<int>(stride));
-  }  
+  }
+
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
+  {
+    if (this == var) return IdentityCF(this->Dimensions());
+
+    auto diffc1 = c1->DiffJacobi(var);
+    return MakeExtendDimensionCoefficientFunction (diffc1, Array<int> (diffc1->Dimensions()), Array<int> (pos),
+                                                   Array<int>(stride));
+  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
