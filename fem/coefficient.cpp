@@ -5648,15 +5648,29 @@ public:
 
     for (int i = pos.Size(); i < dims.Size(); i++)
       pos.Append(0);
-    for (int i = stride.Size(); i < dims.Size(); i++)
-      stride.Append(1);
-    
-    int firstoutput = pos[0];
-    for (int i = 1; i < dims.Size(); i++)
+
+    if (stride.Size() > 0 && stride.Size() != dims.Size())
+      throw Exception("stride must be either of size zero or the same size as dims");
+
+    if (stride.Size() == 0)
       {
-        firstoutput *= dims[i];
-        firstoutput += pos[i];
+        stride.SetSize(dims.Size());
+        stride = 1;
+        for (int i = dims.Size() - 1; i >= 0; i--)
+          for (int j = 0; j < i; ++j)
+            stride[j] *= dims[i];
       }
+
+//    cout << "stride: " << stride << endl;
+    
+    int firstoutput = 0;
+    for (int i = 0; i < dims.Size(); i++)
+      {
+        firstoutput += pos[i] * stride[i];
+      }
+
+//    cout << "first output: " << firstoutput << endl;
+
     for (int i = 0; i < c1->Dimension(); i++)
       {
         int index = i;
@@ -5665,15 +5679,14 @@ public:
         for (int j = dims1.Size()-1; j >= 0; j--)
           {
             int indexj = index % dims1[j];
-            outputindex += indexj * outputdist;
-            outputdist *= dims[j];
+            outputindex += indexj * stride[j];
             index /= dims1[j];
           }
         if (outputindex > Dimension())
-          throw Exception("illegal ouptut index "+ToString(outputindex));
+          throw Exception("illegal output index "+ToString(outputindex));
         mapping.Append (outputindex);
       }
-    // cout << "output indices = " << mapping << endl;
+//    cout << "output indices = " << mapping << endl;
   }
 
   
@@ -5757,8 +5770,16 @@ public:
     resdims += Dimensions();
     resdims += var->Dimensions();
 
+    Array<int> resstride(resdims.Size());
+    resstride.Range(0, dims.Size()) = stride;
+    resstride.Range(dims.Size(), END) = 1;
+    for (int i = resdims.Size() - 1; i >= dims.Size(); i--)
+      for (int j = 0; j < i; ++j)
+        resstride[j] *= resdims[i];
+
+//    cout << "new stride: " << resstride << endl;
     auto diffc1 = c1->DiffJacobi(var);
-    return MakeExtendDimensionCoefficientFunction (diffc1, move(resdims), Array<int> (pos), Array<int>(stride));
+    return MakeExtendDimensionCoefficientFunction (diffc1, move(resdims), Array<int>(pos), move(resstride));
   }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
