@@ -224,6 +224,39 @@ def test_diff(options):
     assert same(DDPsi, PsiOpt.Diff(Cv).Diff(Cv).Compile())
 
 
+def test_tensor_diff():
+    Cv = fem.Einsum('ki,kj->ij', pF, pF)
+    b = fem.Einsum('ij,jk,kl->il', F, InvES(Cv), TransposeES(F))
+    same(Trace(Cv).Diff(Cv), fem.Einsum('ii', Cv).Diff(Cv))
+    same(Trace(b).Diff(Cv), fem.Einsum('ii', b).Diff(Cv))
+
+    same(Trace(pF).Diff(pF), TraceES(pF).Diff(pF))
+    same(Trace(b).Diff(Cv), TraceES(b).Diff(Cv))
+
+    same(Det(pF).Diff(pF), DetES(pF).Diff(pF))
+    same(Det(b).Diff(Cv), DetES(b).Diff(Cv))
+
+    same(Inv(pF).Diff(pF), InvES(pF).Diff(pF))
+    same(Inv(b).Diff(Cv), InvES(b).Diff(Cv))
+
+    same(pF.trans.Diff(pF), TransposeES(pF).Diff(pF))
+    same(b.trans.Diff(Cv), TransposeES(b).Diff(Cv))
+
+    A_extend = np.zeros((3, 3, 2, 2))
+    A_extend[1:, :-1, :, :] = np.einsum('ik,jl->ijkl', np.eye(2), np.eye(2))
+    cf_extend = CoefficientFunction(tuple(A_extend.flatten().tolist()), dims=A_extend.shape)
+    pF_extend = pF[:2, :2].ExtendDimension((3, 3), (1, 0))
+    pF_extend_ES = fem.Einsum('ijkl,kl->ij', cf_extend, pF[:2, :2])
+    same(pF_extend.Diff(pF), pF_extend_ES.Diff(pF))
+
+    b_extend = b[:2, :2].ExtendDimension((3, 3), (1, 0))
+    b_extend_ES = fem.Einsum('ijkl,kl->ij', cf_extend, b[:2, :2])
+    same(b_extend.Diff(Cv), b_extend_ES.Diff(Cv))
+
+    AA = fem.Einsum('ik,jl->ijkl', pF, b)
+    same(AA.TensorTranspose((2, 0, 3, 1)).Diff(pF), fem.Einsum("ijkl->kilj", AA).Diff(pF))
+
+
 if __name__ == "__main__":
     test_blas(False)
     test_blas(True)
@@ -233,3 +266,4 @@ if __name__ == "__main__":
     test_diff({"expand_einsum": True,
                "optimize_path": True,
                "optimize_identities": True})
+    test_tensor_diff()
