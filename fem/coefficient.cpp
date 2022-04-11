@@ -5656,19 +5656,6 @@ public:
 
     auto dims1 = c1->Dimensions();
     dim1 = c1->Dimension();
-
-    stringstream descr;
-    descr << "extend-dimension [";
-    descr << " input dims: ";
-    for (auto i : Range(dims1.Size()-1))
-      descr << dims1[i] << ", ";
-    descr << dims1.Last() << " | ";
-    descr << " pos: " << pos << " | ";
-    descr << " stride: ";
-    for (auto i : Range(stride.Size()-1))
-      descr << stride[i] << ", ";
-    descr << stride.Last() << " ]";
-    SetDescription(descr.str());
       
     if (dims1.Size() != dims.Size())
       throw Exception("ExtendDimension needs same tensordimension");
@@ -5677,7 +5664,20 @@ public:
       pos.Append(0);
     for (int i = stride.Size(); i < dims.Size(); i++)
       stride.Append(1);
-    
+
+    stringstream descr;
+    descr << "extend-dimension [";
+    descr << " input dims: ";
+    for (auto i : Range(dims1.Size()-1))
+        descr << dims1[i] << ", ";
+    descr << dims1.Last() << " | ";
+    descr << " pos: " << pos << " | ";
+    descr << " stride: ";
+    for (auto i : Range(stride.Size()-1))
+      descr << stride[i] << ", ";
+    descr << stride.Last() << " ]";
+    SetDescription(descr.str());
+
     int firstoutput = pos[0];
     for (int i = 1; i < dims.Size(); i++)
       {
