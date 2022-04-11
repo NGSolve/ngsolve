@@ -3600,9 +3600,7 @@ public:
       return IdentityCF(h*w) -> Reshape( Array<int> { h, w, h, w } );        
   
     auto diffc1 = c1->DiffJacobi(var);
-    auto res = diffc1 -> TensorTranspose( 0, 1 );
-    res -> SetDescription("tensor-transpose");
-    return res;
+    return diffc1 -> TensorTranspose( 0, 1 );
   }
 };
 
@@ -5580,7 +5578,14 @@ MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Arra
       dist[i] = dist1[ordering[i]];
     }
 
-  return MakeSubTensorCoefficientFunction (c1, 0, std::move(dims), std::move(dist));
+  auto res = MakeSubTensorCoefficientFunction (c1, 0, std::move(dims), std::move(dist));
+  stringstream descr;
+  descr << "tensor-transpose [";
+  for (auto i : Range(ordering.Size() - 1))
+    descr << " " << ordering[i] << ",";
+  descr << " " << ordering.Last() << " ]";
+  res -> SetDescription(descr.str());
+  return res;
 }
 
 shared_ptr<CoefficientFunction>
@@ -5651,6 +5656,19 @@ public:
 
     auto dims1 = c1->Dimensions();
     dim1 = c1->Dimension();
+
+    stringstream descr;
+    descr << "extend-dimension [";
+    descr << " input dims: ";
+    for (auto i : Range(dims1.Size()-1))
+      descr << dims1[i] << ", ";
+    descr << dims1.Last() << " | ";
+    descr << " pos: " << pos << " | ";
+    descr << " stride: ";
+    for (auto i : Range(stride.Size()-1))
+      descr << stride[i] << ", ";
+    descr << stride.Last() << " ]";
+    SetDescription(descr.str());
       
     if (dims1.Size() != dims.Size())
       throw Exception("ExtendDimension needs same tensordimension");
@@ -5717,8 +5735,8 @@ public:
     func(*this);
   }
 
-  virtual string GetDescription () const override
-  { return "extend-dimension"; }
+//  virtual string GetDescription () const override
+//  { return "extend-dimension"; }
   
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
