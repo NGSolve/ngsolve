@@ -5493,9 +5493,11 @@ public:
     if (this == var)
       return IdentityCF(Dimensions());
     
+    Array<int> dimres { this->Dimensions() };
+    dimres += var->Dimensions();
+    
     auto diffc1 = c1->DiffJacobi(var);
 
-    
     int vardim = var->Dimension();
     Array<int> vardims = Array<int> (var->Dimensions());
     Array<int> dist(vardims.Size());
