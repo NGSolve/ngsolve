@@ -5753,9 +5753,12 @@ public:
   {
     if (this == var) return IdentityCF(this->Dimensions());
 
+    Array<int> resdims;
+    resdims += Dimensions();
+    resdims += var->Dimensions();
+
     auto diffc1 = c1->DiffJacobi(var);
-    return MakeExtendDimensionCoefficientFunction (diffc1, Array<int> (diffc1->Dimensions()), Array<int> (pos),
-                                                   Array<int>(stride));
+    return MakeExtendDimensionCoefficientFunction (diffc1, move(resdims), Array<int> (pos), Array<int>(stride));
   }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
