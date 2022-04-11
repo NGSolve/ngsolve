@@ -20,7 +20,13 @@ namespace ngfem
     if (this == var) return dir;
     return CWMult (0.5/sqrt(c1), c1->Diff(var, dir));
   }
-  
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericSqrt>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return 0.5/sqrt(c1) * c1->DiffJacobi(var);
+  }
 
   
   template <> shared_ptr<CoefficientFunction>
@@ -31,6 +37,13 @@ namespace ngfem
     // return UnaryOpCF(c1, GenericCos(), "cos") * c1->Diff(var, dir);
     // return CWMult (UnaryOpCF(c1, GenericCos(), "cos"), c1->Diff(var, dir));
     return CWMult (cos(c1), c1->Diff(var, dir));
+  }
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericSin>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return cos(c1) * c1->DiffJacobi(var);
   }
   
   
@@ -44,8 +57,13 @@ namespace ngfem
     // return CWMult (-1 * UnaryOpCF(c1, GenericSin(), "sin"),  c1->Diff(var, dir));
     return CWMult (-sin(c1),  c1->Diff(var, dir));
   }
-  
 
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericCos>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return -sin(c1) * c1->DiffJacobi(var);
+  }
 
   
   
@@ -55,6 +73,13 @@ namespace ngfem
   {
     if (this == var) return dir;
     return 1.0 / (UnaryOpCF(c1, GenericCos(), "cos")*UnaryOpCF(c1, GenericCos(), "cos")) * c1->Diff(var, dir);
+  }
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericTan>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return 1.0 / (UnaryOpCF(c1, GenericCos(), "cos")*UnaryOpCF(c1, GenericCos(), "cos")) * c1->DiffJacobi(var);
   }
   
 
@@ -67,12 +92,28 @@ namespace ngfem
   }
 
   template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericASin>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return make_shared<ConstantCoefficientFunction>(1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1 * c1, GenericSqrt(), "sqrt") * c1->DiffJacobi(var);
+  }
+
+
+  template <> shared_ptr<CoefficientFunction>
   cl_UnaryOpCF<GenericACos>::Diff(const CoefficientFunction * var,
                                   shared_ptr<CoefficientFunction> dir) const
   {
     if (this == var) return dir;
     return make_shared<ConstantCoefficientFunction>(-1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1*c1, GenericSqrt(), "sqrt") * c1->Diff(var, dir);
   }
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericACos>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return make_shared<ConstantCoefficientFunction>(-1)/UnaryOpCF(make_shared<ConstantCoefficientFunction>(1) - c1*c1, GenericSqrt(), "sqrt") * c1->DiffJacobi(var);
+  }
+
 
   template <> shared_ptr<CoefficientFunction>
   cl_UnaryOpCF<GenericATan>::Diff(const CoefficientFunction * var,
@@ -82,8 +123,12 @@ namespace ngfem
     return make_shared<ConstantCoefficientFunction>(1) / (c1*c1 + make_shared<ConstantCoefficientFunction>(1)) * c1->Diff(var, dir);
   }
 
-  
-
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericATan>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return make_shared<ConstantCoefficientFunction>(1) / (c1*c1 + make_shared<ConstantCoefficientFunction>(1)) * c1->DiffJacobi(var);
+  }
 
   
 
@@ -99,17 +144,30 @@ namespace ngfem
   }
 
   template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericSinh>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return cosh(c1) * c1->DiffJacobi(var);
+  }
+
+  template <> shared_ptr<CoefficientFunction>
   cl_UnaryOpCF<GenericCosh>::Diff(const CoefficientFunction * var,
                                   shared_ptr<CoefficientFunction> dir) const
   {
     if (this == var) return dir;
     // return UnaryOpCF(c1, GenericSinh(), "sinh") * c1->Diff(var, dir);
     // return CWMult (UnaryOpCF(c1, GenericSinh(), "sinh"), c1->Diff(var, dir));
-    return CWMult (sinh(c1), c1->Diff(var, dir));  
+    return CWMult (sinh(c1), c1->Diff(var, dir));
+  }
+
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericCosh>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return sinh(c1) * c1->DiffJacobi(var);
   }
 
 
-  
 
   
   template <> shared_ptr<CoefficientFunction>
@@ -154,7 +212,12 @@ namespace ngfem
     return CWMult (2. / sqrt(M_PI) * exp(- c1 * c1), c1->Diff(var, dir));
   }
 
-
+  template <> shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericErf>::DiffJacobi(const CoefficientFunction * var) const
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+    return 2. / sqrt(M_PI) * exp(- c1 * c1) * c1->DiffJacobi(var);
+  }
   
 
 
