@@ -2420,4 +2420,77 @@ namespace ngla
 #endif
 #endif
 
+
+
+
+  template <typename TSCAL>
+  void SparseBlockMatrix<TSCAL> ::
+  AddElementMatrix(FlatArray<int> dnums1, 
+                   FlatArray<int> dnums2, 
+                   BareSliceMatrix<TSCAL> elmat,
+                   bool use_atomic)
+  {
+    // cout << "add elmat, dnums = " << dnums1 << ", " << dnums2 << endl;
+    // cout << elmat.AddSize(bheight*dnums1.Size(), bwidth*dnums2.Size()) << endl;
+    for (int i = 0; i < dnums1.Size(); i++)
+      for (int j = 0; j < dnums2.Size(); j++)
+        {
+          auto pos = this->GetPosition(dnums1[i], dnums2[j]);
+          auto entry = FlatMatrix(bheight, bwidth, (TSCAL*)data.Addr(pos*bheight*bwidth));
+
+          entry += elmat.Rows(i*bheight, (i+1)*bheight).Cols(j*bwidth, (j+1)*bwidth);
+        }
+  }
+
+  template <typename TSCAL>
+  ostream & SparseBlockMatrix<TSCAL> ::
+  Print (ostream & ost) const
+  {
+    for (int i = 0; i < size; i++)
+      {
+	ost << "Row " << i << ":";
+	
+	for (size_t j = firsti[i]; j < firsti[i+1]; j++)
+          ost << " " << colnr[j] << ":" << endl
+              << FlatMatrix(bheight, bwidth, (TSCAL*)data.Addr(j*bheight*bwidth)) << endl;
+                            
+	ost << "\n";
+      }
+    
+    return ost;
+  }
+
+
+  
+  template <typename TSCAL>
+  void SparseBlockMatrix<TSCAL> ::
+  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto fx = x.FV<TSCAL>();
+    auto fy = y.FV<TSCAL>();
+
+    Vector<TSCAL> sum(bheight);
+    FlatArray<size_t> index = this->GetFirstArray();
+    FlatArray<int> cols = this->GetColIndices();
+    for (auto i : Range(this->Height()))
+      {
+        auto rowind = this->GetRowIndices(i);
+        
+        sum = 0;
+        for (auto j : Range(index[i], index[i+1]))
+          {
+            auto mat = FlatMatrix(bheight, bwidth, (TSCAL*)data.Addr(j*bheight*bwidth));
+            auto vx = fx.Range(bwidth*cols[j], bwidth*(cols[j]+1));
+            cout << "mat = " << endl << mat << endl;
+            cout << "vx = " << vx << endl;
+            sum += mat*vx;
+          }
+        auto vy = fy.Range(bheight*i, bheight*(i+1));
+        vy += s*sum;
+      }
+  }
+
+  template class SparseBlockMatrix<double>;
+  template class SparseBlockMatrix<Complex>;
+  
 }
