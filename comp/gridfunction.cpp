@@ -2536,7 +2536,7 @@ namespace ngcomp
 	  averages[i] /= volumes[i];
       }
       }
-    catch (Exception e)
+    catch (const Exception& e)
       {
         cerr << "Caught exception in VisualizeGF::Analyze: " << e.What() << endl;
       }

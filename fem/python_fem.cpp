@@ -1521,7 +1521,7 @@ maxiter: int
                                      fm = Trans(simdfm);
                                    }
                                }
-                             catch (ExceptionNOSIMD e)
+                             catch (const ExceptionNOSIMD& e)
                                {
                                  for (auto i = r.begin(); i < r.end(); )
                                    {

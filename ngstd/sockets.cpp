@@ -345,9 +345,9 @@ namespace ngstd
         Socket::bind (port);
         Socket::listen();
       }
-    catch (SocketException e)
+    catch (SocketException& e)
       {
-        e.Append ("\ndouring server socket creation");
+        e.Append ("\nduring server socket creation");
         throw e;
       }
   }
@@ -384,9 +384,9 @@ namespace ngstd
         Socket::create();
         Socket::connect (host, port);
       }
-    catch (SocketException e)
+    catch (SocketException& e)
       {
-        e.Append ("\ndouring client socket initialization");
+        e.Append ("\nduring client socket initialization");
         throw e;
       }
   }

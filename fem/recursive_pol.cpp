@@ -288,7 +288,7 @@ namespace ngfem
 	    */
 	    initialized = 1;
 	  }
-	catch (Exception e)
+	catch (const Exception& e)
 	  {
 	    cout << "Caught in VertexExtensionOptimal:" << e.What() << endl;
 	  }
@@ -443,7 +443,7 @@ namespace ngfem
 	    
 	    initialized = 1;
 	  }
-	catch (Exception e)
+	catch (const Exception& e)
 	  {
 	    cout << "Caught in VertexExtensionOptimal:" << e.What() << endl;
 	  }
@@ -603,7 +603,7 @@ namespace ngfem
 	    
 	    initialized = 1;
 	  }
-	catch (Exception e)
+	catch (const Exception& e)
 	  {
 	    cout << "Caught in VertexExtensionOptimal:" << e.What() << endl;
 	  }

@@ -335,7 +335,7 @@ namespace ngfem
           });
         timings.push_back(make_tuple("SIMD - CalcBMatrix", time/steps*1e9/(bmat.Height()*bmat.Width())));
       }
-    catch (ExceptionNOSIMD e) { ; } 
+    catch (const ExceptionNOSIMD& e) { ; }
 
 
     coefs = 1;
@@ -347,7 +347,7 @@ namespace ngfem
           });
         timings.push_back(make_tuple("SIMD - Appy", time/steps*1e9/(bmat.Height()*bmat.Width())));
       }
-    catch (ExceptionNOSIMD e) { ; } 
+    catch (const ExceptionNOSIMD& e) { ; }
 
     simd_values = SIMD<double> (1.0);
     coefs = 0.0;
@@ -359,7 +359,7 @@ namespace ngfem
           });
         timings.push_back(make_tuple("SIMD - AppyTrans", time/steps*1e9/(bmat.Height()*bmat.Width())));
       }
-    catch (ExceptionNOSIMD e) { ; } 
+    catch (const ExceptionNOSIMD& e) { ; }
 
 
 

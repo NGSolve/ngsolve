@@ -749,7 +749,7 @@ namespace ngsolve
       {
         GetPDE() -> AddVariable (string("constrbvp.")+GetName()+".its", invmat->GetSteps(), 6);
       }
-      catch (std::exception e) { ; }
+      catch (const std::exception& e) { ; }
     }
     
     
