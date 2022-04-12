@@ -1056,7 +1056,7 @@ namespace ngfem
               }
             // NgProfiler::StopThreadTimer(telvec, tid);
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << e.What() << endl
                  << "switching back to standard evaluation" << endl;
@@ -1299,7 +1299,7 @@ namespace ngfem
               dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
               // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
             }
-          catch (Exception e)
+          catch (const Exception& e)
             {
               cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
             }
@@ -1696,7 +1696,7 @@ namespace ngfem
           // ir.NothingToDelete();
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -1926,7 +1926,7 @@ namespace ngfem
               T_CalcElementMatrixAdd<double,double,Complex> (fel, trafo, elmat, symmetric_so_far, lh);
           }
       }
-    catch (ExceptionNOSIMD e)  // retry with simd_evaluate is off
+    catch (const ExceptionNOSIMD& e)  // retry with simd_evaluate is off
       {
         elmat = 0.0;
         bool symmetric_so_far = true;        
@@ -2138,7 +2138,7 @@ namespace ngfem
               return;
             }
           
-          catch (ExceptionNOSIMD e)
+          catch (const ExceptionNOSIMD& e)
             {
               cout << IM(6) << e.What() << endl
                    << "switching to scalar evaluation, may be a problem with Add" << endl;
@@ -2471,7 +2471,7 @@ namespace ngfem
           */
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation in CalcLinearized" << endl;
@@ -2683,7 +2683,7 @@ namespace ngfem
 
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation in CalcLinearizedEB" << endl;
@@ -2882,7 +2882,7 @@ namespace ngfem
           return;
         }
     
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -3031,7 +3031,7 @@ namespace ngfem
             }
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -3164,7 +3164,7 @@ namespace ngfem
           return;
         }
     
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -3309,7 +3309,7 @@ namespace ngfem
             }
           return;
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -3535,7 +3535,7 @@ namespace ngfem
               dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
               // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
             }
-          catch (Exception e)
+          catch (const Exception& e)
             {
             cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
             }
@@ -4041,7 +4041,7 @@ namespace ngfem
               }
             // tall.Stop();
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << "caught in SymbolicFacetInegtrator::Apply: " << endl
                  << e.What() << endl;
@@ -4220,7 +4220,7 @@ namespace ngfem
 
 	    return;
 	  }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
                  << e.What() << endl;
@@ -4353,7 +4353,7 @@ namespace ngfem
 		  proxy->Evaluator()->AddTrans(volumefel, simd_mir, simd_proxyvalues, ely.Range(test_range));
 		}
 	  }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << "caught in SymbolicFacetInegtrator::CalcTraceValues: " << endl
                  << e.What() << endl;
@@ -4515,7 +4515,7 @@ namespace ngfem
               }
             
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << "caught in SymbolicFacetInegtrator::ApplyBnd: " << endl
                  << e.What() << endl;
@@ -4769,7 +4769,7 @@ namespace ngfem
               }
           }
 
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << e.What() << endl
                  << "switching back to standard evaluation (in SymbolicEnergy::CalcLinearized)" << endl;
@@ -5169,7 +5169,7 @@ namespace ngfem
               sum += mir[i].GetWeight() * values(0, i);
             return HSum(sum);
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << e.What() << endl
                  << "switching back to standard evaluation (in SymbolicEnergy::Energy)" << endl;
@@ -5339,7 +5339,7 @@ namespace ngfem
                   }
               }
           }
-        catch (ExceptionNOSIMD e)
+        catch (const ExceptionNOSIMD& e)
           {
             cout << IM(6) << e.What() << endl
                  << "switching back to standard evaluation (in SymbolicEnergy::CalcLinearized)" << endl;              

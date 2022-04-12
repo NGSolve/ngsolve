@@ -3593,9 +3593,6 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
-    int h = Dimensions()[0];
-    int w = Dimensions()[1];
-    
     if (this == var)
       return IdentityCF(this->Dimensions());
   
@@ -5012,10 +5009,10 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
     stringstream result_indices{};
     c1 = 'A';
-    for (auto i : Range(dims.Size()))
+    for ([[maybe_unused]] auto i : Range(dims.Size()))
       result_indices << c1++;
     c1 = 'a';
-    for (auto i : Range(dims.Size()))
+    for ([[maybe_unused]] auto i : Range(dims.Size()))
       result_indices << c1++;
 
     signature << "->" << result_indices.str();
@@ -5689,7 +5686,6 @@ public:
       {
         int index = i;
         int outputindex = firstoutput;
-        int outputdist = 1;
         for (int j = dims1.Size()-1; j >= 0; j--)
           {
             int indexj = index % dims1[j];
@@ -8879,7 +8875,7 @@ Array<CoefficientFunction*> FindCacheCF (CoefficientFunction & func)
   func.TraverseTree
     ( [&] (CoefficientFunction & nodecf)
       {
-        if (auto ccf = dynamic_cast<CacheCoefficientFunction*> (&nodecf))
+        if (dynamic_cast<CacheCoefficientFunction*> (&nodecf))
           {
             if (cachecf.Contains(&nodecf)) return;
             cachecf.Append (&nodecf);

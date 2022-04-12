@@ -466,7 +466,7 @@ namespace ngfem
         }
       }
     }
-    catch (ExceptionNOSIMD e)
+    catch (const ExceptionNOSIMD& e)
     {
       for (int el_vb = D; el_vb >= 0; el_vb--)
       {

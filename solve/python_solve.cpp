@@ -884,7 +884,7 @@ void ExportVisFunctions(py::module &m) {
                           else
                             GetValues<SIMD<double>>( *cf, mlh, mir, vals_real.Range(first,next), vals_imag, min_local, max_local, covariant);
                         }
-                      catch(ExceptionNOSIMD e)
+                      catch(const ExceptionNOSIMD& e)
                         {
                           use_simd = false;
                         }

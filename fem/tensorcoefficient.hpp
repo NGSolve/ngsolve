@@ -319,11 +319,11 @@ namespace ngfem {
                                     bool skip_zeroes = true) const;
 
           virtual void NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatVector<AutoDiffDiff<1, bool>> values) const;
+                                      FlatVector<AutoDiffDiff<1, bool>> values) const override;
 
           virtual void NonZeroPattern(const class ProxyUserData &ud,
                                       FlatArray<FlatVector<AutoDiffDiff<1, bool>>> input,
-                                      FlatVector<AutoDiffDiff<1, bool>> values) const;
+                                      FlatVector<AutoDiffDiff<1, bool>> values) const override;
 
           using BASE::Evaluate;
 
