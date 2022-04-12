@@ -871,6 +871,88 @@ namespace ngla
 #endif
 
 
+
+  template <typename TSCAL>
+  class NGS_DLL_HEADER SparseBlockMatrix : public S_BaseSparseMatrix<TSCAL>
+  {
+    size_t bheight, bwidth;
+    NumaDistributedArray<TSCAL> data;
+    
+    typedef S_BaseSparseMatrix<TSCAL> BASE;
+    using BASE::firsti;
+    using BASE::colnr;
+    using BASE::owner;
+    using BASE::size;
+    using BASE::width;
+    using BASE::nze;
+    using BASE::balance;
+    using BASE::asvec;
+    
+  public:
+    using BASE::CreatePosition;
+    using BASE::GetPositionTest;
+    using BASE::FindSameNZE;
+    using BASE::SetEntrySize;
+    using BASE::AsVector;
+    
+    SparseBlockMatrix (const MatrixGraph & agraph, size_t abheight, size_t abwidth, bool stealgraph)
+      : BASE (agraph, stealgraph), bheight(abheight), bwidth(abwidth),
+      data(nze*bheight*bwidth)
+        { 
+          SetEntrySize (bheight, bwidth, bheight*bwidth);
+          asvec.AssignMemory (nze*bheight*bwidth, (void*)data.Addr(0));
+          // FindSameNZE();
+          GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
+                                  data, "data");
+          GetMemoryTracer().SetName("SparseMatrix");
+        }
+    
+    tuple<int,int> EntrySizes() const override { return { bheight, bwidth }; }
+    
+    AutoVector CreateRowVector () const override
+    {
+      return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->width, this->bwidth));
+    }
+    
+    AutoVector CreateColVector () const override
+    {
+      return AutoVector(make_shared<S_BaseVectorPtr<TSCAL>> (this->size, this->bheight));
+    }
+
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    
+    void SetZero() override
+    {
+      data = TSCAL(0);
+    }
+    
+    virtual void AddElementMatrix(FlatArray<int> dnums1, 
+                                  FlatArray<int> dnums2, 
+                                  BareSliceMatrix<TSCAL> elmat,
+                                  bool use_atomic = false);
+
+    ostream & Print (ostream & ost) const override;
+
+    
+    const MemoryTracer & GetMemoryTracer() const
+    {
+      return mem_tracer;
+    }
+    
+  private:
+    MemoryTracer mem_tracer =
+      {"MatrixGraph",
+       colnr, "colnr",
+       firsti, "firsti"
+       // same_nze, "same_nze"
+      };
+    
+  };
+
+
+  
+
 }
 
 #endif

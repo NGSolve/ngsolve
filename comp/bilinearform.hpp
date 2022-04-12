@@ -450,14 +450,11 @@ namespace ngcomp
     ElementByElementMatrix<SCAL> *harmonicext_ptr, *harmonicexttrans_ptr, *innersolve_ptr, *innermatrix_ptr;
 
     
-#ifdef PARALLEL
     //data for mpi-facets; only has data if there are relevant integrators in the BLF!
     mutable bool have_mpi_facet_data = false;
     mutable Array<int> os_per;
     mutable Table<SCAL> send_table;
     mutable Table<SCAL> recv_table;
-#endif
-    
     
         
   public:
@@ -722,6 +719,53 @@ namespace ngcomp
   };
 
 
+
+  template <class TSCAL>
+  class NGS_DLL_HEADER T_BilinearFormDynBlocks : public S_BilinearForm<TSCAL>
+  {
+  public:
+    typedef SparseBlockMatrix<TSCAL> TMATRIX;
+    shared_ptr<TMATRIX> mymatrix;
+    size_t blockheight, blockwidth;
+  protected:
+
+  public:
+    T_BilinearFormDynBlocks (shared_ptr<FESpace> afespace, 
+                             const string & aname, const Flags & flags)
+      : S_BilinearForm<TSCAL> (afespace, aname, flags),
+      blockheight(afespace->GetDimension()),
+      blockwidth(afespace->GetDimension()) { } 
+    
+    T_BilinearFormDynBlocks (shared_ptr<FESpace> afespace, 
+                             shared_ptr<FESpace> afespace2,
+                             const string & aname, const Flags & flags)
+      : S_BilinearForm<TSCAL> (afespace, afespace2, aname, flags),
+      blockheight(afespace2->GetDimension()),
+      blockwidth(afespace->GetDimension()) { } 
+    
+    virtual ~T_BilinearFormDynBlocks () { };
+
+    virtual shared_ptr<BilinearForm> GetLowOrderBilinearForm() override;
+
+    virtual void AllocateMatrix () override;
+    virtual unique_ptr<BaseVector> CreateRowVector() const override;
+    virtual unique_ptr<BaseVector> CreateColVector() const override;
+
+    virtual void CleanUpLevel() override;
+
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+				   FlatArray<int> dnums2,
+				   BareSliceMatrix<TSCAL> elmat,
+				   ElementId id, bool addatomic, 
+				   LocalHeap & lh) override;
+  };
+
+
+
+
+
+
+  
 
   template <class TSCAL>
   class NGS_DLL_HEADER S_BilinearFormNonAssemble : public S_BilinearForm<TSCAL>
