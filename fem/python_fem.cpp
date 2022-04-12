@@ -1276,7 +1276,7 @@ keep_files : bool
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
-  m.def("Id", [] (int dim, int order) { return IdentityCF(dim, order); }, py::arg("dim"), py::arg("tensor_order") = 2,
+  m.def("Id", [] (int dim) { return IdentityCF(dim); }, py::arg("dim"),
         "Identity matrix of given dimension");
   m.def("Id", [] (const Array<int>& dims) { return IdentityCF(dims); }, py::arg("dims"),
         "Identity tensor for a space with dimensions 'dims', ie. the result is of 'dims + dims'");

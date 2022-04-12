@@ -2624,7 +2624,8 @@ namespace ngcomp
                      fespace->GetDofNrs (ei, dnums1);
                      fespace2->GetDofNrs (ei, dnums2);
           
-                     FlatMatrix<SCAL> elmat(dnums2.Size(), dnums1.Size(), lh);
+                     FlatMatrix<SCAL> elmat(dnums2.Size()*fespace2->GetDimension(),
+                                            dnums1.Size()*fespace->GetDimension(), lh);
                      for (auto & bfi : VB_parts[vb])
                        {
                          if (!bfi->DefinedOn (eltrans.GetElementIndex())) continue;
@@ -6268,6 +6269,130 @@ namespace ngcomp
 
 
 
+  
+  /* *********************  T_BilinearFormDynBlocks ************** */
+
+
+  template <typename TSCAL>
+    shared_ptr<BilinearForm>  T_BilinearFormDynBlocks<TSCAL>::
+    GetLowOrderBilinearForm()
+  {
+    if (this->low_order_bilinear_form)
+      return this->low_order_bilinear_form;
+    
+    auto lospace = this->fespace->LowOrderFESpacePtr();
+    if (!lospace) return nullptr;
+
+    cout << IM(3) << "creating low order biform on demand" << endl;
+    this->low_order_bilinear_form = 
+      make_shared<T_BilinearFormDynBlocks<TSCAL>> (lospace, lospace, this->name+string(" low-order"), this->flags);
+
+    for (auto igt : this->parts)
+      this->low_order_bilinear_form->AddIntegrator(igt);      
+
+    if (this->mats.Size())
+      {
+        LocalHeap lh(10*1000*1000);
+        this->low_order_bilinear_form -> Assemble(lh);
+      }
+    return this->low_order_bilinear_form;
+  }
+
+  template <typename TSCAL>
+  void T_BilinearFormDynBlocks<TSCAL>::
+  AllocateMatrix ()
+  {
+    if (this->mats.Size() == this->ma->GetNLevels())
+      return;
+
+    MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
+
+    auto spmat = make_shared<SparseBlockMatrix<TSCAL>>
+      (graph, blockheight, blockwidth, true);
+    
+    this->GetMemoryTracer().Track(*spmat, "mymatrix");
+    mymatrix = spmat; // .get();
+    
+    if (this->spd) spmat->SetSPD();
+    shared_ptr<BaseMatrix> mat = spmat;
+
+    if (this->GetFESpace()->IsParallel())
+      mat = make_shared<ParallelMatrix> (mat, this->GetTrialSpace()->GetParallelDofs(),
+					 this->GetTestSpace()->GetParallelDofs());
+
+    this->mats.SetSize(this->ma->GetNLevels());
+    this->mats.Last() = mat;
+
+    if (!this->multilevel || this->low_order_bilinear_form)
+      for (int i = 0; i < this->mats.Size()-1; i++)
+        this->mats[i].reset();
+
+    this->AllocateInternalMatrices();
+  }
+
+
+  template <typename TSCAL>
+  void T_BilinearFormDynBlocks<TSCAL>::
+  CleanUpLevel ()
+  {
+    if (!this->multilevel || this->low_order_bilinear_form)
+      for (int i = 0; i < this->mats.Size(); i++)
+        this->mats[i].reset();
+  }
+
+
+
+  template <typename TSCAL>
+  unique_ptr<BaseVector> T_BilinearFormDynBlocks<TSCAL>::
+  CreateRowVector() const
+  {
+    auto afespace = this->GetTrialSpace();
+    
+    if (afespace->IsParallel())
+      return make_unique<S_ParallelBaseVectorPtr<TSCAL>> (afespace->GetNDof(),
+                                                          blockwidth,
+                                                          afespace->GetParallelDofs(),
+                                                          CUMULATED);
+    else
+      return make_unique<S_BaseVectorPtr<TSCAL>> (afespace->GetNDof(), blockwidth);
+  }
+  
+  template <typename TSCAL>
+    unique_ptr<BaseVector> T_BilinearFormDynBlocks<TSCAL>::
+  CreateColVector() const
+  {
+    auto afespace = this->GetTestSpace();
+    if (afespace->IsParallel())
+      return make_unique<S_ParallelBaseVectorPtr<TSCAL>> (afespace->GetNDof(),
+                                                         blockheight,
+                                                         afespace->GetParallelDofs(),
+                                                         DISTRIBUTED);
+    else
+      return make_unique<S_BaseVectorPtr<TSCAL>> (afespace->GetNDof(),
+                                                  blockheight);
+  }
+
+
+  
+  template <typename TSCAL>
+  void T_BilinearFormDynBlocks<TSCAL>::
+  AddElementMatrix (FlatArray<int> dnums1,
+                    FlatArray<int> dnums2,
+                    BareSliceMatrix<TSCAL> elmat,
+                    ElementId id, bool addatomic, 
+                    LocalHeap & lh) 
+  {
+    mymatrix -> TMATRIX::AddElementMatrix (dnums1, dnums2, elmat, addatomic || this->fespace->HasAtomicDofs());
+  }
+
+
+
+
+
+
+
+  
+
 
   template <class TM>
   T_BilinearFormDiagonal<TM> :: 
@@ -6611,7 +6736,7 @@ namespace ngcomp
           {
             //bf = CreateSymMatObject<T_BilinearFormSymmetric, BilinearForm> //, const FESpace, const string, const Flags>
             //  (space->GetDimension(), space->IsComplex(), *space, name, flags);
-            
+
             CreateSymMatObject3(bf, T_BilinearFormSymmetric,
                                 space->GetDimension(), space->IsComplex(),
                                 space, name, flags);
@@ -6689,11 +6814,15 @@ namespace ngcomp
           {
             //bf = CreateSymMatObject<T_BilinearForm, BilinearForm> 
             //  (space->GetDimension(), space->IsComplex(), *space, name, flags);
-            
-            
-            CreateSymMatObject3 (bf, T_BilinearForm,
-                                 space->GetDimension(), space->IsComplex(),
-                                 space, name, flags);
+
+            if (space->GetDimension() > MAX_SYS_DIM)
+              {
+                return make_shared<T_BilinearFormDynBlocks<double>> (space, name, flags);
+              }
+            else
+              CreateSymMatObject3 (bf, T_BilinearForm,
+                                   space->GetDimension(), space->IsComplex(),
+                                   space, name, flags);
           }
       }
 
