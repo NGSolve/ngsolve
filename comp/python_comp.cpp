@@ -688,14 +688,14 @@ kwargs : kwargs
                             auto reg = py::cast<Region>(definedon);
                             flags->SetFlag("definedon", reg);
                           }
-                        catch(py::cast_error)
+                        catch(const py::cast_error&)
                           {}
                         try
                           {
                             auto map = py::cast<std::map<VorB, Region>>(definedon);
                             flags->SetFlag("definedon", map);
                           }
-                        catch(py::cast_error)
+                        catch(const py::cast_error&)
                           {}
                         // py::extract<Region> definedon_reg(definedon);
                         // if (definedon_reg.check() && definedon_reg().IsVolume())
@@ -3522,7 +3522,7 @@ integrator : ngsolve.fem.LFI
                            for(int i = 0; i< dim; i++)
                              hsum[i] = HSum(vsum[i]);
                          }
-                       catch (ExceptionNOSIMD e)
+                       catch (const ExceptionNOSIMD& e)
                          {
                            this_simd = false;
                            use_simd = false;
@@ -3621,7 +3621,7 @@ integrator : ngsolve.fem.LFI
                            for(size_t i = 0; i < dim; i++)
                              hsum[i] = HSum(vsum[i]);
                          }
-                       catch (ExceptionNOSIMD e)
+                       catch (const ExceptionNOSIMD& e)
                          {
                            this_simd = false;
                            use_simd = false;

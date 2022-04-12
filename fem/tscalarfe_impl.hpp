@@ -899,7 +899,7 @@ namespace ngfem
       {
         static_cast<const FEL*>(this) -> CalcDualShape2 (mip, shape);
       }
-    catch (Exception e)
+    catch (const Exception& e)
       {
         double imeas = 1.0/mip.GetMeasure();
         shape = 0.0;

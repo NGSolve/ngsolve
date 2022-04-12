@@ -234,6 +234,8 @@ namespace ngfem
       case ET_PYRAMID: return trafo_pyramid;
       case ET_HEX: return trafo_hex;
       }
+      
+    throw Exception(string("no trafo for element type ") + ToString(et));
   }
 
   

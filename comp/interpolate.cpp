@@ -514,7 +514,7 @@ namespace ngcomp
               m2m3 = elmat * m3;
             }
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -560,7 +560,7 @@ namespace ngcomp
           for (auto & sbfi : single_bli)
             sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -641,7 +641,7 @@ namespace ngcomp
           for (auto & sbfi : single_bli)
             sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;
@@ -765,7 +765,7 @@ namespace ngcomp
           for (auto & sbfi : single_bli)
             sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
         }
-      catch (ExceptionNOSIMD e)
+      catch (const ExceptionNOSIMD& e)
         {
           cout << IM(6) << e.What() << endl
                << "switching to scalar evaluation" << endl;

@@ -41,9 +41,9 @@ namespace ngfem
         else
           return ZeroCF(Array<int>());
       }
-    catch(py::cast_error) {}
+    catch(const py::cast_error&) {}
     try { return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()); }
-    catch(py::cast_error) {}
+    catch(const py::cast_error&) {}
 
     if (py::isinstance<py::list>(val))
       {
@@ -1521,7 +1521,7 @@ maxiter: int
                                      fm = Trans(simdfm);
                                    }
                                }
-                             catch (ExceptionNOSIMD e)
+                             catch (const ExceptionNOSIMD& e)
                                {
                                  for (auto i = r.begin(); i < r.end(); )
                                    {
@@ -2424,7 +2424,7 @@ intrule : ngsolve.fem.Integrationrule
                                        return py::cast(mat);
                                      }
                                  }
-                               catch (LocalHeapOverflow ex)
+                               catch (const LocalHeapOverflow& ex)
                                  {
                                    heapsize *= 10;
                                  }
@@ -2468,7 +2468,7 @@ complex : bool
                                   self->CalcLinearizedElementMatrix (fe, trafo, vec, mat, lh);
                                   return py::cast(mat);
                                  }
-                               catch (LocalHeapOverflow ex)
+                               catch (const LocalHeapOverflow& ex)
                                  {
                                    heapsize *= 10;
                                  }
@@ -2509,7 +2509,7 @@ heapsize : int
                                   self->ApplyElementMatrix (fe, trafo, vec, vecy, 0, lh);
                                   return py::cast(vecy);
                                  }
-                               catch (LocalHeapOverflow ex)
+                               catch (const LocalHeapOverflow& ex)
                                  {
                                    heapsize *= 10;
                                  }
@@ -2700,7 +2700,7 @@ ir : ngsolve.fem.IntegrationRule
                        return py::cast(vec);
                      }
                  }
-               catch (LocalHeapOverflow ex)
+               catch (const LocalHeapOverflow& ex)
                  {
                    heapsize *= 10;
                  }

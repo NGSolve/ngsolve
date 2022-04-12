@@ -127,7 +127,7 @@ namespace ngfem {
                 indices[i] = full_index / strides[i];
                 full_index -= indices[i] * strides[i];
             }
-            return move(indices);
+            return indices;
         }
 
         // index format: 'ij,jk->ik' (result after '->' is mandatory!); return: input data, result data,
@@ -194,7 +194,7 @@ namespace ngfem {
                 ++subset_idx;
             });
 
-            return move(idx_sets);
+            return idx_sets;
         }
 
         Array<int> index_dimensions(const MultiIndex &mi)
@@ -225,7 +225,7 @@ namespace ngfem {
                                    "exactly twice.");
             signature += "->";
           }
-          return move(signature);
+          return signature;
         }
 
         vector<string> split_signature(string signature)
@@ -246,7 +246,7 @@ namespace ngfem {
                 new_part << item;
             }
           parts.push_back(new_part.str());
-          return move(parts);
+          return parts;
         }
 
         optional<string> substitute_id_index(string signature, pair<char, char> id_indices,
@@ -370,7 +370,7 @@ namespace ngfem {
             else
               new_cfs.Append(cfs[i]);
 
-          return {move(form_index_signature(parts)), move(new_cfs)};
+          return {form_index_signature(parts), move(new_cfs)};
         }
 
         pair<string, Array<shared_ptr<CoefficientFunction>>>
@@ -401,7 +401,7 @@ namespace ngfem {
             else
               new_cfs.Append(cfs[i]);
 
-          return {move(form_index_signature(parts)), move(new_cfs)};
+          return {form_index_signature(parts), move(new_cfs)};
         }
 
 
@@ -424,22 +424,24 @@ namespace ngfem {
           {
             if (cfs[i]->GetDescription() == identity_descr &&
                 cfs[i]->Dimensions().Size() == 2)
+            {
               if (parts[i][0] == parts[i][1] &&
                   parts.back().find(parts[i][0]) == string::npos)
               {
+                // trace of identity
                 parts[i] = parts[i][0];
                 cf_subs[i] = ConstantCF(cfs[i]->Dimensions()[0]);
                 cf_subs[i]->SetDimensions(Array<int>{1});
               }
-              else if (auto new_signature =
-                      substitute_id_index(signature,
-                                          {parts[i][0], parts[i][1]}, i,
-                                          remove, true); new_signature)
+              else if (auto new_signature = substitute_id_index(
+                      signature, {parts[i][0], parts[i][1]}, i, remove, true); new_signature)
               {
+                // contraction with identity
                 signature = new_signature.value();
                 parts = split_signature(signature);
                 remove[i] = true;
               }
+            }
           }
 
           decltype(parts) new_parts{};
@@ -458,7 +460,7 @@ namespace ngfem {
             else if (!remove[i])
               new_cfs.Append(cfs[i]);
 
-          return {move(form_index_signature(new_parts)), move(new_cfs)};
+          return {form_index_signature(new_parts), move(new_cfs)};
         }
 
 
@@ -790,11 +792,11 @@ namespace ngfem {
                                 {
                                   return item->IsComplex();
                                 }) != acfs.end()),
-              original_inputs{acfs},
-              original_index_signature{aindex_signature},
-              max_mem{0},
               node{},
-              options{aoptions} {
+              max_mem{0},
+              options{aoptions},
+              original_index_signature{aindex_signature},
+              original_inputs{acfs} {
 
           if (get_option(options, "expand_einsum", true))
           {
@@ -847,7 +849,6 @@ namespace ngfem {
             // compute index mappings and nonzero patterns
             const auto index_sets = compute_multi_indices(index_signature, cfs);
             const auto& RI = index_sets[cfs.Size()];
-            const auto& FI = index_sets[cfs.Size() + 1];
 
             if (RI.Size() > 0)
             {

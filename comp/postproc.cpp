@@ -559,7 +559,7 @@ namespace ngcomp
                      
                      return;
                    }
-                 catch (ExceptionNOSIMD e)
+                 catch (const ExceptionNOSIMD& e)
                    {
                      use_simd = false;
 		     for (auto sbfi : single_bli)
@@ -789,7 +789,7 @@ namespace ngcomp
                      
                      return;
                    }
-                 catch (ExceptionNOSIMD e)
+                 catch (const ExceptionNOSIMD& e)
                    {
                      use_simd = false;
                      cout << IM(4) << "Warning: switching to std evalution in SetValues since: " << e.What() << endl;
@@ -1572,7 +1572,7 @@ namespace ngfem
                      if (element_wise.Size())
                        element_wise(el.Nr()) += hsum;
                    }
-                 catch (ExceptionNOSIMD e)
+                 catch (const ExceptionNOSIMD& e)
                    {
                      this_simd = false;
                      use_simd = false;
@@ -1641,7 +1641,7 @@ namespace ngfem
                  if (element_wise.Size())
                  element_wise(el.Nr()) += hsum;
                  }
-                 catch (ExceptionNOSIMD e)
+                 catch (const ExceptionNOSIMD& e)
                  {
                      this_simd = false;
                      use_simd = false;
