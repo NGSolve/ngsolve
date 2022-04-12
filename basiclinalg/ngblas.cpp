@@ -1337,7 +1337,7 @@ namespace ngbla
   pfunc_abt dispatch_addabt[];
   auto init_addabt = [] ()
   {
-    Iterate<std::size(dispatch_abt)> ([&] (auto i)
+    Iterate<std::size(dispatch_addabt)> ([&] (auto i)
     { dispatch_addabt[i] = &MultABtSmallWA<i,ADD>; });
     // dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
     return 1;
