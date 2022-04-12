@@ -111,7 +111,7 @@ def test_blas(use_legacy_ops):
     op = fem.Einsum('ijkl->jilk', pFpF, **options)
     op_blas = pFpF.TensorTranspose((1, 0, 3, 2))
     assert same(op, op_blas)
-    assert check_optimization(op, options, {0: "with optimized node subtensor"})
+    assert check_optimization(op, options, {0: "with optimized node tensor-transpose [ 1, 0, 3, 2 ]"})
 
 
 def test_identity_optimizations():
