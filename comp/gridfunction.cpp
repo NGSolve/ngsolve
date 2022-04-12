@@ -2727,7 +2727,7 @@ namespace ngcomp
 
     delete [] val;
       }
-    catch (Exception e)
+    catch (const Exception& e)
       {
         cerr << "Caught exception in VisualizeGF::Analyze2: " << e.What() << endl;
       }
