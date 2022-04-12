@@ -186,7 +186,7 @@ namespace ngfem
         resultdims += var->Dimensions();
         
         if (this == var) // diff by me
-          return IdentityCF(Dimension()) -> Reshape(resultdims);
+          return IdentityCF(Dimensions());
 
         if (this->InputCoefficientFunctions().Size()==0)
           return ZeroCF(resultdims);          
@@ -1550,7 +1550,7 @@ public:
       {
         if (this -> Dimensions().Size() == 0)
             return make_shared<ConstantCoefficientFunction>(1);
-        return IdentityCF(this->Dimension()) -> Reshape ( Array<int> (Dimensions()+Dimensions()) );
+        return IdentityCF(this->Dimensions());
       }
     return scal * c1->DiffJacobi(var);
   }
@@ -1782,7 +1782,7 @@ public:
     Array<int> dimres { this -> Dimensions() + var->Dimensions() };
 
     if (this == var)
-      return IdentityCF(dimvar) -> Reshape (dimres);
+      return IdentityCF(this->Dimensions());
 
     auto diffc1 = c1->DiffJacobi(var);
     auto diffc2 = c2->DiffJacobi(var);
@@ -2917,7 +2917,7 @@ public:
     int dimvar = var->Dimension();
 
     if (this == var)
-      return IdentityCF(h*w) -> Reshape( Array<int> { h, w, h, w } );        
+      return IdentityCF(this->Dimensions());
 
     Array<int> dimres{h,w};
     dimres += var->Dimensions();
@@ -3410,10 +3410,10 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
-    int dim = Dimensions()[0];
     if (this == var)
-      return IdentityCF(dim*dim) -> Reshape( Array<int> { dim, dim, dim, dim } );        
+      return IdentityCF(this->Dimensions());
 
+    int dim = Dimensions()[0];
     Array<int> resdims = { dim, dim };
     resdims += var->Dimensions();
     return ZeroCF( resdims );
@@ -3597,7 +3597,7 @@ public:
     int w = Dimensions()[1];
     
     if (this == var)
-      return IdentityCF(h*w) -> Reshape( Array<int> { h, w, h, w } );        
+      return IdentityCF(this->Dimensions());
   
     auto diffc1 = c1->DiffJacobi(var);
     auto res = diffc1 -> TensorTranspose( 0, 1 );
@@ -3756,7 +3756,7 @@ public:
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
     if (this == var)
-      return IdentityCF(D*D) -> Reshape( Array<int> { D, D, D, D } );
+      return IdentityCF(this->Dimensions());
 
     auto diffc1 = c1->DiffJacobi(var);
     auto inv1 = const_cast<InverseCoefficientFunction*>(this)->shared_from_this();
@@ -4116,7 +4116,7 @@ public:
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
     if (this == var)
-      return IdentityCF(D*D) -> Reshape( Array<int> { D, D, D, D } );
+      return IdentityCF(this->Dimensions());
 
     return (DeterminantCF(c1) * InverseCF(c1)->Transpose() ) -> DiffJacobi(var);
   }
@@ -4865,16 +4865,15 @@ template <>
 shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericIdentity>::DiffJacobi(const CoefficientFunction * var) const
 {
-  Array<int> ndims(this->Dimensions());
-  ndims += var->Dimensions();
-  
   if (var == this)
     {
       if (this->Dimensions().Size()==0)
         return make_shared<ConstantCoefficientFunction>(1);
-      return IdentityCF(this->Dimension())->Reshape(ndims);
+      return IdentityCF(this->Dimensions());
     }
 
+  Array<int> ndims(this->Dimensions());
+  ndims += var->Dimensions();
   return c1->DiffJacobi(var) -> Reshape(ndims);
 }
 
@@ -4982,16 +4981,9 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     return make_shared<CrossProductCoefficientFunction> (c1, c2);
   }
 
-  shared_ptr<CoefficientFunction> IdentityCF (int dim, int order)
+  shared_ptr<CoefficientFunction> IdentityCF (int dim)
   {
-     if (order % 2 != 0)
-         throw NG_EXCEPTION("order of IdentityCF must be even");
-     if (order == 2)
-       return make_shared<IdentityCoefficientFunction> (dim);
-
-     Array<int> dims(order / 2);
-     dims = dim;
-     return IdentityCF(dims);
+     return make_shared<IdentityCoefficientFunction> (dim);
   }
 
   shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims)
@@ -5498,15 +5490,14 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
   {
+    if (this == var)
+      return IdentityCF(Dimensions());
+    
     Array<int> dimres { this->Dimensions() };
     dimres += var->Dimensions();
     
-    if (this == var)
-      return IdentityCF(Dimension()) -> Reshape(dimres);
-    
     auto diffc1 = c1->DiffJacobi(var);
 
-    
     int vardim = var->Dimension();
     Array<int> vardims = Array<int> (var->Dimensions());
     Array<int> dist(vardims.Size());
@@ -5653,19 +5644,33 @@ public:
     dim1 = c1->Dimension();
       
     if (dims1.Size() != dims.Size())
-      throw Exception("ExtendDimension needs same tensordimension");
+      throw Exception("ExtendDimension needs same tensor dimension");
 
     for (int i = pos.Size(); i < dims.Size(); i++)
       pos.Append(0);
-    for (int i = stride.Size(); i < dims.Size(); i++)
-      stride.Append(1);
-    
-    int firstoutput = pos[0];
-    for (int i = 1; i < dims.Size(); i++)
+
+    if (stride.Size() > 0 && stride.Size() != dims.Size())
+      throw Exception("stride must be either of size zero or the same size as dims");
+
+    if (stride.Size() == 0)
       {
-        firstoutput *= dims[i];
-        firstoutput += pos[i];
+        stride.SetSize(dims.Size());
+        stride = 1;
+        for (int i = dims.Size() - 1; i >= 0; i--)
+          for (int j = 0; j < i; ++j)
+            stride[j] *= dims[i];
       }
+
+//    cout << "stride: " << stride << endl;
+    
+    int firstoutput = 0;
+    for (int i = 0; i < dims.Size(); i++)
+      {
+        firstoutput += pos[i] * stride[i];
+      }
+
+//    cout << "first output: " << firstoutput << endl;
+
     for (int i = 0; i < c1->Dimension(); i++)
       {
         int index = i;
@@ -5674,15 +5679,14 @@ public:
         for (int j = dims1.Size()-1; j >= 0; j--)
           {
             int indexj = index % dims1[j];
-            outputindex += indexj * outputdist;
-            outputdist *= dims[j];
+            outputindex += indexj * stride[j];
             index /= dims1[j];
           }
         if (outputindex > Dimension())
-          throw Exception("illegal ouptut index "+ToString(outputindex));
+          throw Exception("illegal output index "+ToString(outputindex));
         mapping.Append (outputindex);
       }
-    // cout << "output indices = " << mapping << endl;
+//    cout << "output indices = " << mapping << endl;
   }
 
   
@@ -5756,7 +5760,27 @@ public:
     if (this == var) return dir;
     return MakeExtendDimensionCoefficientFunction (c1->Diff(var, dir), Array<int> (dims), Array<int> (pos),
                                                Array<int>(stride));
-  }  
+  }
+
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
+  {
+    if (this == var) return IdentityCF(this->Dimensions());
+
+    Array<int> resdims;
+    resdims += Dimensions();
+    resdims += var->Dimensions();
+
+    Array<int> resstride(resdims.Size());
+    resstride.Range(0, dims.Size()) = stride;
+    resstride.Range(dims.Size(), END) = 1;
+    for (int i = resdims.Size() - 1; i >= dims.Size(); i--)
+      for (int j = 0; j < i; ++j)
+        resstride[j] *= resdims[i];
+
+//    cout << "new stride: " << resstride << endl;
+    auto diffc1 = c1->DiffJacobi(var);
+    return MakeExtendDimensionCoefficientFunction (diffc1, move(resdims), Array<int>(pos), move(resstride));
+  }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
