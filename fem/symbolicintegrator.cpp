@@ -3535,7 +3535,7 @@ namespace ngfem
               dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
               // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
             }
-          catch (Exception e)
+          catch (const Exception& e)
             {
             cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
             }

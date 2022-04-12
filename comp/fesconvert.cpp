@@ -404,7 +404,7 @@ namespace ngcomp
     auto simd_guard = [&](auto some_lam) {
       if (use_simd) {
 	try { some_lam(); }
-	catch (ExceptionNOSIMD e) { /** Turn off SIMD and continue **/
+	catch (const ExceptionNOSIMD& e) { /** Turn off SIMD and continue **/
 	  for (auto bfi : ab_bfis)
 	    { bfi->SetSimdEvaluate(false); }
 	  for (auto bfi : bb_bfis)

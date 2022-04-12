@@ -79,7 +79,7 @@ namespace ngcomp
       {
         mapping = std::any_cast<shared_ptr<CoefficientFunction>>(flags.GetAnyFlag("mapping"));
       }
-    catch(std::bad_any_cast ex)
+    catch(const std::bad_any_cast& ex)
       {
         throw Exception("No mapping or wrong mapping given!\nGlobalInterfacespace needs kwarg: mapping=CoefficientFunction");
       }
