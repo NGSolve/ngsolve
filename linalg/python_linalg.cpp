@@ -334,7 +334,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("CreateVectors", [] (BaseVector & self, int num)
          {
            std::vector<shared_ptr<BaseVector>> vecs;
-           for (int i : Range(num))
+           for ([[maybe_unused]] auto i : Range(num))
              vecs.push_back(self.CreateVector());
            return vecs;
          }, py::arg("num"),
