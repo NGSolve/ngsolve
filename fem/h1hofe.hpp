@@ -53,13 +53,15 @@ namespace ngfem
     // using VertexOrientedFE<ET>::vnums;
 
     /// order of edge shapes
-    Vec<N_EDGE, TORDER> order_edge; 
+    // Vec<N_EDGE, TORDER> order_edge;
+    std::array<TORDER, N_EDGE> order_edge; 
 
     /// order of face shapes
-    Vec<N_FACE, INT<2,TORDER> > order_face; 
+    // Vec<N_FACE, INT<2,TORDER> > order_face;
+    std::array<INT<2,TORDER>, N_FACE> order_face; 
 
     /// order of internal shapes (3d only)
-    Vec<N_CELL, INT<3,TORDER> > order_cell;
+    std::array<INT<3,TORDER>, N_CELL > order_cell;
     
     bool nodalp2 = false;
 

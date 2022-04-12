@@ -3597,9 +3597,7 @@ public:
       return IdentityCF(this->Dimensions());
   
     auto diffc1 = c1->DiffJacobi(var);
-    auto res = diffc1 -> TensorTranspose( 0, 1 );
-    res -> SetDescription("tensor-transpose");
-    return res;
+    return diffc1 -> TensorTranspose( 0, 1 );
   }
 };
 
@@ -5568,7 +5566,14 @@ MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Arra
       dist[i] = dist1[ordering[i]];
     }
 
-  return MakeSubTensorCoefficientFunction (c1, 0, std::move(dims), std::move(dist));
+  auto res = MakeSubTensorCoefficientFunction (c1, 0, std::move(dims), std::move(dist));
+  stringstream descr;
+  descr << "tensor-transpose [";
+  for (auto i : Range(ordering.Size() - 1))
+    descr << " " << ordering[i] << ",";
+  descr << " " << ordering.Last() << " ]";
+  res -> SetDescription(descr.str());
+  return res;
 }
 
 shared_ptr<CoefficientFunction>
@@ -5658,15 +5663,22 @@ public:
             stride[j] *= dims[i];
       }
 
-//    cout << "stride: " << stride << endl;
-    
+    stringstream descr;
+    descr << "extend-dimension [";
+    descr << " input dims: ";
+    for (auto i : Range(dims1.Size()-1))
+      descr << dims1[i] << ", ";
+    descr << dims1.Last() << " | ";
+    descr << " pos: " << pos << " | ";
+    descr << " stride: ";
+    for (auto i : Range(stride.Size()-1))
+      descr << stride[i] << ", ";
+    descr << stride.Last() << " ]";
+    SetDescription(descr.str());  
+
     int firstoutput = 0;
     for (int i = 0; i < dims.Size(); i++)
-      {
-        firstoutput += pos[i] * stride[i];
-      }
-
-//    cout << "first output: " << firstoutput << endl;
+      firstoutput += pos[i] * stride[i];
 
     for (int i = 0; i < c1->Dimension(); i++)
       {
@@ -5717,8 +5729,8 @@ public:
     func(*this);
   }
 
-  virtual string GetDescription () const override
-  { return "extend-dimension"; }
+//  virtual string GetDescription () const override
+//  { return "extend-dimension"; }
   
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }

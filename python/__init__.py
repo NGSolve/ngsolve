@@ -67,6 +67,12 @@ from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTra
     PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize, printmaster
 from . import solvers
 
+
+try:
+    from netgen.occ import unit_square, unit_cube
+except:
+    pass
+
 CF = CoefficientFunction
 
 from math import pi
