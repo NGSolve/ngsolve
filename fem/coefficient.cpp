@@ -4601,6 +4601,7 @@ template <>
 shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPlus>::DiffJacobi(const CoefficientFunction * var) const
 {
+  if (var == this) return IdentityCF(Dimensions());
   return c1->DiffJacobi(var) + c2->DiffJacobi(var);
 }
 
@@ -4640,6 +4641,7 @@ template <>
 shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericMinus>::DiffJacobi(const CoefficientFunction * var) const
 {
+  if (var == this) return IdentityCF(Dimensions());
   return c1->DiffJacobi(var) - c2->DiffJacobi(var);
 }
 
@@ -7610,6 +7612,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     virtual shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
+      if (var == this) return Compile (dir, _real_compile, _maxderiv, _wait);
       auto diff_cf = cf->Diff(var, dir);
       // return Compile (diff_cf, false, 0, 0);
       return Compile (diff_cf, _real_compile, _maxderiv, _wait);
@@ -7618,6 +7621,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     virtual shared_ptr<CoefficientFunction>
     DiffJacobi (const CoefficientFunction * var) const override
     {
+      if (var == this) return Compile (IdentityCF(Dimensions()), _real_compile, _maxderiv, _wait);
       auto diff_cf = cf->DiffJacobi(var);
       // return Compile (diff_cf, false, 0, 0);
       return Compile (diff_cf, _real_compile, _maxderiv, _wait);
