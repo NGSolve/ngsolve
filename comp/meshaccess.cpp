@@ -394,7 +394,8 @@ namespace ngcomp
       STACK_ARRAY(SIMD<double>, mem0, ir.Size());
       FlatVector<SIMD<double>> def(ir.Size(), &mem0[0]);
       STACK_ARRAY(SIMD<double>, mem1, (DIMS*ir.Size()));
-      FlatMatrix<SIMD<double>> grad(DIMS, ir.Size(), &mem1[0]);
+      // FlatMatrix<SIMD<double>> grad(DIMS, ir.Size(), &mem1[0]);
+      FlatMatrix<SIMD<double>> grad(DIMS, ir.Size(), mem1);
 
       for (int i = 0; i < DIMR; i++)
         {
