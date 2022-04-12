@@ -365,7 +365,7 @@ namespace ngfem
       {       
         Mat<DIM> jac = mip.GetJacobian();
         Mat<DIM> inv_jac = mip.GetJacobianInverse();        
-	Mat<DIM> hesse_FinvT[3], F_HFinvT_Finv[3];
+	Mat<DIM> hesse_FinvT[DIM], F_HFinvT_Finv[DIM];
 		
 	double eps = 1e-4;	
 		
@@ -396,11 +396,9 @@ namespace ngfem
 	    jacllinv = Trans(mipll.GetJacobianInverse());
 	    
 	    for (int j = 0; j < DIM; j++)
-	      {
-		hesse_FinvT[0](j,dir) = (8.0*jacrinv(0,j) - 8.0*jaclinv(0,j) - jacrrinv(0,j) + jacllinv(0,j) ) / (12.0*eps);
-		hesse_FinvT[1](j,dir) = (8.0*jacrinv(1,j) - 8.0*jaclinv(1,j) - jacrrinv(1,j) + jacllinv(1,j) ) / (12.0*eps);
-		hesse_FinvT[2](j,dir) = (8.0*jacrinv(2,j) - 8.0*jaclinv(2,j) - jacrrinv(2,j) + jacllinv(2,j) ) / (12.0*eps);		
-	      }
+        for (int k = 0; k < DIM; k++)
+          hesse_FinvT[k](j,dir) = (8.0*jacrinv(k,j) - 8.0*jaclinv(k,j) - jacrrinv(k,j) + jacllinv(k,j) ) / (12.0*eps);
+	     
 	  }
 	
 	for(int i=0; i<DIM; i++)
