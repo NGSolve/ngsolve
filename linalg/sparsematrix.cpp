@@ -2420,4 +2420,85 @@ namespace ngla
 #endif
 #endif
 
+
+
+
+  template <typename TSCAL>
+  void SparseBlockMatrix<TSCAL> ::
+  AddElementMatrix(FlatArray<int> dnums1, 
+                   FlatArray<int> dnums2, 
+                   BareSliceMatrix<TSCAL> elmat,
+                   bool use_atomic)
+  {
+    // cout << "add elmat, dnums = " << dnums1 << ", " << dnums2 << endl;
+    // cout << elmat.AddSize(bheight*dnums1.Size(), bwidth*dnums2.Size()) << endl;
+    for (int i = 0; i < dnums1.Size(); i++)
+      for (int j = 0; j < dnums2.Size(); j++)
+        {
+          auto pos = this->GetPosition(dnums1[i], dnums2[j]);
+          auto entry = FlatMatrix(bheight, bwidth, (TSCAL*)data.Addr(pos*bheight*bwidth));
+
+          entry += elmat.Rows(i*bheight, (i+1)*bheight).Cols(j*bwidth, (j+1)*bwidth);
+        }
+  }
+
+  template <typename TSCAL>
+  ostream & SparseBlockMatrix<TSCAL> ::
+  Print (ostream & ost) const
+  {
+    for (int i = 0; i < size; i++)
+      {
+	ost << "Row " << i << ":";
+	
+	for (size_t j = firsti[i]; j < firsti[i+1]; j++)
+          ost << " " << colnr[j] << ":" << endl
+              << FlatMatrix(bheight, bwidth, (TSCAL*)data.Addr(j*bheight*bwidth)) << endl;
+                            
+	ost << "\n";
+      }
+    
+    return ost;
+  }
+
+  
+  template <typename TSCAL>
+  void SparseBlockMatrix<TSCAL> ::
+  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer tblockmat("SparseBlockMatrix::MultAdd");
+     
+    auto fx = x.FV<TSCAL>();
+    auto fy = y.FV<TSCAL>();
+
+    Vector<TSCAL> sum(bheight);
+    FlatArray<size_t> index = this->GetFirstArray();
+    FlatArray<int> cols = this->GetColIndices();
+    FlatArray<TSCAL> values = data;
+
+    size_t bw = bwidth;
+    size_t bh = bheight;
+    size_t bsize = bw*bh;
+    
+    tblockmat.Start();
+    
+    for (auto i : Range(this->Height()))
+      {
+        sum = 0;
+        for (auto j : Range(index[i], index[i+1]))
+          {
+            auto mat = FlatMatrix(bh, bw, (TSCAL*)values.Addr(j*bsize)); 
+            auto vx = fx.Range(bw*cols[j], bw*cols[j]+bw);
+            sum += mat*vx;
+          }
+        auto vy = fy.Range(i*bh, i*bh+bh);
+        vy += s*sum;
+      }
+    
+    tblockmat.Stop();
+    tblockmat.AddFlops (bheight*bwidth*this->NZE());
+  }
+
+  template class SparseBlockMatrix<double>;
+  template class SparseBlockMatrix<Complex>;
+  
 }
