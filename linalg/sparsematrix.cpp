@@ -2460,34 +2460,42 @@ namespace ngla
     return ost;
   }
 
-
   
   template <typename TSCAL>
   void SparseBlockMatrix<TSCAL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer tblockmat("SparseBlockMatrix::MultAdd");
+     
     auto fx = x.FV<TSCAL>();
     auto fy = y.FV<TSCAL>();
 
     Vector<TSCAL> sum(bheight);
     FlatArray<size_t> index = this->GetFirstArray();
     FlatArray<int> cols = this->GetColIndices();
+    FlatArray<TSCAL> values = data;
+
+    size_t bw = bwidth;
+    size_t bh = bheight;
+    size_t bsize = bw*bh;
+    
+    tblockmat.Start();
+    
     for (auto i : Range(this->Height()))
       {
-        auto rowind = this->GetRowIndices(i);
-        
         sum = 0;
         for (auto j : Range(index[i], index[i+1]))
           {
-            auto mat = FlatMatrix(bheight, bwidth, (TSCAL*)data.Addr(j*bheight*bwidth));
-            auto vx = fx.Range(bwidth*cols[j], bwidth*(cols[j]+1));
-            cout << "mat = " << endl << mat << endl;
-            cout << "vx = " << vx << endl;
+            auto mat = FlatMatrix(bh, bw, (TSCAL*)values.Addr(j*bsize)); 
+            auto vx = fx.Range(bw*cols[j], bw*cols[j]+bw);
             sum += mat*vx;
           }
-        auto vy = fy.Range(bheight*i, bheight*(i+1));
+        auto vy = fy.Range(i*bh, i*bh+bh);
         vy += s*sum;
       }
+    
+    tblockmat.Stop();
+    tblockmat.AddFlops (bheight*bwidth*this->NZE());
   }
 
   template class SparseBlockMatrix<double>;

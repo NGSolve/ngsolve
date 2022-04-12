@@ -140,7 +140,7 @@ namespace ngla
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("SparseMatrix::MultAdd"); RegionTimer reg(t);
-    t.AddFlops (this->NZE());
+    t.AddFlops (this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(double)));
 
     ParallelForRange
       (balance, [&] (IntRange myrange)
