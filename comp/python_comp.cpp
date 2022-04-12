@@ -3522,7 +3522,7 @@ integrator : ngsolve.fem.LFI
                            for(int i = 0; i< dim; i++)
                              hsum[i] = HSum(vsum[i]);
                          }
-                       catch (ExceptionNOSIMD e)
+                       catch (const ExceptionNOSIMD& e)
                          {
                            this_simd = false;
                            use_simd = false;
@@ -3621,7 +3621,7 @@ integrator : ngsolve.fem.LFI
                            for(size_t i = 0; i < dim; i++)
                              hsum[i] = HSum(vsum[i]);
                          }
-                       catch (ExceptionNOSIMD e)
+                       catch (const ExceptionNOSIMD& e)
                          {
                            this_simd = false;
                            use_simd = false;
