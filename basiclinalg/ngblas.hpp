@@ -12,7 +12,7 @@
 namespace ngbla
 {
 
-  extern NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  // extern NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
   typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[26];
   INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
@@ -24,16 +24,23 @@ namespace ngbla
   }
 
 
-  extern NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
+  // extern NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
   typedef void (*pmultadd_matvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmultadd_matvec dispatch_addmatvec[25];
   INLINE void MultAddMatVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
+    /*
     size_t sx = x.Size();
     if (sx <= 24)
       (*dispatch_addmatvec[sx])  (s, a, x, y);
     else
       MultAddMatVec_intern (s, a, x, y);
+    */
+    size_t dsx = x.Size();
+    if (dsx >= std::size(dispatch_addmatvec))
+      dsx = std::size(dispatch_addmatvec)-1;
+    (*dispatch_addmatvec[dsx])  (s, a, x, y);    
+    
   }
 
 

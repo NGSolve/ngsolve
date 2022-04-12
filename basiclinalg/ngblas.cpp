@@ -183,17 +183,6 @@ namespace ngbla
   }
 
   pmult_matvec dispatch_matvec[];
-  /*=
-    {
-      &MultMatVecShort<0>, &MultMatVecShort<1>, &MultMatVecShort<2>, &MultMatVecShort<3>,
-      &MultMatVecShort<4>, &MultMatVecShort<5>, &MultMatVecShort<6>, &MultMatVecShort<7>,
-      &MultMatVecShort<8>, &MultMatVecShort<9>, &MultMatVecShort<10>, &MultMatVecShort<11>,
-      &MultMatVecShort<12>, &MultMatVecShort<13>, &MultMatVecShort<14>, &MultMatVecShort<15>,
-      &MultMatVecShort<16>, &MultMatVecShort<17>, &MultMatVecShort<18>, &MultMatVecShort<19>,
-      &MultMatVecShort<20>, &MultMatVecShort<21>, &MultMatVecShort<22>, &MultMatVecShort<23>,
-      &MultMatVecShort<24>
-    };
-  */
   
   auto init_matvec = [] ()
   {
@@ -202,25 +191,9 @@ namespace ngbla
     dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
     return 1;
   }();
-  
-  
-  /*
-  template <template <int> typename FUNC, typename T>
-  void InitDispatchArray (T * ap)
-  {
-    cout << "array size = " << std::size(*ap) << endl;
-  }
-  
-  auto myinit = [] ()
-  {
-    cout << "init" << endl;
-    InitDispatchArray<MultMatVecShort> (dispatch_matvec);
-    return 0;
-  };
-  int dummy_myinit = myinit();
-  */
-  
 
+
+  /*
  pmultadd_matvec dispatch_addmatvec[25] =
     {
       &MultAddMatVecShort<0>, &MultAddMatVecShort<1>, &MultAddMatVecShort<2>, &MultAddMatVecShort<3>,
@@ -231,6 +204,19 @@ namespace ngbla
       &MultAddMatVecShort<20>, &MultAddMatVecShort<21>, &MultAddMatVecShort<22>, &MultAddMatVecShort<23>,
       &MultAddMatVecShort<24>
     };
+  */
+  
+  pmultadd_matvec dispatch_addmatvec[];
+  
+  auto init_addmatvec = [] ()
+  {
+    Iterate<std::size(dispatch_addmatvec)-1> ([&] (auto i)
+    { dispatch_addmatvec[i] = &MultAddMatVecShort<i>; });
+    dispatch_addmatvec[std::size(dispatch_addmatvec)-1] = &MultAddMatVec_intern;
+    return 1;
+  }();
+
+  
 
   
 
