@@ -899,6 +899,22 @@ namespace ngfem
         throw Exception ("Testfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing");
 
     cache_cfs = FindCacheCF(*cf);
+    
+    dcf_dtest.SetSize(proxies.Size());
+
+    if (symbolic_integrator_uses_diff)
+      for (auto i : Range(proxies))
+      {
+        try
+          {
+              dcf_dtest[i] = cf->DiffJacobi(proxies[i]);
+              // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+          }
+        catch (const Exception& e)
+          {
+              cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+      }
   }
 
   /*
@@ -987,21 +1003,26 @@ namespace ngfem
             
             FlatVector<SCAL> elvec1(elvec.Size(), lh);
             FlatMatrix<SCAL> val(mir.Size(), 1,lh);
-            for (auto proxy : proxies)
+            for (auto j : Range(proxies))
               {
                 HeapReset hr(lh);
+                auto proxy = proxies[j];
                 FlatMatrix<SCAL> proxyvalues(mir.Size(), proxy->Dimension(), lh);
-                for (int k = 0; k < proxy->Dimension(); k++)
-                  {
-                    ud.testfunction = proxy;
-                    ud.test_comp = k;
-                    cf -> Evaluate (mir, val);
-                    proxyvalues.Col(k) = val.Col(0);
-                  }
+
+                if (dcf_dtest[j])
+                    dcf_dtest[j]->Evaluate (mir, proxyvalues);
+                else
+                  for (int k = 0; k < proxy->Dimension(); k++)
+                    {
+                      ud.testfunction = proxy;
+                      ud.test_comp = k;
+                      cf -> Evaluate (mir, val);
+                      proxyvalues.Col(k) = val.Col(0);
+                    }
                 
-                for (size_t i = 0; i < mir.Size(); i++)
+                for (auto i : Range(mir))
+                    proxyvalues.Row(i) *= ir_facet[i].Weight() * mir[i].GetMeasure();
                   // proxyvalues.Row(i) *= ir_facet[i].Weight() * measure(i);
-                  proxyvalues.Row(i) *= ir_facet[i].Weight() * mir[i].GetMeasure();
                 
                 proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
                 elvec += elvec1;
@@ -1035,19 +1056,29 @@ namespace ngfem
             
             elvec = 0;
             // NgProfiler::StopThreadTimer(telvec_zero, tid);                        
-            for (auto proxy : proxies)
+            for (auto j : Range(proxies))
               {
                 // NgProfiler::StartThreadTimer(telvec_dvec, tid);
+                auto proxy = proxies[j];
                 FlatMatrix<SIMD<SCAL>> proxyvalues(proxy->Dimension(), ir.Size(), lh);
-                for (size_t k = 0; k < proxy->Dimension(); k++)
-                  {
-                    ud.testfunction = proxy;
-                    ud.test_comp = k;
+                if (dcf_dtest[j])
+                  dcf_dtest[j]->Evaluate (mir, proxyvalues);
+                else
+                  for (size_t k = 0; k < proxy->Dimension(); k++)
+                    {
+                      ud.testfunction = proxy;
+                      ud.test_comp = k;
+
+                      cf -> Evaluate (mir, proxyvalues.Rows(k,k+1));
+                    }
                     
-                    cf -> Evaluate (mir, proxyvalues.Rows(k,k+1));
-                    for (size_t i = 0; i < mir.Size(); i++)
-                      proxyvalues(k,i) *= mir[i].GetWeight();
+                for (auto i : Range(proxyvalues.Height()))
+                  {
+                    auto row = proxyvalues.Row(i);
+                    for (auto j : Range(row.Size()))
+                      row(j) *= mir[j].GetWeight();
                   }
+                    
                 // NgProfiler::StopThreadTimer(telvec_dvec, tid);
                 
                 // NgProfiler::StartThreadTimer(telvec_applytrans, tid);                                
@@ -1083,18 +1114,24 @@ namespace ngfem
           ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh);
         
         elvec = 0;
-        for (auto proxy : proxies)
+        for (auto j : Range(proxies))
           {
+            auto proxy = proxies[j];
             FlatMatrix<SCAL> proxyvalues(ir.Size(), proxy->Dimension(), lh);
-            for (int k = 0; k < proxy->Dimension(); k++)
-              {
-                ud.testfunction = proxy;
-                ud.test_comp = k;
+            if (dcf_dtest[j])
+              dcf_dtest[j]->Evaluate (mir, proxyvalues);
+            else
+              for (int k = 0; k < proxy->Dimension(); k++)
+                {
+                  ud.testfunction = proxy;
+                  ud.test_comp = k;
+                  cf -> Evaluate (mir, values);
+                  proxyvalues.Col(k) = values.Col(0);
+                }
                 
-                cf -> Evaluate (mir, values);
-                for (int i = 0; i < mir.Size(); i++)
-                  proxyvalues(i,k) = mir[i].GetWeight() * values(i,0);
-              }
+            for (int i = 0; i < mir.Size(); i++)
+              proxyvalues.Row(i) *= mir[i].GetWeight();
+                
             proxy->Evaluator()->ApplyTrans(fel, mir, proxyvalues, elvec1, lh);
             elvec += elvec1;
           }
