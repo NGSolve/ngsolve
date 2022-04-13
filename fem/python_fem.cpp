@@ -684,6 +684,12 @@ val : can be one of the following:
                   [] (CF & self) { return self.SpaceDim(); },
                   [] (CF & self, int dim) { self.SetSpaceDim(dim); })
     
+    .def("MakeVariable", [](shared_ptr<CF> self)
+         {
+           self->SetVariable(true);
+           return self;
+         }, "make node a variable, by which we can differentiate")
+    
     .def("__getitem__",  [](shared_ptr<CF> self, int comp)
                                          {
                                            if (comp < 0 || comp >= self->Dimension())
