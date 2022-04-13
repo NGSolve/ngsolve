@@ -2470,7 +2470,7 @@ namespace ngla
     auto fx = x.FV<TSCAL>();
     auto fy = y.FV<TSCAL>();
 
-    Vector<TSCAL> sum(bheight);
+    // Vector<TSCAL> sum(bheight);
     FlatArray<size_t> index = this->GetFirstArray();
     FlatArray<int> cols = this->GetColIndices();
     FlatArray<TSCAL> values = data;
@@ -2483,15 +2483,16 @@ namespace ngla
     
     for (auto i : Range(this->Height()))
       {
-        sum = 0;
+        // sum = 0;
+        auto sum = fy.Range(i*bh, i*bh+bh);        
         for (auto j : Range(index[i], index[i+1]))
           {
             auto mat = FlatMatrix(bh, bw, (TSCAL*)values.Addr(j*bsize)); 
             auto vx = fx.Range(bw*cols[j], bw*cols[j]+bw);
-            sum += mat*vx;
+            sum += s*mat*vx;
           }
-        auto vy = fy.Range(i*bh, i*bh+bh);
-        vy += s*sum;
+        // auto vy = fy.Range(i*bh, i*bh+bh);
+        // vy += s*sum;
       }
     
     tblockmat.Stop();
