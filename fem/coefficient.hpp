@@ -23,6 +23,7 @@ namespace ngfem
     bool is_complex = false;
     int spacedim = -1;  // needed for grad(x), grad(1), ...
     string description;
+    bool is_variable = false;  // variables cannot be optimized away (e.g. for differentiation)
   public:
     // default constructor for archive
     CoefficientFunction() = default;
@@ -245,6 +246,10 @@ namespace ngfem
     virtual string GetDescription () const;
     void SetDescription (string desc) { description = desc; }
 
+
+    bool IsVariable() const { return is_variable; }
+    void SetVariable (bool var = true) { is_variable = var; }
+    
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
     // returns Jacobi-matrix (possible as higher order tensor)
