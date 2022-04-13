@@ -476,6 +476,7 @@ namespace ngbla
   template <class TA, class TB> class MultExpr;
   template <class TA> class MinusExpr;
   template <class TA> class TransExpr;
+  template <class TA, class TS> class ScaleExpr;
   
   /**
      The base class for matrices.
@@ -626,6 +627,38 @@ namespace ngbla
       return Spec();
     }
 
+    // x += s*(m*y)
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<std::is_same<OP,AsAdd>::value,int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
+              // typename enable_if<is_convertible<T,FlatVector<double>>::value,int>::type = 0>
+              typename enable_if<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<ScaleExpr<MultExpr<TA, TB>,double>> & prod)
+    {
+      MultAddMatVec (prod.Spec().S(),
+                     make_SliceMatrix(prod.Spec().A().A()),
+                     prod.Spec().A().B(),
+                     Spec());
+      return Spec();
+    }
+
+    // x += (s*m)*y
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<std::is_same<OP,AsAdd>::value,int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
+              typename enable_if<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<MultExpr<ScaleExpr<TA,double>, TB>> & prod)
+    {
+      MultAddMatVec (prod.Spec().A().S(),
+                     make_SliceMatrix(prod.Spec().A().A()),
+                     prod.Spec().B(),
+                     Spec());
+      return Spec();
+    }
+
+    
     // rank 1 update
     template <typename OP, typename TA, typename TB,
               typename enable_if<is_convertible<TA,FlatVector<double>>::value,int>::type = 0,
@@ -1077,6 +1110,10 @@ namespace ngbla
 
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
+
+    INLINE const TA & A() const { return a; }
+    INLINE TS S() const { return s; }
+    
     void Dump (ostream & ost) const
     { ost << "Scale, s=" << s << " * "; a.Dump(ost);  }
   };

@@ -62,6 +62,10 @@ namespace ngbla
   }
 
 
+  INLINE void MultAddMatVec (double s, BareSliceMatrix<double, ColMajor> a, FlatVector<> x, FlatVector<> y)
+  {
+    MultAddMatTransVec (s, Trans(a), x, y);
+  }
 
 
   
