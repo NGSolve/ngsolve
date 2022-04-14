@@ -4757,7 +4757,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
       return make_shared<MultMatMatCoefficientFunction> (c1, c2);
     if (c1->Dimensions().Size() >= 2 && c2->Dimensions().Size() == 1)
       {
-        if (dynamic_pointer_cast<IdentityCoefficientFunction>(c1))
+        if (dynamic_pointer_cast<IdentityCoefficientFunction>(c1) && !c1->IsVariable())
           return c2;
         return make_shared<MultMatVecCoefficientFunction> (c1, c2);
       }
@@ -5059,7 +5059,7 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
       }
 
     // if (coef.use_count() == 1)
-    if (dynamic_pointer_cast<IdentityCoefficientFunction> (coef))
+    if (dynamic_pointer_cast<IdentityCoefficientFunction> (coef) && !coef->IsVariable())
       return coef;
 
     return make_shared<TransposeCoefficientFunction> (coef);
@@ -5085,6 +5085,13 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     auto dims = coef->Dimensions();
     if (dims.Size() != 2) throw Exception("Inverse of non-matrix");
     if (dims[0] != dims[1]) throw Exception("Inverse of non-quadratic matrix");
+
+    if (coef->IsZeroCF())
+      return ZeroCF(Array<int>());
+
+    if (dynamic_pointer_cast<IdentityCoefficientFunction> (coef) && !coef->IsVariable())
+      return make_shared<ConstantCoefficientFunction>(1);
+        
     switch (dims[0])
       {
       case 1: return make_shared<DeterminantCoefficientFunction<1>> (coef);
@@ -5329,7 +5336,7 @@ MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
   if (c1->IsZeroCF())
     return ZeroCF( Array<int>({}) );
 
-  if (c1->GetDescription() == "unary operation ' '")
+  if (c1->GetDescription() == "unary operation ' '"  && !c1->IsVariable())
     return MakeComponentCoefficientFunction(c1->InputCoefficientFunctions()[0], comp);
 
   if (c1->GetDescription() == "VectorialCoefficientFunction")
