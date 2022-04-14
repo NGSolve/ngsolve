@@ -1124,6 +1124,9 @@ cf : ngsolve.CoefficientFunction
     .def ("Diff", // &CoefficientFunction::Diff,
           [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
           {
+            if (!var->IsVariable())
+              cout << "Warning: differentiationg by a variable not marked as Variable, \n"
+                "might be optimized out. Call MakeVariable for differentiation CF" << endl;
             if (dir)
               return coef->Diff(var.get(), dir);
             else
@@ -1159,6 +1162,7 @@ cf : ngsolve.CoefficientFunction
     .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir, std::vector<shared_ptr<CoefficientFunction>> Eulerian)
           {
             DiffShapeCF shape;
+            shape.SetVariable();
             for (auto gf : Eulerian)
               shape.Eulerian_gridfunctions.Append(gf.get());
             return coef->Diff (&shape, dir);

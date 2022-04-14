@@ -454,7 +454,7 @@ namespace ngfem
   ParameterCoefficientFunction<SCAL> ::
   ParameterCoefficientFunction(SCAL aval)
     : CoefficientFunctionNoDerivative(1, std::is_same_v<SCAL, Complex>), val(aval)
-  { ; }
+  { SetVariable(true); }
 
   template<typename SCAL>
   ParameterCoefficientFunction<SCAL> ::
@@ -7246,7 +7246,7 @@ public:
     typedef T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
   public:
     CoordCoefficientFunction() = default;
-    CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { ; }
+    CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { SetVariable(true); }
 
     void DoArchive(Archive& ar) override
     {
