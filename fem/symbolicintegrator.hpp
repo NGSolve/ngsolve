@@ -619,6 +619,7 @@ public:
     Array<ProxyFunction*> proxies;
     Array<CoefficientFunction*> gridfunction_cfs;
     Array<CoefficientFunction*> cache_cfs;
+    Array<shared_ptr<CoefficientFunction>> dcf_dtest;
 
     VorB vb;
     // bool element_boundary;
