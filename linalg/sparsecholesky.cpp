@@ -635,8 +635,8 @@ namespace ngla
 
     Array<TM> sum(BS*maxrow);
 
-    double flops1 = 0;
-    double flops2 = 0;
+    // double flops1 = 0;
+    // double flops2 = 0;
     // starttime1 = clock();
 
     for (int i1 = 0; i1 < n;  )
@@ -727,7 +727,7 @@ namespace ngla
                     diag[i1+j2] += Trans (hlfact[firsti-1]) * q;
                   }
                 
-                flops1 += (nk+1)*j2;
+                // flops1 += (nk+1)*j2;
                 TM aiinv;
                 CalcInverse (diag[i1+j2], aiinv);
                 diag[i1+j2] = aiinv;
@@ -764,7 +764,7 @@ namespace ngla
 	    CalcInverse (diag[i1+jj], aiinv);
 	    diag[i1+jj] = aiinv;
 
-	    flops1 += (nk+1)*jj;
+	    // flops1 += (nk+1)*jj;
 	  }
 
 
@@ -821,7 +821,7 @@ namespace ngla
                     }
                 }
 
-              flops2 += (BS*(mi-j)-6)*(last_same-i1);
+              // flops2 += (BS*(mi-j)-6)*(last_same-i1);
 
               // merge together
               for (int l = 0; l < BS; l++)
@@ -862,7 +862,7 @@ namespace ngla
 		  sum[k] += qtrans * hlfact[first+k];
 	      }
 
-	    flops2 += (mi - j)*(last_same-i1);
+	    // flops2 += (mi - j)*(last_same-i1);
 
 	    // merge together
 	    int firstj = hfirstinrow[hrowindex2[firsti_ri+j]];
