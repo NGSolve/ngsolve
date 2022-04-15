@@ -2153,6 +2153,13 @@ namespace ngbla
     return FlatMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Data());
   }
 
+  template <typename T, ORDERING ord,
+            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
+  INLINE auto Trans (const Matrix<T,ord> & mat)
+  {
+    return FlatMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Data());
+  }
+
   /*
   INLINE 
   const SliceMatrix<double> Trans (SliceMatrix<double,ColMajor> mat)
