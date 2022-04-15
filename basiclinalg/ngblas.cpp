@@ -4015,6 +4015,28 @@ namespace ngbla
   }
 
 #endif  // ifdef AVX512/AVX/SSE
+
+
+
+
+  // externals from ng_blas
+  void LapackMultAdd (SliceMatrix<double> a, 
+                             SliceMatrix<Complex,ColMajor> b, 
+                             Complex alpha,
+                             SliceMatrix<Complex> c,
+                             Complex beta)
+  {
+    if (beta == 0.0)
+      c = alpha * (a * b);
+    else
+      {
+        c *= beta;
+        c += alpha * (a * b);
+      }
+    // BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta);
+  }
+
+
   
 }
 

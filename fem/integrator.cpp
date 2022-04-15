@@ -2054,7 +2054,7 @@ namespace ngfem
 
 
 
-
+  ComplexLinearFormIntegrator :: ~ComplexLinearFormIntegrator() { }
 
 
 

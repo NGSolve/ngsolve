@@ -422,11 +422,13 @@ namespace ngbla
 
 
   // we don't have a lapack function for that 
-  inline void LapackMultAdd (SliceMatrix<double> a, 
-                             SliceMatrix<Complex,ColMajor> b, 
-                             Complex alpha,
-                             SliceMatrix<Complex> c,
-                             Complex beta)
+  void LapackMultAdd (SliceMatrix<double> a, 
+                      SliceMatrix<Complex,ColMajor> b, 
+                      Complex alpha,
+                      SliceMatrix<Complex> c,
+                      Complex beta);
+  // ---> moved implementation to ng_blas
+  /*
   {
     if (beta == 0.0)
       c = alpha * (a * b);
@@ -437,6 +439,7 @@ namespace ngbla
       }
     // BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta);
   }
+  */
 
   template <typename TA, typename TB, typename ALPHA, typename BETA, typename TC>
   inline void LapackMultAdd (TA a, 
