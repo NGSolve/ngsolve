@@ -651,6 +651,17 @@ namespace ngbla
         }
     }
 
+    template <typename ...TTUP>
+    Mat (tuple<TTUP...> tup)
+    {
+      constexpr int s = tuple_size<decltype(tup)>();
+      Iterate<s> ([this, tup] (auto i) { this->data[i] = get<i>(tup); });
+    }
+
+    template <class... T2>
+    Mat (T v0, T v1, T2... rest)
+      : Mat(tuple(v0, v1, rest...)) { } 
+
     /// assign values
     template<typename TB>
     INLINE Mat & operator= (const Expr<TB> & m)

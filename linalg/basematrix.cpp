@@ -475,11 +475,12 @@ namespace ngla
             cerr << "illegal operator composition" << endl;
             cerr << "optyp A = " << int(para->GetOpType()) << endl;
             cerr << "optyp B = " << int(parb->GetOpType()) << endl;
-            cerr << "type a parallelmat of = " << typeid(*para->GetMatrix()).name()
-                 << ", type b = " <<typeid(*parb->GetMatrix()).name() << endl;
+            auto & locmata = *para->GetMatrix();
+            auto & locmatb = *parb->GetMatrix();
+            cerr << "type a parallelmat of = " << typeid(locmata).name()
+                 << ", type b = " <<typeid(locmatb).name() << endl;
           }
       }
-
     
     return make_shared<ProductMatrix> (a, b);
   }
