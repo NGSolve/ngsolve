@@ -134,7 +134,6 @@ namespace ngbla
 
   NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    // constexpr int SW = SIMD<double>::Size();
     size_t h = y.Size();
     size_t w = x.Size();
     size_t i = 0;
@@ -142,18 +141,22 @@ namespace ngbla
     double * pa = &a(i,0);
     for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
       {
-        // SIMD<double,4> sum1, sum2;
-        // tie(sum1, sum2) = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        /*
         auto [sum1, sum2] = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
         sum1.Store(&y(i));        
         sum2.Store(&y(i+4));        
+        */
+        SIMD<double,8> sum = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        sum.Store(&y(i));
       }
     
     if (i+4 <= h)
       {
-        // SIMD<double,4> sum;
-        // tie(sum) = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        /*
         auto [sum] = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        sum.Store(&y(i));
+        */
+        SIMD<double,4> sum = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
         sum.Store(&y(i));
         i += 4;
         pa += 4*a.Dist();
@@ -179,7 +182,47 @@ namespace ngbla
 
   NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    y += s * a.AddSize(y.Size(),x.Size()) * x;
+    // y += s * a.AddSize(y.Size(),x.Size()) * x;
+
+    size_t h = y.Size();
+    size_t w = x.Size();
+    size_t i = 0;
+
+    double * pa = a.Data();
+    for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
+      {
+        SIMD<double,8> sum = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        sum = SIMD<double,8>(&y(i)) + s*sum;
+        sum.Store(&y(i));
+      }
+    
+    if (i+4 <= h)
+      {
+        SIMD<double,4> sum = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        sum = SIMD<double,4>(&y(i)) + s*sum;        
+        sum.Store(&y(i));
+        i += 4;
+        pa += 4*a.Dist();
+      }
+
+    if (i+2 <= h)
+      {
+        auto scal = MatKernelScalAB<2,1> (w, pa, a.Dist(), &x(0), 0);
+        SIMD<double,2> sum(get<0>(scal), get<1>(scal));
+        sum = SIMD<double,2>(&y(i)) + s*sum;                
+        sum.Store(&y(i));
+        i += 2;
+        pa += 2*a.Dist();
+      }
+
+    if (i+1 <= h)
+      {
+        auto scal = MatKernelScalAB<1,1> (w, pa, a.Dist(), &x(0), 0);
+        y(i) += s*get<0>(scal);
+      }
+
+
+    
   }
 
   pmult_matvec dispatch_matvec[];
