@@ -887,6 +887,23 @@ namespace ngbla
       return *this;
     }
 
+    template<typename TB>
+    INLINE Vec & operator+= (const Expr<TB> & v)
+    {
+      for (size_t i = 0; i < S; i++)
+	data[i] += v.Spec()(i,0);
+      return *this;
+    }
+    
+    template<typename TB>
+    INLINE Vec & operator-= (const Expr<TB> & v)
+    {
+      for (size_t i = 0; i < S; i++)
+	data[i] -= v.Spec()(i,0);
+      return *this;
+    }
+    
+
     /// access vector
     INLINE TELEM & operator() (size_t i) 
     {
