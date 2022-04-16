@@ -13,6 +13,33 @@ constexpr bool reg32 = false;
 
 namespace ngbla
 {
+
+  // BLAS1 operations
+  
+  void CopyVector (FlatVector<double> src, FlatVector<double> dest)
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = src[i];
+  }
+  
+  void CopyVector (SliceVector<double> src, SliceVector<double> dest)
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = src[i];
+  }
+
+  void AddVector (double alpha, FlatVector<double> src, FlatVector<double> dest)
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] += alpha * src[i];
+  }
+  
+  void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest)
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] += alpha * src[i];
+  }
+
   
 
   int dgemm(char *transa, char *transb, integer *m, integer *

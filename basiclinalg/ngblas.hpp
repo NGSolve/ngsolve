@@ -12,6 +12,46 @@
 namespace ngbla
 {
 
+  // vector ops
+
+  template <typename T1, typename T2>
+  void CopyVector (FlatVector<T1> src, FlatVector<T2> dest)
+  {
+    for (size_t i : Range(dest))
+      dest[i] = src[i];
+  }
+
+  template <typename T1, typename T2>
+  void CopyVector (SliceVector<T1> src, SliceVector<T2> dest)
+  {
+    for (size_t i : Range(dest))
+      dest[i] = src[i];
+  }
+
+  void CopyVector (FlatVector<double> src, FlatVector<double> dest);
+  void CopyVector (SliceVector<double> src, SliceVector<double> dest);
+
+
+  template <typename T0, typename T1, typename T2>
+  void AddVector (T0 alpha, FlatVector<T1> src, FlatVector<T2> dest)
+  {
+    for (size_t i : Range(dest))
+      dest[i] += alpha*src[i];
+  }
+
+  template <typename T0, typename T1, typename T2>
+  void AddVector (T0 alpha, SliceVector<T1> src, SliceVector<T2> dest)
+  {
+    for (size_t i : Range(dest))
+      dest[i] += alpha*src[i];
+  }
+
+  void AddVector (double alpha, FlatVector<double> src, FlatVector<double> dest);
+  void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest);
+
+
+
+  
 
   typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[26];
