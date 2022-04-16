@@ -887,6 +887,7 @@ namespace ngbla
       return *this;
     }
 
+    /*
     template<typename TB>
     INLINE Vec & operator+= (const Expr<TB> & v)
     {
@@ -902,7 +903,7 @@ namespace ngbla
 	data[i] -= v.Spec()(i,0);
       return *this;
     }
-    
+    */
 
     /// access vector
     INLINE TELEM & operator() (size_t i) 
@@ -1087,11 +1088,19 @@ namespace ngbla
   }
 
 
-  template<int S, typename TB>
-  INLINE Vec<S> & operator+= (Vec<S> & v, const Expr<TB> & v2)
+  template<int S, typename T, typename TB>
+  INLINE Vec<S,T> & operator+= (Vec<S,T> & v, const Expr<TB> & v2)
   {
     for (int i = 0; i < S; i++)
       v(i) += v2.Spec()(i,0);
+    return v;
+  }
+
+  template<int S, typename T, typename TB>
+  INLINE Vec<S,T> & operator-= (Vec<S,T> & v, const Expr<TB> & v2)
+  {
+    for (int i = 0; i < S; i++)
+      v(i) -= v2.Spec()(i,0);
     return v;
   }
 
