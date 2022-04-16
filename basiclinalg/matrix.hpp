@@ -2391,6 +2391,26 @@ namespace ngbla
   }
 
   template <int H, int W, typename T>
+  INLINE Mat<H,W,T> & operator+= (Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
+  {
+    Iterate<H*W> ([&] (auto i) {
+        ma(i.value) += mb(i.value);
+      });
+    return ma;
+  }
+
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> & operator-= (Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
+  {
+    Iterate<H*W> ([&] (auto i) {
+        ma(i.value) -= mb(i.value);
+      });
+    return ma;
+  }
+
+  
+
+  template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator* (T scal, const Mat<H,W,T> & mat)
   {
     Mat<H,W,T> res;
