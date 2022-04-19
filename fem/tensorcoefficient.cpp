@@ -249,6 +249,51 @@ namespace ngfem {
           return parts;
         }
 
+        string replace_ellipse(const string& signature_part, size_t pos, size_t nnew, const string& new_symbols) {
+            stringstream sstr;
+            for (auto i : Range(pos))
+                sstr << signature_part[i];
+            for (auto i : Range(nnew))
+                sstr << new_symbols[i];
+
+            auto offset = pos + 3;
+            auto nremain = signature_part.size() - offset;
+            for (auto i : Range(nremain))
+                sstr << signature_part[i + offset];
+            return sstr.str();
+        }
+
+        pair<string,string> expand_ellipse(string signature_part, const shared_ptr<CoefficientFunction> cf,
+                              const string& existing_symbols, string ellipse_symbols = "")
+        {
+            auto pos = signature_part.find("...");
+            if (pos == string::npos)
+                return {move(signature_part), move(ellipse_symbols)};
+
+            auto nnew = cf->Dimensions().Size() - (signature_part.size() - 3);
+
+            if (nnew > ellipse_symbols.size())
+                ellipse_symbols += new_index_symbols(existing_symbols + ellipse_symbols, nnew - ellipse_symbols.size());
+
+            signature_part = replace_ellipse(signature_part, pos, nnew, ellipse_symbols);
+            return {move(signature_part), move(ellipse_symbols)};
+        }
+
+        string expand_ellipses(const string& signature, const Array<shared_ptr<CoefficientFunction>>& cfs)
+        {
+            auto parts = split_signature(signature);
+            string ellipse_symbols{};
+            ellipse_symbols.reserve(10);
+            for (auto i : Range(parts.size() - 1))
+                tie(parts[i], ellipse_symbols) = expand_ellipse(parts[i], cfs[i], signature, ellipse_symbols);
+
+            auto pos = parts.back().find("...");
+            if (pos != string::npos)
+                parts.back() = replace_ellipse(parts.back(), pos, ellipse_symbols.size(), ellipse_symbols);
+
+            return form_index_signature(parts);
+        }
+
         optional<string> substitute_id_index(string signature, pair<char, char> id_indices,
                                  size_t id_pos, const FlatArray<bool> marked_for_removal,
                                  bool recurse)
@@ -430,8 +475,7 @@ namespace ngfem {
               {
                 // trace of identity
                 parts[i] = parts[i][0];
-                cf_subs[i] = ConstantCF(cfs[i]->Dimensions()[0]);
-                cf_subs[i]->SetDimensions(Array<int>{1});
+                cf_subs[i] = ConstantCF(cfs[i]->Dimensions()[0])->Reshape(1);
               }
               else if (auto new_signature = substitute_id_index(
                       signature, {parts[i][0], parts[i][1]}, i, remove, true); new_signature)
@@ -1172,7 +1216,7 @@ namespace ngfem {
     shared_ptr<CoefficientFunction> EinsumCF(const string &index_signature,
                                              const Array<shared_ptr<CoefficientFunction>> &cfs,
                                              const map<string, bool> &options) {
-        return make_shared<EinsumCoefficientFunction>(index_signature, cfs, options);
+        return make_shared<EinsumCoefficientFunction>(expand_ellipses(index_signature, cfs), cfs, options);
     }
 
 } // namespace ngfem
