@@ -2316,16 +2316,32 @@ int main (int argn, char **argv)
   out <<
 R"raw_string(
 template <typename Tuple, std::size_t ... Is>
-auto pop_front_impl(const Tuple& tuple, std::index_sequence<Is...>)
+auto pop_front2_impl(const Tuple& tuple, std::index_sequence<Is...>)
 {
-    return std::make_tuple(std::get<1 + Is>(tuple)...);
+    return std::make_tuple(std::get<2 + Is>(tuple)...);
 }
 
 template <typename Tuple>
-auto pop_front(const Tuple& tuple)
+auto pop_front2(const Tuple& tuple)
 {
-    return pop_front_impl(tuple,
-                          std::make_index_sequence<std::tuple_size<Tuple>::value - 1>());
+    return pop_front2_impl(tuple,
+                          std::make_index_sequence<std::tuple_size<Tuple>::value - 2>());
+}
+
+template<int N1, int N2>
+auto Concat2(SIMD<double,N1> simd1, SIMD<double,N2> simd2)
+{
+    if constexpr (IsNativeSIMDSize(simd1.Size())) {
+        return SIMD<double,simd1.Size()+simd2.Size()>(simd1, simd2);
+    }
+    else {
+      auto lo = simd1.Lo();
+      auto hi = simd1.Hi();
+  
+      SIMD<double,hi.Size()+simd2.Size()> res1(hi, simd2);
+      SIMD<double,simd1.Size()+simd2.Size()> res2(lo, res1);
+      return res2;
+    }
 }
 
 template <typename ...Args, int N>
@@ -2333,23 +2349,13 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
 {
   if constexpr (tuple_size<tuple<SIMD<double,N>, Args...>>() == 1)
                  return get<0>(tup);
+  else if constexpr (tuple_size<tuple<SIMD<double,N>, Args...>>() == 2)
+      return Concat2(get<0>(tup), get<1>(tup));
   else
     {
-      auto simd1 = get<0>(tup);
-      auto simd2 = Concat(pop_front(tup));
-      if constexpr (simd1.Size() == SIMD<double>::Size())
-                     {
-                       return SIMD<double,simd1.Size()+simd2.Size()>(simd1, simd2);
-                     }
-      else
-        {
-          auto lo = simd1.Lo();
-          auto hi = simd1.Hi();
-      
-          SIMD<double,hi.Size()+simd2.Size()> res1(hi, simd2);
-          SIMD<double,simd1.Size()+simd2.Size()> res2(lo, res1);
-          return res2;
-        }
+      auto front = Concat2(get<0>(tup), get<1>(tup));
+      auto rest = pop_front2(tup);
+      return Concat(std::tuple_cat(make_tuple(front), rest));
     }
 }
 )raw_string"
