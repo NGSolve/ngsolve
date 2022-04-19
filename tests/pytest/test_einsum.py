@@ -16,7 +16,7 @@ u.Interpolate((x ** 2 * z * y, y ** 3 * x, z ** 2 * x * y))
 X0 = mesh(0.1, 0.1, 0.1)
 
 p_ = [Parameter(float((F * F)(X0)[i])) for i in range(9)]
-pF = CoefficientFunction(tuple(p_), dims=(3, 3))
+pF = CoefficientFunction(tuple(p_), dims=(3, 3)).MakeVariable()
 
 
 def DetES(A, **options):
@@ -33,7 +33,7 @@ def TransposeES(A, **options):
 
 def InvES(A, **options):
     _Det = DetES(A, **options)
-    return TransposeES(_Det.Diff(A) / _Det, **options)
+    return TransposeES(_Det.Diff(A.MakeVariable()) / _Det, **options)
 
 
 def op_counts(acf):
@@ -59,7 +59,7 @@ def same(cf1, cf2, tol=1e-12):
 
 @pytest.mark.parametrize("use_legacy_ops", (True, False))
 def test_blas(use_legacy_ops):
-    options = {"use_legacy_ops": use_legacy_ops}
+    options = {"use_legacy_ops": use_legacy_ops, "optimize_path": False}
     
     def check_optimization(cf, options, legacy_str_lines):
         if options["use_legacy_ops"]:
@@ -195,12 +195,12 @@ def test_path_optimization():
 
 @pytest.mark.parametrize("options", ({"expand_einsum": True, "optimize_path": True, "optimize_identities": True},))
 def test_diff(options):
-    Cv = fem.Einsum('ki,kj->ij', pF, pF)
-    b = fem.Einsum('ij,jk,kl->il', F, InvES(Cv), TransposeES(F))
-    Psi = TraceES(b) + log(DetES(b))
+    Cv = fem.Einsum('ki,kj->ij', pF, pF).MakeVariable()
+    b = fem.Einsum('ij,jk,kl->il', F, InvES(Cv, optimize_path=False), TransposeES(F, optimize_path=False))
+    Psi = TraceES(b, optimize_path=False) + log(DetES(b, optimize_path=False))
     PsiOpt = TraceES(b, **options) + log(DetES(b, **options))
 
-    _Cv = pF.trans * pF
+    _Cv = (pF.trans * pF).MakeVariable()
     _b = F * Inv(_Cv) * F.trans
     Psi_legacy = Trace(_b) + log(Det(_b))
 
@@ -225,36 +225,53 @@ def test_diff(options):
 
 
 def test_tensor_diff():
-    Cv = fem.Einsum('ki,kj->ij', pF, pF)
-    b = fem.Einsum('ij,jk,kl->il', F, InvES(Cv), TransposeES(F))
-    same(Trace(Cv).Diff(Cv), fem.Einsum('ii', Cv).Diff(Cv))
-    same(Trace(b).Diff(Cv), fem.Einsum('ii', b).Diff(Cv))
+    options = {"optimize_path": True}
 
-    same(Trace(pF).Diff(pF), TraceES(pF).Diff(pF))
-    same(Trace(b).Diff(Cv), TraceES(b).Diff(Cv))
+    Cv = fem.Einsum('ki,kj->ij', pF, pF).MakeVariable()
+    b = fem.Einsum('ij,jk,kl->il', F, InvES(Cv), TransposeES(F, **options))
+    assert same(Trace(Cv).Diff(Cv), fem.Einsum('ii', Cv, **options).Diff(Cv))
+    assert same(Trace(b).Diff(Cv), fem.Einsum('ii', b, **options).Diff(Cv))
 
-    same(Det(pF).Diff(pF), DetES(pF).Diff(pF))
-    same(Det(b).Diff(Cv), DetES(b).Diff(Cv))
+    assert same(Trace(pF).Diff(pF), TraceES(pF, **options).Diff(pF))
+    assert same(Trace(b).Diff(Cv), TraceES(b, **options).Diff(Cv))
 
-    same(Inv(pF).Diff(pF), InvES(pF).Diff(pF))
-    same(Inv(b).Diff(Cv), InvES(b).Diff(Cv))
+    assert same(Det(pF).Diff(pF), DetES(pF, **options).Diff(pF))
+    assert same(Det(b).Diff(Cv), DetES(b, **options).Diff(Cv))
 
-    same(pF.trans.Diff(pF), TransposeES(pF).Diff(pF))
-    same(b.trans.Diff(Cv), TransposeES(b).Diff(Cv))
+    assert same(Inv(pF).Diff(pF), InvES(pF, **options).Diff(pF))
+    assert same(Inv(b).Diff(Cv), InvES(b, **options).Diff(Cv))
+
+    assert same(pF.trans.Diff(pF), TransposeES(pF, **options).Diff(pF))
+    assert same(b.trans.Diff(Cv), TransposeES(b, **options).Diff(Cv))
 
     A_extend = np.zeros((3, 3, 2, 2))
     A_extend[1:, :-1, :, :] = np.einsum('ik,jl->ijkl', np.eye(2), np.eye(2))
     cf_extend = CoefficientFunction(tuple(A_extend.flatten().tolist()), dims=A_extend.shape)
     pF_extend = pF[:2, :2].ExtendDimension((3, 3), (1, 0))
     pF_extend_ES = fem.Einsum('ijkl,kl->ij', cf_extend, pF[:2, :2])
-    same(pF_extend.Diff(pF), pF_extend_ES.Diff(pF))
+    assert same(pF_extend.Diff(pF), pF_extend_ES.Diff(pF))
 
     b_extend = b[:2, :2].ExtendDimension((3, 3), (1, 0))
     b_extend_ES = fem.Einsum('ijkl,kl->ij', cf_extend, b[:2, :2])
-    same(b_extend.Diff(Cv), b_extend_ES.Diff(Cv))
+    assert same(b_extend.Diff(Cv), b_extend_ES.Diff(Cv))
 
     AA = fem.Einsum('ik,jl->ijkl', pF, b)
-    same(AA.TensorTranspose((2, 0, 3, 1)).Diff(pF), fem.Einsum("ijkl->kilj", AA).Diff(pF))
+    assert same(AA.TensorTranspose((2, 0, 3, 1)).Diff(pF), fem.Einsum("ijkl->kilj", AA).Diff(pF))
+
+
+def test_ellipses():
+    options = {"optimize_path": False}
+
+    def check_signature(cf, expected_signature):
+        return str(cf).splitlines()[0].count(" " + expected_signature + ",") == 1
+
+    Cv = fem.Einsum('ki,kj->ij', pF, pF).MakeVariable()
+    b = fem.Einsum('ij,jk,kl->il', F, InvES(Cv, **options), TransposeES(F, **options))
+    bb = fem.Einsum('ij,kl->ijkl', b, b)
+    cb = fem.Einsum('i,jk->ikj', CF(2).Reshape((1, )), b)
+    assert check_signature(fem.Einsum('i...,j...k,k...->ijk', cb, bb, Cv, **options), 'iAB,jABk,kA->ijk')
+    assert check_signature(fem.Einsum('i...,j...k,k...->ij...k', cb, bb, Cv, **options), 'iAB,jABk,kA->ijABk')
+    assert check_signature(fem.Einsum('i,...kj,kj->i...k', CF(2).Reshape((1,)), bb, Cv, **options), 'i,ABkj,kj->iABk')
 
 
 if __name__ == "__main__":
