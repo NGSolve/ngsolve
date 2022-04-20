@@ -1712,12 +1712,12 @@ namespace ngcomp
     // if (var == shape.get())
     if (auto diffshape = dynamic_cast<const DiffShapeCF*>(var))                
       {
-        const CoefficientFunction * me = this;
+        auto me = const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this();
         bool Eulerian = diffshape->Eulerian_gridfunctions.Contains(me);
         //cout << "diff GF is " << (Eulerian ? "Eulrian" : "Lagrange") << endl;
         for (int i = 0; i < 4; i++)
           if (diffop[i])
-            return diffop[i]->DiffShape (const_cast<GridFunctionCoefficientFunction*>(this)->shared_from_this(), dir, Eulerian);
+            return diffop[i]->DiffShape (me, dir, Eulerian);
         throw Exception("don't have any diffop for shape-derivative");
       }
     

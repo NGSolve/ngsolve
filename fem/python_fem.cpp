@@ -1161,13 +1161,10 @@ cf : ngsolve.CoefficientFunction
 
     .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir, std::vector<shared_ptr<CoefficientFunction>> Eulerian)
           {
-            DiffShapeCF shape;
-            shape.SetVariable();
+            auto shape = make_shared<DiffShapeCF>();
             for (auto gf : Eulerian)
-              shape.Eulerian_gridfunctions.Append(gf.get());
-            return coef->Diff (&shape, dir);
-            
-            // return coef->Diff (shape.get(), dir);
+              shape->Eulerian_gridfunctions.Append(gf);
+            return coef->Diff (shape.get(), dir);
           },
           "Compute shape derivative in direction", 
           py::arg("direction")=1.0,  py::arg("Eulerian")=std::vector<shared_ptr<CoefficientFunction>> ())

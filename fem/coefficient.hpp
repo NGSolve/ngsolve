@@ -1733,8 +1733,10 @@ public:
   class DiffShapeCF : public ConstantCoefficientFunction
   {
   public:
-    DiffShapeCF() : ConstantCoefficientFunction(1) { }
-    Array<const CoefficientFunction*> Eulerian_gridfunctions;
+    DiffShapeCF() : ConstantCoefficientFunction(1) {
+      SetVariable();
+    }
+    Array<shared_ptr<CoefficientFunction>> Eulerian_gridfunctions;
   };
 
 
