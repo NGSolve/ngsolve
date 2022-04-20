@@ -258,6 +258,7 @@ namespace ngcomp
     if (flags.NumFlagDefined("smoothing")) 
       throw Exception ("Flag 'smoothing' for fespace is obsolete \n Please use flag 'blocktype' in preconditioner instead");
     nodalp2 = flags.GetDefineFlag ("nodalp2");
+    nodal = flags.GetDefineFlag ("nodal");    
     
     highest_order_dc = flags.GetDefineFlag ("highest_order_dc");
     if (highest_order_dc && order < 2)
@@ -928,7 +929,21 @@ into the wirebasket.
                 ; 
               }
           }
-        
+
+        if (nodal)
+          {
+            return SwitchET<ET_SEGM,ET_TRIG> 
+              (eltype,
+               [&] (auto et) -> FiniteElement&
+               {
+                 constexpr ELEMENT_TYPE ET = et.ElementType();
+                 Ngs_Element ngel = ma->GetElement<et.DIM,BND> (ei.Nr());
+                 
+                 auto hofe =  new (alloc) NodalHOFE<ET> (order);
+                 hofe -> SetVertexNumbers (ngel.vertices);
+                 return *hofe;
+               });
+          }
         
         auto elnr = ei.Nr();
         if (ei.IsVolume())
@@ -939,7 +954,7 @@ into the wirebasket.
                  constexpr ELEMENT_TYPE ET = et.ElementType();
                  
                  Ngs_Element ngel = ma->GetElement<et.DIM,VOL> (elnr);
-                 H1HighOrderFE<ET> * hofe =  new (alloc) H1HighOrderFE<et> ();
+                 auto * hofe =  new (alloc) H1HighOrderFE<ET> ();
                  
                  hofe -> SetVertexNumbers (ngel.Vertices());
                  
