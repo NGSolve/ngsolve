@@ -1600,6 +1600,22 @@ value : double
 )raw_string"))
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
+    .def("__iadd__", [](spParameterCF self, double val)
+    { self->SetValue(self->GetValue() + val); return self; })
+    .def("__isub__", [](spParameterCF self, double val)
+    { self->SetValue(self->GetValue() - val); return self; })
+    .def("__imul__", [](spParameterCF self, double val)
+    { self->SetValue(self->GetValue() * val); return self; })
+    .def("__itruediv__", [](spParameterCF self, double val)
+    { self->SetValue(self->GetValue() / val); return self; })
+    .def("__lt__", [](spParameterCF self, double val)
+    { return self->GetValue() < val; })
+    .def("__le__", [](spParameterCF self, double val)
+    { return self->GetValue() <= val; })
+    .def("__gt__", [](spParameterCF self, double val)
+    { return self->GetValue() > val; })
+    .def("__ge__", [](spParameterCF self, double val)
+    { return self->GetValue() >= val; })
     ;
 
   using spParCFC = shared_ptr<ParameterCoefficientFunction<Complex>>;
