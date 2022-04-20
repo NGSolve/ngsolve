@@ -54,6 +54,7 @@ namespace ngfem
 // #include "h1lofe.hpp"
 #include "h1hofe.hpp"
 #include "l2hofe.hpp"
+#include "nodalhofe.hpp"
 
 #include "hdivfe.hpp"
 #include "hcurlfe.hpp"
