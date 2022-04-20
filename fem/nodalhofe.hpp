@@ -44,7 +44,7 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const;
     
-
+    /*
     virtual tuple<int,int,int,int> GetNDofVEFC () const override
     {
       int nv = N_VERTEX;
@@ -60,6 +60,7 @@ namespace ngfem
         nc += PolBubbleDimension (INT<3>(order));
       return { nv, ne, nf, nc };
     }
+    */
   };
 
 }  
@@ -82,9 +83,11 @@ namespace ngfem
 {
   NODALHOFE_EXTERN template class NodalHOFE<ET_SEGM>;
   NODALHOFE_EXTERN template class NodalHOFE<ET_TRIG>;
+  NODALHOFE_EXTERN template class NodalHOFE<ET_TET>;
 
   NODALHOFE_EXTERN template class T_ScalarFiniteElement<NodalHOFE<ET_SEGM>, ET_SEGM>;
   NODALHOFE_EXTERN template class T_ScalarFiniteElement<NodalHOFE<ET_TRIG>, ET_TRIG>;
+  NODALHOFE_EXTERN template class T_ScalarFiniteElement<NodalHOFE<ET_TET>, ET_TET>;
 }
 
 #endif
