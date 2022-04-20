@@ -28,8 +28,8 @@ namespace ngbla
       dest[i] = src[i];
   }
 
-  void CopyVector (FlatVector<double> src, FlatVector<double> dest);
-  void CopyVector (SliceVector<double> src, SliceVector<double> dest);
+  extern NGS_DLL_HEADER void CopyVector (FlatVector<double> src, FlatVector<double> dest);
+  extern NGS_DLL_HEADER void CopyVector (SliceVector<double> src, SliceVector<double> dest);
 
 
   template <typename T0, typename T1, typename T2>
@@ -46,8 +46,8 @@ namespace ngbla
       dest[i] += alpha*src[i];
   }
 
-  void AddVector (double alpha, FlatVector<double> src, FlatVector<double> dest);
-  void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest);
+  extern NGS_DLL_HEADER void AddVector (double alpha, FlatVector<double> src, FlatVector<double> dest);
+  extern NGS_DLL_HEADER void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest);
 
 
 
