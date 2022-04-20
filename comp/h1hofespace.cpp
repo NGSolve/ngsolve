@@ -932,7 +932,7 @@ into the wirebasket.
 
         if (nodal)
           {
-            return SwitchET<ET_SEGM,ET_TRIG> 
+            return SwitchET<ET_SEGM,ET_TRIG,ET_TET> 
               (eltype,
                [&] (auto et) -> FiniteElement&
                {
