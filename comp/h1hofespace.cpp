@@ -936,12 +936,10 @@ into the wirebasket.
             return SwitchET
               (eltype, [&] (auto et) -> FiniteElement&
                {
-                 // return T_GetFE<et.ElementType()> (elnr, alloc);
-                 
                  constexpr ELEMENT_TYPE ET = et.ElementType();
                  
-                 Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
-                 H1HighOrderFE<ET> * hofe =  new (alloc) H1HighOrderFE<ET> ();
+                 Ngs_Element ngel = ma->GetElement<et.DIM,VOL> (elnr);
+                 H1HighOrderFE<ET> * hofe =  new (alloc) H1HighOrderFE<et> ();
                  
                  hofe -> SetVertexNumbers (ngel.Vertices());
                  
@@ -979,41 +977,9 @@ into the wirebasket.
                  hofe -> ComputeNDof();
                  return *hofe;
                });
-            
-            /*
-              switch (eltype)
-              {
-              case ET_POINT:    return T_GetFE<ET_POINT> (elnr, alloc);
-              case ET_SEGM:    return T_GetFE<ET_SEGM> (elnr, alloc);
-              
-              case ET_TRIG:    return T_GetFE<ET_TRIG> (elnr, alloc);
-              case ET_QUAD:    return T_GetFE<ET_QUAD> (elnr, alloc);
-                
-              case ET_TET:     return T_GetFE<ET_TET> (elnr, alloc);
-              case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, alloc);
-              case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, alloc);
-              case ET_HEX:     return T_GetFE<ET_HEX> (elnr, alloc);
-                
-              default:
-                throw Exception ("illegal element in H1HoFeSpace::GetFE");
-              }
-            */
           }
         else if (ei.IsBoundary())
           {
-            /*
-            switch (eltype)
-              {
-              case ET_POINT:   return T_GetSFE<ET_POINT> (elnr, alloc);
-              case ET_SEGM:    return T_GetSFE<ET_SEGM> (elnr, alloc);
-                
-              case ET_TRIG:    return T_GetSFE<ET_TRIG> (elnr, alloc);
-              case ET_QUAD:    return T_GetSFE<ET_QUAD> (elnr, alloc);
-                
-              default:
-                throw Exception ("illegal element in H1HoFeSpace::GetSFE");
-              }
-            */
             return SwitchET<ET_POINT,ET_SEGM,ET_TRIG,ET_QUAD> 
               (eltype,
                [&] (auto et) -> FiniteElement&
