@@ -1236,6 +1236,10 @@ inverse : string
          {
            return shared_ptr<BaseVector> (expr.Evaluate());
          }, "create vector and evaluate expression into it")
+    .def("CreateVector", [](DynamicVectorExpression expr)
+         {
+           return shared_ptr<BaseVector> (expr.CreateVector());
+         }, "create vector")
   ;
 
   py::implicitly_convertible<BaseVector, DynamicVectorExpression>();
