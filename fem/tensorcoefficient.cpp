@@ -28,9 +28,9 @@ namespace ngfem {
             Vector<bool> nzvec(cf->Dimension());
             nzvec = false;
 
-            DummyFE<ET_TRIG> dummyfe;
             ProxyUserData ud;
-            ud.fel = &dummyfe;
+//            DummyFE<ET_TRIG> dummyfe;
+//            ud.fel = &dummyfe; do not do this here as it interferes with the purpose (see ProxyFunctio::NonZeroPattern)
 
             Array<ProxyFunction *> trial_proxies, test_proxies;
 
@@ -51,23 +51,34 @@ namespace ngfem {
             for (size_t i: Range(nzvec_ad))
                 nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
-            for (int l1: trial_proxies.Range())
-                for (int l2: Range(0, trial_proxies[l1]->Dimension())) {
-                    ud.trialfunction = trial_proxies[l1];
-                    ud.trial_comp = l2;
-                    cf->NonZeroPattern(ud, nzvec_ad);
-                    for (size_t i: Range(nzvec_ad))
-                        nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
+            if (test_proxies.Size() && !trial_proxies.Size()) {
+                for (auto test_proxy : test_proxies)
+                    for (int k2 : Range(0, test_proxy->Dimension())) {
+                        ud.testfunction = test_proxy;
+                        ud.test_comp = k2;
+                        cf->NonZeroPattern(ud, nzvec_ad);
+                        for (size_t i: Range(nzvec_ad))
+                            nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
+                    }
+            } else  {
+                for (auto trial_proxy : trial_proxies)
+                    for (auto l2 : Range(0, trial_proxy->Dimension())) {
+                        ud.trialfunction = trial_proxy;
+                        ud.trial_comp = l2;
+                        cf->NonZeroPattern(ud, nzvec_ad);
+                        for (size_t i: Range(nzvec_ad))
+                            nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
-                    for (int k1: test_proxies.Range())
-                        for (int k2: Range(0, test_proxies[k1]->Dimension())) {
-                            ud.testfunction = test_proxies[k1];
-                            ud.test_comp = k2;
-                            cf->NonZeroPattern(ud, nzvec_ad);
-                            for (size_t i: Range(nzvec_ad))
-                                nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
-                        }
-                }
+                        for (auto test_proxy : test_proxies)
+                            for (auto k2 : Range(0, test_proxy->Dimension())) {
+                                ud.testfunction = test_proxy;
+                                ud.test_comp = k2;
+                                cf->NonZeroPattern(ud, nzvec_ad);
+                                for (size_t i: Range(nzvec_ad))
+                                    nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
+                            }
+                    }
+            }
             return nzvec;
         }
 
