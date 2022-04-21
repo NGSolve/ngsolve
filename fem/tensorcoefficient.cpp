@@ -249,92 +249,103 @@ namespace ngfem {
           return parts;
         }
 
-        string replace_ellipse(const string& signature_part, size_t pos, size_t nnew, const string& new_symbols) {
-            stringstream sstr;
-            for (auto i : Range(pos))
-                sstr << signature_part[i];
-            for (auto i : Range(nnew))
-                sstr << new_symbols[i];
+        string replace_ellipse(const string& signature_part, size_t pos, size_t nnew, const string& new_symbols)
+        {
+          stringstream sstr;
+          for (auto i : Range(pos))
+            sstr << signature_part[i];
+          for (auto i : Range(nnew))
+            sstr << new_symbols[i];
 
-            auto offset = pos + 3;
-            auto nremain = signature_part.size() - offset;
-            for (auto i : Range(nremain))
-                sstr << signature_part[i + offset];
-            return sstr.str();
+          auto offset = pos + 3;
+          auto nremain = signature_part.size() - offset;
+          for (auto i : Range(nremain))
+            sstr << signature_part[i + offset];
+
+          return sstr.str();
         }
 
         pair<string,string> expand_ellipse(string signature_part, const shared_ptr<CoefficientFunction> cf,
                               const string& existing_symbols, string ellipse_symbols = "")
         {
-            auto pos = signature_part.find("...");
-            if (pos == string::npos)
-                return {move(signature_part), move(ellipse_symbols)};
+          auto pos = signature_part.find("...");
+          if (pos == string::npos)
+              return {move(signature_part), move(ellipse_symbols)};
 
-            auto nnew = cf->Dimensions().Size() - (signature_part.size() - 3);
+          auto nnew = cf->Dimensions().Size() - (signature_part.size() - 3);
 
-            if (nnew > ellipse_symbols.size())
-                ellipse_symbols += new_index_symbols(existing_symbols + ellipse_symbols, nnew - ellipse_symbols.size());
+          if (nnew > ellipse_symbols.size())
+              ellipse_symbols += new_index_symbols(existing_symbols + ellipse_symbols, nnew - ellipse_symbols.size());
 
-            signature_part = replace_ellipse(signature_part, pos, nnew, ellipse_symbols);
-            return {move(signature_part), move(ellipse_symbols)};
+          signature_part = replace_ellipse(signature_part, pos, nnew, ellipse_symbols);
+          return {move(signature_part), move(ellipse_symbols)};
         }
 
         string expand_ellipses(const string& signature, const Array<shared_ptr<CoefficientFunction>>& cfs)
         {
-            auto parts = split_signature(signature);
-            string ellipse_symbols{};
-            ellipse_symbols.reserve(10);
-            for (auto i : Range(parts.size() - 1))
-                tie(parts[i], ellipse_symbols) = expand_ellipse(parts[i], cfs[i], signature, ellipse_symbols);
+          auto parts = split_signature(signature);
+          string ellipse_symbols{};
+          ellipse_symbols.reserve(10);
+          for (auto i : Range(parts.size() - 1))
+            tie(parts[i], ellipse_symbols) = expand_ellipse(parts[i], cfs[i], signature, ellipse_symbols);
 
-            auto pos = parts.back().find("...");
-            if (pos != string::npos)
-                parts.back() = replace_ellipse(parts.back(), pos, ellipse_symbols.size(), ellipse_symbols);
+          auto pos = parts.back().find("...");
+          if (pos != string::npos)
+            parts.back() = replace_ellipse(parts.back(), pos, ellipse_symbols.size(), ellipse_symbols);
 
-            return form_index_signature(parts);
+          for (const auto& part : parts)
+            if (part.find("...") != string::npos)
+              throw NG_EXCEPTION(string("could not expand all ellipses in signature ") + signature);
+
+          return form_index_signature(parts);
         }
 
         optional<string> substitute_id_index(string signature, pair<char, char> id_indices,
                                  size_t id_pos, const FlatArray<bool> marked_for_removal,
                                  bool recurse)
         {
-            bool subs{false};
-            auto parts = split_signature(signature);
-            auto &result_part = parts.back();
+          bool subs{false};
+          auto parts = split_signature(signature);
+          auto &result_part = parts.back();
 
-            if (result_part.find(id_indices.first) != string::npos) {
-                if (recurse)
-                  return substitute_id_index(signature,
-                                             {id_indices.second, id_indices.first},
-                                             id_pos,
-                                             marked_for_removal);
-                else
-                  return {};
+          if (result_part.find(id_indices.first) != string::npos)
+            {
+              if (recurse)
+                return substitute_id_index(signature,
+                                           {id_indices.second, id_indices.first},
+                                           id_pos,
+                                           marked_for_removal);
+              else
+                return {};
             }
 
-            for (size_t i2: Range(parts.size() - 1)) {
-                // do not touch current id tensor pos
-                if (i2 == id_pos || marked_for_removal[i2])
-                    continue;
+          for (size_t i2: Range(parts.size() - 1))
+          {
+            // do not touch current id tensor pos
+            if (i2 == id_pos || marked_for_removal[i2])
+              continue;
 
-                auto &idx2 = parts[i2];
-                for (char& c : idx2) {
-                    // substitute
-                    if (c == id_indices.first) {
-                        c = id_indices.second;
-                        subs = true;
-                    }
+            auto &idx2 = parts[i2];
+
+            for (char& c : idx2)
+            {
+              // substitute
+              if (c == id_indices.first)
+                {
+                  c = id_indices.second;
+                  subs = true;
                 }
             }
+          }
 
-            if (subs)
-              return form_index_signature(parts);
-            else if (recurse)
-              return substitute_id_index(signature,
-                                         {id_indices.second, id_indices.first},
-                                         id_pos, marked_for_removal);
-            else
-              return {};
+          if (subs)
+            return form_index_signature(parts);
+          else if (recurse)
+            return substitute_id_index(signature,
+                                       {id_indices.second, id_indices.first},
+                                       id_pos, marked_for_removal);
+          else
+            return {};
         }
 
         string
@@ -389,7 +400,7 @@ namespace ngfem {
         }
 
         pair<string, Array<shared_ptr<CoefficientFunction>>>
-        flatten_einsum(string signature,
+        flatten_einsum(const string& signature,
                        const Array<shared_ptr<CoefficientFunction>>& cfs,
                        const map<string, bool> &options) {
 
