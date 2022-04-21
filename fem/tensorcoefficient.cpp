@@ -1157,11 +1157,24 @@ namespace ngfem {
           res_dims.Append(var->Dimensions());
 
           auto dres = ZeroCF(res_dims);
-          string new_symbols{};
           try
           {
-            new_symbols = new_index_symbols(original_index_signature,
-                                            var->Dimensions().Size());
+              auto parts = split_signature(original_index_signature);
+
+              for (size_t i: Range(original_inputs.Size())) {
+                  auto new_inputs{original_inputs};
+                  new_inputs[i] = original_inputs[i]->DiffJacobi(var);
+                  if (new_inputs[i]->IsZeroCF())
+                      continue;
+                  auto new_parts{parts};
+                  new_parts[i] = parts[i] + "...";
+                  new_parts.back() += "...";
+                  dres = dres + EinsumCF(form_index_signature(new_parts), new_inputs, options);
+              }
+
+              // TODO: great potential for optimization when equivalent objects are
+              //  identified in Compile
+              return dres;
           }
           catch (const Exception& e)
           {
@@ -1178,23 +1191,6 @@ namespace ngfem {
             }
             throw e;
           }
-
-          auto parts = split_signature(original_index_signature);
-
-          for (size_t i: Range(original_inputs.Size())) {
-            auto new_inputs{original_inputs};
-            new_inputs[i] = original_inputs[i]->DiffJacobi(var);
-            if (new_inputs[i]->IsZeroCF())
-              continue;
-            auto new_parts{parts};
-            new_parts[i] = parts[i] + new_symbols;
-            new_parts.back() += new_symbols;
-            dres = dres + EinsumCF(form_index_signature(new_parts), new_inputs, options);
-          }
-
-          // TODO: great potential for optimization when equivalent objects are
-          //  identified in Compile
-          return dres;
         }
 
         shared_ptr<EinsumCoefficientFunction>
