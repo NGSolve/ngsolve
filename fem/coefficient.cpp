@@ -4889,41 +4889,14 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     if (dims.Size() == 0)
       return ConstantCF(1);
 
-    if (dims.Size() == 1)
-      return IdentityCF(dims[0]);
-
-    map<int, shared_ptr<CoefficientFunction>> Id_map;
-    Array<shared_ptr<CoefficientFunction>> Id_cfs;
-    Id_cfs.SetAllocSize(dims.Size());
-    stringstream signature{};
-    char c1 = 'A';
-    char c2 = 'a';
+    int dim = 1;
     for (auto d : dims)
-    {
-      if (Id_map.find(d) == Id_map.end())
-        Id_map[d] = IdentityCF(d);
-
-      Id_cfs.Append(Id_map[d]);
-
-      if (c1 > 'Z')
-        throw NG_EXCEPTION("IdentityCF: out of symbols for higher-order identity tensor");
-
-      signature << c1++;
-      signature << c2++;
-      if (Id_cfs.Size() < Id_cfs.AllocSize())
-        signature << ",";
-    }
-
-    stringstream result_indices{};
-    c1 = 'A';
-    for ([[maybe_unused]] auto i : Range(dims.Size()))
-      result_indices << c1++;
-    c1 = 'a';
-    for ([[maybe_unused]] auto i : Range(dims.Size()))
-      result_indices << c1++;
-
-    signature << "->" << result_indices.str();
-    return EinsumCF(signature.str(), Id_cfs);
+      dim *= d;
+    
+    Array<int> tensor_dims;
+    tensor_dims.Append(dims);
+    tensor_dims.Append(dims);
+    return make_shared<IdentityCoefficientFunction>(dim)->Reshape(tensor_dims);
   }
 
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord)
