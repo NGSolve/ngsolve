@@ -4671,10 +4671,19 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
           }
       }
     if (c1->Dimension() == 1 && c2->Dimension() > 1)
-      return make_shared<MultScalVecCoefficientFunction> (c1, c2);
+      {
+        if (c1->Dimensions().Size())
+          return make_shared<MultScalVecCoefficientFunction> (MakeComponentCoefficientFunction(c1,0), c2);
+        else
+          return make_shared<MultScalVecCoefficientFunction> (c1, c2);
+      }
     if (c1->Dimension() > 1 && c2->Dimension() == 1)
-      return make_shared<MultScalVecCoefficientFunction> (c2, c1);
-    
+      {
+        if (c2->Dimensions().Size())
+          return make_shared<MultScalVecCoefficientFunction> (MakeComponentCoefficientFunction(c2,0), c1);
+        else
+          return make_shared<MultScalVecCoefficientFunction> (c2, c1);
+      }
     return BinaryOpCF (c1, c2, gen_mult,"*");
   }
 

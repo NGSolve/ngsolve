@@ -985,8 +985,8 @@ namespace ngfem
     Array<shared_ptr<CoefficientFunction>> cflist(dim);
     for (int i = 0; i < dim; i++)
       cflist[i] = diffop->DiffShape(proxys[i], dir, Eulerian);
-    auto result = MakeVectorialCoefficientFunction(move(cflist));
-    result->SetDimensions( Array({dim,diffop->Dim()}) );
+    auto result = MakeVectorialCoefficientFunction(move(cflist)) -> Reshape(Array({dim,diffop->Dim()}));
+    //result->SetDimensions( Array({dim,diffop->Dim()}) );
 
     return result;
   }
