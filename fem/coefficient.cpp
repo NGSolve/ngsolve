@@ -4876,6 +4876,13 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
   shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims)
   {
+
+    if (dims.Size() == 0)
+      return ConstantCF(1);
+
+    if (dims.Size() == 1)
+      return IdentityCF(dims[0]);
+
     map<int, shared_ptr<CoefficientFunction>> Id_map;
     Array<shared_ptr<CoefficientFunction>> Id_cfs;
     Id_cfs.SetAllocSize(dims.Size());
@@ -4908,13 +4915,6 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
     signature << "->" << result_indices.str();
     return EinsumCF(signature.str(), Id_cfs);
-//    int dim = 1;
-//    for (auto d : dims)
-//      dim *= d;
-//    Array<int> tensor_dims;
-//    tensor_dims.Append(dims);
-//    tensor_dims.Append(dims);
-//    return make_shared<IdentityCoefficientFunction> (dim) -> Reshape(tensor_dims);
   }
 
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord)
