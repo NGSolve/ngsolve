@@ -1132,13 +1132,13 @@ namespace ngfem {
             return dir;
 
           auto dres = ZeroCF(Array<int>{Dimensions()});
-          for (size_t i: Range(cfs.Size())) {
-            auto new_inputs = InputCoefficientFunctions();
-            new_inputs[i] = cfs[i]->Diff(var, dir);
+          for (size_t i: Range(original_inputs.Size())) {
+            auto new_inputs{original_inputs};
+            new_inputs[i] = original_inputs[i]->Diff(var, dir);
             if (new_inputs[i]->IsZeroCF())
               continue;
 
-            dres = dres + EinsumCF(index_signature, new_inputs, options);
+            dres = dres + EinsumCF(original_index_signature, new_inputs, options);
           }
           // TODO: great potential for optimization when equivalent objects are
           //  identified in Compile
