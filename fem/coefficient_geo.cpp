@@ -461,16 +461,14 @@ namespace ngfem
       if (dynamic_cast<const DiffShapeCF*>(var))                
         {
           int dim = dir->Dimension();
-          auto n = NormalVectorCF(dim);
-          n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+          auto n = NormalVectorCF(dim) -> Reshape( Array<int> ( { dim, 1 } ) );
           auto Pn = n * TransposeCF(n);
 
           auto WG = const_cast<cl_WeingartenCF*>(this)->shared_from_this();
           auto dX = dir->Operator("Gradboundary");
           Array<shared_ptr<CoefficientFunction>> cflist(1);
           cflist[0] = TransposeCF(dir->Operator("hesseboundary"))*n;
-          auto Hn = MakeVectorialCoefficientFunction(move(cflist));
-          Hn->SetDimensions( Array({dim,dim}) );
+          auto Hn = MakeVectorialCoefficientFunction(move(cflist))->Reshape(dim, dim);
           
           return -Hn - TransposeCF(dX)*WG + WG*(2*SymmetricCF(Pn*dX)-dX);
         }
