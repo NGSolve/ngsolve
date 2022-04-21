@@ -711,7 +711,20 @@ namespace ngfem {
               shape->push_back(dim);
             inputs.append(py::array_t<double>(shape));
           }
-          auto res = einsum_path(signature, *inputs, "einsum_call"_a = true);
+
+          py::object res;
+          try {
+              res = einsum_path(signature, *inputs, "einsum_call"_a = true);
+          } catch (const exception& e) {
+              cout << "Exception in call to einsum_path for sign. " << signature << " and input dims \n";
+              for (auto cf : input_cfs)
+                  cout << cf->Dimensions() << "\n";
+              cout << endl;
+              cout << e.what();
+              throw e;
+          }
+
+
           auto res_tuple = py::extract<py::tuple>(res)();
           auto path = py::extract<py::list>(res_tuple[1])();
           Array<shared_ptr<CoefficientFunction>> tp_inputs{input_cfs};
@@ -1143,7 +1156,9 @@ namespace ngfem {
             return dir;
 
           auto dres = ZeroCF(Array<int>{Dimensions()});
-          for (size_t i: Range(original_inputs.Size())) {
+
+          for (size_t i: Range(original_inputs.Size()))
+          {
             auto new_inputs{original_inputs};
             new_inputs[i] = original_inputs[i]->Diff(var, dir);
             if (new_inputs[i]->IsZeroCF())
@@ -1172,15 +1187,16 @@ namespace ngfem {
           {
               auto parts = split_signature(original_index_signature);
 
-              for (size_t i: Range(original_inputs.Size())) {
-                  auto new_inputs{original_inputs};
-                  new_inputs[i] = original_inputs[i]->DiffJacobi(var);
-                  if (new_inputs[i]->IsZeroCF())
-                      continue;
-                  auto new_parts{parts};
-                  new_parts[i] = parts[i] + "...";
-                  new_parts.back() += "...";
-                  dres = dres + EinsumCF(form_index_signature(new_parts), new_inputs, options);
+              for (size_t i: Range(original_inputs.Size()))
+              {
+                auto new_inputs{original_inputs};
+                new_inputs[i] = original_inputs[i]->DiffJacobi(var);
+                if (new_inputs[i]->IsZeroCF())
+                  continue;
+                auto new_parts{parts};
+                new_parts[i] = parts[i] + "...";
+                new_parts.back() += "...";
+                dres = dres + EinsumCF(form_index_signature(new_parts), new_inputs, options);
               }
 
               // TODO: great potential for optimization when equivalent objects are
