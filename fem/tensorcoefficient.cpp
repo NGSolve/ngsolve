@@ -817,7 +817,20 @@ namespace ngfem {
             tie(expanded_index_signature, expanded_inputs) =
                 tie(original_index_signature, original_inputs);
 
-          if (get_option(options, "optimize_path", false))
+          bool detected_zero_input = find_if(
+                  expanded_inputs.begin(), expanded_inputs.end(),
+                  [](const auto& cf) { return cf->IsZeroCF();}
+                  ) != expanded_inputs.end();
+
+          if (detected_zero_input)
+          {
+            const auto index_sets = compute_multi_indices(expanded_index_signature, expanded_inputs);
+            auto dims = index_dimensions(index_sets[cfs.Size()]);
+            node = ZeroCF(dims);
+            index_signature = "";
+            cfs = {};
+          }
+          else if (get_option(options, "optimize_path", false))
           {
             if (get_option(options, "optimize_identities", false))
             {
@@ -828,7 +841,9 @@ namespace ngfem {
               node = optimize_path(index_signature, cfs, options);
             }
             else
+            {
               node = optimize_path(expanded_index_signature, expanded_inputs, options);
+            }
           }
           else if (get_option(options, "optimize_identities", false))
           {
@@ -840,10 +855,11 @@ namespace ngfem {
 
           if (!node && cfs.Size() < 3 && get_option(options, "use_legacy_ops", false))
             node = optimize_legacy(index_signature, cfs, options);
-
-
+          
           if (node)
+          {
             SetDimensions(node->Dimensions());
+          }
           else
           {
             // compute index mappings and nonzero patterns
