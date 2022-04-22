@@ -50,6 +50,8 @@ def op_counts(acf):
 
 
 def same(cf1, cf2, tol=1e-12):
+    if np.array(cf1(X0)).size != np.array(cf2(X0)).size:
+        return False
     if np.max(np.abs(np.array(cf1(X0)) - np.array(cf2(X0)))) < tol:
         return True
     else:
@@ -260,6 +262,20 @@ def test_tensor_diff():
 
     AA = fem.Einsum('ik,jl->ijkl', pF, b)
     assert same(AA.TensorTranspose((2, 0, 3, 1)).Diff(pF), fem.Einsum("ijkl->kilj", AA).Diff(pF))
+
+
+def test_zero_detection():
+    def check_optimization(cf):
+        return str(cf).splitlines()[0].count("ZeroCF") == 1
+
+    AA = fem.Einsum('ik,jl->ijkl', pF, 0 * pF)
+    assert same(AA, 0 * fem.Einsum('ik,jl->ijkl', pF, pF))
+    assert check_optimization(AA)
+
+    # DiffJacobi does its own "Zero optimization"
+    AA = fem.Einsum('ik,jl->ijkl', pF, pF).Diff((2*pF).MakeVariable())
+    assert np.max(np.abs(np.array(AA.dims) - [3] * 6)) < 1e-12
+    assert str(AA) == "ZeroCoefficientFunction"
 
 
 if __name__ == "__main__":
