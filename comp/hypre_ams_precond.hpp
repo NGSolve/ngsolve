@@ -107,6 +107,7 @@ public:
   virtual int VHeight() const override { return hc_ndof; }
   virtual int VWidth() const override { return hc_ndof; }
   virtual const BaseMatrix & GetAMatrix() const override { return bfa->GetMatrix(); }
+  virtual const BaseMatrix & GetMatrix() const override { return *this; }
 
   virtual const char * ClassName() const override
   { return "HYPRE AMG Preconditioner"; }
