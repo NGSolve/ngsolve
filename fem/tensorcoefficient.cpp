@@ -888,6 +888,13 @@ namespace ngfem {
           else
             tie (index_signature, cfs) = {original_index_signature, original_inputs};
 
+          if (!node && cfs.Size() == 1)
+          {
+            auto parts = split_signature(index_signature);
+            if (parts.size() == 2 && parts[0] == parts[1])
+              node = cfs[0];
+          }
+
           if (!node && cfs.Size() < 3 && get_option(options, "use_legacy_ops", false))
             node = optimize_legacy(index_signature, cfs, options);
           
