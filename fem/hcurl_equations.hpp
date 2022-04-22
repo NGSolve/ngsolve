@@ -578,8 +578,8 @@ namespace ngfem
     {
       if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdBoundaryEdge");      
       int dim = dir->Dimension();
-      auto n = NormalVectorCF(dim);
-      n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+      auto n = NormalVectorCF(dim) -> Reshape(Array<int> ( { dim, 1 } ));
+      //n -> SetDimensions( Array<int> ( { dim, 1 } ) );
       auto Pn = n * TransposeCF(n);
       
       return (2*SymmetricCF(Pn * dir->Operator("Gradboundary"))
