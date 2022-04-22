@@ -117,6 +117,7 @@ def test_blas(use_legacy_ops):
 def test_identity_optimizations():
     def check_optimization(cf, legacy_str_lines):
         cflines = str(cf).splitlines()
+        print(str(cf))
         for k, v in legacy_str_lines.items():
             if cflines[k].count(v) != 1:
                 return False
@@ -153,6 +154,11 @@ def test_identity_optimizations():
     op = fem.Einsum('ii,ij->ij', Id(3), pF, **options)
     op_opt = pF
     assert same(op, op_opt)
+
+    op = fem.Einsum('ii->ii', pF, **options)
+    op_opt = pF
+    assert same(op, op_opt)
+    assert check_optimization(op, {0: "EinsumCF ii->ii with optimized node unary operation ' '"})
 
 
 def test_expansion():
