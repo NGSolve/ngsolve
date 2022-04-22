@@ -50,6 +50,7 @@ public:
   virtual int VHeight() const override { return pardofs->GetNDofLocal();}
   virtual int VWidth() const override { return pardofs->GetNDofLocal();}
   virtual const BaseMatrix & GetAMatrix() const override { return bfa->GetMatrix(); }
+  virtual const BaseMatrix & GetMatrix() const override { return *this; }
 
   virtual const char * ClassName() const override
   { return "HYPRE AMG Preconditioner"; }
