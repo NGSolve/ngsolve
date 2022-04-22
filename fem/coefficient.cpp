@@ -4671,10 +4671,19 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
           }
       }
     if (c1->Dimension() == 1 && c2->Dimension() > 1)
-      return make_shared<MultScalVecCoefficientFunction> (c1, c2);
+      {
+        if (c1->Dimensions().Size())
+          return make_shared<MultScalVecCoefficientFunction> (MakeComponentCoefficientFunction(c1,0), c2);
+        else
+          return make_shared<MultScalVecCoefficientFunction> (c1, c2);
+      }
     if (c1->Dimension() > 1 && c2->Dimension() == 1)
-      return make_shared<MultScalVecCoefficientFunction> (c2, c1);
-    
+      {
+        if (c2->Dimensions().Size())
+          return make_shared<MultScalVecCoefficientFunction> (MakeComponentCoefficientFunction(c2,0), c1);
+        else
+          return make_shared<MultScalVecCoefficientFunction> (c2, c1);
+      }
     return BinaryOpCF (c1, c2, gen_mult,"*");
   }
 
@@ -4729,11 +4738,6 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
   }
 
 
-struct GenericIdentity {
-  template <typename T> T operator() (T x) const { return x; }
-  static string Name() { return  " "; }
-  void DoArchive(Archive& ar) {}
-};
 template <>
 shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericIdentity>::Diff(const CoefficientFunction * var,
@@ -4876,45 +4880,18 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
   shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims)
   {
-    map<int, shared_ptr<CoefficientFunction>> Id_map;
-    Array<shared_ptr<CoefficientFunction>> Id_cfs;
-    Id_cfs.SetAllocSize(dims.Size());
-    stringstream signature{};
-    char c1 = 'A';
-    char c2 = 'a';
+
+    if (dims.Size() == 0)
+      return ConstantCF(1);
+
+    int dim = 1;
     for (auto d : dims)
-    {
-      if (Id_map.find(d) == Id_map.end())
-        Id_map[d] = IdentityCF(d);
-
-      Id_cfs.Append(Id_map[d]);
-
-      if (c1 > 'Z')
-        throw NG_EXCEPTION("IdentityCF: out of symbols for higher-order identity tensor");
-
-      signature << c1++;
-      signature << c2++;
-      if (Id_cfs.Size() < Id_cfs.AllocSize())
-        signature << ",";
-    }
-
-    stringstream result_indices{};
-    c1 = 'A';
-    for ([[maybe_unused]] auto i : Range(dims.Size()))
-      result_indices << c1++;
-    c1 = 'a';
-    for ([[maybe_unused]] auto i : Range(dims.Size()))
-      result_indices << c1++;
-
-    signature << "->" << result_indices.str();
-    return EinsumCF(signature.str(), Id_cfs);
-//    int dim = 1;
-//    for (auto d : dims)
-//      dim *= d;
-//    Array<int> tensor_dims;
-//    tensor_dims.Append(dims);
-//    tensor_dims.Append(dims);
-//    return make_shared<IdentityCoefficientFunction> (dim) -> Reshape(tensor_dims);
+      dim *= d;
+    
+    Array<int> tensor_dims;
+    tensor_dims.Append(dims);
+    tensor_dims.Append(dims);
+    return make_shared<IdentityCoefficientFunction>(dim)->Reshape(tensor_dims);
   }
 
   shared_ptr<CoefficientFunction> UnitVectorCF (int dim, int coord)
