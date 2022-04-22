@@ -116,9 +116,7 @@ def test_blas(use_legacy_ops):
 
 def test_identity_optimizations():
     def check_optimization(cf, legacy_str_lines):
-        print(str(cf))
         cflines = str(cf).splitlines()
-        print(str(cf))
         for k, v in legacy_str_lines.items():
             if cflines[k].count(v) != 1:
                 return False
