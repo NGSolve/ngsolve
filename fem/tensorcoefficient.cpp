@@ -794,6 +794,38 @@ namespace ngfem {
         }
 
 
+        string validate_signature(string signature)
+        {
+          const string arrow{"->"};
+          const string special{arrow + ","};
+
+          stringstream not_allowed;
+          for (char c : signature)
+          {
+            if (special.find(c) != string::npos)
+              continue;
+            if (c < 'A' || (c > 'Z' && c < 'a') || c > 'z')
+              not_allowed << c << ", ";
+          }
+          auto found_not_allowed = not_allowed.str();
+          if (!found_not_allowed.empty())
+            throw NG_EXCEPTION(string("index signature contains the following illegal characters: ")
+                               + found_not_allowed);
+
+          // special shorthand for trace of a matrix
+          if (signature.size() == 2 && signature[0] == signature[1])
+            return move(signature);
+
+          if (signature.find(arrow) == string::npos)
+            throw NG_EXCEPTION(string("index signature must contain \"") + arrow + ("\""));
+
+          for (char c : arrow)
+            if (count(signature.begin(), signature.end(), c) > 1)
+                throw NG_EXCEPTION(string("index signature must contain only one \"") + c + ("\""));
+
+          return move(signature);
+        }
+
         EinsumCoefficientFunction::EinsumCoefficientFunction(
             const string &aindex_signature,
             const Array<shared_ptr<CoefficientFunction>> &acfs,
@@ -808,8 +840,11 @@ namespace ngfem {
               node{},
               max_mem{0},
               options{aoptions},
-              original_index_signature{aindex_signature},
+              original_index_signature{validate_signature(aindex_signature)},
               original_inputs{acfs} {
+
+          if (original_inputs.Size() != (split_signature(original_index_signature).size() - 1))
+            throw NG_EXCEPTION("number of input cfs does not match the number of inputs in the index signature");
 
           if (get_option(options, "expand_einsum", true))
           {
@@ -830,7 +865,20 @@ namespace ngfem {
             tie(expanded_index_signature, expanded_inputs) =
                 tie(original_index_signature, original_inputs);
 
-          if (get_option(options, "optimize_path", false))
+          bool detected_zero_input = find_if(
+                  expanded_inputs.begin(), expanded_inputs.end(),
+                  [](const auto& cf) { return cf->IsZeroCF();}
+                  ) != expanded_inputs.end();
+
+          if (detected_zero_input)
+          {
+            const auto index_sets = compute_multi_indices(expanded_index_signature, expanded_inputs);
+            auto dims = index_dimensions(index_sets[expanded_inputs.Size()]);
+            node = ZeroCF(dims);
+            index_signature = "";
+            cfs = {};
+          }
+          else if (get_option(options, "optimize_path", false))
           {
             if (get_option(options, "optimize_identities", false))
             {
@@ -841,7 +889,9 @@ namespace ngfem {
               node = optimize_path(index_signature, cfs, options);
             }
             else
+            {
               node = optimize_path(expanded_index_signature, expanded_inputs, options);
+            }
           }
           else if (get_option(options, "optimize_identities", false))
           {
@@ -851,12 +901,20 @@ namespace ngfem {
           else
             tie (index_signature, cfs) = {original_index_signature, original_inputs};
 
+          if (!node && cfs.Size() == 1)
+          {
+            auto parts = split_signature(index_signature);
+            if (parts.size() == 2 && parts[0] == parts[1])
+              node = cfs[0];
+          }
+
           if (!node && cfs.Size() < 3 && get_option(options, "use_legacy_ops", false))
             node = optimize_legacy(index_signature, cfs, options);
-
-
+          
           if (node)
+          {
             SetDimensions(node->Dimensions());
+          }
           else
           {
             // compute index mappings and nonzero patterns

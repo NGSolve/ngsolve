@@ -50,6 +50,8 @@ def op_counts(acf):
 
 
 def same(cf1, cf2, tol=1e-12):
+    if np.array(cf1(X0)).size != np.array(cf2(X0)).size:
+        return False
     if np.max(np.abs(np.array(cf1(X0)) - np.array(cf2(X0)))) < tol:
         return True
     else:
@@ -116,7 +118,6 @@ def test_blas(use_legacy_ops):
 
 def test_identity_optimizations():
     def check_optimization(cf, legacy_str_lines):
-        print(str(cf))
         cflines = str(cf).splitlines()
         for k, v in legacy_str_lines.items():
             if cflines[k].count(v) != 1:
@@ -154,6 +155,11 @@ def test_identity_optimizations():
     op = fem.Einsum('ii,ij->ij', Id(3), pF, **options)
     op_opt = pF
     assert same(op, op_opt)
+
+    op = fem.Einsum('ii->ii', pF, **options)
+    op_opt = pF
+    assert same(op, op_opt)
+    assert check_optimization(op, {0: "EinsumCF ii->ii with optimized node unary operation ' '"})
 
 
 def test_expansion():
@@ -256,6 +262,20 @@ def test_tensor_diff():
 
     AA = fem.Einsum('ik,jl->ijkl', pF, b)
     assert same(AA.TensorTranspose((2, 0, 3, 1)).Diff(pF), fem.Einsum("ijkl->kilj", AA).Diff(pF))
+
+
+def test_zero_detection():
+    def check_optimization(cf):
+        return str(cf).splitlines()[0].count("ZeroCF") == 1
+
+    AA = fem.Einsum('ik,jl->ijkl', pF, 0 * pF)
+    assert same(AA, 0 * fem.Einsum('ik,jl->ijkl', pF, pF))
+    assert check_optimization(AA)
+
+    # DiffJacobi does its own "Zero optimization"
+    AA = fem.Einsum('ik,jl->ijkl', pF, pF).Diff((2*pF).MakeVariable())
+    assert np.max(np.abs(np.array(AA.dims) - [3] * 6)) < 1e-12
+    assert str(AA) == "ZeroCoefficientFunction"
 
 
 if __name__ == "__main__":
