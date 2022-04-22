@@ -781,6 +781,38 @@ namespace ngfem {
         }
 
 
+        string validate_signature(string signature)
+        {
+          const string arrow{"->"};
+          const string special{arrow + ","};
+
+          stringstream not_allowed;
+          for (char c : signature)
+          {
+            if (special.find(c) != string::npos)
+              continue;
+            if (c < 'A' || (c > 'Z' && c < 'a') || c > 'z')
+              not_allowed << c << ", ";
+          }
+          auto found_not_allowed = not_allowed.str();
+          if (!found_not_allowed.empty())
+            throw NG_EXCEPTION(string("index signature contains the following illegal characters: ")
+                               + found_not_allowed);
+
+          // special shorthand for trace of a matrix
+          if (signature.size() == 2 && signature[0] == signature[1])
+            return move(signature);
+
+          if (signature.find(arrow) == string::npos)
+            throw NG_EXCEPTION(string("index signature must contain \"") + arrow + ("\""));
+
+          for (char c : arrow)
+            if (count(signature.begin(), signature.end(), c) > 1)
+                throw NG_EXCEPTION(string("index signature must contain only one \"") + c + ("\""));
+
+          return move(signature);
+        }
+
         EinsumCoefficientFunction::EinsumCoefficientFunction(
             const string &aindex_signature,
             const Array<shared_ptr<CoefficientFunction>> &acfs,
@@ -795,8 +827,11 @@ namespace ngfem {
               node{},
               max_mem{0},
               options{aoptions},
-              original_index_signature{aindex_signature},
+              original_index_signature{validate_signature(aindex_signature)},
               original_inputs{acfs} {
+
+          if (original_inputs.Size() != (split_signature(original_index_signature).size() - 1))
+            throw NG_EXCEPTION("number of input cfs does not match the number of inputs in the index signature");
 
           if (get_option(options, "expand_einsum", true))
           {
