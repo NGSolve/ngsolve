@@ -116,6 +116,7 @@ def test_blas(use_legacy_ops):
 
 def test_identity_optimizations():
     def check_optimization(cf, legacy_str_lines):
+        print(str(cf))
         cflines = str(cf).splitlines()
         print(str(cf))
         for k, v in legacy_str_lines.items():
@@ -132,24 +133,24 @@ def test_identity_optimizations():
     op_opt = pF
     assert same(op, op_opt)
     assert same(op, op_noopt)
-    check_optimization(op, {0: "EinsumCF ik,kj->ij with optimized node EinsumCF ij->ij"})
+    assert check_optimization(op, {0: "EinsumCF ik,kj->ij with optimized node EinsumCF ij->ij"})
 
     op = fem.Einsum('ijkl,kl->ij', II, pF, **options)
     op_noopt = fem.Einsum('ijkl,kl->ij', II, pF, optimize_identities=False, sparse_evaluation=False)
     op_opt = pF
     assert same(op, op_opt)
     assert same(op, op_noopt)
-    check_optimization(op, {0: "EinsumCF ik,kj->ij with optimized node EinsumCF ij->ij"})
+    assert check_optimization(op, {0: "EinsumCF ijkl,kl->ij with optimized node EinsumCF ij->ij"})
 
     op = fem.Einsum('ii,kj->kj', I, pF, **options)
     op_opt = 3.0 * pF
     assert same(op, op_opt)
-    check_optimization(op, {0: "EinsumCF ii,kj->kj with optimized node EinsumCF kj,i->kj"})
+    assert check_optimization(op, {0: "EinsumCF ii,kj->kj with optimized node EinsumCF kj,i->kj"})
 
     op = fem.Einsum('ijkl,jl->ik', II, pF, **options)
     op_opt = Trace(pF) * I
     assert same(op, op_opt)
-    check_optimization(op, {0: "EinsumCF ijkl,jl->ik with optimized node EinsumCF ll,ik->ik"})
+    assert check_optimization(op, {0: "EinsumCF ijkl,jl->ik with optimized node EinsumCF ll,ik->ik"})
 
     op = fem.Einsum('ii,ij->ij', Id(3), pF, **options)
     op_opt = pF
@@ -166,13 +167,13 @@ def test_expansion():
     op1 = fem.Einsum('ik,kj->ij', 1 * pF, 2 * pF, **options)
     op2 = fem.Einsum('ij,jl->il', 3 * pF, op1, **options)
     op2_e = fem.Einsum('ij,jk,kl->il', 3 * pF, 1 * pF, 2 * pF, **options)
-    same(op2, op2_e)
+    assert same(op2, op2_e)
     op3 = fem.Einsum('ik,jl->ijkl', op1, op2, **options)
     op3_e = fem.Einsum('io,ok,jm,mn,nl->ijkl', 1 * pF, 2 * pF, 3 * pF, 1 * pF, 2 * pF, **options)
-    same(op3, op3_e)
+    assert same(op3, op3_e)
     op4 = fem.Einsum('ijkl,jl->ik', op3, op1, **options)
     op4_e = fem.Einsum('io,ok,jm,mn,nl,jp,pl->ik', 1 * pF, 2 * pF, 3 * pF, 1 * pF, 2 * pF, 1 * pF, 2 * pF, **options)
-    same(op4, op4_e)
+    assert same(op4, op4_e)
 
 
 def test_path_optimization():
@@ -233,34 +234,34 @@ def test_diff(options):
 def test_tensor_diff():
     Cv = fem.Einsum('ki,kj->ij', pF, pF)
     b = fem.Einsum('ij,jk,kl->il', F, InvES(Cv), TransposeES(F))
-    same(Trace(Cv).Diff(Cv), fem.Einsum('ii', Cv).Diff(Cv))
-    same(Trace(b).Diff(Cv), fem.Einsum('ii', b).Diff(Cv))
+    assert same(Trace(Cv).Diff(Cv), fem.Einsum('ii', Cv).Diff(Cv))
+    assert same(Trace(b).Diff(Cv), fem.Einsum('ii', b).Diff(Cv))
 
-    same(Trace(pF).Diff(pF), TraceES(pF).Diff(pF))
-    same(Trace(b).Diff(Cv), TraceES(b).Diff(Cv))
+    assert same(Trace(pF).Diff(pF), TraceES(pF).Diff(pF))
+    assert same(Trace(b).Diff(Cv), TraceES(b).Diff(Cv))
 
-    same(Det(pF).Diff(pF), DetES(pF).Diff(pF))
-    same(Det(b).Diff(Cv), DetES(b).Diff(Cv))
+    assert same(Det(pF).Diff(pF), DetES(pF).Diff(pF))
+    assert same(Det(b).Diff(Cv), DetES(b).Diff(Cv))
 
-    same(Inv(pF).Diff(pF), InvES(pF).Diff(pF))
-    same(Inv(b).Diff(Cv), InvES(b).Diff(Cv))
+    assert same(Inv(pF).Diff(pF), InvES(pF).Diff(pF))
+    assert same(Inv(b).Diff(Cv), InvES(b).Diff(Cv))
 
-    same(pF.trans.Diff(pF), TransposeES(pF).Diff(pF))
-    same(b.trans.Diff(Cv), TransposeES(b).Diff(Cv))
+    assert same(pF.trans.Diff(pF), TransposeES(pF).Diff(pF))
+    assert same(b.trans.Diff(Cv), TransposeES(b).Diff(Cv))
 
     A_extend = np.zeros((3, 3, 2, 2))
     A_extend[1:, :-1, :, :] = np.einsum('ik,jl->ijkl', np.eye(2), np.eye(2))
     cf_extend = CoefficientFunction(tuple(A_extend.flatten().tolist()), dims=A_extend.shape)
     pF_extend = pF[:2, :2].ExtendDimension((3, 3), (1, 0))
     pF_extend_ES = fem.Einsum('ijkl,kl->ij', cf_extend, pF[:2, :2])
-    same(pF_extend.Diff(pF), pF_extend_ES.Diff(pF))
+    assert same(pF_extend.Diff(pF), pF_extend_ES.Diff(pF))
 
     b_extend = b[:2, :2].ExtendDimension((3, 3), (1, 0))
     b_extend_ES = fem.Einsum('ijkl,kl->ij', cf_extend, b[:2, :2])
-    same(b_extend.Diff(Cv), b_extend_ES.Diff(Cv))
+    assert same(b_extend.Diff(Cv), b_extend_ES.Diff(Cv))
 
     AA = fem.Einsum('ik,jl->ijkl', pF, b)
-    same(AA.TensorTranspose((2, 0, 3, 1)).Diff(pF), fem.Einsum("ijkl->kilj", AA).Diff(pF))
+    assert same(AA.TensorTranspose((2, 0, 3, 1)).Diff(pF), fem.Einsum("ijkl->kilj", AA).Diff(pF))
 
 
 if __name__ == "__main__":
