@@ -4738,11 +4738,6 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
   }
 
 
-struct GenericIdentity {
-  template <typename T> T operator() (T x) const { return x; }
-  static string Name() { return  " "; }
-  void DoArchive(Archive& ar) {}
-};
 template <>
 shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericIdentity>::Diff(const CoefficientFunction * var,
