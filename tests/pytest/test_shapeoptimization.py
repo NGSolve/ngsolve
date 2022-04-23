@@ -32,7 +32,7 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     if G0bnd:
         dJOmegaTestFA += G0bnd.DiffShape(PSI)
     ddJOmegaTestFA = BilinearForm(VEC)
-    ddJOmegaTestFA += G0.DiffShape(PSI).DiffShape(PHI).Compile()
+    ddJOmegaTestFA += G0.DiffShape(PSI).DiffShape(PHI) # .Compile()
     if G0bnd:
         ddJOmegaTestFA += G0bnd.DiffShape(PSI).DiffShape(PHI) # .Compile()
 
