@@ -188,7 +188,6 @@ def test_shapeopt_2d():
     Gbnd = 1000*(1/Norm(Inv(F).trans*n)*gfu.Trace()*(Inv(F).trans*n) + 1/Norm(F*tang)*gfu.Trace()*(F*tang))*Det(F)*Norm(Inv(F).trans*n)*ds
 
     Test(G0, G, gfX, X, F, G0bnd,Gbnd)
-    print (1/0)
     return
     
 
