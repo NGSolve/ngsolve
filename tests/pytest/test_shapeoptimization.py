@@ -32,10 +32,10 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     if G0bnd:
         dJOmegaTestFA += G0bnd.DiffShape(PSI)
     ddJOmegaTestFA = BilinearForm(VEC)
-    ddJOmegaTestFA += G0.DiffShape(PSI).DiffShape(PHI).Compile()
+    ddJOmegaTestFA += G0.DiffShape(PSI).DiffShape(PHI) # .Compile()
     print (G0.DiffShape(PSI).DiffShape(PHI).Compile())
     if G0bnd:
-        ddJOmegaTestFA += G0bnd.DiffShape(PSI).DiffShape(PHI).Compile()
+        ddJOmegaTestFA += G0bnd.DiffShape(PSI).DiffShape(PHI) # .Compile()
         print (G0bnd.DiffShape(PSI).DiffShape(PHI).Compile())        
 
     t = 1/4
@@ -188,6 +188,7 @@ def test_shapeopt_2d():
     Gbnd = 1000*(1/Norm(Inv(F).trans*n)*gfu.Trace()*(Inv(F).trans*n) + 1/Norm(F*tang)*gfu.Trace()*(F*tang))*Det(F)*Norm(Inv(F).trans*n)*ds
 
     Test(G0, G, gfX, X, F, G0bnd,Gbnd)
+    print (1/0)
     return
     
 
