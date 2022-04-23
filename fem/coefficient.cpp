@@ -7832,44 +7832,6 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       }
 
       T_Evaluate (ir, Trans(values));
-      return;
-
-      /*
-      // static Timer t1("CompiledCF::Evaluate 1");
-      // static Timer t2("CompiledCF::Evaluate 2");
-      // static Timer t3("CompiledCF::Evaluate 3");
-
-      // t1.Start();
-      // int totdim = 0;
-      // for (int d : dim) totdim += d;
-      ArrayMem<double, 10000> hmem(ir.Size()*totdim);
-      int mem_ptr = 0;
-      ArrayMem<BareSliceMatrix<double,ColMajor>,100> temp(steps.Size());
-      ArrayMem<BareSliceMatrix<double,ColMajor>, 100> in(max_inputsize);
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          // temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
-          new (&temp[i]) BareSliceMatrix<double,ColMajor> (dim[i], &hmem[mem_ptr], DummySize(dim[i], ir.Size()));          
-          mem_ptr += ir.Size()*dim[i];
-        }
-      // t1.Stop();
-      // t2.Start();
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          // myglobalvar ++;
-          // timers[i]->Start();
-          auto inputi = inputs[i];
-          for (int nr : Range(inputi))
-            // in[nr] = &temp[inputi[nr]];
-            new (&in[nr]) BareSliceMatrix<double,ColMajor> (temp[inputi[nr]]);
-          steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
-          // timers[i]->Stop();
-        }
-      
-      // values = temp.Last();
-      values.AddSize(ir.Size(), Dimension()) = Trans(temp.Last());
-      // t2.Stop();
-      */
     }
 
 
@@ -7884,31 +7846,6 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         }
 
       T_Evaluate (ir, Trans(values));
-      return;
-      
-      /*
-      typedef AutoDiff<1,double> T;
-      ArrayMem<T,500> hmem(ir.Size()*totdim);      
-      int mem_ptr = 0;
-      ArrayMem<BareSliceMatrix<T,ColMajor>,100> temp(steps.Size());
-      ArrayMem<BareSliceMatrix<T,ColMajor>,100> in(max_inputsize);
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          new (&temp[i]) BareSliceMatrix<T,ColMajor> (dim[i], &hmem[mem_ptr], DummySize(dim[i], ir.Size()));
-          mem_ptr += ir.Size()*dim[i];
-        }
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          auto inputi = inputs[i];
-          for (int nr : Range(inputi))
-            new (&in[nr]) BareSliceMatrix<T,ColMajor> (temp[inputi[nr]]);
-          steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
-        }
-      
-      values.AddSize(ir.Size(), Dimension()) = Trans(temp.Last());
-      */
     }
 
 
@@ -7923,31 +7860,6 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       }
 
       T_Evaluate (ir, Trans(values));
-      return;
-
-      /*
-      typedef AutoDiffDiff<1,double> T;
-      ArrayMem<T,500> hmem(ir.Size()*totdim);      
-      int mem_ptr = 0;
-      ArrayMem<BareSliceMatrix<T,ColMajor>,100> temp(steps.Size());
-      ArrayMem<BareSliceMatrix<T,ColMajor>,100> in(max_inputsize);
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          new (&temp[i]) BareSliceMatrix<T,ColMajor> (dim[i], &hmem[mem_ptr], DummySize(dim[i], ir.Size()));
-          mem_ptr += ir.Size()*dim[i];
-        }
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          auto inputi = inputs[i];
-          for (int nr : Range(inputi))
-            new (&in[nr]) BareSliceMatrix<T,ColMajor> (temp[inputi[nr]]);
-          steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
-        }
-      
-      values.AddSize(ir.Size(), Dimension()) = Trans(temp.Last());
-      */
     }
 
 
@@ -7962,33 +7874,6 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         }
 
       T_Evaluate (ir, values);
-      return;
-
-      /*
-      typedef AutoDiff<1,SIMD<double>> T;
-      // STACK_ARRAY(T, hmem, ir.Size()*totdim);
-      ArrayMem<T,500> hmem(ir.Size()*totdim);
-      size_t mem_ptr = 0;
-
-      ArrayMem<BareSliceMatrix<T>,100> temp(steps.Size());
-      ArrayMem<BareSliceMatrix<T>,100> in(max_inputsize);
-
-      for (size_t i = 0; i < steps.Size()-1; i++)
-        {
-          new (&temp[i]) BareSliceMatrix<T> (ir.Size(), &hmem[mem_ptr], DummySize(dim[i], ir.Size()));
-          mem_ptr += ir.Size()*dim[i];
-        }
-      // the final step goes to result matrix
-      new (&temp.Last()) BareSliceMatrix<T>(values);
-      
-      for (size_t i = 0; i < steps.Size(); i++)
-        {
-          auto inputi = inputs[i];
-          for (size_t nr : Range(inputi))
-            new (&in[nr]) BareSliceMatrix<T> (temp[inputi[nr]]);
-          steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
-        }
-      */
     }
 
 
@@ -8003,34 +7888,6 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       }
       
       T_Evaluate (ir, values);
-      return;
-
-      /*
-      typedef AutoDiffDiff<1,SIMD<double>> T;
-      // STACK_ARRAY(T, hmem, ir.Size()*totdim);
-      ArrayMem<T,500> hmem(ir.Size()*totdim);      
-      int mem_ptr = 0;
-      ArrayMem<BareSliceMatrix<T>,100> temp(steps.Size());
-      ArrayMem<BareSliceMatrix<T>,100> in(max_inputsize);
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          new (&temp[i]) BareSliceMatrix<T> (ir.Size(), &hmem[mem_ptr], DummySize(dim[i], ir.Size()));
-          mem_ptr += ir.Size()*dim[i];
-        }
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          auto inputi = inputs[i];
-          for (int nr : Range(inputi))
-            new (&in[nr]) BareSliceMatrix<T> (temp[inputi[nr]]);
-          // in[nr] = &temp[inputi[nr]];
-
-          steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
-        }
-
-      values.AddSize(Dimension(), ir.Size()) = temp.Last();
-      */
     }
 
     
@@ -8044,36 +7901,6 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       }
 
       T_Evaluate (ir, values);
-      return;
-
-      /*
-      // STACK_ARRAY(SIMD<double>, hmem, ir.Size()*totdim);
-      ArrayMem<SIMD<double>,500> hmem(ir.Size()*totdim);            
-      int mem_ptr = 0;
-      ArrayMem<BareSliceMatrix<SIMD<double>>,100> temp(steps.Size());
-      ArrayMem<BareSliceMatrix<SIMD<double>>,100> in(max_inputsize);
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          new (&temp[i]) BareSliceMatrix<SIMD<double>> (ir.Size(), &hmem[mem_ptr], DummySize(dim[i], ir.Size()));
-          mem_ptr += ir.Size()*dim[i];
-        }
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          // timers[i]->Start();          
-          auto inputi = inputs[i];
-          for (int nr : Range(inputi))
-            new (&in[nr]) BareSliceMatrix<SIMD<double>> (temp[inputi[nr]]);            
-          // in[nr] = &temp[inputi[nr]];
-
-          steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
-          // timers[i]->Stop();                    
-        }
-
-      BareSliceMatrix<SIMD<double>> temp_last = temp.Last();
-      values.AddSize(Dimension(), ir.Size()) = temp_last;
-      */
     }
 
     void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
@@ -8103,231 +7930,6 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       }
     }
 
-#ifdef OLD
-    [[deprecated]]
-    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                                FlatMatrix<double> values, FlatMatrix<double> deriv) const
-    {
-      /*
-      if(compiled_function_deriv)
-      {
-        compiled_function_deriv(ir, values, deriv);
-        return;
-      }
-      */
-      
-      /*
-      Array<Matrix<>*> temp;
-      Array<Matrix<>*> dtemp;
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          // timers[i]->Start();
-          
-          temp.Append (new Matrix<>(ir.Size(), dim[i]));
-          dtemp.Append (new Matrix<>(ir.Size(), dim[i]));
-          
-          Array<FlatMatrix<>*> in;
-          for (int j : inputs[i])
-            in.Append (temp[j]);
-          Array<FlatMatrix<>*> din;
-          for (int j : inputs[i])
-            din.Append (dtemp[j]);
-          
-          steps[i] -> EvaluateDeriv (ir, in, din, *temp[i], *dtemp[i]);
-          // timers[i]->Stop();
-        }
-
-      values = *temp.Last();
-      deriv = *dtemp.Last();
-      
-      for (int i = 0; i < steps.Size(); i++)
-        delete temp[i];
-      for (int i = 0; i < steps.Size(); i++)
-        delete dtemp[i];
-      */
-
-      // int totdim = 0;
-      // for (int d : dim) totdim += d;
-      ArrayMem<double, 10000> hmem(ir.Size()*3*totdim);
-      int mem_ptr = 0;
-      
-      ArrayMem<FlatMatrix<>,100> temp(steps.Size());
-      ArrayMem<FlatMatrix<>,100> dtemp(steps.Size());
-      ArrayMem<FlatMatrix<>*, 20> in, din;
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          // timers[i]->Start();
-          temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
-          mem_ptr += ir.Size()*dim[i];
-          dtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
-          mem_ptr += ir.Size()*dim[i];
-
-          in.SetSize(0);
-          din.SetSize(0);
-          for (int j : inputs[i])
-            in.Append (&temp[j]);
-          for (int j : inputs[i])
-            din.Append (&dtemp[j]);
-          steps[i] -> EvaluateDeriv (ir, in, din, temp[i], dtemp[i]);
-          // timers[i]->Stop();
-        }
-
-      values = temp.Last();
-      deriv = dtemp.Last();
-    }
-
-    [[deprecated]]
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatMatrix<double> values, FlatMatrix<double> deriv,
-                                 FlatMatrix<double> dderiv) const
-    {
-      /*
-      if(compiled_function_dderiv)
-      {
-        compiled_function_dderiv(ir, values, deriv, dderiv);
-        return;
-      }
-      */
-      int totdim = 0;
-      for (int d : dim) totdim += d;
-      ArrayMem<double, 10000> hmem(ir.Size()*3*totdim);
-      int mem_ptr = 0;
-      
-      Array<FlatMatrix<>> temp(steps.Size());
-      Array<FlatMatrix<>> dtemp(steps.Size());
-      Array<FlatMatrix<>> ddtemp(steps.Size());
-      ArrayMem<FlatMatrix<>*, 20> in, din, ddin;
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          // timers[i]->Start();          
-          temp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);
-          mem_ptr += ir.Size()*dim[i];
-          dtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
-          mem_ptr += ir.Size()*dim[i];
-          ddtemp[i].AssignMemory(ir.Size(), dim[i], &hmem[mem_ptr]);          
-          mem_ptr += ir.Size()*dim[i];
-
-          in.SetSize(0);
-          din.SetSize(0);
-          ddin.SetSize(0);
-          for (int j : inputs[i])
-            in.Append (&temp[j]);
-          for (int j : inputs[i])
-            din.Append (&dtemp[j]);
-          for (int j : inputs[i])
-            ddin.Append (&ddtemp[j]);
-
-          steps[i] -> EvaluateDDeriv (ir, in, din, ddin, temp[i], dtemp[i], ddtemp[i]);
-          // timers[i]->Stop();                    
-        }
-
-      values = temp.Last();
-      deriv = dtemp.Last();
-      dderiv = ddtemp.Last();
-    }
-#endif
-
-    
-#ifdef OLD
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
-    {
-      /*
-      if(compiled_function_simd_deriv)
-      {
-        compiled_function_simd_deriv(ir, values, deriv);
-        return;
-      }
-      */
-      // throw ExceptionNOSIMD ("*************** CompiledCF :: EvaluateDeriv not available without codegeneration");
-
-
-      STACK_ARRAY(SIMD<double>, hmem, 2*ir.Size()*totdim);      
-      int mem_ptr = 0;
-      ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
-      ArrayMem<AFlatMatrix<double>,100> dtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize), din(max_inputsize);
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          new (&temp[i]) AFlatMatrix<double> (dim[i], ir.IR().GetNIP(), &hmem[mem_ptr]);
-          mem_ptr += ir.Size()*dim[i];
-          new (&dtemp[i]) AFlatMatrix<double> (dim[i], ir.IR().GetNIP(), &hmem[mem_ptr]);
-          mem_ptr += ir.Size()*dim[i];
-        }
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          // timers[i]->Start();          
-          auto inputi = inputs[i];
-          for (int nr : Range(inputi))
-            {
-              in[nr] = &temp[inputi[nr]];
-              din[nr] = &dtemp[inputi[nr]];
-            }
-
-          steps[i] -> EvaluateDeriv (ir, in.Range(0, inputi.Size()), din.Range(0, inputi.Size()),
-                                     temp[i], dtemp[i]);
-
-          // timers[i]->Stop();                    
-        }
-      values = temp.Last();
-      deriv = dtemp.Last();
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                 AFlatMatrix<double> values, AFlatMatrix<double> deriv,
-                                 AFlatMatrix<double> dderiv) const
-    {
-      /*
-      if(compiled_function_simd_dderiv)
-      {
-        compiled_function_simd_dderiv(ir, values, deriv, dderiv);
-        return;
-      }
-      */
-      // throw ExceptionNOSIMD ("*************** CompiledCF :: EvaluateDDeriv coming soon");
-      STACK_ARRAY(SIMD<double>, hmem, 3*ir.Size()*totdim);      
-      int mem_ptr = 0;
-      ArrayMem<AFlatMatrix<double>,100> temp(steps.Size());
-      ArrayMem<AFlatMatrix<double>,100> dtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>,100> ddtemp(steps.Size());
-      ArrayMem<AFlatMatrix<double>*,100> in(max_inputsize), din(max_inputsize), ddin(max_inputsize);
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          new (&temp[i]) AFlatMatrix<double> (dim[i], ir.IR().GetNIP(), &hmem[mem_ptr]);
-          mem_ptr += ir.Size()*dim[i];
-          new (&dtemp[i]) AFlatMatrix<double> (dim[i], ir.IR().GetNIP(), &hmem[mem_ptr]);
-          mem_ptr += ir.Size()*dim[i];
-          new (&ddtemp[i]) AFlatMatrix<double> (dim[i], ir.IR().GetNIP(), &hmem[mem_ptr]);
-          mem_ptr += ir.Size()*dim[i];
-        }
-
-      for (int i = 0; i < steps.Size(); i++)
-        {
-          // timers[i]->Start();          
-          auto inputi = inputs[i];
-          for (int nr : Range(inputi))
-            {
-              in[nr] = &temp[inputi[nr]];
-              din[nr] = &dtemp[inputi[nr]];
-              ddin[nr] = &ddtemp[inputi[nr]];
-            }
-
-          steps[i] -> EvaluateDDeriv (ir, in.Range(0, inputi.Size()), din.Range(0, inputi.Size()),
-                                      ddin.Range(0, inputi.Size()),
-                                      temp[i], dtemp[i], ddtemp[i]);
-          // timers[i]->Stop();                    
-        }
-      values = temp.Last();
-      deriv = dtemp.Last();
-      dderiv = ddtemp.Last();
-    }
-#endif
-    
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
       for (int i = 0; i < cf->Dimension(); i++)
