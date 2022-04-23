@@ -24,6 +24,7 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     if Gbnd:
         ddJOmegaTestSA += (Gbnd.Diff(F, Grad(PSI).Trace()) + Gbnd.Diff(X, PSI)).Diff(F, Grad(PHI).Trace()).Compile()
         ddJOmegaTestSA += (Gbnd.Diff(F, Grad(PSI).Trace()) + Gbnd.Diff(X, PSI)).Diff(X, PHI).Compile()
+    
         
     #full automatic
     dJOmegaTestFA = LinearForm(VEC)
@@ -33,7 +34,7 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     ddJOmegaTestFA = BilinearForm(VEC)
     ddJOmegaTestFA += G0.DiffShape(PSI).DiffShape(PHI).Compile()
     if G0bnd:
-        ddJOmegaTestFA += G0bnd.DiffShape(PSI).DiffShape(PHI).Compile()
+        ddJOmegaTestFA += G0bnd.DiffShape(PSI).DiffShape(PHI) # .Compile()
 
     t = 1/4
     J0 = Integrate(G0, mesh)
