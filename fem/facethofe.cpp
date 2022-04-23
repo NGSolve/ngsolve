@@ -19,6 +19,15 @@
 namespace ngfem
 { 
 
+  template <typename Tx>
+  INLINE auto NodalShapePowerL2(Tx lam, int i, int order)
+  {
+    Tx prod = Tx(1.0);
+    for (int j = 0; j < i; j++)
+      prod *= ((order+1)*lam - j-0.5) / (i-j);
+    return prod;
+  }
+
   
   template <> template<typename Tx, typename TFA>  
   void FacetFE<ET_SEGM> :: T_CalcShapeFNr (int fnr, TIP<1,Tx> ip, TFA & shape) const
@@ -36,8 +45,12 @@ namespace ngfem
     
     INT<2> e = GetVertexOrientedEdge (fnr);
     int p = facet_order[fnr];
-    
-    LegendrePolynomial::Eval (p, lam[e[1]]-lam[e[0]], shape);
+
+    if (!nodal)
+      LegendrePolynomial::Eval (p, lam[e[1]]-lam[e[0]], shape);
+    else
+      for (int i = 0; i <= p; i++)
+        shape[i] = NodalShapePowerL2(lam[e[1]], i, order)*NodalShapePowerL2(lam[e[0]], p-i, p);
   }
 
 
@@ -67,8 +80,16 @@ namespace ngfem
     
     INT<4> f = GetVertexOrientedFace (fnr);
     int p = facet_order[fnr];
-    
-    DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
+
+    if (!nodal)
+      DubinerBasis::Eval (p, lam[f[0]], lam[f[1]], shape);
+    else
+      for (int i = 0, ii = 0; i <= p; i++)
+        for (int j = 0; j <= p-i; j++)
+          shape[ii++] =
+            NodalShapePowerL2(lam[f[0]], i, order) *
+            NodalShapePowerL2(lam[f[1]], j, p) *
+            NodalShapePowerL2(lam[f[2]], p-i-j, p);
   }
 
 

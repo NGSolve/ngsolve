@@ -176,7 +176,8 @@ namespace ngcomp
     //      in case of (var_order && order) or (relorder) 
     var_order = flags.GetDefineFlag("variableorder");  
     order =  int (flags.GetNumFlag ("order",0)); 
-
+    nodal = flags.GetDefineFlag("nodalbasis");
+    
     if(flags.NumFlagDefined("relorder") && !flags.NumFlagDefined("order")) 
       var_order = 1; 
     
@@ -590,7 +591,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
 
-    FacetFE<ET> * fe =  new (alloc) FacetFE<ET> ();
+    FacetFE<ET> * fe =  new (alloc) FacetFE<ET> (nodal);
     fe -> SetVertexNumbers (ngel.Vertices());
     fe -> SetOrder(0);
     if (ET_trait<ET>::DIM >= 2)

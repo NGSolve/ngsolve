@@ -47,6 +47,8 @@ namespace ngcomp
     bool hide_highest_order_dc;
     bool nowirebasket;
     bool all_dofs_together;
+
+    bool nodal;
   public:
     ///
     FacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
