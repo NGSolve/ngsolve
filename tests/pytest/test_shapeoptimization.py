@@ -44,8 +44,12 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     delta2 = [0,0]
     delta1Prev = [0,0]
     delta2Prev = [0,0]
+
     dJOmegaTestSA.Assemble()
     dJOmegaTestFA.Assemble()
+    
+    return
+
     ddJOmegaTestSA.Assemble()
     ddJOmegaTestFA.Assemble()
 
@@ -53,7 +57,6 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     tmp2 = dJOmegaTestSA.vec.CreateVector()
     tmp1.data = ddJOmegaTestSA.mat*gfX.vec
     tmp2.data = ddJOmegaTestFA.mat*gfX.vec
-    # tmp2.data = ddJOmegaTestSA.mat*gfX.vec
     
     for i in range(7):
         for j in range(2):
