@@ -13,8 +13,8 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     
     #semi automatic
     dJOmegaTestSA = LinearForm(VEC)
-    dJOmegaTestSA += G.Diff(F, Grad(PSI)).Compile()
-    # dJOmegaTestSA += G.Diff(X, PSI).Compile()
+    # dJOmegaTestSA += G.Diff(F, Grad(PSI)).Compile()
+    dJOmegaTestSA += G.Diff(X, PSI).Compile()
     # if Gbnd:
     #     dJOmegaTestSA += Gbnd.Diff(F, Grad(PSI).Trace()).Compile()
     #     dJOmegaTestSA += Gbnd.Diff(X, PSI).Compile()
