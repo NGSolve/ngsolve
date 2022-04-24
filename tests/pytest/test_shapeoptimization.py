@@ -14,10 +14,10 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     #semi automatic
     dJOmegaTestSA = LinearForm(VEC)
     dJOmegaTestSA += G.Diff(F, Grad(PSI)).Compile()
-    dJOmegaTestSA += G.Diff(X, PSI).Compile()
-    if Gbnd:
-        dJOmegaTestSA += Gbnd.Diff(F, Grad(PSI).Trace()).Compile()
-        dJOmegaTestSA += Gbnd.Diff(X, PSI).Compile()
+    # dJOmegaTestSA += G.Diff(X, PSI).Compile()
+    # if Gbnd:
+    #     dJOmegaTestSA += Gbnd.Diff(F, Grad(PSI).Trace()).Compile()
+    #     dJOmegaTestSA += Gbnd.Diff(X, PSI).Compile()
     ddJOmegaTestSA = BilinearForm(VEC)
     ddJOmegaTestSA += (G.Diff(F, Grad(PSI)) + G.Diff(X, PSI)).Diff(F, Grad(PHI)).Compile()
     ddJOmegaTestSA += (G.Diff(F, Grad(PSI)) + G.Diff(X, PSI)).Diff(X, PHI).Compile()
@@ -46,7 +46,7 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     delta2Prev = [0,0]
     
 
-    # dJOmegaTestSA.Assemble()
+    dJOmegaTestSA.Assemble()
     dJOmegaTestFA.Assemble()
     # ddJOmegaTestSA.Assemble()
     # ddJOmegaTestFA.Assemble()
