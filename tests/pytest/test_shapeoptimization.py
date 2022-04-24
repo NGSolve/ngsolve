@@ -49,7 +49,7 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     # dJOmegaTestSA.Assemble()
     dJOmegaTestFA.Assemble()
     # ddJOmegaTestSA.Assemble()
-    ddJOmegaTestFA.Assemble()
+    # ddJOmegaTestFA.Assemble()
     return
 
     tmp1 = dJOmegaTestSA.vec.CreateVector()
