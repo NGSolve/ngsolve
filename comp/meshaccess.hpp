@@ -761,6 +761,7 @@ namespace ngcomp
     { ednums = GetElement(ElementId(VOL,elnr)).Edges(); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
+    [[deprecated("Use GetElEdges(ElementId) instead!")]]                
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the edges of a boundary element
@@ -785,6 +786,7 @@ namespace ngcomp
     { fnums = GetElement(ElementId(VOL,elnr)).Faces(); }
 
     // returns face numbers and face orientation of an element. (old style function)
+    [[deprecated("Use GetElFaces(ElementId) instead!")]]                        
     void GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const;
 
     /// returns face number of surface element

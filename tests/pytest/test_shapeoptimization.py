@@ -44,12 +44,11 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     delta2 = [0,0]
     delta1Prev = [0,0]
     delta2Prev = [0,0]
-
-    dJOmegaTestSA.Assemble()
-    dJOmegaTestFA.Assemble()
     
     return
 
+    dJOmegaTestSA.Assemble()
+    dJOmegaTestFA.Assemble()
     ddJOmegaTestSA.Assemble()
     ddJOmegaTestFA.Assemble()
 
