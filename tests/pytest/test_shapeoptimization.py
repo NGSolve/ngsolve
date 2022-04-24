@@ -134,8 +134,6 @@ def test_shapeopt_2d():
     G  = uD * Det(F) * dx
     Test(G0, G, gfX, X, F)
 
-    return
-
     ### (Vector)H1
     fes = H1(mesh, order=1)
     gfu = GridFunction(fes)
