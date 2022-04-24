@@ -47,12 +47,13 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     dJOmegaTestSA.Assemble()
     dJOmegaTestFA.Assemble()
     ddJOmegaTestSA.Assemble()
-    ddJOmegaTestFA.Assemble()
+    # ddJOmegaTestFA.Assemble()
 
     tmp1 = dJOmegaTestSA.vec.CreateVector()
     tmp2 = dJOmegaTestSA.vec.CreateVector()
     tmp1.data = ddJOmegaTestSA.mat*gfX.vec
-    tmp2.data = ddJOmegaTestFA.mat*gfX.vec
+    # tmp2.data = ddJOmegaTestFA.mat*gfX.vec
+    tmp2.data = ddJOmegaTestSA.mat*gfX.vec
     
     for i in range(7):
         for j in range(2):
