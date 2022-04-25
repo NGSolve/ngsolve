@@ -98,8 +98,7 @@ namespace ngfem
       auto sgrad = dynamic_pointer_cast<ProxyFunction>(grad)->Trace();
       auto sdivdir = TraceCF(sgrad);
 
-      auto tang = TangentialVectorCF(dir->Dimension(), false);
-      tang -> SetDimensions( Array<int> ( { dir->Dimension(), 1 } ) );
+      auto tang = TangentialVectorCF(dir->Dimension(), false) -> Reshape(dir->Dimension(), 1);
       auto bsdivdir = InnerProduct(sgrad*tang,tang);
 
       DiffShapeCF shape;

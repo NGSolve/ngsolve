@@ -665,7 +665,7 @@ val : can be one of the following:
                   "number of components of CF")
     .def_property("dims",
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
-                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
+                  [] (shared_ptr<CF> self, py::tuple tup) { throw Exception("Use cf = cf.Reshape(tuple) instead of cf.dims=tuple"); /*self->SetDimensions(makeCArray<int>(tup));*/ } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
     .def("Reshape", [] (shared_ptr<CF> self, py::tuple tup) { return self->Reshape(makeCArray<int>(tup)); } ,
          "reshape CF:  (dim) for vector, (h,w) for matrix")
