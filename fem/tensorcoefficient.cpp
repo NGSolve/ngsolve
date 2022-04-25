@@ -691,8 +691,8 @@ namespace ngfem {
         shared_ptr<CoefficientFunction>
         optimize_path(const string &signature,
                       const Array<shared_ptr<CoefficientFunction>>& input_cfs,
-                      const map<string, bool> &aoptions) {
-
+                      const map<string, bool> &aoptions)
+        {
           map<string, bool> options = aoptions;
           options["optimize_path"] = false;
           options["expand_einsum"] = false;
@@ -705,7 +705,8 @@ namespace ngfem {
           py::object einsum_path = np.attr("einsum_path");
 
           py::list inputs{};
-          for (auto icf: input_cfs) {
+          for (auto icf: input_cfs)
+          {
             py::array::ShapeContainer shape{};
             for (int dim: icf->Dimensions())
               shape->push_back(dim);
@@ -713,29 +714,38 @@ namespace ngfem {
           }
 
           py::object res;
-          try {
-              res = einsum_path(signature, *inputs, "einsum_call"_a = true);
-          } catch (const exception& e) {
-              cout << "Exception in call to einsum_path for sign. " << signature << " and input dims \n";
-              for (auto cf : input_cfs)
-                  cout << cf->Dimensions() << "\n";
-              cout << endl;
-              cout << e.what();
-              throw e;
+          try
+          {
+            res = einsum_path(signature, *inputs, "einsum_call"_a = true);
+          }
+          catch (const exception& e)
+          {
+            cout << "Exception in call to einsum_path"
+                 << "\n\t"
+                 << "for signature" << signature
+                 << "\n\t"
+                 << "and input dims \n";
+            for (auto cf : input_cfs)
+              cout << cf->Dimensions() << "\n";
+            cout << endl;
+            cout << e.what();
+            throw e;
           }
 
 
           auto res_tuple = py::extract<py::tuple>(res)();
           auto path = py::extract<py::list>(res_tuple[1])();
           Array<shared_ptr<CoefficientFunction>> tp_inputs{input_cfs};
-          for (size_t j: Range(path.size())) {
+          for (size_t j: Range(path.size()))
+          {
             auto op = py::extract<py::tuple>(path[j])();
             Array<shared_ptr<CoefficientFunction>> new_inputs;
             Array<shared_ptr<CoefficientFunction>> old_inputs;
             auto in_indices = py::extract<py::tuple>(op[0])();
             Array<bool> drop_from_old(tp_inputs.Size());
             drop_from_old = false;
-            for (const auto &item: in_indices) {
+            for (const auto &item: in_indices)
+            {
               auto in_idx = py::extract<size_t>(item)();
               new_inputs.Append(tp_inputs[in_idx]);
               drop_from_old[in_idx] = true;
