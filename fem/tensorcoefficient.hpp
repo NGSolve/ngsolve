@@ -129,10 +129,12 @@ namespace ngfem {
         
         string form_index_signature(const vector<string>& parts);
 
+        string expand_ellipses(const string& signature, const Array<shared_ptr<CoefficientFunction>>& cfs);
+
         Vector<bool> nonzero_pattern(shared_ptr <CoefficientFunction> cf);
 
         pair<string, Array<shared_ptr<CoefficientFunction>>>
-        flatten_einsum(string signature,
+        flatten_einsum(const string& signature,
                        const Array<shared_ptr<CoefficientFunction>>& cfs,
                        const map<string, bool> &options);
         
