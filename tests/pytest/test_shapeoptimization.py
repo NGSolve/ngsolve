@@ -1,6 +1,8 @@
 from ngsolve import *
 from netgen.geom2d import SplineGeometry, unit_square
-
+from netgen.csg import unit_cube
+from pytest import approx
+import pytest
 
 # Taylor Test for first and second (semi-) automatic shape derivative
 def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
@@ -22,6 +24,7 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     if Gbnd:
         ddJOmegaTestSA += (Gbnd.Diff(F, Grad(PSI).Trace()) + Gbnd.Diff(X, PSI)).Diff(F, Grad(PHI).Trace()).Compile()
         ddJOmegaTestSA += (Gbnd.Diff(F, Grad(PSI).Trace()) + Gbnd.Diff(X, PSI)).Diff(X, PHI).Compile()
+    
         
     #full automatic
     dJOmegaTestFA = LinearForm(VEC)
@@ -41,6 +44,8 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     delta2 = [0,0]
     delta1Prev = [0,0]
     delta2Prev = [0,0]
+    
+
     dJOmegaTestSA.Assemble()
     dJOmegaTestFA.Assemble()
     ddJOmegaTestSA.Assemble()
@@ -127,7 +132,6 @@ def test_shapeopt_2d():
     G  = uD * Det(F) * dx
     Test(G0, G, gfX, X, F)
 
-    
     ### (Vector)H1
     fes = H1(mesh, order=1)
     gfu = GridFunction(fes)
@@ -186,7 +190,38 @@ def test_shapeopt_2d():
     return
     
 
+@pytest.mark.slow
+def test_code_gen():
+    mesh = Mesh(unit_cube.GenerateMesh(maxh=0.3))
+
+    VEC = VectorH1(mesh,order=1)
+    Phi,Psi = VEC.TnT()
+    gfvh = GridFunction(VEC)
+    gfvh.Set(CF( (x,y*x,x*y*z) ),definedon=mesh.Boundaries(".*"))
+    gfh = GridFunction(H1(mesh,order=1))
+    gfh.Set(x*y*z,definedon=mesh.Boundaries(".*"))
+
+    gfhc = GridFunction(HCurl(mesh,order=1))
+    gfhc.Set(CF( (x,y*x,x*y*z) ),definedon=mesh.Boundaries(".*"))
+    gfhd = GridFunction(HDivSurface(mesh,order=1))
+    gfhd.Set(CF( (x,y*x,x*y*z) ),definedon=mesh.Boundaries(".*"))
+    
+
+    n = specialcf.normal(3)
+
+    functions = [(CF(1)*ds).DiffShape(Psi),(Trace(Grad(n))*ds).DiffShape(Psi),(CF(1)*ds(element_boundary=True)).DiffShape(Psi), (Trace(Grad(gfvh).Trace())*ds).DiffShape(Psi), ((Grad(gfh).Trace())**2*ds).DiffShape(Psi), (curl(gfhc).Trace()*gfhc.Trace()*ds).DiffShape(Psi),(div(gfhd).Trace()*gfhd.Trace()*gfhd.Trace()*ds).DiffShape(Psi)]
+
+
+    for cf in functions:
+        cfs = [ cf.Compile(), cf.Compile(True, wait=True)]
+        for f in cfs:
+            lf = BilinearForm(VEC)
+            lf += Variation(cf-f)
+            assert lf.Energy(gfvh.vec) == approx(0)
+        
+    return
 
 if __name__ == "__main__":
     test_diff()
     test_shapeopt_2d()
+    test_code_gen()

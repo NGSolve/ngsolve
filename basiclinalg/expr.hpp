@@ -1381,6 +1381,9 @@ namespace ngbla
     decltype(auto) operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
     decltype(auto) operator() (size_t i) const { return a(i+first_row); }
 
+    typedef typename TA::TELEM TELEM;
+    typedef typename TA::TSCAL TSCAL;
+    
     enum { IS_LINEAR = 0 };
     enum { COL_MAJOR = TA::COL_MAJOR };
 

@@ -9,6 +9,7 @@
 #include "../ngstd/python_ngstd.hpp"
 
 #include "tensorcoefficient.hpp"
+#include "coefficient_impl.hpp"
 
 
 namespace ngfem {
@@ -28,9 +29,9 @@ namespace ngfem {
             Vector<bool> nzvec(cf->Dimension());
             nzvec = false;
 
-            DummyFE<ET_TRIG> dummyfe;
             ProxyUserData ud;
-            ud.fel = &dummyfe;
+//            DummyFE<ET_TRIG> dummyfe;
+//            ud.fel = &dummyfe; do not do this here as it interferes with the purpose (see ProxyFunctio::NonZeroPattern)
 
             Array<ProxyFunction *> trial_proxies, test_proxies;
 
@@ -51,23 +52,34 @@ namespace ngfem {
             for (size_t i: Range(nzvec_ad))
                 nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
-            for (int l1: trial_proxies.Range())
-                for (int l2: Range(0, trial_proxies[l1]->Dimension())) {
-                    ud.trialfunction = trial_proxies[l1];
-                    ud.trial_comp = l2;
-                    cf->NonZeroPattern(ud, nzvec_ad);
-                    for (size_t i: Range(nzvec_ad))
-                        nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
+            if (test_proxies.Size() && !trial_proxies.Size()) {
+                for (auto test_proxy : test_proxies)
+                    for (int k2 : Range(0, test_proxy->Dimension())) {
+                        ud.testfunction = test_proxy;
+                        ud.test_comp = k2;
+                        cf->NonZeroPattern(ud, nzvec_ad);
+                        for (size_t i: Range(nzvec_ad))
+                            nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
+                    }
+            } else  {
+                for (auto trial_proxy : trial_proxies)
+                    for (auto l2 : Range(0, trial_proxy->Dimension())) {
+                        ud.trialfunction = trial_proxy;
+                        ud.trial_comp = l2;
+                        cf->NonZeroPattern(ud, nzvec_ad);
+                        for (size_t i: Range(nzvec_ad))
+                            nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
-                    for (int k1: test_proxies.Range())
-                        for (int k2: Range(0, test_proxies[k1]->Dimension())) {
-                            ud.testfunction = test_proxies[k1];
-                            ud.test_comp = k2;
-                            cf->NonZeroPattern(ud, nzvec_ad);
-                            for (size_t i: Range(nzvec_ad))
-                                nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
-                        }
-                }
+                        for (auto test_proxy : test_proxies)
+                            for (auto k2 : Range(0, test_proxy->Dimension())) {
+                                ud.testfunction = test_proxy;
+                                ud.test_comp = k2;
+                                cf->NonZeroPattern(ud, nzvec_ad);
+                                for (size_t i: Range(nzvec_ad))
+                                    nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
+                            }
+                    }
+            }
             return nzvec;
         }
 
@@ -404,8 +416,6 @@ namespace ngfem {
                        const Array<shared_ptr<CoefficientFunction>>& cfs,
                        const map<string, bool> &options) {
 
-          const auto identity_descr = IdentityCF(1)->GetDescription();
-
           Array<shared_ptr<CoefficientFunction>> new_cfs;
           new_cfs.SetAllocSize(cfs.Size());
 
@@ -429,12 +439,28 @@ namespace ngfem {
           return {form_index_signature(parts), move(new_cfs)};
         }
 
+        bool is_identity(const shared_ptr<CoefficientFunction> cf) {
+          if (dynamic_pointer_cast<IdentityCoefficientFunction>(cf))
+            return true;
+
+          if (auto dims = cf->Dimensions(); dims.Size() % 2 == 0
+              && dynamic_pointer_cast<cl_UnaryOpCF<GenericIdentity>>(cf)
+              && is_identity(cf->InputCoefficientFunctions()[0]))
+          {
+            auto N = size_t(dims.Size() / 2);
+            for (auto j : Range(N))
+              if (dims[j] != dims[j + N])
+                return false;
+            return true;
+          }
+
+          return false;
+        }
+
         pair<string, Array<shared_ptr<CoefficientFunction>>>
         expand_higher_order_identities(string signature,
                        const Array<shared_ptr<CoefficientFunction>>& cfs,
                        [[maybe_unused]] const map<string, bool> &options) {
-
-          const auto identity_descr = IdentityCF(1)->GetDescription();
 
           Array<shared_ptr<CoefficientFunction>> new_cfs;
           new_cfs.SetAllocSize(cfs.Size());
@@ -443,11 +469,11 @@ namespace ngfem {
           auto parts = split_signature(signature);
 
           for (auto i : Range(cfs))
-            if (cfs[i]->GetDescription() == identity_descr)
+            if (is_identity(cfs[i]))
             {
               auto dims = cfs[i]->Dimensions();
               stringstream new_part{};
-              for (size_t j: Range(dims.Size() / 2)) {
+              for (auto j : Range(dims.Size() / 2)) {
                 new_cfs.Append(IdentityCF(dims[j]));
                 new_part << (j > 0 ? "," : "")
                          << parts[i][j] << parts[i][j + dims.Size() / 2];
@@ -455,7 +481,10 @@ namespace ngfem {
               parts[i] = new_part.str();
             }
             else
+            {
               new_cfs.Append(cfs[i]);
+            }
+
 
           return {form_index_signature(parts), move(new_cfs)};
         }
@@ -466,8 +495,6 @@ namespace ngfem {
                             const Array<shared_ptr<CoefficientFunction>>& cfs,
                             [[maybe_unused]] const map<string, bool>& options)
         {
-          const auto identity_descr = IdentityCF(1)->GetDescription();
-
           Array<shared_ptr<CoefficientFunction>> new_cfs;
           new_cfs.SetAllocSize(cfs.Size());
           auto parts = split_signature(signature);
@@ -478,7 +505,7 @@ namespace ngfem {
           remove = false;
           for (size_t i: Range(cfs))
           {
-            if (cfs[i]->GetDescription() == identity_descr &&
+            if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[i]) &&
                 cfs[i]->Dimensions().Size() == 2)
             {
               if (parts[i][0] == parts[i][1] &&
@@ -532,7 +559,6 @@ namespace ngfem {
               return ZeroCF(dims);
             }
 
-          const auto identity_descr = IdentityCF(1)->GetDescription();
           cout << IM(5) << "EinsumCF: trying to detect some 'legacy' operations" << endl;
 
           const bool optimize_identities =
@@ -556,8 +582,7 @@ namespace ngfem {
               index_sets[2].Size() == 1 && index_sets[0][0].symbol != index_sets[0][1].symbol) {
             if (index_sets[1][0].symbol == index_sets[0][1].symbol)
             {
-              // NOTE: no other way to detect identity!
-              if (cfs[0]->GetDescription() == identity_descr &&
+              if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[0]) &&
                   optimize_identities)
               {
                 cout << IM(5) << "EinsumCF: detected I * vec" << endl;
@@ -568,8 +593,7 @@ namespace ngfem {
             }
             else if (index_sets[1][0].symbol == index_sets[0][0].symbol)
             {
-              // NOTE: no other way to detect identity!
-              if (cfs[0]->GetDescription() == identity_descr &&
+              if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[0]) &&
                   optimize_identities)
               {
                 cout << IM(5) << "EinsumCF: detected I * vec" << endl;
@@ -595,14 +619,14 @@ namespace ngfem {
               int i0 = ij_jk ? 0 : 1;
               int i1 = ij_jk ? 1 : 0;
 
-              if (cfs[i0]->GetDescription() == identity_descr &&
+              if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[i0]) &&
                   optimize_identities)
               {
                 cout << IM(5) << "EinsumCF: detected I * Mat" << endl;
                 return cfs[i1];
               }
 
-              if (cfs[i1]->GetDescription() == identity_descr &&
+              if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[i1]) &&
                   optimize_identities)
               {
                 cout << IM(5) << "EinsumCF: detected Mat * I" << endl;
@@ -620,13 +644,13 @@ namespace ngfem {
               index_sets[1][0].symbol != index_sets[1][1].symbol &&
               index_sets[1][0].symbol == index_sets[0][0].symbol &&
               index_sets[2][0].symbol == index_sets[0][1].symbol) {
-            if (cfs[0]->GetDescription() == identity_descr &&
+            if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[0]) &&
                 optimize_identities) {
               cout << IM(5) << "EinsumCF: detected I * Mat" << endl;
               return cfs[1];
             }
 
-            if (cfs[1]->GetDescription() == identity_descr &&
+            if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[1]) &&
                 optimize_identities) {
               cout << IM(5) << "EinsumCF: detected Mat.trans * I" << endl;
               return TransposeCF(cfs[0]);
@@ -642,13 +666,13 @@ namespace ngfem {
               index_sets[1][0].symbol != index_sets[1][1].symbol &&
               index_sets[1][1].symbol == index_sets[0][1].symbol &&
               index_sets[2][0].symbol == index_sets[0][0].symbol) {
-            if (cfs[0]->GetDescription() == identity_descr &&
+            if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[0]) &&
                 optimize_identities) {
               cout << IM(5) << "EinsumCF: detected I * Mat.trans" << endl;
               return TransposeCF(cfs[1]);
             }
 
-            if (cfs[1]->GetDescription() == identity_descr &&
+            if (dynamic_pointer_cast<IdentityCoefficientFunction>(cfs[1]) &&
                 optimize_identities) {
               cout << IM(5) << "EinsumCF: detected Mat * I" << endl;
               return cfs[0];
@@ -859,6 +883,38 @@ namespace ngfem {
         }
 
 
+        string validate_signature(string signature)
+        {
+          const string arrow{"->"};
+          const string special{arrow + ","};
+
+          stringstream not_allowed;
+          for (char c : signature)
+          {
+            if (special.find(c) != string::npos)
+              continue;
+            if (c < 'A' || (c > 'Z' && c < 'a') || c > 'z')
+              not_allowed << c << ", ";
+          }
+          auto found_not_allowed = not_allowed.str();
+          if (!found_not_allowed.empty())
+            throw NG_EXCEPTION(string("index signature contains the following illegal characters: ")
+                               + found_not_allowed);
+
+          // special shorthand for trace of a matrix
+          if (signature.size() == 2 && signature[0] == signature[1])
+            return move(signature);
+
+          if (signature.find(arrow) == string::npos)
+            throw NG_EXCEPTION(string("index signature must contain \"") + arrow + ("\""));
+
+          for (char c : arrow)
+            if (count(signature.begin(), signature.end(), c) > 1)
+                throw NG_EXCEPTION(string("index signature must contain only one \"") + c + ("\""));
+
+          return move(signature);
+        }
+
         EinsumCoefficientFunction::EinsumCoefficientFunction(
             const string &aindex_signature,
             const Array<shared_ptr<CoefficientFunction>> &acfs,
@@ -873,8 +929,11 @@ namespace ngfem {
               node{},
               max_mem{0},
               options{aoptions},
-              original_index_signature{aindex_signature},
+              original_index_signature{validate_signature(aindex_signature)},
               original_inputs{acfs} {
+
+          if (original_inputs.Size() != (split_signature(original_index_signature).size() - 1))
+            throw NG_EXCEPTION("number of input cfs does not match the number of inputs in the index signature");
 
           if (get_option(options, "expand_einsum", true))
           {
@@ -895,7 +954,20 @@ namespace ngfem {
             tie(expanded_index_signature, expanded_inputs) =
                 tie(original_index_signature, original_inputs);
 
-          if (get_option(options, "optimize_path", false))
+          bool detected_zero_input = find_if(
+                  expanded_inputs.begin(), expanded_inputs.end(),
+                  [](const auto& cf) { return cf->IsZeroCF();}
+                  ) != expanded_inputs.end();
+
+          if (detected_zero_input)
+          {
+            const auto index_sets = compute_multi_indices(expanded_index_signature, expanded_inputs);
+            auto dims = index_dimensions(index_sets[expanded_inputs.Size()]);
+            node = ZeroCF(dims);
+            index_signature = "";
+            cfs = {};
+          }
+          else if (get_option(options, "optimize_path", false))
           {
             if (get_option(options, "optimize_identities", false))
             {
@@ -906,7 +978,9 @@ namespace ngfem {
               node = optimize_path(index_signature, cfs, options);
             }
             else
+            {
               node = optimize_path(expanded_index_signature, expanded_inputs, options);
+            }
           }
           else if (get_option(options, "optimize_identities", false))
           {
@@ -916,12 +990,20 @@ namespace ngfem {
           else
             tie (index_signature, cfs) = {original_index_signature, original_inputs};
 
+          if (!node && cfs.Size() == 1)
+          {
+            auto parts = split_signature(index_signature);
+            if (parts.size() == 2 && parts[0] == parts[1])
+              node = cfs[0];
+          }
+
           if (!node && cfs.Size() < 3 && get_option(options, "use_legacy_ops", false))
             node = optimize_legacy(index_signature, cfs, options);
-
-
+          
           if (node)
+          {
             SetDimensions(node->Dimensions());
+          }
           else
           {
             // compute index mappings and nonzero patterns
