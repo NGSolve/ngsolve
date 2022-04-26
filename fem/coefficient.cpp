@@ -5546,7 +5546,10 @@ public:
     for (auto i : Range(dims1.Size()-1))
       descr << dims1[i] << ", ";
     descr << dims1.Last() << " | ";
-    descr << " pos: " << pos << " | ";
+    descr << " pos: ";
+    for (auto i : Range(pos.Size()-1))
+      descr << pos[i] << ", ";
+    descr << pos.Last() << " | ";
     descr << " stride: ";
     for (auto i : Range(stride.Size()-1))
       descr << stride[i] << ", ";
