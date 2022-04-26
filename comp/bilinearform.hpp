@@ -76,9 +76,9 @@ namespace ngcomp
     // loop over elements
     Array<shared_ptr<FacetBilinearFormIntegrator>> elementwise_skeleton_parts;
 
-#ifdef PARALLEL
+    // #ifdef PARALLEL
     Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;
-#endif
+    // #endif
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<unique_ptr<SpecialElement>> specialelements;
