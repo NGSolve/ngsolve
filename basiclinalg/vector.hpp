@@ -894,7 +894,8 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return FlatVec(const_cast<Vec&>(*this)); } 
+    // auto View() const { return FlatVec(const_cast<Vec&>(*this)); }
+    auto View() const { return Vec(*this); } 
     
     /// access vector
     INLINE TELEM & operator() (size_t i) 
@@ -965,6 +966,7 @@ namespace ngbla
     INLINE Vec (T d) { ; }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
+    auto View() const { return Vec(*this); }     
     INLINE constexpr size_t Size() const { return 0; }
     INLINE constexpr size_t Height() const { return 0; }
     INLINE constexpr size_t Width() const { return 1; }
