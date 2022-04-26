@@ -224,7 +224,7 @@ namespace ngla
     static Timer t("ParallelVector - Cumulate");
     RegionTimer reg(t);
     
-#ifdef PARALLEL
+    // #ifdef PARALLEL
     if (status != DISTRIBUTED) return;
     
     // int ntasks = paralleldofs->GetNTasks();
@@ -254,7 +254,7 @@ namespace ngla
       } 
 
     SetStatus(CUMULATED);
-#endif
+    // #endif
   }
   
 

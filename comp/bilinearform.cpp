@@ -243,9 +243,9 @@ namespace ngcomp
 	  auto fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator> (bfi);
 	  if (!fbfi)  throw Exception ("not a FacetBFI");
           elementwise_skeleton_parts.Append(fbfi);
-#ifdef PARALLEL
+          // #ifdef PARALLEL
 	  mpi_facet_parts.Append(fbfi);
-#endif
+          // #endif
 	}
 	else
           {
@@ -254,11 +254,11 @@ namespace ngcomp
             auto fbfi = dynamic_pointer_cast<FacetBilinearFormIntegrator> (bfi);
             if (!fbfi)  throw Exception ("not a FacetBFI");
             facetwise_skeleton_parts[bfi->VB()] += fbfi;
-#ifdef PARALLEL
+            // #ifdef PARALLEL
 	    if(bfi->VB()==VOL) { //BND-integrators are per definition not mpi!!
 	      mpi_facet_parts.Append(fbfi);
 	    }
-#endif
+            // #endif
           }
       }
     else
@@ -4643,11 +4643,11 @@ namespace ngcomp
 
                        ma->GetFacetElements(facet,elnums);
                        if (elnums.Size()<2) {
-#ifdef PARALLEL
+                         // #ifdef PARALLEL
                          auto comm = ma->GetCommunicator();
 			 if( (comm.Size()>1) && (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()), fnums1[facnr1])).Size() > 0) )
 			   continue;
-#endif
+                         // #endif
                          facet2 = ma->GetPeriodicFacet(fnums1[facnr1]);
                          if(facet2!=facet)
                            {
@@ -4793,7 +4793,7 @@ namespace ngcomp
         }
 
 	
-#ifdef PARALLEL
+        // #ifdef PARALLEL
         auto comm = ma->GetCommunicator();
 	if (comm.Size() > 1 && mpi_facet_parts.Size())
 	  {
@@ -4931,7 +4931,7 @@ namespace ngcomp
 	    }
 	    if(reqs.Size()) MyMPI_WaitAll(reqs);
 	  }
-#endif
+        // #endif
 
         static mutex specelmutex;
         if (specialelements.Size())
