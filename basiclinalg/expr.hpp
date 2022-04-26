@@ -1218,11 +1218,11 @@ namespace ngbla
   */
   template <class TA, class TB> class MultExpr : public Expr<MultExpr<TA,TB> >
   {
-    const TA & a;
-    const TB & b;
+    TA a;
+    TB b;
   public:
 
-    INLINE MultExpr (const TA & aa, const TB & ab) : a(aa), b(ab) { ; }
+    INLINE MultExpr (TA aa, TB ab) : a(aa), b(ab) { ; }
 
     INLINE auto operator() (size_t i) const
     { return operator()(i,0); }  
@@ -1255,15 +1255,16 @@ namespace ngbla
   template <int H, typename SCALA, class TB> class MultExpr<DiagMat<H,SCALA>,TB> 
     : public Expr<MultExpr<DiagMat<H,SCALA>,TB> >
   {
-    const DiagMat<H,SCALA> & a;
-    const TB & b;
+    DiagMat<H,SCALA> a;
+    TB b;
   public:
 
-    MultExpr (const DiagMat<H,SCALA> & aa, const TB & ab) : a(aa), b(ab) { ; }
+    MultExpr (DiagMat<H,SCALA> aa, TB ab) : a(aa), b(ab) { ; }
 
     auto operator() (size_t i) const { return a[i] * b(i); }  
     auto operator() (size_t i, size_t j) const { return a[i] * b(i,j); }
 
+    auto View() const { return MultExpr(a, b); }     
     const DiagMat<H,SCALA> & A() const { return a; }
     const TB & B() const { return b; }
     size_t Height() const { return a.Height(); }
@@ -1276,7 +1277,7 @@ namespace ngbla
   INLINE MultExpr<TA, TB>
   operator* (const Expr<TA> & a, const Expr<TB> & b)
   {
-    return MultExpr<TA, TB> (a.Spec(), b.Spec());
+    return MultExpr<TA, TB> (a.View(), b.View());
   }
 
 
@@ -1534,16 +1535,18 @@ namespace ngbla
   // Attention NOT transpose !!! elemwise conjugate !!! 
   template <class TA> class ConjExpr : public Expr<ConjExpr<TA> >
   {
-    const TA & a;
+    TA a;
   public:
     // typedef typename TA::TELEM TELEM;
     // typedef typename TA::TSCAL TSCAL;
 
-    INLINE ConjExpr (const TA & aa) : a(aa) { ; }
+    INLINE ConjExpr (TA aa) : a(aa) { ; }
 
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
- 
+    
+    auto View() const { return ConjExpr(a); } 
+    
     INLINE auto operator() (size_t i, size_t j) const { return Conj(a(i,j)); }
     INLINE auto operator() (size_t i) const { return Conj(a(i)); }
 
@@ -1556,7 +1559,7 @@ namespace ngbla
   INLINE ConjExpr<TA>
   Conj (const Expr<TA> & a)
   {
-    return ConjExpr<TA> (static_cast <const TA&> (a));
+    return ConjExpr<TA> (a.View()); // static_cast <const TA&> (a));
   }
 
   template<int D, typename TAD>

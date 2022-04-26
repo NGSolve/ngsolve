@@ -1247,6 +1247,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatMatrixFixHeight(*this); } 
+
+    
     /*
     /// access operator, linear access
     TELEM & operator() (int i)
