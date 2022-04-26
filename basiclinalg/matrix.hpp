@@ -851,6 +851,8 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return DiagMat(*this); } 
+
     /// linear access
     TELEM & operator() (int i) { return data[i]; }
     /// access element
