@@ -15,7 +15,7 @@ namespace ngbla
   template <int S, typename T> class FlatVec;
   template <class T> class SysVector;
   template <class T = double> class Vector;
-  template <class T = double> class SliceVector;
+  // template <class T> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
   template <int S, int DIST, typename T> class FlatSliceVec;
 
@@ -112,8 +112,11 @@ namespace ngbla
     INLINE const FlatVector & operator= (const FlatVector & v) const
     {
       NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
+      /*
       for (auto i : ngstd::Range(size))
 	data[i] = v(i);
+      */
+      CopyVector (v, *this);
       return *this;
     }
 
@@ -1070,11 +1073,19 @@ namespace ngbla
   }
 
 
-  template<int S, typename TB>
-  INLINE Vec<S> & operator+= (Vec<S> & v, const Expr<TB> & v2)
+  template<int S, typename T, typename TB>
+  INLINE Vec<S,T> & operator+= (Vec<S,T> & v, const Expr<TB> & v2)
   {
     for (int i = 0; i < S; i++)
       v(i) += v2.Spec()(i,0);
+    return v;
+  }
+
+  template<int S, typename T, typename TB>
+  INLINE Vec<S,T> & operator-= (Vec<S,T> & v, const Expr<TB> & v2)
+  {
+    for (int i = 0; i < S; i++)
+      v(i) -= v2.Spec()(i,0);
     return v;
   }
 

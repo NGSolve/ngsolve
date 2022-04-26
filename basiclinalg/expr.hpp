@@ -25,6 +25,7 @@ namespace ngbla
 
   template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <class T = double> class FlatVector;
+  template <class T = double> class SliceVector;
 
   
   template <typename T, typename TELEM=typename T::TELEM>
@@ -476,6 +477,7 @@ namespace ngbla
   template <class TA, class TB> class MultExpr;
   template <class TA> class MinusExpr;
   template <class TA> class TransExpr;
+  template <class TA, class TS> class ScaleExpr;
   
   /**
      The base class for matrices.
@@ -503,10 +505,27 @@ namespace ngbla
     {
       // static Timer t(string("Ng-std-expr:") + typeid(TOP).name() + typeid(TB).name());
       // RegionTimer reg(t);
-      
+
       NETGEN_CHECK_RANGE(Height(), v.Height(), v.Height()+1);
       NETGEN_CHECK_RANGE(Width(), v.Width(), v.Width()+1);
 
+      if constexpr (std::is_same_v<TOP,As> && 
+                    is_convertible_v<TB,FlatVector<typename T::TELEM>> && 
+                    is_convertible_v<T,FlatVector<typename T::TELEM>>)
+                     {
+                       CopyVector(FlatVector<typename T::TELEM>(v.Spec()), FlatVector<typename T::TELEM>(this->Spec()));
+                       return Spec();
+                     }
+      else if constexpr (std::is_same_v<TOP,As> && 
+                    is_convertible_v<TB,SliceVector<typename T::TELEM>> && 
+                    is_convertible_v<T,SliceVector<typename T::TELEM>>)
+                     {
+                       CopyVector(SliceVector<typename T::TELEM>(v.Spec()), SliceVector<typename T::TELEM>(this->Spec()));
+                       return Spec();
+                     }
+      // else
+      // auto unused_variable_in_assign = v.Spec()(0,0);
+      
       if (T::COL_MAJOR)
         {
 	  size_t h = Expr<T>::Height();
@@ -579,6 +598,19 @@ namespace ngbla
 	
 
 
+    
+    /*
+    template <typename OP, typename TA,
+              typename enable_if<std::is_same<OP,As>::value,int>::type = 0,
+              typename enable_if<is_convertible<TA,SliceVector<typename TA::TELEM>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<TA> & src) 
+    {
+      CopyVector(src.Spec(), this->Spec());
+    }
+    */
+
+
+    
     template <typename OP, typename TA, typename TB,
               typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
               typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0,
@@ -626,6 +658,50 @@ namespace ngbla
       return Spec();
     }
 
+    // x += s*y
+    template <typename OP, typename TA, 
+              typename enable_if<std::is_same<OP,AsAdd>::value,int>::type = 0,
+              typename enable_if<is_convertible<TA,SliceVector<double>>::value,int>::type = 0,
+              typename enable_if<is_convertible<typename pair<T,TA>::first_type,SliceVector<double>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<ScaleExpr<TA,double>> & scaled)
+    {
+      AddVector (scaled.Spec().S(),
+                 SliceVector<typename T::TELEM>(scaled.Spec().A()),
+                 SliceVector<typename T::TELEM>(this->Spec()));
+      return Spec();
+    }
+
+    
+    // x += s*(m*y)
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<std::is_same<OP,AsAdd>::value,int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
+              typename enable_if<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<ScaleExpr<MultExpr<TA, TB>,double>> & prod)
+    {
+      MultAddMatVec (prod.Spec().S(),
+                     make_SliceMatrix(prod.Spec().A().A()),
+                     prod.Spec().A().B(),
+                     Spec());
+      return Spec();
+    }
+
+    // x += (s*m)*y
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<std::is_same<OP,AsAdd>::value,int>::type = 0,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
+              typename enable_if<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<MultExpr<ScaleExpr<TA,double>, TB>> & prod)
+    {
+      MultAddMatVec (prod.Spec().A().S(),
+                     make_SliceMatrix(prod.Spec().A().A()),
+                     prod.Spec().B(),
+                     Spec());
+      return Spec();
+    }
+    
     // rank 1 update
     template <typename OP, typename TA, typename TB,
               typename enable_if<is_convertible<TA,FlatVector<double>>::value,int>::type = 0,
@@ -1077,6 +1153,10 @@ namespace ngbla
 
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
+
+    INLINE const TA & A() const { return a; }
+    INLINE TS S() const { return s; }
+    
     void Dump (ostream & ost) const
     { ost << "Scale, s=" << s << " * "; a.Dump(ost);  }
   };
@@ -1301,6 +1381,9 @@ namespace ngbla
     decltype(auto) operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
     decltype(auto) operator() (size_t i) const { return a(i+first_row); }
 
+    typedef typename TA::TELEM TELEM;
+    typedef typename TA::TSCAL TSCAL;
+    
     enum { IS_LINEAR = 0 };
     enum { COL_MAJOR = TA::COL_MAJOR };
 
@@ -1355,7 +1438,7 @@ namespace ngbla
     const TA & a;
     FlatArray<int> rows;
   public:
-    // typedef typename TA::TELEM TELEM;
+    typedef typename TA::TELEM TELEM;
     // typedef typename TA::TSCAL TSCAL;
 
     RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
@@ -1393,7 +1476,7 @@ namespace ngbla
     const TA & a;
     FlatArray<int> cols;
   public:
-    // typedef typename TA::TELEM TELEM;
+    typedef typename TA::TELEM TELEM;
     // typedef typename TA::TSCAL TSCAL;
 
     ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }

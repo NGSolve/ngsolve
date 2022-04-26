@@ -1562,6 +1562,8 @@ namespace ngfem
       : lfi(alfi), factor(afactor)
     { ; }
 
+    virtual ~ComplexLinearFormIntegrator();
+    
     virtual VorB VB () const { return lfi->VB(); } 
     virtual void CheckElement (const FiniteElement & el) const { lfi->CheckElement(el); }
 

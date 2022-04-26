@@ -602,7 +602,7 @@ global system.
                [&alloc] (auto et) -> FiniteElement&
                { return * new (alloc) DummyFE<et.ElementType()>; });
           }
-        catch (Exception e)
+        catch (const Exception& e)
           {
             throw Exception("illegal element type in L2::GetSurfaceFE");
           }

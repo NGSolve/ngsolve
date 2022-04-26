@@ -41,9 +41,9 @@ namespace ngfem
         else
           return ZeroCF(Array<int>());
       }
-    catch(py::cast_error) {}
+    catch(const py::cast_error&) {}
     try { return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()); }
-    catch(py::cast_error) {}
+    catch(const py::cast_error&) {}
 
     if (py::isinstance<py::list>(val))
       {
@@ -665,7 +665,7 @@ val : can be one of the following:
                   "number of components of CF")
     .def_property("dims",
                   [] (shared_ptr<CF> self) { return Array<int>(self->Dimensions()); } ,
-                  [] (shared_ptr<CF> self, py::tuple tup) { self->SetDimensions(makeCArray<int>(tup)); } ,
+                  [] (shared_ptr<CF> self, py::tuple tup) { throw Exception("Use cf = cf.Reshape(tuple) instead of cf.dims=tuple"); /*self->SetDimensions(makeCArray<int>(tup));*/ } ,
                   "shape of CF:  (dim) for vector, (h,w) for matrix")
     .def("Reshape", [] (shared_ptr<CF> self, py::tuple tup) { return self->Reshape(makeCArray<int>(tup)); } ,
          "reshape CF:  (dim) for vector, (h,w) for matrix")
@@ -683,6 +683,12 @@ val : can be one of the following:
     .def_property("spacedim",
                   [] (CF & self) { return self.SpaceDim(); },
                   [] (CF & self, int dim) { self.SetSpaceDim(dim); })
+    
+    .def("MakeVariable", [](shared_ptr<CF> self)
+         {
+           self->SetVariable(true);
+           return self;
+         }, "make node a variable, by which we can differentiate")
     
     .def("__getitem__",  [](shared_ptr<CF> self, int comp)
                                          {
@@ -1118,6 +1124,9 @@ cf : ngsolve.CoefficientFunction
     .def ("Diff", // &CoefficientFunction::Diff,
           [] (shared_ptr<CF> coef, shared_ptr<CF> var, shared_ptr<CF> dir)
           {
+            if (!var->IsVariable())
+              cout << "Warning: differentiationg by a variable not marked as Variable, \n"
+                "might be optimized out. Call MakeVariable for differentiation CF" << endl;
             if (dir)
               return coef->Diff(var.get(), dir);
             else
@@ -1152,12 +1161,10 @@ cf : ngsolve.CoefficientFunction
 
     .def ("DiffShape", [] (shared_ptr<CF> coef, shared_ptr<CF> dir, std::vector<shared_ptr<CoefficientFunction>> Eulerian)
           {
-            DiffShapeCF shape;
+            auto shape = make_shared<DiffShapeCF>();
             for (auto gf : Eulerian)
-              shape.Eulerian_gridfunctions.Append(gf.get());
-            return coef->Diff (&shape, dir);
-            
-            // return coef->Diff (shape.get(), dir);
+              shape->Eulerian_gridfunctions.Append(gf);
+            return coef->Diff (shape.get(), dir);
           },
           "Compute shape derivative in direction", 
           py::arg("direction")=1.0,  py::arg("Eulerian")=std::vector<shared_ptr<CoefficientFunction>> ())
@@ -1276,7 +1283,7 @@ keep_files : bool
   m.def("Sym", [] (shared_ptr<CF> cf) { return SymmetricCF(cf); });
   m.def("Skew", [] (shared_ptr<CF> cf) { return SkewCF(cf); });
   m.def("Trace", [] (shared_ptr<CF> cf) { return TraceCF(cf); });
-  m.def("Id", [] (int dim, int order) { return IdentityCF(dim, order); }, py::arg("dim"), py::arg("tensor_order") = 2,
+  m.def("Id", [] (int dim) { return IdentityCF(dim); }, py::arg("dim"),
         "Identity matrix of given dimension");
   m.def("Id", [] (const Array<int>& dims) { return IdentityCF(dims); }, py::arg("dims"),
         "Identity tensor for a space with dimensions 'dims', ie. the result is of 'dims + dims'");
@@ -1521,7 +1528,7 @@ maxiter: int
                                      fm = Trans(simdfm);
                                    }
                                }
-                             catch (ExceptionNOSIMD e)
+                             catch (const ExceptionNOSIMD& e)
                                {
                                  for (auto i = r.begin(); i < r.end(); )
                                    {
@@ -1593,6 +1600,22 @@ value : double
 )raw_string"))
     .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
           "return parameter value")
+    .def("__iadd__", [](spParameterCF self, double val)
+    { self->SetValue(self->GetValue() + val); return self; })
+    .def("__isub__", [](spParameterCF self, double val)
+    { self->SetValue(self->GetValue() - val); return self; })
+    .def("__imul__", [](spParameterCF self, double val)
+    { self->SetValue(self->GetValue() * val); return self; })
+    .def("__itruediv__", [](spParameterCF self, double val)
+    { self->SetValue(self->GetValue() / val); return self; })
+    .def("__lt__", [](spParameterCF self, double val)
+    { return self->GetValue() < val; })
+    .def("__le__", [](spParameterCF self, double val)
+    { return self->GetValue() <= val; })
+    .def("__gt__", [](spParameterCF self, double val)
+    { return self->GetValue() > val; })
+    .def("__ge__", [](spParameterCF self, double val)
+    { return self->GetValue() >= val; })
     ;
 
   using spParCFC = shared_ptr<ParameterCoefficientFunction<Complex>>;
@@ -2424,7 +2447,7 @@ intrule : ngsolve.fem.Integrationrule
                                        return py::cast(mat);
                                      }
                                  }
-                               catch (LocalHeapOverflow ex)
+                               catch (const LocalHeapOverflow& ex)
                                  {
                                    heapsize *= 10;
                                  }
@@ -2468,7 +2491,7 @@ complex : bool
                                   self->CalcLinearizedElementMatrix (fe, trafo, vec, mat, lh);
                                   return py::cast(mat);
                                  }
-                               catch (LocalHeapOverflow ex)
+                               catch (const LocalHeapOverflow& ex)
                                  {
                                    heapsize *= 10;
                                  }
@@ -2509,7 +2532,7 @@ heapsize : int
                                   self->ApplyElementMatrix (fe, trafo, vec, vecy, 0, lh);
                                   return py::cast(vecy);
                                  }
-                               catch (LocalHeapOverflow ex)
+                               catch (const LocalHeapOverflow& ex)
                                  {
                                    heapsize *= 10;
                                  }
@@ -2700,7 +2723,7 @@ ir : ngsolve.fem.IntegrationRule
                        return py::cast(vec);
                      }
                  }
-               catch (LocalHeapOverflow ex)
+               catch (const LocalHeapOverflow& ex)
                  {
                    heapsize *= 10;
                  }

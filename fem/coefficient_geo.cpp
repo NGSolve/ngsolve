@@ -231,16 +231,16 @@ namespace ngfem
       if (consistent)
         throw Exception("consistent tangent does not support Compile(True) yet");
         
-        string miptype;
-        if(code.is_simd)
-          miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
-        else
-          miptype = "DimMappedIntegrationPoint<"+ToLiteral(D)+">*";
-        auto tv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetTV()");
-        auto tv = Var("tmp", index);
-        code.body += tv.Assign(tv_expr);
-        for( int i : Range(D))
-          code.body += Var(index,i).Assign(tv(i));
+      string miptype;
+      if(code.is_simd)
+        miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
+      else
+        miptype = "DimMappedIntegrationPoint<"+ToLiteral(D)+">*";
+      auto tv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetTV()");
+      auto tv = Var("tmp", index);
+      code.body += tv.Assign(tv_expr);
+      for( int i : Range(D))
+        code.body += Var(index,i).Assign(tv(i));
     }
 
       using CoefficientFunctionNoDerivative::Evaluate;
@@ -461,16 +461,14 @@ namespace ngfem
       if (dynamic_cast<const DiffShapeCF*>(var))                
         {
           int dim = dir->Dimension();
-          auto n = NormalVectorCF(dim);
-          n -> SetDimensions( Array<int> ( { dim, 1 } ) );
+          auto n = NormalVectorCF(dim) -> Reshape( Array<int> ( { dim, 1 } ) );
           auto Pn = n * TransposeCF(n);
 
           auto WG = const_cast<cl_WeingartenCF*>(this)->shared_from_this();
           auto dX = dir->Operator("Gradboundary");
           Array<shared_ptr<CoefficientFunction>> cflist(1);
           cflist[0] = TransposeCF(dir->Operator("hesseboundary"))*n;
-          auto Hn = MakeVectorialCoefficientFunction(move(cflist));
-          Hn->SetDimensions( Array({dim,dim}) );
+          auto Hn = MakeVectorialCoefficientFunction(move(cflist))->Reshape(dim, dim);
           
           return -Hn - TransposeCF(dX)*WG + WG*(2*SymmetricCF(Pn*dX)-dX);
         }

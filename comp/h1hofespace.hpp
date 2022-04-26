@@ -48,6 +48,7 @@ namespace ngcomp
   
     bool level_adapted_order; 
     bool nodalp2;
+    bool nodal;
     bool highest_order_dc;
   public:
 

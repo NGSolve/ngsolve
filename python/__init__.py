@@ -56,7 +56,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     NormalFacetFESpace, NormalFacetSurface, \
     FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
     NodalFESpace, VectorNodalFESpace, H1LumpingFESpace, \
-    NumberSpace, Periodic, Discontinuous, Hidden, MatrixValued, Compress, \
+    NumberSpace, Periodic, Discontinuous, Hidden, VectorValued, MatrixValued, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Interpolate, Variation, \
     NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ConvertOperator, ORDER_POLICY, VTKOutput, SetHeapSize, \
@@ -66,6 +66,12 @@ from .solve import BVP, CalcFlux, Draw, DrawFlux, \
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTrace, \
     PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize, printmaster
 from . import solvers
+
+
+try:
+    from netgen.occ import unit_square, unit_cube
+except:
+    pass
 
 CF = CoefficientFunction
 

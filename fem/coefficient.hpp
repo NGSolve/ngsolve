@@ -23,6 +23,7 @@ namespace ngfem
     bool is_complex = false;
     int spacedim = -1;  // needed for grad(x), grad(1), ...
     string description;
+    bool is_variable = false;  // variables cannot be optimized away (e.g. for differentiation)
   public:
     // default constructor for archive
     CoefficientFunction() = default;
@@ -245,6 +246,10 @@ namespace ngfem
     virtual string GetDescription () const;
     void SetDescription (string desc) { description = desc; }
 
+
+    bool IsVariable() const { return is_variable; }
+    void SetVariable (bool var = true) { is_variable = var; }
+    
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
     // returns Jacobi-matrix (possible as higher order tensor)
@@ -1728,8 +1733,10 @@ public:
   class DiffShapeCF : public ConstantCoefficientFunction
   {
   public:
-    DiffShapeCF() : ConstantCoefficientFunction(1) { }
-    Array<const CoefficientFunction*> Eulerian_gridfunctions;
+    DiffShapeCF() : ConstantCoefficientFunction(1) {
+      SetVariable();
+    }
+    Array<shared_ptr<CoefficientFunction>> Eulerian_gridfunctions;
   };
 
 
@@ -1842,7 +1849,7 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> operator/ (double val, shared_ptr<CoefficientFunction> c2);
 
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> IdentityCF (int dim, int order = 2);
+  shared_ptr<CoefficientFunction> IdentityCF (int dim);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> IdentityCF (FlatArray<int> dims);

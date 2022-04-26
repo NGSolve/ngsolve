@@ -319,11 +319,11 @@ namespace ngfem {
                                     bool skip_zeroes = true) const;
 
           virtual void NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatVector<AutoDiffDiff<1, bool>> values) const;
+                                      FlatVector<AutoDiffDiff<1, bool>> values) const override;
 
           virtual void NonZeroPattern(const class ProxyUserData &ud,
                                       FlatArray<FlatVector<AutoDiffDiff<1, bool>>> input,
-                                      FlatVector<AutoDiffDiff<1, bool>> values) const;
+                                      FlatVector<AutoDiffDiff<1, bool>> values) const override;
 
           using BASE::Evaluate;
 
@@ -341,7 +341,7 @@ namespace ngfem {
               return;
             }
 
-            ArrayMem<T, 1000> mem(max_mem);
+            ArrayMem<T, 1000> mem(max_mem * ir.Size());
             T *mem_pos = mem.Data();
             Array<FlatMatrix<T, ORD>> tmp_arrays(cfs.Size());
             for (size_t i: Range(cfs)) {

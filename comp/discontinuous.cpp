@@ -80,7 +80,9 @@ namespace ngcomp {
 
   void DiscontinuousFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
   {
-    throw Exception ("DiscontinuousFESpace :: GetDofNrs(NodeId) not implemented");
+    dnums.SetSize0();
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == int(vb))
+      dnums += IntRange(first_element_dof[ni.GetNr()], first_element_dof[ni.GetNr()+1]);
   }
   
   void DiscontinuousFESpace :: GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const

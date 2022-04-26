@@ -50,6 +50,8 @@ def op_counts(acf):
 
 
 def same(cf1, cf2, tol=1e-12):
+    if np.array(cf1(X0)).size != np.array(cf2(X0)).size:
+        return False
     if np.max(np.abs(np.array(cf1(X0)) - np.array(cf2(X0)))) < tol:
         return True
     else:
@@ -111,7 +113,7 @@ def test_blas(use_legacy_ops):
     op = fem.Einsum('ijkl->jilk', pFpF, **options)
     op_blas = pFpF.TensorTranspose((1, 0, 3, 2))
     assert same(op, op_blas)
-    assert check_optimization(op, options, {0: "with optimized node subtensor"})
+    assert check_optimization(op, options, {0: "with optimized node tensor-transpose [ 1, 0, 3, 2 ]"})
 
 
 def test_identity_optimizations():
@@ -131,28 +133,33 @@ def test_identity_optimizations():
     op_opt = pF
     assert same(op, op_opt)
     assert same(op, op_noopt)
-    check_optimization(op, {0: "EinsumCF ik,kj->ij with optimized node EinsumCF ij->ij"})
+    assert check_optimization(op, {0: "EinsumCF ik,kj->ij with optimized node EinsumCF ij->ij"})
 
     op = fem.Einsum('ijkl,kl->ij', II, pF, **options)
     op_noopt = fem.Einsum('ijkl,kl->ij', II, pF, optimize_identities=False, sparse_evaluation=False)
     op_opt = pF
     assert same(op, op_opt)
     assert same(op, op_noopt)
-    check_optimization(op, {0: "EinsumCF ik,kj->ij with optimized node EinsumCF ij->ij"})
+    assert check_optimization(op, {0: "EinsumCF ijkl,kl->ij with optimized node EinsumCF ij->ij"})
 
     op = fem.Einsum('ii,kj->kj', I, pF, **options)
     op_opt = 3.0 * pF
     assert same(op, op_opt)
-    check_optimization(op, {0: "EinsumCF ii,kj->kj with optimized node EinsumCF kj,i->kj"})
+    assert check_optimization(op, {0: "EinsumCF ii,kj->kj with optimized node EinsumCF kj,i->kj"})
 
     op = fem.Einsum('ijkl,jl->ik', II, pF, **options)
     op_opt = Trace(pF) * I
     assert same(op, op_opt)
-    check_optimization(op, {0: "EinsumCF ijkl,jl->ik with optimized node EinsumCF ll,ik->ik"})
+    assert check_optimization(op, {0: "EinsumCF ijkl,jl->ik with optimized node EinsumCF ll,ik->ik"})
 
     op = fem.Einsum('ii,ij->ij', Id(3), pF, **options)
     op_opt = pF
     assert same(op, op_opt)
+
+    op = fem.Einsum('ii->ii', pF, **options)
+    op_opt = pF
+    assert same(op, op_opt)
+    assert check_optimization(op, {0: "EinsumCF ii->ii with optimized node unary operation ' '"})
 
 
 def test_expansion():
@@ -160,13 +167,13 @@ def test_expansion():
     op1 = fem.Einsum('ik,kj->ij', 1 * pF, 2 * pF, **options)
     op2 = fem.Einsum('ij,jl->il', 3 * pF, op1, **options)
     op2_e = fem.Einsum('ij,jk,kl->il', 3 * pF, 1 * pF, 2 * pF, **options)
-    same(op2, op2_e)
+    assert same(op2, op2_e)
     op3 = fem.Einsum('ik,jl->ijkl', op1, op2, **options)
     op3_e = fem.Einsum('io,ok,jm,mn,nl->ijkl', 1 * pF, 2 * pF, 3 * pF, 1 * pF, 2 * pF, **options)
-    same(op3, op3_e)
+    assert same(op3, op3_e)
     op4 = fem.Einsum('ijkl,jl->ik', op3, op1, **options)
     op4_e = fem.Einsum('io,ok,jm,mn,nl,jp,pl->ik', 1 * pF, 2 * pF, 3 * pF, 1 * pF, 2 * pF, 1 * pF, 2 * pF, **options)
-    same(op4, op4_e)
+    assert same(op4, op4_e)
 
 
 def test_path_optimization():
@@ -224,6 +231,53 @@ def test_diff(options):
     assert same(DDPsi, PsiOpt.Diff(Cv).Diff(Cv).Compile())
 
 
+def test_tensor_diff():
+    Cv = fem.Einsum('ki,kj->ij', pF, pF)
+    b = fem.Einsum('ij,jk,kl->il', F, InvES(Cv), TransposeES(F))
+    assert same(Trace(Cv).Diff(Cv), fem.Einsum('ii', Cv).Diff(Cv))
+    assert same(Trace(b).Diff(Cv), fem.Einsum('ii', b).Diff(Cv))
+
+    assert same(Trace(pF).Diff(pF), TraceES(pF).Diff(pF))
+    assert same(Trace(b).Diff(Cv), TraceES(b).Diff(Cv))
+
+    assert same(Det(pF).Diff(pF), DetES(pF).Diff(pF))
+    assert same(Det(b).Diff(Cv), DetES(b).Diff(Cv))
+
+    assert same(Inv(pF).Diff(pF), InvES(pF).Diff(pF))
+    assert same(Inv(b).Diff(Cv), InvES(b).Diff(Cv))
+
+    assert same(pF.trans.Diff(pF), TransposeES(pF).Diff(pF))
+    assert same(b.trans.Diff(Cv), TransposeES(b).Diff(Cv))
+
+    A_extend = np.zeros((3, 3, 2, 2))
+    A_extend[1:, :-1, :, :] = np.einsum('ik,jl->ijkl', np.eye(2), np.eye(2))
+    cf_extend = CoefficientFunction(tuple(A_extend.flatten().tolist()), dims=A_extend.shape)
+    pF_extend = pF[:2, :2].ExtendDimension((3, 3), (1, 0))
+    pF_extend_ES = fem.Einsum('ijkl,kl->ij', cf_extend, pF[:2, :2])
+    assert same(pF_extend.Diff(pF), pF_extend_ES.Diff(pF))
+
+    b_extend = b[:2, :2].ExtendDimension((3, 3), (1, 0))
+    b_extend_ES = fem.Einsum('ijkl,kl->ij', cf_extend, b[:2, :2])
+    assert same(b_extend.Diff(Cv), b_extend_ES.Diff(Cv))
+
+    AA = fem.Einsum('ik,jl->ijkl', pF, b)
+    assert same(AA.TensorTranspose((2, 0, 3, 1)).Diff(pF), fem.Einsum("ijkl->kilj", AA).Diff(pF))
+
+
+def test_zero_detection():
+    def check_optimization(cf):
+        return str(cf).splitlines()[0].count("ZeroCF") == 1
+
+    AA = fem.Einsum('ik,jl->ijkl', pF, 0 * pF)
+    assert same(AA, 0 * fem.Einsum('ik,jl->ijkl', pF, pF))
+    assert check_optimization(AA)
+
+    # DiffJacobi does its own "Zero optimization"
+    AA = fem.Einsum('ik,jl->ijkl', pF, pF).Diff((2*pF).MakeVariable())
+    assert np.max(np.abs(np.array(AA.dims) - [3] * 6)) < 1e-12
+    assert str(AA) == "ZeroCoefficientFunction"
+
+
 if __name__ == "__main__":
     test_blas(False)
     test_blas(True)
@@ -233,3 +287,4 @@ if __name__ == "__main__":
     test_diff({"expand_einsum": True,
                "optimize_path": True,
                "optimize_identities": True})
+    test_tensor_diff()

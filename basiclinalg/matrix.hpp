@@ -502,7 +502,7 @@ namespace ngbla
     {
       CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2);
     }
-
+    
     Matrix (initializer_list<initializer_list<T>> llist) 
       : FlatMatrix<T,ORD> (0,0,nullptr)
     {
@@ -650,6 +650,17 @@ namespace ngbla
           r++;
         }
     }
+
+    template <typename ...TTUP>
+    Mat (tuple<TTUP...> tup)
+    {
+      constexpr int s = tuple_size<decltype(tup)>();
+      Iterate<s> ([this, tup] (auto i) { this->data[i] = get<i>(tup); });
+    }
+
+    template <class... T2>
+    Mat (T v0, T v1, T2... rest)
+      : Mat(tuple(v0, v1, rest...)) { } 
 
     /// assign values
     template<typename TB>
@@ -2080,9 +2091,35 @@ namespace ngbla
     }
   };
 
+  
+  template <typename T>
+  struct trivtrans { static constexpr bool value = false; };
+  template<> struct trivtrans<double> { static constexpr bool value = true; };
+  template<> struct trivtrans<Complex> { static constexpr bool value = true; };
+  template <int D, typename T>
+  struct trivtrans<AutoDiff<D,T>> { static constexpr bool value = true; };
+  template <int D, typename T>
+  struct trivtrans<AutoDiffDiff<D,T>> { static constexpr bool value = true; };
+  template <int D>
+  struct trivtrans<SIMD<double,D>> { static constexpr bool value = true; };
+
+  
+  template <typename T>
+  constexpr bool IsTrivialTranspose ()
+  {
+    return trivtrans<T>::value;
+  }
 
 
+  
+  
+  constexpr ORDERING operator! (ORDERING ordering)
+  {
+    return ordering == ColMajor ?  RowMajor : ColMajor;
+  }
 
+
+  /*
   INLINE
   FlatMatrix<double,ColMajor> Trans (FlatMatrix<double,RowMajor> mat)
   {
@@ -2106,10 +2143,24 @@ namespace ngbla
   {
     return FlatMatrix<Complex,RowMajor> (mat.Width(), mat.Height(), mat.Data());
   }
+  */
+  
 
+  template <typename T, ORDERING ord,
+            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
+  INLINE auto Trans (FlatMatrix<T,ord> mat)
+  {
+    return FlatMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Data());
+  }
 
+  template <typename T, ORDERING ord,
+            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
+  INLINE auto Trans (const Matrix<T,ord> & mat)
+  {
+    return FlatMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Data());
+  }
 
-
+  /*
   INLINE 
   const SliceMatrix<double> Trans (SliceMatrix<double,ColMajor> mat)
   {
@@ -2133,11 +2184,22 @@ namespace ngbla
   {
     return SliceMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
+  */
+
+  template <typename T, ORDERING ord,
+            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
+  INLINE const SliceMatrix<T,!ord> Trans (SliceMatrix<T,ord> mat)
+  {
+    return SliceMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
+  }
 
   
+
+  /*
   // only for scalar types
   // no Mat - entries which would also transposition of the small blocks
-  template <typename T>
+  template <typename T,
+            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
   INLINE const BareSliceMatrix<T,ColMajor> Trans (BareSliceMatrix<T,RowMajor> mat)
   {
     return SliceMatrix<T,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
@@ -2148,8 +2210,18 @@ namespace ngbla
   {
     return SliceMatrix<T,RowMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
+  */
 
 
+  template <typename T, ORDERING ord,
+            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
+  INLINE const BareSliceMatrix<T,!ord> Trans (BareSliceMatrix<T,ord> mat)
+  {
+    return SliceMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
+  }
+
+
+  
   
   template <int H, int DIST>
   INLINE const FlatMatrixFixWidth<H,double,DIST> Trans (FlatMatrixFixHeight<H,double,DIST> mat)
@@ -2317,6 +2389,26 @@ namespace ngbla
       });
     return res;
   }
+
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> & operator+= (Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
+  {
+    Iterate<H*W> ([&] (auto i) {
+        ma(i.value) += mb(i.value);
+      });
+    return ma;
+  }
+
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> & operator-= (Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
+  {
+    Iterate<H*W> ([&] (auto i) {
+        ma(i.value) -= mb(i.value);
+      });
+    return ma;
+  }
+
+  
 
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator* (T scal, const Mat<H,W,T> & mat)

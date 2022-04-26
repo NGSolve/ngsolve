@@ -148,13 +148,15 @@ namespace ngfem
   template <typename T>
   Mat<2,2,T> DyadProd(Vec<2,T> a, Vec<2,T> b)
   {
-    return Matrix<T>({{a(0)*b(0), a(0)*b(1)}, {a(1)*b(0), a(1)*b(1)}} );
+    // return Matrix<T>({{a(0)*b(0), a(0)*b(1)}, {a(1)*b(0), a(1)*b(1)}} );
+    return { a(0)*b(0), a(0)*b(1),  a(1)*b(0), a(1)*b(1) };
   }
 
   template <typename T>
   Mat<3,3,T> DyadProd(Vec<3,T> a, Vec<3,T> b)
   {
-    return Matrix<T>( {{a(0)*b(0), a(0)*b(1), a(0)*b(2)}, {a(1)*b(0), a(1)*b(1), a(1)*b(2)}, {a(2)*b(0), a(2)*b(1), a(2)*b(2)}} );
+    // return Matrix<T>( {{a(0)*b(0), a(0)*b(1), a(0)*b(2)}, {a(1)*b(0), a(1)*b(1), a(1)*b(2)}, {a(2)*b(0), a(2)*b(1), a(2)*b(2)}} );
+    return { a(0)*b(0), a(0)*b(1), a(0)*b(2),   a(1)*b(0), a(1)*b(1), a(1)*b(2),   a(2)*b(0), a(2)*b(1), a(2)*b(2) };
   }
 
   template <ELEMENT_TYPE ET> class HDivDivFE;

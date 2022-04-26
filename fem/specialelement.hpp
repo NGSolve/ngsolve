@@ -67,7 +67,8 @@ namespace ngfem
 			   LocalHeap& lh) const;
 
     virtual void CalcElementMatrix(FlatMatrix<Complex> elmat,
-			   LocalHeap & lh) const
+                                   LocalHeap & lh) const;
+    /*
     {
       cerr << "SpecialElement::CalcElementMatrix(complex) called" << endl;
       exit(10);
@@ -76,12 +77,14 @@ namespace ngfem
       elmat.AssignMemory (relmat.Height(), relmat.Width(), lh);
       elmat = relmat;
     }
-
+    */
+    
     virtual void CalcElementVector(FlatVector<double> elvec,
 			   LocalHeap & lh) const;
 
     virtual void CalcElementVector(FlatVector<Complex> elvec,
-			   LocalHeap & lh) const
+                                   LocalHeap & lh) const;
+    /*
     {
       cerr << "SpecialElement::CalcElementMatrix(complex) called" << endl;
       exit(10);
@@ -90,7 +93,8 @@ namespace ngfem
       elvec.AssignMemory (relvec.Height(),lh);
       elvec = relvec;
     }
-
+    */
+    
     virtual void CalcLinearizedElementMatrix(FlatVector<double> elx,
                                              FlatMatrix<double> elmat,
                                              LocalHeap& lh) const

@@ -1328,6 +1328,11 @@ namespace ngla
       return vec;
       */
     }
+
+    AutoVector CreateVector() const
+    {
+      return ve->CreateVector();
+    }
     
     void AssignTo (double s, BaseVector & v2) const
     { ve->AssignTo(s,v2); }

@@ -13,6 +13,33 @@ constexpr bool reg32 = false;
 
 namespace ngbla
 {
+
+  // BLAS1 operations
+  
+  void CopyVector (FlatVector<double> src, FlatVector<double> dest)
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = src[i];
+  }
+  
+  void CopyVector (SliceVector<double> src, SliceVector<double> dest)
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = src[i];
+  }
+
+  void AddVector (double alpha, FlatVector<double> src, FlatVector<double> dest)
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] += alpha * src[i];
+  }
+  
+  void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest)
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] += alpha * src[i];
+  }
+
   
 
   int dgemm(char *transa, char *transb, integer *m, integer *
@@ -134,7 +161,6 @@ namespace ngbla
 
   NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    // constexpr int SW = SIMD<double>::Size();
     size_t h = y.Size();
     size_t w = x.Size();
     size_t i = 0;
@@ -142,18 +168,22 @@ namespace ngbla
     double * pa = &a(i,0);
     for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
       {
-        // SIMD<double,4> sum1, sum2;
-        // tie(sum1, sum2) = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        /*
         auto [sum1, sum2] = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
         sum1.Store(&y(i));        
         sum2.Store(&y(i+4));        
+        */
+        SIMD<double,8> sum = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        sum.Store(&y(i));
       }
     
     if (i+4 <= h)
       {
-        // SIMD<double,4> sum;
-        // tie(sum) = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        /*
         auto [sum] = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        sum.Store(&y(i));
+        */
+        SIMD<double,4> sum = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
         sum.Store(&y(i));
         i += 4;
         pa += 4*a.Dist();
@@ -179,21 +209,50 @@ namespace ngbla
 
   NGS_DLL_HEADER void MultAddMatVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    y += s * a.AddSize(y.Size(),x.Size()) * x;
+    // y += s * a.AddSize(y.Size(),x.Size()) * x;
+
+    size_t h = y.Size();
+    size_t w = x.Size();
+    size_t i = 0;
+
+    double * pa = a.Data();
+    for ( ; i+8 <= h; i+=8, pa += 8*a.Dist())
+      {
+        SIMD<double,8> sum = MatKernelScalAB<8,1> (w, pa, a.Dist(), &x(0), 0);
+        sum = SIMD<double,8>(&y(i)) + s*sum;
+        sum.Store(&y(i));
+      }
+    
+    if (i+4 <= h)
+      {
+        SIMD<double,4> sum = MatKernelScalAB<4,1> (w, pa, a.Dist(), &x(0), 0);
+        sum = SIMD<double,4>(&y(i)) + s*sum;        
+        sum.Store(&y(i));
+        i += 4;
+        pa += 4*a.Dist();
+      }
+
+    if (i+2 <= h)
+      {
+        auto scal = MatKernelScalAB<2,1> (w, pa, a.Dist(), &x(0), 0);
+        SIMD<double,2> sum(get<0>(scal), get<1>(scal));
+        sum = SIMD<double,2>(&y(i)) + s*sum;                
+        sum.Store(&y(i));
+        i += 2;
+        pa += 2*a.Dist();
+      }
+
+    if (i+1 <= h)
+      {
+        auto scal = MatKernelScalAB<1,1> (w, pa, a.Dist(), &x(0), 0);
+        y(i) += s*get<0>(scal);
+      }
+
+
+    
   }
 
   pmult_matvec dispatch_matvec[];
-  /*=
-    {
-      &MultMatVecShort<0>, &MultMatVecShort<1>, &MultMatVecShort<2>, &MultMatVecShort<3>,
-      &MultMatVecShort<4>, &MultMatVecShort<5>, &MultMatVecShort<6>, &MultMatVecShort<7>,
-      &MultMatVecShort<8>, &MultMatVecShort<9>, &MultMatVecShort<10>, &MultMatVecShort<11>,
-      &MultMatVecShort<12>, &MultMatVecShort<13>, &MultMatVecShort<14>, &MultMatVecShort<15>,
-      &MultMatVecShort<16>, &MultMatVecShort<17>, &MultMatVecShort<18>, &MultMatVecShort<19>,
-      &MultMatVecShort<20>, &MultMatVecShort<21>, &MultMatVecShort<22>, &MultMatVecShort<23>,
-      &MultMatVecShort<24>
-    };
-  */
   
   auto init_matvec = [] ()
   {
@@ -202,25 +261,9 @@ namespace ngbla
     dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
     return 1;
   }();
-  
-  
-  /*
-  template <template <int> typename FUNC, typename T>
-  void InitDispatchArray (T * ap)
-  {
-    cout << "array size = " << std::size(*ap) << endl;
-  }
-  
-  auto myinit = [] ()
-  {
-    cout << "init" << endl;
-    InitDispatchArray<MultMatVecShort> (dispatch_matvec);
-    return 0;
-  };
-  int dummy_myinit = myinit();
-  */
-  
 
+
+  /*
  pmultadd_matvec dispatch_addmatvec[25] =
     {
       &MultAddMatVecShort<0>, &MultAddMatVecShort<1>, &MultAddMatVecShort<2>, &MultAddMatVecShort<3>,
@@ -231,6 +274,19 @@ namespace ngbla
       &MultAddMatVecShort<20>, &MultAddMatVecShort<21>, &MultAddMatVecShort<22>, &MultAddMatVecShort<23>,
       &MultAddMatVecShort<24>
     };
+  */
+  
+  pmultadd_matvec dispatch_addmatvec[];
+  
+  auto init_addmatvec = [] ()
+  {
+    Iterate<std::size(dispatch_addmatvec)-1> ([&] (auto i)
+    { dispatch_addmatvec[i] = &MultAddMatVecShort<i>; });
+    dispatch_addmatvec[std::size(dispatch_addmatvec)-1] = &MultAddMatVec_intern;
+    return 1;
+  }();
+
+  
 
   
 
@@ -1351,7 +1407,7 @@ namespace ngbla
   pfunc_abt dispatch_addabt[];
   auto init_addabt = [] ()
   {
-    Iterate<std::size(dispatch_abt)> ([&] (auto i)
+    Iterate<std::size(dispatch_addabt)> ([&] (auto i)
     { dispatch_addabt[i] = &MultABtSmallWA<i,ADD>; });
     // dispatch_matvec[std::size(dispatch_matvec)-1] = &MultMatVec_intern;
     return 1;
@@ -3986,6 +4042,28 @@ namespace ngbla
   }
 
 #endif  // ifdef AVX512/AVX/SSE
+
+
+
+
+  // externals from ng_blas
+  void LapackMultAdd (SliceMatrix<double> a, 
+                             SliceMatrix<Complex,ColMajor> b, 
+                             Complex alpha,
+                             SliceMatrix<Complex> c,
+                             Complex beta)
+  {
+    if (beta == 0.0)
+      c = alpha * (a * b);
+    else
+      {
+        c *= beta;
+        c += alpha * (a * b);
+      }
+    // BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta);
+  }
+
+
   
 }
 
