@@ -153,6 +153,8 @@ namespace ngbla
       return *this;
     }
 
+    FlatVector<T> View() const { return FlatVector<T>(*this); }     
+    
     /*  // prevents bla pattern matching
     template<typename TB>
     INLINE const FlatVector & operator+= (const Expr<TB> & v) const
@@ -315,6 +317,8 @@ namespace ngbla
     }
     */
 
+    auto View() const { return FlatVector(*this); }         
+    
     /// assign memory for vector on local heap
     void AssignMemory (size_t as, LocalHeap & lh) 
     {
@@ -890,6 +894,8 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatVec(const_cast<Vec&>(*this)); } 
+    
     /// access vector
     INLINE TELEM & operator() (size_t i) 
     {
@@ -1152,6 +1158,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatVec(*this); }         
+
+    
     template<typename TB>
     INLINE const FlatVec & operator+= (const Expr<TB> & v) const
     {
@@ -1257,6 +1266,8 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatSliceVec(*this); } 
+    
     template<typename TB>
     INLINE auto operator+= (const Expr<TB> & v) const
     {
@@ -1401,6 +1412,7 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return SliceVector(*this); } 
 
     template<typename TB>
     INLINE const SliceVector & operator+= (const Expr<TB> & v) const
@@ -1553,6 +1565,8 @@ namespace ngbla
 	data[i] = v(i);
       return *this;
     }
+
+    auto View() const { return BareVector(*this); } 
     
     FlatVector<T> AddSize(size_t size) const
     {
@@ -1616,6 +1630,8 @@ namespace ngbla
     size_t Dist () const { return dist; }
     T* Data() const { return data; }
 
+    auto View() const { return BareSliceVector(*this); }
+    
     [[deprecated("Use Range(0,size) instead!")]]                
     SliceVector<T> AddSize(size_t size) const
     {
@@ -2022,7 +2038,6 @@ namespace ngbla
   }
   
 
-  
 }
 
 namespace ngstd
