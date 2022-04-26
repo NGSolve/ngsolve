@@ -131,6 +131,10 @@ namespace ngbla
       return *this;
     }
 
+
+    auto View() const { return FlatMatrix(*this); }     
+    
+    
     /// copy size and pointers
     INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
     {
@@ -335,6 +339,8 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatMatrix(*this); }     
+    
     /// copy size and pointers
     INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
     {
@@ -689,6 +695,8 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return *this; } 
+    
     INLINE T* Data() noexcept { return &data[0]; }
 
     /// linear access
@@ -975,6 +983,8 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatMatrixFixWidth(*this); } 
+    
     /// copy size and pointers
     INLINE const FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) throw()
     {
@@ -1509,6 +1519,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return SliceMatrix(*this); }     
+
+    
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
@@ -1649,6 +1662,8 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return SliceMatrix(*this); }     
+    
     /// access operator
     TELEM & operator() (size_t i, size_t j) const
     {
@@ -1784,6 +1799,9 @@ namespace ngbla
     
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
+    auto View() const { return BareSliceMatrix(*this); } 
+
+    
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
@@ -1924,6 +1942,8 @@ namespace ngbla
     
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
+    auto View() const { return BareSliceMatrix(*this); } 
+    
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
@@ -2288,6 +2308,7 @@ namespace ngbla
     /// nothing to do 
     Id () { ; }
 
+    auto View() const { return Id(); } 
     ///
     double operator() (int i) const
     {
@@ -2321,7 +2342,7 @@ namespace ngbla
     { cerr << "Identity, linear access" << endl; return 0; }
 
     double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
-
+    auto View() const { return Identity(size); } 
     int Height () const { return size; }
     int Width () const { return size; }
   };
