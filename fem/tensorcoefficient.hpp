@@ -16,6 +16,9 @@ namespace ngfem {
         using namespace ngcore;
         using namespace ngstd;
         using namespace ngbla;
+
+        class NGS_DLL_HEADER OutOfIndices : public Exception
+        { public: using Exception::Exception; };
         
         struct Index {
             char symbol;
