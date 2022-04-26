@@ -1407,6 +1407,8 @@ namespace ngbla
       MatExpr<SubMatrixExpr<TA> >::operator= (m);
       return *this;
     }
+
+    auto View() const { return SubMatrixExpr(a, first_row, first_col, height, width); }
   };
 
 
