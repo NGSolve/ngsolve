@@ -103,7 +103,7 @@ namespace ngfem {
             new_char = 'a';
             while (existing.size() < target_size) {
                 if (new_char > 'z')
-                    throw NG_EXCEPTION("Did not find any unused symbol in A-Z and a-z. Consider using 'optimize_path' and disabling 'einsum_expansion' at some point.");
+                    throw OutOfIndices("Did not find any unused symbol in A-Z and a-z. Consider using 'optimize_path' and disabling 'einsum_expansion' at some point.");
                 if (find(begin(existing), end(existing), new_char) != end(existing))
                     ++new_char;
                 else
@@ -1295,9 +1295,9 @@ namespace ngfem {
               //  identified in Compile
               return dres;
           }
-          catch (const Exception& e)
+          catch (const OutOfIndices& e)
           {
-            if (!options.at("optimize_path"))
+            if (options.find("optimize_path") == options.end() || !options.at("optimize_path"))
             {
               cout << "Caught exception during DiffJacobi:\n"
                    << e.What()
@@ -1306,7 +1306,7 @@ namespace ngfem {
               auto opts = options;
               opts["optimize_path"] = true;
               opts["expand_einsum"] = false;
-              return Optimize(options)->DiffJacobi(var);
+              return Optimize(opts)->DiffJacobi(var);
             }
             throw e;
           }
