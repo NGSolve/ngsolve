@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from netgen.occ import *
+from netgen.csg import unit_cube
 from ngsolve import *
 import numpy as np
 import pytest
