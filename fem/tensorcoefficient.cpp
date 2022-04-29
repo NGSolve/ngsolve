@@ -970,6 +970,7 @@ namespace ngfem {
 
           if (detected_zero_input)
           {
+            is_zero = true;
             const auto index_sets = compute_multi_indices(expanded_index_signature, expanded_inputs);
             auto dims = index_dimensions(index_sets[expanded_inputs.Size()]);
             node = ZeroCF(dims);
