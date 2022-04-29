@@ -5,8 +5,12 @@
 /*********************************************************************/
 
 #include <cmath>
+#include <set>
+
+#ifdef NGS_PYTHON
 #include "../ngstd/ngstd.hpp"
 #include "../ngstd/python_ngstd.hpp"
+#endif // NGS_PYTHON
 
 #include "tensorcoefficient.hpp"
 #include "coefficient_impl.hpp"
@@ -721,6 +725,10 @@ namespace ngfem {
           options["optimize_path"] = false;
           options["expand_einsum"] = false;
 
+#ifndef NGS_PYTHON
+          throw Exception("Function not available");
+#else // NGS_PYTHON
+
           namespace py = pybind11;
 
           auto np = py::module::import("numpy");
@@ -783,6 +791,7 @@ namespace ngfem {
             tp_inputs.Append(EinsumCF(new_signature, new_inputs, options));
           }
           return tp_inputs.Last();
+#endif // NGS_PYTHON
         }
 
         LeviCivitaCoefficientFunction::LeviCivitaCoefficientFunction(int adim) : BASE(1), dim{adim}
