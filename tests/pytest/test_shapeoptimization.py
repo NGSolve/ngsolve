@@ -134,6 +134,7 @@ def test_shapeopt_2d():
 
 
     ### Basic
+    uD = X[0]
     G0 = uD * dx
     G  = uD * Det(F) * dx
     Test(G0, G, gfX, X, F)
