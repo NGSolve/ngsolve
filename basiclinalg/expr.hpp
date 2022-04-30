@@ -998,10 +998,10 @@ namespace ngbla
   };
 
   template <typename TA, typename TB>
-  INLINE SumExpr<TA, TB>
+  INLINE auto
   operator+ (const Expr<TA> & a, const Expr<TB> & b)
   {
-    return SumExpr<TA, TB> (a.View(), b.View());
+    return SumExpr(a.View(), b.View());
   }
 
 
@@ -1036,10 +1036,9 @@ namespace ngbla
 
 
   template <typename TA, typename TB>
-  INLINE SubExpr<TA, TB>
-  operator- (const Expr<TA> & a, const Expr<TB> & b)
+  inline auto operator- (const Expr<TA> & a, const Expr<TB> & b)
   {
-    return SubExpr<TA, TB> (a.View(), b.View());
+    return SubExpr(a.View(), b.View());
   }
 
 
