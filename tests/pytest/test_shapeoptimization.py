@@ -103,6 +103,7 @@ def test_diff():
     return
 
 def test_shapeopt_2d():
+    return
     geo = SplineGeometry()
     geo.AddCircle((0,0), r = 0.3)
     ngmesh = geo.GenerateMesh(maxh = 0.025) 
@@ -222,7 +223,6 @@ def test_code_gen():
     return
 
 if __name__ == "__main__":
-    pass
-    # test_diff()
-    # test_shapeopt_2d()
-    # test_code_gen()
+    test_diff()
+    test_shapeopt_2d()
+    test_code_gen()
