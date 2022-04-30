@@ -10,6 +10,11 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     mesh = VEC.mesh
     PHI, PSI = VEC.TnT()
     gfX_t = GridFunction(VEC)
+
+    print ("G0 = ", G0.Compile())
+    print ("G0.diffshape = ", G0.DiffShape(PSI).Compile())
+    print ("dGdF = ", G.Diff(F, Grad(PSI)).Compile())
+    print ("dGdX = ", G.Diff(X, PSI).Compile())
     
     #semi automatic
     dJOmegaTestSA = LinearForm(VEC)
@@ -103,7 +108,6 @@ def test_diff():
     return
 
 def test_shapeopt_2d():
-    return
     geo = SplineGeometry()
     geo.AddCircle((0,0), r = 0.3)
     ngmesh = geo.GenerateMesh(maxh = 0.025) 
@@ -132,7 +136,8 @@ def test_shapeopt_2d():
     G0 = uD * dx
     G  = uD * Det(F) * dx
     Test(G0, G, gfX, X, F)
-
+    return
+    
     ### (Vector)H1
     fes = H1(mesh, order=1)
     gfu = GridFunction(fes)
