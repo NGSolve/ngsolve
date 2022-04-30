@@ -77,8 +77,8 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
         delta1[1] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestFA.vec,gfX.vec))
         delta2[0] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestSA.vec,gfX.vec) - t**2/2*InnerProduct(tmp1,gfX.vec))
         delta2[1] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestFA.vec,gfX.vec) - t**2/2*InnerProduct(tmp2,gfX.vec))
-        #print( " delta1 = ", delta1)
-        #print( " delta2 = ", delta2)
+        print( " delta1 = ", delta1)
+        print( " delta2 = ", delta2)
 
         if i > 0:
             #print( "--------------------------delta1Prev / delta1 = ",round(delta1Prev[0] / delta1[0],3),round(delta1Prev[1] / delta1[1],3))
