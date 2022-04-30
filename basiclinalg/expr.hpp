@@ -990,7 +990,6 @@ namespace ngbla
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
 
-    // auto View() const { return SumExpr(a, b); }
     auto View() const { return *this; } 
     
     void Dump (ostream & ost) const
@@ -1063,7 +1062,7 @@ namespace ngbla
 
     auto operator() (size_t i) const { return -a(i); }
     auto operator() (size_t i, size_t j) const { return -a(i,j); }
-    auto View() const { return MinusExpr(a); }     
+    auto View() const { return *this; }     
     size_t Height() const { return a.Height(); }
     size_t Width() const { return a.Width(); }
     INLINE const TA & A() const { return a; }
@@ -1074,7 +1073,7 @@ namespace ngbla
   inline MinusExpr<TA>
   operator- (const Expr<TA> & a)
   {
-    return MinusExpr<TA> (a.View());
+    return MinusExpr (a.View());
   }
 
 
@@ -1104,7 +1103,7 @@ namespace ngbla
   template <typename TA, typename TB>
   inline auto pw_mult (const Expr<TA> & a, const Expr<TB> & b)
   {
-    return PW_Mult_Expr<TA, TB> (a.View(), b.View());
+    return PW_Mult_Expr (a.View(), b.View());
   }
 
 
@@ -1132,7 +1131,7 @@ namespace ngbla
   template <typename TA>
   inline auto pw_inv (const Expr<TA> & a)
   {
-    return PW_Inv_Expr<TA> (a.View());
+    return PW_Inv_Expr (a.View());
   }
 
 
@@ -1171,34 +1170,31 @@ namespace ngbla
   template <typename TA>
   inline auto operator* (double b, const Expr<TA> & a)
   {
-    return ScaleExpr<TA, double> (a.View(), b);
+    return ScaleExpr (a.View(), b);
   }
 
   template <typename TA>
-  INLINE ScaleExpr<TA, Complex> 
-  operator* (Complex b, const Expr<TA> & a)
+  INLINE auto operator* (Complex b, const Expr<TA> & a)
   {
-    return ScaleExpr<TA, Complex> (a.View(), b);
+    return ScaleExpr (a.View(), b);
   }
   
   template <int D, typename TAD, typename TA>
   INLINE auto operator* (const AutoDiff<D,TAD> & b, const Expr<TA> & a)
   {
-    return ScaleExpr<TA, AutoDiff<D,TAD> > (a.View(), b );
+    return ScaleExpr (a.View(), b );
   }
 
   template <typename TA>
-  INLINE ScaleExpr<TA, SIMD<double> >  
-  operator* (SIMD<double> b, const Expr<TA> & a)
+  INLINE auto operator* (SIMD<double> b, const Expr<TA> & a)
   {
-    return ScaleExpr<TA, SIMD<double>> (a.View(), b);
+    return ScaleExpr (a.View(), b);
   }
   
   template <typename TA>
-  INLINE ScaleExpr<TA, SIMD<Complex> >  
-  operator* (SIMD<Complex> b, const Expr<TA> & a)
+  INLINE auto operator* (SIMD<Complex> b, const Expr<TA> & a)
   {
-    return ScaleExpr<TA, SIMD<Complex>> (a.View(), b);
+    return ScaleExpr (a.View(), b);
   }
   
 
@@ -1238,7 +1234,7 @@ namespace ngbla
       return sum;
     }
 
-    auto View() const { return MultExpr(a, b); } 
+    auto View() const { return *this; } 
     INLINE const TA & A() const { return a; }
     INLINE const TB & B() const { return b; }
     INLINE size_t Height() const { return a.Height(); }
@@ -1269,10 +1265,9 @@ namespace ngbla
 
 
   template <typename TA, typename TB>
-  INLINE MultExpr<TA, TB>
-  operator* (const Expr<TA> & a, const Expr<TB> & b)
+  INLINE auto operator* (const Expr<TA> & a, const Expr<TB> & b)
   {
-    return MultExpr<TA, TB> (a.View(), b.View());
+    return MultExpr (a.View(), b.View());
   }
 
 
@@ -1313,7 +1308,7 @@ namespace ngbla
   template <typename TA>
   inline auto Trans (const Expr<TA> & a)
   {
-    return TransExpr<TA> (a.View());
+    return TransExpr (a.View());
   }
 
   /* ************************* Real/Imag ************************ */
@@ -1340,9 +1335,9 @@ namespace ngbla
   };
 
   template <typename TA>
-  inline RealExpr<TA> Real(const Expr<TA> & a)
+  inline auto Real(const Expr<TA> & a)
   {
-    return RealExpr<TA> (a.View());
+    return RealExpr(a.View());
   }
 
 
@@ -1362,9 +1357,9 @@ namespace ngbla
   };
 
   template <typename TA>
-  inline ImagExpr<TA> Imag(const Expr<TA> & a)
+  inline auto Imag(const Expr<TA> & a)
   {
-    return ImagExpr<TA> (a.View());
+    return ImagExpr (a.View());
   }
 
 
@@ -1554,10 +1549,9 @@ namespace ngbla
 
   /// Conjugate
   template <typename TA>
-  INLINE ConjExpr<TA>
-  Conj (const Expr<TA> & a)
+  INLINE auto Conj (const Expr<TA> & a)
   {
-    return ConjExpr<TA> (a.View()); // static_cast <const TA&> (a));
+    return ConjExpr (a.View()); 
   }
 
   template<int D, typename TAD>
