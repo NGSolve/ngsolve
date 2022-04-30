@@ -415,8 +415,6 @@ namespace ngcomp
       for (int i = 0; i < ir.Size(); i++)
         mir[i].Compute();
     }
-
-
   };
 
 
@@ -1366,7 +1364,6 @@ namespace ngcomp
 	    continue;
 	  }
   }
-
   
 
   void MeshAccess :: 

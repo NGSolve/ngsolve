@@ -770,6 +770,7 @@ namespace ngcomp
     { ednums = ArrayObject (GetElement(ElementId(BND,selnr)).edges); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
+    [[deprecated("Use GetElEdges(ElementId) instead, orient is deprecated!")]]                        
     void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the faces of an element
@@ -793,6 +794,7 @@ namespace ngcomp
     int GetSElFace (int selnr) const;
 
     // returns face number and orientation of surface element
+    [[deprecated("orientation is deprecated!")]]
     void GetSElFace (int selnr, int & fnum, int & orient) const;
 
     /// returns vertex numbers of face
