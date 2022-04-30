@@ -39,6 +39,7 @@ namespace ngcomp
   }
   */
 
+  
   RaviartThomasFESpace :: RaviartThomasFESpace (shared_ptr<MeshAccess> ama, const Flags& flags, bool parseflags)
   : FESpace (ama, flags)
   {
@@ -140,20 +141,23 @@ namespace ngcomp
   
   void RaviartThomasFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
-    if(ei.VB()==VOL)
+    if(ei.VB()==VOL || ei.VB()==BND)
       {
+        /*
 	Array<int> forient(6);
-	
 	if (ma->GetDimension() == 2)
 	  ma->GetElEdges (ei.Nr(), dnums, forient);
 	else
 	  ma->GetElFaces (ei.Nr(), dnums, forient);
-	
+        */
+        dnums = ma->GetElement(ei).Facets();
+        
 	if (!DefinedOn (ei))
 	  dnums = -1;
         return;
       }
 
+    /*
     if(ei.VB()==BND)
       {
 	if (ma->GetDimension() == 2)
@@ -161,14 +165,14 @@ namespace ngcomp
 	    int eoa[12];
 	    Array<int> eorient(12, eoa);
 	    ma->GetSElEdges (ei.Nr(), dnums, eorient);
-	    
 	    if (!DefinedOn(ei))
 	      dnums = -1;
             
           }
     // (*testout) << "el = " << elnr << ", dofs = " << dnums << endl;
       }
-  
+    */
+    
     if(ei.VB()==BBND || ei.VB()==BBBND)
       {
         dnums.SetSize0();

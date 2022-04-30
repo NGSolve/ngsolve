@@ -496,8 +496,10 @@ int NGS_LoadPDE (ClientData clientData,
     {
       try
 	{
+#ifdef PARALLEL_GL
 	  MyMPI_SendCmd ("ngs_pdefile", MPI_COMM_WORLD);
-
+#endif
+          
 	  pde = make_shared<ngsolve::PDE>();
           pde->SetTclInterpreter (interp);
 
@@ -578,7 +580,7 @@ int NGS_LoadPy (ClientData clientData,
 	  cout << "(should) load python file '" << filename << "'" << endl;
 
 #ifdef NGS_PYTHON
-#ifdef PARALLEL
+#ifdef PARALLEL_GL
 	  stringstream buf;
 	  buf << "ngs_py " << ifstream(filename).rdbuf();
 	  MyMPI_SendCmd (buf.str().c_str(), MPI_COMM_WORLD);
@@ -692,8 +694,10 @@ int NGS_SolvePDE (ClientData clientData,
   cout << "Solve PDE" << endl;
   Ng_SetRunning (1);
 
+#ifdef PARALLEL_GL
   MyMPI_SendCmd ("ngs_solvepde", MPI_COMM_WORLD);
-
+#endif
+  
   RunParallel (SolveBVP, NULL);
 
   return NG_TCL_OK;
