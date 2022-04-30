@@ -1414,7 +1414,8 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return SliceVector(*this); } 
+    // auto View() const { return SliceVector(*this); }
+    auto View() const { return *this; }
 
     template<typename TB>
     INLINE const SliceVector & operator+= (const Expr<TB> & v) const
@@ -1743,6 +1744,7 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return *this; }
 
     template<typename TB>
     INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
