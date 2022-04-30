@@ -222,6 +222,7 @@ def test_code_gen():
     return
 
 if __name__ == "__main__":
+    pass
     # test_diff()
     # test_shapeopt_2d()
     # test_code_gen()
