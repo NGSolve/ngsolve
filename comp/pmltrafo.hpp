@@ -106,7 +106,7 @@ namespace ngcomp
       } 
       else 
         pmltrafo->MapPointV(ip,vec,jac);
-      values = jac;
+      values = jac.AsVector();
     }
   };
     class PML_JacInv : public CoefficientFunction
@@ -144,7 +144,7 @@ namespace ngcomp
       else 
         pmltrafo->MapPointV(ip,vec,jac);
       CalcInverse(jac);
-      values=jac;
+      values=jac.AsVector();
     }
   };
     class PML_Det : public CoefficientFunction
@@ -474,7 +474,7 @@ namespace ngcomp
       trafo->Evaluate(hpoint,fvpoint);
       point = fvpoint;
       jac->Evaluate(hpoint,fvjac);
-      jacmat = fvjac;
+      jacmat = fvjac.AsMatrix(DIM,DIM);
     }
     
     virtual void MapPoint (Vec<DIM> & hpoint, Vec<DIM,Complex> & point,

@@ -634,8 +634,8 @@ namespace ngfem
     T eta = lam[fav[1]];
     
     Matrix<T> tauhat(3,2);
-    tauhat.Cols(0,1) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
-    tauhat.Cols(1,2) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
+    tauhat.Col(0) = adxi;//Vec<3,T>(adxi.DValue(0),adxi.DValue(1),adxi.DValue(2));
+    tauhat.Col(1) = adeta;//Vec<3,T>(adeta.DValue(0),adeta.DValue(1),adeta.DValue(2));
     Matrix<T> tau(3,2);
     // (dShat/dS) *F * tauhat
     tau = mip.GetJacobian() * tauhat;

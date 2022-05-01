@@ -291,7 +291,7 @@ namespace ngfem
 	   else
 	     CalcShape2 (ip2d, shape);
 	   
-	   shapen = shape * nv;
+	   shapen.Col(0) = shape * nv;
 	   moments += ip.Weight() * (testshape * Trans (shapen));
 	 }
      }
@@ -353,7 +353,7 @@ namespace ngfem
 	  else
 	    CalcShape2 (ip3d, shape);
 	  
-	  shapen = shape * nv;
+	  shapen.Col(0) = shape * nv;
 	  moments += ip.Weight() * (testshape * Trans (shapen));
 	}
     }

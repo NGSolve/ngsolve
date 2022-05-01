@@ -676,7 +676,7 @@ public:
 			  LocalHeap & lh)
   {
     y.Range(0,fel.GetNDof()) =
-      ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh);
+      ((1.0/mip.GetJacobiDet())* InnerProduct (x, mip.GetNV()) ) * Cast(fel).GetCurlShape (mip.IP(), lh).AsVector();
   }
 
   static shared_ptr<CoefficientFunction>

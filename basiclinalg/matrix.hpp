@@ -133,6 +133,7 @@ namespace ngbla
 
 
     auto View() const { return FlatMatrix(*this); }     
+    tuple<size_t, size_t> Shape() const { return { h, w }; }
     
     
     /// copy size and pointers
@@ -164,7 +165,7 @@ namespace ngbla
     INLINE auto Height () const { return h; }
     /// the width
     INLINE auto Width () const { return w; }
-    /// 
+    ///
     INLINE auto Dist () const { return w; }
 
     INLINE T * Data () const { return data; }
@@ -340,6 +341,7 @@ namespace ngbla
     }
 
     auto View() const { return FlatMatrix(*this); }     
+    tuple<size_t, size_t> Shape() const { return { h, w }; }
     
     /// copy size and pointers
     INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
@@ -696,6 +698,7 @@ namespace ngbla
     }
 
     auto View() const { return *this; } 
+    tuple<size_t, size_t> Shape() const { return { H, W }; }
     
     INLINE T* Data() noexcept { return &data[0]; }
 
@@ -852,7 +855,8 @@ namespace ngbla
     }
 
     auto View() const { return DiagMat(*this); } 
-
+    tuple<size_t, size_t> Shape() const { return { H,H }; }
+    
     /// linear access
     TELEM & operator() (int i) { return data[i]; }
     /// access element
@@ -986,6 +990,7 @@ namespace ngbla
     }
 
     auto View() const { return FlatMatrixFixWidth(*this); } 
+    tuple<size_t, size_t> Shape() const { return { h,W }; }
     
     /// copy size and pointers
     INLINE const FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) throw()
@@ -1021,6 +1026,12 @@ namespace ngbla
     ///
     INLINE operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
 
+    auto AsVector() const
+    {
+      return FlatVector<T> (h*W, data);
+    }
+
+    
     ///
     INLINE const FlatVec<W,T> Row (size_t i) const
     {
@@ -1248,7 +1259,7 @@ namespace ngbla
     }
 
     auto View() const { return FlatMatrixFixHeight(*this); } 
-
+    tuple<size_t, size_t> Shape() const { return { H, w }; }
     
     /*
     /// access operator, linear access
@@ -1525,6 +1536,7 @@ namespace ngbla
     }
 
     auto View() const { return SliceMatrix(*this); }     
+    tuple<size_t, size_t> Shape() const { return { h, w }; }
 
     
     /// access operator
@@ -1550,7 +1562,7 @@ namespace ngbla
 
     /// 
     INLINE size_t Dist () const throw() { return dist; }
-
+    
     INLINE T* Data() const noexcept { return data; }
 
     using CMCPMatExpr<SliceMatrix>::Rows;
@@ -1667,7 +1679,8 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return SliceMatrix(*this); }     
+    auto View() const { return *this; }     
+    tuple<size_t, size_t> Shape() const { return { h, w }; }
     
     /// access operator
     TELEM & operator() (size_t i, size_t j) const
@@ -1805,7 +1818,7 @@ namespace ngbla
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
     auto View() const { return BareSliceMatrix(*this); } 
-
+    tuple<size_t, size_t> Shape() const { return { DummySize::Height(), DummySize::Width() }; }
     
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
@@ -1843,11 +1856,11 @@ namespace ngbla
     /// 
     INLINE size_t Dist () const throw() { return dist; }
     void IncPtr (size_t inc) { data += inc; } 
-    SliceMatrix<T> AddSize (size_t h, size_t w) const
+    SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
-      return SliceMatrix<T> (h, w, dist, data);
+      return SliceMatrix<T,ORD> (h, w, dist, data);
     }
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
@@ -1948,6 +1961,7 @@ namespace ngbla
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
     auto View() const { return BareSliceMatrix(*this); } 
+    tuple<size_t, size_t> Shape() const { return { DummySize::Height(), DummySize::Width() }; }
     
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
@@ -2074,6 +2088,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return *this; }
+    tuple<size_t,size_t> Shape() const { return { h, w }; }
+    
     /// access operator
     TELEM & operator() (size_t i, size_t j) const
     {
@@ -2313,7 +2330,8 @@ namespace ngbla
     /// nothing to do 
     Id () { ; }
 
-    auto View() const { return Id(); } 
+    auto View() const { return Id(); }
+    tuple<size_t, size_t> Shape() const { return { H,H }; }    
     ///
     double operator() (int i) const
     {
@@ -2347,7 +2365,8 @@ namespace ngbla
     { cerr << "Identity, linear access" << endl; return 0; }
 
     double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
-    auto View() const { return Identity(size); } 
+    auto View() const { return Identity(size); }
+    tuple<size_t, size_t> Shape() const { return { size, size }; }    
     int Height () const { return size; }
     int Width () const { return size; }
   };
