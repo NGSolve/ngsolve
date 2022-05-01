@@ -1514,9 +1514,13 @@ public:
     auto in0 = input[0];
     // values.AddSize(Dimension(), ir.Size()) = scal * in0;
     SliceMatrix<T,ORD> sval(Dimension(), ir.Size(), values.Dist(), values.Data());
-    sval = scal * in0;
+    // sval = scal * in0;   // failing on WIN-AVX
+    for (int i = 0; i < Dimension(); i++)
+      for (int j = 0; j < ir.Size(); j++)
+        sval(i,j) = scal * in0(i,j);
     
     /*
+      // working on WIN-AVX
     for (int i = 0; i < Dimension(); i++)
       for (int j = 0; j < ir.Size(); j++)
         values(i,j) = scal * in0(i,j);
