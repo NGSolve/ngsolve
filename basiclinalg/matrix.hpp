@@ -1461,25 +1461,28 @@ namespace ngbla
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
     { ; }
 
-
+    /*
     /// assign contents
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) 
     {
       return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
-
+    */
+    
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
     {
       return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
+    /*
     INLINE SliceMatrix operator= (const SliceMatrix & m) 
     {
       return MatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
-
+    */
+    
     INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
       return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
