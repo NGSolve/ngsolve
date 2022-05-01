@@ -1046,6 +1046,7 @@ namespace ngbla
   template <typename TA, typename TB>
   inline auto operator- (const Expr<TA> & a, const Expr<TB> & b)
   {
+    NETGEN_CHECK_SHAPE(a, b);    
     return SubExpr(a.View(), b.View());
   }
 
@@ -1115,6 +1116,7 @@ namespace ngbla
   template <typename TA, typename TB>
   inline auto pw_mult (const Expr<TA> & a, const Expr<TB> & b)
   {
+    NETGEN_CHECK_SHAPE(a, b);    
     return PW_Mult_Expr (a.View(), b.View());
   }
 
