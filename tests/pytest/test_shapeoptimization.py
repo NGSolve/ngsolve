@@ -11,12 +11,12 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     PHI, PSI = VEC.TnT()
     gfX_t = GridFunction(VEC)
 
-    print ("G0 = ", G0.Compile())
-    print ("G0.diffshape = ", G0.DiffShape(PSI).Compile())
-    print ("dGdF = ", G.Diff(F, Grad(PSI)).Compile())
-    print ("dGdX = ", G.Diff(X, PSI).Compile())
-    print ("G0", G0)
-    print ("G0.ddshape", G0.DiffShape(PSI).DiffShape(PHI).Compile())   
+    # print ("G0 = ", G0.Compile())
+    # print ("G0.diffshape = ", G0.DiffShape(PSI).Compile())
+    # print ("dGdF = ", G.Diff(F, Grad(PSI)).Compile())
+    # print ("dGdX = ", G.Diff(X, PSI).Compile())
+    # print ("G0", G0)
+    # print ("G0.ddshape", G0.DiffShape(PSI).DiffShape(PHI).Compile())   
     
     #semi automatic
     dJOmegaTestSA = LinearForm(VEC)
@@ -76,10 +76,10 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
  
         mesh.UnsetDeformation()
 
-        print ("DJSA = ", InnerProduct(dJOmegaTestSA.vec,gfX.vec))
-        print ("DJFA = ", InnerProduct(dJOmegaTestFA.vec,gfX.vec))        
-        print ("DDJSA = ", InnerProduct(tmp1,gfX.vec))
-        print ("DDJFA = ", InnerProduct(tmp2,gfX.vec))        
+        # print ("DJSA = ", InnerProduct(dJOmegaTestSA.vec,gfX.vec))
+        # print ("DJFA = ", InnerProduct(dJOmegaTestFA.vec,gfX.vec))        
+        # print ("DDJSA = ", InnerProduct(tmp1,gfX.vec))
+        # print ("DDJFA = ", InnerProduct(tmp2,gfX.vec))        
 
         
         delta1[0] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestSA.vec,gfX.vec))
@@ -144,11 +144,9 @@ def test_shapeopt_2d():
 
 
     ### Basic
-    uD = CF( 1 ) # X[0]
     G0 = uD * dx
     G  = uD * Det(F) * dx
     Test(G0, G, gfX, X, F)
-    1/0
     
     ### (Vector)H1
     fes = H1(mesh, order=1)
