@@ -74,6 +74,13 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
         if G0bnd: Jt += Integrate(G0bnd, mesh)
  
         mesh.UnsetDeformation()
+
+        print ("DJSA = ", InnerProduct(dJOmegaTestSA.vec,gfX.vec))
+        print ("DJFA = ", InnerProduct(dJOmegaTestFA.vec,gfX.vec))        
+        print ("DDJSA = ", InnerProduct(tmp1,gfX.vec))
+        print ("DDJFA = ", InnerProduct(tmp2,gfX.vec))        
+
+        
         delta1[0] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestSA.vec,gfX.vec))
         delta1[1] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestFA.vec,gfX.vec))
         delta2[0] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestSA.vec,gfX.vec) - t**2/2*InnerProduct(tmp1,gfX.vec))
@@ -109,7 +116,7 @@ def test_diff():
     return
 
 def test_shapeopt_2d():
-    return   # disable tests
+    # return   # disable tests
 
     geo = SplineGeometry()
     geo.AddCircle((0,0), r = 0.3)
@@ -136,10 +143,11 @@ def test_shapeopt_2d():
 
 
     ### Basic
-    # uD = X[0]
+    uD = CF( 1 ) # X[0]
     G0 = uD * dx
     G  = uD * Det(F) * dx
     Test(G0, G, gfX, X, F)
+    1/0
     
     ### (Vector)H1
     fes = H1(mesh, order=1)
