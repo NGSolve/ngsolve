@@ -1550,15 +1550,17 @@ public:
         sval(i,j) = prod(i,j);
     */
 
-    /*
     // failing, but works with check
     auto sval = values.AddSize(Dimension(), ir.Size());
     auto prod = scal*in0;
     sval = prod;
+    assert(sval.Height() == Dimension());
+    assert(sval.Width() == ir.Size());
+    
     // if (sval.Height() != Dimension()) throw Exception("wrong height");
     // if (sval.Width() != ir.Size()) throw Exception("wrong width");
-    */
-    values.AddSize(Dimension(), ir.Size()) = scal*in0;
+    
+    // values.AddSize(Dimension(), ir.Size()) = scal*in0;
     
     /*
       // working on WIN-AVX
