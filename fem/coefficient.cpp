@@ -1550,15 +1550,15 @@ public:
         sval(i,j) = prod(i,j);
     */
 
-
-    // failing
+    /*
+    // failing, but works with check
     auto sval = values.AddSize(Dimension(), ir.Size());
     auto prod = scal*in0;
     sval = prod;
-    if (sval.Height() != Dimension()) throw Exception("wrong height");
-    if (sval.Width() != ir.Size()) throw Exception("wrong width");
-    
-    // values.AddSize(Dimension(), ir.Size()) = scal*in0;
+    // if (sval.Height() != Dimension()) throw Exception("wrong height");
+    // if (sval.Width() != ir.Size()) throw Exception("wrong width");
+    */
+    values.AddSize(Dimension(), ir.Size()) = scal*in0;
     
     /*
       // working on WIN-AVX
@@ -4692,7 +4692,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
         if (c1->Dimension() > 1 && c2->Dimension() > 1)
           return ZeroCF(Array<int>( {} ));
         if ( (c1->Dimension() == 1 && c2->Dimension() > 1) || (c1->Dimension() > 1 && c2->Dimension() == 1))
-          return ZeroCF(Array( {c1->Dimension()*c2->Dimension()} ));
+          return ZeroCF(Array( {int(c1->Dimension()*c2->Dimension())} ));
 
         return ZeroCF(Array<int>( {} ));
           
