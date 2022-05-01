@@ -58,7 +58,7 @@ namespace ngfem {
 
             if (test_proxies.Size() && !trial_proxies.Size()) {
                 for (auto test_proxy : test_proxies)
-                    for (int k2 : Range(0, test_proxy->Dimension())) {
+                    for (int k2 : Range(test_proxy->Dimension())) {
                         ud.testfunction = test_proxy;
                         ud.test_comp = k2;
                         cf->NonZeroPattern(ud, nzvec_ad);
@@ -67,7 +67,7 @@ namespace ngfem {
                     }
             } else  {
                 for (auto trial_proxy : trial_proxies)
-                    for (auto l2 : Range(0, trial_proxy->Dimension())) {
+                    for (auto l2 : Range(trial_proxy->Dimension())) {
                         ud.trialfunction = trial_proxy;
                         ud.trial_comp = l2;
                         cf->NonZeroPattern(ud, nzvec_ad);
@@ -75,7 +75,7 @@ namespace ngfem {
                             nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
                         for (auto test_proxy : test_proxies)
-                            for (auto k2 : Range(0, test_proxy->Dimension())) {
+                          for (auto k2 : Range(test_proxy->Dimension())) {
                                 ud.testfunction = test_proxy;
                                 ud.test_comp = k2;
                                 cf->NonZeroPattern(ud, nzvec_ad);
