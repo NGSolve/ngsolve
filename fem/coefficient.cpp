@@ -1542,7 +1542,7 @@ public:
     */
 
     /*
-    // in progress
+    // failing
     auto sval = values.AddSize(Dimension(), ir.Size());
     auto prod = scal*in0;
     for (int i = 0; i < sval.Height(); i++)
@@ -1550,12 +1550,15 @@ public:
         sval(i,j) = prod(i,j);
     */
 
-    /*
+
+    // failing
     auto sval = values.AddSize(Dimension(), ir.Size());
     auto prod = scal*in0;
     sval = prod;
-    */
-    values.AddSize(Dimension(), ir.Size()) = scal*in0;
+    if (sval.Height() != Dimension()) throw Exception("wrong height");
+    if (sval.Width() != ir.Size()) throw Exception("wrong width");
+    
+    // values.AddSize(Dimension(), ir.Size()) = scal*in0;
     
     /*
       // working on WIN-AVX
