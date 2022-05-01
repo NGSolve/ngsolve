@@ -1512,7 +1512,10 @@ public:
                    BareSliceMatrix<T,ORD> values) const
   {
     auto in0 = input[0];
-    values.AddSize(Dimension(), ir.Size()) = scal * in0;
+    // values.AddSize(Dimension(), ir.Size()) = scal * in0;
+    for (int i = 0; i < Dimension(); i++)
+      for (int j = 0; j < ir.Size(); j++)
+        values(i,j) = scal * in0(i,j);
   }
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
