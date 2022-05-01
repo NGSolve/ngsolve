@@ -1549,9 +1549,13 @@ public:
       for (int j = 0; j < sval.Width(); j++)
         sval(i,j) = prod(i,j);
     */
+
+    /*
     auto sval = values.AddSize(Dimension(), ir.Size());
     auto prod = scal*in0;
     sval = prod;
+    */
+    values.AddSize(Dimension(), ir.Size()) = scal*in0;
     
     /*
       // working on WIN-AVX
