@@ -15,6 +15,7 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     print ("G0.diffshape = ", G0.DiffShape(PSI).Compile())
     print ("dGdF = ", G.Diff(F, Grad(PSI)).Compile())
     print ("dGdX = ", G.Diff(X, PSI).Compile())
+    print ("G0", G0)
     print ("G0.ddshape", G0.DiffShape(PSI).DiffShape(PHI).Compile())   
     
     #semi automatic
