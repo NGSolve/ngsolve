@@ -1532,13 +1532,22 @@ public:
         sval(i,j) = prod(i,j);
     */
 
-
+    /*
+      // in progress ..
     auto sval = values.AddSize(Dimension(), ir.Size());
     auto prod = scal*in0;
     for (int i = 0; i < Dimension(); i++)
       for (int j = 0; j < ir.Size(); j++)
         sval(i,j) = prod(i,j);
+    */
+
     
+    auto sval = values.AddSize(Dimension(), ir.Size());
+    auto prod = scal*in0;
+    for (int i = 0; i < sval.Height(); i++)
+      for (int j = 0; j < sval.Width(); j++)
+        sval(i,j) = prod(i,j);
+
     
     /*
       // working on WIN-AVX
