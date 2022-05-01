@@ -24,7 +24,6 @@ namespace ngbla
   */
   template <typename T, ORDERING ORD>
   class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD> >
-                     // class FlatMatrix : public CMCPMatExpr<FlatMatrix<T> >
   {
   protected:
     /// the height
@@ -82,7 +81,9 @@ namespace ngbla
     INLINE explicit FlatMatrix (const MatExpr<T2> & m)
       : h(m.Height()), w(m.Width()),
         data(const_cast<T*>(&m.Spec()(0,0)))  
-    { ; }
+    {
+      static_assert(ORD == m.Ordering());
+    }
   
     /// useful to put FlatMatrix over other Mat
     template <int H, int W>
@@ -134,7 +135,7 @@ namespace ngbla
 
     auto View() const { return FlatMatrix(*this); }     
     tuple<size_t, size_t> Shape() const { return { h, w }; }
-    
+    static constexpr auto Ordering() { return ORD; } 
     
     /// copy size and pointers
     INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
@@ -300,7 +301,7 @@ namespace ngbla
       w = m2.A().Width();
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (h*w);
-      CMCPMatExpr<FlatMatrix<T> >::operator= (m2.A());
+      CMCPMatExpr<FlatMatrix<T,ColMajor> >::operator= (m2.A());
     }
 
     /// set size, and assign mem
@@ -1465,23 +1466,23 @@ namespace ngbla
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) 
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
     INLINE SliceMatrix operator= (const SliceMatrix & m) 
     {
-      return MatExpr<SliceMatrix>::operator= (m);
+      return MatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
     INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
     /*
@@ -1662,12 +1663,12 @@ namespace ngbla
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ColMajor>>::operator= (m);
     }
 
-    INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
+    INLINE const SliceMatrix & operator= (const SliceMatrix<T,ColMajor> & m) const
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ColMajor>>::operator= (m);
     }
 
     /// assign constant
@@ -1817,7 +1818,7 @@ namespace ngbla
     
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
-    auto View() const { return BareSliceMatrix(*this); } 
+    auto View() const { return *this; } 
     tuple<size_t, size_t> Shape() const { return { DummySize::Height(), DummySize::Width() }; }
     
     /// access operator
@@ -1856,7 +1857,7 @@ namespace ngbla
     /// 
     INLINE size_t Dist () const throw() { return dist; }
     void IncPtr (size_t inc) { data += inc; } 
-    SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
+    const SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
@@ -1905,7 +1906,7 @@ namespace ngbla
       return Rows (range.First(), range.Next());
     }
 
-    INLINE const BareSliceMatrix<T> Cols (IntRange range) const
+    INLINE const BareSliceMatrix Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
@@ -1915,11 +1916,11 @@ namespace ngbla
       return SliceVector<T> (h, dist+1, &data[0]);
     }
     */
-    BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
+    BareSliceMatrix RowSlice(size_t first, size_t adist) const
     {
       // NETGEN_CHECK_RANGE(first, 0, Height());  // too restrictive
       NETGEN_CHECK_RANGE(first, 0, adist);  
-      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
+      return BareSliceMatrix (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
     }
     
   };
@@ -1985,7 +1986,7 @@ namespace ngbla
 
     INLINE TELEM* Data() const { return data; }
 
-    SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
+    const SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
