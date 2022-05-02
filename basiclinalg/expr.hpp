@@ -1040,7 +1040,7 @@ namespace ngbla
     INLINE auto operator() (size_t i) const { return a(i)-b(i); }
     INLINE auto operator() (size_t i, size_t j) const { return a(i,j)-b(i,j); }
 
-    auto View() const { return SubExpr(a, b); }
+    auto View() const { return *this; }
     auto Shape() const { return a.Shape(); }
     
     INLINE size_t Height() const { return a.Height(); }
@@ -1283,7 +1283,7 @@ namespace ngbla
     auto operator() (size_t i) const { return a[i] * b(i); }  
     auto operator() (size_t i, size_t j) const { return a[i] * b(i,j); }
 
-    auto View() const { return MultExpr(a, b); }
+    auto View() const { return *this; }
     auto Shape() const
     {
       typedef decltype(b.Shape()) TBSHAPE;
@@ -1293,8 +1293,8 @@ namespace ngbla
         return tuple<size_t,size_t> (H, b.Width());
     }
     
-    const DiagMat<H,SCALA> & A() const { return a; }
-    const TB & B() const { return b; }
+    const auto A() const { return a; }
+    const auto B() const { return b; }
     size_t Height() const { return a.Height(); }
     size_t Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
@@ -1621,7 +1621,7 @@ namespace ngbla
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
     
-    auto View() const { return ConjExpr(a); }
+    auto View() const { return *this; }
     auto Shape() const { return a.Shape(); }
     
     INLINE auto operator() (size_t i, size_t j) const { return Conj(a(i,j)); }
