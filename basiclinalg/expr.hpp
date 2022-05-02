@@ -1055,7 +1055,7 @@ namespace ngbla
     INLINE auto operator() (size_t i) const { return a(i)-b(i); }
     INLINE auto operator() (size_t i, size_t j) const { return a(i,j)-b(i,j); }
 
-    auto View() const { return *this; }
+    auto View() const { return SubExpr(a,b); }
     auto Shape() const { return a.Shape(); }
     
     INLINE size_t Height() const { return a.Height(); }
@@ -1092,7 +1092,7 @@ namespace ngbla
 
     auto operator() (size_t i) const { return -a(i); }
     auto operator() (size_t i, size_t j) const { return -a(i,j); }
-    auto View() const { return *this; }
+    auto View() const { return MinusExpr(a); }
     auto Shape() const { return a.Shape(); }
     
     size_t Height() const { return a.Height(); }
@@ -1268,7 +1268,7 @@ namespace ngbla
       return sum;
     }
 
-    auto View() const { return *this; }
+    auto View() const { return MultExpr(a,b); }
     auto Shape() const
     {
       typedef decltype(b.Shape()) TBSHAPE;
