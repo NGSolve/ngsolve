@@ -859,7 +859,8 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return DiagMat<H,const T>(*this); } 
+    // auto View() const { return DiagMat<H,const T>(*this); }
+    auto View() const { return *this; } 
     tuple<size_t, size_t> Shape() const { return { H,H }; }
     
     /// linear access
