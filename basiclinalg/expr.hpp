@@ -1278,7 +1278,16 @@ namespace ngbla
     auto operator() (size_t i) const { return a[i] * b(i); }  
     auto operator() (size_t i, size_t j) const { return a[i] * b(i,j); }
 
-    auto View() const { return MultExpr(a, b); }     
+    auto View() const { return MultExpr(a, b); }
+    auto Shape() const
+    {
+      typedef decltype(b.Shape()) TBSHAPE;
+      if constexpr (tuple_size<TBSHAPE>() == 1)
+                     return tuple<size_t> (H);
+      else
+        return tuple<size_t,size_t> (H, b.Width());
+    }
+    
     const DiagMat<H,SCALA> & A() const { return a; }
     const TB & B() const { return b; }
     size_t Height() const { return a.Height(); }
