@@ -536,7 +536,7 @@ namespace ngbla
       // auto unused_variable_in_assign = v.Spec()(0,0);
 
       auto src = v.View();
-      decltype(auto) dest = this->ViewRW();
+      // decltype(auto) dest = this->ViewRW();
 
       
       if (T::COL_MAJOR)
@@ -549,7 +549,7 @@ namespace ngbla
               for (size_t i = 0; i < h; i++)
                 // TOP()(Spec()(i,j), v.Spec()(i,j));
                 // TOP()(Spec()(i,j), v.View()(i,j));
-                TOP()(dest(i,j), src(i,j));
+                TOP()(Spec()(i,j), src(i,j));
           return Spec();
         }
 
@@ -561,7 +561,7 @@ namespace ngbla
 	      auto hw = Expr<T>::Height() * Expr<T>::Width();
               for (auto i : Range(hw))  // int i = 0; i < hw; i++)
                 // TOP()(Spec()(i),v.Spec()(i));
-                TOP()(dest(i), src(i));
+                TOP()(Spec()(i), src(i));
 	    }
 	  else
 	    {
@@ -572,7 +572,7 @@ namespace ngbla
                   for (size_t j = 0; j < w; j++, k++)
                     // TOP() (Spec()(i,j), v.Spec()(k));
                     // TOP() (Spec()(i,j), v.View()(k));
-                    TOP() (dest(i,j), src(k));
+                    TOP() (Spec()(i,j), src(k));
 	    }
 	}
       else
@@ -586,14 +586,14 @@ namespace ngbla
                   for (size_t j = 0; j < w; j++, k++)
                     // TOP() (Spec()(k), v.Spec()(i,j));
                     // TOP() (Spec()(k), v.View()(i,j));
-                    TOP() (dest(k), src(i,j));                    
+                    TOP() (Spec()(k), src(i,j));                    
               else
                 {
                   for (size_t i = 0; i < h; i++)
                     for (size_t j = 0; j < w; j++)
                       {
                         // TOP() (Spec()(i,j), v.View()(i,j));
-                        TOP() (dest(i,j), src(i,j));                        
+                        TOP() (Spec()(i,j), src(i,j));                        
                       }
                 }
             }
