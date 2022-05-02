@@ -1264,7 +1264,7 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return FlatMatrixFixHeight(*this); } 
+    auto View() const { return *this; } 
     tuple<size_t, size_t> Shape() const { return { H, w }; }
     
     /*
@@ -1544,7 +1544,7 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return SliceMatrix(*this); }     
+    auto View() const { return *this; }     
     tuple<size_t, size_t> Shape() const { return { h, w }; }
 
     
@@ -1969,7 +1969,7 @@ namespace ngbla
     
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
-    auto View() const { return BareSliceMatrix(*this); } 
+    auto View() const { return *this; } 
     tuple<size_t, size_t> Shape() const { return { DummySize::Height(), DummySize::Width() }; }
     
     /// access operator
