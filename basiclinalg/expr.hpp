@@ -542,7 +542,8 @@ namespace ngbla
           if (h > 0)
             for (size_t j = 0; j < w; j++)
               for (size_t i = 0; i < h; i++)
-                TOP()(Spec()(i,j), v.Spec()(i,j));
+                // TOP()(Spec()(i,j), v.Spec()(i,j));
+                TOP()(Spec()(i,j), v.View()(i,j));
           return Spec();
         }
 
@@ -553,7 +554,8 @@ namespace ngbla
 	    {
 	      auto hw = Expr<T>::Height() * Expr<T>::Width();
               for (auto i : Range(hw))  // int i = 0; i < hw; i++)
-                TOP()(Spec()(i),v.Spec()(i));
+                // TOP()(Spec()(i),v.Spec()(i));
+                TOP()(Spec()(i),v.View()(i));
 	    }
 	  else
 	    {
@@ -562,7 +564,8 @@ namespace ngbla
               if (w > 0)
                 for (size_t i = 0, k = 0; i < h; i++)
                   for (size_t j = 0; j < w; j++, k++)
-                    TOP() (Spec()(i,j), v.Spec()(k));
+                    // TOP() (Spec()(i,j), v.Spec()(k));
+                    TOP() (Spec()(i,j), v.View()(k));
 	    }
 	}
       else
@@ -574,11 +577,13 @@ namespace ngbla
               if (T::IS_LINEAR)
                 for (size_t i = 0, k = 0; i < h; i++)
                   for (size_t j = 0; j < w; j++, k++)
-                    TOP() (Spec()(k), v.Spec()(i,j));
+                    // TOP() (Spec()(k), v.Spec()(i,j));
+                    TOP() (Spec()(k), v.View()(i,j));
               else
                 for (size_t i = 0; i < h; i++)
                   for (size_t j = 0; j < w; j++)
-                    TOP() (Spec()(i,j), v.Spec()(i,j));
+                    // TOP() (Spec()(i,j), v.Spec()(i,j));
+                    TOP() (Spec()(i,j), v.View()(i,j));
             }
         }
       return Spec();
@@ -628,8 +633,8 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
       constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
       
-      NgGEMM<ADD,POS> (make_SliceMatrix(prod.Spec().A()),
-                       make_SliceMatrix(prod.Spec().B()),
+      NgGEMM<ADD,POS> (make_SliceMatrix(prod.View().A()),
+                       make_SliceMatrix(prod.View().B()),
                        make_SliceMatrix(Spec()));
       return Spec();
     }
@@ -644,8 +649,8 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
       constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
       
-      NgGEMM<ADD,!POS> (make_SliceMatrix(prod.Spec().A().A()),
-                        make_SliceMatrix(prod.Spec().B()),
+      NgGEMM<ADD,!POS> (make_SliceMatrix(prod.View().A().A()),
+                        make_SliceMatrix(prod.View().B()),
                         make_SliceMatrix(Spec()));
       return Spec();
     }
@@ -660,8 +665,8 @@ namespace ngbla
     {
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
       constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
-      NgGEMV<ADD,POS> (make_SliceMatrix(prod.Spec().A()),
-                       prod.Spec().B(),
+      NgGEMV<ADD,POS> (make_SliceMatrix(prod.View().A()),
+                       prod.View().B(),
                        Spec());
       return Spec();
     }
@@ -673,8 +678,8 @@ namespace ngbla
               typename enable_if<is_convertible<typename pair<T,TA>::first_type,SliceVector<double>>::value,int>::type = 0>
     INLINE T & Assign (const Expr<ScaleExpr<TA,double>> & scaled)
     {
-      AddVector (scaled.Spec().S(),
-                 SliceVector<typename T::TELEM>(scaled.Spec().A()),
+      AddVector (scaled.View().S(),
+                 SliceVector<typename T::TELEM>(scaled.View().A()),
                  SliceVector<typename T::TELEM>(this->Spec()));
       return Spec();
     }
@@ -1463,7 +1468,7 @@ namespace ngbla
       return *this;
     }
 
-    auto View() { return *this; }
+    auto View() const { return *this; }
     tuple<size_t> Shape() const { return a.Width(); }
   };
 
@@ -1495,7 +1500,7 @@ namespace ngbla
       return *this;
     }
 
-    auto View() { return *this; }
+    auto View() const { return *this; }
     tuple<size_t> Shape() const { return a.Height(); }
   };
 
