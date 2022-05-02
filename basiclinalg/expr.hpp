@@ -320,7 +320,7 @@ namespace ngbla
     INLINE const T & Spec() const { return static_cast<const T&> (*this); }
 
     auto View() const { return static_cast<const T&> (*this).View(); }
-    auto ViewRW() const { return static_cast<const T&> (*this).ViewRW(); }
+    decltype(auto) ViewRW() { return static_cast<T&>(*this).ViewRW(); }
     auto Shape() const { return static_cast<const T&> (*this).Shape(); }        
 
 
@@ -536,7 +536,7 @@ namespace ngbla
       // auto unused_variable_in_assign = v.Spec()(0,0);
 
       auto src = v.View();
-      // decltype(auto) dest = this->ViewRW();
+      decltype(auto) dest = this->ViewRW();
 
       
       if (T::COL_MAJOR)
@@ -549,7 +549,7 @@ namespace ngbla
               for (size_t i = 0; i < h; i++)
                 // TOP()(Spec()(i,j), v.Spec()(i,j));
                 // TOP()(Spec()(i,j), v.View()(i,j));
-                TOP()(Spec()(i,j), src(i,j));
+                TOP()(dest(i,j), src(i,j));
           return Spec();
         }
 
@@ -561,7 +561,7 @@ namespace ngbla
 	      auto hw = Expr<T>::Height() * Expr<T>::Width();
               for (auto i : Range(hw))  // int i = 0; i < hw; i++)
                 // TOP()(Spec()(i),v.Spec()(i));
-                TOP()(Spec()(i), src(i));
+                TOP()(dest(i), src(i));
 	    }
 	  else
 	    {
@@ -572,7 +572,7 @@ namespace ngbla
                   for (size_t j = 0; j < w; j++, k++)
                     // TOP() (Spec()(i,j), v.Spec()(k));
                     // TOP() (Spec()(i,j), v.View()(k));
-                    TOP() (Spec()(i,j), src(k));
+                    TOP() (dest(i,j), src(k));
 	    }
 	}
       else
@@ -586,14 +586,14 @@ namespace ngbla
                   for (size_t j = 0; j < w; j++, k++)
                     // TOP() (Spec()(k), v.Spec()(i,j));
                     // TOP() (Spec()(k), v.View()(i,j));
-                    TOP() (Spec()(k), src(i,j));                    
+                    TOP() (dest(k), src(i,j));                    
               else
                 {
                   for (size_t i = 0; i < h; i++)
                     for (size_t j = 0; j < w; j++)
                       {
                         // TOP() (Spec()(i,j), v.View()(i,j));
-                        TOP() (Spec()(i,j), src(i,j));                        
+                        TOP() (dest(i,j), src(i,j));                        
                       }
                 }
             }
@@ -901,7 +901,7 @@ namespace ngbla
       return Spec();
     }
 
-    auto ViewRW() const { return static_cast<const T&> (*this).View(); }    
+    auto ViewRW() { return this->View(); }    
 
     
     template<typename TB>
@@ -1546,7 +1546,7 @@ namespace ngbla
 
     auto Row (size_t i) const { return a.Row(rows[i]); }
     auto View() const { return RowsArrayExpr(a, rows); }
-    auto ViewRW() const { return RowsArrayExpr(a, rows); }
+    auto ViewRW() { return RowsArrayExpr(a, rows); }
     auto Shape() const
     {
       typedef decltype(a.Shape()) TASHAPE;
@@ -1594,7 +1594,7 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     auto View() const { return *this; }
-    auto ViewRW() const { return *this; }
+    auto ViewRW() { return *this; }
     tuple<size_t,size_t> Shape() const { return { a.Height(), cols.Size() }; }
     
     template<typename TB>
