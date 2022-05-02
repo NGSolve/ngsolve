@@ -1082,8 +1082,7 @@ namespace ngbla
   };
 
   template <typename TA>
-  inline MinusExpr<TA>
-  operator- (const Expr<TA> & a)
+  inline auto operator- (const Expr<TA> & a)
   {
     return MinusExpr (a.View());
   }

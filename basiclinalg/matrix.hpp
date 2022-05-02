@@ -626,6 +626,11 @@ namespace ngbla
     Mat () = default;
     Mat (const Mat &) = default;
 
+    
+    auto & HTData() const { return data; }                                    
+    template <typename T2>
+    Mat (const Mat<H,W,T2> & m2) : data(m2.HTData()) { ; }
+
     /*
     /// copy matrix
     INLINE Mat (const Mat & m) 
@@ -642,7 +647,7 @@ namespace ngbla
     }
 
     /// fill with scalar
-    INLINE Mat (TSCAL s) 
+    INLINE Mat (TSCAL s)     
     {
       for (size_t i = 0; i < H*W; i++) 
         data[i] = s;
@@ -698,11 +703,10 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return *this; } 
+    auto View() const { return Mat<H,W,const T>{*this}; }
     tuple<size_t, size_t> Shape() const { return { H, W }; }
     
     INLINE T* Data() noexcept { return &data[0]; }
-
     /// linear access
     INLINE TELEM & operator() (size_t i) { return data[i]; }
     /// access element
@@ -855,7 +859,7 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return DiagMat(*this); } 
+    auto View() const { return DiagMat<H,const T>(*this); } 
     tuple<size_t, size_t> Shape() const { return { H,H }; }
     
     /// linear access
@@ -990,7 +994,7 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return FlatMatrixFixWidth(*this); } 
+    auto View() const { return *this; } 
     tuple<size_t, size_t> Shape() const { return { h,W }; }
     
     /// copy size and pointers
@@ -2410,7 +2414,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator- (const Mat<H,W,T> & mat)
   {
-    Mat<H,W,T> res;
+    Mat<H,W,typename remove_const<T>::type> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = -mat(i.value);
       });
@@ -2422,7 +2426,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator+ (const Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
   {
-    Mat<H,W,T> res;
+    Mat<H,W,typename remove_const<T>::type> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = ma(i.value) + mb(i.value);
       });
@@ -2432,7 +2436,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator- (const Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
   {
-    Mat<H,W,T> res;
+    Mat<H,W,typename remove_const<T>::type> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = ma(i.value) - mb(i.value);
       });
@@ -2462,7 +2466,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator* (T scal, const Mat<H,W,T> & mat)
   {
-    Mat<H,W,T> res;
+    Mat<H,W,typename remove_const<T>::type> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = scal * mat(i.value);
       });
