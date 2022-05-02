@@ -335,14 +335,14 @@ namespace ngbla
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
 
-    INLINE RowExpr<const T> Row (size_t r) const
+    INLINE auto Row (size_t r) const
     {
       return RowExpr<const T> (static_cast<const T&> (*this), r);
     }
 
-    INLINE ColExpr<T> Col (size_t r) const
+    INLINE auto Col (size_t r) const
     {
-      return RowExpr<T> (static_cast<T&> (*this), r);
+      return ColExpr<const T> (static_cast<T&> (*this), r);
     }
 
 
@@ -1077,7 +1077,7 @@ namespace ngbla
     
     size_t Height() const { return a.Height(); }
     size_t Width() const { return a.Width(); }
-    INLINE const TA & A() const { return a; }
+    INLINE TA A() const { return a; }
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
 
@@ -1174,7 +1174,7 @@ namespace ngbla
     auto View() const { return *this; }
     auto Shape() const { return a.Shape(); }         
     
-    INLINE const TA & A() const { return a; }
+    INLINE TA A() const { return a; }
     INLINE TS S() const { return s; }
     
     void Dump (ostream & ost) const
@@ -1258,8 +1258,8 @@ namespace ngbla
         return tuple<size_t,size_t> (a.Height(), b.Width());
     }
     
-    INLINE const TA & A() const { return a; }
-    INLINE const TB & B() const { return b; }
+    INLINE TA A() const { return a; }
+    INLINE TB B() const { return b; }
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
@@ -1458,6 +1458,37 @@ namespace ngbla
     tuple<size_t> Shape() const { return a.Width(); }
   };
 
+
+
+  template <class TA> 
+  class ColExpr : public MatExpr<ColExpr<TA> >
+  {
+    TA & a;
+    size_t col;
+  public:
+    ColExpr (TA & aa, size_t c)
+      : a(aa), col(c) { ; }
+
+    size_t Height() const { return a.Height(); }
+    size_t Width() const { return 1; }
+
+    auto operator() (size_t i, size_t j) -> decltype(a(0,0)) { return a(i,col); }
+    auto operator() (size_t i) -> decltype(a(0,0)) { return a(i,col); }
+    auto operator() (size_t i, size_t j) const { return a(i,col); }
+    auto operator() (size_t i) const { return a(i,col); }
+
+    enum { IS_LINEAR = 0 };
+    
+    template<typename TB>
+    const ColExpr & operator= (const Expr<TB> & m) 
+    {
+      MatExpr<ColExpr<TA> >::operator= (m);
+      return *this;
+    }
+
+    auto View() { return *this; }
+    tuple<size_t> Shape() const { return a.Height(); }
+  };
 
 
 

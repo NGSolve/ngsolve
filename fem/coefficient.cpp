@@ -1557,8 +1557,8 @@ public:
     // assert(sval.Height() == Dimension());
     // assert(sval.Width() == ir.Size());
     
-    if (sval.Height() != Dimension()) throw Exception("wrong height");
-    if (sval.Width() != ir.Size()) throw Exception("wrong width");
+    // if (sval.Height() != Dimension()) throw Exception("wrong height");
+    // if (sval.Width() != ir.Size()) throw Exception("wrong width");
     
     // values.AddSize(Dimension(), ir.Size()) = scal*in0;
     
