@@ -704,6 +704,7 @@ namespace ngbla
     }
 
     auto View() const { return Mat<H,W,const T>{*this}; }
+    auto ViewRW() const { return *this; }
     tuple<size_t, size_t> Shape() const { return { H, W }; }
     
     INLINE T* Data() noexcept { return &data[0]; }
