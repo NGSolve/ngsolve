@@ -1,4 +1,4 @@
-call "C:\Program Files (x86)\Microsoft Visual Studio\2017\BuildTools\VC\Auxiliary\Build\vcvars64"
+call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64"
 set CMAKE_GENERATOR=Ninja
 set NETGEN_BUILD_DIR=%CI_DIR%\build
 set CMAKE_INSTALL_PREFIX=%CI_DIR%\install
