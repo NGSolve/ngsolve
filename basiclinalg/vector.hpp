@@ -815,12 +815,20 @@ namespace ngbla
     /// constructor, no initialization
     INLINE Vec () { ; }
     /// copy vector
+    /*
     INLINE Vec (const Vec & v) : MatExpr<Vec> ()
     {
       for (size_t i = 0; i < S; i++)
 	data[i] = v.data[i];
     }
+    */
+    
+    Vec (const Vec &) = default;
+    auto & HTData() const { return data; }                                    
+    template <typename T2>
+    Vec (const Vec<S,T2> & v2) : data(v2.HTData()) { ; }
 
+    
     /// initialize with values
     INLINE Vec (const TELEM & scal)
     {
@@ -898,7 +906,8 @@ namespace ngbla
     }
 
     // auto View() const { return FlatVec(const_cast<Vec&>(*this)); }
-    auto View() const { return Vec(*this); } 
+    // auto View() const { return Vec(*this); }
+    auto View() const { return Vec<S,const T>{*this}; }    
     tuple<size_t> Shape() const { return { S }; }
     
     /// access vector
