@@ -1001,7 +1001,7 @@ namespace ngbla
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
 
-    auto View() const { return *this; }
+    auto View() const { return SumExpr(a,b); }
     auto Shape() const { return a.Shape(); }     
     
     void Dump (ostream & ost) const
