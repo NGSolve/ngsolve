@@ -377,6 +377,11 @@ endforeach()
 string(TOUPPER "CMAKE_CXX_FLAGS_${CMAKE_BUILD_TYPE}" build_type_name)
 set(ngscxx_flags "${${build_type_name}} ${CMAKE_CXX_FLAGS} ${ngscxx_define_flags}")
 
+if(WIN32)
+  string(REPLACE "/Zi " " " ngscxx_flags ${ngscxx_flags})
+endif(WIN32)
+
+
 foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} )
     set(ngscxx_flags "${ngscxx_flags} ${opt}")
 endforeach()
