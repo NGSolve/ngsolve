@@ -13,7 +13,23 @@ namespace ngstd
     {
       Unload();
       if(directory_to_delete)
-          filesystem::remove_all(*directory_to_delete);
+        for(auto i : Range(5))
+        {
+          // on Windows, a (detached?) child process of the compiler/linker might still block the directory
+          // wait for it to finish (up to a second)
+          try
+          {
+            filesystem::remove_all(*directory_to_delete);
+            directory_to_delete = nullopt;
+            break;
+          }
+          catch(const std::exception &e)
+          {
+            this_thread::sleep_for(std::chrono::milliseconds(200));
+          }
+        }
+      if(directory_to_delete)
+        std::cerr << "Could not delete " << directory_to_delete->string() << std::endl;
     }
 
     void SharedLibrary :: Load( const filesystem::path & lib_name_ )
