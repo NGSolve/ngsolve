@@ -862,10 +862,12 @@ namespace ngcomp
             archive << spaces[i] -> type;
             archive << spaces[i] -> GetDimension();
 
+#ifdef OLD_PARALLEL            
 	    MyMPI_SendCmd ("ngs_archive_space", MPI_COMM_WORLD);
             // MyMPI_Bcast (i, MPI_COMM_WORLD);
             GetMeshAccess()->GetCommunicator().Bcast (i);
-
+#endif
+            
             spaces[i] -> DoArchive(archive);
 	    cout << "space " << i << " complete" << endl;
           }
@@ -901,10 +903,12 @@ namespace ngcomp
             archive << string (gridfunctions.GetName(i));
             archive << gridfunctions[i]->GetFESpace()->GetName();
 
+#ifdef OLD_PARALLEL
 	    MyMPI_SendCmd ("ngs_archive_gridfunction", MPI_COMM_WORLD);
 	    // MyMPI_Bcast (i, MPI_COMM_WORLD);
             GetMeshAccess()->GetCommunicator().Bcast(i);
-
+#endif
+            
             gridfunctions[i] -> DoArchive (archive);
             // cout << "archive gf, type = " << typeid(*gridfunctions[i]).name() << endl;
           }
