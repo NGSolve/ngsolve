@@ -114,6 +114,7 @@ namespace ngfem
         case 2: return { 0, 0, ndof, 0 };
         case 3: return { 0, 0, 0, ndof };
         }
+      return { 0, 0, 0, 0 }; // for the compiler
     }
 
     NGS_DLL_HEADER virtual void PrecomputeTrace () override;

@@ -76,9 +76,9 @@ namespace ngcomp
     // loop over elements
     Array<shared_ptr<FacetBilinearFormIntegrator>> elementwise_skeleton_parts;
 
-#ifdef PARALLEL
+    // #ifdef PARALLEL
     Array<shared_ptr<FacetBilinearFormIntegrator> > mpi_facet_parts;
-#endif
+    // #endif
 
     /// special elements for hacks (used for contact, periodic-boundary-penalty-constraints, ...
     Array<unique_ptr<SpecialElement>> specialelements;
@@ -472,7 +472,7 @@ namespace ngcomp
     */
     using BilinearForm::BilinearForm;
     
-    ~S_BilinearForm();
+    virtual ~S_BilinearForm();
 
     ///
     void AddMatrix1 (SCAL val, const BaseVector & x,
@@ -482,7 +482,7 @@ namespace ngcomp
                       BaseVector & y, bool transpose, LocalHeap & lh) const;
 
     virtual void AddMatrix (double val, const BaseVector & x,
-                           BaseVector & y, LocalHeap & lh) const
+                           BaseVector & y, LocalHeap & lh) const override
     {
       x.Cumulate();
       y.Distribute();
@@ -494,7 +494,7 @@ namespace ngcomp
                              BaseVector & y, LocalHeap & lh) const;
 
     virtual void AddMatrix (Complex val, const BaseVector & x,
-                           BaseVector & y, LocalHeap & lh) const
+                           BaseVector & y, LocalHeap & lh) const override
     {
       x.Cumulate();
       y.Distribute();
@@ -503,7 +503,7 @@ namespace ngcomp
     }
 
     virtual void AddMatrixTrans (double val, const BaseVector & x,
-                                 BaseVector & y, LocalHeap & lh) const;
+                                 BaseVector & y, LocalHeap & lh) const override;
 
     virtual void LapackEigenSystem(FlatMatrix<SCAL> & elmat, LocalHeap & lh) const;
     // { ; }
@@ -516,7 +516,7 @@ namespace ngcomp
     virtual void ApplyLinearizedMatrixAdd (double val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y, LocalHeap & lh) const
+					   BaseVector & y, LocalHeap & lh) const override
     {
       lin.Cumulate();
       x.Cumulate();
@@ -528,7 +528,7 @@ namespace ngcomp
     virtual void ApplyLinearizedMatrixAdd (Complex val,
 					   const BaseVector & lin,
 					   const BaseVector & x,
-					   BaseVector & y, LocalHeap & lh) const
+					   BaseVector & y, LocalHeap & lh) const override
     {
       lin.Cumulate();
       x.Cumulate();
@@ -538,21 +538,21 @@ namespace ngcomp
     }
   
 
-    virtual double Energy (const BaseVector & x, LocalHeap & lh) const;
+    virtual double Energy (const BaseVector & x, LocalHeap & lh) const override;
 
-    virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const;
+    virtual void ComputeInternal (BaseVector & u, const BaseVector & f, LocalHeap & lh) const override;
 
-    virtual void ModifyRHS (BaseVector & fd) const;
+    virtual void ModifyRHS (BaseVector & fd) const override;
 
     ///
-    virtual void DoAssemble (LocalHeap & lh);
+    virtual void DoAssemble (LocalHeap & lh) override;
     virtual void Assemble_facetwise_skeleton_parts_VOL (Array<bool>& useddof, size_t & gcnt, LocalHeap & lh, const BaseVector * lin = nullptr);
     ///
     // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///
     virtual void AssembleLinearization (const BaseVector & lin,
 					LocalHeap & lh, 
-					bool reallocate = 0);
+					bool reallocate = 0) override;
     ///
     virtual void AddElementMatrix (FlatArray<int> dnums1,
                                    FlatArray<int> dnums2,
@@ -581,22 +581,22 @@ namespace ngcomp
 				       LocalHeap & lh);
 
 
-    shared_ptr<BaseMatrix> GetHarmonicExtension () const 
+    shared_ptr<BaseMatrix> GetHarmonicExtension () const override
     { 
       return harmonicext; 
     }
     ///  
-    shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const
+    shared_ptr<BaseMatrix> GetHarmonicExtensionTrans () const override
     { 
       return harmonicexttrans; 
     }
     ///  
-    shared_ptr<BaseMatrix> GetInnerSolve () const
+    shared_ptr<BaseMatrix> GetInnerSolve () const override
     { 
       return innersolve; 
     }
     ///  
-    shared_ptr<BaseMatrix> GetInnerMatrix () const
+    shared_ptr<BaseMatrix> GetInnerMatrix () const override
     { 
       return innermatrix; 
     }
@@ -614,7 +614,7 @@ namespace ngcomp
 				    const FiniteElement * fel,
 				    const SpecialElement * sel = NULL) const;
     */
-    virtual void AllocateInternalMatrices ();
+    virtual void AllocateInternalMatrices () override;
   };
 
 

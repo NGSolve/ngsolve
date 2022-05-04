@@ -72,7 +72,7 @@ namespace ngfem
 
             fel.CalcMappedDShape (mirl, shape_u);
             
-            dshape_u = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+            dshape_u.Col(0) = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
             for (size_t l = 0; l < D; l++)
               for (size_t k = 0; k < nd_u; k++)
                 mat(k*D*D+j*D+l, i) = dshape_u(k*D+l, 0);

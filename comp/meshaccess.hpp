@@ -761,7 +761,7 @@ namespace ngcomp
     { ednums = GetElement(ElementId(VOL,elnr)).Edges(); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
-    [[deprecated("Use GetElEdges(ElementId) instead!")]]                
+    // [[deprecated("Use GetElEdges(ElementId) instead!")]]                
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the edges of a boundary element
@@ -770,6 +770,7 @@ namespace ngcomp
     { ednums = ArrayObject (GetElement(ElementId(BND,selnr)).edges); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
+    // [[deprecated("Use GetElEdges(ElementId) instead, orient is deprecated!")]]
     void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the faces of an element
@@ -786,13 +787,14 @@ namespace ngcomp
     { fnums = GetElement(ElementId(VOL,elnr)).Faces(); }
 
     // returns face numbers and face orientation of an element. (old style function)
-    [[deprecated("Use GetElFaces(ElementId) instead!")]]                        
+    // [[deprecated("Use GetElFaces(ElementId) instead!")]]                        
     void GetElFaces (int elnr, Array<int> & fnums, Array<int> & orient) const;
 
     /// returns face number of surface element
     int GetSElFace (int selnr) const;
 
     // returns face number and orientation of surface element
+    // [[deprecated("orientation is deprecated!")]]
     void GetSElFace (int selnr, int & fnum, int & orient) const;
 
     /// returns vertex numbers of face

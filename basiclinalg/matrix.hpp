@@ -24,7 +24,6 @@ namespace ngbla
   */
   template <typename T, ORDERING ORD>
   class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD> >
-                     // class FlatMatrix : public CMCPMatExpr<FlatMatrix<T> >
   {
   protected:
     /// the height
@@ -82,7 +81,9 @@ namespace ngbla
     INLINE explicit FlatMatrix (const MatExpr<T2> & m)
       : h(m.Height()), w(m.Width()),
         data(const_cast<T*>(&m.Spec()(0,0)))  
-    { ; }
+    {
+      static_assert(ORD == m.Ordering());
+    }
   
     /// useful to put FlatMatrix over other Mat
     template <int H, int W>
@@ -131,6 +132,11 @@ namespace ngbla
       return *this;
     }
 
+
+    auto View() const { return FlatMatrix(*this); }     
+    tuple<size_t, size_t> Shape() const { return { h, w }; }
+    static constexpr auto Ordering() { return ORD; } 
+    
     /// copy size and pointers
     INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
     {
@@ -160,7 +166,7 @@ namespace ngbla
     INLINE auto Height () const { return h; }
     /// the width
     INLINE auto Width () const { return w; }
-    /// 
+    ///
     INLINE auto Dist () const { return w; }
 
     INLINE T * Data () const { return data; }
@@ -295,7 +301,7 @@ namespace ngbla
       w = m2.A().Width();
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (h*w);
-      CMCPMatExpr<FlatMatrix<T> >::operator= (m2.A());
+      CMCPMatExpr<FlatMatrix<T,ColMajor> >::operator= (m2.A());
     }
 
     /// set size, and assign mem
@@ -335,6 +341,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatMatrix(*this); }     
+    tuple<size_t, size_t> Shape() const { return { h, w }; }
+    
     /// copy size and pointers
     INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
     {
@@ -617,6 +626,11 @@ namespace ngbla
     Mat () = default;
     Mat (const Mat &) = default;
 
+    
+    auto & HTData() const { return data; }                                    
+    template <typename T2>
+    Mat (const Mat<H,W,T2> & m2) : data(m2.HTData()) { ; }
+
     /*
     /// copy matrix
     INLINE Mat (const Mat & m) 
@@ -633,7 +647,7 @@ namespace ngbla
     }
 
     /// fill with scalar
-    INLINE Mat (TSCAL s) 
+    INLINE Mat (TSCAL s)     
     {
       for (size_t i = 0; i < H*W; i++) 
         data[i] = s;
@@ -689,8 +703,11 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return Mat<H,W,const T>{*this}; }
+    auto & ViewRW() { return *this; }
+    tuple<size_t, size_t> Shape() const { return { H, W }; }
+    
     INLINE T* Data() noexcept { return &data[0]; }
-
     /// linear access
     INLINE TELEM & operator() (size_t i) { return data[i]; }
     /// access element
@@ -843,6 +860,10 @@ namespace ngbla
       return *this;
     }
 
+    // auto View() const { return DiagMat<H,const T>(*this); }
+    auto View() const { return *this; } 
+    tuple<size_t, size_t> Shape() const { return { H,H }; }
+    
     /// linear access
     TELEM & operator() (int i) { return data[i]; }
     /// access element
@@ -975,6 +996,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return *this; } 
+    tuple<size_t, size_t> Shape() const { return { h,W }; }
+    
     /// copy size and pointers
     INLINE const FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) throw()
     {
@@ -1009,6 +1033,12 @@ namespace ngbla
     ///
     INLINE operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
 
+    auto AsVector() const
+    {
+      return FlatVector<T> (h*W, data);
+    }
+
+    
     ///
     INLINE const FlatVec<W,T> Row (size_t i) const
     {
@@ -1235,6 +1265,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return *this; } 
+    tuple<size_t, size_t> Shape() const { return { H, w }; }
+    
     /*
     /// access operator, linear access
     TELEM & operator() (int i)
@@ -1434,28 +1467,31 @@ namespace ngbla
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
     { ; }
 
-
+    /*
     /// assign contents
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) 
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
-
+    */
+    
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
+    /*
     INLINE SliceMatrix operator= (const SliceMatrix & m) 
     {
-      return MatExpr<SliceMatrix>::operator= (m);
+      return MatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
-
+    */
+    
     INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
     /*
@@ -1509,6 +1545,10 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return *this; }     
+    tuple<size_t, size_t> Shape() const { return { h, w }; }
+
+    
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
@@ -1532,7 +1572,7 @@ namespace ngbla
 
     /// 
     INLINE size_t Dist () const throw() { return dist; }
-
+    
     INLINE T* Data() const noexcept { return data; }
 
     using CMCPMatExpr<SliceMatrix>::Rows;
@@ -1632,12 +1672,12 @@ namespace ngbla
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ColMajor>>::operator= (m);
     }
 
-    INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
+    INLINE const SliceMatrix & operator= (const SliceMatrix<T,ColMajor> & m) const
     {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
+      return CMCPMatExpr<SliceMatrix<T,ColMajor>>::operator= (m);
     }
 
     /// assign constant
@@ -1649,6 +1689,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return *this; }     
+    tuple<size_t, size_t> Shape() const { return { h, w }; }
+    
     /// access operator
     TELEM & operator() (size_t i, size_t j) const
     {
@@ -1784,6 +1827,9 @@ namespace ngbla
     
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
+    auto View() const { return *this; } 
+    tuple<size_t, size_t> Shape() const { return { DummySize::Height(), DummySize::Width() }; }
+    
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
@@ -1820,11 +1866,11 @@ namespace ngbla
     /// 
     INLINE size_t Dist () const throw() { return dist; }
     void IncPtr (size_t inc) { data += inc; } 
-    SliceMatrix<T> AddSize (size_t h, size_t w) const
+    const SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
-      return SliceMatrix<T> (h, w, dist, data);
+      return SliceMatrix<T,ORD> (h, w, dist, data);
     }
     
     INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
@@ -1869,7 +1915,7 @@ namespace ngbla
       return Rows (range.First(), range.Next());
     }
 
-    INLINE const BareSliceMatrix<T> Cols (IntRange range) const
+    INLINE const BareSliceMatrix Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
@@ -1879,11 +1925,11 @@ namespace ngbla
       return SliceVector<T> (h, dist+1, &data[0]);
     }
     */
-    BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
+    BareSliceMatrix RowSlice(size_t first, size_t adist) const
     {
       // NETGEN_CHECK_RANGE(first, 0, Height());  // too restrictive
       NETGEN_CHECK_RANGE(first, 0, adist);  
-      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
+      return BareSliceMatrix (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
     }
     
   };
@@ -1924,6 +1970,9 @@ namespace ngbla
     
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
+    auto View() const { return *this; } 
+    tuple<size_t, size_t> Shape() const { return { DummySize::Height(), DummySize::Width() }; }
+    
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
@@ -1946,7 +1995,7 @@ namespace ngbla
 
     INLINE TELEM* Data() const { return data; }
 
-    SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
+    const SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
@@ -2049,6 +2098,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return *this; }
+    tuple<size_t,size_t> Shape() const { return { h, w }; }
+    
     /// access operator
     TELEM & operator() (size_t i, size_t j) const
     {
@@ -2288,6 +2340,8 @@ namespace ngbla
     /// nothing to do 
     Id () { ; }
 
+    auto View() const { return Id(); }
+    tuple<size_t, size_t> Shape() const { return { H,H }; }    
     ///
     double operator() (int i) const
     {
@@ -2321,7 +2375,8 @@ namespace ngbla
     { cerr << "Identity, linear access" << endl; return 0; }
 
     double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
-
+    auto View() const { return Identity(size); }
+    tuple<size_t, size_t> Shape() const { return { size, size }; }    
     int Height () const { return size; }
     int Width () const { return size; }
   };
@@ -2361,7 +2416,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator- (const Mat<H,W,T> & mat)
   {
-    Mat<H,W,T> res;
+    Mat<H,W,typename remove_const<T>::type> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = -mat(i.value);
       });
@@ -2373,7 +2428,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator+ (const Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
   {
-    Mat<H,W,T> res;
+    Mat<H,W,typename remove_const<T>::type> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = ma(i.value) + mb(i.value);
       });
@@ -2383,7 +2438,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator- (const Mat<H,W,T> & ma, const Mat<H,W,T> & mb)
   {
-    Mat<H,W,T> res;
+    Mat<H,W,typename remove_const<T>::type> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = ma(i.value) - mb(i.value);
       });
@@ -2413,7 +2468,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> operator* (T scal, const Mat<H,W,T> & mat)
   {
-    Mat<H,W,T> res;
+    Mat<H,W,typename remove_const<T>::type> res;
     Iterate<H*W> ([&] (auto i) {
         res(i.value) = scal * mat(i.value);
       });

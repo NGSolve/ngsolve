@@ -153,6 +153,9 @@ namespace ngbla
       return *this;
     }
 
+    FlatVector<T> View() const { return FlatVector<T>(*this); }     
+    tuple<size_t> Shape() const { return { size }; }
+    
     /*  // prevents bla pattern matching
     template<typename TB>
     INLINE const FlatVector & operator+= (const Expr<TB> & v) const
@@ -217,6 +220,7 @@ namespace ngbla
 
     /// vector is matrix of height size
     INLINE size_t Height () const { return size; }
+
 
     /// vector is matrix of with 1
     INLINE constexpr size_t Width () const { return 1; }
@@ -315,6 +319,9 @@ namespace ngbla
     }
     */
 
+    auto View() const { return FlatVector(*this); }         
+    tuple<size_t> Shape() const { return { size }; }
+    
     /// assign memory for vector on local heap
     void AssignMemory (size_t as, LocalHeap & lh) 
     {
@@ -808,12 +815,20 @@ namespace ngbla
     /// constructor, no initialization
     INLINE Vec () { ; }
     /// copy vector
+    /*
     INLINE Vec (const Vec & v) : MatExpr<Vec> ()
     {
       for (size_t i = 0; i < S; i++)
 	data[i] = v.data[i];
     }
+    */
+    
+    Vec (const Vec &) = default;
+    auto & HTData() const { return data; }                                    
+    template <typename T2>
+    Vec (const Vec<S,T2> & v2) : data(v2.HTData()) { ; }
 
+    
     /// initialize with values
     INLINE Vec (const TELEM & scal)
     {
@@ -890,6 +905,11 @@ namespace ngbla
       return *this;
     }
 
+    // auto View() const { return FlatVec(const_cast<Vec&>(*this)); }
+    // auto View() const { return Vec(*this); }
+    auto View() const { return Vec<S,const T>{*this}; }    
+    tuple<size_t> Shape() const { return { S }; }
+    
     /// access vector
     INLINE TELEM & operator() (size_t i) 
     {
@@ -959,6 +979,8 @@ namespace ngbla
     INLINE Vec (T d) { ; }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
+    auto View() const { return Vec(*this); }
+    tuple<size_t> Shape() const { return { 0 }; }    
     INLINE constexpr size_t Size() const { return 0; }
     INLINE constexpr size_t Height() const { return 0; }
     INLINE constexpr size_t Width() const { return 1; }
@@ -1152,6 +1174,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatVec(*this); }         
+    tuple<size_t> Shape() const { return { S }; }
+    
     template<typename TB>
     INLINE const FlatVec & operator+= (const Expr<TB> & v) const
     {
@@ -1257,6 +1282,9 @@ namespace ngbla
       return *this;
     }
 
+    auto View() const { return FlatSliceVec(*this); } 
+    tuple<size_t> Shape() const { return { S }; }
+    
     template<typename TB>
     INLINE auto operator+= (const Expr<TB> & v) const
     {
@@ -1401,7 +1429,10 @@ namespace ngbla
       return *this;
     }
 
-
+    // auto View() const { return SliceVector(*this); }
+    auto View() const { return *this; }
+    tuple<size_t> Shape() const { return { s }; }
+    
     template<typename TB>
     INLINE const SliceVector & operator+= (const Expr<TB> & v) const
     {
@@ -1553,6 +1584,9 @@ namespace ngbla
 	data[i] = v(i);
       return *this;
     }
+
+    auto View() const { return BareVector(*this); } 
+    tuple<size_t> Shape() const { return { DummySize::Height() }; }
     
     FlatVector<T> AddSize(size_t size) const
     {
@@ -1616,6 +1650,9 @@ namespace ngbla
     size_t Dist () const { return dist; }
     T* Data() const { return data; }
 
+    auto View() const { return BareSliceVector(*this); }
+    tuple<size_t> Shape() const { return { DummySize::Height() }; }
+    
     [[deprecated("Use Range(0,size) instead!")]]                
     SliceVector<T> AddSize(size_t size) const
     {
@@ -1725,7 +1762,9 @@ namespace ngbla
       return *this;
     }
 
-
+    auto View() const { return *this; }
+    tuple<size_t> Shape() const { return { s }; }
+    
     template<typename TB>
     INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
     {
@@ -2022,7 +2061,6 @@ namespace ngbla
   }
   
 
-  
 }
 
 namespace ngstd

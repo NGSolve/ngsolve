@@ -1240,11 +1240,11 @@ namespace ngfem
     Vector<AutoDiffDiff<1,bool>> nzvec(1);
     int k = 0;
     for (int k1 : test_proxies.Range())
-      for (int k2 : Range(0,test_proxies[k1]->Dimension()))
+      for (int k2 : Range(test_proxies[k1]->Dimension()))
         {
           int l = 0;
           for (int l1 : trial_proxies.Range())
-            for (int l2 : Range(0,trial_proxies[l1]->Dimension()))
+            for (int l2 : Range(trial_proxies[l1]->Dimension()))
               {
                 ud.trialfunction = trial_proxies[l1];
                 ud.trial_comp = l2;
@@ -1263,11 +1263,11 @@ namespace ngfem
     ud.eval_deriv = 1;
     k = 0;
     for (int k1 : test_proxies.Range())
-      for (int k2 : Range(0,test_proxies[k1]->Dimension()))
+      for (int k2 : Range(test_proxies[k1]->Dimension()))
         {
           int l = 0;
           for (int l1 : trial_proxies.Range())
-            for (int l2 : Range(0,trial_proxies[l1]->Dimension()))
+            for (int l2 : Range(trial_proxies[l1]->Dimension()))
               {
                 ud.trialfunction = trial_proxies[l1];
                 ud.trial_comp = l2;
@@ -4692,11 +4692,11 @@ namespace ngfem
     Vector<AutoDiffDiff<1,bool>> nzvec(1);
     int k = 0;
     for (int k1 : trial_proxies.Range())
-      for (int k2 : Range(0,trial_proxies[k1]->Dimension()))
+      for (int k2 : Range(trial_proxies[k1]->Dimension()))
         {
           int l = 0;
           for (int l1 : trial_proxies.Range())
-            for (int l2 : Range(0,trial_proxies[l1]->Dimension()))
+            for (int l2 : Range(trial_proxies[l1]->Dimension()))
               {
                 ud.trialfunction = trial_proxies[l1];
                 ud.trial_comp = l2;

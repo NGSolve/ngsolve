@@ -5,8 +5,12 @@
 /*********************************************************************/
 
 #include <cmath>
+#include <set>
+
+#ifdef NGS_PYTHON
 #include "../ngstd/ngstd.hpp"
 #include "../ngstd/python_ngstd.hpp"
+#endif // NGS_PYTHON
 
 #include "tensorcoefficient.hpp"
 #include "coefficient_impl.hpp"
@@ -54,7 +58,7 @@ namespace ngfem {
 
             if (test_proxies.Size() && !trial_proxies.Size()) {
                 for (auto test_proxy : test_proxies)
-                    for (int k2 : Range(0, test_proxy->Dimension())) {
+                    for (int k2 : Range(test_proxy->Dimension())) {
                         ud.testfunction = test_proxy;
                         ud.test_comp = k2;
                         cf->NonZeroPattern(ud, nzvec_ad);
@@ -63,7 +67,7 @@ namespace ngfem {
                     }
             } else  {
                 for (auto trial_proxy : trial_proxies)
-                    for (auto l2 : Range(0, trial_proxy->Dimension())) {
+                    for (auto l2 : Range(trial_proxy->Dimension())) {
                         ud.trialfunction = trial_proxy;
                         ud.trial_comp = l2;
                         cf->NonZeroPattern(ud, nzvec_ad);
@@ -71,7 +75,7 @@ namespace ngfem {
                             nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
                         for (auto test_proxy : test_proxies)
-                            for (auto k2 : Range(0, test_proxy->Dimension())) {
+                          for (auto k2 : Range(test_proxy->Dimension())) {
                                 ud.testfunction = test_proxy;
                                 ud.test_comp = k2;
                                 cf->NonZeroPattern(ud, nzvec_ad);
@@ -103,7 +107,7 @@ namespace ngfem {
             new_char = 'a';
             while (existing.size() < target_size) {
                 if (new_char > 'z')
-                    throw NG_EXCEPTION("Did not find any unused symbol in A-Z and a-z. Consider using 'optimize_path' and disabling 'einsum_expansion' at some point.");
+                    throw OutOfIndices("Did not find any unused symbol in A-Z and a-z. Consider using 'optimize_path' and disabling 'einsum_expansion' at some point.");
                 if (find(begin(existing), end(existing), new_char) != end(existing))
                     ++new_char;
                 else
@@ -261,47 +265,103 @@ namespace ngfem {
           return parts;
         }
 
+        string replace_ellipse(const string& signature_part, size_t pos, size_t nnew, const string& new_symbols)
+        {
+          stringstream sstr;
+          for (auto i : Range(pos))
+            sstr << signature_part[i];
+          for (auto i : Range(nnew))
+            sstr << new_symbols[i];
+
+          auto offset = pos + 3;
+          auto nremain = signature_part.size() - offset;
+          for (auto i : Range(nremain))
+            sstr << signature_part[i + offset];
+
+          return sstr.str();
+        }
+
+        pair<string,string> expand_ellipse(string signature_part, const shared_ptr<CoefficientFunction> cf,
+                              const string& existing_symbols, string ellipse_symbols = "")
+        {
+          auto pos = signature_part.find("...");
+          if (pos == string::npos)
+              return {move(signature_part), move(ellipse_symbols)};
+
+          auto nnew = cf->Dimensions().Size() - (signature_part.size() - 3);
+
+          if (nnew > ellipse_symbols.size())
+              ellipse_symbols += new_index_symbols(existing_symbols + ellipse_symbols, nnew - ellipse_symbols.size());
+
+          signature_part = replace_ellipse(signature_part, pos, nnew, ellipse_symbols);
+          return {move(signature_part), move(ellipse_symbols)};
+        }
+
+        string expand_ellipses(const string& signature, const Array<shared_ptr<CoefficientFunction>>& cfs)
+        {
+          auto parts = split_signature(signature);
+          string ellipse_symbols{};
+          ellipse_symbols.reserve(10);
+          for (auto i : Range(parts.size() - 1))
+            tie(parts[i], ellipse_symbols) = expand_ellipse(parts[i], cfs[i], signature, ellipse_symbols);
+
+          auto pos = parts.back().find("...");
+          if (pos != string::npos)
+            parts.back() = replace_ellipse(parts.back(), pos, ellipse_symbols.size(), ellipse_symbols);
+
+          for (const auto& part : parts)
+            if (part.find("...") != string::npos)
+              throw NG_EXCEPTION(string("could not expand all ellipses in signature ") + signature);
+
+          return form_index_signature(parts);
+        }
+
         optional<string> substitute_id_index(string signature, pair<char, char> id_indices,
                                  size_t id_pos, const FlatArray<bool> marked_for_removal,
                                  bool recurse)
         {
-            bool subs{false};
-            auto parts = split_signature(signature);
-            auto &result_part = parts.back();
+          bool subs{false};
+          auto parts = split_signature(signature);
+          auto &result_part = parts.back();
 
-            if (result_part.find(id_indices.first) != string::npos) {
-                if (recurse)
-                  return substitute_id_index(signature,
-                                             {id_indices.second, id_indices.first},
-                                             id_pos,
-                                             marked_for_removal);
-                else
-                  return {};
+          if (result_part.find(id_indices.first) != string::npos)
+            {
+              if (recurse)
+                return substitute_id_index(signature,
+                                           {id_indices.second, id_indices.first},
+                                           id_pos,
+                                           marked_for_removal);
+              else
+                return {};
             }
 
-            for (size_t i2: Range(parts.size() - 1)) {
-                // do not touch current id tensor pos
-                if (i2 == id_pos || marked_for_removal[i2])
-                    continue;
+          for (size_t i2: Range(parts.size() - 1))
+          {
+            // do not touch current id tensor pos
+            if (i2 == id_pos || marked_for_removal[i2])
+              continue;
 
-                auto &idx2 = parts[i2];
-                for (char& c : idx2) {
-                    // substitute
-                    if (c == id_indices.first) {
-                        c = id_indices.second;
-                        subs = true;
-                    }
+            auto &idx2 = parts[i2];
+
+            for (char& c : idx2)
+            {
+              // substitute
+              if (c == id_indices.first)
+                {
+                  c = id_indices.second;
+                  subs = true;
                 }
             }
+          }
 
-            if (subs)
-              return form_index_signature(parts);
-            else if (recurse)
-              return substitute_id_index(signature,
-                                         {id_indices.second, id_indices.first},
-                                         id_pos, marked_for_removal);
-            else
-              return {};
+          if (subs)
+            return form_index_signature(parts);
+          else if (recurse)
+            return substitute_id_index(signature,
+                                       {id_indices.second, id_indices.first},
+                                       id_pos, marked_for_removal);
+          else
+            return {};
         }
 
         string
@@ -356,7 +416,7 @@ namespace ngfem {
         }
 
         pair<string, Array<shared_ptr<CoefficientFunction>>>
-        flatten_einsum(string signature,
+        flatten_einsum(const string& signature,
                        const Array<shared_ptr<CoefficientFunction>>& cfs,
                        const map<string, bool> &options) {
 
@@ -457,8 +517,7 @@ namespace ngfem {
               {
                 // trace of identity
                 parts[i] = parts[i][0];
-                cf_subs[i] = ConstantCF(cfs[i]->Dimensions()[0]);
-                cf_subs[i]->SetDimensions(Array<int>{1});
+                cf_subs[i] = ConstantCF(cfs[i]->Dimensions()[0])->Reshape(1);
               }
               else if (auto new_signature = substitute_id_index(
                       signature, {parts[i][0], parts[i][1]}, i, remove, true); new_signature)
@@ -660,11 +719,15 @@ namespace ngfem {
         shared_ptr<CoefficientFunction>
         optimize_path(const string &signature,
                       const Array<shared_ptr<CoefficientFunction>>& input_cfs,
-                      const map<string, bool> &aoptions) {
-
+                      const map<string, bool> &aoptions)
+        {
           map<string, bool> options = aoptions;
           options["optimize_path"] = false;
           options["expand_einsum"] = false;
+
+#ifndef NGS_PYTHON
+          throw Exception("Function not available");
+#else // NGS_PYTHON
 
           namespace py = pybind11;
 
@@ -674,24 +737,47 @@ namespace ngfem {
           py::object einsum_path = np.attr("einsum_path");
 
           py::list inputs{};
-          for (auto icf: input_cfs) {
+          for (auto icf: input_cfs)
+          {
             py::array::ShapeContainer shape{};
             for (int dim: icf->Dimensions())
               shape->push_back(dim);
             inputs.append(py::array_t<double>(shape));
           }
-          auto res = einsum_path(signature, *inputs, "einsum_call"_a = true);
+
+          py::object res;
+          try
+          {
+            res = einsum_path(signature, *inputs, "einsum_call"_a = true);
+          }
+          catch (const exception& e)
+          {
+            cout << "Exception in call to einsum_path"
+                 << "\n\t"
+                 << "for signature" << signature
+                 << "\n\t"
+                 << "and input dims \n";
+            for (auto cf : input_cfs)
+              cout << cf->Dimensions() << "\n";
+            cout << endl;
+            cout << e.what();
+            throw e;
+          }
+
+
           auto res_tuple = py::extract<py::tuple>(res)();
           auto path = py::extract<py::list>(res_tuple[1])();
           Array<shared_ptr<CoefficientFunction>> tp_inputs{input_cfs};
-          for (size_t j: Range(path.size())) {
+          for (size_t j: Range(path.size()))
+          {
             auto op = py::extract<py::tuple>(path[j])();
             Array<shared_ptr<CoefficientFunction>> new_inputs;
             Array<shared_ptr<CoefficientFunction>> old_inputs;
             auto in_indices = py::extract<py::tuple>(op[0])();
             Array<bool> drop_from_old(tp_inputs.Size());
             drop_from_old = false;
-            for (const auto &item: in_indices) {
+            for (const auto &item: in_indices)
+            {
               auto in_idx = py::extract<size_t>(item)();
               new_inputs.Append(tp_inputs[in_idx]);
               drop_from_old[in_idx] = true;
@@ -705,6 +791,7 @@ namespace ngfem {
             tp_inputs.Append(EinsumCF(new_signature, new_inputs, options));
           }
           return tp_inputs.Last();
+#endif // NGS_PYTHON
         }
 
         LeviCivitaCoefficientFunction::LeviCivitaCoefficientFunction(int adim) : BASE(1), dim{adim}
@@ -1170,13 +1257,15 @@ namespace ngfem {
             return dir;
 
           auto dres = ZeroCF(Array<int>{Dimensions()});
-          for (size_t i: Range(cfs.Size())) {
-            auto new_inputs = InputCoefficientFunctions();
-            new_inputs[i] = cfs[i]->Diff(var, dir);
+
+          for (size_t i: Range(original_inputs.Size()))
+          {
+            auto new_inputs{original_inputs};
+            new_inputs[i] = original_inputs[i]->Diff(var, dir);
             if (new_inputs[i]->IsZeroCF())
               continue;
 
-            dres = dres + EinsumCF(index_signature, new_inputs, options);
+            dres = dres + EinsumCF(original_index_signature, new_inputs, options);
           }
           // TODO: great potential for optimization when equivalent objects are
           //  identified in Compile
@@ -1195,15 +1284,29 @@ namespace ngfem {
           res_dims.Append(var->Dimensions());
 
           auto dres = ZeroCF(res_dims);
-          string new_symbols{};
           try
           {
-            new_symbols = new_index_symbols(original_index_signature,
-                                            var->Dimensions().Size());
+              auto parts = split_signature(original_index_signature);
+
+              for (size_t i: Range(original_inputs.Size()))
+              {
+                auto new_inputs{original_inputs};
+                new_inputs[i] = original_inputs[i]->DiffJacobi(var);
+                if (new_inputs[i]->IsZeroCF())
+                  continue;
+                auto new_parts{parts};
+                new_parts[i] = parts[i] + "...";
+                new_parts.back() += "...";
+                dres = dres + EinsumCF(form_index_signature(new_parts), new_inputs, options);
+              }
+
+              // TODO: great potential for optimization when equivalent objects are
+              //  identified in Compile
+              return dres;
           }
-          catch (const Exception& e)
+          catch (const OutOfIndices& e)
           {
-            if (!options.at("optimize_path"))
+            if (options.find("optimize_path") == options.end() || !options.at("optimize_path"))
             {
               cout << "Caught exception during DiffJacobi:\n"
                    << e.What()
@@ -1212,27 +1315,10 @@ namespace ngfem {
               auto opts = options;
               opts["optimize_path"] = true;
               opts["expand_einsum"] = false;
-              return Optimize(options)->DiffJacobi(var);
+              return Optimize(opts)->DiffJacobi(var);
             }
             throw e;
           }
-
-          auto parts = split_signature(original_index_signature);
-
-          for (size_t i: Range(original_inputs.Size())) {
-            auto new_inputs{original_inputs};
-            new_inputs[i] = original_inputs[i]->DiffJacobi(var);
-            if (new_inputs[i]->IsZeroCF())
-              continue;
-            auto new_parts{parts};
-            new_parts[i] = parts[i] + new_symbols;
-            new_parts.back() += new_symbols;
-            dres = dres + EinsumCF(form_index_signature(new_parts), new_inputs, options);
-          }
-
-          // TODO: great potential for optimization when equivalent objects are
-          //  identified in Compile
-          return dres;
         }
 
         shared_ptr<EinsumCoefficientFunction>
@@ -1254,7 +1340,7 @@ namespace ngfem {
     shared_ptr<CoefficientFunction> EinsumCF(const string &index_signature,
                                              const Array<shared_ptr<CoefficientFunction>> &cfs,
                                              const map<string, bool> &options) {
-        return make_shared<EinsumCoefficientFunction>(index_signature, cfs, options);
+        return make_shared<EinsumCoefficientFunction>(expand_ellipses(index_signature, cfs), cfs, options);
     }
 
 } // namespace ngfem

@@ -1952,8 +1952,8 @@ namespace ngfem
                   T eta = lam[fav[1]];
                   
                   Matrix<T> F(3,2);
-                  F.Cols(0,1) = adxi;
-                  F.Cols(1,2) = adeta;
+                  F.Col(0) = adxi;
+                  F.Col(1) = adeta;
 		 
                   Matrix<T> Ftmp(2,2);
                   Ftmp = Trans(F)*F;

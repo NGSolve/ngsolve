@@ -16,7 +16,7 @@ namespace ngfem
   class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this_virtual<CoefficientFunction>
   {
   private:
-    int dimension = 1;
+    size_t dimension = 1;
     Array<int> dims;
   protected:
     bool elementwise_constant = false;
@@ -39,7 +39,7 @@ namespace ngfem
       if (dimension <= 1)
         dims = Array<int> (0);
       else
-        dims = Array<int> ( { dimension } );
+        dims = Array<int> ( { int(dimension) } );
     }
     
     ///
@@ -164,7 +164,7 @@ namespace ngfem
     }
 
     bool IsComplex() const { return is_complex; }
-    int Dimension() const { return dimension; }
+    size_t Dimension() const { return dimension; }
     FlatArray<int> Dimensions() const { return dims; }
     
     void SetDimensions (FlatArray<int> adims)

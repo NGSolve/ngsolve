@@ -1512,7 +1512,62 @@ public:
                    BareSliceMatrix<T,ORD> values) const
   {
     auto in0 = input[0];
-    values.AddSize(Dimension(), ir.Size()) = scal * in0;
+    // values.AddSize(Dimension(), ir.Size()) = scal * in0;
+    // SliceMatrix<T,ORD> sval(Dimension(), ir.Size(), values.Dist(), values.Data());
+    // sval = scal * in0;   // failing on WIN-AVX
+
+    /*
+    // working on WIN-AVX
+    for (int i = 0; i < Dimension(); i++)
+      for (int j = 0; j < ir.Size(); j++)
+        sval(i,j) = scal * in0(i,j);
+    */
+
+    /*
+      working:
+      SliceMatrix<T,ORD> sval(Dimension(), ir.Size(), values.Dist(), values.Data());
+    auto prod = scal*in0;
+    for (int i = 0; i < Dimension(); i++)
+      for (int j = 0; j < ir.Size(); j++)
+        sval(i,j) = prod(i,j);
+    */
+
+    /*
+      // working
+    auto sval = values.AddSize(Dimension(), ir.Size());
+    auto prod = scal*in0;
+    for (int i = 0; i < Dimension(); i++)
+      for (int j = 0; j < ir.Size(); j++)
+        sval(i,j) = prod(i,j);
+    */
+
+    /*
+    // failing
+    auto sval = values.AddSize(Dimension(), ir.Size());
+    auto prod = scal*in0;
+    for (int i = 0; i < sval.Height(); i++)
+      for (int j = 0; j < sval.Width(); j++)
+        sval(i,j) = prod(i,j);
+    */
+
+    // failing, but works with check
+    auto sval = values.AddSize(Dimension(), ir.Size());
+    auto prod = scal*in0;
+    sval = prod;
+    // assert(sval.Height() == Dimension());
+    // assert(sval.Width() == ir.Size());
+    
+    // if (sval.Height() != Dimension()) throw Exception("wrong height");
+    // if (sval.Width() != ir.Size()) throw Exception("wrong width");
+    
+    // values.AddSize(Dimension(), ir.Size()) = scal*in0;
+    
+    /*
+      // working on WIN-AVX
+    for (int i = 0; i < Dimension(); i++)
+      for (int j = 0; j < ir.Size(); j++)
+        values(i,j) = scal * in0(i,j);
+    */
   }
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir,
@@ -4639,7 +4694,7 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
         if (c1->Dimension() > 1 && c2->Dimension() > 1)
           return ZeroCF(Array<int>( {} ));
         if ( (c1->Dimension() == 1 && c2->Dimension() > 1) || (c1->Dimension() > 1 && c2->Dimension() == 1))
-          return ZeroCF(Array( {c1->Dimension()*c2->Dimension()} ));
+          return ZeroCF(Array( {int(c1->Dimension()*c2->Dimension())} ));
 
         return ZeroCF(Array<int>( {} ));
           
@@ -5546,7 +5601,10 @@ public:
     for (auto i : Range(dims1.Size()-1))
       descr << dims1[i] << ", ";
     descr << dims1.Last() << " | ";
-    descr << " pos: " << pos << " | ";
+    descr << " pos: ";
+    for (auto i : Range(pos.Size()-1))
+      descr << pos[i] << ", ";
+    descr << pos.Last() << " | ";
     descr << " stride: ";
     for (auto i : Range(stride.Size()-1))
       descr << stride[i] << ", ";

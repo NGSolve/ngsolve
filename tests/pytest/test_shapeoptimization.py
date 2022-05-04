@@ -10,6 +10,13 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     mesh = VEC.mesh
     PHI, PSI = VEC.TnT()
     gfX_t = GridFunction(VEC)
+
+    # print ("G0 = ", G0.Compile())
+    # print ("G0.diffshape = ", G0.DiffShape(PSI).Compile())
+    # print ("dGdF = ", G.Diff(F, Grad(PSI)).Compile())
+    # print ("dGdX = ", G.Diff(X, PSI).Compile())
+    # print ("G0", G0)
+    # print ("G0.ddshape", G0.DiffShape(PSI).DiffShape(PHI).Compile())   
     
     #semi automatic
     dJOmegaTestSA = LinearForm(VEC)
@@ -46,9 +53,8 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
     delta2Prev = [0,0]
     
 
-    # dJOmegaTestSA.Assemble()
+    dJOmegaTestSA.Assemble()
     dJOmegaTestFA.Assemble()
-    return
     ddJOmegaTestSA.Assemble()
     ddJOmegaTestFA.Assemble()
 
@@ -69,12 +75,19 @@ def Test(G0, G, gfX, X, F, G0bnd=None, Gbnd=None):
         if G0bnd: Jt += Integrate(G0bnd, mesh)
  
         mesh.UnsetDeformation()
+
+        # print ("DJSA = ", InnerProduct(dJOmegaTestSA.vec,gfX.vec))
+        # print ("DJFA = ", InnerProduct(dJOmegaTestFA.vec,gfX.vec))        
+        # print ("DDJSA = ", InnerProduct(tmp1,gfX.vec))
+        # print ("DDJFA = ", InnerProduct(tmp2,gfX.vec))        
+
+        
         delta1[0] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestSA.vec,gfX.vec))
         delta1[1] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestFA.vec,gfX.vec))
         delta2[0] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestSA.vec,gfX.vec) - t**2/2*InnerProduct(tmp1,gfX.vec))
         delta2[1] = abs(Jt - J0 -  t*InnerProduct(dJOmegaTestFA.vec,gfX.vec) - t**2/2*InnerProduct(tmp2,gfX.vec))
-        #print( " delta1 = ", delta1)
-        #print( " delta2 = ", delta2)
+        print( " delta1 = ", delta1)
+        print( " delta2 = ", delta2)
 
         if i > 0:
             #print( "--------------------------delta1Prev / delta1 = ",round(delta1Prev[0] / delta1[0],3),round(delta1Prev[1] / delta1[1],3))
@@ -104,6 +117,8 @@ def test_diff():
     return
 
 def test_shapeopt_2d():
+    # return   # disable tests
+
     geo = SplineGeometry()
     geo.AddCircle((0,0), r = 0.3)
     ngmesh = geo.GenerateMesh(maxh = 0.025) 
@@ -132,7 +147,7 @@ def test_shapeopt_2d():
     G0 = uD * dx
     G  = uD * Det(F) * dx
     Test(G0, G, gfX, X, F)
-
+    
     ### (Vector)H1
     fes = H1(mesh, order=1)
     gfu = GridFunction(fes)
