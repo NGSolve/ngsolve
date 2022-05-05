@@ -8,7 +8,7 @@
 /*********************************************************************/
 
 
-#include <soldata.hpp>   // netgen visualization
+#include <meshing/soldata.hpp>   // netgen visualization
 
 namespace ngcomp
 {

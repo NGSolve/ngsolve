@@ -4,12 +4,8 @@
 
 #if NETGEN_USE_GUI
 #include <incopengl.hpp>
-
-namespace netgen
-{
-  DLL_HEADER void AddUserVisualizationObject (UserVisualizationObject * vis);
-  DLL_HEADER void DeleteUserVisualizationObject (UserVisualizationObject * vis);
-}
+#include <visual.hpp>
+#include <visualization/vssolution.hpp>
 #endif // NETGEN_USE_GUI
 
 

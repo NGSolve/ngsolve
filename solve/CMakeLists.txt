@@ -31,13 +31,13 @@ set_target_properties(ngslib PROPERTIES INSTALL_RPATH "${NETGEN_RPATH_TOKEN}/../
 install(TARGETS ngslib DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 endif(NETGEN_USE_PYTHON)
 
-target_link_libraries( solve PUBLIC ngcomp ngstd ngfem ngla ngbla nglib visual ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${VTUNE_LIB} ${PARDISO_LIBS})
+target_link_libraries( solve PUBLIC ngcomp ngstd ngfem ngla ngbla nglib ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${VTUNE_LIB} ${PARDISO_LIBS})
 target_link_libraries( solve ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS solve ${ngs_install_dir} )
 
 if (NETGEN_USE_GUI)
     add_library( ngsolve SHARED ${ngsolve_object_libs} ngsolve.cpp)
-    target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES} PUBLIC gui)
+    target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES} PUBLIC nggui)
 
 else (NETGEN_USE_GUI)
     if(WIN32) # libngsolve.dll is the only ngsolve library on windows -> also build it without GUI

@@ -30,7 +30,7 @@ target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:n
 install( TARGETS ngcomp ${ngs_install_dir} )
 
 if(NETGEN_USE_GUI)
-  target_link_libraries(ngcomp PRIVATE ${NETGEN_OPENGL_LIBRARIES})
+  target_link_libraries(ngcomp PUBLIC nggui PRIVATE ${NETGEN_OPENGL_LIBRARIES})
 endif(NETGEN_USE_GUI)
 
 install( FILES
