@@ -21,6 +21,7 @@ additional_libs = [
         "libmesh.so",
         "libmkl_rt.so.1",
         "libngcore.so",
+        "libnggui.so",
         "libnglib.so",
         "libocc.so",
         "libpng15.so.15.13.0",
