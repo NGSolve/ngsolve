@@ -13,7 +13,7 @@ namespace ngstd
     {
       Unload();
       if(directory_to_delete)
-        for(auto i : Range(5))
+        for([[maybe_unused]] auto i : Range(5))
         {
           // on Windows, a (detached?) child process of the compiler/linker might still block the directory
           // wait for it to finish (up to a second)

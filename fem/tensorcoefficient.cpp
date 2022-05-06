@@ -912,7 +912,7 @@ namespace ngfem {
 
           // special shorthand for trace of a matrix
           if (signature.size() == 2 && signature[0] == signature[1])
-            return move(signature);
+            return signature;
 
           if (signature.find(arrow) == string::npos)
             throw NG_EXCEPTION(string("index signature must contain \"") + arrow + ("\""));
@@ -921,7 +921,7 @@ namespace ngfem {
             if (count(signature.begin(), signature.end(), c) > 1)
                 throw NG_EXCEPTION(string("index signature must contain only one \"") + c + ("\""));
 
-          return move(signature);
+          return signature;
         }
 
         EinsumCoefficientFunction::EinsumCoefficientFunction(
