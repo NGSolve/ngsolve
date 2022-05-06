@@ -3,9 +3,7 @@
 
 #include <solve.hpp>
 
-#ifdef TCL
 extern "C" void Ng_TclCmd(string);
-#endif
 
 
 
@@ -1439,12 +1437,7 @@ namespace ngcomp
 
   void PDE :: Tcl_Eval (string str)
   {
-#ifdef TCL
     Ng_TclCmd(str);
-#else
-    cout << "sorry, no Tcl" << endl;
-#endif
-    
   }
 
 

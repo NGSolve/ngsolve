@@ -1,7 +1,5 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-add_definitions(-DTCL -DUSE_TCL_STUBS -DUSE_TK_STUBS)
-
 add_library( solve ${NGS_LIB_TYPE}
         bvp.cpp generalizedEVP.cpp numproc.cpp evp.cpp 
         hyperbolic.cpp numprocee.cpp python_solve.cpp
@@ -17,11 +15,7 @@ set_target_properties(ngslib PROPERTIES PREFIX "")
 target_link_libraries(ngslib PRIVATE "$<BUILD_INTERFACE:netgen_python>")
 target_link_libraries(ngslib ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 
-if(NETGEN_USE_GUI AND WIN32)
-    target_link_libraries(ngslib PUBLIC ngsolve)
-else(NETGEN_USE_GUI AND WIN32)
-    target_link_libraries(ngslib PUBLIC solve)
-endif(NETGEN_USE_GUI AND WIN32)
+target_link_libraries(ngslib PUBLIC ngsolve)
 
 if(WIN32)
     set_target_properties( ngslib PROPERTIES SUFFIX ".pyd" )
@@ -35,22 +29,13 @@ target_link_libraries( solve PUBLIC ngcomp ngstd ngfem ngla ngbla nglib ${MPI_CX
 target_link_libraries( solve ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS solve ${ngs_install_dir} )
 
-if (NETGEN_USE_GUI)
-    add_library( ngsolve SHARED ${ngsolve_object_libs} ngsolve.cpp)
-    target_link_libraries(ngsolve PRIVATE ${NETGEN_OPENGL_LIBRARIES} PUBLIC nggui)
+add_library( ngsolve SHARED ${ngsolve_object_libs} ngsolve.cpp)
+target_link_libraries(ngsolve PUBLIC nglib ngcore solve ngcomp ngfem ngbla ngla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>" )
+install( TARGETS ngsolve ${ngs_install_dir} )
 
-else (NETGEN_USE_GUI)
-    if(WIN32) # libngsolve.dll is the only ngsolve library on windows -> also build it without GUI
-        add_library( ngsolve SHARED ${ngsolve_object_libs})
-    endif(WIN32)
-
-endif (NETGEN_USE_GUI)
-
-if (NETGEN_USE_GUI OR WIN32)
-  target_link_libraries(ngsolve PUBLIC nglib ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${PARDISO_LIBS} ${UMFPACK_LIBRARIES} )
+if (WIN32)
+    target_link_libraries(ngsolve PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${PARDISO_LIBS} ${UMFPACK_LIBRARIES} )
     target_link_libraries(ngsolve ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
-    target_link_libraries(ngsolve PUBLIC solve ngcomp ngstd ngfem ngla ngbla)
-    install( TARGETS ngsolve ${ngs_install_dir} )
 endif()
 
 if(WIN32)
