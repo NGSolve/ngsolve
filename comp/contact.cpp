@@ -2,6 +2,8 @@
 
 #include "contact.hpp"
 
+#undef NETGEN_USE_GUI // TODO: implement interface in netgen to draw lines (to avoid linking opengl here)
+
 #if NETGEN_USE_GUI
 #include <incopengl.hpp>
 #include <visual.hpp>

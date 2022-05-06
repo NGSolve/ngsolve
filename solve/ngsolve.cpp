@@ -12,7 +12,7 @@
 #include <parallelngs.hpp>
 
 #include <thread>
-#include <ngtcl.hpp>
+#include <meshing/visual_interface.hpp>
 
 using namespace std;
 using namespace ngsolve;
