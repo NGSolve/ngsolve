@@ -1171,7 +1171,7 @@ namespace ngbla
      Matrix is stored colum-wise
   */
   template <int H, typename T = double, int SLICE = H>
-  class FlatMatrixFixHeight : public MatExpr<FlatMatrixFixHeight<H,T,SLICE> >
+  class FlatMatrixFixHeight : public CMCPMatExpr<FlatMatrixFixHeight<H,T,SLICE> >
   {
   protected:
     /// the data
