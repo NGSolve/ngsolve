@@ -1191,8 +1191,8 @@ namespace ngbla
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
 
-    auto View() const { return *this; }
-    auto Shape() const { return a.Shape(); }         
+    INLINE auto View() const { return *this; }
+    INLINE auto Shape() const { return a.Shape(); }         
     
     INLINE TA A() const { return a; }
     INLINE TS S() const { return s; }
@@ -1202,7 +1202,7 @@ namespace ngbla
   };
 
   template <typename TA>
-  inline auto operator* (double b, const Expr<TA> & a)
+  INLINE auto operator* (double b, const Expr<TA> & a)
   {
     return ScaleExpr (a.View(), b);
   }
