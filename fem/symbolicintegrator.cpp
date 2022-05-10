@@ -4722,6 +4722,31 @@ namespace ngfem
           }
         cout << IM(6) << endl;
       }
+
+    ddcf.SetSize(sqr(trial_proxies.Size()));
+    if (symbolic_integrator_uses_diff)
+      {
+        try
+          {
+            cout << "cf = " << *cf << endl;
+            for (int i = 0; i < trial_proxies.Size(); i++)
+              {
+                auto diffi = cf->DiffJacobi(trial_proxies[i]);
+                cout << "diffi = " << *diffi << endl;
+                for (int j = 0; j < trial_proxies.Size(); j++)
+                  {
+                    // cout << "diff_" << i << "," << j << " = " << endl;
+                    ddcf[i*trial_proxies.Size()+j] = diffi->DiffJacobi(trial_proxies[j]);
+                    cout << "ddcf = " << *ddcf[i*trial_proxies.Size()+j] << endl;
+                  }
+              }
+          }
+        catch (const Exception& e)
+          {
+            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+      }
+    
     cout << IM(6) << "nonzero: " << cnt << "/" << sqr(nonzeros.Height()) << endl;
     cout << IM(6) << "nonzero-proxies: " << endl << nonzeros_proxies << endl;
   }
@@ -5086,6 +5111,14 @@ namespace ngfem
 
                   {
                   RegionTimer reg(tdmat);
+
+
+                  if (ddcf[l1*trial_proxies.Size()+k1])
+                    {
+                      ddcf[l1*trial_proxies.Size()+k1]->Evaluate(mir, proxyvalues2);
+                    }
+                  else
+                  
                   for (int k = 0; k < dim_proxy1; k++)
                     for (int l = 0; l < dim_proxy2; l++)
                       {
