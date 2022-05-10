@@ -970,6 +970,7 @@ public:
     Array<int> trial_cum;     // cumulated dimension of proxies
     Matrix<bool> nonzeros;    // do components interact ? 
     Matrix<bool> nonzeros_proxies; // do proxies interact ?
+    Array<shared_ptr<CoefficientFunction>> ddcf;
     
   public:
     SymbolicEnergy (shared_ptr<CoefficientFunction> acf, VorB avb, VorB aelement_vb);
