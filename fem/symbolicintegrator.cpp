@@ -1326,15 +1326,16 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
 
     dcf_dtest.SetSize(test_proxies.Size());
+    ddcf_dtrial_dtest.SetSize(trial_proxies.Size(), test_proxies.Size());
 
-    // comment in for experimental new Apply
     if (symbolic_integrator_uses_diff)
-      for (int i = 0; i < test_proxies.Size(); i++)
+      for (auto i : Range(test_proxies))
         {
           try
             {
               dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
-              // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+              for (auto j : Range(trial_proxies))
+                ddcf_dtrial_dtest(j, i) = cf->DiffJacobi(trial_proxies[j])->DiffJacobi(test_proxies[i]);
             }
           catch (const Exception& e)
             {
@@ -1536,40 +1537,69 @@ namespace ngfem
                       bool samediffop = same_diffops(tt_pair) && !is_mixedfe;
                       // td.Start();
 
-                      FlatMatrix<SIMD<SCAL>> proxyvalues(dim_proxy1*dim_proxy2, ir.Size(), lh);
+                      FlatMatrix<SIMD<SCAL>> proxyvalues(dim_proxy1 * dim_proxy2, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL>> diagproxyvalues(dim_proxy1, ir.Size(), lh);
                       FlatMatrix<SIMD<SCAL>> val(1, ir.Size(), lh);
-                      {
-                        // RegionTimer regdmat(timer_SymbBFIdmat);                      
-                      if (!is_diagonal)
-                        for (size_t k = 0, kk = 0; k < dim_proxy1; k++)
-                          for (size_t l = 0; l < dim_proxy2; l++, kk++)
+
+                      IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                      IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
+                      SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
+
+                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width() * dim_proxy1, ir.Size(), lh);
+                      FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width() * dim_proxy2, ir.Size(), lh);
+                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 = samediffop ?
+                                                             bbmat1 : FlatMatrix<SIMD<SCAL_SHAPES>>(
+                                      elmat.Height() * dim_proxy2, ir.Size(), lh);
+
+                      FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2 * ir.Size(),
+                                                      bdbmat1.Data());
+                      FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2 * ir.Size(),
+                                                            bbmat2.Data());
+
+                      if (ddcf_dtrial_dtest(k1nr, l1nr))
+                        {
+//                          cout << "use ddcf_dtrial_dtest" << endl;
+                          ddcf_dtrial_dtest(k1nr, l1nr)->Evaluate(mir, proxyvalues);
+
+                          if (is_diagonal)
+                              for (auto k : Range(dim_proxy1))
+                                  diagproxyvalues.Row(k) = proxyvalues.Row(k*(dim_proxy1 + 1));
+                        }
+                      else
+                        {
+                          if (!is_diagonal)
                             {
-                              if (nonzeros(l1+l, k1+k))
+                              for (size_t k = 0, kk = 0; k < dim_proxy1; k++)
+                                for (size_t l = 0; l < dim_proxy2; l++, kk++)
+                                  {
+                                    if (nonzeros(l1 + l, k1 + k))
+                                      {
+                                        ud.trialfunction = proxy1;
+                                        ud.trial_comp = k;
+                                        ud.testfunction = proxy2;
+                                        ud.test_comp = l;
+
+                                        cf->Evaluate(mir, proxyvalues.Rows(kk, kk + 1));
+                                      }
+                                    else;
+                                      // proxyvalues.Row(kk) = 0.0;
+                                  }
+                            }
+                          else
+                            {
+                              for (int k = 0; k < proxy1->Dimension(); k++)
                                 {
                                   ud.trialfunction = proxy1;
                                   ud.trial_comp = k;
                                   ud.testfunction = proxy2;
-                                  ud.test_comp = l;
-                                  
-                                  cf -> Evaluate (mir, proxyvalues.Rows(kk,kk+1));
+                                  ud.test_comp = k;
+
+                                  cf->Evaluate(mir, diagproxyvalues.Rows(k, k + 1));
                                 }
-                              else
-                                ; 
-                                // proxyvalues.Row(kk) = 0.0;
                             }
-                      else
-                        for (size_t k = 0; k < dim_proxy1; k++)
-                          {
-                            ud.trialfunction = proxy1;
-                            ud.trial_comp = k;
-                            ud.testfunction = proxy2;
-                            ud.test_comp = k;
-                            
-                            cf -> Evaluate (mir, diagproxyvalues.Rows(k,k+1));
-                          }
-                      // td.Stop();
-                      }
+                          // td.Stop();
+                        }
+
                       // NgProfiler::StartThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());
                       FlatVector<SIMD<double>> weights(ir.Size(), lh);
                       if (!is_diagonal)
@@ -1579,22 +1609,6 @@ namespace ngfem
                       else
                         for (size_t i = 0; i < ir.Size(); i++)
                           diagproxyvalues.Col(i) *= mir[i].GetWeight();
-                      
-
-                      IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
-                      IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                      SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
-
-                          
-                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat1(elmat.Width()*dim_proxy1, ir.Size(), lh);
-                      FlatMatrix<SIMD<SCAL>> bdbmat1(elmat.Width()*dim_proxy2, ir.Size(), lh);
-                      FlatMatrix<SIMD<SCAL_SHAPES>> bbmat2 = samediffop ?
-                        bbmat1 : FlatMatrix<SIMD<SCAL_SHAPES>>(elmat.Height()*dim_proxy2, ir.Size(), lh);
-                      
-                      FlatMatrix<SIMD<SCAL>> hbdbmat1(elmat.Width(), dim_proxy2*ir.Size(),
-                                                      bdbmat1.Data());
-                      FlatMatrix<SIMD<SCAL_SHAPES>> hbbmat2(elmat.Height(), dim_proxy2*ir.Size(),
-                                                            bbmat2.Data());
 
                       // NgProfiler::StopThreadTimer (timer_SymbBFIscale, TaskManager::GetThreadId());
                       // bbmat1 = 0.0;
@@ -1610,32 +1624,32 @@ namespace ngfem
                         {
                           // static Timer t("diag DB", NoTracing);
                           // RegionTracer reg(TaskManager::GetThreadId(), t);
-                          // NgProfiler::StartThreadTimer (timer_SymbBFIbd, TaskManager::GetThreadId());                      
-                          
+                          // NgProfiler::StartThreadTimer (timer_SymbBFIbd, TaskManager::GetThreadId());
+
                           /*
                           size_t ii = r1.First()*dim_proxy1;
                           for (size_t i : r1)
                             for (size_t j = 0; j < dim_proxy1; j++, ii++)
                               bdbmat1.Row(ii) = pw_mult(bbmat1.Row(ii), diagproxyvalues.Row(j));
                           */
-                          
+
                           // size_t sr1 = r1.Size();
                           for (size_t j = 0; j < dim_proxy1; j++)
                             {
-                              auto hbbmat1 = bbmat1.RowSlice(j,dim_proxy1).Rows(r1);
-                              auto hbdbmat1 = bdbmat1.RowSlice(j,dim_proxy1).Rows(r1);
-                              
+                              auto hbbmat1 = bbmat1.RowSlice(j, dim_proxy1).Rows(r1);
+                              auto hbdbmat1 = bdbmat1.RowSlice(j, dim_proxy1).Rows(r1);
+
                               for (size_t k = 0; k < bdbmat1.Width(); k++)
-                                hbdbmat1.Col(k).Range(0,r1.Size()) = diagproxyvalues(j,k) * hbbmat1.Col(k);
+                                hbdbmat1.Col(k).Range(0, r1.Size()) = diagproxyvalues(j, k) * hbbmat1.Col(k);
                             }
                         }
                       else
                         {
                           // static Timer t("DB", NoTracing);
                           // RegionTracer reg(TaskManager::GetThreadId(), t);
-                          
+
                           // bdbmat1 = 0.0;
-                          hbdbmat1.Rows(r1) = 0.0; 
+                          hbdbmat1.Rows(r1) = 0.0;
                           /*
                           for (auto i : r1)
                             for (size_t j = 0; j < dim_proxy2; j++)
@@ -1664,17 +1678,17 @@ namespace ngfem
 
                           for (size_t j = 0; j < dim_proxy2; j++)
                             for (size_t k = 0; k < dim_proxy1; k++)
-                              if (nonzeros(l1+j, k1+k))
+                              if (nonzeros(l1 + j, k1 + k))
                                 {
-                                  auto proxyvalues_jk = proxyvalues.Row(k*dim_proxy2+j);
-                                  auto bbmat1_k = bbmat1.RowSlice(k, dim_proxy1).Rows(r1);
-                                  auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
+                                   auto proxyvalues_jk = proxyvalues.Row(k * dim_proxy2 + j);
+                                   auto bbmat1_k = bbmat1.RowSlice(k, dim_proxy1).Rows(r1);
+                                   auto bdbmat1_j = bdbmat1.RowSlice(j, dim_proxy2).Rows(r1);
 
-                                  for (size_t i = 0; i < ir.Size(); i++)
-                                    bdbmat1_j.Col(i).Range(0,r1.Size()) += proxyvalues_jk(i)*weights(i) * bbmat1_k.Col(i);
+                                   for (size_t i = 0; i < ir.Size(); i++)
+                                     bdbmat1_j.Col(i).Range(0, r1.Size()) +=
+                                               proxyvalues_jk(i) * weights(i) * bbmat1_k.Col(i);
                                 }
                         }
-                      
                       // elmat.Rows(r2).Cols(r1) += bbmat2.Rows(r2) * Trans(bdbmat1.Rows(r1));
                       // AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
 
@@ -1692,7 +1706,7 @@ namespace ngfem
                         // static Timer t("AddABt", NoTracing);
                         // RegionTracer reg(TaskManager::GetThreadId(), t);
                         
-                        if (symmetric_so_far)
+                      if (symmetric_so_far)
                         {
                           /*
                             RegionTimer regdmult(timer_SymbBFImultsym);
@@ -1722,7 +1736,6 @@ namespace ngfem
                           */
                         }
                     }
-              
                   l1 += proxy2->Dimension();
                   l1nr++;
                 }
@@ -1767,10 +1780,10 @@ namespace ngfem
 
             for (int k = 0; k < proxy1->Dimension(); k++)
               for (int l = 0; l < proxy2->Dimension(); l++)
-                if (nonzeros(l1+l, k1+k))
+                if (nonzeros(l1 + l, k1 + k))
                   {
                     if (k != l) is_diagonal = false;
-                    is_nonzero = true;
+                      is_nonzero = true;
                   }
 
             if (is_nonzero) //   && k1nr*test_proxies.Size()+l1nr >= first_std_eval)
@@ -1778,91 +1791,103 @@ namespace ngfem
                 HeapReset hr(lh);
                 bool samediffop = (*(proxy1->Evaluator()) == *(proxy2->Evaluator())) && !is_mixedfe;
                 // td.Start();
-                FlatTensor<3,SCAL> proxyvalues(lh, mir.Size(), proxy1->Dimension(), proxy2->Dimension());
-                FlatVector<SCAL> diagproxyvalues(mir.Size()*proxy1->Dimension(), lh);
+                FlatTensor<3, SCAL> proxyvalues(lh, mir.Size(), proxy1->Dimension(), proxy2->Dimension());
+                FlatVector<SCAL> diagproxyvalues(mir.Size() * proxy1->Dimension(), lh);
                 FlatMatrix<SCAL> val(mir.Size(), 1, lh);
-                
-                
-                if (!is_diagonal)
-                  for (int k = 0; k < proxy1->Dimension(); k++)
-                    for (int l = 0; l < proxy2->Dimension(); l++)
-                      {
-                        if (nonzeros(l1+l, k1+k))
-                          {
-                            if (k != l) is_diagonal = false;
-                            is_nonzero = true;
-                            ud.trialfunction = proxy1;
-                            ud.trial_comp = k;
-                            ud.testfunction = proxy2;
-                            ud.test_comp = l;
-                            
-                            cf -> Evaluate (mir, val);
-                            proxyvalues(STAR,k,l) = val.Col(0);
-                          }
-                        else
-                          proxyvalues(STAR,k,l) = 0.0;
-                      }
-                else
-                  for (int k = 0; k < proxy1->Dimension(); k++)
-                    {
-                      ud.trialfunction = proxy1;
-                      ud.trial_comp = k;
-                      ud.testfunction = proxy2;
-                      ud.test_comp = k;
 
-                      if (!elementwise_constant)
+                IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
+                IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
+                SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
+                FlatMatrix<SCAL_SHAPES, ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
+                FlatMatrix<SCAL_SHAPES, ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
+
+                if (ddcf_dtrial_dtest(l1nr, k1nr))
+                  {
+//                    cout << "use ddcf_dtrial_dtest (NO SIMD)" << endl;
+                    // TODO: optimize for element-wise constant case?
+                    FlatMatrix<SCAL> mproxyvalues(mir.Size(), proxy1->Dimension() * proxy2->Dimension(),
+                                                  proxyvalues.Data());
+                    ddcf_dtrial_dtest(l1nr, k1nr)->Evaluate(mir, mproxyvalues);
+                    if (is_diagonal)
+                        for (auto k: Range(proxy1->Dimension()))
+                            diagproxyvalues.Slice(k, proxy1->Dimension()) = proxyvalues(STAR, k, k);
+                  }
+                else
+                  {
+                    if (!is_diagonal)
+                      for (int k = 0; k < proxy1->Dimension(); k++)
+                        for (int l = 0; l < proxy2->Dimension(); l++)
+                          {
+                            if (nonzeros(l1 + l, k1 + k))
+                              {
+                                ud.trialfunction = proxy1;
+                                ud.trial_comp = k;
+                                ud.testfunction = proxy2;
+                                ud.test_comp = l;
+
+                                cf->Evaluate(mir, val);
+                                proxyvalues(STAR, k, l) = val.Col(0);
+                              }
+                            else
+                              proxyvalues(STAR, k, l) = 0.0;
+                          }
+                    else
+                      for (int k = 0; k < proxy1->Dimension(); k++)
                         {
-                          cf -> Evaluate (mir, val);
-                          diagproxyvalues.Slice(k, proxy1->Dimension()) = val.Col(0);
+                          ud.trialfunction = proxy1;
+                          ud.trial_comp = k;
+                          ud.testfunction = proxy2;
+                          ud.test_comp = k;
+
+                          if (!elementwise_constant)
+                            {
+                              cf->Evaluate(mir, val);
+                              diagproxyvalues.Slice(k, proxy1->Dimension()) = val.Col(0);
+                            }
+                          else
+                            {
+                              cf->Evaluate(mir[0], val.Row(0));
+                              diagproxyvalues.Slice(k, proxy1->Dimension()) = val(0, 0);
+                            }
                         }
-                      else
-                        {
-                          cf -> Evaluate (mir[0], val.Row(0));
-                          diagproxyvalues.Slice(k, proxy1->Dimension()) = val(0,0);
-                        }
-                    }
-            
-                // td.Stop();
+                  }
+                  // td.Stop();
 
                 if (!mir.IsComplex())
                   {
                     if (!is_diagonal)
                       for (int i = 0; i < mir.Size(); i++)
-                        proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
+                        proxyvalues(i, STAR, STAR) *= mir[i].GetWeight();
                     else
                       for (int i = 0; i < mir.Size(); i++)
-                        diagproxyvalues.Range(proxy1->Dimension()*IntRange(i,i+1)) *= mir[i].GetWeight();
+                        diagproxyvalues.Range(proxy1->Dimension() * IntRange(i, i + 1)) *= mir[i].GetWeight();
                   }
                 else
                   { // pml
                     if (!is_diagonal)
                       for (int i = 0; i < mir.Size(); i++)
-                        proxyvalues(i,STAR,STAR) *= mir[i].GetWeight();
+                        proxyvalues(i, STAR, STAR) *= mir[i].GetWeight();
                     else
                       for (int i = 0; i < mir.Size(); i++)
-                        diagproxyvalues.Range(proxy1->Dimension()*IntRange(i,i+1)) *=
-                          static_cast<const ScalMappedIntegrationPoint<SCAL>&> (mir[i]).GetJacobiDet()*ir[i].Weight();
+                        diagproxyvalues.Range(proxy1->Dimension() * IntRange(i, i + 1)) *=
+                                    static_cast<const ScalMappedIntegrationPoint<SCAL> &> (mir[i]).GetJacobiDet() *
+                                    ir[i].Weight();
                   }
-                IntRange r1 = proxy1->Evaluator()->UsedDofs(fel_trial);
-                IntRange r2 = proxy2->Evaluator()->UsedDofs(fel_test);
-                SliceMatrix<SCAL_RES> part_elmat = elmat.Rows(r2).Cols(r1);
-                FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
-                FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
-                
                 constexpr size_t BS = 16;
-                for (size_t i = 0; i < mir.Size(); i+=BS)
+                for (size_t i = 0; i < mir.Size(); i += BS)
                   {
                     HeapReset hr(lh);
-                    int bs = min2(size_t(BS), mir.Size()-i);
-                    
-                    FlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs*proxy1->Dimension(), lh);
-                    FlatMatrix<SCAL> bdbmat1(elmat.Width(), bs*proxy2->Dimension(), lh);
+                    int bs = min2(size_t(BS), mir.Size() - i);
+
+                    FlatMatrix<SCAL_SHAPES> bbmat1(elmat.Width(), bs * proxy1->Dimension(), lh);
+                    FlatMatrix<SCAL> bdbmat1(elmat.Width(), bs * proxy2->Dimension(), lh);
                     FlatMatrix<SCAL_SHAPES> bbmat2 = samediffop ?
-                      bbmat1 : FlatMatrix<SCAL_SHAPES>(elmat.Height(), bs*proxy2->Dimension(), lh);
+                                                     bbmat1 : FlatMatrix<SCAL_SHAPES>(elmat.Height(),
+                                                                                      bs * proxy2->Dimension(), lh);
 
                     // tb.Start();
-                    BaseMappedIntegrationRule & bmir = mir.Range(i, i+bs, lh);
+                    BaseMappedIntegrationRule &bmir = mir.Range(i, i + bs, lh);
 
                     proxy1->Evaluator()->CalcMatrix(fel_trial, bmir, Trans(bbmat1), lh);
 
@@ -1873,11 +1898,11 @@ namespace ngfem
                     // tdb.Start();
                     if (is_diagonal)
                       {
-                        FlatVector<SCAL> diagd(bs*proxy1->Dimension(), lh);
-                        diagd = diagproxyvalues.Range(i*proxy1->Dimension(),
-                                                      (i+bs)*proxy1->Dimension());
+                        FlatVector<SCAL> diagd(bs * proxy1->Dimension(), lh);
+                        diagd = diagproxyvalues.Range(i * proxy1->Dimension(),
+                                                      (i + bs) * proxy1->Dimension());
                         for (size_t i = 0; i < diagd.Size(); i++)
-                          bdbmat1.Col(i) = diagd(i) * bbmat1.Col(i);
+                            bdbmat1.Col(i) = diagd(i) * bbmat1.Col(i);
                         // MultMatDiagMat(bbmat1, diagd, bdbmat1);
                         // tdb.AddFlops (bbmat1.Height()*bbmat1.Width());
                       }
@@ -1885,11 +1910,11 @@ namespace ngfem
                       {
                         for (int j = 0; j < bs; j++)
                           {
-                            int ii = i+j;
-                            IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);
-                            IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
+                            int ii = i + j;
+                            IntRange r1 = proxy1->Dimension() * IntRange(j, j + 1);
+                            IntRange r2 = proxy2->Dimension() * IntRange(j, j + 1);
                             // bdbmat1.Cols(r2) = bbmat1.Cols(r1) * proxyvalues(ii,STAR,STAR);
-                            MultMatMat (bbmat1.Cols(r1), proxyvalues(ii,STAR,STAR), bdbmat1.Cols(r2));
+                            MultMatMat(bbmat1.Cols(r1), proxyvalues(ii, STAR, STAR), bdbmat1.Cols(r2));
                           }
                         // tdb.AddFlops (proxy1->Dimension()*proxy2->Dimension()*bs*bbmat1.Height());
                       }
@@ -1897,22 +1922,20 @@ namespace ngfem
                     // tlapack.Start();
                     // elmat.Rows(r2).Cols(r1) += bbmat2.Rows(r2) * Trans(bdbmat1.Rows(r1));
                     // AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), elmat.Rows(r2).Cols(r1));
-
                     symmetric_so_far &= samediffop && is_diagonal;
                     if (symmetric_so_far)
-                      AddABtSym (bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
+                      AddABtSym(bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
                     else
-                      AddABt (bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
+                      AddABt(bbmat2.Rows(r2), bdbmat1.Rows(r1), part_elmat);
                     // tlapack.Stop();
                     // tlapack.AddFlops (r2.Size()*r1.Size()*bdbmat1.Width());
                   }
 
                 if (symmetric_so_far)
                   for (int i = 0; i < part_elmat.Height(); i++)
-                    for (int j = i+1; j < part_elmat.Width(); j++)
-                      part_elmat(i,j) = part_elmat(j,i);
+                    for (int j = i + 1; j < part_elmat.Width(); j++)
+                      part_elmat(i, j) = part_elmat(j, i);
               }
-            
             l1 += proxy2->Dimension();
             l1nr++;
           }
