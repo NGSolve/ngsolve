@@ -115,6 +115,9 @@ namespace ngfem
     if (coef->Dimensions() == adims)
       return coef;
 
+    if (coef->IsZeroCF())
+      return ZeroCF(adims);
+
     Array<int> newdims (adims);
 
     int newdim = 1;
