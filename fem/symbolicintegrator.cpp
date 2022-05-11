@@ -5113,9 +5113,9 @@ namespace ngfem
                   RegionTimer reg(tdmat);
 
 
-                  if (ddcf[l1*trial_proxies.Size()+k1])
+                  if (ddcf[k1*trial_proxies.Size()+l1])
                     {
-                      ddcf[l1*trial_proxies.Size()+k1]->Evaluate(mir, proxyvalues2);
+                      ddcf[k1*trial_proxies.Size()+l1]->Evaluate(mir, proxyvalues2);
                     }
                   else
                   
