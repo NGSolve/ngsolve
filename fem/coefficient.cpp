@@ -2228,7 +2228,7 @@ public:
     else
       {
         auto dvc2 = vc2->DiffJacobi (var);
-        dv2v1 = TransposeCF(dvc2->Reshape(Array<int> ({dimip, dimvar})))*vc1;
+        dv2v1 = dvc2 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
         dv2v1 = dv2v1 -> Reshape (var->Dimensions());        
       }
     return dv1v2 + dv2v1;
@@ -3269,7 +3269,7 @@ public:
     auto diffc2 = c2->DiffJacobi(var);
     
     auto diffc1_trans = diffc1 -> TensorTranspose(0,1) -> Reshape(inner_dim, h*dimvar) -> Transpose();
-    auto prod1 = (diffc1_trans * c2) -> Reshape(dimvar, h) -> Transpose();
+    auto prod1 = (diffc1_trans * c2) -> Reshape(h,dimvar);
     auto prod1trans = prod1 -> Reshape(dimres);
 
     auto diffc2_trans = diffc2 -> Reshape(inner_dim, dimvar);
@@ -4111,6 +4111,10 @@ public:
     if (this == var)
       return IdentityCF(this->Dimensions());
 
+    if (this->Dimensions()[0] == 2)
+      return (TraceCF(c1)*IdentityCF(2)-TransposeCF(c1))  -> DiffJacobi(var);
+    else if (this->Dimensions()[0] == 3)
+      return (0.5*(TraceCF(c1)*TraceCF(c1) - TraceCF(c1*c1))*IdentityCF(3) - TraceCF(c1)*TransposeCF(c1) + TransposeCF(c1*c1))->DiffJacobi(var);
     return (DeterminantCF(c1) * InverseCF(c1)->Transpose() ) -> DiffJacobi(var);
   }
 
