@@ -106,7 +106,8 @@ namespace ngfem
       return ZeroCF(this->Dimensions());
     }
 
-    shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
+    shared_ptr<CoefficientFunction>
+    DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
     {
       if (this == var)
         return IdentityCF(this->Dimensions());

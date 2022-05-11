@@ -200,6 +200,7 @@ namespace ngfem {
                                       FlatVector<AutoDiffDiff<1, bool>> values) const override;
 
           using BASE::Evaluate;
+          using typename BASE::T_DJC;
 
           virtual double Evaluate(const BaseMappedIntegrationPoint &ip) const override;
 
@@ -233,7 +234,7 @@ namespace ngfem {
           shared_ptr<CoefficientFunction> Diff(const CoefficientFunction *var,
                                                shared_ptr<CoefficientFunction> dir) const override;
 
-          shared_ptr<CoefficientFunction> DiffJacobi(const CoefficientFunction *var) const override;
+          shared_ptr<CoefficientFunction> DiffJacobi(const CoefficientFunction *var, T_DJC & cache) const override;
         };
 
         class EinsumCoefficientFunction
@@ -259,7 +260,7 @@ namespace ngfem {
           Array<shared_ptr<CoefficientFunction>> expanded_inputs{};
 
           bool is_zero{false};
-
+          using typename BASE::T_DJC;
         public:
           EinsumCoefficientFunction() = default;
 
@@ -402,7 +403,7 @@ namespace ngfem {
               shared_ptr<CoefficientFunction> dir) const override;
 
           virtual shared_ptr<CoefficientFunction> DiffJacobi(
-              const CoefficientFunction *var) const override;
+              const CoefficientFunction *var, T_DJC & cache) const override;
 
           virtual bool IsZeroCF() const override { return is_zero; }
         };
