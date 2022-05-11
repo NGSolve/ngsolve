@@ -25,6 +25,7 @@ namespace ngfem
     string description;
     bool is_variable = false;  // variables cannot be optimized away (e.g. for differentiation)
   public:
+    typedef std::map<const CoefficientFunction*, shared_ptr<CoefficientFunction>> T_DJC; // DiffJacobi Cache type
     // default constructor for archive
     CoefficientFunction() = default;
     CoefficientFunction (int adimension, bool ais_complex = false)
@@ -254,7 +255,7 @@ namespace ngfem
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
     // returns Jacobi-matrix (possible as higher order tensor)
     virtual shared_ptr<CoefficientFunction>
-      DiffJacobi (const CoefficientFunction * var) const;
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const;
 
 
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
@@ -571,6 +572,7 @@ namespace ngfem
     ///
     double val;
     typedef T_CoefficientFunction<ConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
+    using BASE::T_DJC;
   public:
     ///
     ConstantCoefficientFunction() = default;
@@ -687,7 +689,7 @@ namespace ngfem
     }
 
     virtual shared_ptr<CoefficientFunction>
-      DiffJacobi (const CoefficientFunction * var) const override;
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
   };
 
 
@@ -1213,6 +1215,7 @@ namespace ngfem
   OP lam;
   string name;
   typedef  T_CoefficientFunction<cl_UnaryOpCF<OP>> BASE;
+  using typename BASE::T_DJC;
 public:
   cl_UnaryOpCF() = default;
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
@@ -1353,8 +1356,8 @@ public:
   { throw Exception ("unarycf "+name+" does not provide a derivative"); }
 
   virtual shared_ptr<CoefficientFunction>
-  DiffJacobi (const CoefficientFunction * var) const override
-  { return BASE::DiffJacobi(var); }
+  DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  { return BASE::DiffJacobi(var, cache); }
 
   
   /*
@@ -1444,7 +1447,8 @@ public:
   using BASE::Dimension;
   using BASE::SetDimension;
   using BASE::SetDimensions;
-  using BASE::Evaluate;  
+  using BASE::Evaluate;
+  using typename BASE::T_DJC;    
 public:
   cl_BinaryOpCF() = default;
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
@@ -1645,8 +1649,8 @@ public:
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
 
   virtual shared_ptr<CoefficientFunction>
-  DiffJacobi (const CoefficientFunction * var) const override
-  { return BASE::DiffJacobi(var); }
+  DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  { return BASE::DiffJacobi(var, cache); }
 
   /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,

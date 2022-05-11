@@ -907,8 +907,9 @@ namespace ngfem
       {
         try
           {
-              dcf_dtest[i] = cf->DiffJacobi(proxies[i]);
-              // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
+            CoefficientFunction::T_DJC cache;
+            dcf_dtest[i] = cf->DiffJacobi(proxies[i], cache);
+            // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
           }
         catch (const Exception& e)
           {
@@ -1333,7 +1334,8 @@ namespace ngfem
         {
           try
             {
-              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
+              CoefficientFunction::T_DJC cache;
+              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i], cache);
               // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
             }
           catch (const Exception& e)
@@ -3569,7 +3571,8 @@ namespace ngfem
         {
           try
             {
-              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
+              CoefficientFunction::T_DJC cache;              
+              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i], cache);
               // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
             }
           catch (const Exception& e)
@@ -4731,12 +4734,14 @@ namespace ngfem
             cout << IM(5) << "cf = " << *cf << endl;
             for (int i = 0; i < trial_proxies.Size(); i++)
               {
-                auto diffi = cf->DiffJacobi(trial_proxies[i]);
+                CoefficientFunction::T_DJC cache;                
+                auto diffi = cf->DiffJacobi(trial_proxies[i], cache);
                 cout << IM(5) << "diffi = " << *diffi << endl;
                 for (int j = 0; j < trial_proxies.Size(); j++)
                   {
                     // cout << "diff_" << i << "," << j << " = " << endl;
-                    ddcf[i*trial_proxies.Size()+j] = diffi->DiffJacobi(trial_proxies[j]);
+                    CoefficientFunction::T_DJC cache;                                    
+                    ddcf[i*trial_proxies.Size()+j] = diffi->DiffJacobi(trial_proxies[j], cache);
                     cout << IM(5) <<  "ddcf = " << *ddcf[i*trial_proxies.Size()+j] << endl;
                   }
               }
