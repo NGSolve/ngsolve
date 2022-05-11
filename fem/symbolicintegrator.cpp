@@ -4728,16 +4728,16 @@ namespace ngfem
       {
         try
           {
-            cout << "cf = " << *cf << endl;
+            cout << IM(5) << "cf = " << *cf << endl;
             for (int i = 0; i < trial_proxies.Size(); i++)
               {
                 auto diffi = cf->DiffJacobi(trial_proxies[i]);
-                cout << "diffi = " << *diffi << endl;
+                cout << IM(5) << "diffi = " << *diffi << endl;
                 for (int j = 0; j < trial_proxies.Size(); j++)
                   {
                     // cout << "diff_" << i << "," << j << " = " << endl;
                     ddcf[i*trial_proxies.Size()+j] = diffi->DiffJacobi(trial_proxies[j]);
-                    cout << "ddcf = " << *ddcf[i*trial_proxies.Size()+j] << endl;
+                    cout << IM(5) <<  "ddcf = " << *ddcf[i*trial_proxies.Size()+j] << endl;
                   }
               }
           }
