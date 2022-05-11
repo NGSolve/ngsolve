@@ -2,14 +2,12 @@
 
 #include "contact.hpp"
 
+#undef NETGEN_USE_GUI // TODO: implement interface in netgen to draw lines (to avoid linking opengl here)
+
 #if NETGEN_USE_GUI
 #include <incopengl.hpp>
-
-namespace netgen
-{
-  DLL_HEADER void AddUserVisualizationObject (UserVisualizationObject * vis);
-  DLL_HEADER void DeleteUserVisualizationObject (UserVisualizationObject * vis);
-}
+#include <visual.hpp>
+#include <visualization/vssolution.hpp>
 #endif // NETGEN_USE_GUI
 
 
@@ -910,7 +908,9 @@ namespace ngcomp
     shared_ptr<GridFunction> displacement = nullptr;
     if(displacement_)
       {
-        displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", displacement_->GetFlags());
+        auto flags = displacement_->GetFlags();
+        flags.SetFlag("novisual");
+        displacement = CreateGridFunction(displacement_->GetFESpace(), "_cb_displacement", flags);
         displacement->Update();
         displacement->GetVector() = displacement_->GetVector();
       }

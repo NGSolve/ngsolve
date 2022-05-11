@@ -1,3 +1,5 @@
+not needed anymore
+
 #ifndef FILE_MPIWRAPPER
 #define FILE_MPIWRAPPER
 
@@ -6,6 +8,7 @@
 /* Author: Joachim Schoeberl                                              */
 /* Date:   2007,2011                                                      */
 /* ************************************************************************/
+
 
 namespace ngstd
 {

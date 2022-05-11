@@ -115,6 +115,9 @@ namespace ngfem
     if (coef->Dimensions() == adims)
       return coef;
 
+    if (coef->IsZeroCF())
+      return ZeroCF(adims);
+
     Array<int> newdims (adims);
 
     int newdim = 1;
@@ -2384,6 +2387,30 @@ public:
     return 2*InnerProduct(c1->Diff(var,dir),c1);
   }
 
+  
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
+  {
+    if (this == var)
+      return make_shared<ConstantCoefficientFunction> (1);
+
+    shared_ptr<CoefficientFunction> dv1v1;
+    int dimip = c1->Dimension();
+    int dimvar = var->Dimension();
+    
+    auto vc1 = c1->Reshape( dimip );
+       
+    if (c1.get() == var)
+      dv1v1 = c1;
+    else
+      {
+        auto dvc1 = vc1->DiffJacobi (var);
+        dv1v1 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
+        dv1v1 = dv1v1 -> Reshape (var->Dimensions());
+      }
+    return 2*dv1v1;
+  }
+  
+
   virtual void NonZeroPattern (const class ProxyUserData & ud,
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
@@ -2615,6 +2642,31 @@ public:
     return make_shared<ConstantCoefficientFunction>(1.0)/NormCF(c1) * InnerProduct(c1,c1->Diff(var,dir));
   }
 
+
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var) const override
+  {
+    if (this == var)
+      return make_shared<ConstantCoefficientFunction> (1);
+
+    shared_ptr<CoefficientFunction> dv1v1;
+    int dimip = c1->Dimension();
+    int dimvar = var->Dimension();
+    
+    auto vc1 = c1->Reshape( dimip );
+       
+    if (c1.get() == var)
+      dv1v1 = c1;
+    else
+      {
+        auto dvc1 = vc1->DiffJacobi (var);
+        dv1v1 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
+        dv1v1 = dv1v1 -> Reshape (var->Dimensions());
+      }
+    return (1.0 / const_cast<CoefficientFunction*>((CoefficientFunction*)this)->shared_from_this()) * dv1v1;
+  }
+  
+
+  
 };
 
 

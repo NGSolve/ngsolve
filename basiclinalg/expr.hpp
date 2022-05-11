@@ -343,7 +343,7 @@ namespace ngbla
 
     INLINE auto Col (size_t r) const
     {
-      return ColExpr<const T> (static_cast<T&> (*this), r);
+      return ColExpr<const T> (static_cast<const T&> (*this), r);
     }
 
 
@@ -1191,8 +1191,8 @@ namespace ngbla
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
 
-    auto View() const { return *this; }
-    auto Shape() const { return a.Shape(); }         
+    INLINE auto View() const { return *this; }
+    INLINE auto Shape() const { return a.Shape(); }         
     
     INLINE TA A() const { return a; }
     INLINE TS S() const { return s; }
@@ -1202,7 +1202,7 @@ namespace ngbla
   };
 
   template <typename TA>
-  inline auto operator* (double b, const Expr<TA> & a)
+  INLINE auto operator* (double b, const Expr<TA> & a)
   {
     return ScaleExpr (a.View(), b);
   }
@@ -1453,6 +1453,7 @@ namespace ngbla
     }
 
     auto View() const { return SubMatrixExpr(a, first_row, first_col, height, width); }
+    auto ViewRW() { return SubMatrixExpr(a, first_row, first_col, height, width); }
     tuple<size_t,size_t> Shape() const { return { height, width }; }
   };
 

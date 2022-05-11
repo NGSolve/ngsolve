@@ -258,6 +258,8 @@ namespace ngfem {
           string expanded_index_signature{};
           Array<shared_ptr<CoefficientFunction>> expanded_inputs{};
 
+          bool is_zero{false};
+
         public:
           EinsumCoefficientFunction() = default;
 
@@ -401,6 +403,8 @@ namespace ngfem {
 
           virtual shared_ptr<CoefficientFunction> DiffJacobi(
               const CoefficientFunction *var) const override;
+
+          virtual bool IsZeroCF() const override { return is_zero; }
         };
     }
 

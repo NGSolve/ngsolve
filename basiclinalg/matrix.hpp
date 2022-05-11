@@ -1171,7 +1171,7 @@ namespace ngbla
      Matrix is stored colum-wise
   */
   template <int H, typename T = double, int SLICE = H>
-  class FlatMatrixFixHeight : public MatExpr<FlatMatrixFixHeight<H,T,SLICE> >
+  class FlatMatrixFixHeight : public CMCPMatExpr<FlatMatrixFixHeight<H,T,SLICE> >
   {
   protected:
     /// the data
@@ -1223,8 +1223,8 @@ namespace ngbla
     template<typename TB>
     const FlatMatrixFixHeight & operator= (const Expr<TB> & m) const
     {
-      for (int j = 0; j < w; j++)
-        for (int i = 0; i < H; i++)
+      for (size_t j = 0; j < w; j++)
+        for (size_t i = 0; i < H; i++)
           (*this)(i,j) = m.Spec()(i,j);
       return *this;
     }
@@ -1233,11 +1233,11 @@ namespace ngbla
     const FlatMatrixFixHeight & operator= (const FlatMatrixFixHeight & m) const
     {
       if (H == SLICE)
-        for (int i = 0; i < w*H; i++)
+        for (size_t i = 0; i < w*H; i++)
           data[i] = m(i);
       else
-        for (int j = 0; j < w; j++)
-          for (int i = 0; i < H; i++)
+        for (size_t j = 0; j < w; j++)
+          for (size_t i = 0; i < H; i++)
             (*this)(i,j) = m(i,j);
       
       return *this;
@@ -1247,11 +1247,11 @@ namespace ngbla
     FlatMatrixFixHeight & operator= (TSCAL s)
     {
       if (H == SLICE)
-        for (int i = 0; i < w*H; i++)
+        for (size_t i = 0; i < w*H; i++)
           data[i] = s; 
       else
-        for (int j = 0; j < w; j++)
-          for (int i = 0; i < H; i++)
+        for (size_t j = 0; j < w; j++)
+          for (size_t i = 0; i < H; i++)
             (*this)(i,j) = s;
         
       return *this;
@@ -1286,14 +1286,14 @@ namespace ngbla
     */
 
     /// access operator, linear access
-    TELEM & operator() (int i) const
+    TELEM & operator() (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height()*Width());
       return data[i]; 
     }
 
     /// access operator
-    TELEM & operator() (int i, int j) const
+    TELEM & operator() (size_t i, size_t j) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
       NETGEN_CHECK_RANGE(j, 0, Width());
@@ -1302,10 +1302,10 @@ namespace ngbla
 
 
     /// the height
-    int Height () const { return H; }
+    size_t Height () const { return H; }
 
     /// the width
-    int Width () const { return w; }
+    size_t Width () const { return w; }
 
     INLINE T* Data() const noexcept { return data; }
 
@@ -1320,7 +1320,7 @@ namespace ngbla
     }
 
 
-    const FlatMatrixFixHeight Cols (int first, int next) const
+    const FlatMatrixFixHeight Cols (size_t first, size_t next) const
     {
       return FlatMatrixFixHeight (next-first, data+first*SLICE);
     }

@@ -12,7 +12,7 @@
 #include <parallelngs.hpp>
 
 #include <thread>
-#include <ngtcl.hpp>
+#include <meshing/visual_interface.hpp>
 
 using namespace std;
 using namespace ngsolve;
@@ -31,8 +31,14 @@ using netgen::Ng_Tcl_SetResult;
 using netgen::Ng_Tcl_CreateCommand;
 using netgen::NG_TCL_OK;
 using netgen::NG_TCL_ERROR;
+/*
 using netgen::NG_TCL_STATIC;
 using netgen::NG_TCL_VOLATILE;
+*/
+#define NG_TCL_VOLATILE		((Tcl_FreeProc *) 1)
+#define NG_TCL_STATIC		((Tcl_FreeProc *) 0)
+#define NG_TCL_DYNAMIC		((Tcl_FreeProc *) 3)
+
 
 #ifdef SOCKETS
 #include "markus/jobmanager.hpp"
