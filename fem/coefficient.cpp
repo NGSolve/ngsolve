@@ -181,7 +181,10 @@ namespace ngfem
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const
   {
-    if (cache.find(this) != cache.end()) return cache[this];        
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+        
     /*
     if (var->Dimensions().Size() == 0)
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
@@ -210,7 +213,7 @@ namespace ngfem
         auto dvec = MakeVectorialCoefficientFunction (move(ddi));
         auto dvec1 = dvec->Reshape(var->Dimension(), this->Dimension()) -> Transpose();
         auto res = dvec1 -> Reshape(resultdims);
-        cache[this] = res;
+        cache[thisptr] = res;
         return res;
       }
   }
@@ -1613,7 +1616,10 @@ public:
   
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];        
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+             
     if (this == var)
       {
         if (this -> Dimensions().Size() == 0)
@@ -1621,7 +1627,7 @@ public:
         return IdentityCF(this->Dimensions());
       }
     auto res = scal * c1->DiffJacobi(var, cache);
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
 };
@@ -1846,7 +1852,9 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];        
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
     int dimvar = var->Dimension();
     int mydim = this->Dimension();    
       
@@ -1863,7 +1871,7 @@ public:
 
     auto prod2 = c1 * diffc2;
     auto res = prod1 + prod2;
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
 
@@ -2215,9 +2223,12 @@ public:
   
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];        
     if (this == var)
       return make_shared<ConstantCoefficientFunction> (1);
+
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
 
     shared_ptr<CoefficientFunction> dv1v2, dv2v1;
     int dimip = c1->Dimension();
@@ -2230,7 +2241,7 @@ public:
       dv1v2 = c2;
     else
       {
-        auto dvc1 = vc1->DiffJacobi (var, cache);
+        auto dvc1 = c1->DiffJacobi (var, cache);
         dv1v2 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc2;
         dv1v2 = dv1v2 -> Reshape (var->Dimensions());
       }
@@ -2239,12 +2250,12 @@ public:
       dv2v1 = c1;
     else
       {
-        auto dvc2 = vc2->DiffJacobi (var, cache);
+        auto dvc2 = c2->DiffJacobi (var, cache);
         dv2v1 = dvc2 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
         dv2v1 = dv2v1 -> Reshape (var->Dimensions());        
       }
     auto res = dv1v2 + dv2v1;
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
   
@@ -2405,7 +2416,10 @@ public:
   
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];        
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+    
     if (this == var)
       return make_shared<ConstantCoefficientFunction> (1);
 
@@ -2419,12 +2433,12 @@ public:
       dv1v1 = c1;
     else
       {
-        auto dvc1 = vc1->DiffJacobi (var, cache);
+        auto dvc1 = c1->DiffJacobi (var, cache);
         dv1v1 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
         dv1v1 = dv1v1 -> Reshape (var->Dimensions());
       }
     auto res = 2*dv1v1;
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
   
@@ -2663,7 +2677,10 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];        
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
     if (this == var)
       return make_shared<ConstantCoefficientFunction> (1);
 
@@ -2677,12 +2694,12 @@ public:
       dv1v1 = c1;
     else
       {
-        auto dvc1 = vc1->DiffJacobi (var, cache);
+        auto dvc1 = c1->DiffJacobi (var, cache);
         dv1v1 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
         dv1v1 = dv1v1 -> Reshape (var->Dimensions());
       }
     auto res = (1.0 / const_cast<CoefficientFunction*>((CoefficientFunction*)this)->shared_from_this()) * dv1v1;
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
   
@@ -3045,7 +3062,10 @@ public:
   
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {    
-    if (cache.find(this) != cache.end()) return cache[this];
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
     int h = Dimensions()[0];
     int w = Dimensions()[1];
     int dimvar = var->Dimension();
@@ -3070,7 +3090,7 @@ public:
     auto prod2trans = prod2->Reshape(dimres);
 
     auto res = prod1trans + prod2trans;
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
 };
@@ -3280,7 +3300,10 @@ public:
   
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];    
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
     int h = Dimensions()[0];
     int dimvar = var->Dimension();
 
@@ -3302,7 +3325,7 @@ public:
     auto prod2trans = prod2 -> Reshape(dimres);
 
     auto res = prod1trans + prod2trans;
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
   
@@ -3440,8 +3463,7 @@ public:
   {
     if (this == var) return dir;
     return CrossProduct(c1->Diff(var,dir),c2) + CrossProduct(c1, c2->Diff(var,dir));
-  }
-  
+  }  
   
 };
 
@@ -3618,13 +3640,16 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];            
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
     if (this == var)
       return IdentityCF(this->Dimensions());
   
     auto diffc1 = c1->DiffJacobi (var, cache);
     auto res = diffc1 -> TensorTranspose( 0, 1 );
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
 };
@@ -3779,7 +3804,10 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];                
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
     if (this == var)
       return IdentityCF(this->Dimensions());
 
@@ -3794,7 +3822,7 @@ public:
     auto trans = prod1r -> TensorTranspose( 0, 1 );
     auto prod2 = inv1->Transpose() * trans -> Reshape( D, -1 );
     auto res = prod2 -> Reshape( Array<int> (dimres) ) -> TensorTranspose( 0, 1);
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
 };
@@ -3961,7 +3989,10 @@ public:
   shared_ptr<CoefficientFunction>
   DiffJacobi (const CoefficientFunction * var, typename BASE::T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];                
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
     if (this == var) return make_shared<ConstantCoefficientFunction>(1);
     if (c1.get() == var) return CofactorCF (c1);
     auto input = c1->InputCoefficientFunctions();
@@ -3971,7 +4002,7 @@ public:
     auto diffc1 = c1->DiffJacobi (var, cache) -> Reshape( D*D, var->Dimension() );
     auto prod = cof * diffc1;
     auto res = prod->Reshape(var->Dimensions());
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }
 
@@ -4145,16 +4176,26 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, typename BASE::T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];                
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
     if (this == var)
       return IdentityCF(this->Dimensions());
 
+    shared_ptr<CoefficientFunction> res;
+
     if (this->Dimensions()[0] == 2)
-      return (TraceCF(c1)*IdentityCF(2)-TransposeCF(c1))  -> DiffJacobi (var, cache);
+      res = (TraceCF(c1)*IdentityCF(2)-TransposeCF(c1)) -> DiffJacobi (var, cache);
     else if (this->Dimensions()[0] == 3)
-      return (0.5*(TraceCF(c1)*TraceCF(c1) - TraceCF(c1*c1))*IdentityCF(3) - TraceCF(c1)*TransposeCF(c1) + TransposeCF(c1*c1))->DiffJacobi (var, cache);
-    auto res = (DeterminantCF(c1) * InverseCF(c1)->Transpose() ) -> DiffJacobi (var, cache);
-    cache[this] = res;
+      {
+        auto trcf = TraceCF(c1);
+        auto prodcf = c1*c1;
+        res = (0.5*(trcf*trcf - TraceCF(prodcf))*IdentityCF(3) - trcf*TransposeCF(c1) + TransposeCF(prodcf)) -> DiffJacobi (var, cache);
+      }
+    else
+      res = (DeterminantCF(c1) * InverseCF(c1)->Transpose() ) -> DiffJacobi (var, cache);
+    cache[thisptr] = res;
     return res;
   }
 
@@ -4575,26 +4616,27 @@ public:
   shared_ptr<CoefficientFunction>
   DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];                
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
     if (this == var) return make_shared<ConstantCoefficientFunction>(1);
     if (c1.get() == var) return IdentityCF (c1->Dimensions()[0]);
     auto input = c1->InputCoefficientFunctions();
     if (input.Size() == 0) return ZeroCF(c1->Dimensions());
-    
-    if (c1->GetDescription()=="binary operation '-'")
-      return TraceCF(input[0])->DiffJacobi (var, cache) - TraceCF(input[1])->DiffJacobi (var, cache);
-    // cout << "Trace::DiffJacobi, c1 desc= " << c1->GetDescription() << endl;
 
-    if (dynamic_pointer_cast<MultMatMatCoefficientFunction>(c1) && !c1->IsComplex())
+    shared_ptr<CoefficientFunction> res;
+    if (c1->GetDescription()=="binary operation '-'")
+      res = TraceCF(input[0])->DiffJacobi (var, cache) - TraceCF(input[1])->DiffJacobi (var, cache);
+    else if (dynamic_pointer_cast<MultMatMatCoefficientFunction>(c1) && !c1->IsComplex())
       {
         auto AB = c1->InputCoefficientFunctions();
-        return InnerProduct(AB[0], AB[1]->Transpose() )->DiffJacobi (var, cache);
+        res = InnerProduct(AB[0], AB[1]->Transpose() )->DiffJacobi (var, cache);
       }
-
-    auto res = MakeTensorTraceCoefficientFunction (c1->DiffJacobi (var, cache), 0, 1);
-    cache[this] = res;
+    else
+      res = MakeTensorTraceCoefficientFunction (c1->DiffJacobi (var, cache), 0, 1);
+    cache[thisptr] = res;
     return res;
-    // return CoefficientFunction::DiffJacobi (var, cache);
   }
   
 };
@@ -4641,10 +4683,13 @@ template <>
 shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPlus>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
 {
-  if (cache.find(this) != cache.end()) return cache[this];
+  auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+  if (cache.find(thisptr) != cache.end())
+    return cache[thisptr];
+
   if (var == this) return IdentityCF(Dimensions());
   auto res = c1->DiffJacobi (var, cache) + c2->DiffJacobi (var, cache);
-  cache[this] = res;
+  cache[thisptr] = res;
   return res;
 }
 
@@ -4684,10 +4729,13 @@ template <>
 shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericMinus>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
 {
-  if (cache.find(this) != cache.end()) return cache[this];              
+  auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+  if (cache.find(thisptr) != cache.end())
+    return cache[thisptr];
+
   if (var == this) return IdentityCF(Dimensions());
   auto res = c1->DiffJacobi (var, cache) - c2->DiffJacobi (var, cache);
-  cache[this] = res;
+  cache[thisptr] = res;
   return res;
 }
 
@@ -4751,10 +4799,13 @@ template <>
 shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericMult>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
 {
-  if (cache.find(this) != cache.end()) return cache[this];              
+  auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+  if (cache.find(thisptr) != cache.end())
+    return cache[thisptr];
+
   if (var == this) return make_shared<ConstantCoefficientFunction>(1);
   auto res = c1 * c2->DiffJacobi (var, cache) + c2 * c1->DiffJacobi (var, cache);
-  cache[this] = res;
+  cache[thisptr] = res;
   return res;
 }
 
@@ -4779,7 +4830,10 @@ template <>
 shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericDiv>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const 
 {
-  if (cache.find(this) != cache.end()) return cache[this];              
+  auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+  if (cache.find(thisptr) != cache.end())
+    return cache[thisptr];
+
   if (Dimensions().Size() > 0)
     return CoefficientFunction::DiffJacobi (var, cache);
   
@@ -4787,7 +4841,7 @@ cl_BinaryOpCF<GenericDiv>::DiffJacobi(const CoefficientFunction * var, T_DJC & c
     return make_shared<ConstantCoefficientFunction>(1);
   
   auto res = (c2*c1->DiffJacobi (var, cache) - c1*c2->DiffJacobi (var, cache)) / (c2*c2);
-  cache[this] = res;
+  cache[thisptr] = res;
   return res;
 }
 
@@ -4923,7 +4977,10 @@ template <>
 shared_ptr<CoefficientFunction>
 cl_UnaryOpCF<GenericIdentity>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
 {
-  if (cache.find(this) != cache.end()) return cache[this];              
+  auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+  if (cache.find(thisptr) != cache.end())
+    return cache[thisptr];
+
   if (var == this)
     {
       if (this->Dimensions().Size()==0)
@@ -4934,7 +4991,7 @@ cl_UnaryOpCF<GenericIdentity>::DiffJacobi(const CoefficientFunction * var, T_DJC
   Array<int> ndims(this->Dimensions());
   ndims += var->Dimensions();
   auto res = c1->DiffJacobi (var, cache) -> Reshape(ndims);
-  cache[this] = res;
+  cache[thisptr] = res;
   return res;
 }
 
@@ -5326,7 +5383,10 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];                
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+    
     if (this == var) return make_shared<ConstantCoefficientFunction>(1);
     auto diffc1 = c1->DiffJacobi (var, cache);
     Array<int> vardims = Array<int> (var->Dimensions());
@@ -5338,7 +5398,7 @@ public:
         prod *= vardims[i];
       }
     auto res = MakeSubTensorCoefficientFunction(diffc1, comp*var->Dimension(), move(vardims), move(dist));
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }  
   
@@ -5534,7 +5594,10 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];                
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+    
     if (this == var)
       return IdentityCF(Dimensions());
     
@@ -5559,7 +5622,7 @@ public:
     Array<int> alldist { firstdist + dist };
     
     auto res = MakeSubTensorCoefficientFunction(diffc1, first*vardim, move(dimres), move(alldist));
-    cache[this] = res;
+    cache[thisptr] = res;
     return res;
   }  
   
@@ -5827,7 +5890,10 @@ public:
 
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
-    if (cache.find(this) != cache.end()) return cache[this];                
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+    
     if (this == var) return IdentityCF(this->Dimensions());
 
     Array<int> resdims;
@@ -5843,7 +5909,9 @@ public:
 
 //    cout << "new stride: " << resstride << endl;
     auto diffc1 = c1->DiffJacobi (var, cache);
-    return MakeExtendDimensionCoefficientFunction (diffc1, move(resdims), Array<int>(pos), move(resstride));
+    auto res = MakeExtendDimensionCoefficientFunction (diffc1, move(resdims), Array<int>(pos), move(resstride));
+    cache[thisptr] = res;
+    return res;
   }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -7254,7 +7322,8 @@ public:
     auto veccf = MakeVectorialCoefficientFunction (move(diff_ci));
     veccf->SetDimensions(Dimensions());
     return veccf;
-  }  
+  }
+
 };
 
   void VectorialCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -7683,11 +7752,16 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     virtual shared_ptr<CoefficientFunction>
     DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
     {
-      if (cache.find(this) != cache.end()) return cache[this];                  
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if (cache.find(thisptr) != cache.end())
+        return cache[thisptr];
+
       if (var == this) return Compile (IdentityCF(Dimensions()), _real_compile, _maxderiv, _wait);
       auto diff_cf = cf->DiffJacobi (var, cache);
       // return Compile (diff_cf, false, 0, 0);
-      return Compile (diff_cf, _real_compile, _maxderiv, _wait);
+      auto res = Compile (diff_cf, _real_compile, _maxderiv, _wait);
+      cache[thisptr] = res;
+      return res;
     }
 
     

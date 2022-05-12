@@ -25,7 +25,7 @@ namespace ngfem
     string description;
     bool is_variable = false;  // variables cannot be optimized away (e.g. for differentiation)
   public:
-    typedef std::map<const CoefficientFunction*, shared_ptr<CoefficientFunction>> T_DJC; // DiffJacobi Cache type
+    typedef std::map<shared_ptr<CoefficientFunction>, shared_ptr<CoefficientFunction>> T_DJC; // DiffJacobi Cache type
     // default constructor for archive
     CoefficientFunction() = default;
     CoefficientFunction (int adimension, bool ais_complex = false)
