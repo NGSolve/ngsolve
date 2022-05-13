@@ -2424,7 +2424,7 @@ diffop : ngsolve.fem.DifferentialOperator
     .def ("Diff", &SumOfIntegrals::Diff)
     .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
-    .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
+    .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false, py::arg("keep_files")=false )
     .def("__str__",  [](shared_ptr<SumOfIntegrals> igls) { return ToString(*igls); } )
     .def("__radd__", [](shared_ptr<SumOfIntegrals> igls, int i) {
         if (i != 0) throw Exception("can only add integer 0 to SumOfIntegrals (for Python sum(list))");
@@ -2434,7 +2434,7 @@ diffop : ngsolve.fem.DifferentialOperator
 
   py::class_<Variation> (m, "Variation")
     .def(py::init<shared_ptr<SumOfIntegrals>>())
-    .def ("Compile", &Variation::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
+    .def ("Compile", &Variation::Compile, py::arg("realcompile")=false, py::arg("wait")=false, py::arg("keep_files")=false)
     ;
   
   
