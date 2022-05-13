@@ -441,6 +441,10 @@ namespace ngfem
     
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
+
+    virtual shared_ptr<CoefficientFunction>
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
+
   };
 
 
