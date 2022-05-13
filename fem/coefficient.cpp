@@ -7612,6 +7612,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     bool _real_compile = false;
     int _maxderiv = 2;
     bool _wait = false;
+    bool _keep_files = false;
     
   public:
     CompiledCoefficientFunction() = default;
@@ -7743,10 +7744,10 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
     virtual shared_ptr<CoefficientFunction>
     Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
     {
-      if (var == this) return Compile (dir, _real_compile, _maxderiv, _wait);
+      if (var == this) return Compile (dir, _real_compile, _maxderiv, _wait, _keep_files);
       auto diff_cf = cf->Diff(var, dir);
       // return Compile (diff_cf, false, 0, 0);
-      return Compile (diff_cf, _real_compile, _maxderiv, _wait);
+      return Compile (diff_cf, _real_compile, _maxderiv, _wait, _keep_files);
     }
 
     virtual shared_ptr<CoefficientFunction>
@@ -7759,7 +7760,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       if (var == this) return Compile (IdentityCF(Dimensions()), _real_compile, _maxderiv, _wait);
       auto diff_cf = cf->DiffJacobi (var, cache);
       // return Compile (diff_cf, false, 0, 0);
-      auto res = Compile (diff_cf, _real_compile, _maxderiv, _wait);
+      auto res = Compile (diff_cf, _real_compile, _maxderiv, _wait, _keep_files);
       cache[thisptr] = res;
       return res;
     }
@@ -7770,6 +7771,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       _real_compile = true;
       _maxderiv = maxderiv;
       _wait = wait;
+      _keep_files = keep_files;
       
         std::vector<string> link_flags;
         if(cf->IsComplex())
