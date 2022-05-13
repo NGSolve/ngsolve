@@ -422,4 +422,64 @@ INLINE ostream & operator<< (ostream & ost, const FlatTensor<0,T> & tensor)
 
 
 
+
+
+  // a tensor with static shape
+  
+
+  template <typename T, size_t ...SHAPE>
+  class Tens
+  {
+    
+    
+    template <size_t FIRST, size_t ...REST>
+    static constexpr size_t Prod ()
+    {
+      if constexpr (sizeof...(REST) == 0) return FIRST;
+      else return FIRST * Prod<REST...>();
+    }
+    
+    
+    template <typename TUPSHAPE, typename TUPIND>
+    static constexpr size_t CalcIndex(TUPSHAPE shape, TUPIND ind)
+    {
+      size_t i1 = 0;
+      constexpr size_t dim = tuple_size<TUPSHAPE>();
+      Iterate<dim> ([&](auto i)
+                    {
+                      i1 *= get<i> (shape);
+                      i1 += get<i> (ind);
+                    });
+      return i1;
+    }
+    
+    
+    
+    T data[Prod<SHAPE...>()];
+  public:
+    static constexpr size_t Size() { return Prod<SHAPE...>(); }
+    static constexpr size_t Order() { return sizeof...(SHAPE); }
+    
+    static constexpr auto Shape() {
+      array<size_t, Order()> shape;
+      Iterate<Order()> ([&](auto I)
+                        {
+                          shape[I] = get<I> (tuple(SHAPE...));
+                        });
+      return shape;
+    }
+    
+    auto AsVector() { return FlatVector<T> (Size(), data); }
+    
+    template <typename ...IND>
+    T & operator() (IND... i)
+    {
+      size_t ind = CalcIndex(tuple(SHAPE...), tuple(i...));
+      return data[ind];
+    }
+  };
+  
+
+
+
 }

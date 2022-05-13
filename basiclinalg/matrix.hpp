@@ -718,9 +718,9 @@ namespace ngbla
     INLINE const TELEM & operator() (size_t i, size_t j) const { return data[i*W+j]; }
 
     /// the height
-    INLINE constexpr size_t Height () const { return H; }
+    INLINE static constexpr size_t Height ()  { return H; }
     /// the width
-    INLINE constexpr size_t Width () const { return W; }
+    INLINE static constexpr size_t Width ()  { return W; }
 
     ///
     INLINE const FlatVec<W,T> Row (size_t i) 
