@@ -361,6 +361,16 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                     symbolic_integrator_uses_diff = val;
                   }, "New treatment of symobolic forms using differentiation by proxies")
                   
+    .def_property("code_uses_tensors",
+                  [] (GlobalDummyVariables&)
+                  {
+                    return code_uses_tensors;
+                  },
+                  [] (GlobalDummyVariables&, bool val)
+                  {
+                    code_uses_tensors = val;
+                  }, "Use tensors in code-generation")
+                  
     ;
 
   m.attr("ngsglobals") = py::cast(&globvar);

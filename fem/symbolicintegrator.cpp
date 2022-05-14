@@ -212,9 +212,18 @@ namespace ngfem
       body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
       });
     */
+
+    if (code_uses_tensors)
+      {
+        body += "Tens<" + code.res_type;
+        for (auto d : this->Dimensions())
+          body += ',' + ToLiteral(d);
+        body += "> var_" + ToLiteral(index) + ";\n";
+      }
     
     for (int i = 0; i < this->Dimension(); i++) {
-      body += Var(index, i, this->Dimensions()).Declare("{scal_type}", 0.0);
+      if (!code_uses_tensors)
+        body += Var(index, i, this->Dimensions()).Declare("{scal_type}", 0.0);   // why do we initizlize ? 
       body += Var(index, i, this->Dimensions()).Assign(CodeExpr("0.0"), false);
     }
 

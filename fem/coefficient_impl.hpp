@@ -34,14 +34,16 @@ namespace ngfem
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
-      FlatArray<int> hdims = Dimensions();        
+      FlatArray<int> hdims = Dimensions();
+      code.Declare (code.res_type, index, this->Dimensions());
+
       for (int i : Range(hdims[0]))
         for (int j : Range(hdims[1]))
           {
             if (i == j)
-              code.body += Var(index,i,j).Assign(string("1.0"));
+              code.body += Var(index,i,j).Assign(string("1.0"), false);
             else
-              code.body += Var(index,i,j).Assign(string("0.0"));
+              code.body += Var(index,i,j).Assign(string("0.0"), false);
           }
     }
 
