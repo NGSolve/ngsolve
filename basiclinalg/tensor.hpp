@@ -430,15 +430,12 @@ INLINE ostream & operator<< (ostream & ost, const FlatTensor<0,T> & tensor)
   template <typename T, size_t ...SHAPE>
   class Tens
   {
-    
-    
     template <size_t FIRST, size_t ...REST>
     static constexpr size_t Prod ()
     {
       if constexpr (sizeof...(REST) == 0) return FIRST;
       else return FIRST * Prod<REST...>();
     }
-    
     
     template <typename TUPSHAPE, typename TUPIND>
     static constexpr size_t CalcIndex(TUPSHAPE shape, TUPIND ind)
@@ -452,8 +449,6 @@ INLINE ostream & operator<< (ostream & ost, const FlatTensor<0,T> & tensor)
                     });
       return i1;
     }
-    
-    
     
     T data[Prod<SHAPE...>()];
   public:
@@ -477,6 +472,28 @@ INLINE ostream & operator<< (ostream & ost, const FlatTensor<0,T> & tensor)
       size_t ind = CalcIndex(tuple(SHAPE...), tuple(i...));
       return data[ind];
     }
+
+    T & operator[] (size_t i) { return data[i]; }
+  };
+  
+  template <typename T>
+  class Tens<T>
+  {
+    T data[1];
+    
+  public:
+    static constexpr size_t Size() { return 1; }
+    static constexpr size_t Order() { return 0; }
+    
+    static constexpr auto Shape() {
+      array<size_t, 0> shape;
+      return shape;
+    }
+    
+    auto AsVector() { return FlatVector<T> (Size(), data); }
+    
+    T & operator() ()  { return data[0]; }
+    T & operator[] (size_t) { return data[0]; }    
   };
   
 

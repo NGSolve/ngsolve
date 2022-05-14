@@ -55,15 +55,17 @@ namespace ngfem
     variables["rows"] = code.is_simd ? rows : cols;
     variables["cols"] = code.is_simd ? cols : rows;
     code.header += Code::Map(mycode, variables);
+
+    code.Declare(code.res_type, index, Dimensions());
     if(code.is_simd)
       {
         for (int i = 0; i < Dimension(); i++)
-          code.body += Var(index,i,Dimensions()).Assign(values.S()+"("+ToString(i)+",i)");          
+          code.body += Var(index,i,Dimensions()).Assign(values.S()+"("+ToString(i)+",i)", false);          
       }
     else
       {
         for (int i = 0; i < Dimension(); i++)
-          code.body += Var(index,i,Dimensions()).Assign(values.S()+"(i,"+ToString(i)+")");
+          code.body += Var(index,i,Dimensions()).Assign(values.S()+"(i,"+ToString(i)+")", false);
       }
   }
 
@@ -418,7 +420,8 @@ namespace ngfem
   
   void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
-    code.body += Var(index).Declare(code.res_type);
+    // code.body += Var(index).Declare(code.res_type);
+    code.Declare(code.res_type, index, Dimensions());
     code.body += Var(index).Assign(Var(val), false);
   }
 
@@ -1472,8 +1475,9 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    code.Declare (code.res_type, index, this->Dimensions());    
     for (int i = 0; i < Dimension(); i++)
-      code.body += Var(index,i,this->Dimensions()).Assign(Var(scal) * Var(inputs[0],i,c1->Dimensions()));      
+      code.body += Var(index,i,this->Dimensions()).Assign(Var(scal) * Var(inputs[0],i,c1->Dimensions()), false);      
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1803,8 +1807,9 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    code.Declare (code.res_type, index, Dimensions());
     for (int i = 0; i < Dimension(); i++)
-      code.body += Var(index,i,Dimensions()).Assign( Var(inputs[0]) * Var(inputs[1],i,Dimensions()) );      
+      code.body += Var(index,i,Dimensions()).Assign( Var(inputs[0]) * Var(inputs[1],i,Dimensions()), false );      
   }
 
   using BASE::Evaluate;
@@ -1981,7 +1986,8 @@ public:
     CodeExpr result;
     for (int i = 0; i < c1->Dimension(); i++)
       result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[1], i, c2->Dimensions());
-    code.body += Var(index).Assign(result.S());
+    code.Declare (code.res_type, index, Dimensions());                              
+    code.body += Var(index).Assign(result.S(), false);
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -2149,10 +2155,11 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    code.Declare (code.res_type, index, this->Dimensions());                                  
     CodeExpr result;
     for (int i = 0; i < c1->Dimension(); i++)
       result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[1], i, c2->Dimensions());
-    code.body += Var(index).Assign(result.S());
+    code.body += Var(index).Assign(result.S(), false);
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -2350,10 +2357,12 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    code.Declare (code.res_type, index, this->Dimensions());                                  
+    
     CodeExpr result;
     for (int i = 0; i < c1->Dimension(); i++)
       result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[0], i, c1->Dimensions());
-    code.body += Var(index).Assign(result.S());
+    code.body += Var(index).Assign(result.S(), false);
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -2648,7 +2657,9 @@ public:
     auto res = CodeExpr();
     for (int i = 0; i < c1->Dimension(); i++)
       res += Var(inputs[0],i,c1->Dimensions()).Func("L2Norm2");
-    code.body += Var(index).Assign( res.Func("sqrt"));
+
+    code.Declare (code.res_type, index, this->Dimensions());
+    code.body += Var(index).Assign( res.Func("sqrt"), false);
   }
 
   /*
@@ -2905,13 +2916,27 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
     FlatArray<int> hdims = Dimensions();
-      for (int i : Range(hdims[0]))
-        for (int j : Range(hdims[1])) {
-          CodeExpr s;
-          for (int k : Range(inner_dim))
-            s += Var(inputs[0], i, k) * Var(inputs[1], k, j);
-          code.body += Var(index, i, j).Assign(s);
-        }
+    code.Declare (code.res_type, index, hdims);
+
+    if (code_uses_tensors)
+      {
+        code.body += "for (int i = 0; i < "+ToString(hdims[0])+"; i++)\n";
+        code.body += "for (int j = 0; j < "+ToString(hdims[1])+"; j++) { \n";
+        code.body += "auto sum = var_" + ToString(inputs[0]) + "(i,0) * var_" + ToString(inputs[1]) + "(0,j); \n";
+        code.body += "for (int k = 1; k < "+ToString(inner_dim)+"; k++) \n";
+        code.body += "sum += var_" + ToString(inputs[0]) + "(i,k) * var_" + ToString(inputs[1]) + "(k,j); \n";
+        code.body += "var_" + ToString(index) + "(i,j) = sum; } \n";
+      }
+    else
+      {
+        for (int i : Range(hdims[0]))
+          for (int j : Range(hdims[1])) {
+            CodeExpr s;
+            for (int k : Range(inner_dim))
+              s += Var(inputs[0], i, k) * Var(inputs[1], k, j);
+            code.body += Var(index, i, j).Assign(s, false);
+          }
+      }
   }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -3183,12 +3208,13 @@ public:
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+    code.Declare (code.res_type, index, Dimensions());                          
       auto dims = c1->Dimensions();
       for (int i : Range(dims[0])) {
         CodeExpr s;
         for (int j : Range(dims[1]))
             s += Var(inputs[0], i, j) * Var(inputs[1], j);
-	code.body += Var(index, i).Assign(s);
+	code.body += Var(index, i).Assign(s, false);
       }
   }
 
@@ -3588,10 +3614,12 @@ public:
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-      FlatArray<int> hdims = Dimensions();        
+      FlatArray<int> hdims = Dimensions();
+      code.Declare (code.res_type, index, this->Dimensions());
+      
       for (int i : Range(hdims[0]))
         for (int j : Range(hdims[1]))
-          code.body += Var(index,i,j).Assign( Var(inputs[0],j,i) );
+          code.body += Var(index,i,j).Assign( Var(inputs[0],j,i), false );
   }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -3959,7 +3987,9 @@ public:
       for (int k = 0; k < D; k++)
         code.body += mat_var(j,k).Assign(Var(inputs[0], j, k), false);
 
-    code.body += Var(index).Assign(mat_var.Func("Det"));
+    code.Declare (code.res_type, index, this->Dimensions());
+    
+    code.body += Var(index).Assign(mat_var.Func("Det"), false);
   }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -4143,9 +4173,10 @@ public:
 
     code.body += cof_var.Assign(mat_var.Func("Cof"), false);
 
+    code.Declare (code.res_type, index, this->Dimensions());                          
     for (int j = 0; j < D; j++)
       for (int k = 0; k < D; k++)
-        code.body += Var(index, j, k).Assign(cof_var(j,k));
+        code.body += Var(index, j, k).Assign(cof_var(j,k), false);
   }
 
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -4626,9 +4657,10 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
     CodeExpr result;
     int dim1 = c1->Dimensions()[0];
+    code.Declare (code.res_type, index, Array<int>());                  
     for (int i = 0; i < dim1; i++)
       result += Var(inputs[0],i,i);
-    code.body += Var(index).Assign(result.S());
+    code.body += Var(index).Assign(result.S(), false);
   }
   
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
@@ -5650,9 +5682,10 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    code.Declare (code.res_type, index, Dimensions());                      
     auto dims1 = c1->Dimensions();
     for (auto i : Range(mapping))
-      code.body += Var(index, i, num).Assign( Var(inputs[0], mapping[i], dims1));
+      code.body += Var(index, i, num).Assign( Var(inputs[0], mapping[i], dims1), false);
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -7997,8 +8030,10 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
                  ii++;
             });
 #endif
+
+            code.Declare (code.res_type, steps.Size(), cf->Dimensions());
             for (int ind = 0; ind < cf->Dimension(); ind++) {
-              code.body += Var(steps.Size(),ind,cf->Dimensions()).Declare(res_type);
+              // code.body += Var(steps.Size(),ind,cf->Dimensions()).Declare(res_type);
               code.body += Var(steps.Size(),ind,cf->Dimensions()).Assign(Var(steps.Size()-1,ind, cf->Dimensions()),false);
               string sget = "(i," + ToLiteral(ii) + ") =";
               if(simd) sget = "(" + ToLiteral(ii) + ",i) =";
