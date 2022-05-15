@@ -561,7 +561,8 @@ namespace ngfem
     stringstream s;
     constexpr auto type = is_same_v<SCAL, Complex> ? "Complex" : "double";
     s << "*reinterpret_cast<" << type << "*>(" << code.AddPointer(&val) << ")";
-    code.body += Var(index).Declare(code.res_type);
+    // code.body += Var(index).Declare(code.res_type);
+    code.Declare (code.res_type, index, this->Dimensions());
     code.body += Var(index).Assign(s.str(), false);
   }
 
@@ -1371,8 +1372,9 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
+    code.Declare (code.res_type, index, this->Dimensions());
     for (int i = 0; i < Dimension(); i++)
-      code.body += Var(index,i,this->Dimensions()).Assign(string("0.0"));      
+      code.body += Var(index,i,this->Dimensions()).Assign(string("0.0"), false);      
   }
 
   using T_CoefficientFunction<ZeroCoefficientFunction>::Evaluate;
@@ -1808,8 +1810,14 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     code.Declare (code.res_type, index, Dimensions());
-    for (int i = 0; i < Dimension(); i++)
-      code.body += Var(index,i,Dimensions()).Assign( Var(inputs[0]) * Var(inputs[1],i,Dimensions()), false );      
+    if (code_uses_tensors)
+      {
+        code.body += "for (size_t i = 0; i < "+ToString(this->Dimension())+"; i++)\n";
+        code.body += "var_"+ToString(index)+"[i] = var_"+ToString(inputs[0])+"[0]*var_"+ToString(inputs[1])+"[i];\n";
+      }
+    else
+      for (int i = 0; i < Dimension(); i++)
+        code.body += Var(index,i,Dimensions()).Assign( Var(inputs[0]) * Var(inputs[1],i,Dimensions()), false );      
   }
 
   using BASE::Evaluate;
@@ -2920,10 +2928,10 @@ public:
 
     if (code_uses_tensors)
       {
-        code.body += "for (int i = 0; i < "+ToString(hdims[0])+"; i++)\n";
-        code.body += "for (int j = 0; j < "+ToString(hdims[1])+"; j++) { \n";
+        code.body += "for (size_t i = 0; i < "+ToString(hdims[0])+"; i++)\n";
+        code.body += "for (size_t j = 0; j < "+ToString(hdims[1])+"; j++) { \n";
         code.body += "auto sum = var_" + ToString(inputs[0]) + "(i,0) * var_" + ToString(inputs[1]) + "(0,j); \n";
-        code.body += "for (int k = 1; k < "+ToString(inner_dim)+"; k++) \n";
+        code.body += "for (size_t k = 1; k < "+ToString(inner_dim)+"; k++) \n";
         code.body += "sum += var_" + ToString(inputs[0]) + "(i,k) * var_" + ToString(inputs[1]) + "(k,j); \n";
         code.body += "var_" + ToString(index) + "(i,j) = sum; } \n";
       }
@@ -3427,9 +3435,10 @@ public:
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-    code.body += Var(index, 0).Assign (Var(inputs[0],1)*Var(inputs[1],2)-Var(inputs[0],2)*Var(inputs[1],1));
-    code.body += Var(index, 1).Assign (Var(inputs[0],2)*Var(inputs[1],0)-Var(inputs[0],0)*Var(inputs[1],2));
-    code.body += Var(index, 2).Assign (Var(inputs[0],0)*Var(inputs[1],1)-Var(inputs[0],1)*Var(inputs[1],0));
+    code.Declare (code.res_type, index, this->Dimensions());
+    code.body += Var(index, 0).Assign (Var(inputs[0],1)*Var(inputs[1],2)-Var(inputs[0],2)*Var(inputs[1],1), false);
+    code.body += Var(index, 1).Assign (Var(inputs[0],2)*Var(inputs[1],0)-Var(inputs[0],0)*Var(inputs[1],2), false);
+    code.body += Var(index, 2).Assign (Var(inputs[0],0)*Var(inputs[1],1)-Var(inputs[0],1)*Var(inputs[1],0), false);
   }
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -5452,7 +5461,8 @@ public:
     GetIndex(dims, comp, i, j);
     code.body += Var(index).Assign( Var(inputs[0], i, j ));
     */
-    code.body += Var(index).Assign( Var(inputs[0], comp, c1->Dimensions() ));    
+    code.Declare (code.res_type, index, Dimensions());                                             
+    code.body += Var(index).Assign( Var(inputs[0], comp, c1->Dimensions() ), false);    
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -7521,11 +7531,12 @@ public:
   {
     int input = 0;
     int input_index = 0;
+    code.Declare (code.res_type, index, Dimensions());                          
     for (int i = 0; i < Dimension(); i++)
       {
         auto cfi = ci[input];
         code.body += Var(index, i, this->Dimensions())
-          .Assign(Var(inputs[input], input_index, cfi->Dimensions()));
+          .Assign(Var(inputs[input], input_index, cfi->Dimensions()), false);
         input_index++;
         if (input_index == cfi->Dimension() )
           {
@@ -7995,6 +8006,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
               auto& step = *steps[i];
               if (!simd && deriv == 0)              
                 cout << IM(3) << "step " << i << ": " << typeid(step).name() << endl;
+              code.body += string("// step ")+ToString(i)+": "+step.GetDescription()+"\n";
               step.GenerateCode(code, inputs[i],i);
             }
 
