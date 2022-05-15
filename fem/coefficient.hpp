@@ -1253,10 +1253,15 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     code.Declare (code.res_type, index, this->Dimensions());
-    
-    for (int i = 0; i < this->Dimension(); i++)
-      code.body += Var(index, i, this->Dimensions())
-        .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name), false);
+    if (code_uses_tensors)
+      {
+        code.body += "for (size_t i = 0; i < "+ToString(this->Dimension())+"; i++)\n";
+        code.body += "var_"+ToString(index)+"[i] = "+name+"( var_"+ToString(inputs[0])+"[i]);\n";
+      }
+    else
+      for (int i = 0; i < this->Dimension(); i++)
+        code.body += Var(index, i, this->Dimensions())
+          .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name), false);
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override

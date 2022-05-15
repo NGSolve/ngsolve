@@ -151,7 +151,7 @@ namespace ngfem
   GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     // auto dims = Dimensions();
-
+    
     string header = "\n\
     {flatmatrix} {values};\n\
     ProxyUserData * {ud} = (ProxyUserData*)mir.GetTransformation().userdata;\n\
