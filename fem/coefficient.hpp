@@ -25,6 +25,7 @@ namespace ngfem
     string description;
     bool is_variable = false;  // variables cannot be optimized away (e.g. for differentiation)
   public:
+    typedef std::map<shared_ptr<CoefficientFunction>, shared_ptr<CoefficientFunction>> T_DJC; // DiffJacobi Cache type
     // default constructor for archive
     CoefficientFunction() = default;
     CoefficientFunction (int adimension, bool ais_complex = false)
@@ -254,7 +255,7 @@ namespace ngfem
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
     // returns Jacobi-matrix (possible as higher order tensor)
     virtual shared_ptr<CoefficientFunction>
-      DiffJacobi (const CoefficientFunction * var) const;
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const;
 
 
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
@@ -440,6 +441,10 @@ namespace ngfem
     
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
+
+    virtual shared_ptr<CoefficientFunction>
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
+
   };
 
 
@@ -571,6 +576,7 @@ namespace ngfem
     ///
     double val;
     typedef T_CoefficientFunction<ConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
+    using BASE::T_DJC;
   public:
     ///
     ConstantCoefficientFunction() = default;
@@ -687,7 +693,7 @@ namespace ngfem
     }
 
     virtual shared_ptr<CoefficientFunction>
-      DiffJacobi (const CoefficientFunction * var) const override;
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
   };
 
 
@@ -1213,6 +1219,7 @@ namespace ngfem
   OP lam;
   string name;
   typedef  T_CoefficientFunction<cl_UnaryOpCF<OP>> BASE;
+  using typename BASE::T_DJC;
 public:
   cl_UnaryOpCF() = default;
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
@@ -1245,9 +1252,16 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    for (int i = 0; i < this->Dimension(); i++)
-      code.body += Var(index, i, this->Dimensions())
-        .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name) );
+    code.Declare (code.res_type, index, this->Dimensions());
+    if (code_uses_tensors)
+      {
+        code.body += "for (size_t i = 0; i < "+ToString(this->Dimension())+"; i++)\n";
+        code.body += "var_"+ToString(index)+"[i] = "+name+"( var_"+ToString(inputs[0])+"[i]);\n";
+      }
+    else
+      for (int i = 0; i < this->Dimension(); i++)
+        code.body += Var(index, i, this->Dimensions())
+          .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name), false);
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1353,8 +1367,8 @@ public:
   { throw Exception ("unarycf "+name+" does not provide a derivative"); }
 
   virtual shared_ptr<CoefficientFunction>
-  DiffJacobi (const CoefficientFunction * var) const override
-  { return BASE::DiffJacobi(var); }
+  DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  { return BASE::DiffJacobi(var, cache); }
 
   
   /*
@@ -1444,7 +1458,8 @@ public:
   using BASE::Dimension;
   using BASE::SetDimension;
   using BASE::SetDimensions;
-  using BASE::Evaluate;  
+  using BASE::Evaluate;
+  using typename BASE::T_DJC;    
 public:
   cl_BinaryOpCF() = default;
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
@@ -1476,16 +1491,37 @@ public:
   }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    for (int i = 0; i < this->Dimension(); i++)
+    code.Declare (code.res_type, index, this->Dimensions());
+
+    if (code_uses_tensors)
       {
-        auto op1 = Var(inputs[0], i, c1->Dimensions()).S();
-        auto op2 = Var(inputs[1], i, c2->Dimensions()).S();
-        string expr;
+        code.body += "for (int i = 0; i < "+ToString(this->Dimension())+"; i++)\n";
+        code.body += "var_" + ToString(index) + "[i] = ";
         if(opname.size()>2) // atan2, pow, etc.
-          expr = opname + '(' + op1 + ',' + op2 + ')';
-        else // +,-,*,/, etc.
-          expr = op1 + ' ' + opname + ' ' + op2;
-        code.body += Var(index,i,this->Dimensions()).Assign( expr );
+          {
+            code.body += opname + '(' + "var_" + ToString(inputs[0]) + "[i],";
+            code.body += "var_" + ToString(inputs[1]) + "[i]); \n";            
+          }
+        else
+          {
+            code.body += "var_" + ToString(inputs[0]) + "[i]" + opname;
+            code.body += "var_" + ToString(inputs[1]) + "[i]; \n";
+          }
+      }
+
+    else
+      {
+        for (int i = 0; i < this->Dimension(); i++)
+          {
+            auto op1 = Var(inputs[0], i, c1->Dimensions()).S();
+            auto op2 = Var(inputs[1], i, c2->Dimensions()).S();
+            string expr;
+            if(opname.size()>2) // atan2, pow, etc.
+              expr = opname + '(' + op1 + ',' + op2 + ')';
+            else // +,-,*,/, etc.
+              expr = op1 + ' ' + opname + ' ' + op2;
+            code.body += Var(index,i,this->Dimensions()).Assign( expr, false );
+          }
       }
   }
 
@@ -1645,8 +1681,8 @@ public:
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
 
   virtual shared_ptr<CoefficientFunction>
-  DiffJacobi (const CoefficientFunction * var) const override
-  { return BASE::DiffJacobi(var); }
+  DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  { return BASE::DiffJacobi(var, cache); }
 
   /*
   virtual void NonZeroPattern (const class ProxyUserData & ud,

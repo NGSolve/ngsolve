@@ -69,6 +69,16 @@ def test_evaluate(unit_mesh_2d):
     assert vals2 == approx(np.array(list(zip([0.5 + 0J] * 10, pnts*1J))))
     assert x(unit_mesh_2d(0.5,0.5)) == approx(0.5)
 
+
+def test_diff(unit_mesh_3d):
+    u = CF( (x ** 2 * z * y-0.08, y ** 3 * x, z ** 2 * x * y) ).MakeVariable()
+    F = CF( (exp(x+y),sin(x-z),cos(y**2+z*x), x**2-y,log( 2+0.2*x*y),sqrt(4+y+z), u), dims=(3,3) ) + 10*Id(3)
+
+    cfs = [Det(F), Cof(F), Sym(F), Skew(F), Inv(F), F.trans*F, F*u, InnerProduct(F,F), InnerProduct(u,F*u), IfPos(u[0], F, Inv(F)), Norm(F), Inv(F)-F+ Cof(F), Cross(u,F*u), 1/(Norm(u)+10)*F, F[:,0],F.Compile(), F.ExtendDimension(dims=(4,3))*u]
+
+    for cf in cfs:
+        assert Integrate( Norm(cf.Diff(u,CF((1,0,0)))-cf.Diff(u)*CF((1,0,0))),unit_mesh_3d) == approx(0.0)
+    
 if __name__ == "__main__":
     test_pow()
     test_ParameterCF()
@@ -76,3 +86,4 @@ if __name__ == "__main__":
     test_real()
     test_domainwise_cf()
     test_evaluate()
+    test_diff()

@@ -361,6 +361,16 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                     symbolic_integrator_uses_diff = val;
                   }, "New treatment of symobolic forms using differentiation by proxies")
                   
+    .def_property("code_uses_tensors",
+                  [] (GlobalDummyVariables&)
+                  {
+                    return code_uses_tensors;
+                  },
+                  [] (GlobalDummyVariables&, bool val)
+                  {
+                    code_uses_tensors = val;
+                  }, "Use tensors in code-generation")
+                  
     ;
 
   m.attr("ngsglobals") = py::cast(&globvar);
@@ -2424,7 +2434,7 @@ diffop : ngsolve.fem.DifferentialOperator
     .def ("Diff", &SumOfIntegrals::Diff)
     .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")
-    .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
+    .def ("Compile", &SumOfIntegrals::Compile, py::arg("realcompile")=false, py::arg("wait")=false, py::arg("keep_files")=false )
     .def("__str__",  [](shared_ptr<SumOfIntegrals> igls) { return ToString(*igls); } )
     .def("__radd__", [](shared_ptr<SumOfIntegrals> igls, int i) {
         if (i != 0) throw Exception("can only add integer 0 to SumOfIntegrals (for Python sum(list))");
@@ -2434,7 +2444,7 @@ diffop : ngsolve.fem.DifferentialOperator
 
   py::class_<Variation> (m, "Variation")
     .def(py::init<shared_ptr<SumOfIntegrals>>())
-    .def ("Compile", &Variation::Compile, py::arg("realcompile")=false, py::arg("wait")=false)
+    .def ("Compile", &Variation::Compile, py::arg("realcompile")=false, py::arg("wait")=false, py::arg("keep_files")=false)
     ;
   
   
