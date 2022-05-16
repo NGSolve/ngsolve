@@ -422,10 +422,10 @@ INLINE ostream & operator<< (ostream & ost, const FlatTensor<0,T> & tensor)
 
 
 
-
+extern void ThrowTensorIndexError(size_t ind);
 
   // a tensor with static shape
-  
+
 
   template <typename T, size_t ...SHAPE>
   class Tens
@@ -470,6 +470,7 @@ INLINE ostream & operator<< (ostream & ost, const FlatTensor<0,T> & tensor)
     T & operator() (IND... i)
     {
       size_t ind = CalcIndex(tuple(SHAPE...), tuple(i...));
+      // if (ind >= Size()) ThrowTensorIndexError(ind);
       return data[ind];
     }
 

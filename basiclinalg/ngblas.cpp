@@ -4063,7 +4063,11 @@ namespace ngbla
     // BASE_LapackMultAdd<double> (Trans(a), true, Trans(b), true, alpha, c, beta);
   }
 
-
+  
+  void ThrowTensorIndexError(size_t ind)
+  {
+    throw Exception ("Tensor index error " + ToString(ind));
+  }
   
 }
 

@@ -5197,6 +5197,16 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     if (auto uv = dynamic_pointer_cast<UnitVectorCoefficientFunction>(c2))
       return MakeComponentCoefficientFunction(c1, uv->GetCoordinate());
 
+    if (auto transc1 = dynamic_pointer_cast<TransposeCoefficientFunction>(c1))
+      if (auto transc2 = dynamic_pointer_cast<TransposeCoefficientFunction>(c2))
+        {
+          cout << "simplify double transpose" << endl;
+          auto sub1 = c1->InputCoefficientFunctions();
+          auto sub2 = c2->InputCoefficientFunctions();
+          return InnerProduct(sub1[0], sub2[0]);
+        }
+      
+    
     if (c1 == c2)
       {
         switch (c1->Dimension())
@@ -5689,6 +5699,9 @@ public:
   { return "subtensor"; }
   */
 
+  int First() const { return first; }
+  FlatArray<int> Num() const { return num; }
+  FlatArray<int> Dist() const { return dist; }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -5813,6 +5826,19 @@ MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first,
   //further optimization possible by checking if only subtensor of c1 is zero..
   if (c1->IsZeroCF())
     return ZeroCF(num);
+
+  // trivial sub-tensor ?
+  bool trivial = (first == 0) && (num.Size() == c1->Dimensions().Size());
+  for (int i = 0; i < dist.Size()-1; i++)
+    if (dist[i] != num[i]*dist[i+1]) trivial = false;
+  if (dist.Last() != 1) trivial = false;
+  if (trivial)
+    {
+      cout << IM(2) << "optimizing out trivial sub-tensor" << endl;
+      return c1;
+    }
+  
+  
   return make_shared<SubTensorCoefficientFunction> (c1, first, move(num), move(dist));
 }
 
@@ -5824,33 +5850,55 @@ MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, Arra
   if (dims1.Size() != ordering.Size())
     throw Exception("TensorTranspose - tensor dimensions don't match");
 
-  Array<int> dist1(dims1.Size());
-  int disti = 1;
-  for (int i = dims1.Size()-1; i >= 0; i--)
+  if (!c1->IsVariable())
+  if (auto subcf = dynamic_pointer_cast<SubTensorCoefficientFunction>(c1))
     {
-      dist1[i] = disti;
-      disti *= dims1[i];
+      cout << IM(2) << "Optimization: Tensor-Transpose of subtensor is a subtensor" << endl;
+      Array<int> dims(dims1.Size()), dist(dims1.Size());
+      for (int i = 0; i < dims.Size(); i++)
+        {
+          if (ordering[i] < 0 || ordering[i] >= dims1.Size())
+            throw Exception ("ordering out of range");
+          dims[i] = dims1[ordering[i]];
+          dist[i] = subcf->Dist()[ordering[i]];
+        }
+
+      auto input = c1->InputCoefficientFunctions();
+      auto res = MakeSubTensorCoefficientFunction (input[0], subcf->First(),
+                                                   std::move(dims), std::move(dist));
+      return res;
     }
   
-  Array<int> dims(dims1.Size()), dist(dims1.Size());
-  for (int i = 0; i < dims.Size(); i++)
+  else
     {
-      if (ordering[i] < 0 || ordering[i] >= dims1.Size())
-        throw Exception ("ordering out of range");
-      dims[i] = dims1[ordering[i]];
-      dist[i] = dist1[ordering[i]];
+      Array<int> dist1(dims1.Size());
+      
+      int disti = 1;
+      for (int i = dims1.Size()-1; i >= 0; i--)
+        {
+          dist1[i] = disti;
+          disti *= dims1[i];
+        }
+      
+      Array<int> dims(dims1.Size()), dist(dims1.Size());
+      for (int i = 0; i < dims.Size(); i++)
+        {
+          if (ordering[i] < 0 || ordering[i] >= dims1.Size())
+            throw Exception ("ordering out of range");
+          dims[i] = dims1[ordering[i]];
+          dist[i] = dist1[ordering[i]];
+        }
+      
+      auto res = MakeSubTensorCoefficientFunction (c1, 0, std::move(dims), std::move(dist));
+      stringstream descr;
+      descr << "tensor-transpose [";
+      for (auto i : Range(ordering.Size() - 1))
+        descr << " " << ordering[i] << ",";
+      descr << " " << ordering.Last() << " ]";
+      res -> SetDescription(descr.str());
+      return res;
     }
-
-  auto res = MakeSubTensorCoefficientFunction (c1, 0, std::move(dims), std::move(dist));
-  stringstream descr;
-  descr << "tensor-transpose [";
-  for (auto i : Range(ordering.Size() - 1))
-    descr << " " << ordering[i] << ",";
-  descr << " " << ordering.Last() << " ]";
-  res -> SetDescription(descr.str());
-  return res;
 }
-
 shared_ptr<CoefficientFunction>
 MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, int i1, int i2)
 {
@@ -7870,8 +7918,13 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         ost << "Step " << i << ": " << cf->GetDescription();
         if (cf->Dimensions().Size() == 1)
           ost << ", dim=" << cf->Dimension();
-        else if (cf->Dimensions().Size() == 2)
-          ost << ", dims = " << cf->Dimensions()[0] << " x " << cf->Dimensions()[1];
+        else if (cf->Dimensions().Size() >= 2)
+          {
+            // ost << ", dims = " << cf->Dimensions()[0] << " x " << cf->Dimensions()[1];
+            ost << ", dims = " << cf->Dimensions()[0];
+            for (int j = 1; j < cf->Dimensions().Size(); j++)
+              ost << " x " << cf->Dimensions()[j];
+          }
         ost << endl;
         if (inputs[i].Size() > 0)
           {
