@@ -1,7 +1,7 @@
-/*********************************************************************/
 /* File:   hcurlcurlfespace.cpp                                      */
 /* Author: Michael Neunteufel                                        */
 /* Date:   June 2018                                                 */
+/*********************************************************************/
 /*********************************************************************/
 
 
@@ -1717,7 +1717,7 @@ namespace ngcomp
                 ndof += 3*(of[0]*(of[0]+1)/2);
                 if(issurfacespace && discontinuous)
                   {
-                    for (auto e : ma->GetElEdges(ei))
+                    for (auto e : ma->GetFaceEdges(i))
                       ndof += first_edge_dof[e+1] - first_edge_dof[e];            
                   }
                 break;
@@ -1725,7 +1725,7 @@ namespace ngcomp
                 ndof += of[0]*of[0] + (of[0]+2)*(of[0])*2  + 1;//+ 2*of[0];
                 if(issurfacespace && discontinuous)
                   {
-                    for (auto e : ma->GetElEdges(ei))
+                    for (auto e : ma->GetFaceEdges(i))
                       ndof += first_edge_dof[e+1] - first_edge_dof[e];            
                   }
                 break;

@@ -7,6 +7,9 @@
 
 namespace ngfem
 {
+  bool code_uses_tensors = false;
+
+  
     atomic<unsigned> Code::id_counter{0};
 
     void Code::AddLinkFlag(string flag)
@@ -28,6 +31,32 @@ namespace ngfem
         return name;
     }
 
+  void Code :: Declare (string type, int i, FlatArray<int> dims)
+  {
+    if (code_uses_tensors)
+      {
+        body += "Tens<" + type;
+        for (int j = 0; j < dims.Size(); j++)
+          body += ',' + ToLiteral(dims[j]);
+        body += "> var_" + ToLiteral(i) + ";\n";
+      }
+    else
+      {
+        size_t prod=1;
+        for (auto d : dims) prod *= d;
+        for (int j = 0; j < prod; j ++)
+          body += type + Var(" var", i, j, dims).S() + ";\n";
+        
+        /*
+          body += type + " var_" + ToLiteral(i);
+          for (int j = 0; j < dims.Size(); j++)
+          body += '_' + ToLiteral(dims[j]);
+          body += ";\n";
+        */
+      }
+  }
+  
+  
     unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files )
     {
       static int counter = 0;
