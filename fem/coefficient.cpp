@@ -4128,6 +4128,13 @@ public:
     auto diffc1 = c1->DiffJacobi (var, cache) -> Reshape( D*D, var->Dimension() );
     auto prod = cof * diffc1;
     auto res = prod->Reshape(var->Dimensions());
+
+    /*
+    auto cof = CofactorCF(c1) -> Reshape( D*D );
+    auto diffc1 = c1->DiffJacobi (var, cache) -> Reshape( D*D, var->Dimension() );
+    auto res = diffc1->Transpose() * cof;
+    */
+    
     cache[thisptr] = res;
     return res;
   }
@@ -4962,7 +4969,11 @@ cl_BinaryOpCF<GenericMult>::DiffJacobi(const CoefficientFunction * var, T_DJC & 
     return cache[thisptr];
 
   if (var == this) return make_shared<ConstantCoefficientFunction>(1);
-  auto res = c1 * c2->DiffJacobi (var, cache) + c2 * c1->DiffJacobi (var, cache);
+  shared_ptr<CoefficientFunction> res;
+  if (c1 == c2)
+    res = (2*c1) * c1->DiffJacobi (var, cache);
+  else
+    res = c1 * c2->DiffJacobi (var, cache) + c2 * c1->DiffJacobi (var, cache);
   cache[thisptr] = res;
   return res;
 }
@@ -5023,7 +5034,13 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
           
       }
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
-      return make_shared<MultMatMatCoefficientFunction> (c1, c2);
+      {
+        if (dynamic_pointer_cast<IdentityCoefficientFunction>(c1) && !c1->IsVariable())
+          return c2;
+        if (dynamic_pointer_cast<IdentityCoefficientFunction>(c2) && !c2->IsVariable())
+          return c1;
+        return make_shared<MultMatMatCoefficientFunction> (c1, c2);
+      }
     if (c1->Dimensions().Size() >= 2 && c2->Dimensions().Size() == 1)
       {
         if (dynamic_pointer_cast<IdentityCoefficientFunction>(c1) && !c1->IsVariable())
@@ -5353,7 +5370,25 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
 
     if (dynamic_pointer_cast<IdentityCoefficientFunction> (coef) && !coef->IsVariable())
       return make_shared<ConstantCoefficientFunction>(1);
-        
+
+
+    // common pattern : Det (F^T F) = Det(F)**2, for F square
+    if (!coef->IsVariable())
+      if (auto mmm = dynamic_pointer_cast<MultMatMatCoefficientFunction> (coef))
+        {
+          auto AB = mmm->InputCoefficientFunctions();
+          if (!AB[0]->IsVariable())
+            if (auto trans = dynamic_pointer_cast<TransposeCoefficientFunction> (AB[0]))
+              {
+                auto At = trans->InputCoefficientFunctions()[0];
+                if (At->Dimensions()[0] == At->Dimensions()[1])
+                  {
+                    auto detF = DeterminantCF (At);
+                    return detF*detF;
+                  }
+              }
+        }
+    
     switch (dims[0])
       {
       case 1: return make_shared<DeterminantCoefficientFunction<1>> (coef);
@@ -5829,15 +5864,15 @@ MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first,
 
   // trivial sub-tensor ?
   bool trivial = (first == 0) && (num.Size() == c1->Dimensions().Size());
-  for (int i = 0; i < dist.Size()-1; i++)
+  for (int i = 0; i+1 < dist.Size(); i++)
     if (dist[i] != num[i]*dist[i+1]) trivial = false;
-  if (dist.Last() != 1) trivial = false;
+  if (dist.Size() >= 1)
+    if (dist.Last() != 1) trivial = false;
   if (trivial)
     {
       cout << IM(2) << "optimizing out trivial sub-tensor" << endl;
       return c1;
     }
-  
   
   return make_shared<SubTensorCoefficientFunction> (c1, first, move(num), move(dist));
 }
