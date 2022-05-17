@@ -1339,26 +1339,48 @@ namespace ngfem
     ddcf_dtrial_dtest.SetSize(trial_proxies.Size(), test_proxies.Size());
 
     if (symbolic_integrator_uses_diff)
-      for (auto i : Range(test_proxies))
-        {
-          try
-            {
-              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i]);
-              for (auto j : Range(trial_proxies))
+      {
+        // NOTE (MR): the derivative wrt to the trail function is carried out before that wrt the test function in order
+        // to avoid a transposition during the actual assembly.
+        for (auto i : Range(trial_proxies))
+          {
+            shared_ptr<CoefficientFunction> dcf_dtrial;
+            try
               {
-                CoefficientFunction::T_DJC cache;
-                ddcf_dtrial_dtest(j, i) = cf->DiffJacobi(trial_proxies[j])->DiffJacobi(test_proxies[i]);
+                CoefficientFunction::T_DJC cache1;
+                dcf_dtrial = cf->DiffJacobi(trial_proxies[i], cache1);
+              }
+            catch (const Exception& e)
+              {
+                cout << IM(5) << "dcf_dtrial has thrown exception " << e.What() << endl;
               }
 
-              CoefficientFunction::T_DJC cache;
-              dcf_dtest[i] = cf->DiffJacobi(test_proxies[i], cache);
-              // cout << "dcf_dtest = " << *dcf_dtest[i] << endl;
-            }
-          catch (const Exception& e)
-            {
-              cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
-            }
-        }
+            for (auto j : Range(test_proxies))
+              {
+                if (i == 0)
+                  try
+                    {
+                      CoefficientFunction::T_DJC cache;
+                      dcf_dtest[j] = cf->DiffJacobi(test_proxies[j], cache);
+                    }
+                  catch (const Exception& e)
+                    {
+                      cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+                    }
+
+                if (dcf_dtrial)
+                  try
+                    {
+                      CoefficientFunction::T_DJC cache2;
+                      ddcf_dtrial_dtest(i, j) = dcf_dtrial->DiffJacobi(test_proxies[j], cache2);
+                    }
+                  catch (const Exception& e)
+                    {
+                      cout << IM(5) << "ddcf_dtrial_dtest has thrown exception " << e.What() << endl;
+                    }
+              }
+          }
+      }
   }
 
 
@@ -1819,13 +1841,13 @@ namespace ngfem
                 FlatMatrix<SCAL_SHAPES, ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
                 FlatMatrix<SCAL_SHAPES, ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
-                if (ddcf_dtrial_dtest(l1nr, k1nr))
+                if (ddcf_dtrial_dtest(k1nr, l1nr))
                   {
 //                    cout << "use ddcf_dtrial_dtest (NO SIMD)" << endl;
                     // TODO: optimize for element-wise constant case?
                     FlatMatrix<SCAL> mproxyvalues(mir.Size(), proxy1->Dimension() * proxy2->Dimension(),
                                                   proxyvalues.Data());
-                    ddcf_dtrial_dtest(l1nr, k1nr)->Evaluate(mir, mproxyvalues);
+                    ddcf_dtrial_dtest(k1nr, l1nr)->Evaluate(mir, mproxyvalues);
                     if (is_diagonal)
                         for (auto k: Range(proxy1->Dimension()))
                             diagproxyvalues.Slice(k, proxy1->Dimension()) = proxyvalues(STAR, k, k);
