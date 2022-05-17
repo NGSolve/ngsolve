@@ -1647,7 +1647,7 @@ value : complex
   input scalar
 
 )raw_string"))
-    .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
+    .def ("Get", [] (spParCFC cf)  { return cf->GetValue(); },
           "return parameter value")
     ;
 
