@@ -133,11 +133,11 @@ namespace ngfem
 
     
     shared_ptr<SumOfIntegrals>
-    Compile (bool realcompile, bool wait) const
+    Compile (bool realcompile, bool wait, bool keep_files) const
     {
       auto compiled = make_shared<SumOfIntegrals>();
       for (auto & icf : icfs)
-        compiled->icfs += make_shared<Integral> (::ngfem::Compile (icf->cf, realcompile, 2, wait), icf->dx);
+        compiled->icfs += make_shared<Integral> (::ngfem::Compile (icf->cf, realcompile, 2, wait, keep_files), icf->dx);
       return compiled;
     }
 
@@ -181,9 +181,9 @@ namespace ngfem
     shared_ptr<SumOfIntegrals> igls;
     Variation (shared_ptr<SumOfIntegrals> _igls) : igls(_igls) { ; }
     
-    auto Compile (bool realcompile, bool wait) const
+    auto Compile (bool realcompile, bool wait, bool keep_files) const
     {
-      return Variation(igls->Compile(realcompile, wait));
+      return Variation(igls->Compile(realcompile, wait, keep_files));
     }
   };
   

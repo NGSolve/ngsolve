@@ -106,8 +106,10 @@ namespace ngfem
         auto nv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetNV()");
         auto nv = Var("tmp", index);
         code.body += nv.Assign(nv_expr);
+        
+        code.Declare (code.res_type, index, this->Dimensions());    
         for( int i : Range(D))
-          code.body += Var(index,i).Assign(nv(i));
+          code.body += Var(index,i).Assign(nv(i), false);
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
@@ -239,8 +241,10 @@ namespace ngfem
       auto tv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetTV()");
       auto tv = Var("tmp", index);
       code.body += tv.Assign(tv_expr);
+
+      code.Declare (code.res_type, index, this->Dimensions());          
       for( int i : Range(D))
-        code.body += Var(index,i).Assign(tv(i));
+        code.body += Var(index,i).Assign(tv(i), false);
     }
 
       using CoefficientFunctionNoDerivative::Evaluate;
