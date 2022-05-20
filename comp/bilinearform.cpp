@@ -5914,6 +5914,36 @@ namespace ngcomp
   }
  
 
+  template <class TSCAL>
+  void S_BilinearForm<TSCAL>::LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const 
+  {
+    if (!this->symmetric || this->fespace->IsComplex())
+      {
+        Vector<Complex> lami(elmat.Height());
+        Matrix<TSCAL> evecs(elmat.Height());
+        FlatMatrix<TSCAL> elmat_save(elmat.Height(), elmat.Width(), lh);
+        elmat_save = elmat;
+#ifdef LAPACK
+        LapackEigenValues (elmat_save, lami, evecs);
+        (*testout) << "lami = " 
+                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
+#endif
+      }
+    else
+      {
+        Vector<TSCAL> lami(elmat.Height());
+        Matrix<TSCAL> evecs(elmat.Height());
+#ifdef LAPACK
+        LapackEigenValuesSymmetric (elmat, lami, evecs);
+#else
+        CalcEigenSystem (elmat, lami, evecs);
+#endif
+        (*testout) << "lami = " 
+                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
+      }
+  }
+
+
 
 
   template class S_BilinearForm<double>;
@@ -6074,36 +6104,6 @@ namespace ngcomp
                     LocalHeap & lh) 
   {
     mymatrix -> TMATRIX::AddElementMatrix (dnums1, dnums2, elmat, addatomic || this->fespace->HasAtomicDofs());
-  }
-
-
-  template <class TSCAL>
-  void S_BilinearForm<TSCAL>::LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const 
-  {
-    if (!this->symmetric || this->fespace->IsComplex())
-      {
-        Vector<Complex> lami(elmat.Height());
-        Matrix<TSCAL> evecs(elmat.Height());
-        FlatMatrix<TSCAL> elmat_save(elmat.Height(), elmat.Width(), lh);
-        elmat_save = elmat;
-#ifdef LAPACK
-        LapackEigenValues (elmat_save, lami, evecs);
-        (*testout) << "lami = " 
-                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
-#endif
-      }
-    else
-      {
-        Vector<TSCAL> lami(elmat.Height());
-        Matrix<TSCAL> evecs(elmat.Height());
-#ifdef LAPACK
-        LapackEigenValuesSymmetric (elmat, lami, evecs);
-#else
-        CalcEigenSystem (elmat, lami, evecs);
-#endif
-        (*testout) << "lami = " 
-                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
-      }
   }
 
 
