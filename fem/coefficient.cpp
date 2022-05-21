@@ -7118,9 +7118,11 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       };
 
       auto var_if = Var(inputs[0]);
-      for (int i = 0; i < cf_then->Dimension(); i++)
-        code.body += Var(index,i,cf_then->Dimensions()).Declare(code.res_type);        
-
+      // for (int i = 0; i < cf_then->Dimension(); i++)
+      // code.body += Var(index,i,cf_then->Dimensions()).Declare(code.res_type);        
+      code.Declare (code.res_type, index, Dimensions());                          
+      
+      
       if(code.is_simd) {
         for (int i = 0; i < cf_then->Dimension(); i++)
             // cast all input parameters of IfPos to enforce the right overload (f.i. intermediate results could be double instead of AutoDiff<>)
@@ -7706,7 +7708,9 @@ public:
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
         auto v = Var(index);
         // code.body += v.Assign(CodeExpr(string("mir.GetPoints()(i,")+ToLiteral(dir)+")"));
-        code.body += v.Assign(CodeExpr(string("points(i,")+ToLiteral(dir)+")"));
+
+        code.Declare(code.res_type, index, Dimensions());        
+        code.body += v.Assign(CodeExpr(string("points(i,")+ToLiteral(dir)+")"), false);
     }
 
     template <typename MIR, typename T, ORDERING ORD>
