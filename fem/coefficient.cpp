@@ -5863,11 +5863,13 @@ MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first,
     return ZeroCF(num);
 
   // trivial sub-tensor ?
-  bool trivial = (first == 0) && (num.Size() == c1->Dimensions().Size());
+  const auto dims = c1->Dimensions();
+  bool trivial = (first == 0) && (num.Size() == dims.Size()) && (num == dims);
   for (int i = 0; i+1 < dist.Size(); i++)
     if (dist[i] != num[i]*dist[i+1]) trivial = false;
   if (dist.Size() >= 1)
     if (dist.Last() != 1) trivial = false;
+
   if (trivial)
     {
       cout << IM(2) << "optimizing out trivial sub-tensor" << endl;
