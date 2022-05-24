@@ -473,8 +473,17 @@ extern void ThrowTensorIndexError(size_t ind);
       // if (ind >= Size()) ThrowTensorIndexError(ind);
       return data[ind];
     }
+    
+    template <typename ...IND>
+    const T & operator() (IND... i) const
+    {
+      size_t ind = CalcIndex(tuple(SHAPE...), tuple(i...));
+      // if (ind >= Size()) ThrowTensorIndexError(ind);
+      return data[ind];
+    }
 
     T & operator[] (size_t i) { return data[i]; }
+    const T & operator[] (size_t i) const { return data[i]; }
   };
   
   template <typename T>
@@ -495,6 +504,8 @@ extern void ThrowTensorIndexError(size_t ind);
     
     T & operator() ()  { return data[0]; }
     T & operator[] (size_t) { return data[0]; }    
+    const T & operator() () const { return data[0]; }
+    const T & operator[] (size_t) const { return data[0]; }    
   };
   
 
