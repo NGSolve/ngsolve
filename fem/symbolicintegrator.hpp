@@ -677,7 +677,7 @@ public:
     bool has_interpolate; // is there an interpolate in the expression tree ? 
     shared_ptr<BilinearFormIntegrator> linearization;
     Array<shared_ptr<CoefficientFunction>> dcf_dtest;  // derivatives by test-functions
-    Matrix<shared_ptr<CoefficientFunction>> ddcf_dtest_dtrial;  // derivatives by trial- and test-functions
+    Matrix<shared_ptr<CoefficientFunction>> ddcf_dtest_dtrial;  // derivatives by test- and trial-functions
   public:
     NGS_DLL_HEADER SymbolicBilinearFormIntegrator (shared_ptr<CoefficientFunction> acf, VorB avb,
                                                    VorB aelement_boundary);
