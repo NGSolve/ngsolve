@@ -1494,8 +1494,8 @@ namespace ngfem
     
   {
     static Timer t(string("SymbolicBFI::CalcElementMatrixAdd")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), NoTracing);
-    static Timer tdmat("SymbolicBFI::CalcDMat - simd", NoTracing);
-    static Timer tmult("SymbolicBFI::mult - simd", NoTracing);
+//    static Timer tdmat("SymbolicBFI::CalcDMat - simd", NoTracing);
+//    static Timer tmult("SymbolicBFI::mult - simd", NoTracing);
     RegionTimer reg(t);
     // RegionTracer regtr(TaskManager::GetThreadId(), t);    
 
@@ -1585,7 +1585,7 @@ namespace ngfem
 
                       if (ddcf_dtest_dtrial(l1nr, k1nr))
                         {
-                          RegionTimer regdmat(tdmat);
+//                          RegionTimer regdmat(tdmat);
 //                          cout << "use ddcf_dtest_dtrial" << endl;
                           ddcf_dtest_dtrial(l1nr, k1nr)->Evaluate(mir, proxyvalues);
 
@@ -1595,7 +1595,7 @@ namespace ngfem
                         }
                       else
                         {
-                          RegionTimer regdmat(tdmat);
+//                          RegionTimer regdmat(tdmat);
                           if (!is_diagonal)
                             {
                               for (size_t k = 0, kk = 0; k < dim_proxy1; k++)
@@ -1706,7 +1706,7 @@ namespace ngfem
                                     hbdbmat1.Col(i).Range(r1) += hproxyvalues(i) * hbbmat1.Col(i).Range(r1);
                                 }
                           */
-                          RegionTimer regmult(tmult);
+//                          RegionTimer regmult(tmult);
                           for (size_t j = 0; j < dim_proxy2; j++)
                             for (size_t k = 0; k < dim_proxy1; k++)
                               if (nonzeros(l1+j, k1+k))
