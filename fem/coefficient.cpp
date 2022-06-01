@@ -3956,6 +3956,9 @@ public:
 
 class InverseCoefficientFunctionAnyDim : public CoefficientFunction
 {
+  // This is implemented in a separate class because of limitations of msvc in the context of "constexpr if".
+  // Otherwise, it could be easily integrated in InverseCoefficientFunction<D>, eg. for D == -1.
+
   shared_ptr<CoefficientFunction> c1;
   using T_DJC = CoefficientFunction::T_DJC;
 
