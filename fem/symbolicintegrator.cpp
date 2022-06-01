@@ -1336,7 +1336,7 @@ namespace ngfem
     if (trial_proxies.Size() == 0) trial_difforder = 0;
 
     dcf_dtest.SetSize(test_proxies.Size());
-    ddcf_dtest_dtrial.SetSize(trial_proxies.Size(), test_proxies.Size());
+    ddcf_dtest_dtrial.SetSize(test_proxies.Size(), trial_proxies.Size());
 
     if (symbolic_integrator_uses_diff)
       {
