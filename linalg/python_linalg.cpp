@@ -731,7 +731,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Extend", &MultiVector::Extend)
     .def("Append", &MultiVector::Append)
     .def("AppendOrthogonalize", &MultiVector::AppendOrthogonalize,
-         py::arg("vec"), py::arg("ipmat")=nullptr,
+         py::arg("vec"), py::arg("ipmat")=nullptr, py::arg("parallel")=true, py::arg("iterations")=2,
          "assumes that existing vectors are orthogonal, and orthogonalize new vector against existing vectors")
     .def("Replace", [](MultiVector & x, int ind, shared_ptr<BaseVector> v2)
          {
