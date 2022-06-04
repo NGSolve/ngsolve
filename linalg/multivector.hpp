@@ -78,7 +78,7 @@ namespace ngla {
       vecs[i] = v;
     }
 
-    void AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ip);
+    void AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ip, bool parallel, int iterations);
 
     MultiVector & operator= (double val)
     {

@@ -289,16 +289,59 @@ namespace ngla {
   }
 
 
-
-  void MultiVector :: AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ipmat)
+  void MultiVector :: AppendOrthogonalize (shared_ptr<BaseVector> v, BaseMatrix * ipmat,
+                                           bool parallel, int iterations)
   {
-    vecs.Append (v->CreateVector());
-    *vecs.Last() = *v;
+    auto hv = v->CreateVector();
+    hv = *v;
+    // vecs.Append (v->CreateVector());
+    // *vecs.Last() = *v;
 
-    if (IsComplex())    
-      this->T_Orthogonalize<Complex> (ipmat);
+    if (!IsComplex())
+      for (int j = 0; j < iterations; j++)
+        {
+          if (!ipmat)
+            {
+              if (parallel)
+                {
+                  Vector<double> prod = -this->InnerProductD (hv);
+                  Axpy (prod, *this, hv);
+                }
+              else
+                {
+                  for (int i = 0; i < this->Size(); i++)
+                    hv += -InnerProduct<double> (*(*this)[i], hv) * *(*this)[i];
+                }
+              hv /= hv.L2Norm();
+            }
+          else
+            {
+              auto hv2 = v->CreateVector();              
+              if (parallel)
+                {
+                  hv2 = *ipmat * hv;
+                  Vector<double> prod = -this->InnerProductD (hv2);
+                  Axpy (prod, *this, hv);
+                }
+              else
+                {
+                  for (int i = 0; i < this->Size(); i++)
+                    {
+                      hv2 = *ipmat * hv;
+                      hv += -InnerProduct<double> (*(*this)[i], hv2) * *(*this)[i];
+                    }
+                }
+              hv2 = *ipmat * hv;              
+              hv /= sqrt(InnerProduct(hv, hv2));
+            }
+        }
     else
-      this->T_Orthogonalize<double> (ipmat);
+      {
+        // complex 
+      }
+    vecs.Append (hv);
+    if (IsComplex())
+      this->T_Orthogonalize<Complex> (ipmat);
   }
 
   void MultiVector :: SetScalar (double s)
