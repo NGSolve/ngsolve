@@ -112,12 +112,31 @@ namespace ngla {
     // me[i] += v2[j] mat(j,i)
     virtual void Add (const MultiVector & v2, FlatMatrix<double> mat);
     virtual void Add (const MultiVector & v2, FlatMatrix<Complex> mat);
-    
+
+    template <typename T>
+    auto T_InnerProduct (const MultiVector & v2, bool conjugate = false)
+    {
+      if constexpr (is_same<T, double>())
+                     return InnerProductD (v2);
+      else
+        return InnerProductC (v2, conjugate);
+    }
     
     virtual Matrix<> InnerProductD (const MultiVector & v2) const;
     virtual Matrix<Complex> InnerProductC (const MultiVector & v2, bool conjugate = false) const;    
     virtual Matrix<> InnerProductD (const MultiVectorExpr & v2) const;
-    virtual Matrix<Complex> InnerProductC (const MultiVectorExpr & v2, bool conjugate = false) const;    
+    virtual Matrix<Complex> InnerProductC (const MultiVectorExpr & v2, bool conjugate = false) const;
+
+
+    template <typename T>
+    auto T_InnerProduct (const BaseVector & v2, bool conjugate = false)
+    {
+      if constexpr (is_same<T, double>())
+                     return InnerProductD (v2);
+        else
+          return InnerProductC (v2, conjugate);
+    }
+    
     virtual Vector<> InnerProductD (const BaseVector & v2) const;
     virtual Vector<Complex> InnerProductC (const BaseVector & v2, bool conjugate = false) const;
 
