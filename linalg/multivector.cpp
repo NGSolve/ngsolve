@@ -309,15 +309,16 @@ namespace ngla {
     auto hv = v->CreateVector();
     hv = *v;
 
-    if (!IsComplex())
-      {
+    // if (!IsComplex())
+    // {
         if (!ipmat)
           {
             for (int j = 0; j < iterations; j++)
               {
                 if (parallel)
                   {
-                    Vector<double> prod = -this->InnerProductD (hv);
+                    // Vector<T> prod = -this->InnerProduct<T> (hv);
+                    Vector<T> prod = -this->T_InnerProduct<T> (hv);
                     Axpy (prod, *this, hv);
                     oldR -= prod;
                   }
@@ -325,7 +326,7 @@ namespace ngla {
                   {
                     for (int i = 0; i < osize; i++)
                       {
-                        double ip = -InnerProduct<double> (*(*this)[i], hv);
+                        T ip = -InnerProduct<T> (*(*this)[i], hv);
                         hv += ip * *(*this)[i];
                         R(i) -= ip;
                       }
@@ -344,7 +345,7 @@ namespace ngla {
                 if (parallel)
                   {
                     hv2 = *ipmat * hv;
-                    Vector<double> prod = -this->InnerProductD (hv2);
+                    Vector<T> prod = -this->T_InnerProduct<T> (hv2);
                     Axpy (prod, *this, hv);
                     oldR -= prod;                    
                   }
@@ -353,18 +354,19 @@ namespace ngla {
                     for (int i = 0; i < this->Size(); i++)
                       {
                         hv2 = *ipmat * hv;
-                        double ip = -InnerProduct<double> (*(*this)[i], hv2);
+                        T ip = -::InnerProduct<T> (*(*this)[i], hv2);
                         hv += ip * *(*this)[i];
                         R(i) -= ip;                        
                       }
                   }
               }
             hv2 = *ipmat * hv;
-            double norm = sqrt(InnerProduct(hv, hv2));
+            // double norm = sqrt(InnerProduct(hv, hv2));
+            double norm = sqrt(fabs(InnerProduct<T>(hv, hv2)));
             R(osize) = norm;            
             hv /= norm;
           }
-      }
+        // }
     vecs.Append (hv);
     return R;
   }
