@@ -272,7 +272,6 @@ namespace ngcomp
       default:
         ;
       }
-  
   }
   
   HDivHighOrderFESpace:: ~HDivHighOrderFESpace () 
@@ -643,6 +642,7 @@ namespace ngcomp
         first_facet_dof[nfa] = ndof;
 	 
 	// Array<int> fnums;
+        bool have_pyramids = false;
         for (size_t i = 0; i < nel; i++)
           {
             INT<3> p = order_inner[i];
@@ -689,8 +689,8 @@ namespace ngcomp
                   inci -= p[0]*(p[1]*p[2] + p[1] + p[2] + 1)  + p[1]*p[2] + p[1] + p[2]; 
                 break; 
               case ET_PYRAMID: 
-                inci=0; 
-                cout << "WARNING: there are hdiv-pyramids (not implemented yet) !! " << endl;
+                inci=0;
+                have_pyramids=true;
                 break; 
               default:
                 inci = 0;
@@ -702,6 +702,8 @@ namespace ngcomp
 	  }
         first_inner_dof[nel] = ndof;
 
+        if (have_pyramids)
+          cout << "WARNING: there are hdiv-pyramids (not implemented yet) !! " << endl;
 
         
         if (highest_order_dc)
