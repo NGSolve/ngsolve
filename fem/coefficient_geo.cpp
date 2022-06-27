@@ -523,10 +523,10 @@ namespace ngfem
       if (ip.IP().VB() == BBND)
         {
           auto F = ip.GetJacobian();
-          // auto & trafo = ip.GetTransformation();
+          auto & trafo = ip.GetTransformation();
           int vnr = ip.IP().FacetNr();
           // auto pnt = ip.IP().Point();
-          //ELEMENT_TYPE et = trafo.GetElementType();
+          ELEMENT_TYPE et = trafo.GetElementType();
           //int iavnums[] = { 0, 1, 2, 3 };
           //FlatArray<int> vnums(4, &iavnums[0]);
           //trafo.GetSort(vnums);
@@ -534,11 +534,33 @@ namespace ngfem
 	  //cout << "vnr = " << vnr << endl << "pnt = " << pnt << endl << endl;
 	  //cout << "F = " << F << endl;
 	  
-          Vec<2> tv_ref[] = { Vec<2>(1,0), Vec<2>(0,1), Vec<2>(-1,1) };
-          //Vec<2> tv_ref_v0[] = { -tv_ref[0], tv_ref[2] };
-          //Vec<2> tv_ref_v1[] = { -tv_ref[2], -tv_ref[1] };
-          //Vec<2> tv_ref_v2[] = { tv_ref[1], tv_ref[0] };
-          Vec<2> tv_ref_v [] = { -tv_ref[0], tv_ref[2], -tv_ref[2], -tv_ref[1], tv_ref[1], tv_ref[0] };
+          Vec<2> tv_ref[3] = { Vec<2>(1,0), Vec<2>(0,1), Vec<2>(-1,1) };
+          Vec<2> tv_ref_v[8];
+
+          switch(et)
+            {
+            case ET_TRIG:
+              tv_ref_v[0] = -tv_ref[0];
+              tv_ref_v[1] = tv_ref[2];
+              tv_ref_v[2] = -tv_ref[2];
+              tv_ref_v[3] = -tv_ref[1];
+              tv_ref_v[4] = tv_ref[1];
+              tv_ref_v[5] = tv_ref[0];
+              break;
+            case ET_QUAD:
+              tv_ref_v[0] = tv_ref[1];
+              tv_ref_v[1] = tv_ref[0];
+              tv_ref_v[2] = -tv_ref[0];
+              tv_ref_v[3] = tv_ref[1];
+              tv_ref_v[4] = -tv_ref[1];
+              tv_ref_v[5] = -tv_ref[0];
+              tv_ref_v[6] = tv_ref[0];
+              tv_ref_v[7] = -tv_ref[1];
+              break;
+            default:
+              throw Exception("VertexTangentialVectorsCF does not support"+ToString(trafo.GetElementType()));
+              break;
+            }
 
 	  FlatMatrix<double> phys_tv(D,2,&res[0]);
 	  Vec<D> tmp = F*tv_ref_v[2*vnr+0];
