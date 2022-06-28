@@ -801,6 +801,26 @@ namespace ngfem
     wi.Append(sum/2);
   }
 
+  
+  void ComputeGaussRadauRule (int n, Array<double>& xi, Array<double>& wi)
+  {
+    Array<double> axi;
+    Array<double> awi;
+    
+    ComputeGaussJacobiRule(n-1,axi,awi,0, 1);
+    xi.SetSize(0);
+    wi.SetSize(0);
+    double sum = 1;
+    for (int i = 0; i < n-1; i++)
+      sum -= awi[i];
+    
+    xi.Append(0);
+    wi.Append(sum);
+    
+    xi.Append (axi);
+    wi.Append (awi);
+  }
+
 
 
 #ifdef LAPACK
