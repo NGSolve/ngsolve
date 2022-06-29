@@ -918,11 +918,33 @@ namespace ngcomp
             MixedFiniteElement fel(felx, fely);
         
             Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
-            elmat = 0.0;
-            bool symmetric_so_far = true;
-            for (auto bfi : geom_free_parts)
+
+            
+            bool done = false;
+            while (!done)
+              {
+                try
+                  {
+                    elmat = 0.0;
+                    bool symmetric_so_far = true;
+                    for (auto bfi : geom_free_parts)
+                      if (bfi->VB() == vb)
+                        bfi->CalcElementMatrixAdd(fel, trafo, elmat, symmetric_so_far, lh);
+                    done = true;
+                  }
+                catch (const ExceptionNOSIMD& e)
+                  {
+                    ;
+                  }
+              }
+
+            /*
+              elmat = 0.0;
+              bool symmetric_so_far = true;
+              for (auto bfi : geom_free_parts)
               if (bfi->VB() == vb)
-                bfi->CalcElementMatrixAdd(fel, trafo, elmat, symmetric_so_far, lh);
+              bfi->CalcElementMatrixAdd(fel, trafo, elmat, symmetric_so_far, lh);
+            */
             
             Table<DofId> xdofs(elclass_inds.Size(), felx.GetNDof()),
               ydofs(elclass_inds.Size(), fely.GetNDof());
