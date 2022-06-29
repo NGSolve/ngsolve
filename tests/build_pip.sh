@@ -20,7 +20,7 @@ do
     $PYDIR/pip install netgen-mesher==$NETGEN_VERSION
 
     rm -rf _skbuild
-    $PYDIR/pip wheel --use-feature=in-tree-build .
+    $PYDIR/pip wheel .
     auditwheel repair ngsolve*-cp${pyversion}-*.whl
     rm ngsolve-*.whl
     $PYDIR/pip uninstall -y netgen-mesher
@@ -28,7 +28,7 @@ do
 
     rm -rf _skbuild
     $PYDIR/pip install netgen-mesher-avx2==$NETGEN_VERSION
-    NETGEN_ARCH=avx2 $PYDIR/pip wheel --use-feature=in-tree-build .
+    NETGEN_ARCH=avx2 $PYDIR/pip wheel .
     auditwheel repair ngsolve_avx2*-cp${pyversion}-*.whl
     rm ngsolve_avx2-*.whl
 
