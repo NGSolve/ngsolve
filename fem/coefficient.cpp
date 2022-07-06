@@ -5437,7 +5437,7 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     if (auto transc1 = dynamic_pointer_cast<TransposeCoefficientFunction>(c1))
       if (auto transc2 = dynamic_pointer_cast<TransposeCoefficientFunction>(c2))
         {
-          cout << "simplify double transpose" << endl;
+          cout << IM(6) << "simplify double transpose" << endl;
           auto sub1 = c1->InputCoefficientFunctions();
           auto sub2 = c2->InputCoefficientFunctions();
           return InnerProduct(sub1[0], sub2[0]);
