@@ -82,7 +82,7 @@ class WebGLScene(BaseWebGuiScene):
                 if md_deformation:
                     deformation.vec.data = self.deformation.vecs[i]
 
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=settings))
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings))
             d['multidim_data'] = data
             d['multidim_interpolate'] = self.interpolate_multidim
             d['multidim_animate'] = self.animate
