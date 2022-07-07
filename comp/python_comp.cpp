@@ -457,6 +457,13 @@ when building the system matrices.
            return l;
          },"returns list of available differential operators")
     .def("__diffop__", &ProxyFunction::Evaluator)
+    .def("VSEmbedding",
+         [] (const spProxy self) -> optional<Matrix<double>>
+         {
+           if (auto embedding = self->Evaluator()->GetVSEmbedding(); embedding)
+             return Matrix<>{embedding.value()};
+           return {};
+         },"get the vector space embedding (returns None if the embedding is 'identity')")
     ;
 
   m.def("SetHeapSize",
@@ -1287,6 +1294,18 @@ component : int
            // return make_shared<Embedding> (self->GetNDof(), self->GetRange(comp), self->IsComplex());
          },
          py::arg("component"), "create embedding operator for this component")
+
+    .def("VSEmbedding", [] (shared_ptr<CompoundFESpace> self, VorB vb) -> optional<Matrix<double>>
+         {
+           if (!self->GetEvaluator(vb))
+             throw Exception("FE space does not have an evaluator for VorB == " + ToString(vb));
+
+           if (auto embedding = self->GetEvaluator(vb)->GetVSEmbedding(); embedding)
+             return Matrix<>{embedding.value()};
+           
+           return {};
+         },
+         py::arg("VOL_or_BND") = VOL, "get the vector space embedding (returns None if the embedding is 'identity')")
 
     .def("Restriction", [] (shared_ptr<CompoundFESpace> self, int comp)
          {
