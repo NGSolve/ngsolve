@@ -1132,6 +1132,10 @@ inverse : string
              return py::cast(m.CreateBlockJacobiPrecond (blocktable, nullptr, parallel));
          }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"), py::arg("parallel")=false,
          py::arg("GS")=false)
+    .def("DeleteZeroElements", [](shared_ptr<BaseSparseMatrix> m, double tol)->shared_ptr<BaseSparseMatrix>
+         {
+           return m -> DeleteZeroElements(tol);
+         })
      ;
   
   py::class_<S_BaseMatrix<double>, shared_ptr<S_BaseMatrix<double>>, BaseMatrix>
