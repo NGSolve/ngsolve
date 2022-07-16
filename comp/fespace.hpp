@@ -707,17 +707,14 @@ ANY                  1 1 1 1 | 15
                         LocalHeap & lh) const;
 
     virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const;
-    // { throw Exception("GetTraceOperator not overloaded"); }
 
     virtual shared_ptr<BaseMatrix> ConvertL2Operator (shared_ptr<FESpace> l2space) const;
     
     virtual void GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
                            LocalHeap & lh) const;
     
-      // { throw Exception("GetTrace not overloaded"); }
     virtual void GetTraceTrans (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
                                 LocalHeap & lh) const;
-    // { throw Exception("GetTrace not overloaded"); }
     
     shared_ptr<ParallelDofs> GetParallelDofs () const { return paralleldofs; }
     virtual void UpdateParallelDofs ();
