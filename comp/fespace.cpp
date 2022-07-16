@@ -1257,6 +1257,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     dnums.SetSize0 ();
   }
 
+  shared_ptr<Prolongation> FESpace :: GetProlongation () const
+  {
+    return prol;
+  }
+  
+  SymbolTable<shared_ptr<DifferentialOperator>> FESpace :: GetAdditionalEvaluators () const
+  {
+    return additional_evaluators;
+  } 
 
   shared_ptr<BilinearFormIntegrator> FESpace :: GetIntegrator (VorB vb) const
   {
@@ -1942,6 +1951,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     cout << "ApplyM is only available for L2-space, not for " << typeid(*this).name() << endl;
   }
+
+
+  shared_ptr<BaseMatrix> FESpace :: GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const
+  {
+    throw Exception("GetTraceOperator not overloaded");
+  }
+
+  void FESpace :: GetTrace (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
+                            LocalHeap & lh) const
+  {
+    throw Exception("GetTrace not overloaded");
+  }
+
+  void FESpace :: GetTraceTrans (const FESpace & tracespace, const BaseVector & in, BaseVector & out, bool avg,
+                                 LocalHeap & lh) const
+  {
+    throw Exception("GetTrace not overloaded");
+  }
+
+  
 
   shared_ptr<BaseMatrix> FESpace :: ConvertL2Operator (shared_ptr<FESpace> l2space) const
   {
