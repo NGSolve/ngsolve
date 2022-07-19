@@ -78,7 +78,7 @@ def PINVIT1(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False
 
 
 
-def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False):
+def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=True):
     """preconditioned inverse iteration"""
 
     r = mata.CreateRowVector()
@@ -96,7 +96,7 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
         vecs[0:num] = mata * uvecs - (matm * uvecs).Scale (lams)
         vecs[num:2*num] = pre * vecs[0:num]
         vecs[0:num] = uvecs
-        
+
         vecs.Orthogonalize(matm)
 
         # hv[:] = mata * vecs
@@ -113,6 +113,41 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False)
 
         uvecs[:] = vecs * Matrix(evec[:,0:num])
     return lams, uvecs
+
+
+def LOBPCG(mata, matm, pre, num=1, maxit=20, printrates=True):
+    """Knyazev's cg-like extension of PINVIT"""
+
+    r = mata.CreateRowVector()
+    
+    uvecs = MultiVector(r, num)
+    vecs = MultiVector(r, 3*num)
+
+    for v in vecs:
+        r.SetRandom()
+        v.data = pre * r
+
+    lams = Vector(num * [1])
+    
+    for i in range(maxit):
+        uvecs.data = mata * vecs[0:num] - (matm * vecs[0:num]).Scale (lams)
+        vecs[2*num:3*num] = pre * uvecs
+        
+        vecs.Orthogonalize(matm)
+
+        asmall = InnerProduct (vecs, mata * vecs)
+        msmall = InnerProduct (vecs, matm * vecs)
+    
+        ev,evec = scipy.linalg.eigh(a=asmall, b=msmall)
+        lams = Vector(ev[0:num])
+        if printrates:
+            print (i, ":", list(lams))
+
+        uvecs[:] = vecs * Matrix(evec[:,0:num])
+        vecs[num:2*num] = vecs[0:num]
+        vecs[0:num] = uvecs
+    return lams, uvecs
+
 
 
 

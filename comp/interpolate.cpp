@@ -173,7 +173,7 @@ namespace ngcomp
     void T_Evaluate_impl (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
       // #ifdef FIRSTDRAFT
-      LocalHeapMem<1000000> lh("interpolate");
+      LocalHeapMem<2000000> lh("interpolate");
 
       // static Timer t("interpolate");
       // RegionTracer reg(TaskManager::GetThreadId(), t);    

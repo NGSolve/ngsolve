@@ -231,13 +231,13 @@ cl_BinaryOpCF<GenericPow>::Diff(const CoefficientFunction * var,
 }
 
 template <> shared_ptr<CoefficientFunction>
-cl_BinaryOpCF<GenericPow>::DiffJacobi(const CoefficientFunction * var) const
+cl_BinaryOpCF<GenericPow>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
 {
   if (this == var) return make_shared<ConstantCoefficientFunction>(1);
   /// auto loga = UnaryOpCF( c1, GenericLog(), "log");
   // auto exp_b_loga = UnaryOpCF(c2*loga, MakeSGenericExp(), "exp");
   auto exp_b_loga = exp(c2*log(c1));
-  return exp_b_loga->DiffJacobi(var);
+  return exp_b_loga->DiffJacobi(var, cache);
 }
 
 
@@ -1130,7 +1130,10 @@ cf : ngsolve.CoefficientFunction
             if (dir)
               return coef->Diff(var.get(), dir);
             else
-              return coef->DiffJacobi(var.get());
+              {
+                CoefficientFunction::T_DJC cache;
+                return coef->DiffJacobi(var.get(), cache);
+              }
             /*
             if (var->Dimension() == 1)
               return coef->Diff(var.get(), make_shared<ConstantCoefficientFunction>(1));
@@ -1644,7 +1647,7 @@ value : complex
   input scalar
 
 )raw_string"))
-    .def ("Get", [] (spParameterCF cf)  { return cf->GetValue(); },
+    .def ("Get", [] (spParCFC cf)  { return cf->GetValue(); },
           "return parameter value")
     ;
 

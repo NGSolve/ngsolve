@@ -881,7 +881,7 @@ namespace ngfem {
 
         shared_ptr<CoefficientFunction>
         LeviCivitaCoefficientFunction::DiffJacobi(
-            const CoefficientFunction *var) const
+                                                  const CoefficientFunction *var, T_DJC & cache) const
         {
           if (this == var)
             return IdentityCF(Dimensions());
@@ -970,6 +970,7 @@ namespace ngfem {
 
           if (detected_zero_input)
           {
+            is_zero = true;
             const auto index_sets = compute_multi_indices(expanded_index_signature, expanded_inputs);
             auto dims = index_dimensions(index_sets[expanded_inputs.Size()]);
             node = ZeroCF(dims);
@@ -1274,7 +1275,7 @@ namespace ngfem {
 
         shared_ptr<CoefficientFunction>
         EinsumCoefficientFunction::DiffJacobi(
-            const CoefficientFunction *var) const
+           const CoefficientFunction *var, T_DJC & cache) const
         {
           if (this == var)
             return IdentityCF(Dimensions());
@@ -1291,7 +1292,7 @@ namespace ngfem {
               for (size_t i: Range(original_inputs.Size()))
               {
                 auto new_inputs{original_inputs};
-                new_inputs[i] = original_inputs[i]->DiffJacobi(var);
+                new_inputs[i] = original_inputs[i]->DiffJacobi(var,cache);
                 if (new_inputs[i]->IsZeroCF())
                   continue;
                 auto new_parts{parts};
@@ -1315,7 +1316,7 @@ namespace ngfem {
               auto opts = options;
               opts["optimize_path"] = true;
               opts["expand_einsum"] = false;
-              return Optimize(opts)->DiffJacobi(var);
+              return Optimize(opts)->DiffJacobi(var, cache);
             }
             throw e;
           }

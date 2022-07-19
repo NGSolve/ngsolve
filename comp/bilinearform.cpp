@@ -918,11 +918,33 @@ namespace ngcomp
             MixedFiniteElement fel(felx, fely);
         
             Matrix<> elmat(fely.GetNDof(), felx.GetNDof());
-            elmat = 0.0;
-            bool symmetric_so_far = true;
-            for (auto bfi : geom_free_parts)
+
+            
+            bool done = false;
+            while (!done)
+              {
+                try
+                  {
+                    elmat = 0.0;
+                    bool symmetric_so_far = true;
+                    for (auto bfi : geom_free_parts)
+                      if (bfi->VB() == vb)
+                        bfi->CalcElementMatrixAdd(fel, trafo, elmat, symmetric_so_far, lh);
+                    done = true;
+                  }
+                catch (const ExceptionNOSIMD& e)
+                  {
+                    ;
+                  }
+              }
+
+            /*
+              elmat = 0.0;
+              bool symmetric_so_far = true;
+              for (auto bfi : geom_free_parts)
               if (bfi->VB() == vb)
-                bfi->CalcElementMatrixAdd(fel, trafo, elmat, symmetric_so_far, lh);
+              bfi->CalcElementMatrixAdd(fel, trafo, elmat, symmetric_so_far, lh);
+            */
             
             Table<DofId> xdofs(elclass_inds.Size(), felx.GetNDof()),
               ydofs(elclass_inds.Size(), fely.GetNDof());
@@ -5914,6 +5936,36 @@ namespace ngcomp
   }
  
 
+  template <class TSCAL>
+  void S_BilinearForm<TSCAL>::LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const 
+  {
+    if (!this->symmetric || this->fespace->IsComplex())
+      {
+        Vector<Complex> lami(elmat.Height());
+        Matrix<TSCAL> evecs(elmat.Height());
+        FlatMatrix<TSCAL> elmat_save(elmat.Height(), elmat.Width(), lh);
+        elmat_save = elmat;
+#ifdef LAPACK
+        LapackEigenValues (elmat_save, lami, evecs);
+        (*testout) << "lami = " 
+                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
+#endif
+      }
+    else
+      {
+        Vector<TSCAL> lami(elmat.Height());
+        Matrix<TSCAL> evecs(elmat.Height());
+#ifdef LAPACK
+        LapackEigenValuesSymmetric (elmat, lami, evecs);
+#else
+        CalcEigenSystem (elmat, lami, evecs);
+#endif
+        (*testout) << "lami = " 
+                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
+      }
+  }
+
+
 
 
   template class S_BilinearForm<double>;
@@ -6074,36 +6126,6 @@ namespace ngcomp
                     LocalHeap & lh) 
   {
     mymatrix -> TMATRIX::AddElementMatrix (dnums1, dnums2, elmat, addatomic || this->fespace->HasAtomicDofs());
-  }
-
-
-  template <class TSCAL>
-  void S_BilinearForm<TSCAL>::LapackEigenSystem(FlatMatrix<TSCAL> & elmat, LocalHeap & lh) const 
-  {
-    if (!this->symmetric || this->fespace->IsComplex())
-      {
-        Vector<Complex> lami(elmat.Height());
-        Matrix<TSCAL> evecs(elmat.Height());
-        FlatMatrix<TSCAL> elmat_save(elmat.Height(), elmat.Width(), lh);
-        elmat_save = elmat;
-#ifdef LAPACK
-        LapackEigenValues (elmat_save, lami, evecs);
-        (*testout) << "lami = " 
-                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
-#endif
-      }
-    else
-      {
-        Vector<TSCAL> lami(elmat.Height());
-        Matrix<TSCAL> evecs(elmat.Height());
-#ifdef LAPACK
-        LapackEigenValuesSymmetric (elmat, lami, evecs);
-#else
-        CalcEigenSystem (elmat, lami, evecs);
-#endif
-        (*testout) << "lami = " 
-                   << endl << lami << endl << "evecs: " << endl << evecs << endl;
-      }
   }
 
 

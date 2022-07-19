@@ -47,7 +47,7 @@ namespace ngla
   template <class TM>
   shared_ptr<SparseMatrixTM<TM>> SparseMatrixTM<TM> ::
   CreateFromCOO (FlatArray<int> indi, FlatArray<int> indj,
-                 FlatArray<TSCAL> val, size_t h, size_t w)
+                 FlatArray<TM> val, size_t h, size_t w)
   {
     Array<int> cnt(h);
     cnt = 0;
@@ -423,7 +423,26 @@ namespace ngla
     }
   }
 
-
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseSparseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  DeleteZeroElements(double tol) const
+  {
+    Array<int> indi, indj;
+    Array<TM> val;
+    for (auto i : Range(this->Height()))
+      {
+        for (auto j : Range(firsti[i], firsti[i+1]))
+          {
+            if (ngbla::L2Norm2(data[j]) > tol*tol)
+              {
+                indi.Append (i);
+                indj.Append (colnr[j]);
+                val.Append (data[j]);
+              }
+          }
+      }
+    return this->CreateFromCOO(indi, indj, val, this->Height(), this->Width());
+  }
 
   template <class TM>
   ostream & SparseMatrixTM<TM> ::

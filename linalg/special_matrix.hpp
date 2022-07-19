@@ -19,7 +19,7 @@ namespace ngla
     // projector on true / false bits
     Projector (shared_ptr<BitArray> abits, bool akeep_values = true)
       : bits(abits), keep_values(akeep_values) { ; }
-
+    
     virtual bool IsComplex() const override { return false; } 
 
     virtual int VHeight() const override { return bits->Size(); }
@@ -32,6 +32,9 @@ namespace ngla
     virtual void Project (BaseVector & x) const;
     virtual void SetValues (BaseVector & x, double val) const;
 
+    bool KeepValues() const { return keep_values; }
+    shared_ptr<BitArray> Mask() const { return bits; }
+    
     AutoVector CreateRowVector() const override
     { throw Exception("CreateRowVector not implemented for Projector!"); }
     AutoVector CreateColVector() const override

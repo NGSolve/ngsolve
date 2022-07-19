@@ -68,3 +68,6 @@ def Rotate(dx, dy):
 
 def Zoom(z):
     ngsolve.solve.Tcl_Eval("Ng_MouseMove 0 0 0 {} zoom; redraw;\n".format(-z))
+
+def Center():
+    ngsolve.solve.Tcl_Eval("Ng_Center; redraw;\n")

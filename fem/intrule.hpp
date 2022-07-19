@@ -864,6 +864,14 @@ namespace ngfem
   NGS_DLL_HEADER extern 
   void ComputeGaussLobattoRule (int n, Array<double>& xi, Array<double>& wi);
 
+  /**
+     Gauss-Lobatto Rule with n points on interval [0,1].
+     Contains 0 as points
+     exact for polynomials up to order 2n-2
+   */
+  NGS_DLL_HEADER extern 
+  void ComputeGaussRadauRule (int n, Array<double>& xi, Array<double>& wi);
+
 
   /**
      Computes Gauss-Hermite integration rule.
