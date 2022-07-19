@@ -1408,6 +1408,31 @@ inverse : string
            return mv;
          },
          "project vector inline")
+    .def("CreateSparseMatrix", [](const Projector & proj)
+         {
+           Array<int> indi(proj.Height()), indj(proj.Width());
+           Array<double> vals(proj.Height());
+           for (int i : Range(proj.Height()))
+             {
+               indi[i] = i;
+               indj[i] = i;
+             }
+           auto mask = proj.Mask();
+           if (proj.KeepValues())
+             {
+               vals = false;
+               for (int i : Range(proj.Height()))
+                 if ( (*mask)[i] ) vals[i] = true;
+             }
+           else
+             {
+               vals = false;
+               for (int i : Range(proj.Height()))
+                 if ( !(*mask)[i] ) vals[i] = true;
+             }
+           return SparseMatrix<double>::CreateFromCOO (indi, indj, vals, proj.Height(), proj.Height());           
+         },
+         "create a spasre matrix from projector")
     ;
   
   py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")
