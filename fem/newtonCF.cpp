@@ -367,6 +367,8 @@ public:
 
     const auto distribute_vec_to_blocks = [&](const auto &src,
                                               auto &dest) -> void {
+
+      /*
       for (size_t qi : Range(mir)) {
         auto src_qi = src.Row(qi);
         int offset = 0;
@@ -376,6 +378,14 @@ public:
           offset += dest_qi.Size();
         }
       }
+      */
+      size_t offset = 0;
+      for (auto destblock : dest)
+        {
+          auto next = offset + destblock.Width();
+          destblock = src.Cols(offset, next);
+          offset = next;
+        }
     };
 
     const auto calc_residuals = [&]() -> void {
