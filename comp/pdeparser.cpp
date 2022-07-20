@@ -2262,24 +2262,24 @@ namespace ngcomp
 		oldelement = element;
 
 		tstep *= 2;
+                netgen::SplineSeg3<3> spline(
+                        netgen::GeomPoint<3>{{p1[0], p1[1], p1[2]}},
+                        netgen::GeomPoint<3>{{p2[0], p2[1], p2[2]}},
+                        netgen::GeomPoint<3>{{p3[0], p3[1], p3[2]}} );
 		do
 		  {
 		    tstep *= 0.75;
 		    double testt = t+tstep;
-		    double b1 = (1.-testt)*(1.-testt);
-		    double b2 = sqrt(2.)*testt*(1.-testt);
-		    double b3 = testt*testt;
-		    double w = b1+b2+b3;
-		    current = (b1/w)*p1 + (b2/w)*p2 + (b3/w)*p3;
+                    auto p = spline.GetPoint(testt);
+                    current = {p[0], p[1], p[2]};
 		  } 
 		while(L2Norm(current-oldp) > h);
 		
 		t+=tstep;
 		if(t < 1)
 		  {
-		    tangent = (1.-t)*((1.-sqrt(2.))*t-1.)*p1 +
-		      (1.-2*t)*p2 +
-		      (t*(sqrt(2.)+(1.-sqrt(2.))*t))*p3;
+                    auto tang = spline.GetTangent(t);
+		    tangent = {tang[0], tang[1], tang[2]};
 		    integrator.AppendCurvePoint(current,tangent);
 		    if(draw)
 		      ma.AddPointCurvePoint(current);
@@ -2307,6 +2307,8 @@ namespace ngcomp
 	  }
 	infile >> inp;
       }
+
+    cout << IM(5) << "Built line curve integrator with " << integrator.NumCurvePoints() << " points" << endl;
   }
 
 
