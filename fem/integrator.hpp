@@ -1636,7 +1636,10 @@ namespace ngfem
     int comp;
   public:
     CompoundLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, int acomp)
-      : lfi(alfi), comp(acomp) { ; }
+      : lfi(alfi), comp(acomp)
+    {
+        is_curve_integrator = lfi->IntegrationAlongCurve();
+    }
 
     virtual VorB VB () const
     { return lfi->VB(); }
