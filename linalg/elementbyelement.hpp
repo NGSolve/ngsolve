@@ -159,6 +159,8 @@ namespace ngla
     virtual int VHeight() const override { return num*matrix.Height(); }
     virtual int VWidth() const override { return num*matrix.Width(); }
     
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const override;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     
