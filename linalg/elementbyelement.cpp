@@ -1055,6 +1055,19 @@ namespace ngla
       }
   }
 
-
+  void StructuredElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto hx = x.FV<double>().AsMatrix(num, matrix.Width());
+    auto hy = y.FV<double>().AsMatrix(num, matrix.Height());
+    Matrix tmp = s * Trans(matrix);
+    hy += hx * tmp;
+  }
   
+  void StructuredElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto hx = x.FV<double>().AsMatrix(num, matrix.Height());
+    auto hy = y.FV<double>().AsMatrix(num, matrix.Width());
+    Matrix tmp = s * matrix;    
+    hy += hx * tmp;
+  }
 }
