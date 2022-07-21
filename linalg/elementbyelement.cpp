@@ -1060,14 +1060,16 @@ namespace ngla
     auto hx = x.FV<double>().AsMatrix(num, matrix.Width());
     auto hy = y.FV<double>().AsMatrix(num, matrix.Height());
     Matrix tmp = s * Trans(matrix);
-    hy += hx * tmp;
+    ParallelForRange (hx.Height(), [&](IntRange myrange) {
+        hy.Rows(myrange) += hx.Rows(myrange) * tmp; });
   }
   
   void StructuredElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     auto hx = x.FV<double>().AsMatrix(num, matrix.Height());
     auto hy = y.FV<double>().AsMatrix(num, matrix.Width());
-    Matrix tmp = s * matrix;    
-    hy += hx * tmp;
+    Matrix tmp = s * matrix;
+    ParallelForRange (hx.Height(), [&](IntRange myrange) {
+        hy.Rows(myrange) += hx.Rows(myrange) * tmp; });
   }
 }
