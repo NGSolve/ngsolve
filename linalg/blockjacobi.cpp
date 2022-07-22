@@ -314,7 +314,7 @@ namespace ngla
   ///
   template <class TM, class TV_ROW, class TV_COL>
   BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  BlockJacobiPrecond (shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
+  BlockJacobiPrecond (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
 		      shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
       invdiag(ablocktable->Size())
@@ -859,7 +859,7 @@ namespace ngla
   ///
   template <class TM, class TV>
   BlockJacobiPrecondSymmetric<TM,TV> ::
-  BlockJacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM,TV>> amat, 
+  BlockJacobiPrecondSymmetric (shared_ptr<const SparseMatrixSymmetric<TM,TV>> amat, 
 			       shared_ptr<Table<int>> ablocktable)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat)
   {

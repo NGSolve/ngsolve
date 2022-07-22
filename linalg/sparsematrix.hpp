@@ -583,8 +583,8 @@ namespace ngla
         // return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks, parallel);
 
         return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>>
-          ( dynamic_pointer_cast<SparseMatrix>
-            (const_cast<SparseMatrix*>(this)->shared_from_this()),
+          ( dynamic_pointer_cast<const SparseMatrix>
+            (this->shared_from_this()),
             blocks, parallel);
     }
 
@@ -744,8 +744,8 @@ namespace ngla
     { 
       // return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
       return make_shared<BlockJacobiPrecondSymmetric<TM,TV>>
-        ( dynamic_pointer_cast<SparseMatrixSymmetric>
-          (const_cast<SparseMatrixSymmetric*>(this)->shared_from_this()),
+        ( dynamic_pointer_cast<const SparseMatrixSymmetric>
+          (this->shared_from_this()),
           blocks);
     }
 
