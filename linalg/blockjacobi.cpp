@@ -314,7 +314,7 @@ namespace ngla
   ///
   template <class TM, class TV_ROW, class TV_COL>
   BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  BlockJacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
+  BlockJacobiPrecond (shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
 		      shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat), 
       invdiag(ablocktable->Size())
@@ -343,7 +343,7 @@ namespace ngla
                       {
                         size_t nze = 0;
                         for (auto row : (*blocktable)[i])
-                          nze += amat.GetRowIndices(row).Size();
+                          nze += amat->GetRowIndices(row).Size();
                         return nze;
                       },
                       [] (size_t a, size_t b) { return a+b; },
@@ -400,7 +400,7 @@ namespace ngla
         NgProfiler::StartThreadTimer (tget, TaskManager::GetThreadId());
 	for (size_t j = 0; j < blocki.Size(); j++)
 	  for (size_t k = 0; k < blocki.Size(); k++)
-	    blockmat(j,k) = mat(blocki[j], blocki[k]);
+	    blockmat(j,k) = (*mat)(blocki[j], blocki[k]);
         NgProfiler::StopThreadTimer (tget, TaskManager::GetThreadId());                         
         // }, TasksPerThread(10));
        }
@@ -422,7 +422,7 @@ namespace ngla
 	Calling GSSmooth/GSSmoothback leads to undefined behavior
      **/
     if (cumulate_block_diags) {
-      if (auto ppds = amat.GetParallelDofs()) { // without attached ParallelDofs, we cannot cumulate blocks
+      if (auto ppds = amat->GetParallelDofs()) { // without attached ParallelDofs, we cannot cumulate blocks
 	const auto & pds = *ppds;
 	auto all_dps = pds.GetDistantProcs();
 	const auto& btab = *blocktable;
@@ -514,7 +514,7 @@ namespace ngla
 
     int maxcolor = 0;
     int basecol = 0;
-    Array<unsigned int> mask(mat.Width());
+    Array<unsigned int> mask(mat->Width());
     size_t found = 0;
 
     do
@@ -544,7 +544,7 @@ namespace ngla
                 if (color > maxcolor) maxcolor = color;
                 
                 for (int d : (*blocktable)[i] )
-                  for(auto coupling : mat.GetRowIndices(d))
+                  for(auto coupling : mat->GetRowIndices(d))
                     mask[coupling] |= checkbit;
               }
           }
@@ -574,7 +574,7 @@ namespace ngla
                                  size_t blocknr = block_coloring[c][bi];
 
                                  for (auto d : (*blocktable)[blocknr])
-                                   costs += mat.GetRowIndices(d).Size();
+                                   costs += mat->GetRowIndices(d).Size();
                                  return costs;
                                });
 
@@ -750,7 +750,7 @@ namespace ngla
                       for (size_t j = 0; j < bs; j++)
                         {
                           auto jj = block[j];
-                          hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                          hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
                         }
                       
                       hy = (invdiag[i]) * hx;
@@ -792,7 +792,7 @@ namespace ngla
                       for (size_t j = 0; j < bs; j++)
                         {
                           auto jj = block[j];
-                          hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                          hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
                         }
                       
                       hy = (invdiag[i]) * hx;
@@ -839,7 +839,7 @@ namespace ngla
                    for (size_t j = 0; j < bs; j++)
                      {
                        auto jj = block[j];
-                       hx(j) = fb(jj) - mat.RowTimesVector (jj, fx);
+                       hx(j) = fb(jj) - mat->RowTimesVector (jj, fx);
                      }
                    
                    hy = (invdiag[i]) * hx;
@@ -859,7 +859,7 @@ namespace ngla
   ///
   template <class TM, class TV>
   BlockJacobiPrecondSymmetric<TM,TV> ::
-  BlockJacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
+  BlockJacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM,TV>> amat, 
 			       shared_ptr<Table<int>> ablocktable)
     : BaseBlockJacobiPrecond(ablocktable), mat(amat)
   {
@@ -889,7 +889,7 @@ namespace ngla
 
     {
       LocalHeap lh (20000 + 5*sizeof(int)*maxbs, "blockjacobi-heap"); 
-      Array<int> block_inv(amat.Height());
+      Array<int> block_inv(amat->Height());
       block_inv = -1;
 
       for (size_t i = 0; i < blocktable->Size(); i++)
@@ -898,7 +898,7 @@ namespace ngla
 	  
 	  if (!bs) continue;
 	  
-	  blockbw[i] = Reorder ((*blocktable)[i], mat, block_inv, lh);
+	  blockbw[i] = Reorder ((*blocktable)[i], *mat, block_inv, lh);
 	  blocksize[i] = bs;
 
 	  blockstart[i] = memneed[i%NBLOCKS];
@@ -961,7 +961,7 @@ namespace ngla
     
     int nblocks = blocktable->Size();
     Array<int> coloring(nblocks);
-    Array<unsigned int> mask(mat.Width());
+    Array<unsigned int> mask(mat->Width());
     int current_color = 0;
     coloring = -1;
     int colored_blocks = 0;
@@ -976,7 +976,7 @@ namespace ngla
 	    if (coloring[i]>-1) continue;
 	    bool is_free = true;
 	    for (int d : (*blocktable)[i] )
-	      for(auto coupling : mat.GetRowIndices(d)) 
+	      for(auto coupling : mat->GetRowIndices(d)) 
 		if(mask[coupling]) 
 		  {
 		    is_free = false;
@@ -988,7 +988,7 @@ namespace ngla
 		coloring[i] = current_color;
 		colored_blocks++;
 		for (int d : (*blocktable)[i]) 
-		  for(auto coupling : mat.GetRowIndices(d)) 
+		  for(auto coupling : mat->GetRowIndices(d)) 
 		      mask[coupling] = 1;
 	      }
 	  }
@@ -1006,7 +1006,7 @@ namespace ngla
     cout << IM(3) <<  " using " << current_color << " colors" << endl;
     
     /*
-    *testout << "matrix.h = " << mat.Height() << endl;
+    *testout << "matrix.h = " << mat->Height() << endl;
     *testout << "smoothing blocks = " << blocktable.Size() << endl;
     
     *testout << "coloring: " << endl << block_coloring << endl;
@@ -1027,7 +1027,7 @@ namespace ngla
                                  FlatArray<int> block = (*blocktable)[blocknr];
                                  int costs = 0;
                                  for (size_t i=0; i<block.Size(); i++)
-                                   costs += mat.GetRowIndices(block[i]).Size();
+                                   costs += mat->GetRowIndices(block[i]).Size();
                                  return costs;
                                });
       }
@@ -1064,7 +1064,7 @@ namespace ngla
 	  {
 	    if (abs (j-k) < bw)
 	      {
-		TM val = mat(block[j], block[k]);
+		TM val = (*mat)(block[j], block[k]);
 		if (j >= k)
 		  blockmat(j,k) = val;
 		else
@@ -1137,8 +1137,8 @@ namespace ngla
 
     // y = b - (D L^T) x
     fy = fb;
-    for (int j = 0; j < mat.Height(); j++)
-      mat.AddRowTransToVector (j, -fx(j), fy);
+    for (int j = 0; j < mat->Height(); j++)
+      mat->AddRowTransToVector (j, -fx(j), fy);
 
     
     if (task_manager)
@@ -1205,7 +1205,7 @@ namespace ngla
     for (int k = 1; k <= steps; k++)
       GSSmoothPartial (x, b, res);
 
-    mat.MultAdd1 (-1, x, res);
+    mat->MultAdd1 (-1, x, res);
     // res = b - mat * x;
   }
   
@@ -1222,7 +1222,7 @@ namespace ngla
 
     // y = b - (D L^T) x
     y = 1.0*b;
-    mat.MultAdd2 (-1, x, y);
+    mat->MultAdd2 (-1, x, y);
 
     for (int k = 1; k <= steps; k++)
       GSSmoothBackPartial (x, b, y);
@@ -1273,7 +1273,7 @@ namespace ngla
 
     // di = P_i (y - L x)
     for (int j = 0; j < bs; j++)
-      di(j) = y(row[j]) - mat.RowTimesVectorNoDiag (row[j], x);
+      di(j) = y(row[j]) - mat->RowTimesVectorNoDiag (row[j], x);
     if (!lowmem)
       InvDiag(i).Mult (di, wi);
     else
@@ -1292,7 +1292,7 @@ namespace ngla
     for (int j = 0; j < bs; j++)
       {
 	x(row[j]) += wi(j);
-	mat.AddRowTransToVector (row[j], -wi(j), y);
+	mat->AddRowTransToVector (row[j], -wi(j), y);
       }
   }
 

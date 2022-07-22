@@ -136,7 +136,7 @@ namespace ngla
 
     // full col-index array
     FlatArray<int> GetColIndices() const { return colnr; }
-
+    
     // col-indices of the i-th row
     FlatArray<int> GetRowIndices(size_t i) const
     { return FlatArray<int> (firsti[i+1]-firsti[i], colnr+firsti[i]); }      
@@ -579,7 +579,13 @@ namespace ngla
 	  throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
 	  return nullptr;
 	}
-      else return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks, parallel);
+      else
+        // return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>> (*this, blocks, parallel);
+
+        return make_shared<BlockJacobiPrecond<TM,TV_ROW,TV_COL>>
+          ( dynamic_pointer_cast<SparseMatrix>
+            (const_cast<SparseMatrix*>(this)->shared_from_this()),
+            blocks, parallel);
     }
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
@@ -736,7 +742,11 @@ namespace ngla
                                 bool parallel  = 1,
                                 shared_ptr<BitArray> freedofs = NULL) const override
     { 
-      return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
+      // return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
+      return make_shared<BlockJacobiPrecondSymmetric<TM,TV>>
+        ( dynamic_pointer_cast<SparseMatrixSymmetric>
+          (const_cast<SparseMatrixSymmetric*>(this)->shared_from_this()),
+          blocks);
     }
 
 
