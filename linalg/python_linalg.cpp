@@ -1103,7 +1103,7 @@ inverse : string
          py::arg("freedofs") = shared_ptr<BitArray>(),
          py::arg("GS") = false)
     
-    .def("CreateBlockSmoother", [](BaseSparseMatrix & m, py::object blocks, bool parallel,
+    .def("CreateBlockSmoother", [](shared_ptr<BaseSparseMatrix> m, py::object blocks, bool parallel,
                                    bool GS) 
          {
            shared_ptr<Table<int>> blocktable;
@@ -1129,7 +1129,7 @@ inverse : string
            if (GS)
              return py::cast(make_shared<SymmetricBlockGaussSeidelPrecond>(m, blocktable));  
            else
-             return py::cast(m.CreateBlockJacobiPrecond (blocktable, nullptr, parallel));
+             return py::cast(m->CreateBlockJacobiPrecond (blocktable, nullptr, parallel));
          }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"), py::arg("parallel")=false,
          py::arg("GS")=false)
     .def("DeleteZeroElements", [](shared_ptr<BaseSparseMatrix> m, double tol)->shared_ptr<BaseSparseMatrix>
