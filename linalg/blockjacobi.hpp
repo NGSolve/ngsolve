@@ -106,7 +106,7 @@ namespace ngla
   {
     shared_ptr<BaseBlockJacobiPrecond> jac;
   public:
-    SymmetricBlockGaussSeidelPrecond (shared_ptr<BaseSparseMatrix> mat, shared_ptr<Table<int>> blocktable)
+    SymmetricBlockGaussSeidelPrecond (shared_ptr<const BaseSparseMatrix> mat, shared_ptr<Table<int>> blocktable)
       : jac(mat->CreateBlockJacobiPrecond(blocktable)) { }
 
     int VHeight() const override { return jac->VHeight(); }
@@ -137,7 +137,7 @@ namespace ngla
   protected:
     /// a reference to the matrix
     // const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
-    shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> mat;
+    shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> mat;
     /// inverses of the small blocks
     Array<FlatMatrix<TM>> invdiag;
     /// the data for the inverses
@@ -149,7 +149,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ///
-    BlockJacobiPrecond (shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
+    BlockJacobiPrecond (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
 			shared_ptr<Table<int>> ablocktable, bool cumulate_block_diags = false);
     ///
     virtual ~BlockJacobiPrecond ();
@@ -219,7 +219,7 @@ namespace ngla
     virtual public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    shared_ptr<SparseMatrixSymmetric<TM,TV>> mat;
+    shared_ptr<const SparseMatrixSymmetric<TM,TV>> mat;
 
     // 
     enum { NBLOCKS = 20 };
@@ -237,7 +237,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
   
     ///
-    NGS_DLL_HEADER BlockJacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM,TV>> amat, 
+    NGS_DLL_HEADER BlockJacobiPrecondSymmetric (shared_ptr<const SparseMatrixSymmetric<TM,TV>> amat, 
                                                 shared_ptr<Table<int>> ablocktable);
     
     /*
