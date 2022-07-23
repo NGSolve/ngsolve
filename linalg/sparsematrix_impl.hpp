@@ -49,13 +49,28 @@ namespace ngla
   CreateFromCOO (FlatArray<int> indi, FlatArray<int> indj,
                  FlatArray<TM> val, size_t h, size_t w)
   {
+    static Timer t("SparseMatrix::CreateFromCOO"); RegionTimer r(t);
     Array<int> cnt(h);
+
+    /*
     cnt = 0;
     for (auto i : indi) cnt[i]++;
+    */
 
+    DynamicTable<int> tab(h);
+    for (size_t i = 0; i < indi.Size(); i++)
+      tab.AddUnique(indi[i], indj[i]);
+    for (size_t i = 0; i < h; i++)
+      cnt[i] = tab.EntrySize(i);
+    
     auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
     for (auto k : ngstd::Range(indi))
-      (*matrix)(indi[k], indj[k]) = val[k];
+      matrix->CreatePosition(indi[k], indj[k]);
+    matrix->SetZero();
+
+    for (auto k : ngstd::Range(indi))
+      (*matrix)(indi[k], indj[k]) += val[k];
+
     return matrix;
   }
   
