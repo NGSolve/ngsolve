@@ -1652,8 +1652,12 @@ namespace ngcomp
 
     if (first_update)
       {
-        if (!ma->GetNE() && ma->GetNSE())
+        bool defonsurf = false;
+        for (auto b: definedon[BND])
+          defonsurf = defonsurf || b;
+        if ((!ma->GetNE() && ma->GetNSE()) || defonsurf)
             issurfacespace = true;
+
         first_edge_dof.SetSize (ma->GetNEdges()+1);
         first_facet_dof.SetSize (ma->GetNFacets()+1);
         first_element_dof.SetSize (ma->GetNE()+1);
@@ -1670,11 +1674,14 @@ namespace ngcomp
         fine_edges.SetSize(ma->GetNEdges());
         fine_facet = false;
         fine_edges = false;
-        for(auto el : ma->Elements(VOL))
-          {
-            fine_facet[el.Facets()] = true;
-            fine_edges[el.Edges()] = true;
-          }
+        if (!issurfacespace)
+        {
+          for(auto el : ma->Elements(VOL))
+            {
+              fine_facet[el.Facets()] = true;
+              fine_edges[el.Edges()] = true;
+            }
+        }
         for (int i = 0; i < ma->GetNSE(); i++)
           {
             ElementId sei(BND, i);
@@ -1704,7 +1711,6 @@ namespace ngcomp
           }
         for(auto i : Range(ma->GetNFacets()))
           {
-            ElementId ei(BND, i);
             first_facet_dof[i] = ndof;
             if(!fine_facet[i]) continue;
 
@@ -1737,6 +1743,8 @@ namespace ngcomp
         if (discontinuous && !issurfacespace)
           ndof = 0;
 
+        if (!issurfacespace)
+        {
         for(auto i : Range(ma->GetNE()))
           {
             ElementId ei(VOL, i);
@@ -1797,6 +1805,8 @@ namespace ngcomp
                 throw Exception(string("illegal element type") + ToString(ma->GetElType(ei)));
               }
           }
+        }
+        else first_element_dof = ndof;
    
         first_element_dof.Last() = ndof;
         if(discontinuous)
@@ -1816,6 +1826,9 @@ namespace ngcomp
 
     
     UpdateCouplingDofArray();
+
+    if (print)
+      *testout << "Hcurlcurl ctofdof = " << ctofdof << endl;
   }
 
   void  HCurlCurlFESpace :: UpdateCouplingDofArray ()
@@ -1911,7 +1924,7 @@ namespace ngcomp
     Ngs_Element ngel = ma->GetElement(ei);
     if (!ei.IsVolume())
     {
-      if(!discontinuous || (issurfacespace && ei.VB() == BND))
+      if(!discontinuous || (issurfacespace && ei.VB() == BND && DefinedOn(ngel)))
       {
         auto feseg = new (alloc) HCurlCurlFE<ET_SEGM> (order);
         auto fetr  = new (alloc) HCurlCurlFE<ET_TRIG> (order);
@@ -1972,6 +1985,19 @@ namespace ngcomp
         }
     }
     
+    // ei.VB == VOL
+    if (issurfacespace || !DefinedOn(ngel))
+    {
+      switch (ma->GetElType(ei))
+      {
+      case ET_TRIG: return *new (alloc) DummyFE<ET_TRIG>; break;
+      case ET_QUAD: return *new (alloc) DummyFE<ET_QUAD>; break;
+      case ET_TET: return *new (alloc) DummyFE<ET_TET>; break;
+      case ET_PRISM: return *new (alloc) DummyFE<ET_PRISM>; break;
+      case ET_HEX: return *new (alloc) DummyFE<ET_HEX>; break;
+      }
+    }
+
     switch(ngel.GetType())
       {
       case ET_TRIG:

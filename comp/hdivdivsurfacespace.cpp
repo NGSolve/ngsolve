@@ -610,6 +610,7 @@ namespace ngcomp
   void HDivDivSurfaceSpace::GetDofNrs(ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
+    if (!DefinedOn (ei)) return;
     
     switch (ei.VB())
       {
