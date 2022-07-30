@@ -234,7 +234,7 @@ namespace ngbla
       return SliceVector<T> (size/dist2, dist2, data+first);
     }
 
-    INLINE FlatMatrix<T> AsMatrix (size_t h, size_t w)
+    INLINE const FlatMatrix<T> AsMatrix (size_t h, size_t w) const
     {
       return FlatMatrix<T> (h,w, data);
     }
