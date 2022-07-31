@@ -3049,7 +3049,7 @@ namespace ngbla
             b(i,j) = cos(i+3) * cos(j);
         
         double tot = n*m*k;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         // MultMatMat(a,b,c);
         if (tot < 1e6)
           {
@@ -3088,7 +3088,7 @@ namespace ngbla
             b(i,j) = cos(i+3) * cos(j);
         c = 0.0;
         double tot = n*m*k;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         // MultMatMat(a,b,c);
         {
           Timer t("C += A*B");
@@ -3118,7 +3118,7 @@ namespace ngbla
         Matrix<> saveb = b;
         Matrix<double,ColMajor> at = a;
         double tot = n*n*m/2;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
 
         {
           b = saveb;
@@ -3234,7 +3234,7 @@ namespace ngbla
         Matrix<> saveb = b;
         
         double tot = n*n*m/2;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         // MultMatMat(a,b,c);
         {
           Timer t("X = L * X");
@@ -3303,7 +3303,7 @@ namespace ngbla
         Matrix<> savea = a;
         
         double tot = n*n*n/6;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         if (its > maxits) its = maxits;
         {
           Timer t("L^-1");
@@ -3714,7 +3714,7 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
@@ -3736,7 +3736,7 @@ namespace ngbla
         // a = 1;
         // a.Diag() = 1.1;
         double tot = n*n*n;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         if (its > maxits) its = maxits;
         {
           Timer t("Inv(A)");
@@ -3793,7 +3793,7 @@ namespace ngbla
         a = 1;
         Trans(a).Diag() = 10000;
         double tot = n*n*n;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
@@ -3813,7 +3813,7 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
@@ -3832,7 +3832,7 @@ namespace ngbla
         a = 1;
         a.Diag() = 10000;
         double tot = n*n*n;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         {
           Timer t("Inv(A)");
           t.Start();
@@ -3855,7 +3855,7 @@ namespace ngbla
         
         Matrix aorig = a;
         double tot = 5 * n*n*n;
-        size_t its = 1e9 / tot + 1;
+        size_t its = 1e10 / tot + 1;
         its = min(maxits, its);
         if (!lapack)
           {
