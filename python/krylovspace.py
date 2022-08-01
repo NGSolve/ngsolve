@@ -720,8 +720,9 @@ restart : int = None
                  **kwargs):
         super().__init__(*args, **kwargs)
         if innerproduct is not None:
-            self.innnerproduct = innerproduct
+            self.innerproduct = innerproduct
             self.norm = lambda x: sqrt(innerproduct(x,x).real)
+            self.restart = restart
         else:
             self.innerproduct = lambda x, y: y.InnerProduct(x, conjugate=True)
             self.norm = Norm
