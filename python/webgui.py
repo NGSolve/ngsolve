@@ -27,7 +27,7 @@ def getMinMax( vals, fmin=None, fmax=None ):
 
 
 class WebGLScene(BaseWebGuiScene):
-    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_, objects, nodal_p1, settings={}):
+    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, intpoints, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_, objects, nodal_p1, settings={}):
         from IPython.display import display, Javascript
         import threading
         self.cf = cf
@@ -49,6 +49,7 @@ class WebGLScene(BaseWebGuiScene):
         self.nodal_p1 = nodal_p1
         self.settings = settings
 
+        self.intpoints = intpoints
         self.deformation = deformation
         self.encoding = 'b64'
 
@@ -61,7 +62,7 @@ class WebGLScene(BaseWebGuiScene):
     def GetData(self, set_minmax=True):
         encoding = self.encoding
         import json
-        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=self.deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings)
+        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=self.deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings)
 
         if isinstance(self.cf, ngs.GridFunction) and len(self.cf.vecs)>1:
             # multidim gridfunction - generate data for each component
@@ -82,7 +83,7 @@ class WebGLScene(BaseWebGuiScene):
                 if md_deformation:
                     deformation.vec.data = self.deformation.vecs[i]
 
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, deformation=deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings))
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings))
             d['multidim_data'] = data
             d['multidim_interpolate'] = self.interpolate_multidim
             d['multidim_animate'] = self.animate
@@ -193,7 +194,7 @@ def GetNodalP1Data(encode, mesh, cf, cf2=None):
     return d
     
     
-def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformation=None, region=True, objects=[], nodal_p1=False, encoding='b64', settings={}):
+def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoints=None, deformation=None, region=True, objects=[], nodal_p1=False, encoding='b64', settings={}):
     timer.Start()
 
     import inspect
@@ -407,7 +408,10 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
         if region and region.VB() == vb:
             vb = region
-        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
+        if intpoints is not None:
+            pts = mesh.MapToAllElements(intpoints, vb)
+        else:
+            pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
 
         pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
 
@@ -538,7 +542,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, deformat
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[], nodal_p1=False, settings={}):
+def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, intpoints=None, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[], nodal_p1=False, settings={}):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -551,7 +555,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects, nodal_p1=nodal_p1, settings=settings)
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, intpoints=intpoints, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects, nodal_p1=nodal_p1, settings=settings)
     if wg._IN_IPYTHON:
         if wg._IN_GOOGLE_COLAB:
             from IPython.display import display, HTML
@@ -567,7 +571,7 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
         return scene
 
 
-def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[], nodal_p1=False, settings={}):
+def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, intpoints=None, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[], nodal_p1=False, settings={}):
     if isinstance(mesh_or_func, ngs.Mesh):
         mesh = mesh_or_func
         func = None
@@ -580,7 +584,7 @@ def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=Non
         func = mesh_or_func
         mesh = mesh_or_none or func.space.mesh
         
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects, nodal_p1=nodal_p1, settings=settings)
+    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, intpoints=intpoints, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects, nodal_p1=nodal_p1, settings=settings)
     import json
 
     docu_path = os.environ['NETGEN_DOCUMENTATION_OUT_DIR']
