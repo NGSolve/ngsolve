@@ -513,7 +513,10 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
             points = makeP2Tets( points )
           intrules[eltype] = ngs.IntegrationRule( sum(points, []) )
 
-        pts = mesh.MapToAllElements(intrules, ngs.VOL)
+        if intpoints is not None:
+            pts = mesh.MapToAllElements(intpoints, ngs.VOL)            
+        else:
+            pts = mesh.MapToAllElements(intrules, ngs.VOL)
             
         pmat = func1(pts)
 
