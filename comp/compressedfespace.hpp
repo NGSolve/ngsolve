@@ -73,13 +73,7 @@ namespace ngcomp
     }
 
     ProxyNode MakeProxyFunction (bool testfunction,
-                                 const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const override
-    {
-      auto proxy = GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
-      shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<CompressedFESpace*>(this)->shared_from_this());
-      proxy.SetFESpace(fes);
-      return proxy;
-    }
+                                 const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const override;
 
     virtual bool DefinedOn (ElementId id) const
     {
