@@ -1660,7 +1660,7 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
     }
   else if (wa % SW)  // do the mask load :-(
     {
-      out << "SIMD<mask64," << SW << "> mask(" << wa%SW << "UL);" << endl;
+      out << "SIMD<mask64," << SW << "> mask(size_t(" << wa % SW << "));" << endl;
       out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ", mask);" << endl;
     }
   out << "size_t i = 0;" << endl;
@@ -1796,7 +1796,7 @@ void GenerateAddMatVec (ostream & out, int wa)
     }
   else if (wa % SW)  // do the mask load :-(
     {
-      out << "SIMD<mask64," << SW << "> mask(" << wa%SW << "UL);" << endl;
+      out << "SIMD<mask64," << SW << "> mask(size_t(" << wa % SW << "));" << endl;
       out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ", mask);" << endl;
     }
   out << "size_t i = 0;" << endl;
