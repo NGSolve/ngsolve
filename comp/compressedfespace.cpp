@@ -66,6 +66,20 @@ namespace ngcomp
     FESpace::FinalizeUpdate();
   }
 
+  ProxyNode CompressedFESpace::MakeProxyFunction (bool testfunction,
+                                                  const function<shared_ptr<ProxyFunction>(shared_ptr<ProxyFunction>)> & addblock) const
+    {
+      return GetBaseSpace()->MakeProxyFunction
+        (testfunction,
+         [&] (shared_ptr<ProxyFunction> proxy)
+         {
+           shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<CompressedFESpace*>(this)->shared_from_this());
+           proxy->SetFESpace(fes);
+           return addblock (proxy);
+         });
+    }
+
+
   FiniteElement & CompressedFESpace::GetFE (ElementId ei, Allocator & lh) const
   {
     return space->GetFE(ei,lh);
