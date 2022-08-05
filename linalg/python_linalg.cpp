@@ -1084,6 +1084,41 @@ inverse : string
            *y = *mat * *x;
            return y;
          })
+
+    .def("ToDense", [](BM & m)
+         {
+           auto vecx = m.CreateRowVector();
+           auto vecy = m.CreateColVector();
+           
+           if (!m.IsComplex())
+             {
+               Matrix<double> dmat(m.Height(), m.Width());
+               auto fx = vecx.FV<double>();
+               auto fy = vecy.FV<double>();
+               for (int i = 0; i < fx.Size(); i++)
+                 {
+                   fx = 0;
+                   fx(i) = 1;
+                   vecy = m * vecx;
+                   dmat.Col(i) = fy;
+                 }
+               return py::cast(dmat);
+             }
+           else
+             {
+               Matrix<Complex> dmat(m.Height(), m.Width());
+               auto fx = vecx.FV<Complex>();
+               auto fy = vecy.FV<Complex>();
+               for (int i = 0; i < fx.Size(); i++)
+                 {
+                   fx = 0;
+                   fx(i) = 1;
+                   vecy = m * vecx;
+                   dmat.Col(i) = fy;
+                 }
+               return py::cast(dmat);
+             }
+         })
     
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     ;
