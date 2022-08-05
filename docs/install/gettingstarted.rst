@@ -51,7 +51,7 @@ First we need to locate the geometry files (e.g. \*.geo, \*.stl, \*.in2d). Usual
 
 Now you can load a geometry with "File/Load Geometry" from the menu in the GUI and generate a mesh by clicking the "Generate Mesh" button.
 
-If you are using the command prompt, you can start netgen and load a geometry simultaniously.
+If you are using the command prompt, you can start netgen and load a geometry simultaneously.
 
 .. code:: bash
 
