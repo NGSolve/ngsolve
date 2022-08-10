@@ -365,8 +365,8 @@ public:
     FlatArray<int> p(numeric_dim, lh);
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
 
-    const auto distribute_vec_to_blocks = [&](const auto &src,
-                                              auto &dest) -> void {
+    const auto distribute_vec_to_blocks = [](const auto &src,
+                                             auto &dest) -> void {
 
       /*
       for (size_t qi : Range(mir)) {
