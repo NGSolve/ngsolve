@@ -1057,9 +1057,9 @@ namespace ngfem
 
   
   // new design, code is still experimental ...
-  
   template <typename DOP, typename F>
-  class T_FunctionDiffOp : public DifferentialOperator
+  class   [[deprecated("guess it never got over the first experimental use")]]  
+  T_FunctionDiffOp : public DifferentialOperator
   {
 
     // possible conversion from vector to scalar 
