@@ -19,6 +19,21 @@ namespace ngcomp
 {
 
 
+  class H1LumpingSegm2 : public T_ScalarFiniteElementFO<H1LumpingSegm2,ET_SEGM,3,2>
+  {
+  public:
+    template<typename Tx, typename TFA>  
+    static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
+    {
+      Tx lam[] = { ip.x,  1-ip.x };
+      for (int i = 0; i < 2; i++)
+        shape[i] = 2*lam[i]*(lam[i]-0.5);
+      shape[2] = 4 * lam[0] * lam[1];
+    }
+  };
+
+  
+
   class H1LumpingTrig2 : public T_ScalarFiniteElementFO<H1LumpingTrig2,ET_TRIG,7,3>
   {
   public:
@@ -142,6 +157,8 @@ namespace ngcomp
   {
     switch (ma->GetElement(ei).GetType())
       {
+        case ET_SEGM:
+          return * new (alloc) H1LumpingSegm2;
         case ET_TRIG:
           return * new (alloc) H1LumpingTrig2;
         case ET_TET:
