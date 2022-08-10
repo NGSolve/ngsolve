@@ -113,6 +113,21 @@ namespace ngfem
       return shape;
     }
 
+
+    virtual Vec<D>
+    EvaluateShape (const IntegrationPoint & ip, 
+                   BareSliceVector<double> x, LocalHeap & lh) const
+    {
+      HeapReset hr(lh);
+      return Trans (GetShape(ip, lh)) * x;
+    }  
+    
+    NGS_DLL_HEADER virtual void 
+    Evaluate (const IntegrationRule & ir, BareSliceVector<> coefs, SliceMatrix<> values) const;
+
+    NGS_DLL_HEADER virtual void 
+    Evaluate (const MappedIntegrationRule<D,D> & mir, BareSliceVector<> coefs, SliceMatrix<> values) const;
+    
     ///
     /*
     const FlatMatrixFixWidth<DIM_CURL_TRAIT<D>::DIM> GetCurlShape (const IntegrationPoint & ip, 
