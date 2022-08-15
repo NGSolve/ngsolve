@@ -276,10 +276,11 @@ public:
 
   void Evaluate(const BaseMappedIntegrationRule &mir,
                 BareSliceMatrix<double> values) const override {
-    // static Timer t("NewtonCF::Eval", NoTracing);
-    // static Timer t1("NewtonCF::Eval get Jac", NoTracing);
-    // static Timer t2("NewtonCF::Eval solve", NoTracing);
-    // RegionTimer reg(t);
+    static Timer t("NewtonCF::Eval", NoTracing);
+    static Timer t1("NewtonCF::Eval get Jac", NoTracing);
+    static Timer t2("NewtonCF::Eval solve", NoTracing);
+    static Timer t3("NewtonCF::compute increment", NoTracing);    
+    RegionTimer reg(t);
     // RegionTracer regtr(TaskManager::GetThreadId(), t);
 
     // cout << "eval minimization" << endl;
@@ -365,8 +366,8 @@ public:
     FlatArray<int> p(numeric_dim, lh);
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
 
-    const auto distribute_vec_to_blocks = [](const auto &src,
-                                             auto &dest) -> void {
+    const auto distribute_vec_to_blocks = [](auto src,
+                                             auto dest) {
 
       /*
       for (size_t qi : Range(mir)) {
@@ -388,6 +389,7 @@ public:
         }
     };
 
+    /*
     const auto calc_residuals = [&]() -> void {
       // RegionTracer regtr1(TaskManager::GetThreadId(), t1);
       expression->Evaluate(mir, val);
@@ -411,7 +413,28 @@ public:
         // cout << "res block " << block << " = " << res << endl;
       }
     };
+    */
+    
+    const auto calc_residuals = [&]() {
+      RegionTimer regtr1(t1);
+      expression->Evaluate(mir, val);
+      distribute_vec_to_blocks(val, val_blocks);
 
+      for (int block : Range(nblocks)) {
+        auto proxy = proxies[block];
+        auto res = res_blocks[block];
+        auto rhs = rhs_blocks[block];
+        auto valb = val_blocks[block];
+
+        res = valb;
+
+        // The actual rhs (respecting VS embeddings)
+        if (auto vsemb = get_vs_embedding(proxy); vsemb)
+          rhs = res * vsemb.value();
+      }
+    };
+
+    /*
     const auto calc_linearizations = [&]() -> void {
       // RegionTracer regtr2(TaskManager::GetThreadId(), t2);
       for (int block2 : Range(nblocks)) {
@@ -443,7 +466,38 @@ public:
         }
       }
     };
+    */
+    
+    const auto calc_linearizations = [&]() {
+      RegionTimer regtr2(t2);
+      for (int block2 : Range(nblocks)) {
+        auto proxy2 = proxies[block2];
 
+        for (int l : Range(proxy2->Dimension())) {
+          // This means, the derivative is taken wrt proxy 2
+          ud.trialfunction = proxy2;
+          ud.trial_comp = l;
+          expression->Evaluate(mir, dval);
+          distribute_vec_to_blocks(dval, dval_blocks);
+
+          for (int block1 : Range(nblocks)) {
+            auto proxy1 = proxies[block1];
+            auto dvalb = dval_blocks[block1];
+            auto deriv = deriv_blocks[block1];
+            auto lin = lin_blocks[block1 * nblocks + block2];
+            for (int k : Range(proxy1->Dimension())) {
+              for (size_t qi : Range(mir)) {
+                deriv(qi, k) = dvalb(qi, k).DValue(0);
+              }
+            }
+            lin(STAR, STAR, l) = deriv;
+          }
+        }
+      }
+    };
+
+
+    /*
     const auto compute_increments = [&]() -> void {
       for (size_t qi : Range(mir)) {
 
@@ -520,7 +574,93 @@ public:
         }
       }
     };
+    */
 
+
+    const auto compute_increments = [&]() {
+      RegionTimer r(t3);      
+      for (size_t qi : Range(mir)) {
+
+        // NOTE: when to skip something because of convergence?
+        //  -> the current approach assumes that evaluation of "expression"
+        //  for all qpoints at once is beneficial!
+
+        int offset1 = 0;
+        for (int block1 : Range(proxies))
+          {
+            auto proxy1 = proxies[block1];
+            auto rhsb = rhs_blocks[block1].Row(qi);
+            
+            rhs.Range(offset1, offset1+rhsb.Size()) = rhsb;
+            
+            int offset2 = 0;
+            for (int block2 : Range(proxies)) {
+              auto proxy2 = proxies[block2];
+              auto linb = lin_blocks[block1 * nblocks + block2](qi, STAR, STAR);
+              auto lhsb = lhs_blocks[block1 * nblocks + block2](qi, STAR, STAR);
+              if (auto vsemb1 = get_vs_embedding(proxy1); vsemb1)
+                {
+                  if (auto vsemb2 = get_vs_embedding(proxy2); vsemb2) 
+                    lhsb = Trans(vsemb1.value()) * linb * vsemb2.value();
+                  else 
+                    lhsb = Trans(vsemb1.value()) * linb;
+                }
+              else
+                {
+                  if (auto vsemb2 = get_vs_embedding(proxy2); vsemb2) 
+                    lhsb = linb * vsemb2.value();
+                }
+              
+              // cout << "lhs block (" << block1 << ", " << block2 << ") = "
+              //      << lhsb << endl;
+              /*
+              for (int k : Range(lhsb.Height()))
+                for (int l : Range(lhsb.Width()))
+                  lhs(offset1 + k, offset2 + l) = lhsb(k, l);
+              */
+              
+              lhs.Rows(offset1, offset1+lhsb.Height()).Cols(offset2, offset2+lhsb.Width()) = lhsb;
+              offset2 += lhsb.Width();
+            }
+            offset1 += rhsb.Size();
+          }
+        
+        if (converged(rhs, tol, res_0_qp[qi], rtol)) {
+          w.Row(qi) = 0;
+          continue;
+        }
+
+        //        cout << "RHS: " << rhs << endl;
+        //        cout << "LHS: " << lhs << endl;
+
+        p = 0;
+        CalcLU (lhs, p);
+        SolveFromLU (lhs, p, SliceMatrix<double, ColMajor>(rhs.Size(), 1, rhs.Size(), rhs.Data()));
+        auto &sol = rhs;
+
+        // Handle VS-embedding
+        auto wi = w.Row(qi);
+        int offset_w = 0;
+        int offset_sol = 0;
+        for (int block : Range(proxies))
+          {
+            auto proxy = proxies[block];
+            if (const auto vsemb = get_vs_embedding(proxy); vsemb)
+              wi.Range(offset_w, offset_w + proxy->Dimension()) =
+                vsemb.value() *
+                sol.Range(offset_sol, offset_sol + proxy_dof_dimension(proxy));
+            else
+              wi.Range(offset_w, offset_w + proxy->Dimension()) =
+                sol.Range(offset_sol, offset_sol + proxy_dof_dimension(proxy));
+            offset_w += proxy->Dimension();
+            offset_sol += proxy_dof_dimension(proxy);
+          }
+      }
+    };
+
+
+    
+    /*
     const auto merge_xk_blocks = [&]() -> void {
       for (size_t qi : Range(mir)) {
         auto xk_qi = xk.Row(qi);
@@ -532,6 +672,18 @@ public:
         }
       }
     };
+    */
+
+    const auto merge_xk_blocks = [xk,xk_blocks]() {
+      size_t offset = 0;
+      for (auto xkb : xk_blocks)
+        {
+          auto next = offset + xkb.Width();
+          xk.Cols(offset, next) = xkb;
+          offset = next;
+        }
+    };
+    
 
     // Evaluate starting point
     if (startingpoints.Size() == proxies.Size()) {
