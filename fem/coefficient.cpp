@@ -8293,7 +8293,10 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         stringstream s;
         string pointer_code;
         string top_code = ""
-             "#include<fem.hpp>\n"
+          "#include<fem.hpp>\n"
+          "#if defined(__GNUC__) || defined(__clang__)\n"
+          "#pragma GCC diagnostic ignored \"-Wunused-but-set-variable\"\n"
+          "#endif\n"
              "using namespace ngfem;\n"
              "extern \"C\" {\n"
              ;
