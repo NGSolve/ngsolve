@@ -460,11 +460,11 @@ def test_compound_advanced_nonlinear_symmetric(fes_ir):
 
 if __name__ == "__main__":
     _fes_ir = mk_fes_ir()
-    # test_scalar_linear_minimization(_fes_ir)
-    # test_scalar_nonlinear_minimization(_fes_ir)
-    # test_2d_compound_minimization(_fes_ir)
-    # test_partial_compound_minimization(_fes_ir)
-    # test_2d_compound_linear_nonsymmetric(_fes_ir)
-    # test_linear_symmetric_space_non_symmetric_system(_fes_ir)
+    test_scalar_linear_minimization(_fes_ir)
+    test_scalar_nonlinear_minimization(_fes_ir)
+    test_2d_compound_minimization(_fes_ir)
+    test_partial_compound_minimization(_fes_ir)
+    test_2d_compound_linear_nonsymmetric(_fes_ir)
+    test_linear_symmetric_space_non_symmetric_system(_fes_ir)
     test_compound_advanced_linear_nonsymmetric_system(_fes_ir)
-    # test_compound_advanced_nonlinear_symmetric(_fes_ir)
+    test_compound_advanced_nonlinear_symmetric(_fes_ir)
