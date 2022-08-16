@@ -321,8 +321,6 @@ public:
     FlatArray<FlatMatrix<double>> xk_blocks(nblocks, lh);
     FlatArray<FlatMatrix<double>> xold_blocks(nblocks, lh);
     FlatArray<FlatTensor<3, double>> lin_blocks(nblocks, lh);
-    FlatArray<FlatVector<double>> w_blocks(nblocks, lh);
-    FlatArray<FlatVector<double>> w_vs_blocks(nblocks, lh);
 
     for (auto i : Range(nblocks)) {
       const auto proxy = proxies[i];
@@ -542,7 +540,7 @@ public:
 
 
     const auto compute_increments = [&]() {
-      RegionTimer r(t3);      
+      RegionTimer r(t3);
       for (size_t qi : Range(mir)) {
 
         // NOTE: when to skip something because of convergence?
@@ -583,7 +581,7 @@ public:
           // resulting LHS matrix is non-square!
           QRFactorization(lhs, Q);
           auto x = Vector<double>(Trans(Q) * rhs);
-          TriangularSolve<TRIG_SIDE::UpperRight>(lhs, x);
+          TriangularSolve<UpperRight, NonNormalized>(lhs.Rows(0, x.Size()), x);
 
 //          cout << "x: " << x << endl;
 
