@@ -221,7 +221,34 @@ def test_2d_compound_linear_nonsymmetric(fes_ir):
     assert np.allclose(uvec2.vec.FV().NumPy(), 0)
 
 
-def test_compound_advanced_linear_nonsymmetric(fes_ir):
+def test_linear_symmetric_space_non_symmetric_system(fes_ir):
+    fes_M = MatrixValued(fes_ir, dim=2, symmetric=True)
+
+    print(fes_M.VSEmbedding())
+    VS_np = fes_M.VSEmbedding().NumPy()
+
+    expected_np = np.array([1, 2, 2, 5])
+
+    A_np = np.array([   2,   1 / 2, 1 / 3,  0,
+                        1 / 2,   4,   5 / 2,  0,
+                        1 / 3, 5 / 2,   3,  4 / 3,
+                        5 / 3,   2,   4 / 3,  2]).reshape((4, 4))
+    b_np = A_np.dot(expected_np)
+
+    A = CoefficientFunction(tuple(A_np.flatten().tolist()), dims=(4, 4))
+    b = CoefficientFunction(tuple(b_np.flatten().tolist()))
+
+    u = GridFunction(fes_M)
+    u_trial = fes_M.TrialFunction()
+    eq = A * u_trial.Reshape((4,)) - b
+    u.Interpolate(CF(0) * b)
+    ncf = NewtonCF(eq, u, maxiter=1)
+    u.Interpolate(ncf)
+    print(u.vec.FV().NumPy())
+    assert np.allclose(VS_np.dot(u.vec.FV().NumPy()), expected_np, atol=1e-8, rtol=0)
+
+
+def test_compound_advanced_linear_nonsymmetric_system(fes_ir):
     fes_M = MatrixValued(fes_ir, dim=3, symmetric=True)
     fes_compound = fes_ir * fes_M * (fes_ir ** 2)
 
@@ -246,29 +273,35 @@ def test_compound_advanced_linear_nonsymmetric(fes_ir):
                                1 / 2, 4, 0,
                                1 / 3, 0, 2), dims=(3, 3))
 
-    # scalar eq component
-    def res_func_1(u1, u2, u3):
-        return 4 * u1 + 2 * u2[0, 1] + 5 * u2[1, 2] + (M22 * u3) * a
+    expected_np = np.array([2,
+                            3, 1, 4,
+                            1, 2, 5,
+                            4, 5, 1,
+                            6, 2])
 
-        # matrix eq component
+    A_np = np.array([
+          1,  1/2,     4,     2,     0,     0,     0,     0,     0,     0,     0,     0, #1
+        1/3,  3/2,     1,   4/5,     2,     5,     0,     0,     0,     0,     0,     0, #2
+          5,    1,   5/2,     2,   5/3,   2/5,     5,     3,     2,     7,     0,     0, #3
+          2,  4/7,     3,   4/5,   1/4,   3/8,     3,     5,     1,     5,     8,     1, #4
+          0,    2,   5/3,   1/4,     2,     3,     3,     1,     6,     7,     5,     2, #5
+          0,    5,   2/5,   3/8,     3,     7,     2,     4,     8,     1,     2,     1, #6
+          9,    2,   1/7,     1,   5/8,   2/9,     6,     2,   1/3,     4,   5/3,     5, #7
+          4,    3,   5/7,     3,   5/4,   3/9,     1,     2,   5/6,     2,   5/2,     7, #8
+          1,  1/3,   5/4,   3/2,   4/5,   3/5,     0,     0,   5/2,   1/2,   3/5,     4, #9
+          5,  1/5,   7/4,   3/5,     0,     8,     2,     1,   5/7,   3/2,   3/8,     0, #10
+          0,  7/5,   3/2,   3/8,     1,   1/2,     0,     9,   2/7,   2/5,   7/6,   3/7, #11
+          0,  1/4,     2,     7,     0,   2/3,     7,     1,   4/3,   4/9,   1/8,   8/3, #12
+    ]).reshape((12, 12))
 
-    def res_func_2(u1, u2, u3):
-        return (M33 * u2 + M33
-                + CoefficientFunction((M33[0], 0, 0, 0, 0, 0, 0, 0, 0), dims=(3, 3))
-                + CoefficientFunction((u1, u3[0], u3[1] / 3,
-                                       0, 0, 0,
-                                       0, 0, 0), dims=(3, 3))
-                )
+    b_np = A_np.dot(expected_np)
 
-    # vector eq component
-    def res_func_3(u1, u2, u3):
-        return a * u1 + M22 * u3 + 2 * a * u3[0] + M22 * a / 2 + M22 * CoefficientFunction((u2[0, 0], u2[2, 2]))
+    A_cf = CF(tuple(A_np.flatten().tolist()), dims=(12, 12))
+    b_cf = CF(tuple(b_np.flatten().tolist()))
 
     def res_func(u1, u2, u3):
-        return CoefficientFunction(
-            (res_func_1(u1, u2, u3),
-             res_func_2(u1, u2, u3),
-             res_func_3(u1, u2, u3)))
+        u_all = CF(tuple([u1] + [u2[i] for i in range(9)] + [u3[j] for j in range(2)]))
+        return A_cf * u_all - b_cf
 
     eq = res_func(du1, du2, du3)
 
@@ -276,17 +309,32 @@ def test_compound_advanced_linear_nonsymmetric(fes_ir):
     uv2 = CoefficientFunction(tuple([uvec[i] for i in range(1, 10)]), dims=(3, 3))
     uv3 = CoefficientFunction(tuple([uvec[i] for i in range(10, 12)]))
     check = res_func(uv1, uv2, uv3)
-
-    expected = np.array([-6.32030540e-01, -1.65811403e+00, -1.03161645e-01, -4.81744750e-04,
-                         -1.03161645e-01, -9.87104794e-01, 5.77134791e-03, -4.81744750e-04,
-                         5.77134791e-03, -9.99919709e-01, 9.39655500e-01, 6.55157652e-01])
+    check_compound = res_func(u1, u2, u3)
 
     u1.Interpolate(cf1)
     u2.Interpolate(1 / 2 * (cf2 + cf2.trans))
     u3.Interpolate(cf3)
     ncf = NewtonCF(eq, u.components, maxiter=1)
     uvec.Interpolate(ncf)
-    assert np.allclose(uvec.vec.FV().NumPy(), expected, atol=1e-8, rtol=0)
+    print(uvec.vec.FV().NumPy())
+    assert np.allclose(uvec.vec.FV().NumPy(), expected_np, atol=1e-8, rtol=0)
+
+    u1.Interpolate(uvec[0])
+    u2.Interpolate(uvec[1:10])
+    u3.Interpolate(uvec[10:12])
+
+    print(u1.vec.FV().NumPy())
+    print(u2.vec.FV().NumPy())
+    print(u3.vec.FV().NumPy())
+
+    uvec_check = GridFunction(uvec.space)
+    uvec_check.Interpolate(check)
+    print("check", uvec_check.vec.FV().NumPy())
+    assert np.allclose(uvec_check.vec.FV().NumPy(), 0)
+
+    uvec_check.Interpolate(check_compound)
+    print("check_compound", uvec_check.vec.FV().NumPy())
+    assert np.allclose(uvec_check.vec.FV().NumPy(), 0)
 
     # different starting point styles
     u1.Interpolate(cf1)
@@ -294,30 +342,21 @@ def test_compound_advanced_linear_nonsymmetric(fes_ir):
     u3.Interpolate(cf3)
     ncf = NewtonCF(eq, u, maxiter=1)
     uvec.Interpolate(ncf)
-    assert np.allclose(uvec.vec.FV().NumPy(), expected, atol=1e-8, rtol=0)
+    assert np.allclose(uvec.vec.FV().NumPy(), expected_np, atol=1e-8, rtol=0)
 
     u1.Interpolate(cf1)
     u2.Interpolate(1 / 2 * (cf2 + cf2.trans))
     u3.Interpolate(cf3)
     ncf = NewtonCF(eq, CoefficientFunction((u1, u2, u3)), maxiter=1)
     uvec.Interpolate(ncf)
-    assert np.allclose(uvec.vec.FV().NumPy(), expected, atol=1e-8, rtol=0)
+    assert np.allclose(uvec.vec.FV().NumPy(), expected_np, atol=1e-8, rtol=0)
 
     u1.Interpolate(cf1)
     u2.Interpolate(1 / 2 * (cf2 + cf2.trans))
     u3.Interpolate(cf3)
     ncf = NewtonCF(eq, [u1, u2, u3], maxiter=1)
     uvec.Interpolate(ncf)
-    assert np.allclose(uvec.vec.FV().NumPy(), expected, atol=1e-8, rtol=0)
-
-    # Solution check
-    uvec_check = GridFunction(uvec.space)
-    uvec_check.Interpolate(check)
-    nvec = uvec_check.vec.FV().NumPy()
-    allres = nvec.reshape((12, int(nvec.size / 12))).T
-    # Only the symmetric part of the error for u2 is relevant and indeed vanishes
-    _res = allres[0][1:10].reshape((3, 3))
-    assert np.allclose(1 / 2 * (_res + _res.T), 0)
+    assert np.allclose(uvec.vec.FV().NumPy(), expected_np, atol=1e-8, rtol=0)
 
 
 def test_compound_advanced_nonlinear_symmetric(fes_ir):
@@ -421,10 +460,11 @@ def test_compound_advanced_nonlinear_symmetric(fes_ir):
 
 if __name__ == "__main__":
     _fes_ir = mk_fes_ir()
-    test_scalar_linear_minimization(_fes_ir)
-    test_scalar_nonlinear_minimization(_fes_ir)
-    test_2d_compound_minimization(_fes_ir)
-    test_partial_compound_minimization(_fes_ir)
-    test_2d_compound_linear_nonsymmetric(_fes_ir)
-    test_compound_advanced_linear_nonsymmetric(_fes_ir)
-    test_compound_advanced_nonlinear_symmetric(_fes_ir)
+    # test_scalar_linear_minimization(_fes_ir)
+    # test_scalar_nonlinear_minimization(_fes_ir)
+    # test_2d_compound_minimization(_fes_ir)
+    # test_partial_compound_minimization(_fes_ir)
+    # test_2d_compound_linear_nonsymmetric(_fes_ir)
+    # test_linear_symmetric_space_non_symmetric_system(_fes_ir)
+    test_compound_advanced_linear_nonsymmetric_system(_fes_ir)
+    # test_compound_advanced_nonlinear_symmetric(_fes_ir)
