@@ -95,6 +95,9 @@ class NewtonCF : public CoefficientFunction {
   size_t full_dim = 0;
   Array<int> proxy_dims{};
 
+  // Dimension of equation
+  size_t eq_dim = 0;
+
   // Same parameters as for scipy's newton
   // Alternatively, could one think of ParameterCFs here?
   double tol{1e-6};
@@ -143,6 +146,8 @@ public:
     // NOTE: GFs on generic CompoundSpaces do not provide useful/usable
     // dimension data! They are currently not supported. For that, newtonCF.cpp
     // would have to be part of "comp" instead of "fem"
+
+    eq_dim = expression->Dimension();
 
     expression->TraverseTree([&](CoefficientFunction &nodecf) {
       auto nodeproxy = dynamic_cast<ProxyFunction *>(&nodecf);
@@ -217,13 +222,19 @@ public:
         proxy_dims.Append(proxy->Dimension());
     }
 
-    if (expression->Dimension() != full_dim)
-      throw Exception(string("NewtonCF: dimension of residual expression (=") +
-                      to_string(expression->Dimension()) +
-                      ") does not match the accumulated dimension of detected "
-                      "trial functions (=" +
-                      to_string(full_dim) + ")");
-
+    if (eq_dim < numeric_dim )
+      throw Exception(string("NewtonCF: under-determined system of equations detected. "
+                             "Dimension of residual expression (=") + to_string(expression->Dimension()) + ")"
+                             "is less than the (numeric/dof) dimension of the detected trial functions "
+                             "(=" + to_string(full_dim) + ")");
+    else if (eq_dim > full_dim)
+      cout << IM(3) << "NewtonCF: Over-determined system detected. "
+                       "Dimension of residual exceeds (full/symbolic) dimension of trial functions. "
+                       "Linear(ized) systems of equations will be solved in a least-square sense." << endl;
+    else if (eq_dim > numeric_dim)
+        cout << IM(3) << "NewtonCF: Over-determined system detected."
+                         "Dimension of residual exceeds (numeric/dof) dimension of trial functions. "
+                         "Linear(ized) systems of equations will be solved in a least-square sense." << endl;
 
     // Process startingpoints
 
@@ -326,21 +337,22 @@ public:
       const auto proxy = proxies[i];
       xk_blocks[i].Assign(ud.GetMemory(proxy));
       xold_blocks[i].AssignMemory(mir.Size(), proxy->Dimension(), lh);
-      lin_blocks[i].AssignMemory(lh, mir.Size(), full_dim, proxy->Dimension());
+      lin_blocks[i].AssignMemory(lh, mir.Size(), eq_dim, proxy->Dimension());
     }
 
     // Block-agnostic data structures
     FlatMatrix<> xk(mir.Size(), full_dim, lh);
     FlatMatrix<> xold(mir.Size(), full_dim, lh);
     FlatMatrix<> w(mir.Size(), full_dim, lh);
-    FlatMatrix<> res_all(mir.Size(), full_dim, lh);
+    FlatMatrix<> res_all(mir.Size(), eq_dim, lh);
     FlatMatrix<AutoDiff<1, double>> dval(mir.Size(), full_dim, lh);
     FlatArray<double> res_0_qp(mir.Size(), lh);
     res_0_qp = 0;
 
     // auxiliary data structures for solving
-    FlatArray<int> p(full_dim, lh);
-    FlatMatrix<> Q(full_dim, numeric_dim, lh);
+    FlatArray<int> p(numeric_dim, lh);
+    FlatMatrix<> Q(eq_dim, numeric_dim, lh);
+    FlatMatrix<double> lhs(eq_dim, numeric_dim, lh);
 
     const auto distribute_vec_to_blocks = [](auto src,
                                              auto dest) {
@@ -555,7 +567,6 @@ public:
         }
 
         // handle VS embedding
-        FlatMatrix<double> lhs(full_dim, numeric_dim, lh);
 
         size_t cola = 0;
         size_t colb = 0;
@@ -571,7 +582,7 @@ public:
           cola = colb;
         }
 
-        if (full_dim == numeric_dim) {
+        if (lhs.Height() == lhs.Width()) {
           p = 0;
           CalcLU (lhs, p);
           SolveFromLU (lhs, p, SliceMatrix<double, ColMajor>(rhs.Size(), 1, rhs.Size(), rhs.Data()));
