@@ -63,7 +63,7 @@ then
         selenium \
         webgui_jupyter_widgets \
         markupsafe==2.0.1 \
-        pybind11-stubgen==0.5 \
+        pybind11-stubgen \
         docutils==0.16 \
         Jinja2==2.11.3 \
 

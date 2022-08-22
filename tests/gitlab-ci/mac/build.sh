@@ -6,7 +6,7 @@ mkdir -p $SRC_DIR
 cp -a . $SRC_DIR/
 cd $BUILD_DIR
 
-pip3 install pybind11-stubgen==0.5
+pip3 install --upgrade pybind11-stubgen
 
 cmake $SRC_DIR \
       -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \
