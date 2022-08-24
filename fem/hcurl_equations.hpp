@@ -128,6 +128,15 @@ namespace ngfem
       y.Range(0,fel.GetNDof()) = shape * x;
     }
 
+    using DiffOp<DiffOpIdEdge<D, FEL> >::ApplyIR;
+    template <class MIR>
+    static void ApplyIR (const FiniteElement & fel, const MIR & mir,
+			 BareSliceVector<double> x, SliceMatrix<double> y,
+			 LocalHeap & lh)
+    {
+      static_cast<const FEL&> (fel).Evaluate (mir, x, y);
+    }
+
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
