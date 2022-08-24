@@ -37,6 +37,7 @@ namespace ngcomp
     enum { DIFFORDER = 0 };
 
     static INT<0> GetDimensions() { return INT<0>(); };
+    static string Name() { return "IdIR"; }
     static bool SupportsVB (VorB checkvb) { return true; }
 
     template <typename MIP, typename MAT>
@@ -47,6 +48,26 @@ namespace ngcomp
       mat(0, mip.IP().Nr()) = 1;
     }
 
+    using DiffOp<IRDiffOp>::ApplyIR;
+    template <class MIR, class TMY>
+    static void ApplyIR (const FiniteElement & fel, const MIR & mir,
+                         BareSliceVector<double> x, TMY y,
+			 LocalHeap & lh)
+    {
+      y.Col(0).Range(0, fel.GetNDof()) = x;
+    }
+
+    using DiffOp<IRDiffOp>::ApplyTransIR;    
+    template <class MIR>
+    static void ApplyTransIR (const FiniteElement & fel, 
+			      const MIR & mir,
+			      FlatMatrix<double> x, BareSliceVector<double> y,
+			      LocalHeap & lh)
+    {
+      y.Range(0, fel.GetNDof()) = x.Col(0);
+    }
+    
+    
     template <typename FEL, typename MIR>
     static void GenerateMatrixSIMDIR (const FEL & fel, const MIR & mir, BareSliceMatrix<SIMD<double>> mat)
     {
