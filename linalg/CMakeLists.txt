@@ -8,7 +8,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp   
         python_linalg.cpp umfpackinverse.cpp
         ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 
-        )
+				cuda_linalg.cpp)
 
 target_include_directories(ngla PRIVATE ${UMFPACK_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
@@ -37,8 +37,9 @@ if(USE_MUMPS)
 endif()
 
 if(USE_CUDA)
-    cuda_add_library (linalg_kernels linalg_kernels.cu cuda_linalg.cpp )
-    target_link_libraries(ngla linalg_kernels ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusparse_LIBRARY})
+    # cuda_add_library (linalg_kernels linalg_kernels.cu cuda_linalg.cpp )
+    # target_link_libraries(ngla linalg_kernels ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusparse_LIBRARY})
+		target_link_libraries(ngla PRIVATE ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusparse_LIBRARY})
 endif(USE_CUDA)
 
 install( FILES
