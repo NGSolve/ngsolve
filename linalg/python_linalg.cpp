@@ -1877,6 +1877,15 @@ shift : object
 	// TODO:
 	/* m.def("InnerProdcut", [] (UnifiedVector &a, UnifiedVector &b)) */
 
+	py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
+	 (m, "DevMatrix", "Device Matrix");
+
+	m.def("CreateDevMatrix", [] (BaseMatrix & mat)
+			{
+				return CreateDevMatrix(mat);
+			});
+	 	
+
   py::class_<DevSparseMatrix, BaseMatrix, shared_ptr<DevSparseMatrix>>
     (m, "DevSparseMatrix", "DevSparseMatrix for CUDA applications")
 

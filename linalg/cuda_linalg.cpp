@@ -20,7 +20,7 @@
 #include <cuda_runtime_api.h>
 
 // TODO: why use own kernel instead of cublas?
-extern void SetScalar (double val, int n, double * dev_ptr);
+//extern void SetScalar (double val, int n, double * dev_ptr);
 
 namespace ngla
 {
@@ -72,6 +72,9 @@ namespace ngla
 
   cublasHandle_t Get_CuBlas_Handle ()
   {
+		static Timer tblashandle("CUDA create cublas handle");
+		RegionTimer reg(tblashandle);
+
     static cublasHandle_t handle;
     static bool first_call = true;
 
@@ -84,6 +87,9 @@ namespace ngla
   }
   cusparseHandle_t Get_CuSparse_Handle ()
   {
+		static Timer tsparsehandle("CUDA create cusparse handle");
+		RegionTimer reg(tsparsehandle);
+
     static cusparseHandle_t handle;
     static bool first_call = true;
 
@@ -143,7 +149,10 @@ namespace ngla
   BaseVector & UnifiedVector :: operator= (double d)
   {
     for (int i = 0; i < size; i++) host_data[i] = d;
-    ::SetScalar (d, size, dev_data);
+    /* ::SetScalar (d, size, dev_data); */
+
+	
+		cublasDscal(Get_CuBlas_Handle(), size, &d, dev_data, 1); 
 
     host_uptodate = true;
     dev_uptodate = true;
@@ -334,7 +343,6 @@ namespace ngla
 
 
 
-
   DevSparseMatrix :: DevSparseMatrix (const SparseMatrix<double> & mat)
   {
     height = mat.Height();
@@ -410,10 +418,10 @@ namespace ngla
   
   void DevSparseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-		static Timer tprel("CUSPARSE PREL");
-		static Timer tbuffer("CUSPARSE BUFFER");
-		static Timer tmv("CUSPARSE MV");
-		static Timer tbufferallocate("CUSPARSE BUFFER ALLOCATE");
+		static Timer tprel("CUDA PREL");
+		static Timer tbuffer("CUDA BUFFER");
+		static Timer tmv("CUDA MV");
+		static Timer tbufferallocate("CUDA BUFFER ALLOCATE");
 
 		tprel.Start();
     // cout << "device mult sparse" << endl;
@@ -632,6 +640,28 @@ namespace ngla
   };
   InitCuBlasHandle init;
   */
+
+
+
+	shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix & mat)
+	{
+		cerr << "creating dev matrix." << endl;
+		if (typeid(mat) == typeid(SparseMatrix<double>))
+		{
+			SparseMatrix<double>& sparse_mat = dynamic_cast<SparseMatrix<double>&>(mat);
+			cerr << "creating sparse matrix" << endl;
+			return make_shared<DevSparseMatrix>(DevSparseMatrix(sparse_mat));
+		}
+		else
+		{
+			// TODO: better error handling
+			cerr << "matrix type " << typeid(mat).name() << " not supported." << endl;
+			return make_shared<DevMatrix>(DevMatrix());
+		}
+	}
+
+
+
 
 }
 

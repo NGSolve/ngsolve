@@ -101,7 +101,17 @@ namespace ngla
     friend class DevJacobiPreconditioner;
   };
 
-  class DevSparseMatrix : public BaseMatrix
+	class DevMatrix : public BaseMatrix
+	{
+	public:
+		// TODO
+		DevMatrix() { }
+
+		virtual AutoVector CreateRowVector() const { return UnifiedVector(Width()).CreateVector(); }
+		virtual AutoVector CreateColVector() const { return UnifiedVector(Height()).CreateVector(); }
+	};
+
+  class DevSparseMatrix : public DevMatrix
   {
     //cusparseMatDescr_t * descr;
 		cusparseSpMatDescr_t descr;
@@ -151,6 +161,8 @@ namespace ngla
   /*   virtual void Mult (const BaseVector & x, BaseVector & y) const; */
   /*   virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const; */
   /* }; */
+
+	shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix & mat);
 
 }
 #endif
