@@ -1,0 +1,29 @@
+find_package(CUDAToolkit)
+enable_language(CUDA)
+
+add_compile_definitions(NGSolve PRIVATE CUDA)
+
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
+
+add_library(ngscudalib ${NGS_LIB_TYPE}
+    cuda_linalg.cpp
+    linalg_kernels.cu
+)
+
+target_link_libraries(ngscudalib PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve)
+
+if(USE_PYTHON)
+    find_package(Python3 COMPONENTS Interpreter Development)
+    Python3_add_library(ngscuda python_ngscuda.cpp)
+    target_link_libraries(ngscuda PUBLIC ngscudalib)
+endif(USE_PYTHON)
+
+install( TARGETS ngscudalib ${ngs_install_dir} )
+install(TARGETS ngscuda DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
+
+install( FILES
+        cuda_linalg.hpp
+        DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
+        COMPONENT ngsolve_devel
+)
+

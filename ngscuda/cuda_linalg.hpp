@@ -1,5 +1,5 @@
-#ifdef CUDA
 #include <cusparse.h>
+#include <la.hpp>
 
 namespace ngla
 {
@@ -153,4 +153,3 @@ namespace ngla
   /* }; */
 
 }
-#endif

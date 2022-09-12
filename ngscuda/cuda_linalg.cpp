@@ -1,5 +1,3 @@
-#ifdef CUDA 
-
 /*********************************************************************/
 /* File:   cuda_linalg.cpp                                           */
 /* Author: Joachim Schoeberl, Matthias Hochsteger                    */
@@ -18,6 +16,8 @@
 #include <cublas_v2.h>
 #include <cusparse.h>
 #include <cuda_runtime_api.h>
+
+#include "cuda_linalg.hpp"
 
 // TODO: why use own kernel instead of cublas?
 extern void SetScalar (double val, int n, double * dev_ptr);
@@ -634,8 +634,3 @@ namespace ngla
   */
 
 }
-
-
-
-
-#endif
