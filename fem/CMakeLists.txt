@@ -25,15 +25,6 @@ add_library(ngfem ${NGS_LIB_TYPE}
         voxelcoefficientfunction.cpp
         tensorcoefficient.cpp tensorcoefficient.hpp)
 
-# if(USE_CUDA)
-#     cuda_add_library( cuda_fem STATIC
-#             test.cu test1.cu fem_kernels.cu
-#             OPTIONS ${CUDA_OPTIONS}
-#             )
-#     target_link_libraries(ngfem cuda_fem)
-#     target_link_libraries(ngfem ${CUDA_LIBRARIES} ${CUDA_CUBLAS_LIBRARIES} ${CUDA_cusparse_LIBRARY})
-# endif(USE_CUDA)
-
 target_link_libraries(ngfem PUBLIC ngbla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>")
 target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS ngfem ${ngs_install_dir} )

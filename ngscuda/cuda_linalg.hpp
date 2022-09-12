@@ -1,5 +1,5 @@
-#ifdef CUDA
 #include <cusparse.h>
+#include <la.hpp>
 
 namespace ngla
 {
@@ -165,4 +165,3 @@ namespace ngla
 	shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix & mat);
 
 }
-#endif
