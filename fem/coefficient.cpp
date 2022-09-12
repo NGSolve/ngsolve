@@ -6982,9 +6982,10 @@ public:
                                FlatVector<AutoDiffDiff<1,bool>> values) const override 
   {
     values = AutoDiffDiff<1,bool> (false);
-    for (auto ini : input)
-      for (size_t i = 0; i < values.Size(); i++)
-        values(i) += ini(i);
+    for (auto j : Range(input))
+      if (ci[j])
+        for (size_t i = 0; i < values.Size(); i++)
+          values(i) += input[j](i);
   }
 };
 
@@ -8526,6 +8527,9 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       size_t mem_ptr = 0;
       ArrayMem<BareSliceMatrix<T,ORD>,100> temp(steps.Size());
       ArrayMem<BareSliceMatrix<T,ORD>, 100> in(max_inputsize);
+
+      // used if nullptr are in tree
+      BareSliceMatrix<T,ORD> zeromat(FlatMatrix<T, ORD>(0, ir.Size(), hmem.Data()));
       for (size_t i = 0; i < steps.Size()-1; i++)
         {
           new (&temp[i]) BareSliceMatrix<T,ORD> (FlatMatrix<T,ORD> (dim[i], ir.Size(), &hmem[mem_ptr]));
@@ -8538,7 +8542,12 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         {
           auto inputi = inputs[i];
           for (int nr : Range(inputi))
-            new (&in[nr]) BareSliceMatrix<T,ORD> (temp[inputi[nr]]);
+          {
+            if(inputi[nr] == -1)
+              new (&in[nr]) BareSliceMatrix<T,ORD> (zeromat);
+            else
+              new (&in[nr]) BareSliceMatrix<T,ORD> (temp[inputi[nr]]);
+          }
           steps[i] -> Evaluate (ir, in.Range(0, inputi.Size()), temp[i]);
         }
     }
@@ -8581,6 +8590,10 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       size_t mem_ptr = 0;
       ArrayMem<FlatVector<T>,100> temp(steps.Size());
       ArrayMem<FlatVector<T>,100> in(max_inputsize);
+
+      // used if nullptr are in tree
+      FlatVector<T> zerovec(0, hmem.Data());
+
       for (size_t i = 0; i < steps.Size(); i++)
         {
           new (&temp[i]) FlatVector<T> (dim[i], &hmem[mem_ptr]);
@@ -8591,7 +8604,12 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
         {
           auto inputi = inputs[i];
           for (int nr : Range(inputi))
-            new (&in[nr]) FlatVector<T> (temp[inputi[nr]]);
+          {
+            if(inputi[nr] == -1)
+              new (&in[nr]) FlatVector<T> (zerovec);
+            else
+              new (&in[nr]) FlatVector<T> (temp[inputi[nr]]);
+          }
           steps[i] -> NonZeroPattern (ud, in.Range(0, inputi.Size()), temp[i]);
         }
       auto & last = temp.Last();
