@@ -27,6 +27,7 @@ fi
 if [ "$IMAGE_NAME" == "mpi" ] || [ "$IMAGE_NAME" == "avx" ]
 then
     apt-get update && apt-get -y install libopenmpi-dev openmpi-bin gfortran python3-mpi4py python3-petsc4py
+  PYTHONPATH=/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib/python3/dist-packages
   export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=ON -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF -DBUILD_STUB_FILES=OFF"
 fi
 
