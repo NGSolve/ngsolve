@@ -159,6 +159,4 @@ inline void NOOP_Deleter(void *) { ; }
 
 
 
-#include "cuda_ngstd.hpp"
-
 #endif
