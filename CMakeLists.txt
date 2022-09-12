@@ -222,16 +222,19 @@ endif (USE_LAPACK)
 
 #######################################################################
 if (USE_CUDA)
-		enable_language(CUDA)
-    find_package(CUDA)
+    #find_package(CUDA)
     # set(CUDA_SEPARABLE_COMPILATION ON)
     # set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++17;-O2;-DUSE_MYCOMPLEX;-DHD="__host__ __device__")
     # set(CUDA_OPTIONS -Xcompiler -fPIC)
     # SET (EXTRA_LIBS ${EXTRA_LIBS} cudart cublas cusparse)
-		include_directories("/usr/local/cuda-11.7/targets/x86_64-linux/include")
-		link_directories("/usr/local/cuda-11.7/targets/x86_64-linux/lib")
+    find_package(CUDAToolkit)
+    #target_link_libraries(ngs_lapack INTERFACE ${CUDA_cublas_LIBRARY} ${CUDA_cuart_LIBRARY})
+    target_link_libraries(ngs_lapack INTERFACE CUDA::cublas CUDA::cudart)
+    #include_directories("/opt/cuda/targets/x86_64-linux/include")
+    #link_directories("/opt/cuda/targets/x86_64-linux/lib")
+    enable_language(CUDA)
 
-		add_compile_definitions(NGSolve PRIVATE CUDA)
+    add_compile_definitions(NGSolve PRIVATE CUDA)
 endif (USE_CUDA)
 
 #######################################################################
