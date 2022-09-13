@@ -2,7 +2,7 @@ from ngsolve import *
 
 def AddArtificialDiffusion(a,Ubnd,magnitude,compile=True,true_compile=False,compile_wait=True):
     if true_compile and not compile:
-        raise Excpetion("you need compile=True to active true_compile")
+        raise Exception("you need compile=True to activate true_compile")
     
     if len(a.integrators) > 2:
         print("it seems you already added artificial diffusion - I will not add more")
