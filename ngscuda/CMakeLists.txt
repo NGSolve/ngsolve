@@ -7,10 +7,15 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(ngscudalib ${NGS_LIB_TYPE}
     cuda_linalg.cpp
+		cuda_ngstd.cpp
     linalg_kernels.cu
 )
 
 target_link_libraries(ngscudalib PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve)
+
+# TODO: remove. just for testing
+message(STATUS "NETGEN_USE_PYTHON VALUE: ${NETGEN_USE_PYTHON}")
+message(STATUS "USE_PYTHON VALUE: ${USE_PYTHON}")
 
 if(USE_PYTHON)
     find_package(Python3 COMPONENTS Interpreter Development)
@@ -23,6 +28,7 @@ install(TARGETS ngscuda DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPON
 
 install( FILES
         cuda_linalg.hpp
+				cuda_ngstd.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
 )
