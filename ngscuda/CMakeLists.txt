@@ -13,15 +13,11 @@ add_library(ngscudalib ${NGS_LIB_TYPE}
 
 target_link_libraries(ngscudalib PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve)
 
-# TODO: remove. just for testing
-message(STATUS "NETGEN_USE_PYTHON VALUE: ${NETGEN_USE_PYTHON}")
-message(STATUS "USE_PYTHON VALUE: ${USE_PYTHON}")
-
-if(USE_PYTHON)
+if(NETGEN_USE_PYTHON)
     find_package(Python3 COMPONENTS Interpreter Development)
     Python3_add_library(ngscuda python_ngscuda.cpp)
     target_link_libraries(ngscuda PUBLIC ngscudalib)
-endif(USE_PYTHON)
+endif(NETGEN_USE_PYTHON)
 
 install( TARGETS ngscudalib ${ngs_install_dir} )
 install(TARGETS ngscuda DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
