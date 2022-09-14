@@ -12,7 +12,7 @@ endif(WIN32)
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
 option( USE_LAPACK       "build ngsolve with LAPACK" ON)
-# option( USE_CUDA         "enable CUDA GPU support")
+option( USE_CUDA         "enable CUDA GPU support")
 option( USE_MKL          "enable MKL")
 option( USE_HYPRE        "enable HYPRE support")
 option( USE_MUMPS        "enable sparse direct solver MUMPS")
@@ -219,15 +219,6 @@ if (USE_LAPACK)
     endif()
     target_link_libraries(ngs_lapack INTERFACE "${LAPACK_LIBRARIES}")
 endif (USE_LAPACK)
-
-#######################################################################
-if (USE_CUDA)
-    find_package(CUDA)
-    set(CUDA_SEPARABLE_COMPILATION ON)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++17;-O2;-DUSE_MYCOMPLEX;-DHD="__host__ __device__")
-    set(CUDA_OPTIONS -Xcompiler -fPIC)
-    SET (EXTRA_LIBS ${EXTRA_LIBS} cudart cublas cusparse)
-endif (USE_CUDA)
 
 #######################################################################
 set(MAX_SYS_DIM "3" CACHE STRING "Maximum compile-time size of SparseMatrix entries.")
@@ -546,6 +537,9 @@ add_subdirectory(pde_tutorial)
 add_subdirectory(py_tutorials)
 add_subdirectory(tests)
 add_subdirectory(docs)
+if(USE_CUDA)
+    add_subdirectory(ngscuda)
+endif(USE_CUDA)
 
 
 
