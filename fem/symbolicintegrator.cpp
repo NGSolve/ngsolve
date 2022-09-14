@@ -1834,13 +1834,13 @@ namespace ngfem
                 FlatMatrix<SCAL_SHAPES, ColMajor> bmat1(proxy1->Dimension(), elmat.Width(), lh);
                 FlatMatrix<SCAL_SHAPES, ColMajor> bmat2(proxy2->Dimension(), elmat.Height(), lh);
 
-                if (ddcf_dtest_dtrial(k1nr, l1nr))
+                if (ddcf_dtest_dtrial(l1nr, k1nr))
                   {
 //                    cout << "use ddcf_dtest_dtrial (NO SIMD)" << endl;
                     // TODO: optimize for element-wise constant case?
                     FlatMatrix<SCAL> mproxyvalues(mir.Size(), proxy1->Dimension() * proxy2->Dimension(),
                                                   proxyvalues.Data());
-                    ddcf_dtest_dtrial(k1nr, l1nr)->Evaluate(mir, mproxyvalues);
+                    ddcf_dtest_dtrial(l1nr, k1nr)->Evaluate(mir, mproxyvalues);
                     if (is_diagonal)
                         for (auto k: Range(proxy1->Dimension()))
                             diagproxyvalues.Slice(k, proxy1->Dimension()) = proxyvalues(STAR, k, k);
