@@ -641,8 +641,6 @@ namespace ngla
   InitCuBlasHandle init;
   */
 
-
-
 	shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix & mat)
 	/* DevMatrix :: DevMatrix (BaseMatrix & mat) */
 	{
@@ -660,8 +658,5 @@ namespace ngla
 			throw Exception(string("matrix type not supported: ") + typeid(mat).name());
 		}
 	}
-
-
-
 
 }
