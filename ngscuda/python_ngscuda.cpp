@@ -134,7 +134,6 @@ PYBIND11_MODULE(ngscuda, m) {
 					self.MultAdd(s, x, y);
 				});
 
-<<<<<<< HEAD
 	py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
 		(m, "DevMatrix", "DevMatrix for CUDA applications");
 		
@@ -149,7 +148,5 @@ PYBIND11_MODULE(ngscuda, m) {
 	/* 		{ */
 	/* 			return CreateDevMatrix(mat); */
 	/* 		}); */
-=======
->>>>>>> 6d28ada61482d85ff3a9bc60e9d1ab0e8a5ca709
 }
 
