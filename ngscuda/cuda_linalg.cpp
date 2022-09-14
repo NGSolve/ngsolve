@@ -644,19 +644,20 @@ namespace ngla
 
 
 	shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix & mat)
+	/* DevMatrix :: DevMatrix (BaseMatrix & mat) */
 	{
 		cerr << "creating dev matrix." << endl;
 		if (typeid(mat) == typeid(SparseMatrix<double>))
 		{
 			SparseMatrix<double>& sparse_mat = dynamic_cast<SparseMatrix<double>&>(mat);
 			cerr << "creating sparse matrix" << endl;
-			return make_shared<DevSparseMatrix>(DevSparseMatrix(sparse_mat));
+			return make_shared<DevSparseMatrix>(sparse_mat);
+			/* *this = DevSparseMatrix(sparse_mat); */
+			/* return *this; */
 		}
 		else
 		{
-			// TODO: better error handling
-			cerr << "matrix type " << typeid(mat).name() << " not supported." << endl;
-			return make_shared<DevMatrix>(DevMatrix());
+			throw Exception(string("matrix type not supported: ") + typeid(mat).name());
 		}
 	}
 

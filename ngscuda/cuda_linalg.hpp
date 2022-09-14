@@ -104,12 +104,14 @@ namespace ngla
 	class DevMatrix : public BaseMatrix
 	{
 	public:
-		// TODO
 		DevMatrix() { }
 
 		virtual AutoVector CreateRowVector() const { return UnifiedVector(Width()).CreateVector(); }
 		virtual AutoVector CreateColVector() const { return UnifiedVector(Height()).CreateVector(); }
 	};
+
+	shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix &mat);
+
 
   class DevSparseMatrix : public DevMatrix
   {
@@ -162,6 +164,5 @@ namespace ngla
   /*   virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const; */
   /* }; */
 
-	shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix & mat);
 
 }

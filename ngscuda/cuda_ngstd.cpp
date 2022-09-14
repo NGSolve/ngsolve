@@ -1,7 +1,9 @@
 #ifdef CUDA
 
 #include <ngstd.hpp>
+#include <cuda_ngstd.hpp>
 
+using namespace std;
 
 namespace ngs_cuda
 {

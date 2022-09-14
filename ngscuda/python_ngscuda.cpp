@@ -2,8 +2,14 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include "cuda_linalg.hpp"
+#include "cuda_ngstd.hpp"
 
+/*
+ * TODO:
+ * 	always use ngs_cuda?
+ */
 using namespace ngla;
+using namespace ngs_cuda;
 
 PYBIND11_MODULE(ngscuda, m) {
 	/*
@@ -13,6 +19,8 @@ PYBIND11_MODULE(ngscuda, m) {
 	 * 	-) Is it possible to use the usual functions (f.e. iterative method
 	 * 		using jacobi) without redifining only using f.e. operator+
 	 */
+
+	InitCUDA();
 
   py::class_<UnifiedVector, BaseVector, shared_ptr<UnifiedVector>>
     (m, "UnifiedVector", "UnifiedVector for CUDA applications")
@@ -126,5 +134,19 @@ PYBIND11_MODULE(ngscuda, m) {
 					self.MultAdd(s, x, y);
 				});
 
+	py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
+		(m, "DevMatrix", "DevMatrix for CUDA applications");
+		
+		/* .def(py::init ( [] (BaseMatrix & mat) -> shared_ptr<BaseMatrix> */
+	m.def("CreateDevMatrix", [] (BaseMatrix &mat)
+					{
+						/* return make_shared<DevMatrix>(mat); */
+						return CreateDevMatrix(mat);
+					});
+
+	/* m.def("CreateDevMatrix", [] (BaseMatrix & mat) */
+	/* 		{ */
+	/* 			return CreateDevMatrix(mat); */
+	/* 		}); */
 }
 
