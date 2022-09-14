@@ -301,15 +301,8 @@ public:
     static Timer t2("NewtonCF::Eval solve", NoTracing);
     static Timer t3("NewtonCF::compute increment", NoTracing);    
     RegionTimer reg(t);
-    // RegionTracer regtr(TaskManager::GetThreadId(), t);
-
-    // cout << "eval minimization" << endl;
 
     LocalHeap lh(1000000);
-
-    // startingpoint -> Evaluate (mir, values);
-    // cout << "starting: " << endl << values.AddSize(Dimension(), ir.Size()) <<
-    // endl;
 
     const ElementTransformation &trafo = mir.GetTransformation();
     auto saved_ud = trafo.PushUserData();
@@ -355,164 +348,6 @@ public:
     FlatMatrix<double> lhs(eq_dim, numeric_dim, lh);
     FlatVector<double> x(numeric_dim, lh);
 
-    /*
-    // THIS CODE IS OUTDATED AND BUGGY. DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
-    const auto calc_residuals = [&]() -> void {
-      // RegionTracer regtr1(TaskManager::GetThreadId(), t1);
-      expression->Evaluate(mir, val);
-      distribute_vec_to_blocks(val, val_blocks);
-
-      for (int block : Range(nblocks)) {
-        auto proxy = proxies[block];
-        auto &res = res_all[block];
-        auto &rhs = rhs_all[block];
-        auto &valb = val_blocks[block];
-
-        for (int k : Range(proxy->Dimension()))
-          for (size_t qi : Range(mir))
-            res(qi, k) = valb(qi, k);
-
-        // The actual rhs (respecting VS embeddings)
-        if (auto vsemb = get_vs_embedding(proxy); vsemb)
-          for (size_t qi : Range(mir))
-            rhs.Row(qi) = Trans(vsemb.value()) * res.Row(qi);
-
-        // cout << "res block " << block << " = " << res << endl;
-      }
-    };
-    */
-
-    /*
-    // THIS CODE IS OUTDATED AND BUGGY. DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
-    const auto calc_linearizations = [&]() -> void {
-      // RegionTracer regtr2(TaskManager::GetThreadId(), t2);
-      for (int block2 : Range(nblocks)) {
-        auto proxy2 = proxies[block2];
-
-        for (int l : Range(proxy2->Dimension())) {
-          // This means, the derivative is taken wrt proxy 2
-          ud.trialfunction = proxy2;
-          ud.trial_comp = l;
-          expression->Evaluate(mir, dval);
-          distribute_vec_to_blocks(dval, dval_blocks);
-
-          for (int block1 : Range(nblocks)) {
-            auto proxy1 = proxies[block1];
-            auto &dvalb = dval_blocks[block1];
-            auto &deriv = deriv_blocks[block1];
-            auto &lin = lin_blocks[block1 * nblocks + block2];
-            for (int k : Range(proxy1->Dimension())) {
-              for (size_t qi : Range(mir)) {
-                deriv(qi, k) = dvalb(qi, k).DValue(0);
-              }
-            }
-            lin(STAR, STAR, l) = deriv;
-            // cout << "lin block (" << block1 << ", " << block2 << ")[*, *, "
-            //      << l << "] = " << lin(STAR, STAR, l) << endl;
-          }
-          // cout << "lin block (" << block1 << ", " << block2
-          //      << ") = " << lin << endl;
-        }
-      }
-    };
-    */
-
-
-    /*
-    // THIS CODE IS OUTDATED AND BUGGY. DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
-      const auto compute_increments = [&]() -> void {
-      for (size_t qi : Range(mir)) {
-
-        // NOTE: when to skip something because of convergence?
-        //  -> the current approach assumes that evaluation of "expression"
-        //  for all qpoints at once is beneficial!
-
-        int offset1 = 0;
-        for (int block1 : Range(proxies)) {
-          const auto proxy1 = proxies[block1];
-          const auto &rhsb = rhs_all[block1].Row(qi);
-
-          for (int k : Range(rhsb.Size()))
-            rhs[offset1 + k] = rhsb[k];
-
-          int offset2 = 0;
-          for (int block2 : Range(proxies)) {
-            const auto proxy2 = proxies[block2];
-            const auto &linb =
-                lin_blocks[block1 * nblocks + block2](qi, STAR, STAR);
-            const auto &lhsb =
-                lhs_blocks[block1 * nblocks + block2](qi, STAR, STAR);
-            if (auto vsemb1 = get_vs_embedding(proxy1); vsemb1)
-              if (auto vsemb2 = get_vs_embedding(proxy2); vsemb2) {
-                lhsb = Trans(vsemb1.value()) * linb * vsemb2.value();
-              } else {
-                lhsb = Trans(vsemb1.value()) * linb;
-              }
-            else if (auto vsemb2 = get_vs_embedding(proxy2); vsemb2) {
-              lhsb = linb * vsemb2.value();
-            } else {
-              // nothing to do
-            }
-
-            // cout << "lhs block (" << block1 << ", " << block2 << ") = "
-            //      << lhsb << endl;
-            for (int k : Range(lhsb.Height()))
-              for (int l : Range(lhsb.Width()))
-                lhs(offset1 + k, offset2 + l) = lhsb(k, l);
-
-            offset2 += lhsb.Width();
-          }
-          offset1 += rhsb.Size();
-        }
-
-        if (converged(rhs, tol, res_0_qp[qi], rtol)) {
-          w.Row(qi) = 0;
-          continue;
-        }
-
-        //        cout << "RHS: " << rhs << endl;
-        //        cout << "LHS: " << lhs << endl;
-
-        p = 0;
-        CalcLU (lhs, p);
-        SolveFromLU (lhs, p, SliceMatrix<double, ColMajor>(rhs.Size(), 1, rhs.Size(), rhs.Data()));
-        auto &sol = rhs;
-
-        // Handle VS-embedding
-        auto &wi = w.Row(qi);
-        int offset_w = 0;
-        int offset_sol = 0;
-        for (int block : Range(proxies)) {
-          const auto proxy = proxies[block];
-          if (const auto vsemb = get_vs_embedding(proxy); vsemb)
-            wi.Range(offset_w, offset_w + proxy->Dimension()) =
-                vsemb.value() *
-                sol.Range(offset_sol, offset_sol + proxy_dof_dimension(proxy));
-          else
-            wi.Range(offset_w, offset_w + proxy->Dimension()) =
-                sol.Range(offset_sol, offset_sol + proxy_dof_dimension(proxy));
-          offset_w += proxy->Dimension();
-          offset_sol += proxy_dof_dimension(proxy);
-        }
-      }
-    };
-    */
-
-    
-    /*
-    const auto merge_xk_blocks = [&]() -> void {
-      for (size_t qi : Range(mir)) {
-        auto xk_qi = xk.Row(qi);
-        int offset = 0;
-        for (int block : Range(this->proxies)) {
-          auto xkb_qi = xk_blocks[block].Row(qi);
-          xk_qi.Range(offset, offset + xkb_qi.Size()) = xkb_qi;
-          offset += xkb_qi.Size();
-        }
-      }
-    };
-    */
-    
 
     // Evaluate starting point
     if (startingpoints.Size() == proxies.Size())
@@ -609,7 +444,6 @@ public:
                   x = Vector<double>(Trans(Q) * rhs);
                   TriangularSolve<UpperRight, NonNormalized>(lhs.Rows(0, x.Size()), x);
                   expand_increments(x, w.Row(qi));
-//          cout << "x: " << x << endl;
                 }
             }
         }
@@ -622,8 +456,8 @@ public:
         {
           RegionTimer regtr1(t1);
           calc_residuals(res_all, mir);
+//          cout << "res: " << res_all << endl;
         }
-//        cout << "res: " << res_all << endl;
         success = all_converged_qp(res_all, tol, res_0_qp, rtol);
       }
 
@@ -640,7 +474,7 @@ public:
 
 private:
     template <typename src_t, typename dest_t>
-    void expand_increments(const src_t &src, dest_t& dest) const
+    void expand_increments(const src_t src, dest_t dest) const
     {
       if (src.Size() == dest.Size())
         {
@@ -649,7 +483,6 @@ private:
         }
 
       // apply VS embedding to increment
-//      auto w_qi = w.Row(qi);
       size_t cola = 0;
       size_t colb = 0;
       size_t colxa = 0;
@@ -661,36 +494,22 @@ private:
             {
               colxb += vsemb.value().Width();
               dest.Range(cola, colb) = vsemb.value() * src.Range(colxa, colxb);
-//              cout << w_qi.Range(cola, colb) << ", " << vsemb.value() * x.Range(colxa, colxb) << endl;
+//              cout << dest.Range(cola, colb) << ", " << vsemb.value() * src.Range(colxa, colxb) << endl;
             }
           else
             {
               colxb += proxies[block]->Dimension();
               dest.Range(cola, colb) = src.Range(colxa, colxb);
-//              cout << w_qi.Range(cola, colb) << ", " << x.Range(colxa, colxb) << endl;
+//              cout << dest.Range(cola, colb) << ", " << src.Range(colxa, colxb) << endl;
             }
-//          cout << "cols: " << cola << ", " << colb << endl;
-//          cout << "colsx: " << colxa << ", " << colxb << endl;
           cola = colb;
           colxa = colxb;
         }
-//        cout << "w_qi: " << w_qi << endl;
     };
 
 
     template <typename src_t, typename dest_t>
     void distribute_vec_to_blocks(const src_t src,  dest_t dest) const {
-        /*
-        for (size_t qi : Range(mir)) {
-          auto src_qi = src.Row(qi);
-          int offset = 0;
-          for (int block : Range(nblocks)) {
-            auto dest_qi = dest[block].Row(qi);
-            dest_qi = src_qi.Range(offset, offset + dest_qi.Size());
-            offset += dest_qi.Size();
-          }
-        }
-        */
         size_t offset = 0;
         for (auto destblock : dest)
           {
@@ -724,12 +543,6 @@ private:
               ud.trialfunction = proxy2;
               ud.trial_comp = l;
               expression->Evaluate(mir, dval);
-
-//        cout << "dval: ";
-//        for (auto qi : Range(mir))
-//          for (auto k : Range(dval.Width()))
-//              cout << dval(qi, k).DValue(0) << ",";
-//        cout << endl;
 
               for (auto qi : Range(mir))
                 for (auto k : Range(dval.Width()))
