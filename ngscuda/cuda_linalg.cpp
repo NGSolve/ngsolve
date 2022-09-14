@@ -1,5 +1,3 @@
-#ifdef CUDA 
-
 /*********************************************************************/
 /* File:   cuda_linalg.cpp                                           */
 /* Author: Joachim Schoeberl, Matthias Hochsteger                    */
@@ -7,17 +5,27 @@
 /*********************************************************************/
 
 
+/*
+ *	TODO:
+ *		-) operator+
+ *		-) float / template
+ *		-) complex
+ * */
+
 #include <la.hpp>
 #include <cublas_v2.h>
 #include <cusparse.h>
+#include <cuda_runtime_api.h>
 
+#include "cuda_linalg.hpp"
+
+// TODO: why use own kernel instead of cublas?
 extern void SetScalar (double val, int n, double * dev_ptr);
-
-
 
 namespace ngla
 {
 
+	/*
   UnifiedVector * dynamic_cast_UnifiedVector (BaseVector * x)
   {
     // cout << "my dynamic * cast" << endl;
@@ -55,7 +63,7 @@ namespace ngla
       return dynamic_cast<const UnifiedVector&> (**ax);
     return dynamic_cast<const UnifiedVector&> (x);
   }
-
+	*/
 
   /*
   cublasHandle_t handle;
@@ -96,17 +104,47 @@ namespace ngla
   {
     size = asize;
     host_data = new double[asize];
-    cudaMalloc(&dev_data, size*sizeof(double));
+
+		cudaMalloc((void**)&dev_data, size*sizeof(double));
+
+		cusparseCreateDnVec (&descr, size, dev_data, CUDA_R_64F);
+
+
     host_uptodate = false;
     dev_uptodate = false;
 
     (*this) = 0.0;
   }
 
+	UnifiedVector :: UnifiedVector (BaseVector& vec)
+	{
+		// TODO: check, fix and pybind
+		cerr << "(BaseVector) ctor UnifiedVector" << endl;
+    host_data = new double[size];
+    cudaMalloc((void**)&dev_data, size*sizeof(double));
+
+		cusparseCreateDnVec (&descr, size, dev_data, CUDA_R_64F);
+
+    host_uptodate = false;
+    dev_uptodate = false;
+
+		(*this) = vec;
+	}
+
+	UnifiedVector :: ~UnifiedVector ()
+	{
+		cerr << "dtor UnifiedVector" << endl;
+
+		cusparseDestroyDnVec(descr);
+		cudaFree(dev_data);
+		delete[] host_data;
+	}
+
   BaseVector & UnifiedVector :: operator= (double d)
   {
     for (int i = 0; i < size; i++) host_data[i] = d;
     ::SetScalar (d, size, dev_data);
+
     host_uptodate = true;
     dev_uptodate = true;
     
@@ -121,7 +159,7 @@ namespace ngla
 
   BaseVector & UnifiedVector :: operator= (BaseVector & v2)
   {
-    UnifiedVector * uv2 = dynamic_cast_UnifiedVector (&v2);
+    UnifiedVector * uv2 = dynamic_cast<UnifiedVector*> (&v2);
     if (uv2)
       {
         if (uv2->dev_uptodate)
@@ -179,22 +217,24 @@ namespace ngla
   
   BaseVector & UnifiedVector :: Add (double scal, const BaseVector & v)
   {
-    const UnifiedVector * v2 = dynamic_cast_UnifiedVector (&v);
+    const UnifiedVector * v2 = dynamic_cast<const UnifiedVector*> (&v);
+
     if (v2)
       {
-	UpdateDevice();
-	v2->UpdateDevice();
-	
-	cublasDaxpy (Get_CuBlas_Handle(), 
-                     size, &scal, v2->dev_data, 1, dev_data, 1);
-	host_uptodate = false;
+				UpdateDevice();
+				v2->UpdateDevice();
+
+				cublasDaxpy (Get_CuBlas_Handle(), 
+													 size, &scal, v2->dev_data, 1, dev_data, 1);
+				host_uptodate = false;
       }
     else
       {
-	UpdateHost();
-	VFlatVector<> (size, host_data) += scal * v;
-	dev_uptodate = false;
+				UpdateHost();
+				VFlatVector<> (size, host_data) += scal * v;
+				dev_uptodate = false;
       }
+
     return *this;
   }
   
@@ -202,17 +242,18 @@ namespace ngla
   {
     // cout << "Inner Prod" << endl;
 
-    const UnifiedVector * uv2 = dynamic_cast_UnifiedVector (&v2);
+    const UnifiedVector * uv2 = dynamic_cast<const UnifiedVector*> (&v2);
     if (uv2)
-      {
-	UpdateDevice();
-	uv2->UpdateDevice();
-	
-	double res;
-	cublasDdot (Get_CuBlas_Handle(), 
-                    size, dev_data, 1, uv2->dev_data, 1, &res);
-	return res;
-      }
+		{
+			cerr << "cublas dot" << endl;
+			UpdateDevice();
+			uv2->UpdateDevice();
+			
+			double res;
+			cublasDdot (Get_CuBlas_Handle(), 
+												size, dev_data, 1, uv2->dev_data, 1, &res);
+			return res;
+		}
 
     FlatVector<> fv = FVDouble();
     FlatVector<> fv2 = v2.FVDouble();
@@ -227,6 +268,18 @@ namespace ngla
     return ost;
   }
   
+	void UnifiedVector :: PrintDevice () const
+	{
+		int DSIZE = size * sizeof(double);
+		double *tmp = (double*) malloc(DSIZE);
+		cudaMemcpy(tmp, dev_data, DSIZE, cudaMemcpyDeviceToHost);
+		cerr << "device up-to-date: " << dev_uptodate << endl;
+		for (int i=0; i<size; i++)
+		{
+			cerr << tmp[i] << endl;
+		}
+	}
+
   void UnifiedVector :: UpdateHost () const
   {
     if (host_uptodate) return;
@@ -264,7 +317,7 @@ namespace ngla
 
   AutoVector UnifiedVector :: CreateVector () const
   {
-    return make_shared<UnifiedVector> (size);
+    return make_unique<UnifiedVector> (size);
   }
 
   
@@ -282,21 +335,19 @@ namespace ngla
 
 
 
-
-
-
-
   DevSparseMatrix :: DevSparseMatrix (const SparseMatrix<double> & mat)
   {
     height = mat.Height();
     width = mat.Width();
     nze = mat.NZE();
 
+		/*
     descr = new cusparseMatDescr_t;
     cusparseCreateMatDescr (descr);
 
     cusparseSetMatType(*descr, CUSPARSE_MATRIX_TYPE_GENERAL);
     cusparseSetMatIndexBase(*descr, CUSPARSE_INDEX_BASE_ZERO);
+		*/
 
     cout << "create device sparse matrix, n = " << height << ", nze = " << nze << endl;
     
@@ -310,13 +361,64 @@ namespace ngla
     cudaMemcpy (dev_ind, &temp_ind[0], (mat.Height()+1)*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy (dev_col, &mat.GetRowIndices(0)[0], mat.NZE()*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy (dev_val, &mat.GetRowValues(0)[0], mat.NZE()*sizeof(double), cudaMemcpyHostToDevice);
+
+		/* cerr << "CREATING!" << endl; */
+		/* int *host_row = (int*) malloc((mat.Height()+1) * sizeof(int)); */
+		/* int *host_col = (int*) malloc(mat.Width() * sizeof(int)); */
+		/* double *host_val = (double*) malloc(mat.NZE() * sizeof(double)); */
+		/* cudaMemcpy(host_row, dev_ind, (mat.Height() + 1) * sizeof(int), cudaMemcpyDeviceToHost); */
+		/* cudaMemcpy(host_col, dev_col, mat.Width() * sizeof(int), cudaMemcpyDeviceToHost); */
+		/* cudaMemcpy(host_val, dev_val, mat.NZE() * sizeof(double), cudaMemcpyDeviceToHost); */
+		/* for (int i=0; i<mat.Height() +1 ; i++) */
+		/* { */
+		/* 	cerr << host_row[i] << " "; */
+		/* } */
+		/* cerr << endl; */
+		/* for (int i=0; i<mat.Width(); i++) */
+		/* { */
+		/* 	cerr << host_col[i] << " "; */
+		/* } */
+		/* cerr << endl; */
+		/* for (int i=0; i<mat.NZE(); i++) */
+		/* { */
+		/* 	cerr << host_val[i] << " "; */
+		/* } */
+		/* cerr << endl; */
+
+
+		/* for (int i=0; i<mat.Height()+1; i++) */
+		/* { */
+		/* 	cerr << temp_ind[i] << " "; */
+		/* } */
+		/* cerr << endl; */
+		/* for (int i=0; i<mat.NZE()+1; i++) */
+		/* { */
+		/* 	cerr << mat.GetRowIndices(0)[i] << " "; */
+		/* } */
+		/* cerr << endl; */
+
+		cusparseCreateCsr(&descr, height, width, nze,
+											dev_ind, dev_col, dev_val,
+											CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO,
+											CUDA_R_64F);
   }
+
+	DevSparseMatrix :: ~DevSparseMatrix ()
+	{
+		cusparseDestroySpMat(descr);
+	}
   
   void DevSparseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
+		static Timer tprel("CUSPARSE PREL");
+		static Timer tbuffer("CUSPARSE BUFFER");
+		static Timer tmv("CUSPARSE MV");
+		static Timer tbufferallocate("CUSPARSE BUFFER ALLOCATE");
+
+		tprel.Start();
     // cout << "device mult sparse" << endl;
-    const UnifiedVector & ux = dynamic_cast_UnifiedVector (x);
-    UnifiedVector & uy = dynamic_cast_UnifiedVector (y);
+    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
+    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
 
     ux.UpdateDevice();
     uy = 0.0;
@@ -324,12 +426,39 @@ namespace ngla
 
     double alpha= 1;
     double beta = 0;
+		tprel.Stop();
+
+		// deprecated
+		/*
     cusparseDcsrmv (Get_CuSparse_Handle(), 
                     CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
 		    &alpha, *descr, 
 		    dev_val, dev_ind, dev_col, 
 		    ux.dev_data, &beta, uy.dev_data);
+		*/
 
+		tbuffer.Start();
+		size_t bufferSize = 0;
+		void* dBuffer = NULL;
+
+		cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
+														&alpha, descr, ux.descr, &beta, uy.descr, CUDA_R_64F,
+														CUSPARSE_MV_ALG_DEFAULT, &bufferSize);
+		tbuffer.Stop();
+		tbufferallocate.Start();
+		cudaMalloc(&dBuffer, bufferSize);
+		cerr << "buffersize: " << bufferSize << endl;
+		tbufferallocate.Stop();
+
+		cusparseStatus_t status;
+		tmv.Start();
+		status = cusparseSpMV(Get_CuSparse_Handle(), 
+								 CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
+								 ux.descr, &beta, uy.descr, CUDA_R_64F,
+								 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+		tmv.Stop();
+		/* cerr << "Status: " << cusparseGetErrorString(status) << endl; */
+		
     uy.host_uptodate = false;
     // cout << "mult complete" << endl;
   }
@@ -338,19 +467,38 @@ namespace ngla
   void DevSparseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     // cout << "device multadd sparse matrix" << endl;
-    const UnifiedVector & ux = dynamic_cast_UnifiedVector (x);
-    UnifiedVector & uy = dynamic_cast_UnifiedVector (y);
+    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
+    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
 
     double alpha= 1;
-    double beta = 1;
+    //double beta = 1;
+		double beta = s; // s was not in use. I guess this is where it's supposed to be
+
+		// deprecated
+		/*
     cusparseDcsrmv (Get_CuSparse_Handle(), 
                     CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
 		    &alpha, *descr, 
 		    dev_val, dev_ind, dev_col, 
 		    ux.dev_data, &beta, uy.dev_data);
+		*/
+
+		cusparseSpMatDescr_t matA;
+		size_t bufferSize = 0;
+		void* dBuffer = NULL;
+
+		cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
+														&alpha, matA, ux.descr, &beta, uy.descr, CUDA_R_64F,
+														CUSPARSE_MV_ALG_DEFAULT, &bufferSize);
+		cudaMalloc(&dBuffer, bufferSize);
+
+		cusparseSpMV(Get_CuSparse_Handle(), 
+								 CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA,
+								 ux.descr, &beta, uy.descr, CUDA_R_64F,
+								 CUSPARSE_MV_ALG_DEFAULT, &bufferSize);
 
     uy.host_uptodate = false;
 
@@ -362,93 +510,98 @@ namespace ngla
 
 
 
+	// TODO:
+	// 	redo. similiar to DevSparseMatrix
+  /* DevJacobiPreconditioner :: DevJacobiPreconditioner (const SparseMatrix<double> & mat, */
+						      /* const BitArray & freedofs) */
+  /* { */
+  /*   height = mat.Height(); */
+  /*   width = mat.Height(); */
+  /*   nze = mat.Height(); */
 
+  /*   descr = new cusparseMatDescr_t; */
+  /*   cusparseCreateMatDescr (descr); */
 
-  DevJacobiPreconditioner :: DevJacobiPreconditioner (const SparseMatrix<double> & mat,
-						      const BitArray & freedofs)
-  {
-    height = mat.Height();
-    width = mat.Height();
-    nze = mat.Height();
+  /*   cusparseSetMatType(*descr, CUSPARSE_MATRIX_TYPE_GENERAL); */
+  /*   cusparseSetMatIndexBase(*descr, CUSPARSE_INDEX_BASE_ZERO); */
 
-    descr = new cusparseMatDescr_t;
-    cusparseCreateMatDescr (descr);
-
-    cusparseSetMatType(*descr, CUSPARSE_MATRIX_TYPE_GENERAL);
-    cusparseSetMatIndexBase(*descr, CUSPARSE_INDEX_BASE_ZERO);
-
-    cout << "create Jacobi preconditioner" << endl;
+  /*   cout << "create Jacobi preconditioner" << endl; */
     
-    Array<int> temp_ind (height+1); 
-    Array<int> temp_cols (height);
-    Array<double> temp_vals (height);
+  /*   Array<int> temp_ind (height+1); */ 
+  /*   Array<int> temp_cols (height); */
+  /*   Array<double> temp_vals (height); */
 
-    for (int i = 0; i <= height; i++) temp_ind[i] = i; 
+  /*   for (int i = 0; i <= height; i++) temp_ind[i] = i; */ 
 
-    for (int i = 0; i < height; i++)
-      {
-	temp_cols[i] = i;
-	if (freedofs.Test(i))
-	  temp_vals[i] = 1.0 / mat(i,i);
-	else
-	  temp_vals[i] = 0.0;
-      }
+  /*   for (int i = 0; i < height; i++) */
+  /*     { */
+	/* temp_cols[i] = i; */
+	/* if (freedofs.Test(i)) */
+	  /* temp_vals[i] = 1.0 / mat(i,i); */
+	/* else */
+	  /* temp_vals[i] = 0.0; */
+  /*     } */
 
-    cudaMalloc ((void**)&dev_ind, (height+1) * sizeof(int));
-    cudaMalloc ((void**)&dev_col, (height) * sizeof(int));
-    cudaMalloc ((void**)&dev_val, (height) * sizeof(double));
+  /*   cudaMalloc ((void**)&dev_ind, (height+1) * sizeof(int)); */
+  /*   cudaMalloc ((void**)&dev_col, (height) * sizeof(int)); */
+  /*   cudaMalloc ((void**)&dev_val, (height) * sizeof(double)); */
 
-    cudaMemcpy (dev_ind, &temp_ind[0], (height+1)*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy (dev_col, &temp_cols[0], height*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy (dev_val, &temp_vals[0], height*sizeof(double), cudaMemcpyHostToDevice);
-  }
+  /*   cudaMemcpy (dev_ind, &temp_ind[0], (height+1)*sizeof(int), cudaMemcpyHostToDevice); */
+  /*   cudaMemcpy (dev_col, &temp_cols[0], height*sizeof(int), cudaMemcpyHostToDevice); */
+  /*   cudaMemcpy (dev_val, &temp_vals[0], height*sizeof(double), cudaMemcpyHostToDevice); */
+  /* } */
   
-  void DevJacobiPreconditioner :: Mult (const BaseVector & x, BaseVector & y) const
-  {
-    // cout << "device mult precond" << endl;
+  /* void DevJacobiPreconditioner :: Mult (const BaseVector & x, BaseVector & y) const */
+  /* { */
+  /*   // cout << "device mult precond" << endl; */
 
-    const UnifiedVector & ux = dynamic_cast_UnifiedVector (x);
-    UnifiedVector & uy = dynamic_cast_UnifiedVector (y);
+  /*   const UnifiedVector & ux = dynamic_cast<UnifiedVector*> (x); */
+  /*   UnifiedVector & uy = dynamic_cast<UnifiedVector*> (y); */
 
-    ux.UpdateDevice();
-    uy = 0.0;
-    uy.UpdateDevice();
+  /*   ux.UpdateDevice(); */
+  /*   uy = 0.0; */
+  /*   uy.UpdateDevice(); */
 
-    double alpha= 1;
-    double beta = 0;
-    cusparseDcsrmv (Get_CuSparse_Handle (), 
-                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
-		    &alpha, *descr, 
-		    dev_val, dev_ind, dev_col, 
-		    ux.dev_data, &beta, uy.dev_data);
+  /*   double alpha= 1; */
+  /*   double beta = 0; */
 
-    uy.host_uptodate = false;
+		/* // TODO: fix this */
+  /*   /1* cusparseDcsrmv (Get_CuSparse_Handle (), *1/ */ 
+  /*   /1*                 CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, *1/ */ 
+		    /* /1* &alpha, *descr, *1/ */ 
+		    /* /1* dev_val, dev_ind, dev_col, *1/ */ 
+		    /* /1* ux.dev_data, &beta, uy.dev_data); *1/ */
 
-    // cout << "mult complete" << endl;
-  }
+  /*   uy.host_uptodate = false; */
+
+  /*   // cout << "mult complete" << endl; */
+  /* } */
 
 
-  void DevJacobiPreconditioner :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
-  {
-    cout << "device multadd precond" << endl;
+  /* void DevJacobiPreconditioner :: MultAdd (double s, const BaseVector & x, BaseVector & y) const */
+  /* { */
+  /*   cout << "device multadd precond" << endl; */
 
-    const UnifiedVector & ux = dynamic_cast_UnifiedVector(x);
-    UnifiedVector & uy = dynamic_cast_UnifiedVector(y);
+  /*   const UnifiedVector & ux = dynamic_cast<UnifiedVector*>(x); */
+  /*   UnifiedVector & uy = dynamic_cast<UnifiedVector*>(y); */
 
-    ux.UpdateDevice();
-    uy.UpdateDevice();
+  /*   ux.UpdateDevice(); */
+  /*   uy.UpdateDevice(); */
 
-    double alpha= 1;
-    double beta = 1;
-    cusparseDcsrmv (Get_CuSparse_Handle (), 
-                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
-		    &alpha, *descr, 
-		    dev_val, dev_ind, dev_col, 
-		    ux.dev_data, &beta, uy.dev_data);
+  /*   double alpha= 1; */
+  /*   double beta = 1; */
 
-    uy.host_uptodate = false;
-    cout << "mult complete" << endl;
-  }
+
+		/* // TODO: fix this */
+  /*   /1* cusparseDcsrmv (Get_CuSparse_Handle (), *1/ */ 
+  /*   /1*                 CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, *1/ */ 
+		    /* /1* &alpha, *descr, *1/ */ 
+		    /* /1* dev_val, dev_ind, dev_col, *1/ */ 
+		    /* /1* ux.dev_data, &beta, uy.dev_data); *1/ */
+
+  /*   uy.host_uptodate = false; */
+  /*   cout << "mult complete" << endl; */
+  /* } */
   
 
 
@@ -477,13 +630,7 @@ namespace ngla
       cusparseCreate(&cusparseHandle);
     }
   };
-
   InitCuBlasHandle init;
   */
 
 }
-
-
-
-
-#endif

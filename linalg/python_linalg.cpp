@@ -1770,7 +1770,7 @@ shift : object
   m.def("DoArchive" , [](shared_ptr<Archive> & arch, BaseMatrix & mat)
                                          { cout << "output basematrix" << endl;
                                            mat.DoArchive(*arch); return arch; });
-                                           
+
 }
 
 
