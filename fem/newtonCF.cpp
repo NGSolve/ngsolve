@@ -353,29 +353,7 @@ public:
     FlatArray<int> p(numeric_dim, lh);
     FlatMatrix<> Q(eq_dim, numeric_dim, lh);
     FlatMatrix<double> lhs(eq_dim, numeric_dim, lh);
-
-    const auto distribute_vec_to_blocks = [](auto src,
-                                             auto dest) {
-
-      /*
-      for (size_t qi : Range(mir)) {
-        auto src_qi = src.Row(qi);
-        int offset = 0;
-        for (int block : Range(nblocks)) {
-          auto dest_qi = dest[block].Row(qi);
-          dest_qi = src_qi.Range(offset, offset + dest_qi.Size());
-          offset += dest_qi.Size();
-        }
-      }
-      */
-      size_t offset = 0;
-      for (auto destblock : dest)
-        {
-          auto next = offset + destblock.Width();
-          destblock = src.Cols(offset, next);
-          offset = next;
-        }
-    };
+    FlatVector<double> x(numeric_dim, lh);
 
     /*
     // THIS CODE IS OUTDATED AND BUGGY. DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
@@ -403,11 +381,6 @@ public:
       }
     };
     */
-    
-    const auto calc_residuals = [&]() {
-      RegionTimer regtr1(t1);
-      expression->Evaluate(mir, res_all);
-    };
 
     /*
     // THIS CODE IS OUTDATED AND BUGGY. DO NOT USE UNLESS YOU KNOW WHAT YOU ARE DOING.
@@ -443,31 +416,6 @@ public:
       }
     };
     */
-    
-    const auto calc_linearizations = [&]() {
-      RegionTimer regtr2(t2);
-
-      for (auto block2 : Range(nblocks)) {
-        auto proxy2 = proxies[block2];
-
-        for (auto l : Range(proxy2->Dimension())) {
-          // This means, the derivative is taken wrt proxy 2
-          ud.trialfunction = proxy2;
-          ud.trial_comp = l;
-          expression->Evaluate(mir, dval);
-
-//          cout << "dval: ";
-//          for (auto qi : Range(mir))
-//            for (auto k : Range(dval.Width()))
-//                cout << dval(qi, k).DValue(0) << ",";
-//          cout << endl;
-
-          for (auto qi : Range(mir))
-            for (auto k : Range(dval.Width()))
-              lin_blocks[block2](qi, k, l) = dval(qi, k).DValue(0);
-        }
-      }
-    };
 
 
     /*
@@ -550,81 +498,6 @@ public:
     };
     */
 
-
-    const auto compute_increments = [&]() {
-      RegionTimer r(t3);
-      for (size_t qi : Range(mir)) {
-
-        // NOTE: when to skip something because of convergence?
-        //  -> the current approach assumes that evaluation of "expression"
-        //  for all qpoints at once is beneficial!
-
-        auto rhs = res_all.Row(qi);
-        
-        if (converged(rhs, tol, res_0_qp[qi], rtol)) {
-          w.Row(qi) = 0;
-          continue;
-        }
-
-        // handle VS embedding
-
-        size_t cola = 0;
-        size_t colb = 0;
-        for (auto block : Range(proxies)) {
-          if (const auto vsemb = get_vs_embedding(proxies[block]); vsemb) {
-            colb += vsemb.value().Width();
-            lhs.Cols(cola, colb) = lin_blocks[block](qi, STAR, STAR) * vsemb.value();
-          }
-          else {
-            colb += proxies[block]->Dimension();
-            lhs.Cols(cola, colb) = lin_blocks[block](qi, STAR, STAR);
-          }
-          cola = colb;
-        }
-
-        if (lhs.Height() == lhs.Width()) {
-          p = 0;
-          CalcLU (lhs, p);
-          SolveFromLU (lhs, p, SliceMatrix<double, ColMajor>(rhs.Size(), 1, rhs.Size(), rhs.Data()));
-          w.Row(qi) = rhs;
-        }
-        else {
-          // resulting LHS matrix is non-square!
-          QRFactorization(lhs, Q);
-          auto x = Vector<double>(Trans(Q) * rhs);
-          TriangularSolve<UpperRight, NonNormalized>(lhs.Rows(0, x.Size()), x);
-
-//          cout << "x: " << x << endl;
-
-          // apply VS embedding to increment
-          auto w_qi = w.Row(qi);
-          cola = 0;
-          colb = 0;
-          size_t colxa = 0;
-          size_t colxb = 0;
-          for (auto block : Range(proxies)) {
-            colb += proxies[block]->Dimension();
-            if (const auto vsemb = get_vs_embedding(proxies[block]); vsemb) {
-                colxb += vsemb.value().Width();
-                w_qi.Range(cola, colb) = vsemb.value() * x.Range(colxa, colxb);
-//                cout << w_qi.Range(cola, colb) << ", " << vsemb.value() * x.Range(colxa, colxb) << endl;
-            }
-            else {
-                colxb += proxies[block]->Dimension();
-                w_qi.Range(cola, colb) = x.Range(colxa, colxb);
-//                cout << w_qi.Range(cola, colb) << ", " << x.Range(colxa, colxb) << endl;
-            }
-//            cout << "cols: " << cola << ", " << colb << endl;
-//            cout << "colsx: " << colxa << ", " << colxb << endl;
-            cola = colb;
-            colxa = colxb;
-          }
-//          cout << "w_qi: " << w_qi << endl;
-        }
-      }
-    };
-
-
     
     /*
     const auto merge_xk_blocks = [&]() -> void {
@@ -639,31 +512,32 @@ public:
       }
     };
     */
-
-    const auto merge_xk_blocks = [xk,xk_blocks]() {
-      size_t offset = 0;
-      for (auto xkb : xk_blocks)
-        {
-          auto next = offset + xkb.Width();
-          xk.Cols(offset, next) = xkb;
-          offset = next;
-        }
-    };
     
 
     // Evaluate starting point
-    if (startingpoints.Size() == proxies.Size()) {
-      for (int i : Range(startingpoints))
-        startingpoints[i]->Evaluate(mir, xk_blocks[i]);
-      merge_xk_blocks();
-    } else {
-      // This is the only case when we should end up here (checked in
-      // constructor)
-      assert(startingpoints.Size() == 1);
+    if (startingpoints.Size() == proxies.Size())
+      {
+        for (int i : Range(startingpoints))
+          startingpoints[i]->Evaluate(mir, xk_blocks[i]);
 
-      startingpoints[0]->Evaluate(mir, xk);
-      distribute_vec_to_blocks(xk, xk_blocks);
-    }
+        // merge blocks
+        size_t offset = 0;
+        for (auto xkb : xk_blocks)
+          {
+            auto next = offset + xkb.Width();
+            xk.Cols(offset, next) = xkb;
+            offset = next;
+          }
+      }
+    else
+      {
+        // This is the only case when we should end up here (checked in
+        // constructor)
+        assert(startingpoints.Size() == 1);
+
+        startingpoints[0]->Evaluate(mir, xk);
+        distribute_vec_to_blocks(xk, xk_blocks);
+      }
 
 //    cout << "starting value = " << xk << endl;
 //    cout << "blocks:" << endl;
@@ -676,32 +550,82 @@ public:
     //    "\n\n------------------------START------------------------------"
     //            "\n";
 
-    calc_residuals();
+    {
+      RegionTimer regtr1(t1);
+      calc_residuals(res_all, mir);
+    }
 
-    for (auto qi : Range(mir.Size()))
+    for (auto qi : Range(mir))
       res_0_qp[qi] = LInfNorm(res_all.Row(qi));
 
 //    cout << "[0] res: " << res_all << endl;
 //    cout << "[0] res_qp: " << res_0_qp << endl;
 
     bool success = all_converged_qp(res_all, tol, res_0_qp, rtol);
-    for ([[maybe_unused]] int step : Range(maxiter)) {
-      if (success)
-        break;
+    for ([[maybe_unused]] int step : Range(maxiter))
+      {
+        if (success)
+          break;
 
-      calc_linearizations();
-//      cout << "lin: " << lin_blocks << endl;
+        {
+          RegionTimer regtr2(t2);
+          calc_linearizations(lin_blocks, dval, ud, mir);
+          //      cout << "lin: " << lin_blocks << endl;
+        }
 
-      compute_increments();
+        {
+          // compute increments
+          RegionTimer r(t3);
+          for (size_t qi : Range(mir))
+            {
 
-      xk -= w;
-//      cout << "w: " << xk << endl;
-//      cout << "xk: " << xk << endl;
-      distribute_vec_to_blocks(xk, xk_blocks);
-      calc_residuals();
-//      cout << "res: " << res_all << endl;
-      success = all_converged_qp(res_all, tol, res_0_qp, rtol);
-    }
+              // NOTE: when to skip something because of convergence?
+              //  -> the current approach assumes that evaluation of "expression"
+              //  for all qpoints at once is beneficial!
+
+              auto rhs = res_all.Row(qi);
+
+              // skip if newton for this qp has already converged
+              if (converged(rhs, tol, res_0_qp[qi], rtol))
+                {
+                  w.Row(qi) = 0;
+                  continue;
+                }
+
+              // handle VS embedding
+              form_lhs_from_lin_blocks(lhs, lin_blocks, qi);
+
+              if (lhs.Height() == lhs.Width())
+                {
+                  p = 0;
+                  CalcLU (lhs, p);
+                  SolveFromLU (lhs, p, SliceMatrix<double, ColMajor>(rhs.Size(), 1, rhs.Size(), rhs.Data()));
+                  expand_increments(rhs, w.Row(qi));
+                }
+              else
+                {
+                  assert(lhs.Height() > lhs.Width());
+                  QRFactorization(lhs, Q);
+                  x = Vector<double>(Trans(Q) * rhs);
+                  TriangularSolve<UpperRight, NonNormalized>(lhs.Rows(0, x.Size()), x);
+                  expand_increments(x, w.Row(qi));
+//          cout << "x: " << x << endl;
+                }
+            }
+        }
+
+        xk -= w;
+//        cout << "w: " << xk << endl;
+//        cout << "xk: " << xk << endl;
+        distribute_vec_to_blocks(xk, xk_blocks);
+
+        {
+          RegionTimer regtr1(t1);
+          calc_residuals(res_all, mir);
+        }
+//        cout << "res: " << res_all << endl;
+        success = all_converged_qp(res_all, tol, res_0_qp, rtol);
+      }
 
 //     cout << "xk (final): " << xk << endl;
 
@@ -713,6 +637,127 @@ public:
     //    cout <<
     //    "\n--------------------- NewtonCF done ---------------------------\n";
   }
+
+private:
+    template <typename src_t, typename dest_t>
+    void expand_increments(const src_t &src, dest_t& dest) const
+    {
+      if (src.Size() == dest.Size())
+        {
+          dest = src;
+          return;
+        }
+
+      // apply VS embedding to increment
+//      auto w_qi = w.Row(qi);
+      size_t cola = 0;
+      size_t colb = 0;
+      size_t colxa = 0;
+      size_t colxb = 0;
+      for (auto block : Range(proxies))
+        {
+          colb += proxies[block]->Dimension();
+          if (const auto vsemb = get_vs_embedding(proxies[block]); vsemb)
+            {
+              colxb += vsemb.value().Width();
+              dest.Range(cola, colb) = vsemb.value() * src.Range(colxa, colxb);
+//              cout << w_qi.Range(cola, colb) << ", " << vsemb.value() * x.Range(colxa, colxb) << endl;
+            }
+          else
+            {
+              colxb += proxies[block]->Dimension();
+              dest.Range(cola, colb) = src.Range(colxa, colxb);
+//              cout << w_qi.Range(cola, colb) << ", " << x.Range(colxa, colxb) << endl;
+            }
+//          cout << "cols: " << cola << ", " << colb << endl;
+//          cout << "colsx: " << colxa << ", " << colxb << endl;
+          cola = colb;
+          colxa = colxb;
+        }
+//        cout << "w_qi: " << w_qi << endl;
+    };
+
+
+    template <typename src_t, typename dest_t>
+    void distribute_vec_to_blocks(const src_t src,  dest_t dest) const {
+        /*
+        for (size_t qi : Range(mir)) {
+          auto src_qi = src.Row(qi);
+          int offset = 0;
+          for (int block : Range(nblocks)) {
+            auto dest_qi = dest[block].Row(qi);
+            dest_qi = src_qi.Range(offset, offset + dest_qi.Size());
+            offset += dest_qi.Size();
+          }
+        }
+        */
+        size_t offset = 0;
+        for (auto destblock : dest)
+          {
+            auto next = offset + destblock.Width();
+            destblock = src.Cols(offset, next);
+            offset = next;
+          }
+    };
+
+    template<typename res_all_t>
+    inline void calc_residuals(res_all_t res_all, const BaseMappedIntegrationRule& mir) const
+    {
+      expression->Evaluate(mir, res_all);
+    };
+
+    template<typename lin_blocks_t, typename dval_t>
+    void calc_linearizations(
+            lin_blocks_t lin_blocks,
+            dval_t dval,
+            ProxyUserData& ud,
+            const BaseMappedIntegrationRule& mir
+            ) const
+    {
+      for (auto block2 : Range(proxies))
+        {
+          auto proxy2 = proxies[block2];
+
+          for (auto l : Range(proxy2->Dimension()))
+            {
+              // This means, the derivative is taken wrt proxy 2
+              ud.trialfunction = proxy2;
+              ud.trial_comp = l;
+              expression->Evaluate(mir, dval);
+
+//        cout << "dval: ";
+//        for (auto qi : Range(mir))
+//          for (auto k : Range(dval.Width()))
+//              cout << dval(qi, k).DValue(0) << ",";
+//        cout << endl;
+
+              for (auto qi : Range(mir))
+                for (auto k : Range(dval.Width()))
+                  lin_blocks[block2](qi, k, l) = dval(qi, k).DValue(0);
+            }
+        }
+    };
+
+    template<typename lhs_t, typename lin_blocks_t>
+    void form_lhs_from_lin_blocks(lhs_t lhs, const lin_blocks_t lin_blocks, size_t qi) const
+    {
+      size_t cola = 0;
+      size_t colb = 0;
+      for (auto block : Range(proxies))
+        {
+          if (const auto vsemb = get_vs_embedding(proxies[block]); vsemb)
+            {
+              colb += vsemb.value().Width();
+              lhs.Cols(cola, colb) = lin_blocks[block](qi, STAR, STAR) * vsemb.value();
+            }
+          else
+            {
+              colb += proxies[block]->Dimension();
+              lhs.Cols(cola, colb) = lin_blocks[block](qi, STAR, STAR);
+            }
+          cola = colb;
+        }
+    }
 };
 
 class MinimizationCF : public CoefficientFunction {
