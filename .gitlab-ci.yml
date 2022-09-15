@@ -437,7 +437,7 @@ deploy_mac:
     - tags
 
 pip_linux:
-  image: quay.io/pypa/manylinux2014_x86_64
+  image: sameli/manylinux2014_x86_64_cuda_11
   stage: build
   tags:
     - pip
