@@ -26,12 +26,6 @@ do
     mv ngsolve*.whl wheelhouse/
     $PYDIR/pip uninstall -y netgen-mesher
 
-    rm -rf _skbuild
-    $PYDIR/pip install netgen-mesher-avx2==$NETGEN_VERSION
-    NETGEN_ARCH=avx2 $PYDIR/pip wheel .
-    rename linux_ manylinux_2_17_x86_64.manylinux2014_ ngsolve*.whl
-    mv ngsolve*.whl wheelhouse/
-
     #$PYDIR/pip install --extra-index-url https://test.pypi.org/simple/ wheelhouse/ngsolve-avx2-*-cp${pyversion}-*.whl
     #$PYDIR/python3 -c 'import ngsolve'
     #cd ../tests/pytest
