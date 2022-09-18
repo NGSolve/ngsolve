@@ -17,12 +17,16 @@ namespace ngcomp
   class NGS_DLL_HEADER L2HighOrderFESpace : public FESpace
   {
   protected:
+    /*
+      ----> baseclass
     // Number of Elements
     int nel;
     // Degrees of Freedom 
     int ndof;
     // Levels 
     Array<int> ndlevel;
+    */
+      
     // if order is relative to mesh order 
     bool var_order;
     // variable order is set to mesh_order + rel_order 
@@ -65,9 +69,9 @@ namespace ngcomp
     ///
     virtual void UpdateCouplingDofArray() override;    
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDofLevel (int level) const override;
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
