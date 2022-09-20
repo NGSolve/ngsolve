@@ -1356,7 +1356,8 @@ expression : CoefficientFunction
   the objective function to be minimized
 
 startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
-  the initial guess for the iterative solution of the nonlinear problem
+  The initial guess for the iterative solution of the minimization problem. In case of a list or a tuple,
+  the order of starting points must match the order of the trial functions in their parent FE space.
 
 tol: double
   absolute tolerance
@@ -1459,7 +1460,8 @@ expression : CoefficientFunction
   the residual of the nonlinear equation
 
 startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
-  the initial guess for the iterative solution of the nonlinear problem
+  The initial guess for the iterative solution of the nonlinear problem. In case of a list or a tuple,
+  the order of starting points must match the order of the trial functions in their parent FE space.
 
 tol: double
   absolute tolerance
