@@ -71,6 +71,7 @@ elif 'linux' in sys.platform:
         f'-DMKL_ROOT:PATH={root_dir}',
         f'-DMKL_LIBRARY:PATH={root_dir}/lib/libmkl_rt.so.1',
         f'-DMKL_INCLUDE_DIR:PATH={root_dir}/include',
+        '-DUSE_CUDA=ON',
     ]
     install_requires.append('mkl == 2021.*')
     packages = []
