@@ -3,32 +3,29 @@
 
 namespace ngla
 {
+  class DevSparseMatrix;
 
-	/* TODO:
-	 *  -) always create cusparseDnVecDescr_t?
-	 *   .) alternative: static, similiar to handle
-	 *   .) alternative: create derived class "CuspUnifiedVector"?
-	 *  -) keep cusparseSpMV_bufferSize? (similiar to handle)
-	 *   .) alternative: add to devMatrix or create MultMatVec class
-	 *  -) why was there no destructor? (cudaFree!)
-	 *  */
   class UnifiedVector : public S_BaseVector<double>
   {
     // using int size;
     double * host_data;
-		double * dev_data;
-		cusparseDnVecDescr_t descr;
-	
+    double * dev_data;
+    cusparseDnVecDescr_t descr;
+  
     mutable bool host_uptodate;
     mutable bool dev_uptodate;
     
   public:
     UnifiedVector (int asize);
-		UnifiedVector (BaseVector& vec);
-		virtual ~UnifiedVector();
+    UnifiedVector (const BaseVector& vec);
+    UnifiedVector (const UnifiedVector& vec);
+    virtual ~UnifiedVector();
+
+    void initialize_unified (size_t size);
     
     BaseVector & operator= (double d);
-    BaseVector & operator= (BaseVector & v2);
+    BaseVector & operator= (const BaseVector & v2);
+    UnifiedVector & operator= (const UnifiedVector & v2);
 
     template <typename T2>
     UnifiedVector & operator= (const VVecExpr<T2> & v)
@@ -36,54 +33,30 @@ namespace ngla
       BaseVector::operator= (v);
       return *this;
     }
-    
-		/*
-		 *	TODO:
-		 *		avoid cpy between device and host
-		 *		maybe leave the update to the user?
-		 * */
-		const double & operator [] (const int ind) const
-		{
-			UpdateHost(); 
-			return host_data[ind];
-		}
 
-		double & operator [] (const int ind)
-		{
-			UpdateHost(); 
-			dev_uptodate = false; // TODO: not sure, that this is the best approach
-			return host_data[ind];
-		}
+    size_t Size () const throw();
 
-		int Size () const
-		{
-			return size;
-		}
+    const double & operator [] (const int ind) const;
+    double & operator [] (const int ind);
 
-		const cusparseDnVecDescr_t& GetDescr() const
-		{
-			return descr;
-		}
+    const cusparseDnVecDescr_t& GetDescr() const;
 
-		cusparseDnVecDescr_t& GetDescr()
-		{
-			return descr;
-		}
+    cusparseDnVecDescr_t& GetDescr();
 
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & SetScalar (double scal);
     virtual BaseVector & Set (double scal, const BaseVector & v);
     virtual BaseVector & Add (double scal, const BaseVector & v);
 
-    virtual double InnerProduct (const BaseVector & v2) const;
+    virtual BaseVector & operator- () const;
 
+    double InnerProduct (const BaseVector & v2) const;
 
     void UpdateHost () const;
     void UpdateDevice () const;
 
-
     virtual ostream & Print (ostream & ost) const;    
-		virtual void PrintDevice () const;
+    /* virtual void PrintDevice () const; */
     virtual AutoVector CreateVector () const;
 
     virtual FlatVector<double> FVDouble () const;
@@ -92,54 +65,128 @@ namespace ngla
 
 
     virtual void GetIndirect (const FlatArray<int> & ind, 
-			      const FlatVector<double> & v) const;
+            const FlatVector<double> & v) const;
     virtual void GetIndirect (const FlatArray<int> & ind, 
-			      const FlatVector<Complex> & v) const;
+            const FlatVector<Complex> & v) const;
 
     
     friend class DevSparseMatrix;
     friend class DevJacobiPreconditioner;
   };
 
-	class DevMatrix : public BaseMatrix
-	{
-	public:
-		DevMatrix() { }
+/*   BaseVector& operator+ (const UnifiedVector&, const BaseVector&); */
+/*   BaseVector& operator+ (const BaseVector&, const UnifiedVector&); */
+/*   BaseVector& operator+ (const UnifiedVector&, const UnifiedVector&); */
 
-		virtual AutoVector CreateRowVector() const { return UnifiedVector(Width()).CreateVector(); }
-		virtual AutoVector CreateColVector() const { return UnifiedVector(Height()).CreateVector(); }
-	};
+/*   BaseVector& operator- (const UnifiedVector&, const BaseVector&); */
+/*   BaseVector& operator- (const BaseVector&, const UnifiedVector&); */
+/*   BaseVector& operator- (const UnifiedVector&, const UnifiedVector&); */
 
-	shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix &mat);
+/*   BaseVector& operator* (double, const UnifiedVector&); */
+/*   BaseVector& operator* (double, const UnifiedVector&); */
+/*   BaseVector& operator* (const UnifiedVector& v, const DevSparseMatrix& mat); */
+
+  AutoVector CreateUnifiedVector(size_t size);
+
+  class DevMatrix : public BaseMatrix
+  {
+  public:
+    DevMatrix() { }
+
+    virtual AutoVector CreateRowVector() const { return UnifiedVector(Width()).CreateVector(); }
+    virtual AutoVector CreateColVector() const { return UnifiedVector(Height()).CreateVector(); }
+
+  };
+
+  shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix &mat);
+  shared_ptr<DevMatrix> CreateDevMatrix (Matrix<> &mat);
 
 
   class DevSparseMatrix : public DevMatrix
   {
     //cusparseMatDescr_t * descr;
-		cusparseSpMatDescr_t descr;
+    cusparseSpMatDescr_t descr;
     int * dev_ind;
     int * dev_col;
     double * dev_val;
     int height, width, nze;
   public:
     DevSparseMatrix (const SparseMatrix<double> & mat);
-		~DevSparseMatrix ();
+    ~DevSparseMatrix ();
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
 
-		// TODO: check this. just placeholders 
-		virtual AutoVector CreateRowVector () const
-		{
-			return UnifiedVector(width).CreateVector();
-		}
+    /* DevSparseMatrix operator- () const; */
+    /* void Scale (double d); */
 
-		virtual AutoVector CreateColVector () const
-		{
-			return UnifiedVector(height).CreateVector();
-		}
+    virtual AutoVector CreateRowVector () const
+    {
+      return UnifiedVector(width).CreateVector();
+    }
+
+    virtual AutoVector CreateColVector () const
+    {
+      return UnifiedVector(height).CreateVector();
+    }
+
+    void Scale (double d);
+    void Mult (const DevSparseMatrix& a);
   };
 
+
+  /* DevSparseMatrix & operator+ (const DevSparseMatrix& a, const DevSparseMatrix& b); */
+  /* DevSparseMatrix & operator- (const DevSparseMatrix& a, const DevSparseMatrix& b); */
+  /* DevSparseMatrix & operator* (const DevSparseMatrix& a, const DevSparseMatrix& b); */
+  /* DevSparseMatrix & operator* (const DevSparseMatrix& a, double d); */
+
+  // dense device matrix
+  class DevDMatrix : public DevMatrix
+  {
+  private:
+    size_t height, width;
+
+    cusparseDnMatDescr_t descr;
+    double* host_data;
+    double* dev_data;
+  public:
+    DevDMatrix ();
+    DevDMatrix (const Matrix<>& mat);
+    ~DevDMatrix ();
+
+    int VHeight() const { return height; }
+    int VWidth() const { return width; }
+
+    virtual AutoVector CreateRowVector () const;
+    virtual AutoVector CreateColVector () const;
+
+    void Add (const DevDMatrix& b);
+    void Mult (const DevDMatrix& b, DevDMatrix& c);
+    void Scale (double d);
+
+    void SetZero ();
+    double* DevData () const;
+
+    virtual ostream & Print (ostream & ost) const;    
+  };
+
+  class DevEBEMatrix : public DevMatrix
+  {
+  private:
+    size_t height, width;
+    DevDMatrix devmat;
+    Table<int> col_dnums, row_dnums;
+    bool disjointrows, disjointcols;
+  public:
+    DevEBEMatrix (const ConstantElementByElementMatrix& mat);
+    ~DevEBEMatrix ();
+
+    virtual AutoVector CreateRowVector () const;
+    virtual AutoVector CreateColVector () const;
+
+    void MultAdd (double s, const UnifiedVector & x, UnifiedVector & y);
+    void Scale (double d);
+  };
 
   /* class DevJacobiPreconditioner : public BaseMatrix */
   /* { */
@@ -150,8 +197,8 @@ namespace ngla
   /*   // stored as sparse matrix ... */
   /*   /1* cusparseMatDescr_t * descr; *1/ */
 
-		/* // used to be cusparseMatSpDescr_t... not sure about the difference */
-		/* cusparseSpMatDescr_t descr; */
+    /* // used to be cusparseMatSpDescr_t... not sure about the difference */
+    /* cusparseSpMatDescr_t descr; */
   /*   int * dev_ind; */
   /*   int * dev_col; */
   /*   double * dev_val; */
@@ -163,6 +210,5 @@ namespace ngla
   /*   virtual void Mult (const BaseVector & x, BaseVector & y) const; */
   /*   virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const; */
   /* }; */
-
 
 }
