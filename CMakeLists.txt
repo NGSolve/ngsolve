@@ -183,7 +183,7 @@ else(WIN32)
     list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
 endif(WIN32)
 if(APPLE)
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
+    #   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -undefined dynamic_lookup")
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS MSG_NOSIGNAL=0)
 endif(APPLE)
 
@@ -438,7 +438,7 @@ if(APPLE)
     endif()
     #   set(ngscxx_flags "${ngscxx_flags} -Qunused-arguments")
     set(ngscxx_includes "${ngscxx_includes} -I$Netgen_BUNDLE/Contents/Resources/include" )  
-    set(ngsld_flags "${ngsld_flags} -L$Netgen_BUNDLE/Contents/MacOS  -undefined dynamic_lookup" )
+    #    set(ngsld_flags "${ngsld_flags} -L$Netgen_BUNDLE/Contents/MacOS  -undefined dynamic_lookup" )
     set(ngscxx_header "\
 #!${BASH}
 ${ngscxx_set_script_dir}
