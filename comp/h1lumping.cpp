@@ -86,8 +86,6 @@ namespace ngcomp
 
 
   
-  // template class T_ScalarFiniteElementFO<FE_Segm0,ET_SEGM,1,0>;
-  
   H1LumpingFESpace :: H1LumpingFESpace (shared_ptr<MeshAccess> ama, const Flags & flags)
     : FESpace (ama, flags)
   {
