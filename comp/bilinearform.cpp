@@ -1305,10 +1305,10 @@ namespace ngcomp
                                       fel2,facnr2,mapped_trafo2,vnums2, elmat, lh);
               }
                               
-              fespace->TransformMat (ei1, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
-              fespace->TransformMat (ei2, elmat.Rows(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_LEFT);
-              fespace->TransformMat (ei1, elmat.Cols(0,dnums1.Size()), TRANSFORM_MAT_RIGHT);
-              fespace->TransformMat (ei2, elmat.Cols(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_RIGHT);
+              fespace->TransformMat (ei1, elmat.Rows(0,dnums1.Size()*fespace->GetDimension()), TRANSFORM_MAT_LEFT);
+              fespace->TransformMat (ei2, elmat.Rows(dnums1.Size()*fespace->GetDimension(),elmat_size), TRANSFORM_MAT_LEFT);
+              fespace->TransformMat (ei1, elmat.Cols(0,dnums1.Size()*fespace->GetDimension()), TRANSFORM_MAT_RIGHT);
+              fespace->TransformMat (ei2, elmat.Cols(dnums1.Size()*fespace->GetDimension(),elmat_size), TRANSFORM_MAT_RIGHT);
                               
               if (printelmat)
               {
@@ -2293,10 +2293,10 @@ namespace ngcomp
                                    */
                                  // *testout << "elmat : \n" << elmat << endl;
                                  
-                                 fespace->TransformMat (ei1, elmat.Rows(0,dnums1.Size()), TRANSFORM_MAT_LEFT);
-                                 fespace->TransformMat (ei2, elmat.Rows(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_LEFT);
-                                 fespace->TransformMat (ei1, elmat.Cols(0,dnums1.Size()), TRANSFORM_MAT_RIGHT);
-                                 fespace->TransformMat (ei2, elmat.Cols(dnums1.Size(),dnums2.Size()), TRANSFORM_MAT_RIGHT);
+                                 fespace->TransformMat (ei1, elmat.Rows(0,dnums1.Size()*fespace->GetDimension()), TRANSFORM_MAT_LEFT);
+                                 fespace->TransformMat (ei2, elmat.Rows(dnums1.Size()*fespace->GetDimension(),elmat_size), TRANSFORM_MAT_LEFT);
+                                 fespace->TransformMat (ei1, elmat.Cols(0,dnums1.Size()*fespace->GetDimension()), TRANSFORM_MAT_RIGHT);
+                                 fespace->TransformMat (ei2, elmat.Cols(dnums1.Size()*fespace->GetDimension(),elmat_size), TRANSFORM_MAT_RIGHT);
                                  
                                  if (printelmat)
                                    {
@@ -2839,8 +2839,9 @@ namespace ngcomp
                           //   for (auto d : dnums)
                           //     if (IsRegularDof(d)) useddof[d] = true;
                               
-                          FlatMatrix<SCAL> elmat(dnums_test.Size()*fespace->GetDimension(),
-                                                 dnums_trial.Size()*fespace->GetDimension(), lh);
+                          int elmat_width = (dnums1_trial.Size() + dnums2_trial.Size()) * fespace->GetDimension();
+                          int elmat_height = (dnums1_test.Size() + dnums2_test.Size()) * fespace->GetDimension();
+                          FlatMatrix<SCAL> elmat(elmat_height, elmat_width, lh);
                               
                           {
                             auto & mapped_trafo1 = eltrans1.AddDeformation(bfi->GetDeformation().get(), lh);
@@ -2849,10 +2850,10 @@ namespace ngcomp
                                                   fel2,facnr2,mapped_trafo2,vnums2, elmat, lh);
                           }
                               
-                          fespace->TransformMat (ei1, elmat.Rows(0,dnums1_test.Size()), TRANSFORM_MAT_LEFT);
-                          fespace->TransformMat (ei2, elmat.Rows(dnums1_test.Size(),dnums2_test.Size()), TRANSFORM_MAT_LEFT);
-                          fespace->TransformMat (ei1, elmat.Cols(0,dnums1_trial.Size()), TRANSFORM_MAT_RIGHT);
-                          fespace->TransformMat (ei2, elmat.Cols(dnums1_trial.Size(),dnums2_trial.Size()), TRANSFORM_MAT_RIGHT);
+                          fespace->TransformMat (ei1, elmat.Rows(0,dnums1_test.Size()*fespace->GetDimension()), TRANSFORM_MAT_LEFT);
+                          fespace->TransformMat (ei2, elmat.Rows(dnums1_test.Size()*fespace->GetDimension(),elmat_height), TRANSFORM_MAT_LEFT);
+                          fespace->TransformMat (ei1, elmat.Cols(0,dnums1_trial.Size()*fespace->GetDimension()), TRANSFORM_MAT_RIGHT);
+                          fespace->TransformMat (ei2, elmat.Cols(dnums1_trial.Size()*fespace->GetDimension(),elmat_width), TRANSFORM_MAT_RIGHT);
                               
                           if (printelmat)
                           {
