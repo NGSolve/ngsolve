@@ -18,14 +18,12 @@ namespace ngla
   public:
     UnifiedVector (int asize);
     UnifiedVector (const BaseVector& vec);
-    UnifiedVector (const UnifiedVector& vec);
+    /* UnifiedVector (const UnifiedVector& vec); */
     virtual ~UnifiedVector();
 
-    void initialize_unified (size_t size);
-    
     BaseVector & operator= (double d);
     BaseVector & operator= (const BaseVector & v2);
-    UnifiedVector & operator= (const UnifiedVector & v2);
+    /* UnifiedVector & operator= (const UnifiedVector & v2); */
 
     template <typename T2>
     UnifiedVector & operator= (const VVecExpr<T2> & v)
@@ -34,7 +32,7 @@ namespace ngla
       return *this;
     }
 
-    size_t Size () const throw();
+    /* size_t Size () const throw(); */
 
     const double & operator [] (const int ind) const;
     double & operator [] (const int ind);
@@ -47,8 +45,6 @@ namespace ngla
     virtual BaseVector & SetScalar (double scal);
     virtual BaseVector & Set (double scal, const BaseVector & v);
     virtual BaseVector & Add (double scal, const BaseVector & v);
-
-    virtual BaseVector & operator- () const;
 
     double InnerProduct (const BaseVector & v2) const;
 
@@ -63,7 +59,6 @@ namespace ngla
     virtual FlatVector<Complex> FVComplex () const;
     virtual void * Memory() const throw ();
 
-
     virtual void GetIndirect (const FlatArray<int> & ind, 
             const FlatVector<double> & v) const;
     virtual void GetIndirect (const FlatArray<int> & ind, 
@@ -73,18 +68,6 @@ namespace ngla
     friend class DevSparseMatrix;
     friend class DevJacobiPreconditioner;
   };
-
-/*   BaseVector& operator+ (const UnifiedVector&, const BaseVector&); */
-/*   BaseVector& operator+ (const BaseVector&, const UnifiedVector&); */
-/*   BaseVector& operator+ (const UnifiedVector&, const UnifiedVector&); */
-
-/*   BaseVector& operator- (const UnifiedVector&, const BaseVector&); */
-/*   BaseVector& operator- (const BaseVector&, const UnifiedVector&); */
-/*   BaseVector& operator- (const UnifiedVector&, const UnifiedVector&); */
-
-/*   BaseVector& operator* (double, const UnifiedVector&); */
-/*   BaseVector& operator* (double, const UnifiedVector&); */
-/*   BaseVector& operator* (const UnifiedVector& v, const DevSparseMatrix& mat); */
 
   AutoVector CreateUnifiedVector(size_t size);
 
@@ -98,12 +81,13 @@ namespace ngla
 
   };
 
-  shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix &mat);
-  shared_ptr<DevMatrix> CreateDevMatrix (Matrix<> &mat);
+  shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix &mat);
+  shared_ptr<BaseMatrix> CreateDevMatrix (Matrix<> &mat);
 
 
   class DevSparseMatrix : public DevMatrix
   {
+  protected:
     //cusparseMatDescr_t * descr;
     cusparseSpMatDescr_t descr;
     int * dev_ind;
@@ -111,14 +95,38 @@ namespace ngla
     double * dev_val;
     int height, width, nze;
   public:
+    DevSparseMatrix () { }
     DevSparseMatrix (const SparseMatrix<double> & mat);
-    ~DevSparseMatrix ();
+    virtual ~DevSparseMatrix ();
 
+    // TODO: implement?
+    /* virtual shared_ptr<BaseMatrix> InverseMatrix */ 
+
+    /* virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override; */
+
+    /* virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override; */
+    /* virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override; */
+    /* virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override; */
+    /* virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override; */
+    /* virtual void MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const override; */
+
+    /* // y += s L * x */
+    /* virtual void MultAdd1 (const BaseVector & x, BaseVector & y, */ 
+    /*                        const BitArray * ainner = NULL, */
+    /*                        const Array<int> * acluster = NULL) const override; */
+
+    /* // y += s (D + L^T) * x) */
+    /* virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y, */
+    /*                        const BitArray * ainner = NULL, */
+    /*                        const Array<int> * acluster = NULL) const override; */
+
+    // TODO: check usage of MultAdd1
+
+
+    virtual void Mult (const DevSparseMatrix& a);
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-
-    /* DevSparseMatrix operator- () const; */
-    /* void Scale (double d); */
+    virtual void Scale (double d);
 
     virtual AutoVector CreateRowVector () const
     {
@@ -130,15 +138,11 @@ namespace ngla
       return UnifiedVector(height).CreateVector();
     }
 
-    void Scale (double d);
-    void Mult (const DevSparseMatrix& a);
+    // devine VHeight/VWidth here or in the derived classes?
+    virtual int VHeight() const { return height; }
+    virtual int VWidth() const { return width; }
+
   };
-
-
-  /* DevSparseMatrix & operator+ (const DevSparseMatrix& a, const DevSparseMatrix& b); */
-  /* DevSparseMatrix & operator- (const DevSparseMatrix& a, const DevSparseMatrix& b); */
-  /* DevSparseMatrix & operator* (const DevSparseMatrix& a, const DevSparseMatrix& b); */
-  /* DevSparseMatrix & operator* (const DevSparseMatrix& a, double d); */
 
   // dense device matrix
   class DevDMatrix : public DevMatrix
@@ -160,8 +164,9 @@ namespace ngla
     virtual AutoVector CreateRowVector () const;
     virtual AutoVector CreateColVector () const;
 
-    void Add (const DevDMatrix& b);
-    void Mult (const DevDMatrix& b, DevDMatrix& c);
+    virtual void Add (const DevDMatrix& b);
+    virtual void Mult (const DevDMatrix& b, DevDMatrix& c);
+    virtual void MultAdd (const DevDMatrix& b, DevDMatrix& c);
     void Scale (double d);
 
     void SetZero ();
@@ -186,6 +191,24 @@ namespace ngla
 
     void MultAdd (double s, const UnifiedVector & x, UnifiedVector & y);
     void Scale (double d);
+  };
+
+  class DevJacobiPrecond : public DevSparseMatrix
+  {
+  private:
+    /* cusparseSpMatDescr_t descr; */
+    shared_ptr<BitArray> inner;
+    /* int height; */
+  public:
+    DevJacobiPrecond (const SparseMatrix<double> & amat, 
+      shared_ptr<BitArray> ainner=nullptr, bool use_par=true);
+
+    virtual ~DevJacobiPrecond ();
+
+    /* void MultAdd (double s, const BaseVector & x, const BaseVector & y) const; */
+
+    /* int VHeight() const override { return height; } */
+    /* int VWidth() const override { return height; } */
   };
 
   /* class DevJacobiPreconditioner : public BaseMatrix */

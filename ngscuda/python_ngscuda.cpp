@@ -4,28 +4,25 @@
 #include "cuda_linalg.hpp"
 #include "cuda_ngstd.hpp"
 
-/*
- * TODO:
+/* TODO:
  *   always use ngs_cuda?
- */
-using namespace ngla;
-using namespace ngs_cuda;
+ */ using namespace ngla; using namespace ngs_cuda;
 
 PYBIND11_MODULE(ngscuda, m) {
 
   InitCUDA(1);
 
   py::class_<UnifiedVector, BaseVector, shared_ptr<UnifiedVector>>
-    (m, "UnifiedVector", "UnifiedVector for CUDA applications")
+    (m, "UnifiedVector", "UnifiedVector for CUDA applications", py::multiple_inheritance())
                  
   .def(py::init([] (int asize) -> shared_ptr<UnifiedVector>
         { 
           return make_shared<UnifiedVector>(asize); 
         }))
-  .def(py::init([] (const UnifiedVector &vec) -> shared_ptr<UnifiedVector>
-        {
-          return make_shared<UnifiedVector>(vec);
-        }))
+  /* .def(py::init([] (const UnifiedVector &vec) -> shared_ptr<UnifiedVector> */
+  /*       { */
+  /*         return make_shared<UnifiedVector>(vec); */
+  /*       })) */
   .def(py::init([] (const BaseVector &vec) 
         {
           return make_shared<UnifiedVector>(vec);
@@ -33,12 +30,15 @@ PYBIND11_MODULE(ngscuda, m) {
   .def(py::init([] (py::array_t<double> bvec)
         {
           auto vec = bvec.template unchecked<1>();
-          shared_ptr<UnifiedVector> v = make_shared<UnifiedVector>(vec.size());
+          shared_ptr<UnifiedVector> uv = make_shared<UnifiedVector>(vec.size());
+          FlatVector<double> fv = uv->FVDouble();
+          cerr << uv->Size() << endl;
+          cerr << fv.Size() << endl;
           for (size_t i = 0; i < vec.size(); i++)
           {
-            (*v)[i] = vec(i);
+            fv(i) = vec(i);
           }
-          return v;
+          return uv;
         }))
   /* .def(py::init([] (UnifiedVector &vec) -> shared_ptr<UnifiedVector> */
   /*       { */
@@ -55,18 +55,19 @@ PYBIND11_MODULE(ngscuda, m) {
   /*         cerr << "expr." << endl; */
   /*         throw Exception("TODO"); */
   /*       })) */
-  .def("CreateVector", [] (UnifiedVector & self, bool copy)
-         {
-           auto newvec = self.CreateVector();
-           if (copy) newvec = self;
-           return shared_ptr<BaseVector>(newvec);
-         }, py::arg("copy")=false,
-         "creates a new vector of same type, contents is undefined if copy is false")
+  /* .def("CreateVector", [] (UnifiedVector & self, bool copy) */
+  /*        { */
+  /*          auto newvec = self.CreateVector(); */
+  /*          if (copy) newvec = self; */
+  /*          return shared_ptr<BaseVector>(newvec); */
+  /*        }, py::arg("copy")=false, */
+  /*        "creates a new vector of same type, contents is undefined if copy is false") */
    
 
   /* .def("__len__", &UnifiedVector::Size) */
 
-//  TODO: extend for splicing (define UnifiedVector.Range?)
+  //  TODO: extend for splicing (define UnifiedVector.Range?)
+  //    not that important. maybe delete
   .def("__getitem__", [] (UnifiedVector & self, int ind)
       {
         if (ind < 0)
@@ -89,40 +90,40 @@ PYBIND11_MODULE(ngscuda, m) {
   /*         self.PrintDevice(); */
   /*       }) */
 
-  // TODO: fix?
-  .def("Add", [] (UnifiedVector & self, UnifiedVector & v2, py::object s) -> void
-        {
-          self.Add (py::extract<double>(s)(), v2);
-          return;
-        })
+  /* // TODO: fix? */
+  /* .def("Add", [] (UnifiedVector & self, UnifiedVector & v2, py::object s) -> void */
+  /*       { */
+  /*         self.Add (py::extract<double>(s)(), v2); */
+  /*         return; */
+  /*       }) */
 
-  // TODO: add complex / conjugate
-  .def("InnerProduct", [] (UnifiedVector & self, UnifiedVector & v2) -> double
-      {
-        /* cerr << "innerproduct as method" << endl; */
-        cerr << "InnerProduct sizes: " << self.Size() << " " << v2.Size() << endl; 
-        return self.InnerProduct(v2);
-      })
-  .def("InnerProduct", [] (UnifiedVector & self, BaseVector & v2) -> double
-      {
-        /* cerr << "innerproduct as method" << endl; */
-        cerr << "InnerProduct sizes: " << self.Size() << " " << v2.Size() << endl; 
-        return self.InnerProduct(v2);
-      })
+  /* // TODO: add complex / conjugate */
+  /* .def("InnerProduct", [] (UnifiedVector & self, UnifiedVector & v2) -> double */
+  /*     { */
+  /*       /1* cerr << "innerproduct as method" << endl; *1/ */
+  /*       cerr << "InnerProduct sizes: " << self.Size() << " " << v2.Size() << endl; */ 
+  /*       return self.InnerProduct(v2); */
+  /*     }) */
+  /* .def("InnerProduct", [] (UnifiedVector & self, BaseVector & v2) -> double */
+  /*     { */
+  /*       /1* cerr << "innerproduct as method" << endl; *1/ */
+  /*       cerr << "InnerProduct sizes: " << self.Size() << " " << v2.Size() << endl; */ 
+  /*       return self.InnerProduct(v2); */
+  /*     }) */
   .def("UpdateHost", [] (UnifiedVector &self) -> void
         { self.UpdateHost(); }) 
   .def("UpdateDevice", [] (UnifiedVector &self) -> void
-        { self.UpdateDevice(); })
+        { self.UpdateDevice(); });
 
-  .def("__str__", [] (UnifiedVector & self) { return ToString<UnifiedVector>(self); } )
-  .def("__repr__", [] (UnifiedVector & self) { return "unfiedvector"; } )
+  /* .def("__str__", [] (UnifiedVector & self) { return ToString<UnifiedVector>(self); } ) */
+  /* .def("__repr__", [] (UnifiedVector & self) { return "unfiedvector"; } ) */
 
-  .def("__len__", [] (UnifiedVector & self) {return self.Size(); })
+  /* .def("__len__", [] (UnifiedVector & self) {return self.Size(); }) */
 
-  .def("Scale", [] (UnifiedVector & self, double d)
-        {
-          self.Scale(d);
-        });
+  /* .def("Scale", [] (UnifiedVector & self, double d) */
+  /*       { */
+  /*         self.Scale(d); */
+  /*       }); */
 
   /* TODO: */  
   /* .def("__add__", [] (shared_ptr<UnifiedVector> e1, shared_ptr<UnifiedVector> e2) */
@@ -177,40 +178,25 @@ PYBIND11_MODULE(ngscuda, m) {
   // TODO:
   /* m.def("InnerProdcut", [] (UnifiedVector &a, UnifiedVector &b)) */
 
-  py::class_<DevSparseMatrix, BaseMatrix, shared_ptr<DevSparseMatrix>>
+  py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
+    (m, "DevMatrix", "device matrix for CUDA applications");
+
+  py::class_<DevSparseMatrix, DevMatrix, shared_ptr<DevSparseMatrix>>
     (m, "DevSparseMatrix", "DevSparseMatrix for CUDA applications")
 
     .def(py::init ( [] (SparseMatrix<double>& mat) -> shared_ptr<DevSparseMatrix>
           {
             return make_shared<DevSparseMatrix>(mat);
           }
-          ))
-    .def("Mult", [] (DevSparseMatrix &self, UnifiedVector &x, UnifiedVector &y)
-        {
-          self.Mult(x, y);
-        })
-    .def("Mult", [] (DevSparseMatrix &self, double s, UnifiedVector &x, UnifiedVector &y)
-        {
-          self.MultAdd(s, x, y);
-        });
-    /* .def("__mul__", [] (const DevSparseMatrix & a, const DevSparseMatrix & b) */
-    /*       { */
-    /*         cerr << "mat, mat prod" << endl; */
-    /*         return a * b; */
-    /*       }) */
-    /* .def("__add__", [] (const DevSparseMatrix & a, const DevSparseMatrix & b) */
-    /*       { */
-    /*         cerr << "mat, mat add" << endl; */
-    /*         return a + b; */
-    /*       }) */
-    /* .def("__sub__", [] (const DevSparseMatrix & a, const DevSparseMatrix & b) */
-    /*       { */
-    /*         cerr << "mat, mat sub" << endl; */
-    /*         return a - b; */
-    /*       }); */
-
-  py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
-    (m, "DevMatrix", "device matrix for CUDA applications");
+          ));
+    /* .def("Mult", [] (DevSparseMatrix &self, UnifiedVector &x, UnifiedVector &y) */
+    /*     { */
+    /*       self.Mult(x, y); */
+    /*     }) */
+    /* .def("Mult", [] (DevSparseMatrix &self, double s, UnifiedVector &x, UnifiedVector &y) */
+    /*     { */
+    /*       self.MultAdd(s, x, y); */
+    /*     }); */
 
   py::class_<DevDMatrix, DevMatrix, shared_ptr<DevDMatrix>>
     (m, "DevDMatrix", "dense device matrix for CUDA applications")
@@ -247,6 +233,18 @@ PYBIND11_MODULE(ngscuda, m) {
           {
             return CreateDevMatrix(mat);
           });
+
+  py::class_<DevJacobiPrecond, DevSparseMatrix, shared_ptr<DevJacobiPrecond>>
+    (m, "DevJacobiPrecond", "Jacobi Preconditioner working on device");
+
+  m.def("CreateDevSmoother", [] (SparseMatrix<double> &mat, shared_ptr<BitArray> ba)
+          {
+            shared_ptr<DevJacobiPrecond> res_ptr = make_shared<DevJacobiPrecond>(mat, ba);
+            cerr << "creation successful." << endl;
+            return res_ptr;
+          },
+          py::arg("mat"),
+          py::arg("freedofs") = shared_ptr<BitArray>());
 
 }
 

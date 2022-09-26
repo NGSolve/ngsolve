@@ -101,59 +101,33 @@ namespace ngla
 
   UnifiedVector :: UnifiedVector (int asize)
   {
-    initialize_unified(asize);
-    (*this) = 0.0;
-  }
-
-  UnifiedVector :: UnifiedVector (const BaseVector& vec)
-  {
-    initialize_unified(vec.Size());
-    (*this) = vec;
-  }
-
-  UnifiedVector :: UnifiedVector (const UnifiedVector & uvec)
-  {
-    initialize_unified(uvec.Size());
-    (*this) = uvec;
-  }
-
-  UnifiedVector & UnifiedVector :: operator= (const UnifiedVector & uvec)
-  {
-    if (uvec.dev_uptodate)
-      {
-        cudaMemcpy (dev_data, uvec.dev_data, sizeof(double)*size, cudaMemcpyDeviceToDevice);    
-        dev_uptodate = true;
-        host_uptodate = false;
-      }
-    else if (uvec.host_uptodate)
-      {
-        VFlatVector<double> fv(size, host_data);
-        VFlatVector<double> fv2 = uvec.FVDouble();
-
-        fv = fv2;
-
-        host_uptodate = true;
-        dev_uptodate = false;
-      }
-    else
-      {
-        cerr << "operator= (BaseVector) : undefined vector" << endl;
-      }
-    return *this;
-  }
-
-  void UnifiedVector :: initialize_unified (size_t size)
-  {
-    this->size = size;
+    cerr << "UnifiedVector (int) ctor of size " << asize << endl;
+    this->size = asize;
 
     host_data = new double[size];
     cudaMalloc((void**)&dev_data, size*sizeof(double));
 
     cusparseCreateDnVec (&descr, size, dev_data, CUDA_R_64F);
 
-    host_uptodate = false;
-    dev_uptodate = false;
+    /* host_uptodate = false; */
+    // not the best solution, since the values in host_data are random host_uptodate and dev_uptodate false causes problems
+    // alternative: check for this case in FVDouble()
+    host_uptodate = true;
+    dev_uptodate = true;
   }
+
+  UnifiedVector :: UnifiedVector (const BaseVector& vec) : UnifiedVector(vec.Size())
+  {
+    (*this) = vec;
+  }
+
+  // TODO: remove
+  /* UnifiedVector :: UnifiedVector (const UnifiedVector & uvec) */
+  /* { */
+  /*   initialize_unified(uvec.Size()); */
+  /*   (*this) = uvec; */
+  /* } */
+
   
   UnifiedVector :: ~UnifiedVector ()
   {
@@ -166,13 +140,11 @@ namespace ngla
 
   BaseVector & UnifiedVector :: operator= (double d)
   {
-    for (int i = 0; i < size; i++) host_data[i] = d;
+    /* for (int i = 0; i < size; i++) host_data[i] = d; */
+    host_uptodate = false;
+
     /* ::SetScalar (d, size, dev_data); */
-
-  
     cublasDscal(Get_CuBlas_Handle(), size, &d, dev_data, 1); 
-
-    host_uptodate = true;
     dev_uptodate = true;
     
     return *this;
@@ -184,34 +156,62 @@ namespace ngla
     */
   }
 
+  /* UnifiedVector & UnifiedVector :: operator= (const UnifiedVector & uvec) */
+  /* { */
+  /*   if (uvec.dev_uptodate) */
+  /*     { */
+  /*       cudaMemcpy (dev_data, uvec.dev_data, sizeof(double)*size, cudaMemcpyDeviceToDevice); */    
+  /*       dev_uptodate = true; */
+  /*       host_uptodate = false; */
+  /*     } */
+  /*   else if (uvec.host_uptodate) */
+  /*     { */
+  /*       VFlatVector<double> fv(size, host_data); */
+  /*       VFlatVector<double> fv2 = uvec.FVDouble(); */
+
+  /*       fv = fv2; */
+
+  /*       host_uptodate = true; */
+  /*       dev_uptodate = false; */
+  /*     } */
+  /*   else */
+  /*     { */
+  /*       cerr << "operator= (BaseVector) : undefined vector" << endl; */
+  /*     } */
+  /*   return *this; */
+  /* } */
+
+
   BaseVector & UnifiedVector :: operator= (const BaseVector & v2)
   {
     // moved to operator=(UnifiedVector &v2) (ran into problems while working on python bindings)
-    /* UnifiedVector * uv2 = dynamic_cast<UnifiedVector*> (&v2); */
-    /* if (uv2) */
-    /*   { */
-    /*     if (uv2->dev_uptodate) */
-    /*       { */
-    /*         cudaMemcpy (dev_data, uv2->dev_data, sizeof(double)*size, cudaMemcpyDeviceToDevice); */    
-    /*         dev_uptodate = true; */
-    /*         host_uptodate = false; */
-    /*       } */
-    /*     else if (uv2->host_uptodate) */
-    /*       { */
-    /*         VFlatVector<double> fv(size, host_data); */
-    /*         fv = 1.0*v2; */
-    /*         host_uptodate = true; */
-    /*         dev_uptodate = false; */
-    /*       } */
-    /*     else */
-    /*       { */
-    /*         cerr << "operator= (BaseVector) : undefined vector" << endl; */
-    /*       } */
-    /*     return *this; */
-    /*   } */
+    const UnifiedVector * uv2 = dynamic_cast<const UnifiedVector*> (&v2);
+    if (uv2)
+      {
+        if (uv2->dev_uptodate)
+          {
+            cudaMemcpy (dev_data, uv2->dev_data, sizeof(double)*size, cudaMemcpyDeviceToDevice);    
+            dev_uptodate = true;
+            host_uptodate = false;
+          }
+        else if (uv2->host_uptodate)
+          {
+            /* VFlatVector<double> fv(size, host_data); */
+            /* fv = 1.0*v2; */
+            FVDouble() = uv2->FVDouble();
+            host_uptodate = true;
+            dev_uptodate = false;
+          }
+        else
+          {
+            cerr << "operator= (BaseVector) : undefined vector" << endl;
+          }
+        return *this;
+      }
 
-    VFlatVector<double> fv(size, host_data);
-    fv = 1.0*v2;
+    /* VFlatVector<double> fv(size, host_data); */
+    /* fv = 1.0*v2; */
+    FVDouble() = v2.FVDouble();
 
     host_uptodate = true;
     dev_uptodate = false;
@@ -241,10 +241,10 @@ namespace ngla
   /*   return *this; */
   /* } */
 
-  size_t UnifiedVector :: Size () const throw()
-  {
-    return size;
-  }
+  /* size_t UnifiedVector :: Size () const throw() */
+  /* { */
+  /*   return size; */
+  /* } */
 
   /*
    *  TODO:
@@ -253,12 +253,14 @@ namespace ngla
    * */
   const double & UnifiedVector :: operator [] (const int ind) const
   {
+    cerr << "UnifiedVector operator[]" << endl;
     UpdateHost(); 
     return host_data[ind];
   }
 
   double & UnifiedVector :: operator [] (const int ind)
   {
+    cerr << "UnifiedVector operator[] const" << endl;
     UpdateHost(); 
     dev_uptodate = false; // TODO: not sure, that this is the best approach
     return host_data[ind];
@@ -278,6 +280,7 @@ namespace ngla
   
   BaseVector & UnifiedVector :: Scale (double scal)
   {
+    cerr << "Unified::Scale" << endl;
     UpdateDevice();
     cublasDscal (Get_CuBlas_Handle(), size, &scal, dev_data, 1);
     host_uptodate = false;
@@ -286,12 +289,14 @@ namespace ngla
 
   BaseVector & UnifiedVector :: SetScalar (double scal)
   {
+    cerr << "uvec setscalar" << endl;
     (*this) = scal;
     return *this;
   }
   
   BaseVector & UnifiedVector :: Set (double scal, const BaseVector & v)
   {
+    cerr << "uvec set" << endl;
     (*this) = 0.0;
     Add (scal, v);
     return *this;
@@ -304,6 +309,7 @@ namespace ngla
 
     if (v2)
       {
+        cerr << "uvec add uvec" << endl;
         UpdateDevice();
         v2->UpdateDevice();
 
@@ -313,19 +319,16 @@ namespace ngla
       }
     else
       {
+        cerr << "uvec add basevec" << endl;
         UpdateHost();
         VFlatVector<> (size, host_data) += scal * v;
+
+        // does not work, since operator+=(FlatVector<double>, VVecExpr<...>) not defined
+        /* FVDouble() += scal * v; */
         dev_uptodate = false;
       }
 
     return *this;
-  }
-
-  // TODO: not optimal.
-  BaseVector& UnifiedVector :: operator- () const
-  {
-    shared_ptr<UnifiedVector> uvecptr = make_shared<UnifiedVector>(*this);
-    return uvecptr->Scale(-1);
   }
   
   double UnifiedVector :: InnerProduct (const BaseVector & v2) const
@@ -337,6 +340,7 @@ namespace ngla
     const UnifiedVector * uv2 = dynamic_cast<const UnifiedVector*> (&v2);
     if (uv2)
     {
+      cerr << "uvec ip uvec" << endl;
       UpdateDevice();
       uv2->UpdateDevice();
       
@@ -345,6 +349,7 @@ namespace ngla
                         size, dev_data, 1, uv2->dev_data, 1, &res);
       return res;
     }
+    cerr << "uvec ip basevec" << endl;
 
     FlatVector<> fv = FVDouble();
     FlatVector<> fv2 = v2.FVDouble();
@@ -357,8 +362,23 @@ namespace ngla
     cout << "output unified vector of size " << size;
     cout << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
     if (!host_uptodate)
-      cout << "host not up-to-date!" << endl;
-    ost << FVDouble();
+    {
+      if (dev_uptodate)
+      {
+        cout << "host not up-to-data. printing device data" << endl;
+        Vector<double> tmp(size);
+        cudaMemcpy(tmp.Data(), dev_data, size * sizeof(double), cudaMemcpyDeviceToHost);
+        ost << tmp << endl;
+      }
+      else
+      {
+        cout << "undefined vector" << endl;
+      }
+    }
+    else
+    {
+      ost << FVDouble();
+    }
     return ost;
   }
   
@@ -375,16 +395,16 @@ namespace ngla
 
   void UnifiedVector :: UpdateHost () const
   {
-    if (host_uptodate) return;
-    if (!dev_uptodate) cout << "ERROR UnifiedVector::UpdateHost non is uptodate" << endl;
+    if (host_uptodate || !dev_uptodate) return;
+    /* if (!dev_uptodate) cout << "ERROR UnifiedVector::UpdateHost non is uptodate" << endl; */
     cudaMemcpy (host_data, dev_data, sizeof(double)*size, cudaMemcpyDeviceToHost);    
     host_uptodate = true;
   }
 
   void UnifiedVector :: UpdateDevice () const
   {
-    if (dev_uptodate) return;
-    if (!host_uptodate) cout << "ERROR UnifiedVector::UpdateDevice non is uptodate" << endl;
+    if (dev_uptodate || !host_uptodate) return;
+    /* if (!host_uptodate) cout << "ERROR UnifiedVector::UpdateDevice non is uptodate" << endl; */
     cout << "Host2Device copy !!!!!!!!!!!!!!" << endl;
     cudaMemcpy (dev_data, host_data, sizeof(double)*size, cudaMemcpyHostToDevice);
     dev_uptodate = true;
@@ -392,7 +412,8 @@ namespace ngla
   
   FlatVector<double> UnifiedVector :: FVDouble () const
   {
-    /* UpdateHost(); */
+    UpdateHost();
+    dev_uptodate = false;
     return FlatVector<> (size, host_data);
   }
   
@@ -403,6 +424,7 @@ namespace ngla
     
   void * UnifiedVector :: Memory() const throw()
   { 
+    cerr << "access2memory" << endl;
     UpdateHost(); 
     return host_data;
   }
@@ -423,53 +445,6 @@ namespace ngla
   {
     cout << "UnifiedVector :: GetIndirect not supported" << endl;
   }
-
-
-  /* BaseVector& operator+ (const UnifiedVector& v1, const BaseVector& v2) */
-  /* { */
-  /*   shared_ptr<UnifiedVector> res = make_shared<UnifiedVector>(v1); */
-  /*   return res->Add(1, v2); */
-  /* } */
-  /* BaseVector& operator+ (const BaseVector& v1, const UnifiedVector& v2) */
-  /* { */
-  /*   return v2 + v1; */
-  /* } */
-  /* BaseVector& operator+ (const UnifiedVector& v1, const UnifiedVector& v2) */
-  /* { */
-  /*   shared_ptr<UnifiedVector> res = make_shared<UnifiedVector>(v1); */
-  /*   return res->Add(1, v2); */
-  /* } */
-
-  /* BaseVector& operator- (const UnifiedVector& v1, const BaseVector& v2) */
-  /* { */
-  /*   shared_ptr<UnifiedVector> res = make_shared<UnifiedVector>(v1); */
-  /*   return res->Add(-1, v2); */
-  /* } */
-  /* BaseVector& operator- (const BaseVector& v1, const UnifiedVector& v2) */
-  /* { */
-  /*   shared_ptr<UnifiedVector> res = make_shared<UnifiedVector>(v1); */
-  /*   return res->Add(-1, v2); */
-  /* } */
-  /* BaseVector& operator- (const UnifiedVector& v1, const UnifiedVector& v2) */
-  /* { */
-  /*   shared_ptr<UnifiedVector> res = make_shared<UnifiedVector>(v1); */
-  /*   return res->Add(-1, v2); */
-  /* } */
-
-  /* BaseVector& operator* (double d, const BaseVector& v) */
-  /* { */
-  /*   shared_ptr<UnifiedVector> res = make_shared<UnifiedVector>(v); */
-  /*   return res->Scale(d); */
-  /* } */
-
-  /* BaseVector& operator* (double d, const UnifiedVector& v) */
-  /* { */
-  /*   shared_ptr<UnifiedVector> res = make_shared<UnifiedVector>(v); */
-  /*   return res->Scale(d); */
-  /* } */
-
-
-
 
 
   DevSparseMatrix :: DevSparseMatrix (const SparseMatrix<double> & mat)
@@ -499,41 +474,6 @@ namespace ngla
     cudaMemcpy (dev_col, &mat.GetRowIndices(0)[0], mat.NZE()*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy (dev_val, &mat.GetRowValues(0)[0], mat.NZE()*sizeof(double), cudaMemcpyHostToDevice);
 
-    /* cerr << "CREATING!" << endl; */
-    /* int *host_row = (int*) malloc((mat.Height()+1) * sizeof(int)); */
-    /* int *host_col = (int*) malloc(mat.Width() * sizeof(int)); */
-    /* double *host_val = (double*) malloc(mat.NZE() * sizeof(double)); */
-    /* cudaMemcpy(host_row, dev_ind, (mat.Height() + 1) * sizeof(int), cudaMemcpyDeviceToHost); */
-    /* cudaMemcpy(host_col, dev_col, mat.Width() * sizeof(int), cudaMemcpyDeviceToHost); */
-    /* cudaMemcpy(host_val, dev_val, mat.NZE() * sizeof(double), cudaMemcpyDeviceToHost); */
-    /* for (int i=0; i<mat.Height() +1 ; i++) */
-    /* { */
-    /*   cerr << host_row[i] << " "; */
-    /* } */
-    /* cerr << endl; */
-    /* for (int i=0; i<mat.Width(); i++) */
-    /* { */
-    /*   cerr << host_col[i] << " "; */
-    /* } */
-    /* cerr << endl; */
-    /* for (int i=0; i<mat.NZE(); i++) */
-    /* { */
-    /*   cerr << host_val[i] << " "; */
-    /* } */
-    /* cerr << endl; */
-
-
-    /* for (int i=0; i<mat.Height()+1; i++) */
-    /* { */
-    /*   cerr << temp_ind[i] << " "; */
-    /* } */
-    /* cerr << endl; */
-    /* for (int i=0; i<mat.NZE()+1; i++) */
-    /* { */
-    /*   cerr << mat.GetRowIndices(0)[i] << " "; */
-    /* } */
-    /* cerr << endl; */
-
     cusparseCreateCsr(&descr, height, width, nze,
                       dev_ind, dev_col, dev_val,
                       CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO,
@@ -543,6 +483,9 @@ namespace ngla
   DevSparseMatrix :: ~DevSparseMatrix ()
   {
     cusparseDestroySpMat(descr);
+    cudaFree(dev_ind);
+    cudaFree(dev_col);
+    cudaFree(dev_val);
   }
   
   void DevSparseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
@@ -553,7 +496,9 @@ namespace ngla
     static Timer tbufferallocate("CUDA BUFFER ALLOCATE");
 
     tprel.Start();
-    // cout << "device mult sparse" << endl;
+    cout << "device mult sparse" << endl;
+    cout << "vec0: " << typeid(x).name() << endl;
+    cout << "vec1: " << typeid(y).name() << endl;
     const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
     UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
 
@@ -602,7 +547,9 @@ namespace ngla
 
   void DevSparseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    // cout << "device multadd sparse matrix" << endl;
+    cout << "device multadd sparse matrix" << endl;
+    cout << "vec1: " << typeid(x).name() << endl;
+    cout << "vec2: " << typeid(y).name() << endl;
     const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
     UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
 
@@ -652,31 +599,26 @@ namespace ngla
     throw Exception("not implemented yet.");
   }
 
-  /* DevSparseMatrix& operator+ (const DevSparseMatrix& a, const DevSparseMatrix& b) */
+  /* // y += s L * x */
+  /* virtual void MultAdd1 (const BaseVector & x, BaseVector & y, */ 
+  /*                        const BitArray * ainner = NULL, */
+  /*                        const Array<int> * acluster = NULL) const */
   /* { */
-  /*   throw Exception("TODO"); */
+  /*   throw Exception("not implemented yet."); */
   /* } */
 
-  /* DevSparseMatrix& operator- (const DevSparseMatrix& a, const DevSparseMatrix& b) */
+  /* // y += s (D + L^T) * x) */
+  /* void MultAdd2 (double s, const BaseVector & x, BaseVector & y, */
+  /*                        const BitArray * ainner = NULL, */
+  /*                        const Array<int> * acluster = NULL) const */
   /* { */
-  /*   throw Exception("TODO"); */
-  /* } */
-
-  /* DevSparseMatrix& operator* (const DevSparseMatrix& a, const DevSparseMatrix& b) */
-  /* { */
-  /*   throw Exception("TODO"); */
-  /* } */
-  
-  /* DevSparseMatrix& operator* (const DevSparseMatrix& a, double d) */
-  /* { */
-  /*   throw Exception("TODO"); */
+  /*   throw Exception("not implemented yet."); */
   /* } */
 
 
-  // TODO:
-  //   redo. similiar to DevSparseMatrix
+
   /* DevJacobiPreconditioner :: DevJacobiPreconditioner (const SparseMatrix<double> & mat, */
-                  /* const BitArray & freedofs) */
+  /*                 const BitArray & freedofs) */
   /* { */
   /*   height = mat.Height(); */
   /*   width = mat.Height(); */
@@ -698,11 +640,11 @@ namespace ngla
 
   /*   for (int i = 0; i < height; i++) */
   /*     { */
-  /* temp_cols[i] = i; */
-  /* if (freedofs.Test(i)) */
-    /* temp_vals[i] = 1.0 / mat(i,i); */
-  /* else */
-    /* temp_vals[i] = 0.0; */
+  /*       temp_cols[i] = i; */
+  /*       if (freedofs.Test(i)) */
+  /*         temp_vals[i] = 1.0 / mat(i,i); */
+  /*       else */
+  /*         temp_vals[i] = 0.0; */
   /*     } */
 
   /*   cudaMalloc ((void**)&dev_ind, (height+1) * sizeof(int)); */
@@ -852,18 +794,23 @@ namespace ngla
   void DevDMatrix :: Mult (const DevDMatrix& b, DevDMatrix& c)
   {
     int m = height;
-    int n = width;
-    int k = b.Width();
+    int k = width;
+    int n = b.Width();
     
     double alpha = 1;
     double beta = 0;
 
-    throw Exception ("causes errors (prbly due to col-major order)")
+    /* throw Exception ("causes errors (prbly due to col-major order)") */
 
     cerr << "dense device matrix prod " << m << "x" << n << " and " << n << "x" << k << endl;
     cerr << b.Height() << " " << b.Width() << endl;
     cublasDgemm (Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N, m, n, k,
                  &alpha, dev_data, m, b.DevData(), k, &beta, c.DevData(), m);
+  }
+
+  void DevDMatrix :: MultAdd (const DevDMatrix& b, DevDMatrix& c)
+  {
+    throw Exception("not implemented yet.");
   }
 
   void DevDMatrix :: Scale (double d)
@@ -934,7 +881,7 @@ namespace ngla
   }
 
 
-  shared_ptr<DevMatrix> CreateDevMatrix (BaseMatrix & mat)
+  shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix & mat)
   /* DevMatrix :: DevMatrix (BaseMatrix & mat) */
   {
     cerr << "creating dev matrix." << endl;
@@ -959,7 +906,7 @@ namespace ngla
   }
 
   // TODO: also complex
-  shared_ptr<DevMatrix> CreateDevMatrix (Matrix<> & mat)
+  shared_ptr<BaseMatrix> CreateDevMatrix (Matrix<> & mat)
   {
     Matrix<double>& dmat = dynamic_cast<Matrix<double>&>(mat);
     cerr << "creating dense device matrix" << endl;
@@ -973,5 +920,56 @@ namespace ngla
     return *res;
   }
 
+  DevJacobiPrecond :: DevJacobiPrecond (const SparseMatrix<double> & amat, 
+    shared_ptr<BitArray> ainner, bool use_par)
+      : inner(ainner)
+  {
+    cerr << "Creating Device Jacobi Smoother of size " << height << endl;
+
+    height = amat.Height();
+    width = amat.Height();
+    nze = 0;
+    Array<int> tmp_ind(height+1);
+    Array<int> tmp_col(height);
+    Array<double> tmp_val(height);
+
+    tmp_ind[0] = 0;
+    for (int i=0; i<height; i++)
+    {
+      if (!inner || inner->Test(i))
+      {
+        tmp_col[nze] = i;
+        tmp_ind[i+1] = tmp_ind[i]+1;
+        tmp_val[nze] = 1 / amat(i,i);
+        nze++;
+      }
+      else
+      {
+        tmp_ind[i+1] = tmp_ind[i];
+      }
+    }
+    
+    cerr << "malloc." << endl;
+    cudaMalloc((void**) &dev_ind, (height+1) * sizeof(int));
+    cudaMalloc((void**) &dev_col, nze * sizeof(int));
+    cudaMalloc((void**) &dev_val, nze * sizeof(double));
+
+    cerr << "copying" << endl;
+    cudaMemcpy(dev_ind, tmp_ind.begin(), (height + 1) * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_col, tmp_col.begin(), nze * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(dev_val, tmp_val.begin(), nze * sizeof(double), cudaMemcpyHostToDevice);
+
+    cerr << "creating matrix" << endl;
+    cusparseCreateCsr(&descr, height, height, nze,
+                      dev_ind, dev_col, dev_val,
+                      CUSPARSE_INDEX_32I, CUSPARSE_INDEX_32I, CUSPARSE_INDEX_BASE_ZERO,
+                      CUDA_R_64F);
+    cerr << "finished." << endl;
+  }
+
+  DevJacobiPrecond :: ~DevJacobiPrecond ()
+  {
+    cerr << "DevJacobiPrecond dtor" << endl;
+  }
 
 }
