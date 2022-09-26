@@ -44,8 +44,9 @@ namespace ngfem
   protected:
     typedef BASE T_IMPL;
     typedef SHAPES T_SHAPES;
-    
-    enum { DIM = ET_trait<ET>::DIM };
+
+    static constexpr int DIM = ngfem::Dim(ET);
+    // enum { DIM = ET_trait<ET>::DIM };
     enum { N_VERTEX = ET_trait<ET>::N_VERTEX };
 
     using ET_trait<ET>::PolDimension;
@@ -69,7 +70,6 @@ namespace ngfem
 
   public:
     using ET_trait<ET>::ElementType;
-    // int loclam[2] = { 0, 1 };
     
     INLINE L2HighOrderFE () { ; }
     INLINE L2HighOrderFE (int aorder)
@@ -149,52 +149,6 @@ namespace ngfem
 
 #include <tscalarfe_impl.hpp>
 #include <l2hofe_impl.hpp>
-
-#ifdef NONE
-namespace ngfem
-{
-  template <> inline void L2HighOrderFE<ET_POINT> ::
-  GetDiagMassMatrix(FlatVector<> mass) const
-  {
-    mass(0) = 1;
-  }
-  
-  template <> inline void L2HighOrderFE<ET_SEGM> ::
-  GetDiagMassMatrix(FlatVector<> mass) const
-  {
-    for (int ix = 0; ix <= order; ix++)
-      mass(ix) = 1.0 / (2 * ix + 1);
-  }
-
-  template <> inline void L2HighOrderFE<ET_TRIG> ::
-  GetDiagMassMatrix(FlatVector<> mass) const
-  {
-    for (int ix = 0, ii = 0; ix <= order; ix++)
-      for (int iy = 0; iy <= order - ix; iy++, ii++)
-	mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
-  }
-
-  template <> inline void L2HighOrderFE<ET_QUAD> ::
-  GetDiagMassMatrix(FlatVector<> mass) const
-  {
-    for (int ix = 0, ii = 0; ix <= order; ix++)
-      for (int iy = 0; iy <= order; iy++, ii++)
-        mass(ii) = 1.0 / ((2 * ix + 1) * (2 * iy + 1));
-  }
-
-  
-
-  template <> inline void L2HighOrderFE<ET_HEX> ::
-  GetDiagMassMatrix(FlatVector<> mass) const
-  {
-    for (int ix = 0, ii = 0; ix <= order; ix++)
-      for (int iy = 0; iy <= order; iy++)
-        for (int iz = 0; iz <= order; iz++, ii++)
-          mass(ii) = 1.0 / ((2 * ix + 1) * (2 * iy + 1) * (2 * iz + 1));
-  }
-}
-#endif
-
 
 #else
 #define L2HOFE_EXTERN extern
