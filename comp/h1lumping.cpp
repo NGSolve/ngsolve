@@ -1,5 +1,6 @@
 #include <comp.hpp>    // provides FESpace, ...
 #include "../fem/tscalarfe_impl.hpp"
+#include "../fem/h1lofe.hpp"
 
 
 /*
@@ -50,19 +51,6 @@ namespace ngcomp
         shape[i+3] = 4 * lam[edges[i][0]] * lam[edges[i][1]] - 4.0/9*bub;
       
       shape[6] = bub;      
-      /*
-      Tx l1 = ip.x;
-      Tx l2 = ip.y;
-      Tx l3 = 1-l1-l2;
-      Tx bub = 27*l1*l2*l3;
-      shape[0] = 2*l1*(l1-0.5) + 1.0/9 * bub ;
-      shape[1] = 2*l2*(l2-0.5) + 1.0/9 * bub ;
-      shape[2] = 2*l3*(l3-0.5) + 1.0/9 * bub ;
-      shape[3] = 4*l1*l3 - 4.0/9 * bub;
-      shape[4] = 4*l2*l3 - 4.0/9 * bub;
-      shape[5] = 4*l1*l2 - 4.0/9 * bub;
-      shape[6] = bub;
-      */
     }
   };
 
@@ -135,13 +123,24 @@ namespace ngcomp
     nvert = ma->GetNV();
     nedge = ma->GetNEdges();
     nface = (ma->GetDimension() == 2) ? 0 : ma->GetNFaces();
-    SetNDof (nvert+nedge+nface+ma->GetNE(VOL));
+    switch (order)
+      {
+      case 1:
+        SetNDof (nvert); break;
+      case 2:
+        SetNDof (nvert+nedge+nface+ma->GetNE(VOL)); break;
+      default:
+        throw Exception("H1LumpingFESpace only supports order 1 or 2");
+      }
   }
 
   void H1LumpingFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
     dnums.SetSize(0);
     dnums += ma->GetElement(ei).Vertices();
+
+    if (order == 1) return;
+    
     for (auto e : ma->GetElement(ei).Edges())
       dnums.Append (nvert+e);
 
@@ -155,58 +154,103 @@ namespace ngcomp
 
   FiniteElement & H1LumpingFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
-    switch (ma->GetElement(ei).GetType())
+    switch (order)
       {
-        case ET_SEGM:
-          return * new (alloc) H1LumpingSegm2;
-        case ET_TRIG:
+      case 1:
+        switch (ma->GetElement(ei).GetType())
+          {
+          case ET_SEGM:
+            return * new (alloc) ScalarFE<ET_SEGM,1>;
+          case ET_TRIG:
+          return * new (alloc)  ScalarFE<ET_TRIG,1>;
+          case ET_TET:
+            return * new (alloc) ScalarFE<ET_TET,1>;
+          default:
+            throw Exception("H1Lumping: Element of type "+ToString(ma->GetElement(ei).GetType()) + 
+                            " not available\n");
+          }
+        
+      case 2:
+        switch (ma->GetElement(ei).GetType())
+          {
+          case ET_SEGM:
+            return * new (alloc) H1LumpingSegm2;
+          case ET_TRIG:
           return * new (alloc) H1LumpingTrig2;
-        case ET_TET:
-          return * new (alloc) H1LumpingTet2;
-      default:
-        throw Exception("H1Lumping: Element of type "+ToString(ma->GetElement(ei).GetType()) + 
-                        " not available\n");
+          case ET_TET:
+            return * new (alloc) H1LumpingTet2;
+          default:
+            throw Exception("H1Lumping: Element of type "+ToString(ma->GetElement(ei).GetType()) + 
+                            " not available\n");
+          }
       }
+    throw Exception("H1LumpingFESpace - undefined order or element");
   }
 
   std::map<ELEMENT_TYPE, IntegrationRule> H1LumpingFESpace :: GetIntegrationRules() const
   {
     std::map<ELEMENT_TYPE, IntegrationRule> rules;
-    
-    IntegrationRule ir7;
-    ir7.Append ( IntegrationPoint( 1, 0, 0, 1.0/40));
-    ir7.Append ( IntegrationPoint( 0, 1, 0, 1.0/40));
-    ir7.Append ( IntegrationPoint( 0, 0, 0, 1.0/40));
-    ir7.Append ( IntegrationPoint( 0.5, 0, 0, 1.0/15));
-    ir7.Append ( IntegrationPoint( 0, 0.5, 0, 1.0/15));
-    ir7.Append ( IntegrationPoint( 0.5, 0.5, 0, 1.0/15));
-    ir7.Append ( IntegrationPoint( 1.0/3, 1.0/3, 0, 9.0/40));
 
-    rules[ET_TRIG] = move(ir7);
+    switch (order)
+      {
+      case 1:
+        {
+          IntegrationRule ir3;
+          ir3.Append ( IntegrationPoint( 1, 0, 0, 1.0/6));
+          ir3.Append ( IntegrationPoint( 0, 1, 0, 1.0/6));
+          ir3.Append ( IntegrationPoint( 0, 0, 0, 1.0/6));        
+          rules[ET_TRIG] = move(ir3);
+        
+          IntegrationRule ir4;  // tet
+          ir4.Append ( IntegrationPoint( 1, 0, 0, 1.0/24) );
+          ir4.Append ( IntegrationPoint( 0, 1, 0, 1.0/24) );
+          ir4.Append ( IntegrationPoint( 0, 0, 1, 1.0/24) );
+          ir4.Append ( IntegrationPoint( 0, 0, 0, 1.0/24) );
+          rules[ET_TET] = move(ir4);
+          break;
+        }
 
-    
-    IntegrationRule ir15;  // tet
-    ir15.Append ( IntegrationPoint( 1, 0, 0, 17./5040) );
-    ir15.Append ( IntegrationPoint( 0, 1, 0, 17./5040) );
-    ir15.Append ( IntegrationPoint( 0, 0, 1, 17./5040) );
-    ir15.Append ( IntegrationPoint( 0, 0, 0, 17./5040) );
-
-    ir15.Append ( IntegrationPoint( 0.5, 0, 0,   2./315) );      
-    ir15.Append ( IntegrationPoint( 0.5, 0.5, 0, 2./315) );     
-    ir15.Append ( IntegrationPoint( 0.5, 0, 0.5, 2./315) );     
-    ir15.Append ( IntegrationPoint( 0, 0.5, 0,   2./315) );      
-    ir15.Append ( IntegrationPoint( 0, 0, 0.5,   2./315) );      
-    ir15.Append ( IntegrationPoint( 0, 0.5, 0.5, 2./315) );
-    
-    ir15.Append ( IntegrationPoint( 1./3, 1./3, 1./3, 9./560) );
-    ir15.Append ( IntegrationPoint( 0, 1./3, 1./3, 9./560) );
-    ir15.Append ( IntegrationPoint( 1./3, 0, 1./3, 9./560) );
-    ir15.Append ( IntegrationPoint( 1./3, 1./3, 0, 9./560) );    
-
-    ir15.Append ( IntegrationPoint( 1./4, 1./4, 1./4, 16./315) );
-    
-    rules[ET_TET] = move(ir15);
-
+      case 2:
+        {
+          IntegrationRule ir7;
+          ir7.Append ( IntegrationPoint( 1, 0, 0, 1.0/40));
+          ir7.Append ( IntegrationPoint( 0, 1, 0, 1.0/40));
+          ir7.Append ( IntegrationPoint( 0, 0, 0, 1.0/40));
+          ir7.Append ( IntegrationPoint( 0.5, 0, 0, 1.0/15));
+          ir7.Append ( IntegrationPoint( 0, 0.5, 0, 1.0/15));
+          ir7.Append ( IntegrationPoint( 0.5, 0.5, 0, 1.0/15));
+          ir7.Append ( IntegrationPoint( 1.0/3, 1.0/3, 0, 9.0/40));
+          
+          rules[ET_TRIG] = move(ir7);
+          
+          
+          IntegrationRule ir15;  // tet
+          ir15.Append ( IntegrationPoint( 1, 0, 0, 17./5040) );
+          ir15.Append ( IntegrationPoint( 0, 1, 0, 17./5040) );
+          ir15.Append ( IntegrationPoint( 0, 0, 1, 17./5040) );
+          ir15.Append ( IntegrationPoint( 0, 0, 0, 17./5040) );
+          
+          ir15.Append ( IntegrationPoint( 0.5, 0, 0,   2./315) );      
+          ir15.Append ( IntegrationPoint( 0.5, 0.5, 0, 2./315) );     
+          ir15.Append ( IntegrationPoint( 0.5, 0, 0.5, 2./315) );     
+          ir15.Append ( IntegrationPoint( 0, 0.5, 0,   2./315) );      
+          ir15.Append ( IntegrationPoint( 0, 0, 0.5,   2./315) );      
+          ir15.Append ( IntegrationPoint( 0, 0.5, 0.5, 2./315) );
+          
+          ir15.Append ( IntegrationPoint( 1./3, 1./3, 1./3, 9./560) );
+          ir15.Append ( IntegrationPoint( 0, 1./3, 1./3, 9./560) );
+          ir15.Append ( IntegrationPoint( 1./3, 0, 1./3, 9./560) );
+          ir15.Append ( IntegrationPoint( 1./3, 1./3, 0, 9./560) );    
+          
+          ir15.Append ( IntegrationPoint( 1./4, 1./4, 1./4, 16./315) );
+          
+          rules[ET_TET] = move(ir15);
+          break;
+        }
+        
+      default:
+        throw Exception ("H1LumpingFESpace, undefined order");
+      }
     
     return rules;
   }
