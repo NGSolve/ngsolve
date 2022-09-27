@@ -3,11 +3,13 @@
 
 namespace ngla
 {
+  void InitCuLinalg();
+
   class DevSparseMatrix;
 
   class UnifiedVector : public S_BaseVector<double>
   {
-    // using int size;
+    /* using int size; */
     double * host_data;
     double * dev_data;
     cusparseDnVecDescr_t descr;
@@ -18,12 +20,11 @@ namespace ngla
   public:
     UnifiedVector (int asize);
     UnifiedVector (const BaseVector& vec);
-    /* UnifiedVector (const UnifiedVector& vec); */
+
     virtual ~UnifiedVector();
 
     BaseVector & operator= (double d);
     BaseVector & operator= (const BaseVector & v2);
-    /* UnifiedVector & operator= (const UnifiedVector & v2); */
 
     template <typename T2>
     UnifiedVector & operator= (const VVecExpr<T2> & v)
@@ -31,8 +32,6 @@ namespace ngla
       BaseVector::operator= (v);
       return *this;
     }
-
-    /* size_t Size () const throw(); */
 
     const double & operator [] (const int ind) const;
     double & operator [] (const int ind);
@@ -46,12 +45,13 @@ namespace ngla
     virtual BaseVector & Set (double scal, const BaseVector & v);
     virtual BaseVector & Add (double scal, const BaseVector & v);
 
-    double InnerProduct (const BaseVector & v2) const;
+    double InnerProduct (const BaseVector & v2, bool conjugate=false) const;
 
     void UpdateHost () const;
     void UpdateDevice () const;
 
     virtual ostream & Print (ostream & ost) const;    
+    virtual ostream & PrintStatus (ostream & ost) const;
     /* virtual void PrintDevice () const; */
     virtual AutoVector CreateVector () const;
 
@@ -64,12 +64,19 @@ namespace ngla
     virtual void GetIndirect (const FlatArray<int> & ind, 
             const FlatVector<Complex> & v) const;
 
+    virtual double* DevData() const
+    { 
+      return dev_data; 
+    }
     
+    friend class DevDMatrix;
     friend class DevSparseMatrix;
     friend class DevJacobiPreconditioner;
   };
 
-  AutoVector CreateUnifiedVector(size_t size);
+
+
+  /* AutoVector CreateUnifiedVector(size_t size); */
 
   class DevMatrix : public BaseMatrix
   {
@@ -101,15 +108,7 @@ namespace ngla
 
     // TODO: implement?
     /* virtual shared_ptr<BaseMatrix> InverseMatrix */ 
-
-    /* virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override; */
-
     /* virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override; */
-    /* virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override; */
-    /* virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override; */
-    /* virtual void MultConjTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override; */
-    /* virtual void MultAdd (FlatVector<double> alpha, const MultiVector & x, MultiVector & y) const override; */
-
     /* // y += s L * x */
     /* virtual void MultAdd1 (const BaseVector & x, BaseVector & y, */ 
     /*                        const BitArray * ainner = NULL, */
@@ -120,13 +119,10 @@ namespace ngla
     /*                        const BitArray * ainner = NULL, */
     /*                        const Array<int> * acluster = NULL) const override; */
 
-    // TODO: check usage of MultAdd1
 
-
-    virtual void Mult (const DevSparseMatrix& a);
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    virtual void Scale (double d);
+    /* virtual void Scale (double d); */
 
     virtual AutoVector CreateRowVector () const
     {
@@ -141,8 +137,9 @@ namespace ngla
     // devine VHeight/VWidth here or in the derived classes?
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return width; }
-
   };
+
+  shared_ptr<DevSparseMatrix> MatMult (const DevSparseMatrix& mata, const DevSparseMatrix& matb);
 
   // dense device matrix
   class DevDMatrix : public DevMatrix
@@ -151,10 +148,11 @@ namespace ngla
     size_t height, width;
 
     cusparseDnMatDescr_t descr;
-    double* host_data;
+
     double* dev_data;
   public:
     DevDMatrix ();
+    DevDMatrix (size_t height, size_t width);
     DevDMatrix (const Matrix<>& mat);
     ~DevDMatrix ();
 
@@ -164,16 +162,19 @@ namespace ngla
     virtual AutoVector CreateRowVector () const;
     virtual AutoVector CreateColVector () const;
 
-    virtual void Add (const DevDMatrix& b);
-    virtual void Mult (const DevDMatrix& b, DevDMatrix& c);
-    virtual void MultAdd (const DevDMatrix& b, DevDMatrix& c);
-    void Scale (double d);
+    virtual void Add (const BaseMatrix& b);
+    virtual void Scale (double d);
+    virtual void Mult (const BaseVector& x, BaseVector& y) const;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
 
     void SetZero ();
+
     double* DevData () const;
 
     virtual ostream & Print (ostream & ost) const;    
   };
+
+  shared_ptr<DevDMatrix> MatMult (const DevDMatrix& mata, const DevDMatrix& matb);
 
   class DevEBEMatrix : public DevMatrix
   {
@@ -190,9 +191,10 @@ namespace ngla
     virtual AutoVector CreateColVector () const;
 
     void MultAdd (double s, const UnifiedVector & x, UnifiedVector & y);
-    void Scale (double d);
+    /* void Scale (double d); */
   };
 
+  // currently uses Mult and MultAdd of DevSparseMatrix
   class DevJacobiPrecond : public DevSparseMatrix
   {
   private:

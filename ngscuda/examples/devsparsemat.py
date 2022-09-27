@@ -12,72 +12,65 @@ import time
 
 rep = 100
 
-h = 0.05
-p = 20
+h = 0.01
+p = 5
 mesh = Mesh(unit_square.GenerateMesh(maxh=h))
 fes = H1(mesh, order=p, dirichlet="bottom|right")
 fes.ndof
 print("h:", h)
 print("p:", p)
 
-u = fes.TrialFunction()  
-v = fes.TestFunction()
+u, v = fes.TnT()
 gfu = GridFunction(fes)
 
-u, v = fes.TnT()
-
-a = BilinearForm(fes, symmetric=True)
-a += grad(u)*grad(v)*dx
+a = BilinearForm(grad(u)*grad(v)*dx, symmetric=True)
 a.Assemble()
 
-f = LinearForm(fes)
-f += x*v*dx
+f = LinearForm(x*v*dx)
 f.Assemble()
 
 
-a_ngsparse = a.mat
-a_cusparse = CreateDevMatrix(a.mat)
 
-n = a_ngsparse.height
-v = UnifiedVector(n)
-for i in range(n):
-    v[i] = i
-
-res_uniform = UnifiedVector(n)
-for i in range(n):
-    res_uniform[i] = 0
-
-
-v.UpdateDevice()
-res_uniform.UpdateDevice()
-
-
-x_ngvec = BaseVector(n)
-for i in range(n):
-    x_ngvec[i] = v[i]
-
-res_ngvec = BaseVector(n)
 print("\n*** ng ***")
+
+n = a.mat.height
+
+a_ngsparse = a.mat
+
+x_ngvec = BaseVector(n * [1])
+
+res_ngvec = BaseVector(n * [0])
 t0 = time.time()
 for i in range(rep):
     a_ngsparse.Mult(x_ngvec, res_ngvec)
 ng_time = time.time() - t0
-print("time ng:", ng_time) 
+
 
 
 print("\n*** cusparse ***")
+
+InitCuLinalg()
+
+a_cusparse = CreateDevMatrix(a.mat)
+
+univ = UnifiedVector(n * [1])
+unires = UnifiedVector(n * [0])
+
+univ.UpdateDevice()
+unires.UpdateDevice()
+
 t0 = time.time()
 for i in range(rep):
-    a_cusparse.Mult(v, res_uniform)
-res_uniform.UpdateHost()
+    a_cusparse.Mult(univ, unires)
+# unires.UpdateHost()
 print("time uni:", time.time() - t0)
 
-# M = 0
-# for i in range(n):
-#     tmp = res_ngvec[i] - res_uniform[i]
-#     if (tmp > M):
-#         M = tmp
-# print("max diff: ", M)
+
+err = (res_ngvec - unires).Evaluate()
+M = max([abs(err[i]) for i in range(n)])
+print("max error:", M)
+
+
 
 print("\nTimers:")
 timers = Timers()
