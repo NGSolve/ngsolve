@@ -4,13 +4,14 @@
 #include "cuda_linalg.hpp"
 #include "cuda_ngstd.hpp"
 
-/* TODO:
- *   always use ngs_cuda?
- */ using namespace ngla; using namespace ngs_cuda;
+// TODO: always use ngs_cuda?
+using namespace ngla; using namespace ngs_cuda;
 
 PYBIND11_MODULE(ngscuda, m) {
 
   InitCUDA(1);
+
+  m.def("InitCuLinalg", &InitCuLinalg, "Initializing cublas and cusparse.");
 
   py::class_<UnifiedVector, BaseVector, shared_ptr<UnifiedVector>>
     (m, "UnifiedVector", "UnifiedVector for CUDA applications", py::multiple_inheritance())
@@ -32,8 +33,6 @@ PYBIND11_MODULE(ngscuda, m) {
           auto vec = bvec.template unchecked<1>();
           shared_ptr<UnifiedVector> uv = make_shared<UnifiedVector>(vec.size());
           FlatVector<double> fv = uv->FVDouble();
-          cerr << uv->Size() << endl;
-          cerr << fv.Size() << endl;
           for (size_t i = 0; i < vec.size(); i++)
           {
             fv(i) = vec(i);
@@ -198,6 +197,8 @@ PYBIND11_MODULE(ngscuda, m) {
     /*       self.MultAdd(s, x, y); */
     /*     }); */
 
+  // TODO:
+  // make operators work instead of Add, Mult, ..
   py::class_<DevDMatrix, DevMatrix, shared_ptr<DevDMatrix>>
     (m, "DevDMatrix", "dense device matrix for CUDA applications")
     
@@ -209,10 +210,10 @@ PYBIND11_MODULE(ngscuda, m) {
           {
             self.Add(b);
           })
-    .def("Mult", [] (DevDMatrix& self, DevDMatrix& b, DevDMatrix& c)
-          {
-            self.Mult(b, c);
-          })
+    /* .def("Mult", [] (DevDMatrix& self, DevDMatrix& b, DevDMatrix& c) */
+    /*       { */
+    /*         self.Mult(b, c); */
+    /*       }) */
     .def("Scale", [] (DevDMatrix& self, double d)
           {
             self.Scale(d);
@@ -240,7 +241,6 @@ PYBIND11_MODULE(ngscuda, m) {
   m.def("CreateDevSmoother", [] (SparseMatrix<double> &mat, shared_ptr<BitArray> ba)
           {
             shared_ptr<DevJacobiPrecond> res_ptr = make_shared<DevJacobiPrecond>(mat, ba);
-            cerr << "creation successful." << endl;
             return res_ptr;
           },
           py::arg("mat"),
