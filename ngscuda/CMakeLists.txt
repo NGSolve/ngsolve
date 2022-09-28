@@ -7,6 +7,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(ngscudalib ${NGS_LIB_TYPE}
     cuda_linalg.cpp
+    cuda_ngstd.cpp
     linalg_kernels.cu
 )
 
@@ -23,6 +24,7 @@ endif(NETGEN_USE_PYTHON)
 
 install( FILES
         cuda_linalg.hpp
+        cuda_ngstd.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
 )
