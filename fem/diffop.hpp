@@ -1058,7 +1058,7 @@ namespace ngfem
   
   // new design, code is still experimental ...
   template <typename DOP, typename F>
-  class   [[deprecated("guess it never got over the first experimental use")]]  
+  class  //  [[deprecated("guess it never got over the first experimental use")]]  
   T_FunctionDiffOp : public DifferentialOperator
   {
 
@@ -1121,7 +1121,7 @@ namespace ngfem
   
   
 
-  template <typename DOP, typename F>  [[deprecated("guess it never got over the first experimental use")]]    
+  template <typename DOP, typename F> // [[deprecated("guess it never got over the first experimental use")]]    
   shared_ptr<DifferentialOperator> CreateFunctionDiffOp (const DOP & dop, 
                                                          const F & func, int dim = 1)
   {
