@@ -1120,7 +1120,8 @@ namespace ngfem
   };
   
   
-  template <typename DOP, typename F>
+
+  template <typename DOP, typename F>  [[deprecated("guess it never got over the first experimental use")]]    
   shared_ptr<DifferentialOperator> CreateFunctionDiffOp (const DOP & dop, 
                                                          const F & func, int dim = 1)
   {
