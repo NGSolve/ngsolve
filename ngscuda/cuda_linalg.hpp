@@ -71,7 +71,7 @@ namespace ngla
     
     friend class DevDMatrix;
     friend class DevSparseMatrix;
-    friend class DevJacobiPreconditioner;
+    friend class DevJacobiPrecond;
   };
 
 
@@ -134,7 +134,6 @@ namespace ngla
       return UnifiedVector(height).CreateVector();
     }
 
-    // devine VHeight/VWidth here or in the derived classes?
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return width; }
   };
@@ -146,15 +145,19 @@ namespace ngla
   {
   private:
     size_t height, width;
-
-    cusparseDnMatDescr_t descr;
-
     double* dev_data;
+    /* cusparseDnMatDescr_t descr; */
+
   public:
     DevDMatrix ();
     DevDMatrix (size_t height, size_t width);
     DevDMatrix (const Matrix<>& mat);
+    DevDMatrix (const DevDMatrix& mat);
     ~DevDMatrix ();
+
+    /* const DevDMatrix & operator= (const Expr<TBxx> & mat) const; */
+    const DevDMatrix & operator= (double d) const;
+    const DevDMatrix & operator= (const DevDMatrix & mat) const;
 
     int VHeight() const { return height; }
     int VWidth() const { return width; }
@@ -200,19 +203,25 @@ namespace ngla
   private:
     /* cusparseSpMatDescr_t descr; */
     shared_ptr<BitArray> inner;
-    /* int height; */
+    double* dev_invdiag;
   public:
     DevJacobiPrecond (const SparseMatrix<double> & amat, 
       shared_ptr<BitArray> ainner=nullptr, bool use_par=true);
 
+    /* DevJacobiPrecond (const JacobiPrecond<double> & amat); */
+
     virtual ~DevJacobiPrecond ();
 
-    /* void MultAdd (double s, const BaseVector & x, const BaseVector & y) const; */
+    /* void Mult (const BaseVector & x, BaseVector & y) const; */
+    /* void MultAdd (double s, const BaseVector & x, BaseVector & y) const; */
 
     /* int VHeight() const override { return height; } */
     /* int VWidth() const override { return height; } */
+
   };
 
+
+  // old version
   /* class DevJacobiPreconditioner : public BaseMatrix */
   /* { */
   /*   // should be like this: */
