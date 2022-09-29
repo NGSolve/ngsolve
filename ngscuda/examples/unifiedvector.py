@@ -1,86 +1,75 @@
 # file: unifiedvector.py
-# date: 20.09.2022
+# date: 28.09.2022
 #
 # testing basic functions for unifiedvectors working on device
+# UnifiedVector stores host and device data
 
 from ngsolve.la import *
 from ngsolve.ngscuda import *
 
-n = 10
+n = 3
 
-# create vectors using size
-print("creating from int")
+# Create UnifiedVector using size
+print("creating from size")
 a0 = UnifiedVector(n)
-print(len(a0))
-print(a0)
+# print(a0)
 
-# create using array
+# Create UnifiedVector using array
 print("creating from list")
 a1 = UnifiedVector(n * [1])
-print(a1)
+# print(a1)
 
-# create using BaseVector
+# Create UnifiedVector using BaseVector
 print("creating from BaseVector")
-ang = BaseVector(n * [2])
+ang = BaseVector(n)
 a2 = UnifiedVector(ang)
-print(a1)
+# print(a1)
 
-# create using UnifiedVector
-# the host data is only copied automatically, when the device is not up-to-date!
+# Create UnifiedVector using UnifiedVector
+# the host data is only copied, when the device is not up-to-date!
 print("creating from UnifiedVector")
 a2 = UnifiedVector(a1)
 a2.UpdateHost()
-print(a2)
+# print(a2)
 
-# creating using CreateVector
+# Create UnifiedVector using CreateVector
+# values are undefined!
 print("creating using CreateVector")
-a3 = a0.CreateVector()
-print(a3)
+a3 = a1.CreateVector()
+# print(a3)
 
-# access values
-# only changes data on host!
-for i in range(len(a0)):
-    a0[i] = 3
-print(a0)
 
+
+# Set values using scalar
 print("setting to 2")
+a0.FV()[:] = 1
 a1.FV()[:] = 2
-print(a1)
+a2.FV()[:] = 3
+# print(a1)
 
-print("setting 4 times 2")
-a0.Assign(a1, 4)
-print(a0)
+# Set BaseVector using UnifiedVector
+print("set basevector using unifiedvector")
+ang[:] = a1
+# print(ang)
+
+
 
 # inner product unified and base
 # calculations on host to avoid unnecessary host2device cpy
 res = a0.InnerProduct(ang)
-print("<a,b>", res)
+# print("innerproduct unified, base:", res)
 
 # inner product unified
 res = a0.InnerProduct(a1)
-print("innerproduct unified, base:", res)
+# print("innerproduct unified, unified:", res)
 
-# scale
-# a1.Scale(3)
-# a1.UpdateHost()
-# print(a1)
-
-# add to vector
+# add unifed and unified
 print("add unified vectors")
-a0.Add(a1, 1)
-a0.UpdateHost()
-print(a0)
-
-print("add unified vectors")
-print(a0)
-print(a1)
 a2 = a0 + a1
-print(a2.Evaluate())
+# print(a2.Evaluate())
 
+# scale unified
 print("scale")
 a3 = 5 * a0
-print(a3.Evaluate())
+# print(a3.Evaluate())
 
-print("set base using unified")
-ang[:] = a0
-print(ang)
