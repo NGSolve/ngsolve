@@ -1,5 +1,5 @@
 # file: devsparsemat.py
-# date: 20.09.2022
+# date: 28.09.2022
 #
 # testing basic functions for sparse matrix on device
 
@@ -13,7 +13,7 @@ import time
 rep = 100
 
 h = 0.01
-p = 5
+p = 10
 mesh = Mesh(unit_square.GenerateMesh(maxh=h))
 fes = H1(mesh, order=p, dirichlet="bottom|right")
 fes.ndof
@@ -30,56 +30,50 @@ f = LinearForm(x*v*dx)
 f.Assemble()
 
 
-
-print("\n*** ng ***")
-
+# Matrix operations on CPU
 n = a.mat.height
 
-a_ngsparse = a.mat
+x_cpu = a.mat.CreateVector()
+x_cpu.FV()[:] = 1
 
-x_ngvec = BaseVector(n * [1])
+res_cpu = a.mat.CreateVector()
 
-res_ngvec = BaseVector(n * [0])
-t0 = time.time()
-for i in range(rep):
-    a_ngsparse.Mult(x_ngvec, res_ngvec)
-ng_time = time.time() - t0
+print("\n*** Matrix-Vector Mult on the CPU ***")
+a.mat.Mult(x_cpu, res_cpu)
 
 
+# Matrix operations on GPU
+print("\n*** Matrix-Vector Mult on the GPU ***")
 
-print("\n*** cusparse ***")
+a_dev = CreateDevMatrix(a.mat)
 
-InitCuLinalg()
+x_dev = a_dev.CreateVector()
+x_dev.FV()[:] = 1
 
-a_cusparse = CreateDevMatrix(a.mat)
+res_dev = a_dev.CreateVector()
 
-univ = UnifiedVector(n * [1])
-unires = UnifiedVector(n * [0])
+x_dev.UpdateDevice()
+res_dev.UpdateDevice()
 
-univ.UpdateDevice()
-unires.UpdateDevice()
-
-t0 = time.time()
-for i in range(rep):
-    a_cusparse.Mult(univ, unires)
-# unires.UpdateHost()
-print("time uni:", time.time() - t0)
+a_dev.Mult(x_dev, res_dev)
+# res_dev.UpdateHost()
 
 
-err = (res_ngvec - unires).Evaluate()
-M = max([abs(err[i]) for i in range(n)])
-print("max error:", M)
+# diff = (res_dev - res_cpu).Evaluate()
+# M = max([abs(diff[i]) for i in range(len(diff))])
+# print("Max Diff: ", M)
 
 
+## timings of gpu may not be accurate due to synchronization
+# print("\nTimers:")
+# timers = Timers()
+# for t in timers:
+#     if t["name"] == "SparseMatrix::MultAdd":
+#         time_cpu = t["time"]
 
-print("\nTimers:")
-timers = Timers()
-for t in timers:
-    if t['name'] == "CUDA MV":
-       uni_time = t['time'] 
-    if t['name'][:4] == "CUDA":
-        print(t['name'], t['time'])
+#     if t["name"] == "CUDA Matrix-Vector Multiplication":
+#         time_dev = t["time"]
 
-print("\nNZE / Time")
-print("NGSolve: {:.2E}".format(rep * a.mat.nze / ng_time))
-print("Unified: {:.2E}".format(rep * a.mat.nze / uni_time))
+# print("\nNZE / Time")
+# print("NGSolve: {:.2E}".format(rep * a.mat.nze / time_cpu))
+# print("Unified: {:.2E}".format(rep * a.mat.nze / time_dev))
