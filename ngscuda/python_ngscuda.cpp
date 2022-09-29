@@ -10,6 +10,7 @@ using namespace ngla; using namespace ngs_cuda;
 PYBIND11_MODULE(ngscuda, m) {
 
   InitCUDA(1);
+  InitCuLinalg();
 
   m.def("InitCuLinalg", &InitCuLinalg, "Initializing cublas and cusparse.");
 
@@ -221,6 +222,12 @@ PYBIND11_MODULE(ngscuda, m) {
     .def("SetZero", [] (DevDMatrix& self)
           {
             self.SetZero();
+          });
+  m.def("MatMult", [] (const DevDMatrix& mata, const DevDMatrix& matb)
+          {
+            shared_ptr<DevDMatrix> matptr = MatMult(mata, matb);
+            cerr << *matptr << endl;
+            return matptr;
           });
     
     /* .def(py::init ( [] (BaseMatrix & mat) -> shared_ptr<BaseMatrix> */
