@@ -5029,7 +5029,7 @@ namespace ngcomp
                        MixedFiniteElement fel(fel1, fel2);
                        bfi->ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
                        
-                       this->fespace->TransformVec (ei, elvecy, TRANSFORM_RHS);
+                       this->fespace2->TransformVec (ei, elvecy, TRANSFORM_RHS);
         
                        elvecy *= val;
                        y.AddIndirect (dnums2, elvecy);  // coloring	      
