@@ -44,6 +44,11 @@ namespace ngbla
 
 
   // Interface to lapack functions
+  NGS_DLL_HEADER int sgemm(char *transa, char *transb, integer *m, integer *
+		  n, integer *k, real *alpha, real *a, integer *lda, 
+		  real *b, integer *ldb, real *beta, real *c__, 
+		  integer *ldc);
+
   NGS_DLL_HEADER int dgemm(char *transa, char *transb, integer *m, integer *
 		  n, integer *k, doublereal *alpha, doublereal *a, integer *lda, 
 		  doublereal *b, integer *ldb, doublereal *beta, doublereal *c__, 
@@ -62,13 +67,20 @@ namespace ngbla
   NGS_DLL_HEADER int dgetri(integer* n, double* a, integer* lda, integer* ipiv,
                             double* hwork, integer* lwork, integer* info);
 
+  inline int gemm(char *transa, char *transb, integer *m, integer *
+      n, integer *k, real *alpha, real *a, integer *lda,
+      real *b, integer *ldb, real *beta, real *c__,
+      integer *ldc)
+  {
+    return sgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+  }
 
   inline int gemm(char *transa, char *transb, integer *m, integer *
       n, integer *k, doublereal *alpha, doublereal *a, integer *lda,
       doublereal *b, integer *ldb, doublereal *beta, doublereal *c__,
       integer *ldc)
   {
-    return dgemm (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+    return dgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
   }
 
   inline int gemm(char *transa, char *transb, integer *m, integer *
@@ -294,7 +306,12 @@ namespace ngbla
 
 
 
-
+  inline void LapackMultAdd (SliceMatrix<float> a, 
+			     SliceMatrix<float> b, 
+			     float alpha,
+			     SliceMatrix<float> c,
+			     float beta)
+  { BASE_LapackMultAdd<float> (a, false, b, false, alpha, c, beta); }
 
   inline void LapackMultAdd (SliceMatrix<double> a, 
 			     SliceMatrix<double> b, 

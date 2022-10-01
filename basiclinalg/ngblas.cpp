@@ -2856,7 +2856,8 @@ namespace ngbla
                          SliceMatrix<double, ColMajor> V);
 
   
-  list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k, bool lapack, size_t maxits)
+  list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k,
+                                     bool lapack, bool doubleprec, size_t maxits)
   {
     if (what < 0)
       {
@@ -3039,41 +3040,55 @@ namespace ngbla
     if (what == 0 || what == 10)
       {
         // C=A*B
-        Matrix<> a(n,m), b(m,k), c(n,k);
-        a = 1; b = 2;
-        for (size_t i = 0; i < n; i++)
-          for (size_t j = 0; j < m; j++)
-            a(i,j) = sin(i+1) * cos(j);
-        for (size_t i = 0; i < m; i++)
-          for (size_t j = 0; j < k; j++)
-            b(i,j) = cos(i+3) * cos(j);
-        
-        double tot = n*m*k;
-        size_t its = 1e10 / tot + 1;
-        // MultMatMat(a,b,c);
-        if (tot < 1e6)
-          {
-            c = a * b;
-            double err = L2Norm(a*b-c);
-            if (err > 1e-8)
+        auto doit = [&] (auto a, auto b, auto c) {
+          a = 1; b = 2;
+          for (size_t i = 0; i < n; i++)
+            for (size_t j = 0; j < m; j++)
+              a(i,j) = sin(i+1) * cos(j);
+          for (size_t i = 0; i < m; i++)
+            for (size_t j = 0; j < k; j++)
+              b(i,j) = cos(i+3) * cos(j);
+          
+          double tot = n*m*k;
+          size_t its = 1e10 / tot + 1;
+          // MultMatMat(a,b,c);
+          if (tot < 1e6)
+            {
+              c = a * b;
+              double err = L2Norm(a*b-c);
+              if (err > 1e-8)
               throw Exception("MultMatMat is faulty");
           }
         
-        {
-          Timer t("C = A*B");
-          t.Start();
-          if (!lapack)
-            for (size_t j = 0; j < its; j++)
-              // MultMatMat(a,b,c);
-              c = a*b;
-          else
-            for (size_t j = 0; j < its; j++)
-              c = a*b | Lapack;
-          t.Stop();
-          cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
-          timings.push_back(make_tuple("MultMatMat", 1e-9 * n*m*k*its / t.GetTime()));
-        }
+          {
+            Timer t("C = A*B");
+            t.Start();
+            if (!lapack)
+              for (size_t j = 0; j < its; j++)
+                // MultMatMat(a,b,c);
+                c = a*b;
+            else
+              for (size_t j = 0; j < its; j++)
+                c = a*b | Lapack;
+            t.Stop();
+            cout << "MultMatMat GFlops = " << 1e-9 * n*m*k*its / t.GetTime() << endl;
+            timings.push_back(make_tuple("MultMatMat", 1e-9 * n*m*k*its / t.GetTime()));
+          }
+        };
+
+        if (doubleprec)
+          {
+            Matrix<double> a(n,m), b(m,k), c(n,k);
+            doit (a,b,c);
+          }
+        else
+          {
+            Matrix<float> a(n,m), b(m,k), c(n,k);
+            doit (a,b,c);
+          }
+        
       }
+        
 
     if (what == 0 || what == 11)
       {
