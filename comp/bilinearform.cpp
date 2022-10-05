@@ -4580,10 +4580,12 @@ namespace ngcomp
                                FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
                                  ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
+                               this->fespace->TransformVec (ei1, elx, TRANSFORM_SOL);
                                
                                auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
                                auto & mapped_strafo = seltrans.AddDeformation(bfi->GetDeformation().get(), lh);
                                bfi->ApplyFacetMatrix (fel,facnr1,mapped_trafo,vnums1, mapped_strafo, vnums2, elx, ely, lh);
+                               this->fespace->TransformVec (ei1, ely, TRANSFORM_RHS);
                                y.AddIndirect(dnums, ely, fespace->HasAtomicDofs());
                              } //end for (numintegrators)
                            
@@ -4624,6 +4626,8 @@ namespace ngcomp
                          ely(dnums.Size()*fespace->GetDimension(), lh);
                        
                        x.GetIndirect(dnums, elx);
+                       this->fespace->TransformVec (ei1, elx.Range(0, dnums1.Size()*fespace->GetDimension()), TRANSFORM_SOL);
+                       this->fespace->TransformVec (ei2, elx.Range(dnums1.Size()*fespace->GetDimension(), dnums.Size()*fespace->GetDimension()), TRANSFORM_SOL);
 
                        RegionTimer reg2(timerDGapply);                     
                        for (auto & bfi : facetwise_skeleton_parts[VOL])                                   
@@ -4636,6 +4640,8 @@ namespace ngcomp
                            auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
                            bfi->ApplyFacetMatrix (fel1, facnr1, mapped_trafo1, vnums1,
                                                   fel2, facnr2, mapped_trafo2, vnums2, elx, ely, lh);
+                           this->fespace->TransformVec (ei1, ely.Range(0, dnums1.Size()*fespace->GetDimension()), TRANSFORM_RHS);
+                           this->fespace->TransformVec (ei2, ely.Range(dnums1.Size()*fespace->GetDimension(), dnums.Size()*fespace->GetDimension()), TRANSFORM_RHS);
 
                            y.AddIndirect(dnums, ely);
                          }
@@ -5036,7 +5042,6 @@ namespace ngcomp
                      }
                  });
             }
-        // cout << "apply not implemented for mixed" << endl;
 
         {
           RegionTimer reg(timerDG);
@@ -5120,11 +5125,13 @@ namespace ngcomp
                                FlatVector<SCAL> elx(dnums1.Size()*this->fespace->GetDimension(), lh),
                                  ely(dnums2.Size()*this->fespace->GetDimension(), lh);
                                x.GetIndirect(dnums1, elx);
+                               this->fespace->TransformVec (ei1, elx, TRANSFORM_SOL);
 
                                auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
                                auto & mapped_strafo = seltrans.AddDeformation(bfi->GetDeformation().get(), lh);
 
                                bfi->ApplyFacetMatrix (fel,facnr1,mapped_trafo,vnums1, mapped_strafo, vnums2, elx, ely, lh);
+                               this->fespace2->TransformVec (ei1, ely, TRANSFORM_RHS);
                                y.AddIndirect(dnums2, ely, fespace2->HasAtomicDofs());
                              } //end for (numintegrators)
 
@@ -5176,6 +5183,8 @@ namespace ngcomp
                          ely(dnums_test.Size()*fespace2->GetDimension(), lh);
 
                        x.GetIndirect(dnums_trial, elx);
+                       this->fespace->TransformVec (ei1, elx.Range(0, dnums1_trial.Size()*fespace->GetDimension()), TRANSFORM_SOL);
+                       this->fespace->TransformVec (ei2, elx.Range(dnums1_trial.Size()*fespace->GetDimension(), dnums_trial.Size()*fespace->GetDimension()), TRANSFORM_SOL);
 
                        RegionTimer reg2(timerDGapply);
                        for (auto & bfi : facetwise_skeleton_parts[VOL])
@@ -5188,6 +5197,8 @@ namespace ngcomp
                            auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
                            bfi->ApplyFacetMatrix (fel1, facnr1, mapped_trafo1, vnums1,
                                                   fel2, facnr2, mapped_trafo2, vnums2, elx, ely, lh);
+                           this->fespace2->TransformVec (ei1, ely.Range(0, dnums1_test.Size()*fespace2->GetDimension()), TRANSFORM_RHS);
+                           this->fespace2->TransformVec (ei2, ely.Range(dnums1_test.Size()*fespace2->GetDimension(), dnums_test.Size()*fespace2->GetDimension()), TRANSFORM_RHS);
 
                            y.AddIndirect(dnums_test, ely);
                          }
