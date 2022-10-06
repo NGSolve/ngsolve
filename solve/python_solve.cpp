@@ -26,9 +26,6 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                       int sd, bool autoscale, double min, double max,
                       bool draw_vol, bool draw_surf, bool reset, py::kwargs kwargs)
               {
-                if (name.find(" " , 0) != -1)
-                  throw Exception("In Draw: name must not contain spaces");
-
                 if (cf == nullptr)
                   throw Exception("In Draw: invalid object to draw");
                 
@@ -69,10 +66,10 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 Ng_SetSolutionData (&soldata);
 
                 if (cf->Dimension() == 1)
-                  Ng_TclCmd (string("set ::visoptions.scalfunction ")+name+":1;\n");
+                  Ng_TclCmd (string("set ::visoptions.scalfunction \"")+name+":1\";\n");
                 else
                   if (cf->Dimension() == 3 || cf->Dimension() == ma->GetDimension())
-                    Ng_TclCmd (string("set ::visoptions.vecfunction ")+name+";\n");
+                    Ng_TclCmd (string("set ::visoptions.vecfunction \"")+name+"\";\n");
 
                 Ng_TclCmd (string("set ::visoptions.subdivisions ")+ToString(sd)+";\n");
 		Ng_TclCmd ("set ::visoptions.autoscale "+ToString(autoscale)+";\n");
