@@ -24,7 +24,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
 
     m.def ("Draw", [](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
                       int sd, bool autoscale, double min, double max,
-                      bool draw_vol, bool draw_surf, bool reset, py::kwargs kwargs)
+                      bool draw_vol, bool draw_surf, bool reset, string title, string number_format, string unit, py::kwargs kwargs)
               {
                 if (cf == nullptr)
                   throw Exception("In Draw: invalid object to draw");
@@ -47,7 +47,10 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
 
-                soldata.name = (char*)name.c_str();
+                soldata.name = name;
+                soldata.title = title;
+                soldata.number_format = number_format;
+                soldata.unit = unit;
                 soldata.data = 0;
                 soldata.components = cf -> Dimension();
                 if (cf->IsComplex()) soldata.components *= 2;
@@ -87,6 +90,9 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
               py::arg("draw_vol")=true,
            py::arg("draw_surf")=true,
            py::arg("reset")=false,
+           py::arg("title")="",
+           py::arg("number_format")="%.3e",
+           py::arg("unit")="",
            docu_string(R"raw_string(
 Parameters:
 
@@ -116,6 +122,15 @@ draw_vol : bool
 
 draw_surf : bool
   input draw surface
+
+title : string
+  printed on top of colormap
+
+number_format : string
+  printf-style format string for numbers under colormap
+
+unit : string
+  string (ASCII only) to print after maximum value of colormap
 
 )raw_string")
              );
