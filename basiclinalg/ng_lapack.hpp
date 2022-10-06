@@ -54,6 +54,11 @@ namespace ngbla
 		  doublereal *b, integer *ldb, doublereal *beta, doublereal *c__, 
 		  integer *ldc);
 
+  NGS_DLL_HEADER int sgemm(char *transa, char *transb, integer *m, integer *
+		  n, integer *k, real *alpha, real *a, integer *lda, 
+		  real *b, integer *ldb, real *beta, real *c__, 
+		  integer *ldc);
+
   NGS_DLL_HEADER int zgemm(char *transa, char *transb, integer *m, integer *
 		    n, integer *k, doublecomplex *alpha, doublecomplex *a, integer *lda, 
 		    doublecomplex *b, integer *ldb, doublecomplex *beta, doublecomplex *
@@ -72,7 +77,7 @@ namespace ngbla
       real *b, integer *ldb, real *beta, real *c__,
       integer *ldc)
   {
-    return sgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+    return sgemm (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
   }
 
   inline int gemm(char *transa, char *transb, integer *m, integer *
@@ -80,7 +85,7 @@ namespace ngbla
       doublereal *b, integer *ldb, doublereal *beta, doublereal *c__,
       integer *ldc)
   {
-    return dgemm_ (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
+    return dgemm (transa, transb, m, n, k, alpha, a, lda, b, ldb, beta, c__, ldc);
   }
 
   inline int gemm(char *transa, char *transb, integer *m, integer *
