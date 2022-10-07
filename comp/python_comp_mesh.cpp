@@ -31,6 +31,51 @@ inline auto Nr2VolElement(size_t nr) {  return ElementId(VOL,nr); };
       using CoefficientFunctionNoDerivative::Evaluate;
   };
 
+  class GeoParamCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    shared_ptr<MeshAccess> ma;
+    GeoParamCF (shared_ptr<MeshAccess> ma_) :
+        CoefficientFunctionNoDerivative(2, false),
+        ma(ma_)
+      { ; }
+
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+        throw Exception("GeoParamCF - no scalar evalute");
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const override
+    {
+       const ElementTransformation & trafo = ip.GetTransformation();
+       ElementId ei = trafo.GetElementId();
+       result = 0.0;
+       if(ma->GetDimension() == 3 && ei.VB() == BND || ma->GetDimension()==2 && ei.VB() == VOL)
+       {
+           const auto & el = ma->GetNetgenMesh()->SurfaceElement(ei.Nr()+1);
+           Mat<4,2> vals;
+           auto np = el.GetNP();
+           for(auto i : Range(np))
+               vals.Row(i) = Vec<2>{el.GeomInfoPi(i+1).u, el.GeomInfoPi(i+1).v};
+
+           const auto & p = ip.IP();
+           ArrayMem<double, 4> lam;
+           auto p0 = p(0);
+           auto p1 = p(1);
+           if(np==3)
+               lam = {p0, p1, 1-p0-p1};
+           if(np==4)
+               lam = {(1-p0)*(1-p1), p0*(1-p1), p0*p1, (1-p0)*p1};
+
+           for(auto i : Range(lam))
+               result += lam[i] * vals.Row(i);
+       }
+    }
+
+      using CoefficientFunctionNoDerivative::Evaluate;
+  };
+
+
 void ExportPml(py::module &m);
 
 void ExportNgcompMesh (py::module &m)
@@ -745,6 +790,10 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
     .def("LocalHCF", [](MeshAccess& self) -> shared_ptr<CoefficientFunction>
             {
               return make_shared<LocalHCF>( self.GetNetgenMesh()->GetLocalH() );
+            })
+    .def("GeoParamCF", [](shared_ptr<MeshAccess> self) -> shared_ptr<CoefficientFunction>
+            {
+              return make_shared<GeoParamCF>( self );
             })
 
     // TODO: explain how to mark elements
