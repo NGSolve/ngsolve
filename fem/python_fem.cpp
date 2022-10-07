@@ -1401,7 +1401,7 @@ kwargs:
   m.def("LeviCivitaSymbol", &LeviCivitaCF);
   
   m.def("NewtonCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
-                       optional<double> rtol, optional<int> maxiter){
+                       optional<double> rtol, optional<int> maxiter, optional<bool> allow_fail){
 
           // First check for a GridFunction. This case is important for GFs on
           // generic compound spaces.
@@ -1409,13 +1409,13 @@ kwargs:
           if (egf.check()) {
             const auto gf = egf();
             if (gf->GetFESpace()->GetEvaluator())
-              return CreateNewtonCF(expr, gf, tol, rtol, maxiter);
+              return CreateNewtonCF(expr, gf, tol, rtol, maxiter, allow_fail);
             else {
               // Probably a GF on a generic compound space
               Array<shared_ptr<CoefficientFunction>> stps(gf->GetNComponents());
               for (int comp : Range(stps))
                 stps[comp] = gf->GetComponent(comp);
-              return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+              return CreateNewtonCF(expr, stps, tol, rtol, maxiter, allow_fail);
             }
           }
 
@@ -1436,13 +1436,13 @@ kwargs:
                     + string(py::str(val)) + " of type "
                     + string(py::str(val.get_type())));
             }
-            return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+            return CreateNewtonCF(expr, stps, tol, rtol, maxiter, allow_fail);
           }
 
           // Attemp std. conversion to a CoefficientFunction
           py::extract<shared_ptr<CoefficientFunction>> ecf(startingpoint);
           if (ecf.check())
-            return CreateNewtonCF(expr, ecf(), tol, rtol, maxiter);
+            return CreateNewtonCF(expr, ecf(), tol, rtol, maxiter, allow_fail);
 
           throw std::invalid_argument(
               string("Failed to convert startingpoint ")
@@ -1450,27 +1450,31 @@ kwargs:
               + " to a CoefficientFunction");
       },
       py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-6,
-      py::arg("rtol") = 0.0, py::arg("maxiter") = 10, docu_string(R"raw_string(
+      py::arg("rtol") = 0.0, py::arg("maxiter") = 10, py::arg("allow_fail") = false,
+      docu_string(R"raw_string(
 Creates a CoefficientFunction that returns the solution to a nonlinear problem.
-Convergence failure is indicated by returning NaN(s).
+By defautlt, convergence failure is indicated by returning NaN(s).
 
 Parameters:
 
 expression : CoefficientFunction
-  the residual of the nonlinear equation
+  The residual of the nonlinear equation
 
 startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
   The initial guess for the iterative solution of the nonlinear problem. In case of a list or a tuple,
   the order of starting points must match the order of the trial functions in their parent FE space.
 
-tol: double
-  absolute tolerance
+tol: double, deault=1e-6
+  Absolute tolerance
 
-rtol: double
-  relative tolerance
+rtol: double, default=0
+  Relative tolerance
 
-maxiter: int
-  maximum iterations
+maxiter: int, default=10
+  Maximum number of iterations
+
+allow_fail : bool, default=False
+    Do not write NaN's into result even if the Newton scheme did not converge.
 
 )raw_string"));
 

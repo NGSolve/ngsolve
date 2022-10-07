@@ -104,19 +104,21 @@ class NewtonCF : public CoefficientFunction {
   double rtol{0.0};
   int maxiter{10};
 
+  bool allow_fail{false};
+
 public:
   NewtonCF(shared_ptr<CoefficientFunction> aexpression,
            shared_ptr<CoefficientFunction> astartingpoint,
            std::optional<double> atol, std::optional<double> artol,
-           std::optional<int> amaxiter)
+           std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : NewtonCF{aexpression,
                  Array<shared_ptr<CoefficientFunction>>{astartingpoint}, atol,
-                 artol, amaxiter} {}
+                 artol, amaxiter, aallow_fail} {}
 
   NewtonCF(shared_ptr<CoefficientFunction> aexpression,
            const Array<shared_ptr<CoefficientFunction>> &astartingpoints,
            std::optional<double> atol, std::optional<double> artol,
-           std::optional<int> amaxiter)
+           std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : expression(aexpression) {
 
     // NOTES:
@@ -287,6 +289,8 @@ public:
       rtol = *artol;
     if (amaxiter)
       maxiter = *amaxiter;
+    if (aallow_fail)
+      allow_fail = *aallow_fail;
   }
 
   double Evaluate(const BaseMappedIntegrationPoint &ip) const override {
@@ -463,8 +467,12 @@ public:
 
 //     cout << "xk (final): " << xk << endl;
 
-    if (!success)
+    if (!success and !allow_fail)
       xk = numeric_limits<double>::quiet_NaN();
+    if (!success and allow_fail)
+    {   
+      cout << "WARNING: The NewtonCF did not converge to desired tollerance" << endl;
+    }
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), full_dim) = xk;
@@ -1129,16 +1137,18 @@ shared_ptr<CoefficientFunction>
 CreateNewtonCF(shared_ptr<CoefficientFunction> expression,
                shared_ptr<CoefficientFunction> startingpoint,
                std::optional<double> atol, std::optional<double> rtol,
-               std::optional<int> maxiter) {
-  return make_shared<NewtonCF>(expression, startingpoint, atol, rtol, maxiter);
+               std::optional<int> maxiter,
+               std::optional<bool> allow_fail) {
+  return make_shared<NewtonCF>(expression, startingpoint, atol, rtol, maxiter, allow_fail);
 }
 
 shared_ptr<CoefficientFunction>
 CreateNewtonCF(shared_ptr<CoefficientFunction> expression,
                const Array<shared_ptr<CoefficientFunction>> &startingpoints,
                std::optional<double> tol, std::optional<double> rtol,
-               std::optional<int> maxiter) {
-  return make_shared<NewtonCF>(expression, startingpoints, tol, rtol, maxiter);
+               std::optional<int> maxiter,
+               std::optional<bool> allow_fail) {
+  return make_shared<NewtonCF>(expression, startingpoints, tol, rtol, maxiter, allow_fail);
 }
 
 } // namespace ngfem
