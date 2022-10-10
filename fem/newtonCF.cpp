@@ -470,9 +470,7 @@ public:
     if (!success and !allow_fail)
       xk = numeric_limits<double>::quiet_NaN();
     if (!success and allow_fail)
-    {   
-      cout << "WARNING: The NewtonCF did not converge to desired tollerance" << endl;
-    }
+      cout << IM(3) << "The NewtonCF did not converge to desired tollerance" << endl;
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), full_dim) = xk;
