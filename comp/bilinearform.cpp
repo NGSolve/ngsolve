@@ -4580,10 +4580,12 @@ namespace ngcomp
                                FlatVector<SCAL> elx(dnums.Size()*this->fespace->GetDimension(), lh),
                                  ely(dnums.Size()*this->fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
+                               this->fespace->TransformVec (ei1, elx, TRANSFORM_SOL);
                                
                                auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
                                auto & mapped_strafo = seltrans.AddDeformation(bfi->GetDeformation().get(), lh);
                                bfi->ApplyFacetMatrix (fel,facnr1,mapped_trafo,vnums1, mapped_strafo, vnums2, elx, ely, lh);
+                               this->fespace->TransformVec (ei1, ely, TRANSFORM_RHS);
                                y.AddIndirect(dnums, ely, fespace->HasAtomicDofs());
                              } //end for (numintegrators)
                            
@@ -4624,6 +4626,8 @@ namespace ngcomp
                          ely(dnums.Size()*fespace->GetDimension(), lh);
                        
                        x.GetIndirect(dnums, elx);
+                       this->fespace->TransformVec (ei1, elx.Range(0, dnums1.Size()*fespace->GetDimension()), TRANSFORM_SOL);
+                       this->fespace->TransformVec (ei2, elx.Range(dnums1.Size()*fespace->GetDimension(), dnums.Size()*fespace->GetDimension()), TRANSFORM_SOL);
 
                        RegionTimer reg2(timerDGapply);                     
                        for (auto & bfi : facetwise_skeleton_parts[VOL])                                   
@@ -4636,6 +4640,8 @@ namespace ngcomp
                            auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
                            bfi->ApplyFacetMatrix (fel1, facnr1, mapped_trafo1, vnums1,
                                                   fel2, facnr2, mapped_trafo2, vnums2, elx, ely, lh);
+                           this->fespace->TransformVec (ei1, ely.Range(0, dnums1.Size()*fespace->GetDimension()), TRANSFORM_RHS);
+                           this->fespace->TransformVec (ei2, ely.Range(dnums1.Size()*fespace->GetDimension(), dnums.Size()*fespace->GetDimension()), TRANSFORM_RHS);
 
                            y.AddIndirect(dnums, ely);
                          }
@@ -5029,14 +5035,183 @@ namespace ngcomp
                        MixedFiniteElement fel(fel1, fel2);
                        bfi->ApplyElementMatrix (fel, eltrans, elvecx, elvecy, 0, lh);
                        
-                       this->fespace->TransformVec (ei, elvecy, TRANSFORM_RHS);
+                       this->fespace2->TransformVec (ei, elvecy, TRANSFORM_RHS);
         
                        elvecy *= val;
                        y.AddIndirect (dnums2, elvecy);  // coloring	      
                      }
                  });
             }
-        // cout << "apply not implemented for mixed" << endl;
+
+        {
+          RegionTimer reg(timerDG);
+
+          if ( (facetwise_skeleton_parts[VOL].Size() > 0) ||
+               (facetwise_skeleton_parts[BND].Size() > 0) )
+
+            for (auto colfacets : fespace->FacetColoring())
+              {
+                SharedLoop2 sl(colfacets.Size());
+
+                ParallelJob
+                  ( [&] (const TaskInfo & ti)
+                    {
+                      LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+                      RegionTimer reg(timerDGpar);
+
+                      Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh),
+                        vnums1(8, lh), vnums2(8, lh);
+
+                  for (int i : sl)
+                     {
+                       // timerDG1.Start();
+                       HeapReset hr(lh);
+                       int facet = colfacets[i];
+                       int facet2 = colfacets[i];
+                       ma->GetFacetElements (facet, elnums);
+                       if (elnums.Size() == 0) continue; // coarse facets
+                       int el1 = elnums[0];
+                       ElementId ei1(VOL, el1);
+                       fnums1 = ma->GetElFacets(ei1);
+                       int facnr1 = fnums1.Pos(facet);
+
+                       // timerDG1.Stop();
+                       if(elnums.Size() < 2)
+                         {
+                           if (ma->GetCommunicator().Size() > 1)
+                             if (ma->GetDistantProcs (NodeId(NT_FACET, facet)).Size() > 0)
+                               continue;
+
+                           facet2 = ma->GetPeriodicFacet(facet);
+                           if(facet2 > facet)
+                             {
+                               ma->GetFacetElements (facet2, elnums_per);
+                               if (elnums_per.Size() > 1)
+                                 throw Exception("DG-Apply failed due to invalid periodicity.");
+                               elnums.Append(elnums_per[0]);
+                             }
+                           else if(facet2 < facet)
+                             continue;
+                         }
+
+                       if (elnums.Size()<2)
+                         {
+                           // RegionTimer reg(timerDGfacet);
+
+                           ma->GetFacetSurfaceElements (facet, elnums);
+                           int sel = elnums[0];
+                           ElementId sei(BND, sel);
+
+                           const FiniteElement & fel1 = fespace->GetFE (ei1, lh);
+                           const FiniteElement & fel2 = fespace2->GetFE (ei1, lh);
+                           MixedFiniteElement fel(fel1, fel2);
+
+                           vnums1 = ma->GetElVertices (ei1);
+                           vnums2 = ma->GetElVertices (sei);
+
+                           ElementTransformation & eltrans = ma->GetTrafo (ei1, lh);
+                           ElementTransformation & seltrans = ma->GetTrafo (sei, lh);
+
+                           Array<int> dnums1 (fel1.GetNDof(), lh);
+                           fespace->GetDofNrs (ei1, dnums1);
+                           Array<int> dnums2 (fel2.GetNDof(), lh);
+                           fespace2->GetDofNrs (ei1, dnums2);
+
+                           for (auto & bfi : facetwise_skeleton_parts[BND])
+                             {
+                               if (!bfi->DefinedOn (seltrans.GetElementIndex())) continue;
+                               if (!bfi->DefinedOnElement (facet)) continue;
+
+                               FlatVector<SCAL> elx(dnums1.Size()*this->fespace->GetDimension(), lh),
+                                 ely(dnums2.Size()*this->fespace->GetDimension(), lh);
+                               x.GetIndirect(dnums1, elx);
+                               this->fespace->TransformVec (ei1, elx, TRANSFORM_SOL);
+
+                               auto & mapped_trafo = eltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+                               auto & mapped_strafo = seltrans.AddDeformation(bfi->GetDeformation().get(), lh);
+
+                               bfi->ApplyFacetMatrix (fel,facnr1,mapped_trafo,vnums1, mapped_strafo, vnums2, elx, ely, lh);
+                               this->fespace2->TransformVec (ei1, ely, TRANSFORM_RHS);
+                               y.AddIndirect(dnums2, ely, fespace2->HasAtomicDofs());
+                             } //end for (numintegrators)
+
+                           continue;
+                         } // end if boundary facet
+
+                       if (facetwise_skeleton_parts[VOL].Size() == 0)
+                         continue;
+
+                       // timerDG2.Start();
+                       // timerDG2a.Start();
+                       // int el2 = elnums[1];
+                       // ElementId ei2(VOL, el2);
+                       ElementId ei2(VOL, elnums[1]);
+
+                       // fnums2 = ma->GetElFacets(ei2);
+                       // int facnr2 = fnums2.Pos(facet2);
+                       int facnr2 = ma->GetElFacets(ei2).Pos(facet2);
+
+                       ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
+                       ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
+
+                       const FiniteElement & fel1_trial = fespace->GetFE (ei1, lh);
+                       const FiniteElement & fel1_test = fespace2->GetFE (ei1, lh);
+                       MixedFiniteElement fel1(fel1_trial, fel1_test);
+                       const FiniteElement & fel2_trial = fespace->GetFE (ei2, lh);
+                       const FiniteElement & fel2_test = fespace2->GetFE (ei2, lh);
+                       MixedFiniteElement fel2(fel2_trial, fel2_test);
+
+                       // timerDG2a.Stop();
+                       // timerDG2b.Start();
+                       Array<int> dnums1_trial(fel1_trial.GetNDof(), lh), dnums2_trial(fel2_trial.GetNDof(), lh);
+                       Array<int> dnums1_test(fel1_test.GetNDof(), lh), dnums2_test(fel2_trial.GetNDof(), lh);
+                       fespace->GetDofNrs (ei1, dnums1_trial);
+                       fespace->GetDofNrs (ei2, dnums2_trial);
+                       fespace2->GetDofNrs (ei1, dnums1_test);
+                       fespace2->GetDofNrs (ei2, dnums2_test);
+                       vnums1 = ma->GetElVertices (ei1);
+                       vnums2 = ma->GetElVertices (ei2);
+
+                       Array<int> dnums_trial(fel1_trial.GetNDof()+fel2_trial.GetNDof(), lh);
+                       dnums_trial.Range(0, dnums1_trial.Size()) = dnums1_trial;
+                       dnums_trial.Range(dnums1_trial.Size(), dnums_trial.Size()) = dnums2_trial;
+                       Array<int> dnums_test(fel1_test.GetNDof()+fel2_test.GetNDof(), lh);
+                       dnums_test.Range(0, dnums1_test.Size()) = dnums1_test;
+                       dnums_test.Range(dnums1_test.Size(), dnums_test.Size()) = dnums2_test;
+
+                       FlatVector<SCAL> elx(dnums_trial.Size()*fespace->GetDimension(), lh),
+                         ely(dnums_test.Size()*fespace2->GetDimension(), lh);
+
+                       x.GetIndirect(dnums_trial, elx);
+                       this->fespace->TransformVec (ei1, elx.Range(0, dnums1_trial.Size()*fespace->GetDimension()), TRANSFORM_SOL);
+                       this->fespace->TransformVec (ei2, elx.Range(dnums1_trial.Size()*fespace->GetDimension(), dnums_trial.Size()*fespace->GetDimension()), TRANSFORM_SOL);
+
+                       RegionTimer reg2(timerDGapply);
+                       for (auto & bfi : facetwise_skeleton_parts[VOL])
+                         {
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei1))) continue;
+                           if (!bfi->DefinedOn (ma->GetElIndex (ei2))) continue;
+                           if (!bfi->DefinedOnElement (facet) ) continue;
+
+                           auto & mapped_trafo1 = eltrans1.AddDeformation(bfi->GetDeformation().get(), lh);
+                           auto & mapped_trafo2 = eltrans2.AddDeformation(bfi->GetDeformation().get(), lh);
+                           bfi->ApplyFacetMatrix (fel1, facnr1, mapped_trafo1, vnums1,
+                                                  fel2, facnr2, mapped_trafo2, vnums2, elx, ely, lh);
+                           this->fespace2->TransformVec (ei1, ely.Range(0, dnums1_test.Size()*fespace2->GetDimension()), TRANSFORM_RHS);
+                           this->fespace2->TransformVec (ei2, ely.Range(dnums1_test.Size()*fespace2->GetDimension(), dnums_test.Size()*fespace2->GetDimension()), TRANSFORM_RHS);
+
+                           y.AddIndirect(dnums_test, ely);
+                         }
+                     }
+                 });
+              }
+
+          if (elementwise_skeleton_parts.Size())
+              throw Exception("Elementwise skeleton not yet implemented for Mixed Spaces + Apply!");
+          auto comm = ma->GetCommunicator();
+          if (comm.Size() > 1 && mpi_facet_parts.Size())
+              throw Exception("MPI facets not yet implemented for Mixed Spaces + Apply!");
+        }
       }
   }
 
