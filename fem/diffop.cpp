@@ -247,7 +247,7 @@ namespace ngfem
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
-    size_t nd = fel.GetNDof();
+    size_t nd = fel.GetNDof() * BlockDim();
     FlatVector<double> hx(nd, lh);
     x.Range(0,nd) = 0.0;
     for (int i = 0; i < mir.Size(); i++)
@@ -265,7 +265,7 @@ namespace ngfem
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
-    size_t nd = fel.GetNDof();
+    size_t nd = fel.GetNDof() * BlockDim();
     FlatVector<Complex> hx(nd, lh);
     x.Range(0,nd) = 0.0;
     for (int i = 0; i < mir.Size(); i++)
