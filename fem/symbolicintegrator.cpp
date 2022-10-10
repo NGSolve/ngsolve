@@ -4023,6 +4023,15 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
+    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
+    const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
+    bool is_mixedfe2 = typeid(fel2) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe2 = static_cast<const MixedFiniteElement*> (&fel2);
+    const FiniteElement & fel2_trial = is_mixedfe2 ? mixedfe2->FETrial() : fel2;
+    const FiniteElement & fel2_test = is_mixedfe2 ? mixedfe2->FETest() : fel2;
+
     if (simd_evaluate)
       {
         try
@@ -4042,7 +4051,7 @@ namespace ngfem
             
             ely = 0;
             
-            int maxorder = max2 (fel1.Order(), fel2.Order());
+            int maxorder = max2(max2 (fel1_trial.Order(), fel1_test.Order()), max2 (fel2_trial.Order(), fel2_test.Order()));
             
             auto eltype1 = trafo1.GetElementType();
             auto eltype2 = trafo2.GetElementType();
@@ -4069,7 +4078,7 @@ namespace ngfem
             // evaluate proxy-values
             ProxyUserData ud(trial_proxies.Size(), gridfunction_cfs.Size(), lh);
             const_cast<ElementTransformation&>(trafo1).userdata = &ud;
-            ud.fel = &fel1;   // necessary to check remember-map
+            ud.fel = &fel1_trial;   // necessary to check remember-map
 
             PrecomputeCacheCF(cache_cfs, simd_mir1, lh);
 
@@ -4084,13 +4093,13 @@ namespace ngfem
             for (ProxyFunction * proxy : trial_proxies)
               {
                 IntRange trial_range  = proxy->IsOther() ?
-                  IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elx.Size()) :
-                  IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
+                  IntRange(proxy->Evaluator()->BlockDim()*fel1_trial.GetNDof(), elx.Size()) :
+                  IntRange(0, proxy->Evaluator()->BlockDim()*fel1_trial.GetNDof());
                 
                 if (proxy->IsOther())
-                  proxy->Evaluator()->Apply(fel2, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy));
+                  proxy->Evaluator()->Apply(fel2_trial, simd_mir2, elx.Range(trial_range), ud.GetAMemory(proxy));
                 else
-                  proxy->Evaluator()->Apply(fel1, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy));
+                  proxy->Evaluator()->Apply(fel1_trial, simd_mir1, elx.Range(trial_range), ud.GetAMemory(proxy));
                 // tapply.AddFlops (trial_range.Size() * simd_ir_facet_vol1.GetNIP());
               }
             // tapply.Stop();
@@ -4122,14 +4131,14 @@ namespace ngfem
                   }
                 // tcoef.Stop();
                 // tapplyt.Start();
-                IntRange test_range  = proxy->IsOther() ? IntRange(fel1.GetNDof(), elx.Size()) : IntRange(0, fel1.GetNDof());
+                IntRange test_range  = proxy->IsOther() ? IntRange(fel1_test.GetNDof(), elx.Size()) : IntRange(0, fel1_test.GetNDof());
                 int blockdim = proxy->Evaluator()->BlockDim();
                 test_range = blockdim * test_range;
                 
                 if (proxy->IsOther())
-                  proxy->Evaluator()->AddTrans(fel2, simd_mir2, simd_proxyvalues, ely.Range(test_range));
+                  proxy->Evaluator()->AddTrans(fel2_test, simd_mir2, simd_proxyvalues, ely.Range(test_range));
                 else
-                  proxy->Evaluator()->AddTrans(fel1, simd_mir1, simd_proxyvalues, ely.Range(test_range));
+                  proxy->Evaluator()->AddTrans(fel1_test, simd_mir1, simd_proxyvalues, ely.Range(test_range));
                 // tapplyt.AddFlops (test_range.Size() * simd_ir_facet_vol1.GetNIP());                
                 // tapplyt.Stop();
               }
@@ -4532,6 +4541,10 @@ namespace ngfem
                     FlatVector<double> elx, FlatVector<double> ely,
                     LocalHeap & lh) const
   {
+    bool is_mixedfe1 = typeid(fel1) == typeid(const MixedFiniteElement&);
+    const MixedFiniteElement * mixedfe1 = static_cast<const MixedFiniteElement*> (&fel1);
+    const FiniteElement & fel1_trial = is_mixedfe1 ? mixedfe1->FETrial() : fel1;
+    const FiniteElement & fel1_test = is_mixedfe1 ? mixedfe1->FETest() : fel1;
     if (simd_evaluate)
       {
         try
@@ -4542,7 +4555,7 @@ namespace ngfem
             
             ely = 0;
             
-            int maxorder = fel1.Order();
+            int maxorder = max2 (fel1_trial.Order(), fel1_test.Order());
             
             auto eltype1 = trafo1.GetElementType();
             auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
@@ -4563,7 +4576,7 @@ namespace ngfem
             ProxyUserData ud(trial_proxies.Size(), lh);
             const_cast<ElementTransformation&>(trafo1).userdata = &ud;
             const_cast<ElementTransformation&>(strafo).userdata = &ud;
-            ud.fel = &fel1;   // necessary to check remember-map
+            ud.fel = &fel1_trial;   // necessary to check remember-map
             // ud.elx = &elx;
             // ud.lh = &lh;
 
@@ -4574,7 +4587,7 @@ namespace ngfem
             
             for (ProxyFunction * proxy : trial_proxies)
               if (! (proxy->IsOther() && proxy->BoundaryValues()) )
-                proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetAMemory(proxy));
+                proxy->Evaluator()->Apply(fel1_trial, mir1, elx, ud.GetAMemory(proxy));
             
             for (ProxyFunction * proxy : trial_proxies)
               if (proxy->IsOther() && proxy->BoundaryValues())
@@ -4605,7 +4618,7 @@ namespace ngfem
                 if (proxy->IsOther() && proxy->BoundaryValues())
                   ; // nothing to do 
                 else
-                  proxy->Evaluator()->AddTrans(fel1, mir1, proxyvalues, ely);
+                  proxy->Evaluator()->AddTrans(fel1_test, mir1, proxyvalues, ely);
               }
             
           }
@@ -4638,7 +4651,7 @@ namespace ngfem
     
     FlatVector<> ely1(ely.Size(), lh);
 
-    int maxorder = fel1.Order();
+    int maxorder = max2 (fel1_trial.Order(), fel1_test.Order());
 
     auto eltype1 = trafo1.GetElementType();
     auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr);
@@ -4659,7 +4672,7 @@ namespace ngfem
     ProxyUserData ud(trial_proxies.Size(), lh);
     const_cast<ElementTransformation&>(trafo1).userdata = &ud;
     const_cast<ElementTransformation&>(strafo).userdata = &ud;
-    ud.fel = &fel1;   // necessary to check remember-map
+    ud.fel = &fel1_trial;   // necessary to check remember-map
     // ud.elx = &elx;
     // ud.lh = &lh;
 
@@ -4670,7 +4683,7 @@ namespace ngfem
     
     for (ProxyFunction * proxy : trial_proxies)
       if (! (proxy->IsOther() && proxy->BoundaryValues()))
-        proxy->Evaluator()->Apply(fel1, mir1, elx, ud.GetMemory(proxy), lh);
+        proxy->Evaluator()->Apply(fel1_trial, mir1, elx, ud.GetMemory(proxy), lh);
 
     for (ProxyFunction * proxy : trial_proxies)    
       if (proxy->IsOther() && proxy->BoundaryValues())
@@ -4701,7 +4714,7 @@ namespace ngfem
         if (proxy->IsOther() && proxy->BoundaryValues())
           ;  // nothing to do 
         else
-          proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, ely1, lh);
+          proxy->Evaluator()->ApplyTrans(fel1_trial, mir1, proxyvalues, ely1, lh);
         ely += ely1;
       }
   }
