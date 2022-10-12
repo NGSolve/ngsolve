@@ -466,14 +466,14 @@ public:
       }
 
 //     cout << "xk (final): " << xk << endl;
-    if (!success)
-    {
-      cout << IM(4) << "The NewtonCF did not converge to tollerance on element " << trafo.GetElementNr() << endl;
+    if (!success) {
+      cout << IM(4) << "The NewtonCF did not converge to tolerance on element " << trafo.GetElementNr() << endl;
 
-      for (auto qi : Range(res_all.Height()))
-      {
-        if (!converged(res_all.Row(qi), tol, res_0_qp[qi], rtol))
-          cout << IM(5) << "Index " << qi << ", ||res||_inf="<< LInfNorm(res_all.Row(qi)) << endl;
+      for (auto qi : Range(res_all.Height())) {
+        if (!converged(res_all.Row(qi), tol, res_0_qp[qi], rtol)) {
+          cout << IM(5) << "Quadrature point index " << qi << ", ||res||_inf=" << LInfNorm(res_all.Row(qi));
+          cout << IM(5) << ", ||res_0||_inf=" << res_0_qp[qi] << endl;      
+        }
       }
 
       if (!allow_fail)
@@ -1117,19 +1117,30 @@ public:
 //
 //    cout << "MinimizationCF done" << "\n\n";
 
-    if (!success)
-    {
-      cout << IM(4) << "The MinimizationCF did not converge to tollerance on element " << trafo.GetElementNr() << endl;
+if (!success) {
+  cout << IM(4) << "The MinimizationCF did not converge to tolerance on element " << trafo.GetElementNr() << endl;
 
-      for (auto block : Range(rhs_blocks))
-      {
-        if (!converged(rhs_blocks[block].AsVector(), tol, res_0_blocks[block], rtol))
-          cout << IM(5) << "Block " << block << ", ||res||_inf="<< LInfNorm(rhs_blocks[block].AsVector()) << endl;
-      }
-
-      if (!allow_fail)
-        xk = numeric_limits<double>::quiet_NaN();
+  FlatArray<double> res_qp(mir.Size(), lh);
+  for (auto qi : Range(mir.Size())) {
+    for (auto block : Range(nblocks)) {
+      res_qp[qi] = max(LInfNorm(rhs_blocks[block].Row(qi)), res_qp[qi]);  
     }
+  }
+
+
+  for (auto qi : Range(mir.Size())) {
+    for (auto block : Range(rhs_blocks)) {
+      if (!converged(rhs_blocks[block].Row(qi), tol, res_0_blocks[block], rtol)) {
+        cout << IM(5) << "Quadrature point index " << qi << ", ||res||_inf="<< LInfNorm(rhs_blocks[block].Row(qi));
+        cout << IM(5) << ", ||res_0||_inf="<< res_0_blocks[block];
+        break;
+      }
+    }
+  }
+
+  if (!allow_fail)
+    xk = numeric_limits<double>::quiet_NaN();
+}
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), Dimension()) = xk;
