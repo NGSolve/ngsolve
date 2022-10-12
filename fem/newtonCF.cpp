@@ -69,17 +69,6 @@ bool all_converged_qp(const mat_t &res, double tol, vec_t res_0 = 0, double rtol
                      });
 }
 
-template<typename vec_t, typename res_blocks_t>
-bool all_converged(const vec_t &vec_blocks, double tol,
-                   const res_blocks_t &res_0_blocks, double rtol) {
-  auto block_range = Range(vec_blocks);
-  return std::all_of(begin(block_range), end(block_range),
-                     [=](const auto &block) {
-                       return converged(vec_blocks[block].AsVector(),
-                                        tol, res_0_blocks[block], rtol);
-                     });
-}
-
 } // namespace
 
 class NewtonCF : public CoefficientFunction {
@@ -839,6 +828,7 @@ public:
     FlatMatrix<> xk(mir.Size(), full_dim, lh);
     FlatMatrix<> xold(mir.Size(), full_dim, lh);
     FlatMatrix<> w(mir.Size(), full_dim, lh);
+    FlatMatrix<> res_mat(mir.Size(), numeric_dim, lh);
     FlatVector<> rhs(numeric_dim, lh);
     FlatArray<int> p(numeric_dim, lh);
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
@@ -1090,15 +1080,27 @@ public:
 //    cout << "\n" << "start newton loop" << "\n";
     calc_energy_rhs_and_diags();
 
-    for (auto block : Range(nblocks))
-      res_0_blocks[block] = LInfNorm(rhs_blocks[block].AsVector());
+//    for (auto block : Range(nblocks))
+//      res_0_blocks[block] = LInfNorm(rhs_blocks[block].AsVector());
 
-    for (auto qi : Range(mir.Size()))
+
+    for (auto qi : Range(mir))
       for (auto block : Range(nblocks))
         res_0_qp[qi] = max(LInfNorm(rhs_blocks[block].Row(qi)), res_0_qp[qi]);
 
+    const auto all_converged = [&]() -> bool {
+      for (size_t qi : Range(mir)) {
+        int offset1 = 0;
+        for (size_t block1 : Range(nblocks)) {
+          const auto &rhsb = rhs_blocks[block1].Row(qi);
+          res_mat.Row(qi).Range(rhsb.Size()) = rhsb;
+        }
+      }
+      return all_converged_qp(res_mat, tol, res_0_qp, rtol);
+    };
 
-    bool success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
+    bool success = all_converged();
+
     for ([[maybe_unused]] int step : Range(maxiter)) {
       if (success)
         break;
@@ -1108,7 +1110,7 @@ public:
       if (!linesearch())
         break;
       calc_energy_rhs_and_diags();
-      success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
+      success = all_converged();
 //      cout << "newton step " << step + 1 << endl;
     }
 
@@ -1120,21 +1122,10 @@ public:
 if (!success) {
   cout << IM(4) << "The MinimizationCF did not converge to tolerance on element " << trafo.GetElementNr() << endl;
 
-  FlatArray<double> res_qp(mir.Size(), lh);
-  for (auto qi : Range(mir.Size())) {
-    for (auto block : Range(nblocks)) {
-      res_qp[qi] = max(LInfNorm(rhs_blocks[block].Row(qi)), res_qp[qi]);  
-    }
-  }
-
-
-  for (auto qi : Range(mir.Size())) {
-    for (auto block : Range(rhs_blocks)) {
-      if (!converged(rhs_blocks[block].Row(qi), tol, res_0_blocks[block], rtol)) {
-        cout << IM(5) << "Quadrature point index " << qi << ", ||res||_inf="<< LInfNorm(rhs_blocks[block].Row(qi));
-        cout << IM(5) << ", ||res_0||_inf="<< res_0_blocks[block];
-        break;
-      }
+  for (auto qi : Range(res_mat.Height())) {
+    if (!converged(res_mat.Row(qi), tol, res_0_qp[qi], rtol)) {
+      cout << IM(5) << "Quadrature point index " << qi << ", ||res||_inf=" << LInfNorm(res_mat.Row(qi));
+      cout << IM(5) << ", ||res_0||_inf=" << res_0_qp[qi] << endl;
     }
   }
 
