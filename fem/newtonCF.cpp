@@ -1090,10 +1090,11 @@ public:
 
     const auto all_converged = [&]() -> bool {
       for (size_t qi : Range(mir)) {
-        int offset1 = 0;
-        for (size_t block1 : Range(nblocks)) {
-          const auto &rhsb = rhs_blocks[block1].Row(qi);
-          res_mat.Row(qi).Range(rhsb.Size()) = rhsb;
+        int offset = 0;
+        for (size_t block : Range(nblocks)) {
+          auto rhsb = rhs_blocks[block].Row(qi);
+          res_mat.Row(qi).Range(offset, offset + rhsb.Size()) = rhsb;
+          offset += rhsb.Size();
         }
       }
       return all_converged_qp(res_mat, tol, res_0_qp, rtol);
