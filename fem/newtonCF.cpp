@@ -466,11 +466,19 @@ public:
       }
 
 //     cout << "xk (final): " << xk << endl;
+    if (!success)
+    {
+      cout << IM(4) << "The NewtonCF did not converge to tollerance on element " << trafo.GetElementNr() << endl;
 
-    if (!success and !allow_fail)
-      xk = numeric_limits<double>::quiet_NaN();
-    if (!success and allow_fail)
-      cout << IM(3) << "The NewtonCF did not converge to desired tollerance" << endl;
+      for (auto qi : Range(res_all.Height()))
+      {
+        if (!converged(res_all.Row(qi), tol, res_0_qp[qi], rtol))
+          cout << IM(5) << "Index " << qi << ", ||res||_inf="<< LInfNorm(res_all.Row(qi)) << endl;
+      }
+
+      if (!allow_fail)
+        xk = numeric_limits<double>::quiet_NaN();
+    }
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), full_dim) = xk;
@@ -599,19 +607,21 @@ class MinimizationCF : public CoefficientFunction {
   double rtol{0.0};
   int maxiter{20};
 
+  bool allow_fail{false};
+
 public:
   MinimizationCF(shared_ptr<CoefficientFunction> aexpression,
                  shared_ptr<CoefficientFunction> astartingpoint,
                  std::optional<double> atol, std::optional<double> artol,
-                 std::optional<int> amaxiter)
+                 std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : MinimizationCF{aexpression,
                        Array<shared_ptr<CoefficientFunction>>{astartingpoint},
-                       atol, artol, amaxiter} {}
+                       atol, artol, amaxiter, aallow_fail} {}
 
   MinimizationCF(shared_ptr<CoefficientFunction> aexpression,
                  const Array<shared_ptr<CoefficientFunction>> &astartingpoints,
                  std::optional<double> atol, std::optional<double> artol,
-                 std::optional<int> amaxiter)
+                 std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : expression(aexpression) {
 
     expression->TraverseTree([&](CoefficientFunction &nodecf) {
@@ -1108,7 +1118,18 @@ public:
 //    cout << "MinimizationCF done" << "\n\n";
 
     if (!success)
-      xk = numeric_limits<double>::quiet_NaN();
+    {
+      cout << IM(4) << "The MinimizationCF did not converge to tollerance on element " << trafo.GetElementNr() << endl;
+
+      for (auto block : Range(rhs_blocks))
+      {
+        if (!converged(rhs_blocks[block].AsVector(), tol, res_0_blocks[block], rtol))
+          cout << IM(5) << "Block " << block << ", ||res||_inf="<< LInfNorm(rhs_blocks[block].AsVector()) << endl;
+      }
+
+      if (!allow_fail)
+        xk = numeric_limits<double>::quiet_NaN();
+    }
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), Dimension()) = xk;
@@ -1119,16 +1140,18 @@ shared_ptr<CoefficientFunction>
 CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
                shared_ptr<CoefficientFunction> startingpoint,
                std::optional<double> atol, std::optional<double> rtol,
-               std::optional<int> maxiter) {
-  return make_shared<MinimizationCF>(expression, startingpoint, atol, rtol, maxiter);
+               std::optional<int> maxiter,
+               std::optional<bool> allow_fail) {
+  return make_shared<MinimizationCF>(expression, startingpoint, atol, rtol, maxiter, allow_fail);
 }
 
 shared_ptr<CoefficientFunction>
 CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
                const Array<shared_ptr<CoefficientFunction>> &startingpoints,
                std::optional<double> tol, std::optional<double> rtol,
-               std::optional<int> maxiter) {
-  return make_shared<MinimizationCF>(expression, startingpoints, tol, rtol, maxiter);
+               std::optional<int> maxiter,
+               std::optional<bool> allow_fail) {
+  return make_shared<MinimizationCF>(expression, startingpoints, tol, rtol, maxiter, allow_fail);
 }
 
 shared_ptr<CoefficientFunction>

@@ -1963,13 +1963,13 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
                        shared_ptr<CoefficientFunction> startingpoint,
                        std::optional<double> atol, std::optional<double> rtol,
-                       std::optional<int> maxiter);
+                       std::optional<int> maxiter, std::optional<bool> allow_fail);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
                        const Array<shared_ptr<CoefficientFunction>> &startingpoints,
                        std::optional<double> tol, std::optional<double> rtol,
-                       std::optional<int> maxiter);
+                       std::optional<int> maxiter, std::optional<bool> allow_fail);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   CreateNewtonCF (shared_ptr<CoefficientFunction> expression,
