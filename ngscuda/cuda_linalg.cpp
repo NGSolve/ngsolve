@@ -423,6 +423,9 @@ namespace ngla
     width = mat.Width();
     nze = mat.NZE();
 
+    cout << IM(5) << "DevSparseMatrix" << endl
+         << " height = " << height << ", width = " << width << ", nze = " << nze << endl;
+
     // deprecated
     /*
     descr = new cusparseMatDescr_t;
@@ -441,6 +444,8 @@ namespace ngla
     cudaMalloc ((void**)&dev_col, (mat.NZE()) * sizeof(int));
     cudaMalloc ((void**)&dev_val, (mat.NZE()) * sizeof(double));
 
+    cout << IM(5) << "dev_ind = " << dev_ind << ", dev_col = " << dev_col << ", dev_val = " << dev_val << endl;
+    
     cudaMemcpy (dev_ind, &temp_ind[0], (mat.Height()+1)*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy (dev_col, &mat.GetRowIndices(0)[0], mat.NZE()*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy (dev_val, &mat.GetRowValues(0)[0], mat.NZE()*sizeof(double), cudaMemcpyHostToDevice);
