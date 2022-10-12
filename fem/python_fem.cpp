@@ -1349,9 +1349,9 @@ keep_files : bool
         py::arg("rtol") = 0.0, py::arg("maxiter") = 20,
         py::arg("allow_fail") = false, docu_string(R"raw_string(
 Creates a CoefficientFunction that returns the solution to a minimization problem.
-Convergence failure is indicated by returning NaN(s). Set ngsgloals.message_level
+Convergence failure is indicated by returning NaNs. Set ngsgloals.message_level
 to 4 for element information in case of failure. Set ngsgloals.message_level to 5
-for details on the resudual.
+for details on the residual.
 
 Parameters:
 
@@ -1373,7 +1373,7 @@ maxiter: int
 
 allow_fail : bool
   Returns the result of the final Newton step, even if the tolerance is not reached.
-  Othewrise Nan's are returned.
+  Otherwise NaNs are returned.
 
 )raw_string"));
 
@@ -1460,9 +1460,9 @@ kwargs:
       py::arg("rtol") = 0.0, py::arg("maxiter") = 10, py::arg("allow_fail") = false,
       docu_string(R"raw_string(
 Creates a CoefficientFunction that returns the solution to a nonlinear problem.
-By defautlt, convergence failure is indicated by returning NaN(s). Set ngsgloals.message_level
+By default, convergence failure is indicated by returning NaNs. Set ngsgloals.message_level
 to 4 for element information in case of failure. Set ngsgloals.message_level to 5 for 
-details on the resudual.
+details on the residual.
 
 Parameters:
 
@@ -1473,18 +1473,18 @@ startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
   The initial guess for the iterative solution of the nonlinear problem. In case of a list or a tuple,
   the order of starting points must match the order of the trial functions in their parent FE space.
 
-tol: double, default=1e-6
+tol: double
   Absolute tolerance
 
-rtol: double, default=0
+rtol: double
   Relative tolerance
 
-maxiter: int, default=10
+maxiter: int
   Maximum number of iterations
 
-allow_fail : bool, default=False
+allow_fail : bool
     Returns the result of the final Newton step, even if the tolerance is not reached.
-    Othewrise Nan's are returned.
+    Otherwise NaNs are returned.
 
 )raw_string"));
 
