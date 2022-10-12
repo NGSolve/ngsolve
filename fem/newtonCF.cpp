@@ -1119,19 +1119,19 @@ public:
 //
 //    cout << "MinimizationCF done" << "\n\n";
 
-if (!success) {
-  cout << IM(4) << "The MinimizationCF did not converge to tolerance on element " << trafo.GetElementNr() << endl;
+    if (!success) {
+      cout << IM(4) << "The MinimizationCF did not converge to tolerance on element " << trafo.GetElementNr() << endl;
 
-  for (auto qi : Range(res_mat.Height())) {
-    if (!converged(res_mat.Row(qi), tol, res_0_qp[qi], rtol)) {
-      cout << IM(5) << "Quadrature point index " << qi << ", ||res||_inf=" << LInfNorm(res_mat.Row(qi));
-      cout << IM(5) << ", ||res_0||_inf=" << res_0_qp[qi] << endl;
+      for (auto qi : Range(res_mat.Height())) {
+        if (!converged(res_mat.Row(qi), tol, res_0_qp[qi], rtol)) {
+          cout << IM(5) << "Quadrature point index " << qi << ", ||res||_inf=" << LInfNorm(res_mat.Row(qi));
+          cout << IM(5) << ", ||res_0||_inf=" << res_0_qp[qi] << endl;
+        }
+      }
+
+      if (!allow_fail)
+        xk = numeric_limits<double>::quiet_NaN();
     }
-  }
-
-  if (!allow_fail)
-    xk = numeric_limits<double>::quiet_NaN();
-}
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), Dimension()) = xk;
