@@ -1297,7 +1297,7 @@ keep_files : bool
   m.def("Conj", [] (shared_ptr<CF> cf) { return ConjCF(cf); }, "complex-conjugate");
 
   m.def("MinimizationCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
-                       optional<double> rtol, optional<int> maxiter){
+                       optional<double> rtol, optional<int> maxiter, optional<bool> allow_fail){
 
           // First check for a GridFunction. This case is important for GFs on
           // (abstract) compound spaces.
@@ -1305,13 +1305,13 @@ keep_files : bool
           if (egf.check()) {
             const auto gf = egf();
             if (gf->GetFESpace()->GetEvaluator())
-              return CreateMinimizationCF(expr, gf, tol, rtol, maxiter);
+              return CreateMinimizationCF(expr, gf, tol, rtol, maxiter, allow_fail);
             else {
               // Probably a GF on a generic compound space
               Array<shared_ptr<CoefficientFunction>> stps(gf->GetNComponents());
               for (int comp : Range(stps))
                 stps[comp] = gf->GetComponent(comp);
-              return CreateMinimizationCF(expr, stps, tol, rtol, maxiter);
+              return CreateMinimizationCF(expr, stps, tol, rtol, maxiter, allow_fail);
             }
           }
 
@@ -1332,13 +1332,13 @@ keep_files : bool
                     + string(py::str(val)) + " of type "
                     + string(py::str(val.get_type())));
             }
-            return CreateMinimizationCF(expr, stps, tol, rtol, maxiter);
+            return CreateMinimizationCF(expr, stps, tol, rtol, maxiter, allow_fail);
           }
 
           // Attemp std. conversion to a CoefficientFunction
           py::extract<shared_ptr<CoefficientFunction>> ecf(startingpoint);
           if (ecf.check())
-            return CreateMinimizationCF(expr, ecf(), tol, rtol, maxiter);
+            return CreateMinimizationCF(expr, ecf(), tol, rtol, maxiter, allow_fail);
 
           throw std::invalid_argument(
               string("Failed to convert startingpoint ")
@@ -1346,9 +1346,12 @@ keep_files : bool
               + " to a CoefficientFunction");
         },
         py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-6,
-        py::arg("rtol") = 0.0, py::arg("maxiter") = 20, docu_string(R"raw_string(
+        py::arg("rtol") = 0.0, py::arg("maxiter") = 20,
+        py::arg("allow_fail") = false, docu_string(R"raw_string(
 Creates a CoefficientFunction that returns the solution to a minimization problem.
-Convergence failure is indicated by returning NaN(s).
+Convergence failure is indicated by returning NaNs. Set ngsgloals.message_level
+to 4 for element information in case of failure. Set ngsgloals.message_level to 5
+for details on the residual.
 
 Parameters:
 
@@ -1367,6 +1370,10 @@ rtol: double
 
 maxiter: int
   maximum iterations
+
+allow_fail : bool
+  Returns the result of the final Newton step, even if the tolerance is not reached.
+  Otherwise NaNs are returned.
 
 )raw_string"));
 
@@ -1401,7 +1408,7 @@ kwargs:
   m.def("LeviCivitaSymbol", &LeviCivitaCF);
   
   m.def("NewtonCF", [](shared_ptr<CF> expr, py::object startingpoint, optional<double> tol,
-                       optional<double> rtol, optional<int> maxiter){
+                       optional<double> rtol, optional<int> maxiter, optional<bool> allow_fail){
 
           // First check for a GridFunction. This case is important for GFs on
           // generic compound spaces.
@@ -1409,13 +1416,13 @@ kwargs:
           if (egf.check()) {
             const auto gf = egf();
             if (gf->GetFESpace()->GetEvaluator())
-              return CreateNewtonCF(expr, gf, tol, rtol, maxiter);
+              return CreateNewtonCF(expr, gf, tol, rtol, maxiter, allow_fail);
             else {
               // Probably a GF on a generic compound space
               Array<shared_ptr<CoefficientFunction>> stps(gf->GetNComponents());
               for (int comp : Range(stps))
                 stps[comp] = gf->GetComponent(comp);
-              return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+              return CreateNewtonCF(expr, stps, tol, rtol, maxiter, allow_fail);
             }
           }
 
@@ -1436,13 +1443,13 @@ kwargs:
                     + string(py::str(val)) + " of type "
                     + string(py::str(val.get_type())));
             }
-            return CreateNewtonCF(expr, stps, tol, rtol, maxiter);
+            return CreateNewtonCF(expr, stps, tol, rtol, maxiter, allow_fail);
           }
 
           // Attemp std. conversion to a CoefficientFunction
           py::extract<shared_ptr<CoefficientFunction>> ecf(startingpoint);
           if (ecf.check())
-            return CreateNewtonCF(expr, ecf(), tol, rtol, maxiter);
+            return CreateNewtonCF(expr, ecf(), tol, rtol, maxiter, allow_fail);
 
           throw std::invalid_argument(
               string("Failed to convert startingpoint ")
@@ -1450,27 +1457,34 @@ kwargs:
               + " to a CoefficientFunction");
       },
       py::arg("expression"), py::arg("startingpoint"), py::arg("tol") = 1e-6,
-      py::arg("rtol") = 0.0, py::arg("maxiter") = 10, docu_string(R"raw_string(
+      py::arg("rtol") = 0.0, py::arg("maxiter") = 10, py::arg("allow_fail") = false,
+      docu_string(R"raw_string(
 Creates a CoefficientFunction that returns the solution to a nonlinear problem.
-Convergence failure is indicated by returning NaN(s).
+By default, convergence failure is indicated by returning NaNs. Set ngsgloals.message_level
+to 4 for element information in case of failure. Set ngsgloals.message_level to 5 for 
+details on the residual.
 
 Parameters:
 
 expression : CoefficientFunction
-  the residual of the nonlinear equation
+  The residual of the nonlinear equation
 
 startingpoint: CoefficientFunction, list/tuple of CoefficientFunctions
   The initial guess for the iterative solution of the nonlinear problem. In case of a list or a tuple,
   the order of starting points must match the order of the trial functions in their parent FE space.
 
 tol: double
-  absolute tolerance
+  Absolute tolerance
 
 rtol: double
-  relative tolerance
+  Relative tolerance
 
 maxiter: int
-  maximum iterations
+  Maximum number of iterations
+
+allow_fail : bool
+    Returns the result of the final Newton step, even if the tolerance is not reached.
+    Otherwise NaNs are returned.
 
 )raw_string"));
 

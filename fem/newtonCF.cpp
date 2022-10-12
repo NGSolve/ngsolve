@@ -69,17 +69,6 @@ bool all_converged_qp(const mat_t &res, double tol, vec_t res_0 = 0, double rtol
                      });
 }
 
-template<typename vec_t, typename res_blocks_t>
-bool all_converged(const vec_t &vec_blocks, double tol,
-                   const res_blocks_t &res_0_blocks, double rtol) {
-  auto block_range = Range(vec_blocks);
-  return std::all_of(begin(block_range), end(block_range),
-                     [=](const auto &block) {
-                       return converged(vec_blocks[block].AsVector(),
-                                        tol, res_0_blocks[block], rtol);
-                     });
-}
-
 } // namespace
 
 class NewtonCF : public CoefficientFunction {
@@ -104,19 +93,21 @@ class NewtonCF : public CoefficientFunction {
   double rtol{0.0};
   int maxiter{10};
 
+  bool allow_fail{false};
+
 public:
   NewtonCF(shared_ptr<CoefficientFunction> aexpression,
            shared_ptr<CoefficientFunction> astartingpoint,
            std::optional<double> atol, std::optional<double> artol,
-           std::optional<int> amaxiter)
+           std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : NewtonCF{aexpression,
                  Array<shared_ptr<CoefficientFunction>>{astartingpoint}, atol,
-                 artol, amaxiter} {}
+                 artol, amaxiter, aallow_fail} {}
 
   NewtonCF(shared_ptr<CoefficientFunction> aexpression,
            const Array<shared_ptr<CoefficientFunction>> &astartingpoints,
            std::optional<double> atol, std::optional<double> artol,
-           std::optional<int> amaxiter)
+           std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : expression(aexpression) {
 
     // NOTES:
@@ -287,6 +278,8 @@ public:
       rtol = *artol;
     if (amaxiter)
       maxiter = *amaxiter;
+    if (aallow_fail)
+      allow_fail = *aallow_fail;
   }
 
   double Evaluate(const BaseMappedIntegrationPoint &ip) const override {
@@ -462,9 +455,19 @@ public:
       }
 
 //     cout << "xk (final): " << xk << endl;
+    if (!success) {
+      cout << IM(4) << "The NewtonCF did not converge to tolerance on element " << trafo.GetElementNr() << endl;
 
-    if (!success)
-      xk = numeric_limits<double>::quiet_NaN();
+      for (auto qi : Range(res_all.Height())) {
+        if (!converged(res_all.Row(qi), tol, res_0_qp[qi], rtol)) {
+          cout << IM(5) << "Quadrature point index " << qi << ", ||res||_inf=" << LInfNorm(res_all.Row(qi));
+          cout << IM(5) << ", ||res_0||_inf=" << res_0_qp[qi] << endl;      
+        }
+      }
+
+      if (!allow_fail)
+        xk = numeric_limits<double>::quiet_NaN();
+    }
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), full_dim) = xk;
@@ -593,19 +596,21 @@ class MinimizationCF : public CoefficientFunction {
   double rtol{0.0};
   int maxiter{20};
 
+  bool allow_fail{false};
+
 public:
   MinimizationCF(shared_ptr<CoefficientFunction> aexpression,
                  shared_ptr<CoefficientFunction> astartingpoint,
                  std::optional<double> atol, std::optional<double> artol,
-                 std::optional<int> amaxiter)
+                 std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : MinimizationCF{aexpression,
                        Array<shared_ptr<CoefficientFunction>>{astartingpoint},
-                       atol, artol, amaxiter} {}
+                       atol, artol, amaxiter, aallow_fail} {}
 
   MinimizationCF(shared_ptr<CoefficientFunction> aexpression,
                  const Array<shared_ptr<CoefficientFunction>> &astartingpoints,
                  std::optional<double> atol, std::optional<double> artol,
-                 std::optional<int> amaxiter)
+                 std::optional<int> amaxiter, std::optional<bool> aallow_fail)
       : expression(aexpression) {
 
     expression->TraverseTree([&](CoefficientFunction &nodecf) {
@@ -823,6 +828,7 @@ public:
     FlatMatrix<> xk(mir.Size(), full_dim, lh);
     FlatMatrix<> xold(mir.Size(), full_dim, lh);
     FlatMatrix<> w(mir.Size(), full_dim, lh);
+    FlatMatrix<> res_mat(mir.Size(), numeric_dim, lh);
     FlatVector<> rhs(numeric_dim, lh);
     FlatArray<int> p(numeric_dim, lh);
     FlatMatrix<> lhs(numeric_dim, numeric_dim, lh);
@@ -1074,15 +1080,28 @@ public:
 //    cout << "\n" << "start newton loop" << "\n";
     calc_energy_rhs_and_diags();
 
-    for (auto block : Range(nblocks))
-      res_0_blocks[block] = LInfNorm(rhs_blocks[block].AsVector());
+//    for (auto block : Range(nblocks))
+//      res_0_blocks[block] = LInfNorm(rhs_blocks[block].AsVector());
 
-    for (auto qi : Range(mir.Size()))
+
+    for (auto qi : Range(mir))
       for (auto block : Range(nblocks))
         res_0_qp[qi] = max(LInfNorm(rhs_blocks[block].Row(qi)), res_0_qp[qi]);
 
+    const auto all_converged = [&]() -> bool {
+      for (size_t qi : Range(mir)) {
+        int offset = 0;
+        for (size_t block : Range(nblocks)) {
+          auto rhsb = rhs_blocks[block].Row(qi);
+          res_mat.Row(qi).Range(offset, offset + rhsb.Size()) = rhsb;
+          offset += rhsb.Size();
+        }
+      }
+      return all_converged_qp(res_mat, tol, res_0_qp, rtol);
+    };
 
-    bool success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
+    bool success = all_converged();
+
     for ([[maybe_unused]] int step : Range(maxiter)) {
       if (success)
         break;
@@ -1092,7 +1111,7 @@ public:
       if (!linesearch())
         break;
       calc_energy_rhs_and_diags();
-      success = all_converged(rhs_blocks, tol, res_0_blocks, rtol);
+      success = all_converged();
 //      cout << "newton step " << step + 1 << endl;
     }
 
@@ -1101,8 +1120,19 @@ public:
 //
 //    cout << "MinimizationCF done" << "\n\n";
 
-    if (!success)
-      xk = numeric_limits<double>::quiet_NaN();
+    if (!success) {
+      cout << IM(4) << "The MinimizationCF did not converge to tolerance on element " << trafo.GetElementNr() << endl;
+
+      for (auto qi : Range(res_mat.Height())) {
+        if (!converged(res_mat.Row(qi), tol, res_0_qp[qi], rtol)) {
+          cout << IM(5) << "Quadrature point index " << qi << ", ||res||_inf=" << LInfNorm(res_mat.Row(qi));
+          cout << IM(5) << ", ||res_0||_inf=" << res_0_qp[qi] << endl;
+        }
+      }
+
+      if (!allow_fail)
+        xk = numeric_limits<double>::quiet_NaN();
+    }
 
     // cout << "result = " << xk << endl;
     values.AddSize(mir.Size(), Dimension()) = xk;
@@ -1113,32 +1143,36 @@ shared_ptr<CoefficientFunction>
 CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
                shared_ptr<CoefficientFunction> startingpoint,
                std::optional<double> atol, std::optional<double> rtol,
-               std::optional<int> maxiter) {
-  return make_shared<MinimizationCF>(expression, startingpoint, atol, rtol, maxiter);
+               std::optional<int> maxiter,
+               std::optional<bool> allow_fail) {
+  return make_shared<MinimizationCF>(expression, startingpoint, atol, rtol, maxiter, allow_fail);
 }
 
 shared_ptr<CoefficientFunction>
 CreateMinimizationCF(shared_ptr<CoefficientFunction> expression,
                const Array<shared_ptr<CoefficientFunction>> &startingpoints,
                std::optional<double> tol, std::optional<double> rtol,
-               std::optional<int> maxiter) {
-  return make_shared<MinimizationCF>(expression, startingpoints, tol, rtol, maxiter);
+               std::optional<int> maxiter,
+               std::optional<bool> allow_fail) {
+  return make_shared<MinimizationCF>(expression, startingpoints, tol, rtol, maxiter, allow_fail);
 }
 
 shared_ptr<CoefficientFunction>
 CreateNewtonCF(shared_ptr<CoefficientFunction> expression,
                shared_ptr<CoefficientFunction> startingpoint,
                std::optional<double> atol, std::optional<double> rtol,
-               std::optional<int> maxiter) {
-  return make_shared<NewtonCF>(expression, startingpoint, atol, rtol, maxiter);
+               std::optional<int> maxiter,
+               std::optional<bool> allow_fail) {
+  return make_shared<NewtonCF>(expression, startingpoint, atol, rtol, maxiter, allow_fail);
 }
 
 shared_ptr<CoefficientFunction>
 CreateNewtonCF(shared_ptr<CoefficientFunction> expression,
                const Array<shared_ptr<CoefficientFunction>> &startingpoints,
                std::optional<double> tol, std::optional<double> rtol,
-               std::optional<int> maxiter) {
-  return make_shared<NewtonCF>(expression, startingpoints, tol, rtol, maxiter);
+               std::optional<int> maxiter,
+               std::optional<bool> allow_fail) {
+  return make_shared<NewtonCF>(expression, startingpoints, tol, rtol, maxiter, allow_fail);
 }
 
 } // namespace ngfem
