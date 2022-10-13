@@ -99,11 +99,13 @@ namespace ngla
 
   UnifiedVector :: UnifiedVector (int asize)
   {
+    cout << IM(5) << "Create unified vector, size = " << size << endl;
     this->size = asize;
 
     host_data = new double[size];
-    cudaMalloc((void**)&dev_data, size*sizeof(double));
-
+    auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
+    cout << IM(5) << "err = " << err << endl;
+    
     cusparseCreateDnVec (&descr, size, dev_data, CUDA_R_64F);
 
     host_uptodate = false;
@@ -440,10 +442,11 @@ namespace ngla
     Array<int> temp_ind (mat.Height()+1); 
     for (int i = 0; i <= mat.Height(); i++) temp_ind[i] = mat.First(i); // conversion to 32-bit integer
 
-    cudaMalloc ((void**)&dev_ind, (mat.Height()+1) * sizeof(int));
-    cudaMalloc ((void**)&dev_col, (mat.NZE()) * sizeof(int));
-    cudaMalloc ((void**)&dev_val, (mat.NZE()) * sizeof(double));
+    auto err1 = cudaMalloc ((void**)&dev_ind, (mat.Height()+1) * sizeof(int));
+    auto err2 = cudaMalloc ((void**)&dev_col, (mat.NZE()) * sizeof(int));
+    auto err3 = cudaMalloc ((void**)&dev_val, (mat.NZE()) * sizeof(double));
 
+    cout << IM(5) << "err = " << err1 << " " << err2 << " " << err3 << endl;
     cout << IM(5) << "dev_ind = " << dev_ind << ", dev_col = " << dev_col << ", dev_val = " << dev_val << endl;
     
     cudaMemcpy (dev_ind, &temp_ind[0], (mat.Height()+1)*sizeof(int), cudaMemcpyHostToDevice);
