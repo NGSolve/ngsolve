@@ -60,6 +60,8 @@ namespace ngfem
     else
       throw Exception("a proxy needs at least one evaluator");
     elementwise_constant = true;
+
+    SetVariable(true);
   }
 
   string ProxyFunction :: GetDescription () const
