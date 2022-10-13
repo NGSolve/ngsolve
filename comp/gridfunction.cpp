@@ -1158,6 +1158,8 @@ namespace ngcomp
 
     for (auto vb : { VOL, BND, BBND, BBBND })
       diffop[vb] = gf->GetFESpace()->GetEvaluator(vb);
+
+    SetVariable(true);
   }
 
   GridFunctionCoefficientFunction :: 
@@ -1177,6 +1179,8 @@ namespace ngcomp
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
+
+    SetVariable(true);
   }
 
   GridFunctionCoefficientFunction :: 
@@ -1203,6 +1207,8 @@ namespace ngcomp
           SetDimensions (diffop[vb]->Dimensions());
           break;
         }
+
+    SetVariable(true);
   }
   
   GridFunctionCoefficientFunction :: 
@@ -1220,6 +1226,8 @@ namespace ngcomp
     else if (bfi->VB() == BND)
       diffop = make_shared<CalcFluxDifferentialOperator> (bfi, false);      
     */
+
+    SetVariable(true);
   }
 
 
