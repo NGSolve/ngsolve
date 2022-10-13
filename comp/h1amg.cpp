@@ -134,7 +134,7 @@ namespace ngcomp
       size_t num_edges = edge_weights.Size();
       size_t num_vertices = vertex_weights.Size();
 
-      cout << "H1AMG: level = " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
+      cout << IM(3) << "H1AMG: level = " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
 
       size = mat->Height();
 
