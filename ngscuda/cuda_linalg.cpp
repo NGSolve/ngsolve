@@ -17,46 +17,6 @@
 namespace ngla
 {
 
-  /*
-  UnifiedVector * dynamic_cast_UnifiedVector (BaseVector * x)
-  {
-    // cout << "my dynamic * cast" << endl;
-    AutoVector * ax = dynamic_cast<AutoVector*> (x);
-    if (ax)
-      return dynamic_cast<UnifiedVector*> (&**ax);
-    return dynamic_cast<UnifiedVector*> (x);
-  }
-
-  const UnifiedVector * dynamic_cast_UnifiedVector (const BaseVector * x)
-  {
-    // cout << "my dynamic const * cast" << endl;
-    const AutoVector * ax = dynamic_cast<const AutoVector*> (x);
-    if (ax)
-      { 
-        // cout << "is an autovector" << endl; 
-        return dynamic_cast<const UnifiedVector*> (&**ax);
-      }
-    return dynamic_cast<const UnifiedVector*> (x);
-  }
-  
-  UnifiedVector & dynamic_cast_UnifiedVector (BaseVector & x)
-  {
-    // cout << "my dynamic cast" << endl;
-    AutoVector * ax = dynamic_cast<AutoVector*> (&x);
-    if (ax)
-      return dynamic_cast<UnifiedVector&> (**ax);
-    return dynamic_cast<UnifiedVector&> (x);
-  }
-  const UnifiedVector & dynamic_cast_UnifiedVector (const BaseVector & x)
-  {
-    // cout << "my dynamic cast" << endl;
-    const AutoVector * ax = dynamic_cast<const AutoVector*> (&x);
-    if (ax)
-      return dynamic_cast<const UnifiedVector&> (**ax);
-    return dynamic_cast<const UnifiedVector&> (x);
-  }
-  */
-
   cublasHandle_t Get_CuBlas_Handle ()
   {
     static Timer tblashandle("CUDA create cublas handle");
@@ -98,13 +58,14 @@ namespace ngla
   /******************** Unified Vector ********************/
 
   UnifiedVector :: UnifiedVector (int asize)
+    : size(asize)
   {
-    cout << IM(5) << "Create unified vector, size = " << size << endl;
-    this->size = asize;
+    cout << IM(7) << "Create unified vector, size = " << size << endl;
 
     host_data = new double[size];
     auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
-    cout << IM(5) << "err = " << err << endl;
+    if (err != 0)
+      throw Exception("UnifiedVector allocation error, ec="+ToString(err));
     
     cusparseCreateDnVec (&descr, size, dev_data, CUDA_R_64F);
 
@@ -425,9 +386,9 @@ namespace ngla
     width = mat.Width();
     nze = mat.NZE();
 
-    cout << IM(5) << "DevSparseMatrix" << endl
+    cout << IM(7) << "DevSparseMatrix" << endl
          << " height = " << height << ", width = " << width << ", nze = " << nze << endl;
-
+    
     // deprecated
     /*
     descr = new cusparseMatDescr_t;
@@ -439,15 +400,12 @@ namespace ngla
 
     /* cout << "create device sparse matrix, n = " << height << ", nze = " << nze << endl; */
     
-    Array<int> temp_ind (mat.Height()+1); 
-    for (int i = 0; i <= mat.Height(); i++) temp_ind[i] = mat.First(i); // conversion to 32-bit integer
+    Array<int> temp_ind (height+1); 
+    for (int i = 0; i <= height; i++) temp_ind[i] = mat.First(i); // conversion to 32-bit integer
 
-    auto err1 = cudaMalloc ((void**)&dev_ind, (mat.Height()+1) * sizeof(int));
-    auto err2 = cudaMalloc ((void**)&dev_col, (mat.NZE()) * sizeof(int));
-    auto err3 = cudaMalloc ((void**)&dev_val, (mat.NZE()) * sizeof(double));
-
-    cout << IM(5) << "err = " << err1 << " " << err2 << " " << err3 << endl;
-    cout << IM(5) << "dev_ind = " << dev_ind << ", dev_col = " << dev_col << ", dev_val = " << dev_val << endl;
+    cudaMalloc ((void**)&dev_ind, (mat.Height()+1) * sizeof(int));
+    cudaMalloc ((void**)&dev_col, (mat.NZE()) * sizeof(int));
+    cudaMalloc ((void**)&dev_val, (mat.NZE()) * sizeof(double));
     
     cudaMemcpy (dev_ind, &temp_ind[0], (mat.Height()+1)*sizeof(int), cudaMemcpyHostToDevice);
     cudaMemcpy (dev_col, &mat.GetRowIndices(0)[0], mat.NZE()*sizeof(int), cudaMemcpyHostToDevice);
