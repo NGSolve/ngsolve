@@ -156,8 +156,8 @@ namespace ngla
     
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const;
     static std::map<type_index, function<shared_ptr<BaseMatrix>(const BaseMatrix&)>> devmatcreator;
-    void RegisterDeviceMatrixCreator (type_index type,
-                                      function<shared_ptr<BaseMatrix>(const BaseMatrix&)> creator)
+    static void RegisterDeviceMatrixCreator (type_index type,
+                                             function<shared_ptr<BaseMatrix>(const BaseMatrix&)> creator)
     {
       devmatcreator[type] = creator;
     }
