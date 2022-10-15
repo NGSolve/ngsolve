@@ -13,59 +13,32 @@ PYBIND11_MODULE(ngscuda, m) {
   InitCuLinalg();
 
   m.def("InitCuLinalg", &InitCuLinalg, "Initializing cublas and cusparse.");
-
+  
   py::class_<UnifiedVector, BaseVector, shared_ptr<UnifiedVector>>
     (m, "UnifiedVector", "UnifiedVector for CUDA applications", py::multiple_inheritance())
-                 
-  .def(py::init([] (int asize) -> shared_ptr<UnifiedVector>
-        { 
-          return make_shared<UnifiedVector>(asize); 
-        }))
-  /* .def(py::init([] (const UnifiedVector &vec) -> shared_ptr<UnifiedVector> */
-  /*       { */
-  /*         return make_shared<UnifiedVector>(vec); */
-  /*       })) */
-  .def(py::init([] (const BaseVector &vec) 
-        {
-          return make_shared<UnifiedVector>(vec);
-        }))
-  .def(py::init([] (py::array_t<double> bvec)
-        {
-          auto vec = bvec.template unchecked<1>();
-          shared_ptr<UnifiedVector> uv = make_shared<UnifiedVector>(vec.size());
-          FlatVector<double> fv = uv->FVDouble();
-          for (size_t i = 0; i < vec.size(); i++)
-          {
-            fv(i) = vec(i);
-          }
-          return uv;
-        }))
-  /* .def(py::init([] (UnifiedVector &vec) -> shared_ptr<UnifiedVector> */
-  /*       { */
-  /*         return make_shared<UnifiedVector>(dynamic_cast<BaseVector&>(vec)); */
-  /*       })) */
-  /* .def(py::init([] (UnifiedVector &vec) -> shared_ptr<UnifiedVector> */
-  /*       { */
-  /*         cerr << "i am here." << endl; */
-  /*         throw Exception("TODO"); */
-  /*         /1* return make_shared<UnifiedVector>(vec); *1/ */
-  /*       })) */
-  /* .def(py::init([] (DynamicVectorExpression expr) -> shared_ptr<UnifiedVector> */
-  /*       { */
-  /*         cerr << "expr." << endl; */
-  /*         throw Exception("TODO"); */
-  /*       })) */
-  /* .def("CreateVector", [] (UnifiedVector & self, bool copy) */
-  /*        { */
-  /*          auto newvec = self.CreateVector(); */
-  /*          if (copy) newvec = self; */
-  /*          return shared_ptr<BaseVector>(newvec); */
-  /*        }, py::arg("copy")=false, */
-  /*        "creates a new vector of same type, contents is undefined if copy is false") */
-   
+    
+    .def(py::init([] (int size)
+                  { 
+                    return make_shared<UnifiedVector>(size); 
+                  }))
+    .def(py::init([] (const BaseVector &vec) 
+                  {
+                    return make_shared<UnifiedVector>(vec);
+                  }))
+    .def(py::init([] (py::array_t<double> bvec)
+                  {
+                    auto vec = bvec.template unchecked<1>();
+                    shared_ptr<UnifiedVector> uv = make_shared<UnifiedVector>(vec.size());
+                    FlatVector<double> fv = uv->FVDouble();
+                    for (size_t i = 0; i < vec.size(); i++)
+                      {
+                        fv(i) = vec(i);
+                      }
+                    return uv;
+                  }))
 
-  /* .def("__len__", &UnifiedVector::Size) */
-
+    /*
+      JS: should be inherited from BaseVector ??
   //  TODO: extend for splicing (define UnifiedVector.Range?)
   //    not that important. maybe delete
   .def("__getitem__", [] (UnifiedVector & self, int ind)
@@ -84,36 +57,18 @@ PYBIND11_MODULE(ngscuda, m) {
           py::index_error();
         self[ind] = z; 
       })
+    */
+    
 
-  /* .def("PrintDevice", [] (UnifiedVector & self) */
-  /*       { */
-  /*         self.PrintDevice(); */
-  /*       }) */
-
-  /* // TODO: fix? */
-  /* .def("Add", [] (UnifiedVector & self, UnifiedVector & v2, py::object s) -> void */
-  /*       { */
-  /*         self.Add (py::extract<double>(s)(), v2); */
-  /*         return; */
-  /*       }) */
-
-  /* // TODO: add complex / conjugate */
-  /* .def("InnerProduct", [] (UnifiedVector & self, UnifiedVector & v2) -> double */
-  /*     { */
-  /*       /1* cerr << "innerproduct as method" << endl; *1/ */
-  /*       cerr << "InnerProduct sizes: " << self.Size() << " " << v2.Size() << endl; */ 
-  /*       return self.InnerProduct(v2); */
-  /*     }) */
-  /* .def("InnerProduct", [] (UnifiedVector & self, BaseVector & v2) -> double */
-  /*     { */
-  /*       /1* cerr << "innerproduct as method" << endl; *1/ */
-  /*       cerr << "InnerProduct sizes: " << self.Size() << " " << v2.Size() << endl; */ 
-  /*       return self.InnerProduct(v2); */
-  /*     }) */
+    /*
   .def("UpdateHost", [] (UnifiedVector &self) -> void
         { self.UpdateHost(); }) 
   .def("UpdateDevice", [] (UnifiedVector &self) -> void
         { self.UpdateDevice(); });
+    */
+    .def("UpdateHost", &UnifiedVector::UpdateHost)
+    .def("UpdateDevice", &UnifiedVector::UpdateDevice)
+    
 
   /* .def("__str__", [] (UnifiedVector & self) { return ToString<UnifiedVector>(self); } ) */
   /* .def("__repr__", [] (UnifiedVector & self) { return "unfiedvector"; } ) */

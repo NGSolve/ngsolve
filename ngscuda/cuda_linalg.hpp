@@ -83,9 +83,8 @@ namespace ngla
   public:
     DevMatrix() { }
 
-    virtual AutoVector CreateRowVector() const { return UnifiedVector(Width()).CreateVector(); }
-    virtual AutoVector CreateColVector() const { return UnifiedVector(Height()).CreateVector(); }
-
+    virtual AutoVector CreateRowVector() const { return make_unique<UnifiedVector>(Width()); }
+    virtual AutoVector CreateColVector() const { return make_unique<UnifiedVector>(Height()); }
   };
 
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix &mat);

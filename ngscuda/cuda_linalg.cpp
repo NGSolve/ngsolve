@@ -65,8 +65,8 @@ namespace ngla
   /******************** Unified Vector ********************/
 
   UnifiedVector :: UnifiedVector (int asize)
-    : size(asize)
   {
+    this->size = asize;
     cout << IM(7) << "Create unified vector, size = " << size << endl;
 
     host_data = new double[size];

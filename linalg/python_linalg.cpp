@@ -1121,6 +1121,7 @@ inverse : string
          })
     
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
+    .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
     ;
 
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
