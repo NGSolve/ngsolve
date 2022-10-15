@@ -53,6 +53,13 @@ namespace ngla
     cerr << "Initializing cublas and cusparse." << endl;
     Get_CuBlas_Handle();
     Get_CuSparse_Handle();
+
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(SparseMatrix<double>),
+                                            [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & sparse_mat = dynamic_cast<const SparseMatrix<double>&>(mat);
+                                              return make_shared<DevSparseMatrix>(sparse_mat);
+                                            });
   }
 
   /******************** Unified Vector ********************/
@@ -347,6 +354,13 @@ namespace ngla
 
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix & mat)
   {
+    auto res = mat.CreateDeviceMatrix();
+    if (res)
+      {
+        cout << "CreateDeviceMatrix could create devmatrix" << endl;
+        return res;
+      }
+    
     if (typeid(mat) == typeid(SparseMatrix<double>))
     {
       SparseMatrix<double>& sparse_mat = dynamic_cast<SparseMatrix<double>&>(mat);

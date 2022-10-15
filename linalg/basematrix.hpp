@@ -152,6 +152,16 @@ namespace ngla
     
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const;
     void PrintOperatorInfo (ostream & ost, int level = 0) const;
+
+    
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const;
+    static std::map<type_index, function<shared_ptr<BaseMatrix>(const BaseMatrix&)>> devmatcreator;
+    void RegisterDeviceMatrixCreator (type_index type,
+                                      function<shared_ptr<BaseMatrix>(const BaseMatrix&)> creator)
+    {
+      devmatcreator[type] = creator;
+    }
+    
   private:
     BaseMatrix & operator= (const BaseMatrix & m2) { return *this; }
 

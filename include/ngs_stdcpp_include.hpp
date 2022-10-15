@@ -85,6 +85,7 @@
 #include <exception>
 #include <complex>
 #include <string>
+#include <typeindex>
 #include <typeinfo>
 #include <memory>
 #include <initializer_list>
