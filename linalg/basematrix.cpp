@@ -330,7 +330,21 @@ namespace ngla
     return "";
   }
 
+  std::map<type_index, function<shared_ptr<BaseMatrix>(const BaseMatrix&)>> BaseMatrix::devmatcreator;
 
+  shared_ptr<BaseMatrix> BaseMatrix :: CreateDeviceMatrix() const
+  {
+    cout << "CreateDeviceMatrix calle" << endl;
+    
+    auto it = devmatcreator.find(typeid(*this));
+    if (it == devmatcreator.end()) return nullptr;
+
+    cout << "have a creator function" << endl;
+    return (*it).second(*this);
+  }
+
+
+  
   BaseMatrix::OperatorInfo BaseMatrix :: GetOperatorInfo () const
   {
     OperatorInfo info;
