@@ -68,7 +68,7 @@ PYBIND11_MODULE(ngscuda, m) {
     */
     .def("UpdateHost", &UnifiedVector::UpdateHost)
     .def("UpdateDevice", &UnifiedVector::UpdateDevice)
-    
+    ;
 
   /* .def("__str__", [] (UnifiedVector & self) { return ToString<UnifiedVector>(self); } ) */
   /* .def("__repr__", [] (UnifiedVector & self) { return "unfiedvector"; } ) */

@@ -1995,6 +1995,7 @@ namespace ngcomp
       case ET_TET: return *new (alloc) DummyFE<ET_TET>; break;
       case ET_PRISM: return *new (alloc) DummyFE<ET_PRISM>; break;
       case ET_HEX: return *new (alloc) DummyFE<ET_HEX>; break;
+      default: throw Exception("Element type "+ToString(ma->GetElType(ei))+" not supported");
       }
     }
 

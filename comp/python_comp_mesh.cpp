@@ -50,7 +50,7 @@ inline auto Nr2VolElement(size_t nr) {  return ElementId(VOL,nr); };
        const ElementTransformation & trafo = ip.GetTransformation();
        ElementId ei = trafo.GetElementId();
        result = 0.0;
-       if(ma->GetDimension() == 3 && ei.VB() == BND || ma->GetDimension()==2 && ei.VB() == VOL)
+       if((ma->GetDimension() == 3 && ei.VB() == BND) || (ma->GetDimension()==2 && ei.VB() == VOL))
        {
            const auto & el = ma->GetNetgenMesh()->SurfaceElement(ei.Nr()+1);
            Mat<4,2> vals;
