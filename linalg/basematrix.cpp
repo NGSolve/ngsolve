@@ -334,12 +334,10 @@ namespace ngla
 
   shared_ptr<BaseMatrix> BaseMatrix :: CreateDeviceMatrix() const
   {
-    cout << "CreateDeviceMatrix calle" << endl;
-    
     auto it = devmatcreator.find(typeid(*this));
     if (it == devmatcreator.end()) return nullptr;
 
-    cout << "have a creator function" << endl;
+    cout << IM(7) << "DeviceMatrix creator function for type " << typeid(*this).name() << endl;
     return (*it).second(*this);
   }
 

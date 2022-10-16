@@ -184,7 +184,7 @@ Whetting the Appetite
 
 
 7.  Shape- and Topology Optimization
-=========================
+=====================================
 Peter Gangl and Kevin Sturm
 
 .. toctree::
@@ -201,13 +201,13 @@ Peter Gangl and Kevin Sturm
 
 
 8.  Extended Finite Elements
-=========================
+=============================
 C. Lehrenfeld
 
 coming soon ...   
 
 9. Extending by C++ programming
-=========================
+===============================
 
 .. toctree::
    :maxdepth: 1

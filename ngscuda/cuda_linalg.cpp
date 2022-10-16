@@ -355,11 +355,7 @@ namespace ngla
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix & mat)
   {
     auto res = mat.CreateDeviceMatrix();
-    if (res)
-      {
-        cout << "CreateDeviceMatrix could create devmatrix" << endl;
-        return res;
-      }
+    if (res) return res;
     
     if (typeid(mat) == typeid(SparseMatrix<double>))
     {
