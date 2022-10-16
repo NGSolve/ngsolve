@@ -669,6 +669,12 @@ namespace ngla
       bmb.Print(ost);
       return ost;
     }
+
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
+    {
+      return make_shared<SumMatrix>(bma.CreateDeviceMatrix(), bmb.CreateDeviceMatrix(), a, b);
+    }
+
   };
 
 
