@@ -211,7 +211,7 @@ namespace ngcomp
 
     Vector<> fac(nd);
     
-    GetTransformationFactors (elnr, fac);
+    GetTransformationFactors (ei, fac);
     
     int i, j, k, l;
     
@@ -247,7 +247,7 @@ namespace ngcomp
 
     Vector<> fac(nd);
     
-    GetTransformationFactors (elnr, fac);
+    GetTransformationFactors (ei, fac);
     
     if ((tt & TRANSFORM_RHS) || (tt & TRANSFORM_SOL) || (tt & TRANSFORM_SOL_INVERSE))
       {
@@ -258,15 +258,26 @@ namespace ngcomp
   }
   
   void RaviartThomasFESpace ::
-  GetTransformationFactors (int elnr, FlatVector<> & fac) const
+  GetTransformationFactors (ElementId ei, FlatVector<> fac) const
   {
-    Array<int> edge_nums, edge_orient;
-    
-    fac = 1;
+    auto vnums = ma->GetElVertices(ei);
 
-    ma->GetElEdges (elnr, edge_nums, edge_orient);
-    for (int i = 0; i < 3; i++)
+    /*
+    for (auto [i,e] : Enumerate(ET_trait<ET_TRIG>::edges))
+      fac[i] = vnums[e[0]] > vnums[e[1]] ? 1 : -1;
+    */
+    
+    for (auto [e,fi] : Zip(ET_trait<ET_TRIG>::edges, fac))
+      fi = vnums[e[0]] > vnums[e[1]] ? 1 : -1;
+    
+    
+    /*
+      // old
+      Array<int> edge_nums, edge_orient;
+      ma->GetElEdges (elnr, edge_nums, edge_orient);
+      for (int i = 0; i < 3; i++)
       fac(i) = edge_orient[i];
+    */
   }
 
 
