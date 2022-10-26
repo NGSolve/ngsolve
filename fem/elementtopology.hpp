@@ -876,17 +876,17 @@ namespace ngfem
     static INLINE void CalcLambda (const Tx & x, Tlam & lam)
     { lam[0] = x[0]; lam[1] = x[1], lam[2] = 1-x[0]-x[1]; }
 
-
-    static INLINE INT<2> GetEdge (int i)
+    
+    // static constexpr INT<2> edges[3] = { { 2, 0 }, { 1, 2 }, { 0, 1 } };
+    static constexpr array<INT<2>,3> edges = { INT<2>{ 2, 0 }, INT<2>{ 1, 2 }, INT<2>{ 0, 1 } };
+    
+    static constexpr INT<2> GetEdge (int i)
     {
-#ifndef __CUDA_ARCH__
-      static
-#endif
-	const int edges[][2] = 
-	{ { 2, 0 },
+      constexpr INT<2> edges[] =
+        { { 2, 0 },
 	  { 1, 2 },
 	  { 0, 1 } };
-      return INT<2> (edges[i][0], edges[i][1]);
+      return edges[i];
     }
 
     template <typename TVN>
@@ -900,11 +900,7 @@ namespace ngfem
 
     static INLINE INT<4> GetFace (int /* i */ )
     {
-#ifndef __CUDA_ARCH__
-      static 
-#endif
-	const int face[] = { 0, 1, 2, -1 };
-
+      static const int face[] = { 0, 1, 2, -1 };
       return INT<4> (face[0], face[1], face[2], -1);
     }
 
@@ -939,9 +935,7 @@ namespace ngfem
       if (vnums[sort[1]] > vnums[sort[2]]) { Swap (sort[1], sort[2]); }
       if (vnums[sort[0]] > vnums[sort[1]]) { Swap (sort[0], sort[1]); }
       
-#ifndef __CUDA_ARCH__
       static
-#endif
 	int f2vop[] = { 1, 0, 2 };
       int vop = f2vop[facet];
       for (int i = 0; i < 3; i++)
@@ -980,10 +974,7 @@ namespace ngfem
 
     static INLINE INT<2> GetEdge (int i)
     {
-#ifndef __CUDA_ARCH__
-      static 
-#endif
-	const int edges[][2] = 
+      static const int edges[][2] = 
 	{ { 0, 1 },
 	  { 2, 3 },
 	  { 3, 0 },
@@ -1004,10 +995,7 @@ namespace ngfem
     static INLINE Tx XiEdge (int i, Tx hx[], const TVN & vnums)
     {
       INT<2> e = GetEdgeSort (i, vnums);
-#ifndef __CUDA_ARCH__
-      static 
-#endif
-        const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+      static const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
       Tx xi(0.0);
       for (int j = 0; j < 2; j++)
         {
@@ -1033,10 +1021,7 @@ namespace ngfem
 
     static INLINE INT<4> GetFace (int /* i */ )
     {
-#ifndef __CUDA_ARCH__
-      static 
-#endif
-	const int face[] = 
+      static const int face[] = 
         { 0, 1, 2, 3 };
 
       return INT<4> (face[0], face[1], face[2], face[3]);
@@ -1069,10 +1054,7 @@ namespace ngfem
     static INLINE Vec<2,Tx> XiFace (int /* i */, Tx hx[], const TVN & vnums)
     {
       INT<4> f = GetFaceSort (0, vnums); 
-#ifndef __CUDA_ARCH__
-      static 
-#endif
-        const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
+      static const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
       Tx xi(0), eta(0);
       for (int j = 0; j < 2; j++)
         {
@@ -1134,10 +1116,7 @@ namespace ngfem
 
     static INLINE INT<2> GetEdge (int i)
     {
-#ifndef __CUDA_ARCH__
-      static 
-#endif
-	const int edges[6][2] = 
+      static const int edges[6][2] = 
 	{ { 3, 0 },
 	  { 3, 1 },
 	  { 3, 2 }, 
@@ -1158,10 +1137,7 @@ namespace ngfem
 
     static INLINE INT<4> GetFace (int i )
     {
-#ifndef __CUDA_ARCH__
-      static 
-#endif
-	const int faces[][4]  =
+      static const int faces[][4]  =
 	{ { 3, 1, 2, -1 },
 	  { 3, 2, 0, -1 },
 	  { 3, 0, 1, -1 },
