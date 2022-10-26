@@ -206,7 +206,7 @@ namespace ngcomp
   {
     int nd = 3;
     bool boundary = (ei.VB() == BND);
-    size_t elnr = ei.Nr();
+    // size_t elnr = ei.Nr();
     if (boundary) return;
 
     Vector<> fac(nd);
