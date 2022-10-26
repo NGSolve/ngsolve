@@ -749,7 +749,7 @@ namespace ngcomp
     void GetSElVertices (int selnr, Array<int> & vnums) const
     { vnums = GetElement(ElementId(BND,selnr)).Vertices(); }
 
-    [[deprecated("Use enums = GetElEdges(ElementId) instead! ")]]    
+    // [[deprecated("Use enums = GetElEdges(ElementId) instead! ")]]    
     void GetElEdges (ElementId ei, Array<int> & ednums) const
     { ednums = GetElement(ei).Edges(); }
 
@@ -774,7 +774,7 @@ namespace ngcomp
     void GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const;
 
     /// returns the faces of an element
-    [[deprecated("Use fanums = GetElFaces(ElementId) instead!")]]        
+    // [[deprecated("Use fanums = GetElFaces(ElementId) instead!")]]        
     void GetElFaces (ElementId ei, Array<int> & fnums) const
     { fnums = GetElement(ei).Faces(); }
 
@@ -794,7 +794,7 @@ namespace ngcomp
     int GetSElFace (int selnr) const;
 
     // returns face number and orientation of surface element
-    // [[deprecated("orientation is deprecated!")]]
+    // [[deprecated("orientation is deprecated! use GetSElFace(nr) instead")]]
     void GetSElFace (int selnr, int & fnum, int & orient) const;
 
     /// returns vertex numbers of face
