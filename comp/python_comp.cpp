@@ -1979,7 +1979,7 @@ active_dofs : BitArray or None
                       py::list state;
                       state.append (gf.GetFESpace());
                       state.append (gf.GetName());
-                      state.append (gf.GetFlags());
+                      state.append (Flags(gf.GetFlags()).SetFlag("parallel", false));
                       for (int i = 0; i < gf.GetMultiDim(); i++)
                         state.append (gf.GetVectorPtr(i));
                       return py::tuple(state);
