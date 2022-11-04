@@ -935,7 +935,8 @@ int NGS_GetData (ClientData clientData,
 		 Tcl_Interp * interp,
 		 int argc, const char *argv[])
 {
-  static char buf[1000];
+  constexpr int BS = 1000;
+  static char buf[BS];
   buf[0] = 0;
   stringstream str;
 
@@ -1032,11 +1033,11 @@ int NGS_GetData (ClientData clientData,
 
       if (strcmp (argv[1], "numcoefficients") == 0)
 	{
-	  sprintf (buf, "%zu", pde->GetCoefficientTable().Size());
+	  snprintf (buf, BS, "%zu", pde->GetCoefficientTable().Size());
 	}
       else if (strcmp (argv[1], "coefficientname") == 0)
 	{
-	  sprintf (buf, "%s",
+	  snprintf (buf, BS, "%s",
 		   pde->GetCoefficientTable().GetName(atoi(argv[2])).c_str());
 	}
 
@@ -1044,11 +1045,11 @@ int NGS_GetData (ClientData clientData,
 
       if (strcmp (argv[1], "numspaces") == 0)
 	{
-	  sprintf (buf, "%zu", pde->GetSpaceTable().Size());
+	  snprintf (buf, BS, "%zu", pde->GetSpaceTable().Size());
 	}
       else if (strcmp (argv[1], "spacename") == 0)
 	{
-	  sprintf (buf, "%s",
+	  snprintf (buf, BS, "%s",
 		   pde->GetSpaceTable().GetName(atoi(argv[2])).c_str());
 	}
       else if (strcmp (argv[1], "spacetype") == 0)
@@ -1056,20 +1057,20 @@ int NGS_GetData (ClientData clientData,
 	  cout << "ask space type " << endl;
 	  auto space = pde->GetFESpace(argv[2]);
 	  cerr << "space = " << space << endl;
-	  if (space)  sprintf (buf, "%s", space->GetClassName().c_str());
-	  else sprintf (buf, "Nodal");
+	  if (space)  snprintf (buf, BS, "%s", space->GetClassName().c_str());
+	  else snprintf (buf, BS, "Nodal");
 	}
       else if (strcmp (argv[1], "spaceorder") == 0)
 	{
 	  auto space = pde->GetFESpace(argv[2]);
-	  if (space)  sprintf (buf, "%d", space->GetOrder());
-	  else sprintf (buf, "1");
+	  if (space)  snprintf (buf, BS, "%d", space->GetOrder());
+	  else snprintf (buf, BS, "1");
 	}
       else if (strcmp (argv[1], "spacedim") == 0)
 	{
 	  auto space = pde->GetFESpace(argv[2]);
-	  if (space)  sprintf (buf, "%d", space->GetDimension());
-	  else sprintf (buf, "1");
+	  if (space)  snprintf (buf, BS, "%d", space->GetDimension());
+	  else snprintf (buf, BS, "1");
 	}
       else if (strcmp (argv[1], "setspace") == 0)
 	{
@@ -1084,60 +1085,60 @@ int NGS_GetData (ClientData clientData,
 
       else if (strcmp (argv[1], "numgridfunctions") == 0)
 	{
-	  sprintf (buf, "%zu", pde->GetGridFunctionTable().Size());
+	  snprintf (buf, BS, "%zu", pde->GetGridFunctionTable().Size());
 	}
       else if (strcmp (argv[1], "gridfunctionname") == 0)
 	{
-	  sprintf (buf, "%s",
+	  snprintf (buf, BS, "%s",
 		   pde->GetGridFunctionTable().GetName(atoi(argv[2])).c_str());
 	}
       else if (strcmp (argv[1], "gridfunctionspace") == 0)
 	{
 	  shared_ptr<ngcomp::GridFunction> gf = pde->GetGridFunction(argv[2]);
 	  if (gf)
-	    sprintf (buf, "%s", 
+	    snprintf (buf, BS, "%s", 
 		     gf->GetFESpace()->GetName().c_str()); 
 	  else
-	    sprintf (buf, "v");
+	    snprintf (buf, BS, "v");
 	}
 
       else if (strcmp (argv[1], "numbilinearforms") == 0)
 	{
-	  sprintf (buf, "%zu", pde->GetBilinearFormTable().Size());
+	  snprintf (buf, BS, "%zu", pde->GetBilinearFormTable().Size());
 	}
       else if (strcmp (argv[1], "bilinearformname") == 0)
 	{
-	  sprintf (buf, "%s",
+	  snprintf (buf, BS, "%s",
 		   pde->GetBilinearFormTable().GetName(atoi(argv[2])).c_str());
 	}
 
       else if (strcmp (argv[1], "numlinearforms") == 0)
 	{
-	  sprintf (buf, "%zu", pde->GetLinearFormTable().Size());
+	  snprintf (buf, BS, "%zu", pde->GetLinearFormTable().Size());
 	}
       else if (strcmp (argv[1], "linearformname") == 0)
 	{
-	  sprintf (buf, "%s",
+	  snprintf (buf, BS, "%s",
 		   pde->GetLinearFormTable().GetName(atoi(argv[2])).c_str());
 	}
 
       else if (strcmp (argv[1], "numbilinearformcomps") == 0)
 	{
-	  sprintf (buf, "%d", pde->GetBilinearForm(argv[2])->NumIntegrators());
+	  snprintf (buf, BS, "%d", pde->GetBilinearForm(argv[2])->NumIntegrators());
 	}
       else if (strcmp (argv[1], "bilinearformcompname") == 0)
 	{
-	  sprintf (buf, "%s",
+	  snprintf (buf, BS, "%s",
 		   pde->GetBilinearForm(argv[2])->GetIntegrator(atoi(argv[3]))->Name().c_str());
 	}
 
       else if (strcmp (argv[1], "numlinearformcomps") == 0)
 	{
-	  sprintf (buf, "%d", pde->GetLinearForm(argv[2])->NumIntegrators());
+	  snprintf (buf, BS, "%d", pde->GetLinearForm(argv[2])->NumIntegrators());
 	}
       else if (strcmp (argv[1], "linearformcompname") == 0)
 	{
-	  sprintf (buf, "%s",
+	  snprintf (buf, BS, "%s",
 		   pde->GetLinearForm(argv[2])->GetIntegrator(atoi(argv[3]))->Name().c_str());
 	}
 
@@ -1145,7 +1146,7 @@ int NGS_GetData (ClientData clientData,
     }
   else
     {
-      sprintf (buf, "0");
+      snprintf (buf, BS, "0");
     }
   str << buf;
   Ng_Tcl_SetResult (interp, (char*)str.str().c_str(), NG_TCL_VOLATILE);
