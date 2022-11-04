@@ -43,7 +43,7 @@ int main(int argc, char ** argv)
   int id;
   MPI_Comm_rank(MPI_COMM_WORLD, &id);
   char filename[100];
-  sprintf (filename, "ngs.prof.%d", id);
+  snprintf (filename, 100, "ngs.prof.%d", id);
   FILE *prof = fopen(filename,"w");
   netgen::NgProfiler::Print (prof);
   fclose(prof);
