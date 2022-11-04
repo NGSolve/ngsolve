@@ -1252,7 +1252,8 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    code.Declare (code.res_type, index, this->Dimensions());
+    //code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), this->IsComplex());
     if (code_uses_tensors)
       {
         code.body += "for (size_t i = 0; i < "+ToString(this->Dimension())+"; i++)\n";
@@ -1491,7 +1492,8 @@ public:
   }
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    code.Declare (code.res_type, index, this->Dimensions());
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), this->IsComplex());
 
     if (code_uses_tensors)
       {

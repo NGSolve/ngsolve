@@ -56,6 +56,46 @@ namespace ngfem
       }
   }
   
+
+  void Code :: Declare (int i, FlatArray<int> dims, bool iscomplex)
+  {
+    /*
+    string type = iscomplex ? "Complex" : "double";
+    if(is_simd) type = "SIMD<" + res_type + ">";
+    if(deriv==1) type = "AutoDiff<1," + type + ">";
+    if(deriv==2) type = "AutoDiffDiff<1," + type + ">";
+    */
+    string type = GetType (iscomplex);
+    
+    if (code_uses_tensors)
+      {
+        body += "Tens<" + type;
+        for (int j = 0; j < dims.Size(); j++)
+          body += ',' + ToLiteral(dims[j]);
+        body += "> var_" + ToLiteral(i) + ";\n";
+      }
+    else
+      {
+        size_t prod=1;
+        for (auto d : dims) prod *= d;
+        for (int j = 0; j < prod; j ++)
+          body += type + Var(" var", i, j, dims).S() + ";\n";
+      }
+  }
+
+
+  string Code :: GetType (bool iscomplex) const
+  {
+    string type = iscomplex ? "Complex" : "double";
+    if(is_simd) type = "SIMD<" + type + ">";
+    if(deriv==1) type = "AutoDiff<1," + type + ">";
+    if(deriv==2) type = "AutoDiffDiff<1," + type + ">";
+
+    return type;
+  }
+
+
+
   
     unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files )
     {

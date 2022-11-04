@@ -35,7 +35,8 @@ namespace ngfem
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
       FlatArray<int> hdims = Dimensions();
-      code.Declare (code.res_type, index, this->Dimensions());
+      // code.Declare (code.res_type, index, this->Dimensions());
+      code.Declare (index, this->Dimensions(), this->IsComplex());
 
       for (int i : Range(hdims[0]))
         for (int j : Range(hdims[1]))
