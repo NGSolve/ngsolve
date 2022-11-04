@@ -56,7 +56,8 @@ namespace ngfem
     variables["cols"] = code.is_simd ? cols : rows;
     code.header += Code::Map(mycode, variables);
 
-    code.Declare(code.res_type, index, Dimensions());
+    // code.Declare(code.res_type, index, Dimensions());
+    code.Declare(index, Dimensions(), IsComplex());
     if(code.is_simd)
       {
         for (int i = 0; i < Dimension(); i++)
@@ -421,7 +422,8 @@ namespace ngfem
   void ConstantCoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
     // code.body += Var(index).Declare(code.res_type);
-    code.Declare(code.res_type, index, Dimensions());
+    //code.Declare(code.res_type, index, Dimensions());
+    code.Declare(index, Dimensions(), IsComplex());
     code.body += Var(index).Assign(Var(val), false);
   }
 
@@ -562,7 +564,8 @@ namespace ngfem
     constexpr auto type = is_same_v<SCAL, Complex> ? "Complex" : "double";
     s << "*reinterpret_cast<" << type << "*>(" << code.AddPointer(&val) << ")";
     // code.body += Var(index).Declare(code.res_type);
-    code.Declare (code.res_type, index, this->Dimensions());
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), IsComplex());    
     code.body += Var(index).Assign(s.str(), false);
   }
 
@@ -1372,7 +1375,8 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    code.Declare (code.res_type, index, this->Dimensions());
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), IsComplex());
     for (int i = 0; i < Dimension(); i++)
       code.body += Var(index,i,this->Dimensions()).Assign(string("0.0"), false);      
   }
@@ -1477,7 +1481,8 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    code.Declare (code.res_type, index, this->Dimensions());    
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), IsComplex());  
     for (int i = 0; i < Dimension(); i++)
       code.body += Var(index,i,this->Dimensions()).Assign(Var(scal) * Var(inputs[0],i,c1->Dimensions()), false);      
   }
@@ -1809,7 +1814,8 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    code.Declare (code.res_type, index, Dimensions());
+    // code.Declare (code.res_type, index, Dimensions());
+    code.Declare (index, Dimensions(), IsComplex());
     if (code_uses_tensors)
       {
         code.body += "for (size_t i = 0; i < "+ToString(this->Dimension())+"; i++)\n";
@@ -1994,7 +2000,8 @@ public:
     CodeExpr result;
     for (int i = 0; i < c1->Dimension(); i++)
       result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[1], i, c2->Dimensions());
-    code.Declare (code.res_type, index, Dimensions());                              
+    // code.Declare (code.res_type, index, Dimensions());
+    code.Declare (index, Dimensions(), IsComplex());  
     code.body += Var(index).Assign(result.S(), false);
   }
 
@@ -2163,7 +2170,8 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    code.Declare (code.res_type, index, this->Dimensions());                                  
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), this->IsComplex());
     CodeExpr result;
     for (int i = 0; i < c1->Dimension(); i++)
       result += Var(inputs[0], i, c1->Dimensions()) * Var(inputs[1], i, c2->Dimensions());
@@ -2365,7 +2373,8 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    code.Declare (code.res_type, index, this->Dimensions());                                  
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), this->IsComplex()); 
     
     CodeExpr result;
     for (int i = 0; i < c1->Dimension(); i++)
@@ -2666,7 +2675,8 @@ public:
     for (int i = 0; i < c1->Dimension(); i++)
       res += Var(inputs[0],i,c1->Dimensions()).Func("L2Norm2");
 
-    code.Declare (code.res_type, index, this->Dimensions());
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), this->IsComplex());
     code.body += Var(index).Assign( res.Func("sqrt"), false);
   }
 
@@ -2924,7 +2934,8 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
     FlatArray<int> hdims = Dimensions();
-    code.Declare (code.res_type, index, hdims);
+    // code.Declare (code.res_type, index, hdims);
+    code.Declare (index, hdims, IsComplex());
 
     if (code_uses_tensors)
       {
@@ -3216,7 +3227,8 @@ public:
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-    code.Declare (code.res_type, index, Dimensions());                          
+    // code.Declare (code.res_type, index, Dimensions());
+    code.Declare (index, Dimensions(), IsComplex()); 
       auto dims = c1->Dimensions();
       for (int i : Range(dims[0])) {
         CodeExpr s;
@@ -3435,7 +3447,8 @@ public:
   { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-    code.Declare (code.res_type, index, this->Dimensions());
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), this->IsComplex());
     code.body += Var(index, 0).Assign (Var(inputs[0],1)*Var(inputs[1],2)-Var(inputs[0],2)*Var(inputs[1],1), false);
     code.body += Var(index, 1).Assign (Var(inputs[0],2)*Var(inputs[1],0)-Var(inputs[0],0)*Var(inputs[1],2), false);
     code.body += Var(index, 2).Assign (Var(inputs[0],0)*Var(inputs[1],1)-Var(inputs[0],1)*Var(inputs[1],0), false);
@@ -3624,7 +3637,8 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       FlatArray<int> hdims = Dimensions();
-      code.Declare (code.res_type, index, this->Dimensions());
+      // code.Declare (code.res_type, index, this->Dimensions());
+      code.Declare (index, this->Dimensions(), this->IsComplex());
       
       for (int i : Range(hdims[0]))
         for (int j : Range(hdims[1]))
@@ -3811,7 +3825,8 @@ public:
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    // auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.GetType(this->IsComplex())+">";
     auto mat_var = Var("mat", index);
     auto inv_var = Var("inv", index);
     code.body += mat_var.Declare(mat_type);
@@ -4209,14 +4224,16 @@ public:
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    // auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.GetType(this->IsComplex())+">";
     auto mat_var = Var("mat", index);
     code.body += mat_var.Declare(mat_type);
     for (int j = 0; j < D; j++)
       for (int k = 0; k < D; k++)
         code.body += mat_var(j,k).Assign(Var(inputs[0], j, k), false);
 
-    code.Declare (code.res_type, index, this->Dimensions());
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), this->IsComplex());
     
     code.body += Var(index).Assign(mat_var.Func("Det"), false);
   }
@@ -4398,7 +4415,8 @@ public:
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    // auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
+    auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.GetType(this->IsComplex())+">";
     auto mat_var = Var("mat", index);
     auto cof_var = Var("cof", index);
     code.body += mat_var.Declare(mat_type);
@@ -4408,8 +4426,9 @@ public:
         code.body += mat_var(j,k).Assign(Var(inputs[0], j, k), false);
 
     code.body += cof_var.Assign(mat_var.Func("Cof"), false);
-
-    code.Declare (code.res_type, index, this->Dimensions());                          
+    
+    // code.Declare (code.res_type, index, this->Dimensions());
+    code.Declare (index, this->Dimensions(), this->IsComplex()); 
     for (int j = 0; j < D; j++)
       for (int k = 0; k < D; k++)
         code.body += Var(index, j, k).Assign(cof_var(j,k), false);
@@ -4893,7 +4912,7 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
     CodeExpr result;
     int dim1 = c1->Dimensions()[0];
-    code.Declare (code.res_type, index, Array<int>());                  
+    code.Declare (index, Array<int>(), IsComplex()); 
     for (int i = 0; i < dim1; i++)
       result += Var(inputs[0],i,i);
     code.body += Var(index).Assign(result.S(), false);
@@ -5726,7 +5745,7 @@ public:
     GetIndex(dims, comp, i, j);
     code.body += Var(index).Assign( Var(inputs[0], i, j ));
     */
-    code.Declare (code.res_type, index, Dimensions());                                             
+    code.Declare (index, Dimensions(), IsComplex()); 
     code.body += Var(index).Assign( Var(inputs[0], comp, c1->Dimensions() ), false);    
   }
 
@@ -5960,7 +5979,8 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
-    code.Declare (code.res_type, index, Dimensions());                      
+    // code.Declare (code.res_type, index, Dimensions());
+    code.Declare (index, Dimensions(), IsComplex());
     auto dims1 = c1->Dimensions();
     for (auto i : Range(mapping))
       code.body += Var(index, i, num).Assign( Var(inputs[0], mapping[i], dims1), false);
@@ -7335,14 +7355,15 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       };
       */
       auto cast_value = [&] (int input, int i, FlatArray<int> dims) {
-        return code.res_type + "(" + Var(inputs[input], i, dims).S() + ")";
+        // return code.res_type + "(" + Var(inputs[input], i, dims).S() + ")";
+        return code.GetType(this->IsComplex()) + "(" + Var(inputs[input], i, dims).S() + ")";
       };
 
       auto var_if = Var(inputs[0]);
       // for (int i = 0; i < cf_then->Dimension(); i++)
       // code.body += Var(index,i,cf_then->Dimensions()).Declare(code.res_type);        
-      code.Declare (code.res_type, index, Dimensions());                          
-      
+      // code.Declare (code.res_type, index, Dimensions());
+      code.Declare (index, Dimensions(), IsComplex());      
       
       if(code.is_simd) {
         for (int i = 0; i < cf_then->Dimension(); i++)
@@ -7837,7 +7858,8 @@ public:
   {
     int input = 0;
     int input_index = 0;
-    code.Declare (code.res_type, index, Dimensions());                          
+    // code.Declare (code.res_type, index, Dimensions());
+    code.Declare (index, Dimensions(), IsComplex());
     for (int i = 0; i < Dimension(); i++)
       {
         auto cfi = ci[input];
@@ -7930,7 +7952,8 @@ public:
         auto v = Var(index);
         // code.body += v.Assign(CodeExpr(string("mir.GetPoints()(i,")+ToLiteral(dir)+")"));
 
-        code.Declare(code.res_type, index, Dimensions());        
+        // code.Declare(code.res_type, index, Dimensions());
+        code.Declare(index, Dimensions(), IsComplex());
         code.body += v.Assign(CodeExpr(string("points(i,")+ToLiteral(dir)+")"), false);
     }
 

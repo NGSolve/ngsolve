@@ -72,7 +72,10 @@ namespace ngfem
       return code;
     }
 
+    [[deprecated("use Declare(i,dims,iscomplex) instead")]]  
     void Declare (string type, int i, FlatArray<int> dims);
+    void Declare (int i, FlatArray<int> dims, bool iscomplex);
+    string GetType (bool iscomplex) const;
   };
 
   struct CodeExpr
