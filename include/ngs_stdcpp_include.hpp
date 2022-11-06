@@ -137,7 +137,6 @@
 #endif
 #endif
 
-/*
 [[noreturn]] inline void unreachable()
 {
     // Uses compiler specific extensions if possible.
@@ -149,7 +148,6 @@
     __assume(false);
 #endif
 }
-*/
 
 
 #ifndef __assume
@@ -160,9 +158,7 @@
 #define __assume(cond) if (!(cond)) __builtin_unreachable(); else;
 #endif
 #else
-#ifndef _MSC_VER // MSVC
 #define __assume(cond)
-#endif
 #endif
 #endif
 

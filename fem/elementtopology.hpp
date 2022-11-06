@@ -1569,7 +1569,7 @@ namespace ngfem
       case ET_PYRAMID: return f(ET_trait<ET_PYRAMID>()); 
       case ET_HEX:     return f(ET_trait<ET_HEX>()); 
       default:
-        __assume(false);
+        unreachable();
       }
   }
 
