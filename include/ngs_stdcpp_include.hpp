@@ -137,19 +137,14 @@
 #endif
 #endif
 
-[[noreturn]] inline void unreachable()
-{
-    // Uses compiler specific extensions if possible.
-    // Even if no extension is used, undefined behavior is still raised by
-    // an empty function body and the noreturn attribute.
-#ifdef __GNUC__ // GCC, Clang, ICC
-    __builtin_unreachable();
-#else
-#ifdef _MSC_VER // MSVC
-    __assume(false);
-#endif    
+// from https://stackoverflow.com/questions/60802864/emulating-gccs-builtin-unreachable-in-visual-studio
+#ifdef __GNUC__ // GCC 4.8+, Clang, Intel and other compilers compatible with GCC (-std=c++0x or above)
+[[noreturn]] inline __attribute__((always_inline)) void unreachable() {__builtin_unreachable();}
+#elif defined(_MSC_VER) // MSVC
+[[noreturn]] __forceinline void unreachable() {__assume(false);}
+#else // ???
+inline void unreachable() {}
 #endif
-}
 
 
 #ifndef __assume
