@@ -8382,7 +8382,8 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
             });
 #endif
 
-            code.Declare (code.res_type, steps.Size(), cf->Dimensions());
+            // code.Declare (code.res_type, steps.Size(), cf->Dimensions());
+            code.Declare (steps.Size(), cf->Dimensions(), cf->IsComplex());
             for (int ind = 0; ind < cf->Dimension(); ind++) {
               // code.body += Var(steps.Size(),ind,cf->Dimensions()).Declare(res_type);
               code.body += Var(steps.Size(),ind,cf->Dimensions()).Assign(Var(steps.Size()-1,ind, cf->Dimensions()),false);

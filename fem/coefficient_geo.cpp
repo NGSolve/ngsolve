@@ -107,7 +107,7 @@ namespace ngfem
         auto nv = Var("tmp", index);
         code.body += nv.Assign(nv_expr);
         
-        code.Declare (code.res_type, index, this->Dimensions());    
+        code.Declare (index, this->Dimensions(), this->IsComplex());  
         for( int i : Range(D))
           code.body += Var(index,i).Assign(nv(i), false);
     }
@@ -242,7 +242,7 @@ namespace ngfem
       auto tv = Var("tmp", index);
       code.body += tv.Assign(tv_expr);
 
-      code.Declare (code.res_type, index, this->Dimensions());          
+      code.Declare (index, this->Dimensions(), this->IsComplex()); 
       for( int i : Range(D))
         code.body += Var(index,i).Assign(tv(i), false);
     }

@@ -940,7 +940,7 @@ namespace ngla
                    for (size_t i = 0; i < num; i++)
                      fy(col_dnums[col[bi+i]]) += s * hy.Row(i);
                  }
-             });
+             }, TasksPerThread(2));
       }
     else
       {
@@ -977,7 +977,7 @@ namespace ngla
                  for (size_t i = 0; i < num; i++)
                    fy(col_dnums[bi+i]) += s * hy.Row(i);
                }
-           });
+           }, TasksPerThread(2));
       }
   }
   
@@ -1020,7 +1020,7 @@ namespace ngla
                    for (size_t i = 0; i < num; i++)
                      fy(row_dnums[col[bi+i]]) += s * hy.Row(i);
                  }
-             });
+             }, TasksPerThread(2));
       }
     else
       {
