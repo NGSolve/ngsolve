@@ -5,6 +5,11 @@
 
 using namespace ngbla;
 
+
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wself-assign-overloaded"
+#endif
+
 template<typename T, typename TCLASS>
 void PyDefVecBuffer( TCLASS & c )
 {

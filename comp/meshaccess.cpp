@@ -1294,6 +1294,7 @@ namespace ngcomp
   void MeshAccess :: 
   GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const
   {
+    /*
     ednums.SetSize (12);
     orient.SetSize (12);
     int ned = 
@@ -1302,11 +1303,20 @@ namespace ngcomp
     orient.SetSize (ned);
     for (int i = 0; i < ned; i++)
       ednums[i]--;
+    */
+    auto el = GetElement(ElementId(VOL, elnr));
+    auto vnums = el.Vertices();
+    auto locedges = ElementTopology::GetEdges(el.GetType());
+    ednums = el.Edges();
+    orient.SetSize(ednums.Size());
+    for (auto i : Range(ednums))
+      orient[i] = vnums[locedges[i][1]] > vnums[locedges[i][0]] ? 1 : -1;
   }
 
   void MeshAccess :: 
   GetSElEdges (int selnr, Array<int> & ednums, Array<int> & orient) const
   {
+    /*
     ednums.SetSize (4);
     orient.SetSize (4);
     int ned = 
@@ -1316,6 +1326,15 @@ namespace ngcomp
 
     for (int i = 0; i < ned; i++)
       ednums[i]--;
+    */
+    auto el = GetElement(ElementId(BND, selnr));
+    auto vnums = el.Vertices();
+    auto locedges = ElementTopology::GetEdges(el.GetType());
+    ednums = el.Edges();
+    orient.SetSize(ednums.Size());
+    for (auto i : Range(ednums))
+      orient[i] = vnums[locedges[i][1]] > vnums[locedges[i][0]] ? 1 : -1;
+
   }
 
 

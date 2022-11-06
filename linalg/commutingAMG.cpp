@@ -370,7 +370,7 @@ namespace ngla
     if (vertices.Size())   // visualization of faces
       {
         char buf[20];
-        sprintf (buf, "amg.level%d.surf", levels);
+        snprintf (buf, 20, "amg.level%d.surf", levels);
         cout << "filename = " << buf << endl;
         ofstream out (buf);
         out << "surfacemesh" << endl;

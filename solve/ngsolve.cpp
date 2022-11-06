@@ -1314,7 +1314,10 @@ if(is_pardiso_available)
   if(netgen::netgen_executable_started)
   {
     Py_Initialize();
+
+#if PY_VERSION_HEX < 0x03090000
     PyEval_InitThreads();
+#endif
 
     py::module main_module = py::module::import("__main__");
 
@@ -1449,7 +1452,11 @@ void Parallel_InitPython ()
     {
       cout << "ini (parallel) python" << endl;
       Py_Initialize();
+#if PY_VERSION_HEX < 0x03090000
       PyEval_InitThreads();
+#endif
+
+      
       py::module m = py::module::import("__main__");
       // pyenv = PythonEnvironment (m);
       {
