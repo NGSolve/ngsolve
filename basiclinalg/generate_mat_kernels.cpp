@@ -1,19 +1,14 @@
-// ngscxx generate_mat_kernels.cpp ; a.out
-
-#include "../include/ngs_stdcpp_include.hpp"
-#define NGS_DLL_HEADER
+#include <string>
+#include <iostream>
+#include <fstream>
+#include <sstream>
 
 using namespace std;
 
- 
-
-#ifndef SIMD_SIZE
-  #include "../ngstd/simd_complex.hpp"
-  #define SIMD_SIZE ngcore::SIMD<double>::Size()
-#endif // SIMD_SIZE
-
 enum OP { ADD, SUB, SET, SETNEG };
 enum ORDERING { ColMajor, RowMajor };
+
+int SIMD_SIZE = 0;
 
 string ToString (OP op)
 {
@@ -2310,6 +2305,8 @@ void GenerateTriangularXY (ofstream & out, bool solve, bool lowerleft, bool norm
 
 int main (int argn, char **argv)
 {
+  ifstream simd_size_file("simd_size");
+  simd_size_file >> SIMD_SIZE;
   ofstream out(argv[1]);
 
 
