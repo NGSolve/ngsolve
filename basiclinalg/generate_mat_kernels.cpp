@@ -8,8 +8,6 @@ using namespace std;
 enum OP { ADD, SUB, SET, SETNEG };
 enum ORDERING { ColMajor, RowMajor };
 
-int SIMD_SIZE = 0;
-
 string ToString (OP op)
 {
   switch (op)
@@ -2305,8 +2303,6 @@ void GenerateTriangularXY (ofstream & out, bool solve, bool lowerleft, bool norm
 
 int main (int argn, char **argv)
 {
-  ifstream simd_size_file("simd_size");
-  simd_size_file >> SIMD_SIZE;
   ofstream out(argv[1]);
 
 
