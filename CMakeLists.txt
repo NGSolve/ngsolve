@@ -64,6 +64,7 @@ else()
   endif()
 endif()
 
+set(CMAKE_CXX_STANDARD 17)
 find_package(Netgen REQUIRED CONFIG HINTS ${CMAKE_INSTALL_PREFIX}/Contents/Resources)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
