@@ -189,7 +189,7 @@ if (USE_LAPACK)
         if(APPLE)
           set(LAPACK_LIBRARIES /System/Library/Frameworks/Accelerate.framework )
         else(APPLE)
-          find_package(LAPACK)
+          find_package(LAPACK REQUIRED)
         endif(APPLE)
       endif(WIN32)
     endif()
@@ -201,19 +201,21 @@ if(USE_UMFPACK)
   if(BUILD_UMFPACK)
     set(UMFPACK_DIR ${CMAKE_CURRENT_BINARY_DIR}/umfpack/install CACHE PATH "Temporary directory to build UMFPACK")
     set(UMFPACK_STATIC ON)
+    string(REPLACE ";" "|" LAPACK_LIBRARIES_LIST "${LAPACK_LIBRARIES}")
     ExternalProject_Add(
       suitesparse
       DEPENDS ${LAPACK_PROJECTS}
       GIT_REPOSITORY https://github.com/jlblancoc/suitesparse-metis-for-windows.git
       GIT_TAG 1618fd16ea34be287c0fbc32789ca280012a9280
+      LIST_SEPARATOR |
       ${SUBPROJECT_ARGS}
       CMAKE_ARGS
           -DCMAKE_INSTALL_PREFIX=${UMFPACK_DIR}
           -DSHARED=OFF
           -DBUILD_METIS=OFF
           -DLAPACK_FOUND=FALSE # Use blas/lapack found by ngsolve
-          -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES}
-          -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES}
+          -DSUITESPARSE_CUSTOM_BLAS_LIB=${LAPACK_LIBRARIES_LIST}
+          -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES_LIST}
           -DSUITESPARSE_INSTALL_PREFIX=${UMFPACK_DIR}
           -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON
          ${SUBPROJECT_CMAKE_ARGS}
