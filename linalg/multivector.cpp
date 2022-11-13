@@ -445,7 +445,7 @@ namespace ngla {
   Matrix<> MultiVector ::
   InnerProductD (const MultiVectorExpr & y) const
   {
-    static Timer t("MultiVector::InnerProductD");
+    static Timer t("InnerProductD (MulitVector,MultiVectorExpr)");
     RegionTimer reg(t);
 
     /*
