@@ -120,10 +120,10 @@ namespace ngcomp
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies, test_proxies;
     bool deformed;
-
+    bool volume;
   public:
     ContactIntegrator(shared_ptr<CoefficientFunction> _cf,
-                      bool _deformed);
+                      bool _deformed, bool _volume);
 
     bool IsDeformed() const { return deformed; }
 
@@ -157,16 +157,17 @@ namespace ngcomp
     bool draw_pairs = false;
     Array<Vec<3>> primary_points;
     Array<Vec<3>> secondary_points;
+    bool volume;
   public:
     void Draw();
-    ContactBoundary(Region _master, Region _other, bool draw_pairs = false);
+    ContactBoundary(Region _master, Region _other, bool draw_pairs = false, bool _volume=false);
 
     ~ContactBoundary();
 
     void AddEnergy(shared_ptr<CoefficientFunction> form,
                    bool deformed=false);
     void AddIntegrator(shared_ptr<CoefficientFunction> form,
-                       bool deformed=false);
+                       bool deformed=false, bool volume=false);
 
     // Update search tree for gap function, if bf is not
     // nullptr, update SpecialElements of bf
