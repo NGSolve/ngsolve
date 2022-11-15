@@ -3978,7 +3978,7 @@ namespace ngfem
     for (int i = 0; i < ir.Size(); i++)
       {
         irinv[i].SetFacetNr(fnr);
-        // irinv[i].Weight() = ir[i].Weight();
+        irinv[i].SetWeight(ir[i].Weight());
       }
 
 
