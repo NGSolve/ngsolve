@@ -120,10 +120,9 @@ namespace ngcomp
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies, test_proxies;
     bool deformed;
-    bool volume;
   public:
     ContactIntegrator(shared_ptr<CoefficientFunction> _cf,
-                      bool _deformed, bool _volume);
+                      bool _deformed);
 
     bool IsDeformed() const { return deformed; }
 
@@ -167,7 +166,7 @@ namespace ngcomp
     void AddEnergy(shared_ptr<CoefficientFunction> form,
                    bool deformed=false);
     void AddIntegrator(shared_ptr<CoefficientFunction> form,
-                       bool deformed=false, bool volume=false);
+                       bool deformed=false);
 
     // Update search tree for gap function, if bf is not
     // nullptr, update SpecialElements of bf

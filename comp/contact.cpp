@@ -654,8 +654,8 @@ namespace ngcomp
   }
 
   ContactIntegrator::ContactIntegrator(shared_ptr<CoefficientFunction> _cf,
-                                       bool _deformed, bool _volume)
-    : cf(_cf), deformed(_deformed), volume(_volume)
+                                       bool _deformed)
+    : cf(_cf), deformed(_deformed)
   {
     cf->TraverseTree
       ([&](CoefficientFunction& nodecf)
@@ -871,9 +871,9 @@ namespace ngcomp
   }
 
   void ContactBoundary::AddIntegrator(shared_ptr<CoefficientFunction> form,
-                                      bool deformed, bool volume)
+                                      bool deformed)
   {
-    integrators.Append(make_shared<ContactIntegrator>(form, deformed, volume));
+    integrators.Append(make_shared<ContactIntegrator>(form, deformed));
     if (deformed)
       deformed_integrators.Append (integrators.Last());
     else
@@ -1020,6 +1020,15 @@ namespace ngcomp
                               primary_ir.AddIntegrationPoint (this_ir[index[i]]);
                               secondary_ir.AddIntegrationPoint (other_ir[index[i]]);
                             }
+
+
+                          /*
+                          cout << "surfmir =  " << trafo(primary_ir, lh) << endl;
+                          auto & t2 = mesh->GetTrafo(ElementId(BND, other_nr[index[first]]), lh);
+                          cout << "secondarymir =  " << t2(secondary_ir, lh) << endl;                              
+                          // they are not matching ??? 
+                          */
+
                           
                           if (!volume)
                             {
@@ -1059,6 +1068,15 @@ namespace ngcomp
                               for (int i = 0; i < ir_vol.Size(); i++)
                                 volir.AddIntegrationPoint (ir_vol[i]);
 
+                              /*
+                                // vol and primary surf do match (but not secondary)
+                              cout << "volmir =  " << vol_trafo(volir, lh) << endl;
+                              cout << "surfmir =  " << trafo(primary_ir, lh) << endl;
+                              
+                              auto & t2 = mesh->GetTrafo(ElementId(BND, other_nr[index[first]]), lh);
+                              cout << "secondarymir =  " << t2(secondary_ir, lh) << endl;                              
+                              */
+                              
                               lock_guard<mutex> guard(add_mutex);
                               bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
                                                     (vei, ElementId(BND, other_nr[index[first]]),
@@ -1198,23 +1216,54 @@ namespace ngcomp
 
     auto& primary_fel = fes->GetFE(primary_ei, lh);
     auto& secondary_fel = fes->GetFE(secondary_ei, lh);
-    
-    for (bool def : { false, true })
-      {
-        auto& energies = cb->GetEnergies(def);
-        auto& integrators = cb->GetIntegrators(def);
-        if (energies.Size() || integrators.Size())
-          {
-            MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
-            MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
-            primary_mir.SetOtherMIR(&secondary_mir);
 
-            for(const auto& ci : integrators)
-              ci->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
-            for(const auto& ce : energies)
-              ce->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
-          }
+    if (primary_ei.IsBoundary())
+      for (bool def : { false, true })
+        {
+          auto& energies = cb->GetEnergies(def);
+          auto& integrators = cb->GetIntegrators(def);
+          if (energies.Size() || integrators.Size())
+            {
+              MappedIntegrationRule<DIM-1,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
+              MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
+              primary_mir.SetOtherMIR(&secondary_mir);
+              
+              for(const auto& ci : integrators)
+                ci->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
+              for(const auto& ce : energies)
+                ce->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
+            }
+        }
+    else
+      {
+        // cout << "volume contact integrator" << endl;
+      for (bool def : { false, true })
+        {
+          auto& energies = cb->GetEnergies(def);
+          auto& integrators = cb->GetIntegrators(def);
+          if (energies.Size() || integrators.Size())
+            {
+              MappedIntegrationRule<DIM,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
+              MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
+
+              /*
+              cout << "primary mir: " << endl;
+              for (const auto & mip : primary_mir)
+                cout << mip << endl;
+              cout << "secondary mir: " << endl;
+              for (const auto & mip : secondary_mir)
+                cout << mip << endl;
+              */
+              primary_mir.SetOtherMIR(&secondary_mir);
+              
+              for(const auto& ci : integrators)
+                ci->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
+              for(const auto& ce : energies)
+                ce->CalcLinearizedAdd(primary_fel, secondary_fel, primary_mir, elx, elmat, lh);            
+            }
+        }
       }
+      
   }
 
   template class MPContactElement<2>;

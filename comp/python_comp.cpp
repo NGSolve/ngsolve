@@ -4620,7 +4620,7 @@ operations of it are used!
      .def("AddEnergy", &ContactBoundary::AddEnergy,
           "form"_a, "deformed"_a = false)
      .def("AddIntegrator", &ContactBoundary::AddIntegrator,
-          "form"_a, "deformed"_a = false, "volume"_a=false)
+          "form"_a, "deformed"_a = false)
      .def("Update", &ContactBoundary::Update,
           py::arg("gf") = nullptr, py::arg("bf") = nullptr,
           py::arg("intorder") = 4, py::arg("maxdist") = 0.,
