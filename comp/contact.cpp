@@ -654,8 +654,8 @@ namespace ngcomp
   }
 
   ContactIntegrator::ContactIntegrator(shared_ptr<CoefficientFunction> _cf,
-                                       bool _deformed)
-    : cf(_cf), deformed(_deformed)
+                                       bool _deformed, bool _volume)
+    : cf(_cf), deformed(_deformed), volume(_volume)
   {
     cf->TraverseTree
       ([&](CoefficientFunction& nodecf)
@@ -814,8 +814,8 @@ namespace ngcomp
   }
 
   ContactBoundary::ContactBoundary(Region _master, Region _other,
-                                   bool _draw_pairs)
-    : master(_master), other(_other), draw_pairs(_draw_pairs)
+                                   bool _draw_pairs, bool _volume)
+    : master(_master), other(_other), draw_pairs(_draw_pairs), volume(_volume)
   {
 #if NETGEN_USE_GUI
     if(draw_pairs)
@@ -871,9 +871,9 @@ namespace ngcomp
   }
 
   void ContactBoundary::AddIntegrator(shared_ptr<CoefficientFunction> form,
-                                      bool deformed)
+                                      bool deformed, bool volume)
   {
-    integrators.Append(make_shared<ContactIntegrator>(form, deformed));
+    integrators.Append(make_shared<ContactIntegrator>(form, deformed, volume));
     if (deformed)
       deformed_integrators.Append (integrators.Last());
     else
@@ -1014,16 +1014,58 @@ namespace ngcomp
                           
                           IntegrationRule primary_ir;
                           IntegrationRule secondary_ir;
+
                           for (int i = first; i < next; i++)
                             {
                               primary_ir.AddIntegrationPoint (this_ir[index[i]]);
                               secondary_ir.AddIntegrationPoint (other_ir[index[i]]);
                             }
-                          lock_guard<mutex> guard(add_mutex);
-                          bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
-                                                (el, ElementId(BND, other_nr[index[first]]),
-                                                 move(primary_ir), move(secondary_ir),
-                                                 this, displacement.get()));
+                          
+                          if (!volume)
+                            {
+                              lock_guard<mutex> guard(add_mutex);
+                              bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
+                                                    (el, ElementId(BND, other_nr[index[first]]),
+                                                     move(primary_ir), move(secondary_ir),
+                                                     this, displacement.get()));
+                            }
+                          else
+                            {
+                              // LocalHeapMem<100000> lh("lhbfv");
+                              // const ElementTransformation & trafo = ir.GetTransformation();
+                              // auto ei = trafo.GetElementId();
+                              // const MeshAccess & ma = *static_cast<const MeshAccess*> (trafo.GetMesh());
+
+                              int facet = mesh->GetElFacets(el)[0];
+                              ArrayMem<int,2> elnums;
+                              mesh->GetFacetElements (facet, elnums);
+                              if (elnums.Size() != 1)
+                                throw Exception("surface element does not have exactly one vol element");
+
+                              ElementId vei(VOL, elnums[0]);
+                              int locfacnr = mesh->GetElFacets(vei).Pos(facet);
+                                  
+                              ElementTransformation & vol_trafo = mesh->GetTrafo (vei, lh);
+                              // if (!vol_cf->DefinedOn(vol_trafo)) continue;
+                                  
+                              Facet2ElementTrafo f2el(vol_trafo.GetElementType(), mesh->GetElVertices(vei));
+                              Array<int> surfvnums { mesh->GetElVertices(el) };
+                              Facet2SurfaceElementTrafo f2sel(trafo.GetElementType(), surfvnums);
+                              
+                              auto & ir_ref = f2sel.Inverse(primary_ir, lh);
+                              auto & ir_vol = f2el(locfacnr, ir_ref, lh);
+
+                              IntegrationRule volir;
+                              for (int i = 0; i < ir_vol.Size(); i++)
+                                volir.AddIntegrationPoint (ir_vol[i]);
+
+                              lock_guard<mutex> guard(add_mutex);
+                              bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
+                                                    (vei, ElementId(BND, other_nr[index[first]]),
+                                                     move(volir), move(secondary_ir),
+                                                     this, displacement.get()));
+                            }
+                          
                           first = next;
                         }
                     });
