@@ -778,12 +778,12 @@ namespace ngcomp
           IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*primary_fel.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*primary_fel.GetNDof());
 
           auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
-          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
-          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
+          FlatMatrix<double,ColMajor> bmat1(proxy1->Dimension(), trial_range.Size(), lh);
+          FlatMatrix<double,ColMajor> bmat2(proxy2->Dimension(), test_range.Size(), lh);
 
           int bs = primary_mir.Size();
-          FlatMatrix<double,ColMajor> bdbmat1(bs*proxy2->Dimension(), loc_elmat.Width(), lh);
-          FlatMatrix<double,ColMajor> bbmat2(bs*proxy2->Dimension(), loc_elmat.Height(), lh);
+          FlatMatrix<double,ColMajor> bdbmat1(bs*proxy2->Dimension(), trial_range.Size(), lh);
+          FlatMatrix<double,ColMajor> bbmat2(bs*proxy2->Dimension(), test_range.Size(), lh);
 
           bdbmat1 = 0.;
           bbmat2 = 0.;
@@ -1244,6 +1244,8 @@ namespace ngcomp
           if (energies.Size() || integrators.Size())
             {
               MappedIntegrationRule<DIM,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
+              primary_mir.ComputeNormalsAndMeasure (primary_trafo.GetElementType(), primary_ir[0].FacetNr());
+              
               MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
 
               /*
