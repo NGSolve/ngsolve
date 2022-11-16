@@ -5,6 +5,7 @@
 
 using namespace std;
 
+int simd_size = 0;
 enum OP { ADD, SUB, SET, SETNEG };
 enum ORDERING { ColMajor, RowMajor };
 
@@ -1524,7 +1525,7 @@ void GenerateShortSum (ostream & out, int wa, OP op)
   
   for (int r : { 8, 4, 2, 1})
     {
-      if (r > SIMD_SIZE) continue;
+      if (r > simd_size) continue;
       
       out << "if (rest & " << r << ") {  \n";
       if (wa > 0)
@@ -1907,7 +1908,7 @@ void  GenerateMatVec (ostream & out, int wa, OP op)
   out << "template <> INLINE void KernelMatVec<" << wa << ", " << ToString(op) << ">" << endl
       << "(size_t ha, double * pa, size_t da, double * x, double * y) {" << endl;
 
-  int SW = SIMD_SIZE;  // generate optimal code for my host
+  int SW = simd_size;  // generate optimal code for my host
   // out << "constexpr int SW = SIMD<double>::Size();" << endl;
   int i = 0;
   for ( ; SW*(i+1) <= wa; i++)
@@ -2044,7 +2045,7 @@ void GenerateAddMatVec (ostream & out, int wa)
   out << "template <> INLINE void KernelAddMatVec<" << wa << ">" << endl
       << "(double s, size_t ha, double * pa, size_t da, double * x, double * y) {" << endl;
 
-  int SW = SIMD_SIZE;  // generate optimal code for my host
+  int SW = simd_size;  // generate optimal code for my host
   int i = 0;
   for ( ; SW*(i+1) <= wa; i++)
     out << "SIMD<double," << SW << "> x" << i << "(x+" << i*SW << ");" << endl;
@@ -2179,7 +2180,7 @@ void GenerateAddMatTransVecI (ostream & out, int wa)
       << "inline void KernelAddMatTransVecI<" << wa << ">" << endl
       << "(double s, size_t ha, double * pa, size_t da, double * x, double * y, int * ind) {" << endl;
 
-  int SW = SIMD_SIZE;  // generate optimal code for my host
+  int SW = simd_size;  // generate optimal code for my host
 
   int nfull = wa / SW;
   int rest = wa % SW;
@@ -2574,6 +2575,7 @@ void GenerateTriangularXY (ofstream & out, bool solve, bool lowerleft, bool norm
 int main (int argn, char **argv)
 {
   ofstream out(argv[1]);
+  simd_size = atoi(argv[2]);
 
 
   out <<
@@ -2634,7 +2636,7 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
     "{ sum = FNMA(a,b,sum); }";
 
   
-  out << "static_assert(SIMD<double>::Size() == " << SIMD_SIZE << ", \"inconsistent compile flags for generate_mat_kernels.cpp and matkernel.hpp\");" << endl;
+  out << "static_assert(SIMD<double>::Size() == " << simd_size << ", \"inconsistent compile flags for generate_mat_kernels.cpp and matkernel.hpp\");" << endl;
   out << "enum OPERATION { ADD, SUB, SET, SETNEG };" << endl;
 
   out << " /* *********************** MatKernelMultAB ********************* */" << endl
