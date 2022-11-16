@@ -2648,8 +2648,9 @@ definedonelem : object
 )raw_string"), py::dynamic_attr())
     .def(py::init([] (string name, int dim,
                       py::object py_coef,
-                      py::object definedon, bool imag, const Flags & flags,
-                      py::object definedonelem)
+                      optional<variant<ngcomp::Region, py::list>> definedon,
+                      bool imag, const Flags & flags,
+                      shared_ptr<BitArray> definedonelem)
                   {
                     Array<shared_ptr<CoefficientFunction>> coef = MakeCoefficients(py_coef);
                     auto lfi = GetIntegrators().CreateLFI (name, dim, coef);
@@ -2657,31 +2658,35 @@ definedonelem : object
                     if (!lfi) throw Exception(string("undefined integrator '")+name+
                                               "' in "+ToString(dim)+ " dimension having 1 coefficient");
 
-                    if(hasattr(definedon,"Mask"))
+                    if(definedon)
                       {
-                        auto vb = py::cast<VorB>(definedon.attr("VB")());
-                        if(vb != lfi->VB())
-                          throw Exception(string("LinearFormIntegrator ") + name + " not defined for " +
-                                          (vb==VOL ? "VOL" : (vb==BND ? "BND" : "BBND")));
-                        lfi->SetDefinedOn(py::cast<BitArray>(definedon.attr("Mask")()));
+                        if(auto reg = get_if<ngcomp::Region>(&*definedon); reg)
+                          {
+                            auto vb = reg->VB();
+                            if(vb != lfi->VB())
+                              throw Exception(string("LinearFormIntegrator ") + name + " not defined for " +
+                                              (vb==VOL ? "VOL" : (vb==BND ? "BND" : "BBND")));
+                            lfi->SetDefinedOn(reg->Mask());
+                          }
+                        else
+                          {
+                            auto list = get_if<py::list>(&*definedon);
+                            Array<int> defon = makeCArray<int> (*list);
+                            for (int & d : defon) d--;
+                            lfi -> SetDefinedOn (defon);
+                          }
                       }
-                    if (py::extract<py::list> (definedon).check())
-                      {
-                        Array<int> defon = makeCArray<int> (definedon);
-                        for (int & d : defon) d--;
-                        lfi -> SetDefinedOn (defon);
-                      }
-                    if (! py::extract<DummyArgument> (definedonelem).check())
-                      lfi -> SetDefinedOnElements (py::extract<shared_ptr<BitArray>>(definedonelem)());
+                    if (definedonelem)
+                      lfi -> SetDefinedOnElements(definedonelem);
 
                     if (imag)
                       lfi = make_shared<ComplexLinearFormIntegrator> (lfi, Complex(0,1));
                     return lfi;
                   }),
-         py::arg("name")=NULL,py::arg("dim")=-1,
-         py::arg("coef"),py::arg("definedon")=DummyArgument(),
+         py::arg("name")="lfi",py::arg("dim")=-1,
+         py::arg("coef"),py::arg("definedon")=nullopt,
          py::arg("imag")=false, py::arg("flags")=py::dict(),
-         py::arg("definedonelements")=DummyArgument())
+         py::arg("definedonelements")=nullptr)
 
     .def("__str__",  [](shared_ptr<LFI> self) { return ToString<LinearFormIntegrator>(*self); } )
     .def_property("simd_evaluate",
