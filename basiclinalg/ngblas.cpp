@@ -11,6 +11,11 @@ constexpr bool reg32 = false;
 #endif
 
 
+namespace ngcore
+{
+  // some more simds
+}
+
 namespace ngbla
 {
 
