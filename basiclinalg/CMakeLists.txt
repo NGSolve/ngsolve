@@ -1,39 +1,17 @@
 include(CheckCXXSourceCompiles)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
-# determine simd size on target architecture
-set(SIMD_SIZE -1)
-macro(check_simd_size CHECK_SIMD_SIZE RESULT_VAR)
-    try_compile(${RESULT_VAR}
-        ${CMAKE_CURRENT_BINARY_DIR}
-        ${CMAKE_CURRENT_SOURCE_DIR}/check_simd_size.cpp
-        OUTPUT_VARIABLE out
-        COMPILE_DEFINITIONS -DCHECK_SIMD_SIZE=${CHECK_SIMD_SIZE}
-        CXX_STANDARD 17
-        LINK_LIBRARIES ngcore)
-    # message("compile output ${res} \n${out}")
-    set(RESULT_VAR ${res})
-    if(${RESULT_VAR})
-        set(SIMD_SIZE ${CHECK_SIMD_SIZE})
-    endif()
-endmacro()
-
-check_simd_size(1 IS_SIMD_SIZE_1)
-check_simd_size(2 IS_SIMD_SIZE_2)
-check_simd_size(4 IS_SIMD_SIZE_4)
-check_simd_size(8 IS_SIMD_SIZE_8)
-message("Detected SIMD width: ${SIMD_SIZE}")
-
 add_executable(kernel_generator generate_mat_kernels.cpp)
-target_compile_definitions(kernel_generator PUBLIC -DSIMD_SIZE=${SIMD_SIZE})
 
-
-add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp
-  COMMAND kernel_generator "${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp"
+add_custom_command(OUTPUT  matkernel_1.hpp matkernel_2.hpp matkernel_4.hpp matkernel_8.hpp
+  COMMAND kernel_generator matkernel_1.hpp 1
+  COMMAND kernel_generator matkernel_2.hpp 2
+  COMMAND kernel_generator matkernel_4.hpp 4
+  COMMAND kernel_generator matkernel_8.hpp 8
   DEPENDS kernel_generator
 )
 
-add_custom_target(kernel_generated DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/matkernel.hpp)
+add_custom_target(kernel_generated DEPENDS matkernel_1.hpp matkernel_2.hpp matkernel_4.hpp matkernel_8.hpp)
 
 add_library(ngbla ${NGS_LIB_TYPE}
         bandmatrix.cpp triangular.cpp calcinverse.cpp cholesky.cpp
