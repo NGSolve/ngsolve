@@ -215,34 +215,33 @@ max : float
 
 
     m.def("SetVisualization",
-            [](py::object deformation, py::object min, py::object max,
-                /* py::object clippnt, */ py::object clipnormal, py::object clipping)
+            [](optional<bool> deformation, optional<double> min, optional<double> max,
+               optional<py::tuple> clipnormal, optional<bool> clipping)
              {
                bool need_redraw = false;
-               if (py::extract<bool>(deformation).check())
+               if (deformation)
                  {
-                   bool def = py::extract<bool>(deformation)();
-                   Ng_TclCmd ("set ::visoptions.deformation "+ToString(def)+";\n");
+                   Ng_TclCmd ("set ::visoptions.deformation "+ToString(*deformation)+";\n");
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                    need_redraw = true;
                  }
-               if (py::extract<double>(min).check())
+               if (min)
                  {
                    Ng_TclCmd ("set ::visoptions.autoscale 0\n");
-                   Ng_TclCmd ("set ::visoptions.mminval "+ToString(py::extract<double>(min)())+";\n");
+                   Ng_TclCmd ("set ::visoptions.mminval "+ToString(*min)+";\n");
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");                 
                    need_redraw = true;
                  }
-               if (py::extract<double>(max).check())
+               if (max)
                  {
                    Ng_TclCmd ("set ::visoptions.autoscale 0\n");
-                   Ng_TclCmd ("set ::visoptions.mmaxval "+ToString(py::extract<double>(max)())+";\n");
+                   Ng_TclCmd ("set ::visoptions.mmaxval "+ToString(*max)+";\n");
                    Ng_TclCmd ("Ng_Vis_Set parameters;\n");                   
                    need_redraw = true;
                  }
-               if (py::extract<py::tuple>(clipnormal).check())
+               if (clipnormal)
                  {
-                   py::tuple norm = py::extract<py::tuple>(clipnormal)();
+                   py::tuple norm = *clipnormal;
                    if (py::len(norm)==3)
                      {
                        // cout << "setting clipping normal" << endl;
@@ -254,10 +253,9 @@ max : float
                        need_redraw = true;
                      }
                  }
-               if (py::extract<bool>(clipping).check())
+               if (clipping)
                  {
-                   bool clip = py::extract<bool>(clipping)();
-                   Ng_TclCmd ("set ::viewoptions.clipping.enable "+ToString(int(clip))+";\n");
+                   Ng_TclCmd ("set ::viewoptions.clipping.enable "+ToString(int(*clipping))+";\n");
                    Ng_TclCmd ("Ng_SetVisParameters");
                    
                    need_redraw = true;
@@ -265,12 +263,11 @@ max : float
                if (need_redraw)
                  Ng_Redraw(true);
              },
-             py::arg("deformation")=DummyArgument(),
-             py::arg("min")=DummyArgument(),
-             py::arg("max")=DummyArgument(),
-             // py::arg("clippnt")=DummyArgument(),
-             py::arg("clipnormal")=DummyArgument(),
-          py::arg("clipping")=DummyArgument(), docu_string(R"raw_string(
+             py::arg("deformation")=nullopt,
+             py::arg("min")=nullopt,
+             py::arg("max")=nullopt,
+             py::arg("clipnormal")=nullopt,
+          py::arg("clipping")=nullopt, docu_string(R"raw_string(
 Set visualization options
 
 Parameters:
