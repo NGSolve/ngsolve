@@ -456,6 +456,7 @@ pip_windows:
     - .\tests\build_pip.ps1 C:\Python38
     - .\tests\build_pip.ps1 C:\Python39
     - .\tests\build_pip.ps1 C:\Python310
+    - .\tests\build_pip.ps1 C:\Python311
   when: manual
 
 pip_macos:
@@ -468,4 +469,5 @@ pip_macos:
     - ./tests/build_pip_mac.sh 3.8
     - ./tests/build_pip_mac.sh 3.9
     - ./tests/build_pip_mac.sh 3.10
+    - ./tests/build_pip_mac.sh 3.11
   when: manual
