@@ -8,6 +8,7 @@
 #include <fem.hpp>
 #include <comp.hpp>
 #include <mutex>
+#include <meshing/fieldlines.hpp>
 using namespace ngfem;
 using ngfem::ELEMENT_TYPE;
 
@@ -1280,6 +1281,67 @@ keep_files : bool
                            })
     
     .def (NGSPickle<CoefficientFunction>())
+    .def("_BuildFieldLines", [](shared_ptr<CoefficientFunction > cf, shared_ptr<ngcomp::MeshAccess> ma,
+                const std::vector<std::tuple<double,double,double>> & start_points,
+                size_t num_fieldlines,
+                double length,
+                double max_points,
+                double thickness,
+                double tolerance,
+                int direction
+                )
+    {
+        Array<netgen::Point<3>> points;
+        for(const auto & [x,y,z] : start_points)
+            points.Append(netgen::Point<3>{x,y,z});
+
+        std::function eval_func = [&](int elnr, const double * lami, netgen::Vec<3> & vec)
+        {
+            vec = 0.0;
+            LocalHeapMem<1000> lh("CF evaluate");
+            auto& trafo = ma->GetTrafo(ElementId(VOL, elnr), lh);
+            auto& mip = trafo(IntegrationPoint(lami[0], lami[1], lami[2]),lh);
+            FlatVector<double> fv(3, &vec[0]);
+            cf->Evaluate(mip, fv);
+            return vec.Length2()>0.0;
+        };
+
+        int rk_type = 3;
+
+        netgen::FieldLineCalc linecalc(*ma->GetNetgenMesh(), eval_func, length, max_points, thickness, tolerance, rk_type, direction);
+	linecalc.GenerateFieldLines(points,num_fieldlines);
+
+        auto convert = [](const auto & data) {
+            std::vector<double> a;
+            if(data.Size()==0)
+                return a;
+
+            size_t n = data.Size() * sizeof(data[0])/sizeof(double);
+            double * p = reinterpret_cast<double*>(&data[0]);
+            for(auto i : Range(n))
+                a.push_back(p[i]);
+
+            return a;
+        };
+
+        py::dict res;
+        res["type"] = py::cast("fieldlines");
+        res["name"] = py::cast("fieldlines");
+        res["pstart"] = convert(linecalc.GetPStart());
+        res["pend"] = convert(linecalc.GetPEnd());
+        res["value"] = convert(linecalc.GetValues());
+        res["thickness"] = py::cast(linecalc.GetThickness());
+
+        return res;
+    }, py::arg("mesh"),
+       py::arg("start_points"),
+       py::arg("num_fieldlines")=100,
+       py::arg("length")=0.5,
+       py::arg("max_points")=500,
+       py::arg("thickness")=0.0015,
+       py::arg("tolerance")=0.0005,
+       py::arg("direction")=0
+    )
     ;
 
   m.def("Cross", [] (shared_ptr<CF> cf1, shared_ptr<CF> cf2) { return CrossProduct(cf1, cf2); });
