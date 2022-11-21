@@ -642,6 +642,21 @@ mesh (netgen.Mesh): a mesh generated from Netgen
         "Return pml transformation on domain dom"
         )
 
+    .def("Region",
+	 [](const shared_ptr<MeshAccess> & ma, VorB vb, optional<string> opt_pattern)
+	  {
+            if (opt_pattern)
+                return Region (ma, vb, *opt_pattern);
+
+            // empty region
+            auto region = Region(ma, vb);
+            region.Mask().Clear();
+            return region;
+	  },
+         py::arg("vb"),
+         py::arg("pattern") = ".*",
+	 "Return boundary mesh-region matching the given regex pattern")
+
     .def("GetMaterials",
 	 [](const MeshAccess & ma)
          {
