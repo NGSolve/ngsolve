@@ -2439,6 +2439,48 @@ namespace ngcomp
     return make_shared<BoundaryFromVolumeCoefficientFunction> (avol_cf);
   }
 
+  class TrafoCF : public CoefficientFunctionNoDerivative
+  {
+    shared_ptr<CoefficientFunction> func, trafo;
+    Region region;
+  public:
+    TrafoCF(shared_ptr<CoefficientFunction> _func,
+            shared_ptr<CoefficientFunction> _trafo,
+            Region _region)
+      : CoefficientFunctionNoDerivative(_func->Dimension()),
+        func(_func), trafo(_trafo), region(_region) {}
+
+    double Evaluate(const BaseMappedIntegrationPoint& mip) const override
+    {
+      Vec<3> mapped_point;
+      trafo->Evaluate(mip, mapped_point);
+      IntegrationPoint ip;
+      int elnr;
+      Array<int> indices;
+      for(auto i : Range(region.Mask().Size()))
+        if(region.Mask().Test(i))
+            indices.Append(i);
+
+      if(region.VB() == VOL)
+        elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true, &indices);
+      else if(region.VB() == BND)
+        elnr = region.Mesh()->FindSurfaceElementOfPoint(mapped_point, ip, true, &indices);
+      else
+        throw Exception("Only VOL and BND implemented yet!");
+      auto& trafo = region.Mesh()->GetTrafo(ElementId(region.VB(), elnr), global_alloc);
+      auto& mapped_mip = trafo(ip, global_alloc);
+      return func->Evaluate(mapped_mip);
+    }
+  };
+
+  shared_ptr<CoefficientFunction> MakeTrafoCF(shared_ptr<CoefficientFunction> func,
+                                              shared_ptr<CoefficientFunction> trafo,
+                                              Region region)
+  {
+    return make_shared<TrafoCF>(func, trafo, region);
+  }
+
+
   
 
 #ifdef PARALLEL
