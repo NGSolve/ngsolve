@@ -1297,6 +1297,11 @@ namespace ngcomp
 
   shared_ptr<CoefficientFunction>
   MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf);
+
+  shared_ptr<CoefficientFunction>
+  MakeTrafoCF(shared_ptr<CoefficientFunction> func,
+              shared_ptr<CoefficientFunction> trafo,
+              Region region);
   
   /**
      Controls the progress - output.
