@@ -1015,7 +1015,6 @@ a domain-wise CF to define a function only locally:
 uloc = CoefficientFunction( [None, None, u, None] )
 )raw_string")
           );
-
 }
 
 

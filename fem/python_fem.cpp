@@ -544,6 +544,15 @@ direction : int
   
   m.attr("specialcf") = py::cast(&specialcf);
 
+  struct CoordinateTrafo
+  {
+    shared_ptr<CoefficientFunction> trafo;
+    ngcomp::Region region;
+  };
+
+  py::class_<CoordinateTrafo>(m, "CoordinateTrafo")
+    .def(py::init<shared_ptr<CoefficientFunction>, ngcomp::Region>());
+
   auto cf_class = py::class_<CoefficientFunction, shared_ptr<CoefficientFunction>>
     (m, "CoefficientFunction",
 R"raw(A CoefficientFunction (CF) is some function defined on a mesh.
@@ -661,6 +670,10 @@ val : can be one of the following:
              pnt = Vector<>{ x };
            return make_shared<ngcomp::PointEvaluationFunctional>(self, pnt);
          }, py::arg("x"), py::arg("y")=nullopt, py::arg("z")=nullopt)
+    .def("__call__", [](shared_ptr<CF> self, const CoordinateTrafo& trafo)
+    {
+      return ngcomp::MakeTrafoCF(self, trafo.trafo, trafo.region);
+    })
     .def_property_readonly("dim",
          [] (CF& self) { return self.Dimension(); } ,
                   "number of components of CF")
