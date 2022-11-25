@@ -27,11 +27,10 @@ def getMinMax( vals, fmin=None, fmax=None ):
 
 
 class WebGLScene(BaseWebGuiScene):
-    def __init__(self, cf, mesh, order, min_, max_, draw_vol, draw_surf, autoscale, intpoints, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_, objects, nodal_p1, settings={}):
+    def __init__(self, cf, mesh_or_regions, order, min_, max_, draw_vol, draw_surf, autoscale, intpoints, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_, objects, nodal_p1, settings={}):
         from IPython.display import display, Javascript
         import threading
         self.cf = cf
-        self.mesh = mesh
         self.order = order
         self.min = min_
         self.max = max_
@@ -53,16 +52,49 @@ class WebGLScene(BaseWebGuiScene):
         self.deformation = deformation
         self.encoding = 'b64'
 
-        if isinstance(mesh, ngs.comp.Region):
-            self.region = mesh
-            self.mesh = self.region.mesh
+        regions = {}
+
+        # got one region as input: draw only on region and region.Boundaries()
+        if isinstance(mesh_or_regions, ngs.comp.Region):
+            region = mesh_or_regions
+            self.mesh = mesh = region.mesh
+            regions[region.VB()] = region
+            while region.VB() != ngs.BBND:
+                bnd_reg = region.Boundaries()
+                regions[bnd_reg.VB()] = bnd_reg
+                region = bnd_reg
+
+        # draw exactly on given list of regions (no regions.Boundaries())
+        elif isinstance(mesh_or_regions, list):
+            regions = {}
+            self.mesh = None
+            for reg in mesh_or_regions:
+                if isinstance(reg, ngs.comp.Region):
+                    self.mesh = reg.mesh
+                    regions[reg.VB()] = reg
+                if isinstance(reg, ngs.comp.VorB):
+                    regions[reg] = reg
+            if self.mesh is None:
+                raise RuntimeError("missing mesh/region")
+
+        # draw on whole mesh
+        elif isinstance(mesh_or_regions, ngs.comp.Mesh):
+            self.mesh = mesh_or_regions
+            for vb in [ngs.VOL, ngs.BND, ngs.BBND]:
+                regions[vb] = vb
         else:
-            self.region = None
+            raise RuntimeError("invalid input mesh")
+
+        # fill with empty regions
+        for vb in [ngs.VOL, ngs.BND, ngs.BBND]:
+            if vb not in regions:
+                regions[vb] = self.mesh.Region(vb, None)
+        self.regions = regions
 
     def GetData(self, set_minmax=True):
         encoding = self.encoding
         import json
-        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=self.deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings)
+        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=self.deformation, regions=self.regions, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings)
 
         if isinstance(self.cf, ngs.GridFunction) and len(self.cf.vecs)>1:
             # multidim gridfunction - generate data for each component
@@ -83,7 +115,7 @@ class WebGLScene(BaseWebGuiScene):
                 if md_deformation:
                     deformation.vec.data = self.deformation.vecs[i]
 
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=deformation, region=self.region, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings))
+                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=deformation, regions=self.regions, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings))
             d['multidim_data'] = data
             d['multidim_interpolate'] = self.interpolate_multidim
             d['multidim_animate'] = self.animate
@@ -194,7 +226,7 @@ def GetNodalP1Data(encode, mesh, cf, cf2=None):
     return d
     
     
-def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoints=None, deformation=None, region=True, objects=[], nodal_p1=False, encoding='b64', settings={}):
+def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoints=None, deformation=None, regions=None, objects=[], nodal_p1=False, encoding='b64', settings={}):
     timer.Start()
 
     import inspect
@@ -317,11 +349,10 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
-        if region and region.VB() == vb:
-            vb = region
+        reg = regions[vb]
         cf = func1 if draw_surf else func0
         timer2map.Start()
-        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
+        pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, reg)
         timer2map.Stop()
         pmat = cf(pts)
 
@@ -359,9 +390,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         ipts = [(i/og,0) for i in range(og+1)]
         ir_seg = ngs.IntegrationRule(ipts, [0,]*len(ipts))
         vb = [ngs.VOL, ngs.BND, ngs.BBND][mesh.dim-1]
-        if region and region.VB() == vb:
-            vb = region
-        pts = mesh.MapToAllElements(ir_seg, vb)
+        reg = regions[vb]
+        pts = mesh.MapToAllElements(ir_seg, reg)
         pmat = func0(pts)
         pmima = updatePMinMax(pmat)
         pmat = pmat.reshape(-1, og+1, 4)
@@ -406,12 +436,11 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
         
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
-        if region and region.VB() == vb:
-            vb = region
+        reg = regions[vb]
         if intpoints is not None:
-            pts = mesh.MapToAllElements(intpoints, vb)
+            pts = mesh.MapToAllElements(intpoints, reg)
         else:
-            pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, vb)
+            pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, reg)
 
         pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
 
@@ -514,9 +543,9 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
           intrules[eltype] = ngs.IntegrationRule( sum(points, []) )
 
         if intpoints is not None:
-            pts = mesh.MapToAllElements(intpoints, ngs.VOL)            
+            pts = mesh.MapToAllElements(intpoints, regions[ngs.VOL])
         else:
-            pts = mesh.MapToAllElements(intrules, ngs.VOL)
+            pts = mesh.MapToAllElements(intrules, regions[ngs.VOL])
             
         pmat = func1(pts)
 
