@@ -1000,7 +1000,12 @@ a domain-wise CF to define a function only locally:
 uloc = CoefficientFunction( [None, None, u, None] )
 )raw_string")
           );
-
+    m.def("TrafoCF", [](shared_ptr<CoefficientFunction> func,
+                        shared_ptr<CoefficientFunction> trafo,
+                        Region region)
+    {
+      return MakeTrafoCF(func, trafo, region);
+    });
 }
 
 
