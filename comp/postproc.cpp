@@ -1670,9 +1670,9 @@ namespace ngfem
                        cf -> Evaluate (mir, values);
                        for (int i = 0; i < values.Height(); i++)
                          hsum += mir[i].GetWeight() * values(i,0);
-                       if (element_wise.Size())
-                         element_wise(el.Nr()) += hsum;
                      }
+                   if (element_wise.Size())
+                     element_wise(el.Nr()) += hsum;
                  }
                AtomicAdd(sum, hsum);
              });
