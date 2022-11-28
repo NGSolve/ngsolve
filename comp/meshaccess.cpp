@@ -2443,12 +2443,39 @@ namespace ngcomp
   {
     shared_ptr<CoefficientFunction> func, trafo;
     Region region;
+    unique_ptr<netgen::BoxTree<3>> searchtree;
   public:
     TrafoCF(shared_ptr<CoefficientFunction> _func,
             shared_ptr<CoefficientFunction> _trafo,
             Region _region)
       : CoefficientFunctionNoDerivative(_func->Dimension()),
-        func(_func), trafo(_trafo), region(_region) {}
+        func(_func), trafo(_trafo), region(_region)
+    {
+      if(region.VB() == BND)
+        {
+          netgen::Box<3> box(netgen::Box<3>::EMPTY_BOX);
+          for(const auto& el : region.GetElements())
+            for(auto v : el.Points())
+              {
+                auto p = region.Mesh()->GetPoint<3>(v);
+                box.Add({ p[0], p[1], p[2] });
+              }
+
+          box.Scale(1.2);
+          searchtree = make_unique<netgen::BoxTree<3>>(box);
+          for(const auto& el : region.GetElements())
+            {
+              netgen::Box<3> box (netgen::Box<3>::EMPTY_BOX);
+              for(auto v : el.Points())
+                {
+                  auto p = region.Mesh()->GetPoint<3>(v);
+                  box.Add({ p[0], p[1], p[2] });
+                }
+              box.Scale(1.2);
+              searchtree->Insert(box, el.Nr());
+            }
+        }
+    }
 
     double Evaluate(const BaseMappedIntegrationPoint& mip) const override
     {
@@ -2456,19 +2483,43 @@ namespace ngcomp
       trafo->Evaluate(mip, mapped_point);
       IntegrationPoint ip;
       int elnr;
-      Array<int> indices;
-      for(auto i : Range(region.Mask().Size()))
-        if(region.Mask().Test(i))
-            indices.Append(i);
 
-      if(region.VB() == VOL)
-        elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true, &indices);
-      else if(region.VB() == BND)
-        elnr = region.Mesh()->FindSurfaceElementOfPoint(mapped_point, ip, true, &indices);
+      if(region.VB() == BND)
+        {
+      netgen::Point<3> p = {mapped_point[0], mapped_point[1], mapped_point[2] };
+      searchtree->GetFirstIntersecting(p, p, [&](int si)
+      {
+        if(region.Mesh()->GetNetgenMesh()
+           ->PointContainedIn2DElement({mapped_point[0],
+               mapped_point[1],
+               mapped_point[2]},
+             &ip(0),
+             si+1, false))
+          {
+            elnr = si;
+            return true;
+          }
+        return false;
+      });
+      if(region.Mesh()->GetNetgenMesh()->SurfaceElement(elnr+1).GetType() == netgen::TRIG)
+        {
+          double lam0 = 1-ip(0)-ip(1);
+          ip(1) = ip(0);
+          ip(0) = lam0;
+        }
+        }
+      else if(region.VB() == VOL)
+        {
+          Array<int> indices;
+          for(auto i : Range(region.Mask().Size()))
+            if(region.Mask().Test(i))
+              indices.Append(i);
+          elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true, &indices);
+        }
       else
         throw Exception("Only VOL and BND implemented yet!");
-      auto& trafo = region.Mesh()->GetTrafo(ElementId(region.VB(), elnr), global_alloc);
-      auto& mapped_mip = trafo(ip, global_alloc);
+      auto& eltrafo = region.Mesh()->GetTrafo(ElementId(region.VB(), elnr), global_alloc);
+      auto& mapped_mip = eltrafo(ip, global_alloc);
       return func->Evaluate(mapped_mip);
     }
   };
