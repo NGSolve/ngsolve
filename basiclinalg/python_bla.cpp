@@ -368,6 +368,7 @@ void PyMatAccess( TCLASS &c )
             Matrix<TSCAL> res(self.Height());
             res = Identity(self.Height());
             return res; });
+        c.def("Norm",  [](TMAT & self) { return L2Norm(self); }, "Returns L2-norm");
 }
 
 
