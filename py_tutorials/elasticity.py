@@ -23,7 +23,7 @@ fes = H1(mesh, order=2, dirichlet="left", dim=mesh.dim)
 
 u  = fes.TrialFunction()
 
-force = CoefficientFunction( (0,1) )
+force = CoefficientFunction( (0,1/2) )
 
 I = Id(mesh.dim)
 F = I + Grad(u)
@@ -38,7 +38,7 @@ def NeoHooke (C):
 
 
 
-factor = Parameter(0.1)
+factor = Parameter(1)
 
 a = BilinearForm(fes, symmetric=False)
 a += Variation (NeoHooke(C).Compile()*dx)
