@@ -1207,7 +1207,7 @@ namespace ngcomp
 
 
 
-    /// Riemann curvature tensor for HCurlCurl
+  /// Ricci curvature tensor for HCurlCurl
   template <int D, typename FEL = HCurlCurlFiniteElement<D> >
   class DiffOpRicciHCurlCurl : public DiffOp<DiffOpRicciHCurlCurl<D> >
   {
@@ -1266,13 +1266,11 @@ namespace ngcomp
 
           if constexpr (D==2)
             {
-              // maybe wrong sign, see curvature diffop!
               y = Cof(ginv).AsVector();
-              y *= Q(0);
+              y *= -Q(0);
             }
           else
             {
-              //sign?
               y = -TensorCrossProduct(ginv,Qmat).AsVector();
             }
 
@@ -1328,15 +1326,13 @@ namespace ngcomp
       
           if constexpr (D==2)
             {
-              // maybe wrong sign, see curvature diffop!
-              y.Col(m).Range(0,D*D) = Q(0,m)*Cof(invG).AsVector();
+              y.Col(m).Range(0,D*D) = -Q(0,m)*Cof(invG).AsVector();
             }
           else
             {
               Mat<D,D,SIMD<double>> Qmat_m;
               for (size_t j = 0; j < D*D; j++)
                 Qmat_m(j) = Q(j,m);
-              //sign?
               y.Col(m).Range(0,D*D) = -TensorCrossProduct(invG,Qmat_m).AsVector();
             }
         }
@@ -1349,6 +1345,212 @@ namespace ngcomp
     //}
   };
 
+
+  /// Scalar curvature for HCurlCurl
+  template <int D, typename FEL = HCurlCurlFiniteElement<D> >
+  class DiffOpScalarHCurlCurl : public DiffOp<DiffOpScalarHCurlCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 2 };
+    static constexpr double eps() { return 1e-4; } 
+
+    
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT mat, LocalHeap & lh)
+    {
+      throw Exception("Scalar curvature is a nonlinear operator! Use only apply!");
+    }
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      
+      typedef typename TVX::TSCAL TSCAL;
+      if constexpr (!std::is_same<TSCAL,double>())
+                     {
+                       throw Exception("Scalar diffop only implemented for TSCAL == double");
+                     }
+      else
+        {
+          Vec<D*D*D*D,TSCAL> Riemann;
+          DiffOpRiemannHCurlCurl<D>::Apply(fel, mip, x, Riemann, lh);
+          Mat<D,D> g;
+          
+          bfel.EvaluateMappedShape (mip, x, g);
+
+          Mat<D,D> ginv = Inv(g);
+
+	  y(0) = TSCAL(0);
+
+	  for (size_t i = 0; i < D; i++)
+            for (size_t j = 0; j < D; j++)
+	      for (size_t k = 0; k < D; k++)
+		for (size_t l = 0; l < D; l++)
+		  {
+                    y(0) += ginv(i,k) * ginv(j,l) * Riemann(D*(D*(D*i+j)+k)+l);
+		  }
+	  
+        }
+    }
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      throw ExceptionNOSIMD("ApplySIMDIR for Complex not implemented in Scalar DiffOp");
+    }
+    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+
+
+      size_t size = bmir.Size()*SIMD<double>::Size()*D*D*D*D;
+      STACK_ARRAY(SIMD<double>, mem, size);
+      FlatMatrix<SIMD<double>> Riemann(D*D*D*D, bmir.Size(), mem);
+      DiffOpRiemannHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Riemann);
+      
+      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+      FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
+      bfel.Evaluate (bmir, x, G);
+      
+      for (size_t m = 0; m < bmir.Size(); m++)
+        {
+          Mat<D,D,SIMD<double>> G_m;
+          for (size_t j = 0; j < D*D; j++)
+            G_m(j) = G(j,m);
+          Mat<D,D,SIMD<double>> invG = Inv(G_m);  
+
+
+	  y(0,m) = SIMD<double>(0);
+
+	  
+	  for (size_t i = 0; i < D; i++)
+            for (size_t j = 0; j < D; j++)
+	      for (size_t k = 0; k < D; k++)
+		for (size_t l = 0; l < D; l++)
+		  {
+                    y(0,m) += invG(i,k) * invG(j,l) * Riemann(D*(D*(D*i+j)+k)+l,m);
+		  }
+        }
+    }
+    
+  };
+
+  /// Einstein tensor for HCurlCurl
+  template <int D, typename FEL = HCurlCurlFiniteElement<D> >
+  class DiffOpEinsteinHCurlCurl : public DiffOp<DiffOpEinsteinHCurlCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D*D };
+    enum { DIFFORDER = 2 };
+    static constexpr double eps() { return 1e-4; } 
+    static Array<int> GetDimensions() { return Array<int> ( { D,D } ); };
+    
+    
+    ///
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+      static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+				MAT mat, LocalHeap & lh)
+    {
+      throw Exception("Einstein tensor is a nonlinear operator! Use only apply!");
+    }
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY & y,
+                       LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+      
+      typedef typename TVX::TSCAL TSCAL;
+      if constexpr (!std::is_same<TSCAL,double>())
+                     {
+                       throw Exception("Einstein diffop only implemented for TSCAL == double");
+                     }
+      else
+        {
+          Vec<1,TSCAL> scalar;
+          Vec<D*D,TSCAL> Ricci;
+          DiffOpRicciHCurlCurl<D>::Apply(fel, mip, x, Ricci, lh);
+          DiffOpScalarHCurlCurl<D>::Apply(fel, mip, x, scalar, lh);
+          Mat<D,D> g;
+          bfel.EvaluateMappedShape (mip, x, g);
+
+	  y = Ricci - 0.5*scalar*g.AsVector();
+        }
+    }
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      throw ExceptionNOSIMD("ApplySIMDIR for Complex not implemented in Scalar DiffOp");
+    }
+    
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
+
+      size_t size = bmir.Size()*SIMD<double>::Size()*D*D;
+      STACK_ARRAY(SIMD<double>, mem, size);
+      STACK_ARRAY(SIMD<double>, mem2, bmir.Size()*SIMD<double>::Size());
+      FlatMatrix<SIMD<double>> Ricci(D*D, bmir.Size(), &mem[0]);
+      FlatMatrix<SIMD<double>> scalar(1, bmir.Size(), &mem2[0]);
+      DiffOpRicciHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Ricci);
+      DiffOpScalarHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, scalar);
+      
+      STACK_ARRAY(SIMD<double>, mem3, D*D*bmir.Size()*SIMD<double>::Size());
+      FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem3[0]);
+      bfel.Evaluate (bmir, x, G);
+      
+      for (size_t m = 0; m < bmir.Size(); m++)
+        {
+	  // Mat<D,D,SIMD<double>> Ricci_m;
+	  // for (size_t j = 0; j < D*D; j++)
+	  //   Ricci_m(j) = Ricci(j,m);
+
+	  y.Col(m).Range(0,D*D) = Ricci.Col(m) - 0.5*scalar(0,m)*G.Col(m);
+        }
+    }
+    
+  };
 
   /// Curvature operator for HCurlCurl
   template <int D, typename FEL>
@@ -1414,13 +1616,12 @@ namespace ngcomp
           
           if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
             {
-              //TODO check sign!
               bfel.EvaluateMappedIncShape(mip, x, y);
-              y(0) *= -0.5;
+              y(0) *= 0.5;
               for (size_t q=0; q<D; q++)
                 {
-                  y(0) += hchristoffel2(1*D*D+0*D+q)*hchristoffel1(1*D*D+0*D+q);
-                  y(0) -= hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
+                  y(0) -= hchristoffel2(1*D*D+0*D+q)*hchristoffel1(1*D*D+0*D+q);
+                  y(0) += hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
                 }
             }
           else // Exploit that only 6 independent numbers are involved
@@ -1509,15 +1710,14 @@ namespace ngcomp
         }
       if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
         {
-          //TODO check sign!
           bfel.EvaluateIncShape(bmir, x, y);
-          y.Row(0).Range(0,bmir.Size()) *= -0.5;
+          y.Row(0).Range(0,bmir.Size()) *= 0.5;
           for (size_t q=0; q<D; q++)
             {
               for (size_t m = 0; m < bmir.Size(); m++)
                 {
-                  y(0,m) += hchristoffel2(1*D*D+0*D+q,m)*hchristoffel1(1*D*D+0*D+q,m);
-                  y(0,m) -= hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
+                  y(0,m) -= hchristoffel2(1*D*D+0*D+q,m)*hchristoffel1(1*D*D+0*D+q,m);
+                  y(0,m) += hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                 }
             }
         }
@@ -1614,6 +1814,8 @@ namespace ngcomp
         additional_evaluators.Set ("Ricci", make_shared<T_DifferentialOperator<DiffOpRicciHCurlCurl<2>>> ());
         additional_evaluators.Set ("inc", make_shared<T_DifferentialOperator<DiffOpIncHCurlCurl<2>>> ());
         additional_evaluators.Set ("curvature", make_shared<T_DifferentialOperator<DiffOpCurvatureHCurlCurl<2>>> ());
+        additional_evaluators.Set ("scalar", make_shared<T_DifferentialOperator<DiffOpScalarHCurlCurl<2>>> ());	
+	additional_evaluators.Set ("Einstein", make_shared<T_DifferentialOperator<DiffOpEinsteinHCurlCurl<2>>> ());
 	break;
       case 3:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
@@ -1626,8 +1828,8 @@ namespace ngcomp
         additional_evaluators.Set ("inc", make_shared<T_DifferentialOperator<DiffOpIncHCurlCurl<3>>> ());
         additional_evaluators.Set ("curvature", make_shared<T_DifferentialOperator<DiffOpCurvatureHCurlCurl<3>>> ());
         additional_evaluators.Set ("edgettcomponent", make_shared<T_DifferentialOperator<DiffOpEdgeTTComponentHCurlCurl<3>>> ());
-
-        
+	additional_evaluators.Set ("scalar", make_shared<T_DifferentialOperator<DiffOpScalarHCurlCurl<3>>> ());
+	additional_evaluators.Set ("Einstein", make_shared<T_DifferentialOperator<DiffOpEinsteinHCurlCurl<3>>> ());
 	break;
       default:
         ;
