@@ -39,6 +39,47 @@ def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffo
     return
 
 
+
+def TestCurvatureDiffOps2D(mesh, order):
+    g = CF( (1 + (x - 1/3*x**3)**2, (x - 1/3*x**3)*(y - 1/3*y**3), (x - 1/3*x**3)*(y - 1/3*y**3), 1 + (y - 1/3*y**3)**2), dims=(2,2) )
+    Gauss_ex = 81*(-x**2 + 1)*(-y**2 + 1)/(9 + x**2*(x**2 - 3)**2 + y**2*(y**2 - 3)**2)**2
+    Scalar_ex = 2*Gauss_ex
+
+    Ricci_ex = -CF( ((-1 - x**2 + 2/3*x**4 - 1/9*x**6)*(x**2 - 1)*(y**2 - 1)*1/(1 + 1/9*x**6 + 1/9*y**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2)**2, (1 - 1/3*y**2)*y*(-1 + 1/3*x**2)*x*(x**2 - 1)*(y**2 - 1)*1/(1 + 1/9*x**6 + 1/9*y**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2)**2, (1 - 1/3*y**2)*y*(-1 + 1/3*x**2)*x*(x**2 - 1)*(y**2 - 1)*1/(1 + 1/9*x**6 + 1/9*y**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2)**2,(-1 - y**2 + 2/3*y**4 - 1/9*y**6)*(x**2 - 1)*(y**2 - 1)*1/(1 + 1/9*x**6 + 1/9*y**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2)**2),dims=(2,2) )
+    
+    fes = HCurlCurl(mesh,order=order)
+    gf = GridFunction(fes)
+    gf.Set(g)
+    
+    assert sqrt(Integrate( InnerProduct(gf.Operator("scalar")-Scalar_ex,gf.Operator("scalar")-Scalar_ex), mesh)) < 1e-8
+    assert sqrt(Integrate( InnerProduct(gf.Operator("Ricci")-Ricci_ex,gf.Operator("Ricci")-Ricci_ex), mesh)) < 1e-8
+    assert sqrt(Integrate( InnerProduct(gf.Operator("Einstein"),gf.Operator("Einstein")), mesh)) < 1e-8
+    return
+
+def TestCurvatureDiffOps3D(mesh, order):
+    g = CF( (1+(x-1/3*x**3)**2,(x-1/3*x**3)*(y-1/3*y**3),(x-1/3*x**3)*(z-1/3*z**3),(x-1/3*x**3)*(y-1/3*y**3),1+(y-1/3*y**3)**2,(y-1/3*y**3)*(z-1/3*z**3),(x-1/3*x**3)*(z-1/3*z**3),(y-1/3*y**3)*(z-1/3*z**3),1+(z-1/3*z**3)**2), dims=(3,3) )
+
+    Scalar_ex = -(((2 - 2*z**2)*y**2 + 2*z**2 - 2)*x**12 + ((-24 + 24*z**2)*y**2 - 24*z**2 + 24)*x**10 + ((2 - 2*z**2)*y**6 + (-12 + 12*z**2)*y**4 + (108 - 2*z**6 - 144*z**2 + 12*z**4)*y**2 - 72 - 12*z**4 + 108*z**2 + 2*z**6)*x**8 + ((2 - 2*z**2)*y**8 + (-28 + 28*z**2)*y**6 + (114 - 114*z**2)*y**4 + (468*z**2 + 28*z**6 - 2*z**8 - 198 - 114*z**4)*y**2 - 72 + 114*z**4 + 2*z**8 - 28*z**6 - 198*z**2)*x**6 + ((-12 + 12*z**2)*y**8 + (114 - 114*z**2)*y**6 + (-360 + 360*z**2)*y**4 + (360*z**4 - 114*z**6 + 12*z**8 + 54 - 702*z**2)*y**2 + 594 + 114*z**6 - 12*z**8 - 360*z**4 + 54*z**2)*x**4 + ((2 - 2*z**2)*y**12 + (-24 + 24*z**2)*y**10 + (108 - 2*z**6 - 144*z**2 + 12*z**4)*y**8 + (468*z**2 + 28*z**6 - 2*z**8 - 198 - 114*z**4)*y**6 + (360*z**4 - 114*z**6 + 12*z**8 + 54 - 702*z**2)*y**4 + (486 + 468*z**6 - 2*z**12 + 24*z**10 - 144*z**8 - 702*z**4)*y**2 + 108*z**8 - 324 - 24*z**10 + 2*z**12 - 198*z**6 + 54*z**4 + 486*z**2)*x**2 + (2*z**2 - 2)*y**12 + (-24*z**2 + 24)*y**10 + (-72 - 12*z**4 + 108*z**2 + 2*z**6)*y**8 + (-72 + 114*z**4 + 2*z**8 - 28*z**6 - 198*z**2)*y**6 + (594 + 114*z**6 - 12*z**8 - 360*z**4 + 54*z**2)*y**4 + (108*z**8 - 324 - 24*z**10 + 2*z**12 - 198*z**6 + 54*z**4 + 486*z**2)*y**2 - 486 - 72*z**8 + 24*z**10 - 2*z**12 - 72*z**6 + 594*z**4 - 324*z**2)/(1 + 1/9*x**6 + 1/9*y**6 + 1/9*z**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2 - 2/3*z**4 + z**2)/(x**6 + y**6 + z**6 - 6*x**4 - 6*y**4 - 6*z**4 + 9*x**2 + 9*y**2 + 9*z**2 + 9)**2
+
+    Ricci11 = -(-1 + x**2)*((2*y**2)*z**2 - 2/3*y**2*z**4 + 1/9*y**2*z**6 - 2/3*y**4*z**2 + 1/9*y**6*z**2 + x**2*y**2 - 2/3*x**4*y**2 + 1/9*x**6*y**2 + x**2*z**2 - 2/3*x**4*z**2 + 1/9*x**6*z**2 - 2 - 2/9*x**6 - 1/9*y**6 - 1/9*z**6 + 2/3*y**4 + 4/3*x**4 - 2*x**2 + 2/3*z**4)/(1 + 1/9*x**6 + 1/9*y**6 + 1/9*z**6  - 2/3*y**4 + y**2 - 2/3*x**4 + x**2 - 2/3*z**4 + z**2)**2
+    Ricci12 = (1 - 1/3*y**2)*y*(-1 + 1/3*x**2)*x*(x**2 - 1)*(y**2 - 1)/(1 + 1/9*x**6 + 1/9*y**6 + 1/9*z**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2 - 2/3*z**4 + z**2)**2
+    Ricci13 = (1 - 1/3*z**2)*z*(-1 + 1/3*x**2)*x*(x**2 - 1)*(z**2 - 1)/(1 + 1/9*x**6 + 1/9*y**6 + 1/9*z**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2 - 2/3*z**4 + z**2)**2
+    Ricci22 = -(-1 + y**2)*(y**2*z**2 - 2/3*y**4*z**2 + 1/9*y**6*z**2 + x**2*y**2 + (2*x**2)*z**2 - 2/3*x**4*z**2 + 1/9*x**6*z**2 - 2 - 1/9*x**6 - 2/9*y**6 - 1/9*z**6 + 4/3*y**4 - 2*y**2 + 2/3*x**4 - 2/3*x**2*y**4 + 1/9*x**2*y**6 - 2/3*x**2*z**4 + 1/9*x**2*z**6 + 2/3*z**4)/(1 + 1/9*x**6 + 1/9*y**6 + 1/9*z**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2 - 2/3*z**4 + z**2)**2
+    Ricci23 = (1 - 1/3*z**2)*z*(-1 + 1/3*y**2)*y*(y**2 - 1)*(z**2 - 1)/(1 + 1/9*x**6 + 1/9*y**6 + 1/9*z**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2 - 2/3*z**4 + z**2)**2
+    Ricci33 = -(-1 + z**2)*(y**2*z**2 - 2/3*y**2*z**4 + 1/9*y**2*z**6 + (2*x**2)*y**2 - 2/3*x**4*y**2 + 1/9*x**6*y**2 + x**2*z**2 - 2 - 1/9*x**6 - 1/9*y**6 - 2/9*z**6 + 2/3*y**4 + 2/3*x**4 - 2/3*x**2*y**4 + 1/9*x**2*y**6 - 2/3*x**2*z**4 + 1/9*x**2*z**6 + 4/3*z**4 - 2*z**2)/(1 + 1/9*x**6 + 1/9*y**6 + 1/9*z**6 - 2/3*y**4 + y**2 - 2/3*x**4 + x**2 - 2/3*z**4 + z**2)**2
+    Ricci_ex = -CF( (Ricci11,Ricci12,Ricci13, Ricci12,Ricci22,Ricci23, Ricci13,Ricci23,Ricci33), dims=(3,3) )
+
+    Einstein_ex = Ricci_ex - 1/2*Scalar_ex*g
+    
+    fes = HCurlCurl(mesh,order=order)
+    gf = GridFunction(fes)
+    gf.Set(g)
+
+    assert sqrt(Integrate( InnerProduct(gf.Operator("scalar")-Scalar_ex,gf.Operator("scalar")-Scalar_ex), mesh)) < 1e-7
+    assert sqrt(Integrate( InnerProduct(gf.Operator("Ricci")-Ricci_ex,gf.Operator("Ricci")-Ricci_ex), mesh)) < 1e-7
+    assert sqrt(Integrate( InnerProduct(gf.Operator("Einstein")-Einstein_ex,gf.Operator("Einstein")-Einstein_ex), mesh)) < 1e-7
+    return
+
 def test_fespaces_2d():
     n_2d = specialcf.normal(2)
     Ptau_2d = Id(2) - OuterProduct(n_2d,n_2d)
@@ -74,6 +115,9 @@ def test_fespaces_2d():
     mesh = Mesh(geo.GenerateMesh(quad_dominated=True,maxh=0.5))
     #Test(mesh=mesh, space=H1, order=2, trace = lambda cf : cf, diffops=["hesse", "Grad"], vb=VOL, set_dual=[True,False], addorder=1)
     """
+
+    mesh = Mesh(unit_square.GenerateMesh(maxh=1,quad_dominated=False))
+    TestCurvatureDiffOps2D(mesh,8)
     return
 
 def test_fespaces_3d():
@@ -117,6 +161,9 @@ def test_fespaces_3d():
     mesh = MakeStructured3DMesh(hexes=False, nx=2,ny=2,nz=2, prism=True, mapping = lambda x,y,z : (x*(0.4+0.4*y)**2,0.75*y,1.25*z) )
     Test(mesh=mesh, order=2, vb=VOL)
     """
+
+    mesh = MakeStructured3DMesh(hexes=False, nx=1,ny=1,nz=1, prism=False)
+    TestCurvatureDiffOps3D(mesh, order=6)
     
     return
 
