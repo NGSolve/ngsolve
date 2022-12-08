@@ -29,7 +29,7 @@ install( FILES
         bessel.hpp blockalloc.hpp evalfunc.hpp
         memusage.hpp ngstd.hpp
         stringops.hpp templates.hpp
-        statushandler.hpp ngsstream.hpp mpiwrapper.hpp	      
+        statushandler.hpp ngsstream.hpp 
         polorder.hpp sockets.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
         bspline.hpp simd_complex.hpp sample_sort.hpp
