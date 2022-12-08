@@ -2477,6 +2477,7 @@ namespace ngcomp
         }
     }
 
+    using CoefficientFunctionNoDerivative::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint& mip) const override
     {
       Vec<3> mapped_point;
