@@ -68,7 +68,7 @@ namespace ngla
                                               
                                               return make_shared<DevDiagonalMatrix>(diag);
                                             });
-l  }
+  }
 
 
   /******************** DevMatrix ********************/
@@ -272,7 +272,7 @@ l  }
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    MultDiagonal (diag.Size(), s, diag.DevData(), ux.DevData(), uy.DevData());
+    MultAddDiagonal (diag.Size(), s, diag.DevData(), ux.DevData(), uy.DevData());
   }
   
 
