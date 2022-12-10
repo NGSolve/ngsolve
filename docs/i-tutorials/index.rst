@@ -149,7 +149,7 @@ Whetting the Appetite
    unit-4.4-occ/workplane.ipynb               
 
 
-5. MPI - Parallelization
+5. MPI - Parallelization and CUDA Support
 =========================
 
 .. toctree::
@@ -159,13 +159,14 @@ Whetting the Appetite
    unit-5a.2-pardofs/pardofs.ipynb 
    unit-5a.3-petsc/petsc.ipynb 
    unit-5a.3-petsc/PETSc_interface.ipynb 
-              
-   unit-5.0-mpi_basics/MPI-Parallelization_in_NGSolve.ipynb
-   unit-5.1-mpi_ngsolve/mpi_basics.ipynb
-   unit-5.2-fetidp_point2d/feti-dp-i.ipynb
-   unit-5.3-fetidp_point3d/feti-dp-ii.ipynb
-   unit-5.4-fetidp_edge/feti-dp-iii.ipynb
-   unit-5.5-fetidp_inexact/feti-dp-iv.ipynb
+   unit-5.5-cuda/poisson_cuda.ipynb
+   
+   historic/unit-5.0-mpi_basics/MPI-Parallelization_in_NGSolve.ipynb
+   historic/unit-5.1-mpi_ngsolve/mpi_basics.ipynb
+   historic/unit-5.2-fetidp_point2d/feti-dp-i.ipynb
+   historic/unit-5.3-fetidp_point3d/feti-dp-ii.ipynb
+   historic/unit-5.4-fetidp_edge/feti-dp-iii.ipynb
+   historic/ unit-5.5-fetidp_inexact/feti-dp-iv.ipynb
    
    
 6. Various Topics
