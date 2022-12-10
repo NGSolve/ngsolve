@@ -12,7 +12,6 @@ namespace ngla
   UnifiedVector :: UnifiedVector (int asize)
   {
     this->size = asize;
-    cout << IM(7) << "Create unified vector, size = " << size << endl;
 
     host_data = new double[size];
     auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
@@ -32,8 +31,6 @@ namespace ngla
 
   UnifiedVector :: ~UnifiedVector ()
   {
-    /* cerr << "dtor UnifiedVector" << endl; */
-
     cusparseDestroyDnVec(descr);
     cudaFree(dev_data);
     delete[] host_data;
@@ -41,26 +38,17 @@ namespace ngla
 
   BaseVector & UnifiedVector :: operator= (double d)
   {
-    /* for (int i = 0; i < size; i++) host_data[i] = d; */
-    host_uptodate = false;
-
     ::SetScalar (d, size, dev_data); 
-    // cublasDscal(Get_CuBlas_Handle(), size, &d, dev_data, 1); 
+
+    host_uptodate = false;
     dev_uptodate = true;
     
     return *this;
-    /*
-    host_uptodate = true;
-    dev_uptodate = false;
-    UpdateDevice();
-    return *this;
-    */
   }
 
   BaseVector & UnifiedVector :: operator= (const BaseVector & v2)
   {
-    const UnifiedVector * uv2 = dynamic_cast<const UnifiedVector*> (&v2);
-    if (uv2)
+    if (auto uv2 = dynamic_cast<const UnifiedVector*> (&v2))
       {
         if (uv2->dev_uptodate)
           {
@@ -81,8 +69,6 @@ namespace ngla
         return *this;
       }
 
-    /* VFlatVector<double> fv(size, host_data); */
-    /* fv = 1.0*v2; */
     FVDouble() = v2.FVDouble();
 
     host_uptodate = true;
@@ -92,7 +78,6 @@ namespace ngla
 
   const double & UnifiedVector :: operator [] (const int ind) const
   {
-    /* cerr << "UnifiedVector operator[]" << endl; */
     UpdateHost(); 
     return host_data[ind];
   }
@@ -140,9 +125,7 @@ namespace ngla
   
   BaseVector & UnifiedVector :: Add (double scal, const BaseVector & v)
   {
-    const UnifiedVector * v2 = dynamic_cast<const UnifiedVector*> (&v);
-
-    if (v2)
+    if (auto v2 = dynamic_cast<const UnifiedVector*> (&v))
       {
         UpdateDevice();
         v2->UpdateDevice();
@@ -167,48 +150,46 @@ namespace ngla
     static Timer tdot("CUDA InnerProduct");
     RegionTimer reg(tdot);
 
-    const UnifiedVector * uv2 = dynamic_cast<const UnifiedVector*> (&v2);
-    if (uv2)
-    {
-      static Timer tdot("CUDA InnerProduct devdev");
-      RegionTimer reg(tdot);
-      UpdateDevice();
-      uv2->UpdateDevice();
-      
-      double res;
-      cublasDdot (Get_CuBlas_Handle(), 
-                        size, dev_data, 1, uv2->dev_data, 1, &res);
-      return res;
-    }
+    if (auto uv2 = dynamic_cast<const UnifiedVector*> (&v2);
+      {
+        static Timer tdot("CUDA InnerProduct devdev");
+        RegionTimer reg(tdot);
+        UpdateDevice();
+        uv2->UpdateDevice();
+        
+        double res;
+        cublasDdot (Get_CuBlas_Handle(), 
+                    size, dev_data, 1, uv2->dev_data, 1, &res);
+        return res;
+      }
 
     FlatVector<> fv = FVDouble();
     FlatVector<> fv2 = v2.FVDouble();
     return ngbla::InnerProduct (fv, fv2);
   }
 
-
   ostream & UnifiedVector :: Print (ostream & ost) const
   {
     cout << "output unified vector of size " << size;
     cout << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
     if (!host_uptodate)
-    {
-      if (dev_uptodate)
       {
-        cout << "host not up-to-data. printing device data" << endl;
-        Vector<double> tmp(size);
-        cudaMemcpy(tmp.Data(), dev_data, size * sizeof(double), cudaMemcpyDeviceToHost);
-        ost << tmp << endl;
+        if (dev_uptodate)
+          {
+            cout << "host not up-to-data. printing device data" << endl;
+            Vector<double> tmp(size);
+            cudaMemcpy(tmp.Data(), dev_data, size * sizeof(double), cudaMemcpyDeviceToHost);
+            ost << tmp << endl;
+          }
+        else
+          {
+            cout << "undefined vector" << endl;
+          }
       }
-      else
-      {
-        cout << "undefined vector" << endl;
-      }
-    }
     else
-    {
-      ost << FVDouble();
-    }
+      {
+        ost << FVDouble();
+      }
     return ost;
   }
 
@@ -219,17 +200,8 @@ namespace ngla
     cout << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
     return ost;
   }
-  
-  /* void UnifiedVector :: PrintDevice () const */
-  /* { */
-  /*   int DSIZE = size * sizeof(double); */
-  /*   double *tmp = (double*) malloc(DSIZE); */
-  /*   cudaMemcpy(tmp, dev_data, DSIZE, cudaMemcpyDeviceToHost); */
-  /*   cout << "device up-to-date: " << dev_uptodate << endl; */
-  /*   for (int i=0; i<size; i++) */
-  /*     cout << tmp[i] << endl; */
-  /* } */
 
+  
   AutoVector UnifiedVector :: CreateVector () const
   {
     return make_unique<UnifiedVector> (size);
@@ -241,10 +213,11 @@ namespace ngla
       return;
 
     if (dev_uptodate)
-      cudaMemcpy (host_data, dev_data, sizeof(double)*size, cudaMemcpyDeviceToHost);    
-    /* else */
-    /*   cout << "ERROR UnifiedVector::UpdateHost non is uptodate" << endl; */
-
+      {
+        cudaMemcpy (host_data, dev_data, sizeof(double)*size, cudaMemcpyDeviceToHost);
+        cout << IM(5) << "Device2Host copy!" << endl;        
+      }
+    
     host_uptodate = true;
   }
 
@@ -254,11 +227,10 @@ namespace ngla
       return;
 
     if (host_uptodate)
-      cudaMemcpy (dev_data, host_data, sizeof(double)*size, cudaMemcpyHostToDevice);
-    /* else */
-    /*   cout << "ERROR UnifiedVector::UpdateDevice non is uptodate" << endl; */
-
-    cout << "Host2Device copy!" << endl;
+      {
+        cudaMemcpy (dev_data, host_data, sizeof(double)*size, cudaMemcpyHostToDevice);
+        cout << IM(5) << "Host2Device copy!" << endl;
+      }
     
     dev_uptodate = true;
   }
@@ -280,17 +252,4 @@ namespace ngla
     UpdateHost(); 
     return host_data;
   }
-
-  
-  void UnifiedVector :: GetIndirect (const FlatArray<int> & ind, 
-            const FlatVector<double> & v) const
-  {
-    cout << "UnifiedVector :: GetIndirect not supported" << endl;
-  }
-  void UnifiedVector :: GetIndirect (const FlatArray<int> & ind, 
-            const FlatVector<Complex> & v) const
-  {
-    cout << "UnifiedVector :: GetIndirect not supported" << endl;
-  }
-
 }
