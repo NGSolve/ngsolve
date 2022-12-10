@@ -4,15 +4,8 @@
 /* Date:   11. Aug. 2014                                             */
 /*********************************************************************/
 
-
 #include <la.hpp>
-#include <cublas_v2.h>
-#include <cusparse.h>
-#include <cuda_runtime_api.h>
-
 #include "cuda_linalg.hpp"
-
-extern void SetScalar (double val, int n, double * dev_ptr); 
 
 namespace ngla
 {
@@ -181,7 +174,7 @@ namespace ngla
 
     cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
                             &alpha, descr, ux.descr, &beta, uy.descr, CUDA_R_64F,
-                            CUSPARSE_MV_ALG_DEFAULT, &bufferSize);
+                            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
 
     cusparseStatus_t status;
@@ -226,13 +219,13 @@ namespace ngla
 
     cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
                             &alpha, matA, ux.descr, &beta, uy.descr, CUDA_R_64F,
-                            CUSPARSE_MV_ALG_DEFAULT, &bufferSize);
+                            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
 
     cusparseSpMV(Get_CuSparse_Handle(), 
                  CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA,
                  ux.descr, &beta, uy.descr, CUDA_R_64F,
-                 CUSPARSE_MV_ALG_DEFAULT, &bufferSize);
+                 CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
 
     uy.host_uptodate = false;
   }
