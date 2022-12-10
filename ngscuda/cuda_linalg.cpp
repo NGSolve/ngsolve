@@ -12,7 +12,7 @@
 
 #include "cuda_linalg.hpp"
 
-/* extern void SetScalar (double val, int n, double * dev_ptr); */
+extern void SetScalar (double val, int n, double * dev_ptr); 
 
 namespace ngla
 {
@@ -99,8 +99,8 @@ namespace ngla
     /* for (int i = 0; i < size; i++) host_data[i] = d; */
     host_uptodate = false;
 
-    /* ::SetScalar (d, size, dev_data); */
-    cublasDscal(Get_CuBlas_Handle(), size, &d, dev_data, 1); 
+    ::SetScalar (d, size, dev_data); 
+    // cublasDscal(Get_CuBlas_Handle(), size, &d, dev_data, 1); 
     dev_uptodate = true;
     
     return *this;
