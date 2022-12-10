@@ -53,7 +53,22 @@ namespace ngla
                                               auto & sparse_mat = dynamic_cast<const SparseMatrix<double>&>(mat);
                                               return make_shared<DevSparseMatrix>(sparse_mat);
                                             });
-  }
+
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(JacobiPrecond<double>),
+                                            [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & Jacobimat = dynamic_cast<const JacobiPrecond<double>&>(mat);
+                                              
+                                              auto diagarray = Jacobimat.GetInverse();
+                                              UnifiedVector diag(diagarray.Size());
+                                              auto fv = diag.FVDouble();
+                                              for (size_t i = 0; i < fv.Size(); i++)
+                                                fv[i] = diagarray[i];
+                                              diag.UpdateDevice();
+                                              
+                                              return make_shared<DevDiagonalMatrix>(diag);
+                                            });
+l  }
 
 
   /******************** DevMatrix ********************/
@@ -230,6 +245,7 @@ namespace ngla
     uy.host_uptodate = false;
   }
 
+
   shared_ptr<DevSparseMatrix> MatMult (const DevSparseMatrix& mata, const DevSparseMatrix& matb)
   {
     throw Exception ("DevSparseMatrix MatMult not implemented yet.");
@@ -237,6 +253,30 @@ namespace ngla
 
   
 
+  void DevDiagonalMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
+    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    MultDiagonal (diag.Size(), diag.DevData(), ux.DevData(), uy.DevData());
+  }
+  
+  void DevDiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
+    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    MultDiagonal (diag.Size(), s, diag.DevData(), ux.DevData(), uy.DevData());
+  }
+  
+
+  
 
   /******************** DevDMatrix ********************/
 

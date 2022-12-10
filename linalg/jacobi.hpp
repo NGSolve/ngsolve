@@ -65,7 +65,9 @@ namespace ngla
 
     int VHeight() const override { return height; }
     int VWidth() const override { return height; }
-  
+
+    FlatArray<TM> GetInverse() const { return invdiag; }
+    
     ///
     void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
 

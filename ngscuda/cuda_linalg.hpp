@@ -8,6 +8,8 @@
 
 // own ngsolve cuda-kernels:
 extern void SetScalar (double val, int n, double * dev_ptr); 
+extern void MultDiagonal (int n, double * D, double * x, double * y);
+extern void MultAddDiagonal (int n, double alpha, double * D, double * x, double * y);
 
 namespace ngla
 {
@@ -64,6 +66,7 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     /* virtual void Scale (double d); */
 
+    /*
     virtual AutoVector CreateRowVector () const
     {
       return UnifiedVector(width).CreateVector();
@@ -73,11 +76,32 @@ namespace ngla
     {
       return UnifiedVector(height).CreateVector();
     }
+    */
 
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return width; }
   };
 
+
+  class DevDiagonalMatrix : public DevMatrix
+  {
+  protected:
+    UnifiedVector diag;
+
+  public:
+    DevDiagonalMatrix (UnifiedVector _diag) : diag(_diag) { }
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+
+    virtual int VHeight() const { return diag.Size(); }
+    virtual int VWidth() const { return diag.Size(); }
+  };
+
+
+
+
+  
   shared_ptr<DevSparseMatrix> MatMult (const DevSparseMatrix& mata, const DevSparseMatrix& matb);
 
   // dense device matrix
