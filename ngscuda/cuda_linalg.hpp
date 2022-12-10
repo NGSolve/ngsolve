@@ -1,14 +1,18 @@
-#include <cusparse.h>
 #include <la.hpp>
 
+#include <cuda_runtime_api.h>
+#include <cublas_v2.h>
+#include <cusparse.h>
 
 #include "unifiedvector.hpp"
 
-
+// own ngsolve cuda-kernels:
+extern void SetScalar (double val, int n, double * dev_ptr); 
 
 namespace ngla
 {
   void InitCuLinalg();
+  cublasHandle_t Get_CuBlas_Handle ();
 
   class DevSparseMatrix;
 

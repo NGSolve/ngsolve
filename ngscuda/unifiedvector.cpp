@@ -1,10 +1,5 @@
 #include <la.hpp>
-#include <cublas_v2.h>
-#include <cusparse.h>
-#include <cuda_runtime_api.h>
-
 #include "cuda_linalg.hpp"
-
 
 namespace ngla
 {
@@ -150,7 +145,7 @@ namespace ngla
     static Timer tdot("CUDA InnerProduct");
     RegionTimer reg(tdot);
 
-    if (auto uv2 = dynamic_cast<const UnifiedVector*> (&v2);
+    if (auto uv2 = dynamic_cast<const UnifiedVector*> (&v2))
       {
         static Timer tdot("CUDA InnerProduct devdev");
         RegionTimer reg(tdot);
