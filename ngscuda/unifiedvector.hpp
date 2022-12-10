@@ -7,7 +7,6 @@ namespace ngla
 
   class UnifiedVector : public S_BaseVector<double>
   {
-    /* using int size; */
     double * host_data;
     double * dev_data;
     cusparseDnVecDescr_t descr;
@@ -56,11 +55,6 @@ namespace ngla
     virtual FlatVector<double> FVDouble () const;
     virtual FlatVector<Complex> FVComplex () const;
     virtual void * Memory() const throw ();
-
-    virtual void GetIndirect (const FlatArray<int> & ind, 
-            const FlatVector<double> & v) const;
-    virtual void GetIndirect (const FlatArray<int> & ind, 
-            const FlatVector<Complex> & v) const;
 
     virtual double* DevData() const
     { 
