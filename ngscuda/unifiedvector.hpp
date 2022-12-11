@@ -17,12 +17,14 @@ namespace ngla
   public:
     UnifiedVector (int asize);
     UnifiedVector (const BaseVector & vec);
-    // UnifiedVector (UnifiedVector && vec);
+    UnifiedVector (const UnifiedVector & vec);
+    UnifiedVector (UnifiedVector && vec);
 
     virtual ~UnifiedVector();
 
     BaseVector & operator= (double d);
     BaseVector & operator= (const BaseVector & v2);
+    UnifiedVector & operator= (const UnifiedVector & v2);    
 
     template <typename T2>
     UnifiedVector & operator= (const VVecExpr<T2> & v)

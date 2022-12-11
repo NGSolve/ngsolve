@@ -22,16 +22,22 @@ namespace ngla
   UnifiedVector :: UnifiedVector (const BaseVector& vec) : UnifiedVector(vec.Size())
   {
     (*this) = vec;
+    UpdateDevice();    
   }
 
-  /*
+  UnifiedVector :: UnifiedVector (const UnifiedVector& vec) : UnifiedVector(vec.Size())
+  {
+    (*this) = vec;
+    UpdateDevice();    
+  }
+  
   // to be improved
   UnifiedVector :: UnifiedVector (UnifiedVector && vec)
     : UnifiedVector (vec.Size())
   {
     (*this) = vec;
+    UpdateDevice();
   }
-  */
   
   UnifiedVector :: ~UnifiedVector ()
   {
@@ -81,6 +87,29 @@ namespace ngla
     UpdateDevice();
     return *this;
   }
+
+  BaseVector & UnifiedVector :: operator= (const UnifiedVector & v2)
+  {
+    if (v2.dev_uptodate)
+      {
+        cudaMemcpy (dev_data, v2.dev_data, sizeof(double)*size, cudaMemcpyDeviceToDevice);    
+        dev_uptodate = true;
+        host_uptodate = false;
+      }
+    else if (v2.host_uptodate)
+      {
+        FVDouble() = v2.FVDouble();
+        host_uptodate = true;
+        dev_uptodate = false;
+        UpdateDevice();            
+      }
+    else
+      {
+        cerr << "operator=UnifiedVector - not up to date" << endl;
+      }
+    return *this;
+  }
+  
 
   const double & UnifiedVector :: operator [] (const int ind) const
   {
