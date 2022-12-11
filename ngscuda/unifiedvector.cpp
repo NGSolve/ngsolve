@@ -65,6 +65,7 @@ namespace ngla
             FVDouble() = uv2->FVDouble();
             host_uptodate = true;
             dev_uptodate = false;
+            UpdateDevice();            
           }
         else
           {
@@ -77,6 +78,7 @@ namespace ngla
 
     host_uptodate = true;
     dev_uptodate = false;
+    UpdateDevice();
     return *this;
   }
 
