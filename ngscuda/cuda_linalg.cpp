@@ -60,11 +60,19 @@ namespace ngla
                                               auto & Jacobimat = dynamic_cast<const JacobiPrecond<double>&>(mat);
                                               
                                               auto diagarray = Jacobimat.GetInverse();
+
+                                              /*
                                               UnifiedVector diag(diagarray.Size());
                                               auto fv = diag.FVDouble();
                                               for (size_t i = 0; i < fv.Size(); i++)
                                                 fv[i] = diagarray[i];
                                               diag.UpdateDevice();
+                                              */
+                                              VVector<double> diag(diagarray.Size());
+                                              auto fv = diag.FVDouble();
+                                              for (size_t i = 0; i < fv.Size(); i++)
+                                                fv[i] = diagarray[i];
+                                              // diag.UpdateDevice();
                                               
                                               return make_shared<DevDiagonalMatrix>(diag);
                                             });

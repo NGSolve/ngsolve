@@ -16,7 +16,8 @@ namespace ngla
     
   public:
     UnifiedVector (int asize);
-    UnifiedVector (const BaseVector& vec);
+    UnifiedVector (const BaseVector & vec);
+    // UnifiedVector (UnifiedVector && vec);
 
     virtual ~UnifiedVector();
 
