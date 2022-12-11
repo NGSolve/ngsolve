@@ -24,6 +24,15 @@ namespace ngla
     (*this) = vec;
   }
 
+  /*
+  // to be improved
+  UnifiedVector :: UnifiedVector (UnifiedVector && vec)
+    : UnifiedVector (vec.Size())
+  {
+    (*this) = vec;
+  }
+  */
+  
   UnifiedVector :: ~UnifiedVector ()
   {
     cusparseDestroyDnVec(descr);
