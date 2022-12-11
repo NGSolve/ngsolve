@@ -88,7 +88,7 @@ namespace ngla
     return *this;
   }
 
-  BaseVector & UnifiedVector :: operator= (const UnifiedVector & v2)
+  UnifiedVector & UnifiedVector :: operator= (const UnifiedVector & v2)
   {
     if (v2.dev_uptodate)
       {
