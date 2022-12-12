@@ -305,7 +305,7 @@ namespace ngla
 
     numblocks = mat.GetRowDNums().Size();
     cudaMalloc((double**)&dev_mat, hm*wm*sizeof(double));
-    cudaMemcpy (dev_mat, mat.GetMatrix().Data(), hw*wmm*sizeof(double), cudaMemcpyHostToDevice); 
+    cudaMemcpy (dev_mat, mat.GetMatrix().Data(), hm*wm*sizeof(double), cudaMemcpyHostToDevice); 
   }
 
   
