@@ -14,6 +14,9 @@ extern void MultAddDiagonal (int n, double alpha, double * D, double * x, double
 
 namespace ngla
 {
+  using namespace ngs_cuda;
+  
+  
   void InitCuLinalg();
   cublasHandle_t Get_CuBlas_Handle ();
 

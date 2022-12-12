@@ -10,11 +10,6 @@ namespace ngs_cuda
   void InitCUDA (int verbose = 2);
 
 
-
-
-
-
-
   template <typename T>
   class DevVar
   {
