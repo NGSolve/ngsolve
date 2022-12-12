@@ -215,7 +215,8 @@ namespace ngla
 
     /* uy.UpdateHost(); */
     
-    uy.host_uptodate = false;
+    // uy.host_uptodate = false;
+    uy.InvalidateHost();
   }
 
 
@@ -277,6 +278,8 @@ namespace ngla
     uy.UpdateDevice();
 
     MultDiagonal (diag.Size(), diag.DevData(), ux.DevData(), uy.DevData());
+
+    uy.InvalidateHost();    
   }
   
   void DevDiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -288,6 +291,8 @@ namespace ngla
     uy.UpdateDevice();
 
     MultAddDiagonal (diag.Size(), s, diag.DevData(), ux.DevData(), uy.DevData());
+
+    uy.InvalidateHost();    
   }
   
   /******************** DevConstantEBEMatrix ********************/
@@ -324,7 +329,6 @@ namespace ngla
         cudaMalloc((double**)&dev_hx, numblocks*wm*sizeof(double));
         cudaMalloc((double**)&dev_hy, numblocks*hm*sizeof(double));
 
-        // copy input vectors kernel ...
         ConstEBEKernelCopyIn (numblocks, wm, rowdnums.DevData(), ux.DevData(), dev_hx);
 
         /*
@@ -352,7 +356,7 @@ cublasStatus_t cublasDgemm(cublasHandle_t handle,
         cudaFree(dev_hx);
       }
 
-    uy *= 1; // disable host data
+    uy.InvalidateHost();    
     
     /*
     auto fx = x.FV<double>();
