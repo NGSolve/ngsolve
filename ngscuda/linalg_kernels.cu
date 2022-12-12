@@ -44,36 +44,36 @@ void MultAddDiagonal (int n, double alpha, double * D, double * x, double * y)
 
 /* ************** kernels for ConstantEBE Matrix ********************** */
 
-void ConstEBEKernelCopyInKernel (int numblocks, FlatTable<int> row_dnums, double * dev_ux, double * dev_hx)
+
+__global__ void ConstEBEKernelCopyInKernel (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx)
 {
   int tid = threadIdx.x;
-  int wm = row_dnums[0].Size();
   
   for (int r = 0; r < numblocks; r++)
     {
-      for (int i = tid; i < wm; i += blockDim.x)
-        dev_hx[r*wm+i] = dev_ux[row_dnums[r][i]];
+      for (int i = tid; i < bs; i += blockDim.x)
+        dev_hx[r*bs+i] = dev_ux[row_dnums[r*bs+i]];
     }
 }
 
-void ConstEBEKernelCopyIn (int numblocks, const DevTable<int> & row_dnums, double * dev_ux, double * dev_hx)
+void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx)
 {
-  ConstEBEKernelCopyInKernel<<<1,128>>> (numblocks, row_dnums, dev_ux, dev_hx)
+  ConstEBEKernelCopyInKernel<<<1,128>>> (numblocks, bs, row_dnums, dev_ux, dev_hx);
 }
 
-void ConstEBEKernelCopyOutKernel (int numblocks, FlatTable<int> col_dnums, double * dev_hy, double * dev_uy)
+__global__ void ConstEBEKernelCopyOutKernel (int numblocks, int bs, int *  col_dnums, double * dev_hy, double * dev_uy)
 {
   int tid = threadIdx.x;
-  int hm = col_dnums[0].Size();
   
   for (int r = 0; r < numblocks; r++)
     {
-      for (int i = tid; i < hm; i += blockDim.x)
-        dev_uy[col_dnums[r][i]] += dev_hx[r*hm+i];
+      for (int i = tid; i < bs; i += blockDim.x)
+        dev_uy[col_dnums[r*bs+i]] += dev_hy[r*bs+i];
     }
 }
 
-void ConstEBEKernelCopyOut (int numblocks, const DevTable<int> & col_dnums, double * dev_hy, double * dev_uy)
+void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, double * dev_hy, double * dev_uy)
 {
-  ConstEBEKernelCopyOutKernel<<<1,128>>> (numblocks, col_dnums, dev_hy, dev_uy)
+  ConstEBEKernelCopyOutKernel<<<1,128>>> (numblocks, bs, col_dnums, dev_hy, dev_uy);
 }
+
