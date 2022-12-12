@@ -76,6 +76,13 @@ namespace ngla
                                               
                                               return make_shared<DevDiagonalMatrix>(diag);
                                             });
+
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(ConstantElementByElementMatrix),
+                                            [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & ebe_mat = dynamic_cast<const ConstantElementByElementMatrix&>(mat);
+                                              return make_shared<DevConstantElementByElementMatrix>(ebe_mat);
+                                            });
   }
 
 
@@ -283,7 +290,91 @@ namespace ngla
     MultAddDiagonal (diag.Size(), s, diag.DevData(), ux.DevData(), uy.DevData());
   }
   
+  /******************** DevConstantEBEMatrix ********************/
 
+  DevConstantElementByElementMatrix ::
+  DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat)
+    : h(mat.Height()), w(mat.Width()),
+      hm(mat.GetMatrix().Height()), wm(mat.GetMatrix().Width()),
+      rowdnums(mat.GetRowDNums()), coldnums(mat.GetColDNums()),
+      row_coloring(mat.GetRowColoring()), col_coloring(mat.GetColColoring())
+  {
+    disjoint_rows = mat.GetRowColoring().Size() != 0;
+    disjoint_cols = mat.GetColColoring().Size() != 0;
+    // mat.GetMatrix(); 
+  }
+  
+  void DevConstantElementByElementMatrix ::
+  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    cerr << "constantEBE Mult not implemented" << endl;
+
+
+    /*
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+
+    if (!disjoint_cols)
+      {
+        RegionTimer reg(tcol);
+
+        for (auto col : col_coloring)
+          ParallelForRange
+            (col.Size(), [&] (IntRange r)
+             {
+               constexpr size_t BS = 128;
+               Matrix<> hx(BS, matrix.Width());
+               Matrix<> hy(BS, matrix.Height());
+               
+               for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+                 {
+                   size_t li = min2(bi+BS, r.Next());
+                   size_t num = li-bi;
+                   
+                   for (size_t i = 0; i < num; i++)
+                     hx.Row(i) = fx(row_dnums[col[bi+i]]);
+                   
+                   {
+                     // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                     hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
+                   }
+                   
+                   for (size_t i = 0; i < num; i++)
+                     fy(col_dnums[col[bi+i]]) += s * hy.Row(i);
+                 }
+             }, TasksPerThread(2));
+      }
+    else
+      {
+        RegionTimer reg(t);
+        ParallelForRange
+          (row_dnums.Size(), [&] (IntRange r)
+           {
+             constexpr size_t BS = 128;
+             Matrix<> hx(BS, matrix.Width());
+             Matrix<> hy(BS, matrix.Height());
+
+             for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+               {
+                 size_t li = min2(bi+BS, r.Next());
+                 size_t num = li-bi; 
+                 for (size_t i = 0; i < num; i++)
+                   hx.Row(i) = fx(row_dnums[bi+i]);
+                 {
+                   // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                   // RegionTimer reg(tpmult);
+                   // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                   hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
+                 }
+                 for (size_t i = 0; i < num; i++)
+                   fy(col_dnums[bi+i]) += s * hy.Row(i);
+               }
+           }, TasksPerThread(2));
+      }
+    */
+    
+  }
+  
   
 
   /******************** DevDMatrix ********************/

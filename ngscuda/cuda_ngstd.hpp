@@ -181,7 +181,7 @@ namespace ngs_cuda
   
   public: 
 
-    DevTable (const Table<T> & t2)
+    DevTable (FlatTable<T> t2)
     {
       size = t2.Size();
       cudaMalloc((int**)&dev_index, (size+1)*sizeof(int));
