@@ -325,7 +325,7 @@ namespace ngla
         cudaMalloc((double**)&dev_hy, numblocks*wm*sizeof(double));
 
         // copy input vectors kernel ...
-        ConstEBEKernelCopyIn (numblocks, hm, FlatTable<int>(rowdnums).Data(), ux.DevData(), dev_hx);
+        ConstEBEKernelCopyIn (numblocks, hm, rowdnums.DevData(), ux.DevData(), dev_hx);
 
         /*
 cublasStatus_t cublasDgemm(cublasHandle_t handle,
@@ -344,7 +344,7 @@ cublasStatus_t cublasDgemm(cublasHandle_t handle,
                                           s, dev_mat, wm, dev_hx, hm,
                                           0.0, dev_hy, wm);
         
-        ConstEBEKernelCopyOut (numblocks, wm, FlatTable<int> (coldnums).Data(), dev_hy, uy.DevData());
+        ConstEBEKernelCopyOut (numblocks, wm, coldnums.DevData(), dev_hy, uy.DevData());
 
         cudaFree(dev_hy);
         cudaFree(dev_hx);
