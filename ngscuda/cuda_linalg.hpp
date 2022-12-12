@@ -99,7 +99,27 @@ namespace ngla
   };
 
 
+  
+  class DevConstantElementByElementMatrix : public DevMatrix
+  {
+    size_t h, w; // big matrix shape
 
+    double * dev_mat;
+    size_t hm, wm;  // small matrix shape
+    
+    DevTable<int> rowdnums, coldnums;
+    DevTable<int> row_coloring, col_coloring;
+
+    bool disjoint_rows, disjoint_cols;
+    
+  public:
+    DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat);
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+
+    virtual int VHeight() const { return h; }
+    virtual int VWidth() const { return w; }
+  };
+  
 
   
   shared_ptr<DevSparseMatrix> MatMult (const DevSparseMatrix& mata, const DevSparseMatrix& matb);

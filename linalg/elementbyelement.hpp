@@ -142,10 +142,13 @@ namespace ngla
     
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+    
+    FlatMatrix<> GetMatrix() const { return matrix; }
+    FlatTable<int> GetRowDNums() const { return row_dnums; }
+    FlatTable<int> GetColDNums() const { return col_dnums; }
 
-    const Matrix<> & GetMatrix() const { return matrix; }
-    const Table<int> & GetRowDNums() const { return row_dnums; }
-    const Table<int> & GetColDNums() const { return col_dnums; }
+    FlatTable<int> GetRowColoring() const { return row_coloring; }    
+    FlatTable<int> GetColColoring() const { return col_coloring; }    
   };
 
   class NGS_DLL_HEADER StructuredElementByElementMatrix : public BaseMatrix
