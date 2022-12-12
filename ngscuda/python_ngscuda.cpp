@@ -4,7 +4,8 @@
 #include "cuda_linalg.hpp"
 
 // TODO: always use ngs_cuda?
-using namespace ngla; using namespace ngs_cuda;
+using namespace ngla;
+using namespace ngs_cuda;
 
 PYBIND11_MODULE(ngscuda, m) {
 
