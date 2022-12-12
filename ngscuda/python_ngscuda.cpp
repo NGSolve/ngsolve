@@ -2,7 +2,6 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include "cuda_linalg.hpp"
-#include "cuda_ngstd.hpp"
 
 // TODO: always use ngs_cuda?
 using namespace ngla; using namespace ngs_cuda;
