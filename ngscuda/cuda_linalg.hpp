@@ -12,6 +12,12 @@ extern void SetScalar (double val, int n, double * dev_ptr);
 extern void MultDiagonal (int n, double * D, double * x, double * y);
 extern void MultAddDiagonal (int n, double alpha, double * D, double * x, double * y);
 
+
+extern void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
+extern void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, double * dev_hy, double * dev_uy);
+
+
+
 namespace ngla
 {
   using namespace ngs_cuda;

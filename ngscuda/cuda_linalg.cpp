@@ -312,11 +312,12 @@ namespace ngla
   void DevConstantElementByElementMatrix ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    cerr << "constantEBE Mult not implemented" << endl;
-
     auto & ux = dynamic_cast<const UnifiedVector&> (x);
     auto & uy = dynamic_cast<UnifiedVector&> (y);
-
+    
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+    
     if (disjoint_cols)
       {
         double *dev_hx, *dev_hy;
@@ -324,7 +325,7 @@ namespace ngla
         cudaMalloc((double**)&dev_hy, numblocks*wm*sizeof(double));
 
         // copy input vectors kernel ...
-        ConstEBEKernelCopyIn (numblocks, row_dnums, ux.DevData(), dev_hx);
+        ConstEBEKernelCopyIn (numblocks, hm, FlatTable<int>(rowdnums).Data(), ux.DevData(), dev_hx);
 
         /*
 cublasStatus_t cublasDgemm(cublasHandle_t handle,
@@ -340,10 +341,10 @@ cublasStatus_t cublasDgemm(cublasHandle_t handle,
         // dev_hy = dev_hx * mat  
         cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
                                           wm, numblocks, hm, 
-                                          s, dev_mat, wm, hx, hm,
-                                          0.0, hy, wm);
+                                          s, dev_mat, wm, dev_hx, hm,
+                                          0.0, dev_hy, wm);
         
-        ConstEBEKernelCopyOut (numblocks, col_dnums, dev_hy, uy.DevData());
+        ConstEBEKernelCopyOut (numblocks, wm, FlatTable<int> (coldnums).Data(), dev_hy, uy.DevData());
 
         cudaFree(dev_hy);
         cudaFree(dev_hx);
