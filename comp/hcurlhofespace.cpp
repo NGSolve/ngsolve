@@ -204,6 +204,10 @@ namespace ngcomp
       "  Remove high order gradients from domains where the value is 0.\n"
       "  This list can be generated for example like this:\n"
       "  graddoms = [1 if mat == 'iron' else 0 for mat in mesh.GetMaterials()]";
+    docu.Arg("gradientboundaries") = "List[int] = None\n"
+      "  Remove high order gradients from boundaries where the value is 0.\n"
+      "  This list can be generated for example like this:\n"
+      "  gradbnds = [1 if bnd == 'iron_bnd' else 0 for bnd in mesh.GetBoundaries()]";
     docu.Arg("highest_order_dc") = "bool = False\n"
       "  Activates relaxed H(curl)-conformity. Allows tangential discontinuity of highest order edge basis functions";
     return docu;
