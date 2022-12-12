@@ -4,6 +4,7 @@
 #include <cublas_v2.h>
 #include <cusparse.h>
 
+#include "cuda_ngstd.hpp"
 #include "unifiedvector.hpp"
 
 // own ngsolve cuda-kernels:
@@ -111,7 +112,7 @@ namespace ngla
     DevTable<int> row_coloring, col_coloring;
 
     bool disjoint_rows, disjoint_cols;
-    
+    size_t numblocks;
   public:
     DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat);
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;

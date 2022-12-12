@@ -301,15 +301,37 @@ namespace ngla
   {
     disjoint_rows = mat.GetRowColoring().Size() != 0;
     disjoint_cols = mat.GetColColoring().Size() != 0;
-    // mat.GetMatrix(); 
+    // mat.GetMatrix();
+
+    numblocks = mat.GetRowDNums().Size();
+    cudaMalloc((double**)&dev_mat, hm*wm*sizeof(double));
+    cudaMemcpy (dev_mat, mat.GetMatrix().Data(), hw*wmm*sizeof(double), cudaMemcpyHostToDevice); 
   }
+
   
   void DevConstantElementByElementMatrix ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     cerr << "constantEBE Mult not implemented" << endl;
 
+    auto & ux = dynamic_cast<const UnifiedVector&> (x);
+    auto & uy = dynamic_cast<UnifiedVector&> (y);
 
+    if (disjoint_cols)
+      {
+        double *dev_hx, *dev_hy;
+        cudaMalloc((double**)&dev_hx, numblocks*wm*sizeof(double));
+        cudaMalloc((double**)&dev_hy, numblocks*wm*sizeof(double));
+
+        // copy input vectors kernel ...
+        // ConstEBEKernelCopyIn (numblocks, row_dnums, ux.DevData(), dev_hx);
+        // MatrixMult
+        // ConstEBEKernelCopyOut (numblocks, col_dnums, dev_hy, uy.DevData());
+
+        cudaFree(dev_hy);
+        cudaFree(dev_hx);
+      }
+    
     /*
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
