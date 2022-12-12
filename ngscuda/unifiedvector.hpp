@@ -49,7 +49,9 @@ namespace ngla
 
     void UpdateHost () const;
     void UpdateDevice () const;
-
+    void InvalidateHost() const { host_uptodate = false; }
+    void InvalidateDevice() const { device_uptodate = false; }
+    
     virtual ostream & Print (ostream & ost) const;    
     virtual ostream & PrintStatus (ostream & ost) const;
     /* virtual void PrintDevice () const; */
