@@ -171,14 +171,16 @@ namespace ngs_cuda
   class DevTable
   {
     int size;
-    size_t * dev_index;
-    T * dev_data;
+    size_t * dev_index = nullptr;
+    T * dev_data = nullptr;
   
   public: 
 
     DevTable (FlatTable<T> t2)
     {
       size = t2.Size();
+      if (size == 0) return;
+      
       cudaMalloc((size_t**)&dev_index, (size+1)*sizeof(size_t));
       cudaMemcpy (dev_index, &t2.IndexArray()[0], sizeof(size_t)*(size+1), cudaMemcpyHostToDevice); 
       // cout << "res = " << cudaMemcpy (dev_index, t2.Index(), sizeof(int)*(size+1), cudaMemcpyHostToDevice) << endl;
