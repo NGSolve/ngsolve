@@ -748,7 +748,10 @@ namespace ngcomp
     else
       return;
 
-    fileout = make_shared<ofstream>(filenamefinal.str());
+    if(legacy)
+      fileout = make_shared<ofstream>(filenamefinal.str());
+    else
+      fileout = make_shared<ofstream>(filenamefinal.str(), ofstream::binary);
 
 
     ResetArrays();
