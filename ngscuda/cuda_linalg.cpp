@@ -304,8 +304,8 @@ namespace ngla
       rowdnums(mat.GetRowDNums()), coldnums(mat.GetColDNums()),
       row_coloring(mat.GetRowColoring()), col_coloring(mat.GetColColoring())
   {
-    disjoint_rows = mat.GetRowColoring().Size() != 0;
-    disjoint_cols = mat.GetColColoring().Size() != 0;
+    disjoint_rows = (mat.GetRowColoring().Size() == 0);
+    disjoint_cols = (mat.GetColColoring().Size() == 0);
     // mat.GetMatrix();
 
     numblocks = mat.GetRowDNums().Size();

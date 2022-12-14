@@ -119,7 +119,8 @@ namespace ngs_cuda
     {
       return Array<T> (*this);
     }
-
+    
+    T * DevData() const { return dev_data; }
   }; 
 
 
