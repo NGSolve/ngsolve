@@ -21,6 +21,8 @@
 #include "contact.hpp"
 #include "globalinterfacespace.hpp"
 #include "globalspace.hpp"
+#include "vtkoutput.hpp"
+
 using namespace ngcomp;
 
 using ngfem::ELEMENT_TYPE;
@@ -4366,7 +4368,7 @@ deformation : ngsolve.comp.GridFunction
    py::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>>(m, "VTKOutput")
     .def(py::init([] (shared_ptr<MeshAccess> ma, py::list coefs_list,
                       py::list names_list, string filename, int subdivision, 
-                      int only_element, string floatsize, bool legacy)
+                      int only_element, string floatsize, bool legacy, int order)
          -> shared_ptr<BaseVTKOutput>
          {
            Array<shared_ptr<CoefficientFunction> > coefs
@@ -4375,9 +4377,9 @@ deformation : ngsolve.comp.GridFunction
              = makeCArray<string> (names_list);
            shared_ptr<BaseVTKOutput> ret;
            if (ma->GetDimension() == 2)
-             ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy);
+             ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy, order);
            else
-             ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy);
+             ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy, order);
            return ret;
          }),
          py::arg("ma"),
@@ -4388,6 +4390,7 @@ deformation : ngsolve.comp.GridFunction
          py::arg("only_element") = -1,
          py::arg("floatsize") = "double",
          py::arg("legacy") = false,
+         py::arg("order") = 1,
          docu_string(R"raw_string(
 VTK output class. Allows to put mesh and field information of several CoefficientFunctions into a VTK file.
 (Can be used by independent visualization software, e.g. ParaView).
@@ -4424,6 +4427,9 @@ floatsize : string in {\"single\", \"double\" }   object
 
 legacy : bool (default: False)
   defines if legacy-VTK output shall be used 
+
+order : int (default: 1)
+  allowed values: 1,2
             .)raw_string")
          )
      .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb)

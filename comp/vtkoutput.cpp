@@ -5,6 +5,7 @@
 /*********************************************************************/
 
 #include <comp.hpp>
+#include "vtkoutput.hpp"
 
 namespace ngcomp
 {
@@ -21,7 +22,8 @@ namespace ngcomp
                   (int)flags.GetNumFlag("subdivision", 0),
                   (int)flags.GetNumFlag("only_element", -1),
                   flags.GetStringFlag("floatsize", "double"),
-                  flags.GetDefineFlag("legacy"))
+                  flags.GetDefineFlag("legacy"),
+                  (int)flags.GetNumFlag("order", 1))
   {
     ;
   }
@@ -31,10 +33,12 @@ namespace ngcomp
                           const Array<shared_ptr<CoefficientFunction>> &a_coefs,
                           const Array<string> &a_field_names,
                           string a_filename, int a_subdivision, int a_only_element, 
-                          string a_floatsize, bool a_legacy)
+                          string a_floatsize, bool a_legacy, int a_order)
       : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
-        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy)
+        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy), order(a_order)
   {
+    r = 1 << (subdivision + order -1);
+    h = 1.0/r;
     if ((floatsize != "double") && (floatsize != "float") && (floatsize != "single"))
       cout << IM(1) << "VTKOutput: floatsize is not int {\"double\",\"single\",\"float\"}. Using \"float|single\".";
     value_field.SetSize(a_coefs.Size());
@@ -55,269 +59,245 @@ namespace ngcomp
       field->SetSize(0);
   }
 
-  /// Fill principil lattices (points and connections on subdivided reference simplex) in 2D
-  template <int D>
-  void VTKOutput<D>::FillReferenceTrig(Array<IntegrationPoint> &ref_coords, Array<INT<ELEMENT_MAXPOINTS + 1>> &ref_elems)
+  int VTKCell :: GetVtkType(ELEMENT_TYPE et, int order)
   {
-    if (subdivision == 0)
+    if(order==1)
     {
-      ref_coords.Append(IntegrationPoint(0.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(1.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(0.0, 1.0, 0.0));
-      ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(3, 0, 1, 2));
-    }
-    else
-    {
-      const int r = 1 << subdivision;
-      const int s = r + 1;
-
-      const double h = 1.0 / r;
-
-      int pidx = 0;
-      for (int i = 0; i <= r; ++i)
-        for (int j = 0; i + j <= r; ++j)
-        {
-          ref_coords.Append(IntegrationPoint(j * h, i * h));
-        }
-
-      pidx = 0;
-      for (int i = 0; i <= r; ++i)
-        for (int j = 0; i + j <= r; ++j, pidx++)
-        {
-          // int pidx_curr = pidx;
-          if (i + j == r)
-            continue;
-          int pidx_incr_i = pidx + 1;
-          int pidx_incr_j = pidx + s - i;
-
-          ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(3, pidx, pidx_incr_i, pidx_incr_j));
-
-          int pidx_incr_ij = pidx_incr_j + 1;
-
-          if (i + j + 1 < r)
-            ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(3, pidx_incr_i, pidx_incr_ij, pidx_incr_j));
-        }
-    }
-  }
-  /// Fill principil lattices (points and connections on subdivided reference simplex) in 2D
-  template <int D>
-  void VTKOutput<D>::FillReferenceQuad(Array<IntegrationPoint> &ref_coords, Array<INT<ELEMENT_MAXPOINTS + 1>> &ref_elems)
-  {
-    if (subdivision == 0)
-    {
-      ref_coords.Append(IntegrationPoint(0.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(1.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(1.0, 1.0, 0.0));
-      ref_coords.Append(IntegrationPoint(0.0, 1.0, 0.0));
-      INT<ELEMENT_MAXPOINTS + 1> quad;
-      quad[0] = 4;
-      quad[1] = 0;
-      quad[2] = 1;
-      quad[3] = 2;
-      quad[4] = 3;
-      ref_elems.Append(quad);
-    }
-    else
-    {
-      const int r = 1 << subdivision;
-      // const int s = r + 1;
-
-      const double h = 1.0 / r;
-
-      int pidx = 0;
-      for (int i = 0; i <= r; ++i)
-        for (int j = 0; j <= r; ++j)
-        {
-          ref_coords.Append(IntegrationPoint(j * h, i * h));
-        }
-
-      for (int i = 0; i < r; ++i)
-      {
-        int incr_i = r + 1;
-        pidx = i * incr_i;
-        for (int j = 0; j < r; ++j, pidx++)
-        {
-          ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(4, pidx, pidx + 1, pidx + incr_i + 1, pidx + incr_i));
-        }
+      switch(et) {
+        case ET_POINT: return VTK_VERTEX;
+        case ET_SEGM: return VTK_LINE;
+        case ET_TRIG: return VTK_TRIANGLE;
+        case ET_QUAD: return VTK_QUAD;
+        case ET_TET: return VTK_TETRA;
+        case ET_HEX: return VTK_HEXAHEDRON;
+        case ET_PRISM: return VTK_WEDGE;
+        case ET_PYRAMID: return VTK_PYRAMID;
       }
     }
+    else if(order==2)
+    {
+      switch(et) {
+        case ET_POINT: throw Exception("Have no second order points");
+        case ET_SEGM: return VTK_QUADRATIC_EDGE;
+        case ET_TRIG: return VTK_QUADRATIC_TRIANGLE;
+        case ET_QUAD: return VTK_BIQUADRATIC_QUAD; // 9 nodes
+        case ET_TET: return VTK_QUADRATIC_TETRA;
+        // case ET_HEX: return VTK_TRIQUADRATIC_HEXAHEDRON; // 27 nodes (not supported by paraview tessellation)
+        case ET_HEX: return VTK_QUADRATIC_HEXAHEDRON; // 20 nodes
+        case ET_PRISM: return VTK_BIQUADRATIC_QUADRATIC_WEDGE; // 18 nodes
+        // case ET_PRISM: return VTK_QUADRATIC_WEDGE; // 18 nodes (not supported by paraview tessellation)
+        case ET_PYRAMID: return VTK_PYRAMID; //VTK_TRIQUADRATIC_PYRAMID; // 19 nodes
+      }
+    }
+    else
+      throw Exception("Invalid element order: " + ToString(order));
+  }
+
+  VTKCell :: VTKCell(ELEMENT_TYPE et, int order, const std::map<tuple<int,int,int>, int> &m,
+      int i, int j, int k, Vec<3,int> vi, Vec<3,int> vj, Vec<3,int> vk)
+  {
+    type = GetVtkType(et, order);
+    auto f = [&m, i,j,k, vi, vj, vk](int i0,int j0, int k0) {
+      auto ijk = Vec<3,int>{i,j,k};
+      ijk += i0*vi+j0*vj+k0*vk;
+      return m.at({ijk[0], ijk[1], ijk[2]});
+    };
+
+    switch(type) {
+      case VTK_TRIANGLE: pi = {f(0,0,0), f(1,0,0), f(0,1,0)}; break;
+      case VTK_QUAD: pi = {f(0,0,0), f(0,1,0), f(1,1,0), f(1,0,0)}; break;
+      case VTK_TETRA: pi = {f(0,0,0), f(0,0,1), f(0,1,0), f(1,0,0)}; break;
+      case VTK_WEDGE: pi = {f(0,0,0), f(1,0,0), f(0,1,0), f(0,0,1), f(1,0,1), f(0,1,1)}; break;
+      case VTK_HEXAHEDRON: pi = {f(0,0,0), f(0,0,1), f(0,1,1), f(0,1,0), f(1,0,0), f(1,0,1), f(1,1,1), f(1,1,0)}; break;
+      case VTK_PYRAMID: pi = {f(0,0,0), f(0,1,0), f(1,1,0), f(1,0,0), f(0,0,1)}; break;
+
+      case VTK_QUADRATIC_TRIANGLE: pi = {f(0,0,0), f(2,0,0), f(0,2,0),
+                                         f(1,0,0), f(1,1,0), f(0,1,0)}; break;
+      case VTK_BIQUADRATIC_QUAD: pi = {f(0,0,0), f(0,2,0), f(2,2,0), f(2,0,0),
+                                       f(0,1,0), f(1,2,0), f(2,1,0), f(1,0,0), f(1,1,0)}; break;
+
+      case VTK_QUADRATIC_TETRA: pi = { f(0,0,0), f(0,0,2), f(0,2,0), f(2,0,0),
+                                       f(0,0,1), f(0,1,1), f(0,1,0), f(1,0,0),
+                                       f(1,0,1), f(1,1,0) }; break;
+      case VTK_TRIQUADRATIC_HEXAHEDRON: pi = { f(0,0,0), f(0,0,2), f(0,2,2), f(0,2,0), f(2,0,0), f(2,0,2), f(2,2,2), f(2,2,0),
+                                               f(0,0,1), f(0,1,2), f(0,2,1), f(0,1,0), f(2,0,1), f(2,1,2), f(2,2,1), f(2,1,0),
+                                               f(1,0,0), f(1,0,2), f(1,2,2), f(1,2,0),
+                                               f(1,1,0), f(1,1,2), f(1,0,1), f(1,2,1), f(0,1,1), f(2,1,1), f(1,1,1)}; break;
+      case VTK_QUADRATIC_HEXAHEDRON: pi = { f(0,0,0), f(0,0,2), f(0,2,2), f(0,2,0), f(2,0,0), f(2,0,2), f(2,2,2), f(2,2,0),
+                                               f(0,0,1), f(0,1,2), f(0,2,1), f(0,1,0), f(2,0,1), f(2,1,2), f(2,2,1), f(2,1,0),
+                                               f(1,0,0), f(1,0,2), f(1,2,2), f(1,2,0)}; break;
+
+      case VTK_BIQUADRATIC_QUADRATIC_WEDGE: pi = {f(0,0,0), f(2,0,0), f(0,2,0), f(0,0,2), f(2,0,2), f(0,2,2),
+                                                  f(1,0,0), f(1,1,0), f(0,1,0), f(1,0,2), f(1,1,2), f(0,1,2),
+                                                  f(0,0,1), f(2,0,1), f(0,2,1), f(1,0,1), f(1,1,1), f(0,1,1)}; break;
+
+      case VTK_QUADRATIC_WEDGE: pi = { f(0,0,0), f(2,0,0), f(0,2,0), f(0,0,2), f(2,0,2), f(0,2,2),
+                                       f(1,0,0), f(1,1,0), f(0,1,0), f(1,0,2), f(1,1,2), f(0,1,2),
+                                       f(0,0,1), f(2,0,1), f(0,2,1)}; break;
+
+      default: throw Exception("VTK type not implemented: "+ToString(type));
+    }
+  }
+
+  /// Fill principil lattices (points and connections on subdivided reference simplex) in 2D
+  template <int D>
+  void VTKOutput<D>::FillReferenceTrig(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems)
+  {
+    std::map<tuple<int,int,int>, int> m;
+
+    for (int i = 0; i <= r; ++i)
+      for (int j = 0; i + j <= r; ++j)
+      {
+        m[{i,j,0}] = ref_coords.Size();
+        ref_coords.Append(IntegrationPoint(j * h, i * h));
+      }
+
+    for (int i = 0; i < r; i+=order)
+      for (int j = 0; i + j < r; j+=order)
+      {
+        if(i+j+order<r)
+          ref_elems.Append({ET_QUAD, order, m, i, j, 0});
+        else
+          ref_elems.Append({ET_TRIG, order, m, i, j, 0});
+      }
+  }
+
+  /// Fill principil lattices (points and connections on subdivided reference simplex) in 2D
+  template <int D>
+  void VTKOutput<D>::FillReferenceQuad(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems)
+  {
+    std::map<tuple<int,int,int>, int> m;
+
+    for (int i : Range(r+1))
+      for (int j : Range(r+1))
+      {
+        m[{i,j,0}] = ref_coords.Size();
+        ref_coords.Append(IntegrationPoint(j * h, i * h));
+      }
+
+    for (int i=0; i<r; i+=order)
+      for (int j=0; j<r; j+=order)
+        ref_elems.Append({ET_QUAD, order, m, i, j, 0});
   }
 
   /// Fill principil lattices (points and connections on subdivided reference simplex) in 3D
   template <int D>
-  void VTKOutput<D>::FillReferenceTet(Array<IntegrationPoint> &ref_coords, Array<INT<ELEMENT_MAXPOINTS + 1>> &ref_elems)
+  void VTKOutput<D>::FillReferenceTet(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems)
   {
-    if (subdivision == 0)
-    {
-      ref_coords.Append(IntegrationPoint(0.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(1.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(0.0, 1.0, 0.0));
-      ref_coords.Append(IntegrationPoint(0.0, 0.0, 1.0));
-      ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(4, 0, 1, 2, 3));
-    }
-    else
-    {
-      const int r = 1 << subdivision;
-      const int s = r + 1;
+    std::map<tuple<int,int,int>, int> m;
 
-      const double h = 1.0 / r;
+    for (int i = 0; i <= r; ++i)
+      for (int j = 0; i + j <= r; ++j)
+        for (int k = 0; i + j + k <= r; ++k)
+        {
+          m[{i,j,k}] = ref_coords.Size();
+          ref_coords.Append(IntegrationPoint(i * h, j * h, k * h));
+        }
 
-      int pidx = 0;
-      for (int i = 0; i <= r; ++i)
-        for (int j = 0; i + j <= r; ++j)
-          for (int k = 0; i + j + k <= r; ++k)
+    for (int i = 0; i < r; i+=order)
+      for (int j = 0; i + j < r; j+=order)
+        for (int k = 0; i + j + k < r; k+=order)
+        {
+          if(i+j+k+2*order<r)
+            ref_elems.Append({ET_HEX, order, m, i, j, k});
+          else if(i+j+k+order<r)
           {
-            ref_coords.Append(IntegrationPoint(i * h, j * h, k * h));
+            ref_elems.Append({ET_PRISM, order, m, i, j, k});
+            ref_elems.Append({ET_TET, order, m, i+order, j, k, {-1,1,0}});
+            ref_elems.Append({ET_TET, order, m, i, j+order, k, {1,0,0}, {1,-1,1}});
           }
-
-      for (int i = 0; i <= r; ++i)
-        for (int j = 0; i + j <= r; ++j)
-          for (int k = 0; i + j + k <= r; ++k, pidx++)
-          {
-            if (i + j + k == r)
-              continue;
-            // int pidx_curr = pidx;
-            int pidx_incr_k = pidx + 1;
-            int pidx_incr_j = pidx + s - i - j;
-            int pidx_incr_i = pidx + (s - i) * (s + 1 - i) / 2 - j;
-
-            int pidx_incr_kj = pidx_incr_j + 1;
-
-            int pidx_incr_ij = pidx + (s - i) * (s + 1 - i) / 2 - j + s - (i + 1) - j;
-            int pidx_incr_ki = pidx + (s - i) * (s + 1 - i) / 2 - j + 1;
-            int pidx_incr_kij = pidx + (s - i) * (s + 1 - i) / 2 - j + s - (i + 1) - j + 1;
-
-            ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(4, pidx, pidx_incr_k, pidx_incr_j, pidx_incr_i));
-            if (i + j + k + 1 == r)
-              continue;
-
-            ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(4, pidx_incr_k, pidx_incr_kj, pidx_incr_j, pidx_incr_i));
-            ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(4, pidx_incr_k, pidx_incr_kj, pidx_incr_ki, pidx_incr_i));
-
-            ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(4, pidx_incr_j, pidx_incr_i, pidx_incr_kj, pidx_incr_ij));
-            ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(4, pidx_incr_i, pidx_incr_kj, pidx_incr_ij, pidx_incr_ki));
-
-            if (i + j + k + 2 != r)
-              ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(4, pidx_incr_kj, pidx_incr_ij, pidx_incr_ki, pidx_incr_kij));
-          }
-    }
+          else
+            ref_elems.Append({ET_TET, order, m, i, j, k});
+        }
   }
 
   /// Fill principil lattices (points and connections on subdivided reference hexahedron) in 3D
   template <int D>
-  void VTKOutput<D>::FillReferenceHex(Array<IntegrationPoint> &ref_coords, Array<INT<ELEMENT_MAXPOINTS + 1>> &ref_elems)
+  void VTKOutput<D>::FillReferenceHex(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems)
   {
-    if (subdivision == 0)
-    {
-      ref_coords.Append(IntegrationPoint(0.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(1.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(1.0, 1.0, 0.0));
-      ref_coords.Append(IntegrationPoint(0.0, 1.0, 0.0));
-      ref_coords.Append(IntegrationPoint(0.0, 0.0, 1.0));
-      ref_coords.Append(IntegrationPoint(1.0, 0.0, 1.0));
-      ref_coords.Append(IntegrationPoint(1.0, 1.0, 1.0));
-      ref_coords.Append(IntegrationPoint(0.0, 1.0, 1.0));
-      INT<ELEMENT_MAXPOINTS + 1> hex;
-      hex[0] = 8;
-      hex[1] = 0;
-      hex[2] = 1;
-      hex[3] = 2;
-      hex[4] = 3;
-      hex[5] = 4;
-      hex[6] = 5;
-      hex[7] = 6;
-      hex[8] = 7;
-      ref_elems.Append(hex);
-    }
-    else
-    {
-      const int r = 1 << subdivision;
-      // const int s = r + 1;
+    std::map<tuple<int,int,int>, int> m;
 
-      const double h = 1.0 / r;
-
-      int pidx = 0;
-      for (int i = 0; i <= r; ++i)
-        for (int j = 0; j <= r; ++j)
-          for (int k = 0; k <= r; ++k)
-          {
-            ref_coords.Append(IntegrationPoint(k * h, j * h, i * h));
-          }
-
-      for (int i = 0; i < r; ++i)
-      {
-        int incr_i = (r + 1) * (r + 1);
-        for (int j = 0; j < r; ++j)
+    for (int i = 0; i <= r; ++i)
+      for (int j = 0; j <= r; ++j)
+        for (int k = 0; k <= r; ++k)
         {
-          int incr_j = r + 1;
-          pidx = i * incr_i + j * incr_j;
-          for (int k = 0; k < r; ++k, pidx++)
-          {
-            ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(8, pidx, pidx + 1, pidx + incr_j + 1, pidx + incr_j,
-                                                        pidx + incr_i, pidx + incr_i + 1, pidx + incr_i + incr_j + 1, pidx + incr_j + incr_i));
-          }
+          m[{i,j,k}] = ref_coords.Size();
+          ref_coords.Append(IntegrationPoint(k * h, j * h, i * h));
         }
-      }
-    }
+
+    for (int i = 0; i < r; i+=order)
+      for (int j = 0; j < r; j+=order)
+        for (int k = 0; k < r; k+=order)
+          ref_elems.Append({ET_HEX, order, m, i, j, k});
   }
 
   template <int D>
-  void VTKOutput<D>::FillReferencePrism(Array<IntegrationPoint> &ref_coords, Array<INT<ELEMENT_MAXPOINTS + 1>> &ref_elems)
+  void VTKOutput<D>::FillReferencePrism(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems)
   {
-    if (subdivision == 0)
-    {
-      ref_coords.Append(IntegrationPoint(0.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(1.0, 0.0, 0.0));
-      ref_coords.Append(IntegrationPoint(0.0, 1.0, 0.0));
-      ref_coords.Append(IntegrationPoint(0.0, 0.0, 1.0));
-      ref_coords.Append(IntegrationPoint(1.0, 0.0, 1.0));
-      ref_coords.Append(IntegrationPoint(0.0, 1.0, 1.0));
-      INT<ELEMENT_MAXPOINTS + 1> elem;
-      elem[0] = 6;
-      for (int i = 0; i < ElementTopology::GetNVertices(ET_PRISM); i++)
-        elem[i + 1] = i;
-      ref_elems.Append(elem);
-    }
-    else
-    {
-      const int r = 1 << subdivision;
-      const int s = r + 1;
+    std::map<tuple<int,int,int>, int> m;
 
-      const double h = 1.0 / r;
+    for (int k = 0; k <= r; k++)
+      for (int i = 0; i <= r; ++i)
+        for (int j = 0; i + j <= r; ++j)
+        {
+          m[{i,j,k}] = ref_coords.Size();
+          ref_coords.Append(IntegrationPoint(j * h, i * h, k * h));
+        }
 
-      int pidx = 0;
-      for (int k = 0; k <= r; k++)
-        for (int i = 0; i <= r; ++i)
-          for (int j = 0; i + j <= r; ++j)
-          {
-            ref_coords.Append(IntegrationPoint(j * h, i * h, k * h));
-          }
-
-      pidx = 0;
-      for (int k = 0; k < r; k++)
-      {
-        int incr_k = (r + 2) * (r + 1) / 2;
-        pidx = k * incr_k;
-        for (int i = 0; i <= r; ++i)
-          for (int j = 0; i + j <= r; ++j, pidx++)
-          {
-            // int pidx_curr = pidx;
-            if (i + j == r)
-              continue;
-            int pidx_incr_i = pidx + 1;
-            int pidx_incr_j = pidx + s - i;
-
-            ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(6, pidx, pidx_incr_i, pidx_incr_j, pidx + incr_k, pidx_incr_i + incr_k, pidx_incr_j + incr_k, 0, 0));
-
-            int pidx_incr_ij = pidx_incr_j + 1;
-
-            if (i + j + 1 < r)
-              ref_elems.Append(INT<ELEMENT_MAXPOINTS + 1>(6, pidx_incr_i, pidx_incr_ij, pidx_incr_j, pidx_incr_i + incr_k, pidx_incr_ij + incr_k, pidx_incr_j + incr_k, 0, 0));
-          }
-      }
-    }
+    for (int k = 0; k < r; k+=order)
+      for (int i = 0; i < r; i+=order)
+        for (int j = 0; i + j < r; j+=order)
+        {
+          if (i + j + order < r)
+            ref_elems.Append({ET_HEX, order, m, i, j, k});
+          else
+            ref_elems.Append({ET_PRISM, order, m, i, j, k});
+        }
   }
+
+  template <int D>
+  void VTKOutput<D>::FillReferencePyramid(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems)
+  {
+    std::map<tuple<int,int,int>, int> m;
+
+    for (int k = 0; k + order <= r; k++)
+      for (int i = 0; i <= r; ++i)
+        for (int j = 0; j <= r; ++j)
+        {
+          m[{i,j,k}] = ref_coords.Size();
+          double h1 = (1.0-h*k)*h;
+          ref_coords.Append(IntegrationPoint(j * h1, i * h1, k * h));
+        }
+
+    m[{0,0,r}] = ref_coords.Size();
+    ref_coords.Append(IntegrationPoint(0, 0, 1.0));
+    auto s = r/order;
+    if(order==2)
+    {
+      double h1 = 2*(1.0-h*(r-1))*h;
+      double hr = (r-1)*h;
+      m[{0,0,r-1}] = ref_coords.Size();
+      ref_coords.Append(IntegrationPoint(0, 0, hr));
+      m[{s,0,r-1}] = ref_coords.Size();
+      ref_coords.Append(IntegrationPoint(0, s*h1, hr));
+      m[{0,s,r-1}] = ref_coords.Size();
+      ref_coords.Append(IntegrationPoint(s*h1, 0, hr));
+      m[{s,s,r-1}] = ref_coords.Size();
+      ref_coords.Append(IntegrationPoint(s*h1, s*h1, hr));
+    }
+
+    for (int k = 0; k + order < r; k+=order)
+      for (int i = 0; i < r; i+=order)
+        for (int j = 0; j < r; j+=order)
+          ref_elems.Append({ET_HEX, order, m, i, j, k});
+
+    // pyramids not well supported yet, use two tets instead
+    ref_elems.Append({ET_TET, order, m, 0, 0, r-order, {s,s,0}, {0,s,0}});
+    ref_elems.Append({ET_TET, order, m, 0, 0, r-order, {s,0,0}, {s,s,0}});
+  }
+
   /* ###########################
+     ###########################
      # Legacy Files as Fallback#
      ###########################*/
   template <int D>
@@ -342,15 +322,15 @@ namespace ngcomp
     for (auto c : cells)
     {
       ndata++;
-      ndata += c[0];
+      ndata += c.pi.Size();
     }
     *fileout << "CELLS " << cells.Size() << " " << ndata << endl;
     for (auto c : cells)
     {
-      int nv = c[0];
+      int nv = c.pi.Size();
       *fileout << nv << "\t";
       for (int i = 0; i < nv; i++)
-        *fileout << c[i + 1] << "\t";
+        *fileout << c.pi[i] << "\t";
       *fileout << endl;
     }
   }
@@ -360,40 +340,9 @@ namespace ngcomp
   void VTKOutput<D>::PrintCellTypesLegacy(VorB vb, const BitArray *drawelems)
   {
     *fileout << "CELL_TYPES " << cells.Size() << endl;
-    int factor = (1 << subdivision) * (1 << subdivision);
-    if (D == 3 && vb == VOL)
-      factor *= (1 << subdivision);
-    for (auto e : ma->Elements(vb))
-    {
-      if (drawelems && !(drawelems->Test(e.Nr())))
-        continue;
+    for(auto & c : cells)
+      *fileout << c.type << " ";
 
-      switch (ma->GetElType(e))
-      {
-      case ET_TET:
-        for (int i = 0; i < factor; i++)
-          *fileout << "10 " << endl; //(void)c;
-        break;
-      case ET_QUAD:
-        for (int i = 0; i < factor; i++)
-          *fileout << "9 " << endl;
-        break;
-      case ET_TRIG:
-        for (int i = 0; i < factor; i++)
-          *fileout << "5 " << endl;
-        break;
-      case ET_PRISM:
-        for (int i = 0; i < factor; i++)
-          *fileout << "13 " << endl;
-        break;
-      case ET_HEX:
-        for (int i = 0; i < factor; i++)
-          *fileout << "12 " << endl;
-        break;
-      default:
-        cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
-      }
-    }
     *fileout << "CELL_DATA " << cells.Size() << endl;
     *fileout << "POINT_DATA " << points.Size() << endl;
   }
@@ -488,13 +437,13 @@ namespace ngcomp
     for (auto c : cells)
     {
 
-      int nv = c[0];
+      int nv = c.pi.Size();
       offs += nv;
       offsets.write((char *)&offs, sizeof(int32_t));
       sizeoff += sizeof(int32_t);
       for (int i = 0; i < nv; i++)
       {
-        connectivity.write((char *)&c[i + 1], sizeof(int));
+        connectivity.write((char *)&c.pi[i], sizeof(int));
         sizecon += sizeof(int);
       }
     }
@@ -518,64 +467,17 @@ namespace ngcomp
   void VTKOutput<D>::PrintCellTypes(VorB vb, int *offset, stringstream *appenddata, const BitArray *drawelems)
   {
     *fileout << "<DataArray type=\"UInt8\" Name=\"types\" format=\"appended\" offset=\"" << *offset << "\">" << endl;
-    int factor = (1 << subdivision) * (1 << subdivision);
     stringstream data;
     uint32_t sizetypes = 0;
     uint8_t eltype;
 
-    if (D == 3 && vb == VOL)
-      factor *= (1 << subdivision);
-    for (auto e : ma->Elements(vb))
+    for(auto & cell : cells)
     {
-      if (drawelems && !(drawelems->Test(e.Nr())))
-        continue;
-
-      switch (ma->GetElType(e))
-      {
-      case ET_TET:
-        for (int i = 0; i < factor; i++)
-        {
-          sizetypes += sizeof(uint8_t);
-          eltype = 10;
-          data.write((char *)&eltype, sizeof(uint8_t)); //(void)c;
-        }
-        break;
-      case ET_QUAD:
-        for (int i = 0; i < factor; i++)
-        {
-          sizetypes += sizeof(uint8_t);
-          eltype = 9;
-          data.write((char *)&eltype, sizeof(uint8_t));
-        }
-        break;
-      case ET_TRIG:
-        for (int i = 0; i < factor; i++)
-        {
-          sizetypes += sizeof(uint8_t);
-          eltype = 5;
-          data.write((char *)&eltype, sizeof(uint8_t));
-        }
-        break;
-      case ET_PRISM:
-        for (int i = 0; i < factor; i++)
-        {
-          sizetypes += sizeof(uint8_t);
-          eltype = 13;
-          data.write((char *)&eltype, sizeof(uint8_t));
-        }
-        break;
-      case ET_HEX:
-        for (int i = 0; i < factor; i++)
-        {
-          sizetypes += sizeof(uint8_t);
-          eltype = 12;
-          data.write((char *)&eltype, sizeof(uint8_t));
-        }
-        break;
-      default:
-        cout << "VTKOutput Element Type " << ma->GetElType(e) << " not supported!" << endl;
-      }
+      sizetypes += sizeof(uint8_t);
+      eltype = cell.type;
+      data.write((char*)&eltype, sizeof(uint8_t));
     }
+
     appenddata->write((char *)&sizetypes, sizeof(uint32_t));
     *appenddata << data.str();
     *offset += sizetypes + 4;
@@ -756,21 +658,24 @@ namespace ngcomp
 
     ResetArrays();
 
-    Array<IntegrationPoint> ref_vertices_tet(0), ref_vertices_prism(0), ref_vertices_trig(0), ref_vertices_quad(0), ref_vertices_hex(0);
-    Array<INT<ELEMENT_MAXPOINTS + 1>> ref_tets(0), ref_prisms(0), ref_trigs(0), ref_quads(0), ref_hexes(0);
-    FlatArray<IntegrationPoint> ref_vertices;
-    FlatArray<INT<ELEMENT_MAXPOINTS + 1>> ref_elems;
+    std::map<ELEMENT_TYPE, Array<IntegrationPoint>> ref_vertices;
+    std::map<ELEMENT_TYPE, Array<VTKCell>> ref_elems;
+    // Array<IntegrationPoint> ref_vertices_tet(0), ref_vertices_prism(0), ref_vertices_pyramid(0), ref_vertices_trig(0), ref_vertices_quad(0), ref_vertices_hex(0);
+    // Array<VTKCell> ref_tets(0), ref_prisms(0), ref_trigs(0), ref_quads(0), ref_hexes(0), ref_pyramids(0);
+    // FlatArray<IntegrationPoint> ref_vertices;
+    // FlatArray<VTKCell> ref_elems;
     /*
     if (D==3)
       FillReferenceData3D(ref_vertices,ref_tets);
     else
       FillReferenceData2D(ref_vertices,ref_tets);
     */
-    FillReferenceTet(ref_vertices_tet, ref_tets);
-    FillReferencePrism(ref_vertices_prism, ref_prisms);
-    FillReferenceQuad(ref_vertices_quad, ref_quads);
-    FillReferenceTrig(ref_vertices_trig, ref_trigs);
-    FillReferenceHex(ref_vertices_hex, ref_hexes);
+    FillReferenceTet(ref_vertices[ET_TET], ref_elems[ET_TET]);
+    FillReferencePrism(ref_vertices[ET_PRISM], ref_elems[ET_PRISM]);
+    FillReferencePyramid(ref_vertices[ET_PYRAMID], ref_elems[ET_PYRAMID]);
+    FillReferenceQuad(ref_vertices[ET_QUAD], ref_elems[ET_QUAD]);
+    FillReferenceTrig(ref_vertices[ET_TRIG], ref_elems[ET_TRIG]);
+    FillReferenceHex(ref_vertices[ET_HEX], ref_elems[ET_HEX]);
 
     // header:
     if (!legacy)
@@ -802,34 +707,8 @@ namespace ngcomp
       ElementTransformation &eltrans = ma->GetTrafo(ei, lh);
       ELEMENT_TYPE eltype = ma->GetElType(ei);
 
-      switch (eltype)
-      {
-      case ET_TRIG:
-        ref_vertices.Assign(ref_vertices_trig);
-        ref_elems.Assign(ref_trigs);
-        break;
-      case ET_QUAD:
-        ref_vertices.Assign(ref_vertices_quad);
-        ref_elems.Assign(ref_quads);
-        break;
-      case ET_TET:
-        ref_vertices.Assign(ref_vertices_tet);
-        ref_elems.Assign(ref_tets);
-        break;
-      case ET_HEX:
-        ref_vertices.Assign(ref_vertices_hex);
-        ref_elems.Assign(ref_hexes);
-        break;
-      case ET_PRISM:
-        ref_vertices.Assign(ref_vertices_prism);
-        ref_elems.Assign(ref_prisms);
-        break;
-      default:
-        throw Exception("VTK output for element-type" + ToString(eltype) + "not supported");
-      }
-
       int offset = points.Size();
-      for (auto ip : ref_vertices)
+      for (auto ip : ref_vertices[eltype])
       {
         if (vb == VOL)
         {
@@ -845,7 +724,7 @@ namespace ngcomp
 
       for (int i = 0; i < coefs.Size(); i++)
       {
-        for (auto ip : ref_vertices)
+        for (auto ip : ref_vertices[eltype])
         {
           if (vb == VOL)
           {
@@ -868,11 +747,10 @@ namespace ngcomp
         }
       }
 
-      for (auto elem : ref_elems)
+      for (auto new_elem : ref_elems[eltype])
       {
-        INT<ELEMENT_MAXPOINTS + 1> new_elem = elem;
-        for (int i = 1; i <= new_elem[0]; ++i)
-          new_elem[i] += offset;
+        for (auto & pi : new_elem.pi)
+          pi += offset;
         cells.Append(new_elem);
       }
     }
