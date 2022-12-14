@@ -84,6 +84,5 @@ namespace ngcomp
 #include "fesconvert.hpp"
 
 // #include "bddc.hpp"
-#include "vtkoutput.hpp"
 
 #endif
