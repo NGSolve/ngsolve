@@ -325,35 +325,20 @@ namespace ngla
     
     if (disjoint_cols)
       {
-        double *dev_hx, *dev_hy;
-        cudaMalloc((double**)&dev_hx, numblocks*wm*sizeof(double));
-        cudaMalloc((double**)&dev_hy, numblocks*hm*sizeof(double));
-
-        ConstEBEKernelCopyIn (numblocks, wm, rowdnums.DevData(), ux.DevData(), dev_hx);
-
-        /*
-cublasStatus_t cublasDgemm(cublasHandle_t handle,
-                           cublasOperation_t transa, cublasOperation_t transb,
-                           int m, int n, int k,
-                           const double          *alpha,
-                           const double          *A, int lda,
-                           const double          *B, int ldb,
-                           const double          *beta,
-                           double          *C, int ldc)
-        */
+        DevArray<double> dev_hx(numblocks*wm);
+        DevArray<double> dev_hy(numblocks*hm);
+        
+        ConstEBEKernelCopyIn (numblocks, wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
         
         // dev_hy = dev_hx * Trans(mat)
         double beta = 0.0;
         double alpha = s;
         cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_T, CUBLAS_OP_N,
                                           hm, numblocks, wm, 
-                                          &alpha, dev_mat, wm, dev_hx, wm,
-                                          &beta, dev_hy, hm);
+                                          &alpha, dev_mat, wm, dev_hx.DevData(), wm,
+                                          &beta, dev_hy.DevData(), hm);
         
-        ConstEBEKernelCopyOut (numblocks, hm, coldnums.DevData(), dev_hy, uy.DevData());
-
-        cudaFree(dev_hy);
-        cudaFree(dev_hx);
+        ConstEBEKernelCopyOut (numblocks, hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
       }
 
     uy.InvalidateHost();    
