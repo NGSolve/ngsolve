@@ -1394,7 +1394,7 @@ namespace ngcomp
             result = 0;
             return;
           }
-        const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(vb, elnr), lh2);
+        const ElementTransformation & trafo2 = ma->GetTrafo(ElementId(VOL, elnr), lh2);
         Evaluate (trafo2(rip, lh2), result);
         return;
       }
