@@ -2461,7 +2461,7 @@ namespace ngcomp
                 box.Add({ p[0], p[1], p[2] });
               }
 
-          box.Scale(1.2);
+          box.Scale(1.4);
           searchtree = make_unique<netgen::BoxTree<3>>(box);
           for(const auto& el : region.GetElements())
             {
@@ -2471,7 +2471,7 @@ namespace ngcomp
                   auto p = region.Mesh()->GetPoint<3>(v);
                   box.Add({ p[0], p[1], p[2] });
                 }
-              box.Scale(1.2);
+              box.Scale(1.4);
               searchtree->Insert(box, el.Nr());
             }
         }
