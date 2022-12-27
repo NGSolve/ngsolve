@@ -2134,6 +2134,50 @@ public:
     values(0) = sum;
   }
 
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+      if (this == var) return dir;
+      return InnerProduct(c1->Diff(var,dir),c2) + InnerProduct(c1,c2->Diff(var,dir));
+  }
+
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+  {
+    if (this == var)
+      return make_shared<ConstantCoefficientFunction> (1);
+
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
+    shared_ptr<CoefficientFunction> dv1v2, dv2v1;
+    int dimip = c1->Dimension();
+    int dimvar = var->Dimension();
+
+    auto vc1 = c1->Reshape( dimip );
+    auto vc2 = c2->Reshape( dimip );
+
+    if (c1.get() == var)
+      dv1v2 = c2;
+    else
+      {
+        auto dvc1 = c1->DiffJacobi (var, cache);
+        dv1v2 = dvc1 -> Reshape(dimip, dimvar) -> Transpose() * vc2;
+        dv1v2 = dv1v2 -> Reshape (var->Dimensions());
+      }
+
+    if (c2.get() == var)
+      dv2v1 = c1;
+    else
+      {
+        auto dvc2 = c2->DiffJacobi (var, cache);
+        dv2v1 = dvc2 -> Reshape(dimip, dimvar) -> Transpose() * vc1;
+        dv2v1 = dv2v1 -> Reshape (var->Dimensions());
+      }
+    auto res = dv1v2 + dv2v1;
+    cache[thisptr] = res;
+    return res;
+  }
   
 };
 
