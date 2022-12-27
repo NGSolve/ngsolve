@@ -921,6 +921,12 @@ ei : ngsolve.comp.ElementId
   input element id
 
 )raw_string"))
+    .def("Elements",
+           [](const FESpace &self, const Region &reg) {
+             auto range = FESpace::ElementRange(self.Elements(reg.VB(), glh))
+               | filter([reg](auto el) { return reg.Mask().Test(el.GetIndex()); });
+             return py::make_iterator(range.begin(), range.end());
+           }, py::keep_alive<0,1>(), py::keep_alive<0,2>())
 
     .def("GetDofNrs", [](shared_ptr<FESpace> self, NodeId ni)
          {
