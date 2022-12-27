@@ -35,7 +35,7 @@ namespace ngfem {
 
             ProxyUserData ud;
 //            DummyFE<ET_TRIG> dummyfe;
-//            ud.fel = &dummyfe; do not do this here as it interferes with the purpose (see ProxyFunctio::NonZeroPattern)
+//            ud.fel = &dummyfe; do not do this here as it interferes with the purpose (see ProxyFunction::NonZeroPattern)
 
             Array<ProxyFunction *> trial_proxies, test_proxies;
 
@@ -75,7 +75,7 @@ namespace ngfem {
                             nzvec[i] = nzvec[i] || nzvec_ad[i].Value();
 
                         for (auto test_proxy : test_proxies)
-                          for (auto k2 : Range(test_proxy->Dimension())) {
+                            for (auto k2 : Range(test_proxy->Dimension())) {
                                 ud.testfunction = test_proxy;
                                 ud.test_comp = k2;
                                 cf->NonZeroPattern(ud, nzvec_ad);
@@ -1056,7 +1056,7 @@ namespace ngfem {
                 }
             }
 
-            if (get_option(options, "sparse_evaluation", true))
+            if (get_option(options, "sparse_evaluation", sparse_evaluation_default))
               sparse_index_maps = build_index_maps(index_sets, nz_all);
 
           }
@@ -1159,6 +1159,7 @@ namespace ngfem {
           FlatArray<bool> declared(index_maps.Height(), lh);
           declared = false;
 
+          const bool sparse_eval = get_option(options, "sparse_evaluation", sparse_evaluation_default);
           const auto cres = cfs.Size();
           for (size_t I: Range(declared)) {
             const auto I_map = index_maps.Row(I);
@@ -1168,12 +1169,15 @@ namespace ngfem {
               continue;
 
             CodeExpr s;
-            if (!result_nz_vec[res_idx] && !declared[res_idx])
-              s = Var(0.0);
+            if (sparse_eval && !result_nz_vec[res_idx])
+              if (!declared[res_idx])
+                s = Var(0.0);
+              else
+                continue;
             else
               for (size_t i: Range(inputs)) {
                 const auto I_local = I_map(i);
-                if (!nz_vecs[i][I_local]) {
+                if (sparse_eval && !nz_vecs[i][I_local]) {
                   s.code.clear();
                   break;
                 }

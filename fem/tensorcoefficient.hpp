@@ -247,6 +247,8 @@ namespace ngfem {
           string index_signature{};
           size_t max_mem{0};
           map<string, bool> options{};
+          static constexpr bool sparse_evaluation_default = true;
+
           Array<Vector<bool>> nz_inputs{};
           Vector<bool> nz_result{};
           Vector<bool> nz_all{};
