@@ -15,10 +15,65 @@
 #include "tensorcoefficient.hpp"
 #include "coefficient_impl.hpp"
 
+#include <core/register_archive.hpp>
+#include <core/python_ngcore.hpp> // for shallow archive
 
 namespace ngfem {
 
     namespace tensor_internal {
+
+        template <typename T>
+        void archive_array_shallow(Archive& ar, T& array) {
+            if(ar.Output()) {
+                ar << array.Size();
+                for (auto cf : array)
+                    ar.Shallow(cf);
+            }
+            else {
+                size_t s;
+                ar & s;
+                array.SetSize(s);
+                for (auto i : Range(s))
+                    ar.Shallow(array[i]);
+            }
+        }
+
+        template <typename T>
+        void archive_array(Archive& ar, T& array) {
+            // TODO: streamline implementation / implement somewhere else
+            if(ar.Output()) {
+                ar << array.Size();
+                for (auto& item : array)
+                    ar & item;
+            }
+            else {
+                size_t s;
+                ar & s;
+                array.SetSize(s);
+                for (auto& item : array)
+                    ar & item;
+            }
+        }
+
+        template <typename T>
+        void archive_matrix(Archive& ar, T& matrix) {
+            // TODO: streamline implementation / implement somewhere else
+            if(ar.Output()) {
+                ar << matrix.Height();
+                ar << matrix.Width();
+                auto vec = matrix.AsVector();
+                for (auto& item : vec)
+                    ar & item;
+            }
+            else {
+                size_t h, w;
+                ar & h & w;
+                matrix.SetSize(h, w);
+                auto vec = matrix.AsVector();
+                for (auto& item : vec)
+                    ar & item;
+            }
+        }
 
         bool get_option(const map<string, bool> &options, string key, bool or_val) {
             auto found = options.find(key);
@@ -26,7 +81,7 @@ namespace ngfem {
                 return found->second;
             else
                 return or_val;
-        };
+        }
 
         Vector<bool> nonzero_pattern(CoefficientFunction *cf) {
             Vector<AutoDiffDiff<1, bool>> nzvec_ad(cf->Dimension());
@@ -806,6 +861,12 @@ namespace ngfem {
           SetDimensions(dims.Part(0));
         }
 
+        void LeviCivitaCoefficientFunction::DoArchive(Archive &ar)
+        {
+          BASE::DoArchive(ar);
+          ar & dim;
+          mi.DoArchive(ar);
+        }
 
         void LeviCivitaCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index,
                                     bool skip_zeroes) const
@@ -1060,6 +1121,48 @@ namespace ngfem {
               sparse_index_maps = build_index_maps(index_sets, nz_all);
 
           }
+        }
+
+        void EinsumCoefficientFunction::DoArchive(Archive &ar)
+        {
+          BASE::DoArchive(ar);
+          // trivial
+          ar & is_zero & max_mem & options;
+
+          ar & index_signature
+             & original_index_signature
+             & expanded_index_signature;
+
+          // shallow
+          ar.Shallow(node);
+          archive_array_shallow(ar, cfs);
+          archive_array_shallow(ar, original_inputs);
+          archive_array_shallow(ar, expanded_inputs);
+
+          // vectors and matrices
+          if (ar.Output())
+          {
+            ar << nz_inputs.Size();
+            for (auto& item : nz_inputs)
+            {
+              archive_array(ar, item);
+            }
+          }
+          else
+          {
+            size_t s;
+            ar & s;
+            nz_inputs.SetSize(s);
+            for (auto& item : nz_inputs)
+            {
+              archive_array(ar, item);
+            }
+          }
+
+          archive_array(ar, nz_result);
+          archive_array(ar, nz_all);
+          archive_matrix(ar, index_maps);
+          archive_matrix(ar, sparse_index_maps);
         }
 
         Matrix<int> EinsumCoefficientFunction::build_index_maps(
@@ -1343,5 +1446,8 @@ namespace ngfem {
                                              const map<string, bool> &options) {
         return make_shared<EinsumCoefficientFunction>(expand_ellipses(index_signature, cfs), cfs, options);
     }
+
+    static RegisterClassForArchive<LeviCivitaCoefficientFunction, CoefficientFunction> reglevicivitacf;
+    static RegisterClassForArchive<EinsumCoefficientFunction, CoefficientFunction> regeinsumcf;
 
 } // namespace ngfem
