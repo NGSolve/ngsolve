@@ -355,6 +355,12 @@ namespace ngfem {
         string expand_ellipses(const string& signature, const Array<shared_ptr<CoefficientFunction>>& cfs)
         {
           auto parts = split_signature(signature);
+          if (parts.size() - 1 != cfs.Size())
+              throw NG_EXCEPTION(
+                  string("number of inputs (") + to_string(cfs.Size()) + ") " +
+                  "does not match the number inferred from the signature ("
+                  + to_string(parts.size() - 1) + ")");
+
           string ellipse_symbols{};
           ellipse_symbols.reserve(10);
           for (auto i : Range(parts.size() - 1))
