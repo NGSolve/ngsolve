@@ -246,12 +246,19 @@ namespace ngla {
             double norm = sqrt(fabs(InnerProduct<T>(*tmp, *mv[i], true)));
             Rfactor(i,i) = norm;
             *mv[i] *= 1.0 / norm;
+            /*
             for (int j = i+1; j < mv.Size(); j++)
               {
                 T rij = InnerProduct<T>(*mv[j], *tmp, true) / norm;
                 Rfactor(i,j) = rij;
                 *mv[j] -= rij * *mv[i];
               }
+            */
+            IntRange rest(i+1, mv.Size());
+            auto mvrest = mv.Range(rest);
+            Rfactor.Row(i).Range(rest) = (1.0/norm) * mvrest->T_InnerProduct<T> (*tmp, true);
+            for (auto j : rest)
+              *mv[j] -= Rfactor(i,j) * *mv[i];              
           }
       }
     else
