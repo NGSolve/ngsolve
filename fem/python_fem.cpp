@@ -1477,6 +1477,7 @@ kwargs:
   "optimize_path" (false) -- try to reorder product for greater efficiency
   "optimize_identities" (false) -- try to eliminate identity tensors
   "use_legacy_ops" (false) -- fall back to existing CFs implementing certain blas operations where possible
+  "sparse_evaluation" (true) -- exploit sparsity of tensors
 
 )raw_string"));
   
