@@ -1804,6 +1804,159 @@ namespace ngfem
   };
 
 
+
+
+
+  /// Identity
+  template <int DIM_EL, int DIM_SPC>
+  class DiffOpIdDual : public DiffOp<DiffOpIdDual<DIM_EL, DIM_SPC> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_EL };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+    static INT<0> GetDimensions() { return INT<0>(); };
+
+    static bool SupportsVB (VorB checkvb) { return true; }
+
+    static string Name() { return "IdDual"; }
+    // static constexpr bool SUPPORT_PML = true;
+
+    static const BaseScalarFiniteElement & Cast (const FiniteElement & fel)
+    { return static_cast<const BaseScalarFiniteElement&> (fel); }
+
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
+				MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0));
+      mat.Row(0) /= mip.GetMeasure();
+    }
+#ifdef UNUSED
+    template <typename MAT>
+    static void GenerateMatrixIR (const FiniteElement & fel,
+                                  const BaseMappedIntegrationRule & mir,
+                                  MAT & mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (mir.IR(), Trans(mat));
+      for (int i = 0; i < mir.Size(); i++)
+        mat.Row(i) /= mir[i].GetMeasure();
+    }
+#endif
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcShape (mir.IR(), mat);
+      for (int i = 0; i < mir.Size(); i++)
+        mat.Col(i).Range(0,fel.GetNDof()) /= mir[i].GetMeasure();
+    }
+
+#ifdef  UNSUED
+    template <typename MIP, class TVX, class TVY>
+    static void Apply (const FiniteElement & fel, const MIP & mip,
+		       const TVX & x, TVY & y,
+		       LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      y = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
+      y(0) /= mip.GetMeasure();
+    }
+
+    static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
+		       BareSliceVector<double> x, FlatVector<double> y,
+		       LocalHeap & lh)
+    {
+      y(0) = Cast(fel).Evaluate(mip.IP(), x);
+      y(0) /= mip.GetMeasure();
+    }
+
+
+    using DiffOp<DiffOpIdDual>::ApplyIR;
+    template <class MIR, class TMY>
+    static void ApplyIR (const FiniteElement & fel, const MIR & mir,
+                         BareSliceVector<double> x, TMY y,
+			 LocalHeap & lh)
+    {
+      Cast(fel).Evaluate (mir.IR(), x, y.Col(0));
+      for (int i = 0; i < mir.Size(); i++)
+        y(i,0) /= mir[i].GetMeasure();
+    }
+
+
+    // using ApplySIMDIR;
+    using DiffOp<DiffOpIdDual>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).Evaluate (mir.IR(), x, y.Row(0));
+      for (int i = 0; i < mir.Size(); i++)
+        y(0,i) /= mir[i].GetMeasure();
+
+    }
+
+
+    template <typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const FiniteElement & fel, const MIP & mip,
+			    const TVX & x, TVY & y,
+			    LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      y.Range(0,fel.GetNDof()) = (x(0)/mip.GetMeasure()) * Cast(fel).GetShape (mip.IP(), lh);
+    }
+
+    /*
+    // using DiffOp<DiffOpId<D, FEL> >::ApplyTransIR;
+    template <class MIR>
+    static void ApplyTransIR (const FiniteElement & fel,
+			      const MIR & mir,
+			      FlatMatrix<double> x, BareSliceVector<double> y,
+			      LocalHeap & lh)
+    {
+      Cast(fel).EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
+    }
+
+    template <class MIR>
+    static void ApplyTransIR (const FiniteElement & fel,
+			      const MIR & mir,
+			      FlatMatrix<Complex> x, BareSliceVector<Complex> y,
+			      LocalHeap & lh)
+    {
+      DiffOp<DiffOpId<D, FEL> > :: ApplyTransIR (fel, mir, x, y, lh);
+    }
+
+    using DiffOp<DiffOpId<D, FEL> >::AddTransSIMDIR;
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+    }
+
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
+    {
+      Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
+    }
+*/
+
+
+    /*
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir);
+    */
+#endif
+  };
+
+
+
+
+
+  
+
   template <int DIM_SPC> class DiffOpGradBoundaryVectorH1;
   
   template <int DIM_SPC>
@@ -2300,7 +2453,13 @@ namespace ngfem
   BDBEQUATIONS_EXTERN template class T_BIntegrator<DiffOpIdBoundary<3>, DVec<1>, ScalarFiniteElement<2>>;
 
 
+  extern template class NGS_DLL_HEADER DiffOpIdDual<1,2>;
+  extern template class NGS_DLL_HEADER DiffOpIdDual<2,3>;
+  extern template class NGS_DLL_HEADER DiffOpIdDual<1,1>;
+  extern template class NGS_DLL_HEADER DiffOpIdDual<2,2>;
+  extern template class NGS_DLL_HEADER DiffOpIdDual<3,3>;
 
+  
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<1> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<2> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpId<3> >;
