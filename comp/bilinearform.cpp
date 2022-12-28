@@ -3861,6 +3861,8 @@ namespace ngcomp
                   if (IsRegularDof(dnums[j]))
                     useddof[dnums[j]] = true;
                 AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), true, lh);
+                for(auto pre : preconditioners)
+                  pre->AddElementMatrix(dnums, elmat, ElementId(BND, i), lh);
               }
             }
         });

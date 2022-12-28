@@ -75,8 +75,8 @@ namespace ngcomp
       // auto fes = bfa -> GetFESpace();
       shared_ptr<MeshAccess> ma = fes->GetMeshAccess();
 
-      Array<int> wbdcnt(ma->GetNE()+ma->GetNSE()+ma->GetNCD2E());
-      Array<int> ifcnt(ma->GetNE()+ma->GetNSE()+ma->GetNCD2E());
+      Array<int> wbdcnt(ma->GetNE()+ma->GetNSE()+ma->GetNCD2E()+bfa->GetSpecialElements().Size());
+      Array<int> ifcnt(ma->GetNE()+ma->GetNSE()+ma->GetNCD2E()+bfa->GetSpecialElements().Size());
       wbdcnt = 0;
       ifcnt = 0;
       const BitArray & freedofs = *fes->GetFreeDofs();
@@ -104,6 +104,27 @@ namespace ngcomp
                    ifcnt[ii]++;
                }
            });
+      Array<int> dnums;
+      int base = ma->GetNE() + ma->GetNSE() + ma->GetNCD2E();
+      for(auto i : Range(bfa->GetSpecialElements()))
+        {
+          auto& el = bfa->GetSpecialElements()[i];
+          dnums.SetSize0();
+          el->GetDofNrs(dnums);
+          for (auto d : dnums) {
+            if (!IsRegularDof(d)) continue;
+            if (!freedofs.Test(d)) continue;
+            COUPLING_TYPE ct = fes->GetDofCouplingType(d);
+            if (((ct & CONDENSABLE_DOF) != 0) && bfa->UsesEliminateInternal())
+              continue;
+
+            int ii = base + i;
+            if (ct == WIREBASKET_DOF)
+              wbdcnt[ii]++;
+            else
+              ifcnt[ii]++;
+          }
+        }
 
       Table<int> el2wbdofs(wbdcnt);   // wirebasket dofs on each element
       Table<int> el2ifdofs(ifcnt);    // interface dofs on each element
@@ -131,7 +152,31 @@ namespace ngcomp
                    el2ifdofs[ii][lifcnt++] = d;
                }
            });
-      
+
+      base = ma->GetNE() + ma->GetNSE() + ma->GetNCD2E();
+      for(auto i : Range(bfa->GetSpecialElements()))
+        {
+          auto& el = bfa->GetSpecialElements()[i];
+          int lifcnt = 0;
+          int lwbcnt = 0;
+          dnums.SetSize0();
+          el->GetDofNrs(dnums);
+          for (auto d : dnums) {
+            if (!IsRegularDof(d))
+              continue;
+            if (!freedofs.Test(d))
+              continue;
+            COUPLING_TYPE ct = fes->GetDofCouplingType(d);
+            if (((ct & CONDENSABLE_DOF) != 0) && bfa->UsesEliminateInternal())
+              continue;
+
+            int ii = base + i;
+            if (ct == WIREBASKET_DOF)
+              el2wbdofs[ii][lwbcnt++] = d;
+            else
+              el2ifdofs[ii][lifcnt++] = d;
+          }
+        }
 
       auto ndof = fes->GetNDof();      
 
