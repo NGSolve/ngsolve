@@ -265,6 +265,9 @@ namespace ngfem {
             : public T_CoefficientFunction<EinsumCoefficientFunction>
         {
           using BASE = T_CoefficientFunction<EinsumCoefficientFunction>;
+          using typename BASE::T_DJC;
+
+          static constexpr bool sparse_evaluation_default = true;
 
           bool is_zero{false};
           size_t max_mem{0};
@@ -287,7 +290,6 @@ namespace ngfem {
           string expanded_index_signature{};
           Array<shared_ptr<CoefficientFunction>> expanded_inputs{};
 
-          using typename BASE::T_DJC;
         public:
           EinsumCoefficientFunction() = default;
 
@@ -299,6 +301,7 @@ namespace ngfem {
           Matrix<int> build_index_maps(const Array<MultiIndex>& index_sets, const optional<Vector<bool>>& nz_pattern);
 
         public:
+
           virtual void DoArchive(Archive &ar) override;
 
           virtual shared_ptr<EinsumCoefficientFunction> Optimize(const map<string, bool> &aoptions) const;
