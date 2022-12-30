@@ -35,7 +35,7 @@ namespace ngcomp
                           string a_filename, int a_subdivision, int a_only_element, 
                           string a_floatsize, bool a_legacy, int a_order)
       : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
-        filename(a_filename), subdivision(a_subdivision), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy), order(a_order)
+        filename(a_filename), subdivision(a_subdivision), order(a_order), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy)
   {
     r = 1 << (subdivision + order -1);
     h = 1.0/r;
