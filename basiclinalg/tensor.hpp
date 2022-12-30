@@ -353,6 +353,12 @@ template <int DIM, typename T = double>
 class Tensor : public FlatTensor<DIM,T>
 {
 public:
+  Tensor (const Tensor&) = delete;
+  Tensor (Tensor&& t2)
+    : FlatTensor<DIM,T> (t2)
+  {
+    t2.Data() = nullptr;
+  }
   
   template <typename ... ARG>
   Tensor (ARG ... args) : FlatTensor<DIM,T> (args...)
