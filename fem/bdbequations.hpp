@@ -63,6 +63,21 @@ namespace ngfem
       // mat = Trans (Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ());
     }
 
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDShape (ip, Trans(mat));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat = Trans(static_cast<const MappedIntegrationPoint<D,D>&>(mip).GetJacobianInverse());
+    }
+    
+    
     static void GenerateMatrixIR (const FiniteElement & fel, 
                                   const MappedIntegrationRule<D,D> & mir,
                                   SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
@@ -323,6 +338,22 @@ namespace ngfem
       // mat.Row(0) = Cast(fel).GetShape(mip.IP(), lh);
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));      
     }
+
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (ip, mat.Row(0));      
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat(0,0) = 1;
+    }
+    
+    
     /*
     static void GenerateMatrix (const FiniteElement & fel, 
 				const BaseMappedIntegrationPoint & mip,
@@ -450,6 +481,8 @@ namespace ngfem
     {
       Cast(fel).AddTrans (mir.IR(), y.Row(0), x);
     }
+
+    
 
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,

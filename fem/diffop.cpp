@@ -292,6 +292,26 @@ namespace ngfem
   {
     throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD<Complex> ... ) not overloaded for class ") + typeid(*this).name());
   }
+  
+  void DifferentialOperator ::
+  CalcMatrix (const FiniteElement & fel,
+              const IntegrationPoint & ip,
+              SliceMatrix<double,ColMajor> mat,
+              LocalHeap & lh) const
+  {
+    throw Exception ("DiffOp::CalcMatrix - Refelement not overloaded");
+  }
+  
+  void DifferentialOperator ::
+  CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
+                            SliceMatrix<double> trans,
+                            LocalHeap & lh) const
+  {
+    throw Exception ("DiffOp::CalcTransformationMatrix not overloaded");    
+  }
+  
+
+  
 
   list<tuple<string,double>> DifferentialOperator ::
   Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const

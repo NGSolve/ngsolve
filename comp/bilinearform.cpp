@@ -125,7 +125,8 @@ namespace ngcomp
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
     spd = flags.GetDefineFlag ("spd");
-    geom_free = flags.GetDefineFlag("geom_free");    
+    geom_free = flags.GetDefineFlag("geom_free");
+    matrix_free_bdb = flags.GetDefineFlag("matrix_free_bdb");    
     if (spd) symmetric = true;
     SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());
   }
@@ -180,6 +181,7 @@ namespace ngcomp
                      !flags.GetDefineFlag ("nokeep_internal"));
     if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
     geom_free = flags.GetDefineFlag("geom_free");
+    matrix_free_bdb = flags.GetDefineFlag("matrix_free_bdb");
     
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
@@ -799,6 +801,11 @@ namespace ngcomp
         return;
       }
 
+    if (matrix_free_bdb)
+      {
+        AssembleBDB(lh);
+        return;
+      }
     
     try
       {
@@ -977,6 +984,151 @@ namespace ngcomp
     mats.SetSize (ma->GetNLevels());
     mats.Last() = sum;
   }
+
+
+
+  /*
+    Stores product of B2 D B1 matrices
+
+    B matrices ... sum of EBE const 
+    D bock-diagonal
+   */
+  
+  void BilinearForm :: AssembleBDB (LocalHeap & lh)
+  {
+    static Timer t("assemble-BDB"); RegionTimer reg(t);
+    
+    auto fesx = GetTrialSpace();
+    auto fesy = GetTestSpace();
+    auto ma = GetMeshAccess();
+
+
+    if (parts.Size() != 1) throw Exception("mat-free bdb biforms need 1 integrator");
+    auto bfi = dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (parts[0]);
+
+    auto & trialproxies = bfi->TrialProxies();
+    auto & testproxies = bfi->TestProxies();
+    auto diffopx = trialproxies[0]->Evaluator();
+    auto diffopy = testproxies[0]->Evaluator();
+    int dimx = diffopx->Dim();
+    int dimy = diffopy->Dim();
+    
+
+    if (trialproxies.Size() != 1) throw Exception ("mat-free bdb biforms need 1 trial-proxy");
+    if (testproxies.Size() != 1) throw Exception ("mat-free bdb biforms need 1 test-proxy");
+
+    shared_ptr<BaseMatrix> sum;
+
+    Array<short> classnr(ma->GetNE(VOL));
+    ma->IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_SEGM, ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+        
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+    Table<size_t> table = creator.MoveTable();
+    
+    
+    for (auto elclass_inds : table)
+      {
+        if (elclass_inds.Size() == 0) continue;
+        
+        // size_t nr = classnr[elclass_inds[0]];
+        ElementId ei(VOL,elclass_inds[0]);
+        auto & felx = GetTrialSpace()->GetFE (ei, lh);
+        auto & fely = GetTestSpace()->GetFE (ei, lh);
+        // auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
+        
+        MixedFiniteElement fel(felx, fely);
+        const IntegrationRule & ir = bfi->GetIntegrationRule(felx.ElementType(), felx.Order()+fely.Order());
+        Matrix<double,ColMajor> bmatx_(ir.Size()*diffopx->Dim(), felx.GetNDof());
+        Matrix<double,ColMajor> bmaty_(ir.Size()*diffopy->Dim(), fely.GetNDof());
+        
+        for (int i : Range(ir.Size()))
+          {
+            diffopx->CalcMatrix(felx, ir[i], bmatx_.Rows(i*dimx, (i+1)*dimx), lh);
+            diffopy->CalcMatrix(fely, ir[i], bmaty_.Rows(i*dimy, (i+1)*dimy), lh);
+          }
+
+        Matrix bmatx = bmatx_;
+        Matrix bmaty = bmaty_;
+
+
+        Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
+        Table<DofId> xdofsout(elclass_inds.Size(), bmatx.Height());
+
+        Table<DofId> ydofsin(elclass_inds.Size(), fely.GetNDof());
+        Table<DofId> ydofsout(elclass_inds.Size(), bmaty.Height());
+
+        Array<DofId> dnumsx, dnumsy;
+        for (auto i : Range(elclass_inds))
+          {
+            ElementId ei(VOL, elclass_inds[i]);
+            fesx->GetDofNrs(ei, dnumsx);
+            fesy->GetDofNrs(ei, dnumsy);
+            xdofsin[i] = dnumsx;
+            ydofsin[i] = dnumsy;
+          }
+
+        auto xa = xdofsout.AsArray();
+        for (size_t i = 0; i < xa.Size(); i++)
+          xa[i] = i;
+        auto ya = ydofsout.AsArray();
+        for (size_t i = 0; i < ya.Size(); i++)
+          ya[i] = i;
+            
+        auto bx = make_shared<ConstantElementByElementMatrix>
+          (xa.Size(), fesx->GetNDof(),
+           bmatx, std::move(xdofsout), std::move(xdofsin));
+
+        auto by = make_shared<ConstantElementByElementMatrix>
+          (ya.Size(), fesy->GetNDof(),
+           bmaty, std::move(ydofsout), std::move(ydofsin));
+
+
+
+        Tensor<3> diag(elclass_inds.Size()*ir.Size(), dimy, dimx);
+        for (auto i : Range(elclass_inds))
+          {
+            HeapReset hr(lh);
+            ElementId ei(VOL, elclass_inds[i]);
+            auto & trafo = ma->GetTrafo(ei, lh);
+            auto & mir = trafo(ir, lh);
+            FlatMatrix transx(dimx, dimx, lh);
+            FlatMatrix transy(dimy, dimy, lh);
+            Matrix prod(dimx, dimy);
+            
+            for (int j = 0; j < ir.Size(); j++)
+              {
+                diffopx->CalcTransformationMatrix(mir[j], transx, lh);
+                diffopy->CalcTransformationMatrix(mir[j], transy, lh);
+                
+                prod = Trans(transy) * transx;
+                prod *= mir[j].GetWeight();
+                diag(i*ir.Size()+j,STAR,STAR) = prod;
+              }
+          }
+
+        auto diagmat = make_shared<BlockDiagonalMatrix> (std::move(diag));
+        auto mat = ComposeOperators (TransposeOperator(by), ComposeOperators (diagmat, bx));
+        
+        if (sum)
+          sum = make_shared<SumMatrix>(sum, mat);
+        else
+          sum = mat;
+      }
+
+    mats.SetSize (ma->GetNLevels());
+    mats.Last() = sum;
+  }
+
 
   
 
