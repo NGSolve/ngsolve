@@ -24,7 +24,7 @@ def test_arnoldi():
     a.Assemble()
     m.Assemble()
 
-    lam = ArnoldiSolver(a.mat,m.mat,fes.FreeDofs(),u.vecs,1)
+    lam = ArnoldiSolver(a.mat,m.mat,fes.FreeDofs(),list(u.vecs),1)
     print("ev = ", lam)
     Draw(u.components[0])
     Draw(u.components[1])
