@@ -442,6 +442,7 @@ namespace ngla
   shared_ptr<BaseSparseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   DeleteZeroElements(double tol) const
   {
+    static Timer t("SparseMatrix::DeleteZeroElements"); RegionTimer reg(t);
     Array<int> indi, indj;
     Array<TM> val;
     for (auto i : Range(this->Height()))

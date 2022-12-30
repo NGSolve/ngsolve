@@ -85,6 +85,40 @@ namespace ngla
   };
 
 
+
+  class BlockDiagonalMatrix : public BaseMatrix
+  {
+    mutable Tensor<3> blockdiag;  // some const are missing for tensor
+    int blocks, dimy, dimx;
+  public:
+    typedef double TSCAL;
+    
+    BlockDiagonalMatrix(Tensor<3> _blockdiag)
+      : blockdiag(std::move(_blockdiag))
+    {
+      blocks = blockdiag.GetSize();
+      dimy = blockdiag.GetSubTensor().GetSize();
+      dimx = blockdiag.GetSubTensor().GetSubTensor().GetSize();
+    }
+    
+    bool IsComplex() const override { return false; } 
+
+    int VHeight() const override { return blocks*dimy; }
+    int VWidth() const override { return blocks*dimx; }
+
+    ostream & Print (ostream & ost) const override;
+    
+    AutoVector CreateRowVector () const override;
+    AutoVector CreateColVector () const override;
+
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
+  };
+
+
+  
   
   class PermutationMatrix : public BaseMatrix
   {

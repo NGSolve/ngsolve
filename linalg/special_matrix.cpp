@@ -285,6 +285,56 @@ namespace ngla
 #endif
   
 
+
+  ostream & BlockDiagonalMatrix :: Print (ostream & ost) const
+  {
+    ost << "BlockDiagmatrix, blocks = " << blocks << " of dim " << dimy << " x " << dimx << endl;
+    return ost;
+  }
+    
+  AutoVector BlockDiagonalMatrix :: CreateRowVector () const
+  {
+    return make_unique<VVector<double>>(VWidth());
+  }
+  
+  AutoVector BlockDiagonalMatrix :: CreateColVector () const
+  {
+    return make_unique<VVector<double>>(VHeight());    
+  }
+  
+  void BlockDiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+    // for (size_t i = 0; i < blocks; i++)
+    ParallelFor
+      (blocks, [&] (size_t i)
+       {
+         fy.Range(i*dimy, (i+1)*dimy) += s* blockdiag(i,STAR,STAR) * fx.Range(i*dimx, (i+1)*dimx);
+       });
+  }
+  
+  void BlockDiagonalMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+    // for (size_t i = 0; i < blocks; i++)
+    ParallelFor
+      (blocks, [&] (size_t i)
+       {
+         fy.Range(i*dimx, (i+1)*dimx) += s* Trans(blockdiag(i,STAR,STAR)) * fx.Range(i*dimy, (i+1)*dimy);
+       });
+  }
+  
+  shared_ptr<BaseMatrix> BlockDiagonalMatrix :: InverseMatrix (shared_ptr<BitArray> subset) const
+  {
+    cout << "blockdiagmatrix, Inverse not implemented" << endl;
+    return nullptr;
+  }
+  
+
+
+  
   
   void PermutationMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
