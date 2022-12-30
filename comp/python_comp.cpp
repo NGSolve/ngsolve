@@ -2582,7 +2582,9 @@ space : ngsolve.FESpace
                      "  Stores only the diagonal of the matrix.",
                      py::arg("geom_free") = "bool = False\n"
                      "  when element matrices are independent of geometry, we store them \n"
-                     "  only for the referecne elements",
+                     "  only for the reference elements",
+                     py::arg("matrix_free_bdb") = "bool = False\n"
+                     "  store BDB factors seperately",
                      py::arg("check_unused") = "bool = True\n"
 		     "  If set prints warnings if not UNUSED_DOFS are not used."
                      );

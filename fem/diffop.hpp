@@ -158,6 +158,21 @@ namespace ngfem
     }
 
 
+
+    template <typename FEL, typename IP, typename MAT>
+    static void GenerateMatrixRef (const FEL & fel, const IP & ip,
+                                   MAT & mat, LocalHeap & lh)
+    { 
+      cout << "DIFFOP::GenerateMatrixRef should not be here, diffop = " << typeid(DOP).name() << endl;
+    }
+    
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    { 
+      cout << "DIFFOP::CalcTransformationMatrix should not be here, diffop = " << typeid(DOP).name() << endl;
+    }
+
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
                shared_ptr<CoefficientFunction> dir,
@@ -400,6 +415,18 @@ namespace ngfem
       ApplyTrans (fel, mir, flux, x, lh);
     }
 
+
+    /// calculates matrix on reference element
+    NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+                const IntegrationPoint & ip,
+                SliceMatrix<double,ColMajor> mat,
+                LocalHeap & lh) const;
+    
+    NGS_DLL_HEADER virtual void
+    CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
+                              SliceMatrix<double> trans,
+                              LocalHeap & lh) const;
     
     virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
                                                        shared_ptr<CoefficientFunction> dir,
@@ -1037,6 +1064,21 @@ namespace ngfem
               const SIMD_BaseMappedIntegrationRule & bmir,
               BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const override;
+
+
+    /// calculates matrix on reference element
+    NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+                const IntegrationPoint & ip,
+                SliceMatrix<double,ColMajor> mat,
+                LocalHeap & lh) const override;
+    
+    NGS_DLL_HEADER virtual void
+    CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
+                              SliceMatrix<double> trans,
+                              LocalHeap & lh) const override;
+
+    
 
 #endif
     shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
