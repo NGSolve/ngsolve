@@ -1067,13 +1067,13 @@ namespace ngfem
 
 
     /// calculates matrix on reference element
-    NGS_DLL_HEADER virtual void
+    virtual void
     CalcMatrix (const FiniteElement & fel,
                 const IntegrationPoint & ip,
                 SliceMatrix<double,ColMajor> mat,
                 LocalHeap & lh) const override;
     
-    NGS_DLL_HEADER virtual void
+    virtual void
     CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
                               SliceMatrix<double> trans,
                               LocalHeap & lh) const override;
