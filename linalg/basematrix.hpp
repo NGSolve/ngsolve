@@ -473,6 +473,10 @@ namespace ngla
 
     virtual AutoVector CreateRowVector () const override { return bmb.CreateRowVector(); }
     virtual AutoVector CreateColVector () const override { return bma.CreateColVector(); }
+
+    auto SPtrA() const { return spbma; }
+    auto SPtrB() const { return spbmb; }
+
     
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const override

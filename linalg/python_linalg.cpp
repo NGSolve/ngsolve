@@ -1187,6 +1187,10 @@ inverse : string
     .def_property_readonly("matA",  &SumMatrix::SPtrA)
     .def_property_readonly("matB",  &SumMatrix::SPtrB)
     ;
+  py::class_<ProductMatrix, shared_ptr<ProductMatrix>, BaseMatrix> (m, "ProductMatrix")
+    .def_property_readonly("matA",  &ProductMatrix::SPtrA)
+    .def_property_readonly("matB",  &ProductMatrix::SPtrB)
+    ;
 
   
   py::class_<LoggingMatrix, shared_ptr<LoggingMatrix>, BaseMatrix> (m, "LoggingMatrix")
