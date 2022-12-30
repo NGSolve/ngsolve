@@ -115,18 +115,25 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=True):
     return lams, uvecs
 
 
-def LOBPCG(mata, matm, pre, num=1, maxit=20, printrates=True):
+def LOBPCG(mata, matm, pre, num=1, maxit=20, initial=None, printrates=True):
     """Knyazev's cg-like extension of PINVIT"""
 
     r = mata.CreateRowVector()
-    
-    uvecs = MultiVector(r, num)
-    vecs = MultiVector(r, 3*num)
 
+    if initial:
+        num=len(initial)
+        uvecs = initial
+    else:
+        uvecs = MultiVector(r, num)
+
+    vecs = MultiVector(r, 3*num)
     for v in vecs:
         r.SetRandom()
         v.data = pre * r
 
+    if initial:
+         vecs[0:num] = uvecs       
+        
     lams = Vector(num * [1])
     
     for i in range(maxit):

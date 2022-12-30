@@ -150,6 +150,7 @@ namespace ngcomp
     virtual const BaseVector & GetVector (int comp = 0) const  { return *vec[comp]; }
     ///  
     virtual shared_ptr<BaseVector> GetVectorPtr (int comp = 0) const  { return vec[comp]; }
+    auto GetVectors() const { return MultiVector(vec); }
     ///
     void SetNested (int anested = 1) { nested = anested; }
     ///
