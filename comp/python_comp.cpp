@@ -2165,12 +2165,15 @@ bonus_intorder : int
                            "coefficient vector")
 
     .def_property_readonly("vecs", 
-                           [](shared_ptr<GF> self)-> py::list
-                   { 
+                           [](shared_ptr<GF> self) // -> py::list
+                   {
+                     /*
                      py::list vecs(self->GetMultiDim());
                      for (int i = 0; i < self->GetMultiDim(); i++)
                        vecs[i] = py::cast(self->GetVectorPtr(i));
                      return vecs;
+                     */
+                     return self->GetVectors();
                    },
                   "list of coefficient vectors for multi-dim gridfunction")
 

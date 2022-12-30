@@ -40,6 +40,8 @@ namespace ngla {
     shared_ptr<BaseVector> refvec;
     Array<shared_ptr<BaseVector>> vecs;
   public:
+    MultiVector (const Array<shared_ptr<BaseVector>> & avecs)
+      : refvec(avecs.Size()?avecs[0]:nullptr), vecs(avecs) { } 
     MultiVector (shared_ptr<BaseVector> v, size_t cnt): refvec (v)
     {
       Extend (cnt);
