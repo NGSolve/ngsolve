@@ -148,7 +148,7 @@ def LOBPCG(mata, matm, pre, num=1, maxit=20, initial=None, printrates=True):
         ev,evec = scipy.linalg.eigh(a=asmall, b=msmall)
         lams = Vector(ev[0:num])
         if printrates:
-            print (i, ":", list(lams))
+            print (i, ":", list(lams), flush=True)
 
         uvecs[:] = vecs * Matrix(evec[:,0:num])
         vecs[num:2*num] = vecs[0:num]
