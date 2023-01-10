@@ -578,8 +578,8 @@ namespace ngcomp
     */
     // { cerr << "ApplyElementMatrix called for baseclass" << endl;}
 
-    virtual void AddDiagElementMatrix (const Array<int> & dnums1,
-				       const FlatVector<SCAL> & diag,
+    virtual void AddDiagElementMatrix (FlatArray<int> dnums1,
+                                       FlatVector<SCAL> diag,
 				       bool inner_element, int elnr,
 				       LocalHeap & lh);
 
@@ -835,20 +835,20 @@ namespace ngcomp
 			    const Flags & flags);
     virtual ~T_BilinearFormDiagonal ();
 
-    virtual void AllocateMatrix ();
-    virtual unique_ptr<BaseVector> CreateRowVector() const;
-    virtual unique_ptr<BaseVector> CreateColVector() const;
+    virtual void AllocateMatrix () override;
+    virtual unique_ptr<BaseVector> CreateRowVector() const override;
+    virtual unique_ptr<BaseVector> CreateColVector() const override;
 
     virtual void AddElementMatrix (FlatArray<int> dnums1,
 				   FlatArray<int> dnums2,
 				   BareSliceMatrix<TSCAL> elmat,
 				   ElementId id, bool addatomic, 
-				   LocalHeap & lh);
+				   LocalHeap & lh) override;
 
-    virtual void AddDiagElementMatrix (const Array<int> & dnums1,
-				       const FlatVector<TSCAL> & diag,
+    virtual void AddDiagElementMatrix (FlatArray<int> dnums1,
+				       FlatVector<TSCAL> diag,
 				       bool inner_element, int elnr,
-				       LocalHeap & lh);
+				       LocalHeap & lh) override;
     /*
     virtual void ApplyElementMatrix(const BaseVector & x,
 				    BaseVector & y,

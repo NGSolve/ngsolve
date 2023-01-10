@@ -1641,49 +1641,55 @@ namespace ngcomp
                 
                 if (vb==VOL && diagonal)
                   {
-                    double prevtime = WallTime();
-                    Array<DofId> dnums;
+                    static Timer tdiag("AssembleDiag"); RegionTimer reg(tdiag);
+                    
+                    // double prevtime = WallTime();
+                    // Array<DofId> dnums;
 
-                    for (int i = 0; i < ne; i++)
+                    // for (int i = 0; i < ne; i++)
+                    IterateElements
+                      (*fespace, vb, clh,  [&] (FESpace::Element el, LocalHeap & lh)
                       {
-                        HeapReset hr(clh);
-                        ElementId id(vb, i);
-                        gcnt++;
-			
+                        // HeapReset hr(clh);
+                        // ElementId id(vb, i);
+                        // gcnt++;
+			/*
                         if (clock()-prevtime > 0.1 * CLOCKS_PER_SEC)
                           {
                             cout << IM(3) << "\rassemble element " << i << "/" << ne << flush;
                             ma->SetThreadPercentage ( 100.0*gcnt / (loopsteps) );
                             prevtime = clock();
                           }
-                        
+                        */
                         // clh.CleanUp(heapp);
 			
-                        if (!fespace->DefinedOn (vb,ma->GetElIndex (id))) continue;
+                        // if (!fespace->DefinedOn (vb,ma->GetElIndex (id))) continue;
 			
-                        const FiniteElement & fel = fespace->GetFE (id, clh);
-                        ElementTransformation & eltrans = ma->GetTrafo (id, clh);
-                        auto ei = ElementId(vb,i);
-                        fespace->GetDofNrs (ei, dnums);
+                        const FiniteElement & fel = fespace->GetFE (el, lh);
+                        ElementTransformation & eltrans = ma->GetTrafo (el, lh);
+                        // auto ei = ElementId(vb,i);
+                        // fespace->GetDofNrs (ei, dnums);
+                        FlatArray<int> dnums = el.GetDofs();
                         
-                        FlatVector<SCAL> sum_diag(dnums.Size()*fespace->GetDimension(), clh);
+                        FlatVector<SCAL> sum_diag(dnums.Size()*fespace->GetDimension(), lh);
                         sum_diag = 0;
                         
                         for (auto & bfip : VB_parts[vb])
                           {
                             const BilinearFormIntegrator & bfi = *bfip;
-                            if (!bfi.DefinedOn (ma->GetElIndex (id))) continue;
-                            if (!bfi.DefinedOnElement (i)) continue;
+                            if (!bfi.DefinedOn (el.GetIndex())) continue;
+                            if (!bfi.DefinedOnElement (el.Nr())) continue;
                             
-                            FlatVector<double> diag(sum_diag.Size(), clh);
+                            FlatVector<double> diag(sum_diag.Size(), lh);
                             try
                               {
-                                bfi.CalcElementMatrixDiag (fel, eltrans, diag, clh);
+                                bfi.CalcElementMatrixDiag (fel, eltrans, diag, lh);
 				
                                 if (printelmat) 
                                   {
+                                    lock_guard<mutex> guard(printelmat_mutex);                                    
                                     testout->precision(8);
-                                    (*testout) << "elnum= " << ElementId(vb,i) << endl;
+                                    (*testout) << "elnum= " << el << endl;
                                     (*testout) << "integrator " << bfi.Name() << endl;
                                     (*testout) << "dnums = " << endl << dnums << endl;
                                     (*testout) << "diag-elmat = " << endl << diag << endl;
@@ -1705,14 +1711,14 @@ namespace ngcomp
                             sum_diag += diag;
                           }
 			
-                        AddDiagElementMatrix (dnums, sum_diag, 1, i, clh);
+                        AddDiagElementMatrix (dnums, sum_diag, 1, el.Nr(), lh);
 
                         if (check_unused)
                           for (int j = 0; j < dnums.Size(); j++)
                             if (IsRegularDof(dnums[j]))
                               useddof[dnums[j]] = true;
-                      }
-                    cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
+                      });
+                    // cout << IM(3) << "\rassemble element " << ne << "/" << ne << endl;
                   }
                 else // not diagonal
                   {
@@ -6257,8 +6263,8 @@ namespace ngcomp
 
   template <class SCAL>
   void S_BilinearForm<SCAL> :: 
-  AddDiagElementMatrix (const Array<int> & dnums1,
-                        const FlatVector<SCAL> & diag,
+  AddDiagElementMatrix (FlatArray<int> dnums1,
+                        FlatVector<SCAL> diag,
                         bool inner_element, int elnr,
                         LocalHeap & lh)
   {
@@ -6877,8 +6883,8 @@ namespace ngcomp
 
   template <class TM>
   void T_BilinearFormDiagonal<TM> :: 
-  AddDiagElementMatrix (const Array<int> & dnums1,
-                        const FlatVector<TSCAL> & diag,
+  AddDiagElementMatrix (FlatArray<int> dnums1,
+                        FlatVector<TSCAL> diag,
                         bool inner_element, int elnr,
                         LocalHeap & lh) 
   {
@@ -6904,10 +6910,10 @@ namespace ngcomp
 
   ///
   template <> void T_BilinearFormDiagonal<double>::
-  AddDiagElementMatrix (const Array<int> & dnums1,
-                        const FlatVector<double> & diag,
-                        bool inner_element, int elnr,
-                        LocalHeap & lh) 
+    AddDiagElementMatrix (FlatArray<int> dnums1,
+                          FlatVector<double> diag,
+                          bool inner_element, int elnr,
+                          LocalHeap & lh) 
   {
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
@@ -6916,10 +6922,10 @@ namespace ngcomp
 
   ///
   template <> void T_BilinearFormDiagonal<Complex>::
-  AddDiagElementMatrix (const Array<int> & dnums1,
-                        const FlatVector<Complex> & diag,
-                        bool inner_element, int elnr,
-                        LocalHeap & lh) 
+    AddDiagElementMatrix (FlatArray<int> dnums1,
+                          FlatVector<Complex> diag,
+                          bool inner_element, int elnr,
+                          LocalHeap & lh) 
   {
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularDof(dnums1[i]))
