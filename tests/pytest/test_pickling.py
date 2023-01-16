@@ -212,6 +212,20 @@ def test_pickle_CoefficientFunctions():
     cfs.append(to_compile.Compile())
     cfs.append(to_compile.Compile(realcompile=True, wait=True))
     cfs.append(to_compile.Compile(realcompile=True, wait=False))
+    mat55 = CoefficientFunction((5,cfs[2],0,2, 1,
+                                 0,     1,0,0,0,
+                                 0,     0,2,1,0,
+                                 1,     0,0,1,0,
+                                 0,     2,0,4,1),
+                                dims=(5,5))
+    cfs.append(Inv(mat55))
+    cfs.append(mat55[2,1:])
+    def _DetES(A, **options):
+        return fem.Einsum('ijk,i,j,k->', fem.LeviCivitaSymbol(3), *[A[i, :] for i in range(3)], **options)
+    mat33 = mat55[:3,:3]
+    cfs.append(_DetES(mat33))
+    cfs.append(_DetES(mat33, optimize_path=True))
+
     mp = mesh(0.3,0.4,0.5)
     compiled_vals = to_compile(mp)
     dump = pickle.dumps(cfs)
@@ -252,9 +266,14 @@ def test_pickle_CoefficientFunctions():
     npt.assert_approx_equal(lcfs[25](mp),0.4)
     npt.assert_approx_equal(lcfs[26](mp),0.3)
     npt.assert_approx_equal(lcfs[27](mp),sqrt(0.3*0.3+0.4*0.4))
-    np.allclose(lcfs[28](mp), compiled_vals)
-    np.allclose(lcfs[29](mp), compiled_vals)
-    np.allclose(lcfs[30](mp), compiled_vals)
+    lcfs[2].Set(cfs[2].Get())
+    npt.assert_array_almost_equal(lcfs[28](mp), compiled_vals)
+    npt.assert_array_almost_equal(lcfs[29](mp), compiled_vals)
+    npt.assert_array_almost_equal(lcfs[30](mp), compiled_vals)
+    npt.assert_array_almost_equal(lcfs[31](mp), cfs[31](mp))
+    npt.assert_array_almost_equal(lcfs[32](mp), cfs[32](mp))
+    npt.assert_array_almost_equal(lcfs[33](mp), cfs[33](mp))
+    npt.assert_array_almost_equal(lcfs[34](mp), cfs[33](mp))
 
 def test_pickle_sparsecholesky():
     mesh = Mesh(unit_square.GenerateMesh(maxh=0.3))

@@ -66,6 +66,30 @@ namespace ngfem {
             size_t Size() const { return indices.Size(); };
 
             size_t TotalDim() const { return total_dim; }
+
+            void DoArchive(Archive &ar) {
+                size_t isize;
+                string tmp_symbol{};
+                if(ar.Output()) {
+                    isize = indices.Size();
+                    ar & isize;
+                    for (auto idx : indices) {
+                      tmp_symbol = string{idx.symbol};
+                      ar & tmp_symbol & idx.pos & idx.dim;
+                    }
+                }
+                else {
+                    ar & isize;
+                    indices.SetSize(isize);
+                    size_t tmp_pos;
+                    size_t tmp_idx;
+                    for (auto i : Range(isize)) {
+                      ar & tmp_symbol & tmp_pos & tmp_idx;
+                      indices[i] = Index{tmp_symbol.at(0), tmp_pos, tmp_idx};
+                    }
+                }
+                ar & strides & total_dim;
+            }
         };
 
         bool operator==(const MultiIndex &a, const MultiIndex &b) {
@@ -183,7 +207,7 @@ namespace ngfem {
 
           virtual string GetDescription() const override { return string("Levi-Civita Symbol"); }
 
-          void DoArchive(Archive &ar) override { BASE::DoArchive(ar); }
+          virtual void DoArchive(Archive &ar) override;
 
           virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
             GenerateCode(code, inputs, index, false);
@@ -241,13 +265,13 @@ namespace ngfem {
             : public T_CoefficientFunction<EinsumCoefficientFunction>
         {
           using BASE = T_CoefficientFunction<EinsumCoefficientFunction>;
+          using typename BASE::T_DJC;
 
-          Array<shared_ptr<CoefficientFunction>> cfs{};
-          shared_ptr<CoefficientFunction> node{};
-          string index_signature{};
+          static constexpr bool sparse_evaluation_default = true;
+
+          bool is_zero{false};
           size_t max_mem{0};
           map<string, bool> options{};
-          static constexpr bool sparse_evaluation_default = true;
 
           Array<Vector<bool>> nz_inputs{};
           Vector<bool> nz_result{};
@@ -255,14 +279,17 @@ namespace ngfem {
           Matrix<int> index_maps{};
           Matrix<int> sparse_index_maps{};
 
+          shared_ptr<CoefficientFunction> node{};
+
+          string index_signature{};
+          Array<shared_ptr<CoefficientFunction>> cfs{};
+
           string original_index_signature{};
           Array<shared_ptr<CoefficientFunction>> original_inputs{};
 
           string expanded_index_signature{};
           Array<shared_ptr<CoefficientFunction>> expanded_inputs{};
 
-          bool is_zero{false};
-          using typename BASE::T_DJC;
         public:
           EinsumCoefficientFunction() = default;
 
@@ -274,6 +301,9 @@ namespace ngfem {
           Matrix<int> build_index_maps(const Array<MultiIndex>& index_sets, const optional<Vector<bool>>& nz_pattern);
 
         public:
+
+          virtual void DoArchive(Archive &ar) override;
+
           virtual shared_ptr<EinsumCoefficientFunction> Optimize(const map<string, bool> &aoptions) const;
 
           const string &IndexSignature() const { return index_signature; }
@@ -315,11 +345,6 @@ namespace ngfem {
           }
 
           virtual string GetDescription() const override;
-
-          virtual void DoArchive(Archive &ar) override {
-            BASE::DoArchive(ar);
-            for_each(cfs.begin(), cfs.end(), [&](auto cf) { ar.Shallow(cf); });
-          }
 
           virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
             GenerateCode(code, inputs, index, false);

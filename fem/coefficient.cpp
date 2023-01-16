@@ -6009,7 +6009,7 @@ public:
   void DoArchive(Archive& ar) override
   {
     BASE::DoArchive(ar);
-    ar.Shallow(c1) & dim1 & first & num & dist;
+    ar.Shallow(c1) & dim1 & first & num & dist & mapping;
   }
 
   /*
@@ -9375,6 +9375,7 @@ static RegisterClassForArchive<TraceCoefficientFunction, CoefficientFunction> re
 static RegisterClassForArchive<InverseCoefficientFunction<1>, CoefficientFunction> reginversecf1;
 static RegisterClassForArchive<InverseCoefficientFunction<2>, CoefficientFunction> reginversecf2;
 static RegisterClassForArchive<InverseCoefficientFunction<3>, CoefficientFunction> reginversecf3;
+static RegisterClassForArchive<InverseCoefficientFunctionAnyDim, CoefficientFunction> reginverseanydimcf;
 static RegisterClassForArchive<DeterminantCoefficientFunction<1>, CoefficientFunction> regdetcf1;
 static RegisterClassForArchive<DeterminantCoefficientFunction<2>, CoefficientFunction> regdetcf2;
 static RegisterClassForArchive<DeterminantCoefficientFunction<3>, CoefficientFunction> regdetcf3;
@@ -9393,5 +9394,6 @@ static RegisterClassForArchive<CompiledCoefficientFunction, CoefficientFunction>
 static RegisterClassForArchive<OtherCoefficientFunction, CoefficientFunction> regothercf;
 static RegisterClassForArchive<LoggingCoefficientFunction, CoefficientFunction> regloggingcf;
 static RegisterClassForArchive<CacheCoefficientFunction, CoefficientFunction> regcachingcf;
+static RegisterClassForArchive<SubTensorCoefficientFunction, CoefficientFunction> regsubtensorcf;
 }
 
