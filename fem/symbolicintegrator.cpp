@@ -112,7 +112,7 @@ namespace ngfem
     for (int i = 0; i < additional_diffops.Size(); i++)
       if (auto add_diffop_trace = additional_diffops[i]->GetTrace())
         trace_proxy->SetAdditionalEvaluator (additional_diffops.GetName(i), add_diffop_trace);
-
+    trace_proxy->is_other = is_other;
     return trace_proxy;
   }
 
