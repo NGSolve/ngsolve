@@ -322,8 +322,8 @@ namespace ngfem
       {
         lock_guard<mutex> guard(m);
         if (cnt < 3)
-          cout << "WARNING: call baseclass ApplyElementMatrix complex, type = " << typeid(*this).name() << endl;
-        if (cnt == 2) cout << "(further warnings suppressed)" << endl;
+          cout << IM(1) <<"WARNING: call baseclass ApplyElementMatrix complex, type = " << typeid(*this).name() << endl;
+        if (cnt == 2) cout << IM(1) <<  "(further warnings suppressed)" << endl;
 	cnt++;
       }
 
