@@ -26,11 +26,11 @@ if config.is_python_package and sys.platform.startswith('win'):
 if config.is_python_package and config.USE_MKL:
     if sys.platform == 'linux':
         _mkl = pkg_resources.get_distribution('mkl')
-        _mkl_rt = _mkl.get_resource_filename('mkl','../../libmkl_rt.so.1')
+        _mkl_rt = _mkl.get_resource_filename('mkl','../../libmkl_rt.so.2')
         ctypes.CDLL(_mkl_rt)
     elif sys.platform.startswith('win'):
         _mkl = pkg_resources.get_distribution('mkl')
-        _mkl_rt = os.path.abspath(_mkl.get_resource_filename('mkl','../../Library/bin/mkl_rt.1.dll'))
+        _mkl_rt = os.path.abspath(_mkl.get_resource_filename('mkl','../../Library/bin/mkl_rt.2.dll'))
         ctypes.CDLL(_mkl_rt)
 
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve

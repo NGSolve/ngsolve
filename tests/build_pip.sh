@@ -17,7 +17,7 @@ for pyversion in 38 39 310 311
 do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
-    $PYDIR/pip install -U pytest-check numpy wheel scikit-build mkl==2021.* mkl-devel==2021.*
+    $PYDIR/pip install -U pytest-check numpy wheel scikit-build mkl==2022.* mkl-devel==2022.*
     $PYDIR/pip install netgen-mesher==$NETGEN_VERSION
 
     rm -rf _skbuild
