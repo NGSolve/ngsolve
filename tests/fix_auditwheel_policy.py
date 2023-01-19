@@ -2,7 +2,7 @@ import json
 
 policy_file = "/opt/_internal/pipx/venvs/auditwheel/lib/python3.9/site-packages/auditwheel/policy/manylinux-policy.json"
 data = json.load(open(policy_file))
-# todo: read libs from netgen.libs directory and remove hashes from names, then add just libmkl_rt.so.1
+# todo: read libs from netgen.libs directory and remove hashes from names, then add just libmkl_rt.so.2
 additional_libs = [
         "libGLU.so.1",
         "libGLX.so.0",
@@ -19,7 +19,7 @@ additional_libs = [
         "libgui.so",
         "libinterface.so",
         "libmesh.so",
-        "libmkl_rt.so.1",
+        "libmkl_rt.so.2",
         "libngcore.so",
         "libnggui.so",
         "libnglib.so",
