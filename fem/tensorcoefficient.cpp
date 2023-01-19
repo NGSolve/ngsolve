@@ -1278,32 +1278,32 @@ namespace ngfem {
               continue;
 
             CodeExpr s;
-            if (sparse_eval && !result_nz_vec[res_idx])
-              if (!declared[res_idx])
-                s = Var(0.0);
-              else
-                continue;
-            else
+
+            if (!sparse_eval || result_nz_vec[res_idx]) {
               for (size_t i: Range(inputs)) {
                 const auto I_local = I_map(i);
                 if (sparse_eval && !nz_vecs[i][I_local]) {
                   s.code.clear();
                   break;
                 }
-                if (s.code.empty())
-                  s = Var(inputs[i], I_local, input_dims[i]);
-                else
+                if (!s.code.empty())
                   s *= Var(inputs[i], I_local, input_dims[i]);
+                else
+                  s = Var(inputs[i], I_local, input_dims[i]);
               }
 
-            if (s.code.empty())
-              continue;
-
-            if (declared[res_idx])
-              code.body += Var(index, res_idx, result_dims)
-                               .Assign(Var(index, res_idx, result_dims) + s, false);
-            else {
-              code.body += Var(index, res_idx, result_dims).Assign(s);
+              if (!s.code.empty()) {
+                if (declared[res_idx]) {
+                  code.body +=
+                      Var(index, res_idx, result_dims)
+                          .Assign(Var(index, res_idx, result_dims) + s, false);
+                } else {
+                  code.body += Var(index, res_idx, result_dims).Assign(s);
+                  declared[res_idx] = true;
+                }
+              }
+            } else if (!declared[res_idx]) {
+              code.body += Var(index, res_idx, result_dims).Declare(code.GetType(this->IsComplex()), 0.0);
               declared[res_idx] = true;
             }
           }
