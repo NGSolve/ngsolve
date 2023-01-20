@@ -141,9 +141,11 @@ namespace ngcomp
             // cout << "dofs = " << patchdofs.Size() << ", singleel: " << numsingle << endl;
             FlatMatrix<> patchmat(patchdofs.Size(), lh);
             FlatVector<> patchvec(patchdofs.Size(), lh);        
-            FlatVector<> patchsol(patchdofs.Size(), lh);        
+            FlatVector<> patchsol(patchdofs.Size(), lh);
+            FlatArray<int> perms(patchdofs.Size(), lh);
             patchmat = 0.0;
             patchvec = 0.0;
+            perms = 0;
             
             for (auto vb : { VOL, BND })
               for (auto el : ma->GetVertexElements(v, vb))
@@ -197,11 +199,15 @@ namespace ngcomp
             // cout << "patchmat = " << endl << patchmat << endl;
             // Matrix<> inv_patchmat = patchmat;
             tinv.Start();
-            CalcInverse (patchmat);
+            perms = 0;
+            CalcLU (patchmat, perms);
+            SolveFromLU (patchmat, perms, SliceMatrix<double, ColMajor>(patchvec.Size(), 1, patchvec.Size(), patchvec.Data()));
+            // CalcInverse (patchmat);
             tinv.Stop();
             tinv.AddFlops (patchmat.Height()*patchmat.Height()*patchmat.Height());
             // cout << "inv patchmat = " << endl << patchmat << endl;        
-            patchsol = patchmat * patchvec;
+            patchsol = patchvec;
+            // patchsol = patchmat * patchvec;
             // Vector<> res = patchvec - patchmat * patchsol;  // need post-iteration for high penalty
             // patchsol += inv_patchmat * res;
             // cout << "patchvec = " << endl << patchvec << endl;
