@@ -3761,6 +3761,26 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  shared_ptr<BaseMatrix> CompoundFESpaceAllSame ::
+  GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const
+  {
+    shared_ptr<BaseMatrix> sum;
+    auto compoundtrace = dynamic_pointer_cast<CompoundFESpaceAllSame>(tracespace);
+    for (int i = 0; i < Spaces().Size(); i++)
+      {
+        auto tracei = ComposeOperators( compoundtrace->EmbeddingOperator(i),
+                                        ComposeOperators ( Spaces()[i]->GetTraceOperator(compoundtrace->Spaces()[i], avg),
+                                                           this->RestrictionOperator(i)));
+        if (sum)
+          sum = AddOperators(sum, tracei, 1, 1);
+        else
+          sum = tracei;
+      }
+    return sum;
+  }
+
+  
+
   MatrixFESpace ::
   MatrixFESpace (shared_ptr<FESpace> space, int avdim, const Flags & flags,
                  bool checkflags)

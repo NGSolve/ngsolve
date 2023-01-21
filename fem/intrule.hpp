@@ -1472,6 +1472,7 @@ namespace ngfem
     virtual SliceMatrix<> GetPoints() const = 0;
     virtual SliceMatrix<Complex> GetPointsComplex() const
     { throw Exception("don't have complex ir"); }
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et) { throw Exception ("ComputeNormalsAndMeasure(ET) not overloaded"); }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) = 0;
     virtual bool IsComplex() const = 0;
 
@@ -1537,6 +1538,7 @@ namespace ngfem
                             const_cast<double*> (&mips[0].GetPoint()(0)));
     }
 
+    virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et);
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
     virtual bool IsComplex() const { return false; } 
   };

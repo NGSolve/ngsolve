@@ -299,7 +299,7 @@ namespace ngfem
               SliceMatrix<double,ColMajor> mat,
               LocalHeap & lh) const
   {
-    throw Exception ("DiffOp::CalcMatrix - Refelement not overloaded");
+    throw Exception (string("DiffOp::CalcMatrix - Refelement not overloaded, type = ") + typeid(*this).name() );
   }
   
   void DifferentialOperator ::
@@ -307,7 +307,7 @@ namespace ngfem
                             SliceMatrix<double> trans,
                             LocalHeap & lh) const
   {
-    throw Exception ("DiffOp::CalcTransformationMatrix not overloaded");    
+    throw Exception (string("DiffOp::CalcTransformationMatrix not overloaded, type = ") + typeid(*this).name() );    
   }
   
 
@@ -894,6 +894,34 @@ namespace ngfem
     //    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix not yet tested for SIMD support");
   }
   
+  void VectorDifferentialOperator ::
+  CalcMatrix (const FiniteElement & bfel,
+              const IntegrationPoint & ip,
+              SliceMatrix<double,ColMajor> mat,
+              LocalHeap & lh) const
+  {
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
+
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();
+
+    mat = 0.0;
+    diffop->CalcMatrix (fel, ip, mat.Rows(dimi).Cols(ndi), lh);
+    for (int i = 1; i < dim; i++)
+      mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
+  }
+    
+  void VectorDifferentialOperator ::
+  CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
+                            SliceMatrix<double> trans,
+                            LocalHeap & lh) const
+  {
+    size_t dimi = diffop->Dim();
+    
+    trans = 0;
+    for (int i = 0; i < dim; i++)
+      diffop->CalcTransformationMatrix (mip, trans.Rows(i*dimi, (i+1)*dimi).Cols(i*dimi, (i+1)*dimi), lh);
+  }
 
   void VectorDifferentialOperator ::
   Apply (const FiniteElement & bfel,

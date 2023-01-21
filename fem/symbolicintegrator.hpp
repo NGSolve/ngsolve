@@ -599,7 +599,31 @@ public:
     IntRange r = BlockDim() * fel.GetRange(comp);
     diffop->AddTrans (fel[comp], bmir, flux, x.Range(r));
   }
-
+  
+  
+  /// calculates matrix on reference element
+  NGS_DLL_HEADER virtual void
+  CalcMatrix (const FiniteElement & bfel,
+              const IntegrationPoint & ip,
+              SliceMatrix<double,ColMajor> mat,
+              LocalHeap & lh) const override
+  {
+    const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+    IntRange r = BlockDim() * fel.GetRange(comp);
+    mat = 0.0;
+    diffop->CalcMatrix (fel[comp], ip, mat.Cols(r), lh);
+  }
+  
+  
+  NGS_DLL_HEADER virtual void
+  CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
+                            SliceMatrix<double> trans,
+                            LocalHeap & lh) const override
+  {
+    diffop->CalcTransformationMatrix(mip, trans, lh);
+  }
+  
+  
    virtual shared_ptr<CoefficientFunction>
    DiffShape (shared_ptr<CoefficientFunction> proxy,
               shared_ptr<CoefficientFunction> dir, bool Eulerian) const override

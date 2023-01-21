@@ -67,9 +67,56 @@ namespace ngcomp
 
   
 
+  // returns u n
+  template <int D>
+  class DiffOpNormal : public DiffOp<DiffOpNormal<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    static string Name() { return "normal"; }
+    
+    static const ScalarFiniteElement<D> & Cast (const FiniteElement & fel) 
+    { return static_cast<const ScalarFiniteElement<D>&> (fel); }
+
+    // using DiffOp<DiffOpNormal<D> >::GenerateMatrix;
+    static void GenerateMatrix (const FiniteElement & fel, 
+                                const MappedIntegrationPoint<D,D> & mip,
+                                SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (mip.IP(), mat.Row(0));
+      for (auto i : Range(fel.GetNDof()))
+        {
+          double val = mat(0, i);
+          mat.Col(i).Range(D) = val * mip.GetNV();
+        }
+    }
 
 
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      mat = 0.0;
+      Cast(fel).CalcShape (ip, mat.Row(0));      
+    }
 
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat = 0.0;
+      mat.Col(0).Range(D) = static_cast<const MappedIntegrationPoint<D,D>&> (mip).GetNV();
+    }
+
+    
+  };
+  
+  
 
 
 
@@ -136,6 +183,7 @@ namespace ngcomp
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
           // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
+          additional_evaluators.Set ("normal", make_shared<T_DifferentialOperator<DiffOpNormal<2>>>());          
           break;
         }
       case 3:
