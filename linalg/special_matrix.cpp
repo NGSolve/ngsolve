@@ -285,6 +285,51 @@ namespace ngla
 #endif
   
 
+  BlockDiagonalMatrix ::
+  BlockDiagonalMatrix(Tensor<3> _blockdiag)
+    : blockdiag(std::move(_blockdiag))
+  {
+    blocks = blockdiag.GetSize();
+    dimy = blockdiag.GetSubTensor().GetSize();
+    dimx = blockdiag.GetSubTensor().GetSubTensor().GetSize();
+
+    
+    // check for blockdiag non-zero pattern:
+    Matrix nonzero(dimy, dimx);
+    for (int i = 0; i < dimy; i++)
+      for (int j = 0; j < dimx; j++)
+        nonzero(i,j) = L2Norm(blockdiag(STAR,i,j));
+
+    for (int sub = dimx; sub >= 2; sub--) // so many sub-blocks ?
+      if ( (dimx % sub == 0) && (dimy % sub == 0) )
+        {
+          Matrix nz2 = nonzero;
+          int subdimx = dimx/sub;
+          int subdimy = dimy/sub;
+          for (int i = 0; i < sub; i++)
+            nz2.Rows(i*subdimy, (i+1)*subdimy).Cols(i*subdimx, (i+1)*subdimx) = 0.0;
+          
+          if (L2Norm(nz2) == 0)
+            {
+              cout << IM(3) << "can reduce subblocks by factor " << sub << endl;
+              // cout << "nonzero = " << endl << nonzero << endl;
+              
+              Tensor<3> newblockdiag(blocks*sub, subdimy, subdimx);
+              for (int i = 0; i < blocks; i++)
+                for (int j = 0; j < sub; j++)
+                  newblockdiag(i*sub+j,STAR,STAR) =
+                    blockdiag(i,STAR,STAR).Rows(j*subdimy, (j+1)*subdimy).Cols(j*subdimx, (j+1)*subdimx);
+
+              blocks *= sub;
+              dimy = subdimy;
+              dimx = subdimx;
+              // blockdiag = std::move(newblockdiag);
+              blockdiag.Assign (newblockdiag);
+              newblockdiag.Data() = nullptr;
+              return;
+            }
+        }
+  }
 
   ostream & BlockDiagonalMatrix :: Print (ostream & ost) const
   {
@@ -301,9 +346,52 @@ namespace ngla
   {
     return make_unique<VVector<double>>(VHeight());    
   }
+
+
+  void BlockDiagonalMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    // cout << "BlockDiagonalMult, dims = " << dimx << " x " << dimy << endl;
+    static Timer t("BlockDiagonalMatrix::Mult"); RegionTimer r(t);
+
+
+    if (dimx == 1 && dimy == 1)
+      {
+        auto fx = x.FV<double>();
+        auto fy = y.FV<double>();
+        ParallelFor
+          (blocks, [&] (size_t i)
+           {
+             fy(i) = blockdiag(i,0,0) * fx(i);
+           });
+        return;
+      }
+
+    if (dimx == 2 && dimy == 2)
+      {
+        auto fx = x.FV<Vec<2>>();
+        auto fy = y.FV<Vec<2>>();
+        ParallelFor
+          (blocks, [&] (size_t i)
+           {
+             fy(i) = Mat<2,2>(blockdiag(i,STAR,STAR)) * fx(i);
+           });
+        return;
+      }
+
+    
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+    ParallelFor
+      (blocks, [&] (size_t i)
+       {
+         fy.Range(i*dimy, (i+1)*dimy) = blockdiag(i,STAR,STAR) * fx.Range(i*dimx, (i+1)*dimx);
+       });
+  }
+
   
   void BlockDiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("BlockDiagonalMatrix::MultAdd"); RegionTimer r(t);
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
     // for (size_t i = 0; i < blocks; i++)
@@ -316,6 +404,8 @@ namespace ngla
   
   void BlockDiagonalMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("BlockDiagonalMatrix::MultTransAdd"); RegionTimer r(t);
+    
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
     // for (size_t i = 0; i < blocks; i++)

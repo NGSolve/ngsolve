@@ -96,6 +96,31 @@ namespace ngcomp
                                           x.Range(fel_facet.GetFacetDofs(facetnr)));
     }
 
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & bfel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      int facetnr = ip.FacetNr();
+      if (facetnr >= 0)
+        {
+          mat = 0.0;
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+          fel_facet.Facet(facetnr).CalcShape(ip, 
+                                             mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+        }
+      else
+        throw Exception ("DiffOpIdFacet::MatrixRef, not on face");
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat(0,0) = 1;
+    }
+
+    
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
                shared_ptr<CoefficientFunction> dir,

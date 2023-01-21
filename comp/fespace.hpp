@@ -1319,6 +1319,7 @@ ANY                  1 1 1 1 | 15
       return spaces[0]->GetDualShapeNodes(vb);
     }
 
+    virtual shared_ptr<BaseMatrix> GetTraceOperator (shared_ptr<FESpace> tracespace, bool avg) const override;
   };
 
   class NGS_DLL_HEADER MatrixFESpace : public CompoundFESpace

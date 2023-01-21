@@ -559,6 +559,87 @@ namespace ngfem
       }
   }
 
+
+  template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL>
+  void MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,SCAL> :: 
+  ComputeNormalsAndMeasure (ELEMENT_TYPE et)
+  {
+    auto hmips = mips;
+    if (hmips.Size() == 0) return;
+
+    if ((Dim(et) >= 2) && (Dim(et)-int(hmips[0].IP().VB()) == 0))
+      { // pnts in dim >= 2
+        for (size_t i = 0; i < hmips.Size(); i++)
+          hmips[i].SetMeasure(1);
+        return;
+      }
+    if constexpr(DIM_ELEMENT == 3)
+      if (hmips[0].IP().VB() == BBND && Dim(et) == 3)
+      {
+        // throw Exception ("ComputeNormalsAndMeasure not yet available for volume-edges");
+	FlatVector<Vec<3>> points(99,(double*)ElementTopology::GetVertices (et));
+        auto edges = ElementTopology::GetEdges (et);
+        for (int i = 0; i < hmips.Size(); i++)
+          {
+            auto & mip = hmips[i];        
+            int facetnr = mip.IP().FacetNr();
+            Vec<3> tau_ref = points(edges[facetnr][1]) - points(edges[facetnr][0]);
+            Vec<3> tau = mip.GetJacobian() * tau_ref;
+            mip.SetMeasure(L2Norm(tau));
+            tau /= L2Norm(tau);
+            mip.SetTV(tau);
+          }
+        return;
+      }
+      
+    
+    for (int i = 0; i < hmips.Size(); i++)
+      {
+        auto & mip = hmips[i];
+        int facetnr = mip.IP().FacetNr();
+        Vec<DIM_ELEMENT> normal_ref = ElementTopology::GetNormals<DIM_ELEMENT>(et)[facetnr];
+        
+        Mat<DIM_ELEMENT,DIM_SPACE,SCAL> inv_jac = mip.GetJacobianInverse();
+        double det = fabs (mip.GetJacobiDet()); // GetMeasure();
+        Vec<DIM_SPACE> normal = det * Trans (inv_jac) * normal_ref;
+        double len = L2Norm (normal);       // that's the surface measure
+        normal *= 1.0/len;                  // normal vector on physical element
+        mip.SetMeasure (len);
+
+        if constexpr (DIM_ELEMENT == DIM_SPACE)
+          {
+            mip.SetNV(normal);
+            if (DIM_SPACE == 2)
+              mip.SetTV(Vec<2>(-normal(1),normal(0)));
+          }
+        else
+          {
+            if constexpr (DIM_SPACE == 3 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<3>(normal));
+              }
+            else if constexpr ( DIM_SPACE == 3 && DIM_ELEMENT == 2)
+              {
+                Vec<3> tang = Cross(Vec<3> (normal), Vec<3> (mip.GetNV()));
+                mip.SetTV(tang);
+              }
+            else if constexpr ( DIM_SPACE == 2 && DIM_ELEMENT == 1)
+              {
+                mip.SetTV(Vec<2>(normal));
+              }
+            else if constexpr ( DIM_ELEMENT == 0 )
+               ;                 
+            else
+              {
+                throw Exception("In ComputeNormalsAndMeasure: not implemented yet!");
+              }
+            
+          }
+      }
+  }
+
+
+  
   template <int DIM_ELEMENT, int DIM_SPACE>
   MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE,Complex> :: 
   MappedIntegrationRule (const IntegrationRule & ir, 
