@@ -1089,7 +1089,7 @@ namespace ngfem
 
     /// calculates matrix on reference element
 
-    NGS_DLL_HEADER virtual int DimRef() const override;
+    virtual int DimRef() const override;
     
     virtual void
     CalcMatrix (const FiniteElement & fel,
