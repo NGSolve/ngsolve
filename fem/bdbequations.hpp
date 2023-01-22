@@ -63,6 +63,8 @@ namespace ngfem
       // mat = Trans (Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ());
     }
 
+    static int DimRef() { return D; } 
+    
     template <typename IP, typename MAT>
     static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
                                    MAT && mat, LocalHeap & lh)
@@ -339,6 +341,8 @@ namespace ngfem
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));      
     }
 
+    static int DimRef() { return 1; } 
+    
     template <typename IP, typename MAT>
     static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
                                    MAT && mat, LocalHeap & lh)

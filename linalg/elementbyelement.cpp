@@ -690,6 +690,67 @@ namespace ngla
                                   Table<int> acol_dnums, Table<int> arow_dnums)
   : h(ah), w(aw), matrix(amatrix), col_dnums(move(acol_dnums)), row_dnums(move(arow_dnums))
   {
+
+    // checking zero entries:
+    int num_zero_rows = 0;
+    Array<int> compress;
+    for (int i = 0; i < matrix.Height(); i++)
+      if (L2Norm(matrix.Row(i)) == 0)
+        num_zero_rows++;
+      else
+        compress.Append(i);
+    if (num_zero_rows)
+      {
+        Matrix cmatrix(compress.Size(), matrix.Width());
+        for (int i = 0; i < compress.Size(); i++)
+          cmatrix.Row(i) = matrix.Row(compress[i]);
+
+        Table<int> ccol_dnums(col_dnums.Size(), compress.Size());
+        for (int i = 0; i < col_dnums.Size(); i++)
+          for (int j = 0; j < compress.Size(); j++)
+            ccol_dnums[i][j] = col_dnums[i][compress[j]];
+
+        matrix = std::move(cmatrix);
+        col_dnums = std::move(ccol_dnums);
+      }
+
+    
+    int num_zero_cols = 0;
+    compress.SetSize(0);
+    for (int i = 0; i < matrix.Width(); i++)
+      if (L2Norm(matrix.Col(i)) == 0)
+        num_zero_cols++;
+      else
+        compress.Append(i);
+    if (num_zero_cols)
+      {
+        Matrix cmatrix(matrix.Height(), compress.Size());
+        for (int i = 0; i < compress.Size(); i++)
+          cmatrix.Col(i) = matrix.Col(compress[i]);
+
+        Table<int> crow_dnums(row_dnums.Size(), compress.Size());
+        for (int i = 0; i < row_dnums.Size(); i++)
+          for (int j = 0; j < compress.Size(); j++)
+            crow_dnums[i][j] = row_dnums[i][compress[j]];
+
+        matrix = std::move(cmatrix);
+        row_dnums = std::move(crow_dnums);
+      }
+    
+    /*
+    int num_zero = 0;
+    for (int i = 0; i < matrix.Width(); i++)
+      for (int j = 0; j < matrix.Height(); j++)
+        if (matrix(i,j) == 0)
+          num_zero++;
+    if (num_zero)
+      {
+        cout << "Constant EBE: " << num_zero << "/" << matrix.Height()*matrix.Width() << " elements" << endl;
+        cout << matrix << endl;
+      }
+    */
+    
+    
     disjoint_cols = true;
     disjoint_rows = true;
 

@@ -96,6 +96,8 @@ namespace ngcomp
                                           x.Range(fel_facet.GetFacetDofs(facetnr)));
     }
 
+
+    static int DimRef() { return 1; }     
     
     template <typename IP, typename MAT>
     static void GenerateMatrixRef (const FiniteElement & bfel, const IP & ip,

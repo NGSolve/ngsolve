@@ -279,6 +279,11 @@ namespace ngfem
     DIFFOP::AddTransSIMDIR (bfel, bmir, flux, x);
   }
 
+  template <typename DIFFOP>
+  int T_DifferentialOperator<DIFFOP> :: DimRef() const
+  {
+    return DIFFOP::DimRef();
+  }
 
   
   template <typename DIFFOP>

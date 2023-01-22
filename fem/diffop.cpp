@@ -292,6 +292,11 @@ namespace ngfem
   {
     throw ExceptionNOSIMD (string("DifferentialOperator :: AddTrans ( ... SIMD<Complex> ... ) not overloaded for class ") + typeid(*this).name());
   }
+
+  int DifferentialOperator :: DimRef() const
+  {
+    throw Exception (string("DiffOp::DimRef - not overloaded, type = ") + typeid(*this).name() );    
+  }
   
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
@@ -903,24 +908,30 @@ namespace ngfem
     auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
 
     size_t ndi = fel.GetNDof();
-    size_t dimi = diffop->Dim();
+    size_t dimi = diffop->DimRef();
 
     mat = 0.0;
     diffop->CalcMatrix (fel, ip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 1; i < dim; i++)
       mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
   }
-    
+
+  int VectorDifferentialOperator :: DimRef() const
+  {
+    return dim*diffop->DimRef();
+  }
+  
   void VectorDifferentialOperator ::
   CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
                             SliceMatrix<double> trans,
                             LocalHeap & lh) const
   {
     size_t dimi = diffop->Dim();
+    size_t dimiref = diffop->DimRef();    
     
     trans = 0;
     for (int i = 0; i < dim; i++)
-      diffop->CalcTransformationMatrix (mip, trans.Rows(i*dimi, (i+1)*dimi).Cols(i*dimi, (i+1)*dimi), lh);
+      diffop->CalcTransformationMatrix (mip, trans.Rows(i*dimi, (i+1)*dimi).Cols(i*dimiref, (i+1)*dimiref), lh);
   }
 
   void VectorDifferentialOperator ::

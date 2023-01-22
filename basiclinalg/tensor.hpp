@@ -214,27 +214,27 @@ public:
 
   
   template <typename ... ARG>
-  auto braces (size_t i, ARG ... args)
+  auto braces (size_t i, ARG ... args) const
   {
     return OffsetTensor (sub.braces(args...), i*dist);
   }
 
   template <typename ... ARG>
-  auto braces (typestar star, ARG ... args) 
+  auto braces (typestar star, ARG ... args) const
   {
     return LargerTensor(sub.braces(args...), size, dist);
   }
 
 
   template <typename ... ARG>
-  auto operator() (size_t i, ARG ... args)
+  auto operator() (size_t i, ARG ... args) const
     -> decltype (ReduceTensor0 (this->braces(i,args...)))
   {
     return ReduceTensor0 (braces(i,args...));
   }
  
   template <typename ... ARG>
-  auto operator() (typestar star, ARG ... args) 
+  auto operator() (typestar star, ARG ... args) const
   {
     return braces(star,args...);
   }
@@ -316,8 +316,8 @@ public:
   size_t GetTotalSize () const { return 1; }
   T *& Data () { return data; }
   T * Data () const { return data; }  
-  FlatTensor<0,T,LINDIM> operator() () { return FlatTensor<0,T,LINDIM> (data); }
-  FlatTensor<0,T,LINDIM> braces () { return FlatTensor<0,T,LINDIM> (data); }
+  FlatTensor<0,T,LINDIM> operator() () const { return FlatTensor<0,T,LINDIM> (data); }
+  FlatTensor<0,T,LINDIM> braces () const { return FlatTensor<0,T,LINDIM> (data); }
   // const T & operator() () const { return *data; }
   // T & operator() () { return *data; }
   operator T  () const { return *data; }

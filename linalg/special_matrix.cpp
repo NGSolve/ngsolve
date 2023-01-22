@@ -300,6 +300,9 @@ namespace ngla
       for (int j = 0; j < dimx; j++)
         nonzero(i,j) = L2Norm(blockdiag(STAR,i,j));
 
+    // cout << "Blockdiag, shape = " << dimy << " x " << dimx << endl;
+    // cout << "nonzero = " << endl << nonzero << endl;
+    
     for (int sub = dimx; sub >= 2; sub--) // so many sub-blocks ?
       if ( (dimx % sub == 0) && (dimy % sub == 0) )
         {
@@ -329,6 +332,8 @@ namespace ngla
               return;
             }
         }
+
+    cout << IM(5) << "Blockdiag, final shape = " << dimy << " x " << dimx << endl;    
   }
 
   ostream & BlockDiagonalMatrix :: Print (ostream & ost) const
@@ -377,7 +382,7 @@ namespace ngla
            });
         return;
       }
-
+    cout << "BlockDiagMult, dimx = " << dimx << ", dimy = " << dimy << endl;
     
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
@@ -424,6 +429,110 @@ namespace ngla
   
 
 
+
+
+  BlockDiagonalMatrixSoA ::
+  BlockDiagonalMatrixSoA(Tensor<3> _blockdiag)
+    : blockdiag(std::move(_blockdiag))
+  {
+    dimy = blockdiag.GetSize();
+    dimx = blockdiag.GetSubTensor().GetSize();
+    blocks = blockdiag.GetSubTensor().GetSubTensor().GetSize();
+
+    // check for blockdiag non-zero pattern:
+    nonzero.SetSize(dimy, dimx);
+    for (int i = 0; i < dimy; i++)
+      for (int j = 0; j < dimx; j++)
+        nonzero(i,j) = L2Norm(blockdiag(i,j,STAR));
+  }
+
+  ostream & BlockDiagonalMatrixSoA :: Print (ostream & ost) const
+  {
+    ost << "BlockDiagmatrixSoA, blocks = " << blocks << " of dim " << dimy << " x " << dimx << endl;
+    return ost;
+  }
+    
+  AutoVector BlockDiagonalMatrixSoA :: CreateRowVector () const
+  {
+    return make_unique<VVector<double>>(VWidth());
+  }
+  
+  AutoVector BlockDiagonalMatrixSoA :: CreateColVector () const
+  {
+    return make_unique<VVector<double>>(VHeight());    
+  }
+
+
+  
+  void BlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("BlockDiagonalMatrixSoA::MultAdd"); RegionTimer r(t);
+    auto mx = x.FV<double>().AsMatrix(dimx, blocks);
+    auto my = y.FV<double>().AsMatrix(dimy, blocks);
+    // for (size_t i = 0; i < blocks; i++)
+    ParallelForRange
+      (blocks, [&] (IntRange r)
+       {
+         for (int i = 0; i < dimy; i++)
+           for (int j = 0; j < dimx; j++)
+             if (nonzero(i,j) != 0)
+               my.Row(i).Range(r) += s* pw_mult (blockdiag(i,j,STAR).Range(r), mx.Row(j).Range(r));
+       });
+  }
+  
+  void BlockDiagonalMatrixSoA :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("BlockDiagonalMatrixSoA::MultTransAdd"); RegionTimer r(t);
+
+    auto mx = x.FV<double>().AsMatrix(dimy, blocks);
+    auto my = y.FV<double>().AsMatrix(dimx, blocks);
+    // for (size_t i = 0; i < blocks; i++)
+    ParallelForRange
+      (blocks, [&] (IntRange r)
+       {
+         for (int i = 0; i < dimx; i++)
+           for (int j = 0; j < dimy; j++)
+             if (nonzero(j,i) != 0)               
+               my.Row(i).Range(r) += s* pw_mult(blockdiag(j,i,STAR).Range(r), mx.Row(j).Range(r));
+       });
+  }
+  
+
+
+
+
+  
+  TransposeVector :: TransposeVector (int ah, int aw)
+    : h(ah), w(aw)
+  { ; } 
+
+  ostream & TransposeVector :: Print (ostream & ost) const
+  {
+    ost << "TransposeVector, output shape is " << h << " x " << w << endl;
+    return ost;
+  }
+    
+  AutoVector TransposeVector :: CreateRowVector () const
+  {
+    return make_unique<VVector<double>> (h*w);
+  }
+  
+  AutoVector TransposeVector :: CreateColVector () const
+  {
+    return make_unique<VVector<double>> (h*w);
+  }
+      
+  void TransposeVector :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<double>().AsMatrix(h,w) = Trans(x.FV<double>().AsMatrix(w,h));
+  }
+
+  void TransposeVector :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<double>().AsMatrix(w,h) = Trans(x.FV<double>().AsMatrix(h,w));
+  };
+
+  
   
   
   void PermutationMatrix :: Mult (const BaseVector & x, BaseVector & y) const

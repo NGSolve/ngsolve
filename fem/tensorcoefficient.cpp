@@ -1002,9 +1002,9 @@ namespace ngfem {
                                 {
                                   return item->IsComplex();
                                 }) != acfs.end()),
-              node{},
               max_mem{0},
               options{aoptions},
+              node{},
               original_index_signature{validate_signature(aindex_signature)},
               original_inputs{acfs} {
 
