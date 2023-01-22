@@ -436,7 +436,8 @@ namespace ngcomp
     else
     {
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlDiv<2>>>();
-      //evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>();
+      // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>();
+      additional_evaluators.Set("oldid",  make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>());
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv<3>>>();
       integrator[VOL] = make_shared<HCurlDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv<3>>>();
