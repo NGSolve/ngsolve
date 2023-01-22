@@ -31,13 +31,13 @@ namespace ngcomp
     /// don't assemble matrix
     bool nonassemble;
     /// store only diagonal of matrix
-    bool diagonal;
+    bool diagonal = false;
     /// element-matrix for ref-elements
-    bool geom_free;
+    bool geom_free = false;
     /// stores geom-free B factors, and D factors in integration points
-    bool matrix_free_bdb;
+    bool matrix_free_bdb = false;
     /// stores geom-free B factors, and D factors in integration points, and compiled CF
-    bool nonlinear_matrix_free_bdb;
+    bool nonlinear_matrix_free_bdb = false;
     /// store matrices on mesh hierarchy
     bool multilevel;
     /// galerkin projection of coarse grid matrices
