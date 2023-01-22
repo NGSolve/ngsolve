@@ -47,7 +47,7 @@ template <int DIM, typename T = double, int DIMLIN = DIM> class FlatTensor;
 
 template <int DIM, typename T, int LINDIM>
 INLINE auto LargerTensor (FlatTensor<DIM,T,LINDIM> tensor, size_t as, size_t ad)
-  -> FlatTensor<DIM+1,T,LINDIM> 
+// -> FlatTensor<DIM+1,T,LINDIM> 
 {
   return FlatTensor<DIM+1,T,LINDIM> (as, ad, tensor);
 }
@@ -62,13 +62,13 @@ INLINE auto LargerTensor (FlatTensor<0,T,LINDIM> tensor, int as, int ad)
 */
 template <typename T>
 INLINE auto LargerTensor (FlatTensor<0,T,0> tensor, size_t as, size_t ad)
-  -> SliceVector<T> 
+// -> SliceVector<T> 
 {
   return SliceVector<T> (as, ad, tensor.Data());
 }
 template <typename T, int LINDIM>
 INLINE auto LargerTensor (FlatTensor<0,T,LINDIM> tensor, size_t as, size_t ad)
-  -> FlatVector<T> 
+// -> FlatVector<T> 
 {
   return FlatVector<T> (as, tensor.Data());
 }
@@ -76,7 +76,7 @@ INLINE auto LargerTensor (FlatTensor<0,T,LINDIM> tensor, size_t as, size_t ad)
 
 template <typename T>
 INLINE auto LargerTensor (SliceVector<T> vec, size_t as, size_t ad)
-  -> DoubleSliceMatrix<T> 
+// -> DoubleSliceMatrix<T> 
 {
   return DoubleSliceMatrix<T> (as, vec.Size(),
                                ad, vec.Dist(), vec.Data());
@@ -84,7 +84,7 @@ INLINE auto LargerTensor (SliceVector<T> vec, size_t as, size_t ad)
 
 template <typename T>
 INLINE auto LargerTensor (FlatVector<T> vec, int as, int ad)
-  -> SliceMatrix<T> 
+// -> SliceMatrix<T> 
 {
   return SliceMatrix<T> (as, vec.Size(),
                          ad, vec.Data());
@@ -131,21 +131,21 @@ INLINE auto OffsetTensor (FlatTensor<DIM,T,LINDIM> tensor, int offset)
 
 template <typename T>
 INLINE auto OffsetTensor (SliceVector<T> vec, int offset)
-  -> SliceVector<T> 
+//-> SliceVector<T> 
 {
   return SliceVector<T> (vec.Size(), vec.Dist(), vec.Data()+offset);
 }
 
 template <typename T>
 INLINE auto OffsetTensor (FlatVector<T> vec, int offset)
-  -> FlatVector<T> 
+// -> FlatVector<T> 
 {
   return FlatVector<T> (vec.Size(), vec.Data()+offset);
 }
 
 template <typename T>
 INLINE auto OffsetTensor (DoubleSliceMatrix<T> mat, int offset)
-  -> DoubleSliceMatrix<T> 
+// -> DoubleSliceMatrix<T> 
 {
   return DoubleSliceMatrix<T> (mat.Height(),mat.Width(),
                                mat.DistRow(),mat.DistCol(),
@@ -154,7 +154,7 @@ INLINE auto OffsetTensor (DoubleSliceMatrix<T> mat, int offset)
 
 template <typename T>
 INLINE auto OffsetTensor (SliceMatrix<T> mat, int offset)
-  -> SliceMatrix<T> 
+// -> SliceMatrix<T> 
 {
   return SliceMatrix<T> (mat.Height(),mat.Width(),
                          mat.Dist(),
