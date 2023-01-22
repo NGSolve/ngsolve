@@ -2588,6 +2588,8 @@ space : ngsolve.FESpace
                      "  only for the reference elements",
                      py::arg("matrix_free_bdb") = "bool = False\n"
                      "  store BDB factors seperately",
+                     py::arg("nonlinear_matrix_free_bdb") = "bool = False\n"
+                     "  store BDB factors seperately for nonlinear operators",
                      py::arg("check_unused") = "bool = True\n"
 		     "  If set prints warnings if not UNUSED_DOFS are not used."
                      );

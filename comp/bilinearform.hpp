@@ -36,6 +36,8 @@ namespace ngcomp
     bool geom_free;
     /// stores geom-free B factors, and D factors in integration points
     bool matrix_free_bdb;
+    /// stores geom-free B factors, and D factors in integration points, and compiled CF
+    bool nonlinear_matrix_free_bdb;
     /// store matrices on mesh hierarchy
     bool multilevel;
     /// galerkin projection of coarse grid matrices
@@ -423,7 +425,7 @@ namespace ngcomp
     /// assemble matrix
     virtual void DoAssemble (LocalHeap & lh) = 0;
     void AssembleGF (LocalHeap & lh);
-    void AssembleBDB (LocalHeap & lh);
+    void AssembleBDB (LocalHeap & lh, bool linear);
 
     /// allocates (sparse) matrix data-structure
     virtual void AllocateMatrix () = 0;

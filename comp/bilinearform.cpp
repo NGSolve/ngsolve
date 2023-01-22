@@ -128,6 +128,7 @@ namespace ngcomp
     spd = flags.GetDefineFlag ("spd");
     geom_free = flags.GetDefineFlag("geom_free");
     matrix_free_bdb = flags.GetDefineFlag("matrix_free_bdb");    
+    nonlinear_matrix_free_bdb = flags.GetDefineFlag("nonlinear_matrix_free_bdb");    
     if (spd) symmetric = true;
     SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());
   }
@@ -802,9 +803,9 @@ namespace ngcomp
         return;
       }
 
-    if (matrix_free_bdb)
+    if (matrix_free_bdb || nonlinear_matrix_free_bdb)
       {
-        AssembleBDB(lh);
+        AssembleBDB(lh, matrix_free_bdb);
         return;
       }
     
@@ -997,16 +998,16 @@ namespace ngcomp
 
   class ApplyIntegrationPoints : public BaseMatrix
   {
-    shared_ptr<CoefficientFunction> coef;
+    Array<shared_ptr<CoefficientFunction>> coefs;
     const Array<ProxyFunction*> & trialproxies;
     
     size_t dimx, dimy;
     size_t nip;
     
   public:
-    ApplyIntegrationPoints (shared_ptr<CoefficientFunction> acoef, const Array<ProxyFunction*> & atrialproxies,
+    ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs, const Array<ProxyFunction*> & atrialproxies,
                             size_t adimx, size_t adimy, size_t anip)
-      : coef(acoef), trialproxies(atrialproxies), dimx(adimx), dimy(adimy), nip(anip) { ; }
+      : coefs(acoefs), trialproxies(atrialproxies), dimx(adimx), dimy(adimy), nip(anip) { ; }
       
     AutoVector CreateColVector() const override
     { return make_unique<VVector<double>> (nip*dimy); }
@@ -1161,23 +1162,31 @@ namespace ngcomp
 
                    // ttransx.Start();
                    SliceMatrix<double> (dimx, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
-                                        (double*)(ud.GetAMemory (proxy)).Data())
-                     = Trans(x.FV<double>().AsMatrix(nip,dimx).Rows(r).Rows(r2).Cols(starti, nexti));
+                                        (double*)(ud.GetAMemory (proxy)).Data()) = 
+                     // Trans(x.FV<double>().AsMatrix(nip,dimx).Rows(r).Rows(r2).Cols(starti, nexti));
+                     x.FV<double>().AsMatrix(dimx, nip).Cols(r).Cols(r2).Rows(starti, nexti);
                    // ttransx.Stop();
                    
                    starti = nexti;
                  }
                
-               FlatMatrix<> res = y.FV<double>().AsMatrix(nip,dimy).Rows(r).Rows(r2);
-               FlatMatrix<SIMD<double>> simdres(dimy, simdmir.Size(), lh);
            
                // teval.Start();
-               coef -> Evaluate (simdmir, simdres);
+               FlatMatrix<SIMD<double>> simdres(dimy, simdmir.Size(), lh);
+               starti = 0;
+               for (auto coef : coefs)
+                 {
+                   int nexti = starti + coef->Dimension();
+                   coef -> Evaluate (simdmir, simdres.Rows(starti, nexti));
+                   starti = nexti;
+                 }
                // teval.Stop();
                
                // ttransy.Start();
-               res = Trans( SliceMatrix<double> (dimy, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
-                                                 (double*)simdres.Data()) );
+               // FlatMatrix<> res = y.FV<double>().AsMatrix(nip,dimy).Rows(r).Rows(r2);
+               SliceMatrix<> res = y.FV<double>().AsMatrix(dimy, nip).Cols(r).Cols(r2);
+               res = SliceMatrix<double> (dimy, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
+                                          (double*)simdres.Data());
                // ttransy.Stop();
              }
          });
@@ -1186,7 +1195,7 @@ namespace ngcomp
   };
 
   
-  void BilinearForm :: AssembleBDB (LocalHeap & lh)
+  void BilinearForm :: AssembleBDB (LocalHeap & lh, bool linear)
   {
     static Timer t("assemble-BDB"); RegionTimer reg(t);
     
@@ -1194,29 +1203,6 @@ namespace ngcomp
     auto fesy = GetTestSpace();
     auto ma = GetMeshAccess();
 
-
-    if (parts.Size() != 1) throw Exception("mat-free bdb biforms need 1 integrator");
-    auto bfi = dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (parts[0]);
-
-    auto & trialproxies = bfi->TrialProxies();
-    auto & testproxies = bfi->TestProxies();
-    /*
-    auto diffopx = trialproxies[0]->Evaluator();
-    auto diffopy = testproxies[0]->Evaluator();
-    int dimx = diffopx->Dim();
-    int dimy = diffopy->Dim();
-    */
-    int dimx = 0, dimy = 0;
-    for (auto proxy : trialproxies)
-      dimx += proxy->Evaluator()->Dim();
-    for (auto proxy : testproxies)
-      dimy += proxy->Evaluator()->Dim();
-    
-
-    // if (trialproxies.Size() != 1) throw Exception ("mat-free bdb biforms need 1 trial-proxy");
-    if (testproxies.Size() != 1) throw Exception ("mat-free bdb biforms need 1 test-proxy");
-
-    shared_ptr<BaseMatrix> sum;
 
     Array<short> classnr(ma->GetNE(VOL));
     ma->IterateElements
@@ -1234,6 +1220,32 @@ namespace ngcomp
         creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
     
+
+    shared_ptr<BaseMatrix> sum;
+
+    for (auto part : parts)
+      {
+        
+        // if (parts.Size() != 1) throw Exception("mat-free bdb biforms need 1 integrator");
+        auto bfi = dynamic_pointer_cast<SymbolicBilinearFormIntegrator> (part);
+
+    auto & trialproxies = bfi->TrialProxies();
+    auto & testproxies = bfi->TestProxies();
+
+    int dimx = 0, dimy = 0;
+    for (auto proxy : trialproxies)
+      dimx += proxy->Evaluator()->Dim();
+    for (auto proxy : testproxies)
+      dimy += proxy->Evaluator()->Dim();
+
+    int dimxref = 0, dimyref = 0;
+    for (auto proxy : trialproxies)
+      dimxref += proxy->Evaluator()->DimRef();
+    for (auto proxy : testproxies)
+      dimyref += proxy->Evaluator()->DimRef();
+
+
+
     
     for (auto elclass_inds : table)
       {
@@ -1269,26 +1281,26 @@ namespace ngcomp
                   ir += ip;
               }
           }
-        Matrix<double,ColMajor> bmatx_(ir.Size()*dimx, felx.GetNDof());
-        Matrix<double,ColMajor> bmaty_(ir.Size()*dimy, fely.GetNDof());
+        Matrix<double,ColMajor> bmatx_(ir.Size()*dimxref, felx.GetNDof());
+        Matrix<double,ColMajor> bmaty_(ir.Size()*dimyref, fely.GetNDof());
         
         for (int i : Range(ir.Size()))
           {
             // diffopx->CalcMatrix(felx, ir[i], bmatx_.Rows(i*dimx, (i+1)*dimx), lh);
-            int starti = i*dimx;
+            int starti = i*dimxref;
             for (auto proxy : trialproxies)
               {
                 auto diffopx = proxy->Evaluator();
-                int nexti = starti+diffopx->Dim();
+                int nexti = starti+diffopx->DimRef();
                 diffopx->CalcMatrix(felx, ir[i], bmatx_.Rows(starti, nexti), lh);
                 starti = nexti;
               }
             // diffopy->CalcMatrix(fely, ir[i], bmaty_.Rows(i*dimy, (i+1)*dimy), lh);
-            starti = i*dimy;
+            starti = i*dimyref;
             for (auto proxy : testproxies)
               {
                 auto diffopy = proxy->Evaluator();
-                int nexti = starti+diffopy->Dim();
+                int nexti = starti+diffopy->DimRef();
                 diffopy->CalcMatrix(fely, ir[i], bmaty_.Rows(starti, nexti), lh);
                 starti = nexti;
               }
@@ -1296,7 +1308,7 @@ namespace ngcomp
 
         Matrix bmatx = bmatx_;
         Matrix bmaty = bmaty_;
-
+        
         Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
         Table<DofId> xdofsout(elclass_inds.Size(), bmatx.Height());
 
@@ -1313,27 +1325,43 @@ namespace ngcomp
             ydofsin[i] = dnumsy;
           }
 
+        int nel = elclass_inds.Size();
+        size_t nip = ir.Size()*nel;
+            
         auto xa = xdofsout.AsArray();
-        for (size_t i = 0; i < xa.Size(); i++)
-          xa[i] = i;
         auto ya = ydofsout.AsArray();
-        for (size_t i = 0; i < ya.Size(); i++)
-          ya[i] = i;
+        
+        if (linear)
+          {
+            for (size_t i = 0; i < xa.Size(); i++)
+              xa[i] = i;
+            for (size_t i = 0; i < ya.Size(); i++)
+              ya[i] = i;
+          }
+        else
+          {
+            for (size_t i = 0; i < nip; i++)
+              for (size_t j = 0; j < dimxref; j++)
+                xa[i*dimxref+j] = j*nip+i;
+            for (size_t i = 0; i < nip; i++)
+              for (size_t j = 0; j < dimyref; j++)
+                ya[i*dimyref+j] = j*nip+i;
+          }
             
         auto bx = make_shared<ConstantElementByElementMatrix>
-          (xa.Size(), fesx->GetNDof(),
+          (nip*dimxref, fesx->GetNDof(),
            bmatx, std::move(xdofsout), std::move(xdofsin));
 
         auto by = make_shared<ConstantElementByElementMatrix>
-          (ya.Size(), fesy->GetNDof(),
+          (nip*dimyref, fesy->GetNDof(),
            bmaty, std::move(ydofsout), std::move(ydofsin));
 
 
         shared_ptr<BaseMatrix> mat;
 
-        if (true)
+        if (linear)
           {
-            Tensor<3> diag(elclass_inds.Size()*ir.Size(), dimy, dimx);
+            Tensor<3> diag(elclass_inds.Size()*ir.Size(), dimyref, dimxref);
             for (auto i : Range(elclass_inds))
               {
                 HeapReset hr(lh);
@@ -1342,9 +1370,9 @@ namespace ngcomp
                 auto & mir = trafo(ir, lh);
                 if (bfi->ElementVB() != VOL) 
                   mir.ComputeNormalsAndMeasure (fel.ElementType());
-                FlatMatrix transx(dimx, dimx, lh);
-                FlatMatrix transy(dimy, dimy, lh);
-                Matrix prod(dimx, dimy);
+                FlatMatrix transx(dimx, dimxref, lh);
+                FlatMatrix transy(dimy, dimyref, lh);
+                Matrix prod(dimxref, dimyref);
                 
                 for (int j = 0; j < ir.Size(); j++)
                   {
@@ -1361,12 +1389,12 @@ namespace ngcomp
               }
             
             auto diagmat = make_shared<BlockDiagonalMatrix> (std::move(diag));
-            mat = ComposeOperators (TransposeOperator(by), ComposeOperators (diagmat, bx));
+            mat = TransposeOperator(by) * diagmat * bx;
           }
         else
           {
-            Tensor<3> diagx(elclass_inds.Size()*ir.Size(), dimx, dimx);
-            Tensor<3> diagy(elclass_inds.Size()*ir.Size(), dimy, dimy);
+            Tensor<3> diagx(dimx, dimxref, nip);
+            Tensor<3> diagy(dimy, dimyref, nip);
             
             for (auto i : Range(elclass_inds))
               {
@@ -1377,55 +1405,63 @@ namespace ngcomp
                 if (bfi->ElementVB() != VOL) 
                   mir.ComputeNormalsAndMeasure (fel.ElementType());
                 
-                FlatMatrix transx(dimx, dimx, lh);
-                FlatMatrix transy(dimy, dimy, lh);
+                FlatMatrix transx(dimx, dimxref, lh);
+                FlatMatrix transy(dimy, dimyref, lh);
 
                 transx = 0.0;
                 transy = 0.0;
                 for (int j = 0; j < ir.Size(); j++)
                   {
-                    int starti = 0;
+                    int starti = 0, startiref = 0;
                     for (auto proxy : trialproxies)
                       {
                         auto diffop = proxy->Evaluator();
                         int nexti = starti+diffop->Dim();
-                        diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(starti,nexti), lh);
+                        int nextiref = startiref+diffop->DimRef();
+                        diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(startiref,nextiref), lh);
                         starti = nexti;
+                        startiref = nextiref;
                       }
-                    starti = 0;
+                    starti = 0; startiref = 0;
                     for (auto proxy : testproxies)
                       {
                         auto diffop = proxy->Evaluator();
                         int nexti = starti+diffop->Dim();
-                        diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(starti,nexti), lh);
+                        int nextiref = startiref+diffop->DimRef();                        
+                        diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(startiref,nextiref), lh);
                         starti = nexti;
+                        startiref = nextiref;
                       }
 
                     transy *= mir[j].GetWeight();
-                    diagx(i*ir.Size()+j,STAR,STAR) = transx;
-                    diagy(i*ir.Size()+j,STAR,STAR) = Trans(transy);
+                    diagx(STAR,STAR,i*ir.Size()+j) = transx;
+                    diagy(STAR,STAR,i*ir.Size()+j) = transy;
                   }
               }
 
             shared_ptr<CoefficientFunction> coef = bfi -> GetCoefficientFunction();
-            CoefficientFunction::T_DJC cache;
-            auto diffcf = Compile (coef -> DiffJacobi(testproxies[0], cache), false, 0, true, false);
-            // auto diffcf = coef -> DiffJacobi(testproxies[0], cache);
-            // cout << "diffcf = " << endl << *diffcf << endl;
-            auto ipop = make_shared<ApplyIntegrationPoints> (diffcf, trialproxies, dimx, dimy, ir.Size()*elclass_inds.Size());
-            
-            auto diagmatx = make_shared<BlockDiagonalMatrix> (std::move(diagx));
-            auto diagmaty = make_shared<BlockDiagonalMatrix> (std::move(diagy));
-            auto op1 = ComposeOperators (diagmatx, bx);
-            auto op2 = ComposeOperators (ipop, op1);
-            auto op3 = ComposeOperators (diagmaty, op2);
-            mat = ComposeOperators (TransposeOperator(by), op3);
+            Array<shared_ptr<CoefficientFunction>> diffcfs;
+            for (auto proxy : testproxies)
+              {
+                CoefficientFunction::T_DJC cache;
+                diffcfs += coef -> DiffJacobi(proxy, cache);                  
+              }
+
+            auto ipop = make_shared<ApplyIntegrationPoints> (std::move(diffcfs), trialproxies, dimx, dimy, nip);
+
+            auto diagmatx = make_shared<BlockDiagonalMatrixSoA> (std::move(diagx));
+            auto diagmaty = make_shared<BlockDiagonalMatrixSoA> (std::move(diagy));
+
+            mat = TransposeOperator(diagmaty * /* make_shared<TransposeVector>(dimyref, nip) * */ by) *
+              ipop *
+              (diagmatx * /* make_shared<TransposeVector>(dimxref, nip) * */ bx);
           }
 
         if (sum)
           sum = make_shared<SumMatrix>(sum, mat);
         else
           sum = mat;
+      }
       }
 
     mats.SetSize (ma->GetNLevels());

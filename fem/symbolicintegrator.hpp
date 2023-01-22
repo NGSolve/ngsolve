@@ -602,6 +602,12 @@ public:
   
   
   /// calculates matrix on reference element
+
+  NGS_DLL_HEADER virtual int DimRef() const override
+  {
+    return BlockDim()*diffop->DimRef();
+  }
+  
   NGS_DLL_HEADER virtual void
   CalcMatrix (const FiniteElement & bfel,
               const IntegrationPoint & ip,

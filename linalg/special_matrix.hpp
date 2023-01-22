@@ -88,7 +88,7 @@ namespace ngla
 
   class BlockDiagonalMatrix : public BaseMatrix
   {
-    mutable Tensor<3> blockdiag;  // some const are missing for tensor
+    Tensor<3> blockdiag;  
     int blocks, dimy, dimx;
   public:
     typedef double TSCAL;
@@ -111,6 +111,55 @@ namespace ngla
     shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
   };
 
+  // blocks is inner-most dimension of tensor and vectors
+  class BlockDiagonalMatrixSoA : public BaseMatrix
+  {
+    Tensor<3> blockdiag;  
+    int blocks, dimy, dimx;
+    Matrix<double> nonzero;
+  public:
+    typedef double TSCAL;
+    
+    BlockDiagonalMatrixSoA(Tensor<3> _blockdiag);
+    bool IsComplex() const override { return false; } 
+
+    int VHeight() const override { return blocks*dimy; }
+    int VWidth() const override { return blocks*dimx; }
+
+    ostream & Print (ostream & ost) const override;
+    
+    AutoVector CreateRowVector () const override;
+    AutoVector CreateColVector () const override;
+
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    // shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
+  };
+
+
+  
+
+  // Convert RowMajor to ColMajor matrix (stored as vector)
+  class TransposeVector : public BaseMatrix
+  {
+    int h, w; // result matrix
+  public:
+    typedef double TSCAL;
+    
+    TransposeVector (int ah, int aw);
+    bool IsComplex() const override { return false; } 
+
+    int VHeight() const override { return h*w; }
+    int VWidth() const override { return h*w; }
+
+    ostream & Print (ostream & ost) const override;
+    
+    AutoVector CreateRowVector () const override;
+    AutoVector CreateColVector () const override;
+
+    void Mult (const BaseVector & x, BaseVector & y) const override;    
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;    
+  };
 
   
   

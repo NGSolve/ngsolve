@@ -96,12 +96,12 @@ namespace ngcomp
         }
     }
 
+    static int DimRef() { return 1; } 
 
     template <typename IP, typename MAT>
     static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
                                    MAT && mat, LocalHeap & lh)
     {
-      mat = 0.0;
       Cast(fel).CalcShape (ip, mat.Row(0));      
     }
 
@@ -109,7 +109,6 @@ namespace ngcomp
     static void CalcTransformationMatrix (const MIP & mip,
                                           MAT & mat, LocalHeap & lh)
     {
-      mat = 0.0;
       mat.Col(0).Range(D) = static_cast<const MappedIntegrationPoint<D,D>&> (mip).GetNV();
     }
 
