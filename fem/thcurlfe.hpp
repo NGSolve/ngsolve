@@ -31,14 +31,6 @@ namespace ngfem
 
     NGS_DLL_HEADER T_HCurlHighOrderFiniteElement () { ; }
     HD virtual ELEMENT_TYPE ElementType() const override { return ET; }
-
-    /*
-    template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (const Tx & hx, TFA & shape) const
-    { 
-      static_cast<const SHAPES*> (this) -> T_CalcShape (hx, shape);
-    }
-    */
     
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const
@@ -46,7 +38,6 @@ namespace ngfem
       static_cast<const SHAPES*> (this) -> T_CalcShape (tip, shape);
     }
 
-    // const SHAPES & Cast() const { return static_cast<const SHAPES&> (*this); }
     
     virtual void CalcShape (const IntegrationPoint & ip, 
                             SliceMatrix<> shape) const override;

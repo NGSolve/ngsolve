@@ -13,14 +13,9 @@ namespace ngfem
   template <typename T>
   Mat<3,3,T> TensorCrossProduct(Mat<3,3,T> A, Mat<3,3,T> B)
   {
-    // return 0.5 * ( Cof(A+B) - Cof(A-B) );
+    // return 0.5 * ( Cof(A+B) - Cof(A-B) ); // more cancelation
 
     Mat<3,3,T> prod;
-    /*
-    prod.Col(0) = Cross(Vec<3,T>(A.Col(1)), Vec<3,T>(B.Col(2))) - Cross(Vec<3,T>(A.Col(2)), Vec<3,T>(B.Col(1)));
-    prod.Col(1) = Cross(Vec<3,T>(A.Col(2)), Vec<3,T>(B.Col(0))) - Cross(Vec<3,T>(A.Col(0)), Vec<3,T>(B.Col(2)));
-    prod.Col(2) = Cross(Vec<3,T>(A.Col(0)), Vec<3,T>(B.Col(1))) - Cross(Vec<3,T>(A.Col(1)), Vec<3,T>(B.Col(0)));
-    */
     prod.Col(0) = Cross(A.Col(1), B.Col(2)) - Cross(A.Col(2), B.Col(1));
     prod.Col(1) = Cross(A.Col(2), B.Col(0)) - Cross(A.Col(0), B.Col(2));
     prod.Col(2) = Cross(A.Col(0), B.Col(1)) - Cross(A.Col(1), B.Col(0));
@@ -32,7 +27,6 @@ namespace ngfem
   {
     Mat<3,3,T> result;
     for (int j = 0; j < 3; j++)
-      // result.Col(j) = Cross(v, Vec<3,T>(A.Col(j)));
       result.Col(j) = Cross(v, A.Col(j));
     return result;
   }
@@ -42,7 +36,6 @@ namespace ngfem
   {
     Mat<3,3,T> result;
     for (int j = 0; j < 3; j++)
-      // result.Row(j) = Cross(Vec<3,T>(A.Row(j)),v);
       result.Row(j) = Cross(A.Row(j), v);
     return result;
   }
@@ -105,7 +98,7 @@ namespace ngfem
   };
 
   template <int D,typename VEC,typename MAT>
-  void VecToSymMat(const VEC & vec,MAT & mat)
+  void VecToSymMat(const VEC & vec, MAT & mat)
   {
     switch(D)
     {
@@ -127,56 +120,6 @@ namespace ngfem
       break;
     }
   }
-
-  
-  // template <int D,typename T ,typename MAT>
-  // Vec<D*D-D,T> SymMatToVec(MAT & mat)
-  // {
-  //   if (D == 2)
-  //     return Vec<3,T>(mat(0),mat(3),mat(2));
-  //   else if (D == 3)
-  //     return Vec<6,T>(mat(0),mat(4),mat(8),mat(5),mat(2),mat(1));
-  //   else
-  //     return T(0.0);
-  // }
-
-
-  
-  /*
-  template <typename T>
-  Mat<1,1,T> DyadProd(Vec<1,T> a, Vec<1,T> b)
-  {
-    return Matrix<T>({{a(0)*b(0)}} );
-  }
-
-  template <typename T>
-  Mat<2,2,T> DyadProd(Vec<2,T> a, Vec<2,T> b)
-  {
-    return Matrix<T>({{a(0)*b(0), a(0)*b(1)}, {a(1)*b(0), a(1)*b(1)}} );
-  }
-
-  template <typename T>
-  Mat<3,3,T> DyadProd(Vec<3,T> a, Vec<3,T> b)
-  {
-    return Matrix<T>( {{a(0)*b(0), a(0)*b(1), a(0)*b(2)}, {a(1)*b(0), a(1)*b(1), a(1)*b(2)}, {a(2)*b(0), a(2)*b(1), a(2)*b(2)}} );
-  }
-
-  template <typename T>
-  Mat<3,3,T> SymDyadProd(Vec<3,T> a, Vec<3,T> b)
-  {
-    return Matrix<T>( {{2*a(0)*b(0), a(0)*b(1)+a(1)*b(0), a(0)*b(2)+a(2)*b(0)}, {a(1)*b(0) + a(0)*b(1), 2*a(1)*b(1), a(1)*b(2) + a(2)*b(1)}, {a(2)*b(0) + a(0)*b(2), a(2)*b(1) + a(1)*b(2), 2*a(2)*b(2)}} );
-  }
-  template <typename T>
-  Mat<2,2,T> SymDyadProd(Vec<2,T> a, Vec<2,T> b)
-  {
-    return Matrix<T>( {{2*a(0)*b(0), a(0)*b(1)+a(1)*b(0)}, {a(1)*b(0) + a(0)*b(1), 2*a(1)*b(1)}} );
-  }
-  template <typename T>
-  Mat<1,1,T> SymDyadProd(Vec<1,T> a, Vec<1,T> b)
-  {
-    return Matrix<T>( {{a(0)*b(0)}} );
-  }
-  */
 
   template <int H, int W, typename T>
   Mat<H,W,T> DyadProd(Vec<H,T> a, Vec<W,T> b)
