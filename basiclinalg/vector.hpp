@@ -53,7 +53,7 @@ namespace ngbla
     
     /// set size and mem
     INLINE FlatVector (size_t as, void * adata) : size(as), data(static_cast<TELEM*> (adata)) 
-    {  ; }
+    { ; }
 
     /// put FlatVector over fixed size vector
     template <int S>
