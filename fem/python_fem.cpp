@@ -2370,6 +2370,21 @@ weights : list
            auto & mir = trafo(ir, lh);
            return diffop.Timing (fel, mir);
          })
+    .def("__call__", [&] (const DifferentialOperator & diffop,
+                          const FiniteElement & fel, const MeshPoint & mp)
+         {
+           LocalHeap lh(1000000);           
+           Matrix<double,ColMajor> mat(diffop.Dim(), fel.GetNDof());
+
+           auto ei = ElementId(mp.vb, mp.nr);
+           auto& trafo = mp.mesh->GetTrafo(ei, lh);
+           IntegrationPoint ip(mp.x, mp.y, mp.z);
+           auto & mip = trafo(ip, lh);
+           diffop.CalcMatrix (fel, mip, mat, lh);
+
+           return Matrix<>(mat); // row-major
+         })
+                          
     ;
 
   typedef BilinearFormIntegrator BFI;
