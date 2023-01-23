@@ -382,7 +382,6 @@ namespace ngla
            });
         return;
       }
-    cout << "BlockDiagMult, dimx = " << dimx << ", dimy = " << dimy << endl;
     
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
