@@ -133,8 +133,6 @@ namespace ngfem
     Tx x = ip.x;
     Tx lam[2] = { x, 1-x };
 
-    // ArrayMem<Tx,20> adpol1(order);
-	
     INT<2> e = GetEdgeSort (0, vnums);	  
     
     //Nedelec low order edge shape function 
@@ -145,15 +143,6 @@ namespace ngfem
     if(p > 0 && usegrad_cell)
       { 
         // LegendrePolynomial::
-        /*
-        EdgeOrthoPol::
-          EvalScaledMult (p-1, 
-                          lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
-                          lam[e[0]]*lam[e[1]], adpol1);
-
-        for(int j = 0; j < p; j++) 	      
-          shape[j+1] = Du (adpol1[j]);
-        */
         size_t ii = 1;
         EdgeOrthoPol::
           EvalScaledMult (p-1, 
@@ -391,7 +380,6 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   void HCurlHighOrderFE_Shape<ET_TET> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
   {
-    // Tx x = hx[0], y = hx[1], z = hx[2];
     Tx x = ip.x, y = ip.y, z = ip.z;    
     Tx lam[4] = { x, y, z, 1-x-y-z };
 
