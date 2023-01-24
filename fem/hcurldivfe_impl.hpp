@@ -516,9 +516,42 @@ namespace ngfem
     }
 
   };
-
-  template <int D, typename T>
+  template <int D, typename T>  
   auto Id_v (AutoDiff<D,T> av) { return T_Id_v<D,T>(av); }
+
+  //   template <int D, typename T>  class T_Id_v_DD;
+  // template <typename T>  class T_Id_v_DD<2,T>
+  // {
+  //    AutoDiffDiff<2,T> v;
+  // public:
+  //   T_Id_v_DD  (AutoDiffDiff<2,T> av) : v(av) { ; }
+    
+  //   Vec<4,T> Shape() {
+  //     T zero = 0.0;
+  //     Vec<4,T> Id_v= zero;
+
+  //     for (int i=0; i<2; i++)
+	//       Id_v(i*(2))= v.Value();      
+  //     return Id_v;
+  //   }
+
+  //   Vec<2,T> DivShape()
+  //   {
+  //     Vec<2,T> div_Id_v;
+  //     for (int i=0; i<2; i++)
+	//         div_Id_v(i) = v.DValue(i);
+  //     return div_Id_v;
+  //   }
+
+  //   Vec<2,T> CurlShape()
+  //   {     
+  //     throw Exception("not implemented for T_Id_v and D = 2");
+  //   }
+
+  // };
+  // template <int D, typename T>
+  // auto Id_v_DD (AutoDiffDiff<D,T> av) { return T_Id_v_DD<D,T>(av); }
+  
 
   /* ############### (HEX) - edge basis functions ############### */
   /* calculate legendre * dev((grad l1) o-times (grad l2)) */
@@ -540,7 +573,7 @@ namespace ngfem
 	  sigmaref(i*3+2)= v.Value() * l1.DValue(i) * l2.DValue(2);
 	}
 
-      T trace_sigma = v.Value()/3 * (l1.DValue(0) * l2.DValue(0) + l1.DValue(1) * l2.DValue(1) + l1.DValue(2) * l2.DValue(2));
+      T trace_sigma = v.Value()/3.0 * (l1.DValue(0) * l2.DValue(0) + l1.DValue(1) * l2.DValue(1) + l1.DValue(2) * l2.DValue(2));
       
       sigmaref(0) = sigmaref(0) - trace_sigma;
       sigmaref(4) = sigmaref(4) - trace_sigma;

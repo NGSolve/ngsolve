@@ -282,6 +282,8 @@ namespace ngcomp
 	  for (int j = 0; j < D*D; j++)
 	    mat(j, i) = sigma(j);
 	}
+    // cout<<mat<<endl;
+    // getchar();
 
     }        
   };
@@ -430,16 +432,17 @@ namespace ngcomp
     {
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlDiv<1>>>();
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv<2>>>();
-      integrator[VOL] = make_shared<HCurlDivMassIntegrator<2>> (one);
+      // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<2>>>();
+      // integrator[VOL] = make_shared<HCurlDivMassIntegrator<2>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv<2>>>();
     }
     else
     {
       evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundaryHCurlDiv<2>>>();
       // evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>();
-      additional_evaluators.Set("oldid",  make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>());
+      // additional_evaluators.Set("oldid",  make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv_old<3>>>());
       evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCurlDiv<3>>>();
-      integrator[VOL] = make_shared<HCurlDivMassIntegrator<3>> (one);
+      // integrator[VOL] = make_shared<HCurlDivMassIntegrator<3>> (one);
       flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHCurlDiv<3>>>();
     }
 
@@ -583,9 +586,9 @@ namespace ngcomp
                 }
                 break;            
         case ET_TET:
-          ndof += 8 * oi * (oi+1)*(oi+2)/6;
+          ndof += 8 * oi * (oi+1)*(oi+2)/6.0;
           if(ot>-1)
-            ndof += (ot + 1)*(ot+2)*(ot+3)/6;
+            ndof += (ot + 1)*(ot+2)*(ot+3)/6.0;
 
           if (GGbubbles)
             ndof += 3*(oi+1)*(oi+2)/2;
@@ -720,7 +723,8 @@ namespace ngcomp
         diag_offset =  (ot+1)*(ot+2)*(ot+3)/6.0;
         if(ot>-1)
           {
-            ctofdof[innerdofs[0]] = INTERFACE_DOF; 
+            // ctofdof[innerdofs[0]] = INTERFACE_DOF; 
+            ctofdof[innerdofs[0]] = LOCAL_DOF; 
             offset = 1;
             //for (int dof = offset; dof < diag_offset; dof++)
             //ctofdof[innerdofs[dof]] = LOCAL_DOF;
