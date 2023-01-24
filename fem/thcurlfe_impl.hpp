@@ -101,11 +101,6 @@ namespace ngfem
                 SBLambda ([shapei,DIMSPACE] (size_t j, auto s)
                           {
                             shapei.Range(j*DIMSPACE, (j+1)*DIMSPACE) = s.Value();
-                            /*
-                            auto shape = s.Value();
-                            for (size_t k = 0; k < DIMSPACE; k++)
-                              shapei(j*DIMSPACE+k) = shape(k);
-                            */
                           }));
                }
        });
@@ -118,26 +113,15 @@ namespace ngfem
                        SliceMatrix<> curlshape) const
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
-    /*
-    if (DIM == 2)
-      {
-        CalcCurlShape (mip.IP(), curlshape);
-        curlshape /= mip.GetJacobiDet();        
-      }
-    else
-    */
-    {
-      Vec<DIM, AutoDiff<DIM> > adp = mip;
-      TIP<DIM,AutoDiff<DIM>> tip(adp, bmip.IP().FacetNr(), bmip.IP().VB());
-      this->T_CalcShape (GetTIP(mip), 
-                         SBLambda ([&](size_t i, auto s) 
-                                   { 
-                                     // FlatVec<DIM_CURL_(DIM)> (&curlshape(i,0)) = s.CurlValue();
-                                     curlshape.Row(i) = s.CurlValue();
-                                   }));
-    }
-  }
 
+    Vec<DIM,AutoDiff<DIM> > adp = mip;
+    TIP<DIM,AutoDiff<DIM>> tip(adp, bmip.IP().FacetNr(), bmip.IP().VB());
+    this->T_CalcShape (GetTIP(mip), 
+                       SBLambda ([&](size_t i, auto s) 
+                                 { 
+                                   curlshape.Row(i) = s.CurlValue();
+                                 }));
+  }
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
@@ -167,11 +151,6 @@ namespace ngfem
              this->T_CalcShape (GetTIP(mir[i]),
                                 SBLambda ([shapei,DIM_CURL] (size_t j, auto s)
                                           {
-                                            /*
-                                            auto cshape = s.CurlValue();
-                                            for (size_t k = 0; k < DIM_CURL; k++)
-                                              shapei(j*DIM_CURL+k) = cshape(k);
-                                            */
                                             shapei.Range(j*DIM_CURL, (j+1)*DIM_CURL) = s.CurlValue();
                                           }));
            }
@@ -225,8 +204,6 @@ namespace ngfem
                                             sum += coefs(j) * shape.Value();
                                           }));
              values.Col(i).Range(DIMSPACE) = sum;
-             // for (size_t k = 0; k < DIMSPACE; k++)
-             // values(k,i) = sum(k); 
            }
        });
   }
@@ -250,8 +227,6 @@ namespace ngfem
                                             sum += coefs(j) * shape.Value();
                                           }));
              values.Col(i).Range(DIMSPACE) = sum;
-             // for (size_t k = 0; k < DIMSPACE; k++)
-             // values(k,i) = sum(k);
            }
        });
   }
@@ -275,8 +250,6 @@ namespace ngfem
                                             sum += coefs(j) * shape.CurlValue();
                                           }));
              values.Col(i).Range(DIM_CURL) = sum;
-             // for (size_t k = 0; k < DIM_CURL; k++)
-             // values(k,i) = sum(k).Data();
            }
        });
   }
