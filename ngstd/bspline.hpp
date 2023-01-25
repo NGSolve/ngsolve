@@ -19,34 +19,34 @@ namespace ngstd
     
   public:
     BSpline() = default;
-    BSpline (int aorder, 
+    NGS_DLL_HEADER BSpline (int aorder,
              Array<double> at,
              Array<double> ac);
-    BSpline (const BSpline &) = default;
-    BSpline & operator= (const BSpline &) = default;
+    NGS_DLL_HEADER BSpline (const BSpline &) = default;
+    NGS_DLL_HEADER BSpline & operator= (const BSpline &) = default;
 
     void DoArchive(Archive& ar)
     {
       ar & order & t & c;
     }
 
-    BSpline Differentiate () const;
-    BSpline Integrate () const;
+    NGS_DLL_HEADER BSpline Differentiate () const;
+    NGS_DLL_HEADER BSpline Integrate () const;
 
-    double Evaluate (double x) const;
-    SIMD<double> Evaluate(SIMD<double> x) const;
+    NGS_DLL_HEADER double Evaluate (double x) const;
+    NGS_DLL_HEADER SIMD<double> Evaluate(SIMD<double> x) const;
     double operator() (double x) const { return Evaluate(x); }
     Complex operator() (Complex x) const { return Evaluate(x.real()); }
     /*I had to explicitly write double and SIMD<double>
      here as these functions will be used in GenerateCode and I was
      getting the error "templates must have C++ linkage"*/
-    AutoDiff<1,double> operator() (AutoDiff<1,double> x) const;
-    AutoDiffDiff<1,double> operator() (AutoDiffDiff<1,double> x) const;
-    AutoDiff<1,SIMD<double>> operator() (AutoDiff<1,SIMD<double>> x) const;
-    AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const;
+    NGS_DLL_HEADER AutoDiff<1,double> operator() (AutoDiff<1,double> x) const;
+    NGS_DLL_HEADER AutoDiffDiff<1,double> operator() (AutoDiffDiff<1,double> x) const;
+    NGS_DLL_HEADER AutoDiff<1,SIMD<double>> operator() (AutoDiff<1,SIMD<double>> x) const;
+    NGS_DLL_HEADER AutoDiffDiff<1,SIMD<double>> operator() (AutoDiffDiff<1,SIMD<double>> x) const;
     
-    SIMD<double> operator() (SIMD<double> x) const;
-    SIMD<Complex> operator() (SIMD<Complex> x) const;
+    NGS_DLL_HEADER SIMD<double> operator() (SIMD<double> x) const;
+    NGS_DLL_HEADER SIMD<Complex> operator() (SIMD<Complex> x) const;
     
     friend ostream & operator<< (ostream & ost, const BSpline & sp);
   };
