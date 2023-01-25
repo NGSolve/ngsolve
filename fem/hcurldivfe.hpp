@@ -362,6 +362,7 @@ namespace ngfem
         }));
       }
       else // curved element
+      
       {       
         Mat<DIM> jac = mip.GetJacobian();
         Mat<DIM> inv_jac = mip.GetJacobianInverse();        
@@ -559,6 +560,7 @@ namespace ngfem
 	}
       }
       else
+  
 	{	  
 	  //throw ExceptionNOSIMD(string("HCurlDiv - CalcMappedDivShape SIMD only for noncurved elements"));
 	  for (size_t i = 0; i < mir.Size(); i++)
@@ -1065,8 +1067,17 @@ namespace ngfem
 
 	      // gives (-d_x u(x) d_y v(y), 0, 0, 0)
 	      for(int j = 0; j <= ot-1; j++)
-		shape[ii++] = Gradu_Curlv(u[i],v[j], 0.0);
+		      shape[ii++] = Gradu_Curlv(u[i],v[j], 0.0);
 	    }	 
+
+      // below version works for set, but not for div???
+      // ArrayMem<Tx,20> vi(ot+2), ui(ot+2);
+      // LegendrePolynomial(ot+2, lx[0]-lx[1], ui);
+      // LegendrePolynomial(ot+2, ly[0]-ly[2], vi);
+
+      // for(int i = 0; i <= ot; i++)
+      //     for(int j = 0; j <= ot; j++)
+      //       shape[ii++] = Id_v_DD(ui[i]*vi[j]);
 	}
 	
       //////////////////////////////////////////////////////////////////////////////////////
@@ -1224,7 +1235,7 @@ namespace ngfem
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(le,lo,lt,ls*dub_vals[l]);	      
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,lt,le,ls*dub_vals[l]);	  
 	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lo,ls,lt,le*dub_vals[l]);	      
-	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(lt,ls,lo,le*dub_vals[l]);
+	      shape[ii++] =  T_Dl1_o_Dl2xDl3_v<T>(ls,lt,lo,le*dub_vals[l]);
 	    }
       
       if(GGbubbles)
@@ -1387,19 +1398,19 @@ namespace ngfem
       int ninner = 2 * (p+1) * (p+1) * (p+1);
 
       if (p > 0)
-	ninner += 6 * (p+2) * (p+1) * (p);
+	      ninner += 6 * (p+2) * (p+1) * (p);
       else
-	ninner += 6;
+	      ninner += 6;
       
       
       order = max2(order, order_inner);
       ndof += ninner;
       
       if (order_trace > -1)
-	{
-	  ndof += (order_trace +1) * (order_trace+1)* (order_trace+1);
-	  order = max2(order, order_trace);
-	}
+        {
+          ndof += (order_trace +1) * (order_trace+1)* (order_trace+1);
+          order = max2(order, order_trace);
+        }
       order+=2;
       if (GGbubbles)
 	{
@@ -1436,25 +1447,34 @@ namespace ngfem
           int p = order_facet[i];
           
           AutoDiff<3,T> lam_f(0);
-          for (int j = 0; j < 4; j++)
-            lam_f += lami[faces[i][j]];
+          // for (int j = 0; j < 4; j++)
+          //   lam_f += lami[faces[i][j]];
           
+          int fmax = 0;
+          lam_f = -1 + 0.25*sigma[faces[i][0]];
+          for(int j = 1; j < 4; j++)
+          {
+            if(vnums[faces[i][j]] > vnums[faces[i][fmax]]) fmax = j;
+            lam_f += sigma[faces[i][j]]*0.25;
+          }
+
+
           INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
           AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
           AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
           //auto nv = GetGradient(lam_f);
 	  
-	  LegendrePolynomial (p+1, eta, leg_u);
-          LegendrePolynomial (p+1, xi, leg_v);
+	        LegendrePolynomial::Eval (p+1, eta, leg_u);
+          LegendrePolynomial::Eval (p+1, xi, leg_v);
           
           for (int j = 0; j <= p; j++)
             for (int k = 0; k <= p; k++)
-	      {
-		shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(xi,xi,eta,lam_f*leg_u[j]*leg_v[k]);
-		shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(eta,xi,eta,lam_f*leg_u[j]*leg_v[k]);
-		//shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,lam_f,lam_f*leg_u[j]*leg_v[k]);  // not div-free
-		//shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,lam_f,lam_f*leg_u[j]*leg_v[k]); // not div-free
-	      }	            
+              {
+                shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(xi, xi, eta,lam_f*leg_u[j]*leg_v[k]);
+                shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(eta,xi,eta,lam_f*leg_u[j]*leg_v[k]);
+                //shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,lam_f,lam_f*leg_u[j]*leg_v[k]);  // not div-free
+                //shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,lam_f,lam_f*leg_u[j]*leg_v[k]); // not div-free
+              }	            
         }
 
       int oi=order_inner;
@@ -1466,61 +1486,69 @@ namespace ngfem
       AutoDiff<3,T> eta = sigma[0] - sigma[3];
       AutoDiff<3,T> nv = sigma[0] - sigma[4];
           
-      LegendrePolynomial (p+2, xi,  leg_u);
-      LegendrePolynomial (p+2, eta, leg_v);
-      LegendrePolynomial (p+2, nv,  leg_w);
+      LegendrePolynomial::Eval(p+2, xi,  leg_u);
+      LegendrePolynomial::Eval(p+2, eta, leg_v);
+      LegendrePolynomial::Eval(p+2, nv,  leg_w);
 
+      // constructs a space that contains all trace free polynomials up to order oi (=order_facet)
+      // plus certain high order bubbles such that nabla u : lo_nt_bubble is included in the space (for MCS inf-sup)
+      // for example: d_y u_1 \in P^{k+1} x P{k-1} x P^{k}
+      // so for B = (0,1,0,0,0,0,0,0,0) * y * (1-y) (= nt-bubble) we need
+      // P^{k+1} x P^{k+1}/P^1 x P^{k} in the space
+      // second argument factorized with linear poly because it has (always) y * (1-y) components included
+
+      // Then H(div) order=k and H(cd) with order=k-1, orderinner = k should work
+      // orderinner = k produces the bubbles mentioned above. 
+      // order = k-1 is enough for facets (only need to control constants/linears)
+      // conv order ok nabla u = sigma is only k-1 
       
       //polynomials on the diagonal
       // 2 * (oi+1)**3
       // with trace + (ot+1)**3
       for (int i = 0; i <= oi; i++)
-	for (int j = 0; j <= oi; j++)
-	  for (int k = 0; k <= oi; k++)
-                {
-		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,xi,leg_u[i]*leg_v[j]*leg_w[k]);
-		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,eta,leg_u[i]*leg_v[j]*leg_w[k]);
-		  //if (ot>-1)
-		  //  shape[ii++] = Id_v(leg_u[i]*leg_v[j]*leg_w[k]);
-		}
+        for (int j = 0; j <= oi; j++)
+          for (int k = 0; k <= oi; k++)
+            {
+              // This is an nn-function, which is a nt-bubble for HEXES
+              shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(xi,eta, nv, leg_u[i]*leg_v[j]*leg_w[k]);
+              shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(eta, xi, nv, leg_u[i]*leg_v[j]*leg_w[k]);
+            }
 
       
       if (ot>-1)
-	{
-	  for (int i = 0; i <= ot; i++)
-	    for (int j = 0; j <= ot; j++)
-	      for (int k = 0; k <= ot; k++)
-		shape[ii++] = Id_v(leg_u[i]*leg_v[j]*leg_w[k]);
-	}
+        {
+          for (int i = 0; i <= ot; i++)
+            for (int j = 0; j <= ot; j++)
+              for (int k = 0; k <= ot; k++)
+                shape[ii++] = Id_v(leg_u[i]*leg_v[j]*leg_w[k]);
+        }
       
       if (oi == 0)
-	{
-	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,nv, leg_u[0]*leg_v[0]*leg_w[0] * lz[0] * lz[1]);
-	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,nv,leg_u[0]*leg_v[0]*leg_w[0] * lz[0] * lz[1]);
-	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,eta,leg_u[0]*leg_v[0]*leg_w[0] * ly[0] * ly[1]);
-	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(nv,eta,leg_u[0]*leg_v[0]*leg_w[0] * ly[0] * ly[1]);
-	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,xi,leg_u[0]*leg_v[0]*leg_w[0] * lx[0] * lx[1]);
-	  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(nv,xi, leg_u[0]*leg_v[0]*leg_w[0] * lx[0] * lx[1]);
-	}
+        {
+          shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(xi, xi, eta, leg_u[0]*leg_v[0]*leg_w[0] * lz[0] * lz[1]);
+          shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(eta, xi, eta,leg_u[0]*leg_v[0]*leg_w[0] * lz[0] * lz[1]);
+          // basis function for example above
+          shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(xi,xi, nv,leg_u[0]*leg_v[0]*leg_w[0] * ly[0] * ly[1]); 
+          shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(nv,xi, nv,leg_u[0]*leg_v[0]*leg_w[0] * ly[0] * ly[1]);
+          shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(eta,eta, nv,leg_u[0]*leg_v[0]*leg_w[0] * lx[0] * lx[1]);
+          shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(nv,eta, nv, leg_u[0]*leg_v[0]*leg_w[0] * lx[0] * lx[1]);
+        }
       else
-	{       
-	  //polynomials on the off diagonal that are nt-bubbles
-	  for (int i = 0; i <= oi+1; i++)
-	    for (int j = 0; j <= oi; j++)
-	      for (int k = 0; k <= oi-1; k++)
-                {
-		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,nv, leg_u[i]*leg_v[j]*leg_w[k] * lz[0] * lz[1]);
-		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,nv,leg_u[j]*leg_v[i]*leg_w[k] * lz[0] * lz[1]);
-
-		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(xi,eta,leg_u[i]*leg_v[k]*leg_w[j]  * ly[0] * ly[1]);
-		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(nv,eta,leg_u[j]*leg_v[k]*leg_w[i]  * ly[0] * ly[1]);
-
-		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(eta,xi,leg_u[k]*leg_v[i]*leg_w[j]  * lx[0] * lx[1]);
-		  shape[ii++] = T_dev_Dl1_o_Dl2_v<T>(nv,xi, leg_u[k]*leg_v[j]*leg_w[i]  * lx[0] * lx[1]);
-		  
-		}
+        {       
+          //polynomials on the off diagonal that are nt-bubbles
+          for (int i = 0; i <= oi+1; i++)
+            for (int j = 0; j <= oi; j++)
+              for (int k = 0; k <= oi-1; k++)
+                      {
+                        shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(xi, xi, eta, leg_u[i]*leg_v[j]*leg_w[k] * lz[0] * lz[1]);
+                        shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(eta, xi, eta, leg_u[j]*leg_v[i]*leg_w[k] * lz[0] * lz[1]);
+                        shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(xi, xi, nv, leg_u[i]*leg_v[k]*leg_w[j]  * ly[0] * ly[1]);
+                        shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(nv, xi, nv, leg_u[j]*leg_v[k]*leg_w[i]  * ly[0] * ly[1]);
+                        shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(eta, eta, nv,leg_u[k]*leg_v[i]*leg_w[j]  * lx[0] * lx[1]);
+                        shape[ii++] = T_Dl1_o_Dl2xDl3_v<T>(nv, eta, nv, leg_u[k]*leg_v[j]*leg_w[i]  * lx[0] * lx[1]);
+                      }
       
-	}	  
+        }	  
     };
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
