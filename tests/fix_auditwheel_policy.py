@@ -1,6 +1,6 @@
 import json
 
-policy_file = "/opt/_internal/pipx/venvs/auditwheel/lib/python3.9/site-packages/auditwheel/policy/manylinux-policy.json"
+policy_file = "/opt/_internal/pipx/venvs/auditwheel/lib/python3.10/site-packages/auditwheel/policy/manylinux-policy.json"
 data = json.load(open(policy_file))
 # todo: read libs from netgen.libs directory and remove hashes from names, then add just libmkl_rt.so.2
 additional_libs = [
