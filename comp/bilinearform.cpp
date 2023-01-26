@@ -3031,7 +3031,7 @@ namespace ngcomp
                   lh.CleanUp();
                 }
             });
-            if(assembledspecialelements) cout << "\rassemble special element " 
+            if(assembledspecialelements) cout << IM(3) << "\rassemble special element " 
                                               << specialelements.Size() << "/" << specialelements.Size() << endl;
             tspecial.Stop();
 
