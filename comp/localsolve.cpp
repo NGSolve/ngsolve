@@ -90,7 +90,7 @@ namespace ngcomp
     for (auto icf : bf->icfs)
       {
         auto & dx = icf->dx;
-        bfis[dx.vb] += make_shared<SymbolicBilinearFormIntegrator> (icf->cf, dx.vb, dx.element_vb);
+        bfis[dx.vb] += icf -> MakeBilinearFormIntegrator();
       }        
     
     
@@ -106,7 +106,7 @@ namespace ngcomp
         for (auto icf : lf->icfs)
           {
             auto & dx = icf->dx;
-            lfis[dx.vb] += make_shared<SymbolicLinearFormIntegrator> (hatfunc*icf->cf, dx.vb, dx.element_vb);
+            lfis[dx.vb] += Integral{hatfunc*icf->cf, dx}.MakeLinearFormIntegrator();
           }        
 
         LocalHeap lh = clh.Split ();
@@ -141,9 +141,11 @@ namespace ngcomp
             // cout << "dofs = " << patchdofs.Size() << ", singleel: " << numsingle << endl;
             FlatMatrix<> patchmat(patchdofs.Size(), lh);
             FlatVector<> patchvec(patchdofs.Size(), lh);        
-            FlatVector<> patchsol(patchdofs.Size(), lh);        
+            FlatVector<> patchsol(patchdofs.Size(), lh);
+            FlatArray<int> perms(patchdofs.Size(), lh);
             patchmat = 0.0;
             patchvec = 0.0;
+            perms = 0;
             
             for (auto vb : { VOL, BND })
               for (auto el : ma->GetVertexElements(v, vb))
@@ -155,8 +157,7 @@ namespace ngcomp
                   // cout << "dofs = " << dofs << endl;
                   auto & trafo = ma->GetTrafo(ei, lh);
                   auto & fel = fes->GetFE(ei, lh);
-                  
-                  
+
                   el2patch.SetSize(dofs.Size());
                   for (auto i : Range(dofs))
                     el2patch[i] = patchdofs.Pos(dofs[i]);
@@ -167,6 +168,9 @@ namespace ngcomp
                   elmat = 0.0;
                   for (auto & bfi : bfis[vb])
                     {
+                      if (!bfi -> DefinedOn(trafo.GetElementIndex())) continue;
+                      if (!bfi -> DefinedOnElement(el)) continue;
+
                       bfi -> CalcElementMatrix(fel, trafo, elmati, lh);
                       elmat += elmati;
                       // bfi -> CalcElementMatrixAdd(fel, trafo, elmat, lh);
@@ -178,6 +182,9 @@ namespace ngcomp
                   sumelvec = 0.0;
                   for (auto & lfi : lfis[vb])
                     {
+                      if (!lfi -> DefinedOn(trafo.GetElementIndex())) continue;
+                      if (!lfi -> DefinedOnElement(el)) continue;
+
                       lfi -> CalcElementVector(fel, trafo, elvec, lh);
                       sumelvec += elvec;
                     }
@@ -197,11 +204,15 @@ namespace ngcomp
             // cout << "patchmat = " << endl << patchmat << endl;
             // Matrix<> inv_patchmat = patchmat;
             tinv.Start();
-            CalcInverse (patchmat);
+            perms = 0;
+            CalcLU (patchmat, perms);
+            SolveFromLU (patchmat, perms, SliceMatrix<double, ColMajor>(patchvec.Size(), 1, patchvec.Size(), patchvec.Data()));
+            // CalcInverse (patchmat);
             tinv.Stop();
             tinv.AddFlops (patchmat.Height()*patchmat.Height()*patchmat.Height());
             // cout << "inv patchmat = " << endl << patchmat << endl;        
-            patchsol = patchmat * patchvec;
+            patchsol = patchvec;
+            // patchsol = patchmat * patchvec;
             // Vector<> res = patchvec - patchmat * patchsol;  // need post-iteration for high penalty
             // patchsol += inv_patchmat * res;
             // cout << "patchvec = " << endl << patchvec << endl;
