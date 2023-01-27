@@ -999,7 +999,7 @@ namespace ngcomp
   class ApplyIntegrationPoints : public BaseMatrix
   {
     Array<shared_ptr<CoefficientFunction>> coefs;
-    const Array<ProxyFunction*> & trialproxies;
+    Array<ProxyFunction*> trialproxies;
     
     size_t dimx, dimy;
     size_t nip;
@@ -1007,13 +1007,15 @@ namespace ngcomp
   public:
     ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs, const Array<ProxyFunction*> & atrialproxies,
                             size_t adimx, size_t adimy, size_t anip)
-      : coefs(acoefs), trialproxies(atrialproxies), dimx(adimx), dimy(adimy), nip(anip) { ; }
+      : coefs(acoefs), trialproxies{atrialproxies}, dimx(adimx), dimy(adimy), nip(anip) { ; }
       
     AutoVector CreateColVector() const override
     { return make_unique<VVector<double>> (nip*dimy); }
     AutoVector CreateRowVector() const override
     { return make_unique<VVector<double>> (nip*dimx); }
 
+    virtual int VHeight() const override { return nip*dimy; }
+    virtual int VWidth() const override { return nip*dimx; }
     
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
@@ -1022,115 +1024,6 @@ namespace ngcomp
       static Timer tmir("ApplyIntegrationPoints mir");      
       static Timer ttransx("ApplyIntegrationPoints transx");
       static Timer ttransy("ApplyIntegrationPoints transy");
-
-      /*
-      IntegrationRule ir;
-      for (int i = 0; i < nip; i++)
-        ir.Append (IntegrationPoint(0,0,0));
-
-      FE_ElementTransformation<2,2> trafo(ET_TRIG);
-      LocalHeap lh(10000000);
-      MappedIntegrationRule<2,2> mir(ir, trafo, 0, lh); // don't actually compute
-      
-      ProxyUserData ud(trialproxies.Size(), 0, lh);
-      trafo.userdata = &ud;
-
-      int starti = 0;
-      for (auto proxy : trialproxies)
-        {
-          int nexti = starti + proxy->Evaluator()->Dim();
-          ud.AssignMemory (proxy, ir.GetNIP(), proxy->Evaluator()->Dim(), lh);
-          ud.GetMemory (proxy) = x.FV<double>().AsMatrix(nip,dimx).Cols(starti, nexti);
-          starti = nexti;
-        }
-      FlatMatrix<> res = y.FV<double>().AsMatrix(nip,dimy);
-
-      teval.Start();
-      coef -> Evaluate (mir, res);
-      teval.Stop();
-      */
-
-      /*
-      ParallelForRange
-        (nip, [&](IntRange r)
-         {
-           IntegrationRule ir;
-           for (int i = 0; i < r.Size(); i++)
-             ir.Append (IntegrationPoint(0,0,0));
-           
-           FE_ElementTransformation<2,2> trafo(ET_TRIG);
-           LocalHeap lh(10000000);
-           MappedIntegrationRule<2,2> mir(ir, trafo, 0, lh); // don't actually compute
-           
-           ProxyUserData ud(trialproxies.Size(), 0, lh);
-           trafo.userdata = &ud;
-
-           int starti = 0;
-           for (auto proxy : trialproxies)
-             {
-               int nexti = starti + proxy->Evaluator()->Dim();
-               ud.AssignMemory (proxy, ir.GetNIP(), proxy->Evaluator()->Dim(), lh);
-               ud.GetMemory (proxy) = x.FV<double>().AsMatrix(nip,dimx).Rows(r).Cols(starti, nexti);
-               starti = nexti;
-             }
-           FlatMatrix<> res = y.FV<double>().AsMatrix(nip,dimy).Rows(r);
-
-           teval.Start();
-           coef -> Evaluate (mir, res);
-           teval.Stop();
-         });
-      */
-
-      /*
-      ParallelForRange
-        (nip, [&](IntRange r)
-         {
-           tmir.Start();
-           IntegrationRule ir;
-           for (int i = 0; i < r.Size(); i++)
-             ir.Append (IntegrationPoint(0,0,0));
-           SIMD_IntegrationRule simdir(ir);
-           
-           FE_ElementTransformation<2,2> trafo(ET_TRIG);
-           LocalHeap lh(10000000);
-           MappedIntegrationRule<2,2> mir(ir, trafo, 0, lh); // don't actually compute
-           SIMD_MappedIntegrationRule<2,2> simdmir(simdir, trafo, 0, lh); // don't actually compute
-
-           tmir.Stop();
-           
-           ProxyUserData ud(trialproxies.Size(), 0, lh);
-           trafo.userdata = &ud;
-
-           int starti = 0;
-           for (auto proxy : trialproxies)
-             {
-               int nexti = starti + proxy->Evaluator()->Dim();
-               ud.AssignMemory (proxy, ir.GetNIP(), proxy->Evaluator()->Dim(), lh);
-               ud.GetMemory (proxy) = x.FV<double>().AsMatrix(nip,dimx).Rows(r).Cols(starti, nexti);
-
-               ttransx.Start();
-               SliceMatrix<double> (dimx, r.Size(), SIMD<double>::Size()*simdmir.Size(),
-                                    (double*)(ud.GetAMemory (proxy)).Data())
-                 = Trans(x.FV<double>().AsMatrix(nip,dimx).Rows(r).Cols(starti, nexti));
-               ttransx.Stop();
-               
-               starti = nexti;
-             }
-           
-           FlatMatrix<> res = y.FV<double>().AsMatrix(nip,dimy).Rows(r);
-           Matrix<SIMD<double>> simdres(dimy, simdmir.Size());
-           
-           teval.Start();
-           coef -> Evaluate (simdmir, simdres);
-           teval.Stop();
-
-           ttransy.Start();
-           res = Trans( SliceMatrix<double> (dimy, r.Size(), SIMD<double>::Size()*simdmir.Size(), (double*)simdres.Data()) );
-           ttransy.Stop();
-           // coef -> Evaluate (mir, res);           
-         });
-      */
-
 
       ParallelForRange
         (nip, [&](IntRange r)
