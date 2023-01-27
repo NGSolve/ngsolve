@@ -119,6 +119,6 @@ __global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, int size, 
 
 void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res)
 {    
-  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256>>> (s, size, a, b, c);
+  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256>>> (s, size, a, b, res);
 }
 
