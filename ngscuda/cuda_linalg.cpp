@@ -83,6 +83,15 @@ namespace ngla
                                               auto & ebe_mat = dynamic_cast<const ConstantElementByElementMatrix&>(mat);
                                               return make_shared<DevConstantElementByElementMatrix>(ebe_mat);
                                             });
+
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(BlockDiagonalMatrixSoA),
+                                            [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & bdm_mat = dynamic_cast<const BlockDiagonalMatrixSoA&>(mat);
+                                              return make_shared<DevBlockDiagonalMatrixSoA>(bdm_mat);
+                                            });
+
+    
   }
 
 
@@ -340,6 +349,26 @@ namespace ngla
         
         ConstEBEKernelCopyOut (numblocks, hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
       }
+    else
+      {
+        for (auto c : col_coloring)
+          {
+            DevArray<double> dev_hx(c.Size()*wm);
+            DevArray<double> dev_hy(c.Size()*hm);
+            
+            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+            
+            // dev_hy = dev_hx * Trans(mat)
+            double beta = 0.0;
+            double alpha = s;
+            cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_T, CUBLAS_OP_N,
+                                              hm, c.Size(), wm, 
+                                              &alpha, dev_mat, wm, dev_hx.DevData(), wm,
+                                              &beta, dev_hy.DevData(), hm);
+            
+            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+          }
+      }
 
     uy.InvalidateHost();    
     
@@ -408,6 +437,40 @@ namespace ngla
     
   }
   
+
+  
+  DevBlockDiagonalMatrixSoA ::
+  DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat)
+    : nonzero(mat.GetNonZeroPattern())
+  {
+    FlatTensor<3> blockdiag = mat.GetBlockDiag ();
+    dimy = blockdiag.GetSize();
+    dimx = blockdiag.GetSubTensor().GetSize();
+    blocks = blockdiag.GetSubTensor().GetSubTensor().GetSize();
+    
+    auto err = cudaMalloc((void**)&dev_mat, dimx*dimy*blocks*sizeof(double));
+    if (err != 0)
+      throw Exception("DevBlockDiagonalMatrixSoA allocation error, ec="+ToString(err));
+
+    cudaMemcpy (dev_mat, blockdiag.Data(), sizeof(double)*dimx*dimy*blocks, cudaMemcpyHostToDevice);    
+  }
+  
+  void DevBlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto & ux = dynamic_cast<const UnifiedVector&> (x);
+    auto & uy = dynamic_cast<UnifiedVector&> (y);
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+    
+    for (int i = 0; i < dimy; i++)
+      for (int j = 0; j < dimx; j++)
+        if (nonzero(i,j) != 0)
+          DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*j, uy.DevData()+blocks*i);
+
+    uy.InvalidateHost();
+  }
+
+
   
 
   /******************** DevDMatrix ********************/
