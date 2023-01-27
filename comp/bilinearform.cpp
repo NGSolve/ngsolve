@@ -1008,7 +1008,21 @@ namespace ngcomp
     ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
                             const Array<ProxyFunction*> & atrialproxies,
                             size_t adimx, size_t adimy, size_t anip)
-      : coefs(acoefs), trialproxies{atrialproxies}, dimx(adimx), dimy(adimy), nip(anip) { ; }
+      : coefs(acoefs), trialproxies{atrialproxies}, dimx(adimx), dimy(adimy), nip(anip)
+
+    { 
+      // make my own code
+      for (auto cf : coefs)
+        {
+          auto compiledcf = Compile (cf, false);
+          Code code = compiledcf->GenerateProgram(0, false);
+          /*
+          cout << "Generated code:" << endl;
+          cout << code.header << endl;
+          cout << code.body << endl;
+          */
+        }
+    }
       
     AutoVector CreateColVector() const override
     { return make_unique<VVector<double>> (nip*dimy); }

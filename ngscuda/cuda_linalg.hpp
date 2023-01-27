@@ -136,7 +136,7 @@ namespace ngla
 
   class DevBlockDiagonalMatrixSoA : public DevMatrix
   {
-    double * dev_mat; // Tensor<3> blockdiag;  
+    double * dev_data; // Tensor<3> blockdiag;  
     int blocks, dimy, dimx;
     Matrix<double> nonzero;
     

@@ -448,11 +448,11 @@ namespace ngla
     dimx = blockdiag.GetSubTensor().GetSize();
     blocks = blockdiag.GetSubTensor().GetSubTensor().GetSize();
     
-    auto err = cudaMalloc((void**)&dev_mat, dimx*dimy*blocks*sizeof(double));
+    auto err = cudaMalloc((void**)&dev_data, dimx*dimy*blocks*sizeof(double));
     if (err != 0)
       throw Exception("DevBlockDiagonalMatrixSoA allocation error, ec="+ToString(err));
 
-    cudaMemcpy (dev_mat, blockdiag.Data(), sizeof(double)*dimx*dimy*blocks, cudaMemcpyHostToDevice);    
+    cudaMemcpy (dev_data, blockdiag.Data(), sizeof(double)*dimx*dimy*blocks, cudaMemcpyHostToDevice);
   }
   
   void DevBlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const

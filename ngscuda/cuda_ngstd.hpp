@@ -211,12 +211,14 @@ namespace ngs_cuda
 
     operator FlatTable<T> () const
     {
-      return FlatTable<T> (size, dev_index, dev_data);
+      return FlatTable<T> (size, index, dev_data);
     }
 
     size_t * Index() const { return index; }
     T * DevData() const { return dev_data; }
 
+    FlatArray<T> Row(int i) const { return { index[i+1]-index[i], dev_data+index[i] } }
+    
     class Iterator
     {
       const DevDataTable & tab;
@@ -224,7 +226,7 @@ namespace ngs_cuda
     public:
       Iterator (const DevDataTable & _tab, size_t _row) : tab(_tab), row(_row) { ; }
       Iterator & operator++ () { ++row; return *this; }
-      FlatArray<T> operator* () const { return { index[i+1]-index[i], dev_data+index[i] } }
+      FlatArray<T> operator* () const { return tab.Row(row); }
       bool operator!= (const Iterator & it2) { return row != it2.row; }
     };
 
