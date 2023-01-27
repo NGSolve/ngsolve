@@ -134,6 +134,9 @@ namespace ngla
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     // shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
+
+    FlatTensor<3> GetBlockDiag () const { return blockdiag; }
+    FlatMatrix<double> GetNonZeroPattern() const { return nonzero; }
   };
 
 

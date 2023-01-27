@@ -15,8 +15,10 @@ extern void MultAddDiagonal (int n, double alpha, double * D, double * x, double
 
 extern void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
 extern void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, double * dev_hy, double * dev_uy);
+extern void ConstEBEKernelCopyInIdx (int numblocks, int * idx, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
+extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * col_dnums, double * dev_hy, double * dev_uy);
 
-
+extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res);
 
 namespace ngla
 {
@@ -131,6 +133,22 @@ namespace ngla
   };
   
 
+
+  class DevBlockDiagonalMatrixSoA : public DevMatrix
+  {
+    double * dev_mat; // Tensor<3> blockdiag;  
+    int blocks, dimy, dimx;
+    Matrix<double> nonzero;
+    
+ public:
+    DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+
+    virtual int VHeight() const { return dimy*blocks; }
+    virtual int VWidth() const { return dimx*blocks; }
+  };
+
+  
   
   shared_ptr<DevSparseMatrix> MatMult (const DevSparseMatrix& mata, const DevSparseMatrix& matb);
 
