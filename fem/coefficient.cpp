@@ -8155,7 +8155,7 @@ shared_ptr<CoefficientFunction> Freeze (shared_ptr<CoefficientFunction> cf)
 
 
   // ///////////////////////////// Compiled CF /////////////////////////
-class CompiledCoefficientFunction : public CoefficientFunction //, public std::enable_shared_from_this<CompiledCoefficientFunction>
+class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface //, public std::enable_shared_from_this<CompiledCoefficientFunction>
   {
     typedef void (*lib_function)(const ngfem::BaseMappedIntegrationRule &, ngbla::BareSliceMatrix<double>);
     typedef void (*lib_function_simd)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<double>>);
@@ -8194,7 +8194,7 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
   public:
     CompiledCoefficientFunction() = default;
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
-      : CoefficientFunction(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
+      : CompiledCoefficientFunctionInterface(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
     {
       SetDimensions (cf->Dimensions());
       cf -> TraverseTree
@@ -8347,6 +8347,30 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
       return res;
     }
 
+
+    Code GenerateProgram (int deriv, bool simd) const override
+    {
+      Code code;
+      code.is_simd = simd;
+      code.deriv = deriv;
+
+      string res_type = cf->IsComplex() ? "Complex" : "double";
+      if(simd) res_type = "SIMD<" + res_type + ">";
+      if(deriv==1) res_type = "AutoDiff<1," + res_type + ">";
+      if(deriv==2) res_type = "AutoDiffDiff<1," + res_type + ">";
+      code.res_type = res_type;
+      
+      for (auto i : Range(steps))
+        {
+          auto& step = *steps[i];
+          if (!simd && deriv == 0)              
+            cout << IM(3) << "step " << i << ": " << typeid(step).name() << endl;
+          code.body += string("// step ")+ToString(i)+": "+step.GetDescription()+"\n";
+          step.GenerateCode(code, inputs[i],i);
+        }
+      
+      return code;
+    }
     
     void RealCompile(int maxderiv, bool wait, bool keep_files)
     {
@@ -8375,6 +8399,10 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
           for (auto simd : {false,true}) {
             if (!simd && deriv == 0)
               cout << IM(3) << "Compiled CF:" << endl;
+
+            Code code = GenerateProgram(deriv, simd);
+            
+            /*
             Code code;
             code.is_simd = simd;
             code.deriv = deriv;
@@ -8384,7 +8412,11 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
             if(deriv==1) res_type = "AutoDiff<1," + res_type + ">";
             if(deriv==2) res_type = "AutoDiffDiff<1," + res_type + ">";
             code.res_type = res_type;
+            */
+            
+            string res_type = code.res_type;
 
+            /*
             for (auto i : Range(steps)) {
               auto& step = *steps[i];
               if (!simd && deriv == 0)              
@@ -8392,39 +8424,14 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
               code.body += string("// step ")+ToString(i)+": "+step.GetDescription()+"\n";
               step.GenerateCode(code, inputs[i],i);
             }
-
+            */
+            
             pointer_code += code.pointer;
             top_code += code.top;
 
             // set results
             string scal_type = cf->IsComplex() ? "Complex" : "double";
             int ii = 0;
-#ifdef OLD
-            TraverseDimensions( cf->Dimensions(), [&](int ind, int i, int j) {
-                 code.body += Var(steps.Size(),i,j).Declare(res_type);
-                 code.body += Var(steps.Size(),i,j).Assign(Var(steps.Size()-1,i,j),false);
-                 string sget = "(i," + ToLiteral(ii) + ") =";
-                 if(simd) sget = "(" + ToLiteral(ii) + ",i) =";
-
-                 // for (auto ideriv : Range(simd ? 1 : deriv+1))
-                 for (auto ideriv : Range(1))
-                 {
-                   code.body += parameters[ideriv] + sget + Var(steps.Size(),i,j).code;
-                   /*
-                   if(deriv>=1 && !simd)
-                   {
-                     code.body += ".";
-                     if(ideriv==2) code.body += "D";
-                     if(ideriv>=1) code.body += "DValue(0)";
-                     else code.body += "Value()";
-                   }
-                   */
-                   // if(simd) code.body +=".Data()";
-                   code.body += ";\n";
-                 }
-                 ii++;
-            });
-#endif
 
             // code.Declare (code.res_type, steps.Size(), cf->Dimensions());
             code.Declare (steps.Size(), cf->Dimensions(), cf->IsComplex());
@@ -8438,16 +8445,6 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
               for (auto ideriv : Range(1))
                 {
                   code.body += parameters[ideriv] + sget + Var(steps.Size(),ind,cf->Dimensions()).code;
-                  /*
-                    if(deriv>=1 && !simd)
-                    {
-                    code.body += ".";
-                    if(ideriv==2) code.body += "D";
-                    if(ideriv>=1) code.body += "DValue(0)";
-                    else code.body += "Value()";
-                    }
-                  */
-                  // if(simd) code.body +=".Data()";
                   code.body += ";\n";
                 }
               ii++;
@@ -8472,20 +8469,9 @@ class CompiledCoefficientFunction : public CoefficientFunction //, public std::e
 
             // Function parameters
             if (simd)
-              {
-                s << "(SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<" << res_type << "> results";
-              }
+              s << "(SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<" << res_type << "> results";
             else
-              {
-                s << "(BaseMappedIntegrationRule & mir, BareSliceMatrix<" << res_type << "> results";
-                /*
-                string param_type = simd ? "BareSliceMatrix<SIMD<"+scal_type+">> " : "FlatMatrix<"+scal_type+"> ";
-                if (simd && deriv == 0) param_type = "BareSliceMatrix<SIMD<"+scal_type+">> ";
-                s << "( " << (simd?"SIMD_":"") << "BaseMappedIntegrationRule &mir";
-                for(auto i : Range(deriv+1))
-                  s << ", " << param_type << parameters[i];
-                */
-              }
+              s << "(BaseMappedIntegrationRule & mir, BareSliceMatrix<" << res_type << "> results";
             s << " ) {" << endl;
             s << code.header << endl;
             s << "[[maybe_unused]] auto points = mir.GetPoints();" << endl;
@@ -8985,7 +8971,7 @@ class RealCF : public CoefficientFunctionNoDerivative
     return make_shared<ImagCF>(cf);
   }
 
-  shared_ptr<CoefficientFunction> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait, bool keep_files)
+  shared_ptr<CompiledCoefficientFunctionInterface> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait, bool keep_files)
   {
     auto compiledcf = dynamic_pointer_cast<CompiledCoefficientFunction>(c);
     auto cf = compiledcf ? compiledcf : make_shared<CompiledCoefficientFunction> (c);
