@@ -168,6 +168,71 @@ namespace ngs_cuda
   */
 
 
+
+  // only data at device, but index at host
+  template <typename T>
+  class DevDataTable
+  {
+    int size;
+    size_t * index = nullptr;
+    T * dev_data = nullptr;
+  
+  public: 
+
+    DevDataTable (FlatTable<T> t2)
+    {
+      size = t2.Size();
+      if (size == 0) return;
+
+      index = new size_t[size+1];
+      for (int i = 0; i <= size; i++)
+        index[i] = t2.IndexArray()[i];
+      // cudaMalloc((size_t**)&dev_index, (size+1)*sizeof(size_t));
+      // cudaMemcpy (dev_index, &t2.IndexArray()[0], sizeof(size_t)*(size+1), cudaMemcpyHostToDevice); 
+      // cout << "res = " << cudaMemcpy (dev_index, t2.Index(), sizeof(int)*(size+1), cudaMemcpyHostToDevice) << endl;
+    
+      int sizedata = t2.AsArray().Size();
+      cudaMalloc((int**)&dev_data, sizedata*sizeof(T));
+      cudaMemcpy (dev_data, t2.Data(), sizeof(T)*sizedata, cudaMemcpyHostToDevice);
+    }
+
+    ~DevDataTable ()
+    {
+      cudaFree (dev_data);
+      // cudaFree (dev_index);
+      delete [] index;
+    }
+
+    void D2H (FlatTable<T> & t2) const
+    {
+      int sizedata = t2.AsArray().Size();
+      cudaMemcpy (&t2[0][0], dev_data, sizeof(T)*sizedata, cudaMemcpyDeviceToHost);    
+    }
+
+    operator FlatTable<T> () const
+    {
+      return FlatTable<T> (size, dev_index, dev_data);
+    }
+
+    size_t * Index() const { return index; }
+    T * DevData() const { return dev_data; }
+
+    class Iterator
+    {
+      const DevDataTable & tab;
+      size_t row;
+    public:
+      Iterator (const DevDataTable & _tab, size_t _row) : tab(_tab), row(_row) { ; }
+      Iterator & operator++ () { ++row; return *this; }
+      FlatArray<T> operator* () const { return { index[i+1]-index[i], dev_data+index[i] } }
+      bool operator!= (const Iterator & it2) { return row != it2.row; }
+    };
+
+    Iterator begin() const { return Iterator(*this, 0); }
+    Iterator end() const { return Iterator(*this, size); }
+  }; 
+
+
   template <typename T>
   class DevTable
   {
@@ -211,7 +276,6 @@ namespace ngs_cuda
     size_t * DevIndex() const { return dev_index; }
     T * DevData() const { return dev_data; }
   }; 
-
 
 
 
