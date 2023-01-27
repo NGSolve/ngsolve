@@ -120,7 +120,7 @@ namespace ngla
     size_t hm, wm;  // small matrix shape
     
     DevTable<int> rowdnums, coldnums;
-    DevTable<int> row_coloring, col_coloring;
+    DevDataTable<int> row_coloring, col_coloring;
 
     bool disjoint_rows, disjoint_cols;
     size_t numblocks;

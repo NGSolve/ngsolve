@@ -1005,7 +1005,8 @@ namespace ngcomp
     size_t nip;
     
   public:
-    ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs, const Array<ProxyFunction*> & atrialproxies,
+    ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
+                            const Array<ProxyFunction*> & atrialproxies,
                             size_t adimx, size_t adimy, size_t anip)
       : coefs(acoefs), trialproxies{atrialproxies}, dimx(adimx), dimy(adimy), nip(anip) { ; }
       
