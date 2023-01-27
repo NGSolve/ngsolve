@@ -1012,16 +1012,46 @@ namespace ngcomp
 
     { 
       // make my own code
+
+      stringstream s;
+      s <<
+        "#include <cstddef>\n"
+        "void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
+        "                      double * output, size_t dist_output) {\n";
+
       for (auto cf : coefs)
         {
           auto compiledcf = Compile (cf, false);
           Code code = compiledcf->GenerateProgram(0, false);
-          /*
-          cout << "Generated code:" << endl;
-          cout << code.header << endl;
-          cout << code.body << endl;
-          */
+
+          s << "{\n";
+          // cout << code.header << endl;
+
+          // something like, but have to figure out offset for each trial-proxy:
+          s <<
+            R"raw_string(            
+          auto values_0 = [nip,input](size_t i, int comp)
+            {
+              return input[i + comp*dist_input];
+            };
+          auto values_26 = [nip,input](size_t i, int comp)
+            {
+              return input[i + (comp+4)*dist_input];
+            };
+)raw_string";
+          
+          s << "for (size_t i = 0; i < nip; i++) {\n";
+          s << code.body << endl;
+
+          // missing: last step nr
+          for (int j = 0; j < cf->Dimension(); j++)
+            s << "output[i+"<<j<<"*dist_output] = "
+              << Var(55, j, cf->Dimensions()).code << ";\n";
+          
+          s << "}\n}";
         }
+      s << "}\n";
+      cout << s.str() << endl;
     }
       
     AutoVector CreateColVector() const override

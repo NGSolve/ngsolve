@@ -181,19 +181,6 @@ namespace ngfem
     }
     header += "}\n";
 
-    /*
-    TraverseDimensions( dims, [&](int ind, int i, int j) {
-        header += Var("comp", index,i,j).Declare("{scal_type}", 0.0);
-        if(!testfunction && code.deriv==2)
-        {
-          header += "if(( ({ud}->trialfunction == {this}) && ({ud}->trial_comp=="+ToLiteral(ind)+"))\n"+
-          " ||  (({ud}->testfunction == {this}) && ({ud}->test_comp=="+ToLiteral(ind)+")))\n";
-        }
-        else
-          header += "if({ud}->{comp_string}=="+ToLiteral(ind)+" && {ud}->{func_string} == {this})\n";
-        header += Var("comp", index,i,j).S() + string("{get_component}") + " = 1.0;\n";
-    });
-    */
     for (int i = 0; i < this->Dimension(); i++) {
       header += Var("comp", index,i,this->Dimensions()).Declare("{scal_type}", 0.0);
         if(!testfunction && code.deriv==2)
@@ -207,13 +194,6 @@ namespace ngfem
     }
     
     string body = "";
-    
-    /*
-      TraverseDimensions( dims, [&](int ind, int i, int j) {
-      body += Var(index, i,j).Declare("{scal_type}", 0.0);
-      body += Var(index, i,j).Assign(CodeExpr("0.0"), false);
-      });
-    */
 
     if (code_uses_tensors)
       {
@@ -231,21 +211,8 @@ namespace ngfem
 
   
     if(!testfunction) {
-      body += "if ({ud}->fel) {\n";
-      /*
-      TraverseDimensions( dims, [&](int ind, int i, int j) {
-          string var = Var(index, i,j);
-          if(code.deriv)
-            var += ".Value()";
-          string values = "{values}";
-          if(code.is_simd)
-            values += "(" + ToLiteral(ind) + ",i)";
-          else
-            values += "(i," + ToLiteral(ind) + ")";
-
-          body += var + " = " + values + ";\n";
-      });
-      */
+      body += "// if ({ud}->fel) {\n";
+      body += "if (true) {\n";
       for (int i = 0; i < Dimension(); i++) {
         string var = Var(index, i, this->Dimensions());
         if(code.deriv)
@@ -266,13 +233,6 @@ namespace ngfem
     }
     body += "{\n";
     if(testfunction)
-      /*
-      TraverseDimensions( dims, [&](int ind, int i, int j) {
-        if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
-        if(code.deriv==1) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
-        if(code.deriv==2) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
-      });
-      */
       for (int i = 0; i < Dimension(); i++) {
         if(code.deriv==0) body += Var(index,i,Dimensions()).Assign( Var("comp", index,i,Dimensions()), false );
         if(code.deriv==1) body += Var(index,i,Dimensions()).Assign( Var("comp", index,i,Dimensions()), false );
@@ -280,12 +240,6 @@ namespace ngfem
                             .Assign( Var("comp", index,i, Dimensions()).Call("DValue","0"), false );
       }
     else
-      /*
-      TraverseDimensions( dims, [&](int ind, int i, int j) {
-        if(code.deriv==0) body += Var(index,i,j).Assign( Var("comp", index,i,j), false );
-        if(code.deriv>=1) body += Var(index,i,j).Call("DValue","0").Assign( Var("comp", index,i,j).Call("DValue","0"), false );
-      });
-      */
       for (int i = 0; i < this->Dimension(); i++) {
         if(code.deriv==0) body += Var(index,i,Dimensions()).Assign( Var("comp", index,i,Dimensions()), false );
         if(code.deriv>=1) body += Var(index,i,Dimensions()).Call("DValue","0").Assign( Var("comp", index,i,Dimensions()).Call("DValue","0"), false );
