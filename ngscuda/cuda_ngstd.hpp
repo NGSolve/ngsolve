@@ -217,7 +217,7 @@ namespace ngs_cuda
     size_t * Index() const { return index; }
     T * DevData() const { return dev_data; }
 
-    FlatArray<T> Row(int i) const { return { index[i+1]-index[i], dev_data+index[i] } }
+    FlatArray<T> Row(int i) const { return { index[i+1]-index[i], dev_data+index[i] }; }
     
     class Iterator
     {
