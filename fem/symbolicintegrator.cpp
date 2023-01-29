@@ -229,7 +229,7 @@ namespace ngfem
       if(code.deriv)
         body += "}\n";
       else
-        body += "} else ";
+        body += "} /* else ";
     }
     body += "{\n";
     if(testfunction)
@@ -244,8 +244,10 @@ namespace ngfem
         if(code.deriv==0) body += Var(index,i,Dimensions()).Assign( Var("comp", index,i,Dimensions()), false );
         if(code.deriv>=1) body += Var(index,i,Dimensions()).Call("DValue","0").Assign( Var("comp", index,i,Dimensions()).Call("DValue","0"), false );
       };
-  
     body += "}\n";
+    if (!testfunction && code.deriv == 0)
+      body += "*/\n";
+  
 
     string func_string = testfunction ? "testfunction" : "trialfunction";
     string comp_string = testfunction ? "test_comp" : "trial_comp";

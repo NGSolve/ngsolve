@@ -127,6 +127,7 @@ namespace ngla
     int VWidth() const override { return blocks*dimx; }
 
     ostream & Print (ostream & ost) const override;
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;

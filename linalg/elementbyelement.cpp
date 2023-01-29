@@ -952,6 +952,16 @@ namespace ngla
     return make_unique<VVector<>> (h);
   }
 
+  BaseMatrix::OperatorInfo ConstantElementByElementMatrix :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = string("ConstantEBEMatrix (bs = ") + ToString(matrix.Height()) + "x"
+      + ToString (matrix.Width()) + ")";
+    info.height = Height();
+    info.width = Width();
+    return info;
+  }
+    
   
   void ConstantElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {

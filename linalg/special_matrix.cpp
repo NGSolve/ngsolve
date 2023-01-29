@@ -450,6 +450,16 @@ namespace ngla
     ost << "BlockDiagmatrixSoA, blocks = " << blocks << " of dim " << dimy << " x " << dimx << endl;
     return ost;
   }
+
+  BaseMatrix::OperatorInfo BlockDiagonalMatrixSoA :: GetOperatorInfo () const
+  {
+    OperatorInfo info;
+    info.name = string("BlockDiagonalMatrixSoA (bs = ") + ToString(dimy) + "x"
+      + ToString (dimx) + ")";
+    info.height = Height();
+    info.width = Width();
+    return info;
+  }
     
   AutoVector BlockDiagonalMatrixSoA :: CreateRowVector () const
   {

@@ -8168,7 +8168,6 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     typedef void (*lib_function_simd_complex)(const ngfem::SIMD_BaseMappedIntegrationRule &, BareSliceMatrix<SIMD<Complex>>);
 
     shared_ptr<CoefficientFunction> cf;
-    Array<CoefficientFunction*> steps;
     DynamicTable<int> inputs;
     size_t max_inputsize;
     Array<int> dim;
