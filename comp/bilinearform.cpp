@@ -1013,45 +1013,55 @@ namespace ngcomp
     { 
       // make my own code
 
+      Array<int> proxyoffset;
+      int starti = 0;
+      for (auto proxy : trialproxies)
+        {
+          proxyoffset.Append (starti);
+          starti += proxy->Evaluator()->Dim();
+        }
+          
       stringstream s;
       s <<
         "#include <cstddef>\n"
         "void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
         "                      double * output, size_t dist_output) {\n";
 
+      int base_output = 0;
       for (auto cf : coefs)
         {
           auto compiledcf = Compile (cf, false);
           Code code = compiledcf->GenerateProgram(0, false);
-
+          
           s << "{\n";
           // cout << code.header << endl;
-
-          // something like, but have to figure out offset for each trial-proxy:
-          s <<
-            R"raw_string(            
-          auto values_0 = [nip,input](size_t i, int comp)
-            {
-              return input[i + comp*dist_input];
-            };
-          auto values_26 = [nip,input](size_t i, int comp)
-            {
-              return input[i + (comp+4)*dist_input];
-            };
-)raw_string";
           
+          for (auto step : Range(compiledcf->Steps()))
+            if (auto proxycf = dynamic_cast<ProxyFunction*> (compiledcf->Steps()[step]))
+              if (auto pos = trialproxies.Pos(proxycf); pos != trialproxies.ILLEGAL_POSITION)
+                {
+                  s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
+                    " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
+                }
+
           s << "for (size_t i = 0; i < nip; i++) {\n";
           s << code.body << endl;
 
           // missing: last step nr
           for (int j = 0; j < cf->Dimension(); j++)
-            s << "output[i+"<<j<<"*dist_output] = "
-              << Var(55, j, cf->Dimensions()).code << ";\n";
+            s << "output[i+"<<base_output+j<<"*dist_output] = "
+              << Var(compiledcf->Steps().Size()-1, j, cf->Dimensions()).code << ";\n";
+          base_output += cf->Dimension();
           
           s << "}\n}";
         }
       s << "}\n";
+
+    
       cout << s.str() << endl;
+
+    
+    
     }
       
     AutoVector CreateColVector() const override

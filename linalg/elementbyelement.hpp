@@ -136,6 +136,8 @@ namespace ngla
 
     virtual int VHeight() const override { return h; }
     virtual int VWidth() const override { return w; }
+
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;

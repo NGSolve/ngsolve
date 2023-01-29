@@ -1992,9 +1992,12 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
 class CompiledCoefficientFunctionInterface : public CoefficientFunction
 {
+protected:
+  Array<CoefficientFunction*> steps;
 public:
   using CoefficientFunction::CoefficientFunction;
   virtual Code GenerateProgram (int deriv, bool simd) const = 0;
+  const Array<CoefficientFunction*> & Steps() const { return steps; }
 };
 
 NGS_DLL_HEADER
