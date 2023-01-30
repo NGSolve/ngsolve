@@ -1035,6 +1035,38 @@ namespace ngcomp
   };
 
 
+
+  class ApplyIntegrationPoints : public BaseMatrix
+  {
+    Array<shared_ptr<CoefficientFunction>> coefs;
+    Array<ProxyFunction*> trialproxies;
+    
+    typedef void (*lib_function)(size_t nip, double * input, size_t dist_input,
+                                 double * output, size_t dist_output);
+
+    unique_ptr<SharedLibrary> library;
+    lib_function compiled_function = nullptr;
+    
+    size_t dimx, dimy;
+    size_t nip;
+    
+  public:
+    ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
+                            const Array<ProxyFunction*> & atrialproxies,
+                            size_t adimx, size_t adimy, size_t anip);
+    
+    AutoVector CreateColVector() const override;
+    AutoVector CreateRowVector() const override;
+    
+    virtual int VHeight() const override { return nip*dimy; }
+    virtual int VWidth() const override { return nip*dimx; }
+    
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+  };  
+  
+
+  
+
   /**
      This bilinearform stores the element-matrices
    */
