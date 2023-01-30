@@ -7,7 +7,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(ngscudalib ${NGS_LIB_TYPE}
     cuda_linalg.cpp unifiedvector.cpp
-    cuda_ngstd.cpp cude_applyIR.cpp
+    cuda_ngstd.cpp cuda_applyIR.cpp
     linalg_kernels.cu
 )
 
