@@ -1,0 +1,140 @@
+
+#include <la.hpp>
+#include <comp.hpp>
+
+#include "cuda_linalg.hpp"
+
+namespace ngla
+{
+  
+  class DevApplyIntegrationPoints : public DevMatrix
+  {
+    size_t h, w;
+    size_t dimx, dimy, nip;
+    unique_ptr<SharedLibrary> library;
+
+    typedef void (*lib_function)(size_t nip, double * input, size_t dist_input,
+                                 double * output, size_t dist_output);
+    lib_function compiled_function = nullptr;
+    
+  public:
+    DevApplyIntegrationPoints (const ApplyIntegrationPoints & aipmat)
+    {
+      h = aipmat.Height();
+      w = aipmat.Width();
+
+      dimx = aipmat.GetDimX();
+      dimy = aipmat.GetDimY();
+      nip = aipmat.GetNIP();
+      
+      // generate cuda code, similar as for host (with C-Function + Kernel):
+
+      auto & trialproxies = aipmat.GetTrialProxies();
+      
+      Array<int> proxyoffset;
+      int starti = 0;
+      for (auto proxy : trialproxies)
+        {
+          proxyoffset.Append (starti);
+          starti += proxy->Evaluator()->Dim();
+        }
+      
+      stringstream s;
+      s <<
+        "#include <cstddef>\n"
+        "__global__ void ApplyIPFunctionKernel (size_t nip, double * input, size_t dist_input,\n"
+        "                      double * output, size_t dist_output) {\n";
+      
+      int base_output = 0;
+      for (auto cf : aipmat.GetCFs())
+        {
+          auto compiledcf = Compile (cf, false);
+          Code code = compiledcf->GenerateProgram(0, false);
+          
+          s << "{\n";
+          // cout << code.header << endl;
+          
+          for (auto step : Range(compiledcf->Steps()))
+            if (auto proxycf = dynamic_cast<ProxyFunction*> (compiledcf->Steps()[step]))
+              if (auto pos = trialproxies.Pos(proxycf); pos != trialproxies.ILLEGAL_POSITION)
+                {
+                  s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
+                    " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
+                }
+          
+          s << "for (size_t i = 0; i < nip; i++) {\n";
+          s << code.body << endl;
+          
+          // missing: last step nr
+          for (int j = 0; j < cf->Dimension(); j++)
+            s << "output[i+"<<base_output+j<<"*dist_output] = "
+              << Var(compiledcf->Steps().Size()-1, j, cf->Dimensions()).code << ";\n";
+          base_output += cf->Dimension();
+          
+          s << "}\n}";
+        }
+      s << "}\n";
+
+      s << 
+        "extern \"C\" void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
+        "                      double * output, size_t dist_output) {\n"
+        "  ApplyIPFunctionKernel<<<256,256>>> (nip, input, dist_input, output, dist_output); } \n";
+
+      
+      
+      // cout << s.str() << endl;
+
+      /*
+      // CUDA - compilation:
+      try
+        {
+          static int cnt=0;
+          string name = "newcode"+ToString(cnt);
+          cnt++;
+          
+          ofstream codefile(name+".cu");
+          codefile << s.str();
+          codefile.close();
+          
+          int err = system( ("ngscxx -c "+name+".cpp -o "+name+".o").c_str() );
+          if (err) throw Exception ("problem calling compiler");
+          err = system( ("ngsld -shared "+name+".o -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore -o "+name+".so").c_str() );
+          if (err) throw Exception ("problem calling linker");
+          library = make_unique<SharedLibrary>(name+".so");
+          compiled_function = library->GetFunction<lib_function> ("ApplyIPFunction");
+        }
+      catch (const Exception & e)
+        { ; } 
+      */
+    }
+    
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override
+    {
+      const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
+      UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+      
+      ux.UpdateDevice();
+      uy.UpdateDevice();
+
+      FlatMatrix<double> mx = x.FV<double>().AsMatrix(dimx, nip);
+      FlatMatrix<double> my = y.FV<double>().AsMatrix(dimy, nip);
+      
+      compiled_function(nip, ux.DevData(), nip, uy.DevData(), nip);
+    }
+
+    virtual int VHeight() const override { return h; }
+    virtual int VWidth() const { return w; }    
+  };
+
+
+  
+  void InitApplyIntegrationPoints ()
+  {
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(ApplyIntegrationPoints),
+                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & mat = dynamic_cast<const ApplyIntegrationPoints&>(bmat);
+                                              return make_shared<DevApplyIntegrationPoints>(mat);
+                                            });
+  }
+};

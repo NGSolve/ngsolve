@@ -1062,6 +1062,12 @@ namespace ngcomp
     virtual int VWidth() const override { return nip*dimx; }
     
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+
+    const Array<shared_ptr<CoefficientFunction>> & GetCFs() const { return coefs; } 
+    const Array<ProxyFunction*> & GetTrialProxies() const { return trialproxies; }
+    size_t GetDimX() const { return dimx; }
+    size_t GetDimY() const { return dimy; }
+    size_t GetNIP() const { return nip; }
   };  
   
 
