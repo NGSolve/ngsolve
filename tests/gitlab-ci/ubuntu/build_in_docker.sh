@@ -63,10 +63,10 @@ then
         ipyparallel \
         selenium \
         webgui_jupyter_widgets \
-        markupsafe==2.0.1 \
+        markupsafe \
         pybind11-stubgen \
-        docutils==0.16 \
-        Jinja2==2.11.3 \
+        docutils \
+        Jinja2 \
 
 fi
 
