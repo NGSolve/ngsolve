@@ -1,8 +1,9 @@
 
 #include <la.hpp>
 #include <comp.hpp>
-
 #include "cuda_linalg.hpp"
+
+using namespace ngcomp;
 
 namespace ngla
 {
