@@ -996,150 +996,172 @@ namespace ngcomp
     D bock-diagonal
    */
 
-  class ApplyIntegrationPoints : public BaseMatrix
-  {
-    Array<shared_ptr<CoefficientFunction>> coefs;
-    Array<ProxyFunction*> trialproxies;
-    
-    size_t dimx, dimy;
-    size_t nip;
-    
-  public:
-    ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
-                            const Array<ProxyFunction*> & atrialproxies,
-                            size_t adimx, size_t adimy, size_t anip)
-      : coefs(acoefs), trialproxies{atrialproxies}, dimx(adimx), dimy(adimy), nip(anip)
-
-    { 
+  ApplyIntegrationPoints ::
+  ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
+                          const Array<ProxyFunction*> & atrialproxies,
+                          size_t adimx, size_t adimy, size_t anip)
+    : coefs(acoefs), trialproxies{atrialproxies}, dimx(adimx), dimy(adimy), nip(anip)
+  { 
       // make my own code
+    
+    Array<int> proxyoffset;
+    int starti = 0;
+    for (auto proxy : trialproxies)
+      {
+        proxyoffset.Append (starti);
+        starti += proxy->Evaluator()->Dim();
+      }
+    
+    stringstream s;
+    s <<
+      "#include <cstddef>\n"
+      "extern \"C\" void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
+      "                      double * output, size_t dist_output) {\n";
 
-      Array<int> proxyoffset;
-      int starti = 0;
-      for (auto proxy : trialproxies)
-        {
-          proxyoffset.Append (starti);
-          starti += proxy->Evaluator()->Dim();
-        }
-          
-      stringstream s;
-      s <<
-        "#include <cstddef>\n"
-        "void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
-        "                      double * output, size_t dist_output) {\n";
-
-      int base_output = 0;
-      for (auto cf : coefs)
-        {
-          auto compiledcf = Compile (cf, false);
-          Code code = compiledcf->GenerateProgram(0, false);
-          
-          s << "{\n";
-          // cout << code.header << endl;
-          
-          for (auto step : Range(compiledcf->Steps()))
-            if (auto proxycf = dynamic_cast<ProxyFunction*> (compiledcf->Steps()[step]))
-              if (auto pos = trialproxies.Pos(proxycf); pos != trialproxies.ILLEGAL_POSITION)
-                {
-                  s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
-                    " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
-                }
-
-          s << "for (size_t i = 0; i < nip; i++) {\n";
-          s << code.body << endl;
-
+    int base_output = 0;
+    for (auto cf : coefs)
+      {
+        auto compiledcf = Compile (cf, false);
+        Code code = compiledcf->GenerateProgram(0, false);
+        
+        s << "{\n";
+        // cout << code.header << endl;
+        
+        for (auto step : Range(compiledcf->Steps()))
+          if (auto proxycf = dynamic_cast<ProxyFunction*> (compiledcf->Steps()[step]))
+            if (auto pos = trialproxies.Pos(proxycf); pos != trialproxies.ILLEGAL_POSITION)
+              {
+                s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
+                  " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
+              }
+        
+        s << "for (size_t i = 0; i < nip; i++) {\n";
+        s << code.body << endl;
+        
           // missing: last step nr
-          for (int j = 0; j < cf->Dimension(); j++)
-            s << "output[i+"<<base_output+j<<"*dist_output] = "
-              << Var(compiledcf->Steps().Size()-1, j, cf->Dimensions()).code << ";\n";
-          base_output += cf->Dimension();
-          
-          s << "}\n}";
-        }
-      s << "}\n";
-
-    
-      cout << s.str() << endl;
-
+        for (int j = 0; j < cf->Dimension(); j++)
+          s << "output[i+"<<base_output+j<<"*dist_output] = "
+            << Var(compiledcf->Steps().Size()-1, j, cf->Dimensions()).code << ";\n";
+        base_output += cf->Dimension();
+        
+        s << "}\n}";
+      }
+    s << "}\n";
     
     
-    }
-      
-    AutoVector CreateColVector() const override
-    { return make_unique<VVector<double>> (nip*dimy); }
-    AutoVector CreateRowVector() const override
-    { return make_unique<VVector<double>> (nip*dimx); }
+    // cout << s.str() << endl;
 
-    virtual int VHeight() const override { return nip*dimy; }
-    virtual int VWidth() const override { return nip*dimx; }
+    try
+      {
+        static int cnt=0;
+        string name = "newcode"+ToString(cnt);
+        cnt++;
+        
+        ofstream codefile(name+".cpp");
+        codefile << s.str();
+        codefile.close();
+        
+        int err = system( ("ngscxx -c "+name+".cpp -o "+name+".o").c_str() );
+        if (err) throw Exception ("problem calling compiler");
+        err = system( ("ngsld -shared "+name+".o -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore -o "+name+".so").c_str() );
+        if (err) throw Exception ("problem calling linker");
+        library = make_unique<SharedLibrary>(name+".so");
+        compiled_function = library->GetFunction<lib_function> ("ApplyIPFunction");
+      }
+    catch (const Exception & e)
+      { ; } 
+  }
+  
+  AutoVector ApplyIntegrationPoints :: CreateColVector() const
+  {
+    return make_unique<VVector<double>> (nip*dimy);
+  }
+  
+  AutoVector ApplyIntegrationPoints :: CreateRowVector() const
+  {
+    return make_unique<VVector<double>> (nip*dimx);
+  }
+  
+  void ApplyIntegrationPoints :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("ApplyIntegrationPoints"); RegionTimer reg(t);
+    static Timer teval("ApplyIntegrationPoints eval");
+    static Timer tmir("ApplyIntegrationPoints mir");      
+    static Timer ttransx("ApplyIntegrationPoints transx");
+    static Timer ttransy("ApplyIntegrationPoints transy");
+
+    if (compiled_function)
+      {
+        FlatMatrix<double> mx = x.FV<double>().AsMatrix(dimx, nip);
+        FlatMatrix<double> my = y.FV<double>().AsMatrix(dimy, nip);
+        ParallelForRange(nip, [this,mx, my] (IntRange r)
+                         {
+                           this->compiled_function(r.Size(),
+                                                   mx.Cols(r).Data(), mx.Dist(),
+                                                   my.Cols(r).Data(), my.Dist());
+                         });
+        return;
+      }
     
-    virtual void Mult (const BaseVector & x, BaseVector & y) const override
-    {
-      static Timer t("ApplyIntegrationPoints"); RegionTimer reg(t);
-      static Timer teval("ApplyIntegrationPoints eval");
-      static Timer tmir("ApplyIntegrationPoints mir");      
-      static Timer ttransx("ApplyIntegrationPoints transx");
-      static Timer ttransy("ApplyIntegrationPoints transy");
+    ParallelForRange
+      (nip, [&](IntRange r)
+       {
+         constexpr size_t BS = 256;
+         LocalHeap lh(1000000);
+         
+         for (size_t ii = r.First(); ii < r.Next(); ii+=BS)
+           {
+             IntRange r2(ii, min(ii+BS, r.Next()));               
+             HeapReset hr(lh);
+             
+             SIMD_IntegrationRule simdir(r2.Size(), lh);               
+             FE_ElementTransformation<2,2> trafo(ET_TRIG);
+             SIMD_MappedIntegrationRule<2,2> simdmir(simdir, trafo, 0, lh); // don't actually compute
+             
+             // tmir.Stop();
+             
+             ProxyUserData ud(trialproxies.Size(), 0, lh);
+             trafo.userdata = &ud;
+             ScalarFE<ET_TRIG,1> dummyfe;
+             ud.fel = &dummyfe;
+             
+             int starti = 0;
+             for (auto proxy : trialproxies)
+               {
+                 int nexti = starti + proxy->Evaluator()->Dim();
+                 ud.AssignMemory (proxy, r2.Size(), proxy->Evaluator()->Dim(), lh);
+                 
+                 // ttransx.Start();
+                 SliceMatrix<double> (dimx, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
+                                      (double*)(ud.GetAMemory (proxy)).Data()) = 
+                   x.FV<double>().AsMatrix(dimx, nip).Cols(r2).Rows(starti, nexti);
+                 // ttransx.Stop();
+                 
+                 starti = nexti;
+               }
+             
+             
+             // teval.Start();
+             FlatMatrix<SIMD<double>> simdres(dimy, simdmir.Size(), lh);
+             starti = 0;
+             for (auto coef : coefs)
+               {
+                 int nexti = starti + coef->Dimension();
+                 coef -> Evaluate (simdmir, simdres.Rows(starti, nexti));
+                 starti = nexti;
+               }
+             // teval.Stop();
+             
+             // ttransy.Start();
+             SliceMatrix<> res = y.FV<double>().AsMatrix(dimy, nip).Cols(r2);
+             res = SliceMatrix<double> (dimy, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
+                                        (double*)simdres.Data());
+             // ttransy.Stop();
+           }
+       }, TasksPerThread(3));
+  }
 
-      ParallelForRange
-        (nip, [&](IntRange r)
-         {
-           constexpr size_t BS = 256;
-           LocalHeap lh(1000000);
-
-           for (size_t ii = r.First(); ii < r.Next(); ii+=BS)
-             {
-               IntRange r2(ii, min(ii+BS, r.Next()));               
-               HeapReset hr(lh);
-
-               SIMD_IntegrationRule simdir(r2.Size(), lh);               
-               FE_ElementTransformation<2,2> trafo(ET_TRIG);
-               SIMD_MappedIntegrationRule<2,2> simdmir(simdir, trafo, 0, lh); // don't actually compute
-
-               // tmir.Stop();
-           
-               ProxyUserData ud(trialproxies.Size(), 0, lh);
-               trafo.userdata = &ud;
-               ScalarFE<ET_TRIG,1> dummyfe;
-               ud.fel = &dummyfe;
-
-               int starti = 0;
-               for (auto proxy : trialproxies)
-                 {
-                   int nexti = starti + proxy->Evaluator()->Dim();
-                   ud.AssignMemory (proxy, r2.Size(), proxy->Evaluator()->Dim(), lh);
-
-                   // ttransx.Start();
-                   SliceMatrix<double> (dimx, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
-                                        (double*)(ud.GetAMemory (proxy)).Data()) = 
-                     x.FV<double>().AsMatrix(dimx, nip).Cols(r2).Rows(starti, nexti);
-                   // ttransx.Stop();
-                   
-                   starti = nexti;
-                 }
-               
-           
-               // teval.Start();
-               FlatMatrix<SIMD<double>> simdres(dimy, simdmir.Size(), lh);
-               starti = 0;
-               for (auto coef : coefs)
-                 {
-                   int nexti = starti + coef->Dimension();
-                   coef -> Evaluate (simdmir, simdres.Rows(starti, nexti));
-                   starti = nexti;
-                 }
-               // teval.Stop();
-               
-               // ttransy.Start();
-               SliceMatrix<> res = y.FV<double>().AsMatrix(dimy, nip).Cols(r2);
-               res = SliceMatrix<double> (dimy, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
-                                          (double*)simdres.Data());
-               // ttransy.Stop();
-             }
-         }, TasksPerThread(3));
-      
-    }
-  };
-
+  
   
   void BilinearForm :: AssembleBDB (LocalHeap & lh, bool linear)
   {

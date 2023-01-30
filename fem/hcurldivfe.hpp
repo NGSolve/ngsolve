@@ -1430,8 +1430,8 @@ namespace ngfem
       AutoDiff<3,T> lx[2] ={ 1-xx, xx};
       AutoDiff<3,T> ly[2] ={ 1-yy, yy};
       AutoDiff<3,T> lz[2] ={ 1-zz, zz};
-      AutoDiff<3,T> lami[8]={(1-xx)*(1-yy)*(1-zz),xx*(1-yy)*(1-zz),xx*yy*(1-zz),(1-xx)*yy*(1-zz),
-                  (1-xx)*(1-yy)*zz,xx*(1-yy)*zz,xx*yy*zz,(1-xx)*yy*zz};
+      // AutoDiff<3,T> lami[8]={(1-xx)*(1-yy)*(1-zz),xx*(1-yy)*(1-zz),xx*yy*(1-zz),(1-xx)*yy*(1-zz),
+      // (1-xx)*(1-yy)*zz,xx*(1-yy)*zz,xx*yy*zz,(1-xx)*yy*zz};
       
       AutoDiff<3,T> sigma[8] = {1-xx + 1-yy + 1-zz, xx + 1-yy + 1-zz, xx + yy + 1-zz, 1-xx + yy + 1-zz,
 				1-xx + 1-yy + zz, xx + 1-yy + zz, xx + yy + zz, 1-xx + yy + zz};
