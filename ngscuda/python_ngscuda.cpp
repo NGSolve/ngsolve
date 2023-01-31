@@ -7,10 +7,15 @@
 using namespace ngla;
 using namespace ngs_cuda;
 
+namespace ngla {
+  extern void InitApplyIntegrationPoints ();
+}
+
 PYBIND11_MODULE(ngscuda, m) {
 
   InitCUDA(1);
   InitCuLinalg();
+  InitApplyIntegrationPoints();
 
   m.def("InitCuLinalg", &InitCuLinalg, "Initializing cublas and cusparse.");
   
