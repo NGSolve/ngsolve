@@ -62,8 +62,12 @@ namespace ngla
                   s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
                     " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
                 }
+
+
+          s << "int tid = blockIdx.x*blockDim.x+threadIdx.x\n"
+            << "for (int i = tid; i < nip; i += blockDim.x*gridDim.x) {\n";
+          // s << "for (size_t i = 0; i < nip; i++) {\n";
           
-          s << "for (size_t i = 0; i < nip; i++) {\n";
           s << code.body << endl;
           
           // missing: last step nr
@@ -83,30 +87,23 @@ namespace ngla
 
       
       
-      // cout << s.str() << endl;
+      cout << s.str() << endl;
 
-      /*
       // CUDA - compilation:
-      try
-        {
-          static int cnt=0;
-          string name = "newcode"+ToString(cnt);
-          cnt++;
-          
-          ofstream codefile(name+".cu");
-          codefile << s.str();
-          codefile.close();
-          
-          int err = system( ("ngscxx -c "+name+".cpp -o "+name+".o").c_str() );
-          if (err) throw Exception ("problem calling compiler");
-          err = system( ("ngsld -shared "+name+".o -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore -o "+name+".so").c_str() );
-          if (err) throw Exception ("problem calling linker");
-          library = make_unique<SharedLibrary>(name+".so");
-          compiled_function = library->GetFunction<lib_function> ("ApplyIPFunction");
-        }
-      catch (const Exception & e)
-        { ; } 
-      */
+
+      static int cnt=0;
+      string name = "GPUcode"+ToString(cnt);
+      cnt++;
+      
+      ofstream codefile(name+".cu");
+      codefile << s.str();
+      codefile.close();
+      
+      // int err = system( ("ngscxx -c "+name+".cpp -o "+name+".o").c_str() );
+      int err = system( ("nvcc -shared -Xcompiler -fPIC "+name+".cu -o "+name+".so").c_str() );
+      if (err) throw Exception ("problem calling compiler");
+      library = make_unique<SharedLibrary>(name+".so");
+      compiled_function = library->GetFunction<lib_function> ("ApplyIPFunction");
     }
     
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
@@ -117,9 +114,6 @@ namespace ngla
       ux.UpdateDevice();
       uy.UpdateDevice();
 
-      FlatMatrix<double> mx = x.FV<double>().AsMatrix(dimx, nip);
-      FlatMatrix<double> my = y.FV<double>().AsMatrix(dimy, nip);
-      
       compiled_function(nip, ux.DevData(), nip, uy.DevData(), nip);
     }
 
