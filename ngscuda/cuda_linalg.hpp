@@ -126,10 +126,11 @@ namespace ngla
     size_t numblocks;
   public:
     DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat);
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual int VHeight() const { return h; }
-    virtual int VWidth() const { return w; }
+    int VHeight() const override { return h; }
+    int VWidth() const override { return w; }
   };
   
 
@@ -142,10 +143,10 @@ namespace ngla
     
  public:
     DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-
-    virtual int VHeight() const { return dimy*blocks; }
-    virtual int VWidth() const { return dimx*blocks; }
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    int VHeight() const override { return dimy*blocks; }
+    int VWidth() const override { return dimx*blocks; }
   };
 
   
