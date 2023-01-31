@@ -372,6 +372,12 @@ namespace ngla
       bm.Print(ost);
       return ost;
     }
+
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
+    {
+      return make_shared<Transpose>(bm.CreateDeviceMatrix());
+    }
+
   };
 
 
@@ -543,6 +549,12 @@ namespace ngla
       bmb.Print(ost);
       return ost;
     }
+
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
+    {
+      return make_shared<ProductMatrix>(bma.CreateDeviceMatrix(), bmb.CreateDeviceMatrix());
+    }
+
   };
 
 
@@ -768,7 +780,11 @@ namespace ngla
       bm.Print(ost);
       return ost;
     }
-    
+
+    virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
+    {
+      return make_shared<VScaleMatrix<TSCAL>>(bm.CreateDeviceMatrix(), scale);
+    }
   };
   
   inline VScaleMatrix<double> operator* (double d, const BaseMatrix & m)

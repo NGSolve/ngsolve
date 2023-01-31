@@ -371,73 +371,63 @@ namespace ngla
       }
 
     uy.InvalidateHost();    
-    
-    /*
-    auto fx = x.FV<double>();
-    auto fy = y.FV<double>();
-
-    if (!disjoint_cols)
-      {
-        RegionTimer reg(tcol);
-
-        for (auto col : col_coloring)
-          ParallelForRange
-            (col.Size(), [&] (IntRange r)
-             {
-               constexpr size_t BS = 128;
-               Matrix<> hx(BS, matrix.Width());
-               Matrix<> hy(BS, matrix.Height());
-               
-               for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
-                 {
-                   size_t li = min2(bi+BS, r.Next());
-                   size_t num = li-bi;
-                   
-                   for (size_t i = 0; i < num; i++)
-                     hx.Row(i) = fx(row_dnums[col[bi+i]]);
-                   
-                   {
-                     // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
-                     hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
-                   }
-                   
-                   for (size_t i = 0; i < num; i++)
-                     fy(col_dnums[col[bi+i]]) += s * hy.Row(i);
-                 }
-             }, TasksPerThread(2));
-      }
-    else
-      {
-        RegionTimer reg(t);
-        ParallelForRange
-          (row_dnums.Size(), [&] (IntRange r)
-           {
-             constexpr size_t BS = 128;
-             Matrix<> hx(BS, matrix.Width());
-             Matrix<> hy(BS, matrix.Height());
-
-             for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
-               {
-                 size_t li = min2(bi+BS, r.Next());
-                 size_t num = li-bi; 
-                 for (size_t i = 0; i < num; i++)
-                   hx.Row(i) = fx(row_dnums[bi+i]);
-                 {
-                   // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
-                   // RegionTimer reg(tpmult);
-                   // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
-                   hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
-                 }
-                 for (size_t i = 0; i < num; i++)
-                   fy(col_dnums[bi+i]) += s * hy.Row(i);
-               }
-           }, TasksPerThread(2));
-      }
-    */
-    
   }
   
 
+  void DevConstantElementByElementMatrix ::
+  MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto & ux = dynamic_cast<const UnifiedVector&> (x);
+    auto & uy = dynamic_cast<UnifiedVector&> (y);
+    
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+    
+    if (disjoint_rows)
+      {
+        DevArray<double> dev_hx(numblocks*hm);
+        DevArray<double> dev_hy(numblocks*wm);
+        
+        ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
+        
+        // dev_hy = dev_hx * mat
+        double beta = 0.0;
+        double alpha = s;
+        cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
+                                          wm, numblocks, hm, 
+                                          &alpha, dev_mat, wm, dev_hx.DevData(), wm,
+                                          &beta, dev_hy.DevData(), hm);
+        
+        ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
+      }
+    else
+      {
+        for (auto c : col_coloring)
+          {
+            DevArray<double> dev_hx(c.Size()*hm);
+            DevArray<double> dev_hy(c.Size()*wm);
+            
+            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
+            
+            // dev_hy = dev_hx * mat
+            double beta = 0.0;
+            double alpha = s;
+            cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
+                                              wm, c.Size(), hm, 
+                                              &alpha, dev_mat, wm, dev_hx.DevData(), wm,
+                                              &beta, dev_hy.DevData(), hm);
+            
+            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
+          }
+      }
+
+    uy.InvalidateHost();    
+  }
+  
+
+
+
+  
   
   DevBlockDiagonalMatrixSoA ::
   DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat)
@@ -466,6 +456,21 @@ namespace ngla
       for (int j = 0; j < dimx; j++)
         if (nonzero(i,j) != 0)
           DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*j, uy.DevData()+blocks*i);
+
+    uy.InvalidateHost();
+  }
+
+  void DevBlockDiagonalMatrixSoA :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    auto & ux = dynamic_cast<const UnifiedVector&> (x);
+    auto & uy = dynamic_cast<UnifiedVector&> (y);
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+    
+    for (int i = 0; i < dimy; i++)
+      for (int j = 0; j < dimx; j++)
+        if (nonzero(i,j) != 0)
+          DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*i, uy.DevData()+blocks*j);
 
     uy.InvalidateHost();
   }
