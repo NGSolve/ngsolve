@@ -781,6 +781,18 @@ namespace ngla
       return ost;
     }
 
+    auto SPtrMat() const { return spbm; }
+    
+    virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override
+    {
+      OperatorInfo info;
+      info.name = "ScaleMatrix, scale = "+ToString(scale);
+      info.height = Height();
+      info.width = Width();
+      info.childs += &bm;
+      return info;
+    }
+    
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
     {
       return make_shared<VScaleMatrix<TSCAL>>(bm.CreateDeviceMatrix(), scale);
