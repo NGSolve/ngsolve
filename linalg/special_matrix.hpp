@@ -264,6 +264,9 @@ namespace ngla
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
+    IntRange GetRange() const { return range; }
   };
 
 
@@ -332,6 +335,9 @@ namespace ngla
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
+    IntRange GetRange() const { return range; }
   };
 
 
