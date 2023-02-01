@@ -87,7 +87,7 @@ namespace ngla
 
       
       
-      cout << s.str() << endl;
+      cout << IM(9) << s.str() << endl;
 
       // CUDA - compilation:
 

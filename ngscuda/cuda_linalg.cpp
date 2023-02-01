@@ -395,8 +395,8 @@ namespace ngla
         double alpha = s;
         cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
                                           wm, numblocks, hm, 
-                                          &alpha, dev_mat, wm, dev_hx.DevData(), wm,
-                                          &beta, dev_hy.DevData(), hm);
+                                          &alpha, dev_mat, wm, dev_hx.DevData(), hm,
+                                          &beta, dev_hy.DevData(), wm);
         
         ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
       }
@@ -414,8 +414,8 @@ namespace ngla
             double alpha = s;
             cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
                                               wm, c.Size(), hm, 
-                                              &alpha, dev_mat, wm, dev_hx.DevData(), wm,
-                                              &beta, dev_hy.DevData(), hm);
+                                              &alpha, dev_mat, wm, dev_hx.DevData(), hm,
+                                              &beta, dev_hy.DevData(), wm);
             
             ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
           }
