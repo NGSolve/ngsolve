@@ -13,8 +13,6 @@ namespace ngla
     if (err != 0)
       throw Exception("UnifiedVector allocation error, ec="+ToString(err));
     
-    cusparseCreateDnVec (&descr, size, dev_data, CUDA_R_64F);
-
     host_uptodate = false;
     dev_uptodate = false;
   }
@@ -41,7 +39,6 @@ namespace ngla
   
   UnifiedVector :: ~UnifiedVector ()
   {
-    cusparseDestroyDnVec(descr);
     cudaFree(dev_data);
     delete[] host_data;
   }
@@ -128,17 +125,6 @@ namespace ngla
   {
     return make_unique<UnifiedVectorWrapper>(*this, range);
   }
-
-  const cusparseDnVecDescr_t& UnifiedVector :: GetDescr() const
-  {
-    return descr;
-  }
-
-  cusparseDnVecDescr_t& UnifiedVector :: GetDescr()
-  {
-    return descr;
-  }
-
 
   
   BaseVector & UnifiedVector :: Scale (double scal)
@@ -304,11 +290,8 @@ namespace ngla
     auto uptr = dynamic_cast<const UnifiedVector*>(&vec_);
     if(uptr)
     {
-      host_data = uptr->HostData();
-      host_data += range.First();
-      dev_data = uptr->DevData();
-      dev_data += range.First();
-      cusparseCreateDnVec (&descr, size, dev_data, CUDA_R_64F);
+      host_data = uptr->HostData() + range.First();
+      dev_data = uptr->DevData() + range.First();
       uptr->UpdateDevice();
       uptr->InvalidateHost();
       initial_host_uptodate =  uptr->IsHostUptodate();
