@@ -98,10 +98,10 @@ namespace ngla
   class DevDiagonalMatrix : public DevMatrix
   {
   protected:
-    UnifiedVector diag;
+    const UnifiedVector diag;
 
   public:
-    DevDiagonalMatrix (UnifiedVector _diag) : diag(_diag) { }
+    DevDiagonalMatrix (const UnifiedVector _diag) : diag(_diag) { }
 
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
