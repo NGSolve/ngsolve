@@ -48,7 +48,7 @@ void MultAddDiagonal (int n, double alpha, double * D, double * x, double * y)
 __global__ void ConstEBEKernelCopyInKernel (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx)
 {
   int tid = threadIdx.x;
-  for (int r = blockIdx.x*blockDim.y+blockIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)
+  for (int r = blockIdx.x*blockDim.y+threadIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)
     for (int i = tid; i < bs; i += blockDim.x)
       dev_hx[r*bs+i] = dev_ux[row_dnums[r*bs+i]];
 }
@@ -64,7 +64,7 @@ __global__ void ConstEBEKernelCopyOutKernel (int numblocks, int bs, int *  col_d
   int tid = threadIdx.x;
 
   // for (int r = blockIdx.x; r < numblocks; r+=gridDim.x)
-  for (int r = blockIdx.x*blockDim.y+blockIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)  
+  for (int r = blockIdx.x*blockDim.y+threadIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)  
     for (int i = tid; i < bs; i += blockDim.x)
       dev_uy[col_dnums[r*bs+i]] += dev_hy[r*bs+i];
 }
@@ -81,7 +81,7 @@ __global__ void ConstEBEKernelCopyInIdxKernel (int numblocks, int * idx, int bs,
 {
   int tid = threadIdx.x;
   // for (int r = blockIdx.x; r < numblocks; r+=gridDim.x)
-  for (int r = blockIdx.x*blockDim.y+blockIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)    
+  for (int r = blockIdx.x*blockDim.y+threadIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)    
     for (int i = tid; i < bs; i += blockDim.x)
       dev_hx[r*bs+i] = dev_ux[row_dnums[idx[r]*bs+i]];
 }
@@ -96,7 +96,7 @@ __global__ void ConstEBEKernelCopyOutIdxKernel (int numblocks, int * idx, int bs
   int tid = threadIdx.x;
 
   // for (int r = blockIdx.x; r < numblocks; r+=gridDim.x)
-  for (int r = blockIdx.x*blockDim.y+blockIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)    
+  for (int r = blockIdx.x*blockDim.y+threadIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)    
     for (int i = tid; i < bs; i += blockDim.x)
       dev_uy[col_dnums[idx[r]*bs+i]] += dev_hy[r*bs+i];
 }
