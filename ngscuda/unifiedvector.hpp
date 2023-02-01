@@ -74,7 +74,7 @@ namespace ngla
     
     virtual double* HostData() const
     {
-      return dev_data;
+      return host_data;
     }
 
     friend class DevDMatrix;
