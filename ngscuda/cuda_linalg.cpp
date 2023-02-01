@@ -77,6 +77,13 @@ namespace ngla
                                               return make_shared<DevDiagonalMatrix>(diag);
                                             });
 
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(DiagonalMatrix<double>),
+                                            [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & diagmat = dynamic_cast<const DiagonalMatrix<double>&>(mat);
+                                              
+                                              return make_shared<DevDiagonalMatrix>(diagmat.AsVector());
+                                            });
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(ConstantElementByElementMatrix),
                                             [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
                                             {
