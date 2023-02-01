@@ -7,6 +7,7 @@ namespace ngla
 
   class UnifiedVector : public S_BaseVector<double>
   {
+  protected:
     double * host_data;
     double * dev_data;
     cusparseDnVecDescr_t descr;
@@ -15,6 +16,7 @@ namespace ngla
     mutable bool dev_uptodate;
     
   public:
+    UnifiedVector () = default;
     UnifiedVector (int asize);
     UnifiedVector (const BaseVector & vec);
     UnifiedVector (const UnifiedVector & vec);
@@ -36,6 +38,8 @@ namespace ngla
     const double & operator [] (const int ind) const;
     double & operator [] (const int ind);
 
+    virtual AutoVector Range (T_Range<size_t> range) const;
+
     const cusparseDnVecDescr_t& GetDescr() const;
 
     cusparseDnVecDescr_t& GetDescr();
@@ -51,6 +55,8 @@ namespace ngla
     void UpdateDevice () const;
     void InvalidateHost() const { host_uptodate = false; }
     void InvalidateDevice() const { dev_uptodate = false; }
+    bool IsHostUptodate() const { return host_uptodate; }
+    bool IsDevUptodate() const { return dev_uptodate; }
     
     virtual ostream & Print (ostream & ost) const;    
     virtual ostream & PrintStatus (ostream & ost) const;
@@ -66,9 +72,27 @@ namespace ngla
       return dev_data; 
     }
     
+    virtual double* HostData() const
+    {
+      return dev_data;
+    }
+
     friend class DevDMatrix;
     friend class DevSparseMatrix;
     friend class DevJacobiPrecond;
+  };
+
+  class UnifiedVectorWrapper : public UnifiedVector
+  {
+    mutable bool initial_host_uptodate;
+    mutable bool initial_dev_uptodate;
+    const BaseVector & vec;
+
+  public:
+    UnifiedVectorWrapper(const BaseVector & vec_, optional<IntRange> opt_range = nullopt);
+    ~UnifiedVectorWrapper();
+
+    using UnifiedVector::operator=;
   };
 
 

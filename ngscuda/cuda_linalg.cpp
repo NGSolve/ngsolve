@@ -189,8 +189,8 @@ namespace ngla
     /* cout << "device mult sparse" << endl; */
     /* cout << "vec0: " << typeid(x).name() << endl; */
     /* cout << "vec1: " << typeid(y).name() << endl; */
-    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
 
     ux.UpdateDevice();
     uy = 0.0;
@@ -234,8 +234,8 @@ namespace ngla
     static Timer tmv("CUDA MultAdd");
     RegionTimer reg(tmv);
 
-    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -280,8 +280,8 @@ namespace ngla
 
   void DevDiagonalMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -293,8 +293,8 @@ namespace ngla
   
   void DevDiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-    UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
 
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -326,9 +326,9 @@ namespace ngla
   void DevConstantElementByElementMatrix ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    auto & ux = dynamic_cast<const UnifiedVector&> (x);
-    auto & uy = dynamic_cast<UnifiedVector&> (y);
-    
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+
     ux.UpdateDevice();
     uy.UpdateDevice();
     
@@ -377,8 +377,8 @@ namespace ngla
   void DevConstantElementByElementMatrix ::
   MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    auto & ux = dynamic_cast<const UnifiedVector&> (x);
-    auto & uy = dynamic_cast<UnifiedVector&> (y);
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
     
     ux.UpdateDevice();
     uy.UpdateDevice();
@@ -447,8 +447,8 @@ namespace ngla
   
   void DevBlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    auto & ux = dynamic_cast<const UnifiedVector&> (x);
-    auto & uy = dynamic_cast<UnifiedVector&> (y);
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
     
@@ -462,8 +462,8 @@ namespace ngla
 
   void DevBlockDiagonalMatrixSoA :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    auto & ux = dynamic_cast<const UnifiedVector&> (x);
-    auto & uy = dynamic_cast<UnifiedVector&> (y);
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
     
@@ -595,25 +595,20 @@ namespace ngla
 
   void DevDMatrix :: MultAdd (double s, const BaseVector& x, BaseVector& y) const
   {
-    const UnifiedVector * ux = dynamic_cast<const UnifiedVector*> (&x);
-    UnifiedVector * uy = dynamic_cast<UnifiedVector*> (&y);
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
 
-    if ((!ux) || (!uy))
-    {
-      throw Exception("Inputs no UnifiedVector (will be fixed)");
-    }
-
-    ux->UpdateDevice();
-    uy->UpdateDevice();
+    ux.UpdateDevice();
+    uy.UpdateDevice();
 
     double alpha = 1;
     double beta = s;
 
     // CUBLAS_OP_T since cublas uses cow-major while matrix is row-major
     cublasStatus_t stat = cublasDgemv(Get_CuBlas_Handle(), CUBLAS_OP_T, width, height, &alpha, 
-                dev_data, width, ux->DevData(), 1, &beta, uy->DevData(), 1);
+                dev_data, width, ux.DevData(), 1, &beta, uy.DevData(), 1);
 
-    uy->host_uptodate = false;
+    uy.host_uptodate = false;
   }
 
   void DevDMatrix :: SetZero ()
