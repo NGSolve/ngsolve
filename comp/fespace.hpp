@@ -402,7 +402,7 @@ ANY                  1 1 1 1 | 15
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap && lh2) 
         : IntRange(ar), fes(afes),
           definedon(fes.definedon[avb].Size(),fes.definedon[avb].Addr(0)),
-          vb(avb), mylh(move(lh2)), lh(mylh)
+          vb(avb), mylh(std::move(lh2)), lh(mylh)
       { ; }
 
       INLINE ElementRange (const FESpace & afes, VorB avb, IntRange ar, LocalHeap & lh2) 
@@ -414,8 +414,8 @@ ANY                  1 1 1 1 | 15
       ElementRange (const ElementRange & r2) = delete;
 
       INLINE ElementRange (ElementRange && r2) 
-        : IntRange(r2), fes(r2.fes), definedon(move(r2.definedon)), vb(r2.vb), 
-          temp_dnums(move(r2.temp_dnums)), mylh(move(r2.mylh)), 
+        : IntRange(r2), fes(r2.fes), definedon(std::move(r2.definedon)), vb(r2.vb), 
+          temp_dnums(std::move(r2.temp_dnums)), mylh(std::move(r2.mylh)), 
           lh( (&r2.mylh == &r2.lh) ? mylh : r2.lh)
       { ; }
 
@@ -441,7 +441,7 @@ ANY                  1 1 1 1 | 15
     ElementRange Elements (VorB vb = VOL, LocalHeap && lh = 10000) const
     {
       // cout << "C++ FESpace::Elements with lh rvalue, name = " << lh.name << endl;
-      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), move(lh));
+      return ElementRange (*this, vb, IntRange (0, ma->GetNE(vb)), std::move(lh));
     }
 
     ElementRange Elements (VorB vb, LocalHeap & lh) const

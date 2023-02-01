@@ -2335,7 +2335,7 @@ namespace ngcomp
     for(auto i : Range(cfs))
       if(cfs[i] == nullptr)
         cfs[i] = default_value;
-    return MakeDomainWiseCoefficientFunction(move(cfs));
+    return MakeDomainWiseCoefficientFunction(std::move(cfs));
   }
 
   class BoundaryFromVolumeCoefficientFunction :

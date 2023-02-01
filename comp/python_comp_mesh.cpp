@@ -756,7 +756,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
       for(auto val : py_svals)
         vals.Append(make_pair(py::cast<variant<string, Region>>(val.first),
                               py::cast<shared_ptr<CoefficientFunction>>(val.second)));
-      return self.RegionCF(vb, default_value, move(vals));
+      return self.RegionCF(vb, default_value, std::move(vals));
     }, py::arg("VorB"), py::arg("value"), py::arg("default") = nullptr,
          R"delimiter(Region wise CoefficientFunction.
 First argument is VorB, defining the co-dimension,
@@ -775,7 +775,7 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
       for(auto val : py_svals)
         vals.Append(make_pair(py::cast<variant<string, Region>>(val.first),
                               py::cast<shared_ptr<CoefficientFunction>>(val.second)));
-      return self.MaterialCF(default_value, move(vals));
+      return self.MaterialCF(default_value, std::move(vals));
     }, py::arg("values"), py::arg("default") = nullptr,
                   R"delimiter(Domain wise CoefficientFunction.
 First argument is a dict from either material names or Region objects to
@@ -793,7 +793,7 @@ will create a CF being 2e6 on all domains starting with 'steel_' and 0 elsewhere
       for(auto val : py_svals)
         vals.Append(make_pair(py::cast<variant<string, Region>>(val.first),
                               py::cast<shared_ptr<CoefficientFunction>>(val.second)));
-      return self.BoundaryCF(default_value, move(vals));
+      return self.BoundaryCF(default_value, std::move(vals));
     }, py::arg("values"), py::arg("default") = nullptr,
          R"delimiter(Boundary wise CoefficientFunction.
 First argument is a dict from either boundary names or Region objects to
