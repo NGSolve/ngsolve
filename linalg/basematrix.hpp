@@ -365,6 +365,7 @@ namespace ngla
     virtual int VHeight() const override { return bm.VWidth(); }
     virtual int VWidth() const override { return bm.VHeight(); }
 
+    auto SPtrMat() const { return spbm; }
 
     virtual ostream & Print (ostream & ost) const override
     {

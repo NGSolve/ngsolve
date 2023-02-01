@@ -1194,6 +1194,9 @@ inverse : string
   py::class_<VScaleMatrix<double>, shared_ptr<VScaleMatrix<double>>, BaseMatrix> (m, "ScaleMatrix")
     .def_property_readonly("mat",  &VScaleMatrix<double>::SPtrMat)
     ;
+  py::class_<Transpose, shared_ptr<Transpose>, BaseMatrix> (m, "TransposeMatrix")
+    .def_property_readonly("mat",  &Transpose::SPtrMat)
+    ;
 
   
   py::class_<LoggingMatrix, shared_ptr<LoggingMatrix>, BaseMatrix> (m, "LoggingMatrix")
