@@ -124,6 +124,11 @@ namespace ngla
     return host_data[ind];
   }
 
+  AutoVector UnifiedVector :: Range (T_Range<size_t> range) const
+  {
+    return make_unique<UnifiedVectorWrapper>(*this, range);
+  }
+
   const cusparseDnVecDescr_t& UnifiedVector :: GetDescr() const
   {
     return descr;
@@ -287,4 +292,52 @@ namespace ngla
     UpdateHost(); 
     return host_data;
   }
+
+  UnifiedVectorWrapper :: UnifiedVectorWrapper(const BaseVector & vec_, optional<IntRange> opt_range)
+    : vec(vec_)
+  {
+    IntRange range = {0, vec.Size()};
+    if(opt_range)
+      range = *opt_range;
+    this->size = range.Size();
+
+    auto uptr = dynamic_cast<const UnifiedVector*>(&vec_);
+    if(uptr)
+    {
+      host_data = uptr->HostData();
+      host_data += range.First();
+      dev_data = uptr->DevData();
+      dev_data += range.First();
+      cusparseCreateDnVec (&descr, size, dev_data, CUDA_R_64F);
+      uptr->UpdateDevice();
+      uptr->InvalidateHost();
+      initial_host_uptodate =  uptr->IsHostUptodate();
+      initial_dev_uptodate =  uptr->IsDevUptodate();
+    }
+    else
+    {
+      auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
+      if (err != 0)
+        throw Exception("UnifiedVector allocation error, ec="+ToString(err));
+      initial_host_uptodate = true;
+      initial_dev_uptodate = false;
+      host_data = vec.FVDouble().Data() + range.First();
+    }
+    host_uptodate = initial_host_uptodate;
+    dev_uptodate = initial_dev_uptodate;
+  }
+
+  UnifiedVectorWrapper :: ~UnifiedVectorWrapper()
+  {
+    if(initial_host_uptodate && !host_uptodate)
+      UpdateHost();
+    if(initial_dev_uptodate && !dev_uptodate)
+      UpdateDevice();
+
+    host_data = nullptr;
+    auto uptr = dynamic_cast<const UnifiedVector*>(&vec);
+    if(uptr)
+      dev_data = nullptr;
+  }
+
 }
