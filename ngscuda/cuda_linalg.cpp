@@ -211,17 +211,23 @@ namespace ngla
     size_t bufferSize = 0;
     void* dBuffer = NULL;
 
+    cusparseDnVecDescr_t descr_x, descr_y;
+    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
+
     cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
-                            &alpha, descr, ux.descr, &beta, uy.descr, CUDA_R_64F,
+                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
                             CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
 
     cusparseStatus_t status;
     cusparseSpMV(Get_CuSparse_Handle(), 
                  CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
-                 ux.descr, &beta, uy.descr, CUDA_R_64F,
+                 descr_x, &beta, descr_y, CUDA_R_64F,
                  CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
 
+    cusparseDestroyDnVec(descr_x);
+    cusparseDestroyDnVec(descr_y);
     /* uy.UpdateHost(); */
     
     // uy.host_uptodate = false;
@@ -257,16 +263,22 @@ namespace ngla
     size_t bufferSize = 0;
     void* dBuffer = NULL;
 
+    cusparseDnVecDescr_t descr_x, descr_y;
+    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
+
     cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
-                            &alpha, matA, ux.descr, &beta, uy.descr, CUDA_R_64F,
+                            &alpha, matA, descr_x, &beta, descr_y, CUDA_R_64F,
                             CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
 
     cusparseSpMV(Get_CuSparse_Handle(), 
                  CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA,
-                 ux.descr, &beta, uy.descr, CUDA_R_64F,
+                 descr_x, &beta, descr_y, CUDA_R_64F,
                  CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
 
+    cusparseDestroyDnVec(descr_x);
+    cusparseDestroyDnVec(descr_y);
     uy.host_uptodate = false;
   }
 

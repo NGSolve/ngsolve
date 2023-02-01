@@ -10,7 +10,6 @@ namespace ngla
   protected:
     double * host_data;
     double * dev_data;
-    cusparseDnVecDescr_t descr;
   
     mutable bool host_uptodate;
     mutable bool dev_uptodate;
@@ -39,10 +38,6 @@ namespace ngla
     double & operator [] (const int ind);
 
     virtual AutoVector Range (T_Range<size_t> range) const;
-
-    const cusparseDnVecDescr_t& GetDescr() const;
-
-    cusparseDnVecDescr_t& GetDescr();
 
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & SetScalar (double scal);
