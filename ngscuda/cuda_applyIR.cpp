@@ -64,7 +64,7 @@ namespace ngla
                 }
 
 
-          s << "int tid = blockIdx.x*blockDim.x+threadIdx.x\n"
+          s << "int tid = blockIdx.x*blockDim.x+threadIdx.x;\n"
             << "for (int i = tid; i < nip; i += blockDim.x*gridDim.x) {\n";
           // s << "for (size_t i = 0; i < nip; i++) {\n";
           
