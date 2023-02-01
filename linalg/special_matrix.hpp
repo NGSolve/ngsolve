@@ -73,6 +73,7 @@ namespace ngla
     int VWidth() const override { return diag->Size(); }
 
     BaseVector & AsVector() override { return *diag; }
+    const BaseVector & AsVector() const override { return *diag; }
     ostream & Print (ostream & ost) const override;
     
     AutoVector CreateRowVector () const override;
