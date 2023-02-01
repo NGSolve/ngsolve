@@ -204,7 +204,7 @@ namespace ngla
     { ; }   
 
     BaseSparseMatrix (BaseSparseMatrix && amat)
-      : BaseMatrix(amat), MatrixGraph (move(amat))
+      : BaseMatrix(amat), MatrixGraph (std::move(amat))
     { ; }
 
     virtual ~BaseSparseMatrix ();
@@ -433,7 +433,7 @@ namespace ngla
     }
 
     SparseMatrixTM (SparseMatrixTM && amat)
-      : BASE (move(amat)), nul(TSCAL(0))
+      : BASE (std::move(amat)), nul(TSCAL(0))
     {
       SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
       GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
@@ -548,7 +548,7 @@ namespace ngla
       : SparseMatrixTM<TM> (amat) { ; }
 
     SparseMatrix (SparseMatrixTM<TM> && amat)
-      : SparseMatrixTM<TM> (move(amat)) { ; }
+      : SparseMatrixTM<TM> (std::move(amat)) { ; }
 
     virtual shared_ptr<BaseMatrix> CreateMatrix () const override;
     // virtual BaseMatrix * CreateMatrix (const Array<int> & elsperrow) const;

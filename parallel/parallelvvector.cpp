@@ -498,7 +498,7 @@ namespace ngla
                                                            sub_pardofs,
                                                            this->GetParallelStatus());
 
-    return move(vec);
+    return std::move(vec);
 
     /*
       Version 2:
@@ -519,7 +519,7 @@ namespace ngla
                                                            locvec.Memory(), 
                                                            range.GetParallelDofs(),
                                                            this->GetParallelStatus());
-    return move(vec);
+    return std::move(vec);
   }
 
 

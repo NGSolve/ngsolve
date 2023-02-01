@@ -313,14 +313,14 @@ namespace ngla
           res = make_unique<S_BaseVectorPtr<Complex>> (size, es);
         else
           res = make_unique<S_BaseVectorPtr<double>> (size, es);
-        return move(res);
+        return std::move(res);
       }
     
     if (is_complex)
       res = make_unique<VVector<Complex>> (size);
     else
       res = make_unique<VVector<double>> (size);
-    return move(res);
+    return std::move(res);
   }
 
 

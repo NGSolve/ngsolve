@@ -92,7 +92,7 @@ namespace ngla
     /// size of vector
     size_t size;
     /// number of doubles per entry
-    int entrysize;
+    int entrysize = 1;
     ///
     // shared_ptr<ParallelDofs> paralleldofs;
 
@@ -383,16 +383,16 @@ namespace ngla
   public:
     AutoVector () { ; }
 
-    AutoVector (AutoVector && av2) : vec(move(av2.vec)) { } 
+    AutoVector (AutoVector && av2) : vec(std::move(av2.vec)) { } 
     // { size = av2.Size(), entrysize = av2.EntrySize(); }
 
     AutoVector (shared_ptr<BaseVector> hvec) : vec(hvec) { }
     
-    AutoVector (unique_ptr<BaseVector> hvec) : vec(move(hvec)) { } 
+    AutoVector (unique_ptr<BaseVector> hvec) : vec(std::move(hvec)) { } 
     // { size = vec->Size(), entrysize = vec->EntrySize(); }
 
     template<typename U>
-    AutoVector (unique_ptr<U> hvec) : vec(move(hvec)) { } 
+    AutoVector (unique_ptr<U> hvec) : vec(std::move(hvec)) { } 
     // { size = vec->Size(), entrysize = vec->EntrySize(); }
 
     ~AutoVector();
@@ -481,7 +481,7 @@ namespace ngla
     ///
     BaseVector & AssignPointer (AutoVector && v)
     {
-      vec = move(v.vec);
+      vec = std::move(v.vec);
       // size = v.size;
       // entrysize = v.entrysize;
       return *this;

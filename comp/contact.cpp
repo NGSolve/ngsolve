@@ -1035,7 +1035,7 @@ namespace ngcomp
                               lock_guard<mutex> guard(add_mutex);
                               bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
                                                     (el, ElementId(BND, other_nr[index[first]]),
-                                                     move(primary_ir), move(secondary_ir),
+                                                     std::move(primary_ir), std::move(secondary_ir),
                                                      this, displacement.get()));
                             }
                           else
@@ -1080,7 +1080,7 @@ namespace ngcomp
                               lock_guard<mutex> guard(add_mutex);
                               bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
                                                     (vei, ElementId(BND, other_nr[index[first]]),
-                                                     move(volir), move(secondary_ir),
+                                                     std::move(volir), std::move(secondary_ir),
                                                      this, displacement.get()));
                             }
                           
@@ -1099,7 +1099,7 @@ namespace ngcomp
                                           ContactBoundary* _cb,
                                           GridFunction* _deformation)
     : primary_ei(aprimary_ei), secondary_ei(asecondary_ei),
-      primary_ir(move(aprimary_ir)), secondary_ir(move(asecondary_ir)),
+      primary_ir(std::move(aprimary_ir)), secondary_ir(std::move(asecondary_ir)),
       cb(_cb), fes(_cb->GetFESpace().get()), deformation(_deformation)
   { }
 
