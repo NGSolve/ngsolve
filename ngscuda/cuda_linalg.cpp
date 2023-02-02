@@ -427,39 +427,39 @@ namespace ngla
     
     if (disjoint_rows)
       {
-        DevArray<double> dev_hx(numblocks*hm);
-        DevArray<double> dev_hy(numblocks*wm);
-        
-        ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
+        // DevArray<double> dev_hx(numblocks*hm);
+        // DevArray<double> dev_hy(numblocks*wm);
+        // swapped hx/hy naming !!!!
+        ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), ux.DevData(), dev_hy.DevData());
         
         // dev_hy = dev_hx * mat
         double beta = 0.0;
         double alpha = s;
         cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
                                           wm, numblocks, hm, 
-                                          &alpha, dev_mat, wm, dev_hx.DevData(), hm,
-                                          &beta, dev_hy.DevData(), wm);
+                                          &alpha, dev_mat, wm, dev_hy.DevData(), hm,
+                                          &beta, dev_hx.DevData(), wm);
         
-        ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
+        ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hx.DevData(), uy.DevData());
       }
     else
       {
         for (auto c : col_coloring)
           {
-            DevArray<double> dev_hx(c.Size()*hm);
-            DevArray<double> dev_hy(c.Size()*wm);
-            
-            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
+            // DevArray<double> dev_hx(c.Size()*hm);
+            // DevArray<double> dev_hy(c.Size()*wm);
+            // swapped hx/hy naming !!!!            
+            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hy.DevData());
             
             // dev_hy = dev_hx * mat
             double beta = 0.0;
             double alpha = s;
             cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
                                               wm, c.Size(), hm, 
-                                              &alpha, dev_mat, wm, dev_hx.DevData(), hm,
-                                              &beta, dev_hy.DevData(), wm);
+                                              &alpha, dev_mat, wm, dev_hy.DevData(), hm,
+                                              &beta, dev_hx.DevData(), wm);
             
-            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
+            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), dev_hx.DevData(), uy.DevData());
           }
       }
 
