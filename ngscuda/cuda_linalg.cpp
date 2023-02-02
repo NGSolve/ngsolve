@@ -330,13 +330,14 @@ namespace ngla
     : h(mat.Height()), w(mat.Width()),
       hm(mat.GetMatrix().Height()), wm(mat.GetMatrix().Width()),
       rowdnums(mat.GetRowDNums()), coldnums(mat.GetColDNums()),
-      row_coloring(mat.GetRowColoring()), col_coloring(mat.GetColColoring())
+      row_coloring(mat.GetRowColoring()), col_coloring(mat.GetColColoring()),
+      numblocks(mat.GetRowDNums().Size()),
+      dev_hx(numblocks*wm), dev_hy(numblocks*hm)
   {
     disjoint_rows = (mat.GetRowColoring().Size() == 0);
     disjoint_cols = (mat.GetColColoring().Size() == 0);
     // mat.GetMatrix();
-
-    numblocks = mat.GetRowDNums().Size();
+    
     cudaMalloc((double**)&dev_mat, hm*wm*sizeof(double));
     cudaMemcpy (dev_mat, mat.GetMatrix().Data(), hm*wm*sizeof(double), cudaMemcpyHostToDevice); 
   }
@@ -356,8 +357,8 @@ namespace ngla
     
     if (disjoint_cols)
       {
-        DevArray<double> dev_hx(numblocks*wm);
-        DevArray<double> dev_hy(numblocks*hm);
+        // DevArray<double> dev_hx(numblocks*wm);
+        // DevArray<double> dev_hy(numblocks*hm);
         
         ConstEBEKernelCopyIn (numblocks, wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
         
@@ -378,8 +379,8 @@ namespace ngla
       {
         for (auto c : col_coloring)
           {
-            DevArray<double> dev_hx(c.Size()*wm);
-            DevArray<double> dev_hy(c.Size()*hm);
+            // DevArray<double> dev_hx(c.Size()*wm);
+            // DevArray<double> dev_hy(c.Size()*hm);
             
             ConstEBEKernelCopyInIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
             
