@@ -345,6 +345,8 @@ namespace ngla
   void DevConstantElementByElementMatrix ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("DevConstantEBEMatrix::MultAdd"); RegionTimer reg(t);
+    
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
 
@@ -396,6 +398,8 @@ namespace ngla
   void DevConstantElementByElementMatrix ::
   MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("DevConstantEBEMatrix::MultTransAdd"); RegionTimer reg(t);
+    
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
     
@@ -466,6 +470,8 @@ namespace ngla
   
   void DevBlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("DevBlockDiagonalMatrixSoA::MultAdd"); RegionTimer reg(t);
+    
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
@@ -481,6 +487,8 @@ namespace ngla
 
   void DevBlockDiagonalMatrixSoA :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("DevBlockDiagonalMatrixSoA::MultTransAdd"); RegionTimer reg(t);
+    
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
