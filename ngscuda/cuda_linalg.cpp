@@ -346,6 +346,7 @@ namespace ngla
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("DevConstantEBEMatrix::MultAdd"); RegionTimer reg(t);
+    static Timer tmult("DevConstantEBEMatrix::MultAdd - mult");
     
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
@@ -363,11 +364,14 @@ namespace ngla
         // dev_hy = dev_hx * Trans(mat)
         double beta = 0.0;
         double alpha = s;
+        {
+        tmult.Start();
         cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_T, CUBLAS_OP_N,
                                           hm, numblocks, wm, 
                                           &alpha, dev_mat, wm, dev_hx.DevData(), wm,
                                           &beta, dev_hy.DevData(), hm);
-        
+        tmult.Stop();
+        }
         ConstEBEKernelCopyOut (numblocks, hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
       }
     else
@@ -382,11 +386,14 @@ namespace ngla
             // dev_hy = dev_hx * Trans(mat)
             double beta = 0.0;
             double alpha = s;
+            {
+            tmult.Start();
             cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_T, CUBLAS_OP_N,
                                               hm, c.Size(), wm, 
                                               &alpha, dev_mat, wm, dev_hx.DevData(), wm,
                                               &beta, dev_hy.DevData(), hm);
-            
+            tmult.Stop();
+            }
             ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
           }
       }
