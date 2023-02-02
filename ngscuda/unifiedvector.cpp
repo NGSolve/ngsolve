@@ -155,9 +155,11 @@ namespace ngla
       {
         UpdateDevice();
         v2->UpdateDevice();
-
+        /*
         cublasDaxpy (Get_CuBlas_Handle(), 
                            size, &scal, v2->dev_data, 1, dev_data, 1);
+        */
+        MyDaxpy (scal, size, v2->dev_data, dev_data);
         host_uptodate = false;
       }
     else
