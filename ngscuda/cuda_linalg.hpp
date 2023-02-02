@@ -9,8 +9,8 @@
 
 // own ngsolve cuda-kernels:
 extern void SetScalar (double val, int n, double * dev_ptr);
-extern void SetVector (double val, int n, double * x, double * y)
-extern void MyDaxpy (double val, int n, double * x, double * y)
+extern void SetVector (double val, int n, double * x, double * y);
+extern void MyDaxpy (double val, int n, double * x, double * y);
 
 
 extern void MultDiagonal (int n, double * D, double * x, double * y);
