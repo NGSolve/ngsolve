@@ -348,6 +348,8 @@ namespace ngla
   {
     static Timer t("DevConstantEBEMatrix::MultAdd"); RegionTimer reg(t);
     static Timer tmult("DevConstantEBEMatrix::MultAdd - mult");
+    static Timer tcopyin("DevConstantEBEMatrix::MultAdd - copyin");
+    static Timer tcopyout("DevConstantEBEMatrix::MultAdd - copyout");
     
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
@@ -359,8 +361,10 @@ namespace ngla
       {
         // DevArray<double> dev_hx(numblocks*wm);
         // DevArray<double> dev_hy(numblocks*hm);
-        
+
+        tcopyin.Start();
         ConstEBEKernelCopyIn (numblocks, wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+        tcopyin.Stop();
         
         // dev_hy = dev_hx * Trans(mat)
         double beta = 0.0;
@@ -373,7 +377,9 @@ namespace ngla
                                           &beta, dev_hy.DevData(), hm);
         tmult.Stop();
         }
+        tcopyout.Start();        
         ConstEBEKernelCopyOut (numblocks, hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+        tcopyout.Stop();
       }
     else
       {
@@ -381,8 +387,10 @@ namespace ngla
           {
             // DevArray<double> dev_hx(c.Size()*wm);
             // DevArray<double> dev_hy(c.Size()*hm);
-            
+
+            tcopyin.Start();            
             ConstEBEKernelCopyInIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+            tcopyin.Stop();
             
             // dev_hy = dev_hx * Trans(mat)
             double beta = 0.0;
@@ -395,7 +403,10 @@ namespace ngla
                                               &beta, dev_hy.DevData(), hm);
             tmult.Stop();
             }
+
+            tcopyout.Start();
             ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+            tcopyout.Stop();
           }
       }
 
