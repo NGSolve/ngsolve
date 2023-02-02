@@ -279,16 +279,20 @@ namespace ngfem
 
     // orient: copied from h1
     AutoDiff<2> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
-    int fmax = 0; 
-    for (int j = 1; j < 4; j++)
-      if (vnums[j] > vnums[fmax]) fmax = j;
-    int f1 = (fmax+3)%4; 
-    int f2 = (fmax+1)%4; 
-    if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f1 > f2; 
+    // int fmax = 0; 
+    // for (int j = 1; j < 4; j++)
+    //   if (vnums[j] > vnums[fmax]) fmax = j;
+    // int f1 = (fmax+3)%4; 
+    // int f2 = (fmax+1)%4; 
+    // if(vnums[f2] > vnums[f1]) swap(f1,f2);  // fmax > f1 > f2; 
 
-    AutoDiff<2> xi  = sigma[fmax] - sigma[f1]; 
-    AutoDiff<2> eta = sigma[fmax] - sigma[f2]; 
+    // AutoDiff<2> xi  = sigma[fmax] - sigma[f1]; 
+    // AutoDiff<2> eta = sigma[fmax] - sigma[f2]; 
     
+    INT<4> f = GetFaceSort (0, vnums); 
+    AutoDiff<2> xi  = sigma[f[0]] - sigma[f[1]]; 
+    AutoDiff<2> eta = sigma[f[0]] - sigma[f[3]]; 
+
     int ii = 0;
     
     int n = max2(order_inner[0],order_inner[1]);
