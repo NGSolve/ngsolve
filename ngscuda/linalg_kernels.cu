@@ -12,6 +12,38 @@ void SetScalar (double val, int n, double * x)
 } 
 
 
+// y[i] = val * x[i]
+__global__ void SetVectorKernel (double val, int n, double * x, double * y)
+{
+  int tid = blockIdx.x*blockDim.x+threadIdx.x;
+  for (int i = tid; i < n; i += blockDim.x*gridDim.x)
+    y[i] = val * x[i];
+}
+
+void SetVector (double val, int n, double * x, double * y)
+{
+  SetVectorKernel<<<512,256>>> (val, n, x, y);
+} 
+
+
+// y[i] += val * x[i]
+__global__ void MyDaxpyKernel (double val, int n, double * x, double * y)
+{
+  int tid = blockIdx.x*blockDim.x+threadIdx.x;
+  for (int i = tid; i < n; i += blockDim.x*gridDim.x)
+    y[i] += val * x[i];
+}
+
+void MyDaxpy (double val, int n, double * x, double * y)
+{
+  MyDaxpyKernel<<<512,256>>> (val, n, x, y);
+} 
+
+
+
+
+
+
 // y = D * x
 __global__ void MultDiagonalKernel (int n, double * D, double * x, double * y)
 {
