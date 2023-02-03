@@ -162,6 +162,10 @@ namespace ngla
     int n = a->Height();
     height = n;
 
+    hermitian = a->IsHermitian();
+    if (hermitian)
+      throw Exception("complex hermitian sparse inverse is WIP");
+
     int printstat = 0;
     
     if (printstat)
@@ -1749,6 +1753,14 @@ namespace ngla
                            { ; } );
     timer0.Stop();    
     */
+
+    if (hermitian)
+      {
+        for (size_t i : Range(hy))
+          hy(i) = Conj(hy(i));
+        cout << "use hermitean solve" << endl;
+      }
+    
     timer1.Start();
 
     RunParallelDependency (micro_dependency, micro_dependency_trans,
@@ -1854,6 +1866,11 @@ namespace ngla
                  });
 
 
+    if (hermitian)
+      for (size_t i : Range(hy))
+        hy(i) = Conj(hy(i));
+
+    
     timer2.Start();
 
     /*
@@ -1953,7 +1970,6 @@ namespace ngla
 
     timer2.Stop();
 
-    
   }
 
   template <class TM, class TV_ROW, class TV_COL>
