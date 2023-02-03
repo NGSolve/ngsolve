@@ -142,6 +142,31 @@ namespace ngla
 
     virtual void DoArchive (Archive & ar);
 
+    
+    template <typename TSCAL>
+      Matrix<TSCAL> ToDense() const;
+    /*
+    {
+      auto vecx = CreateRowVector();
+      auto vecy = CreateColVector();
+      
+      Matrix<TSCAL> dmat(Height(), Width());
+      auto fx = vecx.FV<TSCAL>();
+      auto fy = vecy.FV<TSCAL>();
+      for (int i = 0; i < fx.Size(); i++)
+        {
+          fx = 0;
+          fx(i) = 1;
+          Mult (vecx, vecy);
+          dmat.Col(i) = fy;
+        }
+      return std::move(dmat);
+    }
+    */
+
+    // time per run
+    double Timing (int runs = 10) const;
+    
     class OperatorInfo
     {
     public:

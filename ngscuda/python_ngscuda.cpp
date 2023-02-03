@@ -228,7 +228,7 @@ PYBIND11_MODULE(ngscuda, m) {
            return c;
          })
     
-    .def("__timing__", [](const Matrix<Dev<double>> & a)
+    .def("__timing__", []()
          {
            for (int n = 100; n < 5000; n *= 2)
              {

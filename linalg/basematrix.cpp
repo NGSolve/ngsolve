@@ -253,6 +253,43 @@ namespace ngla
     ;
   }
 
+  template <typename TSCAL>
+  Matrix<TSCAL> BaseMatrix :: ToDense() const
+  {
+    auto vecx = CreateRowVector();
+    auto vecy = CreateColVector();
+    
+    Matrix<TSCAL> dmat(Height(), Width());
+    auto fx = vecx.FV<TSCAL>();
+    auto fy = vecy.FV<TSCAL>();
+    for (int i = 0; i < fx.Size(); i++)
+      {
+        fx = 0;
+        fx(i) = 1;
+        Mult (vecx, vecy);
+        dmat.Col(i) = fy;
+      }
+    return std::move(dmat);
+  }
+
+  template Matrix<double> BaseMatrix :: ToDense<double>() const;
+  template Matrix<Complex> BaseMatrix :: ToDense<Complex>() const;
+
+
+  double BaseMatrix::Timing (int runs) const
+  {
+    Timer t("timing");
+    auto vx = CreateRowVector();
+    auto vy = CreateColVector();
+
+    vx = 0;
+    t.Start();
+    for (int i = 0; i < runs; i++)
+      Mult (vx, vy);
+    t.Stop();
+    return t.GetTime()/runs;
+  }
+  
 
   template<>
   S_BaseMatrix<double> :: S_BaseMatrix () 
