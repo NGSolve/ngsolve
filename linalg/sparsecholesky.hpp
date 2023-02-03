@@ -71,7 +71,8 @@ namespace ngla
     int nused;
     // number of non-zero entries in the L-factor
     size_t nze;
-
+    //
+    bool hermitian = false;   // Hermitian or complex-symmetric ? 
     // the reordering (original dofnr i -> order[i])
     Array<int> order;
     Array<int> inv_order;
@@ -147,6 +148,8 @@ namespace ngla
     int VHeight() const override { return height; }
     ///
     int VWidth() const override { return height; }
+    ///
+    void SetHermitian (bool herm = true) { hermitian = herm; } 
     ///
     void Allocate (const Array<int> & aorder, 
 		   const Array<MDOVertex> & vertices,
@@ -239,6 +242,7 @@ namespace ngla
     using BASE::block_dependency;
     using BASE::BlockDofs;
     using BASE::BlockExtDofs;
+    using BASE::hermitian;
   public:
     typedef TV_COL TV;
     typedef TV_ROW TVX;

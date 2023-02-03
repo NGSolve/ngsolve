@@ -351,6 +351,7 @@ namespace ngla
     // Array<TM, size_t> data;
     NumaDistributedArray<TM> data;
     TM nul;
+    bool hermitian = false;
     
     typedef S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL> BASE;
     using BASE::firsti;
@@ -449,6 +450,9 @@ namespace ngla
     virtual ~SparseMatrixTM ();
 
 
+    bool IsHermitian() const { return hermitian; }
+    void SetHermitian(bool herm) { hermitian = herm; }
+    
     TM & operator[] (int i)  { return data[i]; }
     const TM & operator[] (int i) const { return data[i]; }
 
