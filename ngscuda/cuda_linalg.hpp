@@ -5,8 +5,8 @@
 #include <cusparse.h>
 
 #include "cuda_ngstd.hpp"
+#include "cuda_ngbla.hpp"
 #include "unifiedvector.hpp"
-
 // own ngsolve cuda-kernels:
 extern void SetScalar (double val, int n, double * dev_ptr);
 extern void SetVector (double val, int n, double * x, double * y);
@@ -153,6 +153,23 @@ namespace ngla
     int VHeight() const override { return dimy*blocks; }
     int VWidth() const override { return dimx*blocks; }
   };
+
+  class DevEmbeddedMatrix : public EmbeddedMatrix
+  {
+  public:
+    using EmbeddedMatrix::EmbeddedMatrix;
+    AutoVector CreateColVector() const override { return make_unique<UnifiedVector>(Height()); }      
+  };
+  
+  class DevEmbeddedTransposeMatrix : public EmbeddedTransposeMatrix
+  {
+  public:
+    using EmbeddedTransposeMatrix::EmbeddedTransposeMatrix;
+    AutoVector CreateRowVector() const override { return make_unique<UnifiedVector>(Width()); }      
+  };
+  
+
+
 
   
   

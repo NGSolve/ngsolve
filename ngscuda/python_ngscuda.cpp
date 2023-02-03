@@ -4,6 +4,7 @@
 #include "cuda_linalg.hpp"
 
 // TODO: always use ngs_cuda?
+using namespace ngbla;
 using namespace ngla;
 using namespace ngs_cuda;
 
@@ -213,5 +214,42 @@ PYBIND11_MODULE(ngscuda, m) {
           py::arg("mat"),
           py::arg("freedofs") = shared_ptr<BitArray>());
 
+
+  
+  
+  
+  py::class_<Matrix<Dev<double>>> (m, "DevMatrix")
+    .def(py::init<FlatMatrix<double>>())
+    .def("D2H", &Matrix<Dev<double>>::D2H)
+    .def("__matmul__", [&](const Matrix<Dev<double>> & a, const Matrix<Dev<double>> & b)
+         {
+           Matrix<Dev<double>> c(a.Height(), b.Width());
+           MultMatMat (a, b, c);
+           return c;
+         })
+    
+    .def("__timing__", [](const Matrix<Dev<double>> & a)
+         {
+           for (int n = 100; n < 5000; n *= 2)
+             {
+               cout << "n = " << n << endl;
+               Matrix a(n,n), b(n,n);
+               a = 1; b = 2;
+               Matrix<Dev<double>> deva(a);
+               Matrix<Dev<double>> devb(b);
+               Matrix<Dev<double>> devc(n, n);
+               int runs = 1e11 / (double(n)*double(n)*double(n)) + 1;
+               Timer t("matmat");
+               t.Start();
+               cudaDeviceSynchronize();
+               for (int i = 0; i < runs; i++)
+                 MultMatMat(deva, devb, devc);
+               cudaDeviceSynchronize();
+               t.Stop();
+               t.AddFlops (double(runs)*n*n*n);
+               cout << "time = " << t.GetTime() << " MFlops = " << t.GetMFlops() << endl;
+             }
+         })
+    ;
 }
 

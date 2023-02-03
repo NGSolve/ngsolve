@@ -98,6 +98,21 @@ namespace ngla
                                               return make_shared<DevBlockDiagonalMatrixSoA>(bdm_mat);
                                             });
 
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(EmbeddedMatrix),
+                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & mat = dynamic_cast<const EmbeddedMatrix&>(bmat);
+                                              return make_shared<DevEmbeddedMatrix>(mat.Height(), mat.GetRange(),
+                                                                                    mat.GetMatrix()->CreateDeviceMatrix());
+                                            });
+    
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(EmbeddedTransposeMatrix),
+                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & mat = dynamic_cast<const EmbeddedTransposeMatrix&>(bmat);
+                                              return make_shared<DevEmbeddedTransposeMatrix>(mat.Width(), mat.GetRange(),
+                                                                                             mat.GetMatrix()->CreateDeviceMatrix());
+                                            });
     
   }
 
