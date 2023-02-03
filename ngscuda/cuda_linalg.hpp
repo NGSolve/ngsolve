@@ -4,9 +4,12 @@
 #include <cublas_v2.h>
 #include <cusparse.h>
 
-#include "cuda_ngstd.hpp"
-#include "cuda_ngbla.hpp"
-#include "unifiedvector.hpp"
+namespace ngla
+{
+  cublasHandle_t Get_CuBlas_Handle ();
+}
+
+
 // own ngsolve cuda-kernels:
 extern void SetScalar (double val, int n, double * dev_ptr);
 extern void SetVector (double val, int n, double * x, double * y);
@@ -24,13 +27,17 @@ extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * co
 
 extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res);
 
+
+#include "cuda_ngstd.hpp"
+#include "cuda_ngbla.hpp"
+#include "unifiedvector.hpp"
+
+
 namespace ngla
 {
   using namespace ngs_cuda;
   
-  
   void InitCuLinalg();
-  cublasHandle_t Get_CuBlas_Handle ();
 
   class DevSparseMatrix;
 
