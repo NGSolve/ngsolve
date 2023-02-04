@@ -140,7 +140,7 @@ PYBIND11_MODULE(ngscuda, m) {
   /* m.def("InnerProdcut", [] (UnifiedVector &a, UnifiedVector &b)) */
 
   py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
-    (m, "DevMatrix", "device matrix for CUDA applications");
+    (m, "DevBaseMatrix", "device matrix for CUDA applications");
 
   py::class_<DevSparseMatrix, DevMatrix, shared_ptr<DevSparseMatrix>>
     (m, "DevSparseMatrix", "DevSparseMatrix for CUDA applications")
