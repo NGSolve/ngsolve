@@ -274,6 +274,20 @@ namespace ngbla
       }
   }
 
+  template <typename T, ORDERING ORD>
+  INLINE void MySubADBh (SliceMatrix<T,ORD> a,
+                         SliceVector<T> diag,
+                         SliceMatrix<T,ORD> b,
+                         SliceMatrix<T,ORD> c,
+                         bool symmetric)
+  {
+    Matrix<T,ORD> bconj(b.Height(), b.Width());
+    bconj = Conj(b);
+    MySubADBt (a, diag, SliceMatrix<T,ORD>(bconj), c, symmetric);
+  }
+
+
+  
   
 // Solve for B1:   B1 D1 L1^t = B
   template <typename T, ORDERING ORD>
@@ -329,12 +343,21 @@ namespace ngbla
   }
   
   // calc new A22-block
+  // A2 -= B D B^t
   template <typename T, ORDERING ORD>
   void CalcLDL_A2 (SliceVector<T> diag, SliceMatrix<T,ORD> B, SliceMatrix<T,ORD> A2)
   {
     MySubADBt (B, diag, B, A2, true);
-    return;
   }
+
+  // calc new A22-block hermitsch
+  // A2 -= B D B^h
+  template <typename T, ORDERING ORD>
+  void CalcLDL_A2H (SliceVector<T> diag, SliceMatrix<T,ORD> B, SliceMatrix<T,ORD> A2)
+  {
+    MySubADBh (B, diag, B, A2, true);
+  }
+
   
 
 // Calc A = L D L^t
@@ -382,6 +405,35 @@ namespace ngbla
     */
   }
 
+
+// Calc A = L D L^h
+  template <typename T, ORDERING ORD>
+  void CalcLDLH (SliceMatrix<T,ORD> mat)
+  {
+    size_t n = mat.Height();
+    
+    if (n >= 2)
+      {
+        size_t n1 = n/2;
+        auto L1 = mat.Rows(0,n1).Cols(0,n1);
+        auto L2 = mat.Rows(n1,n).Cols(n1,n);
+        auto B = mat.Rows(n1,n).Cols(0,n1);
+        CalcLDLH (L1);
+        CalcLDL_SolveL (L1,B);
+        CalcLDL_A2H (L1.Diag(),B,L2);
+        CalcLDLH (L2);
+        return;
+      }
+
+    if (n == 1)
+      {
+        auto hm = mat(0,0);
+        CalcInverse (hm, mat(0,0));
+        return;
+      }
+  }
+
+
   
   template <typename T, ORDERING ORD>
   void SolveLDL (SliceMatrix<T,ORD> mat, FlatVector<T> sol)
@@ -406,6 +458,31 @@ namespace ngbla
         sol(i) -= mat(i,i) * hsum;
       }
   }
+
+  template <typename T, ORDERING ORD>
+  void SolveLDLH (SliceMatrix<T,ORD> mat, FlatVector<T> sol)
+  {
+    size_t n = mat.Height();
+    
+    for (size_t i = 0; i < n; i++)
+      {
+        T tmp = mat(i,i)*sol(i);
+        for (size_t j = i+1; j < n; j++)
+          sol(j) -= mat(j,i) * tmp;
+      }
+    
+    for (size_t i = 0; i < n; i++)
+      sol(i) *= mat(i,i);
+    
+    for (size_t i = n; i--> 0; )
+      {
+        T hsum{0};
+        for (size_t j = i+1; j < n; j++)
+          hsum += Conj(mat(j,i))*sol(j);
+        sol(i) -= mat(i,i) * hsum;
+      }
+  }
+
 
 
 
