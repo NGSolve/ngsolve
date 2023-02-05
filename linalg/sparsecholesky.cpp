@@ -1425,11 +1425,23 @@ namespace ngla
 
         {
           // RegionTracer reg1(TaskManager::GetThreadId(), tdep1, block.Size());
-          CalcLDL (A11);
-          if (mi < nk)
+          if (!hermitian)
             {
-              CalcLDL_SolveL (A11,B);
-              CalcLDL_A2 (A11.Diag(),B,A22);
+              CalcLDL (A11);
+              if (mi < nk)
+                {
+                  CalcLDL_SolveL (A11,B);
+                  CalcLDL_A2 (A11.Diag(),B,A22);
+                }
+            }
+          else
+            {
+              CalcLDLH (A11);
+              if (mi < nk)
+                {
+                  CalcLDL_SolveL (A11,B);
+                  CalcLDL_A2H (A11.Diag(),B,A22);
+                }
             }
         }
         
@@ -1494,7 +1506,10 @@ namespace ngla
                   size_t first = hfirstinrow[i2] + block.Next()-i2-1;
                   
                   TM q = hdiag[i2] * hlfact[first+j];
-                  hdiag[target_row] -= Trans (hlfact[first+j]) * q;
+                  if (!hermitian)
+                    hdiag[target_row] -= Trans (hlfact[first+j]) * q;
+                  else
+                    hdiag[target_row] -= Conj(Trans (hlfact[first+j])) * q;
                 }
               
               locks[target_row].unlock();            
@@ -1754,15 +1769,14 @@ namespace ngla
     timer0.Stop();    
     */
 
-    if (hermitian)
-      {
-        for (size_t i : Range(hy))
-          hy(i) = Conj(hy(i));
-        cout << "use hermitean solve" << endl;
-      }
     
     timer1.Start();
 
+    if (hermitian)
+      for (size_t i : Range(hy))
+        hy(i) = Conj(hy(i));
+
+    
     RunParallelDependency (micro_dependency, micro_dependency_trans,
                            [&,hy] (int nr) 
                            {
@@ -1866,10 +1880,6 @@ namespace ngla
                  });
 
 
-    if (hermitian)
-      for (size_t i : Range(hy))
-        hy(i) = Conj(hy(i));
-
     
     timer2.Start();
 
@@ -1970,6 +1980,14 @@ namespace ngla
 
     timer2.Stop();
 
+    if (hermitian)
+      {
+        for (size_t i : Range(hy))
+          hy(i) = Conj(hy(i));
+        cout << "use hermitean solve" << endl;
+      }
+
+    
   }
 
   template <class TM, class TV_ROW, class TV_COL>
