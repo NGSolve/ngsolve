@@ -65,7 +65,7 @@ namespace ngs_cuda
     cudaDeviceSetSharedMemConfig ( cudaSharedMemBankSizeEightByte );
   }
 
-
+  DevStackMemory stackmemory;
 
 }
 

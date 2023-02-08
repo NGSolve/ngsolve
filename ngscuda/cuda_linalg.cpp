@@ -340,14 +340,16 @@ namespace ngla
   
   /******************** DevConstantEBEMatrix ********************/
 
+  bool synckernels = true;
+  
   DevConstantElementByElementMatrix ::
   DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat)
     : h(mat.Height()), w(mat.Width()),
       hm(mat.GetMatrix().Height()), wm(mat.GetMatrix().Width()),
       rowdnums(mat.GetRowDNums()), coldnums(mat.GetColDNums()),
       row_coloring(mat.GetRowColoring()), col_coloring(mat.GetColColoring()),
-      numblocks(mat.GetRowDNums().Size()),
-      dev_hx(numblocks*wm), dev_hy(numblocks*hm)
+      numblocks(mat.GetRowDNums().Size())
+      // dev_hx(numblocks*wm), dev_hy(numblocks*hm)
   {
     disjoint_rows = (mat.GetRowColoring().Size() == 0);
     disjoint_cols = (mat.GetColColoring().Size() == 0);
@@ -371,14 +373,21 @@ namespace ngla
 
     ux.UpdateDevice();
     uy.UpdateDevice();
+
+    if (synckernels)
+     cudaDeviceSynchronize();
+    
     
     if (disjoint_cols)
       {
-        // DevArray<double> dev_hx(numblocks*wm);
-        // DevArray<double> dev_hy(numblocks*hm);
+        DevStackArray<double> dev_hx(numblocks*wm);
+        DevStackArray<double> dev_hy(numblocks*hm);
 
         tcopyin.Start();
         ConstEBEKernelCopyIn (numblocks, wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+        if (synckernels)
+          cudaDeviceSynchronize();
+        
         tcopyin.Stop();
         
         // dev_hy = dev_hx * Trans(mat)
@@ -390,21 +399,25 @@ namespace ngla
                                           hm, numblocks, wm, 
                                           &alpha, dev_mat, wm, dev_hx.DevData(), wm,
                                           &beta, dev_hy.DevData(), hm);
+        if (synckernels) cudaDeviceSynchronize();
         tmult.Stop();
         }
+        
         tcopyout.Start();        
         ConstEBEKernelCopyOut (numblocks, hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+        if (synckernels) cudaDeviceSynchronize();
         tcopyout.Stop();
       }
     else
       {
         for (auto c : col_coloring)
           {
-            // DevArray<double> dev_hx(c.Size()*wm);
-            // DevArray<double> dev_hy(c.Size()*hm);
+            DevStackArray<double> dev_hx(c.Size()*wm);
+            DevStackArray<double> dev_hy(c.Size()*hm);
 
             tcopyin.Start();            
             ConstEBEKernelCopyInIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+            if (synckernels) cudaDeviceSynchronize();            
             tcopyin.Stop();
             
             // dev_hy = dev_hx * Trans(mat)
@@ -416,11 +429,13 @@ namespace ngla
                                               hm, c.Size(), wm, 
                                               &alpha, dev_mat, wm, dev_hx.DevData(), wm,
                                               &beta, dev_hy.DevData(), hm);
+            if (synckernels) cudaDeviceSynchronize();            
             tmult.Stop();
             }
 
             tcopyout.Start();
             ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+            if (synckernels) cudaDeviceSynchronize();            
             tcopyout.Stop();
           }
       }
@@ -442,9 +457,9 @@ namespace ngla
     
     if (disjoint_rows)
       {
-        // DevArray<double> dev_hx(numblocks*hm);
-        // DevArray<double> dev_hy(numblocks*wm);
-        // swapped hx/hy naming !!!!
+        DevStackArray<double> dev_hx(numblocks*wm);
+        DevStackArray<double> dev_hy(numblocks*hm);
+
         ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), ux.DevData(), dev_hy.DevData());
         
         // dev_hy = dev_hx * mat
@@ -461,9 +476,9 @@ namespace ngla
       {
         for (auto c : col_coloring)
           {
-            // DevArray<double> dev_hx(c.Size()*hm);
-            // DevArray<double> dev_hy(c.Size()*wm);
-            // swapped hx/hy naming !!!!            
+            DevStackArray<double> dev_hx(c.Size()*wm);
+            DevStackArray<double> dev_hy(c.Size()*hm);
+
             ConstEBEKernelCopyInIdx (c.Size(), c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hy.DevData());
             
             // dev_hy = dev_hx * mat
@@ -477,7 +492,8 @@ namespace ngla
             ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), dev_hx.DevData(), uy.DevData());
           }
       }
-
+    
+    if (synckernels) cudaDeviceSynchronize();
     uy.InvalidateHost();    
   }
   
