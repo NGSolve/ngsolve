@@ -164,7 +164,8 @@ namespace ngla
 
     hermitian = a->IsHermitian();
     if (hermitian)
-      throw Exception("complex hermitian sparse inverse is WIP");
+      // throw Exception("complex hermitian sparse inverse is WIP");
+      cerr << "complex hermitian sparse inverse is WIP" << endl;
 
     int printstat = 0;
     
@@ -1773,9 +1774,14 @@ namespace ngla
     timer1.Start();
 
     if (hermitian)
-      for (size_t i : Range(hy))
-        hy(i) = Conj(hy(i));
+      {
+        for (size_t i : Range(hy))
+          hy(i) = Conj(hy(i));
+        cout << "use hermitean solve" << endl;
+      }
 
+
+    
     
     RunParallelDependency (micro_dependency, micro_dependency_trans,
                            [&,hy] (int nr) 
@@ -1869,6 +1875,10 @@ namespace ngla
                            });
 
     timer1.Stop();
+
+    if (hermitian)
+      for (size_t i : Range(hy))
+        hy(i) = Conj(hy(i));
 
 
     // solve with the diagonal
@@ -1979,13 +1989,6 @@ namespace ngla
                            });
 
     timer2.Stop();
-
-    if (hermitian)
-      {
-        for (size_t i : Range(hy))
-          hy(i) = Conj(hy(i));
-        cout << "use hermitean solve" << endl;
-      }
 
     
   }
@@ -2172,6 +2175,8 @@ namespace ngla
       {
 	swap (i, j);
 	hval = Trans (val);
+        if (hermitian)
+          hval = Conj(hval);
       }
     else
       hval = val;
