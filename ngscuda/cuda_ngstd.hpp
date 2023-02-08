@@ -45,10 +45,59 @@ namespace ngs_cuda
     return ost;
   }
 
+  class DevStackMemory
+  {
+    char * data;
+    char * stackptr;
+  public:
+    DevStackMemory (size_t s = 512*1024*1025)
+      {
+        cudaMalloc (&data, s);
+        stackptr = data;
+      }
+    
+    ~DevStackMemory ()
+      {
+        cudaFree (data);        
+      }
+    
+    template <typename T>
+      T * Alloc (size_t s)
+    {
+      char * tmp = stackptr;
+      s *= sizeof(T);
+      s = (s+255) & (-256);
+      stackptr += s;
+      return reinterpret_cast<T*>(tmp);
+    }
+    
+    void Free (void * ptr)
+    {
+      stackptr = reinterpret_cast<char*> (ptr);
+    }
+  };
 
+  extern DevStackMemory stackmemory;
 
-
-
+  template <typename T>
+  class DevStackArray
+  {
+    size_t size;
+    T * data;
+  public:
+    DevStackArray (size_t s)
+      : size(s), data{stackmemory.Alloc<T>(s)}
+      {
+        ;
+      }
+    ~DevStackArray ()
+      {
+        stackmemory.Free(data);
+      }
+    
+    T * DevData () const { return data; }
+  };
+  
 
 
 
