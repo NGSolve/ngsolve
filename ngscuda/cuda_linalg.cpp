@@ -345,18 +345,13 @@ namespace ngla
   DevConstantElementByElementMatrix ::
   DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat)
     : h(mat.Height()), w(mat.Width()),
-      hm(mat.GetMatrix().Height()), wm(mat.GetMatrix().Width()),
+      devmat(mat.GetMatrix()),
       rowdnums(mat.GetRowDNums()), coldnums(mat.GetColDNums()),
       row_coloring(mat.GetRowColoring()), col_coloring(mat.GetColColoring()),
       numblocks(mat.GetRowDNums().Size())
-      // dev_hx(numblocks*wm), dev_hy(numblocks*hm)
   {
     disjoint_rows = (mat.GetRowColoring().Size() == 0);
     disjoint_cols = (mat.GetColColoring().Size() == 0);
-    // mat.GetMatrix();
-    
-    cudaMalloc((double**)&dev_mat, hm*wm*sizeof(double));
-    cudaMemcpy (dev_mat, mat.GetMatrix().Data(), hm*wm*sizeof(double), cudaMemcpyHostToDevice); 
   }
 
   
@@ -380,31 +375,24 @@ namespace ngla
     
     if (disjoint_cols)
       {
-        DevStackArray<double> dev_hx(numblocks*wm);
-        DevStackArray<double> dev_hy(numblocks*hm);
+        DevStackArray<double> dev_hx(numblocks*devmat.Width());
+        DevStackArray<double> dev_hy(numblocks*devmat.Height());
 
         tcopyin.Start();
-        ConstEBEKernelCopyIn (numblocks, wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
-        if (synckernels)
-          cudaDeviceSynchronize();
-        
+        ConstEBEKernelCopyIn (numblocks, devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+        if (synckernels) cudaDeviceSynchronize();
         tcopyin.Stop();
         
         // dev_hy = dev_hx * Trans(mat)
-        double beta = 0.0;
-        double alpha = s;
-        {
         tmult.Start();
-        cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_T, CUBLAS_OP_N,
-                                          hm, numblocks, wm, 
-                                          &alpha, dev_mat, wm, dev_hx.DevData(), wm,
-                                          &beta, dev_hy.DevData(), hm);
+        FlatMatrix<Dev<double>> matx(numblocks, devmat.Width(), dev_hx.Data());
+        FlatMatrix<Dev<double>> maty(numblocks, devmat.Height(), dev_hy.Data());
+        MultMatMat (matx, Trans(devmat), maty, s, 0);
         if (synckernels) cudaDeviceSynchronize();
         tmult.Stop();
-        }
         
         tcopyout.Start();        
-        ConstEBEKernelCopyOut (numblocks, hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+        ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
         if (synckernels) cudaDeviceSynchronize();
         tcopyout.Stop();
       }
@@ -412,29 +400,25 @@ namespace ngla
       {
         for (auto c : col_coloring)
           {
-            DevStackArray<double> dev_hx(c.Size()*wm);
-            DevStackArray<double> dev_hy(c.Size()*hm);
+            DevStackArray<double> dev_hx(c.Size()*devmat.Width());
+            DevStackArray<double> dev_hy(c.Size()*devmat.Height());
 
             tcopyin.Start();            
-            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
             if (synckernels) cudaDeviceSynchronize();            
             tcopyin.Stop();
             
             // dev_hy = dev_hx * Trans(mat)
-            double beta = 0.0;
-            double alpha = s;
-            {
             tmult.Start();
-            cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_T, CUBLAS_OP_N,
-                                              hm, c.Size(), wm, 
-                                              &alpha, dev_mat, wm, dev_hx.DevData(), wm,
-                                              &beta, dev_hy.DevData(), hm);
+            FlatMatrix<Dev<double>> matx(c.Size(), devmat.Width(), dev_hx.Data());
+            FlatMatrix<Dev<double>> maty(c.Size(), devmat.Height(), dev_hy.Data());
+            MultMatMat (matx, Trans(devmat), maty, s, 0);
+                
             if (synckernels) cudaDeviceSynchronize();            
             tmult.Stop();
-            }
 
             tcopyout.Start();
-            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), hm, coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
             if (synckernels) cudaDeviceSynchronize();            
             tcopyout.Stop();
           }
@@ -455,41 +439,38 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
     
+    auto hm = devmat.Height();
+    auto wm = devmat.Width();
     if (disjoint_rows)
       {
-        DevStackArray<double> dev_hx(numblocks*wm);
-        DevStackArray<double> dev_hy(numblocks*hm);
+        DevStackArray<double> dev_hx(numblocks*hm);
+        DevStackArray<double> dev_hy(numblocks*wm);
 
-        ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), ux.DevData(), dev_hy.DevData());
+        ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
         
         // dev_hy = dev_hx * mat
-        double beta = 0.0;
-        double alpha = s;
-        cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
-                                          wm, numblocks, hm, 
-                                          &alpha, dev_mat, wm, dev_hy.DevData(), hm,
-                                          &beta, dev_hx.DevData(), wm);
         
-        ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hx.DevData(), uy.DevData());
+        FlatMatrix<Dev<double>> matx(numblocks, hm, dev_hx.Data());
+        FlatMatrix<Dev<double>> maty(numblocks, wm, dev_hy.Data());
+        MultMatMat (matx, devmat, maty, s, 0);
+        
+        ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
       }
     else
       {
         for (auto c : col_coloring)
           {
-            DevStackArray<double> dev_hx(c.Size()*wm);
-            DevStackArray<double> dev_hy(c.Size()*hm);
+            DevStackArray<double> dev_hx(c.Size()*hm);
+            DevStackArray<double> dev_hy(c.Size()*wm);
 
-            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hy.DevData());
-            
+            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
             // dev_hy = dev_hx * mat
-            double beta = 0.0;
-            double alpha = s;
-            cublasStatus_t stat = cublasDgemm(Get_CuBlas_Handle(), CUBLAS_OP_N, CUBLAS_OP_N,
-                                              wm, c.Size(), hm, 
-                                              &alpha, dev_mat, wm, dev_hy.DevData(), hm,
-                                              &beta, dev_hx.DevData(), wm);
-            
-            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), dev_hx.DevData(), uy.DevData());
+
+            FlatMatrix<Dev<double>> matx(c.Size(), hm, dev_hx.Data());
+            FlatMatrix<Dev<double>> maty(c.Size(), wm, dev_hy.Data());
+            MultMatMat (matx, devmat, maty, s, 0);
+           
+            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
           }
       }
     

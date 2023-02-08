@@ -127,15 +127,13 @@ namespace ngla
   {
     size_t h, w; // big matrix shape
 
-    double * dev_mat;
-    size_t hm, wm;  // small matrix shape
+    Matrix<Dev<double>> devmat;
     
     DevTable<int> rowdnums, coldnums;
     DevDataTable<int> row_coloring, col_coloring;
 
     bool disjoint_rows, disjoint_cols;
     size_t numblocks;
-    // DevArray<double> dev_hx, dev_hy;
   public:
     DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
