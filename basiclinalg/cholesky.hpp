@@ -283,7 +283,7 @@ namespace ngbla
   {
     Matrix<T,ORD> bconj(b.Height(), b.Width());
     bconj = Conj(b);
-    MySubADBt (a, diag, SliceMatrix<T,ORD>(bconj), c, symmetric);
+    MySubADBt (a, diag, SliceMatrix<T,ORD>(bconj), c, false); // symmetric);
   }
 
 

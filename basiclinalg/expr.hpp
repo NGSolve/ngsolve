@@ -1252,7 +1252,7 @@ namespace ngbla
     INLINE auto operator() (size_t i) const
     { return operator()(i,0); }  
 
-    INLINE auto operator() (size_t i, size_t j) const -> decltype (a(0,0)*b(0,0))
+    INLINE auto operator() (size_t i, size_t j) const // -> decltype (a(0,0)*b(0,0))
     { 
       size_t wa = a.Width();
 
