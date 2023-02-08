@@ -3,13 +3,8 @@
 
 namespace ngbla
 {
+    using namespace ngs_cuda;
     
-  template <typename T>
-  class Dev 
-  {
-  public:
-    T data;
-  };
   template<> struct trivtrans<Dev<double>> { static constexpr bool value = true; };
 
     
@@ -60,10 +55,11 @@ namespace ngbla
     
   template <ORDERING ORDA, ORDERING ORDB>  
   void CudaMultMatMat2 (SliceMatrix<Dev<double>, ORDA> a, SliceMatrix<Dev<double>,ORDB> b, 
-                        SliceMatrix<Dev<double>, ORDERING::ColMajor> c)
+                        SliceMatrix<Dev<double>, ORDERING::ColMajor> c,
+                       double alpha, double beta)
   {
-    double alpha = 1;
-    double beta = 0;
+    // double alpha = 1;
+    // double beta = 0;
     cublasStatus_t stat = cublasDgemm(ngla::Get_CuBlas_Handle(), 
                                       ORDA==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 
                                       ORDB==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 
@@ -74,9 +70,10 @@ namespace ngbla
     
   template <ORDERING ORDA, ORDERING ORDB>  
   void CudaMultMatMat2 (SliceMatrix<Dev<double>, ORDA> a, SliceMatrix<Dev<double>,ORDB> b, 
-                        SliceMatrix<Dev<double>, ORDERING::RowMajor> c)
+                        SliceMatrix<Dev<double>, ORDERING::RowMajor> c,
+                       double alpha, double beta)
   {
-    CudaMultMatMat2 (Trans(b), Trans(a), Trans(c));
+    CudaMultMatMat2 (Trans(b), Trans(a), Trans(c), alpha, beta);
   }
     
     
@@ -84,9 +81,9 @@ namespace ngbla
             typename enable_if<IsConvertibleToSliceMatrix<TA,Dev<double>>(),int>::type = 0,
             typename enable_if<IsConvertibleToSliceMatrix<TB,Dev<double>>(),int>::type = 0,
             typename enable_if<IsConvertibleToSliceMatrix<TC,Dev<double>>(),int>::type = 0>
-  void MultMatMat (const TA & a, const TB & b, const TC & c)
+  void MultMatMat (const TA & a, const TB & b, const TC & c, double alpha=1, double beta=0)
   {
-    CudaMultMatMat2(make_SliceMatrix(a), make_SliceMatrix(b), make_SliceMatrix(c));
+    CudaMultMatMat2(make_SliceMatrix(a), make_SliceMatrix(b), make_SliceMatrix(c), alpha, beta);
   }
     
 }

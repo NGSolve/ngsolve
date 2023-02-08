@@ -11,6 +11,14 @@ namespace ngs_cuda
 
 
   template <typename T>
+  class Dev 
+  {
+  public:
+    T data;
+  };
+    
+    
+  template <typename T>
   class DevVar
   {
     T * ptr;
@@ -45,6 +53,7 @@ namespace ngs_cuda
     return ost;
   }
 
+    // TODO: Resize + error checking
   class DevStackMemory
   {
     char * data;
@@ -80,22 +89,17 @@ namespace ngs_cuda
   extern DevStackMemory stackmemory;
 
   template <typename T>
-  class DevStackArray
+  class DevStackArray : public FlatArray<Dev<T>>
   {
-    size_t size;
-    T * data;
   public:
     DevStackArray (size_t s)
-      : size(s), data{stackmemory.Alloc<T>(s)}
-      {
-        ;
-      }
+      : FlatArray<Dev<T>> (s, (Dev<T>*)stackmemory.Alloc<T>(s))
+      { ; } 
     ~DevStackArray ()
       {
-        stackmemory.Free(data);
+        stackmemory.Free(this->data);
       }
-    
-    T * DevData () const { return data; }
+    T * DevData () const { return (T*)this->data; }
   };
   
 
