@@ -1358,9 +1358,11 @@ component : int
 
   py::class_<CompoundFESpaceAllSame, shared_ptr<CompoundFESpaceAllSame>, CompoundFESpace>
     (m,"VectorValued")
-    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim, bool autoupdate) {
+    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim, bool interleaved, bool autoupdate) {
           Flags flags;
           flags.SetFlag("autoupdate", autoupdate || space->DoesAutoUpdate());
+          if (interleaved)
+            flags.SetFlag("interleaved");
           int sdim = optdim.value_or (space->GetSpatialDimension());
           auto vecspace = make_shared<CompoundFESpaceAllSame> (space, sdim, flags);
           vecspace->SetDoSubspaceUpdate(false);
@@ -1370,7 +1372,7 @@ component : int
             vecspace->SetDoSubspaceUpdate(true);
           connect_auto_update(vecspace.get());
           return vecspace;
-        }),py::arg("space"), py::arg("dim")=nullopt, py::arg("autoupdate")=false)
+        }),py::arg("space"), py::arg("dim")=nullopt, py::arg("interleaved")=false, py::arg("autoupdate")=false)
     .def(py::pickle([] (py::object pyfes)
                     {
                       auto fes = py::cast<shared_ptr<CompoundFESpaceAllSame>>(pyfes);
