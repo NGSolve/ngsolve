@@ -26,8 +26,9 @@ namespace ngbla
     Matrix (size_t h_, size_t w_)
       : FlatMatrix<Dev<T>>(h_, w_, nullptr)
     {
-      if (auto err = cudaMalloc((void**)&data, h*w*sizeof(T)))
-        throw Exception("UnifiedVector allocation error, ec="+ToString(err));
+      this->data = Dev<T>::Malloc(h*2);
+      // if (auto err = cudaMalloc((void**)&data, h*w*sizeof(T)))
+      //   throw Exception("UnifiedVector allocation error, ec="+ToString(err));
     }
          
     Matrix (FlatMatrix<T> mat)
@@ -42,7 +43,8 @@ namespace ngbla
          
     ~Matrix()
     {
-      cudaFree(data);
+      // cudaFree(data);
+      Dev<T>::Free(data);
     }
          
     void D2H (FlatMatrix<T> mat)
