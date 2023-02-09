@@ -15,6 +15,17 @@ namespace ngs_cuda
   {
   public:
     T data;
+    static Dev<T> * Malloc(size_t size)
+    {
+        Dev<T> * ptr;
+        if (auto err = cudaMalloc (&ptr, size*sizeof(T)))
+            throw Exception("cudaMalloc error, ec="+ToString(err));
+        return ptr;        
+    }
+    static void Free(Dev<T> * data)
+    {
+        cudaFree (data);   
+    }
   };
     
     
