@@ -3737,7 +3737,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       AddSpace (space);
 
     // interleaved: not yet implemented, will copy from VectorH1
-    interleaved = flags.GetDefineFlag("interleaved");  
+    interleaved = flags.GetDefineFlag("interleaved");
+    if (interleaved)
+      throw Exception("CompoundFESpaceAllSame: Interleaved not yet supported");
     
     for (auto vb : { VOL, BND, BBND, BBBND })
       {
