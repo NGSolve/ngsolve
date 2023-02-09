@@ -724,6 +724,8 @@ namespace ngfem
     
     void PrintReport (ostream & ost) const override;
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
+    virtual shared_ptr<CoefficientFunction>
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
   };
 
 
