@@ -483,6 +483,14 @@ namespace ngfem
     code.body += Var(index).Assign(Var(val));
   }
 
+  shared_ptr<CoefficientFunction>
+  ConstantCoefficientFunctionC :: DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const
+  {
+    return ZeroCF(var->Dimensions());
+  }
+
+  
+
   ///
   template<typename SCAL>
   ParameterCoefficientFunction<SCAL> ::
