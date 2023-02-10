@@ -4585,7 +4585,14 @@ public:
         //Cof(A) = 0.5*(tr(A)**2 - tr(A**2))I - tr(A)A^T +(AA)^T
 
         //return (0.5*(TraceCF(c1)*TraceCF(c1) - TraceCF(c1*c1))*IdentityCF(3) - TraceCF(c1)*TransposeCF(c1) + TransposeCF(c1*c1))->Diff(var,dir);
-        return  0.5*(2*TraceCF(c1)*TraceCF(c1->Diff(var,dir)) - TraceCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir)))*IdentityCF(3)- TraceCF(c1->Diff(var,dir))*TransposeCF(c1) - TraceCF(c1)*TransposeCF(c1->Diff(var,dir)) + TransposeCF(c1->Diff(var,dir)*c1 + c1 * c1->Diff(var,dir));
+        auto trace_c1 = TraceCF(c1);
+        auto diff_c1 = c1->Diff(var,dir);
+        auto trace_diff_c1 = TraceCF(diff_c1);
+        auto diff_c1_x_c1 = diff_c1 * c1;
+        auto c1_x_diff_c1 = c1 * diff_c1;
+        return (trace_c1 * trace_diff_c1 - TraceCF(diff_c1_x_c1)) * IdentityCF(3)
+                - trace_diff_c1 * TransposeCF(c1)
+                - trace_c1 * TransposeCF(diff_c1) + TransposeCF(diff_c1_x_c1 + c1_x_diff_c1);
       }
     else
       throw Exception("CofactorCF Diff only implemented for dim <=3");
