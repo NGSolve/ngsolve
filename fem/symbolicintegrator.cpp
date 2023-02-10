@@ -180,6 +180,10 @@ namespace ngfem
       }\n";
     }
     header += "}\n";
+    if(code.deriv || !testfunction)
+      header += "const bool {has_values} = {ud}->HasMemory({this});\n";
+    else
+      header += "constexpr bool {has_values} = true;\n"; // always need values in case code.deriv==0 (i.e. evaluation of proxy)
 
     for (int i = 0; i < this->Dimension(); i++) {
       header += Var("comp", index,i,this->Dimensions()).Declare("{scal_type}", 0.0);
@@ -212,7 +216,7 @@ namespace ngfem
   
     if(!testfunction) {
       body += "// if ({ud}->fel) {\n";
-      body += "if (true) {\n";
+      body += "if ({has_values}) {\n";
       for (int i = 0; i < Dimension(); i++) {
         string var = Var(index, i, this->Dimensions());
         if(code.deriv)
@@ -260,6 +264,7 @@ namespace ngfem
 
     variables["flatmatrix"] = code.is_simd ? "FlatMatrix<SIMD<double>>" : "FlatMatrix<double>";
 
+    variables["has_values"] = Var("has_values", index).S();
     variables["values"] = Var("values", index).S();
 
     variables["get_component"] = "";

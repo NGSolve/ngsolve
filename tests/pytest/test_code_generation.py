@@ -88,6 +88,14 @@ def test_code_generation_derivatives(unit_mesh_3d):
         vals -= vals_ref
         assert Norm(vals) == approx(0)
 
+def test_code_generation_derivatives_2d(unit_mesh_2d):
+    fes = VectorH1(unit_mesh_2d, order=2)
+    u, v = fes.TnT()
+
+    a = BilinearForm(fes, symmetric=True)
+    a += InnerProduct(Grad(u), Grad(v)).Compile(realcompile=True, wait=True, keep_files=True) * dx
+    a.Assemble()
+
 def test_code_generation_python_module(unit_mesh_3d):
     from ngsolve.fem import CompilePythonModule
 
