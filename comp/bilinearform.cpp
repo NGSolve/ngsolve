@@ -1033,6 +1033,7 @@ namespace ngcomp
               {
                 s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
                   " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
+                s << "bool constexpr has_values_" << step << " = true;\n" << endl;
               }
         
         s << "for (size_t i = 0; i < nip; i++) {\n";
