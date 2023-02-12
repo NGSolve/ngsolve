@@ -4504,10 +4504,20 @@ public:
   {
     Vector<AutoDiffDiff<1,bool>> v1(c1->Dimension());
     c1->NonZeroPattern (ud, v1);
+    /*
     AutoDiffDiff<1,bool> sum(false);
     for (int i = 0; i < v1.Size(); i++)
       sum += v1(i);
     values = sum;
+    */
+    Mat<D,D,AutoDiffDiff<1,bool>> v1mat;
+    for (int i = 0; i < D; i++)
+      for (int j = 0; j < D; j++)
+        v1mat(i,j) = v1(i*D+j);
+    auto v2mat = Cof(v1mat);
+    for (int i = 0; i < D; i++)
+      for (int j = 0; j < D; j++)
+        values(i*D+j) = v2mat(i,j);
   }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
@@ -4515,24 +4525,17 @@ public:
                                FlatVector<AutoDiffDiff<1,bool>> values) const override
   {
     auto v1 = input[0];
-    AutoDiffDiff<1,bool> sum(false);
-    for (int i = 0; i < v1.Size(); i++)
-      sum += v1(i);
-    values = sum;
-    /*
-    AutoDiffDiff<1,bool> add(true);
-    add.DValue(0) = true;
-    add.DDValue(0,0) = true;
-    values = add;
-    */
-    /*
-    FlatArray<int> hdims = Dimensions();    
-    auto in0 = input[0];
-    for (size_t j = 0; j < hdims[0]; j++)
-      for (size_t k = 0; k < hdims[1]; k++)
-        values(j*hdims[1]+k) = in0(k*hdims[0]+j);
-    */
+
+    Mat<D,D,AutoDiffDiff<1,bool>> v1mat;
+    for (int i = 0; i < D; i++)
+      for (int j = 0; j < D; j++)
+        v1mat(i,j) = v1(i*D+j);
+    auto v2mat = Cof(v1mat);
+    for (int i = 0; i < D; i++)
+      for (int j = 0; j < D; j++)
+        values(i*D+j) = v2mat(i,j);
   }
+  
   using T_CoefficientFunction<CofactorCoefficientFunction<D>>::Evaluate;
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
