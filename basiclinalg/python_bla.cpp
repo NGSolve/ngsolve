@@ -832,12 +832,12 @@ complex : bool
       });
 
 
-    py::class_<SparseVector> (m, "SparseVector")
-      .def(py::init( [] (int n) { return new SparseVector(n); }))
-      .def("__str__", &ToString<SparseVector>)
-      .def("__setitem__", [](SparseVector & self, size_t i, double v) { self[i] = v; })
-      .def("__getitem__", [](SparseVector & self, size_t i) { return self[i]; })
-      .def("InnerProduct", &SparseVector::InnerProduct)
+    py::class_<SparseVector<double>> (m, "SparseVector")
+      .def(py::init( [] (int n) { return new SparseVector<double>(n); }))
+      .def("__str__", &ToString<SparseVector<double>>)
+      .def("__setitem__", [](SparseVector<double> & self, size_t i, double v) { self[i] = v; })
+      .def("__getitem__", [](SparseVector<double> & self, size_t i) { return self[i]; })
+      .def("InnerProduct", &SparseVector<double>::InnerProduct)
       ;
       
 

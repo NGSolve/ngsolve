@@ -37,21 +37,21 @@ namespace ngcore
 
 
   
-  template <>
-  class SIMD<Complex>
+  template <int N>
+  class SIMD<Complex, N>
   {
-    SIMD<double> re, im;
+    SIMD<double,N> re, im;
   public:
     SIMD () = default;
-    SIMD (SIMD<double> _r, SIMD<double> _i = 0.0) : re(_r), im(_i) { ; }
+    SIMD (SIMD<double,N> _r, SIMD<double,N> _i = 0.0) : re(_r), im(_i) { ; }
     SIMD (Complex c) : re(c.real()), im(c.imag()) { ; }
     SIMD (double d) : re(d), im(0.0) { ; }
     static constexpr int Size() { return SIMD<double>::Size(); }
 
-    SIMD<double> real() const { return re; }
-    SIMD<double> imag() const { return im; }
-    SIMD<double> & real() { return re; }
-    SIMD<double> & imag() { return im; }
+    auto real() const { return re; }
+    auto imag() const { return im; }
+    auto & real() { return re; }
+    auto & imag() { return im; }
 
 
     // Numbers in SIMD structure are not necessarily in same order as in memory
@@ -59,17 +59,17 @@ namespace ngcore
     // [x0,y0,x1,y1,x2,y2,x3,y3] -> [x0,x2,x1,x3,y0,y2,y1,y3]
     void LoadFast (Complex * p)
     {
-      SIMD<double> c1((double*)p);
-      SIMD<double> c2((double*)(p+SIMD<double>::Size()/2));
+      SIMD<double,N> c1((double*)p);
+      SIMD<double,N> c2((double*)(p+SIMD<double>::Size()/2));
       tie(re,im) = Unpack(c1,c2);
     }
 
     void StoreFast (Complex * p)
     {
-      SIMD<double> h1, h2;
+      SIMD<double,N> h1, h2;
       tie(h1,h2) = Unpack(re,im);
       h1.Store((double*)p);
-      h2.Store((double*)(p+SIMD<double>::Size()/2));
+      h2.Store((double*)(p+SIMD<double,N>::Size()/2));
     }
 
     void LoadFast (Complex * p, int nr)
@@ -88,6 +88,7 @@ namespace ngcore
     }
   };
 
+  // templatize all with N ???
   inline SIMD<double> Real(SIMD<Complex> a) { return a.real(); }
   inline SIMD<double> Imag(SIMD<Complex> a) { return a.imag(); }
 

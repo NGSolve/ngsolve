@@ -260,7 +260,7 @@ namespace ngcomp
                                Vector<> apoint)
       : cf(acf), point(apoint) { }
     
-    SparseVector Assemble() const;
+    SparseVector<double> Assemble() const;
   };
   
 

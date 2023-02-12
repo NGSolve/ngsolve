@@ -885,7 +885,7 @@ namespace ngcomp
 
 
   
-  SparseVector PointEvaluationFunctional :: Assemble() const
+  SparseVector<double> PointEvaluationFunctional :: Assemble() const
   {
     typedef double SCAL;  // only real for the moment ...
     
@@ -906,7 +906,7 @@ namespace ngcomp
     if (!fespace)
       throw Exception("PointFunctional does not have Testfunction");
     
-    SparseVector sv(fespace->GetNDof());
+    SparseVector<double> sv(fespace->GetNDof());
     
 
     

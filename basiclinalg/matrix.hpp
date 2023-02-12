@@ -188,9 +188,9 @@ namespace ngbla
 
     const SliceVector<T> Diag (int offset) const
     {
-      int dp = max(offset, 0);
-      int dm = min(offset, 0);
-      return SliceVector<T> (min(w-dp, h+dm), Dist()+1, data+dp-dm*Dist());
+      int dp = std::max(offset, 0);
+      int dm = std::min(offset, 0);
+      return SliceVector<T> (std::min(w-dp, h+dm), Dist()+1, data+dp-dm*Dist());
     }
     
 
@@ -518,7 +518,7 @@ namespace ngbla
       int h = llist.size();
       int w = 0;
       for (auto row : llist)
-        w = max2(w, int(row.size()));
+        w = std::max(w, int(row.size()));
 
       SetSize (h, w);
       (*this) = T(0.0);
@@ -669,7 +669,7 @@ namespace ngbla
     Mat (tuple<TTUP...> tup)
     {
       constexpr int s = tuple_size<decltype(tup)>();
-      Iterate<s> ([this, tup] (auto i) { this->data[i] = get<i>(tup); });
+      Iterate<s> ([this, tup] (auto i) { this->data[i] = std::get<i>(tup); });
     }
 
     template <class... T2>
@@ -1626,8 +1626,8 @@ namespace ngbla
     INLINE const SliceVector<T> Diag (int offset) const
     {
       // return SliceVector<T> (h, dist+1, data);
-      int dp = max(offset, 0);
-      int dm = min(offset, 0);
+      int dp = std::max(offset, 0);
+      int dm = std::min(offset, 0);
       return SliceVector<T> (min(w-dp, h+dm), dist+1, data+dp-dm*dist);
     }
 
@@ -1732,8 +1732,8 @@ namespace ngbla
 
     const SliceVector<T> Diag (int offset) const
     {
-      int dp = max(offset, 0);
-      int dm = min(offset, 0);
+      int dp = std::max(offset, 0);
+      int dm = std::min(offset, 0);
       return SliceVector<T> (min(w-dp, h+dm), dist+1, data-dm+dp*dist);
     }
 

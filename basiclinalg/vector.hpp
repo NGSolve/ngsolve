@@ -1900,28 +1900,29 @@ namespace ngbla
   };
 
 
-
+  template <typename T=double>
   class SparseVector
   {
     size_t size;
-    ClosedHashTable<size_t, double> data;
+    ClosedHashTable<size_t, T> data;
   public:
     SparseVector (size_t asize) : size(asize), data(10) { }
     size_t Size() const { return size; }
-    double operator[] (size_t i) const { return data[i]; }
-    double & operator[] (size_t i) { return data[i]; }
-    double InnerProduct (FlatVector<> v2) const
+    T operator[] (size_t i) const { return data[i]; }
+    T & operator[] (size_t i) { return data[i]; }
+    T InnerProduct (FlatVector<T> v2) const
     {
-      double sum = 0;
+      T sum = 0;
       for (auto [i,v] : data)
         sum += v * v2(i);
       return sum;
     }
-    friend ostream & operator<< (ostream & ost, const SparseVector & sv);
+    auto & Data() const { return data; }
   };
-  
-  inline ostream & operator<< (ostream & ost, const SparseVector & sv) {
-    for (auto [i,v] : sv.data)
+
+  template <typename T>  
+  inline ostream & operator<< (ostream & ost, const SparseVector<T> & sv) {
+    for (auto [i,v] : sv.Data())
       ost << i << ": " << v << ", ";
     return ost;
   }
