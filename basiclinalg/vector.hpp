@@ -1034,7 +1034,7 @@ namespace ngbla
     /// matrix with
     enum { WIDTH  = 1  };
     ///
-    enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
+    // enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
   };
 
 

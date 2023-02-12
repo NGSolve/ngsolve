@@ -180,7 +180,7 @@ namespace ngbla
     static constexpr int HEIGHT = 1;
     static constexpr int WIDTH = 1;
     ///
-    enum { IS_COMPLEX = 0 };
+    // enum { IS_COMPLEX = 0 };
   };
 
   template <class T>
@@ -199,7 +199,7 @@ namespace ngbla
     typedef int TV_ROW;
     enum { HEIGHT = D };
     enum { WIDTH = 1 };
-    enum { IS_COMPLEX = 0 };
+    // enum { IS_COMPLEX = 0 };
   };
 
   template <>
@@ -212,7 +212,7 @@ namespace ngbla
     typedef Complex TV_ROW;
     static constexpr int HEIGHT = 1;
     static constexpr int WIDTH = 1;
-    enum { IS_COMPLEX = 1 };
+    // enum { IS_COMPLEX = 1 };
   };
 
 
@@ -226,7 +226,7 @@ namespace ngbla
     typedef AutoDiff<D,SCAL> TV_ROW;
     static constexpr int HEIGHT = 1;
     static constexpr int WIDTH = 1;
-    enum { IS_COMPLEX = mat_traits<SCAL>::IS_COMPLEX };
+    // enum { IS_COMPLEX = mat_traits<SCAL>::IS_COMPLEX };
   };
 
 
@@ -251,6 +251,26 @@ namespace ngbla
   template <> inline size_t Width<double> (const double&) { return 1; }
   template <> inline size_t Width<Complex> (const Complex&) { return 1; }
 
+
+
+  template <class TM> 
+  inline constexpr size_t Height () { return TM::Height(); }
+  template <class TM> 
+  inline constexpr size_t Width () { return TM::Width(); }
+
+  template <> inline constexpr size_t Height<double> () { return 1; }
+  template <> inline constexpr size_t Height<Complex> () { return 1; }
+  template <> inline constexpr size_t Width<double> () { return 1; }
+  template <> inline constexpr size_t Width<Complex> () { return 1; }
+
+  
+  template <class TM> 
+  inline constexpr bool IsComplex () { return IsComplex<typename mat_traits<TM>::TSCAL>(); }
+  template <> inline constexpr bool IsComplex<double> () { return false; }
+  template <> inline constexpr bool IsComplex<Complex> () { return true; }  
+
+  
+  
 
   /// Complex to double assignment called
   class Complex2RealException : public Exception
