@@ -1219,14 +1219,14 @@ namespace ngbla
     return ScaleExpr (a.View(), b );
   }
 
-  template <typename TA>
-  INLINE auto operator* (SIMD<double> b, const Expr<TA> & a)
+  template <int N, typename TA>
+  INLINE auto operator* (SIMD<double,N> b, const Expr<TA> & a)
   {
     return ScaleExpr (a.View(), b);
   }
   
-  template <typename TA>
-  INLINE auto operator* (SIMD<Complex> b, const Expr<TA> & a)
+  template <int N, typename TA>
+  INLINE auto operator* (SIMD<Complex,N> b, const Expr<TA> & a)
   {
     return ScaleExpr (a.View(), b);
   }
@@ -1717,13 +1717,13 @@ namespace ngbla
   AutoDiff<DIM> InnerProduct (AutoDiff<DIM> a, AutoDiff<DIM> b) {return a * b;}
 
   template <int N>
-  SIMD<double> InnerProduct (SIMD<double,N> a, SIMD<double,N> b) { return a*b; }
+  auto InnerProduct (SIMD<double,N> a, SIMD<double,N> b) { return a*b; }
   template <int N>
-  SIMD<Complex> InnerProduct (SIMD<Complex,N> a, SIMD<double,N> b) { return a*b; }
+  auto InnerProduct (SIMD<Complex,N> a, SIMD<double,N> b) { return a*b; }
   template <int N>
-  SIMD<Complex> InnerProduct (SIMD<double,N> a, SIMD<Complex,N> b) { return a*b; }
+  auto InnerProduct (SIMD<double,N> a, SIMD<Complex,N> b) { return a*b; }
   template <int N>
-  SIMD<Complex> InnerProduct (SIMD<Complex,N> a, SIMD<Complex,N> b) { return a*b; }
+  auto InnerProduct (SIMD<Complex,N> a, SIMD<Complex,N> b) { return a*b; }
 
   /**
      Inner product
