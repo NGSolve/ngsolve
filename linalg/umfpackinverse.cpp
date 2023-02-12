@@ -75,7 +75,8 @@ namespace ngla
 
 
     symmetric = asymmetric;
-    is_complex = mat_traits<TM>::IS_COMPLEX;
+    //is_complex = mat_traits<TM>::IS_COMPLEX;
+    is_complex = ngbla::IsComplex<TM>();
 
     (*testout) << "Umfpack, symmetric = " << symmetric << endl;
 
@@ -329,7 +330,8 @@ namespace ngla
 
     if(nrhs>1) throw Exception("UmfpackInverse: Multiple right-hand sides not supported.");
 
-    bool is_vector_complex = mat_traits<TVX>::IS_COMPLEX;
+    // bool is_vector_complex = mat_traits<TVX>::IS_COMPLEX;
+    bool is_vector_complex = ngbla::IsComplex<TVX>();
     if(is_complex && !is_vector_complex) throw Exception("UmfpackInverse: Cannot solve with complex matrix and real vector.");
 
     if (fx.Size() != fy.Size())
@@ -432,7 +434,8 @@ namespace ngla
 
     if(nrhs>1) throw Exception("UmfpackInverse: Multiple right-hand sides not supported.");
 
-    bool is_vector_complex = mat_traits<TVX>::IS_COMPLEX;
+    // bool is_vector_complex = mat_traits<TVX>::IS_COMPLEX;
+    bool is_vector_complex = ngbla::IsComplex<TVX>();
     if(is_complex && !is_vector_complex) throw Exception("UmfpackInverse: Cannot solve with complex matrix and real vector.");
 
     if (fx.Size() != fy.Size())
@@ -553,7 +556,8 @@ namespace ngla
   template<class TM>
   void UmfpackInverseTM<TM> :: SetMatrixType() // TM entry)
   {
-    if (mat_traits<TM>::IS_COMPLEX)
+    // if (mat_traits<TM>::IS_COMPLEX)
+    if (ngbla::IsComplex<TM>())
       is_complex = true;
     else
       is_complex = false;

@@ -667,7 +667,8 @@ namespace ngla
   template<class TM>
   void PardisoInverseTM<TM> :: SetMatrixType() // TM entry)
   {
-    if (mat_traits<TM>::IS_COMPLEX)
+    // if (mat_traits<TM>::IS_COMPLEX)
+    if (ngbla::IsComplex<TM>())
       {
 	if ( symmetric ) 
 	  matrixtype = 6;   // complex symmetric
@@ -689,7 +690,7 @@ namespace ngla
 
     if (print)
       cout << "spd = " << int(spd) << ", sym = " << int(symmetric) 
-	   << ", complex = " << int(mat_traits<TM>::IS_COMPLEX)
+	   << ", complex = " << int(ngbla::IsComplex<TM>())
 	   << ", matrixtype = " << matrixtype << endl;
     *testout << "pardiso matrixtype = " << matrixtype << endl;
   }

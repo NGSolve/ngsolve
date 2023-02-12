@@ -788,7 +788,7 @@ namespace ngbla
     // enum { WIDTH  = W  };
     static constexpr int WIDTH = W;
     ///
-    enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
+    // enum { IS_COMPLEX = mat_traits<TSCAL>::IS_COMPLEX };
   };
 
 

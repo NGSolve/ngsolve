@@ -204,13 +204,14 @@ namespace ngla
   template <typename TM>  
   AutoVector DiagonalMatrix<TM> :: CreateRowVector () const 
   {
-    return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
+    // return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
+    return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), mat_traits<TM>::WIDTH);
   }
 
   template <typename TM>    
   AutoVector DiagonalMatrix<TM> :: CreateColVector () const 
   {
-    return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::HEIGHT);
+    return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), mat_traits<TM>::HEIGHT);
   }
 
   template <typename TM>    

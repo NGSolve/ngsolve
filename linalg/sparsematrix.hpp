@@ -369,6 +369,10 @@ namespace ngla
     using BASE::SetEntrySize;
     using BASE::AsVector;
 
+    void SetEntrySize()
+    {
+      BASE::SetEntrySize (Height<TM>(), Width<TM>(), sizeof(TM)/sizeof(TSCAL));      
+    }
   public:
     typedef TM TENTRY;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
@@ -377,7 +381,9 @@ namespace ngla
       : BASE (as, max_elsperrow),
 	data(nze), nul(TSCAL(0))
     {
-      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      // SetEntrySize (Height<TM>(), Width<TM>(), sizeof(TM)/sizeof(TSCAL));
+      SetEntrySize ();
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
                               data, "data");
@@ -388,7 +394,8 @@ namespace ngla
       : BASE (elsperrow, awidth), 
 	data(nze), nul(TSCAL(0))
     {
-      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      SetEntrySize ();      
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
                               data, "data");
@@ -401,7 +408,8 @@ namespace ngla
       : BASE (size, width, rowelements, colelements, symmetric), 
 	data(nze), nul(TSCAL(0))
     { 
-      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      SetEntrySize ();            
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
                               data, "data");
@@ -413,7 +421,8 @@ namespace ngla
       : BASE (agraph, stealgraph), 
 	data(nze), nul(TSCAL(0))
     { 
-      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      SetEntrySize ();      
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       FindSameNZE();
       GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
@@ -425,7 +434,8 @@ namespace ngla
       : BASE (amat), 
       data(nze), nul(TSCAL(0))
     {
-      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      SetEntrySize ();            
       asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));      
       AsVector() = amat.AsVector();
       GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
@@ -436,7 +446,8 @@ namespace ngla
     SparseMatrixTM (SparseMatrixTM && amat)
       : BASE (std::move(amat)), nul(TSCAL(0))
     {
-      SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      // SetEntrySize (mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH, sizeof(TM)/sizeof(TSCAL));
+      SetEntrySize ();
       GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",
                               data, "data");
       GetMemoryTracer().SetName("SparseMatrix");
