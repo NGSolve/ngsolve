@@ -2299,9 +2299,13 @@ namespace ngbla
     const BareSliceMatrix<TSCAL> mat;
     Scalar2ElemMatrix (const BareSliceMatrix<TSCAL> amat) : mat(amat) { ; }
 
+    /*
     enum { H = mat_traits<TM>::HEIGHT };
     enum { W = mat_traits<TM>::WIDTH };
-
+    */
+    enum { H = Height<TM>() };
+    enum { W = Width<TM>() };
+    
     TM operator() (size_t i, size_t j) const
     {
       TM ret;

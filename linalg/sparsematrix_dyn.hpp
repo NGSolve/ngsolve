@@ -27,8 +27,8 @@ namespace ngla
       : BaseSparseMatrix (mat, false)
     {
       width = mat.Width();
-      bh = mat_traits<TM>::HEIGHT;
-      bw = mat_traits<TM>::WIDTH;
+      bh = ngbla::Height<TM>(); // mat_traits<TM>::HEIGHT;
+      bw = ngbla::Width<TM>();  // mat_traits<TM>::WIDTH;
       bs = bh*bw;
       nze = mat.NZE();
       data.SetSize(nze*bs);

@@ -170,7 +170,8 @@ namespace ngla
   void DiagonalMatrix<TM> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("DiagonalMatrix::MultAdd"); RegionTimer reg(t);    
-    if (mat_traits<TM>::WIDTH == x.EntrySize())
+    // if (mat_traits<TM>::WIDTH == x.EntrySize())
+    if (ngbla::Width<TM>() == x.EntrySize())
       {
         typedef typename mat_traits<TM>::TV_ROW TV_ROW;
         typedef typename mat_traits<TM>::TV_COL TV_COL;
@@ -205,13 +206,13 @@ namespace ngla
   AutoVector DiagonalMatrix<TM> :: CreateRowVector () const 
   {
     // return CreateBaseVector(diag->Size(), mat_traits<TM>::IS_COMPLEX, mat_traits<TM>::WIDTH);
-    return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), mat_traits<TM>::WIDTH);
+    return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), ngbla::Width<TM>());
   }
 
   template <typename TM>    
   AutoVector DiagonalMatrix<TM> :: CreateColVector () const 
   {
-    return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), mat_traits<TM>::HEIGHT);
+    return CreateBaseVector(diag->Size(), ngbla::IsComplex<TM>(), ngbla::Height<TM>());
   }
 
   template <typename TM>    

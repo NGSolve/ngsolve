@@ -319,11 +319,12 @@ namespace ngla
   template <class TM, class TV_ROW, class TV_COL>
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (shared_ptr<BitArray> subset) const {
-    if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) {
+    // if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) {
+    if constexpr(ngbla::Height<TM>() != ngbla::Width<TM>()) { 
 	throw Exception("Tried to invert SparseMatrix with non-square entries!");
 	return nullptr;
       }
-    else if constexpr(MAX_SYS_DIM < mat_traits<TM>::HEIGHT) {
+      else if constexpr(MAX_SYS_DIM < ngbla::Height<TM>()) {
 	throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need at least ")+to_string(mat_traits<TM>::HEIGHT));
       }
     else {
@@ -375,12 +376,13 @@ namespace ngla
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
-    if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) {
+    // if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) {
+    if constexpr(ngbla::Height<TM>() != ngbla::Width<TM>()) { 
 	throw Exception("Tried to invert SparseMatrix with non-square entries!");
 	return nullptr;
       }
-    else if constexpr(MAX_SYS_DIM < mat_traits<TM>::HEIGHT) {
-	throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need at least ")+to_string(mat_traits<TM>::HEIGHT));
+    else if constexpr(MAX_SYS_DIM < ngbla::Height<TM>() ) {
+	throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need at least ")+to_string(ngbla::Height<TM>()));
       }
     else {
       // #ifndef ASTRID

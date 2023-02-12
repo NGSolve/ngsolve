@@ -177,8 +177,8 @@ namespace ngbla
     // enum { HEIGHT = 1 };
     /// matrix with
     // enum { WIDTH  = 1  };
-    static constexpr int HEIGHT = 1;
-    static constexpr int WIDTH = 1;
+    // static constexpr int HEIGHT = 1;
+    // static constexpr int WIDTH = 1;
     ///
     // enum { IS_COMPLEX = 0 };
   };
@@ -197,8 +197,8 @@ namespace ngbla
     typedef int TSCAL;
     typedef int TV_COL;
     typedef int TV_ROW;
-    enum { HEIGHT = D };
-    enum { WIDTH = 1 };
+    // enum { HEIGHT = D };
+    // enum { WIDTH = 1 };
     // enum { IS_COMPLEX = 0 };
   };
 
@@ -210,8 +210,8 @@ namespace ngbla
     typedef Complex TSCAL;
     typedef Complex TV_COL;
     typedef Complex TV_ROW;
-    static constexpr int HEIGHT = 1;
-    static constexpr int WIDTH = 1;
+    // static constexpr int HEIGHT = 1;
+    // static constexpr int WIDTH = 1;
     // enum { IS_COMPLEX = 1 };
   };
 
@@ -224,8 +224,8 @@ namespace ngbla
     typedef AutoDiff<D,SCAL> TSCAL;
     typedef AutoDiff<D,SCAL> TV_COL;
     typedef AutoDiff<D,SCAL> TV_ROW;
-    static constexpr int HEIGHT = 1;
-    static constexpr int WIDTH = 1;
+    // static constexpr int HEIGHT = 1;
+    // static constexpr int WIDTH = 1;
     // enum { IS_COMPLEX = mat_traits<SCAL>::IS_COMPLEX };
   };
 

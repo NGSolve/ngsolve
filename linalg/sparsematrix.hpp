@@ -371,7 +371,7 @@ namespace ngla
 
     void SetEntrySize()
     {
-      BASE::SetEntrySize (Height<TM>(), Width<TM>(), sizeof(TM)/sizeof(TSCAL));      
+      BASE::SetEntrySize (ngbla::Height<TM>(), ngbla::Width<TM>(), sizeof(TM)/sizeof(TSCAL));      
     }
   public:
     typedef TM TENTRY;
@@ -513,7 +513,8 @@ namespace ngla
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
 
-    virtual tuple<int,int> EntrySizes() const override { return { mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH }; }
+    // virtual tuple<int,int> EntrySizes() const override { return { mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH }; }
+    virtual tuple<int,int> EntrySizes() const override { return { Height<TM>(), Width<TM>() }; }
     
     shared_ptr<BaseSparseMatrix>
       CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>(const Array<int>&, int)> & creator) const;
@@ -575,8 +576,9 @@ namespace ngla
     virtual shared_ptr<BaseJacobiPrecond>
       CreateJacobiPrecond (shared_ptr<BitArray> inner) const override
     {
-      if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) return nullptr;
-      else if constexpr(mat_traits<TM>::HEIGHT > MAX_SYS_DIM) {
+      // if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) return nullptr;
+      if constexpr(ngbla::Height<TM>() != ngbla::Width<TM>()) return nullptr;
+      else if constexpr(ngbla::Height<TM>() > MAX_SYS_DIM) {
 	  throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
 	  return nullptr;
 	}
@@ -589,9 +591,10 @@ namespace ngla
                                 bool parallel = 1,
                                 shared_ptr<BitArray> freedofs = NULL) const override
     { 
-      if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) return nullptr;
-      else if constexpr(mat_traits<TM>::HEIGHT > MAX_SYS_DIM) {
-	  throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
+      // if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) return nullptr;
+      if constexpr(ngbla::Height<TM>() != ngbla::Width<TM>()) return nullptr;
+      else if constexpr(ngbla::Height<TM>() > MAX_SYS_DIM) {
+	  throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(ngbla::Height<TM>()));
 	  return nullptr;
 	}
       else
