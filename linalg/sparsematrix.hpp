@@ -514,7 +514,7 @@ namespace ngla
     virtual AutoVector CreateColVector () const override;
 
     // virtual tuple<int,int> EntrySizes() const override { return { mat_traits<TM>::HEIGHT, mat_traits<TM>::WIDTH }; }
-    virtual tuple<int,int> EntrySizes() const override { return { Height<TM>(), Width<TM>() }; }
+    virtual tuple<int,int> EntrySizes() const override { return { ngbla::Height<TM>(), ngbla::Width<TM>() }; }
     
     shared_ptr<BaseSparseMatrix>
       CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>(const Array<int>&, int)> & creator) const;
