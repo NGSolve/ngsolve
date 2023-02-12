@@ -174,14 +174,15 @@ namespace ngla
 	throw Exception("Invalid parameters inner/cluster. Thrown by PardisoInverse.");
       }
 
-    if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
+    // if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
+    if ( ngbla::Height<TM>() != ngbla::Width<TM>() )
       {
 	cout << "PardisoInverse: Each entry in the square matrix has to be a square matrix!" << endl;
 	throw Exception("No Square Matrix. Thrown by PardisoInverse.");
       }
 
 
-    entrysize = mat_traits<TM>::HEIGHT; 
+    entrysize = ngbla::Height<TM>(); // mat_traits<TM>::HEIGHT; 
     height = a->Height() * entrysize;
 
     *testout << "matrix.InverseTpye = " <<  a->GetInverseType() << endl;

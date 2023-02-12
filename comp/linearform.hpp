@@ -188,7 +188,7 @@ namespace ngcomp
   public:
 
     typedef typename mat_traits<TV>::TSCAL TSCAL;
-    enum { HEIGHT = mat_traits<TV>::HEIGHT };
+    // enum { HEIGHT = mat_traits<TV>::HEIGHT };
 
     ///
     using S_LinearForm<TSCAL>::S_LinearForm;
