@@ -27,6 +27,8 @@ extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * co
 
 extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res);
 
+extern void DevProjectorMultAdd (double s, size_t size, const double * a, double * b, const unsigned char * bits, bool keep_values);
+extern void DevProjectorProject (size_t size, double * a, const unsigned char * bits, bool keep_values);
 
 #include "cuda_ngstd.hpp"
 #include "cuda_ngbla.hpp"
@@ -172,6 +174,32 @@ namespace ngla
     using EmbeddedTransposeMatrix::EmbeddedTransposeMatrix;
     AutoVector CreateRowVector() const override { return make_unique<UnifiedVector>(Width()); }      
   };
+
+
+  class DevProjector : public DevMatrix
+  {
+  private:
+    shared_ptr<DevBitArray> bits;
+    bool keep_values;
+  public:
+    DevProjector (const Projector & proj)
+      : bits(make_shared<DevBitArray>(*proj.Mask())), 
+        keep_values(proj.KeepValues()) { ; }
+
+    void Mult (const BaseVector & x, BaseVector & y) const;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+
+    void Project (BaseVector & x) const;
+
+    virtual int VHeight() const override { return bits->Size(); }
+    virtual int VWidth() const override { return bits->Size(); }
+
+    AutoVector CreateRowVector() const override
+    { throw Exception("CreateRowVector not implemented for DevProjector!"); }
+    AutoVector CreateColVector() const override
+    { throw Exception("CreateColVector not implemented for DevProjector!"); }
+
+  };
   
 
 
@@ -242,11 +270,11 @@ namespace ngla
   {
   private:
     /* cusparseSpMatDescr_t descr; */
-    shared_ptr<BitArray> inner;
+    shared_ptr<ngstd::BitArray> inner;
     double* dev_invdiag;
   public:
     DevJacobiPrecond (const SparseMatrix<double> & amat, 
-      shared_ptr<BitArray> ainner=nullptr, bool use_par=true);
+      shared_ptr<ngstd::BitArray> ainner=nullptr, bool use_par=true);
 
     /* DevJacobiPrecond (const JacobiPrecond<double> & amat); */
 
