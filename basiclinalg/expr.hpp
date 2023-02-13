@@ -1021,17 +1021,32 @@ namespace ngbla
       return ColsArrayExpr<T> (static_cast<const T&> (*this), cols); 
     }
   };
+  
 
 
 
 
 
+  template <typename T>
+  struct is_scalar_type { static constexpr bool value = false; };
+  template<> struct is_scalar_type<int> { static constexpr bool value = true; };  
+  template<> struct is_scalar_type<double> { static constexpr bool value = true; };
+  template<> struct is_scalar_type<Complex> { static constexpr bool value = true; };
+  template <int D, typename T>
+  struct is_scalar_type<AutoDiff<D,T>> { static constexpr bool value = true; };
+  template <int D, typename T>
+  struct is_scalar_type<AutoDiffDiff<D,T>> { static constexpr bool value = true; };
+  template <int D>
+  struct is_scalar_type<SIMD<double,D>> { static constexpr bool value = true; };
+  template <int D>
+  struct is_scalar_type<SIMD<Complex,D>> { static constexpr bool value = true; };
 
-
-
-
-
-
+  
+  template <typename T>
+  constexpr bool IsScalar ()
+  {
+    return is_scalar_type<T>::value;
+  }
 
 
 
@@ -1246,6 +1261,8 @@ namespace ngbla
     { ost << "Scale, s=" << s << " * "; a.Dump(ost);  }
   };
 
+
+  /*
   template <typename TA>
   INLINE auto operator* (double b, const Expr<TA> & a)
   {
@@ -1275,8 +1292,14 @@ namespace ngbla
   {
     return ScaleExpr (a.View(), b);
   }
-  
+  */
 
+  template <typename TS, typename TA,
+            typename enable_if<IsScalar<TS>(),int>::type = 0>
+  INLINE auto operator* (TS s, const Expr<TA> & a)
+  {
+    return ScaleExpr (a.View(), s);
+  }
 
 
 
@@ -1751,7 +1774,7 @@ namespace ngbla
 
   /* ************************* InnerProduct ********************** */
 
-
+  /*
   INLINE double InnerProduct (double a, double b) {return a * b;}
   INLINE Complex InnerProduct (Complex a, Complex b) {return a * b;}
   INLINE Complex InnerProduct (double a, Complex b) {return a * b;}
@@ -1769,7 +1792,15 @@ namespace ngbla
   auto InnerProduct (SIMD<double,N> a, SIMD<Complex,N> b) { return a*b; }
   template <int N>
   auto InnerProduct (SIMD<Complex,N> a, SIMD<Complex,N> b) { return a*b; }
+  */
+  template <typename TA, typename TB,
+            typename enable_if<IsScalar<TA>(),int>::type = 0,
+            typename enable_if<IsScalar<TB>(),int>::type = 0>
+  auto InnerProduct (TA a, TB b) { return a*b; } 
 
+
+
+  
   /**
      Inner product
   */

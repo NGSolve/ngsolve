@@ -2147,7 +2147,7 @@ namespace ngbla
     }
   };
 
-  
+  /*
   template <typename T>
   struct trivtrans { static constexpr bool value = false; };
   template<> struct trivtrans<double> { static constexpr bool value = true; };
@@ -2165,8 +2165,10 @@ namespace ngbla
   {
     return trivtrans<T>::value;
   }
+  */
 
-
+  template <typename T>
+  constexpr bool IsTrivialTranspose () { return IsScalar<T>(); } 
   
   
   constexpr ORDERING operator! (ORDERING ordering)
