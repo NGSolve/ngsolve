@@ -7,9 +7,14 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+#include <iostream>
+#include <ngs_stdcpp_include.hpp>
+
 namespace ngstd 
 {
+  using namespace std;
 
+  
 /// min of 2 values
 template <class T>
 INLINE T min2 (T a, T b)

@@ -711,4 +711,23 @@ INLINE AutoDiffDiff<D,SCAL> IfPos (SCAL /* SIMD<double> */ a, AutoDiffDiff<D,SCA
 }
 
 
+namespace ngbla
+{
+  template <typename T> struct is_scalar_type;
+  template <int D, typename T>
+  struct is_scalar_type<ngstd::AutoDiffDiff<D,T>> { static constexpr bool value = true; };
+
+
+  // not meaningful for AutoDiff<D,Complex>, since this is
+  // not (complex) differentiable anyway
+  template<int D, typename SCAL>
+  inline auto L2Norm2 (const ngstd::AutoDiffDiff<D,SCAL> & x) 
+  {
+    return x*x;
+  }
+  
+}
+
+
+
 #endif
