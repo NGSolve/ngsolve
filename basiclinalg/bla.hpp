@@ -20,15 +20,6 @@ namespace ngbla
 
   using ngstd::CArray;
 
-#ifdef USE_MYCOMPLEX
-  typedef MyComplex<double> Complex;
-  using std::fabs;
-  inline double fabs (Complex v) { return ngstd::abs (v); }
-#else
-  // typedef std::complex<double> Complex;
-  using std::fabs;
-  inline double fabs (Complex v) { return std::abs (v); }
-#endif
 
   using ngcore::AtomicAdd;
   inline void AtomicAdd (Complex & x, Complex y)
@@ -43,22 +34,6 @@ namespace ngbla
   inline bool IsComplex(Complex v) { return true; }
 }
 
-/*
-namespace ngstd
-{
-// is for std::complex already in ngcore
-  inline auto & operator& (Archive & ar, Complex & c)
-  {
-    double hr, hi;
-    if (ar.Output())
-      { hr = c.real(); hi = c.imag(); }
-    ar & hr & hi;
-    if (ar.Input())
-      c = Complex(hr, hi);
-    return ar;
-  }
-}
-*/
 
 #ifdef PARALLEL
 namespace ngcore
