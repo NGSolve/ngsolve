@@ -1963,6 +1963,9 @@ namespace ngbla
       res(i) = a * vec(i);
     return res;
   }
+
+  template <int S, typename T>
+  INLINE auto operator* (int a, const Vec<S,T> & vec) { return double(a)*vec; }
   
   template <int S, typename T>
   INLINE auto operator* (Complex a, const Vec<S,T> & vec) 
