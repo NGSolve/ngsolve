@@ -73,35 +73,10 @@ namespace ngla
     DevSparseMatrix (const SparseMatrix<double> & mat);
     virtual ~DevSparseMatrix ();
 
-    // TODO: implement?
-    /* virtual shared_ptr<BaseMatrix> InverseMatrix */ 
-    /* virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override; */
-    /* // y += s L * x */
-    /* virtual void MultAdd1 (const BaseVector & x, BaseVector & y, */ 
-    /*                        const BitArray * ainner = NULL, */
-    /*                        const Array<int> * acluster = NULL) const override; */
-
-    /* // y += s (D + L^T) * x) */
-    /* virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y, */
-    /*                        const BitArray * ainner = NULL, */
-    /*                        const Array<int> * acluster = NULL) const override; */
-
-
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    /* virtual void Scale (double d); */
-
-    /*
-    virtual AutoVector CreateRowVector () const
-    {
-      return UnifiedVector(width).CreateVector();
-    }
-
-    virtual AutoVector CreateColVector () const
-    {
-      return UnifiedVector(height).CreateVector();
-    }
-    */
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
 
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return width; }
@@ -270,11 +245,11 @@ namespace ngla
   {
   private:
     /* cusparseSpMatDescr_t descr; */
-    shared_ptr<ngstd::BitArray> inner;
+    shared_ptr<BitArray> inner;
     double* dev_invdiag;
   public:
     DevJacobiPrecond (const SparseMatrix<double> & amat, 
-      shared_ptr<ngstd::BitArray> ainner=nullptr, bool use_par=true);
+      shared_ptr<BitArray> ainner=nullptr, bool use_par=true);
 
     /* DevJacobiPrecond (const JacobiPrecond<double> & amat); */
 

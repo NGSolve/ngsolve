@@ -174,17 +174,6 @@ namespace ngla
     cout << IM(7) << "DevSparseMatrix" << endl
          << " height = " << height << ", width = " << width << ", nze = " << nze << endl;
     
-    // deprecated
-    /*
-    descr = new cusparseMatDescr_t;
-    cusparseCreateMatDescr (descr);
-
-    cusparseSetMatType(*descr, CUSPARSE_MATRIX_TYPE_GENERAL);
-    cusparseSetMatIndexBase(*descr, CUSPARSE_INDEX_BASE_ZERO);
-    */
-
-    /* cout << "create device sparse matrix, n = " << height << ", nze = " << nze << endl; */
-    
     Array<int> temp_ind (height+1); 
     for (int i = 0; i <= height; i++) temp_ind[i] = mat.First(i); // conversion to 32-bit integer
 
@@ -213,12 +202,9 @@ namespace ngla
   
   void DevSparseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    static Timer tmv("CUDA Matrix-Vector Multiplication");
+    static Timer tmv("DevSparseMatrix :: Mult");
     RegionTimer reg(tmv);
 
-    /* cout << "device mult sparse" << endl; */
-    /* cout << "vec0: " << typeid(x).name() << endl; */
-    /* cout << "vec1: " << typeid(y).name() << endl; */
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
 
@@ -229,15 +215,6 @@ namespace ngla
     double alpha= 1;
     double beta = 0;
 
-    // deprecated
-    /*
-    cusparseDcsrmv (Get_CuSparse_Handle(), 
-                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
-        &alpha, *descr, 
-        dev_val, dev_ind, dev_col, 
-        ux.dev_data, &beta, uy.dev_data);
-    */
-
     size_t bufferSize = 0;
     void* dBuffer = NULL;
 
@@ -250,24 +227,24 @@ namespace ngla
                             CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
 
-    cusparseStatus_t status;
     cusparseSpMV(Get_CuSparse_Handle(), 
                  CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
                  descr_x, &beta, descr_y, CUDA_R_64F,
                  CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
 
+    cudaFree(dBuffer);
+
     cusparseDestroyDnVec(descr_x);
     cusparseDestroyDnVec(descr_y);
     /* uy.UpdateHost(); */
     
-    // uy.host_uptodate = false;
     uy.InvalidateHost();
   }
 
 
   void DevSparseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer tmv("CUDA MultAdd");
+    static Timer tmv("DevSparseMatrix :: MultAdd");
     RegionTimer reg(tmv);
 
     UnifiedVectorWrapper ux(x);
@@ -276,18 +253,8 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    double alpha= 1;
-    /* double beta = 1; */
-    double beta = s;
-
-    // deprecated
-    /*
-    cusparseDcsrmv (Get_CuSparse_Handle(), 
-                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
-        &alpha, *descr, 
-        dev_val, dev_ind, dev_col, 
-        ux.dev_data, &beta, uy.dev_data);
-    */
+    double alpha= s;
+    double beta = 1;
 
     size_t bufferSize = 0;
     void* dBuffer = NULL;
@@ -304,11 +271,95 @@ namespace ngla
     cusparseSpMV(Get_CuSparse_Handle(), 
                  CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
                  descr_x, &beta, descr_y, CUDA_R_64F,
-                 CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
+                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+
+    cudaFree(dBuffer);
 
     cusparseDestroyDnVec(descr_x);
     cusparseDestroyDnVec(descr_y);
-    uy.host_uptodate = false;
+    uy.InvalidateHost();
+  }
+
+
+  void DevSparseMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer tmv("DevSparseMatrix :: MultTrans");
+    RegionTimer reg(tmv);
+
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+
+    ux.UpdateDevice();
+    uy = 0.0;
+    uy.UpdateDevice();
+
+    double alpha= 1;
+    double beta = 0;
+
+    size_t bufferSize = 0;
+    void* dBuffer = NULL;
+
+    cusparseDnVecDescr_t descr_x, descr_y;
+    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
+
+    cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_TRANSPOSE,
+                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
+                            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
+    cudaMalloc(&dBuffer, bufferSize);
+
+    cusparseSpMV(Get_CuSparse_Handle(), 
+                 CUSPARSE_OPERATION_TRANSPOSE, &alpha, descr,
+                 descr_x, &beta, descr_y, CUDA_R_64F,
+                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+
+    cudaFree(dBuffer);
+
+    cusparseDestroyDnVec(descr_x);
+    cusparseDestroyDnVec(descr_y);
+    /* uy.UpdateHost(); */
+    
+    uy.InvalidateHost();
+  }
+
+
+  void DevSparseMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer tmv("DevSparseMatrix :: MultTransAdd");
+    RegionTimer reg(tmv);
+
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    double alpha= s;
+    double beta = 1;
+
+    size_t bufferSize = 0;
+    void* dBuffer = NULL;
+
+    cusparseDnVecDescr_t descr_x, descr_y;
+    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
+
+    cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_TRANSPOSE,
+                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
+                            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
+    cudaMalloc(&dBuffer, bufferSize);
+
+    cusparseSpMV(Get_CuSparse_Handle(), 
+                 CUSPARSE_OPERATION_TRANSPOSE, &alpha, descr,
+                 descr_x, &beta, descr_y, CUDA_R_64F,
+                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+
+    cudaFree(dBuffer);
+
+    cusparseDestroyDnVec(descr_x);
+    cusparseDestroyDnVec(descr_y);
+
+    uy.InvalidateHost();
   }
 
 
@@ -821,7 +872,7 @@ namespace ngla
 
   // use_par is currently not in use. maybe important later
   DevJacobiPrecond :: DevJacobiPrecond (const SparseMatrix<double> & amat, 
-    shared_ptr<ngstd::BitArray> ainner, bool use_par)
+    shared_ptr<BitArray> ainner, bool use_par)
       : inner(ainner)
   {
 
