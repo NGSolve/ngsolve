@@ -14,8 +14,8 @@
 #include <core/array.hpp>
 #include <core/localheap.hpp>
 #include <core/exception.hpp>
-#include <core/hashtable.hpp> // for INT
-#include <templates.hpp>      // for Iterate
+#include <core/hashtable.hpp>  // for INT
+// #include <templates.hpp>    // for Iterate 
 
 namespace ngcore
 {
