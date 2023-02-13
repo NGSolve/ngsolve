@@ -43,7 +43,8 @@ namespace ngla
 
   void InitCuLinalg()
   {
-    cerr << "Initializing cublas and cusparse." << endl;
+    cout << "Initializing cublas and cusparse." << endl;
+
     Get_CuBlas_Handle();
     Get_CuSparse_Handle();
 
@@ -113,6 +114,13 @@ namespace ngla
                                               return make_shared<DevEmbeddedTransposeMatrix>(mat.Width(), mat.GetRange(),
                                                                                              mat.GetMatrix()->CreateDeviceMatrix());
                                             });
+
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(Projector),
+                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & proj = dynamic_cast<const Projector&>(bmat);
+                                              return make_shared<DevProjector>(proj);
+                                            });
     
   }
 
@@ -166,17 +174,6 @@ namespace ngla
     cout << IM(7) << "DevSparseMatrix" << endl
          << " height = " << height << ", width = " << width << ", nze = " << nze << endl;
     
-    // deprecated
-    /*
-    descr = new cusparseMatDescr_t;
-    cusparseCreateMatDescr (descr);
-
-    cusparseSetMatType(*descr, CUSPARSE_MATRIX_TYPE_GENERAL);
-    cusparseSetMatIndexBase(*descr, CUSPARSE_INDEX_BASE_ZERO);
-    */
-
-    /* cout << "create device sparse matrix, n = " << height << ", nze = " << nze << endl; */
-    
     Array<int> temp_ind (height+1); 
     for (int i = 0; i <= height; i++) temp_ind[i] = mat.First(i); // conversion to 32-bit integer
 
@@ -205,12 +202,9 @@ namespace ngla
   
   void DevSparseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
-    static Timer tmv("CUDA Matrix-Vector Multiplication");
+    static Timer tmv("DevSparseMatrix :: Mult");
     RegionTimer reg(tmv);
 
-    /* cout << "device mult sparse" << endl; */
-    /* cout << "vec0: " << typeid(x).name() << endl; */
-    /* cout << "vec1: " << typeid(y).name() << endl; */
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
 
@@ -220,15 +214,6 @@ namespace ngla
 
     double alpha= 1;
     double beta = 0;
-
-    // deprecated
-    /*
-    cusparseDcsrmv (Get_CuSparse_Handle(), 
-                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
-        &alpha, *descr, 
-        dev_val, dev_ind, dev_col, 
-        ux.dev_data, &beta, uy.dev_data);
-    */
 
     size_t bufferSize = 0;
     void* dBuffer = NULL;
@@ -242,24 +227,24 @@ namespace ngla
                             CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
 
-    cusparseStatus_t status;
     cusparseSpMV(Get_CuSparse_Handle(), 
                  CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
                  descr_x, &beta, descr_y, CUDA_R_64F,
                  CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
 
+    cudaFree(dBuffer);
+
     cusparseDestroyDnVec(descr_x);
     cusparseDestroyDnVec(descr_y);
     /* uy.UpdateHost(); */
     
-    // uy.host_uptodate = false;
     uy.InvalidateHost();
   }
 
 
   void DevSparseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer tmv("CUDA MultAdd");
+    static Timer tmv("DevSparseMatrix :: MultAdd");
     RegionTimer reg(tmv);
 
     UnifiedVectorWrapper ux(x);
@@ -268,20 +253,9 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    double alpha= 1;
-    /* double beta = 1; */
-    double beta = s;
+    double alpha= s;
+    double beta = 1;
 
-    // deprecated
-    /*
-    cusparseDcsrmv (Get_CuSparse_Handle(), 
-                    CUSPARSE_OPERATION_NON_TRANSPOSE, height, width, nze, 
-        &alpha, *descr, 
-        dev_val, dev_ind, dev_col, 
-        ux.dev_data, &beta, uy.dev_data);
-    */
-
-    cusparseSpMatDescr_t matA;
     size_t bufferSize = 0;
     void* dBuffer = NULL;
 
@@ -290,18 +264,102 @@ namespace ngla
     cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
 
     cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
-                            &alpha, matA, descr_x, &beta, descr_y, CUDA_R_64F,
+                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
                             CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
 
     cusparseSpMV(Get_CuSparse_Handle(), 
-                 CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA,
+                 CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
                  descr_x, &beta, descr_y, CUDA_R_64F,
-                 CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
+                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+
+    cudaFree(dBuffer);
 
     cusparseDestroyDnVec(descr_x);
     cusparseDestroyDnVec(descr_y);
-    uy.host_uptodate = false;
+    uy.InvalidateHost();
+  }
+
+
+  void DevSparseMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer tmv("DevSparseMatrix :: MultTrans");
+    RegionTimer reg(tmv);
+
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+
+    ux.UpdateDevice();
+    uy = 0.0;
+    uy.UpdateDevice();
+
+    double alpha= 1;
+    double beta = 0;
+
+    size_t bufferSize = 0;
+    void* dBuffer = NULL;
+
+    cusparseDnVecDescr_t descr_x, descr_y;
+    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
+
+    cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_TRANSPOSE,
+                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
+                            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
+    cudaMalloc(&dBuffer, bufferSize);
+
+    cusparseSpMV(Get_CuSparse_Handle(), 
+                 CUSPARSE_OPERATION_TRANSPOSE, &alpha, descr,
+                 descr_x, &beta, descr_y, CUDA_R_64F,
+                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+
+    cudaFree(dBuffer);
+
+    cusparseDestroyDnVec(descr_x);
+    cusparseDestroyDnVec(descr_y);
+    /* uy.UpdateHost(); */
+    
+    uy.InvalidateHost();
+  }
+
+
+  void DevSparseMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer tmv("DevSparseMatrix :: MultTransAdd");
+    RegionTimer reg(tmv);
+
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    double alpha= s;
+    double beta = 1;
+
+    size_t bufferSize = 0;
+    void* dBuffer = NULL;
+
+    cusparseDnVecDescr_t descr_x, descr_y;
+    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
+    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
+
+    cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_TRANSPOSE,
+                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
+                            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
+    cudaMalloc(&dBuffer, bufferSize);
+
+    cusparseSpMV(Get_CuSparse_Handle(), 
+                 CUSPARSE_OPERATION_TRANSPOSE, &alpha, descr,
+                 descr_x, &beta, descr_y, CUDA_R_64F,
+                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+
+    cudaFree(dBuffer);
+
+    cusparseDestroyDnVec(descr_x);
+    cusparseDestroyDnVec(descr_y);
+
+    uy.InvalidateHost();
   }
 
 
@@ -534,7 +592,42 @@ namespace ngla
   }
 
 
-  
+  void DevProjector :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    y = x;
+    Project (y);
+  }
+
+  void DevProjector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DevProjector::MultAdd"); RegionTimer reg(t);
+    if (x.EntrySize() != 1)
+      throw Exception("DevProjector :: MultAdd not implemented for EntrySize > 1");
+
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    DevProjectorMultAdd (s, bits->Size(), ux.DevData(), uy.DevData(), bits->Data(), keep_values);
+
+    uy.InvalidateHost();
+  }
+
+  void DevProjector :: Project (BaseVector & x) const
+  {
+    static Timer t("DevProjector::Project"); RegionTimer reg(t);
+    if (x.EntrySize() != 1)
+      throw Exception("DevProjector :: Project not implemented for EntrySize > 1");
+
+    UnifiedVectorWrapper ux(x);
+
+    ux.UpdateDevice();
+
+    DevProjectorProject (bits->Size(), ux.DevData(), bits->Data(), keep_values);
+
+    ux.InvalidateHost();
+  }
 
   /******************** DevDMatrix ********************/
 
