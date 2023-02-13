@@ -1,3 +1,5 @@
+#include <climits>
+
 // x = val
 __global__ void SetScalarKernel (double val, int n, double * x)
 {
@@ -156,5 +158,80 @@ __global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, int size, 
 void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res)
 {    
   DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256>>> (s, size, a, b, res);
+}
+
+
+/* ************** kernels for DevProjector Matrix ********************** */
+
+__global__ void DevProjectorMultAddKernel1 (double s, size_t size, const double * a, 
+                                            double * b, const unsigned char * bits)
+{
+  int tid = blockIdx.x*blockDim.x+threadIdx.x;
+  for (int i = tid; i < size; i += blockDim.x * gridDim.x)
+  {
+    unsigned char mask = (char(1) << (i % CHAR_BIT));
+    unsigned int addr = i / CHAR_BIT;
+
+    if (bits[addr] & mask)
+      b[i] += s * a[i];
+  }
+}
+
+__global__ void DevProjectorMultAddKernel2 (double s, size_t size, const double * a, 
+                                            double * b, const unsigned char * bits)
+{
+  int tid = blockIdx.x*blockDim.x+threadIdx.x;
+  for (int i = tid; i < size; i += blockDim.x * gridDim.x)
+  {
+    unsigned char mask = (char(1) << (i % CHAR_BIT));
+    unsigned int addr = i / CHAR_BIT;
+
+    if (! (bits[addr] & mask))
+      b[i] += s * a[i];
+  }
+}
+
+void DevProjectorMultAdd (double s, size_t size, const double * a, double * b, 
+                          const unsigned char * bits, bool keep_values)
+{
+  if (keep_values)
+    DevProjectorMultAddKernel1<<<512,256>>>(s, size, a, b, bits);
+  else
+    DevProjectorMultAddKernel2<<<512,256>>>(s, size, a, b, bits);
+}
+
+__global__ void DevProjectorProjectKernel1 (size_t size, double * a, const unsigned char * bits)
+{
+  int tid = blockIdx.x*blockDim.x+threadIdx.x;
+  for (int i = tid; i < size; i += blockDim.x * gridDim.x)
+  {
+    unsigned char mask = (char(1) << (i % CHAR_BIT));
+    unsigned int addr = i / CHAR_BIT;
+
+    if (! (bits[addr] & mask))
+      a[i] = 0.0;
+  }
+}
+
+__global__ void DevProjectorProjectKernel2 (size_t size, double * a, const unsigned char * bits)
+{
+  int tid = blockIdx.x*blockDim.x+threadIdx.x;
+  for (int i = tid; i < size; i += blockDim.x * gridDim.x)
+  {
+    unsigned char mask = (char(1) << (i % CHAR_BIT));
+    unsigned int addr = i / CHAR_BIT;
+
+    if (bits[addr] & mask)
+      a[i] = 0.0;
+  }
+}
+
+void DevProjectorProject (size_t size, double * a, const unsigned char * bits, 
+                          bool keep_values)
+{
+  if (keep_values)
+    DevProjectorProjectKernel1<<<512,256>>>(size, a, bits);
+  else 
+    DevProjectorProjectKernel2<<<512,256>>>(size, a, bits);
 }
 

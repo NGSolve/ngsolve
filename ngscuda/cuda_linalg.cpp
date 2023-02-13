@@ -43,7 +43,8 @@ namespace ngla
 
   void InitCuLinalg()
   {
-    cerr << "Initializing cublas and cusparse." << endl;
+    cout << "Initializing cublas and cusparse." << endl;
+
     Get_CuBlas_Handle();
     Get_CuSparse_Handle();
 
@@ -112,6 +113,13 @@ namespace ngla
                                               auto & mat = dynamic_cast<const EmbeddedTransposeMatrix&>(bmat);
                                               return make_shared<DevEmbeddedTransposeMatrix>(mat.Width(), mat.GetRange(),
                                                                                              mat.GetMatrix()->CreateDeviceMatrix());
+                                            });
+
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(Projector),
+                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & proj = dynamic_cast<const Projector&>(bmat);
+                                              return make_shared<DevProjector>(proj);
                                             });
     
   }
@@ -281,7 +289,6 @@ namespace ngla
         ux.dev_data, &beta, uy.dev_data);
     */
 
-    cusparseSpMatDescr_t matA;
     size_t bufferSize = 0;
     void* dBuffer = NULL;
 
@@ -290,12 +297,12 @@ namespace ngla
     cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
 
     cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
-                            &alpha, matA, descr_x, &beta, descr_y, CUDA_R_64F,
+                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
                             CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
     cudaMalloc(&dBuffer, bufferSize);
 
     cusparseSpMV(Get_CuSparse_Handle(), 
-                 CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, matA,
+                 CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
                  descr_x, &beta, descr_y, CUDA_R_64F,
                  CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
 
@@ -534,7 +541,42 @@ namespace ngla
   }
 
 
-  
+  void DevProjector :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    y = x;
+    Project (y);
+  }
+
+  void DevProjector :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DevProjector::MultAdd"); RegionTimer reg(t);
+    if (x.EntrySize() != 1)
+      throw Exception("DevProjector :: MultAdd not implemented for EntrySize > 1");
+
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    DevProjectorMultAdd (s, bits->Size(), ux.DevData(), uy.DevData(), bits->Data(), keep_values);
+
+    uy.InvalidateHost();
+  }
+
+  void DevProjector :: Project (BaseVector & x) const
+  {
+    static Timer t("DevProjector::Project"); RegionTimer reg(t);
+    if (x.EntrySize() != 1)
+      throw Exception("DevProjector :: Project not implemented for EntrySize > 1");
+
+    UnifiedVectorWrapper ux(x);
+
+    ux.UpdateDevice();
+
+    DevProjectorProject (bits->Size(), ux.DevData(), bits->Data(), keep_values);
+
+    ux.InvalidateHost();
+  }
 
   /******************** DevDMatrix ********************/
 
@@ -779,7 +821,7 @@ namespace ngla
 
   // use_par is currently not in use. maybe important later
   DevJacobiPrecond :: DevJacobiPrecond (const SparseMatrix<double> & amat, 
-    shared_ptr<BitArray> ainner, bool use_par)
+    shared_ptr<ngstd::BitArray> ainner, bool use_par)
       : inner(ainner)
   {
 
