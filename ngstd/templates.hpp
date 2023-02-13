@@ -84,43 +84,6 @@ void LoadBin (istream & ist, T & val)
 
 
 
-
-  /*
-template <int NUM>
-class Cl_Iterate
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC f)
-  {
-    Cl_Iterate<NUM-1>::Do(f);
-    f(IC<NUM>());
-  }
-};
-
-template <>
-class Cl_Iterate<-1>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC f)  { }
-};
-
-template <>
-class Cl_Iterate<0>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC f)  { f(IC<0>()); }
-};
-
-template <int NUM, typename FUNC>
-INLINE void Iterate (FUNC f)
-{
-  Cl_Iterate<NUM-1>::Do(f);
-}
-  */
-
 template <int N> using IC = std::integral_constant<int,N>;  // needed for Iterate
 
 template <int NUM, typename FUNC>
@@ -131,52 +94,12 @@ INLINE void Iterate (FUNC f)
 }
 
 
-
-
-
-
-template <int NUM>
-class Cl_Switch
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (size_t nr, FUNC f)
-  {
-    if (nr == NUM)
-      f(IC<NUM>());
-    else
-      Cl_Switch<NUM-1>::Do(nr, f);
-  }
-};
-  
-template <>
-class Cl_Switch<-1>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (size_t /* nr */, FUNC /* f */)  { }
-};
-
-template <>
-class Cl_Switch<0>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (size_t /* nr */, FUNC f)
-  {
-    // if (nr == 0)
-    f(IC<0>());
-  }
-};
-
 template <int NUM, typename FUNC>
 INLINE void Switch (size_t nr, FUNC f)
 {
-  Cl_Switch<NUM-1>::Do(nr, f);
+  if (NUM-1 == nr) f(IC<NUM-1>());
+  if constexpr (NUM > 1) Switch<NUM-1> (nr, f);
 }
-
-
-
 
 
 }
