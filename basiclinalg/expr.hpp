@@ -11,9 +11,34 @@
 #include <gmpxx.h>
 #endif
 
+#include <core/array.hpp>
+#include <core/localheap.hpp>
+#include <core/exception.hpp>
+#include <core/hashtable.hpp> // for INT
+#include <templates.hpp>      // for Iterate
+
+namespace ngcore
+{
+  template <typename SCAL, int N> class SIMD;
+}
 
 namespace ngbla
 {
+  using namespace std;
+  using namespace ngcore;
+  using namespace ngstd;
+  /*
+  using ngcore::LocalHeap;
+  using ngcore::FlatArray;
+  using ngcore::HTArray;  
+  using ngcore::Exception;
+  using ngcore::IntRange;
+  using ngcore::ClosedHashTable;
+  using ngcore::INT;
+  using ngcore::SIMD;
+  using ngstd::Iterate;
+  */
+  
   enum ORDERING { ColMajor, RowMajor };
 
   template <typename T = double, ORDERING ORD = RowMajor> class FlatMatrix;
@@ -190,7 +215,7 @@ namespace ngbla
 
 
   template <int D>
-  class mat_traits<ngstd::INT<D> >
+  class mat_traits<ngcore::INT<D> >
   {
   public:
     typedef int TELEM;

@@ -43,10 +43,11 @@ namespace ngbla
   inline bool IsComplex(Complex v) { return true; }
 }
 
-
+/*
 namespace ngstd
 {
-  inline Archive & operator& (Archive & ar, Complex & c)
+// is for std::complex already in ngcore
+  inline auto & operator& (Archive & ar, Complex & c)
   {
     double hr, hi;
     if (ar.Output())
@@ -57,7 +58,7 @@ namespace ngstd
     return ar;
   }
 }
-
+*/
 
 #ifdef PARALLEL
 namespace ngcore
