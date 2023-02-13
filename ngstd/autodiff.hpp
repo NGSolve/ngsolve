@@ -1085,6 +1085,46 @@ using AutoDiff = AutoDiffRec<D,SCAL>;
 
 }
 
+
+
+namespace ngbla
+{
+  template <typename T> struct is_scalar_type;
+  template <int D, typename T>
+  struct is_scalar_type<ngstd::AutoDiff<D,T>> { static constexpr bool value = true; };
+
+  // not meaningful for AutoDiff<D,Complex>, since this is
+  // not (complex) differentiable anyway
+  template<int D, typename SCAL>
+  inline auto L2Norm2 (const ngstd::AutoDiff<D,SCAL> & x) 
+  {
+    return x*x;
+  }
+
+  template<int D, typename SCAL>
+  inline auto L2Norm (const ngstd::AutoDiff<D,SCAL> & x) throw()
+  {
+    return IfPos(x.Value(), x, -x);
+  }
+  
+
+  
+  template<int D, typename TAD>
+  INLINE auto Conj (const ngstd::AutoDiff<D,TAD> & a) 
+  { 
+    ngstd::AutoDiff<D,TAD> b; 
+    b.Value() = conj(a.Value()); 
+    
+    for(int i=0;i<D;i++) 
+      b.DValue(i) = conj(a.DValue(i)); 
+    
+    return b;
+  }
+
+  
+}
+
+
 #endif
 
 

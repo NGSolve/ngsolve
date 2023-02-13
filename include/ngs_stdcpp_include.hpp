@@ -1,3 +1,6 @@
+#ifndef NGS_STDCPP_INCLUDE_HPP
+#define NGS_STDCPP_INCLUDE_HPP
+
 #ifdef WIN32
 
 // This function or variable may be unsafe. Consider using _ftime64_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
@@ -178,4 +181,7 @@ namespace std
 
 #ifdef PARALLEL
 #include <unistd.h>  // for usleep (only for parallel)
+#endif
+
+
 #endif

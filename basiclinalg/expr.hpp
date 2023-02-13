@@ -15,29 +15,16 @@
 #include <core/localheap.hpp>
 #include <core/exception.hpp>
 #include <core/hashtable.hpp>  // for INT
+#include <ngs_stdcpp_include.hpp>
 // #include <templates.hpp>    // for Iterate 
 
-namespace ngcore
-{
-  template <typename SCAL, int N> class SIMD;
-}
 
 namespace ngbla
 {
   using namespace std;
   using namespace ngcore;
   using namespace ngstd;
-  /*
-  using ngcore::LocalHeap;
-  using ngcore::FlatArray;
-  using ngcore::HTArray;  
-  using ngcore::Exception;
-  using ngcore::IntRange;
-  using ngcore::ClosedHashTable;
-  using ngcore::INT;
-  using ngcore::SIMD;
-  using ngstd::Iterate;
-  */
+
   
   enum ORDERING { ColMajor, RowMajor };
 
@@ -109,10 +96,6 @@ namespace ngbla
   }
 
 
-
-
-
-
   template <typename TM> 
   inline typename TM::TELEM & Access (TM & mat, int i, int j)
   {
@@ -146,6 +129,32 @@ namespace ngbla
   }
 
 
+
+
+  template <typename T> struct is_scalar_type;
+    
+  template<> struct is_scalar_type<int> { static constexpr bool value = true; };  
+  template<> struct is_scalar_type<double> { static constexpr bool value = true; };
+  template<> struct is_scalar_type<Complex> { static constexpr bool value = true; };
+  
+  // template <int D, typename T>
+  // struct is_scalar_type<AutoDiff<D,T>> { static constexpr bool value = true; };
+  // template <int D, typename T>
+  // struct is_scalar_type<AutoDiffDiff<D,T>> { static constexpr bool value = true; };
+  // template <int D>
+  // struct is_scalar_type<SIMD<double,D>> { static constexpr bool value = true; };
+  // template <int D>
+  // struct is_scalar_type<SIMD<Complex,D>> { static constexpr bool value = true; };
+
+
+  template <typename T>
+  struct is_scalar_type { static constexpr bool value = false; };
+  
+  template <typename T>
+  constexpr bool IsScalar ()
+  {
+    return is_scalar_type<T>::value;
+  }
 
 
 
@@ -241,6 +250,7 @@ namespace ngbla
   };
 
 
+  /*
   template <int D, typename SCAL>
   class mat_traits<AutoDiff<D,SCAL> >
   {
@@ -253,7 +263,7 @@ namespace ngbla
     // static constexpr int WIDTH = 1;
     // enum { IS_COMPLEX = mat_traits<SCAL>::IS_COMPLEX };
   };
-
+  */
 
 
 
@@ -319,13 +329,13 @@ namespace ngbla
     return TO(f);
   }
 
-
+  /*
   template <typename TO>
   inline TO ConvertTo (const AutoDiff<1, Complex> & f)
   {
     return TO(f);
   }
-
+  */
 
   template <>
   inline double ConvertTo (Complex f)
@@ -1027,28 +1037,6 @@ namespace ngbla
 
 
 
-  template <typename T>
-  struct is_scalar_type { static constexpr bool value = false; };
-  template<> struct is_scalar_type<int> { static constexpr bool value = true; };  
-  template<> struct is_scalar_type<double> { static constexpr bool value = true; };
-  template<> struct is_scalar_type<Complex> { static constexpr bool value = true; };
-  template <int D, typename T>
-  struct is_scalar_type<AutoDiff<D,T>> { static constexpr bool value = true; };
-  template <int D, typename T>
-  struct is_scalar_type<AutoDiffDiff<D,T>> { static constexpr bool value = true; };
-  template <int D>
-  struct is_scalar_type<SIMD<double,D>> { static constexpr bool value = true; };
-  template <int D>
-  struct is_scalar_type<SIMD<Complex,D>> { static constexpr bool value = true; };
-
-  
-  template <typename T>
-  constexpr bool IsScalar ()
-  {
-    return is_scalar_type<T>::value;
-  }
-
-
 
 
 
@@ -1393,12 +1381,16 @@ namespace ngbla
 
   /* ************************** Trans *************************** */
 
-
+  /*
   INLINE double Trans (double a) { return a; }
   INLINE Complex Trans (Complex a) { return a; }
   template<int D, typename TAD>
   INLINE AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
-
+  */
+  template <typename TA,
+            typename enable_if<IsScalar<TA>(),int>::type = 0>
+  auto Trans (TA a) { return a; } 
+  
 
   /**
      Transpose of Matrix-expr
@@ -1724,18 +1716,6 @@ namespace ngbla
     return ConjExpr (a.View()); 
   }
 
-  template<int D, typename TAD>
-  INLINE AutoDiff<D,TAD> Conj (const AutoDiff<D,TAD> & a) 
-  { 
-    AutoDiff<D,TAD> b; 
-    b.Value() = conj(a.Value()); 
-  
-    for(int i=0;i<D;i++) 
-      b.DValue(i) = conj(a.DValue(i)); 
-
-    return b;
-  }
-
 
 
   /* ************************* Truncate ************************* */
@@ -1861,19 +1841,7 @@ namespace ngbla
     return L2Norm2(x.Value());
   }
   */
-  // not meaningful for AutoDiff<D,Complex>, since this is
-  // not (complex) differentiable anyway
-  template<int D, typename SCAL>
-  inline auto L2Norm2 (const AutoDiff<D,SCAL> & x) 
-  {
-    return x*x;
-  }
   
-  template<int D, typename SCAL>
-  inline auto L2Norm2 (const AutoDiffDiff<D,SCAL> & x) 
-  {
-    return x*x;
-  }
 
   template <class TA>
   inline auto L2Norm2 (const Expr<TA> & v) -> decltype(L2Norm2(v.Spec()(0)))
@@ -1915,11 +1883,6 @@ namespace ngbla
     return fabs(v);
   }
 
-  template<int D, typename SCAL>
-  inline double L2Norm (const AutoDiff<D,SCAL> & x) throw()
-  {
-    return MaxNorm(x.Value());
-  }
 
   template <class TA>
   inline double MaxNorm (const Expr<TA> & v)
