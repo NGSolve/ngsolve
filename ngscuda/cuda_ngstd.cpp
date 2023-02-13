@@ -46,9 +46,9 @@ namespace ngs_cuda
 
     for (int i = 0; i < devCount; ++i)
       {
-  // Get device properties
-  cudaDeviceProp devProp;
-  cudaGetDeviceProperties(&devProp, i);
+        // Get device properties
+        cudaDeviceProp devProp;
+        cudaGetDeviceProperties(&devProp, i);
 
         if (verbose == 1)
           {
@@ -66,6 +66,46 @@ namespace ngs_cuda
   }
 
   DevStackMemory stackmemory;
+
+  DevBitArray :: DevBitArray (size_t asize)
+  {
+    SetSize (asize);
+  }
+
+  DevBitArray :: DevBitArray (const BitArray & ba)
+  {
+    (*this) = ba;
+  }
+
+  DevBitArray :: ~DevBitArray ()
+  {
+    if (size)
+      cudaFree(dev_data);
+  }
+
+  DevBitArray & DevBitArray :: operator= (const BitArray &ba)
+  {
+    SetSize (ba.Size());
+
+    if (!size)
+      return *this;
+
+    cudaMemcpy(dev_data, ba.Data(), Addr(size) + 1, cudaMemcpyHostToDevice);
+
+    return *this;
+  }
+
+  void DevBitArray :: SetSize (size_t asize)
+  {
+    if (size == asize)
+      return;
+
+    if (size)
+      cudaFree(dev_data);
+    
+    size = asize;
+    cudaMalloc((void**) &dev_data, Addr(size) + 1);
+  }
 
 }
 

@@ -27,6 +27,8 @@ extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * co
 
 extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res);
 
+extern void DevProjectorMultAdd (double s, size_t size, const double * a, double * b, const unsigned char * bits, bool keep_values);
+extern void DevProjectorProject (size_t size, double * a, const unsigned char * bits, bool keep_values);
 
 #include "cuda_ngstd.hpp"
 #include "cuda_ngbla.hpp"
@@ -71,35 +73,10 @@ namespace ngla
     DevSparseMatrix (const SparseMatrix<double> & mat);
     virtual ~DevSparseMatrix ();
 
-    // TODO: implement?
-    /* virtual shared_ptr<BaseMatrix> InverseMatrix */ 
-    /* virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override; */
-    /* // y += s L * x */
-    /* virtual void MultAdd1 (const BaseVector & x, BaseVector & y, */ 
-    /*                        const BitArray * ainner = NULL, */
-    /*                        const Array<int> * acluster = NULL) const override; */
-
-    /* // y += s (D + L^T) * x) */
-    /* virtual void MultAdd2 (double s, const BaseVector & x, BaseVector & y, */
-    /*                        const BitArray * ainner = NULL, */
-    /*                        const Array<int> * acluster = NULL) const override; */
-
-
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-    /* virtual void Scale (double d); */
-
-    /*
-    virtual AutoVector CreateRowVector () const
-    {
-      return UnifiedVector(width).CreateVector();
-    }
-
-    virtual AutoVector CreateColVector () const
-    {
-      return UnifiedVector(height).CreateVector();
-    }
-    */
+    virtual void MultTrans (const BaseVector & x, BaseVector & y) const;
+    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
 
     virtual int VHeight() const { return height; }
     virtual int VWidth() const { return width; }
@@ -171,6 +148,32 @@ namespace ngla
   public:
     using EmbeddedTransposeMatrix::EmbeddedTransposeMatrix;
     AutoVector CreateRowVector() const override { return make_unique<UnifiedVector>(Width()); }      
+  };
+
+
+  class DevProjector : public DevMatrix
+  {
+  private:
+    shared_ptr<DevBitArray> bits;
+    bool keep_values;
+  public:
+    DevProjector (const Projector & proj)
+      : bits(make_shared<DevBitArray>(*proj.Mask())), 
+        keep_values(proj.KeepValues()) { ; }
+
+    void Mult (const BaseVector & x, BaseVector & y) const;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+
+    void Project (BaseVector & x) const;
+
+    virtual int VHeight() const override { return bits->Size(); }
+    virtual int VWidth() const override { return bits->Size(); }
+
+    AutoVector CreateRowVector() const override
+    { throw Exception("CreateRowVector not implemented for DevProjector!"); }
+    AutoVector CreateColVector() const override
+    { throw Exception("CreateColVector not implemented for DevProjector!"); }
+
   };
   
 

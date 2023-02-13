@@ -398,6 +398,32 @@ namespace ngs_cuda
     }
     }; 
   */
+  class DevBitArray
+  {
+  protected:
+    size_t size = 0;
+    unsigned char * dev_data = nullptr;
+
+  public:
+    DevBitArray (size_t asize);
+    DevBitArray (const ngstd::BitArray & ba);
+
+    ~DevBitArray ();
+
+    DevBitArray & operator= (const ngstd::BitArray &ba);
+
+    size_t Size () const { return size; }
+    auto Data () const { return dev_data; }
+
+    void SetSize (size_t asize);
+
+  private:
+    size_t Addr (size_t i) const
+    {
+      return (i / CHAR_BIT);
+    }
+  };
+
 }
 
 
