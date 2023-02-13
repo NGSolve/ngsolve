@@ -43,8 +43,8 @@ namespace ngbla
   template <typename T, typename TELEM=typename T::TELEM>
   constexpr bool IsConvertibleToSliceMatrix ()
   {
-    return is_convertible<T,SliceMatrix<TELEM, RowMajor>>::value ||
-      is_convertible<T,SliceMatrix<TELEM, ColMajor>>::value;
+    return is_convertible_v<T,SliceMatrix<TELEM, RowMajor>> ||
+      is_convertible_v<T,SliceMatrix<TELEM, ColMajor>>;
   }
 
 
@@ -692,9 +692,9 @@ namespace ngbla
 
     
     template <typename OP, typename TA, typename TB,
-              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),int>::type = 0>
+              enable_if_t<IsConvertibleToSliceMatrix<TA,double>(),bool> = true,
+              enable_if_t<IsConvertibleToSliceMatrix<TB,double>(),bool> = true,
+              enable_if_t<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),bool> = true>
     INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod) 
     {
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
@@ -725,7 +725,7 @@ namespace ngbla
 
     template <typename OP, typename TA, typename TB,
               typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
-              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
+              typename enable_if<is_convertible_v<TB,FlatVector<double>>,int>::type = 0,
               // typename enable_if<is_convertible<T,FlatVector<double>>::value,int>::type = 0>
               typename enable_if<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
     INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod)
@@ -740,9 +740,9 @@ namespace ngbla
 
     // x += s*y
     template <typename OP, typename TA, 
-              typename enable_if<std::is_same<OP,AsAdd>::value,int>::type = 0,
-              typename enable_if<is_convertible<TA,SliceVector<double>>::value,int>::type = 0,
-              typename enable_if<is_convertible<typename pair<T,TA>::first_type,SliceVector<double>>::value,int>::type = 0>
+              enable_if_t<std::is_same<OP,AsAdd>::value,bool> = true,
+              enable_if_t<is_convertible_v<TA,SliceVector<double>>,bool> = true,
+              enable_if_t<is_convertible<typename pair<T,TA>::first_type,SliceVector<double>>::value,bool> = true>
     INLINE T & Assign (const Expr<ScaleExpr<TA,double>> & scaled)
     {
       AddVector (scaled.View().S(),
@@ -754,10 +754,10 @@ namespace ngbla
     
     // x += s*(m*y)
     template <typename OP, typename TA, typename TB,
-              typename enable_if<std::is_same<OP,AsAdd>::value,int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
-              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
-              typename enable_if<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
+              enable_if_t<std::is_same_v<OP,AsAdd>,bool> = true,
+              enable_if_t<IsConvertibleToSliceMatrix<TA,double>(),bool> = true,
+              enable_if_t<is_convertible_v<TB,FlatVector<double>>,bool> = true,
+              enable_if_t<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,bool> = true>
     INLINE T & Assign (const Expr<ScaleExpr<MultExpr<TA, TB>,double>> & prod)
     {
       MultAddMatVec (prod.Spec().S(),
@@ -784,8 +784,8 @@ namespace ngbla
     
     // rank 1 update
     template <typename OP, typename TA, typename TB,
-              typename enable_if<is_convertible<TA,FlatVector<double>>::value,int>::type = 0,
-              typename enable_if<is_convertible<TB,FlatVector<double>>::value,int>::type = 0,
+              typename enable_if<is_convertible_v<TA,FlatVector<double>>,int>::type = 0,
+              typename enable_if<is_convertible_v<TB,FlatVector<double>>,int>::type = 0,
               typename enable_if<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),int>::type = 0>
     INLINE T & Assign (const Expr<MultExpr<TA, TransExpr<TB>>> & prod)
     {

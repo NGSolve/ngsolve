@@ -179,6 +179,23 @@ namespace std
 }
 #endif
 
+
+
+namespace ngcore
+{
+#ifdef USE_MYCOMPLEX
+  typedef MyComplex<double> Complex;
+  using std::fabs;
+  inline double fabs (Complex v) { return ngstd::abs (v); }
+#else
+  typedef std::complex<double> Complex;
+  using std::fabs;
+  inline double fabs (Complex v) { return std::abs (v); }
+#endif
+}
+
+
+
 #ifdef PARALLEL
 #include <unistd.h>  // for usleep (only for parallel)
 #endif
