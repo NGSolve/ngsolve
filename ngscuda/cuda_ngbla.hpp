@@ -3,10 +3,12 @@
 
 namespace ngbla
 {
-    using namespace ngs_cuda;
+  using namespace ngs_cuda;
     
-  template<> struct trivtrans<Dev<double>> { static constexpr bool value = true; };
-
+  // template<> struct trivtrans<Dev<double>> { static constexpr bool value = true; };
+  template<> struct is_scalar_type<Dev<double>> { static constexpr bool value = true; };
+  
+  
     
   template <typename T>  
   class Matrix<Dev<T>> : public FlatMatrix<Dev<T>>
