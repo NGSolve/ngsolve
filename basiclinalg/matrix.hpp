@@ -7,10 +7,13 @@
 /* Date:   01. Jan. 02                                                    */
 /**************************************************************************/
 
+
+#include "expr.hpp"
+
+
 namespace ngbla
 {
 
-  
   template <int H, int W, typename T> class Mat;
   // template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class BareSliceMatrix;
@@ -763,7 +766,8 @@ namespace ngbla
       return FlatVec<H*W,const T> (data.Ptr());
     }
 
-    void DoArchive(Archive& ar)
+    template <typename ARCHIVE>
+    void DoArchive(ARCHIVE& ar)
     {
       ar.Do(&data[0], H*W);
     }
@@ -2613,8 +2617,8 @@ namespace ngbla
 
 namespace ngstd
 {
-  template <int N, int M, typename T>
-  inline Archive & operator& (Archive & ar, ngbla::Mat<N,M,T> & m)
+  template <typename ARCHIVE, int N, int M, typename T>
+  inline auto & operator& (ARCHIVE & ar, ngbla::Mat<N,M,T> & m)
   {
     for (int i = 0; i < N*M; i++)
       ar & m(i);

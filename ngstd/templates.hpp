@@ -121,6 +121,7 @@ INLINE void Iterate (FUNC f)
 }
   */
 
+template <int N> using IC = std::integral_constant<int,N>;  // needed for Iterate
 
 template <int NUM, typename FUNC>
 INLINE void Iterate (FUNC f)

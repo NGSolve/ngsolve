@@ -7,6 +7,8 @@
 /* Date:   01. Jan. 02                                                    */
 /**************************************************************************/
 
+#include "expr.hpp"
+
 namespace ngbla
 {
 
@@ -211,7 +213,7 @@ namespace ngbla
     { return FlatVector (next-first, data+first); }
 
     /// sub-vector given by range
-    INLINE FlatVector Range (T_Range<size_t> range) const
+    INLINE FlatVector Range (IntRange range) const
     { return Range (range.First(), range.Next()); }
     
 
@@ -225,8 +227,8 @@ namespace ngbla
     /// vector is matrix of with 1
     INLINE constexpr size_t Width () const { return 1; }
     
-    INLINE T_Range<size_t> Range () const
-    { return T_Range<size_t> (0, size); }
+    INLINE auto Range () const
+    { return IntRange (0, size); }
 
     /// take a slice of the vector. Take elements first+i * dist. 
     INLINE const SliceVector<T> Slice (size_t first, size_t dist2) const
@@ -363,7 +365,7 @@ namespace ngbla
     ALWAYS_INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
       if (TB::IS_LINEAR)
-        for (auto i : ngstd::Range(size))
+        for (auto i : ngcore::Range(size))
           (*this)(i) += v.Spec()(i);
       else
 	for (size_t i = 0; i < size; i++)
@@ -1611,7 +1613,7 @@ namespace ngbla
     }
 
     /// sub-vector given by range
-    INLINE auto Range (T_Range<size_t> range) const
+    INLINE auto Range (IntRange range) const
     {
       NETGEN_CHECK_RANGE(range.First(), 0, Height());
       NETGEN_CHECK_RANGE(range.Next(), 0, Height()+1);
@@ -1680,7 +1682,7 @@ namespace ngbla
     {
       return SliceVector<T> (next-first, dist, data+first*dist);
     }
-    SliceVector<T> Range (T_Range<size_t> range) const
+    SliceVector<T> Range (IntRange range) const
     {
       return Range(range.First(), range.Next());
     }    
@@ -2089,8 +2091,8 @@ namespace ngbla
 
 namespace ngstd
 {
-  template <int S, typename T>
-  inline Archive & operator& (Archive & ar, ngbla::Vec<S,T> & v)
+  template <typename ARCHIVE, int S, typename T>
+  inline auto & operator& (ARCHIVE & ar, ngbla::Vec<S,T> & v)
   {
     for (int i = 0; i < S; i++)
       ar & v(i);
