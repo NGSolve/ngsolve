@@ -626,7 +626,7 @@ namespace ngbla
     // enum { WIDTH  = W };
 
     /// do not initialize 
-    Mat () = default;
+    constexpr Mat () = default;
     Mat (const Mat &) = default;
 
     
