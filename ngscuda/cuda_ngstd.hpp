@@ -17,15 +17,29 @@ namespace ngs_cuda
     T data;
     static Dev<T> * Malloc(size_t size)
     {
-        Dev<T> * ptr;
-        if (auto err = cudaMalloc (&ptr, size*sizeof(T)))
-            throw Exception("cudaMalloc error, ec="+ToString(err));
-        return ptr;        
+      Dev<T> * ptr;
+      if (auto err = cudaMalloc (&ptr, size*sizeof(T)))
+        throw Exception("cudaMalloc error, ec="+ToString(err));
+      return ptr;        
     }
+    
     static void Free(Dev<T> * data)
     {
         cudaFree (data);   
     }
+
+    T D2H() const
+    {
+      T res;
+      cudaMemcpy (&res, &data, sizeof(T), cudaMemcpyDeviceToHost);
+      return res;
+    }
+
+    void H2D (T val)
+    {
+      cudaMemcpy (&data, &val, sizeof(T), cudaMemcpyHostToDevice);
+    }
+    
   };
     
     
