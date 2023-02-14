@@ -1267,12 +1267,6 @@ namespace ngfem
 
 
 
-#ifdef __CUDACC__
-  // __device__ Vec<2> * legendre_coefs;
-  // __device__ Vec<2> legendre_coefs[100];
-  extern __device__ double legendre_coefs[][2];
-#endif
-
   class NGS_DLL_HEADER LegendrePolynomial : public RecursivePolynomial<LegendrePolynomial>
   {
     static Array< Vec<2> > coefs;
@@ -1301,18 +1295,12 @@ namespace ngfem
     static INLINE double CalcB (int i) { return 0; }
     static INLINE double CalcC (int i) { return 1.0/i-1.0; }
 
-#ifndef __CUDA_ARCH__
     template <typename TI>
       static INLINE double A (TI i) { return coefs[i][0]; } 
     template <typename TI>
       static INLINE double B (TI i) { return 0; }
     template <typename TI>    
       static INLINE double C (TI i) { return coefs[i][1]; } 
-#else
-    static INLINE double A (int i) { return legendre_coefs[i][0]; } 
-    static INLINE double B (int i) { return 0; }
-    static INLINE double C (int i) { return legendre_coefs[i][1]; } 
-#endif    
     
     template <int I>
     static INLINE double A (IC<I> i) { return 2.0-1.0/i; }
@@ -1375,15 +1363,9 @@ namespace ngfem
     template <class S, class Sy>
     static INLINE S P1(S x, Sy y)  { return P1(x); }
 
-#ifndef __CUDA_ARCH__    
     static INLINE double A (int i) { return coefs[i][0]; } 
     static INLINE double B (int i) { return 0; }
     static INLINE double C (int i) { return coefs[i][1]; } 
-#else
-    static INLINE double A (int i) { return intlegnobubble_coefs[i][0]; }
-    static INLINE double B (int i) { return 0; }
-    static INLINE double C (int i) { return intlegnobubble_coefs[i][1]; }
-#endif
     
     static INLINE double CalcA (int i) { i+=2; return (2*i-3)/double(i); }
     static INLINE double CalcB (int i) { return 0; }
@@ -1537,7 +1519,6 @@ namespace ngfem
   class JacobiPolynomialAlpha : public RecursivePolynomialNonStatic<JacobiPolynomialAlpha>
   {
   public:
-#ifndef __CUDA_ARCH__
     /*
     static Array< Vec<4> > coefs;
     static int maxnp;
@@ -1545,33 +1526,22 @@ namespace ngfem
     static constexpr size_t maxnp = 128;
     static constexpr size_t maxalpha = 128;
     static Vec<4> coefs[maxnp*maxalpha];
-#else
-    size_t alpha;
-#endif
     size_t n2;
     Vec<4> * coefsal;
   public:
     INLINE JacobiPolynomialAlpha (size_t a) 
     { 
       // offset = alpha*maxnp;
-#ifndef __CUDA_ARCH__
       coefsal = &coefs[a*maxnp];
       n2 = 2*maxnp;
-#else
-      alpha = a;
       // coefsal = &jacobialpha_coefs[alpha*(jacobialpha_maxn+1)];      
-#endif
     }
 
     template <class S, class T>
     INLINE JacobiPolynomialAlpha (int n, S x, int a, T && values)
     { 
       // offset = alpha*(maxn+1);
-#ifndef __CUDA_ARCH__
       coefsal = &coefs[a*maxnp];
-#else
-      alpha(a);
-#endif
       n2 = 2*maxnp;
       Eval (n, x, values);
     }
@@ -1584,35 +1554,21 @@ namespace ngfem
     template <class S>
     INLINE S P1(S x) const 
     { 
-#ifndef __CUDA_ARCH__
       return FMA (coefsal[1][0],x,S(coefsal[1][1])); 
-#else
-      return FMA (jacobialpha_coefs[alpha][1][0], x, jacobialpha_coefs[alpha][1][1]);
-#endif
     }
     template <class S, class Sy>
     INLINE S P1(S x, Sy y) const 
     { 
-#ifndef __CUDA_ARCH__
       return FMA(coefsal[1][0],x,coefsal[1][1]*y);
-#else
-      return jacobialpha_coefs[alpha][1][0]*x+jacobialpha_coefs[alpha][1][1]*y;
-#endif
     }
 
 
-#ifndef __CUDA_ARCH__
     template <typename TI>
     INLINE const double & A (TI i) const { return coefsal[i][0]; } 
     template <typename TI>
     INLINE const double & B (TI i) const { return coefsal[i][1]; } 
     template <typename TI>
     INLINE const double & C (TI i) const { return coefsal[i][2]; } 
-#else
-    INLINE const double & A (int i) const { return jacobialpha_coefs[alpha][i][0]; } 
-    INLINE const double & B (int i) const { return jacobialpha_coefs[alpha][i][1]; } 
-    INLINE const double & C (int i) const { return jacobialpha_coefs[alpha][i][2]; } 
-#endif
 
     template <typename TI>
     INLINE void ABC (TI i, double & a, double & b, double & c) const   
