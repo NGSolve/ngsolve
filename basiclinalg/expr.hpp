@@ -62,7 +62,7 @@ namespace ngbla
     Matrix expression templates
   */
 
-
+  /*
   template <typename TVEC> 
   inline typename TVEC::TELEM & Access (TVEC & vec, int nr)
   {
@@ -94,7 +94,8 @@ namespace ngbla
   {
     return vec;
   }
-
+  */
+  
 
   template <typename TM> 
   inline typename TM::TELEM & Access (TM & mat, int i, int j)
@@ -286,7 +287,12 @@ namespace ngbla
   template <> inline size_t Width<double> (const double&) { return 1; }
   template <> inline size_t Width<Complex> (const Complex&) { return 1; }
 
-
+  /*
+  template <class TM> 
+  inline constexpr size_t Height () { return Height(TM()); }
+  template <class TM> 
+  inline constexpr size_t Width () { return Width(TM()); }
+  */
 
   template <class TM> 
   inline constexpr size_t Height () { return TM::Height(); }
@@ -366,7 +372,7 @@ namespace ngbla
   class Expr 
   {
   public:
-    INLINE Expr () { ; }
+    constexpr Expr () = default;
 
     /// cast to specific type
     INLINE T & Spec() { return static_cast<T&> (*this); }
@@ -550,7 +556,7 @@ namespace ngbla
   {
   public:
  
-    INLINE MatExpr () { ; }
+    constexpr MatExpr () = default;
 
     using Expr<T>::Spec;
     using Expr<T>::Height;
