@@ -107,7 +107,7 @@
 
 #ifdef __CUDACC__
 #define CUDA
-#define HD __host__ __device__
+#define HD
 #endif
 
 #ifndef HD
