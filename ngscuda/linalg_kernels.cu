@@ -1,4 +1,15 @@
 #include <climits>
+#include <ngstd.hpp>
+#undef INLINE
+#define INLINE __host__ __device__ inline
+#include <templates.hpp>
+#include <vector.hpp>
+#include <matrix.hpp>
+using namespace ngbla;
+
+#include "cuda_ngstd.hpp"
+using namespace ngs_cuda;
+
 
 // x = val
 __global__ void SetScalarKernel (double val, int n, double * x)
@@ -12,6 +23,22 @@ void SetScalar (double val, int n, double * x)
 {
   SetScalarKernel<<<512,256>>> (val, n, x);
 } 
+
+
+__global__ void SetScalarKernelNew (double val, FlatVector<Dev<double>> vec)
+{
+  int tid = blockIdx.x*blockDim.x+threadIdx.x;
+  for (int i = tid; i < vec.Size(); i += blockDim.x*gridDim.x)
+    vec(i) = val;
+}
+
+void SetScalar (double val, FlatVector<Dev<double>> vec)
+{
+  SetScalarKernelNew<<<512,256>>> (val, vec);
+} 
+
+
+
 
 
 // y[i] = val * x[i]
