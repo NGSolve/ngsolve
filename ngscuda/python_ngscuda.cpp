@@ -220,7 +220,8 @@ PYBIND11_MODULE(ngscuda, m) {
   
   py::class_<Matrix<Dev<double>>> (m, "DevMatrix")
     .def(py::init<FlatMatrix<double>>())
-    .def("D2H", &Matrix<Dev<double>>::D2H)
+    .def("D2H", [&](const Matrix<Dev<double>> & a) 
+         { return a.D2H(); }) 
     .def("__matmul__", [&](const Matrix<Dev<double>> & a, const Matrix<Dev<double>> & b)
          {
            Matrix<Dev<double>> c(a.Height(), b.Width());

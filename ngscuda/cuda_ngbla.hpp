@@ -46,7 +46,7 @@ namespace ngbla
       Dev<T>::Free(data);
     }
          
-    void D2H (FlatMatrix<T> mat)
+    void D2H (FlatMatrix<T> mat) const
     {
       cudaMemcpy (mat.Data(), data, sizeof(T)*h*w, cudaMemcpyDeviceToHost);
     }
@@ -55,8 +55,30 @@ namespace ngbla
     {
       cudaMemcpy (data, mat.Data(), sizeof(T)*h*w, cudaMemcpyHostToDevice);
     }
+
+    Matrix<T> D2H() const
+    {
+      Matrix<T> mh(h, w);
+      D2H (mh);
+      return mh;
+    }
   };
+  
+  inline Matrix<double> D2H (SliceMatrix<Dev<double>> dmat)
+  {
+    Matrix<double> hmat(dmat.Height(), dmat.Width());
+    for (size_t i = 0; i < hmat.Height(); i++)
+      cudaMemcpy (&hmat(i,0), &dmat(i,0), sizeof(double)*hmat.Width(), cudaMemcpyDeviceToHost);
+    return hmat;
+  }
+  
+  inline Matrix<double,ColMajor> D2H (SliceMatrix<Dev<double>,ColMajor> dmat)
+  {
+    return Trans(D2H(Trans(dmat)));
+  }
     
+
+  
     
   template <ORDERING ORDA, ORDERING ORDB>  
   void CudaMultMatMat2 (SliceMatrix<Dev<double>, ORDA> a, SliceMatrix<Dev<double>,ORDB> b, 
