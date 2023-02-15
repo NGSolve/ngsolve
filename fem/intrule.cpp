@@ -1654,7 +1654,7 @@ namespace ngfem
                 {
                   double y = (*iry)[i2](0);
                   
-                  Mat<2> trans3, trans, hmat;
+                  Mat<2> trans3; // , trans, hmat;
                   
                   // quad -> trig transform
                   trans3(0,0) = 1;
@@ -2125,7 +2125,7 @@ namespace ngfem
                     {
                       double y = (*iry)[i2](0);
                       
-                      Mat<2> trans3, trans, hmat;
+                      Mat<2> trans3; // , trans, hmat;
                       
                       // quad -> trig transform
                       trans3(0,0) = 1;
@@ -2338,7 +2338,7 @@ namespace ngfem
                     {
                       double z = (*irz)[i3](0);
                     
-                      Mat<3> trans3, trans, hmat;
+                      Mat<3> trans3; // , trans, hmat;
                     
                       // hex -> tet transform
                       trans3(0,0) = 1;

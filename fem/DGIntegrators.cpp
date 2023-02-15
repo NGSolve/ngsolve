@@ -240,7 +240,7 @@ namespace ngfem
       
       FlatMatrixFixHeight<2> bmat(nd, lh);
       FlatMatrixFixHeight<2> dbmat(nd, lh);
-      Mat<2> dmat;
+      // Mat<2> dmat;
           
       const IntegrationRule & ir_vol =
         SelectIntegrationRule (eltype, 2*fel_l2.Order());
