@@ -7,9 +7,12 @@
 #include <matrix.hpp>
 using namespace ngbla;
 
+
 #include "cuda_ngstd.hpp"
 using namespace ngs_cuda;
 
+namespace ngs_cuda
+{
 
 // x = val
 __global__ void SetScalarKernel (double val, int n, double * x)
@@ -262,3 +265,5 @@ void DevProjectorProject (size_t size, double * a, const unsigned char * bits,
     DevProjectorProjectKernel2<<<512,256>>>(size, a, bits);
 }
 
+
+}

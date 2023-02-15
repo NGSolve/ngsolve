@@ -1,6 +1,9 @@
+#ifndef CUDA_LINALG_HPP
+#define CUDA_LINALG_HPP
+
 #include <la.hpp>
 
-#include <cuda_runtime_api.h>
+#include <cuda_runtime.h>
 #include <cublas_v2.h>
 #include <cusparse.h>
 
@@ -12,6 +15,8 @@ namespace ngla
   cublasHandle_t Get_CuBlas_Handle ();
 }
 
+namespace ngs_cuda
+{
 
 // own ngsolve cuda-kernels:
 extern void SetScalar (double val, int n, double * dev_ptr);
@@ -34,10 +39,13 @@ extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a
 
 extern void DevProjectorMultAdd (double s, size_t size, const double * a, double * b, const unsigned char * bits, bool keep_values);
 extern void DevProjectorProject (size_t size, double * a, const unsigned char * bits, bool keep_values);
+}
 
-#include "cuda_ngstd.hpp"
+  
 #include "cuda_ngbla.hpp"
 #include "unifiedvector.hpp"
+
+
 
 
 namespace ngla
@@ -294,3 +302,6 @@ namespace ngla
   /* }; */
 
 }
+
+
+#endif

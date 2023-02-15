@@ -1,7 +1,6 @@
 #ifndef CUDA_NGSTD_HPP
 #define CUDA_NGSTD_HPP
 
-#ifdef CUDA
 
 #include <cuda_runtime.h>
 
@@ -42,14 +41,28 @@ namespace ngs_cuda
     {
       cudaMemcpy (&data, &val, sizeof(T), cudaMemcpyHostToDevice);
     }
-      
+
+
+    void D2H (FlatArray<T> hosta)
+    {
+      cudaMemcpy (hosta.Data(), &data, hosta.Size()*sizeof(T), cudaMemcpyDeviceToHost);
+    }
+
+    void H2D (FlatArray<T> hosta)
+    {
+      cudaMemcpy (&data, hosta.Data(), hosta.Size()*sizeof(T), cudaMemcpyHostToDevice);
+    }
+
+    
     __device__ Dev<T> & operator= (T d2) { data = d2; return *this; }
     __device__ operator T() const { return data; } 
   };
     
-    
+
+
+  
   template <typename T>
-  class DevVar
+  class [[deprecated]] DevVar
   {
     T * ptr;
   public:
@@ -137,7 +150,7 @@ namespace ngs_cuda
 
 
   template <typename T>
-  class DevArray 
+  class [[deprecated]] DevArray 
   {
     int size;
     T * dev_data;
@@ -283,13 +296,15 @@ namespace ngs_cuda
       // cout << "res = " << cudaMemcpy (dev_index, t2.Index(), sizeof(int)*(size+1), cudaMemcpyHostToDevice) << endl;
     
       int sizedata = t2.AsArray().Size();
-      cudaMalloc((int**)&dev_data, sizedata*sizeof(T));
+      // cudaMalloc((int**)&dev_data, sizedata*sizeof(T));
+      dev_data = Dev<double>::Malloc(sizedata);
       cudaMemcpy (dev_data, t2.Data(), sizeof(T)*sizedata, cudaMemcpyHostToDevice);
     }
 
     ~DevDataTable ()
     {
-      cudaFree (dev_data);
+      Dev<double>::Free (dev_data);
+      // cudaFree (dev_data);
       // cudaFree (dev_index);
       delete [] index;
     }
@@ -300,13 +315,13 @@ namespace ngs_cuda
       cudaMemcpy (&t2[0][0], dev_data, sizeof(T)*sizedata, cudaMemcpyDeviceToHost);    
     }
 
-    operator FlatTable<T> () const
+    operator FlatTable<Dev<T>> () const
     {
-      return FlatTable<T> (size, index, dev_data);
+      return FlatTable<Dev<T>> (size, index, dev_data);
     }
 
-    size_t * Index() const { return index; }
-    T * DevData() const { return dev_data; }
+    auto Index() const { return index; }
+    auto DevData() const { return dev_data; }
 
     FlatArray<Dev<T>> Row(int i) const { return { index[i+1]-index[i], dev_data+index[i] }; }
     
@@ -458,7 +473,5 @@ namespace ngs_cuda
 
 }
 
-
-#endif
 
 #endif
