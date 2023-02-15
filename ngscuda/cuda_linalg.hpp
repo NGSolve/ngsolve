@@ -4,6 +4,9 @@
 #include <cublas_v2.h>
 #include <cusparse.h>
 
+#include "cuda_ngstd.hpp"
+using namespace ngs_cuda;
+
 namespace ngla
 {
   cublasHandle_t Get_CuBlas_Handle ();
@@ -12,6 +15,8 @@ namespace ngla
 
 // own ngsolve cuda-kernels:
 extern void SetScalar (double val, int n, double * dev_ptr);
+extern void SetScalar (double val, ngbla::FlatVector<Dev<double>> vec);
+
 extern void SetVector (double val, int n, double * x, double * y);
 extern void MyDaxpy (double val, int n, double * x, double * y);
 

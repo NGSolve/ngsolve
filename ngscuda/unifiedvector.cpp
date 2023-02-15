@@ -45,8 +45,9 @@ namespace ngla
 
   BaseVector & UnifiedVector :: operator= (double d)
   {
-    ::SetScalar (d, size, dev_data); 
-
+    // ::SetScalar (d, size, dev_data); 
+    ::SetScalar (d, FlatVector<Dev<double>> (size, dev_data));
+      
     host_uptodate = false;
     dev_uptodate = true;
     

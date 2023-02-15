@@ -1,3 +1,6 @@
+#ifndef CUDA_NGSTD_HPP
+#define CUDA_NGSTD_HPP
+
 #ifdef CUDA
 
 #include <cuda_runtime.h>
@@ -39,7 +42,9 @@ namespace ngs_cuda
     {
       cudaMemcpy (&data, &val, sizeof(T), cudaMemcpyHostToDevice);
     }
-    
+      
+    __device__ Dev<T> & operator= (T d2) { data = d2; return *this; }
+    __device__ operator T() const { return data; } 
   };
     
     
@@ -453,5 +458,7 @@ namespace ngs_cuda
 
 }
 
+
+#endif
 
 #endif
