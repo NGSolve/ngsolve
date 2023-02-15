@@ -203,6 +203,14 @@ namespace ngs_cuda
 
 
 
+  template <typename T>
+  inline Array<T> D2H (FlatArray<Dev<T>> deva)
+  {
+    Array<T> hosta(deva.Size());
+    cudaMemcpy (hosta.Data(), deva.Data(), sizeof(T)*hosta.Size(), cudaMemcpyDeviceToHost);    
+    return hosta;
+  }
+
 
 
 
@@ -253,7 +261,7 @@ namespace ngs_cuda
   {
     int size;
     size_t * index = nullptr;
-    T * dev_data = nullptr;
+    Dev<T> * dev_data = nullptr;
   
   public: 
 
@@ -295,7 +303,7 @@ namespace ngs_cuda
     size_t * Index() const { return index; }
     T * DevData() const { return dev_data; }
 
-    FlatArray<T> Row(int i) const { return { index[i+1]-index[i], dev_data+index[i] }; }
+    FlatArray<Dev<T>> Row(int i) const { return { index[i+1]-index[i], dev_data+index[i] }; }
     
     class Iterator
     {
@@ -304,7 +312,7 @@ namespace ngs_cuda
     public:
       Iterator (const DevDataTable & _tab, size_t _row) : tab(_tab), row(_row) { ; }
       Iterator & operator++ () { ++row; return *this; }
-      FlatArray<T> operator* () const { return tab.Row(row); }
+      auto operator* () const { return tab.Row(row); }
       bool operator!= (const Iterator & it2) { return row != it2.row; }
     };
 
@@ -317,8 +325,8 @@ namespace ngs_cuda
   class DevTable
   {
     int size;
-    size_t * dev_index = nullptr;
-    T * dev_data = nullptr;
+    Dev<size_t> * dev_index = nullptr;
+    Dev<T> * dev_data = nullptr;
   
   public: 
 
@@ -353,8 +361,13 @@ namespace ngs_cuda
       return FlatTable<T> (size, dev_index, dev_data);
     }
 
-    size_t * DevIndex() const { return dev_index; }
-    T * DevData() const { return dev_data; }
+    size_t * DevIndex() const { return (size_t*)dev_index; }
+    T * DevData() const { return (T*)dev_data; }
+
+    FlatArray<Dev<T>> AsArray() const
+    {
+      return FlatArray<Dev<T>> ( dev_index[size].D2H(), dev_data );
+    }    
   }; 
 
 

@@ -462,7 +462,7 @@ namespace ngla
             DevStackArray<double> dev_hy(c.Size()*devmat.Height());
 
             tcopyin.Start();            
-            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
             if (synckernels) cudaDeviceSynchronize();            
             tcopyin.Stop();
             
@@ -476,7 +476,7 @@ namespace ngla
             tmult.Stop();
 
             tcopyout.Start();
-            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
             if (synckernels) cudaDeviceSynchronize();            
             tcopyout.Stop();
           }
@@ -521,14 +521,14 @@ namespace ngla
             DevStackArray<double> dev_hx(c.Size()*hm);
             DevStackArray<double> dev_hy(c.Size()*wm);
 
-            ConstEBEKernelCopyInIdx (c.Size(), c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
+            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
             // dev_hy = dev_hx * mat
 
             FlatMatrix<Dev<double>> matx(c.Size(), hm, dev_hx.Data());
             FlatMatrix<Dev<double>> maty(c.Size(), wm, dev_hy.Data());
             MultMatMat (matx, devmat, maty, s, 0);
            
-            ConstEBEKernelCopyOutIdx (c.Size(), c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
+            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
           }
       }
     

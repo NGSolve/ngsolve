@@ -2314,11 +2314,25 @@ namespace ngbla
     
     TM operator() (size_t i, size_t j) const
     {
+      /*
       TM ret;
       for (size_t k = 0; k < H; k++)
 	for (size_t l = 0; l < W; l++)
 	  Access(ret, k,l) = mat(i*H+k, j*W+l);
       return ret;
+      */
+      if constexpr (IsScalar<TM>())
+        {
+          return mat(i,j);
+        }
+      else
+        {
+          TM ret;
+          for (size_t k = 0; k < H; k++)
+            for (size_t l = 0; l < W; l++)
+              ret(k,l) = mat(i*H+k, j*W+l);
+          return ret;
+        }
     }
 
     Scalar2ElemMatrix Rows(size_t first, size_t next) const
