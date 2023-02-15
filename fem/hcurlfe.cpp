@@ -4146,8 +4146,8 @@ namespace ngfem
     Mat<NEDGEDOF,3> hshape2;
     Mat<NEDGEDOF,3> shape2;
 
-    Mat<4,3> hshape3;
-    Mat<4,3> shape3;
+    // Mat<4,3> hshape3;
+    // Mat<4,3> shape3;
 
     shape = 0.0; //!
     CalcShape1 (ip, hshape);

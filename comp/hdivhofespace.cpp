@@ -59,7 +59,7 @@ namespace ngcomp
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,D,lh);
       Vec<D> n = sip.GetNV();
-      Mat<D,D> mati;
+      // Mat<D,D> mati;
       fel.CalcMappedShape(sip,shape);
       mat.Col(0) = shape * n;
     }
