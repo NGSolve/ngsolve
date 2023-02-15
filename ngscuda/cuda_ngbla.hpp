@@ -1,6 +1,8 @@
 #ifndef CUDA_NGBLA
 #define CUDA_NGBLA
 
+#include "cuda_ngstd.hpp"
+
 namespace ngbla
 {
   using namespace ngs_cuda;
