@@ -44,7 +44,8 @@ namespace ngla
     virtual BaseVector & Set (double scal, const BaseVector & v);
     virtual BaseVector & Add (double scal, const BaseVector & v);
 
-    double InnerProduct (const BaseVector & v2, bool conjugate=false) const;
+    virtual double InnerProductD (const BaseVector & v2) const;
+    virtual double L2Norm () const;
 
     void UpdateHost () const;
     void UpdateDevice () const;

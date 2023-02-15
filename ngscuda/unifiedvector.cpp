@@ -177,11 +177,8 @@ namespace ngla
     return *this;
   }
   
-  double UnifiedVector :: InnerProduct (const BaseVector & v2, bool conjugate) const
+  double UnifiedVector :: InnerProductD (const BaseVector & v2) const
   {
-    if (conjugate)
-      throw Exception("conjugate in innerproduct not implemented yet.");
-
     static Timer tdot("CUDA InnerProduct");
     RegionTimer reg(tdot);
 
@@ -203,6 +200,15 @@ namespace ngla
     return ngbla::InnerProduct (fv, fv2);
   }
 
+  virtual double UnifiedVector :: L2Norm() const
+  {
+    UpdateDevice();
+    double res;
+    cublasDnrm2(Get_CuBlas_Handle(), size, dev_data, 1, &res);
+    return res;
+  }
+
+  
   ostream & UnifiedVector :: Print (ostream & ost) const
   {
     cout << "output unified vector of size " << size;
