@@ -60,9 +60,9 @@ namespace ngs_cuda
     
 
 
-  
+  /*
   template <typename T>
-  class [[deprecated]] DevVar
+  class DevVar
   {
     T * ptr;
   public:
@@ -95,6 +95,7 @@ namespace ngs_cuda
     ost << T(var);
     return ost;
   }
+  */
 
     // TODO: Resize + error checking
   class DevStackMemory
@@ -297,13 +298,13 @@ namespace ngs_cuda
     
       int sizedata = t2.AsArray().Size();
       // cudaMalloc((int**)&dev_data, sizedata*sizeof(T));
-      dev_data = Dev<double>::Malloc(sizedata);
+      dev_data = Dev<T>::Malloc(sizedata);
       cudaMemcpy (dev_data, t2.Data(), sizeof(T)*sizedata, cudaMemcpyHostToDevice);
     }
 
     ~DevDataTable ()
     {
-      Dev<double>::Free (dev_data);
+      Dev<T>::Free (dev_data);
       // cudaFree (dev_data);
       // cudaFree (dev_index);
       delete [] index;
