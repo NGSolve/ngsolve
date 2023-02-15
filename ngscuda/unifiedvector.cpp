@@ -200,7 +200,7 @@ namespace ngla
     return ngbla::InnerProduct (fv, fv2);
   }
 
-  virtual double UnifiedVector :: L2Norm() const
+  double UnifiedVector :: L2Norm() const
   {
     UpdateDevice();
     double res;
