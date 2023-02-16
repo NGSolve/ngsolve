@@ -194,26 +194,28 @@ void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, doubl
 
 
 __global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, int num, Dev<int> * inds,
-                                                            SliceMatrix<Dev<double>> a, SliceMatrix<Dev<double>> b,
+                                                            SliceMatrix<Dev<double>> a,
+                                                            SliceMatrix<Dev<double>> b,
                                                             SliceMatrix<Dev<double>> res)
 {
   // TODO: copy inds to shared memory ? 
   int tid = blockIdx.x*blockDim.x+threadIdx.x;
-  for (int i = tid; i < size; i += blockDim.x*gridDim.x)
+  for (int i = tid; i < res.Width(); i += blockDim.x*gridDim.x)
     for (int j = 0; j < num; j++)
       {
         int rowa = inds[3*j];
         int rowb = inds[3*j+1];
         int rowres = inds[3*j+2];
         // res[i] += s * a[i]*b[i];
-        res(rowres,i) += s * a.Row(rowa,i) * b.Row(rowb,i);
+        res(rowres,i) = res(rowres,i) + s * a(rowa,i) * b(rowb,i);
       }
 }
 
 // for (i,j,k) in indices:
 //    res.Row(k) += s * a.Row(i) * b.Row(j)
 void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int num, Dev<int> * inds,
-                                           SliceMatrix<Dev<double>> a, Sl  iceMatrix<Dev<double>> b,
+                                           SliceMatrix<Dev<double>> a, 
+                                           SliceMatrix<Dev<double>> b,
                                            SliceMatrix<Dev<double>> res)
 {
   DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256>>> (s, num, inds, a, b, res);

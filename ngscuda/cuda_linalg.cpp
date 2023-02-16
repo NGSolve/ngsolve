@@ -580,17 +580,17 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    /*
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
         if (nonzero(i,j) != 0)
           DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*j, uy.DevData()+blocks*i);
-    */
+
+    /*  
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
     FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)ux.DevData());
     FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
     DevBlockDiagonalMatrixSoAMultAddVecs (s, numnonzero, indices, a, b, res);
-
+*/
     uy.InvalidateHost();
   }
 
