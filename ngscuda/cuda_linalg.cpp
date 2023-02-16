@@ -567,7 +567,7 @@ namespace ngla
             nonzeroinds.Append(j);
           }
     numnonzero = nonzeroinds.Size();
-    indices = Dev<int>.Malloc(numnonzero);
+    indices = Dev<int>::Malloc(numnonzero);
     indices -> H2D(nonzeroinds);
   }
   
@@ -586,9 +586,9 @@ namespace ngla
         if (nonzero(i,j) != 0)
           DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*j, uy.DevData()+blocks*i);
     */
-    FlatMatrix<Dev<double>> a(dimx*dimy, blocks, dev_data);
-    FlatMatrix<Dev<double>> b(dimx, blocks, ux.DevData());
-    FlatMatrix<Dev<double>> res(dimy, blocks, uy.DevData());
+    FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
+    FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)ux.DevData());
+    FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
     DevBlockDiagonalMatrixSoAMultAddVecs (s, numnonzero, indices, a, b, res);
 
     uy.InvalidateHost();
