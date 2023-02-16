@@ -8,31 +8,35 @@
 /**************************************************************************/
 
 #include <core/simd.hpp>
+#include <ngs_stdcpp_include.hpp>
 
 namespace ngcore
 {
   using std::tie;
 
-  typedef std::complex<double> Complex;
-
   INLINE SIMD<mask64> Mask128 (int64_t nr)
   {
-#ifdef __AVX512F__  
+#ifdef __CUDA_ARCH__
+    return 2*nr;
+
+#else // __CUDA_ARCH__
+  #ifdef __AVX512F__
 
     return _mm512_cmpgt_epi64_mask(_mm512_set1_epi64(nr),
                                    _mm512_set_epi64(3, 3, 2, 2, 1, 1, 0, 0));
-    
-#elif defined(__AVX__)
+
+  #elif defined(__AVX__)
 
     return my_mm256_cmpgt_epi64(_mm256_set1_epi64x(nr),
                                 _mm256_set_epi64x(1, 1, 0, 0));
 
-#elif defined NETGEN_ARCH_AMD64
+  #elif defined NETGEN_ARCH_AMD64
     return _mm_cmpgt_epi32(_mm_set1_epi32(nr),
                            _mm_set_epi32(0, 0, 0, 0));
-#else
+  #else
     return 2*nr;
-#endif
+  #endif
+#endif // __CUDA_ARCH__
   }
 
 
@@ -142,7 +146,7 @@ namespace ngcore
     // double re1, im1, re2, im2;
     // std::tie(re1,im1,re2,im2) = HSum(sc1.real(), sc1.imag(), sc2.real(), sc2.imag());
     auto [re1,im1,re2,im2] = HSum(sc1.real(), sc1.imag(), sc2.real(), sc2.imag());
-    return make_tuple(Complex(re1,im1), Complex(re2,im2));
+    return std::make_tuple(Complex(re1,im1), Complex(re2,im2));
   }
   
   INLINE ostream & operator<< (ostream & ost, SIMD<Complex> c)
