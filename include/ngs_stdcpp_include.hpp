@@ -1,33 +1,8 @@
 #ifndef NGS_STDCPP_INCLUDE_HPP
 #define NGS_STDCPP_INCLUDE_HPP
 
-#ifdef WIN32
+#include <core/ngcore_api.hpp>
 
-// This function or variable may be unsafe. Consider using _ftime64_s instead. To disable deprecation, use _CRT_SECURE_NO_WARNINGS. See online help for details.
-#pragma warning(disable:4996)
-#pragma warning(disable:4244)
-
-// multiple inheritance via dominance
-#pragma warning(disable:4250)
-
-// bool-int conversion
-#pragma warning(disable:4800)
-
-// C++ exception specification ignored except to indicate a function is not __declspec(nothrow)
-#pragma warning(disable:4290)
-
-// no suitable definition provided for explicit template instantiation request
-#pragma warning(disable:4661)
-
-
-// needs to have dll-interface to be used by clients of class
-#pragma warning(disable:4251)
-// why does this apply to inline-only classes ????
-
-// size_t to int conversion:
-#pragma warning(disable:4267)
-
-#endif
 
 
 #ifdef __GNUC__
@@ -48,22 +23,6 @@
 #endif
 #endif
 
-
-
-
-#ifdef __INTEL_COMPILER
-// #pragma warning (disable:175)    // range check 
-// #pragma warning (disable:597)    // implicit conversion (2014)
-
-// unknown attribute __leaf__ in /usr/include/x86_64-linux-gnu/sys/sysmacros.h
-#pragma warning (disable:1292)  
-#endif
-
-
-#ifdef __clang__
-// #pragma clang diagnostic ignored "-Wpotentially-evaluated-expression"
-// related to clang Bug 2181:  https://www.nsnam.org/bugzilla/show_bug.cgi?id=2181
-#endif
 
 #if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wvirtual-move-assign"
@@ -104,40 +63,15 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+// __host__ __device__ for CUDA
+#define HD NETGEN_HD
 
-#ifdef __CUDACC__
-#define CUDA
-#define HD
-#endif
+#define ALWAYS_INLINE NETGEN_ALWAYS_INLINE
+#define INLINE NETGEN_INLINE
+#define LAMBDA_INLINE NETGEN_LAMBDA_INLINE
 
-#ifndef HD
-#define HD
-#endif
-
-
-#ifdef __INTEL_COMPILER
-#ifdef WIN32
-#define ALWAYS_INLINE __forceinline
-#define INLINE __forceinline inline
-#define LAMBDA_INLINE
-#else
-#define ALWAYS_INLINE __forceinline
-#define INLINE __forceinline inline
-#define LAMBDA_INLINE __attribute__ ((__always_inline__))
-#endif
-#else
-#ifdef __GNUC__
-#define ALWAYS_INLINE __attribute__ ((__always_inline__))
-#define INLINE __attribute__ ((__always_inline__)) inline   HD 
-#define LAMBDA_INLINE __attribute__ ((__always_inline__))
-// #ifndef __clang__
+#ifdef NETGEN_VLA
 #define VLA
-// #endif
-#else
-#define ALWAYS_INLINE
-#define INLINE inline
-#define LAMBDA_INLINE
-#endif
 #endif
 
 // from https://stackoverflow.com/questions/60802864/emulating-gccs-builtin-unreachable-in-visual-studio
@@ -162,10 +96,12 @@ inline void unreachable() {}
 #endif
 #endif
 
-//#define INLINE __attribute__ ((__always_inline__)) inline
-//#define INLINE inline
 
-
+#ifdef NGS_EXPORTS
+  #define NGS_DLL_HEADER NGCORE_API_EXPORT
+#else
+  #define NGS_DLL_HEADER NGCORE_API_IMPORT
+#endif
 // #ifdef __clang__
 #if defined(__GNUC__) && !defined(__INTEL_COMPILER)
 namespace std
@@ -180,11 +116,14 @@ namespace std
 #endif
 
 
+#ifdef USE_MYCOMPLEX
+#include <mycomplex.hpp>
+#endif
 
 namespace ngcore
 {
 #ifdef USE_MYCOMPLEX
-  typedef MyComplex<double> Complex;
+  typedef ngstd::MyComplex<double> Complex;
   using std::fabs;
   inline double fabs (Complex v) { return ngstd::abs (v); }
 #else

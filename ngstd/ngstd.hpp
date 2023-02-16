@@ -13,20 +13,6 @@
 
 #include <ngs_stdcpp_include.hpp>
 
-#ifdef WIN32
-   #ifdef NGS_EXPORTS
-      #define NGS_DLL_HEADER   __declspec(dllexport)
-   #else
-      #define NGS_DLL_HEADER   __declspec(dllimport)
-   #endif
-#else
-   #if __GNUC__ >= 4
-      #define NGS_DLL_HEADER __attribute__ ((visibility ("default")))
-   #else
-      #define NGS_DLL_HEADER
-   #endif
-#endif
-
 /*
 inline void * operator new (size_t cnt)
 {
