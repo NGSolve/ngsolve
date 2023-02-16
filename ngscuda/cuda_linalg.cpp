@@ -557,19 +557,27 @@ namespace ngla
     cudaMemcpy (dev_data, blockdiag.Data(), sizeof(double)*dimx*dimy*blocks, cudaMemcpyHostToDevice);
 
 
-    Array<int> nonzeroinds;
+    Array<int> nonzeroinds, nonzeroinds_trans;
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
         if (nonzero(i,j) != 0)
           {
             nonzeroinds.Append(i*dimx+j);
-            nonzeroinds.Append(i);
             nonzeroinds.Append(j);
-          }
-    numnonzero = nonzeroinds.Size();
-    indices = Dev<int>::Malloc(numnonzero);
+            nonzeroinds.Append(i);
+
+            nonzeroinds_trans.Append(i*dimx+j);
+            nonzeroinds_trans.Append(i);
+            nonzeroinds_trans.Append(j);
+        
+        }
+    numnonzero = nonzeroinds.Size()/3;
+    indices = Dev<int>::Malloc(3*numnonzero);
     indices -> H2D(nonzeroinds);
-  }
+
+    indices_trans = Dev<int>::Malloc(3*numnonzero);
+    indices_trans -> H2D(nonzeroinds_trans);
+}
   
   void DevBlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
@@ -579,18 +587,18 @@ namespace ngla
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
-
+/*
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
         if (nonzero(i,j) != 0)
           DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*j, uy.DevData()+blocks*i);
+*/
 
-    /*  
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
     FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)ux.DevData());
     FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
     DevBlockDiagonalMatrixSoAMultAddVecs (s, numnonzero, indices, a, b, res);
-*/
+
     uy.InvalidateHost();
   }
 
@@ -603,11 +611,18 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
     
+      /*
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
         if (nonzero(i,j) != 0)
           DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*i, uy.DevData()+blocks*j);
-
+*/
+      
+    FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
+    FlatMatrix<Dev<double>> b(dimy, blocks,  (Dev<double>*)ux.DevData());
+    FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)uy.DevData());
+    DevBlockDiagonalMatrixSoAMultAddVecs (s, numnonzero, indices_trans, a, b, res);
+      
     uy.InvalidateHost();
   }
 
