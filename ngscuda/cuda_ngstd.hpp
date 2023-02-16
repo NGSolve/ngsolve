@@ -155,11 +155,11 @@ namespace ngs_cuda
 
 namespace ngcore 
 {
-    using ngs_cuda::Dev;
+  using ngs_cuda::Dev;
   template <typename T>  
   class Array<Dev<T>> : public FlatArray<Dev<T>>
-{
-public:
+  {
+  public:
     Array() = default;
     Array (size_t s)
       : FlatArray<Dev<T>>(s, Dev<T>::Malloc(s)) { } ;     
@@ -179,18 +179,18 @@ public:
     void SetSize(size_t s)
     {
       if (this->Size() != s)
-      {
-        Dev<T>::Free(this->data);
-        this->data = Dev<T>::Malloc(s);
-        this->size = s;
-      }
+        {
+          Dev<T>::Free(this->data);
+          this->data = Dev<T>::Malloc(s);
+          this->size = s;
+        }
     }
     
-      ~Array()
-      {
-            Dev<T>::Free(this->data);
-      }
-    };
+    ~Array()
+    {
+      Dev<T>::Free(this->data);
+    }
+  };
 }
 
 
