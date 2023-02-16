@@ -571,12 +571,9 @@ namespace ngla
             nonzeroinds_trans.Append(j);
         
         }
-    numnonzero = nonzeroinds.Size()/3;
-    indices = Dev<int>::Malloc(3*numnonzero);
-    indices -> H2D(nonzeroinds);
 
-    indices_trans = Dev<int>::Malloc(3*numnonzero);
-    indices_trans -> H2D(nonzeroinds_trans);
+    indices = nonzeroinds;
+    indices_trans = nonzeroinds_trans;
 }
   
   void DevBlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -597,7 +594,8 @@ namespace ngla
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
     FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)ux.DevData());
     FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
-    DevBlockDiagonalMatrixSoAMultAddVecs (s, numnonzero, indices, a, b, res);
+    DevBlockDiagonalMatrixSoAMultAddVecs (s, indices, a, b, res);
+    if (synckernels) cudaDeviceSynchronize();
 
     uy.InvalidateHost();
   }
@@ -621,7 +619,8 @@ namespace ngla
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
     FlatMatrix<Dev<double>> b(dimy, blocks,  (Dev<double>*)ux.DevData());
     FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)uy.DevData());
-    DevBlockDiagonalMatrixSoAMultAddVecs (s, numnonzero, indices_trans, a, b, res);
+    DevBlockDiagonalMatrixSoAMultAddVecs (s, indices_trans, a, b, res);
+    if (synckernels) cudaDeviceSynchronize();
       
     uy.InvalidateHost();
   }

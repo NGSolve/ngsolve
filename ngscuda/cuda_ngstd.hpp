@@ -56,6 +56,11 @@ namespace ngs_cuda
     
     __device__ Dev<T> & operator= (T d2) { data = d2; return *this; }
     __device__ operator T() const { return data; } 
+    
+    template <typename T2>
+    __device__ auto & operator+= (T2 other) { data += other; return *this; }
+    template <typename T2>
+    __device__ auto & operator-= (T2 other) { data -= other; return *this; }
   };
     
 
@@ -145,10 +150,52 @@ namespace ngs_cuda
       }
     T * DevData () const { return (T*)this->data; }
   };
-  
+}
 
 
+namespace ngcore 
+{
+    using ngs_cuda::Dev;
+  template <typename T>  
+  class Array<Dev<T>> : public FlatArray<Dev<T>>
+{
+public:
+    Array() = default;
+    Array (size_t s)
+      : FlatArray<Dev<T>>(s, Dev<T>::Malloc(s)) { } ;     
+    Array (FlatArray<T> a2)
+      : Array(a2.Size())
+    {
+      this->data->H2D(a2);
+    }
+    
+    Array& operator= (FlatArray<T> a2)
+    {
+      SetSize(a2.Size());
+      this->data->H2D(a2);
+      return *this;
+    }
+    
+    void SetSize(size_t s)
+    {
+      if (this->Size() != s)
+      {
+        Dev<T>::Free(this->data);
+        this->data = Dev<T>::Malloc(s);
+        this->size = s;
+      }
+    }
+    
+      ~Array()
+      {
+            Dev<T>::Free(this->data);
+      }
+    };
+}
 
+
+namespace ngs_cuda
+{
   // use Array<Dev<T>> instead 
   template <typename T>
   class [[deprecated]] DevArray 
@@ -454,11 +501,11 @@ namespace ngs_cuda
 
   public:
     DevBitArray (size_t asize);
-    DevBitArray (const ngstd::BitArray & ba);
+    DevBitArray (const ngcore::BitArray & ba);
 
     ~DevBitArray ();
 
-    DevBitArray & operator= (const ngstd::BitArray &ba);
+    DevBitArray & operator= (const ngcore::BitArray &ba);
 
     size_t Size () const { return size; }
     auto Data () const { return dev_data; }

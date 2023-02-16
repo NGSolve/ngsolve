@@ -1,10 +1,9 @@
 #include <climits>
-#include <ngstd.hpp>
-#undef INLINE
-#define INLINE __host__ __device__ inline
+// #include <ngstd.hpp>
 #include <templates.hpp>
 #include <vector.hpp>
 #include <matrix.hpp>
+// #include <bla.hpp>
 using namespace ngbla;
 
 
@@ -193,7 +192,7 @@ void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, doubl
 
 
 
-__global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, int num, Dev<int> * inds,
+__global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, FlatArray<Dev<int>> inds,
                                                             SliceMatrix<Dev<double>> a,
                                                             SliceMatrix<Dev<double>> b,
                                                             SliceMatrix<Dev<double>> res)
@@ -201,24 +200,24 @@ __global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, int num, D
   // TODO: copy inds to shared memory ? 
   int tid = blockIdx.x*blockDim.x+threadIdx.x;
   for (int i = tid; i < res.Width(); i += blockDim.x*gridDim.x)
-    for (int j = 0; j < num; j++)
+    for (int j = 0; j < inds.Size(); j+=3)
       {
-        int rowa = inds[3*j];
-        int rowb = inds[3*j+1];
-        int rowres = inds[3*j+2];
+        int rowa = inds[j];
+        int rowb = inds[j+1];
+        int rowres = inds[j+2];
         // res[i] += s * a[i]*b[i];
-        res(rowres,i) = res(rowres,i) + s * a(rowa,i) * b(rowb,i);
+        res(rowres,i) += s * a(rowa,i) * b(rowb,i);
       }
 }
 
 // for (i,j,k) in indices:
 //    res.Row(k) += s * a.Row(i) * b.Row(j)
-void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int num, Dev<int> * inds,
+void DevBlockDiagonalMatrixSoAMultAddVecs (double s, FlatArray<Dev<int>> inds, 
                                            SliceMatrix<Dev<double>> a, 
                                            SliceMatrix<Dev<double>> b,
                                            SliceMatrix<Dev<double>> res)
 {
-  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256>>> (s, num, inds, a, b, res);
+  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256>>> (s, inds, a, b, res);
 }
 
 
