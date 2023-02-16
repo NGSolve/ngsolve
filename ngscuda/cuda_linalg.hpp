@@ -40,7 +40,7 @@ extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * co
 
   // for (i,j,k) in indices:
   //    res.Row(k) += s * a.Row(i) * b.Row(j)
-  extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int num, Dev<int> * inds,
+  extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, FlatArray<Dev<int>>, 
                                                     SliceMatrix<Dev<double>> a, 
                                                     SliceMatrix<Dev<double>> b,
                                                     SliceMatrix<Dev<double>> res);
@@ -149,9 +149,7 @@ namespace ngla
     double * dev_data; // Tensor<3> blockdiag;  
     int blocks, dimy, dimx;
     Matrix<double> nonzero;
-    int numnonzero;
-    Dev<int> * indices;
-    Dev<int> * indices_trans;
+    Array<Dev<int>> indices, indices_trans;
  public:
     DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
