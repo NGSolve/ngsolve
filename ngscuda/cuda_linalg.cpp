@@ -555,6 +555,20 @@ namespace ngla
       throw Exception("DevBlockDiagonalMatrixSoA allocation error, ec="+ToString(err));
 
     cudaMemcpy (dev_data, blockdiag.Data(), sizeof(double)*dimx*dimy*blocks, cudaMemcpyHostToDevice);
+
+
+    Array<int> nonzeroinds;
+    for (int i = 0; i < dimy; i++)
+      for (int j = 0; j < dimx; j++)
+        if (nonzero(i,j) != 0)
+          {
+            nonzeroinds.Append(i*dimx+j);
+            nonzeroinds.Append(i);
+            nonzeroinds.Append(j);
+          }
+    numnonzero = nonzeroinds.Size();
+    indices = Dev<int>.Malloc(numnonzero);
+    indices -> H2D(nonzeroinds);
   }
   
   void DevBlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -565,11 +579,17 @@ namespace ngla
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
-    
+
+    /*
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
         if (nonzero(i,j) != 0)
           DevBlockDiagonalMatrixSoAMultAddVecs (s, blocks, dev_data + blocks*(i*dimx+j), ux.DevData()+blocks*j, uy.DevData()+blocks*i);
+    */
+    FlatMatrix<Dev<double>> a(dimx*dimy, blocks, dev_data);
+    FlatMatrix<Dev<double>> b(dimx, blocks, ux.DevData());
+    FlatMatrix<Dev<double>> res(dimy, blocks, uy.DevData());
+    DevBlockDiagonalMatrixSoAMultAddVecs (s, numnonzero, indices, a, b, res);
 
     uy.InvalidateHost();
   }
