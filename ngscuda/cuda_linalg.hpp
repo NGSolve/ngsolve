@@ -35,7 +35,14 @@ extern void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, doubl
 extern void ConstEBEKernelCopyInIdx (int numblocks, int * idx, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
 extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * col_dnums, double * dev_hy, double * dev_uy);
 
-extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res);
+  extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res);
+
+  // for (i,j,k) in indices:
+  //    res.Row(k) += s * a.Row(i) * b.Row(j)
+  extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int num, Dev<int> * inds,
+                                                    SliceMatrix<Dev<double>> a, Sl  iceMatrix<Dev<double>> b,
+                                                    SliceMatrix<Dev<double>> res);
+
 
 extern void DevProjectorMultAdd (double s, size_t size, const double * a, double * b, const unsigned char * bits, bool keep_values);
 extern void DevProjectorProject (size_t size, double * a, const unsigned char * bits, bool keep_values);
@@ -140,7 +147,9 @@ namespace ngla
     double * dev_data; // Tensor<3> blockdiag;  
     int blocks, dimy, dimx;
     Matrix<double> nonzero;
-    
+    int numnonzero;
+    Dev<int> * indices;
+    Dev<int> * indices_trans;
  public:
     DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;

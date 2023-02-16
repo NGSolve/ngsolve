@@ -149,7 +149,7 @@ namespace ngs_cuda
 
 
 
-
+  // use Array<Dev<T>> instead 
   template <typename T>
   class [[deprecated]] DevArray 
   {
