@@ -17,7 +17,8 @@ namespace ngla
 
 namespace ngs_cuda
 {
-
+  using namespace ngbla;
+  
 // own ngsolve cuda-kernels:
 extern void SetScalar (double val, int n, double * dev_ptr);
 extern void SetScalar (double val, ngbla::FlatVector<Dev<double>> vec);
