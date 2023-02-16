@@ -41,7 +41,8 @@ extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * co
   // for (i,j,k) in indices:
   //    res.Row(k) += s * a.Row(i) * b.Row(j)
   extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int num, Dev<int> * inds,
-                                                    SliceMatrix<Dev<double>> a, Sl  iceMatrix<Dev<double>> b,
+                                                    SliceMatrix<Dev<double>> a, 
+                                                    SliceMatrix<Dev<double>> b,
                                                     SliceMatrix<Dev<double>> res);
 
 
