@@ -36,7 +36,7 @@ namespace ngbla
 
   
   template <typename TOP, typename T, typename TB>
-  class assign_trait<TOP, T, LapackExpr<TB>>
+  class assign_trait<TOP, T, LapackExpr<TB>, int>
   {
   public:
     static INLINE T & Assign (MatExpr<T> & self, const Expr<LapackExpr<TB>> & v)

@@ -530,7 +530,7 @@ namespace ngbla
 
 
   
-  template <typename TOP, typename T, typename TB>
+  template <typename TOP, typename T, typename TB, typename Enable=int>
   class assign_trait
   {
   public:
