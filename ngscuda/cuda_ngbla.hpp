@@ -104,7 +104,7 @@ namespace ngbla
   {
     CudaMultMatMat2 (Trans(b), Trans(a), Trans(c), alpha, beta);
   }
-    
+   
     
   template <typename TA, typename TB, typename TC,
             typename enable_if<IsConvertibleToSliceMatrix<TA,Dev<double>>(),int>::type = 0,
@@ -114,6 +114,64 @@ namespace ngbla
   {
     CudaMultMatMat2(make_SliceMatrix(a), make_SliceMatrix(b), make_SliceMatrix(c), alpha, beta);
   }
+ 
+
+  template <typename TOP, typename T, typename TB1, typename TB2>
+  class assign_trait<TOP, T, MultExpr<TB1,TB2>,
+                     enable_if_t<IsConvertibleToSliceMatrix<T,Dev<double>>(),int>>
+  {
+  public:
+    static INLINE T & Assign (MatExpr<T> & self, const Expr<MultExpr<TB1,TB2>> & v)
+    {
+      auto res = self.View();
+
+      double alpha = std::is_same_v<TOP,typename MatExpr<T>::AsSub> ? -1 : 1;
+      double beta = std::is_same_v<TOP,typename MatExpr<T>::As> ? 0 : 1;
+
+      MultMatMat (v.Spec().A(), v.Spec().B(), self.Spec(), alpha, beta);
+      return self.Spec();
+    }
+  };    
+    
+  template <typename TOP, typename T, typename TB1, typename TB2>
+  class assign_trait<TOP, T, ScaleExpr<MultExpr<TB1,TB2>,double>,
+                     enable_if_t<IsConvertibleToSliceMatrix<T,Dev<double>>(),int>>
+  {
+  public:
+    static INLINE T & Assign (MatExpr<T> & self, const Expr<ScaleExpr<MultExpr<TB1,TB2>,double>> & v)
+    {
+      auto res = self.View();
+
+      double alpha = is_same_v<TOP,typename MatExpr<T>::AsSub> ? -1 : 1;
+      double beta = is_same_v<TOP,typename MatExpr<T>::As> ? 0 : 1;
+      
+      alpha *= v.View().S();
+
+      MultMatMat (v.View().A().A(), v.View().A().B(), self.ViewRW(), alpha, beta);
+      return self.Spec();
+    }
+  };    
+    
+  template <typename TOP, typename T, typename TB1, typename TB2>
+  class assign_trait<TOP, T, MultExpr<ScaleExpr<TB1,double>,TB2>,
+                     enable_if_t<IsConvertibleToSliceMatrix<T,Dev<double>>(),int>>
+  {
+  public:
+    static INLINE T & Assign (MatExpr<T> & self, const Expr<MultExpr<ScaleExpr<TB1,double>,TB2>> & v)
+    {
+      auto res = self.View();
+
+      double alpha = is_same_v<TOP,typename MatExpr<T>::AsSub> ? -1 : 1;
+      double beta = is_same_v<TOP,typename MatExpr<T>::As> ? 0 : 1;
+      
+      alpha *= v.View().A().S();
+
+      MultMatMat (v.View().A().A(), v.View().B(), self.ViewRW(), alpha, beta);
+      return self.Spec();
+    }
+  };    
+    
+    
     
 }
 
