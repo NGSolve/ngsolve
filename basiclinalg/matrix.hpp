@@ -9,7 +9,7 @@
 
 
 #include "expr.hpp"
-
+#include "vector.hpp"
 
 namespace ngbla
 {

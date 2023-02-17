@@ -52,7 +52,6 @@ namespace ngcore
 #include "expr.hpp"
 #include "vector.hpp"
 #include "matrix.hpp"
-#include "avector.hpp"
 #include "ngblas.hpp"
 #include "cholesky.hpp"
 #include "symmetricmatrix.hpp"
@@ -79,5 +78,7 @@ namespace ngbla
 }
 
 #include "ng_lapack.hpp"
+#include "avector.hpp"
+
 
 #endif

@@ -7,12 +7,12 @@
 /* Date:   Nov 2020                                                         */
 /****************************************************************************/
 
+#include "matrix.hpp"
+
+
 namespace ngbla
 {
 
-
-
-  
   // find Householder reflection vector v such that
   // reflection matrix H_v = I - 2 v v^T / (v^T v)
   // leads to H_v x = +/- e_0 ||x||
