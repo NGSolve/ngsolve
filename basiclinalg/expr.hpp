@@ -14,9 +14,10 @@
 #include <core/array.hpp>
 #include <core/localheap.hpp>
 #include <core/exception.hpp>
-#include <core/hashtable.hpp>  // for INT
+#include <core/hashtable.hpp>   // for INT
+
 #include <ngs_stdcpp_include.hpp>
-// #include <templates.hpp>    // for Iterate 
+#include <templates.hpp>        // for Iterate 
 
 
 namespace ngbla
@@ -96,34 +97,37 @@ namespace ngbla
   }
   */
   
-
+  /*
   template <typename TM> 
   inline typename TM::TELEM & Access (TM & mat, int i, int j)
   {
     return mat(i,j);
   }
-
+  */
+  
   template <typename TM> 
   inline typename TM::TELEM Access (const TM & mat, int i, int j)
   {
     return mat(i,j);
   }
 
+  /*
   inline double & Access (double & mat, int i, int j)
   {
     return mat;
   }
-
+  */
+  
   inline double Access (const double & mat, int i, int j)
   {
     return mat;
   }
-
+  /*
   inline Complex & Access (Complex & mat, int i, int j)
   {
     return mat;
   }
-
+  */
   inline Complex Access (const Complex & mat, int i, int j)
   {
     return mat;
@@ -496,31 +500,6 @@ namespace ngbla
 
 
 
-  template <typename TA>
-  class LapackExpr : public Expr<LapackExpr<TA> >
-  {
-    const TA & a;
-  public:
-    LapackExpr (const TA & aa) : a(aa) { ; }
-    const TA & A() const { return a; }
-    size_t Height() const { return a.Height(); }
-    size_t Width() const { return a.Width(); }
-  };
-
-
-  // enum  T_Lapack { Lapack };
-  class T_Lapack { };
-  static T_Lapack Lapack;
-  
-  template <typename TA>
-  INLINE LapackExpr<TA> operator| (const Expr<TA> & a, T_Lapack /* tl */)
-  {
-    return LapackExpr<TA> (a.Spec());
-  }
-
-
-
-
 
   template <typename TA>
   class LocalHeapExpr : public Expr<LocalHeapExpr<TA> >
@@ -542,11 +521,114 @@ namespace ngbla
   }
 
 
-
+  template <class TA> class MatExpr;
   template <class TA, class TB> class MultExpr;
   template <class TA> class MinusExpr;
   template <class TA> class TransExpr;
   template <class TA, class TS> class ScaleExpr;
+
+
+
+  
+  template <typename TOP, typename T, typename TB>
+  class assign_trait
+  {
+  public:
+    static INLINE T & Assign (MatExpr<T> & self, const Expr<TB> & v)
+    {
+      NETGEN_CHECK_RANGE(self.Height(), v.Height(), v.Height()+1);
+      NETGEN_CHECK_RANGE(self.Width(), v.Width(), v.Width()+1);
+      NETGEN_CHECK_SHAPE(self.Spec(), v);
+    
+      if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> && 
+                    is_convertible_v<TB,FlatVector<typename T::TELEM>> && 
+                    is_convertible_v<T,FlatVector<typename T::TELEM>>)
+                     {
+                       CopyVector(FlatVector<typename T::TELEM>(v.Spec()), FlatVector<typename T::TELEM>(self.Spec()));
+                       return self.Spec();
+                     }
+      
+      else if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> && 
+                         is_convertible_v<TB,SliceVector<typename T::TELEM>> && 
+                         is_convertible_v<T,SliceVector<typename T::TELEM>>)
+                          {
+                            CopyVector(SliceVector<typename T::TELEM>(v.Spec()), SliceVector<typename T::TELEM>(self.Spec()));
+                            return self.Spec();
+                          }
+      // else
+      // auto unused_variable_in_assign = v.Spec()(0,0);
+
+      auto src = v.View();
+      decltype(auto) dest = self.ViewRW();
+      
+      if (T::COL_MAJOR)
+        {
+	  size_t h = self.Height();
+	  size_t w = self.Width();
+
+          if (h > 0)
+            for (size_t j = 0; j < w; j++)
+              for (size_t i = 0; i < h; i++)
+                // TOP()(Spec()(i,j), v.Spec()(i,j));
+                // TOP()(Spec()(i,j), v.View()(i,j));
+                TOP()(dest(i,j), src(i,j));
+          return self.Spec();
+        }
+
+
+      if (TB::IS_LINEAR)
+	{
+	  if (T::IS_LINEAR)
+	    {
+	      auto hw = self.Height() * self.Width();
+              for (auto i : Range(hw))  // int i = 0; i < hw; i++)
+                // TOP()(Spec()(i),v.Spec()(i));
+                TOP()(dest(i), src(i));
+	    }
+	  else
+	    {
+	      size_t h = self.Height();
+	      size_t w = self.Width();
+              if (w > 0)
+                for (size_t i = 0, k = 0; i < h; i++)
+                  for (size_t j = 0; j < w; j++, k++)
+                    // TOP() (Spec()(i,j), v.Spec()(k));
+                    // TOP() (Spec()(i,j), v.View()(k));
+                    TOP() (dest(i,j), src(k));
+	    }
+	}
+      else
+	{
+	  size_t h = self.Height();
+	  size_t w = self.Width();
+          if (w > 0)
+            {
+              if (T::IS_LINEAR)
+                for (size_t i = 0, k = 0; i < h; i++)
+                  for (size_t j = 0; j < w; j++, k++)
+                    // TOP() (Spec()(k), v.Spec()(i,j));
+                    // TOP() (Spec()(k), v.View()(i,j));
+                    TOP() (dest(k), src(i,j));                    
+              else
+                {
+                  for (size_t i = 0; i < h; i++)
+                    for (size_t j = 0; j < w; j++)
+                      {
+                        // TOP() (Spec()(i,j), v.View()(i,j));
+                        TOP() (dest(i,j), src(i,j));                        
+                      }
+                }
+            }
+        }
+      return self.Spec();
+     
+    }
+  };
+
+
+
+  
+
   
   /**
      The base class for matrices.
@@ -572,9 +654,12 @@ namespace ngbla
     template<typename TOP, typename TB>
     INLINE T & Assign (const Expr<TB> & v)
     {
+      return assign_trait<TOP, T, TB>::Assign (*this, v);
+      /*
       // static Timer t(string("Ng-std-expr:") + typeid(TOP).name() + typeid(TB).name());
       // RegionTimer reg(t);
 
+      
       NETGEN_CHECK_RANGE(Height(), v.Height(), v.Height()+1);
       NETGEN_CHECK_RANGE(Width(), v.Width(), v.Width()+1);
       NETGEN_CHECK_SHAPE(this->Spec(), v);
@@ -660,6 +745,7 @@ namespace ngbla
             }
         }
       return Spec();
+      */
     }
 
 
@@ -852,6 +938,8 @@ namespace ngbla
     }
     */
 
+
+    /*
     template <typename TA, typename TB>
     INLINE T & operator= (const Expr<LapackExpr<MultExpr<TA, TB>>> & prod) 
     {
@@ -872,7 +960,7 @@ namespace ngbla
       LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), -1.0, Spec(), 1.0);
       return Spec();
     }
-
+    */
 
 
 
@@ -1850,7 +1938,7 @@ namespace ngbla
   
 
   template <class TA>
-  inline auto L2Norm2 (const Expr<TA> & v) -> decltype(L2Norm2(v.Spec()(0)))
+  inline auto L2Norm2 (const Expr<TA> & v) // -> decltype(L2Norm2(v.Spec()(0)))
   {
     // double sum = 0;
     decltype(L2Norm2(v.Spec()(0))) sum = 0.0;
@@ -1869,7 +1957,7 @@ namespace ngbla
      Calculates the Euclidean norm
   */
   template <class TA>
-  inline auto L2Norm (const Expr<TA> & v) -> decltype(L2Norm2(v))
+  inline auto L2Norm (const Expr<TA> & v) // -> decltype(L2Norm2(v))
   {
     return sqrt (L2Norm2(v));
   }
