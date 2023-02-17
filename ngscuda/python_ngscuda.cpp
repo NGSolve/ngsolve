@@ -231,6 +231,7 @@ PYBIND11_MODULE(ngscuda, m) {
     
     .def("__timing__", []()
          {
+            if (false)
            for (int n = 100; n < 5000; n *= 2)
              {
                cout << "n = " << n << endl;
@@ -249,6 +250,43 @@ PYBIND11_MODULE(ngscuda, m) {
                t.Stop();
                t.AddFlops (double(runs)*n*n*n);
                cout << "time = " << t.GetTime() << " MFlops = " << t.GetMFlops() << endl;
+             }
+             
+             {
+            int nummats = 1000000;
+            int math = 20, matw = 20;
+            Array<double> hmatdata(nummats*math*matw);
+            Array<double> hvecxdata(nummats*matw);
+            Array<double> hvecydata(nummats*math);
+            hvecxdata = 1;
+            hmatdata = 2;
+             
+            Array<Dev<double>> matdata(hmatdata), vecxdata(hvecxdata), vecydata(hvecydata);
+             
+            Array<MatVecData> hmvdata(nummats);
+             
+            for (int i = 0; i < nummats; i++)
+            {
+                new (&hmvdata[i].mat) SliceMatrix<Dev<double>>(math, matw, matw, matdata.Data()+i*math*matw);
+                new (&hmvdata[i].x) FlatVector(matw, vecxdata.Data()+i*matw);
+                new (&hmvdata[i].y) FlatVector(math, vecydata.Data()+i*math);
+            }
+            
+            Array<Dev<MatVecData>> mvdata(hmvdata);
+             
+            Timer t("manymatvec");
+             size_t runs = 100;
+               cudaDeviceSynchronize();
+               t.Start();
+               for (int i = 0; i < runs; i++)
+                 ManyMatVec(mvdata);
+               cudaDeviceSynchronize();
+               t.Stop();
+               t.AddFlops (double(runs)*nummats*math*matw);
+               cout << "manymatvec, time = " << t.GetTime() << " MFlops = " << t.GetMFlops() << endl;
+             
+               auto hostvec = D2H(vecydata);
+               cout << "vecy = " << hostvec.Range(0, math) << endl;
              }
          })
     ;
