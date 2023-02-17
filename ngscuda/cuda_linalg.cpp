@@ -430,7 +430,6 @@ namespace ngla
     if (synckernels)
      cudaDeviceSynchronize();
     
-    
     if (disjoint_cols)
       {
         DevStackArray<double> dev_hx(numblocks*devmat.Width());
@@ -445,7 +444,8 @@ namespace ngla
         tmult.Start();
         FlatMatrix<Dev<double>> matx(numblocks, devmat.Width(), dev_hx.Data());
         FlatMatrix<Dev<double>> maty(numblocks, devmat.Height(), dev_hy.Data());
-        MultMatMat (matx, Trans(devmat), maty, s, 0);
+        // MultMatMat (matx, Trans(devmat), maty, s, 0);
+        maty = s * matx * Trans(devmat);
         if (synckernels) cudaDeviceSynchronize();
         tmult.Stop();
         
@@ -470,8 +470,8 @@ namespace ngla
             tmult.Start();
             FlatMatrix<Dev<double>> matx(c.Size(), devmat.Width(), dev_hx.Data());
             FlatMatrix<Dev<double>> maty(c.Size(), devmat.Height(), dev_hy.Data());
-            MultMatMat (matx, Trans(devmat), maty, s, 0);
-                
+            // MultMatMat (matx, Trans(devmat), maty, s, 0);
+            maty = s * matx * Trans(devmat); 
             if (synckernels) cudaDeviceSynchronize();            
             tmult.Stop();
 
