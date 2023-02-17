@@ -1576,8 +1576,8 @@ namespace ngbla
     using DummySize::Width;
     using DummySize::Height;
 #endif
-    BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
-    BareVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(&vec(0)) { ; }
+    INLINE BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
+    INLINE BareVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(vec.Data()) { ; }
 
     template <int D, typename TSCAL2>
     INLINE const BareVector & operator= (const Vec<D,TSCAL2> & v) const
@@ -1587,22 +1587,22 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return BareVector(*this); } 
-    tuple<size_t> Shape() const { return { DummySize::Height() }; }
+    INLINE auto View() const { return BareVector(*this); } 
+    INLINE tuple<size_t> Shape() const { return { DummySize::Height() }; }
     
-    FlatVector<T> AddSize(size_t size) const
+    INLINE FlatVector<T> AddSize(size_t size) const
     {
       NETGEN_CHECK_RANGE(size, Height(), Height()+1);
       return FlatVector<T> (size, data);
     }
     
-    T & operator() (size_t i) const
+    INLINE T & operator() (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
       return data[i];
     }
-    T & operator() (size_t i, size_t j) const{ return (*this)(i); }
-    T & operator[] (size_t i) const { return (*this)(i); }
+    INLINE T & operator() (size_t i, size_t j) const{ return (*this)(i); }
+    INLINE T & operator[] (size_t i) const { return (*this)(i); }
 
     /// sub-vector of size next-first, starting at first
     INLINE auto Range (size_t first, size_t next) const
