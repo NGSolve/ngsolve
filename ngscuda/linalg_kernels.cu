@@ -10,6 +10,10 @@ using namespace ngbla;
 #include "cuda_ngstd.hpp"
 using namespace ngs_cuda;
 
+#include "linalg_kernels.hpp"
+
+
+
 namespace ngs_cuda
 {
 
@@ -101,6 +105,40 @@ void MultAddDiagonal (int n, double alpha, double * D, double * x, double * y)
 {
   MultAddDiagonalKernel<<<512,256>>> (n, alpha, D, x, y);
 } 
+
+
+/* ***************** Many Mat-Vec kernels ******************** */
+
+
+/*
+// y = A * x
+class MatVecData
+{
+    public:
+  SliceMatrix<Dev<double>> mat;
+  BareVector<Dev<double>> x, y;
+    MatVecData() : mat(0,0,0,nullptr), x(nullptr), y(nullptr) { ; }
+};
+ */   
+__global__ void ManyMatVecKernel (FlatArray<Dev<MatVecData>> matvecs)
+{
+  for (int i = blockIdx.x; i < matvecs.Size(); i += gridDim.x)
+  {
+     MatVecData mv = matvecs[i];
+     for (int r = threadIdx.x; r < mv.mat.Height(); r += blockDim.x)
+       {
+          double sum = 0;
+          for (int c = 0; c < mv.mat.Width(); c++)
+             sum += mv.mat(r,c) * mv.x(c);
+          mv.y(r) = sum;
+       }
+  }
+}
+    
+void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs)
+{
+  ManyMatVecKernel<<<512,32>>> (matvecs);
+}
 
 
 
