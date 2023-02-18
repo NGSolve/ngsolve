@@ -339,12 +339,8 @@ namespace ngs_cuda
       index = new size_t[size+1];
       for (int i = 0; i <= size; i++)
         index[i] = t2.IndexArray()[i];
-      // cudaMalloc((size_t**)&dev_index, (size+1)*sizeof(size_t));
-      // cudaMemcpy (dev_index, &t2.IndexArray()[0], sizeof(size_t)*(size+1), cudaMemcpyHostToDevice); 
-      // cout << "res = " << cudaMemcpy (dev_index, t2.Index(), sizeof(int)*(size+1), cudaMemcpyHostToDevice) << endl;
-    
+
       int sizedata = t2.AsArray().Size();
-      // cudaMalloc((int**)&dev_data, sizedata*sizeof(T));
       dev_data = Dev<T>::Malloc(sizedata);
       cudaMemcpy (dev_data, t2.Data(), sizeof(T)*sizedata, cudaMemcpyHostToDevice);
     }
@@ -352,8 +348,6 @@ namespace ngs_cuda
     ~DevDataTable ()
     {
       Dev<T>::Free (dev_data);
-      // cudaFree (dev_data);
-      // cudaFree (dev_index);
       delete [] index;
     }
 
@@ -443,56 +437,6 @@ namespace ngs_cuda
 
 
 
-
-
-
-  /*
-    template <typename T = double>
-    class DevMatrix
-    {
-    int h;
-    int w; 
-    T * dev_data;
-  
-    public: 
-    DevMatrix (int ah, int aw)
-    {
-    h = ah; w = aw;
-    cudaMalloc((T**)&dev_data, h*w*sizeof(T));
-    }
-
-    DevMatrix (FlatMatrix<T> m2)
-    {
-    h = m2.Height();
-    w = m2.Width();
-    cudaMalloc((T**)&dev_data, h*w*sizeof(T));
-    cudaMemcpy (dev_data, &m2(0,0), sizeof(T)*h*w, cudaMemcpyHostToDevice);
-    }
-
-    ~DevMatrix ()
-    {
-    cudaFree (dev_data);
-    }
-
-    T * Data() { return dev_data; }
-
-    DevMatrix & operator= (FlatMatrix<T> m2)
-    {
-    cudaMemcpy (dev_data, &m2(0,0), sizeof(T)*h*w, cudaMemcpyHostToDevice);
-    return *this;
-    }
-
-    void D2H (FlatMatrix<T> & m2)
-    {
-    cudaMemcpy (&m2(0,0), dev_data, sizeof(T)*h*w, cudaMemcpyDeviceToHost);    
-    }
-
-    operator FlatMatrix<T> ()
-    {
-    return FlatMatrix<T> (h, w, dev_data);
-    }
-    }; 
-  */
   class DevBitArray
   {
   protected:
