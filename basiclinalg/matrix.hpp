@@ -1697,13 +1697,13 @@ namespace ngbla
     INLINE tuple<size_t, size_t> Shape() const { return { h, w }; }
     
     /// access operator
-    TELEM & operator() (size_t i, size_t j) const
+    INLINE TELEM & operator() (size_t i, size_t j) const
     {
       return data[j*dist+i]; 
     }
 
     /// access operator, linear access
-    TELEM & operator() (size_t i) const
+    INLINE TELEM & operator() (size_t i) const
     {
       return data[i]; 
     }
