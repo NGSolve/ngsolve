@@ -11,6 +11,61 @@ namespace ngbla
   // template<> struct trivtrans<Dev<double>> { static constexpr bool value = true; };
   template<> struct is_scalar_type<Dev<double>> { static constexpr bool value = true; };
   
+
+  template <typename T>  
+  class Vector<Dev<T>> : public FlatVector<Dev<T>>
+  { 
+    using FlatVector<Dev<T>>::size;
+    using FlatVector<Dev<T>>::data;
+
+  public:
+    Vector (Vector&) = delete;
+    Vector (Vector&&v2)
+      : FlatVector<Dev<T>>(v2.Size(), v2.Data())
+    {
+      v2.data = nullptr;
+    }
+         
+    Vector (size_t asize)
+      : FlatVector<Dev<T>>(asize, Dev<T>::Malloc(asize)) { ; }
+         
+    Vector (FlatVector<T> vec)
+      : FlatVector<Dev<T>>(vec.Size(), Dev<T>::Malloc(vec.Size()))
+    {
+      H2D(vec);
+    }
+    
+    ~Vector()
+    {
+      Dev<T>::Free(data);
+    }
+         
+    void D2H (FlatVector<T> vec) const
+    {
+      cudaMemcpy (vec.Data(), data, sizeof(T)*size, cudaMemcpyDeviceToHost);
+    }
+
+    void H2D (FlatVector<T> vec)
+    {
+      cudaMemcpy (data, vec.Data(), sizeof(T)*size, cudaMemcpyHostToDevice);
+    }
+
+    Vector<T> D2H() const
+    {
+      Vector<T> vh(size);
+      D2H (vh);
+      return vh;
+    }
+  };
+  
+  inline Vector<double> D2H (FlatVector<Dev<double>> dvec)
+  {
+    Vector<double> hvec(dvec.Size());
+    cudaMemcpy (hvec.Data(), dvec.Data(), sizeof(double)*hvec.Size(), cudaMemcpyDeviceToHost);
+    return hvec;
+  }
+  
+
   
     
   template <typename T>  
@@ -29,21 +84,15 @@ namespace ngbla
     }
          
     Matrix (size_t h_, size_t w_)
-      : FlatMatrix<Dev<T>>(h_, w_, nullptr)
-    {
-      this->data = Dev<T>::Malloc(h*w);
-    }
+      : FlatMatrix<Dev<T>>(h_, w_, Dev<T>::Malloc(h_*w_)) { ; }
          
     Matrix (FlatMatrix<T> mat)
+      : FlatMatrix<Dev<T>>(mat.Height(), mat.Width(),
+                           Dev<T>::Malloc(mat.Height()*mat.Width()))
     {
-      h = mat.Height();
-      w = mat.Width();
-      if (auto err = cudaMalloc((void**)&data, h*w*sizeof(T)))
-        throw Exception("UnifiedVector allocation error, ec="+ToString(err));
-
-      cudaMemcpy (data, mat.Data(), sizeof(T)*h*w, cudaMemcpyHostToDevice);
+      H2D(mat);
     }
-         
+    
     ~Matrix()
     {
       Dev<T>::Free(data);
@@ -79,8 +128,8 @@ namespace ngbla
   {
     return Trans(D2H(Trans(dmat)));
   }
-    
-
+   
+  
   
     
   template <ORDERING ORDA, ORDERING ORDB>  
@@ -88,16 +137,15 @@ namespace ngbla
                         SliceMatrix<Dev<double>, ORDERING::ColMajor> c,
                        double alpha, double beta)
   {
-    // double alpha = 1;
-    // double beta = 0;
-    cublasStatus_t stat = cublasDgemm(ngla::Get_CuBlas_Handle(), 
-                                      ORDA==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 
-                                      ORDB==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 
-                                      c.Height(), c.Width(), a.Width(),
-                                      &alpha, (double*)a.Data(), a.Dist(), (double*)b.Data(), b.Dist(),
-                                      &beta, (double*)c.Data(), c.Dist());
+    cublasStatus_t stat =
+      cublasDgemm(ngla::Get_CuBlas_Handle(), 
+                  ORDA==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 
+                  ORDB==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 
+                  c.Height(), c.Width(), a.Width(),
+                  &alpha, (double*)a.Data(), a.Dist(), (double*)b.Data(), b.Dist(),
+                  &beta, (double*)c.Data(), c.Dist());
   }
-    
+  
   template <ORDERING ORDA, ORDERING ORDB>  
   void CudaMultMatMat2 (SliceMatrix<Dev<double>, ORDA> a, SliceMatrix<Dev<double>,ORDB> b, 
                         SliceMatrix<Dev<double>, ORDERING::RowMajor> c,
@@ -108,9 +156,9 @@ namespace ngbla
    
     
   template <typename TA, typename TB, typename TC,
-            typename enable_if<IsConvertibleToSliceMatrix<TA,Dev<double>>(),int>::type = 0,
-            typename enable_if<IsConvertibleToSliceMatrix<TB,Dev<double>>(),int>::type = 0,
-            typename enable_if<IsConvertibleToSliceMatrix<TC,Dev<double>>(),int>::type = 0>
+            enable_if_t<IsConvertibleToSliceMatrix<TA,Dev<double>>(),int> = 0,
+            enable_if_t<IsConvertibleToSliceMatrix<TB,Dev<double>>(),int> = 0,
+            enable_if_t<IsConvertibleToSliceMatrix<TC,Dev<double>>(),int> = 0>
   void MultMatMat (const TA & a, const TB & b, const TC & c, double alpha=1, double beta=0)
   {
     CudaMultMatMat2(make_SliceMatrix(a), make_SliceMatrix(b), make_SliceMatrix(c), alpha, beta);
@@ -172,15 +220,6 @@ namespace ngbla
     }
   };    
     
-    /*
-    // not working yet (is scalar val on host or device ?)
-  template <>
-  inline const FlatVector<Dev<double>> & FlatVector<Dev<double>> :: operator= (const Dev<double> & val) const
-  {
-      SetScalar (val, *this);
-      return *this;
-  }
-  */
       
 }
 
