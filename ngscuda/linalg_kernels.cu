@@ -120,24 +120,33 @@ class MatVecData
     MatVecData() : mat(0,0,0,nullptr), x(nullptr), y(nullptr) { ; }
 };
  */   
-__global__ void ManyMatVecKernel (FlatArray<Dev<MatVecData>> matvecs)
+__global__ void ManyMatVecKernel (FlatArray<Dev<MatVecData>> matvecs, 
+                        BareVector<Dev<double>> x, BareVector<Dev<double>> y)
 {
-  for (int i = blockIdx.x; i < matvecs.Size(); i += gridDim.x)
+  for (int i = blockIdx.x*blockDim.y+threadIdx.y; i < matvecs.Size(); i += gridDim.x*blockDim.y)
   {
      MatVecData mv = matvecs[i];
-     for (int r = threadIdx.x; r < mv.mat.Height(); r += blockDim.x)
+     size_t h = mv.mat.Height();
+     size_t w = mv.mat.Width();
+     
+     BareVector myx = x.Range(mv.offsetx, mv.offsetx+w);
+     BareVector myy = y.Range(mv.offsety, mv.offsety+h);
+     
+     for (int r = threadIdx.x; r < h; r += blockDim.x)
        {
           double sum = 0;
-          for (int c = 0; c < mv.mat.Width(); c++)
-             sum += mv.mat(r,c) * mv.x(c);
-          mv.y(r) = sum;
+          for (int c = 0; c < w; c++)
+             sum += mv.mat(r,c) * myx(c);
+          // myy(r) += sum;
+          atomicAdd((double*)&myy(r), sum);
        }
   }
 }
     
-void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs)
+void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs, 
+                        BareVector<Dev<double>> x, BareVector<Dev<double>> y)
 {
-  ManyMatVecKernel<<<512,32>>> (matvecs);
+  ManyMatVecKernel<<<512,dim3(16,16)>>> (matvecs, x, y);
 }
 
 
@@ -337,3 +346,4 @@ void DevProjectorProject (size_t size, double * a, const unsigned char * bits,
 
 
 }
+

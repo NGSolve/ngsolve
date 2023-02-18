@@ -2,6 +2,7 @@
 #define CUDA_NGBLA
 
 #include "cuda_ngstd.hpp"
+#include "linalg_kernels.hpp"
 
 namespace ngbla
 {
@@ -171,8 +172,16 @@ namespace ngbla
     }
   };    
     
-    
-    
+    /*
+    // not working yet (is scalar val on host or device ?)
+  template <>
+  inline const FlatVector<Dev<double>> & FlatVector<Dev<double>> :: operator= (const Dev<double> & val) const
+  {
+      SetScalar (val, *this);
+      return *this;
+  }
+  */
+      
 }
 
 #endif
