@@ -1664,10 +1664,10 @@ namespace ngbla
 
 
     /// set height, width, and mem
-    SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
+    INLINE SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
       : h(ah), w(aw), dist(adist), data(adata) { ; }
 
-    SliceMatrix (FlatMatrix<T,ColMajor> mat)
+    INLINE SliceMatrix (FlatMatrix<T,ColMajor> mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
@@ -1685,7 +1685,7 @@ namespace ngbla
     }
 
     /// assign constant
-    const SliceMatrix & operator= (TSCAL s) const throw()
+    INLINE const SliceMatrix & operator= (TSCAL s) const throw()
     {
       for (size_t i = 0; i < w; i++)
         for (size_t j = 0; j < h; j++)
@@ -1693,8 +1693,8 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return *this; }     
-    tuple<size_t, size_t> Shape() const { return { h, w }; }
+    INLINE auto View() const { return *this; }     
+    INLINE tuple<size_t, size_t> Shape() const { return { h, w }; }
     
     /// access operator
     TELEM & operator() (size_t i, size_t j) const
@@ -1709,32 +1709,32 @@ namespace ngbla
     }
 
     /// the height
-    size_t Height () const throw() { return h; }
+    INLINE size_t Height () const throw() { return h; }
 
     /// the width
-    size_t Width () const throw() { return w; }
+    INLINE size_t Width () const throw() { return w; }
 
     /// 
-    size_t Dist () const throw() { return dist; }
+    INLINE size_t Dist () const throw() { return dist; }
 
     INLINE T* Data() const noexcept { return data; }
 
-    const FlatVector<T> Col (size_t i) const
+    INLINE const FlatVector<T> Col (size_t i) const
     {
       return FlatVector<T> (h, &data[i*dist]);
     }
 
-    const SliceVector<T> Row (size_t i) const
+    INLINE const SliceVector<T> Row (size_t i) const
     {
       return SliceVector<T> (w, dist, &data[i]);
     }
 
-    const SliceVector<T> Diag () const
+    INLINE const SliceVector<T> Diag () const
     {
       return SliceVector<T> (w, dist+1, data);
     }
 
-    const SliceVector<T> Diag (int offset) const
+    INLINE const SliceVector<T> Diag (int offset) const
     {
       int dp = std::max(offset, 0);
       int dm = std::min(offset, 0);
@@ -1742,23 +1742,23 @@ namespace ngbla
     }
 
     
-    const SliceMatrix Rows (size_t first, size_t next) const
+    INLINE const SliceMatrix Rows (size_t first, size_t next) const
     {
       return SliceMatrix (next-first, w, dist, data+first);
     }
-    const SliceMatrix Rows (IntRange range) const
+    INLINE const SliceMatrix Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
 
 
-    const SliceMatrix Cols (size_t first, size_t next) const
+    INLINE const SliceMatrix Cols (size_t first, size_t next) const
     {
       return SliceMatrix (h, next-first, dist, data+first*dist);
     }
 
 
-    const SliceMatrix Cols (IntRange range) const
+    INLINE const SliceMatrix Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
