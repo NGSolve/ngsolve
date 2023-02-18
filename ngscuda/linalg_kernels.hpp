@@ -24,11 +24,13 @@ class MatVecData
 {
     public:
   SliceMatrix<Dev<double>> mat;
-  FlatVector<Dev<double>> x, y;
-    MatVecData() : mat(0,0,0,nullptr), x(0,(void*)nullptr), y(0,(void*)nullptr) { ; }
+  // BareVector<Dev<double>> x, y;
+    size_t offsetx, offsety;
+    MatVecData() : mat(0,0,0,nullptr) /* , x(nullptr), y(nullptr) */ { ; }
 };
     
-extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs); 
+extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs, 
+                        BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
     
     
 extern void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
