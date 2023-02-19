@@ -13,7 +13,6 @@ using namespace ngs_cuda;
 #include "linalg_kernels.hpp"
 
 
-
 namespace ngs_cuda
 {
 
