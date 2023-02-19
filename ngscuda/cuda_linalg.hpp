@@ -132,7 +132,7 @@ namespace ngla
     double h, w;
     Array<Dev<int>> indices;
     Array<Dev<double>> matrices;
-    Array<Dev<BlockJacCtr>> ctrstructs;
+    Array<Dev<BlockJacobiCtr>> ctrstructs;
  public:
     DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
