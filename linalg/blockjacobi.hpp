@@ -99,6 +99,8 @@ namespace ngla
       cerr << "BaseBlockJacobiPrecond :: InitCoarseType not implemented!" << endl;
     }
     */
+
+    auto GetBlockTable() const { return blocktable; } 
   };
 
 
