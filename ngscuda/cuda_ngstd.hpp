@@ -169,6 +169,13 @@ namespace ngcore
       this->data->H2D(a2);
     }
     
+    Array& operator= (Array<Dev<T>> && a2)
+    {
+      Swap (this->data, a2.data);
+      Swap (this->size, a2.size);
+      return *this;
+    }
+    
     Array& operator= (FlatArray<T> a2)
     {
       SetSize(a2.Size());

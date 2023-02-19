@@ -628,27 +628,42 @@ namespace ngla
 
 
   DevBlockJacobiMatrix :: DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat)
-    : h(mat.Height()), w(mat.Width())
+    : h(mat.Height()), w(mat.Width()),
+      matrices(mat.MatrixData()), indices(mat.GetBlockTable()->AsArray())
   {
-    // missing: setup control struct
-    /*
-    Array<Dev<int>> indices;
-    Array<Dev<double>> matrices;
-    Array<Dev<BlockJacCtr>> ctrstructs;
-    */
-
-    
+    const Array<FlatMatrix<double>> & inverses = mat.GetInverses();
+        
+    Array<BlockJacobiCtr> hostctrs(inverses.Size());
+    Dev<double> * matptr = matrices.Data();
+    Dev<int> * indexptr = indices.Data();
+    for (size_t i = 0; i < inverses.Size(); i++)
+    {
+      size_t s = inverses[i].Height();
+      new (&hostctrs[i].mat) SliceMatrix<Dev<double>> (s, s, s, matptr);
+      hostctrs[i].indices = indexptr;
+      matptr += s*s;
+      indexptr += s;
+    }
+          
+    ctrstructs = Array<Dev<BlockJacobiCtr>> (hostctrs);
   }
+
 
   void DevBlockJacobiMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    static Timer t("DevBlockJacobi::MultAdd");
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
-    
+    if (synckernels) cudaDeviceSynchronize();
+    t.Start();
+      
     DeviceBlockJacobi (s, ctrstructs, ux.FVDev(), uy.FVDev());
-    
+      
+    if (synckernels) cudaDeviceSynchronize();
+    t.Stop();
+      
     uy.InvalidateHost();
   }
 

@@ -38,6 +38,7 @@ extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
   public:
     SliceMatrix<Dev<double>> mat;
     Dev<int> * indices;
+    BlockJacobiCtr() : mat(0,0,0,nullptr) { ; }
   };
   
   extern void DeviceBlockJacobi (double s, FlatArray<Dev<BlockJacobiCtr>> ctrs, 
