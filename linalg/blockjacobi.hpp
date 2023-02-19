@@ -202,7 +202,8 @@ namespace ngla
       return { MemoryUsage ("BlockJac", nels*sizeof(TM), blocktable->Size()) };
     }
 
-
+    const Array<FlatMatrix<TM>> & GetInverses() const { return invdiag; }
+    const Array<TM> & MatrixData() const { return bigmem; } 
   };
 
 
