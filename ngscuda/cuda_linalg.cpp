@@ -59,21 +59,12 @@ namespace ngla
                                             [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
                                             {
                                               auto & Jacobimat = dynamic_cast<const JacobiPrecond<double>&>(mat);
-                                              
                                               auto diagarray = Jacobimat.GetInverse();
 
-                                              /*
-                                              UnifiedVector diag(diagarray.Size());
-                                              auto fv = diag.FVDouble();
-                                              for (size_t i = 0; i < fv.Size(); i++)
-                                                fv[i] = diagarray[i];
-                                              diag.UpdateDevice();
-                                              */
                                               VVector<double> diag(diagarray.Size());
                                               auto fv = diag.FVDouble();
                                               for (size_t i = 0; i < fv.Size(); i++)
                                                 fv[i] = diagarray[i];
-                                              // diag.UpdateDevice();
                                               
                                               return make_shared<DevDiagonalMatrix>(diag);
                                             });
@@ -85,6 +76,7 @@ namespace ngla
                                               
                                               return make_shared<DevDiagonalMatrix>(diagmat.AsVector());
                                             });
+    
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(ConstantElementByElementMatrix),
                                             [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
                                             {
@@ -98,6 +90,15 @@ namespace ngla
                                               auto & bdm_mat = dynamic_cast<const BlockDiagonalMatrixSoA&>(mat);
                                               return make_shared<DevBlockDiagonalMatrixSoA>(bdm_mat);
                                             });
+
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(BlockJacobiPrecond<double>),
+                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & mat = dynamic_cast<const BlockJacobiPrecond<double>&>(bmat);
+                                              return make_shared<DevBlockJacobiMatrix>(mat);
+                                            });
+
+    
 
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(EmbeddedMatrix),
                                             [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
@@ -625,6 +626,33 @@ namespace ngla
     uy.InvalidateHost();
   }
 
+
+  DevBlockJacobiMatrix :: DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat)
+    : h(mat.Height(), w(mat.Width())
+  {
+    // missing: setup control struct
+    /*
+    Array<Dev<int>> indices;
+    Array<Dev<double>> matrices;
+    Array<Dev<BlockJacCtr>> ctrstructs;
+    */
+
+    
+  }
+
+  void DevBlockJacobiMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+    
+    DeviceBlockJacobi (s, ctrstructs, ux.FVDev(), uy.FVDev());
+    
+    uy.InvalidateHost();
+  }
+
+  
 
   void DevProjector :: Mult (const BaseVector & x, BaseVector & y) const
   {

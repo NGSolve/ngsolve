@@ -73,6 +73,12 @@ namespace ngla
       return host_data;
     }
 
+    virtual FlatVector<Dev<double>> FVDev() const
+    {
+      return { Size(), (Dev<double>*)dev_data };
+    }
+    
+    
     friend class DevDMatrix;
     friend class DevSparseMatrix;
     friend class DevJacobiPrecond;
