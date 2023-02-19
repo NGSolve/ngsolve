@@ -628,7 +628,7 @@ namespace ngla
 
 
   DevBlockJacobiMatrix :: DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat)
-    : h(mat.Height(), w(mat.Width())
+    : h(mat.Height()), w(mat.Width())
   {
     // missing: setup control struct
     /*
