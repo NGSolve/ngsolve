@@ -127,6 +127,21 @@ namespace ngla
     int VWidth() const override { return dimx*blocks; }
   };
 
+  class DevBlockJacobiMatrix : public DevMatrix
+  {
+    double h, w;
+    Array<Dev<int>> indices;
+    Array<Dev<double>> matrices;
+    Array<Dev<BlockJacCtr>> ctrstructs;
+ public:
+    DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat);
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    // void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    int VHeight() const override { return h; }
+    int VWidth() const override { return w; }
+  };
+
+  
   class DevEmbeddedMatrix : public EmbeddedMatrix
   {
   public:

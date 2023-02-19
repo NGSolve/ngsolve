@@ -22,16 +22,27 @@ extern void MultAddDiagonal (int n, double alpha, double * D, double * x, double
 // y = A * x
 class MatVecData
 {
-    public:
+public:
   SliceMatrix<Dev<double>> mat;
   // BareVector<Dev<double>> x, y;
-    size_t offsetx, offsety;
-    MatVecData() : mat(0,0,0,nullptr) /* , x(nullptr), y(nullptr) */ { ; }
+  size_t offsetx, offsety;
+  MatVecData() : mat(0,0,0,nullptr) /* , x(nullptr), y(nullptr) */ { ; }
 };
     
 extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs, 
                         BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
-    
+
+
+  class BlockJacobiCtr
+  {
+  public:
+    SliceMatrix<Dev<double>> mat;
+    Dev<int> * indices;
+  };
+  
+  extern void DeviceBlockJacobi (double s, FlatArray<Dev<BlockJacobiCtr>> ctrs, 
+                                 BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
+  
     
 extern void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
 extern void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, double * dev_hy, double * dev_uy);

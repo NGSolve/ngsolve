@@ -136,9 +136,9 @@ __global__ void ManyMatVecKernel (FlatArray<Dev<MatVecData>> matvecs,
        {
           double sum = 0;
           for (int c = 0; c < w; c++)
-             sum += mv.mat(r,c) * myx(c);
-          // myy(r) += sum;
-          atomicAdd((double*)&myy(r), sum);
+            sum += mv.mat(r,c) * myx(c);
+          myy(r) = sum;
+          // atomicAdd((double*)&myy(r), sum);
        }
   }
 }
@@ -149,6 +149,32 @@ void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
   ManyMatVecKernel<<<512,dim3(16,16)>>> (matvecs, x, y);
 }
 
+
+  __global__ void BlockJacobiKernel (double s, FlatArray<Dev<BlockJacobiCtr>> ctrs, 
+                                     BareVector<Dev<double>> x, BareVector<Dev<double>> y)
+  {
+    for (int i = blockIdx.x*blockDim.y+threadIdx.y; i < matvecs.Size(); i += gridDim.x*blockDim.y)
+      {
+        BlockJacobiCtr mv = ctrs[i];
+        size_t h = mv.mat.Height();
+        size_t w = mv.mat.Width();
+     
+        for (int r = threadIdx.x; r < h; r += blockDim.x)
+          {
+            double sum = 0;
+            for (int c = 0; c < w; c++)
+              sum += mv.mat(r,c) * x(mv.indices[c]);
+            atomicAdd((double*)&y(indices[c]), s*sum);
+          }
+      }
+  }
+    
+  
+  void DeviceBlockJacobi (double s, FlatArray<Dev<BlockJacobiCtr>> ctrs, 
+                          BareVector<Dev<double>> x, BareVector<Dev<double>> y)
+  {
+    BlockJacobyKernel<<<512,dim3(16,16)>>> (s, ctrs, x, y);
+  }
 
 
 
