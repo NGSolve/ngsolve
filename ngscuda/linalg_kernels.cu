@@ -17,7 +17,7 @@ using namespace ngs_cuda;
 // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
 #ifdef __CUDA_ARCH__
 #if __CUDA_ARCH__ < 600
-__device__ inline double atomicAdd(double* address, double val)
+__device__ double atomicAdd(double* address, double val)
 {
     unsigned long long int* address_as_ull =
                               (unsigned long long int*)address;
@@ -36,7 +36,6 @@ __device__ inline double atomicAdd(double* address, double val)
 }
 #endif
 #endif
-
 
 
 namespace ngs_cuda
