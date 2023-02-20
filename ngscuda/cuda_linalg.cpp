@@ -98,13 +98,14 @@ namespace ngla
                                               return make_shared<DevBlockJacobiMatrix>(mat);
                                             });
 
+    /*
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(SparseCholeskyTM<double>),
                                             [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                             {
                                               auto & mat = dynamic_cast<const SparseCholeskyTM<double>&>(bmat);
                                               return make_shared<DevSparseCholesky>(mat);
-                                            });
-
+                                              });
+    */
     
 
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(EmbeddedMatrix),
@@ -674,14 +675,8 @@ namespace ngla
     uy.InvalidateHost();
   }
 
-
-
-  class : public DevMatrix
-  {
-    double h, w;
-    DevTable<int> micro_dependency;
-    Array<Dev<SparseCholeskyTM<double>::MicroTask>> microtasks;
-  public:
+  
+  /*
     DevSparseCholesky :: DevSparseCholesky(const SparseCholeskyTM<double> & mat)
       : h(mat.Height()), w(mat.Width()),
         microtasks(mat.GetMicroTasks()),
@@ -689,7 +684,7 @@ namespace ngla
     {
       ;
     }
-    
+  
     void DevSparseCholesky ::
     MultAdd (double s, const BaseVector & x, BaseVector & y) const
     {
@@ -709,8 +704,7 @@ namespace ngla
       
       uy.InvalidateHost();
     }
-  };
-
+  */
 
 
   
