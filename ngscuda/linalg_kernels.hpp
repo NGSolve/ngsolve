@@ -28,7 +28,11 @@ public:
   size_t offsetx, offsety;
   MatVecData() : mat(0,0,0,nullptr) /* , x(nullptr), y(nullptr) */ { ; }
 };
-    
+
+
+  /* **************** BlockJacobi kernels ********************* */
+
+  
 extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs, 
                         BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
 
@@ -43,6 +47,12 @@ extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
   
   extern void DeviceBlockJacobi (double s, FlatArray<Dev<BlockJacobiCtr>> ctrs, 
                                  BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
+
+
+  /* **************** SpasreCholesky kernels ********************* */
+
+
+  extern void DeviceSparseCholeskySolveL (const DevTable<int> & dependency, FlatVector<Dev<double>> v);
   
     
 extern void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx);

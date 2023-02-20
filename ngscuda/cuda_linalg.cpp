@@ -98,6 +98,13 @@ namespace ngla
                                               return make_shared<DevBlockJacobiMatrix>(mat);
                                             });
 
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(SparseCholeskyTM<double>),
+                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & mat = dynamic_cast<const SparseCholeskyTM<double>&>(bmat);
+                                              return make_shared<DevSparseCholesky>(mat);
+                                            });
+
     
 
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(EmbeddedMatrix),
@@ -666,6 +673,45 @@ namespace ngla
       
     uy.InvalidateHost();
   }
+
+
+
+  class : public DevMatrix
+  {
+    double h, w;
+    DevTable<int> micro_dependency;
+    Array<Dev<SparseCholeskyTM<double>::MicroTask>> microtasks;
+  public:
+    DevSparseCholesky :: DevSparseCholesky(const SparseCholeskyTM<double> & mat)
+      : h(mat.Height()), w(mat.Width()),
+        microtasks(mat.GetMicroTasks()),
+        micro_dependency(mat.GetMicroDependency())
+    {
+      ;
+    }
+    
+    void DevSparseCholesky ::
+    MultAdd (double s, const BaseVector & x, BaseVector & y) const
+    {
+      
+      static Timer t("DevSparseCholesky::MultAdd");
+      UnifiedVectorWrapper ux(x);
+      UnifiedVectorWrapper uy(y);
+      ux.UpdateDevice();
+      uy.UpdateDevice();
+      if (synckernels) cudaDeviceSynchronize();
+      t.Start();
+      
+      DeviceSparseCholeskySolveL (micro_dependency, ux.FVDev());
+      
+      if (synckernels) cudaDeviceSynchronize();
+      t.Stop();
+      
+      uy.InvalidateHost();
+    }
+  };
+
+
 
   
 

@@ -112,7 +112,8 @@ namespace ngla
       BT type;
       int bblock;
       int nbblocks;
-      void DoArchive(Archive& ar)
+      template <typename ARCHIVE>
+      void DoArchive(ARCHIVE& ar)
       {
         ar & blocknr & type & bblock & nbblocks;
       }
@@ -211,6 +212,11 @@ namespace ngla
       auto ext_size =  firstinrow[range.First()+1]-firstinrow[range.First()] - range.Size()+1;
       return rowindex2.Range(base, base+ext_size);
     }
+
+
+    FlatArray<MicroTask> GetMicroTasks() const { return microtasks; }
+    FlatTable<int> GetMicroDependency() const { return micro_dependency; }
+    FlatTable<int> GetMicroDependencyTranspose() const { return micro_dependency_trans; }
   };
 
 
