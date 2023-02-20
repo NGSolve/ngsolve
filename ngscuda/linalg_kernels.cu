@@ -15,6 +15,7 @@ using namespace ngs_cuda;
 
 // from CUDA C++ Programming Guide:
 // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
+#ifdef __CUDA_ARCH__
 #if __CUDA_ARCH__ < 600
 __device__ inline double atomicAdd(double* address, double val)
 {
@@ -33,6 +34,7 @@ __device__ inline double atomicAdd(double* address, double val)
 
     return __longlong_as_double(old);
 }
+#endif
 #endif
 
 
@@ -201,16 +203,45 @@ void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
 
   /* *************** kernels for SpasreCholesky *********************** */
 
-  __global__ void DeviceSparseCholeskySolveLKernel (FlatTable<int> dependency, FlatVector<Dev<double>> v,
-                                                    int & acounter)
+  __global__ void DeviceSparseCholeskySolveLKernel (FlatTable<int> dependency, 
+                                                    FlatArray<Dev<int>> incomingdep, 
+                                                    FlatVector<Dev<double>> v,
+                                                    int & cnt)
   {
-    // testing: just process thre dependency graph
+    __shared__ int myjobs[16]; // max blockDim.y;   
+    
+    while (true)
+       {
+          if (threadIdx.x == 0)
+             myjobs[threadIdx.y] = atomicAdd(&cnt, 1);
+          __syncwarp();
+
+          int myjob = myjobs[threadIdx.y];
+          if (myjob >= dependency.Size())
+              break;
+
+          // do the work ....
+
+
+          if (threadIdx.x == 0)
+              while (atomicAdd((int*)&incomingdep[myjob], 0) > 0);
+          __syncwarp();
+          
+          if (threadIdx.x == 0)
+              // for (int d : dependency[myjob])
+              for (int j = 0; j < dependency[myjob].Size(); j++)
+                 atomicAdd((int*)&incomingdep[dependency[myjob][j]], -1);
+       }
   }
   
-  void DeviceSparseCholeskySolveL (const DevTable<int> & dependency, FlatVector<Dev<double>> v)
+  void DeviceSparseCholeskySolveL (const DevTable<int> & dependency, 
+                                   FlatArray<Dev<int>> incomingdep, 
+                                   FlatVector<Dev<double>> v)
   {
     Dev<int> * pcnt = Dev<int>::Malloc(1);
-    DeviceSparseCholeskySolveLKernel<<<512,dim3(16,16)>>> (dependency, v, *(int*)pcnt);
+    pcnt->H2D(0);
+    DeviceSparseCholeskySolveLKernel<<<512,dim3(32,8)>>> (dependency, incomingdep, v, *(int*)pcnt);
+    cout << "shared counter: " << pcnt->D2H();
     Dev<int>::Free (pcnt);
   }
 

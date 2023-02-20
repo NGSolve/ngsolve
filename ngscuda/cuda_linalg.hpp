@@ -141,19 +141,18 @@ namespace ngla
   };
   
 
-  /*
   class DevSparseCholesky : public DevMatrix
   {
     double h, w;
     Array<Dev<SparseCholeskyTM<double>::MicroTask>> microtasks;
-    DevTable<int> micro_dependency;
+    DevTable<int> dependency;
+    Array<int> host_incomingdep;
   public:
     DevSparseCholesky(const SparseCholeskyTM<double> & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     int VHeight() const override { return h; }
     int VWidth() const override { return w; }
   };
-  */
   
   class DevEmbeddedMatrix : public EmbeddedMatrix
   {
