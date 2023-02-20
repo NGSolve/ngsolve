@@ -24,29 +24,6 @@ namespace ngla
 #include "unifiedvector.hpp"
 
 
-// from CUDA C++ Programming Guide:
-// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
-#if __CUDA_ARCH__ < 600
-__device__ inline double atomicAdd(double* address, double val)
-{
-    unsigned long long int* address_as_ull =
-                              (unsigned long long int*)address;
-    unsigned long long int old = *address_as_ull, assumed;
-
-    do {
-        assumed = old;
-        old = atomicCAS(address_as_ull, assumed,
-                        __double_as_longlong(val +
-                               __longlong_as_double(assumed)));
-
-    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-    } while (assumed != old);
-
-    return __longlong_as_double(old);
-}
-#endif
-
-
 
 namespace ngla
 {
@@ -163,19 +140,20 @@ namespace ngla
     int VWidth() const override { return w; }
   };
   
-  
+
+  /*
   class DevSparseCholesky : public DevMatrix
   {
     double h, w;
     Array<Dev<SparseCholeskyTM<double>::MicroTask>> microtasks;
     DevTable<int> micro_dependency;
   public:
-    DevSparseCholesky(const SparseCholeskyTM<double> mat);
+    DevSparseCholesky(const SparseCholeskyTM<double> & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     int VHeight() const override { return h; }
     int VWidth() const override { return w; }
   };
-  
+  */
   
   class DevEmbeddedMatrix : public EmbeddedMatrix
   {

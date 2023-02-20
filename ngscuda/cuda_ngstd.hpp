@@ -427,7 +427,7 @@ namespace ngs_cuda
 
     operator FlatTable<T> () const
     {
-      return FlatTable<T> (size, dev_index, dev_data);
+      return FlatTable<T> (size, (size_t*)dev_index, (T*)dev_data);
     }
 
     size_t * DevIndex() const { return (size_t*)dev_index; }

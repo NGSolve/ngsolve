@@ -13,6 +13,30 @@ using namespace ngs_cuda;
 #include "linalg_kernels.hpp"
 
 
+// from CUDA C++ Programming Guide:
+// https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
+#if __CUDA_ARCH__ < 600
+__device__ inline double atomicAdd(double* address, double val)
+{
+    unsigned long long int* address_as_ull =
+                              (unsigned long long int*)address;
+    unsigned long long int old = *address_as_ull, assumed;
+
+    do {
+        assumed = old;
+        old = atomicCAS(address_as_ull, assumed,
+                        __double_as_longlong(val +
+                               __longlong_as_double(assumed)));
+
+    // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
+    } while (assumed != old);
+
+    return __longlong_as_double(old);
+}
+#endif
+
+
+
 namespace ngs_cuda
 {
 
@@ -186,7 +210,7 @@ void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
   void DeviceSparseCholeskySolveL (const DevTable<int> & dependency, FlatVector<Dev<double>> v)
   {
     Dev<int> * pcnt = Dev<int>::Malloc(1);
-    DeviceSparseCholeskySolveLKernel (dependency, v, *(int*)pcnt);
+    DeviceSparseCholeskySolveLKernel<<<512,dim3(16,16)>>> (dependency, v, *(int*)pcnt);
     Dev<int>::Free (pcnt);
   }
 
