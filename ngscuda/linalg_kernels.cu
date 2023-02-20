@@ -175,6 +175,20 @@ void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
     BlockJacobiKernel<<<512,dim3(16,16)>>> (s, ctrs, x, y);
   }
 
+  /* *************** kernels for SpasreCholesky *********************** */
+
+  __global__ void DeviceSparseCholeskySolveLKernel (FlatTable<int> dependency, FlatVector<Dev<double>> v,
+                                                    int & acounter)
+  {
+    // testing: just process thre dependency graph
+  }
+  
+  void DeviceSparseCholeskySolveL (const DevTable<int> & dependency, FlatVector<Dev<double>> v)
+  {
+    Dev<int> * pcnt = Dev<int>::Malloc(1);
+    DeviceSparseCholeskySolveLKernel (dependency, v, *(int*)pcnt);
+    Dev<int>::Free (pcnt);
+  }
 
 
 /* ************** kernels for ConstantEBE Matrix ********************** */
