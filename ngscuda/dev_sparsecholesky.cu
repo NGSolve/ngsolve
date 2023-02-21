@@ -7,6 +7,7 @@ using namespace ngla;
 
 namespace ngla
 {
+  extern bool synckernels;
   using namespace ngs_cuda;
 
 
