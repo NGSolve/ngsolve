@@ -1,6 +1,10 @@
 #ifndef CUDA_LINALG_HPP
 #define CUDA_LINALG_HPP
 
+// partial override of overloaded function (MultAdd)
+#pragma nv_diag_suppress 611
+#pragma nv_diag_suppress 20013
+
 #include <la.hpp>
 
 #include <cuda_runtime.h>
@@ -43,6 +47,8 @@ namespace ngla
 
     virtual AutoVector CreateRowVector() const { return make_unique<UnifiedVector>(Width()); }
     virtual AutoVector CreateColVector() const { return make_unique<UnifiedVector>(Height()); }
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override final {}
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override final {}
   };
 
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix &mat);

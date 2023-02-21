@@ -20,8 +20,10 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(${lib_name} ${NGS_LIB_TYPE}
     cuda_linalg.cpp unifiedvector.cpp
     cuda_ngstd.cpp cuda_ngbla.hpp cuda_applyIR.cpp
-    linalg_kernels.cu 
+    linalg_kernels.cu dev_sparsecholesky.cu
 )
+
+target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr>)
 
 target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON )
