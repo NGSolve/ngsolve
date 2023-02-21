@@ -113,6 +113,8 @@ namespace ngla
             while(*n_deps);
           __syncwarp();
 
+          // do the work for myjob....
+          
           MicroTask task = microtasks[myjob];
           size_t blocknr = task.blocknr;
           auto range = T_Range<int>(blocks[blocknr], blocks[blocknr+1]);
@@ -120,100 +122,49 @@ namespace ngla
           auto ext_size =  firstinrow[range.First()+1]-firstinrow[range.First()] - range.Size()+1;
           auto extdofs = rowindex2.Range(base, base+ext_size);
 
-          if (task.type == MicroTask::LB_BLOCK)
-          { // first L, then B
-
-            // auto extdofs = BlockExtDofs (blocknr);
-            // VectorMem<520,double> temp(extdofs.Size());
-            // temp = 0;
-
-            // for (auto i : range)
-            // {
-            //   double hyi = hy(i);
-
-            //   size_t size = range.end()-i-1;
-            //   if (size > 0)
-            //   {
-            //     FlatVector<double> vlfact(size, &lfact[firstinrow[i]]);
-
-            //     auto hyr = hy.Range(i+1, range.end());
-            //     for (size_t j = 0; j < size; j++)
-            //       hyr(j) -= Trans(vlfact(j)) * hyi;
-            //   }
-            //   if (extdofs.Size() == 0)
-            //   {
-            //     // cerr << "should not be here" << endl;
-            //     continue;
-            //   }
-            //   size_t first = firstinrow[i] + range.end()-i-1;
-            //   FlatVector<double> ext_lfact (extdofs.Size(), &lfact[first]);
-            //   for (size_t j = 0; j < temp.Size(); j++)
-            //     temp(j) += Trans(ext_lfact(j)) * hyi;
-            // }
-
-            // for (size_t j : Range(extdofs))
-            //   AtomicAdd (hy(extdofs[j]), -temp(j));
-          }
-
-          else if (task.type == MicroTask::L_BLOCK)
-          {
-
-          if (threadIdx.x == 0)
-            for (auto i : range)
+          
+          if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
-              size_t size = range.end()-i-1;
-              if (size == 0) continue;
-              FlatVector<Dev<double>> vlfact(size, &lfact[firstinrow[i]]);
-
-              double hyi = hy(i);
-              auto hyr = hy.Range(i+1, range.end());
-              for (size_t j = 0; j < hyr.Size(); j++)
-                hyr(j) -= vlfact(j) * hyi;
-            }
-
-          }
-
-          else 
-          {
-            // auto extdofs = BlockExtDofs (blocknr);
-            if (extdofs.Size() != 0)
               if (threadIdx.x == 0)
-            {
-              auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
-              auto my_extdofs = extdofs.Range(myr);
-
-              // VectorMem<520,double> temp(my_extdofs.Size());
-              // temp = 0;
-
-              // for (auto i : range)
-              // {
-              //   size_t first = firstinrow[i] + range.end()-i-1;
-
-              //   FlatVector<double> ext_lfact (extdofs.Size(), &lfact[first]);
-
-              //   double hyi = hy(i);
-              //   for (size_t j = 0; j < temp.Size(); j++)
-              //     temp(j) += Trans(ext_lfact(myr.begin()+j)) * hyi;
-              // }
-
-              // for (size_t j : Range(my_extdofs))
-              //   AtomicAdd (hy(my_extdofs[j]), -temp(j));
-
-              for (size_t j = 0; j < my_extdofs.Size(); j++)
-              {
-                double temp = 0.0;
                 for (auto i : range)
-                {
-                  size_t first = firstinrow[i] + range.end()-i-1;
-                  FlatVector<double> ext_lfact (extdofs.Size(), &lfact[first]);
-                  temp += Trans(ext_lfact(myr.begin()+j)) * hy(i);
-                }
-                atomicAdd ((double*)(&hy(my_extdofs[j])), -temp);
-              }
+                  {
+                    size_t size = range.end()-i-1;
+                    if (size == 0) continue;
+                    
+                    auto vlfact = lfact.Range(firstinrow[i], firstinrow[i]+size);
+                    
+                    double hyi = hy(i);
+                    auto hyr = hy.Range(i+1, range.end());
+                    for (size_t j = 0; j < hyr.Size(); j++)
+                      hyr(j) -= vlfact[j] * hyi;
+                  }
             }
-          }
-          // do the work for myjob....
-
+          
+          if ((task.type == MicroTask::B_BLOCK) || (task.type == MicroTask::LB_BLOCK))
+            {
+              if (extdofs.Size() != 0)
+                if (threadIdx.x == 0)
+                  {
+                    auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
+                    auto my_extdofs = extdofs.Range(myr);
+                    
+                    for (size_t j = 0; j < my_extdofs.Size(); j++)
+                      {
+                        double temp = 0.0;
+                        for (auto i : range)
+                          {
+                            size_t first = firstinrow[i] + range.end()-i-1;
+                            auto ext_lfact = lfact.Range(first, all_extdofs.Size());
+                            
+                            temp += Trans(ext_lfact[myr.begin()+j]) * hy(i);
+                          }
+                        atomicAdd ((double*)(&hy(my_extdofs[j])), -temp);
+                      }
+                  }
+            }
+          
+          // myjob is done
+          
           if (threadIdx.x == 0)
               for (int d : dependency[myjob])
                  atomicAdd((int*)&incomingdep[d], -1);
@@ -274,30 +225,22 @@ namespace ngla
 
     DeviceSparseCholeskyReorderKernel<<<512,256>>> (ux.FVDev(), hx, order);
 
-    cout << "hx[:10] = " << endl;
-    cout << D2H(hx.Range(10)) << endl;
+    cout << "hx[:10] = " << endl << D2H(hx.Range(10)) << endl;
 
     Array<Dev<int>> incomingdep(host_incomingdep);
 
     Dev<int> * pcnt = Dev<int>::Malloc(1);
     pcnt->H2D(0);
-    DeviceSparseCholeskySolveLKernel<<<512,dim3(32,8)>>> (
-        micro_dependency,
-        incomingdep,
-        hx,
-        *(int*)pcnt,
-        microtasks,
-        blocks,
-        rowindex2,
-        firstinrow_ri,
-        firstinrow,
-        lfact
-        );
-    cout << "shared counter: " << pcnt->D2H() << endl;;
+    DeviceSparseCholeskySolveLKernel<<<512,dim3(32,8)>>>
+      (
+       micro_dependency, incomingdep, hx, *(int*)pcnt,
+       microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
+       );
     Dev<int>::Free (pcnt);
 
-    cout << "kernel is back" << endl;
 
+    
+    
     DeviceSparseCholeskyReorderAddKernel<<<512,256>>> (hy, uy.FVDev(), order, s);
 
     if (synckernels) cudaDeviceSynchronize();
