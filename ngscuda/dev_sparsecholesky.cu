@@ -10,18 +10,6 @@ namespace ngla
   using namespace ngs_cuda;
 
 
-  auto a = []()->int
-  {
-    BaseMatrix::RegisterDeviceMatrixCreator
-    (typeid(SparseCholesky<double>),
-     [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
-    {
-      auto & mat = dynamic_cast<const SparseCholeskyTM<double>&>(bmat);
-      return make_shared<DevSparseCholesky>(mat);
-    });
-  } ();
-
-
   class DevSparseCholesky : public DevMatrix
   {
     double h, w;
@@ -35,6 +23,18 @@ namespace ngla
     int VWidth() const override { return w; }
   };
 
+
+
+  auto a = []()->int
+  {
+    BaseMatrix::RegisterDeviceMatrixCreator
+    (typeid(SparseCholesky<double>),
+     [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+    {
+      auto & mat = dynamic_cast<const SparseCholeskyTM<double>&>(bmat);
+      return make_shared<DevSparseCholesky>(mat);
+    });
+  } ();
 
 
   
