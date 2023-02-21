@@ -49,7 +49,7 @@ namespace ngla
   };
 
 
-
+  /*
   static const auto a = []()
   {
     BaseMatrix::RegisterDeviceMatrixCreator
@@ -61,8 +61,18 @@ namespace ngla
     });
     return 0;
   } ();
-
-
+  */
+  
+  void InitSparseCholesky()
+  {
+    BaseMatrix::RegisterDeviceMatrixCreator
+      (typeid(SparseCholesky<double>),
+       [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+       {
+         auto & mat = dynamic_cast<const SparseCholeskyTM<double>&>(bmat);
+         return make_shared<DevSparseCholesky>(mat);
+       });
+  }
   
   
   /* *************** kernels for SparseCholesky *********************** */
@@ -322,7 +332,7 @@ namespace ngla
 
     DeviceSparseCholeskyReorderKernel<<<512,256>>> (ux.FVDev(), hx, order);
 
-    cout << "hx[:10] = " << endl << D2H(hx.Range(10)) << endl;
+    cout << "reordered[:10] = " << endl << D2H(hx.Range(10)) << endl;
 
     Array<Dev<int>> incomingdep(host_incomingdep);
     Array<Dev<int>> incomingdep_trans(host_incomingdep_trans);    
@@ -335,6 +345,8 @@ namespace ngla
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
        );
 
+    cout << "SolveL[:10] = " << endl << D2H(hx.Range(10)) << endl;
+    
     // TODO : Diag
 
     /*
@@ -344,6 +356,9 @@ namespace ngla
        micro_dependency_trans, incomingdep_trans, hx, *(int*)pcnt,
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
        );
+
+    cout << "SolveLT[:10] = " << endl << D2H(hx.Range(10)) << endl;
+
     */
     
     Dev<int>::Free (pcnt);

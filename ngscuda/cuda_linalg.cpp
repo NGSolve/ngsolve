@@ -9,7 +9,9 @@
 
 namespace ngla
 {
+  extern void InitSparseCholesky();
 
+  
   cublasHandle_t Get_CuBlas_Handle ()
   {
     static Timer tblashandle("CUDA create cublas handle");
@@ -48,6 +50,8 @@ namespace ngla
     Get_CuBlas_Handle();
     Get_CuSparse_Handle();
 
+    InitSparseCholesky();
+    
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(SparseMatrix<double>),
                                             [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
                                             {
