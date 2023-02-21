@@ -154,7 +154,7 @@ namespace ngla
                         for (auto i : range)
                           {
                             size_t first = firstinrow[i] + range.end()-i-1;
-                            auto ext_lfact = lfact.Range(first, all_extdofs.Size());
+                            auto ext_lfact = lfact.Range(first, extdofs.Size());
                             
                             temp += Trans(ext_lfact[myr.begin()+j]) * hy(i);
                           }
@@ -162,7 +162,7 @@ namespace ngla
                       }
                   }
             }
-          
+                      
           // myjob is done
           
           if (threadIdx.x == 0)
