@@ -93,55 +93,88 @@ namespace ngcore
   };
 
   // templatize all with N ???
-  inline SIMD<double> Real(SIMD<Complex> a) { return a.real(); }
-  inline SIMD<double> Imag(SIMD<Complex> a) { return a.imag(); }
+  template <int N>
+  inline SIMD<double, N> Real(SIMD<Complex, N> a) { return a.real(); }
+  template <int N>
+  inline SIMD<double, N> Imag(SIMD<Complex, N> a) { return a.imag(); }
 
-  INLINE SIMD<Complex> operator+ (SIMD<Complex> a, SIMD<Complex> b)
-  { return SIMD<Complex> (a.real()+b.real(), a.imag()+b.imag()); }
-  INLINE SIMD<Complex> & operator+= (SIMD<Complex> & a, SIMD<Complex> b)
+  template <int N>
+  INLINE SIMD<Complex, N> operator+ (SIMD<Complex, N> a, SIMD<Complex, N> b)
+  { return SIMD<Complex, N> (a.real()+b.real(), a.imag()+b.imag()); }
+  template <int N>
+  INLINE SIMD<Complex, N> & operator+= (SIMD<Complex, N> & a, SIMD<Complex, N> b)
   { a.real()+=b.real(); a.imag()+=b.imag(); return a; }
-  INLINE SIMD<Complex> operator- (SIMD<Complex> a, SIMD<Complex> b)
-  { return SIMD<Complex> (a.real()-b.real(), a.imag()-b.imag()); }
-  INLINE SIMD<Complex> operator- (SIMD<Complex> a)
-  { return SIMD<Complex> (-a.real(), -a.imag()); }
-  INLINE SIMD<Complex> operator* (SIMD<Complex> a, SIMD<Complex> b)
-    { return SIMD<Complex> (a.real()*b.real()-a.imag()*b.imag(),
+  template <int N>
+  INLINE SIMD<Complex, N> operator- (SIMD<Complex, N> a, SIMD<Complex, N> b)
+  { return SIMD<Complex, N> (a.real()-b.real(), a.imag()-b.imag()); }
+  template <int N>
+  INLINE SIMD<Complex, N> operator- (SIMD<Complex, N> a)
+  { return SIMD<Complex, N> (-a.real(), -a.imag()); }
+  template <int N>
+  INLINE SIMD<Complex, N> operator* (SIMD<Complex, N> a, SIMD<Complex, N> b)
+    { return SIMD<Complex, N> (a.real()*b.real()-a.imag()*b.imag(),
                             a.real()*b.imag()+a.imag()*b.real()); }
-  INLINE SIMD<Complex> operator* (SIMD<double> a, SIMD<Complex> b)
-  { return SIMD<Complex> (a*b.real(), a*b.imag()); }
-  INLINE SIMD<Complex> operator* (SIMD<Complex> b, SIMD<double> a)
-  { return SIMD<Complex> (a*b.real(), a*b.imag()); }
-  INLINE SIMD<Complex> operator* (double a, SIMD<Complex> b)
-  { return SIMD<Complex> (a*b.real(), a*b.imag()); }
-  INLINE SIMD<Complex> & operator*= (SIMD<Complex> & a, double b)
+  template <int N>
+  INLINE SIMD<Complex, N> operator* (SIMD<double> a, SIMD<Complex, N> b)
+  { return SIMD<Complex, N> (a*b.real(), a*b.imag()); }
+  template <int N>
+  INLINE SIMD<Complex, N> operator* (SIMD<Complex, N> b, SIMD<double> a)
+  { return SIMD<Complex, N> (a*b.real(), a*b.imag()); }
+  template <int N>
+  INLINE SIMD<Complex, N> operator* (double a, SIMD<Complex, N> b)
+  { return SIMD<Complex, N> (a*b.real(), a*b.imag()); }
+  template <int N>
+  INLINE SIMD<Complex, N> operator* (Complex a, SIMD<double, N> b)
+  { return SIMD<Complex, N> (a.real()*b, a.imag()*b); }
+  template <int N>
+  INLINE SIMD<Complex, N> & operator*= (SIMD<Complex, N> & a, double b)
   { a.real()*= b; a.imag() *= b; return a; }  
-  INLINE SIMD<Complex> & operator*= (SIMD<Complex> & a, Complex b)
-  { a = a*SIMD<Complex>(b); return a; }
-  INLINE SIMD<Complex> & operator*= (SIMD<Complex> & a, SIMD<double> b)
+  template <int N>
+  INLINE SIMD<Complex, N> & operator*= (SIMD<Complex, N> & a, Complex b)
+  { a = a*SIMD<Complex, N>(b); return a; }
+  template <int N>
+  INLINE SIMD<Complex, N> & operator*= (SIMD<Complex, N> & a, SIMD<double> b)
   { a.real()*= b; a.imag() *= b; return a; }
-  INLINE SIMD<Complex> & operator*= (SIMD<Complex> & a, SIMD<Complex> b)
+  template <int N>
+  INLINE SIMD<Complex, N> & operator*= (SIMD<Complex, N> & a, SIMD<Complex, N> b)
   { a = a*b; return a; }
 
-  INLINE SIMD<Complex> Inv (SIMD<Complex> a)
+  template <int N>
+  INLINE SIMD<Complex, N> Inv (SIMD<Complex, N> a)
   {
     SIMD<double> n2 = a.real()*a.real()+a.imag()*a.imag();
-    return SIMD<Complex> (a.real()/n2, -a.imag()/n2);
+    return SIMD<Complex, N> (a.real()/n2, -a.imag()/n2);
   }
   
-  INLINE SIMD<Complex> operator/ (SIMD<Complex> a, SIMD<Complex> b)
+  template <int N>
+  INLINE SIMD<Complex, N> operator/ (double a, SIMD<Complex, N> b)
+  {
+    return a * Inv(b);
+  }
+
+  template <int N>
+  INLINE SIMD<Complex, N> operator/ (Complex a, SIMD<Complex, N> b)
+  {
+    return a * Inv(b);
+  }
+
+  template <int N>
+  INLINE SIMD<Complex, N> operator/ (SIMD<Complex, N> a, SIMD<Complex, N> b)
   {
     return a * Inv(b);
   }
 
   
-  INLINE Complex HSum (SIMD<Complex> sc)
+  template <int N>
+  INLINE Complex HSum (SIMD<Complex, N> sc)
   {
     double re, im;
     std::tie(re,im) = HSum(sc.real(), sc.imag());
     return Complex(re,im);
   }
 
-  INLINE auto HSum (SIMD<Complex> sc1, SIMD<Complex> sc2)
+  template <int N>
+  INLINE auto HSum (SIMD<Complex, N> sc1, SIMD<Complex, N> sc2)
   {
     // double re1, im1, re2, im2;
     // std::tie(re1,im1,re2,im2) = HSum(sc1.real(), sc1.imag(), sc2.real(), sc2.imag());
@@ -149,15 +182,16 @@ namespace ngcore
     return std::make_tuple(Complex(re1,im1), Complex(re2,im2));
   }
   
-  INLINE ostream & operator<< (ostream & ost, SIMD<Complex> c)
+  template <int N>
+  ostream & operator<< (ostream & ost, SIMD<Complex, N> c)
   {
     ost << c.real() << ", " << c.imag();
     return ost;
   }
 
 
-  template <typename FUNC>
-  SIMD<Complex> SIMDComplexWrapper (SIMD<Complex> x, FUNC f)
+  template <typename FUNC, int N>
+  SIMD<Complex, N> SIMDComplexWrapper (SIMD<Complex, N> x, FUNC f)
   {
     Complex hx[SIMD<double>::Size()];
     x.StoreFast(hx);
@@ -166,41 +200,53 @@ namespace ngcore
     return x;
   }
 
-  inline SIMD<Complex> cos (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> cos (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return cos(c); }); }
   
-  inline SIMD<Complex> sin (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> sin (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return sin(c); }); }
 
-  inline SIMD<Complex> tan (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> tan (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return tan(c); }); }
 
-  inline SIMD<Complex> atan (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> atan (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return atan(c); }); }
 
-  inline SIMD<Complex> acos (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> acos (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return acos(c); }); }
 
-  inline SIMD<Complex> asin (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> asin (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return asin(c); }); }
 
-  inline SIMD<Complex> cosh (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> cosh (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return cosh(c); }); }
   
-  inline SIMD<Complex> sinh (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> sinh (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return sinh(c); }); }
   
-  inline SIMD<Complex> exp (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> exp (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return exp(c); }); }
 
-  inline SIMD<Complex> log (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> log (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return log(c); }); }
 
-  inline SIMD<Complex> sqrt (SIMD<Complex> x)
+  template <int N>
+  inline SIMD<Complex, N> sqrt (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return sqrt(c); }); }
 
-  inline SIMD<Complex> Conj (SIMD<Complex> x)
-  { return SIMD<Complex> (x.real(), -x.imag()); } 
+  template <int N>
+  inline SIMD<Complex, N> Conj (SIMD<Complex, N> x)
+  { return SIMD<Complex, N> (x.real(), -x.imag()); } 
 
   INLINE Complex IfPos (Complex a, Complex b, Complex c)
   {
@@ -208,9 +254,10 @@ namespace ngcore
                     IfPos (a.real(), b.imag(), c.imag()));
   }
 
-  INLINE SIMD<Complex> IfPos (SIMD<Complex> a, SIMD<Complex> b, SIMD<Complex> c)
+  template <int N>
+  INLINE SIMD<Complex, N> IfPos (SIMD<Complex, N> a, SIMD<Complex, N> b, SIMD<Complex, N> c)
   {
-    return SIMD<Complex> (IfPos (a.real(), b.real(), c.real()),
+    return SIMD<Complex, N> (IfPos (a.real(), b.real(), c.real()),
                           IfPos (a.real(), b.imag(), c.imag()));
   }
 }
