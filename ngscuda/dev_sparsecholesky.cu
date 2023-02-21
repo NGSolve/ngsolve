@@ -18,6 +18,7 @@ namespace ngla
     Array<Dev<MicroTask>> microtasks;
     DevTable<int> micro_dependency, micro_dependency_trans;
     Array<int> host_incomingdep;
+    Array<int> host_incomingdep_trans;
 
     // block i has dofs  [blocks[i], blocks[i+1])
     Array<Dev<int>> blocks; 
