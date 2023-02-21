@@ -56,7 +56,7 @@ namespace ngbla
   typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[26];
   
-  INLINE void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  inline void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     size_t dsx = min(x.Size(), std::size(dispatch_matvec)-1);
     (*dispatch_matvec[dsx])  (a, x, y);    
@@ -66,7 +66,7 @@ namespace ngbla
   typedef void (*pmultadd_matvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmultadd_matvec dispatch_addmatvec[25];
   
-  INLINE void MultAddMatVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  inline void MultAddMatVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     size_t dsx = min(x.Size(), std::size(dispatch_addmatvec)-1);    
     (*dispatch_addmatvec[dsx])  (s, a, x, y);    
@@ -79,7 +79,7 @@ namespace ngbla
   typedef void (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmult_mattransvec dispatch_mattransvec[13];
   
-  INLINE void MultMatTransVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  inline void MultMatTransVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     size_t sx = x.Size();
     if (sx <= 12)
@@ -92,7 +92,7 @@ namespace ngbla
   typedef void (*pmultadd_mattransvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmultadd_mattransvec dispatch_addmattransvec[13];
   
-  INLINE void MultAddMatTransVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  inline void MultAddMatTransVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     size_t sx = x.Size();
     if (sx <= 12)
@@ -102,7 +102,7 @@ namespace ngbla
   }
 
 
-  INLINE void MultAddMatVec (double s, BareSliceMatrix<double, ColMajor> a, FlatVector<> x, FlatVector<> y)
+  inline void MultAddMatVec (double s, BareSliceMatrix<double, ColMajor> a, FlatVector<> x, FlatVector<> y)
   {
     MultAddMatTransVec (s, Trans(a), x, y);
   }
@@ -115,7 +115,7 @@ namespace ngbla
   typedef void (*pmultadd_mattransvecind)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>, FlatArray<int>);
   extern NGS_DLL_HEADER pmultadd_mattransvecind dispatch_addmattransvecI[25];
   
-  INLINE void MultAddMatTransVecIndirect (double s, BareSliceMatrix<> a,
+  inline void MultAddMatTransVecIndirect (double s, BareSliceMatrix<> a,
                                           FlatVector<> x, FlatVector<> y, FlatArray<int> ind)
   {
     size_t sy = y.Size();
@@ -360,7 +360,7 @@ namespace ngbla
   
   
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
-  INLINE void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
+  inline void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
   {
     // static Timer t("generic MM, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(orda)+ToString(ordb));
     // RegionTimer r(t);

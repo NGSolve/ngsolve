@@ -45,10 +45,8 @@ namespace ngla
   public:
     DevMatrix() { }
 
-    virtual AutoVector CreateRowVector() const { return make_unique<UnifiedVector>(Width()); }
-    virtual AutoVector CreateColVector() const { return make_unique<UnifiedVector>(Height()); }
-    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override final {}
-    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override final {}
+    AutoVector CreateRowVector() const override { return make_unique<UnifiedVector>(Width()); }
+    AutoVector CreateColVector() const override { return make_unique<UnifiedVector>(Height()); }
   };
 
   shared_ptr<BaseMatrix> CreateDevMatrix (BaseMatrix &mat);
@@ -247,7 +245,7 @@ namespace ngla
     virtual AutoVector CreateRowVector () const;
     virtual AutoVector CreateColVector () const;
 
-    void MultAdd (double s, const UnifiedVector & x, UnifiedVector & y);
+    void MultAdd (double s, const UnifiedVector & x, UnifiedVector & y) override;
     /* void Scale (double d); */
   };
 
