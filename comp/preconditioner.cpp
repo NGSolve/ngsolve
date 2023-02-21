@@ -1298,10 +1298,11 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   {
     ;
   }
-  
-  PreconditionerClasses :: PreconditionerClasses () { }
 
+  /*
+  PreconditionerClasses :: PreconditionerClasses () { }
   PreconditionerClasses :: ~PreconditionerClasses() { }
+  */
   
   void PreconditionerClasses :: 
   AddPreconditioner (const string & aname,

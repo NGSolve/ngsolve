@@ -437,8 +437,9 @@ namespace ngcomp
   
     Array<unique_ptr<PreconditionerInfo>> prea;
   public:
-    PreconditionerClasses();
-    ~PreconditionerClasses();
+    PreconditionerClasses() = default;
+    PreconditionerClasses(const PreconditionerClasses &) = delete;
+    ~PreconditionerClasses() = default;
 
     void AddPreconditioner (const string & aname, 
 			    function<shared_ptr<Preconditioner>(const PDE&, const Flags&, const string&)> acreator,
