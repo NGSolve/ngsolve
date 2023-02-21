@@ -384,14 +384,14 @@ namespace ngbla
     /// cast to specific type
     INLINE const T & Spec() const { return static_cast<const T&> (*this); }
 
-    auto View() const { return static_cast<const T&> (*this).View(); }
-    decltype(auto) ViewRW() { return static_cast<T&>(*this).ViewRW(); }
-    auto Shape() const { return static_cast<const T&> (*this).Shape(); }        
+    INLINE auto View() const { return static_cast<const T&> (*this).View(); }
+    INLINE decltype(auto) ViewRW() { return static_cast<T&>(*this).ViewRW(); }
+    INLINE auto Shape() const { return static_cast<const T&> (*this).Shape(); }        
 
 
     /// height
-    size_t Height() const { return Spec().T::Height(); }
-    size_t Width() const { return Spec().T::Width(); }
+    INLINE size_t Height() const { return Spec().T::Height(); }
+    INLINE size_t Width() const { return Spec().T::Width(); }
 
     // auto Shape() const { return std::tuple(Height(), Width()); }
 
@@ -418,32 +418,32 @@ namespace ngbla
       return SubMatrixExpr<T> (static_cast<T&> (*this), first, 0, next-first, Width()); 
     }
 
-    SubMatrixExpr<T>
+    INLINE SubMatrixExpr<T>
     Cols (size_t first, size_t next) 
     { 
       return SubMatrixExpr<T> (static_cast<T&> (*this), 0, first, Height(), next-first);
     }
 
-    SubMatrixExpr<T>
+    INLINE SubMatrixExpr<T>
     Rows (IntRange range) 
     { 
       return Rows (range.First(), range.Next());
     }
 
-    SubMatrixExpr<T>
+    INLINE SubMatrixExpr<T>
     Cols (IntRange range) 
     { 
       return Cols (range.First(), range.Next());
     }
 
 
-    RowsArrayExpr<T>
+    INLINE RowsArrayExpr<T>
     Rows (FlatArray<int> rows) 
     { 
       return RowsArrayExpr<T> (static_cast<const T&> (*this), rows); 
     }
 
-    ColsArrayExpr<T>
+    INLINE ColsArrayExpr<T>
     Cols (FlatArray<int> cols) 
     { 
       return ColsArrayExpr<T> (static_cast<const T&> (*this), cols); 
@@ -1050,7 +1050,7 @@ namespace ngbla
       return Spec();
     }
 
-    auto ViewRW() { return this->View(); }    
+    INLINE auto ViewRW() { return this->View(); }    
 
     
     template<typename TB>
@@ -1113,13 +1113,13 @@ namespace ngbla
 
 
 
-    RowsArrayExpr<T>
+    INLINE RowsArrayExpr<T>
     Rows (FlatArray<int> rows) const
     { 
       return RowsArrayExpr<T> (static_cast<const T&> (*this), rows); 
     }
 
-    ColsArrayExpr<T>
+    INLINE ColsArrayExpr<T>
     Cols (FlatArray<int> cols) const
     { 
       return ColsArrayExpr<T> (static_cast<const T&> (*this), cols); 
@@ -1158,8 +1158,8 @@ namespace ngbla
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
 
-    auto View() const { return SumExpr(a,b); }
-    auto Shape() const { return a.Shape(); }     
+    INLINE auto View() const { return SumExpr(a,b); }
+    INLINE auto Shape() const { return a.Shape(); }     
     
     void Dump (ostream & ost) const
     { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
@@ -1197,8 +1197,8 @@ namespace ngbla
     INLINE auto operator() (size_t i) const { return a(i)-b(i); }
     INLINE auto operator() (size_t i, size_t j) const { return a(i,j)-b(i,j); }
 
-    auto View() const { return SubExpr(a,b); }
-    auto Shape() const { return a.Shape(); }
+    INLINE auto View() const { return SubExpr(a,b); }
+    INLINE auto Shape() const { return a.Shape(); }
     
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
@@ -1232,19 +1232,19 @@ namespace ngbla
   public:
     MinusExpr (TA aa) : a(aa) { ; }
 
-    auto operator() (size_t i) const { return -a(i); }
-    auto operator() (size_t i, size_t j) const { return -a(i,j); }
-    auto View() const { return MinusExpr(a); }
-    auto Shape() const { return a.Shape(); }
+    INLINE auto operator() (size_t i) const { return -a(i); }
+    INLINE auto operator() (size_t i, size_t j) const { return -a(i,j); }
+    INLINE auto View() const { return MinusExpr(a); }
+    INLINE auto Shape() const { return a.Shape(); }
     
-    size_t Height() const { return a.Height(); }
-    size_t Width() const { return a.Width(); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
     INLINE TA A() const { return a; }
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
 
   template <typename TA>
-  inline auto operator- (const Expr<TA> & a)
+  INLINE auto operator- (const Expr<TA> & a)
   {
     return MinusExpr (a.View());
   }
@@ -1268,14 +1268,14 @@ namespace ngbla
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
     
-    auto View() const { return *this; }
-    auto Shape() const { return a.Shape(); }
+    INLINE auto View() const { return *this; }
+    INLINE auto Shape() const { return a.Shape(); }
     void Dump (ostream & ost) const
     { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
   };
 
   template <typename TA, typename TB>
-  inline auto pw_mult (const Expr<TA> & a, const Expr<TB> & b)
+  INLINE auto pw_mult (const Expr<TA> & a, const Expr<TB> & b)
   {
     NETGEN_CHECK_SHAPE(a, b);    
     return PW_Mult_Expr (a.View(), b.View());
@@ -1298,13 +1298,13 @@ namespace ngbla
 
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
-    auto View () const { return *this; }
+    INLINE auto View () const { return *this; }
     void Dump (ostream & ost) const
     { ost << "1/("; a.Dump(ost); ost << ")"; }
   };
 
   template <typename TA>
-  inline auto pw_inv (const Expr<TA> & a)
+  INLINE auto pw_inv (const Expr<TA> & a)
   {
     return PW_Inv_Expr (a.View());
   }
@@ -1418,8 +1418,8 @@ namespace ngbla
       return sum;
     }
 
-    auto View() const { return MultExpr(a,b); }
-    auto Shape() const
+    INLINE auto View() const { return MultExpr(a,b); }
+    INLINE auto Shape() const
     {
       typedef decltype(b.Shape()) TBSHAPE;
       if constexpr (tuple_size<TBSHAPE>() == 1)
@@ -1445,11 +1445,11 @@ namespace ngbla
 
     MultExpr (DiagMat<H,SCALA> aa, TB ab) : a(aa), b(ab) { ; }
 
-    auto operator() (size_t i) const { return a[i] * b(i); }  
-    auto operator() (size_t i, size_t j) const { return a[i] * b(i,j); }
+    INLINE auto operator() (size_t i) const { return a[i] * b(i); }  
+    INLINE auto operator() (size_t i, size_t j) const { return a[i] * b(i,j); }
 
-    auto View() const { return *this; }
-    auto Shape() const
+    INLINE auto View() const { return *this; }
+    INLINE auto Shape() const
     {
       typedef decltype(b.Shape()) TBSHAPE;
       if constexpr (tuple_size<TBSHAPE>() == 1)
@@ -1458,10 +1458,10 @@ namespace ngbla
         return tuple<size_t,size_t> (H, b.Width());
     }
     
-    const auto A() const { return a; }
-    const auto B() const { return b; }
-    size_t Height() const { return a.Height(); }
-    size_t Width() const { return b.Width(); }
+    INLINE const auto A() const { return a; }
+    INLINE const auto B() const { return b; }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
   };
 
@@ -1483,7 +1483,7 @@ namespace ngbla
   */
   template <typename TA,
             typename enable_if<IsScalar<TA>(),int>::type = 0>
-  auto Trans (TA a) { return a; } 
+  INLINE auto Trans (TA a) { return a; } 
   
 
   /**
@@ -1503,8 +1503,8 @@ namespace ngbla
     // auto Row (int i) const -> decltype (a.Col(i)) { return a.Col(i); }
     // auto Col (int i) const -> decltype (a.Row(i)) { return a.Row(i); }
 
-    auto View() const { return *this; }
-    tuple<size_t,size_t> Shape() const { return { a.Width(), a.Height() }; }
+    INLINE auto View() const { return *this; }
+    INLINE tuple<size_t,size_t> Shape() const { return { a.Width(), a.Height() }; }
     enum { IS_LINEAR = 0 };
 
     INLINE const TA & A() const { return a; }
@@ -1513,18 +1513,18 @@ namespace ngbla
 
   /// Transpose 
   template <typename TA>
-  inline auto Trans (const Expr<TA> & a)
+  INLINE auto Trans (const Expr<TA> & a)
   {
     return TransExpr (a.View());
   }
 
   /* ************************* Real/Imag ************************ */
   
-  inline double Real(double a) { return a; }
-  inline double Imag(double a) { return 0; }
+  INLINE double Real(double a) { return a; }
+  INLINE double Imag(double a) { return 0; }
 
-  inline double Real(Complex a) { return a.real(); }
-  inline double Imag(Complex a) { return a.imag(); }
+  INLINE double Real(Complex a) { return a.real(); }
+  INLINE double Imag(Complex a) { return a.imag(); }
   
   template <class TA>
   class RealExpr : public Expr<RealExpr<TA> >
@@ -1533,17 +1533,17 @@ namespace ngbla
   public:
     RealExpr (TA aa) : a(aa) { ; }
 
-    auto operator() (size_t i) const { return Real(a(i)); }
-    auto operator() (size_t i, size_t j) const { return Real(a(i,j)); }
-    size_t Height() const { return a.Height(); }
-    size_t Width() const { return a.Width(); }
-    auto View() const { return *this; }
-    auto Shape() const { return a.Shape(); }
+    INLINE auto operator() (size_t i) const { return Real(a(i)); }
+    INLINE auto operator() (size_t i, size_t j) const { return Real(a(i,j)); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
+    INLINE auto View() const { return *this; }
+    INLINE auto Shape() const { return a.Shape(); }
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
 
   template <typename TA>
-  inline auto Real(const Expr<TA> & a)
+  INLINE auto Real(const Expr<TA> & a)
   {
     return RealExpr(a.View());
   }
@@ -1556,17 +1556,17 @@ namespace ngbla
   public:
     ImagExpr (TA aa) : a(aa) { ; }
 
-    auto operator() (size_t i) const { return Imag(a(i)); }
-    auto operator() (size_t i, size_t j) const { return Imag(a(i,j)); }
-    size_t Height() const { return a.Height(); }
-    size_t Width() const { return a.Width(); }
-    auto View() const { return *this; }
-    auto Shape() const { return a.Shape(); }    
+    INLINE auto operator() (size_t i) const { return Imag(a(i)); }
+    INLINE auto operator() (size_t i, size_t j) const { return Imag(a(i,j)); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return a.Width(); }
+    INLINE auto View() const { return *this; }
+    INLINE auto Shape() const { return a.Shape(); }    
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
 
   template <typename TA>
-  inline auto Imag(const Expr<TA> & a)
+  INLINE auto Imag(const Expr<TA> & a)
   {
     return ImagExpr (a.View());
   }
@@ -1585,13 +1585,13 @@ namespace ngbla
     SubMatrixExpr (TA & aa, size_t fr, size_t fc, size_t ah, size_t aw) 
       : a(aa), first_row(fr), first_col(fc), height(ah), width(aw) { ; }
 
-    size_t Height() const { return height; }
-    size_t Width() const { return width; }
+    INLINE size_t Height() const { return height; }
+    INLINE size_t Width() const { return width; }
 
     // auto operator() (size_t i, size_t j) { return a(i+first_row, j+first_col); }
     // auto operator() (size_t i) { return a(i+first_row); }
-    decltype(auto) operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
-    decltype(auto) operator() (size_t i) const { return a(i+first_row); }
+    INLINE decltype(auto) operator() (size_t i, int j) const  { return a(i+first_row, j+first_col); }
+    INLINE decltype(auto) operator() (size_t i) const { return a(i+first_row); }
 
     typedef typename TA::TELEM TELEM;
     typedef typename TA::TSCAL TSCAL;
@@ -1600,15 +1600,15 @@ namespace ngbla
     enum { COL_MAJOR = TA::COL_MAJOR };
 
     template<typename TB>
-    const SubMatrixExpr & operator= (const Expr<TB> & m) 
+    INLINE const SubMatrixExpr & operator= (const Expr<TB> & m) 
     {
       MatExpr<SubMatrixExpr<TA> >::operator= (m);
       return *this;
     }
 
-    auto View() const { return SubMatrixExpr(a, first_row, first_col, height, width); }
-    auto ViewRW() { return SubMatrixExpr(a, first_row, first_col, height, width); }
-    tuple<size_t,size_t> Shape() const { return { height, width }; }
+    INLINE auto View() const { return SubMatrixExpr(a, first_row, first_col, height, width); }
+    INLINE auto ViewRW() { return SubMatrixExpr(a, first_row, first_col, height, width); }
+    INLINE tuple<size_t,size_t> Shape() const { return { height, width }; }
   };
 
 
@@ -1621,25 +1621,25 @@ namespace ngbla
     RowExpr (TA & aa, size_t r)
       : a(aa), row(r) { ; }
 
-    size_t Height() const { return 1; }
-    size_t Width() const { return a.Width(); }
+    INLINE size_t Height() const { return 1; }
+    INLINE size_t Width() const { return a.Width(); }
 
-    auto operator() (size_t i, size_t j) -> decltype(a(0,0)) { return a(row,i); }
-    auto operator() (size_t i) -> decltype(a(0,0)) { return a(row,i); }
-    auto operator() (size_t i, size_t j) const { return a(row,i); }
-    auto operator() (size_t i) const { return a(row,i); }
+    INLINE auto operator() (size_t i, size_t j) -> decltype(a(0,0)) { return a(row,i); }
+    INLINE auto operator() (size_t i) -> decltype(a(0,0)) { return a(row,i); }
+    INLINE auto operator() (size_t i, size_t j) const { return a(row,i); }
+    INLINE auto operator() (size_t i) const { return a(row,i); }
 
     enum { IS_LINEAR = 0 };
     
     template<typename TB>
-    const RowExpr & operator= (const Expr<TB> & m) 
+    INLINE const RowExpr & operator= (const Expr<TB> & m) 
     {
       MatExpr<RowExpr<TA> >::operator= (m);
       return *this;
     }
 
-    auto View() const { return *this; }
-    tuple<size_t> Shape() const { return a.Width(); }
+    INLINE auto View() const { return *this; }
+    INLINE tuple<size_t> Shape() const { return a.Width(); }
   };
 
 
@@ -1653,25 +1653,25 @@ namespace ngbla
     ColExpr (TA & aa, size_t c)
       : a(aa), col(c) { ; }
 
-    size_t Height() const { return a.Height(); }
-    size_t Width() const { return 1; }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return 1; }
 
-    auto operator() (size_t i, size_t j) -> decltype(a(0,0)) { return a(i,col); }
-    auto operator() (size_t i) -> decltype(a(0,0)) { return a(i,col); }
-    auto operator() (size_t i, size_t j) const { return a(i,col); }
-    auto operator() (size_t i) const { return a(i,col); }
+    INLINE auto operator() (size_t i, size_t j) -> decltype(a(0,0)) { return a(i,col); }
+    INLINE auto operator() (size_t i) -> decltype(a(0,0)) { return a(i,col); }
+    INLINE auto operator() (size_t i, size_t j) const { return a(i,col); }
+    INLINE auto operator() (size_t i) const { return a(i,col); }
 
     enum { IS_LINEAR = 0 };
     
     template<typename TB>
-    const ColExpr & operator= (const Expr<TB> & m) 
+    INLINE const ColExpr & operator= (const Expr<TB> & m) 
     {
       MatExpr<ColExpr<TA> >::operator= (m);
       return *this;
     }
 
-    auto View() const { return *this; }
-    tuple<size_t> Shape() const { return a.Height(); }
+    INLINE auto View() const { return *this; }
+    INLINE tuple<size_t> Shape() const { return a.Height(); }
   };
 
 
@@ -1691,18 +1691,18 @@ namespace ngbla
     typedef typename TA::TELEM TELEM;
     // typedef typename TA::TSCAL TSCAL;
 
-    RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
+    INLINE RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
 
-    auto Height() const { return rows.Size(); }
-    auto Width() const { return a.Width(); }
+    INLINE auto Height() const { return rows.Size(); }
+    INLINE auto Width() const { return a.Width(); }
 
-    auto operator() (size_t i, size_t j) const-> decltype(a(rows[i],j)) { return a(rows[i], j); }
-    auto operator() (size_t i) const-> decltype(a(rows[i])) { return a(rows[i]); }
+    INLINE auto operator() (size_t i, size_t j) const-> decltype(a(rows[i],j)) { return a(rows[i], j); }
+    INLINE auto operator() (size_t i) const-> decltype(a(rows[i])) { return a(rows[i]); }
 
-    auto Row (size_t i) const { return a.Row(rows[i]); }
-    auto View() const { return RowsArrayExpr(a, rows); }
-    auto ViewRW() { return RowsArrayExpr(a, rows); }
-    auto Shape() const
+    INLINE auto Row (size_t i) const { return a.Row(rows[i]); }
+    INLINE auto View() const { return RowsArrayExpr(a, rows); }
+    INLINE auto ViewRW() { return RowsArrayExpr(a, rows); }
+    INLINE auto Shape() const
     {
       typedef decltype(a.Shape()) TASHAPE;
       if constexpr (tuple_size<TASHAPE>() == 1)
@@ -1713,13 +1713,13 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     template<typename TB>
-    const RowsArrayExpr & operator= (const Expr<TB> & m) 
+    INLINE const RowsArrayExpr & operator= (const Expr<TB> & m) 
     {
       MatExpr<RowsArrayExpr<TA> >::operator= (m);
       return *this;
     }
 
-    const RowsArrayExpr & operator= (const RowsArrayExpr & m) 
+    INLINE const RowsArrayExpr & operator= (const RowsArrayExpr & m) 
     {
       MatExpr<RowsArrayExpr<TA> >::operator= (m);
       return *this;
@@ -1738,22 +1738,22 @@ namespace ngbla
     typedef typename TA::TELEM TELEM;
     // typedef typename TA::TSCAL TSCAL;
 
-    ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
+    INLINE ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
 
-    size_t Height() const { return a.Height(); }
-    size_t Width() const { return cols.Size(); }
+    INLINE size_t Height() const { return a.Height(); }
+    INLINE size_t Width() const { return cols.Size(); }
 
-    auto operator() (size_t i, size_t j) const -> decltype(a(i, cols[j]))  { return a(i, cols[j]); }
-    auto operator() (size_t i) const -> decltype(a(i, cols[0]))  { return a(i, cols[0]); }
+    INLINE auto operator() (size_t i, size_t j) const -> decltype(a(i, cols[j]))  { return a(i, cols[j]); }
+    INLINE auto operator() (size_t i) const -> decltype(a(i, cols[0]))  { return a(i, cols[0]); }
 
     enum { IS_LINEAR = 0 };
 
-    auto View() const { return *this; }
-    auto ViewRW() { return *this; }
-    tuple<size_t,size_t> Shape() const { return { a.Height(), cols.Size() }; }
+    INLINE auto View() const { return *this; }
+    INLINE auto ViewRW() { return *this; }
+    INLINE tuple<size_t,size_t> Shape() const { return { a.Height(), cols.Size() }; }
     
     template<typename TB>
-    const ColsArrayExpr & operator= (const Expr<TB> & m) 
+    INLINE const ColsArrayExpr & operator= (const Expr<TB> & m) 
     {
       MatExpr<ColsArrayExpr<TA> >::operator= (m);
       return *this;
@@ -1793,8 +1793,8 @@ namespace ngbla
     INLINE size_t Height() const { return a.Height(); }
     INLINE size_t Width() const { return a.Width(); }
     
-    auto View() const { return *this; }
-    auto Shape() const { return a.Shape(); }
+    INLINE auto View() const { return *this; }
+    INLINE auto Shape() const { return a.Shape(); }
     
     INLINE auto operator() (size_t i, size_t j) const { return Conj(a(i,j)); }
     INLINE auto operator() (size_t i) const { return Conj(a(i)); }
@@ -1833,7 +1833,7 @@ namespace ngbla
  
     INLINE auto operator() (size_t i, size_t j) const { return Truncate(a(i,j), eps); }
     INLINE auto operator() (size_t i) const { return Truncate(a(i), eps); }
-    auto View() const { return *this; }
+    INLINE auto View() const { return *this; }
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
 
@@ -1870,7 +1870,7 @@ namespace ngbla
   template <typename TA, typename TB,
             typename enable_if<IsScalar<TA>(),int>::type = 0,
             typename enable_if<IsScalar<TB>(),int>::type = 0>
-  auto InnerProduct (TA a, TB b) { return a*b; } 
+  INLINE auto InnerProduct (TA a, TB b) { return a*b; } 
 
 
 
@@ -1904,7 +1904,7 @@ namespace ngbla
      Calculates the trace of a matrix expression.
   */
   template <class TA>
-  inline auto Trace (const Expr<TA> & a) // -> decltype (a.Spec()(0,0))
+  INLINE auto Trace (const Expr<TA> & a) // -> decltype (a.Spec()(0,0))
   {
     // typedef typename TA::TELEM TELEM;
     typedef decltype( RemoveConst(a.Spec()(0,0)) ) TRES;
@@ -1918,12 +1918,12 @@ namespace ngbla
   /* **************************** L2Norm **************************** */
 
   /// Euclidean norm squared
-  inline double L2Norm2 (double v)
+  INLINE double L2Norm2 (double v)
   {
     return v*v;
   }
 
-  inline double L2Norm2 (Complex v)
+  INLINE double L2Norm2 (Complex v)
   {
     return v.real()*v.real()+v.imag()*v.imag();
   }
@@ -1938,7 +1938,7 @@ namespace ngbla
   
 
   template <class TA>
-  inline auto L2Norm2 (const Expr<TA> & v) // -> decltype(L2Norm2(v.Spec()(0)))
+  INLINE auto L2Norm2 (const Expr<TA> & v) // -> decltype(L2Norm2(v.Spec()(0)))
   {
     // double sum = 0;
     decltype(L2Norm2(v.Spec()(0))) sum = 0.0;
@@ -1957,7 +1957,7 @@ namespace ngbla
      Calculates the Euclidean norm
   */
   template <class TA>
-  inline auto L2Norm (const Expr<TA> & v) // -> decltype(L2Norm2(v))
+  INLINE auto L2Norm (const Expr<TA> & v) // -> decltype(L2Norm2(v))
   {
     return sqrt (L2Norm2(v));
   }
@@ -1967,19 +1967,19 @@ namespace ngbla
   /* **************************** MaxNorm **************************** */
 
   /// Euclidean norm squared
-  inline double MaxNorm (double v)
+  INLINE double MaxNorm (double v)
   {
     return fabs(v);
   }
 
-  inline double MaxNorm (Complex v)
+  INLINE double MaxNorm (Complex v)
   {
     return fabs(v);
   }
 
 
   template <class TA>
-  inline double MaxNorm (const Expr<TA> & v)
+  INLINE double MaxNorm (const Expr<TA> & v)
   {
     double sum = 0;
 
