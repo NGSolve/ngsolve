@@ -231,23 +231,7 @@ namespace ngla
 
   shared_ptr<DevDMatrix> MatMult (const DevDMatrix& mata, const DevDMatrix& matb);
 
-  class DevEBEMatrix : public DevMatrix
-  {
-  private:
-    size_t height, width;
-    DevDMatrix devmat;
-    Table<int> col_dnums, row_dnums;
-    bool disjointrows, disjointcols;
-  public:
-    DevEBEMatrix (const ConstantElementByElementMatrix& mat);
-    ~DevEBEMatrix ();
 
-    virtual AutoVector CreateRowVector () const;
-    virtual AutoVector CreateColVector () const;
-
-    void MultAdd (double s, const UnifiedVector & x, UnifiedVector & y) override;
-    /* void Scale (double d); */
-  };
 
   // currently uses Mult and MultAdd of DevSparseMatrix
   class DevJacobiPrecond : public DevSparseMatrix
