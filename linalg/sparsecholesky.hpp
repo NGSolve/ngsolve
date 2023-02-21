@@ -217,6 +217,19 @@ namespace ngla
     FlatArray<MicroTask> GetMicroTasks() const { return microtasks; }
     FlatTable<int> GetMicroDependency() const { return micro_dependency; }
     FlatTable<int> GetMicroDependencyTranspose() const { return micro_dependency_trans; }
+    FlatArray<int> GetBlocks() const { return blocks; }
+
+    FlatArray<int> GetOrder() const { return order; }
+    FlatArray<int> GetInvOrder() const { return inv_order; }
+
+    FlatArray<int> GetRowIndex2() const { return rowindex2; }
+    FlatArray<size_t> GetFirstInRowRI() const { return firstinrow_ri; }
+    FlatArray<size_t> GetFirstInRow() const { return firstinrow; }
+
+    FlatArray<TM> GetLFact() const { return lfact; }
+    FlatArray<TM> GetDiag() const { return diag; }
+
+    auto GetNUsed() const { return nused; }
   };
 
 
