@@ -98,13 +98,6 @@ namespace ngla
                                               return make_shared<DevBlockJacobiMatrix>(mat);
                                             });
 
-    BaseMatrix::RegisterDeviceMatrixCreator(typeid(SparseCholesky<double>),
-                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
-                                            {
-                                              auto & mat = dynamic_cast<const SparseCholeskyTM<double>&>(bmat);
-                                              return make_shared<DevSparseCholesky>(mat);
-                                              });
-
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(EmbeddedMatrix),
                                             [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                             {
@@ -673,49 +666,6 @@ namespace ngla
   }
 
   
-    DevSparseCholesky :: DevSparseCholesky(const SparseCholeskyTM<double> & mat)
-      : h(mat.Height()), w(mat.Width()),
-        microtasks(mat.GetMicroTasks()),
-        dependency(mat.GetMicroDependency()),
-        host_incomingdep(mat.GetMicroDependency().Size())
-    {
-      auto hostdep = mat.GetMicroDependency();
-            
-      host_incomingdep = 0;
-                         
-      bool directional = true;
-      for (int i = 0; i < hostdep.Size(); i++)
-        for (int d : hostdep[i])
-            {
-                if (d <= i) directional = false;
-                host_incomingdep[d]++;
-            }
-      cout << "directional = " << (directional? "yes" : "no") << endl;
-    }
-  
-    void DevSparseCholesky ::
-    MultAdd (double s, const BaseVector & x, BaseVector & y) const
-    {
-      
-      static Timer t("DevSparseCholesky::MultAdd");
-      UnifiedVectorWrapper ux(x);
-      UnifiedVectorWrapper uy(y);
-      ux.UpdateDevice();
-      uy.UpdateDevice();
-      if (synckernels) cudaDeviceSynchronize();
-      t.Start();
-      
-        cout << "MultAdd in DevSpasreCholesky" << endl;
-      Array<Dev<int>> incomingdep(host_incomingdep);
-      DeviceSparseCholeskySolveL (dependency, incomingdep, ux.FVDev());
-          cout << "kernel is back" << endl;
-      if (synckernels) cudaDeviceSynchronize();
-      t.Stop();
-      
-      uy.InvalidateHost();
-    }
-
-
 
   
 

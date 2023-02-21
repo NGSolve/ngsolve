@@ -200,49 +200,6 @@ void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
     BlockJacobiKernel<<<512,dim3(16,16)>>> (s, ctrs, x, y);
   }
 
-  /* *************** kernels for SpasreCholesky *********************** */
-
-  __global__ void DeviceSparseCholeskySolveLKernel (FlatTable<int> dependency, 
-                                                    FlatArray<Dev<int>> incomingdep, 
-                                                    FlatVector<Dev<double>> v,
-                                                    int & cnt)
-  {
-    __shared__ int myjobs[16]; // max blockDim.y;   
-    
-    while (true)
-       {
-          if (threadIdx.x == 0)
-             myjobs[threadIdx.y] = atomicAdd(&cnt, 1);
-          __syncwarp();
-
-          int myjob = myjobs[threadIdx.y];
-          if (myjob >= dependency.Size())
-              break;
-
-          // do the work ....
-
-
-          if (threadIdx.x == 0)
-              while (atomicAdd((int*)&incomingdep[myjob], 0) > 0);
-          __syncwarp();
-          
-          if (threadIdx.x == 0)
-              // for (int d : dependency[myjob])
-              for (int j = 0; j < dependency[myjob].Size(); j++)
-                 atomicAdd((int*)&incomingdep[dependency[myjob][j]], -1);
-       }
-  }
-  
-  void DeviceSparseCholeskySolveL (const DevTable<int> & dependency, 
-                                   FlatArray<Dev<int>> incomingdep, 
-                                   FlatVector<Dev<double>> v)
-  {
-    Dev<int> * pcnt = Dev<int>::Malloc(1);
-    pcnt->H2D(0);
-    DeviceSparseCholeskySolveLKernel<<<512,dim3(32,8)>>> (dependency, incomingdep, v, *(int*)pcnt);
-    cout << "shared counter: " << pcnt->D2H();
-    Dev<int>::Free (pcnt);
-  }
 
 
 /* ************** kernels for ConstantEBE Matrix ********************** */

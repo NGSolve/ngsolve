@@ -49,13 +49,6 @@ extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
                                  BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
 
 
-  /* **************** SpasreCholesky kernels ********************* */
-
-
-  extern void DeviceSparseCholeskySolveL (const DevTable<int> & dependency, 
-                                          FlatArray<Dev<int>> incomingdep, 
-                                          FlatVector<Dev<double>> v);
-  
     
 extern void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
 extern void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, double * dev_hy, double * dev_uy);
