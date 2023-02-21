@@ -155,8 +155,8 @@ namespace ngbla
       return *this;
     }
 
-    FlatVector<T> View() const { return FlatVector<T>(*this); }     
-    tuple<size_t> Shape() const { return { size }; }
+    INLINE FlatVector<T> View() const { return FlatVector<T>(*this); }     
+    INLINE tuple<size_t> Shape() const { return { size }; }
     
     /*  // prevents bla pattern matching
     template<typename TB>
@@ -321,8 +321,8 @@ namespace ngbla
     }
     */
 
-    auto View() const { return FlatVector(*this); }         
-    tuple<size_t> Shape() const { return { size }; }
+    INLINE auto View() const { return FlatVector(*this); }         
+    INLINE tuple<size_t> Shape() const { return { size }; }
     
     /// assign memory for vector on local heap
     void AssignMemory (size_t as, LocalHeap & lh) 
@@ -909,8 +909,8 @@ namespace ngbla
 
     // auto View() const { return FlatVec(const_cast<Vec&>(*this)); }
     // auto View() const { return Vec(*this); }
-    auto View() const { return Vec<S,const T>{*this}; }    
-    tuple<size_t> Shape() const { return { S }; }
+    INLINE auto View() const { return Vec<S,const T>{*this}; }    
+    INLINE tuple<size_t> Shape() const { return { S }; }
     
     /// access vector
     INLINE TELEM & operator() (size_t i) 
@@ -981,8 +981,8 @@ namespace ngbla
     INLINE Vec (T d) { ; }
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
-    auto View() const { return Vec(*this); }
-    tuple<size_t> Shape() const { return { 0 }; }    
+    INLINE auto View() const { return Vec(*this); }
+    INLINE tuple<size_t> Shape() const { return { 0 }; }    
     INLINE constexpr size_t Size() const { return 0; }
     INLINE constexpr size_t Height() const { return 0; }
     INLINE constexpr size_t Width() const { return 1; }
@@ -1176,8 +1176,8 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return FlatVec(*this); }         
-    tuple<size_t> Shape() const { return { S }; }
+    INLINE auto View() const { return FlatVec(*this); }         
+    INLINE tuple<size_t> Shape() const { return { S }; }
     
     template<typename TB>
     INLINE const FlatVec & operator+= (const Expr<TB> & v) const
@@ -1284,8 +1284,8 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return FlatSliceVec(*this); } 
-    tuple<size_t> Shape() const { return { S }; }
+    INLINE auto View() const { return FlatSliceVec(*this); } 
+    INLINE tuple<size_t> Shape() const { return { S }; }
     
     template<typename TB>
     INLINE auto operator+= (const Expr<TB> & v) const
@@ -1432,8 +1432,8 @@ namespace ngbla
     }
 
     // auto View() const { return SliceVector(*this); }
-    auto View() const { return *this; }
-    tuple<size_t> Shape() const { return { s }; }
+    INLINE auto View() const { return *this; }
+    INLINE tuple<size_t> Shape() const { return { s }; }
     
     template<typename TB>
     INLINE const SliceVector & operator+= (const Expr<TB> & v) const
@@ -1652,8 +1652,8 @@ namespace ngbla
     size_t Dist () const { return dist; }
     T* Data() const { return data; }
 
-    auto View() const { return BareSliceVector(*this); }
-    tuple<size_t> Shape() const { return { DummySize::Height() }; }
+    INLINE auto View() const { return BareSliceVector(*this); }
+    INLINE tuple<size_t> Shape() const { return { DummySize::Height() }; }
     
     [[deprecated("Use Range(0,size) instead!")]]                
     SliceVector<T> AddSize(size_t size) const
@@ -1764,8 +1764,8 @@ namespace ngbla
       return *this;
     }
 
-    auto View() const { return *this; }
-    tuple<size_t> Shape() const { return { s }; }
+    INLINE auto View() const { return *this; }
+    INLINE tuple<size_t> Shape() const { return { s }; }
     
     template<typename TB>
     INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
@@ -1782,14 +1782,14 @@ namespace ngbla
 
 
     /// access element
-    TELEM & operator() (size_t i) 
+    INLINE TELEM & operator() (size_t i) 
     {
       NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*DIST]; 
     }
 
     /// access element
-    TELEM & operator() (size_t i) const
+    INLINE TELEM & operator() (size_t i) const
     {
       NETGEN_CHECK_RANGE(i,0,s);
       return data[i*DIST]; 
