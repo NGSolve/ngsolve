@@ -61,6 +61,8 @@ namespace ngs_cuda
     __device__ auto & operator+= (T2 other) { data += other; return *this; }
     template <typename T2>
     __device__ auto & operator-= (T2 other) { data -= other; return *this; }
+    template <typename T2>
+    __device__ auto & operator*= (T2 other) { data *= other; return *this; }
   };
     
 
