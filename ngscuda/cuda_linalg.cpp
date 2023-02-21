@@ -892,58 +892,6 @@ namespace ngla
   }
 
 
-  /******************** DevEBEMatrix ********************/
-
-  DevEBEMatrix :: DevEBEMatrix (const ConstantElementByElementMatrix& ebemat)
-    : devmat(ebemat.GetMatrix()), col_dnums(ebemat.GetColDNums()), row_dnums(ebemat.GetRowDNums())
-  { 
-    throw Exception("DevEBEMatrix not implemented yet.");
-
-
-  }
-
-  DevEBEMatrix :: ~DevEBEMatrix ()
-  { }
-
-  AutoVector DevEBEMatrix :: CreateRowVector () const
-  {
-    return make_unique<UnifiedVector>(width);
-  }
-
-  AutoVector DevEBEMatrix :: CreateColVector () const
-  {
-    return make_unique<UnifiedVector>(height);
-  }
-
-  void DevEBEMatrix :: MultAdd (double s, const UnifiedVector& x, UnifiedVector& y)
-  {
-    static Timer timer("Dev-EBE-Matrix::MultAdd");
-    RegionTimer reg(timer);
-
-    size_t maxs = 0;
-    for (size_t i=0; i<col_dnums.Size(); i++)
-      maxs = max2 (maxs, col_dnums[i].Size());
-
-    /* ebe_multadd_kernel(); */
-
-    throw Exception("DevEBEMatrix::MultAdd not implemented yet.");
-  }
-
-  /* void DevEBEMatrix :: Scale (double d) */
-  /* { */
-  /*   throw Exception("DevEBEMatrix::Scale not implemented yet."); */
-  /* } */
-
-
-
-  /* BaseVector& operator* (const UnifiedVector& v, const DevSparseMatrix& mat) */
-  /* { */
-  /*   shared_ptr<UnifiedVector> res = make_shared<UnifiedVector>(v.Size()); */
-  /*   mat.Mult(v, *res); */
-  /*   return *res; */
-  /* } */
-
-
 
   /******************** DevJacobiPrecond ********************/
 
