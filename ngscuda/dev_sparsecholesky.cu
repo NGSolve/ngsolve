@@ -173,12 +173,107 @@ namespace ngla
   
 
 
+  __global__ void DeviceSparseCholeskySolveLTransKernel (
+        FlatTable<int> dependency, 
+        FlatArray<Dev<int>> incomingdep, 
+        FlatVector<Dev<double>> hy,
+        int & cnt,
+        FlatArray<Dev<MicroTask>> microtasks,
+        FlatArray<Dev<int>> blocks,
+        FlatArray<Dev<int>> rowindex2,
+        FlatArray<Dev<size_t>> firstinrow_ri,
+        FlatArray<Dev<size_t>> firstinrow,
+        FlatArray<Dev<double>> lfact
+      )
+  {
+    __shared__ int myjobs[16]; // max blockDim.y;   
+    
+    while (true)
+       {
+          if (threadIdx.x == 0)
+             myjobs[threadIdx.y] = atomicAdd(&cnt, 1);
+          __syncwarp();
+
+          int myjob = dependency.Size()-1 - myjobs[threadIdx.y];
+          if (myjob < 0)
+            break;
+
+          volatile int * n_deps = (int*)&incomingdep[myjob];
+          if (threadIdx.x == 0)
+            while(*n_deps);
+          __syncwarp();
+
+          // do the work for myjob....
+          
+          MicroTask task = microtasks[myjob];
+          size_t blocknr = task.blocknr;
+          auto range = T_Range<int>(blocks[blocknr], blocks[blocknr+1]);
+          auto base = firstinrow_ri[range.First()] + range.Size()-1;
+          auto ext_size =  firstinrow[range.First()+1]-firstinrow[range.First()] - range.Size()+1;
+          auto extdofs = rowindex2.Range(base, base+ext_size);
+
+          // TODO: needs transpose:
+          if ((task.type == MicroTask::B_BLOCK) || (task.type == MicroTask::LB_BLOCK))
+            {
+              if (extdofs.Size() != 0)
+                if (threadIdx.x == 0)
+                  {
+                    auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
+                    auto my_extdofs = extdofs.Range(myr);
+                    
+                    for (size_t j = 0; j < my_extdofs.Size(); j++)
+                      {
+                        double temp = 0.0;
+                        for (auto i : range)
+                          {
+                            size_t first = firstinrow[i] + range.end()-i-1;
+                            auto ext_lfact = lfact.Range(first, extdofs.Size());
+                            
+                            temp += Trans(ext_lfact[myr.begin()+j]) * hy(i);
+                          }
+                        atomicAdd ((double*)(&hy(my_extdofs[j])), -temp);
+                      }
+                  }
+            }
+
+          // TODO: needs transpose:          
+          if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
+            {
+              if (threadIdx.x == 0)
+                for (auto i : range)
+                  {
+                    size_t size = range.end()-i-1;
+                    if (size == 0) continue;
+                    
+                    auto vlfact = lfact.Range(firstinrow[i], firstinrow[i]+size);
+                    
+                    double hyi = hy(i);
+                    auto hyr = hy.Range(i+1, range.end());
+                    for (size_t j = 0; j < hyr.Size(); j++)
+                      hyr(j) -= vlfact[j] * hyi;
+                  }
+            }
+          
+
+          
+          // myjob is done
+          
+          if (threadIdx.x == 0)
+              for (int d : dependency[myjob])
+                 atomicAdd((int*)&incomingdep[d], -1);
+       }
+  }
+  
+
+  
+
   DevSparseCholesky :: DevSparseCholesky(const SparseCholeskyTM<double> & mat)
     : h(mat.Height()), w(mat.Width()),
       microtasks(mat.GetMicroTasks()),
       micro_dependency(mat.GetMicroDependency()),
       micro_dependency_trans(mat.GetMicroDependencyTranspose()),
       host_incomingdep(mat.GetMicroDependency().Size()),
+      host_incomingdep_trans(mat.GetMicroDependency().Size()),      
       blocks(mat.GetBlocks()),
       rowindex2(mat.GetRowIndex2()),
       firstinrow_ri(mat.GetFirstInRowRI()),
@@ -198,7 +293,11 @@ namespace ngla
           if (d <= i) directional = false;
           host_incomingdep[d]++;
         }
-    cout << "directional = " << (directional? "yes" : "no") << endl;
+
+    if (!directional) throw Exception("dependency-graph must be directional");
+    
+    for (int i = 0; i < hostdep.Size(); i++)
+      host_incomingdep_trans[i] = hostdep[i].Size();
   }
 
 
@@ -219,15 +318,14 @@ namespace ngla
     cout << "MultAdd in DevSpasreCholesky" << endl;
 
     DevStackArray<double> mem_hx(x.Size());
-    DevStackArray<double> mem_hy(y.Size());
     FlatVector<Dev<double>> hx(x.Size(), mem_hx.Data());
-    FlatVector<Dev<double>> hy(y.Size(), mem_hy.Data());
 
     DeviceSparseCholeskyReorderKernel<<<512,256>>> (ux.FVDev(), hx, order);
 
     cout << "hx[:10] = " << endl << D2H(hx.Range(10)) << endl;
 
     Array<Dev<int>> incomingdep(host_incomingdep);
+    Array<Dev<int>> incomingdep_trans(host_incomingdep_trans);    
 
     Dev<int> * pcnt = Dev<int>::Malloc(1);
     pcnt->H2D(0);
@@ -236,12 +334,21 @@ namespace ngla
        micro_dependency, incomingdep, hx, *(int*)pcnt,
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
        );
+
+    // TODO : Diag
+
+    /*
+    pcnt->H2D(0);
+    DeviceSparseCholeskySolveLTransKernel<<<512,dim3(32,8)>>>
+      (
+       micro_dependency_trans, incomingdep_trans, hx, *(int*)pcnt,
+       microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
+       );
+    */
+    
     Dev<int>::Free (pcnt);
-
-
     
-    
-    DeviceSparseCholeskyReorderAddKernel<<<512,256>>> (hy, uy.FVDev(), order, s);
+    DeviceSparseCholeskyReorderAddKernel<<<512,256>>> (hx, uy.FVDev(), order, s);
 
     if (synckernels) cudaDeviceSynchronize();
     t.Stop();
