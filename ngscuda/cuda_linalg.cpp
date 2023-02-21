@@ -130,28 +130,8 @@ namespace ngla
   {
     if (auto res = mat.CreateDeviceMatrix())
       return res;
-    
-    if (typeid(mat) == typeid(SparseMatrix<double>))
-    {
-      SparseMatrix<double>& sparse_mat = dynamic_cast<SparseMatrix<double>&>(mat);
-      return make_shared<DevSparseMatrix>(sparse_mat);
-      /* *this = DevSparseMatrix(sparse_mat); */
-      /* return *this; */
-    }
-    else if (typeid(mat) == typeid(ConstantElementByElementMatrix))
-    {
-      ConstantElementByElementMatrix& ebe_mat = dynamic_cast<ConstantElementByElementMatrix&>(mat);
-      return make_shared<DevEBEMatrix>(ebe_mat);
-    }
-    /* else if (typeid(mat) == typeid(JacobiPrecond<double>)) */
-    /* { */
-    /*   JacobiPrecond<double>& jac_mat = dynamic_cast<JacobiPrecond<double>&>(mat); */
-    /*   return make_shared<DevJacobiPrecond>(jac_mat); */
-    /* } */
     else
-    {
       throw Exception(string("matrix type not supported: ") + typeid(mat).name());
-    }
   }
 
   shared_ptr<BaseMatrix> CreateDevMatrix (Matrix<> & mat)
