@@ -3,6 +3,7 @@
 
 
 #include <cuda_runtime.h>
+#include <core/profiler.hpp>
 
 namespace ngs_cuda
 {
@@ -152,8 +153,59 @@ namespace ngs_cuda
       }
     T * DevData () const { return (T*)this->data; }
   };
-}
 
+  class CudaRegionTimer
+  {
+    const ngcore::Timer<> & timer;
+    bool is_already_stopped = false;
+
+    struct UserData {
+      int timernr;
+      bool is_start;
+    };
+
+    // encode UserData directly in void* pointer (8 bytes available)
+    void * Encode( bool start ) const
+    {
+      static_assert(sizeof(UserData) <= sizeof(void*), "cannot encode UserData in void*");
+      UserData data{timer, start};
+      return *reinterpret_cast<void**>(&data);
+    }
+
+    static void CUDART_CB Callback(cudaStream_t stream, cudaError_t status, void *userData)
+    {
+      const UserData & ud = *reinterpret_cast<UserData*>(&userData);
+      if(!ngcore::trace) return;
+      if(ud.is_start)
+        ngcore::trace->StartGPU(ud.timernr);
+      else
+        ngcore::trace->StopGPU(ud.timernr);
+    }
+
+  public:
+    CudaRegionTimer (ngcore::Timer<> & atimer) : timer(atimer) {
+      timer.Start();
+      cudaStreamAddCallback(0, Callback, Encode(true), 0);
+    }
+    ~CudaRegionTimer ()
+    {
+      if(!is_already_stopped)
+        Stop();
+    }
+    CudaRegionTimer() = delete;
+    CudaRegionTimer(const CudaRegionTimer &) = delete;
+    CudaRegionTimer(CudaRegionTimer &&) = delete;
+    void operator=(const CudaRegionTimer &) = delete;
+    void operator=(CudaRegionTimer &&) = delete;
+
+    void Stop() {
+      cudaStreamAddCallback(0, Callback, Encode(false), 0);
+      timer.Stop();
+      is_already_stopped = true;
+    }
+  };
+
+}
 
 namespace ngcore 
 {

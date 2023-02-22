@@ -51,6 +51,8 @@ __global__ void SetScalarKernel (double val, int n, double * x)
 
 void SetScalar (double val, int n, double * x)
 {
+  static Timer t("CUDA::SetScalar");
+  CudaRegionTimer rt(t);
   SetScalarKernel<<<512,256>>> (val, n, x);
 } 
 
@@ -64,6 +66,8 @@ __global__ void SetScalarKernelNew (double val, FlatVector<Dev<double>> vec)
 
 void SetScalar (double val, FlatVector<Dev<double>> vec)
 {
+  static Timer t("CUDA::SetScalar");
+  CudaRegionTimer rt(t);
   SetScalarKernelNew<<<512,256>>> (val, vec);
 } 
 
@@ -81,6 +85,8 @@ __global__ void SetVectorKernel (double val, int n, double * x, double * y)
 
 void SetVector (double val, int n, double * x, double * y)
 {
+  static Timer t("CUDA::SetVector");
+  CudaRegionTimer rt(t);
   SetVectorKernel<<<512,256>>> (val, n, x, y);
 } 
 
