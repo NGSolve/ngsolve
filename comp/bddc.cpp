@@ -580,6 +580,18 @@ namespace ngcomp
 
       y.Cumulate();
     }
+
+    shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
+    {
+      shared_ptr<BaseMatrix> op;
+      if (bfa->SymmetricStorage())
+        op = harmonicext * inv * TransposeOperator (harmonicext) + innersolve;
+      else
+        op = harmonicext * inv * harmonicexttrans + innersolve;
+      
+      return op->CreateDeviceMatrix();
+    }
+    
   };
 
 
