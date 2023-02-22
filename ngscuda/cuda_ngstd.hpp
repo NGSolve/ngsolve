@@ -338,8 +338,11 @@ namespace ngs_cuda
     return hosta;
   }
 
-
-
+  template <typename T>
+  inline void H2D (FlatArray<Dev<T>> deva, FlatArray<T> hosta)
+  {
+    cudaMemcpy (deva.Data(), hosta.Data(), sizeof(T)*hosta.Size(), cudaMemcpyHostToDevice);    
+  }
 
   /*
     template <class T>
