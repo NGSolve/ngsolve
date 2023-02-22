@@ -4,7 +4,6 @@
 using namespace ngla;
 
 
-
 namespace ngla
 {
   extern bool synckernels;
@@ -50,9 +49,9 @@ namespace ngla
   };
 
 
-  /*
   static const auto a = []()
   {
+    cout << "autoinit" << endl;
     BaseMatrix::RegisterDeviceMatrixCreator
     (typeid(SparseCholesky<double>),
      [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
@@ -62,10 +61,10 @@ namespace ngla
     });
     return 0;
   } ();
-  */
   
   void InitSparseCholesky()
   {
+    cout << "manual init" << endl;
     BaseMatrix::RegisterDeviceMatrixCreator
       (typeid(SparseCholesky<double>),
        [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
@@ -147,8 +146,10 @@ namespace ngla
          
           if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
+            /*
               if (threadIdx.x == 0)
-                for (auto i : range)
+                // for (auto i : range)
+                for (int i = blocks[blocknr]; i < blocks[blocknr+1]; i++)
                   {
                     size_t size = range.end()-i-1;
                     if (size == 0) continue;
@@ -160,17 +161,38 @@ namespace ngla
                     for (size_t j = 0; j < hyr.Size(); j++)
                       hyr(j) -= vlfact[j] * hyi;
                   }
+                  */
+
+               for (int i = blocks[blocknr]; i < blocks[blocknr+1]-1; i++)
+                  {
+                    size_t size = range.end()-i-1;
+                    
+                    auto vlfact = lfact.Range(firstinrow[i], firstinrow[i]+size);
+                    
+                    __threadfence_block();   
+
+                    double hyi = hy(i);
+                    /*
+                    for (size_t j = i+1; j < range.end(); j++)
+                      hy(j) -= vlfact[j-i-1] * hyi;
+                      */
+                    for (int j = threadIdx.x+blocks[blocknr]; j < range.end(); j += blockDim.x)
+                       if (j > i)
+                          hy(j) -= vlfact[j-i-1] * hyi;
+                     __threadfence_block();   
+                  }
             }
           
           if ((task.type == MicroTask::B_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
               if (extdofs.Size() != 0)
-                if (threadIdx.x == 0)
+//                if (threadIdx.x == 0)
                   {
                     auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
                     auto my_extdofs = extdofs.Range(myr);
                     
-                    for (size_t j = 0; j < my_extdofs.Size(); j++)
+                    for (int j = threadIdx.x; j < my_extdofs.Size(); j+=blockDim.x)
+                    // for (size_t j = 0; j < my_extdofs.Size(); j++)
                       {
                         double temp = 0.0;
                         for (auto i : range)
@@ -239,26 +261,13 @@ namespace ngla
           // TODO: needs transpose:
           if ((task.type == MicroTask::B_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
+            /*
               if (extdofs.Size() != 0)
                 if (threadIdx.x == 0)
                   {
                     auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
                     auto my_extdofs = extdofs.Range(myr);
                     
-                    /*
-                    for (size_t j = 0; j < my_extdofs.Size(); j++)
-                      {
-                        double temp = 0.0;
-                        for (auto i : range)
-                          {
-                            size_t first = firstinrow[i] + range.end()-i-1;
-                            auto ext_lfact = lfact.Range(first, extdofs.Size());
-                            
-                            temp += Trans(ext_lfact[myr.begin()+j]) * hy(i);
-                          }
-                        atomicAdd ((double*)(&hy(my_extdofs[j])), -temp);
-                      }
-                      */
                       
                     for (auto i : range)
                         {
@@ -272,27 +281,33 @@ namespace ngla
                             atomicAdd ((double*)(&hy(i)), -val);
                         }
                   }
+            */
+              if (extdofs.Size() != 0)
+                  {
+                    auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
+                    auto my_extdofs = extdofs.Range(myr);
+                                          
+                    // for (auto i : range)
+                    for (int i = range.First()+threadIdx.x; i < range.Next(); i += blockDim.x)
+                        {
+                            size_t first = firstinrow[i] + range.end()-i-1;
+                            auto ext_lfact = lfact.Range(first, first+extdofs.Size());
+                            
+                            double val = 0.0;
+                            for (auto j : Range(my_extdofs))
+                                val += ext_lfact[myr.begin()+j] * hy(my_extdofs[j]);
+                                
+                            atomicAdd ((double*)(&hy(i)), -val);
+                        }
+                  }
+                
             }
 
-          // TODO: needs transpose:          
+          //       
           if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
               if (threadIdx.x == 0)
                 {
-                /*
-                for (auto i : range)
-                  {
-                    size_t size = range.end()-i-1;
-                    if (size == 0) continue;
-                    
-                    auto vlfact = lfact.Range(firstinrow[i], firstinrow[i]+size);
-                    
-                    double hyi = hy(i);
-                    auto hyr = hy.Range(i+1, range.end());
-                    for (size_t j = 0; j < hyr.Size(); j++)
-                      hyr(j) -= vlfact[j] * hyi;
-                  }
-                  */
                 if (range.Size() > 0) // for case [0,0)
                   for (size_t i = range.end()-1; i-- > range.begin(); )
                     {
@@ -307,6 +322,7 @@ namespace ngla
                         hy(i) = hyi;
                     }
                 }
+
             }
           
 
@@ -365,6 +381,9 @@ namespace ngla
   {
   
     static Timer t("DevSparseCholesky::MultAdd");
+    static Timer tL("DevSparseChol, L-fact");
+    static Timer tLT("DevSparseChol, L-fact");
+    
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
@@ -385,6 +404,8 @@ namespace ngla
     Array<Dev<int>> incomingdep(host_incomingdep);
     Array<Dev<int>> incomingdep_trans(host_incomingdep_trans);    
 
+    cudaDeviceSynchronize();
+    tL.Start();
     Dev<int> * pcnt = Dev<int>::Malloc(1);
     pcnt->H2D(0);
     DeviceSparseCholeskySolveLKernel<<<512,dim3(32,8)>>>
@@ -392,20 +413,27 @@ namespace ngla
        micro_dependency, incomingdep, hx, *(int*)pcnt,
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
        );
-
+    cudaDeviceSynchronize();
+    tL.Stop();
     // cout << "SolveL[:10] = " << endl << D2H(hx.Range(10)) << endl;
     
     // TODO : Diag
     DeviceSparseCholeskyMultDiagKernel<<<512,256>>> (diag, hx);
-    
+
+
     // cout << "SolveDL[:10] = " << endl << D2H(hx.Range(10)) << endl;
     // cout << "Norm DL = " << L2Norm(D2H(hx)) << endl;
     pcnt->H2D(0);
+    cudaDeviceSynchronize();
+    tLT.Start();
+    
     DeviceSparseCholeskySolveLTransKernel<<<512,dim3(32,8)>>>
       (
        micro_dependency_trans, incomingdep_trans, hx, *(int*)pcnt,
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
        );
+    cudaDeviceSynchronize();
+    tLT.Stop();
 
     // cout << "SolveLT[:10] = " << endl << D2H(hx.Range(10)) << endl;
 

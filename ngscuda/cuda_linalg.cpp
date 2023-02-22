@@ -50,7 +50,7 @@ namespace ngla
     Get_CuBlas_Handle();
     Get_CuSparse_Handle();
 
-    InitSparseCholesky();
+    // InitSparseCholesky();
     
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(SparseMatrix<double>),
                                             [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
