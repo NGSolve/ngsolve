@@ -146,53 +146,30 @@ namespace ngla
          
           if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
-            /*
-              if (threadIdx.x == 0)
-                // for (auto i : range)
-                for (int i = blocks[blocknr]; i < blocks[blocknr+1]; i++)
-                  {
-                    size_t size = range.end()-i-1;
-                    if (size == 0) continue;
-                    
-                    auto vlfact = lfact.Range(firstinrow[i], firstinrow[i]+size);
-                    
-                    double hyi = hy(i);
-                    auto hyr = hy.Range(i+1, range.end());
-                    for (size_t j = 0; j < hyr.Size(); j++)
-                      hyr(j) -= vlfact[j] * hyi;
-                  }
-                  */
-
                for (int i = blocks[blocknr]; i < blocks[blocknr+1]-1; i++)
                   {
                     size_t size = range.end()-i-1;
                     
-                    auto vlfact = lfact.Range(firstinrow[i], firstinrow[i]+size);
+                    auto vlfact = lfact.Range(firstinrow[i]-i-1, firstinrow[i]+size);
                     
                     __threadfence_block();   
 
                     double hyi = hy(i);
-                    /*
-                    for (size_t j = i+1; j < range.end(); j++)
-                      hy(j) -= vlfact[j-i-1] * hyi;
-                      */
                     for (int j = threadIdx.x+blocks[blocknr]; j < range.end(); j += blockDim.x)
                        if (j > i)
-                          hy(j) -= vlfact[j-i-1] * hyi;
-                     __threadfence_block();   
+                          hy(j) -= vlfact[j] * hyi;
+                    __threadfence_block();   
                   }
             }
           
           if ((task.type == MicroTask::B_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
               if (extdofs.Size() != 0)
-//                if (threadIdx.x == 0)
                   {
                     auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
                     auto my_extdofs = extdofs.Range(myr);
                     
                     for (int j = threadIdx.x; j < my_extdofs.Size(); j+=blockDim.x)
-                    // for (size_t j = 0; j < my_extdofs.Size(); j++)
                       {
                         double temp = 0.0;
                         for (auto i : range)
@@ -200,7 +177,7 @@ namespace ngla
                             size_t first = firstinrow[i] + range.end()-i-1;
                             auto ext_lfact = lfact.Range(first, extdofs.Size());
                             
-                            temp += Trans(ext_lfact[myr.begin()+j]) * hy(i);
+                            temp += ext_lfact[myr.begin()+j] * hy(i);
                           }
                         atomicAdd ((double*)(&hy(my_extdofs[j])), -temp);
                       }
@@ -209,7 +186,7 @@ namespace ngla
                       
           // myjob is done
           __syncwarp();
-     __threadfence();
+         __threadfence();
          
           if (threadIdx.x == 0)
               for (int d : dependency[myjob])
@@ -261,27 +238,6 @@ namespace ngla
           // TODO: needs transpose:
           if ((task.type == MicroTask::B_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
-            /*
-              if (extdofs.Size() != 0)
-                if (threadIdx.x == 0)
-                  {
-                    auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
-                    auto my_extdofs = extdofs.Range(myr);
-                    
-                      
-                    for (auto i : range)
-                        {
-                            size_t first = firstinrow[i] + range.end()-i-1;
-                            auto ext_lfact = lfact.Range(first, first+extdofs.Size());
-                            
-                            double val = 0.0;
-                            for (auto j : Range(my_extdofs))
-                                val += ext_lfact[myr.begin()+j] * hy(my_extdofs[j]);
-                                
-                            atomicAdd ((double*)(&hy(i)), -val);
-                        }
-                  }
-            */
               if (extdofs.Size() != 0)
                   {
                     auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
@@ -306,6 +262,7 @@ namespace ngla
           //       
           if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
+            /*
               if (threadIdx.x == 0)
                 {
                 if (range.Size() > 0) // for case [0,0)
@@ -322,7 +279,52 @@ namespace ngla
                         hy(i) = hyi;
                     }
                 }
+                */
+                /*
+              if (threadIdx.x == 0)
+                {
+                if (range.Size() > 0) // for case [0,0)
+                  for (int i = range.end()-2; i >= range.begin(); i--)
+                    {
+                        size_t size = range.end()-i-1;
+                        auto vlfact = lfact.Data()+firstinrow[i]; 
+                        
+                        auto hyr = hy.Range(i+1, range.end());
 
+                        double hyi = hy(i);
+                        for (size_t j = 0; j < size; j++)
+                           hyi -= vlfact[j] * hyr(j);
+                        hy(i) = hyi;
+                    }
+                }
+                */
+                
+                
+                /*
+                 if (threadIdx.x == 0)
+                {
+                  auto hhy = hy.Range(range);
+                  
+                   for (int j = range.Size()-1; j >= 0; j--)
+                      for (int i = 0; i < j; i++)
+                      {
+                        auto vlfact = lfact.Data()+firstinrow[range.First()+i]-i-1; 
+                        hhy(i) -= vlfact[j] * hhy(j);                           
+                      }   
+                }
+                */
+                
+                
+                 auto hhy = hy.Range(range);
+                 for (int j = range.Size()-1; j >= 0; j--)
+                    {
+                      for (int i = threadIdx.x; i < j; i += blockDim.x)
+                        {
+                          auto vlfact = lfact.Data()+firstinrow[range.First()+i]-i-1; 
+                          hhy(i) -= vlfact[j] * hhy(j);                           
+                        }   
+                     __threadfence_block();   
+                    }
             }
           
 
@@ -382,7 +384,7 @@ namespace ngla
   
     static Timer t("DevSparseCholesky::MultAdd");
     static Timer tL("DevSparseChol, L-fact");
-    static Timer tLT("DevSparseChol, L-fact");
+    static Timer tLT("DevSparseChol, LT-fact");
     static Timer tR("DevSparseChol, Reorder");
     static Timer tRA("DevSparseChol, Reorder Add");
     static Timer tD("DevSparseChol, Diag");
@@ -406,12 +408,20 @@ namespace ngla
 
     // cout << "reordered[:10] = " << endl << D2H(hx.Range(10)) << endl;
 
-    Array<Dev<int>> incomingdep(host_incomingdep);
-    Array<Dev<int>> incomingdep_trans(host_incomingdep_trans);    
+    // Array<Dev<int>> incomingdep(host_incomingdep);
+    // Array<Dev<int>> incomingdep_trans(host_incomingdep_trans);    
+    
+    DevStackArray<int> incomingdep(host_incomingdep.Size());
+    H2D(incomingdep, host_incomingdep);
+    DevStackArray<int> incomingdep_trans(host_incomingdep_trans.Size());
+    H2D(incomingdep_trans, host_incomingdep_trans);    
+
 
     CudaRegionTimer rtL(tL);
-    Dev<int> * pcnt = Dev<int>::Malloc(1);
+    Dev<int> * pcnt = Dev<int>::Malloc(2);
     pcnt->H2D(0);
+    (pcnt+1)->H2D(0);
+
     DeviceSparseCholeskySolveLKernel<<<512,dim3(32,8)>>>
       (
        micro_dependency, incomingdep, hx, *(int*)pcnt,
@@ -422,31 +432,32 @@ namespace ngla
     // cout << "SolveL[:10] = " << endl << D2H(hx.Range(10)) << endl;
     
     // TODO : Diag
+    {
     CudaRegionTimer rtD(tD);
     DeviceSparseCholeskyMultDiagKernel<<<512,256>>> (diag, hx);
-    rtD.Stop();
-
+    }
 
     // cout << "SolveDL[:10] = " << endl << D2H(hx.Range(10)) << endl;
     // cout << "Norm DL = " << L2Norm(D2H(hx)) << endl;
-    pcnt->H2D(0);
+    //  pcnt->H2D(0);
 
+    {
     CudaRegionTimer rtLT(tLT);
     DeviceSparseCholeskySolveLTransKernel<<<512,dim3(32,8)>>>
       (
-       micro_dependency_trans, incomingdep_trans, hx, *(int*)pcnt,
+       micro_dependency_trans, incomingdep_trans, hx, *(int*)(pcnt+1),
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
        );
-    rtLT.Stop();
+    }
 
     // cout << "SolveLT[:10] = " << endl << D2H(hx.Range(10)) << endl;
 
-    Dev<int>::Free (pcnt);
     
     CudaRegionTimer rtRA(tRA);
     DeviceSparseCholeskyReorderAddKernel<<<512,256>>> (hx, uy.FVDev(), order, s);
     rtRA.Stop();
 
+    Dev<int>::Free (pcnt);
     if (synckernels) cudaDeviceSynchronize();
       
     uy.InvalidateHost();
