@@ -383,13 +383,16 @@ namespace ngla
     static Timer t("DevSparseCholesky::MultAdd");
     static Timer tL("DevSparseChol, L-fact");
     static Timer tLT("DevSparseChol, L-fact");
+    static Timer tR("DevSparseChol, Reorder");
+    static Timer tRA("DevSparseChol, Reorder Add");
+    static Timer tD("DevSparseChol, Diag");
     
+    RegionTimer rt(t);
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
     if (synckernels) cudaDeviceSynchronize();
-    t.Start();
       
     // cout << "MultAdd in DevSpasreCholesky" << endl;
     // cout.precision(16);
@@ -397,15 +400,16 @@ namespace ngla
     DevStackArray<double> mem_hx(x.Size());
     FlatVector<Dev<double>> hx(x.Size(), mem_hx.Data());
 
+    CudaRegionTimer rtR(tR);
     DeviceSparseCholeskyReorderKernel<<<512,256>>> (ux.FVDev(), hx, order);
+    rtR.Stop();
 
     // cout << "reordered[:10] = " << endl << D2H(hx.Range(10)) << endl;
 
     Array<Dev<int>> incomingdep(host_incomingdep);
     Array<Dev<int>> incomingdep_trans(host_incomingdep_trans);    
 
-    cudaDeviceSynchronize();
-    tL.Start();
+    CudaRegionTimer rtL(tL);
     Dev<int> * pcnt = Dev<int>::Malloc(1);
     pcnt->H2D(0);
     DeviceSparseCholeskySolveLKernel<<<512,dim3(32,8)>>>
@@ -413,36 +417,37 @@ namespace ngla
        micro_dependency, incomingdep, hx, *(int*)pcnt,
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
        );
-    cudaDeviceSynchronize();
-    tL.Stop();
+    rtL.Stop();
+
     // cout << "SolveL[:10] = " << endl << D2H(hx.Range(10)) << endl;
     
     // TODO : Diag
+    CudaRegionTimer rtD(tD);
     DeviceSparseCholeskyMultDiagKernel<<<512,256>>> (diag, hx);
+    rtD.Stop();
 
 
     // cout << "SolveDL[:10] = " << endl << D2H(hx.Range(10)) << endl;
     // cout << "Norm DL = " << L2Norm(D2H(hx)) << endl;
     pcnt->H2D(0);
-    cudaDeviceSynchronize();
-    tLT.Start();
-    
+
+    CudaRegionTimer rtLT(tLT);
     DeviceSparseCholeskySolveLTransKernel<<<512,dim3(32,8)>>>
       (
        micro_dependency_trans, incomingdep_trans, hx, *(int*)pcnt,
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
        );
-    cudaDeviceSynchronize();
-    tLT.Stop();
+    rtLT.Stop();
 
     // cout << "SolveLT[:10] = " << endl << D2H(hx.Range(10)) << endl;
 
     Dev<int>::Free (pcnt);
     
+    CudaRegionTimer rtRA(tRA);
     DeviceSparseCholeskyReorderAddKernel<<<512,256>>> (hx, uy.FVDev(), order, s);
+    rtRA.Stop();
 
     if (synckernels) cudaDeviceSynchronize();
-    t.Stop();
       
     uy.InvalidateHost();
   }
