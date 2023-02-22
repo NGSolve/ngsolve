@@ -171,6 +171,9 @@ namespace ngla
     
     if (printstat)
       cout << IM(4) << "Minimal degree ordering: N = " << n << endl;
+
+    max_bs = a->GetInverseFlags().GetNumFlag("maxbs", 1024);
+
     
     clock_t starttime, endtime;
     starttime = clock();
@@ -428,7 +431,7 @@ namespace ngla
     
     blocks.Append(0);
     for (int i = 1; i < nused; i++)
-      if (blocknrs[i] == i)  //  || i >= blocks.Last()+256) // don't subdivide, for this we have the micro-blocks
+      if (blocknrs[i] == i || i >= blocks.Last()+max_bs) // don't subdivide, for this we have the micro-blocks
         blocks.Append (i);
     if (nused > 0)
       blocks.Append(nused);

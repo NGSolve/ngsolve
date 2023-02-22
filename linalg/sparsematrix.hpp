@@ -179,6 +179,7 @@ namespace ngla
   protected:
     /// sparse direct solver
     mutable INVERSETYPE inversetype = default_inversetype;    // C++11 :-) Windows VS2013
+    Flags inverseflags;
     bool spd = false;
     
   public:
@@ -275,7 +276,10 @@ namespace ngla
 
     virtual INVERSETYPE  GetInverseType () const override
     { return inversetype; }
-
+    virtual void SetInverseFlags (const Flags & flags) override
+    { inverseflags = flags; }
+    virtual const Flags & GetInverseFlags () const { return inverseflags; } 
+    
     void SetSPD (bool aspd = true) { spd = aspd; }
     bool IsSPD () const { return spd; }
     virtual size_t NZE () const override { return nze; }

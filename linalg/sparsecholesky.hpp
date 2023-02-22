@@ -134,6 +134,9 @@ namespace ngla
     // the original matrix
     // const SparseMatrixTM<TM> & mat;
 
+    int max_bs = 1024;  
+    int max_micro_bs = 256; // not yet used
+    
   public:
     typedef typename mat_traits<TM>::TSCAL TSCAL_MAT;
 
