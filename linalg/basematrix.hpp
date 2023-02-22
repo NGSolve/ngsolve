@@ -139,6 +139,7 @@ namespace ngla
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
     virtual INVERSETYPE  GetInverseType () const;
+    virtual void SetInverseFlags (const Flags & flags) { ; }
 
     virtual void DoArchive (Archive & ar);
 

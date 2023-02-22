@@ -1015,12 +1015,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                               return GetInverseName( m.GetInverseType());
                                             })
 
-    .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs, string inverse)
+    .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs, string inverse, const Flags & flags)
                                      { 
                                        if (inverse != "") m.SetInverseType(inverse);
+                                       m.SetInverseFlags (flags);
                                        return m.InverseMatrix(freedofs);
                                      }
-         ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str(""), 
+         ,"Inverse", py::arg("freedofs")=nullptr, py::arg("inverse")=py::str(""), py::arg("flags")=Flags(),
          docu_string(R"raw_string(Calculate inverse of sparse matrix
 Parameters:
 
