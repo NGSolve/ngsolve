@@ -272,14 +272,18 @@ namespace ngs_cuda
 
   };
 #else
-  struct DeviceBlockRegionTracer{};
+  struct DeviceBlockRegionTracer
+  {
+    __device__ DeviceBlockRegionTracer( int , int, int ) {}    
+  };
   struct DeviceRegionTimer
   {
     __device__ DeviceRegionTimer( int , int ) {}
   };
   struct DeviceRegionTracer
   {
-    __device__ DeviceRegionTracer( bool active_, int timer_nr_, int id_) {}
+    // __device__ DeviceRegionTracer( bool active_, int timer_nr_, int id_) {}
+    __device__ DeviceRegionTracer( const DeviceBlockRegionTracer & tr, int timer_nr_, int id_) { }  
   };
 #endif // NGS_CUDA_DEVICE_TIMERS
 
