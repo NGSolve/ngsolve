@@ -2393,16 +2393,16 @@ namespace ngbla
     typedef double TSCAL;
     enum { IS_LINEAR = 0 };
 
-    Identity (int s) : size(s) { ; }
+    INLINE Identity (int s) : size(s) { ; }
 
-    double operator() (int i) const
+    INLINE double operator() (int i) const
     { cerr << "Identity, linear access" << endl; return 0; }
 
     INLINE double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
     INLINE auto View() const { return Identity(size); }
     INLINE tuple<size_t, size_t> Shape() const { return { size, size }; }    
-    int Height () const { return size; }
-    int Width () const { return size; }
+    INLINE int Height () const { return size; }
+    INLINE int Width () const { return size; }
   };
 
 
