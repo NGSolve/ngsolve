@@ -2440,6 +2440,7 @@ diffop : ngsolve.fem.DifferentialOperator
     .def(py::self + py::self)
     .def(py::self - py::self)
     .def(float() * py::self)
+    .def(Complex() * py::self)    
     .def_property("linearization",
                   [](const SumOfIntegrals& ints)
                   {

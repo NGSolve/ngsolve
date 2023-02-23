@@ -58,6 +58,12 @@ namespace ngfem
     return Integral (fac * cf.cf, cf.dx);
   }
 
+  inline Integral operator* (Complex fac, const Integral & cf)
+  {
+    return Integral (fac * cf.cf, cf.dx);
+  }
+
+  
   inline ostream & operator<< (ostream & ost, const Integral & igl)
   {
     ost << *igl.cf << " " << igl.dx.vb << endl;
@@ -157,6 +163,13 @@ namespace ngfem
   }
 
   inline auto operator* (double fac, SumOfIntegrals c1)
+  {
+    SumOfIntegrals faccf;
+    for (auto & ci : c1.icfs) faccf.icfs += make_shared<Integral>(fac*(*ci));
+    return faccf;
+  }
+
+  inline auto operator* (Complex fac, SumOfIntegrals c1)
   {
     SumOfIntegrals faccf;
     for (auto & ci : c1.icfs) faccf.icfs += make_shared<Integral>(fac*(*ci));
