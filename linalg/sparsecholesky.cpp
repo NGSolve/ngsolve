@@ -173,6 +173,7 @@ namespace ngla
       cout << IM(4) << "Minimal degree ordering: N = " << n << endl;
 
     max_bs = a->GetInverseFlags().GetNumFlag("maxbs", 1024);
+    max_micro_bs = a->GetInverseFlags().GetNumFlag("maxmubs", 256);
 
     
     clock_t starttime, endtime;
@@ -473,7 +474,8 @@ namespace ngla
 	int nb = 0;
 	if(BlockDofs(i).Size()) {
 	  auto extdofs = BlockExtDofs (i);
-	  nb = (extdofs.Size()+255) / 256;
+	  // nb = (extdofs.Size()+255) / 256;
+          nb = (extdofs.Size()+max_micro_bs-1) / max_micro_bs;
 	}
 
         if (nb == 1)
