@@ -153,8 +153,10 @@ class MatVecData
 __global__ void ManyMatVecKernel (FlatArray<Dev<MatVecData>> matvecs, 
                         BareVector<Dev<double>> x, BareVector<Dev<double>> y)
 {
+  DeviceBlockRegionTracer brt(gridDim.x*blockDim.y, gridDim.x*threadIdx.y + blockIdx.x, threadIdx.x);
   for (int i = blockIdx.x*blockDim.y+threadIdx.y; i < matvecs.Size(); i += gridDim.x*blockDim.y)
   {
+     DeviceRegionTracer rt(brt, 0, i);
      MatVecData mv = matvecs[i];
      size_t h = mv.mat.Height();
      size_t w = mv.mat.Width();

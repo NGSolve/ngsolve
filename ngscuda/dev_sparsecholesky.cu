@@ -117,6 +117,7 @@ namespace ngla
       )
   {
     __shared__ int myjobs[16]; // max blockDim.y;   
+    DeviceBlockRegionTracer brt(gridDim.x*blockDim.y, gridDim.x*threadIdx.y + blockIdx.x, threadIdx.x);
     
     while (true)
        {
@@ -146,6 +147,7 @@ namespace ngla
          
           if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
+              DeviceRegionTracer rt(brt, 0, task.blocknr);
                for (int i = blocks[blocknr]; i < blocks[blocknr+1]-1; i++)
                   {
                     size_t size = range.end()-i-1;
@@ -166,6 +168,7 @@ namespace ngla
             {
               if (extdofs.Size() != 0)
                   {
+                    DeviceRegionTracer rt(brt, 1, task.blocknr);
                     auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
                     auto my_extdofs = extdofs.Range(myr);
                     
