@@ -52,7 +52,6 @@ namespace ngla
 
   static const auto a = []()
   {
-    cout << "autoinit" << endl;
     BaseMatrix::RegisterDeviceMatrixCreator
     (typeid(SparseCholesky<double>),
      [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
@@ -62,18 +61,6 @@ namespace ngla
     });
     return 0;
   } ();
-  
-  void InitSparseCholesky()
-  {
-    cout << "manual init" << endl;
-    BaseMatrix::RegisterDeviceMatrixCreator
-      (typeid(SparseCholesky<double>),
-       [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
-       {
-         auto & mat = dynamic_cast<const SparseCholeskyTM<double>&>(bmat);
-         return make_shared<DevSparseCholesky>(mat);
-       });
-  }
   
   
   /* *************** kernels for SparseCholesky *********************** */
