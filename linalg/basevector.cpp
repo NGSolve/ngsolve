@@ -624,8 +624,9 @@ namespace ngla
     auto it = devveccreator.find(typeid(*this));
     if (it == devveccreator.end())
       {
-        cout << IM(1) << "No DeviceVector creator function for type " << typeid(*this).name()
-             << ", using create host-vector" << endl;
+        cout << IM(1) << "No device creator function, creating host vector";
+        cout << IM(7) << ", type = " << typeid(*this).name();
+        cout << IM(1) << endl;
         return CreateVector();
       }
     cout << IM(7) << "DeviceVector creator function for type " << typeid(*this).name() << endl;

@@ -156,13 +156,16 @@ namespace ngla
     ///
     virtual ~BlockJacobiPrecond ();
 
-    int Height() const { return mat->Height(); }
+    size_t Height() const { return mat->Height(); }
     int VHeight() const override { return mat->Height(); }
-    int Width() const { return mat->Width(); }
+    size_t Width() const { return mat->Width(); }
     int VWidth() const override { return mat->Width(); }
 
     AutoVector CreateRowVector() const override { return mat->CreateColVector(); }
     AutoVector CreateColVector() const override { return mat->CreateRowVector(); }
+
+    BaseMatrix::OperatorInfo GetOperatorInfo () const override
+    { return { string("BlockJacobi-")+typeid(TM).name(), this->Height(), this->Width() }; }
     
     ///
     void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;

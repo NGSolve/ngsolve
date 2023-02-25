@@ -98,6 +98,9 @@ class LinearSolver(BaseMatrix):
     def Width(self) -> int:
         return self.mat.height
 
+    def CreateVector(self,col):
+        return self.mat.CreateVector(not col)
+    
     def IsComplex(self) -> bool:
         return self.mat.IsComplex()
 

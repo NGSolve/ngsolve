@@ -1538,27 +1538,28 @@ inverse : string
 
   m.def("CGSolver", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
                        bool iscomplex, bool printrates,
-                       double precision, int maxsteps, bool conjugate)
-                                       {
-                                         shared_ptr<KrylovSpaceSolver> solver;
-                                         if(mat->IsComplex()) iscomplex = true;
-                                         
-                                         if (iscomplex)
-                                           {
-                                             if(conjugate)
-                                               solver = make_shared<CGSolver<ComplexConjugate>>(mat, pre);
-                                             else
-                                               solver = make_shared<CGSolver<Complex>> (mat, pre);
-                                           }
-                                         else
-                                           solver = make_shared<CGSolver<double>> (mat, pre);
-                                         solver->SetPrecision(precision);
-                                         solver->SetMaxSteps(maxsteps);
-                                         solver->SetPrintRates (printrates);
-                                         return solver;
-                                       },
-           py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
-        py::arg("precision")=1e-8, py::arg("maxsteps")=200, py::arg("conjugate")=false,
+                       double precision, int maxsteps, bool conjugate, optional<int> maxiter)
+        {
+          shared_ptr<KrylovSpaceSolver> solver;
+          if(mat->IsComplex()) iscomplex = true;
+          if (maxiter) maxsteps = *maxiter;
+          
+          if (iscomplex)
+            {
+              if(conjugate)
+                solver = make_shared<CGSolver<ComplexConjugate>>(mat, pre);
+              else
+                solver = make_shared<CGSolver<Complex>> (mat, pre);
+            }
+          else
+            solver = make_shared<CGSolver<double>> (mat, pre);
+          solver->SetPrecision(precision);
+          solver->SetMaxSteps(maxsteps);
+          solver->SetPrintRates (printrates);
+          return solver;
+        },
+        py::arg("mat"), py::arg("pre"), py::arg("complex") = false, py::arg("printrates")=true,
+        py::arg("precision")=1e-8, py::arg("maxsteps")=200, py::arg("conjugate")=false, py::arg("maxiter")=nullopt,
         docu_string(R"raw_string(
 A CG Solver.
 

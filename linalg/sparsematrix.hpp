@@ -312,8 +312,8 @@ namespace ngla
     }
 
 
-    int Height() const { return size; }
-    int Width() const { return width; }
+    size_t Height() const { return size; }
+    size_t Width() const { return width; }
     virtual int VHeight() const override { return size; }
     virtual int VWidth() const override { return width; }
 
@@ -576,6 +576,10 @@ namespace ngla
     virtual AutoVector CreateVector () const override;
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
+
+
+    BaseMatrix::OperatorInfo GetOperatorInfo () const override
+    { return { string("SparseMatrix")+typeid(TM).name(), this->Height(), this->Width() }; }
     
     virtual shared_ptr<BaseJacobiPrecond>
       CreateJacobiPrecond (shared_ptr<BitArray> inner) const override

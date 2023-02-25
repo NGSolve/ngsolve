@@ -153,6 +153,9 @@ namespace ngla
     ///
     int VWidth() const override { return height; }
     ///
+    BaseMatrix::OperatorInfo GetOperatorInfo () const override
+    { return { string("SparseCholesky-")+typeid(TM).name(), size_t(height), size_t(height) }; }
+    
     void SetHermitian (bool herm = true) { hermitian = herm; } 
     ///
     void Allocate (const Array<int> & aorder, 
