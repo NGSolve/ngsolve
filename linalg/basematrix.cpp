@@ -375,7 +375,8 @@ namespace ngla
     if (it == devmatcreator.end())
       {
         cout << IM(7) << "No deviceMatrix creator function for type " << typeid(*this).name() << endl;
-        return nullptr;
+        return const_cast<BaseMatrix*>(this)->shared_from_this();
+        // return nullptr;
       }
     cout << IM(7) << "DeviceMatrix creator function for type " << typeid(*this).name() << endl;
     return (*it).second(*this);

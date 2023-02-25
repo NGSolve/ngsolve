@@ -617,6 +617,20 @@ namespace ngla
   void BaseVector :: SetParallelStatus (PARALLEL_STATUS stat) const { ; }
   
 
+  std::map<type_index, function<shared_ptr<BaseVector>(const BaseVector&,bool)>> BaseVector::devveccreator;
+  
+  shared_ptr<BaseVector> BaseVector :: CreateDeviceVector(bool unified) const
+  {
+    auto it = devveccreator.find(typeid(*this));
+    if (it == devveccreator.end())
+      {
+        cout << IM(1) << "No DeviceVector creator function for type " << typeid(*this).name()
+             << ", using create host-vector" << endl;
+        return CreateVector();
+      }
+    cout << IM(7) << "DeviceVector creator function for type " << typeid(*this).name() << endl;
+    return (*it).second(*this, unified);
+  }
 
 
   /**

@@ -592,8 +592,20 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("Distribute", [] (BaseVector & self) { self.Distribute(); } ) 
     .def("Cumulate", [] (BaseVector & self) { self.Cumulate(); } ) 
     .def("GetParallelStatus", [] (BaseVector & self) { return self.GetParallelStatus(); } )
-    .def("SetParallelStatus", [] (BaseVector & self, PARALLEL_STATUS stat) { self.SetParallelStatus(stat); }, py::arg("stat"));
+    .def("SetParallelStatus", [] (BaseVector & self, PARALLEL_STATUS stat) { self.SetParallelStatus(stat); }, py::arg("stat"))
 
+    .def("CreateDeviceVector", [] (BaseVector & self, bool unified, bool copy)
+         {
+           auto newvec = self.CreateDeviceVector(unified);
+           if (copy) *newvec = self;
+           return newvec;
+         }, py::arg("unifeid")=true, py::arg("copy")=true,
+         "creates a device-vector of the same type")
+    ;
+
+
+
+  
   // m.def("InnerProduct",[](BaseVector & v1, BaseVector & v2)->double { return InnerProduct(v1,v2); })
   m.def ("InnerProduct",
          [] (py::object x, py::object y, py::kwargs kw) -> py::object

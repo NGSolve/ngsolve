@@ -368,6 +368,17 @@ namespace ngla
     virtual PARALLEL_STATUS GetParallelStatus () const;
     virtual void SetParallelStatus (PARALLEL_STATUS stat) const;
     virtual optional<NgMPI_Comm> GetCommunicator() const { return nullopt; }
+
+
+    virtual shared_ptr<BaseVector> CreateDeviceVector(bool unified) const;
+    static std::map<type_index, function<shared_ptr<BaseVector>(const BaseVector&,bool)>> devveccreator;
+    static void RegisterDeviceVectorCreator (type_index type,
+                                             function<shared_ptr<BaseVector>(const BaseVector&,bool)> creator)
+    {
+      devveccreator[type] = creator;
+    }
+
+    
     const MemoryTracer& GetMemoryTracer() const { return mt; }
   private:
   MemoryTracer mt = { "BaseVector" };
