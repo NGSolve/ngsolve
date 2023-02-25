@@ -381,14 +381,12 @@ namespace ngla
     static Timer tD("DevSparseChol, Diag");
     
     RegionTimer rt(t);
+    
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
     if (synckernels) cudaDeviceSynchronize();
-      
-    // cout << "MultAdd in DevSpasreCholesky" << endl;
-    // cout.precision(16);
     
     DevStackArray<double> mem_hx(x.Size());
     FlatVector<Dev<double>> hx(x.Size(), mem_hx.Data());
