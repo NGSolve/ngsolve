@@ -37,17 +37,6 @@ extern void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs,
                         BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
 
 
-  class BlockJacobiCtr
-  {
-  public:
-    SliceMatrix<Dev<double>> mat;
-    Dev<int> * indices;
-    BlockJacobiCtr() : mat(0,0,0,nullptr) { ; }
-  };
-  
-  extern void DeviceBlockJacobi (double s, FlatArray<Dev<BlockJacobiCtr>> ctrs, 
-                                 BareVector<Dev<double>> x, BareVector<Dev<double>> y); 
-
 
     
 extern void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx);

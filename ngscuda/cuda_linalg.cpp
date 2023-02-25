@@ -99,13 +99,15 @@ namespace ngla
                                               return make_shared<DevBlockDiagonalMatrixSoA>(bdm_mat);
                                             });
 
+    /*
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(BlockJacobiPrecond<double>),
                                             [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                             {
                                               auto & mat = dynamic_cast<const BlockJacobiPrecond<double>&>(bmat);
                                               return make_shared<DevBlockJacobiMatrix>(mat);
                                             });
-
+    */
+    
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(EmbeddedMatrix),
                                             [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                             {
@@ -612,46 +614,6 @@ namespace ngla
     uy.InvalidateHost();
   }
 
-
-  DevBlockJacobiMatrix :: DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat)
-    : h(mat.Height()), w(mat.Width()),
-      matrices(mat.MatrixData()), indices(mat.GetBlockTable()->AsArray())
-  {
-    const Array<FlatMatrix<double>> & inverses = mat.GetInverses();
-        
-    Array<BlockJacobiCtr> hostctrs(inverses.Size());
-    Dev<double> * matptr = matrices.Data();
-    Dev<int> * indexptr = indices.Data();
-    for (size_t i = 0; i < inverses.Size(); i++)
-    {
-      size_t s = inverses[i].Height();
-      new (&hostctrs[i].mat) SliceMatrix<Dev<double>> (s, s, s, matptr);
-      hostctrs[i].indices = indexptr;
-      matptr += s*s;
-      indexptr += s;
-    }
-          
-    ctrstructs = Array<Dev<BlockJacobiCtr>> (hostctrs);
-  }
-
-
-  void DevBlockJacobiMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
-  {
-    static Timer t("DevBlockJacobi::MultAdd");
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
-    ux.UpdateDevice();
-    uy.UpdateDevice();
-    if (synckernels) cudaDeviceSynchronize();
-    t.Start();
-      
-    DeviceBlockJacobi (s, ctrstructs, ux.FVDev(), uy.FVDev());
-      
-    if (synckernels) cudaDeviceSynchronize();
-    t.Stop();
-      
-    uy.InvalidateHost();
-  }
 
   
 
