@@ -50,14 +50,11 @@ namespace ngla
     Get_CuBlas_Handle();
     Get_CuSparse_Handle();
 
-    // InitSparseCholesky();
-    /*
     BaseVector::RegisterDeviceVectorCreator(typeid(S_BaseVectorPtr<double>),
-                                            [] (const BaseVector & bvec, bool unified) -> shared_ptr<BaseVector>
+                                            [] (const BaseVector & vec, bool unified) -> shared_ptr<BaseVector>
                                             {
                                               return make_shared<UnifiedVector>(vec);
                                             });
-    */
     
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(SparseMatrix<double>),
                                             [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>

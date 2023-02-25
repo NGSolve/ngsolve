@@ -46,7 +46,8 @@ namespace ngla
   BaseVector & UnifiedVector :: operator= (double d)
   {
     // ::SetScalar (d, size, dev_data); 
-    ::SetScalar (d, FlatVector<Dev<double>> (size, dev_data));
+    // ::SetScalar (d, FlatVector<Dev<double>> (size, dev_data));
+    ::SetScalar (d, FVDev()); 
       
     host_uptodate = false;
     dev_uptodate = true;
@@ -145,13 +146,9 @@ namespace ngla
   BaseVector & UnifiedVector :: Set (double scal, const BaseVector & v)
   {
     UnifiedVectorWrapper uv(v);
+    uv.UpdateDevice();
     SetVector (scal, Size(), uv.DevData(), DevData());
     host_uptodate = false;
-
-    /*
-    (*this) = 0.0;
-    Add (scal, v);
-    */
     return *this;
   }
   

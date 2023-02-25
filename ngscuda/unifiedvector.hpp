@@ -39,13 +39,13 @@ namespace ngla
 
     virtual AutoVector Range (T_Range<size_t> range) const;
 
-    virtual BaseVector & Scale (double scal);
-    virtual BaseVector & SetScalar (double scal);
-    virtual BaseVector & Set (double scal, const BaseVector & v);
-    virtual BaseVector & Add (double scal, const BaseVector & v);
+    virtual BaseVector & Scale (double scal) override;
+    virtual BaseVector & SetScalar (double scal) override;
+    virtual BaseVector & Set (double scal, const BaseVector & v) override;
+    virtual BaseVector & Add (double scal, const BaseVector & v) override;
 
-    virtual double InnerProductD (const BaseVector & v2) const;
-    virtual double L2Norm () const;
+    virtual double InnerProductD (const BaseVector & v2) const override;
+    virtual double L2Norm () const override;
 
     void UpdateHost () const;
     void UpdateDevice () const;
@@ -54,13 +54,13 @@ namespace ngla
     bool IsHostUptodate() const { return host_uptodate; }
     bool IsDevUptodate() const { return dev_uptodate; }
     
-    virtual ostream & Print (ostream & ost) const;    
+    virtual ostream & Print (ostream & ost) const override;    
     virtual ostream & PrintStatus (ostream & ost) const;
     /* virtual void PrintDevice () const; */
-    virtual AutoVector CreateVector () const;
+    virtual AutoVector CreateVector () const override;
 
-    virtual FlatVector<double> FVDouble () const;
-    virtual FlatVector<Complex> FVComplex () const;
+    virtual FlatVector<double> FVDouble () const override;
+    virtual FlatVector<Complex> FVComplex () const override;
     virtual void * Memory() const throw ();
 
     virtual double* DevData() const

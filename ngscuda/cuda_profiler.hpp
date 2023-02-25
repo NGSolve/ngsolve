@@ -11,7 +11,7 @@ namespace ngs_cuda
   extern int gpu_clock;
 
 #ifdef __CUDACC__
-#define NGS_CUDA_DEVICE_TIMERS
+  // #define NGS_CUDA_DEVICE_TIMERS
 #ifdef NGS_CUDA_DEVICE_TIMERS
   constexpr int N_MAX_DEVICE_TIMERS = 16;
   struct DevTraceData {
