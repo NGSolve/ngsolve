@@ -694,6 +694,14 @@ namespace ngcomp
       return *pre;
     }
 
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
+    {
+      if (!pre)
+        ThrowPreconditionerNotReady();        
+      return pre;
+    }
+    
+
     virtual void CleanUpLevel ()
     {
       /*

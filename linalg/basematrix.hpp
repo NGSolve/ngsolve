@@ -41,13 +41,13 @@ namespace ngla
     virtual int VWidth() const;
 
     /// inline function VHeight
-    int Height() const
+    size_t Height() const
     {
       return VHeight();
     }
   
     /// inline function VWidth
-    int Width() const
+    size_t Width() const
     {
       return VWidth();
     }
@@ -174,6 +174,9 @@ namespace ngla
       string name = "undef";
       size_t height = 0, width = 0;
       Array<const BaseMatrix*> childs;
+      OperatorInfo() = default;
+      OperatorInfo(string aname, size_t ah, size_t aw)
+        : name(aname), height(ah), width(aw) { } 
     };
     
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const;
