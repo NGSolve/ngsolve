@@ -599,7 +599,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            auto newvec = self.CreateDeviceVector(unified);
            if (copy) *newvec = self;
            return newvec;
-         }, py::arg("unifeid")=true, py::arg("copy")=true,
+         }, py::arg("unified")=true, py::arg("copy")=true,
          "creates a device-vector of the same type")
     ;
 
