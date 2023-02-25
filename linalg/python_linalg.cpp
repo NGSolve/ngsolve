@@ -1130,6 +1130,11 @@ inverse : string
                                    bool GS) 
          {
            shared_ptr<Table<int>> blocktable;
+           if (py::extract<shared_ptr<Table<int>>>(blocks).check())
+             {
+               blocktable = py::extract<shared_ptr<Table<int>>>(blocks)();
+             }
+           else
            {
              py::gil_scoped_acquire aq;
              size_t size = py::len(blocks);

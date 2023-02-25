@@ -1216,6 +1216,12 @@ rho : ngsolve.fem.CoefficientFunction
           pycluster[i] = 0;
       return pycluster;
     })
+
+    .def("CreateSmoothingBlocks", [](FESpace& self, py::kwargs kwargs)
+         {
+           auto flags = CreateFlagsFromKwArgs(kwargs);
+           return self.CreateSmoothingBlocks(flags); 
+         })
     ;
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
