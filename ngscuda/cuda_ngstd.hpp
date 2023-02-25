@@ -128,7 +128,7 @@ namespace ngs_cuda
     {
       char * tmp = stackptr;
       s *= sizeof(T);
-      s = (s+255) & ptrdiff_t(-256);
+      s = (s+255) & size_t(-256);
       stackptr += s;
       return reinterpret_cast<T*>(tmp);
     }
