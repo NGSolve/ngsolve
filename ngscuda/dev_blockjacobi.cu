@@ -7,6 +7,8 @@ using namespace ngla;
 
 namespace ngla
 {
+  extern bool synckernels;
+
   class BlockJacobiCtr
   {
   public:
@@ -97,19 +99,18 @@ namespace ngla
 
   void DevBlockJacobiMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer t("DevBlockJacobi::MultAdd");
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
     ux.UpdateDevice();
     uy.UpdateDevice();
-    if (synckernels) cudaDeviceSynchronize();
-    t.Start();
+    
+    {
+      static Timer t("DevBlockJacobi::MultAdd");
+      CudaRegionTimer rt(t);
       
-    DeviceBlockJacobi (s, ctrstructs, ux.FVDev(), uy.FVDev());
-      
-    if (synckernels) cudaDeviceSynchronize();
-    t.Stop();
-      
+      DeviceBlockJacobi (s, ctrstructs, ux.FVDev(), uy.FVDev());
+    }
+    
     uy.InvalidateHost();
   }
 

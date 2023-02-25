@@ -188,53 +188,13 @@ namespace ngla
     cudaFree(dev_col);
     cudaFree(dev_val);
   }
-  
-  void DevSparseMatrix :: Mult (const BaseVector & x, BaseVector & y) const
-  {
-    static Timer tmv("DevSparseMatrix :: Mult");
-    RegionTimer reg(tmv);
-
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
-
-    ux.UpdateDevice();
-    uy = 0.0;
-    uy.UpdateDevice();
-
-    double alpha= 1;
-    double beta = 0;
-
-    size_t bufferSize = 0;
-    void* dBuffer = NULL;
-
-    cusparseDnVecDescr_t descr_x, descr_y;
-    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
-    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
-
-    cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
-                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
-                            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
-    cudaMalloc(&dBuffer, bufferSize);
-
-    cusparseSpMV(Get_CuSparse_Handle(), 
-                 CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
-                 descr_x, &beta, descr_y, CUDA_R_64F,
-                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
-
-    cudaFree(dBuffer);
-
-    cusparseDestroyDnVec(descr_x);
-    cusparseDestroyDnVec(descr_y);
-    /* uy.UpdateHost(); */
-    
-    uy.InvalidateHost();
-  }
 
 
   void DevSparseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer tmv("DevSparseMatrix :: MultAdd");
-    RegionTimer reg(tmv);
+    CudaRegionTimer rt(tmv);
+    // RegionTimer reg(tmv);
 
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
@@ -270,52 +230,10 @@ namespace ngla
   }
 
 
-  void DevSparseMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
-  {
-    static Timer tmv("DevSparseMatrix :: MultTrans");
-    RegionTimer reg(tmv);
-
-    UnifiedVectorWrapper ux(x);
-    UnifiedVectorWrapper uy(y);
-
-    ux.UpdateDevice();
-    uy = 0.0;
-    uy.UpdateDevice();
-
-    double alpha= 1;
-    double beta = 0;
-
-    size_t bufferSize = 0;
-    void* dBuffer = NULL;
-
-    cusparseDnVecDescr_t descr_x, descr_y;
-    cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
-    cusparseCreateDnVec (&descr_y, uy.Size(), uy.DevData(), CUDA_R_64F);
-
-    cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_TRANSPOSE,
-                            &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
-                            CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
-    cudaMalloc(&dBuffer, bufferSize);
-
-    cusparseSpMV(Get_CuSparse_Handle(), 
-                 CUSPARSE_OPERATION_TRANSPOSE, &alpha, descr,
-                 descr_x, &beta, descr_y, CUDA_R_64F,
-                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
-
-    cudaFree(dBuffer);
-
-    cusparseDestroyDnVec(descr_x);
-    cusparseDestroyDnVec(descr_y);
-    /* uy.UpdateHost(); */
-    
-    uy.InvalidateHost();
-  }
-
-
   void DevSparseMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer tmv("DevSparseMatrix :: MultTransAdd");
-    RegionTimer reg(tmv);
+    CudaRegionTimer reg(tmv);
 
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
