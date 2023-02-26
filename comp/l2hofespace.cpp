@@ -3220,6 +3220,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
                (*this, VOL, lh,
                 [&] (FESpace::Element el, LocalHeap & lh)
                 {
+                  constexpr int DIM = Height<decltype(1.0*elscale(0))>();
+                  
                   auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());                       
                   const ElementTransformation & trafo = el.GetTrafo();
                   
