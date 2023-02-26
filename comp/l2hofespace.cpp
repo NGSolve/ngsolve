@@ -816,6 +816,64 @@ global system.
     return FESpace::GetMassOperator(rho, defon, lh);
   }
 
+  shared_ptr<BaseMatrix>
+  L2HighOrderFESpace :: CreateMassOperator (shared_ptr<CoefficientFunction> rho,
+                                            shared_ptr<Region> defon,
+                                            bool inverse,
+                                            LocalHeap & lh) const
+  {
+    bool curved = false;
+    for (auto el : ma->Elements(VOL))
+      if (el.is_curved) curved = true;
+
+    if (curved)
+      {
+        cout << IM(5) << "curved L2 not implemented, using uncurved" << endl;
+        curved = false;
+      }
+
+    if (rho->ElementwiseConstant() && all_dofs_together && order_policy == CONSTANT_ORDER && !curved)
+      {
+        auto & fe = GetFE(ElementId(VOL, 0), lh);
+        Vector<double> diag_mass(fe.GetNDof());
+        dynamic_cast<const BaseScalarFiniteElement&>(fe).GetDiagMassMatrix(diag_mass);
+        auto ma = GetMeshAccess();
+        Vector<double> elscale(ma->GetNE());
+        
+        IterateElements
+          (*this, VOL, lh,
+           [&rho, &defon, &ma, &elscale] (FESpace::Element el, LocalHeap & lh)
+           {
+             auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());                       
+             const ElementTransformation & trafo = el.GetTrafo();
+             
+             IntegrationRule ir(fel.ElementType(), 0);
+             BaseMappedIntegrationRule & mir = trafo(ir, lh);
+             double jac = mir[0].GetMeasure();
+             if (rho)
+               jac *= rho->Evaluate(mir[0]);
+             if (defon && !defon->Mask()[ma->GetElIndex(el)])
+               jac = 0;
+             elscale[el.Nr()] = jac;
+           });
+
+        VVector<> diag(elscale.Size()*diag_mass.Size());
+        for (size_t i = 0, ii=0; i < elscale.Size(); i++)
+          for (size_t j = 0; j < diag_mass.Size(); j++, ii++)
+            diag(ii) = elscale(i)*diag_mass(j);
+        if (inverse)
+          for (size_t i = 0; i < diag.Size(); i++)
+            if (diag(i) != 0)
+              diag(i) = 1/diag(i);
+
+        return make_shared<DiagonalMatrix<double>> (make_shared<VVector<>>(std::move(diag)));
+      }
+
+    throw Exception ("curved elements not yet supported, L2HighOrderFESpace :: CreateMassOperator");
+  }
+  
+
+  
   /*
   shared_ptr<BaseMatrix> L2HighOrderFESpace ::
   GetMassOperator (shared_ptr<CoefficientFunction> rho,
@@ -3126,6 +3184,94 @@ One can evaluate the vector-valued function, and one can take the gradient.
        });
     }
 
+
+  shared_ptr<BaseMatrix>
+  VectorL2FESpace :: CreateMassOperator (shared_ptr<CoefficientFunction> rho,
+                                         shared_ptr<Region> defon,
+                                         bool inverse,
+                                         LocalHeap & lh) const
+  {
+    bool curved = false;
+    for (auto el : ma->Elements(VOL))
+      if (el.is_curved) curved = true;
+
+    if (curved)
+      {
+        cout << IM(5) << "curved L2 not implemented, using uncurved" << endl;
+        curved = false;
+      }
+
+    if (rho->ElementwiseConstant() && order_policy == CONSTANT_ORDER && !curved)
+      {
+        shared_ptr<BaseMatrix> mat;
+        Switch<3>
+          (ma->GetDimension()-1, [&](auto DIMr)
+           {
+             constexpr int DIM = DIMr.value+1;
+             
+             auto & vfe = static_cast<const VectorFiniteElement&>(GetFE(ElementId(VOL, 0), lh));
+             auto & fe = static_cast<const BaseScalarFiniteElement&>(vfe[0]);
+             
+             Vector<> diag_mass(fe.GetNDof());
+             dynamic_cast<const BaseScalarFiniteElement&>(fe).GetDiagMassMatrix(diag_mass);
+             auto ma = GetMeshAccess();
+             Vector<Mat<DIM,DIM>> elscale(ma->GetNE());
+             IterateElements
+               (*this, VOL, lh,
+                [&] (FESpace::Element el, LocalHeap & lh)
+                {
+                  auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());                       
+                  const ElementTransformation & trafo = el.GetTrafo();
+                  
+                  IntegrationRule ir(fel.ElementType(), 0);
+                  BaseMappedIntegrationRule & mir = trafo(ir, lh);
+                  
+                  Mat<DIM> transrho;
+                  if (defon && !defon->Mask()[ma->GetElIndex(el)])
+                    transrho = 0;
+                  else
+                    {
+                      Mat<DIM> rhoi(0.0);
+                      if (!rho)
+                        rhoi = Identity(DIM);
+                      else if (rho->Dimension() == 1)
+                        rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
+                      else
+                        rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
+
+                      if (piola)                      
+                        transrho = 1/mir[0].GetMeasure() * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
+                      else if (covariant)
+                        transrho = mir[0].GetMeasure() * Inv(mir[0].GetJacobian()) * rhoi * Trans(Inv(mir[0].GetJacobian()));
+                      else
+                        transrho = mir[0].GetMeasure() * rhoi;
+                        
+                      if (inverse)
+                        transrho = ::ngbla::Inv(transrho);
+                    }
+                  
+                  elscale[el.Nr()] = transrho;
+                });
+
+             if (inverse)
+               for (auto & d : diag_mass)
+                 d = 1/d;
+             
+             Tensor<3> diag(DIM, DIM, elscale.Size()*diag_mass.Size());
+             for (size_t i = 0, ii=0; i < elscale.Size(); i++)
+               for (size_t j = 0; j < diag_mass.Size(); j++, ii++)
+                 diag(STAR,STAR,ii) = diag_mass(j)*elscale(i);
+             
+             mat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
+           });
+        return mat;
+      }
+
+    throw Exception ("curved elements not yet supported, VectorL2HighOrderFESpace :: CreateMassOperator");
+  }
+
+
+  
 
 #ifdef OLD
   template <int DIM>
