@@ -3191,6 +3191,23 @@ One can evaluate the vector-valued function, and one can take the gradient.
                                          bool inverse,
                                          LocalHeap & lh) const
   {
+    switch (ma->GetDimension())
+      {
+      case 1: return CreateMassOperator_Dim<1> (rho, defon, inverse, lh);
+      case 2: return CreateMassOperator_Dim<2> (rho, defon, inverse, lh);
+      case 3: return CreateMassOperator_Dim<3> (rho, defon, inverse, lh);
+      }
+    throw Exception("only dims 1,2,3 are supported");
+  }
+
+
+  template <int DIM>
+  shared_ptr<BaseMatrix>
+  VectorL2FESpace :: CreateMassOperator_Dim (shared_ptr<CoefficientFunction> rho,
+                                             shared_ptr<Region> defon,
+                                             bool inverse,
+                                             LocalHeap & lh) const
+  {
     bool curved = false;
     for (auto el : ma->Elements(VOL))
       if (el.is_curved) curved = true;
@@ -3204,71 +3221,64 @@ One can evaluate the vector-valued function, and one can take the gradient.
     if (rho->ElementwiseConstant() && order_policy == CONSTANT_ORDER && !curved)
       {
         shared_ptr<BaseMatrix> mat;
-        Switch<3>
-          (ma->GetDimension()-1, [&](auto DIMr)
+             
+        auto & vfe = static_cast<const VectorFiniteElement&>(GetFE(ElementId(VOL, 0), lh));
+        auto & fe = static_cast<const BaseScalarFiniteElement&>(vfe[0]);
+        
+        Vector<> diag_mass(fe.GetNDof());
+        dynamic_cast<const BaseScalarFiniteElement&>(fe).GetDiagMassMatrix(diag_mass);
+        auto ma = GetMeshAccess();
+        Vector<Mat<DIM,DIM>> elscale(ma->GetNE());
+        IterateElements
+          (*this, VOL, lh,
+           [this, inverse, &ma, &elscale, &defon,&rho] (FESpace::Element el, LocalHeap & lh)
            {
-             constexpr int DIM = DIMr.value+1;
+             auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());                       
+             const ElementTransformation & trafo = el.GetTrafo();
              
-             auto & vfe = static_cast<const VectorFiniteElement&>(GetFE(ElementId(VOL, 0), lh));
-             auto & fe = static_cast<const BaseScalarFiniteElement&>(vfe[0]);
+             IntegrationRule ir(fel.ElementType(), 0);
+             BaseMappedIntegrationRule & mir = trafo(ir, lh);
              
-             Vector<> diag_mass(fe.GetNDof());
-             dynamic_cast<const BaseScalarFiniteElement&>(fe).GetDiagMassMatrix(diag_mass);
-             auto ma = GetMeshAccess();
-             Vector<Mat<DIM,DIM>> elscale(ma->GetNE());
-             IterateElements
-               (*this, VOL, lh,
-                [this, inverse, &ma, &elscale, &defon,&rho] (FESpace::Element el, LocalHeap & lh)
-                {
-                  constexpr int DIM = Height<decltype(1.0*elscale(0))>();
-                  
-                  auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());                       
-                  const ElementTransformation & trafo = el.GetTrafo();
-                  
-                  IntegrationRule ir(fel.ElementType(), 0);
-                  BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                  
-                  Mat<DIM> transrho;
-                  if (defon && !defon->Mask()[ma->GetElIndex(el)])
-                    transrho = 0;
-                  else
-                    {
-                      Mat<DIM> rhoi(0.0);
-                      if (!rho)
-                        rhoi = Identity(DIM);
-                      else if (rho->Dimension() == 1)
-                        rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
-                      else
-                        rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-
-                      if (piola)                      
-                        transrho = 1/mir[0].GetMeasure() * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
-                      else if (covariant)
-                        transrho = mir[0].GetMeasure() * Inv(mir[0].GetJacobian()) * rhoi * Trans(Inv(mir[0].GetJacobian()));
-                      else
-                        transrho = mir[0].GetMeasure() * rhoi;
-                        
-                      if (inverse)
-                        transrho = ::ngbla::Inv(transrho);
-                    }
-                  
-                  elscale[el.Nr()] = transrho;
-                });
-
-             if (inverse)
-               for (auto & d : diag_mass)
-                 d = 1/d;
+             Mat<DIM> transrho;
+             if (defon && !defon->Mask()[ma->GetElIndex(el)])
+               transrho = 0;
+             else
+               {
+                 Mat<DIM> rhoi(0.0);
+                 if (!rho)
+                   rhoi = Identity(DIM);
+                 else if (rho->Dimension() == 1)
+                   rhoi = rho->Evaluate(mir[0]) * Identity(DIM);
+                 else
+                   rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
+                 
+                 if (piola)                      
+                   transrho = 1/mir[0].GetMeasure() * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
+                 else if (covariant)
+                   transrho = mir[0].GetMeasure() * Inv(mir[0].GetJacobian()) * rhoi * Trans(Inv(mir[0].GetJacobian()));
+                 else
+                   transrho = mir[0].GetMeasure() * rhoi;
+                 
+                 if (inverse)
+                   transrho = ::ngbla::Inv(transrho);
+               }
              
-             Tensor<3> diag(DIM, DIM, elscale.Size()*diag_mass.Size());
-             for (size_t i = 0, ii=0; i < elscale.Size(); i++)
-               for (size_t j = 0; j < diag_mass.Size(); j++, ii++)
-                 diag(STAR,STAR,ii) = diag_mass(j)*elscale(i);
-             
-             mat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
+             elscale[el.Nr()] = transrho;
            });
+        
+        if (inverse)
+          for (auto & d : diag_mass)
+            d = 1/d;
+        
+        Tensor<3> diag(DIM, DIM, elscale.Size()*diag_mass.Size());
+        for (size_t i = 0, ii=0; i < elscale.Size(); i++)
+          for (size_t j = 0; j < diag_mass.Size(); j++, ii++)
+            diag(STAR,STAR,ii) = diag_mass(j)*elscale(i);
+        
+        mat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
         return mat;
       }
-
+    
     throw Exception ("curved elements not yet supported, VectorL2HighOrderFESpace :: CreateMassOperator");
   }
 
