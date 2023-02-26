@@ -700,6 +700,12 @@ ANY                  1 1 1 1 | 15
     virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
                                                     shared_ptr<Region> defon,
                                                     LocalHeap & lh) const;
+
+    
+    virtual shared_ptr<BaseMatrix> CreateMassOperator (shared_ptr<CoefficientFunction> rho,
+                                                       shared_ptr<Region> defon,
+                                                       bool inverse,
+                                                       LocalHeap & lh) const;
     
     virtual void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const;
@@ -1412,6 +1418,12 @@ ANY                  1 1 1 1 | 15
     {
       return fes->IsComplex();
     }
+
+    shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
+    {
+      return fes->CreateMassOperator(rho, definedon, inverse, lh);
+    }
+    
     
     virtual void Mult (const BaseVector & v, BaseVector & prod) const override;
     virtual void MultAdd (double val, const BaseVector & v, BaseVector & prod) const override;

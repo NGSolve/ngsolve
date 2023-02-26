@@ -1938,7 +1938,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                    rho, false, defon, lh);    
   }
 
-
+  shared_ptr<BaseMatrix> FESpace :: CreateMassOperator (shared_ptr<CoefficientFunction> rho,
+                                                        shared_ptr<Region> defon,
+                                                        bool inverse,
+                                                        LocalHeap & lh) const
+  {
+    throw Exception(string("CreateMassOperator not overloaded, space = ") + typeid(*this).name());
+  }
+  
   
   void FESpace :: SolveM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                           LocalHeap & lh) const
