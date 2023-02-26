@@ -3218,7 +3218,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              Vector<Mat<DIM,DIM>> elscale(ma->GetNE());
              IterateElements
                (*this, VOL, lh,
-                [&] (FESpace::Element el, LocalHeap & lh)
+                [this, inverse, &ma, &elscale, &defon,&rho] (FESpace::Element el, LocalHeap & lh)
                 {
                   constexpr int DIM = Height<decltype(1.0*elscale(0))>();
                   
