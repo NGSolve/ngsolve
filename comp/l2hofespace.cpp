@@ -3450,7 +3450,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
           (elclass_inds.Size()*ir.Size()*DIM, GetNDof(),
            bmat, std::move(xdofsout), std::move(xdofsin));
             
-        Tensor<3> diag(elclass_inds.Size()*ir.Size(), DIM, DIM);
+        Tensor<3> diag(DIM, DIM, elclass_inds.Size()*ir.Size());
         for (auto i : Range(elclass_inds))
           {
             HeapReset hr(lh);
@@ -3472,7 +3472,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
                       rhoi = rho->Evaluate(mir[j]) * Identity(DIM);
                     else
                       rho -> Evaluate(mir[j], FlatVector<> (DIM*DIM, &rhoi(0,0)));
-
+                    
                     if (!inverse)
                       {
                         if (piola)                      
@@ -3497,10 +3497,10 @@ One can evaluate the vector-valued function, and one can take the gradient.
                         transrho = rhoi;
                       }
                   }
-                diag(i*mir.Size()+j,STAR,STAR) = transrho;
+                diag(STAR,STAR,i*mir.Size()+j) = transrho;
               }
           }
-        
+
         auto diagmat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
         auto mat = TransposeOperator(bx) * diagmat * bx;
         
