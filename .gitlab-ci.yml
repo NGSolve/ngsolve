@@ -322,7 +322,7 @@ clang_no_fp_timings:
 ############################################
 
 deploy_github:
-  stage: deploy
+  stage: build
   tags:
     - deploy
   script:
