@@ -189,12 +189,13 @@ namespace ngs_cuda
     bool is_already_stopped = false;
     ngcore::TTimePoint t_kernel_start;
 
-
+    static bool is_cuda_timer_enabled;
 
   public:
     CudaRegionTimer (ngcore::Timer<> & atimer) : timer(atimer) {
       timer.Start();
-      detail::StartGPUTimer(timer);
+      if(is_cuda_timer_enabled)
+        detail::StartGPUTimer(timer);
 #ifdef NGS_CUDA_DEVICE_TIMERS
       cudaStreamAddCallback(0, detail::CallbackKernelStart, &t_kernel_start, 0);
 #endif // NGS_CUDA_DEVICE_TIMERS
@@ -211,7 +212,8 @@ namespace ngs_cuda
     void operator=(CudaRegionTimer &&) = delete;
 
     void Stop() {
-      detail::StopGPUTimer(timer);
+      if(is_cuda_timer_enabled)
+        detail::StopGPUTimer(timer);
 #ifdef NGS_CUDA_DEVICE_TIMERS
       ProcessTracingData();
 #endif // NGS_CUDA_DEVICE_TIMERS
@@ -226,7 +228,13 @@ namespace ngs_cuda
       double t_seconds = 1.0*ticks/gpu_clock + 1e-6; // add 1us for kernel startup
       return t_kernel_start + t_seconds / ngcore::seconds_per_tick;
     }
+
+    static void SetCudaTimer(bool enabled){
+      is_cuda_timer_enabled = enabled;
+    }
   };
+
+  void TimeProfiler();
 }
 
 #endif // NGS_CUDA_PROFILER_HPP

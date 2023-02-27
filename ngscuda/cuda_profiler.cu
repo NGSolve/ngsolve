@@ -24,6 +24,8 @@ namespace ngs_cuda
 #endif // NGS_CUDA_DEVICE_TIMERS
 
 
+  bool CudaRegionTimer :: is_cuda_timer_enabled = false;
+
   void CudaRegionTimer :: ProcessTracingData()
   {
 #ifdef NGS_CUDA_DEVICE_TIMERS
@@ -155,4 +157,54 @@ namespace ngs_cuda
 #endif // NGS_CUDA_DEVICE_TIMERS
   }
 
+  __global__ void SmallKernel (long long *clock)
+  {
+    if(clock)
+      *clock = clock64();
+  }
+
+  void TimeProfiler() {
+    static Timer t("cudaDeviceSynchronize");
+    for(auto i : Range(10))
+      SmallKernel<<<1,1>>>(nullptr);
+    {
+      RegionTimer rt(t);
+      cudaDeviceSynchronize();
+    }
+    {
+      static Timer t("Empty CudaRegionTimer"); RegionTimer rt(t);
+      for(auto i : Range(10))
+        CudaRegionTimer crt(t);
+    }
+    {
+      RegionTimer rt(t);
+      cudaDeviceSynchronize();
+    }
+    for(auto j : Range(5))
+    {
+      {
+        static Timer t("CudaRegionTimer with small kernel"); RegionTimer rt(t);
+        for(auto i : Range(100))
+        {
+          CudaRegionTimer crt(t);
+          SmallKernel<<<1,1>>>(nullptr);
+        }
+      }
+      {
+        RegionTimer rt(t);
+        cudaDeviceSynchronize();
+      }
+      {
+        static Timer t("One CudaRegionTimer with 10 small kernel s"); RegionTimer rt(t);
+        CudaRegionTimer crt(t);
+        for(auto i : Range(100))
+          SmallKernel<<<1,1>>>(nullptr);
+      }
+      {
+        RegionTimer rt(t);
+        cudaDeviceSynchronize();
+      }
+    }
+
+  }
 } // namespace ngs_cuda

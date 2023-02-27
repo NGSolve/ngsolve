@@ -2,6 +2,7 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include "cuda_linalg.hpp"
+#include "cuda_profiler.hpp"
 
 // TODO: always use ngs_cuda?
 using namespace ngbla;
@@ -215,6 +216,8 @@ PYBIND11_MODULE(ngscuda, m) {
           py::arg("freedofs") = shared_ptr<BitArray>());
 
 
+  m.def("__time_tracer__", TimeProfiler);
+  m.def("SetCudaTimer", CudaRegionTimer::SetCudaTimer);
   
   
   
