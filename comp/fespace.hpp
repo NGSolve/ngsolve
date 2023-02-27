@@ -1421,7 +1421,7 @@ ANY                  1 1 1 1 | 15
 
     shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
     {
-      return fes->CreateMassOperator(rho, definedon, inverse, lh);
+      return fes->CreateMassOperator(rho, definedon, inverse, lh)->CreateDeviceMatrix();
     }
     
     

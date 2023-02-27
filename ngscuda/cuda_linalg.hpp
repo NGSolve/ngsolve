@@ -83,6 +83,8 @@ namespace ngla
   public:
     DevDiagonalMatrix (const UnifiedVector _diag) : diag(_diag) { }
 
+    virtual xbool IsSymmetric() const { return true; }
+
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
 
