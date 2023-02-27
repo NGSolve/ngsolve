@@ -19,7 +19,6 @@ namespace ngfem
       filesystem::path dir;
 #ifdef WIN32
       dir = filesystem::path(std::tmpnam(nullptr)).concat("_ngsolve_"+ToString(rank)+"_"+ToString(counter++));
-      return dir;
 #else // WIN32
       string tmp_template = filesystem::temp_directory_path().append("ngsolve_tmp_"+ToString(rank)+"_"+ToString(counter++)+"_XXXXXX");
       if(mkdtemp(&tmp_template[0])==nullptr)
