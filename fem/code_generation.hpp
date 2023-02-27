@@ -7,6 +7,7 @@
 /* Date:   13. Apr. 2016                                             */
 /*********************************************************************/
 
+#include <filesystem>
 #include <map>
 #include <variant>
 
@@ -282,6 +283,7 @@ namespace ngfem
     }
   }
 
+  std::filesystem::path CreateTempDir();
   unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files = false );
   namespace detail {
       string GenerateL2ElementCode(int order);
