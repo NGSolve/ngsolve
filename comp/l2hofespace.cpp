@@ -826,13 +826,15 @@ global system.
     for (auto el : ma->Elements(VOL))
       if (el.is_curved) curved = true;
 
+    /*
     if (curved)
       {
         cout << IM(5) << "curved L2 not implemented, using uncurved" << endl;
         curved = false;
       }
-
-    if (rho->ElementwiseConstant() && all_dofs_together && order_policy == CONSTANT_ORDER && !curved)
+    */
+    
+    if (rho->ElementwiseConstant() && all_dofs_together && order_policy != VARIABLE_ORDER && !curved)
       {
         auto & fe = GetFE(ElementId(VOL, 0), lh);
         Vector<double> diag_mass(fe.GetNDof());
@@ -869,7 +871,106 @@ global system.
         return make_shared<DiagonalMatrix<double>> (make_shared<VVector<>>(std::move(diag)));
       }
 
-    throw Exception ("curved elements not yet supported, L2HighOrderFESpace :: CreateMassOperator");
+
+
+
+    
+    auto ma = GetMeshAccess();
+
+    Array<short> classnr(ma->GetNE(VOL));
+    ma->IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_SEGM, ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+        
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+    Table<size_t> table = creator.MoveTable();
+
+    shared_ptr<BaseMatrix> sum;
+
+    for (auto elclass_inds : table)
+      {
+        HeapReset hr(lh);
+        if (elclass_inds.Size() == 0) continue;
+        ElementId ei(VOL,elclass_inds[0]);
+        
+
+        auto & fel = static_cast<const BaseScalarFiniteElement&>(GetFE(ei, lh));
+
+        IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+        
+        Matrix<double,ColMajor> bmat(ir.Size(), fel.GetNDof());
+        for (int i : Range(ir.Size()))
+          fel.CalcShape(ir[i], bmat.Row(i));
+        
+        Vector<> diag_mass(fel.GetNDof());
+        fel.GetDiagMassMatrix(diag_mass);
+
+        if (inverse)
+          for (int i = 0; i < diag_mass.Size(); i++)
+            bmat.Col(i) /= diag_mass(i);
+
+        Table<DofId> xdofsin(elclass_inds.Size(), fel.GetNDof());
+        Table<DofId> xdofsout(elclass_inds.Size(), ir.Size());
+
+        Array<DofId> dnums;
+        for (auto i : Range(elclass_inds))
+          {
+            ElementId ei(VOL, elclass_inds[i]);
+            GetDofNrs(ei, dnums);
+            xdofsin[i] = dnums;
+          }
+        
+        auto xa = xdofsout.AsArray();
+        for (size_t i = 0; i < xa.Size(); i++)
+          xa[i] = i;
+        
+        auto bx = make_shared<ConstantElementByElementMatrix>
+          (elclass_inds.Size()*ir.Size(), GetNDof(),
+           bmat, std::move(xdofsout), std::move(xdofsin));
+            
+        VVector<double> diag(elclass_inds.Size()*ir.Size());
+        for (auto i : Range(elclass_inds))
+          {
+            HeapReset hr(lh);
+            ElementId ei(VOL, elclass_inds[i]);
+            auto & trafo = ma->GetTrafo(ei, lh);
+            auto & mir = trafo(ir, lh);
+            
+            for (int j = 0; j < mir.Size(); j ++)
+              {
+                double rhoi =  rho->Evaluate(mir[j]);
+                size_t diagind = i*ir.Size()+j;
+                
+                if (defon && !defon->Mask()[ma->GetElIndex(ei)])
+                  diag(diagind) = 0;
+                else
+                  {
+                    rhoi *= mir[j].GetMeasure();
+                    if (!inverse)
+                      diag(diagind) = rhoi*ir[j].Weight();
+                    else
+                      diag(diagind) = 1/rhoi*ir[j].Weight();
+                  }
+              }
+          }
+
+        auto diagmat = make_shared<DiagonalMatrix<double>> (make_shared<VVector<>>(std::move(diag)));        
+        auto mat = TransposeOperator(bx) * diagmat * bx;
+        
+        if (sum)
+          sum = sum + mat;
+        else
+          sum = mat;
+      }
+    return sum;
   }
   
 
@@ -3212,11 +3313,13 @@ One can evaluate the vector-valued function, and one can take the gradient.
     for (auto el : ma->Elements(VOL))
       if (el.is_curved) curved = true;
 
+    /*
     if (curved)
       {
         cout << IM(5) << "curved L2 not implemented, using uncurved" << endl;
         curved = false;
       }
+    */
 
     if (rho->ElementwiseConstant() && order_policy == CONSTANT_ORDER && !curved)
       {
@@ -3278,11 +3381,138 @@ One can evaluate the vector-valued function, and one can take the gradient.
         mat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
         return mat;
       }
+
+
+
+
+
     
-    throw Exception ("curved elements not yet supported, VectorL2HighOrderFESpace :: CreateMassOperator");
+    auto ma = GetMeshAccess();
+
+    Array<short> classnr(ma->GetNE(VOL));
+    ma->IterateElements
+      (VOL, lh, [&] (auto el, LocalHeap & llh)
+       {
+         classnr[el.Nr()] = 
+           SwitchET<ET_SEGM, ET_TRIG,ET_TET>
+           (el.GetType(),
+            [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
+       });
+        
+    TableCreator<size_t> creator;
+    for ( ; !creator.Done(); creator++)
+      for (auto i : Range(classnr))
+        creator.Add (classnr[i], i);
+    Table<size_t> table = creator.MoveTable();
+
+    shared_ptr<BaseMatrix> sum;
+
+    for (auto elclass_inds : table)
+      {
+        HeapReset hr(lh);
+        if (elclass_inds.Size() == 0) continue;
+        ElementId ei(VOL,elclass_inds[0]);
+        
+        auto & vfel = static_cast<const VectorFiniteElement&>(GetFE(ei, lh));
+        auto & fel = static_cast<const BaseScalarFiniteElement&>(vfel[0]);
+
+
+        IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+        
+        Matrix<double,ColMajor> bmat(ir.Size(), fel.GetNDof());
+        for (int i : Range(ir.Size()))
+          fel.CalcShape(ir[i], bmat.Row(i));
+        
+        Vector<> diag_mass(fel.GetNDof());
+        fel.GetDiagMassMatrix(diag_mass);
+
+        if (inverse)
+          for (int i = 0; i < diag_mass.Size(); i++)
+            bmat.Col(i) /= diag_mass(i);
+
+        Table<DofId> xdofsin(elclass_inds.Size()*DIM, fel.GetNDof());
+        Table<DofId> xdofsout(elclass_inds.Size()*DIM, ir.Size());
+
+        Array<DofId> dnums;
+        for (auto i : Range(elclass_inds))
+          {
+            ElementId ei(VOL, elclass_inds[i]);
+            GetDofNrs(ei, dnums);
+            for (int j = 0; j < DIM; j++)
+              xdofsin[i+j*elclass_inds.Size()] = dnums.Range(j*fel.GetNDof(), (j+1)*fel.GetNDof());
+          }
+        
+        auto xa = xdofsout.AsArray();
+        for (size_t i = 0; i < xa.Size(); i++)
+          xa[i] = i;
+        
+        auto bx = make_shared<ConstantElementByElementMatrix>
+          (elclass_inds.Size()*ir.Size()*DIM, GetNDof(),
+           bmat, std::move(xdofsout), std::move(xdofsin));
+            
+        Tensor<3> diag(elclass_inds.Size()*ir.Size(), DIM, DIM);
+        for (auto i : Range(elclass_inds))
+          {
+            HeapReset hr(lh);
+            ElementId ei(VOL, elclass_inds[i]);
+            auto & trafo = ma->GetTrafo(ei, lh);
+            // auto & mir = trafo(ir, lh);
+            MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
+            
+            for (int j = 0; j < mir.Size(); j++)
+              {
+                Mat<DIM> transrho;
+                if (defon && !defon->Mask()[ma->GetElIndex(ei)])
+                  transrho = 0;
+                else
+                  {
+                    Mat<DIM> rhoi(0.0);
+                    if (!rho)
+                      rhoi = Identity(DIM);
+                    else if (rho->Dimension() == 1)
+                      rhoi = rho->Evaluate(mir[j]) * Identity(DIM);
+                    else
+                      rho -> Evaluate(mir[j], FlatVector<> (DIM*DIM, &rhoi(0,0)));
+
+                    if (!inverse)
+                      {
+                        if (piola)                      
+                          transrho = 1/mir[j].GetMeasure() * Trans(mir[j].GetJacobian()) * rhoi * mir[j].GetJacobian();
+                        else if (covariant)
+                          transrho = mir[j].GetMeasure() * Inv(mir[j].GetJacobian()) * rhoi * Trans(Inv(mir[j].GetJacobian()));
+                        else
+                          transrho = mir[j].GetMeasure() * rhoi;
+                      }
+                    else
+                      {
+                        Mat<DIM> trans = Identity(DIM);
+                        if (piola)
+                          trans = 1/mir[j].GetJacobiDet() * mir[j].GetJacobian();
+                        else if (covariant)
+                          trans = Trans(mir[j].GetJacobianInverse());
+                        rhoi = Trans(trans)*rhoi*trans;
+                        rhoi *= mir[j].GetMeasure();
+                        
+                        rhoi = Inv(rhoi);
+                        rhoi *= mir[j].IP().Weight();
+                        transrho = rhoi;
+                      }
+                  }
+                diag(i*mir.Size()+j,STAR,STAR) = transrho;
+              }
+          }
+        
+        auto diagmat = make_shared<BlockDiagonalMatrix> (std::move(diag));
+        auto mat = TransposeOperator(bx) * diagmat * bx;
+        
+        if (sum)
+          sum = sum + mat;
+        else
+          sum = mat;
+      }
+    return sum;
   }
-
-
+  
   
 
 #ifdef OLD
