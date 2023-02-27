@@ -170,9 +170,9 @@ namespace ngla
     cudaMalloc ((void**)&dev_col, (mat.NZE()) * sizeof(int));
     cudaMalloc ((void**)&dev_val, (mat.NZE()) * sizeof(double));
     
-    cudaMemcpy (dev_ind, &temp_ind[0], (mat.Height()+1)*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy (dev_col, &mat.GetRowIndices(0)[0], mat.NZE()*sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy (dev_val, &mat.GetRowValues(0)[0], mat.NZE()*sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemcpy (dev_ind, temp_ind.Data(), (mat.Height()+1)*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy (dev_col, mat.GetRowIndices(0).Data(), mat.NZE()*sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy (dev_val, mat.GetRowValues(0).Data(), mat.NZE()*sizeof(double), cudaMemcpyHostToDevice);
 
     cusparseCreateCsr(&descr, height, width, nze,
                       dev_ind, dev_col, dev_val,
