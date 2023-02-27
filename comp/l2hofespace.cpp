@@ -3456,7 +3456,6 @@ One can evaluate the vector-valued function, and one can take the gradient.
             HeapReset hr(lh);
             ElementId ei(VOL, elclass_inds[i]);
             auto & trafo = ma->GetTrafo(ei, lh);
-            // auto & mir = trafo(ir, lh);
             MappedIntegrationRule<DIM,DIM> mir(ir, trafo, lh);
             
             for (int j = 0; j < mir.Size(); j++)
@@ -3502,7 +3501,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
               }
           }
         
-        auto diagmat = make_shared<BlockDiagonalMatrix> (std::move(diag));
+        auto diagmat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
         auto mat = TransposeOperator(bx) * diagmat * bx;
         
         if (sum)
