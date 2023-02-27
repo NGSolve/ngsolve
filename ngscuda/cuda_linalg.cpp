@@ -423,7 +423,7 @@ namespace ngla
       }
     else
       {
-        for (auto c : col_coloring)
+        for (auto c : row_coloring)
           {
             DevStackArray<double> dev_hx(c.Size()*hm);
             DevStackArray<double> dev_hy(c.Size()*wm);
