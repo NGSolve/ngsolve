@@ -1054,19 +1054,21 @@ namespace ngcomp
 
     try
       {
-        static int cnt=0;
-        string name = "newcode"+ToString(cnt);
-        cnt++;
+        auto dir = CreateTempDir();
+        auto prefix = dir.append("newcode");
+        auto src_file = filesystem::path(prefix).concat(".cpp").u8string();
+        auto obj_file = filesystem::path(prefix).concat(".o").u8string();
+        auto lib_file = filesystem::path(prefix).concat(".so").u8string();
         
-        ofstream codefile(name+".cpp");
+        ofstream codefile(src_file);
         codefile << s.str();
         codefile.close();
         
-        int err = system( ("ngscxx -c "+name+".cpp -o "+name+".o").c_str() );
+        int err = system( ("ngscxx -c "+src_file+" -o "+obj_file).c_str() );
         if (err) throw Exception ("problem calling compiler");
-        err = system( ("ngsld -shared "+name+".o -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore -o "+name+".so").c_str() );
+        err = system( ("ngsld -shared "+obj_file+" -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore -o "+lib_file).c_str() );
         if (err) throw Exception ("problem calling linker");
-        library = make_unique<SharedLibrary>(name+".so");
+        library = make_unique<SharedLibrary>(lib_file, dir);
         compiled_function = library->GetFunction<lib_function> ("ApplyIPFunction");
       }
     catch (const Exception & e)

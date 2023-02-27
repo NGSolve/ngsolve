@@ -92,21 +92,20 @@ namespace ngla
 
       // CUDA - compilation:
 
-      static int cnt=0;
-      string name = "GPUcode"+ToString(cnt);
-      cnt++;
+      auto dir = CreateTempDir();
+      auto prefix = dir.append("GPUcode");
+      auto src_file = filesystem::path(prefix).concat(".cu").u8string();
+      auto lib_file = filesystem::path(prefix).concat(".so").u8string();
       
-      ofstream codefile(name+".cu");
+      ofstream codefile(src_file);
       codefile << s.str();
       codefile.close();
       
-      // int err = system( ("ngscxx -c "+name+".cpp -o "+name+".o").c_str() );
-      int err = system( ("nvcc -shared -Xcompiler -fPIC "+name+".cu -o "+name+".so").c_str() );
-      /*
-      int err = system( ("/usr/local/cuda/bin/nvcc -isystem=/usr/local/cuda/include -isystem=/opt/conda/include/netgen -isystem=/opt/conda/include/netgen/include --generate-code=arch=compute_80,code=[compute_80,sm_80] --generate-code=arch=compute_86,code=[compute_86,sm_86] -shared -Xcompiler -fPIC "+name+".cu -o "+name+".so").c_str() );
-      */
+      int err = system( ("ngs_nvcc -shared -Xcompiler -fPIC " + src_file + " -o "+lib_file).c_str() );
       if (err) throw Exception ("problem calling compiler");
-      library = make_unique<SharedLibrary>(name+".so");
+      system( "ls -alt");
+      system( "pwd");
+      library = make_unique<SharedLibrary>(lib_file, dir);
       compiled_function = library->GetFunction<lib_function> ("ApplyIPFunction");
     }
     

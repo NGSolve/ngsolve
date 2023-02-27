@@ -9,6 +9,26 @@ namespace ngfem
 {
   bool code_uses_tensors = false;
 
+  filesystem::path CreateTempDir()
+  {
+      static int counter = 0;
+      int rank = 0;
+#ifdef PARALLEL
+      rank = ngcore::NgMPI_Comm(MPI_COMM_WORLD).Rank();
+#endif // PARALLEL
+      filesystem::path dir;
+#ifdef WIN32
+      dir = filesystem::path(std::tmpnam(nullptr)).concat("_ngsolve_"+ToString(rank)+"_"+ToString(counter++));
+      return dir;
+#else // WIN32
+      string tmp_template = filesystem::temp_directory_path().append("ngsolve_tmp_"+ToString(rank)+"_"+ToString(counter++)+"_XXXXXX");
+      if(mkdtemp(&tmp_template[0])==nullptr)
+          throw Exception("could not create temporary directory");
+      dir = tmp_template;
+#endif // WIN32
+      filesystem::create_directories(dir);
+      return dir;
+  }
   
     atomic<unsigned> Code::id_counter{0};
 
@@ -99,26 +119,11 @@ namespace ngfem
   
     unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files )
     {
-      static int counter = 0;
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");
       string object_files;
-      int rank = 0;
-#ifdef PARALLEL
-      rank = ngcore::NgMPI_Comm(MPI_COMM_WORLD).Rank();
-#endif // PARALLEL
-      filesystem::path lib_dir;
-#ifdef WIN32
-      lib_dir = filesystem::path(std::tmpnam(nullptr)).concat("_ngsolve_"+ToString(rank)+"_"+ToString(counter++));
-#else // WIN32
-      string tmp_template = filesystem::temp_directory_path().append("ngsolve_tmp_"+ToString(rank)+"_"+ToString(counter++)+"_XXXXXX");
-      if(mkdtemp(&tmp_template[0])==nullptr)
-          throw Exception("could not create temporary directory");
-
-      lib_dir = tmp_template;
-#endif // WIN32
+      filesystem::path lib_dir = CreateTempDir();
       string chdir_cmd = "cd " + lib_dir.string() + " && ";
-      filesystem::create_directories(lib_dir);
       for(auto i : Range(codes.size())) {
         filesystem::path src_file;
         if(std::holds_alternative<filesystem::path>(codes[i]))
