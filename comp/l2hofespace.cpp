@@ -822,19 +822,22 @@ global system.
                                             bool inverse,
                                             LocalHeap & lh) const
   {
+    /*
     bool curved = false;
     for (auto el : ma->Elements(VOL))
       if (el.is_curved) curved = true;
 
-    /*
     if (curved)
       {
         cout << IM(5) << "curved L2 not implemented, using uncurved" << endl;
         curved = false;
       }
     */
+
+    shared_ptr<BaseMatrix> sum;
+    bool optimize_constant = rho->ElementwiseConstant() && all_dofs_together;
     
-    if (rho->ElementwiseConstant() && all_dofs_together && order_policy != VARIABLE_ORDER && !curved)
+    if (optimize_constant)
       {
         auto & fe = GetFE(ElementId(VOL, 0), lh);
         Vector<double> diag_mass(fe.GetNDof());
@@ -846,6 +849,12 @@ global system.
           (*this, VOL, lh,
            [&rho, &defon, &ma, &elscale] (FESpace::Element el, LocalHeap & lh)
            {
+             if ( (defon && !defon->Mask()[ma->GetElIndex(el)]) || el.is_curved)
+               {
+                 elscale[el.Nr()] = 0;
+                 return;
+               }
+
              auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());                       
              const ElementTransformation & trafo = el.GetTrafo();
              
@@ -854,8 +863,6 @@ global system.
              double jac = mir[0].GetMeasure();
              if (rho)
                jac *= rho->Evaluate(mir[0]);
-             if (defon && !defon->Mask()[ma->GetElIndex(el)])
-               jac = 0;
              elscale[el.Nr()] = jac;
            });
 
@@ -868,10 +875,8 @@ global system.
             if (diag(i) != 0)
               diag(i) = 1/diag(i);
 
-        return make_shared<DiagonalMatrix<double>> (make_shared<VVector<>>(std::move(diag)));
+        sum = make_shared<DiagonalMatrix<double>> (make_shared<VVector<>>(std::move(diag)));
       }
-
-
 
 
     
@@ -890,10 +895,10 @@ global system.
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
-        creator.Add (classnr[i], i);
+        if (!optimize_constant || ma->GetElement({VOL,i}).is_curved)
+            creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
-    shared_ptr<BaseMatrix> sum;
 
     for (auto elclass_inds : table)
       {
@@ -3320,8 +3325,10 @@ One can evaluate the vector-valued function, and one can take the gradient.
         curved = false;
       }
     */
+    shared_ptr<BaseMatrix> sum;
 
-    if (rho->ElementwiseConstant() && order_policy == CONSTANT_ORDER && !curved)
+    bool optimize_constant = rho->ElementwiseConstant();
+    if (optimize_constant)
       {
         shared_ptr<BaseMatrix> mat;
              
@@ -3343,7 +3350,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
              BaseMappedIntegrationRule & mir = trafo(ir, lh);
              
              Mat<DIM> transrho;
-             if (defon && !defon->Mask()[ma->GetElIndex(el)])
+             if ( (defon && !defon->Mask()[ma->GetElIndex(el)]) || el.is_curved)
                transrho = 0;
              else
                {
@@ -3378,13 +3385,8 @@ One can evaluate the vector-valued function, and one can take the gradient.
           for (size_t j = 0; j < diag_mass.Size(); j++, ii++)
             diag(STAR,STAR,ii) = diag_mass(j)*elscale(i);
         
-        mat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
-        return mat;
+        sum = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
       }
-
-
-
-
 
     
     auto ma = GetMeshAccess();
@@ -3402,10 +3404,9 @@ One can evaluate the vector-valued function, and one can take the gradient.
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
-        creator.Add (classnr[i], i);
+        if (!optimize_constant || ma->GetElement({VOL,i}).is_curved)        
+          creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
-
-    shared_ptr<BaseMatrix> sum;
 
     for (auto elclass_inds : table)
       {
