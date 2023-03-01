@@ -9,10 +9,10 @@ namespace ngs_cuda
 
   int gpu_clock = 0;
 
+#ifdef NGS_CUDA_DEVICE_TIMERS
   constexpr bool SKIP_BLOCKS_WITH_NO_TRACES = true;
   constexpr bool CHECK_ALL_TRACE_ENTRIES = true;
 
-#ifdef NGS_CUDA_DEVICE_TIMERS
   __device__ DevTimerData d_timer_data[N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS];
   __device__ DevTraceData d_trace_data[N_MAX_TRACER_OBJECTS+1];
   __device__ DevTraceBlockData d_block_data[N_MAX_BLOCKS];

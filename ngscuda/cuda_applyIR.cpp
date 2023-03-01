@@ -100,7 +100,8 @@ namespace ngla
       ofstream codefile(src_file);
       codefile << s.str();
       codefile.close();
-      
+      cout << "calling compiler, srcfile = " << src_file << ", libfile = " << lib_file << endl;
+      return;
       int err = system( ("ngs_nvcc -shared -Xcompiler -fPIC " + src_file + " -o "+lib_file).c_str() );
       if (err) throw Exception ("problem calling compiler");
       system( "ls -alt");
