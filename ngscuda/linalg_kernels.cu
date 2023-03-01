@@ -206,10 +206,10 @@ __global__ void ConstEBEKernelCopyOutKernel (int numblocks, int bs, int *  col_d
 {
   int tid = threadIdx.x;
 
-  // for (int r = blockIdx.x; r < numblocks; r+=gridDim.x)
   for (int r = blockIdx.x*blockDim.y+threadIdx.y; r < numblocks; r+=gridDim.x*blockDim.y)  
     for (int i = tid; i < bs; i += blockDim.x)
-      dev_uy[col_dnums[r*bs+i]] += dev_hy[r*bs+i];
+      // dev_uy[col_dnums[r*bs+i]] += dev_hy[r*bs+i];
+      atomicAdd((double*)dev_uy+col_dnums[r*bs+i], dev_hy[r*bs+i]);      
 }
 
 void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, double * dev_hy, double * dev_uy)

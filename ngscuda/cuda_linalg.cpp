@@ -337,7 +337,8 @@ namespace ngla
     if (synckernels)
      cudaDeviceSynchronize();
     
-    if (disjoint_cols)
+    // if (disjoint_cols)
+    if (true)
       {
         DevStackArray<double> dev_hx(numblocks*devmat.Width());
         DevStackArray<double> dev_hy(numblocks*devmat.Height());
@@ -406,7 +407,8 @@ namespace ngla
     
     auto hm = devmat.Height();
     auto wm = devmat.Width();
-    if (disjoint_rows)
+    // if (disjoint_rows)
+    if (true)      
       {
         DevStackArray<double> dev_hx(numblocks*hm);
         DevStackArray<double> dev_hy(numblocks*wm);
