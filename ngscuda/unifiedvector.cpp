@@ -284,7 +284,20 @@ namespace ngla
   {
     throw Exception ("unified complex not yet supported");
   }
-    
+
+  FlatVector<Dev<double>> UnifiedVector :: FVDev() const
+  {
+    UpdateDevice();
+    InvalidateHost();
+    return { Size(), (Dev<double>*)dev_data };
+  }
+
+  FlatVector<Dev<double>> UnifiedVector :: FVDevRO() const
+  {
+    UpdateDevice();
+    return { Size(), (Dev<double>*)dev_data };
+  }
+  
   void * UnifiedVector :: Memory() const throw()
   { 
     UpdateHost(); 

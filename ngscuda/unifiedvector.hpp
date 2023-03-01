@@ -73,11 +73,11 @@ namespace ngla
       return host_data;
     }
 
-    virtual FlatVector<Dev<double>> FVDev() const
-    {
-      return { Size(), (Dev<double>*)dev_data };
-    }
-    
+    // udpate device and invalidate host
+    FlatVector<Dev<double>> FVDev() const;
+
+    // udpate device 
+    FlatVector<Dev<double>> FVDevRO() const;
     
     friend class DevDMatrix;
     friend class DevSparseMatrix;

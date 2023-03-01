@@ -66,14 +66,6 @@ namespace ngla
       }
   }
     
-  
-  void DeviceBlockJacobi (double s, FlatArray<Dev<BlockJacobiCtr>> ctrs, 
-                          BareVector<Dev<double>> x, BareVector<Dev<double>> y)
-  {
-    BlockJacobiKernel<<<512,dim3(16,16)>>> (s, ctrs, x, y);
-  }
-  
-
 
   DevBlockJacobiMatrix :: DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat)
     : h(mat.Height()), w(mat.Width()),
@@ -101,18 +93,17 @@ namespace ngla
   {
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
-    ux.UpdateDevice();
-    uy.UpdateDevice();
+    // ux.UpdateDevice();
+    // uy.UpdateDevice();
     
     {
       static Timer t("DevBlockJacobi::MultAdd");
       CudaRegionTimer rt(t);
-      
-      DeviceBlockJacobi (s, ctrstructs, ux.FVDev(), uy.FVDev());
+
+      BlockJacobiKernel<<<512,dim3(16,16)>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
     }
     
-    uy.InvalidateHost();
+    // uy.InvalidateHost();
   }
-
   
 }
