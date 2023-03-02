@@ -14,8 +14,8 @@ namespace ngla
     size_t dimx, dimy, nip;
     unique_ptr<SharedLibrary> library;
 
-    typedef void (*lib_function)(size_t nip, double * input, size_t dist_input,
-                                 double * output, size_t dist_output);
+    typedef void (*lib_function)(size_t nip, BareVector<Dev<double>> input input, size_t dist_input,
+                                 BareVector<Dev<double>> input output, size_t dist_output);
     lib_function compiled_function = nullptr;
     
   public:
@@ -82,9 +82,9 @@ namespace ngla
       s << "}\n";
 
       s << 
-        "extern \"C\" void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
-        "                      double * output, size_t dist_output) {\n"
-        "  ApplyIPFunctionKernel<<<256,256>>> (nip, input, dist_input, output, dist_output); } \n";
+        "extern \"C\" void ApplyIPFunction (size_t nip, BareVector<Dev<double>> input, size_t dist_input,\n"
+        "                      BareVector<Dev<double>> output, size_t dist_output) {\n"
+        "  ApplyIPFunctionKernel<<<256,256>>> (nip, (double*)input.Data(), dist_input, (double*)output.Data(), dist_output); } \n";
 
       
       
@@ -108,15 +108,17 @@ namespace ngla
     
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
-      const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
-      UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+      UnifiedVectorWrapper ux(x);
+      UnifiedVectorWrapper uy(y);
       
-      ux.UpdateDevice();
-      uy.UpdateDevice();
+      // const UnifiedVector & ux = dynamic_cast<const UnifiedVector&> (x);
+      // UnifiedVector & uy = dynamic_cast<UnifiedVector&> (y);
+      
+      // ux.UpdateDevice();
+      // uy.UpdateDevice();
 
-      compiled_function(nip, ux.DevData(), nip, uy.DevData(), nip);
+      compiled_function(nip, ux.FVDevRO(), nip, uy.FVDev(), nip);
       cudaDeviceSynchronize();
-
     }
 
     virtual int VHeight() const override { return h; }
