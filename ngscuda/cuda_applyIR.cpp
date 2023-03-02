@@ -14,8 +14,8 @@ namespace ngla
     size_t dimx, dimy, nip;
     unique_ptr<SharedLibrary> library;
 
-    typedef void (*lib_function)(size_t nip, BareVector<Dev<double>> input input, size_t dist_input,
-                                 BareVector<Dev<double>> input output, size_t dist_output);
+    typedef void (*lib_function)(size_t nip, BareVector<Dev<double>> input, size_t dist_input,
+                                 BareVector<Dev<double>> output, size_t dist_output);
     lib_function compiled_function = nullptr;
     
   public:
