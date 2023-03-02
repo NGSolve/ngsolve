@@ -54,7 +54,7 @@ foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} "-fPIC")
 endforeach()
 
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvcc
-              CONTENT "${ngs_nvcc_header}\n$NVCC ${ngscxx_define_flags} ${nvcc_flags} ${ngscxx_includes} $*\n"
+              CONTENT "${ngs_nvcc_header}\n$NVCC ${ngscxx_define_flags} -arch=native ${nvcc_flags} ${ngscxx_includes} $*\n"
               CONDITION $<COMPILE_LANGUAGE:CXX>
               )
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink CONTENT "${ngs_nvcc_header}\n$NGSCXX ${ngsld_flags} $*\n")
