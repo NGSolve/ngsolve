@@ -641,7 +641,7 @@ vals : tuple
         class_FMD.def("Inverse", [](FMD & self, FMD & inv) {
 	    CalcInverse(self,inv); return;
 	  });
-        class_FMD.def_property_readonly("I", py::cpp_function([](FMD &self) { return Inv(self); } ) );        
+        class_FMD.def_property_readonly("I", py::cpp_function([](FMD &self) { return Inverse(self); } ) );        
         class_FMD.def("__str__", &ToString<FMD>);
         class_FMD.def("__repr__", &ToString<FMD>);
         PyDefMatBuffer<FMD>(class_FMD);
@@ -688,7 +688,7 @@ vals : tuple
                     result(j,i) = Conj(self(i,j));
             return result;
             } ), "Return conjugate and transposed matrix" )
-          .def_property_readonly("I", py::cpp_function([](FMC & self) { return Inv(self); }))
+          .def_property_readonly("I", py::cpp_function([](FMC & self) { return Inverse(self); }))
         ;
     PyDefMatBuffer<FMC>(class_FMC);
 

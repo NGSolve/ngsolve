@@ -4139,7 +4139,8 @@ public:
         for (auto j : Range(D))
           for (auto k : Range(D))
             hm(j, k) = result(j * D + k, i);
-        hm = Inv(hm);
+        // hm = Inv(hm);
+        CalcInverse(hm);
         for (auto j : Range(D))
           for (auto k : Range(D))
             result(j * D + k, i) = hm(j, k);
@@ -4161,7 +4162,8 @@ public:
         for (auto j : Range(D))
           for (auto k : Range(D))
             hm(j, k) = in0(j * D + k, i);
-        hm = Inv(hm);
+        // hm = Inv(hm);
+        CalcInverse(hm);
         for (auto j : Range(D))
           for (auto k : Range(D))
             values(j * D + k, i) = hm(j, k);

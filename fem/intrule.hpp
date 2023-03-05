@@ -493,7 +493,7 @@ namespace ngfem
 
     INLINE void Compute ()
     {
-      if (DIMS == DIMR)
+      if constexpr (DIMS == DIMR)
 	{
 	  det = Det (dxdxi);
 	  normalvec = TSCAL(0.0);
@@ -1831,7 +1831,7 @@ namespace ngcore
 
     INLINE void Compute ()
     {
-      if (DIMS == DIMR)
+      if constexpr (DIMS == DIMR)
 	{
 	  det = Det (dxdxi);
 	  normalvec = SIMD<double>(0.0);

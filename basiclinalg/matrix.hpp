@@ -2557,6 +2557,190 @@ namespace ngbla
     return res;
   }
 
+  template <typename T>
+  auto Det (Mat<0,0,T> m)
+  {
+    return T(1.0);
+  }
+
+
+  template <typename T>
+  auto Det (Mat<1,1,T> m)
+  {
+    return m(0,0);
+  }
+
+  template <typename T>
+  auto Det (Mat<2,2,T> m)
+  {
+    return m(0,0)*m(1,1) - m(0,1)*m(1,0); 
+  }
+
+  template <typename T>
+  auto Det (Mat<3,3,T> m)
+  {
+    return 
+      m(0) * (m(4) * m(8) - m(5) * m(7)) +
+      m(1) * (m(5) * m(6) - m(3) * m(8)) +
+      m(2) * (m(3) * m(7) - m(4) * m(6));
+  }
+
+
+  
+
+
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> Adj (Mat<H,W,T> m)
+  {
+    cerr << "Adj<" << H << "," << W << "> not implemented" << endl;
+    return m;
+  }
+
+
+  template <typename T>
+  INLINE Mat<0,0,T> Adj (Mat<0,0,T> m)
+  {
+    return Mat<0,0,T>();
+  }
+
+  template <typename T>
+  INLINE Mat<1,1,T> Adj (Mat<1,1,T> m)
+  {
+    Mat<1,1,T> adj;
+    adj(0,0) = m(0,0);
+    return adj;
+  }
+
+  template <typename T>
+  INLINE Mat<2,2,T> Adj (Mat<2,2,T> m)
+  {
+    Mat<2,2,T> adj;
+    adj(0,0) = m(1,1);
+    adj(0,1) = -m(0,1);
+    adj(1,0) = -m(1,0);
+    adj(1,1) = m(0,0);
+    return adj;
+  }
+
+
+  template <typename T>
+  INLINE Mat<3,3,T> Adj (Mat<3,3,T> m)
+  {
+    Mat<3,3,T> adj;
+    adj(0,0) =  m(4)*m(8)-m(5)*m(7);
+    adj(0,1) = -(m(1) * m(8) - m(2) * m(7));
+    adj(0,2) =  m(1) * m(5) - m(2) * m(4);
+    
+    adj(1,0) =  m(5)*m(6)-m(3)*m(8);
+    adj(1,1) =  m(0) * m(8) - m(2) * m(6);
+    adj(1,2) = -(m(0) * m(5) - m(2) * m(3));
+    
+    adj(2,0) =  (m(3)*m(7)-m(4)*m(6));
+    adj(2,1) = -(m(0) * m(7) - m(1) * m(6));
+    adj(2,2) =  (m(0) * m(4) - m(1) * m(3));
+    return adj;
+  }
+
+
+
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> Cof (Mat<H,W,T> m)
+  {
+    cerr << "Cof<" << H << "," << W << "> not implemented" << endl;
+    return m;
+  }
+
+  template <typename T>
+  INLINE Mat<0,0,T> Cof (Mat<0,0,T> m)
+  {
+    return Mat<0,0,T>();
+  }
+
+  template <typename T>
+  INLINE Mat<1,1,T> Cof (Mat<1,1,T> m)
+  {
+    Mat<1,1,T> cof;
+    cof(0,0) = T(1); // m(0,0);
+    return cof;
+  }
+
+  template <typename T>
+  INLINE Mat<2,2,T> Cof (Mat<2,2,T> m)
+  {
+    Mat<2,2,T> cof;
+    cof(0,0) = m(1,1);
+    cof(0,1) = -m(1,0);
+    cof(1,0) = -m(0,1);
+    cof(1,1) = m(0,0);
+    return cof;
+  }
+
+
+  template <typename T>
+  INLINE Mat<3,3,T> Cof (Mat<3,3,T> m)
+  {
+    Mat<3,3,T> cof;
+    cof(0,0) =  m(1,1)*m(2,2)-m(2,1)*m(1,2);
+    cof(0,1) = -m(1,0)*m(2,2)+m(2,0)*m(1,2);
+    cof(0,2) =  m(1,0)*m(2,1)-m(2,0)*m(1,1);
+    
+    cof(1,0) = -m(0,1)*m(2,2)+m(2,1)*m(0,2); 
+    cof(1,1) =  m(0,0)*m(2,2)-m(2,0)*m(0,2); 
+    cof(1,2) = -m(0,0)*m(2,1)+m(2,0)*m(0,1);
+    
+    cof(2,0) =  m(0,1)*m(1,2)-m(1,1)*m(0,2); 
+    cof(2,1) = -m(0,0)*m(1,2)+m(1,0)*m(0,2); 
+    cof(2,2) =  m(0,0)*m(1,1)-m(1,0)*m(0,1);
+    return cof;
+  }
+
+
+  template <typename T>
+  INLINE Mat<4,4,T> Cof (Mat<4,4,T> m)
+  {
+    Mat<4,4,T> cof;
+    cof(0,0) =   (m(1,1)*m(2,2)*m(3,3)+m(1,2)*m(2,3)*m(3,1)+m(1,3)*m(2,1)*m(3,2) - m(1,1)*m(3,2)*m(2,3) - m(2,1)*m(1,2)*m(3,3) - m(3,1)*m(2,2)*m(1,3));
+    cof(0,1) =  -(m(1,0)*m(2,2)*m(3,3)+m(1,2)*m(2,3)*m(3,0)+m(1,3)*m(2,0)*m(3,2) - m(1,0)*m(3,2)*m(2,3) - m(2,0)*m(1,2)*m(3,3) - m(3,0)*m(2,2)*m(1,3));
+    cof(0,2) =   (m(1,0)*m(2,1)*m(3,3)+m(1,1)*m(2,3)*m(3,0)+m(1,3)*m(2,0)*m(3,1) - m(1,0)*m(3,1)*m(2,3) - m(2,0)*m(1,1)*m(3,3) - m(3,0)*m(2,1)*m(1,3));
+    cof(0,3) =  -(m(1,0)*m(2,1)*m(3,2)+m(1,1)*m(2,2)*m(3,0)+m(1,2)*m(2,0)*m(3,1) - m(1,0)*m(3,1)*m(2,2) - m(2,0)*m(1,1)*m(3,2) - m(3,0)*m(2,1)*m(1,2));
+
+    cof(1,0) =  -(m(0,1)*m(2,2)*m(3,3)+m(0,2)*m(2,3)*m(3,1)+m(0,3)*m(2,1)*m(3,2) - m(0,1)*m(3,2)*m(2,3) - m(2,1)*m(0,2)*m(3,3) - m(3,1)*m(2,2)*m(0,3));
+    cof(1,1) =   (m(0,0)*m(2,2)*m(3,3)+m(0,2)*m(2,3)*m(3,0)+m(0,3)*m(2,0)*m(3,2) - m(0,0)*m(3,2)*m(2,3) - m(2,0)*m(0,2)*m(3,3) - m(3,0)*m(2,2)*m(0,3));
+    cof(1,2) =  -(m(0,0)*m(2,1)*m(3,3)+m(0,1)*m(2,3)*m(3,0)+m(0,3)*m(2,0)*m(3,1) - m(0,0)*m(3,1)*m(2,3) - m(2,0)*m(0,1)*m(3,3) - m(3,0)*m(2,1)*m(0,3));
+    cof(1,3) =   (m(0,0)*m(2,1)*m(3,2)+m(0,1)*m(2,2)*m(3,0)+m(0,2)*m(2,0)*m(3,1) - m(0,0)*m(3,1)*m(2,2) - m(2,0)*m(0,1)*m(3,2) - m(3,0)*m(2,1)*m(0,2));
+
+    cof(2,0) =   (m(0,1)*m(1,2)*m(3,3)+m(0,2)*m(1,3)*m(3,1)+m(0,3)*m(1,1)*m(3,2) - m(0,1)*m(3,2)*m(1,3) - m(1,1)*m(0,2)*m(3,3) - m(3,1)*m(1,2)*m(0,3));
+    cof(2,1) =  -(m(0,0)*m(1,2)*m(3,3)+m(0,2)*m(1,3)*m(3,0)+m(0,3)*m(1,0)*m(3,2) - m(0,0)*m(3,2)*m(1,3) - m(1,0)*m(0,2)*m(3,3) - m(3,0)*m(1,2)*m(0,3));
+    cof(2,2) =   (m(0,0)*m(1,1)*m(3,3)+m(0,1)*m(1,3)*m(3,0)+m(0,3)*m(1,0)*m(3,1) - m(0,0)*m(3,1)*m(1,3) - m(1,0)*m(0,1)*m(3,3) - m(3,0)*m(1,1)*m(0,3));
+    cof(2,3) =  -(m(0,0)*m(1,1)*m(3,2)+m(0,1)*m(1,2)*m(3,0)+m(0,2)*m(1,0)*m(3,1) - m(0,0)*m(3,1)*m(1,2) - m(1,0)*m(0,1)*m(3,2) - m(3,0)*m(1,1)*m(0,2));
+
+    cof(3,0) =  -(m(0,1)*m(1,2)*m(2,3)+m(0,2)*m(1,3)*m(2,1)+m(0,3)*m(1,1)*m(2,2) - m(0,1)*m(2,2)*m(1,3) - m(1,1)*m(0,2)*m(2,3) - m(2,1)*m(1,2)*m(0,3));
+    cof(3,1) =   (m(0,0)*m(1,2)*m(2,3)+m(0,2)*m(1,3)*m(2,0)+m(0,3)*m(1,0)*m(2,2) - m(0,0)*m(2,2)*m(1,3) - m(1,0)*m(0,2)*m(2,3) - m(2,0)*m(1,2)*m(0,3));
+    cof(3,2) =  -(m(0,0)*m(1,1)*m(2,3)+m(0,1)*m(1,3)*m(2,0)+m(0,3)*m(1,0)*m(2,1) - m(0,0)*m(2,1)*m(1,3) - m(1,0)*m(0,1)*m(2,3) - m(2,0)*m(1,1)*m(0,3));
+    cof(3,3) =   (m(0,0)*m(1,1)*m(2,2)+m(0,1)*m(1,2)*m(2,0)+m(0,2)*m(1,0)*m(2,1) - m(0,0)*m(2,1)*m(1,2) - m(1,0)*m(0,1)*m(2,2) - m(2,0)*m(1,1)*m(0,2));
+    return cof;
+  }
+
+
+  template <int H, int W, typename T>
+  INLINE Mat<H,W,T> Inv (Mat<H,W,T> m)
+  {
+    return 1.0/Det(m) * Cof(m);
+    /*
+    Mat<H,W,T> inv;
+    CalcInverse (m, inv);
+    return inv;
+    */
+  }
+
+
+
+
+
+
+
+
+  
 
   //
   //  Can we put a SliceMatrix over a matrix ? 

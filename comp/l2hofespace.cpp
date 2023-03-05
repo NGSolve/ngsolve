@@ -3354,7 +3354,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
                  if (piola)                      
                    transrho = 1/mir[0].GetMeasure() * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
                  else if (covariant)
-                   transrho = mir[0].GetMeasure() * Inv(mir[0].GetJacobian()) * rhoi * Trans(Inv(mir[0].GetJacobian()));
+                   transrho = mir[0].GetMeasure() * Inverse(mir[0].GetJacobian()) * rhoi * Trans(Inverse(mir[0].GetJacobian()));
                  else
                    transrho = mir[0].GetMeasure() * rhoi;
                  

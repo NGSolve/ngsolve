@@ -8,7 +8,6 @@
 /**************************************************************************/
 
 #include <core/simd.hpp>
-// #include <ngs_stdcpp_include.hpp>
 
 namespace ngcore
 {

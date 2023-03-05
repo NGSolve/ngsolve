@@ -383,8 +383,9 @@ namespace ngbla
 
     if (n == 1)
       {
-        auto hm = mat(0,0);
-        CalcInverse (hm, mat(0,0));
+        // auto hm = mat(0,0);
+        // CalcInverse (hm, mat(0,0));
+        mat(0,0) = Inv(mat(0,0));
         return;
       }
 
@@ -429,8 +430,9 @@ namespace ngbla
 
     if (n == 1)
       {
-        auto hm = mat(0,0);
-        CalcInverse (hm, mat(0,0));
+        // auto hm = mat(0,0);
+        // CalcInverse (hm, mat(0,0));
+        mat(0,0) = Inv(mat(0,0));
         return;
       }
   }
@@ -504,7 +506,8 @@ namespace ngbla
     FlatVector<T> dinv(n, &mem);
     
     for (size_t i = 0; i < n; i++)
-      CalcInverse (mat(i,i), dinv(i));
+      // CalcInverse (mat(i,i), dinv(i));
+      dinv(i) = Inv(mat(i,i));
     
     for (int i = n-1; i >= 0; i--)
       {
@@ -529,7 +532,8 @@ namespace ngbla
     
     for (size_t i = 0; i < n; i++)
       {
-        CalcInverse (mat(i,i), dinv(i));
+        // CalcInverse (mat(i,i), dinv(i));
+        dinv(i) = Inv(mat(i,i));
         mat(i,i) = dinv(i);
       }
     
@@ -582,8 +586,8 @@ namespace ngbla
     if (n == 0) return;
     if (n == 1)
       {
-        //  mat(0,0) = Inv(mat(0,0));
-        CalcInverse (mat(0,0));
+        mat(0,0) = Inv(mat(0,0));
+        // CalcInverse (mat(0,0));
         return;
       }      
     
