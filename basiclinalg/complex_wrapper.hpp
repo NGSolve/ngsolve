@@ -43,8 +43,8 @@ namespace ngcore
 /// namespace for basic linear algebra
 namespace ngbla
 {
-  using namespace std;
-  using namespace ngstd;
+  // using namespace std;
+  // using namespace ngstd;
   using ngcore::Complex;
 
   using ngcore::AtomicAdd;
