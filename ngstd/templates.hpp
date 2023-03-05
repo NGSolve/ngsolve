@@ -50,12 +50,14 @@ INLINE T max3 (T a, T b, T c)
   */
 
 
+/*
 /// sign of value (+1, 0, -1)
 template <class T>
 INLINE int sgn (T a)
 {
   return (a > 0) ? 1 : ( ( a < 0) ? -1 : 0 );
 }
+*/
 
   /*
 /// square element 
@@ -65,6 +67,8 @@ INLINE T sqr (const T a)
   return a * a; 
 }
   */
+
+   /*
   using ngcore::sqr;
   using ngcore::pow3;
   using ngcore::max2;
@@ -73,7 +77,8 @@ INLINE T sqr (const T a)
   using ngcore::min3;
   using ngcore::LoadBin;
   using ngcore::SaveBin;
-
+   */
+  
     /*
 
 /// element to the third power

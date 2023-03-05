@@ -2607,7 +2607,7 @@ namespace ngbla
   INLINE Mat<1,1,T> Adj (Mat<1,1,T> m)
   {
     Mat<1,1,T> adj;
-    adj(0,0) = m(0,0);
+    adj(0,0) = T(1); // m(0,0);
     return adj;
   }
 
@@ -2726,11 +2726,6 @@ namespace ngbla
   INLINE Mat<H,W,T> Inv (Mat<H,W,T> m)
   {
     return 1.0/Det(m) * Adj(m);
-    /*
-    Mat<H,W,T> inv;
-    CalcInverse (m, inv);
-    return inv;
-    */
   }
 
 
