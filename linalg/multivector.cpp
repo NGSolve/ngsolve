@@ -428,10 +428,10 @@ namespace ngla {
     static Timer t("MultiVector::InnerProductD");
     RegionTimer reg(t);
 
-    Matrix<double> res(Size(), y.Size());
+    Matrix<double> res(y.Size(), Size());
     for (int i = 0; i < Size(); i++)
       for (int j = 0; j < y.Size(); j++)
-        res(i,j) = vecs[i]->InnerProductD(*y[j]);
+        res(j,i) = vecs[i]->InnerProductD(*y[j]);
     return res;
   }
   
@@ -441,10 +441,10 @@ namespace ngla {
     static Timer t("MultiVector::InnerProductC");
     RegionTimer reg(t);
 
-    Matrix<Complex> res(Size(), y.Size());
+    Matrix<Complex> res(y.Size(), Size());
     for (int i = 0; i < Size(); i++)
       for (int j = 0; j < y.Size(); j++)
-        res(i,j) = vecs[i]->InnerProductC(*y[j], conjugate);
+        res(j,i) = vecs[i]->InnerProductC(*y[j], conjugate);
     return res;
   }
 
