@@ -89,24 +89,6 @@ void LoadBin (istream & ist, T & val)
 
 
 
-template <int N> using IC = std::integral_constant<int,N>;  // needed for Iterate
-
-template <int NUM, typename FUNC>
-INLINE void Iterate (FUNC f)
-{
-  if constexpr (NUM > 1) Iterate<NUM-1> (f);
-  if constexpr (NUM >= 1) f(IC<NUM-1>());
-}
-
-
-template <int NUM, typename FUNC>
-INLINE void Switch (size_t nr, FUNC f)
-{
-  if (NUM-1 == nr) f(IC<NUM-1>());
-  if constexpr (NUM > 1) Switch<NUM-1> (nr, f);
-}
-
-
 }
 
 #endif
