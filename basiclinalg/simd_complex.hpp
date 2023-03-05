@@ -8,7 +8,7 @@
 /**************************************************************************/
 
 #include <core/simd.hpp>
-#include <ngs_stdcpp_include.hpp>
+// #include <ngs_stdcpp_include.hpp>
 
 namespace ngcore
 {
@@ -247,12 +247,6 @@ namespace ngcore
   template <int N>
   inline SIMD<Complex, N> Conj (SIMD<Complex, N> x)
   { return SIMD<Complex, N> (x.real(), -x.imag()); } 
-
-  INLINE Complex IfPos (Complex a, Complex b, Complex c)
-  {
-    return Complex (IfPos (a.real(), b.real(), c.real()),
-                    IfPos (a.real(), b.imag(), c.imag()));
-  }
 
   template <int N>
   INLINE SIMD<Complex, N> IfPos (SIMD<Complex, N> a, SIMD<Complex, N> b, SIMD<Complex, N> c)

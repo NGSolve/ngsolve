@@ -5,40 +5,7 @@
 #include <ngstd.hpp>
 
 
-/// namespace for basic linear algebra
-namespace ngbla
-{
-  using namespace std;
-  using namespace ngstd;
-
-
-  using ngcore::AtomicAdd;
-  inline void AtomicAdd (Complex & x, Complex y)
-  {
-    auto real = y.real();
-    ngstd::AtomicAdd (reinterpret_cast<double(&)[2]>(x)[0], real);
-    auto imag = y.imag();
-    ngstd::AtomicAdd (reinterpret_cast<double(&)[2]>(x)[1], imag);
-  }
-
-  inline bool IsComplex(double v) { return false; }
-  inline bool IsComplex(Complex v) { return true; }
-}
-
-
-#ifdef PARALLEL
-namespace ngcore
-{
-  template <> struct MPI_typetrait<ngbla::Complex> {
-    static MPI_Datatype MPIType ()  { return MPI_CXX_DOUBLE_COMPLEX; }
-      // return MPI_C_DOUBLE_COMPLEX;   // no MPI_SUM defined ??
-      // return MPI_DOUBLE_COMPLEX;
-  };
-}
-#endif
-
-
-
+#include "complex_wrapper.hpp"
 
 #include "expr.hpp"
 #include "vector.hpp"
@@ -51,6 +18,7 @@ namespace ngcore
 #include "householder.hpp"
 #include "tensor.hpp"
 #include "eigensystem.hpp"
+#include "simd_complex.hpp"
 
 #include "ng_lapack.hpp"
 #include "avector.hpp"

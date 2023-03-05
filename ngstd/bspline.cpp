@@ -348,11 +348,12 @@ namespace ngstd
     return SIMD<double>(&res[0]);
   }
 
+  /*
   SIMD<Complex> BSpline :: operator() (SIMD<Complex> x) const
   {
     return { (*this)(x.real()) };
   }
-
+  */
   
   ostream & operator<< (ostream & ost, const BSpline & sp)
   {

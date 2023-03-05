@@ -45,7 +45,6 @@
 
 #include <new>
 #include <exception>
-#include <complex>
 #include <string>
 #include <typeindex>
 #include <typeinfo>
@@ -102,36 +101,6 @@ inline void unreachable() {}
 #else
   #define NGS_DLL_HEADER NGCORE_API_IMPORT
 #endif
-// #ifdef __clang__
-#if defined(__GNUC__) && !defined(__INTEL_COMPILER)
-namespace std
-{
-  // avoid expensive call to complex mult by using the grammar school implementation
-  INLINE std::complex<double> operator* (std::complex<double> a, std::complex<double> b)
-  {
-    return std::complex<double> (a.real()*b.real()-a.imag()*b.imag(),
-                                 a.real()*b.imag()+a.imag()*b.real());
-  }
-}
-#endif
-
-
-#ifdef USE_MYCOMPLEX
-#include <mycomplex.hpp>
-#endif
-
-namespace ngcore
-{
-#ifdef USE_MYCOMPLEX
-  typedef ngstd::MyComplex<double> Complex;
-  using std::fabs;
-  inline double fabs (Complex v) { return ngstd::abs (v); }
-#else
-  typedef std::complex<double> Complex;
-  using std::fabs;
-  inline double fabs (Complex v) { return std::abs (v); }
-#endif
-}
 
 
 

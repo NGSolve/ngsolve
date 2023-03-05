@@ -32,7 +32,7 @@ install( FILES
         statushandler.hpp ngsstream.hpp 
         polorder.hpp sockets.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
-        bspline.hpp simd_complex.hpp sample_sort.hpp
+        bspline.hpp sample_sort.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

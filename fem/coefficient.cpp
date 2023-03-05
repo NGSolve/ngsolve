@@ -9,6 +9,10 @@
 */
 
 #include <core/register_archive.hpp>
+#include <ngstd.hpp>
+#include <bla.hpp>
+
+#include <../basiclinalg/complex_wrapper.hpp>
 #include <fem.hpp>
 #include <coefficient_impl.hpp>
 
