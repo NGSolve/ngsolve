@@ -2725,7 +2725,7 @@ namespace ngbla
   template <int H, int W, typename T>
   INLINE Mat<H,W,T> Inv (Mat<H,W,T> m)
   {
-    return 1.0/Det(m) * Cof(m);
+    return 1.0/Det(m) * Adj(m);
     /*
     Mat<H,W,T> inv;
     CalcInverse (m, inv);
