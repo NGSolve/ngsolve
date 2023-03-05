@@ -21,7 +21,7 @@ namespace ngla
   
   class DevBlockJacobiMatrix : public DevMatrix
   {
-    double h, w;
+    size_t h, w;
     Array<Dev<int>> indices;
     Array<Dev<double>> matrices;
     Array<Dev<BlockJacobiCtr>> ctrstructs;

@@ -44,101 +44,10 @@ PYBIND11_MODULE(ngscuda, m) {
                     return uv;
                   }))
 
-    /*
-      JS: should be inherited from BaseVector ??
-  //  TODO: extend for splicing (define UnifiedVector.Range?)
-  //    not that important. maybe delete
-  .def("__getitem__", [] (UnifiedVector & self, int ind)
-      {
-        if (ind < 0)
-          ind += self.Size();
-        if (ind < 0 || ind >= self.Size())
-          py::index_error();
-        return py::cast(self[ind]);
-      }, py::arg("ind"), "Return value at given position")
-  .def("__setitem__", [] (UnifiedVector & self, int ind, double z)
-      { 
-        if (ind < 0)
-          ind += self.Size();
-        if (ind < 0 || ind >= self.Size())
-          py::index_error();
-        self[ind] = z; 
-      })
-    */
-    
-
-    /*
-  .def("UpdateHost", [] (UnifiedVector &self) -> void
-        { self.UpdateHost(); }) 
-  .def("UpdateDevice", [] (UnifiedVector &self) -> void
-        { self.UpdateDevice(); });
-    */
     .def("UpdateHost", &UnifiedVector::UpdateHost)
     .def("UpdateDevice", &UnifiedVector::UpdateDevice)
     ;
 
-  /* .def("__str__", [] (UnifiedVector & self) { return ToString<UnifiedVector>(self); } ) */
-  /* .def("__repr__", [] (UnifiedVector & self) { return "unfiedvector"; } ) */
-
-  /* .def("__len__", [] (UnifiedVector & self) {return self.Size(); }) */
-
-  /* .def("Scale", [] (UnifiedVector & self, double d) */
-  /*       { */
-  /*         self.Scale(d); */
-  /*       }); */
-
-  /* TODO: */  
-  /* .def("__add__", [] (shared_ptr<UnifiedVector> e1, shared_ptr<UnifiedVector> e2) */
-  /*       { */
-  /*         cerr << "aunivec, vec add" << endl; */
-  /*         return make_shared<BaseVector>((*e1) + (*e2)); */
-  /*       }) */
-  /* .def("__neg__", [] (shared_ptr<UnifiedVector> e1) */
-  /*       { */
-  /*         cerr << "univec neg" << endl; */
-  /*         return make_shared<BaseVector>(-(*e1)); */
-  /*       }) */
-  /* .def("__sub__", [] (shared_ptr<UnifiedVector> e1, shared_ptr<UnifiedVector> e2) */
-  /*       { */
-  /*         cerr << "univec, base sub" << endl; */
-  /*         return (*e1) - (*e2); */
-  /*       }) */
-  /* .def("__mul__", [] (shared_ptr<UnifiedVector> x, shared_ptr<DevSparseMatrix> a) */
-  /*       { */
-  /*         cerr << "univec mat prod" << endl; */
-  /*         return (*x) * (*a); */
-  /*       }) */
-  /* .def("__rmul__", [] (double x, const UnifiedVector& v) */
-  /*       { */
-  /*         cerr << "scal, mat prod" << endl; */
-  /*         return x * v; */
-  /*       }); */
-
-  /* .def("Set") */
-  /* .def("__add__", (UnifiedVector & v1, BaseVector & v2, py::object s) -> void */
-  /*     { */
-  /*       return v1 + v2; */
-  /*     }) */
-  /* .def("Scale", [](UnifiedVector & self, double scal) -> shared_ptr<UnifiedVector> */
-  /*     { cerr << "scaling by " << scal << endl; return self.Scale(scal); }) */
-
-  // TODO: probably useless... use ToGPU instead?
-  //
-  //   alternative: BaesVector::ToGPU
-  /* .def("Assign", [] (UnifiedVector &self, BaseVector &v2) -> void */
-  /*       { */
-  /*         self = v2; */
-  /*         return; */
-  /*       }) */
-
-  /* .def("Assign", [] (UnifiedVector &self, py::object d) -> void */
-  /*       { */
-  /*         self.SetScalar(py::extract<double>(d)()); */
-  /*         return; */
-  /*       }) */
-
-  // TODO:
-  /* m.def("InnerProdcut", [] (UnifiedVector &a, UnifiedVector &b)) */
 
   py::class_<DevMatrix, BaseMatrix, shared_ptr<DevMatrix>>
     (m, "DevBaseMatrix", "device matrix for CUDA applications");
@@ -151,14 +60,6 @@ PYBIND11_MODULE(ngscuda, m) {
             return make_shared<DevSparseMatrix>(mat);
           }
           ));
-    /* .def("Mult", [] (DevSparseMatrix &self, UnifiedVector &x, UnifiedVector &y) */
-    /*     { */
-    /*       self.Mult(x, y); */
-    /*     }) */
-    /* .def("Mult", [] (DevSparseMatrix &self, double s, UnifiedVector &x, UnifiedVector &y) */
-    /*     { */
-    /*       self.MultAdd(s, x, y); */
-    /*     }); */
 
   // TODO:
   // make operators work instead of Add, Mult, ..

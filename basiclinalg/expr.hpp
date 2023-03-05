@@ -7,10 +7,6 @@
 /* Date:   01. Jan. 02                                                    */
 /**************************************************************************/
 
-#ifdef USE_GMP
-#include <gmpxx.h>
-#endif
-
 #include <core/array.hpp>
 #include <core/localheap.hpp>
 #include <core/exception.hpp>

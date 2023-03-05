@@ -3314,17 +3314,6 @@ One can evaluate the vector-valued function, and one can take the gradient.
                                              bool inverse,
                                              LocalHeap & lh) const
   {
-    bool curved = false;
-    for (auto el : ma->Elements(VOL))
-      if (el.is_curved) curved = true;
-
-    /*
-    if (curved)
-      {
-        cout << IM(5) << "curved L2 not implemented, using uncurved" << endl;
-        curved = false;
-      }
-    */
     shared_ptr<BaseMatrix> sum;
 
     bool optimize_constant = rho->ElementwiseConstant();
