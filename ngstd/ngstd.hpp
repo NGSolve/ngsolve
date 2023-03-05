@@ -61,28 +61,7 @@ namespace ngstd
 
 Specific data types Exception, BlockAllocator, AutoPtr, EvalFunction, AutoDiff, AutoDiffDiff
 */
-namespace ngstd
-{
-  using namespace std;
-  template <typename T>
-  class ParallelValue
-  {
-    T val;
-  public:
-    ParallelValue (const T & _val) : val(_val) { ; }
-    operator T () const { return val; }
-  };
-  
-  template <typename FUNC> class ParallelFunction
-  {
-    FUNC f;
-  public:
-    ParallelFunction (const FUNC & _f) : f(_f) { ; }
-    operator FUNC () const { return f; }
-    auto operator() (size_t i) const { return f(i); }
-  };
-  
-}
+
 
 #include <ngs_defines.hpp>
 
@@ -90,18 +69,18 @@ namespace ngstd
 #include <core/ngcore.hpp>
 namespace ngstd
 {
-    using namespace ngcore;
-    using ngcore::INT;
+  using namespace ngcore;
+  using ngcore::INT;
 } // namespace ngstd
 
 #include "ngs_utils.hpp"
 // #include "ngsstream.hpp"  
-#include "templates.hpp"
+// #include "templates.hpp" // nothing in anymore
 
 // #include "simd_complex.hpp"
 
 #include "blockalloc.hpp"
-#include "autoptr.hpp"
+// #include "autoptr.hpp"
 #include "memusage.hpp"
 
 #include "evalfunc.hpp"
@@ -113,7 +92,6 @@ namespace ngstd
 #include "stringops.hpp"
 #include "statushandler.hpp"
 
-// #include "mpiwrapper.hpp"
 #ifndef WIN32
 #include "sockets.hpp"
 #endif
@@ -133,16 +111,6 @@ namespace ngstd
 }
 
 
-
-
-
 inline void NOOP_Deleter(void *) { ; }
-
-
-#ifdef GOLD
-#include <ngstd_gold.hpp>
-#endif
-
-
 
 #endif

@@ -247,6 +247,7 @@ INLINE AutoDiffVec<D,SCAL> operator* (const AutoDiffVec<D,SCAL> & x, const AutoD
 }
 
 /// AutoDiffVec times AutoDiffVec
+using ngcore::sqr;
 template<int D, typename SCAL>
 INLINE AutoDiffVec<D,SCAL> sqr (const AutoDiffVec<D,SCAL> & x) throw()
 {
