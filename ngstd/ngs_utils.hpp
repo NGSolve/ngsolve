@@ -29,8 +29,8 @@ namespace ngstd
 
   // ////////////////    integral constants
 
-  template <int N>
-  using IC = integral_constant<int,N>;
+  // template <int N>
+  // using IC = integral_constant<int,N>;
 
   // Class to handle/load shared libraries
   class SharedLibrary
