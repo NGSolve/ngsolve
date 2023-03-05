@@ -1,13 +1,6 @@
 #ifndef FILE_NGBLA
 #define FILE_NGBLA
 
-// #ifdef USE_BLAS
-// extern "C"
-// {
-// #include <mkl_cblas.h>
-// }
-// #endif
-
 
 #include <ngstd.hpp>
 
@@ -17,8 +10,6 @@ namespace ngbla
 {
   using namespace std;
   using namespace ngstd;
-
-  using ngstd::CArray;
 
 
   using ngcore::AtomicAdd;
@@ -59,23 +50,7 @@ namespace ngcore
 #include "triangular.hpp"
 #include "householder.hpp"
 #include "tensor.hpp"
-
-namespace ngbla
-{
-
-  /// Computes eigenvalues and vectors of the symmetric matrix mat.
-  extern NGS_DLL_HEADER void CalcEigenSystem (const FlatMatrix<double> & mat,
-			       FlatVector<double> & lami,
-			       FlatMatrix<double> & eigenvecs);
-
-
-
-  /// Computes the Schur Complement.
-  extern NGS_DLL_HEADER void CalcSchurComplement (const FlatMatrix<double> a, 
-				   FlatMatrix<double> s,
-				   const BitArray & used,
-				   LocalHeap & lh);
-}
+#include "eigensystem.hpp"
 
 #include "ng_lapack.hpp"
 #include "avector.hpp"

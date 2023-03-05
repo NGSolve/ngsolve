@@ -159,6 +159,9 @@ Whetting the Appetite
    unit-5a.2-pardofs/pardofs.ipynb 
    unit-5a.3-petsc/petsc.ipynb 
    unit-5a.3-petsc/PETSc_interface.ipynb 
+   unit-5.5-cuda/poisson_cuda.ipynb 
+   unit-5.5-cuda/wave_cuda.ipynb 
+   unit-5.5-cuda/EulerEquations.ipynb 
    
    historic/unit-5.0-mpi_basics/MPI-Parallelization_in_NGSolve.ipynb
    historic/unit-5.1-mpi_ngsolve/mpi_basics.ipynb

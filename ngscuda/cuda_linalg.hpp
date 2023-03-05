@@ -35,8 +35,6 @@ namespace ngla
   
   void InitCuLinalg();
 
-  class DevSparseMatrix;
-
 
   /* AutoVector CreateUnifiedVector(size_t size); */
 

@@ -201,10 +201,6 @@ namespace ngbla
     // shape functions had a problem with icc v9.1
     // const CArray<T> Addr(int i) const { return CArray<T> (data+i*dist); }
     INLINE T * Addr(size_t i) const { return data+i; }
-    /*
-    const CArray<T> operator+(int i) const
-    { return CArray<T> (data+i*dist); }
-    */
 
     T * operator+(size_t i) const { return data+i; }
 
@@ -401,19 +397,6 @@ namespace ngbla
     {
       return static_cast<Vec<S,T>*> ((void*) (data+i*S)); 
     }
-
-    /*
-    const CArray<Vec<S,T> > Addr(int i) const
-    {
-      return CArray<Vec<S,T> > (static_cast<Vec<S,T>*> ((void*) (data+i*S))); 
-    }
-    */
-    /*
-    const CArray<T> Addr(int i) const
-    {
-      return CArray<T> (data+i*S); 
-    }
-    */
 
     /// sub-vector of size next-first, starting at first
     /* const */ FlatVector<Vec<S,T> > Range (size_t first, size_t next) const
