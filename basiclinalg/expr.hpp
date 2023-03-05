@@ -12,8 +12,6 @@
 #include <core/exception.hpp>
 #include <core/hashtable.hpp>   // for INT
 
-// #include <ngs_stdcpp_include.hpp>
-// #include <templates.hpp>        // for Iterate 
 #include "complex_wrapper.hpp"
 
 namespace ngbla
@@ -930,30 +928,6 @@ namespace ngbla
       NgGEMM<false,true> (make_SliceMatrix(prod.Spec().A()),
                           make_SliceMatrix(prod.Spec().B()),
                           make_SliceMatrix(Spec()));
-      return Spec();
-    }
-    */
-
-
-    /*
-    template <typename TA, typename TB>
-    INLINE T & operator= (const Expr<LapackExpr<MultExpr<TA, TB>>> & prod) 
-    {
-      LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), 1.0, Spec(), 0.0);
-      return Spec();
-    }
-
-    template <typename TA, typename TB>
-    INLINE T & operator+= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
-    {
-      LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), 1.0, Spec(), 1.0);
-      return Spec();
-    }
-
-    template <typename TA, typename TB>
-    INLINE T & operator-= (const Expr<LapackExpr<MultExpr<TA, TB> > > & prod)
-    {
-      LapackMultAdd (prod.Spec().A().A(), prod.Spec().A().B(), -1.0, Spec(), 1.0);
       return Spec();
     }
     */
@@ -2013,31 +1987,6 @@ namespace ngbla
 
 
 
-  /* **************************** Inverse *************************** */
-
-
-  enum class INVERSE_LIB { INV_NGBLA, INV_NGBLA_LU, INV_LAPACK, INV_NGBLA_QR, INV_CHOOSE };
-
-  /// Calculate inverse. Gauss elimination with row pivoting
-  template <class T2>
-  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<T2> inv, INVERSE_LIB il = INVERSE_LIB::INV_CHOOSE);
-
-  extern NGS_DLL_HEADER void CalcInverse (FlatMatrix<double> inv, INVERSE_LIB il = INVERSE_LIB::INV_CHOOSE);
-
-  template <class T, class T2>
-  inline void CalcInverse (const FlatMatrix<T> m, FlatMatrix<T2> inv)
-  {
-    inv = m;
-    CalcInverse (inv);
-  }
-
-  template <class T, class T2>
-  inline void CalcInverse (const FlatMatrix<T> m, Matrix<T2> & inv)
-  {
-    inv = m;
-    CalcInverse (inv);
-  }
-
   
   extern NGS_DLL_HEADER void CalcLU (SliceMatrix<double> A, FlatArray<int> p);
   extern NGS_DLL_HEADER void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p);
@@ -2045,245 +1994,12 @@ namespace ngbla
   extern NGS_DLL_HEADER void SolveTransFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X);
   
 
-  /**
-     Calculates the inverse of a Matrix.
-  */
-  template <typename T>
-  inline Matrix<T> Inv (const FlatMatrix<T> & m)
-  {
-    Matrix<T> inv(m.Height(),m.Height());
-    CalcInverse (m, inv);
-    return inv;
-  }
-
-  inline void CalcInverse (double & m)
-  {
-    m = 1 / m;
-  }
-
-  inline void CalcInverse (Complex & m)
-  {
-    m = 1.0 / m;
-  }
-
-  template <int H, int W, typename T>
-  inline void CalcInverse (Mat<H,W,T> & m)
-  {
-    FlatMatrix<T> fm(m);
-    CalcInverse (fm);
-  }
 
 
-  INLINE void CalcInverse (const double & m, double & inv)
-  {
-    inv = 1 / m;
-  }
-
-  INLINE void CalcInverse (const Complex & m, Complex & inv)
-  {
-    inv = 1.0 / m;
-  }
-
-  template <int H, int W, typename T, typename TINV>
-  inline void CalcInverse (const Mat<H,W,T> & m, TINV & inv)
-  {
-    FlatMatrix<T> fm(m);
-    FlatMatrix<T> finv(inv);
-    CalcInverse (fm, finv);
-  }
-
-  template <typename T, typename TINV>
-  INLINE void CalcInverse (const Mat<0,0,T> & m, TINV & inv)
-  {
-    ;
-  }
-
-  template <typename T, typename TINV>
-  INLINE void CalcInverse (const Mat<1,1,T> & m, TINV & inv)
-  {
-    inv(0,0) = 1.0 / m(0,0);
-  }
-
-  template <typename T, typename TINV>
-  INLINE void CalcInverse (const Mat<2,2,T> & m, TINV & inv)
-  {
-    T idet = 1.0 / (m(0,0) * m(1,1) - m(0,1) * m(1,0));
-    inv(0,0) = idet * m(1,1);
-    inv(0,1) = -idet * m(0,1);
-    inv(1,0) = -idet * m(1,0);
-    inv(1,1) = idet * m(0,0);
-  }
-
-  template <typename T, typename TINV>
-  INLINE void CalcInverse (Mat<3,3,T> m, TINV & inv)
-  {
-    T h0 = m(4)*m(8)-m(5)*m(7);
-    T h1 = m(5)*m(6)-m(3)*m(8);
-    T h2 = m(3)*m(7)-m(4)*m(6);
-    T det = m(0) * h0 + m(1) * h1 + m(2) * h2;
-    T idet = 1.0 / det;
-    
-    inv(0,0) =  idet * h0; 
-    inv(0,1) = -idet * (m(1) * m(8) - m(2) * m(7));
-    inv(0,2) =  idet * (m(1) * m(5) - m(2) * m(4));
-    
-    inv(1,0) =  idet * h1; 
-    inv(1,1) =  idet * (m(0) * m(8) - m(2) * m(6));
-    inv(1,2) = -idet * (m(0) * m(5) - m(2) * m(3));
-    
-    inv(2,0) =  idet * h2; 
-    inv(2,1) = -idet * (m(0) * m(7) - m(1) * m(6));
-    inv(2,2) =  idet * (m(0) * m(4) - m(1) * m(3));
-    return;
-  }
-
-
-
-  template <int H, int W, typename T>
-  INLINE Mat<H,W,T> Inv (Mat<H,W,T> m)
-  {
-    Mat<H,W,T> inv;
-    CalcInverse (m, inv);
-    return inv;
-  }
-
-  template <int H, int W, typename T>
-  INLINE Mat<H,W,T> Adj (Mat<H,W,T> m)
-  {
-    cerr << "Adj<" << H << "," << W << "> not implemented" << endl;
-    return m;
-  }
-
-
-  template <typename T>
-  INLINE Mat<0,0,T> Adj (Mat<0,0,T> m)
-  {
-    return Mat<0,0,T>();
-  }
-
-  template <typename T>
-  INLINE Mat<1,1,T> Adj (Mat<1,1,T> m)
-  {
-    Mat<1,1,T> adj;
-    adj(0,0) = m(0,0);
-    return adj;
-  }
-
-  template <typename T>
-  INLINE Mat<2,2,T> Adj (Mat<2,2,T> m)
-  {
-    Mat<2,2,T> adj;
-    adj(0,0) = m(1,1);
-    adj(0,1) = -m(0,1);
-    adj(1,0) = -m(1,0);
-    adj(1,1) = m(0,0);
-    return adj;
-  }
-
-
-  template <typename T>
-  INLINE Mat<3,3,T> Adj (Mat<3,3,T> m)
-  {
-    Mat<3,3,T> adj;
-    adj(0,0) =  m(4)*m(8)-m(5)*m(7);
-    adj(0,1) = -(m(1) * m(8) - m(2) * m(7));
-    adj(0,2) =  m(1) * m(5) - m(2) * m(4);
-    
-    adj(1,0) =  m(5)*m(6)-m(3)*m(8);
-    adj(1,1) =  m(0) * m(8) - m(2) * m(6);
-    adj(1,2) = -(m(0) * m(5) - m(2) * m(3));
-    
-    adj(2,0) =  (m(3)*m(7)-m(4)*m(6));
-    adj(2,1) = -(m(0) * m(7) - m(1) * m(6));
-    adj(2,2) =  (m(0) * m(4) - m(1) * m(3));
-    return adj;
-  }
-
-
-
-  template <int H, int W, typename T>
-  INLINE Mat<H,W,T> Cof (Mat<H,W,T> m)
-  {
-    cerr << "Cof<" << H << "," << W << "> not implemented" << endl;
-    return m;
-  }
-
-  template <typename T>
-  INLINE Mat<0,0,T> Cof (Mat<0,0,T> m)
-  {
-    return Mat<0,0,T>();
-  }
-
-  template <typename T>
-  INLINE Mat<1,1,T> Cof (Mat<1,1,T> m)
-  {
-    Mat<1,1,T> cof;
-    cof(0,0) = T(1); // m(0,0);
-    return cof;
-  }
-
-  template <typename T>
-  INLINE Mat<2,2,T> Cof (Mat<2,2,T> m)
-  {
-    Mat<2,2,T> cof;
-    cof(0,0) = m(1,1);
-    cof(0,1) = -m(1,0);
-    cof(1,0) = -m(0,1);
-    cof(1,1) = m(0,0);
-    return cof;
-  }
-
-
-  template <typename T>
-  INLINE Mat<3,3,T> Cof (Mat<3,3,T> m)
-  {
-    Mat<3,3,T> cof;
-    cof(0,0) =  m(1,1)*m(2,2)-m(2,1)*m(1,2);
-    cof(0,1) = -m(1,0)*m(2,2)+m(2,0)*m(1,2);
-    cof(0,2) =  m(1,0)*m(2,1)-m(2,0)*m(1,1);
-    
-    cof(1,0) = -m(0,1)*m(2,2)+m(2,1)*m(0,2); 
-    cof(1,1) =  m(0,0)*m(2,2)-m(2,0)*m(0,2); 
-    cof(1,2) = -m(0,0)*m(2,1)+m(2,0)*m(0,1);
-    
-    cof(2,0) =  m(0,1)*m(1,2)-m(1,1)*m(0,2); 
-    cof(2,1) = -m(0,0)*m(1,2)+m(1,0)*m(0,2); 
-    cof(2,2) =  m(0,0)*m(1,1)-m(1,0)*m(0,1);
-    return cof;
-  }
-
-
-  template <typename T>
-  INLINE Mat<4,4,T> Cof (Mat<4,4,T> m)
-  {
-    Mat<4,4,T> cof;
-    cof(0,0) =   (m(1,1)*m(2,2)*m(3,3)+m(1,2)*m(2,3)*m(3,1)+m(1,3)*m(2,1)*m(3,2) - m(1,1)*m(3,2)*m(2,3) - m(2,1)*m(1,2)*m(3,3) - m(3,1)*m(2,2)*m(1,3));
-    cof(0,1) =  -(m(1,0)*m(2,2)*m(3,3)+m(1,2)*m(2,3)*m(3,0)+m(1,3)*m(2,0)*m(3,2) - m(1,0)*m(3,2)*m(2,3) - m(2,0)*m(1,2)*m(3,3) - m(3,0)*m(2,2)*m(1,3));
-    cof(0,2) =   (m(1,0)*m(2,1)*m(3,3)+m(1,1)*m(2,3)*m(3,0)+m(1,3)*m(2,0)*m(3,1) - m(1,0)*m(3,1)*m(2,3) - m(2,0)*m(1,1)*m(3,3) - m(3,0)*m(2,1)*m(1,3));
-    cof(0,3) =  -(m(1,0)*m(2,1)*m(3,2)+m(1,1)*m(2,2)*m(3,0)+m(1,2)*m(2,0)*m(3,1) - m(1,0)*m(3,1)*m(2,2) - m(2,0)*m(1,1)*m(3,2) - m(3,0)*m(2,1)*m(1,2));
-
-    cof(1,0) =  -(m(0,1)*m(2,2)*m(3,3)+m(0,2)*m(2,3)*m(3,1)+m(0,3)*m(2,1)*m(3,2) - m(0,1)*m(3,2)*m(2,3) - m(2,1)*m(0,2)*m(3,3) - m(3,1)*m(2,2)*m(0,3));
-    cof(1,1) =   (m(0,0)*m(2,2)*m(3,3)+m(0,2)*m(2,3)*m(3,0)+m(0,3)*m(2,0)*m(3,2) - m(0,0)*m(3,2)*m(2,3) - m(2,0)*m(0,2)*m(3,3) - m(3,0)*m(2,2)*m(0,3));
-    cof(1,2) =  -(m(0,0)*m(2,1)*m(3,3)+m(0,1)*m(2,3)*m(3,0)+m(0,3)*m(2,0)*m(3,1) - m(0,0)*m(3,1)*m(2,3) - m(2,0)*m(0,1)*m(3,3) - m(3,0)*m(2,1)*m(0,3));
-    cof(1,3) =   (m(0,0)*m(2,1)*m(3,2)+m(0,1)*m(2,2)*m(3,0)+m(0,2)*m(2,0)*m(3,1) - m(0,0)*m(3,1)*m(2,2) - m(2,0)*m(0,1)*m(3,2) - m(3,0)*m(2,1)*m(0,2));
-
-    cof(2,0) =   (m(0,1)*m(1,2)*m(3,3)+m(0,2)*m(1,3)*m(3,1)+m(0,3)*m(1,1)*m(3,2) - m(0,1)*m(3,2)*m(1,3) - m(1,1)*m(0,2)*m(3,3) - m(3,1)*m(1,2)*m(0,3));
-    cof(2,1) =  -(m(0,0)*m(1,2)*m(3,3)+m(0,2)*m(1,3)*m(3,0)+m(0,3)*m(1,0)*m(3,2) - m(0,0)*m(3,2)*m(1,3) - m(1,0)*m(0,2)*m(3,3) - m(3,0)*m(1,2)*m(0,3));
-    cof(2,2) =   (m(0,0)*m(1,1)*m(3,3)+m(0,1)*m(1,3)*m(3,0)+m(0,3)*m(1,0)*m(3,1) - m(0,0)*m(3,1)*m(1,3) - m(1,0)*m(0,1)*m(3,3) - m(3,0)*m(1,1)*m(0,3));
-    cof(2,3) =  -(m(0,0)*m(1,1)*m(3,2)+m(0,1)*m(1,2)*m(3,0)+m(0,2)*m(1,0)*m(3,1) - m(0,0)*m(3,1)*m(1,2) - m(1,0)*m(0,1)*m(3,2) - m(3,0)*m(1,1)*m(0,2));
-
-    cof(3,0) =  -(m(0,1)*m(1,2)*m(2,3)+m(0,2)*m(1,3)*m(2,1)+m(0,3)*m(1,1)*m(2,2) - m(0,1)*m(2,2)*m(1,3) - m(1,1)*m(0,2)*m(2,3) - m(2,1)*m(1,2)*m(0,3));
-    cof(3,1) =   (m(0,0)*m(1,2)*m(2,3)+m(0,2)*m(1,3)*m(2,0)+m(0,3)*m(1,0)*m(2,2) - m(0,0)*m(2,2)*m(1,3) - m(1,0)*m(0,2)*m(2,3) - m(2,0)*m(1,2)*m(0,3));
-    cof(3,2) =  -(m(0,0)*m(1,1)*m(2,3)+m(0,1)*m(1,3)*m(2,0)+m(0,3)*m(1,0)*m(2,1) - m(0,0)*m(2,1)*m(1,3) - m(1,0)*m(0,1)*m(2,3) - m(2,0)*m(1,1)*m(0,3));
-    cof(3,3) =   (m(0,0)*m(1,1)*m(2,2)+m(0,1)*m(1,2)*m(2,0)+m(0,2)*m(1,0)*m(2,1) - m(0,0)*m(2,1)*m(1,2) - m(1,0)*m(0,1)*m(2,2) - m(2,0)*m(1,1)*m(0,2));
-    return cof;
-  }
-
-
-
-
-
-
+  
+  template <typename TA,
+            enable_if_t<IsScalar<TA>(),bool> = true>
+  INLINE auto Inv (TA val) { return 1.0/val; } 
   
 
 
@@ -2293,6 +2009,7 @@ namespace ngbla
   /**
      Calculates the determinant of a Matrix.
   */
+
   template <class T>
   inline typename T::TELEM Det (const MatExpr<T> & m)
   {
@@ -2322,6 +2039,7 @@ namespace ngbla
 
     return typename T::TELEM (0);  
   }
+
 }
 
 #endif
