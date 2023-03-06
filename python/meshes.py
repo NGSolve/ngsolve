@@ -36,7 +36,7 @@ def Make1DMesh(n, mapping = None, periodic=False):
     idx_right = mesh.AddRegion("right", dim=0)
         
     for i in range(n):
-        mesh.Add(Element1D([pids[i],pids[i+1]],index=idx_inner))
+        mesh.Add(Element1D([pids[i+1],pids[i]],index=idx_inner))
     mesh.Add (Element0D( pids[0], index=idx_left))
     mesh.Add (Element0D( pids[n], index=idx_right))
     if periodic:
