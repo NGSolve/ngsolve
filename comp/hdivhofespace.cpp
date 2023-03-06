@@ -61,7 +61,7 @@ namespace ngcomp
       Vec<D> n = sip.GetNV();
       // Mat<D,D> mati;
       fel.CalcMappedShape(sip,shape);
-      mat.Col(0) = shape * n;
+      mat.Row(0) = shape * n;
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
