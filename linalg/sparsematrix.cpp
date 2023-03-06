@@ -128,9 +128,9 @@ namespace ngla
     if (!graph.owner) {
       throw Exception("Matrix-Graph Move-constructor with graph that is now owner ... is that valid?");
     }
-    size = move(graph.size);
-    width = move(graph.width);
-    nze = move(graph.nze);
+    size = std::move(graph.size);
+    width = std::move(graph.width);
+    nze = std::move(graph.nze);
     owner = true;
     firsti.Swap (graph.firsti);
     colnr.Swap (graph.colnr);
@@ -610,7 +610,7 @@ namespace ngla
                          }
                      }
                    }
-                   entries[row_hi] = move(loctable);
+                   entries[row_hi] = std::move(loctable);
                  },
                  TasksPerThread(4));
     

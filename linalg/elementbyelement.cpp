@@ -688,7 +688,7 @@ namespace ngla
   ConstantElementByElementMatrix ::
   ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<> amatrix,
                                   Table<int> acol_dnums, Table<int> arow_dnums)
-  : h(ah), w(aw), matrix(amatrix), col_dnums(move(acol_dnums)), row_dnums(move(arow_dnums))
+  : h(ah), w(aw), matrix(amatrix), col_dnums(std::move(acol_dnums)), row_dnums(std::move(arow_dnums))
   {
 
     // checking zero entries:

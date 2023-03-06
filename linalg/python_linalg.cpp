@@ -111,7 +111,7 @@ void ExportSparseMatrix(py::module m)
            return py::make_tuple (pyri, pyci, pyvals);
            */
            // moves the arrays
-           return py::make_tuple (move(ri), move(ci), move(vals));
+           return py::make_tuple (std::move(ri), std::move(ci), std::move(vals));
          })
     
     .def("CSR", [] (shared_ptr<SparseMatrix<T>> sp) -> py::object
@@ -955,7 +955,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def(py::init<>([] (shared_ptr<MultiVector> vec)
                     { return make_shared<BaseMatrixFromMultiVector> (vec); }))
     .def(py::init<>([] (Matrix<> mat)
-                    { return make_shared<BaseMatrixFromMatrix> (move(mat)); }))
+                    { return make_shared<BaseMatrixFromMatrix> (std::move(mat)); }))
     .def(py::init<>([] (py::object pyob)
                     { return make_shared<PyLinearOperator> (pyob); }))
     .def("__str__", [](BaseMatrix &self) { return ToString<BaseMatrix>(self); } )
@@ -1497,7 +1497,7 @@ inverse : string
                     Array<size_t> inda(ind.size());
                     for (size_t i = 0; i < inda.Size(); i++)
                       inda[i] = ind[i];
-                    return make_shared<PermutationMatrix> (w, move(inda)); 
+                    return make_shared<PermutationMatrix> (w, std::move(inda)); 
                   }),
          py::arg("w"), py::arg("ind"))
     ;

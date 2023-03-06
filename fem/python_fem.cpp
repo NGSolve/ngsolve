@@ -52,7 +52,7 @@ namespace ngfem
         Array<shared_ptr<CoefficientFunction>> cflist(el.size());
         for (int i : Range(cflist.Size()))
           cflist[i] = MakeCoefficient(el[i]);
-        return MakeDomainWiseCoefficientFunction(move(cflist));
+        return MakeDomainWiseCoefficientFunction(std::move(cflist));
       }
 
     if (py::isinstance<py::tuple>(val))
@@ -61,7 +61,7 @@ namespace ngfem
         Array<shared_ptr<CoefficientFunction>> cflist(et.size());
         for (int i : Range(cflist.Size()))
           cflist[i] = MakeCoefficient(et[i]);
-        return MakeVectorialCoefficientFunction(move(cflist));
+        return MakeVectorialCoefficientFunction(std::move(cflist));
       }
     throw std::invalid_argument(string("Cannot make CoefficientFunction from ") + string(py::str(val)) + " of type " + string(py::str(val.get_type())));
   }
@@ -688,7 +688,7 @@ val : can be one of the following:
         if (stride) cstride = makeCArray<int>(*stride);
         if (pos) cpos = makeCArray<int>(*pos);
         return MakeExtendDimensionCoefficientFunction(self, makeCArray<int>(dims),
-                                                  move(cpos), move(cstride)); } ,
+                                                  std::move(cpos), std::move(cstride)); } ,
       "Extend shape by 0-padding", py::arg("dims"), py::arg("pos")=nullopt, py::arg("stride")=nullopt)
     .def_property_readonly("is_complex",
                            [] (CF &  self) { return self.IsComplex(); },
@@ -727,7 +727,7 @@ val : can be one of the following:
              if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
              throw py::index_error();
            */
-           return MakeSubTensorCoefficientFunction (self, first, move(num), move(dist));
+           return MakeSubTensorCoefficientFunction (self, first, std::move(num), std::move(dist));
          }, py::arg("components"))
 
     /*
@@ -993,7 +993,7 @@ val : can be one of the following:
                    vecs.Append(vec);
                  }
            if (vecs.Size() == dims.Size())
-               return MakeVectorContractionCoefficientFunction (self, move(vecs));
+               return MakeVectorContractionCoefficientFunction (self, std::move(vecs));
 
            int numslice = 0;
            int first = 0;
@@ -1045,7 +1045,7 @@ val : can be one of the following:
            if (numslice == 0)
              return MakeComponentCoefficientFunction(self, first);
            else
-             return MakeSubTensorCoefficientFunction(self, first, move(num), move(dist));
+             return MakeSubTensorCoefficientFunction(self, first, std::move(num), std::move(dist));
          })
 
 
@@ -1366,7 +1366,7 @@ keep_files : bool
         "Identity matrix of given dimension");
   m.def("Id", [] (const Array<int>& dims) { return IdentityCF(dims); }, py::arg("dims"),
         "Identity tensor for a space with dimensions 'dims', ie. the result is of 'dims + dims'");
-  m.def("Zero", [] (const Array<int>& dims) { return ZeroCF(move(dims)); });
+  m.def("Zero", [] (const Array<int>& dims) { return ZeroCF(std::move(dims)); });
   m.def("Inv", [] (shared_ptr<CF> cf) { return InverseCF(cf); });
   m.def("Cof", [] (shared_ptr<CF> cf) { return CofactorCF(cf); });
   m.def("Det", [] (shared_ptr<CF> cf) { return DeterminantCF(cf); });
@@ -1461,7 +1461,7 @@ allow_fail : bool
             map<string, bool> options{};
             for (const auto kv : kwargs)
                 options[py::extract<string>(kv.first)()] = py::extract<bool>(kv.second)();
-            return EinsumCF(move(index_signature), move(cfs), options);
+            return EinsumCF(std::move(index_signature), std::move(cfs), options);
         }, py::arg("einsum_signature"), docu_string(R"raw_string(
 Generic tensor product in the spirit of numpy's \"einsum\" feature.
 
@@ -2942,14 +2942,14 @@ alpha : double
               for(auto i : Range(vals))
                 vals[i] = c_array.at(i);
               return make_shared<VoxelCoefficientFunction<Complex>>
-                (start, end, dim_vals, move(vals), linear, trafo);
+                (start, end, dim_vals, std::move(vals), linear, trafo);
             }
           auto d_array = py::cast<py::array_t<double>>(values.attr("ravel")());
           Array<double> vals(values.size());
           for(auto i : Range(vals))
             vals[i] = d_array.at(i);
           return make_shared<VoxelCoefficientFunction<double>>
-              (start, end, dim_vals, move(vals), linear, trafo);
+              (start, end, dim_vals, std::move(vals), linear, trafo);
         }, py::arg("start"), py::arg("end"), py::arg("values"),
         py::arg("linear")=true, py::arg("trafocf")=DummyArgument(), R"delimiter(CoefficientFunction defined on a grid.
 

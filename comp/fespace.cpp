@@ -1720,7 +1720,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     Table<int> table = creator.MoveTable();
     if (print)
       *testout << "smoothing blocks = " << endl << table << endl;
-    return make_shared<Table<int>> (move(table));
+    return make_shared<Table<int>> (std::move(table));
   }
 
     
@@ -1779,7 +1779,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                                           ElementId (vb, els_of_col[mynr]), 
                                           temp_dnums, lh);
                       
-                      func (move(el), lh);
+                      func (std::move(el), lh);
                     }
 
                   ProgressOutput::SumUpLocal();
@@ -1806,7 +1806,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 HeapReset hr(lh);
                 FESpace::Element el(fes, ElementId (vb, els_of_col[i]), temp_dnums, lh);
                 
-                func (move(el), lh);
+                func (std::move(el), lh);
               }
 	    
             catch (const Exception & e)

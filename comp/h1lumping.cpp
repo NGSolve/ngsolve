@@ -197,14 +197,14 @@ namespace ngcomp
           ir3.Append ( IntegrationPoint( 1, 0, 0, 1.0/6));
           ir3.Append ( IntegrationPoint( 0, 1, 0, 1.0/6));
           ir3.Append ( IntegrationPoint( 0, 0, 0, 1.0/6));        
-          rules[ET_TRIG] = move(ir3);
+          rules[ET_TRIG] = std::move(ir3);
         
           IntegrationRule ir4;  // tet
           ir4.Append ( IntegrationPoint( 1, 0, 0, 1.0/24) );
           ir4.Append ( IntegrationPoint( 0, 1, 0, 1.0/24) );
           ir4.Append ( IntegrationPoint( 0, 0, 1, 1.0/24) );
           ir4.Append ( IntegrationPoint( 0, 0, 0, 1.0/24) );
-          rules[ET_TET] = move(ir4);
+          rules[ET_TET] = std::move(ir4);
           break;
         }
 
@@ -219,7 +219,7 @@ namespace ngcomp
           ir7.Append ( IntegrationPoint( 0.5, 0.5, 0, 1.0/15));
           ir7.Append ( IntegrationPoint( 1.0/3, 1.0/3, 0, 9.0/40));
           
-          rules[ET_TRIG] = move(ir7);
+          rules[ET_TRIG] = std::move(ir7);
           
           
           IntegrationRule ir15;  // tet
@@ -242,7 +242,7 @@ namespace ngcomp
           
           ir15.Append ( IntegrationPoint( 1./4, 1./4, 1./4, 16./315) );
           
-          rules[ET_TET] = move(ir15);
+          rules[ET_TET] = std::move(ir15);
           break;
         }
         
