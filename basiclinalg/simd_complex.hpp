@@ -129,6 +129,12 @@ namespace ngcore
   INLINE SIMD<Complex, N> operator* (SIMD<double, N> b, Complex a)
   { return SIMD<Complex, N> (a.real()*b, a.imag()*b); }
   template <int N>
+  INLINE SIMD<Complex, N> operator* (Complex a, SIMD<Complex, N> b)
+  { return SIMD<Complex, N> (a)*b; }
+  template <int N>
+  INLINE SIMD<Complex, N> operator* (SIMD<Complex, N> b, Complex a)
+  { return SIMD<Complex, N> (a)*b; }
+  template <int N>
   INLINE SIMD<Complex, N> & operator*= (SIMD<Complex, N> & a, double b)
   { a.real()*= b; a.imag() *= b; return a; }  
   template <int N>
