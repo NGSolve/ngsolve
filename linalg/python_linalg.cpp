@@ -1136,7 +1136,6 @@ inverse : string
              }
            else
            {
-             py::gil_scoped_acquire aq;
              size_t size = py::len(blocks);
            
              Array<int> cnt(size);
@@ -1158,7 +1157,7 @@ inverse : string
              return py::cast(make_shared<SymmetricBlockGaussSeidelPrecond>(m, blocktable));  
            else
              return py::cast(m->CreateBlockJacobiPrecond (blocktable, nullptr, parallel));
-         }, py::call_guard<py::gil_scoped_release>(), py::arg("blocks"), py::arg("parallel")=false,
+         }, py::arg("blocks"), py::arg("parallel")=false,
          py::arg("GS")=false)
     .def("DeleteZeroElements", [](shared_ptr<BaseSparseMatrix> m, double tol)->shared_ptr<BaseSparseMatrix>
          {
