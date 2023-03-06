@@ -1116,7 +1116,7 @@ namespace ngfem
             FlatMatrix<> mat(2,1,lh);
 	    FlatVec<3> p1 = points (edges[fnr][0]);
 	    FlatVec<3> p2 = points (edges[fnr][1]);
-            mat.Col(0) = p1 - p2;
+            mat.Col(0) = (p1 - p2).Range(0,2);
             return mat;
 	    break;
 	  }
@@ -2343,7 +2343,7 @@ namespace ngfem
     SIMD_IntegrationRule & operator= (SIMD_IntegrationRule &&) = default;
     
     SIMD_IntegrationRule (size_t asize, SIMD<IntegrationPoint> * pip)
-      : Array<SIMD<IntegrationPoint>> (asize, pip) { ; }
+      : Array<SIMD<IntegrationPoint>> (asize, pip), nip(asize*SIMD<IntegrationPoint>::Size()) { }
 
     size_t GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
     void SetNIP(size_t _nip) { nip = _nip; }
