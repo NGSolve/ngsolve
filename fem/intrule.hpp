@@ -572,6 +572,13 @@ namespace ngfem
         }
     }
 
+    INLINE const Mat<DIMR,DIMS,SCAL> GetJacobianCofactor() const 
+    { 
+      if (DIMS == DIMR)
+        return Cof (dxdxi);
+      else
+        return det * Trans(GetJacobianInverse());
+    }
 
     INLINE operator Vec<DIMS, AutoDiff<DIMR,TSCAL>> () const
     {
