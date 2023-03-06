@@ -520,11 +520,13 @@ namespace ngfem
     for (int i = 0; i < hmips.Size(); i++)
       {
         auto & mip = hmips[i];
-        Mat<DIM_ELEMENT,DIM_SPACE,SCAL> inv_jac = mip.GetJacobianInverse();
-        double det = fabs (mip.GetJacobiDet()); // GetMeasure();
-        Vec<DIM_SPACE> normal = det * Trans (inv_jac) * normal_ref;
+        // Mat<DIM_ELEMENT,DIM_SPACE,SCAL> inv_jac = mip.GetJacobianInverse();
+        // double det = fabs (mip.GetJacobiDet()); // GetMeasure();
+        // Vec<DIM_SPACE> normal = det * Trans (inv_jac) * normal_ref;
+        Vec<DIM_SPACE> normal = mip.GetJacobianCofactor() * normal_ref;
+        double sign = mip.GetJacobiDet() > 0 ? 1 : -1;
         double len = L2Norm (normal);       // that's the surface measure
-        normal *= 1.0/len;                  // normal vector on physical element
+        normal *= sign/len;                  // normal vector on physical element
         mip.SetMeasure (len);
 
         if constexpr (DIM_ELEMENT == DIM_SPACE)
