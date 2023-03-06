@@ -702,7 +702,7 @@ namespace ngcomp
       }
     
     graph -> FindSameNZE();
-    return move(*graph);
+    return std::move(*graph);
   }
 
 
@@ -5816,7 +5816,7 @@ namespace ngcomp
                         }
                     });
                       
-                  mgfs.Append (move(mgf));
+                  mgfs.Append (std::move(mgf));
                 }
             }
             
@@ -5905,7 +5905,7 @@ namespace ngcomp
                           hhmgfxi.Rows(myrange) = mgfs[cntgf].Rows(myrange) * hbmat;
                         });
                       
-                      mgfxi.Append (move(hmgfxi));
+                      mgfxi.Append (std::move(hmgfxi));
                       cntgf++;
                     }
                 }
@@ -6099,7 +6099,7 @@ namespace ngcomp
                         fes->GetDofNrs( { VOL, myinds[i] }, dofnr);
                         vec.GetIndirect(dofnr, mgf.Row(i));                    
                       }
-                    mgfs.Append (move(mgf));
+                    mgfs.Append (std::move(mgf));
                   }
               }
 
@@ -6166,7 +6166,7 @@ namespace ngcomp
                         
                         hhmgfxi = mgfs[cntgf] * hbmat;
                         
-                        mgfxi.Append (move(hmgfxi));
+                        mgfxi.Append (std::move(hmgfxi));
                         cntgf++;
                       }
                   }

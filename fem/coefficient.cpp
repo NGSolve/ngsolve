@@ -217,7 +217,7 @@ namespace ngfem
             auto vec = UnitVectorCF(dim,i)->Reshape(var->Dimensions());
             ddi[i] = this->Diff(var, vec);
           }
-        auto dvec = MakeVectorialCoefficientFunction (move(ddi));
+        auto dvec = MakeVectorialCoefficientFunction (std::move(ddi));
         auto dvec1 = dvec->Reshape(var->Dimension(), this->Dimension()) -> Transpose();
         auto res = dvec1 -> Reshape(resultdims);
         cache[thisptr] = res;
@@ -1358,7 +1358,7 @@ public:
 
   ZeroCoefficientFunction (Array<int> dims) : T_CoefficientFunction<ZeroCoefficientFunction>(1, false)
   {
-    SetDimensions(move(dims));
+    SetDimensions(std::move(dims));
   }
 
   
@@ -3630,8 +3630,8 @@ public:
             cross2[i] = CrossProduct(c1,MakeSubTensorCoefficientFunction(diffc2,i,Array<int>({3}),Array<int>({dimvar})));
           }
         
-        auto dcross1 = MakeVectorialCoefficientFunction (move(cross1))->Reshape(dimvar,h) -> Transpose() -> Reshape(dimres);
-        auto dcross2 = MakeVectorialCoefficientFunction (move(cross2))->Reshape(dimvar,h) -> Transpose() -> Reshape(dimres);
+        auto dcross1 = MakeVectorialCoefficientFunction (std::move(cross1))->Reshape(dimvar,h) -> Transpose() -> Reshape(dimres);
+        auto dcross2 = MakeVectorialCoefficientFunction (std::move(cross2))->Reshape(dimvar,h) -> Transpose() -> Reshape(dimres);
     
         res = dcross1 + dcross2;
       }
@@ -3649,7 +3649,7 @@ public:
         cross[1] = c13*c21 - c11*c23;
         cross[2] = c11*c22 - c12*c21;
 
-        res = MakeVectorialCoefficientFunction(move(cross)) -> DiffJacobi (var, cache);
+        res = MakeVectorialCoefficientFunction(std::move(cross)) -> DiffJacobi (var, cache);
         
       }
     cache[thisptr] = res;
@@ -5908,7 +5908,7 @@ public:
         dist[i] = prod;
         prod *= vardims[i];
       }
-    auto res = MakeSubTensorCoefficientFunction(diffc1, comp*var->Dimension(), move(vardims), move(dist));
+    auto res = MakeSubTensorCoefficientFunction(diffc1, comp*var->Dimension(), std::move(vardims), std::move(dist));
     cache[thisptr] = res;
     return res;
   }  
@@ -6137,7 +6137,7 @@ public:
       
     Array<int> alldist { firstdist + dist };
     
-    auto res = MakeSubTensorCoefficientFunction(diffc1, first*vardim, move(dimres), move(alldist));
+    auto res = MakeSubTensorCoefficientFunction(diffc1, first*vardim, std::move(dimres), std::move(alldist));
     cache[thisptr] = res;
     return res;
   }  
@@ -6184,7 +6184,7 @@ MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first,
       return c1;
     }
   
-  return make_shared<SubTensorCoefficientFunction> (c1, first, move(num), move(dist));
+  return make_shared<SubTensorCoefficientFunction> (c1, first, std::move(num), std::move(dist));
 }
 
 
@@ -6257,7 +6257,7 @@ MakeTensorTransposeCoefficientFunction (shared_ptr<CoefficientFunction> c1, int 
   ia[i1] = i2;
   ia[i2] = i1;
 
-  return MakeTensorTransposeCoefficientFunction (c1, move(ia));
+  return MakeTensorTransposeCoefficientFunction (c1, std::move(ia));
 }
 
 
@@ -6460,7 +6460,7 @@ public:
 
 //    cout << "new stride: " << resstride << endl;
     auto diffc1 = c1->DiffJacobi (var, cache);
-    auto res = MakeExtendDimensionCoefficientFunction (diffc1, move(resdims), Array<int>(pos), move(resstride));
+    auto res = MakeExtendDimensionCoefficientFunction (diffc1, std::move(resdims), Array<int>(pos), std::move(resstride));
     cache[thisptr] = res;
     return res;
   }
@@ -6493,7 +6493,7 @@ MakeExtendDimensionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
 {
   if (c1->IsZeroCF())
     return ZeroCF(dims);
-  return make_shared<ExtendDimensionCoefficientFunction> (c1, move(dims), move(pos), move(stride));
+  return make_shared<ExtendDimensionCoefficientFunction> (c1, std::move(dims), std::move(pos), std::move(stride));
 }
 
 
@@ -6509,7 +6509,7 @@ public:
   VectorContractionCoefficientFunction() = default;
   VectorContractionCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                         Array<shared_ptr<CoefficientFunction>> avectors)
-    : BASE(1, ac1->IsComplex()), c1(ac1), vectors(move(avectors))
+    : BASE(1, ac1->IsComplex()), c1(ac1), vectors(std::move(avectors))
   {
     elementwise_constant = c1->ElementwiseConstant();
   }
@@ -6700,7 +6700,7 @@ shared_ptr<CoefficientFunction>
 MakeVectorContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
                                           Array<shared_ptr<CoefficientFunction>> vectors)
 {
-  return make_shared<VectorContractionCoefficientFunction> (c1, move(vectors));
+  return make_shared<VectorContractionCoefficientFunction> (c1, std::move(vectors));
 }
 
 
@@ -6943,7 +6943,7 @@ public:
         cfop.Append (cf->Operator(name));
       else
         cfop.Append (nullptr);
-    return MakeDomainWiseCoefficientFunction(move (cfop));
+    return MakeDomainWiseCoefficientFunction(std::move (cfop));
   }
   
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
@@ -6956,7 +6956,7 @@ public:
         ci_deriv.Append (cf->Diff(var, dir));
       else
         ci_deriv.Append (nullptr);
-    return MakeDomainWiseCoefficientFunction(move (ci_deriv));
+    return MakeDomainWiseCoefficientFunction(std::move (ci_deriv));
   }  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
@@ -7082,7 +7082,7 @@ public:
   {
     for(auto cf : aci)
       if (cf && !cf->IsZeroCF())
-        return make_shared<DomainWiseCoefficientFunction> (move (aci));
+        return make_shared<DomainWiseCoefficientFunction> (std::move (aci));
     for(auto cf : aci)
       if(cf)
         return ZeroCF(cf->Dimensions());
@@ -7888,7 +7888,7 @@ public:
         diff_ci.Append (cf->Diff(var, dir));
       else
         diff_ci.Append (nullptr);
-    auto veccf = MakeVectorialCoefficientFunction (move(diff_ci));
+    auto veccf = MakeVectorialCoefficientFunction (std::move(diff_ci));
     veccf->SetDimensions(Dimensions());
     return veccf;
   }
@@ -7913,7 +7913,7 @@ public:
         diff_ci.Append (cf->DiffJacobi (var, cache) -> Reshape(cf->Dimension()*dimvar));
       else
         diff_ci.Append (nullptr);
-    auto res = MakeVectorialCoefficientFunction (move(diff_ci)) -> Reshape(dimvar,this->Dimension()) -> Reshape(dimres);
+    auto res = MakeVectorialCoefficientFunction (std::move(diff_ci)) -> Reshape(dimvar,this->Dimension()) -> Reshape(dimres);
 
     cache[thisptr] = res;
     return res;
@@ -7950,7 +7950,7 @@ public:
     int totdim = 0;
     for (auto cf : aci)
       if (!cf->IsZeroCF())
-        return make_shared<VectorialCoefficientFunction> (move (aci));
+        return make_shared<VectorialCoefficientFunction> (std::move (aci));
       else
         totdim += cf->Dimension();
     
@@ -8078,7 +8078,7 @@ public:
       Array<shared_ptr<CoefficientFunction>> funcs(spacedim);
       funcs = ZeroCF(Array<int>());
       funcs[dir] = make_shared<ConstantCoefficientFunction> (1);
-      return MakeVectorialCoefficientFunction (move(funcs));
+      return MakeVectorialCoefficientFunction (std::move(funcs));
     }
     
     

@@ -35,7 +35,7 @@ namespace ngstd
       else
         cd[j-order] = 0;
     // throw Exception ("cannot differentiate, B-spline is discontinuous");
-    return BSpline (order-1, move(td), move(cd));
+    return BSpline (order-1, std::move(td), std::move(cd));
   }
   
   BSpline BSpline :: Integrate () const
@@ -82,7 +82,7 @@ namespace ngstd
     ci[origsize] = ci[origsize-1];
     
     // cout << "integral, c = " << c << endl << "ci = " << ci << endl;
-    return BSpline (order+1, move(text), move(ci));
+    return BSpline (order+1, std::move(text), std::move(ci));
   }
 
   

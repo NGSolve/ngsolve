@@ -951,7 +951,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
       }
       
     // cout << "smoothingblocks = " << endl << table << endl;
-    return make_shared<Table<int>> (move(table));
+    return make_shared<Table<int>> (std::move(table));
   }
 
 

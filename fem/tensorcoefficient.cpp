@@ -341,7 +341,7 @@ namespace ngfem {
         {
           auto pos = signature_part.find("...");
           if (pos == string::npos)
-              return {move(signature_part), move(ellipse_symbols)};
+              return {std::move(signature_part), std::move(ellipse_symbols)};
 
           auto nnew = cf->Dimensions().Size() - (signature_part.size() - 3);
 
@@ -349,7 +349,7 @@ namespace ngfem {
               ellipse_symbols += new_index_symbols(existing_symbols + ellipse_symbols, nnew - ellipse_symbols.size());
 
           signature_part = replace_ellipse(signature_part, pos, nnew, ellipse_symbols);
-          return {move(signature_part), move(ellipse_symbols)};
+          return {std::move(signature_part), std::move(ellipse_symbols)};
         }
 
         string expand_ellipses(const string& signature, const Array<shared_ptr<CoefficientFunction>>& cfs)
@@ -501,7 +501,7 @@ namespace ngfem {
             else
               new_cfs.Append(cfs[i]);
 
-          return {form_index_signature(parts), move(new_cfs)};
+          return {form_index_signature(parts), std::move(new_cfs)};
         }
 
         bool is_identity(const shared_ptr<CoefficientFunction> cf) {
@@ -551,7 +551,7 @@ namespace ngfem {
             }
 
 
-          return {form_index_signature(parts), move(new_cfs)};
+          return {form_index_signature(parts), std::move(new_cfs)};
         }
 
 
@@ -607,7 +607,7 @@ namespace ngfem {
             else if (!remove[i])
               new_cfs.Append(cfs[i]);
 
-          return {form_index_signature(new_parts), move(new_cfs)};
+          return {form_index_signature(new_parts), std::move(new_cfs)};
         }
 
 
@@ -773,7 +773,7 @@ namespace ngfem {
             for (auto i : Range(ordering))
               ordering[i] = parts[1].find(parts[0][i]);
             return MakeTensorTransposeCoefficientFunction(cfs[0],
-                                                          move(ordering));
+                                                          std::move(ordering));
           }
         }
 

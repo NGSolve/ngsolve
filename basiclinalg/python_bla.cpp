@@ -774,7 +774,7 @@ complex : bool
                     else
                       m = dsm;
                     // return py::cast(Matrix<double> (dsm));
-                    return py::cast(move(m));
+                    return py::cast(std::move(m));
                   }
                 else
                   {
@@ -796,7 +796,7 @@ complex : bool
                   {
                     Matrix<Complex> m(dsm.Height(), dsm.Width());
                     m = dsm;
-                    return py::cast(move(m));
+                    return py::cast(std::move(m));
                   }
                 else
                   {

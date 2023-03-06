@@ -1038,13 +1038,13 @@ namespace ngfem
         Array<shared_ptr<CoefficientFunction>> tmp(ddim);
         for(int j = 0; j < diffop->Dim(); j++)
             tmp[j] = MakeComponentCoefficientFunction(proxy,i*dim+j);
-        proxys[i] = MakeVectorialCoefficientFunction(move(tmp));
+        proxys[i] = MakeVectorialCoefficientFunction(std::move(tmp));
       }
     
     Array<shared_ptr<CoefficientFunction>> cflist(dim);
     for (int i = 0; i < dim; i++)
       cflist[i] = diffop->DiffShape(proxys[i], dir, Eulerian);
-    auto result = MakeVectorialCoefficientFunction(move(cflist)) -> Reshape(Array({dim,diffop->Dim()}));
+    auto result = MakeVectorialCoefficientFunction(std::move(cflist)) -> Reshape(Array({dim,diffop->Dim()}));
     //result->SetDimensions( Array({dim,diffop->Dim()}) );
 
     return result;

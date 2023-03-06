@@ -472,7 +472,7 @@ namespace ngfem
           auto dX = dir->Operator("Gradboundary");
           Array<shared_ptr<CoefficientFunction>> cflist(1);
           cflist[0] = TransposeCF(dir->Operator("hesseboundary"))*n;
-          auto Hn = MakeVectorialCoefficientFunction(move(cflist))->Reshape(dim, dim);
+          auto Hn = MakeVectorialCoefficientFunction(std::move(cflist))->Reshape(dim, dim);
           
           return -Hn - TransposeCF(dX)*WG + WG*(2*SymmetricCF(Pn*dX)-dX);
         }
