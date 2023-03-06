@@ -114,16 +114,19 @@ namespace ngcore
     { return SIMD<Complex, N> (a.real()*b.real()-a.imag()*b.imag(),
                             a.real()*b.imag()+a.imag()*b.real()); }
   template <int N>
-  INLINE SIMD<Complex, N> operator* (SIMD<double> a, SIMD<Complex, N> b)
+  INLINE SIMD<Complex, N> operator* (SIMD<double, N> a, SIMD<Complex, N> b)
   { return SIMD<Complex, N> (a*b.real(), a*b.imag()); }
   template <int N>
-  INLINE SIMD<Complex, N> operator* (SIMD<Complex, N> b, SIMD<double> a)
+  INLINE SIMD<Complex, N> operator* (SIMD<Complex, N> b, SIMD<double, N> a)
   { return SIMD<Complex, N> (a*b.real(), a*b.imag()); }
   template <int N>
   INLINE SIMD<Complex, N> operator* (double a, SIMD<Complex, N> b)
   { return SIMD<Complex, N> (a*b.real(), a*b.imag()); }
   template <int N>
   INLINE SIMD<Complex, N> operator* (Complex a, SIMD<double, N> b)
+  { return SIMD<Complex, N> (a.real()*b, a.imag()*b); }
+  template <int N>
+  INLINE SIMD<Complex, N> operator* (SIMD<double, N> b, Complex a)
   { return SIMD<Complex, N> (a.real()*b, a.imag()*b); }
   template <int N>
   INLINE SIMD<Complex, N> & operator*= (SIMD<Complex, N> & a, double b)
