@@ -388,73 +388,178 @@ namespace ngfem
       const IntegrationPoint& ip = bmip.IP();
       const ElementTransformation & eltrans = bmip.GetTransformation();
 
+      if (!eltrans.IsCurvedElement())
+	{
+	  res = 0;
+	  return;
+	}
+      
       double eps = 1e-4;
 
       Mat<D,D-1> dshape;
       
-      for (int j = 0; j < D-1; j++)   // d / dxj
-        {
-          IntegrationPoint ipl(ip);
-          ipl(j) -= eps;
-          IntegrationPoint ipr(ip);
-          ipr(j) += eps;
-          IntegrationPoint ipll(ip);
-          ipll(j) -= 2*eps;
-          IntegrationPoint iprr(ip);
-          iprr(j) += 2*eps;
-        
-          MappedIntegrationPoint<D-1,D> sipl(ipl, eltrans);
-          MappedIntegrationPoint<D-1,D> sipr(ipr, eltrans);
-          MappedIntegrationPoint<D-1,D> sipll(ipll, eltrans);
-          MappedIntegrationPoint<D-1,D> siprr(iprr, eltrans);
+      if (bmip.DimSpace() != bmip.DimElement())
+	{
+	  for (int j = 0; j < D-1; j++)   // d / dxj
+	    {
+	      IntegrationPoint ipl(ip);
+	      ipl(j) -= eps;
+	      IntegrationPoint ipr(ip);
+	      ipr(j) += eps;
+	      IntegrationPoint ipll(ip);
+	      ipll(j) -= 2*eps;
+	      IntegrationPoint iprr(ip);
+	      iprr(j) += 2*eps;
+	      
+	      MappedIntegrationPoint<D-1,D> sipl(ipl, eltrans);
+	      MappedIntegrationPoint<D-1,D> sipr(ipr, eltrans);
+	      MappedIntegrationPoint<D-1,D> sipll(ipll, eltrans);
+	      MappedIntegrationPoint<D-1,D> siprr(iprr, eltrans);
+	      
+	      dshape.Col(j) = (1.0/(12.0*eps)) * (8.0*sipr.GetNV()-8.0*sipl.GetNV()-siprr.GetNV()+sipll.GetNV());
+            }
+	  
+	  res = (dshape*static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip).GetJacobianInverse()).AsVector();
+	}
+      else
+	{
+          LocalHeapMem<10000> lh("Weingarten-lh-nosimd");
 
-          dshape.Col(j) = (1.0/(12.0*eps)) * (8.0*sipr.GetNV()-8.0*sipl.GetNV()-siprr.GetNV()+sipll.GetNV());
+	  ELEMENT_TYPE et = eltrans.GetElementType();
+          int fnr = bmip.IP().FacetNr();
+          auto f2eltrafo = Facet2ElementTrafo(et);
+
+	  for (int j = 0; j < D-1; j++)   // d / dxj
+	    {
+	      HeapReset hr(lh);
+	      IntegrationPoint ipts[4];
+              ipts[0] = ip;
+	      ipts[0](j) -= eps;
+	      ipts[1] = ip;
+              ipts[1](j) += eps;
+	      ipts[2] = ip;
+              ipts[2](j) -= 2*eps;
+	      ipts[3] = ip;
+	      ipts[3](j) += 2*eps;
+
+              IntegrationPoint ipts_vol[4];
+              f2eltrafo(fnr,ipts[0],ipts_vol[0]);
+              f2eltrafo(fnr,ipts[1],ipts_vol[1]);
+              f2eltrafo(fnr,ipts[2],ipts_vol[2]);
+              f2eltrafo(fnr,ipts[3],ipts_vol[3]);
+
+              IntegrationRule ir(4,ipts_vol);
+              MappedIntegrationRule<D,D> mir(ir, eltrans, lh);
+
+              dshape.Col(j) = (1.0/(12.0*eps)) * (8.0*mir[1].GetNV()-8.0*mir[0].GetNV()-mir[3].GetNV()+mir[2].GetNV());
+	    }
+
+          Mat<D,D-1> F = bmip.GetJacobian()*f2eltrafo.GetJacobian(fnr,lh);
+          Mat<D-1,D-1> FtF = Trans(F)*F;
+          Mat<D-1,D> Finv = Inv(FtF)*Trans(F);
+          res = (dshape*Finv).AsVector();
         }
-      
-      res = (dshape*static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip).GetJacobianInverse()).AsVector();
     }
 
     
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values) const override 
     {
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
       LocalHeapMem<10000> lh("Weingarten-lh");
 
-      auto & ir = mir.IR();
       double eps = 1e-4;
 
       Mat<D,D-1,SIMD<double>> dshape;
       Mat<D,D,SIMD<double>> phys_dshape;
+
+      if (bmir[0].DimSpace() != bmir[0].DimElement())
+	{
+          auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
+          auto & ir = mir.IR();
       
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          const SIMD<IntegrationPoint> & ip = ir[i];
-          const ElementTransformation & eltrans = mir[i].GetTransformation();
-
-          for (int j = 0; j < D-1; j++)   // d / dxj
-            {
-              HeapReset hr(lh);
-              SIMD<IntegrationPoint> ipts[4];
-              ipts[0] = ip;
-              ipts[0](j) -= eps;
-              ipts[1] = ip;
-              ipts[1](j) += eps;              
-              ipts[2] = ip;
-              ipts[2](j) -= 2*eps;
-              ipts[3] = ip;
-              ipts[3](j) += 2*eps;
-
-              SIMD_IntegrationRule ir(4, ipts);
-              SIMD_MappedIntegrationRule<D-1,D> mirl(ir, eltrans, lh);
-
-              dshape.Col(j) = (1.0/(12.0*eps)) * ( mirl.GetNormals().Row(2) - mirl.GetNormals().Row(3) - 8.0*mirl.GetNormals().Row(0) + 8.0*mirl.GetNormals().Row(1) );
-            }
-
-          phys_dshape = dshape*mir[i].GetJacobianInverse();
+	  for (size_t i = 0; i < mir.Size(); i++)
+	    {
+	      const SIMD<IntegrationPoint> & ip = ir[i];
+	      const ElementTransformation & eltrans = mir[i].GetTransformation();
+	      
+	      if (!eltrans.IsCurvedElement())
+		{
+		  values.Col(i).Range(D*D) = 0;
+		  continue;
+		}
+	      for (int j = 0; j < D-1; j++)   // d / dxj
+		{
+		  HeapReset hr(lh);
+		  SIMD<IntegrationPoint> ipts[4];
+		  ipts[0] = ip;
+		  ipts[0](j) -= eps;
+		  ipts[1] = ip;
+		  ipts[1](j) += eps;              
+		  ipts[2] = ip;
+		  ipts[2](j) -= 2*eps;
+		  ipts[3] = ip;
+		  ipts[3](j) += 2*eps;
+		  
+		  SIMD_IntegrationRule ir(4, ipts);
+		  SIMD_MappedIntegrationRule<D-1,D> mirl(ir, eltrans, lh);
+		  
+		  dshape.Col(j) = (1.0/(12.0*eps)) * ( mirl.GetNormals().Row(2) - mirl.GetNormals().Row(3) - 8.0*mirl.GetNormals().Row(0) + 8.0*mirl.GetNormals().Row(1) );
+		}
+	      
+	      phys_dshape = dshape*mir[i].GetJacobianInverse();
               
-          for (size_t l = 0; l < D*D; l++)
-            values(l, i) = phys_dshape(l);
-        }
+	      for (size_t l = 0; l < D*D; l++)
+		values(l, i) = phys_dshape(l);
+	    }
+	}
+      else
+	{
+          auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+          auto & ir = mir.IR();
+
+	  for (size_t i = 0; i < mir.Size(); i++)
+	    {
+	      const SIMD<IntegrationPoint> & ip = ir[i];
+	      const ElementTransformation & eltrans = mir[i].GetTransformation();
+	      
+	      if (!eltrans.IsCurvedElement())
+		{
+		  values.Col(i).Range(D*D) = 0;
+		  continue;
+		}
+
+	      ELEMENT_TYPE et = eltrans.GetElementType();
+              int fnr = ip.FacetNr();
+              auto f2eltrafo = Facet2ElementTrafo(et);
+
+              for (int j = 0; j < D-1; j++)   // d / d t_j
+		{
+		  HeapReset hr(lh);
+		  SIMD<IntegrationPoint> ipts[4];
+		  ipts[0] = ip;
+                  ipts[0](j) -= eps;
+		  ipts[1] = ip;
+                  ipts[1](j) += eps;
+		  ipts[2] = ip;
+                  ipts[2](j) -= 2*eps;
+		  ipts[3] = ip;
+                  ipts[3](j) += 2*eps;
+                  
+		  SIMD_IntegrationRule ir(4,ipts);
+                  const SIMD_IntegrationRule & f2elir =f2eltrafo(fnr,ir,lh);
+                  SIMD_MappedIntegrationRule<D,D> mir(f2elir, eltrans, lh);
+                  
+                  dshape.Col(j) = (1.0/(12.0*eps)) * (mir.GetNormals().Row(2) - mir.GetNormals().Row(3) - 8.0*mir.GetNormals().Row(0) + 8.0*mir.GetNormals().Row(1));
+		}
+              
+              Mat<D,D-1,SIMD<double>> F = mir[i].GetJacobian()*f2eltrafo.GetJacobian(fnr,lh);
+              Mat<D-1,D-1,SIMD<double>> FtF = Trans(F)*F;
+              Mat<D-1,D,SIMD<double>> Finv = Inv(FtF)*Trans(F);
+              phys_dshape = dshape*Finv;
+              
+	      for (size_t l = 0; l < D*D; l++)
+		values(l, i) = phys_dshape(l);
+	    }
+	}
       
     }
 
