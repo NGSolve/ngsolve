@@ -601,7 +601,7 @@ namespace ngla
                          
     Matrix<> InnerProductD (const MultiVector & v2) const override
     {
-      Matrix<double> res(Size(), v2.Size());
+      Matrix<double> res(v2.Size(), Size());
       if (res.Height()*res.Width()==0) return res;
       
       auto status1 = (*this)[0] -> GetParallelStatus();
@@ -621,7 +621,7 @@ namespace ngla
             for (int i = 0; i < v2.Size(); i++)
               ptrs2[i] = v2[i]->FVDouble().Data();
             
-            ngbla::PairwiseInnerProduct((*this)[0]->FVDouble().Size(), ptrs1, ptrs2, res);
+            ngbla::PairwiseInnerProduct((*this)[0]->FVDouble().Size(), ptrs2, ptrs1, res);
             
             paralleldofs->GetCommunicator()
               .AllReduce(FlatArray(res.Height()*res.Width(), res.Data()), MPI_SUM);
