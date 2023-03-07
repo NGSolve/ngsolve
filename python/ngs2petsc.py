@@ -101,6 +101,23 @@ class PETScPreconditioner(ngs.BaseMatrix):
         self.precond.setOperators(self.mat)
         if flags["levels"]:
             self.precond.setGAMGLevels(flags["levels"])
+        if flags["spaiEpsilon"]:
+            self.precond.setSPAIEpsilon(flags["spaiEpsilon"])
+        if flags["spaiNBSteps"]:
+            self.precond.setSPAINBSteps(flags["spaiNBSteps"])
+        if flags["spaiMax"]:
+            self.precond.setSPAIMax(flags["spaiMax"])
+        if flags["spaiMaxNew"]:
+            self.precond.setSPAIMaxNew(flags["spaiMaxNew"])
+        if flags["spaiBlockSize"]:
+            self.precond.setSPAIBlockSize(flags["spaiBlockSize"])
+        if flags["spaiCacheSize"]:
+            self.precond.setSPAICacheSize(flags["spaiCacheSize"])
+        if flags["spaiVerbose"]:
+            self.precond.setSPAIVerbose(flags["spaiVerbose"])
+        if flags["spaiSp"]:
+            self.precond.setSPAISp(flags["spaiSp"])
+
         self.precond.setUp()
         self.pscx, self.pscy = self.mat.createVecs()
 
@@ -136,6 +153,16 @@ from ngsolve.comp import RegisterPreconditioner
 RegisterPreconditioner ("gamg", MakePETScPreconditioner)
 RegisterPreconditioner ("petsc", MakePETScPreconditioner, docflags = { \
                 "pctype" : "type of PETSc preconditioner",
+                "spaiEpsilon" : "set the tolerance for the SPAI preconditioner (default .4)",
+                "spaiNBSteps" : "set maximum number of improvement steps per row in the SPAI preconditioner (default 5)",
+                "spaiMax" : "set the size of various working buffers in the SPAI preconditioner (default. 5000)",
+                "spaiMaxNew" : "set maximum number of new nonzero candidates per step in SPAI preconditioner (default 5)",
+                "spaiBlockSize" : "set the block size for the SPAI preconditioner (default 1)",
+                "spaiCacheSize" : "set specify cache size in the SPAI preconditioner (default 5)",
+                "spaiVerbose" : "set verbosity level for the SPAI preconditioner (default 1)",
+                "spaiSp" : """specify a symmetric matrix sparsity pattern in the SPAI preconditioner: 0 or 1.
+Notes:
+    If A has a symmetric nonzero pattern use spaiSp equal to 1 to improve performance by eliminating some communication in the parallel version. Even if A does not have a symmetric nonzero pattern -sp 1 may well lead to good results, but the code will not follow the published SPAI algorithm exactly.""",
                 "levels" : "AMG levels" })
 
 
