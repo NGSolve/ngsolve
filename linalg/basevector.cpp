@@ -1109,9 +1109,9 @@ namespace ngla
 
     size_t n = this->RefVec()->FVDouble().Size();
 
-    Matrix<double> res(Size(), v2.Size());
+    Matrix<double> res(v2.Size(), Size());
     res = 0;
-
+    
     constexpr size_t BBH = 512;
     constexpr size_t BH = 256;
     constexpr size_t AH = 256;
@@ -1148,7 +1148,7 @@ namespace ngla
             // add the results to the matrix res
             for (int ell_j = 0; ell_j < js; ell_j++) {
               for (int ell_k = 0; ell_k < ks; ell_k++) {
-                AtomicAdd(res(j0 + ell_j, k0 + ell_k), res_sub(ell_j, ell_k));
+                AtomicAdd(res(k0 + ell_k, j0 + ell_j), res_sub(ell_j, ell_k));
               }
             }
 
@@ -1170,7 +1170,7 @@ namespace ngla
 
     size_t n = this->RefVec()->FVComplex().Size();
 
-    Matrix<Complex> res(Size(), v2.Size());
+    Matrix<Complex> res(v2.Size(), Size());
     res = 0. + 0i;
 
     constexpr size_t BBH = 256;
@@ -1211,7 +1211,7 @@ namespace ngla
             // add the results to the matrix res
             for (int ell_j = 0; ell_j < js; ell_j++) {
               for (int ell_k = 0; ell_k < ks; ell_k++) {
-                AtomicAdd(res(j0 + ell_j, k0 + ell_k), res_sub(ell_j, ell_k));
+                AtomicAdd(res(k0 + ell_k, j0 + ell_j), res_sub(ell_j, ell_k));
               }
             }
 
