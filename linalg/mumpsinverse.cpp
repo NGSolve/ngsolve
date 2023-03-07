@@ -67,7 +67,7 @@ namespace ngla
 	    throw Exception("Invalid parameters inner/cluster. Thrown by MumpsInverse.");
 	  }
 	
-	if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
+	if ( int( ngbla::Width<TM>()) != int(ngbla::Height<TM>()) )
 	  {
 	    cout << "Mumps: Each entry in the square matrix has to be a square matrix!" << endl;
 	    throw Exception("No Square Matrix. Thrown by MumpsInverse.");
@@ -75,8 +75,8 @@ namespace ngla
       }
 
 
-    entrysize = mat_traits<TM>::HEIGHT; 
-    iscomplex = mat_traits<TM>::IS_COMPLEX;
+    entrysize = ngbla::Height<TM>();
+    iscomplex = ngbla::IsComplex<TM>();
 
 
     int * colstart = 0;
@@ -461,7 +461,7 @@ namespace ngla
 	    throw Exception("Invalid parameters inner/cluster. Thrown by ParallelMumpsInverse.");
 	  }
 	
-	if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
+	if ( int(ngbla::Width<TM>()) != int(ngbla::Height<TM>()) )
 	  {
 	    cout << "Mumps: Each entry in the square matrix has to be a square matrix!" << endl;
 	    throw Exception("No Square Matrix. Thrown by ParallelMumpsInverse.");
@@ -541,8 +541,8 @@ namespace ngla
     */
 
 
-    entrysize = mat_traits<TM>::HEIGHT; 
-    iscomplex = mat_traits<TM>::IS_COMPLEX;
+    entrysize = ngbla::Height<TM>();
+    iscomplex = ngbla::IsComplex<TM>();
 
     Array<int> col_indices;
     Array<int> row_indices;
@@ -1121,6 +1121,4 @@ namespace ngla
 
 
 #endif
-
-
 
