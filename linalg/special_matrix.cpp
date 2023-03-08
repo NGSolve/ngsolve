@@ -1198,7 +1198,7 @@ namespace ngla
 
   
   BaseMatrixFromMatrix :: BaseMatrixFromMatrix (Matrix<> amat)
-    : mat(move(amat)) { }
+    : mat(std::move(amat)) { }
   
   void BaseMatrixFromMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
