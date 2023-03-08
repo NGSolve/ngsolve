@@ -1,3 +1,4 @@
+#include "cuda_ngstd.hpp"
 #include "cuda_linalg.hpp"
 #include "cuda_profiler.hpp"
 #include <la.hpp>
