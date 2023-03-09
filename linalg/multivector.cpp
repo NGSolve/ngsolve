@@ -478,12 +478,12 @@ namespace ngla {
     static Timer t("MultiVector::InnerProductC");
     RegionTimer reg(t);
 
-    Matrix<Complex> res(Size(), y.Size());
+    Matrix<Complex> res(y.Size(), Size());
     shared_ptr<BaseVector> hy = y.CreateVector();    
     for (int j = 0; j < y.Size(); j++)
       {
         y.CalcComponent(j, *hy);
-        res.Col(j) = InnerProductC(*hy, conjugate);
+        res.Row(j) = InnerProductC(*hy, conjugate);
       }
     return res;
   }
