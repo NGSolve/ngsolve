@@ -1,25 +1,21 @@
 namespace ngfem
 {
 
-  INLINE pmult_matvec GetMatVecFunction (size_t wa)
+  INLINE auto GetMatVecFunction (size_t wa)
   {
-    /*
-    if (wa <= 24)
-      return dispatch_matvec[wa];
-    else
-      return &MultMatVec_intern;
-    */
-    if (wa >= std::size(dispatch_matvec))
-      wa = std::size(dispatch_matvec)-1;
-    return dispatch_matvec[wa];
+    // if (wa >= std::size(dispatch_matvec))
+    // wa = std::size(dispatch_matvec)-1;
+    return dispatch_matvec[min(wa, std::size(dispatch_matvec)-1)];
   }
 
-  INLINE pmult_mattransvec GetMatTransVecFunction (size_t wa)
+  INLINE auto GetMatTransVecFunction (size_t wa)
   {
-    if (wa <= 12)
-      return dispatch_mattransvec[wa];
-    else
-      return &MultMatTransVec_intern;
+    /*
+    if (wa >= std::size(dispatch_mattransvec))
+      wa = std::size(dispatch_mattransvec)-1;
+    return dispatch_mattransvec[wa];
+    */
+    return dispatch_mattransvec[min(wa, std::size(dispatch_mattransvec)-1)];
   }
 
 

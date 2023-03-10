@@ -4,8 +4,13 @@
 /* Date:   Nov 2020                                                         */
 /****************************************************************************/
 
+#include <core/simd.hpp>
+#include <ngs_stdcpp_include.hpp>
+#include <matrix.hpp>
+#include <vector.hpp>
+#include <triangular.hpp>
+#include <ngblas.hpp>
 
-#include <bla.hpp>
 
 namespace ngbla
 {

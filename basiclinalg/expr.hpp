@@ -53,6 +53,21 @@ namespace ngbla
   template <bool ADD, bool POS, ORDERING ord>
   void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y);
 
+
+
+  template <typename T>
+  struct is_scalar_type { static constexpr bool value = false; };
+  
+  template <typename T>
+  constexpr bool IsScalar ()
+  {
+    return is_scalar_type<T>::value;
+  }
+
+
+
+
+  
   /*
     Matrix expression templates
   */
@@ -99,34 +114,45 @@ namespace ngbla
   }
   */
   
-  template <typename TM> 
-  inline typename TM::TELEM Access (const TM & mat, int i, int j)
+  template <typename TM, enable_if_t<!IsScalar<TM>(),bool> = true> 
+  inline auto Access (const TM & mat, int i, int j)
   {
     return mat(i,j);
   }
 
+  template <typename TM, enable_if_t<IsScalar<TM>(),bool> = true>  
+  inline auto Access (const TM & mat, int i, int j)
+  {
+    return mat;
+  }
+
+  
   /*
   inline double & Access (double & mat, int i, int j)
   {
     return mat;
   }
   */
-  
+
+  /*
   inline double Access (const double & mat, int i, int j)
   {
     return mat;
   }
+  */
   /*
   inline Complex & Access (Complex & mat, int i, int j)
   {
     return mat;
   }
   */
+  /*
   inline Complex Access (const Complex & mat, int i, int j)
   {
     return mat;
   }
-
+  */
+  
 
 
 
@@ -136,30 +162,6 @@ namespace ngbla
   template<> struct is_scalar_type<double> { static constexpr bool value = true; };
   template<> struct is_scalar_type<Complex> { static constexpr bool value = true; };
   
-  // template <int D, typename T>
-  // struct is_scalar_type<AutoDiff<D,T>> { static constexpr bool value = true; };
-  // template <int D, typename T>
-  // struct is_scalar_type<AutoDiffDiff<D,T>> { static constexpr bool value = true; };
-  // template <int D>
-  // struct is_scalar_type<SIMD<double,D>> { static constexpr bool value = true; };
-  // template <int D>
-  // struct is_scalar_type<SIMD<Complex,D>> { static constexpr bool value = true; };
-
-
-  template <typename T>
-  struct is_scalar_type { static constexpr bool value = false; };
-  
-  template <typename T>
-  constexpr bool IsScalar ()
-  {
-    return is_scalar_type<T>::value;
-  }
-
-
-
-
-
-
 
 
   /**
@@ -280,10 +282,10 @@ namespace ngbla
     return m.Width();
   }
 
-  template <> inline size_t Height<double> (const double&) { return 1; }
-  template <> inline size_t Height<Complex> (const Complex&) { return 1; }
-  template <> inline size_t Width<double> (const double&) { return 1; }
-  template <> inline size_t Width<Complex> (const Complex&) { return 1; }
+  template <> inline constexpr size_t Height<double> (const double&) { return 1; }
+  template <> inline constexpr size_t Height<Complex> (const Complex&) { return 1; }
+  template <> inline constexpr size_t Width<double> (const double&) { return 1; }
+  template <> inline constexpr size_t Width<Complex> (const Complex&) { return 1; }
 
   /*
   template <class TM> 
@@ -1786,9 +1788,12 @@ namespace ngbla
 
   INLINE double Truncate (double v, double eps = 1e-12)
   {
-    if (fabs(v) < eps)
-      return 0;
-    return v;
+    return (fabs(v) < eps) ? 0 : v;
+  }
+
+  INLINE Complex Truncate (Complex v, double eps = 1e-12)
+  {
+    return Complex(Truncate(Real(v), eps), Truncate(Imag(v),eps));
   }
   
   template <class TA> class TruncateExpr : public Expr<TruncateExpr<TA> >
