@@ -73,34 +73,22 @@ namespace ngbla
   }
 
 
-
-  
-  extern NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
-  typedef void (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
-  extern NGS_DLL_HEADER pmult_mattransvec dispatch_mattransvec[13];
-  
+  // typedef void (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  extern NGS_DLL_HEADER pmult_matvec dispatch_mattransvec[13];
   inline void MultMatTransVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    size_t sx = x.Size();
-    if (sx <= 12)
-      (*dispatch_mattransvec[sx])  (a, x, y);
-    else
-      MultMatTransVec_intern (a, x, y);
+    size_t dsx = min(x.Size(), std::size(dispatch_mattransvec)-1);    
+    (*dispatch_mattransvec[dsx])  (a, x, y);    
   }
 
-  extern NGS_DLL_HEADER void MultAddMatTransVec_intern (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y);
-  typedef void (*pmultadd_mattransvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
-  extern NGS_DLL_HEADER pmultadd_mattransvec dispatch_addmattransvec[13];
-  
+  // typedef void (*pmultadd_mattransvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  extern NGS_DLL_HEADER pmultadd_matvec dispatch_addmattransvec[13];
   inline void MultAddMatTransVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
-    size_t sx = x.Size();
-    if (sx <= 12)
-      (*dispatch_addmattransvec[sx])  (s, a, x, y);
-    else
-      MultAddMatTransVec_intern (s, a, x, y);
+    size_t dsx = min(x.Size(), std::size(dispatch_addmattransvec)-1);    
+    (*dispatch_addmattransvec[dsx])  (s, a, x, y);    
   }
-
+  
 
   inline void MultAddMatVec (double s, BareSliceMatrix<double, ColMajor> a, FlatVector<> x, FlatVector<> y)
   {
@@ -138,16 +126,13 @@ namespace ngbla
   extern NGS_DLL_HEADER void REGCALL MultMatMat_intern (size_t ha, size_t wa, size_t wb,
                                                         BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c);
 
-  typedef void REGCALL (*pmultAB)(size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);
   typedef void REGCALL (*pmultABW)(size_t, size_t, size_t, BareSliceMatrix<>, BareSliceMatrix<>, BareSliceMatrix<>);
   
   extern NGS_DLL_HEADER pmultABW dispatch_multAB[14];
   inline void MultMatMat (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
-    size_t wa = a.Width();
-    if (wa >= std::size(dispatch_multAB))
-      wa = std::size(dispatch_multAB)-1;
+    size_t wa = std::min(a.Width(), std::size(dispatch_multAB)-1);
     (*dispatch_multAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
   
@@ -155,9 +140,12 @@ namespace ngbla
   inline void MinusMultAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
+    /*
     size_t wa = a.Width();
     if (wa >= std::size(dispatch_minusmultAB))
       wa = std::size(dispatch_minusmultAB)-1;
+    */
+    size_t wa = std::min(a.Width(), std::size(dispatch_minusmultAB)-1);    
     (*dispatch_minusmultAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
   
@@ -165,9 +153,10 @@ namespace ngbla
   inline void AddAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
-    size_t wa = a.Width();
-    if (wa >= std::size(dispatch_addAB))
-      wa = std::size(dispatch_addAB)-1;
+    // size_t wa = a.Width();
+    // if (wa >= std::size(dispatch_addAB))
+    // wa = std::size(dispatch_addAB)-1;
+    size_t wa = std::min(a.Width(), std::size(dispatch_addAB)-1);    
     (*dispatch_addAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
 
@@ -175,9 +164,10 @@ namespace ngbla
   inline void SubAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
-    size_t wa = a.Width();
-    if (wa >= std::size(dispatch_subAB))
-      wa = std::size(dispatch_subAB)-1;
+    // size_t wa = a.Width();
+    // if (wa >= std::size(dispatch_subAB))
+    // wa = std::size(dispatch_subAB)-1;
+    size_t wa = std::min(a.Width(), std::size(dispatch_subAB)-1);        
     (*dispatch_subAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
 
@@ -201,9 +191,12 @@ namespace ngbla
   inline void MatMat_AtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
+    /*
     size_t wa = a.Width();
     if (wa >= std::size(dispatch_atb<ADD,POS>::ptrs))
       wa = std::size(dispatch_atb<ADD,POS>::ptrs)-1;
+    */
+    size_t wa = std::min(a.Width(), std::size(dispatch_atb<ADD,POS>::ptrs)-1);            
     (*dispatch_atb<ADD,POS>::ptrs[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
   
@@ -350,21 +343,12 @@ namespace ngbla
   // f   t    C = A*B
   // t   f    C -= A*B
   // t   t    C += A*B
-
-  template <bool A, bool P, ORDERING oa, ORDERING ob>
-  class trait__
-  {
-  public:
-    typedef double TELEM;
-  };
-  
   
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
   inline void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
   {
     // static Timer t("generic MM, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(orda)+ToString(ordb));
     // RegionTimer r(t);
-    // typename trait__<ADD,POS,orda,ordb>::TELEM x;  // to get a warning
     
     // static Timer t("NgGEMM unresolved" + ToString(ADD) + ToString(POS) + ToString(orda) + ToString(ordb));
     // RegionTimer reg(t);
@@ -492,18 +476,9 @@ namespace ngbla
   }
 
 
-  template <bool A, bool P, ORDERING oa>
-  class vtrait__
-  {
-  public:
-    typedef double TELEM;
-  };
-
   template <bool ADD, bool POS, ORDERING ord>
   void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y)
   {
-    typename vtrait__<ADD,POS,ord>::TELEM hv;  // to get a warning
-    
     // static Timer t("generic MV, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(ord));
     // RegionTimer r(t);
     // cout << "generic nggemv , add = " << ADD << ", pos = " << POS << endl;
@@ -563,6 +538,7 @@ namespace ngbla
                                             bool lapack, bool doubleprec, size_t maxits);
 
 
+  extern NGS_DLL_HEADER  
   double MatKernelMaskedScalAB (size_t n,
 				double * pa, size_t da,
 				double * pb, size_t db,
