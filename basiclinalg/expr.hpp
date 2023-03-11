@@ -1881,10 +1881,8 @@ namespace ngbla
   template <class TA>
   INLINE auto Trace (const Expr<TA> & a) // -> decltype (a.Spec()(0,0))
   {
-    // typedef typename TA::TELEM TELEM;
     typedef decltype( RemoveConst(a.Spec()(0,0)) ) TRES;
     TRES sum = 0;    
-    // decltype (a.Spec()(0,0)) sum = 0;
     for (size_t i = 0; i < Height(a); i++)
       sum += a.Spec()(i,i);
     return sum;
@@ -1903,19 +1901,9 @@ namespace ngbla
     return v.real()*v.real()+v.imag()*v.imag();
   }
 
-  /*
-  template<int D, typename SCAL>
-  inline double L2Norm2 (const AutoDiff<D,SCAL> & x) 
-  {
-    return L2Norm2(x.Value());
-  }
-  */
-  
-
   template <class TA>
-  INLINE auto L2Norm2 (const Expr<TA> & v) // -> decltype(L2Norm2(v.Spec()(0)))
+  INLINE auto L2Norm2 (const Expr<TA> & v) 
   {
-    // double sum = 0;
     decltype(L2Norm2(v.Spec()(0))) sum = 0.0;
     if (TA::IS_LINEAR)
       for (size_t i = 0; i < v.Height()*v.Width(); i++)

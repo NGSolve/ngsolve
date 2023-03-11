@@ -39,12 +39,11 @@ namespace ngbla
 
     /// element type
     typedef T TELEM;
-    // typedef T& TREF;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// nothing done in default constructor
-    INLINE FlatMatrix () = default; // { ; }
+    INLINE FlatMatrix () = default; 
   
     /// set height, width, and mem
     INLINE FlatMatrix (size_t ah, size_t aw, T * adata) 
@@ -63,10 +62,6 @@ namespace ngbla
       : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
-    /*
-    INLINE FlatMatrix (const FlatMatrix & m) throw () 
-      : h(m.h), w(m.w) , data(m.data) { ; }
-    */
     FlatMatrix (const FlatMatrix & m) = default;
     /// allocate and compute 
     template<typename TB>
