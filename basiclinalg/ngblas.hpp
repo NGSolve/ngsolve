@@ -50,6 +50,13 @@ namespace ngbla
   extern NGS_DLL_HEADER void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest);
 
 
+  template <typename TA, typename TB>
+  void TransposeMatrix(SliceMatrix<TA> a, SliceMatrix<TB> b)
+  {
+    b = Trans(a);
+  }
+
+  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b);
 
   
 

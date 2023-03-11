@@ -2002,7 +2002,7 @@ namespace ngbla
   static constexpr size_t NK = 128;
 
 
-  void MyTranspose (SliceMatrix<> a, SliceMatrix<> b)
+  void TransposeMatrix (SliceMatrix<> a, SliceMatrix<> b)
   {
     size_t j = 0;
     size_t ha = a.Height();
