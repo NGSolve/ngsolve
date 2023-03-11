@@ -221,8 +221,7 @@ namespace ngbla
   }
 
 
-
-  void TransposeMatrix (SliceMatrix<> a, SliceMatrix<> b)
+  void TransposeMatrixOLD (SliceMatrix<> a, SliceMatrix<> b)
   {
     size_t h = a.Height();
     size_t i = 0;
@@ -2599,8 +2598,7 @@ namespace ngbla
 
 
 #else // AVX
-  
-  void TransposeMatrix(SliceMatrix<> a, SliceMatrix<> b)
+  void TransposeMatrixOLD(SliceMatrix<> a, SliceMatrix<> b)
   {
     b = Trans(a);    
   }
