@@ -1,10 +1,7 @@
-import math
 from ngsolve import *
-import netgen.geom2d as gm
+from netgen.geom2d import SplineGeometry
 
-SetHeapSize(50*1000*1000)
-# geometrical and material properties
-geo = gm.SplineGeometry()
+geo = SplineGeometry()
 
 xneg  =-0.43
 xpos  = 0.43
@@ -19,17 +16,9 @@ gap   = 0.005
 pntx = [xneg,xpos]
 pnty = [yneg,-rring-gap-wslab,-rring-gap,rring+gap,rring+gap+wslab,ypos]
 
-
-pts = []
-for yi in pnty:
-    for xi in pntx:
-        pts.append (geo.AddPoint(xi,yi))
-
-#### parameters for source position
-
+pts = [geo.AddPoint(xi,yi) for yi in pnty for xi in pntx]
 
 ### geometry #######################################################
-#inner rects
 geo.Append (["line", pts[0], pts[1]], leftdomain=1, rightdomain=0)
 geo.Append (["line", pts[1], pts[3]], leftdomain=1, rightdomain=0)
 geo.Append (["line", pts[3], pts[2]], leftdomain=1, rightdomain=2)
@@ -62,11 +51,11 @@ data = geo.CreatePML(0.05)
 normals = data["normals"]
 
 
-mesh = Mesh(geo.GenerateMesh(maxh=0.05)).Curve(3)
+
+
+mesh = Mesh(geo.GenerateMesh(maxh=0.05))
 
 eps_r = {"air" : 1, "eps_nine" : 3**3}
-
-order = 3
 
 for mat in mesh.GetMaterials():
     if mat.startswith("pml_normal_wg"):
@@ -83,7 +72,9 @@ wavelength = 1.542
 fcen       = 5/wavelength
 df         = 0.1
 tpeak      = 1
+order = 3
 
+mesh.Curve(order)
 fes_facet = FacetFESpace(mesh, order=order+1)
 gfsource = GridFunction(fes_facet)
 
@@ -100,7 +91,6 @@ fes_tr = FacetFESpace(mesh, order=order+1)
 fes_hdiv = HDiv(mesh, order=order+1, orderinner=1)
 
 n = specialcf.normal(2) 
-# h = specialcf.mesh_size
 
 p,q = fes_p.TnT()
 u,v = fes_u.TnT()
@@ -110,14 +100,7 @@ uhdiv,vhdiv = fes_hdiv.TnT()
 Bel = BilinearForm(grad(p)*v*dx - p*(v*n)*dx(element_boundary=True), geom_free=True).Assemble()
 Btr = BilinearForm(0.5*ptr*(n*v)*dx(element_boundary=True), geom_free=True).Assemble()
 Bstab = BilinearForm(p*(vhdiv*n)*dx(element_boundary=True),  geom_free=True).Assemble()
-Mstab = BilinearForm(uhdiv*vhdiv*dx, diagonal=True).Assemble()
 
-Mstabinv = Mstab.mat.Inverse()
-
-
-fes = fes_p*fes_p*fes_u*fes_u
-q,qhat, v,vhat = fes.TestFunction()
-Lsrc  = LinearForm(gfsource*q*dx(element_boundary=True)).Assemble()
 
 
 nvec = { mat : ((normals[mat][0], normals[mat][1]) if mat in normals else (0,0)) for mat in mesh.GetMaterials() }
@@ -126,45 +109,44 @@ cfn = CF( [CF(nvec[mat]) for mat in mesh.GetMaterials()])
 cft = CF( ( cfn[1], -cfn[0] ) )
 
 pml1d = mesh.Materials("pml_default.*|pml_normal.*")
-
 eps = CF([eps_r[mat] for mat in mesh.GetMaterials()])
 
 
+fes = fes_p*fes_p*fes_u*fes_u*fes_hdiv
+emb_p, emb_phat, emb_u, emb_uhat, emb_hdiv = fes.embeddings
+
+# gradient operator
+traceop = fes_p.TraceOperator(fes_tr, False)
+fullB = emb_u @ (Bel.mat + Btr.mat @ traceop) @ emb_p.T + emb_hdiv@Bstab.mat@emb_p.T
+
+# mass matrices
+invmassp = fes_p.Mass(eps).Inverse()
+invmassu = fes_u.Mass(Id(mesh.dim)).Inverse()
+Mstab = BilinearForm(uhdiv*vhdiv*dx, diagonal=True).Assemble()
+Mstabinv = Mstab.mat.Inverse()
+
+
+invp = emb_p @ invmassp @ emb_p.T + emb_phat @ invmassp @ emb_phat.T
+invu = emb_u @ invmassu @ emb_u.T + emb_uhat @ invmassu @ emb_uhat.T + emb_hdiv@Mstabinv@emb_hdiv.T
+
+
 # damping matrices
-sigma = 10   # pml damping parameter
 dampp1 = fes_p.Mass (eps, definedon=pml1d)
 dampp2 = fes_p.Mass (eps, definedon=mesh.Materials("pml_corner"))
 dampu1 = fes_u.Mass (OuterProduct(cfn,cfn), definedon=pml1d)
 dampu2 = fes_u.Mass (OuterProduct(cft,cft), definedon=pml1d)
 
-gfu = GridFunction(fes)
-gfstab = GridFunction(fes_hdiv)
-gfu.vec[:] = 0
-
-# For the time stepping
-tau = 2e-4
-tend = 100
-t = 0
-
-
-w = gfu.vec.CreateVector()
-
-emb_p, emb_phat, emb_u, emb_uhat = fes.embeddings
-
-traceop = fes_p.TraceOperator(fes_tr, False)
-fullB = emb_u @ (Bel.mat + Btr.mat @ traceop) @ emb_p.T
-
 dampingu = emb_u @ dampu1 @ emb_u.T + (-emb_u + emb_uhat) @ dampu2 @ (emb_u.T + emb_uhat.T)
 dampingp = emb_p @ dampp1 @ emb_p.T + emb_p @ dampp2 @ (2*emb_p.T-emb_phat.T) + emb_phat @ dampp2 @ emb_p.T
 
-invmassp = fes_p.Mass(eps).Inverse()
-invmassu = fes_u.Mass(Id(mesh.dim)).Inverse()
-invp = emb_p @ invmassp @ emb_p.T + emb_phat @ invmassp @ emb_phat.T
-invu = emb_u @ invmassu @ emb_u.T + emb_uhat @ invmassu @ emb_uhat.T
+
+# source term
+Lsrc  = LinearForm(gfsource*q*dx(element_boundary=True)).Assemble()
+srcvec = emb_p * (invmassp*Lsrc.vec).Evaluate()
 
 # time-envelope:
 def Envelope(t):
     if abs((t-tpeak)/tpeak) < 1:
-        return (2*exp(1)/sqrt(math.pi))*sin(2*math.pi*fcen*t)*exp (-1/(1-((t-tpeak)/tpeak)**2))
+        return (2*exp(1)/sqrt(pi))*sin(2*pi*fcen*t)*exp (-1/(1-((t-tpeak)/tpeak)**2))
     else:
         return 0

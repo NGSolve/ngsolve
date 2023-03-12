@@ -292,6 +292,8 @@ namespace ngcomp
       "  Activates relaxed H(div)-conformity. Allows normal discontinuity of highest order facet basis functions";
     docu.Arg("hide_all_dofs") = "bool = False\n"
       "  Set all used dofs to HIDDEN_DOFs";
+    docu.Arg("orderinner") = "int = unused\n"
+      "  Set order of inner shapes (orderinner=0 for no inner shapes)\n";
     return docu;
   }
   
