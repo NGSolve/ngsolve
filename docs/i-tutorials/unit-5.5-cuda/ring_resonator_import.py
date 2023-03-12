@@ -62,12 +62,9 @@ data = geo.CreatePML(0.05)
 normals = data["normals"]
 
 
-mesh = Mesh(geo.GenerateMesh(maxh=0.05))
-mesh.Curve(3)
-Draw(mesh)
+mesh = Mesh(geo.GenerateMesh(maxh=0.05)).Curve(3)
 
-eps_r = {"air" : 1,
-         "eps_nine" : 3**3}
+eps_r = {"air" : 1, "eps_nine" : 3**3}
 
 order = 3
 
@@ -79,14 +76,6 @@ for mat in mesh.GetMaterials():
     if mat not in eps_r:
         eps_r[mat] = eps_r["air"]
 
-# print ('materials:',[mat for mat in mesh.GetMaterials()])
-
-def gaussp(pt):
-    return CoefficientFunction(sin( (math.pi/wslab)*(y-pt[1])))
-    return CoefficientFunction(exp ( -3200 * ( (y-pt[1])**2 )) )
-
-# ~ center_source = (pntx[0],0.5*pnty[3]+0.5*pnty[4])
-center_source = (pntx[0],pnty[3])
 
 
 ### Parameters for Source field ##########################################################################
@@ -97,13 +86,10 @@ tpeak      = 1
 
 fes_facet = FacetFESpace(mesh, order=order+1)
 gfsource = GridFunction(fes_facet)
-source_cf = gaussp(center_source)
+
+source_cf =  sin( (pi/wslab)*(y-pnty[3]) ) 
 gfsource.Set(source_cf,definedon=mesh.Boundaries("normal_wg_lefttop"))
 
-fes_test = H1(mesh)
-gf_test = GridFunction(fes_test)
-gf_test.Set(source_cf)
-Draw(gf_test)
 
 ##########################################################################################################
 
@@ -112,39 +98,26 @@ fes_u = VectorL2(mesh, order=order, piola=True, order_policy=ORDER_POLICY.CONSTA
 fes_p = L2(mesh, order=order+1, all_dofs_together=True, order_policy=ORDER_POLICY.CONSTANT)
 fes_tr = FacetFESpace(mesh, order=order+1)
 fes_hdiv = HDiv(mesh, order=order+1, orderinner=1)
-fes = fes_p*fes_p*fes_u*fes_u
-
-p,phat, u,uhat = fes.TrialFunction()
-q,qhat, v,vhat = fes.TestFunction()
 
 n = specialcf.normal(2) 
-h = specialcf.mesh_size
+# h = specialcf.mesh_size
 
-
-# Bel = BilinearForm(trialspace=fes_p, testspace=fes_u, geom_free=True)
-# Bel += SymbolicBFI ( grad(fes_p.TrialFunction())*fes_u.TestFunction())
-# Bel += SymbolicBFI ( -fes_p.TrialFunction()*(fes_u.TestFunction()*n), element_boundary=True)
-# Bel.Assemble()
+p,q = fes_p.TnT()
+u,v = fes_u.TnT()
+ptr,qtr = fes_tr.TnT()
+uhdiv,vhdiv = fes_hdiv.TnT()
 
 Bel = BilinearForm(grad(p)*v*dx - p*(v*n)*dx(element_boundary=True), geom_free=True).Assemble()
+Btr = BilinearForm(0.5*ptr*(n*v)*dx(element_boundary=True), geom_free=True).Assemble()
+Bstab = BilinearForm(p*(vhdiv*n)*dx(element_boundary=True),  geom_free=True).Assemble()
+Mstab = BilinearForm(uhdiv*vhdiv*dx, diagonal=True).Assemble()
 
-Btr = BilinearForm(trialspace=fes_tr, testspace=fes_u, geom_free=True)
-Btr += SymbolicBFI (0.5 * fes_tr.TrialFunction() * (n*fes_u.TestFunction()), element_boundary=True)
-Btr.Assemble()
-
-Bstab = BilinearForm(trialspace=fes_p, testspace=fes_hdiv, geom_free=True)
-Bstab += SymbolicBFI(fes_p.TrialFunction()*(fes_hdiv.TestFunction()*n), element_boundary=True)
-Bstab.Assemble()
-
-Mstab = BilinearForm(fes_hdiv, diagonal=True)
-Mstab += SymbolicBFI(fes_hdiv.TrialFunction() * fes_hdiv.TestFunction())
-Mstab.Assemble()
 Mstabinv = Mstab.mat.Inverse()
 
 
-
+fes = fes_p*fes_p*fes_u*fes_u
+q,qhat, v,vhat = fes.TestFunction()
 Lsrc  = LinearForm(gfsource*q*dx(element_boundary=True)).Assemble()
-
 
 
 nvec = { mat : ((normals[mat][0], normals[mat][1]) if mat in normals else (0,0)) for mat in mesh.GetMaterials() }
@@ -179,9 +152,7 @@ w = gfu.vec.CreateVector()
 emb_p, emb_phat, emb_u, emb_uhat = fes.embeddings
 
 traceop = fes_p.TraceOperator(fes_tr, False)
-# fullB = emb_u @ (Bel.mat + Btr.mat @ traceop) @ emb_p.T
-fullB = Bel.mat + emb_u @ (Btr.mat @ traceop) @ emb_p.T
-
+fullB = emb_u @ (Bel.mat + Btr.mat @ traceop) @ emb_p.T
 
 dampingu = emb_u @ dampu1 @ emb_u.T + (-emb_u + emb_uhat) @ dampu2 @ (emb_u.T + emb_uhat.T)
 dampingp = emb_p @ dampp1 @ emb_p.T + emb_p @ dampp2 @ (2*emb_p.T-emb_phat.T) + emb_phat @ dampp2 @ emb_p.T
@@ -191,7 +162,7 @@ invmassu = fes_u.Mass(Id(mesh.dim)).Inverse()
 invp = emb_p @ invmassp @ emb_p.T + emb_phat @ invmassp @ emb_phat.T
 invu = emb_u @ invmassu @ emb_u.T + emb_uhat @ invmassu @ emb_uhat.T
 
-print ("define envelope")
+# time-envelope:
 def Envelope(t):
     if abs((t-tpeak)/tpeak) < 1:
         return (2*exp(1)/sqrt(math.pi))*sin(2*math.pi*fcen*t)*exp (-1/(1-((t-tpeak)/tpeak)**2))
