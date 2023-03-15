@@ -1371,6 +1371,11 @@ namespace ngfem {
           if (this == var)
             return dir;
 
+          // IMPORTANT NOTE:
+          // use "original_index_signature" and "original_inputs" as only
+          // these protect variables etc, i.e. they do not carry any
+          // optimization!
+
           auto dres = ZeroCF(Array<int>{Dimensions()});
 
           for (size_t i: Range(original_inputs.Size()))
@@ -1401,6 +1406,10 @@ namespace ngfem {
           auto dres = ZeroCF(res_dims);
           try
           {
+              // IMPORTANT NOTE:
+              // use "original_index_signature" and "original_inputs" as only
+              // these protect variables etc, i.e. they do not carry any
+              // optimization!
               auto parts = split_signature(original_index_signature);
 
               for (size_t i: Range(original_inputs.Size()))
