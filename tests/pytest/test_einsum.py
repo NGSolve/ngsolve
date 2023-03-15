@@ -52,11 +52,18 @@ def op_counts(acf):
 def same(cf1, cf2, tol=1e-12):
     if np.array(cf1(X0)).size != np.array(cf2(X0)).size:
         return False
-    if np.max(np.abs(np.array(cf1(X0)) - np.array(cf2(X0)))) < tol:
-        return True
-    else:
-        print(np.max(np.abs(np.array(cf1(X0)) - np.array(cf2(X0)))), " >= ", tol)
+
+    diff_pnt = np.max(np.abs(np.array(cf1(X0)) - np.array(cf2(X0))))
+    if diff_pnt >= tol:
+        print("[point evaluation]:", diff_pnt, " >= ", tol)
         return False
+
+    diff_cf = cf1 - cf2
+    diff_int = Integrate(InnerProduct(diff_cf, diff_cf), mesh)
+    if diff_int >= tol:
+        print("[integrate]:", diff_int, " >= ", tol)
+        return False
+    return True
 
 
 @pytest.mark.parametrize("use_legacy_ops", (True, False))
