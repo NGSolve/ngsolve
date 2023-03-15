@@ -1295,9 +1295,7 @@ namespace ngfem {
 
               if (!s.code.empty()) {
                 if (declared[res_idx]) {
-                  code.body +=
-                      Var(index, res_idx, result_dims)
-                          .Assign(Var(index, res_idx, result_dims) + s, false);
+                  code.body += Var(index, res_idx, result_dims).S() + " += " + s.S() + ";\n";
                 } else {
                   code.body += Var(index, res_idx, result_dims).Assign(s);
                   declared[res_idx] = true;
