@@ -3284,14 +3284,36 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
     // code.Declare (code.res_type, index, Dimensions());
-    code.Declare (index, Dimensions(), IsComplex()); 
-      auto dims = c1->Dimensions();
-      for (int i : Range(dims[0])) {
-        CodeExpr s;
-        for (int j : Range(dims[1]))
+    code.Declare (index, Dimensions(), IsComplex());
+    const auto dims = c1->Dimensions();
+
+    if (dims.Size() == 2)
+      for (int i : Range(dims[0]))
+        {
+          CodeExpr s;
+          for (int j : Range(dims[1]))
             s += Var(inputs[0], i, j) * Var(inputs[1], j);
-	code.body += Var(index, i).Assign(s, false);
+          code.body += Var(index, i).Assign(s, false);
+        }
+    else 
+      {
+        const auto& dims_c1 = dims;
+        const auto dims_res = Dimensions();
+        const auto dim_c2 = c2->Dimension();
+
+        int cc1 = 0;
+        for (int i_res : Range(Dimension()))
+          {
+            CodeExpr s;
+            for (int j : Range(dim_c2))
+              {
+                s += Var(inputs[0], cc1, dims_c1) * Var(inputs[1], j);
+                cc1++;
+              }
+            code.body += Var(index, i_res, dims_res).Assign(s, false);
+          }
       }
+      
   }
 
   /*
