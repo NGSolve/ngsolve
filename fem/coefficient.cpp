@@ -5328,17 +5328,26 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
   {
     if (c1->IsZeroCF() || c2->IsZeroCF())
       {
+        // mat @ mat
         if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
           return ZeroCF(Array( {c1->Dimensions()[0],c2->Dimensions()[1]} ));
-        if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 1)
-          return ZeroCF(Array( {c1->Dimensions()[0]} ));
-        if (c1->Dimension() > 1 && c2->Dimension() > 1)
+        // mat/tensor @ vec
+        if (c1->Dimensions().Size() >= 2 && c2->Dimensions().Size() == 1)
+          return ZeroCF(Array<int>( c1->Dimensions().Range(0, END-1) ));
+        // <vec, vec> (scalar result)
+        if (c1->Dimension() > 1 && c2->Dimension() > 1
+            && c1->Dimension() == c2->Dimension())
           return ZeroCF(Array<int>( {} ));
-        if ( (c1->Dimension() == 1 && c2->Dimension() > 1) || (c1->Dimension() > 1 && c2->Dimension() == 1))
-          return ZeroCF(Array( {int(c1->Dimension()*c2->Dimension())} ));
-
-        return ZeroCF(Array<int>( {} ));
-          
+        // scal * vec/mat/tensor
+        if (c1->Dimension() == 1 && c2->Dimension() > 1)
+          return ZeroCF(c2->Dimensions());
+        // vec/mat/tensor * scal
+        if (c1->Dimension() > 1 && c2->Dimension() == 1)
+          return ZeroCF(c1->Dimensions());
+        // scal * scal
+        if (c1->Dimension() == 1 && c2->Dimension() == 1)
+          return ZeroCF(Array<int>( {} ));
+        cout << IM(5) << "missed optimization opportunity in 'operator*'" << endl;
       }
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
       {
@@ -5646,7 +5655,10 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     if (coef->IsZeroCF())
       {
         auto dims = coef->Dimensions();
-        coef->SetDimensions( Array( {dims[1], dims[0]}) );
+        if (dims.Size() == 2)
+            coef->SetDimensions( Array( {dims[1], dims[0]}) );
+        else
+            throw Exception("Transpose of non-matrix called");
         return coef;
       }
 
