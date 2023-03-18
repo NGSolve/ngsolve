@@ -5398,7 +5398,13 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
 
     return make_shared<ScaleCoefficientFunction> (v1, c2); 
   }
-  
+
+  shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> cf)
+  {
+    return make_shared<ScaleCoefficientFunction> (-1.0, cf);     
+  }
+
+
   shared_ptr<CoefficientFunction> operator* (Complex v1, shared_ptr<CoefficientFunction> c2)
   {
     if (c2->IsZeroCF())

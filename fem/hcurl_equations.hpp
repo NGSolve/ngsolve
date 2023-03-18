@@ -40,6 +40,9 @@ namespace ngfem
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 0 };
 
+    static const FEL & Cast (const FiniteElement & fel) 
+    { return static_cast<const FEL&> (fel); }
+    
     static constexpr bool SUPPORT_PML = true;
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, 
@@ -54,7 +57,7 @@ namespace ngfem
 				MAT && mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
-      mat = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh) * mip.GetJacobianInverse();
+      mat = Cast(fel).GetShape(mip.IP(), lh) * mip.GetJacobianInverse();
     }
 
     template <typename AFEL>
@@ -62,7 +65,7 @@ namespace ngfem
                                  const MappedIntegrationPoint<D,D> & mip,
                                  SliceMatrix<> mat, LocalHeap & lh)
     {
-      static_cast<const FEL&> (fel).CalcMappedShape (mip, mat);  
+      Cast(fel).CalcMappedShape (mip, mat);  
     }
 
 
@@ -70,14 +73,14 @@ namespace ngfem
                                   const MappedIntegrationRule<D,D> & mir,
                                   SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
-      static_cast<const FEL&> (fel).CalcMappedShape (mir, Trans(mat));
+      Cast(fel).CalcMappedShape (mir, Trans(mat));
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      static_cast<const FEL&>(fel).CalcMappedShape (mir, mat);      
+      Cast(fel).CalcMappedShape (mir, mat);      
     }
 
 
@@ -86,10 +89,11 @@ namespace ngfem
 		       const TVX & x, TVY && y,
 		       LocalHeap & lh) 
     {
-      typedef typename TVX::TSCAL TSCAL;
+      // typedef typename TVX::TSCAL TSCAL;
+      typedef decltype(RemoveConst(x(0))) TSCAL;
       HeapReset hr(lh);
       Vec<D,TSCAL> hx;
-      hx = Trans (static_cast<const FEL&> (fel).GetShape (mip.IP(), lh)) * x;
+      hx = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
       y = Trans (mip.GetJacobianInverse()) * hx;
     }
 
@@ -100,7 +104,7 @@ namespace ngfem
     {
       HeapReset hr(lh);
       FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
-      static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
+      Cast(fel).CalcMappedShape (mip, shape);
       y = Trans(shape) * x;
     }
 
@@ -114,7 +118,7 @@ namespace ngfem
       HeapReset hr(lh);
       Vec<D,TSCAL> hx;
       hx = mip.GetJacobianInverse() * x;
-      y.Range(0,fel.GetNDof()) = static_cast<const FEL&> (fel).GetShape (mip.IP(),lh) * hx;
+      y.Range(0,fel.GetNDof()) = Cast(fel).GetShape (mip.IP(),lh) * hx;
     }
 
     template <typename FEL1, class TVX, class TVY>
@@ -124,7 +128,7 @@ namespace ngfem
     {
       HeapReset hr(lh);
       FlatMatrixFixWidth<D> shape(fel.GetNDof(), lh);
-      static_cast<const FEL&> (fel).CalcMappedShape (mip, shape);
+      Cast(fel).CalcMappedShape (mip, shape);
       y.Range(0,fel.GetNDof()) = shape * x;
     }
 
@@ -134,32 +138,32 @@ namespace ngfem
 			 BareSliceVector<double> x, SliceMatrix<double> y,
 			 LocalHeap & lh)
     {
-      static_cast<const FEL&> (fel).Evaluate (mir, x, y);
+      Cast(fel).Evaluate (mir, x, y);
     }
 
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      static_cast<const FEL&> (fel).Evaluate (mir, x, y);
+      Cast(fel).Evaluate (mir, x, y);
     }    
 
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
     {
-      static_cast<const FEL&> (fel).Evaluate (mir, x, y);
+      Cast(fel).Evaluate (mir, x, y);
     }    
 
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
-       static_cast<const FEL&> (fel).AddTrans (mir, y, x);
+      Cast(fel).AddTrans (mir, y, x);
     }    
     
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
-       static_cast<const FEL&> (fel).AddTrans (mir, y, x);
+      Cast(fel).AddTrans (mir, y, x);
     }    
 
     static shared_ptr<CoefficientFunction>
