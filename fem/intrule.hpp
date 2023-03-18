@@ -491,6 +491,11 @@ namespace ngfem
       Compute();
     }
 
+    INLINE void CheckDims() const
+    {
+      static_assert(DIMR >= DIMS, "DIMR >= DIMS not satisfied");
+    }
+    
     INLINE void Compute ()
     {
       if constexpr (DIMS == DIMR)
