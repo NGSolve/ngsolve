@@ -752,31 +752,38 @@ namespace ngfem
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
   }
   */
-
+  template <int DIM, int DIMSPAC>
+  int Func()
+  {
+    ; // generate a warning;
+  }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcMappedDShape (const BaseMappedIntegrationPoint & bmip, 
 		    BareSliceMatrix<> dshape) const
   {
-    auto & mip = dynamic_cast<const MappedIntegrationPoint<0,2> &> (bmip);
-    /*
     Iterate<4-DIM>
-      ([&bmip, dshape, this](auto CODIM)
+    // ([&bmip, dshape, this](auto CODIM)
+      ([&bmip](auto CODIM)
        {
          constexpr auto DIMSPACE = DIM+CODIM.value;
          if (bmip.DimSpace() == DIMSPACE)
            {
+             Func<DIM,DIMSPACE>();
+             ;
+             /*
              auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE> &> (bmip);
              auto dshapes = dshape.AddSize(ndof, DIMSPACE);
              
              this->T_CalcShape (GetTIP(mip),
                                 SBLambda ([dshapes] (size_t i, auto shape)
                                           { dshapes.Row(i) = ngbla::GetGradient(shape); }));
+             */
            }
        });
-    */
-    
+
+
     if (bmip.DimSpace() == DIM)
       {
         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
