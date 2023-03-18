@@ -752,11 +752,6 @@ namespace ngfem
                                     { shape.StoreGradient (&dshape(i,0)) ; }));
   }
   */
-  template <int DIM, int DIMSPAC>
-  int Func()
-  {
-    ; // generate a warning;
-  }
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
@@ -764,26 +759,22 @@ namespace ngfem
 		    BareSliceMatrix<> dshape) const
   {
     Iterate<4-DIM>
-    // ([&bmip, dshape, this](auto CODIM)
-      ([&bmip](auto CODIM)
+      ([&bmip, dshape, this](auto CODIM)
        {
          constexpr auto DIMSPACE = DIM+CODIM.value;
          if (bmip.DimSpace() == DIMSPACE)
            {
-             Func<DIM,DIMSPACE>();
-             ;
-             /*
+             static_assert(DIM<=DIMSPACE, "dim<=dimspace");
              auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE> &> (bmip);
              auto dshapes = dshape.AddSize(ndof, DIMSPACE);
              
              this->T_CalcShape (GetTIP(mip),
                                 SBLambda ([dshapes] (size_t i, auto shape)
                                           { dshapes.Row(i) = ngbla::GetGradient(shape); }));
-             */
            }
        });
 
-
+    /*
     if (bmip.DimSpace() == DIM)
       {
         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
@@ -807,6 +798,7 @@ namespace ngfem
       {
         cout << "CalcMappedDShape called for bboundary (not implemented)" << endl;        
       }
+    */
   }
 
 
