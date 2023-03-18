@@ -1867,8 +1867,8 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (Complex v1, shared_ptr<CoefficientFunction> c2);
 
-  inline shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1)
-  { return (-1) * c1; }
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> CreateWrapperCF (shared_ptr<CoefficientFunction> cf);

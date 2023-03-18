@@ -336,8 +336,6 @@ namespace ngfem
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      // HeapReset hr(lh);
-      // mat.Row(0) = Cast(fel).GetShape(mip.IP(), lh);
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));      
     }
 
@@ -570,8 +568,6 @@ namespace ngfem
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     {
-      // HeapReset hr(lh);
-      // mat.Row(0) = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh);
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
 
@@ -588,7 +584,7 @@ namespace ngfem
 		       LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      y = Trans (static_cast<const FEL&>(fel).GetShape (mip.IP(), lh)) * x;
+      y = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
       // y(0) = InnerProduct (x, static_cast<const FEL&>(fel).GetShape (mip.IP(), lh));
     }
 
@@ -596,7 +592,7 @@ namespace ngfem
 		       const FlatVector<double> & x, FlatVector<double> & y,
 		       LocalHeap & lh) 
     {
-      y(0) = static_cast<const FEL&>(fel).Evaluate(mip.IP(), x);
+      y(0) = Cast(fel).Evaluate(mip.IP(), x);
     }
 
 
@@ -606,7 +602,7 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      y.Range(0,fel.GetNDof()) = static_cast<const FEL&>(fel).GetShape (mip.IP(), lh) * x;
+      y.Range(0,fel.GetNDof()) = Cast(fel).GetShape (mip.IP(), lh) * x;
     }
 
 
@@ -618,11 +614,7 @@ namespace ngfem
 			      FlatMatrix<double> x, BareSliceVector<double> y,
 			      LocalHeap & lh)
     {
-      // static Timer t("applytransir - bnd");
-      // RegionTimer reg(t);
-
-      static_cast<const FEL&>(fel).
-	EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
+      Cast(fel).EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
     }
 
     template <class MIR>
