@@ -758,20 +758,18 @@ namespace ngfem
   CalcMappedDShape (const BaseMappedIntegrationPoint & bmip, 
 		    BareSliceMatrix<> dshape) const
   {
-    Iterate<4-DIM>
-      ([&bmip, dshape, this](auto CODIM)
+    Switch<4-DIM>
+      (bmip.DimSpace()-DIM, [&bmip, dshape, this](auto CODIM)
        {
          constexpr auto DIMSPACE = DIM+CODIM.value;
-         if (bmip.DimSpace() == DIMSPACE)
-           {
-             static_assert(DIM<=DIMSPACE, "dim<=dimspace");
-             auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE> &> (bmip);
-             auto dshapes = dshape.AddSize(ndof, DIMSPACE);
-             
-             this->T_CalcShape (GetTIP(mip),
-                                SBLambda ([dshapes] (size_t i, auto shape)
-                                          { dshapes.Row(i) = ngbla::GetGradient(shape); }));
-           }
+         static_assert(DIM<=DIMSPACE, "dim<=dimspace");
+         
+         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE> &> (bmip);
+         auto dshapes = dshape.AddSize(ndof, DIMSPACE);
+         
+         this->T_CalcShape (GetTIP(mip),
+                            SBLambda ([dshapes] (size_t i, auto shape)
+                                      { dshapes.Row(i) = ngbla::GetGradient(shape); }));
        });
 
     /*
