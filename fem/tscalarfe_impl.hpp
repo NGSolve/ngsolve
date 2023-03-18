@@ -761,10 +761,11 @@ namespace ngfem
     Switch<4-DIM>
       (bmip.DimSpace()-DIM, [&bmip, dshape, this](auto CODIM)
        {
-         constexpr auto DIMSPACE = DIM+CODIM.value;
+         constexpr int DIM_ = DIM;
+         constexpr int DIMSPACE = int(DIM)+int(CODIM.value);
          static_assert(DIM<=DIMSPACE, "dim<=dimspace");
          
-         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE> &> (bmip);
+         auto & mip = static_cast<const MappedIntegrationPoint<DIM_,DIMSPACE> &> (bmip);
          auto dshapes = dshape.AddSize(ndof, DIMSPACE);
          
          this->T_CalcShape (GetTIP(mip),
@@ -805,28 +806,27 @@ namespace ngfem
   CalcMappedDShape (const BaseMappedIntegrationRule & bmir, 
 		    BareSliceMatrix<> dshape) const
   {
+    /*
     // auto & mir = static_cast<const MappedIntegrationRule<DIM,DIM> &> (bmir);
     for (size_t i = 0; i < bmir.Size(); i++)
       T_ScalarFiniteElement::CalcMappedDShape (bmir[i], dshape.Cols(i*DIM,(i+1)*DIM));
-    /*
-    Iterate<4-DIM>
-      ([&bmir, dshape, this](auto CODIM)
+    */
+
+    Switch<4-DIM>
+      (bmir.DimSpace()-DIM, [&bmir, dshape, this](auto CODIM)
        {
-         constexpr auto DIMSPACE = DIM+CODIM.value;
-         if (bmir.DimSpace() == DIMSPACE)
+         constexpr int DIM_ = DIM;
+         constexpr int DIMSPACE = int(DIM)+int(CODIM.value);
+         auto & mir = static_cast<const MappedIntegrationRule<DIM_,DIMSPACE> &> (bmir);
+         for (size_t i = 0; i < mir.Size(); i++)
            {
-             auto & mir = static_cast<const MappedIntegrationRule<DIM,DIMSPACE> &> (bmir);
-             for (size_t i = 0; i < mir.Size(); i++)
-               {
-                 auto dshapes = dshape.Cols(i*DIMSPACE, (i+1)*DIMSPACE).AddSize(ndof, DIMSPACE);
-                 this->T_CalcShape (GetTIP(mir[i]),
-                                    SBLambda ([dshapes] (size_t j, auto shape)
-                                              { dshapes.Row(j) = ngbla::GetGradient(shape); }));
-               }
+             auto dshapes = dshape.Cols(i*DIMSPACE, (i+1)*DIMSPACE).AddSize(ndof, DIMSPACE);
+             this->T_CalcShape (GetTIP(mir[i]),
+                                SBLambda ([dshapes] (size_t j, auto shape)
+                                          { dshapes.Row(j) = ngbla::GetGradient(shape); }));
            }
        });
-    */
-  }
+}
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
