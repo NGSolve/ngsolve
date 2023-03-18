@@ -805,9 +805,9 @@ namespace ngfem
   CalcMappedDShape (const BaseMappedIntegrationRule & bmir, 
 		    BareSliceMatrix<> dshape) const
   {
-    auto & mir = static_cast<const MappedIntegrationRule<DIM,DIM> &> (bmir);
-    for (size_t i = 0; i < mir.Size(); i++)
-      T_ScalarFiniteElement::CalcMappedDShape (mir[i], dshape.Cols(i*DIM,(i+1)*DIM));
+    // auto & mir = static_cast<const MappedIntegrationRule<DIM,DIM> &> (bmir);
+    for (size_t i = 0; i < bmir.Size(); i++)
+      T_ScalarFiniteElement::CalcMappedDShape (bmir[i], dshape.Cols(i*DIM,(i+1)*DIM));
     /*
     Iterate<4-DIM>
       ([&bmir, dshape, this](auto CODIM)
