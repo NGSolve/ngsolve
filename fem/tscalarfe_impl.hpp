@@ -759,6 +759,7 @@ namespace ngfem
   CalcMappedDShape (const BaseMappedIntegrationPoint & bmip, 
 		    BareSliceMatrix<> dshape) const
   {
+    /*
     Iterate<4-DIM>
       ([&bmip, dshape, this](auto CODIM)
        {
@@ -773,7 +774,8 @@ namespace ngfem
                                           { dshapes.Row(i) = ngbla::GetGradient(shape); }));
            }
        });
-      /*
+    */
+
     if (bmip.DimSpace() == DIM)
       {
         auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM> &> (bmip);
@@ -797,7 +799,6 @@ namespace ngfem
       {
         cout << "CalcMappedDShape called for bboundary (not implemented)" << endl;        
       }
-    */
   }
 
 
@@ -806,11 +807,10 @@ namespace ngfem
   CalcMappedDShape (const BaseMappedIntegrationRule & bmir, 
 		    BareSliceMatrix<> dshape) const
   {
-    /*
     auto & mir = static_cast<const MappedIntegrationRule<DIM,DIM> &> (bmir);
     for (size_t i = 0; i < mir.Size(); i++)
       T_ScalarFiniteElement::CalcMappedDShape (mir[i], dshape.Cols(i*DIM,(i+1)*DIM));
-    */
+    /*
     Iterate<4-DIM>
       ([&bmir, dshape, this](auto CODIM)
        {
@@ -827,6 +827,7 @@ namespace ngfem
                }
            }
        });
+    */
   }
 
 
