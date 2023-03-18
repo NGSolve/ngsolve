@@ -1491,6 +1491,7 @@ namespace ngfem
   template <int DIM_ELEMENT, int DIM_SPACE, typename SCAL = double>
   class NGS_DLL_HEADER MappedIntegrationRule : public BaseMappedIntegrationRule
   {
+    static_assert(DIM_ELEMENT <= DIM_SPACE, "DIM-source > DIM-range !!");    
     FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL> > mips;
   public:
     MappedIntegrationRule (const IntegrationRule & ir, 
