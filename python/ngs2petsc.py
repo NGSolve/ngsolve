@@ -155,16 +155,30 @@ class DMPlexMapping:
     def __init__(self,mesh=None):
         if type(mesh) is ngs.comp.Mesh:
            self.createPETScDMPlex(mesh) 
-        elif type(mesh) is psc.DM:
+        elif type(mesh) is psc.DMPlex:
            self.createNGSMesh(mesh)
         else:
             raise ValueError("Mesh format not recognised.")
     def createNGSMesh(self,plex):
-        #Implementing the serial case to begin ith only
         ngmesh = ngm.Mesh(dim=plex.getCoordinateDim())
         self.ngmesh = ngmesh
-        self.ngmesh.AddPoints (plex.getCoordinates().getArray().reshape([-1,2]))  
-        #Need to figure out how to grab connectivity matrix from DMPLex
+        if plex.getDimension() == 2:
+            coordinates = plex.getCoordinates().getArray().reshape([-1,2])
+            self.ngmesh.AddPoints(coordinates)  
+            cstart,cend = plex.getHeightStratum(0)
+            vstart, vend = plex.getHeightStratum(2)
+            cells = []
+            for i in range(cstart,cend):
+                sIndex  = plex.getCone(i)
+                s1 = plex.getCone(sIndex[0])-vstart
+                s2 = plex.getCone(sIndex[1])-vstart
+                if np.linalg.det(np.array([coordinates[s1[1]]-coordinates[s1[0]],coordinates[s2[1]]-coordinates[s1[1]]])) < 0.:
+                    cells = cells+[[s1[1],s1[0],s2[1]]]
+                else:
+                    cells = cells+[[s1[0],s1[1],s2[1]]]
+
+        fd = ngmesh.Add(ngm.FaceDescriptor(bc=1))
+        self.ngmesh.AddElements(dim=plex.getDimension(), index=1, data=np.asarray(cells,dtype=np.int32), base=0)
         
     def createPETScDMPlex(self,mesh):
         self.ngmesh = mesh.ngmesh
