@@ -6,7 +6,7 @@ from ngsolve import *
 import numpy as np
 import pytest
 
-mesh = Mesh(unit_cube.GenerateMesh())
+mesh = Mesh(unit_cube.GenerateMesh(maxh=1))
 
 fes = VectorH1(mesh)
 u = GridFunction(fes)
@@ -302,6 +302,67 @@ def test_zero_detection():
     assert str(AA) == "ZeroCoefficientFunction"
 
 
+def impl_test_sparsity_optimization(realcompile):
+    # print("test_sparsity_optimization")
+    # print("rc", realcompile)
+
+    options = {"optimize_path": False, "sparse_evaluation": True}
+    options_no_opt = {k: False for k in options.keys()}
+
+    F0 = CF((1.1, 0.2, 0.4, 0, 1.2, 0.3, 0.1, 0.15, 0.9), dims=(3,3))
+
+    u_trial = fes.TrialFunction()
+    u_test = fes.TestFunction()
+
+    K = fem.Einsum('i,j,k->ijk', CF((1.1, 1.3, 0.8)), CF((0.76, 1.2, 1.8)), CF((1.2, 2.3, 0.4)), **options_no_opt)
+    uuu = fem.Einsum('i,j,k->ijk', u_trial, u_trial, u_trial, **options_no_opt)
+
+    # print("psi setup")
+    Psi_no_opt = fem.Einsum('ijk,ijk->', K, uuu, **options_no_opt).Compile(realcompile=realcompile, wait=True)
+    Psi = fem.Einsum('ijk,ijk->', K, uuu, **options).Compile(realcompile=realcompile, wait=True)
+
+    pos = CF((x, y, z))
+    u.Interpolate(F0*pos + 0.05 * InnerProduct(F0*pos, pos) * CF((1, 1.1, 1.2)))
+
+    # print("BiLi setup")
+
+    a_no_opt = BilinearForm(fes, symmetric=True)
+    a_no_opt += Psi_no_opt.Diff(u_trial, u_test) * dx
+
+    a = BilinearForm(fes, symmetric=True)
+    a += Psi.Diff(u_trial, u_test) * dx
+
+    # print("compute...")
+
+    a_no_opt.AssembleLinearization(u.vec)
+    a.AssembleLinearization(u.vec)
+
+    diff = a.mat.AsVector().FV().NumPy() - a_no_opt.mat.AsVector().FV().NumPy()
+    # print(np.max(np.abs(diff)))
+    assert np.max(np.abs(diff)) < 1e-14
+
+    diff_energy = abs(a.Energy(u.vec) - a_no_opt.Energy(u.vec))
+    # print(diff_energy)
+    assert abs(diff_energy) < 1e-14
+
+    r_a = u.vec.CreateVector()
+    r_a_no_opt = u.vec.CreateVector()
+    a.Apply(u.vec, r_a)
+    a_no_opt.Apply(u.vec, r_a_no_opt)
+    diff = r_a.FV().NumPy() - r_a_no_opt.FV().NumPy()
+    print(np.max(np.abs(diff)))
+    assert np.max(np.abs(diff)) < 1e-14
+
+
+def test_sparsity_optimization():
+    impl_test_sparsity_optimization(False)
+
+
+@pytest.mark.slow
+def test_sparsity_optimization():
+    impl_test_sparsity_optimization(True)
+
+
 if __name__ == "__main__":
     test_blas(False)
     test_blas(True)
@@ -314,3 +375,5 @@ if __name__ == "__main__":
     test_tensor_diff()
     test_ellipses()
     test_zero_detection()
+    test_sparsity_optimization(False)
+    test_sparsity_optimization(True)
