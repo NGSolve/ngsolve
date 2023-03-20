@@ -89,8 +89,9 @@ namespace ngfem {
             nzvec = false;
 
             ProxyUserData ud;
-//            DummyFE<ET_TRIG> dummyfe;
-//            ud.fel = &dummyfe; do not do this here as it interferes with the purpose (see ProxyFunction::NonZeroPattern)
+            DummyFE<ET_TRIG> dummyfe;
+            ud.fel = &dummyfe;
+            ud.eval_deriv = 1;
 
             Array<ProxyFunction *> trial_proxies, test_proxies;
 
