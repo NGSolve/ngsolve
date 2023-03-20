@@ -76,10 +76,22 @@ def test_code_gen(unit_mesh_3d):
     assert _check_compiled(rvec.trans * mat)
     assert _check_compiled(mat * vec)
     assert _check_compiled(tens * vec)
+    assert _check_compiled(tens[:,:,vec])
+    assert _check_compiled(tens[:,vec,:])
+    assert _check_compiled(tens[vec,vec,:])
     assert _check_compiled(scal * tens)
     assert np.all(np.array((scal * tens).dims) == np.array(tens.dims))
 
 
-if __name__ == "__main__":
-    test_optimizations(unit_mesh_2d)
-    test_code_gen(unit_mesh_3d)
+def test_tensor_mult(unit_mesh_3d):
+    vec = CF((1, 2, 3))
+    tens = CF(tuple(range(27)), dims=(3, 3, 3))
+
+    _compare = lambda cf1, cf2: compare_cfs(cf1, cf2, unit_mesh_3d)
+
+    compare_cfs(CF(1), CF(2), unit_mesh_3d)
+    assert _compare(tens * vec, tens[:,:,vec])
+    assert _compare((tens * vec) * vec, tens[:,vec,vec])
+    assert _compare(((tens * vec) * vec) * vec, tens[vec,vec,vec])
+    assert _compare(tens.TensorTranspose((1,2,0)) * vec, tens[vec,:,:])
+    assert _compare((tens * vec).trans * vec, tens[vec,:,vec])
