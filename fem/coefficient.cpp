@@ -3284,14 +3284,36 @@ public:
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
     // code.Declare (code.res_type, index, Dimensions());
-    code.Declare (index, Dimensions(), IsComplex()); 
-      auto dims = c1->Dimensions();
-      for (int i : Range(dims[0])) {
-        CodeExpr s;
-        for (int j : Range(dims[1]))
+    code.Declare (index, Dimensions(), IsComplex());
+    const auto dims = c1->Dimensions();
+
+    if (dims.Size() == 2)
+      for (int i : Range(dims[0]))
+        {
+          CodeExpr s;
+          for (int j : Range(dims[1]))
             s += Var(inputs[0], i, j) * Var(inputs[1], j);
-	code.body += Var(index, i).Assign(s, false);
+          code.body += Var(index, i).Assign(s, false);
+        }
+    else 
+      {
+        const auto& dims_c1 = dims;
+        const auto dims_res = Dimensions();
+        const auto dim_c2 = c2->Dimension();
+
+        int cc1 = 0;
+        for (int i_res : Range(Dimension()))
+          {
+            CodeExpr s;
+            for (int j : Range(dim_c2))
+              {
+                s += Var(inputs[0], cc1, dims_c1) * Var(inputs[1], j);
+                cc1++;
+              }
+            code.body += Var(index, i_res, dims_res).Assign(s, false);
+          }
       }
+      
   }
 
   /*
@@ -5328,17 +5350,26 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
   {
     if (c1->IsZeroCF() || c2->IsZeroCF())
       {
+        // mat @ mat
         if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
           return ZeroCF(Array( {c1->Dimensions()[0],c2->Dimensions()[1]} ));
-        if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 1)
-          return ZeroCF(Array( {c1->Dimensions()[0]} ));
-        if (c1->Dimension() > 1 && c2->Dimension() > 1)
+        // mat/tensor @ vec
+        if (c1->Dimensions().Size() >= 2 && c2->Dimensions().Size() == 1)
+          return ZeroCF(Array<int>( c1->Dimensions().Range(0, END-1) ));
+        // <vec, vec> (scalar result)
+        if (c1->Dimension() > 1 && c2->Dimension() > 1
+            && c1->Dimension() == c2->Dimension())
           return ZeroCF(Array<int>( {} ));
-        if ( (c1->Dimension() == 1 && c2->Dimension() > 1) || (c1->Dimension() > 1 && c2->Dimension() == 1))
-          return ZeroCF(Array( {int(c1->Dimension()*c2->Dimension())} ));
-
-        return ZeroCF(Array<int>( {} ));
-          
+        // scal * vec/mat/tensor
+        if (c1->Dimension() == 1 && c2->Dimension() > 1)
+          return ZeroCF(c2->Dimensions());
+        // vec/mat/tensor * scal
+        if (c1->Dimension() > 1 && c2->Dimension() == 1)
+          return ZeroCF(c1->Dimensions());
+        // scal * scal
+        if (c1->Dimension() == 1 && c2->Dimension() == 1)
+          return ZeroCF(Array<int>( {} ));
+        cout << IM(5) << "missed optimization opportunity in 'operator*'" << endl;
       }
     if (c1->Dimensions().Size() == 2 && c2->Dimensions().Size() == 2)
       {
@@ -5646,7 +5677,10 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     if (coef->IsZeroCF())
       {
         auto dims = coef->Dimensions();
-        coef->SetDimensions( Array( {dims[1], dims[0]}) );
+        if (dims.Size() == 2)
+            coef->SetDimensions( Array( {dims[1], dims[0]}) );
+        else
+            throw Exception("Transpose of non-matrix called");
         return coef;
       }
 
