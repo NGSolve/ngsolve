@@ -89,8 +89,9 @@ namespace ngfem {
             nzvec = false;
 
             ProxyUserData ud;
-//            DummyFE<ET_TRIG> dummyfe;
-//            ud.fel = &dummyfe; do not do this here as it interferes with the purpose (see ProxyFunction::NonZeroPattern)
+            DummyFE<ET_TRIG> dummyfe;
+            ud.fel = &dummyfe;
+            ud.eval_deriv = 1;
 
             Array<ProxyFunction *> trial_proxies, test_proxies;
 
@@ -1294,9 +1295,7 @@ namespace ngfem {
 
               if (!s.code.empty()) {
                 if (declared[res_idx]) {
-                  code.body +=
-                      Var(index, res_idx, result_dims)
-                          .Assign(Var(index, res_idx, result_dims) + s, false);
+                  code.body += Var(index, res_idx, result_dims).S() + " += " + s.S() + ";\n";
                 } else {
                   code.body += Var(index, res_idx, result_dims).Assign(s);
                   declared[res_idx] = true;
@@ -1370,6 +1369,11 @@ namespace ngfem {
           if (this == var)
             return dir;
 
+          // IMPORTANT NOTE:
+          // use "original_index_signature" and "original_inputs" as only
+          // these protect variables etc, i.e. they do not carry any
+          // optimization!
+
           auto dres = ZeroCF(Array<int>{Dimensions()});
 
           for (size_t i: Range(original_inputs.Size()))
@@ -1400,6 +1404,10 @@ namespace ngfem {
           auto dres = ZeroCF(res_dims);
           try
           {
+              // IMPORTANT NOTE:
+              // use "original_index_signature" and "original_inputs" as only
+              // these protect variables etc, i.e. they do not carry any
+              // optimization!
               auto parts = split_signature(original_index_signature);
 
               for (size_t i: Range(original_inputs.Size()))
