@@ -663,7 +663,7 @@ namespace ngcomp
             // just not tested ...
             for (int i = 0; i < specialelements.Size(); i++)
             {
-              specialelements[i]->GetDofNrs (dnums);
+              specialelements[i]->GetDofNrs2 (dnums);
 		
               for (int j = 0; j < dnums.Size(); j++)
                 if (dnums[j] != -1)
@@ -3569,6 +3569,28 @@ namespace ngcomp
               } // if facetwise_skeleton_parts[BND].size
 
             if (elementwise_skeleton_parts.Size()) throw Exception ("mixed biforms don't support elementwise skeleton terms");
+
+
+            ParallelForRange
+              ( IntRange(specialelements.Size()), [&] ( IntRange r )
+                {
+                  LocalHeap lh = clh.Split();
+                  Array<int> dnums, dnums2;
+                  
+                  for (int i : r)
+                    {
+                      const SpecialElement & el = *specialelements[i];
+                      
+                      el.GetDofNrs (dnums);
+                      el.GetDofNrs2 (dnums2);
+                
+                      FlatMatrix<SCAL> elmat(dnums2.Size(), dnums.Size(), lh);
+                      el.CalcElementMatrix (elmat, lh);
+                  
+                      AddElementMatrix (dnums2, dnums, elmat, ElementId(BND,i), true, lh);
+                    }
+                  lh.CleanUp();
+                });
             
             if (print) *testout << "mat = " << mat << endl;
 
