@@ -1188,6 +1188,7 @@ rho : ngsolve.fem.CoefficientFunction
         int dim = space->GetDimension();
         Flags flags;
         if (is_complex) flags.SetFlag("complex");
+        if (space->UsesDGCoupling()) flags.SetFlag ("dgjumps");
         flags.SetFlag ("dim", dim);
         flags.SetFlag ("autoupdate", space->DoesAutoUpdate());
         auto productspace = make_shared<CompoundFESpaceAllSame> (space, p, flags);
