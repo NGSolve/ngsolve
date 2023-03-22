@@ -40,7 +40,7 @@ install( FILES
         basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp multivector.hpp
         chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp   
         pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp
-        sparsematrix_spec.hpp sparsematrix_impl.hpp sparsematrix_dyn.hpp
+        sparsematrix_impl.hpp sparsematrix_dyn.hpp
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp
         umfpackinverse.hpp vvector.hpp python_linalg.hpp
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp
