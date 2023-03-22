@@ -19,9 +19,9 @@ namespace ngcomp
                                                 bool parallel)
   {
     cout << "We assemble matrix" << endl;
-    Timer tgraph("MyAssemble - buildmatrixgraph");
-    Timer tassemble("MyAssemble - assemble matrix");
-    Timer telement("MyAssemble - calc element matrix");        
+    static Timer tgraph("MyAssemble - buildmatrixgraph");
+    static Timer tassemble("MyAssemble - assemble matrix");
+    static Timer telement("MyAssemble - calc element matrix");        
     auto ma = fes->GetMeshAccess();
     
     int ndof = fes->GetNDof();
@@ -82,8 +82,10 @@ namespace ngcomp
             const ElementTransformation & eltrans = ma->GetTrafo (ei, lh);
             
             // compute the element matrix
+            telement.Start();            
             FlatMatrix<> elmat (fel.GetNDof(), lh);
             bfi->CalcElementMatrix (fel, eltrans, elmat, lh);
+            telement.Stop();
             
             mat->AddElementMatrix (dnums, dnums, elmat);
           }
@@ -124,5 +126,25 @@ namespace ngcomp
     
     tassemble.Stop();
     return mat;
+  }
+
+
+
+  /*
+    Exercise: implement a corresponding function for assembling the right hand side vector
+   */
+  shared_ptr<BaseVector> MyAssembleVector(shared_ptr<FESpace> fes,
+                                          shared_ptr<LinearFormIntegrator> lfi,
+                                          bool parallel)
+  {
+    // A VVector (virtual vector) is derived from BaseVector
+    shared_ptr<BaseVector> vec = make_shared<VVector<double>> (fes->GetNDof());
+
+    // adding an element vector to the global vector
+    FlatVector<double> elvec;
+    Array<int> dnums;
+    vec->AddIndirect (dnums, elvec);
+    
+    return vec;
   }
 }
