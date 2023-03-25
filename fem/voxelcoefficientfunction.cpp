@@ -167,6 +167,56 @@ namespace ngfem
     throw Exception("Real evaluate for complex VoxelCoefficient called!");
   }
 
+  template<typename T>
+  double VectorialVoxelCoefficientFunction<T> :: Evaluate(const BaseMappedIntegrationPoint& ip) const
+  {
+    if constexpr(is_same_v<T, double>)
+    {
+	    Vec<1> res;
+	    Evaluate (ip, res);
+	    return res(0);
+    }
+    throw Exception("Real evaluate for complex VectorialVoxelCoefficient called!");
+  }
+
+  template<typename T>
+  void VectorialVoxelCoefficientFunction<T> :: Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<double> result) const
+  {
+    int base = 0;
+    for (auto & cf : voxel_cfs)
+      {
+        cf->Evaluate(ip, result.Range(base, base+1));
+        base += 1;
+      }
+  }
+
+
+  template<typename T>
+  void VectorialVoxelCoefficientFunction<T> :: Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<Complex> result) const
+  {
+    int base = 0;
+    for (auto & cf : voxel_cfs)
+      {
+        cf->Evaluate(ip, result.Range(base, base+1));
+        base += 1;
+      }
+  }
+
+  template<typename T>
+  Complex VectorialVoxelCoefficientFunction<T> :: EvaluateComplex(const BaseMappedIntegrationPoint& ip) const
+  {
+    if constexpr(is_same_v<T, Complex>)
+    {
+	    Vec<1, Complex> res;
+	    Evaluate (ip, res);
+	    return res(0);
+    }
+    throw Exception("Complex evaluate for real VectorialVoxelCoefficient called!");
+
+  }
+
   template class VoxelCoefficientFunction<double>;
   template class VoxelCoefficientFunction<Complex>;
+  template class VectorialVoxelCoefficientFunction<double>;
+  template class VectorialVoxelCoefficientFunction<Complex>;
 } // namespace ngfem

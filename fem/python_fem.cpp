@@ -2960,6 +2960,122 @@ If linear is True the function will be interpolated linearly between the values.
 
 )delimiter");
 
+m.def("VectorialVoxelCoefficient",
+        [](py::tuple pystart, py::tuple pyend, py::array values,
+           py::tuple shape,
+           bool linear, py::object trafocf)
+        -> shared_ptr<CoefficientFunction>
+        {
+          shared_ptr<CoefficientFunction> trafo;
+          try { trafo = MakeCoefficient(trafocf); }
+          catch(...) { trafo=nullptr; }
+          Array<string> allowed_types = { "float64", "complex128" };
+          if(!allowed_types.Contains(py::cast<string>(values.dtype().attr("name"))))
+            throw Exception("Only float64 and complex128 dtype arrays allowed!");
+          Array<double> start, end;
+          Array<size_t> dim_vals;
+          for(auto val : pystart)
+            start.Append(py::cast<double>(val));
+          for(auto val : pyend)
+            end.Append(py::cast<double>(val));
+          // Dimension of VoxelCoefficientFunction
+          int dim = values.ndim() - py::len(shape);
+	  int dim_start = start.Size();
+	  int dim_end = end.Size();
+	  if(py::len(shape) > 2) throw Exception("VectorialVoxelCoefficientFunction is only implemented for vectors and matrices.");
+	  if (dim_end != dim_start) throw Exception("Start and end coordinates of bounding box do not have the same dimension.");
+	  if (dim_end != dim) throw Exception("The shape of the values, the dimension and the provided shape are not consistent.");
+          int entries = 1;
+          for(auto val : shape){
+                  entries *= py::cast<int>(val);
+          }
+          for(auto d : Range(dim)){
+            dim_vals.Insert(0, values.shape(d));
+          }
+
+          if(values.dtype().kind() == 'c')
+	  {
+              Array<shared_ptr<VoxelCoefficientFunction<Complex>>> cflist(entries);
+	      int idx_row = 0;
+	      int idx_col = 0;
+
+              for (int i : Range(cflist.Size())){
+	         py::tuple data_range;
+	         // for vectors
+	         if (py::len(shape) == 1)
+		          data_range = py::make_tuple(py::ellipsis(), i);
+		 // for matrices
+		 else if (py::len(shape) == 2)
+		 {
+			  data_range = py::make_tuple(py::ellipsis(), idx_row, idx_col);
+			  idx_col += 1;
+			  if (idx_col % py::cast<int>(shape[1]) == 0){
+				  idx_col = 0;
+				  idx_row += 1;
+			  }
+		  }
+		  auto data_vals = values[data_range];
+                  auto c_array = py::cast<py::array_t<Complex>>(data_vals.attr("ravel")());
+                  Array<Complex> vals(c_array.size());
+                  for(auto j : Range(vals))
+                    vals[j] = c_array.at(j);
+                  cflist[i] = make_shared<VoxelCoefficientFunction<Complex>>
+      	                      (start, end, dim_vals, std::move(vals), linear, trafo);
+	      }
+	      auto cdims = makeCArray<int> (shape);
+	      auto vecvoxel_cf = make_shared<VectorialVoxelCoefficientFunction<Complex>>(std::move(cflist));
+	      vecvoxel_cf->SetDimensions(cdims);
+	      return vecvoxel_cf;
+	  }
+
+          Array<shared_ptr<VoxelCoefficientFunction<double>>> cflist(entries);
+	  // for matrices
+	  int idx_row = 0;
+	  int idx_col = 0;
+
+          for (int i : Range(cflist.Size())){
+	      py::tuple data_range;
+	      // for vectors
+	      if (py::len(shape) == 1)
+		      data_range = py::make_tuple(py::ellipsis(), i);
+              // for matrices
+	      else if (py::len(shape) == 2)
+	      {
+		      data_range = py::make_tuple(py::ellipsis(), idx_row, idx_col);
+		      idx_col += 1;
+		      if (idx_col % py::cast<int>(shape[1]) == 0){
+			      idx_col = 0;
+			      idx_row += 1;
+		      }
+	      }
+	      auto data_vals = values[data_range];
+	      auto d_array = py::cast<py::array_t<double>>(data_vals.attr("ravel")());
+	      Array<double> vals(d_array.size());
+	      for(auto j : Range(vals))
+		 vals[j] = d_array.at(j);
+	      cflist[i] = make_shared<VoxelCoefficientFunction<double>>
+			  (start, end, dim_vals, std::move(vals), linear, trafo);
+          }
+          auto cdims = makeCArray<int> (shape);
+
+	  auto vecvoxel_cf = make_shared<VectorialVoxelCoefficientFunction<double>>(std::move(cflist));
+	  vecvoxel_cf->SetDimensions(cdims);
+
+          return vecvoxel_cf;
+        }, py::arg("start"), py::arg("end"), py::arg("values"), py::arg("shape"),
+        py::arg("linear")=true, py::arg("trafocf")=DummyArgument(), R"delimiter(CoefficientFunction defined on a grid.
+
+Start and end mark the cartesian boundary of domain. The function will be continued by a constant function outside of this box. Inside a cartesian grid will be created by the dimensions of the numpy input array 'values'.
+In contrast to the VoxelCoefficient, the values can be arrays with a certain shape.
+For example, a matrix-valued coefficient function would have the shape (3, 3) and a vector-valued coefficient function would have the shape (3,).
+The array with values must have the dimensions of the mesh and the values stored as:
+x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...
+
+If linear is True the function will be interpolated linearly between the values. Otherwise the nearest voxel value is taken.
+
+)delimiter");
+
+
       const string header = R"CODE(
 #include <comp.hpp>
 #include <python_ngstd.hpp>

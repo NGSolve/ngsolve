@@ -34,6 +34,31 @@ namespace ngfem
   private:
     SCAL T_Evaluate(const BaseMappedIntegrationPoint& ip) const;
   };
+
+  template<typename SCAL>
+  class VectorialVoxelCoefficientFunction : public CoefficientFunctionNoDerivative
+  {
+	  // Array of VoxelCoefficientFunction
+  	  Array<shared_ptr<VoxelCoefficientFunction<SCAL>>> voxel_cfs;
+	  Array<size_t> dimi;  // shape of entries
+
+  public:
+    VectorialVoxelCoefficientFunction() = default;
+    VectorialVoxelCoefficientFunction (Array<shared_ptr<VoxelCoefficientFunction<SCAL>>> avoxel_cfs) : voxel_cfs(avoxel_cfs), dimi(avoxel_cfs.Size())
+    {
+    	for (auto cf : voxel_cfs)
+      	  if (cf && cf->IsComplex())
+            is_complex = true;
+    }
+
+    using CoefficientFunctionNoDerivative::Evaluate;
+    double Evaluate(const BaseMappedIntegrationPoint& ip) const override;
+    Complex EvaluateComplex(const BaseMappedIntegrationPoint& ip) const override;
+    void Evaluate(const BaseMappedIntegrationPoint& mip, FlatVector<> values) const override;
+    void Evaluate(const BaseMappedIntegrationPoint& mip, FlatVector<Complex> values) const override;
+
+  };
+
 } // namespace ngfem
 
 #endif // NGSOLVE_VOXELCOEFFICIENTFUNCTION_HPP
