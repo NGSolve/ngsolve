@@ -152,7 +152,8 @@ CELL_SETS_LABEL = "Cell Sets"
 EDGE_SETS_LABEL = "Edge Sets"
 
 class DMPlexMapping:
-    def __init__(self,mesh=None):
+    def __init__(self,mesh=None,name="Default"):
+        self.name = name
         if type(mesh) is ngs.comp.Mesh:
            self.createPETScDMPlex(mesh) 
         elif type(mesh) is psc.DMPlex:
@@ -194,7 +195,7 @@ class DMPlexMapping:
                     T = self.ngmesh.Elements2D().NumPy()["nodes"]
                     T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-1
                 plex = psc.DMPlex().createFromCellList(dim, T, V)
-                plex.setName(self.ngmesh.GetMeshName())
+                plex.setName(self.name)
                 vStart, vEnd = plex.getDepthStratum(0)
                 if surfMesh:
                     for e in self.ngmesh.Elements1D():
@@ -219,7 +220,7 @@ class DMPlexMapping:
                 T = self.ngmesh.Elements2D().NumPy()["nodes"]
                 T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-1
                 plex = psc.DMPlex().createFromCellList(2, T, V)
-                plex.setName(self.ngmesh.GetMeshName())
+                plex.setName(self.name)
                 vStart, vEnd = plex.getDepthStratum(0)   # vertices
                 for e in self.ngmesh.Elements1D():
                     join = plex.getJoin([vStart+v.nr-1 for v in e.vertices])
