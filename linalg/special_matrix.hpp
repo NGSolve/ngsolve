@@ -11,7 +11,7 @@ namespace ngla
 {
 
 
-  class Projector : public BaseMatrix
+  class NGS_DLL_HEADER Projector : public BaseMatrix
   {
     shared_ptr<BitArray> bits;
     bool keep_values;
