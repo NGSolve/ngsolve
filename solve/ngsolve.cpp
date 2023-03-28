@@ -31,6 +31,8 @@ using netgen::Ng_Tcl_SetResult;
 using netgen::Ng_Tcl_CreateCommand;
 using netgen::NG_TCL_OK;
 using netgen::NG_TCL_ERROR;
+using netgen::h_argc;
+using netgen::h_argv;
 /*
 using netgen::NG_TCL_STATIC;
 using netgen::NG_TCL_VOLATILE;
@@ -583,7 +585,12 @@ int NGS_LoadPy (ClientData clientData,
       try
 	{
 	  string filename = argv[1];
-	  cout << "(should) load python file '" << filename << "'" << endl;
+	  cout << IM(3) << "(should) load python file '" << filename << "'" << endl;
+
+    Array<string> args;
+    args.Append(filename);
+    for(auto i : Range(h_argc-2))
+      args.Append(h_argv[i+2]);
 
 #ifdef NGS_PYTHON
 #ifdef PARALLEL_GL
@@ -592,7 +599,7 @@ int NGS_LoadPy (ClientData clientData,
 	  MyMPI_SendCmd (buf.str().c_str(), MPI_COMM_WORLD);
 #endif // PARALLEL
 	  {
-        std::thread([](string init_file_) 
+        std::thread([](Array<string> argv)
           {
             AcquireGIL gil_lock;
             try{
@@ -602,21 +609,31 @@ int NGS_LoadPy (ClientData clientData,
               // change working directory to the python file
               stringstream s;
               s << "import os" << endl
-                << "os.chdir(os.path.dirname(os.path.abspath('" << init_file_ << "')))" << endl
+                << "os.chdir(os.path.dirname(os.path.abspath('" << argv[0] << "')))" << endl
                 << "del os" << endl;
+
+              // set sys.argv
+              s << "import sys" << endl;
+              s << "sys.argv = [";
+              for(auto i : Range(argv.Size()))
+              {
+                if(i>0) s << ',' << endl;
+                s << '"' << argv[i] << '"';
+              }
+              s << ']' << endl;
               pyenv.exec(s.str());
 
-              pyenv.exec_file(init_file_.c_str());
+              pyenv.exec_file(argv[0].c_str());
               Ng_SetRunning (0); 
             }
             catch (py::error_already_set const &) {
               PyErr_Print();
             }
-            cout << "Finished executing " << init_file_ << endl;
+            cout << IM(3) << "Finished executing " << argv[0] << endl;
             
             pythread_id = mainthread_id;
             
-          }, filename).detach();
+          }, args).detach();
 // 	    AcquireGIL gil_lock;
 // 	    string command = string("import ") + filename;
 // 	    pyenv.exec (command.c_str());
