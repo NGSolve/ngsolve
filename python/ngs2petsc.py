@@ -1,7 +1,10 @@
 import ngsolve as ngs
+import netgen.meshing as ngm
 import petsc4py.PETSc as psc
 from mpi4py import MPI
 import numpy as np
+
+#PETSc Matrix
 
 def CreatePETScMatrix (ngs_mat, freedofs=None):
     locmat = ngs_mat.local_mat
@@ -40,6 +43,7 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
 
 
 
+#PETSc Vector
 class VectorMapping:
     def __init__ (self, pardofs, freedofs=None):
         self.pardofs = pardofs
@@ -87,6 +91,7 @@ class VectorMapping:
 
 
     
+#PETSc Preconditioner
 class PETScPreconditioner(ngs.BaseMatrix):
     def __init__(self,mat,freedofs=None, flags=None):
         ngs.BaseMatrix.__init__(self)
@@ -140,5 +145,99 @@ RegisterPreconditioner ("petsc", MakePETScPreconditioner, docflags = { \
 
 
 
+#PETSc DMPlex
 
+FACE_SETS_LABEL = "Face Sets"
+CELL_SETS_LABEL = "Cell Sets"
+EDGE_SETS_LABEL = "Edge Sets"
+
+class DMPlexMapping:
+    def __init__(self,mesh=None,name="Default"):
+        self.name = name
+        print(type(mesh))
+        if type(mesh) is ngs.comp.Mesh or type(mesh) is ngm.Mesh:
+           self.createPETScDMPlex(mesh) 
+        elif type(mesh) is psc.DMPlex:
+           self.createNGSMesh(mesh)
+        else:
+            raise ValueError("Mesh format not recognised.")
+    def createNGSMesh(self,plex):
+        ngmesh = ngm.Mesh(dim=plex.getCoordinateDim())
+        self.ngmesh = ngmesh
+        if plex.getDimension() == 2:
+            coordinates = plex.getCoordinates().getArray().reshape([-1,2])
+            self.ngmesh.AddPoints(coordinates)  
+            cstart,cend = plex.getHeightStratum(0)
+            vstart, vend = plex.getHeightStratum(2)
+            cells = []
+            for i in range(cstart,cend):
+                sIndex  = plex.getCone(i)
+                s1 = plex.getCone(sIndex[0])-vstart
+                s2 = plex.getCone(sIndex[1])-vstart
+                if np.linalg.det(np.array([coordinates[s1[1]]-coordinates[s1[0]],coordinates[s2[1]]-coordinates[s1[1]]])) < 0.:
+                    cells = cells+[[s1[1],s1[0],s2[1]]]
+                else:
+                    cells = cells+[[s1[0],s1[1],s2[1]]]
+
+        fd = ngmesh.Add(ngm.FaceDescriptor(bc=1))
+        self.ngmesh.AddElements(dim=plex.getDimension(), index=1, data=np.asarray(cells,dtype=np.int32), base=0)
+        
+    def createPETScDMPlex(self,mesh):
+        if type(mesh) is ngs.comp.Mesh:
+            self.ngmesh = mesh.ngmesh
+        else:
+            self.ngmesh = mesh
+        comm = mesh.comm
+        if self.ngmesh.dim == 3:
+            if comm.rank == 0:
+                V = self.ngmesh.Coordinates()
+                T = self.ngmesh.Elements3D().NumPy()["nodes"]
+                T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-1
+                surfMesh, dim = False, 3
+                if len(T) == 0:
+                    surfMesh, dim = True, 2
+                    T = self.ngmesh.Elements2D().NumPy()["nodes"]
+                    T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-1
+                plex = psc.DMPlex().createFromCellList(dim, T, V)
+                plex.setName(self.name)
+                vStart, vEnd = plex.getDepthStratum(0)
+                if surfMesh:
+                    for e in self.ngmesh.Elements1D():
+                        join = plex.getJoin([vStart+v.nr-1 for v in e.vertices])
+                        plex.setLabelValue(FACE_SETS_LABEL, join[0], int(e.surfaces[1]))
+                else:
+                    for e in self.ngmesh.Elements2D():
+                        join = plex.getFullJoin([vStart+v.nr-1 for v in e.vertices])
+                        plex.setLabelValue(FACE_SETS_LABEL, join[0], int(e.index))
+                    for e in self.ngmesh.Elements1D():
+                        join = plex.getJoin([vStart+v.nr-1 for v in e.vertices])
+                        plex.setLabelValue(EDGE_SETS_LABEL, join[0], int(e.index))
+                self.plex = plex
+            else:
+                plex = psc.DMPlex().createFromCellList(3,
+                                                        np.zeros((0, 4), dtype=np.int32),
+                                                        np.zeros((0, 3), dtype=np.double))
+                self.plex = plex
+        elif self.ngmesh.dim == 2:
+            if comm.rank == 0:
+                V = self.ngmesh.Coordinates()
+                T = self.ngmesh.Elements2D().NumPy()["nodes"]
+                T = np.array([list(np.trim_zeros(a, 'b')) for a in list(T)])-1
+                plex = psc.DMPlex().createFromCellList(2, T, V)
+                plex.setName(self.name)
+                vStart, vEnd = plex.getDepthStratum(0)   # vertices
+                for e in self.ngmesh.Elements1D():
+                    join = plex.getJoin([vStart+v.nr-1 for v in e.vertices])
+                    plex.setLabelValue(FACE_SETS_LABEL, join[0], int(e.index))
+                if not ((1 == self.ngmesh.Elements2D().NumPy()["index"]).all()):
+                    for e in self.ngmesh.Elements2D():
+                        join = plex.getFullJoin([vStart+v.nr-1 for v in e.vertices])
+                        plex.setLabelValue(CELL_SETS_LABEL, join[0], int(e.index))
+
+                self.plex = plex
+            else:
+                plex = psc.DMPlex().createFromCellList(2,
+                                                        np.zeros((0, 3), dtype=np.int32),
+                                                        np.zeros((0, 2), dtype=np.double))
+                self.plex = plex
     
