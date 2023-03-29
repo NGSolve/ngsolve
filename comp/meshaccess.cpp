@@ -1570,29 +1570,19 @@ namespace ngcomp
   void MeshAccess :: GetVertexElements (size_t vnr, Array<int> & elnrs) const
   {
     elnrs = ArrayObject(mesh.GetNode<0> (vnr).elements);
-    /*
-    int nel = Ng_GetNVertexElements (vnr+1);
-    elnrs.SetSize (nel);
-    Ng_GetVertexElements (vnr+1, &elnrs[0]);
-    for (int j = 0; j < nel; j++)
-      elnrs[j]--;
-    */
   }
-
-    void MeshAccess :: SetDeformation (shared_ptr<GridFunction> def)
-    {
-      if (def)
-        {
-          // if (dim  != def->GetFESpace()->GetDimension())
-          // now also VectorH1 is possible !
-          if (dim != def->Dimension())
-            throw Exception ("Mesh::SetDeformation needs a GridFunction with dim="+ToString(dim));
-        }
-      deformation = def;
-    }
   
-    void MeshAccess :: SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr)
-    {
+  void MeshAccess :: SetDeformation (shared_ptr<GridFunction> def)
+  {
+    if (def)
+      if (dim != def->Dimension())
+        throw Exception ("Mesh::SetDeformation needs a GridFunction with dim="+ToString(dim));
+      
+    deformation = def;
+  }
+  
+  void MeshAccess :: SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr)
+  {
       if (_domnr>=nregions[VOL])
         throw Exception("MeshAccess::SetPML: was not able to set PML, domain index too high!");
       if (pml_trafo->GetDimension()!=dim)
@@ -1648,7 +1638,6 @@ namespace ngcomp
             (this, el.GetType(), 
              ElementId(VOL,elnr), el.GetIndex(),
              loc_deformation, lh); 
-        // dynamic_cast<LocalHeap&> (lh));
 
         else
 
@@ -1657,7 +1646,6 @@ namespace ngcomp
             (this, el.GetType(), 
              ElementId(VOL,elnr), el.GetIndex(),
              loc_deformation, lh);
-        //dynamic_cast<LocalHeap&> (lh));
       }
 
     else if ( el.is_curved )
@@ -2283,18 +2271,18 @@ namespace ngcomp
   }
 
 
-  const Table<size_t> & MeshAccess :: GetElementsOfClass()
+  const Table<size_t> & MeshAccess :: GetElementsOfClass (VorB vb) const
   {
-    if (int(elements_of_class_timestamp) >= mesh.GetTimeStamp())
-      return elements_of_class;
+    if (int(elements_of_class_timestamp[vb]) >= mesh.GetTimeStamp())
+      return elements_of_class[vb];
 
-    Array<short> classnr(GetNE());
+    Array<short> classnr(GetNE(vb));
     LocalHeap lh(10000);  // should use ParallelForRange, then we don't need the lh
     IterateElements
-      (VOL, lh, [&] (auto el, LocalHeap & llh)
+      (vb, lh, [&] (auto el, LocalHeap & llh)
        {
          classnr[el.Nr()] = 
-           SwitchET<ET_TRIG,ET_TET>
+           SwitchET<ET_SEGM,ET_TRIG,ET_TET>
            (el.GetType(),
             [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
        });
@@ -2304,9 +2292,9 @@ namespace ngcomp
       for (auto i : Range(classnr))
         creator.Add (classnr[i], i);
 
-    elements_of_class = creator.MoveTable();
-    elements_of_class_timestamp = mesh.GetTimeStamp();
-    return elements_of_class;
+    elements_of_class[vb] = creator.MoveTable();
+    elements_of_class_timestamp[vb] = mesh.GetTimeStamp();
+    return elements_of_class[vb];
   }
 
   shared_ptr<CoefficientFunction> MeshAccess ::
