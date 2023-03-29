@@ -154,7 +154,8 @@ EDGE_SETS_LABEL = "Edge Sets"
 class DMPlexMapping:
     def __init__(self,mesh=None,name="Default"):
         self.name = name
-        if type(mesh) is ngs.comp.Mesh:
+        print(type(mesh))
+        if type(mesh) is ngs.comp.Mesh or type(mesh) is ngm.Mesh:
            self.createPETScDMPlex(mesh) 
         elif type(mesh) is psc.DMPlex:
            self.createNGSMesh(mesh)
@@ -182,7 +183,10 @@ class DMPlexMapping:
         self.ngmesh.AddElements(dim=plex.getDimension(), index=1, data=np.asarray(cells,dtype=np.int32), base=0)
         
     def createPETScDMPlex(self,mesh):
-        self.ngmesh = mesh.ngmesh
+        if type(mesh) is ngs.comp.Mesh:
+            self.ngmesh = mesh.ngmesh
+        else:
+            self.ngmesh = mesh
         comm = mesh.comm
         if self.ngmesh.dim == 3:
             if comm.rank == 0:
