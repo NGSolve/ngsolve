@@ -1143,10 +1143,10 @@ namespace ngcomp
     }
 
   private:
-    Table<size_t> elements_of_class;
-    size_t elements_of_class_timestamp = -1;
+    mutable Table<size_t> elements_of_class[4];
+    mutable size_t elements_of_class_timestamp[4] = { 0, 0, 0, 0 };
   public:
-    const Table<size_t> & GetElementsOfClass(); // classification by vertex numbers
+    const Table<size_t> & GetElementsOfClass(VorB vb = VOL) const; // classification by vertex numbers
 
   private:
     Array<bool> higher_integration_order;
