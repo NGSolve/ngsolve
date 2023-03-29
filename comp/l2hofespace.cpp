@@ -289,6 +289,9 @@ global system.
 
     docu.Arg("hide_all_dofs") = "bool = False\n"
       "  Set all used dofs to HIDDEN_DOFs";
+    docu.Arg("tp") = "bool = False\n"
+      "  Use sum-factorization for evaluation";
+
     return docu;
   }
 
@@ -806,7 +809,7 @@ global system.
     bool curved = false;
     for (auto el : ma->Elements(VOL))
       if (el.is_curved) curved = true;
-    if (rho->ElementwiseConstant() && all_dofs_together && order_policy == CONSTANT_ORDER && !curved)
+    if ( (!rho || rho->ElementwiseConstant()) && all_dofs_together && order_policy == CONSTANT_ORDER && !curved)
       {
         return make_shared<ApplyMassL2Const>
           (dynamic_pointer_cast<FESpace>(const_cast<L2HighOrderFESpace*>(this)->shared_from_this()),
@@ -2941,7 +2944,9 @@ One can evaluate the vector-valued function, and one can take the gradient.
       "  all dofs are condensed without a global dofnr";
     docu.Arg("lowest_order_wb") = "bool = False\n"
       "  Keep lowest order dof in WIRE_BASKET";
-
+    docu.Arg("tp") = "bool = False\n"
+      "  Use sum-factorization for evaluation";
+    
     return docu;
   }
 
