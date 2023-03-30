@@ -8451,6 +8451,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
           "#include<fem.hpp>\n"
           "#if defined(__GNUC__) || defined(__clang__)\n"
           "#pragma GCC diagnostic ignored \"-Wunused-but-set-variable\"\n"
+          "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"          
           "#endif\n"
              "using namespace ngfem;\n"
              "extern \"C\" {\n"
