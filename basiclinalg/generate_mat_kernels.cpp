@@ -2674,7 +2674,11 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       AlignedGenerateMultAB (out, 5, i, SET);
       AlignedGenerateMultAB (out, 6, i, SET);
     }
-  
+
+  for (int i = 5; i <= 16; i++)
+    GenerateMultAB (out, 1, i);  
+  for (int i = 5; i <= 12; i++)
+    GenerateMultAB (out, 2, i);
   GenerateMultAB (out, 8, 1);
   GenerateMultAB (out, 12, 1);
   
