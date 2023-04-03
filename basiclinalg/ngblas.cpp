@@ -604,7 +604,8 @@ namespace ngbla
     // t.AddFlops (H*hb*wb);
     constexpr size_t SW = SIMD<double>::Size();
     constexpr size_t SWdTB = sizeof(SIMD<double>)/sizeof(TB);
-    constexpr size_t BSB = reg32 ? 4 : 3;
+    /// constexpr size_t BSB = reg32 ? 4 : 3;
+    constexpr size_t BSB = (H > 0) ? 12 / H : 1;
     size_t l = 0, lb = 0;
     for ( ; l+BSB*SW <= wb; l += BSB*SW, lb += BSB*SWdTB)
       MatKernelMultAB<H,BSB,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
@@ -852,6 +853,17 @@ namespace ngbla
   void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
+    if (ha <= 4)
+      {
+        Switch<5>
+          (ha, [=](auto HA)
+           {
+             if (HA.value > 0)
+               MatKernel2AddAB<HA.value,SET>(wa, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
+           });
+        return;
+      }
+
     constexpr size_t BBH = 128;
     if (wa <= BBH)
       {
@@ -2984,7 +2996,7 @@ namespace ngbla
               c = a * b;
               double err = L2Norm(a*b-c);
               if (err > 1e-8)
-              throw Exception("MultMatMat is faulty");
+                throw Exception("MultMatMat is faulty");
           }
         
           {
@@ -3552,6 +3564,27 @@ namespace ngbla
           timings.push_back(make_tuple("MatKernelAddAB aligned", 1e-9 * tot*its / t.GetTime()));
         }
       }
+    
+    if (what == 0 || what == 102)
+      {
+        // C=A*B
+        constexpr int W = 8;
+        Matrix<> a(2,n), b(n,W*SW), c(2,W*SW);
+        a = 1; b = 2; c = 0;
+        double tot = a.Width()*a.Height()*b.Width();
+        size_t its = 1e10 / tot + 1;
+        {
+          Timer t("C = A*B");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            MatKernelMultAB<2,W,ADD>(n,a.Data(), a.Width(), &b(0), b.Width(), &c(0), c.Width());
+            // MatKernel2AddAB<1,SET>(b.Height(), b.Width(), a.Data(), a.Dist(), &b(0), b.Dist(), &c(0), c.Dist());
+          t.Stop();
+          cout << "MatKernelAddAB 1x4 = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MatKernelAddAB", 1e-9 * tot*its / t.GetTime()));
+        }
+      }
+
 
     if (what == 0 || what == 110)
       {
