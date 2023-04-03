@@ -853,13 +853,13 @@ namespace ngbla
   void MultMatMat_intern (size_t ha, size_t wa, size_t wb,
                           BareSliceMatrix<> a, BareSliceMatrix<> b, BareSliceMatrix<> c)
   {
+    if (ha == 0) return;
     if (ha <= 4)
       {
-        Switch<5>
-          (ha, [=](auto HA)
+        Switch<4>
+          (ha-1, [=](auto HA)
            {
-             if (HA.value > 0)
-               MatKernel2AddAB<HA.value,SET>(wa, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
+             MatKernel2AddAB<HA.value+1,SET>(wa, wb, a.Data(), a.Dist(), b.Data(), b.Dist(), c.Data(), c.Dist());
            });
         return;
       }
