@@ -1363,10 +1363,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (ntype[HIDDEN_DOF]) ost << "hidden = " << ntype[HIDDEN_DOF] << endl;
     if (ntype[LOCAL_DOF])  ost << "local  = " << ntype[LOCAL_DOF] << endl;
 
+    /*
     int nfree = 0;
     for (int i = 0; i < free_dofs->Size(); i++)
       if ((*free_dofs)[i])
 	nfree++;
+    */
   }
   
   void FESpace :: DoArchive (Archive & archive)

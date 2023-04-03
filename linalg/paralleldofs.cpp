@@ -124,7 +124,7 @@ namespace ngla
     Table<int> tab(s);
     for(auto k:ngstd::Range(ndloc))
       if(take_dofs->Test(k)) tab[k] = this->GetDistantProcs(k);
-    return make_shared<ParallelDofs>(this->GetCommunicator(), move(tab));
+    return make_shared<ParallelDofs>(this->GetCommunicator(), std::move(tab));
   }
 
   shared_ptr<ParallelDofs> ParallelDofs :: Range (IntRange range) const
@@ -138,7 +138,7 @@ namespace ngla
     for(auto k : range)
       tab[k-range.First()] = GetDistantProcs(k);
 
-    return make_shared<ParallelDofs>(this->GetCommunicator(), move(tab));
+    return make_shared<ParallelDofs>(this->GetCommunicator(), std::move(tab));
   }
 
   

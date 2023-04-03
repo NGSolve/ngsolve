@@ -821,7 +821,7 @@ namespace ngla
       for ([[maybe_unused]] auto d : paralleldofs->GetExchangeDofs(p)) 
 	dps[njs++][0] = p;
 
-    this->jump_paralleldofs = make_shared<ParallelDofs>(paralleldofs->GetCommunicator(), move(dps));
+    this->jump_paralleldofs = make_shared<ParallelDofs>(paralleldofs->GetCommunicator(), std::move(dps));
   }
 
 
