@@ -2827,7 +2827,7 @@ namespace ngcomp
             if (facetwise_skeleton_parts[BND].Size())
               {
                 // cout << "check bnd" << endl;
-                int cnt = 0;
+                // int cnt = 0;
                 int ne = ma->GetNE(BND);
                 ParallelForRange
                   ( IntRange(ne), [&] ( IntRange r )
@@ -2839,7 +2839,7 @@ namespace ngcomp
                         {
                           {
                             lock_guard<mutex> guard(printmatasstatus2_mutex);
-                            cnt++;
+                            // cnt++;
                             gcnt++;
                             // if (cnt % 10 == 0)
                               // cout << "\rassemble facet surface element " << cnt << "/" << ne << flush;
