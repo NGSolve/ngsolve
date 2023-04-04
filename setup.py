@@ -74,7 +74,7 @@ elif 'linux' in sys.platform:
         '-DUSE_CUDA=ON',
         '-DCMAKE_CUDA_ARCHITECTURES=all',
     ]
-    install_requires.append('mkl == 2022.*')
+    install_requires.append('mkl')
     packages = []
 elif 'win' in sys.platform:
     _cmake_args += [
@@ -84,7 +84,7 @@ elif 'win' in sys.platform:
         f'-DMKL_INCLUDE_DIR:PATH={root_dir}/Library/include',
         f'-DNGSOLVE_INSTALL_DIR_TCL:PATH=Scripts',
     ]
-    install_requires.append('mkl == 2022.*')
+    install_requires.append('mkl')
 
 if 'PYDIR' in os.environ:
     _cmake_args += [f'-DCMAKE_PREFIX_PATH={os.environ["PYDIR"]}']
