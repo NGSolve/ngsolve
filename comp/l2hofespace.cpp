@@ -1072,7 +1072,7 @@ global system.
   void L2HighOrderFESpace :: ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * def,
                                      LocalHeap & lh) const
   {
-    static Timer t("ApplyM"); RegionTimer reg(t);
+    static Timer t("L2::ApplyM"); RegionTimer reg(t);
     static Timer tall("ApplyM - all");
     static Timer tel("ApplyM - el");
     static Timer ttrafo("ApplyM - trafo");
@@ -1083,6 +1083,8 @@ global system.
     static Timer tcalc1("ApplyM - calc1");
     static Timer tcalc2("ApplyM - calc2");
     static Timer tsetup("ApplyM - setup");
+    static Timer tmir("ApplyM - mir");        
+    static Timer trho("ApplyM - eval rho");    
     if (rho && rho->Dimension() != 1)
       throw Exception("L2HighOrderFESpace::ApplyM needs a scalar density");
 
@@ -1137,26 +1139,32 @@ global system.
 
                        NgProfiler::StopThreadTimer(tgetx, tid);
 
-                       NgProfiler::StartThreadTimer(tsetup, tid);
+                       // NgProfiler::StartThreadTimer(tsetup, tid);
+                       // NgProfiler::StartTimer (tsetup);
+                       // tsetup.Start();
                        FlatVector<double> diag_mass(fel.GetNDof(), lh);
+                       {
+                         // RegionTimer regsetup(tsetup);
                        fel.GetDiagMassMatrix (diag_mass);
-
+                       }
                        bool curved = trafo.IsCurvedElement();
                        if (rho && !rho->ElementwiseConstant()) curved = true;
-                       NgProfiler::StopThreadTimer(tsetup, tid);
+                       // NgProfiler::StopThreadTimer(tsetup, tid);
+                       // NgProfiler::StopTimer (tsetup);
+                       // tsetup.Stop();
 
                        NgProfiler::StartThreadTimer(tcalc, tid);
                        if (!curved)
                          {
-                           NgProfiler::StartThreadTimer(tcalc1, tid);
+                           // tcalc1.Start();
                            IntegrationRule ir(fel.ElementType(), 0);
                            BaseMappedIntegrationRule & mir = trafo(ir, lh);
                            double jac = mir[0].GetMeasure();
                            if (rho) jac *= rho->Evaluate(mir[0]);
 
 
-                           NgProfiler::StopThreadTimer(tcalc1, tid);
-                           NgProfiler::StartThreadTimer(tcalc2, tid);
+                           // tcalc1.Stop();
+                           // NgProfiler::StartThreadTimer(tcalc2, tid);
 
                            if (dimension == 1)
                              for (size_t i = 0; i < elx.Size(); i++)
@@ -1164,18 +1172,20 @@ global system.
                            else
                              for (size_t i = 0; i < melx.Height(); i++)
                                melx.Row(i) *= jac*diag_mass(i);
-                           NgProfiler::StopThreadTimer(tcalc2, tid);
+                           // NgProfiler::StopThreadTimer(tcalc2, tid);
                          }
                        else
                          {
                            // throw Exception ("L2HighOrderFESpace::ApplyM for curved not available");
-
                            SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order());
+                           // tmir.Start();
                            auto & mir = trafo(ir, lh);
+                           // tmir.Stop();
                            FlatVector<SIMD<double>> pntvals(ir.Size(), lh);
                            FlatMatrix<SIMD<double>> rhovals(1, ir.Size(), lh);
+                           // trho.Start();
                            if (rho) rho->Evaluate (mir, rhovals);
-
+                           // trho.Stop();
                            // for (int i = 0; i < melx.Height(); i++)
                            // melx.Row(i) /= diag_mass(i);
                            for (int comp = 0; comp < dimension; comp++)
@@ -3476,6 +3486,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
                           transrho = mir[j].GetMeasure() * Inv(mir[j].GetJacobian()) * rhoi * Trans(Inv(mir[j].GetJacobian()));
                         else
                           transrho = mir[j].GetMeasure() * rhoi;
+                        transrho *= mir[j].IP().Weight();                        
                       }
                     else
                       {
