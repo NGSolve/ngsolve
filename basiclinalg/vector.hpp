@@ -951,6 +951,11 @@ namespace ngbla
 
     INLINE /* const */ FlatVector<T> Range(size_t first, size_t next) 
     { return FlatVector<T> (next-first, data+first); }
+
+    const T * begin() const { return data.Ptr(); }
+    const T * end() const { return data.Ptr()+S; }
+    T * begin() { return data.Ptr(); }
+    T * end() { return data.Ptr()+S; }
   };
 
 
