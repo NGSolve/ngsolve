@@ -134,11 +134,12 @@ namespace ngcomp
                           numels[patchdofs.Pos(d)]++;
                       }
                 }
+            /*
             size_t numsingle = 0;
             for (auto num : numels)
               if (num == 1) numsingle++;
-            
             // cout << "dofs = " << patchdofs.Size() << ", singleel: " << numsingle << endl;
+            */
             FlatMatrix<> patchmat(patchdofs.Size(), lh);
             FlatVector<> patchvec(patchdofs.Size(), lh);        
             FlatVector<> patchsol(patchdofs.Size(), lh);
