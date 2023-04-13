@@ -3408,8 +3408,9 @@ One can evaluate the vector-valued function, and one can take the gradient.
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
-        if (!optimize_constant || ma->GetElement({VOL,i}).is_curved)        
-          creator.Add (classnr[i], i);
+        if (!optimize_constant || ma->GetElement({VOL,i}).is_curved)
+          if (!defon || defon->Mask()[ma->GetElIndex({VOL,i})])  
+            creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
     for (auto elclass_inds : table)
