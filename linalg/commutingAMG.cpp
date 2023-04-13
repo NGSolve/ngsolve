@@ -381,10 +381,11 @@ namespace ngla
               << vertices[i](2) << "\n";
 
         double minweight=1e10;
+        /*
         int cntf = 0;
         for (int i = 0; i < f2v.Size(); i++)
           if (weightf[i] < minweight) cntf++;
-
+        */
         out << f2v.Size() << endl;
         for (int i = 0; i < f2v.Size(); i++)
 	  if (weightf[i] < minweight) 
