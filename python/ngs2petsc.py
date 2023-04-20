@@ -21,25 +21,28 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
         isfree_loc = psc.IS().createBlock(indices=locfree, bsize=eh)
         apsc_loc = apsc_loc.createSubMatrices(isfree_loc)[0]
 
-        
-    pardofs = ngs_mat.row_pardofs
-    comm = pardofs.comm.mpi4py
-
-    
-    globnums, nglob = pardofs.EnumerateGlobally(freedofs)
-    if freedofs is not None:
-        globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
-
-    lgmap = psc.LGMap().create(indices=globnums, bsize=eh, comm=comm)
-    
-    mat = psc.Mat().create(comm=comm)
-    mat.setSizes(size=nglob*eh, bsize=eh)
-    mat.setType(psc.Mat.Type.IS)
-    mat.setLGMap(lgmap)
-    mat.setISLocalMat(apsc_loc)
-    mat.assemble()
-    mat.convert("mpiaij")
-    return mat
+    comm = MPI.COMM_WORLD
+    if comm.Get_size() > 1: 
+        pardofs = ngs_mat.row_pardofs
+        comm = pardofs.comm.mpi4py
+        globnums, nglob = pardofs.EnumerateGlobally(freedofs)
+        if freedofs is not None:
+            globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
+            lgmap = psc.LGMap().create(indices=globnums, bsize=eh, comm=comm)
+            mat = psc.Mat().create(comm=comm)
+            mat.setSizes(size=nglob*eh, bsize=eh)
+            mat.setType(psc.Mat.Type.IS)
+            mat.setLGMap(lgmap)
+            mat.setISLocalMat(apsc_loc)
+            mat.assemble()
+            mat.convert("mpiaij")
+            return mat
+    else:
+        if freedofs is not None:
+            mat = apsc_loc
+            mat.assemble()
+            mat.convert("seqaij")
+            return mat
 
 
 
