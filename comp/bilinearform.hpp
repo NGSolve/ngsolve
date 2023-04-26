@@ -552,6 +552,7 @@ namespace ngcomp
     ///
     virtual void DoAssemble (LocalHeap & lh) override;
     virtual void Assemble_facetwise_skeleton_parts_VOL (Array<bool>& useddof, size_t & gcnt, LocalHeap & lh, const BaseVector * lin = nullptr);
+    virtual void Assemble_facetwise_skeleton_parts_BND (Array<bool>& useddof, size_t & gcnt, LocalHeap & lh, const BaseVector * lin = nullptr);
     ///
     // virtual void DoAssembleIndependent (BitArray & useddof, LocalHeap & lh);
     ///
