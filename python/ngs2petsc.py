@@ -21,34 +21,36 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
         isfree_loc = psc.IS().createBlock(indices=locfree, bsize=eh)
         apsc_loc = apsc_loc.createSubMatrices(isfree_loc)[0]
 
-        
-    pardofs = ngs_mat.row_pardofs
-    comm = pardofs.comm.mpi4py
-
-    
-    globnums, nglob = pardofs.EnumerateGlobally(freedofs)
-    if freedofs is not None:
-        globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
-
-    lgmap = psc.LGMap().create(indices=globnums, bsize=eh, comm=comm)
-    
-    mat = psc.Mat().create(comm=comm)
-    mat.setSizes(size=nglob*eh, bsize=eh)
-    mat.setType(psc.Mat.Type.IS)
-    mat.setLGMap(lgmap)
-    mat.setISLocalMat(apsc_loc)
-    mat.assemble()
-    mat.convert("mpiaij")
-    return mat
-
+    comm = MPI.COMM_WORLD
+    if comm.Get_size() > 1: 
+        pardofs = ngs_mat.row_pardofs
+        globnums, nglob = pardofs.EnumerateGlobally(freedofs)
+        if freedofs is not None:
+            globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
+            lgmap = psc.LGMap().create(indices=globnums, bsize=eh, comm=comm)
+            mat = psc.Mat().create(comm=comm)
+            mat.setSizes(size=nglob*eh, bsize=eh)
+            mat.setType(psc.Mat.Type.IS)
+            mat.setLGMap(lgmap)
+            mat.setISLocalMat(apsc_loc)
+            mat.assemble()
+            mat.convert("mpiaij")
+            return mat
+    else:
+        if freedofs is not None:
+            mat = apsc_loc
+            mat.assemble()
+            mat.convert("seqaij")
+            return mat
 
 
 #PETSc Vector
+
 class VectorMapping:
     def __init__ (self, pardofs, freedofs=None):
         self.pardofs = pardofs
         self.freedofs = freedofs
-        comm = pardofs.comm.mpi4py        
+        comm = MPI.COMM_WORLD     
         globnums, self.nglob = pardofs.EnumerateGlobally(freedofs)
         self.es = self.pardofs.entrysize
         if self.freedofs is not None:
@@ -87,11 +89,10 @@ class VectorMapping:
             self.p2n_scat = psc.Scatter().create(psc_vector, self.iset, locvec, self.isetlocfree)
         self.p2n_scat.scatter (psc_vector, locvec, addv=psc.InsertMode.INSERT)
         return ngs_vector
-    
-
 
     
 #PETSc Preconditioner
+
 class PETScPreconditioner(ngs.BaseMatrix):
     def __init__(self,mat,freedofs=None, flags=None):
         ngs.BaseMatrix.__init__(self)
@@ -142,7 +143,6 @@ RegisterPreconditioner ("gamg", MakePETScPreconditioner)
 RegisterPreconditioner ("petsc", MakePETScPreconditioner, docflags = { \
                 "pctype" : "type of PETSc preconditioner",
                 "levels" : "AMG levels" })
-
 
 
 #PETSc DMPlex
@@ -240,4 +240,69 @@ class DMPlexMapping:
                                                         np.zeros((0, 3), dtype=np.int32),
                                                         np.zeros((0, 2), dtype=np.double))
                 self.plex = plex
-    
+
+
+#Krylov Solver
+
+counter = 0
+
+class KrylovSolver():
+    """
+    Inspired by Firedrake solver class.
+    """    
+    global counter
+    counter += 1
+    def __init__(self, a, fes, p=None, solver_parameters=None,options_prefix=None):
+        self.fes = fes
+        a.Assemble()
+        Amat = a.mat
+        if p is not None:
+            p.Assemble()
+            Pmat = p.mat
+        else:
+            Pmat = None
+        if not isinstance(Amat, ngs.la.SparseMatrixd):
+            raise TypeError("Provided operator is a '%s', not an la.SparseMatrixd" % type(Amat).__name__)
+        if Pmat is not None and not isinstance(Pmat, ngs.la.SparseMatrixd):
+            raise TypeError("Provided preconditioner is a '%s', not an la.SparseMatrixd" % type(Pmat).__name__)
+
+        self.solver_parameters = solver_parameters
+        self.options_prefix = options_prefix
+        options_object = psc.Options() 
+        for optName, optValue in self.solver_parameters.items():
+            options_object[optName] = optValue
+	
+	#Creating the PETSc Matrix
+        Asc = CreatePETScMatrix(Amat, fes.FreeDofs())
+        self.A = Asc
+        self.comm = MPI.COMM_WORLD
+        #Setting up the preconditioner
+        if Pmat is not None:
+            Psc = CreatePETScMatrix(Pmat, fes.FreeDofs())
+            self.P = Psc
+        else:
+            self.P = Asc
+        #Setting options prefix
+        self.A.setOptionsPrefix(self.options_prefix)
+        self.P.setOptionsPrefix(self.options_prefix)
+        self.A.setFromOptions()
+        self.P.setFromOptions()
+
+        self.ksp = psc.KSP().create(comm=self.comm)
+
+        # Operator setting must come after null space has been
+        # applied
+        self.ksp.setOperators(A=self.A, P=self.P)
+        # Set from options now (we're not allowed to change parameters
+        # anyway).
+        self.ksp.setOptionsPrefix(self.options_prefix)
+        self.ksp.setFromOptions()
+    def solve(self, f):
+        f.Assemble()
+        u = ngs.GridFunction(self.fes)
+        self.vmap = VectorMapping(self.fes.ParallelDofs(), self.fes.FreeDofs())
+        upsc, fpsc = self.A.createVecs()
+        self.vmap.N2P(f.vec, fpsc)
+        self.ksp.solve(fpsc, upsc)
+        self.vmap.P2N(upsc, u.vec);
+        return u
