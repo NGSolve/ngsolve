@@ -125,13 +125,15 @@ namespace ngcomp
 		      //TODO: get aligned volelement and check that
 			}
 		      }
+                    /*
+                    // does nothing for symbolic integrators anyway
 		    IterateElements
 		      (*fespace,vb,clh, [&](FESpace::Element el, LocalHeap & lh)
 		       {
                          if (lfi->DefinedOn(el.GetIndex()) && lfi->DefinedOnElement(el.Nr()))
 			   lfi->CheckElement(el.GetFE());
 		       });
-		    
+                    */
 		  }
 	      }
 	  }

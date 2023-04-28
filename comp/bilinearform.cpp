@@ -1971,12 +1971,15 @@ namespace ngcomp
       {
 	for(auto bfi : VB_parts[vb])
 	  {
+            /*
+            // does nothing for symbolic integrators anyway
 	    IterateElements
 	      (*fespace,vb,clh, [&] (FESpace::Element el, LocalHeap & lh)
 	       {
 		 if(bfi->DefinedOn(el.GetIndex()) && bfi->DefinedOnElement(el.Nr()))
 		   bfi->CheckElement(el.GetFE());
 	       });
+            */
 	    if(bfi->VB()==VOL && bfi->SkeletonForm())
 	      if (!fespace->UsesDGCoupling())
 		throw Exception("FESpace is not suitable for those integrators (try -dgjumps)");
