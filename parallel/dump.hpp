@@ -351,7 +351,7 @@ namespace ngstd
     have1[0] = true;
     have1[1] = true;
       
-    int packages_sent = 0;
+    // int packages_sent = 0;
       
 
     int iib; //index in buf
@@ -390,7 +390,7 @@ namespace ngstd
 	    index_out = 0;
 	    comm.Send (out_buf, p_out, 700001);
 	    comm.Send (out_dnrs, p_out, 700001);
-	    packages_sent++;
+	    // packages_sent++;
 	  }
       }
     while(index_in<n_in)
@@ -420,7 +420,7 @@ namespace ngstd
 	    index_out = 0;
 	    comm.Send (out_buf, p_out, 700001);
 	    comm.Send (out_dnrs, p_out, 700001);
-	    packages_sent++;
+	    // packages_sent++;
 	  }
       }
     while(index_own<base_array_size)
@@ -432,14 +432,14 @@ namespace ngstd
 	    index_out = 0;
 	    comm.Send (out_buf, p_out, 700001);
 	    comm.Send (out_dnrs, p_out, 700001);
-	    packages_sent++;
+	    // packages_sent++;
 	  }
       }
     if(has_extra)
       {
 	comm.Send (out_buf, p_out, 700001);
 	comm.Send (out_dnrs, p_out, 700001);
-	packages_sent++;
+	// packages_sent++;
       }
   }
 
@@ -512,9 +512,9 @@ namespace ngstd
       }
 
   
-    int got_from_p1 = 2;
-    int got_from_p2 = 2;
-    int packages_sent = 0;
+    // int got_from_p1 = 2;
+    // int got_from_p2 = 2;
+    // int packages_sent = 0;
     int index1, index2, i3;
     index1 = index2 = i3 = 0;
 
@@ -534,7 +534,7 @@ namespace ngstd
 	    MPI_Recv(a1, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    MPI_Recv(b1, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    have1[0] = true;
-	    got_from_p1++;
+	    // got_from_p1++;
 	  }
 	else if (i1 == 0 && index1 !=0 && index1+pkg_size<n_in1 && !have1[1]) //replace 2nd halve
 	  {
@@ -542,7 +542,7 @@ namespace ngstd
 	    MPI_Recv(a1+pkg_size, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    MPI_Recv(b1+pkg_size, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    have1[1] = true;
-	    got_from_p1++;
+	    // got_from_p1++;
 	  }
 	else if(i2==pkg_size && index2+pkg_size<n_in2 && !have2[0]) //replace 1st halve
 	  {
@@ -550,14 +550,14 @@ namespace ngstd
 	    MPI_Recv(a2, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    MPI_Recv(b2, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    have2[0] = true;
-	    got_from_p2++;
+	    // got_from_p2++;
 	  }
 	else if (i2 == 0 && index2 !=0 && index2+pkg_size<n_in2 && !have2[1]) //replace 2nd halve
 	  {
 	    have2[1] = true;
 	    MPI_Recv(a2+pkg_size, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    MPI_Recv(b2+pkg_size, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    got_from_p2++;
+	    // got_from_p2++;
 	  }
       
 	if(b1[i1]<b2[i2])
@@ -586,7 +586,7 @@ namespace ngstd
 	    i3 = 0;
 	    MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, MPI_COMM_WORLD);
 	    MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, MPI_COMM_WORLD);
-	    packages_sent++;
+	    // packages_sent++;
 	  }
       
       }
@@ -599,7 +599,7 @@ namespace ngstd
 	    MPI_Recv(a1, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    MPI_Recv(b1, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    have1[0] = true;
-	    got_from_p1++;
+	    // got_from_p1++;
 	  }
 	else if (i1 == 0 && index1 !=0 && index1+pkg_size<n_in1 && have1[1] == false) //replace 2nd halve
 	  {
@@ -607,7 +607,7 @@ namespace ngstd
 	    MPI_Recv(a1+pkg_size, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    MPI_Recv(b1+pkg_size, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    have1[1] = true;
-	    got_from_p1++;
+	    // got_from_p1++;
 	  }
 	b3[i3] = b1[i1];
 	a3[i3++] = a1[i1];
@@ -621,7 +621,7 @@ namespace ngstd
 	    i3 = 0;
 	    MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, MPI_COMM_WORLD);
 	    MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, MPI_COMM_WORLD);
-	    packages_sent++;
+	    // packages_sent++;
 	  }
       }
     while(index2<n_in2)
@@ -633,14 +633,14 @@ namespace ngstd
 	    MPI_Recv(a2, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    MPI_Recv(b2, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    have2[0] = true;
-	    got_from_p2++;
+	    // got_from_p2++;
 	  }
 	else if (i2 == 0 && index2 !=0 && index2+pkg_size<n_in2 && have2[1] == false) //replace 2nd halve
 	  {
 	    MPI_Recv(a2+pkg_size, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    MPI_Recv(b2+pkg_size, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 	    have2[1] = true;
-	    got_from_p2++;
+	    // got_from_p2++;
 	  }
 	b3[i3] = b2[i2];
 	a3[i3++] = a2[i2];
@@ -654,7 +654,7 @@ namespace ngstd
 	    i3 = 0;
 	    MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, MPI_COMM_WORLD);
 	    MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, MPI_COMM_WORLD);
-	    packages_sent++;
+	    // packages_sent++;
 	  }
       }
     if(i3!=0)
@@ -662,7 +662,7 @@ namespace ngstd
 	i3 = 0;
 	MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, MPI_COMM_WORLD);
 	MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, MPI_COMM_WORLD);
-	packages_sent++;
+	// packages_sent++;
       }  
 
     free(a1);
@@ -709,14 +709,14 @@ namespace ngstd
 	return;
       }
     int p_in1, p_in2, p_out;
-    int k = 1;
+    // int k = 1;
     int block_size = 2;
     int first_active = 1;
     bool found = false;
     while(!found)
       {
 	block_size *=2;
-	k++;
+	// k++;
 	first_active *=2;
 	int am_i = first_active;
 	while(am_i<2*np)
