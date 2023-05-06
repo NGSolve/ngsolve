@@ -138,12 +138,12 @@ void ExportSparseMatrix(py::module m)
                            { return self->EntrySizes(); })
     
     .def_static("CreateFromCOO",
-                [] (py::list indi, py::list indj, py::list values, size_t h, size_t w)
+                [] (const Array<int> & cindi, const Array<int> & cindj, const Array<T> & cvalues, size_t h, size_t w)
                 {
-                  auto cindi = makeCArray<int>(indi);
-                  auto cindj = makeCArray<int>(indj);
-                  auto cvalues = makeCArray<double>(values);
-                  return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
+                  // auto cindi = makeCArray<int>(indi);
+                  // auto cindj = makeCArray<int>(indj);
+                  // auto cvalues = makeCArray<double>(values);
+                  return SparseMatrix<T>::CreateFromCOO (cindi,cindj,cvalues, h,w);
                 }, py::arg("indi"), py::arg("indj"), py::arg("values"), py::arg("h"), py::arg("w"))
 
     .def_static("CreateFromElmat",
