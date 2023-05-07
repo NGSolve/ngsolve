@@ -24,6 +24,7 @@ def CreatePETScMatrix (ngs_mat, freedofs=None):
     comm = MPI.COMM_WORLD
     if comm.Get_size() > 1: 
         pardofs = ngs_mat.row_pardofs
+        comm = pardofs.comm.mpi4py
         globnums, nglob = pardofs.EnumerateGlobally(freedofs)
         if freedofs is not None:
             globnums = np.array(globnums, dtype=psc.IntType)[freedofs]
@@ -50,7 +51,7 @@ class VectorMapping:
     def __init__ (self, pardofs, freedofs=None):
         self.pardofs = pardofs
         self.freedofs = freedofs
-        comm = MPI.COMM_WORLD     
+        comm = pardofs.comm.mpi4py
         globnums, self.nglob = pardofs.EnumerateGlobally(freedofs)
         self.es = self.pardofs.entrysize
         if self.freedofs is not None:
