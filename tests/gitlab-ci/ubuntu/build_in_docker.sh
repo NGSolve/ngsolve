@@ -97,9 +97,19 @@ if [ "$IMAGE_NAME" == "avx" ]
 then
   ## build and upload docu to server
 
+  # first build ngsxfem
+  cd ~/src
+  git clone https://github.com/ngsxfem/ngsxfem.git
+  cd ngsxfem
+  mkdir -p build
+  cd build
+  cmake -DBUILD_NGSOLVE=OFF -DCMAKE_INSTALL_PREFIX=/usr ..
+  make -j12 install
+
   # fix links like /edit/some_file.cpp to work with nbsphinx (removing the /edit/ part)
   sed -i 's/\/edit\///g' ~/src/ngsolve/docs/i-tutorials/*/*.ipynb
 
+  cd ~/build/ngsolve/ngsolve
   export NGS_NUM_THREADS=4
   echo "build docu"
   ipython profile create --parallel --profile=default
