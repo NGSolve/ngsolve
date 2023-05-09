@@ -202,11 +202,23 @@ Peter Gangl and Kevin Sturm
    unit-7-optimization/05_Topological_Derivative_Transmission.ipynb
 
 
-8.  Extended Finite Elements
-=============================
-C. Lehrenfeld
+8. Unfitted Finite Elements
+===========================
+C. Lehrenfeld and the `ngsxfem <https://github.com/ngsxfem/ngsxfem/>`_ authors
 
-coming soon ...   
+These units require the Add-on `ngsxfem <https://github.com/ngsxfem/ngsxfem/>`_ to be installed.
+There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-jupyter/>`_.
+
+.. toctree::
+   :maxdepth: 1
+
+   unit-8.1-basics/basics.ipynb
+   unit-8.2-intlset/intlset.ipynb
+   unit-8.3-cutfem/cutfem.ipynb
+   unit-8.4-spacetime_fitted/spacetime_fitted.ipynb
+   unit-8.5-spacetime_unfitted/spacetime_unfitted.ipynb
+   unit-8.6-mlset_basic/mlset_basic.ipynb
+   unit-8.7-mlset_pde/mlset_pde.ipynb
 
 9. Extending by C++ programming
 ===============================
