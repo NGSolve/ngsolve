@@ -2,13 +2,6 @@ from ngsolve.la import InnerProduct, MultiVector
 from math import sqrt
 from ngsolve import Projector, Norm, Matrix, Vector, IdentityMatrix
 
-try:
-    import scipy.linalg
-    from scipy import random
-except:
-    pass
-
-
 def Orthogonalize (vecs, mat):
     mv = []
     for i in range(len(vecs)):
@@ -25,6 +18,7 @@ def Orthogonalize (vecs, mat):
 
 def PINVIT1(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False):
     """preconditioned inverse iteration"""
+    import scipy.linalg
 
     r = mata.CreateRowVector()
     Av = mata.CreateRowVector()
@@ -39,7 +33,7 @@ def PINVIT1(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False
         vecs.append (mata.CreateRowVector())
 
     for v in uvecs:
-        r.FV().NumPy()[:] = random.rand(len(r.FV()))
+        r.SetRandom()
         v.data = pre * r
 
     asmall = Matrix(2*num, 2*num)
@@ -80,6 +74,7 @@ def PINVIT1(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=False
 
 def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=True):
     """preconditioned inverse iteration"""
+    import scipy.linalg
 
     r = mata.CreateRowVector()
     
@@ -117,6 +112,7 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=True):
 
 def LOBPCG(mata, matm, pre, num=1, maxit=20, initial=None, printrates=True):
     """Knyazev's cg-like extension of PINVIT"""
+    import scipy.linalg
 
     r = mata.CreateRowVector()
 
@@ -160,6 +156,7 @@ def LOBPCG(mata, matm, pre, num=1, maxit=20, initial=None, printrates=True):
 
 
 def Arnoldi (mat, tol=1e-10, maxiter=200):
+    import scipy.linalg
     H = Matrix(maxiter,maxiter, complex=mat.is_complex)
     H[:,:] = 0
     v = mat.CreateVector(colvector=False)
