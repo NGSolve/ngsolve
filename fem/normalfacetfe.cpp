@@ -71,9 +71,38 @@ namespace ngfem
   void NormalFacetVolumeFE_Shape<ET_TRIG>::
   T_CalcShape (TIP<DIM,Tx> ip, TFA & shape) const
   {
-    if (ip.vb != BND) throw Exception("normal-facet element evaluated not at BND");
     Tx lami[3] = { ip.x, ip.y, 1-ip.x-ip.y } ;
+    
+    if (ip.vb == BBND)
+      {
+        for (int i = 0; i < 3; i++)
+          {
+            INT<2> e = GetVertexOrientedEdge(i);
+            if (e[0] == ip.facetnr || e[1] == ip.facetnr)
+              {
+                int first = first_facet_dof[i];
+                int p = facet_order[i][0];
+                
+                Tx xi = lami[e[0]] - lami[e[1]];
+                
+                LegendrePolynomial (p, xi, 
+                                    SBLambda([&](int nr, auto val)
+                                             {
+                                               shape[first+nr] = uDv (val, xi);
+                                             }));                
+              }
+            else
+              {
+                for (int j : Range(first_facet_dof[i], first_facet_dof[i+1]))
+                  shape[j] = Du(Tx(0.0));
+              }
+          }
+        return;
+      }
+    
+    if (ip.vb != BND) throw Exception("normal-facet element evaluated not at BND");
 
+    
     for (int i = 0; i < 3; i++)
       {
         if (ip.facetnr != i)
