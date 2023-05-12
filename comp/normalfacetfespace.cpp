@@ -77,6 +77,49 @@ namespace ngcomp
 
 
 
+  /// Gradient operator for HCurl
+  template <int D, typename FEL = HDivFiniteElement<D> >
+  class DiffOpNormalMapping : public DiffOp<DiffOpNormalMapping<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 1 };
+
+    static Array<int> GetDimensions() { return Array<int> ( { D } ); }
+    
+    static constexpr double eps() { return 1e-4; }
+
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      /*
+      mat = (1.0/mip.GetJacobiDet()) * 
+        (mip.GetJacobian() * Trans (Cast(fel).GetShape(mip.IP(), lh)));
+      */
+      mat = Cof(mip.GetJacobian()) * Trans (static_cast<const FEL&>(fel).GetShape(mip.IP(), lh));
+    }
+  };
+
+
+
+
+
 
 
 
@@ -150,8 +193,12 @@ namespace ngcomp
 
     if (ma->GetDimension() == 2)
       {
+        if (flags.GetDefineFlag("normalmapping"))
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpNormalMapping<2>>>();
+        else
+          evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
+          
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdVecHDivBoundary<2>>>();
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDiv<2>>>();
       }
     else
       {
