@@ -158,11 +158,16 @@ Whetting the Appetite
    unit-5a.1-mpi/poisson_mpi.ipynb 
    unit-5a.2-pardofs/pardofs.ipynb 
    unit-5a.3-petsc/petsc.ipynb 
-   unit-5a.3-petsc/PETSc_interface.ipynb 
+   unit-5a.3-petsc/PETSc_interface.ipynb
+
+CUDA Device support:
+   
    unit-5.5-cuda/poisson_cuda.ipynb 
    unit-5.5-cuda/wave_cuda.ipynb 
    unit-5.5-cuda/EulerEquations.ipynb 
-   
+
+some old MPI examples:
+
    historic/unit-5.0-mpi_basics/MPI-Parallelization_in_NGSolve.ipynb
    historic/unit-5.1-mpi_ngsolve/mpi_basics.ipynb
    historic/unit-5.2-fetidp_point2d/feti-dp-i.ipynb
