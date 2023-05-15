@@ -108,11 +108,19 @@ namespace ngcomp
                                 MAT mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
-      /*
-      mat = (1.0/mip.GetJacobiDet()) * 
-        (mip.GetJacobian() * Trans (Cast(fel).GetShape(mip.IP(), lh)));
-      */
-      mat = Cof(mip.GetJacobian()) * Trans (static_cast<const FEL&>(fel).GetShape(mip.IP(), lh));
+      auto shaperef = static_cast<const FEL&>(fel).GetShape(mip.IP(), lh);
+
+      auto normals = ElementTopology::GetNormals<D>(fel.ElementType());
+      int ndf = shaperef.Height()/normals.Size();
+      for (int i = 0; i < normals.Size(); i++)
+        for (int j = 0; j < ndf; j++)
+          {
+            int ii = j+i*ndf;
+            Vec<2> n = normals(i);
+            shaperef.Row(ii) = InnerProduct(shaperef.Row(ii), n) * n;
+          }
+
+      mat = Cof(mip.GetJacobian()) * Trans(shaperef);
     }
   };
 
