@@ -68,6 +68,7 @@ then
         docutils \
         Jinja2 \
         PySpice \
+        tensorflow \
 
 fi
 
