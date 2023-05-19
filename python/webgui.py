@@ -594,8 +594,13 @@ def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, ma
             html = scene.GenerateHTML()
             display(HTML(html))
         else:
+            import webgui_jupyter_widgets as wjw
+            from packaging.version import parse
             # render scene using widgets.DOMWidget
-            scene.Draw(width, height)
+            if parse(wjw.__version__) < parse("0.2.15"):
+                scene.Draw()
+            else:
+                scene.Draw(width, height)
             return scene
     else:
         if filename:
