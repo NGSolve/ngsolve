@@ -202,8 +202,12 @@ nr : int
                                    Array<int> enums;
                                    for (auto el : mesh.GetVertexElements(node.GetNr()))
                                      for (auto edge : mesh.GetElement(ElementId(VOL,el)).Edges())
-                                       if (!enums.Contains(edge))
-                                         enums.Append(edge);
+                                       {
+                                         auto [v0,v1] = mesh.GetEdgePNums(edge);
+                                         if (v0 == node.GetNr() || v1 == node.GetNr())
+                                           if (!enums.Contains(edge))
+                                             enums.Append(edge);
+                                       }
                                    QuickSort (enums);
                                    return MakePyTuple(Substitute(enums, Nr2Edge));
                                  }
