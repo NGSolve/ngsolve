@@ -36,6 +36,8 @@ namespace ngfem
   void ExportStdMathFunction_(py::module &m, string name,
                               string description)
   {
+    static RegisterClassForArchive<cl_UnaryOpCF<FUNC>, CoefficientFunction> reguopcf;
+
     m.def (name.c_str(), [name] (py::object x) -> py::object
               {
                 FUNC func;
