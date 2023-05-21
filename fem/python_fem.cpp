@@ -24,6 +24,8 @@ namespace ngfem
   extern SymbolTable<double> * constant_table_for_FEM;
   SymbolTable<double> pmlpar;
 
+  void ExportStdMathFunctions(py::module &m);
+
   shared_ptr<CoefficientFunction> MakeCoefficient (py::object val)
   {
     py::extract<shared_ptr<CoefficientFunction>> ecf(val);
@@ -479,23 +481,7 @@ direction : int
 
   };
 
-  
-  ExportStdMathFunction_<GenericSin>(m, "sin", "Sine of argument in radians");
-  ExportStdMathFunction_<GenericCos>(m, "cos", "Cosine of argument in radians");
-  ExportStdMathFunction_<GenericTan>(m, "tan", "Tangent of argument in radians");
-  ExportStdMathFunction_<GenericSinh>(m, "sinh", "Hyperbolic sine of argument in radians");
-  ExportStdMathFunction_<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument in radians");
-  ExportStdMathFunction_<GenericExp>(m, "exp", "Exponential function");
-  ExportStdMathFunction_<GenericLog>(m, "log", "Logarithm function");
-  ExportStdMathFunction_<GenericATan>(m, "atan", "Inverse tangent in radians");
-  ExportStdMathFunction_<GenericACos>(m, "acos", "Inverse cosine in radians");
-  ExportStdMathFunction_<GenericASin>(m, "asin", "Inverse sine in radians");
-  ExportStdMathFunction_<GenericSqrt>(m, "sqrt", "Square root function");
-  ExportStdMathFunction_<GenericErf>(m, "erf", "Error function");
-  ExportStdMathFunction_<GenericFloor>(m, "floor", "Round to next lower integer");
-  ExportStdMathFunction_<GenericCeil>(m, "ceil", "Round to next greater integer");
-  // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
-  // ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
+  ExportStdMathFunctions(m);
 
   ExportStdMathFunction2<GenericATan2>(m, "atan2", "Four quadrant inverse tangent in radians", "y", "x");
   ExportStdMathFunction2<GenericPow>(m, "pow", "Power function");
