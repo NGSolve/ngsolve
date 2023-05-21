@@ -224,7 +224,7 @@ namespace ngfem
   template <typename FUNC>
   shared_ptr<CoefficientFunction> MakeStdMathFunction(shared_ptr<CoefficientFunction> x)
   {
-    static RegisterClassForArchive<cl_UnaryOpCF<FUNC>, CoefficientFunction> reguopcf;
+    // static RegisterClassForArchive<cl_UnaryOpCF<FUNC>, CoefficientFunction> reguopcf;
     
     FUNC func;
     return UnaryOpCF(x, func, FUNC::Name());
