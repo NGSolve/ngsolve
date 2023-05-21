@@ -15,7 +15,7 @@ namespace ngfem
 {
 
 #ifdef NGS_PYTHON
-  extern void ExportStdMathFunctions(py::module &m);
+  NGS_DLL_HEADER void ExportStdMathFunctions(py::module &m);
   
   void ExportStdMathFunctions(py::module &m)
   {
