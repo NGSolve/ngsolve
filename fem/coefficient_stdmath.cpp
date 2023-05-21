@@ -14,7 +14,9 @@
 namespace ngfem
 {
 
-#ifdef NGS_PYTHON  
+#ifdef NGS_PYTHON
+  extern void ExportStdMathFunctions(py::module &m);
+  
   void ExportStdMathFunctions(py::module &m)
   {
     ExportStdMathFunction_<GenericSin>(m, "sin", "Sine of argument in radians");
