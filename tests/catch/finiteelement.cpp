@@ -91,7 +91,7 @@ void TestFiniteElement(T fel)
                           CHECK(L2Norm(values-values_ref) < 1e-10);
                         }
                     }
-                  catch(Exception ex)
+                  catch(const Exception & ex)
                     {
                       CHECK_THROWS_AS(throw ex, ExceptionNOSIMD);
                       WARN("SIMD not implemented");
