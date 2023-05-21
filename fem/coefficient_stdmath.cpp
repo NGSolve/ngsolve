@@ -14,7 +14,7 @@
 namespace ngfem
 {
 
-#ifdef NGS_PYTHON  
+  // #ifdef NGS_PYTHON  
   void ExportStdMathFunctions(py::module &m)
   {
     ExportStdMathFunction_<GenericSin>(m, "sin", "Sine of argument in radians");
@@ -34,7 +34,7 @@ namespace ngfem
     // ExportStdMathFunction<GenericConj>(m, "Conj", "Conjugate imaginary part of complex number");
     // ExportStdMathFunction<GenericIdentity>(m, " ", "Passes value through");
   }
-#endif
+  // #endif
   
 
   template <> shared_ptr<CoefficientFunction>
