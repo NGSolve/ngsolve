@@ -24,7 +24,7 @@ namespace ngfem
   extern SymbolTable<double> * constant_table_for_FEM;
   SymbolTable<double> pmlpar;
 
-  void ExportStdMathFunctions(py::module &m);
+  NGS_DLL_HEADER void ExportStdMathFunctions(py::module &m);
 
   shared_ptr<CoefficientFunction> MakeCoefficient (py::object val)
   {
