@@ -1568,7 +1568,23 @@ allow_fail : bool
                  LocalHeapMem<10000> lh("CF(MeshPoint)");
                  auto & trafo = p.mesh->GetTrafo(ElementId(p.vb, p.nr), lh);
                  auto & mip = trafo(IntegrationPoint(p.x,p.y,p.z),lh);
-                 return py::cast(self)(mip);
+                 // return py::cast(self)(mip);   // not working ??
+
+                 auto Eval = [&] (auto vec) -> py::object
+                   {
+                     self->Evaluate (mip, vec);
+                     if (self->Dimensions().Size() == 0)
+                       return py::cast(vec(0));
+                     py::tuple res(self->Dimension());
+                     for (auto i : Range(vec))
+                       res[i] = py::cast(vec[i]);
+                     return std::move(res);
+                   };
+                 
+                 if (!self->IsComplex())
+                   return Eval(Vector<> (self->Dimension()));
+                 else
+                   return Eval(Vector<Complex> (self->Dimension()));
                });
   
   if(have_numpy)
