@@ -1562,6 +1562,14 @@ allow_fail : bool
     .def("Assemble", &ngcomp::PointEvaluationFunctional::Assemble)
     ;
 
+
+  cf_class.def("__call__", [](shared_ptr<CF> self, MeshPoint p)
+               {
+                 LocalHeapMem<10000> lh("CF(MeshPoint)");
+                 auto & trafo = p.mesh->GetTrafo(ElementId(p.vb, p.nr), lh);
+                 auto & mip = trafo(IntegrationPoint(p.x,p.y,p.z),lh);
+                 return py::cast(self)(mip);
+               });
   
   if(have_numpy)
     {
