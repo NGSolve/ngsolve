@@ -2231,7 +2231,7 @@ weights : list
                   py::format_descriptor<int>::format(), py::detail::npy_format_descriptor<int>::dtype()}});
   }
 
-  py::class_<BaseMappedIntegrationPoint>(m, "BaseMappedIntegrationPoint")
+  py::class_<BaseMappedIntegrationPoint, shared_ptr<BaseMappedIntegrationPoint>>(m, "BaseMappedIntegrationPoint")
     .def(py::init([](MeshPoint& pnt)
                   {
                     if(pnt.nr == -1){
