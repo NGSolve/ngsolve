@@ -344,7 +344,9 @@ namespace ngfem
     ///
     bool is_complex;
     /// fabs(det)
-    double measure; 
+    double measure;
+    
+    BaseMappedIntegrationPoint (const BaseMappedIntegrationPoint&) = default;
   public:
     ///
     INLINE BaseMappedIntegrationPoint () = default;
