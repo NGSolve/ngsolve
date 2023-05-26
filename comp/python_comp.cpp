@@ -1662,45 +1662,18 @@ BND : boolean or None
                     connect_auto_update(dcfes.get());
                     return dcfes;
                   }), py::arg("fespace"))
-    /*
-    .def(py::pickle([](const PeriodicFESpace* per_fes)
+    .def(py::pickle([](const DiscontinuousFESpace* disc_fes)
                     {
-                      py::list idnrs;
-                      for (auto idnr : *per_fes->GetUsedIdnrs())
-                        idnrs.append(idnr);
-                      auto quasiper_fes = dynamic_cast<const QuasiPeriodicFESpace*>(per_fes);
-                      if(quasiper_fes)
-                        {
-                          py::list fac;
-                          for(auto factor : *quasiper_fes->GetFactors())
-                            fac.append(factor);
-                          return py::make_tuple(per_fes->GetBaseSpace(),idnrs,fac);
-                        }
-                      return py::make_tuple(per_fes->GetBaseSpace(),idnrs);
+                      return py::make_tuple(disc_fes->GetBaseSpace(),disc_fes->GetFlags());
                     },
-                    [] (py::tuple state) -> shared_ptr<PeriodicFESpace>
+                    [] (py::tuple state) -> shared_ptr<DiscontinuousFESpace>
                     {
-                      auto idnrs = make_shared<Array<int>>();
-                      for (auto id : state[1].cast<py::list>())
-                        idnrs->Append(id.cast<int>());
-                      if(py::len(state)==3)
-                        {
-                          auto facs = make_shared<Array<Complex>>();
-                          for (auto fac : state[2].cast<py::list>())
-                            facs->Append(fac.cast<Complex>());
-                          auto fes = make_shared<QuasiPeriodicFESpace>
-                            (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
-                          fes->Update(glh);
-                          fes->FinalizeUpdate(glh);
-                          return fes;
-                        }
-                      auto fes = make_shared<PeriodicFESpace>(state[0].cast<shared_ptr<FESpace>>(),
-                                                              Flags(),idnrs);
-                      fes->Update(glh);
-                      fes->FinalizeUpdate(glh);
+                      auto flags = state[1].cast<Flags>();
+                      auto fes = make_shared<DiscontinuousFESpace>(state[0].cast<shared_ptr<FESpace>>(), flags);
+                      fes->Update();
+                      fes->FinalizeUpdate();
                       return fes;
                     }))
-    */
     ;
 
 
