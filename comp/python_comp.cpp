@@ -2539,6 +2539,9 @@ space : ngsolve.FESpace
                      "  documentation for further information.",
                      py::arg("eliminate_internal") = "bool = False\n"
                      "  deprecated for static condensation, replaced by 'condense'\n",
+                     py::arg("keep_internal") = "bool = True\n"
+                     "  store harmonic extension and inner inverse matrix from static condensation\n"
+                     "  set to False to save memory, and recompute local matrices on demand\n",
                      py::arg("eliminate_hidden") = "bool = False\n"
                      "  Set up BilinearForm for static condensation of hidden\n"
                      "  dofs. May be overruled by eliminate_internal.",
