@@ -67,8 +67,10 @@ then
         pybind11-stubgen \
         docutils \
         Jinja2 \
-        PySpice \
         tensorflow \
+
+    pip3 install git+https://github.com/PySpice-org/PySpice.git
+    ln -s /usr/lib/x86_64-linux-gnu/libngspice.so.0  /usr/lib/x86_64-linux-gnu/libngspice.so
 
 fi
 
