@@ -247,16 +247,14 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
 
 .. toctree::
    :maxdepth: 1
-    unit-10.1-ngspice NGSpiceNGSolve.ipynb Coupling with NGSpice
-    unit-10.2-tensorflow/TensorFlowNGSolve.ipynb Coupling with
-    TensorFlow
+    unit-10.1-ngspice NGSpiceNGSolve.ipynb
+    unit-10.2-tensorflow/TensorFlowNGSolve.ipynb
 
 
 Appendix::
 .. toctree::
   :maxdepth 1
   
-  appendix-webgui/webgui-internal.ipynb Webgui programming and
-  internal features
+  appendix-webgui/webgui-internal.ipynb
   
        
