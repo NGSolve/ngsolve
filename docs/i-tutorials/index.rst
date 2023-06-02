@@ -247,7 +247,7 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
 
 .. toctree::
    :maxdepth: 1
-    unit-10.1-ngspice NGSpiceNGSolve.ipynb
+    unit-10.1-ngspice/NGSpiceNGSolve.ipynb
     unit-10.2-tensorflow/TensorFlowNGSolve.ipynb
 
 
