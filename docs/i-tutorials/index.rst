@@ -244,6 +244,7 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
    
 
 10. NGSolve and ...
+===================
 
 .. toctree::
    :maxdepth: 1
@@ -252,6 +253,8 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
 
 
 Appendix::
+==========
+
 .. toctree::
   :maxdepth 1
   
