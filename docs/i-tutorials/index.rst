@@ -242,3 +242,21 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
    unit-9.3-highorder/highorder.ipynb
    
    
+
+10. NGSolve and ...
+
+.. toctree::
+   :maxdepth: 1
+    unit-10.1-ngspice NGSpiceNGSolve.ipynb Coupling with NGSpice
+    unit-10.2-tensorflow/TensorFlowNGSolve.ipynb Coupling with
+    TensorFlow
+
+
+Appendix::
+.. toctree::
+  :maxdepth 1
+  
+  appendix-webgui/webgui-internal.ipynb Webgui programming and
+  internal features
+  
+       
