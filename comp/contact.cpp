@@ -76,7 +76,7 @@ namespace ngcomp
   };
 
   template<int DIMS, int DIMR>
-  double FindClosestPoint( Vec<DIMR> pmaster, Vec<DIMR> n, double h, const ElementTransformation & trafo, IntegrationPoint & ip, Vec<DIMR> & p)
+  double FindClosestPoint( Vec<DIMR> pmaster, Vec<DIMR> n, double h, const ElementTransformation & trafo, IntegrationPoint & ip, Vec<DIMR> & p, bool both_sides)
   // input arguments: pmaster, n, h (maximum distance), trafo
   // output arguments: ip, p
   {
@@ -92,6 +92,8 @@ namespace ngcomp
       MappedIntegrationPoint<DIMS, DIMR> mip{ip, trafo};
       T2<DIMS> t2{mip, pmaster};
       bool is_front = InnerProduct(n, mip.GetNV()) < 0;
+      if(both_sides)
+        is_front = true;
 
       if constexpr (DIMS==1)
       {
@@ -176,7 +178,7 @@ namespace ngcomp
   }
 
   template<int DIM>
-  optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh) const
+  optional<ContactPair<DIM>> T_GapFunction<DIM> :: CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip1, LocalHeap& lh, bool both_sides) const
   {
     HeapReset hr(lh);
     // int intorder2 = 10*displacement->GetFESpace()->GetOrder();
@@ -224,7 +226,7 @@ namespace ngcomp
 
          IntegrationPoint ip2;
          Vec<DIM> p2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip1_def.GetNV(), mindist, trafo2_def, ip2, p2 );
+         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip1_def.GetNV(), mindist, trafo2_def, ip2, p2, both_sides );
          if(dist<mindist && dist < h)
          {
            mindist = dist;
@@ -250,9 +252,10 @@ namespace ngcomp
   }
 
   template<int DIM>
-  void T_GapFunction<DIM> :: Update(shared_ptr<GridFunction> displacement_, int intorder2, double h_)
+  void T_GapFunction<DIM> :: Update(shared_ptr<GridFunction> displacement_, int intorder2, double h_, bool both_sides)
   {
     h = h_;
+    this->both_sides = both_sides;
 
     displacement = displacement_;
 
@@ -382,7 +385,7 @@ namespace ngcomp
 
          Vec<DIM> p2;
          IntegrationPoint ip2;
-         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip.GetNV(), mindist, trafo2_def, ip2, p2 );
+         double dist = FindClosestPoint<DIM-1,DIM>(p1, inv_fac * inv_fac2 * mip.GetNV(), mindist, trafo2_def, ip2, p2, both_sides);
          if(dist<mindist && dist < h)
          {
            mindist = dist;
@@ -883,7 +886,7 @@ namespace ngcomp
   void ContactBoundary::
   Update(shared_ptr<GridFunction> displacement_,
          shared_ptr<BilinearForm> bf,
-         int intorder, double h)
+         int intorder, double h, bool both_sides)
   {
     if(!displacement_ && !bf)
       throw Exception("Either displacement or BilinearForm needed in ContactBoundary update!");
@@ -915,9 +918,10 @@ namespace ngcomp
         displacement->GetVector() = displacement_->GetVector();
       }
     if (displacement)
-      gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h);
+      gap->Update(displacement, 10*displacement->GetFESpace()->GetOrder(), h,
+                  both_sides);
     else
-      gap->Update(nullptr, 10, h);
+      gap->Update(nullptr, 10, h, both_sides);
       
     auto mesh = fes->GetMeshAccess();
     if(mesh->GetDimension() == 2)
@@ -968,7 +972,8 @@ namespace ngcomp
                       int cntpair = 0;
                       for(const auto& mip : mir)                        
                         {
-                          auto pair = tgap->CreateContactPair(mip, lh);
+                          auto pair = tgap->CreateContactPair(mip, lh,
+                                                              both_sides);
                           if (pair.has_value())
                             {
                               this_ir[cntpair] =  (*pair).primary_ip;
