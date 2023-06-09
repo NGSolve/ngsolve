@@ -21,31 +21,15 @@
 # $(MKLROOT)/lib/intel64/libmkl_intel_lp64.a $(MKLROOT)/lib/intel64/libmkl_core.a $(MKLROOT)/lib/intel64/libmkl_gnu_thread.a -ldl -lpthread -lm
 
 # interface layer, either lp64 or ilp64 (only for 64 bit build)
-if(NOT MKL_INTERFACE_LAYER)
-    set(MKL_INTERFACE_LAYER "_lp64")
-endif(NOT MKL_INTERFACE_LAYER)
+if(NOT MKL_INTERFACE)
+    set(MKL_INTERFACE "lp64")
+endif(NOT MKL_INTERFACE)
 
-if(NOT MKL_ARCH)
-  if(CMAKE_SIZEOF_VOID_P EQUAL 8)
-    set(MKL_ARCH "intel64")
-  else()
-    set(MKL_ARCH "ia32")
-  endif()
-endif(NOT MKL_ARCH)
-
-if(MKL_ARCH STREQUAL "ia32")
-  if(WIN32)
-    set(MKL_INTERFACE_LAYER "_c")
-  else(WIN32)
-    set(MKL_INTERFACE_LAYER "")
-  endif(WIN32)
-endif(MKL_ARCH STREQUAL "ia32")
+set(MKL_ARCH "intel64")
 
 include(FindPackageHandleStandardArgs)
 
-if(MKL_STATIC)
-  set(MKL_LINK static)
-elseif(MKL_SDL)
+if(NOT MKL_LINK)
   set(MKL_LINK sdl)
 endif()
 set(d lib/cmake/mkl)
@@ -109,7 +93,7 @@ else()
       ######################### Interface layer #######################
       # win32 link advisor:
       # mkl_intel_lp64.lib mkl_core.lib mkl_intel_thread.lib libiomp5md.lib -ldl
-      set(MKL_INTERFACE_LIBNAME "mkl_intel${MKL_INTERFACE_LAYER}")
+      set(MKL_INTERFACE_LIBNAME "mkl_intel_${MKL_INTERFACE}")
 
       find_library(MKL_INTERFACE_LIBRARY ${MKL_INTERFACE_LIBNAME}
           PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
@@ -134,10 +118,10 @@ else()
           PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
       find_library(MKL_FFT_LIBRARY mkl_cdft_core
           PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
-      find_library(MKL_SCALAPACK_LIBRARY mkl_scalapack${MKL_INTERFACE_LAYER}
+      find_library(MKL_SCALAPACK_LIBRARY mkl_scalapack_${MKL_INTERFACE}
           PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
 
-      find_library(MKL_BLACS_LIBRARY mkl_blacs_openmpi${MKL_INTERFACE_LAYER}
+      find_library(MKL_BLACS_LIBRARY mkl_blacs_openmpi_${MKL_INTERFACE}
           PATHS ${MKL_ROOT}/lib/${MKL_ARCH}/)
 
   #     ############################ RTL layer ##########################
