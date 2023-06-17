@@ -26,6 +26,7 @@ namespace ngcomp
     Array<double> weight;
     
     bool block;
+    string blocktype;
     bool hypre;
     bool coarse;
     bool local; // act as bddc for the local matrix
@@ -63,7 +64,8 @@ namespace ngcomp
       hypre = ahypre;
 
       local = flags.GetDefineFlag("local");
-      
+      if (block)
+        blocktype = flags.GetStringFlag ("blocktype", "");
       // pwbmat = NULL;
       inv = NULL;
 
@@ -415,10 +417,12 @@ namespace ngcomp
 	  Flags flags;
 	  flags.SetFlag("eliminate_internal");
 	  flags.SetFlag("subassembled");
+          if (blocktype != "")
+            flags.SetFlag ("blocktype", blocktype);
 	  cout << IM(3) << "call Create Smoothing Blocks of " << bfa->GetFESpace()->GetName() << endl;
 	  shared_ptr<Table<int>> blocks = (bfa->GetFESpace()->CreateSmoothingBlocks(flags));
 	  cout << IM(3) << "has blocks" << endl << endl;
-	  // *testout << "blocks = " << endl << blocks << endl;
+          // cout << "blocks = " << endl << *blocks << endl;
 	  // *testout << "pwbmat = " << endl << *pwbmat << endl;
 	  cout << IM(3) << "call block-jacobi inverse" << endl;
 
@@ -432,9 +436,11 @@ namespace ngcomp
 	  cout << IM(3) << "call directsolverclusters inverse" << endl;
 	  auto clusters = bfa->GetFESpace()->CreateDirectSolverClusters(flags);
 	  cout << IM(3) << "has clusters" << endl << endl;
-	  
+
+          // cout << "clusters = " << endl << *clusters << endl;
 	  cout << IM(3) << "call coarse wirebasket grid inverse" << endl;
-	  inv_coarse = pwbmat->InverseMatrix(clusters);
+          if (clusters)
+            inv_coarse = pwbmat->InverseMatrix(clusters);
 	  cout << IM(3) << "has inverse" << endl << endl;
 	  
 	  tmp = make_shared<VVector<>>(ndof);
