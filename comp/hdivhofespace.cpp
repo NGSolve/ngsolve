@@ -1316,6 +1316,12 @@ namespace ngcomp
 
   shared_ptr<Table<int>> HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
+    {
+      auto blocktype = precflags.GetStringFlag ("blocktype", "");
+      if (blocktype == "edgepatch" || blocktype == "facepatch" || blocktype == "vertexpatch")
+        return FESpace::CreateSmoothingBlocks(precflags);
+    }
+    
     int first;
     int ncnt = 0;
     // int ni = ma->GetNE(); //nel;

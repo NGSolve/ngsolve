@@ -1650,6 +1650,37 @@ lot of new non-zero entries in the matrix!\n" << endl;
         
           }
       }
+
+    if (flags.GetStringFlag("blocktype") == "facepatch")
+      {
+        
+        Array<DofId> dofs;
+        for ( ; !creator.Done(); creator++)
+          {
+            // EFI
+            
+            for (size_t i : Range(ma->GetNFaces()))        
+              {
+                GetDofNrs (NodeId(NT_FACE, i), dofs);
+                for (auto d : dofs)
+                  if (IsRegularDof(d))
+                    creator.Add (i, d);
+              }
+            
+            if(ma->GetDimension() == 3)
+              for(size_t i : Range(ma->GetNE()))
+                {
+                  GetDofNrs(NodeId(NT_CELL, i), dofs);
+                  auto elfaces = ma->GetElFaces(ElementId(VOL, i));
+                  for(auto d : dofs)
+                    if(IsRegularDof(d))
+                      for(auto f : elfaces)
+                        creator.Add(f, d);
+                }
+        
+          }
+      }
+
     
     else
       
