@@ -1412,6 +1412,11 @@ inverse : string
          "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
     ;
 
+  py::class_<SymmetricBlockGaussSeidelPrecond, shared_ptr<SymmetricBlockGaussSeidelPrecond>, BaseMatrix>
+    (m, "SymmetricBlockGaussSeidelPreconditioner");
+  py::class_<SymmetricGaussSeidelPrecond, shared_ptr<SymmetricGaussSeidelPrecond>, BaseMatrix>
+    (m, "SymmetricGaussSeidelPreconditioner");
+  
   py::class_<SparseFactorization, shared_ptr<SparseFactorization>, BaseMatrix>
     (m, "SparseFactorization")
     .def("Smooth", [] (SparseFactorization & self, BaseVector & u, BaseVector & y)
