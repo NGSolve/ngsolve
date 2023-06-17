@@ -1587,6 +1587,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     bool eliminate_internal = flags.GetDefineFlag("eliminate_internal");
     auto freedofs = GetFreeDofs(eliminate_internal);
 
+    if (flags.GetDefineFlag("subassembled"))
+      {
+        freedofs = make_shared<BitArray>(*freedofs);
+        for (auto i : Range(GetNDof()))
+          if (GetDofCouplingType(i) != WIREBASKET_DOF)
+            freedofs->Clear(i);
+      }
+
     FilteredTableCreator creator(freedofs.get());
 
     /*
