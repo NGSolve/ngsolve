@@ -357,7 +357,9 @@ void PyMatAccess( TCLASS &c )
         c.def_property_readonly("h", py::cpp_function(&TMAT::Height ), "Height of the matrix");
         c.def_property_readonly("w", py::cpp_function(&TMAT::Width ), "Width of the matrix");
         c.def_property_readonly("shape", &TMAT::Shape, "Shape of the matrix");
-        c.def_property_readonly("T", py::cpp_function([](TMAT &self) { return TNEW(Trans(self)); } ), "return transpose of matrix" );
+        c.def_property_readonly("T", [](TMAT &self) { return TNEW(Trans(self)); }, "return transpose of matrix" );
+        c.def_property_readonly("H", [](TMAT &self) { return TNEW(Trans(Conj(self))); }, "return transpose of matrix" );
+        c.def_property_readonly("C", [](TMAT &self) { return TNEW(Conj(self)); }, "return conjugate of matrix" );        
         c.def_property("A",
                        py::cpp_function([](TMAT &self) { return Vector<TSCAL>(FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) ); } ),
                        py::cpp_function([](TMAT &self, Vector<TSCAL> v) { FlatVector<TSCAL>( self.Width()* self.Height(), &self(0,0)) = v; } ),                       
@@ -670,24 +672,30 @@ vals : tuple
           .def("Height", &FMC::Height, "Returns height of the matrix" )
           .def("Width", &FMC::Width, "Returns width of the matrix" )
         .def("__len__", []( FMC& self) { return self.Height();}  )
-          .def_property_readonly("h", py::cpp_function(&FMC::Height ), "Height of the matrix")
-          .def_property_readonly("w", py::cpp_function(&FMC::Width ), "Width of the matrix")
-          .def_property_readonly("A", py::cpp_function([](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); }  ), "Returns matrix as vector")
-          .def_property_readonly("T", py::cpp_function([](FMC &self) { return Matrix<Complex>(Trans(self)); } ), "Return transpose of matrix" )
-        .def_property_readonly("C", py::cpp_function([](FMC &self) { 
+          .def_property_readonly("h", &FMC::Height, "Height of the matrix")
+          .def_property_readonly("w", &FMC::Width, "Width of the matrix")
+          .def_property_readonly("A", [](FMC &self) { return Vector<Complex>(FlatVector<Complex>( self.Width()* self.Height(), &self(0,0) )); }, "Returns matrix as vector")
+          .def_property_readonly("T", [](FMC &self) { return Matrix<Complex>(Trans(self)); }, "Return transpose of matrix" )
+        .def_property_readonly("C", [](FMC &self) {
+              /*
             Matrix<Complex> result( self.Height(), self.Width() );
             for (int i=0; i<self.Height(); i++)
                 for (int j=0; j<self.Width(); j++) 
                     result(i,j) = Conj(self(i,j));
             return result;
-            } ), "Return conjugate matrix" )
-        .def_property_readonly("H", py::cpp_function([](FMC &self) { 
+              */
+              return Matrix<Complex> (Conj(self));
+            }, "Return conjugate matrix" )
+        .def_property_readonly("H", [](FMC &self) {
+              /*
             Matrix<Complex> result( self.Width(), self.Height() );
             for (int i=0; i<self.Height(); i++)
                 for (int j=0; j<self.Width(); j++) 
                     result(j,i) = Conj(self(i,j));
             return result;
-            } ), "Return conjugate and transposed matrix" )
+              */
+              return Matrix<Complex> (Trans(Conj(self)));
+            }, "Return conjugate and transposed matrix" )
           .def_property_readonly("I", py::cpp_function([](FMC & self) { return Inverse(self); }))
         ;
     PyDefMatBuffer<FMC>(class_FMC);
