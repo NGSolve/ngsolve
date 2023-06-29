@@ -4631,6 +4631,7 @@ operations of it are used!
      .def("Update", &ContactBoundary::Update,
           py::arg("gf") = nullptr, py::arg("bf") = nullptr,
           py::arg("intorder") = 4, py::arg("maxdist") = 0.,
+          py::arg("both_sides")=false,
           R"delimiter(
 Update searchtree for gap function.
 If bf is given add specialelements corresponding to
