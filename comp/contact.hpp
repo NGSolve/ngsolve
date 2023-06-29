@@ -20,6 +20,7 @@ namespace ngcomp
     Region master;
     Region other;
     double h;
+    bool both_sides;
 
   public:
     GapFunction( shared_ptr<MeshAccess> ma_, Region primary_, Region secondary_)
@@ -27,7 +28,8 @@ namespace ngcomp
         ma(ma_), master(primary_), other(secondary_)
     { }
 
-    virtual void Update(shared_ptr<GridFunction> gf, int intorder_, double h_) = 0;
+    virtual void Update(shared_ptr<GridFunction> gf, int intorder_, double h_,
+                        bool both_sides) = 0;
     void Draw();
   };
 
@@ -40,7 +42,7 @@ namespace ngcomp
       : GapFunction(mesh_, primary_, secondary_)
     { }
 
-    void Update(shared_ptr<GridFunction> gf, int intorder_, double h) override;
+    void Update(shared_ptr<GridFunction> gf, int intorder_, double h, bool both_sides) override;
 
     const netgen::BoxTree<DIM, int>& GetSearchTree() { return *searchtree; }
 
@@ -56,7 +58,7 @@ namespace ngcomp
     void Evaluate(const BaseMappedIntegrationRule & mir,
                   BareSliceMatrix<> result) const override;
 
-    optional<ContactPair<DIM>> CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip, LocalHeap& lh) const;
+    optional<ContactPair<DIM>> CreateContactPair(const MappedIntegrationPoint<DIM-1, DIM>& mip, LocalHeap& lh, bool both_sides) const;
   };
 
   template<int DIM>
@@ -172,7 +174,7 @@ namespace ngcomp
     // nullptr, update SpecialElements of bf
     void Update(shared_ptr<GridFunction> gf,
                 shared_ptr<BilinearForm> bf,
-                int intorder, double h);
+                int intorder, double h, bool both_sides);
 
     shared_ptr<CoefficientFunction> Gap() const { return gap; }
     shared_ptr<CoefficientFunction> Normal() const { return normal; }
