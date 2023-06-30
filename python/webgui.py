@@ -101,7 +101,7 @@ def GetData(obj, args, kwargs):
                 if md_deformation:
                     deformation.vec.data = deformation.vecs[i]
 
-            d = BuildRenderData(mesh, cf, order=kwargs['order'], draw_surf=kwargs['draw_surf'], draw_vol=kwargs['draw_vol'], intpoints=kwargs['intpoints'], deformation=deformation, regions=regions, objects=kwargs['objects'], nodal_p1=kwargs['nodal_p1'], settings=kwargs['settings'])
+                data.append(BuildRenderData(mesh, gf, order=kwargs['order'], draw_surf=kwargs['draw_surf'], draw_vol=kwargs['draw_vol'], intpoints=kwargs['intpoints'], deformation=deformation, regions=regions, objects=kwargs['objects'], nodal_p1=kwargs['nodal_p1'], settings=kwargs['settings']))
             d['multidim_data'] = data
             d['multidim_interpolate'] = kwargs['interpolate_multidim']
             d['multidim_animate'] = kwargs['animate']
