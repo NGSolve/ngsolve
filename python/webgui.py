@@ -1,20 +1,9 @@
 import math
 import numpy as np
-from time import time
 import ngsolve as ngs
-import os
 
-import webgui_jupyter_widgets
-from webgui_jupyter_widgets import BaseWebGuiScene, encodeData, WebGuiDocuWidget
-import webgui_jupyter_widgets.widget as wg
-
-from packaging.version import parse
-if parse(webgui_jupyter_widgets.__version__) >= parse("0.2.18"):
-    _default_width = None
-    _default_height = None
-else:
-    _default_width = "100%"
-    _default_height = "50vh"
+from netgen.webgui import Draw, register_draw_type
+from webgui_jupyter_widgets import encodeData
 
 
 def updatePMinMax( pmat, pmima=None ):
@@ -36,38 +25,27 @@ def getMinMax( vals, fmin=None, fmax=None ):
     return funcmin, funcmax
 
 
-class WebGLScene(BaseWebGuiScene):
-    def __init__(self, cf, mesh_or_regions, order, min_, max_, draw_vol, draw_surf, autoscale, intpoints, deformation, interpolate_multidim, animate, clipping, vectors, on_init, eval_function, eval_, objects, nodal_p1, settings={}):
-        from IPython.display import display, Javascript
-        import threading
-        self.cf = cf
-        self.order = order
-        self.min = min_
-        self.max = max_
-        self.draw_vol = draw_vol
-        self.draw_surf = draw_surf
-        self.autoscale = autoscale
-        self.interpolate_multidim = interpolate_multidim
-        self.animate = animate
-        self.clipping = clipping
-        self.vectors = vectors
-        self.on_init = on_init
-        self.eval_function = eval_function
-        self.eval_ = eval_
-        self.objects = objects
-        self.nodal_p1 = nodal_p1
-        self.settings = settings
-
-        self.intpoints = intpoints
-        self.deformation = deformation
-        self.encoding = 'b64'
-
+@register_draw_type(ngs.Mesh, ngs.CoefficientFunction, ngs.GridFunction, ngs.comp.GridFunctionCoefficientFunction)
+def GetData(obj, args, kwargs):
         regions = {}
 
+        cf = None
+        if isinstance(obj, ngs.GridFunction):
+            cf = obj
+            mesh = obj.space.mesh
+        elif isinstance(obj, ngs.CoefficientFunction):
+            cf = obj
+            if len(args)<1:
+                raise RuntimeError("Cannot draw CoefficientFunction without mesh")
+            mesh = args[0]
+        else:
+            # assume, mesh is given
+            mesh = obj
+
         # got one region as input: draw only on region and region.Boundaries()
-        if isinstance(mesh_or_regions, ngs.comp.Region):
-            region = mesh_or_regions
-            self.mesh = mesh = region.mesh
+        if isinstance(mesh, ngs.comp.Region):
+            region = mesh
+            mesh = region.mesh
             regions[region.VB()] = region
             while region.VB() != ngs.BBND:
                 bnd_reg = region.Boundaries()
@@ -75,21 +53,21 @@ class WebGLScene(BaseWebGuiScene):
                 region = bnd_reg
 
         # draw exactly on given list of regions (no regions.Boundaries())
-        elif isinstance(mesh_or_regions, list):
+        elif isinstance(mesh, list):
             regions = {}
-            self.mesh = None
-            for reg in mesh_or_regions:
+            list_ = mesh
+            mesh = None
+            for reg in list_:
                 if isinstance(reg, ngs.comp.Region):
-                    self.mesh = reg.mesh
+                    mesh = reg.mesh
                     regions[reg.VB()] = reg
                 if isinstance(reg, ngs.comp.VorB):
                     regions[reg] = reg
-            if self.mesh is None:
+            if mesh is None:
                 raise RuntimeError("missing mesh/region")
 
         # draw on whole mesh
-        elif isinstance(mesh_or_regions, ngs.comp.Mesh):
-            self.mesh = mesh_or_regions
+        elif isinstance(mesh, ngs.comp.Mesh):
             for vb in [ngs.VOL, ngs.BND, ngs.BBND]:
                 regions[vb] = vb
         else:
@@ -98,87 +76,36 @@ class WebGLScene(BaseWebGuiScene):
         # fill with empty regions
         for vb in [ngs.VOL, ngs.BND, ngs.BBND]:
             if vb not in regions:
-                regions[vb] = self.mesh.Region(vb, None)
-        self.regions = regions
+                regions[vb] = mesh.Region(vb, None)
 
-    def GetData(self, set_minmax=True):
-        encoding = self.encoding
-        import json
-        d = BuildRenderData(self.mesh, self.cf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=self.deformation, regions=self.regions, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings)
+        if 'intpoints' not in kwargs:
+            kwargs['intpoints']  = None
+        d = BuildRenderData(mesh, cf, order=kwargs['order'], draw_surf=kwargs['draw_surf'], draw_vol=kwargs['draw_vol'], intpoints=kwargs['intpoints'], deformation=kwargs['deformation'], regions=regions, objects=kwargs['objects'], nodal_p1=kwargs['nodal_p1'], settings=kwargs['settings'])
 
-        if isinstance(self.cf, ngs.GridFunction) and len(self.cf.vecs)>1:
+        if isinstance(cf, ngs.GridFunction) and len(cf.vecs)>1:
             # multidim gridfunction - generate data for each component
-            gf = ngs.GridFunction(self.cf.space)
-            dim = len(self.cf.vecs)
+            gf = ngs.GridFunction(cf.space)
+            dim = len(cf.vecs)
 
-            if isinstance(self.deformation, ngs.GridFunction) and len(self.deformation.vecs)==dim:
-                md_deformation = True
-                deformation = ngs.GridFunction(self.deformation.space)
-            else:
-                md_deformation = False
-                deformation = self.deformation
+            md_deformation = False;
+            if 'deformation' in kwargs:
+                deformation = kwargs['deformation']
+                if isinstance(deformation, ngs.GridFunction) and len(deformation.vecs)==dim:
+                    md_deformation = True
+                    deformation = ngs.GridFunction(deformation.space)
 
             data = []
             for i in range(1,dim):
-                gf.vec.data = self.cf.vecs[i]
+                gf.vec.data = cf.vecs[i]
 
                 if md_deformation:
-                    deformation.vec.data = self.deformation.vecs[i]
+                    deformation.vec.data = deformation.vecs[i]
 
-                data.append(BuildRenderData(self.mesh, gf, self.order, draw_surf=self.draw_surf, draw_vol=self.draw_vol, intpoints=self.intpoints, deformation=deformation, regions=self.regions, objects=self.objects, nodal_p1=self.nodal_p1, encoding=encoding, settings=self.settings))
+            d = BuildRenderData(mesh, cf, order=kwargs['order'], draw_surf=kwargs['draw_surf'], draw_vol=kwargs['draw_vol'], intpoints=kwargs['intpoints'], deformation=deformation, regions=regions, objects=kwargs['objects'], nodal_p1=kwargs['nodal_p1'], settings=kwargs['settings'])
             d['multidim_data'] = data
-            d['multidim_interpolate'] = self.interpolate_multidim
-            d['multidim_animate'] = self.animate
+            d['multidim_interpolate'] = kwargs['interpolate_multidim']
+            d['multidim_animate'] = kwargs['animate']
 
-
-        if set_minmax:
-            if self.min is not None:
-                d['funcmin'] = self.min
-            if self.max is not None:
-                d['funcmax'] = self.max
-            d['autoscale'] = self.autoscale
-
-        if self.clipping is not None:
-            d['clipping'] = True
-            if isinstance(self.clipping, dict):
-                allowed_args = ("x", "y", "z", "dist", "function", "pnt", "vec")
-                if "vec" in self.clipping:
-                    vec = self.clipping["vec"]
-                    self.clipping["x"] = vec[0]
-                    self.clipping["y"] = vec[1]
-                    self.clipping["z"] = vec[2]
-                if "pnt" in self.clipping:
-                    d['mesh_center'] = list(self.clipping["pnt"])
-                for name, val in self.clipping.items():
-                    if not (name in allowed_args):
-                        raise Exception('Only {} allowed as arguments for clipping!'.format(", ".join(allowed_args)))
-                    d['clipping_' + name] = val
-
-        if self.vectors is not None:
-            d['vectors'] = True
-            if isinstance(self.vectors, dict):
-                for name, val in self.vectors.items():
-                    if not (name in ("grid_size", "offset")):
-                        raise Exception('Only "grid_size" and "offset" allowed as arguments for vectors!')
-                    d['vectors_' + name] = val
-
-        if self.on_init:
-            d['on_init'] = self.on_init
-
-        if self.eval_function:
-            d['user_eval_function'] = self.eval_function
-
-        # see shaders/utils.h for value explanation (function_mode)
-        eval_ = self.eval_
-        if eval_ is not None:
-            if isinstance(eval_, int):
-                d['eval'] = eval_
-            elif eval_ == 'norm':
-                d['eval'] = 3
-            elif eval_ == 'real':
-                d['eval'] = 5
-            elif eval_ == 'imag':
-                d['eval'] = 6
 
         return d
 
@@ -584,95 +511,4 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
     timer.Stop()
     return d
 
-def Draw(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, intpoints=None, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[], nodal_p1=False, settings={}, width=_default_width, height=_default_height):
-    if isinstance(mesh_or_func, ngs.Mesh):
-        mesh = mesh_or_func
-        func = None
-
-    if isinstance(mesh_or_func, ngs.CoefficientFunction):
-        func = mesh_or_func
-        mesh = mesh_or_none
-
-    if isinstance(mesh_or_func, ngs.GridFunction):
-        func = mesh_or_func
-        mesh = mesh_or_none or func.space.mesh
-        
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, intpoints=intpoints, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects, nodal_p1=nodal_p1, settings=settings)
-    if wg._IN_IPYTHON:
-        if wg._IN_GOOGLE_COLAB:
-            from IPython.display import display, HTML
-            html = scene.GenerateHTML()
-            display(HTML(html))
-        else:
-            import webgui_jupyter_widgets as wjw
-            from packaging.version import parse
-            # render scene using widgets.DOMWidget
-            if parse(wjw.__version__) < parse("0.2.15"):
-                scene.Draw()
-            else:
-                scene.Draw(width, height)
-            return scene
-    else:
-        if filename:
-            scene.GenerateHTML(filename=filename)
-        return scene
-
-
-def _DrawDocu(mesh_or_func, mesh_or_none=None, name='function', order=2, min=None, max=None, draw_vol=True, draw_surf=True, autoscale=True, intpoints=None, deformation=False, interpolate_multidim=False, animate=False, clipping=None, vectors=None, js_code=None, eval_function=None, eval=None, filename="", objects=[], nodal_p1=False, settings={}, width=_default_width, height=_default_height):
-    if isinstance(mesh_or_func, ngs.Mesh):
-        mesh = mesh_or_func
-        func = None
-
-    if isinstance(mesh_or_func, ngs.CoefficientFunction):
-        func = mesh_or_func
-        mesh = mesh_or_none
-
-    if isinstance(mesh_or_func, ngs.GridFunction):
-        func = mesh_or_func
-        mesh = mesh_or_none or func.space.mesh
-        
-    scene = WebGLScene(func, mesh, order, min_=min, max_=max, draw_vol=draw_vol, draw_surf=draw_surf, autoscale=autoscale, intpoints=intpoints, deformation=deformation, interpolate_multidim=interpolate_multidim, animate=animate, clipping=clipping, vectors=vectors, on_init=js_code, eval_function=eval_function, eval_=eval, objects=objects, nodal_p1=nodal_p1, settings=settings)
-    import json
-
-    docu_path = os.environ['NETGEN_DOCUMENTATION_OUT_DIR']
-    src_path = os.environ['NETGEN_DOCUMENTATION_SRC_DIR']
-    cwd_path = os.path.abspath('.')
-    rel_path = os.path.relpath('.', src_path)
-    path = os.path.join(docu_path, rel_path)
-
-    if not os.path.exists(path):
-        os.makedirs(path)
-    counter_file = os.path.join(docu_path, '.counter')
-    if os.path.exists(counter_file):
-        file_counter = int(open(counter_file,'r').read())+1
-    else:
-        file_counter = 0
-
-    open(counter_file,'w').write(str(file_counter))
-
-    data_file = 'render_data_{}.json'.format(file_counter)
-    data_file_abs = os.path.join(path, data_file)
-    preview_file = 'preview_{}.png'.format(file_counter)
-    preview_file_abs = os.path.join(path, preview_file)
-
-
-    widget = WebGuiDocuWidget()
-    widget.value = {'render_data' : data_file, 'preview' : preview_file }
-    scene.widget = widget
-    data = scene.GetData()
-    json.dump(data, open(data_file_abs, "w"))
-    scene.MakeScreenshot(preview_file_abs, 1200, 600)
-    scene.Redraw = lambda : None
-    from IPython.display import display, HTML
-    display(widget)
-    return scene
-
-if 'NETGEN_DOCUMENTATION_SRC_DIR' in os.environ:
-    # we are buiding the documentation, some things are handled differently:
-    # 1) Draw() is generating a .png (using headless chromium via selenium) and a render_data.json
-    #    to show a preview image and load the render_data only when requested by user
-    # 2) return a NGSDocuWebGuiWidget instead of NGSWebGuiWidget implementing the preview/load on demand of webgui
-
-    _Draw = Draw
-    Draw = _DrawDocu
-
+__all__ = ['Draw']
