@@ -18,9 +18,10 @@ for pyversion in 38 39 310 311
 do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
-    $PYDIR/pip install -U pytest-check numpy wheel scikit-build mkl==2022.* mkl-devel==2022.*
+    $PYDIR/pip install -U pytest-check numpy wheel scikit-build mkl==2023.* mkl-devel==2023.*
     $PYDIR/pip install netgen-mesher==$NETGEN_VERSION
 
+    sed -i 's/set(DLL_EXT ".so")/set(DLL_EXT ".so.2")/' /opt/python/cp${pyversion}-cp${pyversion}/lib/cmake/mkl/MKLConfig.cmake
     rm -rf _skbuild
     $PYDIR/pip wheel .
     rename linux_ manylinux_2_17_x86_64.manylinux2014_ ngsolve*.whl
