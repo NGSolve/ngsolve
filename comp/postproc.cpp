@@ -1538,6 +1538,16 @@ namespace ngfem
             defon = reg.Mask();
           }
       }
+
+
+    std::array<IntegrationRule*, std::max(element_types)+1> user_ir;
+    std::array<unique_ptr<SIMD_IntegrationRule>, std::max(element_types)+1> user_simd_ir;
+
+    for (auto [type, val] : dx.userdefined_intrules)
+      {
+        user_ir[type] = val.get();
+        user_simd_ir[type] = make_unique<SIMD_IntegrationRule>(*user_ir[type]);
+      }
     
     if (dx.element_vb == VOL)
       {
@@ -1562,8 +1572,9 @@ namespace ngfem
                  try
                    {
                      SIMD_IntegrationRule ir(trafo.GetElementType(), order);
-                     auto & mir = trafo(ir, lh);
-                     FlatMatrix<SIMD<TSCAL>> values(1, ir.Size(), lh);
+                     auto myir = user_simd_ir[trafo.GetElementType()] ? user_simd_ir[trafo.GetElementType()].get() : &ir;
+                     auto & mir = trafo(*myir, lh);
+                     FlatMatrix<SIMD<TSCAL>> values(1, myir->Size(), lh);
                      cf -> Evaluate (mir, values);
                      SIMD<TSCAL> vsum = 0.0;
                      for (size_t i = 0; i < values.Width(); i++)
@@ -1582,8 +1593,9 @@ namespace ngfem
              if (!this_simd)
                {
                  IntegrationRule ir(trafo.GetElementType(), order);
-                 BaseMappedIntegrationRule & mir = trafo(ir, lh);
-                 FlatMatrix<TSCAL> values(ir.Size(), 1, lh);
+                 auto myir = user_ir[trafo.GetElementType()] ? user_ir[trafo.GetElementType()] : &ir;
+                 BaseMappedIntegrationRule & mir = trafo(*myir, lh);
+                 FlatMatrix<TSCAL> values(myir->Size(), 1, lh);
                  cf -> Evaluate (mir, values);
                  for (int i = 0; i < values.Height(); i++)
                    hsum += mir[i].GetWeight() * values(i,0);
