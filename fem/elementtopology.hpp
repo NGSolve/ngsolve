@@ -24,16 +24,19 @@ namespace ngfem
 	ET_TRIG = 10, ET_QUAD = 11, 
 	ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
   
-#ifndef WIN32
+  // #ifndef WIN32
   static constexpr initializer_list<ELEMENT_TYPE> element_types =
     { ET_POINT, ET_SEGM, ET_TRIG, ET_QUAD,
       ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX };
+  /*
 #else
   // less efficient, but MSVC doesn't like the constexpr here
   static initializer_list<ELEMENT_TYPE> element_types =
     { ET_POINT, ET_SEGM, ET_TRIG, ET_QUAD,
       ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX };
 #endif
+  */
+  
 
   /**
      Type of node. 
