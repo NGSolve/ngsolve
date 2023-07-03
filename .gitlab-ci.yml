@@ -139,6 +139,16 @@ win_avx_cleanup:
     paths:
       - logs/
 
+docu_test:
+  <<: *ubuntu
+  <<: *build_linux
+  variables:
+    IMAGE_NAME: "avx"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+  when: manual
+  after_script:
+    - /home/gitlab-runner/deploy/deploy_release.sh $CI_PIPELINE_ID
+
 ubuntu_avx_build:
   <<: *ubuntu_avx
   <<: *build_linux
