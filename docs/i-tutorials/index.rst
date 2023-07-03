@@ -229,6 +229,8 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
    unit-8.5-spacetime_unfitted/spacetime_unfitted.ipynb
    unit-8.6-mlset_basic/mlset_basic.ipynb
    unit-8.7-mlset_pde/mlset_pde.ipynb
+   unit-8.8-aggregation/aggregation.ipynb
+   unit-8.9-unfmixed/unfmixed.ipynb
 
 9. Extending by C++ programming
 ===============================
