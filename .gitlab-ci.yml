@@ -101,9 +101,14 @@ win_avx_cleanup:
   variables:
     IMAGE_NAME: "avx"
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
-  only:
-    - schedules
-    - tags
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+      when: never
+    - if: $CI_COMMIT_TAG
+      when: always
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      when: always
+    - when: manual
 
 .template_ubuntu_avx512: &ubuntu_avx512
   tags:
