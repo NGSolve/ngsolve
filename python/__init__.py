@@ -27,7 +27,7 @@ if config.is_python_package and config.USE_MKL:
     import importlib.metadata
     for f in importlib.metadata.files('mkl'):
         if f.match('*mkl_rt*'):
-            ctypes.CDLL(f.locate())
+            ctypes.CDLL(str(f.locate()))
 
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
