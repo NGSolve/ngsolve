@@ -109,3 +109,24 @@ div.nboutput div.output_area {
 .webgui_tooltip:hover .webgui_tooltiptext {
     visibility: visible;
 }
+
+.dg .cr {
+    margin-left: 0;
+}
+
+.dg li.folder {
+  list-style: none;
+    margin-left: 0;
+}
+
+.dg .closed li:not(.title), .dg .closed ul li, .dg .closed ul li>* {
+    list-style: none;
+    overflow: hidden;
+    border: 0;
+    margin-left: 0;
+}
+
+.folder .dg {
+    margin-bottom: 0;
+
+}
