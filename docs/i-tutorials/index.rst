@@ -261,5 +261,6 @@ Appendix
   
   appendix-taskmanager/taskmanager.ipynb 
   appendix-webgui/webgui-internal.ipynb
+  appendix-vtk/vtk.ipynb
   
        
