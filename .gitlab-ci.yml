@@ -107,8 +107,8 @@ win_avx_cleanup:
     - if: $CI_COMMIT_TAG
       when: always
     - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-      when: always
-    - when: manual
+      when: manual
+    - when: never
 
 .template_ubuntu_avx512: &ubuntu_avx512
   tags:
