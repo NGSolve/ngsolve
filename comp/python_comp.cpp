@@ -2785,6 +2785,13 @@ y : ngsolve.BaseVector
 
 )raw_string"))
 
+
+    .def ("Apply", [](shared_ptr<BilinearForm> self, shared_ptr<BaseVector> x)
+          {
+            shared_ptr<BaseMatrix> app = make_shared<BilinearFormApplication> (self, glh);
+            return DynamicVectorExpression(make_shared<DynamicMatVecExpression>(app,x));
+          }, py::arg("u"))
+    
     .def("ComputeInternal", [](BF & self, BaseVector & u, BaseVector & f)
 	  {
 	    self.ComputeInternal (u, f, glh );
