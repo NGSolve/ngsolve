@@ -147,7 +147,7 @@ docu_test:
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
   when: manual
   after_script:
-    - /home/gitlab-runner/deploy/deploy_release.sh $CI_PIPELINE_ID
+    - /home/gitlab-runner/deploy/deploy_docu_test.sh $CI_PIPELINE_ID
 
 ubuntu_avx_build:
   <<: *ubuntu_avx
