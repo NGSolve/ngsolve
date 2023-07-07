@@ -230,9 +230,7 @@ def SOAR (A, B, maxiter=200):
 
 
 
-
-
-
+# author: A. Schoefl
 def TOAR (A, B, maxiter=200):
 
     r = A.CreateVector()
