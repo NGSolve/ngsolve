@@ -25,6 +25,9 @@ if config.is_python_package and sys.platform.startswith('win'):
 
 if config.is_python_package and config.USE_MKL:
     import importlib.metadata
+    for f in importlib.metadata.files('intel_openmp'):
+        if f.match('*libiomp?.so'):
+            ctypes.CDLL(str(f.locate()))
     for f in importlib.metadata.files('mkl'):
         if f.match('*mkl_rt*'):
             ctypes.CDLL(str(f.locate()))
