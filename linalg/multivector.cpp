@@ -233,7 +233,6 @@ namespace ngla {
   {
     static Timer t("MultiVector::Orthogonalize");
     RegionTimer reg(t);
-
     auto & mv = *this;
     Matrix<T> Rfactor(mv.Size());
     Rfactor = T(0.0);
@@ -278,7 +277,7 @@ namespace ngla {
             auto mv2 = mv.Range(r2);
             Rfactor.Rows(r1).Cols(r1) = mv1->T_Orthogonalize<T>(ipmat);
             Matrix<T> ip = Conj(InnerProduct<T> (*mv1, *mv2, true));
-            Rfactor.Rows(r1).Cols(r2) = ip;
+            Rfactor.Rows(r2).Cols(r1) = ip;
             ip *= -1;
             mv2->Add (*mv1, ip);
             Rfactor.Rows(r2).Cols(r2) = mv2->T_Orthogonalize<T>(ipmat);
