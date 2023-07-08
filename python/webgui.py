@@ -106,7 +106,7 @@ def GetData(obj, args, kwargs):
             d['multidim_interpolate'] = kwargs['interpolate_multidim']
             d['multidim_animate'] = kwargs['animate']
 
-        if d['is_complex'] and 'animate_complex' in kwargs:
+        if 'is_complex' in d and d['is_complex'] and 'animate_complex' in kwargs:
             s = d['gui_settings']
             if 'Complex' not in s:
                 s['Complex'] = dict(phase= 0.0, speed=2, animate=False)
