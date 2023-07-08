@@ -104,7 +104,8 @@ Whetting the Appetite
 
    unit-2.1.1-preconditioners/preconditioner.ipynb
    unit-2.1.2-blockjacobi/blockjacobi.ipynb
-   unit-2.1.3-bddc/bddc.ipynb
+   unit-2.1.3-multigrid/multigrid.ipynb
+   unit-2.1.4-bddc/bddc.ipynb
    unit-2.2-eigenvalues/pinvit.ipynb
    unit-2.3-hcurlhdiv/hcurlhdiv.ipynb
    unit-2.4-Maxwell/Maxwell.ipynb
@@ -125,13 +126,13 @@ Whetting the Appetite
 
    unit-3.1-parabolic/parabolic.ipynb
    unit-3.2-navierstokes/navierstokes.ipynb
-   unit-3.3-scalardg/scalardg.ipynb
-   unit-3.3.1-wavedg/wavedg.ipynb
-   unit-3.4-simplehyp/shallow2D.ipynb
-   unit-3.5-surfacehdg/surfacehdg.ipynb
-   unit-3.6-opsplit/opsplit.ipynb
-   unit-3.7-nonlinear/nonlinear.ipynb
-   unit-3.8-nonlmin/nonlmin.ipynb
+   unit-3.3-nonlinear/nonlinear.ipynb
+   unit-3.4-nonlmin/nonlmin.ipynb
+   unit-3.5.1-dgapply/dgapply-scalar.ipynb
+   unit-3.5.2-wavedg/wavedg.ipynb
+   unit-3.6-surfacehdg/surfacehdg.ipynb
+   unit-3.7-opsplit/opsplit.ipynb
+   unit-3.8-simplehyp/shallow2D.ipynb
 
 4. Geometric modeling and mesh generation
 ==========================================
