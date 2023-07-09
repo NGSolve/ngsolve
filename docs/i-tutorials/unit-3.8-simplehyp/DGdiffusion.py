@@ -23,21 +23,21 @@ def AddArtificialDiffusion(a,Ubnd,magnitude,compile=True,true_compile=False,comp
     
     ints = []
     if compile:
-        form1 = (diff * InnerProduct(grad(U),grad(V))).Compile(true_compile,wait=compile_wait)
+        form1 = (diff * InnerProduct(Grad(U),Grad(V))).Compile(true_compile,wait=compile_wait)
     else:
-        form1 = diff * InnerProduct(grad(U),grad(V))
+        form1 = diff * InnerProduct(Grad(U),Grad(V))
     ints.append(SymbolicBFI ( form1 ))
     if compile:
-        form2 = (diff * (- InnerProduct(avg(grad(U).trans,grad(U.Other()).trans)*n,V-V.Other())
-                                     - InnerProduct(avg(grad(V).trans,grad(V.Other()).trans)*n,U-Uhat) 
+        form2 = (diff * (- InnerProduct(avg(Grad(U),Grad(U.Other()))*n,V-V.Other())
+                                     - InnerProduct(avg(Grad(V),Grad(V.Other()))*n,U-Uhat) 
                                      + gamma*order**2/h*InnerProduct(U-Uhat,V-V.Other()))).Compile(true_compile,wait=compile_wait)
     else:
-        form2 = (diff * (- InnerProduct(avg(grad(U).trans,grad(U.Other()).trans)*n,V-V.Other())
-                                     - InnerProduct(avg(grad(V).trans,grad(V.Other()).trans)*n,U-Uhat) 
+        form2 = (diff * (- InnerProduct(avg(Grad(U),Grad(U.Other()))*n,V-V.Other())
+                                     - InnerProduct(avg(Grad(V),Grad(V.Other()))*n,U-Uhat) 
                                      + gamma*order**2/h*InnerProduct(U-Uhat,V-V.Other())))
     ints.append(SymbolicBFI (form2, VOL, skeleton=True))
-    # ints.append(SymbolicBFI (diff * (- InnerProduct(grad(U).trans*n,V)
-    #                                  - InnerProduct(grad(V).trans*n,U-Uhat) 
+    # ints.append(SymbolicBFI (diff * (- InnerProduct(Grad(U).trans*n,V)
+    #                                  - InnerProduct(Grad(V).trans*n,U-Uhat) 
     #                                  + gamma*order**2/h*InnerProduct(U-Uhat,V)), BND, skeleton=True))
     for integrator in ints:
         a += integrator
