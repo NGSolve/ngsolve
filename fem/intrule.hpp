@@ -1226,7 +1226,7 @@ namespace ngfem
     }
 
 
-    const class SIMD_IntegrationRule & operator() (int fnr, const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
+    NGS_DLL_HEADER const class SIMD_IntegrationRule & operator() (int fnr, const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
 
   };
 
@@ -1432,7 +1432,7 @@ namespace ngfem
       return elpoint;
     }
 
-    class SIMD_IntegrationRule & operator() (const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
+    NGS_DLL_HEADER class SIMD_IntegrationRule & operator() (const class SIMD_IntegrationRule & irfacet, LocalHeap & lh);
 
     IntegrationRule & Inverse (const IntegrationRule & ir, LocalHeap & lh);    
     class SIMD_IntegrationRule & Inverse (const class SIMD_IntegrationRule & ir, LocalHeap & lh);

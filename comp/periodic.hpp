@@ -14,7 +14,7 @@ namespace ngcomp
 
  // A periodic wrapper class for fespaces 
 
-  class PeriodicFESpace : public FESpace
+  class NGS_DLL_HEADER PeriodicFESpace : public FESpace
   {
   protected:
     Array<int> dofmap; // mapping of dofs

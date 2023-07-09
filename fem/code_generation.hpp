@@ -14,7 +14,7 @@
 
 namespace ngfem
 {
-  extern bool code_uses_tensors;
+  NGS_DLL_HEADER extern bool code_uses_tensors;
 
   template <typename T>
   inline string ToLiteral(const T & val)
@@ -54,7 +54,7 @@ namespace ngfem
 
     string pointer;
 
-    string AddPointer(const void *p );
+    NGS_DLL_HEADER string AddPointer(const void *p );
 
     void AddLinkFlag(string flag);
 
