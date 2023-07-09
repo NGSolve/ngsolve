@@ -85,7 +85,7 @@ Whetting the Appetite
 
 .. toctree::
    :maxdepth: 1
-             
+
    unit-1.1-poisson/poisson.ipynb
    unit-1.2-coefficient/coefficientfunction.ipynb
    unit-1.3-dirichlet/dirichlet.ipynb
@@ -117,6 +117,10 @@ Whetting the Appetite
    unit-2.9-fourthorder/fourthorder.ipynb
    unit-2.10-dualbasis/dualbasis.ipynb
    unit-2.11-matrixfree/matrixfree.ipynb
+   unit-2.12-periodicity/periodicity.ipynb
+   unit-2.12-periodicity/dispersion.ipynb
+   unit-2.13-interfaces/interfaceresistivity.ipynb
+   unit-2.14-globalspaces/planewavecoupling.ipynb
 
 3. Time-dependent and non-linear problems
 ==========================================
