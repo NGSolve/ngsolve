@@ -23,6 +23,8 @@ add_library(${lib_name} SHARED
     linalg_kernels.cu dev_sparsecholesky.cu dev_blockjacobi.cu cuda_profiler.cu
 )
 
+# set_source_files_properties(cuda_linalg.cpp PROPERTIES LANGUAGE CUDA)
+
 target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --extended-lambda >)
 
 target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve)
