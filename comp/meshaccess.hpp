@@ -700,6 +700,8 @@ namespace ngcomp
 
     shared_ptr<netgen::Mesh> GetNetgenMesh () const
     { return mesh.GetMesh(); }
+
+    netgen::Ngx_Mesh & GetNetgenMeshX () { return mesh; }
       
     
     /**
