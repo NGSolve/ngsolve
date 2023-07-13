@@ -839,6 +839,12 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          py::arg("levels"), py::arg("factor")=0.125,
 	 "Geometric mesh refinement towards marked vertices and edges, uses factor for placement of new points")
 
+    .def("SplitElements_Alfeld",
+         [] (MeshAccess & ma)
+         {
+           ma.GetNetgenMeshX().SplitAlefeld();
+           ma.UpdateBuffers();
+         })
     .def("_updateBuffers", &MeshAccess::UpdateBuffers, "Update NGSolve mesh information, needs to be called if Netgen mesh changes")
     .def("SetRefinementFlag", &MeshAccess::SetRefinementFlag,
          py::arg("ei"), py::arg("refine"),
