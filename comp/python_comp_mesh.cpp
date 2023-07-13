@@ -842,7 +842,7 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
     .def("SplitElements_Alfeld",
          [] (MeshAccess & ma)
          {
-           ma.GetNetgenMeshX().SplitAlefeld();
+           ma.GetNetgenMeshX().SplitAlfeld();
            ma.UpdateBuffers();
          })
     .def("_updateBuffers", &MeshAccess::UpdateBuffers, "Update NGSolve mesh information, needs to be called if Netgen mesh changes")
