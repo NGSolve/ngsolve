@@ -24,12 +24,33 @@ __global__ void SetScalarKernel (double val, int n, double * x)
     x[i] = val;
 }
 
-void SetScalar (double val, int n, double * x)
+void SetScalar1 (double val, int n, double * x)
 {
   static Timer t("CUDA::SetScalar");
   CudaRegionTimer rt(t);
   SetScalarKernel<<<512,256>>> (val, n, x);
 } 
+
+
+template<class F> __global__
+void CUDA_forall(int n, F f)
+{
+  int tid = blockIdx.x*blockDim.x+threadIdx.x;
+  for (int i = tid; i < n; i += blockDim.x*gridDim.x)
+     f(blockIdx.x*blockDim.x+threadIdx.x);
+}
+
+void SetScalar (double val, int n, double * x)
+{
+  static Timer t("CUDA::SetScalar");
+  CudaRegionTimer rt(t);
+
+  auto lam = [val,n,x] __device__ (int tid) {
+    x[tid] = val;
+  };
+  CUDA_forall<<<512,256>>> (n, lam);
+}
+
 
 
 __global__ void SetScalarKernelNew (double val, FlatVector<Dev<double>> vec)
@@ -43,7 +64,8 @@ void SetScalar (double val, FlatVector<Dev<double>> vec)
 {
   static Timer t("CUDA::SetScalar");
   CudaRegionTimer rt(t);
-  SetScalarKernelNew<<<512,256>>> (val, vec);
+  SetScalar(val, vec.Size(), reinterpret_cast<double*>(vec.Data()));
+  // SetScalarKernelNew<<<512,256>>> (val, vec);
 } 
 
 
