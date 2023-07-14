@@ -32,7 +32,7 @@ CDEFS   = -DAdd_
 
 #Begin Optimized options
 # uncomment -fopenmp in lines below to benefit from OpenMP
-OPTF    = -O  -fPIC -DALLOW_NON_INIT # -fopenmp
+OPTF    = -fallow-argument-mismatch -O  -fPIC -DALLOW_NON_INIT # -fopenmp
 OPTL    = -O -fPIC # -fopenmp
 OPTC    = -O -fPIC # -fopenmp
 #End Optimized options
