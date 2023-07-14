@@ -20,9 +20,9 @@ configure_file(${CMAKE_CURRENT_LIST_DIR}/mumps.inc ${CMAKE_CURRENT_BINARY_DIR}/d
 ExternalProject_Add(project_mumps
   DEPENDS project_parmetis
   URL 
-  "http://graal.ens-lyon.fr/MUMPS/MUMPS_5.0.2.tar.gz"
-  "https://src.fedoraproject.org/lookaside/extras/MUMPS/MUMPS_5.0.2.tar.gz/591bcb2c205dcb0283872608cdf04927/MUMPS_5.0.2.tar.gz"
-  URL_MD5 591bcb2c205dcb0283872608cdf04927
+  "https://distfiles.macports.org/mumps/MUMPS_5.2.1.tar.gz"
+  "https://mirrors.cloud.tencent.com/macports/distfiles/mumps/MUMPS_5.2.1.tar.gz"
+  URL_MD5 a4d43b459dc46db984503fbd8526fa69
   ${SUBPROJECT_ARGS}
   DOWNLOAD_DIR ${CMAKE_CURRENT_SOURCE_DIR}/external_dependencies
   BUILD_IN_SOURCE 1
