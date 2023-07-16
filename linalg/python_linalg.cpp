@@ -1159,7 +1159,7 @@ inverse : string
              return py::cast(m->CreateBlockJacobiPrecond (blocktable, nullptr, parallel));
          }, py::arg("blocks"), py::arg("parallel")=false,
          py::arg("GS")=false)
-    .def("DeleteZeroElements", [](shared_ptr<BaseSparseMatrix> m, double tol)->shared_ptr<BaseSparseMatrix>
+    .def("DeleteZeroElements", [](shared_ptr<BaseSparseMatrix> m, double tol)
          {
            return m -> DeleteZeroElements(tol);
          })

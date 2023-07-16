@@ -120,7 +120,9 @@ namespace ngcomp
     Array<void*> precomputed_data;
     /// output of norm of matrix entries
     bool checksum;
-
+    ///
+    optional<double> delete_zero_elements;
+    
     mutable std::map<size_t, Matrix<>> precomputed;
   public:
     /// generate a bilinear-form

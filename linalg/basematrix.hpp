@@ -140,7 +140,12 @@ namespace ngla
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
     virtual INVERSETYPE  GetInverseType () const;
     virtual void SetInverseFlags (const Flags & flags) { ; }
-
+    virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const
+    {
+      throw Exception (string("DeleteZeroElements not overloaded, type =")+typeid(*this).name());
+    }
+    
+    
     virtual void DoArchive (Archive & ar);
 
     
