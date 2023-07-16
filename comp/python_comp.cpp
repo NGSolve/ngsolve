@@ -2579,7 +2579,9 @@ space : ngsolve.FESpace
                      py::arg("nonlinear_matrix_free_bdb") = "bool = False\n"
                      "  store BDB factors seperately for nonlinear operators",
                      py::arg("check_unused") = "bool = True\n"
-		     "  If set prints warnings if not UNUSED_DOFS are not used."
+		     "  If set prints warnings if not UNUSED_DOFS are not used.",
+                     py::arg("delete_zero_elements") = "double = unset\n"
+                     "  remove all matrix entries smaller than this value from sparse matrix"
                      );
                 })
 

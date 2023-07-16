@@ -65,10 +65,7 @@ namespace ngla
   class ParallelMatrix : public BaseMatrix
   {
     shared_ptr<BaseMatrix> mat;
-    // const ParallelDofs & pardofs;
-
     shared_ptr<ParallelDofs> row_paralleldofs, col_paralleldofs;
-
     PARALLEL_OP op;
     
   public:
@@ -122,6 +119,13 @@ namespace ngla
     virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override;
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const override;
     virtual INVERSETYPE GetInverseType () const override;
+
+    virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const override
+    {
+      return make_shared<ParallelMatrix> (mat->DeleteZeroElements(tol),
+                                          row_paralleldofs, col_paralleldofs, op);
+    }
+    
   };
 
 

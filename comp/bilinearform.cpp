@@ -131,6 +131,8 @@ namespace ngcomp
     nonlinear_matrix_free_bdb = flags.GetDefineFlag("nonlinear_matrix_free_bdb");    
     if (spd) symmetric = true;
     SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());
+    if (flags.NumFlagDefined("delete_zero_elements"))
+      delete_zero_elements = flags.GetNumFlag("delete_zero_elements", 0.0);
   }
 
 
@@ -3041,6 +3043,9 @@ namespace ngcomp
                       AddElementMatrix (dnums, dnums, elmat, ElementId(BND,i), false, clh);
                     }
               }
+
+            if (delete_zero_elements)
+              mats.Last() = mats.Last() -> DeleteZeroElements(delete_zero_elements.value_or(0));
             
             for (auto pre : preconditioners)
               pre -> FinalizeLevel(&GetMatrix());

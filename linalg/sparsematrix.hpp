@@ -285,7 +285,7 @@ namespace ngla
     virtual size_t NZE () const override { return nze; }
     virtual tuple<int,int> EntrySizes() const = 0;
 
-    virtual shared_ptr<BaseSparseMatrix> DeleteZeroElements(double tol) const
+    virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const override
     {
       throw Exception ("DeleteZeroElements not overloaded");
     }
@@ -629,7 +629,7 @@ namespace ngla
           { return make_shared<SparseMatrix<decltype(Trans(TM())), TV_COL, TV_ROW>> (elsperrow, width); } );
     }
 
-    virtual shared_ptr<BaseSparseMatrix> DeleteZeroElements(double tol) const override;
+    virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const override;
     
     ///
     inline TVY RowTimesVector (int row, const FlatVector<TVX> vec) const

@@ -441,7 +441,7 @@ namespace ngla
   }
 
   template <class TM, class TV_ROW, class TV_COL>
-  shared_ptr<BaseSparseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
+  shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   DeleteZeroElements(double tol) const
   {
     static Timer t("SparseMatrix::DeleteZeroElements"); RegionTimer reg(t);
