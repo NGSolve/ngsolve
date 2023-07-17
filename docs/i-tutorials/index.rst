@@ -163,7 +163,9 @@ Whetting the Appetite
    unit-5a.2-pardofs/pardofs.ipynb 
    unit-5a.3-petsc/petsc.ipynb 
    unit-5a.3-petsc/PETSc_interface.ipynb
+   More on PETSc coupling is available by Stefano Zampini and Umberto Zerbinati at https://ngspetsc.readthedocs.io/en/latest/ngsPETSc.html 
 
+   
 CUDA Device support:
 
 .. toctree::
