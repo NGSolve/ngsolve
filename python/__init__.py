@@ -65,7 +65,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
 from .solve import BVP, CalcFlux, Draw, DrawFlux, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTrace, \
-    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, TimeFunction, Normalize, printmaster
+    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, PrivateSpace, TimeFunction, Normalize, printmaster
 from . import solvers
 
 
