@@ -610,11 +610,12 @@ int NGS_LoadPy (ClientData clientData,
               // set sys.argv
               s << "import sys" << endl;
               s << "sys.argv = [";
-              for(auto i : Range(2, h_argc))
-              {
-                if(i>0) s << ',' << endl;
-                s << '"' << h_argv[i] << '"';
-              }
+              if(h_argc > 1)
+                for(auto i : Range(2, h_argc))
+                  {
+                    if(i>0) s << ',' << endl;
+                    s << '"' << h_argv[i] << '"';
+                  }
               s << ']' << endl;
               pyenv.exec(s.str());
 
