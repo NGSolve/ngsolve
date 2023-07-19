@@ -225,5 +225,44 @@ namespace ngfem
 
     // cout << "interpol, coefs = " << coefs << endl;    
   }
+
+
+  SkewMatrixFiniteElement :: SkewMatrixFiniteElement (const FiniteElement & ascalfe, int avdim)
+    : vdim(avdim), 
+      dim(avdim*(avdim-1)/2),
+      scalfe(ascalfe)
+  {
+    ndof = dim*scalfe.GetNDof();
+    order = scalfe.Order();
+  } 
+
+
+  void SkewMatrixFiniteElement :: Print (ostream & ost) const
+  {
+    ost << "SkewMatrixFiniteElement" << endl;
+    scalfe.Print (ost);
+  }
+
+
+  void SkewMatrixFiniteElement :: Interpolate (const ElementTransformation & trafo, 
+                                               const CoefficientFunction & func, SliceMatrix<> coefs,
+                                               LocalHeap & lh) const
+  {
+    size_t scalndof = scalfe.GetNDof();
+    size_t fulldim = vdim*vdim;
+    STACK_ARRAY(double, mem, ndof*fulldim); 
+    FlatMatrix temp(scalndof, fulldim, &mem[0]);
+    scalfe.Interpolate (trafo, func, temp, lh);
+    // cout << "interpol, temp = " << temp << endl;
+
+    // now we need to transpose, not sure if we stay with that
+    for (int i = 0, ii = 0; i < vdim; i++)
+      for (int j = 0; j < i; j++, ii++)
+        for (int k = 0; k < scalndof; k++)
+          coefs(ii*scalndof+k, 0) = 0.5 * (temp(k,i*vdim+j)-temp(k,j*vdim+i));
+
+    // cout << "interpol, coefs = " << coefs << endl;    
+  }
 }
+
 

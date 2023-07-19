@@ -1332,6 +1332,7 @@ ANY                  1 1 1 1 | 15
   {
     bool symmetric;
     bool deviatoric;
+    bool skewsymmetric;
     int vdim;
   public:
     MatrixFESpace (shared_ptr<FESpace> space, int avdim, const Flags & flags,

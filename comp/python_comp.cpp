@@ -1402,11 +1402,12 @@ component : int
 
   py::class_<MatrixFESpace, shared_ptr<MatrixFESpace>, CompoundFESpace>
     (m,"MatrixValued")
-    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim, bool symmetric, bool deviatoric,
+    .def(py::init([] (shared_ptr<FESpace> space, optional<int> optdim, bool symmetric, bool deviatoric, bool skewsymmetric,
             bool autoupdate) {
           Flags flags;
           if (symmetric) flags.SetFlag("symmetric");
           if (deviatoric) flags.SetFlag("deviatoric");
+          if (skewsymmetric) flags.SetFlag("skewsymmetric");          
           flags.SetFlag("autoupdate", autoupdate || space->DoesAutoUpdate());
           int sdim = optdim.value_or (space->GetSpatialDimension());
           auto matspace = make_shared<MatrixFESpace> (space, sdim, flags);
@@ -1417,7 +1418,8 @@ component : int
             matspace->SetDoSubspaceUpdate(true);
           connect_auto_update(matspace.get());
           return matspace;
-        }), py::arg("space"), py::arg("dim")=nullopt, py::arg("symmetric")=false, py::arg("deviatoric")=false,
+        }), py::arg("space"), py::arg("dim")=nullopt, py::arg("symmetric")=false,
+         py::arg("deviatoric")=false, py::arg("skewsymmetric")=false,
         py::arg("autoupdate")=false)
     ;
   

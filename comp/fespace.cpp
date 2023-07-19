@@ -3839,11 +3839,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     order = space->GetOrder();    
     symmetric = flags.GetDefineFlag("symmetric");
     deviatoric = flags.GetDefineFlag("deviatoric");
-
-    if (deviatoric && !symmetric) throw Exception ("non-symmetric and deviatoric not supported");
+    skewsymmetric = flags.GetDefineFlag("skewsymmetric");
     
+    if (deviatoric && !symmetric) throw Exception ("non-symmetric and deviatoric not supported");
+    if (symmetric && skewsymmetric) throw Exception ("symmetric and skewsymmetric - not much would remain"); 
     int dim = symmetric ? vdim*(vdim+1)/2 : sqr(vdim);
-    if (deviatoric) dim--;
+    if (skewsymmetric) dim = vdim*(vdim-1)/2;
+    
+    if (deviatoric && !skewsymmetric) dim--;
     for (int i = 0; i < dim; i++)
       AddSpace (space);
     
@@ -3858,6 +3861,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 else
                   evaluator[vb] = make_shared<SymMatrixDifferentialOperator> (eval, vdim);
               }
+            else if (skewsymmetric)
+              evaluator[vb] = make_shared<SkewMatrixDifferentialOperator> (eval, vdim);
             else
               evaluator[vb] = make_shared<MatrixDifferentialOperator> (eval, vdim);
           }
@@ -3877,7 +3882,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     else
       type = "Matrix"+(*this)[0]->type;
     */
-    type = string((symmetric) ? "Sym" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->type;
+    type = string((symmetric) ? "Sym" : "") + string((skewsymmetric) ? "Skew" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->type;
 
     for (VorB vb : {VOL, BND, BBND, BBBND})
       definedon[vb] = space->DefinedOn(vb);
@@ -3886,17 +3891,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
   string MatrixFESpace :: GetClassName () const
   {
     // return ( symmetric ? "SymMatrix" : "Matrix" ) + (*this)[0]->GetClassName();
-    return string(symmetric ? "Sym" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->GetClassName();
+    return string(symmetric ? "Sym" : "") + string(skewsymmetric ? "Skew" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->GetClassName();
   }
 
 
   FiniteElement & MatrixFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
     const FiniteElement &fe0 = spaces[0]->GetFE(ei, alloc);
-    if (!symmetric)
-      return *new (alloc) VectorFiniteElement(fe0, static_cast<int>(spaces.Size()));
-    else
+    if (symmetric)
       return *new (alloc) SymMatrixFiniteElement(fe0, vdim, deviatoric);
+    else if (skewsymmetric)
+      return *new (alloc) SkewMatrixFiniteElement(fe0, vdim);
+    else
+      return *new (alloc) VectorFiniteElement(fe0, static_cast<int>(spaces.Size()));
   }
 
 

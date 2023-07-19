@@ -942,6 +942,62 @@ namespace ngfem
     */
   };
 
+  class SkewMatrixDifferentialOperator : public DifferentialOperator
+  {
+  protected:
+    shared_ptr<DifferentialOperator> diffop;
+    int vdim;
+  public:
+    NGS_DLL_HEADER SkewMatrixDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
+                                                  int avdim);
+
+    NGS_DLL_HEADER virtual ~SkewMatrixDifferentialOperator ();
+    
+    virtual string Name() const override { return diffop->Name(); }
+    shared_ptr<DifferentialOperator> BaseDiffOp() const { return diffop; }
+    virtual bool SupportsVB (VorB checkvb) const override { return diffop->SupportsVB(checkvb); }
+    
+    virtual IntRange UsedDofs(const FiniteElement & fel) const override
+    { return IntRange(0, fel.GetNDof()); }
+
+    shared_ptr<DifferentialOperator> GetTrace() const override
+    {
+      if (auto diffoptrace = diffop->GetTrace())      
+        return make_shared<SkewMatrixDifferentialOperator> (diffoptrace, vdim);
+      else
+        return nullptr;
+    }
+    
+    NGS_DLL_HEADER virtual void
+    CalcMatrix (const FiniteElement & fel,
+		const BaseMappedIntegrationPoint & mip,
+		SliceMatrix<double,ColMajor> mat, 
+		LocalHeap & lh) const override;    
+
+    NGS_DLL_HEADER virtual void
+    CalcMatrixVS (const FiniteElement & fel,
+                  const BaseMappedIntegrationPoint & mip,
+                  SliceMatrix<double,ColMajor> mat, 
+                  LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER virtual void 
+    CalcMatrix (const FiniteElement & bfel,
+                const SIMD_BaseMappedIntegrationRule & mir,
+                BareSliceMatrix<SIMD<double>> bmat) const override;
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & bfel,
+	   const SIMD_BaseMappedIntegrationRule & bmir,
+	   BareSliceVector<double> x, 
+	   BareSliceMatrix<SIMD<double>> flux) const override;
+
+    NGS_DLL_HEADER virtual void
+    AddTrans (const FiniteElement & bfel,
+              const SIMD_BaseMappedIntegrationRule & bmir,
+              BareSliceMatrix<SIMD<double>> flux,
+              BareSliceVector<double> x) const override;
+  };
+
   
   
 

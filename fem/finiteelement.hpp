@@ -217,6 +217,35 @@ namespace ngfem
   };
 
 
+  class NGS_DLL_HEADER SkewMatrixFiniteElement : public FiniteElement
+  {
+  protected:
+    int vdim;
+    int dim;
+    const FiniteElement & scalfe;
+  public:
+    /// initialize with pointers to components, copy pointers
+    SkewMatrixFiniteElement (const FiniteElement & ascalfe, int avdim);
+
+    virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
+    /// number of components
+    int GetNComponents() const { return dim; }
+
+    /// select i-th component
+    // const FiniteElement & operator[] (int i) const { return *fea[i]; }
+    const FiniteElement & ScalFE() const { return scalfe; }
+
+    /// the name of the element family
+    virtual string ClassName() const override { return "SkewMatrixFiniteElement"; }
+
+    virtual void Print (ostream & ost) const override;
+
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const override; 
+  };
+
+
   
   /**
      a placeholder finite element
