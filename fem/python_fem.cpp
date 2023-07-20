@@ -153,6 +153,18 @@ struct GenericBSpline {
   void DoArchive(Archive& ar) { ar & sp; }
 };
 
+struct GenericBSpline2D {
+  shared_ptr<BSpline2D> sp;
+  GenericBSpline2D( const BSpline2D &asp ) : sp(make_shared<BSpline2D>(asp)) {;}
+  GenericBSpline2D( shared_ptr<BSpline2D> asp ) : sp(asp) {;}
+
+  template <typename T1, typename T2> T1 operator() (T1 y, T2 x) const { return (*sp)(y,x);  }
+  SIMD<Complex> operator() (SIMD<Complex> y,SIMD<Complex> x) const { throw Exception("BSpline2D not available for SIMD<complex>"); }
+  Complex operator() (Complex y,Complex x) const { throw Exception("BSpline2D not available for complex"); }
+  static string Name() { return "bspline2d"; }
+  void DoArchive(Archive& ar) {}
+};
+
 template <> void
 cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
 {
@@ -1784,6 +1796,46 @@ vals : list
          [](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }, "Integrate the BSpline")
     .def("Differentiate", 
          [](const BSpline & sp) { return make_shared<BSpline>(sp.Differentiate()); }, "Differentiate the BSpline")
+    ;
+
+  py::class_<BSpline2D, shared_ptr<BSpline2D> > (m, "BSpline2D",R"raw(
+Bilinear intepolation of data given on a regular grid
+
+)raw")
+    .def(py::init
+         ([](py::list x, py::list y, py::list v, int order, bool extrapolate)
+          {
+            return make_shared<BSpline2D> (
+                                         makeCArray<double> (x),
+                                         makeCArray<double> (y),
+                                         makeCArray<double> (v),
+                                         order,
+                                         extrapolate);
+          }), py::arg("x"), py::arg("y"), py::arg("vals"), py::arg("order")=1, py::arg("extrapolate")=true,
+        R"raw(
+x : list, y: list
+  sorted list of grid coordinates
+
+vals : list
+  list of values at (x0,y0), (x0,y1), ...
+
+order: int
+  interpolation order (only order=1 is supported)
+
+extrapolate: bool = True
+  extrapolate values if outside given x/y coordinates (instead of throwing an exception)
+)raw")
+    .def("__str__", &ToString<BSpline2D>)
+    .def("__call__", [] (shared_ptr<BSpline2D> self, double x, double y)
+          {
+            return self->Evaluate(x, y);
+          },
+      py::arg("x"), py::arg("y"),
+      py::return_value_policy::move)
+    .def("__call__", [](shared_ptr<BSpline2D> sp, shared_ptr<CF> cx, shared_ptr<CF> cy)
+          {
+            return BinaryOpCF (cx, cy, GenericBSpline2D(sp), "BSpline2D");
+          }, py::arg("cx"), py::arg("cy"))
     ;
 
   m.def ("LoggingCF", LoggingCF, py::arg("cf"), py::arg("logfile")="stdout");
