@@ -40,15 +40,24 @@ void CUDA_forall(int n, F f)
      f(blockIdx.x*blockDim.x+threadIdx.x);
 }
 
+#define DEVICE_LAMBDA __device__
+
+template <class F>
+inline void DeviceParallelFor (int n, F f)
+{
+  CUDA_forall<<<512,256>>> (n, lam);
+}
+
 void SetScalar (double val, int n, double * x)
 {
   static Timer t("CUDA::SetScalar");
   CudaRegionTimer rt(t);
 
-  auto lam = [val,n,x] __device__ (int tid) {
+  auto lam = [val,n,x] DEVICE_LAMBDA (int tid) {
     x[tid] = val;
   };
-  CUDA_forall<<<512,256>>> (n, lam);
+  // CUDA_forall<<<512,256>>> (n, lam);
+  DeviceParallelFor (n, lam);
 }
 
 
