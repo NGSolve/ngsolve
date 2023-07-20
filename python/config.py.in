@@ -1,8 +1,0 @@
-version = "@NGSOLVE_VERSION@"
-
-install_dir = '@CMAKE_INSTALL_PREFIX@'
-install_dir_res = '@NGSOLVE_INSTALL_DIR_RES@'
-install_dir_python = '@NGSOLVE_INSTALL_DIR_PYTHON@'
-install_dir_bin = '@NGSOLVE_INSTALL_DIR_BIN@'
-install_dir_include = '@NGSOLVE_INSTALL_DIR_INCLUDE@'
-install_dir_cmake = '@NGSOLVE_INSTALL_DIR_CMAKE@'
