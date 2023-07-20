@@ -362,7 +362,110 @@ namespace ngstd
         << "c = " << sp.c << endl;
     return ost;
   }
-  
+
+  std::tuple<int,int,bool> BSpline2D :: Search(double x, double y) const
+  {
+    int ix=0, iy=0;
+    if(!extrapolate)
+    {
+      if(x<px[0] || x>px.Last())
+        throw Exception("x out of range: " + ToString(x) + "\t[" + ToString(px[0]) + "," + ToString(px.Last())+"]");
+
+      if(y<py[0] || y>py.Last())
+        throw Exception("y out of range: " + ToString(y) + "\t[" + ToString(py[0]) + "," + ToString(py.Last())+"]");
+    }
+
+    if(x<px[0]) ix = -1;
+    else if(x>px.Last()) ix = px.Size();
+    else
+      for(auto i : Range(px.Size()-1))
+        if(px[i]<=x && x<=px[i+1]) {
+          ix = i;
+          break;
+        }
+
+    if(y<py[0]) iy = -1;
+    else if(y>py.Last()) iy = py.Size();
+    else
+      for(auto i : Range(py.Size()-1))
+        if(py[i]<=y && y<=py[i+1]) {
+          iy = i;
+          break;
+        }
+
+    bool outside = min(ix,iy)==-1 || iy==py.Size() || ix==px.Size();
+    return {ix, iy, outside};
+  }
+
+  double BSpline2D :: Evaluate (double x, double y) const
+  {
+    auto [ix, iy, outside] = Search(x,y);
+    if(outside)
+    {
+      auto xbnd = min(max(x, px[0]), px.Last());
+      auto ybnd = min(max(y, py[0]), py.Last());
+      auto dx = AutoDiff<1,double>(xbnd, x-xbnd);
+      auto dy = AutoDiff<1,double>(ybnd, y-ybnd);
+      auto dval = (*this)(dx, dy);
+      return dval.Value()+dval.DValue(0);
+    }
+    else
+    {
+      return Interpolate(ix, iy, x, y);
+    }
+  }
+
+  SIMD<double> BSpline2D :: Evaluate(SIMD<double> x, SIMD<double> y) const
+  {
+    SIMD<double> res;
+    for(auto i : Range(res.Size()))
+      reinterpret_cast<double*>(&res)[i] = Evaluate(x[i], y[i]);
+    return res;
+  }
+
+  AutoDiff<1,double> BSpline2D :: operator() (AutoDiff<1,double> x, AutoDiff<1,double> y) const
+  {
+    auto [ix, iy, outside] = Search(x.Value(),y.Value());
+
+    if(outside)
+    {
+      throw Exception("BSpline2D::operator()(AutoDiff<1,double>) out of range");
+    }
+
+    return Interpolate(ix, iy, x, y);
+  }
+
+  AutoDiffDiff<1,double> BSpline2D :: operator() (AutoDiffDiff<1,double> x, AutoDiffDiff<1,double> y) const
+  {
+    throw Exception("BSpline2D::AutoDiffDiff eval not implemented");
+  }
+
+  AutoDiff<1,SIMD<double>> BSpline2D :: operator() (AutoDiff<1,SIMD<double>> x, AutoDiff<1,SIMD<double>> y) const
+  {
+    throw ExceptionNOSIMD();
+  }
+
+  AutoDiffDiff<1,SIMD<double>> BSpline2D :: operator() (AutoDiffDiff<1,SIMD<double>> x, AutoDiffDiff<1,SIMD<double>> y) const
+  {
+    throw ExceptionNOSIMD();
+  }
+
+
+  SIMD<double> BSpline2D :: operator() (SIMD<double> x, SIMD<double> y) const
+  {
+    return Evaluate(x,y);
+  }
+
+
+  ostream & operator<< (ostream & ost, const BSpline2D & sp)
+  {
+    ost << "bspline2d" << endl
+      << "x = " << sp.px << endl
+      << "y = " << sp.py << endl
+      << "v = " << sp.v << endl;
+    return ost;
+  }
+
 }
 
 
@@ -384,3 +487,4 @@ int main ()
     }
 }
 */
+
