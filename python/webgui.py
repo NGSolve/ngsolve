@@ -2,7 +2,7 @@ import math
 import numpy as np
 import ngsolve as ngs
 
-from netgen.webgui import Draw, register_draw_type
+from netgen.webgui import Draw, register_draw_type, WebGLScene
 from webgui_jupyter_widgets import encodeData
 
 
