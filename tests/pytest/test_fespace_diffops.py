@@ -6,7 +6,7 @@ from ngsolve.meshes import MakeStructured2DMesh,MakeStructured3DMesh, MakeStruct
 from space_utils import *
 
 def Test(mesh, space, order, idop=lambda cf : cf, trace=None, ttrace=None, diffops=None, vb=VOL, set_dual=[False], addorder=0, sym=False, dev=False, facet=False, **kwargs):
-    fes = space(mesh, order=order+addorder, dim=kwargs.get("dim", 1))
+    fes = space(mesh, order=order+addorder, dim=kwargs.get("dim", 1), RT=kwargs.get("RT", False), type1=kwargs.get("type1", False))
     gf = GridFunction(fes)
 
     cf = GetDiffOp("id", order, dim=mesh.dim, dims=gf.dims, sym=sym, dev=dev, vb=vb)
@@ -93,7 +93,9 @@ def test_fespaces_2d():
     Test(mesh=mesh, space=L2, order=2, diffops=["Grad","hesse"], vb=VOL, set_dual=[False])
     Test(mesh=mesh, space=VectorL2, order=2, diffops=["Grad"], vb=VOL, set_dual=[False])
     Test(mesh=mesh, space=HCurl, order=2, trace = lambda cf : Ptau_2d*cf, diffops=["curl","Grad"], vb=VOL, set_dual=[True,False])
+    Test(mesh=mesh, space=HCurl, order=2, trace = lambda cf : Ptau_2d*cf, diffops=["curl","Grad"], vb=VOL, set_dual=[True,False], addorder=1, type1=True)
     Test(mesh=mesh, space=HDiv, order=2, trace = lambda cf : Pn_2d*cf, diffops=["div","Grad"], vb=VOL, set_dual=[True,False])
+    Test(mesh=mesh, space=HDiv, order=2, trace = lambda cf : Pn_2d*cf, diffops=["div","Grad"], vb=VOL, set_dual=[True,False], RT=True)
     Test(mesh=mesh, space=HDivDiv, order=2, trace = lambda cf : Pn_2d*cf*Pn_2d, diffops=["div"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_2d*cf*Ptau_2d, diffops=["curl","inc", "christoffel","christoffel2"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlDiv, order=2, trace = lambda cf : Ptau_2d*cf*Pn_2d, diffops=["div","curl"], vb=VOL, set_dual=[False], dev=True)
@@ -136,7 +138,9 @@ def test_fespaces_3d():
     Test(mesh=mesh, space=L2, order=2, diffops=["Grad","hesse"], vb=VOL, set_dual=[False])
     Test(mesh=mesh, space=VectorL2, order=2, diffops=["Grad"], vb=VOL, set_dual=[False])
     Test(mesh=mesh, space=HCurl, order=2, trace = lambda cf : Ptau_3d*cf, diffops=["curl","Grad"], vb=VOL, set_dual=[True,False])
+    Test(mesh=mesh, space=HCurl, order=2, trace = lambda cf : Ptau_3d*cf, diffops=["curl","Grad"], vb=VOL, set_dual=[True,False], addorder=1,type1=True)
     Test(mesh=mesh, space=HDiv, order=2, trace = lambda cf : Pn_3d*cf, diffops=["div","Grad"], vb=VOL, set_dual=[True,False])
+    Test(mesh=mesh, space=HDiv, order=2, trace = lambda cf : Pn_3d*cf, diffops=["div","Grad"], vb=VOL, set_dual=[True,False],RT=True)
     Test(mesh=mesh, space=HDivDiv, order=2, trace = lambda cf : Pn_3d*cf*Pn_3d, diffops=["div"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlCurl, order=2, trace = lambda cf : Ptau_3d*cf*Ptau_3d, diffops=["curl","inc","christoffel","christoffel2"], vb=VOL, set_dual=[False], sym=True)
     Test(mesh=mesh, space=HCurlDiv, order=2, trace = lambda cf : Ptau_3d*cf*Pn_3d, diffops=["div"], vb=VOL, set_dual=[False], dev=True)

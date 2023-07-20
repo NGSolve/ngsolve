@@ -222,8 +222,6 @@ template <typename MIP, typename TFA>
                 Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
                 
 		Vec<2,T> nvref = Vec<2,T>(tauref[1],-tauref[0]);
-		// Vec<2,T> nv = Trans(mip.GetJacobianInverse())*nvref; // original version - broken with curved elements
-		// Vec<2,T> nv = L2Norm(tauref) / L2Norm(mip.GetJacobian()*tauref) * Cof(mip.GetJacobian()) * nvref; // new version              
                 auto nv = L2Norm(nvref) / L2Norm(Trans(mip.GetJacobianInverse())*nvref) * Trans(mip.GetJacobianInverse())*nvref; // latest version, see TET for derivation
                 
 		LegendrePolynomial::Eval
@@ -247,17 +245,23 @@ template <typename MIP, typename TFA>
       }
     if (ip.VB() == VOL)
       {
-	DubinerBasis::Eval(order_inner[0]-2, x, y,
+	DubinerBasis::Eval(order_inner[0]-2+RT, x, y,
                            SBLambda([&] (size_t nr, auto val)
                                     {
                                       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val, 0);
-                                      shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val*y, -val*x);
+				      if(RT)
+					shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (0,val);
+				      else
+					shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T> (val*y, -val*x);
                                     }));
-	LegendrePolynomial::Eval(order_inner[0]-2,y,
+
+	if(!RT)
+	  LegendrePolynomial::Eval(order_inner[0]-2,y,
 				 SBLambda([&] (size_t nr, auto val)
 					  {
 					    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<2,T>(0,val);
 					  }));
+
       }
   }
 
@@ -547,8 +551,7 @@ template <typename MIP, typename TFA>
 		Vec<3,T> tauref2 = pnts[fav[2]] - pnts[fav[0]];
 		Vec<3,T> nvref   = Cross(tauref1,tauref2);
                 
-		//Vec<3,T> nv = Trans(mip.GetJacobianInverse())*nvref; // old version - broken with curved elements
-		//Vec<3,T> nv = L2Norm(nvref) / L2Norm(Cross(mip.GetJacobian()*tauref1, mip.GetJacobian()*tauref2)) * Cof(mip.GetJacobian()) * nvref; // new version
+
 
                 // Rewrite new version: use often that Cof(F) = Det(F)*F^{-T}
                 // Cross(F*tauref1, F*tauref2): Cross(F*tauref1,F*tauref2)*v = Det(F*tauref1,F*tauref2,v) = Det(F)*Det(tauref1,tauref2,F^{-1}v) = Det(F)F^{-T}Cross(tauref1,tauref2)*v = Cof(F)*nvref*v
@@ -580,50 +583,42 @@ template <typename MIP, typename TFA>
 
     if (ip.VB() == VOL && order > 1)
       {
-	LegendrePolynomial leg;
-	JacobiPolynomialAlpha jac1(1);    
-	leg.EvalScaled1Assign 
-	  (order_inner[0]-2, lam[2]-lam[3], lam[2]+lam[3],
-	   SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
-		     {
-		       // JacobiPolynomialAlpha jac(2*k+1);
-		       JacobiPolynomialAlpha jac2(2*k+2);
-		       
-		       jac1.EvalScaledMult1Assign
-			 (order-2-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
-			  SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
-				    {
-				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
-				      jac2.EvalMult(order-2 - k - j, 2 * lam[0] - 1, polsy, 
-						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
-							     {
-							       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(val,0,0),Vec<3,T>(x,y,z));
-							       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,val,0),Vec<3,T>(x,y,z));
-							       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(val, 0, 0);
-							       
-							     }));
-				      jac2.IncAlpha2();
-				    }));
-		       jac1.IncAlpha2();
-		     }));
-
-	DubinerBasis::Eval(order_inner[0]-2, x, y,
+	DubinerBasis3D::Eval (order-2, lam[0], lam[1], lam[2],
+			      SBLambda([&](size_t j, T val) LAMBDA_INLINE
+			      {
+				if(RT)
+				  {
+				    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(val,0,0);
+				    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,val,0);
+				    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,0,val);
+				  }
+				else
+				  {
+				    shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(val,0,0),Vec<3,T>(x,y,z));
+				    shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,val,0),Vec<3,T>(x,y,z));
+				    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(val, 0, 0);
+				  }
+			      }));
+	if (!RT)
+	  {
+	    DubinerBasis::Eval(order_inner[0]-2, x, y,
                            SBLambda([&] (size_t nr, auto val)
                                     {
                                       shape[ii++] = Trans(mip.GetJacobianInverse())*Cross(Vec<3,T>(0,0,val),Vec<3,T>(x,y,z));
                                     }));
         
-	DubinerBasis::Eval(order_inner[0]-2, y, z,
+	    DubinerBasis::Eval(order_inner[0]-2, y, z,
                            SBLambda([&] (size_t nr, auto val)
                                     {
                                       shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,val,0);
                                     }));
         
-	LegendrePolynomial::Eval(order_inner[0]-2,z,
+	    LegendrePolynomial::Eval(order_inner[0]-2,z,
 				 SBLambda([&] (size_t nr, auto val)
 					  {
 					    shape[ii++] = Trans(mip.GetJacobianInverse())*Vec<3,T>(0,0,val);
 					  }));
+	  }
       }
   }
 

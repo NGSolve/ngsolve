@@ -1432,33 +1432,7 @@ namespace ngfem
         for (int i = 0; i < 3; i++)
           ii += order_edge[i];
 
-        /*// now come the inner ...
-        Vec<2,AutoDiff<2,T>> adp(mip);
-        
-        //AutoDiff<2> adx(x,0);
-        //AutoDiff<2> ady(y,1);
-        
-        AutoDiff<2,T> adx = adp(0);
-        AutoDiff<2,T> ady = adp(1);
-        
-        AutoDiff<2,T> l2 = 1-adx-ady;
 
-        ArrayMem<AutoDiff<2,T>, 20> adpol1(order+1), adpol2(order+1);
-        LegendrePolynomial::EvalScaled(order, adx-l2, adx+l2, adpol1);
-        LegendrePolynomial::Eval(order, 2*ady-1, adpol2);
-        int p = order_face[0][0];
-        for (int i = 0; i < p; i++)
-          for (int j = 0; j < p-i; j++)
-            if (i > 0 || j > 0)
-              shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (Du (adpol1[i]*adpol2[j])));
-        for (int i = 1; i <= p; i++)
-          for (int j = 1; j <= p-i; j++)
-            shape[ii++] = Vec<2,T> (THDiv2Shape<2,T> (uDv_minus_vDu (adpol1[i], adpol2[j])));
-	
-	*/
-	
-	// auto xphys = mip.GetPoint()(0);
-        // auto yphys = mip.GetPoint()(1);
         auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
         DubinerBasis::Eval(order-2, x, y,
                            SBLambda([&] (size_t nr, auto val)
@@ -1621,18 +1595,23 @@ namespace ngfem
 		 
 		 DubinerBasis::Eval(order-2, xi, eta,
                                     SBLambda([&] (size_t nr, auto val)
-                                             {
+                                             {						 
                                                shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val, 0));
-                                               shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
+					       if (type1)
+						 shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T>(0, val));
+					       else
+						 shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T> (val*xi, val*eta));		
                                              }));
-		 LegendrePolynomial::Eval(order-2,xi,
+		 if (!type1)
+		   LegendrePolynomial::Eval(order-2,xi,
 					  SBLambda([&] (size_t nr, auto val)
 						   {
 						     shape[ii++] = 1/(det*mip.GetMeasure())*mip.GetJacobian()*(F*Vec<2,T>(0, val));
 						   }));
 	       }
 	     else
-	      ii += (p+1)*(p-1);
+	       ii += (p+!type1)*(p-1);
+	     
 	  }
       }
     else
@@ -1640,7 +1619,7 @@ namespace ngfem
         for (int i = 0; i < 4; i++)
 	  {
 	    int p = order_face[i][0];
-	    ii += (p+1)*(p-1);
+	    ii += (p+!type1)*(p-1);
 	  }
       }
     if (ip.VB() == VOL)
@@ -1648,38 +1627,25 @@ namespace ngfem
 	// auto xphys = mip.GetPoint()(0);
         // auto yphys = mip.GetPoint()(1);
 	// auto zphys = mip.GetPoint()(2);
+
+	auto trafo = 1/mip.GetMeasure()*mip.GetJacobian();
+
+	DubinerBasis3D::Eval (order-3, lam[0], lam[1], lam[2],
+			      SBLambda([&](size_t j, T val) LAMBDA_INLINE
+	 						     {
+							       if (type1)
+								 shape[ii++] = trafo*Vec<3,T> (0, 0, val);
+							       else
+								 shape[ii++] = trafo*Vec<3,T>(val*x, val*y, val*z);
+	 						       shape[ii++] = trafo*Vec<3,T>(val, 0, 0);
+	 						       shape[ii++] = trafo*Vec<3,T>(0, val, 0);
+	 						     }));
 	
-	LegendrePolynomial leg;
-	JacobiPolynomialAlpha jac1(1);    
-	leg.EvalScaled1Assign 
-	  (order-3, lam[2]-lam[3], lam[2]+lam[3],
-	   SBLambda ([&](size_t k, T polz) LAMBDA_INLINE
-		     {
-		       // JacobiPolynomialAlpha jac(2*k+1);
-		       JacobiPolynomialAlpha jac2(2*k+2);
-		       
-		       jac1.EvalScaledMult1Assign
-			 (order-3-k, lam[1]-lam[2]-lam[3], 1-lam[0], polz, 
-			  SBLambda ([&] (size_t j, T polsy) LAMBDA_INLINE
-				    {
-				      // JacobiPolynomialAlpha jac(2*(j+k)+2);
-				      jac2.EvalMult(order-3 - k - j, 2 * lam[0] - 1, polsy, 
-						    SBLambda([&](size_t j, T val) LAMBDA_INLINE
-							     {
-							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val*x, val*y, val*z);
-							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(val, 0, 0);
-							       shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T>(0, val, 0);
-							     }));
-				      jac2.IncAlpha2();
-				    }));
-		       jac1.IncAlpha2();
-		     }));
-
-
-        DubinerBasis::Eval(order-3, x, y,
+	if (!type1)
+	  DubinerBasis::Eval(order-3, x, y,
                            SBLambda([&] (size_t nr, auto val)
                                     {
-                                      shape[ii++] = 1/mip.GetMeasure()*mip.GetJacobian()*Vec<3,T> (0, 0, val);
+                                      shape[ii++] = trafo*Vec<3,T> (0, 0, val);
                                     }));
       }
   }
