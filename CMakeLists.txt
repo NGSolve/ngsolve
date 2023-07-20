@@ -296,11 +296,6 @@ if (NETGEN_USE_PYTHON)
         target_link_libraries(netgen_python INTERFACE ${NETGEN_PYTHON_LIBRARIES})
         target_include_directories(netgen_python INTERFACE ${NETGEN_PYBIND_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
     endif()
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/python/config.py.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/python/config.py"
-    IMMEDIATE @ONLY)
-  install(FILES ${CMAKE_CURRENT_BINARY_DIR}/python/config.py DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/ COMPONENT ngsolve)
 endif (NETGEN_USE_PYTHON)
 
 #######################################################################
