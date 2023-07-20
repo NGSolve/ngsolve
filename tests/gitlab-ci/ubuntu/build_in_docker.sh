@@ -57,7 +57,6 @@ then
         nbsphinx \
         jupyter \
         jupyter-client \
-        notebook==6.* \
         nbstripout \
         ipykernel \
         widgetsnbextension \
@@ -119,10 +118,6 @@ then
   echo "build docu"
   ipython profile create --parallel --profile=default
   echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_default/ipcluster_config.py
-  jupyter nbextension install --py widgetsnbextension
-  jupyter nbextension enable --py widgetsnbextension
-  jupyter nbextension install --py webgui_jupyter_widgets
-  jupyter nbextension enable --py webgui_jupyter_widgets
   make docs > /logs/build_docs.log 2>&1
   find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout
   cp -r ~/src/ngsolve/docs/i-tutorials docs/html/jupyter-files
