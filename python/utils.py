@@ -147,10 +147,12 @@ def OuterProduct(a, b):
     return a.Reshape((a.dim,1)) * b.Reshape((1, b.dim))
 
 
-def PrivateSpace(fes):
-    # TODO: make space wrapper which also works after refinement
-    fes.SetCouplingType(IntRange(0,fes.ndof), COUPLING_TYPE.HIDDEN_DOF)
-    return Compress(fes)
+PrivateSpace = Hidden
+# def PrivateSpace(fes):
+# TODO: make space wrapper which also works after refinement
+# fes.SetCouplingType(IntRange(0,fes.ndof), COUPLING_TYPE.HIDDEN_DOF)
+# return Compress(fes)
+# return Hidden(fes)
 
 def TimeFunction(func, name=None):
     name = name or func.__qualname__
