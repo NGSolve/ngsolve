@@ -57,6 +57,7 @@ then
         nbsphinx \
         jupyter \
         jupyter-client \
+        notebook==6.* \
         nbstripout \
         ipykernel \
         widgetsnbextension \
