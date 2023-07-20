@@ -26,8 +26,11 @@ To install the WebGUI Jupyter notebook extension, run
 .. code:: bash
 
     pip3 install webgui_jupyter_widgets
-    jupyter nbextension install --user --py widgetsnbextension
-    jupyter nbextension enable --user --py widgetsnbextension
+
+If you have jupyter >= 7.0.0, you are done. For older versions you need to install and enable the notebook extension:
+
+.. code:: bash
+
     jupyter nbextension install --user --py webgui_jupyter_widgets
     jupyter nbextension enable --user --py webgui_jupyter_widgets
 
