@@ -38,14 +38,16 @@ namespace ngfem
   {
     static RegisterClassForArchive<cl_UnaryOpCF<FUNC>, CoefficientFunction> reguopcf;
 
-    m.def(name.c_str(), [](double x) {
+    m.def(name.c_str(), py::vectorize([](double x)
+    {
         FUNC func;
         return func(x);
-      }, py::arg("x"), description.c_str());
-    m.def(name.c_str(), [](Complex x) {
+    }), py::arg("x"), description.c_str());
+    m.def(name.c_str(), py::vectorize([](Complex x)
+    {
         FUNC func;
         return func(x);
-      }, py::arg("x"), description.c_str());
+    }), py::arg("x"), description.c_str());
     m.def(name.c_str(), [] (shared_ptr<CoefficientFunction> x) -> shared_ptr<CoefficientFunction> {
         FUNC func;
         return func(x);
