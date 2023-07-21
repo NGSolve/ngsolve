@@ -163,7 +163,16 @@ namespace ngla
         cublasDaxpy (Get_CuBlas_Handle(), 
                            size, &scal, v2->dev_data, 1, dev_data, 1);
         */
-        MyDaxpy (scal, size, v2->dev_data, dev_data);
+        // MyDaxpy (scal, size, v2->dev_data, dev_data);
+
+        auto x = v2->dev_data;
+        auto y = dev_data;
+        DeviceParallelFor (size, 
+            [scal,x,y] DEVICE_LAMBDA (int tid) 
+        {
+           y[tid] += scal*x[tid];
+        }); 
+        
         host_uptodate = false;
       }
     else
