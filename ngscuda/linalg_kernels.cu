@@ -32,21 +32,6 @@ void SetScalar1 (double val, int n, double * x)
 } 
 
 
-template<class F> __global__
-void CUDA_forall(int n, F f)
-{
-  int tid = blockIdx.x*blockDim.x+threadIdx.x;
-  for (int i = tid; i < n; i += blockDim.x*gridDim.x)
-     f(blockIdx.x*blockDim.x+threadIdx.x);
-}
-
-#define DEVICE_LAMBDA __device__
-
-template <class F>
-inline void DeviceParallelFor (int n, F f)
-{
-  CUDA_forall<<<512,256>>> (n, f);
-}
 
 void SetScalar (double val, int n, double * x)
 {
@@ -105,14 +90,22 @@ __global__ void MyDaxpyKernel (double val, int n, double * x, double * y)
     y[i] += val * x[i];
 }
 
-void MyDaxpy (double val, int n, double * x, double * y)
+void MyDaxpy1 (double val, int n, double * x, double * y)
 {
+// cout << "MyDaxpy" << endl;
   MyDaxpyKernel<<<512,256>>> (val, n, x, y);
 } 
 
 
-
-
+void MyDaxpy (double val, int n, double * x, double * y)
+{
+// cout << "MyDaxpy2" << endl;
+  DeviceParallelFor (n, 
+    [val,x,y] DEVICE_LAMBDA (int tid) 
+    {
+       y[tid] += val*x[tid];
+    });
+}
 
 
 // y = D * x
