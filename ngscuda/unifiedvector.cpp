@@ -165,13 +165,11 @@ namespace ngla
         */
         // MyDaxpy (scal, size, v2->dev_data, dev_data);
 
-        auto x = v2->dev_data;
-        auto y = dev_data;
-        DeviceParallelFor (size, 
-            [scal,x,y] DEVICE_LAMBDA (int tid) 
-        {
-           y[tid] += scal*x[tid];
-        }); 
+        DeviceParallelFor
+          (size, [scal, x=v2->dev_data, y=dev_data] DEVICE_LAMBDA (auto tid) 
+           {
+             y[tid] += scal*x[tid];
+           }); 
         
         host_uptodate = false;
       }
