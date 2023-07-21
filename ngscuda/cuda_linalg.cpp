@@ -349,7 +349,13 @@ namespace ngla
         DevStackArray<double> dev_hy(numblocks*devmat.Height());
 
         tcopyin.Start();
-        ConstEBEKernelCopyIn (numblocks, devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+        // ConstEBEKernelCopyIn (numblocks, devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+	DeviceParallelFor
+          (numblocks*devmat.Width(),
+           [locx=dev_hx.DevData(), globx=ux.DevData(), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
+           {
+             locx[tid] = globx[idx[tid]];
+           });
         if (synckernels) cudaDeviceSynchronize();
         tcopyin.Stop();
         
@@ -363,7 +369,14 @@ namespace ngla
         tmult.Stop();
         
         tcopyout.Start();        
-        ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+        // ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+	DeviceParallelFor
+          (numblocks*devmat.Height(),
+           [globy=uy.DevData(), locy=dev_hy.DevData(), idx=coldnums.DevData() ] DEVICE_LAMBDA (auto tid)
+           {
+             atomicAdd(globy+idx[tid], locy[tid]);
+           });
+ 
         if (synckernels) cudaDeviceSynchronize();
         tcopyout.Stop();
       }
