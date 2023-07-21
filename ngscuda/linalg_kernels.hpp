@@ -16,7 +16,7 @@ void CUDA_forall(int n, F f)
 {
   int tid = blockIdx.x*blockDim.x+threadIdx.x;
   for (int i = tid; i < n; i += blockDim.x*gridDim.x)
-     f(blockIdx.x*blockDim.x+threadIdx.x);
+    f(i);
 }
 
 #define DEVICE_LAMBDA __device__
