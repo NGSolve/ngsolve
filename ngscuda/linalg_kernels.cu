@@ -45,7 +45,7 @@ void CUDA_forall(int n, F f)
 template <class F>
 inline void DeviceParallelFor (int n, F f)
 {
-  CUDA_forall<<<512,256>>> (n, lam);
+  CUDA_forall<<<512,256>>> (n, f);
 }
 
 void SetScalar (double val, int n, double * x)
