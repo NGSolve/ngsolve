@@ -533,7 +533,21 @@ namespace ngla
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
     FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)ux.DevData());
     FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
-    DevBlockDiagonalMatrixSoAMultAddVecs (s, indices, a, b, res);
+    // DevBlockDiagonalMatrixSoAMultAddVecs (s, indices, a, b, res);
+
+    DeviceParallelFor
+      (res.Width(),
+       [a,b,res,inds=indices,s] DEVICE_LAMBDA (auto tid)
+       {
+         for (int j = 0; j < inds.Size(); j+=3)
+           {
+             int rowa = inds[j];
+             int rowb = inds[j+1];
+             int rowres = inds[j+2];
+             res(rowres,i) += s * a(rowa,i) * b(rowb,i);
+           }
+       });
+    
     if (synckernels) cudaDeviceSynchronize();
 
     uy.InvalidateHost();
