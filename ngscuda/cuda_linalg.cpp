@@ -537,7 +537,7 @@ namespace ngla
 
     DeviceParallelFor
       (res.Width(),
-       [a,b,res,inds=indices,s] DEVICE_LAMBDA (auto tid)
+       [a,b,res,inds=FlatArray(indices),s] DEVICE_LAMBDA (auto i)
        {
          for (int j = 0; j < inds.Size(); j+=3)
            {
