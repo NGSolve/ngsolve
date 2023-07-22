@@ -290,7 +290,13 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    MultDiagonal (diag.Size(), diag.DevData(), ux.DevData(), uy.DevData());
+    // MultDiagonal (diag.Size(), diag.DevData(), ux.DevData(), uy.DevData());
+    DeviceParallelFor
+      (diag.Size(),
+       [ddiag=diag.DevData(), dx=ux.DevData(), dy=uy.DevData()] DEVICE_LAMBDA (auto tid)
+           {
+             dy[tid] = ddiag[tid]*dx[tid];
+           });
 
     uy.InvalidateHost();    
   }
@@ -303,7 +309,13 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    MultAddDiagonal (diag.Size(), s, diag.DevData(), ux.DevData(), uy.DevData());
+    // MultAddDiagonal (diag.Size(), s, diag.DevData(), ux.DevData(), uy.DevData());
+    DeviceParallelFor
+      (diag.Size(),
+       [ddiag=diag.DevData(), dx=ux.DevData(), dy=uy.DevData(), s] DEVICE_LAMBDA (auto tid)
+           {
+             dy[tid] += s*ddiag[tid]*dx[tid];
+           });
 
     uy.InvalidateHost();    
   }
