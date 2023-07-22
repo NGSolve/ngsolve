@@ -149,12 +149,13 @@ namespace ngla
       throw Exception(string("matrix type not supported: ") + typeid(mat).name());
   }
 
+/*
   shared_ptr<BaseMatrix> CreateDevMatrix (Matrix<> & mat)
   {
     Matrix<double>& dmat = dynamic_cast<Matrix<double>&>(mat);
     return make_shared<DevDMatrix>(dmat);
   }
-
+*/
 
 
   /******************** DevSparseMatrix ********************/
@@ -382,11 +383,11 @@ namespace ngla
         
         tcopyout.Start();        
         // ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
-	DeviceParallelFor
+        DeviceParallelFor
           (numblocks*devmat.Height(),
            [globy=uy.DevData(), locy=dev_hy.DevData(), idx=coldnums.DevData() ] DEVICE_LAMBDA (auto tid)
            {
-             atomicAdd(globy+idx[tid], locy[tid]);
+             atomicAdd((double*)globy+idx[tid], locy[tid]);
            });
  
         if (synckernels) cudaDeviceSynchronize();
@@ -400,7 +401,7 @@ namespace ngla
             DevStackArray<double> dev_hy(c.Size()*devmat.Height());
 
             tcopyin.Start();            
-            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), devmat.Width(), rowdnums.DevData(), (double*)ux.DevData(), dev_hx.DevData());
             if (synckernels) cudaDeviceSynchronize();            
             tcopyin.Stop();
             
@@ -414,7 +415,7 @@ namespace ngla
             tmult.Stop();
 
             tcopyout.Start();
-            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), devmat.Height(), coldnums.DevData(), dev_hy.DevData(), (double*)uy.DevData());
             if (synckernels) cudaDeviceSynchronize();            
             tcopyout.Stop();
           }
@@ -443,7 +444,13 @@ namespace ngla
         DevStackArray<double> dev_hx(numblocks*hm);
         DevStackArray<double> dev_hy(numblocks*wm);
 
-        ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
+        // ConstEBEKernelCopyIn (numblocks, hm, coldnums.DevData(), (double*)ux.DevData(), dev_hx.DevData());
+        DeviceParallelFor
+          (numblocks*hm,
+           [locx=dev_hx.DevData(), globx=ux.DevData(), idx=coldnums.DevData()] DEVICE_LAMBDA (auto tid)
+           {
+             locx[tid] = globx[idx[tid]];
+           });
         
         // dev_hy = dev_hx * mat
         
@@ -451,7 +458,14 @@ namespace ngla
         FlatMatrix<Dev<double>> maty(numblocks, wm, dev_hy.Data());
         MultMatMat (matx, devmat, maty, s, 0);
         
-        ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
+        // ConstEBEKernelCopyOut (numblocks, wm, rowdnums.DevData(), dev_hy.DevData(), (double*)uy.DevData());
+        DeviceParallelFor
+          (numblocks*wm,
+           [globy=uy.DevData(), locy=dev_hy.DevData(), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
+           {
+             atomicAdd((double*)globy+idx[tid], locy[tid]);
+           });
+        
       }
     else
       {
@@ -460,14 +474,14 @@ namespace ngla
             DevStackArray<double> dev_hx(c.Size()*hm);
             DevStackArray<double> dev_hy(c.Size()*wm);
 
-            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), hm, coldnums.DevData(), ux.DevData(), dev_hx.DevData());
+            ConstEBEKernelCopyInIdx (c.Size(), (int*)c.Data(), hm, coldnums.DevData(), (double*)ux.DevData(), dev_hx.DevData());
             // dev_hy = dev_hx * mat
 
             FlatMatrix<Dev<double>> matx(c.Size(), hm, dev_hx.Data());
             FlatMatrix<Dev<double>> maty(c.Size(), wm, dev_hy.Data());
             MultMatMat (matx, devmat, maty, s, 0);
            
-            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), uy.DevData());
+            ConstEBEKernelCopyOutIdx (c.Size(), (int*)c.Data(), wm, rowdnums.DevData(), dev_hy.DevData(), (double*)uy.DevData());
           }
       }
     
@@ -652,11 +666,13 @@ namespace ngla
 
     ux.UpdateDevice();
 
-    DevProjectorProject (bits->Size(), ux.DevData(), bits->Data(), keep_values);
+    DevProjectorProject (bits->Size(), (double*)ux.DevData(), bits->Data(), keep_values);
 
     ux.InvalidateHost();
   }
 
+    
+#ifdef NONE
   /******************** DevDMatrix ********************/
 
   DevDMatrix :: DevDMatrix ()
@@ -1029,5 +1045,6 @@ namespace ngla
   /*   uy.host_uptodate = false; */
   /*   cout << "mult complete" << endl; */
   /* } */
-
+#endif
+    
 }
