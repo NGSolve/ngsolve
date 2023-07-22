@@ -187,7 +187,7 @@ namespace ngbla
                      enable_if_t<IsConvertibleToSliceMatrix<T,Dev<double>>(),int>>
   {
   public:
-    static INLINE T & Assign (MatExpr<T> & self, const Expr<ScaleExpr<MultExpr<TB1,TB2>,double>> & v)
+    static inline T & Assign (MatExpr<T> & self, const Expr<ScaleExpr<MultExpr<TB1,TB2>,double>> & v)
     {
       auto res = self.View();
 
@@ -206,7 +206,7 @@ namespace ngbla
                      enable_if_t<IsConvertibleToSliceMatrix<T,Dev<double>>(),int>>
   {
   public:
-    static INLINE T & Assign (MatExpr<T> & self, const Expr<MultExpr<ScaleExpr<TB1,double>,TB2>> & v)
+    static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<ScaleExpr<TB1,double>,TB2>> & v)
     {
       auto res = self.View();
 

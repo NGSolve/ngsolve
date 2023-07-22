@@ -61,6 +61,7 @@ PYBIND11_MODULE(ngscuda, m) {
           }
           ));
 
+#ifdef NONE
   // TODO:
   // make operators work instead of Add, Mult, ..
   py::class_<DevDMatrix, DevMatrix, shared_ptr<DevDMatrix>>
@@ -92,19 +93,21 @@ PYBIND11_MODULE(ngscuda, m) {
             cerr << *matptr << endl;
             return matptr;
           });
-    
+#endif   
     /* .def(py::init ( [] (BaseMatrix & mat) -> shared_ptr<BaseMatrix> */
 
   m.def("CreateDevMatrix", [] (BaseMatrix &mat)
           {
             return CreateDevMatrix(mat);
           });
-
+/*
   m.def("CreateDevMatrix", [] (Matrix<> &mat)
           {
             return CreateDevMatrix(mat);
           });
-
+*/
+    
+    /*
   py::class_<DevJacobiPrecond, DevSparseMatrix, shared_ptr<DevJacobiPrecond>>
     (m, "DevJacobiPrecond", "Jacobi Preconditioner working on device");
 
@@ -115,7 +118,7 @@ PYBIND11_MODULE(ngscuda, m) {
           },
           py::arg("mat"),
           py::arg("freedofs") = shared_ptr<BitArray>());
-
+*/
 
   m.def("__time_tracer__", TimeProfiler);
   m.def("SetCudaTimer", CudaRegionTimer::SetCudaTimer);

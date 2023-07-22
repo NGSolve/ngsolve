@@ -9,7 +9,7 @@ namespace ngla
   {
   protected:
     double * host_data;
-    double * dev_data;
+    Dev<double> * dev_data;
   
     mutable bool host_uptodate;
     mutable bool dev_uptodate;
@@ -63,7 +63,7 @@ namespace ngla
     virtual FlatVector<Complex> FVComplex () const override;
     virtual void * Memory() const throw ();
 
-    virtual double* DevData() const
+    virtual Dev<double> * DevData() const
     { 
       return dev_data; 
     }
