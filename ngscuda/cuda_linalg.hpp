@@ -173,7 +173,7 @@ namespace ngla
 
 
 
-  
+ #ifdef NONE 
   
   shared_ptr<DevSparseMatrix> MatMult (const DevSparseMatrix& mata, const DevSparseMatrix& matb);
 
@@ -240,7 +240,8 @@ namespace ngla
     /* int VWidth() const override { return height; } */
 
   };
-
+#endif
+    
 
   // old version
   /* class DevJacobiPreconditioner : public BaseMatrix */

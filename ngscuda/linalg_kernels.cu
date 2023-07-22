@@ -67,14 +67,14 @@ void SetScalar (double val, FlatVector<Dev<double>> vec)
 
 
 // y[i] = val * x[i]
-__global__ void SetVectorKernel (double val, int n, double * x, double * y)
+__global__ void SetVectorKernel (double val, int n, Dev<double> * x, Dev<double> * y)
 {
   int tid = blockIdx.x*blockDim.x+threadIdx.x;
   for (int i = tid; i < n; i += blockDim.x*gridDim.x)
     y[i] = val * x[i];
 }
 
-void SetVector (double val, int n, double * x, double * y)
+void SetVector (double val, int n, Dev<double> * x, Dev<double> * y)
 {
   static Timer t("CUDA::SetVector");
   CudaRegionTimer rt(t);

@@ -132,7 +132,7 @@ namespace ngla
   BaseVector & UnifiedVector :: Scale (double scal)
   {
     UpdateDevice();
-    cublasDscal (Get_CuBlas_Handle(), size, &scal, dev_data, 1);
+    cublasDscal (Get_CuBlas_Handle(), size, &scal, (double*)dev_data, 1);
     host_uptodate = false;
     return *this;
   }
@@ -195,7 +195,7 @@ namespace ngla
         
         double res;
         cublasDdot (Get_CuBlas_Handle(), 
-                    size, dev_data, 1, uv2->dev_data, 1, &res);
+                    size, (double*)dev_data, 1, (double*)uv2->dev_data, 1, &res);
         return res;
       }
 
@@ -208,7 +208,7 @@ namespace ngla
   {
     UpdateDevice();
     double res;
-    cublasDnrm2(Get_CuBlas_Handle(), size, dev_data, 1, &res);
+    cublasDnrm2(Get_CuBlas_Handle(), size, (double*)dev_data, 1, &res);
     return res;
   }
 

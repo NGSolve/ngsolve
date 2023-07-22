@@ -4,7 +4,7 @@ namespace ngs_cuda
 {
   using namespace ngbla;
 
-
+#ifdef NONE
   template <typename T = double>
   class DevVector 
   {
@@ -164,7 +164,7 @@ namespace ngs_cuda
   }; 
 
 
-
+#endif
 
 }
 
