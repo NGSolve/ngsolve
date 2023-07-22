@@ -572,7 +572,22 @@ namespace ngla
     FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
     FlatMatrix<Dev<double>> b(dimy, blocks,  (Dev<double>*)ux.DevData());
     FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)uy.DevData());
-    DevBlockDiagonalMatrixSoAMultAddVecs (s, indices_trans, a, b, res);
+    // DevBlockDiagonalMatrixSoAMultAddVecs (s, indices_trans, a, b, res);
+
+    DeviceParallelFor
+      (res.Width(),
+       [a,b,res,inds=FlatArray(indices_trans),s] DEVICE_LAMBDA (auto i)
+       {
+         for (int j = 0; j < inds.Size(); j+=3)
+           {
+             int rowa = inds[j];
+             int rowb = inds[j+1];
+             int rowres = inds[j+2];
+             res(rowres,i) += s * a(rowa,i) * b(rowb,i);
+           }
+       });
+
+    
     if (synckernels) cudaDeviceSynchronize();
       
     uy.InvalidateHost();
@@ -600,7 +615,29 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    DevProjectorMultAdd (s, bits->Size(), ux.DevData(), uy.DevData(), bits->Data(), keep_values);
+    // DevProjectorMultAdd (s, bits->Size(), ux.DevData(), uy.DevData(), bits->Data(), keep_values);
+    if (keep_values)
+      DeviceParallelFor
+        (bits->Size(),
+         [s, x=ux.DevData(), y=uy.DevData(), bits=bits->Data()] DEVICE_LAMBDA (auto i)
+         {
+           unsigned char mask = (char(1) << (i % CHAR_BIT));
+           unsigned int addr = i / CHAR_BIT;
+           
+           if (bits[addr] & mask)
+             y[i] += s * x[i];
+         });
+    else
+      DeviceParallelFor
+        (bits->Size(),
+         [s, x=ux.DevData(), y=uy.DevData(), bits=bits->Data()] DEVICE_LAMBDA (auto i)
+         {
+           unsigned char mask = (char(1) << (i % CHAR_BIT));
+           unsigned int addr = i / CHAR_BIT;
+           
+           if (! (bits[addr] & mask) )
+             y[i] += s * x[i];
+         });
 
     uy.InvalidateHost();
   }
