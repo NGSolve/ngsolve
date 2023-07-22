@@ -34,8 +34,9 @@ inline void DeviceParallelFor (int n, F f)
 extern void SetScalar (double val, int n, double * dev_ptr);
 extern void SetScalar (double val, ngbla::FlatVector<Dev<double>> vec);
 
-extern void SetVector (double val, int n, double * x, double * y);
-extern void MyDaxpy (double val, int n, double * x, double * y);
+// y = val*x
+extern void SetVector (double val, int n, Dev<double> * x, Dev<double> * y);
+extern void MyDaxpy (double val, int n, Dev<double> * x, Dev<double> * y);
 
 
 extern void MultDiagonal (int n, double * D, double * x, double * y);
