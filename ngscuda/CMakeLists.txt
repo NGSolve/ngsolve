@@ -20,10 +20,10 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 add_library(${lib_name} SHARED
     cuda_linalg.cpp unifiedvector.cpp
     cuda_ngstd.cpp cuda_ngbla.hpp cuda_applyIR.cpp
-    linalg_kernels.cu dev_sparsecholesky.cu dev_blockjacobi.cu cuda_profiler.cu
+    linalg_kernels.cu dev_sparsecholesky.cpp dev_blockjacobi.cpp cuda_profiler.cu
 )
 
-set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp PROPERTIES LANGUAGE CUDA)
+set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp dev_sparsecholesky.cpp dev_blockjacobi.cpp PROPERTIES LANGUAGE CUDA)
 
 target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --extended-lambda >)
 

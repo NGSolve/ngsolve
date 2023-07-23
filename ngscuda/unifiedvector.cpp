@@ -9,10 +9,12 @@ namespace ngla
     this->size = asize;
 
     host_data = new double[size];
+    dev_data = Dev<double>::Malloc(size);
+    /*
     auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
     if (err != 0)
       throw Exception("UnifiedVector allocation error, ec="+ToString(err));
-    
+    */
     host_uptodate = false;
     dev_uptodate = false;
   }
@@ -39,7 +41,8 @@ namespace ngla
   
   UnifiedVector :: ~UnifiedVector ()
   {
-    cudaFree(dev_data);
+    // cudaFree(dev_data);
+    Dev<double>::Free(dev_data);
     delete[] host_data;
   }
 
@@ -215,20 +218,20 @@ namespace ngla
   
   ostream & UnifiedVector :: Print (ostream & ost) const
   {
-    cout << "output unified vector of size " << size;
-    cout << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
+    ost << "output unified vector of size " << size;
+    ost << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
     if (!host_uptodate)
       {
         if (dev_uptodate)
           {
-            cout << "host not up-to-data. printing device data" << endl;
+            ost << "host not up-to-data. printing device data" << endl;
             Vector<double> tmp(size);
             cudaMemcpy(tmp.Data(), dev_data, size * sizeof(double), cudaMemcpyDeviceToHost);
             ost << tmp << endl;
           }
         else
           {
-            cout << "undefined vector" << endl;
+            ost << "undefined vector" << endl;
           }
       }
     else
@@ -241,8 +244,8 @@ namespace ngla
   // TODO: maybe remove. mainly for testing
   ostream & UnifiedVector :: PrintStatus (ostream & ost) const
   {
-    cout << "output unified vector of size " << size;
-    cout << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
+    ost << "output unified vector of size " << size;
+    ost << ", host = " << host_uptodate << ", dev = " << dev_uptodate << endl;
     return ost;
   }
 
@@ -259,7 +262,8 @@ namespace ngla
 
     if (dev_uptodate)
       {
-        cudaMemcpy (host_data, dev_data, sizeof(double)*size, cudaMemcpyDeviceToHost);
+        // cudaMemcpy (host_data, dev_data, sizeof(double)*size, cudaMemcpyDeviceToHost);   
+        dev_data -> D2H ( {size, host_data} );
         cout << IM(5) << "Device2Host copy!" << endl;        
       }
     
@@ -273,7 +277,8 @@ namespace ngla
 
     if (host_uptodate)
       {
-        cudaMemcpy (dev_data, host_data, sizeof(double)*size, cudaMemcpyHostToDevice);
+        // cudaMemcpy (dev_data, host_data, sizeof(double)*size, cudaMemcpyHostToDevice);
+        dev_data -> H2D ( {size, host_data} );
         cout << IM(5) << "Host2Device copy!" << endl;
       }
     
@@ -284,7 +289,7 @@ namespace ngla
   {
     UpdateHost();
     dev_uptodate = false;
-    return FlatVector<> (size, host_data);
+    return { size, host_data };
   }
   
   FlatVector<Complex> UnifiedVector :: FVComplex () const
@@ -296,13 +301,13 @@ namespace ngla
   {
     UpdateDevice();
     InvalidateHost();
-    return { Size(), (Dev<double>*)dev_data };
+    return { Size(), dev_data };
   }
 
   FlatVector<Dev<double>> UnifiedVector :: FVDevRO() const
   {
     UpdateDevice();
-    return { Size(), (Dev<double>*)dev_data };
+    return { Size(), dev_data };
   }
   
   void * UnifiedVector :: Memory() const throw()
