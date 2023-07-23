@@ -251,6 +251,8 @@ public:
   size_t GetDist () const { return dist; }
   size_t GetTotalSize () const { return size*sub.GetTotalSize(); }
 
+  auto Shape() const { return std::tuple_cat(std::tuple<size_t>(size), sub.Shape()); }
+  
   auto GetSubTensor() const -> decltype(sub)
   { return sub; } 
   FlatTensor<DIM-1,T> GetSubTensor (size_t i) const 
@@ -327,9 +329,9 @@ public:
   T & operator+= (double d) { *data += d; return *data; }
 
   template<typename ... ARG>
-  INLINE void SetSize (ARG ... args) throw ()
-  {
-  }
+  INLINE void SetSize (ARG ... args) throw () { }
+
+  auto Shape() const { return std::tuple<>(); }
 
   INLINE void Assign (const FlatTensor& m) throw ()
   {
