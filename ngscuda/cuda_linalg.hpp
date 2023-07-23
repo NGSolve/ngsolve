@@ -21,12 +21,8 @@ namespace ngla
 
   
 #include "cuda_ngbla.hpp"
-
-
 #include "linalg_kernels.hpp"
-
 #include "unifiedvector.hpp"
-
 
 
 namespace ngla
@@ -170,102 +166,6 @@ namespace ngla
 
   };
   
-
-
-
- #ifdef NONE 
-  
-  shared_ptr<DevSparseMatrix> MatMult (const DevSparseMatrix& mata, const DevSparseMatrix& matb);
-
-  // dense device matrix
-  class DevDMatrix : public DevMatrix
-  {
-  private:
-    size_t height, width;
-    double* dev_data;
-    /* cusparseDnMatDescr_t descr; */
-
-  public:
-    DevDMatrix ();
-    DevDMatrix (size_t height, size_t width);
-    DevDMatrix (const Matrix<>& mat);
-    DevDMatrix (const DevDMatrix& mat);
-    ~DevDMatrix ();
-
-    /* const DevDMatrix & operator= (const Expr<TBxx> & mat) const; */
-    const DevDMatrix & operator= (double d) const;
-    const DevDMatrix & operator= (const DevDMatrix & mat) const;
-
-    int VHeight() const { return height; }
-    int VWidth() const { return width; }
-
-    virtual AutoVector CreateRowVector () const;
-    virtual AutoVector CreateColVector () const;
-
-    virtual void Add (const BaseMatrix& b);
-    virtual void Scale (double d);
-    virtual void Mult (const BaseVector& x, BaseVector& y) const;
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
-
-    void SetZero ();
-
-    double* DevData () const;
-
-    virtual ostream & Print (ostream & ost) const;    
-  };
-
-  shared_ptr<DevDMatrix> MatMult (const DevDMatrix& mata, const DevDMatrix& matb);
-
-
-
-  // currently uses Mult and MultAdd of DevSparseMatrix
-  class DevJacobiPrecond : public DevSparseMatrix
-  {
-  private:
-    /* cusparseSpMatDescr_t descr; */
-    shared_ptr<BitArray> inner;
-    double* dev_invdiag;
-  public:
-    DevJacobiPrecond (const SparseMatrix<double> & amat, 
-      shared_ptr<BitArray> ainner=nullptr, bool use_par=true);
-
-    /* DevJacobiPrecond (const JacobiPrecond<double> & amat); */
-
-    virtual ~DevJacobiPrecond ();
-
-    /* void Mult (const BaseVector & x, BaseVector & y) const; */
-    /* void MultAdd (double s, const BaseVector & x, BaseVector & y) const; */
-
-    /* int VHeight() const override { return height; } */
-    /* int VWidth() const override { return height; } */
-
-  };
-#endif
-    
-
-  // old version
-  /* class DevJacobiPreconditioner : public BaseMatrix */
-  /* { */
-  /*   // should be like this: */
-  /*   // double * dev_diag; */
-  /*   // int size; */
-
-  /*   // stored as sparse matrix ... */
-  /*   /1* cusparseMatDescr_t * descr; *1/ */
-
-    /* // used to be cusparseMatSpDescr_t... not sure about the difference */
-    /* cusparseSpMatDescr_t descr; */
-  /*   int * dev_ind; */
-  /*   int * dev_col; */
-  /*   double * dev_val; */
-  /*   int height, width, nze; */
-    
-
-  /* public: */
-  /*   DevJacobiPreconditioner (const SparseMatrix<double> & mat, const BitArray & freedofs); */
-  /*   virtual void Mult (const BaseVector & x, BaseVector & y) const; */
-  /*   virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const; */
-  /* }; */
 
 }
 
