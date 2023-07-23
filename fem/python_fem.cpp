@@ -328,6 +328,9 @@ else_obj : object
 
 )raw_string"))
     ;
+  m.def("IfPos", py::vectorize([](double x, double then, double else_) {
+    return x > 0 ? then : else_;
+  }));
   
   m.def("CoordCF", 
         [] (int direction)
