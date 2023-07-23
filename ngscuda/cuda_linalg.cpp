@@ -499,9 +499,12 @@ namespace ngla
     : nonzero(mat.GetNonZeroPattern())
   {
     FlatTensor<3> blockdiag = mat.GetBlockDiag ();
+    tie(dimy, dimx, blocks) = blockdiag.Shape();
+    /*
     dimy = blockdiag.GetSize();
     dimx = blockdiag.GetSubTensor().GetSize();
     blocks = blockdiag.GetSubTensor().GetSubTensor().GetSize();
+    */
     
     auto err = cudaMalloc((void**)&dev_data, dimx*dimy*blocks*sizeof(double));
     if (err != 0)
