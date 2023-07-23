@@ -1,3 +1,5 @@
+not needed anymore
+
 #ifdef CUDA
 
 namespace ngs_cuda
