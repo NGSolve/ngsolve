@@ -2511,6 +2511,56 @@ namespace ngcomp
       auto& mapped_mip = eltrafo(ip, global_alloc);
       return func->Evaluate(mapped_mip);
     }
+
+
+    virtual void Evaluate(const BaseMappedIntegrationPoint & mip,
+			  FlatVector<> result) const override
+    {
+      Vec<3> mapped_point;
+      trafo->Evaluate(mip, mapped_point);
+      IntegrationPoint ip;
+      int elnr;
+
+      if(region.VB() == BND)
+        {
+      netgen::Point<3> p = {mapped_point[0], mapped_point[1], mapped_point[2] };
+      searchtree->GetFirstIntersecting(p, p, [&](int si)
+      {
+        if(region.Mesh()->GetNetgenMesh()
+           ->PointContainedIn2DElement({mapped_point[0],
+               mapped_point[1],
+               mapped_point[2]},
+             &ip(0),
+             si+1, false))
+          {
+            elnr = si;
+            return true;
+          }
+        return false;
+      });
+      if(region.Mesh()->GetNetgenMesh()->SurfaceElement(elnr+1).GetType() == netgen::TRIG)
+        {
+          double lam0 = 1-ip(0)-ip(1);
+          ip(1) = ip(0);
+          ip(0) = lam0;
+        }
+        }
+      else if(region.VB() == VOL)
+        {
+          Array<int> indices;
+          for(auto i : Range(region.Mask().Size()))
+            if(region.Mask().Test(i))
+              indices.Append(i);
+          elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true, &indices);
+        }
+      else
+        throw Exception("Only VOL and BND implemented yet!");
+      auto& eltrafo = region.Mesh()->GetTrafo(ElementId(region.VB(), elnr), global_alloc);
+      auto& mapped_mip = eltrafo(ip, global_alloc);
+      func->Evaluate(mapped_mip, result);
+    }
+
+    
   };
 
   shared_ptr<CoefficientFunction> MakeTrafoCF(shared_ptr<CoefficientFunction> func,
