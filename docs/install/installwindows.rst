@@ -44,7 +44,7 @@ Start "Git Bash", navigate to ``BASEDIR`` and execute
 
 .. code:: bash
 
-       git clone https://github.com/NGSolve/ngsolve.git src
+   git clone --recurse-submodules https://github.com/NGSolve/ngsolve.git src
 
 Go to the source directory and initialize the git submodules to download
 the source files for Netgen and Pybind11.

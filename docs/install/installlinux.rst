@@ -40,15 +40,7 @@ Choose a directory where you want to install Netgen/NGSolve, which will be denot
    export BASEDIR=~/ngsuite
    mkdir -p $BASEDIR
    cd $BASEDIR
-   git clone https://github.com/NGSolve/ngsolve.git ngsolve-src
-
-To also fetch the dependencies (Netgen) we must tell git to load the
-submodules
-
-.. code:: bash
-
-   cd $BASEDIR/ngsolve-src
-   git submodule update --init --recursive
+   git clone --recurse-submodules https://github.com/NGSolve/ngsolve.git ngsolve-src
 
 Building from the source
 ************************
