@@ -55,13 +55,13 @@ namespace ngfem
     }
 
     using ScalarFiniteElement<D>::Evaluate;
-    NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override
+    HD NGS_DLL_HEADER virtual void Evaluate (const SIMD_IntegrationRule & ir, BareSliceVector<> coefs, BareVector<SIMD<double>> values) const override
     {
       fe.EvaluateFacetVolIp (fnr, ir, coefs, values);
     }
     
     using ScalarFiniteElement<D>::AddTrans;    
-    NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override
+    HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const override
     {
       fe.AddTransFacetVolIp (fnr, ir, values, coefs);
     }

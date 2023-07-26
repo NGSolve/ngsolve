@@ -135,7 +135,7 @@ namespace ngfem
   public:
     using BaseScalarFiniteElement::BaseScalarFiniteElement;
 
-    int Dim () const final { return D; } 
+    HD int Dim () const final { return D; } 
     
     /**
        returns derivatives in point ip.
