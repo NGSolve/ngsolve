@@ -137,7 +137,7 @@ namespace ngfem
     
     // NGS_DLL_HEADER virtual void GetPolOrders (FlatArray<PolOrder<DIM> > orders) const;
 
-    HD NGS_DLL_HEADER 
+    NGS_DLL_HEADER 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const override;
 
     NGS_DLL_HEADER virtual void AddDualTrans (const IntegrationRule & ir, BareSliceVector<double> values, BareSliceVector<> coefs) const override;

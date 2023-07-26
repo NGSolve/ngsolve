@@ -127,7 +127,7 @@ namespace ngfem
         const_cast<FiniteElement*>(pfel) -> SetVertexNumbers(vnums);
     }
 
-    virtual bool ComplexShapes() const override;
+    HD virtual bool ComplexShapes() const override;
 
     virtual void Interpolate (const ElementTransformation & trafo,
                               const class CoefficientFunction & func, SliceMatrix<> coefs,
@@ -182,8 +182,8 @@ namespace ngfem
 
     const FiniteElement & FETrial() const { return fe_trial; } 
     const FiniteElement & FETest() const { return fe_test; }
-    virtual ELEMENT_TYPE ElementType() const { return fe_trial.ElementType(); }    
-    virtual bool ComplexShapes() const { return fe_trial.ComplexShapes() && fe_test.ComplexShapes(); }
+    HD virtual ELEMENT_TYPE ElementType() const { return fe_trial.ElementType(); }    
+    HD virtual bool ComplexShapes() const { return fe_trial.ComplexShapes() && fe_test.ComplexShapes(); }
   };
 
 

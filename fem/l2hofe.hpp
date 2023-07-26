@@ -98,7 +98,7 @@ namespace ngfem
         order = max2(order, order_inner[i]);
     }
 
-    virtual tuple<int,int,int,int> GetNDofVEFC () const override
+    HD virtual tuple<int,int,int,int> GetNDofVEFC () const override
     {
       switch (DIM)
         {
@@ -130,7 +130,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void GetTrace (int facet, FlatVector<> coefs, FlatVector<> fcoefs) const override;
     NGS_DLL_HEADER virtual void GetTraceTrans (int facet, FlatVector<> fcoefs, FlatVector<> coefs) const override;
 
-    NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const override;
+    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const override;
     NGS_DLL_HEADER virtual bool DualityMassDiagonal () const override { return true; }
     NGS_DLL_HEADER virtual bool GetDiagDualityMassInverse (FlatVector<> diag) const override
     {
