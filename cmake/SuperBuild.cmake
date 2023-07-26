@@ -12,6 +12,11 @@ set (SUBPROJECT_ARGS
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
 )
 
+option( USE_GUI     "build with GUI" ON )
+option( USE_MPI     "enable mpi parallelization" OFF )
+option( USE_OCC     "build with OpenCascade geometry kernel interface" ON)
+option( USE_PYTHON  "build with python interface" ON )
+
 # only show output on failure in ci-builds
 if(DEFINED ENV{CI})
     set (SUBPROJECT_ARGS
