@@ -198,7 +198,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     SymMatrixFiniteElement (const FiniteElement & ascalfe, int avdim, bool adeviatoric);
 
-    virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
+    HD virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
     /// number of components
     int GetNComponents() const { return dim; }
 
@@ -227,7 +227,7 @@ namespace ngfem
     /// initialize with pointers to components, copy pointers
     SkewMatrixFiniteElement (const FiniteElement & ascalfe, int avdim);
 
-    virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
+    HD virtual ELEMENT_TYPE ElementType() const override { return scalfe.ElementType(); }
     /// number of components
     int GetNComponents() const { return dim; }
 

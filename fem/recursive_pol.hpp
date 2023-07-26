@@ -626,7 +626,7 @@ namespace ngfem
 
 
     template <int N, class S, class Sy, class Sc, class T>
-    INLINE static void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values)
+    HD INLINE static void EvalScaledMult (IC<N> n, S x, Sy y, Sc c, T && values)
     {
       S p1(c*REC::P1(x,y)), p2(c * REC::P0(x));
       Iterate<N+1> ([&] (auto i) LAMBDA_INLINE
