@@ -31,7 +31,7 @@ namespace ngfem
             template <ELEMENT_TYPE ET2> class TSHAPES = HCurlHighOrderFE_Shape,
             typename BASE = T_HCurlHighOrderFiniteElement<ET, TSHAPES<ET>> >
 
-    class HCurlHighOrderFE : public BASE, public ET_trait<ET>, public VertexOrientedFE<ET>
+  class HCurlHighOrderFE : public BASE, public ET_trait<ET>, public VertexOrientedFE<ET>
   {
   protected:
     using ET_trait<ET>::N_VERTEX;

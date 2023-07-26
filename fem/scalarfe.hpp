@@ -20,7 +20,7 @@ namespace ngfem
       : FiniteElement (andof, aorder) { ; }
 
     /// the name
-    HD NGS_DLL_HEADER
+    NGS_DLL_HEADER
     virtual string ClassName() const override;
 
     /// compute shape
