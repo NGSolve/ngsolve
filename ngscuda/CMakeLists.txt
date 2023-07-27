@@ -23,7 +23,7 @@ add_library(${lib_name} SHARED
     linalg_kernels.cu dev_sparsecholesky.cpp dev_blockjacobi.cpp cuda_profiler.cu
 )
 
-set_source_files_properties(cuda_applyIR.cpp cuda_linalg.cpp unifiedvector.cpp dev_sparsecholesky.cpp dev_blockjacobi.cpp PROPERTIES LANGUAGE CUDA)
+set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp dev_sparsecholesky.cpp dev_blockjacobi.cpp PROPERTIES LANGUAGE CUDA)
 
 target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --extended-lambda >)
 
