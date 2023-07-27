@@ -7,7 +7,7 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-#include "fastmat.hpp"
+// #include "fastmat.hpp"
 
 namespace ngfem
 {
@@ -127,7 +127,7 @@ public:
 };
 
 
-
+  /*
   template <int H, int DIST, typename T1, typename T2, typename T3>
   void FastMat (FlatMatrixFixHeight<H,T1,DIST> a,
                 FlatMatrixFixHeight<H,T2,DIST> b,
@@ -135,7 +135,7 @@ public:
   {
     FastMat<H> (a.Width(), DIST, a.Data(), b.Data(), c.Data());
   }
-  
+  */
   
 
   template <class DMATOP> // , int DIM_ELEMENT, int DIM_SPACE>
@@ -800,12 +800,12 @@ public:
 
 
 #ifdef __SSE3__
-#define BLOCK_VERSION
+  // #define BLOCK_VERSION
 #endif
 
-#ifdef __MIC__
-#define BLOCK_VERSION
-#endif
+  // #ifdef __MIC__
+  // #define BLOCK_VERSION
+  // #endif
 
 
 

@@ -127,10 +127,12 @@ namespace ngfem
               dmat *= fac;
 	      dbmat = dmat * bmat;
 	      // elmat += Trans (bmat) * dbmat;
+              /*
               if (DMATOP::SYMMETRIC)
                 // FastMat<DIM_DMAT> (elmat.Height(), &dbmat(0,0), &bmat(0,0), &elmat(0,0));
                 FastMat<DIM_DMAT> (dbmat, bmat, elmat);
               else
+              */
                 elmat += Trans (bmat) * dbmat;
 	    } 
 	}

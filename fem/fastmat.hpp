@@ -1,3 +1,6 @@
+not used anymore
+
+
 #ifndef FILE_FASTMAT
 #define FILE_FASTMAT
 
