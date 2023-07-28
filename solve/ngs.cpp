@@ -1,12 +1,6 @@
 #include <solve.hpp>
 #include <cstdlib>
 
-namespace netgen
-{
-  int h_argc;
-  char ** h_argv;
-}
-
 extern int dummy_bvp;
 
 int main(int argc, char ** argv)
