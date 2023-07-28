@@ -2008,7 +2008,7 @@ namespace ngbla
   
 
 
-  /* *********************** double - Complex mixed arithmetics (WIP) ******************** */
+  /* *********************** double - Complex mixed arithmetics ******************** */
 
 
   // n ... number of doubles
@@ -2019,13 +2019,6 @@ namespace ngbla
                   SIMD<double,4> & sum11, SIMD<double,4> & sum21, SIMD<double,4> & sum31, SIMD<double,4> & sum41,
                   SIMD<double,4> & sum12, SIMD<double,4> & sum22, SIMD<double,4> & sum32, SIMD<double,4> & sum42)
   {
-    /*
-    __m128d * pb1 = reinterpret_cast<__m128d*> (_pb1);
-    __m128d * pb2 = reinterpret_cast<__m128d*> (_pb2);
-    __m128d * pb3 = reinterpret_cast<__m128d*> (_pb3);
-    __m128d * pb4 = reinterpret_cast<__m128d*> (_pb4);
-    */
-
     sum11 = 0.0;
     sum21 = 0.0;
     sum31 = 0.0;
@@ -2041,14 +2034,6 @@ namespace ngbla
         SIMD<double,4> a2(pa2[i]);
         SIMD<double,4> a3(pa3[i]);
         SIMD<double,4> a4(pa4[i]);
-        /*
-        SIMD<double,4> b1 = _mm256_broadcast_pd(pb1+i);
-        SIMD<double,4> b2 = _mm256_broadcast_pd(pb2+i);
-        SIMD<double,4> b3 = _mm256_broadcast_pd(pb3+i);
-        SIMD<double,4> b4 = _mm256_broadcast_pd(pb4+i);
-        SIMD<double,4> mb1 = _mm256_blend_pd(b1, b2, 12);
-        SIMD<double,4> mb2 = _mm256_blend_pd(b3, b4, 12);
-        */
         SIMD<double,4> mb1(SIMD<double,2>((double*)(pb1+i)), SIMD<double,2>((double*)(pb2+i)));
         SIMD<double,4> mb2(SIMD<double,2>((double*)(pb3+i)), SIMD<double,2>((double*)(pb4+i)));
         
@@ -2061,12 +2046,6 @@ namespace ngbla
         sum32 += a3 * mb2;
         sum42 += a4 * mb2;
       }
-    /*
-      s1 = _mm256_hadd_pd(sum11, sum12);
-      s2 = _mm256_hadd_pd(sum21, sum22);
-      s3 = _mm256_hadd_pd(sum31, sum32);
-      s4 = _mm256_hadd_pd(sum41, sum42);
-    */
   }
 
   

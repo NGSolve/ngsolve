@@ -1905,7 +1905,7 @@ namespace ngbla
   }
 
 
-  void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  void AddABtSymUNUSD (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
   {  
     // static Timer t("AddABtSym, double-complex"); RegionTimer reg(t);
     // c += a * Trans(b);
@@ -2013,7 +2013,7 @@ namespace ngbla
     */
   }
 
-  void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  void AddABtSymUNUSED (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
   {
     c += a * Trans(b) | Lapack;
     // cout << "AddABTsym complex - complex not implemented" << endl;
@@ -2022,7 +2022,7 @@ namespace ngbla
 
 
 
-  void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  void AddABtUNUSED (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
   {
     /*
       int ah = a.Height();
@@ -2187,7 +2187,7 @@ namespace ngbla
       }
   }
 
-  void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
+  void AddABtUNUSED (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
   {
     c += a * Trans(b) | Lapack;  
     // cout << "addabt complex-complex not implemented" << endl;
