@@ -12,6 +12,15 @@ set (SUBPROJECT_ARGS
     PREFIX ${CMAKE_CURRENT_BINARY_DIR}/dependencies
 )
 
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Emscripten")
+    set(NETGEN_CMAKE_COMMAND emcmake ${CMAKE_COMMAND})
+    set (SUBPROJECT_ARGS
+        ${SUBPROJECT_ARGS}
+        CMAKE_COMMAND emcmake ${CMAKE_COMMAND})
+else()
+    set(NETGEN_CMAKE_COMMAND ${CMAKE_COMMAND})
+endif()
+
 option( USE_GUI     "build with GUI" ON )
 option( USE_MPI     "enable mpi parallelization" OFF )
 option( USE_OCC     "build with OpenCascade geometry kernel interface" ON)
@@ -156,7 +165,7 @@ else(NETGEN_DIR)
   list(APPEND DEPENDENCIES install_netgen)
 
   message("\n\nConfigure Netgen from submodule...")
-  execute_process(COMMAND ${CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${SUBPROJECT_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
+  execute_process(COMMAND ${NETGEN_CMAKE_COMMAND} -G${CMAKE_GENERATOR} ${NETGEN_CMAKE_ARGS} ${SUBPROJECT_CMAKE_ARGS} ${PROJECT_SOURCE_DIR}/external_dependencies/netgen WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/netgen)
 endif(NETGEN_DIR)
 
 #######################################################################
