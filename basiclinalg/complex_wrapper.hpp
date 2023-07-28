@@ -43,8 +43,6 @@ namespace ngcore
 /// namespace for basic linear algebra
 namespace ngbla
 {
-  // using namespace std;
-  // using namespace ngstd;
   using ngcore::Complex;
 
   using ngcore::AtomicAdd;
@@ -79,8 +77,6 @@ namespace ngstd
   INLINE Complex IfPos (Complex a, Complex b, Complex c)
   {
     return a.real() > 0 ? b : c;
-    // Complex (IfPos (a.real(), b.real(), c.real()),
-    // IfPos (a.real(), b.imag(), c.imag()));
   }
 }
 

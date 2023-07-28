@@ -58,7 +58,7 @@ namespace ngstd
     Array<double> px;
     Array<double> py;
     Array<double> v;
-    int order = 1;
+    [[maybe_unused]] int order = 1;
     bool extrapolate = true;
 
     std::tuple<int,int,bool> Search(double x, double y) const;

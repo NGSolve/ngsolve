@@ -10,6 +10,7 @@
 namespace ngstd
 {
 
+  not used anymore
   // Automatic differentiation datatype
 
   

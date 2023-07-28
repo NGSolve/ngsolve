@@ -30,7 +30,7 @@ install( FILES
         memusage.hpp ngstd.hpp
         stringops.hpp templates.hpp
         statushandler.hpp ngsstream.hpp 
-        polorder.hpp sockets.hpp
+        sockets.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
         bspline.hpp sample_sort.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
