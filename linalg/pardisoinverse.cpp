@@ -77,6 +77,7 @@ namespace ngla
 #ifdef USE_PARDISO
   bool is_pardiso_available = true;
 #else
+#ifndef __EMSCRIPTEN__
   static SharedLibrary libmkl;
   static bool LoadMKL()
   {
@@ -97,6 +98,9 @@ namespace ngla
       }
   };
   bool is_pardiso_available = LoadMKL();
+#else // __EMSCRIPTEN__
+  bool is_pardiso_available = false;
+#endif // __EMSCRIPTEN__
 #endif
 
   int pardiso_msg = 0;

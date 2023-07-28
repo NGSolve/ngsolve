@@ -92,7 +92,7 @@ namespace ngcomp
 
       // handle possible overhead
       if (const int mask = ndof - SW * i; mask != 0)
-        y(0, i) = If(mask, SIMD<double>(&x(SW*i, mask)), SIMD<double>(x(ndof - 1)));
+        y(0, i) = If(SIMD<mask64>(mask), SIMD<double>(&x(SW*i, mask)), SIMD<double>(x(ndof - 1)));
 
       // cout << "y (final) " << y << endl;
     }
