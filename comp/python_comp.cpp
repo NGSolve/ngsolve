@@ -1008,17 +1008,17 @@ coupling_type : ngsolve.comp.COUPLING_TYPE
           {
             auto fe = shared_ptr<FiniteElement> (&self->GetFE(ei, global_alloc));
             
-            auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe);
-            if (scalfe) return py::cast(scalfe);
+            if (auto scalfe = dynamic_pointer_cast<BaseScalarFiniteElement> (fe))
+              return py::cast(scalfe);
 
-            auto hcurlfe = dynamic_pointer_cast<BaseHCurlFiniteElement> (fe);
-            if (hcurlfe) return py::cast(hcurlfe);
+            if (auto hcurlfe = dynamic_pointer_cast<BaseHCurlFiniteElement> (fe))
+              return py::cast(hcurlfe);
 
-            auto hdivfe = dynamic_pointer_cast<BaseHDivFiniteElement> (fe);
-            if (hdivfe) return py::cast(hdivfe);
+            if (auto hdivfe = dynamic_pointer_cast<BaseHDivFiniteElement> (fe))
+              return py::cast(hdivfe);
 
-            auto hdivdivfe = dynamic_pointer_cast<BaseHDivDivFiniteElement> (fe);
-            if (hdivdivfe) return py::cast(hdivdivfe);
+            if (auto hdivdivfe = dynamic_pointer_cast<BaseHDivDivFiniteElement> (fe))
+              return py::cast(hdivdivfe);
 
             return py::cast(fe);
           }, py::arg("ei"), docu_string(R"raw_string(
@@ -1239,18 +1239,25 @@ rho : ngsolve.fem.CoefficientFunction
           Flags flags;
           if (spaces.Size() == 0)
             throw Exception("Product space must have at least one space");
+          /*
           int dim = spaces[0]->GetDimension();
           for (auto space : spaces)
             if (space->GetDimension() != dim)
               throw Exception("Product space of spaces with different dimensions is not allowed");
+
           flags.SetFlag ("dim", dim);
+
           bool is_complex = spaces[0]->IsComplex();
           for (auto space : spaces)
             if (space->IsComplex() != is_complex)
               throw Exception("Product space of spaces with complex and real spaces is not allowed");
           if (is_complex)
             flags.SetFlag ("complex");
-
+          */
+          
+          if (spaces[0]->IsComplex()) flags.SetFlag("complex");
+          flags.SetFlag("dim", spaces[0]->GetDimension());
+          
           bool autoupdate = spaces[0]->DoesAutoUpdate();
           for (auto space : spaces)
             if (space->DoesAutoUpdate() != autoupdate)

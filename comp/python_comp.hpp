@@ -53,7 +53,10 @@ namespace ngcomp
     return dynamic_pointer_cast<FESPACE>(fes);
   };
 
+
   inline void connect_auto_update(FESpace* fes) {
+    fes->ConnectAutoUpdate();
+    /*
     if (fes->weak_from_this().expired())
       throw Exception("Given pointer is not managed by a shared ptr.");
     if (fes->DoesAutoUpdate())
@@ -62,13 +65,17 @@ namespace ngcomp
                                                    fes->Update();
                                                    fes->FinalizeUpdate();
                                                  });
+    */
   }
-
+  
   inline void connect_auto_update(GridFunction* gf) {
+    gf->ConnectAutoUpdate();
+    /*
     if (gf->weak_from_this().expired())
       throw Exception("Given pointer is not managed by a shared ptr.");
     if (gf->DoesAutoUpdate())
       gf->GetFESpace()->updateSignal.Connect(gf, [gf](){ gf->Update(); });
+    */
   }
 
   template <typename FES, typename BASE=FESpace>
@@ -88,7 +95,8 @@ namespace ngcomp
                       auto fes = make_shared<FES>(ma,flags);
                       fes->Update();
                       fes->FinalizeUpdate();
-                      connect_auto_update(fes.get());
+                      // connect_auto_update(fes.get());
+                      fes -> ConnectAutoUpdate();
                       return fes;
                     }),py::arg("mesh"))
     
