@@ -2005,7 +2005,361 @@ namespace ngbla
         c.Rows(i,i2).Cols(i,i2) += tempc;
       }
   }
+  
 
+
+  /* *********************** double - Complex mixed arithmetics (WIP) ******************** */
+
+
+  // n ... number of doubles
+  INLINE
+  void MyScal4x4 (int n,
+                  double * pa1, double * pa2, double * pa3, double * pa4,
+                  Complex * pb1, Complex * pb2, Complex * pb3, Complex * pb4,
+                  SIMD<double,4> & sum11, SIMD<double,4> & sum21, SIMD<double,4> & sum31, SIMD<double,4> & sum41,
+                  SIMD<double,4> & sum12, SIMD<double,4> & sum22, SIMD<double,4> & sum32, SIMD<double,4> & sum42)
+  {
+    /*
+    __m128d * pb1 = reinterpret_cast<__m128d*> (_pb1);
+    __m128d * pb2 = reinterpret_cast<__m128d*> (_pb2);
+    __m128d * pb3 = reinterpret_cast<__m128d*> (_pb3);
+    __m128d * pb4 = reinterpret_cast<__m128d*> (_pb4);
+    */
+
+    sum11 = 0.0;
+    sum21 = 0.0;
+    sum31 = 0.0;
+    sum41 = 0.0;
+    sum12 = 0.0;
+    sum22 = 0.0;
+    sum32 = 0.0;
+    sum42 = 0.0;
+
+    for (int i = 0; i < n; i++)
+      {
+        SIMD<double,4> a1(pa1[i]);
+        SIMD<double,4> a2(pa2[i]);
+        SIMD<double,4> a3(pa3[i]);
+        SIMD<double,4> a4(pa4[i]);
+        /*
+        SIMD<double,4> b1 = _mm256_broadcast_pd(pb1+i);
+        SIMD<double,4> b2 = _mm256_broadcast_pd(pb2+i);
+        SIMD<double,4> b3 = _mm256_broadcast_pd(pb3+i);
+        SIMD<double,4> b4 = _mm256_broadcast_pd(pb4+i);
+        SIMD<double,4> mb1 = _mm256_blend_pd(b1, b2, 12);
+        SIMD<double,4> mb2 = _mm256_blend_pd(b3, b4, 12);
+        */
+        SIMD<double,4> mb1(SIMD<double,2>((double*)(pb1+i)), SIMD<double,2>((double*)(pb2+i)));
+        SIMD<double,4> mb2(SIMD<double,2>((double*)(pb3+i)), SIMD<double,2>((double*)(pb4+i)));
+        
+        sum11 += a1 * mb1;
+        sum21 += a2 * mb1;
+        sum31 += a3 * mb1;
+        sum41 += a4 * mb1;
+        sum12 += a1 * mb2;
+        sum22 += a2 * mb2;
+        sum32 += a3 * mb2;
+        sum42 += a4 * mb2;
+      }
+    /*
+      s1 = _mm256_hadd_pd(sum11, sum12);
+      s2 = _mm256_hadd_pd(sum21, sum22);
+      s3 = _mm256_hadd_pd(sum31, sum32);
+      s4 = _mm256_hadd_pd(sum41, sum42);
+    */
+  }
+
+  
+  // n ... number of doubles
+  template <typename TI>
+  INLINE void MyScal2x4 (TI n,
+                         double * pa1, double * pa2,
+                         Complex * pb1, Complex * pb2, Complex * pb3, Complex * pb4,
+                         SIMD<double,4> & sum11, SIMD<double,4> & sum21,
+                         SIMD<double,4> & sum12, SIMD<double,4> & sum22)
+  {
+    sum11 = 0.0;
+    sum21 = 0.0;
+    sum12 = 0.0;
+    sum22 = 0.0;
+    
+    for (TI i = 0; i < n; i++)
+      {
+        SIMD<double,4> a1(pa1[i]);
+        SIMD<double,4> a2(pa2[i]);
+        SIMD<double,4> mb1(SIMD<double,2>((double*)(pb1+i)), SIMD<double,2>((double*)(pb2+i)));
+        SIMD<double,4> mb2(SIMD<double,2>((double*)(pb3+i)), SIMD<double,2>((double*)(pb4+i)));
+        sum11 += a1 * mb1;
+        sum21 += a2 * mb1;
+        sum12 += a1 * mb2;
+        sum22 += a2 * mb2;
+      }
+  }
+
+  // n ... number of doubles
+  INLINE
+  void MyScal2x2 (int n,
+                  double * pa1, double * pa2,
+                  Complex * pb1, Complex * pb2,
+                  SIMD<double,4> & sum11, SIMD<double,4> & sum21)
+  {
+    sum11 = 0.0;
+    sum21 = 0.0;
+    
+    for (int i = 0; i < n; i++)
+      {
+        SIMD<double,4> a1(pa1[i]);
+        SIMD<double,4> a2(pa2[i]);
+        SIMD<double,4> mb1(SIMD<double,2>((double*)(pb1+i)), SIMD<double,2>((double*)(pb2+i)));
+
+        sum11 += a1 * mb1;
+        sum21 += a2 * mb1;
+      }
+  }
+
+
+  // n ... number of doubles
+  INLINE
+  void MyScal1x4 (int n,
+                  double * pa1,
+                  Complex * pb1, Complex * pb2, Complex * pb3, Complex * pb4,
+                  SIMD<double,4> & sum11,
+                  SIMD<double,4> & sum12)
+  {
+    sum11 = 0.0;
+    sum12 = 0.0;
+    
+    for (int i = 0; i < n; i++)
+      {
+        SIMD<double,4> a1(pa1[i]);
+        SIMD<double,4> mb1(SIMD<double,2>((double*)(pb1+i)), SIMD<double,2>((double*)(pb2+i)));
+        SIMD<double,4> mb2(SIMD<double,2>((double*)(pb3+i)), SIMD<double,2>((double*)(pb4+i)));
+        sum11 += a1 * mb1;
+        sum12 += a1 * mb2;
+      }
+  }
+
+
+  
+  void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  {
+    // c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack;
+
+    size_t i = 0;
+    if (a.Width() <= 0) return;
+    
+    for ( ; i+3 < a.Height(); i += 4)
+      {
+        int j = 0;
+        for ( ; j+3 < b.Height(); j += 4)
+          {
+            SIMD<double,4> s11, s21, s31, s41, s12, s22, s32, s42;
+            MyScal4x4 (a.Width(), &a(i,0), &a(i+1,0), &a(i+2,0), &a(i+3,0),
+                       &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0),
+                       s11, s21, s31, s41, s12, s22, s32, s42);
+
+            s11 += SIMD<double,4>(reinterpret_cast<double*>(&c(i,j)));
+            s21 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+1,j)));
+            s31 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+2,j)));
+            s41 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+3,j)));
+            s12 += SIMD<double,4>(reinterpret_cast<double*>(&c(i,j+2)));
+            s22 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+1,j+2)));
+            s32 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+2,j+2)));
+            s42 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+3,j+2)));
+            s11.Store(reinterpret_cast<double*>(&c(i,j)));
+            s21.Store(reinterpret_cast<double*>(&c(i+1,j)));
+            s31.Store(reinterpret_cast<double*>(&c(i+2,j)));
+            s41.Store(reinterpret_cast<double*>(&c(i+3,j)));
+            s12.Store(reinterpret_cast<double*>(&c(i,j+2)));
+            s22.Store(reinterpret_cast<double*>(&c(i+1,j+2)));
+            s32.Store(reinterpret_cast<double*>(&c(i+2,j+2)));
+            s42.Store(reinterpret_cast<double*>(&c(i+3,j+2)));
+          }
+        
+        for ( ; j+1 < c.Width(); j += 2)
+          for (int i2 = i; i2 < i+4; i2 += 2)
+            {
+              SIMD<double,4> s11, s21;
+              MyScal2x2 (a.Width(), &a(i2,0), &a(i2+1,0),
+                         &b(j,0), &b(j+1,0),
+                         s11, s21);
+              s11 += SIMD<double,4>(reinterpret_cast<double*>(&c(i2,j)));
+              s21 += SIMD<double,4>(reinterpret_cast<double*>(&c(i2+1,j)));
+              s11.Store(reinterpret_cast<double*>(&c(i2,j)));
+              s21.Store(reinterpret_cast<double*>(&c(i2+1,j)));
+            }
+
+        for (  ; j < c.Width(); j++)
+          for (int i2 = i; i2 < i+4; i2 ++)
+            c(i2,j) += InnerProduct(a.Row(i2), b.Row(j));
+      }
+
+
+    
+    for ( ; i+1 < c.Height(); i += 2)
+      {
+        int j = 0;
+        for ( ; j+3 < c.Width(); j += 4)
+          {
+            SIMD<double,4> s11, s21, s12, s22;
+            MyScal2x4 (a.Width(), &a(i,0), &a(i+1,0),
+                       &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0),
+                       s11, s21, s12, s22);
+            s11 += SIMD<double,4>(reinterpret_cast<double*>(&c(i,j)));
+            s21 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+1,j)));
+            s12 += SIMD<double,4>(reinterpret_cast<double*>(&c(i,j+2)));
+            s22 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+1,j+2)));
+            s11.Store(reinterpret_cast<double*>(&c(i,j)));
+            s21.Store(reinterpret_cast<double*>(&c(i+1,j)));
+            s12.Store(reinterpret_cast<double*>(&c(i,j+2)));
+            s22.Store(reinterpret_cast<double*>(&c(i+1,j+2)));
+          }
+        for ( ; j+1 < c.Width(); j += 2)
+          {
+            SIMD<double,4> s11, s21;
+            MyScal2x2 (a.Width(), &a(i,0), &a(i+1,0),
+                       &b(j,0), &b(j+1,0),
+                       s11, s21);
+            s11 += SIMD<double,4>(reinterpret_cast<double*>(&c(i,j)));
+            s21 += SIMD<double,4>(reinterpret_cast<double*>(&c(i+1,j)));
+            s11.Store(reinterpret_cast<double*>(&c(i,j)));
+            s21.Store(reinterpret_cast<double*>(&c(i+1,j)));
+          }
+        for (  ; j < c.Width(); j++)
+          {
+            c(i,j) += InnerProduct(a.Row(i), b.Row(j));
+            c(i+1,j) += InnerProduct(a.Row(i+1), b.Row(j));
+          }
+      }
+
+  
+    if (i < c.Height())
+      {
+        int j = 0;
+        for ( ; j+3 < c.Width(); j += 4)
+          {
+            SIMD<double,4> s11, s12;
+            MyScal1x4 (a.Width(), &a(i,0),
+                       &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0), s11, s12);
+            s11 += SIMD<double,4>(reinterpret_cast<double*>(&c(i,j)));
+            s11.Store(reinterpret_cast<double*>(&c(i,j)));
+            s12 += SIMD<double,4>(reinterpret_cast<double*>(&c(i,j+2)));
+            s12.Store(reinterpret_cast<double*>(&c(i,j+2)));
+          }
+        for ( ; j < c.Width(); j++)
+          {
+            c(i,j) += InnerProduct(a.Row(i), b.Row(j));            
+          }
+      }
+  }
+  
+  void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  {
+    // c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack;
+
+  
+    if (a.Width() <= 0) return;
+  
+    int j = 0;
+    for ( ; j+3 < c.Width(); j += 4)
+      {
+        int i = j;
+        Complex * pc = &c(i,j);
+        for ( ; i+3 < c.Height(); i += 4)
+          {
+            SIMD<double,4> s11, s21, s31, s41;
+            SIMD<double,4> s12, s22, s32, s42;
+            MyScal4x4 (a.Width(),
+                       &a(i,0), &a(i+1,0), &a(i+2,0), &a(i+3,0),
+                       &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0),
+                       s11, s21, s31, s41,
+                       s12, s22, s32, s42);
+
+            double * pcd = reinterpret_cast<double*> (pc);
+            s11 += SIMD<double,4>(pcd);
+            s11.Store(pcd);
+            s12 += SIMD<double,4>(pcd+4);
+            s12.Store(pcd+4);
+          
+            pc += c.Dist();
+            pcd = reinterpret_cast<double*> (pc);          
+            s21 += SIMD<double,4>(pcd);
+            s21.Store(pcd);
+            s22 += SIMD<double,4>(pcd+4);
+            s22.Store(pcd+4);
+
+            pc += c.Dist();
+            pcd = reinterpret_cast<double*> (pc);                    
+            s31 += SIMD<double,4>(pcd);
+            s31.Store(pcd);
+            s32 += SIMD<double,4>(pcd+4);
+            s32.Store(pcd+4);
+
+            pc += c.Dist();
+            pcd = reinterpret_cast<double*> (pc);                              
+            s41 += SIMD<double,4>(pcd);
+            s41.Store(pcd);
+            s42 += SIMD<double,4>(pcd+4);
+            s42.Store(pcd+4);
+            pc += c.Dist();          
+          }
+
+        if (i+1 < c.Height())
+          {
+            SIMD<double,4> s11, s21;
+            SIMD<double,4> s12, s22;
+            MyScal2x4 (a.Width(), &a(i,0), &a(i+1,0),
+                       &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0),
+                       s11, s21, s12, s22);
+
+            double * pcd = reinterpret_cast<double*> (pc);          
+            s11 += SIMD<double,4>(pcd);
+            s11.Store(pcd);
+            s12 += SIMD<double,4>(pcd+4);
+            s12.Store(pcd+4);
+          
+            pc += c.Dist();
+            pcd = reinterpret_cast<double*> (pc);          
+            s21 += SIMD<double,4>(pcd);
+            s21.Store(pcd);
+            s22 += SIMD<double,4>(pcd+4);
+            s22.Store(pcd+4);
+          
+            pc += c.Dist();
+            i += 2;
+          }
+
+        if (i < c.Height())
+          {
+            SIMD<double,4> s11, s12;
+            MyScal1x4 (a.Width(), &a(i,0),
+                       &b(j,0), &b(j+1,0), &b(j+2,0), &b(j+3,0), s11, s12);
+          
+            double * pcd = reinterpret_cast<double*> (pc);                    
+            s11 += SIMD<double,4>(pcd);
+            s11.Store(pcd);
+            s12 += SIMD<double,4>(pcd+4);
+            s12.Store(pcd+4);
+          }
+      }
+
+    for ( ; j < c.Width(); j++)
+      for (int i = j; i < c.Height(); i++)
+        c(i,j) += InnerProduct(a.Row(i), b.Row(j));
+    
+  }
+
+  void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  {
+    c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack;
+  }
+  
+  void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  {
+    c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack;
+  }
+  
+  
 
   /* ************************** SubAtDB ***************************** */
 

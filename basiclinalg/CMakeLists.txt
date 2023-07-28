@@ -17,7 +17,7 @@ add_library(ngbla ${NGS_LIB_TYPE}
         bandmatrix.cpp triangular.cpp calcinverse.cpp cholesky.cpp
         LUdecomposition.cpp householder.cpp svd.cpp
         eigensystem.cpp LapackGEP.cpp
-        python_bla.cpp avector.cpp ngblas.cpp
+        python_bla.cpp ngblas.cpp
         )
 
 add_dependencies(ngbla kernel_generated)
@@ -34,7 +34,7 @@ install( FILES
         bandmatrix.hpp cholesky.hpp matrix.hpp ng_lapack.hpp 
         vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp clapack.h     
         tensor.hpp triangular.hpp householder.hpp eigensystem.hpp calcinverse.hpp
-        avector.hpp ngblas.hpp simd_complex.hpp complex_wrapper.hpp
+        ngblas.hpp simd_complex.hpp complex_wrapper.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
