@@ -952,6 +952,7 @@ complex : bool
                                 }
 
 
+                                #ifdef LAPACK
                                 { // Lapack - Inverse
                                   Matrix<> a(n,n);
                                   a = 1e-5;
@@ -985,6 +986,7 @@ complex : bool
                                   t.Stop();
                                   cout << "LapackInverse GFlops = " << 1e-9 * ops*runs / t.GetTime() << endl;
                                 }
+                                #endif // LAPACK
 
 
 

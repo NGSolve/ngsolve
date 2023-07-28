@@ -43,11 +43,15 @@ namespace ngbla
     ngbla::integer lda = A.Dist(), ldu = U.Dist(), ldv = V.Dist();
     ngbla::integer lwork = work.Size();
 
+  #ifdef LAPACK
     dgesvd_ ( &jobu, &jobv, &m, &n, A.Data(), &lda,
               S.Data(),
               U.Data(), &ldu, V.Data(), &ldv,
               work.Data(), &lwork, 
               &info);
+  #else
+    throw Exception("No Lapack");
+  #endif
     // cout << "info = " << info << endl;
     // if (n <= 100)
     // cout << "S = " << S << endl;
