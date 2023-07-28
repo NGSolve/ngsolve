@@ -228,6 +228,7 @@ if (USE_LAPACK)
       find_package(LAPACK REQUIRED)
     endif()
     target_link_libraries(ngs_lapack INTERFACE "${LAPACK_LIBRARIES}")
+    list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
 endif (USE_LAPACK)
 
 #######################################################################
@@ -255,10 +256,8 @@ endif (USE_MKL)
 
 if(MKL_STATIC)
   set(LAPACK_CMAKE_LINK_INTERFACE PRIVATE)
-  list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
 else()
   set(LAPACK_CMAKE_LINK_INTERFACE PUBLIC)
-  list(APPEND NGSOLVE_COMPILE_DEFINITIONS LAPACK)
 endif()
 
 #######################################################################

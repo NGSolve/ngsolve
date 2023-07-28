@@ -612,7 +612,11 @@ namespace ngla
 	    }
 	}
     tf.Stop();
-    FactorSPD(); 
+    #ifdef LAPACK
+      FactorSPD();
+    #else
+      throw Exception ("No Lapack");
+    #endif // LAPACK
   }
  
 
@@ -944,6 +948,7 @@ namespace ngla
   }
   */
 
+#ifdef LAPACK
   // template <>
   template <class TM>
   void SparseCholeskyTM<TM> :: FactorSPD ()
@@ -1554,6 +1559,8 @@ namespace ngla
 
     // task_manager -> StartWorkers();
   }
+
+#endif // LAPACK
 
 
 
