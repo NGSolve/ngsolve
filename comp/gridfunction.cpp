@@ -104,6 +104,16 @@ namespace ngcomp
     throw Exception("GridFunction::Update not overloaded");
   }
 
+
+  void GridFunction :: ConnectAutoUpdate()
+  {
+    if (this->weak_from_this().expired())
+      throw Exception("Given pointer is not managed by a shared ptr.");
+    if (this->DoesAutoUpdate())
+      this->GetFESpace()->updateSignal.Connect(this, [this](){ this->Update(); });
+  }
+
+  
   void GridFunction :: DoArchive (Archive & archive)
   {
     archive & nested & autoupdate & visual & multidim & level_updated;

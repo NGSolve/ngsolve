@@ -1311,35 +1311,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return bli;
   }
 
-    /*
-  const FiniteElement & FESpace :: GetSFE (int selnr, LocalHeap & lh) const
-  {
-    return const_cast<FiniteElement&>(GetFE(ElementId(BND,selnr),lh));
-  }
-
-  const FiniteElement & FESpace :: GetCD2FE (int cd2elnr, LocalHeap & lh) const
-  {
-    return const_cast<FiniteElement&>(GetFE(ElementId(BBND,cd2elnr),lh));
-  }
-*/
-
-  /*
-  const FiniteElement & FESpace :: GetFE (ELEMENT_TYPE type) const
-  {
-    switch (type)
-      {
-      case ET_SEGM:  return *segm;
-      case ET_TRIG:  return *trig;
-      case ET_QUAD:  return *quad;
-      case ET_TET:   return *tet;
-      case ET_PYRAMID: return *pyramid;
-      case ET_PRISM: return *prism;
-      case ET_HEX:   return *hex;
-      case ET_POINT: return *point;
-      }
-    throw Exception ("GetFE: unknown type");
-  }
-  */
 
   
   void FESpace :: PrintReport (ostream & ost) const
@@ -1764,7 +1735,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return make_shared<Table<int>> (std::move(table));
   }
 
-    
+
+  void FESpace :: ConnectAutoUpdate() 
+  {
+    if (this->weak_from_this().expired())
+      throw Exception("Given pointer is not managed by a shared ptr.");
+    if (this->DoesAutoUpdate())
+      this->GetMeshAccess()->updateSignal.Connect(this, [this]()
+      {
+        this->Update();
+        this->FinalizeUpdate();
+      });
+  }
+  
   void FESpace :: SetDefinedOn (VorB vb, const BitArray & defon)
   {
     definedon[vb].SetSize(defon.Size());
@@ -1870,86 +1853,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
   }
   
-  /*
-  // Aendern, Bremse!!!
-  template < int S, class T >
-  void FESpace :: TransformVec (int elnr, VorB vb,
-				const FlatVector< Vec<S,T> >& vec, TRANSFORM_TYPE type) const
-  {
-    //cout << "Achtung, Bremse" << endl;
-
-    Vector<T> partvec(vec.Size());
-
-    for(int i=0; i<S; i++)
-      {
-	for(int j=0;j<vec.Size(); j++)
-	  partvec(j) = vec[j](i);
-
-	TransformVec(ElementId(vb, elnr),partvec,type);
-
-	for(int j=0;j<vec.Size(); j++)
-	  vec[j](i) = partvec(j);
-      }
-  }
-
-  template void FESpace::TransformVec(int elnr, VorB vb,
-				      const FlatVector< Vec<2,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-				      const FlatVector< Vec<3,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-				      const FlatVector< Vec<4,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-				      const FlatVector< Vec<5,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-				      const FlatVector< Vec<6,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-				      const FlatVector< Vec<7,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<8,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<9,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<10,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<11,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<12,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<13,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<14,double> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<15,double> >& vec, TRANSFORM_TYPE type) const;
-
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<2,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<3,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<4,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<5,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<6,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<7,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<8,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<9,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<10,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<11,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<12,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<13,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<14,Complex> >& vec, TRANSFORM_TYPE type) const;
-  template void FESpace::TransformVec(int elnr, VorB vb,
-					const FlatVector< Vec<15,Complex> >& vec, TRANSFORM_TYPE type) const;
-  */
 
   ostream & operator<< (ostream & ost, COUPLING_TYPE ct)
   {
@@ -2255,15 +2158,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<FESpace*>(this)->shared_from_this());
 
-    //should get virtual functions ....
-    // if (auto periodicspace = dynamic_pointer_cast<PeriodicFESpace>(fes))
-    // return periodicspace->GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
-    // if (auto compressedspace = dynamic_pointer_cast<CompressedFESpace>(fes))
-    // return compressedspace->GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
-    // if (auto reorderedspace = dynamic_pointer_cast<ReorderedFESpace>(fes))
-    // return reorderedspace->GetBaseSpace()->MakeProxyFunction (testfunction, addblock);
-    
-
     auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
                                               fes->GetEvaluator(),
                                               fes->GetFluxEvaluator(),
@@ -2386,21 +2280,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
         return SwitchET(et, [&lh] (auto type) -> FiniteElement&
                         { return * new (lh) ScalarFE<type.ElementType(),1>(); });
 
-        /*
-        switch (ma->GetElType(ei))
-          {
-          case ET_SEGM:    return *(new (lh) ScalarFE<ET_SEGM,1>);
-          case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
-          case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
-          case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
-          case ET_PRISM:   return *(new (lh) ScalarFE<ET_PRISM,1>);
-          case ET_PYRAMID: return *(new (lh) ScalarFE<ET_PYRAMID,1>);
-          case ET_HEX:     return *(new (lh) ScalarFE<ET_HEX,1>);
-          case ET_POINT:   return *(new (lh) ScalarFE<ET_POINT,1>);
-          default:
-            throw Exception ("Inconsistent element type in NodalFESpace::GetFE");
-          }
-        */
       }
     else
       {
@@ -2929,38 +2808,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         return SwitchET(et, [&lh] (auto type) -> FiniteElement&
                         { return * new (lh) ScalarFE<type.ElementType(),0>(); });
-
-        /*
-        switch (ma->GetElType(ei))
-          {
-          case ET_TET:     return * new (lh) ScalarFE<ET_TET,0>;
-          case ET_PRISM:   return * new (lh) FE_Prism0;
-          case ET_PYRAMID: return * new (lh) FE_Pyramid0;
-          case ET_HEX:     return * new (lh) FE_Hex0;
-          case ET_TRIG:    return * new (lh) ScalarFE<ET_TRIG,0>;
-          case ET_QUAD:    return * new (lh) ScalarFE<ET_QUAD,0>;
-          case ET_SEGM:    return * new (lh) FE_Segm0;
-          case ET_POINT:   return * new (lh) FE_Point;
-          }
-        */
       }
     else
       {
         return SwitchET(et, [&lh] (auto type) -> FiniteElement&
                         { return * new (lh) ScalarFE<type.ElementType(),1>(); });
-        /*
-        switch (ma->GetElType(ei))
-          {
-          case ET_TET:     return *(new (lh) ScalarFE<ET_TET,1>);
-          case ET_PRISM:   return *(new (lh) FE_Prism1);
-          case ET_PYRAMID: return *(new (lh) FE_Pyramid1);
-          case ET_HEX:     return *(new (lh) FE_Hex1);
-          case ET_TRIG:    return *(new (lh) ScalarFE<ET_TRIG,1>);
-          case ET_QUAD:    return *(new (lh) ScalarFE<ET_QUAD,1>);
-          case ET_SEGM:    return *(new (lh) FE_Segm1);
-          case ET_POINT:   return * new (lh) FE_Point;            
-          }
-        */
       }
     throw Exception ("Illegal element type in ElementFESpace::GetFE");
   }
@@ -3195,29 +3047,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     all_the_same = true;
   }
 
-
-  /*
-  CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
-				      const Array<shared_ptr<FESpace>> & aspaces,
-				      const Flags & flags, bool parseflags)
-    : FESpace (ama, flags), spaces(aspaces)
-  {
-    name="CompoundFESpaces";
-    DefineDefineFlag("compound");
-    DefineStringListFlag("spaces");
-    if(parseflags) CheckFlags(flags);
-    
-    auto hprol = make_shared<CompoundProlongation> (this);
-    for (auto space : spaces)
-      hprol -> AddProlongation (space->GetProlongation());      
-    prol = hprol;
-
-    needs_transform_vec = false;
-    for (auto space : spaces)
-      if (space->NeedsTransformVec())
-        needs_transform_vec = true;
-  }
-  */
   
   CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
 				      const Array<shared_ptr<FESpace>> & aspaces,
@@ -3231,6 +3060,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   void CompoundFESpace :: AddSpace (shared_ptr<FESpace> fes)
   {
+    if (fes->IsComplex() != this->IsComplex())
+      throw Exception("Product space of spaces with complex and real spaces is not allowed");
+    if (fes->GetDimension() != this->GetDimension())
+      throw Exception("Product space of spaces with different dimensions is not allowed");
+    
+    
     spaces.Append (fes);
     dynamic_pointer_cast<CompoundProlongation> (prol) -> AddProlongation (fes->GetProlongation());
     if (fes->NeedsTransformVec())      

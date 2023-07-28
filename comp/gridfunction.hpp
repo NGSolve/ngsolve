@@ -143,6 +143,8 @@ namespace ngcomp
     virtual void Update ();
     ///
     bool DoesAutoUpdate () const { return autoupdate; }
+    void ConnectAutoUpdate();
+    
     ///
     virtual void DoArchive (Archive & archive) override;
     ///  
