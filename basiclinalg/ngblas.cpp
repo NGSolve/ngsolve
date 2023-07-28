@@ -3256,6 +3256,7 @@ namespace ngbla
           cout << "MultMatVec GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultMatVec", 1e-9 * n*m*its / t.GetTime()));
         }
+    #ifdef LAPACK
         {
           Timer t("y = A*x, Lapack");
           t.Start();
@@ -3265,6 +3266,7 @@ namespace ngbla
           cout << "MultMatVec Lapack GFlops = " << 1e-9 * n*m*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultMatVecLapack", 1e-9 * n*m*its / t.GetTime()));
         }
+    #endif // LAPACK
       }
 
     if (what == 0 || what == 6)
@@ -4133,6 +4135,7 @@ namespace ngbla
         }
       }
 
+  #ifdef LAPACK
      if (what == 0 || what == 211)
       {
         // CalcInverse
@@ -4151,6 +4154,7 @@ namespace ngbla
           timings.push_back(make_tuple("LapackInv(A)", 1e-9 * tot *its / t.GetTime()));
         }
       }
+  #endif // LAPACK
      
      if (what == 0 || what == 300)
       {
@@ -4180,6 +4184,7 @@ namespace ngbla
           }
         else
           {
+          #ifdef LAPACK
             Timer t("LapackSVD");
             t.Start();
             for (size_t j = 0; j < its; j++)
@@ -4190,6 +4195,7 @@ namespace ngbla
             t.Stop();
             cout << "LapackSVD GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
             timings.push_back(make_tuple("LapackSVD", 1e-9 * tot *its / t.GetTime()));
+          #endif // LAPACK
           }
       }
 

@@ -41,6 +41,7 @@ namespace ngbla
   public:
     static INLINE T & Assign (MatExpr<T> & self, const Expr<LapackExpr<TB>> & v)
     {
+    #ifdef LAPACK
       if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As>)
                      LapackMultAdd (v.Spec().A().A(), v.Spec().A().B(), 1.0, self.Spec(), 0.0);
       if constexpr (std::is_same_v<TOP,typename MatExpr<T>::AsAdd>)
@@ -48,6 +49,9 @@ namespace ngbla
       if constexpr (std::is_same_v<TOP,typename MatExpr<T>::AsSub>)
                      LapackMultAdd (v.Spec().A().A(), v.Spec().A().B(), -1.0, self.Spec(), 0.0);
       return self.Spec();
+    #else // LAPACK
+      throw Exception("No Lapack");
+    #endif // LAPACK
     }
   };  
 

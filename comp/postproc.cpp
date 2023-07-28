@@ -15,10 +15,12 @@
 namespace ngcomp
 { 
 
+#ifdef LAPACK
   inline void LapackInverseSPD (ngbla::SliceMatrix<Complex> a)
   {
     LapackInverse (a);
   }
+#endif // LAPACK
 
   /*
   inline void LapackSolveSPD (FlatMatrix<> a, FlatVector<> rhs, FlatVector<> sol)
@@ -773,7 +775,11 @@ namespace ngcomp
                            }
                          else
                            {
+                           #ifdef LAPACK
                              LapackInverseSPD (elmat);
+                           #else // LAPACK
+                              throw Exception("no lapack");
+                           #endif // LAPACK
                              elfluxi = elmat * elflux;
                            }
                        }

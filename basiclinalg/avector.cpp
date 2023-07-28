@@ -62,6 +62,7 @@ namespace ngbla
 {
 
 
+#ifdef LAPACK
   int sgemm(char *transa, char *transb, integer *m, integer *
 		  n, integer *k, real *alpha, real *a, integer *lda, 
 		  real *b, integer *ldb, real *beta, real *c__, 
@@ -105,6 +106,7 @@ namespace ngbla
     return dgetrf_(n,m,a,lda,ipiv,info);
   }
 
+#endif // LAPACK
 
   
 #if defined (__AVX__) && !defined(__AVX512F__)
