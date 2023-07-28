@@ -11,7 +11,6 @@
 
 namespace ngcore
 {
-  using std::tie;
 
   INLINE SIMD<mask64> Mask128 (int64_t nr)
   {
@@ -64,13 +63,12 @@ namespace ngcore
     {
       SIMD<double,N> c1((double*)p);
       SIMD<double,N> c2((double*)(p+SIMD<double>::Size()/2));
-      tie(re,im) = Unpack(c1,c2);
+      std::tie(re,im) = Unpack(c1,c2);
     }
 
     void StoreFast (Complex * p)
     {
-      SIMD<double,N> h1, h2;
-      tie(h1,h2) = Unpack(re,im);
+      auto [h1,h2] = Unpack(re,im);
       h1.Store((double*)p);
       h2.Store((double*)(p+SIMD<double,N>::Size()/2));
     }
@@ -79,13 +77,12 @@ namespace ngcore
     {
       SIMD<double> c1((double*)p, Mask128(nr));
       SIMD<double> c2((double*)(p+SIMD<double>::Size()/2), Mask128(nr-SIMD<double>::Size()/2));
-      tie(re,im) = Unpack(c1,c2);
+      std::tie(re,im) = Unpack(c1,c2);
     }
 
     void StoreFast (Complex * p, int nr)
     {
-      SIMD<double> h1, h2;
-      tie(h1,h2) = Unpack(re,im);
+      auto [h1,h2] = Unpack(re,im);
       h1.Store((double*)p, Mask128(nr));
       h2.Store((double*)(p+SIMD<double>::Size()/2), Mask128(nr-SIMD<double>::Size()/2));
     }

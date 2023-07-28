@@ -2,26 +2,22 @@
 
 namespace ngbla
 {
-  using namespace ngbla;
 
-
-  void CalcEigenSystem (const FlatMatrix<double> & mat1,
-			FlatVector<double> & lami,
-			FlatMatrix<double> & eigenvecs)
+  void CalcEigenSystem (const FlatMatrix<double> mat1,
+			FlatVector<double> lami,
+			FlatMatrix<double> eigenvecs)
   {
-    int i, j, k, l;
-    
     int n = mat1.Height();    
     Matrix<double> mat(n, n);
     mat = mat1;
 
     eigenvecs = 0;
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
       eigenvecs(i,i) = 1;
     
-    for (l = 0; l < 100; l++)
-      for (i = 0; i < n; i++)
-	for (j = 0; j < i; j++)
+    for (int l = 0; l < 100; l++)
+      for (int i = 0; i < n; i++)
+	for (int j = 0; j < i; j++)
 	  {
 	    // find eigensystem of a(i-j,i-j)
 
@@ -92,7 +88,7 @@ namespace ngbla
 	
 	    // V^T A V = V^T G^{-1}  (G^T A G)  G^{-1} V
 
-	    for (k = 0; k < n; k++)
+	    for (int k = 0; k < n; k++)
 	      {
 		double v1 = mat(k,i);
 		double v2 = mat(k,j);
@@ -100,7 +96,7 @@ namespace ngbla
 		mat(k,j) = v1 * y21 + v2 * y22;
 	      }
 
-	    for (k = 0; k < n; k++)
+	    for (int k = 0; k < n; k++)
 	      {
 		double v1 = mat(i,k);
 		double v2 = mat(j,k);
@@ -111,7 +107,7 @@ namespace ngbla
 	    mat(i,j) = 0;
 	    mat(j,i) = 0;
 
-	    for (k = 0; k < n; k++)
+	    for (int k = 0; k < n; k++)
 	      {
 		double v1 = eigenvecs(i,k);
 		double v2 = eigenvecs(j,k);
@@ -120,7 +116,7 @@ namespace ngbla
 	      }
 	  }
 
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
       lami(i) = mat(i,i);
   }
 }

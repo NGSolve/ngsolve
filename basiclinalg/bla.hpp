@@ -17,15 +17,13 @@
 #include "triangular.hpp"
 #include "householder.hpp"
 #include "tensor.hpp"
+#include "eigensystem.hpp"
 
 // so far we can move stuff to ngcore
 
 #include "calcinverse.hpp"
-#include "eigensystem.hpp"
 #include "simd_complex.hpp"
 
 #include "ng_lapack.hpp"
-// #include "avector.hpp"
-
 
 #endif

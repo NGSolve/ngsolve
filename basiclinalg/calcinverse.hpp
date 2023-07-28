@@ -127,6 +127,13 @@ namespace ngbla
   }
 
 
+  
+  /// Computes the Schur Complement.
+  extern NGS_DLL_HEADER void CalcSchurComplement (const FlatMatrix<double> a, 
+				   FlatMatrix<double> s,
+				   const BitArray & used,
+				   LocalHeap & lh);
+
 }
 
 
