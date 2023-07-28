@@ -10,6 +10,7 @@ namespace ngbla
 
 #if defined(__AVX__) && !defined(__AVX512F__)
 
+  /*
   extern void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
 
@@ -17,7 +18,8 @@ namespace ngbla
   // extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c);
   extern void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
   extern void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c);
-
+  */
+  
   /*
   extern void SubAtB (SliceMatrix<double> a, SliceMatrix<double> b, SliceMatrix<double> c);
   inline void SubABt (SliceMatrix<double,ColMajor> a, SliceMatrix<double,ColMajor> b, SliceMatrix<double,ColMajor> c)
@@ -37,6 +39,7 @@ namespace ngbla
   // INLINE void AddABtSym (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   // { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
 
+  /*
   INLINE void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
   { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
   
@@ -48,6 +51,7 @@ namespace ngbla
   
   INLINE void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
   { c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack; }
+  */
 
 #endif // __AVX__
 

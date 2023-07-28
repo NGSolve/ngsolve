@@ -25,7 +25,7 @@
 #include "simd_complex.hpp"
 
 #include "ng_lapack.hpp"
-#include "avector.hpp"
+// #include "avector.hpp"
 
 
 #endif
