@@ -16,7 +16,9 @@
 #include "coefficient_impl.hpp"
 
 #include <core/register_archive.hpp>
+#ifdef NGS_PYTHON
 #include <core/python_ngcore.hpp> // for shallow archive
+#endif // NGS_PYTHON
 
 namespace ngfem {
 
