@@ -157,6 +157,7 @@ namespace ngcomp
     virtual BaseVector & GetVector () const override { return *vec; }
     virtual shared_ptr<BaseVector> GetVectorPtr () const override { return vec; }
 
+    virtual void AllocateVector () override;
     virtual void CleanUpLevel() override;    
     ///
     virtual void AddElementVector (FlatArray<int> dnums,
@@ -193,17 +194,11 @@ namespace ngcomp
     ///
     using S_LinearForm<TSCAL>::S_LinearForm;
 
-    /*
-    T_LinearForm(shared_ptr<FESpace> afespace, const string & aname,
-        const Flags & flags)
-        : BASE(afespace, aname, flags) { ; }
-    */
     ///
     virtual ~T_LinearForm () { };
 
-
     ///
-    virtual void AllocateVector () override;
+    // virtual void AllocateVector () override;
     ///
     // virtual void CleanUpLevel() override;
 

@@ -304,14 +304,6 @@ namespace ngcomp
   class NGS_DLL_HEADER S_GridFunction : public GridFunction
   {
   public:
-    /*
-    S_GridFunction (const FESpace & afespace, const string & aname, const Flags & flags)
-      : GridFunction (afespace, aname, flags) { ; }
-    S_GridFunction (shared_ptr<FESpace> afespace, const string & aname, const Flags & flags)
-      : GridFunction (afespace, aname, flags) { ; }
-    */
-    // using GridFunction::GridFunction;
-
     S_GridFunction (shared_ptr<FESpace> afespace, 
 		    const string & aname = "gfu", 
 		    const Flags & flags = Flags());
