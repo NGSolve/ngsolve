@@ -604,6 +604,7 @@ void GenerateMultiVecScalC_generic (ostream & out, int h, int w, bool c)
   out << "size_t i = 0;" << endl;
   out << "for (; i+SW <= 2*n; i+=SW) {" << endl; // 2*n since the vectors are complex
 
+#ifdef OLD  
   for (int i = 0; i < h; i++) {
     out << "SIMD<double> a" << i << "(pa" << i << " + i);" << endl;
     /*
@@ -627,7 +628,21 @@ void GenerateMultiVecScalC_generic (ostream & out, int h, int w, bool c)
       // out << "sum" << i << "_" << j << " += SIMD<double> (" << SIMD_FMAADDSUB << "(a" << i << "Re, b" << j << ".Data(), a" << i << "Im_b" << j << "Swap));" << endl;
       out << "sum" << i << "_" << j << " += FMAddSub (a" << i << "Re, b" << j << ", a" << i << "Im_b" << j << "Swap);" << endl;
     }
-  }
+#endif
+    
+    for (int i = 0; i < h; i++)
+      out << "SIMD<double> a" << i << "(pa" << i << " + i);" << endl;
+
+    for (int j = 0; j < w; j++)
+      {
+        out << "SIMD<double> b" << j << "(pb" << j << " + i);" << endl;
+        if (c) 
+          out << "b" << j << " *= conj;" << endl;
+        
+        for (int i = 0; i < h; i++)
+          out << "FMAComplex(a" << i << ", b" << j << ", sum" << i << "_" << j << ");" << endl;
+      }
+    
   out << "}" << endl;
 
   // remaining coefficients
