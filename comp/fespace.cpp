@@ -3701,16 +3701,19 @@ lot of new non-zero entries in the matrix!\n" << endl;
             else
               evaluator[vb] = make_shared<MatrixDifferentialOperator> (eval, vdim);
           }
-        // if (auto fluxeval = spaces[0] -> GetFluxEvaluator(vb))
-        // flux_evaluator[vb] = make_shared<VectorDifferentialOperator> (fluxeval, dim);
+        
+        if (auto fluxeval = spaces[0] -> GetFluxEvaluator(vb))
+          {
+            if (!symmetric && !skewsymmetric && !deviatoric)
+              flux_evaluator[vb] = make_shared<MatrixDifferentialOperator> (fluxeval, vdim);
+          }
       }
 
-    /*
     auto additional = spaces[0]->GetAdditionalEvaluators();
     for (int i = 0; i < additional.Size(); i++)
       additional_evaluators.Set (additional.GetName(i),
-                                 make_shared<VectorDifferentialOperator>(additional[i], dim));
-    */
+                                 make_shared<MatrixDifferentialOperator>(additional[i], vdim));
+    
     /*
     if (symmetric)
       type = "Sym"+Matrix"+(*this)[0]->type;
