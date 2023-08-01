@@ -2483,7 +2483,9 @@ void TestFunc31
 }
 
 
-  void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+template <typename FUNC>
+void T_AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c,
+               FUNC func)
   {
     // c.AddSize(a.Height(), b.Height()) += a * Trans(b); // | Lapack;
     // return ;
@@ -2505,7 +2507,8 @@ void TestFunc31
             pb[0] = &b(j,0);
             pb[1] = &b(j+1,0);
             MultiVecScalC<6,2,0> (a.Width(), pa, pb, block.Data(), block.Dist());
-            c.Rows(i,i+6).Cols(j,j+2).AddSize(6,2) += block;
+            // c.Rows(i,i+6).Cols(j,j+2).AddSize(6,2) += block;
+            func (block.View(), c.Rows(i,i+6).Cols(j,j+2).AddSize(6,2));
           }
         for ( ; j+1 <= b.Height(); j+=1)
           {
@@ -2519,7 +2522,8 @@ void TestFunc31
             pa[5] = &a(i+5,0);
             pb[0] = &b(j,0);
             MultiVecScalC<6,1,0> (a.Width(), pa, pb, block.Data(), block.Dist());
-            c.Rows(i,i+6).Cols(j,j+1).AddSize(6,1) += block.Cols(0,1);
+            // c.Rows(i,i+6).Cols(j,j+1).AddSize(6,1) += block.Cols(0,1);
+            func (block.Cols(0,1), c.Rows(i,i+6).Cols(j,j+1).AddSize(6,1));            
           }
       }
     for ( ; i+3 <= a.Height(); i+=3)
@@ -2535,7 +2539,8 @@ void TestFunc31
             pb[0] = &b(j,0);
             pb[1] = &b(j+1,0);
             MultiVecScalC<3,2,0> (a.Width(), pa, pb, block.Data(), block.Dist());
-            c.Rows(i,i+3).Cols(j,j+2).AddSize(3,2) += block.Rows(0,3);
+            // c.Rows(i,i+3).Cols(j,j+2).AddSize(3,2) += block.Rows(0,3);
+            func (block.Rows(0,3), c.Rows(i,i+3).Cols(j,j+2).AddSize(3,2));                        
           }
         for ( ; j+1 <= b.Height(); j+=1)
           {
@@ -2546,12 +2551,28 @@ void TestFunc31
             pa[2] = &a(i+2,0);
             pb[0] = &b(j,0);
             MultiVecScalC<3,1,0> (a.Width(), pa, pb, block.Data(), block.Dist());
-            c.Rows(i,i+3).Cols(j,j+1).AddSize(3,1) += block.Rows(0,3).Cols(0,1);
+            // c.Rows(i,i+3).Cols(j,j+1).AddSize(3,1) += block.Rows(0,3).Cols(0,1);
+            func (block.Rows(0,3).Cols(0,1), c.Rows(i,i+3).Cols(j,j+1).AddSize(3,1));                                    
           }
       }
     if (i < a.Height())
-      c.Rows(i,a.Height()).AddSize(a.Height()-i, b.Height()) += a.Rows(i, a.Height()) * Trans(b); 
+      // c.Rows(i,a.Height()).AddSize(a.Height()-i, b.Height()) += a.Rows(i, a.Height()) * Trans(b);
+      func(a.Rows(i, a.Height()) * Trans(b), c.Rows(i,a.Height()).AddSize(a.Height()-i, b.Height()));
   }
+
+
+  void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  {
+    T_AddABt (a, b, c, [](auto ab, auto c) { c += ab; });
+  }
+
+  void SubABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  {
+    T_AddABt (a, b, c, [](auto ab, auto c) { c -= ab; });
+  }
+
+
+
   
   void AddABtSym (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
   {

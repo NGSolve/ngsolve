@@ -13,6 +13,7 @@ namespace ngcomp
                         FlatMatrix<Complex> & evecs)
   { ; }
 
+  /*
   void MinusMultAB (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
   {
     c = -a * b | Lapack;
@@ -25,6 +26,7 @@ namespace ngcomp
   {
     c += a*b | Lapack;
   }
+  */
 
   template <typename T>
   inline void AInvBt (ngbla::FlatMatrix<T> a, ngbla::FlatMatrix<T> b)
@@ -2314,7 +2316,8 @@ namespace ngcomp
                                  if (elim_only_hidden || !keep_internal) 
                                    {
                                      AInvBt (d, b);    // b <--- b d^-1
-                                     LapackMultAddABt (b, c, -1, a);                                 
+                                     // LapackMultAddABt (b, c, -1, a);
+                                     SubABt (b, c, a);
                                    }
                                  else
                                    {
@@ -2401,8 +2404,9 @@ namespace ngcomp
                                              cidnums.AppendHaveMem(dof);
 
                                          AInvBt (dd, db);    // b <--- b d^-1
-                                         LapackMultAddABt (db, dc, -1, da);   
-                             
+                                         // LapackMultAddABt (db, dc, -1, da);   
+                                         SubABt (db, dc, da);
+                                         
                                          innermatrix_ptr->AddElementMatrix(el.Nr(),cidnums,cidnums,da);
                                        }
                                        else
@@ -4241,7 +4245,8 @@ namespace ngcomp
                          if (elim_only_hidden || !keep_internal)
                            {
                              AInvBt (d, b);
-                             LapackMultAddABt (b, c, -1, a);
+                             // LapackMultAddABt (b, c, -1, a);
+                             SubABt (b, c, a);
                            }
                          else
                            {
