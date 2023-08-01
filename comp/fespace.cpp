@@ -3710,16 +3710,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
     auto additional = spaces[0]->GetAdditionalEvaluators();
-    for (int i = 0; i < additional.Size(); i++)
-      additional_evaluators.Set (additional.GetName(i),
-                                 make_shared<MatrixDifferentialOperator>(additional[i], vdim));
+    if (!symmetric && !skewsymmetric && !deviatoric)
+      for (int i = 0; i < additional.Size(); i++)
+        additional_evaluators.Set (additional.GetName(i),
+                                   make_shared<MatrixDifferentialOperator>(additional[i], vdim));
     
-    /*
-    if (symmetric)
-      type = "Sym"+Matrix"+(*this)[0]->type;
-    else
-      type = "Matrix"+(*this)[0]->type;
-    */
     type = string((symmetric) ? "Sym" : "") + string((skewsymmetric) ? "Skew" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->type;
 
     for (VorB vb : {VOL, BND, BBND, BBBND})
@@ -3728,7 +3723,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   string MatrixFESpace :: GetClassName () const
   {
-    // return ( symmetric ? "SymMatrix" : "Matrix" ) + (*this)[0]->GetClassName();
     return string(symmetric ? "Sym" : "") + string(skewsymmetric ? "Skew" : "") + (deviatoric ? "Dev" : "") + "Matrix" + (*this)[0]->GetClassName();
   }
 
