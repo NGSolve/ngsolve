@@ -47,7 +47,7 @@ namespace ngbla
       if constexpr (std::is_same_v<TOP,typename MatExpr<T>::AsAdd>)
                      LapackMultAdd (v.Spec().A().A(), v.Spec().A().B(), 1.0, self.Spec(), 1.0);
       if constexpr (std::is_same_v<TOP,typename MatExpr<T>::AsSub>)
-                     LapackMultAdd (v.Spec().A().A(), v.Spec().A().B(), -1.0, self.Spec(), 0.0);
+                     LapackMultAdd (v.Spec().A().A(), v.Spec().A().B(), -1.0, self.Spec(), 1.0);
       return self.Spec();
     #else // LAPACK
       throw Exception("No Lapack");
