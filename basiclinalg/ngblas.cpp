@@ -2482,8 +2482,6 @@ void TestFunc31
     pc[0+2*dc].imag(hsum[1]); }
 }
 
-// ARM complex mult:
-// https://arxiv.org/pdf/1901.07294.pdf
 
   void AddABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
   {
