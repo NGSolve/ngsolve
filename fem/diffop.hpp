@@ -761,17 +761,7 @@ namespace ngfem
     int vdim;
   public:
     MatrixDifferentialOperator (shared_ptr<DifferentialOperator> adiffop, 
-                                int avdim)
-      : DifferentialOperator(sqr(avdim)*adiffop->Dim(), adiffop->BlockDim(),
-                             adiffop->VB(), adiffop->DiffOrder()),
-        diffop(adiffop), vdim(avdim)
-    {
-      if (adiffop->Dimensions().Size() == 0)
-        // dimensions = Array<int> ( { avdim, avdim });
-        SetDimensions ( { avdim, avdim } );
-      else
-        throw Exception("no matrix-valued of vector-valued possible");
-    }
+                                int avdim);
 
     NGS_DLL_HEADER virtual ~MatrixDifferentialOperator ();
     
