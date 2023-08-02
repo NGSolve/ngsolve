@@ -928,6 +928,8 @@ namespace ngfem
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
+    static_cast<const FEL*>(this) -> CalcDualShape2 (mip, shape);    
+    /*
     try
       {
         static_cast<const FEL*>(this) -> CalcDualShape2 (mip, shape);
@@ -939,6 +941,7 @@ namespace ngfem
         static_cast<const FEL*> (this)->        
           T_CalcDualShape (GetTIP<DIM>(mip.IP()), SBLambda ( [&](int j, double val) { shape(j) = imeas * val; }));
       }
+    */
   }
   
   

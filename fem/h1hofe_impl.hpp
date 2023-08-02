@@ -42,10 +42,15 @@ namespace ngfem
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcDualShape (const TIP<DIM,Tx> ip, TFA & shape) const
-    { throw Exception ("T_dual shape not implemented, H1Ho"); }      
+    { throw Exception ("T_dual shape not implemented, H1Ho"+ToString(ET)); }      
     
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
-    { throw Exception ("dual shape not implemented, H1Ho"); }
+    {
+      double imeas = 1.0/mip.GetMeasure();
+      shape = 0.0;
+      T_CalcDualShape (GetTIP<DIM>(mip.IP()), SBLambda ( [&](int j, double val) { shape(j) = imeas * val; }));
+      // throw Exception ("dual shape not implemented, H1Ho");
+    }
 
     bool GetDiagDualityMassInverse2 (FlatVector<> diag) const { return false; }
   };
@@ -60,13 +65,14 @@ namespace ngfem
     shape[0] = Tx(1.0);
   }
 
-
+  /*
   template<>
   inline void H1HighOrderFE_Shape<ET_POINT> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
     shape[0] = 1.0;
   }
-
+  */
+  
   /* *********************** Segment  **********************/  
 
   template <> template<typename Tx, typename TFA>  
@@ -105,7 +111,7 @@ namespace ngfem
       }
   }
 
-
+#ifdef NONE
   template<>
   inline void H1HighOrderFE_Shape<ET_SEGM> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
@@ -129,7 +135,7 @@ namespace ngfem
 			  1.0/mip.GetMeasure() /* *lam[e[0]]*lam[e[1]]*/, shape+2);
       }
   }
-
+#endif
 
   /* *********************** Triangle  **********************/
 
@@ -200,6 +206,7 @@ namespace ngfem
       }
   }
 
+#ifdef NONE
   template<>
   inline void H1HighOrderFE_Shape<ET_TRIG> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
@@ -238,7 +245,7 @@ namespace ngfem
                                lam[f[0]], lam[f[1]],1.0/mip.GetMeasure(), shape+ii);
       }
   }
-
+#endif
 
   /* *********************** Quadrilateral  **********************/
 
@@ -536,7 +543,7 @@ namespace ngfem
     // 	      shape+ii);
   }
 
-
+#ifdef NONE
   template<>
   inline void H1HighOrderFE_Shape<ET_TET> ::
   CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
@@ -580,7 +587,7 @@ namespace ngfem
     if (ip.VB() == VOL && order_cell[0][0] >= 4)
       DubinerBasis3DOrthoBub::EvalMult (order_cell[0][0]-4, lam[0], lam[1], lam[2], 1.0/mip.GetMeasure(), shape+ii);
   }
-
+#endif
   
 
   template<> template<typename Tx, typename TFA>  
