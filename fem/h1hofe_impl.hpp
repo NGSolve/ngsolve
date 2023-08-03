@@ -65,13 +65,11 @@ namespace ngfem
     shape[0] = Tx(1.0);
   }
 
-  /*
   template<>
   inline void H1HighOrderFE_Shape<ET_POINT> ::CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
   {
     shape[0] = 1.0;
   }
-  */
   
   /* *********************** Segment  **********************/  
 
