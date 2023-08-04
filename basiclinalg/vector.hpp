@@ -435,11 +435,15 @@ namespace ngbla
     }
     */
 
+    /*
     /// access to data
     const void * Data () const { return static_cast<const void*>(data); }
     /// access to data
     void * Data () { return static_cast<void*>(data); }
-
+    */
+    /// access to data
+    INLINE auto Data () const { return (Vec<S,T>*)(void*)data; } 
+    
     // new for SysVectors:
     // typedef FlatVector<T> TV_COL;
     // typedef double TV_ROW;

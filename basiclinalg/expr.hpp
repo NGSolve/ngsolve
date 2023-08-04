@@ -95,20 +95,66 @@ namespace ngbla
   }
   */
 
+  namespace detail {
+    template <typename T>
+    struct test_conv_flatvector {
+      template<typename T2>
+      static constexpr auto check(T2*) -> decltype(FlatVector(T2()));
+      template<typename>
+      static constexpr std::false_type check(...);
+      
+      using type = decltype(check<T>(nullptr));
+      static constexpr bool value = !std::is_same<type, std::false_type>::value;
+    };
+  }
+  
+  template <typename T>
+  constexpr bool IsConvertibleToFlatVector()
+  {
+    return detail::test_conv_flatvector<T>::value;
+  }
+
+
+  namespace detail {
+    template <typename T>
+    struct test_conv_slicevector {
+      template<typename T2>
+      static constexpr auto check(T2*) -> decltype(SliceVector(T2()));
+      template<typename>
+      static constexpr std::false_type check(...);
+      
+      using type = decltype(check<T>(nullptr));
+      static constexpr bool value = !std::is_same<type, std::false_type>::value;
+    };
+  }
+  
+  template <typename T>
+  constexpr bool IsConvertibleToSliceVector()
+  {
+    return detail::test_conv_slicevector<T>::value;
+  }
+
+  
+  /*
   template <typename T>
   constexpr bool IsConvertibleToFlatVector()
   {
     return is_convertible_v<T, FlatVector<double>> ||
       is_convertible_v<T, FlatVector<Complex>>;
   }
-
+  
   template <typename T>
   constexpr bool IsConvertibleToSliceVector()
   {
     return is_convertible_v<T, SliceVector<double>> ||
       is_convertible_v<T, SliceVector<Complex>>;
   }
+  */
 
+
+
+
+  
   
   
   
