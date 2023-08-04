@@ -512,4 +512,40 @@ namespace ngla {
 
 
 
+
+
+
+  shared_ptr<MultiVectorExpr> operator+ (shared_ptr<MultiVectorExpr> e1,
+                                                shared_ptr<MultiVectorExpr> e2)
+  {
+    if (e1->Size() != e2->Size())
+      throw Exception("MultiVector+ sizes don't fit: " + ToString(e1->Size()) + " != " + ToString(e2->Size()));
+    return make_shared<SumMultiVectorExpr> (e1,e2);
+  }
+                                         
+  shared_ptr<MultiVectorExpr> operator- (shared_ptr<MultiVectorExpr> e1)
+  {
+    Vector<> mones(e1->Size()); mones = -1;
+    return make_shared<ScaledMultiVectorExpr<double>> (e1, mones);
+  }
+
+  shared_ptr<MultiVectorExpr> operator- (shared_ptr<MultiVectorExpr> e1,
+						shared_ptr<MultiVectorExpr> e2)
+  {
+    return e1 + (-e2);
+  }
+                                         
+  shared_ptr<MultiVectorExpr> operator* (double s, shared_ptr<MultiVectorExpr> e1)
+  {
+    Vector<double> scale(e1->Size()); scale = s;
+    return make_shared<ScaledMultiVectorExpr<double>> (e1, scale);
+  }
+  
+  shared_ptr<MultiVectorExpr> operator* (Complex s, shared_ptr<MultiVectorExpr> e1)
+  {
+    Vector<Complex> scale(e1->Size()); scale = s;
+    return make_shared<ScaledMultiVectorExpr<Complex>> (e1, scale);
+  }  
+
+
 }

@@ -32,7 +32,9 @@ namespace ngbla
 
   template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <class T = double> class FlatVector;
+  template <class T = double> class BareVector;  
   template <class T = double> class SliceVector;
+  template <class T = double> class BareSliceVector;
 
   
   template <typename T, typename TELEM=typename T::TELEM>
@@ -43,6 +45,72 @@ namespace ngbla
   }
 
 
+  /*
+  namespace detail
+  {
+    template <typename T, int Enable>
+    struct test_conv_flatvector {
+      static constexpr bool Test () { return false; }
+    };
+    
+    template <typename T>
+    struct test_conv_flatvector<T,1> {
+      static constexpr bool Test  ()
+      {
+        T * p;
+        decltype (FlatVector(*p)) X;
+        return true;
+      }
+    };
+  }
+  
+  template <typename T>
+  constexpr bool IsConvertibleToFlatVector()
+  {
+    return detail::test_conv_flatvector<T,1>::Test();
+  }
+
+  namespace detail
+  {
+    template <typename T, int Enable>
+    struct test_conv_slicevector {
+      static constexpr bool Test () { return false; }
+    };
+    
+    template <typename T>
+    struct test_conv_slicevector<T,1> {
+      static constexpr bool Test  ()
+      {
+        T * p;
+        decltype (SliceVector(*p)) X;
+        return true;
+      }
+    };
+  }
+  
+  template <typename T>
+  constexpr bool IsConvertibleToSliceVector()
+  {
+    return detail::test_conv_slicevector<T,1>::Test();
+  }
+  */
+
+  template <typename T>
+  constexpr bool IsConvertibleToFlatVector()
+  {
+    return is_convertible_v<T, FlatVector<double>> ||
+      is_convertible_v<T, FlatVector<Complex>>;
+  }
+
+  template <typename T>
+  constexpr bool IsConvertibleToSliceVector()
+  {
+    return is_convertible_v<T, SliceVector<double>> ||
+      is_convertible_v<T, SliceVector<Complex>>;
+  }
+
+  
+  
   
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
   void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c);
@@ -52,6 +120,9 @@ namespace ngbla
   
   template <bool ADD, bool POS, ORDERING ord>
   void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y);
+
+  template <bool ADD, ORDERING ord>
+  void NgGEMV (double s, SliceMatrix<double,ord> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT;
 
 
 
@@ -523,8 +594,11 @@ namespace ngbla
   template <class TA> class TransExpr;
   template <class TA, class TS> class ScaleExpr;
 
-
-
+  template <typename TOP, typename T, typename TB>
+  void TypeWarning()
+  {
+    TB*p;
+  }
   
   template <typename TOP, typename T, typename TB, typename Enable=int>
   class assign_trait
@@ -535,24 +609,42 @@ namespace ngbla
       NETGEN_CHECK_RANGE(self.Height(), v.Height(), v.Height()+1);
       NETGEN_CHECK_RANGE(self.Width(), v.Width(), v.Width()+1);
       NETGEN_CHECK_SHAPE(self.Spec(), v);
-    
+
+      /*
       if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> && 
                     is_convertible_v<TB,FlatVector<typename T::TELEM>> && 
                     is_convertible_v<T,FlatVector<typename T::TELEM>>)
-                     {
-                       CopyVector(FlatVector<typename T::TELEM>(v.Spec()), FlatVector<typename T::TELEM>(self.Spec()));
-                       return self.Spec();
-                     }
-      
+        {
+          CopyVector(FlatVector<typename T::TELEM>(v.Spec()), FlatVector<typename T::TELEM>(self.Spec()));
+          return self.Spec();
+        }
+      */
+      if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> && 
+                    IsConvertibleToFlatVector<TB>() && 
+                    IsConvertibleToFlatVector<T>())
+        {
+          CopyVector(BareVector(FlatVector(v.Spec())), FlatVector(self.Spec()));
+          return self.Spec();
+        }
+
+      /*
       else if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> && 
                          is_convertible_v<TB,SliceVector<typename T::TELEM>> && 
                          is_convertible_v<T,SliceVector<typename T::TELEM>>)
-                          {
-                            CopyVector(SliceVector<typename T::TELEM>(v.Spec()), SliceVector<typename T::TELEM>(self.Spec()));
-                            return self.Spec();
-                          }
+        {
+          CopyVector(SliceVector<typename T::TELEM>(v.Spec()), SliceVector<typename T::TELEM>(self.Spec()));
+          return self.Spec();
+        }
+      */
+      else if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> &&
+                         IsConvertibleToSliceVector<TB>() && 
+                         IsConvertibleToSliceVector<T>())
+        {
+          CopyVector(BareSliceVector(SliceVector(v.Spec())), SliceVector(self.Spec()));
+          return self.Spec();
+        }
       // else
-      // auto unused_variable_in_assign = v.Spec()(0,0);
+      // TypeWarning<TOP,T,TB>();
 
       auto src = v.View();
       decltype(auto) dest = self.ViewRW();
@@ -826,6 +918,42 @@ namespace ngbla
       return Spec();
     }
 
+
+    
+    
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<is_convertible_v<TB,SliceVector<double>>,int>::type = 0,
+              typename enable_if<!is_convertible_v<TB,FlatVector<double>>,int>::type = 0,              
+              typename enable_if<is_convertible<typename pair<T,TB>::first_type,SliceVector<double>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod)
+    {
+      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
+      constexpr double POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value ? 1 : -1;
+      NgGEMV<ADD> (POS, make_SliceMatrix(prod.View().A()),
+                   BareSliceVector(prod.View().B()),
+                   BareSliceVector(Spec()));
+      return Spec();
+    }
+    template <typename OP, typename TA, typename TB,
+              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
+              typename enable_if<is_convertible_v<TB,FlatVector<double>>,int>::type = 0,
+              typename enable_if<is_convertible<typename pair<T,TB>::first_type,SliceVector<double>>::value,int>::type = 0,
+              typename enable_if<!is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
+    INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod)
+    {
+      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
+      constexpr double POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value ? 1 : -1;      
+      NgGEMV<ADD> (POS, make_SliceMatrix(prod.View().A()),
+                   BareSliceVector(prod.View().B()),
+                   BareSliceVector(Spec()));
+      return Spec();
+    }
+
+
+
+
+    
     // x += s*y
     template <typename OP, typename TA, 
               enable_if_t<std::is_same<OP,AsAdd>::value,bool> = true,

@@ -1558,47 +1558,32 @@ namespace ngfem
     Complex factor;
   public:
     ComplexLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, 
-				 Complex afactor)
-      : lfi(alfi), factor(afactor)
-    { ; }
-
+				 Complex afactor);
     virtual ~ComplexLinearFormIntegrator();
     
-    virtual VorB VB () const { return lfi->VB(); } 
-    virtual void CheckElement (const FiniteElement & el) const { lfi->CheckElement(el); }
+    virtual VorB VB () const override;
+    virtual void CheckElement (const FiniteElement & el) const override;
 
 
     virtual void
     CalcElementVector (const FiniteElement & fel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<double> elvec,
-		       LocalHeap & lh) const
-    {
-      throw Exception ("ComplexLinearFormIntegrator: cannot assemble double vector");
-    }
+		       LocalHeap & lh) const override;
 
     virtual void
     CalcElementVector (const FiniteElement & fel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<Complex> elvec,
-		       LocalHeap & lh) const
-    {
-      FlatVector<Complex> rvec(elvec.Size(), lh);
-      lfi->CalcElementVector (fel, eltrans, rvec, lh);
-      elvec = factor * rvec;
-    }  
-
+		       LocalHeap & lh) const override;
 
     virtual void
     CalcElementVectorIndependent (const FiniteElement & gfel, 
-				      const BaseMappedIntegrationPoint & s_mip,
-				      const BaseMappedIntegrationPoint & g_mip,
-				      FlatVector<double> & elvec,
-				      LocalHeap & lh,
-				      const bool curveint = false) const
-    {
-      throw Exception ("ComplexLinearFormIntegrator: cannot assemble double vector");
-    }
+                                  const BaseMappedIntegrationPoint & s_mip,
+                                  const BaseMappedIntegrationPoint & g_mip,
+                                  FlatVector<double> & elvec,
+                                  LocalHeap & lh,
+                                  const bool curveint = false) const override;
   
 
     virtual void
@@ -1607,24 +1592,9 @@ namespace ngfem
 				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<Complex> & elvec,
 				      LocalHeap & lh,
-				      const bool curveint = false) const
-    { 
-      FlatVector<double> rvec;
+                                  const bool curveint = false) const override;
 
-      lfi->CalcElementVectorIndependent (gfel, s_mip, g_mip,
-					    rvec, lh, curveint);
-      elvec.AssignMemory (rvec.Size(), lh);
-      elvec = factor * rvec;
-    }
-
-
-
-
-    virtual string Name () const
-    {
-      return string ("ComplexIntegrator (") + lfi->Name() + ")";
-    }
-
+    virtual string Name () const override;
   };
 
 

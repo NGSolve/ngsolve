@@ -118,7 +118,7 @@ namespace ngbla
       for (auto i : ngstd::Range(size))
 	data[i] = v(i);
       */
-      CopyVector (v, *this);
+      CopyVector (BareVector(v), *this);
       return *this;
     }
 
@@ -1555,7 +1555,7 @@ namespace ngbla
 
 
   
-  template <class T = double>
+  template <class T>
   class BareVector : public CMCPMatExpr<BareVector<T> >, DummySize
   {
     T * __restrict data;
@@ -1613,7 +1613,7 @@ namespace ngbla
 
 
   
-  template <class T = double>
+  template <class T>
   class BareSliceVector : public CMCPMatExpr<BareSliceVector<T> >, DummySize
   {
     T * __restrict data;
