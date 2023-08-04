@@ -13,8 +13,8 @@ namespace ngla
 
 /// Sparse matrix with dynamic block size (still experimental)
   template<class TSCAL>
-  class  NGS_DLL_HEADER SparseMatrixDynamic : public BaseSparseMatrix, 
-                                              public S_BaseMatrix<TSCAL>
+  class  NGS_DLL_HEADER SparseMatrixDynamic : public BaseSparseMatrix
+  // public S_BaseMatrix<TSCAL>
   {
   protected:
     size_t bh, bw, bs;
@@ -30,6 +30,7 @@ namespace ngla
       bh = ngbla::Height<TM>(); // mat_traits<TM>::HEIGHT;
       bw = ngbla::Width<TM>();  // mat_traits<TM>::WIDTH;
       bs = bh*bw;
+      is_complex = ngbla::IsComplex<TM>();
       nze = mat.NZE();
       data.SetSize(nze*bs);
       auto matvec = mat.AsVector().template FV<TM>();

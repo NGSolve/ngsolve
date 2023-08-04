@@ -116,6 +116,11 @@ namespace ngla
 
   void BaseMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    if (is_complex)
+      {
+        MultAdd (Complex(s), x, y);
+        return;
+      }
     //    cout << "Warning: BaseMatrix::MultAdd(double), this = " << typeid(*this).name() << endl;
     auto temp = y.CreateVector();
     safety_check |= 1;
@@ -139,6 +144,12 @@ namespace ngla
   
   void BaseMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
+    if (is_complex)
+      {
+        MultTransAdd (Complex(s), x, y);
+        return;
+      }
+    
     if(IsSymmetric().IsTrue())
       { MultAdd(s, x, y); return; }
 
@@ -302,12 +313,15 @@ namespace ngla
   { ; }
 
   S_BaseMatrix<Complex> :: S_BaseMatrix () 
-  { ; }
+  {
+    is_complex = true;
+  }
 
   S_BaseMatrix<Complex> :: ~S_BaseMatrix () 
   { ; }
 
 
+  /*
   void S_BaseMatrix<Complex> :: 
   MultAdd (double s, const BaseVector & x, BaseVector & y) const 
   {
@@ -337,7 +351,8 @@ namespace ngla
 	<< typeid(*this).name();
     throw Exception (err.str());
   }
-
+  */
+  
 
   void VMatVecExpr :: CheckSize (BaseVector & dest_vec) const
   {

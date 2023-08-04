@@ -24,7 +24,8 @@ namespace ngla
   protected:
     shared_ptr<ParallelDofs> paralleldofs;
     mutable char safety_check = 0;
-
+    bool is_complex = false;
+    
   protected:
     /// 
     BaseMatrix ();
@@ -55,7 +56,7 @@ namespace ngla
     virtual xbool IsSymmetric() const { return maybe; }
 
     /// is matrix complex ?
-    virtual bool IsComplex() const { return false; }
+    virtual bool IsComplex() const { return is_complex; }
     
     /// scalar assignment
     BaseMatrix & operator= (double s)
@@ -219,7 +220,7 @@ namespace ngla
     ///
     virtual ~S_BaseMatrix ();
 
-    virtual bool IsComplex() const { return false; }
+    // virtual bool IsComplex() const { return false; }
   };
 
   // specifies the scalar type Complex.
@@ -231,8 +232,9 @@ namespace ngla
     S_BaseMatrix ();
     ///
     virtual ~S_BaseMatrix ();
-    virtual bool IsComplex() const { return true; }
-    
+    // virtual bool IsComplex() const { return true; }
+
+    /*
     /// calls MultAdd (Complex s);
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
     /// must be overloaded
@@ -242,6 +244,7 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const;
     /// should be overloaded
     virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const;
+    */
   };
 
 
@@ -846,15 +849,15 @@ namespace ngla
   {
     bool has_format;
     size_t size;
-    bool is_complex;
+    // bool is_complex;
   public:
     ///
     IdentityMatrix ()
-      : has_format(false), is_complex(false) { ; }
+      : has_format(false) { ; }
     IdentityMatrix (size_t asize, bool ais_complex)
-      : has_format(true), size(asize), is_complex(ais_complex) { ; }
+      : has_format(true), size(asize) { is_complex=ais_complex; }
     
-    virtual bool IsComplex() const override { return is_complex; }
+    // virtual bool IsComplex() const override { return is_complex; }
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
     ///
