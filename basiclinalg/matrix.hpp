@@ -507,7 +507,7 @@ namespace ngbla
     INLINE Matrix (const Expr<TB> & m2) 
       : FlatMatrix<T,ORD> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
-      CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2);
+      CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2); // .View());   // does it work with view ? 
     }
     
     Matrix (initializer_list<initializer_list<T>> llist) 

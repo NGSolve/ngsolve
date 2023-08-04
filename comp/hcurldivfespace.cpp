@@ -4,11 +4,11 @@
 /* Date:   2017/2018                                                 */
 /*********************************************************************/
 
-
 #include <comp.hpp>
 #include "../fem/hcurldivfe.hpp"
 #include "hcurldivfespace.hpp"
 #include "../fem/hcurlhdiv_dshape.hpp"
+
 
 namespace ngcomp
 {

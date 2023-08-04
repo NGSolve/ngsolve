@@ -2053,10 +2053,80 @@ namespace ngfem
 
 
 
-
+  
+  ComplexLinearFormIntegrator ::
+  ComplexLinearFormIntegrator (shared_ptr<LinearFormIntegrator> alfi, 
+				 Complex afactor)
+    : lfi(alfi), factor(afactor)
+  { ; }
+  
   ComplexLinearFormIntegrator :: ~ComplexLinearFormIntegrator() { }
 
+  
+  VorB ComplexLinearFormIntegrator :: VB () const { return lfi->VB(); } 
+  void ComplexLinearFormIntegrator :: CheckElement (const FiniteElement & el) const { lfi->CheckElement(el); }
 
+
+  void ComplexLinearFormIntegrator ::
+  CalcElementVector (const FiniteElement & fel, 
+                     const ElementTransformation & eltrans, 
+                     FlatVector<double> elvec,
+                     LocalHeap & lh) const
+  {
+    throw Exception ("ComplexLinearFormIntegrator: cannot assemble double vector");
+  }
+  
+  void ComplexLinearFormIntegrator ::
+  CalcElementVector (const FiniteElement & fel, 
+                     const ElementTransformation & eltrans, 
+                     FlatVector<Complex> elvec,
+                     LocalHeap & lh) const
+  {
+    FlatVector<Complex> rvec(elvec.Size(), lh);
+    lfi->CalcElementVector (fel, eltrans, rvec, lh);
+    elvec = factor * rvec;
+  }  
+  
+
+  void ComplexLinearFormIntegrator ::
+  CalcElementVectorIndependent (const FiniteElement & gfel, 
+                                const BaseMappedIntegrationPoint & s_mip,
+                                const BaseMappedIntegrationPoint & g_mip,
+                                FlatVector<double> & elvec,
+                                LocalHeap & lh,
+                                const bool curveint) const
+  {
+    throw Exception ("ComplexLinearFormIntegrator: cannot assemble double vector");
+  }
+  
+
+  void ComplexLinearFormIntegrator ::
+  CalcElementVectorIndependent (const FiniteElement & gfel, 
+                                const BaseMappedIntegrationPoint & s_mip,
+                                const BaseMappedIntegrationPoint & g_mip,
+                                FlatVector<Complex> & elvec,
+                                LocalHeap & lh,
+                                const bool curveint) const
+  { 
+    FlatVector<double> rvec;
+    
+    lfi->CalcElementVectorIndependent (gfel, s_mip, g_mip,
+                                       rvec, lh, curveint);
+    elvec.AssignMemory (rvec.Size(), lh);
+    elvec = factor * rvec;
+  }
+  
+  
+  
+  string ComplexLinearFormIntegrator :: Name () const
+  {
+    return string ("ComplexIntegrator (") + lfi->Name() + ")";
+  }
+  
+
+
+
+  
 
   void CompoundLinearFormIntegrator ::  
   CalcElementVector (const FiniteElement & bfel, 

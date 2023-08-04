@@ -21,25 +21,38 @@ namespace ngbla
 
   // BLAS1 operations
   
-  void CopyVector (FlatVector<double> src, FlatVector<double> dest)
+  void CopyVector (BareVector<double> src, FlatVector<double> dest) noexcept
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = src[i];
   }
   
-  void CopyVector (SliceVector<double> src, SliceVector<double> dest)
+  void CopyVector (BareSliceVector<double> src, SliceVector<double> dest) noexcept
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = src[i];
   }
 
-  void AddVector (double alpha, FlatVector<double> src, FlatVector<double> dest)
+  void CopyVector (double alpha, BareVector<double> src, FlatVector<double> dest) noexcept
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = alpha * src[i];
+  }
+  
+  void CopyVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) noexcept
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = alpha * src[i];
+  }
+
+
+  void AddVector (double alpha, BareVector<double> src, FlatVector<double> dest) noexcept
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] += alpha * src[i];
   }
   
-  void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest)
+  void AddVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) noexcept
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] += alpha * src[i];
@@ -116,7 +129,7 @@ namespace ngbla
 
 
   template <int SX>
-  void MultMatVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  void MultMatVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) noexcept
   {
     KernelMatVec<SX,SET> (y.Size(), a.Data(), a.Dist(), x.Data(), y.Data());
   }
@@ -128,7 +141,7 @@ namespace ngbla
   }
 
 
-  NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) noexcept
   {
     size_t h = y.Size();
     size_t w = x.Size();
@@ -244,14 +257,14 @@ namespace ngbla
 
   
   template <int SX>
-  void MultMatTransVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  void MultMatTransVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) noexcept
   {
     MatKernelDaxpy<1, SX, SET> (y.Size(), x.Data(), 1, a.Data(), a.Dist(), y.Data(), 1);
   }
   
 
 
-  NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) noexcept
   {
     constexpr int SW = SIMD<double>::Size();
     size_t h = x.Size();
@@ -408,11 +421,61 @@ namespace ngbla
 
 
 
+  /* *************************** Mat-Vec with Slice-Vecotrs ******************* */
 
+  // template <bool ADD, ORDERING ord>
+  template <>  
+  void NgGEMV<false> (double s, SliceMatrix<double,RowMajor> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    // y.Range(a.Height()) = s*a*x;
+    for (size_t i = 0; i < a.Height(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < a.Width(); j++)
+          sum += a(i,j) * x(j);
+        y(i) = s*sum;
+      }
+  }
 
+  template <>
+  void NgGEMV<false> (double s, SliceMatrix<double,ColMajor> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    // y.Range(a.Height()) = s*a*x;
+    for (size_t i = 0; i < a.Height(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < a.Width(); j++)
+          sum += a(i,j) * x(j);
+        y(i) = s*sum;
+      }
+  }
 
+  template <>  
+  void NgGEMV<true> (double s, SliceMatrix<double,RowMajor> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    // y.Range(a.Height()) += s*a*x;
+    for (size_t i = 0; i < a.Height(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < a.Width(); j++)
+          sum += a(i,j) * x(j);
+        y(i) += s*sum;
+      }
+  }
 
-  
+  template <>
+  void NgGEMV<true> (double s, SliceMatrix<double,ColMajor> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    // y.Range(a.Height()) += s*a*x;
+    for (size_t i = 0; i < a.Height(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < a.Width(); j++)
+          sum += a(i,j) * x(j);
+        y(i) += s*sum;
+      }
+  }
+
 
   // ************************** Mult Add transpose Mat * vec, indirect ***************
 

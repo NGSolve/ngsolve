@@ -15,39 +15,62 @@ namespace ngbla
   // vector ops
 
   template <typename T1, typename T2>
-  void CopyVector (FlatVector<T1> src, FlatVector<T2> dest)
+  void CopyVector (BareVector<T1> src, FlatVector<T2> dest) NETGEN_NOEXCEPT
   {
     for (size_t i : Range(dest))
       dest[i] = src[i];
   }
 
   template <typename T1, typename T2>
-  void CopyVector (SliceVector<T1> src, SliceVector<T2> dest)
+  void CopyVector (BareSliceVector<T1> src, SliceVector<T2> dest) NETGEN_NOEXCEPT
   {
     for (size_t i : Range(dest))
       dest[i] = src[i];
   }
 
-  extern NGS_DLL_HEADER void CopyVector (FlatVector<double> src, FlatVector<double> dest);
-  extern NGS_DLL_HEADER void CopyVector (SliceVector<double> src, SliceVector<double> dest);
+  extern NGS_DLL_HEADER void CopyVector (BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void CopyVector (BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void CopyVector (BareVector<Complex> src, FlatVector<Complex> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void CopyVector (BareSliceVector<Complex> src, SliceVector<Complex> dest) NETGEN_NOEXCEPT;
 
 
   template <typename T0, typename T1, typename T2>
-  void AddVector (T0 alpha, FlatVector<T1> src, FlatVector<T2> dest)
+  void CopyVector (T0 alpha, BareVector<T1> src, FlatVector<T2> dest) NETGEN_NOEXCEPT
+  {
+    for (size_t i : Range(dest))
+      dest[i] = alpha * src[i];
+  }
+
+  template <typename T0, typename T1, typename T2>
+  void CopyVector (T0 alpha, BareSliceVector<T1> src, SliceVector<T2> dest) NETGEN_NOEXCEPT
+  {
+    for (size_t i : Range(dest))
+      dest[i] = alpha * src[i];
+  }
+
+  extern NGS_DLL_HEADER void CopyVector (double alpha, BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void CopyVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void CopyVector (Complex alpha, BareVector<Complex> src, FlatVector<Complex> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void CopyVector (Complex alpha, BareSliceVector<Complex> src, SliceVector<Complex> dest) NETGEN_NOEXCEPT;
+
+
+  
+  template <typename T0, typename T1, typename T2>
+  void AddVector (T0 alpha, BareVector<T1> src, FlatVector<T2> dest) NETGEN_NOEXCEPT
   {
     for (size_t i : Range(dest))
       dest[i] += alpha*src[i];
   }
 
   template <typename T0, typename T1, typename T2>
-  void AddVector (T0 alpha, SliceVector<T1> src, SliceVector<T2> dest)
+  void AddVector (T0 alpha, BareSliceVector<T1> src, SliceVector<T2> dest) NETGEN_NOEXCEPT
   {
     for (size_t i : Range(dest))
       dest[i] += alpha*src[i];
   }
 
-  extern NGS_DLL_HEADER void AddVector (double alpha, FlatVector<double> src, FlatVector<double> dest);
-  extern NGS_DLL_HEADER void AddVector (double alpha, SliceVector<double> src, SliceVector<double> dest);
+  extern NGS_DLL_HEADER void AddVector (double alpha, BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void AddVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT;
 
 
   template <typename TA, typename TB>
@@ -60,10 +83,10 @@ namespace ngbla
 
   
 
-  typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
+  typedef void (*pmult_matvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER pmult_matvec dispatch_matvec[26];
   
-  inline void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  inline void MultMatVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     size_t dsx = min(x.Size(), std::size(dispatch_matvec)-1);
     (*dispatch_matvec[dsx])  (a, x, y);    
@@ -545,6 +568,11 @@ namespace ngbla
   {
     MultAddMatTransVec (-1,Trans(a),x,y);
   }
+
+
+  template <bool ADD, ORDERING ord>
+  extern void NgGEMV (double s, SliceMatrix<double,ord> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT;
+
 
   
   extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k,
