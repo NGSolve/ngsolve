@@ -173,12 +173,12 @@ namespace ngla
 
 
   /// A virtual base class for all sparse matrices
-  class NGS_DLL_HEADER BaseSparseMatrix : virtual public BaseMatrix, 
+  class NGS_DLL_HEADER BaseSparseMatrix : public BaseMatrix, 
 					  public MatrixGraph
   {
   protected:
     /// sparse direct solver
-    mutable INVERSETYPE inversetype = default_inversetype;    // C++11 :-) Windows VS2013
+    mutable INVERSETYPE inversetype = default_inversetype;   
     Flags inverseflags;
     bool spd = false;
     
@@ -293,8 +293,8 @@ namespace ngla
 
   
   template <typename TSCAL>
-  class NGS_DLL_HEADER S_BaseSparseMatrix : public BaseSparseMatrix,
-                                            public S_BaseMatrix<TSCAL>
+  class NGS_DLL_HEADER S_BaseSparseMatrix : public BaseSparseMatrix
+  // public S_BaseMatrix<TSCAL>
   {
   protected:
     int entry_height, entry_width;
@@ -304,33 +304,24 @@ namespace ngla
     VFlatVector<TSCAL> asvec;
   public:
     using BaseSparseMatrix::BaseSparseMatrix;
+    /*
     void SetEntrySize (int eh, int ew, int es)
     {
       entry_height = eh;
       entry_width = ew;
       entry_size = es;
     }
-
-
-    size_t Height() const { return size; }
-    size_t Width() const { return width; }
-    virtual int VHeight() const override { return size; }
-    virtual int VWidth() const override { return width; }
-
-
+    */
+    
     virtual BaseVector & AsVector() override
     {
-      // asvec.AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Addr(0));
       return asvec; 
     }
 
     virtual const BaseVector & AsVector() const override
     { 
-      // const_cast<VFlatVector<TSCAL>&> (asvec).
-      // AssignMemory (nze*sizeof(TM)/sizeof(TSCAL), (void*)data.Data());
       return asvec; 
     }
-    
     
     FlatVector<TSCAL> GetRowValue (int row, int j)
     {
@@ -370,13 +361,18 @@ namespace ngla
     using BASE::CreatePosition;
     using BASE::GetPositionTest;
     using BASE::FindSameNZE;
-    using BASE::SetEntrySize;
+    // using BASE::SetEntrySize;
     using BASE::AsVector;
 
     void SetEntrySize()
     {
-      BASE::SetEntrySize (ngbla::Height<TM>(), ngbla::Width<TM>(), sizeof(TM)/sizeof(TSCAL));      
+      // BASE::SetEntrySize (ngbla::Height<TM>(), ngbla::Width<TM>(), sizeof(TM)/sizeof(TSCAL));
+      BASE::entry_height = ngbla::Height<TM>();
+      BASE::entry_width = ngbla::Width<TM>();
+      BASE::entry_size = sizeof(TM)/sizeof(TSCAL);
+      BASE::is_complex = IsComplex<TM>();
     }
+    
   public:
     typedef TM TENTRY;
     typedef typename mat_traits<TM>::TSCAL TSCAL;
@@ -464,7 +460,12 @@ namespace ngla
       
     virtual ~SparseMatrixTM ();
 
+    size_t Height() const { return size; }
+    size_t Width() const { return width; }
+    virtual int VHeight() const override { return size; }
+    virtual int VWidth() const override { return width; }
 
+    
     bool IsHermitian() const { return hermitian; }
     void SetHermitian(bool herm) { hermitian = herm; }
     
@@ -935,14 +936,19 @@ namespace ngla
     using BASE::CreatePosition;
     using BASE::GetPositionTest;
     using BASE::FindSameNZE;
-    using BASE::SetEntrySize;
+    // using BASE::SetEntrySize;
     using BASE::AsVector;
     
     SparseBlockMatrix (const MatrixGraph & agraph, size_t abheight, size_t abwidth, bool stealgraph)
       : BASE (agraph, stealgraph), bheight(abheight), bwidth(abwidth),
       data(nze*bheight*bwidth)
         { 
-          SetEntrySize (bheight, bwidth, bheight*bwidth);
+          // SetEntrySize (bheight, bwidth, bheight*bwidth);
+          BASE::entry_height = bheight;
+          BASE::entry_width = bwidth;
+          BASE::entry_size = bheight*bwidth;
+          BASE::is_complex = IsComplex<TSCAL>();
+          
           asvec.AssignMemory (nze*bheight*bwidth, (void*)data.Addr(0));
           // FindSameNZE();
           GetMemoryTracer().Track(*static_cast<MatrixGraph*>(this), "MatrixGraph",

@@ -65,7 +65,7 @@ public:
 template<typename T>
 void ExportSparseMatrix(py::module m)
 {
-  py::class_<SparseMatrix<T>, shared_ptr<SparseMatrix<T>>, BaseSparseMatrix, S_BaseMatrix<typename mat_traits<T>::TSCAL>>
+  py::class_<SparseMatrix<T>, shared_ptr<SparseMatrix<T>>, BaseSparseMatrix /*, S_BaseMatrix<typename mat_traits<T>::TSCAL> */ >
     (m, (string("SparseMatrix") + typeid(T).name()).c_str(),
      "a sparse matrix in CSR storage")
     .def("__getitem__",
