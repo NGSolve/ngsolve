@@ -563,7 +563,7 @@ namespace ngla
     using SparseMatrixTM<TM>::colnr;
     using SparseMatrixTM<TM>::data;
     using SparseMatrixTM<TM>::balance;
-    using BaseSparseMatrix::ColIdx;
+    using typename SparseMatrixTM<TM>::ColIdx;
 
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV_ROW TVX;
