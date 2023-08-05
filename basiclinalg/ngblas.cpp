@@ -21,38 +21,38 @@ namespace ngbla
 
   // BLAS1 operations
   
-  void CopyVector (BareVector<double> src, FlatVector<double> dest) noexcept
+  void CopyVector (BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = src[i];
   }
   
-  void CopyVector (BareSliceVector<double> src, SliceVector<double> dest) noexcept
+  void CopyVector (BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = src[i];
   }
 
-  void CopyVector (double alpha, BareVector<double> src, FlatVector<double> dest) noexcept
+  void CopyVector (double alpha, BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = alpha * src[i];
   }
   
-  void CopyVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) noexcept
+  void CopyVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = alpha * src[i];
   }
 
 
-  void AddVector (double alpha, BareVector<double> src, FlatVector<double> dest) noexcept
+  void AddVector (double alpha, BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] += alpha * src[i];
   }
   
-  void AddVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) noexcept
+  void AddVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] += alpha * src[i];
@@ -129,7 +129,7 @@ namespace ngbla
 
 
   template <int SX>
-  void MultMatVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) noexcept
+  void MultMatVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     KernelMatVec<SX,SET> (y.Size(), a.Data(), a.Dist(), x.Data(), y.Data());
   }
@@ -141,7 +141,7 @@ namespace ngbla
   }
 
 
-  NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) noexcept
+  NGS_DLL_HEADER void MultMatVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     size_t h = y.Size();
     size_t w = x.Size();
@@ -257,14 +257,14 @@ namespace ngbla
 
   
   template <int SX>
-  void MultMatTransVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) noexcept
+  void MultMatTransVecShort (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     MatKernelDaxpy<1, SX, SET> (y.Size(), x.Data(), 1, a.Data(), a.Dist(), y.Data(), 1);
   }
   
 
 
-  NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) noexcept
+  NGS_DLL_HEADER void MultMatTransVec_intern (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y) NETGEN_NOEXCEPT
   {
     constexpr int SW = SIMD<double>::Size();
     size_t h = x.Size();

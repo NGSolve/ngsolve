@@ -13,38 +13,38 @@ constexpr bool reg32 = false;
 namespace ngbla
 {
   
-  void CopyVector (BareVector<Complex> src, FlatVector<Complex> dest) noexcept
+  void CopyVector (BareVector<Complex> src, FlatVector<Complex> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = src[i];
   }
   
-  void CopyVector (BareSliceVector<Complex> src, SliceVector<Complex> dest) noexcept
+  void CopyVector (BareSliceVector<Complex> src, SliceVector<Complex> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = src[i];
   }
 
-  void CopyVector (Complex alpha, BareVector<Complex> src, FlatVector<Complex> dest) noexcept
+  void CopyVector (Complex alpha, BareVector<Complex> src, FlatVector<Complex> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = alpha * src[i];
   }
   
-  void CopyVector (Complex alpha, BareSliceVector<Complex> src, SliceVector<Complex> dest) noexcept
+  void CopyVector (Complex alpha, BareSliceVector<Complex> src, SliceVector<Complex> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = alpha * src[i];
   }
 
   
-  void AddVector (Complex alpha, BareVector<Complex> src, FlatVector<Complex> dest) noexcept
+  void AddVector (Complex alpha, BareVector<Complex> src, FlatVector<Complex> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] += alpha * src[i];
   }
   
-  void AddVector (Complex alpha, BareSliceVector<Complex> src, SliceVector<Complex> dest) noexcept
+  void AddVector (Complex alpha, BareSliceVector<Complex> src, SliceVector<Complex> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] += alpha * src[i];
