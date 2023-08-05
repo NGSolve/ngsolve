@@ -96,6 +96,7 @@ namespace ngla
 
   
   MatrixGraph :: MatrixGraph (const MatrixGraph & agraph, bool stealgraph)
+    : BaseMatrix(agraph)
   {
     MatrixGraph & graph = const_cast<MatrixGraph&> (agraph);
     size = graph.size;
@@ -124,6 +125,7 @@ namespace ngla
   }
 
   MatrixGraph :: MatrixGraph (MatrixGraph && graph)
+    : BaseMatrix(graph)    
   {
     if (!graph.owner) {
       throw Exception("Matrix-Graph Move-constructor with graph that is now owner ... is that valid?");

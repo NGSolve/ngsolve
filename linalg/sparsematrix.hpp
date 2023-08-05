@@ -73,7 +73,7 @@ namespace ngla
   /** 
       The graph of a sparse matrix.
   */
-  class NGS_DLL_HEADER MatrixGraph
+  class NGS_DLL_HEADER MatrixGraph : public BaseMatrix
   {
   protected:
     /// number of rows
@@ -157,7 +157,14 @@ namespace ngla
       return mem_tracer;
     }
 
+    virtual AutoVector CreateRowVector () const
+    { throw Exception("MatrixGraph::CreateRowVector called"); }
+    
+    virtual AutoVector CreateColVector () const
+    { throw Exception("MatrixGraph::CreateRowVector called"); }
+
   private:
+    
     MemoryTracer mem_tracer = {"MatrixGraph",
       colnr, "colnr",
       firsti, "firsti",
@@ -173,8 +180,7 @@ namespace ngla
 
 
   /// A virtual base class for all sparse matrices
-  class NGS_DLL_HEADER BaseSparseMatrix : public BaseMatrix, 
-					  public MatrixGraph
+  class NGS_DLL_HEADER BaseSparseMatrix : public MatrixGraph
   {
   protected:
     /// sparse direct solver
@@ -201,11 +207,11 @@ namespace ngla
     { ; }   
 
     BaseSparseMatrix (const BaseSparseMatrix & amat)
-      : BaseMatrix(amat), MatrixGraph (amat, 0)
+      : MatrixGraph (amat, 0)
     { ; }   
 
     BaseSparseMatrix (BaseSparseMatrix && amat)
-      : BaseMatrix(amat), MatrixGraph (std::move(amat))
+      : MatrixGraph (std::move(amat))
     { ; }
 
     virtual ~BaseSparseMatrix ();
@@ -370,7 +376,7 @@ namespace ngla
       BASE::entry_height = ngbla::Height<TM>();
       BASE::entry_width = ngbla::Width<TM>();
       BASE::entry_size = sizeof(TM)/sizeof(TSCAL);
-      BASE::is_complex = IsComplex<TM>();
+      BASE::is_complex = ngbla::IsComplex<TM>();
     }
     
   public:
@@ -947,7 +953,7 @@ namespace ngla
           BASE::entry_height = bheight;
           BASE::entry_width = bwidth;
           BASE::entry_size = bheight*bwidth;
-          BASE::is_complex = IsComplex<TSCAL>();
+          BASE::is_complex = ngbla::IsComplex<TSCAL>();
           
           asvec.AssignMemory (nze*bheight*bwidth, (void*)data.Addr(0));
           // FindSameNZE();

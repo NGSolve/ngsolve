@@ -11,8 +11,6 @@
 
 namespace ngla
 {
-
-
   class BaseVector;
   class AutoVector;
   class MultiVector;
@@ -95,22 +93,22 @@ namespace ngla
     int entrysize = 1;
     ///
     // shared_ptr<ParallelDofs> paralleldofs;
-
+    
     ///
     BaseVector () { ; }
-
+    
   public:
     ///
     virtual ~BaseVector () { ; }
-
+    
     ///
     template <typename T> 
-    BaseVector & operator= (const VVecExpr<T> & v)
+      BaseVector & operator= (const VVecExpr<T> & v)
     {
       v.AssignTo (1.0, *this);
       return *this;
     }
-
+    
     ///
     BaseVector & operator= (const BaseVector & v)
     {
@@ -381,30 +379,26 @@ namespace ngla
     
     const MemoryTracer& GetMemoryTracer() const { return mt; }
   private:
-  MemoryTracer mt = { "BaseVector" };
+    MemoryTracer mt = { "BaseVector" };
   };
-
-
-  AutoVector CreateBaseVector(size_t size, bool is_complex, int es);
-
   
-  class NGS_DLL_HEADER AutoVector // : public BaseVector
+
+  AutoVector CreateBaseVector(size_t size, bool is_complex = false, int es = 1);
+  
+  
+  class NGS_DLL_HEADER AutoVector 
   {
     shared_ptr<BaseVector> vec;
   public:
-    AutoVector () { ; }
-
-    AutoVector (AutoVector && av2) : vec(std::move(av2.vec)) { } 
-    // { size = av2.Size(), entrysize = av2.EntrySize(); }
-
-    AutoVector (shared_ptr<BaseVector> hvec) : vec(hvec) { }
+    AutoVector () = default;
+    AutoVector (AutoVector && av2) = default; //  : vec(std::move(av2.vec)) { } 
+    
+    AutoVector (shared_ptr<BaseVector> hvec) : vec(std::move(hvec)) { }
     
     AutoVector (unique_ptr<BaseVector> hvec) : vec(std::move(hvec)) { } 
-    // { size = vec->Size(), entrysize = vec->EntrySize(); }
 
     template<typename U>
     AutoVector (unique_ptr<U> hvec) : vec(std::move(hvec)) { } 
-    // { size = vec->Size(), entrysize = vec->EntrySize(); }
 
     ~AutoVector();
 
