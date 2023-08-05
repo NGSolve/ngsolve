@@ -39,7 +39,7 @@ namespace ngla
   }  
   
 
-  MatrixGraph :: MatrixGraph (const Array<int> & elsperrow, int awidth)
+  MatrixGraph :: MatrixGraph (FlatArray<int> elsperrow, size_t awidth)
   {
     size = elsperrow.Size();
     width = awidth;
@@ -62,7 +62,7 @@ namespace ngla
       colnr[i] = -1;
     */
     
-    FlatArray<int> hcolnr = colnr;
+    FlatArray<ColIdx> hcolnr = colnr;
     ParallelForRange (nze,
 		      [hcolnr] (auto myrange)
 		      {
@@ -72,7 +72,7 @@ namespace ngla
     CalcBalancing ();
   }
                                                                                                                                                                                                                   
-  MatrixGraph :: MatrixGraph (int as, int max_elsperrow) 
+  MatrixGraph :: MatrixGraph (size_t as, int max_elsperrow) 
   {
     size = as;
     width = as;
@@ -175,8 +175,8 @@ namespace ngla
   */
 
 
-  template <typename FUNC>
-  INLINE void MergeArrays1 (FlatArray<int*> ptrs,
+  template <typename T, typename FUNC>
+  INLINE void MergeArrays1 (FlatArray<T*> ptrs,
                            FlatArray<int> sizes,
                            // FlatArray<int> minvals,
                            FUNC f)
@@ -218,8 +218,8 @@ namespace ngla
   }  
 
 
-  template <typename FUNC>
-  INLINE void MergeArrays (FlatArray<int*> ptrs,
+  template <typename T, typename FUNC>
+  INLINE void MergeArrays (FlatArray<T*> ptrs,
                            FlatArray<int> sizes,
                            FUNC f)
   {
@@ -388,8 +388,8 @@ namespace ngla
   }
 
 
-  MatrixGraph :: MatrixGraph (int asize, int awidth, const Table<int> & rowelements, 
-                              const Table<int> & colelements, 
+  MatrixGraph :: MatrixGraph (size_t asize, size_t awidth, FlatTable<int> rowelements, 
+                              FlatTable<int> colelements, 
                               bool symmetric)
   {
     // make sure that taskmanager is up ...
@@ -1001,10 +1001,7 @@ namespace ngla
   */
 
   
-  MatrixGraph :: ~MatrixGraph ()
-  {
-    ;
-  }
+  MatrixGraph :: ~MatrixGraph () { } 
   
   void MatrixGraph :: Compress()
   {
@@ -1013,7 +1010,7 @@ namespace ngla
   
 
   /// returns position of Element (i, j), exception for unused
-  size_t MatrixGraph :: GetPosition (int i, int j) const
+  size_t MatrixGraph :: GetPosition (size_t i, size_t j) const
   {
     /*
       for (int k = firsti[i]; k < firsti[i+1]; k++)
@@ -1043,7 +1040,7 @@ namespace ngla
   
   
   /// returns position of Element (i, j), -1 for unused
-  size_t MatrixGraph :: GetPositionTest (int i, int j) const
+  size_t MatrixGraph :: GetPositionTest (size_t i, size_t j) const
   {
     /*
       for (int k = firsti[i]; k < firsti[i+1]; k++)
@@ -1070,7 +1067,7 @@ namespace ngla
     return numeric_limits<size_t>::max();
   }
   
-  size_t MatrixGraph :: CreatePosition (int i, int j)
+  size_t MatrixGraph :: CreatePosition (size_t i, size_t j)
   {
     size_t first = firsti[i]; 
     size_t last = firsti[i+1];
@@ -1150,7 +1147,7 @@ namespace ngla
 
 
   void MatrixGraph :: 
-  GetPositionsSorted (int row, int n, int * pos) const
+  GetPositionsSorted (size_t row, size_t n, int * pos) const
   {
     if (n == 1)
       {
@@ -1420,7 +1417,7 @@ namespace ngla
     ParallelForRange
       (mata.Height(), [&] (IntRange r)
        {
-         Array<int*> ptrs;
+         Array<BaseSparseMatrix::ColIdx*> ptrs;
          Array<int> sizes;
          for (int i : r)
            {
@@ -1466,7 +1463,7 @@ namespace ngla
     ParallelForRange
       (mata.Height(), [&] (IntRange r)
        {
-         Array<int*> ptrs;
+         Array<BaseSparseMatrix::ColIdx*> ptrs;
          Array<int> sizes;
          for (int i : r)
            {
@@ -1478,7 +1475,7 @@ namespace ngla
                  ptrs[j] = matb.GetRowIndices(mata_ci[j]).Addr(0);
                  sizes[j] = matb.GetRowIndices(mata_ci[j]).Size();
                }
-             int * ptr = prod->GetRowIndices(i).Addr(0);
+             BaseSparseMatrix::ColIdx * ptr = prod->GetRowIndices(i).Addr(0);
              MergeArrays(ptrs, sizes, [&ptr] (int col)
                          {
                            *ptr = col;
@@ -1591,8 +1588,8 @@ namespace ngla
 	  for (int j = 0; j < this->GetRowIndices(i).Size(); j++)
 	    {
 	      int col = this->GetRowIndices(i)[j];
-	      FlatArray<int> prol_rowind = prol.GetRowIndices(i);
-	      FlatArray<int> prol_colind = prol.GetRowIndices(col);
+	      FlatArray prol_rowind = prol.GetRowIndices(i);
+	      FlatArray prol_colind = prol.GetRowIndices(col);
 
 	      for (int k = 0; k < prol_rowind.Size(); k++)
 		for (int l = 0; l < prol_colind.Size(); l++)
@@ -1663,7 +1660,7 @@ namespace ngla
 	  
     for (int i = 0; i < n; i++)
       {
-        FlatArray<int> mat_ri = this->GetRowIndices(i);
+        FlatArray mat_ri = this->GetRowIndices(i);
         FlatVector<TM> mat_rval = this->GetRowValues(i);
 
         for (int j = 0; j < mat_ri.Size(); j++)
@@ -1671,8 +1668,8 @@ namespace ngla
             int col = mat_ri[j];
             TM mat_val = mat_rval[j]; 
 
-            FlatArray<int> prol_ri_i = prol.GetRowIndices(i);
-            FlatArray<int> prol_ri_col = prol.GetRowIndices(col);
+            FlatArray prol_ri_i = prol.GetRowIndices(i);
+            FlatArray prol_ri_col = prol.GetRowIndices(col);
             FlatVector<double> prol_rval_i = prol.GetRowValues(i);
             FlatVector<double> prol_rval_col = prol.GetRowValues(col);
 
@@ -2475,7 +2472,7 @@ namespace ngla
 
     // Vector<TSCAL> sum(bheight);
     FlatArray<size_t> index = this->GetFirstArray();
-    FlatArray<int> cols = this->GetColIndices();
+    FlatArray cols = this->GetColIndices();
     FlatArray<TSCAL> values = data;
 
     size_t bw = bwidth;

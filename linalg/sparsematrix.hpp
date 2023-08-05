@@ -75,23 +75,25 @@ namespace ngla
   */
   class NGS_DLL_HEADER MatrixGraph : public BaseMatrix
   {
+  public:
+    typedef int ColIdx;
   protected:
     /// number of rows
-    int size;
+    size_t size;
     /// with of matrix
-    int width;
+    size_t width;
     /// non-zero elements
     size_t nze; 
 
     /// column numbers
     // Array<int, size_t> colnr;
-    NumaDistributedArray<int> colnr;
+    NumaDistributedArray<ColIdx> colnr;
 
     /// pointer to first in row
     Array<size_t> firsti;
   
     /// row has same non-zero elements as previous row
-    Array<int> same_nze;
+    Array<size_t> same_nze;
     
     /// balancing for multi-threading
     Partitioning balance;
@@ -101,16 +103,16 @@ namespace ngla
 
   public:
     /// arbitrary number of els/row
-    MatrixGraph (const Array<int> & elsperrow, int awidth);
+    MatrixGraph (FlatArray<int> elsperrow, size_t awidth);
     /// matrix of height as, uniform number of els/row
-    MatrixGraph (int as, int max_elsperrow);    
+    MatrixGraph (size_t as, int max_elsperrow);    
     /// shadow matrix graph
     MatrixGraph (const MatrixGraph & graph); // , bool stealgraph = false);
     /// move-constuctor
     MatrixGraph (MatrixGraph && graph);
     /// 
-    MatrixGraph (int size, int width,
-                 const Table<int> & rowelements, const Table<int> & colelements, bool symmetric);
+    MatrixGraph (size_t size, size_t width,
+                 FlatTable<int> rowelements, FlatTable<int> colelements, bool symmetric);
     /// 
     // MatrixGraph (const Table<int> & dof2dof, bool symmetric);
     virtual ~MatrixGraph ();
@@ -119,27 +121,27 @@ namespace ngla
     void Compress();
   
     /// returns position of Element (i, j), exception for unused
-    size_t GetPosition (int i, int j) const;
+    size_t GetPosition (size_t i, size_t j) const;
     
     /// returns position of Element (i, j), -1 for unused
-    size_t GetPositionTest (int i, int j) const;
+    size_t GetPositionTest (size_t i, size_t j) const;
 
     /// find positions of n sorted elements, overwrite pos, exception for unused
-    void GetPositionsSorted (int row, int n, int * pos) const;
+    void GetPositionsSorted (size_t row, size_t n, int * pos) const;
 
     /// returns position of new element
-    size_t CreatePosition (int i, int j);
+    size_t CreatePosition (size_t i, size_t j);
 
-    int Size() const { return size; }
+    size_t Size() const { return size; }
 
     size_t NZE() const { return nze; }
 
     // full col-index array
-    FlatArray<int> GetColIndices() const { return colnr; }
+    FlatArray<ColIdx> GetColIndices() const { return colnr; }
     
     // col-indices of the i-th row
-    FlatArray<int> GetRowIndices(size_t i) const
-    { return FlatArray<int> (firsti[i+1]-firsti[i], colnr+firsti[i]); }      
+    FlatArray<ColIdx> GetRowIndices(size_t i) const
+    { return FlatArray<ColIdx> (firsti[i+1]-firsti[i], colnr+firsti[i]); }      
 
     size_t First (int i) const { return firsti[i]; }
     FlatArray<size_t> GetFirstArray () const  { return firsti; } 
@@ -190,6 +192,7 @@ namespace ngla
     
   public:
     using MatrixGraph::MatrixGraph;
+    using MatrixGraph::ColIdx;
     /*
     BaseSparseMatrix (int as, int max_elsperrow)
       : MatrixGraph (as, max_elsperrow)  
@@ -311,6 +314,7 @@ namespace ngla
     // also be a diagonal matrix
     int entry_size;
     VFlatVector<TSCAL> asvec;
+    using MatrixGraph::ColIdx;    
   public:
     using BaseSparseMatrix::BaseSparseMatrix;
     /*
@@ -372,7 +376,8 @@ namespace ngla
     using BASE::FindSameNZE;
     // using BASE::SetEntrySize;
     using BASE::AsVector;
-
+    using typename BASE::ColIdx;
+    
     void SetEntrySize()
     {
       // BASE::SetEntrySize (ngbla::Height<TM>(), ngbla::Width<TM>(), sizeof(TM)/sizeof(TSCAL));
@@ -561,7 +566,7 @@ namespace ngla
     using SparseMatrixTM<TM>::colnr;
     using SparseMatrixTM<TM>::data;
     using SparseMatrixTM<TM>::balance;
-
+    using BaseSparseMatrix::ColIdx;
 
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV_ROW TVX;
@@ -670,7 +675,7 @@ namespace ngla
       size_t first = firsti[row];
       size_t last = firsti[row+1];
 
-      const int * colpi = colnr.Addr(0);
+      const ColIdx * colpi = colnr.Addr(0);
       const TM * datap = data.Addr(0);
 
       for (size_t j = first; j < last; j++)
@@ -683,7 +688,7 @@ namespace ngla
       size_t first = firsti[row];
       size_t last = firsti[row+1];
 
-      const int * colpi = colnr.Addr(0);
+      const ColIdx * colpi = colnr.Addr(0);
       const TM * datap = data.Addr(0);
 
       for (size_t j = first; j < last; j++)
@@ -718,6 +723,7 @@ namespace ngla
     using SparseMatrixTM<TM>::firsti;
     using SparseMatrixTM<TM>::colnr;
     using SparseMatrixTM<TM>::data;
+    using BaseSparseMatrix::ColIdx;    
 
     typedef typename mat_traits<TM>::TSCAL TSCAL;
     typedef TV TV_COL;

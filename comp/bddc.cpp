@@ -380,7 +380,7 @@ namespace ngcomp
       ParallelFor (sparse_innersolve->Height(),
                    [&] (size_t i)
                    {
-                     FlatArray<int> cols = sparse_innersolve -> GetRowIndices(i);
+                     FlatArray cols = sparse_innersolve -> GetRowIndices(i);
                      FlatVector<SCAL> values = sparse_innersolve->GetRowValues(i);
                      double wi = weight[i];
                      for (int j = 0; j < cols.Size(); j++)
@@ -399,7 +399,7 @@ namespace ngcomp
                        sparse_harmonicexttrans->GetBalancing(),
                        [&] (size_t i)
                        {
-                         FlatArray<int> rowind = sparse_harmonicexttrans->GetRowIndices(i);
+                         FlatArray rowind = sparse_harmonicexttrans->GetRowIndices(i);
                          FlatVector<SCAL> values = sparse_harmonicexttrans->GetRowValues(i);
                          for (int j = 0; j < rowind.Size(); j++)
                            values[j] *= weight[rowind[j]];

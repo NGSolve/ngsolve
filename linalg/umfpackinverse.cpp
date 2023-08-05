@@ -198,7 +198,7 @@ namespace ngla
 	  {
 	    if (!subset.Used(i)) continue;
 
-	    FlatArray<int> ind = a.GetRowIndices(i);
+	    FlatArray ind = a.GetRowIndices(i);
 	    for (int j = 0; j < ind.Size(); j++ )
 	      {
 		if (!subset.Used(i,ind[j])) continue;
@@ -234,7 +234,7 @@ namespace ngla
 	    if (!subset.Used(i)) continue;
 	    int ri = entrysize*icompress[i];
 
-	    FlatArray<int> ind = a.GetRowIndices(i);
+	    FlatArray ind = a.GetRowIndices(i);
 	    FlatVector<TM> values = a.GetRowValues(i);
 
 	    for (int j = 0; j < ind.Size(); j++)
@@ -273,7 +273,7 @@ namespace ngla
 	for (int i = 0; i < a.Height(); i++ )
 	  {
 	    if (!subset.Used(i)) continue;
-	    FlatArray<int> ind = a.GetRowIndices(i);
+	    FlatArray ind = a.GetRowIndices(i);
 
 	    int rowelems = 0;
 	    for (int j = 0; j < ind.Size(); j++)
@@ -292,7 +292,7 @@ namespace ngla
 	for (int i = 0; i < a.Height(); i++ )
 	  {
 	    if (!subset.Used(i)) continue;
-	    FlatArray<int> ind = a.GetRowIndices(i);
+	    FlatArray ind = a.GetRowIndices(i);
 	    FlatVector<TM> values = a.GetRowValues(i);
 
 	    int ci = entrysize*icompress[i];

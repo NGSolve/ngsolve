@@ -114,7 +114,7 @@ namespace ngcomp
 
 	for ( int i = 0; i < n; i++ )
 	  {
-	    FlatArray<int> rowindices = 
+	    FlatArray rowindices = 
 	      dynamic_cast<const BaseSparseMatrix&>(amat).GetRowIndices(i);
 	    if ( rowindices.Size() <= 1 )
 	      internaldofs.SetBit(i);

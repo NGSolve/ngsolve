@@ -99,7 +99,8 @@ namespace ngla
     while (row < mat.Height())
       {
         auto rowind = mat.GetRowIndices(row);
-        colnr.Append (rowind);
+        // colnr.Append (rowind);
+        for (auto ri : rowind) colnr.Append(ri);
         firsti_colnr.Append(colnr.Size());
         for (auto val : mat.GetRowValues(row))
           data.Append (val);
