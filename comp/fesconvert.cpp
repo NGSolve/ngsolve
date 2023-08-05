@@ -173,7 +173,7 @@ namespace ngcomp
     // 	    constexpr int DIMB = DBMO + 1;
     // 	    if constexpr( (DIMA == DIMB) ||
     // 			  ( (DIMA == 1) || (DIMB == 1) ) ) { // so we do not try to instantiate SparseMatrix<Mat<2,3,SCAL>> etc.
-    auto spmat = make_shared<TSPM<DIMB, DIMA, SCAL>>(graph, true);
+    auto spmat = make_shared<TSPM<DIMB, DIMA, SCAL>>(std::move(graph));
     spmat->AsVector() = 0;
     bspmat = spmat;
 

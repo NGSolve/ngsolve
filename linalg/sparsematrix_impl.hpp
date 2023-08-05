@@ -145,8 +145,13 @@ namespace ngla
 
 
   template <class TM, class TV_ROW, class TV_COL>
-  SparseMatrix<TM,TV_ROW,TV_COL> :: SparseMatrix (const MatrixGraph & agraph, bool stealgraph)
-  : SparseMatrixTM<TM> (agraph, stealgraph) 
+  SparseMatrix<TM,TV_ROW,TV_COL> :: SparseMatrix (const MatrixGraph & agraph)
+    : SparseMatrixTM<TM> (agraph) 
+  { ; }
+  
+  template <class TM, class TV_ROW, class TV_COL>
+  SparseMatrix<TM,TV_ROW,TV_COL> :: SparseMatrix (MatrixGraph && agraph)
+    : SparseMatrixTM<TM> (std::move(agraph))
   { ; }
  
   
@@ -820,12 +825,21 @@ namespace ngla
   
   template <class TM, class TV>
   SparseMatrixSymmetric<TM,TV> :: 
-  SparseMatrixSymmetric (const MatrixGraph & agraph, bool stealgraph)
+  SparseMatrixSymmetric (const MatrixGraph & agraph)
     // : SparseMatrixTM<TM> (agraph, stealgraph), 
     // SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
-    : SparseMatrix<TM,TV,TV> (agraph, stealgraph)
+    : SparseMatrix<TM,TV,TV> (agraph)
   { ; }
 
+  template <class TM, class TV>
+  SparseMatrixSymmetric<TM,TV> :: 
+  SparseMatrixSymmetric (MatrixGraph && agraph)
+    // : SparseMatrixTM<TM> (agraph, stealgraph), 
+    // SparseMatrixSymmetricTM<TM> (agraph, stealgraph),
+    : SparseMatrix<TM,TV,TV> (std::move(agraph))
+  { ; }
+
+  
   template <class TM, class TV>
   SparseMatrixSymmetric<TM,TV> :: ~SparseMatrixSymmetric ()
   {
