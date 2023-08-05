@@ -26,7 +26,7 @@ namespace ngcomp
   template <int DIMS, int DIMR, typename BASE> class ALE_ElementTransformation;
   
   
-  string Ngs_Element::defaultstring = "default";
+  // string Ngs_Element::defaultstring = "default";
   template <int DIMS, int DIMR>
   class Ng_ElementTransformation : public ElementTransformation
   {
@@ -1421,12 +1421,6 @@ namespace ngcomp
  
   void MeshAccess :: GetFaceEdges (int fnr, Array<int> & edges) const
   {
-    /*
-    edges.SetSize(4);
-    int ned = Ng_GetFace_Edges (fnr+1, &edges[0]);
-    edges.SetSize(ned);
-    for (int i = 0; i < ned; i++) edges[i]--;
-    */
     edges = ArrayObject(mesh.GetFaceEdges(fnr));
   }
   
@@ -1434,8 +1428,6 @@ namespace ngcomp
   {
     faces.SetSize0();
     auto [v0,v1] = GetEdgePNums(enr);
-    // auto v01 = GetEdgePNums(enr);
-    // auto v0 = v01[0], v1 = v01[1];
 
     for (auto elnr : GetVertexElements(v0))
       {
@@ -1470,9 +1462,11 @@ namespace ngcomp
     // ArrayMem<int, 9> vnums;
     auto vnums = GetFacePNums(fnr);
 
+    /*
     ArrayMem<int, 50> vels;
     GetVertexElements (vnums[0], vels);
-
+    */
+    auto vels = GetVertexElements(vnums[0]);
     int faces[8];
     elnums.SetSize (0);
     for (int i = 0; i < vels.Size(); i++)
@@ -1539,11 +1533,6 @@ namespace ngcomp
       case 1: return ET_POINT; 
       case 2: return ET_SEGM;
       default:  // i.e. dim = 3
-        /*
-	ArrayMem<int, 4> pnums;
-	GetFacePNums(fnr, pnums);
-	return (pnums.Size() == 3) ? ET_TRIG : ET_QUAD;
-        */
         return (mesh.GetNode<2>(fnr).vertices.Size() == 3) ? ET_TRIG : ET_QUAD;
       }
   }
@@ -1578,7 +1567,7 @@ namespace ngcomp
       if (dim != def->Dimension())
         throw Exception ("Mesh::SetDeformation needs a GridFunction with dim="+ToString(dim));
       
-    deformation = def;
+    deformation = std::move(def);
   }
   
   void MeshAccess :: SetPML (const shared_ptr<PML_Transformation> & pml_trafo, int _domnr)
@@ -1821,7 +1810,7 @@ namespace ngcomp
     regex re_pattern(pattern);
 
     for (int i : Range(*mask))
-      if (regex_match(mesh->GetMaterial(vb,i), re_pattern))
+      if (regex_match(string(mesh->GetMaterial(vb,i)), re_pattern))
         mask->SetBit(i);
   }      
 

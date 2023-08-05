@@ -19,7 +19,7 @@ namespace ngla
 
   template <class TM>
   void SparseMatrixTM<TM> ::
-  PrefetchRow (int rownr) const
+  PrefetchRow (size_t rownr) const
   {
 #ifdef NETGEN_ARCH_AMD64
 #ifdef __GNUC__

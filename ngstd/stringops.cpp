@@ -3,7 +3,8 @@
 namespace ngstd
 {
 
-  bool StringFitsPattern(const string & str, const string & pattern)
+  // bool StringFitsPattern(const string & str, const string & pattern)
+  bool StringFitsPattern(string_view str, string_view pattern)
   {
     int patternpos = 0;
     int strpos = 0;

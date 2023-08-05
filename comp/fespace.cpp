@@ -122,7 +122,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         std::regex pattern(flags.GetStringFlag("dirichlet"));
         for (int i : Range(ma->GetNRegions(BND)))
-          if (std::regex_match (ma->GetMaterial(BND, i), pattern))
+          if (std::regex_match (string(ma->GetMaterial(BND, i)), pattern))
             dirichlet_constraints[BND].SetBit(i);
       }
 
@@ -138,7 +138,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         std::regex pattern(flags.GetStringFlag("dirichlet_bbnd"));
         for (int i : Range(ma->GetNRegions(BBND)))
-          if (std::regex_match (ma->GetMaterial(BBND, i), pattern))
+          if (std::regex_match (string(ma->GetMaterial(BBND, i)), pattern))
             dirichlet_constraints[BBND].SetBit(i);
       }
 
@@ -154,7 +154,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         std::regex pattern(flags.GetStringFlag("dirichlet_bbbnd"));
         for (int i : Range(ma->GetNRegions(BBBND)))
-          if (std::regex_match (ma->GetMaterial(BBBND, i), pattern))
+          if (std::regex_match (string(ma->GetMaterial(BBBND, i)), pattern))
             
             dirichlet_constraints[BBBND].SetBit(i);
       }

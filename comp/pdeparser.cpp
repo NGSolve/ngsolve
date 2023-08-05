@@ -1140,7 +1140,7 @@ namespace ngcomp
 		  int index = pde->GetMeshAccess()->GetElIndex(ElementId(VOL,i));
 		  if (coeffs[index]) continue;
 
-		  string mat = pde->GetMeshAccess()->GetMaterial(ElementId(VOL,i));
+		  string mat = string(pde->GetMeshAccess()->GetMaterial(ElementId(VOL,i)));
 		  // cout << "mat = " << mat << ", ind = " << index << endl;
 
 		  EvalFunction * fun = NULL;
@@ -1316,7 +1316,7 @@ namespace ngcomp
 		  if (coeffs[index]) continue;
 
 		  shared_ptr<EvalFunction> fun = NULL;
-		  string bcname = pde->GetMeshAccess()->GetMaterial(ElementId(BND, i));
+		  auto bcname = pde->GetMeshAccess()->GetMaterial(ElementId(BND, i));
 		  // cout << "bcname = " << bcname << ", ind = " << index << endl;
 
 		  bool used = false;
@@ -1331,7 +1331,7 @@ namespace ngcomp
 		      if (funs.Used ("default"))
 			fun = funs["default"];
 		      else
-			throw Exception (string ("No value defined for boundary condition ")+bcname); 
+			throw Exception (string ("No value defined for boundary condition ")+string(bcname)); 
 		    }
 			 
 		  if(coeffs[index] == NULL) coeffs[index] = fun; // new EvalFunction(*fun);

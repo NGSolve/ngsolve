@@ -40,7 +40,7 @@
 #include <cstdio>
 #include <cmath>
 #include <ctime>
-#include <climits>
+#include <limits>
 #include <cstring>
 
 #include <new>
@@ -56,6 +56,7 @@
 #include <list>
 #include <array>
 #include <optional>
+#include <variant>
 
 
 #ifndef M_PI
