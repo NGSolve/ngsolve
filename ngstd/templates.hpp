@@ -1,3 +1,6 @@
+nothing here anymore
+
+
 #ifndef FILE_NGSTD_TEMPLATES
 #define FILE_NGSTD_TEMPLATES
 

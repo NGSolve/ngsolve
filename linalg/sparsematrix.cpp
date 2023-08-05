@@ -1250,10 +1250,8 @@ namespace ngla
 
 
 
-  BaseSparseMatrix :: ~BaseSparseMatrix ()
-  { 
-    ;
-  }
+  BaseSparseMatrix :: ~BaseSparseMatrix () { }
+  
 
   INVERSETYPE BaseSparseMatrix ::
   SetInverseType (string ainversetype) const

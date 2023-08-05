@@ -3009,7 +3009,7 @@ namespace ngcomp {
       {
         ElementId ei(VOL,i);
 	if((directsolverclustered.Size() > 0 && directsolverclustered[ma->GetElIndex(ei)]) || 
-	   directsolvermaterials.Contains(ma->GetMaterial(ei)))
+	   directsolvermaterials.Contains(string(ma->GetMaterial(ei))))
 	  {     
 	    ELEMENT_TYPE eltype = ma->GetElType(ei);
 	    if(eltype != ET_PRISM) continue;

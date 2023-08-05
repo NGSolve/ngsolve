@@ -15,8 +15,6 @@ namespace ngla
   */
   class NGS_DLL_HEADER BaseBlockJacobiPrecond : virtual public BaseMatrix
   {
-  public:
-    // enum COARSE_TYPE { NO_COARSE = 0, USER_COARSE = 1, DIRECT_COARSE = 2, SMOOTHING_COARSE = 3 };
   protected:
     /// the table defining the blocks
     shared_ptr<Table<int>> blocktable;
@@ -66,39 +64,6 @@ namespace ngla
     int Reorder (FlatArray<int> block, const MatrixGraph & graph,
 		 FlatArray<int> usedflags,        // in and out: array of -1, size = graph.size
 		 LocalHeap & lh);
-
-    /*
-    virtual void SetCoarseType ( string act) 
-    {
-      if ( strcmp ( act.c_str(), "DIRECT_COARSE") == 0 )
-	{
-	  ct = DIRECT_COARSE;
-	}
-      else if ( strcmp ( act.c_str(), "NO_COARSE") == 0 )
-	{
-	  ct = NO_COARSE;
-	}
-      else if ( strcmp ( act.c_str(), "USER_COARSE") == 0 )
-	{
-	  ct = USER_COARSE;
-	}
-      else if ( strcmp ( act.c_str(), "SMOOTHING_COARSE") == 0 )
-	{
-	  ct = SMOOTHING_COARSE;
-	}
-      else
-	{
-	  ct = NO_COARSE;
-	}
-    }
-    */
-
-    /*
-    virtual void InitCoarseType (string act, const BitArray * freedofs) 
-    {
-      cerr << "BaseBlockJacobiPrecond :: InitCoarseType not implemented!" << endl;
-    }
-    */
 
     auto GetBlockTable() const { return blocktable; } 
   };

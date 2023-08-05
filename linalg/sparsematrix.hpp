@@ -7,7 +7,6 @@
 /* Date:   01. Oct. 94, 15 Jan. 02                                        */
 /**************************************************************************/
 
-#include <limits>
 
 namespace ngla
 {
@@ -181,7 +180,7 @@ namespace ngla
 
 
 
-  /// A virtual base class for all sparse matrices
+  /// base class for all sparse matrices
   class NGS_DLL_HEADER BaseSparseMatrix : public MatrixGraph
   {
   protected:
@@ -306,7 +305,6 @@ namespace ngla
   
   template <typename TSCAL>
   class NGS_DLL_HEADER S_BaseSparseMatrix : public BaseSparseMatrix
-  // public S_BaseMatrix<TSCAL>
   {
   protected:
     int entry_height, entry_width;
@@ -353,7 +351,6 @@ namespace ngla
   /// A general, sparse matrix
   template<class TM>
   class NGS_DLL_HEADER SparseMatrixTM : public S_BaseSparseMatrix<typename mat_traits<TM>::TSCAL>
-    // public BaseSparseMatrix, public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
     // Array<TM, size_t> data;
@@ -496,15 +493,15 @@ namespace ngla
     bool IsHermitian() const { return hermitian; }
     void SetHermitian(bool herm) { hermitian = herm; }
     
-    TM & operator[] (int i)  { return data[i]; }
-    const TM & operator[] (int i) const { return data[i]; }
+    TM & operator[] (size_t i)  { return data[i]; }
+    const TM & operator[] (size_t i) const { return data[i]; }
 
-    TM & operator() (int row, int col)
+    TM & operator() (size_t row, size_t col)
     {
       return data[CreatePosition(row, col)];
     }
 
-    const TM & operator() (int row, int col) const
+    const TM & operator() (size_t row, size_t col) const
     {
       size_t pos = GetPositionTest (row,col);
       if (pos != numeric_limits<size_t>::max())
@@ -513,7 +510,7 @@ namespace ngla
 	return nul;
     }
 
-    void PrefetchRow (int rownr) const;
+    void PrefetchRow (size_t rownr) const;
 
     // full value array
     FlatVector<TM> GetValues() const { return FlatVector<TM> (data.Size(), data.Addr(0)); }

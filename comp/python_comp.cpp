@@ -656,7 +656,7 @@ kwargs : kwargs
                             std::regex pattern(dirichlet.cast<string>());
                             Array<double> dirlist;
                             for (int i = 0; i < ma->GetNBoundaries(); i++)
-                              if (std::regex_match (ma->GetMaterial(BND, i), pattern))
+                              if (std::regex_match (string(ma->GetMaterial(BND, i)), pattern))
                                 {
                                   dirlist.Append (i+1);
                                 }
@@ -694,7 +694,7 @@ kwargs : kwargs
                             std::regex pattern(definedon.cast<string>());
                             Array<double> defonlist;
                             for (int i = 0; i < ma->GetNDomains(); i++)
-                              if (regex_match(ma->GetMaterial(VOL,i), pattern))
+                              if (regex_match(string(ma->GetMaterial(VOL,i)), pattern))
                                 defonlist.Append(i+1);
                             flags->SetFlag ("definedon", defonlist);
                           }

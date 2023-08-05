@@ -600,7 +600,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
               {
                 std::regex pattern(definedon.cast<string>());
                 for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
+                  if (std::regex_match (string(ma.GetMaterial(VOL,i)), pattern))
                     ma.SetPML(apml, i);
               }
           },
@@ -617,7 +617,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
               {
                 std::regex pattern(definedon.cast<string>());
                 for (int i = 0; i < ma.GetNDomains(); i++)
-                  if (std::regex_match (ma.GetMaterial(VOL,i), pattern))
+                  if (std::regex_match (string(ma.GetMaterial(VOL,i)), pattern))
                     ma.UnSetPML(i);
               }
           }, py::arg("definedon"), "Unset PML transformation on domain")
