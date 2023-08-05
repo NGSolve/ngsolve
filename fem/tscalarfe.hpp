@@ -158,8 +158,8 @@ namespace ngfem
     template<typename Tx, typename TFA>  
     INLINE void T_CalcDualShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
-      // throw Exception (string("T_CalcDualShape not implemented for element ")+typeid(*this).name());       
-      static_cast<const FEL*> (this) -> T_CalcDualShape (ip, shape);
+      throw Exception (string("T_CalcDualShape not implemented for element ")+typeid(*this).name());       
+      // static_cast<const FEL*> (this) -> T_CalcDualShape (ip, shape);
     }
 
     bool GetDiagDualityMassInverse2 (FlatVector<> diag) const { return false; }

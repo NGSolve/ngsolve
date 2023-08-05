@@ -279,21 +279,16 @@ namespace ngfem
       static INLINE void T_CalcShape (TIP<1,Tx> ip, TFA & shape) 
     {
       Tx x = ip.x;
-      // Tx lam2 = 1-x;
 
-      // very primitive ...
-      // shape = 0;
-      
-      if (ORDER >= 0) shape[0] = Tx(1.0);
-      if (ORDER >= 1) shape[1] = 2*x-1;
-      if (ORDER >= 2) shape[2] = (2*x-1)*(2*x-1)-1.0/3.0;
-      if (ORDER >= 3) shape[3] = (2*x-1)*(2*x-1)*(2*x-1);
-#ifndef __CUDA_ARCH__
       if (ORDER >= 4)
+        LegendrePolynomial(ORDER, 2*x-1, shape);
+      else
         {
-          throw Exception ("TSegmL2: Legendre polynomials not implemented");
+          if (ORDER >= 0) shape[0] = Tx(1.0);
+          if (ORDER >= 1) shape[1] = 2*x-1;
+          if (ORDER >= 2) shape[2] = (2*x-1)*(2*x-1)-1.0/3.0;
+          if (ORDER >= 3) shape[3] = (2*x-1)*(2*x-1)*(2*x-1);
         }
-#endif
     }
   };
 
