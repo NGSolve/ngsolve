@@ -731,7 +731,7 @@ namespace ngla
                                reinterpret_cast<double*> (fv.Addr(0)));
   }
 
-  AutoVector :: ~AutoVector() { ; }
+  AutoVector :: ~AutoVector() { }
 
   BlockVector & dynamic_cast_BlockVector (BaseVector & x)
   {
