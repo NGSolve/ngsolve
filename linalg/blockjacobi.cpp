@@ -93,7 +93,7 @@ namespace ngla
 	    changed = 0;
 	    for (size_t j = 0; j < n; j++)
 	      {
-		FlatArray<int> row = graph.GetRowIndices(block[j]);
+		FlatArray row = graph.GetRowIndices(block[j]);
 		for (size_t k = 0; k < row.Size(); k++)
 		  {
 		    int kk = block_inv[row[k]];
@@ -207,7 +207,7 @@ namespace ngla
 		changed = 0;
 		for (size_t i = 0; i < n; i++)
 		  {
-		    FlatArray<int> row = graph.GetRowIndices(block[i]);
+		    FlatArray row = graph.GetRowIndices(block[i]);
 
 		    for (size_t j = 0; j < row.Size(); j++)
 		      {
@@ -272,7 +272,7 @@ namespace ngla
 	  newnum[reorder[i]] = i;
 	for (size_t j = 0; j < n; j++)
 	  {
-	    FlatArray<int> row = graph.GetRowIndices(block[j]);
+	    FlatArray row = graph.GetRowIndices(block[j]);
 	    for (size_t k = 0; k < row.Size(); k++)
 	      {
 		int kk = block_inv[row[k]];

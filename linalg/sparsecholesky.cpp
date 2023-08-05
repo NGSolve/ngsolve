@@ -226,7 +226,7 @@ namespace ngla
     else 
       for (int i = 0; i < n; i++)
 	{
-	  FlatArray<int> row = a->GetRowIndices(i);
+	  FlatArray row = a->GetRowIndices(i);
 	  for (int j = 0; j < row.Size(); j++)
 	    {
 	      int col = row[j];

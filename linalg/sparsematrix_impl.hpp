@@ -97,7 +97,7 @@ namespace ngla
     for (int i = 0; i < dnums1.Size(); i++)
       if (IsRegularIndex(dnums1[i]))
 	{
-	  FlatArray<int> rowind = this->GetRowIndices(dnums1[i]);
+	  FlatArray rowind = this->GetRowIndices(dnums1[i]);
 	  FlatVector<TM> rowvals = this->GetRowValues(dnums1[i]);
 	  
 	  int k = 0;
@@ -560,8 +560,8 @@ namespace ngla
 	  for (int j = 0; j < this->GetRowIndices(i).Size(); j++)
 	    {
 	      int col = this->GetRowIndices(i)[j];
-	      FlatArray<int> prol_rowind = prol.GetRowIndices(i);
-	      FlatArray<int> prol_colind = prol.GetRowIndices(col);
+	      FlatArray<ColIdx> prol_rowind = prol.GetRowIndices(i);
+	      FlatArray<ColIdx> prol_colind = prol.GetRowIndices(col);
 
 	      for (int k = 0; k < prol_rowind.Size(); k++)
 		for (int l = 0; l < prol_colind.Size(); l++)
@@ -632,7 +632,7 @@ namespace ngla
 	  
     for (int i = 0; i < n; i++)
       {
-        FlatArray<int> mat_ri = this->GetRowIndices(i);
+        FlatArray mat_ri = this->GetRowIndices(i);
         FlatVector<TM> mat_rval = this->GetRowValues(i);
 
         for (int j = 0; j < mat_ri.Size(); j++)
@@ -640,8 +640,8 @@ namespace ngla
             int col = mat_ri[j];
             TM mat_val = mat_rval[j]; 
 
-            FlatArray<int> prol_ri_i = prol.GetRowIndices(i);
-            FlatArray<int> prol_ri_col = prol.GetRowIndices(col);
+            FlatArray prol_ri_i = prol.GetRowIndices(i);
+            FlatArray prol_ri_col = prol.GetRowIndices(col);
             FlatVector<double> prol_rval_i = prol.GetRowValues(i);
             FlatVector<double> prol_rval_col = prol.GetRowValues(col);
 
@@ -769,7 +769,7 @@ namespace ngla
         {
           // FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
           // FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
-          FlatArray<int> rowind = this->GetRowIndices(dnumsmap[i1]);
+          FlatArray rowind = this->GetRowIndices(dnumsmap[i1]);
           FlatVector<TM> rowvals = this->GetRowValues(dnumsmap[i1]);
           auto elmat_row = elmat.Rows(map[i1], map[i1]+1);
 
@@ -802,7 +802,7 @@ namespace ngla
 
           // FlatArray<int> rowind = this->GetRowIndices(dnums[map[i1]]);
           // FlatVector<TM> rowvals = this->GetRowValues(dnums[map[i1]]);
-          FlatArray<int> rowind = this->GetRowIndices(dnumsmap[i1]);
+          FlatArray rowind = this->GetRowIndices(dnumsmap[i1]);
           FlatVector<TM> rowvals = this->GetRowValues(dnumsmap[i1]);
           auto elmat_row = elmat.Rows(map[i1], map[i1]+1);
 

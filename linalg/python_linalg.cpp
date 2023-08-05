@@ -92,7 +92,7 @@ void ExportSparseMatrix(py::module m)
            Vector<T> vals(nze);
            for (size_t i = 0, ii = 0; i < sp->Height(); i++)
              {
-               FlatArray<int> ind = sp->GetRowIndices(i);
+               FlatArray ind = sp->GetRowIndices(i);
                FlatVector<T> rv = sp->GetRowValues(i);
                for (int j = 0; j < ind.Size(); j++, ii++)
                  {
@@ -117,7 +117,7 @@ void ExportSparseMatrix(py::module m)
     .def("CSR", [] (shared_ptr<SparseMatrix<T>> sp) -> py::object
          {
            // FlatArray<int> colind(sp->NZE(), sp->GetRowIndices().Addr(0));
-           FlatArray<int> colind = sp->GetColIndices();
+           FlatArray colind = sp->GetColIndices();
            // FlatVector<T> values(sp->NZE(), sp->GetRowValues().Addr(0));
            FlatVector<T> values = sp->GetValues();
            typedef typename mat_traits<T>::TSCAL TSCAL;
