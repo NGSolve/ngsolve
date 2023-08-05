@@ -6726,7 +6726,7 @@ namespace ngcomp
 
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
-    auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (graph, 1);
+    auto spmat = make_shared<SparseMatrix<TM,TV,TV>> (std::move(graph));
     spmat->SetHermitian(this->hermitean);
     this->GetMemoryTracer().Track(*spmat, "mymatrix");
     mymatrix = spmat; // .get();
@@ -6887,7 +6887,7 @@ namespace ngcomp
 
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, true);
 
-    auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (graph, 1);
+    auto spmat = make_shared<SparseMatrixSymmetric<TM,TV>> (std::move(graph));
     spmat->SetHermitian(this->hermitean);    
     mymatrix = spmat; // .get();
     this->GetMemoryTracer().Track(*spmat, "mymatrix");
@@ -7032,7 +7032,7 @@ namespace ngcomp
     MatrixGraph graph = this->GetGraph (this->ma->GetNLevels()-1, false);
 
     auto spmat = make_shared<SparseBlockMatrix<TSCAL>>
-      (graph, blockheight, blockwidth, true);
+      (std::move(graph), blockheight, blockwidth);
     
     this->GetMemoryTracer().Track(*spmat, "mymatrix");
     mymatrix = spmat; // .get();

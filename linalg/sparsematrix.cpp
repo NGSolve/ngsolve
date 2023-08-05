@@ -95,9 +95,10 @@ namespace ngla
   
 
   
-  MatrixGraph :: MatrixGraph (const MatrixGraph & agraph, bool stealgraph)
+  MatrixGraph :: MatrixGraph (const MatrixGraph & agraph) // , bool stealgraph)
     : BaseMatrix(agraph)
   {
+    bool stealgraph = false;
     MatrixGraph & graph = const_cast<MatrixGraph&> (agraph);
     size = graph.size;
     width = graph.width;

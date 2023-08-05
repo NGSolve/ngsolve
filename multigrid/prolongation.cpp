@@ -198,7 +198,7 @@ namespace ngmg
       }
 
     // write prolongation matrix
-    shared_ptr<SparseMatrix< double >> prol = make_shared<SparseMatrix< double >> ( mg, 1 );
+    shared_ptr<SparseMatrix< double >> prol = make_shared<SparseMatrix< double >> ( std::move(mg) );
     for( i=0; i<nc; i++ )
       (*prol)( i, i ) = 1;
     for( i=nc; i<nf; i++ )

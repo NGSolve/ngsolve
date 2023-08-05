@@ -24,7 +24,7 @@ namespace ngla
   public:
     template <typename TM>
       SparseMatrixDynamic (const SparseMatrixTM<TM> & mat)
-      : BaseSparseMatrix (mat, false)
+      : BaseSparseMatrix (mat) // , false)
     {
       width = mat.Width();
       bh = ngbla::Height<TM>(); // mat_traits<TM>::HEIGHT;
