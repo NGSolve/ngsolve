@@ -12,8 +12,20 @@
 namespace ngbla
 {
 
-  // vector ops
+  // ***************************** vector operations **************************
 
+  template <typename TS, typename T>
+  void SetVector (TS val, FlatVector<T> vec) NETGEN_NOEXCEPT
+  {
+    for (size_t i : Range(vec))
+      vec[i] = val;
+  }
+  
+  extern NGS_DLL_HEADER void SetVector (double val, FlatVector<double> vec) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void SetVector (Complex val, FlatVector<Complex> vec) NETGEN_NOEXCEPT;
+  
+
+  
   template <typename T1, typename T2>
   void CopyVector (BareVector<T1> src, FlatVector<T2> dest) NETGEN_NOEXCEPT
   {
@@ -73,6 +85,9 @@ namespace ngbla
   extern NGS_DLL_HEADER void AddVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT;
 
 
+
+  // ************************ matrix and matrix-vector ops ****************
+  
   template <typename TA, typename TB>
   void TransposeMatrix(SliceMatrix<TA> a, SliceMatrix<TB> b)
   {
