@@ -20,6 +20,12 @@ namespace ngbla
 {
 
   // BLAS1 operations
+
+  void SetVector (double val, FlatVector<double> dest) NETGEN_NOEXCEPT
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = val;
+  }
   
   void CopyVector (BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT
   {

@@ -12,6 +12,13 @@ constexpr bool reg32 = false;
 
 namespace ngbla
 {
+
+  void SetVector (Complex val, FlatVector<Complex> dest) NETGEN_NOEXCEPT
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = val;
+  }
+  
   
   void CopyVector (BareVector<Complex> src, FlatVector<Complex> dest) NETGEN_NOEXCEPT
   {

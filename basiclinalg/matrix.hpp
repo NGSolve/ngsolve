@@ -119,14 +119,16 @@ namespace ngbla
     /// copy contents
     INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
-      for (size_t i = 0; i < h*w; i++) data[i] = m(i);
+      // for (size_t i = 0; i < h*w; i++) data[i] = m(i);
+      AsVector() = m.AsVector();
       return *this;
     }
 
     /// assign constant
     INLINE const FlatMatrix & operator= (TSCAL s) const 
     {
-      for (auto i : Range(h*w)) data[i] = s;
+      // for (auto i : Range(h*w)) data[i] = s;
+      AsVector() = s;
       return *this;
     }
 
