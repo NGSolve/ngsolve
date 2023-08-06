@@ -280,84 +280,6 @@ namespace ngla
     void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false);
     void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false);
 
-    /*
-
-    template<int S>
-    void GetIndirect (const Array<int> & ind, 
-		      FlatVector< Vec<S,double> > & v) const
-    { 
-      FlatVector<double> fv = FVDouble();
-      // int es = EntrySize();
-      for (int i = 0, ii = 0; i < ind.Size(); i++)
-	if (ind[i] != -1)
-	  {
-	    int base = S * ind[i];
-	    for (int j = 0; j < S; j++)
-	      v[ii++] = fv[base++];
-	  }
-	else
-	  {
-	    for (int j = 0; j < S; j++)
-	      v[ii++] = 0;
-	  }
-    }
-
-    
-    template<int S>
-    void GetIndirect (const Array<int> & ind, 
-		      FlatVector< Vec<S,Complex> > & v) const
-    { 
-      FlatVector<Complex> fv = FVComplex();
-      // int es = EntrySize() / 2;
-      for (int i = 0, ii = 0; i < ind.Size(); i++)
-	if (ind[i] != -1)
-	  {
-	    int base = S * ind[i];
-	    for (int j = 0; j < S; j++)
-	      v[ii++] = fv[base++];
-	  }
-	else
-	  {
-	    for (int j = 0; j < S; j++)
-	      v[ii++] = 0.0;
-	  }
-    }
-
-
-    template<int S>
-    void AddIndirect (const Array<int> & ind, 
-		      const FlatVector< Vec<S,double> > & v)
-    { 
-      FlatVector<double> fv = FVDouble();
-      // int es = EntrySize();
-    
-      for (int i = 0; i < ind.Size(); i++)
-	if (ind[i] != -1)
-	  {
-	    int base = S * ind[i];
-	    for (int j = 0; j < S; j++)
-	      fv[base++] += v[i](j);
-	  }
-    }
-
-    template<int S>
-    void AddIndirect (const Array<int> & ind, 
-		      const FlatVector< Vec<S,Complex> > & v)
-    { 
-      FlatVector<Complex> fv = FVComplex();
-      // if(EntrySize() != 2*S)
-      //       throw Exception("BaseVector::AddIndirect() wrong dimensions");
-
-      for (int i = 0; i < ind.Size(); i++)
-	if (ind[i] != -1)
-	  {
-	    int base = S * ind[i];
-	    for (int j = 0; j < S; j++)
-	      fv[base++] += v[i](j);
-	  }
-    }
-    */
-
     virtual shared_ptr<BaseVector> GetLocalVector () const 
     { return const_cast<BaseVector*>(this)->shared_from_this(); }
     
@@ -504,9 +426,8 @@ namespace ngla
       return *this;
     }
     
-    // operator unique_ptr<BaseVector> () && { return move(vec); }
-    // operator shared_ptr<BaseVector> () && { return move(vec); }
-    operator shared_ptr<BaseVector> () { return vec; }
+    operator shared_ptr<BaseVector> () && { return std::move(vec); }
+    operator shared_ptr<BaseVector> () & { return vec; }
     BaseVector & operator* () { return *vec; }
     const BaseVector & operator* () const { return *vec; }
     operator BaseVector & () { return *vec; }

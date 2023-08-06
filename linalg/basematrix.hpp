@@ -53,6 +53,8 @@ namespace ngla
       return VWidth();
     }
 
+    virtual tuple<size_t, size_t> Shape() const { return { Height(), Width() }; }
+
     virtual xbool IsSymmetric() const { return maybe; }
 
     /// is matrix complex ?
@@ -152,24 +154,6 @@ namespace ngla
     
     template <typename TSCAL>
       Matrix<TSCAL> ToDense() const;
-    /*
-    {
-      auto vecx = CreateRowVector();
-      auto vecy = CreateColVector();
-      
-      Matrix<TSCAL> dmat(Height(), Width());
-      auto fx = vecx.FV<TSCAL>();
-      auto fy = vecy.FV<TSCAL>();
-      for (int i = 0; i < fx.Size(); i++)
-        {
-          fx = 0;
-          fx(i) = 1;
-          Mult (vecx, vecy);
-          dmat.Col(i) = fy;
-        }
-      return std::move(dmat);
-    }
-    */
 
     // time per run
     double Timing (int runs = 10) const;
@@ -215,11 +199,8 @@ namespace ngla
   class NGS_DLL_HEADER S_BaseMatrix : virtual public BaseMatrix
   {
   public:
-    ///
-    S_BaseMatrix ();
-    ///
-    virtual ~S_BaseMatrix ();
-
+    S_BaseMatrix () = default;
+    virtual ~S_BaseMatrix () = default;
     // virtual bool IsComplex() const { return false; }
   };
 
@@ -229,9 +210,9 @@ namespace ngla
   {
   public:
     ///
-    S_BaseMatrix ();
-    ///
-    virtual ~S_BaseMatrix ();
+    S_BaseMatrix () { is_complex = true; }
+    virtual ~S_BaseMatrix () = default;
+    
     // virtual bool IsComplex() const { return true; }
 
     /*
@@ -316,11 +297,6 @@ namespace ngla
     AutoVector Evaluate() const override
     {
       return m->Evaluate(*v);
-      /*
-      auto vec = CreateVector();
-      AssignTo (1, vec);
-      return vec;
-      */
     }
     
     void AssignTo (double s, BaseVector & v2) const override
