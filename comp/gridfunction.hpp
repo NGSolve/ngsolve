@@ -62,24 +62,7 @@ namespace ngcomp
 			   BareSliceMatrix<Complex> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values) const override;
-    /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const override
-    { Evaluate (ir, values); }
-    */
-    
-    /*
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    { Evaluate (ir, result); deriv = 0.0; }
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input,
-                                FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    { Evaluate (ir, result); deriv = 0.0; }
-    */
+
     virtual bool StoreUserData() const override { return true; }
 
     virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
@@ -389,14 +372,6 @@ namespace ngcomp
     Array<shared_ptr<BilinearFormIntegrator>> bfi2d;
     Array<shared_ptr<BilinearFormIntegrator>> bfi3d;
     bool applyd;
-    //
-    // int cache_elnr;
-    // bool cache_bound;
-    // LocalHeap lh;
-    // ElementTransformation eltrans;
-    // const FiniteElement * fel;
-    // Array<int> dnums;
-    // FlatVector<SCAL> elu;
 
   public:
     VisualizeGridFunction (shared_ptr<MeshAccess> ama,

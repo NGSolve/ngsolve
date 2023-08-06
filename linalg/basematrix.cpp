@@ -302,24 +302,22 @@ namespace ngla
     return t.GetTime()/runs;
   }
   
+  /*
+  template<>
+  S_BaseMatrix<double> :: S_BaseMatrix () { }
+
 
   template<>
-  S_BaseMatrix<double> :: S_BaseMatrix () 
-  { ; }
-
-
-  template<>
-  S_BaseMatrix<double> :: ~S_BaseMatrix () 
-  { ; }
+  S_BaseMatrix<double> :: ~S_BaseMatrix () { }
 
   S_BaseMatrix<Complex> :: S_BaseMatrix () 
   {
     is_complex = true;
   }
 
-  S_BaseMatrix<Complex> :: ~S_BaseMatrix () 
-  { ; }
-
+  S_BaseMatrix<Complex> :: ~S_BaseMatrix () {  }
+  */
+  
 
   /*
   void S_BaseMatrix<Complex> :: 

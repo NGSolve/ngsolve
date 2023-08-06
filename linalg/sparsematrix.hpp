@@ -488,7 +488,8 @@ namespace ngla
     size_t Width() const { return width; }
     virtual int VHeight() const override { return size; }
     virtual int VWidth() const override { return width; }
-
+    virtual tuple<size_t, size_t> Shape() const override { return { size, width }; }
+    
     
     bool IsHermitian() const { return hermitian; }
     void SetHermitian(bool herm) { hermitian = herm; }

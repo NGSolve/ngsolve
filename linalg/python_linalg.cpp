@@ -829,17 +829,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         if (auto overload = pybind11::get_overload(this, "IsComplex"))
           return py::cast<bool> (overload());
         return false;
-
-#ifdef OLD
-        PYBIND11_OVERLOAD_PURE(
-            bool, /* Return type */
-            BaseMatrix,      /* Parent class */
-            IsComplex,          /* Name of function */
-            );
-#endif        
       }
 
-      tuple<size_t, size_t> Shape() const
+    tuple<size_t, size_t> Shape() const override
       {
         pybind11::gil_scoped_acquire gil; 
         pybind11::function overload = pybind11::get_overload(this, "Shape");
