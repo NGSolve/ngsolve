@@ -1799,7 +1799,7 @@ namespace ngbla
     /// the data
     T * __restrict data;
   public:
-
+    
     /// element type
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
@@ -1829,7 +1829,6 @@ namespace ngbla
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
     INLINE auto View() const { return *this; } 
-    INLINE tuple<size_t, size_t> Shape() const { return { DummySize::Height(), DummySize::Width() }; }
     
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
@@ -1853,10 +1852,13 @@ namespace ngbla
     }
 
     INLINE TELEM* Data() const { return data; }
+    INLINE auto Shape() const { return tuple<undefined_size, undefined_size>(); } 
+    
 #ifdef NETGEN_ENABLE_CHECK_RANGE
     using DummySize::Height;
     using DummySize::Width;
 #endif
+
     size_t DummyHeight() { return DummySize::Height(); }
     size_t DummyWidth() { return DummySize::Width(); }
     /*

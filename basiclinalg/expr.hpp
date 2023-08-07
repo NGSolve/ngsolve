@@ -46,55 +46,6 @@ namespace ngbla
   }
 
 
-  /*
-  namespace detail
-  {
-    template <typename T, int Enable>
-    struct test_conv_flatvector {
-      static constexpr bool Test () { return false; }
-    };
-    
-    template <typename T>
-    struct test_conv_flatvector<T,1> {
-      static constexpr bool Test  ()
-      {
-        T * p;
-        decltype (FlatVector(*p)) X;
-        return true;
-      }
-    };
-  }
-  
-  template <typename T>
-  constexpr bool IsConvertibleToFlatVector()
-  {
-    return detail::test_conv_flatvector<T,1>::Test();
-  }
-
-  namespace detail
-  {
-    template <typename T, int Enable>
-    struct test_conv_slicevector {
-      static constexpr bool Test () { return false; }
-    };
-    
-    template <typename T>
-    struct test_conv_slicevector<T,1> {
-      static constexpr bool Test  ()
-      {
-        T * p;
-        decltype (SliceVector(*p)) X;
-        return true;
-      }
-    };
-  }
-  
-  template <typename T>
-  constexpr bool IsConvertibleToSliceVector()
-  {
-    return detail::test_conv_slicevector<T,1>::Test();
-  }
-  */
 
   namespace detail {
     template <typename T>
@@ -499,6 +450,8 @@ namespace ngbla
      IsLinear allows linear matrix element access.
   */
 
+  struct undefined_size { };
+
   template <typename T>
   class Expr 
   {
@@ -513,7 +466,8 @@ namespace ngbla
 
     INLINE auto View() const { return static_cast<const T&> (*this).View(); }
     INLINE decltype(auto) ViewRW() { return static_cast<T&>(*this).ViewRW(); }
-    INLINE auto Shape() const { return static_cast<const T&> (*this).Shape(); }        
+    // INLINE auto Shape() const { return static_cast<const T&> (*this).Shape(); }
+    INLINE auto Shape() const { return Spec().T::Shape(); }
 
 
     /// height
