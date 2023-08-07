@@ -156,7 +156,11 @@ namespace ngfem
     const FiniteElement & operator[] (int i) const { return scalar_fe; }
 
     /// dof range of comp-th component
-    IntRange GetRange (int comp) const;
+    IntRange GetRange (int comp) const
+    {
+      int base = scalar_fe.GetNDof() * comp;
+      return IntRange (base, base + scalar_fe.GetNDof());
+    }
 
     /// the name of the element family
     virtual string ClassName() const override { return "VectorFiniteElement"; }

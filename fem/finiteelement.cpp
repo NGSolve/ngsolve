@@ -151,11 +151,13 @@ namespace ngfem
     : FiniteElement{ascalar_fe.GetNDof() * adim, ascalar_fe.Order()},
         scalar_fe{ascalar_fe}, dim{adim} {}
 
+  /*
   IntRange VectorFiniteElement :: GetRange (int comp) const
   {
     int base = scalar_fe.GetNDof() * comp;
     return IntRange (base, base + scalar_fe.GetNDof());
   }
+  */
 
   void VectorFiniteElement :: SetVertexNumbers (FlatArray<int> vnums)
   {
