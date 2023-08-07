@@ -475,6 +475,15 @@ namespace ngbla
   template <int S1, int S2> INLINE auto CombinedSize(IC<S1> s1, IC<S2> s2) { return s1; }  
   template <int S2> INLINE auto CombinedSize(undefined_size s1, IC<S2> s2) { return s2; }  
   template <int S2> INLINE auto CombinedSize(size_t s1, IC<S2> s2) { return s2; }  
+
+  template <typename T1, typename T2>
+  INLINE auto CombinedSize(tuple<T1> tup1, tuple<T2> tup2)
+  { return tuple(CombinedSize(get<0>(tup1), get<0>(tup2))); }
+
+  template <typename T11, typename T12, typename T21, typename T22>
+  INLINE auto CombinedSize(tuple<T11,T12> tup1, tuple<T21,T22> tup2)
+  { return tuple(CombinedSize(get<0>(tup1), get<0>(tup2)),
+                 CombinedSize(get<1>(tup1), get<1>(tup2))); }
   
   
   template <typename T>
@@ -1005,17 +1014,22 @@ namespace ngbla
     }
 
     template <typename OP, typename TA, typename TB, typename TC,
-              typename enable_if<IsConvertibleToSliceMatrix<TA>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceVector<TB>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceVector<typename pair<T,TB>::first_type>(),int>::type = 0,
+              typename enable_if<is_same<typename pair<T,TB>::first_type::TELEM,double>::vale ||
+                                 is_same<typename pair<T,TB>::first_type::ELEM,Complex>::value,int>::type = 0,
+              typename enable_if<IsConvertibleToBareSliceMatrix<TA>(),int>::type = 0,
+              typename enable_if<IsConvertibleToBareSliceVector<TB>(),int>::type = 0,
+              typename enable_if<IsConvertibleToBareSliceVector<typename pair<T,TB>::first_type>(),int>::type = 0,
               typename enable_if<!IsConvertibleToFlatVector<TB>()||!IsConvertibleToFlatVector<typename pair<T,TB>::first_type>(),int>::type = 0>
     INLINE T & Assign (const Expr<MultExpr<ScaleExpr<TA,TC>, TB>> & prod)
     {
+      auto h = CombinedSize(get<0>(Spec().Shape()), get<0>(prod.View().A().Shape()));
+      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
+      
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
       constexpr double POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value ? 1 : -1;
       NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
-                   SliceVector(prod.View().B()),
-                   SliceVector(Spec()));
+                   BareSliceVector(prod.View().B()).Range(w),
+                   BareSliceVector(Spec())).Range(h);
       return Spec();
     }
 
@@ -1324,11 +1338,11 @@ namespace ngbla
     INLINE auto operator() (size_t i) const { return a(i)+b(i); }
     INLINE auto operator() (size_t i, size_t j) const { return a(i,j)+b(i,j); }
 
-    INLINE size_t Height() const { return a.Height(); }
-    INLINE size_t Width() const { return a.Width(); }
+    INLINE auto Height() const { return CombinedSize(a.Height(), b.Height()); }
+    INLINE auto Width() const { return CombinedSize(a.Width(), b.Width()); }
 
     INLINE auto View() const { return SumExpr(a,b); }
-    INLINE auto Shape() const { return a.Shape(); }     
+    INLINE auto Shape() const { return CombinedSize(a.Shape(), b.Shape()); }     
     
     void Dump (ostream & ost) const
     { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
@@ -1367,10 +1381,10 @@ namespace ngbla
     INLINE auto operator() (size_t i, size_t j) const { return a(i,j)-b(i,j); }
 
     INLINE auto View() const { return SubExpr(a,b); }
-    INLINE auto Shape() const { return a.Shape(); }
+    INLINE auto Shape() const { return CombinedSize(a.Shape(), b.Shape()); }
     
-    INLINE size_t Height() const { return a.Height(); }
-    INLINE size_t Width() const { return a.Width(); }
+    INLINE auto Height() const { return CombinedSize(a.Height(), b.Height()); }
+    INLINE auto Width() const { return CombinedSize(a.Width(), b.Width()); }
   };
 
 
@@ -1406,8 +1420,8 @@ namespace ngbla
     INLINE auto View() const { return MinusExpr(a); }
     INLINE auto Shape() const { return a.Shape(); }
     
-    INLINE size_t Height() const { return a.Height(); }
-    INLINE size_t Width() const { return a.Width(); }
+    INLINE auto Height() const { return a.Height(); }
+    INLINE auto Width() const { return a.Width(); }
     INLINE TA A() const { return a; }
     enum { IS_LINEAR = TA::IS_LINEAR };
   };
@@ -1438,7 +1452,7 @@ namespace ngbla
     INLINE size_t Width() const { return a.Width(); }
     
     INLINE auto View() const { return *this; }
-    INLINE auto Shape() const { return a.Shape(); }
+    INLINE auto Shape() const { return CombinedSize(a.Shape(), b.Shape()); }
     void Dump (ostream & ost) const
     { ost << "("; a.Dump(ost); ost << ") + ("; b.Dump(ost); ost << ")"; }
   };
@@ -1499,8 +1513,8 @@ namespace ngbla
     INLINE auto operator() (size_t i) const { return s * a(i); }
     INLINE auto operator() (size_t i, size_t j) const { return s * a(i,j); }
 
-    INLINE size_t Height() const { return a.Height(); }
-    INLINE size_t Width() const { return a.Width(); }
+    INLINE auto Height() const { return a.Height(); }
+    INLINE auto Width() const { return a.Width(); }
 
     INLINE auto View() const { return *this; }
     INLINE auto Shape() const { return a.Shape(); }         
@@ -1592,15 +1606,17 @@ namespace ngbla
     {
       typedef decltype(b.Shape()) TBSHAPE;
       if constexpr (tuple_size<TBSHAPE>() == 1)
-                     return tuple<size_t> (a.Height());
+        return tuple(get<0>(a.Shape()));
+        // return tuple<size_t> (a.Height());
       else
-        return tuple<size_t,size_t> (a.Height(), b.Width());
+        return tuple(get<0>(a.Shape()), get<1>(b.Shape()));
+        // return tuple<size_t,size_t> (a.Height(), b.Width());
     }
     
     INLINE TA A() const { return a; }
     INLINE TB B() const { return b; }
-    INLINE size_t Height() const { return a.Height(); }
-    INLINE size_t Width() const { return b.Width(); }
+    INLINE auto Height() const { return a.Height(); }
+    INLINE auto Width() const { return b.Width(); }
     enum { IS_LINEAR = 0 };
   };
 

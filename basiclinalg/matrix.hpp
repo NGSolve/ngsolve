@@ -1030,7 +1030,7 @@ namespace ngbla
 
     /// the width
     INLINE constexpr size_t Width () const throw() { return W; }
-
+    INLINE constexpr size_t Dist() { return DIST; }
     ///
     INLINE operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
 
@@ -1079,9 +1079,9 @@ namespace ngbla
       return SliceMatrix<T> (h, W, DIST, data);
     }
 
-    INLINE operator BareSliceMatrix<T> () const
+    INLINE operator BareSliceMatrix<T,RowMajor> () const
     {
-      return BareSliceMatrix<T> (DIST, data, DummySize(h,W) );
+      return BareSliceMatrix<T,RowMajor> (DIST, data, DummySize(Shape()) );
     }
   };
 
@@ -1267,7 +1267,7 @@ namespace ngbla
     }
 
     INLINE auto View() const { return *this; } 
-    INLINE tuple<size_t, size_t> Shape() const { return { H, w }; }
+    INLINE auto Shape() const { return tuple(IC<H>(), w); }
     
     /*
     /// access operator, linear access
@@ -1811,18 +1811,21 @@ namespace ngbla
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (FlatMatrix<T,ORD> mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
+      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
     BareSliceMatrix (SliceMatrix<T,ORD> mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
+      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
     template<int H, int W>
     BareSliceMatrix (Mat<H,W,T> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Width()), data(mat.Data())
+      : DummySize(mat.Shape()), dist(mat.Width()), data(mat.Data())
     { ; }
 
+    template<int W, int DIST>
+    BareSliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat)
+      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
     
     BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
     
@@ -1958,11 +1961,11 @@ namespace ngbla
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
     BareSliceMatrix (const FlatMatrix<T,ColMajor> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
+      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
     BareSliceMatrix (const SliceMatrix<T,ColMajor> & mat)
-      : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
+      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
     
