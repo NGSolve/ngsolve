@@ -557,8 +557,8 @@ namespace ngbla
 
 
   
-  template <bool ADD, ORDERING ord>
-  void NgGEMV (double s, SliceMatrix<double,ord> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT;
+  // template <bool ADD, ORDERING ord>
+  // void NgGEMV (double s, SliceMatrix<double,ord> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT;
 
   template <bool ADD, ORDERING ord>
   void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
