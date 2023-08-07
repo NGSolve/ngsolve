@@ -1810,11 +1810,11 @@ namespace ngbla
     BareSliceMatrix() : DummySize(0,0) { ; } // initialize with placement new later
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
-    BareSliceMatrix (const FlatMatrix<T,ORD> & mat)
+    BareSliceMatrix (FlatMatrix<T,ORD> mat)
       : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
-    BareSliceMatrix (const SliceMatrix<T,ORD> & mat)
+    BareSliceMatrix (SliceMatrix<T,ORD> mat)
       : DummySize(mat.Height(), mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
@@ -1853,9 +1853,12 @@ namespace ngbla
     }
 
     INLINE TELEM* Data() const { return data; }
-
+#ifdef NETGEN_ENABLE_CHECK_RANGE
     using DummySize::Height;
     using DummySize::Width;
+#endif
+    size_t DummyHeight() { return DummySize::Height(); }
+    size_t DummyWidth() { return DummySize::Width(); }
     /*
     /// the height
     INLINE size_t Height () const throw() { return h; }
@@ -1988,8 +1991,12 @@ namespace ngbla
       return data[i]; 
     }
 
+#ifdef NETGEN_ENABLE_CHECK_RANGE
     using DummySize::Height;
     using DummySize::Width;
+#endif
+    size_t DummyHeight() { return DummySize::Height(); }
+    size_t DummyWidth() { return DummySize::Width(); }
     
     /// 
     INLINE size_t Dist () const throw() { return dist; }
@@ -2272,7 +2279,7 @@ namespace ngbla
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
   INLINE const BareSliceMatrix<T,!ord> Trans (BareSliceMatrix<T,ord> mat)
   {
-    return SliceMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
+    return SliceMatrix<T,!ord> (mat.DummyWidth(), mat.DummyHeight(), mat.Dist(), mat.Data());
   }
 
 

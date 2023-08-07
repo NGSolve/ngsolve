@@ -357,13 +357,17 @@ namespace ngbla
     template<typename TB>
     ALWAYS_INLINE const FlatVector & operator+= (const Expr<TB> & v) const
     {
-      if (TB::IS_LINEAR)
-        for (auto i : ngcore::Range(size))
-          (*this)(i) += v.Spec()(i);
-      else
-	for (size_t i = 0; i < size; i++)
-	  (*this)(i) += v.Spec()(i,0);
+      CMCPMatExpr<FlatVector>::operator+= (v);
       return *this;
+        /*
+          if (TB::IS_LINEAR)
+          for (auto i : ngcore::Range(size))
+          (*this)(i) += v.Spec()(i);
+          else
+          for (size_t i = 0; i < size; i++)
+	  (*this)(i) += v.Spec()(i,0);
+          return *this;
+        */
     }
 
     /// constant element access
@@ -1353,6 +1357,8 @@ namespace ngbla
 
     /// element access is not linear
     enum { IS_LINEAR = 0 };
+    INLINE SliceVector () = default;
+    INLINE SliceVector (const SliceVector&) = default;
 
     /// set size, distance and memory
     INLINE SliceVector (size_t as, size_t ad, T * adata) 
@@ -1404,12 +1410,15 @@ namespace ngbla
     template<typename TB>
     INLINE const SliceVector & operator+= (const Expr<TB> & v) const
     {
+      return CMCPMatExpr<SliceVector>::operator+= (v);
+      /*
       if (TB::IS_LINEAR)
 	for (size_t i = 0; i < s; i++)
 	  data[i*dist] += v.Spec()(i);
       else
 	for (size_t i = 0; i < s; i++)
 	  data[i*dist] += v.Spec()(i,0);
+      */
       return *this;
     }
 

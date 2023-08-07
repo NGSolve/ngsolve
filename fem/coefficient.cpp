@@ -4137,7 +4137,8 @@ public:
   {
     if (!IsComplex())
       {
-        BareSliceMatrix<double> realvalues(2*values.Dist(), (double*)values.Data(), DummySize(values.Height(), values.Width()));
+        BareSliceMatrix<double> realvalues(2*values.Dist(), (double*)values.Data(),
+                                           DummySize(values.DummyHeight(), values.DummyWidth()));
         Evaluate (ir, realvalues);
         for (size_t i = 0; i < ir.Size(); i++)
           for (size_t j = Dimension(); j-- > 0; )
@@ -9081,7 +9082,7 @@ public:
   {
     *out << "======== Evaluate(" << Demangle(typeid(ir).name()) << ", " << Demangle(typeid(input).name()) << ", " << Demangle(typeid(values).name()) << ")\n";
     *out << ir;
-    *out << "input = \n" << input;
+    // *out << "input = \n" << input;
     func->Evaluate(ir, input, values);
     *out << "result = \n" << values.AddSize(Dimension(), ir.Size()) << '\n';
   }

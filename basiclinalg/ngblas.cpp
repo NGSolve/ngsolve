@@ -429,6 +429,7 @@ namespace ngbla
 
   /* *************************** Mat-Vec with Slice-Vecotrs ******************* */
 
+  /*
   // template <bool ADD, ORDERING ord>
   template <>  
   void NgGEMV<false> (double s, SliceMatrix<double,RowMajor> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT
@@ -481,8 +482,64 @@ namespace ngbla
         y(i) += s*sum;
       }
   }
+  */
 
 
+  template <typename FUNC>  
+  void NgGEMV (double s, BareSliceMatrix<double,RowMajor> a, SliceVector<double> x, SliceVector<double> y,
+               FUNC func) NETGEN_NOEXCEPT
+  {
+    // y.Range(a.Height()) = s*a*x;
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func (y(i), s*sum);
+      }
+  }
+
+  template <typename FUNC>
+  void NgGEMV (double s, BareSliceMatrix<double,ColMajor> a, SliceVector<double> x, SliceVector<double> y,
+               FUNC func) NETGEN_NOEXCEPT
+  {
+    // y.Range(a.Height()) = s*a*x;
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func (y(i), s*sum);
+      }
+  }
+
+
+  template <>  
+  void NgGEMV<false> (double s, BareSliceMatrix<double,RowMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    // NgGEMV (s, a, x, y, [](auto & y, auto sum) { y = sum; });
+    y = s*a.AddSize(y.Size(), x.Size()) * BareSliceVector(x);    
+  }
+  template <>  
+  void NgGEMV<true> (double s, BareSliceMatrix<double,RowMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](auto & y, auto sum) { y += sum; });
+  }
+  template <>  
+  void NgGEMV<false> (double s, BareSliceMatrix<double,ColMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    // NgGEMV (s, a, x, y, [](auto & y, auto sum) { y = sum; });
+    y = s*a.AddSize(y.Size(), x.Size()) * BareSliceVector(x);
+  }
+  template <>  
+  void NgGEMV<true> (double s, BareSliceMatrix<double,ColMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](auto & y, auto sum) { y += sum; });
+  }
+
+
+
+  
   // ************************** Mult Add transpose Mat * vec, indirect ***************
 
 
@@ -2189,13 +2246,14 @@ namespace ngbla
 
 
   
-  void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  void AddABt (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> bc)
   {
     // c.AddSize(a.Height(), b.Height()) += a * Trans(b);
     // return;
     
     size_t i = 0;
     if (a.Width() <= 0) return;
+    auto c = bc.AddSize(a.Height(), b.Height());
     
     for ( ; i+3 < a.Height(); i += 4)
       {
@@ -2302,13 +2360,14 @@ namespace ngbla
       }
   }
   
-  void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> c)
+  void AddABtSym (SliceMatrix<double> a, SliceMatrix<Complex> b, BareSliceMatrix<Complex> bc)
   {
     // c.AddSize(a.Height(), b.Height()) += a * Trans(b) | Lapack;
 
   
     if (a.Width() <= 0) return;
-  
+    auto c = bc.AddSize(a.Height(), b.Height());
+    
     int j = 0;
     for ( ; j+3 < c.Width(); j += 4)
       {

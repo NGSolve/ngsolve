@@ -308,7 +308,7 @@ public:
     {
       diffop->Apply (fel, bmir, elx, flux, lh);
       
-      FlatMatrixFixWidth<DMATOP::DIM_DMAT,double> hflux(flux.Height(), &flux(0,0));
+      FlatMatrixFixWidth<DMATOP::DIM_DMAT,double> hflux(bmir.Size(), &flux(0,0));
       if (applyd)
         dmatop.ApplyIR (fel, bmir, hflux, lh);
     }
@@ -338,7 +338,7 @@ public:
     {
       diffop->Apply (fel, bmir, elx, flux, lh);
       
-      FlatMatrixFixWidth<DMATOP::DIM_DMAT,Complex> hflux(flux.Height(), &flux(0,0));
+      FlatMatrixFixWidth<DMATOP::DIM_DMAT,Complex> hflux(bmir.Size(), &flux(0,0));
       if (applyd)
         dmatop.ApplyIR (fel, bmir, hflux, lh);
     }
