@@ -13,7 +13,6 @@
 
 #include "../fem/h1lofe.hpp"
 #include <parallelngs.hpp>
-#include <regex>
 #include "compressedfespace.hpp"
 
 using namespace ngmg;
@@ -121,7 +120,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (flags.StringFlagDefined("dirichlet"))
       {
         Region dir(ma, BND, flags.GetStringFlag("dirichlet"));
-        dirichlet_constraints[BND] |= dir.Mask();
+        dirichlet_constraints[BND] |= dir.Mask(); // that's what it was before, can we just assign ? 
         /*
         std::regex pattern(flags.GetStringFlag("dirichlet"));
         for (int i : Range(ma->GetNRegions(BND)))
@@ -140,10 +139,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (flags.StringFlagDefined("dirichlet_bbnd"))
       {
+        Region dir(ma, BBND, flags.GetStringFlag("dirichlet_bbnd"));
+        dirichlet_constraints[BBND] |= dir.Mask(); // that's what it was before, can we just assign ? 
+        
+        /*
         std::regex pattern(flags.GetStringFlag("dirichlet_bbnd"));
         for (int i : Range(ma->GetNRegions(BBND)))
           if (std::regex_match (string(ma->GetMaterial(BBND, i)), pattern))
             dirichlet_constraints[BBND].SetBit(i);
+        */
       }
 
     dirichlet_constraints[BBBND].SetSize (ma->GetNRegions(BBBND));
@@ -156,11 +160,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (flags.StringFlagDefined("dirichlet_bbbnd"))
       {
+        Region dir(ma, BBBND, flags.GetStringFlag("dirichlet_bbbnd"));
+        dirichlet_constraints[BBBND] |= dir.Mask(); // that's what it was before, can we just assign ? 
+        /*
         std::regex pattern(flags.GetStringFlag("dirichlet_bbbnd"));
         for (int i : Range(ma->GetNRegions(BBBND)))
           if (std::regex_match (string(ma->GetMaterial(BBBND, i)), pattern))
             
             dirichlet_constraints[BBBND].SetBit(i);
+        */
       }
     
     if (flags.NumListFlagDefined("definedon") || 
