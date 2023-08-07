@@ -527,6 +527,8 @@ namespace ngbla
   }
 
 
+  
+  
   template <bool ADD, bool POS, ORDERING ord>
   void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y)
   {
@@ -553,6 +555,30 @@ namespace ngbla
       }
   }
 
+
+  
+  template <bool ADD, ORDERING ord>
+  void NgGEMV (double s, SliceMatrix<double,ord> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT;
+
+  template <bool ADD, ORDERING ord>
+  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+  template <bool ADD, ORDERING ord>
+  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+  template <bool ADD, ORDERING ord>
+  void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+  
+  
+  template <bool ADD, ORDERING ord>
+  void NgGEMV (double s, BareSliceMatrix<double,ord> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT;
+
+  template <bool ADD, ORDERING ord>
+  void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT;
+
+  template <bool ADD, ORDERING ord>
+  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT;
+
+
+  
   template <> INLINE void NgGEMV<false,true> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
     MultMatVec (a,x,y);
@@ -585,22 +611,6 @@ namespace ngbla
   }
 
 
-  template <bool ADD, ORDERING ord>
-  extern void NgGEMV (double s, SliceMatrix<double,ord> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT;
-
-
-  
-  extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k,
-                                            bool lapack, bool doubleprec, size_t maxits);
-
-
-  extern NGS_DLL_HEADER  
-  double MatKernelMaskedScalAB (size_t n,
-				double * pa, size_t da,
-				double * pb, size_t db,
-				const BitArray & ba);
-
-
 
 
 
@@ -608,6 +618,66 @@ namespace ngbla
 
 
   // bla dispatsches
+
+
+  template <typename OP, typename T, typename TA, typename TB>
+  class assign_trait<OP, T, MultExpr<TA,TB>,
+                     enable_if_t<IsConvertibleToSliceMatrix<TA,double>() &&
+                                 is_convertible<TB,FlatVector<double>>::value &&
+                                 is_convertible<T,FlatVector<double>>::value, int>>
+  {
+  public:
+    static inline  T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod)
+    {
+      // auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
+      // auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
+
+      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
+      constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
+      NgGEMV<ADD,POS> (make_SliceMatrix(prod.View().A()),
+                       prod.View().B(),
+                       self.Spec());
+      return self.Spec();
+    }
+  };
+
+  
+  template <typename OP, typename T, typename TA, typename TB>
+  class assign_trait<OP, T, MultExpr<TA,TB>,
+                     enable_if_t<IsConvertibleToSliceMatrix<TA,Complex>() &&
+                                 IsConvertibleToFlatVector<TB>() &&
+                                 IsConvertibleToFlatVector<T>, int>>
+  {
+  public:    
+    static inline  T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod)
+    {
+      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
+      constexpr double POS = (std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value) ? 1 : -1;
+      
+      NgGEMV<ADD> (POS, BareSliceMatrix(prod.View().A()),
+                   FlatVector(prod.View().B()),
+                   FlatVector(self.Spec()));
+      return self.Spec();
+    }
+  };
+
+  template <typename OP, typename T, typename TA, typename TB, typename TC>
+  class assign_trait<OP, T, MultExpr<ScaleExpr<TA,TC>,TB>, 
+                     enable_if_t<IsConvertibleToSliceMatrix<TA,Complex>() && 
+                                 IsConvertibleToFlatVector<TB>() &&
+                                 IsConvertibleToFlatVector<T>(), int>>
+  {
+  public:    
+    static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<ScaleExpr<TA,TC>, TB>> & prod)
+    {
+      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
+      constexpr double POS = (std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value) ? 1 : -1;      
+      NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
+                   FlatVector(prod.View().B()),
+                   FlatVector(self.Spec()));
+      return self.Spec();
+    }
+  };
   
   template <typename OP, typename T, typename TA, typename TB>
   class assign_trait<OP, T, MultExpr<TA,TB>,
@@ -656,8 +726,20 @@ namespace ngbla
     }
   };
 
-
   
+
+
+
+
+  extern NGS_DLL_HEADER  
+  double MatKernelMaskedScalAB (size_t n,
+				double * pa, size_t da,
+				double * pb, size_t db,
+				const BitArray & ba);
+
+    
+  extern list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k,
+                                            bool lapack, bool doubleprec, size_t maxits);
 }
 
 

@@ -119,35 +119,14 @@ namespace ngbla
 
 
   
-  
-  
-  
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
   void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c);
 
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
   void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double,ColMajor> c);
   
-  template <bool ADD, bool POS, ORDERING ord>
-  void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y);
-
-
-  template <bool ADD, ORDERING ord>
-  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
-  template <bool ADD, ORDERING ord>
-  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
-  template <bool ADD, ORDERING ord>
-  void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
   
   
-  template <bool ADD, ORDERING ord>
-  void NgGEMV (double s, BareSliceMatrix<double,ord> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT;
-
-  template <bool ADD, ORDERING ord>
-  void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT;
-
-  template <bool ADD, ORDERING ord>
-  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT;
 
   template <typename T>
   struct is_scalar_type { static constexpr bool value = false; };
@@ -950,48 +929,7 @@ namespace ngbla
       return Spec();
     }
 
-    template <typename OP, typename TA, typename TB,
-              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
-              typename enable_if<is_convertible_v<TB,FlatVector<double>>,int>::type = 0,
-              typename enable_if<is_convertible<typename pair<T,TB>::first_type,FlatVector<double>>::value,int>::type = 0>
-    INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod)
-    {
-      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
-      constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
-      NgGEMV<ADD,POS> (make_SliceMatrix(prod.View().A()),
-                       prod.View().B(),
-                       Spec());
-      return Spec();
-    }
-
-
-    template <typename OP, typename TA, typename TB,
-              typename enable_if<IsConvertibleToSliceMatrix<TA,Complex>(),int>::type = 0,
-              typename enable_if<IsConvertibleToFlatVector<TB>(),int>::type = 0,
-              typename enable_if<IsConvertibleToFlatVector<typename pair<T,TB>::first_type>(),int>::type = 0>
-    INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod)
-    {
-      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
-      constexpr double POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value ? 1 : -1;      
-      NgGEMV<ADD> (POS, BareSliceMatrix(make_SliceMatrix(prod.View().A())),
-                   FlatVector(prod.View().B()),
-                   FlatVector(Spec()));
-      return Spec();
-    }
-    
-    template <typename OP, typename TA, typename TB, typename TC,
-              typename enable_if<IsConvertibleToSliceMatrix<TA,Complex>(),int>::type = 0,
-              typename enable_if<IsConvertibleToFlatVector<TB>(),int>::type = 0,
-              typename enable_if<IsConvertibleToFlatVector<typename pair<T,TB>::first_type>(),int>::type = 0>
-    INLINE T & Assign (const Expr<MultExpr<ScaleExpr<TA,TC>, TB>> & prod)
-    {
-      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
-      constexpr double POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value ? 1 : -1;      
-      NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(make_SliceMatrix(prod.View().A().A())),
-                   FlatVector(prod.View().B()),
-                   FlatVector(Spec()));
-      return Spec();
-    }
+ 
 
     
     // x += s*y
