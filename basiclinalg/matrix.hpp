@@ -904,7 +904,7 @@ namespace ngbla
      A Matrix with width known at compile time
      No memory allocation/deallocation. User must provide memory.
   */
-  template <int W, typename T = double, int DIST = W>
+  template <int W, typename T = double, int DIST = W, ORDERING=ColMajor>
   class FlatMatrixFixWidth : 
     public CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST>>
   {
@@ -1171,8 +1171,8 @@ namespace ngbla
      No memory allocation/deallocation. User must provide memory.
      Matrix is stored colum-wise
   */
-  template <int H, typename T = double, int SLICE = H>
-  class FlatMatrixFixHeight : public CMCPMatExpr<FlatMatrixFixHeight<H,T,SLICE> >
+  template <int H, typename T = double, int SLICE = H, ORDERING ORD = ColMajor>
+  class FlatMatrixFixHeight : public CMCPMatExpr<FlatMatrixFixHeight<H,T,SLICE,ORD> >
   {
   protected:
     /// the data
@@ -1308,6 +1308,8 @@ namespace ngbla
     /// the width
     size_t Width () const { return w; }
 
+    auto Dist() const { return SLICE; }
+    
     INLINE T* Data() const noexcept { return data; }
 
     const FlatVec<H,T> Col (int i) const
@@ -1547,7 +1549,7 @@ namespace ngbla
     }
 
     INLINE auto View() const { return *this; }     
-    INLINE tuple<size_t, size_t> Shape() const { return { h, w }; }
+    INLINE auto Shape() const { return tuple(h,w); }
 
     
     /// access operator
@@ -1826,6 +1828,11 @@ namespace ngbla
     template<int W, int DIST>
     BareSliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat)
       : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
+
+    // nonsense, only for overload being taken
+    template<int W, int DIST>
+    BareSliceMatrix (FlatMatrixFixHeight<W,T,DIST,ORD> mat)
+      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
     
     BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
     
@@ -1960,14 +1967,17 @@ namespace ngbla
     BareSliceMatrix() : DummySize(0,0) { ; } // initialize with placement new later
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
 
-    BareSliceMatrix (const FlatMatrix<T,ColMajor> & mat)
+    BareSliceMatrix (FlatMatrix<T,ColMajor> mat)
       : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
-    BareSliceMatrix (const SliceMatrix<T,ColMajor> & mat)
+    BareSliceMatrix (SliceMatrix<T,ColMajor> mat)
       : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
+    template<int H, int DIST>
+    BareSliceMatrix (FlatMatrixFixHeight<H,T,DIST> mat)
+      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
     
     BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
     
