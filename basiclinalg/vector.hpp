@@ -898,7 +898,7 @@ namespace ngbla
     // auto View() const { return FlatVec(const_cast<Vec&>(*this)); }
     // auto View() const { return Vec(*this); }
     INLINE auto View() const { return Vec<S,const T>{*this}; }    
-    INLINE tuple<size_t> Shape() const { return { S }; }
+    INLINE tuple<IC<S>> Shape() const { return { IC<S>() }; }
     
     /// access vector
     INLINE TELEM & operator() (size_t i) 
