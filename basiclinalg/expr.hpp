@@ -621,11 +621,7 @@ namespace ngbla
   template <class TA> class TransExpr;
   template <class TA, class TS> class ScaleExpr;
 
-  template <typename TOP, typename T, typename TB>
-  void TypeWarning()
-  {
-    TB*p;
-  }
+
   
   template <typename TOP, typename T, typename TB, typename Enable=int>
   class assign_trait
@@ -670,8 +666,6 @@ namespace ngbla
           CopyVector(BareSliceVector(SliceVector(v.Spec())), SliceVector(self.Spec()));
           return self.Spec();
         }
-      // else
-      // TypeWarning<TOP,T,TB>();
 
       auto src = v.View();
       decltype(auto) dest = self.ViewRW();
@@ -739,7 +733,7 @@ namespace ngbla
      
     }
   };
-
+  
 
 
   
@@ -770,97 +764,6 @@ namespace ngbla
     INLINE T & Assign (const Expr<TB> & v)
     {
       return assign_trait<TOP, T, TB>::Assign (*this, v);
-      /*
-      // static Timer t(string("Ng-std-expr:") + typeid(TOP).name() + typeid(TB).name());
-      // RegionTimer reg(t);
-
-      
-      NETGEN_CHECK_RANGE(Height(), v.Height(), v.Height()+1);
-      NETGEN_CHECK_RANGE(Width(), v.Width(), v.Width()+1);
-      NETGEN_CHECK_SHAPE(this->Spec(), v);
-    
-      if constexpr (std::is_same_v<TOP,As> && 
-                    is_convertible_v<TB,FlatVector<typename T::TELEM>> && 
-                    is_convertible_v<T,FlatVector<typename T::TELEM>>)
-                     {
-                       CopyVector(FlatVector<typename T::TELEM>(v.Spec()), FlatVector<typename T::TELEM>(this->Spec()));
-                       return Spec();
-                     }
-      else if constexpr (std::is_same_v<TOP,As> && 
-                    is_convertible_v<TB,SliceVector<typename T::TELEM>> && 
-                    is_convertible_v<T,SliceVector<typename T::TELEM>>)
-                     {
-                       CopyVector(SliceVector<typename T::TELEM>(v.Spec()), SliceVector<typename T::TELEM>(this->Spec()));
-                       return Spec();
-                     }
-      // else
-      // auto unused_variable_in_assign = v.Spec()(0,0);
-
-      auto src = v.View();
-      decltype(auto) dest = this->ViewRW();
-
-      
-      if (T::COL_MAJOR)
-        {
-	  size_t h = Expr<T>::Height();
-	  size_t w = Expr<T>::Width();
-
-          if (h > 0)
-            for (size_t j = 0; j < w; j++)
-              for (size_t i = 0; i < h; i++)
-                // TOP()(Spec()(i,j), v.Spec()(i,j));
-                // TOP()(Spec()(i,j), v.View()(i,j));
-                TOP()(dest(i,j), src(i,j));
-          return Spec();
-        }
-
-
-      if (TB::IS_LINEAR)
-	{
-	  if (T::IS_LINEAR)
-	    {
-	      auto hw = Expr<T>::Height() * Expr<T>::Width();
-              for (auto i : Range(hw))  // int i = 0; i < hw; i++)
-                // TOP()(Spec()(i),v.Spec()(i));
-                TOP()(dest(i), src(i));
-	    }
-	  else
-	    {
-	      size_t h = Expr<T>::Height();
-	      size_t w = Expr<T>::Width();
-              if (w > 0)
-                for (size_t i = 0, k = 0; i < h; i++)
-                  for (size_t j = 0; j < w; j++, k++)
-                    // TOP() (Spec()(i,j), v.Spec()(k));
-                    // TOP() (Spec()(i,j), v.View()(k));
-                    TOP() (dest(i,j), src(k));
-	    }
-	}
-      else
-	{
-	  size_t h = Expr<T>::Height();
-	  size_t w = Expr<T>::Width();
-          if (w > 0)
-            {
-              if (T::IS_LINEAR)
-                for (size_t i = 0, k = 0; i < h; i++)
-                  for (size_t j = 0; j < w; j++, k++)
-                    // TOP() (Spec()(k), v.Spec()(i,j));
-                    // TOP() (Spec()(k), v.View()(i,j));
-                    TOP() (dest(k), src(i,j));                    
-              else
-                {
-                  for (size_t i = 0; i < h; i++)
-                    for (size_t j = 0; j < w; j++)
-                      {
-                        // TOP() (Spec()(i,j), v.View()(i,j));
-                        TOP() (dest(i,j), src(i,j));                        
-                      }
-                }
-            }
-        }
-      return Spec();
-      */
     }
 
 
