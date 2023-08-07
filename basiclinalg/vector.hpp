@@ -976,7 +976,7 @@ namespace ngbla
     template<typename TB>
     INLINE Vec (const Expr<TB> & v) {;}
     INLINE auto View() const { return Vec(*this); }
-    INLINE tuple<size_t> Shape() const { return { 0 }; }    
+    INLINE auto Shape() const { return tuple(IC<0>()); }    
     INLINE constexpr size_t Size() const { return 0; }
     INLINE constexpr size_t Height() const { return 0; }
     INLINE constexpr size_t Width() const { return 1; }
@@ -1145,7 +1145,7 @@ namespace ngbla
     }
 
     INLINE auto View() const { return FlatVec(*this); }         
-    INLINE tuple<size_t> Shape() const { return { S }; }
+    INLINE auto Shape() const { return tuple(IC<S>()); }
     
     template<typename TB>
     INLINE const FlatVec & operator+= (const Expr<TB> & v) const
@@ -1253,7 +1253,7 @@ namespace ngbla
     }
 
     INLINE auto View() const { return FlatSliceVec(*this); } 
-    INLINE tuple<size_t> Shape() const { return { S }; }
+    INLINE auto Shape() const { return tuple(IC<S>()); }
     
     template<typename TB>
     INLINE auto operator+= (const Expr<TB> & v) const
@@ -1528,6 +1528,9 @@ namespace ngbla
     size_t Width() const { return width; }
     DummySize( size_t aheight, size_t awidth=1 ) :
       height(aheight), width(awidth) {;}
+    template <typename TA, typename TB>
+    DummySize (tuple<TA,TB> shape)
+      : height(get<0>(shape)), width(get<1>(shape)) { }
   };
 #else 
   class DummySize {
@@ -1536,6 +1539,8 @@ namespace ngbla
     DummySize( TH aheight ) {}
     template <typename TH, typename TW>
     DummySize( TH aheight, TW awidth ) {}
+    template <typename TA, typename TB>
+    DummySize (tuple<TA,TB> shape) { }
   protected:
     static INLINE auto Height() { return undefined_size(); }
     static INLINE auto Width() { return undefined_size(); }
