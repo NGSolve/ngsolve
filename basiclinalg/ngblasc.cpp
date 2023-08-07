@@ -57,5 +57,174 @@ namespace ngbla
       dest[i] += alpha * src[i];
   }
 
+
+
+
+
+
+
+  // **************** FlatVector ****************8
+
+  template <typename TM, typename TV, typename FUNC>
+  void NgGEMV (Complex s, BareSliceMatrix<TM,RowMajor> a, FlatVector<TV> x, FlatVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
+  {
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        Complex sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func(y(i), s*sum);
+      }
+  }
+  template <typename TM, typename TV, typename FUNC>
+  void NgGEMV (Complex s, BareSliceMatrix<TM,ColMajor> a, FlatVector<TV> x, FlatVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
+  {
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        Complex sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func(y(i), s*sum);
+      }
+  }
+
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<double,RowMajor> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<double,RowMajor> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<double,ColMajor> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<double,ColMajor> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+
+
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<Complex,RowMajor> a, FlatVector<double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<Complex,RowMajor> a, FlatVector<double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<Complex,ColMajor> a, FlatVector<double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<Complex,ColMajor> a, FlatVector<double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+
+
+  
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<Complex,RowMajor> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<Complex,RowMajor> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<Complex,ColMajor> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<Complex,ColMajor> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+
+
+  // **************** SliceVector ****************8
+  
+
+  template <typename TM, typename FUNC>
+  void NgGEMV (Complex s, BareSliceMatrix<TM,RowMajor> a, SliceVector<Complex> x, SliceVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
+  {
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        Complex sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func(y(i), s*sum);
+      }
+  }
+  template <typename TM, typename FUNC>
+  void NgGEMV (Complex s, BareSliceMatrix<TM,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
+  {
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        Complex sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func(y(i), s*sum);
+      }
+  }
+
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<double,RowMajor> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<double,RowMajor> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<double,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<double,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<Complex,RowMajor> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<Complex,RowMajor> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+  template <>  
+  void NgGEMV<false> (Complex s, BareSliceMatrix<Complex,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y=sum; });
+  }
+  template <>  
+  void NgGEMV<true> (Complex s, BareSliceMatrix<Complex,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV (s, a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+  }
+
+
+
+  
 }
 

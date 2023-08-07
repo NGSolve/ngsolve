@@ -44,7 +44,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     { 
-      cout << "DIFFOP::GenerateMatrix should not be here, diffop = " << typeid(DOP).name() << endl;
+      throw Exception(string("DIFFOP::GenerateMatrix should not be here, diffop = ")+typeid(DOP).name());
     }
 
     /// tbd
@@ -76,7 +76,7 @@ namespace ngfem
 
       FlatMatrixFixHeight<DOP::DIM_DMAT, TSCAL> mat(DOP::DIM*fel.GetNDof(), lh);
       DOP::GenerateMatrix (fel, mip, mat, lh);
-      y = mat * x;
+      y = mat * x.Range(DOP::DIM*fel.GetNDof());
     }
 
     /// Computes B-matrix times element vector in many points
