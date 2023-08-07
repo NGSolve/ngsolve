@@ -705,7 +705,7 @@ namespace ngbla
 
     INLINE auto View() const { return Mat<H,W,const T>{*this}; }
     INLINE auto & ViewRW() { return *this; }
-    INLINE tuple<size_t, size_t> Shape() const { return { H, W }; }
+    INLINE auto Shape() const { return tuple(IC<H>(), IC<W>()); }
     
     INLINE T* Data() noexcept { return &data[0]; }
     /// linear access
@@ -1852,15 +1852,15 @@ namespace ngbla
     }
 
     INLINE TELEM* Data() const { return data; }
-    INLINE auto Shape() const { return tuple<undefined_size, undefined_size>(); } 
+    INLINE auto Shape() const { return tuple(DummySize::Height(), DummySize::Width()); }
     
 #ifdef NETGEN_ENABLE_CHECK_RANGE
     using DummySize::Height;
     using DummySize::Width;
 #endif
 
-    size_t DummyHeight() const { return DummySize::Height(); }
-    size_t DummyWidth() const { return DummySize::Width(); }
+    auto DummyHeight() const { return DummySize::Height(); }
+    auto DummyWidth() const { return DummySize::Width(); }
     
     /// 
     INLINE size_t Dist () const throw() { return dist; }
@@ -1876,19 +1876,20 @@ namespace ngbla
     {
       NETGEN_CHECK_RANGE(first, 0, first==next ? Height()+1 : Height()); // always allow Rows(0,0)
       NETGEN_CHECK_RANGE(next, 0, Height()+1);
-      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist, DummySize(next-first, DummyWidth()));
+      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist,
+                               DummySize(next-first, DummySize::Width()));
     }
 
     INLINE const BareSliceVector<T> Col (size_t col) const
     {
       NETGEN_CHECK_RANGE(col, 0, Width());
-      return SliceVector<T> (DummyHeight(), dist, data+col);
+      return BareSliceVector<T> (data+col, dist, DummySize(DummySize::Height()));
     }
     
     INLINE const BareVector<T> Row (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
-      return FlatVector<T> (DummyWidth(), data+i*dist);
+      return BareVector<T> (data+i*dist, DummySize(DummySize::Width()));
     }
 
     /*
@@ -1928,7 +1929,7 @@ namespace ngbla
     {
       // NETGEN_CHECK_RANGE(first, 0, Height());  // too restrictive
       NETGEN_CHECK_RANGE(first, 0, adist);  
-      return BareSliceMatrix (dist*adist, data+first*dist, DummySize( DummyHeight()/adist, DummyWidth()));
+      return BareSliceMatrix (dist*adist, data+first*dist, DummySize( DummyHeight()/adist, DummySize::Width()));
     }
     
   };
@@ -1970,7 +1971,7 @@ namespace ngbla
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
     INLINE auto View() const { return *this; } 
-    INLINE auto Shape() const { return tuple<undefined_size, undefined_size>(); }
+    INLINE auto Shape() const { return tuple(DummySize::Height(), DummySize::Width()); }
     
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
@@ -1990,8 +1991,8 @@ namespace ngbla
     using DummySize::Height;
     using DummySize::Width;
 #endif
-    size_t DummyHeight() const { return DummySize::Height(); }
-    size_t DummyWidth() const { return DummySize::Width(); }
+    auto DummyHeight() const { return DummySize::Height(); }
+    auto DummyWidth() const { return DummySize::Width(); }
     
     /// 
     INLINE size_t Dist () const throw() { return dist; }
@@ -2009,19 +2010,19 @@ namespace ngbla
     {
       NETGEN_CHECK_RANGE(first, 0, next+1); // allow empty range
       NETGEN_CHECK_RANGE(next, first, Height()+1);
-      return BareSliceMatrix (dist, data+first, DummySize(next-first, DummyWidth()));
+      return BareSliceMatrix (dist, data+first, DummySize(next-first, DummySize::Width()));
     }
 
     INLINE const BareVector<T> Col (size_t i)
     {
       NETGEN_CHECK_RANGE(i, 0, Width());
-      return FlatVector<T> (DummyHeight(), data+i*dist);
+      return BareVector<T> (data+i*dist, DummySize(DummyHeight()));
     }
     
     INLINE const BareSliceVector<T> Row (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
-      return SliceVector<T> (DummyWidth(), dist, data+i);
+      return BareSliceVector<T> (data+i, dist, DummySize(DummySize::Width()));
     }
 
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
@@ -2274,7 +2275,7 @@ namespace ngbla
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
   INLINE const BareSliceMatrix<T,!ord> Trans (BareSliceMatrix<T,ord> mat)
   {
-    return SliceMatrix<T,!ord> (mat.DummyWidth(), mat.DummyHeight(), mat.Dist(), mat.Data());
+    return BareSliceMatrix<T,!ord> (mat.Dist(), mat.Data(), DummySize(mat.DummyWidth(), mat.DummyHeight()));
   }
 
 

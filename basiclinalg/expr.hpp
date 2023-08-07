@@ -463,7 +463,9 @@ namespace ngbla
   */
 
   struct undefined_size { };
-
+  inline auto operator/ (undefined_size ud, size_t i) { return undefined_size(); }
+  inline auto operator- (undefined_size ud, size_t i) { return undefined_size(); }
+  
   INLINE auto CombinedSize(undefined_size s1, undefined_size s2) { return undefined_size(); }
   INLINE auto CombinedSize(undefined_size s1, size_t s2) { return s2; }  
   INLINE auto CombinedSize(size_t s1, undefined_size s2) { return s1; }  

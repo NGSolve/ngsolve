@@ -1532,10 +1532,13 @@ namespace ngbla
 #else 
   class DummySize {
   public:
-    DummySize( size_t aheight, size_t awidth=1 ) {}
+    template <typename TH>    
+    DummySize( TH aheight ) {}
+    template <typename TH, typename TW>
+    DummySize( TH aheight, TW awidth ) {}
   protected:
-    static INLINE size_t Height() { return 0; }
-    static INLINE size_t Width() { return 0; }
+    static INLINE auto Height() { return undefined_size(); }
+    static INLINE auto Width() { return undefined_size(); }
   };
 #endif
 
@@ -1551,6 +1554,7 @@ namespace ngbla
     using DummySize::Width;
     using DummySize::Height;
 #endif
+    INLINE BareVector(T * _data, DummySize ds) : DummySize(ds), data(_data) { ; }    
     INLINE BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
     INLINE BareVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(vec.Data()) { ; }
 
@@ -1563,7 +1567,7 @@ namespace ngbla
     }
 
     INLINE auto View() const { return BareVector(*this); } 
-    INLINE tuple<size_t> Shape() const { return { DummySize::Height() }; }
+    INLINE auto Shape() const { return tuple(DummySize::Height()); }
     
     INLINE FlatVector<T> AddSize(size_t size) const
     {
@@ -1605,12 +1609,12 @@ namespace ngbla
   {
     T * __restrict data;
     size_t dist;
-#ifdef NETGEN_ENABLE_CHECK_RANGE
-    BareSliceVector(T * _data, size_t _dist, DummySize dsize) : DummySize(dsize), data(_data), dist(_dist) { ; }
-#else
-    BareSliceVector(T * _data, size_t _dist) : DummySize(0,0), data(_data), dist(_dist) { ; }
-#endif
+    // #ifdef NETGEN_ENABLE_CHECK_RANGE
   public:
+    BareSliceVector(T * _data, size_t _dist, DummySize dsize) : DummySize(dsize), data(_data), dist(_dist) { ; }
+    // #else
+    // BareSliceVector(T * _data, size_t _dist) : DummySize(0,0), data(_data), dist(_dist) { ; }
+    //#endif
     typedef typename mat_traits<T>::TSCAL TSCAL;
 #ifdef NETGEN_ENABLE_CHECK_RANGE
     using DummySize::Width;
@@ -1628,7 +1632,7 @@ namespace ngbla
     T* Data() const { return data; }
 
     INLINE auto View() const { return BareSliceVector(*this); }
-    INLINE tuple<size_t> Shape() const { return { DummySize::Height() }; }
+    INLINE auto Shape() const { return tuple(DummySize::Height()); }
     
     [[deprecated("Use Range(0,size) instead!")]]                
     SliceVector<T> AddSize(size_t size) const
@@ -1646,11 +1650,7 @@ namespace ngbla
     T & operator[] (size_t i) const { return (*this)(i); }
     BareSliceVector<T> operator+(size_t i) const
     {
-#ifdef NETGEN_ENABLE_CHECK_RANGE
-      return BareSliceVector<T> (data+i*dist, dist, Height()-i);
-#else
-      return BareSliceVector<T> (data+i*dist, dist);
-#endif
+      return BareSliceVector<T> (data+i*dist, dist, DummySize(DummySize::Height()-i));
     }
     T * Addr (size_t i) const { return data+i*dist; }
     SliceVector<T> Range (size_t first, size_t next) const
@@ -1663,11 +1663,7 @@ namespace ngbla
     }    
     BareSliceVector Slice (size_t first, size_t adist) const
     {
-#ifdef NETGEN_ENABLE_CHECK_RANGE
-      return BareSliceVector (data+first*dist, dist*adist, Height()/adist );
-#else
-      return BareSliceVector (data+first*dist, dist*adist);
-#endif
+      return BareSliceVector (data+first*dist, dist*adist, DummySize(DummySize::Height()/adist) );
     }
 
   };
