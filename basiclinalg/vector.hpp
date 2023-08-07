@@ -1370,9 +1370,9 @@ namespace ngbla
 
     /// SV from Vec
     template <int D>
-    INLINE SliceVector (Vec<D,T> & v)
+    INLINE SliceVector (const Vec<D,const T> & v)
     // : s(D), dist(1), data(SliceVecFromVecHelper<T, D>::ptr(v)) { ; }
-      : s(D), dist(1), data(v.Data()) { } 
+      : s(D), dist(1), data(const_cast<T*>(v.Data())) { }
 
     ///
     template <int D>

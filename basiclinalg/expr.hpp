@@ -452,6 +452,9 @@ namespace ngbla
 
   struct undefined_size { };
 
+  // INLINE auto CombinedSize(undefined_size a, undefined_size s2) { return undefiend_size(); }
+  // INLINE auto CombinedSize(undefined_size a, size_t s2) { return s2; }  
+  
   template <typename T>
   class Expr 
   {
@@ -960,6 +963,8 @@ namespace ngbla
     }
 
     template <typename OP, typename TA, typename TB,
+              typename enable_if<is_same<typename pair<T,TB>::first_type::TELEM,double>::vale ||
+                                 is_same<typename pair<T,TB>::first_type::ELEM,Complex>::value,int>::type = 0,
               typename enable_if<IsConvertibleToSliceMatrix<TA>(),int>::type = 0,
               typename enable_if<IsConvertibleToSliceVector<TB>(),int>::type = 0,
               typename enable_if<IsConvertibleToSliceVector<typename pair<T,TB>::first_type>(),int>::type = 0,
