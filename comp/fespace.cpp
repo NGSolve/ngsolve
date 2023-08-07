@@ -120,10 +120,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (flags.StringFlagDefined("dirichlet"))
       {
+        Region dir(ma, BND, flags.GetStringFlag("dirichlet"));
+        dirichlet_constraints[BND] |= dir.Mask();
+        /*
         std::regex pattern(flags.GetStringFlag("dirichlet"));
         for (int i : Range(ma->GetNRegions(BND)))
           if (std::regex_match (string(ma->GetMaterial(BND, i)), pattern))
             dirichlet_constraints[BND].SetBit(i);
+        */
       }
 
     dirichlet_constraints[BBND].SetSize (ma->GetNRegions(BBND));
