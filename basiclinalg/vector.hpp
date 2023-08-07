@@ -1630,7 +1630,11 @@ namespace ngbla
     BareSliceVector(FixSliceVector<D,T> vec) : DummySize( vec.Size() ), data(vec.Data()), dist(D)  { ; }
     BareSliceVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(vec.Data()), dist(1)  { ; }
     template <int D>
-    BareSliceVector(Vec<D,T> & vec) :  DummySize( vec.Size() ), data(vec.Data()), dist(1) { ; }
+    BareSliceVector(const Vec<D,const T> & vec) :
+      DummySize(vec.Size()), data(const_cast<T*>(vec.Data())), dist(1) { ; }
+    template <int D>
+    BareSliceVector(const Vec<D,T> & vec) :
+      DummySize(vec.Size()), data(const_cast<T*>(vec.Data())), dist(1) { ; }
     BareSliceVector(const BareSliceVector &) = default;
     BareSliceVector & operator= (const BareSliceVector&) = delete;
     size_t Dist () const { return dist; }
