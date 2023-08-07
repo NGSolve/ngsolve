@@ -904,7 +904,7 @@ namespace ngbla
      A Matrix with width known at compile time
      No memory allocation/deallocation. User must provide memory.
   */
-  template <int W, typename T = double, int DIST = W, ORDERING=ColMajor>
+  template <int W, typename T = double, int DIST = W>
   class FlatMatrixFixWidth : 
     public CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST>>
   {
