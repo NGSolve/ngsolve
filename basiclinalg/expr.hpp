@@ -45,6 +45,13 @@ namespace ngbla
       is_convertible_v<T,SliceMatrix<TELEM, ColMajor>>;
   }
 
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToBareSliceMatrix ()
+  {
+    return is_convertible_v<T,BareSliceMatrix<TELEM, RowMajor>> ||
+      is_convertible_v<T,BareSliceMatrix<TELEM, ColMajor>>;
+  }
+
 
 
   namespace detail {
@@ -87,22 +94,27 @@ namespace ngbla
   }
 
   
-  /*
-  template <typename T>
-  constexpr bool IsConvertibleToFlatVector()
-  {
-    return is_convertible_v<T, FlatVector<double>> ||
-      is_convertible_v<T, FlatVector<Complex>>;
+
+  namespace detail {
+    template <typename T>
+    struct test_conv_bareslicevector {
+      template<typename T2>
+      static constexpr auto check(T2*) -> decltype(BareSliceVector(T2()));
+      template<typename>
+      static constexpr std::false_type check(...);
+      
+      using type = decltype(check<T>(nullptr));
+      static constexpr bool value = !std::is_same<type, std::false_type>::value;
+    };
   }
   
   template <typename T>
-  constexpr bool IsConvertibleToSliceVector()
+  constexpr bool IsConvertibleToBareSliceVector()
   {
-    return is_convertible_v<T, SliceVector<double>> ||
-      is_convertible_v<T, SliceVector<Complex>>;
+    return detail::test_conv_bareslicevector<T>::value;
   }
-  */
 
+  
 
 
 
@@ -452,8 +464,16 @@ namespace ngbla
 
   struct undefined_size { };
 
-  // INLINE auto CombinedSize(undefined_size a, undefined_size s2) { return undefiend_size(); }
-  // INLINE auto CombinedSize(undefined_size a, size_t s2) { return s2; }  
+  INLINE auto CombinedSize(undefined_size s1, undefined_size s2) { return undefined_size(); }
+  INLINE auto CombinedSize(undefined_size s1, size_t s2) { return s2; }  
+  INLINE auto CombinedSize(size_t s1, undefined_size s2) { return s1; }  
+  INLINE auto CombinedSize(size_t s1, size_t s2) { return s1; }
+  template <int S1> INLINE auto CombinedSize(IC<S1> s1, undefined_size s2) { return s1; }  
+  template <int S1> INLINE auto CombinedSize(IC<S1> s1, size_t s2) { return s1; }  
+  template <int S1, int S2> INLINE auto CombinedSize(IC<S1> s1, IC<S2> s2) { return s1; }  
+  template <int S2> INLINE auto CombinedSize(undefined_size s1, IC<S2> s2) { return s2; }  
+  template <int S2> INLINE auto CombinedSize(size_t s1, IC<S2> s2) { return s2; }  
+  
   
   template <typename T>
   class Expr 
@@ -965,17 +985,20 @@ namespace ngbla
     template <typename OP, typename TA, typename TB,
               typename enable_if<is_same<typename pair<T,TB>::first_type::TELEM,double>::vale ||
                                  is_same<typename pair<T,TB>::first_type::ELEM,Complex>::value,int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<TA>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceVector<TB>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceVector<typename pair<T,TB>::first_type>(),int>::type = 0,
+              typename enable_if<IsConvertibleToBareSliceMatrix<TA>(),int>::type = 0,
+              typename enable_if<IsConvertibleToBareSliceVector<TB>(),int>::type = 0,
+              typename enable_if<IsConvertibleToBareSliceVector<typename pair<T,TB>::first_type>(),int>::type = 0,
               typename enable_if<!IsConvertibleToFlatVector<TB>()||!IsConvertibleToFlatVector<typename pair<T,TB>::first_type>(),int>::type = 0>
     INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod)
     {
+      auto h = CombinedSize(get<0>(Spec().Shape()), get<0>(prod.View().A().Shape()));
+      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
+      
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
       constexpr double POS = (std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value) ? 1 : -1;
-      NgGEMV<ADD> (POS, BareSliceMatrix(make_SliceMatrix(prod.View().A())),
-                   SliceVector(prod.View().B()),
-                   SliceVector(Spec()));
+      NgGEMV<ADD> (POS, BareSliceMatrix(prod.View().A()),
+                   BareSliceVector(prod.View().B()).Range(w),
+                   BareSliceVector(Spec())).Range(h);
       return Spec();
     }
 
@@ -988,7 +1011,7 @@ namespace ngbla
     {
       constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
       constexpr double POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value ? 1 : -1;
-      NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(make_SliceMatrix(prod.View().A().A())),
+      NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
                    SliceVector(prod.View().B()),
                    SliceVector(Spec()));
       return Spec();
