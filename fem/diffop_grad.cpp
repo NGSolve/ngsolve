@@ -3,7 +3,6 @@
   
 namespace ngfem
 {
-
   template <int D, typename FEL>
   shared_ptr<CoefficientFunction> DiffOpGradient<D,FEL> ::
   DiffShape (shared_ptr<CoefficientFunction> proxy,
