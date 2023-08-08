@@ -445,22 +445,22 @@ namespace ngbla
   inline auto operator/ (undefined_size ud, size_t i) { return undefined_size(); }
   inline auto operator- (undefined_size ud, size_t i) { return undefined_size(); }
   
-  INLINE auto CombinedSize(undefined_size s1, undefined_size s2) { return undefined_size(); }
-  INLINE auto CombinedSize(undefined_size s1, size_t s2) { return s2; }  
-  INLINE auto CombinedSize(size_t s1, undefined_size s2) { return s1; }  
-  INLINE auto CombinedSize(size_t s1, size_t s2) { return s1; }
-  template <int S1> INLINE auto CombinedSize(IC<S1> s1, undefined_size s2) { return s1; }  
-  template <int S1> INLINE auto CombinedSize(IC<S1> s1, size_t s2) { return s1; }  
-  template <int S1, int S2> INLINE auto CombinedSize(IC<S1> s1, IC<S2> s2) { return s1; }  
-  template <int S2> INLINE auto CombinedSize(undefined_size s1, IC<S2> s2) { return s2; }  
-  template <int S2> INLINE auto CombinedSize(size_t s1, IC<S2> s2) { return s2; }  
+  INLINE constexpr auto CombinedSize(undefined_size s1, undefined_size s2) { return undefined_size(); }
+  INLINE constexpr auto CombinedSize(undefined_size s1, size_t s2) { return s2; }  
+  INLINE constexpr auto CombinedSize(size_t s1, undefined_size s2) { return s1; }  
+  INLINE constexpr auto CombinedSize(size_t s1, size_t s2) { return s1; }
+  template <int S1> INLINE constexpr auto CombinedSize(IC<S1> s1, undefined_size s2) { return s1; }  
+  template <int S1> INLINE constexpr auto CombinedSize(IC<S1> s1, size_t s2) { return s1; }  
+  template <int S1, int S2> INLINE constexpr auto CombinedSize(IC<S1> s1, IC<S2> s2) { return s1; }  
+  template <int S2> INLINE constexpr auto CombinedSize(undefined_size s1, IC<S2> s2) { return s2; }  
+  template <int S2> INLINE constexpr auto CombinedSize(size_t s1, IC<S2> s2) { return s2; }  
 
   template <typename T1, typename T2>
-  INLINE auto CombinedSize(tuple<T1> tup1, tuple<T2> tup2)
+  INLINE constexpr auto CombinedSize(tuple<T1> tup1, tuple<T2> tup2)
   { return tuple(CombinedSize(get<0>(tup1), get<0>(tup2))); }
 
   template <typename T11, typename T12, typename T21, typename T22>
-  INLINE auto CombinedSize(tuple<T11,T12> tup1, tuple<T21,T22> tup2)
+  INLINE constexpr auto CombinedSize(tuple<T11,T12> tup1, tuple<T21,T22> tup2)
   { return tuple(CombinedSize(get<0>(tup1), get<0>(tup2)),
                  CombinedSize(get<1>(tup1), get<1>(tup2))); }
   
