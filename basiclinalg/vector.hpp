@@ -989,6 +989,10 @@ namespace ngbla
     INLINE T & operator() (int i, int j) const  { return *(T*)(void*)(this); }
     INLINE T* Data() { return nullptr; }
     INLINE const T* Data() const { return nullptr; }
+    INLINE FlatVector<const T> Range(size_t first, size_t next) const
+    { return FlatVector<const T> (next-first, (T*)nullptr); }
+    INLINE FlatVector<T> Range(size_t first, size_t next) 
+    { return FlatVector<T> (next-first, (T*)nullptr); }
   };
 
 

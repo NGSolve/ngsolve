@@ -12,6 +12,7 @@
 #include <core/exception.hpp>
 #include <core/hashtable.hpp>   // for INT
 
+#include <ngs_stdcpp_include.hpp>  // for INLINE
 #include "complex_wrapper.hpp"
 
 namespace ngbla
