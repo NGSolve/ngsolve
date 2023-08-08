@@ -800,9 +800,9 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
       
-      NgGEMM<ADD,POS> (make_SliceMatrix(prod.View().A()),
-                       make_SliceMatrix(prod.View().B()),
-                       make_SliceMatrix(self.Spec()));
+      NgGEMM<ADD,POS> (SliceMatrix(prod.View().A()),
+                       SliceMatrix(prod.View().B()),
+                       SliceMatrix(self.Spec()));
       return self.Spec();
     }
   };
@@ -820,9 +820,9 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
       
-      NgGEMM<ADD,!POS> (make_SliceMatrix(prod.View().A().A()),
-                        make_SliceMatrix(prod.View().B()),
-                        make_SliceMatrix(self.Spec()));
+      NgGEMM<ADD,!POS> (SliceMatrix(prod.View().A().A()),
+                        SliceMatrix(prod.View().B()),
+                        SliceMatrix(self.Spec()));
       return self.Spec();
     }
   };
