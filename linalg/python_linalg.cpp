@@ -1336,10 +1336,14 @@ inverse : string
   
   ExportSparseMatrix<double>(m);
   ExportSparseMatrix<Complex>(m);
+#if MAX_SYS_DIM >= 2  
   ExportSparseMatrix<Mat<2,2,double>>(m);
   ExportSparseMatrix<Mat<2,2,Complex>>(m);
+#endif
+#if MAX_SYS_DIM >= 3
   ExportSparseMatrix<Mat<3,3,double>>(m);
   ExportSparseMatrix<Mat<3,3,Complex>>(m);
+#endif
 
 
   py::class_<SparseMatrixDynamic<double>, shared_ptr<SparseMatrixDynamic<double>>, BaseMatrix>
