@@ -707,7 +707,8 @@ namespace ngbla
     INLINE auto & ViewRW() { return *this; }
     INLINE auto Shape() const { return tuple(IC<H>(), IC<W>()); }
     
-    INLINE T* Data() noexcept { return &data[0]; }
+    INLINE T* Data() noexcept { return data.Ptr(); }
+    INLINE const T* Data() const noexcept { return data.Ptr(); }
     /// linear access
     INLINE TELEM & operator() (size_t i) { return data[i]; }
     /// access element
@@ -1476,6 +1477,10 @@ namespace ngbla
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
     { ; }
 
+    template<int H, int W>    
+    INLINE SliceMatrix(const Mat<H,W,const T> & mat) 
+      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(const_cast<T*>(mat.Data())) { } 
+    
     /*
     /// assign contents
     template<typename TB>
@@ -1834,6 +1839,10 @@ namespace ngbla
       : DummySize(mat.Shape()), dist(mat.Width()), data(mat.Data())
     { ; }
 
+    template<int H, int W>    
+    INLINE BareSliceMatrix(const Mat<H,W,const T> & mat) 
+      : DummySize(mat.Shape()), dist(mat.Width()), data(const_cast<T*>(mat.Data())) { } 
+    
     template<int W, int DIST>
     BareSliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat)
       : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
@@ -1842,6 +1851,9 @@ namespace ngbla
     template<int W, int DIST>
     BareSliceMatrix (FlatMatrixFixHeight<W,T,DIST,ORD> mat)
       : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
+
+
+
     
     BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
     
