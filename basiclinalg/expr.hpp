@@ -484,8 +484,8 @@ namespace ngbla
 
 
     /// height
-    INLINE size_t Height() const { return Spec().T::Height(); }
-    INLINE size_t Width() const { return Spec().T::Width(); }
+    INLINE auto Height() const { return Spec().T::Height(); }
+    INLINE auto Width() const { return Spec().T::Width(); }
 
     // auto Shape() const { return std::tuple(Height(), Width()); }
 

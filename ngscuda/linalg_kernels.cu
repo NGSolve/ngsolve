@@ -1,6 +1,7 @@
 #include <climits>
 // #include <ngstd.hpp>
-#include <templates.hpp>
+// #include <templates.hpp>
+#include <ngs_stdcpp_include.hpp>
 #include <vector.hpp>
 #include <matrix.hpp>
 // #include <bla.hpp>
