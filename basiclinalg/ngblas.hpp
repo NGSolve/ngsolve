@@ -629,14 +629,14 @@ namespace ngbla
   public:
     static inline  T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod)
     {
-      // auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
-      // auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
-
+      auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
+      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
+      
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
       NgGEMV<ADD,POS> (make_SliceMatrix(prod.View().A()),
-                       prod.View().B(),
-                       self.Spec());
+                       prod.View().B().Range(0,w),
+                       self.Spec().Range(0,h));
       return self.Spec();
     }
   };
