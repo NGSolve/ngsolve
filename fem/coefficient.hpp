@@ -521,7 +521,7 @@ namespace ngfem
       if (!IsComplex())
         {
           BareSliceMatrix<double> realvalues(2*values.Dist(), (double*)values.Data(),
-                                             DummySize(values.DummyHeight(), values.DummyWidth()));
+                                             DummySize(values.Height(), values.Width()));
           Evaluate (ir, realvalues);
           for (size_t i = 0; i < ir.Size(); i++)
             for (size_t j = Dimension(); j-- > 0; )

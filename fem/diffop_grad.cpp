@@ -1,7 +1,6 @@
 #include <fem.hpp>
 #include <diffop_impl.hpp>
 
-
 namespace ngfem
 {
   template <int D, typename FEL>

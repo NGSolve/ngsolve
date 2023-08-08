@@ -112,8 +112,7 @@ namespace ngfem
     DIFFOP::GenerateMatrixSIMDIR (bfel, bmir, mat);
   }
 
-  
-  
+
 #ifndef FASTCOMPILE
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
