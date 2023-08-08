@@ -703,7 +703,7 @@ namespace ngbla
   class assign_trait<OP, T, MultExpr<TA,TB>,
                      enable_if_t<IsConvertibleToSliceMatrix<TA,Complex>() &&
                                  IsConvertibleToFlatVector<TB>() &&
-                                 IsConvertibleToFlatVector<T>, int>>
+                                 IsConvertibleToFlatVector<T>(), int>>
   {
   public:    
     static inline  T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod)
