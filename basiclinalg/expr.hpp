@@ -116,17 +116,6 @@ namespace ngbla
   }
 
   
-
-
-
-  
-  template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
-  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c);
-
-  template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
-  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double,ColMajor> c);
-  
-  
   
 
   template <typename T>
@@ -303,13 +292,6 @@ namespace ngbla
     return TO(f);
   }
 
-  /*
-  template <typename TO>
-  inline TO ConvertTo (const AutoDiff<1, Complex> & f)
-  {
-    return TO(f);
-  }
-  */
 
   template <>
   inline double ConvertTo (Complex f)
@@ -374,18 +356,12 @@ namespace ngbla
 
     INLINE auto View() const { return static_cast<const T&> (*this).View(); }
     INLINE decltype(auto) ViewRW() { return static_cast<T&>(*this).ViewRW(); }
-    // INLINE auto Shape() const { return static_cast<const T&> (*this).Shape(); }
     INLINE auto Shape() const { return Spec().T::Shape(); }
 
 
-    /// height
     INLINE auto Height() const { return Spec().T::Height(); }
     INLINE auto Width() const { return Spec().T::Width(); }
 
-    // auto Shape() const { return std::tuple(Height(), Width()); }
-
-    // INLINE auto operator() (int i) const -> decltype (this->Spec()(i)) { return this->Spec()(i); }
-    // INLINE auto operator() (int i, int j) const -> decltype (this->Spec()(i,j)) { return this->Spec()(i,j); }
 
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
@@ -528,39 +504,6 @@ namespace ngbla
       NETGEN_CHECK_RANGE(self.Width(), v.Width(), v.Width()+1);
       NETGEN_CHECK_SHAPE(self.Spec(), v);
 
-      /*
-      if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> && 
-                    is_convertible_v<TB,FlatVector<typename T::TELEM>> && 
-                    is_convertible_v<T,FlatVector<typename T::TELEM>>)
-        {
-          CopyVector(FlatVector<typename T::TELEM>(v.Spec()), FlatVector<typename T::TELEM>(self.Spec()));
-          return self.Spec();
-        }
-      */
-      if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> && 
-                    IsConvertibleToFlatVector<TB>() && 
-                    IsConvertibleToFlatVector<T>())
-        {
-          CopyVector(BareVector(FlatVector(v.Spec())), FlatVector(self.Spec()));
-          return self.Spec();
-        }
-
-      /*
-      else if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> && 
-                         is_convertible_v<TB,SliceVector<typename T::TELEM>> && 
-                         is_convertible_v<T,SliceVector<typename T::TELEM>>)
-        {
-          CopyVector(SliceVector<typename T::TELEM>(v.Spec()), SliceVector<typename T::TELEM>(self.Spec()));
-          return self.Spec();
-        }
-      */
-      else if constexpr (std::is_same_v<TOP,typename MatExpr<T>::As> &&
-                         IsConvertibleToSliceVector<TB>() && 
-                         IsConvertibleToSliceVector<T>())
-        {
-          CopyVector(BareSliceVector(SliceVector(v.Spec())), SliceVector(self.Spec()));
-          return self.Spec();
-        }
 
       auto src = v.View();
       decltype(auto) dest = self.ViewRW();
@@ -573,8 +516,6 @@ namespace ngbla
           if (h > 0)
             for (size_t j = 0; j < w; j++)
               for (size_t i = 0; i < h; i++)
-                // TOP()(Spec()(i,j), v.Spec()(i,j));
-                // TOP()(Spec()(i,j), v.View()(i,j));
                 TOP()(dest(i,j), src(i,j));
           return self.Spec();
         }
@@ -585,8 +526,7 @@ namespace ngbla
 	  if (T::IS_LINEAR)
 	    {
 	      auto hw = self.Height() * self.Width();
-              for (auto i : Range(hw))  // int i = 0; i < hw; i++)
-                // TOP()(Spec()(i),v.Spec()(i));
+              for (auto i : Range(hw))  
                 TOP()(dest(i), src(i));
 	    }
 	  else
@@ -596,8 +536,6 @@ namespace ngbla
               if (w > 0)
                 for (size_t i = 0, k = 0; i < h; i++)
                   for (size_t j = 0; j < w; j++, k++)
-                    // TOP() (Spec()(i,j), v.Spec()(k));
-                    // TOP() (Spec()(i,j), v.View()(k));
                     TOP() (dest(i,j), src(k));
 	    }
 	}
@@ -610,17 +548,12 @@ namespace ngbla
               if (T::IS_LINEAR)
                 for (size_t i = 0, k = 0; i < h; i++)
                   for (size_t j = 0; j < w; j++, k++)
-                    // TOP() (Spec()(k), v.Spec()(i,j));
-                    // TOP() (Spec()(k), v.View()(i,j));
                     TOP() (dest(k), src(i,j));                    
               else
                 {
                   for (size_t i = 0; i < h; i++)
                     for (size_t j = 0; j < w; j++)
-                      {
-                        // TOP() (Spec()(i,j), v.View()(i,j));
-                        TOP() (dest(i,j), src(i,j));                        
-                      }
+                      TOP() (dest(i,j), src(i,j));                        
                 }
             }
         }
@@ -684,48 +617,6 @@ namespace ngbla
 
 
     
-    /*
-    template <typename OP, typename TA,
-              typename enable_if<std::is_same<OP,As>::value,int>::type = 0,
-              typename enable_if<is_convertible<TA,SliceVector<typename TA::TELEM>>::value,int>::type = 0>
-    INLINE T & Assign (const Expr<TA> & src) 
-    {
-      CopyVector(src.Spec(), this->Spec());
-    }
-    */
-
-
-    
-    template <typename OP, typename TA, typename TB,
-              enable_if_t<IsConvertibleToSliceMatrix<TA,double>(),bool> = true,
-              enable_if_t<IsConvertibleToSliceMatrix<TB,double>(),bool> = true,
-              enable_if_t<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),bool> = true>
-    INLINE T & Assign (const Expr<MultExpr<TA, TB>> & prod) 
-    {
-      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
-      constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
-      
-      NgGEMM<ADD,POS> (make_SliceMatrix(prod.View().A()),
-                       make_SliceMatrix(prod.View().B()),
-                       make_SliceMatrix(Spec()));
-      return Spec();
-    }
-
-
-    template <typename OP, typename TA, typename TB,
-              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),int>::type = 0>    
-    INLINE T & Assign (const Expr<MultExpr<MinusExpr<TA>, TB>> & prod) 
-    {
-      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
-      constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
-      
-      NgGEMM<ADD,!POS> (make_SliceMatrix(prod.View().A().A()),
-                        make_SliceMatrix(prod.View().B()),
-                        make_SliceMatrix(Spec()));
-      return Spec();
-    }
 
  
 
@@ -774,26 +665,6 @@ namespace ngbla
       return Spec();
     }
     
-    // rank 1 update
-    template <typename OP, typename TA, typename TB,
-              typename enable_if<is_convertible_v<TA,FlatVector<double>>,int>::type = 0,
-              typename enable_if<is_convertible_v<TB,FlatVector<double>>,int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<typename pair<T,TB>::first_type,double>(),int>::type = 0>
-    INLINE T & Assign (const Expr<MultExpr<TA, TransExpr<TB>>> & prod)
-    {
-      constexpr bool ADD = std::is_same<OP,AsAdd>::value || std::is_same<OP,AsSub>::value;
-      constexpr bool POS = std::is_same<OP,As>::value || std::is_same<OP,AsAdd>::value;
-
-      auto veca = prod.Spec().A();
-      auto mata = FlatMatrix<typename TA::TELEM>(veca.Height(), 1, veca.Data());
-      auto vecb = prod.Spec().B().A();
-      auto matb = FlatMatrix<typename TB::TELEM>(1, vecb.Height(), vecb.Data());
-      
-      NgGEMM<ADD,POS> (SliceMatrix<typename TA::TELEM>(mata),
-                       SliceMatrix<typename TB::TELEM>(matb), Spec());
-      return Spec();
-    }
-
 
     
     template<typename TB>
@@ -822,22 +693,6 @@ namespace ngbla
       Assign<AsSub> (v);
       return Spec();
     }
-
-
-    /*
-    template <typename TA, typename TB,
-              typename enable_if<IsConvertibleToSliceMatrix<TA,double>(),int>::type = 0,
-              typename enable_if<IsConvertibleToSliceMatrix<TB,double>(),int>::type = 0>
-    INLINE T & operator= (const Expr<MultExpr<TA, TB>> & prod) 
-    {
-      cout << "using fast" << endl;
-      NgGEMM<false,true> (make_SliceMatrix(prod.Spec().A()),
-                          make_SliceMatrix(prod.Spec().B()),
-                          make_SliceMatrix(Spec()));
-      return Spec();
-    }
-    */
-
 
 
 
@@ -1220,38 +1075,6 @@ namespace ngbla
   };
 
 
-  /*
-  template <typename TA>
-  INLINE auto operator* (double b, const Expr<TA> & a)
-  {
-    return ScaleExpr (a.View(), b);
-  }
-
-  template <typename TA>
-  INLINE auto operator* (Complex b, const Expr<TA> & a)
-  {
-    return ScaleExpr (a.View(), b);
-  }
-  
-  template <int D, typename TAD, typename TA>
-  INLINE auto operator* (const AutoDiff<D,TAD> & b, const Expr<TA> & a)
-  {
-    return ScaleExpr (a.View(), b );
-  }
-
-  template <int N, typename TA>
-  INLINE auto operator* (SIMD<double,N> b, const Expr<TA> & a)
-  {
-    return ScaleExpr (a.View(), b);
-  }
-  
-  template <int N, typename TA>
-  INLINE auto operator* (SIMD<Complex,N> b, const Expr<TA> & a)
-  {
-    return ScaleExpr (a.View(), b);
-  }
-  */
-
   template <typename TS, typename TA,
             typename enable_if<IsScalar<TS>(),int>::type = 0>
   INLINE auto operator* (TS s, const Expr<TA> & a)
@@ -1351,12 +1174,6 @@ namespace ngbla
 
   /* ************************** Trans *************************** */
 
-  /*
-  INLINE double Trans (double a) { return a; }
-  INLINE Complex Trans (Complex a) { return a; }
-  template<int D, typename TAD>
-  INLINE AutoDiff<D,TAD> Trans (const AutoDiff<D,TAD> & a) { return a; }
-  */
   template <typename TA,
             typename enable_if<IsScalar<TA>(),int>::type = 0>
   INLINE auto Trans (TA a) { return a; } 
@@ -1727,25 +1544,6 @@ namespace ngbla
 
   /* ************************* InnerProduct ********************** */
 
-  /*
-  INLINE double InnerProduct (double a, double b) {return a * b;}
-  INLINE Complex InnerProduct (Complex a, Complex b) {return a * b;}
-  INLINE Complex InnerProduct (double a, Complex b) {return a * b;}
-  INLINE Complex InnerProduct (Complex a, double b) {return a * b;}
-  INLINE int InnerProduct (int a, int b) {return a * b;}
-
-  template <int DIM>
-  AutoDiff<DIM> InnerProduct (AutoDiff<DIM> a, AutoDiff<DIM> b) {return a * b;}
-
-  template <int N>
-  auto InnerProduct (SIMD<double,N> a, SIMD<double,N> b) { return a*b; }
-  template <int N>
-  auto InnerProduct (SIMD<Complex,N> a, SIMD<double,N> b) { return a*b; }
-  template <int N>
-  auto InnerProduct (SIMD<double,N> a, SIMD<Complex,N> b) { return a*b; }
-  template <int N>
-  auto InnerProduct (SIMD<Complex,N> a, SIMD<Complex,N> b) { return a*b; }
-  */
   template <typename TA, typename TB,
             typename enable_if<IsScalar<TA>(),int>::type = 0,
             typename enable_if<IsScalar<TB>(),int>::type = 0>
