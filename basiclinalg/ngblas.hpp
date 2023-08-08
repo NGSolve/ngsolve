@@ -840,14 +840,14 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
       
-      auto veca = prod.Spec().A();
-      auto mata = FlatMatrix<typename TA::TELEM>(veca.Height(), 1, veca.Data());
-      auto vecb = prod.Spec().B().A();
-      auto matb = FlatMatrix<typename TB::TELEM>(1, vecb.Height(), vecb.Data());
+      FlatVector veca = prod.Spec().A();
+      FlatMatrix mata(veca.Height(), 1, veca.Data());
+      FlatVector vecb = prod.Spec().B().A();
+      FlatMatrix matb(1, vecb.Height(), vecb.Data());
       
-      NgGEMM<ADD,POS> (SliceMatrix<typename TA::TELEM>(mata),
-                       SliceMatrix<typename TB::TELEM>(matb),
-                       self.Spec());
+      NgGEMM<ADD,POS> (SliceMatrix(mata),
+                       SliceMatrix(matb),
+                       SliceMatrix(self.Spec()));
       return self.Spec();
     }
   };
