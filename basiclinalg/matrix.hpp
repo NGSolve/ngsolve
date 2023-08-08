@@ -1464,6 +1464,13 @@ namespace ngbla
       : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
+    // nonsense, only for overload being taken
+    template<int W, int DIST>
+    SliceMatrix (FlatMatrixFixHeight<W,T,DIST,ORD> mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data()) { } 
+
+    
+
     template<int H, int W>
     INLINE SliceMatrix (Mat<H,W,T> & mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
@@ -1669,6 +1676,9 @@ namespace ngbla
       : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
+    template<int W, int DIST>
+    SliceMatrix (FlatMatrixFixHeight<W,T,DIST,ColMajor> mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data()) { } 
     
     /// assign contents
     template<typename TB>
