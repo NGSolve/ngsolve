@@ -110,11 +110,9 @@ namespace ngbla
     INLINE const FlatVector & operator= (const FlatVector & v) const
     {
       NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
-      /*
-      for (auto i : ngstd::Range(size))
+      for (auto i : Range())
 	data[i] = v(i);
-      */
-      CopyVector (BareVector(v), *this);
+      // CopyVector (BareVector(v), *this);
       return *this;
     }
 
@@ -137,9 +135,9 @@ namespace ngbla
     /// assign constant value
     INLINE const FlatVector & operator= (TSCAL scal) const
     {
-      // for (auto i : Range())
-      // data[i] = scal;
-      SetVector (scal, *this);
+      for (auto i : Range())
+        data[i] = scal;
+      // SetVector (scal, *this);
       return *this;
     }
 
