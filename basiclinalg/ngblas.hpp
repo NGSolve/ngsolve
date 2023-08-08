@@ -830,9 +830,9 @@ namespace ngbla
   // rank 1 update
   template <typename OP, typename T, typename TA, typename TB>
   class assign_trait<OP, T, MultExpr<TA, TransExpr<TB>>,
-                     enable_if_t<is_convertible<TA,FlatVector<double>>() && 
-                                 is_convertible<TB,FlatVector<double>>() && 
-                                 IsConvertibleToSliceMatrix<T,double>(), int>>
+                     enable_if_t<IsConvertibleToSliceMatrix<T,double>() &&
+                                 is_convertible<TA,FlatVector<double>>() && 
+                                 is_convertible<TB,FlatVector<double>>(), int>>
   {
   public:
     static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TransExpr<TB>>> & prod)
