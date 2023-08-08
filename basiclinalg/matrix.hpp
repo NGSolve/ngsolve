@@ -1458,12 +1458,11 @@ namespace ngbla
       : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
-    /*
-    template<int W>
-    SliceMatrix (const FlatMatrixFixWidth<W,T> & mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
+
+    template<int W, int DIST>
+    SliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
-    */
 
     template<int H, int W>
     INLINE SliceMatrix (Mat<H,W,T> & mat)
