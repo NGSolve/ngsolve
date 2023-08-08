@@ -998,7 +998,7 @@ namespace ngbla
     }
 
     INLINE auto View() const { return *this; } 
-    INLINE tuple<size_t, size_t> Shape() const { return { h,W }; }
+    INLINE auto Shape() const { return tuple(h,IC<W>()); }
     
     /// copy size and pointers
     INLINE const FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) throw()
@@ -1029,8 +1029,8 @@ namespace ngbla
     INLINE size_t Height () const throw() { return h; }
 
     /// the width
-    INLINE constexpr size_t Width () const throw() { return W; }
-    INLINE constexpr size_t Dist() { return DIST; }
+    INLINE constexpr auto Width () const throw() { return IC<W>(); }
+    INLINE constexpr auto Dist() { return DIST; }
     ///
     INLINE operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
 
