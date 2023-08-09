@@ -299,10 +299,8 @@ namespace ngfem
     for (size_t i : Range(mir))
       {
         CalcDualShape(mir[i], shape);
-        // values.Range(GetNDof()) += coefs(i) * shape;
-        values += coefs(i) * shape;
+        coefs += values(i) * shape;
       }
-    // throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());    
   }
   
   void BaseScalarFiniteElement :: AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const
