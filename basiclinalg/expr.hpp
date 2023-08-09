@@ -512,12 +512,12 @@ namespace ngbla
 
       auto src = v.View();
       decltype(auto) dest = self.ViewRW();
+
+      auto h = CombinedSize (src.Height(), dest.Height());
+      auto w = CombinedSize (src.Width(), dest.Width());
       
       if (T::COL_MAJOR)
         {
-	  size_t h = self.Height();
-	  size_t w = self.Width();
-
           if (h > 0)
             for (size_t j = 0; j < w; j++)
               for (size_t i = 0; i < h; i++)
@@ -530,14 +530,12 @@ namespace ngbla
 	{
 	  if (T::IS_LINEAR)
 	    {
-	      auto hw = self.Height() * self.Width();
+	      auto hw = h*w;
               for (auto i : Range(hw))  
                 TOP()(dest(i), src(i));
 	    }
 	  else
 	    {
-	      size_t h = self.Height();
-	      size_t w = self.Width();
               if (w > 0)
                 for (size_t i = 0, k = 0; i < h; i++)
                   for (size_t j = 0; j < w; j++, k++)
@@ -546,8 +544,6 @@ namespace ngbla
 	}
       else
 	{
-	  size_t h = self.Height();
-	  size_t w = self.Width();
           if (w > 0)
             {
               if (T::IS_LINEAR)
