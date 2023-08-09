@@ -35,7 +35,6 @@ namespace ngla
     SetMaxSteps (200); 
     SetInitialize (1);
     printrates = 0;
-    sh = make_shared<BaseStatusHandler>();
     useseed = false;
   }
   
@@ -50,7 +49,6 @@ namespace ngla
     SetMaxSteps (200);
     SetInitialize (1);
     printrates = 0;
-    sh = make_shared<BaseStatusHandler>();
     useseed = false;
   }
 
@@ -66,7 +64,6 @@ namespace ngla
     SetMaxSteps (200);
     SetInitialize (1);
     printrates = 0;
-    sh = make_shared<BaseStatusHandler>();
     useseed = false;
   }
 
@@ -137,8 +134,7 @@ namespace ngla
     try
       {
 	// Solve A u = f
-	if(sh)
-	  sh->SetThreadPercentage(0);
+        BaseStatusHandler::SetThreadPercentage(0);
 
 	auto d = f.CreateVector();
 	auto w = f.CreateVector();
@@ -178,7 +174,7 @@ namespace ngla
 	double lerr = log(err);
 	
 
-	while (n++ < maxsteps && L2Norm(wdn) > err && !(sh && sh->ShouldTerminate()))
+	while (n++ < maxsteps && L2Norm(wdn) > err && !(BaseStatusHandler::ShouldTerminate()))
 	  {
 	    w = (*a) * s;
 
@@ -226,8 +222,7 @@ namespace ngla
 	    //s += w;
 
 	    if (printrates ) cout << IM(1) << n << " " << sqrt(L2Norm (wdn)) << endl;
-	    if(sh)
-	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
+            BaseStatusHandler::SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(L2Norm(wdn)))/(lwstart-lerr)));
 	  } 
 	
@@ -259,8 +254,7 @@ namespace ngla
     try
       {
 	// Solve A u = f
-	if(sh)
-	  sh->SetThreadPercentage(0);
+        BaseStatusHandler::SetThreadPercentage(0);
  
 	SCAL * pl;
 	const SCAL * pr;
@@ -372,7 +366,7 @@ namespace ngla
 	    
 
 
-	    while (n++ < maxsteps && Abs(wdn) > err[seed] && !(sh && sh->ShouldTerminate()))
+	    while (n++ < maxsteps && Abs(wdn) > err[seed] && !(BaseStatusHandler::ShouldTerminate()))
 	      {
 		//if(smalla)
 		w = (*smalla)  * s;
@@ -476,8 +470,7 @@ namespace ngla
 		s += w;
 
 		if (printrates ) cout << IM(1) << n << " (block " << seed+1 << ") " << sqrt (Abs (wdn)) << endl;
-		if(sh)
-		  sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
+                BaseStatusHandler::SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						    (lwstart-log(Abs(wdn)))/(lwstart-lerr)));
 	      } 
 	  }
@@ -557,8 +550,7 @@ namespace ngla
     try
       {
 	// Solve A u = f
-	if(sh)
-	  sh->SetThreadPercentage(0);
+        BaseStatusHandler::SetThreadPercentage(0);
  
         auto w = u.CreateVector();
         auto s = u.CreateVector();
@@ -597,7 +589,7 @@ namespace ngla
 	double lwstart = log(Abs(wdn));
 	double lerr = log(err);
 	
-	while (n++ < maxsteps && Abs(wdn) > err && !(sh && sh->ShouldTerminate()))
+	while (n++ < maxsteps && Abs(wdn) > err && !(BaseStatusHandler::ShouldTerminate()))
 	  {
 	    as = (*a) * s;
 	    wd = wdn;
@@ -620,8 +612,7 @@ namespace ngla
 	    s += w;
 
 	    if (printrates ) cout << IM(1) << n << " " << sqrt (Abs (wdn)) << endl;
-	    if ( sh )
-	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
+            BaseStatusHandler::SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(Abs(wdn)))/(lwstart-lerr)));
 	  } 
 	
@@ -651,8 +642,7 @@ namespace ngla
     try
       {
 	// Solve A u = f
-	if(sh)
-	  sh->SetThreadPercentage(0);
+        BaseStatusHandler::SetThreadPercentage(0);
  
 	auto r = f.CreateVector();
 	auto r_tilde = f.CreateVector();
@@ -716,7 +706,7 @@ namespace ngla
 	double lerr = log(err);
 	
 
-	while (n++ < maxsteps && err_i > err && !(sh && sh->ShouldTerminate()))
+	while (n++ < maxsteps && err_i > err && !(BaseStatusHandler::ShouldTerminate()))
 	  {
 	    rho_old = rho_new;
 	    rho_new = S_InnerProduct<IPTYPE>(r_tilde, r);
@@ -758,8 +748,7 @@ namespace ngla
 	    err_i = L2Norm(r);
 
 	    if (printrates ) cout << IM(1) << n << " " << err_i << endl;
-	    if(sh)
-	      sh->SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
+            BaseStatusHandler::SetThreadPercentage(100.*max2(double(n)/double(maxsteps),
 						(lwstart-log(err_i))/(lwstart-lerr)));
 	  } 
 	
@@ -788,8 +777,7 @@ namespace ngla
   try
       {
 	// Solve A u = f
-	if(sh)
-	  sh->SetThreadPercentage(0);
+        BaseStatusHandler::SetThreadPercentage(0);
  
 	auto d = f.CreateVector();
 	auto w = f.CreateVector();
