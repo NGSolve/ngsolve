@@ -27,7 +27,7 @@ namespace ngfem
     static constexpr bool SUPPORT_PML = false;
     // static Array<int> GetDimensions() { return Array<int> ( { DOP::DIM_DMAT } ); };
     static INT<1> GetDimensions() { return { DOP::DIM_DMAT }; };
-    static bool SupportsVB (VorB checkvb) { return DOP::DIM_SPACE-DOP::DIM_ELEMENT == int(checkvb); }
+    static bool SupportsVB (VorB checkvb) { return int(DOP::DIM_SPACE)-int(DOP::DIM_ELEMENT) == int(checkvb); }
 
 
     typedef void DIFFOP_TRACE;  // 
