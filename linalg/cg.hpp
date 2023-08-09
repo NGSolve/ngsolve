@@ -37,9 +37,6 @@ namespace ngla
     ///
     bool useseed;
 
-    ///
-    shared_ptr<BaseStatusHandler> sh;
-
   public:
     ///
     NGS_DLL_HEADER KrylovSpaceSolver();
@@ -80,9 +77,6 @@ namespace ngla
     void SetInitialize (int ai)
     { initialize = ai; }
     ///
-    void SetStatusHandler (shared_ptr<BaseStatusHandler> stha)
-    { sh = stha; }
-    
 
     void UseSeed(const bool useit = true)
     { useseed = useit; }

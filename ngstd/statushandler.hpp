@@ -10,16 +10,15 @@ namespace ngstd
   class NGS_DLL_HEADER BaseStatusHandler
   {
   public:
-    virtual ~BaseStatusHandler () { ; }
-    virtual void PushStatus (const char * str) const;
-    virtual void PopStatus () const;
-    virtual void SetThreadPercentage (double percent) const;
+    static void PushStatus (const char * str);
+    static void PopStatus ();
+    static void SetThreadPercentage (double percent);
 
-    virtual void GetStatus (string & str, double & percent) const;
+    static void GetStatus (string & str, double & percent);
 
-    virtual void SetTerminate(void) const;
-    virtual void UnSetTerminate(void) const;
-    virtual bool ShouldTerminate(void) const;
+    static void SetTerminate(void);
+    static void UnSetTerminate(void);
+    static bool ShouldTerminate(void);
   };
 
 }
