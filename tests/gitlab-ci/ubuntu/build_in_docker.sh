@@ -103,7 +103,7 @@ then
 
   # first build ngsxfem
   cd ~/src
-  git clone https://github.com/ngsxfem/ngsxfem.git
+  git clone --branch master https://github.com/ngsxfem/ngsxfem.git
   cd ngsxfem
   mkdir -p build
   cd build
