@@ -292,12 +292,21 @@ namespace ngfem
   
   void BaseScalarFiniteElement :: AddDualTrans (const IntegrationRule & ir, BareSliceVector<double> values, BareSliceVector<> coefs) const
   {
-    throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());    
+    LocalHeapMem<10000> lh("adddualtranheap");
+    auto & trafo = GetFEElementTransformation(ElementType());
+    auto & mir = trafo(ir, lh);
+    FlatVector shape(GetNDof(), lh);
+    for (size_t i : Range(mir))
+      {
+        CalcDualShape(mir[i], shape);
+        values.Range(GetNDof()) += coefs(i) * shape;
+      }
+    // throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());    
   }
   
   void BaseScalarFiniteElement :: AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const
   {
-    throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());        
+    throw ExceptionNOSIMD (string("AddDualTrans not overloaded for element ") + typeid(*this).name());        
   }
 
   
