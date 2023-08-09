@@ -318,7 +318,12 @@ namespace ngbla
      IsLinear allows linear matrix element access.
   */
 
-  struct undefined_size { };
+  struct undefined_size
+  {
+    undefined_size() = default;
+    undefined_size(size_t s) { }
+  };
+  inline ostream & operator<< (ostream & ost, undefined_size s) { ost << "undefined"; return ost; }
   inline auto operator/ (undefined_size ud, size_t i) { return undefined_size(); }
   inline auto operator- (undefined_size ud, size_t i) { return undefined_size(); }
   
