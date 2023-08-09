@@ -1557,10 +1557,10 @@ namespace ngbla
   {
     T * __restrict data;
   public:
-#ifdef NETGEN_ENABLE_CHECK_RANGE
+
     using DummySize::Width;
     using DummySize::Height;
-#endif
+
     INLINE BareVector(T * _data, DummySize ds) : DummySize(ds), data(_data) { ; }    
     INLINE BareVector(T * _data) : DummySize(0,0), data(_data) { ; }
     INLINE BareVector(FlatVector<T> vec) : DummySize( vec.Size() ), data(vec.Data()) { ; }
@@ -1623,10 +1623,10 @@ namespace ngbla
     // BareSliceVector(T * _data, size_t _dist) : DummySize(0,0), data(_data), dist(_dist) { ; }
     //#endif
     typedef typename mat_traits<T>::TSCAL TSCAL;
-#ifdef NETGEN_ENABLE_CHECK_RANGE
+
     using DummySize::Width;
     using DummySize::Height;
-#endif
+
     BareSliceVector(SliceVector<T> vec) : DummySize( vec.Size() ), data(vec.Data()), dist(vec.Dist()) { ; }
     template <int D>
     BareSliceVector(FixSliceVector<D,T> vec) : DummySize( vec.Size() ), data(vec.Data()), dist(D)  { ; }

@@ -299,7 +299,8 @@ namespace ngfem
     for (size_t i : Range(mir))
       {
         CalcDualShape(mir[i], shape);
-        values.Range(GetNDof()) += coefs(i) * shape;
+        // values.Range(GetNDof()) += coefs(i) * shape;
+        values += coefs(i) * shape;
       }
     // throw Exception (string("AddDualTrans not overloaded for element ") + typeid(*this).name());    
   }
