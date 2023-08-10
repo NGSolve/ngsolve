@@ -193,7 +193,7 @@ namespace ngcomp
 
   class GridFunction;
 
-  class NGS_DLL_HEADER MeshAccess : public BaseStatusHandler, public enable_shared_from_this_virtual<MeshAccess>
+  class NGS_DLL_HEADER MeshAccess : public enable_shared_from_this<MeshAccess>
   {
     netgen::Ngx_Mesh mesh;
 
