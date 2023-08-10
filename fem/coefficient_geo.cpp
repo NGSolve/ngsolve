@@ -95,7 +95,7 @@ namespace ngfem
       if (ir[0].DimSpace() != D)
 	throw Exception("illegal dim of normal vector");
       for (int i = 0; i < ir.Size(); i++)
-	res.Row(i).AddSize(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+	res.Row(i).Range(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override  {
         string miptype;
@@ -311,7 +311,7 @@ namespace ngfem
       if (ir[0].DimSpace() != DIMR)
       	throw Exception("illegal dim!");
       for (int i = 0; i < ir.Size(); i++)
-      	res.Row(i).AddSize(DIMS*DIMR) = static_cast<const MappedIntegrationPoint<DIMS,DIMR>&>(ir[i]).GetJacobian().AsVector();
+      	res.Row(i).Range(DIMS*DIMR) = static_cast<const MappedIntegrationPoint<DIMS,DIMR>&>(ir[i]).GetJacobian().AsVector();
     }
     
     /*virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
