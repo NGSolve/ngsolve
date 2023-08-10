@@ -206,6 +206,11 @@ namespace ngbla
     /// sub-vector given by range
     INLINE FlatVector Range (IntRange range) const
     { return Range (range.First(), range.Next()); }
+
+    // [[deprecated("Use Range(size) instead!")]]                
+    INLINE FlatVector AddSize (size_t s) const
+    { return FlatVector (s, Data()); } 
+
     
 
     /// vector size

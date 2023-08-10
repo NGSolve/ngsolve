@@ -14,6 +14,28 @@
 namespace ngbla
 {
 
+  
+
+  template <typename TS, typename TD, typename T>
+  auto make_VectorView (TS size, TD dist, T * data)
+  {
+    if constexpr (is_same_v<TS, undefined_size> == true)
+      {
+        if constexpr (std::is_same_v<TD, IC<1>> == true)
+          return BareVector(data, size);
+        else
+          return BareSliceVector(data, dist, size);
+      }
+    else
+      {
+        if constexpr (std::is_same_v<TD, IC<1>> == true)
+          return FlatVector(size, data);
+        else
+          return SliceVector(size, dist, data);
+      }
+  }
+
+  
   template <int H, int W, typename T> class Mat;
   // template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class BareSliceMatrix;
@@ -78,15 +100,15 @@ namespace ngbla
     template <typename T2>
     INLINE explicit FlatMatrix (const MatExpr<T2> & m)
       : h(m.Height()), w(m.Width()),
-        data(const_cast<T*>(&m.Spec()(0,0)))  
+        data(const_cast<T*>(m.Spec().Data()))  
     {
       static_assert(ORD == m.Ordering());
     }
   
     /// useful to put FlatMatrix over other Mat
     template <int H, int W>
-    INLINE FlatMatrix (const Mat<H,W,TSCAL> & m) throw()
-      : h(H), w(W), data(const_cast<T*>(&m(0,0)))
+    INLINE FlatMatrix (const Mat<H,W,TSCAL> & m)
+      : h(H), w(W), data(const_cast<T*>(m.Data()))
     { ; }
 
     // do nothing 
@@ -101,7 +123,7 @@ namespace ngbla
     }
   
     /// set size, and assign mem
-    INLINE void AssignMemory (size_t ah, size_t aw, T * mem) throw()
+    INLINE void AssignMemory (size_t ah, size_t aw, T * mem) 
     {
       h = ah;
       w = aw;
@@ -138,7 +160,7 @@ namespace ngbla
     static constexpr auto Ordering() { return ORD; } 
     
     /// copy size and pointers
-    INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
+    INLINE FlatMatrix & Assign (const FlatMatrix & m) 
     {
       h = m.h;
       w = m.w;
@@ -289,7 +311,7 @@ namespace ngbla
       : h(ah), w(ah), data(lh.Alloc<T>(ah*ah)) { ; }
   
     /// copy constructor. copies pointers, not contents
-    INLINE FlatMatrix (const FlatMatrix & m) throw () 
+    INLINE FlatMatrix (const FlatMatrix & m) 
       : h(m.h), w(m.w) , data(m.data)
     { ; }
   
@@ -313,7 +335,7 @@ namespace ngbla
     }
   
     /// set size, and assign mem
-    INLINE void AssignMemory (int ah, int aw, T * mem) throw()
+    INLINE void AssignMemory (int ah, int aw, T * mem) 
     {
       h = ah;
       w = aw;
@@ -345,7 +367,7 @@ namespace ngbla
     INLINE tuple<size_t, size_t> Shape() const { return { h, w }; }
     
     /// copy size and pointers
-    INLINE FlatMatrix & Assign (const FlatMatrix & m) throw()
+    INLINE FlatMatrix & Assign (const FlatMatrix & m) 
     {
       h = m.h;
       w = m.w;
@@ -423,40 +445,6 @@ namespace ngbla
     {
       return tuple(Cols(0,split), Cols(split, Width()));
     }
-
-    
-    
-    /*
-    using CMCPMatExpr<FlatMatrix<T> >::Rows;
-    using CMCPMatExpr<FlatMatrix<T> >::Cols;
-
-    const FlatMatrix Rows (int first, int next) const
-    {
-      return FlatMatrix (next-first, w, data+first*w);
-    }
-
-    const SliceMatrix<T> Cols (int first, int next) const
-    {
-      return SliceMatrix<T> (h, next-first, w, data+first);
-    }
-
-    const FlatMatrix Rows (IntRange range) const
-    {
-      return FlatMatrix (range.Next()-range.First(), w, data+range.First()*w);
-    }
-
-    const SliceMatrix<T> Cols (IntRange range) const
-    {
-      return SliceMatrix<T> (h, range.Next()-range.First(), w, data+range.First());
-    }
-    */
-
-    /*
-    INLINE operator SliceMatrix<T,ColMajor> () const
-    {
-      return SliceMatrix<T,ColMajor> (h, w, h, data);
-    }
-    */
   };
 
 
@@ -598,8 +586,6 @@ namespace ngbla
       CMCPMatExpr<FlatMatrix<T,ORD> >::operator+= (m);
       return *this;
     }
-
-    
   };
 
 
@@ -619,8 +605,6 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     typedef Vec<H, typename mat_traits<T>::TV_COL> TV_COL;
     typedef Vec<W, typename mat_traits<T>::TV_ROW> TV_ROW;
-    // enum { HEIGHT = H };
-    // enum { WIDTH  = W };
 
     /// do not initialize 
     constexpr Mat () = default;
@@ -631,14 +615,6 @@ namespace ngbla
     template <typename T2>
     Mat (const Mat<H,W,T2> & m2) : data(m2.HTData()) { ; }
 
-    /*
-    /// copy matrix
-    INLINE Mat (const Mat & m) 
-      : MatExpr<Mat> ()
-    {
-      (*this) = m;
-    }
-    */
     /// assign values
     template<typename TB>
     INLINE Mat (const Expr<TB> & m)
@@ -831,7 +807,7 @@ namespace ngbla
     }
 
     /// fill with scalar
-    DiagMat (TSCAL s) throw()    
+    DiagMat (TSCAL s) 
     {
       for (int i = 0; i < H; i++)
         data[i] = s;
@@ -847,7 +823,7 @@ namespace ngbla
     }
 
     /// copy matrix
-    DiagMat & operator= (const DiagMat & m) throw()
+    DiagMat & operator= (const DiagMat & m) 
     {
       for (int i = 0; i < H; i++)
         data[i] = m.data[i];
@@ -855,7 +831,7 @@ namespace ngbla
     }
  
     /// fill values
-    DiagMat & operator= (TSCAL s) throw()
+    DiagMat & operator= (TSCAL s) 
     {
       for (int i = 0; i < H; i++)
         data[i] = s;
@@ -877,9 +853,9 @@ namespace ngbla
     TELEM operator() (int i, int j) const { return (i==j) ? data[i] : 0; }
 
     /// the height
-    constexpr size_t Height () const throw() { return H; }
+    constexpr size_t Height () const { return H; }
     /// the width
-    constexpr size_t  Width () const throw() { return H; }
+    constexpr size_t  Width () const { return H; }
     
     enum { IS_LINEAR = 0 };
   };
@@ -889,203 +865,255 @@ namespace ngbla
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-  /**
-     A Matrix with width known at compile time
-     No memory allocation/deallocation. User must provide memory.
-  */
-  template <int W, typename T = double, int DIST = W>
-  class FlatMatrixFixWidth : 
-    public CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST>>
+  template <int DIM, typename T=double, int DIST=DIM, ORDERING ORD=RowMajor>
+  class FlatMatrixFixInner :
+    public CMCPMatExpr<FlatMatrixFixInner<DIM,T,DIST,ORD>>
   {
   protected:
     /// the data
     T *  __restrict data;
     /// the height
-    size_t h;
+    size_t size;
+    
   public:
     /// entry type
     typedef T TELEM;
     /// scalar type of entry
     typedef typename mat_traits<T>::TSCAL TSCAL;
+    
+    enum { IS_LINEAR = (DIM == DIST) && (ORD==RowMajor) }; 
+    enum { COL_MAJOR = (ORD==ColMajor) };
 
-    enum { IS_LINEAR = (W == DIST) }; 
+    
+    INLINE FlatMatrixFixInner () { ; }    
+    INLINE FlatMatrixFixInner (size_t asize, T * adata) 
+      : data(adata), size(asize) { ; }
 
-    /// nothing done in default constructor
-    INLINE FlatMatrixFixWidth () { ; }
-  
-    /// set height and mem
-    INLINE FlatMatrixFixWidth (size_t ah, T * adata) throw()
-      : data(adata), h(ah) { ; }
+    INLINE FlatMatrixFixInner (size_t asize, LocalHeap & lh) 
+      : data(lh.Alloc<T>(asize*DIST)), size(asize) { ; }
 
-    /// allocates at local heap
-    INLINE FlatMatrixFixWidth (size_t ah, LocalHeap & lh) 
-      : data(lh.Alloc<T>(ah*DIST)), h(ah) { ; }
-  
-    /// copy constructor. copies pointers, not contents
-    INLINE FlatMatrixFixWidth (const FlatMatrixFixWidth & m)
-      : data(m.data), h(m.h)
-    { ; }
+
 
     /// copy constructor. copies pointers, not contents
-    INLINE FlatMatrixFixWidth (const FlatMatrix<TSCAL> & m) 
-      : data(const_cast<T*> (&m(0))), h(m.Height())
+    INLINE FlatMatrixFixInner (FlatMatrix<T,ORD> m) 
+      : data(m.Data()), size(ORD==RowMajor?m.Height():m.Width())
     { ; }
 
     template <int H>
-    INLINE FlatMatrixFixWidth (const Mat<H,W,TSCAL> & m) 
-      : data(const_cast<T*>(&m(0,0))), h(H)
-    { ; }  
+    INLINE FlatMatrixFixInner (const Mat<H,DIM,TSCAL> & m) 
+      : data(const_cast<T*>(m.Data())), size(H)
+    {
+      static_assert(ORD==RowMajor);
+    }  
+
+
+    
+    /// set size, and assign mem
+    INLINE void AssignMemory (size_t asize, LocalHeap & lh) 
+    {
+      size = asize;
+      data = lh.Alloc<T> (size*DIST);
+    }
 
     /// set size, and assign mem
-    INLINE void AssignMemory (size_t ah, LocalHeap & lh) 
+    INLINE void AssignMemory (size_t asize, T * mem) 
     {
-      h = ah;
-      data = lh.Alloc<T> (h*DIST);
-    }
-  
-    /// set size, and assign mem
-    INLINE void AssignMemory (size_t ah, T * mem) throw()
-    {
-      h = ah;
+      size = asize;
       data = mem;
     }
-  
 
+
+    /// copy size and pointers
+    INLINE auto & Assign (const FlatMatrixFixInner & m)
+    {
+      size = m.size;
+      data = m.data;
+      return *this;
+    }
+    
+    
     /// assign contents
     template<typename TB>
-    INLINE const FlatMatrixFixWidth & operator= (const Expr<TB> & m) const
+    INLINE const auto & operator= (const Expr<TB> & m) const
     {
-      return CMCPMatExpr<FlatMatrixFixWidth>::operator= (m);
+      return CMCPMatExpr<FlatMatrixFixInner>::operator= (m);
     }
 
-    /// copy contents
-    INLINE const FlatMatrixFixWidth & operator= (const FlatMatrixFixWidth & m) const throw()
+    auto Size() const { return size; }
+
+    auto Height() const
     {
-      if (W == DIST)
-        for (size_t i = 0; i < h*W; i++)
+      if constexpr (ORD==RowMajor)
+        return size;
+      else
+        return IC<DIM>();
+    }
+
+    auto Width() const
+    {
+      if constexpr (ORD==RowMajor)
+        return IC<DIM>();
+      else
+        return size;
+    }
+
+    INLINE constexpr auto Dist() { return DIST; }    
+    
+    INLINE auto View() const { return *this; } 
+    INLINE auto Shape() const { return tuple(Height(), Width()); }
+
+    INLINE T* Data() const noexcept { return data; }
+    
+    /// access operator, linear access
+    INLINE TELEM & operator() (size_t i) const
+    {
+      static_assert (DIM==DIST);
+      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
+      return data[i]; 
+    }
+
+    INLINE TELEM * Addr(size_t i, size_t j) const
+    {
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
+      if constexpr (ORD==RowMajor)      
+        return data+i*DIST+j;
+      else
+        return data+j*DIST+i;
+    }
+
+    
+    /// access operator
+    INLINE TELEM & operator() (size_t i, size_t j) const
+    {
+      return *Addr(i,j);
+      /*
+      NETGEN_CHECK_RANGE(i, 0, Height());
+      NETGEN_CHECK_RANGE(j, 0, Width());
+      if constexpr (ORD==RowMajor)
+        return data[i*DIST+j];
+      else
+        return data[j*DIST+i];
+      */
+    }
+
+
+
+
+    /// copy contents
+    INLINE const auto & operator= (const FlatMatrixFixInner & m) const 
+    {
+      if (DIM == DIST)
+        for (size_t i = 0; i < size*DIM; i++)
           data[i] = m(i);
       else
-        for (size_t i = 0; i < h; i++)
-          for (size_t j = 0; j < W; j++)
-            (*this)(i,j) = m(i,j);
+        for (size_t i = 0; i < size; i++)
+          for (size_t j = 0; j < DIM; j++)
+            data[i*DIST+j] = m.data[i*DIST+j];
+            // (*this)(i,j) = m(i,j);
         
       return *this;
     }
 
     /// assign constant
-    INLINE const FlatMatrixFixWidth & operator= (TSCAL s) const throw()
+    INLINE const auto & operator= (TSCAL s) const 
     {
-      if (W == DIST)
-        for (size_t i = 0; i < h*W; i++)
+      if (DIM == DIST)
+        for (size_t i = 0; i < size*DIM; i++)
           data[i] = s; 
       else
-        for (size_t i = 0; i < h; i++)
-          for (size_t j = 0; j < W; j++)
-            (*this)(i,j) = s;
+        for (size_t i = 0; i < size; i++)
+          for (size_t j = 0; j < DIM; j++)
+            data[i*DIST+j] = s;
+            // (*this)(i,j) = s;
         
       return *this;
     }
 
-    INLINE auto View() const { return *this; } 
-    INLINE auto Shape() const { return tuple(h,IC<W>()); }
-    
-    /// copy size and pointers
-    INLINE const FlatMatrixFixWidth & Assign (const FlatMatrixFixWidth & m) throw()
-    {
-      h = m.h;
-      data = m.data;
-      return *this;
-    }
 
-    INLINE T* Data() const noexcept { return data; }
 
-    /// access operator, linear access
-    INLINE TELEM & operator() (size_t i) const
-    {
-      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
-      return data[i]; 
-    }
-
-    /// access operator
-    INLINE TELEM & operator() (size_t i, size_t j) const
-    {
-      NETGEN_CHECK_RANGE(i, 0, Height());
-      NETGEN_CHECK_RANGE(j, 0, Width());
-      return data[i*DIST+j]; 
-    }
-
-    /// the height
-    INLINE size_t Height () const throw() { return h; }
-
-    /// the width
-    INLINE constexpr auto Width () const throw() { return IC<W>(); }
-    INLINE constexpr auto Dist() { return DIST; }
     ///
-    INLINE operator const FlatMatrix<T>() const { return FlatMatrix<T> (h, W, data); }
-
-    auto AsVector() const
+    INLINE const auto Row (size_t i) const
     {
-      return FlatVector<T> (h*W, data);
+      if constexpr (ORD==RowMajor)
+        return FlatVec<DIM,T> (Addr(i,0));
+      else
+        return SliceVector<T> (size, DIST, Addr(i,0));
     }
 
-    
-    ///
-    INLINE const FlatVec<W,T> Row (size_t i) const
+    INLINE const auto Col (size_t i) const
     {
-      return FlatVec<W,T> (&(*this)(i,0));
+      if constexpr (ORD==RowMajor)
+        return FixSliceVector<DIST,T> (size, Addr(0,i));
+      else
+        return FlatVec<DIM,T> ( Addr(0,i) );       
     }
 
-    INLINE const FixSliceVector<DIST,T> Col (size_t i) const
+    using CMCPMatExpr<FlatMatrixFixInner<DIM,T,DIST,ORD>>::Rows;
+    using CMCPMatExpr<FlatMatrixFixInner<DIM,T,DIST,ORD>>::Cols;
+
+    INLINE const auto Rows (size_t first, size_t next) const
     {
-      return FixSliceVector<DIST,T> (h, &data[i]);
+      if constexpr (ORD==RowMajor)      
+        return FlatMatrixFixInner (next-first, Addr(first, 0));
+      else
+        return SliceMatrix<T,ORD> (next-first, size, DIST, Addr(first,0));
     }
 
-    using CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST> >::Rows;
-    using CMCPMatExpr<FlatMatrixFixWidth<W,T,DIST> >::Cols;
-
-    INLINE const FlatMatrixFixWidth Rows (size_t first, size_t next) const
+    INLINE const auto Cols (size_t first, size_t next) const
     {
-      return FlatMatrixFixWidth (next-first, data+first*DIST);
+      if constexpr (ORD==RowMajor)            
+        return SliceMatrix<T,ORD> (size, next-first, DIST, Addr(0,first));
+      else
+        return FlatMatrixFixInner (next-first, Addr(0,first));        
     }
 
-    INLINE const SliceMatrix<T> Cols (size_t first, size_t next) const
-    {
-      return SliceMatrix<T> (h, next-first, DIST, data+first);
-    }
-
-    INLINE const FlatMatrixFixWidth Rows (IntRange range) const
+    INLINE const auto Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
 
-    INLINE const SliceMatrix<T> Cols (IntRange range) const
+    INLINE const auto Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
 
-    INLINE operator SliceMatrix<T> () const
+    
+    
+    ///
+    INLINE operator const FlatMatrix<T,ORD>() const
     {
-      return SliceMatrix<T> (h, W, DIST, data);
+      static_assert(DIM==DIST);
+      return FlatMatrix<T,ORD> (Height(), Width(), data);
     }
-
-    INLINE operator BareSliceMatrix<T,RowMajor> () const
+    
+    operator SliceMatrix<T,ORD> () const
     {
-      return BareSliceMatrix<T,RowMajor> (DIST, data, DummySize(Shape()) );
+      return SliceMatrix<T,ORD> (Height(), Width(), DIST, data);
     }
+    
+    operator BareSliceMatrix<T,ORD> () const
+    {
+      return BareSliceMatrix<T,ORD> (DIST, data, DummySize(Shape()));
+    }
+    
+    
+    auto AsVector() const
+    {
+      static_assert(DIM==DIST);
+      return FlatVector<T> (Height()*Width(), data);
+    }
+    
+    
   };
 
+
+
+
+  template <int W, typename T = double, int DIST=W>
+  using FlatMatrixFixWidth = FlatMatrixFixInner<W,T,DIST,RowMajor>;
+
+  
 
   /**
      A Matrix class with memory allocation/deallocation
@@ -1117,11 +1145,11 @@ namespace ngbla
     template<typename TB>
     INLINE MatrixFixWidth & operator= (const Expr<TB> & m)
     {
-      MatExpr<FlatMatrixFixWidth<W,T> >::operator= (m);
+      FlatMatrixFixWidth<W,T>::operator= (m);
       return *this;
     }
 
-    INLINE MatrixFixWidth & operator= (const MatrixFixWidth & m) throw()
+    INLINE MatrixFixWidth & operator= (const MatrixFixWidth & m) 
     {
       FlatMatrixFixWidth<W,T>::operator= (m);
       return *this;
@@ -1149,224 +1177,15 @@ namespace ngbla
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  
-
-
   /**
      A Matrix which height is known at compile time
      No memory allocation/deallocation. User must provide memory.
      Matrix is stored colum-wise
   */
-  template <int H, typename T = double, int SLICE = H, ORDERING ORD = ColMajor>
-  class FlatMatrixFixHeight : public CMCPMatExpr<FlatMatrixFixHeight<H,T,SLICE,ORD> >
-  {
-  protected:
-    /// the data
-    T * __restrict data;
-    /// the width
-    size_t w;
-  public:
-    ///
-    typedef T TELEM;
-    ///
-    typedef typename mat_traits<T>::TSCAL TSCAL;
 
-    /// 
-    FlatMatrixFixHeight () : data(0), w(0) { ; }
+  template <int H, typename T = double, int DIST=H>
+  using FlatMatrixFixHeight = FlatMatrixFixInner<H,T,DIST,ColMajor>;
   
-    /// set height and mem
-    FlatMatrixFixHeight (size_t aw, T * adata) 
-      : data(adata), w(aw) { ; }
-
-    /// allocates at local heap
-    FlatMatrixFixHeight (size_t aw, LocalHeap & lh) 
-      : data(lh.Alloc<T>(aw*SLICE)), w(aw) { ; }
-  
-    /// copy constructor. copies pointers, not contents
-    FlatMatrixFixHeight (const FlatMatrixFixHeight & m)
-      : data(m.data), w(m.w)
-    { ; }
-  
-
-    // do nothing 
-    // ~FlatMatrixFixHeight () throw() { ; }
-    
-    /// set size, and assign mem
-    void AssignMemory (int aw, LocalHeap & lh) 
-    {
-      w = aw;
-      data = (T*)lh.Alloc(w*SLICE*sizeof(T));
-    }
-  
-    /// set size, and assign mem
-    void AssignMemory (int aw, T * mem) 
-    {
-      w = aw;
-      data = mem;
-    }
-  
-
-    /// assign contents
-    template<typename TB>
-    const FlatMatrixFixHeight & operator= (const Expr<TB> & m) const
-    {
-      for (size_t j = 0; j < w; j++)
-        for (size_t i = 0; i < H; i++)
-          (*this)(i,j) = m.Spec()(i,j);
-      return *this;
-    }
-
-    /// copy contents
-    const FlatMatrixFixHeight & operator= (const FlatMatrixFixHeight & m) const
-    {
-      if (H == SLICE)
-        for (size_t i = 0; i < w*H; i++)
-          data[i] = m(i);
-      else
-        for (size_t j = 0; j < w; j++)
-          for (size_t i = 0; i < H; i++)
-            (*this)(i,j) = m(i,j);
-      
-      return *this;
-    }
-
-    /// assign constant
-    FlatMatrixFixHeight & operator= (TSCAL s)
-    {
-      if (H == SLICE)
-        for (size_t i = 0; i < w*H; i++)
-          data[i] = s; 
-      else
-        for (size_t j = 0; j < w; j++)
-          for (size_t i = 0; i < H; i++)
-            (*this)(i,j) = s;
-        
-      return *this;
-    }
-
-    /// copy size and pointers
-    FlatMatrixFixHeight & Assign (const FlatMatrixFixHeight & m)
-    {
-      w = m.w;
-      data = m.data;
-      return *this;
-    }
-
-    INLINE auto View() const { return *this; } 
-    INLINE auto Shape() const { return tuple(IC<H>(), w); }
-    
-    /*
-    /// access operator, linear access
-    TELEM & operator() (int i)
-    { 
-      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
-      return data[i]; 
-    }
-
-    /// access operator
-    TELEM & operator() (int i, int j) 
-    {
-      NETGEN_CHECK_RANGE(i, 0, Height());
-      NETGEN_CHECK_RANGE(j, 0, Width());
-      return data[i+j*SLICE]; 
-    }
-    */
-
-    /// access operator, linear access
-    TELEM & operator() (size_t i) const
-    {
-      NETGEN_CHECK_RANGE(i, 0, Height()*Width());
-      return data[i]; 
-    }
-
-    /// access operator
-    TELEM & operator() (size_t i, size_t j) const
-    {
-      NETGEN_CHECK_RANGE(i, 0, Height());
-      NETGEN_CHECK_RANGE(j, 0, Width());
-      return data[i+j*SLICE]; 
-    }
-
-
-    /// the height
-    size_t Height () const { return H; }
-
-    /// the width
-    size_t Width () const { return w; }
-
-    auto Dist() const { return SLICE; }
-    
-    INLINE T* Data() const noexcept { return data; }
-
-    const FlatVec<H,T> Col (int i) const
-    {
-      return FlatVec<H,T> ( data+i*H ); 
-    }
-
-    const SliceVector<T> Row (int i) const
-    {
-      return SliceVector<T> (w, SLICE, &data[i]);
-    }
-
-
-    const FlatMatrixFixHeight Cols (size_t first, size_t next) const
-    {
-      return FlatMatrixFixHeight (next-first, data+first*SLICE);
-    }
-
-    const FlatMatrixFixHeight Cols (IntRange range) const
-    {
-      return FlatMatrixFixHeight (range.Size(), data+range.First()*SLICE);
-    }
-
-    const SliceMatrix<T,ColMajor>
-    Rows (size_t first, size_t next) const
-    { 
-      return SliceMatrix<T,ColMajor> (next-first, w, SLICE, data+first);
-    }
-
-    const SliceMatrix<T,ColMajor>    
-    Rows (IntRange range) const // -> decltype (this->Rows (range.First(), range.Next()))
-    { 
-      return Rows (range.First(), range.Next());
-    }
-
-    template <size_t ROWS>
-    auto Rows(size_t first)
-    {
-      return FlatMatrixFixHeight<ROWS,T,SLICE> (w, data+first);
-    }
-    
-    operator FlatMatrix<T,ColMajor> () const
-    {
-      static_assert(H==SLICE, "MatrixFixHeight to FlatMatrix, but slice != height");
-      return FlatMatrix<T,ColMajor> (H, w, data);
-    }
-
-    operator SliceMatrix<T,ColMajor> () const
-    {
-      return SliceMatrix<T,ColMajor> (H, w, SLICE, data);
-    }
-
-
-    enum { IS_LINEAR = 0 };
-    enum { COL_MAJOR = 1 }; 
-  };
 
 
   /**
@@ -1419,13 +1238,6 @@ namespace ngbla
 
 
 
-
-
-
-
-
-
-
   template <typename T, ORDERING ORD>
   class SliceMatrix : public CMCPMatExpr<SliceMatrix<T,ORD>>
   {
@@ -1452,7 +1264,7 @@ namespace ngbla
     // INLINE SliceMatrix & operator= (const SliceMatrix &) = delete;
 
     /// set height, width, and mem
-    INLINE SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
+    INLINE SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) 
       : h(ah), w(aw), dist(adist), data(adata) { ; }
 
     SliceMatrix (FlatMatrix<T,ORD> mat)
@@ -1461,72 +1273,39 @@ namespace ngbla
 
 
     template<int W, int DIST>
-    SliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat)
+    SliceMatrix (FlatMatrixFixInner<W,T,DIST,ORD> mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
 
-    // nonsense, only for overload being taken
-    template<int W, int DIST>
-    SliceMatrix (FlatMatrixFixHeight<W,T,DIST,ORD> mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data()) { } 
-
-    
 
     template<int H, int W>
     INLINE SliceMatrix (Mat<H,W,T> & mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
-    { ; }
+    {
+      static_assert(ORD==RowMajor);
+    }
 
     template<int H, int W>    
     INLINE SliceMatrix(const Mat<H,W,const T> & mat) 
-      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(const_cast<T*>(mat.Data())) { } 
-    
-    /*
-    /// assign contents
-    template<typename TB>
-    INLINE const SliceMatrix & operator= (const Expr<TB> & m) 
+      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(const_cast<T*>(mat.Data()))
     {
-      return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
-    }
-    */
+      static_assert(ORD==RowMajor);
+    } 
     
+
+    /// assign contents
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
     {
       return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
-    /*
-    INLINE SliceMatrix operator= (const SliceMatrix & m) 
-    {
-      return MatExpr<SliceMatrix<T,ORD>>::operator= (m);
-    }
-    */
-    
     INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
       return CMCPMatExpr<SliceMatrix<T,ORD>>::operator= (m);
     }
 
-    /*
-    template<int W>
-    const SliceMatrix & operator= (const FlatMatrixFixWidth<W,T> & m) const
-    {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
-    }
-    template<int W>
-    const SliceMatrix & operator= (const MatrixFixWidth<W,T> & m) const
-    {
-      return CMCPMatExpr<SliceMatrix>::operator= (m);
-    }
-    template <typename TA, typename TB>
-    const SliceMatrix & operator= (const LapackProduct<TA, TB> & prod) const
-    {
-      LapackMult (prod.A(), prod.B(), *this);
-      return *this;
-    }
-    */
-
+    
     /// assign constant
     INLINE const SliceMatrix & operator= (TSCAL s) const
     {
@@ -1539,21 +1318,24 @@ namespace ngbla
             data[i*dist+j] = s;
         }
       */
-      if (w == 0) return *this;
+      size_t hw = (ORD == RowMajor) ? w : h;
+      size_t hh = (ORD == RowMajor) ? h : w;
+      
+      if (hw == 0) return *this;
       size_t i = 0, base = 0;
-      for ( ; i+1 < h; i+=2, base += 2*dist)
+      for ( ; i+1 < hh; i+=2, base += 2*dist)
         {
-          __assume (w > 0);
-          for (auto j : Range(w))
+          __assume (hw > 0);
+          for (auto j : Range(hw))
             {
               data[base+j] = s;
               data[base+dist+j] = s;
             }
         }
-      if (i < h)
+      if (i < hh)
         {
-          __assume (w > 0);
-          for (auto j : Range(w))            
+          __assume (hw > 0);
+          for (auto j : Range(hw))            
             data[base+j] = s;
         }
       return *this;
@@ -1562,13 +1344,21 @@ namespace ngbla
     INLINE auto View() const { return *this; }     
     INLINE auto Shape() const { return tuple(h,w); }
 
+    INLINE TELEM * Addr(size_t i, size_t j) const
+    {
+      if constexpr (ORD==RowMajor)      
+        return data+i*dist+j;
+      else
+        return data+j*dist+i;
+    }
+
     
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
       NETGEN_CHECK_RANGE(j, 0, Width());
-      return data[i*dist+j]; 
+      return *Addr(i,j);
     }
 
     /// access operator, linear access
@@ -1578,24 +1368,31 @@ namespace ngbla
       return data[i]; 
     }
 
-    /// the height
-    INLINE size_t Height () const throw() { return h; }
+    INLINE auto RowDist() const
+    {
+      if constexpr (ORD==RowMajor)
+        return IC<1>();
+      else
+        return dist;
+    }
 
-    /// the width
-    INLINE size_t Width () const throw() { return w; }
+    INLINE auto ColDist() const
+    {
+      if constexpr (ORD==RowMajor)
+        return dist;
+      else
+        return IC<1>();
+    }
 
-    /// 
-    INLINE size_t Dist () const throw() { return dist; }
     
-    INLINE T* Data() const noexcept { return data; }
+    INLINE auto Height () const { return h; }
+    INLINE auto Width () const { return w; }
+    INLINE auto Dist () const { return dist; }
+    INLINE T* Data() const  { return data; }
 
     using CMCPMatExpr<SliceMatrix>::Rows;
     using CMCPMatExpr<SliceMatrix>::Cols;
 
-    INLINE const SliceMatrix Rows (size_t first, size_t next) const
-    {
-      return SliceMatrix (next-first, w, dist, data+first*dist);
-    }
 
     INLINE auto SplitRows (size_t split) const
     {
@@ -1607,34 +1404,42 @@ namespace ngbla
       return tuple(Cols(0,split), Cols(split, Width()));
     }
     
-    INLINE const FlatVector<T> Row (size_t i) const
+    INLINE const auto Row (size_t i) const
     {
-      return FlatVector<T> (w, &data[i*dist]);
+      return make_VectorView(Width(), RowDist(), Addr(i,0));
     }
 
-    INLINE const SliceVector<T> Col (size_t i) const
+    INLINE const auto  Col (size_t i) const
     {
-      return SliceVector<T> (h, dist, &data[i]);
+      return make_VectorView(Height(), ColDist(), Addr(0,i));
     }
 
-    INLINE const SliceMatrix<T> Cols (size_t first, size_t next) const
+    INLINE const auto Cols (size_t first, size_t next) const
     {
-      return SliceMatrix<T> (h, next-first, dist, data+first);
+      return SliceMatrix (h, next-first, dist, Addr(0,first));
     }
 
-    INLINE const SliceMatrix Rows (IntRange range) const
+    INLINE const auto Rows (size_t first, size_t next) const
+    {
+      return SliceMatrix (next-first, w, dist, Addr(first, 0));
+    }
+
+    INLINE const auto Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
 
-    INLINE const SliceMatrix<T> Cols (IntRange range) const
+    INLINE const auto Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
 
     INLINE const SliceVector<T> Diag () const
     {
-      return SliceVector<T> (h, dist+1, &data[0]);
+      if (ORD == RowMajor)
+        return SliceVector<T> (h, dist+1, data);
+      else
+        return SliceVector<T> (w, dist+1, data);
     }
 
     INLINE const SliceVector<T> Diag (int offset) const
@@ -1642,168 +1447,34 @@ namespace ngbla
       // return SliceVector<T> (h, dist+1, data);
       int dp = std::max(offset, 0);
       int dm = std::min(offset, 0);
-      return SliceVector<T> (min(w-dp, h+dm), dist+1, data+dp-dm*dist);
+      if (ORD == RowMajor)      
+        return SliceVector<T> (min(w-dp, h+dm), dist+1, data+dp-dm*dist);      
+      else
+        return SliceVector<T> (min(w-dp, h+dm), dist+1, data-dm+dp*dist);
     }
-
-
   };
 
 
 
 
-  template <typename T>
-  class SliceMatrix<T,ColMajor> : public CMCPMatExpr<SliceMatrix<T,ColMajor> >
-  {
-  protected:
-    /// the height
-    size_t h;
-    /// the width
-    size_t w;
-    /// the distance
-    size_t dist;
-    /// the data
-    T * __restrict data;
-  public:
-
-    /// element type
-    typedef T TELEM;
-    /// scalar type of elements (double or Complex)
-    typedef typename mat_traits<T>::TSCAL TSCAL;
-    enum { IS_LINEAR = 0 };
-    enum { COL_MAJOR = 1 }; 
 
 
-    /// set height, width, and mem
-    INLINE SliceMatrix (size_t ah, size_t aw, size_t adist, T * adata) throw ()
-      : h(ah), w(aw), dist(adist), data(adata) { ; }
-
-    INLINE SliceMatrix (FlatMatrix<T,ColMajor> mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
-    { ; }
-
-    template<int W, int DIST>
-    SliceMatrix (FlatMatrixFixHeight<W,T,DIST,ColMajor> mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data()) { } 
-    
-    /// assign contents
-    template<typename TB>
-    INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
-    {
-      return CMCPMatExpr<SliceMatrix<T,ColMajor>>::operator= (m);
-    }
-
-    INLINE const SliceMatrix & operator= (const SliceMatrix<T,ColMajor> & m) const
-    {
-      return CMCPMatExpr<SliceMatrix<T,ColMajor>>::operator= (m);
-    }
-
-    /// assign constant
-    INLINE const SliceMatrix & operator= (TSCAL s) const throw()
-    {
-      for (size_t i = 0; i < w; i++)
-        for (size_t j = 0; j < h; j++)
-          data[i*dist+j] = s;
-      return *this;
-    }
-
-    INLINE auto View() const { return *this; }     
-    INLINE tuple<size_t, size_t> Shape() const { return { h, w }; }
-    
-    /// access operator
-    INLINE TELEM & operator() (size_t i, size_t j) const
-    {
-      return data[j*dist+i]; 
-    }
-
-    /// access operator, linear access
-    INLINE TELEM & operator() (size_t i) const
-    {
-      return data[i]; 
-    }
-
-    /// the height
-    INLINE size_t Height () const throw() { return h; }
-
-    /// the width
-    INLINE size_t Width () const throw() { return w; }
-
-    /// 
-    INLINE size_t Dist () const throw() { return dist; }
-
-    INLINE T* Data() const noexcept { return data; }
-
-    INLINE const FlatVector<T> Col (size_t i) const
-    {
-      return FlatVector<T> (h, &data[i*dist]);
-    }
-
-    INLINE const SliceVector<T> Row (size_t i) const
-    {
-      return SliceVector<T> (w, dist, &data[i]);
-    }
-
-    INLINE const SliceVector<T> Diag () const
-    {
-      return SliceVector<T> (w, dist+1, data);
-    }
-
-    INLINE const SliceVector<T> Diag (int offset) const
-    {
-      int dp = std::max(offset, 0);
-      int dm = std::min(offset, 0);
-      return SliceVector<T> (min(w-dp, h+dm), dist+1, data-dm+dp*dist);
-    }
-
-    
-    INLINE const SliceMatrix Rows (size_t first, size_t next) const
-    {
-      return SliceMatrix (next-first, w, dist, data+first);
-    }
-    INLINE const SliceMatrix Rows (IntRange range) const
-    {
-      return Rows (range.First(), range.Next());
-    }
-
-
-    INLINE const SliceMatrix Cols (size_t first, size_t next) const
-    {
-      return SliceMatrix (h, next-first, dist, data+first*dist);
-    }
-
-
-    INLINE const SliceMatrix Cols (IntRange range) const
-    {
-      return Cols (range.First(), range.Next());
-    }
-
-    INLINE auto SplitRows (size_t split) const
-    {
-      return tuple(Rows(0,split), Rows(split, Height()));
-    }
-
-    INLINE auto SplitCols (size_t split) const
-    {
-      return tuple(Cols(0,split), Cols(split, Width()));
-    }
-
-    
-  };
-
+  
   
   template <typename T, ORDERING ORDER>
   SliceMatrix<T,ORDER> make_SliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
 
-  template <int W, typename T, int DIST>
-  SliceMatrix<T,RowMajor> make_SliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat) { return mat; }
-
-  template <int H, typename T, int DIST>
-  SliceMatrix<T,ColMajor> make_SliceMatrix (FlatMatrixFixHeight<H,T,DIST> mat) { return mat; }
+  template <int DIM, typename T, int DIST, ORDERING ORDER>
+  SliceMatrix<T,ORDER> make_SliceMatrix (FlatMatrixFixInner<DIM,T,DIST,ORDER> mat) { return mat; }
 
   template <int H, int W, typename T>
   SliceMatrix<T,RowMajor> make_SliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
   
   template <typename T, ORDERING ORDER>
   SliceMatrix<T,ORDER> make_SliceMatrix (SliceMatrix<T,ORDER> mat) { return mat; }
+
+
+
 
 
   template <typename T, ORDERING ORD> 
@@ -1837,21 +1508,20 @@ namespace ngbla
     template<int H, int W>
     BareSliceMatrix (Mat<H,W,T> & mat)
       : DummySize(mat.Shape()), dist(mat.Width()), data(mat.Data())
-    { ; }
+    {
+      static_assert(ORD==RowMajor);
+    }
 
     template<int H, int W>    
     INLINE BareSliceMatrix(const Mat<H,W,const T> & mat) 
-      : DummySize(mat.Shape()), dist(mat.Width()), data(const_cast<T*>(mat.Data())) { } 
+      : DummySize(mat.Shape()), dist(mat.Width()), data(const_cast<T*>(mat.Data()))
+    {
+      static_assert(ORD==RowMajor);
+    } 
     
     template<int W, int DIST>
-    BareSliceMatrix (FlatMatrixFixWidth<W,T,DIST> mat)
+    BareSliceMatrix (FlatMatrixFixInner<W,T,DIST,ORD> mat)
       : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
-
-    // nonsense, only for overload being taken
-    template<int W, int DIST>
-    BareSliceMatrix (FlatMatrixFixHeight<W,T,DIST,ORD> mat)
-      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
-
 
 
     
@@ -1860,36 +1530,56 @@ namespace ngbla
     BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
 
     INLINE auto View() const { return *this; } 
-    
+
+
+    INLINE TELEM * Addr(size_t i, size_t j) const
+    {
+      if constexpr (ORD==RowMajor)      
+        return data+i*dist+j;
+      else
+        return data+j*dist+i;
+    }
+
     /// access operator
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
       NETGEN_CHECK_RANGE(j, 0, Width());
-      return data[i*dist+j]; 
+      return *Addr(i,j);
     }
+
     /// access operator
     INLINE TELEM & operator() (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Width()*Height());
       return data[i]; 
     }
-
-    INLINE TELEM * Addr(size_t i, size_t j) const
-    {
-      NETGEN_CHECK_RANGE(i, 0, Height());
-      NETGEN_CHECK_RANGE(j, 0, Width());
-      return data+i*dist+j;
-    }
-
-    INLINE TELEM* Data() const { return data; }
-    INLINE auto Shape() const { return tuple(DummySize::Height(), DummySize::Width()); }
-    
     using DummySize::Height;
     using DummySize::Width;
 
+
+    INLINE TELEM* Data() const { return data; }
+    INLINE auto Shape() const { return tuple(Height(), Width()); }
+
+    INLINE auto RowDist() const
+    {
+      if constexpr (ORD==RowMajor)
+        return IC<1>();
+      else
+        return dist;
+    }
+
+    INLINE auto ColDist() const
+    {
+      if constexpr (ORD==RowMajor)
+        return dist;
+      else
+        return IC<1>();
+    }
+
+    
     /// 
-    INLINE size_t Dist () const throw() { return dist; }
+    INLINE size_t Dist () const  { return dist; }
     void IncPtr (size_t inc) { data += inc; } 
     const SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
     {
@@ -1898,24 +1588,35 @@ namespace ngbla
       return SliceMatrix<T,ORD> (h, w, dist, data);
     }
     
-    INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
+    INLINE const auto Rows (size_t first, size_t next) const
     {
       NETGEN_CHECK_RANGE(first, 0, first==next ? Height()+1 : Height()); // always allow Rows(0,0)
       NETGEN_CHECK_RANGE(next, 0, Height()+1);
-      return BareSliceMatrix ( /* next-first, w, */ dist, data+first*dist,
-                               DummySize(next-first, DummySize::Width()));
+      return BareSliceMatrix ( dist, Addr(first, 0), DummySize(next-first, Width()));
     }
 
-    INLINE const BareSliceVector<T> Col (size_t col) const
+    INLINE const auto Col (size_t col) const
     {
       NETGEN_CHECK_RANGE(col, 0, Width());
-      return BareSliceVector<T> (data+col, dist, DummySize(DummySize::Height()));
+      return make_VectorView(Height(), ColDist(), Addr(0,col));
+      /*
+      if constexpr (ORD==RowMajor)
+        return BareSliceVector<T> (Addr(0,col), dist, DummySize(Height()));
+      else
+        return BareVector<T> (Addr(0,col), DummySize(Height()));
+      */
     }
     
-    INLINE const BareVector<T> Row (size_t i) const
+    INLINE const auto Row (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
-      return BareVector<T> (data+i*dist, DummySize(DummySize::Width()));
+      return make_VectorView(Width(), RowDist(), Addr(i,0));
+      /*
+      if constexpr (ORD==RowMajor)
+        return BareVector<T> (Addr(i,0), DummySize(Width()));
+      else
+        return BareSliceVector<T> (Addr(i,0), dist, DummySize(Width()));
+      */
     }
 
     /*
@@ -1923,25 +1624,21 @@ namespace ngbla
     {
       return SliceVector<T> (h, dist+1, data);
     }
-
-    INLINE const SliceVector<T> Col (size_t i) const
-    {
-      return SliceVector<T> (h, dist, &data[i]);
-    }
     */
+    
     INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
     {
       NETGEN_CHECK_RANGE(first, 0, first==next ? Width()+1 : Width()); // always allow Cols(0,0)
       NETGEN_CHECK_RANGE(next, 0, Width()+1);
-      return BareSliceMatrix (dist, data+first, DummySize(DummySize::Height(), next-first));
+      return BareSliceMatrix (dist, Addr(0,first), DummySize(Height(), next-first));
     }
 
-    INLINE const BareSliceMatrix Rows (IntRange range) const
+    INLINE const auto Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
 
-    INLINE const BareSliceMatrix Cols (IntRange range) const
+    INLINE const auto Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
@@ -1951,136 +1648,15 @@ namespace ngbla
       return SliceVector<T> (h, dist+1, &data[0]);
     }
     */
-    BareSliceMatrix RowSlice(size_t first, size_t adist) const
+    const auto RowSlice(size_t first, size_t adist) const
     {
+      static_assert (ORD==RowMajor);
       // NETGEN_CHECK_RANGE(first, 0, Height());  // too restrictive
       NETGEN_CHECK_RANGE(first, 0, adist);  
-      return BareSliceMatrix (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
+      return BareSliceMatrix<T,ORD> (dist*adist, data+first*dist, DummySize( Height()/adist, Width()));
     }
     
   };
-
-
-
-
-  template <typename T> 
-  class BareSliceMatrix<T,ColMajor> : public CMCPMatExpr<BareSliceMatrix<T,ColMajor>>, DummySize
-  {
-  protected:
-    /// the distance
-    size_t dist;
-    /// the data
-    T * __restrict data;
-  public:
-
-    /// element type
-    typedef T TELEM;
-    /// scalar type of elements (double or Complex)
-    typedef typename mat_traits<T>::TSCAL TSCAL;
-    enum { IS_LINEAR = 0 };
-
-    // 
-    BareSliceMatrix() : DummySize(0,0) { ; } // initialize with placement new later
-    INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
-
-    BareSliceMatrix (FlatMatrix<T,ColMajor> mat)
-      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data())
-    { ; }
-
-    BareSliceMatrix (SliceMatrix<T,ColMajor> mat)
-      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data())
-    { ; }
-
-    template<int H, int DIST>
-    BareSliceMatrix (FlatMatrixFixHeight<H,T,DIST> mat)
-      : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
-    
-    BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
-    
-    BareSliceMatrix & operator= (const BareSliceMatrix & m) = delete;
-
-    INLINE auto View() const { return *this; } 
-    INLINE auto Shape() const { return tuple(DummySize::Height(), DummySize::Width()); }
-    
-    /// access operator
-    INLINE TELEM & operator() (size_t i, size_t j) const
-    {
-      NETGEN_CHECK_RANGE(i, 0, Height());
-      NETGEN_CHECK_RANGE(j, 0, Width());
-      return data[j*dist+i]; 
-    }
-    /// access operator
-    INLINE TELEM & operator() (size_t i) const
-    {
-      NETGEN_CHECK_RANGE(i, 0, Width()*Height());
-      return data[i]; 
-    }
-
-    using DummySize::Height;
-    using DummySize::Width;
-
-    /// 
-    INLINE size_t Dist () const throw() { return dist; }
-
-    INLINE TELEM* Data() const { return data; }
-
-    const SliceMatrix<T,ColMajor> AddSize (size_t h, size_t w) const
-    {
-      NETGEN_CHECK_RANGE(h, Height(), Height()+1);
-      NETGEN_CHECK_RANGE(w, Width(), Width()+1);
-      return SliceMatrix<T,ColMajor> (h, w, dist, data);
-    }
-    
-    INLINE const BareSliceMatrix Rows (size_t first, size_t next) const
-    {
-      NETGEN_CHECK_RANGE(first, 0, next+1); // allow empty range
-      NETGEN_CHECK_RANGE(next, first, Height()+1);
-      return BareSliceMatrix (dist, data+first, DummySize(next-first, Width()));
-    }
-
-    INLINE const BareVector<T> Col (size_t i)
-    {
-      NETGEN_CHECK_RANGE(i, 0, Width());
-      return BareVector<T> (data+i*dist, DummySize(Height()));
-    }
-    
-    INLINE const BareSliceVector<T> Row (size_t i) const
-    {
-      NETGEN_CHECK_RANGE(i, 0, Height());
-      return BareSliceVector<T> (data+i, dist, DummySize(Width()));
-    }
-
-    INLINE const BareSliceMatrix Cols (size_t first, size_t next) const
-    {
-      NETGEN_CHECK_RANGE(first, 0, next+1); // allow empty range
-      NETGEN_CHECK_RANGE(next, first, Width()+1);
-      return BareSliceMatrix (dist, data+dist*first, DummySize(Height(), next-first));
-    }
-
-    INLINE const BareSliceMatrix Rows (IntRange range) const
-    {
-      return Rows (range.First(), range.Next());
-    }
-
-    INLINE const BareSliceMatrix Cols (IntRange range) const
-    {
-      return Cols (range.First(), range.Next());
-    }
-    /*
-    INLINE const SliceVector<T> Diag () const
-    {
-      return SliceVector<T> (h, dist+1, &data[0]);
-    }
-    */
-    /*
-      // a double-slice matrix ???
-    BareSliceMatrix<T> RowSlice(size_t first, size_t adist) const
-    {
-      return BareSliceMatrix<T> (dist*adist, data+first*dist, DummySize( (Height()-first)/adist, Width()));
-    }
-    */
-  };
-
 
 
 
@@ -2108,7 +1684,7 @@ namespace ngbla
     enum { IS_LINEAR = 0 };
 
     /// set height, width, and mem
-    DoubleSliceMatrix (int ah, int aw, int adistr, int adistc, T * adata) throw ()
+    DoubleSliceMatrix (int ah, int aw, int adistr, int adistc, T * adata) 
       : h(ah), w(aw), distr(adistr), distc(adistc), data(adata) { ; }
   
     /// assign contents
@@ -2119,7 +1695,7 @@ namespace ngbla
     }
 
     /// assign constant
-    DoubleSliceMatrix & operator= (TSCAL s) throw()
+    DoubleSliceMatrix & operator= (TSCAL s) 
     {
       for (size_t i = 0; i < h; i++)
         for (size_t j = 0; j < w; j++)
@@ -2145,8 +1721,8 @@ namespace ngbla
       return data[i]; 
     }
 
-    size_t Height () const throw() { return h; }
-    size_t Width () const throw() { return w; }
+    size_t Height () const { return h; }
+    size_t Width () const  { return w; }
     size_t DistRow () const { return distr; }
     size_t DistCol () const { return distc; }
     T * Data () const { return data; }
@@ -2202,32 +1778,6 @@ namespace ngbla
   }
 
 
-  /*
-  INLINE
-  FlatMatrix<double,ColMajor> Trans (FlatMatrix<double,RowMajor> mat)
-  {
-    return FlatMatrix<double,ColMajor> (mat.Width(), mat.Height(), mat.Data());
-  }
-
-  INLINE
-  FlatMatrix<Complex,ColMajor> Trans (FlatMatrix<Complex,RowMajor> mat)
-  {
-    return FlatMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Data());
-  }
-
-  INLINE
-  FlatMatrix<double,RowMajor> Trans (FlatMatrix<double,ColMajor> mat)
-  {
-    return FlatMatrix<double,RowMajor> (mat.Width(), mat.Height(), mat.Data());
-  }
-
-  INLINE
-  FlatMatrix<Complex,RowMajor> Trans (FlatMatrix<Complex,ColMajor> mat)
-  {
-    return FlatMatrix<Complex,RowMajor> (mat.Width(), mat.Height(), mat.Data());
-  }
-  */
-  
 
   template <typename T, ORDERING ord,
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
@@ -2243,31 +1793,6 @@ namespace ngbla
     return FlatMatrix<T,!ord> (mat.Width(), mat.Height(), mat.Data());
   }
 
-  /*
-  INLINE 
-  const SliceMatrix<double> Trans (SliceMatrix<double,ColMajor> mat)
-  {
-    return SliceMatrix<double> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
-  }
-
-  INLINE 
-  const SliceMatrix<Complex> Trans (SliceMatrix<Complex,ColMajor> mat)
-  {
-    return SliceMatrix<Complex> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
-  }
-
-  INLINE 
-  const SliceMatrix<double,ColMajor> Trans (SliceMatrix<double,RowMajor> mat)
-  {
-    return SliceMatrix<double,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
-  }
-
-  INLINE 
-  const SliceMatrix<Complex,ColMajor> Trans (SliceMatrix<Complex,RowMajor> mat)
-  {
-    return SliceMatrix<Complex,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
-  }
-  */
 
   template <typename T, ORDERING ord,
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
@@ -2278,24 +1803,6 @@ namespace ngbla
 
   
 
-  /*
-  // only for scalar types
-  // no Mat - entries which would also transposition of the small blocks
-  template <typename T,
-            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
-  INLINE const BareSliceMatrix<T,ColMajor> Trans (BareSliceMatrix<T,RowMajor> mat)
-  {
-    return SliceMatrix<T,ColMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
-  }
-
-  template <typename T>
-  INLINE const BareSliceMatrix<T,RowMajor> Trans (BareSliceMatrix<T,ColMajor> mat)
-  {
-    return SliceMatrix<T,RowMajor> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
-  }
-  */
-
-
   template <typename T, ORDERING ord,
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
   INLINE const BareSliceMatrix<T,!ord> Trans (BareSliceMatrix<T,ord> mat)
@@ -2304,8 +1811,16 @@ namespace ngbla
   }
 
 
+
+  template <int DIM, typename T, int DIST, ORDERING ord,
+            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
+  INLINE const auto Trans (FlatMatrixFixInner<DIM,T,DIST,ord> mat)
+  {
+    return FlatMatrixFixInner<DIM,T,DIST,!ord> (mat.Size(), mat.Data());
+  }
+
   
-  
+  // should get rid of that ...
   template <int H, int DIST>
   INLINE const FlatMatrixFixWidth<H,double,DIST> Trans (FlatMatrixFixHeight<H,double,DIST> mat)
   {
