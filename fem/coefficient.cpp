@@ -327,7 +327,7 @@ namespace ngfem
   Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const
   {
     for (int i = 0; i < ir.Size(); i++)
-      Evaluate (ir[i], values.Row(i).AddSize(Dimension())); 
+      Evaluate (ir[i], values.Row(i).Range(Dimension())); 
   }
 
   /*
@@ -1871,7 +1871,7 @@ public:
     c1->Evaluate(ir, temp1);
     c2->Evaluate(ir, result);
     for (int i = 0; i < ir.Size(); i++)
-      result.Row(i).AddSize(Dimension()) *= temp1(i,0);
+      result.Row(i).Range(Dimension()) *= temp1(i,0);
   }
 
   template <typename MIR, typename T, ORDERING ORD>
