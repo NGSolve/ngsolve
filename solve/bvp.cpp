@@ -361,16 +361,15 @@ namespace ngsolve
 
     if (solver != DIRECT)  
       {
-        if (ma) ma->PushStatus ("Iterative solver");
+        BaseStatusHandler::PushStatus ("Iterative solver");
         invmat->SetMaxSteps (maxsteps);
         invmat->SetPrecision (prec);
         invmat->SetPrintRates ();
         invmat->SetInitialize (0);
-        invmat->SetStatusHandler(ma);
 	invmat->UseSeed(useseedvariant);
       }
     else
-      if (ma) ma->PushStatus ("Direct solver");
+      BaseStatusHandler::PushStatus ("Direct solver");
 
       
     double starttime, endtime;
@@ -398,7 +397,7 @@ namespace ngsolve
 	vecu += *invmat2 * hv;
       }
 
-    if (ma) ma->PopStatus ();
+    BaseStatusHandler::PopStatus ();
     
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;
@@ -720,7 +719,7 @@ namespace ngsolve
 	  }
       }
 
-    if (ma) ma->PushStatus ("Iterative solver");
+    BaseStatusHandler::PushStatus ("Iterative solver");
 
     invmat->SetMaxSteps (maxsteps);
     invmat->SetPrecision (prec);
@@ -732,7 +731,7 @@ namespace ngsolve
 
     invmat->Mult (vecf, vecu);
 
-    if (ma) ma->PopStatus ();
+    BaseStatusHandler::PopStatus ();
     
     if (print)
       (*testout) << "Solution = " << endl << vecu << endl;

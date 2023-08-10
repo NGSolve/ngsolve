@@ -73,7 +73,7 @@ namespace ngcomp
 
     try
       {
-	ma->PushStatus ("Assemble Vector");
+        BaseStatusHandler::PushStatus ("Assemble Vector");
 	timer1.Start();
 
         // check if integrators fit to space
@@ -314,7 +314,7 @@ namespace ngcomp
 		    gcnt++;
 		    if (i % 10 == 0)
 		      cout << IM(3) << "\rassemble facet surface element " << i << "/" << nse << flush;
-		    ma->SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
+                    BaseStatusHandler::SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
 		  }
 
 		  HeapReset hr(lh);
@@ -409,7 +409,7 @@ namespace ngcomp
 		    if (i%500 == 0)
 		      {
 			cout << IM(3) << "\rassemble curvepoint " << i << "/" << parts[j]->NumCurvePoints() << flush;
-			ma->SetThreadPercentage(100.*i/parts[j]->NumCurvePoints());
+                        BaseStatusHandler::SetThreadPercentage(100.*i/parts[j]->NumCurvePoints());
 		      }
 		    
 		    FlatVector<TSCAL> elvec;
@@ -522,7 +522,7 @@ namespace ngcomp
                << setprecision(16) << L2Norm (GetVector()) << endl;
 
 
-	ma->PopStatus ();
+        BaseStatusHandler::PopStatus ();
       }
 
     catch (Exception & e)
