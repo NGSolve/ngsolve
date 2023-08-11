@@ -295,7 +295,7 @@ namespace ngfem
     LocalHeapMem<10000> lh("adddualtranheap");
     auto & trafo = GetFEElementTransformation(ElementType());
     auto & mir = trafo(ir, lh);
-    FlatVector shape(GetNDof(), lh);
+    FlatVector<> shape(GetNDof(), lh);
     for (size_t i : Range(mir))
       {
         CalcDualShape(mir[i], shape);

@@ -33,7 +33,47 @@ namespace ngbla
 
   template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
   template <typename T, ORDERING ORD> class BareSliceMatrix;
-  template <class T = double> class FlatVector;
+
+
+
+
+  template <typename T, typename TS, typename TDIST> class VectorView;
+
+  template <typename T = double>
+  using FlatVector = VectorView<T,size_t,IC<1>>;
+
+  template <typename T>
+  auto make_FlatVector (const T & v) 
+  { return FlatVector<typename T::TELEM> (v); }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToFlatVector ()
+  {
+    return is_convertible_v<T,FlatVector<TELEM>>;
+  }
+
+  /*
+  template <typename T = double>
+  using SliceVector = VectorView<T,size_t,size_t>;
+
+  template <typename T, typename TS, typename TDIST>
+  auto make_SliceVector (VectorView<T,TS,TDIST> v) -> SliceVector<T>
+  { return SliceVector<T> (v); }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToSliceVector ()
+  {
+    return is_convertible_v<T,SliceVector<TELEM>>;
+  }
+  */
+  
+
+
+
+
+  
+  
+  
   template <class T = double> class BareVector;  
   template <class T = double> class SliceVector;
   template <class T = double> class BareSliceVector;
@@ -55,6 +95,7 @@ namespace ngbla
 
 
 
+  /*
   namespace detail {
     template <typename T>
     struct test_conv_flatvector {
@@ -73,7 +114,10 @@ namespace ngbla
   {
     return detail::test_conv_flatvector<T>::value;
   }
+  */
 
+  
+  
 
   namespace detail {
     template <typename T>

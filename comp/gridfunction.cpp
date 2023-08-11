@@ -2425,7 +2425,7 @@ namespace ngcomp
 		FlatMatrix<SCAL> flux(npts, bfi2d[j]->DimFlux(), lh);
 		bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
 		for (int k = 0; k < npts; k++)
-		  mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
+		  mvalues.Row(k) += FlatVector<> (components, (double*)&flux(k,0));
 	      }
             return isdefined;
           }
@@ -2452,7 +2452,7 @@ namespace ngcomp
                     bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
 
                     for (int k = 0; k < npts; k++)
-                      mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
+                      mvalues.Row(k) += FlatVector<> (components, (double*)&flux(k,0));
                   }
                 return isdefined;
               }
@@ -2471,7 +2471,7 @@ namespace ngcomp
                     bfi2d[j]->CalcFlux (fel, mir, elu, flux, applyd, lh);
 
                     for (int k = 0; k < npts; k++)
-                      mvalues.Row(k) += FlatVector<> (components, &flux(k,0));
+                      mvalues.Row(k) += FlatVector<> (components, (double*)&flux(k,0));
                   }
                 return isdefined;
               }
@@ -2786,7 +2786,7 @@ namespace ngcomp
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
     else
-      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
+      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), (Complex*)values));
     return true;
 
       }
@@ -2817,7 +2817,7 @@ namespace ngcomp
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
     else
-      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));      
+      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), (Complex*)values));      
     return true;
 
       }
@@ -2902,7 +2902,7 @@ namespace ngcomp
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
     else
-      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
+      cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), (Complex*)values));
 
     return true;
 
@@ -2934,7 +2934,7 @@ namespace ngcomp
         if (!cf -> IsComplex())
           cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
         else
-          cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), values));
+          cf -> Evaluate (mip, FlatVector<Complex>(GetComponents(), (Complex*)values));
         
         return true;
       }

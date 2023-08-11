@@ -697,7 +697,7 @@ namespace ngcomp
                                     ud.GetMemory(proxy), lh);
       }
 
-    FlatVector ely1(ely.Size(), lh);
+    FlatVector<> ely1(ely.Size(), lh);
     FlatMatrix<> val(primary_mir.Size(), 1, lh);
 
     for (auto proxy : test_proxies)
@@ -1196,7 +1196,7 @@ namespace ngcomp
                                                 LocalHeap& lh) const
   {
     HeapReset hr(lh);
-    FlatVector elx(elmat.Height(), lh);
+    FlatVector<> elx(elmat.Height(), lh);
     elx = 0;
     CalcLinearizedElementMatrix (elx, elmat, lh);
   }

@@ -29,7 +29,7 @@ namespace ngbla
     else
       {
         if constexpr (std::is_same_v<TD, IC<1>> == true)
-          return FlatVector(size, data);
+          return FlatVector<T>(size, data);
         else
           return SliceVector(size, dist, data);
       }

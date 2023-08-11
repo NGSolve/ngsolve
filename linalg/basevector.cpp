@@ -712,7 +712,7 @@ namespace ngla
   template <class SCAL>
   FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
   {
-    return FlatVector<double> (size * entrysize, Memory());
+    return FlatVector<double> (size * entrysize, (double*)Memory());
   }
 
   template <class SCAL>

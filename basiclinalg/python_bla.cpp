@@ -411,7 +411,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
     ExportVector< FVD, VD, double>(m, "FlatVectorD")
         .def(py::init<size_t, double *>())
-        .def("Range",    static_cast</* const */ FVD (FVD::*)(size_t,size_t) const> (&FVD::Range ) )
+      .def("Range",    static_cast<const FVD (FVD::*)(size_t,size_t) const> (&FVD::Range ) )
       .def("MinMax", [](FVD vec, bool ignore_inf)
            {
              double mi = std::numeric_limits<double>::max();
@@ -429,7 +429,7 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
     ExportVector< FVC, VC, Complex>(m, "FlatVectorC")
         .def(py::self*=double())
         .def(py::init<size_t, Complex *>())
-        .def("Range",    static_cast</* const */ FVC (FVC::*)(size_t,size_t) const> (&FVC::Range ) )
+      .def("Range",    static_cast<const FVC (FVC::*)(size_t,size_t) const> (&FVC::Range ) )
       .def_property("real", py::cpp_function([] (FVC & self)
                     { return SliceVector<double> (self.Size(), 2, (double*)self.Data()); }, py::keep_alive<0,1>()),
                     [] (FVC & self, double val)

@@ -1283,10 +1283,9 @@ namespace ngbla
       shifted(i) = compress_omega2ref(ncomp-1)-compress_Ds2(i);
     for (size_t i = 0; i < ncomp; i++)
       compress_zsmod(i) *= shifted(i)+compress_omega2diff(ncomp-1);
-    
+
     for (auto & zsmod : compress_zsmod)
       zsmod = sqrt(zsmod);
-
     tzmod.Stop();
     
     for (size_t i = 0; i < compress_zs.Size(); i++)

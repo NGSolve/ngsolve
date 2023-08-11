@@ -588,7 +588,7 @@ namespace ngla
   inline FlatVector<T> BaseVector::FV () const
   {
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    return FlatVector<T> (Size(), FV<TSCAL>().Addr(0));
+    return FlatVector<T> (Size(), static_cast<T*> (static_cast<void*>(FV<TSCAL>().Addr(0))));
   }
 
 
@@ -630,7 +630,7 @@ namespace ngla
     virtual FlatVector<SCAL> FVScal () const 
     {
       return FlatVector<SCAL> (size * entrysize * sizeof(double)/sizeof(SCAL), 
-                               Memory());
+                               (SCAL*)Memory());
     }
 
 
