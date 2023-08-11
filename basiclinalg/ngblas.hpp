@@ -592,33 +592,33 @@ namespace ngbla
   
   template <> INLINE void NgGEMV<false,true> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultMatVec (a,x.SkipConst(),y);
+    MultMatVec (a,x.RemoveConst(),y);
   }
   
   template <> INLINE void NgGEMV<false,true> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultMatTransVec (Trans(a),x.SkipConst(),y);
+    MultMatTransVec (Trans(a),x.RemoveConst(),y);
   }
   
 
   template <> INLINE void NgGEMV<true,true> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultAddMatVec (1,a,x.SkipConst(),y);
+    MultAddMatVec (1,a,x.RemoveConst(),y);
   }
 
   template <> INLINE void NgGEMV<true,true> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultAddMatTransVec (1,Trans(a),x.SkipConst(),y);
+    MultAddMatTransVec (1,Trans(a),x.RemoveConst(),y);
   }
   
   template <> INLINE void NgGEMV<true,false> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultAddMatVec (-1,a,x.SkipConst(),y);
+    MultAddMatVec (-1,a,x.RemoveConst(),y);
   }
 
   template <> INLINE void NgGEMV<true,false> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultAddMatTransVec (-1,Trans(a),x.SkipConst(),y);
+    MultAddMatTransVec (-1,Trans(a),x.RemoveConst(),y);
   }
 
 
@@ -656,7 +656,7 @@ namespace ngbla
   public:
     static inline T & Assign (MatExpr<T> & self, const Expr<TB> & v)
     {
-      CopyVector(BareSliceVector(SliceVector(v.Spec())), SliceVector(self.Spec()));
+      CopyVector(make_BareSliceVector(v.Spec()), make_SliceVector(self.Spec()));
       return self.Spec();
     }
   };
@@ -752,8 +752,8 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr double POS = (std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value) ? 1 : -1;
       NgGEMV<ADD> (POS, BareSliceMatrix(prod.View().A()),
-                   BareSliceVector(prod.View().B()).Range(0, w),
-                   BareSliceVector(self.Spec()).Range(0, h));
+                   make_BareSliceVector(prod.View().B()).Range(0, w).RemoveConst(),
+                   make_BareSliceVector(self.Spec()).Range(0, h));
       return self.Spec();
     }
   };    
@@ -776,8 +776,8 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr double POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value ? 1 : -1;
       NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
-                   BareSliceVector(prod.View().B()).Range(0, w),
-                   BareSliceVector(self.Spec()).Range(0, h));
+                   make_BareSliceVector(prod.View().B()).Range(0, w),
+                   make_BareSliceVector(self.Spec()).Range(0, h));
       return self.Spec();
     }
   };

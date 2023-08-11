@@ -52,31 +52,27 @@ namespace ngbla
     return is_convertible_v<T,FlatVector<TELEM>>;
   }
 
-  /*
+
   template <typename T = double>
   using SliceVector = VectorView<T,size_t,size_t>;
 
-  template <typename T, typename TS, typename TDIST>
-  auto make_SliceVector (VectorView<T,TS,TDIST> v) -> SliceVector<T>
-  { return SliceVector<T> (v); }
+  template <typename T>
+  auto make_SliceVector (const T & v) 
+  { return SliceVector<typename T::TELEM> (v); }
   
   template <typename T, typename TELEM=typename T::TELEM>
   constexpr bool IsConvertibleToSliceVector ()
   {
     return is_convertible_v<T,SliceVector<TELEM>>;
   }
-  */
   
-
-
-
 
   
   
   
   template <class T = double> class BareVector;  
-  template <class T = double> class SliceVector;
-  template <class T = double> class BareSliceVector;
+  // template <class T = double> class SliceVector;
+  // template <class T = double> class BareSliceVector;
 
   
   template <typename T, typename TELEM=typename T::TELEM>
@@ -93,53 +89,7 @@ namespace ngbla
       is_convertible_v<T,BareSliceMatrix<TELEM, ColMajor>>;
   }
 
-
-
   /*
-  namespace detail {
-    template <typename T>
-    struct test_conv_flatvector {
-      template<typename T2>
-      static constexpr auto check(T2*) -> decltype(FlatVector(T2()));
-      template<typename>
-      static constexpr std::false_type check(...);
-      
-      using type = decltype(check<T>(nullptr));
-      static constexpr bool value = !std::is_same<type, std::false_type>::value;
-    };
-  }
-  
-  template <typename T>
-  constexpr bool IsConvertibleToFlatVector()
-  {
-    return detail::test_conv_flatvector<T>::value;
-  }
-  */
-
-  
-  
-
-  namespace detail {
-    template <typename T>
-    struct test_conv_slicevector {
-      template<typename T2>
-      static constexpr auto check(T2*) -> decltype(SliceVector(T2()));
-      template<typename>
-      static constexpr std::false_type check(...);
-      
-      using type = decltype(check<T>(nullptr));
-      static constexpr bool value = !std::is_same<type, std::false_type>::value;
-    };
-  }
-  
-  template <typename T>
-  constexpr bool IsConvertibleToSliceVector()
-  {
-    return detail::test_conv_slicevector<T>::value;
-  }
-
-  
-
   namespace detail {
     template <typename T>
     struct test_conv_bareslicevector {
@@ -158,8 +108,7 @@ namespace ngbla
   {
     return detail::test_conv_bareslicevector<T>::value;
   }
-
-  
+  */
   
 
   template <typename T>
@@ -389,6 +338,26 @@ namespace ngbla
   INLINE constexpr auto CombinedSize(tuple<T11,T12> tup1, tuple<T21,T22> tup2)
   { return tuple(CombinedSize(get<0>(tup1), get<0>(tup2)),
                  CombinedSize(get<1>(tup1), get<1>(tup2))); }
+
+
+
+
+
+  template <typename T = double>
+  using BareSliceVector = VectorView<T,undefined_size,size_t>;
+
+  template <typename T>
+  auto make_BareSliceVector (const T & v) 
+  { return BareSliceVector<typename T::TELEM> (v); }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToBareSliceVector ()
+  {
+    return is_convertible_v<T,BareSliceVector<TELEM>>;
+  }
+
+
+
   
   
   template <typename T>
@@ -674,8 +643,8 @@ namespace ngbla
     INLINE T & Assign (const Expr<ScaleExpr<TA,double>> & scaled)
     {
       AddVector (scaled.View().S(),
-                 SliceVector<typename T::TELEM>(scaled.View().A()),
-                 SliceVector<typename T::TELEM>(this->Spec()));
+                 make_SliceVector(scaled.View().A()),
+                 make_SliceVector(this->Spec()));
       return Spec();
     }
 

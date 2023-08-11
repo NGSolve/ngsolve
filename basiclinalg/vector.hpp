@@ -41,8 +41,11 @@ namespace ngbla
 
     INLINE VectorView () = default;
     
-    template <typename T2, typename TS2, enable_if_t<is_convertible<T2*,T*>::value, int> =0>
-    INLINE VectorView (const VectorView<T2,TS2,TDIST> & v2)
+    template <typename T2, typename TS2, typename TDIST2,
+              enable_if_t<is_convertible<T2*,T*>::value, int> =0,
+              enable_if_t<is_convertible<TS2,TS>::value, int> =0,
+              enable_if_t<is_convertible<TDIST2,TDIST>::value, int> =0>
+    INLINE VectorView (const VectorView<T2,TS2,TDIST2> & v2)
       : data(v2.Data()), size(v2.Size()), dist(v2.Dist()) { }
     
     INLINE VectorView (TS asize, T * adata)
@@ -78,8 +81,8 @@ namespace ngbla
     INLINE auto Shape() const { return tuple(size); }
     
 
-    INLINE size_t Height () const { return size; }
-    INLINE constexpr size_t Width () const { return 1; }
+    INLINE auto Height () const { return size; }
+    INLINE auto Width () const { return IC<1>(); }
 
     INLINE auto Range () const { return IntRange (0, size); }
 
@@ -108,10 +111,12 @@ namespace ngbla
     }
     
     /// copy vector. sizes must match
-    INLINE const auto & operator= (const VectorView & v) const
+    template <typename T2, typename TS2, typename TD2>
+    INLINE const auto & operator= (const VectorView<T2,TS2,TD2> & v) const
     {
       NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
-      for (auto i : Range())
+      auto cs = CombinedSize(this->Size(), v.Size());
+      for (size_t i = 0; i < cs; i++)
 	data[i*size] = v(i);
       return *this;
     }
@@ -132,7 +137,7 @@ namespace ngbla
     }
     
     template <int D, typename TSCAL2>
-    INLINE const auto & operator= (const Vec<D,TSCAL2> & v) const
+    INLINE const auto & operator= (const Vec<D,TSCAL2> & v) 
     {
       NETGEN_CHECK_RANGE(D,0,Size()+1);
       for (int i = 0; i < D; i++)
@@ -168,7 +173,7 @@ namespace ngbla
 
     INLINE const auto Range (size_t first, size_t next) const
     {
-      return VectorView (next-first, dist, data+first*dist);
+      return VectorView<T,size_t,TDIST> (next-first, dist, data+first*dist);
     }    
     
     INLINE const auto Range (IntRange range) const
@@ -183,7 +188,7 @@ namespace ngbla
     
     INLINE auto operator+(int i) const { return VectorView(size-i, dist, data+i*dist); }
 
-    INLINE auto SkipConst() const { return VectorView<typename remove_const<T>::type,TS,TDIST>(size, dist, const_cast<typename remove_const<T>::type*> (data)); }
+    INLINE auto RemoveConst() const { return VectorView<typename remove_const<T>::type,TS,TDIST>(size, dist, const_cast<typename remove_const<T>::type*> (data)); }
     
     INLINE const FlatMatrix<T> AsMatrix (size_t h, size_t w) const
     {
@@ -1534,6 +1539,8 @@ namespace ngbla
   };
   */
 
+
+#ifdef NONE
   /**
      A vector with non-linear data access.
      Has size and generic data-pointer. 
@@ -1720,7 +1727,7 @@ namespace ngbla
     Iterator begin() const { return Iterator (*this, 0); }
     Iterator end() const { return Iterator (*this, this->Size()); }
   };
-
+#endif
   
 #ifdef NETGEN_ENABLE_CHECK_RANGE
   // Record with and height for classes that usually have no such information
@@ -1752,6 +1759,7 @@ namespace ngbla
 #endif
 
 
+  
 
   
   template <class T>
@@ -1810,9 +1818,7 @@ namespace ngbla
   };
 
 
-
-
-  
+#ifdef OLF
   template <class T>
   class BareSliceVector : public CMCPMatExpr<BareSliceVector<T> >, DummySize
   {
@@ -1881,7 +1887,8 @@ namespace ngbla
 
   };
 
-
+#endif
+  
 
 
 
