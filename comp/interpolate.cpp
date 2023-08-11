@@ -791,7 +791,7 @@ namespace ngcomp
       v2 = Trans(elmat) * rhs;
 
       dual_fecf->Set (&interpol_fel, &v2);
-      FlatVector fvelvecu(inner_fel.GetNDof(), lh);
+      FlatVector<> fvelvecu(inner_fel.GetNDof(), lh);
       fvelvecu = elvecu;
       for (auto & hbfi : hessian_bfi)
         {

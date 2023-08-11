@@ -390,31 +390,31 @@ namespace ngfem
     //  in 3d:  area of parallelogramm (sum of intweights = 1(quad), 1/2 trig)
     // this is property is preserved by piola transformation: n = det(F) * F^(-T) n_ref
 
-    static double point_normals [][1] = 
-      { { 1 } };  // only to avoid 0-size array
+    static Vec<0> point_normals [] = 
+      { { } };  // only to avoid 0-size array
     
-    static double segm_normals [][1] = 
+    static Vec<1> segm_normals [] = 
     { { 1 },
       { -1 } };
     
-    static double trig_normals [][2] = 
+    static Vec<2> trig_normals [] = 
     { { 0, -1 },
     { -1, 0 },
     { 1, 1 } };
 
-    static double quad_normals [][2] = 
+    static Vec<2> quad_normals [] = 
     { { 0, -1 },
     { 0, 1 },
     { -1, 0 },
     { 1, 0 } };
 
-    static double tet_normals [][3] = 
+    static Vec<3> tet_normals [] = 
     { { -1, 0, 0 },
     { 0, -1, 0 },
     { 0, 0, -1 },
     { 1, 1, 1 } };
 
-    static double pyramid_normals [][3] =
+    static Vec<3> pyramid_normals []=
     {
       { 0, -1, 0 },
       { 1, 0, 1 },
@@ -423,7 +423,7 @@ namespace ngfem
       { 0, 0, -1 }, 
     };    
   
-    static double prism_normals[][3] = 
+    static Vec<3> prism_normals[] = 
     {
       { 0, 0, -1 },
       { 0, 0, 1 },
@@ -432,7 +432,7 @@ namespace ngfem
       { -1, 0, 0 },
     };
 
-    static double hex_normals[][3] = 
+    static Vec<3> hex_normals[] = 
     { 
       { 0, 0, -1 },
       { 0, 0, 1 },
@@ -442,26 +442,44 @@ namespace ngfem
       { -1, 0, 0 },
     };
 
+
+    if constexpr (D==0)
+      switch (et)
+        {
+        case ET_POINT: return FlatVector< Vec<D> > (0, point_normals);
+        default: ;
+        }
+        
+    if constexpr (D==1)
+      switch (et)
+        {
+        case ET_SEGM: return FlatVector< Vec<D> > (2, segm_normals);
+        default: ;
+        }
     
-    switch (et)
-    {
-    case ET_POINT: return FlatVector< Vec<D> > (0, point_normals);
-    case ET_SEGM: return FlatVector< Vec<D> > (2, segm_normals);
-    case ET_TRIG: return FlatVector< Vec<D> > (3, trig_normals);
-    case ET_QUAD: return FlatVector< Vec<D> > (4, quad_normals);
-    case ET_TET:  return FlatVector< Vec<D> > (4, tet_normals);
-    case ET_PYRAMID: return FlatVector< Vec<D> > (5, pyramid_normals);
-    case ET_PRISM: return FlatVector< Vec<D> > (5, prism_normals);
-    case ET_HEX: return FlatVector< Vec<D> > (6, hex_normals);
-    }
-    __assume(false);
-    /*
+    if constexpr (D==2)
+      switch (et)
+        {
+        case ET_TRIG: return FlatVector< Vec<D> > (3, trig_normals);
+        case ET_QUAD: return FlatVector< Vec<D> > (4, quad_normals);
+        default: ;
+        }
+    
+    if constexpr (D==3)
+      switch (et)
+        {
+        case ET_TET:  return FlatVector< Vec<D> > (4, tet_normals);
+        case ET_PYRAMID: return FlatVector< Vec<D> > (5, pyramid_normals);
+        case ET_PRISM: return FlatVector< Vec<D> > (5, prism_normals);
+        case ET_HEX: return FlatVector< Vec<D> > (6, hex_normals);
+        default: ;
+        }
+
     stringstream str;
     str << "Ng_GetNormals, illegal element type " << et << "\n";
     throw Exception (str.str());
-    */
   }
-
+  
 
   template NGS_DLL_HEADER FlatVector< Vec<0> > ElementTopology::GetNormals<0> (ELEMENT_TYPE et);  
   template NGS_DLL_HEADER FlatVector< Vec<1> > ElementTopology::GetNormals<1> (ELEMENT_TYPE et);

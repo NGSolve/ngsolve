@@ -72,6 +72,7 @@ namespace ngbla
                                      a.Range(i,i+r.value) = hb;
                                      b.Range(i,i+r.value) = ha;
                                    });
+
   }
   
 

@@ -1586,7 +1586,7 @@ public:
         return;
       }
     
-    STACK_ARRAY(double, hmem, 2*dim);
+    STACK_ARRAY(Complex, hmem, dim);
     FlatVector<Complex> temp(dim, hmem);
 
     c1->Evaluate (mip, result);

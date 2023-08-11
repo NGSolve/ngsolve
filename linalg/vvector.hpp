@@ -185,7 +185,7 @@ namespace ngla
 
     FlatVector<T> FV () const throw()
     {
-      return FlatVector<T> (this->size, this->pdata);
+      return FlatVector<T> (this->size, (T*)this->pdata);
     }
 
     T & operator() (size_t i) const

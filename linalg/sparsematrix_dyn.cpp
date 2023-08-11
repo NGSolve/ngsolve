@@ -158,7 +158,7 @@ namespace ngla
              int bs = cum_block_size[i+1]-cum_block_size[i];
              FlatMatrix<TSCAL> mat(nexti-firsti, bs, pdata);
              auto ind = colnr.Range(firsti, nexti);
-             MultAddMatTransVecIndirect (s, mat, fx, FlatVector(bs, py), ind);
+             MultAddMatTransVecIndirect (s, mat, fx, FlatVector<TSCAL>(bs, py), ind);
            }
        }, TasksPerThread(4));
         /*

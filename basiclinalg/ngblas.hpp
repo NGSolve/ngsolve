@@ -541,7 +541,7 @@ namespace ngbla
   
   
   template <bool ADD, bool POS, ORDERING ord>
-  void NgGEMV (SliceMatrix<double,ord> a, FlatVector<double> x, FlatVector<double> y)
+  void NgGEMV (SliceMatrix<double,ord> a, FlatVector<const double> x, FlatVector<double> y)
   {
     // static Timer t("generic MV, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(ord));
     // RegionTimer r(t);
@@ -572,11 +572,11 @@ namespace ngbla
   // void NgGEMV (double s, SliceMatrix<double,ord> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT;
 
   template <bool ADD, ORDERING ord>
-  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<const Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
   template <bool ADD, ORDERING ord>
-  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<const double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
   template <bool ADD, ORDERING ord>
-  void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, FlatVector<Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+  void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, FlatVector<const Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
   
   
   template <bool ADD, ORDERING ord>
@@ -590,35 +590,35 @@ namespace ngbla
 
 
   
-  template <> INLINE void NgGEMV<false,true> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<false,true> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultMatVec (a,x,y);
+    MultMatVec (a,x.SkipConst(),y);
   }
   
-  template <> INLINE void NgGEMV<false,true> (SliceMatrix<double,ColMajor> a, FlatVector<> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<false,true> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultMatTransVec (Trans(a),x,y);
+    MultMatTransVec (Trans(a),x.SkipConst(),y);
   }
   
 
-  template <> INLINE void NgGEMV<true,true> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<true,true> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultAddMatVec (1,a,x,y);
+    MultAddMatVec (1,a,x.SkipConst(),y);
   }
 
-  template <> INLINE void NgGEMV<true,true> (SliceMatrix<double,ColMajor> a, FlatVector<> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<true,true> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultAddMatTransVec (1,Trans(a),x,y);
+    MultAddMatTransVec (1,Trans(a),x.SkipConst(),y);
   }
   
-  template <> INLINE void NgGEMV<true,false> (SliceMatrix<> a, FlatVector<> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<true,false> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultAddMatVec (-1,a,x,y);
+    MultAddMatVec (-1,a,x.SkipConst(),y);
   }
 
-  template <> INLINE void NgGEMV<true,false> (SliceMatrix<double,ColMajor> a, FlatVector<> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<true,false> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
-    MultAddMatTransVec (-1,Trans(a),x,y);
+    MultAddMatTransVec (-1,Trans(a),x.SkipConst(),y);
   }
 
 
@@ -641,7 +641,7 @@ namespace ngbla
   public:
     static inline T & Assign (MatExpr<T> & self, const Expr<TB> & v)
     {
-      CopyVector(BareVector(FlatVector(v.Spec())), FlatVector(self.Spec()));
+      CopyVector(BareVector(make_FlatVector(v.Spec())), make_FlatVector(self.Spec()));
       return self.Spec();
     }
   };
@@ -692,8 +692,8 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
       NgGEMV<ADD,POS> (make_SliceMatrix(prod.View().A()),
-                       prod.View().B().Range(0,w),
-                       self.Spec().Range(0,h));
+                       make_FlatVector(prod.View().B().Range(0,w)),
+                       make_FlatVector(self.Spec().Range(0,h)));
       return self.Spec();
     }
   };
@@ -710,10 +710,9 @@ namespace ngbla
     {
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr double POS = (std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value) ? 1 : -1;
-      
       NgGEMV<ADD> (POS, BareSliceMatrix(prod.View().A()),
-                   FlatVector(prod.View().B()),
-                   FlatVector(self.Spec()));
+                   make_FlatVector(prod.View().B()),
+                   make_FlatVector(self.Spec()));
       return self.Spec();
     }
   };
@@ -730,8 +729,8 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr double POS = (std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value) ? 1 : -1;      
       NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
-                   FlatVector(prod.View().B()),
-                   FlatVector(self.Spec()));
+                   make_FlatVector(prod.View().B()),
+                   make_FlatVector(self.Spec()));
       return self.Spec();
     }
   };
@@ -840,9 +839,9 @@ namespace ngbla
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
       
-      FlatVector veca = prod.Spec().A();
+      auto veca = prod.Spec().A();
       FlatMatrix mata(veca.Height(), 1, veca.Data());
-      FlatVector vecb = prod.Spec().B().A();
+      auto vecb = prod.Spec().B().A();
       FlatMatrix matb(1, vecb.Height(), vecb.Data());
       
       NgGEMM<ADD,POS> (SliceMatrix(mata),
