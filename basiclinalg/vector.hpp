@@ -109,6 +109,14 @@ namespace ngbla
       dist = IC<1>(); 
       data = mem;
     }
+
+    INLINE auto & operator= (const VectorView & v)
+    {
+      auto cs = CombinedSize(this->Size(), v.Size());      
+      for (size_t i = 0; i < cs; i++)
+        data[i*dist] = v(i);
+      return *this;
+    }
     
     /// copy vector. sizes must match
     template <typename T2, typename TS2, typename TD2>
@@ -117,7 +125,7 @@ namespace ngbla
       NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
       auto cs = CombinedSize(this->Size(), v.Size());
       for (size_t i = 0; i < cs; i++)
-	data[i*size] = v(i);
+	data[i*dist] = v(i);
       return *this;
     }
     
