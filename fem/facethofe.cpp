@@ -30,7 +30,7 @@ namespace ngfem
 
   
   template <> template<typename Tx, typename TFA>  
-  void FacetFE<ET_SEGM> :: T_CalcShapeFNr (int fnr, TIP<1,Tx> ip, TFA & shape) const
+  void FacetFE<ET_SEGM> :: T_CalcShapeFNr (int fnr, TIP<1,Tx> ip, TFA && shape) const
   {
     shape[0] = Tx(1.0);
   }
@@ -38,7 +38,7 @@ namespace ngfem
   
   template <> template<typename Tx, typename TFA>  
   // void FacetFE<ET_TRIG> :: T_CalcShapeFNr (int fnr, Tx x[2], TFA & shape) const
-  void FacetFE<ET_TRIG> :: T_CalcShapeFNr (int fnr, TIP<2,Tx> ip, TFA & shape) const
+  void FacetFE<ET_TRIG> :: T_CalcShapeFNr (int fnr, TIP<2,Tx> ip, TFA && shape) const
   {
     // Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
     Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
@@ -60,7 +60,7 @@ namespace ngfem
   template<> template<typename Tx, typename TFA>  
   //
   //void FacetFE<ET_QUAD> :: T_CalcShapeFNr (int fnr, Tx hx[2], TFA & shape) const
-  void FacetFE<ET_QUAD> :: T_CalcShapeFNr (int fnr, TIP<2,Tx> ip, TFA & shape) const
+  void FacetFE<ET_QUAD> :: T_CalcShapeFNr (int fnr, TIP<2,Tx> ip, TFA && shape) const
     {
       // Tx x = hx[0], y = hx[1];
       Tx x = ip.x, y = ip.y;
@@ -74,7 +74,7 @@ namespace ngfem
 
 
   template <> template<typename Tx, typename TFA>  
-  void FacetFE<ET_TET> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA & shape) const
+  void FacetFE<ET_TET> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA && shape) const
   {
     Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };  // hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
     
@@ -101,7 +101,7 @@ namespace ngfem
   
   template <> template<typename Tx, typename TFA>  
   // void FacetFE<ET_HEX> :: T_CalcShapeFNr (int fnr, Tx hx[3], TFA & shape) const
-  void FacetFE<ET_HEX> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA & shape) const
+  void FacetFE<ET_HEX> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA && shape) const
   {
     // Tx x = hx[0], y = hx[1], z = hx[2];
     Tx x = ip.x, y = ip.y, z = ip.z;
@@ -131,7 +131,7 @@ namespace ngfem
 
   template <> template<typename Tx, typename TFA>  
   // void FacetFE<ET_PRISM> :: T_CalcShapeFNr (int fnr, Tx hx[3], TFA & shape) const
-  void FacetFE<ET_PRISM> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA & shape) const
+  void FacetFE<ET_PRISM> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA && shape) const
   {
     // Tx x = hx[0], y = hx[1], z = hx[2];
     Tx x = ip.x, y = ip.y, z = ip.z;
@@ -167,7 +167,7 @@ namespace ngfem
 
   template <> template<typename Tx, typename TFA>  
   // void FacetFE<ET_PYRAMID> :: T_CalcShapeFNr (int fnr, Tx hx[3], TFA & shape) const
-  void FacetFE<ET_PYRAMID> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA & shape) const
+  void FacetFE<ET_PYRAMID> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA && shape) const
   {
     // Tx x = hx[0], y = hx[1], z = hx[2];
     Tx x = ip.x, y = ip.y, z = ip.z;

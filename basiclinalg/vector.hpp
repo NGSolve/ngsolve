@@ -112,7 +112,7 @@ namespace ngbla
     
     /// copy vector. sizes must match
     template <typename T2, typename TS2, typename TD2>
-    INLINE const auto & operator= (const VectorView<T2,TS2,TD2> & v) const
+    INLINE auto & operator= (const VectorView<T2,TS2,TD2> & v) 
     {
       NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
       auto cs = CombinedSize(this->Size(), v.Size());
@@ -122,13 +122,13 @@ namespace ngbla
     }
     
     template<typename TB>
-    INLINE const auto & operator= (const Expr<TB> & v) const
+    INLINE auto & operator= (const Expr<TB> & v) 
     {
       return CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
     }
 
     /// assign constant value
-    INLINE const auto & operator= (TSCAL scal) const
+    INLINE auto & operator= (TSCAL scal) const
     {
       for (auto i : Range())
         data[i*dist] = scal;
@@ -137,7 +137,7 @@ namespace ngbla
     }
     
     template <int D, typename TSCAL2>
-    INLINE const auto & operator= (const Vec<D,TSCAL2> & v) 
+    INLINE auto & operator= (const Vec<D,TSCAL2> & v) 
     {
       NETGEN_CHECK_RANGE(D,0,Size()+1);
       for (int i = 0; i < D; i++)
@@ -146,12 +146,19 @@ namespace ngbla
     }
     
     /// access element
-    INLINE TELEM & operator[] (size_t i) const
+    INLINE TELEM & operator[] (size_t i) 
     {
       NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*dist]; 
     }
 
+    INLINE const TELEM & operator[] (size_t i) const
+    {
+      NETGEN_CHECK_RANGE(i,0,Size());
+      return data[i*dist]; 
+    }
+
+    
     /// constant element access
     INLINE TELEM & operator() (size_t i) const
     {
@@ -171,17 +178,17 @@ namespace ngbla
       return RowsArrayExpr<VectorView> (*this, rows);
     }
 
-    INLINE const auto Range (size_t first, size_t next) const
+    INLINE auto Range (size_t first, size_t next) const
     {
       return VectorView<T,size_t,TDIST> (next-first, dist, data+first*dist);
     }    
     
-    INLINE const auto Range (IntRange range) const
+    INLINE auto Range (IntRange range) const
     {
       return Range (range.First(), range.Next());
     }
 
-    INLINE const auto Slice(size_t first, size_t dist2) const
+    INLINE auto Slice(size_t first, size_t dist2) const
     {
       return VectorView<T,decltype(TS()/size_t()), decltype(TDIST()*size_t())> (size/dist2, dist2*dist, Addr(first));
     }
@@ -190,7 +197,7 @@ namespace ngbla
 
     INLINE auto RemoveConst() const { return VectorView<typename remove_const<T>::type,TS,TDIST>(size, dist, const_cast<typename remove_const<T>::type*> (data)); }
     
-    INLINE const FlatMatrix<T> AsMatrix (size_t h, size_t w) const
+    INLINE auto AsMatrix (size_t h, size_t w) const
     {
       // todo: checking
       return FlatMatrix<T> (h,w, data);

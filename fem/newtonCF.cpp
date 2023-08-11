@@ -1000,7 +1000,8 @@ public:
         auto &sol = rhs;
 
         // Handle VS-embedding
-        auto &wi = w.Row(qi);
+        // auto &wi = w.Row(qi);
+        auto wi = w.Row(qi);
         int offset_w = 0;
         int offset_sol = 0;
         for (int block : Range(proxies)) {

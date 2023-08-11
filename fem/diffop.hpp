@@ -67,7 +67,7 @@ namespace ngfem
     */
     template <typename FEL, typename MIP, class TVX, class TVY>
     static void Apply (const FEL & fel, const MIP & mip,
-		       const TVX & x, TVY & y,
+		       const TVX & x, TVY && y,
 		       LocalHeap & lh)
     {
       // typedef typename TVY::TSCAL TSCAL;

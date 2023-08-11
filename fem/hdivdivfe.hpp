@@ -95,7 +95,7 @@ namespace ngfem
   };
 
   template <int D,typename VEC,typename MAT>
-  void VecToSymMat(const VEC & vec,MAT & mat)
+  void VecToSymMat(const VEC & vec,MAT && mat)
   {
     switch(D)
     {

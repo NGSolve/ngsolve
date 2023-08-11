@@ -106,7 +106,7 @@ public:
 
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
-                       const TVX & x, TVY & y,
+                       const TVX & x, TVY && y,
                        LocalHeap & lh) 
     {
       // typedef typename TVX::TSCAL TSCAL;

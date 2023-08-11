@@ -75,9 +75,9 @@ public:
 
   template <typename FEL, typename MIP, class TVX>
   void Apply1 (const FEL & fel, const MIP & mip,
-	       TVX & x, LocalHeap & lh) const
+	       TVX && x, LocalHeap & lh) const
   {
-    Vec<DMO::DIM_DMAT, typename TVX::TSCAL> y;
+    Vec<DMO::DIM_DMAT, typename remove_reference<TVX>::type::TSCAL> y;
     static_cast<const DMO*>(this) -> Apply (fel, mip, x, y, lh);
     x = y;
   }
