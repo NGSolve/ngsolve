@@ -15,14 +15,14 @@ namespace ngbla
 {
 
   
-
+  /*
   template <typename TS, typename TD, typename T>
   auto make_VectorView (TS size, TD dist, T * data)
   {
     if constexpr (is_same_v<TS, undefined_size> == true)
       {
         if constexpr (std::is_same_v<TD, IC<1>> == true)
-          return BareVector(data, size);
+          return BareVector<T>(size, data);
         else
           return BareSliceVector<T>(size, dist, data);
       }
@@ -34,6 +34,7 @@ namespace ngbla
           return SliceVector<T>(size, dist, data);
       }
   }
+  */
 
   
   template <int H, int W, typename T> class Mat;
@@ -1406,12 +1407,12 @@ namespace ngbla
     
     INLINE const auto Row (size_t i) const
     {
-      return make_VectorView(Width(), RowDist(), Addr(i,0));
+      return VectorView(Width(), RowDist(), Addr(i,0));
     }
 
     INLINE const auto  Col (size_t i) const
     {
-      return make_VectorView(Height(), ColDist(), Addr(0,i));
+      return VectorView(Height(), ColDist(), Addr(0,i));
     }
 
     INLINE const auto Cols (size_t first, size_t next) const
@@ -1598,7 +1599,7 @@ namespace ngbla
     INLINE const auto Col (size_t col) const
     {
       NETGEN_CHECK_RANGE(col, 0, Width());
-      return make_VectorView(Height(), ColDist(), Addr(0,col));
+      return VectorView(Height(), ColDist(), Addr(0,col));
       /*
       if constexpr (ORD==RowMajor)
         return BareSliceVector<T> (Addr(0,col), dist, DummySize(Height()));
@@ -1610,7 +1611,7 @@ namespace ngbla
     INLINE const auto Row (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
-      return make_VectorView(Width(), RowDist(), Addr(i,0));
+      return VectorView(Width(), RowDist(), Addr(i,0));
       /*
       if constexpr (ORD==RowMajor)
         return BareVector<T> (Addr(i,0), DummySize(Width()));

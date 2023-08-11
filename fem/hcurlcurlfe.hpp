@@ -661,7 +661,7 @@ namespace ngfem
            
            Cast() -> T_CalcShape (GetTIP(mip),SBLambda([shapes,DIMSPACE](int nr,auto val)
                                                    {
-                                                     shapes.Row(nr).AddSize(DIMSPACE*DIMSPACE) = val.Value().AsVector();
+                                                     shapes.Row(nr).Range(DIMSPACE*DIMSPACE) = val.Value().AsVector();
                                                    }));
          });
     }
@@ -697,9 +697,9 @@ namespace ngfem
                      Cast() -> T_CalcShape (GetTIPHesse(mip),SBLambda([shapes](int nr,auto val)
                                                                        {
                                                                          if constexpr (DIM==3)
-                                                                                        shapes.Row(nr).AddSize(DIM_DDMAT) = val.Inc().AsVector();
+                                                                           shapes.Row(nr).Range(DIM_DDMAT) = val.Inc().AsVector();
                                                                          else
-                                                                           shapes.Row(nr).AddSize(DIM_DDMAT) = val.Inc();
+                                                                           shapes.Row(nr).Range(DIM_DDMAT) = val.Inc();
                                                                        }));
       else
         throw Exception("HCurlCurl::CalcMappedIncShape implemented only for TRIG and TET");
@@ -915,9 +915,9 @@ namespace ngfem
                      Cast() -> T_CalcShape (GetTIPHesse(mip),SBLambda([shape](int nr,auto val)
                                                                        {
                                                                          if constexpr (DIM==3)
-                                                                                        shape.Row(nr).AddSize(DIM_DMAT) = val.Curl().AsVector();
+                                                                           shape.Row(nr).Range(DIM_DMAT) = val.Curl().AsVector();
                                                                          else
-                                                                           shape.Row(nr).AddSize(DIM_DMAT) = val.Curl();
+                                                                           shape.Row(nr).Range(DIM_DMAT) = val.Curl();
                                                                        }));
       else
         throw Exception("HCurlCurl::CalcMappedCurlShape implemented only for TRIG and TET");

@@ -70,7 +70,7 @@ namespace ngbla
   
   
   
-  template <class T = double> class BareVector;  
+  // template <class T = double> class BareVector;  
   // template <class T = double> class SliceVector;
   // template <class T = double> class BareSliceVector;
 
@@ -357,6 +357,19 @@ namespace ngbla
   }
 
 
+  
+  template <typename T = double>
+  using BareVector = VectorView<T,undefined_size,IC<1>>;
+
+  template <typename T>
+  auto make_BareVector (const T & v) 
+  { return BareVector<typename T::TELEM> (v); }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToBareVector ()
+  {
+    return is_convertible_v<T,BareVector<TELEM>>;
+  }
 
   
   

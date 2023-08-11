@@ -38,7 +38,7 @@ namespace ngcomp
                                       BareSliceMatrix<SIMD<double>> mat)
     {
       if(bfel.GetNDof()) // if not dummyFE
-        mat.Row(0).AddSize(mir.Size()) = SIMD<double>(1);
+        mat.Row(0).Range(mir.Size()) = SIMD<double>(1);
     }
 
     using DiffOp<NumberDiffOp>::ApplySIMDIR;

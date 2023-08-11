@@ -641,7 +641,7 @@ namespace ngbla
   public:
     static inline T & Assign (MatExpr<T> & self, const Expr<TB> & v)
     {
-      CopyVector(BareVector(make_FlatVector(v.Spec())), make_FlatVector(self.Spec()));
+      CopyVector(make_BareVector(v.Spec()), make_FlatVector(self.Spec()));
       return self.Spec();
     }
   };
