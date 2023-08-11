@@ -327,6 +327,8 @@ namespace ngfem
     */
   }
 
+#endif // FASTCOMPILE
+
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values,
@@ -358,6 +360,7 @@ namespace ngfem
   }
 
 
+#ifndef FASTCOMPILE
   
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 

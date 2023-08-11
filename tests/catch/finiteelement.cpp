@@ -93,7 +93,7 @@ void TestFiniteElement(T fel)
                     }
                   catch(const Exception & ex)
                     {
-                      CHECK_THROWS_AS(throw ex, ExceptionNOSIMD);
+                      CHECK(typeid(ex) == typeid(ExceptionNOSIMD));
                       WARN("SIMD not implemented");
                     }
                 }
