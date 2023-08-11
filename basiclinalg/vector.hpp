@@ -1760,7 +1760,7 @@ namespace ngbla
 
 
   
-
+#ifdef OLD
   
   template <class T>
   class BareVector : public CMCPMatExpr<BareVector<T> >, DummySize
@@ -1817,7 +1817,8 @@ namespace ngbla
     }
   };
 
-
+#endif
+  
 #ifdef OLF
   template <class T>
   class BareSliceVector : public CMCPMatExpr<BareSliceVector<T> >, DummySize
