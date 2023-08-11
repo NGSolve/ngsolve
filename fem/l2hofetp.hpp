@@ -860,7 +860,7 @@ namespace ngfem
     int NShapeX () const { return (this->order+1)*(this->order+1); }
 
     template <typename IP, typename TZ>
-    void CalcZFactorIP (const IP & z, const TZ & facz) const
+    void CalcZFactorIP (const IP & z, TZ && facz) const
     {
       auto hz = 2*z-1;
       if (this->vnums[2] >= this->vnums[3]) hz = -hz;

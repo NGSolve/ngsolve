@@ -74,7 +74,7 @@ public:
   
   template <typename AFEL, typename MIP, class TVX, class TVY>
   static void Apply (const AFEL & fel, const MIP & mip,
-                     const TVX & x, TVY & y,
+                     const TVX & x, TVY && y,
                      LocalHeap & lh) 
   {
     HeapReset hr(lh);
@@ -257,7 +257,7 @@ public:
 
   template <typename AFEL, typename MIP, class TVX, class TVY>
   static void Apply (const AFEL & fel, const MIP & mip,
-                     const TVX & x, TVY & y,
+                     const TVX & x, TVY && y,
                      LocalHeap & lh) 
   {
     HeapReset hr(lh);
@@ -378,7 +378,7 @@ public:
 
   template <typename AFEL, typename MIP, class TVX, class TVY> 
   static void Apply (const AFEL & fel, const MIP & mip,
-		     const TVX & x, TVY & y,
+		     const TVX & x, TVY && y,
 		     LocalHeap & lh)
   {
     y = ( (1.0/mip.GetJacobiDet())*(InnerProduct (Cast(fel).GetShape (mip.IP(), lh), x) )) * mip.GetNV();
@@ -548,7 +548,7 @@ public:
     
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void Apply (const AFEL & fel, const MIP & mip,
-                       const TVX & x, TVY & y,
+                       const TVX & x, TVY && y,
                        LocalHeap & lh) 
     {
       // typedef typename TVX::TSCAL TSCAL;

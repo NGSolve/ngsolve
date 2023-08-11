@@ -194,22 +194,22 @@ namespace ngbla
 
     INLINE T * Data () const { return data; }
     
-    INLINE const FlatVector<T> Row (size_t i) const
+    INLINE FlatVector<T> Row (size_t i) const
     {
       return FlatVector<T> (w, data+i*w);
     }
 
-    INLINE const SliceVector<T> Col (size_t i) const
+    INLINE SliceVector<T> Col (size_t i) const
     {
       return SliceVector<T> (h, w, data+i);
     }
 
-    INLINE const SliceVector<T> Diag () const
+    INLINE SliceVector<T> Diag () const
     {
       return SliceVector<T> (h, w+1, &data[0]);
     }
 
-    const SliceVector<T> Diag (int offset) const
+    SliceVector<T> Diag (int offset) const
     {
       int dp = std::max(offset, 0);
       int dm = std::min(offset, 0);
@@ -401,17 +401,17 @@ namespace ngbla
 
     INLINE T * Data () const { return data; }
     
-    INLINE const FlatVector<T> Col (size_t i) const
+    INLINE FlatVector<T> Col (size_t i) const
     {
       return FlatVector<T> (h, &data[i*size_t(h)]);
     }
 
-    INLINE const SliceVector<T> Row (size_t i) const
+    INLINE SliceVector<T> Row (size_t i) const
     {
       return SliceVector<T> (w, h, &data[i]);
     }
 
-    const SliceVector<T> Diag () const
+    SliceVector<T> Diag () const
     {
       return SliceVector<T> (h, w+1, &data[0]);
     }
@@ -701,13 +701,13 @@ namespace ngbla
     INLINE static constexpr auto Width ()  { return IC<W>(); }
 
     ///
-    INLINE const FlatVec<W,T> Row (size_t i) 
+    INLINE FlatVec<W,T> Row (size_t i) 
     {
       return FlatVec<W,T> (&(*this)(i,0));
     }
 
     ///
-    INLINE const FlatVec<W,const T> Row (size_t i) const
+    INLINE FlatVec<W,const T> Row (size_t i) const
     {
       return FlatVec<W,const T> (&(*this)(i,0));
     }
@@ -1034,7 +1034,7 @@ namespace ngbla
 
 
     ///
-    INLINE const auto Row (size_t i) const
+    INLINE auto Row (size_t i) const
     {
       if constexpr (ORD==RowMajor)
         return FlatVec<DIM,T> (Addr(i,0));
@@ -1042,7 +1042,7 @@ namespace ngbla
         return SliceVector<T> (size, DIST, Addr(i,0));
     }
 
-    INLINE const auto Col (size_t i) const
+    INLINE auto Col (size_t i) const
     {
       if constexpr (ORD==RowMajor)
         return FixSliceVector<DIST,T> (size, Addr(0,i));
@@ -1405,12 +1405,12 @@ namespace ngbla
       return tuple(Cols(0,split), Cols(split, Width()));
     }
     
-    INLINE const auto Row (size_t i) const
+    INLINE auto Row (size_t i) const
     {
       return VectorView(Width(), RowDist(), Addr(i,0));
     }
 
-    INLINE const auto  Col (size_t i) const
+    INLINE auto  Col (size_t i) const
     {
       return VectorView(Height(), ColDist(), Addr(0,i));
     }
@@ -1435,7 +1435,7 @@ namespace ngbla
       return Cols (range.First(), range.Next());
     }
 
-    INLINE const SliceVector<T> Diag () const
+    INLINE SliceVector<T> Diag () const
     {
       if (ORD == RowMajor)
         return SliceVector<T> (h, dist+1, data);
@@ -1443,7 +1443,7 @@ namespace ngbla
         return SliceVector<T> (w, dist+1, data);
     }
 
-    INLINE const SliceVector<T> Diag (int offset) const
+    INLINE SliceVector<T> Diag (int offset) const
     {
       // return SliceVector<T> (h, dist+1, data);
       int dp = std::max(offset, 0);
@@ -1596,7 +1596,7 @@ namespace ngbla
       return BareSliceMatrix ( dist, Addr(first, 0), DummySize(next-first, Width()));
     }
 
-    INLINE const auto Col (size_t col) const
+    INLINE auto Col (size_t col) const
     {
       NETGEN_CHECK_RANGE(col, 0, Width());
       return VectorView(Height(), ColDist(), Addr(0,col));
@@ -1608,7 +1608,7 @@ namespace ngbla
       */
     }
     
-    INLINE const auto Row (size_t i) const
+    INLINE auto Row (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
       return VectorView(Width(), RowDist(), Addr(i,0));

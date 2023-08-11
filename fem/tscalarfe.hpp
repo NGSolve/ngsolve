@@ -153,7 +153,7 @@ namespace ngfem
     */
     
     template<typename Tx, typename TFA>  
-    INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
+    INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA && shape) const
     {
       static_cast<const FEL*> (this) -> T_CalcShape (ip, shape);
     }
