@@ -24,14 +24,14 @@ namespace ngbla
         if constexpr (std::is_same_v<TD, IC<1>> == true)
           return BareVector(data, size);
         else
-          return BareSliceVector(data, dist, size);
+          return BareSliceVector<T>(size, dist, data);
       }
     else
       {
         if constexpr (std::is_same_v<TD, IC<1>> == true)
           return FlatVector<T>(size, data);
         else
-          return SliceVector(size, dist, data);
+          return SliceVector<T>(size, dist, data);
       }
   }
 
