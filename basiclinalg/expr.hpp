@@ -49,7 +49,8 @@ namespace ngbla
   template <typename T, typename TELEM=typename T::TELEM>
   constexpr bool IsConvertibleToFlatVector ()
   {
-    return is_convertible_v<T,FlatVector<TELEM>>;
+    // return is_convertible_v<T,FlatVector<TELEM>>;
+    return is_constructible_v<FlatVector<TELEM>,T>;
   }
 
 
@@ -63,7 +64,8 @@ namespace ngbla
   template <typename T, typename TELEM=typename T::TELEM>
   constexpr bool IsConvertibleToSliceVector ()
   {
-    return is_convertible_v<T,SliceVector<TELEM>>;
+    // return is_convertible_v<T,SliceVector<TELEM>>;
+    return is_constructible_v<SliceVector<TELEM>,T>;    
   }
   
 
@@ -353,7 +355,8 @@ namespace ngbla
   template <typename T, typename TELEM=typename T::TELEM>
   constexpr bool IsConvertibleToBareSliceVector ()
   {
-    return is_convertible_v<T,BareSliceVector<TELEM>>;
+    // return is_convertible_v<T,BareSliceVector<TELEM>>;
+    return is_constructible_v<BareSliceVector<TELEM>,T>;        
   }
 
 
@@ -368,7 +371,8 @@ namespace ngbla
   template <typename T, typename TELEM=typename T::TELEM>
   constexpr bool IsConvertibleToBareVector ()
   {
-    return is_convertible_v<T,BareVector<TELEM>>;
+    // return is_convertible_v<T,BareVector<TELEM>>;
+    return is_constructible_v<BareVector<TELEM>,T>;            
   }
 
   
@@ -645,14 +649,14 @@ namespace ngbla
 
     
 
- 
-
+    /*
+      TODO: move to traits ... 
     
     // x += s*y
     template <typename OP, typename TA, 
               enable_if_t<std::is_same<OP,AsAdd>::value,bool> = true,
-              enable_if_t<is_convertible_v<TA,SliceVector<double>>,bool> = true,
-              enable_if_t<is_convertible<typename pair<T,TA>::first_type,SliceVector<double>>::value,bool> = true>
+              enable_if_t<is_constructible_v<SliceVector<double>,typename pair<T,TA>::first_type>,bool> = true,
+              enable_if_t<is_constructible_v<SliceVector<double>,TA>,bool> = true>
     INLINE T & Assign (const Expr<ScaleExpr<TA,double>> & scaled)
     {
       AddVector (scaled.View().S(),
@@ -691,7 +695,7 @@ namespace ngbla
                      Spec());
       return Spec();
     }
-    
+    */
 
     
     template<typename TB>
