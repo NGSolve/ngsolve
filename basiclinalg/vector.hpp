@@ -37,10 +37,12 @@ namespace ngbla
   public:
     typedef T TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
-
+    typedef TDIST type_dist;
+    
     /// linear element access ? 
-    enum { IS_LINEAR = std::is_same<TDIST,IC<1>>() };
-
+    // enum { IS_LINEAR = std::is_same<TDIST,IC<1>>() };  // Win32 error ??
+    enum { IS_LINEAR = 0 };  // Win32 error ??
+    
     INLINE VectorView () = default;
     INLINE VectorView (const VectorView&) = default;
     INLINE VectorView (VectorView&&) = default;
@@ -55,7 +57,7 @@ namespace ngbla
     INLINE VectorView (TS asize, T * adata)
       : data(adata), size(asize)
     {
-      static_assert(IS_LINEAR);
+      static_assert(std::is_same<type_dist,IC<1>>());
     } 
     INLINE VectorView (TS asize, TDIST adist, T * adata)
       : data(adata), size(asize), dist(adist) { } 
