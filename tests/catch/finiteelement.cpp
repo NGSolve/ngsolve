@@ -85,7 +85,7 @@ void TestFiniteElement(T fel)
                   try
                     {
                       fel.Evaluate(simdir,coefs,simd_values);
-                      FlatVector<double> values_ref(values.Size(),&simd_values[0]);
+                      FlatVector<double> values_ref(values.Size(),(double*)&simd_values[0]);
                       SECTION("SIMD correctness", "[SIMD]")
                         {
                           CHECK(L2Norm(values-values_ref) < 1e-10);
