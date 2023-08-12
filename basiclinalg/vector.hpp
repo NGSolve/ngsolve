@@ -38,10 +38,12 @@ namespace ngbla
     typedef T TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
-    /// element access is not linear
-    enum { IS_LINEAR = 0 };
+    /// linear element access ? 
+    enum { IS_LINEAR = std::is_same<TDIST,IC<1>>() };
 
     INLINE VectorView () = default;
+    INLINE VectorView (const VectorView&) = default;
+    INLINE VectorView (VectorView&&) = default;
     
     template <typename T2, typename TS2, typename TDIST2,
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
@@ -51,7 +53,10 @@ namespace ngbla
       : data(v2.Data()), size(v2.Size()), dist(v2.Dist()) { }
     
     INLINE VectorView (TS asize, T * adata)
-      : data(adata), size(asize) { } 
+      : data(adata), size(asize)
+    {
+      static_assert(IS_LINEAR);
+    } 
     INLINE VectorView (TS asize, TDIST adist, T * adata)
       : data(adata), size(asize), dist(adist) { } 
 
@@ -61,6 +66,12 @@ namespace ngbla
 
     
     /// put FlatVector over fixed size vector
+
+    template <int S>
+    INLINE VectorView (Vec<S,T> & v)
+      : data(v.Data()), size(v.Size()), dist(IC<1>()) { }
+
+    
     /*
     template <int S>
     INLINE VectorView (Vec<S,T> & v)
@@ -113,6 +124,14 @@ namespace ngbla
     }
     
     INLINE auto & operator= (const VectorView & v)
+    {
+      auto cs = CombinedSize(this->Size(), v.Size());      
+      for (size_t i = 0; i < cs; i++)
+        data[i*dist] = v(i);
+      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
+      return *this;
+    }
+    INLINE auto & operator= (VectorView && v)
     {
       auto cs = CombinedSize(this->Size(), v.Size());      
       for (size_t i = 0; i < cs; i++)
@@ -187,7 +206,7 @@ namespace ngbla
       NETGEN_CHECK_RANGE(i,0,Size());
       return data[i*dist]; 
     }
-
+    
     RowsArrayExpr<VectorView> operator() (FlatArray<int> rows) const
     { 
       return RowsArrayExpr<VectorView> (*this, rows);
