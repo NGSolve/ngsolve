@@ -402,10 +402,16 @@ void NGS_DLL_HEADER ExportNgbla(py::module & m) {
 
     ///////////////////////////////////////////////////////////////////////////////////////
     // Vector types
-    typedef FlatVector<double> FVD;
-    typedef FlatVector<Complex> FVC;
-    typedef SliceVector<double> SVD;
-    typedef SliceVector<Complex> SVC;
+  // typedef FlatVector<double> FVD;
+  // typedef FlatVector<Complex> FVC;
+  typedef VectorView<double,size_t,IC<1>> FVD;
+  typedef VectorView<Complex,size_t,IC<1>> FVC;
+  
+  // typedef SliceVector<double> SVD;
+  // typedef SliceVector<Complex> SVC;
+  typedef VectorView<double,size_t,size_t> SVD;
+  typedef VectorView<Complex,size_t,size_t> SVC;
+  
     typedef Vector<double> VD;
     typedef Vector<Complex> VC;
 

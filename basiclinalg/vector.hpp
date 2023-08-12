@@ -91,8 +91,8 @@ namespace ngbla
       : data(const_cast<T*>(v.Data())), size(v.Size()), dist(IC<1>()) { } 
     */
     
-    auto Size() const { return size; }
-    auto Dist() const { return dist; }
+    INLINE auto Size() const { return size; }
+    INLINE auto Dist() const { return dist; }
     INLINE auto Shape() const { return tuple(size); }
     
 
@@ -103,7 +103,7 @@ namespace ngbla
 
     INLINE T * Addr(size_t i) const { return data+i*dist; }
     
-    T * Data() const { return data; }
+    INLINE T * Data() const { return data; }
 
     INLINE auto View() const { return VectorView(*this); }         
 
@@ -253,8 +253,8 @@ namespace ngbla
       INLINE bool operator == (Iterator d2) { return ind == d2.ind; }
     };
     
-    Iterator begin() const { return Iterator (*this, 0); }
-    Iterator end() const { return Iterator (*this, size); }
+    INLINE Iterator begin() const { return Iterator (*this, 0); }
+    INLINE Iterator end() const { return Iterator (*this, size); }
     
   };
     
