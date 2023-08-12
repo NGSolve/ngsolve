@@ -214,7 +214,7 @@ namespace ngbla
       return RowsArrayExpr<VectorView> (*this, rows);
     }
 
-    INLINE auto Range (size_t first, size_t next) const
+    INLINE VectorView<T,size_t,TDIST> Range (size_t first, size_t next) const
     {
       return VectorView<T,size_t,TDIST> (next-first, dist, data+first*dist);
     }    
