@@ -21,17 +21,19 @@ namespace ngbla
   template <int DIST, typename T> class FixSliceVector;
   template <int S, int DIST, typename T> class FlatSliceVec;
 
-
-  
-
+#ifdef WIN32
+  #define NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+#else
+  #define NO_UNIQUE_ADDRESS [[no_unique_address]]
+#endif
 
   template <typename T, typename TS, typename TDIST>
   class VectorView : public CMCPMatExpr<VectorView<T,TS,TDIST>>
   {
   protected:
     T * __restrict data;
-    [[no_unique_address]] TS size;
-    [[no_unique_address]] TDIST dist;
+    NO_UNIQUE_ADDRESS TS size;
+    NO_UNIQUE_ADDRESS TDIST dist;
   public:
     typedef T TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -109,23 +111,27 @@ namespace ngbla
       dist = IC<1>(); 
       data = mem;
     }
-
+    
     INLINE auto & operator= (const VectorView & v)
     {
       auto cs = CombinedSize(this->Size(), v.Size());      
       for (size_t i = 0; i < cs; i++)
         data[i*dist] = v(i);
+      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
       return *this;
     }
-    
+
     /// copy vector. sizes must match
     template <typename T2, typename TS2, typename TD2>
     INLINE auto & operator= (const VectorView<T2,TS2,TD2> & v) 
     {
+      CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
+      /*
       NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
       auto cs = CombinedSize(this->Size(), v.Size());
       for (size_t i = 0; i < cs; i++)
 	data[i*dist] = v(i);
+      */
       return *this;
     }
     
@@ -138,6 +144,7 @@ namespace ngbla
     /// assign constant value
     INLINE auto & operator= (TSCAL scal) const
     {
+      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (scal);
       for (auto i : Range())
         data[i*dist] = scal;
       // SetVector (scal, *this);
