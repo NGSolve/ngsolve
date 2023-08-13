@@ -40,8 +40,8 @@ namespace ngbla
     typedef TDIST type_dist;
     
     /// linear element access ? 
-    enum { IS_LINEAR = std::is_same<type_dist,IC<1>>() };  // Win32 error ??
-    // enum { IS_LINEAR = 0 };  // Win32 error ??
+    // enum { IS_LINEAR = std::is_same<type_dist,IC<1>>() };  // Win32 error ??
+    enum { IS_LINEAR = 0 }; 
     
     INLINE VectorView () = default;
     INLINE VectorView (const VectorView&) = default;
