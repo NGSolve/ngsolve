@@ -538,7 +538,30 @@ namespace ngbla
   }
 
 
-  
+  template <typename TM, typename TV, typename FUNC>
+  void NgGEMV_fallbck (SliceMatrix<TM,RowMajor> a, FlatVector<const double> x, FlatVector<double> y,
+                       FUNC func) NETGEN_NOEXCEPT  
+  {
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func(y(i), sum);
+      }
+  }  
+  template <typename TM, typename TV, typename FUNC>
+  void NgGEMV_fallback (BareSliceMatrix<TM,ColMajor> a, FlatVector<const double> x, FlatVector<double> y,
+                        FUNC func) NETGEN_NOEXCEPT  
+  {
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func(y(i), sum);
+      }
+  }
   
   template <bool ADD, bool POS, ORDERING ord>
   void NgGEMV (SliceMatrix<double,ord> a, FlatVector<const double> x, FlatVector<double> y)
@@ -549,20 +572,25 @@ namespace ngbla
     // static Timer t("NgGEMV unresolved" + ToString(ADD) + ToString(POS) + ToString(ord));
     // RegionTimer reg(t);
     // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width());
+
     
     if (!ADD)
       {
         if (!POS)
-          y = -1*a*x;
+          // y = -1*a*x;
+          NgGEMV_fallback(a, x, y, [](Complex & y, Complex sum) { y=-sum; });
         else
-          y = 1*a*x;
+          // y = 1*a*x;
+          NgGEMV_fallback(a, x, y, [](Complex & y, Complex sum) { y=sum; });      
       }
     else
       {
         if (!POS)
-          y -= 1*a*x;
+          // y -= 1*a*x;
+          NgGEMV_fallback(a, x, y, [](Complex & y, Complex sum) { y-=sum; });
         else
-          y += 1*a*x;
+          // y += 1*a*x;
+          NgGEMV_fallback(a, x, y, [](Complex & y, Complex sum) { y+=sum; });
       }
   }
 
@@ -873,4 +901,3 @@ namespace ngbla
 #endif
 
 
-an error
