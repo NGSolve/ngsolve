@@ -52,13 +52,13 @@ namespace ngbla
   }
 
 
-  void AddVector (double alpha, BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT
+  void AddVector (double alpha, BareVector<const double> src, FlatVector<double> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] += alpha * src[i];
   }
   
-  void AddVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT
+  void AddVector (double alpha, BareSliceVector<const double> src, SliceVector<double> dest) NETGEN_NOEXCEPT
   {
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] += alpha * src[i];

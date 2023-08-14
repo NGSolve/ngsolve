@@ -81,21 +81,21 @@ namespace ngbla
 
   
   template <typename T0, typename T1, typename T2>
-  void AddVector (T0 alpha, BareVector<T1> src, FlatVector<T2> dest) NETGEN_NOEXCEPT
+  void AddVector (T0 alpha, BareVector<const T1> src, FlatVector<T2> dest) NETGEN_NOEXCEPT
   {
     for (size_t i : Range(dest))
       dest[i] += alpha*src[i];
   }
 
   template <typename T0, typename T1, typename T2>
-  void AddVector (T0 alpha, BareSliceVector<T1> src, SliceVector<T2> dest) NETGEN_NOEXCEPT
+  void AddVector (T0 alpha, BareSliceVector<const T1> src, SliceVector<T2> dest) NETGEN_NOEXCEPT
   {
     for (size_t i : Range(dest))
       dest[i] += alpha*src[i];
   }
 
-  extern NGS_DLL_HEADER void AddVector (double alpha, BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT;
-  extern NGS_DLL_HEADER void AddVector (double alpha, BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void AddVector (double alpha, BareVector<const double> src, FlatVector<double> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void AddVector (double alpha, BareSliceVector<const double> src, SliceVector<double> dest) NETGEN_NOEXCEPT;
 
 
 
@@ -759,7 +759,7 @@ namespace ngbla
 
       if constexpr (IsIC<decltype(cs)>())
         {
-          Vec<cs,T> tmp;
+          Vec<cs,typename remove_const<TB>::type> tmp;
           for (size_t i = 0; i<cs; i++)
             tmp[i] = v.Spec()[i];
           for (size_t i = 0; i<cs; i++)
@@ -774,6 +774,36 @@ namespace ngbla
         CopyVector(BareVector<TB>(v.Spec()), FlatVector<T>(self.Spec().Range(0,cs)));
       else
         CopyVector(BareSliceVector<TB>(v.Spec()), SliceVector<T>(self.Spec().Range(0,cs)));
+      return self.Spec();
+    }
+  };
+  
+
+  // x += s*y
+  template <typename OP, typename T, typename TS, typename TD, typename TB, typename TBS, typename TBD, typename TSCAL>
+  class assign_trait<OP, VectorView<T,TS,TD>, ScaleExpr<VectorView<TB,TBS,TBD>,TSCAL>, 
+                     enable_if_t<std::is_same_v<OP,typename MatExpr<VectorView<T,TS,TD>>::AsAdd> == true, int>>
+  {
+    typedef VectorView<T,TS,TD> TVec;
+    typedef VectorView<TB,TBS,TBD> TVecB;
+  public:
+    static inline auto & Assign (MatExpr<TVec> & self, const Expr<ScaleExpr<TVecB,TSCAL>> & v)
+    {
+      auto cs = CombinedSize (self.Spec().Size(), v.Spec().A().Size());
+      if constexpr (IsIC<decltype(cs)>())
+        {
+          Vec<cs,typename remove_const<TB>::type> tmp;
+          auto s = v.View().S();
+          for (size_t i = 0; i<cs; i++)
+            tmp[i] = v.Spec()[i];
+          for (size_t i = 0; i<cs; i++)
+            self.Spec()[i] += s * tmp[i];
+        }
+      else
+        if constexpr (TVec::IsLinear() && TVecB::IsLinear())
+          AddVector(v.View().S(), BareVector<const TB>(v.View().A()), FlatVector<T>(self.Spec().Range(0,cs)));
+        else
+          AddVector(v.View().S(), BareSliceVector<const TB>(v.View().A()), SliceVector<T>(self.Spec().Range(0,cs)));
       return self.Spec();
     }
   };
