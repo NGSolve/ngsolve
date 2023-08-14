@@ -13,6 +13,75 @@ namespace ngbla
 {
 
 
+
+  template <typename T = double>
+  using FlatVector = VectorView<T,size_t,IC<1>>;
+
+  template <typename T>
+  auto make_FlatVector (const T & v) 
+  { return FlatVector<typename T::TELEM> (v); }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToFlatVector ()
+  {
+    // return is_convertible_v<T,FlatVector<TELEM>>;
+    return is_constructible_v<FlatVector<TELEM>,T>;
+  }
+
+
+  template <typename T = double>
+  using SliceVector = VectorView<T,size_t,size_t>;
+
+  template <typename T>
+  auto make_SliceVector (const T & v) 
+  { return SliceVector<typename T::TELEM> (v); }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToSliceVector ()
+  {
+    // return is_convertible_v<T,SliceVector<TELEM>>;
+    return is_constructible_v<SliceVector<TELEM>,T>;    
+  }
+  
+
+
+  template <typename T = double>
+  using BareSliceVector = VectorView<T,undefined_size,size_t>;
+
+  template <typename T>
+  auto make_BareSliceVector (const T & v) 
+  { return BareSliceVector<typename T::TELEM> (v); }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToBareSliceVector ()
+  {
+    // return is_convertible_v<T,BareSliceVector<TELEM>>;
+    return is_constructible_v<BareSliceVector<TELEM>,T>;        
+  }
+
+
+  
+  template <typename T = double>
+  using BareVector = VectorView<T,undefined_size,IC<1>>;
+
+  template <typename T>
+  auto make_BareVector (const T & v) 
+  { return BareVector<typename T::TELEM> (v); }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToBareVector ()
+  {
+    // return is_convertible_v<T,BareVector<TELEM>>;
+    return is_constructible_v<BareVector<TELEM>,T>;            
+  }
+
+  
+
+
+  
+
+
+  
   template <int S, class T> class Vec;
   // template <int S, typename T> class FlatVec;
 
@@ -47,7 +116,8 @@ namespace ngbla
     
     /// linear element access ? 
     // enum { IS_LINEAR = std::is_same<type_dist,IC<1>>() };  // Win32 error ??
-    enum { IS_LINEAR = 0 }; 
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return std::is_same<type_dist,IC<1>>(); }
     
     INLINE VectorView () = default;
     INLINE VectorView (const VectorView&) = default;
@@ -1053,6 +1123,9 @@ namespace ngbla
     typedef T TELEM;
     /// is the element double or complex ?
     typedef typename mat_traits<T>::TSCAL TSCAL;
+    static constexpr bool IsLinear() { return true; } 
+
+    
     /// a vec is a S times 1 matrix, the according colume vector
     typedef Vec<S, typename mat_traits<T>::TV_COL> TV_COL;
     /// a vec is a S times 1 matrix, the according row vector
@@ -1232,6 +1305,7 @@ namespace ngbla
   class Vec<0,T>  : public MatExpr<Vec<0,T> > 
   {
   public:
+    static constexpr bool IsLinear() { return true; }     
     INLINE Vec () { }
     INLINE Vec (const Vec &d) { }
     INLINE Vec (T d) { }
@@ -1480,6 +1554,8 @@ namespace ngbla
     typedef T TELEM;
     /// is the element double or complex ?
     typedef typename mat_traits<T>::TSCAL TSCAL;
+    static constexpr bool IsLinear() { return D==1; }         
+    
     /// a vec is a S times 1 matrix, the according colume vector
     typedef Vec<S, typename mat_traits<T>::TV_COL> TV_COL;
     /// a vec is a S times 1 matrix, the according row vector
@@ -1978,7 +2054,7 @@ namespace ngbla
 
     /// element access is not linear
     enum { IS_LINEAR = 0 };
-
+    static constexpr bool IsLinear() { return DIST==1; } 
     /// set size, distance and memory
     FixSliceVector (size_t as, T * adata) 
       : s(as), data(adata) { ; }

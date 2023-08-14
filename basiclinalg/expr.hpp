@@ -39,36 +39,6 @@ namespace ngbla
 
   template <typename T, typename TS, typename TDIST> class VectorView;
 
-  template <typename T = double>
-  using FlatVector = VectorView<T,size_t,IC<1>>;
-
-  template <typename T>
-  auto make_FlatVector (const T & v) 
-  { return FlatVector<typename T::TELEM> (v); }
-  
-  template <typename T, typename TELEM=typename T::TELEM>
-  constexpr bool IsConvertibleToFlatVector ()
-  {
-    // return is_convertible_v<T,FlatVector<TELEM>>;
-    return is_constructible_v<FlatVector<TELEM>,T>;
-  }
-
-
-  template <typename T = double>
-  using SliceVector = VectorView<T,size_t,size_t>;
-
-  template <typename T>
-  auto make_SliceVector (const T & v) 
-  { return SliceVector<typename T::TELEM> (v); }
-  
-  template <typename T, typename TELEM=typename T::TELEM>
-  constexpr bool IsConvertibleToSliceVector ()
-  {
-    // return is_convertible_v<T,SliceVector<TELEM>>;
-    return is_constructible_v<SliceVector<TELEM>,T>;    
-  }
-  
-
   
   
   
@@ -346,37 +316,6 @@ namespace ngbla
 
 
 
-
-  template <typename T = double>
-  using BareSliceVector = VectorView<T,undefined_size,size_t>;
-
-  template <typename T>
-  auto make_BareSliceVector (const T & v) 
-  { return BareSliceVector<typename T::TELEM> (v); }
-  
-  template <typename T, typename TELEM=typename T::TELEM>
-  constexpr bool IsConvertibleToBareSliceVector ()
-  {
-    // return is_convertible_v<T,BareSliceVector<TELEM>>;
-    return is_constructible_v<BareSliceVector<TELEM>,T>;        
-  }
-
-
-  
-  template <typename T = double>
-  using BareVector = VectorView<T,undefined_size,IC<1>>;
-
-  template <typename T>
-  auto make_BareVector (const T & v) 
-  { return BareVector<typename T::TELEM> (v); }
-  
-  template <typename T, typename TELEM=typename T::TELEM>
-  constexpr bool IsConvertibleToBareVector ()
-  {
-    // return is_convertible_v<T,BareVector<TELEM>>;
-    return is_constructible_v<BareVector<TELEM>,T>;            
-  }
-
   
   
   template <typename T>
@@ -485,7 +424,8 @@ namespace ngbla
     auto View() const { return *this; }
     auto Shape() const { return a.Shape(); }
     
-    enum { IS_LINEAR = T::IS_LINEAR };
+    // enum { IS_LINEAR = T::IS_LINEAR };
+    static constexpr bool IsLinear() { return T::IsLinear(); }
     void Dump (ostream & ost) const
     { ost << "Sym ("; a.Dump(ost); ost << ")"; }
   };
@@ -558,9 +498,9 @@ namespace ngbla
         }
 
 
-      if (TB::IS_LINEAR)
+      if (TB::IsLinear())
 	{
-	  if (T::IS_LINEAR)
+	  if (T::IsLinear())
 	    {
 	      auto hw = h*w;
               for (auto i : Range(hw))  
@@ -578,7 +518,7 @@ namespace ngbla
 	{
           if (w > 0)
             {
-              if (T::IS_LINEAR)
+              if (T::IsLinear())
                 for (size_t i = 0, k = 0; i < h; i++)
                   for (size_t j = 0; j < w; j++, k++)
                     TOP() (dest(k), src(i,j));                    
@@ -614,7 +554,7 @@ namespace ngbla
     using Expr<T>::Height;
     using Expr<T>::Width;
 
-    enum { IS_LINEAR = 1 };  // row-major continuous storage (dist=width)
+    // enum { IS_LINEAR = 1 };  // row-major continuous storage (dist=width)
     enum { COL_MAJOR = 0 };  // matrix is stored col-major
 
     void Dump (ostream & ost) const { ost << "Matrix"; }
@@ -754,7 +694,7 @@ namespace ngbla
     template <class SCAL2>
     INLINE T & operator*= (SCAL2 s)
     {
-      if (T::IS_LINEAR)
+      if (T::IsLinear())
 	{
 	  size_t hw = Height() * Width();
 	  for (size_t i = 0; i < hw; i++)
@@ -912,7 +852,8 @@ namespace ngbla
     TB b;
   public:
 
-    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    // enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    static constexpr bool IsLinear() { return TA::IsLinear() && TB::IsLinear(); }     
     
     INLINE SumExpr (TA aa, TB ab) : a(aa), b(ab) { ; }
 
@@ -954,7 +895,8 @@ namespace ngbla
     TB b;
   public:
 
-    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    // enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    static constexpr bool IsLinear() { return TA::IsLinear() && TB::IsLinear(); }     
     
     INLINE SubExpr (TA aa, TB ab) : a(aa), b(ab) { ; }
 
@@ -1004,7 +946,8 @@ namespace ngbla
     INLINE auto Height() const { return a.Height(); }
     INLINE auto Width() const { return a.Width(); }
     INLINE TA A() const { return a; }
-    enum { IS_LINEAR = TA::IS_LINEAR };
+    // enum { IS_LINEAR = TA::IS_LINEAR };
+    static constexpr bool IsLinear() { return TA::IsLinear(); } 
   };
 
   template <typename TA>
@@ -1022,7 +965,8 @@ namespace ngbla
     TA a;
     TB b;
   public:
-    enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    // enum { IS_LINEAR = TA::IS_LINEAR && TB::IS_LINEAR };
+    static constexpr bool IsLinear() { return TA::IsLinear() && TB::IsLinear(); }     
 
     INLINE PW_Mult_Expr (TA aa, TB ab) : a(aa), b(ab) { ; }
 
@@ -1087,7 +1031,8 @@ namespace ngbla
     TA a;
     TS s;
   public:
-    enum { IS_LINEAR = TA::IS_LINEAR };
+    // enum { IS_LINEAR = TA::IS_LINEAR };
+    static constexpr bool IsLinear() { return TA::IsLinear(); }
 
     INLINE ScaleExpr (TA aa, TS as) : a(aa), s(as) { ; }
 
@@ -1164,7 +1109,7 @@ namespace ngbla
     INLINE TB B() const { return b; }
     INLINE auto Height() const { return a.Height(); }
     INLINE auto Width() const { return b.Width(); }
-    enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; }     
   };
 
 
@@ -1231,8 +1176,8 @@ namespace ngbla
 
     INLINE auto View() const { return *this; }
     INLINE auto Shape() const { return tuple (a.Width(), a.Height()); }
-    enum { IS_LINEAR = 0 };
-
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; }     
     INLINE const TA & A() const { return a; }
   };
 
@@ -1265,7 +1210,8 @@ namespace ngbla
     INLINE auto Width() const { return a.Width(); }
     INLINE auto View() const { return *this; }
     INLINE auto Shape() const { return a.Shape(); }
-    enum { IS_LINEAR = TA::IS_LINEAR };
+    // enum { IS_LINEAR = TA::IS_LINEAR };
+    static constexpr bool IsLinear() { return TA::IsLinear(); } 
   };
 
   template <typename TA>
@@ -1288,7 +1234,8 @@ namespace ngbla
     INLINE auto Width() const { return a.Width(); }
     INLINE auto View() const { return *this; }
     INLINE auto Shape() const { return a.Shape(); }    
-    enum { IS_LINEAR = TA::IS_LINEAR };
+    // enum { IS_LINEAR = TA::IS_LINEAR };
+    static constexpr bool IsLinear() { return TA::IsLinear(); }     
   };
 
   template <typename TA>
@@ -1323,6 +1270,8 @@ namespace ngbla
     typedef typename TA::TSCAL TSCAL;
     
     enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; }
+    
     enum { COL_MAJOR = TA::COL_MAJOR };
 
     template<typename TB>
@@ -1355,7 +1304,8 @@ namespace ngbla
     INLINE auto operator() (size_t i, size_t j) const { return a(row,i); }
     INLINE auto operator() (size_t i) const { return a(row,i); }
 
-    enum { IS_LINEAR = 0 };
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; }
     
     template<typename TB>
     INLINE const RowExpr & operator= (const Expr<TB> & m) 
@@ -1387,7 +1337,8 @@ namespace ngbla
     INLINE auto operator() (size_t i, size_t j) const { return a(i,col); }
     INLINE auto operator() (size_t i) const { return a(i,col); }
 
-    enum { IS_LINEAR = 0 };
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; }
     
     template<typename TB>
     INLINE const ColExpr & operator= (const Expr<TB> & m) 
@@ -1416,7 +1367,8 @@ namespace ngbla
   public:
     typedef typename TA::TELEM TELEM;
     // typedef typename TA::TSCAL TSCAL;
-
+    static constexpr bool IsLinear() { return false; }
+    
     INLINE RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
 
     INLINE auto Height() const { return rows.Size(); }
@@ -1462,6 +1414,7 @@ namespace ngbla
     FlatArray<int> cols;
   public:
     typedef typename TA::TELEM TELEM;
+    static constexpr bool IsLinear() { return false; } 
     // typedef typename TA::TSCAL TSCAL;
 
     INLINE ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
@@ -1525,7 +1478,8 @@ namespace ngbla
     INLINE auto operator() (size_t i, size_t j) const { return Conj(a(i,j)); }
     INLINE auto operator() (size_t i) const { return Conj(a(i)); }
 
-    enum { IS_LINEAR = 0 };
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return TA::IsLinear(); }         
   };
 
 
@@ -1563,7 +1517,8 @@ namespace ngbla
     INLINE auto operator() (size_t i, size_t j) const { return Truncate(a(i,j), eps); }
     INLINE auto operator() (size_t i) const { return Truncate(a(i), eps); }
     INLINE auto View() const { return *this; }
-    enum { IS_LINEAR = TA::IS_LINEAR };
+    // enum { IS_LINEAR = TA::IS_LINEAR };
+    static constexpr bool IsLinear() { return TA::IsLinear(); }     
   };
 
   /// Conjugate
@@ -1640,7 +1595,7 @@ namespace ngbla
   INLINE auto L2Norm2 (const Expr<TA> & v) 
   {
     decltype(L2Norm2(v.Spec()(0))) sum = 0.0;
-    if (TA::IS_LINEAR)
+    if (TA::IsLinear())
       for (size_t i = 0; i < v.Height()*v.Width(); i++)
 	sum += L2Norm2 (v.Spec()(i));  
     else
