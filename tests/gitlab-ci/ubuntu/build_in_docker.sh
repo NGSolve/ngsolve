@@ -75,6 +75,7 @@ then
 
 fi
 
+mkdir -p /logs/
 pip3 freeze > /logs/pip_freeze.log
 
 cmake ../../src/ngsolve \
