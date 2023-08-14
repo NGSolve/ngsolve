@@ -756,7 +756,21 @@ namespace ngbla
     static inline auto & Assign (MatExpr<TVec> & self, const Expr<TVecB> & v)
     {
       auto cs = CombinedSize (self.Spec().Size(), v.Spec().Size());
-      if constexpr (TVec::IsLinear() && TVecB::IsLinear())
+
+      if constexpr (IsIC<decltype(cs)>())
+        {
+          Vec<cs,T> tmp;
+          for (size_t i = 0; i<cs; i++)
+            tmp[i] = v.Spec()[i];
+          for (size_t i = 0; i<cs; i++)
+            self.Spec()[i] = tmp[i];
+          /*
+            // does not allow auto-vectorization
+          for (size_t i = 0; i<cs; i++)
+            self.Spec()[i] = v.Spec()[i];
+          */
+        }
+      else if constexpr (TVec::IsLinear() && TVecB::IsLinear())
         CopyVector(BareVector<TB>(v.Spec()), FlatVector<T>(self.Spec().Range(0,cs)));
       else
         CopyVector(BareSliceVector<TB>(v.Spec()), SliceVector<T>(self.Spec().Range(0,cs)));
