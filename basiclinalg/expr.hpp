@@ -562,7 +562,7 @@ namespace ngbla
 
 
     template<typename TOP, typename TB>
-    INLINE T & Assign (const Expr<TB> & v)
+    INLINE auto & Assign (const Expr<TB> & v)
     {
       return assign_trait<TOP, T, TB>::Assign (*this, v);
     }

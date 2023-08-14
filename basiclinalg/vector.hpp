@@ -76,6 +76,8 @@ namespace ngbla
   }
 
   
+  template <typename T, typename TS>
+  using LinearVector = VectorView<T,TS,IC<1>>;
 
 
   
@@ -311,6 +313,14 @@ namespace ngbla
     {
       return Range (range.First(), range.Next());
     }
+
+    /*
+    template <int S> 
+    INLINE auto Range (IC<S> r) const
+    {
+      return VectorView<T,IC<S>,TDIST> (r, Dist(), Data());
+    }
+    */
 
     INLINE auto Slice(size_t first, size_t dist2) const
     {
