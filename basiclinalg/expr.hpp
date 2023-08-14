@@ -288,7 +288,7 @@ namespace ngbla
   {
     size_t size;
     
-    undefined_size() = default;
+    undefined_size() = delete;
     constexpr undefined_size(size_t s) : size(s) { }
     template <int S>
     explicit constexpr undefined_size(IC<S> s) : size(s) { }
@@ -332,7 +332,7 @@ namespace ngbla
 #else
     struct undefined_size
     {
-      undefined_size() = default;
+      explicit undefined_size() = default;
       undefined_size(size_t s) { }
       template <int S>
       undefined_size(IC<S> s) { }
