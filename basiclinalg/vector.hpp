@@ -324,7 +324,7 @@ namespace ngbla
 
     INLINE auto Slice(size_t first, size_t dist2) const
     {
-      return VectorView<T,decltype(TS()/size_t()), decltype(TDIST()*size_t())> (size/dist2, dist2*dist, Addr(first));
+      return VectorView<T,decltype(declval<TS>()/size_t()), decltype(declval<TDIST>()*size_t())> (size/dist2, dist2*dist, Addr(first));
     }
     
     INLINE auto operator+(int i) const { return VectorView(size-i, dist, data+i*dist); }
