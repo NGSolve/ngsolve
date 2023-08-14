@@ -330,12 +330,12 @@ namespace ngbla
                  CombinedSize(get<1>(tup1), get<1>(tup2))); }
 
 #else
-    struct undefined_size
+  struct undefined_size
     {
       undefined_size() = delete;
-      undefined_size(size_t s) { }
+      constexpr undefined_size(size_t s) { }
       template <int S>
-      undefined_size(IC<S> s) { }
+      constexpr undefined_size(IC<S> s) { }
   };
   
   inline ostream & operator<< (ostream & ost, undefined_size s) { ost << "undefined"; return ost; }
