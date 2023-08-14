@@ -643,18 +643,24 @@ namespace ngbla
     public:
       template <typename T1, typename T2> 
       INLINE void operator() (T1 && v1, const T2 & v2) { v1 = v2; }
+      static constexpr bool IsPos() { return true; } 
+      static constexpr bool IsAdd() { return false; } 
     };
     class AsAdd 
     {
     public:
       template <typename T1, typename T2> 
       INLINE void operator() (T1 && v1, const T2 & v2) { v1 += v2; }
+      static constexpr bool IsPos() { return true; } 
+      static constexpr bool IsAdd() { return true; } 
     };
     class AsSub 
     {
     public:
       template <typename T1, typename T2> 
       INLINE void operator() (T1 && v1, const T2 & v2) { v1 -= v2; }
+      static constexpr bool IsPos() { return false; } 
+      static constexpr bool IsAdd() { return true; } 
     };
 	
 

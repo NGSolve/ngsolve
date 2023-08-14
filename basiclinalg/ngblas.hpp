@@ -551,66 +551,65 @@ namespace ngbla
   }
 
 
-  template <typename TM, typename TV, typename FUNC>
-  void NgGEMV_fallbck (SliceMatrix<TM,RowMajor> a, FlatVector<const double> x, FlatVector<double> y,
+  template <typename TM, typename FUNC, typename TX, typename TY>
+  void NgGEMV_fallback (BareSliceMatrix<TM,RowMajor> a, FlatVector<TX> x, FlatVector<TY> y,
                        FUNC func) NETGEN_NOEXCEPT  
   {
     for (size_t i = 0; i < y.Size(); i++)
       {
-        double sum = 0;
+        TY sum{0.0};
         for (size_t j = 0; j < x.Size(); j++)
           sum += a(i,j) * x(j);
         func(y(i), sum);
       }
   }  
-  template <typename TM, typename TV, typename FUNC>
-  void NgGEMV_fallback (BareSliceMatrix<TM,ColMajor> a, FlatVector<const double> x, FlatVector<double> y,
+  template <typename TM, typename FUNC, typename TX, typename TY>
+  void NgGEMV_fallback (BareSliceMatrix<TM,ColMajor> a, FlatVector<TX> x, FlatVector<TY> y,
                         FUNC func) NETGEN_NOEXCEPT  
   {
     for (size_t i = 0; i < y.Size(); i++)
       {
-        double sum = 0;
+        TY sum{0.0};
         for (size_t j = 0; j < x.Size(); j++)
           sum += a(i,j) * x(j);
         func(y(i), sum);
       }
   }
-  
-  template <bool ADD, bool POS, ORDERING ord>
-  void NgGEMV (SliceMatrix<double,ord> a, FlatVector<const double> x, FlatVector<double> y)
-  {
-    // static Timer t("generic MV, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(ord));
-    // RegionTimer r(t);
-    // cout << "generic nggemv , add = " << ADD << ", pos = " << POS << endl;
-    // static Timer t("NgGEMV unresolved" + ToString(ADD) + ToString(POS) + ToString(ord));
-    // RegionTimer reg(t);
-    // NgProfiler::AddThreadFlops (t, TaskManager::GetThreadId(), a.Height()*a.Width());
 
-    
+  template <typename TM, typename TVX, typename TVY>
+  extern void TestFunc (TM m, TVX x, TVY y);
+
+  template <bool ADD, bool POS, typename TM, ORDERING ORD, typename TX, typename TY>
+  INLINE void NgGEMV (BareSliceMatrix<TM,ORD> a, FlatVector<const TX> x, FlatVector<TY> y)
+  {
     if (!ADD)
       {
         if (!POS)
           // y = -1*a*x;
-          NgGEMV_fallback(a, x, y, [](Complex & y, Complex sum) { y=-sum; });
+          NgGEMV_fallback(a, x, y, [](auto & y, auto sum) { y=-sum; });
         else
           // y = 1*a*x;
-          NgGEMV_fallback(a, x, y, [](Complex & y, Complex sum) { y=sum; });      
+          NgGEMV_fallback(a, x, y, [](auto & y, auto sum) { y=sum; });      
       }
     else
       {
         if (!POS)
           // y -= 1*a*x;
-          NgGEMV_fallback(a, x, y, [](Complex & y, Complex sum) { y-=sum; });
+          NgGEMV_fallback(a, x, y, [](auto & y, auto sum) { y-=sum; });
         else
           // y += 1*a*x;
-          NgGEMV_fallback(a, x, y, [](Complex & y, Complex sum) { y+=sum; });
+          NgGEMV_fallback(a, x, y, [](auto & y, auto sum) { y+=sum; });
       }
   }
 
-
+  
   
   // template <bool ADD, ORDERING ord>
   // void NgGEMV (double s, SliceMatrix<double,ord> a, BareSliceVector<double> x, BareSliceVector<double> y) NETGEN_NOEXCEPT;
+
+  template <bool ADD, ORDERING ord>
+  extern NGS_DLL_HEADER  
+  void NgGEMV (double s, BareSliceMatrix<double,ord> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT;
 
   template <bool ADD, ORDERING ord>
   extern NGS_DLL_HEADER
@@ -637,33 +636,33 @@ namespace ngbla
 
 
   
-  template <> INLINE void NgGEMV<false,true> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<false,true> (BareSliceMatrix<double,RowMajor> a, FlatVector<const double> x, FlatVector<double> y)
   {
     MultMatVec (a,x.RemoveConst(),y);
   }
   
-  template <> INLINE void NgGEMV<false,true> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<false,true> (BareSliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
     MultMatTransVec (Trans(a),x.RemoveConst(),y);
   }
   
 
-  template <> INLINE void NgGEMV<true,true> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<true,true> (BareSliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
   {
     MultAddMatVec (1,a,x.RemoveConst(),y);
   }
 
-  template <> INLINE void NgGEMV<true,true> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<true,true> (BareSliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
     MultAddMatTransVec (1,Trans(a),x.RemoveConst(),y);
   }
   
-  template <> INLINE void NgGEMV<true,false> (SliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<true,false> (BareSliceMatrix<> a, FlatVector<const double> x, FlatVector<> y)
   {
     MultAddMatVec (-1,a,x.RemoveConst(),y);
   }
 
-  template <> INLINE void NgGEMV<true,false> (SliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
+  template <> INLINE void NgGEMV<true,false> (BareSliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<> y)
   {
     MultAddMatTransVec (-1,Trans(a),x.RemoveConst(),y);
   }
@@ -824,6 +823,67 @@ namespace ngbla
 
 
   // matrix-vector
+  // x OP= M*y
+  template <typename OP, typename T, typename TS, typename TD, typename TA, typename TB, typename TBS, typename TBD>
+  class assign_trait<OP, VectorView<T,TS,TD>, MultExpr<TA,VectorView<TB,TBS,TBD>>,
+                     enable_if_t<IsConvertibleToBareSliceMatrix<TA>(), int>>
+    
+  {
+    typedef VectorView<T,TS,TD> TVec;
+    typedef VectorView<TB,TBS,TBD> TVecB;
+  public:
+    static inline auto & Assign (MatExpr<TVec> & self, const Expr<MultExpr<TA,VectorView<TB,TBS,TBD>>> & prod)
+    {
+      auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
+      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
+
+      constexpr bool ADD = OP::IsAdd();
+      constexpr bool POS = OP::IsPos();
+      
+      if constexpr (TVec::IsLinear() && TVecB::IsLinear())
+        NgGEMV<ADD,POS> (BareSliceMatrix(prod.View().A()),
+                         FlatVector<const TB>(prod.View().B().Range(0,w)),
+                         FlatVector<T>(self.Spec().Range(0,h)));
+      else
+        NgGEMV<ADD> (POS, BareSliceMatrix(prod.View().A()),
+                     SliceVector<TB>(prod.View().B().Range(0,w)),
+                     SliceVector<T>(self.Spec().Range(0,h)));
+      return self.Spec();
+    }
+  };
+  
+  // x OP= (s*M)*y
+  template <typename OP, typename T, typename TS, typename TD, typename TA, typename TB, typename TBS, typename TBD, typename TC>
+  class assign_trait<OP, VectorView<T,TS,TD>, MultExpr<ScaleExpr<TA,TC>,VectorView<TB,TBS,TBD>>,
+                     enable_if_t<IsConvertibleToBareSliceMatrix<TA>(), int>>
+    
+  {
+    typedef VectorView<T,TS,TD> TVec;
+    typedef VectorView<TB,TBS,TBD> TVecB;
+  public:
+    static inline auto & Assign (MatExpr<TVec> & self, const Expr<MultExpr<ScaleExpr<TA,TC>,VectorView<TB,TBS,TBD>>> & prod)
+    {
+      auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
+      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
+
+      constexpr bool ADD = OP::IsAdd();
+      double POS = OP::IsPos() ? 1.0 : -1.0;
+      
+      if constexpr (TVec::IsLinear() && TVecB::IsLinear())
+        NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
+                     FlatVector<const TB>(prod.View().B().Range(0,w)),
+                     FlatVector<T>(self.Spec().Range(0,h)));
+      else
+        NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
+                     SliceVector<TB>(prod.View().B().Range(0,w)),
+                     SliceVector<T>(self.Spec().Range(0,h)));
+      return self.Spec();
+    }
+  };
+  
+  
+
+#ifdef OLDMatVec
   
   template <typename OP, typename T, typename TA, typename TB>
   class assign_trait<OP, T, MultExpr<TA,TB>,
@@ -904,7 +964,8 @@ namespace ngbla
                    make_BareSliceVector(self.Spec()).Range(0, h));
       return self.Spec();
     }
-  };    
+  };
+  
   
 
   template <typename OP, typename T, typename TA, typename TB, typename TC>
@@ -930,8 +991,8 @@ namespace ngbla
     }
   };
 
+#endif
   
-
 
 
   

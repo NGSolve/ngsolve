@@ -484,7 +484,7 @@ namespace ngbla
   }
   */
 
-
+  /*
   template <typename FUNC>  
   void NgGEMV (double s, BareSliceMatrix<double,RowMajor> a, SliceVector<double> x, SliceVector<double> y,
                FUNC func) NETGEN_NOEXCEPT
@@ -512,8 +512,68 @@ namespace ngbla
         func (y(i), s*sum);
       }
   }
+  */
 
 
+
+
+
+  
+
+  template <typename TM, typename FUNC>
+  void T_NgGEMV (double s, BareSliceMatrix<TM,RowMajor> a, FlatVector<const double> x, FlatVector<double> y, FUNC func) NETGEN_NOEXCEPT  
+  {
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func(y(i), s*sum);
+      }
+  }
+  template <typename TM, typename FUNC>
+  void T_NgGEMV (double s, BareSliceMatrix<TM,ColMajor> a, FlatVector<const double> x, FlatVector<double> y, FUNC func) NETGEN_NOEXCEPT  
+  {
+    for (size_t i = 0; i < y.Size(); i++)
+      {
+        double sum = 0;
+        for (size_t j = 0; j < x.Size(); j++)
+          sum += a(i,j) * x(j);
+        func(y(i), s*sum);
+      }
+  }
+
+  template <>
+  NGS_DLL_HEADER    
+  void NgGEMV<false> (double s, BareSliceMatrix<double,RowMajor> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT
+  {
+    T_NgGEMV (s, a, x, y, [](double & y, double sum) { y=sum; });
+  }
+  template <>
+  NGS_DLL_HEADER      
+  void NgGEMV<true> (double s, BareSliceMatrix<double,RowMajor> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT
+  {
+    T_NgGEMV (s, a, x, y, [](double & y, double sum) { y+=sum; });
+  }
+  template <>
+  NGS_DLL_HEADER      
+  void NgGEMV<false> (double s, BareSliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT
+  {
+    T_NgGEMV (s, a, x, y, [](double & y, double sum) { y=sum; });
+  }
+  template <>
+  NGS_DLL_HEADER      
+  void NgGEMV<true> (double s, BareSliceMatrix<double,ColMajor> a, FlatVector<const double> x, FlatVector<double> y) NETGEN_NOEXCEPT
+  {
+    T_NgGEMV (s, a, x, y, [](double & y, double sum) { y+=sum; });
+  }
+
+
+
+
+
+
+  
 
   template <typename TM, typename FUNC>
   void T_NgGEMV (double s, BareSliceMatrix<TM,RowMajor> a, SliceVector<double> x, SliceVector<double> y, FUNC func) NETGEN_NOEXCEPT  
@@ -563,6 +623,11 @@ namespace ngbla
     T_NgGEMV (s, a, x, y, [](double & y, double sum) { y+=sum; });
   }
 
+
+
+
+
+  
   /*
   template <>  
   void NgGEMV<false> (double s, BareSliceMatrix<double,RowMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
