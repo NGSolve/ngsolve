@@ -12,7 +12,7 @@ if [ "$IMAGE_NAME" == "debug" ]
 then
   export CMAKE_CXX_FLAGS="-Og -Wall -Wno-sign-compare -DDebug"
   export CMAKE_BUILD_TYPE="Debug"
-  export CMAKE_ARGS="$CMAKE_ARGS -DFAST_COMPILE=ON"
+  # export CMAKE_ARGS="$CMAKE_ARGS -DFAST_COMPILE=ON"
 else
   export CMAKE_BUILD_TYPE="Release"
 fi
