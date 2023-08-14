@@ -9,6 +9,18 @@
 #define REGCALL
 #endif
 
+/*
+namespace ngcore
+{
+  template <int S>
+  INLINE auto Range (IC<S> s)
+  {
+    return IntRange(0,s);
+  }
+}
+*/
+
+
 namespace ngbla
 {
 
@@ -26,10 +38,11 @@ namespace ngbla
   
 
   
-  template <typename T1, typename T2>
-  void CopyVector (BareVector<T1> src, FlatVector<T2> dest) NETGEN_NOEXCEPT
+  template <typename T1, typename T2, typename T1S, typename T2S>
+  void CopyVector (LinearVector<T1,T1S> src, LinearVector<T2,T2S> dest) NETGEN_NOEXCEPT
   {
-    for (size_t i : Range(dest))
+    auto cs = CombinedSize(src.Size(), dest.Size());
+    for (size_t i : Range(cs))
       dest[i] = src[i];
   }
 
@@ -659,7 +672,8 @@ namespace ngbla
   // bla dispatsches
   
   // vector-vector
-  
+
+  /*
   template <typename OP, typename T, typename TB>
   class assign_trait<OP, T, TB, 
                      enable_if_t<std::is_same_v<OP,typename MatExpr<T>::As> == true &&
@@ -673,7 +687,24 @@ namespace ngbla
       return self.Spec();
     }
   };
-  
+  */
+
+  /*
+  template <typename OP, typename T, typename TS, typename TB, typename TBS>
+  class assign_trait<OP, LinearVector<T,TS>, LinearVector<TB,TBS>, 
+                     enable_if_t<std::is_same_v<OP,typename MatExpr<LinearVector<T,TS>>::As> == true, int>>
+  {
+  public:
+    static inline auto & Assign (MatExpr<LinearVector<T,TS>> & self, const Expr<LinearVector<TB,TBS>> & v)
+    {
+      auto cs = CombinedSize (self.Spec().Size(), v.Spec().Size());
+      CopyVector(BareVector<TB>(v.Spec()), self.Spec().Range(0, cs));
+      return self.Spec();
+    }
+  };
+  */
+
+  /*
   template <typename OP, typename T, typename TB>
   class assign_trait<OP, T, TB, 
                      enable_if_t<std::is_same_v<OP,typename MatExpr<T>::As> == true &&
@@ -688,8 +719,47 @@ namespace ngbla
       return self.Spec();
     }
   };
+  */
+
+  /*
+  template <typename OP, typename T, typename TS, typename TD, typename TB, typename TBS, typename TBD>
+  class assign_trait<OP, VectorView<T,TS,TD>, VectorView<TB,TBS,TBD>, 
+                     enable_if_t<std::is_same_v<OP,typename MatExpr<VectorView<T,TS,TD>>::As> == true, int>>
+  {
+    typedef VectorView<T,TS,TD> TVec;
+    typedef VectorView<TB,TBS,TBD> TVecB;
+  public:
+    static inline auto & Assign (MatExpr<TVec> & self, const Expr<TVecB> & v)
+    {
+      auto cs = CombinedSize (self.Spec().Size(), v.Spec().Size());      
+      CopyVector(BareSliceVector<TB>(v.Spec()), SliceVector<T>(self.Spec().Range(0,cs)));
+      return self.Spec();
+    }
+  };
+  */
 
 
+
+  template <typename OP, typename T, typename TS, typename TD, typename TB, typename TBS, typename TBD>
+  class assign_trait<OP, VectorView<T,TS,TD>, VectorView<TB,TBS,TBD>, 
+                     enable_if_t<std::is_same_v<OP,typename MatExpr<VectorView<T,TS,TD>>::As> == true, int>>
+  {
+    typedef VectorView<T,TS,TD> TVec;
+    typedef VectorView<TB,TBS,TBD> TVecB;
+  public:
+    static inline auto & Assign (MatExpr<TVec> & self, const Expr<TVecB> & v)
+    {
+      auto cs = CombinedSize (self.Spec().Size(), v.Spec().Size());
+      if constexpr (TVec::IsLinear() && TVecB::IsLinear())
+        CopyVector(BareVector<TB>(v.Spec()), FlatVector<T>(self.Spec().Range(0,cs)));
+      else
+        CopyVector(BareSliceVector<TB>(v.Spec()), SliceVector<T>(self.Spec().Range(0,cs)));
+      return self.Spec();
+    }
+  };
+  
+
+  
 
   
   /*
