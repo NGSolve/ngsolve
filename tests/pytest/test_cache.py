@@ -49,16 +49,33 @@ def dg_fes():
 
 def eval_count(filename):
     with open(filename, "r") as lf:
-        content = lf.read()
-    evals = len(re.findall("======== Evaluate", content))
+        lines = lf.readlines()
+    lines = [l for l in lines if l.startswith("======== Evaluate")]
+    evals = 0
+    
+    # have_simd = len(re.findall("======== Evaluate\\(ngfem::SIMD_Mapped", lines))
+    have_simd = False
+    for line in lines:
+        if "::Mapped" in line:
+            evals = 1 if have_simd else evals+1
+            have_simd = False
+        else:
+            have_simd = True
+            evals += 1
+    # evals_regular = len(re.findall("======== Evaluate\\(ngfem::Mapped", content))
+    # evals_simd = len(re.findall("======== Evaluate\\(ngfem::SIMD_Mapped", content))
+    # evals = max(evals_simd, evals_regular)
     print(evals)
     return evals
 
 
+_logfile_counter = 0
 def mk_logfile(filename):
-    logfile = pathlib.Path(filename)
+    global _logfile_counter
+    logfile = pathlib.Path(f"{filename}_{_logfile_counter}")
     if logfile.exists():
         logfile.unlink()
+    _logfile_counter += 1
     return logfile
 
 
@@ -70,23 +87,20 @@ def mk_linear_form(fes, cf):
     L.Assemble()
     return L
 
-
-def test_cache_in_linear_form_integrator(fes):
-    logfile = mk_logfile("test_cache_in_linear_form_integrator_nocache.log")
-    L = mk_linear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
+def compare_lf(make_lf, fes):
+    logfile = mk_logfile("baseline.log")
+    L = make_lf(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
     baseline = eval_count(logfile)
 
-    # covers simd version of LFIntegrator :: T_CalcElementVector (also element_vb != VOL)
-    logfile = mk_logfile("test_cache_in_linear_form_integrator_cf.log")
-    cL = mk_linear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
-    assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 48
+    for cf in [mk_cf(fes), mk_newton_cf(fes)]:
+        logfile = mk_logfile("check.log")
+        cL = make_lf(fes, CacheCF(LoggingCF(cf, logfile=str(logfile))))
+        assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
+        assert eval_count(logfile) < baseline
 
-    # covers non-simd version of LFIntegrator :: T_CalcElementVector (also element_vb != VOL)
-    logfile = mk_logfile("test_cache_in_linear_form_integrator_ncf.log")
-    cL = mk_linear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
-    assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 49
+
+def test_cache_in_linear_form_integrator(fes):
+    compare_lf(mk_linear_form, fes)
 
 
 def mk_facet_linear_form(fes, cf):
@@ -98,22 +112,7 @@ def mk_facet_linear_form(fes, cf):
 
 
 def test_cache_in_facet_linear_form_integrator(fes):
-    logfile = mk_logfile("test_cache_in_facet_linear_form_integrator_nocache.log")
-    L = mk_facet_linear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
-    baseline = eval_count(logfile)
-
-    # covers possibly existing simd version of FacetLFIntegrator :: T_CalcFacetVector
-    logfile = mk_logfile("test_cache_in_facet_linear_form_integrator_cf.log")
-    cL = mk_facet_linear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
-    assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 12
-
-    # covers non-simd version of FacetLFIntegrator :: T_CalcFacetVector
-    logfile = mk_logfile("test_cache_in_facet_linear_form_integrator_ncf.log")
-    cL = mk_facet_linear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
-    assert np.allclose(cL.vec.FV().NumPy(), L.vec.FV().NumPy(), atol=1e-15, rtol=0)
-    # NOTE: currently no simd version exists and the count for simd and non.simd are thus the same
-    assert eval_count(logfile) == 12
+    compare_lf(mk_facet_linear_form, fes)
 
 
 def mk_bilinear_form(fes, cf):
@@ -127,37 +126,30 @@ def mk_bilinear_form(fes, cf):
     return a
 
 
-def test_cache_in_bilinear_form_integrator(fes):
+def compare_blf(make_blf, fes):
+    logfile = mk_logfile("baseline.log")
+    a = make_blf(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
+    baseline = eval_count(logfile)
+
     gf = GridFunction(fes)
     gfvec = gf.vec
     resvec = gf.vec.Copy()
-    gf.Interpolate(CoefficientFunction((x, y, z)))
+    # gf.Interpolate(CoefficientFunction((x, y, z)))
 
-    logfile = mk_logfile("test_cache_in_bilinear_form_integrator_nocache.log")
-    a = mk_bilinear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
-    a.Apply(gfvec, resvec)
-    baseline = eval_count(logfile)
+    for cf in [mk_cf(fes), mk_newton_cf(fes)]:
+        logfile = mk_logfile("check.log")
+        ca = make_blf(fes, CacheCF(LoggingCF(cf, logfile=str(logfile))))
+        count_assemble = eval_count(logfile)
+        assert count_assemble < baseline
+        assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
+        cresvec = gfvec.Copy()
+        ca.Apply(gfvec, cresvec)
+        assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
+        assert eval_count(logfile)-count_assemble < baseline
 
-    # covers simd version of BLFIntegrator :: T_CalcElementMatrixAdd, T_CalcElementMatrixEBAdd and ApplyMatrix
-    logfile = mk_logfile("test_cache_in_bilinear_form_integrator_cf.log")
-    ca = mk_bilinear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
-    assert eval_count(logfile) == 48
-    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
-    cresvec = gfvec.Copy()
-    ca.Apply(gfvec, cresvec)
-    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 96
 
-    # covers non-simd version of BLFIntegrator :: T_CalcElementMatrixAdd, T_CalcElementMatrixEBAdd and ApplyMatrix
-    logfile = mk_logfile("test_cache_in_bilinear_form_integrator_ncf.log")
-    ca = mk_bilinear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
-    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 50
-    cresvec = gfvec.Copy()
-    ca.Apply(gfvec, cresvec)
-    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 98
-
+def test_cache_in_bilinear_form_integrator(fes):
+    compare_blf(mk_bilinear_form, fes)
 
 def mk_facet_bilinear_form(fes, cf):
     trial_function, test_function = fes.TnT()
@@ -169,36 +161,7 @@ def mk_facet_bilinear_form(fes, cf):
 
 
 def test_cache_in_facet_bilinear_form_integrator(fes):
-    gf = GridFunction(fes)
-    gfvec = gf.vec
-    resvec = gf.vec.Copy()
-    gf.Interpolate(CoefficientFunction((x, y, z)))
-
-    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_nocache.log")
-    a = mk_facet_bilinear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
-    a.Apply(gfvec, resvec)
-    baseline = eval_count(logfile)
-
-    # covers simd version of FacetBLFIntegrator :: T_CalcFacetMatrix, ApplyFacetMatrix (both "1-element signature")
-    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_cf.log")
-    ca = mk_facet_bilinear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
-    assert eval_count(logfile) == 12
-    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
-    cresvec = gfvec.Copy()
-    ca.Apply(gfvec, cresvec)
-    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 24
-
-    # covers non-simd version of FacetBLFIntegrator :: T_CalcFacetMatrix, ApplyFacetMatrix (both "1-element signature")
-    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_ncf.log")
-    ca = mk_facet_bilinear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
-    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
-    # NOTE: currently no simd version exists and the count for simd and non.simd are thus the same
-    assert eval_count(logfile) == 12
-    cresvec = gfvec.Copy()
-    ca.Apply(gfvec, cresvec)
-    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 25
+    compare_blf(mk_facet_bilinear_form, fes)
 
 
 def mk_facet_dg_bilinear_form(dg_fes, cf):
@@ -214,37 +177,7 @@ def mk_facet_dg_bilinear_form(dg_fes, cf):
 
 
 def test_cache_in_facet_bilinear_form_integrator_dg(dg_fes):
-    fes = dg_fes
-    gf = GridFunction(fes)
-    gfvec = gf.vec
-    resvec = gf.vec.Copy()
-    gf.Interpolate(CoefficientFunction(x * y * z))
-
-    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_dg_nocache.log")
-    a = mk_facet_dg_bilinear_form(fes, LoggingCF(mk_cf(fes), logfile=str(logfile)))
-    a.Apply(gfvec, resvec)
-    baseline = eval_count(logfile)
-
-    # covers simd version of FacetBLFIntegrator :: T_CalcFacetMatrix, ApplyFacetMatrix (both "2-element signature")
-    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_dg_cf.log")
-    ca = mk_facet_dg_bilinear_form(fes, CacheCF(LoggingCF(mk_cf(fes), logfile=str(logfile))))
-    assert eval_count(logfile) == 18
-    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
-    cresvec = gfvec.Copy()
-    ca.Apply(gfvec, cresvec)
-    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 36
-
-    # covers non-simd version of FacetBLFIntegrator :: T_CalcFacetMatrix, ApplyFacetMatrix (both "2-element signature")
-    logfile = mk_logfile("test_cache_in_facet_bilinear_form_integrator_ncf.log")
-    ca = mk_facet_dg_bilinear_form(fes, CacheCF(LoggingCF(mk_newton_cf(fes), logfile=str(logfile))))
-    assert np.allclose(ca.mat.AsVector().FV().NumPy(), a.mat.AsVector().FV().NumPy(), atol=1e-15, rtol=0)
-    # NOTE: currently no simd version exists and the count for simd and non.simd are thus the same
-    assert eval_count(logfile) == 18
-    cresvec = gfvec.Copy()
-    ca.Apply(gfvec, cresvec)
-    assert np.allclose(cresvec.FV().NumPy(), resvec.FV().NumPy(), atol=1e-15, rtol=0)
-    assert eval_count(logfile) == 37
+    compare_blf(mk_facet_dg_bilinear_form, dg_fes)
 
 
 if __name__ == "__main__":

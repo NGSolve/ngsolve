@@ -590,7 +590,10 @@ namespace ngfem
         Facet2ElementTrafo f2el(ElementType(), VorB(el_vb));
         res = rhs;
         if (!first_time)
-          for (int nr = 0; nr < f2el.GetNFacets(); nr++)
+        {
+          try
+          {
+            for (int nr = 0; nr < f2el.GetNFacets(); nr++)
             {
               IntegrationRule irfacet1(f2el.FacetType(nr), 2*order);
               SIMD_IntegrationRule irfacet(irfacet1);
@@ -601,6 +604,21 @@ namespace ngfem
                 pointvals(i) *= -irfacet[i].Weight();
               AddDualTrans (volir, pointvals, res);
             }
+          }
+          catch (const ExceptionNOSIMD& e)
+          {
+            for (int nr = 0; nr < f2el.GetNFacets(); nr++)
+            {
+              IntegrationRule irfacet(f2el.FacetType(nr), 2*order);
+              auto & volir = f2el(nr, irfacet, lh);
+              FlatVector<double> pointvals(volir.Size(), lh);
+              Evaluate (volir, u, pointvals);
+              for (int i = 0; i < volir.Size(); i++)
+                pointvals(i) *= -irfacet[i].Weight();
+              AddDualTrans (volir, pointvals, res);
+            }
+          }
+        }
         first_time = false;
         
         u.Range(r) += pw_mult(diag.Range(r), res.Range(r));

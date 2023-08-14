@@ -24,6 +24,7 @@ option( USE_CCACHE       "use ccache")
 option( INSTALL_DEPENDENCIES "install dependencies like netgen or solver libs, useful for packaging" OFF )
 option( ENABLE_UNIT_TESTS "Enable Catch unit tests")
 option( BUILD_STUB_FILES "Build stub files for better autocompletion" ON)
+option( FAST_COMPILE "Skip optimized function code for faster compilation times and reduced code size" OFF )
 
 set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH}" "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_modules")
 set(NETGEN_DIR "" CACHE PATH "Path to Netgen, leave empty to build Netgen automatically")
@@ -103,6 +104,10 @@ add_custom_target(generate_version_file
     -P ${CMAKE_CURRENT_LIST_DIR}/cmake/generate_version_file.cmake
     )
 
+#######################################################################
+if(FAST_COMPILE)
+  list(APPEND NGSOLVE_COMPILE_DEFINITIONS FASTCOMPILE)
+endif(FAST_COMPILE)
 #######################################################################
 if(USE_CCACHE)
   find_program(CCACHE_FOUND NAMES ccache ccache.bat)
