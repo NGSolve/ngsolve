@@ -1,12 +1,9 @@
 sed -e "s/{UBUNTU_VERSION}/$UBUNTU_VERSION/" tests/gitlab-ci/ubuntu/docker_template >> docker_file
 docker build -t ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} -f docker_file .
 
-rm -f ngsolve_${CI_PIPELINE_ID}_${IMAGE_NAME}.id
-
-mkdir logs
-
+export DOCKER_NAME=ngsolve_${CI_PIPELINE_ID}_${IMAGE_NAME}
 docker run \
-      --cidfile ngsolve_${CI_PIPELINE_ID}_${IMAGE_NAME}.id \
+      --name ${DOCKER_NAME} \
       -e MKLROOT=/opt/intel/mkl \
       -e CI=$CI \
       -e CI_BUILD_REF=$CI_BUILD_REF \
@@ -20,8 +17,9 @@ docker run \
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64 \
       -e RUN_SLOW_TESTS="$RUN_SLOW_TESTS" \
       -v /opt/intel:/opt/intel \
-      -v `pwd`/logs:/logs \
       -v /mnt/ccache:/ccache ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} \
       bash /root/src/ngsolve/tests/gitlab-ci/ubuntu/build_in_docker.sh
 
-docker commit `cat ngsolve_${CI_PIPELINE_ID}_${IMAGE_NAME}.id` ngsolve_${CI_PIPELINE_ID}_installed:${IMAGE_NAME}
+docker wait ${DOCKER_NAME}
+docker cp ${DOCKER_NAME}:/logs/ .
+docker commit ${DOCKER_NAME} ngsolve_${CI_PIPELINE_ID}_installed:${IMAGE_NAME}

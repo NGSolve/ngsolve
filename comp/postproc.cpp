@@ -1547,6 +1547,8 @@ namespace ngfem
 
 
     std::array<IntegrationRule*, std::max(element_types)+1> user_ir;
+    for (auto & ir_ptr : user_ir)
+      ir_ptr = nullptr;
     std::array<unique_ptr<SIMD_IntegrationRule>, std::max(element_types)+1> user_simd_ir;
 
     for (auto [type, val] : dx.userdefined_intrules)
