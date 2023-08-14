@@ -64,7 +64,7 @@ namespace ngbla
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
-
+    static constexpr bool IsLinear() { return ORD==RowMajor; }
     /// nothing done in default constructor
     INLINE FlatMatrix () = default; 
   
@@ -285,8 +285,8 @@ namespace ngbla
     size_t w;
     T * __restrict data;
   public:
-    enum { IS_LINEAR = 0 };
-
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; } 
     /// element type
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
@@ -606,7 +606,7 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     typedef Vec<H, typename mat_traits<T>::TV_COL> TV_COL;
     typedef Vec<W, typename mat_traits<T>::TV_ROW> TV_ROW;
-
+    static constexpr bool IsLinear() { return true; } 
     /// do not initialize 
     constexpr Mat () = default;
     Mat (const Mat &) = default;
@@ -882,7 +882,8 @@ namespace ngbla
     /// scalar type of entry
     typedef typename mat_traits<T>::TSCAL TSCAL;
     
-    enum { IS_LINEAR = (DIM == DIST) && (ORD==RowMajor) }; 
+    // enum { IS_LINEAR = (DIM == DIST) && (ORD==RowMajor) };
+    static constexpr bool IsLinear() { return (DIM == DIST) && (ORD==RowMajor); }     
     enum { COL_MAJOR = (ORD==ColMajor) };
 
     
@@ -1257,8 +1258,8 @@ namespace ngbla
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    enum { IS_LINEAR = 0 };
-
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; } 
     // 
     SliceMatrix() = delete;
     INLINE SliceMatrix(const SliceMatrix &) = default;
@@ -1492,8 +1493,8 @@ namespace ngbla
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    enum { IS_LINEAR = 0 };
-
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; } 
     // 
     BareSliceMatrix() : DummySize(0,0) { ; } // initialize with placement new later
     INLINE BareSliceMatrix(const BareSliceMatrix &) = default;
@@ -1682,7 +1683,8 @@ namespace ngbla
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    enum { IS_LINEAR = 0 };
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; }     
 
     /// set height, width, and mem
     DoubleSliceMatrix (int ah, int aw, int adistr, int adistc, T * adata) 
@@ -1900,8 +1902,8 @@ namespace ngbla
     typedef Vec<H, double> TV_ROW;
     enum { HEIGHT = H };
     enum { WIDTH  = H };
-    enum { IS_LINEAR = 0 };
-
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; } 
     /// nothing to do 
     Id () { ; }
 
@@ -1932,8 +1934,9 @@ namespace ngbla
   public:
     typedef double TELEM;
     typedef double TSCAL;
-    enum { IS_LINEAR = 0 };
-
+    // enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; }
+    
     INLINE Identity (int s) : size(s) { ; }
 
     INLINE double operator() (int i) const
