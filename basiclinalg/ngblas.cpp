@@ -538,22 +538,26 @@ namespace ngbla
       }
   }
 
-  template <>  
+  template <>
+  NGS_DLL_HEADER    
   void NgGEMV<false> (double s, BareSliceMatrix<double,RowMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
   {
     T_NgGEMV (s, a, x, y, [](double & y, double sum) { y=sum; });
   }
-  template <>  
+  template <>
+  NGS_DLL_HEADER      
   void NgGEMV<true> (double s, BareSliceMatrix<double,RowMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
   {
     T_NgGEMV (s, a, x, y, [](double & y, double sum) { y+=sum; });
   }
-  template <>  
+  template <>
+  NGS_DLL_HEADER      
   void NgGEMV<false> (double s, BareSliceMatrix<double,ColMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
   {
     T_NgGEMV (s, a, x, y, [](double & y, double sum) { y=sum; });
   }
-  template <>  
+  template <>
+  NGS_DLL_HEADER      
   void NgGEMV<true> (double s, BareSliceMatrix<double,ColMajor> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
   {
     T_NgGEMV (s, a, x, y, [](double & y, double sum) { y+=sum; });
