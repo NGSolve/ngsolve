@@ -1901,8 +1901,8 @@ namespace ngbla
     template <typename TA, typename TB>
     DummySize (tuple<TA,TB> shape) { }
   protected:
-    static INLINE auto Height() { return undefined_size(); }
-    static INLINE auto Width() { return undefined_size(); }
+    static INLINE auto Height() { return undefined_size(0); }
+    static INLINE auto Width() { return undefined_size(0); }
   };
 #endif
 

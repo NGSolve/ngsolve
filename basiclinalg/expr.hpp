@@ -332,17 +332,17 @@ namespace ngbla
 #else
     struct undefined_size
     {
-      explicit undefined_size() = default;
+      undefined_size() = delete;
       undefined_size(size_t s) { }
       template <int S>
       undefined_size(IC<S> s) { }
   };
   
   inline ostream & operator<< (ostream & ost, undefined_size s) { ost << "undefined"; return ost; }
-  inline auto operator/ (undefined_size ud, size_t i) { return undefined_size(); }
-  inline auto operator- (undefined_size ud, size_t i) { return undefined_size(); }
+  inline auto operator/ (undefined_size ud, size_t i) { return ud; }
+  inline auto operator- (undefined_size ud, size_t i) { return ud; }
   
-  INLINE constexpr auto CombinedSize(undefined_size s1, undefined_size s2) { return undefined_size(); }
+  INLINE constexpr auto CombinedSize(undefined_size s1, undefined_size s2) { return s1; }
   INLINE constexpr auto CombinedSize(undefined_size s1, size_t s2) { return s2; }  
   INLINE constexpr auto CombinedSize(size_t s1, undefined_size s2) { return s1; }  
   INLINE constexpr auto CombinedSize(size_t s1, size_t s2) { return s1; }
