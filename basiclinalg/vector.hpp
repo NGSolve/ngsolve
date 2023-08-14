@@ -14,7 +14,12 @@ namespace ngbla
 
 
   template <int S, class T> class Vec;
-  template <int S, typename T> class FlatVec;
+  // template <int S, typename T> class FlatVec;
+
+  template <int S, typename T = double>
+  using FlatVec = VectorView<T,IC<S>,IC<1>>;
+  
+  
   template <class T> class SysVector;
   template <class T = double> class Vector;
   // template <class T> class SliceVector;
@@ -31,6 +36,7 @@ namespace ngbla
   class VectorView : public CMCPMatExpr<VectorView<T,TS,TDIST>>
   {
   protected:
+    typedef CMCPMatExpr<VectorView<T,TS,TDIST>> BASE;
     T * __restrict data;
     NO_UNIQUE_ADDRESS TS size;
     NO_UNIQUE_ADDRESS TDIST dist;
@@ -54,6 +60,11 @@ namespace ngbla
     INLINE VectorView (const VectorView<T2,TS2,TDIST2> & v2)
       : data(v2.Data()), size(v2.Size()), dist(v2.Dist()) { }
     
+    INLINE explicit VectorView (T * adata)
+      : data(adata)
+    {
+      ; // static_assert(std::is_same<type_dist,IC<1>>());
+    } 
     INLINE VectorView (TS asize, T * adata)
       : data(adata), size(asize)
     {
@@ -127,18 +138,24 @@ namespace ngbla
     
     INLINE auto & operator= (const VectorView & v)
     {
+      /*
       auto cs = CombinedSize(this->Size(), v.Size());      
       for (size_t i = 0; i < cs; i++)
-        data[i*dist] = v(i);
-      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
+      data[i*dist] = v(i);
+      */
+      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);  // not working ?
+      this->template Assign<typename MatExpr<VectorView<T,TS,TDIST>>::As> (v);      
       return *this;
     }
     INLINE auto & operator= (VectorView && v)
     {
+      /*
       auto cs = CombinedSize(this->Size(), v.Size());      
       for (size_t i = 0; i < cs; i++)
         data[i*dist] = v(i);
-      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
+      */
+      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);  // not working ?
+      this->template Assign<typename MatExpr<VectorView<T,TS,TDIST>>::As> (v);
       return *this;
     }
 
@@ -159,7 +176,8 @@ namespace ngbla
     template<typename TB>
     INLINE auto & operator= (const Expr<TB> & v) 
     {
-      return CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
+      CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
+      return *this;
     }
 
     /// assign constant value
@@ -1188,7 +1206,7 @@ namespace ngbla
     }
 
     /// vector size
-    INLINE constexpr size_t Size () const { return S; }
+    INLINE auto Size () const { return IC<S>(); }
     /// corresponding matrix height
     INLINE constexpr size_t Height () const { return S; }
     /// corresponding matrix with
@@ -1335,7 +1353,7 @@ namespace ngbla
 
 
 
-
+#ifdef OLD
   /**
      A pointer to a vector of fixed size.
   */
@@ -1434,7 +1452,8 @@ namespace ngbla
     /// corresponding matrix with
     INLINE constexpr int Width () const { return 1; }
   };
-
+#endif
+  
   /// output vector.
   template<int S, typename T>
   inline ostream & operator<< (ostream & ost, const FlatVec<S,T> & v)

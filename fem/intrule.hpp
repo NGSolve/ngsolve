@@ -275,8 +275,8 @@ namespace ngfem
     /// global number of ip
     // INLINE int IPNr () const { return -1; }
 
-    INLINE FlatVec<3, double> Point() { return &pi[0]; }
-    INLINE FlatVec<3, const double> Point() const { return &pi[0]; }
+    INLINE auto Point() { return FlatVec<3> (&pi[0]); }
+    INLINE auto Point() const { return FlatVec<3, const double> (&pi[0]); }
 
     void SetFacetNr (int afacetnr, VorB avb = BND)
     { facetnr = afacetnr; vb = avb; }

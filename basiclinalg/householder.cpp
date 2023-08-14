@@ -154,7 +154,7 @@ namespace ngbla
     T = Trans(mv1);
     T.Diag() = 1.0;
     for (size_t i = 0; i < m; i++)
-      T.Row(i).Range(i+1, m) = 0;
+      T.Row(i).Range(i+1, m) = 0.0;
     TriangularMult<UpperRight, Normalized> (mv1, T);
       
     T += mv2 * Trans(mv2);
