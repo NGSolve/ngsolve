@@ -81,6 +81,25 @@ namespace ngbla
     return detail::test_conv_bareslicevector<T>::value;
   }
   */
+
+  
+  namespace detail {
+    template <typename T, typename Enable = int>
+    struct IsIC_trait {
+      static constexpr auto check() { return false; }
+    };
+    
+    template <typename T>
+    struct IsIC_trait<T, std::enable_if_t<std::is_same_v<T, IC<T::value>> == true, int> > {
+      static constexpr auto check() { return true; }  
+    };
+  }
+  
+  template <typename T>
+  constexpr bool IsIC() {
+    return detail::IsIC_trait<T>::check();
+  }
+  
   
 
   template <typename T>
