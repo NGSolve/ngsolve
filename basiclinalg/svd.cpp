@@ -94,7 +94,7 @@ namespace ngbla
         FlatMatrix<double,OH> tmp (rows.Size(), cols.Size(),mem.Data());
         tmp = H.Cols(cols).Rows(rows);
         for (size_t i = 0; i+bs < tmp.Height(); i++)
-          tmp.Col(i).Range(i+bs, tmp.Height()) = 0;
+          tmp.Col(i).Range(i+bs, tmp.Height()) = 0.0;
         MultiHouseholderReflectionMem Hv(SliceMatrix(Trans(tmp)), memh.Data()); 
         Hv.Mult(M.Rows(rows));
       }

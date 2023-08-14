@@ -317,6 +317,8 @@ namespace ngbla
   {
     undefined_size() = default;
     undefined_size(size_t s) { }
+    template <int S>
+    undefined_size(IC<S> s) { }
   };
   inline ostream & operator<< (ostream & ost, undefined_size s) { ost << "undefined"; return ost; }
   inline auto operator/ (undefined_size ud, size_t i) { return undefined_size(); }

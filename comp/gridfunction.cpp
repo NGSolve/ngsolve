@@ -2269,7 +2269,7 @@ namespace ngcomp
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            MappedIntegrationPoint<2,3> mip (ip, eltrans, (double*)x, mdxdxref); 
+            MappedIntegrationPoint<2,3> mip (ip, eltrans, FlatVec<3, const double>(x).RemoveConst(), mdxdxref); 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)
@@ -2290,8 +2290,9 @@ namespace ngcomp
                 for (int j = 0; j < 2; j++)
                   mdxdxref(i,j) = dxdxref[2*i+j];
               }
-            MappedIntegrationPoint<2,2> mip (ip, eltrans, (double*)x, mdxdxref); 
-
+            
+            // MappedIntegrationPoint<2,2> mip (ip, eltrans, (double*)x, mdxdxref); 
+            MappedIntegrationPoint<2,2> mip (ip, eltrans, FlatVec<2, const double>(x).RemoveConst(), mdxdxref); 
             for (int i = 0; i < components; i++)
               values[i] = 0.0;
             for(int j = 0; j<bfi2d.Size(); j++)

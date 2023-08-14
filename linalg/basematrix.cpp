@@ -276,7 +276,7 @@ namespace ngla
     auto fy = vecy.FV<TSCAL>();
     for (int i = 0; i < fx.Size(); i++)
       {
-        fx = 0;
+        fx = 0.0;
         fx(i) = 1;
         Mult (vecx, vecy);
         dmat.Col(i) = fy;
