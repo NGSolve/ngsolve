@@ -127,10 +127,10 @@ namespace ngbla
     
     template <typename T2, typename TS2, typename TDIST2,
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
-              enable_if_t<is_convertible<TS2,TS>::value, int> =0,
-              enable_if_t<is_convertible<TDIST2,TDIST>::value, int> =0>
+              enable_if_t<is_constructible<TS,TS2>::value, int> =0,
+              enable_if_t<is_constructible<TDIST,TDIST2>::value, int> =0>
     INLINE VectorView (const VectorView<T2,TS2,TDIST2> & v2)
-      : data(v2.Data()), size(v2.Size()), dist(v2.Dist()) { }
+      : data{v2.Data()}, size{TS(v2.Size())}, dist{TDIST(v2.Dist())} { }
     
     INLINE explicit VectorView (T * adata)
       : data(adata)
