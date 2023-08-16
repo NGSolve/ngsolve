@@ -55,6 +55,10 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                 soldata.iscomplex = cf -> IsComplex();
                 soldata.draw_surface = draw_surf;
                 soldata.draw_volume  = draw_vol;
+                if(kwargs.contains("surfaces"))
+                  soldata.draw_surfaces = py::cast<shared_ptr<BitArray>>(kwargs["surfaces"]);
+                if(kwargs.contains("volumes"))
+                  soldata.draw_volumes = py::cast<shared_ptr<BitArray>>(kwargs["volumes"]);
                 /*
                 if (flags.GetDefineFlag("volume"))
                   soldata.draw_surface = false;
