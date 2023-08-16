@@ -16,6 +16,7 @@ docker run \
       -e MKL_DOMAIN_THREADS="MKL_DOMAIN_PARDISO=6" \
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64 \
       -e RUN_SLOW_TESTS="$RUN_SLOW_TESTS" \
+      -e SHOW_LOGS="$SHOW_LOGS" \
       -v /opt/intel:/opt/intel \
       -v /mnt/ccache:/ccache ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} \
       bash /root/src/ngsolve/tests/gitlab-ci/ubuntu/build_in_docker.sh
