@@ -351,7 +351,8 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiff<1,SIMD<double>>> values) const override
     {
-      BareSliceMatrix<SIMD<double>> hvalues(2*values.Dist(), &values(0).Value(), DummySize(Dimension(), ir.Size()));
+      // BareSliceMatrix<SIMD<double>> hvalues(2*values.Dist(), &values(0).Value(), DummySize(Dimension(), ir.Size()));
+      BareSliceMatrix<SIMD<double>> hvalues(Dimension(), ir.Size(), 2*values.Dist(), &values(0).Value());
       Evaluate (ir, hvalues);
       for (size_t i = 0; i < Dimension(); i++)
         for (size_t j = ir.Size(); j-- > 0; )
@@ -377,7 +378,8 @@ namespace ngfem
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, 
                            BareSliceMatrix<AutoDiffDiff<1,SIMD<double>>> values) const override
     {
-      BareSliceMatrix<SIMD<double>> hvalues(3*values.Dist(), &values(0).Value(), DummySize(Dimension(), ir.Size()));
+      // BareSliceMatrix<SIMD<double>> hvalues(3*values.Dist(), &values(0).Value(), DummySize(Dimension(), ir.Size()));
+      BareSliceMatrix<SIMD<double>> hvalues(Dimension(), ir.Size(), 3*values.Dist(), &values(0).Value());      
       Evaluate (ir, hvalues);
       for (size_t i = 0; i < Dimension(); i++)
         for (size_t j = ir.Size(); j-- > 0; )
@@ -520,8 +522,11 @@ namespace ngfem
     {
       if (!IsComplex())
         {
+          /*
           BareSliceMatrix<double> realvalues(2*values.Dist(), (double*)values.Data(),
                                              DummySize(values.Height(), values.Width()));
+          */
+          BareSliceMatrix<double> realvalues(values.Height(), values.Width(), 2*values.Dist(), (double*)values.Data());
           Evaluate (ir, realvalues);
           for (size_t i = 0; i < ir.Size(); i++)
             for (size_t j = Dimension(); j-- > 0; )

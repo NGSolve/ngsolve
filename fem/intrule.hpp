@@ -2415,8 +2415,8 @@ namespace ngfem
     // mir on other element as needed for evaluating DG jump terms
     const SIMD_BaseMappedIntegrationRule * other_mir = nullptr;
 
-    BareSliceMatrix<SIMD<double>> points{0,nullptr,DummySize(0,0)};
-    BareSliceMatrix<SIMD<double>> normals{0,nullptr,DummySize(0,0)};
+    BareSliceMatrix<SIMD<double>> points{0,0,0, nullptr};
+    BareSliceMatrix<SIMD<double>> normals{0,0,0, nullptr};
   public:
     SIMD_BaseMappedIntegrationRule (const SIMD_IntegrationRule & air,
                                     const ElementTransformation & aeltrans)
@@ -2482,6 +2482,7 @@ namespace ngfem
         for (size_t i = 0; i < ir.Size(); i++)
           new (&mips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (ir[i], eltrans, -1);
 
+        /*
         new (&points) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
                                                      &mips[0].Point()(0),
                                                      DummySize(mips.Size(), DIM_SPACE));
@@ -2489,6 +2490,14 @@ namespace ngfem
         new (&normals) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
                                                       &mips[0].NV()(0),
                                                       DummySize(mips.Size(), DIM_SPACE));
+        */
+        new (&points) BareSliceMatrix<SIMD<double>> (mips.Size(), DIM_SPACE,
+                                                     sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                                     &mips[0].Point()(0));
+        
+        new (&normals) BareSliceMatrix<SIMD<double>> (mips.Size(), DIM_SPACE,
+                                                      sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                                      &mips[0].NV()(0));
       }
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr) override;
