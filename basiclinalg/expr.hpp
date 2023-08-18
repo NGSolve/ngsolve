@@ -9,8 +9,7 @@
 
 #include <core/array.hpp>
 #include <core/localheap.hpp>
-#include <core/exception.hpp>
-#include <core/hashtable.hpp>   // for INT
+// #include <core/exception.hpp>
 
 #include <ngs_stdcpp_include.hpp>  // for INLINE
 #include "complex_wrapper.hpp"
@@ -21,25 +20,20 @@ namespace ngbla
   using namespace ngcore;
   using namespace ngstd;
 
-  
+
   enum ORDERING { ColMajor, RowMajor };
 
   template <typename T = double, ORDERING ORD = RowMajor> class FlatMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class Matrix;
 
+  
   template <int H, int W, typename T> class Mat;
   template <int H, typename T> class DiagMat;
   template <int S, typename T> class Vec;
 
-  template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
-  class SliceMatrix;
   // template <typename T, ORDERING ORD> class BareSliceMatrix;
 
 
-
-  template <typename T, typename TS, typename TDIST> class VectorView;
-
-  
   
   
   // template <class T = double> class BareVector;  
@@ -47,13 +41,6 @@ namespace ngbla
   // template <class T = double> class BareSliceVector;
 
   
-  template <typename T, typename TELEM=typename T::TELEM>
-  constexpr bool IsConvertibleToSliceMatrix ()
-  {
-    return is_convertible_v<T,SliceMatrix<TELEM, RowMajor>> ||
-      is_convertible_v<T,SliceMatrix<TELEM, ColMajor>>;
-  }
-
 
   /*
   namespace detail {
@@ -175,6 +162,7 @@ namespace ngbla
   class mat_traits<T&> : public mat_traits<T> { };
 
 
+  /*
   template <int D>
   class mat_traits<ngcore::INT<D> >
   {
@@ -187,6 +175,7 @@ namespace ngbla
     // enum { WIDTH = 1 };
     // enum { IS_COMPLEX = 0 };
   };
+  */
 
   template <>
   class mat_traits<Complex>
@@ -247,7 +236,7 @@ namespace ngbla
 
   
   
-
+  /*
   /// Complex to double assignment called
   class Complex2RealException : public Exception
   {
@@ -276,7 +265,7 @@ namespace ngbla
   {
     throw Complex2RealException();
   }
-
+  */
 
   template <class TA> class RowsArrayExpr;
   template <class TA> class ColsArrayExpr;
@@ -381,17 +370,6 @@ namespace ngbla
 
 
     
-  template <typename T = double, ORDERING ORD = RowMajor>
-  using BareSliceMatrix = SliceMatrix<T,ORD,undefined_size, undefined_size, size_t>;
-
-  template <typename T, typename TELEM=typename T::TELEM>
-  constexpr bool IsConvertibleToBareSliceMatrix ()
-  {
-    return is_convertible_v<T,BareSliceMatrix<TELEM, RowMajor>> ||
-      is_convertible_v<T,BareSliceMatrix<TELEM, ColMajor>>;
-  }
-
-
   
   
   template <typename T>
@@ -1750,14 +1728,6 @@ namespace ngbla
     return s;
   }
 
-
-
-  
-  extern NGS_DLL_HEADER void CalcLU (SliceMatrix<double> A, FlatArray<int> p);
-  extern NGS_DLL_HEADER void InverseFromLU (SliceMatrix<double> A, FlatArray<int> p);
-  extern NGS_DLL_HEADER void SolveFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X);
-  extern NGS_DLL_HEADER void SolveTransFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X);
-  
 
 
 

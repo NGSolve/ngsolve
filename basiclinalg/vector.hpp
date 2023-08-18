@@ -8,10 +8,12 @@
 /**************************************************************************/
 
 #include "expr.hpp"
+#include <core/hashtable.hpp>   // for SparseVector
 
 namespace ngbla
 {
 
+  template <typename T, typename TS, typename TDIST> class VectorView;
 
 
   template <typename T = double>
