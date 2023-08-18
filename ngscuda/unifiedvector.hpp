@@ -37,7 +37,7 @@ namespace ngla
     const double & operator [] (const int ind) const;
     double & operator [] (const int ind);
 
-    virtual AutoVector Range (T_Range<size_t> range) const;
+    virtual AutoVector Range (T_Range<size_t> range) const override;
 
     virtual BaseVector & Scale (double scal) override;
     virtual BaseVector & SetScalar (double scal) override;
@@ -61,7 +61,7 @@ namespace ngla
 
     virtual FlatVector<double> FVDouble () const override;
     virtual FlatVector<Complex> FVComplex () const override;
-    virtual void * Memory() const throw ();
+    virtual void * Memory() const throw () override;
 
     virtual Dev<double> * DevData() const
     { 

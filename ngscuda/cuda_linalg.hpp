@@ -151,8 +151,8 @@ namespace ngla
       : bits(make_shared<DevBitArray>(*proj.Mask())), 
         keep_values(proj.KeepValues()) { ; }
 
-    void Mult (const BaseVector & x, BaseVector & y) const;
-    void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    void Mult (const BaseVector & x, BaseVector & y) const override;
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     void Project (BaseVector & x) const;
 
