@@ -122,7 +122,7 @@ namespace ngla
     }
 
     virtual int VHeight() const override { return h; }
-    virtual int VWidth() const { return w; }    
+    virtual int VWidth() const override { return w; }
   };
 
 
