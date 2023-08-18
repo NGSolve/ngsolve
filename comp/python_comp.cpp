@@ -22,6 +22,7 @@
 #include "globalinterfacespace.hpp"
 #include "globalspace.hpp"
 #include "vtkoutput.hpp"
+#include "webgui.hpp"
 
 using namespace ngcomp;
 
@@ -4447,6 +4448,8 @@ If `maxdist` == 0. then 2*meshsize is used.
              return gap_data;
      })
      ;
+  m.def("MeshToTextArchive", &webgui::MeshToTextArchive);
+  m.def("CFToTextArchive", &webgui::CFToTextArchive);
 
   /////////////////////////////////////////////////////////////////////////////////////
 }

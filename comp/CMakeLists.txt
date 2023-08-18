@@ -15,6 +15,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         hypre_ams_precond.cpp facetsurffespace.cpp
         compressedfespace.cpp
         globalinterfacespace.cpp globalspace.cpp
+        webgui.cpp
         ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp
         ../multigrid/smoother.cpp contact.cpp localsolve.cpp interpolate.cpp
         )
@@ -41,6 +42,7 @@ install( FILES
         hypre_ams_precond.hpp facetsurffespace.hpp
         compressedfespace.hpp globalinterfacespace.hpp globalspace.hpp
         python_comp.hpp fesconvert.hpp contact.hpp interpolate.hpp
+        webgui.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
