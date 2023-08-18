@@ -118,14 +118,14 @@ namespace ngbla
             typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
   void TriangularSolve (const TT & T, TX & X)
   {
-    TriangularSolve<SIDE,NORM> (BareSliceMatrix(make_SliceMatrix(T)), make_SliceMatrix(X));
+    TriangularSolve<SIDE,NORM> (make_BareSliceMatrix(T), make_SliceMatrix(X));
   }
 
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, 
             typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0>
   void TriangularSolve (const TT & T, FlatVector<> x)
   {
-    TriangularSolve<SIDE,NORM> (BareSliceMatrix(make_SliceMatrix(T)), SliceMatrix<>(x.Size(),1,1,&x(0)));
+    TriangularSolve<SIDE,NORM> (make_BareSliceMatrix(T), SliceMatrix<>(x.Size(),1,1,&x(0)));
   }
 
 
@@ -185,15 +185,15 @@ namespace ngbla
 
     if (SIDE == LowerLeft)
       {
-        TriangularMult2<SIDE,NORM> (T22, X2);
+        TriangularMult2<SIDE,NORM> (T22.Bare(), X2);
         X2 += T21 * X1;
-        TriangularMult2<SIDE,NORM> (T11, X1);
+        TriangularMult2<SIDE,NORM> (T11.Bare(), X1);
       }
     else
       {
-        TriangularMult2<SIDE,NORM> (T11, X1);
+        TriangularMult2<SIDE,NORM> (T11.Bare(), X1);
         X1 += T12 * X2;
-        TriangularMult2<SIDE,NORM> (T22, X2);
+        TriangularMult2<SIDE,NORM> (T22.Bare(), X2);
       }
   }
 
@@ -271,14 +271,14 @@ namespace ngbla
             typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
   void TriangularMult (const TT & T, TX & X)
   {
-    TriangularMult<SIDE,NORM> (BareSliceMatrix(make_SliceMatrix(T)), make_SliceMatrix(X));
+    TriangularMult<SIDE,NORM> (make_BareSliceMatrix(T), make_SliceMatrix(X));
   }
   
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, 
             typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0>
   void TriangularMult (const TT & T, FlatVector<> x)
   {
-    TriangularMult<SIDE,NORM> (BareSliceMatrix(make_SliceMatrix(T)), SliceMatrix<>(x.Size(),1,1,&x(0)));
+    TriangularMult<SIDE,NORM> (make_BareSliceMatrix(T), SliceMatrix<>(x.Size(),1,1,&x(0)));
   }
 
 
@@ -288,7 +288,7 @@ namespace ngbla
             typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
   void MultTriangular (TX & X, const TT & T)
   {
-    TriangularMult<!SIDE,NORM> (Trans(BareSliceMatrix(make_SliceMatrix(T))), Trans(make_SliceMatrix(X)));
+    TriangularMult<!SIDE,NORM> (Trans(make_BareSliceMatrix(T)), Trans(make_SliceMatrix(X)));
   }
 
 

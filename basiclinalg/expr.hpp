@@ -31,9 +31,9 @@ namespace ngbla
   template <int H, typename T> class DiagMat;
   template <int S, typename T> class Vec;
 
-  template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
-  template <typename T, ORDERING ORD> class BareSliceMatrix;
-
+  template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
+  class SliceMatrix;
+  // template <typename T, ORDERING ORD> class BareSliceMatrix;
 
 
 
@@ -54,12 +54,6 @@ namespace ngbla
       is_convertible_v<T,SliceMatrix<TELEM, ColMajor>>;
   }
 
-  template <typename T, typename TELEM=typename T::TELEM>
-  constexpr bool IsConvertibleToBareSliceMatrix ()
-  {
-    return is_convertible_v<T,BareSliceMatrix<TELEM, RowMajor>> ||
-      is_convertible_v<T,BareSliceMatrix<TELEM, ColMajor>>;
-  }
 
   /*
   namespace detail {
@@ -321,12 +315,15 @@ namespace ngbla
   inline auto operator/ (undefined_size ud, size_t i) { return undefined_size(size_t(ud)/i); }
   inline auto operator- (undefined_size ud, size_t i) { return undefined_size(size_t(ud)-i); }
   inline auto operator+ (undefined_size ud, size_t i) { return undefined_size(size_t(ud)+i); }
+  inline auto operator* (undefined_size ud, size_t i) { return undefined_size(size_t(ud)*i); }
+  inline auto operator* (size_t i, undefined_size ud) { return undefined_size(size_t(ud)*i); }    
   inline bool operator< (size_t i, undefined_size ud) { return i < size_t(ud); }
   inline bool operator< (undefined_size ud, size_t i) { return size_t(ud) < i; }
   inline bool operator>= (size_t i, undefined_size ud) { return i >= size_t(ud); }
   inline bool operator>= (undefined_size ud, size_t i) { return size_t(ud) >= i; }
   inline bool operator== (size_t i, undefined_size ud) { return i == size_t(ud); }
   inline bool operator== (undefined_size ud, size_t i) { return size_t(ud) == i; }
+  inline bool operator== (undefined_size ud, undefined_size ud2) { return size_t(ud) == size_t(ud2); }  
 
   INLINE constexpr auto CombinedSize(undefined_size s1, undefined_size s2) { return undefined_size(s1); }
   INLINE constexpr auto CombinedSize(undefined_size s1, size_t s2) { return s2; }  
@@ -352,7 +349,7 @@ namespace ngbla
   struct undefined_size
     {
       undefined_size() = delete;
-      constexpr undefined_size(size_t s) { }
+      undefined_size(size_t s) { }
       template <int S>
       constexpr undefined_size(IC<S> s) { }
   };
@@ -384,6 +381,15 @@ namespace ngbla
 
 
     
+  template <typename T = double, ORDERING ORD = RowMajor>
+  using BareSliceMatrix = SliceMatrix<T,ORD,undefined_size, undefined_size, size_t>;
+
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToBareSliceMatrix ()
+  {
+    return is_convertible_v<T,BareSliceMatrix<TELEM, RowMajor>> ||
+      is_convertible_v<T,BareSliceMatrix<TELEM, ColMajor>>;
+  }
 
 
   

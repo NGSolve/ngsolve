@@ -613,7 +613,8 @@ namespace ngbla
 
   template <bool ADD, ORDERING ord>
   extern NGS_DLL_HEADER
-  void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<const Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+  void NgGEMV (const Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<const Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+  
   template <bool ADD, ORDERING ord>
   extern NGS_DLL_HEADER  
   void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, FlatVector<const double> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
@@ -841,11 +842,11 @@ namespace ngbla
       constexpr bool POS = OP::IsPos();
       
       if constexpr (TVec::IsLinear() && TVecB::IsLinear())
-        NgGEMV<ADD,POS> (BareSliceMatrix(prod.View().A()),
+        NgGEMV<ADD,POS> (make_BareSliceMatrix(prod.View().A()).RemoveConst(),
                          FlatVector<const TB>(prod.View().B().Range(0,w)),
                          FlatVector<T>(self.Spec().Range(0,h)));
       else
-        NgGEMV<ADD> (POS, BareSliceMatrix(prod.View().A()),
+        NgGEMV<ADD> (POS, make_BareSliceMatrix(prod.View().A()),
                      SliceVector<TB>(prod.View().B().Range(0,w)),
                      SliceVector<T>(self.Spec().Range(0,h)));
       return self.Spec();
@@ -870,11 +871,11 @@ namespace ngbla
       double POS = OP::IsPos() ? 1.0 : -1.0;
       
       if constexpr (TVec::IsLinear() && TVecB::IsLinear())
-        NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
+        NgGEMV<ADD> (POS*prod.View().A().S(), make_BareSliceMatrix(prod.View().A().A()).RemoveConst(),
                      FlatVector<const TB>(prod.View().B().Range(0,w)),
                      FlatVector<T>(self.Spec().Range(0,h)));
       else
-        NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
+        NgGEMV<ADD> (POS*prod.View().A().S(), make_BareSliceMatrix(prod.View().A().A()),
                      SliceVector<TB>(prod.View().B().Range(0,w)),
                      SliceVector<T>(self.Spec().Range(0,h)));
       return self.Spec();
@@ -1007,10 +1008,14 @@ namespace ngbla
     {
       constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
       constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
+
+      size_t n = CombinedSize(prod.View().A().Height(), self.Spec().Height());
+      size_t m = CombinedSize(prod.View().B().Width(), self.Spec().Width());
+      size_t k = CombinedSize(prod.View().A().Width(), prod.View().B().Height());
       
-      NgGEMM<ADD,POS> (SliceMatrix(prod.View().A()),
-                       SliceMatrix(prod.View().B()),
-                       SliceMatrix(self.Spec()));
+      NgGEMM<ADD,POS> (make_BareSliceMatrix(prod.View().A()).AddSize(n,k).RemoveConst(),
+                       make_BareSliceMatrix(prod.View().B()).AddSize(k,m).RemoveConst(),
+                       make_BareSliceMatrix(self.Spec()).AddSize(n,m));
       return self.Spec();
     }
   };
