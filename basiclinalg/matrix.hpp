@@ -14,28 +14,37 @@
 namespace ngbla
 {
 
-  
-  /*
-  template <typename TS, typename TD, typename T>
-  auto make_VectorView (TS size, TD dist, T * data)
-  {
-    if constexpr (is_same_v<TS, undefined_size> == true)
-      {
-        if constexpr (std::is_same_v<TD, IC<1>> == true)
-          return BareVector<T>(size, data);
-        else
-          return BareSliceVector<T>(size, dist, data);
-      }
-    else
-      {
-        if constexpr (std::is_same_v<TD, IC<1>> == true)
-          return FlatVector<T>(size, data);
-        else
-          return SliceVector<T>(size, dist, data);
-      }
-  }
-  */
 
+  
+
+  
+  
+  template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
+  class SliceMatrix;
+
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToSliceMatrix ()
+  {
+    return is_convertible_v<T,SliceMatrix<TELEM, RowMajor>> ||
+      is_convertible_v<T,SliceMatrix<TELEM, ColMajor>>;
+  }
+  
+
+  
+  template <typename T = double, ORDERING ORD = RowMajor>
+  using BareSliceMatrix = SliceMatrix<T,ORD,undefined_size, undefined_size, size_t>;
+
+  template <typename T, typename TELEM=typename T::TELEM>
+  constexpr bool IsConvertibleToBareSliceMatrix ()
+  {
+    return is_convertible_v<T,BareSliceMatrix<TELEM, RowMajor>> ||
+      is_convertible_v<T,BareSliceMatrix<TELEM, ColMajor>>;
+  }
+
+
+
+
+  
   
   template <int H, int W, typename T> class Mat;
   // template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;

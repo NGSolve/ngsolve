@@ -262,9 +262,14 @@ namespace ngla
     FlatVector<TVX> fx = x.FV<TVX> (); //  (x.Size(), x.Memory());
     FlatVector<TVY> fy = y.FV<TVY> (); // (y.Size(), y.Memory());
 
-    int h = this->Height();
-    for (int i = 0; i < h; i++)
-      fy(i) += ConvertTo<TSCAL> (s) * RowTimesVector (i, fx);
+    if constexpr (std::is_constructible<TSCAL,Complex>())
+      {
+        int h = this->Height();
+        for (int i = 0; i < h; i++)
+          fy(i) += TSCAL(s) * RowTimesVector (i, fx);
+      }
+    else
+      throw Exception("MultAdd(complex) called for real matrix");
   }
   
 
@@ -277,9 +282,12 @@ namespace ngla
 
     FlatVector<TVY> fx = x.FV<TVY>(); //  (x.Size(), x.Memory());
     FlatVector<TVX> fy = y.FV<TVX>(); // (y.Size(), y.Memory());
-    
-    for (int i = 0; i < this->Height(); i++)
-      AddRowTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
+
+    if constexpr (std::is_constructible<TSCAL,Complex>())    
+      for (int i = 0; i < this->Height(); i++)
+        AddRowTransToVector (i, TSCAL(s)*fx(i), fy);
+     else
+      throw Exception("MultTransAdd(complex) called for real matrix");
   }
 
   template <class TM, class TV_ROW, class TV_COL>
@@ -291,9 +299,12 @@ namespace ngla
 
     FlatVector<TVY> fx = x.FV<TVY>(); //  (x.Size(), x.Memory());
     FlatVector<TVX> fy = y.FV<TVX>(); // (y.Size(), y.Memory());
-    
-    for (int i = 0; i < this->Height(); i++)
-      AddRowConjTransToVector (i, ConvertTo<TSCAL> (s)*fx(i), fy);
+
+    if constexpr (std::is_constructible<TSCAL,Complex>())        
+      for (int i = 0; i < this->Height(); i++)
+        AddRowConjTransToVector (i, TSCAL(s)*fx(i), fy);
+    else
+      throw Exception("MultConjTransAdd(complex) called for real matrix");      
   }
 
   template <class TM, class TV_ROW, class TV_COL>

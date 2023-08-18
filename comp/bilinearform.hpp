@@ -495,7 +495,11 @@ namespace ngcomp
       x.Cumulate();
       y.Distribute();
 
-      AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
+      // AddMatrix1 (ConvertTo<SCAL> (val), x, y, lh);
+      if constexpr (std::is_constructible<SCAL,Complex>())
+        AddMatrix1 (SCAL(val), x, y, lh);
+      else
+        throw Exception("BilinearForm::AddMatrix(complex) called for real BilinearForm");
     }
 
     virtual void AddMatrixTrans (double val, const BaseVector & x,
@@ -530,7 +534,10 @@ namespace ngcomp
       x.Cumulate();
       y.Distribute();
 
-      ApplyLinearizedMatrixAdd1 (ConvertTo<SCAL> (val), lin, x, y, lh);
+      if constexpr (std::is_constructible<SCAL,Complex>())
+        ApplyLinearizedMatrixAdd1 (SCAL(val), lin, x, y, lh);
+      else
+        throw Exception("BilinearForm::ApplyLinearizedMatrix(complex) called for real BilinearForm");
     }
   
 
