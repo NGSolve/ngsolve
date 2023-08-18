@@ -554,6 +554,7 @@ add_subdirectory(docs)
 if(USE_CUDA)
     add_subdirectory(ngscuda)
 endif(USE_CUDA)
+add_subdirectory(emscripten)
 
 
 
