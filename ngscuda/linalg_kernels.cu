@@ -161,8 +161,8 @@ __global__ void ManyMatVecKernel (FlatArray<Dev<MatVecData>> matvecs,
      size_t h = mv.mat.Height();
      size_t w = mv.mat.Width();
      
-     BareVector myx = x.Range(mv.offsetx, mv.offsetx+w);
-     BareVector myy = y.Range(mv.offsety, mv.offsety+h);
+     auto myx = x.Range(mv.offsetx, mv.offsetx+w);
+     auto myy = y.Range(mv.offsety, mv.offsety+h);
      
      for (int r = threadIdx.x; r < h; r += blockDim.x)
        {

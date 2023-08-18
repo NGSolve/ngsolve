@@ -183,8 +183,8 @@ PYBIND11_MODULE(ngscuda, m) {
             }
             
             Array<Dev<MatVecData>> mvdata(hmvdata);
-            FlatVector vx(vecxdata.Size(), vecxdata.Data());
-            FlatVector vy(vecydata.Size(), vecydata.Data());
+            FlatVector<Dev<double>> vx(vecxdata.Size(), vecxdata.Data());
+            FlatVector<Dev<double>> vy(vecydata.Size(), vecydata.Data());
             SetScalar (0, vy);
                 /*
             Dev<double> * pdev = Dev<double>::Malloc(1);
