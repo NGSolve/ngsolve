@@ -42,14 +42,9 @@ namespace ngbla
   }
 
 
-
-
   
   
   template <int H, int W, typename T> class Mat;
-  // template <typename T = double, ORDERING ORD = RowMajor> class SliceMatrix;
-  // template <typename T = double, ORDERING ORD = RowMajor> class BareSliceMatrix;
-  // template <typename T> class SliceMatrixColMajor;
   template <typename T> class DoubleSliceMatrix;
 
   /**
@@ -879,7 +874,7 @@ namespace ngbla
 
 
 
-
+#ifdef NONE
 
   template <int DIM, typename T=double, int DIST=DIM, ORDERING ORD=RowMajor>
   class FlatMatrixFixInner :
@@ -1123,7 +1118,8 @@ namespace ngbla
     
     
   };
-
+#endif
+  
 
 
   /*
@@ -1339,11 +1335,12 @@ namespace ngbla
     { ; }
 
 
+    /*
     template<int W, int DIST>
     SliceMatrix (FlatMatrixFixInner<W,T,DIST,ORD> mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
-
+    */
 
     template<int H, int W>
     INLINE SliceMatrix (Mat<H,W,T> & mat)
@@ -1578,9 +1575,11 @@ namespace ngbla
   template <typename T, ORDERING ORDER>
   SliceMatrix<T,ORDER> make_SliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
 
+  /*
   template <int DIM, typename T, int DIST, ORDERING ORDER>
   SliceMatrix<T,ORDER> make_SliceMatrix (FlatMatrixFixInner<DIM,T,DIST,ORDER> mat) { return mat; }
-
+  */
+  
   template <int H, int W, typename T>
   SliceMatrix<T,RowMajor> make_SliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
   
@@ -1592,9 +1591,11 @@ namespace ngbla
   template <typename T, ORDERING ORDER>
   BareSliceMatrix<T,ORDER> make_BareSliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
 
+  /*
   template <int DIM, typename T, int DIST, ORDERING ORDER>
   BareSliceMatrix<T,ORDER> make_BareSliceMatrix (FlatMatrixFixInner<DIM,T,DIST,ORDER> mat) { return mat; }
-
+  */
+  
   template <int H, int W, typename T>
   BareSliceMatrix<T,RowMajor> make_BareSliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
   
@@ -1651,11 +1652,12 @@ namespace ngbla
     {
       static_assert(ORD==RowMajor);
     } 
-    
+
+    /*
     template<int W, int DIST>
     BareSliceMatrix (FlatMatrixFixInner<W,T,DIST,ORD> mat)
       : DummySize(mat.Shape()), dist(mat.Dist()), data(mat.Data()) { } 
-
+    */
 
     
     BareSliceMatrix (size_t adist, T * adata, DummySize ds) : DummySize(ds), dist(adist), data(adata) { ; } 
@@ -1934,14 +1936,17 @@ namespace ngbla
   */
 
 
+  /*
   template <int DIM, typename T, int DIST, ORDERING ord,
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
   INLINE const auto Trans (FlatMatrixFixInner<DIM,T,DIST,ord> mat)
   {
     return FlatMatrixFixInner<DIM,T,DIST,!ord> (mat.Size(), mat.Data());
   }
+  */
 
-  
+
+  /*
   // should get rid of that ...
   template <int H, int DIST>
   INLINE const FlatMatrixFixWidth<H,double,DIST> Trans (FlatMatrixFixHeight<H,double,DIST> mat)
@@ -1954,7 +1959,7 @@ namespace ngbla
   {
     return FlatMatrixFixWidth<H,Complex,DIST> (mat.Width(), mat.Data());
   }
-
+  */
 
 
 
