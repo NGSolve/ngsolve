@@ -757,7 +757,7 @@ namespace ngbla
     {
       auto cs = CombinedSize (self.Spec().Size(), v.Spec().Size());
 
-      if constexpr (IsIC<decltype(cs)>())
+      if constexpr (is_IC<decltype(cs)>())
         {
           Vec<cs,typename remove_const<TB>::type> tmp;
           for (size_t i = 0; i<cs; i++)
@@ -790,7 +790,7 @@ namespace ngbla
     static inline auto & Assign (MatExpr<TVec> & self, const Expr<ScaleExpr<TVecB,TSCAL>> & v)
     {
       auto cs = CombinedSize (self.Spec().Size(), v.Spec().A().Size());
-      if constexpr (IsIC<decltype(cs)>())
+      if constexpr (is_IC<decltype(cs)>())
         {
           Vec<cs,typename remove_const<TB>::type> tmp;
           auto s = v.View().S();

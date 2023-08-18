@@ -63,7 +63,7 @@ namespace ngbla
   }
   */
 
-  
+  /*
   namespace detail {
     template <typename T, typename Enable = int>
     struct IsIC_trait {
@@ -80,7 +80,7 @@ namespace ngbla
   constexpr bool IsIC() {
     return detail::IsIC_trait<T>::check();
   }
-  
+  */
   
 
   template <typename T>
