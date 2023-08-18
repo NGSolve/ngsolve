@@ -3436,6 +3436,7 @@ namespace ngfem
     for (size_t i = 0; i < hir.Size(); i++)
       new (&hmips[i]) SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>> (hir[i], eltrans, -1);
 
+    /*
     new (&points) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
                                                  &mips[0].Point()(0),
                                                  DummySize(mips.Size(), DIM_SPACE));
@@ -3443,6 +3444,14 @@ namespace ngfem
     new (&normals) BareSliceMatrix<SIMD<double>> (sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
                                                   &mips[0].NV()(0),
                                                   DummySize(mips.Size(), DIM_SPACE));
+    */
+    new (&points) BareSliceMatrix<SIMD<double>> (mips.Size(), DIM_SPACE,
+                                                 sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                                 &mips[0].Point()(0));
+    
+    new (&normals) BareSliceMatrix<SIMD<double>> (mips.Size(), DIM_SPACE,
+                                                  sizeof(SIMD<MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE>>)/sizeof(SIMD<double>),
+                                                  &mips[0].NV()(0));
     
     eltrans.CalcMultiPointJacobian (ir, *this);
 

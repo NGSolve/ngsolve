@@ -153,9 +153,9 @@ namespace ngbla
     auto X1 = X.Rows(r1);
     auto X2 = X.Rows(r2);
 
-    TriangularMultLL1<NORM> (T22, X2);
+    TriangularMultLL1<NORM> (T22.Bare(), X2);
     X2 += T21 * X1;
-    TriangularMultLL1<NORM> (T11, X1);
+    TriangularMultLL1<NORM> (T11.Bare(), X1);
   }
 
   void TriangularMultLL (BareSliceMatrix<double> T, SliceMatrix<double> X)
@@ -238,9 +238,9 @@ namespace ngbla
     auto X1 = X.Rows(r1);
     auto X2 = X.Rows(r2);
 
-    TriangularMultUR1<NORM> (T11, X1);
+    TriangularMultUR1<NORM> (T11.Bare(), X1);
     X1 += T12 * X2;
-    TriangularMultUR1<NORM> (T22, X2);
+    TriangularMultUR1<NORM> (T22.Bare(), X2);
   }
   
   void TriangularMultUR (BareSliceMatrix<double> T, SliceMatrix<double> X)
