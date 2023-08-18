@@ -69,8 +69,12 @@ namespace ngcomp
       else if constexpr (is_same<MIR, SIMD_BaseMappedIntegrationRule>::value &&
                          is_same<T,AutoDiffDiff<1,SIMD<double>>>::value)
                      {
+                       /*
                        BareSliceMatrix<SIMD<double>> hvalues(3*values.Dist(), &values(0).Value(),
                                                              DummySize(Dimension(), mir.Size()));
+                       */
+                       BareSliceMatrix<SIMD<double>> hvalues(Dimension(), mir.Size(), 3*values.Dist(), &values(0).Value());
+                       
                        // Evaluate (ir, hvalues);
                        diffop->Apply(*fe, mir, *elvec, hvalues);                       
                        for (size_t i = 0; i < Dimension(); i++)
