@@ -49,7 +49,8 @@ namespace ngfem
 				const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
+      // GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
+      GenerateMatrix2 (fel, mip, make_SliceMatrix (Trans(mat)), lh);
     }
 
     template <typename AFEL, typename MIP, typename MAT>
@@ -274,7 +275,8 @@ namespace ngfem
 				const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
+      // GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
+      GenerateMatrix2 (fel, mip, make_SliceMatrix (Trans(mat)), lh);
     }
 
     template <typename AFEL, typename MIP, typename MAT>
@@ -502,7 +504,8 @@ namespace ngfem
     static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
     {
-      GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
+      // GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
+      GenerateMatrix2 (fel, mip, make_SliceMatrix (Trans(mat)), lh);
     }
 
     template <typename AFEL, typename MIP, typename MAT>
