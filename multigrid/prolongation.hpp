@@ -251,38 +251,6 @@ namespace ngmg
 
 
 
-    /// L2Ho prolongaton
-  class L2HoProlongation : public Prolongation
-  {
-    ///
-    shared_ptr<MeshAccess> ma;
-    ///
-    const Array<int> & first_dofs;
-  public:
-    ///
-    L2HoProlongation(shared_ptr<MeshAccess> ama, const Array<int> & afirst_dofs);
-    ///
-    virtual ~L2HoProlongation()
-    { ; }
-    ///
-    virtual void Update (const FESpace & fes) override
-	{ ; }
-
-    ///
-    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
-
-    ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
-
-    ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const override
-    {
-		cout << "RestrictInline not implemented for L2HoProlongation" << endl;
-    }
- 
-  };
-
 
   /// Product space prolongation, combination of elementary prolongations 
   class NGS_DLL_HEADER CompoundProlongation : public Prolongation

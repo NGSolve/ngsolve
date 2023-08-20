@@ -483,7 +483,7 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
 
     /// default constructor
-    Matrix () : FlatMatrix<T,ORD> (0, 0) { ; }
+    Matrix () : FlatMatrix<T,ORD> (0, 0, nullptr) { ; }
 
     /// allocate matrix of size ah * ah
     Matrix (size_t ah) : FlatMatrix<T,ORD> (ah, new T[ah*ah]) { ; }
