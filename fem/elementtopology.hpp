@@ -111,7 +111,7 @@ namespace ngfem
   class ElementId
   {
     typedef size_t int_type;
-    const VorB vb;
+    VorB vb;
     int_type nr;
   public:    
     ElementId (VorB avb, int_type anr) : vb(avb), nr(anr) { ; }
