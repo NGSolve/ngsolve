@@ -611,31 +611,6 @@ namespace ngmg
 
 
 
-
-  L2HoProlongation::
-  L2HoProlongation(shared_ptr<MeshAccess> ama, const Array<int> & afirst_dofs)
-    : ma(ama), first_dofs(afirst_dofs) 
-  { ; }
-  
-  void L2HoProlongation::ProlongateInline (int finelevel, BaseVector & v) const
-  {   
-    FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
-    
-    int ne = ma->GetNE();
-    int ndel = first_dofs[1];
-    
-    for (int i = 0; i <ne; i++)
-      {
-        int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-        if(parent!=-1)
-          fv(ndel*i) = fv(ndel*parent);
-        for(int j = 1; j<ndel; j++)
-          fv(ndel*i+j) = 0;
-      }
-  }
-
-
-
   void EdgeProlongation :: ProlongateInline (int finelevel, BaseVector & v) const
   {
     size_t nc = space.GetNDofLevel (finelevel-1);
