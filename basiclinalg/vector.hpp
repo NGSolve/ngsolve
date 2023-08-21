@@ -16,6 +16,15 @@ namespace ngbla
   template <typename T, typename TS, typename TDIST> class VectorView;
 
 
+  template <typename T, typename TS, typename TD>
+  INLINE void SetVector (typename mat_traits<T>::TSCAL val, VectorView<T,TS,TD> vec) NETGEN_NOEXCEPT
+  {
+    for (size_t i : Range(vec))
+      vec[i] = val;
+  }
+  
+
+  
   template <typename T = double>
   using FlatVector = VectorView<T,size_t,IC<1>>;
 
@@ -100,6 +109,7 @@ namespace ngbla
   template <int S, int DIST, typename T> class FlatSliceVec;
 
 #ifdef WIN32
+  #pragma warning( disable : 4848) // support for standard attribute 'no_unique_address' in C++17 and earlier is a vendor extension
   #define NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
 #else
   #define NO_UNIQUE_ADDRESS [[no_unique_address]]
@@ -258,9 +268,9 @@ namespace ngbla
     INLINE auto & operator= (TSCAL scal) const
     {
       // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (scal);
-      for (auto i : Range())
-        data[i*dist] = scal;
-      // SetVector (scal, *this);
+      // for (auto i : Range())
+      // data[i*dist] = scal;
+      SetVector (scal, *this);
       return *this;
     }
     

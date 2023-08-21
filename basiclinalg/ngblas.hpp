@@ -26,24 +26,9 @@ namespace ngbla
 
   // ***************************** vector operations **************************
 
-  template <typename TS, typename T>
-  void SetVector (TS val, FlatVector<T> vec) NETGEN_NOEXCEPT
-  {
-    for (size_t i : Range(vec))
-      vec[i] = val;
-  }
   
   extern NGS_DLL_HEADER void SetVector (double val, FlatVector<double> vec) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER void SetVector (Complex val, FlatVector<Complex> vec) NETGEN_NOEXCEPT;
-  
-
-  template <typename TS, typename T>
-  void SetVector (TS val, SliceVector<T> vec) NETGEN_NOEXCEPT
-  {
-    for (size_t i : Range(vec))
-      vec[i] = val;
-  }
-  
   extern NGS_DLL_HEADER void SetVector (double val, SliceVector<double> vec) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER void SetVector (Complex val, SliceVector<Complex> vec) NETGEN_NOEXCEPT;
   
@@ -756,8 +741,8 @@ namespace ngbla
   };
   */
 
-
-
+  
+  // x = y
   template <typename OP, typename T, typename TS, typename TD, typename TB, typename TBS, typename TBD>
   class assign_trait<OP, VectorView<T,TS,TD>, VectorView<TB,TBS,TBD>, 
                      enable_if_t<std::is_same_v<OP,typename MatExpr<VectorView<T,TS,TD>>::As> == true, int>>
