@@ -299,23 +299,22 @@ namespace ngbla
   };
 
     
-  
   inline ostream & operator<< (ostream & ost, undefined_size s) { ost << "undefined("<<size_t(s)<<")"; return ost; }
-  inline auto operator/ (undefined_size ud, size_t i) { return undefined_size(size_t(ud)/i); }
-  inline auto operator- (undefined_size ud, size_t i) { return undefined_size(size_t(ud)-i); }
-  inline auto operator+ (undefined_size ud, size_t i) { return undefined_size(size_t(ud)+i); }
-  inline auto operator* (undefined_size ud, size_t i) { return undefined_size(size_t(ud)*i); }
-  inline auto operator* (size_t i, undefined_size ud) { return undefined_size(size_t(ud)*i); }    
-  inline bool operator< (size_t i, undefined_size ud) { return i < size_t(ud); }
-  inline bool operator< (undefined_size ud, size_t i) { return size_t(ud) < i; }
-  inline bool operator>= (size_t i, undefined_size ud) { return i >= size_t(ud); }
-  inline bool operator>= (undefined_size ud, size_t i) { return size_t(ud) >= i; }
-  inline bool operator== (size_t i, undefined_size ud) { return i == size_t(ud); }
-  inline bool operator== (undefined_size ud, size_t i) { return size_t(ud) == i; }
-  inline bool operator== (undefined_size ud, undefined_size ud2) { return size_t(ud) == size_t(ud2); }  
-  inline bool operator!= (size_t i, undefined_size ud) { return i != size_t(ud); }
-  inline bool operator!= (undefined_size ud, size_t i) { return size_t(ud) != i; }
-  inline bool operator!= (undefined_size ud, undefined_size ud2) { return size_t(ud) != size_t(ud2); }  
+  inline constexpr auto operator/ (undefined_size ud, size_t i) { return undefined_size(size_t(ud)/i); }
+  inline constexpr auto operator- (undefined_size ud, size_t i) { return undefined_size(size_t(ud)-i); }
+  inline constexpr auto operator+ (undefined_size ud, size_t i) { return undefined_size(size_t(ud)+i); }
+  inline constexpr auto operator* (undefined_size ud, size_t i) { return undefined_size(size_t(ud)*i); }
+  inline constexpr auto operator* (size_t i, undefined_size ud) { return undefined_size(size_t(ud)*i); }    
+  inline constexpr bool operator< (size_t i, undefined_size ud) { return i < size_t(ud); }
+  inline constexpr bool operator< (undefined_size ud, size_t i) { return size_t(ud) < i; }
+  inline constexpr bool operator>= (size_t i, undefined_size ud) { return i >= size_t(ud); }
+  inline constexpr bool operator>= (undefined_size ud, size_t i) { return size_t(ud) >= i; }
+  inline constexpr bool operator== (size_t i, undefined_size ud) { return i == size_t(ud); }
+  inline constexpr bool operator== (undefined_size ud, size_t i) { return size_t(ud) == i; }
+  inline constexpr bool operator== (undefined_size ud, undefined_size ud2) { return size_t(ud) == size_t(ud2); }  
+  inline constexpr bool operator!= (size_t i, undefined_size ud) { return i != size_t(ud); }
+  inline constexpr bool operator!= (undefined_size ud, size_t i) { return size_t(ud) != i; }
+  inline constexpr bool operator!= (undefined_size ud, undefined_size ud2) { return size_t(ud) != size_t(ud2); }  
 
   /*
   INLINE constexpr auto CombinedSize(undefined_size s1, undefined_size s2) { return undefined_size(s1); }
