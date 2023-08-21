@@ -101,12 +101,19 @@ namespace ngbla
   template <int S, typename T = double>
   using FlatVec = VectorView<T,IC<S>,IC<1>>;
   
+  template <int S, int D, typename T = double>
+  using FlatSliceVec = VectorView<T,IC<S>,IC<D>>;
+  
+  template <int D, typename T = double>
+  using FixSliceVec = VectorView<T,size_t,IC<D>>;  
+
+
   
   template <class T> class SysVector;
   template <class T = double> class Vector;
   // template <class T> class SliceVector;
   template <int DIST, typename T> class FixSliceVector;
-  template <int S, int DIST, typename T> class FlatSliceVec;
+  // template <int S, int DIST, typename T> class FlatSliceVec;
 
 #ifdef WIN32
   #pragma warning( disable : 4848) // support for standard attribute 'no_unique_address' in C++17 and earlier is a vendor extension
@@ -129,8 +136,6 @@ namespace ngbla
     typedef TDIST type_dist;
     
     /// linear element access ? 
-    // enum { IS_LINEAR = std::is_same<type_dist,IC<1>>() };  // Win32 error ??
-    // enum { IS_LINEAR = 0 };
     static constexpr bool IsLinear() { return std::is_same<type_dist,IC<1>>(); }
     
     INLINE VectorView () = default;
@@ -685,13 +690,22 @@ namespace ngbla
       (*this) = v;
     }
 
+    /*
     template <int D>
     INLINE Vec(FlatSliceVec<S,D,T> fsv)
     {
       for (int i = 0; i < S; i++)
         data[i] = fsv(i);
     }
+    */
+    template <typename T2, typename S2, typename D2>
+    INLINE Vec(VectorView<T2,S2,D2> fsv)
+    {
+      for (int i = 0; i < S; i++)
+        data[i] = fsv(i);
+    }
 
+    
     // Helper function for variadic constructor
     template <int I, class... T2>
     void Set(const TELEM &v, T2... rest)
@@ -750,7 +764,7 @@ namespace ngbla
     // auto View() const { return FlatVec(const_cast<Vec&>(*this)); }
     // auto View() const { return Vec(*this); }
     INLINE auto View() const { return Vec<S,const T>{*this}; }    
-    INLINE tuple<IC<S>> Shape() const { return { IC<S>() }; }
+    INLINE auto Shape() const { return tuple { IC<S>() }; }
     
     /// access vector
     INLINE TELEM & operator() (size_t i) 
@@ -952,339 +966,6 @@ namespace ngbla
       ost << " " << setw(7) << v(i);
     return ost;
   }
-
-
-
-
-
-  /**
-     A pointer to a vector of fixed size.
-  */
-  template <int S, int D, typename T = double>
-  class FlatSliceVec : public CMCPMatExpr<FlatSliceVec<S,D,T> > 
-  {
-    /// the values
-    T *  __restrict data;
-  public:
-    /// type of the elements
-    typedef T TELEM;
-    /// is the element double or complex ?
-    typedef typename mat_traits<T>::TSCAL TSCAL;
-    static constexpr bool IsLinear() { return D==1; }         
-    
-    /// a vec is a S times 1 matrix, the according colume vector
-    typedef Vec<S, typename mat_traits<T>::TV_COL> TV_COL;
-    /// a vec is a S times 1 matrix, the according row vector
-    typedef Vec<1, typename mat_traits<T>::TV_ROW> TV_ROW;
-
-    enum { SIZE = S };
-    /// height of matrix
-    enum { HEIGHT = S };
-    /// with of matrix
-    enum { WIDTH  = 1 };
-
-    /// constructor
-    INLINE FlatSliceVec (T * adata) : data(adata) { ; }
-
-    /// copy vector
-    INLINE auto operator= (const FlatSliceVec & v) const
-    {
-      for (int i = 0; i < S; i++)
-	data[i*D] = v.data[i*D];
-      return *this;
-    }
-    
-    /// assign scalar value
-    INLINE auto operator= (TSCAL scal) const
-    {
-      for (int i = 0; i < S; i++)
-	data[i*D] = scal;
-      return *this;
-    }
-
-    /// assign expression
-    template<typename TB>
-    INLINE auto operator= (const Expr<TB> & v) const
-    {
-      for (int i = 0; i < S; i++)
-	data[i*D] = v.Spec()(i,0);
-      return *this;
-    }
-
-    INLINE auto View() const { return FlatSliceVec(*this); } 
-    INLINE auto Shape() const { return tuple(IC<S>()); }
-    
-    template<typename TB>
-    INLINE auto operator+= (const Expr<TB> & v) const
-    {
-      for (int i = 0; i < S; i++)
-	data[i*D] += v.Spec()(i,0);
-      return *this;
-    }
-
-    operator Vec<S,T>() const
-    {
-      Vec<S,T> ret;
-      for (int i = 0; i < S; i++)
-        ret(i) = data[i*D];
-      return ret;
-    }
-    
-    /// access vector
-    INLINE TELEM & operator() (int i) const 
-    {
-      NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*D]; 
-    }
-
-    /// access vector
-    INLINE TELEM & operator[] (int i) const 
-    {
-      NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*D]; 
-    }
-
-    /// access vector
-    INLINE TELEM & operator() (int i, int j) const 
-    {
-      NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*D]; 
-    }
-
-    // INLINE /* const */ FlatVector<T> Range(int first, int next) const
-    // { return FlatVector<T> (next-first, data+first); }
-
-    /// vector size
-    INLINE constexpr int Size () const { return S; }
-    /// corresponding matrix height
-    INLINE constexpr int Height () const { return S; }
-    /// corresponding matrix with
-    INLINE constexpr int Width () const { return 1; }
-  };
-
-  /// output vector.
-  template<int S, int D, typename T>
-  inline ostream & operator<< (ostream & ost, const FlatSliceVec<S,D,T> & v)
-  {
-    for (int i = 0; i < S; i++)
-      ost << " " << setw(7) << v(i*D);
-    return ost;
-  }
-
-
-
-
-
-
-  
-  /*
-  // Template helper for the SliceVector from Vec constructor
-  // to prevent range checks from triggering on call to v(0) for empty v
-  template <typename T, int D>
-  struct SliceVecFromVecHelper
-  {
-    static T *ptr(Vec<D,T> & v) { return &v(0); }
-  };
-
-  template <typename T>
-  struct SliceVecFromVecHelper<T, 0>
-  {
-    static T *ptr(Vec<0,T> &) { return nullptr; }
-  };
-  */
-
-  
-#ifdef NETGEN_ENABLE_CHECK_RANGE
-  // Record with and height for classes that usually have no such information
-  class DummySize {
-    size_t height;
-    size_t width;
-  public:
-    size_t Height() const { return height; }
-    size_t Width() const { return width; }
-    DummySize( size_t aheight, size_t awidth=1 ) :
-      height(aheight), width(awidth) {;}
-    template <typename TA, typename TB>
-    DummySize (tuple<TA,TB> shape)
-      : height(get<0>(shape)), width(get<1>(shape)) { }
-  };
-#else 
-  class DummySize {
-  public:
-    template <typename TH>    
-    DummySize( TH aheight ) {}
-    template <typename TH, typename TW>
-    DummySize( TH aheight, TW awidth ) {}
-    template <typename TA, typename TB>
-    DummySize (tuple<TA,TB> shape) { }
-  protected:
-    static INLINE auto Height() { return undefined_size(0); }
-    static INLINE auto Width() { return undefined_size(0); }
-  };
-#endif
-
-
-
-
-
-  /**
-     A vector with non-linear data access.
-     Has size and generic data-pointer. 
-     No memory allocation/deallocation. User must provide memory.
-  */
-  template <int DIST, typename T = double>
-  class FixSliceVector : public CMCPMatExpr<FixSliceVector<DIST, T> > 
-  {
-  protected:
-    /// vector size
-    size_t s;
-    /// the data
-    T *  __restrict data;
-  public:
-    /// the entry type
-    typedef T TELEM;
-    /// the scalar type of the vector
-    typedef typename mat_traits<T>::TSCAL TSCAL;
-
-    /// element access is not linear
-    enum { IS_LINEAR = 0 };
-    static constexpr bool IsLinear() { return DIST==1; } 
-    /// set size, distance and memory
-    FixSliceVector (size_t as, T * adata) 
-      : s(as), data(adata) { ; }
-
-    /// evaluates matrix expression
-    template<typename TB>
-    FixSliceVector & operator= (const Expr<TB> & v)
-    {
-      return MatExpr<FixSliceVector>::operator= (v);
-    }
-
-    /// assigns constant value
-    const FixSliceVector & operator= (TSCAL scal) const
-    {
-      for (size_t i = 0; i < s; i++)
-	data[i*DIST] = scal; 
-      return *this;
-    }
-
-    /// copies contents of vector
-    INLINE const FixSliceVector & operator= (const FixSliceVector & v2) const
-    {
-      for (size_t i = 0; i < s; i++)
-	data[i*DIST] = v2(i);
-      return *this;
-    }
-
-    template<typename TB>
-    INLINE const FixSliceVector & operator= (const Expr<TB> & v) const
-    {
-      if (TB::IS_LINEAR)
-	for (size_t i = 0; i < s; i++)
-	  data[i*DIST] = v.Spec()(i);
-      else
-	for (size_t i = 0; i < s; i++)
-	  data[i*DIST] = v.Spec()(i,0);
-      return *this;
-    }
-
-    INLINE auto View() const { return *this; }
-    INLINE tuple<size_t> Shape() const { return { s }; }
-    
-    template<typename TB>
-    INLINE const FixSliceVector & operator+= (const Expr<TB> & v) const
-    {
-      if (TB::IS_LINEAR)
-	for (size_t i = 0; i < s; i++)
-	  data[i*DIST] += v.Spec()(i);
-      else
-	for (size_t i = 0; i < s; i++)
-	  data[i*DIST] += v.Spec()(i,0);
-      return *this;
-    }
-
-
-
-    /// access element
-    INLINE TELEM & operator() (size_t i) 
-    {
-      NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*DIST]; 
-    }
-
-    /// access element
-    INLINE TELEM & operator() (size_t i) const
-    {
-      NETGEN_CHECK_RANGE(i,0,s);
-      return data[i*DIST]; 
-    }
-
-    /// access element, index j is unused
-    TELEM & operator() (size_t i, size_t j) const
-    {
-      NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*DIST]; 
-    }
-
-    /// access element, index j is unused
-    TELEM & operator() (size_t i, size_t j) 
-    {
-      NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*DIST]; 
-    }
-
-    /// access element
-    TELEM & operator[] (size_t i) 
-    {
-      NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*DIST]; 
-    }
-
-    /// access element
-    TELEM & operator[] (size_t i) const
-    {
-      NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*DIST]; 
-    }
-
-    /*
-    TELEM * Addr (int i) const
-    {
-      return data+i*DIST;
-    }
-    */
-
-    INLINE T * Data () const { return data; }
-
-    /// vector size
-    size_t Size () const { return s; }
-
-    /// vector is a matrix of height size
-    size_t Height () const { return s; }
-    /// vector is a matrix of width 1
-    size_t constexpr Width () const { return 1; }
-
-    const FixSliceVector Range (size_t first, size_t next) const
-    {
-      return FixSliceVector (next-first, data+first*DIST);
-    }
-
-    const FixSliceVector Range (IntRange range) const
-    {
-      return Range (range.First(), range.Next());
-    }
-
-
-    const SliceVector<T> Slice (size_t first, size_t adist) const
-    {
-      return SliceVector<T> (s/adist, DIST*adist, data+first*DIST);
-    }
-  };
-
-
-
-
-
 
 
 

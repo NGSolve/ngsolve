@@ -14,9 +14,6 @@
 namespace ngbla
 {
 
-
-  
-
   
   
   template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
@@ -295,7 +292,6 @@ namespace ngbla
     size_t w;
     T * __restrict data;
   public:
-    // enum { IS_LINEAR = 0 };
     static constexpr bool IsLinear() { return false; } 
     /// element type
     typedef T TELEM;
@@ -868,7 +864,7 @@ namespace ngbla
     /// the width
     constexpr size_t  Width () const { return H; }
     
-    enum { IS_LINEAR = 0 };
+    static constexpr bool IsLinear() { return false; }         
   };
 
 
@@ -1360,7 +1356,7 @@ namespace ngbla
     typedef T TELEM;
     /// scalar type of elements (double or Complex)
     typedef typename mat_traits<T>::TSCAL TSCAL;
-    // enum { IS_LINEAR = 0 };
+
     static constexpr bool IsLinear() { return false; }     
 
     /// set height, width, and mem
@@ -1428,25 +1424,6 @@ namespace ngbla
     }
   };
 
-  /*
-  template <typename T>
-  struct trivtrans { static constexpr bool value = false; };
-  template<> struct trivtrans<double> { static constexpr bool value = true; };
-  template<> struct trivtrans<Complex> { static constexpr bool value = true; };
-  template <int D, typename T>
-  struct trivtrans<AutoDiff<D,T>> { static constexpr bool value = true; };
-  template <int D, typename T>
-  struct trivtrans<AutoDiffDiff<D,T>> { static constexpr bool value = true; };
-  template <int D>
-  struct trivtrans<SIMD<double,D>> { static constexpr bool value = true; };
-
-  
-  template <typename T>
-  constexpr bool IsTrivialTranspose ()
-  {
-    return trivtrans<T>::value;
-  }
-  */
 
   template <typename T>
   constexpr bool IsTrivialTranspose () { return IsScalar<T>(); } 
@@ -1482,41 +1459,6 @@ namespace ngbla
   }
   
   
-  /*
-  template <typename T, ORDERING ord,
-            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
-  INLINE const BareSliceMatrix<T,!ord> Trans (BareSliceMatrix<T,ord> mat)
-  {
-    return BareSliceMatrix<T,!ord> (mat.Dist(), mat.Data(), DummySize(mat.Width(), mat.Height()));
-  }
-  */
-
-
-  /*
-  template <int DIM, typename T, int DIST, ORDERING ord,
-            typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
-  INLINE const auto Trans (FlatMatrixFixInner<DIM,T,DIST,ord> mat)
-  {
-    return FlatMatrixFixInner<DIM,T,DIST,!ord> (mat.Size(), mat.Data());
-  }
-  */
-
-
-  /*
-  // should get rid of that ...
-  template <int H, int DIST>
-  INLINE const FlatMatrixFixWidth<H,double,DIST> Trans (FlatMatrixFixHeight<H,double,DIST> mat)
-  {
-    return FlatMatrixFixWidth<H,double,DIST> (mat.Width(), mat.Data());
-  }
-
-  template <int H, int DIST>
-  INLINE const FlatMatrixFixWidth<H,Complex,DIST> Trans (FlatMatrixFixHeight<H,Complex,DIST> mat)
-  {
-    return FlatMatrixFixWidth<H,Complex,DIST> (mat.Width(), mat.Data());
-  }
-  */
-
 
 
 
@@ -1582,12 +1524,13 @@ namespace ngbla
     typedef Vec<H, double> TV_ROW;
     enum { HEIGHT = H };
     enum { WIDTH  = H };
-    // enum { IS_LINEAR = 0 };
     static constexpr bool IsLinear() { return false; } 
     /// nothing to do 
     Id () { ; }
 
     INLINE auto View() const { return Id(); }
+    INLINE constexpr auto Height () const { return H; }
+    INLINE constexpr auto Width () const { return H; }
     INLINE tuple<size_t, size_t> Shape() const { return { H,H }; }    
     ///
     double operator() (int i) const
@@ -1598,10 +1541,6 @@ namespace ngbla
     ///
     double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
 
-    /// the height
-    constexpr size_t Height () const { return H; }
-    /// the width
-    constexpr size_t Width () const { return H; }
   };
 
 
@@ -1610,14 +1549,13 @@ namespace ngbla
   /// Variable size identity matrix
   class Identity : public MatExpr<Identity >
   {
-    int size;
+    size_t size;
   public:
     typedef double TELEM;
     typedef double TSCAL;
-    // enum { IS_LINEAR = 0 };
     static constexpr bool IsLinear() { return false; }
     
-    INLINE Identity (int s) : size(s) { ; }
+    INLINE Identity (size_t s) : size(s) { ; }
 
     INLINE double operator() (int i) const
     { cerr << "Identity, linear access" << endl; return 0; }
@@ -1625,8 +1563,8 @@ namespace ngbla
     INLINE double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
     INLINE auto View() const { return Identity(size); }
     INLINE tuple<size_t, size_t> Shape() const { return { size, size }; }    
-    INLINE int Height () const { return size; }
-    INLINE int Width () const { return size; }
+    INLINE auto Height () const { return size; }
+    INLINE auto Width () const { return size; }
   };
 
 
@@ -1953,73 +1891,6 @@ namespace ngbla
   }
 
 
-
-
-
-
-
-
-  
-
-  //
-  //  Can we put a SliceMatrix over a matrix ? 
-  //
-  /*
-  template <typename TMAT, typename T = double>
-  class Is_Sliceable { public: enum { VAL = false };  };
-
-  template <typename T>
-  class Is_Sliceable<SliceMatrix<T>,T> { public: enum { VAL = true };  };
-  
-  template <typename T>
-  class Is_Sliceable<FlatMatrix<T>,T> { public: enum { VAL = true };  };
-  
-  template <typename T>
-  class Is_Sliceable<Matrix<T>,T> { public: enum { VAL = true };  };
-  
-  template <int W, typename T, int DIST>
-  class Is_Sliceable<FlatMatrixFixWidth<W,T,DIST>,T> { public: enum { VAL = true };  };
-
-
-  template <typename TMAT, typename T>
-  class Is_Sliceable<const TMAT, T> { public: enum { VAL = Is_Sliceable<TMAT,T>::VAL };  };
-  template <typename TMAT, typename T>
-  class Is_Sliceable<TMAT&,T> { public: enum { VAL = Is_Sliceable<TMAT,T>::VAL };  };
-  template <typename TMAT, typename T>
-  class Is_Sliceable<TMAT&&,T> { public: enum { VAL = Is_Sliceable<TMAT,T>::VAL };  };
-
-
-
-  template <int IsIt, typename TMAT>
-  class slicetype
-  {
-  public:
-    typedef const TMAT & TYPE;
-  };
-  
-  template <typename TMAT>
-  class slicetype<1,TMAT>
-  {
-  public:
-    typedef SliceMatrix<typename TMAT::TELEM> TYPE;
-  };
-
-
-  //
-  // if possible, a slicematrix is returned
-  // if not, we return a reference to the original matrix
-  // 
-  
-  template <typename T, typename TMAT>
-  auto SliceIfPossible (const TMAT & mat) -> typename slicetype<Is_Sliceable<TMAT,T>::VAL,TMAT>::TYPE
-  {
-    // cout << "type(tmat) = " << typeid(TMAT).name() << endl;
-    // cout << "sliceable = " << Is_Sliceable<TMAT,T>::VAL << endl;
-    // cout << "return type = " << typeid (typename slicetype<Is_Sliceable<TMAT,T>::VAL,TMAT>::TYPE).name() << endl;
-    return mat;
-  }
-  */
-  
 
 
   template <int H, int W, typename SCAL, typename TANY>
