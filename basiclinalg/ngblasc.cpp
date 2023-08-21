@@ -19,6 +19,12 @@ namespace ngbla
       dest[i] = val;
   }
   
+  void SetVector (Complex val, SliceVector<Complex> dest) NETGEN_NOEXCEPT
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = val;
+  }
+  
   
   void CopyVector (BareVector<Complex> src, FlatVector<Complex> dest) NETGEN_NOEXCEPT
   {

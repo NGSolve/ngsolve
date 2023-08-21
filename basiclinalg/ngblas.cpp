@@ -26,6 +26,12 @@ namespace ngbla
     for (size_t i = 0; i < dest.Size(); i++)
       dest[i] = val;
   }
+
+  void SetVector (double val, SliceVector<double> dest) NETGEN_NOEXCEPT
+  {
+    for (size_t i = 0; i < dest.Size(); i++)
+      dest[i] = val;
+  }
   
   void CopyVector (BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT
   {

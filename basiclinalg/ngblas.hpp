@@ -37,6 +37,18 @@ namespace ngbla
   extern NGS_DLL_HEADER void SetVector (Complex val, FlatVector<Complex> vec) NETGEN_NOEXCEPT;
   
 
+  template <typename TS, typename T>
+  void SetVector (TS val, SliceVector<T> vec) NETGEN_NOEXCEPT
+  {
+    for (size_t i : Range(vec))
+      vec[i] = val;
+  }
+  
+  extern NGS_DLL_HEADER void SetVector (double val, SliceVector<double> vec) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void SetVector (Complex val, SliceVector<Complex> vec) NETGEN_NOEXCEPT;
+  
+
+  
   
   template <typename T1, typename T2, typename T1S, typename T2S>
   void CopyVector (LinearVector<T1,T1S> src, LinearVector<T2,T2S> dest) NETGEN_NOEXCEPT
