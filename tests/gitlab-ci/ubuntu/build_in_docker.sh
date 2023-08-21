@@ -45,6 +45,7 @@ cd build/ngsolve
 if [ "$IMAGE_NAME" == "avx" ]
 then
     apt-get install -y \
+      rsync \
       libasound2 \
       libatk-bridge2.0-0 \
       libatk1.0-0 \
@@ -60,7 +61,6 @@ then
       libxrandr2 \
 
     pip3 install \
-        rsync \
         sphinx \
         sphinx_rtd_theme \
         ipython \
