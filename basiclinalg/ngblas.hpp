@@ -47,16 +47,16 @@ namespace ngbla
   }
 
   template <typename T1, typename T2>
-  void CopyVector (BareSliceVector<T1> src, SliceVector<T2> dest) NETGEN_NOEXCEPT
+  void CopyVector (BareSliceVector<T1> src, BareSliceVector<T2> dest, size_t size) NETGEN_NOEXCEPT
   {
-    for (size_t i : Range(dest))
+    for (size_t i : Range(size))
       dest[i] = src[i];
   }
 
   extern NGS_DLL_HEADER void CopyVector (BareVector<double> src, FlatVector<double> dest) NETGEN_NOEXCEPT;
-  extern NGS_DLL_HEADER void CopyVector (BareSliceVector<double> src, SliceVector<double> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void CopyVector (BareSliceVector<double> src, BareSliceVector<double> dest, size_t size) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER void CopyVector (BareVector<Complex> src, FlatVector<Complex> dest) NETGEN_NOEXCEPT;
-  extern NGS_DLL_HEADER void CopyVector (BareSliceVector<Complex> src, SliceVector<Complex> dest) NETGEN_NOEXCEPT;
+  extern NGS_DLL_HEADER void CopyVector (BareSliceVector<Complex> src, BareSliceVector<Complex> dest, size_t size) NETGEN_NOEXCEPT;
 
 
   template <typename T0, typename T1, typename T2>
@@ -773,7 +773,7 @@ namespace ngbla
       else if constexpr (TVec::IsLinear() && TVecB::IsLinear())
         CopyVector(BareVector<TB>(v.Spec()), FlatVector<T>(self.Spec().Range(0,cs)));
       else
-        CopyVector(BareSliceVector<TB>(v.Spec()), SliceVector<T>(self.Spec().Range(0,cs)));
+        CopyVector(BareSliceVector<TB>(v.Spec()), BareSliceVector<T>(self.Spec()), cs);
       return self.Spec();
     }
   };
