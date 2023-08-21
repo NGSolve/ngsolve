@@ -317,6 +317,7 @@ namespace ngcomp
 
               auto [info, parentfaces] = ma->GetParentFaces(face);
               auto parentface = get<0>(parentfaces);
+              if (parentface == -1) break;
               auto parentface_vertices = ma->GetFacePNums(parentface);
               // find vertex maxi s.t. one of maxi's parents is in trig
               int maxi = -1;
