@@ -44,14 +44,23 @@ cd build/ngsolve
 
 if [ "$IMAGE_NAME" == "avx" ]
 then
-    apt-get upgrade -y
-    apt-get install -y software-properties-common
-    add-apt-repository -y ppa:saiarcot895/chromium-beta
-    apt-get update
-    apt-get install -y rsync chromium-browser chromium-chromedriver
-    ln -s /usr/lib/chromium-browser/chromedriver /usr/local/bin/chromedriver
+    apt-get install -y \
+      libasound2 \
+      libatk-bridge2.0-0 \
+      libatk1.0-0 \
+      libcups2 \
+      libdrm2 \
+      libgbm1 \
+      libnss3 \
+      libpango1.0-0 \
+      libxcomposite1 \
+      libxdamage1 \
+      libxfixes3 \
+      libxkbcommon0 \
+      libxrandr2 \
 
     pip3 install \
+        rsync \
         sphinx \
         sphinx_rtd_theme \
         ipython \
@@ -120,6 +129,7 @@ then
   echo "build docu"
   ipython profile create --parallel --profile=default
   echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_default/ipcluster_config.py
+  # export SHOW_LOGS=1
   if [[ $SHOW_LOGS ]];
   then
     make docs
