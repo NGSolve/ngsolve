@@ -26,9 +26,9 @@ namespace ngbla
       dest[i] = src[i];
   }
   
-  void CopyVector (BareSliceVector<Complex> src, SliceVector<Complex> dest) NETGEN_NOEXCEPT
+  void CopyVector (BareSliceVector<Complex> src, BareSliceVector<Complex> dest, size_t size) NETGEN_NOEXCEPT
   {
-    for (size_t i = 0; i < dest.Size(); i++)
+    for (size_t i = 0; i < size; i++)
       dest[i] = src[i];
   }
 
