@@ -353,7 +353,7 @@ namespace ngbla
       // todo: checking
       return FlatMatrix<T> (h,w, data);
     }
-    
+
     class Iterator
     {
       VectorView vec;

@@ -1016,8 +1016,8 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     static constexpr bool IsLinear() { return false; } 
     // 
-    SliceMatrix()
-      : h{0}, w{0}, dist{0}, data{nullptr} { } 
+    SliceMatrix() = default;
+    // : h{0}, w{0}, dist{0}, data{nullptr} { } 
     INLINE SliceMatrix(const SliceMatrix &) = default;
 
     template <typename T2, typename TH2, typename TW2, typename TDIST2,
@@ -1301,6 +1301,12 @@ namespace ngbla
         return SliceVector<T> (min(w-dp, h+dm), dist+1, data+dp-dm*dist);      
       else
         return SliceVector<T> (min(w-dp, h+dm), dist+1, data-dm+dp*dist);
+    }
+
+    // [[deprecated("Use placenement ctor: new(ptr) Matrix(n, lh); instead!")]]
+    void AssignMemory (size_t s, LocalHeap & lh)
+    {
+      new (this) SliceMatrix(s, lh);
     }
   };
 
