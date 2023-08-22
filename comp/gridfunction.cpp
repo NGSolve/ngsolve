@@ -66,7 +66,7 @@ namespace ngcomp
   
   GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & aname,
 				const Flags & aflags)
-    : flags(aflags), name(aname),
+    : name(aname), flags(aflags), 
       // GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
       /*
       GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator>(),
