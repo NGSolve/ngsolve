@@ -91,9 +91,12 @@ namespace ngcomp
       Grid-functions
   */
   class NGS_DLL_HEADER GridFunction 
-    : public NGS_Object, public GridFunctionCoefficientFunction
+    : public GridFunctionCoefficientFunction // , public NGS_Object
   {
   protected:
+    string name;
+    Flags flags;
+    Flags flaglist;
     /// the finite element space
     shared_ptr<FESpace> fespace;
     /// should we do a prolongation from one multigrid-level to the next ?
@@ -156,15 +159,16 @@ namespace ngcomp
     shared_ptr<FESpace> GetFESpace() const { return fespace; }
 
     ///
-    virtual string GetClassName () const override
+    virtual string GetClassName () const
     {
       return "GridFunction";
     }
 
-    virtual string GetName () const
-    {
-      return name;
-    }
+    void SetName(const string & aname) { name = aname; }
+    string GetName () const { return name; }
+
+    const Flags& GetFlags() const { return flags; }
+    Flags& GetFlags() { return flags; }
 
     virtual void Interpolate (const CoefficientFunction & cf,
                               const Region * reg, int mdcomp, LocalHeap & lh);
@@ -172,7 +176,7 @@ namespace ngcomp
     ///
     virtual void PrintReport (ostream & ost) const override;
     ///
-    virtual Array<MemoryUsage> GetMemoryUsage () const override;
+    virtual Array<MemoryUsage> GetMemoryUsage () const;
 
     // void Visualize(const string & name);
 
@@ -270,7 +274,6 @@ namespace ngcomp
     // multidim component, if -1 then all components are loaded/saved
     virtual void Load (istream & ist, int mdcomp = -1) = 0;
     virtual void Save (ostream & ost, int mdcomp = -1) const = 0;
-    using NGS_Object::shared_from_this;
   };
 
 

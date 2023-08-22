@@ -9,37 +9,6 @@ namespace ngcomp
   using namespace ngmg;
 
   
-  Preconditioner :: Preconditioner (const PDE * const apde, const Flags & aflags, 
-				    const string aname)
-    : NGS_Object(apde->GetMeshAccess(), aflags, aname)
-  {
-    test = flags.GetDefineFlag ("test");
-    timing = flags.GetDefineFlag ("timing");
-    print = flags.GetDefineFlag ("print");
-    laterupdate = flags.GetDefineFlag ("laterupdate");
-    testresult_ok = testresult_min = testresult_max = NULL;
-    // using lapack for testing EV
-    uselapack = flags.GetDefineFlag ("lapacktest");
-    if ( uselapack ) test = 1;
-
-    if(test)
-      {
-	string testresult_ok_name = flags.GetStringFlag ("testresultok","");
-	string testresult_min_name = flags.GetStringFlag ("testresultmin","");
-	string testresult_max_name = flags.GetStringFlag ("testresultmax","");
-	
-	if(testresult_ok_name != "") testresult_ok = &(const_cast<PDE*>(apde)->GetVariable(testresult_ok_name));
-	if(testresult_min_name != "") testresult_min = &(const_cast<PDE*>(apde)->GetVariable(testresult_min_name));
-	if(testresult_max_name != "") testresult_max = &(const_cast<PDE*>(apde)->GetVariable(testresult_max_name));
-      }
-
-    on_proc = int ( flags.GetNumFlag("only_on", -1));
-
-    if (!flags.GetDefineFlag ("not_register_for_auto_update"))
-      apde->GetBilinearForm (flags.GetStringFlag ("bilinearform"))->SetPreconditioner(this);
-  }
-
-
   Preconditioner :: Preconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
                                     const string aname)
     : NGS_Object(bfa? bfa->GetMeshAccess(): nullptr, aflags, aname), bf(bfa)
@@ -215,102 +184,6 @@ namespace ngcomp
 
 
 
-
-
-
-  MGPreconditioner :: MGPreconditioner (const PDE & pde, const Flags & aflags, const string aname)
-    : Preconditioner (&pde,aflags,aname)
-  {
-    // cout << "*** MGPreconditioner constructor called" << endl;
-    mgtest = flags.GetDefineFlag ("mgtest");
-    mgfile = flags.GetStringFlag ("mgfile","mgtest.out"); 
-    mgnumber = int(flags.GetNumFlag("mgnumber",1)); 
-    
-
-    shared_ptr<MeshAccess> ma = pde.GetMeshAccess();
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    // bfa -> SetPreconditioner (this);
-
-    shared_ptr<LinearForm> lfconstraint = 
-      pde.GetLinearForm (flags.GetStringFlag ("constraint", ""),1);
-    shared_ptr<FESpace> fes = bfa->GetFESpace();
-    
-
-    shared_ptr<BilinearForm> lo_bfa = bfa;
-    shared_ptr<FESpace> lo_fes = fes;
-
-    if (bfa->GetLowOrderBilinearForm())
-      {
-	lo_bfa = bfa->GetLowOrderBilinearForm();
-	lo_fes = fes->LowOrderFESpacePtr();
-      }
-    /*
-    else if (id == 0 && ntasks > 1 )  // not supported anymore
-      {
-	lo_bfa = bfa;
-	lo_fes = &fes;
-      }
-    */
-
-    shared_ptr<Smoother> sm = nullptr;
-    //    const char * smoother = flags.GetStringFlag ("smoother", "point");
-    smoothertype = flags.GetStringFlag ("smoother", "point");
-
-    if (smoothertype == "point")
-      {
-	sm = make_shared<GSSmoother> (*ma, *lo_bfa);
-      }
-    else if (smoothertype == "line")
-      {
-	sm = make_shared<AnisotropicSmoother> (*ma, *lo_bfa);
-      }
-    else if (smoothertype == "block") 
-      {
-	if (!lfconstraint)
-	  sm = make_shared<BlockSmoother> (*ma, *lo_bfa, flags);
-	else
-	  sm = make_shared<BlockSmoother> (*ma, *lo_bfa, *lfconstraint, flags);
-      }
-    /*
-    else if (smoothertype == "potential")
-      {
-	sm = new PotentialSmoother (ma, *lo_bfa);
-      }
-    */
-    else
-      cerr << "Unknown Smoother " << smoothertype << endl;
-
-    if (!sm)
-      throw Exception ("smoother could not be allocated"); 
-
-    auto prol = lo_fes->GetProlongation();
-    mgp = make_shared<MultigridPreconditioner> (lo_bfa, sm, prol);
-    mgp->SetSmoothingSteps (int(flags.GetNumFlag ("smoothingsteps", 1)));
-    mgp->SetCycle (int(flags.GetNumFlag ("cycle", 1)));
-    mgp->SetIncreaseSmoothingSteps (int(flags.GetNumFlag ("increasesmoothingsteps", 1)));
-    mgp->SetCoarseSmoothingSteps (int(flags.GetNumFlag ("coarsesmoothingsteps", 1)));
-    mgp->SetUpdateAll( flags.GetDefineFlag( "updateall" ) );
-    mgp->SetHarmonicExtensionProlongation (flags.GetDefineFlag("he_prolongation"));
-    MultigridPreconditioner::COARSETYPE ct = MultigridPreconditioner::EXACT_COARSE;
-    const string & coarse = flags.GetStringFlag ("coarsetype", "direct");
-    if (coarse == "smoothing")
-      ct = MultigridPreconditioner::SMOOTHING_COARSE;
-    else if (coarse == "cg")
-      ct = MultigridPreconditioner::CG_COARSE;
-    mgp->SetCoarseType (ct);
-    
-
-    coarse_pre = 
-      pde.GetPreconditioner (flags.GetStringFlag ("coarseprecond", ""), 1);
-
-    if (coarse_pre)
-      mgp->SetCoarseType (MultigridPreconditioner::USER_COARSE);
-
-    finesmoothingsteps = int (flags.GetNumFlag ("finesmoothingsteps", 1));
-
-    tlp = nullptr;
-    inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
-  }
 
 
 
@@ -556,15 +429,6 @@ namespace ngcomp
     string inversetype;
 
   public:
-    DirectPreconditioner (const PDE & pde, const Flags & aflags,
-			  const string aname = "directprecond")
-      : Preconditioner(&pde,aflags,aname)
-    {
-      bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-      // bfa -> SetPreconditioner (this);
-      inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
-    }
-
     DirectPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
 			  const string aname = "directprecond")
       : Preconditioner(abfa,aflags,aname), bfa(abfa)
@@ -673,8 +537,6 @@ namespace ngcomp
     function<shared_ptr<Table<DofId>>(FESpace&)> blockcreator;
   public:
     ///
-    LocalPreconditioner (const PDE & pde, const Flags & aflags,
-			 const string aname = "localprecond");
     LocalPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
 			 const string aname = "localprecond");
     ///
@@ -782,35 +644,6 @@ namespace ngcomp
 
 
 
-  LocalPreconditioner :: LocalPreconditioner (const PDE & pde, const Flags & aflags, 
-					      const string aname)
-    : Preconditioner (&pde,aflags,aname)
-  {
-    bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    // bfa -> SetPreconditioner (this);
-
-    block = flags.GetDefineFlag ("block");
-    locprectest = flags.GetDefineFlag ("mgtest");
-    locprecfile = flags.GetStringFlag ("mgfile","locprectest.out"); 
-
-    string smoother = flags.GetStringFlag("smoother","");
-    if ( smoother == "block" )
-      block = true;
-
-    // coarse-grid preconditioner only used in parallel!!
-    ct = "NO_COARSE";
-    const string & coarse = flags.GetStringFlag ("coarsetype", "nocoarse");
-    if (coarse == "smoothing") 
-      ct = "SMOOTHING_COARSE";
-    else if (coarse == "direct")
-      ct = "DIRECT_COARSE";
-
-    coarse_pre = 
-      pde.GetPreconditioner (flags.GetStringFlag ("coarseprecond", ""), 1);
-    if (coarse_pre)
-      ct = "USER_COARSE";
-  }
-
   LocalPreconditioner :: 
   LocalPreconditioner  (shared_ptr<BilinearForm> abfa, const Flags & aflags,
                         const string aname)
@@ -879,16 +712,6 @@ namespace ngcomp
   // ****************************** TwoLevelPreconditioner *******************************
 
 
-  TwoLevelPreconditioner :: TwoLevelPreconditioner (PDE * apde, const Flags & aflags, const string aname)
-    : Preconditioner(apde,aflags,aname)
-  {
-    pde = apde;
-    bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
-    cpre = pde->GetPreconditioner (flags.GetStringFlag ("coarsepreconditioner", NULL));
-    smoothingsteps = int (flags.GetNumFlag ("smoothingsteps", 1));
-    premat = NULL;
-  }
-
   TwoLevelPreconditioner :: ~TwoLevelPreconditioner()
   {
     delete premat;
@@ -927,14 +750,6 @@ namespace ngcomp
 
 
 
-ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags, const string aname)
-    : Preconditioner(apde,aflags,aname)
-  {
-    dim = int (flags.GetNumFlag ("dim", 1));
-    cm = 0;
-    creal = apde->GetPreconditioner (flags.GetStringFlag ("realpreconditioner",""));
-  }
-
   ComplexPreconditioner :: ~ComplexPreconditioner()
   { 
     ;
@@ -963,16 +778,6 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   }
 
 
-
-  ChebychevPreconditioner :: ChebychevPreconditioner (PDE * apde, const Flags & aflags, const string aname)
-    : Preconditioner(apde,aflags,aname)
-  {
-    steps = int (flags.GetNumFlag ("steps",10.));
-    cm = 0;
-    csimple = apde->GetPreconditioner (flags.GetStringFlag ("csimple",""));
-    bfa = apde->GetBilinearForm (flags.GetStringFlag ("bilinearform",""));
-    test = flags.GetDefineFlag ("test");
-  }
 
   ChebychevPreconditioner :: ~ChebychevPreconditioner()
   { 
@@ -1015,14 +820,6 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
   ////////////////////////////////////////////////////////////////////////////////
   // added 08/19/2003, FB
-
-  NonsymmetricPreconditioner :: NonsymmetricPreconditioner (PDE * apde, const Flags & aflags, const string aname)
-    : Preconditioner(apde,aflags,aname)
-  {
-    dim = int (flags.GetNumFlag ("dim", 1));
-    cm = 0;
-    cbase = apde->GetPreconditioner (flags.GetStringFlag ("basepreconditioner",""));
-  }
 
   NonsymmetricPreconditioner :: ~NonsymmetricPreconditioner()
   { 
@@ -1071,24 +868,6 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   ////////////////////////////////////////////////////////////////////////////////
 
 
-  CommutingAMGPreconditioner :: CommutingAMGPreconditioner (PDE * apde, const Flags & aflags, const string aname)
-    : Preconditioner (apde,aflags,aname), pde(apde)
-  {
-    bfa = pde->GetBilinearForm (flags.GetStringFlag ("bilinearform", ""));
-    while (bfa->GetLowOrderBilinearForm())
-      bfa = bfa->GetLowOrderBilinearForm();
-
-    coefse = pde->GetCoefficientFunction (flags.GetStringFlag ("coefse", ""),1);    
-    coefe = pde->GetCoefficientFunction (flags.GetStringFlag ("coefe", ""),1);    
-    coeff = pde->GetCoefficientFunction (flags.GetStringFlag ("coeff", ""),1);    
-
-    hcurl = dynamic_cast<const NedelecFESpace*> (bfa->GetFESpace().get()) != 0;
-    levels = int (flags.GetNumFlag ("levels", 10));
-    coarsegrid = flags.GetDefineFlag ("coarsegrid");
-
-    amg = NULL;
-  }
-
   CommutingAMGPreconditioner :: ~CommutingAMGPreconditioner ()
   {
     delete amg;
@@ -1107,7 +886,7 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
       }
 #endif
 
-    shared_ptr<MeshAccess> ma = pde->GetMeshAccess();
+    shared_ptr<MeshAccess> ma = nullptr; //pde->GetMeshAccess();
 
     size_t nedge = ma->GetNEdges(); 
     size_t nface = ma->GetNFaces(); 
@@ -1291,10 +1070,9 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
 
   PreconditionerClasses::PreconditionerInfo::
   PreconditionerInfo (const string & aname,
-		      function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
                       function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf,
                       DocInfo adocinfo)
-    : name(aname), creator(acreator), creatorbf(acreatorbf), docinfo(adocinfo)
+    : name(aname), creatorbf(acreatorbf), docinfo(adocinfo)
   {
     ;
   }
@@ -1306,11 +1084,10 @@ ComplexPreconditioner :: ComplexPreconditioner (PDE * apde, const Flags & aflags
   
   void PreconditionerClasses :: 
   AddPreconditioner (const string & aname,
-                     function<shared_ptr<Preconditioner>(const PDE &, const Flags &, const string &)> acreator,
                      function<shared_ptr<Preconditioner>(shared_ptr<BilinearForm>,const Flags &,const string)> acreatorbf,
                      DocInfo docinfo)
   {
-    prea.Append (make_unique<PreconditionerInfo>(aname, acreator, acreatorbf, docinfo));
+    prea.Append (make_unique<PreconditionerInfo>(aname, acreatorbf, docinfo));
   }
 
   const PreconditionerClasses::PreconditionerInfo * 
