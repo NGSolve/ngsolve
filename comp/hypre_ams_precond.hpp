@@ -88,7 +88,6 @@ class HypreAMSPreconditioner : public Preconditioner
 public:
 
   // dummy constructors - not implemented
-  HypreAMSPreconditioner (const PDE & pde, const Flags & flags, const string & name);
   HypreAMSPreconditioner (const BaseMatrix & matrix, const shared_ptr<BitArray> afreedofs); 
 
   // actually implemented!

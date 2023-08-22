@@ -110,12 +110,6 @@ namespace ngcomp
     
 
 
-  HypreAMSPreconditioner :: HypreAMSPreconditioner (const PDE & pde, const Flags & aflags, const string & aname)
-    : Preconditioner(&pde, aflags)
-  {
-    throw Exception ("HYPRE-AMS pde-file-interface not implemented; please use direct python-interface");
-  }
-  
   HypreAMSPreconditioner :: HypreAMSPreconditioner (const BaseMatrix & matrix, const shared_ptr<BitArray> afreedofs)
     : Preconditioner(shared_ptr<BilinearForm>(nullptr), Flags("not_register_for_auto_update"))
   {

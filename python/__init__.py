@@ -59,10 +59,10 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     NodalFESpace, VectorNodalFESpace, H1LumpingFESpace, \
     NumberSpace, Periodic, Discontinuous, Hidden, VectorValued, MatrixValued, Compress, \
     CompressCompound, BoundaryFromVolumeCF, Interpolate, Variation, \
-    NumProc, PDE, Integrate, Region, SymbolicLFI, SymbolicBFI, \
+    Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ConvertOperator, ORDER_POLICY, VTKOutput, SetHeapSize, \
     SetTestoutFile, ngsglobals, pml, MPI_Init, ContactBoundary, PatchwiseSolve
-from .solve import BVP, CalcFlux, Draw, DrawFlux, \
+from .solve import Draw, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTrace, \
     PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, PrivateSpace, TimeFunction, Normalize, printmaster
