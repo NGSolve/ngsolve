@@ -42,7 +42,7 @@ double BernsteinTrig(double x, double y, int i, int j, int n) {
          pow(x, i) * pow(y, j) * pow(1 - x - y, n - i - j);
 }
 
-Matrix<double> GetIBernsteinBasis(ELEMENT_TYPE etype, int order) {
+Matrix<double> GetIBernsteinBasis(ngfem::ELEMENT_TYPE etype, int order) {
   if (etype == ET_SEGM) {
     Matrix<double> ret(order + 1, order + 1);
     ret = 0.;
@@ -72,7 +72,7 @@ Matrix<double> GetIBernsteinBasis(ELEMENT_TYPE etype, int order) {
   throw Exception("Element type not supported");
 }
 
-IntegrationRule GetElementPoints(ELEMENT_TYPE etype, int order) {
+IntegrationRule GetElementPoints(ngfem::ELEMENT_TYPE etype, int order) {
   int n = order + 1;
   IntegrationRule ir;
   if (etype == ET_TRIG)
@@ -92,7 +92,7 @@ IntegrationRule GetElementPoints(ELEMENT_TYPE etype, int order) {
   return ir;
 }
 
-IntegrationRule GetWireframePoints(ELEMENT_TYPE etype, int order) {
+IntegrationRule GetWireframePoints(ngfem::ELEMENT_TYPE etype, int order) {
   int n = order + 1;
   IntegrationRule ir;
   if (etype == ET_TRIG) {
@@ -111,7 +111,7 @@ IntegrationRule GetWireframePoints(ELEMENT_TYPE etype, int order) {
   return ir;
 }
 
-vector<string> MapBernstein(FlatTensor<3, double> input, ELEMENT_TYPE eltype,
+vector<string> MapBernstein(FlatTensor<3, double> input, ngfem::ELEMENT_TYPE eltype,
                             int order, int n_components) {
   auto [ne, nip, comps] = input.Shape();
   Tensor<3, double> output(nip, ne, comps);
