@@ -416,7 +416,7 @@ namespace ngcomp
   template<int DIM>
   void DisplacedNormal<DIM>::Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<> values) const
   {
-    auto ma = displacement->GetMeshAccess();
+    auto ma = displacement->GetFESpace()->GetMeshAccess();
     const auto& el = ma->GetElement(ip.GetTransformation().GetElementId());
     double inv_fac = GetDomIn(*ma, el) == 0 ? -1. : 1.;
 

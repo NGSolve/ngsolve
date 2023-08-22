@@ -13,7 +13,7 @@ namespace ngfem
       coefficient functions
   */
   
-  class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this_virtual<CoefficientFunction>
+  class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this<CoefficientFunction>
   {
   private:
     size_t dimension = 1;

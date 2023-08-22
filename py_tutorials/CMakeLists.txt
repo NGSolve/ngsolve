@@ -6,7 +6,7 @@ install(FILES
        )
 
 install(FILES
-        mixed.py hybrid_mixed.py hybrid_dg.py nonlin.py taskmanager.py
+        mixed.py hybrid_dg.py nonlin.py taskmanager.py
         pickling.py pml.py DG/timeDG-skeleton.py DG/timeDGwave.py
         DG/timeDG.py DG/timeDGlap.py hdivdiv/hhj.py hdivdiv/tdnns.py
         DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/howto
@@ -22,7 +22,7 @@ install(FILES
        )
 
 include(CTest)
-foreach(py_test assemble.py bla.py poisson.py adaptive.py cmagnet.py mixed.py hybrid_mixed.py hybrid_dg.py taskmanager.py compound.py pickling.py)
+foreach(py_test assemble.py bla.py poisson.py adaptive.py cmagnet.py mixed.py hybrid_dg.py taskmanager.py compound.py pickling.py)
 if(NETGEN_USE_MPI)
   add_test(NAME ${py_test} COMMAND ngspy ${py_test} WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
 else()

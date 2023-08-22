@@ -79,7 +79,7 @@ namespace ngcomp
     RegionTimer reg(t);
     
     
-    auto ma = gf->GetMeshAccess();
+    auto ma = gf->GetFESpace()->GetMeshAccess();
     auto fes = gf->GetFESpace();
     const BitArray & freedofs = *fes->GetFreeDofs();
 

@@ -781,28 +781,6 @@ namespace ngcomp
     //cout << IM(4) << " [ VTKOutput Counter: " << output_cnt << ""]" << endl;
   }
 
-  NumProcVTKOutput::NumProcVTKOutput(shared_ptr<PDE> apde, const Flags &flags)
-      : NumProc(apde)
-  {
-    const Array<string> &coefs_strings = flags.GetStringListFlag("coefficients");
-
-    Array<shared_ptr<CoefficientFunction>> coefs;
-    for (int i = 0; i < coefs_strings.Size(); ++i)
-      coefs.Append(apde->GetCoefficientFunction(coefs_strings[i]));
-
-    if (apde->GetMeshAccess()->GetDimension() == 2)
-      vtkout = make_shared<VTKOutput<2>>(coefs, flags, apde->GetMeshAccess());
-    else
-      vtkout = make_shared<VTKOutput<3>>(coefs, flags, apde->GetMeshAccess());
-  }
-
-  void NumProcVTKOutput::Do(LocalHeap &lh)
-  {
-    vtkout->Do(lh);
-  }
-
-  static RegisterNumProc<NumProcVTKOutput> npvtkout("vtkoutput");
-
   template class VTKOutput<2>;
   template class VTKOutput<3>;
 }

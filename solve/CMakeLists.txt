@@ -1,8 +1,7 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( solve ${NGS_LIB_TYPE}
-        bvp.cpp generalizedEVP.cpp numproc.cpp evp.cpp 
-        hyperbolic.cpp numprocee.cpp python_solve.cpp
+        python_solve.cpp
         )
 #  python_mpi.cpp
 target_include_directories(solve PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS})
@@ -43,15 +42,6 @@ if(WIN32)
     enable_language(RC)
     target_sources( ngsolve PRIVATE ../cmake/resources/ngsolve.rc )
     set_target_properties( ngsolve PROPERTIES RULE_LAUNCH_COMPILE "" )
-else(WIN32)
-    if(NOT BUILD_FOR_CONDA)
-    add_executable( ngs ngs.cpp)
-    target_link_libraries(ngs PUBLIC solve netgen_python)
-    if(BUILD_FOR_CONDA AND UNIX AND NOT APPLE)
-      target_link_libraries( ngs PUBLIC -Wl,--no-as-needed ${PYTHON_LIBRARY})
-    endif()
-    install( TARGETS ngs DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve )
-    endif()
 endif(WIN32)
 
 install( FILES solve.hpp DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE} COMPONENT ngsolve_devel )

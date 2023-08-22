@@ -44,30 +44,6 @@ namespace ngfem
 }
 
 
-class PyNumProc : public NumProc
-{
-public:
-  using NumProc::NumProc;
-  virtual void Do (LocalHeap &lh) override
-  {
-      auto pylh = py::cast(lh, py::return_value_policy::reference);
-      try{
-          PYBIND11_OVERLOAD_PURE(
-                                 void,       /* Return type */
-                                 PyNumProc,  /* Parent class */
-                                 Do,         /* Name of function */
-                                 pylh
-          );
-      }
-      catch (py::error_already_set const &e) {
-          cerr << e.what() << endl;
-          PyErr_Print();
-      }
-  }
-};
-
-
-
 py::object ProxyNode2Py (const ProxyNode & node)
 {
   if (auto proxy = *node)
@@ -1929,7 +1905,7 @@ active_dofs : BitArray or None
 
   ////////////////////////////////////// GridFunction //////////////////////////
   
-  auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction, NGS_Object>
+  auto gf_class = py::class_<GF,shared_ptr<GF>, CoefficientFunction>
     (m, "GridFunction",  "a field approximated in some finite element space", py::dynamic_attr());
   gf_class
     .def(py::init([gf_class](shared_ptr<FESpace> fes, string & name,
@@ -1958,7 +1934,7 @@ active_dofs : BitArray or None
                 })
     .def(py::pickle([] (const GridFunction& gf)
                     {
-                      if (ngcore::parallel_pickling && gf.GetMeshAccess()->GetCommunicator().Size() > 1)
+                      if (ngcore::parallel_pickling && gf.GetFESpace()->GetMeshAccess()->GetCommunicator().Size() > 1)
                         {
                           ostringstream str; // (ios::binary);
                           gf.Save(str);
@@ -1967,7 +1943,7 @@ active_dofs : BitArray or None
                           shared_ptr<BaseVector> v2 = make_shared<VVector<double>> (vec.Size());
                           *v2 = vec;
                           
-                          if (gf.GetMeshAccess()->GetCommunicator().Rank() == 0)
+                          if (gf.GetFESpace()->GetMeshAccess()->GetCommunicator().Rank() == 0)
                             return
                               py::make_tuple(gf.GetFESpace(),
                                              gf.GetName(),
@@ -3263,29 +3239,10 @@ integrator : ngsolve.fem.LFI
       DocInfo docinfo;
       for (auto [key,value] : docflags)
         docinfo.Arg(py::cast<string>(key)) = py::cast<string>(value);
-      GetPreconditionerClasses().AddPreconditioner (name, nullptr, creator_function);
+      GetPreconditionerClasses().AddPreconditioner (name, creator_function);
     }, py::arg("name"), py::arg("makepre"), py::arg("docflags") = py::dict(), "register creator-function makepre(BaseMatrix,FreeDofs)->BaseMatrix");
   
   
-  //////////////////////////////////////////////////////////////////////////////////////////
-
-  py::class_<NumProc, NGS_Object, shared_ptr<NumProc>> (m, "NumProc")
-    .def("Do", [](NumProc & self)
-         {
-           self.Do(glh);
-         }, py::call_guard<py::gil_scoped_release>())
-    ;
-
-  py::class_<PyNumProc, NumProc, shared_ptr<PyNumProc>> (m, "PyNumProc")
-    .def(py::init<> ([](shared_ptr<PDE> pde, Flags & flags)
-                     { return new PyNumProc(pde, flags); }), py::arg("pde"), py::arg("flags"))
-    .def_property_readonly("pde", [](NumProc &self) { return self.GetPDE(); }, "PDE of the NumProc")
-    .def("Do", [](NumProc & self, LocalHeap & lh)
-                               {
-                                 self.Do(lh);
-                               }, py::arg("lh"), py::call_guard<py::gil_scoped_release>())
-    ;
-
   //////////////////////////////////////////////////////////////////////////////////////////
 
   PyExportSymbolTable<shared_ptr<FESpace>> (m);
@@ -3294,200 +3251,9 @@ integrator : ngsolve.fem.LFI
   PyExportSymbolTable<shared_ptr<BilinearForm>>(m);
   PyExportSymbolTable<shared_ptr<LinearForm>>(m);
   PyExportSymbolTable<shared_ptr<Preconditioner>> (m);
-  PyExportSymbolTable<shared_ptr<NumProc>> (m);
   PyExportSymbolTable<double> (m);
   PyExportSymbolTable<shared_ptr<double>> (m);
 
-    py::class_<PDE, shared_ptr<PDE>> (m, "PDE")
-
-#ifndef PARALLEL
-      .def(py::init([] (const string & filename)
-                    {
-                      return LoadPDE (filename);
-                    }), py::arg("filename"))
-#else
-      .def(py::init([](const string & filename)
-                           { 
-                             // ngs_comm = MPI_COMM_WORLD;
-
-                             //cout << "Rank = " << MyMPI_GetId(ngs_comm) << "/"
-                             //     << MyMPI_GetNTasks(ngs_comm) << endl;
-
-                             // NGSOStream::SetGlobalActive (MyMPI_GetId(MPI_COMM_WORLD)==0);
-                             return LoadPDE (filename);
-                           }), py::arg("filename"))
-#endif
-
-    .def(py::init<>())
-
-    .def("LoadSolution", []( shared_ptr<PDE> self, string filename, bool ascii )
-        {
-          return self->LoadSolution(filename, ascii);
-        },
-         py::arg("filename"), py::arg("ascii")=false
-      )
-
-    .def("__str__", [] (shared_ptr<PDE> self) { return ToString(*self); } )
-
-    .def("Mesh",  [](shared_ptr<PDE> self, int meshnr)
-        {
-          return self->GetMeshAccess(meshnr);
-        },
-       py::arg("meshnr")=0
-       )
-
-    .def("Solve", [](shared_ptr<PDE> self) { self->Solve(); } )
-
-
-    .def("Add", [](shared_ptr<PDE> self, shared_ptr<MeshAccess> mesh)
-                                {
-                                  self->AddMeshAccess (mesh);
-                                }, py::arg("mesh"))
-
-    .def("Add", [](shared_ptr<PDE> self, const string & name, double val)
-                                {
-                                  self->AddConstant (name, val);
-                                }, py::arg("name"), py::arg("value"))
-
-    .def("Add", [](shared_ptr<PDE> self, shared_ptr<FESpace> space)
-                                {
-                                  self->AddFESpace (space->GetName(), space);
-                                }, py::arg("space"))
-
-    .def("Add", [](shared_ptr<PDE> self, shared_ptr<GridFunction> gf)
-                                {
-                                  self->AddGridFunction (gf->GetName(), gf);
-                                }, py::arg("gf"))
-
-    .def("Add", [](shared_ptr<PDE> self, shared_ptr<BilinearForm> bf)
-                                {
-                                  self->AddBilinearForm (bf->GetName(), bf);
-                                }, py::arg("bf"))
-
-    .def("Add", [](shared_ptr<PDE> self, shared_ptr<LinearForm> lf)
-                                {
-                                  self->AddLinearForm (lf->GetName(), lf);
-                                }, py::arg("lf"))
-
-    .def("Add", [](shared_ptr<PDE> self, shared_ptr<Preconditioner> pre)
-                                {
-                                  self->AddPreconditioner (pre->GetName(), pre);
-                                }, py::arg("pre"))
-
-// TODO
-//     .def("Add", [](PyPDE self, shared_ptr<NumProcWrap> np)
-//                                 {
-//                                   cout << "add pynumproc" << endl;
-//                                   self->AddNumProc ("pynumproc", np);
-//                                 })
-    
-    .def("Add", [](shared_ptr<PDE> self, shared_ptr<NumProc> np)
-                                {
-				  static int cnt = 0;
-				  cnt++;
-				  string name = "np_from_py" + ToString(cnt);
-                                  self->AddNumProc (name, np);
-                                }, py::arg("np"))
-
-      .def("Add", [](shared_ptr<PDE> self, shared_ptr<CoefficientFunction> cf, const string& name)
-                  {
-                    self->AddCoefficientFunction(name, cf);
-                  }, py::arg("cf"), py::arg("name"))
-
-      .def("AddPDE_File", [](shared_ptr<PDE> self, const string& other)
-                  {
-                    LoadPDE(self, other);
-                  }, py::arg("filename"), "Adds definitions of other PDE file into existing one")
-
-    .def("Add", [](shared_ptr<PDE> self, const py::list &l)
-                                {
-                                  for (int i=0; i<py::len(l); i++)
-                                    {
-                                      py::extract<shared_ptr<PyNumProc>> np(l[i]);
-                                      if(np.check())
-                                        {
-                                          self->AddNumProc (np()->GetName(), np());
-                                          continue;
-                                        }
-                                      
-                                      py::extract<shared_ptr<NumProc>> pnp(l[i]);
-                                      if(np.check())
-                                        {
-                                          self->AddNumProc (pnp()->GetName(), pnp());
-                                          continue;
-                                        }
-                                      
-                                      py::extract<shared_ptr<GridFunction>> gf(l[i]);
-                                      if(gf.check())
-                                        {
-                                          self->AddGridFunction (gf()->GetName(), gf());
-                                          continue;
-                                        }
-                                      
-                                      py::extract<shared_ptr<BilinearForm>> bf(l[i]);
-                                      if(gf.check())
-                                        {
-                                          self->AddBilinearForm (bf()->GetName(), bf());
-                                          continue;
-                                        }
-                                      
-                                      py::extract<shared_ptr<LinearForm>> lf(l[i]);
-                                      if(gf.check())
-                                        {
-                                          self->AddLinearForm (lf()->GetName(), lf());
-                                          continue;
-                                        }
-                                      
-                                      py::extract<shared_ptr<Preconditioner>> pre(l[i]);
-                                      if(gf.check())
-                                        {
-                                          self->AddPreconditioner (pre()->GetName(), pre());
-                                          continue;
-                                        }
-                                      
-                                      cout << "warning: unknown object at position " << i << endl;
-                                    }
-                                }, py::arg("list"))
-
-    .def("SetCurveIntegrator", [](shared_ptr<PDE> self, const string & filename, shared_ptr<LinearFormIntegrator> lfi)
-          {
-            self->SetLineIntegratorCurvePointInfo(filename, lfi.get());
-          }, py::arg("filename"), py::arg("lfi"))
-
-    .def_property_readonly ("constants", [](shared_ptr<PDE> self) { return py::cast(self->GetConstantTable()); })
-    .def_property_readonly ("variables", [](shared_ptr<PDE> self) { return py::cast(self->GetVariableTable()); })
-    .def_property_readonly ("coefficients", [](shared_ptr<PDE> self) { return py::cast(self->GetCoefficientTable()); })
-    .def_property_readonly ("spaces", [](shared_ptr<PDE> self) {
-          auto table = self->GetSpaceTable();
-          SymbolTable<shared_ptr<FESpace>> pytable;
-          for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), shared_ptr<FESpace>(table[i]));
-          return py::cast(pytable);
-          })
-    .def_property_readonly ("gridfunctions", [](shared_ptr<PDE> self) {
-          auto table = self->GetGridFunctionTable();
-          SymbolTable<shared_ptr<GridFunction>> pytable;
-          for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), shared_ptr<GridFunction>(table[i]));
-          return py::cast(pytable);
-          })
-    .def_property_readonly ("bilinearforms", [](shared_ptr<PDE> self) {
-          auto table = self->GetBilinearFormTable();
-          SymbolTable<shared_ptr<BilinearForm>> pytable;
-          for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), shared_ptr<BilinearForm>(table[i]));
-          return py::cast(pytable);
-          })
-    .def_property_readonly ("linearforms", [](shared_ptr<PDE> self) {
-          auto table = self->GetLinearFormTable();
-          SymbolTable<shared_ptr<LinearForm>> pytable;
-          for ( auto i : Range(table.Size() ))
-                pytable.Set(table.GetName(i), shared_ptr<LinearForm>(table[i]));
-          return py::cast(pytable);
-          })
-    .def_property_readonly ("preconditioners", [](shared_ptr<PDE> self) { return py::cast(self->GetPreconditionerTable()); })
-    .def_property_readonly ("numprocs", [](shared_ptr<PDE> self) { return py::cast(self->GetNumProcTable()); })
-    ;
   
   m.def("Integrate", 
         [](spCF cf,
