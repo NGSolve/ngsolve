@@ -124,7 +124,6 @@ int NGS_PrintRegistered (ClientData clientData,
 			 int argc, const char *argv[])
 {
   ngfem::GetIntegrators().Print (cout);
-  ngsolve::GetNumProcs().Print (cout);
   ngsolve::GetFESpaceClasses().Print (cout);
   ngsolve::GetPreconditionerClasses().Print (cout);
 
@@ -138,26 +137,6 @@ int NGS_Help (ClientData clientData,
   if (argc >= 2)
     {
       string topics = argv[1];
-
-      if (topics == "numprocs")
-	{
-	  stringstream str;
-	  const Array<shared_ptr<NumProcs::NumProcInfo>> & npi = GetNumProcs().GetNumProcs();
-	  
-	  Array<int> sort(npi.Size());
-	  Array<string> names(npi.Size());
-	  for (int i = 0; i < npi.Size(); i++)
-	    {
-	      sort[i] = i;
-	      names[i] = npi[i]->name;
-	    }
-	  BubbleSort (names, sort);
-	  for (int ii = 0; ii < npi.Size(); ii++)
-	    str << npi[sort[ii]]->name << " ";
-
-	  Ng_Tcl_SetResult (interp, (char*)str.str().c_str(), NG_TCL_VOLATILE);
-	  return NG_TCL_OK;
-	}
 
       stringstream str;
 
@@ -189,18 +168,6 @@ int NGS_Help (ClientData clientData,
 	  ;
 	}
 
-      if (argc >= 3 && strcmp (argv[1], "numproc") == 0)
-	{
-	  const Array<shared_ptr<NumProcs::NumProcInfo>> & npi =
-	    GetNumProcs().GetNumProcs();
-	  for (int i = 0; i < npi.Size(); i++)
-	    {
-	      if (strcmp (argv[2], npi[i]->name.c_str()) == 0)
-		{
-		  npi[i]->printdoc(str);
-		}
-	    }
-	}
 
       cout << str.str();
       Ng_Tcl_SetResult (interp, (char*)str.str().c_str(), NG_TCL_VOLATILE);
@@ -209,8 +176,6 @@ int NGS_Help (ClientData clientData,
 }
 
 
-
-static shared_ptr<PDE> pde;
 
 #ifdef _NGSOLVE_SOCKETS_HPP
   class SocketOutArchive : public Archive
@@ -431,138 +396,10 @@ void MyRunParallel ( void * (*fun)(void *), void * in)
 
 
 
-void * SocketThread (void * data)
-{
-  int port = *(int*)data;
-  cout << "NGSolve accepts socket communication on port " << port << endl;
-  ServerSocket server (port);
-
-  while (true)
-    {
-      try
-        {
-          ServerSocket new_sock;
-          server.accept (new_sock);
-
-          while (new_sock.is_valid())
-            {
-              string str;
-              new_sock >> str;
-              
-              if (str == "")
-                break;
-              else if (str == "np") 
-                new_sock << ToString (pde->GetMeshAccess()->GetNP());
-              else if (str == "ne") 
-                new_sock << ToString (pde->GetMeshAccess()->GetNE());
-              /*
-              else if (str == "mesh") 
-                {
-                  stringstream str;
-                  netgen::mesh -> Save (str);
-                  new_sock << str.str();
-                }
-              */
-              else if (str == "pde") 
-                {
-		  cout << "socket: got command 'pde'" << endl;
-                  SocketOutArchive archive(new_sock);
-                  pde -> DoArchive (archive);
-                  cout << "PDE completely sent" << endl;
-                }
-              else
-                {
-                  cout << "got string '" << str << "'" << endl;
-                  new_sock << "hab dich nicht verstanden";
-                }
-
-            }
-        }
-      catch ( SocketException& ) {}
-    }
-  return NULL;
-}
-
 #endif
 
 
 
-
-
-int NGS_LoadPDE (ClientData clientData,
-		 Tcl_Interp * interp,
-		 int argc, const char *argv[])
-{
-
-  if (Ng_IsRunning())
-    {
-      Ng_Tcl_SetResult (interp, (char*)"Thread already running", NG_TCL_STATIC);
-      return NG_TCL_ERROR;
-    }
-
-  if (argc >= 2)
-    {
-      try
-	{
-#ifdef PARALLEL_GL
-	  MyMPI_SendCmd ("ngs_pdefile", MPI_COMM_WORLD);
-#endif
-          
-	  pde = make_shared<ngsolve::PDE>();
-          pde->SetTclInterpreter (interp);
-
-	  // make sure to have lapack loaded (important for newer MKL !!!)
-	  Matrix<> a(100), b(100), c(100);
-	  a = 1; b = 2; c = a*b | Lapack;
-
-          LoadPDE (pde, argv[1]);
-	  pde->PrintReport (*testout);
-
-// #ifdef NGS_PYTHON
-//           {
-//             try {
-//               cout << "set python object 'pde'" << endl;
-//               cout << "Type 'help(pde)' or 'print(pde)' for more information" << endl;
-//               AcquireGIL gil_lock;
-//               pyenv["pde"] = py::cast(pde);
-//             }
-//             catch (py::error_already_set const &) {
-//               PyErr_Print();
-//             }
-//           }
-// #endif
-
-          int port = pde -> GetConstant ("port", true);
-          if (port)
-            {
-              int * hport = new int;
-              *hport = port;
-#ifndef WIN32
-              MyRunParallel (SocketThread, hport);
-#endif
-            }
-	}
-      catch (ngstd::Exception & e)
-	{
-          pde->SetGood (false);
-	  cerr << "\n\nCaught Exception in NGS_LoadPDE:\n"
-	       << e.What() << endl;
-
-	  ostringstream ost;
-	  ost << "Exception in NGS_LoadPDE: \n " << e.What() << endl;
-	  Ng_Tcl_SetResult (interp, (char*)ost.str().c_str(), NG_TCL_VOLATILE);
-	  return NG_TCL_ERROR;
-	}
-      catch (exception & e)
-	{
-	  cerr << "\n\nCaught exception in NGS_LoadPDE:\n"
-	       << typeid(e).name() << endl;
-          pde->SetGood (false);
-	}
-
-    }
-  return NG_TCL_OK;
-}
 
 
 int NGS_LoadPy (ClientData clientData,
@@ -658,71 +495,6 @@ int NGS_LoadPy (ClientData clientData,
 }
 
 
-void * SolveBVP(void *)
-{
-  // if (MyMPI_GetNTasks (MPI_COMM_WORLD) > 1)
-  // TaskManager::SetNumThreads(1);
-
-  try
-    {
-      if (pde && pde->IsGood())
-	pde->Solve();
-    }
-
-  catch (ngstd::Exception & e)
-    {
-      cerr << "\n\ncaught Exception in SolveBVP:\n"
-	   << e.What() << "\n\n";
-      pde->SetGood (false);
-    }
-#ifdef _MSC_VER
-# ifndef MSVC_EXPRESS
-  catch (CException * e)
-    {
-      TCHAR msg[255];
-      e->GetErrorMessage(msg, 255);
-      cerr << "\n\ncaught Exception in SolveBVP:\n"
-	   << msg << "\n\n";
-      pde->SetGood (false);
-    }
-# endif // MSVC_EXPRESS
-#endif
-  catch (exception & e)
-    {
-      cerr << "\n\ncaught exception in SolveBVP:\n "
-	   << typeid(e).name() << ": " << e.what() << endl;
-      pde->SetGood (false);
-    }
-
-  Ng_SetRunning (0); 
-  return NULL;
-}
-
-
-
-int NGS_SolvePDE (ClientData clientData,
-		  Tcl_Interp * interp,
-		  int argc, const char *argv[])
-{
-  if (Ng_IsRunning())
-    {
-      Ng_Tcl_SetResult (interp, (char*)"Thread already running", NG_TCL_STATIC);
-      return NG_TCL_ERROR;
-    }
-
-  cout << "Solve PDE" << endl;
-  Ng_SetRunning (1);
-
-#ifdef PARALLEL_GL
-  MyMPI_SendCmd ("ngs_solvepde", MPI_COMM_WORLD);
-#endif
-  
-  RunParallel (SolveBVP, NULL);
-
-  return NG_TCL_OK;
-}
-
-
 int NGS_EnterCommand (ClientData clientData,
                       Tcl_Interp * interp,
                       int argc, const char *argv[])
@@ -737,13 +509,6 @@ int NGS_EnterCommand (ClientData clientData,
     }
   while (ch != '\n');
   cout << "command = " << st << endl;
-  if (pde)
-    {
-      stringstream sstream(st);
-      LoadPDE (pde, sstream);
-      pde->Solve ();
-      pde->PrintReport (*testout);
-    }
 
   return NG_TCL_OK;
 }
@@ -751,49 +516,10 @@ int NGS_EnterCommand (ClientData clientData,
 
 
 
-int NGS_PrintPDE (ClientData clientData,
-		  Tcl_Interp * interp,
-		  int argc, const char *argv[])
-{
-  if (pde)
-    {
-      if (argc == 1)
-	pde->PrintReport(cout);
-      else if (argc == 3)
-	{
-	  if (strcmp (argv[1], "coeffs") == 0)
-	    pde->GetCoefficientFunction (argv[2])->PrintReport(cout);
-	  else if (strcmp (argv[1], "spaces") == 0)
-	    pde->GetFESpace (argv[2])->PrintReport(cout);
-	  else if (strcmp (argv[1], "biforms") == 0)
-	    pde->GetBilinearForm (argv[2])->PrintReport(cout);
-	  else if (strcmp (argv[1], "liforms") == 0)
-	    pde->GetLinearForm (argv[2])->PrintReport(cout);
-	  else if (strcmp (argv[1], "gridfuns") == 0)
-	    pde->GetGridFunction (argv[2])->PrintReport(cout);
-	  else if (strcmp (argv[1], "preconds") == 0)
-	    pde->GetPreconditioner (argv[2])->PrintReport(cout);
-	  else if (strcmp (argv[1], "numprocs") == 0)
-	    pde->GetNumProc (argv[2])->PrintReport(cout);
-	}
-      return NG_TCL_OK;
-    }
-  Ng_Tcl_SetResult (interp, (char*)"No pde loaded", NG_TCL_STATIC);
-  return NG_TCL_ERROR;
-}
-
 int NGS_SaveSolution (ClientData clientData,
 		      Tcl_Interp * interp,
 		      int argc, const char *argv[])
 {
-  if (argc >= 2)
-    {
-      if (pde)
-	{
-	  pde->SaveSolution (argv[1],(argc >= 3 && atoi(argv[2])));
-	  return NG_TCL_OK;
-	}
-    }
   Ng_Tcl_SetResult (interp, (char*)"Cannot save solution", NG_TCL_STATIC);
   return NG_TCL_ERROR;
 }
@@ -803,102 +529,11 @@ int NGS_LoadSolution (ClientData clientData,
 		      Tcl_Interp * interp,
 		      int argc, const char *argv[])
 {
-  if (argc >= 2 && pde)
-    {
-      pde->LoadSolution (argv[1], (argc >= 3 && atoi(argv[2])));
-      return NG_TCL_OK;
-    }
-
   Ng_Tcl_SetResult (interp, (char*)"Cannot load solution", NG_TCL_STATIC);
   return NG_TCL_ERROR;
 }
 
 
-
-int NGS_DumpPDE (ClientData clientData,
-		      Tcl_Interp * interp,
-		      int argc, const char *argv[])
-{
-  if (argc >= 2 && pde)
-    {
-      TextOutArchive archive (argv[1]);
-      pde->DoArchive (archive);
-      return NG_TCL_OK;
-    }
-
-  Ng_Tcl_SetResult (interp, (char*)"Dump error", NG_TCL_STATIC);
-  return NG_TCL_ERROR;
-}
-
-int NGS_RestorePDE (ClientData clientData,
-                    Tcl_Interp * interp,
-                    int argc, const char *argv[])
-{
-  if (argc >= 2)
-    {
-      TextInArchive archive (argv[1]);
-      pde = make_shared<ngsolve::PDE>();
-      pde->DoArchive (archive);
-
-#ifdef NGS_PYTHON
-  if(netgen::netgen_executable_started)
-      {
-        AcquireGIL gil_lock;
-        pyenv["pde"] = py::cast(pde);
-      }
-#endif
-      return NG_TCL_OK;
-    }
-
-  Ng_Tcl_SetResult (interp, (char*)"Dump error", NG_TCL_STATIC);
-  return NG_TCL_ERROR;
-}
-
-
-int NGS_SocketLoad (ClientData clientData,
-                    Tcl_Interp * interp,
-                    int argc, const char *argv[])
-{
-  if (argc >= 2)
-    {
-#ifndef WIN32
-      try
-        {
-          int portnum = atoi (argv[1]);
-          cout << "load from port " << portnum;
-          
-          string hostname = "localhost";
-          if (argc >= 3) hostname = argv[2];
-              
-          ClientSocket socket (portnum, hostname);
-          socket << "pde";
-          
-          SocketInArchive archive (socket);
-          pde = make_shared<PDE>();
-          pde->DoArchive (archive);
-
-#ifdef NGS_PYTHON
-          if(netgen::netgen_executable_started)
-	  {
-	    AcquireGIL gil_lock;
-	    pyenv["pde"] = py::cast(pde);
-	  }
-#endif
-
-          return NG_TCL_OK;
-        }
-      catch (SocketException & e)
-        {
-          cout << "caught SocketException : " << e.What() << endl;
-          Ng_Tcl_SetResult (interp, (char*) e.What().c_str(), NG_TCL_VOLATILE);
-          return NG_TCL_ERROR;
-        }
-#endif
-    }
-
-  Ng_Tcl_SetResult (interp, (char*)"load socket error", NG_TCL_STATIC);
-  return NG_TCL_ERROR;
-}
 
 
 int NGS_PythonShell (ClientData clientData,
@@ -953,214 +588,7 @@ int NGS_GetData (ClientData clientData,
   buf[0] = 0;
   stringstream str;
 
-  if (argc >= 2 && pde)
-    {
-      if (strcmp (argv[1], "constants") == 0)
-	{
-	  for (int i = 0; i < pde->GetConstantTable().Size(); i++)
-	    str << "{ " << pde->GetConstantTable().GetName(i) << " = " 
-		<< pde->GetConstantTable()[i] << " } ";
-	}
-
-      if (strcmp (argv[1], "variableswithval") == 0)
-	{
-	  for (int i = 0; i < pde->GetVariableTable().Size(); i++)
-	    str << "{ " << pde->GetVariableTable().GetName(i) << " = " 
-		<< *pde->GetVariableTable()[i] << " } ";
-	}
-
-      if (strcmp (argv[1], "variables") == 0)
-	{
-	  for (int i = 0; i < pde->GetVariableTable().Size(); i++)
-	    str << pde->GetVariableTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "variablesval") == 0)
-	{
-	  for (int i = 0; i < pde->GetVariableTable().Size(); i++)
-	    str << "val" << *pde->GetVariableTable()[i] 
-		<<  "name" << pde->GetVariableTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "coefficients") == 0)
-	{
-	  for (int i = 0; i < pde->GetCoefficientTable().Size(); i++)
-	    str << pde->GetCoefficientTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "spaces") == 0)
-	{
-	  for (int i = 0; i < pde->GetSpaceTable().Size(); i++)
-	    str << pde->GetSpaceTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "gridfunctions") == 0)
-	{
-	  for (int i = 0; i < pde->GetGridFunctionTable().Size(); i++)
-	    str << pde->GetGridFunctionTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "linearforms") == 0)
-	{
-	  for (int i = 0; i < pde->GetLinearFormTable().Size(); i++)
-	    str << pde->GetLinearFormTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "bilinearforms") == 0)
-	{
-	  for (int i = 0; i < pde->GetBilinearFormTable().Size(); i++)
-	    str << pde->GetBilinearFormTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "preconditioners") == 0)
-	{
-	  for (int i = 0; i < pde->GetPreconditionerTable().Size(); i++)
-	    str << pde->GetPreconditionerTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "numprocs") == 0)
-	{
-	  for (int i = 0; i < pde->GetNumProcTable().Size(); i++)
-	    str << pde->GetNumProcTable().GetName(i) << " ";
-	}
-
-      if (strcmp (argv[1], "evaluatefiles") == 0)
-	{
-	  string auxstring = pde->GetEvaluateFiles();
-          size_t i=0;
-	  while(i<auxstring.size())
-	    {
-              i = auxstring.find('\\',i);
-	      if(i != string::npos && i<auxstring.size())
-		auxstring.replace(i,1,"\\\\");
-	      else
-		i = auxstring.size();
-	      i+=2;
-
-	    }
-	  str << auxstring;
-	}
-
-
-
-
-      if (strcmp (argv[1], "numcoefficients") == 0)
-	{
-	  snprintf (buf, BS, "%zu", pde->GetCoefficientTable().Size());
-	}
-      else if (strcmp (argv[1], "coefficientname") == 0)
-	{
-	  snprintf (buf, BS, "%s",
-		   pde->GetCoefficientTable().GetName(atoi(argv[2])).c_str());
-	}
-
-
-
-      if (strcmp (argv[1], "numspaces") == 0)
-	{
-	  snprintf (buf, BS, "%zu", pde->GetSpaceTable().Size());
-	}
-      else if (strcmp (argv[1], "spacename") == 0)
-	{
-	  snprintf (buf, BS, "%s",
-		   pde->GetSpaceTable().GetName(atoi(argv[2])).c_str());
-	}
-      else if (strcmp (argv[1], "spacetype") == 0)
-	{
-	  cout << "ask space type " << endl;
-	  auto space = pde->GetFESpace(argv[2]);
-	  cerr << "space = " << space << endl;
-	  if (space)  snprintf (buf, BS, "%s", space->GetClassName().c_str());
-	  else snprintf (buf, BS, "Nodal");
-	}
-      else if (strcmp (argv[1], "spaceorder") == 0)
-	{
-	  auto space = pde->GetFESpace(argv[2]);
-	  if (space)  snprintf (buf, BS, "%d", space->GetOrder());
-	  else snprintf (buf, BS, "1");
-	}
-      else if (strcmp (argv[1], "spacedim") == 0)
-	{
-	  auto space = pde->GetFESpace(argv[2]);
-	  if (space)  snprintf (buf, BS, "%d", space->GetDimension());
-	  else snprintf (buf, BS, "1");
-	}
-      else if (strcmp (argv[1], "setspace") == 0)
-	{
-	  const char * name = argv[2];
-	  // const char * type = argv[3];
-	  ngstd::Flags flags;
-	  flags.SetFlag ("order", atoi (argv[4]));
-	  flags.SetFlag ("dim", atoi (argv[5]));
-	  pde->AddFESpace (name, flags);
-	}
-
-
-      else if (strcmp (argv[1], "numgridfunctions") == 0)
-	{
-	  snprintf (buf, BS, "%zu", pde->GetGridFunctionTable().Size());
-	}
-      else if (strcmp (argv[1], "gridfunctionname") == 0)
-	{
-	  snprintf (buf, BS, "%s",
-		   pde->GetGridFunctionTable().GetName(atoi(argv[2])).c_str());
-	}
-      else if (strcmp (argv[1], "gridfunctionspace") == 0)
-	{
-	  shared_ptr<ngcomp::GridFunction> gf = pde->GetGridFunction(argv[2]);
-	  if (gf)
-	    snprintf (buf, BS, "%s", 
-		     gf->GetFESpace()->GetName().c_str()); 
-	  else
-	    snprintf (buf, BS, "v");
-	}
-
-      else if (strcmp (argv[1], "numbilinearforms") == 0)
-	{
-	  snprintf (buf, BS, "%zu", pde->GetBilinearFormTable().Size());
-	}
-      else if (strcmp (argv[1], "bilinearformname") == 0)
-	{
-	  snprintf (buf, BS, "%s",
-		   pde->GetBilinearFormTable().GetName(atoi(argv[2])).c_str());
-	}
-
-      else if (strcmp (argv[1], "numlinearforms") == 0)
-	{
-	  snprintf (buf, BS, "%zu", pde->GetLinearFormTable().Size());
-	}
-      else if (strcmp (argv[1], "linearformname") == 0)
-	{
-	  snprintf (buf, BS, "%s",
-		   pde->GetLinearFormTable().GetName(atoi(argv[2])).c_str());
-	}
-
-      else if (strcmp (argv[1], "numbilinearformcomps") == 0)
-	{
-	  snprintf (buf, BS, "%d", pde->GetBilinearForm(argv[2])->NumIntegrators());
-	}
-      else if (strcmp (argv[1], "bilinearformcompname") == 0)
-	{
-	  snprintf (buf, BS, "%s",
-		   pde->GetBilinearForm(argv[2])->GetIntegrator(atoi(argv[3]))->Name().c_str());
-	}
-
-      else if (strcmp (argv[1], "numlinearformcomps") == 0)
-	{
-	  snprintf (buf, BS, "%d", pde->GetLinearForm(argv[2])->NumIntegrators());
-	}
-      else if (strcmp (argv[1], "linearformcompname") == 0)
-	{
-	  snprintf (buf, BS, "%s",
-		   pde->GetLinearForm(argv[2])->GetIntegrator(atoi(argv[3]))->Name().c_str());
-	}
-
-
-    }
-  else
-    {
-      snprintf (buf, BS, "0");
-    }
+  snprintf (buf, BS, "0");
   str << buf;
   Ng_Tcl_SetResult (interp, (char*)str.str().c_str(), NG_TCL_VOLATILE);
   return NG_TCL_OK;
@@ -1221,10 +649,6 @@ int NGS_Set (ClientData clientData,
     {
       double time = double (atof (argv[2])) * 1e-6;
       cout << "NGS time = " << time << endl;
-      if (pde)
-	{
-	  pde->GetVariable ("t", 1) = time;
-	}
     }
   return NG_TCL_OK;
 }
@@ -1247,7 +671,6 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
 #ifdef PARALLELGL
   MyMPI_SendCmd ("ngs_exit", MPI_COMM_WORLD);
 #endif
-  pde.reset();
   return NG_TCL_OK;
 }
 
@@ -1255,7 +678,6 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
 
 namespace ngsolve { 
   // namespace bvp_cpp { extern int link_it; }
-  namespace numprocee_cpp { extern int link_it; }
 }
 
 /*
@@ -1334,17 +756,6 @@ if(is_pardiso_available)
 
     py::module main_module = py::module::import("__main__");
 
-    {
-      main_module.def ("SetDefaultPDE",
-              [](shared_ptr<PDE> apde)
-                               {
-                                 pde = apde;
-                                 pde->GetMeshAccess()->SelectMesh();
-                                 Ng_Redraw();
-                                 return;
-                               });
-    }
-
     // only relevant for gui+mpi -> undefined
     // if (MyMPI_GetId(MPI_COMM_WORLD) == 0)
       {
@@ -1372,16 +783,8 @@ if(is_pardiso_available)
 
   Ng_Tcl_CreateCommand (interp, "NGS_PrintRegistered", NGS_PrintRegistered);
   Ng_Tcl_CreateCommand (interp, "NGS_Help", NGS_Help);
-  Ng_Tcl_CreateCommand (interp, "NGS_LoadPDE", NGS_LoadPDE);
   Ng_Tcl_CreateCommand (interp, "NGS_LoadPy", NGS_LoadPy);
-  Ng_Tcl_CreateCommand (interp, "NGS_SolvePDE", NGS_SolvePDE);
   Ng_Tcl_CreateCommand (interp, "NGS_EnterCommand", NGS_EnterCommand);
-  Ng_Tcl_CreateCommand (interp, "NGS_PrintPDE", NGS_PrintPDE);
-  Ng_Tcl_CreateCommand (interp, "NGS_SaveSolution", NGS_SaveSolution);
-  Ng_Tcl_CreateCommand (interp, "NGS_LoadSolution", NGS_LoadSolution);
-  Ng_Tcl_CreateCommand (interp, "NGS_DumpPDE", NGS_DumpPDE);
-  Ng_Tcl_CreateCommand (interp, "NGS_RestorePDE", NGS_RestorePDE);
-  Ng_Tcl_CreateCommand (interp, "NGS_SocketLoad", NGS_SocketLoad);
   Ng_Tcl_CreateCommand (interp, "NGS_PythonShell", NGS_PythonShell);
   Ng_Tcl_CreateCommand (interp, "NGS_PrintMemoryUsage", NGS_PrintMemoryUsage);
   Ng_Tcl_CreateCommand (interp, "NGS_PrintTiming", NGS_PrintTiming);
@@ -1417,7 +820,6 @@ if(is_pardiso_available)
   // ngsolve::bvp_cpp::link_it = 0;
   // ngfem::bdbequations_cpp::link_it = 0;
   // ngfem::link_it_h1hofefo = 0;
-  ngsolve::numprocee_cpp::link_it = 0;
 
 
 
@@ -1445,16 +847,6 @@ void NGSolve_Exit ()
 #ifdef PARALLEL
 				    
 
-void * SolveBVP2(void *)
-{
-  if (pde && pde->IsGood())
-    pde->Solve();
-
-  Ng_SetRunning (0); 
-  return NULL;
-}
-
-
 extern "C" void NGS_ParallelRun (const string & message);
 
 #ifdef NGS_PYTHON
@@ -1473,13 +865,6 @@ void Parallel_InitPython ()
       py::module m = py::module::import("__main__");
       // pyenv = PythonEnvironment (m);
       {
-	m.def ("SetDefaultPDE", [](shared_ptr<PDE> apde)
-			       {  
-				 pde = apde;
-				 pde->GetMeshAccess()->SelectMesh();
-				 Ng_Redraw();
-				 return; 
-			       });
 	m.def ("Redraw", 
 	       []() {Ng_Redraw();});
       }
@@ -1521,72 +906,6 @@ void NGS_ParallelRun (const string & message)
       // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);
     }
 
-  else if ( message == "ngs_pdefile" )
-    {
-      // ngs_comm = MPI_COMM_WORLD;
-
-      // ma.Reset(new ngcomp::MeshAccess());
-      pde = make_shared<PDE>(); // .Reset(new PDE);
-
-      /*
-      // transfer file contents, not filename
-      string pdefiledata;
-      string filename, pde_directory;
-      cout << "ready to receive" << endl;
-      MyMPI_Recv (filename, 0);
-      MyMPI_Recv (pde_directory, 0);
-      MyMPI_Recv (pdefiledata, 0);
-
-      istringstream pdefile (pdefiledata);
-
-      pde->SetDirectory(pde_directory);
-      pde->SetFilename(filename);
-      pde -> LoadPDE (pdefile, false, 0);
-      */
-
-      string dummy;
-      LoadPDE (pde, dummy, false, 0);
-#ifdef NGS_PYTHON
-
-      Parallel_InitPython ();
-
-      cout << "set python mesh" << endl;
-      {
-        AcquireGIL gil_lock;
-        pyenv["pde"] = py::cast(pde);
-      }
-#endif
-
-    } 
-
-  else if ( message == "ngs_solvepde" )
-    {
-      RunParallel (SolveBVP2, NULL);
-    }
-
-  else if ( message == "ngs_archive_space" )
-    {
-      int nr;
-      NgMPI_Comm(MPI_COMM_WORLD).Bcast (nr);
-      // cout << "proc " << MyMPI_GetId() << " archive space " << nr << endl;
-      WorkerOutArchive archive;
-      pde->GetSpaceTable()[nr] -> DoArchive (archive);
-    }
-
-  else if ( message == "ngs_archive_gridfunction" )
-    {
-      int nr;
-      NgMPI_Comm(MPI_COMM_WORLD).Bcast (nr);      
-      // cout << "proc " << MyMPI_GetId() << " archive gridfunction " << nr << endl;
-      WorkerOutArchive archive;
-      pde->GetGridFunctionTable()[nr] -> DoArchive (archive);
-    }
-
-
-  else if ( message == "ngs_exit" )
-    {
-      pde.reset(); 
-    }
 
 #ifdef NGS_PYTHON
   else if (message.substr(0,7) == "ngs_py " ) 

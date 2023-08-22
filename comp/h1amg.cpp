@@ -466,11 +466,6 @@ namespace ngcomp
 
   public:
 
-    static shared_ptr<Preconditioner> Create (const PDE & pde, const Flags & flags, const string & name)
-    {
-      return make_shared<H1AMG_Preconditioner<double>> (pde, flags, name);      
-    }
-    
     static shared_ptr<Preconditioner> CreateBF (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
     {
       if (bfa->GetFESpace()->IsComplex())
@@ -488,11 +483,6 @@ namespace ngcomp
       else
         cout << IM(3) << "Create H1AMG, complex" << endl;
     }
-
-    H1AMG_Preconditioner (const PDE & pde, const Flags & aflags, const string & aname)
-      : H1AMG_Preconditioner (pde.GetBilinearForm (aflags.GetStringFlag ("bilinearform")),
-                              aflags, aname)
-    { ; }
 
 
     virtual void InitLevel (shared_ptr<BitArray> _freedofs) override
@@ -633,7 +623,6 @@ namespace ngcomp
   // static RegisterPreconditioner<H1AMG_Preconditioner<double> > initpre ("h1amg");
   auto initpre = [] () {
     GetPreconditionerClasses().AddPreconditioner("h1amg",
-                                                 H1AMG_Preconditioner<double>::Create,
                                                  H1AMG_Preconditioner<double>::CreateBF);
     return 1;
   } ();

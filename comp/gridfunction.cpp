@@ -64,9 +64,9 @@ namespace ngcomp
   
   using namespace ngmg;
   
-  GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & name,
-				const Flags & flags)
-    : NGS_Object (afespace->GetMeshAccess(), flags, name), 
+  GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & aname,
+				const Flags & aflags)
+    : flags(aflags), name(aname),
       // GridFunctionCoefficientFunction (shared_ptr<GridFunction>(this, NOOP_Deleter), afespace->GetEvaluator()),
       /*
       GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator>(),
@@ -118,6 +118,8 @@ namespace ngcomp
   {
     archive & nested & autoupdate & visual & multidim & level_updated;
     archive & cacheblocksize;
+
+    const auto& ma = fespace->GetMeshAccess();
 
     if (archive.Input()) Update();
     for (int i = 0; i < vec.Size(); i++)
@@ -503,7 +505,7 @@ namespace ngcomp
           Load (ist, comp);
         return;
       }
-    
+    const auto& ma = fespace->GetMeshAccess();
     auto comm = ma->GetCommunicator();
     if (comm.Size() == 1)
       { 
@@ -579,6 +581,7 @@ namespace ngcomp
   void  S_GridFunction<SCAL> :: LoadNodeType (istream & ist, int mdcomp) 
   {
 #ifdef PARALLEL
+    const auto& ma = fespace->GetMeshAccess();
     auto comm = ma->GetCommunicator();
     int id = comm.Rank();
     int ntasks = comm.Size();
@@ -724,7 +727,7 @@ namespace ngcomp
       }
     
 
-    
+    const auto& ma = fespace->GetMeshAccess();
     auto comm = ma->GetCommunicator();
     int ntasks = comm.Size();
     const FESpace & fes = *GetFESpace();
@@ -825,6 +828,7 @@ namespace ngcomp
   void S_GridFunction<SCAL> :: SaveNodeType (ostream & ost, int mdcomp) const
   {
 #ifdef PARALLEL
+    const auto& ma = fespace->GetMeshAccess();
     auto comm = ma->GetCommunicator();
     int id = comm.Rank();
     int ntasks = comm.Size();
@@ -995,7 +999,7 @@ namespace ngcomp
 	  (this->vec)[i] = gf_parent->GetVector(i).Range (cfes.GetRange(comp));
       }
 
-    this -> level_updated = this -> ma->GetNLevels();
+    this -> level_updated = fespace->GetMeshAccess()->GetNLevels();
     for(auto comp : compgfs)
       if(!comp.expired())
         comp.lock()->Update();
@@ -1058,7 +1062,7 @@ namespace ngcomp
   {
     try
       {
-        if (this->GetFESpace()->GetLevelUpdated() < this->ma->GetNLevels())
+        if (this->GetFESpace()->GetLevelUpdated() < fespace->GetMeshAccess()->GetNLevels())
           {
             this->GetFESpace()->Update();
             this->GetFESpace()->FinalizeUpdate();
@@ -1090,7 +1094,7 @@ namespace ngcomp
 		const_cast<ngmg::Prolongation&> (*this->GetFESpace()->GetProlongation()).Update(*this->GetFESpace());
 		
 		this->GetFESpace()->GetProlongation()->ProlongateInline
-		  (this->GetMeshAccess()->GetNLevels()-1, *vec[i]);
+		  (fespace->GetMeshAccess()->GetNLevels()-1, *vec[i]);
 	      }
 
 	    //	    if (i == 0)
@@ -1100,7 +1104,7 @@ namespace ngcomp
 	    // delete ovec;
 	  }
 	
-	this -> level_updated = this -> ma->GetNLevels();
+	this -> level_updated = fespace->GetMeshAccess()->GetNLevels();
 
         for(auto comp : this->compgfs)
           if(!comp.expired())
@@ -1383,7 +1387,7 @@ namespace ngcomp
     // static Timer timer ("GFCoeffFunc::Eval-scal", NoTracing, NoTiming);
     // RegionTimer reg (timer);
 
-    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
       {
         result = 0.0;
         return;
@@ -1437,7 +1441,7 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> hvalues) const
   {
     auto values = hvalues.AddSize(ir.Size(), Dimension());
-    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
       {
         values = 0.0;
         return;
@@ -1508,7 +1512,7 @@ namespace ngcomp
   Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> hvalues) const
   {
     auto values = hvalues.AddSize(ir.Size(), Dimension());    
-    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
       {
         values = 0.0;
         return;
@@ -1571,7 +1575,7 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<double>> bvalues) const
   {
-    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
       {
         bvalues.AddSize(Dimension(), ir.Size()) = 0.0;
         return;
@@ -1661,7 +1665,7 @@ namespace ngcomp
 
     auto values = bvalues.AddSize(Dimension(), ir.Size());
 
-    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
+    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
       {
         values = 0.0;
         return;

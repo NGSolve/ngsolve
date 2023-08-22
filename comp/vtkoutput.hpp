@@ -23,10 +23,6 @@ namespace ngcomp
     string Name() { return name; }
   };
 
-  /* ---------------------------------------- 
-   numproc
-   ---------------------------------------- */
-
   class BaseVTKOutput
   {
   public:
@@ -197,23 +193,6 @@ namespace ngcomp
     void PrintCellTypesLegacy(VorB vb, const BitArray *drawelems = nullptr);
     void PrintFieldDataLegacy();
     virtual void Do(LocalHeap &lh, double time = -1, VorB vb = VOL, const BitArray *drawelems = 0);
-  };
-
-  class NumProcVTKOutput : public NumProc
-  {
-  protected:
-    shared_ptr<BaseVTKOutput> vtkout = nullptr;
-
-  public:
-    NumProcVTKOutput(shared_ptr<PDE> apde, const Flags &flags);
-    virtual ~NumProcVTKOutput() {}
-
-    virtual string GetClassName() const
-    {
-      return "NumProcVTKOutput";
-    }
-
-    virtual void Do(LocalHeap &lh);
   };
 
 }

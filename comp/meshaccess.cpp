@@ -222,7 +222,7 @@ namespace ngcomp
     virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const override
     {
       return * new (lh) ALE_ElementTransformation<DIMS,DIMR,Ng_ElementTransformation<DIMS,DIMR>>
-        (gf->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
+        (gf->GetFESpace()->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
     }
     
   };
@@ -791,7 +791,7 @@ namespace ngcomp
     virtual const ElementTransformation & VAddDeformation (const GridFunction * gf, LocalHeap & lh) const override
     {
       return * new (lh) ALE_ElementTransformation<DIMS,DIMR,Ng_ConstElementTransformation<DIMS,DIMR>>
-        (gf->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
+        (gf->GetFESpace()->GetMeshAccess().get(), eltype, GetElementId(), elindex, gf, lh);
     }
 
   };

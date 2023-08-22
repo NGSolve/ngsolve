@@ -9,8 +9,6 @@ using namespace ngsolve;
 
 typedef GridFunction GF;
 
-extern void ExportBVP(py::module &m);
-extern void ExportDrawFlux(py::module &m);
 void ExportVisFunctions(py::module &m);
 
 void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
@@ -141,12 +139,12 @@ unit : string
                 // cout << "in draw" << endl;
                 // cout << "gf in draw = " << *gf << endl;
                 // cout << "dims of gf =  " << gf->Dimensions() << endl;
-                gf->GetMeshAccess()->SelectMesh();
+                gf->GetFESpace()->GetMeshAccess()->SelectMesh();
                 // Visualize (gf, gf->GetName());
 
                 // netgen::SolutionData * vis = new VisualizeCoefficientFunction (gf->GetMeshAccess(), gf);
                 auto gfcf = make_shared<GridFunctionCoefficientFunction> (gf);
-                netgen::SolutionData * vis = new VisualizeCoefficientFunction (gf->GetMeshAccess(), gfcf);                
+                netgen::SolutionData * vis = new VisualizeCoefficientFunction (gf->GetFESpace()->GetMeshAccess(), gfcf);
 
                 Ng_SolutionData soldata;
                 Ng_InitSolutionData (&soldata);
@@ -294,8 +292,6 @@ clipping : object
 
 
 
-    ExportBVP(m);
-    ExportDrawFlux(m);
     ExportVisFunctions(m);
 }
 

@@ -62,7 +62,16 @@ def test_hidden():
 
         gfu = GridFunction(fes)
 
-        BVP(bf=a,lf=f,gf=gfu,pre=c).Do()
+        inv = CGSolver(a.mat, c.mat, maxsteps=1000)
+
+        if elim_internal:
+            f.vec.data += a.harmonic_extension_trans * f.vec
+
+        gfu.vec.data = inv * f.vec
+
+        if elim_internal:
+            gfu.vec.data += a.harmonic_extension * gfu.vec
+            gfu.vec.data += a.inner_solve * f.vec
         
         solutions[current_tuple] = gfu
         ndof[current_tuple] = fes.ndof

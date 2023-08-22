@@ -273,7 +273,7 @@ namespace ngcomp
 
     bool boundary = bli->BoundaryForm();
 
-    shared_ptr<MeshAccess> ma = bu.GetMeshAccess();
+    shared_ptr<MeshAccess> ma = bu.GetFESpace()->GetMeshAccess();
 
     if(boundary)
       {
@@ -944,7 +944,7 @@ namespace ngcomp
     static int timer = NgProfiler::CreateTimer ("CalcError");
     NgProfiler::RegionTimer reg (timer);
 
-    shared_ptr<MeshAccess> ma = u.GetMeshAccess();
+    shared_ptr<MeshAccess> ma = u.GetFESpace()->GetMeshAccess();
 
     BaseStatusHandler::PushStatus ("Error estimator");
 
@@ -1035,7 +1035,7 @@ namespace ngcomp
 		  FlatVector<double> & err,
 		  int domain, LocalHeap & lh)
   {
-    BitArray domains(u.GetMeshAccess()->GetNDomains());
+    BitArray domains(u.GetFESpace()->GetMeshAccess()->GetNDomains());
     
     if(domain == -1)
       domains.Set();
@@ -1078,7 +1078,7 @@ namespace ngcomp
 		       FlatVector<double> & diff,
 		       int domain, LocalHeap & lh)
   {
-    shared_ptr<MeshAccess> ma = u1.GetMeshAccess();
+    shared_ptr<MeshAccess> ma = u1.GetFESpace()->GetMeshAccess();
     BaseStatusHandler::PushStatus ("Calc Difference");
 
     const FESpace & fes1 = *u1.GetFESpace();
@@ -1198,7 +1198,7 @@ namespace ngcomp
 		       FlatVector<double> & diff,
 		       int domain, LocalHeap & lh)
   {
-    shared_ptr<MeshAccess> ma = u1.GetMeshAccess();
+    shared_ptr<MeshAccess> ma = u1.GetFESpace()->GetMeshAccess();
 
     BaseStatusHandler::PushStatus ("Calc Difference");
 
