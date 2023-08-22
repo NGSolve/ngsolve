@@ -60,17 +60,16 @@ namespace ngcomp
         case NG_PRISM: case NG_PRISM12: case NG_PRISM15: return ET_PRISM;
         case NG_PYRAMID: case NG_PYRAMID13: return ET_PYRAMID;
         case NG_HEX: case NG_HEX20:     return ET_HEX;
-          // no need for exception, if we keep warnings on 
+          // default:
           /*
-        default:
-          __assume (false);
 #ifndef __CUDA_ARCH__
 	  throw Exception ("Netgen2NgS type conversion: Unhandled element type");
 #else
 	  return ET_POINT;
-#endif	  
+#endif
           */
         }
+      __assume (false);
     }
 
     ELEMENT_TYPE GetType () const 
