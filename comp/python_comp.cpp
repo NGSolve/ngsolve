@@ -4448,8 +4448,16 @@ If `maxdist` == 0. then 2*meshsize is used.
              return gap_data;
      })
      ;
-  m.def("MeshToTextArchive", &webgui::MeshToTextArchive);
-  m.def("CFToTextArchive", &webgui::CFToTextArchive);
+
+  m.def("ToArchive", [](shared_ptr<netgen::Mesh> mesh, bool binary){
+        return py::bytes(webgui::ToArchive(mesh, binary));
+  });
+  m.def("ToArchive", [](shared_ptr<CoefficientFunction> cf, bool binary){
+        return py::bytes(webgui::ToArchive(cf, binary));
+  });
+  m.def("ToArchive", [](shared_ptr<FESpace> fes, bool binary){
+        return py::bytes(webgui::ToArchive(fes, binary));
+  });
 
   /////////////////////////////////////////////////////////////////////////////////////
 }

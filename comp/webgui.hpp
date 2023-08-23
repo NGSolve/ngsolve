@@ -22,20 +22,41 @@ unique_ptr<WebguiData> GenerateWebguiData(shared_ptr<MeshAccess> ma,
                                           shared_ptr<CoefficientFunction> cf,
                                           int order = 1);
 
-inline string MeshToTextArchive(shared_ptr<MeshAccess> ma) {
+template<typename T>
+string ToArchive(shared_ptr<T> &obj, bool binary=true) {
   auto ss = make_shared<stringstream>();
-  ma->GetNetgenMesh()->SetGeometry(nullptr);
-  ma->GetNetgenMesh()->Save(*ss);
-  // TextOutArchive ar(ss);
-  // ar & (*ma);
+  shared_ptr<netgen::NetgenGeometry> geo;
+  if constexpr(is_same_v<T, netgen::Mesh>)
+  {
+    geo = obj->GetGeometry();
+    obj->SetGeometry(nullptr);
+  }
+  if(binary) {
+    BinaryOutArchive ar(ss);
+    ar & obj;
+  }
+  else {
+    TextOutArchive ar(ss);
+    ar & obj;
+  }
+  if constexpr(is_same_v<T, netgen::Mesh>)
+    obj->SetGeometry(geo);
   return ss->str();
 }
-inline string CFToTextArchive(shared_ptr<CoefficientFunction> cf) {
-  auto ss = make_shared<stringstream>();
-  TextOutArchive ar(ss);
-  CoefficientFunction* p = cf.get();
-  ar& p;
-  return ss->str();
+
+template<typename T>
+shared_ptr<T> FromArchive(string s, bool binary=true) {
+  auto ss = make_shared<stringstream>(s);
+  shared_ptr<T> obj;
+  if(binary) {
+    BinaryInArchive ar(ss);
+    ar & obj;
+  }
+  else {
+    TextInArchive ar(ss);
+    ar & obj;
+  }
+  return obj;
 }
 
 }  // namespace webgui
