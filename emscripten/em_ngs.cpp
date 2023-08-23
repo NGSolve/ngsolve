@@ -60,31 +60,13 @@ using namespace emscripten;
 using namespace ngcomp;
 using namespace webgui;
 
-shared_ptr<MeshAccess> LoadMesh(string s) {
-  cout << "load mesh from string " << s << endl;
-  auto m = make_shared<netgen::Mesh>();
-  stringstream ss(s);
-  m->Load(ss);
-  cout << "m loaded " << m->GetNSE() << endl;
-  return make_shared<MeshAccess>(m);
-  // auto ss = make_shared<stringstream>(s);
-  // MeshAccess *ma = nullptr;
-  // TextInArchive in(ss);
-  // in & ma;
-  // return shared_ptr<MeshAccess>(ma);
+shared_ptr<MeshAccess> LoadMesh(string s, bool binary) {
+  return make_shared<MeshAccess>(FromArchive<netgen::Mesh>(s, binary));
 }
 
-shared_ptr<CoefficientFunction> LoadCoefficientFunction(string s) {
-  auto ss = make_shared<stringstream>(s);
-  CoefficientFunction *cf = nullptr;
-  cout << "load coefficient function from string " << s << endl;
-  TextInArchive in(ss);
-  in & cf;
-  cout << "loaded cf " << cf << endl;
-  if(cf) cout << (*cf) << endl;
-  return shared_ptr<CoefficientFunction>(cf);
+shared_ptr<CoefficientFunction> LoadCoefficientFunction(string s, bool binary) {
+  return FromArchive<CoefficientFunction>(s,binary);
 }
-
 
 auto MyEvaluate(shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> cf) {
   std::vector<double> res;
@@ -118,7 +100,7 @@ EMSCRIPTEN_BINDINGS(em_ngs) {
   .smart_ptr<std::shared_ptr<CoefficientFunction>>("CoefficientFunction")
     ;
 
-  emscripten::function("LoadCoefficientFunction", &LoadCoefficientFunction);
+  emscripten::function("LoadCoefficientFunction", &FromArchive<CoefficientFunction>);
   emscripten::function("LoadMesh", &LoadMesh);
   emscripten::function("Evaluate", &MyEvaluate);
   emscripten::function("GenerateWebguiData", &GenerateWebguiData);
