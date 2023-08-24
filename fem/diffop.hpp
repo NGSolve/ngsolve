@@ -53,10 +53,7 @@ namespace ngfem
                                   MAT & mat, LocalHeap & lh)
     {
       for (size_t i = 0; i < mir.Size(); i++)
-        {
-          auto submat = mat.Rows(i*DOP::DIM_DMAT, (i+1)*DOP::DIM_DMAT);
-          DOP::GenerateMatrix (fel, mir[i], submat, lh);
-        }
+        DOP::GenerateMatrix (fel, mir[i], mat.Rows(i*DOP::DIM_DMAT, (i+1)*DOP::DIM_DMAT), lh);
     }
 
     template <typename FEL, typename MIR>
@@ -91,8 +88,7 @@ namespace ngfem
       for (size_t i = 0; i < mir.Size(); i++)
         {
           HeapReset hr(lh);
-          auto yrow = y.Row(i);
-          DOP::Apply (fel, mir[i], x, yrow, lh);
+          DOP::Apply (fel, mir[i], x, y.Row(i), lh);
         }
     }
 
