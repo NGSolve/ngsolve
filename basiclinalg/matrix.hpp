@@ -143,14 +143,13 @@ namespace ngbla
 
     /// assign contents
     template<typename TBxx>
-    INLINE FlatMatrix & operator= (const Expr<TBxx> & m) 
+    INLINE const FlatMatrix & operator= (const Expr<TBxx> & m) const
     {
-      CMCPMatExpr<FlatMatrix>::operator= (m);
-      return *this;
+      return CMCPMatExpr<FlatMatrix>::operator= (m);
     }
 
     /// copy contents
-    INLINE FlatMatrix & operator= (const FlatMatrix & m) 
+    INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
       // for (size_t i = 0; i < h*w; i++) data[i] = m(i);
       AsVector() = m.AsVector();
@@ -158,7 +157,7 @@ namespace ngbla
     }
 
     /// assign constant
-    INLINE FlatMatrix & operator= (TSCAL s) 
+    INLINE const FlatMatrix & operator= (TSCAL s) const 
     {
       // for (auto i : Range(h*w)) data[i] = s;
       AsVector() = s;
@@ -359,21 +358,20 @@ namespace ngbla
 
     /// assign contents
     template<typename TBxx>
-    INLINE FlatMatrix & operator= (const Expr<TBxx> & m) 
+    INLINE const FlatMatrix & operator= (const Expr<TBxx> & m) const
     {
-      CMCPMatExpr<FlatMatrix>::operator= (m);
-      return *this;
+      return CMCPMatExpr<FlatMatrix>::operator= (m);
     }
 
     /// copy contents
-    INLINE FlatMatrix & operator= (const FlatMatrix & m) 
+    INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
     {
       for (size_t i = 0; i < size_t(h)*size_t(w); i++) data[i] = m(i);
       return *this;
     }
 
     /// assign constant
-    INLINE FlatMatrix & operator= (TSCAL s) 
+    INLINE const FlatMatrix & operator= (TSCAL s) const 
     {
       for (size_t i = 0; i < size_t(h)*size_t(w); i++) data[i] = s; 
       return *this;
@@ -431,12 +429,12 @@ namespace ngbla
       return SliceVector<T> (h, w+1, &data[0]);
     }
 
-    INLINE FlatMatrix Cols (size_t first, size_t next) const
+    INLINE const FlatMatrix Cols (size_t first, size_t next) const
     {
       return FlatMatrix (h, next-first, data+first*h);
     }
 
-    INLINE FlatMatrix Cols (IntRange range) const
+    INLINE const FlatMatrix Cols (IntRange range) const
     {
       return FlatMatrix (h, range.Size(), data+range.First()*h);
     }
@@ -1107,21 +1105,19 @@ namespace ngbla
 
     /// assign contents
     template<typename TB>
-    INLINE SliceMatrix & operator= (const Expr<TB> & m) 
+    INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
     {
-      CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
-      return *this;
+      return CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
     }
 
-    INLINE SliceMatrix & operator= (const SliceMatrix & m) 
+    INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
-      CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
-      return *this;
+      return CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
     }
 
     
     /// assign constant
-    INLINE SliceMatrix & operator= (TSCAL s) 
+    INLINE const SliceMatrix & operator= (TSCAL s) const
     {
       /*
       if (w == 0) return *this;
@@ -1214,7 +1210,7 @@ namespace ngbla
     using CMCPMatExpr<SliceMatrix>::Rows;
     using CMCPMatExpr<SliceMatrix>::Cols;
 
-    SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
+    const SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
@@ -1382,10 +1378,9 @@ namespace ngbla
   
     /// assign contents
     template<typename TB>
-    DoubleSliceMatrix & operator= (const Expr<TB> & m) 
+    const DoubleSliceMatrix & operator= (const Expr<TB> & m) const
     {
-       CMCPMatExpr<DoubleSliceMatrix>::operator= (m);
-       return *this;
+      return CMCPMatExpr<DoubleSliceMatrix>::operator= (m);
     }
 
     /// assign constant
@@ -1471,7 +1466,7 @@ namespace ngbla
 
   template <typename T, ORDERING ord, typename TH, typename TW, typename TD,
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
-  INLINE auto Trans (SliceMatrix<T,ord,TH,TW,TD> mat)
+  INLINE const auto Trans (SliceMatrix<T,ord,TH,TW,TD> mat)
   {
     return SliceMatrix<T,!ord,TW,TH,TD> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
