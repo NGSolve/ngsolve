@@ -1107,19 +1107,26 @@ namespace ngbla
 
     /// assign contents
     template<typename TB>
-    INLINE const SliceMatrix & operator= (const Expr<TB> & m) const
+    INLINE SliceMatrix & operator= (const Expr<TB> & m) 
     {
-      return CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
+      CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
+      return *this;
     }
 
-    INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
+    INLINE SliceMatrix & operator= (const SliceMatrix & m) 
     {
-      return CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
+      CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
+      return *this;
     }
 
+    INLINE SliceMatrix & operator= (SliceMatrix && m) 
+    {
+      CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
+      return *this;
+    }
     
     /// assign constant
-    INLINE const SliceMatrix & operator= (TSCAL s) const
+    INLINE SliceMatrix & operator= (TSCAL s) 
     {
       /*
       if (w == 0) return *this;
@@ -1212,7 +1219,7 @@ namespace ngbla
     using CMCPMatExpr<SliceMatrix>::Rows;
     using CMCPMatExpr<SliceMatrix>::Cols;
 
-    const SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
+    SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
