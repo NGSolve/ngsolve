@@ -467,8 +467,8 @@ namespace ngbla
 
   void SolveTransFromLU (SliceMatrix<double> A, FlatArray<int> p, SliceMatrix<double,ColMajor> X)
   {
-    TriangularSolve<LowerLeft> (Trans(A).Bare(), X);
-    TriangularSolve<UpperRight,Normalized> (Trans(A).Bare(), X);
+    TriangularSolve<LowerLeft> (Trans(A), X);
+    TriangularSolve<UpperRight,Normalized> (Trans(A), X);
 
     size_t n = X.Height();
 

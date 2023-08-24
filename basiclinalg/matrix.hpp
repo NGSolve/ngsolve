@@ -19,15 +19,11 @@ namespace ngbla
   template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
   class SliceMatrix;
 
-  template <typename T, typename TELEM=typename std::remove_reference_t<T>::TELEM>
+  template <typename T, typename TELEM=typename T::TELEM>
   constexpr bool IsConvertibleToSliceMatrix ()
   {
-    /*
     return is_convertible_v<T,SliceMatrix<TELEM, RowMajor>> ||
       is_convertible_v<T,SliceMatrix<TELEM, ColMajor>>;
-    */
-    return is_constructible_v<SliceMatrix<TELEM, RowMajor>,T> ||
-      is_constructible_v<SliceMatrix<TELEM, ColMajor>,T>;
   }
   
 
@@ -35,14 +31,11 @@ namespace ngbla
   template <typename T = double, ORDERING ORD = RowMajor>
   using BareSliceMatrix = SliceMatrix<T,ORD,undefined_size, undefined_size, size_t>;
 
-  template <typename T, typename TELEM=typename std::remove_reference_t<T>::TELEM>
+  template <typename T, typename TELEM=typename T::TELEM>
   constexpr bool IsConvertibleToBareSliceMatrix ()
   {
-    // return is_convertible_v<T,BareSliceMatrix<TELEM, RowMajor>> ||
-    // is_convertible_v<T,BareSliceMatrix<TELEM, ColMajor>>;
-    return is_constructible_v<BareSliceMatrix<TELEM, RowMajor>,T> ||
-      is_constructible_v<BareSliceMatrix<TELEM, ColMajor>,T>;
-    
+    return is_convertible_v<T,BareSliceMatrix<TELEM, RowMajor>> ||
+      is_convertible_v<T,BareSliceMatrix<TELEM, ColMajor>>;
   }
 
 
@@ -442,12 +435,12 @@ namespace ngbla
     }
 
 
-    INLINE SliceMatrix<T,ColMajor> Rows (size_t first, size_t next) const
+    INLINE const SliceMatrix<T,ColMajor> Rows (size_t first, size_t next) const
     {
       return SliceMatrix<T,ColMajor> (next-first, w, h, data+first);
     }
 
-    INLINE SliceMatrix<T,ColMajor> Rows (IntRange range) const
+    INLINE const SliceMatrix<T,ColMajor> Rows (IntRange range) const
     {
       return SliceMatrix<T,ColMajor> (range.Size(), w, h, data+range.First());
     }
@@ -1241,22 +1234,22 @@ namespace ngbla
       return VectorView(Height(), ColDist(), Addr(0,i));
     }
 
-    INLINE auto Cols (size_t first, size_t next) const
+    INLINE const auto Cols (size_t first, size_t next) const
     {
       return SliceMatrix<T,ORD,TH,size_t,TDIST>  (h, next-first, dist, Addr(0,first));
     }
 
-    INLINE auto Rows (size_t first, size_t next) const
+    INLINE const auto Rows (size_t first, size_t next) const
     {
       return SliceMatrix<T,ORD,size_t,TW,TDIST> (next-first, w, dist, Addr(first, 0));
     }
 
-    INLINE auto Rows (IntRange range) const
+    INLINE const auto Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
     }
 
-    INLINE auto Cols (IntRange range) const
+    INLINE const auto Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());
     }
