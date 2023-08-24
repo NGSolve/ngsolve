@@ -945,9 +945,9 @@ public:
           int offset2 = offset1;
           for (size_t block2 : Range(block1, nblocks)) {
             const auto proxy2 = proxies[block2];
-            const auto &linb =
+            auto linb =
                 lin_blocks[block1 * nblocks + block2](qi, STAR, STAR);
-            const auto &lhsb =
+            auto lhsb =
                 lhs_blocks[block1 * nblocks + block2](qi, STAR, STAR);
 
             if (auto vsemb1 = get_vs_embedding(proxy1); vsemb1)
