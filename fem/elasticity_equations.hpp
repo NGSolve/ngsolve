@@ -43,10 +43,10 @@ namespace ngfem
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT && mat, LocalHeap & lh)
+				MAT & mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
-      typedef typename remove_reference_t<MAT>::TSCAL TSCAL;
+      typedef typename MAT::TSCAL TSCAL;
       int nd = fel.GetNDof();
 
       FlatMatrixFixHeight<2, TSCAL> grad (nd, lh);
@@ -83,9 +83,9 @@ namespace ngfem
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT && mat, LocalHeap & lh)
+				MAT & mat, LocalHeap & lh)
     {
-      typedef typename remove_reference_t<MAT>::TSCAL TSCAL;
+      typedef typename MAT::TSCAL TSCAL;
 
       HeapReset hr(lh);
       /*
