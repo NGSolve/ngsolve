@@ -143,13 +143,14 @@ namespace ngbla
 
     /// assign contents
     template<typename TBxx>
-    INLINE const FlatMatrix & operator= (const Expr<TBxx> & m) const
+    INLINE FlatMatrix & operator= (const Expr<TBxx> & m) 
     {
-      return CMCPMatExpr<FlatMatrix>::operator= (m);
+      CMCPMatExpr<FlatMatrix>::operator= (m);
+      return *this;
     }
 
     /// copy contents
-    INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
+    INLINE FlatMatrix & operator= (const FlatMatrix & m) 
     {
       // for (size_t i = 0; i < h*w; i++) data[i] = m(i);
       AsVector() = m.AsVector();
@@ -157,7 +158,7 @@ namespace ngbla
     }
 
     /// assign constant
-    INLINE const FlatMatrix & operator= (TSCAL s) const 
+    INLINE FlatMatrix & operator= (TSCAL s) 
     {
       // for (auto i : Range(h*w)) data[i] = s;
       AsVector() = s;
@@ -358,20 +359,21 @@ namespace ngbla
 
     /// assign contents
     template<typename TBxx>
-    INLINE const FlatMatrix & operator= (const Expr<TBxx> & m) const
+    INLINE FlatMatrix & operator= (const Expr<TBxx> & m) 
     {
-      return CMCPMatExpr<FlatMatrix>::operator= (m);
+      CMCPMatExpr<FlatMatrix>::operator= (m);
+      return *this;
     }
 
     /// copy contents
-    INLINE const FlatMatrix & operator= (const FlatMatrix & m) const 
+    INLINE FlatMatrix & operator= (const FlatMatrix & m) 
     {
       for (size_t i = 0; i < size_t(h)*size_t(w); i++) data[i] = m(i);
       return *this;
     }
 
     /// assign constant
-    INLINE const FlatMatrix & operator= (TSCAL s) const 
+    INLINE FlatMatrix & operator= (TSCAL s) 
     {
       for (size_t i = 0; i < size_t(h)*size_t(w); i++) data[i] = s; 
       return *this;
@@ -429,12 +431,12 @@ namespace ngbla
       return SliceVector<T> (h, w+1, &data[0]);
     }
 
-    INLINE const FlatMatrix Cols (size_t first, size_t next) const
+    INLINE FlatMatrix Cols (size_t first, size_t next) const
     {
       return FlatMatrix (h, next-first, data+first*h);
     }
 
-    INLINE const FlatMatrix Cols (IntRange range) const
+    INLINE FlatMatrix Cols (IntRange range) const
     {
       return FlatMatrix (h, range.Size(), data+range.First()*h);
     }
