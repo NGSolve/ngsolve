@@ -733,7 +733,7 @@ namespace ngbla
     // const T & Spec() const { return static_cast<const T&> (*this); }
 
     template<typename TB>
-    INLINE const T & operator= (const Expr<TB> & v) const
+    INLINE const T & operator= (const Expr<TB> & v) 
     {
       const_cast<CMCPMatExpr*> (this) -> MatExpr<T>::operator= (v);
       return Spec();

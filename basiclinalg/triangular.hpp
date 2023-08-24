@@ -269,7 +269,7 @@ namespace ngbla
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
             typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0,
             typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
-  void TriangularMult (const TT & T, TX & X)
+  void TriangularMult (const TT & T, TX && X)
   {
     TriangularMult<SIDE,NORM> (make_BareSliceMatrix(T), make_SliceMatrix(X));
   }
