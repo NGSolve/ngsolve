@@ -77,15 +77,15 @@ namespace ngbla
 
     if (SIDE == LowerLeft)
       {
-        TriangularSolve<SIDE,NORM> (T11, X1);
+        TriangularSolve<SIDE,NORM> (T11.Bare(), X1);
         X2 -= T21 * X1;
-        TriangularSolve<SIDE,NORM> (T22, X2);
+        TriangularSolve<SIDE,NORM> (T22.Bare(), X2);
       }
     else
       {
-        TriangularSolve<SIDE,NORM> (T22, X2);
+        TriangularSolve<SIDE,NORM> (T22.Bare(), X2);
         X1 -= T12 * X2;
-        TriangularSolve<SIDE,NORM> (T11, X1);
+        TriangularSolve<SIDE,NORM> (T11.Bare(), X1);
       }
   }
 
@@ -114,9 +114,9 @@ namespace ngbla
   
 
   template <TRIG_SIDE SIDE, TRIG_NORMAL NORM=NonNormalized, typename TT, typename TX,
-            typename enable_if<IsConvertibleToSliceMatrix<TT>(),int>::type = 0,
+            typename enable_if<IsConvertibleToBareSliceMatrix<TT>(),int>::type = 0,
             typename enable_if<IsConvertibleToSliceMatrix<TX>(),int>::type = 0>
-  void TriangularSolve (const TT & T, TX & X)
+  void TriangularSolve (const TT & T, TX && X)
   {
     TriangularSolve<SIDE,NORM> (make_BareSliceMatrix(T), make_SliceMatrix(X));
   }
