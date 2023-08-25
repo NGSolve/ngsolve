@@ -1107,26 +1107,20 @@ namespace ngbla
 
     /// assign contents
     template<typename TB>
-    INLINE SliceMatrix & operator= (const Expr<TB> & m) 
+    INLINE const SliceMatrix & operator= (const Expr<TB> & m) const 
     {
       CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
       return *this;
     }
 
-    INLINE SliceMatrix & operator= (const SliceMatrix & m) 
+    INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
       CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
       return *this;
     }
 
-    INLINE SliceMatrix & operator= (SliceMatrix && m) 
-    {
-      CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
-      return *this;
-    }
-    
     /// assign constant
-    INLINE SliceMatrix & operator= (TSCAL s) 
+    INLINE const SliceMatrix & operator= (TSCAL s) const
     {
       /*
       if (w == 0) return *this;
