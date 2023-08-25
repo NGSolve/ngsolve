@@ -750,6 +750,49 @@ namespace ngbla
       return FlatSliceVec<H,W,const T> (&(*this)(0,i));
     }
 
+    INLINE auto Rows (size_t i, size_t j) 
+    {
+      return SliceMatrix<T, RowMajor, size_t, IC<W>, IC<W>> (j-i, IC<W>(), IC<W>(), Data()+i*Width());
+    }
+
+    INLINE auto Rows (IntRange r) 
+    {
+      return Rows (r.First(), r.Next());
+    }
+
+    INLINE auto Cols (size_t i, size_t j) 
+    {
+      return SliceMatrix<T, RowMajor, IC<H>, size_t, IC<W>> (IC<H>(), j-i, IC<W>(), Data()+i);
+    }
+
+    INLINE auto Cols (IntRange r) 
+    {
+      return Cols (r.First(), r.Next());
+    }
+
+    INLINE auto Rows (size_t i, size_t j) const
+    {
+      return SliceMatrix<const T, RowMajor, size_t, IC<W>, IC<W>> (j-i, IC<W>(), IC<W>(), Data()+i*Width());
+    }
+
+    INLINE auto Rows (IntRange r) const
+    {
+      return Rows (r.First(), r.Next());
+    }
+
+    INLINE auto Cols (size_t i, size_t j) const
+    {
+      return SliceMatrix<const T, RowMajor, IC<H>, size_t, IC<W>> (IC<H>(), j-i, IC<W>(), Data()+i);
+    }
+
+    INLINE auto Cols (IntRange r) const
+    {
+      return Cols (r.First(), r.Next());
+    }
+    
+
+    
+    
     auto AsVector() 
     {
       return FlatVec<H*W,T> (data.Ptr());
