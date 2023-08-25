@@ -57,10 +57,10 @@ namespace ngbla
      No memory allocation/deallocation. User must provide memory.
   */
   template <typename T, ORDERING ORD>
-  class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD> >
+  class FlatMatrix : public MatExpr<FlatMatrix<T,ORD> >
   {
   protected:
-    typedef CMCPMatExpr<FlatMatrix<T,ORD>> BASE;    
+    typedef MatExpr<FlatMatrix<T,ORD>> BASE;    
     /// the height
     size_t h;
     /// the width
@@ -167,7 +167,8 @@ namespace ngbla
     }
 
 
-    INLINE auto View() const { return FlatMatrix(*this); }     
+    INLINE auto View() const { return FlatMatrix(*this); }
+    INLINE auto ViewRW() { return *this; }
     INLINE tuple<size_t, size_t> Shape() const { return { h, w }; }
     static constexpr auto Ordering() { return ORD; } 
     
@@ -294,10 +295,10 @@ namespace ngbla
 
 
   template <typename T>
-  class FlatMatrix<T,ColMajor> : public CMCPMatExpr<FlatMatrix<T,ColMajor> >
+  class FlatMatrix<T,ColMajor> : public MatExpr<FlatMatrix<T,ColMajor> >
   {
   protected:
-    typedef CMCPMatExpr<FlatMatrix<T,ColMajor>> BASE;    
+    typedef MatExpr<FlatMatrix<T,ColMajor>> BASE;    
     size_t h;
     size_t w;
     T * __restrict data;
@@ -381,7 +382,8 @@ namespace ngbla
       return *this;
     }
 
-    INLINE auto View() const { return FlatMatrix(*this); }     
+    INLINE auto View() const { return FlatMatrix(*this); }
+    INLINE auto ViewRW() { return *this; }    
     INLINE tuple<size_t, size_t> Shape() const { return { h, w }; }
     
     /// copy size and pointers
@@ -515,7 +517,7 @@ namespace ngbla
     INLINE Matrix (const Expr<TB> & m2) 
       : FlatMatrix<T,ORD> (m2.Height(), m2.Width(), new T[m2.Height()*m2.Width()]) 
     {
-      CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2); // .View());   // does it work with view ? 
+      MatExpr<FlatMatrix<T,ORD> >::operator= (m2); // .View());   // does it work with view ? 
     }
     
     Matrix (initializer_list<initializer_list<T>> llist) 
@@ -569,7 +571,7 @@ namespace ngbla
     INLINE Matrix & operator= (const Expr<TB> & m) 
     { 
       SetSize (m.Height(), m.Width());
-      CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m);
+      MatExpr<FlatMatrix<T,ORD> >::operator= (m);
       return *this;
     }
 
@@ -601,7 +603,7 @@ namespace ngbla
     template<typename M2>
     Matrix & operator+= (const M2 & m) 
     { 
-      CMCPMatExpr<FlatMatrix<T,ORD> >::operator+= (m);
+      MatExpr<FlatMatrix<T,ORD> >::operator+= (m);
       return *this;
     }
   };
@@ -1359,7 +1361,7 @@ namespace ngbla
 
 
   template <typename T = double>
-  class DoubleSliceMatrix : public CMCPMatExpr<DoubleSliceMatrix<T> >
+  class DoubleSliceMatrix : public MatExpr<DoubleSliceMatrix<T> >
   {
   protected:
     /// the height
@@ -1385,9 +1387,9 @@ namespace ngbla
   
     /// assign contents
     template<typename TB>
-    const DoubleSliceMatrix & operator= (const Expr<TB> & m) const
+    DoubleSliceMatrix & operator= (const Expr<TB> & m) 
     {
-      return CMCPMatExpr<DoubleSliceMatrix>::operator= (m);
+      return MatExpr<DoubleSliceMatrix>::operator= (m);
     }
 
     /// assign constant
@@ -1400,6 +1402,7 @@ namespace ngbla
     }
 
     INLINE auto View() const { return *this; }
+    INLINE auto ViewRW() { return *this; }    
     INLINE tuple<size_t,size_t> Shape() const { return { h, w }; }
     
     /// access operator
