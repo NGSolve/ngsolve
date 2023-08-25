@@ -1008,10 +1008,10 @@ namespace ngbla
 
 
   template <typename T, ORDERING ORD, typename TH, typename TW, typename TDIST>
-  class SliceMatrix : public CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>
+  class SliceMatrix : public MatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>
   {
   protected:
-    typedef CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>> BASE;        
+    typedef MatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>> BASE;        
     /// the height
     NO_UNIQUE_ADDRESS TH h;
     /// the width
@@ -1110,20 +1110,20 @@ namespace ngbla
 
     /// assign contents
     template<typename TB>
-    INLINE const SliceMatrix & operator= (const Expr<TB> & m) const 
+    INLINE SliceMatrix & operator= (const Expr<TB> & m) 
     {
       BASE::operator= (m);
       return *this;
     }
 
-    INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
+    INLINE SliceMatrix & operator= (const SliceMatrix & m) 
     {
       BASE::operator= (m);
       return *this;
     }
 
     /// assign constant
-    INLINE const SliceMatrix & operator= (TSCAL s) const
+    INLINE SliceMatrix & operator= (TSCAL s) 
     {
       /*
       if (w == 0) return *this;
@@ -1157,7 +1157,8 @@ namespace ngbla
       return *this;
     }
 
-    INLINE auto View() const { return *this; }     
+    INLINE auto View() const { return *this; }
+    INLINE auto ViewRW() { return *this; }
     INLINE auto Shape() const { return tuple(h,w); }
 
     INLINE TELEM * Addr(size_t i, size_t j) const

@@ -340,25 +340,25 @@ namespace ngbla
 
 
     INLINE SubMatrixExpr<T>
-    Rows (size_t first, size_t next)
+    Rows (size_t first, size_t next) const
     { 
       return SubMatrixExpr<T> (static_cast<T&> (*this), first, 0, next-first, Width()); 
     }
 
     INLINE SubMatrixExpr<T>
-    Cols (size_t first, size_t next) 
+    Cols (size_t first, size_t next) const
     { 
       return SubMatrixExpr<T> (static_cast<T&> (*this), 0, first, Height(), next-first);
     }
 
     INLINE SubMatrixExpr<T>
-    Rows (IntRange range) 
+    Rows (IntRange range) const
     { 
       return Rows (range.First(), range.Next());
     }
 
     INLINE SubMatrixExpr<T>
-    Cols (IntRange range) 
+    Cols (IntRange range) const
     { 
       return Cols (range.First(), range.Next());
     }
