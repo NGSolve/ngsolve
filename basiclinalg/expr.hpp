@@ -365,13 +365,13 @@ namespace ngbla
 
 
     INLINE RowsArrayExpr<T>
-    Rows (FlatArray<int> rows) 
+    Rows (FlatArray<int> rows) const
     { 
       return RowsArrayExpr<T> (static_cast<const T&> (*this), rows); 
     }
 
     INLINE ColsArrayExpr<T>
-    Cols (FlatArray<int> cols) 
+    Cols (FlatArray<int> cols) const
     { 
       return ColsArrayExpr<T> (static_cast<const T&> (*this), cols); 
     }
@@ -710,7 +710,7 @@ namespace ngbla
 
 
 
-
+#ifdef OLD
   /**
      The base class for matrices.
      Constant-Means-Constat-Pointer
@@ -815,7 +815,7 @@ namespace ngbla
     }
   };
   
-
+#endif
 
 
 
