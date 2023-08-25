@@ -123,10 +123,10 @@ namespace ngbla
 #endif
 
   template <typename T, typename TS, typename TDIST>
-  class VectorView : public CMCPMatExpr<VectorView<T,TS,TDIST>>
+  class VectorView : public MatExpr<VectorView<T,TS,TDIST>>
   {
   protected:
-    typedef CMCPMatExpr<VectorView<T,TS,TDIST>> BASE;
+    typedef MatExpr<VectorView<T,TS,TDIST>> BASE;
     T * __restrict data;
     NO_UNIQUE_ADDRESS TS size;
     NO_UNIQUE_ADDRESS TDIST dist;
@@ -206,6 +206,7 @@ namespace ngbla
     INLINE T * Data() const { return data; }
 
     INLINE auto View() const { return VectorView(*this); }         
+    INLINE auto ViewRW() { return this->View(); }    
 
 
 
@@ -252,7 +253,7 @@ namespace ngbla
     template <typename T2, typename TS2, typename TD2>
     INLINE auto & operator= (const VectorView<T2,TS2,TD2> & v) 
     {
-      CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
+      MatExpr<VectorView<T,TS,TDIST>>::operator= (v);
       /*
       NETGEN_CHECK_RANGE(v.Size(),0,Size()+1);
       auto cs = CombinedSize(this->Size(), v.Size());
@@ -265,7 +266,7 @@ namespace ngbla
     template<typename TB>
     INLINE auto & operator= (const Expr<TB> & v) 
     {
-      CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);
+      MatExpr<VectorView<T,TS,TDIST>>::operator= (v);
       return *this;
     }
 
@@ -598,12 +599,12 @@ namespace ngbla
 
   
 
-    INLINE TELEM operator() (size_t i) 
+    INLINE auto operator() (size_t i) 
     {
       return FlatVector<T> (blocksize, &data[i*blocksize]); 
     }
 
-    INLINE const TELEM operator() (size_t i) const
+    INLINE auto operator() (size_t i) const
     {
       return FlatVector<T> (blocksize, &data[i*blocksize]); 
     }
