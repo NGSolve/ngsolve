@@ -60,6 +60,7 @@ namespace ngbla
   class FlatMatrix : public CMCPMatExpr<FlatMatrix<T,ORD> >
   {
   protected:
+    typedef CMCPMatExpr<FlatMatrix<T,ORD>> BASE;    
     /// the height
     size_t h;
     /// the width
@@ -145,7 +146,7 @@ namespace ngbla
     template<typename TBxx>
     INLINE FlatMatrix & operator= (const Expr<TBxx> & m) 
     {
-      CMCPMatExpr<FlatMatrix>::operator= (m);
+      BASE::operator= (m);
       return *this;
     }
 
@@ -227,8 +228,8 @@ namespace ngbla
     }
     
 
-    using CMCPMatExpr<FlatMatrix>::Rows;
-    using CMCPMatExpr<FlatMatrix>::Cols;
+    using BASE::Rows;
+    using BASE::Cols;
 
     INLINE FlatMatrix Rows (size_t first, size_t next) const
     {
@@ -296,6 +297,7 @@ namespace ngbla
   class FlatMatrix<T,ColMajor> : public CMCPMatExpr<FlatMatrix<T,ColMajor> >
   {
   protected:
+    typedef CMCPMatExpr<FlatMatrix<T,ColMajor>> BASE;    
     size_t h;
     size_t w;
     T * __restrict data;
@@ -338,7 +340,7 @@ namespace ngbla
       w = m2.A().Width();
       LocalHeap & lh = m2.GetLocalHeap();
       data = lh.Alloc<T> (h*w);
-      CMCPMatExpr<FlatMatrix<T,ColMajor> >::operator= (m2.A());
+      BASE::operator= (m2.A());
     }
 
     /// set size, and assign mem
@@ -361,7 +363,7 @@ namespace ngbla
     template<typename TBxx>
     INLINE FlatMatrix & operator= (const Expr<TBxx> & m) 
     {
-      CMCPMatExpr<FlatMatrix>::operator= (m);
+      BASE::operator= (m);
       return *this;
     }
 
@@ -1009,6 +1011,7 @@ namespace ngbla
   class SliceMatrix : public CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>
   {
   protected:
+    typedef CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>> BASE;        
     /// the height
     NO_UNIQUE_ADDRESS TH h;
     /// the width
@@ -1109,13 +1112,13 @@ namespace ngbla
     template<typename TB>
     INLINE const SliceMatrix & operator= (const Expr<TB> & m) const 
     {
-      CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
+      BASE::operator= (m);
       return *this;
     }
 
     INLINE const SliceMatrix & operator= (const SliceMatrix & m) const
     {
-      CMCPMatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>::operator= (m);
+      BASE::operator= (m);
       return *this;
     }
 
@@ -1210,8 +1213,8 @@ namespace ngbla
         return Height();
     }
     
-    using CMCPMatExpr<SliceMatrix>::Rows;
-    using CMCPMatExpr<SliceMatrix>::Cols;
+    using BASE::Rows;
+    using BASE::Cols;
 
     SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
     {
