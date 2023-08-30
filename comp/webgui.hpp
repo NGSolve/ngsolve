@@ -8,13 +8,39 @@
 namespace webgui {
 using namespace ngcomp;
 
+struct WebguiArchiveData {
+  shared_ptr<MeshAccess> mesh;
+  shared_ptr<CoefficientFunction> cf;
+
+  WebguiArchiveData() = default;
+
+  WebguiArchiveData(shared_ptr<MeshAccess> mesh, shared_ptr<CoefficientFunction> cf)
+    : mesh(mesh), cf(cf) { }
+
+  shared_ptr<MeshAccess> GetMeshAccess() { return mesh; }
+
+  void DoArchive(Archive & ar) {
+    shared_ptr<netgen::NetgenGeometry> geo;
+    if(ar.Output())
+    {
+      geo = mesh->GetNetgenMesh()->GetGeometry();
+      mesh->GetNetgenMesh()->SetGeometry(nullptr);
+    }
+
+    ar & mesh & cf;
+
+    if(ar.Output())
+      mesh->GetNetgenMesh()->SetGeometry(geo);
+  }
+};
+
 struct WebguiData {
   int mesh_dim, order2d, order3d;
   double funcmin, funcmax, mesh_radius;
   vector<double> mesh_center;
   bool draw_vol, draw_surf, show_wireframe, show_mesh;
 
-  vector<string> Bezier_trig_points, Bezier_points;
+  vector<string> Bezier_trig_points, Bezier_points, points3d;
   vector<string> objects, names, edges;
 };
 
@@ -23,7 +49,7 @@ unique_ptr<WebguiData> GenerateWebguiData(shared_ptr<MeshAccess> ma,
                                           int order = 1);
 
 template<typename T>
-string ToArchive(shared_ptr<T> &obj, bool binary=true) {
+string ToArchive(shared_ptr<T> obj, bool binary=true) {
   auto ss = make_shared<stringstream>();
   shared_ptr<netgen::NetgenGeometry> geo;
   if constexpr(is_same_v<T, netgen::Mesh>)

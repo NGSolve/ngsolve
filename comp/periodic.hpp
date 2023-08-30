@@ -27,6 +27,8 @@ namespace ngcomp
     
     virtual ~PeriodicFESpace () { ; }
     void Update() override;
+    void DoArchive (Archive & archive) override;
+    auto GetCArgs () { return std::make_tuple(Shallow(space), GetFlags(), used_idnrs); }
     
     void FinalizeUpdate() override
     {
@@ -93,6 +95,13 @@ namespace ngcomp
     QuasiPeriodicFESpace (shared_ptr<FESpace> fespace, const Flags & flag, shared_ptr<Array<int>> aused_idnrs, shared_ptr<Array<TSCAL>> afactors);
 
     void Update() override;
+    void DoArchive (Archive & archive) override {
+      PeriodicFESpace::DoArchive(archive);
+      archive & factors & dof_factors & master_dofs;
+    }
+    auto GetCArgs () {
+      return std::make_tuple(Shallow(GetBaseSpace()), GetFlags(), used_idnrs, factors);
+    }
 
     shared_ptr<Array<TSCAL>> GetFactors() const { return factors; }
 

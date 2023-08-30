@@ -8,6 +8,7 @@
 /**************************************************************************/
 
 
+#include <core/archive.hpp>
 #include "expr.hpp"
 #include "vector.hpp"
 
@@ -545,6 +546,14 @@ namespace ngbla
 
     /// delete memory
     ~Matrix() { delete [] this->data; }
+
+    void DoArchive( Archive & ar )
+    {
+      ar & this->h & this->w;
+      if(ar.Input())
+        SetSize(this->h, this->w);
+      ar.Do(this->data, this->h*this->w);
+    }
 
     /// sets new size of matrix
     void SetSize(size_t ah, size_t aw)

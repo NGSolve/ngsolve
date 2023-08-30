@@ -1564,63 +1564,15 @@ used_idnrs : list of int = None
                     return perfes;
                   }), py::arg("fespace"), py::arg("phase")=nullopt,
                   py::arg("use_idnrs")=py::list(), py::arg("autoupdate")=false)
-    .def(py::pickle([](const PeriodicFESpace* per_fes)
-                    {
-                      py::list idnrs;
-                      for (auto idnr : *per_fes->GetUsedIdnrs())
-                        idnrs.append(idnr);
-                      auto quasiper_fes_d = dynamic_cast<const QuasiPeriodicFESpace<double>*>(per_fes);
-                      if(quasiper_fes_d)
-                        {
-                          py::list fac;
-                          for(auto factor : *quasiper_fes_d->GetFactors())
-                            fac.append(factor);
-                          return py::make_tuple(per_fes->GetBaseSpace(),idnrs,fac);
-                        }
-                      auto quasiper_fes_c = dynamic_cast<const QuasiPeriodicFESpace<Complex>*>(per_fes);
-                      if(quasiper_fes_c)
-                        {
-                          py::list fac;
-                          for(auto factor : *quasiper_fes_c->GetFactors())
-                            fac.append(factor);
-                          return py::make_tuple(per_fes->GetBaseSpace(),idnrs,fac);
-                        }
-                      return py::make_tuple(per_fes->GetBaseSpace(),idnrs);
-                    },
-                    [] (py::tuple state) -> shared_ptr<PeriodicFESpace>
-                    {
-                      shared_ptr<PeriodicFESpace> fes;
-                      auto idnrs = make_shared<Array<int>>();
-                      for (auto id : state[1].cast<py::list>())
-                        idnrs->Append(id.cast<int>());
-                      if(py::len(state)==3)
-                        {
-                          auto pyfacs = state[2].cast<py::list>();
-                          if(py::extract<double>(pyfacs[0]).check())
-                            {
-                              auto facs = make_shared<Array<double>>();
-                              for(auto fac : pyfacs)
-                                facs->Append(fac.cast<double>());
-                              fes = make_shared<QuasiPeriodicFESpace<double>>
-                                (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
-                            }
-                          else
-                            {
-                              auto facs = make_shared<Array<Complex>>();
-                              for (auto fac : pyfacs)
-                                facs->Append(fac.cast<Complex>());
-                              fes = make_shared<QuasiPeriodicFESpace<Complex>>
-                                (state[0].cast<shared_ptr<FESpace>>(), Flags(),idnrs,facs);
-                            }
-                        }
-                      else
-                        fes = make_shared<PeriodicFESpace>(state[0].cast<shared_ptr<FESpace>>(),
-                                                           Flags(),idnrs);
-                      fes->Update();
-                      fes->FinalizeUpdate();
-                      return fes;
-                    }))
+    .def (NGSPickle<PeriodicFESpace>())
     ;
+
+  py::class_<QuasiPeriodicFESpace<double>, shared_ptr<QuasiPeriodicFESpace<double>>, PeriodicFESpace>(m, "QuasiPeriodicD")
+    .def (NGSPickle<QuasiPeriodicFESpace<double>>())
+  ;
+  py::class_<QuasiPeriodicFESpace<Complex>, shared_ptr<QuasiPeriodicFESpace<Complex>>, PeriodicFESpace>(m, "QuasiPeriodicC")
+    .def (NGSPickle<QuasiPeriodicFESpace<Complex>>())
+  ;
 
 
 
@@ -4457,6 +4409,19 @@ If `maxdist` == 0. then 2*meshsize is used.
   });
   m.def("ToArchive", [](shared_ptr<FESpace> fes, bool binary){
         return py::bytes(webgui::ToArchive(fes, binary));
+  });
+  m.def("ToArchive", [](shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> cf, bool binary){
+        return py::bytes(webgui::ToArchive(make_shared<webgui::WebguiArchiveData>(ma, cf), binary));
+  });
+
+  m.def("FromArchiveMesh", [](string data, bool binary){
+        return webgui::FromArchive<netgen::Mesh>(data, binary);
+  });
+  m.def("FromArchiveCF", [](string  data, bool binary){
+        return webgui::FromArchive<CoefficientFunction>(data, binary);
+  });
+  m.def("FromArchiveFESpace", [](string data, bool binary){
+        return webgui::FromArchive<FESpace>(data, binary);
   });
 
   /////////////////////////////////////////////////////////////////////////////////////
