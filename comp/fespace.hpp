@@ -7,6 +7,8 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+#include <core/register_archive.hpp>
+
 namespace ngcomp
 {
 
@@ -223,6 +225,7 @@ ANY                  1 1 1 1 | 15
     */
     FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
              bool checkflags = false);
+    FESpace (const FESpace &) = delete;
     /// cleanup
     virtual ~FESpace ();
 
@@ -250,6 +253,7 @@ ANY                  1 1 1 1 | 15
 
     /// Dump/restore fespace
     virtual void DoArchive (Archive & archive);
+    std::tuple<Shallow<shared_ptr<MeshAccess>>, Flags> GetCArgs();
 
     Array<MemoryUsage> GetMemoryUsage () const override;
     
@@ -1470,6 +1474,7 @@ ANY                  1 1 1 1 | 15
   class RegisterFESpace
   {
   public:
+    RegisterClassForArchive<FES, FESpace> regclass;
     /// constructor registers fespace
     RegisterFESpace (string label)
     {

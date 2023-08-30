@@ -43,6 +43,8 @@ double BernsteinTrig(double x, double y, int i, int j, int n) {
 }
 
 Matrix<double> GetIBernsteinBasis(ngfem::ELEMENT_TYPE etype, int order) {
+  std::map<std::pair<ngfem::ELEMENT_TYPE, int>, Matrix<double>> cache;
+  if(cache.count({etype, order})) return cache[{etype, order}];
   if (etype == ET_SEGM) {
     Matrix<double> ret(order + 1, order + 1);
     ret = 0.;
@@ -50,7 +52,8 @@ Matrix<double> GetIBernsteinBasis(ngfem::ELEMENT_TYPE etype, int order) {
       for (auto j : Range(order + 1))
         ret(i, j) = Bernstein(1. * i / order, j, order);
     CalcInverse(ret);
-    return {ret};
+    cache.insert({{etype, order}, ret});
+    return ret;
   }
 
   if (etype == ET_TRIG) {
@@ -67,45 +70,100 @@ Matrix<double> GetIBernsteinBasis(ngfem::ELEMENT_TYPE etype, int order) {
         ii++;
       }
     CalcInverse(ret);
+    cache.insert({{etype, order}, ret});
     return ret;
   }
   throw Exception("Element type not supported");
 }
 
-IntegrationRule GetElementPoints(ngfem::ELEMENT_TYPE etype, int order) {
+const IntegrationRule & GetElementPoints(ngfem::ELEMENT_TYPE etype, int order) {
+  static std::map<std::pair<ngfem::ELEMENT_TYPE, int>, IntegrationRule> cache;
+  if (cache.count({etype, order}))
+    return cache[{etype, order}];
+
+  using IP = IntegrationPoint;
   int n = order + 1;
   IntegrationRule ir;
+  if (etype == ET_SEGM)
+    for (auto i : Range(n))
+      ir.Append(IP{1. * i / order, 0., 0.});
   if (etype == ET_TRIG)
     for (auto i : Range(n))
       for (auto j : Range(n - i))
-        ir.Append(IntegrationPoint{1. * j / order, 1. * i / order, 0.});
+        ir.Append(IP{1. * j / order, 1. * i / order, 0.});
   if (etype == ET_QUAD) {
     for (auto i : Range(n))
       for (auto j : Range(n - i))
-        ir.Append(IntegrationPoint{1. * j / order, 1. * i / order, 0.});
+        ir.Append(IP{1. * j / order, 1. * i / order, 0.});
     for (auto i : Range(n))
       for (auto j : Range(n - i))
         ir.Append(
-            IntegrationPoint{1. - 1. * j / order, 1. - 1. * i / order, 0.});
+            IP{1. - 1. * j / order, 1. - 1. * i / order, 0.});
   }
-
-  return ir;
+  if (etype == ET_TET) {
+    ir.Append({ IP(1,0,0), IP(0,1,0), IP(0,0,1), IP(0,0,0) });
+  }
+  if(etype == ET_PYRAMID) {
+    ir.Append( {
+      IP(1,0,0), IP(0,1,0), IP(0,0,1), IP(0,0,0),
+      IP(1,0,0), IP(0,1,0), IP(0,0,1), IP(1,1,0)
+    });
+  }
+  if(etype == ET_PRISM) {
+    ir.Append( {
+      IP(1,0,0), IP(0,1,0), IP(0,0,1), IP(0,0,0),
+      IP(0,0,1), IP(0,1,0), IP(0,1,1), IP(1,0,0),
+      IP(1,0,1), IP(0,1,1), IP(1,0,0), IP(0,0,1)
+    });
+  }
+  if(etype == ET_HEX) {
+    ir.Append( {
+      IP(1,0,0), IP(0,1,0), IP(0,0,1), IP(0,0,0),
+      IP(0,1,1), IP(1,1,1), IP(1,1,0), IP(1,0,1),
+      IP(1,0,1), IP(0,1,1), IP(1,0,0), IP(0,0,1),
+      IP(0,1,1), IP(1,1,0), IP(0,1,0), IP(1,0,0),
+      IP(0,0,1), IP(0,1,0), IP(0,1,1), IP(1,0,0),
+      IP(1,0,1), IP(1,1,0), IP(0,1,1), IP(1,0,0)
+    });
+  }
+  if(Dim(etype) == 3 && order == 2) {
+    // append edge midpoints to each subtet
+    auto mid = [](IP a, IP b) {
+      return IP((a(0)+b(0))/2, (a(1)+b(1))/2, (a(2)+b(2))/2);
+    };
+    auto ntets = ir.Size() / 4;
+    IntegrationRule ir_copy = std::move(ir);
+    ir.SetSize0();
+    for(auto i : Range(ntets))
+    {
+      auto tet = ir_copy.Range(i*4, i*4+4);
+      ir.Append(tet);
+      ir.Append(mid(tet[0], tet[3]));
+      ir.Append(mid(tet[1], tet[3]));
+      ir.Append(mid(tet[2], tet[3]));
+      ir.Append(mid(tet[0], tet[1]));
+      ir.Append(mid(tet[0], tet[2]));
+      ir.Append(mid(tet[1], tet[2]));
+    }
+  }
+  cache[{etype, order}] = std::move(ir);
+  return cache[{etype, order}];
 }
 
 IntegrationRule GetWireframePoints(ngfem::ELEMENT_TYPE etype, int order) {
   int n = order + 1;
   IntegrationRule ir;
   if (etype == ET_TRIG) {
-    for (auto i : Range(n)) ir.Append({1. * i / order, 0., 0.});
-    for (auto i : Range(n)) ir.Append({0., 1. * i / order, 0.});
+    for (auto i : Range(n)) ir.Append(IntegrationPoint{1. * i / order, 0., 0.});
+    for (auto i : Range(n)) ir.Append(IntegrationPoint{0., 1. * i / order, 0.});
     for (auto i : Range(n))
-      ir.Append({1. * i / order, 1. - 1. * i / order, 0.});
+      ir.Append(IntegrationPoint{1. * i / order, 1. - 1. * i / order, 0.});
   }
   if (etype == ET_QUAD) {
-    for (auto i : Range(n)) ir.Append({1. * i / order, 0., 0.});
-    for (auto i : Range(n)) ir.Append({0., 1. * i / order, 0.});
-    for (auto i : Range(n)) ir.Append({1. * i / order, 1., 0.});
-    for (auto i : Range(n)) ir.Append({1., 1. * i / order, 0.});
+    for (auto i : Range(n)) ir.Append(IntegrationPoint{1. * i / order, 0., 0.});
+    for (auto i : Range(n)) ir.Append(IntegrationPoint{0., 1. * i / order, 0.});
+    for (auto i : Range(n)) ir.Append(IntegrationPoint{1. * i / order, 1., 0.});
+    for (auto i : Range(n)) ir.Append(IntegrationPoint{1., 1. * i / order, 0.});
   }
 
   return ir;
@@ -135,16 +193,138 @@ vector<string> MapBernstein(FlatTensor<3, double> input, ngfem::ELEMENT_TYPE elt
   return ret;
 }
 
+vector<string> GenerateWireframeData( shared_ptr<MeshAccess> ma,
+                                      shared_ptr<CoefficientFunction> cf,
+                                      int order) {
+  // generate wireframe data
+  LocalHeapMem<100000> lh("webgui_wireframe_data");
+  auto vb = ma->GetDimension() == 3 ? BND : VOL;
+  Array<double> surface_data;
+  auto comps = cf->Dimension();
+  for (auto elnr : Range(ma->GetNElements(2))) {
+    HeapReset hr(lh);
+
+    auto el = ma->GetElement({vb, elnr});
+    auto ir = GetWireframePoints(el.GetType(), order);
+    auto &trafo = ma->GetTrafo(el, lh);
+    BaseMappedIntegrationRule &mir = trafo(ir, lh);
+    FlatMatrix<> values(ir.Size(), comps, lh);
+    cf->Evaluate(mir, values);
+    surface_data.Append(
+        FlatArray<double>(values.AsVector().Size(), values.Data()));
+  }
+  auto nip = order+1;
+  auto nseg = surface_data.Size() / nip / comps;
+  FlatTensor<3, double> data(nseg, nip, comps, surface_data.Data());
+  return MapBernstein(data, ET_SEGM, order, cf->Dimension());
+}
+
+vector<string> GenerateEdgeData( shared_ptr<MeshAccess> ma,
+                                      shared_ptr<CoefficientFunction> cf,
+                                      int order) {
+  // generate wireframe data
+  LocalHeapMem<100000> lh("webgui_edge_data");
+  auto vb = ma->GetDimension() == 3 ? BBND : BND;
+  Array<double> edge_data;
+  auto comps = cf->Dimension();
+  for (auto elnr : Range(ma->GetNElements(1))) {
+    HeapReset hr(lh);
+
+    auto el = ma->GetElement({vb, elnr});
+    auto &ir = GetElementPoints(el.GetType(), order);
+    auto &trafo = ma->GetTrafo(el, lh);
+    BaseMappedIntegrationRule &mir = trafo(ir, lh);
+    FlatMatrix<> values(ir.Size(), comps, lh);
+    cf->Evaluate(mir, values);
+    edge_data.Append(
+        FlatArray<double>(values.AsVector().Size(), values.Data()));
+  }
+  auto nip = order+1;
+  auto nseg = edge_data.Size() / nip / comps;
+  FlatTensor<3, double> data(nseg, nip, comps, edge_data.Data());
+  return MapBernstein(data, ET_SEGM, order, cf->Dimension());
+}
+
+vector<string> GenerateSurfaceData( shared_ptr<MeshAccess> ma,
+                                    shared_ptr<CoefficientFunction> cf,
+                                    int order) {
+  // generate surface data
+  LocalHeapMem<100000> lh("webgui_surface_data");
+  auto vb = ma->GetDimension() == 3 ? BND : VOL;
+  Array<double> surface_data;
+  auto comps = cf->Dimension();
+  for (auto elnr : Range(ma->GetNElements(2))) {
+    HeapReset hr(lh);
+
+    auto el = ma->GetElement({vb, elnr});
+    auto &ir = GetElementPoints(el.GetType(), order);
+    auto &trafo = ma->GetTrafo(el, lh);
+    BaseMappedIntegrationRule &mir = trafo(ir, lh);
+    FlatMatrix<> values(ir.Size(), comps, lh);
+    cf->Evaluate(mir, values);
+    surface_data.Append(
+        FlatArray<double>(values.AsVector().Size(), values.Data()));
+  }
+  auto nip = GetElementPoints(ET_TRIG, order).Size();
+  auto nel = surface_data.Size() / nip /
+             comps;  // might be different from ma->GetNElements(2), because
+                     // quads are divided into 2 trigs
+  FlatTensor<3, double> data(nel, nip, comps, surface_data.Data());
+  return MapBernstein(data, ET_TRIG, order, cf->Dimension());
+}
+
+vector<string> GenerateVolumeData( shared_ptr<MeshAccess> ma,
+                                    shared_ptr<CoefficientFunction> cf,
+                                    int order) {
+  LocalHeapMem<100000> lh("webgui_volume_data");
+  Array<double> volume_data;
+  auto comps = cf->Dimension();
+  for (auto elnr : Range(ma->GetNElements(3))) {
+    HeapReset hr(lh);
+
+    auto el = ma->GetElement({VOL, elnr});
+    auto &ir = GetElementPoints(el.GetType(), order);
+    auto &trafo = ma->GetTrafo(el, lh);
+    BaseMappedIntegrationRule &mir = trafo(ir, lh);
+    FlatMatrix<> values(ir.Size(), comps, lh);
+    cf->Evaluate(mir, values);
+    volume_data.Append(
+        FlatArray<double>(values.AsVector().Size(), values.Data()));
+  }
+  auto nip = GetElementPoints(ET_TET, order).Size();
+  auto nel = volume_data.Size() / nip /
+             comps;  // might be different from ma->GetNElements(3), because
+                     // hexes/prisms are divided into tets
+  FlatTensor<3, double> data(nel, nip, comps, volume_data.Data());
+  Tensor<3, double> output(nip, nel, comps);
+
+  for (size_t i = 0; i < nel; i++)
+    output(STAR, i, STAR) = data(i, STAR, STAR);
+
+  Tensor<3, float> output_f(nip, nel, comps);
+  auto n = output.GetTotalSize();
+  for (auto i : Range(n)) output_f.Data()[i] = output.Data()[i];
+
+  std::vector<string> ret;
+  for (auto i : Range(nip)) {
+    auto vals = output_f(i, STAR, STAR);
+    ret.push_back(base64_encode(FlatArray<unsigned char>(
+        vals.Height() * vals.Width() * sizeof(vals(0, 0)),
+        reinterpret_cast<unsigned char *>(vals.Data()))));
+  }
+  return ret;
+}
+
 unique_ptr<WebguiData> GenerateWebguiData(shared_ptr<MeshAccess> ma,
                                           shared_ptr<CoefficientFunction> cf,
                                           int order) {
   auto d = make_unique<WebguiData>();
   d->mesh_dim = ma->GetDimension();
-  d->order2d = order;
-  d->order3d = order;
+  d->order2d = min(order, 3);
+  d->order3d = min(order, 2);
   d->funcmin = 0.0;
   d->funcmax = 1.0;
-  d->draw_vol = false;
+  d->draw_vol = true;
   d->draw_surf = true;
   d->show_wireframe = true;
   d->show_mesh = true;
@@ -157,30 +337,10 @@ unique_ptr<WebguiData> GenerateWebguiData(shared_ptr<MeshAccess> ma,
   auto c = Center(pmin, pmax);
   d->mesh_center = {c.X(), c.Y(), c.Z()};
 
-  // generate wireframe data
-  LocalHeapMem<100000> lh("webgui");
-  auto vb = d->mesh_dim == 3 ? BND : VOL;
-  Array<double> wireframe_data;
-  auto comps = cf->Dimension();
-  for (auto elnr : Range(ma->GetNElements(2))) {
-    HeapReset hr(lh);
-
-    auto el = ma->GetElement({vb, elnr});
-    auto ir = GetElementPoints(el.GetType(), order);
-    auto &trafo = ma->GetTrafo(el, lh);
-    BaseMappedIntegrationRule &mir = trafo(ir, lh);
-    FlatMatrix<> values(ir.Size(), comps, lh);
-    cf->Evaluate(mir, values);
-    wireframe_data.Append(
-        FlatArray<double>(values.AsVector().Size(), values.Data()));
-  }
-  auto nip = GetElementPoints(ET_TRIG, order).Size();
-  auto nel = wireframe_data.Size() / nip /
-             comps;  // might be different from ma->GetNElements(2), because
-                     // quads are divided into 2 trigs
-  FlatTensor<3, double> data(wireframe_data.Size() / nip / comps, nip, comps,
-                             wireframe_data.Data());
-  d->Bezier_trig_points = MapBernstein(data, ET_TRIG, order, cf->Dimension());
+  d->edges = GenerateEdgeData(ma, cf, order);
+  d->Bezier_points = GenerateWireframeData(ma, cf, d->order2d);
+  d->Bezier_trig_points = GenerateSurfaceData(ma, cf, d->order2d);
+  d->points3d = GenerateVolumeData(ma, cf, d->order3d);
 
   return d;
 }

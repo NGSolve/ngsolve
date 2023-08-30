@@ -1362,6 +1362,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     archive & dirichlet_vertex & dirichlet_edge & dirichlet_face;
   }
 
+  std::tuple<Shallow<shared_ptr<MeshAccess>>, Flags> FESpace :: GetCArgs ()
+  {
+    return std::make_tuple(Shallow(GetMeshAccess()), GetFlags());
+  }
+
   Array<MemoryUsage> FESpace :: GetMemoryUsage () const
   {
     Array<MemoryUsage> mu;
@@ -3961,6 +3966,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   // standard fespaces:
 
+  static RegisterClassForArchive<FESpace> regfes;
   static RegisterFESpace<NodalFESpace> initnodalfes ("nodal");
   static RegisterFESpace<NonconformingFESpace> initncfes ("nonconforming");
   static RegisterFESpace<NonconformingSurfaceFESpace> initncsurfes ("nonconformingsurface");

@@ -63,6 +63,18 @@ namespace ngcomp
   void Visualize(GridFunction * gf, const string & given_name);
   
   using namespace ngmg;
+
+
+  void GridFunctionCoefficientFunction :: DoArchive(Archive& ar)
+  {
+    CoefficientFunctionNoDerivative::DoArchive(ar);
+    ar.Shallow(gf_shared_ptr);
+    ar.Shallow(gf);
+    ar.Shallow(fes);
+    for (auto i : Range(4))
+      ar & diffop[i];
+    ar & comp;
+  }
   
   GridFunction :: GridFunction (shared_ptr<FESpace> afespace, const string & aname,
 				const Flags & aflags)
@@ -116,12 +128,25 @@ namespace ngcomp
   
   void GridFunction :: DoArchive (Archive & archive)
   {
+    GridFunctionCoefficientFunction::DoArchive(archive);
+
+    archive & name & flags & flaglist;
+    archive.Shallow(fespace);
     archive & nested & autoupdate & visual & multidim & level_updated;
     archive & cacheblocksize;
 
+   // TODO: Multidim GF
+   // TODO: FACE, CELL data
+
     const auto& ma = fespace->GetMeshAccess();
 
-    if (archive.Input()) Update();
+    if (archive.Input())
+    {
+      vec.SetSize (this->multidim);
+      vec = 0;
+      Update();
+    }
+
     for (int i = 0; i < vec.Size(); i++)
       {
         FlatVector<double> fv = vec[i] -> FVDouble();
@@ -190,8 +215,6 @@ namespace ngcomp
 
 
       }
-    if (archive.Input())
-      Visualize(dynamic_pointer_cast<GridFunction> (shared_from_this()), name);
   }
 
 
@@ -3196,6 +3219,10 @@ namespace ngcomp
   template class  VisualizeGridFunction<double>;
   template class  VisualizeGridFunction<Complex>;
 
+  RegisterClassForArchive<GridFunctionCoefficientFunction, CoefficientFunction> reg_gfcf;
+  RegisterClassForArchive<GridFunction, GridFunctionCoefficientFunction> reg_gf;
+  RegisterClassForArchive<S_GridFunction<double>, GridFunction> gf_double;
+  RegisterClassForArchive<S_GridFunction<Complex>, GridFunction> gf_complex;
 }
 
 

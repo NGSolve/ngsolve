@@ -29,6 +29,7 @@ namespace ngcomp
 				     shared_ptr<DifferentialOperator> attrace_diffop = nullptr,
                                      int acomp = 0);
   public:
+    GridFunctionCoefficientFunction () = default;
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<DifferentialOperator> adiffop,
@@ -39,6 +40,7 @@ namespace ngcomp
                                      shared_ptr<BilinearFormIntegrator> abfi, int acomp = 0);
     
     virtual ~GridFunctionCoefficientFunction ();
+    void DoArchive(Archive& ar) override;
     /// scalar valued or vector valued
     virtual bool IsComplex() const;
     virtual int Dimension() const;
@@ -120,6 +122,7 @@ namespace ngcomp
     weak_ptr<GridFunctionCoefficientFunction> derivcf;
   public:
     /// 
+    explicit GridFunction () = default;
     GridFunction (shared_ptr<FESpace> afespace, 
 		  const string & name = "gfu", 
 		  const Flags & flags = Flags());
@@ -291,6 +294,7 @@ namespace ngcomp
   class NGS_DLL_HEADER S_GridFunction : public GridFunction
   {
   public:
+    S_GridFunction () = default;
     S_GridFunction (shared_ptr<FESpace> afespace, 
 		    const string & aname = "gfu", 
 		    const Flags & flags = Flags());
