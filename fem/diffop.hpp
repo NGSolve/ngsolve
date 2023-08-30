@@ -7,6 +7,8 @@
 /* Date:   24. Nov. 2009                                             */
 /*********************************************************************/
 
+#include <core/register_archive.hpp>
+
 namespace ngfem
 {
 
@@ -1014,6 +1016,7 @@ namespace ngfem
     T_DifferentialOperator()
       : DifferentialOperator(DIFFOP::DIM_DMAT, 1, VorB(int(DIM_SPACE)-int(DIM_ELEMENT)), DIFFOP::DIFFORDER)
     {
+      static ngcore::RegisterClassForArchive<ngfem::T_DifferentialOperator<DIFFOP>, DifferentialOperator> reg;
       Array<int> hdims;
       hdims = DIFFOP::GetDimensions();
       SetDimensions ( hdims );
