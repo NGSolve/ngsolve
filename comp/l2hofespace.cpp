@@ -4703,6 +4703,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
 
 
+  static RegisterFESpace<L2HighOrderFESpace> initl2 ("L2");
   static RegisterFESpace<VectorL2FESpace> initvecl2 ("VectorL2");
   static RegisterFESpace<L2SurfaceHighOrderFESpace> initsurfl2 ("l2surf");
 

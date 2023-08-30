@@ -239,6 +239,9 @@ namespace ngfem
     }
     /// destructor
     NGS_DLL_HEADER virtual ~DifferentialOperator ();
+
+    virtual void DoArchive(Archive & ar) { ; }
+
     void SetDimensions (const Array<int> & adims) { dimensions = adims; }
     void SetVectorSpaceEmbedding (Matrix <> emb)
     { vsembedding = emb; vsdim = emb.Width(); }
