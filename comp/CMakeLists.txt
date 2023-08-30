@@ -15,7 +15,6 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         hypre_ams_precond.cpp facetsurffespace.cpp
         compressedfespace.cpp
         globalinterfacespace.cpp globalspace.cpp
-        register_diffops.cpp
         ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp
         ../multigrid/smoother.cpp contact.cpp localsolve.cpp interpolate.cpp
         webgui.cpp

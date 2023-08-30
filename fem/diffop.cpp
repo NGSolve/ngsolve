@@ -8,6 +8,7 @@
  
 #include <fem.hpp>
 #include "diffop_impl.hpp"
+#include <core/register_archive.hpp>
 
 
 
@@ -1701,6 +1702,7 @@ namespace ngfem
   }
 
 
+  static ngcore::RegisterClassForArchive<DifferentialOperator> reg_diffop;
 
   
   /*
