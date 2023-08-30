@@ -75,6 +75,13 @@ namespace ngcomp {
 	}
     }
     
+  void PeriodicFESpace :: DoArchive(Archive & archive)
+    {
+      FESpace::DoArchive(archive);
+      archive.Shallow(space);
+      archive & dofmap & vertex_map & used_idnrs;
+    }
+
   FiniteElement& PeriodicFESpace :: GetFE (ElementId ei, Allocator & alloc) const
     {
       auto & fe = space->GetFE(ei,alloc);
@@ -317,4 +324,8 @@ namespace ngcomp {
 
   template class QuasiPeriodicFESpace<double>;
   template class QuasiPeriodicFESpace<Complex>;
+  
+  static RegisterClassForArchive<PeriodicFESpace, FESpace> reg_periodic;
+  static RegisterClassForArchive<QuasiPeriodicFESpace<double>, PeriodicFESpace> reg_qperiodic_d;
+  static RegisterClassForArchive<QuasiPeriodicFESpace<Complex>, PeriodicFESpace> reg_qperiodic_c;
 }

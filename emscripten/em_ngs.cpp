@@ -3,22 +3,6 @@
 
 #include <comp.hpp>
 #include <meshing.hpp>
-#include "coefficient.hpp"
-#include "hdivdivfespace.hpp"
-#include "hcurldivfespace.hpp"
-#include "hcurlcurlfespace.hpp"
-#include "normalfacetfespace.hpp"
-#include "../fem/hdivdivfe.hpp"
-#include "hdivdivsurfacespace.hpp"
-#include "numberfespace.hpp"
-#include "irspace.hpp"
-#include "compressedfespace.hpp"
-#include "../fem/integratorcf.hpp"
-#include "../fem/h1lofe.hpp"
-#include "contact.hpp"
-#include "globalinterfacespace.hpp"
-#include "globalspace.hpp"
-#include "vtkoutput.hpp"
 #include "webgui.hpp"
 
 namespace emscripten {
@@ -60,32 +44,25 @@ using namespace emscripten;
 using namespace ngcomp;
 using namespace webgui;
 
+shared_ptr<WebguiArchiveData> LoadData(string s, bool binary) {
+  return FromArchive<WebguiArchiveData>(s, binary);
+}
+
 shared_ptr<MeshAccess> LoadMesh(string s, bool binary) {
-  return make_shared<MeshAccess>(FromArchive<netgen::Mesh>(s, binary));
+  return FromArchive<MeshAccess>(s, binary);
 }
 
 shared_ptr<CoefficientFunction> LoadCoefficientFunction(string s, bool binary) {
   return FromArchive<CoefficientFunction>(s,binary);
 }
 
-auto MyEvaluate(shared_ptr<MeshAccess> ma, shared_ptr<CoefficientFunction> cf) {
-  std::vector<double> res;
-  LocalHeapMem<10000> lh("CF(MeshPoint)");
-  for(auto el : ma->Elements(VOL))
-  {
-    HeapReset hrt(lh);
-    auto & trafo = ma->GetTrafo(ElementId(VOL, el.Nr()), lh);
-    auto ir = SelectIntegrationRule(el.GetType(), 3);
-    auto & mir = trafo(ir, lh);
-    FlatMatrix<double> values(ir.Size(), cf->Dimension(), lh);
-    cf->Evaluate(mir, BareSliceMatrix<double>(values));
-    for(auto v : values.AsVector())
-      res.push_back(v);
-  }
-  return res;
-}
-
 EMSCRIPTEN_BINDINGS(em_ngs) {
+  class_<WebguiArchiveData>("WebguiArchiveData")
+  .smart_ptr<std::shared_ptr<WebguiArchiveData>>("WebguiArchiveData")
+  .property("mesh", &WebguiArchiveData::mesh)
+  .property("cf", &WebguiArchiveData::cf)
+    ;
+
   class_<MeshAccess>("Mesh")
   .smart_ptr<std::shared_ptr<MeshAccess>>("Mesh")
   .function("GetDimension", &MeshAccess::GetDimension)
@@ -102,7 +79,7 @@ EMSCRIPTEN_BINDINGS(em_ngs) {
 
   emscripten::function("LoadCoefficientFunction", &FromArchive<CoefficientFunction>);
   emscripten::function("LoadMesh", &LoadMesh);
-  emscripten::function("Evaluate", &MyEvaluate);
+  emscripten::function("LoadData", &LoadData);
   emscripten::function("GenerateWebguiData", &GenerateWebguiData);
 
   class_<WebguiData>("WebguiData")
@@ -119,6 +96,7 @@ EMSCRIPTEN_BINDINGS(em_ngs) {
     .property("show_mesh", &WebguiData::show_mesh)
     .property("Bezier_trig_points", &WebguiData::Bezier_trig_points)
     .property("Bezier_points", &WebguiData::Bezier_points)
+    .property("points3d", &WebguiData::points3d)
     .property("objects", &WebguiData::objects)
     .property("names", &WebguiData::names)
     .property("edges", &WebguiData::edges)
@@ -128,38 +106,5 @@ EMSCRIPTEN_BINDINGS(em_ngs) {
 
 int main() {
   cout << "hello from main!" << endl;
-
-  // the following code is just to check the binary output file size
-
-  // auto m = LoadMesh("");
-  // Flags flags;
-  // new H1HighOrderFESpace(ma, flags));
-  // new L2HighOrderFESpace(ma, flags));
-
-  // new FacetFESpace (m, flags);
-  // new FacetSurfaceFESpace (m, flags);
-  // new H1HighOrderFESpace (m, flags);
-  // new H1LumpingFESpace (m, flags);
-  // new HCurlCurlFESpace (m, flags);
-  // new HCurlDivFESpace (m, flags);
-  // new HDivDivFESpace (m, flags);
-  // new HDivDivSurfaceSpace (m, flags);
-  // new HDivHighOrderSurfaceFESpace (m, flags);
-  // new IntegrationRuleSpace (m, flags);
-  // new IntegrationRuleSpaceSurface (m, flags);
-  // new L2HighOrderFESpace (m, flags);
-  // new L2SurfaceHighOrderFESpace (m, flags);
-  // new NodalFESpace (m, flags);
-  // new NormalFacetFESpace (m, flags);
-  // new NormalFacetSurfaceFESpace (m, flags);
-  // new NumberFESpace (m, flags);
-  // new TangentialSurfaceL2FESpace (m, flags);
-  // new VectorFESpace<FacetFESpace> (m, flags);
-  // new VectorFESpace<FacetSurfaceFESpace> (m, flags);
-  // new VectorFESpace<L2SurfaceHighOrderFESpace> (m, flags);
-  // new VectorFESpace<NodalFESpace> (m, flags);
-  // new VectorFacetFESpace (m, flags);
-  // new VectorH1FESpace (m, flags);
-  // new VectorL2FESpace (m, flags);
 }
 

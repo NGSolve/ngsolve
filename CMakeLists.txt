@@ -179,7 +179,9 @@ if(CMAKE_BUILD_TYPE_LOWER STREQUAL "debug")
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS DEBUG Wall)
 endif()
 
-if(WIN32)
+if(EMSCRIPTEN)
+    set(NGS_LIB_TYPE OBJECT)
+elseif(WIN32)
     add_definitions(-DNGS_EXPORTS)
 
     # build convenience (aka object) libraries in windows)
@@ -194,7 +196,6 @@ if(WIN32)
     endif()
 
 else(WIN32)
-    # build shared libraries in windows)
     set(NGS_LIB_TYPE SHARED)
     list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
 endif(WIN32)

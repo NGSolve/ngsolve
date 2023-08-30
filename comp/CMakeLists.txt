@@ -15,9 +15,10 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         hypre_ams_precond.cpp facetsurffespace.cpp
         compressedfespace.cpp
         globalinterfacespace.cpp globalspace.cpp
-        webgui.cpp
+        register_diffops.cpp
         ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp
         ../multigrid/smoother.cpp contact.cpp localsolve.cpp interpolate.cpp
+        webgui.cpp
         )
 
 target_include_directories(ngcomp PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd ${CMAKE_CURRENT_SOURCE_DIR}/../linalg)
