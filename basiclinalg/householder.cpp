@@ -354,7 +354,7 @@ namespace ngbla
     TriangularSolve<UpperRight,NonNormalized> (ainv, X);
     // ApplyHouseholderReflectionsTrans (ainv.Cols(0,n-1), Trans(SliceMatrix(X)));
     MultiHouseholderReflection H(Trans(ainv.Cols(0,n-1)));
-    H.MultTrans(Trans(SliceMatrix(X)));
+    H.MultTrans(Trans(make_SliceMatrix(X)));
     ainv = Trans(X);
   }
 

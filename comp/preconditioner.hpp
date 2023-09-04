@@ -161,7 +161,7 @@ namespace ngcomp
     ///
     ngmg::TwoLevelMatrix * premat;
     ///
-    int smoothingsteps;
+    // int smoothingsteps;
   public:
     ///
     virtual ~TwoLevelPreconditioner();
