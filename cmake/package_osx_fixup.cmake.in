@@ -34,8 +34,9 @@ function(fixup_bundle1 app libs dirs)
     message(STATUS "fixup_bundle: preparing...")
     get_bundle_keys("${app}" "${libs}" "${dirs}" keys IGNORE_ITEM "${CFG_IGNORE_ITEM}")
 
-    list(REMOVE_ITEM keys "Python" ) # skip fixup of Python
-    foreach(key "Python") # skip fixup of Python${keys})
+    # skip fixup of Python3
+    list(REMOVE_ITEM keys "python3_8" "Python" "Python3")
+    foreach(key "python3_8" "Python" "Python3")
 	    message("unset ${key}_COPYFLAG")
 	    unset(${key}_COPYFLAG)
 	    unset(${key}_DEFAULT_EMBEDDED_PATH)
