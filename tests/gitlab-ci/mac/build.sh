@@ -18,6 +18,7 @@ cmake $SRC_DIR \
       -DENABLE_UNIT_TESTS=ON \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
       -DCPACK_PACKAGE_NAME=NGSolve${PACKAGE_NAME_SUFFIX} \
+      -DPython3_EXECUTABLE=`which python3` \
       -DUSE_OCC=ON
 
 make -j5 install
