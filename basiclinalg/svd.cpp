@@ -95,7 +95,7 @@ namespace ngbla
         tmp = H.Cols(cols).Rows(rows);
         for (size_t i = 0; i+bs < tmp.Height(); i++)
           tmp.Col(i).Range(i+bs, tmp.Height()) = 0.0;
-        MultiHouseholderReflectionMem Hv(SliceMatrix(Trans(tmp)), memh.Data()); 
+        MultiHouseholderReflectionMem Hv(make_SliceMatrix(Trans(tmp)), memh.Data()); 
         Hv.Mult(M.Rows(rows));
       }
   }
@@ -1178,9 +1178,9 @@ namespace ngbla
                 GivensRotation G(c, s, index[i], index[i+1]);
                 zs(i) = r;
                 zs(i+1) = 0;
-                G.Apply (SliceMatrix(Trans(Q)));
+                G.Apply (make_SliceMatrix(Trans(Q)));
                 if (i > 0)
-                  G.Apply (SliceMatrix(Trans(W))); 
+                  G.Apply (make_SliceMatrix(Trans(W))); 
               }
             else
               {

@@ -18,8 +18,12 @@ namespace ngbla
   
   
   template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
-  class SliceMatrix;
+  class MatrixView;
 
+
+  template <typename T = double, ORDERING ORD = RowMajor>
+  using SliceMatrix = MatrixView<T,ORD,size_t, size_t, size_t>;
+  
   template <typename T, typename TELEM=typename std::remove_reference_t<T>::TELEM>
   constexpr bool IsConvertibleToSliceMatrix ()
   {
@@ -31,10 +35,8 @@ namespace ngbla
       is_constructible_v<SliceMatrix<TELEM, ColMajor>,T>;
   }
   
-
-  
   template <typename T = double, ORDERING ORD = RowMajor>
-  using BareSliceMatrix = SliceMatrix<T,ORD,undefined_size, undefined_size, size_t>;
+  using BareSliceMatrix = MatrixView<T,ORD,undefined_size, undefined_size, size_t>;
 
   template <typename T, typename TELEM=typename std::remove_reference_t<T>::TELEM>
   constexpr bool IsConvertibleToBareSliceMatrix ()
@@ -761,7 +763,7 @@ namespace ngbla
 
     INLINE auto Rows (size_t i, size_t j) 
     {
-      return SliceMatrix<T, RowMajor, size_t, IC<W>, IC<W>> (j-i, IC<W>(), IC<W>(), Data()+i*Width());
+      return MatrixView<T, RowMajor, size_t, IC<W>, IC<W>> (j-i, IC<W>(), IC<W>(), Data()+i*Width());
     }
 
     INLINE auto Rows (IntRange r) 
@@ -771,7 +773,7 @@ namespace ngbla
 
     INLINE auto Cols (size_t i, size_t j) 
     {
-      return SliceMatrix<T, RowMajor, IC<H>, size_t, IC<W>> (IC<H>(), j-i, IC<W>(), Data()+i);
+      return MatrixView<T, RowMajor, IC<H>, size_t, IC<W>> (IC<H>(), j-i, IC<W>(), Data()+i);
     }
 
     INLINE auto Cols (IntRange r) 
@@ -781,7 +783,7 @@ namespace ngbla
 
     INLINE auto Rows (size_t i, size_t j) const
     {
-      return SliceMatrix<const T, RowMajor, size_t, IC<W>, IC<W>> (j-i, IC<W>(), IC<W>(), Data()+i*Width());
+      return MatrixView<const T, RowMajor, size_t, IC<W>, IC<W>> (j-i, IC<W>(), IC<W>(), Data()+i*Width());
     }
 
     INLINE auto Rows (IntRange r) const
@@ -791,7 +793,7 @@ namespace ngbla
 
     INLINE auto Cols (size_t i, size_t j) const
     {
-      return SliceMatrix<const T, RowMajor, IC<H>, size_t, IC<W>> (IC<H>(), j-i, IC<W>(), Data()+i);
+      return MatrixView<const T, RowMajor, IC<H>, size_t, IC<W>> (IC<H>(), j-i, IC<W>(), Data()+i);
     }
 
     INLINE auto Cols (IntRange r) const
@@ -935,7 +937,7 @@ namespace ngbla
 
 
   template <int W, typename T = double, int DIST=W>
-  using FlatMatrixFixWidth = SliceMatrix<T,RowMajor,size_t,IC<W>,IC<DIST>>;
+  using FlatMatrixFixWidth = MatrixView<T,RowMajor,size_t,IC<W>,IC<DIST>>;
   
 
   /**
@@ -1008,7 +1010,7 @@ namespace ngbla
 
   
   template <int H, typename T = double, int DIST=H>
-  using FlatMatrixFixHeight = SliceMatrix<T,ColMajor,IC<H>,size_t,IC<DIST>>;
+  using FlatMatrixFixHeight = MatrixView<T,ColMajor,IC<H>,size_t,IC<DIST>>;
 
 
   /**
@@ -1062,10 +1064,10 @@ namespace ngbla
 
 
   template <typename T, ORDERING ORD, typename TH, typename TW, typename TDIST>
-  class SliceMatrix : public MatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>>
+  class MatrixView : public MatExpr<MatrixView<T,ORD,TH,TW,TDIST>>
   {
   protected:
-    typedef MatExpr<SliceMatrix<T,ORD,TH,TW,TDIST>> BASE;        
+    typedef MatExpr<MatrixView<T,ORD,TH,TW,TDIST>> BASE;        
     /// the height
     NO_UNIQUE_ADDRESS TH h;
     /// the width
@@ -1082,23 +1084,23 @@ namespace ngbla
     typedef typename mat_traits<T>::TSCAL TSCAL;
     static constexpr bool IsLinear() { return false; } 
     // 
-    SliceMatrix() = default;
+    MatrixView() = default;
     // : h{0}, w{0}, dist{0}, data{nullptr} { } 
-    INLINE SliceMatrix(const SliceMatrix &) = default;
+    INLINE MatrixView(const MatrixView &) = default;
 
     template <typename T2, typename TH2, typename TW2, typename TDIST2,
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
               enable_if_t<is_constructible<TH,TH2>::value, int> =0,
               enable_if_t<is_constructible<TW,TW2>::value, int> =0,
               enable_if_t<is_constructible<TDIST,TDIST2>::value, int> =0>
-    INLINE SliceMatrix (const SliceMatrix<T2, ORD, TH2, TW2, TDIST2> & m2)
+    INLINE MatrixView (const MatrixView<T2, ORD, TH2, TW2, TDIST2> & m2)
       : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { } 
     
     /// set height, width, and mem
-    INLINE SliceMatrix (TH ah, TW aw, TDIST adist, T * adata) 
+    INLINE MatrixView (TH ah, TW aw, TDIST adist, T * adata) 
       : h(ah), w(aw), dist(adist), data(adata) { ; }
 
-    INLINE SliceMatrix (size_t s, T * adata) 
+    INLINE MatrixView (size_t s, T * adata) 
       : data(adata)
     {
       if constexpr (is_IC<TW>() && is_IC<TDIST>())
@@ -1108,9 +1110,9 @@ namespace ngbla
       else if constexpr (is_IC<TH>() && is_IC<TW>())
         dist = s;
       // else
-      // static_assert(false, "illegal 1-size ctor of SliceMatrix");
+      // static_assert(false, "illegal 1-size ctor of MatrixView");
     }
-    INLINE SliceMatrix (size_t s, LocalHeap & lh)
+    INLINE MatrixView (size_t s, LocalHeap & lh)
     {
       if constexpr (is_IC<TW>() && is_IC<TDIST>())
         h = s;
@@ -1120,7 +1122,7 @@ namespace ngbla
         dist = s;
       data = lh.Alloc<T>(h*w);
       // else
-      // static_assert(false, "illegal 1-size ctor of SliceMatrix");
+      // static_assert(false, "illegal 1-size ctor of MatrixView");
     }
 
 
@@ -1133,7 +1135,7 @@ namespace ngbla
         return val;
     }
     
-    SliceMatrix (FlatMatrix<T,ORD> mat)
+    MatrixView (FlatMatrix<T,ORD> mat)
       : h(ICOrVal<TH>(mat.Height())),
         w(ICOrVal<TW>(mat.Width())),
         dist(ICOrVal<TDIST>(mat.Dist())), data(mat.Data())
@@ -1142,20 +1144,20 @@ namespace ngbla
 
     /*
     template<int W, int DIST>
-    SliceMatrix (FlatMatrixFixInner<W,T,DIST,ORD> mat)
+    MatrixView (FlatMatrixFixInner<W,T,DIST,ORD> mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
     */
 
     template<int H, int W>
-    INLINE SliceMatrix (Mat<H,W,T> & mat)
+    INLINE MatrixView (Mat<H,W,T> & mat)
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
     {
       static_assert(ORD==RowMajor);
     }
 
     template<int H, int W>    
-    INLINE SliceMatrix(const Mat<H,W,const T> & mat) 
+    INLINE MatrixView(const Mat<H,W,const T> & mat) 
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(const_cast<T*>(mat.Data()))
     {
       static_assert(ORD==RowMajor);
@@ -1164,20 +1166,20 @@ namespace ngbla
 
     /// assign contents
     template<typename TB>
-    INLINE SliceMatrix & operator= (const Expr<TB> & m) 
+    INLINE MatrixView & operator= (const Expr<TB> & m) 
     {
       BASE::operator= (m);
       return *this;
     }
 
-    INLINE SliceMatrix & operator= (const SliceMatrix & m) 
+    INLINE MatrixView & operator= (const MatrixView & m) 
     {
       BASE::operator= (m);
       return *this;
     }
 
     /// assign constant
-    INLINE SliceMatrix & operator= (TSCAL s) 
+    INLINE MatrixView & operator= (TSCAL s) 
     {
       /*
       if (w == 0) return *this;
@@ -1271,11 +1273,11 @@ namespace ngbla
     using BASE::Rows;
     using BASE::Cols;
 
-    SliceMatrix<T,ORD> AddSize (size_t h, size_t w) const
+    MatrixView<T,ORD> AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
-      return SliceMatrix<T,ORD,size_t,size_t,size_t> (h, w, dist, data);
+      return MatrixView<T,ORD,size_t,size_t,size_t> (h, w, dist, data);
     }
 
     INLINE auto SplitRows (size_t split) const
@@ -1300,12 +1302,12 @@ namespace ngbla
 
     INLINE auto Cols (size_t first, size_t next) const
     {
-      return SliceMatrix<T,ORD,TH,size_t,TDIST>  (h, next-first, dist, Addr(0,first));
+      return MatrixView<T,ORD,TH,size_t,TDIST>  (h, next-first, dist, Addr(0,first));
     }
 
     INLINE auto Rows (size_t first, size_t next) const
     {
-      return SliceMatrix<T,ORD,size_t,TW,TDIST> (next-first, w, dist, Addr(first, 0));
+      return MatrixView<T,ORD,size_t,TW,TDIST> (next-first, w, dist, Addr(first, 0));
     }
 
     INLINE auto Rows (IntRange range) const
@@ -1337,7 +1339,7 @@ namespace ngbla
     }
 
     INLINE auto RemoveConst() const
-    { return SliceMatrix<typename remove_const<T>::type,ORD,TH,TW,TDIST>
+    { return MatrixView<typename remove_const<T>::type,ORD,TH,TW,TDIST>
         (h,w,dist, const_cast<typename remove_const<T>::type*> (data)); }
     
     void IncPtr (size_t inc) { data += inc; }  // should be only for bare
@@ -1374,7 +1376,7 @@ namespace ngbla
     // [[deprecated("Use placenement ctor: new(ptr) Matrix(n, lh); instead!")]]
     void AssignMemory (size_t s, LocalHeap & lh)
     {
-      new (this) SliceMatrix(s, lh);
+      new (this) MatrixView(s, lh);
     }
   };
 
@@ -1392,7 +1394,7 @@ namespace ngbla
   SliceMatrix<T,RowMajor> make_SliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
 
   template <typename T, ORDERING ORDER, typename TH, typename TW, typename TD>
-  SliceMatrix<T,ORDER> make_SliceMatrix (SliceMatrix<T,ORDER,TH,TW,TD> mat) { return mat; }
+  SliceMatrix<T,ORDER> make_SliceMatrix (MatrixView<T,ORDER,TH,TW,TD> mat) { return mat; }
 
 
   
@@ -1403,7 +1405,7 @@ namespace ngbla
   BareSliceMatrix<T,RowMajor> make_BareSliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
   
   template <typename T, ORDERING ORDER, typename TH, typename TW, typename TDIST>
-  BareSliceMatrix<T,ORDER> make_BareSliceMatrix (SliceMatrix<T,ORDER,TH,TW,TDIST> mat) { return mat; }
+  BareSliceMatrix<T,ORDER> make_BareSliceMatrix (MatrixView<T,ORDER,TH,TW,TDIST> mat) { return mat; }
 
 
 
@@ -1528,9 +1530,9 @@ namespace ngbla
 
   template <typename T, ORDERING ord, typename TH, typename TW, typename TD,
             typename enable_if<IsTrivialTranspose<T>(),int>::type = 0>
-  INLINE const auto Trans (SliceMatrix<T,ord,TH,TW,TD> mat)
+  INLINE const auto Trans (MatrixView<T,ord,TH,TW,TD> mat)
   {
-    return SliceMatrix<T,!ord,TW,TH,TD> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
+    return MatrixView<T,!ord,TW,TH,TD> (mat.Width(), mat.Height(), mat.Dist(), mat.Data());
   }
   
   
