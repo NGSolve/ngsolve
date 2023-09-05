@@ -1174,7 +1174,7 @@ namespace ngstd
   }
 }
 
-
+/*
 #ifdef PARALLEL
 namespace ngcore
 {
@@ -1196,5 +1196,19 @@ namespace ngcore
   };
 }
 #endif
+*/
+
+namespace ngcore
+{
+  template<typename T> struct MPI_typetrait;
+  
+  template<int S, typename T>
+  struct MPI_typetrait<ngbla::Vec<S, T> > {
+    static auto MPIType () {
+      return MPI_typetrait<std::array<T,S>>::MPIType();
+    }
+  };
+}
+
 
 #endif
