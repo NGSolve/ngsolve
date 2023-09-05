@@ -1995,7 +1995,7 @@ namespace ngstd
   }
 }
 
-/*
+
 #ifdef PARALLEL
 namespace ngcore
 {
@@ -2018,8 +2018,8 @@ namespace ngcore
   };
 }
 #endif
-*/
 
+/*
 namespace ngcore
 {
   template<typename T>
@@ -2032,7 +2032,7 @@ namespace ngcore
     }
   };
 }
-
+*/
 
 
 #endif
