@@ -1995,7 +1995,7 @@ namespace ngstd
   }
 }
 
-
+/*
 #ifdef PARALLEL
 namespace ngcore
 {
@@ -2016,9 +2016,23 @@ namespace ngcore
       return MPI_T;
     }
   };
-  
-
 }
 #endif
+*/
+
+namespace ngcore
+{
+  template<typename T>
+  struct MPI_typetrait;
+
+  template<int N, int M, typename T>
+  struct MPI_typetrait<ngbla::Mat<N,M,T> > {
+    static auto MPIType () {
+      return MPI_typetrait<std::array<T,N*M>>::MPIType();
+    }
+  };
+}
+
+
 
 #endif
