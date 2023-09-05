@@ -1393,9 +1393,12 @@ namespace ngbla
   template <int H, int W, typename T>
   SliceMatrix<T,RowMajor> make_SliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
 
+  /*
   template <typename T, ORDERING ORDER, typename TH, typename TW, typename TD>
   SliceMatrix<T,ORDER> make_SliceMatrix (MatrixView<T,ORDER,TH,TW,TD> mat) { return mat; }
-
+  */
+  template <typename T, ORDERING ORDER, typename ...Args>
+  SliceMatrix<T,ORDER> make_SliceMatrix (MatrixView<T, ORDER, Args...> mat) { return mat; }
 
   
   template <typename T, ORDERING ORDER>

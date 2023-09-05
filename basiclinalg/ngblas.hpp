@@ -743,12 +743,12 @@ namespace ngbla
 
   
   // x = y
-  template <typename OP, typename T, typename TS, typename TD, typename TB, typename TBS, typename TBD>
-  class assign_trait<OP, VectorView<T,TS,TD>, VectorView<TB,TBS,TBD>, 
-                     enable_if_t<std::is_same_v<OP,typename MatExpr<VectorView<T,TS,TD>>::As> == true, int>>
+  template <typename OP, typename T, typename ...Args, typename TB, typename ...BArgs>
+  class assign_trait<OP, VectorView<T,Args...>, VectorView<TB, BArgs...>, 
+                     enable_if_t<std::is_same_v<OP,typename MatExpr<VectorView<T,Args...>>::As> == true, int>>
   {
-    typedef VectorView<T,TS,TD> TVec;
-    typedef VectorView<TB,TBS,TBD> TVecB;
+    typedef VectorView<T,Args...> TVec;
+    typedef VectorView<TB, BArgs...> TVecB;
   public:
     static inline auto & Assign (MatExpr<TVec> & self, const Expr<TVecB> & v)
     {
