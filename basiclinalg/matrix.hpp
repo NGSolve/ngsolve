@@ -8,7 +8,6 @@
 /**************************************************************************/
 
 
-#include <core/archive.hpp>
 #include "expr.hpp"
 #include "vector.hpp"
 
@@ -549,7 +548,8 @@ namespace ngbla
     /// delete memory
     ~Matrix() { delete [] this->data; }
 
-    void DoArchive( Archive & ar )
+    template <typename ARCHIVE>
+    void DoArchive (ARCHIVE & ar)
     {
       ar & this->h & this->w;
       if(ar.Input())
