@@ -1,0 +1,36 @@
+deploy_github:
+  stage: deploy
+  tags:
+    - deploy
+  script:
+    - git remote add github git@github.com:NGSolve/ngsolve.git || true
+    - git remote update
+    - git checkout --track origin/master
+    - git pull origin master
+    - git push github master
+  only:
+    - master
+
+deploy_release:
+  stage: deploy
+  tags:
+    - deploy
+  script:
+    - git remote add github git@github.com:NGSolve/ngsolve.git || true
+    - git push github $CI_BUILD_TAG
+    - source tests/gitlab-ci/deploy/release.sh
+  only:
+    - tags
+  environment: deploy_release
+
+deploy_nightly:
+  stage: deploy
+  tags:
+    - deploy
+  script:
+    - source tests/gitlab-ci/deploy/nightly.sh
+  only:
+    - schedules
+  except:
+    - tags
+  environment: deploy_nigthly
