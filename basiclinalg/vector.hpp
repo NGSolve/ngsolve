@@ -1175,6 +1175,7 @@ namespace ngstd
 }
 
 
+/*
 #ifdef PARALLEL
 namespace ngcore
 {
@@ -1196,8 +1197,8 @@ namespace ngcore
   };
 }
 #endif
+*/
 
-/*
 namespace ngcore
 {
   template<typename T> struct MPI_typetrait;
@@ -1209,6 +1210,5 @@ namespace ngcore
     }
   };
 }
-*/
 
 #endif
