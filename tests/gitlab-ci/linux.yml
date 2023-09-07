@@ -1,0 +1,122 @@
+
+############################################
+# Linux
+############################################
+.template_ubuntu: &ubuntu
+  tags:
+    - linux
+    - docker
+    - avx
+    - bash
+
+.template_ubuntu_avx: &ubuntu_avx
+  <<: *ubuntu
+  variables:
+    IMAGE_NAME: "avx"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+  only:
+    - schedules
+    - tags
+
+.template_ubuntu_avx512: &ubuntu_avx512
+  tags:
+    - docker
+    - avx512
+  variables:
+    IMAGE_NAME: "avx512"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+
+.template_ubuntu_debug: &ubuntu_debug
+  <<: *ubuntu
+  variables:
+    IMAGE_NAME: "debug"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+
+.template_ubuntu_mpi: &ubuntu_mpi
+  <<: *ubuntu
+  variables:
+    IMAGE_NAME: "mpi"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LATEST
+
+.template_build_linux: &build_linux
+  stage: build
+  script:
+    - source tests/gitlab-ci/ubuntu/build.sh
+  artifacts:
+    when: always
+    paths:
+      - logs/
+
+ubuntu_avx_build:
+  <<: *ubuntu_avx
+  <<: *build_linux
+
+.ubuntu_avx512_build:
+  <<: *ubuntu_avx512
+  <<: *build_linux
+
+ubuntu_debug_build:
+  <<: *ubuntu_debug
+  <<: *build_linux
+
+ubuntu_mpi_build:
+  <<: *ubuntu_mpi
+  <<: *build_linux
+
+.template_test_linux: &test_linux
+  stage: test
+  script:
+    - source tests/gitlab-ci/ubuntu/test.sh
+
+ubuntu_avx_test:
+  <<: *ubuntu_avx
+  <<: *test_linux
+  needs: ["ubuntu_avx_build"]
+
+.ubuntu_avx512_test:
+  <<: *ubuntu_avx512
+  <<: *test_linux
+  needs: ["ubuntu_avx512_build"]
+
+ubuntu_debug_test:
+  <<: *ubuntu_debug
+  <<: *test_linux
+  needs: ["ubuntu_debug_build"]
+
+ubuntu_mpi_test:
+  <<: *ubuntu_mpi
+  <<: *test_linux
+  needs: ["ubuntu_mpi_build"]
+
+linux_cleanup:
+  stage: cleanup
+  tags:
+    - linux
+    - docker
+    - avx
+    - bash
+  script:
+    - source tests/gitlab-ci/ubuntu/cleanup.sh
+  when: always
+  allow_failure: true
+
+.linux_cleanup_avx512:
+  stage: cleanup
+  tags:
+    - docker
+    - avx512
+  script:
+    - source tests/gitlab-ci/ubuntu/cleanup.sh
+  when: always
+  allow_failure: true
+
+docu_test:
+  <<: *ubuntu
+  <<: *build_linux
+  variables:
+    IMAGE_NAME: "avx"
+    UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+  when: manual
+  after_script:
+    - /home/gitlab-runner/deploy/deploy_docu_test.sh $CI_PIPELINE_ID
+
