@@ -1612,6 +1612,30 @@ namespace ngcomp
     return std::move(tree);
   }
 
+  void MeshAccess :: RefineFromTree(const Array<uint64_t> & tree)
+  {
+    uint64_t ref_level = 1;
+    while(true)
+      {
+        bool any_next = false;
+        for(auto ei : Elements())
+          {
+            auto code = tree[ei.Nr()];
+            // if there is refinement at that level
+            bool refine = code >> ref_level;
+            // and I'm not a child
+            refine &= ~(code & 1);
+            SetRefinementFlag(ei,refine);
+            // will there be refinement at the next level?
+            any_next |= code >> (ref_level+1);
+          }
+        Refine(true);
+        ref_level++;
+        if(!any_next)
+          break;
+      }
+  }
+
   template <int DIM>
   ElementTransformation & MeshAccess :: 
   GetTrafoDim (size_t elnr, Allocator & lh) const
