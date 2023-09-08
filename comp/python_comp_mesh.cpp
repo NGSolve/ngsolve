@@ -879,6 +879,8 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          },
          py::arg("fnum"),
          "Return parent faces")
+
+    .def("BuildRefinementTree", &MeshAccess::BuildRefinementTree)
     
     .def("GetHPElementLevel", &MeshAccess::GetHPElementLevel,
          py::arg("ei"),
