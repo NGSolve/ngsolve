@@ -1315,42 +1315,42 @@ mins, maxs and origin are given as tuples/lists)raw_string")
           int dim = dim1 + dim2;
           Vector<int> vdims1;
           Vector<int> vdims2;
-          
-          if (py::extract<double>(dims1).check())
-          {
-            vdims1.SetSize(1);
-            vdims1=py::extract<double>(dims1)();
-          }
-          else if (py::extract<py::tuple>(dims1).check())
-          {
-            py::tuple tdims1(dims1);
-            vdims1.SetSize(py::len(tdims1));
-            for (int j : Range(py::len(tdims1)))
-              vdims1(j)=py::extract<double>(tdims1[j])();
-          }
-          else 
+
+          if(dims1.is_none())
           {
             vdims1.SetSize(dim1);
             for (int j : Range(dim1))
               vdims1(j)=j+1;
           }
-          if (py::extract<double>(dims2).check())
+          else if(py::isinstance<py::tuple>(dims1))
           {
-            vdims2.SetSize(1);
-            vdims2=py::extract<double>(dims2)();
-          }
-          else if (py::extract<py::tuple>(dims2).check())
-          {
-            py::tuple tdims2(dims2);
-            vdims2.SetSize(py::len(tdims2));
-            for (int j : Range(py::len(tdims2)))
-              vdims2(j)=py::extract<double>(tdims2[j])();
+            auto tdims1 = py::cast<py::tuple>(dims1);
+            vdims1.SetSize(py::len(tdims1));
+            for (int j : Range(py::len(tdims1)))
+              vdims1(j)=py::cast<double>(tdims1[j]);
           }
           else
+          {
+            vdims1.SetSize(1);
+            vdims1=py::cast<double>(dims1);
+          }
+          if(dims2.is_none())
           {
             vdims2.SetSize(dim2);
             for (int j : Range(dim2))
               vdims2(j)=j+dim1+1;
+          }
+          else if (py::isinstance<py::tuple>(dims2))
+          {
+            auto tdims2 = py::cast<py::tuple>(dims2);
+            vdims2.SetSize(py::len(tdims2));
+            for (int j : Range(py::len(tdims2)))
+              vdims2(j)=py::cast<double>(tdims2[j]);
+          }
+          else
+          {
+            vdims2.SetSize(1);
+            vdims2=py::cast<double>(dims2);
           }
           if (vdims1.Size()!=dim1 || vdims2.Size()!=dim2)
           {
@@ -1389,7 +1389,7 @@ mins, maxs and origin are given as tuples/lists)raw_string")
           throw Exception("No valid dimension");
         },
         py::arg("pml1"),py::arg("pml2"), 
-        py::arg("dims1")=DummyArgument(),py::arg("dims2")=DummyArgument(),
+        py::arg("dims1")=py::none(),py::arg("dims2")=py::none(),
         R"raw_string(tensor product of two pml transformations
 
         dimensions are optional, given as tuples/lists and start with 1)raw_string")
