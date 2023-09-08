@@ -1595,11 +1595,24 @@ namespace ngcomp
       return pml_trafos[_domnr];
     }
     
+  Array<uint64_t> MeshAccess :: BuildRefinementTree() const
+  {
+    Array<uint64_t> tree;
+    tree.SetSize(GetNE());
+    tree = 1;
+    for(auto ei : Elements(VOL))
+      {
+        auto parent = GetParentElement(ei);
+        cout << "check element " << ei.Nr() << " with parent " << parent.Nr() << endl;
+        if(parent.Nr() != size_t(-1))
+          {
+            tree[parent.Nr()] = tree[parent.Nr()] << 1;
+            tree[ei.Nr()] = tree[parent.Nr()] + 1;
+          }
+      }
+    return std::move(tree);
+  }
 
-
-
-
-  
   template <int DIM>
   ElementTransformation & MeshAccess :: 
   GetTrafoDim (size_t elnr, Allocator & lh) const
