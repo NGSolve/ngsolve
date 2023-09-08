@@ -987,6 +987,7 @@ namespace ngcomp
     auto GetParentFaces (int fnr) const { return mesh.GetParentFaces(fnr); }
 
     Array<uint64_t> BuildRefinementTree() const;
+    void RefineFromTree(const Array<uint64_t> & tree);
 
     /// representant of vertex for anisotropic meshes
     int GetClusterRepVertex (int pi) const
