@@ -227,8 +227,7 @@ namespace ngbla
       for (size_t i = 0; i < cs; i++)
       data[i*dist] = v(i);
       */
-      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);  // not working ?
-      this->template Assign<typename MatExpr<VectorView<T,TS,TDIST>>::As> (v);      
+      this->template Assign<typename BASE::As> (v);      
       return *this;
     }
     INLINE auto & operator= (VectorView && v)
@@ -238,7 +237,6 @@ namespace ngbla
       for (size_t i = 0; i < cs; i++)
         data[i*dist] = v(i);
       */
-      // CMCPMatExpr<VectorView<T,TS,TDIST>>::operator= (v);  // not working ?
       this->template Assign<typename BASE::As> (v);
       return *this;
     }
@@ -247,14 +245,16 @@ namespace ngbla
     template <typename ...Args>
     INLINE auto & operator= (const VectorView<Args...> & v) 
     {
-      BASE::operator= (v);
+      // BASE::operator= (v);
+      this->template Assign<typename BASE::As> (v);      
       return *this;
     }
     
     template<typename TB>
     INLINE auto & operator= (const Expr<TB> & v) 
     {
-      BASE::operator= (v);
+      // BASE::operator= (v);
+      this->template Assign<typename BASE::As> (v);            
       return *this;
     }
 
@@ -701,18 +701,9 @@ namespace ngbla
       data[I] = v;
     }
 
-    /*
-    template <class... T2>
-    Vec(const TELEM &v, T2... rest) {
-      static_assert(S==1+sizeof...(rest),"Vec<S> ctor with wrong number of arguments called");
-      Set<0>(v, rest...);
-    }
-    */
-
     template <class... T2,
-              typename enable_if<S==1+sizeof...(T2),int>::type=0>
+              enable_if_t<S==1+sizeof...(T2),bool> = true>
     Vec(const TELEM &v, T2... rest) {
-      // static_assert(S==1+sizeof...(rest),"Vec<S> ctor with wrong number of arguments called");
       Set<0>(v, rest...);
     }
   
@@ -875,8 +866,6 @@ namespace ngbla
       
   /// cross product of 3-vectors
   template <typename TA, typename TB,
-            // std::enable_if_t<ConstVectorSize<TA>() == 3, bool> = true,
-            // std::enable_if_t<ConstVectorSize<TB>() == 3, bool> = true>
             std::enable_if_t<ConstVecSize<TA>::VSIZE == 3, bool> = true,
             std::enable_if_t<ConstVecSize<TB>::VSIZE == 3, bool> = true>
   INLINE auto Cross (const TA & a, const TB & b)
@@ -884,16 +873,6 @@ namespace ngbla
     typedef decltype (a(0)*b(0)) T;
     return Vec<3,T>({ a(1)*b(2)-a(2)*b(1), a(2)*b(0)-a(0)*b(2), a(0)*b(1)-a(1)*b(0) });
   }
-
-  /*
-  /// cross product
-  template <typename S>
-  INLINE Vec<3,S> Cross (const Vec<3,S> & a, const Vec<3,S> & b)
-  {
-    return Vec<3,S>({ a(1)*b(2)-a(2)*b(1), a(2)*b(0)-a(0)*b(2), a(0)*b(1)-a(1)*b(0) });
-  }
-  */
-
 
   template <typename S>
   INLINE Vec<1,S> Cross (const Vec<2,S> & a, const Vec<2,S> & b)
