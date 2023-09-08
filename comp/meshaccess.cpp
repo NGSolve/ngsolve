@@ -1603,7 +1603,6 @@ namespace ngcomp
     for(auto ei : Elements(VOL))
       {
         auto parent = GetParentElement(ei);
-        cout << "check element " << ei.Nr() << " with parent " << parent.Nr() << endl;
         if(parent.Nr() != size_t(-1))
           {
             tree[parent.Nr()] = tree[parent.Nr()] << 1;
