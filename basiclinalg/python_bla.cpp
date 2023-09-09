@@ -34,7 +34,7 @@ void PyDefVecBuffer( TCLASS & c )
         // return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype());
         auto frombuffer = numpy.attr("asarray");
         return frombuffer(self, py::detail::npy_format_descriptor<TSCAL>::dtype());
-      }, "Return NumPy object");
+    }, py::keep_alive<0,1>(), "Return NumPy object");
 }
 
 template<typename T, typename TCLASS>
