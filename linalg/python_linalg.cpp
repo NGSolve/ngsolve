@@ -577,7 +577,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                     return py::cast(self.FVDouble());
                                   else
                                     return py::cast(self.FVComplex());
-                                })
+                                }, py::keep_alive<0,1>())
     .def("Reshape", [] (BaseVector & self, size_t w)
          {
            size_t h = self.Size()/w;
