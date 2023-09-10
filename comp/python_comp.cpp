@@ -3057,7 +3057,11 @@ integrator : ngsolve.fem.LFI
                      "  Inverse type used in Preconditioner.",
                      py::arg("test") = "bool = False\n"
                      "  Computes condition number for preconditioner, if testout file\n"
-                     "  is set, prints eigenvalues to file."
+                     "  is set, prints eigenvalues to file.",
+                     py::arg("block") = "\n"
+                     "  use block-Jacobi/block-Gauss-Seidel",
+                     py::arg("blocktype") = "\n"
+                     "  blocktype like 'vertexpatch', 'edgepatch', ..."
                      );
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
