@@ -225,7 +225,8 @@ public:
       "  Remove high order element bubbles with non zero divergence";
     docu.Arg("RT") = "bool = False\n"
       "  RT elements for simplicial elements: P^k subset RT_k subset P^{k+1}";
-
+    docu.Arg("orderinner") = "optional<int> = undefined\n"
+      "  order for inner space if defined, otherwise use order for orderinner";
     return docu;
   }
   
