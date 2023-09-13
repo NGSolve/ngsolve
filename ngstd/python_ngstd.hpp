@@ -46,6 +46,15 @@ namespace ngstd {
           cls.def(name, std::forward<TFunc>(f), std::forward<T>(args)...);
       return cls;
   }
+
+  template<typename T, typename TOffset>
+  auto getNumpyFieldDescriptor(const char *name, TOffset offset) {
+      return py::detail::field_descriptor {
+                          name, static_cast<py::ssize_t>(offset), sizeof(T),
+                          py::format_descriptor<T>::format(),
+                          py::detail::npy_format_descriptor<T>::dtype()
+      };
+  }
 }
 
 using namespace ngstd;
