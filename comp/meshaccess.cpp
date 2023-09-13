@@ -1615,21 +1615,39 @@ namespace ngcomp
   void MeshAccess :: RefineFromTree(const Array<uint64_t> & tree)
   {
     uint64_t ref_level = 1;
+    Array<size_t> elmap(GetNE());
+    // due to closeure of refinement on each level there can be additional
+    // element created. Use this elmap to exclude them from the tree
+    for(auto i : Range(GetNE()))
+      elmap[i] = i;
+
+    size_t child_elnr = GetNE();
     while(true)
       {
         bool any_next = false;
         for(auto ei : Elements())
           {
-            auto code = tree[ei.Nr()];
+            if (elmap[ei.Nr()] == size_t(-1)) {
+              SetRefinementFlag(ei, false);
+              continue;
+            }
+            auto code = tree[elmap[ei.Nr()]];
             // if there is refinement at that level
             bool refine = code >> ref_level;
             // and I'm not a child
             refine &= ~(code & 1);
             SetRefinementFlag(ei,refine);
+            if(refine)
+              elmap.Append(child_elnr++);
+
             // will there be refinement at the next level?
             any_next |= code >> (ref_level+1);
           }
         Refine(true);
+        auto old_size = elmap.Size();
+        elmap.SetSize(GetNE());
+        for(auto i : Range(old_size, elmap.Size()))
+          elmap[i] = -1;
         ref_level++;
         if(!any_next)
           break;
