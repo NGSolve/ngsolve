@@ -9,8 +9,6 @@ ngsolve.bla .... simple vectors and matrices
 ngsolve.fem .... finite elements and integrators
 ngsolve.comp ... function spaces, forms
 """
-import pkg_resources
-import ctypes
 import atexit
 import os, sys
 
@@ -24,6 +22,7 @@ if config.is_python_package and sys.platform.startswith('win'):
     os.environ["PATH"] += os.pathsep + netgen_dir
 
 if config.is_python_package and config.USE_MKL:
+    import ctypes
     import importlib.metadata
     for f in importlib.metadata.files('intel_openmp'):
         if f.match('*libiomp?.so'):
