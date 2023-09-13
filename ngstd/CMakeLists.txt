@@ -7,10 +7,6 @@ add_library( ngstd ${NGS_LIB_TYPE}
         bspline.cpp ngs_utils.cpp
         )
 
-if(NOT WIN32)
-    target_sources(ngstd PRIVATE sockets.cpp)
-endif(NOT WIN32)
-
 target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})
 target_compile_definitions(ngstd PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 target_compile_options(ngstd PUBLIC ${NGSOLVE_COMPILE_OPTIONS})
@@ -30,7 +26,6 @@ install( FILES
         memusage.hpp ngstd.hpp
         stringops.hpp templates.hpp
         statushandler.hpp ngsstream.hpp 
-        sockets.hpp
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
         bspline.hpp sample_sort.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
