@@ -51,10 +51,6 @@ namespace ngstd
 #include "stringops.hpp"
 #include "statushandler.hpp"
 
-#ifndef WIN32
-#include "sockets.hpp"
-#endif
-
 namespace ngstd
 {
 #ifdef WIN32
