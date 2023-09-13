@@ -425,6 +425,24 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
           }
         else
           dc_pairs.SetSize0 ();
+
+        if (discont)
+          {
+            ndof = 0;
+            for(auto i : Range(nel))
+              {
+                ElementId ei(BND, i);
+                int incii = first_inner_dof[i+1] - first_inner_dof[i];
+                auto elfacets = ma->GetElEdges(ei);
+                if(DefinedOn(ei))
+                  for(const auto& facet : elfacets)
+                    incii += first_facet_dof[facet+1] - first_facet_dof[facet] + 1;
+                first_inner_dof[i] = ndof;
+                ndof += incii;
+              }
+            first_inner_dof[nel] = ndof;
+            first_facet_dof = 0;
+          }
       }
     else
       {
@@ -494,6 +512,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
        {
 	 if(ma->GetElType(ei) == ET_SEGM)
           {
+            if(!DefinedOn(ei) || discont) return *new (alloc) HDivNormalDummyFE<ET_SEGM>();
 	    Ngs_Element ngel = ma->GetElement(ei);
 	    //HDivHighOrderNormalFiniteElement<1> * hofe = new (alloc)HDivHighOrderNormalFiniteElement<1>();
 	    auto * fe = new (alloc)HDivHighOrderNormalSegm<TrigExtensionMonomial>(order);
@@ -519,6 +538,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     FiniteElement & HDivHighOrderSurfaceFESpace::T_GetSFE(ElementId ei, bool onlyhdiv, Allocator & lh) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
+    if(!DefinedOn(ngel)) return *new (lh) HDivDummyFE<ET>();
     HDivHighOrderFE<ET>* hofe = new (lh)HDivHighOrderFE<ET>();
     hofe->SetOrderInner(order_inner[ei.Nr()][0]);
     hofe->SetVertexNumbers(ngel.Vertices());
@@ -558,6 +578,13 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
   void HDivHighOrderSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {    
     dnums.SetSize0();
+    if(!DefinedOn(ei)) return;
+    if(discont)
+      {
+        if(ei.VB() == BND)
+          dnums += GetElementDofs(ei.Nr());
+        return;
+      }
     if(ei.VB()==VOL)
       {
 	dnums.SetSize0();
@@ -592,11 +619,6 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 	    	    
 	    //inner
 	    dnums += GetElementDofs (ei.Nr());
-	  }
-	
-	if (!DefinedOn (ei))
-	  {
-	    dnums.SetSize0();	  
 	  }
       }
     else if (ei.VB()==BBND)
