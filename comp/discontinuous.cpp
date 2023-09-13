@@ -26,6 +26,8 @@ namespace ngcomp {
       integrator[vorb] = space->GetIntegrator(vorb);
     }    
     iscomplex = space->IsComplex();
+    for(auto vb : Range(4))
+      definedon[vb] = space->DefinedOn(VorB(vb));
     /*
       // not yet implemented ...
       if (space->LowOrderFESpacePtr() && false)
@@ -43,8 +45,12 @@ namespace ngcomp {
     FESpace::Update();
     
     first_element_dof.SetSize(ma->GetNE(vb)+1);
-    for (auto el : space->Elements(vb))
-      first_element_dof[el.Nr()] = el.GetFE().GetNDof();
+    LocalHeap lh(10000, "discontinuous lh");
+    // fes->Elements only iterates over definedon elements, here we need all!
+    for (auto i : Range(ma->GetNE(vb))) {
+      HeapReset hr(lh);
+      first_element_dof[i] = space->GetFE(ElementId(vb, i), lh).GetNDof();
+    }
 
     size_t ndof = 0;
     for (size_t i : Range(ma->GetNE(vb)))
