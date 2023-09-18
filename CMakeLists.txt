@@ -163,6 +163,19 @@ include_directories (BEFORE
   )
 include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
+add_library(netgen_libs INTERFACE)
+install(TARGETS netgen_libs ${ngs_install_dir})
+if(EMSCRIPTEN AND NETGEN_PYTHON)
+  # special build: leave dependencies open, just pass build flags
+  target_compile_options(netgen_libs INTERFACE $<TARGET_PROPERTY:ngcore,INTERFACE_COMPILE_OPTIONS>)
+  target_compile_definitions(netgen_libs INTERFACE $<TARGET_PROPERTY:ngcore,INTERFACE_COMPILE_DEFINITIONS>)
+  target_include_directories(netgen_libs INTERFACE $<TARGET_PROPERTY:ngcore,INTERFACE_INCLUDE_DIRECTORIES>)
+  target_compile_options(netgen_libs INTERFACE $<TARGET_PROPERTY:nglib,INTERFACE_COMPILE_OPTIONS>)
+else(EMSCRIPTEN AND NETGEN_PYTHON)
+  target_link_libraries(netgen_libs INTERFACE nglib ngcore)
+endif(EMSCRIPTEN AND NETGEN_PYTHON)
+
+
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 if(NETGEN_USE_GUI)
   if(NOT NGSOLVE_INSTALL_DIR_TCL)
@@ -181,11 +194,13 @@ endif()
 
 if(EMSCRIPTEN)
     set(NGS_LIB_TYPE OBJECT)
+    set(NGSOLVE_LIB_TYPE OBJECT)
 elseif(WIN32)
     add_definitions(-DNGS_EXPORTS)
 
     # build convenience (aka object) libraries in windows)
     set(NGS_LIB_TYPE OBJECT)
+    set(NGSOLVE_LIB_TYPE SHARED)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
@@ -197,6 +212,7 @@ elseif(WIN32)
 
 else(WIN32)
     set(NGS_LIB_TYPE SHARED)
+    set(NGSOLVE_LIB_TYPE SHARED)
     list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
 endif(WIN32)
 if(APPLE)
