@@ -34,3 +34,14 @@ pip_windows:
     - .\tests\build_pip.ps1 C:\Python311
   when: manual
 
+pip_pyodide:
+  stage: build
+  tags:
+    - bash
+    - avx
+    - linux
+    - docker
+  script:
+    - ./tests/gitlab-ci/pyodide/build.sh
+  when: manual
+
