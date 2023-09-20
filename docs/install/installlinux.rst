@@ -28,7 +28,7 @@ The following line should update/install all prerequisites on Ubuntu (you need r
 
 .. code:: bash
 	    
-   sudo apt-get update && sudo apt-get -y install python3 python3-distutils python3-tk libpython3-dev libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev liblapacke-dev
+   sudo apt-get update && sudo apt-get -y install python3 python3-distutils python3-tk libpython3-dev libxmu-dev tk-dev tcl-dev cmake git g++ libglu1-mesa-dev liblapacke-dev libocct-data-exchange-dev libocct-draw-dev occt-misc libtbb-dev libxi-dev
 
 Getting the source
 ******************
