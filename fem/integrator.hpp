@@ -220,28 +220,22 @@ namespace ngfem
 
     void UnSetIntegrationAlongCurve ( void );
 
-    int NumCurvePoints(void) const
+    virtual int NumCurvePoints() const
     { return curve_ips.Size(); }
 
-    FlatVector<double> & CurvePoint(const int i)
+    virtual FlatVector<double> CurvePoint(int i)
     { return *(curve_ips[i]); }
 
-    const FlatVector<double> & CurvePoint(const int i) const
-    { return *(curve_ips[i]); }
-
-    FlatVector<double> & CurvePointTangent(const int i)
+    virtual FlatVector<double> CurvePointTangent(int i)
     { return *(curve_ip_tangents[i]); }
 
-    const FlatVector<double> & CurvePointTangent(const int i) const
-    { return *(curve_ip_tangents[i]); }
+    virtual int GetNumCurveParts() const;
+    virtual int GetStartOfCurve(int i) const;
+    virtual int GetEndOfCurve(int i) const;
 
-    int GetNumCurveParts(void) const;
-    int GetStartOfCurve(const int i) const;
-    int GetEndOfCurve(const int i) const;
-
-    void AppendCurvePoint(const FlatVector<double> & point);
-    void AppendCurvePoint(const FlatVector<double> & point, const FlatVector<double> & tangent);
-    void SetCurveClearance(void);
+    virtual void AppendCurvePoint(const FlatVector<double> & point);
+    virtual void AppendCurvePoint(const FlatVector<double> & point, const FlatVector<double> & tangent);
+    virtual void SetCurveClearance();
 
 
   
@@ -1611,42 +1605,66 @@ namespace ngfem
         is_curve_integrator = lfi->IntegrationAlongCurve();
     }
 
-    virtual VorB VB () const
+    VorB VB () const override
     { return lfi->VB(); }
 
-
-    virtual void 
+    void
     CalcElementVector (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<double> elvec,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
-    virtual void 
+    void
     CalcElementVector (const FiniteElement & bfel, 
 		       const ElementTransformation & eltrans, 
 		       FlatVector<Complex> elvec,
-		       LocalHeap & lh) const;
+		       LocalHeap & lh) const override;
 
-    virtual void
+    void
     CalcElementVectorIndependent (const FiniteElement & gfel,
 				      const BaseMappedIntegrationPoint & s_mip,
 				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<double> & elvec,
 				      LocalHeap & lh,
-				      const bool curveint = false) const;
+				      const bool curveint = false) const override;
 
-    virtual void
+    void
     CalcElementVectorIndependent (const FiniteElement & gfel,
 				      const BaseMappedIntegrationPoint & s_mip,
 				      const BaseMappedIntegrationPoint & g_mip,
 				      FlatVector<Complex> & elvec,
 				      LocalHeap & lh,
-				      const bool curveint = false) const;
+				      const bool curveint = false) const override;
 
-    virtual string Name () const
+    string Name () const override
     {
       return string ("CompoundIntegrator (") + lfi->Name() + ")";
     }
+
+    int NumCurvePoints() const override { return lfi->NumCurvePoints(); }
+    FlatVector<double> CurvePoint(int i) override
+    { return lfi->CurvePoint(i); }
+    FlatVector<double> CurvePointTangent(int i) override
+    { return lfi->CurvePointTangent(i); }
+    int GetNumCurveParts() const override
+    { return lfi->GetNumCurveParts(); }
+    int GetStartOfCurve(int i) const override
+    { return lfi->GetStartOfCurve(i); }
+    int GetEndOfCurve(int i) const override
+    { return lfi->GetEndOfCurve(i); }
+
+    void AppendCurvePoint(const FlatVector<double> & point) override
+    { lfi->AppendCurvePoint(point); }
+    void AppendCurvePoint(const FlatVector<double> & point,
+                          const FlatVector<double> & tangent) override
+    { lfi->AppendCurvePoint(point, tangent); }
+    void SetCurveClearance() override
+    { lfi->SetCurveClearance(); }
+    void SetCacheComp(const int comp) override
+    { cachecomp = comp; }
+    int CacheComp() const override
+    { return lfi->CacheComp(); }
+
   };
 
 
