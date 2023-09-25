@@ -431,7 +431,7 @@ namespace ngfem
     /// calculates matrix on reference element
     
     // dimension on refelement (e.g. 2 for surface gradient)
-    virtual int DimRef() const; 
+    NGS_DLL_HEADER virtual int DimRef() const;
     
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
