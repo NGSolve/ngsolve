@@ -330,25 +330,29 @@ namespace ngbla
 
     INLINE auto Row (size_t r) const
     {
-      return RowExpr<const T> (static_cast<const T&> (*this), r);
+      // return RowExpr<const T> (static_cast<const T&> (*this), r);
+      return RowExpr<const T> (this->View(), r);
     }
 
     INLINE auto Col (size_t r) const
     {
-      return ColExpr<const T> (static_cast<const T&> (*this), r);
+      // return ColExpr<const T> (static_cast<const T&> (*this), r);
+      return ColExpr<const T> (this->View(), r);
     }
 
 
     INLINE SubMatrixExpr<T>
     Rows (size_t first, size_t next) const
     { 
-      return SubMatrixExpr<T> (static_cast<T&> (*this), first, 0, next-first, Width()); 
+      // return SubMatrixExpr<T> (static_cast<T&> (*this), first, 0, next-first, Width());
+      return SubMatrixExpr<T> (this->View(), first, 0, next-first, Width()); 
     }
 
     INLINE SubMatrixExpr<T>
     Cols (size_t first, size_t next) const
     { 
-      return SubMatrixExpr<T> (static_cast<T&> (*this), 0, first, Height(), next-first);
+      // return SubMatrixExpr<T> (static_cast<T&> (*this), 0, first, Height(), next-first);
+      return SubMatrixExpr<T> (this->View(), 0, first, Height(), next-first);
     }
 
     INLINE SubMatrixExpr<T>
@@ -779,13 +783,15 @@ namespace ngbla
     SubMatrixExpr<const T>
     INLINE Rows (size_t first, size_t next) const
     { 
-      return SubMatrixExpr<const T> (static_cast<const T&> (*this), first, 0, next-first, Width()); 
+      // return SubMatrixExpr<const T> (static_cast<const T&> (*this), first, 0, next-first, Width());
+      return SubMatrixExpr<const T> (this->View(), first, 0, next-first, Width()); 
     }
 
     SubMatrixExpr<const T>
     INLINE Cols (size_t first, size_t next) const
     { 
-      return SubMatrixExpr<const T> (static_cast<const T&> (*this), 0, first, Height(), next-first);
+      // return SubMatrixExpr<const T> (static_cast<const T&> (*this), 0, first, Height(), next-first);
+      return SubMatrixExpr<const T> (this->View(), 0, first, Height(), next-first);
     }
 
     SubMatrixExpr<const T>
@@ -1230,11 +1236,11 @@ namespace ngbla
   template <class TA> 
   class SubMatrixExpr : public MatExpr<SubMatrixExpr<TA> >
   {
-    TA & a;
+    TA a;
     size_t first_row, first_col;
     size_t height, width;
   public:
-    SubMatrixExpr (TA & aa, size_t fr, size_t fc, size_t ah, size_t aw) 
+    SubMatrixExpr (TA aa, size_t fr, size_t fc, size_t ah, size_t aw) 
       : a(aa), first_row(fr), first_col(fc), height(ah), width(aw) { ; }
 
     INLINE size_t Height() const { return height; }
@@ -1268,10 +1274,10 @@ namespace ngbla
   template <class TA> 
   class RowExpr : public MatExpr<RowExpr<TA> >
   {
-    TA & a;
+    TA a;
     size_t row;
   public:
-    RowExpr (TA & aa, size_t r)
+    RowExpr (TA aa, size_t r)
       : a(aa), row(r) { ; }
 
     INLINE size_t Height() const { return 1; }
@@ -1300,10 +1306,10 @@ namespace ngbla
   template <class TA> 
   class ColExpr : public MatExpr<ColExpr<TA> >
   {
-    TA & a;
+    TA a;
     size_t col;
   public:
-    ColExpr (TA & aa, size_t c)
+    ColExpr (TA aa, size_t c)
       : a(aa), col(c) { ; }
 
     INLINE size_t Height() const { return a.Height(); }
