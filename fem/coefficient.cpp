@@ -26,6 +26,7 @@
 
 namespace ngfem
 {
+  using ngcore::IfPos;
   using ngstd::IfPos;
   
   CoefficientFunction :: ~CoefficientFunction ()
