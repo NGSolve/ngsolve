@@ -31,6 +31,9 @@ Specific data types Exception, BlockAllocator, EvalFunction, AutoDiff, AutoDiffD
 
 #include <ngs_defines.hpp>
 #include <core/ngcore.hpp>
+#include <core/autodiff.hpp>
+#include <core/autodiffdiff.hpp>
+
 namespace ngstd
 {
   using namespace ngcore;
@@ -45,8 +48,6 @@ namespace ngstd
 #include "evalfunc.hpp"
 #include "sample_sort.hpp"
 
-#include "autodiff.hpp"
-#include "autodiffdiff.hpp"
 // #include "polorder.hpp"
 #include "stringops.hpp"
 #include "statushandler.hpp"
