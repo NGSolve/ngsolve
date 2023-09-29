@@ -221,6 +221,7 @@ namespace ngfem
     static FE_ElementTransformation<3,3> trafo_tet(ET_TET);
     static FE_ElementTransformation<3,3> trafo_prism(ET_PRISM);
     static FE_ElementTransformation<3,3> trafo_pyramid(ET_PYRAMID);
+    static FE_ElementTransformation<3,3> trafo_hexamid(ET_HEXAMID);
     static FE_ElementTransformation<3,3> trafo_hex(ET_HEX);
 
     switch (et)
@@ -232,6 +233,7 @@ namespace ngfem
       case ET_TET: return trafo_tet;
       case ET_PRISM: return trafo_prism;
       case ET_PYRAMID: return trafo_pyramid;
+      case ET_HEXAMID: return trafo_hexamid;
       case ET_HEX: return trafo_hex;
       }
       

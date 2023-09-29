@@ -48,6 +48,7 @@ namespace ngfem
       case ET_TET:  return "Tet";
       case ET_PYRAMID: return "Pyramid";
       case ET_PRISM: return "Prism";
+      case ET_HEXAMID:  return "Hexamid";
       case ET_HEX:  return "Hex";
       }
     throw Exception("illegal element type");
