@@ -516,7 +516,17 @@ namespace ngfem
 	  shape[ii] = polsx(ix) * polsy(iy) * polsz(max2(ix,iy), iz);
   }
 
+  /* *********************** Pyramid  **********************/
 
+
+  template<> template<typename Tx, typename TFA>  
+  void L2HighOrderFE_Shape<ET_HEXAMID> :: 
+  T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+  {
+    throw Exception("L2-hexamid not implemented");
+  }
+
+  
   /* *********************** Hex  **********************/
 
 

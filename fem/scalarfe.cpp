@@ -923,6 +923,7 @@ namespace ngfem
   template class DGFiniteElement<ET_TET>;
   template class DGFiniteElement<ET_PRISM>;
   template class DGFiniteElement<ET_PYRAMID>;
+  template class DGFiniteElement<ET_HEXAMID>;
   template class DGFiniteElement<ET_HEX>;
   /*
   template class DGFiniteElement<0>;
@@ -939,6 +940,7 @@ namespace ngfem
   template class  T_ScalarFiniteElement<ScalarDummyFE<ET_TET>,ET_TET>;
   template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PRISM>,ET_PRISM>;
   template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PYRAMID>,ET_PYRAMID>;
+  template class  T_ScalarFiniteElement<ScalarDummyFE<ET_HEXAMID>,ET_HEXAMID>;
   template class  T_ScalarFiniteElement<ScalarDummyFE<ET_HEX>,ET_HEX>;
   
   template class  ScalarDummyFE<ET_POINT>;
@@ -948,6 +950,7 @@ namespace ngfem
   template class  ScalarDummyFE<ET_TET>;
   template class  ScalarDummyFE<ET_PRISM>;
   template class  ScalarDummyFE<ET_PYRAMID>;
+  template class  ScalarDummyFE<ET_HEXAMID>;
   template class  ScalarDummyFE<ET_HEX>;
   
 }

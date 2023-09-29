@@ -741,6 +741,10 @@ into the wirebasket.
 	    if(p[0] > 1 && p[1] > 1 && p[2] > 1) 
 	      neldof = (p[0]-1)*(p[1]-1)*(p[2]-1);
 	    break;
+	  case ET_HEXAMID:
+	    if(p[0] > 1 && p[1] > 1 && p[2] > 1) 
+	      neldof = (p[0]-1)*(p[1]-1)*(p[2]-1);
+	    break;
           case ET_SEGM:
             if (p[0] > 1)
 	      neldof = p[0]-1;

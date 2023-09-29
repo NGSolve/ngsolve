@@ -1052,6 +1052,178 @@ namespace ngfem
       }
   }
 
+
+
+  /* ******************************** Hexamid  ************************************ */
+
+  template<> template<typename Tx, typename TFA>  
+  void  H1HighOrderFE_Shape<ET_HEXAMID> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+  {
+    Tx y = ip.y;
+    Tx z = ip.z;
+    // Tx den = (1-y)*(1-z);
+    Tx den = (1-y*z);
+    den += Tx(1e-12);
+    Tx x = ip.x / den;    
+
+    Tx lam[7] =
+      {
+        (1-x)*(1-y)*(1-z),
+        (  x)*(1-y)*(1-z),
+        (  x)*(  y)*(1-z),
+        (1-x)*(  y)*(1-z),
+        (1-x)*(1-y)*(  z),
+        (  x)*(1-y)*(  z),
+        (  y)*(  z)
+      };
+    
+    Tx sigma[7] =
+      {
+        (1-x)+(1-y)+(1-z),
+        (  x)+(1-y)+(1-z),
+        (  x)+(  y)+(1-z),
+        (1-x)+(  y)+(1-z),
+        (1-x)+(1-y)+(  z),
+        (  x)+(1-y)+(  z),
+        (  y)+(  z)
+      };
+
+    Tx sigmayz[7] =
+      {
+        (1-y)+(1-z),
+        (1-y)+(1-z),
+        (  y)+(1-z),
+        (  y)+(1-z),
+        (1-y)+(  z),
+        (1-y)+(  z),
+        (  y)+(  z)
+      };
+
+    
+    
+    for (int i = 0; i < 7; i++)
+      shape[i] = lam[i];
+    bool edge_between_quads[11] = {
+      true, false, true, true,
+      false, false, false, true,
+      true, false, false
+    };
+
+    /*
+    Tx lam_etrig[11] = {
+      Tx(0), 1-z, Tx(0), Tx(0),
+      1-y, 1-x, x, Tx(0),
+      Tx(0), x, 1-x
+    };
+    */
+    
+    Tx lam_equad[11] = {
+      Tx(0), y, Tx(0), Tx(0),
+      z, z, z, Tx(0),
+      Tx(0), y, y
+    };
+    
+
+    
+    int ii = 7;
+
+    for (int i = 0; i < N_EDGE; i++)
+      if (int p = order_edge[i]; p >= 2)
+        {
+          INT<2> e = GetVertexOrientedEdge (i);          
+          if (edge_between_quads[i])
+            {
+              Tx xi = sigma[e[1]]-sigma[e[0]]; 
+              Tx lam_e = lam[e[0]]+lam[e[1]];
+              Tx bub = 0.25 * lam_e * (1 - xi*xi);
+              EdgeOrthoPol::EvalMult (p-2, xi, bub, shape+ii);
+            }
+          else
+            {
+              Tx lamq = lam_equad[i]+Tx(1e-12);
+              Tx xi = (lam[e[1]]-lam[e[0]])/lamq;
+              Tx lame = (lam[e[1]]+lam[e[0]]) / lamq;
+              Tx bub = 0.25 * (lame*lame - xi*xi) * lamq;
+              EdgeOrthoPol::EvalScaledMult (p-2, xi, lame, bub, shape+ii);
+            }
+          ii += p-1;
+        }
+
+    Array<Tx> polx(order+3), poly(order+3), polz(order+3);
+    for (int i = 0; i < N_FACE; i++)
+      {
+        INT<2> p = order_face[i];
+        if (order_face[i][0] >= 2)
+          {	  
+            INT<4> f = GetVertexOrientedFace (i);
+            if (f[3] >= 0)
+              {
+                /*
+                Tx xi, eta;
+                if (f.Contains(6))
+                  {
+                    xi  = sigmayz[f[0]] - sigmayz[f[1]]; 
+                    eta = sigmayz[f[0]] - sigmayz[f[3]];
+                  }
+                else
+                  {
+                    xi  = sigma[f[0]] - sigma[f[1]]; 
+                    eta = sigma[f[0]] - sigma[f[3]];
+                  }
+                */
+                Tx l0 = lam[f[0]], l1 = lam[f[1]], l3 = lam[f[3]];
+                Tx xi = (l0-l1)/(l0+l1+Tx(1e-12));
+                Tx eta = (l0-l3)/(l0+l3+Tx(1e-12));
+                
+                Tx lamface = lam[f[0]]+lam[f[1]]+lam[f[2]]+lam[f[3]];
+                QuadOrthoPol::EvalMult (p[0]-2, xi,  0.25*(1-xi*xi), polx);
+                QuadOrthoPol::EvalMult (p[1]-2, eta, 0.25*(1-eta*eta), poly);
+                for (int k = 0; k < p[0]-1; k++) 
+                  for (int j = 0; j < p[1]-1; j++) 
+                    shape[ii++] = polx[k] * poly[j] * lamface;
+              }
+            else
+              {
+                int p = order_face[i][0];
+                if (p >= 3)
+                  {
+                    Tx lamface = lam[f[0]]+lam[f[1]]+lam[f[2]];
+                    lamface += Tx(1e-12);
+                    Tx xi = lam[f[0]]/lamface;
+                    Tx eta = lam[f[1]]/lamface;
+                    Tx zeta = lam[f[2]]/lamface;
+                    TrigOrthoPol::EvalMult (p-3, xi, eta, xi*eta*zeta*lamface, shape+ii);
+                    /*
+                      int vop = 6 - f[0] - f[1] - f[2];  	
+                      TrigOrthoPol::EvalScaledMult (p-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
+                      lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
+                    */
+                    ii += (p-2)*(p-1)/2;
+                  }
+              }
+          }
+      }
+
+    // volume dofs:
+    INT<3> p = order_cell[0];
+    if (p[0] >= 2 && p[1] >= 2 && p[2] >= 2)
+      {
+	QuadOrthoPol::EvalMult (p[0]-2, 2*x-1, x*(1-x), polx);
+	QuadOrthoPol::EvalMult (p[1]-2, 2*y-1, y*(1-y), poly);
+	QuadOrthoPol::EvalMult (p[2]-2, 2*z-1, z*(1-z), polz);
+
+	for (int i = 0; i < p[0]-1; i++)
+	  for (int j = 0; j < p[1]-1; j++)
+	    {
+	      Tx pxy = polx[i] * poly[j];
+	      for (int k = 0; k < p[2]-1; k++)
+		shape[ii++] = pxy * polz[k];
+	    }
+      }
+    
+    // cout << "ii = " << ii << " =?= " << ndof << endl;
+  }
+  
 }
 
 #endif

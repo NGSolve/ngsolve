@@ -975,6 +975,49 @@ namespace ngfem
 
 
 
+
+  
+  /* ***************************** Hexamid *********************************** */
+
+  ///
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_HEXAMID,0> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
+  {
+    shape[0] = Tx(1.0);
+  }
+
+  template<> template<typename Tx, typename TFA>  
+  void ScalarFE<ET_HEXAMID,1> :: T_CalcShape (TIP<3,Tx> ip, TFA & shape) 
+  {
+    Tx y = ip.y;
+    Tx z = ip.z;
+    Tx den = (1-y)*(1-z);
+    den += Tx(1e-12);
+    Tx x = ip.x / den;    
+          
+    shape[0] = (1-x)*(1-y)*(1-z);
+    shape[1] = (  x)*(1-y)*(1-z);
+    shape[2] = (  x)*(  y)*(1-z);
+    shape[3] = (1-x)*(  y)*(1-z);
+    shape[4] = (1-x)*(1-y)*(  z);
+    shape[5] = (  x)*(1-y)*(  z);
+    shape[6] =       (  y)*(  z);
+    
+          /*
+    // if (z == 1) z -= 1e-10;
+    z -= 1e-10;
+    
+    shape[0] = (1-z-x)*(1-z-y) / (1-z);
+    shape[1] = x*(1-z-y) / (1-z);
+    shape[2] = x*y / (1-z);
+    shape[3] = (1-z-x)*y / (1-z);
+    shape[4] = z;
+          */
+  }
+
+
+  
+
 #ifdef FILE_H1LOFE_CPP
 
   template<>
@@ -1078,7 +1121,10 @@ namespace ngfem
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Prism2aniso,ET_PRISM>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Prism2HBaniso,ET_PRISM>;
 
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_HEXAMID,0>,ET_HEXAMID>;
+  H1LOFE_EXTERN template class T_ScalarFiniteElement<ScalarFE<ET_HEXAMID,1>,ET_HEXAMID>;
 
+  
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Hex0,ET_HEX>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Hex1,ET_HEX>;
   H1LOFE_EXTERN template class T_ScalarFiniteElement<FE_Hex20,ET_HEX>;
@@ -1176,6 +1222,9 @@ namespace ngfem
   H1LOFE_EXTERN template class ScalarFE<ET_PYRAMID,0>;
   H1LOFE_EXTERN template class ScalarFE<ET_PYRAMID,1>;
 
+  H1LOFE_EXTERN template class ScalarFE<ET_HEXAMID,0>;
+  H1LOFE_EXTERN template class ScalarFE<ET_HEXAMID,1>;
+  
   H1LOFE_EXTERN template class ScalarFE<ET_HEX,0>;
   H1LOFE_EXTERN template class ScalarFE<ET_HEX,1>;
 }

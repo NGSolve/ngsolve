@@ -180,10 +180,12 @@ namespace ngfem
   
   L2HOFE_EXTERN template class L2HighOrderFE<ET_PRISM>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_PYRAMID>;
+  L2HOFE_EXTERN template class L2HighOrderFE<ET_HEXAMID>;
   L2HOFE_EXTERN template class L2HighOrderFE<ET_HEX>;
 
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PRISM>, ET_PRISM, DGFiniteElement<ET_PRISM> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID, DGFiniteElement<ET_PYRAMID> >;
+  L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_HEXAMID>, ET_HEXAMID, DGFiniteElement<ET_HEXAMID> >;
   L2HOFE_EXTERN template class T_ScalarFiniteElement<L2HighOrderFE_Shape<ET_HEX>, ET_HEX, DGFiniteElement<ET_HEX> >;
 }
 

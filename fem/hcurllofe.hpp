@@ -39,6 +39,7 @@ namespace ngfem
   HCURLFE_EXTERN template class HCurlDummyFE<ET_TET>;
   HCURLFE_EXTERN template class HCurlDummyFE<ET_PRISM>;
   HCURLFE_EXTERN template class HCurlDummyFE<ET_PYRAMID>;
+  HCURLFE_EXTERN template class HCurlDummyFE<ET_HEXAMID>;
   HCURLFE_EXTERN template class HCurlDummyFE<ET_HEX>;
 
 
@@ -49,6 +50,7 @@ namespace ngfem
   HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_TET>,ET_TET,0,0>;
   HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_PRISM>,ET_PRISM,0,0>;
   HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_PYRAMID>,ET_PYRAMID,0,0>;
+  HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_HEXAMID>,ET_HEXAMID,0,0>;
   HCURLFE_EXTERN template class T_HCurlFiniteElementFO<HCurlDummyFE<ET_HEX>,ET_HEX,0,0>;
 
 

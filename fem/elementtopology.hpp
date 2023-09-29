@@ -22,12 +22,12 @@ namespace ngfem
   enum NGS_DLL_HEADER ELEMENT_TYPE 
     { ET_POINT = 0, ET_SEGM = 1,
 	ET_TRIG = 10, ET_QUAD = 11, 
-	ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEX = 24 };
+	ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEXAMID = 23, ET_HEX = 24 };
   
   // #ifndef WIN32
   static constexpr initializer_list<ELEMENT_TYPE> element_types =
     { ET_POINT, ET_SEGM, ET_TRIG, ET_QUAD,
-      ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX };
+      ET_TET, ET_PYRAMID, ET_PRISM, ET_HEXAMID, ET_HEX };
   /*
 #else
   // less efficient, but MSVC doesn't like the constexpr here
@@ -171,6 +171,7 @@ namespace ngfem
 	case ET_TET: return 3;
 	case ET_PYRAMID: return 3;
 	case ET_PRISM: return 3;
+	case ET_HEXAMID: return 3;
 	case ET_HEX: return 3;
 	}
       return 0;
@@ -189,6 +190,7 @@ namespace ngfem
 	case ET_TET: return 4;
 	case ET_PYRAMID: return 5;
 	case ET_PRISM: return 6;
+	case ET_HEXAMID: return 7;
 	case ET_HEX: return 8;
 	}
       return 0;
@@ -207,6 +209,7 @@ namespace ngfem
 	case ET_TET: return 6;
 	case ET_PYRAMID: return 8;
 	case ET_PRISM: return 9;
+	case ET_HEXAMID: return 11;
 	case ET_HEX: return 12;
 	}
       return 0;
@@ -225,6 +228,7 @@ namespace ngfem
 	case ET_TET: return 4;
 	case ET_PYRAMID: return 5;
 	case ET_PRISM: return 5;
+	case ET_HEXAMID: return 6;
 	case ET_HEX: return 6;
 	}  
       return 0;
@@ -242,6 +246,7 @@ namespace ngfem
 	case ET_TET: return ET_TRIG;
 	case ET_PYRAMID: return (k<4 ? ET_TRIG : ET_QUAD); 
 	case ET_PRISM: return (k<2 ? ET_TRIG : ET_QUAD);
+	case ET_HEXAMID: return (k==1||k==4) ? ET_TRIG : ET_QUAD;
 	case ET_HEX: return ET_QUAD;
 	default:
 	  return ET_SEGM;
@@ -259,8 +264,9 @@ namespace ngfem
         case ET_QUAD   : return Vec<4,int> (4,4,1,0);
         case ET_TET    : return Vec<4,int> (4,6,4,1);
         case ET_PYRAMID : return Vec<4,int> (5,8,5,1);
-        case ET_PRISM  : return Vec<4,int> (6,9,5,1);
-        case ET_HEX    : return Vec<4,int> (8,12,6,1);
+        case ET_PRISM   : return Vec<4,int> (6,9,5,1);
+        case ET_HEXAMID : return Vec<4,int> (7,11,6,1);          
+        case ET_HEX     : return Vec<4,int> (8,12,6,1);
         }
       return 0;
     }
@@ -275,6 +281,7 @@ namespace ngfem
       static const int nn_tet[] = { 4, 6, 4, 1 };
       static const int nn_pyramid[] = { 5, 8, 5, 1 };
       static const int nn_prism[] = { 6, 9, 5, 1 };
+      static const int nn_hexamid[] = { 7, 11, 6, 1 };
       static const int nn_hex[] = { 8, 12, 6, 1 };
       switch (et)
 	{
@@ -285,6 +292,7 @@ namespace ngfem
 	case ET_TET: return nn_tet[nt];
 	case ET_PYRAMID: return nn_pyramid[nt];
 	case ET_PRISM: return nn_prism[nt];
+	case ET_HEXAMID: return nn_hexamid[nt];
 	case ET_HEX: return nn_hex[nt];
 	}  
       return 0;
@@ -308,7 +316,8 @@ namespace ngfem
 	case ET_TET: return 4;
 	case ET_PYRAMID: return 5;
 	case ET_PRISM: return 5;
-	case ET_HEX: return 6;
+	case ET_HEXAMID: return 6;
+	case ET_HEX: return 6;          
 	}  
       return 0;
     }
@@ -327,6 +336,7 @@ namespace ngfem
 	case ET_TET: return ET_TRIG;
 	case ET_PYRAMID: return (k<4 ? ET_TRIG : ET_QUAD); 
 	case ET_PRISM: return (k<2 ? ET_TRIG : ET_QUAD);
+	case ET_HEXAMID: return (k==1||k==4) ? ET_TRIG : ET_QUAD;          
 	case ET_HEX: return ET_QUAD;
 	default:
 	  return ET_POINT; // dummy
@@ -385,6 +395,22 @@ namespace ngfem
 	  { 2, 4 },
 	  { 3, 4 }};
 
+      static const int hexamid_edges[11][2] =
+        {
+          { 0, 1 },
+          { 2, 3 },
+          { 3, 0 },
+          { 1, 2 },
+          { 4, 5 },
+          { 6, 4 },
+          { 5, 6 },
+          { 0, 4 },
+          { 1, 5 },
+          { 2, 6 },
+          { 3, 6 },
+        };
+
+      
       static const int hex_edges[12][2] =
 	{
 	  { 0, 1 },
@@ -410,6 +436,7 @@ namespace ngfem
 	case ET_TET:  return tet_edges;
 	case ET_PYRAMID: return pyramid_edges;
 	case ET_PRISM: return prism_edges;
+	case ET_HEXAMID: return hexamid_edges;
 	case ET_HEX: return hex_edges;
 	default:
 	  break;
@@ -445,6 +472,16 @@ namespace ngfem
 	  { 0, 1, 2, 3 } // points into interior!
 	};
   
+      static int hexamid_faces[6][4] =
+	{
+          { 0, 3, 2, 1 },
+          { 4, 5, 6, -1},
+          { 0, 1, 5, 4 },
+          { 1, 2, 6, 5 },
+          { 2, 3, 6, -1},
+          { 3, 0, 4, 6 }
+	};
+    
       static int hex_faces[6][4] =
 	{
 	  { 0, 3, 2, 1 },
@@ -454,7 +491,6 @@ namespace ngfem
 	  { 2, 3, 7, 6 },
 	  { 3, 0, 4, 7 }
 	};
-    
       static int trig_faces[1][4] = 
 	{
 	  { 0, 1, 2, -1 },
@@ -470,7 +506,8 @@ namespace ngfem
 	case ET_TET: return tet_faces;
 	case ET_PRISM: return prism_faces;
 	case ET_PYRAMID: return pyramid_faces;
-	case ET_HEX: return hex_faces;
+	case ET_HEXAMID: return hexamid_faces;
+	case ET_HEX: return hex_faces;          
 
 	case ET_TRIG: return trig_faces;
 	case ET_QUAD: return quad_faces;
@@ -1412,6 +1449,125 @@ namespace ngfem
 
 
 
+  template<> class ET_trait<ET_HEXAMID>
+  {
+  public:
+    enum { DIM = 3 };
+    enum { N_VERTEX = 7 };
+    enum { N_EDGE = 11 };
+    enum { N_FACE = 6 };
+    enum { N_CELL = 1 };
+    enum { N_FACET = 6 };
+
+    static constexpr ELEMENT_TYPE ElementType() { return ET_HEXAMID; }
+    constexpr operator ELEMENT_TYPE() const { return ET_HEXAMID; }
+    
+    static INLINE ELEMENT_TYPE FaceType(int i) { return (i==1||i==4) ? ET_TRIG : ET_QUAD; }
+
+    // TODO
+    static INLINE int PolDimension (INT<3> order) {
+      int p = order[0];
+      return (p+1)*(p+1)*(p+1) - (p-1) - p*(p-1);
+    }
+    // TODO
+    static INLINE int PolBubbleDimension (INT<3> p) { return (p[0] < 2) ? 0 :  (p[0]-1)*(p[0]-1)*(p[0]-1); }
+
+    static INLINE INT<2> GetEdge (int i)
+    {
+#ifndef __CUDA_ARCH__
+      static 
+#endif
+	const int edges[][2] = 
+	{
+          { 0, 1 },
+          { 2, 3 },
+          { 3, 0 },
+          { 1, 2 },
+          { 4, 5 },
+          { 6, 4 },
+          { 5, 6 },
+          { 0, 4 },
+          { 1, 5 },
+          { 2, 6 },
+          { 3, 6 },
+        };
+      return INT<2> (edges[i][0], edges[i][1]);
+    }
+
+    template <typename TVN>
+    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
+    {
+      INT<2> e = GetEdge (i);
+      if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
+      return e;
+    }
+
+
+
+    static INLINE INT<4> GetFace (int i )
+    {
+#ifndef __CUDA_ARCH__
+      static 
+#endif
+	const int faces[][4]  =
+	{
+          { 0, 3, 2, 1 },
+          { 4, 5, 6, -1},
+          { 0, 1, 5, 4 },
+          { 1, 2, 6, 5 },
+          { 2, 3, 6, -1},
+          { 3, 0, 4, 6 }
+	};
+
+      return INT<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+    }
+
+    // TODO
+    template <typename TVN>
+    static INLINE INT<4> GetFaceSort (int i, const TVN & vnums)
+    {
+      INT<4> f = GetFace (i);
+      if (f[3] < 0)
+	{
+	  if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 
+	  if(vnums[f[1]] > vnums[f[2]]) swap(f[1],f[2]);
+	  if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 	
+	  return f;
+	}
+      else
+	{
+	  int fmax = 0;
+	  for (int j=1; j<4; j++) 
+	    if (vnums[f[j]] < vnums[f[fmax]]) fmax = j;  
+	  
+	  int f1 = (fmax+3)%4;
+	  int f2 = (fmax+1)%4; 
+	  int fop = (fmax+2)%4; 
+	  
+	  if(vnums[f[f2]]<vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
+	  
+	  return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
+	}
+    }
+
+    template <typename TVN>
+    static INLINE int GetClassNr (const TVN & vnums)
+    {
+      return 0;
+    }
+
+    template <typename TVN>
+    static INLINE int GetFacetClassNr (int facet, const TVN & vnums)
+    {
+      return 0;
+    }
+
+  };
+
+
+
+  
+
   template<> class ET_trait<ET_HEX>
   {
   public:
@@ -1570,6 +1726,7 @@ namespace ngfem
       case ET_TET:     return f(ET_trait<ET_TET>()); 
       case ET_PRISM:   return f(ET_trait<ET_PRISM>()); 
       case ET_PYRAMID: return f(ET_trait<ET_PYRAMID>()); 
+      case ET_HEXAMID: return f(ET_trait<ET_HEXAMID>()); 
       case ET_HEX:     return f(ET_trait<ET_HEX>()); 
       default:
         unreachable();

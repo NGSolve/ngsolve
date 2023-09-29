@@ -293,6 +293,7 @@ namespace ngfem
   SCALARFE_EXTERN template class DGFiniteElement<ET_TET>;
   SCALARFE_EXTERN template class DGFiniteElement<ET_PRISM>;
   SCALARFE_EXTERN template class DGFiniteElement<ET_PYRAMID>;
+  SCALARFE_EXTERN template class DGFiniteElement<ET_HEXAMID>;
   SCALARFE_EXTERN template class DGFiniteElement<ET_HEX>;
 
 #endif

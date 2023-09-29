@@ -218,6 +218,7 @@ namespace ngfem
   extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_TET>,ET_TET>;
   extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PRISM>,ET_PRISM>;
   extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_PYRAMID>,ET_PYRAMID>;
+  extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_HEX>,ET_HEXAMID>;
   extern template class  T_ScalarFiniteElement<ScalarDummyFE<ET_HEX>,ET_HEX>;
 
   extern template class  ScalarDummyFE<ET_POINT>;
@@ -227,6 +228,7 @@ namespace ngfem
   extern template class  ScalarDummyFE<ET_TET>;
   extern template class  ScalarDummyFE<ET_PRISM>;
   extern template class  ScalarDummyFE<ET_PYRAMID>;
+  extern template class  ScalarDummyFE<ET_HEXAMID>;
   extern template class  ScalarDummyFE<ET_HEX>;
 }
 

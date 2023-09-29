@@ -72,7 +72,7 @@ namespace ngfem
     INLINE H1HighOrderFE (int aorder)
     { 
       ndof = PolDimension (aorder);
-      
+      cout << "h1horder ctor, ndof = " << ndof << endl;
       for (int i = 0; i < N_VERTEX; i++) this->SetVertexNumber(i,i);
       for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
       for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
@@ -105,13 +105,10 @@ namespace ngfem
     void ComputeNDof()
     {
       ndof = N_VERTEX;
-      
       for (int i = 0; i < N_EDGE; i++)
         ndof += order_edge[i] - 1;
-      
       for (int i = 0; i < N_FACE; i++)
         ndof += ::ngfem::PolBubbleDimension (FaceType(i), order_face[i]);
-      
       if (DIM == 3)
         ndof += PolBubbleDimension (order_cell[0]);
 
@@ -172,6 +169,7 @@ namespace ngfem
   H1HOFE_EXTERN template class H1HighOrderFE<ET_TET>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_PRISM>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_PYRAMID>;
+  H1HOFE_EXTERN template class H1HighOrderFE<ET_HEXAMID>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_HEX>;
 
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_POINT>, ET_POINT>;
@@ -182,6 +180,7 @@ namespace ngfem
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TET>, ET_TET>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
+  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEXAMID>, ET_HEXAMID>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
 }
 

@@ -2403,6 +2403,7 @@ namespace ngfem
     Array<IntegrationRule*> tetrules;
     Array<IntegrationRule*> prismrules;
     Array<IntegrationRule*> pyramidrules;
+    Array<IntegrationRule*> hexamidrules;
     Array<IntegrationRule*> hexrules;
 
     SIMD_IntegrationRule simd_pointrule;
@@ -2412,6 +2413,7 @@ namespace ngfem
     Array<SIMD_IntegrationRule*> simd_tetrules;
     Array<SIMD_IntegrationRule*> simd_prismrules;
     Array<SIMD_IntegrationRule*> simd_pyramidrules;
+    Array<SIMD_IntegrationRule*> simd_hexamidrules;
     Array<SIMD_IntegrationRule*> simd_hexrules;
     
     Array<IntegrationRule*> jacobirules10;
@@ -2684,6 +2686,9 @@ namespace ngfem
       {
         GenerateIntegrationRule (ET_HEX, p);
         SIMD_SelectIntegrationRule (ET_HEX, p);
+
+        GenerateIntegrationRule (ET_HEXAMID, p);
+        SIMD_SelectIntegrationRule (ET_HEXAMID, p);
       }
     
 
@@ -2786,6 +2791,9 @@ namespace ngfem
     for (int i = 0; i < hexrules.Size(); i++)
       delete hexrules[i];
 
+    for (int i = 0; i < hexamidrules.Size(); i++)
+      delete hexamidrules[i];
+
     for (int i = 0; i < jacobirules10.Size(); i++)
       delete jacobirules10[i];
 
@@ -2817,6 +2825,8 @@ namespace ngfem
 	ira = &pyramidrules; break;
       case ET_PRISM:
 	ira = &prismrules; break;
+      case ET_HEXAMID:
+	ira = &hexamidrules; break;
       case ET_HEX:
 	ira = &hexrules; break;
       default:
@@ -2916,6 +2926,8 @@ namespace ngfem
 	  ira = &pyramidrules; break;
 	case ET_PRISM:
 	  ira = &prismrules; break;
+	case ET_HEXAMID:
+	  ira = &hexamidrules; break;
 	case ET_HEX:
 	  ira = &hexrules; break;
 	default:
@@ -3063,7 +3075,7 @@ namespace ngfem
 	    case ET_HEX:
 	      {
 		const IntegrationRule & segmrule = SelectIntegrationRule (ET_SEGM, order);
-
+                
 		IntegrationRule * hexrule = 
 		  new IntegrationRule; //(segmrule.GetNIP()*segmrule.GetNIP()*segmrule.GetNIP());
 	
@@ -3092,6 +3104,50 @@ namespace ngfem
 		break;
 	      }
 
+
+	    case ET_HEXAMID:
+	      {
+		const IntegrationRule & segmrule = SelectIntegrationRule (ET_SEGM, order);
+                
+		IntegrationRule * hexamidrule = 
+		  new IntegrationRule; //(segmrule.GetNIP()*segmrule.GetNIP()*segmrule.GetNIP());
+	
+		double point[3], weight;
+		int ii = 0;
+		for (int i = 0; i < segmrule.GetNIP(); i++)
+		  for (int j = 0; j < segmrule.GetNIP(); j++)
+		    for (int l = 0; l < segmrule.GetNIP(); l++)
+		      {
+			const IntegrationPoint & ipsegm1 = segmrule[i];
+			const IntegrationPoint & ipsegm2 = segmrule[j];
+			const IntegrationPoint & ipsegm3 = segmrule[l];
+                        double x = ipsegm1.Point()[0];
+                        double y = ipsegm2.Point()[0];
+                        double z = ipsegm3.Point()[0];
+
+                        /*
+			point[0] = x*(1-y)*(1-z);
+			point[1] = y;
+			point[2] = z;
+			weight = (1-y)*(1-z)*ipsegm1.Weight() * ipsegm2.Weight() * ipsegm3.Weight();
+                        */
+			point[0] = x*(1-y*z);
+			point[1] = y;
+			point[2] = z;
+			weight = (1-y*z)*ipsegm1.Weight() * ipsegm2.Weight() * ipsegm3.Weight();
+                        
+			IntegrationPoint ip = 
+			  IntegrationPoint (point, weight);
+		      
+			ip.SetNr (ii); ii++;
+			hexamidrule->AddIntegrationPoint (ip);
+		      }
+		hexamidrules[order] = hexamidrule;
+		break;
+	      }
+
+
+              
 
 	    case ET_PRISM:
 	      {
@@ -3284,6 +3340,8 @@ namespace ngfem
 	ira = &simd_pyramidrules; break;
       case ET_PRISM:
 	ira = &simd_prismrules; break;
+      case ET_HEXAMID:
+	ira = &simd_hexamidrules; break;
       case ET_HEX:
 	ira = &simd_hexrules; break;
       default:
