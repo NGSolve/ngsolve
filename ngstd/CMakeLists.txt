@@ -20,7 +20,6 @@ target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ng
 install( TARGETS ngstd ${ngs_install_dir} )
 
 install( FILES
-        autodiffdiff.hpp autodiff.hpp 
         bessel.hpp blockalloc.hpp evalfunc.hpp
         memusage.hpp ngstd.hpp
         stringops.hpp templates.hpp
