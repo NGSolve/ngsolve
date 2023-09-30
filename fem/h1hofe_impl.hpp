@@ -1099,7 +1099,12 @@ namespace ngfem
         (  y)+(  z)
       };
 
-    
+    Tx lamf[6] =
+      {
+        1-z, z,
+        1-y, x,
+        y, 1-x
+      };
     
     for (int i = 0; i < 7; i++)
       shape[i] = lam[i];
@@ -1158,7 +1163,6 @@ namespace ngfem
             INT<4> f = GetVertexOrientedFace (i);
             if (f[3] >= 0)
               {
-                /*
                 Tx xi, eta;
                 if (f.Contains(6))
                   {
@@ -1170,12 +1174,13 @@ namespace ngfem
                     xi  = sigma[f[0]] - sigma[f[1]]; 
                     eta = sigma[f[0]] - sigma[f[3]];
                   }
-                */
+                /*
                 Tx l0 = lam[f[0]], l1 = lam[f[1]], l3 = lam[f[3]];
                 Tx xi = (l0-l1)/(l0+l1+Tx(1e-12));
                 Tx eta = (l0-l3)/(l0+l3+Tx(1e-12));
-                
-                Tx lamface = lam[f[0]]+lam[f[1]]+lam[f[2]]+lam[f[3]];
+                */
+                // Tx lamface = lam[f[0]]+lam[f[1]]+lam[f[2]]+lam[f[3]];
+                Tx lamface = lamf[i];
                 QuadOrthoPol::EvalMult (p[0]-2, xi,  0.25*(1-xi*xi), polx);
                 QuadOrthoPol::EvalMult (p[1]-2, eta, 0.25*(1-eta*eta), poly);
                 for (int k = 0; k < p[0]-1; k++) 
