@@ -4237,12 +4237,13 @@ drawelems: BitArray
 
    py::class_<InterpolateProxy, shared_ptr<InterpolateProxy>, ProxyFunction> (m, "InterpolateProxy");
    m.def("Interpolate", 
-         [] (shared_ptr<CoefficientFunction> cf, shared_ptr<FESpace> fes, int bonus_intorder)
+         [] (shared_ptr<CoefficientFunction> cf, shared_ptr<FESpace> fes, int bonus_intorder, std::optional<std::string> opname)
          {
            if (!fes)
              throw Exception("In Interpolate: invalid space");
-           return InterpolateCF(cf, fes, bonus_intorder);
+           return InterpolateCF(cf, fes, bonus_intorder, opname);
          }, py::arg("cf"), py::arg("space"), py::arg("bonus_intorder")=0,
+         py::arg("operator")=py::none(),
          docu_string(R"raw_string(Interpolate a CoefficientFunction into the finite element space.
 The interpolation is canonical interpolation using dual shapes.
 The result is a CoefficientFunction.

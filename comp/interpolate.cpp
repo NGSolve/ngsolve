@@ -116,14 +116,19 @@ namespace ngcomp
     // shared_ptr<CoefficientFunction> dual_diffop;
     shared_ptr<DifferentialOperator> dual_diffop;
     VorB vb;
+    optional<string> opname;
     
   public:
     InterpolationCoefficientFunction (shared_ptr<CoefficientFunction> f, shared_ptr<FESpace> afes,
-                                      int abonus_intorder)
-      : T_CoefficientFunction<InterpolationCoefficientFunction>(f->Dimension(), f->IsComplex()),
-      func(f), fes(afes), bonus_intorder(abonus_intorder)
+                                      int abonus_intorder,
+                                      optional<string> aopname)
+      : T_CoefficientFunction<InterpolationCoefficientFunction>(aopname.has_value() ? afes->GetAdditionalEvaluators()[*aopname]->Dim() : f->Dimension(), f->IsComplex()),
+        func(f), fes(afes), bonus_intorder(abonus_intorder), opname(aopname)
     {
-      this->SetDimensions (func->Dimensions());
+      if(opname.has_value())
+        this->SetDimensions(fes->GetAdditionalEvaluators()[*opname]->Dimensions());
+      else
+        this->SetDimensions (func->Dimensions());
       this->elementwise_constant = func->ElementwiseConstant();
 
       // copied from Set (dualshapes)
@@ -187,7 +192,7 @@ namespace ngcomp
       ElementId ei = trafo.GetElementId();
       auto & fel = fes->GetFE(ei, lh);
       // int dim   = fes->GetDimension();
-      int dim = Dimension();
+      int dim = func->Dimension();
 
       
       // cout << " eval for ei " << ei << endl;
@@ -270,11 +275,20 @@ namespace ngcomp
 
       // func->Evaluate(ir, values);
       // cout << " un-interp values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
-        
-      if constexpr (ORD==ColMajor) 
-        fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, Trans(values), lh);
-      else 
-	fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, values, lh);
+
+      if constexpr (ORD == ColMajor)
+        {
+          if(opname.has_value())
+            fes->GetAdditionalEvaluators()[*opname]->Apply(fel, ir, coeffs, Trans(values), lh);
+          else
+            fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, Trans(values), lh);
+        }
+      else
+        {
+          if(opname.has_value())
+            fes->GetAdditionalEvaluators()[*opname]->Apply(fel, ir, coeffs, values, lh);
+          fes->GetEvaluator(vb)->Apply(fel, ir, coeffs, values, lh);
+        }
 
       // cout << " values: " << endl << values.AddSize(Dimension(), ir.Size()) << endl;
     }
@@ -862,7 +876,8 @@ namespace ngcomp
   }
   
   shared_ptr<CoefficientFunction> InterpolateCF (shared_ptr<CoefficientFunction> func, shared_ptr<FESpace> space,
-                                                 int bonus_intorder)
+                                                 int bonus_intorder,
+                                                 optional<string> opname)
   {
     // func->PrintReport(cout);
 
@@ -881,21 +896,35 @@ namespace ngcomp
               if (proxy->IsTestFunction())
                 {
                   // if e.g. H1 without Trace is combined with space where Trace is mandatory
-                  vb = max(proxy->Evaluator()->VB(),vb);
+                  if(opname.has_value())
+                    vb = max(proxy->GetAdditionalEvaluator(*opname)->VB(),vb);
+                  else
+                    vb = max(proxy->Evaluator()->VB(),vb);
                   has_test = true;
                 }
               else
                 {
-                  vb = max(proxy->Evaluator()->VB(),vb);
+                  if(opname.has_value())
+                    vb = max(proxy->GetAdditionalEvaluator(*opname)->VB(),vb);
+                  else
+                    vb = max(proxy->Evaluator()->VB(),vb);
                   has_trial = true;
                 }
             }
         });
 
     if (has_trial != has_test)
-      return make_shared<InterpolateProxy> (func, space, has_test, space->GetEvaluator(vb), bonus_intorder,vb);
-
-    return make_shared<InterpolationCoefficientFunction> (func, space, bonus_intorder);
+      {
+        if (opname.has_value())
+          return make_shared<InterpolateProxy>(
+              func, space, has_test, space->GetAdditionalEvaluators()[*opname],
+              bonus_intorder, vb);
+        else
+          return make_shared<InterpolateProxy>(func, space, has_test,
+                                               space->GetEvaluator(vb),
+                                               bonus_intorder, vb);
+      }
+    return make_shared<InterpolationCoefficientFunction> (func, space, bonus_intorder, opname);
   }
 
 }
