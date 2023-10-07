@@ -657,6 +657,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
             case ET_PYRAMID: return T_GetFE<ET_PYRAMID>(ei.Nr(), lh);
             case ET_PRISM:   return T_GetFE<ET_PRISM>(ei.Nr(), lh);
             case ET_HEX:     return T_GetFE<ET_HEX>(ei.Nr(), lh);
+            default:
             }
 
           throw Exception (string("FacetFESpace ") + GetClassName() 

@@ -2728,7 +2728,7 @@ namespace ngcomp
 		  {
 		  case ET_POINT:  // ??
 		  case ET_SEGM: 
-		  case ET_TET: case ET_HEX: case ET_PRISM: case ET_PYRAMID:
+		  case ET_TET: case ET_HEX: case ET_PRISM: case ET_PYRAMID: case ET_HEXAMID:
 		    break;
 		    
 		  case ET_TRIG:
