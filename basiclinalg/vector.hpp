@@ -13,7 +13,7 @@
 namespace ngbla
 {
 
-  template <typename T, typename TS, typename TDIST> class VectorView;
+  template <typename T, typename TS=double, typename TDIST=IC<1>> class VectorView;
 
 
   template <typename T, typename ...Args>
@@ -1007,7 +1007,8 @@ namespace ngbla
   template <int S, typename T>
   INLINE auto operator* (double a, const Vec<S,T> & vec)
   {
-    typedef decltype(RemoveConst(a*vec(0))) TRES;
+    // typedef decltype(RemoveConst(a*vec(0))) TRES;
+    typedef typename std::remove_const<decltype(double()*std::declval<T>())>::type TRES;
     Vec<S, TRES> res;
     for (int i = 0; i < S; i++)
       res(i) = a * vec(i);

@@ -1609,7 +1609,7 @@ namespace ngcomp
             tree[ei.Nr()] = tree[parent.Nr()] + 1;
           }
       }
-    return std::move(tree);
+    return tree;
   }
 
   void MeshAccess :: RefineFromTree(const Array<uint64_t> & tree)
