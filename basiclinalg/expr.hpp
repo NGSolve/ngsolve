@@ -847,9 +847,13 @@ namespace ngbla
     
     INLINE SumExpr (TA aa, TB ab) : a(aa), b(ab) { ; }
 
+    /*
     INLINE auto operator() (size_t i) const { return a(i)+b(i); }
     INLINE auto operator() (size_t i, size_t j) const { return a(i,j)+b(i,j); }
-
+    */
+    template <typename ...I>
+    INLINE auto operator() (I... i) const { return a(i...)+b(i...); }    
+    
     INLINE auto Height() const { return CombinedSize(a.Height(), b.Height()); }
     INLINE auto Width() const { return CombinedSize(a.Width(), b.Width()); }
 
@@ -889,9 +893,11 @@ namespace ngbla
     
     INLINE SubExpr (TA aa, TB ab) : a(aa), b(ab) { ; }
 
-    INLINE auto operator() (size_t i) const { return a(i)-b(i); }
-    INLINE auto operator() (size_t i, size_t j) const { return a(i,j)-b(i,j); }
-
+    // INLINE auto operator() (size_t i) const { return a(i)-b(i); }
+    // INLINE auto operator() (size_t i, size_t j) const { return a(i,j)-b(i,j); }
+    template <typename ...I>
+    INLINE auto operator() (I... i) const { return a(i...)-b(i...); }
+    
     INLINE auto View() const { return SubExpr(a,b); }
     INLINE auto Shape() const { return CombinedSize(a.Shape(), b.Shape()); }
     
@@ -927,8 +933,12 @@ namespace ngbla
   public:
     MinusExpr (TA aa) : a(aa) { ; }
 
-    INLINE auto operator() (size_t i) const { return -a(i); }
-    INLINE auto operator() (size_t i, size_t j) const { return -a(i,j); }
+    // INLINE auto operator() (size_t i) const { return -a(i); }
+    // INLINE auto operator() (size_t i, size_t j) const { return -a(i,j); }
+
+    template <typename ...I>
+    INLINE auto operator() (I... i) const { return -a(i...); }
+    
     INLINE auto View() const { return MinusExpr(a); }
     INLINE auto Shape() const { return a.Shape(); }
     
