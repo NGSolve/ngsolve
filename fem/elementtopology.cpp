@@ -55,7 +55,7 @@ namespace ngfem
   }
 
   const POINT3D * ElementTopology :: GetVertices (ELEMENT_TYPE et)
-  { 
+  {
     static double segm_points [][3] = 
       { { 1 },
 	{ 0 } };
@@ -96,6 +96,17 @@ namespace ngfem
 	{ 0, 0, 1 }
       };
 
+    static double hexamid_points[][3] = 
+      { 
+	{ 0, 0, 0 },
+	{ 1, 0, 0 },
+	{ 1, 1, 0 },
+	{ 0, 1, 0 },
+	{ 0, 0, 1 },
+	{ 1, 0, 1 },
+	{ 0, 1, 1 }
+      };
+
     static double hex_points[][3] = 
       { 
 	{ 0, 0, 0 },
@@ -123,11 +134,12 @@ namespace ngfem
       case ET_TET:  return tet_points;
       case ET_PYRAMID: return pyramid_points;
       case ET_PRISM: return prism_points;
-      case ET_HEX: return hex_points;
+      case ET_HEXAMID: return hexamid_points;
+      case ET_HEX: return hex_points;        
       default:
-    break;
+        break;
       }
-  
+
     stringstream str;
     str << "Ng_GetVertices, illegal element type " << et << "\n";
     throw Exception (str.str());
