@@ -1045,7 +1045,7 @@ namespace ngbla
   template <int S, typename T>
   INLINE auto operator+ (const Vec<S,T> & a, const Vec<S,T> & b) 
   {
-    typedef decltype(RemoveConst(a(0))) TRES;
+    // typedef decltype(RemoveConst(a(0))) TRES;
     typedef typename std::remove_const<T>::type TRES;        
     Vec<S,TRES> res;
     for (int i = 0; i < S; i++)
