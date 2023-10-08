@@ -81,6 +81,7 @@ namespace ngfem
     static ScalarFE<ET_TET,1> tet;
     static FE_Hex1 hex;
     static FE_Prism1 prism;
+    static ScalarFE<ET_HEXAMID,1> hexamid;
     static FE_Pyramid1 pyr;
     switch (type)
       {
@@ -88,8 +89,9 @@ namespace ngfem
       case ET_HEX: return (&hex);
       case ET_PRISM: return (&prism);
       case ET_PYRAMID: return (&pyr);
+      case ET_HEXAMID: return (&hexamid);        
       default:
-        throw ("FE_ElementTrafo, undefined 3D elementtype");
+        throw Exception("FE_ElementTrafo, undefined 3D elementtype");
       }
   }
 
