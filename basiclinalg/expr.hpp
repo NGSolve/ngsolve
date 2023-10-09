@@ -1072,6 +1072,7 @@ namespace ngbla
 
     INLINE MultExpr (TA aa, TB ab) : a(aa), b(ab) { ; }
 
+    /*
     INLINE auto operator() (size_t i) const
     { return operator()(i,0); }  
 
@@ -1090,15 +1091,35 @@ namespace ngbla
       decltype (a(0,0)*b(0,0)) sum (0);
       return sum;
     }
+    */
+    template <typename ...J>
+    INLINE auto operator() (size_t i, J... j) const
+    { 
+      size_t wa = a.Width();
+
+      if (wa >= 1)
+	{
+	  auto sum = a(i,0) * b(0,j...);
+	  for (size_t k = 1; k < wa; k++)
+	    sum += a(i,k) * b(k,j...);
+          return sum;
+	}
+
+      decltype (a(0,0)*b(0,j...)) sum (0);
+      return sum;
+    }
 
     INLINE auto View() const { return MultExpr(a,b); }
     INLINE auto Shape() const
     {
-      typedef decltype(b.Shape()) TBSHAPE;
-      if constexpr (tuple_size<TBSHAPE>() == 1)
+      if constexpr (tuple_size<decltype(b.Shape())>() == 1)
         return tuple(get<0>(a.Shape()));
       else
         return tuple(get<0>(a.Shape()), get<1>(b.Shape()));
+      /*
+      return tuple_cat(tuple(get<0>(a.Shape())),
+                       std::apply([](auto&&, const auto&... args) {return std::tie(args...);}, b.Shape()) );
+      */
     }
     
     INLINE TA A() const { return a; }
