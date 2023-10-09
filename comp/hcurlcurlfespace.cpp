@@ -1075,6 +1075,8 @@ namespace ngcomp
 
           if constexpr (D==2)
             {
+              //Sign convention of Lee "Introduction to Riemannian Manifolds"
+              //R1212 = -Q
               y(0*D*D*D+1*D*D+0*D+1) = -Q(0);
 
               // R1212 = -R2112 = -R1221 = R2121
@@ -1083,6 +1085,7 @@ namespace ngcomp
             }
           else
             {
+              //Sign convention of Lee "Introduction to Riemannian Manifolds"
               // Q_xx = <Q(x),x> = -R_yzyz
               // Q_xy = <Q(y),x> =  R_xzyz
               // Q_xz = <Q(z),x> = -R_xyyz
@@ -1149,6 +1152,8 @@ namespace ngcomp
 
       if constexpr (D==2)
         {
+	  //Sign convention of Lee "Introduction to Riemannian Manifolds"
+	  //R1212 = -Q
           y.Row(0*D*D*D+1*D*D+0*D+1).Range(bmir.Size()) = -Q.Row(0);
           
           // R1212 = -R2112 = -R1221 = R2121
@@ -1157,6 +1162,7 @@ namespace ngcomp
         }
       else
         {
+	  //Sign convention of Lee "Introduction to Riemannian Manifolds"
           // Q_xx = <Q(x),x> = -R_yzyz
           // Q_xy = <Q(y),x> =  R_xzyz
           // Q_xz = <Q(z),x> = -R_xyyz
@@ -1267,11 +1273,17 @@ namespace ngcomp
           if constexpr (D==2)
             {
               y = Cof(ginv).AsVector();
-              y *= -Q(0);
+              y *= Q(0);
             }
           else
             {
-              y = -TensorCrossProduct(ginv,Qmat).AsVector();
+	      // Q=-1/4*eps_ikl*eps_jmn*Riem_klmn
+	      // (Inv(g) x Q)_ij = eps_ikl eps_jmn Inv(g)_km Q_ln
+	      //                 = -1/4 eps_ikl eps_jmn Inv(g)_km Q_ln eps_lab*eps_ncd*Riem_abcd
+	      //                 = -1/4*(delta_ia*delta_kb - delta_ib*delta_ka)*(delta_jc*delta_md - delta_jd*delta_mc)*Inv(g)_km*Riem_abcd
+	      //                 = -delta_ia*delta_kb*delta_jc*delta_md*Inv(g)_km*Riem_abcd
+	      //                 = -Inv(g)_km*Riem_ikjm = Inv(g)_km*Riem_kijm = Ricci_ij
+              y = TensorCrossProduct(ginv,Qmat).AsVector();
             }
 
           // //old version
@@ -1326,14 +1338,14 @@ namespace ngcomp
       
           if constexpr (D==2)
             {
-              y.Col(m).Range(0,D*D) = -Q(0,m)*Cof(invG).AsVector();
+              y.Col(m).Range(0,D*D) = Q(0,m)*Cof(invG).AsVector();
             }
           else
             {
               Mat<D,D,SIMD<double>> Qmat_m;
               for (size_t j = 0; j < D*D; j++)
                 Qmat_m(j) = Q(j,m);
-              y.Col(m).Range(0,D*D) = -TensorCrossProduct(invG,Qmat_m).AsVector();
+              y.Col(m).Range(0,D*D) = TensorCrossProduct(invG,Qmat_m).AsVector();
             }
         }
     }
@@ -1408,7 +1420,7 @@ namespace ngcomp
 	      for (size_t k = 0; k < D; k++)
 		for (size_t l = 0; l < D; l++)
 		  {
-                    y(0) += ginv(i,k) * ginv(j,l) * Riemann(D*(D*(D*i+j)+k)+l);
+                    y(0) += ginv(i,l) * ginv(j,k) * Riemann(D*(D*(D*i+j)+k)+l);
 		  }
 	  
         }
@@ -1451,7 +1463,7 @@ namespace ngcomp
 	      for (size_t k = 0; k < D; k++)
 		for (size_t l = 0; l < D; l++)
 		  {
-                    y(0,m) += invG(i,k) * invG(j,l) * Riemann(D*(D*(D*i+j)+k)+l,m);
+                    y(0,m) += invG(i,l) * invG(j,k) * Riemann(D*(D*(D*i+j)+k)+l,m);
 		  }
         }
     }
@@ -1616,20 +1628,25 @@ namespace ngcomp
           
           if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
             {
+
+              //Sign convention of Lee "Introduction to Riemannian Manifolds"
+              //Q = R1221 = -0.5*inc(g) + Gamma_01^q*Gamma_10q-Gamma_22^q*Gamma_00q
               bfel.EvaluateMappedIncShape(mip, x, y);
-              y(0) *= 0.5;
+              y(0) *= -0.5;
               for (size_t q=0; q<D; q++)
                 {
-                  y(0) -= hchristoffel2(1*D*D+0*D+q)*hchristoffel1(1*D*D+0*D+q);
-                  y(0) += hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
+                  y(0) += hchristoffel2(1*D*D+0*D+q)*hchristoffel1(1*D*D+0*D+q);
+                  y(0) -= hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
                 }
             }
           else // Exploit that only 6 independent numbers are involved
             {
               // linear inc part
               bfel.EvaluateMappedIncShape(mip, x, y);
-              y.Range(0,9) *= 0.5;
+              y.Range(0,9) *= -0.5;
 
+              //Sign convention of Lee "Introduction to Riemannian Manifolds"
+	      // Q=-1/4*eps_ikl*eps_jmn*Riem_klmn
               // Q_xx = <Q(x),x> = -R_yzyz
               // Q_xy = <Q(y),x> =  R_xzyz
               // Q_xz = <Q(z),x> = -R_xyyz
@@ -1641,23 +1658,23 @@ namespace ngcomp
               //nonlinear christoffelpart
               for (size_t q=0; q<D; q++)
                 {
-                  y(2*D+2) -= hchristoffel2(1*D*D+0*D+q)*hchristoffel1(1*D*D+0*D+q);
-                  y(2*D+2) += hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
+                  y(2*D+2) += hchristoffel2(1*D*D+0*D+q)*hchristoffel1(1*D*D+0*D+q);
+                  y(2*D+2) -= hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
 
-                  y(1*D+2) += hchristoffel2(0*D*D+1*D+q)*hchristoffel1(0*D*D+2*D+q);
-                  y(1*D+2) -= hchristoffel2(2*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
+                  y(1*D+2) -= hchristoffel2(0*D*D+1*D+q)*hchristoffel1(0*D*D+2*D+q);
+                  y(1*D+2) += hchristoffel2(2*D*D+1*D+q)*hchristoffel1(0*D*D+0*D+q);
 
-                  y(0*D+2) -= hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+2*D+q);
-                  y(0*D+2) += hchristoffel2(2*D*D+1*D+q)*hchristoffel1(0*D*D+1*D+q);
+                  y(0*D+2) += hchristoffel2(1*D*D+1*D+q)*hchristoffel1(0*D*D+2*D+q);
+                  y(0*D+2) -= hchristoffel2(2*D*D+1*D+q)*hchristoffel1(0*D*D+1*D+q);
 
-                  y(1*D+1) -= hchristoffel2(0*D*D+2*D+q)*hchristoffel1(0*D*D+2*D+q);
-                  y(1*D+1) += hchristoffel2(2*D*D+2*D+q)*hchristoffel1(0*D*D+0*D+q);
+                  y(1*D+1) += hchristoffel2(0*D*D+2*D+q)*hchristoffel1(0*D*D+2*D+q);
+                  y(1*D+1) -= hchristoffel2(2*D*D+2*D+q)*hchristoffel1(0*D*D+0*D+q);
 
-                  y(0*D+1) += hchristoffel2(1*D*D+2*D+q)*hchristoffel1(0*D*D+2*D+q);
-                  y(0*D+1) -= hchristoffel2(2*D*D+2*D+q)*hchristoffel1(0*D*D+1*D+q);
+                  y(0*D+1) -= hchristoffel2(1*D*D+2*D+q)*hchristoffel1(0*D*D+2*D+q);
+                  y(0*D+1) += hchristoffel2(2*D*D+2*D+q)*hchristoffel1(0*D*D+1*D+q);
 
-                  y(0*D+0) -= hchristoffel2(1*D*D+2*D+q)*hchristoffel1(1*D*D+2*D+q);
-                  y(0*D+0) += hchristoffel2(2*D*D+2*D+q)*hchristoffel1(1*D*D+1*D+q);
+                  y(0*D+0) += hchristoffel2(1*D*D+2*D+q)*hchristoffel1(1*D*D+2*D+q);
+                  y(0*D+0) -= hchristoffel2(2*D*D+2*D+q)*hchristoffel1(1*D*D+1*D+q);
                 }
 
               // symmetry
@@ -1710,14 +1727,17 @@ namespace ngcomp
         }
       if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
         {
+	  //Sign convention of Lee "Introduction to Riemannian Manifolds"
+          //Q = R1221 = -0.5*inc(g) + Gamma_01^q*Gamma_10q-Gamma_22^q*Gamma_00q
+	  
           bfel.EvaluateIncShape(bmir, x, y);
-          y.Row(0).Range(0,bmir.Size()) *= 0.5;
+          y.Row(0).Range(0,bmir.Size()) *= -0.5;
           for (size_t q=0; q<D; q++)
             {
               for (size_t m = 0; m < bmir.Size(); m++)
                 {
-                  y(0,m) -= hchristoffel2(1*D*D+0*D+q,m)*hchristoffel1(1*D*D+0*D+q,m);
-                  y(0,m) += hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
+                  y(0,m) += hchristoffel2(1*D*D+0*D+q,m)*hchristoffel1(1*D*D+0*D+q,m);
+                  y(0,m) -= hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                 }
             }
         }
@@ -1725,7 +1745,7 @@ namespace ngcomp
         {
           // linear inc part
           bfel.EvaluateIncShape(bmir, x, y);
-          y.AddSize(9, bmir.Size()) *= 0.5;
+          y.AddSize(9, bmir.Size()) *= -0.5;
           
           // Q_xx = <Q(x),x> = -R_yzyz
           // Q_xy = <Q(y),x> =  R_xzyz
@@ -1739,23 +1759,23 @@ namespace ngcomp
             {
               for (size_t m = 0; m < bmir.Size(); m++)
                 {
-                  y(2*D+2,m) -= hchristoffel2(1*D*D+0*D+q,m)*hchristoffel1(1*D*D+0*D+q,m);
-                  y(2*D+2,m) += hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
+                  y(2*D+2,m) += hchristoffel2(1*D*D+0*D+q,m)*hchristoffel1(1*D*D+0*D+q,m);
+                  y(2*D+2,m) -= hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                   
-                  y(1*D+2,m) += hchristoffel2(0*D*D+1*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
-                  y(1*D+2,m) -= hchristoffel2(2*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
+                  y(1*D+2,m) -= hchristoffel2(0*D*D+1*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
+                  y(1*D+2,m) += hchristoffel2(2*D*D+1*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                   
-                  y(0*D+2,m) -= hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
-                  y(0*D+2,m) += hchristoffel2(2*D*D+1*D+q,m)*hchristoffel1(0*D*D+1*D+q,m);
+                  y(0*D+2,m) += hchristoffel2(1*D*D+1*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
+                  y(0*D+2,m) -= hchristoffel2(2*D*D+1*D+q,m)*hchristoffel1(0*D*D+1*D+q,m);
                   
-                  y(1*D+1,m) -= hchristoffel2(0*D*D+2*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
-                  y(1*D+1,m) += hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
+                  y(1*D+1,m) += hchristoffel2(0*D*D+2*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
+                  y(1*D+1,m) -= hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(0*D*D+0*D+q,m);
                   
-                  y(0*D+1,m) += hchristoffel2(1*D*D+2*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
-                  y(0*D+1,m) -= hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(0*D*D+1*D+q,m);
+                  y(0*D+1,m) -= hchristoffel2(1*D*D+2*D+q,m)*hchristoffel1(0*D*D+2*D+q,m);
+                  y(0*D+1,m) += hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(0*D*D+1*D+q,m);
               
-                  y(0*D+0,m) -= hchristoffel2(1*D*D+2*D+q,m)*hchristoffel1(1*D*D+2*D+q,m);
-                  y(0*D+0,m) += hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(1*D*D+1*D+q,m);
+                  y(0*D+0,m) += hchristoffel2(1*D*D+2*D+q,m)*hchristoffel1(1*D*D+2*D+q,m);
+                  y(0*D+0,m) -= hchristoffel2(2*D*D+2*D+q,m)*hchristoffel1(1*D*D+1*D+q,m);
                 }
             }
           
@@ -1840,6 +1860,31 @@ namespace ngcomp
   DocInfo HCurlCurlFESpace :: GetDocu ()
   {
     auto docu = FESpace::GetDocu();
+    docu.short_docu = "A Regge finite element space.";
+    docu.long_docu =
+      R"raw_string(The Regge finite element space consists of element-wise symmetric matrix-valued polynomial functions with tangential-tangential continuity over element interfaces. The normal-tangential (tangential-normal) and normal-normal components can jump over elements.
+
+Tangential-tangential boundary values are well defined.
+
+Several (nonlinear) differential operators from differential geometry are implemented for Regge elements. For all curvature related objects we use the sign convention of Lee " Introduction to Riemannian manifolds".
+curl: Row-wise curl of Regge element
+grad: Gradient of Regge element
+inc: incompatibility operator
+     inc(g) = d_1d_1 g_22 - 2*d_1d_2 g_12 + d_2d_2 g_11 in 2D
+     inc(g) = curl(Trans(curl(g))) in 3D
+christoffel: Computes the Christoffel symbol of first kind, which is a third-order tensor: Gamma_ijk(g) = 0.5*(d_i g_jk + d_j g_ik - d_k g_ij)
+christoffel2: Computes the Christoffel symbol of second kind, which is a nonlinear third-order tensor: Gamma_ij^k(g) = Inv(g)^kp Gamma_ijp(g)
+Riemann: Computes the fourth-order Riemann curvature tensor. 
+         R(X,Y)Z = nabla_X nabla_Y Z - nabla_Y nabla_X Z-nabla_[X,Y] Z
+         R_ijkl(g) = d_i Gamma_jkl(g) - d_j Gamma_ikl(g) + Gamma_ik^p(g) Gamma_jlp(g) - Gamma_jk^p(g) Gamma_ilp(g)
+curvature: Curvature operator Q(X wedge Y, W wedge Z) = R(X,Y,Z,W)
+           Q = R1221 in 2D
+           Q(e_i x e_j, e_l x e_k) = R_ijkl in 3D
+Ricci: Ricci curvature tensor Ric_ij(g) = R_iklj(g) Inv(g)^kl
+scalar: Scalar curvature S(g) = Ric_ij(g) Inv(g)^ij = R_iklj(g) Inv(g)^kl Inv(g)^ij
+Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
+)raw_string";
+    
     docu.Arg("discontinuous") = "bool = False\n"
       "  Create discontinuous HCurlCurl space";
     return docu;
