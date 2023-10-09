@@ -13,7 +13,7 @@
 namespace ngbla
 {
 
-  template <typename T, typename TS=double, typename TDIST=IC<1>> class VectorView;
+  template <typename T=double, typename TS=size_t, typename TDIST=IC<1>> class VectorView;
 
 
   template <typename T, typename ...Args>
