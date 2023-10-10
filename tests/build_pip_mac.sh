@@ -18,4 +18,4 @@ $PYDIR/pip3 install numpy twine scikit-build wheel
 export CMAKE_OSX_ARCHITECTURES='arm64;x86_64'
 $PYDIR/pip3 install netgen-mesher==$NETGEN_VERSION
 $PYDIR/python3 setup.py bdist_wheel --plat-name macosx-10.15-universal2 -j10
-$PYDIR/python3 -m twine upload dist/*.whl
+$PYDIR/python3 -m twine upload dist/*.whl || true

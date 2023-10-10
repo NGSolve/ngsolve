@@ -2,13 +2,13 @@ import glob
 import os
 import sys
 import netgen.version
-import site
 
 from skbuild import setup
 import skbuild.cmaker
 from subprocess import check_output
 from distutils.sysconfig import get_python_lib
-import pkg_resources
+from urllib.request import urlopen
+import json
 
 setup_requires = []
 
@@ -28,6 +28,22 @@ def _patched_parse_manifests(self):
 skbuild.cmaker.CMaker._parse_manifests = _patched_parse_manifests
 
 version = check_output([sys.executable,'tests/get_python_version_string_from_git.py'], cwd='.').decode('utf-8').strip()
+
+# check if release alread exists on pypi
+try:
+    python_version = f"cp{sys.version_info.major}{sys.version_info.minor}"
+    platform = sys.platform
+    if platform == 'darwin':
+        platform = 'macosx'
+    url = f"https://pypi.org/pypi/ngsolve/{version}/json"
+    data = json.loads(urlopen(url).read())
+    for url in data['urls']:
+        if platform in url['filename'] and url['python_version'] == python_version:
+            print("version already exists on pypi, skip build")
+            sys.exit()
+except:
+    pass
+
 
 py_install_dir = get_python_lib(1,0,'').replace('\\','/')
 

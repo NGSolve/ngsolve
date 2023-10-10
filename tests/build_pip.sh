@@ -25,7 +25,7 @@ do
     rm -rf _skbuild
     $PYDIR/pip wheel .
     rename linux_ manylinux_2_17_x86_64.manylinux2014_ ngsolve*.whl
-    mv ngsolve*.whl wheelhouse/
+    mv ngsolve*.whl wheelhouse/ || true
     $PYDIR/pip uninstall -y netgen-mesher
 
     #$PYDIR/pip install --extra-index-url https://test.pypi.org/simple/ wheelhouse/ngsolve-avx2-*-cp${pyversion}-*.whl
