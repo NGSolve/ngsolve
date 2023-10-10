@@ -13,7 +13,7 @@ endif()
 find_package(CUDAToolkit)
 enable_language(CUDA)
 
-add_compile_definitions(NGSolve PRIVATE CUDA)
+add_compile_definitions(CUDA)
 
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -27,7 +27,7 @@ set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp dev_sparsecholesky
 
 target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --extended-lambda >)
 
-target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve)
+target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve netgen_python)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_SEPARABLE_COMPILATION ON)
 if(CMAKE_PROJECT_NAME STREQUAL "NGSolve")
   install( TARGETS ${lib_name} ${ngs_install_dir} )
