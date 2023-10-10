@@ -95,7 +95,8 @@ namespace ngcomp
     is_complex = fespace->IsComplex();
     if (fespace->GetEvaluator(VOL) || fespace->GetEvaluator(BND))
       SetDimensions (GridFunctionCoefficientFunction::Dimensions());
-    nested = flags.GetDefineFlag ("nested");
+    // nested = flags.GetDefineFlag ("nested");
+    nested = flags.GetDefineFlagX ("nested").IsMaybeTrue();
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
     autoupdate = flags.GetDefineFlag ("autoupdate");

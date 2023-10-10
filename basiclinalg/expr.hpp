@@ -1117,6 +1117,7 @@ namespace ngbla
       else
         return tuple(get<0>(a.Shape()), get<1>(b.Shape()));
       /*
+        // too complicated ? 
       return tuple_cat(tuple(get<0>(a.Shape())),
                        std::apply([](auto&&, const auto&... args) {return std::tie(args...);}, b.Shape()) );
       */
