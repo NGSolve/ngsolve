@@ -11,7 +11,7 @@ namespace ngcomp
 
   class HDivDivFESpace : public FESpace
   {
-    size_t ndof;
+    // size_t ndof;
     Array<int> first_facet_dof;
     Array<int> first_element_dof;
     Array<INT<2,int> > order_facet;
@@ -39,7 +39,7 @@ namespace ngcomp
 
     void Update() override;
 
-    virtual size_t GetNDof () const throw() override { return ndof; }
+    // virtual size_t GetNDof () const throw() override { return ndof; }
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
     using FESpace::GetOrder;
