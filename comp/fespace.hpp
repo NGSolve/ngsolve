@@ -292,7 +292,8 @@ ANY                  1 1 1 1 | 15
     /// number of (process-local) dofs
     virtual size_t GetNDof () const { return ndof; } 
     /// number of dofs on the level
-    virtual size_t GetNDofLevel (int level) const { return ndof_level[level]; } 
+    virtual size_t GetNDofLevel (int level) const
+    { return (level < ndof_level.Size()) ? ndof_level[level] : GetNDof(); } 
 
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const;
     
