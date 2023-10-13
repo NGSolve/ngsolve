@@ -763,7 +763,7 @@ namespace ngcomp
           fine_facet[el.Facets()] = true;
       }
     
-    ndof = 0;
+    size_t ndof = 0;
     for(auto i : Range(ma->GetNFacets()))
       {
         first_facet_dof[i] = ndof;
@@ -865,6 +865,9 @@ namespace ngcomp
           }
       }
     first_element_dof.Last() = ndof;
+
+    SetNDof(ndof);
+    
     if(discontinuous)
       first_facet_dof = 0;
     
