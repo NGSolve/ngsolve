@@ -1109,10 +1109,16 @@ inverse : string
     .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba,
                               bool GS) 
          {
-           if (GS)
-             return py::cast(make_shared<SymmetricGaussSeidelPrecond>(m, ba));
-           else
-             return py::cast(m.CreateJacobiPrecond(ba));
+           if (GS) {
+             auto pre = make_shared<SymmetricGaussSeidelPrecond>(m, ba);
+             py::gil_scoped_acquire acq;
+             return py::cast(pre);
+           }
+           else {
+             auto pre = m.CreateJacobiPrecond(ba);
+             py::gil_scoped_acquire acq;
+             return py::cast(pre);
+           }
          },
          py::call_guard<py::gil_scoped_release>(),
          py::arg("freedofs") = shared_ptr<BitArray>(),
