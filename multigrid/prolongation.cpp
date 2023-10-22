@@ -466,147 +466,64 @@ namespace ngmg
 
 
 
-  /*
-    ElementProlongation :: 
-    ElementProlongation(const MeshAccess & ama, const ElementFESpace & aspace)
-    : ma(ama), space(aspace)
-    {
-    ;
-    }
-  */
-
-  ElementProlongation :: ~ElementProlongation()
+  ElementProlongation ::
+  ElementProlongation(const FESpace & aspace, VorB avb)
+    : ma(aspace.GetMeshAccess()), space(aspace), vb(avb)
   {
-    ;
+    if (space.GetOrder() != 0)
+      throw Exception("ElementProlongation needs space of order=0");
   }
 
-  /*
-    void ElementProlongation :: Update ()
-    {
-    ;
-    }
 
-    void ElementProlongation :: 
-    ProlongateInline (int finelevel, ngla::BaseVector & v) const
-    {
-    int i, j;
-    int parent;
+  ElementProlongation :: ~ElementProlongation() { }
 
-    int nc = space.GetNDofLevel (finelevel-1);
-    int nf = space.GetNDofLevel (finelevel);
-
-    BaseSystemVector & sv = dynamic_cast<BaseSystemVector&> (v);
-    int sdim = sv.SystemDim();
-
-    for (i = nc+1; i <= nf; i++)
-    {
-    parent = ma->GetParentElement (i);
-    for (j = 1; j <= sdim; j++)
-    sv.VElem(i, j) = sv.VElem(parent, j);
-    }
-    }
-
-    void ElementProlongation :: 
-    RestrictInline (int finelevel, ngla::BaseVector & v) const
-    {
-    int i, j;
-    int parent;
-
-    int nc = space.GetNDofLevel (finelevel-1);
-    int nf = space.GetNDofLevel (finelevel);
-
-    BaseSystemVector & sv = dynamic_cast<BaseSystemVector&> (v);
-    int sdim = sv.SystemDim();
-
-    for (i = nf; i > nc; i--)
-    {
-    parent = ma->GetParentElement (i);
-    for (j = 1; j <= sdim; j++)
-    {
-    sv.VElem(parent, j) += sv.VElem(i, j);
-    sv.VElem(i, j) = 0;
-    }
-    }
-    }
-  */
-
-
-
-
-
-
-
-
-
-  SurfaceElementProlongation :: 
-  SurfaceElementProlongation(shared_ptr<MeshAccess> ama, 
-			     const SurfaceElementFESpace & aspace)
-    : ma(ama) // , space(aspace)
-  {
-    ;
-  }
-
-  SurfaceElementProlongation :: ~SurfaceElementProlongation()
+  void ElementProlongation ::Update (const FESpace & fes) 
   {
     ;
   }
   
-  void SurfaceElementProlongation :: Update (const FESpace & fespace)
+  shared_ptr<SparseMatrix< double >> ElementProlongation ::
+  CreateProlongationMatrix( int finelevel ) const 
   {
-    ;
+    return nullptr;
   }
-
-  void SurfaceElementProlongation :: 
-  ProlongateInline (int finelevel, ngla::BaseVector & v) const
+  
+  ///
+  void ElementProlongation ::
+  ProlongateInline (int finelevel, BaseVector & v) const 
   {
-    cout << "SurfaceElementProlongation not implemented" << endl;
-    /*
-    //  (*testout) << "SurfaceElementProlongation" << endl;
-    //  (*testout) << "before: " << v << endl;
-    int i, j;
-    int parent;
-
-    int nc = space.GetNDofLevel (finelevel-1);
-    int nf = space.GetNDofLevel (finelevel);
-
-    BaseSystemVector & sv = dynamic_cast<BaseSystemVector&> (v);
-    int sdim = sv.SystemDim();
-
-
-    for (i = nc+1; i <= nf; i++)
-    {
-    parent = ma->GetParentSElement (i);
-    for (j = 1; j <= sdim; j++)
-    sv.VElem(i, j) = sv.VElem(parent, j);
-    }
-    */
-    //  (*testout) << "after: " << v << endl;
-  }
-
-  void SurfaceElementProlongation :: 
-  RestrictInline (int finelevel, ngla::BaseVector & v) const
-  {
-    /*
-      int i, j;
-      int parent;
-
-      int nc = space.GetNDofLevel (finelevel-1);
-      int nf = space.GetNDofLevel (finelevel);
-
-      BaseSystemVector & sv = dynamic_cast<BaseSystemVector&> (v);
-      int sdim = sv.SystemDim();
-
-      for (i = nf; i > nc; i--)
+    FlatSysVector<> fv = v.SV();
+    
+    size_t nc = space.GetNDofLevel (finelevel-1);
+    size_t nf = space.GetNDofLevel (finelevel);
+    
+    for (size_t i = nc; i < nf; i++)
       {
-      parent = ma->GetParentSElement (i);
-      for (j = 1; j <= sdim; j++)
-      {
-      sv.VElem(parent, j) += sv.VElem(i, j);
-      sv.VElem(i, j) = 0;
-      }
-      }
-    */
+	  auto parent = ma->GetParentElement (ElementId(vb,i));
+	  fv(i) = fv(parent.Nr());
+	}
+    
+    fv.Range (nf, fv.Size()) = 0;
   }
+  
+  void ElementProlongation ::
+  RestrictInline (int finelevel, BaseVector & v) const 
+  {
+    FlatSysVector<> fv = v.SV(); 
+    
+    size_t nc = space.GetNDofLevel (finelevel-1);
+    size_t nf = space.GetNDofLevel (finelevel);
+    
+    for (int i = nf-1; i >= nc; i--)
+      {
+        auto parent = ma->GetParentElement (ElementId(vb,i));
+        fv(parent.Nr()) += fv(i);
+        fv(i) = 0;
+      }
+  }
+  
+
+
 
 
 
