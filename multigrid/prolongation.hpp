@@ -131,88 +131,25 @@ namespace ngmg
     ///
     shared_ptr<MeshAccess> ma;
     ///
-    const ElementFESpace & space;
+    const FESpace & space;
+    VorB vb;
   public:
     ///
-    ElementProlongation(const ElementFESpace & aspace)
-      : ma(aspace.GetMeshAccess()), space(aspace) { ; }
-    ///
+    ElementProlongation(const FESpace & aspace, VorB avb = VOL);
+
     virtual ~ElementProlongation();
-  
-    ///
-    virtual void Update (const FESpace & fes) override
-    { ; }
-
-    ///
-    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
-
-    ///
-    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
-    {
-      // FlatVector<TV> fv = dynamic_cast<T_BaseVector<TV> &> (v).FV();    
-
-      FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
-    
-      int nc = space.GetNDofLevel (finelevel-1);
-      int nf = space.GetNDofLevel (finelevel);
-
-      for (int i = nc; i < nf; i++)
-	{
-	  int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-	  fv(i) = fv(parent);
-	}
-    
-      for (int i = nf; i < fv.Size(); i++)
-	fv(i) = 0;
-    }
-
-    ///
-    virtual void RestrictInline (int finelevel, BaseVector & v) const override
-    {
-      //    FlatVector<TV> fv = dynamic_cast<T_BaseVector<TV> &> (v).FV();    
-
-      FlatSysVector<> fv (v.Size(), v.EntrySize(), static_cast<double*>(v.Memory()));
-    
-      int nc = space.GetNDofLevel (finelevel-1);
-      int nf = space.GetNDofLevel (finelevel);
-
-      for (int i = nf-1; i >= nc; i--)
-	{
-	  int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-	  fv(parent) += fv(i);
-	  fv(i) = 0;
-	}
-    }
-  };
-
-
-
-  /// Piecewise constant prolongation on boundary (implemented ?)
-  class SurfaceElementProlongation : public Prolongation
-  {
-    ///
-    shared_ptr<MeshAccess> ma;
-    ///
-    // const SurfaceElementFESpace & space;
-  public:
-    ///
-    SurfaceElementProlongation(shared_ptr<MeshAccess> ama,
-			       const SurfaceElementFESpace & aspace);
-    ///
-    virtual ~SurfaceElementProlongation();
   
     ///
     virtual void Update (const FESpace & fes) override;
 
-    ///
-    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override;
+
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
-    ///
     virtual void RestrictInline (int finelevel, BaseVector & v) const override;
   };
+
+
 
 
 

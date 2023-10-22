@@ -1884,6 +1884,10 @@ global system.
           }
       }
 
+    if (order == 0)
+      prol = make_shared<ElementProlongation> (*this, BND);
+
+    
     if (dimension > 1)
     {
       integrator[BND] = make_shared<BlockBilinearFormIntegrator> (integrator[BND], dimension);
