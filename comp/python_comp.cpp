@@ -16,6 +16,7 @@
 #include "numberfespace.hpp"
 #include "irspace.hpp"
 #include "compressedfespace.hpp"
+#include "plateaufespace.hpp"
 #include "../fem/integratorcf.hpp"
 #include "../fem/h1lofe.hpp"
 #include "contact.hpp"
@@ -1783,6 +1784,24 @@ active_dofs : BitArray or None
               }
             }, py::arg("fespace"), py::arg("active_dofs")=DummyArgument());
 
+
+   py::class_<PlateauFESpace, shared_ptr<PlateauFESpace>, FESpace>
+     (m, "PlateauFESpace", docu_string("PlateauFESpace"))
+     .def(py::init([] (shared_ptr<FESpace> & fes,
+                       std::vector<Region> plateaus_vec)
+     {
+       Array<Region> plateaus;
+       for (auto p : plateaus_vec)
+         plateaus.Append (p);
+       auto pfes = make_shared<PlateauFESpace> (fes, std::move(plateaus));
+       pfes->Update();
+       pfes->FinalizeUpdate();
+       connect_auto_update(fes.get());
+       return pfes;
+
+     }))
+    ;
+   
    py::class_<GlobalInterfaceSpace, shared_ptr<GlobalInterfaceSpace>,
               FESpace>
      (m, "GlobalInterfaceSpace")

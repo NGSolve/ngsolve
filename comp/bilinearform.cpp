@@ -558,7 +558,18 @@ namespace ngcomp
                        fespace->GetDofNrs (eid, dnums, VISIBLE_DOF);
                      else
                        fespace->GetDofNrs (eid, dnums);
-                         
+
+                     // remove duplicates ...
+                     QuickSort (dnums);
+                     for (int k = 0; k+1 < dnums.Size(); )
+                       if (dnums[k] == dnums[k+1])
+                         {
+                           for (int j = k+1; j+1 < dnums.Size(); j++)
+                             dnums[j] = dnums[j+1];
+                           dnums.SetSize(dnums.Size()-1);
+                         }
+                       else
+                         k++;
                      
                      for (DofId d : dnums)
                        if (IsRegularDof(d)) creator.Add (shift+i, d);

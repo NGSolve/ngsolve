@@ -787,6 +787,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
                        for (int i = dofs.Size()-1; i >= 0; i--)
                          if (!IsRegularDof(dofs[i])) dofs.DeleteElement(i);
                      QuickSort (dofs);   // sort to avoid dead-locks
+                     // remove duplicates
+                     for (int i = 0; i+1 < dofs.Size(); )
+                       if (dofs[i] == dofs[i+1])
+                         {
+                           for (int j = i+1; j+1 < dofs.Size(); j++)
+                             dofs[j] = dofs[j+1];
+                           dofs.SetSize(dofs.Size()-1);
+                         }
+                       else
+                         i++;
                      
                      for (auto d : dofs) 
                        locks[d].lock();
@@ -841,7 +851,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
                    << " for " << ((vb == VOL) ? "vol" : "bnd") << endl;
       }
       }
-    
     // invalidate facet_coloring
     facet_coloring = Table<int>();
        
