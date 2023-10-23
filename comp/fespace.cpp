@@ -786,8 +786,17 @@ lot of new non-zero entries in the matrix!\n" << endl;
                      else
                        for (int i = dofs.Size()-1; i >= 0; i--)
                          if (!IsRegularDof(dofs[i])) dofs.DeleteElement(i);
+
                      QuickSort (dofs);   // sort to avoid dead-locks
                      // remove duplicates
+                     size_t prev = 0;
+                     for (size_t i = 1; i < dofs.Size(); i++)
+                       if (dofs[i] != dofs[prev])
+                         dofs[++prev] = dofs[i];
+                     if (dofs.Size() > 0)                         
+                       dofs.SetSize(prev+1);
+
+                     /*
                      for (int i = 0; i+1 < dofs.Size(); )
                        if (dofs[i] == dofs[i+1])
                          {
@@ -797,6 +806,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
                          }
                        else
                          i++;
+                     */
+                     
                      
                      for (auto d : dofs) 
                        locks[d].lock();
