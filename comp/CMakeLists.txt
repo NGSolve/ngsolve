@@ -13,7 +13,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         python_comp.cpp python_comp_mesh.cpp ../fem/python_fem.cpp vtkoutput.cpp
         periodic.cpp discontinuous.cpp hidden.cpp reorderedfespace.cpp
         hypre_ams_precond.cpp facetsurffespace.cpp
-        compressedfespace.cpp
+        compressedfespace.cpp plateaufespace.cpp 
         globalinterfacespace.cpp globalspace.cpp
         ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp
         ../multigrid/smoother.cpp contact.cpp localsolve.cpp interpolate.cpp
@@ -40,7 +40,7 @@ install( FILES
         irspace.hpp h1lumping.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp hidden.hpp reorderedfespace.hpp
         hypre_ams_precond.hpp facetsurffespace.hpp
-        compressedfespace.hpp globalinterfacespace.hpp globalspace.hpp
+        compressedfespace.hpp plateaufespace.hpp globalinterfacespace.hpp globalspace.hpp
         python_comp.hpp fesconvert.hpp contact.hpp interpolate.hpp
         webgui.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}

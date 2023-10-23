@@ -202,7 +202,7 @@ namespace ngla
         f(minval);
 
         for (int i : sizes.Range())
-          if (minvals[i] == minval)
+          while (minvals[i] == minval) // if -> while ... duplicate cols in row
             {
               ptrs[i]++;
               sizes[i]--;
