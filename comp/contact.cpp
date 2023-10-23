@@ -670,7 +670,15 @@ namespace ngcomp
          if(proxy && proxy->IsTestFunction() && !test_proxies.Contains(proxy))
            test_proxies.Append(proxy);
        });
-    fes = trial_proxies[0]->GetFESpace();
+    if(trial_proxies.Size())
+      fes = trial_proxies[0]->GetFESpace();
+    else
+      {
+        if (test_proxies.Size())
+          fes = test_proxies[0]->GetFESpace();
+        else
+          throw Exception("No trial or test function found in ContactIntegrator");
+      }
   }
 
   void ContactIntegrator::ApplyAdd(const FiniteElement& primary_fel,
@@ -1172,6 +1180,8 @@ namespace ngcomp
     auto& primary_fel = fes->GetFE(primary_ei, lh);
     auto& secondary_fel = fes->GetFE(secondary_ei, lh);
     
+    if(primary_ei.IsBoundary())
+      {
     for (bool def : { false, true })
       {
         auto& energies = cb->GetEnergies(def);
@@ -1186,6 +1196,27 @@ namespace ngcomp
               ci->ApplyAdd(primary_fel, secondary_fel, primary_mir, elx, ely, lh);
             for(const auto& ce : energies)
               ce->ApplyAdd(primary_fel, secondary_fel, primary_mir, elx, ely, lh);
+          }
+      }
+      }
+    else
+      {
+        for(bool def : { false, true  })
+          {
+            auto& energies = cb->GetEnergies(def);
+            auto& integrators = cb->GetIntegrators(def);
+            if (energies.Size() || integrators.Size())
+              {
+                MappedIntegrationRule<DIM,DIM> primary_mir(primary_ir, def ? primary_deformed_trafo :  primary_trafo, lh);
+                primary_mir.ComputeNormalsAndMeasure (primary_trafo.GetElementType(), primary_ir[0].FacetNr());
+                MappedIntegrationRule<DIM-1,DIM> secondary_mir(secondary_ir, def ? secondary_deformed_trafo : secondary_trafo, lh);
+                primary_mir.SetOtherMIR(&secondary_mir);
+                for(const auto& ci : integrators)
+                  ci->ApplyAdd(primary_fel, secondary_fel, primary_mir, elx, ely, lh);
+                for(const auto& ce : energies)
+                  ce->ApplyAdd(primary_fel, secondary_fel, primary_mir, elx, ely, lh);
+
+                }
           }
       }
   }
