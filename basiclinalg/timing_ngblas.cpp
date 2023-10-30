@@ -29,12 +29,54 @@ namespace ngbla
                          SliceMatrix<double, ColMajor> V);
 
 
+  string GetTimingHelpString()
+  {
+    return string(R"raw_string(
+Available options timings are:
+          -1 .. this help
+          0 ... run all timings
+          1 ... A = B,   A,B = n*m,   A = aligned, fixed dist
+          2 ... A = 0,   A = n*m,     but sliced
+          3 ... A = B^t, A = n*m, 
+          5 ... y = A*x,   A = n*m
+          6 ... y = A^t*x,   A = n*m
+          7 ... y += A^t*x(ind),   A = n*m
+          10 .. C = A * B,   A=n*m, B=m*k, C=n*k
+          11 .. C += A * B,   A=n*m, B=m*k, C=n*k
+          // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned
+          20 .. X = T * X       T=n*n triangular, X=n*m "
+          21 .. X = T^-1 * X     T=n*n triangular, X=n*m "
+          22 .. T^-1             T=n*n triangular"
+          50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m
+          51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned
+          52 .. C = A * B^t,   A=n*k, B=m*k, C=n*m
+          60 .. C -= A^t * D B,  A=n*k, B=n*m, C = k*m, D=diag
+          61 .. C = A^t B,  A=n*k, B=n*m, C = k*m
+          70 .. C += A B^t,  A=n*k, B=m*k, C = n*m, A,B SIMD
+	  80 .. (x,y)        inner product, size n
+          100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW
+          101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned
+          110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW
+          111.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW, B aligned
+          150.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n
+          151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned
+          200.. CalcInverse        A = nxn
+          201.. CalcInverse by LU  A = nxn          
+          205.. LDL                A = nxn
+          210.. CalcInverseLapack  A = nxn
+          300.. CalcSVD            A = nxn
+)raw_string");
+  }
+
 
   list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k,
                                      bool lapack, bool doubleprec, size_t maxits)
   {
     if (what < 0)
       {
+
+        cout << GetTimingHelpString() << flush;
+        /*
         cout << "Available options timings are:\n"
           "-1 .. this help\n"
           "0 ... run all timings\n"
@@ -71,6 +113,7 @@ namespace ngbla
           "210.. CalcInverseLapack  A = nxn\n"
           "300.. CalcSVD            A = nxn\n"
              << endl;
+        */
         return list<tuple<string,double>>();
       }
 
@@ -752,13 +795,19 @@ namespace ngbla
         {
           Timer t("C = A^t*B");
           t.Start();
-          for (size_t j = 0; j < its; j++)
-            c = Trans(a)*b;
+          if (!lapack)
+            for (size_t j = 0; j < its; j++)
+              c = Trans(a)*b;
+          else
+            for (size_t j = 0; j < its; j++)
+              c = Trans(a)*b | Lapack;
+            
           // MultAtB(a, b, c);
           t.Stop();
           cout << "MultAtB GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("MultAtB", 1e-9 * tot *its / t.GetTime()));
         }
+        /*
         {
           Timer t("C = A^t*B");
           t.Start();
@@ -768,6 +817,8 @@ namespace ngbla
           cout << "C=A^t*B GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
           timings.push_back(make_tuple("A^T*B", 1e-9 * tot *its / t.GetTime()));
         }
+        */
+        /*
         {
           Timer t("C = A^t*B, block block");
           constexpr size_t BS = 96;
@@ -788,6 +839,7 @@ namespace ngbla
               timings.push_back(make_tuple("MultAtB - block", 1e-9 * tot *its / t.GetTime()));
             }
         }
+        */
       }
     
     if (what == 0 || what == 70)
