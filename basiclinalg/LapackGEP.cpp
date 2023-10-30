@@ -68,6 +68,15 @@ namespace ngbla
   {
     return dgetrf_(n,m,a,lda,ipiv,info);
   }
+
+  int dgetrs(char *trans, integer *n, integer *nrhs, 
+             doublereal *a, integer *lda, integer *ipiv, doublereal *b, integer *
+             ldb, integer *info)
+  {
+    return dgetrs_(trans, n, nrhs, a, lda, ipiv, b, ldb, info);
+  }
+  
+  
 }
 
 

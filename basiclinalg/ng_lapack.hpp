@@ -118,6 +118,10 @@ namespace ngbla
   NGS_DLL_HEADER int dgetrf(integer* n, integer* m, double* a, integer* lda, integer* ipiv, integer* info);
   NGS_DLL_HEADER int dgetri(integer* n, double* a, integer* lda, integer* ipiv,
                             double* hwork, integer* lwork, integer* info);
+  NGS_DLL_HEADER int dgetrs(char *trans, integer *n, integer *nrhs, 
+                            doublereal *a, integer *lda, integer *ipiv, doublereal *b, integer *
+                            ldb, integer *info);
+  
 
   inline int gemm(char *transa, char *transb, integer *m, integer *
       n, integer *k, real *alpha, real *a, integer *lda,
@@ -833,6 +837,59 @@ namespace ngbla
   */
 
 
+  template <ORDERING ORD>
+  class LapackLU
+  {
+    Matrix <double, ORD> a;
+    ArrayMem<integer,100> ipiv;
+    
+  public:
+    LapackLU (Matrix<double,ORD> _a)
+      : a(std::move(_a)), ipiv(a.Height())
+    {
+      integer m = a.Height();
+      if (m == 0) return;
+      integer n = a.Width();
+      integer lda = a.Dist();
+
+      integer info;
+      dgetrf(&n, &m, &a(0,0), &lda, &ipiv[0], &info);
+    }
+    
+    template <typename Db>
+    void Solve (VectorView<double,Db> b) const
+    {
+      /*
+      int dgetrs_(char *trans, integer *n, integer *nrhs, 
+                  doublereal *a, integer *lda, integer *ipiv, doublereal *b, integer *
+                  ldb, integer *info);
+      */
+      char transa =  (ORD == ColMajor) ? 'N' : 'T';
+      integer n = a.Height();
+      integer nrhs = 1;
+      integer lda = a.Dist();
+      integer ldb = b.Size();
+      integer info;
+      dgetrs(&transa, &n, &nrhs, a.Data(), &lda, ipiv.Data(), b.Data(), &ldb, &info);
+    }
+    
+    Matrix <double,ORD> Inverse() &&
+    {
+      double hwork;
+      integer lwork = -1;
+      integer n = a.Height();      
+      integer lda = a.Dist();
+      integer info;
+      dgetri(&n, &a(0,0), &lda, &ipiv[0], &hwork, &lwork, &info);
+      lwork = integer(hwork);
+      ArrayMem<double,1000> work(lwork);
+      dgetri(&n, &a(0,0), &lda, &ipiv[0], &work[0], &lwork, &info);
+      return std::move(a);
+    }
+  };
+
+
+  
 
   inline void LapackInverse (ngbla::SliceMatrix<double> a)
   {
@@ -1446,8 +1503,7 @@ namespace ngbla
   { c += fac * a * Trans (b); }
 
 
-
-
+  
   inline void LapackInverse (ngbla::FlatMatrix<double> a)
   { 
     CalcInverse (a);
