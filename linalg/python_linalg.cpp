@@ -1781,6 +1781,19 @@ shift : object
                                          { cout << "output basematrix" << endl;
                                            mat.DoArchive(*arch); return arch; });
 
+  m.def("GetAvailableSolvers", []() {
+    py::list solvers;
+    if(is_pardiso_available)
+      solvers.append(GetInverseName(PARDISO));
+#ifdef USE_MUMPS
+    solvers.append(GetInverseName(MUMPS));
+#endif // USE_MUMPS
+#ifdef USE_UMFPACK
+    solvers.append(GetInverseName(UMFPACK));
+#endif // USE_UMFPACK
+    solvers.append(GetInverseName(SPARSECHOLESKY));
+    return solvers;
+  });
 }
 
 
