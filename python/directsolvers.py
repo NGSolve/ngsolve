@@ -1,8 +1,7 @@
-from ngsolve import BaseMatrix, BitArray
+from ngsolve import BaseMatrix, BitArray, BilinearForm, BaseVector
 
 class SuperLU(BaseMatrix):
-    def __init__(self, a: BaseMatrix, freedofs: BitArray = None):
-        import scipy.sparse as sp
+    def __init__(self, a: BaseMatrix | BilinearForm, freedofs: BitArray = None):
         super().__init__()
         self.a = a
         self.freedofs = freedofs
@@ -17,7 +16,7 @@ class SuperLU(BaseMatrix):
             mat = mat[self.fd,:][:,self.fd]
         self.lu = spla.factorized(sp.csc_matrix(mat))
 
-    def Mult(self, x, y):
+    def Mult(self, x: BaseVector, y: BaseVector):
         if not hasattr(self, "lu"):
             self.Update()
         if self.freedofs is not None:
