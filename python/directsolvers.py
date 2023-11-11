@@ -1,7 +1,8 @@
 from ngsolve import BaseMatrix, BitArray, BilinearForm, BaseVector
 
 class SuperLU(BaseMatrix):
-    def __init__(self, a: BaseMatrix | BilinearForm, freedofs: BitArray = None):
+    # def __init__(self, a: BaseMatrix | BilinearForm, freedofs: BitArray = None):
+    def __init__(self, a, freedofs: BitArray = None):        
         super().__init__()
         self.a = a
         self.freedofs = freedofs
