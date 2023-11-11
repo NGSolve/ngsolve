@@ -86,7 +86,7 @@ namespace ngmg
 
   void MultigridPreconditioner :: Update ()
   {
-    bool haveall;
+    bool haveall = true;
     for (int i = 0; i < biform->GetNLevels(); i++)
       if (!biform->GetMatrixPtr(i)) haveall = false;
     if (!haveall && biform->GetNLevels() > 1 && biform->GetMatrixPtr())
