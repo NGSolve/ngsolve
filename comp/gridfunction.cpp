@@ -1112,7 +1112,8 @@ namespace ngcomp
             
 	    *vec[i] = TSCAL(0);
 
-	    if (this->nested && ovec && this->GetFESpace()->GetProlongation())
+	    if (this->nested && ovec && this->GetFESpace()->GetProlongation() &&
+                this -> level_updated < fespace->GetMeshAccess()->GetNLevels())
 	      {
 		*vec[i]->Range (0, ovec->Size()) += *ovec;
 
