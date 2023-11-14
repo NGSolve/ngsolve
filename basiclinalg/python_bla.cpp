@@ -872,7 +872,9 @@ complex : bool
     py::implicitly_convertible<Vector<double>, SliceVector<double>>();
     py::implicitly_convertible<SliceVector<double>, Vector<double>>();
     
-    m.def("__timing__", &ngbla::Timing, py::arg("what"), py::arg("n"), py::arg("m"), py::arg("k"),
+    m.def("__timing__", &ngbla::Timing,
+          GetTimingHelpString().c_str(),
+          py::arg("what"), py::arg("n"), py::arg("m"), py::arg("k"),
           py::arg("lapack")=false, py::arg("doubleprec")=true, py::arg("maxits")=size_t(1e10));
     m.def("CheckPerformance",
              [] (size_t n, size_t m, size_t k)
