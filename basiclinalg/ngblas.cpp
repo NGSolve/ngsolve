@@ -115,12 +115,12 @@ namespace ngbla
             auto pd2 = pd;
             size_t js = 0; 
             for ( ; js+SW <= w; js+=SW, pd2++, ps2+=SW)
-              *pd2 = SIMD<double>(ps2);
+              *pd2 = SIMD<double,SW>(ps2);
           }
       }
     else
       {
-        SIMD<mask64> mask(w % SW);
+        SIMD<mask64,SW> mask(w % SW);
         for (size_t i = 0; i < h; i++, pd += distd, ps += dists)
           {
             auto ps2 = ps;
@@ -128,8 +128,8 @@ namespace ngbla
             
             size_t js = 0; 
             for ( ; js+SW <= w; js+=SW, pd2++, ps2+=SW)
-              *pd2 = SIMD<double>(ps2);
-            SIMD<double>(ps2, mask).Store((double*) (pd2), mask);
+              *pd2 = SIMD<double,SW>(ps2);
+            SIMD<double,SW>(ps2, mask).Store((double*) (pd2), mask);
           }
       }
   }
@@ -852,7 +852,11 @@ namespace ngbla
     constexpr size_t SW = SIMD<double>::Size();
     constexpr size_t SWdTB = sizeof(SIMD<double>)/sizeof(TB);
     /// constexpr size_t BSB = reg32 ? 4 : 3;
-    constexpr size_t BSB = (H > 0) ? 12 / H : 1;
+
+    constexpr size_t accumulators = reg32 ? 24 : 12;
+    constexpr size_t BSB = (H > 0) ? accumulators / H : 1;
+
+    
     size_t l = 0, lb = 0;
     for ( ; l+BSB*SW <= wb; l += BSB*SW, lb += BSB*SWdTB)
       MatKernelMultAB<H,BSB,OP> (hb, pa, da, pb+lb, db, pc+l, dc);
@@ -1472,9 +1476,13 @@ namespace ngbla
     // c.AddSize(a.Width(), b.Width()) = 1.0 * Trans(a) * b;  // avoid recursion
     // return;
 
-    constexpr size_t bs = SIMD<double>::Size();   
-
-    alignas(64) SIMD<double> mem[MAXHA];
+#ifdef __aarch64__
+    constexpr size_t bs = 4;
+#else
+    constexpr size_t bs = SIMD<double>::Size();    
+#endif
+    
+    alignas(64) SIMD<double,bs> mem[MAXHA];
     
     size_t i = 0;
 

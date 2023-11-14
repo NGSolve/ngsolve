@@ -2696,6 +2696,12 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
     GenerateMultAB (out, 2, i);
   GenerateMultAB (out, 8, 1);
   GenerateMultAB (out, 12, 1);
+
+
+  GenerateMultAB (out, 4, 6);    
+  GenerateMultAB (out, 3, 8);  
+  // GenerateMultAB (out, 2, 12);  
+  GenerateMultAB (out, 1, 24);  
   
 
   out << "template <size_t H, OPERATION OP>" << endl
