@@ -1940,7 +1940,8 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       "  Keep lowest order dof in WIRE_BASKET and make other dofs LOCAL";
     docu.Arg("discontinuous") = "bool = False\n"
       "  Make all dofs LOCAL";
-
+    docu.Arg("dual_mapping") = "bool = False\n"
+      "  element mapping includes inverse measure";
     return docu;
   }
 
