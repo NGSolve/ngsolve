@@ -526,7 +526,7 @@ namespace ngcomp
         for (auto el : ma->Elements(VOL))
           if (el.GetType() != ET_TRIG)
             alltrig = false;
-
+        alltrig = !ma->GetCommunicator().AllReduce (!alltrig, MPI_LOR);
         if (alltrig && ma->GetNLevels()==1)
           prol = make_shared<L2HoProlongationTrig>(ma,order,first_element_dof);
         else
