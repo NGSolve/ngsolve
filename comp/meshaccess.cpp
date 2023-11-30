@@ -1094,8 +1094,8 @@ namespace ngcomp
         auto pidnr = periodic_node_pairs[NT_VERTEX]->Append(Array<INT<2,int>>(pv_buffer.Size(), (INT<2,int>*) pv_buffer.Release(), true));
 
         // build vertex map for idnr
-        Array<int> vertex_map(GetNV());
-        for (auto i : Range(GetNV()))
+        Array<int> vertex_map(GetNP());
+        for (auto i : Range(GetNP()))
           vertex_map[i] = i;
         for (const auto& pair : (*periodic_node_pairs[NT_VERTEX])[pidnr])
           vertex_map[pair[1]] = pair[0];

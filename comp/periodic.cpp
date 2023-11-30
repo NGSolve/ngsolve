@@ -35,7 +35,7 @@ namespace ngcomp {
       space->Update();
       FESpace::Update();
       dofmap.SetSize (space->GetNDof());
-      vertex_map.SetSize(ma->GetNV());
+      vertex_map.SetSize(ma->GetNP());
       for (int i = 0; i < dofmap.Size(); i++)
 	dofmap[i] = i;
       for (int i : Range(vertex_map.Size()))
