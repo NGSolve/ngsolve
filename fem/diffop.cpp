@@ -1069,7 +1069,7 @@ namespace ngfem
         throw Exception("no matrix-valued of vector-valued possible");
       */
       SetDimensions( Array<int> (Array<int> { vdim, vdim} + diffop->Dimensions()) );
-      cout << "dimensions of matrix-valued: " << Dimensions() << endl;
+      // cout << "dimensions of matrix-valued: " << Dimensions() << endl;
     }
 
 
