@@ -108,7 +108,7 @@ namespace ngbla
       // CMCPMatExpr<FlatMatrix<T,ORD> >::operator= (m2.A());
       this->operator= (m2.A());
     }
-
+    /*
     /// useful to put FlatMatrix over other matrix
     template <typename T2>
     INLINE explicit FlatMatrix (const MatExpr<T2> & m)
@@ -117,7 +117,13 @@ namespace ngbla
     {
       static_assert(ORD == m.Ordering());
     }
-  
+    */
+
+    template <int W, enable_if_t<ORD==RowMajor, int> =0>
+    INLINE FlatMatrix (MatrixView<T,RowMajor,size_t,IC<W>,IC<W>> m)
+      : h(m.Height()), w(m.Width()), data(m.Data()) { }
+
+    
     /// useful to put FlatMatrix over other Mat
     template <int H, int W>
     INLINE FlatMatrix (const Mat<H,W,TSCAL> & m)
@@ -1320,13 +1326,15 @@ namespace ngbla
       return Cols (range.First(), range.Next());
     }
 
+    /*
     ///
     INLINE operator const FlatMatrix<T,ORD>() const
     {
       // static_assert( Dist() == InnerSize() );
       return FlatMatrix<T,ORD> (Height(), Width(), data);
     }
-
+    */
+    
     auto AsVector() const
     {
       // static_assert( Dist() == InnerSize() );      
