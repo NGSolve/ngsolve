@@ -110,6 +110,7 @@ namespace ngcomp
             }
         */
 
+    /*
 	for (VorB vb : {VOL,BND,BBND,BBBND})
 	  {
             if (int(vb) > ma->GetDimension()) continue;
@@ -119,13 +120,8 @@ namespace ngcomp
 		  {
 		    if(lfi->SkeletonForm())
 		      {
-			if(vb==VOL)
-			  throw Exception ("There are no LinearformIntegrator which act on the skeleton so far!");
-			else {
-		      //TODO: get aligned volelement and check that
-			}
+			  //TODO: get aligned volelement and check that
 		      }
-                    /*
                     // does nothing for symbolic integrators anyway
 		    IterateElements
 		      (*fespace,vb,clh, [&](FESpace::Element el, LocalHeap & lh)
@@ -133,10 +129,10 @@ namespace ngcomp
                          if (lfi->DefinedOn(el.GetIndex()) && lfi->DefinedOnElement(el.Nr()))
 			   lfi->CheckElement(el.GetFE());
 		       });
-                    */
 		  }
 	      }
 	  }
+    */
 
 	if(!allocated || ( this->GetVector().Size() != this->fespace->GetNDof()))
 	  {
@@ -295,8 +291,125 @@ namespace ngcomp
           }
 
 	if(hasskeletonparts[VOL])
-	{
-	  cout << "\rInnerFacetIntegrators not known - cannot handle it yet" << endl;	  
+    {
+      size_t ne = ma->GetNE(VOL);
+      size_t nf = ma->GetNFacets();
+      BitArray fine_facet(nf);
+      fine_facet.Clear();
+      Array<int> elfacets;
+                  
+      for (int i = 0; i < ne; ++i)
+      {
+        auto elfacets = ma->GetElFacets(ElementId(VOL,i));
+        for (auto f : elfacets) fine_facet.SetBit(f);
+      }
+                  
+      ProgressOutput progress(ma,string("linearform assemble inner facet"), nf);
+      for (auto colfacets : fespace->FacetColoring())
+      {
+        SharedLoop2 sl(colfacets.Size());
+        ParallelJob
+          ( [&] (const TaskInfo & ti) 
+          {
+            LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
+            Array<int> elnums_per(2, lh);
+            Array<int> dnums, dnums1, dnums2, elnums, fnums, vnums1, vnums2;
+            for (int il : sl)
+            {
+              int i = colfacets[il];
+              progress.Update();
+              if (!fine_facet.Test(i)) continue;
+              HeapReset hr(lh);
+                                    
+              int el1 = -1, el2 = -1;
+                            
+              ma->GetFacetElements(i,elnums);
+
+              el1 = elnums[0];
+
+              int fac2 = i;
+              // timerDG1.Stop();
+              if(elnums.Size() < 2)
+              {
+                int facet2 = ma->GetPeriodicFacet(i);
+                if(facet2 > i)
+                {
+                  ma->GetFacetElements (facet2, elnums_per);
+                  elnums.Append(elnums_per[0]);
+                  fac2 = facet2;
+                }
+                else
+                  continue;
+              }
+                            
+              if(elnums.Size()<2) continue;
+                            
+              el2 = elnums[1];
+                                    
+              ElementId ei1(VOL, el1);
+              ElementId ei2(VOL, el2);
+                            
+              fnums = ma->GetElFacets(ei1);
+              int facnr1 = fnums.Pos(i);
+                            
+              fnums = ma->GetElFacets(ei2);
+              int facnr2 = fnums.Pos(fac2);
+                            
+              const FiniteElement & fel1 = fespace->GetFE (ei1, lh);
+              const FiniteElement & fel2 = fespace->GetFE (ei2, lh);
+                            
+              ElementTransformation & eltrans1 = ma->GetTrafo (ei1, lh);
+              ElementTransformation & eltrans2 = ma->GetTrafo (ei2, lh);
+                            
+              fespace->GetDofNrs (ei1, dnums1);
+              dnums=dnums1;
+              fespace->GetDofNrs (ei2, dnums2);
+              dnums.Append(dnums2);
+                            
+              vnums1 = ma->GetElVertices (ei1);
+              vnums2 = ma->GetElVertices (ei2);
+
+		      for (int j = 0; j < parts.Size(); j++)
+		        {
+		          if (!parts[j] -> SkeletonForm()) continue;
+		          if (parts[j] -> VB()!=VOL) continue;
+		          if (!parts[j] -> DefinedOn (ma->GetElIndex (ei1))) continue;
+		          if (!parts[j] -> DefinedOn (ma->GetElIndex (ei2))) continue;
+		          if (!parts[j] -> DefinedOnElement (i)) continue;
+		          if (parts[j] -> IntegrationAlongCurve()) continue;		    
+		      
+		          int elvec_size = (dnums1.Size()+dnums2.Size())*fespace->GetDimension();
+
+		          FlatVector<TSCAL> elvec(elvec_size, lh);
+		          dynamic_cast<const FacetLinearFormIntegrator*>(parts[j].get()) 
+		          -> CalcFacetVector (fel1,facnr1,eltrans1,vnums1,
+                                      fel2,facnr2,eltrans2,vnums2, elvec, lh);
+		          if (printelvec)
+		        {
+		          testout->precision(8);
+
+		          (*testout) << "surface-elnum= " << i << endl;
+		          (*testout) << "integrator " << parts[j]->Name() << endl;
+		          (*testout) << "dnums1 = " << endl << dnums1 << endl;
+		          (*testout) << "dnums2 = " << endl << dnums2 << endl;
+		          (*testout) << "(vol)element1-index = " << eltrans1.GetElementIndex() << endl;
+		          (*testout) << "(vol)element2-index = " << eltrans2.GetElementIndex() << endl;
+		          (*testout) << "elvec = " << endl << elvec << endl;
+		        }
+
+		          fespace->TransformVec (ei1, elvec.Range(0,dnums1.Size()*fespace->GetDimension()), TRANSFORM_RHS);
+		          fespace->TransformVec (ei2, elvec.Range(dnums1.Size()*fespace->GetDimension(),elvec_size), TRANSFORM_RHS);
+		        
+		          {
+                            lock_guard<mutex> guard(addelvec3_mutex);
+		        AddElementVector (dnums, elvec, parts[j]->CacheComp()-1);
+		          }
+		        }
+            }
+          });
+      }
+      progress.Done();
+      gcnt += nf;
 	}
 	if(hasskeletonparts[BND])
 	{
