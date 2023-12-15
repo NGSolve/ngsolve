@@ -3970,9 +3970,9 @@ namespace ngcomp
                    if ((bfi->DefinedOn (el.GetIndex()))&&(bfi->DefinedOnElement (el.Nr())))
                      elem_has_integrator = true;
 
-		 if ((vb == VOL) && facetwise_skeleton_parts[BND].Size())
-		   elem_has_integrator = true;
-				 
+                  if ((vb == VOL) && facetwise_skeleton_parts[BND].Size())
+                    elem_has_integrator = true;
+        
                  if (!elem_has_integrator)
                    return;
                  
@@ -4075,7 +4075,6 @@ namespace ngcomp
 			   {
 			     HeapReset hr(lh);
 			     ElementId sei(BND, se);
-			     if (!fespace->DefinedOn (BND,ma->GetElIndex (sei))) continue;
 
 			     auto ei = el;
 			     Array<int>  vnums, svnums;
@@ -4095,9 +4094,10 @@ namespace ngcomp
 
 			     for (auto & bfi : facetwise_skeleton_parts[BND])
 			       {
-				 
-				 if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
-                          
+				              
+            if (!bfi->DefinedOn (ma->GetElIndex(sei) )) continue;                
+            if (!bfi->DefinedOnElement (el.Nr())) continue;   
+
 				 for (int k = 0; k < dnums.Size(); k++)
 				   if (IsRegularDof(dnums[k]))
 				     useddof[dnums[k]] = true;
