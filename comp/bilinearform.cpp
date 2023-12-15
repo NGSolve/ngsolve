@@ -5578,6 +5578,31 @@ namespace ngcomp
                  });
             }
 
+        if (specialelements.Size())
+          {
+            RegionTimer regt(timerspecial);
+            ParallelForRange(IntRange(specialelements.Size()), [&](IntRange r)
+            {
+              Array<int> dnums_trial;
+              Array<int> dnums_test;
+              LocalHeap lh = clh.Split();
+              for(auto i : r)
+                {
+                  HeapReset hr(lh);
+                  const SpecialElement & el = *specialelements[i];
+                  el.GetDofNrs (dnums_trial);
+                  el.GetDofNrs2 (dnums_test);                  
+                  FlatVector<SCAL> elvecx (dnums_trial.Size() * fespace->GetDimension(), lh);
+                  FlatVector<SCAL> elvecy (dnums_test.Size() * fespace2->GetDimension(), lh);
+                  x.GetIndirect (dnums_trial, elvecx);
+                  el.Apply (elvecx, elvecy, lh);
+                  elvecy *= val;
+                  y.AddIndirect (dnums_test, elvecy, true);
+                }
+            });
+          }
+
+        
         {
           RegionTimer reg(timerDG);
 
