@@ -1394,6 +1394,25 @@ namespace ngbla
     delete [] work; 
   }
 
+  // A = U * diag(S) * V
+  extern void LapackSVD (SliceMatrix<double, ColMajor> A,
+                         SliceMatrix<double, ColMajor> U,
+                         SliceMatrix<double, ColMajor> V,
+                         FlatVector<double> S,                         
+                         bool all);
+
+
+  // A = U * diag(S) * V
+  inline void LapackSVD (SliceMatrix<double> A,
+                         SliceMatrix<double> U,
+                         SliceMatrix<double> V,
+                         FlatVector<double> S,                         
+                         bool all)
+  {
+    LapackSVD (Trans(A), Trans(V), Trans(U), S, all);
+  }
+  
+  
 
 #else
 
