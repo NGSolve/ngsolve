@@ -1196,34 +1196,54 @@ namespace ngla
 
 
 
-  
-  BaseMatrixFromMatrix :: BaseMatrixFromMatrix (Matrix<> amat)
+  template <typename T>
+  BaseMatrixFromMatrix<T> :: BaseMatrixFromMatrix (Matrix<T> amat)
     : mat(std::move(amat)) { }
-  
-  void BaseMatrixFromMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+
+  template <typename T>  
+  void BaseMatrixFromMatrix<T> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    y.FV<double>() += s * mat * x.FV<double>();    
+    y.FV<T>() += s * mat * x.FV<T>();    
   }
-    
-  void BaseMatrixFromMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+
+  template <typename T>    
+  void BaseMatrixFromMatrix<T> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    y.FV<double>() += s * Trans(mat) * x.FV<double>();
+    y.FV<T>() += s * Trans(mat) * x.FV<T>();
   }
+
+  template <typename T>  
+  void BaseMatrixFromMatrix<T> :: MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<Complex>() += s * mat * x.FV<Complex>();    
+  }
+
+  template <typename T>    
+  void BaseMatrixFromMatrix<T> :: MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const
+  {
+    y.FV<Complex>() += s * Trans(mat) * x.FV<Complex>();
+  }
+
+
+
   
-  AutoVector BaseMatrixFromMatrix :: CreateRowVector () const
+  template <typename T>    
+  AutoVector BaseMatrixFromMatrix<T> :: CreateRowVector () const
   {
     // missing parallel: 1 dof for all
-    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(mat.Width());   
+    shared_ptr<BaseVector> sp = make_shared<VVector<T>>(mat.Width());   
     return sp;
   }
-  
-  AutoVector BaseMatrixFromMatrix :: CreateColVector () const
+
+  template <typename T>    
+  AutoVector BaseMatrixFromMatrix<T> :: CreateColVector () const
   {
-    shared_ptr<BaseVector> sp = make_shared<VVector<double>>(mat.Height());   
+    shared_ptr<BaseVector> sp = make_shared<VVector<T>>(mat.Height());   
     return sp;
   }
 
-
+  template class BaseMatrixFromMatrix<double>;
+  template class BaseMatrixFromMatrix<Complex>;
 
 
 
