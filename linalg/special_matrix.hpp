@@ -492,16 +492,19 @@ namespace ngla
   };
 
 
+  template <typename T = double>
   class BaseMatrixFromMatrix : public BaseMatrix
   {
-    Matrix<> mat;
+    Matrix<T> mat;
 
   public:
-    BaseMatrixFromMatrix (Matrix<> amat);
+    BaseMatrixFromMatrix (Matrix<T> amat);
 
-    bool IsComplex() const override { return false; }
+    bool IsComplex() const override { return typeid(T) == typeid(Complex); }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
 
     virtual int VHeight() const override { return mat.Height(); }
     virtual int VWidth() const override { return mat.Width(); }
