@@ -3450,6 +3450,78 @@ namespace ngfem
 
   template<typename TSCAL>
   void SymbolicFacetLinearFormIntegrator ::
+  T_CalcFacetVector (const FiniteElement & fel1, int LocalFacetNr1,
+                     const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
+                     const FiniteElement & fel2, int LocalFacetNr2,
+                     const ElementTransformation & trafo2, FlatArray<int> & ElVertices2, 
+                     FlatVector<TSCAL> elvec,
+                     LocalHeap &lh) const 
+  {
+    static Timer t("SymbolicFacetLFI::CalcFacetVector - inner", NoTracing);
+    HeapReset hr(lh);
+
+    elvec = 0;
+    
+    int maxorder = max2 (fel1.Order(), fel2.Order());
+    auto eltype1 = trafo1.GetElementType();
+    auto eltype2 = trafo2.GetElementType();
+    auto etfacet = ElementTopology::GetFacetType (eltype1, LocalFacetNr1);
+
+    const IntegrationRule & ir_facet = GetIntegrationRule(etfacet, 2*maxorder+bonus_intorder);
+    Facet2ElementTrafo transform1(eltype1, ElVertices1); 
+    IntegrationRule & ir_facet_vol1 = transform1(LocalFacetNr1, ir_facet, lh);
+    BaseMappedIntegrationRule & mir1 = trafo1(ir_facet_vol1, lh);
+    Facet2ElementTrafo transform2(eltype2, ElVertices2); 
+    IntegrationRule & ir_facet_vol2 = transform2(LocalFacetNr2, ir_facet, lh);
+    BaseMappedIntegrationRule & mir2 = trafo2(ir_facet_vol2, lh);
+
+    mir1.SetOtherMIR (&mir2);
+    mir2.SetOtherMIR (&mir1);
+
+    ProxyUserData ud;
+    const_cast<ElementTransformation&>(trafo1).userdata = &ud;
+
+    PrecomputeCacheCF(cache_cfs, mir1, lh);
+
+    mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
+    mir2.ComputeNormalsAndMeasure (eltype2, LocalFacetNr2);
+    
+    FlatMatrix<TSCAL> val(ir_facet.Size(), 1,lh);
+    for (auto proxy : proxies)
+      {
+        HeapReset hr(lh);
+        FlatMatrix<TSCAL> proxyvalues(ir_facet.Size(), proxy->Dimension(), lh);
+
+        
+        for (int k = 0; k < proxy->Dimension(); k++)
+          {
+            ud.testfunction = proxy;
+            ud.test_comp = k;
+            cf -> Evaluate (mir1, val);  // needed for grad(u), mesh_size, but: index = material index
+            // cf -> Evaluate (smir, val);
+            proxyvalues.Col(k) = val.Col(0);
+          }
+
+        for (int i = 0; i < mir1.Size(); i++)
+          proxyvalues.Row(i) *= mir1[i].GetMeasure() * ir_facet[i].Weight(); // use also smir here ? 
+
+        IntRange range  = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim()*fel1.GetNDof(), elvec.Size()) : IntRange(0, proxy->Evaluator()->BlockDim()*fel1.GetNDof());
+
+        FlatVector<TSCAL> localvec(range.Size(), lh);
+        localvec = 0.0;
+
+        if (proxy->IsOther())
+          proxy->Evaluator()->ApplyTrans(fel2, mir2, proxyvalues, localvec, lh);
+        else
+          proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, localvec, lh);
+        elvec.Range(range) += localvec;
+      }
+  }
+
+
+
+  template<typename TSCAL>
+  void SymbolicFacetLinearFormIntegrator ::
   T_CalcFacetVector (const FiniteElement & fel1, int LocalFacetNr,
                      const ElementTransformation & trafo1, FlatArray<int> & ElVertices,
                      const ElementTransformation & strafo,
@@ -3510,6 +3582,32 @@ namespace ngfem
         proxy->Evaluator()->ApplyTrans(fel1, mir1, proxyvalues, elvec1, lh);
         elvec += elvec1;
       }
+  }
+
+  void SymbolicFacetLinearFormIntegrator::
+  CalcFacetVector (const FiniteElement & volumefel1, int LocalFacetNr1,
+          		   const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+    		       const FiniteElement & volumefel2, int LocalFacetNr2,
+    		       const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+    		       FlatVector<double> elvec,
+    		       LocalHeap & lh) const
+  {
+    T_CalcFacetVector(volumefel1, LocalFacetNr1, eltrans1, ElVertices1, 
+                      volumefel2, LocalFacetNr2, eltrans2, ElVertices2, 
+                      elvec, lh);
+  }
+  
+  void SymbolicFacetLinearFormIntegrator::
+  CalcFacetVector (const FiniteElement & volumefel1, int LocalFacetNr1,
+    		       const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+    		       const FiniteElement & volumefel2, int LocalFacetNr2,
+    		       const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,	 
+    		       FlatVector<Complex> elvec,
+    		       LocalHeap & lh) const
+  {
+    T_CalcFacetVector(volumefel1, LocalFacetNr1, eltrans1, ElVertices1, 
+                      volumefel2, LocalFacetNr2, eltrans2, ElVertices2, 
+                      elvec, lh);
   }
 
   void SymbolicFacetLinearFormIntegrator::
