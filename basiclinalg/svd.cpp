@@ -63,6 +63,44 @@ namespace ngbla
   }
 
 
+
+  void LapackSVD (SliceMatrix<Complex, ColMajor> A,
+                  SliceMatrix<Complex, ColMajor> U,
+                  SliceMatrix<Complex, ColMajor> V,
+                  FlatVector<double> S,
+                  bool all)
+  {
+    static Timer t("LapackSVD"); RegionTimer reg(t);
+    ngbla::integer m = A.Height(), n = A.Width();
+
+    // Vector<> S(min(n,m));
+    ngbla::integer info;
+    char jobu = all ? 'A' : 'S';
+    char jobv = jobu;
+    ngbla::integer lda = A.Dist(), ldu = U.Dist(), ldv = V.Dist();
+
+  #ifdef LAPACK
+    Array<Complex> work(n*m+100);
+    Array<double> rwork(5*min(n,m));
+    ngbla::integer lwork = work.Size();
+
+    zgesvd_ ( &jobu, &jobv, &m, &n, A.Data(), &lda,
+              S.Data(),
+              U.Data(), &ldu, V.Data(), &ldv,
+              work.Data(), &lwork, rwork.Data(),
+              &info);
+  #else
+    throw Exception("No Lapack");
+  #endif
+    // cout << "info = " << info << endl;
+    // if (n <= 100)
+    // cout << "S = " << S << endl;
+    // A.Diag(0) = S;
+  }
+
+
+
+  
   
   void LapackSVD (SliceMatrix<> A,
                   SliceMatrix<double, ColMajor> U,
