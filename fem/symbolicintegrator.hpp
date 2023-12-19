@@ -861,6 +861,22 @@ public:
     virtual bool BoundaryForm() const override { return vb == BND; }
 
     NGS_DLL_HEADER void
+    CalcFacetVector (const FiniteElement & volumefel1, int LocalFacetNr1,
+			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+			 const FiniteElement & volumefel2, int LocalFacetNr2,
+			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+			 FlatVector<double> elvec,
+			 LocalHeap & lh) const override;   
+
+    NGS_DLL_HEADER void 
+    CalcFacetVector (const FiniteElement & volumefel1, int LocalFacetNr1,
+			 const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+			 const FiniteElement & volumefel2, int LocalFacetNr2,
+			 const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,	 
+			 FlatVector<Complex> elvec,
+			 LocalHeap & lh) const override;
+
+    NGS_DLL_HEADER void
     CalcFacetVector(const FiniteElement & volumefel, int LocalFacetNr,
                     const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                     const ElementTransformation & seltrans,
@@ -875,6 +891,14 @@ public:
                     LocalHeap & lh) const override;
 
   private:
+    template<typename TSCAL>
+    void T_CalcFacetVector (const FiniteElement & fel1, int LocalFacetNr1,
+                       const ElementTransformation & trafo1, FlatArray<int> & ElVertices1,
+                       const FiniteElement & fel2, int LocalFacetNr2,
+                       const ElementTransformation & trafo2, FlatArray<int> & ElVertices2, 
+                       FlatVector<TSCAL> elvec,
+                       LocalHeap &lh) const;
+
     template<typename TSCAL>
     void T_CalcFacetVector (const FiniteElement & volumefel, int LocalFacetNr,
                             const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
