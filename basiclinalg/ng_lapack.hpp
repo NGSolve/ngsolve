@@ -1412,6 +1412,27 @@ namespace ngbla
     LapackSVD (Trans(A), Trans(V), Trans(U), S, all);
   }
   
+
+  // A = U * diag(S) * V
+  extern void LapackSVD (SliceMatrix<Complex, ColMajor> A,
+                         SliceMatrix<Complex, ColMajor> U,
+                         SliceMatrix<Complex, ColMajor> V,
+                         FlatVector<double> S,                         
+                         bool all);
+
+
+  // A = U * diag(S) * V
+  inline void LapackSVD (SliceMatrix<Complex> A,
+                         SliceMatrix<Complex> U,
+                         SliceMatrix<Complex> V,
+                         FlatVector<double> S,                         
+                         bool all)
+  {
+    LapackSVD (Trans(A), Trans(V), Trans(U), S, all);
+  }
+  
+  
+
   
 
 #else
