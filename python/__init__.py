@@ -33,10 +33,10 @@ if config.is_python_package and config.USE_MKL:
 
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
-from netgen import Redraw
+from netgen import Redraw, TimeFunction
 
-from pyngcore import BitArray, TaskManager, SetNumThreads, PajeTrace
-from .ngstd import Timers, Timer, IntRange
+from pyngcore import BitArray, TaskManager, SetNumThreads, PajeTrace, Timers, Timer
+from .ngstd import IntRange
 from .bla import Matrix, Vector, InnerProduct, Norm
 from .la import BaseMatrix, BaseVector, BlockVector, MultiVector, BlockMatrix, \
     CreateVVector, CGSolver, QMRSolver, GMRESSolver, ArnoldiSolver, \
@@ -64,7 +64,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
 from .solve import Draw, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTrace, \
-    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, PrivateSpace, TimeFunction, Normalize, printmaster
+    PyDet, PyCross, PyCof, PyInv, PySym, PySkew, OuterProduct, PrivateSpace, Normalize, printmaster
 from . import solvers
 
 

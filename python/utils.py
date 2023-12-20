@@ -1,7 +1,8 @@
-from ngsolve.ngstd import Timer, IntRange
+from ngsolve.ngstd import IntRange
 from ngsolve.fem import *
 from ngsolve.comp import *
 from ngsolve.bla import Norm
+from netgen import TimeFunction
 
 x = CoordCF(0)
 y = CoordCF(1)
@@ -154,21 +155,8 @@ PrivateSpace = Hidden
 # return Compress(fes)
 # return Hidden(fes)
 
-def TimeFunction(func, name=None):
-    name = name or func.__qualname__
-    timer = Timer(name)
-    def retfunc(*args,**kwargs):
-        with timer:
-            ret = func(*args, **kwargs)
-        return ret
-    return retfunc
-
-
-
 def Normalize (v):
     return 1/Norm(v) * v
-
-
 
 def printmaster (*args):
     from mpi4py.MPI import COMM_WORLD
