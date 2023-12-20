@@ -96,7 +96,7 @@ namespace ngfem
                                                  BareSliceMatrix<SIMD<double>> values) const override;
 
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 
-                                                      FlatMatrixFixWidth<DIM> vals, 
+                                                      BareSliceMatrix<> vals, 
                                                       BareSliceVector<double> coefs) const override;
 
     HD NGS_DLL_HEADER virtual void EvaluateGradTrans (const IntegrationRule & ir, 

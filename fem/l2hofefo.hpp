@@ -210,7 +210,7 @@ namespace ngfem
         this -> BASE::T_IMPL::Evaluate (ir, coefs, vals);
     }
 
-    HD virtual void EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<DIM> values, BareSliceVector<> coefs) const
+    HD virtual void EvaluateGradTrans (const IntegrationRule & ir, BareSliceMatrix<> values, BareSliceVector<> coefs) const
     {
       /*
         static Timer t("evaluate grad trans");
@@ -222,7 +222,8 @@ namespace ngfem
 
       PrecomputedScalShapes<DIM> * pre = SHAPES::precomp.Get (classnr, order, ir.GetNIP());
       if (pre)
-	coefs.Range(0,SHAPES::NDOF) = Trans (FlatMatrixFixWidth<SHAPES::NDOF> (pre->dshapes)) * FlatVector<> (DIM*SHAPES::NDOF, &values(0,0));
+	// coefs.Range(0,SHAPES::NDOF) = Trans (FlatMatrixFixWidth<SHAPES::NDOF> (pre->dshapes)) * FlatVector<> (DIM*SHAPES::NDOF, &values(0,0));
+        coefs.Range(0,SHAPES::NDOF) = Trans (pre->dshapes) * FlatVector<> (DIM*SHAPES::NDOF, &values(0,0));        
       else
 #endif
         BASE::T_IMPL:: EvaluateGradTrans (ir, values, coefs);

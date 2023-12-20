@@ -1353,8 +1353,8 @@ namespace ngcomp
                     auto & mir = trafo(ir, lh);
                     if (bfi->ElementVB() != VOL) 
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
-                    FlatMatrix transx(dimx, dimxref, lh);
-                    FlatMatrix transy(dimy, dimyref, lh);
+                    FlatMatrix<> transx(dimx, dimxref, lh);
+                    FlatMatrix<> transy(dimy, dimyref, lh);
                     Matrix prod(dimxref, dimyref);
                     
                     for (int j = 0; j < ir.Size(); j++)
@@ -1388,8 +1388,8 @@ namespace ngcomp
                     if (bfi->ElementVB() != VOL) 
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
                     
-                    FlatMatrix transx(dimx, dimxref, lh);
-                    FlatMatrix transy(dimy, dimyref, lh);
+                    FlatMatrix<> transx(dimx, dimxref, lh);
+                    FlatMatrix<> transy(dimy, dimyref, lh);
                     
                     transx = 0.0;
                     transy = 0.0;

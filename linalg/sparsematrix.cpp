@@ -2434,7 +2434,7 @@ namespace ngla
       for (int j = 0; j < dnums2.Size(); j++)
         {
           auto pos = this->GetPosition(dnums1[i], dnums2[j]);
-          auto entry = FlatMatrix(bheight, bwidth, (TSCAL*)data.Addr(pos*bheight*bwidth));
+          auto entry = FlatMatrix<TSCAL>(bheight, bwidth, (TSCAL*)data.Addr(pos*bheight*bwidth));
 
           entry += elmat.Rows(i*bheight, (i+1)*bheight).Cols(j*bwidth, (j+1)*bwidth);
         }
@@ -2450,7 +2450,7 @@ namespace ngla
 	
 	for (size_t j = firsti[i]; j < firsti[i+1]; j++)
           ost << " " << colnr[j] << ":" << endl
-              << FlatMatrix(bheight, bwidth, (TSCAL*)data.Addr(j*bheight*bwidth)) << endl;
+              << FlatMatrix<TSCAL>(bheight, bwidth, (TSCAL*)data.Addr(j*bheight*bwidth)) << endl;
                             
 	ost << "\n";
       }
@@ -2485,7 +2485,7 @@ namespace ngla
         auto sum = fy.Range(i*bh, i*bh+bh);        
         for (auto j : Range(index[i], index[i+1]))
           {
-            auto mat = FlatMatrix(bh, bw, (TSCAL*)values.Addr(j*bsize)); 
+            auto mat = FlatMatrix<TSCAL>(bh, bw, (TSCAL*)values.Addr(j*bsize)); 
             auto vx = fx.Range(bw*cols[j], bw*cols[j]+bw);
             sum += s*mat*vx;
           }

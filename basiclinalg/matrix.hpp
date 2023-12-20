@@ -14,11 +14,6 @@
 namespace ngbla
 {
 
-  struct unused_dist { };
-  
-  template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
-  class MatrixView;
-
 
   template <typename T = double, ORDERING ORD = RowMajor>
   using SliceMatrix = MatrixView<T,ORD,size_t, size_t, size_t>;
@@ -53,6 +48,8 @@ namespace ngbla
   template <int H, int W, typename T> class Mat;
   template <typename T> class DoubleSliceMatrix;
 
+
+#ifdef OLDFLATMATRIX
   /**
      A simple matrix.
      Has height, width and data-pointer. 
@@ -476,7 +473,7 @@ namespace ngbla
   };
 
 
-
+#endif
 
 
 
@@ -807,9 +804,6 @@ namespace ngbla
       return Cols (r.First(), r.Next());
     }
     
-
-    
-    
     auto AsVector() 
     {
       return FlatVec<H*W,T> (data.Ptr());
@@ -1101,11 +1095,45 @@ namespace ngbla
               enable_if_t<is_constructible<TDIST,TDIST2>::value, int> =0>
     INLINE MatrixView (const MatrixView<T2, ORD, TH2, TW2, TDIST2> & m2)
       : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { } 
+
+    template <typename T2, typename TH2, typename TW2, typename TDIST2,
+              enable_if_t<is_convertible<T2*,T*>::value, int> =0,
+              enable_if_t<is_constructible<TH,TH2>::value, int> =0,
+              enable_if_t<is_constructible<TW,TW2>::value, int> =0,
+              enable_if_t<is_same<unused_dist,TDIST2>::value, int> =0>
+    INLINE MatrixView (const MatrixView<T2, ORD, TH2, TW2, TDIST2> & m2)
+      : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { } 
+
     
-    /// set height, width, and mem
+    /// set height, width, dist, and mem
     INLINE MatrixView (TH ah, TW aw, TDIST adist, T * adata) 
       : h(ah), w(aw), dist(adist), data(adata) { ; }
 
+    /// set height, width, dist, and mem
+    INLINE MatrixView (TH ah, TW aw, T * adata) 
+      : h(ah), w(aw), data(adata)
+    {
+      static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView needs dist");
+    }
+
+    INLINE MatrixView (size_t ah, size_t aw, LocalHeap & lh) 
+      : h(ah), w(aw), data (lh.Alloc<T>(ah*aw))
+    {
+      static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView(lh) needs dist");            
+    }
+
+    template<typename TB>
+    INLINE MatrixView (const LocalHeapExpr<TB> & m2) 
+    {
+      static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView(lh-expr) needs dist");      
+      h = m2.A().Height();
+      w = m2.A().Width();
+      LocalHeap & lh = m2.GetLocalHeap();
+      data = lh.Alloc<T> (h*w);
+      this->operator= (m2.A());
+    }
+    
+    
     INLINE MatrixView (size_t s, T * adata) 
       : data(adata)
     {
@@ -1115,9 +1143,12 @@ namespace ngbla
         w = s;
       else if constexpr (is_IC<TH>() && is_IC<TW>())
         dist = s;
+      else if constexpr (is_same<TDIST,unused_dist>())
+        h = w = s;
       // else
       // static_assert(false, "illegal 1-size ctor of MatrixView");
     }
+    
     INLINE MatrixView (size_t s, LocalHeap & lh)
     {
       if constexpr (is_IC<TW>() && is_IC<TDIST>())
@@ -1126,6 +1157,9 @@ namespace ngbla
         w = s;
       else if constexpr (is_IC<TH>() && is_IC<TW>())
         dist = s;
+      else if constexpr (is_same<TDIST,unused_dist>())
+        h = w = s;
+      
       data = lh.Alloc<T>(h*w);
       // else
       // static_assert(false, "illegal 1-size ctor of MatrixView");
@@ -1140,13 +1174,14 @@ namespace ngbla
       else
         return val;
     }
-    
+
+    /*
     MatrixView (FlatMatrix<T,ORD> mat)
       : h(ICOrVal<TH>(mat.Height())),
         w(ICOrVal<TW>(mat.Width())),
         dist(ICOrVal<TDIST>(mat.Dist())), data(mat.Data())
     { ; }
-
+    */
 
     /*
     template<int W, int DIST>
@@ -1156,18 +1191,19 @@ namespace ngbla
     */
 
     template<int H, int W>
-    INLINE MatrixView (Mat<H,W,T> & mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(mat.Data())
+    INLINE MatrixView (const Mat<H,W,T> & mat)
+      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(const_cast<T*>(mat.Data()))
     {
       static_assert(ORD==RowMajor);
     }
-
+    /*
     template<int H, int W>    
     INLINE MatrixView(const Mat<H,W,const T> & mat) 
       : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(const_cast<T*>(mat.Data()))
     {
       static_assert(ORD==RowMajor);
-    } 
+    }
+    */
     
 
     /// assign contents
@@ -1320,12 +1356,18 @@ namespace ngbla
 
     INLINE auto Cols (size_t first, size_t next) const
     {
-      return MatrixView<T,ORD,TH,size_t,TDIST>  (h, next-first, dist, Addr(0,first));
+      if constexpr (ORD==RowMajor)      
+        return MatrixView<T,ORD,TH,size_t,size_t>  (h, next-first, Dist(), Addr(0,first));
+      else
+        return MatrixView<T,ORD,TH,size_t,TDIST>  (h, next-first, Dist(), Addr(0,first));
     }
 
     INLINE auto Rows (size_t first, size_t next) const
     {
-      return MatrixView<T,ORD,size_t,TW,TDIST> (next-first, w, dist, Addr(first, 0));
+      if constexpr (ORD==RowMajor)
+        return MatrixView<T,ORD,size_t,TW,TDIST> (next-first, w, Dist(), Addr(first, 0));
+      else
+        return MatrixView<T,ORD,size_t,TW,size_t> (next-first, w, Dist(), Addr(first, 0));
     }
 
     INLINE auto Rows (IntRange range) const
@@ -1370,7 +1412,7 @@ namespace ngbla
       static_assert (ORD==RowMajor);
       // NETGEN_CHECK_RANGE(first, 0, Height());  // too restrictive
       NETGEN_CHECK_RANGE(first, 0, adist);  
-      return BareSliceMatrix<T,ORD> (Height()/adist, Width(), dist*adist, data+first*dist);
+      return BareSliceMatrix<T,ORD> (Height()/adist, Width(), Dist()*adist, data+first*Dist());
     }
     
     
@@ -1398,6 +1440,37 @@ namespace ngbla
     {
       new (this) MatrixView(s, lh);
     }
+
+    void AssignMemory (size_t ah, size_t aw, T * data)
+    {
+      static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView::AssignMemory needs unused-dist");
+      new (this) MatrixView(ah, aw, data);
+    }
+
+    void AssignMemory (size_t ah, size_t aw, LocalHeap & lh)
+    {
+      static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView::AssignMemory needs unused-dist");      
+      new (this) MatrixView(ah, aw, lh);
+    }
+
+    auto Assign (const MatrixView & m) 
+    {
+      data = m.data;
+      h = m.h;
+      w = m.w;
+      dist = m.dist;
+      return *this;
+    }
+    
+    auto Reshape(size_t h2, size_t w2)
+    {
+      static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView::Reshape needs unused-dist");            
+      return FlatMatrix<T,ORD>{h2,w2,data};
+    }
+    
+    
+    // template <typename TH2, typename TW2>
+    // operator MatrixView<T,ORD,TH2,TW2,size_t>() const { return { Height(), Width(), Dist(), Data() }; }
   };
 
 
