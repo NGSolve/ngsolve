@@ -14,7 +14,7 @@
 namespace ngbla
 {
 
-  
+  struct unused_dist { };
   
   template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
   class MatrixView;
@@ -1201,13 +1201,13 @@ namespace ngbla
       
       if (hw == 0) return *this;
       size_t i = 0, base = 0;
-      for ( ; i+1 < hh; i+=2, base += 2*dist)
+      for ( ; i+1 < hh; i+=2, base += 2*Dist())
         {
           __assume (hw > 0);
           for (auto j : Range(hw))
             {
               data[base+j] = s;
-              data[base+dist+j] = s;
+              data[base+Dist()+j] = s;
             }
         }
       if (i < hh)
@@ -1226,9 +1226,9 @@ namespace ngbla
     INLINE TELEM * Addr(size_t i, size_t j) const
     {
       if constexpr (ORD==RowMajor)      
-        return data+i*dist+j;
+        return data+i*Dist()+j;
       else
-        return data+j*dist+i;
+        return data+j*Dist()+i;
     }
 
     
@@ -1252,13 +1252,13 @@ namespace ngbla
       if constexpr (ORD==RowMajor)
         return IC<1>();
       else
-        return dist;
+        return Dist();
     }
 
     INLINE auto ColDist() const
     {
       if constexpr (ORD==RowMajor)
-        return dist;
+        return Dist();
       else
         return IC<1>();
     }
@@ -1266,8 +1266,20 @@ namespace ngbla
     
     INLINE auto Height () const { return h; }
     INLINE auto Width () const { return w; }
-    INLINE auto Dist () const { return dist; }
-    INLINE T* Data() const  { return data; }
+    INLINE auto Dist () const
+    {
+      if constexpr (std::is_same<TDIST, unused_dist>())
+        {
+          if constexpr (ORD==RowMajor)
+            return Width();
+          else
+            return Height();
+        }
+      else
+        return dist;
+    }
+    
+    INLINE T* Data() const { return data; }
     INLINE auto InnerSize () const
     {
       if constexpr (ORD==RowMajor)
@@ -1365,9 +1377,9 @@ namespace ngbla
     INLINE SliceVector<T> Diag () const
     {
       if (ORD == RowMajor)
-        return SliceVector<T> (h, dist+1, data);
+        return SliceVector<T> (h, Dist()+1, data);
       else
-        return SliceVector<T> (w, dist+1, data);
+        return SliceVector<T> (w, Dist()+1, data);
     }
 
     INLINE SliceVector<T> Diag (int offset) const
@@ -1376,9 +1388,9 @@ namespace ngbla
       int dp = std::max(offset, 0);
       int dm = std::min(offset, 0);
       if (ORD == RowMajor)      
-        return SliceVector<T> (min(w-dp, h+dm), dist+1, data+dp-dm*dist);      
+        return SliceVector<T> (min(w-dp, h+dm), Dist()+1, data+dp-dm*Dist());      
       else
-        return SliceVector<T> (min(w-dp, h+dm), dist+1, data-dm+dp*dist);
+        return SliceVector<T> (min(w-dp, h+dm), Dist()+1, data-dm+dp*Dist());
     }
 
     // [[deprecated("Use placenement ctor: new(ptr) Matrix(n, lh); instead!")]]
@@ -2003,30 +2015,6 @@ namespace ngstd
   }
 }
 
-/*
-#ifdef PARALLEL
-namespace ngcore
-{
-  template<int N, int M, typename T>
-  class MPI_typetrait<ngbla::Mat<N, M, T> >
-  {
-  public:
-    /// gets the MPI datatype
-    static MPI_Datatype MPIType () 
-    { 
-      static MPI_Datatype MPI_T = 0;
-      if (!MPI_T)
-	{
-	  int size = N * M;
-	  MPI_Type_contiguous ( size, MPI_typetrait<T>::MPIType(), &MPI_T);
-	  MPI_Type_commit ( &MPI_T );
-	}
-      return MPI_T;
-    }
-  };
-}
-#endif
-*/
 
 
 namespace ngcore
