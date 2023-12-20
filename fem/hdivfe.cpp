@@ -170,7 +170,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
-            FlatMatrixFixWidth<D> vals) const
+            BareSliceMatrix<> vals) const
   {
     MatrixFixWidth<D> shape(ndof);
     for (int i = 0; i < ir.GetNIP(); i++)
@@ -183,7 +183,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   EvaluateTrans (const IntegrationRule & ir, 
-                 FlatMatrixFixWidth<D> vals,
+                 BareSliceMatrix<> vals,
                  FlatVector<double> coefs) const
   {
     MatrixFixWidth<D> shape(ndof);

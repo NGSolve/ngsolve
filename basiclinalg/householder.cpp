@@ -349,7 +349,7 @@ namespace ngbla
   {
     size_t n = ainv.Height();
     ArrayMem<double, 2500> mem(n*n);
-    FlatMatrix X(n,n,mem.Data());
+    FlatMatrix<> X(n,n,mem.Data());
     X = Identity(n);
     TriangularSolve<UpperRight,NonNormalized> (ainv, X);
     // ApplyHouseholderReflectionsTrans (ainv.Cols(0,n-1), Trans(SliceMatrix(X)));
