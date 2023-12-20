@@ -1051,9 +1051,9 @@ namespace ngbla
       constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
       
       auto veca = prod.Spec().A();
-      FlatMatrix mata(veca.Height(), 1, veca.Data());
+      FlatMatrix<> mata(veca.Height(), 1, veca.Data());
       auto vecb = prod.Spec().B().A();
-      FlatMatrix matb(1, vecb.Height(), vecb.Data());
+      FlatMatrix<> matb(1, vecb.Height(), vecb.Data());
       
       NgGEMM<ADD,POS> (make_SliceMatrix(mata),
                        make_SliceMatrix(matb),
