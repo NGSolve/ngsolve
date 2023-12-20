@@ -72,6 +72,7 @@ namespace ngcomp
         case ET_HEX: return VTK_HEXAHEDRON;
         case ET_PRISM: return VTK_WEDGE;
         case ET_PYRAMID: return VTK_PYRAMID;
+        case ET_HEXAMID: throw Exception("hexamid not handled in vtk output");
       }
     }
     else if(order==2)
@@ -87,12 +88,13 @@ namespace ngcomp
         case ET_PRISM: return VTK_BIQUADRATIC_QUADRATIC_WEDGE; // 18 nodes
         // case ET_PRISM: return VTK_QUADRATIC_WEDGE; // 18 nodes (not supported by paraview tessellation)
         case ET_PYRAMID: return VTK_PYRAMID; //VTK_TRIQUADRATIC_PYRAMID; // 19 nodes
+        case ET_HEXAMID: throw Exception("hexamid not handled in vtk output");          
       }
     }
     else
       throw Exception("Invalid element order: " + ToString(order));
   }
-
+ 
   VTKCell :: VTKCell(ELEMENT_TYPE et, int order, const std::map<tuple<int,int,int>, int> &m,
       int i, int j, int k, Vec<3,int> vi, Vec<3,int> vj, Vec<3,int> vk)
   {
