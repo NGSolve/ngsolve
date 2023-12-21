@@ -843,7 +843,7 @@ namespace ngbla
                          FlatVector<const TB>(prod.View().B().Range(0,w)),
                          FlatVector<T>(self.Spec().Range(0,h)));
       else
-        NgGEMV<ADD> (POS, make_BareSliceMatrix(prod.View().A()),
+        NgGEMV<ADD> (POS ? 1.0 : -1.0, make_BareSliceMatrix(prod.View().A()),
                      SliceVector<TB>(prod.View().B().Range(0,w)),
                      SliceVector<T>(self.Spec().Range(0,h)));
       return self.Spec();
