@@ -152,6 +152,7 @@ namespace ngla
     uv.UpdateDevice();
     SetVector (scal, Size(), uv.DevData(), DevData());
     host_uptodate = false;
+    dev_uptodate = true;    
     return *this;
   }
   
