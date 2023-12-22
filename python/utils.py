@@ -2,7 +2,7 @@ from ngsolve.ngstd import IntRange
 from ngsolve.fem import *
 from ngsolve.comp import *
 from ngsolve.bla import Norm
-from netgen import TimeFunction
+from netgen import TimeFunction, Timer
 
 x = CoordCF(0)
 y = CoordCF(1)
