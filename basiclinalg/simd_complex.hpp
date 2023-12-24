@@ -177,6 +177,8 @@ namespace ngcore
   template <int N> INLINE auto operator/ (SIMD<Complex, N> a, SIMD<Complex, N> b)
   { return a * Inv(b); }
 
+  template <int N> INLINE auto operator/ (SIMD<Complex, N> a, SIMD<double, N> b)
+  { return a * (1.0/b); }
   
   template <int N>
   INLINE Complex HSum (SIMD<Complex, N> sc)
