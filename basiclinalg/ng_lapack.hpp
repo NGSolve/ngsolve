@@ -1078,9 +1078,12 @@ namespace ngbla
 
 
 
-  inline void LapackEigenValuesSymmetric (ngbla::FlatMatrix<double> a,
-                                          ngbla::FlatVector<double> lami,
-                                          ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0)){
+  NGS_DLL_HEADER
+  void LapackEigenValuesSymmetric (ngbla::FlatMatrix<double> a,
+                                   ngbla::FlatVector<double> lami,
+                                   ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0));
+  /*
+  {
     char jobz, uplo = 'U'; 
     integer n = a.Height();
     integer lwork=(n+2)*n+1;
@@ -1110,6 +1113,7 @@ namespace ngbla
 
     delete [] work; 
   }
+  */
 
 
 
