@@ -883,7 +883,50 @@ namespace ngbla
     delete[] ipiv; 
 
     return; 
-  } 
+  }
+
+
+
+
+
+
+  void LapackEigenValuesSymmetric (ngbla::FlatMatrix<double> a,
+                                   ngbla::FlatVector<double> lami,
+                                   ngbla::FlatMatrix<double> evecs)
+  {
+    char jobz, uplo = 'U'; 
+    integer n = a.Height();
+    integer lwork=(n+2)*n+1;
+ 
+    double* work = new double[lwork];
+    integer info; 
+ 
+    double * matA;
+
+    if ( evecs.Height() )
+      {
+        // eigenvectors are calculated
+        evecs = a;
+        jobz = 'V';
+        matA = &evecs(0,0);
+      }
+    else
+      {
+        // only eigenvalues are calculated, matrix a is destroyed!!
+        jobz = 'N';
+        matA = &a(0,0);
+      }
+    dsyev_(&jobz, &uplo , &n , matA, &n, &lami(0), work, &lwork, &info); 
+
+    if (info)
+      std::cerr << "LapackEigenValuesSymmetric, info = " << info << std::endl;
+
+    delete [] work; 
+  }
+
+  
+
+  
 }
 
 
