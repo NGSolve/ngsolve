@@ -14,6 +14,7 @@
 
 #include <../basiclinalg/complex_wrapper.hpp>
 #include <fem.hpp>
+//#include <coefficient.hpp>
 #include <coefficient_impl.hpp>
 
 #include <../ngstd/evalfunc.hpp>

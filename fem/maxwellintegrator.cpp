@@ -12,6 +12,7 @@
 #define FILE_HCURL_EQUATIONS_CPP 
 
 #include <fem.hpp>
+#include "hcurl_equations.hpp"
 #include <diffop_impl.hpp>
 
 int link_maxwellintegrator;

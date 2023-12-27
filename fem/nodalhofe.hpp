@@ -1,7 +1,7 @@
 #ifndef FILE_NODALHOFE
 #define FILE_NODALHOFE
 
-
+#include "tscalarfe.hpp"
 
 namespace ngfem
 {

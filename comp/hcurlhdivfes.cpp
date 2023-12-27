@@ -13,7 +13,7 @@
 
 #include <../fem/hcurllofe.hpp>
 #include <../fem/thcurlfe_impl.hpp>
-
+#include <../fem/hcurl_equations.hpp> 
 
 using namespace ngmg; 
 

@@ -4,10 +4,12 @@
 #include <comp.hpp>
 #include <../fem/hcurlhofe.hpp> 
 #include <../fem/hcurllofe.hpp>
+#include <../fem/hcurl_equations.hpp> 
+
 // #include <../fem/hcurlhdiv_dshape.hpp> 
 #include <multigrid.hpp>
 
-extern template class ngla::VFlatVector<double>;
+// extern template class ngla::VFlatVector<double>;
 
 namespace ngcomp 
 {

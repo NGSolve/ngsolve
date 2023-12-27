@@ -7,6 +7,10 @@
 /* Date:   5. Sep. 2013                                              */
 /*********************************************************************/
 
+
+
+#include "hcurlfe.hpp"
+
 namespace ngfem
 {
 
@@ -40,7 +44,7 @@ namespace ngfem
 
     
     virtual void CalcShape (const IntegrationPoint & ip, 
-                            SliceMatrix<> shape) const override;
+                            BareSliceMatrix<> shape) const override;
 
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
                                 SliceMatrix<> curlshape) const override;
@@ -60,7 +64,7 @@ namespace ngfem
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
                                       SliceMatrix<> curlshape) const override;
 
-    virtual void CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+    virtual void CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
                                       SliceMatrix<> curlshape) const override;
 
     virtual void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
@@ -73,7 +77,8 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual void 
     EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<> curl) const override;
-    
+
+    using BASE::Evaluate;
     NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;
     
     NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const override;        

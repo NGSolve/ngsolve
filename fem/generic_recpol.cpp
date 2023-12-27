@@ -5,6 +5,7 @@
 /*********************************************************************/
 
 
+#ifdef NONE
 
 #include <fem.hpp>
 namespace ngfem
@@ -269,3 +270,6 @@ namespace ngfem
 
 
 }
+
+
+#endif

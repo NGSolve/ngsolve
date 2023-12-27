@@ -8,6 +8,8 @@
 /*********************************************************************/
 
 
+#include "elementtransformation.hpp"
+
 namespace ngfem
 {
 

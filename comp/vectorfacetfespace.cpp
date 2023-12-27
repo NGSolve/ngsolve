@@ -5,12 +5,10 @@
 /*********************************************************************/
 
 #include <comp.hpp>
-#include <fem.hpp>
 
 #include "../fem/hcurllofe.hpp"
+#include <../fem/hcurl_equations.hpp>
 
-//#undef NDEBUG
-#include <cassert>
 
 namespace ngcomp
 {

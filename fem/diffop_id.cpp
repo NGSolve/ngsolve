@@ -1,4 +1,6 @@
-#include <fem.hpp>
+// #include <fem.hpp>
+
+#include "bdbequations.hpp"
 #include <diffop_impl.hpp>
   
 namespace ngfem

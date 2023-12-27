@@ -7,8 +7,12 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+#include "code_generation.hpp"
+#include <bla.hpp>
+
 namespace ngfem
 {
+  
   /** 
       coefficient functions
   */

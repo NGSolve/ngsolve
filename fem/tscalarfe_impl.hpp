@@ -6,7 +6,9 @@
 #ifndef FILE_TSCALARFE_IMPL
 #define FILE_TSCALARFE_IMPL
 
- 
+
+#include "recursive_pol.hpp"
+
 namespace ngfem
 {
 

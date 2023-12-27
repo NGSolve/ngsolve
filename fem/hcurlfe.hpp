@@ -7,6 +7,10 @@
 /* Date:   16. Apr. 2000                                             */
 /*********************************************************************/
 
+#include "finiteelement.hpp"
+
+#include "fe_interfaces.hpp"
+#include "tscalarfe.hpp"   // for GetGradient(AutoDiff)
 
 
 namespace ngfem
@@ -20,14 +24,6 @@ namespace ngfem
 
   template <int D> class HDivFiniteElement;
 
-  /*
-  template <int D>
-  class DIM_CURL_TRAIT
-  {
-  public:
-    enum { DIM = (D*(D-1))/2 };
-  };
-  */
   
   constexpr int DIM_CURL_ (int D) { return (D*(D-1))/2; }
 
@@ -44,13 +40,46 @@ namespace ngfem
       : FiniteElement (andof, aorder) { ; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const = 0;
+			    BareSliceMatrix<> shape) const = 0;
 
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
 				  SliceMatrix<> shape) const = 0;
 
+    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const = 0;
+
+    virtual void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip,
+				  BareSliceMatrix<SIMD<double>> shape) const = 0;
+    
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                  BareSliceMatrix<SIMD<double>> shapes) const = 0;
+    
+    /// compute curl of shape, default: numerical diff
+    virtual void CalcCurlShape (const IntegrationPoint & ip, 
+				SliceMatrix<> curlshape) const = 0;
+    
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
 				      SliceMatrix<> curlshape) const = 0;
+
+    virtual void CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
+                                      SliceMatrix<> curlshape) const = 0;
+
+    virtual void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                                      BareSliceMatrix<SIMD<double>> curlshapes) const = 0;
+
+
+
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const;
+    NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
+    
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                                          BareSliceVector<> coefs) const;
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
+                                          BareSliceVector<Complex> coefs) const;
+    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                                              BareSliceVector<> coefs) const;
+    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
+                                              BareSliceVector<Complex> coefs) const;
   };
 
   
@@ -60,7 +89,6 @@ namespace ngfem
 
   public:
     enum { DIM = D };
-    // enum { DIM_CURL = DIM_CURL_TRAIT<D>::DIM };
     enum { DIM_CURL = DIM_CURL_(D) };
 
 
@@ -78,31 +106,30 @@ namespace ngfem
 
   
     /// compute curl of shape, default: numerical diff
-    virtual void CalcCurlShape (const IntegrationPoint & ip, 
-				SliceMatrix<> curlshape) const;
-
-    /// compute shape
-    virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
-				  SliceMatrix<> shape) const override;
-
-
-    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const;
-
-    virtual void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip,
-				  BareSliceMatrix<SIMD<double>> shape) const;
+    void CalcCurlShape (const IntegrationPoint & ip, 
+                        SliceMatrix<> curlshape) const override;
     
-    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                  BareSliceMatrix<SIMD<double>> shapes) const;
+    /// compute shape
+    void CalcMappedShape (const BaseMappedIntegrationPoint & mip, SliceMatrix<> shape) const override;
+
+
+    void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const override;
+
+    void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip,
+                          BareSliceMatrix<SIMD<double>> shape) const override;
+    
+    void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                          BareSliceMatrix<SIMD<double>> shapes) const override;
     
     /// compute curl of shape
-    virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
-				      SliceMatrix<> curlshape) const override;
-
-    virtual void CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
-                                      SliceMatrix<> curlshape) const;
-
-    virtual void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
-                                      BareSliceMatrix<SIMD<double>> curlshapes) const;
+    void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
+                              SliceMatrix<> curlshape) const override;
+    
+    void CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
+                              SliceMatrix<> curlshape) const override;
+    
+    void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
+                              BareSliceMatrix<SIMD<double>> curlshapes) const override;
 
     ///
     const FlatMatrixFixWidth<DIM> GetShape (const IntegrationPoint & ip, 
@@ -121,7 +148,8 @@ namespace ngfem
       HeapReset hr(lh);
       return Trans (GetShape(ip, lh)) * x;
     }  
-    
+
+    using BaseHCurlFiniteElement::Evaluate;
     NGS_DLL_HEADER virtual void 
     Evaluate (const IntegrationRule & ir, BareSliceVector<> coefs, SliceMatrix<> values) const;
 
@@ -153,6 +181,8 @@ namespace ngfem
       return Trans (GetCurlShape(ip, lh)) * x;
     }  
 
+    using BaseHCurlFiniteElement::EvaluateCurl;    
+    
     NGS_DLL_HEADER virtual void 
     EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<> curl) const;
 
@@ -160,26 +190,6 @@ namespace ngfem
     EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
                         BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const;
 
-
-    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    { throw ExceptionNOSIMD(string("HCurlFE - simd eval not overloaded, eltype = ")+typeid(*this).name()); }
-    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
-    { throw ExceptionNOSIMD(string("HCurlFE - simd<complex> eval not overloaded")+typeid(*this).name()); }
-    NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
-    { throw ExceptionNOSIMD(string("HCurlFE - simd evalcurl not overloaded")+typeid(*this).name()); }      
-
-    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
-                                             BareSliceVector<> coefs) const
-    { throw ExceptionNOSIMD(string("HCurlFE - simd addtrans not overloaded")+typeid(*this).name()); }
-    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
-                                             BareSliceVector<Complex> coefs) const
-    { throw ExceptionNOSIMD(string("HCurlFE - simd addtrans complex not overloaded")+typeid(*this).name()); }
-    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
-                                                 BareSliceVector<> coefs) const
-    { throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans not overloaded")+typeid(*this).name()); }
-    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
-                                              BareSliceVector<Complex> coefs) const
-    { throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans complex not overloaded")+typeid(*this).name()); }      
 
     
     NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const;
@@ -210,7 +220,7 @@ namespace ngfem
     virtual void CalcShape4 (const IntegrationPoint & ip, 
 			     FlatMatrixFixWidth<D> shape) const
     { ; }
-  
+    
     ///
     void ComputeEdgeMoments (int enr, ScalarFiniteElement<1> & testfe,
 			     FlatMatrix<> moments, int order, int shape = 1) const;
@@ -298,23 +308,17 @@ namespace ngfem
   template <int DIM, typename SCAL = double>
   class uDv
   {
-    // enum { DIM_CURL = (DIM * (DIM-1))/2 };    
   public:
     const AutoDiff<DIM,SCAL> u, v;
 
     uDv (AutoDiff<DIM,SCAL> au, AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { ; }
 
-    // uDv (AutoDiff<DIM,SCAL> au, AutoDiff<DIM,SCAL> av)
-    // : u(au), v(av) { ; }
-    
-    // Vec<DIM,SCAL> Value () const
     auto Value () const
     {
       return u.Value() * GetGradient(v);
     }
 
-    // Vec<DIM_CURL,SCAL> CurlValue () const
     auto CurlValue () const
     {
       return Cross (GetGradient(u), GetGradient(v));
@@ -326,7 +330,6 @@ namespace ngfem
   template <int DIM, typename SCAL = double>
   class uDv_minus_vDu
   {
-    // enum { DIM_CURL = (DIM * (DIM-1))/2 };
   public:
     const AutoDiff<DIM, SCAL> u, v;
     
@@ -334,19 +337,11 @@ namespace ngfem
                    const AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { }
 
-    /*
-    uDv_minus_vDu (const AutoDiff<DIM,SCAL> au, 
-                   const AutoDiff<DIM,SCAL> av)
-      : u(au), v(av) { }
-    */
-    
-    // Vec<DIM,SCAL> Value () const
     auto Value () const
     {
       return u.Value()*GetGradient(v)-v.Value()*GetGradient(u);
     }
 
-    // Vec<DIM_CURL,SCAL> CurlValue () const
     auto CurlValue () const    
     {
       return 2 * Cross (GetGradient(u), GetGradient(v));
@@ -359,8 +354,6 @@ namespace ngfem
   template <int DIM, typename SCAL = double>
   class wuDv_minus_wvDu
   {
-    // enum { DIM_CURL = (DIM * (DIM-1))/2 };
-
   public:
     const AutoDiff<DIM,SCAL> u, v, w;
 
@@ -368,40 +361,17 @@ namespace ngfem
                      const AutoDiff<DIM,SCAL> av,
                      const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
-    /*
-    wuDv_minus_wvDu (const AutoDiff<DIM,SCAL> au, 
-                     const AutoDiff<DIM,SCAL> av,
-                     const AutoDiff<DIM,SCAL> aw)
-      : u(au), v(av), w(aw) { ; }
-    */
-    
-    // Vec<DIM,SCAL> Value () const
+
     auto Value () const
     {
-      /*
-      Vec<DIM,SCAL> val;
-      for (int j = 0; j < DIM; j++)
-	val(j) = w.Value() * (u.Value() * v.DValue(j) - v.Value() * u.DValue(j));
-      return val;
-      */
       return w.Value()*u.Value()*GetGradient(v) - w.Value()*v.Value()*GetGradient(u);
     }
 
-    // Vec<DIM_CURL,SCAL> CurlValue () const
     auto CurlValue () const
     {
-      /*
-      AutoDiff<DIM_CURL,SCAL> hd = Cross (u*w, v) + Cross(u, v*w);
-      Vec<DIM_CURL,SCAL> val;
-      for (int i = 0; i < DIM_CURL; i++) 
-        val(i) = hd.DValue(i);
-      return val;
-      */
       return Cross(GetGradient(u*w),GetGradient(v)) - Cross(GetGradient(v*w), GetGradient(u));
     }
   };
-
-
 
 
 

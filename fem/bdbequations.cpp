@@ -11,10 +11,11 @@
 #define FILE_BDBEQUATIONS_CPP
 
 
-#include <fem.hpp>
-#include <diffop_impl.hpp>
-
-
+// #include <fem.hpp>
+#include "finiteelement.hpp"
+#include "bdbequations.hpp"
+#include "elasticity_equations.hpp"
+#include "diffop_impl.hpp"
 
   
 namespace ngfem

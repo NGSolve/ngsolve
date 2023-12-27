@@ -8,6 +8,8 @@
 /*********************************************************************/
 
 
+#include "symbolicintegrator.hpp"
+
 namespace ngfem
 {
   class TensorProductBilinearFormIntegrator : public SymbolicBilinearFormIntegrator

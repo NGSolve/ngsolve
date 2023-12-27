@@ -17,7 +17,9 @@ namespace ngcomp { class GridFunction; }
 
 namespace ngfem
 {
-
+  class FiniteElement;
+  template <int D> class ScalarFiniteElement;
+  
   /**
      Transformation from reference element to physical element.
   */

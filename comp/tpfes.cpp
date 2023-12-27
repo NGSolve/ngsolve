@@ -1,5 +1,10 @@
 #include <comp.hpp>
+#include "../fem/tensorproductintegrator.hpp"
+#include "../fem/tpdiffop.hpp"
+#include "../fem/tpintrule.hpp"
+
 #include "tpfes.hpp"
+
 using namespace ngmg;
 
 namespace ngcomp

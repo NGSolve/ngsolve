@@ -7,6 +7,12 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+
+#include "diffop.hpp"
+#include "scalarfe.hpp"
+#include "bdbintegrator.hpp"
+#include "coefficient.hpp"
+
 namespace ngfem
 {
 
