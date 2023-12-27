@@ -9,6 +9,9 @@
 #include "hdivdivfespace.hpp"
 #include "../fem/hdivdivfe.hpp"
 
+#include "../fem/diffop.hpp"
+#include "../fem/diffop_impl.hpp"
+#include "../fem/bdbequations.hpp"
 
 
 namespace ngcomp

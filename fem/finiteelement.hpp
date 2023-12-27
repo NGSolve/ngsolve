@@ -21,8 +21,6 @@ namespace ngfem
 
 namespace ngfem
 {
-  class ElementTransformation;
-
   
   /** 
       Base class finite element.

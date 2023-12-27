@@ -1,5 +1,9 @@
 // WIP, need a bit more design ...
 
+#include "coefficient.hpp"
+#include "integrator.hpp"
+#include "symbolicintegrator.hpp"
+
 namespace ngfem
 {
   class Integral;

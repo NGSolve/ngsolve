@@ -3,6 +3,7 @@
 #include "h1lumping.hpp"
 #include "../fem/tscalarfe_impl.hpp"
 #include "../fem/h1lofe.hpp"
+#include "bdbequations.hpp"
 
 
 /*

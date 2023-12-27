@@ -7,6 +7,14 @@
 /* Date:   orig 2006, redesign Dec 2016                              */
 /*********************************************************************/
 
+#include "finiteelement.hpp"
+#include "fe_interfaces.hpp"
+
+#include "hcurlfe.hpp" // for Cross (AD,AD)
+#include "recursive_pol.hpp"
+#include "recursive_pol_trig.hpp"
+#include "recursive_pol_tet.hpp"
+
 
 namespace ngfem
 {

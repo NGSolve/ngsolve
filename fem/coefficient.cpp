@@ -13,8 +13,8 @@
 #include <bla.hpp>
 
 #include <../basiclinalg/complex_wrapper.hpp>
-#include <fem.hpp>
-//#include <coefficient.hpp>
+// #include <fem.hpp>
+#include <coefficient.hpp>
 #include <coefficient_impl.hpp>
 #include "symbolicintegrator.hpp"
 #include <../ngstd/evalfunc.hpp>

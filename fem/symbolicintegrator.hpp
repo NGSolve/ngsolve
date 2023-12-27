@@ -13,6 +13,8 @@ namespace ngcomp
 }
 
 
+#include "integrator.hpp"
+
 namespace ngfem
 {
 

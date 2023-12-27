@@ -7,6 +7,9 @@
 /* Date:   20. Maerz 2003                                            */
 /*********************************************************************/
 
+#include "fespace.hpp"
+#include "h1hofespace.hpp"
+
 namespace ngcomp
 {
 

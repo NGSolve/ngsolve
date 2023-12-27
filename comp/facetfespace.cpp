@@ -1,7 +1,7 @@
 // #include <comp.hpp>
 // #include <fem.hpp>
 #include "facetfespace.hpp"
-
+#include <bdbequations.hpp>
 #include "../fem/l2hofe.hpp"
 #include "../fem/diffop_impl.hpp"
 #include "../fem/facethofe.hpp"
