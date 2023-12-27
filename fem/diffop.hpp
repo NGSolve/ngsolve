@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 #include <core/register_archive.hpp>
+#include "finiteelement.hpp"
 
 namespace ngfem
 {

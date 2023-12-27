@@ -6,9 +6,10 @@
 /* AutoDiff - revision: J. Schoeberl, March 2009                     */
 /*********************************************************************/
 
-#include <fem.hpp>    
-#include <thcurlfe_impl.hpp>
-#include <hcurlhofe_impl.hpp>
+// #include <fem.hpp>
+#include "hcurlhofe.hpp"
+#include "thcurlfe_impl.hpp"
+#include "hcurlhofe_impl.hpp"
 
 namespace ngfem
 {

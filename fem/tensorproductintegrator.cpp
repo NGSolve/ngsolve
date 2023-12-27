@@ -9,6 +9,9 @@
 */
 
 #include <fem.hpp>
+#include "tensorproductintegrator.hpp"
+#include "tpdiffop.hpp"
+#include "tpintrule.hpp"
 
 namespace ngfem
 {

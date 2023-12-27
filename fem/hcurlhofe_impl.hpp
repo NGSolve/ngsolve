@@ -11,7 +11,8 @@
 
 #include "recursive_pol_tet.hpp"
 #include "thdivfe.hpp"
-   
+#include "hcurlhofe.hpp"
+
 namespace ngfem
 {
 

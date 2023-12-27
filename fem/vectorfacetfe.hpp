@@ -62,7 +62,7 @@ namespace ngfem
     virtual void ComputeNDof ();
 
     virtual void CalcShape(const IntegrationPoint & ip,
-         		    SliceMatrix<> shape) const override;
+                           BareSliceMatrix<> shape) const override;
 
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const;
@@ -125,7 +125,7 @@ namespace ngfem
     INT<2> GetFacetOrder(int j) const { return facet_order[j]; }
     int GetVertexNumber(int j) const { return vnums[j]; }
     
-    virtual void CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const override
+    virtual void CalcShape (const IntegrationPoint & ip, BareSliceMatrix<> shape) const override
     {
       int fnr = ip.FacetNr();
       if (fnr >= 0)
@@ -140,6 +140,7 @@ namespace ngfem
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
 				  BareSliceMatrix<SIMD<double>> shapes) const override;
 
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::Evaluate;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs,
                            BareSliceMatrix<SIMD<double>> values) const override;
     
@@ -152,7 +153,7 @@ namespace ngfem
     template<typename MIP, typename TFA>  
     void CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const;
     
-    virtual void CalcShape (const IntegrationPoint & ip, int facet, SliceMatrix<> shape) const;
+    virtual void CalcShape (const IntegrationPoint & ip, int facet, BareSliceMatrix<> shape) const;
 
     virtual int GetNExtraShapes( int facet) const {return 0;}
     virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const {xshape = 0.0;}

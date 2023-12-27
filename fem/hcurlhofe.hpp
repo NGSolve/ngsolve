@@ -8,7 +8,13 @@
 /*                                                                   */
 /* AutoCurl - revision: J. Schoeberl, March 2009                     */
 /*********************************************************************/
-   
+
+
+#include "thcurlfe.hpp"
+#include "recursive_pol.hpp"
+#include "recursive_pol_trig.hpp"
+#include "recursive_pol_tet.hpp"
+
 namespace ngfem
 {
 

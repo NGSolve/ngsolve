@@ -9,9 +9,21 @@
 /*********************************************************************/
 
 
+#include <bla.hpp>
 namespace ngfem
 {
+  using namespace ngbla;
+}
 
+#include "elementtopology.hpp"
+#include "intrule.hpp"
+#include "elementtransformation.hpp"
+
+namespace ngfem
+{
+  class ElementTransformation;
+
+  
   /** 
       Base class finite element.
       Represents a reference element.

@@ -2,6 +2,7 @@
 #define FILE_THCURLFE_IMPL
 
 
+#include "thcurlfe.hpp"
 
 namespace ngfem
 {
@@ -15,7 +16,7 @@ namespace ngfem
   
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  CalcShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
+  CalcShape (const IntegrationPoint & ip, BareSliceMatrix<> shape) const
   {
     this->T_CalcShape (GetTIPGrad<DIM>(ip), 
                        SBLambda ([shape](size_t i, auto s)
@@ -125,7 +126,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
-  CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+  CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
                        SliceMatrix<> curlshape) const
   {
     for (int i = 0; i < mir.Size(); i++)

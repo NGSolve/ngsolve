@@ -6,6 +6,7 @@
 
 
 #include <fem.hpp>
+#include "hcurl_equations.hpp"
 #include <thcurlfe_impl.hpp>
 #include <cassert>
 
@@ -148,7 +149,7 @@ namespace ngfem
   
   template<ELEMENT_TYPE ET>
   void VectorFacetFacetFE<ET>::CalcShape(const IntegrationPoint & ip,
-                                         SliceMatrix<> shape) const
+                                         BareSliceMatrix<> shape) const
   {
     TIP<DIM,AutoDiff<DIM>> tip = ip;
     T_CalcShape (tip,
@@ -272,7 +273,7 @@ namespace ngfem
 
   template<>
   void VectorFacetFacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip,
-					  SliceMatrix<> shape) const
+                                               BareSliceMatrix<> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
     AutoDiff<2> y (ip(1), 1);
@@ -326,7 +327,7 @@ namespace ngfem
 
   template<>
   void VectorFacetVolumeFE<ET_TRIG> ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     for (int i = 0; i < ndof; i++)
       shape(i, 0) = shape(i, 1) = 0;
@@ -420,9 +421,9 @@ namespace ngfem
 
   template<>
   void VectorFacetVolumeFE<ET_QUAD> ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
-    shape = 0.0;
+    shape.AddSize(ndof, 2) = 0.0;
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
@@ -504,7 +505,7 @@ namespace ngfem
 
   template<>
   void VectorFacetVolumeFE<ET_TET> ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     for (int i = 0; i < ndof; i++)
       shape(i,0) = shape(i,1) = shape(i,2) = 0;
@@ -659,7 +660,7 @@ namespace ngfem
 
   template<>
   void VectorFacetVolumeFE<ET_PRISM> ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
 
@@ -669,7 +670,7 @@ namespace ngfem
     AutoDiff<3> sigma[6];
     for (int i = 0; i < 6; i++) sigma[i] = lami[i] + muz[i];
 
-    shape = 0.0;
+    shape.AddSize(ndof, 3) = 0.0;
 
     // trig face shapes
     if (fanr < 2)
@@ -854,7 +855,7 @@ namespace ngfem
 
   template<>
   void VectorFacetVolumeFE<ET_HEX> ::
-  CalcShape ( const IntegrationPoint & ip, int fanr, SliceMatrix<> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
 
@@ -875,7 +876,7 @@ namespace ngfem
     AutoDiff<3> sigma[8];
     for (int i = 0; i < 8; i++) sigma[i] = mux[i] + muy[i] + muz[i];
     
-    shape = 0.0;
+    shape.AddSize(ndof, 3) = 0.0;
     {
       int p = facet_order[fanr][0];
        
@@ -929,7 +930,7 @@ namespace ngfem
 
   template<>
   void VectorFacetVolumeFE<ET_PYRAMID> ::
-  CalcShape ( const IntegrationPoint & ip, int facet, SliceMatrix<> shape ) const
+  CalcShape ( const IntegrationPoint & ip, int facet, BareSliceMatrix<> shape ) const
   {
     throw Exception("VectorFacetVolumePyramid::CalcShape: not implemented!");
   }

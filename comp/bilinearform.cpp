@@ -3,6 +3,7 @@
 
 #include <parallelngs.hpp>
 #include "../fem/h1lofe.hpp"
+#include "../fem/tensorproductintegrator.hpp"
 
 namespace ngcomp
 {

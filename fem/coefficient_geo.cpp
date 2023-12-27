@@ -9,6 +9,7 @@
 */
 
 #include <fem.hpp>
+#include "tpintrule.hpp"
 
 namespace ngfem
 

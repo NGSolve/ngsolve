@@ -20,6 +20,48 @@
 namespace ngfem
 {
 
+
+  void BaseHCurlFiniteElement :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+  {
+    throw ExceptionNOSIMD(string("HCurlFE - simd eval not overloaded, eltype = ")+typeid(*this).name());
+  }
+  
+  void BaseHCurlFiniteElement :: Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const
+  {
+    throw ExceptionNOSIMD(string("HCurlFE - simd<complex> eval not overloaded")+typeid(*this).name());
+  }
+
+  void BaseHCurlFiniteElement :: EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+  {
+    throw ExceptionNOSIMD(string("HCurlFE - simd evalcurl not overloaded")+typeid(*this).name());
+  }      
+  
+  void BaseHCurlFiniteElement :: AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                                           BareSliceVector<> coefs) const
+  {
+    throw ExceptionNOSIMD(string("HCurlFE - simd addtrans not overloaded")+typeid(*this).name());
+  }
+
+  void BaseHCurlFiniteElement :: AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
+                                           BareSliceVector<Complex> coefs) const
+  {
+    throw ExceptionNOSIMD(string("HCurlFE - simd addtrans complex not overloaded")+typeid(*this).name());
+  }
+
+  void BaseHCurlFiniteElement :: AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+                                                 BareSliceVector<> coefs) const
+  {
+    throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans not overloaded")+typeid(*this).name());
+  }
+
+  void BaseHCurlFiniteElement :: AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
+                                               BareSliceVector<Complex> coefs) const
+  {
+    throw ExceptionNOSIMD(string("HCurlFE - simd addcurltrans complex not overloaded")+typeid(*this).name());
+  }      
+
+
+  
   template <int D>
   string HCurlFiniteElement<D> :: ClassName(void) const
   { 
@@ -213,7 +255,7 @@ namespace ngfem
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcMappedCurlShape (const MappedIntegrationRule<DIM,DIM> & mir, 
+  CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
                        SliceMatrix<> curlshape) const
   {
     for (int i = 0; i < mir.Size(); i++)
@@ -854,9 +896,9 @@ namespace ngfem
   
   void FE_NedelecSegm1 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
-    shape = 0.0; //!
+    // shape = 0.0; //!
     shape (0,0) = 1;
   }
 
@@ -870,9 +912,9 @@ namespace ngfem
   
   void FE_NedelecSegm2 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
-    shape = 0.0; //!
+    // shape = 0.0; //!
     shape (0,0) = 1;
     shape (1,0) = 2*ip(0)-1;
   }
@@ -891,9 +933,9 @@ namespace ngfem
 
   void FE_NedelecSegm3 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
-    shape = 0.0; //!
+    // shape = 0.0; //!
     shape (0,0) = 1;
     shape (1,0) = 2*ip(0)-1;
     shape (2,0) = ip(0) * (1-ip(0));
@@ -1288,10 +1330,10 @@ namespace ngfem
   template <int ORDER, int ZORDER>
   void FE_TNedelecQuad<ORDER,ZORDER> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
     int i, j;
-    shape = 0.0; //!
+    shape.AddSize(ndof,2) = 0.0; //!
 
     Mat<NDOF,2> hshape;
     CalcShape1 (ip, hshape);
@@ -2128,13 +2170,13 @@ namespace ngfem
 
   void FE_NedelecHex1 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const 
   {
     double x = ip(0);
     double y = ip(1);
     double z = ip(2);
 
-    shape = 0;
+    shape.AddSize(ndof,3) = 0;
 
     shape (0,0) = (1-z) * (1 - y);
     shape (1,0) = (1-z) * (-y);
@@ -2186,9 +2228,9 @@ namespace ngfem
 
   void FE_NedelecTet3NoGrad :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
-    shape = 0.0; //!
+    shape.AddSize(ndof,3) = 0.0; //!
     FlatMatrixFixWidth<3> tet1shape(6, &shape(0,0));
     tet1.FE_NedelecTet1::CalcShape (ip, tet1shape);
     
@@ -2208,7 +2250,7 @@ namespace ngfem
 
   void FE_NedelecTet3NoGrad :: 
   CalcCurlShape (const IntegrationPoint & ip, 
-		 FlatMatrixFixWidth<3> curlshape) const
+		 SliceMatrix<> curlshape) const
   {
     FlatMatrixFixWidth<3> tet1curlshape(6, &curlshape(0,0));
     tet1.FE_NedelecTet1::CalcCurlShape (ip, tet1curlshape);
@@ -2521,11 +2563,11 @@ namespace ngfem
   template <int ZORDER>
   void FE_TNedelecPrism2<ZORDER> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
     int i, j;
 
-    shape = 0.0; //!
+    shape.AddSize(ndof, 3) = 0.0; //!
     /*
       Mat<NDOF,3> hshape;
       CalcShape1 (ip, hshape);
@@ -3008,10 +3050,10 @@ namespace ngfem
   template <int ZORDER>
   void FE_TNedelecPrism3<ZORDER> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
 
-    shape = 0.0; //!
+    shape.AddSize(ndof,3) = 0.0; //!
     int i, j;
 
     /*
@@ -3556,11 +3598,11 @@ namespace ngfem
   template <int ZORDER>
   void FE_TNedelecPrism3NoGrad<ZORDER> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
     int i, j;
 
-    shape = 0.0; //!
+    shape.AddSize(ndof,3) = 0.0; //!
     Mat<9,3> loshape;
     prism1.CalcShape (ip, loshape);
 
@@ -4138,7 +4180,7 @@ namespace ngfem
 
 
   void FE_NedelecPyramid2 :: CalcShape (const IntegrationPoint & ip, 
-					SliceMatrix<> shape) const
+					BareSliceMatrix<> shape) const
   {
     Mat<NDOF,3> hshape;
     Mat<8,3> shape1;
@@ -4149,7 +4191,7 @@ namespace ngfem
     // Mat<4,3> hshape3;
     // Mat<4,3> shape3;
 
-    shape = 0.0; //!
+    shape.AddSize(ndof,3) = 0.0; //!
     CalcShape1 (ip, hshape);
     shape = Trans (trans) * hshape;
 

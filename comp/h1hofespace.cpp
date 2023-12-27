@@ -13,7 +13,9 @@
 #include "../fem/h1hofe.hpp"
 #include "../fem/h1hofefo.hpp"
 #include <../fem/hdivhofe.hpp>
-#include <../fem/facethofe.hpp>  
+#include <../fem/facethofe.hpp>
+#include <../fem/nodalhofe.hpp>
+
 
 using namespace ngmg; 
 
