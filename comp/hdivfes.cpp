@@ -11,8 +11,9 @@
 #include <comp.hpp>
 #include <multigrid.hpp>
 
-#include <../fem/hdivhofe.hpp>  
-#include <../fem/hdivlofe.hpp>
+#include "../fem/hdiv_equations.hpp"
+#include "../fem/hdivhofe.hpp"
+#include "../fem/hdivlofe.hpp"
 
 namespace ngcomp
 {

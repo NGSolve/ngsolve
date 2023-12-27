@@ -4,9 +4,9 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
-// #include <comp.hpp>
 #include "vectorfacetfespace.hpp"
 
+#include "../fem/vectorfacetfe.hpp"
 #include "../fem/hcurllofe.hpp"
 #include <../fem/hcurl_equations.hpp>
 

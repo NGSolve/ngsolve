@@ -1,4 +1,5 @@
 #include <comp.hpp>
+#include <../fem/hdiv_equations.hpp>  
 #include <../fem/hdivlofe.hpp>  
 #include <../fem/hdivhofe.hpp>  
 #include <../fem/hdivhofefo.hpp>  

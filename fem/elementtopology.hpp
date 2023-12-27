@@ -9,7 +9,8 @@
 
 namespace ngfem
 {
-
+  using ngcore::INT;
+  
   /*
     Toplogy of reference elements
   */

@@ -7,7 +7,7 @@
 #include <cmath>
 #include <fem.hpp>
 #include <ngstd.hpp>
-
+#include "symbolicintegrator.hpp"
 
 namespace std {
     

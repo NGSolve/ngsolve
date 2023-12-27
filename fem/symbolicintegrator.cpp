@@ -10,6 +10,7 @@
 #include <variant>
 #include <fem.hpp>
 #include "integratorcf.hpp"
+#include "symbolicintegrator.hpp"
 
 namespace ngfem
 {

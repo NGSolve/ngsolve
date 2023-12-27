@@ -8,6 +8,7 @@
 
  
 #include <fem.hpp>
+#include "facethofe.hpp"
 #include <tscalarfe_impl.hpp>
 #include <facethofe.hpp>
 

@@ -17,6 +17,7 @@
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
 #include "irspace.hpp"
+#include "h1lumping.hpp"
 #include "compressedfespace.hpp"
 #include "plateaufespace.hpp"
 #include "../fem/integratorcf.hpp"
