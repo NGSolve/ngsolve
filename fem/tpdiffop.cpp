@@ -1,4 +1,3 @@
-#include <fem.hpp>
 #include "tpintrule.hpp"
 #include "tpdiffop.hpp"
 

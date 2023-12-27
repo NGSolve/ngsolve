@@ -9,9 +9,6 @@
 
 #include "finiteelement.hpp"
 
-#include "fe_interfaces.hpp"
-#include "tscalarfe.hpp"   // for GetGradient(AutoDiff)
-
 
 namespace ngfem
 {
@@ -68,17 +65,24 @@ namespace ngfem
 
 
 
-    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
-    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const;
-    NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                                          BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
+    NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                                          BareSliceVector<Complex> coefs, BareSliceMatrix<SIMD<Complex>> values) const;
+    NGS_DLL_HEADER virtual void EvaluateCurl (const SIMD_BaseMappedIntegrationRule & ir,
+                                              BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const;
     
-    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                                          BareSliceMatrix<SIMD<double>> values,
                                           BareSliceVector<> coefs) const;
-    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
+    NGS_DLL_HEADER virtual void AddTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                                          BareSliceMatrix<SIMD<Complex>> values,
                                           BareSliceVector<Complex> coefs) const;
-    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values,
+    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                                              BareSliceMatrix<SIMD<double>> values,
                                               BareSliceVector<> coefs) const;
-    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<Complex>> values,
+    NGS_DLL_HEADER virtual void AddCurlTrans (const SIMD_BaseMappedIntegrationRule & ir,
+                                              BareSliceMatrix<SIMD<Complex>> values,
                                               BareSliceVector<Complex> coefs) const;
   };
 
@@ -281,7 +285,7 @@ namespace ngfem
 
 
 
-  template <int DIM, typename SCAL> //  = double>
+  template <int DIM, typename SCAL> 
   class Du
   {
     enum { DIM_CURL = (DIM * (DIM-1))/2 };
@@ -290,7 +294,6 @@ namespace ngfem
     const AutoDiff<DIM,SCAL> u;
 
     Du (const AutoDiff<DIM,SCAL> au) : u(au) { }
-    // Du (const AutoDiff<DIM,SCAL> au) : u(au) { }
 
     Vec<DIM,SCAL> Value () const
     {
@@ -305,7 +308,7 @@ namespace ngfem
 
 
 
-  template <int DIM, typename SCAL = double>
+  template <int DIM, typename SCAL>
   class uDv
   {
   public:
@@ -327,7 +330,7 @@ namespace ngfem
 
 
 
-  template <int DIM, typename SCAL = double>
+  template <int DIM, typename SCAL>
   class uDv_minus_vDu
   {
   public:
@@ -351,7 +354,7 @@ namespace ngfem
 
 
 
-  template <int DIM, typename SCAL = double>
+  template <int DIM, typename SCAL>
   class wuDv_minus_wvDu
   {
   public:

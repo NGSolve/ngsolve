@@ -149,6 +149,7 @@ namespace ngfem
   };
 
 
+#ifdef NOTAVAILABLE
   class TetShapesFaceOpt1
   {
   public:
@@ -295,7 +296,6 @@ namespace ngfem
 
 
 
-
   class TetShapesFaceOpt2
   {
   public:
@@ -347,7 +347,8 @@ namespace ngfem
     }
   };
 
-
+#endif
+  
 
 
 

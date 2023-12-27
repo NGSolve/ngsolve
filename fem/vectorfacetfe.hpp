@@ -8,7 +8,9 @@
 /*********************************************************************/
 
 
-#include <fem.hpp>
+// #include <fem.hpp>
+#include "hcurlfe.hpp"
+#include "recursive_pol.hpp"
 #include <cassert>
 
 namespace ngfem 

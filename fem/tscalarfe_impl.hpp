@@ -28,7 +28,7 @@ namespace ngfem
   {
     T_CalcShape (GetTIPGrad<DIM> (ip),
                  SBLambda ([dshape] (int i, auto shape)
-                           { dshape.Row(i) = ngbla::GetGradient(shape); }));
+                           { dshape.Row(i) = GetGradient(shape); }));
   }
 
 #ifndef FASTCOMPILE
@@ -497,7 +497,7 @@ namespace ngfem
     T_CalcShape (GetTIPGrad<DIM>(ip), 
                  SBLambda ( [&](int i, auto val) 
                             { 
-                              sum += coefs(i) * ngbla::GetGradient(val);
+                              sum += coefs(i) * GetGradient(val);
                             }));
     return sum;
   }
@@ -512,7 +512,7 @@ namespace ngfem
         Vec<DIM> sum = 0.0;
         T_CalcShape (GetTIPGrad<DIM>(ir[i]), 
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
-                               { sum += coefs(j) * ngbla::GetGradient(shape); }));
+                               { sum += coefs(j) * GetGradient(shape); }));
         vals.Row(i) = sum; 
       }
   }
@@ -539,7 +539,7 @@ namespace ngfem
                                 SBLambda ([&pcoefs,dist,&sum]
                                           (size_t j, auto shape)
                                           { 
-                                            sum += *pcoefs * ngbla::GetGradient(shape);
+                                            sum += *pcoefs * GetGradient(shape);
                                             pcoefs += dist;
                                           }));
              values.Col(i).Range(DIMSPACE) = sum;
@@ -559,7 +559,7 @@ namespace ngfem
         Vec<DIM,SIMD<double>> sum(0.0);
         T_CalcShape (GetTIPGrad<DIM> (ir[i]),
                      SBLambda ([&sum, coefs] (size_t j, auto shape)
-                               { sum += coefs(j) * ngbla::GetGradient(shape); }));
+                               { sum += coefs(j) * GetGradient(shape); }));
         values.Col(i).Range(DIM) = sum;
       }
   }
@@ -576,7 +576,7 @@ namespace ngfem
         Vec<DIM> vali = vals.Row(i);
         T_CalcShape (GetTIPGrad<DIM>(ir[i]), 
                      SBLambda ([coefs, vali] (int j, auto shape)
-                               { coefs(j) += InnerProduct (vali, ngbla::GetGradient(shape)); }));
+                               { coefs(j) += InnerProduct (vali, GetGradient(shape)); }));
       }
   }
   
@@ -594,7 +594,7 @@ namespace ngfem
                      SBLambda ([&] (int j, auto shape)
                                { 
                                  FlatMatrixFixWidth<DIM> mvals(nels, &values(i,0));
-                                 coefs.Row(j) += mvals * ngbla::GetGradient(shape);
+                                 coefs.Row(j) += mvals * GetGradient(shape);
                                }));
       }
   }
@@ -674,7 +674,7 @@ namespace ngfem
                      this->T_CalcShape (adp,
                                         SBLambda ([=,&pcoef] (size_t j, auto shape)
                                                   {
-                                                    auto grad = ngbla::GetGradient(shape);
+                                                    auto grad = GetGradient(shape);
                                                     SIMD<double> sum1 = InnerProduct(vals1, grad);
                                                     SIMD<double> sum2 = InnerProduct(vals2, grad);
                                                     SIMD<double> sum3 = InnerProduct(vals3, grad);
@@ -699,7 +699,7 @@ namespace ngfem
                      this->T_CalcShape (GetTIP(mir[i]),   // adp
                                         SBLambda ([=,&pcoef] (size_t j, auto shape)
                                                   {
-                                                    *pcoef += HSum(InnerProduct(ngbla::GetGradient(shape), vals));
+                                                    *pcoef += HSum(InnerProduct(GetGradient(shape), vals));
                                                     pcoef += dist;
                                                   }));
                    }
@@ -770,7 +770,7 @@ namespace ngfem
          
          this->T_CalcShape (GetTIP(mip),
                             SBLambda ([dshapes] (size_t i, auto shape)
-                                      { dshapes.Row(i) = ngbla::GetGradient(shape); }));
+                                      { dshapes.Row(i) = GetGradient(shape); }));
        });
 
     /*
@@ -823,10 +823,10 @@ namespace ngfem
              auto dshapes = dshape.Cols(i*DIMSPACE, (i+1)*DIMSPACE).AddSize(ndof, DIMSPACE);
              this->T_CalcShape (GetTIP(mir[i]),
                                 SBLambda ([dshapes] (size_t j, auto shape)
-                                          { dshapes.Row(j) = ngbla::GetGradient(shape); }));
+                                          { dshapes.Row(j) = GetGradient(shape); }));
            }
        });
-}
+  }
 
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>

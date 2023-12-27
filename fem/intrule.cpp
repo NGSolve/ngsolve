@@ -9,8 +9,11 @@
 */
 
 
-#include <fem.hpp>
-   
+// #include <fem.hpp>
+
+#include "intrule.hpp"
+#include "elementtransformation.hpp"
+
 namespace ngfem
 {
   static mutex intruletpfacet_mutex;
@@ -3659,8 +3662,6 @@ namespace ngfem
 
 
 
-  
-  int Integrator :: common_integration_order = -1;
 
   static IntegrationRules intrules;
   const IntegrationRules & GetIntegrationRules ()

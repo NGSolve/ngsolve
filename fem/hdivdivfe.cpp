@@ -6,8 +6,8 @@
 
 #define FILE_HDIVDIVFE_CPP
 
-#include <fem.hpp>
-#include "../fem/hdivdivfe.hpp"
+// #include <fem.hpp>
+#include "hdivdivfe.hpp"
 
 namespace ngfem
 {

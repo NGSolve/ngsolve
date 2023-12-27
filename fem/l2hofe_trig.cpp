@@ -6,7 +6,7 @@
 
 // #define FILE_L2HOFE_TRIG_CPP
  
-#include <fem.hpp>
+// #include <fem.hpp>
 #include <tscalarfe_impl.hpp>
 #include <l2hofe_impl.hpp>
 #include "l2hofefo.hpp"

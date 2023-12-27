@@ -3,7 +3,9 @@
 #ifdef NGS_PYTHON
 
 #include <core/register_archive.hpp>
-#include <fem.hpp>
+// #include <fem.hpp>
+#include <coefficient.hpp>
+#include <finiteelement.hpp>
 
 namespace ngfem
 {

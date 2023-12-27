@@ -6,8 +6,9 @@
 
 
  
-#include <fem.hpp>
+// #include <fem.hpp>
 #include "diffop_impl.hpp"
+#include "coefficient.hpp"
 #include <core/register_archive.hpp>
 
 

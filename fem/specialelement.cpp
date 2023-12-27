@@ -1,4 +1,5 @@
-#include <fem.hpp>
+// #include <fem.hpp>
+#include "specialelement.hpp"
 
 namespace ngfem
 {

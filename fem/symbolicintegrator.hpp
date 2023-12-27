@@ -14,6 +14,8 @@ namespace ngcomp
 
 
 #include "integrator.hpp"
+#include "coefficient.hpp"
+
 
 namespace ngfem
 {

@@ -1,6 +1,10 @@
 #ifndef TPINTRULE_HPP
 #define TPINTRULE_HPP
 
+
+#include "scalarfe.hpp"
+#include "coefficient.hpp"
+
 namespace ngfem
 {
   class TPIntegrationRule : public IntegrationRule

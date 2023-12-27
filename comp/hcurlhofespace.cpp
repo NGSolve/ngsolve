@@ -14,11 +14,6 @@
 
 namespace ngcomp 
 {
-
-
-
-
-
   
 
   HCurlHighOrderFESpace ::  

@@ -11,6 +11,7 @@
 #include "tscalarfe.hpp"
 #include "precomp.hpp"
 
+#include "recursive_pol.hpp"
 
 namespace ngfem
 {

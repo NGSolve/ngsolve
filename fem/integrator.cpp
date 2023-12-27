@@ -7,7 +7,7 @@
    Finite Element Integrators
 */
 
-#include <fem.hpp>
+#include <integrator.hpp>
   
 namespace ngfem
 {
@@ -16,7 +16,9 @@ namespace ngfem
   {
     ;
   }
-
+  
+  int Integrator :: common_integration_order = -1;
+  
   Integrator :: Integrator() throw ()
   {
     SetHigherIntegrationOrder(20);

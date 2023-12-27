@@ -9,15 +9,12 @@
 /*********************************************************************/
 
 
-#include <bla.hpp>
-namespace ngfem
-{
-  using namespace ngbla;
-}
 
 #include "elementtopology.hpp"
 #include "intrule.hpp"
 #include "elementtransformation.hpp"
+
+#include "fe_interfaces.hpp"
 
 namespace ngfem
 {
@@ -273,6 +270,16 @@ namespace ngfem
   };
 
 
+
+  // for shape functions 
+  template <int DIM, typename SCAL>
+  auto GetGradient (const AutoDiff<DIM,SCAL> & ad)
+  {
+    Vec<DIM,SCAL> grad;
+    for (int i = 0; i < DIM; i++)
+      grad(i) = ad.DValue(i);
+    return grad;
+  }
   
 
 

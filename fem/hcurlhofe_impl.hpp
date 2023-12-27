@@ -9,7 +9,7 @@
 /* AutoCurl - revision: J. Schoeberl, March 2009                     */
 /*********************************************************************/
 
-#include "recursive_pol_tet.hpp"
+#include "recursive_pol.hpp"
 #include "thdivfe.hpp"
 #include "hcurlhofe.hpp"
 
