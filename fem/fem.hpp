@@ -64,8 +64,8 @@ namespace ngfem
 // #include "hcurlhofe.hpp" 
 
 
-#include "facetfe.hpp" 
-#include "vectorfacetfe.hpp"
+// #include "facetfe.hpp" 
+// #include "vectorfacetfe.hpp"
 
 
 #include "specialelement.hpp"
@@ -78,7 +78,7 @@ namespace ngfem
 #include "bdbintegrator.hpp"
 #include "bdbequations.hpp"
 // #include "hcurl_equations.hpp"
-#include "hdiv_equations.hpp"
+// #include "hdiv_equations.hpp"
 // #include "elasticity_equations.hpp"
 #include "symbolicintegrator.hpp"
 // #include "tensorproductintegrator.hpp"

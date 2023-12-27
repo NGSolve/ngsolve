@@ -6,6 +6,7 @@
 
 #include <comp.hpp>
 #include <fem.hpp>
+#include <../fem/hdiv_equations.hpp>
 #include <../fem/normalfacetfe.hpp>
 #include <normalfacetsurfacefespace.hpp>
 #include <../fem/hcurlhdiv_dshape.hpp> 

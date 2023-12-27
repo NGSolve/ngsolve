@@ -16,7 +16,7 @@
 #include <fem.hpp>
 //#include <coefficient.hpp>
 #include <coefficient_impl.hpp>
-
+#include "symbolicintegrator.hpp"
 #include <../ngstd/evalfunc.hpp>
 #include <algorithm>
 #ifdef NGS_PYTHON

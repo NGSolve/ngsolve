@@ -9,6 +9,8 @@
 */
   
 #include <fem.hpp>
+#include "facetfe.hpp"
+
 
 namespace ngfem
 {
