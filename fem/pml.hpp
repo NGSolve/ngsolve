@@ -7,6 +7,10 @@
 /* Date:   1. Jul. 2004                                              */
 /*********************************************************************/
 
+
+#include "bdbintegrator.hpp"
+
+
 namespace ngfem
 {
   extern Complex alpha;

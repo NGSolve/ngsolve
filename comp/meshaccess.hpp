@@ -11,17 +11,19 @@
 #include <nginterface_v2.hpp>
 #include <core/ranges.hpp>
 
-namespace ngfem
-{
-  class ElementTransformation;
-  class IntegrationPoint;
-}
+#include <finiteelement.hpp>
+#include <elementtransformation.hpp>
+
 
 
 
 namespace ngcomp
 {
+  class PML_Transformation;
+  
   using netgen::Ng_Node;
+
+  using namespace ngfem;
   
   class MeshAccess;
   class Ngs_Element;

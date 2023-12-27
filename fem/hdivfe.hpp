@@ -7,6 +7,11 @@
 /* Date:   5. Jul. 2001                                              */
 /*********************************************************************/
 
+
+#include "finiteelement.hpp"
+#include "fe_interfaces.hpp"
+
+
 namespace ngfem
 {
 

@@ -7,15 +7,15 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+
+#include "fespace.hpp"
+
 namespace ngcomp
 {
 
   /** 
       Linearform
   */
-
-
-  
 
   
   class NGS_DLL_HEADER LinearForm : public NGS_Object

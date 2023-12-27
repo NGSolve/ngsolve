@@ -7,6 +7,9 @@
 /* Date:   5. Jul. 2001                                              */
 /*********************************************************************/
 
+#include "hdivfe.hpp"
+#include "thcurlfe.hpp"  // for Du
+
 namespace ngfem
 {
 

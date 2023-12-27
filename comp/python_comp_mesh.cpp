@@ -6,6 +6,7 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include <comp.hpp>
+#include "pmltrafo.hpp"
 using namespace ngcomp;
 
 inline auto Nr2Vert(size_t nr) {  return NodeId(NT_VERTEX,nr); };

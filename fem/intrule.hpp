@@ -371,7 +371,7 @@ namespace ngfem
     NGS_DLL_HEADER FlatVector<> GetPoint() const;
     FlatMatrix<> GetJacobian() const;
 
-    // implemented in elementtransforamtion.hpp
+    // implemented in elementtransformation.hpp
     INLINE int DimElement() const; // { return eltrans->ElementDim(); }
     INLINE int DimSpace() const; // { return eltrans->SpaceDim(); } 
     

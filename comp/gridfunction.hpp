@@ -9,6 +9,7 @@
 
 
 #include <meshing/soldata.hpp>   // netgen visualization
+#include "fespace.hpp"
 
 namespace ngcomp
 {

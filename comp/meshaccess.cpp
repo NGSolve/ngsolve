@@ -16,9 +16,10 @@
 #include <nginterface.h>
 
 #include <comp.hpp>
+#include "pmltrafo.hpp"
+
 #include "../fem/h1lofe.hpp"
 #include <regex>
-
 namespace ngcomp
 {
 

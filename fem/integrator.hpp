@@ -9,6 +9,8 @@
 
 
 #include "elementtransformation.hpp"
+#include "diffop.hpp"
+
 
 namespace ngfem
 {

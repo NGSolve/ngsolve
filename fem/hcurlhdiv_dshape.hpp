@@ -2,6 +2,8 @@
 #define FILE_HCURLHDIV_DSHAPE
 
 
+#include "finiteelement.hpp"
+
 namespace ngfem
 {
 

@@ -7,10 +7,12 @@
 /* Date:   2. Aug. 2000                                              */
 /*********************************************************************/
 
+
+#include "meshaccess.hpp"
+
+
 namespace ngcomp
 {
-
-
   class DocInfo
   {
   public:

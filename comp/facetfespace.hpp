@@ -16,6 +16,9 @@
 #ifndef FACET_FESPACE_HPP
 #define FACET_FESPACE_HPP
 
+
+#include "fespace.hpp"
+
 namespace ngcomp
 {
 

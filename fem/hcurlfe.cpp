@@ -72,7 +72,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcCurlShape (const IntegrationPoint & ip, 
-		 SliceMatrix<> curlshape) const
+		 BareSliceMatrix<> curlshape) const
   {
     if (DIM == 1) return;
     double eps = 1e-6;  
@@ -86,7 +86,7 @@ namespace ngfem
     FlatMatrixFixWidth<DIM> shape4(ndof, &hm4[0]);
 
     FlatMatrixFixWidth<DIM> dshapei(ndof, &hmi[0]);
-    curlshape = 0;
+    curlshape.AddSize(ndof, DIM_CURL_(D)) = 0;
 
     for (int i = 0; i < DIM; i++)
       {
@@ -168,7 +168,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-                   SliceMatrix<> shape) const
+                   BareSliceMatrix<> shape) const
   {
     CalcShape (bmip.IP(), shape);
 
@@ -186,7 +186,7 @@ namespace ngfem
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  CalcMappedShape (const BaseMappedIntegrationRule & mir, SliceMatrix<> shapes) const
+  CalcMappedShape (const BaseMappedIntegrationRule & mir, BareSliceMatrix<> shapes) const
   {
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedShape (mir[i], shapes.Cols(i*D, (i+1)*D));
@@ -234,13 +234,13 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
-                       SliceMatrix<> curlshape) const
+                       BareSliceMatrix<> curlshape) const
   {
     auto & mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
     CalcCurlShape (mip.IP(), curlshape);
     if (DIM == 2)
       {
-        curlshape /= mip.GetJacobiDet();        
+        curlshape.AddSize(ndof,1) /= mip.GetJacobiDet();        
       }
     else
       {
@@ -256,7 +256,7 @@ namespace ngfem
   template <int D>
   void HCurlFiniteElement<D> ::
   CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
-                       SliceMatrix<> curlshape) const
+                       BareSliceMatrix<> curlshape) const
   {
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedCurlShape (mir[i], curlshape.Cols(i*DIM_CURL_(D), (i+1)*DIM_CURL_(D)));
@@ -2250,7 +2250,7 @@ namespace ngfem
 
   void FE_NedelecTet3NoGrad :: 
   CalcCurlShape (const IntegrationPoint & ip, 
-		 SliceMatrix<> curlshape) const
+		 BareSliceMatrix<> curlshape) const
   {
     FlatMatrixFixWidth<3> tet1curlshape(6, &curlshape(0,0));
     tet1.FE_NedelecTet1::CalcCurlShape (ip, tet1curlshape);

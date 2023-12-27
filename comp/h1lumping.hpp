@@ -1,6 +1,9 @@
 #ifndef FILE_H1LUMPING
 #define FILE_H1LUMPING
 
+
+#include "fespace.hpp"
+
 namespace ngcomp
 {
 

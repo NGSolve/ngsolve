@@ -10,6 +10,8 @@
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
 #include "hcurlcurlfespace.hpp"
+#include "facetfespace.hpp"
+#include "vectorfacetfespace.hpp"
 #include "normalfacetfespace.hpp"
 #include "../fem/hdivdivfe.hpp"
 #include "hdivdivsurfacespace.hpp"

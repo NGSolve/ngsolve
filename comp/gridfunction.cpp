@@ -1,7 +1,8 @@
 #include <ngstd.hpp>
 #include <nginterface.h>
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "gridfunction.hpp"
 #include <multigrid.hpp>
 
 #include <parallelngs.hpp>
@@ -12,6 +13,7 @@ using namespace ngcomp;
 
 #ifdef PARALLEL
 #include "../parallel/dump.hpp"
+
 
 template <NODE_TYPE NT, typename TELEM>
 class NodalArray
