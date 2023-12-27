@@ -23,7 +23,8 @@ namespace ngcomp
   
   using ngcore::INT;
   using netgen::Ng_Node;
-
+  using ngfem::ELEMENT_TYPE;
+  
   using namespace ngfem;
   
   class MeshAccess;
