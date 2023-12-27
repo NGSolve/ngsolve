@@ -8,6 +8,8 @@
 /*********************************************************************/
 
 #include "hcurlhdiv_dshape.hpp"
+#include "hdivfe.hpp"
+#include "bdbequations.hpp"
 
 namespace ngfem
 {

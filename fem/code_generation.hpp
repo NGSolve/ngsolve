@@ -11,9 +11,12 @@
 #include <map>
 #include <variant>
 
+#include <core/ngcore.hpp>
 
 namespace ngfem
 {
+  using namespace ngbla;
+  
   NGS_DLL_HEADER extern bool code_uses_tensors;
 
   template <typename T>

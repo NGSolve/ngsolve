@@ -11,12 +11,12 @@ namespace ngcomp
 {
   class MeshAccess;
 }
+
+
+#include "elementtopology.hpp"  // for VorB
+
 namespace ngfem
 {
-
-
-
-
   template <int DIM, typename T>
   class TIP;
   

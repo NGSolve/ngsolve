@@ -7,8 +7,11 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-#include "code_generation.hpp"
 #include <bla.hpp>
+#include "code_generation.hpp"
+
+#include "intrule.hpp"
+#include "elementtransformation.hpp"
 
 namespace ngfem
 {

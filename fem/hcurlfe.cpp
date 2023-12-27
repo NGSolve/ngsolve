@@ -11,7 +11,7 @@
 
 #define FILE_HCURLFE_CPP
 
-#include <fem.hpp>
+// #include <fem.hpp>
 #include <thcurlfe_impl.hpp>
 #include "hcurlhofe_impl.hpp"
 #include "hcurllofe.hpp"

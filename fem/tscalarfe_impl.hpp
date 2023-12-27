@@ -7,7 +7,9 @@
 #define FILE_TSCALARFE_IMPL
 
 
+#include "tscalarfe.hpp"
 #include "recursive_pol.hpp"
+
 
 namespace ngfem
 {

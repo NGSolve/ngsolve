@@ -9,7 +9,11 @@
 
 #include <core/register_archive.hpp>
 
-#include <fem.hpp>
+// #include <fem.hpp>
+#include <coefficient.hpp>
+#include <finiteelement.hpp>
+#include <diffop.hpp>
+#include <symbolicintegrator.hpp>
 #include <la.hpp>
 #include "ngsobject.hpp"
 

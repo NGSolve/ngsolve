@@ -12,7 +12,7 @@
 #define FILE_SCALARFE_CPP
 
 
-#include <fem.hpp>
+// #include <fem.hpp>
 #include "tscalarfe_impl.hpp"
 #include "h1lofe.hpp"
 #include "l2hofe.hpp"
@@ -20,55 +20,11 @@
 namespace ngfem
 {
 
-  /*
-  template <int D>
-  ScalarFiniteElement<D> :: ~ScalarFiniteElement () 
-  { ; }
-  */
-
   string BaseScalarFiniteElement :: ClassName() const 
   {
     return "ScalarFiniteElement"; 
   }
 
-  /*
-  template <int D>
-  void ScalarFiniteElement<D> :: 
-  GetPolOrders (FlatArray<PolOrder<D> > orders) const
-  {
-#ifndef __CUDA_ARCH__
-    throw Exception (string ("GetPolOrders not implemnted for element") + ClassName());
-#endif
-  }
-  */
-
- 
-  /*
-    a ( eps - (-eps) ) + b ( 2 eps - (-2eps) )  = 1
-    a ( eps^3 - (-eps)^3) + b ( 8 eps^3 - -8 eps^3 ) = 0
-    
-    2 a + 4 b = 1 / eps
-    2 a + 16 b = 0  
-
-    b = -1 / 12 eps
-    a = 2 / 3 eps
-  */
-
-  /*
-  /// compute dshape, matrix: ndof x spacedim
-  template<int D>
-  void ScalarFiniteElement<D> :: 
-  CalcMappedDShape (const MappedIntegrationPoint<D,D> & mip, 
-                    FlatMatrixFixWidth<D> dshape) const
-  {
-    CalcDShape (mip.IP(), dshape);
-    for (int i = 0; i < dshape.Height(); i++)
-      {
-        Vec<D> hv = dshape.Row(i);
-        dshape.Row(i) = Trans (mip.GetJacobianInverse ()) * hv;
-      }
-  }
-  */
 
   void BaseScalarFiniteElement ::
   CalcShape (const IntegrationPoint & ip, 
@@ -78,7 +34,6 @@ namespace ngfem
     SliceVector<double> imag_part(ndof, 2*shape.Dist(), reinterpret_cast<double*> (&shape(0))+1);
     imag_part = 0.0;
   }
-
 
   
   void BaseScalarFiniteElement :: 

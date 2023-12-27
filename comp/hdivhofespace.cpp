@@ -15,12 +15,14 @@
 
 
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "hdivhofespace.hpp"
 #include "../fem/hdiv_equations.hpp"
 #include <../fem/hdivlofe.hpp>  
 #include <../fem/hdivhofe.hpp>  
 #include <../fem/hdivhofefo.hpp>  
 #include <../fem/hcurlhdiv_dshape.hpp> 
+#include <../fem/diffop_impl.hpp>
 
 namespace ngcomp
 {

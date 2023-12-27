@@ -8,7 +8,8 @@
    High Order Finite Element Space
 */
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include <h1hofespace.hpp>
 #include <multigrid.hpp> 
 #include "../fem/h1hofe.hpp"
 #include "../fem/h1hofefo.hpp"
