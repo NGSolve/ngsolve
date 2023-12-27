@@ -801,7 +801,7 @@ namespace ngcomp
       FlatVector<> rhs(interpol_fel.GetNDof(), lh);
       FlatVector<> v2(interpol_fel.GetNDof(), lh);
       
-      FlatMatrix wprimeflat = wprime | lh;
+      FlatMatrix<> wprimeflat = wprime | lh;
       for (int i = 0; i < wprime.Height(); i++)
         wprimeflat.Row(i) *= mir[i].GetWeight();
       

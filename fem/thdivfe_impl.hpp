@@ -217,7 +217,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET>
   void  T_HDivFiniteElement<FEL,ET> :: 
   Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
-	    FlatMatrixFixWidth<DIM> vals) const  
+	    BareSliceMatrix<> vals) const  
   {    
     for (size_t i = 0; i < ir.GetNIP(); i++)
       {
@@ -238,7 +238,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET>
   void  T_HDivFiniteElement<FEL,ET> :: 
   EvaluateTrans (const IntegrationRule & ir, 
-                 FlatMatrixFixWidth<DIM> vals,
+                 BareSliceMatrix<> vals,
                  FlatVector<double> coefs) const  
   {    
     coefs = 0;

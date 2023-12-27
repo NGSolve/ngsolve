@@ -400,7 +400,7 @@ namespace ngfem
   
   template<int D>
   void ScalarFiniteElement<D> :: 
-  EvaluateGradTrans (const IntegrationRule & ir, FlatMatrixFixWidth<D,double> vals, 
+  EvaluateGradTrans (const IntegrationRule & ir, BareSliceMatrix<> vals, 
                      BareSliceVector<double> coefs) const
   {
     MatrixFixWidth<D> dshape(ndof);

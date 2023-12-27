@@ -564,7 +564,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
   EvaluateGradTrans (const IntegrationRule & ir, 
-                     FlatMatrixFixWidth<DIM> vals, BareSliceVector<double> coefs) const
+                     BareSliceMatrix<> vals, BareSliceVector<double> coefs) const
   {
     coefs.Range(0,ndof) = 0.0;
     for (int i = 0; i < ir.GetNIP(); i++)

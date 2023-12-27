@@ -65,6 +65,10 @@ Available options timings are:
           205.. LDL                A = nxn
           210.. CalcInverseLapack  A = nxn
           300.. CalcSVD            A = nxn
+          410 .. Complex MatVec    A<RowMajor> = nxn FlatVector x,y
+          411 .. Complex MatVec    A<RowMajor> = nxn SliceVector x,y
+          412 .. Complex MatVec    A<ColMajor> = nxn FlatVector x,y
+          413 .. Complex MatVec    A<ColMajor> = nxn SliceVector x,y
 )raw_string");
   }
 
@@ -1220,6 +1224,35 @@ Available options timings are:
           #endif // LAPACK
           }
       }
+
+    if (what == 0 || what == 400)
+      {
+        // y = A*x
+        Matrix<Complex,RowMajor> a(n,m);
+        Vector<Complex> x(n), y(m);
+        a = Complex(1.0); x = Complex(2.0);
+        y = Complex(0.0);
+        double tot = 4*n*m;
+        size_t its = 1e9 / tot + 1;
+        cout << "tot = " << tot << ", its = " << its << endl;
+        {
+          Timer t("y = A*x");
+          t.Start();
+          if (!lapack)
+            for (size_t j = 0; j < its; j++)
+              y.Range(0,m) += a * x.Range(0,n);
+          else
+            for (size_t j = 0; j < its; j++)
+              LapackMultAx (a, x, y);
+              // y.Range(0,m) += make_SliceMatrix(a) * x.Range(0,n) | Lapack;
+            
+          t.Stop();
+          cout << "MultMatVec,complex,RowMajor,Flat  GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("MultMatVec,complex,RowMajor,Flat", 1e-9 * tot*its / t.GetTime()));
+          cout << "norm(y) = " << L2Norm(y) << endl;
+        }
+      }
+     
 
     
     return timings;

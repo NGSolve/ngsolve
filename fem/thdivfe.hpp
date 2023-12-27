@@ -739,10 +739,10 @@ namespace ngfem
 
     virtual void Evaluate (const IntegrationRule & ir, 
 			   FlatVector<double> coefs, 
-			   FlatMatrixFixWidth<DIM> vals) const override;
+			   BareSliceMatrix<> vals) const override;
 
     virtual void EvaluateTrans (const IntegrationRule & ir, 
-                                FlatMatrixFixWidth<DIM> vals,
+                                BareSliceMatrix<> vals,
                                 FlatVector<double> coefs) const override;
 
 

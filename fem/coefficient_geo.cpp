@@ -46,9 +46,9 @@ namespace ngfem
        {
          if (ir[0].DimSpace() != D)
            throw Exception("illegal dim of normal vector");
-         FlatMatrixFixWidth<D> resD(res);
+         // FlatMatrixFixWidth<D> resD(res);
          for (int i = 0; i < ir.Size(); i++)
-           resD.Row(i) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+           res.Row(i).Range(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
        }
        else
        {

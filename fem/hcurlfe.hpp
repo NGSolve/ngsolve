@@ -154,7 +154,7 @@ namespace ngfem
     }  
 
     NGS_DLL_HEADER virtual void 
-    EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const;
+    EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<> curl) const;
 
     NGS_DLL_HEADER virtual void 
     EvaluateMappedCurl (const MappedIntegrationRule<D,D> & mir, 
