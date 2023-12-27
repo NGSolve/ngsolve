@@ -125,7 +125,7 @@ namespace ngfem
           throw Exception("Dimensions do not match.");
 
         STACK_ARRAY(double, mem, ndof*dim);
-        FlatMatrix temp(ndof, dim, &mem[0]);
+        FlatMatrix<> temp(ndof, dim, &mem[0]);
         fea[0] -> Interpolate (trafo, func, temp, lh);
 
         // now we need to transpose, not sure if we stay with that
@@ -174,7 +174,7 @@ namespace ngfem
 
         size_t sndof = scalar_fe.GetNDof();
         STACK_ARRAY(double, mem, sndof * dim);
-        FlatMatrix temp(sndof, static_cast<const size_t>(dim), &mem[0]);
+        FlatMatrix<> temp(sndof, static_cast<const size_t>(dim), &mem[0]);
         scalar_fe.Interpolate (trafo, func, temp, lh);
 
         // now we need to transpose, not sure if we stay with that
@@ -214,7 +214,7 @@ namespace ngfem
     size_t scalndof = scalfe.GetNDof();
     size_t fulldim = vdim*vdim;
     STACK_ARRAY(double, mem, ndof*fulldim); 
-    FlatMatrix temp(scalndof, fulldim, &mem[0]);
+    FlatMatrix<> temp(scalndof, fulldim, &mem[0]);
     scalfe.Interpolate (trafo, func, temp, lh);
     // cout << "interpol, temp = " << temp << endl;
 
@@ -253,7 +253,7 @@ namespace ngfem
     size_t scalndof = scalfe.GetNDof();
     size_t fulldim = vdim*vdim;
     STACK_ARRAY(double, mem, ndof*fulldim); 
-    FlatMatrix temp(scalndof, fulldim, &mem[0]);
+    FlatMatrix<> temp(scalndof, fulldim, &mem[0]);
     scalfe.Interpolate (trafo, func, temp, lh);
     // cout << "interpol, temp = " << temp << endl;
 

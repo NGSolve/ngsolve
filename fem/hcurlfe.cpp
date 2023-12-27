@@ -232,7 +232,7 @@ namespace ngfem
 
   template <int D>
   void HCurlFiniteElement<D> ::
-  EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, FlatMatrixFixWidth<DIM_CURL_(D)> curl) const
+  EvaluateCurl (const IntegrationRule & ir, BareSliceVector<> coefs, BareSliceMatrix<> curl) const
   {
     LocalHeapMem<10000> lhdummy("hcurlfe-lh");
     for (int i = 0; i < ir.Size(); i++)

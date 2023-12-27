@@ -23,7 +23,23 @@ namespace ngbla
 
   enum ORDERING { ColMajor, RowMajor };
 
-  template <typename T = double, ORDERING ORD = RowMajor> class FlatMatrix;
+
+  struct unused_dist
+  {
+    unused_dist () = default;
+    unused_dist (size_t d) { };
+    template <int S>
+    unused_dist (IC<S> d) { };
+  };
+  
+  template <typename T = double, ORDERING ORD = RowMajor, typename TH=size_t, typename TW=size_t, typename TDIST=size_t>
+  class MatrixView;
+
+  template <typename T = double, ORDERING ORD = RowMajor>
+  using FlatMatrix = MatrixView<T,ORD,size_t, size_t, unused_dist>;
+
+  
+  // template <typename T = double, ORDERING ORD = RowMajor> class FlatMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class Matrix;
 
   

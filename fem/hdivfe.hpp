@@ -103,7 +103,7 @@ namespace ngfem
 
     
     virtual void Evaluate (const IntegrationRule & ir, FlatVector<double> coefs, 
-			   FlatMatrixFixWidth<D> vals) const;
+			   BareSliceMatrix<> vals) const;
     /*
     {
       MatrixFixWidth<D> shape(ndof);
@@ -115,7 +115,7 @@ namespace ngfem
     }
     */
     virtual void EvaluateTrans (const IntegrationRule & ir, 
-                                FlatMatrixFixWidth<D> vals,
+                                BareSliceMatrix<> vals,
                                 FlatVector<double> coefs) const;
     /*
     {
