@@ -21,6 +21,7 @@ namespace ngcomp
 {
   class PML_Transformation;
   
+  using ngcore::INT;
   using netgen::Ng_Node;
 
   using namespace ngfem;
