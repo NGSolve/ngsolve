@@ -1,4 +1,6 @@
-#include <comp.hpp>    // provides FESpace, ...
+// #include <comp.hpp>    // provides FESpace, ...
+
+#include "h1lumping.hpp"
 #include "../fem/tscalarfe_impl.hpp"
 #include "../fem/h1lofe.hpp"
 

@@ -43,9 +43,9 @@ namespace ngfem
 			    BareSliceMatrix<> shape) const = 0;
 
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & mip,
-				  SliceMatrix<> shape) const = 0;
+				  BareSliceMatrix<> shape) const = 0;
 
-    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const = 0;
+    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, BareSliceMatrix<> shapes) const = 0;
 
     virtual void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip,
 				  BareSliceMatrix<SIMD<double>> shape) const = 0;
@@ -55,13 +55,13 @@ namespace ngfem
     
     /// compute curl of shape, default: numerical diff
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
-				SliceMatrix<> curlshape) const = 0;
+				BareSliceMatrix<> curlshape) const = 0;
     
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
-				      SliceMatrix<> curlshape) const = 0;
+				      BareSliceMatrix<> curlshape) const = 0;
 
     virtual void CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
-                                      SliceMatrix<> curlshape) const = 0;
+                                      BareSliceMatrix<> curlshape) const = 0;
 
     virtual void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
                                       BareSliceMatrix<SIMD<double>> curlshapes) const = 0;
@@ -107,13 +107,13 @@ namespace ngfem
   
     /// compute curl of shape, default: numerical diff
     void CalcCurlShape (const IntegrationPoint & ip, 
-                        SliceMatrix<> curlshape) const override;
+                        BareSliceMatrix<> curlshape) const override;
     
     /// compute shape
-    void CalcMappedShape (const BaseMappedIntegrationPoint & mip, SliceMatrix<> shape) const override;
+    void CalcMappedShape (const BaseMappedIntegrationPoint & mip, BareSliceMatrix<> shape) const override;
 
 
-    void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const override;
+    void CalcMappedShape (const BaseMappedIntegrationRule & bmir, BareSliceMatrix<> shapes) const override;
 
     void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip,
                           BareSliceMatrix<SIMD<double>> shape) const override;
@@ -123,10 +123,10 @@ namespace ngfem
     
     /// compute curl of shape
     void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
-                              SliceMatrix<> curlshape) const override;
+                              BareSliceMatrix<> curlshape) const override;
     
     void CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
-                              SliceMatrix<> curlshape) const override;
+                              BareSliceMatrix<> curlshape) const override;
     
     void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
                               BareSliceMatrix<SIMD<double>> curlshapes) const override;

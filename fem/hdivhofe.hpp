@@ -9,14 +9,11 @@
 
 
 #include "thdivfe.hpp"
+#include "recursive_pol.hpp"
+#include "recursive_pol_trig.hpp"
 
 namespace ngfem
 {
-  
-
-
-
-
 
   template <int D>
   class HDivHighOrderNormalFiniteElement : public HDivNormalFiniteElement<D>

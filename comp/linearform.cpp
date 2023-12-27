@@ -1,4 +1,5 @@
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "linearform.hpp"
 #include <parallelngs.hpp>
 
 

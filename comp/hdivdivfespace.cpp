@@ -5,9 +5,10 @@
 /*********************************************************************/
 
 
-#include <comp.hpp>
-#include "../fem/hdivdivfe.hpp"
+// #include <comp.hpp>
 #include "hdivdivfespace.hpp"
+#include "../fem/hdivdivfe.hpp"
+
 
 
 namespace ngcomp

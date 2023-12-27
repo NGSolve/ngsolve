@@ -1,5 +1,6 @@
-#include <comp.hpp>
-#include <fem.hpp> 
+// #include <comp.hpp>
+// #include <fem.hpp>
+#include "facetfespace.hpp"
 
 #include "../fem/l2hofe.hpp"
 #include "../fem/diffop_impl.hpp"

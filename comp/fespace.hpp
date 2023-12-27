@@ -9,9 +9,21 @@
 
 #include <core/register_archive.hpp>
 
+#include <fem.hpp>
+#include <la.hpp>
+#include "ngsobject.hpp"
+
+namespace ngmg
+{
+  class Prolongation;
+}
+
+
+
 namespace ngcomp
 {
-
+  using namespace ngla;
+  
   /*
     Finite Element Space
   */

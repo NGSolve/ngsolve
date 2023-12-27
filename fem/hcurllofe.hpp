@@ -614,7 +614,7 @@ namespace ngfem
 
     using HCurlFiniteElement<3>::CalcCurlShape;
     virtual void CalcCurlShape (const IntegrationPoint & ip, 
-                                SliceMatrix<> curlshape) const override;
+                                BareSliceMatrix<> curlshape) const override;
 
     virtual void CalcShape3 (const IntegrationPoint & ip, 
                              FlatMatrixFixWidth<3> shape) const override; 

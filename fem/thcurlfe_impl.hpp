@@ -25,7 +25,7 @@ namespace ngfem
 
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES,BASE> :: 
-  CalcCurlShape (const IntegrationPoint & ip, SliceMatrix<> shape) const
+  CalcCurlShape (const IntegrationPoint & ip, BareSliceMatrix<> shape) const
   {
     this->T_CalcShape (GetTIPGrad<DIM>(ip), 
                        SBLambda ([shape](size_t i, auto s) 
@@ -37,7 +37,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET, SHAPES, BASE> :: 
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-                   SliceMatrix<> shape) const
+                   BareSliceMatrix<> shape) const
   {
     Switch<4-DIM>
       (bmip.DimSpace()-DIM,[this,&bmip,shape](auto CODIM)
@@ -54,7 +54,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcMappedShape (const BaseMappedIntegrationRule & bmir, 
-                   SliceMatrix<> shapes) const
+                   BareSliceMatrix<> shapes) const
   {
     Switch<4-DIM>
       (bmir.DimSpace()-DIM,[this,&bmir,shapes](auto CODIM)
@@ -111,7 +111,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcMappedCurlShape (const BaseMappedIntegrationPoint & bmip,
-                       SliceMatrix<> curlshape) const
+                       BareSliceMatrix<> curlshape) const
   {
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
 
@@ -127,7 +127,7 @@ namespace ngfem
   template <ELEMENT_TYPE ET, typename SHAPES, typename BASE>
   void T_HCurlHighOrderFiniteElement<ET,SHAPES,BASE> :: 
   CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
-                       SliceMatrix<> curlshape) const
+                       BareSliceMatrix<> curlshape) const
   {
     for (int i = 0; i < mir.Size(); i++)
       CalcMappedCurlShape (mir[i], 
