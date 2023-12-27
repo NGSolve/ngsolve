@@ -9,8 +9,6 @@
 
 
 #include "finiteelement.hpp"
-#include "fe_interfaces.hpp"
-
 
 namespace ngfem
 {

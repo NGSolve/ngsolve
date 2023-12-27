@@ -1,4 +1,6 @@
 #include <comp.hpp>
+
+#include "bilinearform.hpp"
 #include <multigrid.hpp>
 
 #include <parallelngs.hpp>

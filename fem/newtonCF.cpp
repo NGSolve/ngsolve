@@ -4,9 +4,9 @@
 /* Date:   Feb 2021                                                  */
 /*********************************************************************/
 
-#include <cmath>
-#include <fem.hpp>
-#include <ngstd.hpp>
+// #include <cmath>
+// #include <fem.hpp>
+// #include <ngstd.hpp>
 #include "symbolicintegrator.hpp"
 
 namespace std {

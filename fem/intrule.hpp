@@ -7,13 +7,10 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-namespace ngcomp
-{
-  class MeshAccess;
-}
-
 
 #include "elementtopology.hpp"  // for VorB
+
+namespace ngcomp { class MeshAccess; }
 
 namespace ngfem
 {

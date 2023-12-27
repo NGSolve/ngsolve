@@ -13,6 +13,8 @@
   Transformation from reference element to actual element
 */
 
+#include "intrule.hpp"
+
 namespace ngcomp { class GridFunction; }
 
 namespace ngfem
@@ -241,9 +243,10 @@ namespace ngfem
     ~FE_ElementTransformation ();
 
     ///
-    virtual void SetElement (const FiniteElement * afel, int aelnr, int aelindex)
+    virtual void SetElement (const ScalarFiniteElement<DIMS> * afel, int aelnr, int aelindex)
     {
-      fel = static_cast<const ScalarFiniteElement<DIMS>*> (afel); 
+      // fel = static_cast<const ScalarFiniteElement<DIMS>*> (afel);
+      fel = afel; 
       elnr = aelnr; 
       elindex = aelindex;
       eltype = fel->ElementType();

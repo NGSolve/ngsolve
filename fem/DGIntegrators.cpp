@@ -6,7 +6,10 @@
 /*********************************************************************/
 
 
-#include <fem.hpp>
+#include "finiteelement.hpp"
+#include "coefficient.hpp"
+#include "integrator.hpp"
+#include "bdbequations.hpp"
 
 namespace ngfem
 {

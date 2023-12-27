@@ -6,7 +6,9 @@
 
 
 
-#include <fem.hpp>
+// #include <fem.hpp>
+#include <recursive_pol.hpp>
+
 namespace ngfem
 {
 

@@ -7,6 +7,14 @@
 /* Date:   June 2018                                                 */
 /*********************************************************************/
 
+
+#include "finiteelement.hpp"
+#include "fe_interfaces.hpp"
+#include "hcurlfe.hpp"
+#include "recursive_pol.hpp"
+#include "recursive_pol_trig.hpp"
+#include "recursive_pol_tet.hpp"
+
 namespace ngfem
 {
   

@@ -1,5 +1,7 @@
 #include <core/register_archive.hpp>
-#include <fem.hpp>
+// #include <fem.hpp>
+#include <coefficient.hpp>
+#include "scalarfe.hpp"
 #include <../ngstd/evalfunc.hpp>
 #include <algorithm>
 #ifdef NGS_PYTHON

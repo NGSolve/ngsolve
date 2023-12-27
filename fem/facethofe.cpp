@@ -7,7 +7,7 @@
 #define FILE_FACETHOFE_CPP
 
  
-#include <fem.hpp>
+// #include <fem.hpp>
 #include "facethofe.hpp"
 #include <tscalarfe_impl.hpp>
 #include <facethofe.hpp>
@@ -218,12 +218,10 @@ namespace ngfem
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i++)
       {
-        // SIMD<double> pt[DIM];
-        // for (int j = 0; j < DIM; j++) pt[j] = hir[i](j);
-        
         SIMD<double> val = values(i);
-        static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr
-          (fnr, GetTIP<DIM>(hir[i]), SBLambda([&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); }));
+        // static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr
+        T_CalcShapeFNr (fnr, GetTIP<DIM>(hir[i]),
+                        SBLambda([&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); }));
       }
   }
   
@@ -234,12 +232,10 @@ namespace ngfem
     FlatArray<SIMD<IntegrationPoint>> hir = ir;
     for (int i = 0; i < hir.Size(); i++)
       {
-        // SIMD<double> pt[DIM];
-        // for (int j = 0; j < DIM; j++) pt[j] = hir[i](j);
-        
         SIMD<double> sum = 0;
-        static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr
-          (fnr, GetTIP<DIM>(hir[i]), SBLambda([&](int j, SIMD<double> shape) { sum += coefs(j)*shape; }));
+        // static_cast<const FacetFE<ET>*>(this)->
+        T_CalcShapeFNr(fnr, GetTIP<DIM>(hir[i]),
+                       SBLambda([&](int j, SIMD<double> shape) { sum += coefs(j)*shape; }));
         values(i) = sum;
       }
   }
@@ -248,11 +244,6 @@ namespace ngfem
   void FacetFE<ET>::CalcFacetShapeVolIP(int fnr, const IntegrationPoint & ip,
                                         BareSliceVector<> shape) const
   {
-    /*
-    double pt[DIM];
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape);
-    */
     static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, GetTIP<DIM>(ip), shape);    
   }
   
@@ -261,29 +252,18 @@ namespace ngfem
                                          BareSliceMatrix<SIMD<double>> shape) const 
   {
     for (size_t i = 0; i < ir.Size(); i++)
-      {
-        /*
-        SIMD<double> pt[DIM];
-        for (int j = 0; j < DIM; j++) pt[j] = ir[i](j);
-        static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape.Col(i));
-        */
-        static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, GetTIP<DIM>(ir[i]), shape.Col(i));        
-      }
+      // static_cast<const FacetFE<ET>*>(this)->
+      T_CalcShapeFNr(fnr, GetTIP<DIM>(ir[i]), shape.Col(i));        
   }
   
   template<ELEMENT_TYPE ET>
   void FacetFE<ET>::CalcFacetDShapeVolIP(int fnr, const IntegrationPoint & ip,
                                          BareSliceMatrix<> dshape) const
   {
-    /*
-    double pt[DIM];
-    for (int i = 0; i < DIM; i++) pt[i] = ip(i);
-    static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr(fnr, pt, shape);
-    */
-    static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr (fnr, GetTIPGrad<DIM> (ip),
-                                                           SBLambda ([dshape] (int i, auto shape)
-                                                                     { dshape.Row(i) = ngbla::GetGradient(shape); }));
-    
+    // static_cast<const FacetFE<ET>*>(this)->
+      T_CalcShapeFNr (fnr, GetTIPGrad<DIM> (ip),
+                      SBLambda ([dshape] (int i, auto shape)
+                      { dshape.Row(i) = GetGradient(shape); }));
   }
 
 

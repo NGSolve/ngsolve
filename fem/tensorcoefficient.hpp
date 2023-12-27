@@ -7,8 +7,10 @@
 /* Date:   01. Apr. 2022                                             */
 /*********************************************************************/
 
-#include "fem.hpp"
+// #include "fem.hpp"
 
+#include "coefficient.hpp"
+#include "symbolicintegrator.hpp"
 
 namespace ngfem {
 

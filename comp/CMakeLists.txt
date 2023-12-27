@@ -4,7 +4,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         ${ngcomp_object_libs}
         bilinearform.cpp facetfespace.cpp fespace.cpp 
         gridfunction.cpp h1hofespace.cpp hcurlhdivfes.cpp hcurlhofespace.cpp 
-        hdivfes.cpp hdivhofespace.cpp hdivhosurfacefespace.cpp hierarchicalee.cpp l2hofespace.cpp     
+        hdivfes.cpp hdivhofespace.cpp hdivhosurfacefespace.cpp l2hofespace.cpp     
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
         preconditioner.cpp vectorfacetfespace.cpp
         normalfacetfespace.cpp normalfacetsurfacefespace.cpp

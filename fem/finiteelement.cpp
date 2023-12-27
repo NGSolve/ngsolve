@@ -12,7 +12,8 @@
 
 
 
-#include <fem.hpp>
+#include <finiteelement.hpp>
+#include <coefficient.hpp>
 
 namespace ngfem
 {

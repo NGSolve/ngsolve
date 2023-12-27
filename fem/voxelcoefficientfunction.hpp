@@ -1,7 +1,7 @@
 #ifndef NGSOLVE_VOXELCOEFFICIENTFUNCTION_HPP
 #define NGSOLVE_VOXELCOEFFICIENTFUNCTION_HPP
 
-#include "fem.hpp"
+#include "coefficient.hpp"
 
 namespace ngfem
 {

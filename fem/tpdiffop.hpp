@@ -1,6 +1,9 @@
 #ifndef TPDIFFOP_HPP
 #define TPDIFFOP_HPP
 
+#include "diffop.hpp"
+
+
 namespace ngfem
 {
   class TPDifferentialOperator : public DifferentialOperator

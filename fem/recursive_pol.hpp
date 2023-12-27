@@ -8,14 +8,14 @@
 /*********************************************************************/
 
 
-namespace std
-{
-}                                      
+#include <bla.hpp>
 
 
 namespace ngfem
 {
+  using namespace ngbla;
 
+  
   /*
     Recursive Polynomials
   */
@@ -4690,5 +4690,8 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
 
 }
 
+
+#include "recursive_pol_trig.hpp"
+#include "recursive_pol_tet.hpp"
 
 #endif

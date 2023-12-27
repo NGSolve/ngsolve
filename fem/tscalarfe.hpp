@@ -234,21 +234,8 @@ namespace ngfem
   extern template class  ScalarDummyFE<ET_PYRAMID>;
   extern template class  ScalarDummyFE<ET_HEXAMID>;
   extern template class  ScalarDummyFE<ET_HEX>;
+
 }
-
-
-namespace ngbla
-{
-  template <int DIM, typename SCAL>
-  auto GetGradient (const AutoDiff<DIM,SCAL> & ad)
-  {
-    Vec<DIM,SCAL> grad;
-    for (int i = 0; i < DIM; i++)
-      grad(i) = ad.DValue(i);
-    return grad;
-  }
-}
-
 
 
 #endif

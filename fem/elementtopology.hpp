@@ -7,9 +7,15 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
+
+
+#include <bla.hpp>
+
 namespace ngfem
 {
+  using namespace ngbla;
   using ngcore::INT;
+
   
   /*
     Toplogy of reference elements
