@@ -9,6 +9,7 @@
 
 
 #include "fespace.hpp"
+#include <specialelement.hpp>
 
 namespace ngcomp
 {
