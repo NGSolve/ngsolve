@@ -2031,8 +2031,8 @@ namespace ngcomp
 					bool build_searchtree,
 					const Array<int> * const indices) const
   {
-    static Timer t("FindElementOfPonit");
-    RegionTracer reg(TaskManager::GetThreadId(), t);
+    // static Timer t("FindElementOfPonit");
+    // RegionTracer reg(TaskManager::GetThreadId(), t);
 
 
     if (indices != NULL)
