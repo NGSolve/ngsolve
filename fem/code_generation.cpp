@@ -5,6 +5,7 @@
 #include<l2hofefo.hpp>
 #include<regex>
 #include<cstdio>
+#include<cstdlib>  // for mkdtemp
 
 namespace ngfem
 {
