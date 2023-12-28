@@ -1,10 +1,9 @@
-#include <comp.hpp>
-#include <fem.hpp> 
+#include "facetsurffespace.hpp"
 
 #include "../fem/l2hofe.hpp"
 #include "../fem/diffop_impl.hpp"
 #include "../fem/facethofe.hpp"
-
+#include <bdbequations.hpp>
 
 namespace ngcomp
 { 

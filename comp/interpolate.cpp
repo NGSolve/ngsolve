@@ -9,7 +9,8 @@
    dual shapes
 */
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "interpolate.hpp"
 #include <variant>
 #include "../fem/integratorcf.hpp"
 

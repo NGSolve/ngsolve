@@ -1,6 +1,6 @@
-#include <h1amg.hpp>
-
-#include <comp.hpp>
+#include "h1amg.hpp"
+#include "preconditioner.hpp"
+// #include <comp.hpp>
 using namespace ngcomp;
 
 

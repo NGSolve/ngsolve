@@ -1,5 +1,6 @@
-#include <comp.hpp>
+// #include <comp.hpp>
 #include "numberfespace.hpp"
+#include <diffop_impl.hpp>
 
 namespace ngcomp
 {

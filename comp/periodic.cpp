@@ -6,7 +6,7 @@
 /*********************************************************************/
 
 
-#include <comp.hpp>
+#include "periodic.hpp"
 
 namespace ngcomp {
 

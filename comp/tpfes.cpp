@@ -1,9 +1,10 @@
-#include <comp.hpp>
+// #include <comp.hpp>
 #include "../fem/tensorproductintegrator.hpp"
 #include "../fem/tpdiffop.hpp"
 #include "../fem/tpintrule.hpp"
 
 #include "tpfes.hpp"
+#include "gridfunction.hpp"
 
 using namespace ngmg;
 

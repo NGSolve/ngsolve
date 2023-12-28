@@ -4,9 +4,13 @@
 #include "python_fem.hpp"
 #include "../ngstd/bspline.hpp"
 
+#include "h1hofe.hpp"
+#include "l2hofe.hpp"
+#include "hdivfe.hpp"
 #include "hdivdivfe.hpp"
-#include <fem.hpp>
-#include <comp.hpp>
+// #include <fem.hpp>
+// #include <comp.hpp>
+#include "meshaccess.hpp"
 #include <mutex>
 #include <meshing/fieldlines.hpp>
 using namespace ngfem;
@@ -18,6 +22,9 @@ using ngfem::ELEMENT_TYPE;
 
 #include "tpintrule.hpp"
 #include "coefficient_stdmath.hpp"
+#include "gridfunction.hpp"
+#include "linearform.hpp"
+
 
 namespace ngfem
 {

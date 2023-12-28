@@ -16,7 +16,9 @@
 #include <../fem/hdivhofe.hpp>
 #include <../fem/facethofe.hpp>
 #include <../fem/nodalhofe.hpp>
-
+#include <l2hofe.hpp>
+#include <bdbequations.hpp>
+#include <diffop_impl.hpp>
 
 using namespace ngmg; 
 

@@ -9,6 +9,7 @@
 */
 
 #include <multigrid.hpp>
+#include <hcurlhdivfes.hpp>
 
 namespace ngmg
 {
@@ -525,6 +526,9 @@ namespace ngmg
 
 
 
+  EdgeProlongation :: EdgeProlongation(const class NedelecFESpace & aspace)
+    : ma(aspace.GetMeshAccess()), space(aspace)
+  { }
 
 
 

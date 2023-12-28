@@ -1,6 +1,9 @@
 #ifndef NGSOLVE_GLOBALINTERFACESPACE_HPP
 #define NGSOLVE_GLOBALINTERFACESPACE_HPP
 
+
+#include "fespace.hpp"
+
 namespace ngcomp
 {
   class GlobalInterfaceSpace : public FESpace

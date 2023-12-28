@@ -8,10 +8,15 @@
 /* Date:   20. Apr. 2000                                             */
 /*********************************************************************/
 
+#include <bilinearform.hpp>
+#include <la.hpp>
 
 namespace ngmg
 {
-
+  using namespace ngla;
+  using namespace ngcomp;
+  using ngla::BaseMatrix;
+  
   /** 
       Multigrid preconditioner
   */
@@ -19,7 +24,7 @@ namespace ngmg
   class Smoother;
   ///
   class Prolongation;
-
+  
 
   ///
   class NGS_DLL_HEADER MultigridPreconditioner : public BaseMatrix

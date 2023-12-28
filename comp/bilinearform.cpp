@@ -1,7 +1,11 @@
 // #include <comp.hpp>
 
 #include "bilinearform.hpp"
+#include "linearform.hpp"
+#include "gridfunction.hpp"
 #include <multigrid.hpp>
+#include "preconditioner.hpp"
+#include "tpfes.hpp"
 
 #include <parallelngs.hpp>
 #include "../fem/h1lofe.hpp"

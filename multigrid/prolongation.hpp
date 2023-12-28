@@ -7,6 +7,8 @@
 /* Date:   20. Apr. 2000                                             */
 /*********************************************************************/
 
+namespace ngcomp { class NedelecFESpace; }
+
 namespace ngmg
 {
 
@@ -152,7 +154,6 @@ namespace ngmg
 
 
 
-
   /// Prolongation for edge-elements.
   // template <class TV>
   class EdgeProlongation : public Prolongation
@@ -163,8 +164,7 @@ namespace ngmg
     const NedelecFESpace & space;
   public:
     ///
-    EdgeProlongation(const NedelecFESpace & aspace)
-      : ma(aspace.GetMeshAccess()), space(aspace) { ; }
+    EdgeProlongation(const NedelecFESpace & aspace);
     ///
     virtual ~EdgeProlongation() { ; }
   

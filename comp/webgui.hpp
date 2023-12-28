@@ -3,7 +3,9 @@
 
 #include <core/archive.hpp>
 
-#include "comp.hpp"
+// #include "comp.hpp"
+#include "meshaccess.hpp"
+
 
 namespace webgui {
 using namespace ngcomp;

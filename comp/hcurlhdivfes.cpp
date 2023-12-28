@@ -8,12 +8,14 @@
    Finite Element Space
 */
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "hcurlhdivfes.hpp"
 #include <multigrid.hpp>
 
 #include <../fem/hcurllofe.hpp>
 #include <../fem/thcurlfe_impl.hpp>
 #include <../fem/hcurl_equations.hpp> 
+#include <diffop_impl.hpp>
 
 using namespace ngmg; 
 

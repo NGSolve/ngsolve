@@ -7,6 +7,8 @@
 /* Date:  September 2017                                             */
 /*********************************************************************/
 
+#include "fespace.hpp"
+
 namespace ngcomp
 {
   class NGS_DLL_HEADER HDivHighOrderSurfaceFESpace : public FESpace

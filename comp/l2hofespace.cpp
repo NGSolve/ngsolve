@@ -8,9 +8,13 @@
    High Order Finite Element Space for L2
 */
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "l2hofespace.hpp"
 #include <multigrid.hpp>
-#include "../fem/l2hofetp.hpp"
+
+#include <l2hofetp.hpp>
+#include <bdbequations.hpp>
+#include <diffop_impl.hpp>
 
 using namespace ngmg;
 

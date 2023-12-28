@@ -1,4 +1,4 @@
-#include <comp.hpp>
+#include "ngsobject.hpp"
 
 
 namespace ngcomp {

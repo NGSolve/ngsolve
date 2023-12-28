@@ -1,5 +1,6 @@
-#include <comp.hpp>
 #include "irspace.hpp"
+#include <diffop_impl.hpp>
+
 
 namespace ngcomp
 {

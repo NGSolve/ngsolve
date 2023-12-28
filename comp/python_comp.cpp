@@ -3,22 +3,35 @@
 
 #include "../ngstd/python_ngstd.hpp"
 #include "python_comp.hpp"
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "gridfunction.hpp"
+#include "linearform.hpp"
+#include "bilinearform.hpp"
+#include "preconditioner.hpp"
 #include <multigrid.hpp> 
 #include <pybind11/functional.h>
-
+#include "l2hofespace.hpp"
+#include "hcurlhofespace.hpp"
+#include "hdivhofespace.hpp"
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
 #include "hcurlcurlfespace.hpp"
 #include "facetfespace.hpp"
+#include "facetsurffespace.hpp"
+#include "hdivhosurfacefespace.hpp"
 #include "vectorfacetfespace.hpp"
 #include "normalfacetfespace.hpp"
+#include "normalfacetsurfacefespace.hpp"
 #include "../fem/hdivdivfe.hpp"
+#include <hdivfe.hpp>
 #include "hdivdivsurfacespace.hpp"
 #include "numberfespace.hpp"
 #include "irspace.hpp"
 #include "h1lumping.hpp"
+#include "hidden.hpp"
+#include "reorderedfespace.hpp"
 #include "compressedfespace.hpp"
+#include "discontinuous.hpp"
 #include "plateaufespace.hpp"
 #include "../fem/integratorcf.hpp"
 #include "../fem/h1lofe.hpp"
@@ -28,8 +41,14 @@
 #include "contact.hpp"
 #include "globalinterfacespace.hpp"
 #include "globalspace.hpp"
+#include "tpfes.hpp"
+#include "postproc.hpp"
+#include "interpolate.hpp"
+#include "fesconvert.hpp"
 #include "vtkoutput.hpp"
 #include "webgui.hpp"
+
+#include <parallelngs.hpp>
 
 using namespace ngcomp;
 

@@ -8,7 +8,8 @@
    Finite Element Space for H(div)
 */
 
-#include <comp.hpp>
+#include "hdivfes.hpp"
+#include "hdivhofespace.hpp"
 #include <multigrid.hpp>
 
 #include "../fem/hdiv_equations.hpp"

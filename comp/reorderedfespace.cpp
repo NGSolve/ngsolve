@@ -5,7 +5,7 @@
 /*********************************************************************/
 
 
-#include <comp.hpp>
+#include "reorderedfespace.hpp"
 
 namespace ngcomp {
   

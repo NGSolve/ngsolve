@@ -6,7 +6,7 @@
 /*********************************************************************/
 
 
-#include <comp.hpp>
+#include "hidden.hpp"
 
 namespace ngcomp {
   
