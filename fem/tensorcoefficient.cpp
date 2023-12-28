@@ -86,9 +86,9 @@ namespace ngfem {
         }
 
         Vector<bool> nonzero_pattern(CoefficientFunction *cf) {
-            Vector<AutoDiffDiff<1, bool>> nzvec_ad(cf->Dimension());
-            Vector<bool> nzvec(cf->Dimension());
-            nzvec = false;
+            Vector<AutoDiffDiff<1,NonZero>> nzvec_ad(cf->Dimension());
+            Vector<NonZero> nzvec(cf->Dimension());
+            nzvec = NonZero(false);
 
             ProxyUserData ud;
             DummyFE<ET_TRIG> dummyfe;
@@ -905,7 +905,7 @@ namespace ngfem {
         }
 
         void LeviCivitaCoefficientFunction::NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatVector<AutoDiffDiff<1, bool>> values) const
+                                      FlatVector<AutoDiffDiff<1, NonZero>> values) const
         {
           for (size_t I : Range(Dimension())) {
             const auto I_array = split(I, mi);
@@ -920,8 +920,8 @@ namespace ngfem {
         }
 
         void LeviCivitaCoefficientFunction::NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatArray<FlatVector<AutoDiffDiff<1, bool>>> input,
-                                      FlatVector<AutoDiffDiff<1, bool>> values) const
+                                      FlatArray<FlatVector<AutoDiffDiff<1, NonZero>>> input,
+                                      FlatVector<AutoDiffDiff<1, NonZero>> values) const
         {
           NonZeroPattern(ud, values);
         }
@@ -1312,7 +1312,7 @@ namespace ngfem {
 
         void EinsumCoefficientFunction::NonZeroPattern(
             const class ProxyUserData &ud,
-            FlatVector<AutoDiffDiff<1, bool>> values) const
+            FlatVector<AutoDiffDiff<1, NonZero>> values) const
         {
           if (node)
           {
@@ -1320,19 +1320,19 @@ namespace ngfem {
             return;
           }
 
-          Array<Vector<AutoDiffDiff<1, bool>>> vecs(cfs.Size());
+          Array<Vector<AutoDiffDiff<1, NonZero>>> vecs(cfs.Size());
           for (int i: Range(cfs)) {
             vecs[i].SetSize(cfs[i]->Dimension());
             cfs[i]->NonZeroPattern(ud, vecs[i]);
           }
 
-          values = false;
+          values = NonZero(false);
           const auto cres = cfs.Size();
           for (size_t I: Range(index_maps.Height())) {
             if (!nz_all(I))
               continue;
             const auto& I_map = index_maps.Row(I);
-            AutoDiffDiff<1, bool> tmp(true);
+            AutoDiffDiff<1, NonZero> tmp(true);
             for (size_t i: Range(vecs))
               tmp *= vecs[i](I_map(i));
             values(I_map(cres)) += tmp;
@@ -1341,8 +1341,8 @@ namespace ngfem {
 
         void EinsumCoefficientFunction::NonZeroPattern(
             const class ProxyUserData &ud,
-            FlatArray<FlatVector<AutoDiffDiff<1, bool>>> input,
-            FlatVector<AutoDiffDiff<1, bool>> values) const
+            FlatArray<FlatVector<AutoDiffDiff<1, NonZero>>> input,
+            FlatVector<AutoDiffDiff<1, NonZero>> values) const
         {
           if (node)
           {
@@ -1350,13 +1350,13 @@ namespace ngfem {
             return;
           }
 
-          values = false;
+          values = NonZero(false);
           const auto cres = cfs.Size();
           for (size_t I: Range(index_maps.Height())) {
             if (!nz_all(I))
               continue;
             const auto& I_map = index_maps.Row(I);
-            AutoDiffDiff<1, bool> tmp(true);
+            AutoDiffDiff<1, NonZero> tmp(true);
             for (size_t i: Range(input))
               tmp *= input[i](I_map(i));
             values(I_map(cres)) += tmp;
