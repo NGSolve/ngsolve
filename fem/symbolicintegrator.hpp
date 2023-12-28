@@ -213,11 +213,11 @@ public:
                                       FlatVector<bool> nonzero_dderiv) const;
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const override;
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override;
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
     NonZeroPattern (ud, values);
     /*

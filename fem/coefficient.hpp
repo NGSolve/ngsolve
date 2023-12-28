@@ -16,10 +16,30 @@
 namespace ngfem
 {
   
+  /*
+    type to determine (non)zero propagation of arithmetic expressions,
+    formerly bool was used instead
+   */
+  class NonZero
+  {
+    bool nz;
+  public:
+    constexpr NonZero () : nz(false) { }
+    constexpr NonZero (bool _nz) : nz(_nz) { };
+    NonZero & operator= (const NonZero &) = default;
+    NonZero & operator= (bool _nz) { nz = _nz; return *this; }
+    constexpr operator bool() const { return nz; }
+
+    constexpr NonZero operator+ (const NonZero & nz2) const { return nz || nz2.nz; }
+    constexpr NonZero operator- (const NonZero & nz2) const { return nz || nz2.nz; }
+    constexpr NonZero operator* (const NonZero & nz2) const { return nz && nz2.nz; }
+    NonZero & operator+= (const NonZero & nz2) { nz = nz || nz2.nz; return *this; }
+    NonZero & operator*= (const NonZero & nz2) { nz = nz && nz2.nz; return *this; }        
+  };
+
   /** 
       coefficient functions
   */
-  
   class NGS_DLL_HEADER CoefficientFunction : public enable_shared_from_this<CoefficientFunction>
   {
   private:
@@ -229,11 +249,11 @@ namespace ngfem
                                  FlatVector<bool> nonzero_dderiv) const;
     */
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatVector<AutoDiffDiff<1,bool>> nonzero) const;
+                                 FlatVector<AutoDiffDiff<1,NonZero>> nonzero) const;
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                                 FlatVector<AutoDiffDiff<1,bool>> values) const
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const
     {
       cout << string("nonzero in-out not overloaded for type")+typeid(*this).name() << endl;
       /*
@@ -436,16 +456,16 @@ namespace ngfem
     */
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      values = AutoDiffDiff<1,bool> (true);
+      values = AutoDiffDiff<1,NonZero> (true);
     }
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      values = AutoDiffDiff<1,bool> (true);
+      values = AutoDiffDiff<1,NonZero> (true);
     }
     
     virtual shared_ptr<CoefficientFunction>
@@ -693,16 +713,16 @@ namespace ngfem
     */
     
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      values = AutoDiffDiff<1,bool> (val != 0.0);
+      values = AutoDiffDiff<1,NonZero> (val != 0.0);
     }
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
-      values = AutoDiffDiff<1,bool> (val != 0.0);
+      values = AutoDiffDiff<1,NonZero> (val != 0.0);
     }
 
     virtual shared_ptr<CoefficientFunction>
@@ -840,12 +860,12 @@ namespace ngfem
     { cf->EvaluateDeriv(ir, result, deriv); }
 
     void NonZeroPattern (const class ProxyUserData & ud,
-                         FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+                         FlatVector<AutoDiffDiff<1,NonZero>> nonzero) const override
     { cf->NonZeroPattern(ud, nonzero); }
 
     void NonZeroPattern (const class ProxyUserData & ud,
-                         FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                         FlatVector<AutoDiffDiff<1,bool>> values) const override
+                         FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                         FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     { cf->NonZeroPattern(ud, input, values); }
 
     void TraverseTree (const function<void(CoefficientFunction&)> & func) override
@@ -1415,10 +1435,10 @@ public:
   */
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const override                               
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override                               
   {
     size_t dim = this->Dimension();    
-    Vector<AutoDiffDiff<1,bool>> v1(dim);
+    Vector<AutoDiffDiff<1,NonZero>> v1(dim);
     c1->NonZeroPattern(ud, v1);
     for (int i = 0; i < values.Size(); i++)
       {
@@ -1440,8 +1460,8 @@ public:
 
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
     auto v1 = input[0];
     if (name == "-"  || name == " ") // "-" actually not used that way
@@ -1736,10 +1756,10 @@ public:
   */
 
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
     size_t dim = Dimension();    
-    Vector<AutoDiffDiff<1,bool>> v1(dim), v2(dim);
+    Vector<AutoDiffDiff<1,NonZero>> v1(dim), v2(dim);
     c1->NonZeroPattern(ud, v1);
     c2->NonZeroPattern(ud, v2);
     for (int i = 0; i < values.Size(); i++)
@@ -1758,8 +1778,8 @@ public:
   }
   
   virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                               FlatVector<AutoDiffDiff<1,bool>> values) const override
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
   {
     auto v1 = input[0];
     auto v2 = input[1];

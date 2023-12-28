@@ -50,24 +50,24 @@ namespace ngfem
 
   
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
       int hd = Dimensions()[0];
-      values = AutoDiffDiff<1,bool>(false);
+      values = AutoDiffDiff<1,NonZero>(false);
 
       for (int i = 0; i < hd; i++)
-        values(i*(hd+1)) = AutoDiffDiff<1,bool>(true);
+        values(i*(hd+1)) = AutoDiffDiff<1,NonZero>(true);
     }
   
     virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-                                 FlatVector<AutoDiffDiff<1,bool>> values) const override
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
       int hd = Dimensions()[0];
-      values = AutoDiffDiff<1,bool>(false);
+      values = AutoDiffDiff<1,NonZero>(false);
 
       for (int i = 0; i < hd; i++)
-        values(i*(hd+1)) = AutoDiffDiff<1,bool>(true);
+        values(i*(hd+1)) = AutoDiffDiff<1,NonZero>(true);
     }
 
     using T_CoefficientFunction<IdentityCoefficientFunction>::Evaluate;

@@ -338,14 +338,14 @@ namespace ngcomp
     }
 
     void NonZeroPattern (const class ProxyUserData & ud,
-			 FlatVector<AutoDiffDiff<1,bool>> nonzero) const override
+			 FlatVector<AutoDiffDiff<1,NonZero>> nonzero) const override
     {
       func->NonZeroPattern(ud, nonzero);
     }
 
     void NonZeroPattern (const class ProxyUserData & ud,
-			 FlatArray<FlatVector<AutoDiffDiff<1,bool>>> input,
-			 FlatVector<AutoDiffDiff<1,bool>> values) const override
+			 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+			 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
     {
       func->NonZeroPattern(ud, input, values);
     }

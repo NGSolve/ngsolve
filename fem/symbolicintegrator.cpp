@@ -750,7 +750,7 @@ namespace ngfem
 
   void ProxyFunction ::
   NonZeroPattern (const class ProxyUserData & ud,
-                  FlatVector<AutoDiffDiff<1,bool>> values) const
+                  FlatVector<AutoDiffDiff<1,NonZero>> values) const
   {
     Vector<bool> nz(values.Size()), nzd(values.Size()), nzdd(values.Size());
     NonZeroPattern (ud, nz, nzd, nzdd);
@@ -1211,7 +1211,7 @@ namespace ngfem
 
     ProxyUserData ud;
     // Vector<bool> nzvec(1), nzdvec(1), nzddvec(1);
-    Vector<AutoDiffDiff<1,bool>> nzvec(1);
+    Vector<AutoDiffDiff<1,NonZero>> nzvec(1);
     int k = 0;
     for (int k1 : test_proxies.Range())
       for (int k2 : Range(test_proxies[k1]->Dimension()))
@@ -4819,7 +4819,7 @@ namespace ngfem
     ProxyUserData ud;
     DummyFE<ET_TRIG> dummyfe;
     ud.fel = &dummyfe;
-    Vector<AutoDiffDiff<1,bool>> nzvec(1);
+    Vector<AutoDiffDiff<1,NonZero>> nzvec(1);
     int k = 0;
     for (int k1 : trial_proxies.Range())
       for (int k2 : Range(trial_proxies[k1]->Dimension()))
