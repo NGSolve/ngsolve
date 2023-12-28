@@ -797,6 +797,10 @@ namespace ngmg
 
     if (direct)
       {
+        if(inv[level-1])
+          inv[level-1]->Update();
+        else
+          {
         GetMemoryTracer().Track(*direct, "DirectSolverClusters");
 	if (biform.UsesEliminateInternal())
 	  {
@@ -809,6 +813,7 @@ namespace ngmg
 	  (biform.GetMatrix()).InverseMatrix (direct);
         string name = "DirectSolverClustersInverse-Level" + ToString(level);
         GetMemoryTracer().Track(*inv[level-1], name);
+        }
       }
   }
 
