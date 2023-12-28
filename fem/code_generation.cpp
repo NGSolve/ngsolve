@@ -6,7 +6,10 @@
 #include<regex>
 #include<cstdio>
 #include<cstdlib>
+
+#if defined __GNUC__ && !defined __EMSCRIPTEN__
 #include <unistd.h>   // for mkdtemp
+#endif
 
 namespace ngfem
 {
