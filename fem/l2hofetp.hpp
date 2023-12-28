@@ -1,3 +1,9 @@
+#ifndef L2HOFETP_HPP
+#define L2HOFETP_HPP
+
+#include "tscalarfe.hpp"
+#include "l2hofe.hpp"
+
 namespace ngfem
 {
 
@@ -1141,3 +1147,6 @@ namespace ngfem
 
   
 }
+
+
+#endif

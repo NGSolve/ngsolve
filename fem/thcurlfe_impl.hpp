@@ -3,6 +3,7 @@
 
 
 #include "thcurlfe.hpp"
+#include "recursive_pol.hpp" // for SBLambda
 
 namespace ngfem
 {

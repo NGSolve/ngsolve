@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 //include recursive_pol.hpp;
+#include "finiteelement.hpp"
 #include "recursive_pol_tet.hpp"
 #include "hcurldivfe_impl.hpp"
 //#include "l2orth3d.hpp"
