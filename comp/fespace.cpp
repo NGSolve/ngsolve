@@ -2095,37 +2095,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return sum;    
   }
 
-#ifdef OLD
-  Table<int> Nodes2Table (const MeshAccess & ma,
-                          const Array<NodeId> & dofnodes)
-  {
-    size_t ndof = dofnodes.Size();
-
-    /*
-    Array<int> ndistprocs(ndof);
-    ndistprocs = 0;
-    for (size_t i = 0; i < ndof; i++)
-      {
-	if (dofnodes[i].GetNr() == -1) continue;
-        ndistprocs[i] = ma.GetDistantProcs (dofnodes[i]).Size();
-      }
-
-    Table<int> dist_procs(ndistprocs);
-    for (size_t i = 0; i < ndof; i++)
-      {
-	if (dofnodes[i].GetNr() == -1) continue;
-	dist_procs[i] = ma.GetDistantProcs (dofnodes[i]);
-      }
-    return dist_procs;
-    */
-    TableCreator<int> creator(ndof);
-    for ( ; !creator.Done(); creator++)
-      for (size_t i = 0; i < ndof; i++)
-        if (dofnodes[i].GetNr() != -1) 
-          creator.Add (i, ma.GetDistantProcs (dofnodes[i]));
-    return creator.MoveTable();
-  }
-#endif
   
   
   void FESpace :: UpdateParallelDofs ( )
@@ -2169,7 +2138,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   bool FESpace :: IsParallel() const
   {
     return ma->GetCommunicator().Size() > 1;
-    // return paralleldofs != nullptr; 
   }
 
   size_t FESpace :: GetNDofGlobal() const 
@@ -3912,23 +3880,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
 
 
-
-  
-
-
-#ifdef OLD
-
-  // #ifdef PARALLEL
-  ParallelMeshDofs :: ParallelMeshDofs (shared_ptr<MeshAccess> ama, 
-					const Array<Node> & adofnodes, 
-					int dim, bool iscomplex)
-    : ParallelDofs (ama->GetCommunicator(),
-		    Nodes2Table (*ama, adofnodes), dim, iscomplex),		    
-      ma(ama), dofnodes(adofnodes)
-  { ; }
-  // #endif
-
-#endif
 
 
 
