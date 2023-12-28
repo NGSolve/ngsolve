@@ -15,6 +15,7 @@
 #include "../fem/hdiv_equations.hpp"
 #include "../fem/hdivhofe.hpp"
 #include "../fem/hdivlofe.hpp"
+#include <diffop_impl.hpp>
 
 namespace ngcomp
 {
