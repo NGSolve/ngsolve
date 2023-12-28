@@ -11,9 +11,14 @@
 #include <nginterface_v2.hpp>
 #include <core/ranges.hpp>
 
-#include <finiteelement.hpp>
-#include <elementtransformation.hpp>
+#include <elementtopology.hpp>
 
+namespace ngfem
+{
+  class IntegrationPoint;
+  class CoefficientFunction;
+  class ElementTransformation;
+}
 
 
 

@@ -13,10 +13,10 @@
 
 namespace ngcomp
 {
-
   class LinearForm;
   class Preconditioner;
 
+  
   /** 
       A bilinear-form.
       A bilinear-form provides the system matrix. 
