@@ -1,6 +1,8 @@
 #ifndef NGSOLVE_GLOBALSPACE_HPP
 #define NGSOLVE_GLOBALSPACE_HPP
 
+#include "fespace.hpp"
+
 namespace ngcomp
 {
   class GlobalSpace : public FESpace

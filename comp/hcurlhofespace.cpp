@@ -3,9 +3,11 @@
 */
 // #include <comp.hpp>
 #include "hcurlhofespace.hpp"
+#include "hcurlhdivfes.hpp"
 #include <../fem/hcurlhofe.hpp> 
 #include <../fem/hcurllofe.hpp>
 #include <../fem/hcurl_equations.hpp> 
+#include <diffop_impl.hpp>
 
 // #include <../fem/hcurlhdiv_dshape.hpp> 
 #include <multigrid.hpp>

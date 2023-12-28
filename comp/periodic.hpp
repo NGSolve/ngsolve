@@ -8,6 +8,7 @@
 /*********************************************************************/
 
 #include <set>
+#include "fespace.hpp"
 
 namespace ngcomp
 {

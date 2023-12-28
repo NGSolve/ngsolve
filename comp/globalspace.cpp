@@ -1,4 +1,3 @@
-#include <comp.hpp>
 #include "globalspace.hpp"
 
 namespace ngcomp

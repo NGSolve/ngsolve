@@ -7,13 +7,15 @@
 /* Date:   12. Jan. 2002                                             */
 /*********************************************************************/
 
+
+#include "fespace.hpp"
+
 namespace ngcomp
 {
 
 /*
    Finite Element Space
 */
-
 
 /// Lowest order Nedelec space (edge elements)
 class NGS_DLL_HEADER NedelecFESpace : public FESpace

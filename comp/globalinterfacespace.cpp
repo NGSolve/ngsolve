@@ -1,5 +1,6 @@
-#include <comp.hpp>
+// #include <comp.hpp>
 #include "globalinterfacespace.hpp"
+#include <recursive_pol.hpp>
 
 namespace ngcomp
 {

@@ -8,12 +8,15 @@
    Finite Element Space
 */
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "fespace.hpp"
 #include <multigrid.hpp>
 
 #include "../fem/h1lofe.hpp"
+#include <bdbequations.hpp>
 #include <parallelngs.hpp>
 #include "compressedfespace.hpp"
+#include "periodic.hpp"
 
 using namespace ngmg;
 

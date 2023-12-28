@@ -10,6 +10,8 @@
 
 #include <parallelngs.hpp>
 #include <multigrid.hpp>
+#include <linearform.hpp>
+#include <bilinearform.hpp>
 
 namespace ngmg
 {

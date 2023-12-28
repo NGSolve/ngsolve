@@ -7,11 +7,9 @@
 /* Date:   25. Mar. 2000                                             */
 /*********************************************************************/
 
-#include <fem.hpp>
+// #include <fem.hpp>
+#include <finiteelement.hpp>
 #include <la.hpp>
-
-
-
 
 /**
    namespace for NGS-components.

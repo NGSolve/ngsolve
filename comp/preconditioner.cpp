@@ -1,4 +1,6 @@
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "bilinearform.hpp"
+#include "preconditioner.hpp"
 #include <multigrid.hpp>
 // #include <solve.hpp>
 #include <parallelngs.hpp>

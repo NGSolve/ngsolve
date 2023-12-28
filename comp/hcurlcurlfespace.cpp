@@ -5,10 +5,12 @@
 /*********************************************************************/
 
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "hcurlcurlfespace.hpp"
 #include "../fem/hcurlcurlfe.hpp"
 #include "hcurlcurlfespace.hpp"
 #include "../fem/hcurlhdiv_dshape.hpp"
+#include <diffop_impl.hpp>
 
 
 namespace ngcomp

@@ -1,4 +1,4 @@
-#include <comp.hpp>
+// #include <comp.hpp>
 #include "compressedfespace.hpp"
 
 namespace ngcomp

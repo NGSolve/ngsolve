@@ -1,4 +1,3 @@
-
 /*********************************************************************/
 /* File:   discontinuous.cpp                                         */
 /* Author: Joachim Schoeberl                                         */
@@ -6,7 +5,7 @@
 /*********************************************************************/
 
 
-#include <comp.hpp>
+#include "discontinuous.hpp"
 
 namespace ngcomp {
   

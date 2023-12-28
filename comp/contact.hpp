@@ -1,7 +1,9 @@
 #ifndef NGSOLVE_CONTACT_HPP
 #define NGSOLVE_CONTACT_HPP
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "gridfunction.hpp"
+#include "bilinearform.hpp"
 
 namespace ngcomp
 {

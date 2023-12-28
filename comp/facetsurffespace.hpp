@@ -5,6 +5,9 @@
 #ifndef FACETSURF_FESPACE_HPP
 #define FACETSURF_FESPACE_HPP
 
+
+#include "fespace.hpp"
+
 namespace ngcomp
 {
   class NGS_DLL_HEADER FacetSurfaceFESpace : public FESpace 

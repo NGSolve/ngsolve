@@ -1,9 +1,10 @@
-#include <comp.hpp>
+#include "hdivhosurfacefespace.hpp"
 #include <../fem/hdiv_equations.hpp>  
 #include <../fem/hdivlofe.hpp>  
 #include <../fem/hdivhofe.hpp>  
 #include <../fem/hdivhofefo.hpp>  
 #include <../fem/hcurlhdiv_dshape.hpp> 
+#include <diffop_impl.hpp>
 
 namespace ngcomp
 {

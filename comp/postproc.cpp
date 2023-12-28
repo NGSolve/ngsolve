@@ -8,7 +8,9 @@
    Postprocessing functions
 */
 
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "gridfunction.hpp"
+
 #include <variant>
 #include <optional>
 

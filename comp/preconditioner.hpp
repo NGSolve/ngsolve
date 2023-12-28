@@ -7,10 +7,13 @@
 /* Date:   10. Jul. 2000                                             */
 /*********************************************************************/
 
-
+#include <la.hpp>
+#include <mgpre.hpp>
 
 namespace ngcomp
 {
+  using namespace ngla;
+  
   /**
      Base class for preconditioners.
   */

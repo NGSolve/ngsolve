@@ -4,13 +4,15 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
-#include <comp.hpp>
-#include <fem.hpp>
+// #include <comp.hpp>
+// #include <fem.hpp>
+#include "normalfacetfespace.hpp"
 #include "../fem/hdiv_equations.hpp"
 #include "../fem/normalfacetfe.hpp"
 #include "normalfacetfespace.hpp"
 #include <../fem/hcurlhdiv_dshape.hpp> 
 
+#include <diffop_impl.hpp>
 #include <cassert>
 
 namespace ngcomp

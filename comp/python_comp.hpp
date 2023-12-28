@@ -4,7 +4,10 @@
 #include <python_ngstd.hpp>
 #include <python_linalg.hpp>
 
-#include "comp.hpp"
+// #include "comp.hpp"
+
+#include "gridfunction.hpp"
+#include "periodic.hpp"
 
 namespace pybind11
 {

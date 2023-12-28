@@ -9,6 +9,7 @@
    dual shapes
 */
 
+#include "fespace.hpp"
 
 namespace ngcomp
 {

@@ -12,10 +12,13 @@
 */
 
 
-#include <comp.hpp>
-
+// #include <comp.hpp>
 
 /// namespace for multigrid components
+
+/*
+namespace ngfem { };
+namespace ngcomp { };
 
 namespace ngmg
 {
@@ -26,6 +29,7 @@ namespace ngmg
   using namespace ngfem;
   using namespace ngcomp;
 }
+*/
 
 
 #include "mgpre.hpp"

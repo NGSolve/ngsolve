@@ -1,6 +1,9 @@
-#include <comp.hpp>
+// #include <comp.hpp>
 // #include <solve.hpp>
+#include "preconditioner.hpp"
 #include "hypre_precond.hpp"
+#include <parallelngs.hpp>
+#include "hcurlhofespace.hpp"
 
 
 namespace ngcomp

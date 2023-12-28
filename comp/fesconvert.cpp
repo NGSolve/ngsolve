@@ -1,4 +1,6 @@
-#include <comp.hpp>
+#include "fespace.hpp"
+#include <parallelngs.hpp>
+
 
 namespace ngcomp
 {

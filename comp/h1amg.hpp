@@ -1,10 +1,12 @@
 #ifndef H1AMG_HPP_
 #define H1AMG_HPP_
 
-#include <comp.hpp>
+#include <la.hpp>
 
 namespace ngcomp
 {
+  using namespace ngla;
+  
   template <class SCAL>
   class NGS_DLL_HEADER H1AMG_Matrix : public ngla::BaseMatrix
   {

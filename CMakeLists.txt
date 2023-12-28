@@ -157,6 +157,7 @@ include_directories (BEFORE
   ${PROJECT_SOURCE_DIR}/fem
   ${PROJECT_SOURCE_DIR}/linalg
   ${PROJECT_SOURCE_DIR}/comp
+  ${PROJECT_SOURCE_DIR}/multigrid
   ${PROJECT_SOURCE_DIR}/parallel
   ${PROJECT_SOURCE_DIR}/solve
   ${PROJECT_SOURCE_DIR}/ngscuda

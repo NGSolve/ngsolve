@@ -1,7 +1,9 @@
 #include "webgui.hpp"
 
 #include <cmath>
-#include <comp.hpp>
+// #include <comp.hpp>
+#include "gridfunction.hpp"
+
 
 namespace webgui {
 

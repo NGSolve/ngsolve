@@ -1,7 +1,8 @@
-#include <comp.hpp>
+#include "hdivdivsurfacespace.hpp"
 #include "../fem/hdivdivfe.hpp"
 #include "hdivdivsurfacespace.hpp"
-
+#include <bdbequations.hpp>
+#include <diffop_impl.hpp>
 
 namespace ngcomp
 {

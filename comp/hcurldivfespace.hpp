@@ -1,9 +1,15 @@
-#pragma once
+#ifndef HCURLDIVFESPACE_HPP
+#define HCURLDIVFESPACE_HPP
+
+
 /*********************************************************************/
 /* File:   hcurldivfespace.h                                           */
 /* Author: Philip                                                  */
 /* Date:   2017/2018                                             */
 /*********************************************************************/
+
+
+#include "fespace.hpp"
 
 namespace ngcomp
 {
@@ -78,3 +84,6 @@ namespace ngcomp
   };
 
 }
+
+
+#endif

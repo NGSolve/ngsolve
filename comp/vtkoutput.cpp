@@ -4,7 +4,7 @@
 /* Date:   1. June 2014                                              */
 /*********************************************************************/
 
-#include <comp.hpp>
+#include "fespace.hpp"
 #include "vtkoutput.hpp"
 
 namespace ngcomp

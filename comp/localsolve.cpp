@@ -9,11 +9,12 @@
    useful for equilibration
 */
 
-#include <comp.hpp>
+// #include <comp.hpp>
 #include <variant>
 #include "../fem/integratorcf.hpp"
 #include "../fem/h1lofe.hpp"
-
+#include "bilinearform.hpp"
+#include "gridfunction.hpp"
 
 namespace ngcomp
 {
