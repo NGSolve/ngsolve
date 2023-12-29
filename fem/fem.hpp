@@ -37,7 +37,6 @@ namespace ngfem
 #include "elementtopology.hpp"
 #include "intrule.hpp"
 
-// #include "generic_recpol.hpp"
 #include "recursive_pol.hpp"
 #include "recursive_pol_trig.hpp"
 // #include "recursive_pol_tet.hpp"
@@ -45,26 +44,26 @@ namespace ngfem
 #include "fe_interfaces.hpp"
 #include "finiteelement.hpp"
 #include "scalarfe.hpp"
-// #include "tscalarfe.hpp"
+#include "tscalarfe.hpp"
 
 #include "elementtransformation.hpp"
 
 
-// #include "h1lofe.hpp"
+#include "h1lofe.hpp"
 #include "h1hofe.hpp"
 #include "l2hofe.hpp"
-// #include "nodalhofe.hpp"
+#include "nodalhofe.hpp"
 
 #include "hdivfe.hpp"
 #include "hcurlfe.hpp"
-// #include "thcurlfe.hpp"
+#include "thcurlfe.hpp"
 
-// #include "hdivhofe.hpp"
-// #include "hcurlhofe.hpp" 
+#include "hdivhofe.hpp"
+#include "hcurlhofe.hpp" 
 
 
-// #include "facetfe.hpp" 
-// #include "vectorfacetfe.hpp"
+#include "facetfe.hpp" 
+#include "vectorfacetfe.hpp"
 
 
 #include "specialelement.hpp"
@@ -76,8 +75,8 @@ namespace ngfem
 #include "diffop_impl.hpp"
 #include "bdbintegrator.hpp"
 #include "bdbequations.hpp"
-// #include "hcurl_equations.hpp"
-// #include "hdiv_equations.hpp"
+#include "hcurl_equations.hpp"
+#include "hdiv_equations.hpp"
 // #include "elasticity_equations.hpp"
 #include "symbolicintegrator.hpp"
 // #include "tensorproductintegrator.hpp"
