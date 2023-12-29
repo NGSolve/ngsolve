@@ -433,13 +433,22 @@ namespace ngfem
     static constexpr int DIM_SPACE = ORIG::DIM_SPACE;
     static constexpr int DIM_ELEMENT = ORIG::DIM_ELEMENT;
 
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      CalcSIMDDShapeFE<FEL,DIM_SPACE,DIM_ELEMENT,ORIG::DIM_DMAT>
+        (static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> &>(bmir), mat, eps());
+    }
+
     
     using BASE::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       // ApplySIMDDShapeFE<FEL,ORIG::DIM_SPACE,ORIG::DIM_ELEMENT,ORIG::DIM_DMAT>(static_cast<const FEL&>(fel), bmir, x, y, eps());
-
+      // return;
+      
       constexpr size_t BS = 64; // number of simd-points
       size_t maxnp = min2(BS, bmir.Size());
       size_t size = (maxnp+1)*SIMD<double>::Size()*500  +  5*ORIG::DIM_DMAT*BS*sizeof(SIMD<double>);
@@ -460,7 +469,7 @@ namespace ngfem
           FlatMatrix<SIMD<double>> hxi(ORIG::DIM_DMAT, num, lh);          
 
           double dist[] = { 1, -1, 2, -2 };
-          double weight[] = { 8/12., -8/12., 1/12., -1/12. };
+          double weight[] = { 8/12., -8/12., -1/12., 1/12. };
           for (int j = 0; j < DIM_ELEMENT; j++)
             {
               hx = SIMD<double>(0.0);
@@ -488,6 +497,14 @@ namespace ngfem
             }
         }
     }
+    
+    using BASE::AddTransSIMDIR;    
+    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
+    {
+      AddTransSIMDDShapeFE<FEL,DIM_SPACE,DIM_ELEMENT,ORIG::DIM_DMAT>(static_cast<const FEL&>(fel), bmir, x, y, eps());
+    }
+
   };
 }
 
