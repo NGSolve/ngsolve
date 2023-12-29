@@ -430,10 +430,54 @@ namespace ngfem
     typedef DiffOp<ME> BASE;
   public:
     static constexpr double eps() { return 1e-4; }
+
+    static constexpr int DIM = ORIG::DIM;    
     static constexpr int DIM_SPACE = ORIG::DIM_SPACE;
     static constexpr int DIM_ELEMENT = ORIG::DIM_ELEMENT;
+    static constexpr int DIM_DMAT = ORIG::DIM_ELEMENT*ORIG::DIM_SPACE;
+    static constexpr int DIFFORDER = ORIG::DIFFORDER+1;
 
 
+    template <typename AFEL, typename SIP, typename MAT,
+              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const SIP & sip,
+                                MAT & mat, LocalHeap & lh)
+    {
+      cout << "nicht gut" << endl;
+      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
+           << ", mat = " << typeid(mat).name() << endl;
+    }
+    
+    template <typename AFEL, typename MIP, typename MAT,
+              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT mat, LocalHeap & lh)
+    {
+      CalcDShapeFE<FEL,DIM_SPACE,DIM_ELEMENT,ORIG::DIM_DMAT>
+        (static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
+    }
+    
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void Apply (const AFEL & fel, const MIP & mip,
+                       const TVX & x, TVY && y,
+                       LocalHeap & lh) 
+    {
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<DIM_SPACE*ORIG::DIM_DMAT> hm(fel.GetNDof(),lh);
+      CalcDShapeFE<FEL,DIM_SPACE,DIM_ELEMENT,ORIG::DIM_DMAT>
+        (static_cast<const FEL&>(fel), mip, hm, lh, eps());
+      y = Trans(hm)*x;
+    }
+
+    template <typename AFEL, typename MIP, class TVX, class TVY>
+    static void ApplyTrans (const AFEL & fel, const MIP & mip,
+			    const TVX & x, TVY & by,
+			    LocalHeap & lh) 
+    {
+      ApplyTransDShapeFE<FEL,DIM_SPACE,DIM_ELEMENT,ORIG::DIM_DMAT>
+        (static_cast<const FEL&>(fel), mip, x, by, lh, eps());
+    }
+    
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
