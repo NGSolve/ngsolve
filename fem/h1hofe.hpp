@@ -165,24 +165,24 @@ namespace ngfem
   H1HOFE_EXTERN template class H1HighOrderFE<ET_POINT>;
   extern template class H1HighOrderFE<ET_SEGM>;
   extern template class H1HighOrderFE<ET_TRIG>;
-  H1HOFE_EXTERN template class H1HighOrderFE<ET_QUAD>;
+  extern template class H1HighOrderFE<ET_QUAD>;
 
-  H1HOFE_EXTERN template class H1HighOrderFE<ET_TET>;
-  H1HOFE_EXTERN template class H1HighOrderFE<ET_PRISM>;
-  H1HOFE_EXTERN template class H1HighOrderFE<ET_PYRAMID>;
+  extern template class H1HighOrderFE<ET_TET>;
+  extern template class H1HighOrderFE<ET_PRISM>;
+  extern template class H1HighOrderFE<ET_PYRAMID>;
   H1HOFE_EXTERN template class H1HighOrderFE<ET_HEXAMID>;
-  H1HOFE_EXTERN template class H1HighOrderFE<ET_HEX>;
+  extern template class H1HighOrderFE<ET_HEX>;
 
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_POINT>, ET_POINT>;
   extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
   extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TRIG>, ET_TRIG>;
-  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
+  extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_QUAD>, ET_QUAD>;
 
-  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TET>, ET_TET>;
-  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
-  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
+  extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_TET>, ET_TET>;
+  extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PRISM>, ET_PRISM>;
+  extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
   H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEXAMID>, ET_HEXAMID>;
-  H1HOFE_EXTERN template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
+  extern template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;
 }
 
 

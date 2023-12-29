@@ -6,7 +6,5 @@
 
 #define FILE_H1HOFE_CPP
 
- 
-// #include <fem.hpp>
 #include <h1hofe.hpp>
 

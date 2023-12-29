@@ -20,7 +20,8 @@ add_library(ngfem ${NGS_LIB_TYPE}
         scalarfe.cpp hdivfe.cpp recursive_pol.cpp
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
         facethofe.cpp DGIntegrators.cpp pml.cpp
-        h1hofe_segm.cpp h1hofe_trig.cpp hdivdivfe.cpp hcurlcurlfe.cpp symbolicintegrator.cpp tpdiffop.cpp
+        h1hofe_segm.cpp h1hofe_trig.cpp h1hofe_quad.cpp h1hofe_tet.cpp h1hofe_prism.cpp h1hofe_pyramid.cpp h1hofe_hex.cpp
+        hdivdivfe.cpp hcurlcurlfe.cpp symbolicintegrator.cpp tpdiffop.cpp
         newtonCF.cpp tensorproductintegrator.cpp code_generation.cpp
         voxelcoefficientfunction.cpp
         tensorcoefficient.cpp tensorcoefficient.hpp)

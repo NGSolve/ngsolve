@@ -9,6 +9,6 @@
 
 namespace ngfem
 {
-  template class H1HighOrderFE<ET_PYRAMID>;
-  template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_PYRAMID>, ET_PYRAMID>;
+  template class H1HighOrderFE<ET_HEX>;
+  template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_HEX>, ET_HEX>;  
 }

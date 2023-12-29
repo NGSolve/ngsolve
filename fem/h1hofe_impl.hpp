@@ -8,6 +8,8 @@
 /*********************************************************************/
 
 #include "recursive_pol.hpp"
+#include "h1hofe.hpp"
+
 
 namespace ngfem
 {
