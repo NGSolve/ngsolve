@@ -1110,12 +1110,18 @@ public:
   
   /// Gradient operator for HCurl
   template <int D, typename FEL = HCurlFiniteElement<D> >
-  class DiffOpGradientHCurl : public DiffOp<DiffOpGradientHCurl<D> >
+  // class DiffOpGradientHCurl : public DiffOp<DiffOpGradientHCurl<D> >
+  class DiffOpGradientHCurl : public NumDiffGradient<DiffOpGradientHCurl<D>,  DiffOpIdEdge<D>, FEL>
   {
+    typedef NumDiffGradient<DiffOpGradientHCurl<D>,  DiffOpIdEdge<D>, FEL> BASE;
   public:
+    using BASE::eps;
+    using BASE::DIM_ELEMENT;
+    using BASE::DIM_SPACE;
+    
     enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
+    // enum { DIM_SPACE = D };
+    // enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
 
@@ -1123,7 +1129,7 @@ public:
 
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPACE, DIM_SPACE } ); }
     
-    static constexpr double eps() { return 1e-4; }
+    // static constexpr double eps() { return 1e-4; }
 
     typedef DiffOpGradientBoundaryHCurl<D> DIFFOP_TRACE;
     ///
@@ -1145,6 +1151,7 @@ public:
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                                                               MAT mat, LocalHeap & lh)
     {
+      // cout << "gen matrix" << endl;
       CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
     }
 
@@ -1154,6 +1161,7 @@ public:
                        const TVX & x, TVY && y,
                        LocalHeap & lh) 
     {
+      // cout << "apply matrix" << endl;      
       // typedef typename TVX::TSCAL TSCAL;
       HeapReset hr(lh);
       FlatMatrixFixWidth<D*D> hm(fel.GetNDof(),lh);
@@ -1173,16 +1181,19 @@ public:
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
+      // cout << "gen matrix simd" << endl;
       CalcSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(bfel), static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), mat, eps());
     }
 
-    using DiffOp<DiffOpGradientHCurl<D>>::ApplySIMDIR;
-
+    /*
+    using BASE::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
+      cout << "apply simd" << endl;      
       ApplySIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
     }
+    */
 
     using DiffOp<DiffOpGradientHCurl<D>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,

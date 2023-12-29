@@ -3,6 +3,7 @@
 
 
 #include "finiteelement.hpp"
+#include "diffop.hpp"
 
 namespace ngfem
 {
@@ -49,15 +50,6 @@ namespace ngfem
         fel.CalcMappedShape (miprr, shape_urr);
         
         dshape_u_ref = (1.0/(12.0*eps)) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
-        
-        // dshape_u_ref = (1.0/(2*eps)) * (shape_ur-shape_ul);
-        // dshape_u_ref = (1.0/(4*eps)) * (shape_urr-shape_ull);
-        
-        /*
-	  for (int k = 0; k < nd_u; k++)
-          for (int l = 0; l < D; l++)
-          bmatu(k, j*D+l) = dshape_u_ref(k,l);
-        */
         for (int l = 0; l < DIM_STRESS; l++)
           bmatu.Col(j*DIM_STRESS+l) = dshape_u_ref.Col(l);
       }
@@ -429,6 +421,74 @@ namespace ngfem
           }
       }
   }
+
+
+
+  template <typename ME, typename ORIG, typename FEL>
+  class NumDiffGradient : public DiffOp<ME>
+  {
+    typedef DiffOp<ME> BASE;
+  public:
+    static constexpr double eps() { return 1e-4; }
+    static constexpr int DIM_SPACE = ORIG::DIM_SPACE;
+    static constexpr int DIM_ELEMENT = ORIG::DIM_ELEMENT;
+
+    
+    using BASE::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      // ApplySIMDDShapeFE<FEL,ORIG::DIM_SPACE,ORIG::DIM_ELEMENT,ORIG::DIM_DMAT>(static_cast<const FEL&>(fel), bmir, x, y, eps());
+
+      constexpr size_t BS = 64; // number of simd-points
+      size_t maxnp = min2(BS, bmir.Size());
+      size_t size = (maxnp+1)*SIMD<double>::Size()*500  +  5*ORIG::DIM_DMAT*BS*sizeof(SIMD<double>);
+      STACK_ARRAY(char, data, size);
+      LocalHeap lh(data, size);
+      
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE>&> (bmir);
+      auto & ir = mir.IR();
+      const ElementTransformation & trafo = mir.GetTransformation();
+      
+      y.AddSize(ORIG::DIM_DMAT*DIM_SPACE, mir.Size()) = SIMD<double>(0.);
+      for (size_t base = 0; base < ir.Size(); base += BS)
+        {
+          HeapReset hr(lh);
+          size_t num = std::min(BS, ir.Size()-base);
+          
+          FlatMatrix<SIMD<double>> hx(ORIG::DIM_DMAT, num, lh);
+          FlatMatrix<SIMD<double>> hxi(ORIG::DIM_DMAT, num, lh);          
+
+          double dist[] = { 1, -1, 2, -2 };
+          double weight[] = { 8/12., -8/12., 1/12., -1/12. };
+          for (int j = 0; j < DIM_ELEMENT; j++)
+            {
+              hx = SIMD<double>(0.0);
+              for (int i = 0; i < 4; i++)
+                {
+                  HeapReset hr(lh);
+                  SIMD_IntegrationRule iri(num*SIMD<double>::Size(), lh);
+                  for (int k = 0; k < iri.Size(); k++)
+                    {
+                      iri[k] = ir[base+k];
+                      iri[k](j) += dist[i]*eps();
+                    }
+                  SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> mir(iri, trafo, lh);
+                  ORIG::ApplySIMDIR (fel, mir, x, hxi);
+                  hx += weight[i]/eps() * hxi;
+                }
+            
+              for (int k = 0; k < num; k++)
+                {
+                  auto jacinv = mir[base+k].GetJacobianInverse();
+                  for (int l = 0; l < ORIG::DIM_DMAT; l++)
+                    for (int m = 0; m < DIM_SPACE; m++)
+                      y(m*ORIG::DIM_DMAT+l, base+k) += jacinv(j,m) * hx(l, k);
+                }
+            }
+        }
+    }
+  };
 }
 
 #endif 
