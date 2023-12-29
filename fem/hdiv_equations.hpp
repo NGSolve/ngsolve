@@ -507,20 +507,26 @@ public:
   
   /// Gradient operator for HDiv
   template <int D, typename FEL = HDivFiniteElement<D> >
-  class DiffOpGradientHDiv : public DiffOp<DiffOpGradientHDiv<D> >
+  // class DiffOpGradientHDiv : public DiffOp<DiffOpGradientHDiv<D> >
+  class DiffOpGradientHDiv : public NumDiffGradient<DiffOpGradientHDiv<D>,  DiffOpIdHDiv<D>, FEL>  
   {
   public:
+    /*
     enum { DIM = 1 };
     enum { DIM_SPACE = D };
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 1 };
+    */
+    
     static Array<int> GetDimensions() { return Array<int> ( { D, D } ); };
     
-    static constexpr double eps() { return 1e-4; }
+    // static constexpr double eps() { return 1e-4; }
 
     typedef DiffOpGradientTraceHDiv<D> DIFFOP_TRACE;
     ///
+
+#ifdef UNUSED    
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
@@ -584,6 +590,7 @@ public:
     {
       AddTransSIMDDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), bmir, x, y, eps());
     }
+#endif
   };
 
 

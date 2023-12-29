@@ -1119,11 +1119,11 @@ public:
     using BASE::DIM_ELEMENT;
     using BASE::DIM_SPACE;
     
-    enum { DIM = 1 };
+    // enum { DIM = 1 };
     // enum { DIM_SPACE = D };
     // enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 1 };
+    // enum { DIM_DMAT = D*D };
+    // enum { DIFFORDER = 1 };
 
     static string Name() { return "grad"; }
 
@@ -1133,6 +1133,8 @@ public:
 
     typedef DiffOpGradientBoundaryHCurl<D> DIFFOP_TRACE;
     ///
+
+    /*
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
@@ -1149,7 +1151,7 @@ public:
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                                                              MAT mat, LocalHeap & lh)
+                                MAT mat, LocalHeap & lh)
     {
       // cout << "gen matrix" << endl;
       CalcDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());
@@ -1169,7 +1171,6 @@ public:
       y = Trans(hm)*x;
     }
 
-
     template <typename AFEL, typename MIP, class TVX, class TVY>
     static void ApplyTrans (const AFEL & fel, const MIP & mip,
 			    const TVX & x, TVY & by,
@@ -1178,7 +1179,6 @@ public:
       ApplyTransDShapeFE<FEL,D,D,D>(static_cast<const FEL&>(fel), mip, x, by, lh, eps());
     }
 
-    /*
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
