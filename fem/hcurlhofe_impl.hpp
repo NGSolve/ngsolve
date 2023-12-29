@@ -10,7 +10,7 @@
 /*********************************************************************/
 
 #include "recursive_pol.hpp"
-#include "thdivfe.hpp"
+// #include "thdivfe.hpp"
 #include "hcurlhofe.hpp"
 
 namespace ngfem
