@@ -168,7 +168,8 @@ namespace ngfem
     }
 
     bool GetDiagDualityMassInverse2 (FlatVector<> diag) const { return false; }
-    
+
+    /*
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     {
       // throw Exception (string("dual shape not implemented for element ")+typeid(*this).name());
@@ -177,6 +178,7 @@ namespace ngfem
       static_cast<const FEL*> (this)->        
         T_CalcDualShape (GetTIP<DIM>(mip.IP()), SBLambda ( [&](int j, double val) { shape(j) = imeas * val; }));
     }
+    */
     
   };
 
