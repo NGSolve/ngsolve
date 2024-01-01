@@ -151,7 +151,7 @@ namespace ngfem
                                                  SliceMatrix<> coefs) const;
 
 
-    NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const;
+    NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & mip, BareSliceVector<> shape) const;
     NGS_DLL_HEADER virtual void AddDualTrans (const IntegrationRule & ir, BareSliceVector<double> values, BareSliceVector<> coefs) const;
     NGS_DLL_HEADER virtual void AddDualTrans (const SIMD_IntegrationRule & ir, BareVector<SIMD<double>> values, BareSliceVector<> coefs) const;
     

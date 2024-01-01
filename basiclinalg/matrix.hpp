@@ -1223,35 +1223,10 @@ namespace ngbla
     /// assign constant
     INLINE MatrixView & operator= (TSCAL s) 
     {
-      /*
-      if (w == 0) return *this;
-      for (size_t i = 0; i < h; i++)
-        {
-          __assume (w > 0);
-          for (size_t j = 0; j < w; j++)
-            data[i*dist+j] = s;
-        }
-      */
-      size_t hw = (ORD == RowMajor) ? w : h;
-      size_t hh = (ORD == RowMajor) ? h : w;
-      
-      if (hw == 0) return *this;
-      size_t i = 0, base = 0;
-      for ( ; i+1 < hh; i+=2, base += 2*Dist())
-        {
-          __assume (hw > 0);
-          for (auto j : Range(hw))
-            {
-              data[base+j] = s;
-              data[base+Dist()+j] = s;
-            }
-        }
-      if (i < hh)
-        {
-          __assume (hw > 0);
-          for (auto j : Range(hw))            
-            data[base+j] = s;
-        }
+      if (InnerSize() == 0) return *this;
+      for (size_t i = 0; i < OuterSize(); i++)
+        for (size_t j = 0; j < InnerSize(); j++)
+          data[i*Dist()+j] = s;
       return *this;
     }
 
@@ -1322,6 +1297,14 @@ namespace ngbla
         return Width();
       else
         return Height();
+    }
+
+    INLINE auto OuterSize () const
+    {
+      if constexpr (ORD==RowMajor)
+        return Height();
+      else
+        return Width();
     }
     
     using BASE::Rows;

@@ -16,6 +16,8 @@
 namespace ngfem
 {
 
+  string DifferentialOperator :: Name() const
+  { return typeid(*this).name(); }  
 
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
@@ -317,6 +319,13 @@ namespace ngfem
     throw Exception (string("DiffOp::CalcTransformationMatrix not overloaded, type = ") + typeid(*this).name() );    
   }
   
+  shared_ptr<CoefficientFunction>
+  DifferentialOperator :: DiffShape (shared_ptr<CoefficientFunction> proxy,
+                                     shared_ptr<CoefficientFunction> dir,
+                                     bool Eulerian) const
+  {
+    throw Exception (string("shape derivative not implemented for DifferentialOperator")+typeid(*this).name());
+  }
 
   
 

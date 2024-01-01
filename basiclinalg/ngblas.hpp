@@ -29,7 +29,14 @@ namespace ngbla
   
   extern NGS_DLL_HEADER void SetVector (double val, FlatVector<double> vec) NETGEN_NOEXCEPT;
   extern NGS_DLL_HEADER void SetVector (Complex val, FlatVector<Complex> vec) NETGEN_NOEXCEPT;
-  extern NGS_DLL_HEADER void SetVector (double val, SliceVector<double> vec) NETGEN_NOEXCEPT;
+
+  extern NGS_DLL_HEADER void SetVector (double val, BareSliceVector<double> dest, size_t size) NETGEN_NOEXCEPT;
+  
+  INLINE void SetVector (double val, SliceVector<double> vec) NETGEN_NOEXCEPT
+  {
+    SetVector (val, vec, vec.Size());
+  }
+  
   extern NGS_DLL_HEADER void SetVector (Complex val, SliceVector<Complex> vec) NETGEN_NOEXCEPT;
   
 
@@ -619,11 +626,24 @@ namespace ngbla
   extern NGS_DLL_HEADER  
   void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, FlatVector<const Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
   
-  
+  /*
   template <bool ADD, ORDERING ord>
   extern NGS_DLL_HEADER  
   void NgGEMV (double s, BareSliceMatrix<double,ord> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT;
+  */
+  
+  template <bool ADD, ORDERING ord>
+  extern NGS_DLL_HEADER  
+  void NgGEMV (double s, BareSliceMatrix<double,ord> a, BareSliceVector<double> x, size_t sx,
+               BareSliceVector<double> y, size_t sy) NETGEN_NOEXCEPT;
+  
+  template <bool ADD, ORDERING ord>
+  INLINE void NgGEMV (double s, BareSliceMatrix<double,ord> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT
+  {
+    NgGEMV<ADD,ord> (s, a, x, x.Size(), y, y.Size());
+  }
 
+  
   template <bool ADD, ORDERING ord>
   extern NGS_DLL_HEADER  
   void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT;

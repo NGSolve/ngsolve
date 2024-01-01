@@ -241,7 +241,7 @@ namespace ngfem
       vsdim = dim;
     }
     /// destructor
-    NGS_DLL_HEADER virtual ~DifferentialOperator ();
+    NGS_DLL_HEADER virtual ~DifferentialOperator () = default;
 
     virtual void DoArchive(Archive & ar) { ; }
 
@@ -251,7 +251,7 @@ namespace ngfem
     optional<FlatMatrix<>> GetVSEmbedding() const { return vsembedding; }
     
     ///
-    virtual string Name() const { return typeid(*this).name(); }
+    virtual string Name() const; // { return typeid(*this).name(); }
     /// dimension of range
     int Dim() const { return dim; }
     int VSDim() const { return vsdim; }
@@ -447,10 +447,7 @@ namespace ngfem
     
     virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
                                                        shared_ptr<CoefficientFunction> dir,
-                                                       bool Eulerian = false) const
-    {
-      throw Exception (string("shape derivative not implemented for DifferentialOperator")+typeid(*this).name());
-    }
+                                                       bool Eulerian = false) const;
 
     NGS_DLL_HEADER virtual list<tuple<string,double>> Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const;
   };
