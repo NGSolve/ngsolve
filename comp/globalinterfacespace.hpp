@@ -23,7 +23,7 @@ namespace ngcomp
 
       void CalcMatrix (const FiniteElement & bfel,
                        const BaseMappedIntegrationPoint & mip,
-                       SliceMatrix<double,ColMajor> mat,
+                       BareSliceMatrix<double,ColMajor> mat,
                        LocalHeap & lh) const override;
     };
 
@@ -36,7 +36,7 @@ namespace ngcomp
 
       void CalcMatrix (const FiniteElement & bfel,
                        const BaseMappedIntegrationPoint & mip,
-                       SliceMatrix<double,ColMajor> mat,
+                       BareSliceMatrix<double,ColMajor> mat,
                        LocalHeap & lh) const override;
     };
 
@@ -49,7 +49,7 @@ namespace ngcomp
 
       void CalcMatrix (const FiniteElement & fel,
                        const BaseMappedIntegrationPoint & mip,
-                       SliceMatrix<double,ColMajor> mat,
+                       BareSliceMatrix<double,ColMajor> mat,
                        LocalHeap & lh) const override;
     };
 

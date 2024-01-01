@@ -22,7 +22,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<double,ColMajor> mat, 
+              BareSliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     throw Exception (string("Error: DifferentialOperator::CalcMatrix called for base class, type = ")
@@ -32,7 +32,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<Complex,ColMajor> mat, 
+              BareSliceMatrix<Complex,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     throw Exception (string("Error: DifferentialOperator::CalcMatrix<Complex> called for base class, type = ")
@@ -42,7 +42,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationRule & mir,
-              SliceMatrix<double,ColMajor> mat,   
+              BareSliceMatrix<double,ColMajor> mat,   
               LocalHeap & lh) const
   {
     int dim = Dim(); 
@@ -53,7 +53,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationRule & mir,
-              SliceMatrix<Complex,ColMajor> mat,   
+              BareSliceMatrix<Complex,ColMajor> mat,   
               LocalHeap & lh) const
   {
     int dim = Dim(); 
@@ -305,7 +305,7 @@ namespace ngfem
   void DifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const IntegrationPoint & ip,
-              SliceMatrix<double,ColMajor> mat,
+              BareSliceMatrix<double,ColMajor> mat,
               LocalHeap & lh) const
   {
     throw Exception (string("DiffOp::CalcMatrix - Refelement not overloaded, type = ") + typeid(*this).name() );
@@ -410,13 +410,13 @@ namespace ngfem
   void BlockDifferentialOperator ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<double,ColMajor> mat, 
+              BareSliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat1(diffop->Dim(), fel.GetNDof(), lh);
     diffop->CalcMatrix (fel, mip, mat1, lh);
-    mat = 0;
+    mat.AddSize(Dim(), mat1.Width()*dim) = 0;
     
     if (comp == -1)
       for (int i = 0; i < mat1.Height(); i++)
@@ -653,13 +653,13 @@ namespace ngfem
   void BlockDifferentialOperatorTrans ::
   CalcMatrix (const FiniteElement & fel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<double,ColMajor> mat, 
+              BareSliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     HeapReset hr(lh);
     FlatMatrix<double,ColMajor> mat1(diffop->Dim(), fel.GetNDof(), lh);
     diffop->CalcMatrix (fel, mip, mat1, lh);
-    mat = 0;
+    mat.AddSize(Dim(), fel.GetNDof()) = 0;
     
     if (comp == -1)
       for (int i = 0; i < mat1.Height(); i++)
@@ -866,7 +866,7 @@ namespace ngfem
   void VectorDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<double,ColMajor> mat, 
+              BareSliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
@@ -874,7 +874,7 @@ namespace ngfem
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();
 
-    mat = 0.0;
+    mat.AddSize(Dim(), bfel.GetNDof()) = 0.0;
     diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 1; i < dim; i++)
       mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
@@ -913,7 +913,7 @@ namespace ngfem
   void VectorDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,
               const IntegrationPoint & ip,
-              SliceMatrix<double,ColMajor> mat,
+              BareSliceMatrix<double,ColMajor> mat,
               LocalHeap & lh) const
   {
     auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
@@ -921,7 +921,7 @@ namespace ngfem
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->DimRef();
 
-    mat = 0.0;
+    mat.AddSize(Dim(), bfel.GetNDof()) = 0.0;
     diffop->CalcMatrix (fel, ip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 1; i < dim; i++)
       mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
@@ -1091,7 +1091,7 @@ namespace ngfem
   void MatrixDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<double,ColMajor> mat, 
+              BareSliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
@@ -1099,7 +1099,7 @@ namespace ngfem
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();
 
-    mat = 0.0;
+    mat.AddSize(Dim(), bfel.GetNDof()) = 0.0;
     diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 1; i < sqr(vdim); i++)
       mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
@@ -1229,7 +1229,7 @@ namespace ngfem
   void SymMatrixDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<double,ColMajor> mat, 
+              BareSliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();    
@@ -1237,7 +1237,7 @@ namespace ngfem
     size_t ndi = fel.GetNDof();
     size_t dimi = 1;  // diffop->Dim();
 
-    mat = 0.0;
+    mat.AddSize(Dim(), bfel.GetNDof()) = 0.0;
     diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 0, ii = 0; i < vdim; i++)
       for (int j = 0; j <= i; j++, ii++)
@@ -1384,7 +1384,7 @@ namespace ngfem
   void SkewMatrixDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<double,ColMajor> mat, 
+              BareSliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     auto & fel = static_cast<const SkewMatrixFiniteElement&> (bfel).ScalFE();    
@@ -1392,7 +1392,7 @@ namespace ngfem
     size_t ndi = fel.GetNDof();
     size_t dimi = 1;  // diffop->Dim();
 
-    mat = 0.0;
+    mat.AddSize(Dim(), bfel.GetNDof()) = 0.0;
     diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 0, ii = 0; i < vdim; i++)
       for (int j = 0; j < i; j++, ii++)
@@ -1542,7 +1542,7 @@ namespace ngfem
   void SymDevMatrixDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,
               const BaseMappedIntegrationPoint & mip,
-              SliceMatrix<double,ColMajor> mat, 
+              BareSliceMatrix<double,ColMajor> mat, 
               LocalHeap & lh) const 
   {
     auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();    
@@ -1550,7 +1550,7 @@ namespace ngfem
     size_t ndi = fel.GetNDof();
     size_t dimi = 1;  // diffop->Dim();
 
-    mat = 0.0;
+    mat.AddSize(Dim(), fel.GetNDof()) = 0.0;
     diffop->CalcMatrix (fel, mip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 0, ii = 0; i < vdim; i++)
       for (int j = 0; j <= i; j++, ii++)
@@ -1564,7 +1564,7 @@ namespace ngfem
             else
               {
                 for (int k = 0; k < vdim-1; k++)
-                  mat.Row(i*vdim+j) -= mat.Row(k*(vdim+1));
+                  mat.Row(i*vdim+j).Range(bfel.GetNDof()) -= mat.Row(k*(vdim+1));
               }
           }
 

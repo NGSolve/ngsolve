@@ -90,15 +90,15 @@ namespace ngcomp
 
 
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      mat = 0.0;
+      mat.AddSize(DIM_DMAT, fel.GetNDof()) = 0.0;
       static_cast<const ScalarFiniteElement<D>&>(fel).CalcDualShape (mip, mat.Row(0));
     }
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
@@ -156,12 +156,12 @@ namespace ngcomp
     static bool SupportsVB (VorB checkvb) { return true; }
 
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & bfel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
-      mat = 0.0;
+      mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
       for (int i = 0; i < DIM_SPACE; i++)
         {
           auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[i]);
@@ -170,7 +170,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {

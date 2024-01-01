@@ -1082,9 +1082,9 @@ template <typename MIP, typename TFA>
 
   template <ELEMENT_TYPE ET>
   void HDivHighOrderFE<ET> ::
-  CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const
+  CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const
   {
-    shape = 0.0;
+    shape.AddSize(this->ndof, bmip.DimSpace()) = 0.0;
     Switch<4-DIM>
       (bmip.DimSpace()-DIM,[this,&bmip,shape](auto CODIM)
        {

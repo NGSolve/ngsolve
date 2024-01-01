@@ -1258,7 +1258,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const
+			    BareSliceMatrix<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -1275,7 +1275,7 @@ namespace ngfem
       fex.CalcShape (ipx, polx);
       fey.CalcShape (ipy, poly);
 
-      shape = 0;
+      shape.AddSize(ndof, 2) = 0;
       int i, j, ii = 0;
       for (i = 0; i < ORDER; i++)
 	for (j = 0; j < ZORDER-1; j++)
@@ -2924,7 +2924,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const
+			    BareSliceMatrix<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -2944,7 +2944,7 @@ namespace ngfem
       IntegrationPoint ipz(z, 0, 0, 1);
       segm.CalcShape (ipz, pz);
 
-      shape = 0;
+      shape.AddSize(ndof, 3) = 0;
       int i, j, ii = 0;
       for (i = 0; i < 3; i++)
 	for (j = 0; j < ZORDER-1; j++)
@@ -3527,7 +3527,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET_PRISM; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const
+			    BareSliceMatrix<> shape) const
     {
       double x = ip(0);
       double y = ip(1);
@@ -3547,7 +3547,7 @@ namespace ngfem
       IntegrationPoint ipz(z, 0, 0, 1);
       segm.CalcShape (ipz, pz);
 
-      shape = 0;
+      shape.AddSize(ndof,3) = 0;
       int i, j, ii = 0;
       for (i = 0; i < 3; i++)
 	for (j = 0; j < ZORDER-1; j++)

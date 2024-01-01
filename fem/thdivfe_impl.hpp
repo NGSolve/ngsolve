@@ -57,7 +57,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET> :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {    
     static_cast<const FEL*> (this) -> 
       T_CalcShape (GetTIPGrad<DIM>(ip), 
@@ -71,7 +71,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET>
   void  T_HDivFiniteElement<FEL,ET> :: 
   CalcDivShape (const IntegrationPoint & ip, 
-		SliceVector<> divshape) const
+		BareSliceVector<> divshape) const
   {  
     static_cast<const FEL*> (this) -> 
       T_CalcShape (GetTIPGrad<DIM>(ip), 
@@ -86,7 +86,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET> :: 
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-                   SliceMatrix<> shape) const
+                   BareSliceMatrix<> shape) const
   {
     Iterate<4-DIM>
       ([this,&bmip,shape](auto CODIM)

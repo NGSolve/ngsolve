@@ -91,7 +91,7 @@ namespace ngcomp
     // using DiffOp<DiffOpNormal<D> >::GenerateMatrix;
     static void GenerateMatrix (const FiniteElement & fel, 
                                 const MappedIntegrationPoint<D,D> & mip,
-                                SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+                                BareSliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
       for (auto i : Range(fel.GetNDof()))
@@ -2532,7 +2532,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                 MAT & mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
-      mat = 0.0;
+      mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       for (int i = 0; i < DIM_ELEMENT; i++)
         feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
@@ -3030,7 +3030,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
                                 MAT & mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
-      mat = 0.0;
+      mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
       auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
       for (int i = 0; i < DIM_SPACE; i++)
         feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
@@ -3148,7 +3148,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     {
       auto & bfel = static_cast<const VectorFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
-      mat = 0;
+      mat.AddSize(DIM_DMAT, fel.GetNDof()) = 0;
 
       int ndofi = feli.GetNDof();
       FlatMatrix<> grad (ndofi, 3, lh);

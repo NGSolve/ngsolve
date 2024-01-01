@@ -477,7 +477,7 @@ namespace ngcomp
     void
     CalcMatrix (const FiniteElement & inner_fel,
 		const BaseMappedIntegrationRule & mir,
-		SliceMatrix<double,ColMajor> mat,   
+		BareSliceMatrix<double,ColMajor> mat,   
 		LocalHeap & lh) const override
     {
       static Timer t1("interpolateDiffOp, CalcMat");
@@ -546,7 +546,7 @@ namespace ngcomp
         }
        
       
-      FlatMatrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof(), lh);
+      FlatMatrix<double, ColMajor> m1(Dim(), interpol_fel.GetNDof(), lh);
       diffop->CalcMatrix(interpol_fel, mir, m1, lh);
       mat = m1*m2m3;
     }

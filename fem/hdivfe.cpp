@@ -24,11 +24,12 @@ namespace ngfem
   {
     return "HDivFiniteElement"; 
   }
+
   
   template <int D>
   void HDivFiniteElement<D> ::
   CalcDivShape (const IntegrationPoint & ip, 
-		SliceVector<> divshape) const
+		BareSliceVector<> divshape) const
   {
     double eps = 1e-5;
     ArrayMem<double, 200> hm1(DIM*ndof), hm2(DIM*ndof), 
@@ -40,7 +41,7 @@ namespace ngfem
     FlatMatrixFixWidth<DIM> shape4(ndof, &hm4[0]);
     
     FlatMatrix<> dshapei(ndof,D, &hmi[0]);
-    divshape = 0;
+    divshape.Range(ndof) = 0;
 
     for (int i = 0; i < D; i++)
       {
@@ -66,9 +67,6 @@ namespace ngfem
 	  divshape(j) += dshapei(j,i);
       }
   }
-
-
-  
 
 
   template <int D>
@@ -98,7 +96,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-                                  SliceMatrix<> shape) const
+                   BareSliceMatrix<> shape) const
   {
     auto mip = static_cast<const MappedIntegrationPoint<D,D>&> (bmip);
     CalcShape (mip.IP(), shape);
@@ -110,7 +108,7 @@ namespace ngfem
       }
   }
   
-
+  
   template <int D>
   void HDivFiniteElement<D> ::
   CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const
@@ -129,7 +127,7 @@ namespace ngfem
                           + typeid(*this).name());
   }
   
-  
+
   template <int D>
   void HDivFiniteElement<D> ::
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
@@ -166,7 +164,6 @@ namespace ngfem
   {
     throw ExceptionNOSIMD("SIMD - HDivFE::CalcMappedDivShape not overloaded");
   }
-
 
   template <int D>
   void HDivFiniteElement<D> ::
@@ -235,10 +232,6 @@ namespace ngfem
     throw ExceptionNOSIMD ("HDivFE::EvaluateDivTrans (simd) not overloaded");        
   }
       
-
-
-
-
   
   template <int D>
   void HDivFiniteElement<D> ::
@@ -448,7 +441,7 @@ namespace ngfem
 
   template <int D>
   void HDivFiniteElement<D> ::
-  CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const
+  CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const
   {
     // throw Exception(string("CalcDualShape not implemented for H(div) element ")+typeid(*this).name());
     static bool first = true;
@@ -478,7 +471,7 @@ namespace ngfem
 
   void FE_RTTrig0 :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
     double x = ip(0);
     double y = ip(1);
@@ -524,7 +517,7 @@ namespace ngfem
 
   void FE_RTTrig0plus :: 
   CalcShape (const IntegrationPoint & ip, 
-	     SliceMatrix<> shape) const
+	     BareSliceMatrix<> shape) const
   {
     double x = ip.Point()[0];
     double y = ip.Point()[1];
@@ -559,7 +552,7 @@ namespace ngfem
   }
   
   void FE_BDMTrig1 :: CalcShape (const IntegrationPoint & ip, 
-				 SliceMatrix<> shape) const
+				 BareSliceMatrix<> shape) const
   {
     Mat<6,2> shape1;
     
@@ -662,11 +655,11 @@ FE_RTQuad0 :: ~FE_RTQuad0()
 
   void FE_RTQuad0 :: 
   CalcShape (const IntegrationPoint & ip, 
-             SliceMatrix<> shape) const
+             BareSliceMatrix<> shape) const
 {
   double x = ip(0);
   double y = ip(1);
-  shape = 0;
+  shape.AddSize(ndof,2) = 0;
   
   shape (0, 1) = 1-y;
   shape (1, 1) = y;
@@ -692,7 +685,7 @@ FE_BDMTet1 :: ~FE_BDMTet1()
 }
 
   void FE_BDMTet1 :: CalcShape (const IntegrationPoint & ip, 
-                                SliceMatrix<> shape) const
+                                BareSliceMatrix<> shape) const
 {
   Mat<12,3> shape1;
   CalcShape1 (ip, shape1);
@@ -760,8 +753,6 @@ void FE_BDMTet1 :: Orthogonalize()
 	     << "fiphij = " << endl << fiphij << endl
 	     << "trans = " << endl << trans << endl;
 }
-  
-
 
 }
 
