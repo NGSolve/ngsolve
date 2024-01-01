@@ -12,11 +12,6 @@
 namespace ngfem
 {
 
-  DifferentialOperator :: ~DifferentialOperator ()
-  {
-    ;
-  }
-  
   int Integrator :: common_integration_order = -1;
   
   Integrator :: Integrator() throw ()
