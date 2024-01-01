@@ -51,7 +51,7 @@ public:
 
   static void GenerateMatrix (const FiniteElement & fel, 
                               const MappedIntegrationPoint<D,D> & mip,
-                              SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+                              BareSliceMatrix<double,ColMajor> mat, LocalHeap & lh)
   {
     Cast(fel).CalcMappedShape (mip, Trans(mat));
   }
@@ -426,14 +426,14 @@ public:
   
   
   template <typename AFEL, typename MIP, typename MAT,
-            typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+            typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               MAT & mat, LocalHeap & lh)
   {
     Cast(fel).CalcDualShape (mip, Trans(mat));
   }
   template <typename AFEL, typename MIP, typename MAT,
-            typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+            typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                               MAT & mat, LocalHeap & lh)
   {

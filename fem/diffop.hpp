@@ -279,25 +279,25 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat,   
+		BareSliceMatrix<double,ColMajor> mat,   
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
-		SliceMatrix<Complex,ColMajor> mat, 
+		BareSliceMatrix<Complex,ColMajor> mat, 
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
-		SliceMatrix<double,ColMajor> mat,   
+		BareSliceMatrix<double,ColMajor> mat,   
 		LocalHeap & lh) const;
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationRule & mir,
-		SliceMatrix<Complex,ColMajor> mat,   
+		BareSliceMatrix<Complex,ColMajor> mat,   
 		LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
@@ -437,7 +437,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
                 const IntegrationPoint & ip,
-                SliceMatrix<double,ColMajor> mat,
+                BareSliceMatrix<double,ColMajor> mat,
                 LocalHeap & lh) const;
     
     NGS_DLL_HEADER virtual void
@@ -491,7 +491,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;    
 
     NGS_DLL_HEADER virtual void
@@ -600,7 +600,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;    
 
     NGS_DLL_HEADER virtual void
@@ -695,7 +695,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;    
 
     NGS_DLL_HEADER virtual void
@@ -709,7 +709,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
                 const IntegrationPoint & ip,
-                SliceMatrix<double,ColMajor> mat,
+                BareSliceMatrix<double,ColMajor> mat,
                 LocalHeap & lh) const override;
     
     NGS_DLL_HEADER virtual void
@@ -790,7 +790,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;
 
     NGS_DLL_HEADER virtual void
@@ -840,7 +840,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;    
 
     NGS_DLL_HEADER virtual void
@@ -899,7 +899,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;    
 
     NGS_DLL_HEADER virtual void
@@ -969,7 +969,7 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
 		const BaseMappedIntegrationPoint & mip,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;    
 
     NGS_DLL_HEADER virtual void
@@ -1055,10 +1055,10 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
                 const BaseMappedIntegrationPoint & mip,
-                SliceMatrix<double,ColMajor> mat, 
+                BareSliceMatrix<double,ColMajor> mat, 
                 LocalHeap & lh) const override
     {
-      mat = 0;
+      mat.AddSize(Dim(), bfel.GetNDof()) = 0;
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->CalcMatrix (fel[comp], mip, mat.Cols(r), lh);
@@ -1070,7 +1070,7 @@ namespace ngfem
                   SliceMatrix<double,ColMajor> mat, 
                   LocalHeap & lh) const override
     {
-      mat = 0;
+      mat.AddSize(Dim(), bfel.GetNDof()) = 0;
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->CalcMatrixVS (fel[comp], mip, mat.Cols(r), lh);
@@ -1079,10 +1079,10 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
                 const BaseMappedIntegrationPoint & mip,
-                SliceMatrix<Complex,ColMajor> mat, 
+                BareSliceMatrix<Complex,ColMajor> mat, 
                 LocalHeap & lh) const override
     {
-      mat = 0;
+      mat.AddSize(Dim(), bfel.GetNDof()) = 0;
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->CalcMatrix (fel[comp], mip, mat.Cols(r), lh);
@@ -1091,10 +1091,10 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
                 const BaseMappedIntegrationRule & mir,
-                SliceMatrix<double,ColMajor> mat, 
+                BareSliceMatrix<double,ColMajor> mat, 
                 LocalHeap & lh) const override
     {
-      mat = 0;
+      mat.AddSize(Dim(), bfel.GetNDof()) = 0;
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->CalcMatrix (fel[comp], mir, mat.Cols(r), lh);
@@ -1103,10 +1103,10 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
                 const BaseMappedIntegrationRule & mir,
-                SliceMatrix<Complex,ColMajor> mat,   
+                BareSliceMatrix<Complex,ColMajor> mat,   
                 LocalHeap & lh) const override
     {
-      mat = 0;
+      mat.AddSize(Dim(), bfel.GetNDof()) = 0;
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->CalcMatrix (fel[comp], mir, mat.Cols(r), lh);
@@ -1231,12 +1231,12 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
                 const IntegrationPoint & ip,
-                SliceMatrix<double,ColMajor> mat,
+                BareSliceMatrix<double,ColMajor> mat,
                 LocalHeap & lh) const override
     {
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
-      mat = 0.0;
+      mat.AddSize(Dim(), bfel.GetNDof())  = 0.0;
       diffop->CalcMatrix (fel[comp], ip, mat.Cols(r), lh);
     }
   
@@ -1306,19 +1306,19 @@ namespace ngfem
     virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;
 
     virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationPoint & bmip,
-		SliceMatrix<Complex,ColMajor> mat, 
+		BareSliceMatrix<Complex,ColMajor> mat, 
 		LocalHeap & lh) const override;
 
     virtual void
     CalcMatrix (const FiniteElement & bfel,
 		const BaseMappedIntegrationRule & bmir,
-		SliceMatrix<double,ColMajor> mat, 
+		BareSliceMatrix<double,ColMajor> mat, 
 		LocalHeap & lh) const override;
 
     virtual void
@@ -1416,7 +1416,7 @@ namespace ngfem
     virtual void
     CalcMatrix (const FiniteElement & fel,
                 const IntegrationPoint & ip,
-                SliceMatrix<double,ColMajor> mat,
+                BareSliceMatrix<double,ColMajor> mat,
                 LocalHeap & lh) const override;
     
     virtual void

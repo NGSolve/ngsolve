@@ -10,7 +10,8 @@ namespace ngfem
 
   /** calculates [du1/dx1 du2/dx1 (du3/dx1) du1/dx2 du2/dx2 (du3/dx2) (du1/dx3 du2/dx3 du3/dx3)] */
   template<typename FEL, int DIMSPACE, int DIM, int DIM_STRESS>
-  void CalcDShapeFE(const FEL & fel, const MappedIntegrationPoint<DIM,DIMSPACE>& mip, SliceMatrix<> bmatu, LocalHeap& lh, double eps = 1e-4)
+  void CalcDShapeFE(const FEL & fel, const MappedIntegrationPoint<DIM,DIMSPACE>& mip,
+                    BareSliceMatrix<> bmatu, LocalHeap& lh, double eps = 1e-4)
   {
     HeapReset hr(lh);
     // bmatu = 0;

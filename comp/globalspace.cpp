@@ -6,7 +6,7 @@ namespace ngcomp
   void GlobalSpace::VolDiffOp::CalcMatrix
     (const FiniteElement & bfel,
      const BaseMappedIntegrationPoint & mip,
-     SliceMatrix<double,ColMajor> mat,
+     BareSliceMatrix<double,ColMajor> mat,
      LocalHeap & lh) const
   {
     HeapReset hr(lh);
@@ -21,7 +21,7 @@ namespace ngcomp
   void GlobalSpace::VolDiffOp::CalcMatrix
     (const FiniteElement & bfel,
      const BaseMappedIntegrationPoint & mip,
-     SliceMatrix<Complex,ColMajor> mat,
+     BareSliceMatrix<Complex,ColMajor> mat,
      LocalHeap & lh) const
   {
     HeapReset hr(lh);

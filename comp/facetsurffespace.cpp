@@ -34,7 +34,7 @@ namespace ngcomp
       int facetnr = mip.IP().FacetNr();
       if (facetnr >= 0)
         {
-          mat = 0.0;
+          mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
           const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
 	  
           fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
@@ -83,7 +83,7 @@ namespace ngcomp
       int facetnr = mip.IP().FacetNr();
       if (facetnr >= 0)
         {
-          mat = 0.0;
+          mat.AddSize(DIM_DMAT,bfel.GetNDof()) = 0.0;
           const FacetVolumeFiniteElement<D-1> & fel_facet = static_cast<const FacetVolumeFiniteElement<D-1>&> (bfel);
           fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
                                              mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
@@ -219,7 +219,7 @@ namespace ngcomp
           auto r = fel_facet.GetFacetDofs(facetnr);
           
           FlatMatrix<> dshaperef(r.Size(), DIM_ELEMENT, lh);
-          mat = 0.0;
+          mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
           /*
           fel_facet.Facet(facetnr).CalcDShape(mip.IP(), 
                                               mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));

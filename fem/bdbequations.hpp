@@ -52,7 +52,7 @@ namespace ngfem
     // using DiffOp<DiffOpGradient<D, FEL> >::GenerateMatrix;
     static void GenerateMatrix (const FiniteElement & fel, 
                                 const MappedIntegrationPoint<D,D> & mip,
-                                SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+                                BareSliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       Cast(fel).CalcMappedDShape (mip, Trans(mat));
     }
@@ -88,7 +88,7 @@ namespace ngfem
     
     static void GenerateMatrixIR (const FiniteElement & fel, 
                                   const MappedIntegrationRule<D,D> & mir,
-                                  SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+                                  BareSliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       Cast(fel).CalcMappedDShape (mir, Trans(mat));
     }
@@ -1786,7 +1786,7 @@ namespace ngfem
                                 MAT & mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
-      mat = 0.0;
+      mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
       for (int i = 0; i < DIM_SPC; i++)
         {
           auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
@@ -1867,7 +1867,7 @@ namespace ngfem
 				MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
-      mat.Row(0) /= mip.GetMeasure();
+      mat.Row(0).Range(fel.GetNDof()) /= mip.GetMeasure();
     }
 #ifdef UNUSED
     template <typename MAT>
@@ -2021,7 +2021,7 @@ namespace ngfem
       HeapReset hr(lh);
       FlatMatrix<> hmat(feli.GetNDof(), DIM_SPC, lh);
       feli.CalcMappedDShape (mip, hmat);
-      mat = 0.0;
+      mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
       for (int i = 0; i < DIM_SPC; i++)
         mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(hmat);
     }
@@ -2115,7 +2115,7 @@ namespace ngfem
       HeapReset hr(lh);
       FlatMatrix<> hmat(feli.GetNDof(), DIM_SPACE, lh);
       feli.CalcMappedDShape (mip, hmat);
-      mat = 0.0;
+      mat.AddSize(DIM_DMAT, fel.GetNDof()) = 0.0;
       for (int i = 0; i < DIM_SPC; i++)
         mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(hmat);
     }
@@ -2198,7 +2198,7 @@ namespace ngfem
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
       
-      mat = 0.0;
+      mat.AddSize(1, bfel.GetNDof()) = 0.0;
       size_t n1 = feli.GetNDof();
       HeapReset hr(lh);
       FlatMatrix<> tmp(n1, DIM_SPC, lh);
@@ -2281,7 +2281,7 @@ namespace ngfem
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
       
-      mat = 0.0;
+      mat.AddSize(1, bfel.GetNDof()) = 0.0;
       size_t n1 = feli.GetNDof();
       HeapReset hr(lh);
       FlatMatrix<> tmp(n1, DIM_SPC, lh);

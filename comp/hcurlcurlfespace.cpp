@@ -301,7 +301,7 @@ namespace ngcomp
     
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-                               SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+                               BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlCurlFiniteElement<2> & fel = static_cast<const HCurlCurlFiniteElement<2>&> (bfel);
       
@@ -362,7 +362,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-                               SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+                               BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlCurlFiniteElement<3> & fel = static_cast<const HCurlCurlFiniteElement<3>&> (bfel);
       
@@ -626,7 +626,7 @@ namespace ngcomp
         {
           for(int j = 0; j < D*D; j++)
             mati(j) = shape(i,j);
-          mat.Col(i) = InnerProduct(mati * t, t);
+          mat(0,i) = InnerProduct(mati * t, t);
         }
     }
   };

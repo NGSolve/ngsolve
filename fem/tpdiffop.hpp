@@ -76,27 +76,27 @@ namespace ngfem
     /// calculates the matrix
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
-        const BaseMappedIntegrationPoint & mip,
-        SliceMatrix<double,ColMajor> mat,   
-        LocalHeap & lh) const override { throw Exception("2 not implemented"); }
+                const BaseMappedIntegrationPoint & mip,
+                BareSliceMatrix<double,ColMajor> mat,   
+                LocalHeap & lh) const override { throw Exception("2 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
-        const BaseMappedIntegrationPoint & bmip,
-        SliceMatrix<Complex,ColMajor> mat, 
-        LocalHeap & lh) const override{ throw Exception("3 not implemented"); }
+                const BaseMappedIntegrationPoint & bmip,
+                BareSliceMatrix<Complex,ColMajor> mat, 
+                LocalHeap & lh) const override{ throw Exception("3 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
-        const BaseMappedIntegrationRule & mir,
-        SliceMatrix<double,ColMajor> mat,   
-        LocalHeap & lh) const override { throw Exception("4 not implemented"); }
+                const BaseMappedIntegrationRule & mir,
+                BareSliceMatrix<double,ColMajor> mat,   
+                LocalHeap & lh) const override { throw Exception("4 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
-        const BaseMappedIntegrationRule & mir,
-        SliceMatrix<Complex,ColMajor> mat,   
-        LocalHeap & lh) const override { throw Exception("5 not implemented"); }
+                const BaseMappedIntegrationRule & mir,
+                BareSliceMatrix<Complex,ColMajor> mat,   
+                LocalHeap & lh) const override { throw Exception("5 not implemented"); }
     
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
@@ -225,26 +225,26 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
-                SliceMatrix<double,ColMajor> mat,   
+                BareSliceMatrix<double,ColMajor> mat,   
                 LocalHeap & lh) const override { throw Exception("2 not implemented"); }
     
       using BlockDifferentialOperator::CalcMatrix;
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
                 const BaseMappedIntegrationPoint & bmip,
-                SliceMatrix<Complex,ColMajor> mat, 
+                BareSliceMatrix<Complex,ColMajor> mat, 
                 LocalHeap & lh) const override { throw Exception("3 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
                 const BaseMappedIntegrationRule & mir,
-                SliceMatrix<double,ColMajor> mat,   
+                BareSliceMatrix<double,ColMajor> mat,   
                 LocalHeap & lh) const override { throw Exception("4 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
                 const BaseMappedIntegrationRule & mir,
-                SliceMatrix<Complex,ColMajor> mat,   
+                BareSliceMatrix<Complex,ColMajor> mat,   
                 LocalHeap & lh) const override { throw Exception("5 not implemented"); }
     
     NGS_DLL_HEADER virtual void
@@ -379,25 +379,25 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
                 const BaseMappedIntegrationPoint & mip,
-                SliceMatrix<double,ColMajor> mat,   
+                BareSliceMatrix<double,ColMajor> mat,   
                 LocalHeap & lh) const override { throw Exception("2 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & bfel,
                 const BaseMappedIntegrationPoint & bmip,
-                SliceMatrix<Complex,ColMajor> mat, 
+                BareSliceMatrix<Complex,ColMajor> mat, 
                 LocalHeap & lh) const override { throw Exception("3 not implemented"); }
 
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
                 const BaseMappedIntegrationRule & mir,
-                SliceMatrix<double,ColMajor> mat,   
+                BareSliceMatrix<double,ColMajor> mat,   
                 LocalHeap & lh) const override { throw Exception("4 not implemented"); }
     
     NGS_DLL_HEADER virtual void
     CalcMatrix (const FiniteElement & fel,
                 const BaseMappedIntegrationRule & mir,
-                SliceMatrix<Complex,ColMajor> mat,   
+                BareSliceMatrix<Complex,ColMajor> mat,   
                 LocalHeap & lh) const override { throw Exception("5 not implemented"); }
     
     NGS_DLL_HEADER virtual void

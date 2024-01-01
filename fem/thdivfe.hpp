@@ -715,15 +715,15 @@ namespace ngfem
   public:
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const override;
+			    BareSliceMatrix<> shape) const override;
     
     virtual void CalcDivShape (const IntegrationPoint & ip, 
-			       SliceVector<> divshape) const override;
+			       BareSliceVector<> divshape) const override;
 
 #ifndef FASTCOMPILE
 
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-                                  SliceMatrix<> shape) const override;
+                                  BareSliceMatrix<> shape) const override;
 
     virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const override;
 

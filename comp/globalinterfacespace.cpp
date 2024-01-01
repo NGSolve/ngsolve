@@ -8,12 +8,12 @@ namespace ngcomp
   void GlobalInterfaceSpace::VolDiffOp<VOLFE>::CalcMatrix
     (const FiniteElement & bfel,
      const BaseMappedIntegrationPoint & mip,
-     SliceMatrix<double,ColMajor> mat,
+     BareSliceMatrix<double,ColMajor> mat,
      LocalHeap & lh) const
   {
     auto & ip = mip.IP();
     auto & fel = dynamic_cast<const VOLFE&> (bfel);
-    mat = 0;
+    mat.AddSize(Dim(), bfel.GetNDof()) = 0;
 
     int fnr = ip.FacetNr();
 
@@ -32,12 +32,12 @@ namespace ngcomp
   void GlobalInterfaceSpace::ParameterGradDiffOp<VOLFE>::CalcMatrix
     (const FiniteElement & bfel,
      const BaseMappedIntegrationPoint & mip,
-     SliceMatrix<double,ColMajor> mat,
+     BareSliceMatrix<double,ColMajor> mat,
      LocalHeap & lh) const
   {
     auto & ip = mip.IP();
     auto & fel = dynamic_cast<const VOLFE&> (bfel);
-    mat = 0;
+    mat.AddSize(Dim(), bfel.GetNDof()) = 0;
 
     int fnr = ip.FacetNr();
 
@@ -56,7 +56,7 @@ namespace ngcomp
   void GlobalInterfaceSpace::InterfaceDiffOp<INTERFACEFE>::CalcMatrix
     (const FiniteElement & fel,
      const BaseMappedIntegrationPoint & mip,
-     SliceMatrix<double,ColMajor> mat,
+     BareSliceMatrix<double,ColMajor> mat,
      LocalHeap & lh) const
   {
     if (fel.GetNDof() > 0)
@@ -105,7 +105,7 @@ namespace ngcomp
 
       ELEMENT_TYPE ElementType() const { return et; }
       void CalcShape(const BaseMappedIntegrationPoint& mip,
-                     SliceVector<double> shapes) const
+                     BareSliceVector<double> shapes) const
       {
         int order = fes->GetOrder();
         if constexpr(DIM ==1)
@@ -261,7 +261,7 @@ namespace ngcomp
       }
 
       void CalcDShape(const BaseMappedIntegrationPoint& mip,
-                      SliceVector<double> dshapes) const
+                      BareSliceVector<double> dshapes) const
       {
         int order = fes->order;
         double phi = fes->mapping->Evaluate(mip);

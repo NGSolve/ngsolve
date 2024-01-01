@@ -141,8 +141,8 @@ namespace ngcomp
 
    
 	template <typename FEL,typename SIP>
-	  static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-				     SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+        static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+                                   BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
 	{
 	   const HCurlDivSurfaceFiniteElement<D> & fel =
 	    dynamic_cast<const HCurlDivSurfaceFiniteElement<D>&> (bfel);
@@ -191,7 +191,7 @@ namespace ngcomp
     
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+                               BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlDivFiniteElement<D> & fel =
         dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
@@ -307,7 +307,7 @@ namespace ngcomp
     
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+                               BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlDivFiniteElement<D> & fel =
         dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);      

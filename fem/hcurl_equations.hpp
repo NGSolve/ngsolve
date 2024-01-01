@@ -54,7 +54,7 @@ namespace ngfem
 				MAT && mat, LocalHeap & lh)
     {
       // GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
-      GenerateMatrix2 (fel, mip, make_SliceMatrix (Trans(mat)), lh);
+      GenerateMatrix2 (fel, mip, make_BareSliceMatrix (Trans(mat)), lh);
     }
 
     template <typename AFEL, typename MIP, typename MAT>
@@ -76,7 +76,7 @@ namespace ngfem
 
     static void GenerateMatrixIR (const FiniteElement & fel, 
                                   const MappedIntegrationRule<D,D> & mir,
-                                  SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+                                  BareSliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       Cast(fel).CalcMappedShape (mir, Trans(mat));
     }
@@ -280,7 +280,7 @@ namespace ngfem
 				MAT && mat, LocalHeap & lh)
     {
       // GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
-      GenerateMatrix2 (fel, mip, make_SliceMatrix (Trans(mat)), lh);
+      GenerateMatrix2 (fel, mip, make_BareSliceMatrix (Trans(mat)), lh);
     }
 
     template <typename AFEL, typename MIP, typename MAT>
@@ -304,7 +304,7 @@ namespace ngfem
 
     static void GenerateMatrixIR (const FiniteElement & fel, 
                                   const MappedIntegrationRule<3,3> & mir,
-                                  SliceMatrix<double,ColMajor> mat, LocalHeap & lh)
+                                  BareSliceMatrix<double,ColMajor> mat, LocalHeap & lh)
     {
       static_cast<const FEL&> (fel).CalcMappedCurlShape (mir, Trans(mat));
     }
@@ -509,7 +509,7 @@ namespace ngfem
 				MAT && mat, LocalHeap & lh)
     {
       // GenerateMatrix2 (fel, mip, SliceIfPossible<double> (Trans(mat)), lh);
-      GenerateMatrix2 (fel, mip, make_SliceMatrix (Trans(mat)), lh);
+      GenerateMatrix2 (fel, mip, make_BareSliceMatrix (Trans(mat)), lh);
     }
 
     template <typename AFEL, typename MIP, typename MAT>

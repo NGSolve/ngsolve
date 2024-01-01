@@ -20,7 +20,7 @@ namespace ngfem
     HDivDummyFE() : HDivFiniteElement<ET_trait<ET>::DIM> (0,0) { ; }
     virtual ELEMENT_TYPE ElementType() const override { return ET; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const override { ; }
+			    BareSliceMatrix<> shape) const override { ; }
   };
 
   template <ELEMENT_TYPE ET>
@@ -46,7 +46,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const override;
+			    BareSliceMatrix<> shape) const override;
   };
 
 
@@ -63,7 +63,7 @@ namespace ngfem
     ///
     virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const override;
+			    BareSliceMatrix<> shape) const override;
   };
 
 
@@ -83,7 +83,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const override;
+			    BareSliceMatrix<> shape) const override;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 
@@ -331,7 +331,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const override { return ET_QUAD; }
 
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const override;
+			    BareSliceMatrix<> shape) const override;
 
   };
 
@@ -540,7 +540,7 @@ namespace ngfem
 
     ///
     virtual void CalcShape (const IntegrationPoint & ip, 
-			    SliceMatrix<> shape) const override;
+			    BareSliceMatrix<> shape) const override;
 
     ///
     virtual void CalcShape1 (const IntegrationPoint & ip, 

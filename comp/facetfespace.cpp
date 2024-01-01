@@ -30,7 +30,7 @@ namespace ngcomp
       int facetnr = mip.IP().FacetNr();
       if (facetnr >= 0)
         {
-          mat = 0.0;
+          mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
           const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
           fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
                                              mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
@@ -107,7 +107,7 @@ namespace ngcomp
       int facetnr = ip.FacetNr();
       if (facetnr >= 0)
         {
-          mat = 0.0;
+          mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
           const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
           fel_facet.Facet(facetnr).CalcShape(ip, 
                                              mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
@@ -161,7 +161,7 @@ namespace ngcomp
           auto r = fel_facet.GetFacetDofs(facetnr);
           
           FlatMatrix<> dshaperef(r.Size(), DIM_ELEMENT, lh);
-          mat = 0.0;
+          mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
           /*
           fel_facet.Facet(facetnr).CalcDShape(mip.IP(), 
                                               mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
@@ -1032,7 +1032,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
       const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel[1]);
 
       int facetnr = mip.IP().FacetNr();
-      mat = 0.0;
+      mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
       if (facetnr < 0)
         fel_vol.CalcShape(mip.IP(), mat.Row(0).Range(fel.GetRange(0)));
       else
