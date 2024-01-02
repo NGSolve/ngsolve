@@ -57,7 +57,7 @@ namespace ngfem
     {
       for (size_t i = 0; i < mir.Size(); i++)
         {
-          auto submat = mat.Rows(i*DOP::DIM_DMAT, (i+1)*DOP::DIM_DMAT);
+          auto submat = mat.Rows(i*DOP::DIM_DMAT, (i+1)*DOP::DIM_DMAT).Cols(DOP::DIM*fel.GetNDof());
           DOP::GenerateMatrix (fel, mir[i], submat, lh);
         }
     }
