@@ -22,7 +22,7 @@ namespace ngfem
   {
     const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
       static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
-    DIFFOP::GenerateMatrix (bfel, mip, mat, lh);
+    DIFFOP::GenerateMatrix (bfel, mip, mat /* .Rows<DIM_DMAT>() */, lh);
   }
 
 

@@ -27,7 +27,7 @@ public:
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
 
       throw Exception("Does not work yet!!!! eltrans 1D -> 3D, no normal vector available");
@@ -63,7 +63,7 @@ public:
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       mat = (1.0 / mip.GetJacobiDet()) * 
 	Trans (static_cast<const FEL&>(fel).GetDivShape(mip.IP(),lh));

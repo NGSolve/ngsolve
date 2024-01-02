@@ -40,14 +40,14 @@ namespace ngcomp
     
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcDualShape (mip, Trans(mat));
     }
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
@@ -100,17 +100,17 @@ namespace ngcomp
     
     
     template <typename FEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcDualShape (mip, Trans(mat));
     }
     
     template <typename FEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       throw Exception(string("DiffOpHCurlCurlDual not available for mat ")+typeid(mat).name());
     }
@@ -157,16 +157,16 @@ namespace ngcomp
 
 
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcMappedShape (mip,Trans(mat));
     }
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       throw Exception(string("DiffOpIdHCurlCurl not available for mat ")+typeid(mat).name());
     }
@@ -213,7 +213,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+                               BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlCurlFiniteElement<2> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<2>&> (bfel);
@@ -223,7 +223,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+                               MAT && mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<2> & fel =
@@ -254,7 +254,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+                               BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HCurlCurlFiniteElement<3> & fel =
         dynamic_cast<const HCurlCurlFiniteElement<3>&> (bfel);
@@ -264,7 +264,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+                               MAT && mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<3> & fel =
@@ -479,16 +479,16 @@ namespace ngcomp
         }*/
 
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcMappedShape (mip,Trans(mat));
     }
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       throw Exception(string("DiffOpIdBoundaryHCurlCurl not available for mat ")+typeid(mat).name());
     }
@@ -562,16 +562,16 @@ namespace ngcomp
         }*/
 
         template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
-    static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
+        static void GenerateMatrix (const AFEL & fel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcMappedShape (mip,Trans(mat));
     }
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       throw Exception(string("DiffOpIdBBoundaryHCurlCurl not available for mat ")+typeid(mat).name());
     }
@@ -613,7 +613,7 @@ namespace ngcomp
     
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+                               MAT && mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<D> & fel = static_cast<const HCurlCurlFiniteElement<D>&> (bfel);
@@ -649,9 +649,9 @@ namespace ngcomp
     static constexpr double eps() { return 1e-4; } 
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+                                  MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -659,7 +659,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
@@ -771,9 +771,9 @@ namespace ngcomp
     static constexpr double eps() { return 1e-4; } 
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -781,7 +781,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
@@ -910,9 +910,9 @@ namespace ngcomp
     
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+                                  MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -920,7 +920,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
@@ -1041,9 +1041,9 @@ namespace ngcomp
     
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+                                  MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -1051,7 +1051,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
@@ -1231,9 +1231,9 @@ namespace ngcomp
     
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+                                  MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -1241,7 +1241,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
@@ -1375,9 +1375,9 @@ namespace ngcomp
     
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+                                  MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -1385,7 +1385,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
@@ -1488,9 +1488,9 @@ namespace ngcomp
     
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+                                  MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -1498,7 +1498,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {
@@ -1579,9 +1579,9 @@ namespace ngcomp
     static Array<int> GetDimensions() { return Array<int> ( { (D*(D-1)/2),(D*(D-1)/2) } ); };
     
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+                                  MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -1589,7 +1589,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT mat, LocalHeap & lh)
     {

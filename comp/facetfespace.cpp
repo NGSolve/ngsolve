@@ -25,7 +25,7 @@ namespace ngcomp
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       int facetnr = mip.IP().FacetNr();
       if (facetnr >= 0)
@@ -150,7 +150,7 @@ namespace ngcomp
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       int facetnr = mip.IP().FacetNr();
       if (facetnr >= 0)
@@ -1025,7 +1025,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       const ScalarFiniteElement<D> & fel_vol = static_cast<const ScalarFiniteElement<D>&> (fel[0]);

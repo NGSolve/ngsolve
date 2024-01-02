@@ -26,16 +26,16 @@ namespace ngcomp
     
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcDualShape (mip, Trans(mat));
     }
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       throw Exception(string("DiffOpHDivDivSurfaceDual not available for mat ")+typeid(mat).name());
     }
@@ -80,7 +80,7 @@ namespace ngcomp
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       throw Exception(string("DiffOpHDivDivDual for Surface should not be called. Trace is missing."));
     }
@@ -112,7 +112,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+                               MAT && mat,LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -141,7 +141,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+                               MAT && mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
       const HDivDivFiniteElement<D> & fel = dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -175,7 +175,7 @@ namespace ngcomp
     
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & bfel, const MIP & sip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
       const HDivDivFiniteElement<2> & fel = 
@@ -265,7 +265,7 @@ namespace ngcomp
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & bfel, const MIP & sip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       const HDivDivFiniteElement<2> & fel = 
         dynamic_cast<const HDivDivFiniteElement<2>&> (bfel);

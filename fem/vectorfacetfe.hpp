@@ -162,7 +162,7 @@ namespace ngfem
 
     using HCurlFiniteElement<ET_trait<ET>::DIM>::ndof;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::CalcDualShape;
-    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const override;
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override;
     virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::EvaluateDual;
     virtual void EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const override;

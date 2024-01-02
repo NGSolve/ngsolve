@@ -1358,6 +1358,15 @@ namespace ngbla
       return Rows (range.First(), range.Next());
     }
 
+    template <int R>
+    INLINE auto Rows() const
+    {
+      if constexpr (ORD==RowMajor)
+        return MatrixView<T,ORD,IC<R>,TW,TDIST> (IC<R>(), w, Dist(), Addr(0,0));
+      else
+        return MatrixView<T,ORD,IC<R>,TW,size_t> (IC<R>(), w, Dist(), Addr(0,0));
+    }
+    
     INLINE auto Cols (IntRange range) const
     {
       return Cols (range.First(), range.Next());

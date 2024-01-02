@@ -1724,9 +1724,9 @@ namespace ngfem
             template <ELEMENT_TYPE ET2> class TSHAPES, 
             typename BASE>
   void HCurlHighOrderFE<ET,TSHAPES,BASE> ::
-  CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const
+  CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const
   {
-    shape = 0.0;
+    shape.AddSize(ndof, bmip.DimSpace()) = 0.0;
     Switch<4-DIM>
       (bmip.DimSpace()-DIM,[this,&bmip,shape](auto CODIM)
        {

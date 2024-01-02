@@ -196,7 +196,7 @@ namespace ngfem
 
 
     
-    NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, SliceMatrix<> shape) const;
+    NGS_DLL_HEADER virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const;
 
     NGS_DLL_HEADER virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const;
 

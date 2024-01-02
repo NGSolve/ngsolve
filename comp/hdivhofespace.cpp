@@ -55,7 +55,7 @@ namespace ngcomp
     
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+      MAT && mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
       auto & fel = dynamic_cast<const HDivFiniteElement<D>&> (bfel);

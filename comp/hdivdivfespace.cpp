@@ -36,14 +36,14 @@ namespace ngcomp
     
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcDualShape (mip, Trans(mat));
     }
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
@@ -97,7 +97,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+      MAT && mat,LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -126,7 +126,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+                               BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -135,7 +135,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+      MAT && mat,LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -253,7 +253,7 @@ namespace ngcomp
     
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+      MAT && mat,LocalHeap & lh)
     {
       HeapReset hr(lh);
       const HDivDivFiniteElement<D> & fel =
@@ -313,7 +313,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+      BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       static Timer t("HDivDivFE - div IP", NoTracing);
       RegionTracer regtr(TaskManager::GetThreadId(), t);    
@@ -326,7 +326,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+      MAT && mat,LocalHeap & lh)
     {
       static Timer t("HDivDivFE - div IP 2", NoTracing);
       RegionTracer regtr(TaskManager::GetThreadId(), t);    
@@ -385,7 +385,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP>
     static void GenerateMatrix(const FEL & bfel,const SIP & mip,
-      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+      BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
     {
       const HDivDivSurfaceFiniteElement<D> & fel =
         dynamic_cast<const HDivDivSurfaceFiniteElement<D>&> (bfel);
@@ -394,7 +394,7 @@ namespace ngcomp
 
     template <typename FEL,typename SIP,typename MAT>
     static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT & mat,LocalHeap & lh)
+      MAT && mat,LocalHeap & lh)
     {
       const HDivDivSurfaceFiniteElement<D> & fel =
         dynamic_cast<const HDivDivSurfaceFiniteElement<D>&> (bfel);
@@ -423,7 +423,7 @@ namespace ngcomp
     
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
-                               MAT & mat, LocalHeap & lh)
+                               MAT && mat, LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -484,7 +484,7 @@ namespace ngcomp
     
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix(const FEL & bfel, const SIP & sip,
-                               MAT & mat, LocalHeap & lh)
+                               MAT && mat, LocalHeap & lh)
     {
       const HDivDivFiniteElement<D> & fel =
         dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
@@ -562,7 +562,7 @@ namespace ngcomp
 
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       static int timer = NgProfiler::CreateTimer ("old div");
       NgProfiler::RegionTimer reg (timer);
