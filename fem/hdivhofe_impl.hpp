@@ -978,7 +978,7 @@ template <typename MIP, typename TFA>
   template<>
   void HDivHighOrderFE<ET_TRIG> :: 
   CalcNormalShape (const IntegrationPoint & ip, 
-                   SliceVector<> nshape) const
+                   BareSliceVector<> nshape) const
   {
     // Vector<> nshape1(nshape.Size());
     // HDivFiniteElement<2>::CalcNormalShape (ip, nshape1);
@@ -1011,7 +1011,7 @@ template <typename MIP, typename TFA>
   template<>
   void HDivHighOrderFE<ET_QUAD> :: 
   CalcNormalShape (const IntegrationPoint & ip, 
-                   SliceVector<> nshape) const
+                   BareSliceVector<> nshape) const
   {
     // Vector<> nshape1(nshape.Size());
     // HDivFiniteElement<2>::CalcNormalShape (ip, nshape1);
@@ -1045,7 +1045,7 @@ template <typename MIP, typename TFA>
   template<>
   void HDivHighOrderFE<ET_TET> :: 
   CalcNormalShape (const IntegrationPoint & ip, 
-                   SliceVector<> nshape) const
+                   BareSliceVector<> nshape) const
   {
     // Vector<> nshape1(nshape.Size());
     // HDivFiniteElement<3>::CalcNormalShape (ip, nshape1);
@@ -1062,7 +1062,7 @@ template <typename MIP, typename TFA>
     HDivHighOrderNormalTrig<> trig(order_facet[fnr][0]);
     trig.SetVertexNumbers (vnumsf);
 
-    VectorMem<20> tmp(nshape.Size());
+    VectorMem<20> tmp(ndof); // nshape.Size());
     trig.CalcShape (ip2d, tmp);
     nshape = -tmp;
     // cout << "nshape1 = " << endl << nshape1 << endl;
@@ -1073,10 +1073,10 @@ template <typename MIP, typename TFA>
 
   template <ELEMENT_TYPE ET>
   void HDivHighOrderFE<ET> ::
-	  CalcNormalShape(const IntegrationPoint & ip,
-	  SliceVector<> nshape) const
+  CalcNormalShape(const IntegrationPoint & ip,
+                  BareSliceVector<> nshape) const
   {
-	  cout << "HDivHOFE, calcnormalshape not overloaded" << endl;
+    cout << "HDivHOFE, calcnormalshape not overloaded" << endl;
   }
   
 

@@ -108,7 +108,7 @@ namespace ngfem
   template <class FEL, ELEMENT_TYPE ET>
   void T_HDivFiniteElement<FEL,ET>::
   CalcMappedShape (const BaseMappedIntegrationRule & bmir, 
-                   SliceMatrix<> shapes) const
+                   BareSliceMatrix<> shapes) const
   {
     Iterate<4-DIM>
       ([this,&bmir,shapes](auto CODIM)
