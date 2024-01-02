@@ -31,14 +31,14 @@ namespace ngfem
       ip is given on the reference element.
      */
     virtual void CalcShape(const IntegrationPoint & ip,
-                           SliceVector<> shape) const = 0;
+                           BareSliceVector<> shape) const = 0;
                            
     /*
       Calculate the matrix of derivatives of the shape functions in the point ip.
       dshape is a matrix of height ndof, and width of space dimension.
      */
     virtual void CalcDShape(const IntegrationPoint & ip,
-                            SliceMatrix<> dshape) const = 0;
+                            BareSliceMatrix<> dshape) const = 0;
   };
 
   /*
@@ -51,10 +51,10 @@ namespace ngfem
     ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
 
     void CalcShape (const IntegrationPoint & ip, 
-                    SliceVector<> shape) const override;
+                    BareSliceVector<> shape) const override;
   
     void CalcDShape (const IntegrationPoint & ip, 
-                     SliceMatrix<> dshape) const override;
+                     BareSliceMatrix<> dshape) const override;
   };
 
 
@@ -68,10 +68,10 @@ namespace ngfem
     ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
 
     void CalcShape (const IntegrationPoint & ip, 
-                    SliceVector<> shape) const override;
+                    BareSliceVector<> shape) const override;
   
     void CalcDShape (const IntegrationPoint & ip, 
-                     SliceMatrix<> dshape) const override;
+                     BareSliceMatrix<> dshape) const override;
   };
 
 }
