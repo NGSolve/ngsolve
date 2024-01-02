@@ -205,7 +205,7 @@ namespace ngfem
     ///
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       // mat = Trans (mip.GetJacobianInverse ()) * Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
       // HeapReset hr(lh);
@@ -265,7 +265,7 @@ namespace ngfem
     ///
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       // mat = Trans (mip.GetJacobianInverse ()) * 
       // Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
@@ -572,7 +572,7 @@ namespace ngfem
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
@@ -728,7 +728,7 @@ namespace ngfem
     ///
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
       int nd = Cast(fel).GetNDof();
@@ -836,7 +836,7 @@ namespace ngfem
     ///
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       throw Exception("hesseboundary not implemented for 1D!");
     }
@@ -1431,7 +1431,7 @@ namespace ngfem
 	mat(i, i) = val;
     }  
   
-
+    
     template <typename FEL, typename MIP, class VECX, class VECY>
     void Apply (const FEL & fel, const MIP & mip,
 		const VECX & x, VECY && y, LocalHeap & lh) const
@@ -1460,7 +1460,7 @@ namespace ngfem
 
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       FlatVector<> shape = static_cast<const FEL&> (fel).GetShape (mip.IP(), lh);
       // Vec<D> nv = mip.GetNV();
@@ -1783,7 +1783,7 @@ namespace ngfem
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
@@ -2013,7 +2013,7 @@ namespace ngfem
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
@@ -2107,7 +2107,7 @@ namespace ngfem
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
@@ -2193,7 +2193,7 @@ namespace ngfem
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_SPC>&> (fel[0]);
@@ -2276,7 +2276,7 @@ namespace ngfem
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);

@@ -91,7 +91,7 @@ namespace ngcomp
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       mat.AddSize(DIM_DMAT, fel.GetNDof()) = 0.0;
       static_cast<const ScalarFiniteElement<D>&>(fel).CalcDualShape (mip, mat.Row(0));
@@ -99,7 +99,7 @@ namespace ngcomp
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       // fel.CalcDualShape (mip, mat);
       throw Exception(string("DiffOpDual not available for mat ")+typeid(mat).name());
@@ -157,7 +157,7 @@ namespace ngcomp
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
@@ -2174,7 +2174,7 @@ into the wirebasket.
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & bmat, LocalHeap & lh)
+                                MAT && bmat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       auto & fel_u = static_cast<const ScalarFiniteElement<DIM_SPACE>&> (fel[0]);

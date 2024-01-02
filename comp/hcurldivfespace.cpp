@@ -33,15 +33,15 @@ namespace ngcomp
     
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcDualShape (mip, Trans(mat));
     }
 
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
@@ -88,9 +88,9 @@ namespace ngcomp
     static constexpr double eps() { return 1e-4; } 
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
-                                  MAT & mat, LocalHeap & lh)
+                                  MAT && mat, LocalHeap & lh)
     {
       cout << "nicht gut" << endl;
       cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
@@ -98,7 +98,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT mat, LocalHeap & lh)
     {
@@ -376,7 +376,7 @@ namespace ngcomp
         
     template <typename FEL, typename SIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       static int timer = NgProfiler::CreateTimer ("old div");
       NgProfiler::RegionTimer reg (timer);

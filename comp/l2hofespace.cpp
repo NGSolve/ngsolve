@@ -1798,7 +1798,7 @@ global system.
     ///
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       mat = Trans (mip.GetJacobianInverse ()) *
 	Trans (static_cast<const FEL&>(fel).GetDShape(mip.IP(),lh));
@@ -2529,7 +2529,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
@@ -2686,7 +2686,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       auto & bfel = static_cast<const VectorFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
@@ -2806,7 +2806,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       auto & bfel = static_cast<const VectorFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);
@@ -3027,7 +3027,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
@@ -3144,7 +3144,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       auto & bfel = static_cast<const VectorFiniteElement&> (fel);
       auto & feli = static_cast<const BaseScalarFiniteElement&> (bfel[0]);

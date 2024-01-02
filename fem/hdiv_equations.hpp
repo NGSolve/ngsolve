@@ -162,7 +162,7 @@ public:
   
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                              MAT & mat, LocalHeap & lh)
+                              MAT && mat, LocalHeap & lh)
   {
     mat = (1.0 / mip.GetJacobiDet()) *mip.GetJacobian () * 
       Trans (Cast(fel).GetShape(mip.IP(),lh));
@@ -234,7 +234,7 @@ public:
   
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                              MAT & mat, LocalHeap & lh)
+                              MAT && mat, LocalHeap & lh)
   {
     HeapReset hr(lh);
     mat = 1.0/mip.GetJacobiDet() *
@@ -322,7 +322,7 @@ public:
 
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-			      MAT & mat, LocalHeap & lh)
+			      MAT && mat, LocalHeap & lh)
   {
     mat =  (1.0/mip.GetJacobiDet())*
       Trans(static_cast<const FEL&> (fel).GetShape (mip.IP(), lh));
@@ -363,7 +363,7 @@ public:
 
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-			      MAT & mat, LocalHeap & lh)
+			      MAT && mat, LocalHeap & lh)
   {
     // Vec<D> scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
     auto scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
@@ -428,14 +428,14 @@ public:
   template <typename AFEL, typename MIP, typename MAT,
             typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                              MAT & mat, LocalHeap & lh)
+                              MAT && mat, LocalHeap & lh)
   {
     Cast(fel).CalcDualShape (mip, Trans(mat));
   }
   template <typename AFEL, typename MIP, typename MAT,
             typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                              MAT & mat, LocalHeap & lh)
+                              MAT && mat, LocalHeap & lh)
   {
     // fel.CalcDualShape (mip, mat);
     throw Exception(string("DiffOpHDivDual not available for mat ")+typeid(mat).name());
@@ -482,16 +482,16 @@ public:
   
   
   template <typename AFEL, typename MIP, typename MAT,
-            typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+            typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                              MAT & mat, LocalHeap & lh)
+                              MAT && mat, LocalHeap & lh)
   {
     Cast(fel).CalcDualShape (mip, Trans(mat));
   }
   template <typename AFEL, typename MIP, typename MAT,
-            typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+            typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-                              MAT & mat, LocalHeap & lh)
+                              MAT && mat, LocalHeap & lh)
   {
     throw Exception(string("DiffOpHDivDualSurface not available for mat ")+typeid(mat).name());
   }
@@ -611,7 +611,7 @@ public:
     typedef void DIFFOP_TRACE;
     ///
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                   MAT & mat, LocalHeap & lh)
     {
@@ -621,7 +621,7 @@ public:
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip, MAT mat, LocalHeap & lh)
     {
       CalcDShapeFE<FEL,D,D-1,D>(static_cast<const FEL&>(fel), mip, Trans(mat), lh, eps());

@@ -35,7 +35,7 @@ namespace ngcomp
     static constexpr double eps() { return 1e-4; }
 
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
     {
@@ -45,7 +45,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT mat, LocalHeap & lh)
     {
@@ -70,7 +70,7 @@ namespace ngcomp
       mat.Row(0) = tmp.Col(5)-tmp.Col(7);  // 1*3+2,   2*3+1
       mat.Row(1) = tmp.Col(6)-tmp.Col(2);  // 2*3+0,   0*3+2
       mat.Row(2) = tmp.Col(1)-tmp.Col(3);  // 0*3+1,   1*3+0
-      for (int i = 0; i < mat.Width(); i++)
+      for (int i = 0; i < fel.GetNDof(); i++)
         mat.Col(i) -= InnerProduct(n, mat.Col(i)) * n;
     }
   };
@@ -96,7 +96,7 @@ namespace ngcomp
     static constexpr double eps() { return 1e-4; }
 
     template <typename AFEL, typename SIP, typename MAT,
-              typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                 MAT & mat, LocalHeap & lh)
     {
@@ -106,7 +106,7 @@ namespace ngcomp
     }
     
     template <typename AFEL, typename MIP, typename MAT,
-              typename std::enable_if<std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
+              typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT mat, LocalHeap & lh)
     {

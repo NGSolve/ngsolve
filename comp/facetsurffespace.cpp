@@ -29,7 +29,7 @@ namespace ngcomp
     
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       int facetnr = mip.IP().FacetNr();
       if (facetnr >= 0)
@@ -78,7 +78,7 @@ namespace ngcomp
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       int facetnr = mip.IP().FacetNr();
       if (facetnr >= 0)
@@ -90,7 +90,7 @@ namespace ngcomp
         }
       else
         {
-            throw Exception("cannot evaluate facet-fe inside element");
+          throw Exception("cannot evaluate facet-fe inside element");
         }
     }
 
@@ -173,7 +173,7 @@ namespace ngcomp
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
-				MAT & mat, LocalHeap & lh)
+				MAT && mat, LocalHeap & lh)
     {
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
@@ -208,7 +208,7 @@ namespace ngcomp
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
-                                MAT & mat, LocalHeap & lh)
+                                MAT && mat, LocalHeap & lh)
     {
       int facetnr = mip.IP().FacetNr();
       if (facetnr >= 0)
