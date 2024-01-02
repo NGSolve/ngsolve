@@ -23,7 +23,6 @@
 using namespace ngmg; 
 
 
-
 #ifdef PARALLEL
 
 #include "../parallel/dump.hpp"
@@ -107,9 +106,9 @@ namespace ngcomp
     }
 
     using DiffOp<DiffOpDual<D>>::AddTransSIMDIR;
-    template <typename FEL, class MIR, class TVY>
+    template <typename FEL, class MIR> // , class TVY>
     static void AddTransSIMDIR (const FEL & fel, const MIR & mir,
-                                BareSliceMatrix<SIMD<double>> x, TVY & y)
+                                BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
     {
       STACK_ARRAY(SIMD<double>, memx, mir.Size());
       FlatVector<SIMD<double>> hx(mir.Size(), &memx[0]);

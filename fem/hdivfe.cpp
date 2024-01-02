@@ -72,7 +72,7 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   CalcNormalShape (const IntegrationPoint & ip, 
-                   SliceVector<> nshape) const
+                   BareSliceVector<> nshape) const
   {
     Array<int> dnums;
     int fnr = ip.FacetNr();
@@ -111,7 +111,7 @@ namespace ngfem
   
   template <int D>
   void HDivFiniteElement<D> ::
-  CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const
+  CalcMappedShape (const BaseMappedIntegrationRule & bmir, BareSliceMatrix<> shapes) const
   {
     auto mir = static_cast<const MappedIntegrationRule<D,D>&> (bmir);
     for (int i = 0; i < mir.Size(); i++)
@@ -151,10 +151,10 @@ namespace ngfem
   template <int D>
   void HDivFiniteElement<D> ::
   CalcMappedDivShape (const MappedIntegrationPoint<DIM,DIM> & mip,
-                      SliceVector<> divshape) const
+                      BareSliceVector<> divshape) const
   {
     CalcDivShape (mip.IP(), divshape);
-    divshape /= mip.GetJacobiDet();
+    divshape.Range(ndof) /= mip.GetJacobiDet();
   }
 
   template <int D>

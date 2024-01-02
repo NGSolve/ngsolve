@@ -399,7 +399,7 @@ namespace ngfem
 
     /// calc normal components of facet shapes, ip has facet-nr
     virtual void CalcNormalShape (const IntegrationPoint & ip, 
-                                  SliceVector<> nshape) const override;
+                                  BareSliceVector<> nshape) const override;
 
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override;
 

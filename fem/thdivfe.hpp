@@ -725,7 +725,7 @@ namespace ngfem
     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                                   BareSliceMatrix<> shape) const override;
 
-    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, SliceMatrix<> shapes) const override;
+    virtual void CalcMappedShape (const BaseMappedIntegrationRule & bmir, BareSliceMatrix<> shapes) const override;
 
     virtual void CalcMappedShape (const SIMD<MappedIntegrationPoint<DIM,DIM>> & mip,
 				  BareSliceMatrix<SIMD<double>> shape) const override;
