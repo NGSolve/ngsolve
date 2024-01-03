@@ -9,7 +9,7 @@
 
 #include "tscalarfe.hpp"
 #include "recursive_pol.hpp"
-
+#include "shapefunction_utils.hpp"
 
 namespace ngfem
 {

@@ -11,6 +11,7 @@
 #include "finiteelement.hpp"
 #include "fe_interfaces.hpp"
 #include "hcurlfe.hpp"
+#include "hcurlfe_utils.hpp"
 #include "recursive_pol.hpp"
 #include "recursive_pol_trig.hpp"
 #include "recursive_pol_tet.hpp"

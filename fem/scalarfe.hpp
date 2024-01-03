@@ -16,12 +16,14 @@ namespace ngfem
   class BaseScalarFiniteElement : public FiniteElement 
   {
   public:
-    // using FiniteElement::FiniteElement;
+    using FiniteElement::FiniteElement;
 
+    /*
     INLINE BaseScalarFiniteElement () { ; } 
     INLINE BaseScalarFiniteElement (int andof, int aorder)
       : FiniteElement (andof, aorder) { ; }
-
+    */
+    
     /// the name
     NGS_DLL_HEADER
     virtual string ClassName() const override;
@@ -311,27 +313,20 @@ namespace ngfem
 
 
 
-#ifdef FILE_SCALARFE_CPP
-#define SCALARFE_EXTERN
-#else
-#define SCALARFE_EXTERN extern
+  extern template class ScalarFiniteElement<0>;
+  extern template class ScalarFiniteElement<1>;
+  extern template class ScalarFiniteElement<2>;
+  extern template class ScalarFiniteElement<3>;
 
-  SCALARFE_EXTERN template class ScalarFiniteElement<0>;
-  SCALARFE_EXTERN template class ScalarFiniteElement<1>;
-  SCALARFE_EXTERN template class ScalarFiniteElement<2>;
-  SCALARFE_EXTERN template class ScalarFiniteElement<3>;
-
-  SCALARFE_EXTERN template class DGFiniteElement<ET_POINT>;
-  SCALARFE_EXTERN template class DGFiniteElement<ET_SEGM>;
-  SCALARFE_EXTERN template class DGFiniteElement<ET_TRIG>;
-  SCALARFE_EXTERN template class DGFiniteElement<ET_QUAD>;
-  SCALARFE_EXTERN template class DGFiniteElement<ET_TET>;
-  SCALARFE_EXTERN template class DGFiniteElement<ET_PRISM>;
-  SCALARFE_EXTERN template class DGFiniteElement<ET_PYRAMID>;
-  SCALARFE_EXTERN template class DGFiniteElement<ET_HEXAMID>;
-  SCALARFE_EXTERN template class DGFiniteElement<ET_HEX>;
-
-#endif
+  extern template class DGFiniteElement<ET_POINT>;
+  extern template class DGFiniteElement<ET_SEGM>;
+  extern template class DGFiniteElement<ET_TRIG>;
+  extern template class DGFiniteElement<ET_QUAD>;
+  extern template class DGFiniteElement<ET_TET>;
+  extern template class DGFiniteElement<ET_PRISM>;
+  extern template class DGFiniteElement<ET_PYRAMID>;
+  extern template class DGFiniteElement<ET_HEXAMID>;
+  extern template class DGFiniteElement<ET_HEX>;
 }
 
 #endif

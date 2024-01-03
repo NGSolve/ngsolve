@@ -266,6 +266,18 @@ namespace ngfem
 
     // cout << "interpol, coefs = " << coefs << endl;    
   }
+
+
+
+
+  template class DummyFE<ET_POINT>;
+  template class DummyFE<ET_SEGM>;
+  template class DummyFE<ET_TRIG>;
+  template class DummyFE<ET_QUAD>;
+  template class DummyFE<ET_TET>;
+  template class DummyFE<ET_PRISM>;
+  template class DummyFE<ET_PYRAMID>;
+  template class DummyFE<ET_HEX>;
 }
 
 

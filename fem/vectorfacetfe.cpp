@@ -9,6 +9,7 @@
 #include "vectorfacetfe.hpp"
 #include "hcurl_equations.hpp"
 #include <thcurlfe_impl.hpp>
+#include "hcurlfe_utils.hpp"
 #include <cassert>
 
 namespace ngfem

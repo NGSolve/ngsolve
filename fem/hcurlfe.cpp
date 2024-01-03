@@ -5187,4 +5187,10 @@ namespace ngfem
 #endif
   
 
+
+  /*
+  template class HCurlFiniteElement<1>;
+  template class HCurlFiniteElement<2>;
+  template class HCurlFiniteElement<3>;
+  */
 }
