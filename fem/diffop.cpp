@@ -921,7 +921,7 @@ namespace ngfem
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->DimRef();
 
-    mat.AddSize(Dim(), bfel.GetNDof()) = 0.0;
+    mat.AddSize(DimRef(), bfel.GetNDof()) = 0.0;
     diffop->CalcMatrix (fel, ip, mat.Rows(dimi).Cols(ndi), lh);
     for (int i = 1; i < dim; i++)
       mat.Rows(i*dimi, (i+1)*dimi).Cols(i*ndi, (i+1)*ndi) = mat.Rows(dimi).Cols(ndi);
