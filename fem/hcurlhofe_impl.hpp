@@ -219,8 +219,8 @@ namespace ngfem
 		shape[ii++] = Du (val);
 	      }));
 
-	// not yet: compatibility with tets/prisms ! non-gradient inner shapes, same for type 1 and 2
-        if (type1)
+	// now ready: compatibility with tets/prisms ! non-gradient inner shapes, same for type 1 and 2
+        if (true) // if (type1)
           {
             DubinerBasis::EvalMult
               (p-2, lam[fav[0]], lam[fav[1]], 
@@ -443,7 +443,8 @@ namespace ngfem
             
 
 	  // non-gradient face shapes
-	  if (type1) {
+          // if (type1) {
+	  if (true) {
 
 	    DubinerBasis::EvalMult
 	      (p-2, lam[fav[0]], lam[fav[1]],
@@ -622,28 +623,53 @@ namespace ngfem
             }
         }
 
+        // if (type1) {        
+        if (true) {
+          
+          DubinerBasis::EvalMult
+            (p-2, lam[fav[0]], lam[fav[1]],
+             lam[fav[0]]*muz[fav[2]],
+             SBLambda
+             ([&](int nr, Tx val)
+             {
+               shape[ii++] =  wuDv_minus_wvDu(lam[fav[1]], lam[fav[2]], val);
+             }));
+	    
+          LegendrePolynomial::EvalMult
+            (p-2, lam[fav[2]]-lam[fav[1]], lam[fav[2]]*muz[fav[2]], 
+             SBLambda
+             ([&] (int j, Tx val)
+             {
+               shape[ii++] = wuDv_minus_wvDu(lam[fav[1]], lam[fav[0]], val);
+             }));
+        }
 
-	Tx xi = lam[fav[2]]-lam[fav[1]];
-	Tx eta = lam[fav[0]]; // 1-lam[f2]-lam[f1];
-	
-	T_TRIGFACESHAPES::CalcSplitted(p+1,xi,eta,adpolxy1,adpolxy2); 
-        /*
-	if(usegrad_face[i])
-	  // gradient-fields =>  \nabla( adpolxy1*adpolxy2*muz )
-	  for (int j = 0; j <= p-2; j++)
-	    for (int k = 0; k <= p-2-j; k++)
+        else
+
+          {
+            
+            Tx xi = lam[fav[2]]-lam[fav[1]];
+            Tx eta = lam[fav[0]]; // 1-lam[f2]-lam[f1];
+            
+            T_TRIGFACESHAPES::CalcSplitted(p+1,xi,eta,adpolxy1,adpolxy2); 
+            /*
+              if(usegrad_face[i])
+              // gradient-fields =>  \nabla( adpolxy1*adpolxy2*muz )
+              for (int j = 0; j <= p-2; j++)
+              for (int k = 0; k <= p-2-j; k++)
               shape[ii++] = Du<3> (adpolxy1[j]*adpolxy2[k] * muz[fav[2]]);
         */
-
-
-	// rotations of grad-fields => grad(uj)*vk*w -  uj*grad(vk)*w 
-	for (int j = 0; j <= p-2; j++)
-	  for (int k = 0; k <= p-2-j; k++)
-            shape[ii++] = wuDv_minus_wvDu (adpolxy2[k], adpolxy1[j], muz[fav[2]]);
-
-	//  Ned0*adpolxy2[j]*muz 
-	for (int j = 0; j <= p-2; j++,ii++)
-          shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpolxy2[j]*muz[fav[2]]);
+            
+            
+            // rotations of grad-fields => grad(uj)*vk*w -  uj*grad(vk)*w 
+            for (int j = 0; j <= p-2; j++)
+              for (int k = 0; k <= p-2-j; k++)
+                shape[ii++] = wuDv_minus_wvDu (adpolxy2[k], adpolxy1[j], muz[fav[2]]);
+            
+            //  Ned0*adpolxy2[j]*muz 
+            for (int j = 0; j <= p-2; j++,ii++)
+              shape[ii] = wuDv_minus_wvDu (lam[fav[1]], lam[fav[2]], adpolxy2[j]*muz[fav[2]]);
+          }
       }
     
 
@@ -1243,11 +1269,7 @@ namespace ngfem
                                       shape[ii++] = Du (val);
                                     }));
             }
-
-	  T_TRIGFACESHAPES::CalcSplitted(p+1, bary[fav[2]]-bary[fav[1]], 
-					 bary[fav[0]],pol_xi,pol_eta);
-	  
-	  for(int j=0;j<=p-2;j++) pol_eta[j] *= lam_face;  
+          
           /*
 	  // phi = pol_xi * pol_eta * lam_face; 
 	  // Type 1: Gradient Functions 
@@ -1256,14 +1278,43 @@ namespace ngfem
 	      for(int k=0;k<=p-2-j; k++)
                 shape[ii++] = Du<3> (pol_xi[j] * pol_eta[k]);
           */
-	  // Type 2:  
-	  for(int j=0;j<= p-2; j++)
-	    for(int k=0;k<=p-2-j; k++)
-              shape[ii++] = uDv_minus_vDu (pol_eta[k], pol_xi[j]);
 
-	  // Type 3: Nedelec-based ones (Ned_0*v_j)
-	  for(int j=0;j<=p-2;j++)
-            shape[ii++] = wuDv_minus_wvDu (bary[fav[1]], bary[fav[2]], pol_eta[j]);
+          // if (type1) {          
+          if (true) {
+            
+            DubinerBasis::EvalMult
+              (p-2, bary[fav[0]], bary[fav[1]],
+               bary[fav[0]]*lam_face,
+               SBLambda
+               ([&](int nr, Tx val)
+               {
+                 shape[ii++] =  wuDv_minus_wvDu(bary[fav[1]], bary[fav[2]], val);
+               }));
+	    
+            LegendrePolynomial::EvalMult
+              (p-2, bary[fav[2]]-bary[fav[1]], bary[fav[2]]*lam_face, 
+               SBLambda
+               ([&] (int j, Tx val)
+               {
+                 shape[ii++] = wuDv_minus_wvDu(bary[fav[1]], bary[fav[0]], val);
+             }));
+          }
+
+          else {
+            T_TRIGFACESHAPES::CalcSplitted(p+1, bary[fav[2]]-bary[fav[1]], 
+                                           bary[fav[0]],pol_xi,pol_eta);
+            
+            for(int j=0;j<=p-2;j++) pol_eta[j] *= lam_face;
+            
+            // Type 2:  
+            for(int j=0;j<= p-2; j++)
+              for(int k=0;k<=p-2-j; k++)
+                shape[ii++] = uDv_minus_vDu (pol_eta[k], pol_xi[j]);
+            
+            // Type 3: Nedelec-based ones (Ned_0*v_j)
+            for(int j=0;j<=p-2;j++)
+              shape[ii++] = wuDv_minus_wvDu (bary[fav[1]], bary[fav[2]], pol_eta[j]);
+          }
 	}
 
 
