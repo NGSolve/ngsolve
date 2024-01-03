@@ -14,7 +14,7 @@
 #include "recursive_pol.hpp"
 #include "recursive_pol_trig.hpp"
 #include "recursive_pol_tet.hpp"
-
+#include "shapefunction_utils.hpp"
 
 namespace ngfem
 {

@@ -14,6 +14,7 @@
 
 #include <../fem/hcurllofe.hpp>
 #include <../fem/thcurlfe_impl.hpp>
+#include <../fem/hcurlfe_utils.hpp>
 #include <../fem/hcurl_equations.hpp> 
 #include <diffop_impl.hpp>
 

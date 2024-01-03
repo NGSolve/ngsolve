@@ -1,4 +1,5 @@
 #include <thdivfe.hpp>
+#include "hdivfe_utils.hpp"
 
 namespace ngfem
 {

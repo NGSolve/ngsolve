@@ -11,6 +11,7 @@
 #include "thdivfe.hpp"
 #include "recursive_pol.hpp"
 #include "recursive_pol_trig.hpp"
+#include "hdivfe_utils.hpp"
 
 namespace ngfem
 {

@@ -12,6 +12,7 @@
 #include "recursive_pol.hpp"
 // #include "thdivfe.hpp"
 #include "hcurlhofe.hpp"
+#include "hcurlfe_utils.hpp"
 
 namespace ngfem
 {
