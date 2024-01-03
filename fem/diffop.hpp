@@ -1236,7 +1236,7 @@ namespace ngfem
     {
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
-      mat.AddSize(Dim(), bfel.GetNDof())  = 0.0;
+      mat.AddSize(DimRef(), bfel.GetNDof())  = 0.0;
       diffop->CalcMatrix (fel[comp], ip, mat.Cols(r), lh);
     }
   
