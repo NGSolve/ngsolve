@@ -65,8 +65,11 @@ install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink DESTINATION ${NGSOLVE_I
 
 install( FILES
         cuda_linalg.hpp
+        cuda_profiler.hpp
         unifiedvector.hpp
         cuda_ngstd.hpp
+        cuda_ngbla.hpp
+        linalg_kernels.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
 )

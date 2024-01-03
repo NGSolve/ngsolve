@@ -42,7 +42,10 @@ namespace ngla
       
       stringstream s;
       s <<
+        "#include <bla.hpp>\n"
+        "#include <cuda_linalg.hpp>\n"
         "#include <cstddef>\n"
+        "using namespace ngbla;\n"
         "__global__ void ApplyIPFunctionKernel (size_t nip, double * input, size_t dist_input,\n"
         "                      double * output, size_t dist_output) {\n";
       
