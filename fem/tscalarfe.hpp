@@ -73,7 +73,7 @@ namespace ngfem
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<> values) const override;
 
     HD NGS_DLL_HEADER virtual void EvaluateTrans (const IntegrationRule & ir, 
-                                                  FlatVector<> vals, 
+                                                  BareSliceVector<> vals, 
                                                   BareSliceVector<double> coefs) const override;
     
     HD NGS_DLL_HEADER virtual void AddTrans (const SIMD_IntegrationRule & ir,

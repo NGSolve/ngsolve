@@ -223,7 +223,7 @@ namespace ngfem
 
   
   void BaseScalarFiniteElement :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<double> vals, BareSliceVector<double> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, BareSliceVector<double> vals, BareSliceVector<double> coefs) const
   {
     VectorMem<20, double> shape(ndof);
     coefs.Range(0,ndof) = 0.0;

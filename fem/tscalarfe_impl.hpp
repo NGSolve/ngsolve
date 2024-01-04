@@ -220,7 +220,7 @@ namespace ngfem
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>
   void T_ScalarFiniteElement<FEL,ET,BASE> :: 
-  EvaluateTrans (const IntegrationRule & ir, FlatVector<> vals, BareSliceVector<double> coefs) const
+  EvaluateTrans (const IntegrationRule & ir, BareSliceVector<> vals, BareSliceVector<double> coefs) const
   {
     coefs.Range(0,ndof) = 0.0;
     for (size_t i = 0; i < ir.GetNIP(); i++)
