@@ -1326,7 +1326,6 @@ namespace ngfem
 		const SIMD_BaseMappedIntegrationRule & mir,
 		BareSliceMatrix<SIMD<double>> mat) const override;
     
-#ifndef FASTCOMPILE
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationPoint & bmip,
@@ -1334,6 +1333,7 @@ namespace ngfem
 	   FlatVector<double> flux,
 	   LocalHeap & lh) const override;
 
+#ifndef FASTCOMPILE
     virtual void
     Apply (const FiniteElement & bfel,
 	   const BaseMappedIntegrationRule & bmir,

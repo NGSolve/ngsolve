@@ -117,7 +117,6 @@ namespace ngfem
   }
 
 
-#ifndef FASTCOMPILE
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
@@ -131,7 +130,7 @@ namespace ngfem
     DIFFOP::Apply (bfel, mip, x, flux, lh);
   }
   
-
+#ifndef FASTCOMPILE
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
   Apply (const FiniteElement & bfel,
