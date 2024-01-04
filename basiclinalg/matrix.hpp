@@ -580,6 +580,16 @@ namespace ngbla
       this->data = new T[this->h * this->w];
     }
 
+
+    void ChangeSize (size_t newh, size_t neww)
+    {
+      Matrix tmp(newh, neww);
+      auto minh = std::min(newh, this->Height());
+      auto minw = std::min(neww, this->Width());
+      tmp.Rows (minh).Cols(minw) = this->Rows(minh).Cols(minw);
+      (*this) = std::move(tmp);
+    }
+    
     /// assign matrix, sizes must match
     template<typename TB>
     INLINE Matrix & operator= (const Expr<TB> & m) 
