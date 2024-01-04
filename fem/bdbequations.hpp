@@ -454,7 +454,7 @@ namespace ngfem
 			    LocalHeap & lh) 
     {
       HeapReset hr(lh);
-      y.Range(0,fel.GetNDof()) = Cast(fel).GetShape (mip.IP(), lh) * x;
+      y.Range(0,fel.GetNDof()) = x(0) * Cast(fel).GetShape (mip.IP(), lh);
     }
 
 

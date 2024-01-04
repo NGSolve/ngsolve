@@ -73,7 +73,6 @@ namespace ngfem
     INLINE H1HighOrderFE (int aorder)
     { 
       ndof = PolDimension (aorder);
-      cout << "h1horder ctor, ndof = " << ndof << endl;
       for (int i = 0; i < N_VERTEX; i++) this->SetVertexNumber(i,i);
       for (int i = 0; i < N_EDGE; i++) order_edge[i] = aorder;
       for (int i = 0; i < N_FACE; i++) order_face[i] = aorder;   
