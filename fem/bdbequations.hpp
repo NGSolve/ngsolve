@@ -478,7 +478,7 @@ namespace ngfem
 			      LocalHeap & lh)
     {
       // Cast(fel).EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
-      Cast(fel).EvaluateTrans (mir.IR(), x.Row(0), y);
+      Cast(fel).EvaluateTrans (mir.IR(), x.Col(0), y);
     }
 
     template <class MIR>
