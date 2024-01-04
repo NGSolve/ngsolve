@@ -71,9 +71,9 @@ namespace ngbla
       dest[i] += alpha * src[i];
   }
   
-  void AddVector (double alpha, BareSliceVector<const double> src, SliceVector<double> dest) NETGEN_NOEXCEPT
+  void AddVector (double alpha, BareSliceVector<const double> src, BareSliceVector<double> dest, size_t size) NETGEN_NOEXCEPT
   {
-    for (size_t i = 0; i < dest.Size(); i++)
+    for (size_t i = 0; i < size; i++)
       dest[i] += alpha * src[i];
   }
 

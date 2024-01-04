@@ -59,7 +59,7 @@ namespace ngfem
   
 
 
-  bool apply_deriv_alpha = 0;
+  // bool apply_deriv_alpha = 0;
 
 
   template <>

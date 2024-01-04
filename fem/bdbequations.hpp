@@ -56,7 +56,21 @@ namespace ngfem
     {
       Cast(fel).CalcMappedDShape (mip, Trans(mat));
     }
+
+    template <typename SCALMIP>
+    static void GenerateMatrix (const FiniteElement & fel, 
+                                const MappedIntegrationPoint<D,D,SCALMIP> & mip,
+                                BareSliceMatrix<Complex,ColMajor> mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      FlatMatrixFixWidth<D> dshape(fel.GetNDof(), lh);
+      Cast(fel).CalcDShape (mip.IP(), dshape);
+      mat = Trans (dshape * mip.GetJacobianInverse ());      
+      // mat = Trans (Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ());
+    }
+
     
+    /*
     template <typename SCALMIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, 
                                 const MappedIntegrationPoint<D,D,SCALMIP> & mip,
@@ -68,7 +82,7 @@ namespace ngfem
       mat = Trans (dshape * mip.GetJacobianInverse ());      
       // mat = Trans (Cast(fel).GetDShape(mip.IP(),lh) * mip.GetJacobianInverse ());
     }
-
+    */
     static int DimRef() { return D; } 
     
     template <typename IP, typename MAT>
@@ -394,18 +408,16 @@ namespace ngfem
     {
       Cast(fel).CalcShape (mir.IR(), mat);      
     }
-   
-    template <typename MIP, class TVX, class TVY>
-    static void Apply (const FiniteElement & fel, const MIP & mip,
-		       const TVX & x, TVY & y,
+    
+    static void Apply (const FiniteElement & fel, const BaseMappedIntegrationPoint & mip,
+		       BareSliceVector<Complex> x, BareVector<Complex> y,                       
 		       LocalHeap & lh) 
     {
-      HeapReset hr(lh);
-      y = Trans (Cast(fel).GetShape (mip.IP(), lh)) * x;
+      y(0) = Cast(fel).Evaluate(mip.IP(), x);      
     }
-
-    static void Apply (const FiniteElement & fel, const MappedIntegrationPoint<D,D> & mip,
-		       BareSliceVector<double> x, FlatVector<double> y,
+    
+    static void Apply (const FiniteElement & fel, const BaseMappedIntegrationPoint & mip,
+		       BareSliceVector<double> x, BareVector<double> y,
 		       LocalHeap & lh) 
     {
       y(0) = Cast(fel).Evaluate(mip.IP(), x);
@@ -465,7 +477,8 @@ namespace ngfem
 			      FlatMatrix<double> x, BareSliceVector<double> y,
 			      LocalHeap & lh)
     {
-      Cast(fel).EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
+      // Cast(fel).EvaluateTrans (mir.IR(), FlatVector<> (mir.Size(), &x(0,0)), y);
+      Cast(fel).EvaluateTrans (mir.IR(), x.Row(0), y);
     }
 
     template <class MIR>

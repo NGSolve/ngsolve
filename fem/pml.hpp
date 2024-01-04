@@ -27,7 +27,7 @@ namespace ngfem
   */
   extern int rect_pml;
   
-  extern bool apply_deriv_alpha;
+  // extern bool apply_deriv_alpha;
 
 
 
@@ -204,7 +204,7 @@ namespace ngfem
       ely = 0;
 
 
-      if (!apply_deriv_alpha)
+      // if (!apply_deriv_alpha)
 	{
 	  Vec<DIM_DMAT,Complex> hv1;
 	  Vec<DIM_DMAT,Complex> hv2;
@@ -229,6 +229,7 @@ namespace ngfem
 	      ely += fac * hely;
 	    }     
 	}
+        /*
       else
 	{
 	  Vec<DIM_DMAT, AutoDiff<1,Complex> > hv1;
@@ -259,6 +260,7 @@ namespace ngfem
 		ely(j) += (fac * hely(j)).DValue(0);
 	    }     
 	}
+        */
     }
 
 
