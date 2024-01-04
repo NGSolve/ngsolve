@@ -103,6 +103,7 @@ namespace ngfem
        Vector x provides coefficient vector.
      */
     HD NGS_DLL_HEADER virtual double Evaluate (const IntegrationPoint & ip, BareSliceVector<> x) const;
+    HD NGS_DLL_HEADER virtual Complex Evaluate (const IntegrationPoint & ip, BareSliceVector<Complex> x) const;    
 
 
     /**

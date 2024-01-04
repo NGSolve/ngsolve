@@ -1224,6 +1224,18 @@ namespace ngbla
     return TransExpr (a.View());
   }
 
+  template <typename TA, typename TB>
+  INLINE auto Trans (const Expr<MultExpr<TA,TB>> & expr)
+  {
+    return Trans(expr.Spec().B()) * Trans(expr.Spec().A());
+  }
+
+  template <typename TA>
+  INLINE auto Trans (const Expr<TransExpr<TA>> & expr)
+  {
+    return expr.Spec().A();
+  }
+  
   /* ************************* Real/Imag ************************ */
   
   INLINE double Real(double a) { return a; }
@@ -1574,10 +1586,13 @@ namespace ngbla
   INLINE auto InnerProduct (const Expr<TA> & a, const Expr<TB> & b)
     -> decltype (InnerProduct(a.Spec()(0), b.Spec()(0)))
   {
-    if (a.Height()*a.Width() == 0) return 0; 
+    auto h = CombinedSize(a.Height(), b.Height());
+    auto w = CombinedSize(a.Width(), b.Width());
+      
+    if (h*w == 0) return 0; 
 
     auto sum = InnerProduct (a.Spec()(0), b.Spec()(0));
-    for (size_t i = 1; i < a.Height()*a.Width(); i++)
+    for (size_t i = 1; i < h*w; i++)
       sum += InnerProduct (a.Spec()(i), b.Spec()(i));
     return sum;
   }

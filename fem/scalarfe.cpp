@@ -103,6 +103,15 @@ namespace ngfem
     CalcShape (ip, shape);
     return InnerProduct (shape, x);
   }  
+
+  Complex BaseScalarFiniteElement :: 
+  Evaluate (const IntegrationPoint & ip, BareSliceVector<Complex> x) const
+  {
+    VectorMem<20, double> shape(ndof);
+    CalcShape (ip, shape);
+    return InnerProduct (x, shape);
+  }  
+
   
   template<int D>
   Vec<D> ScalarFiniteElement<D> :: 
