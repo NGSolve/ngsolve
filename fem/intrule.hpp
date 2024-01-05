@@ -2357,6 +2357,11 @@ namespace ngfem
     SIMD_IntegrationRule (size_t asize, SIMD<IntegrationPoint> * pip)
       : Array<SIMD<IntegrationPoint>> (asize, pip), nip(asize*SIMD<IntegrationPoint>::Size()) { }
 
+    INLINE SIMD_IntegrationRule Range (size_t first, size_t next) const
+    {
+      return SIMD_IntegrationRule (next-first, &(*this)[first]);
+    }
+
     size_t GetNIP() const { return nip; } // Size()*SIMD<double>::Size(); }
     void SetNIP(size_t _nip) { nip = _nip; }
 
