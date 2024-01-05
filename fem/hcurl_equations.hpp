@@ -634,19 +634,13 @@ namespace ngfem
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      // cout << "GenerateMatrixSIMDIR" << endl;
-      /*
-      throw Exception("GenMatSIMDIR buggy");
-      static_cast<const FEL&>(fel).CalcMappedCurlShape (mir, mat);
-      */
-      LocalHeapMem<10000> lh("genmatlh");
-      FE_ElementTransformation<2,2> trafo2d(fel.ElementType());
       constexpr size_t BS=16;
+      LocalHeapMem<BS*SIMD<double>::Size()*sizeof(SIMD<MappedIntegrationPoint<2,2>>)+64> lh("genmatlh");
+      FE_ElementTransformation<2,2> trafo2d(fel.ElementType());
       for (size_t first = 0; first < mir.Size(); first += BS)
         {
           HeapReset hr(lh);
           size_t next = std::min(first+BS, mir.Size());
-          size_t num = next-first;
           SIMD_MappedIntegrationRule<2,2> mir2d(mir.IR().Range(first, next), trafo2d, lh);
           static_cast<const FEL&>(fel).CalcMappedCurlShape (mir2d, mat.Cols(first, next));
                                                             }

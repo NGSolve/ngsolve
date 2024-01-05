@@ -309,6 +309,7 @@ namespace ngbla
 
     INLINE auto Range (size_t first, size_t next) const
     {
+      NETGEN_CHECK_RANGE(next,first,Size()+1);
       return VectorView<T,size_t,TDIST> (next-first, dist, data+first*dist);
     }    
     
