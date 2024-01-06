@@ -322,8 +322,8 @@ namespace ngfem
   }
 
   template <typename T>
-  INLINE Vec<3,AutoDiff<3,T>> Cross (const AutoDiffDiff<3,T> & u,
-					  const Vec<3,T> & v)
+  INLINE Vec<3,AutoDiff<3,T>> Cross (const AutoDiffDiff<3,T> u,
+					  const Vec<3,T> v)
   {
     AutoDiff<3,T> hv[3];
     hv[0].Value() = u.DValue(1)*v(2)-u.DValue(2)*v(1);

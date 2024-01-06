@@ -40,7 +40,7 @@ namespace ngfem
 
 
 
-
+  /*
   template <int DIM, typename SCAL>
   class Class_uDvDw_Cyclic
   {
@@ -56,7 +56,20 @@ namespace ngfem
   INLINE Class_uDvDw_Cyclic<DIM,SCAL> 
   uDvDw_Cyclic (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_uDvDw_Cyclic<DIM,SCAL> (u,v,w); }
+  */
 
+  template <int DIM, typename SCAL>
+  class uDvDw_Cyclic
+  {
+  public:
+    const AutoDiff<DIM,SCAL> u, v, w;
+    uDvDw_Cyclic (const AutoDiff<DIM,SCAL> au, 
+                  const AutoDiff<DIM,SCAL> av,
+                  const AutoDiff<DIM,SCAL> aw)
+      : u(au), v(av), w(aw) { ; }
+  };
+
+  
   /*
   template <int DIM, typename SCAL>
   INLINE Class_uDvDw_Cyclic<DIM,SCAL> 
@@ -67,22 +80,25 @@ namespace ngfem
 
 
   template <int DIM, typename SCAL>
-  class Class_z_times_uDvDw_Cyclic
+  class z_times_uDvDw_Cyclic
   {
   public:
     const AutoDiff<DIM,SCAL> u, v, w, z;
-    Class_z_times_uDvDw_Cyclic (const AutoDiff<DIM,SCAL> au, 
-                        const AutoDiff<DIM,SCAL> av,
-                        const AutoDiff<DIM,SCAL> aw,
-                        const AutoDiff<DIM,SCAL> az)
+    z_times_uDvDw_Cyclic (const AutoDiff<DIM,SCAL> au, 
+                          const AutoDiff<DIM,SCAL> av,
+                          const AutoDiff<DIM,SCAL> aw,
+                          const AutoDiff<DIM,SCAL> az)
       : u(au), v(av), w(aw), z(az) { ; }
   };
 
+  /*
   template <int DIM, typename SCAL>
   INLINE auto
   z_times_uDvDw_Cyclic (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v,
                         AutoDiff<DIM,SCAL> w, AutoDiff<DIM,SCAL> z)
   { return Class_z_times_uDvDw_Cyclic<DIM,SCAL> (u,v,w,z); }
+  */
+
   
   /*
   template <int DIM, typename SCAL>
@@ -95,20 +111,23 @@ namespace ngfem
 
   
   template <int DIM, typename SCAL>
-  class Class_Du_Cross_Dv
+  class Du_Cross_Dv
   {
   public:
     const AutoDiff<DIM,SCAL> u, v;
-    Class_Du_Cross_Dv (const AutoDiff<DIM,SCAL> au, 
-                       const AutoDiff<DIM,SCAL> av)
+    Du_Cross_Dv (const AutoDiff<DIM,SCAL> au, 
+                 const AutoDiff<DIM,SCAL> av)
       : u(au), v(av) { ; }
   };
 
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_Du_Cross_Dv<DIM,SCAL> 
   Du_Cross_Dv (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v)
   { return Class_Du_Cross_Dv<DIM,SCAL> (u,v); }
+  */
 
+  
   /*
   template <int DIM, typename SCAL>
   INLINE Class_Du_Cross_Dv<DIM,SCAL>
@@ -117,21 +136,23 @@ namespace ngfem
   */
 
   template <int DIM, typename SCAL>
-  class Class_wDu_Cross_Dv
+  class wDu_Cross_Dv
   {
   public:
     const AutoDiff<DIM,SCAL> u, v, w;
-    Class_wDu_Cross_Dv (const AutoDiff<DIM,SCAL> au, 
-                        const AutoDiff<DIM,SCAL> av,
-                        const AutoDiff<DIM,SCAL> aw)
+    wDu_Cross_Dv (const AutoDiff<DIM,SCAL> au, 
+                  const AutoDiff<DIM,SCAL> av,
+                  const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
   };
 
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_wDu_Cross_Dv<DIM,SCAL> 
   wDu_Cross_Dv(AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_wDu_Cross_Dv<DIM,SCAL> (u,v,w); }
-
+  */
+  
   /*
   template <int DIM, typename SCAL>
   INLINE Class_wDu_Cross_Dv<DIM,SCAL>
@@ -141,21 +162,23 @@ namespace ngfem
 
   
   template <int DIM, typename SCAL>
-  class Class_uDvDw_minus_DuvDw
+  class uDvDw_minus_DuvDw
   {
   public:
     const AutoDiff<DIM,SCAL> u, v, w;
-    Class_uDvDw_minus_DuvDw (const AutoDiff<DIM,SCAL> au, 
-                             const AutoDiff<DIM,SCAL> av,
-                             const AutoDiff<DIM,SCAL> aw)
+    uDvDw_minus_DuvDw (const AutoDiff<DIM,SCAL> au, 
+                       const AutoDiff<DIM,SCAL> av,
+                       const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
   };
 
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_uDvDw_minus_DuvDw<DIM,SCAL> 
   uDvDw_minus_DuvDw (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_uDvDw_minus_DuvDw<DIM,SCAL> (u,v,w); }
-
+  */
+  
   /*
   template <int DIM, typename SCAL>
   INLINE Class_uDvDw_minus_DuvDw<DIM,SCAL>
@@ -164,21 +187,23 @@ namespace ngfem
   */
 
   template <int DIM, typename SCAL>
-  class Class_curl_uDvw_minus_Duvw
+  class curl_uDvw_minus_Duvw
   {
   public:
     const AutoDiff<DIM,SCAL> u, v, w;
-    Class_curl_uDvw_minus_Duvw (const AutoDiff<DIM,SCAL> au, 
-                                const AutoDiff<DIM,SCAL> av,
-                                const AutoDiff<DIM,SCAL> aw)
+    curl_uDvw_minus_Duvw (const AutoDiff<DIM,SCAL> au, 
+                          const AutoDiff<DIM,SCAL> av,
+                          const AutoDiff<DIM,SCAL> aw)
       : u(au), v(av), w(aw) { ; }
   };
 
+  /*
   template <int DIM, typename SCAL>
   INLINE Class_curl_uDvw_minus_Duvw<DIM,SCAL> 
   curl_uDvw_minus_Duvw (AutoDiff<DIM,SCAL> u, AutoDiff<DIM,SCAL> v, AutoDiff<DIM,SCAL> w)
   { return Class_curl_uDvw_minus_Duvw<DIM,SCAL> (u,v,w); }
-
+  */
+  
   /*
   template <int DIM, typename SCAL>
   INLINE Class_curl_uDvw_minus_Duvw<DIM,SCAL> 
@@ -187,7 +212,7 @@ namespace ngfem
   */
 
 
-
+#ifdef OLDTHDIV2SHAPE
   template <int DIM, typename SCAL = double> class THDiv2Shape
   {
   public:
@@ -233,7 +258,7 @@ namespace ngfem
     Vec<3,SCAL> data;
   public:
 
-    INLINE THDiv2Shape (const Class_uDvDw_Cyclic<3,SCAL> & uvw) 
+    INLINE THDiv2Shape (const uDvDw_Cyclic<3,SCAL> & uvw) 
     { 
       /*
       AutoDiff<3,SCAL> hv =
@@ -256,7 +281,7 @@ namespace ngfem
     }
 
 
-    INLINE THDiv2Shape (const Class_z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
+    INLINE THDiv2Shape (const z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
     { 
       /*
       AutoDiff<3,SCAL> hv =
@@ -278,14 +303,14 @@ namespace ngfem
           uvwz.z.Value() * uvwz.w.Value() * p3.DValue(i);
     }
     
-    INLINE THDiv2Shape (const Class_Du_Cross_Dv<3,SCAL> & uv) 
+    INLINE THDiv2Shape (const Du_Cross_Dv<3,SCAL> & uv) 
     { 
       AutoDiff<3,SCAL> hv = Cross (uv.u, uv.v);
       for (int i = 0; i < 3; i++)
         data[i] = hv.DValue(i);
     }
 
-    INLINE THDiv2Shape (const Class_wDu_Cross_Dv<3,SCAL> & uvw) 
+    INLINE THDiv2Shape (const wDu_Cross_Dv<3,SCAL> & uvw) 
     { 
       AutoDiff<3,SCAL> hv = Cross (uvw.u, uvw.v);
       for (int i = 0; i < 3; i++)
@@ -293,7 +318,7 @@ namespace ngfem
     }
 
 
-    INLINE THDiv2Shape (const Class_uDvDw_minus_DuvDw<3,SCAL> & uvw) 
+    INLINE THDiv2Shape (const uDvDw_minus_DuvDw<3,SCAL> & uvw) 
     { 
       /*
       AutoDiff<3,SCAL> hv =
@@ -312,7 +337,7 @@ namespace ngfem
           uvw.v.Value() * p2.DValue(i);
     }
 
-    INLINE THDiv2Shape (const Class_curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
+    INLINE THDiv2Shape (const curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
     { 
       AutoDiff<3,SCAL> hv = Cross (uvw.u*uvw.w, uvw.v) - Cross (uvw.v*uvw.w, uvw.u);
       for (int i = 0; i < 3; i++)
@@ -321,7 +346,7 @@ namespace ngfem
 
     INLINE operator Vec<3,SCAL> () const { return data; }
   };
-
+#endif
 
 
 
@@ -400,7 +425,7 @@ namespace ngfem
   }
     
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_uDvDw_Cyclic<3,SCAL> & uvw) 
+  INLINE auto HDiv2ShapeNew (const uDvDw_Cyclic<3,SCAL> & uvw) 
     { 
       AutoDiff<3,SCAL> p1 = Cross (uvw.v, uvw.w);
       AutoDiff<3,SCAL> p2 = Cross (uvw.w, uvw.u);
@@ -416,7 +441,7 @@ namespace ngfem
     }
 
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
+  INLINE auto HDiv2ShapeNew (const z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
     { 
       AutoDiff<3,SCAL> p1 = Cross (uvwz.v, uvwz.w);
       AutoDiff<3,SCAL> p2 = Cross (uvwz.w, uvwz.u);
@@ -433,7 +458,7 @@ namespace ngfem
 
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_Du_Cross_Dv<3,SCAL> & uv) 
+  INLINE auto HDiv2ShapeNew (const Du_Cross_Dv<3,SCAL> & uv) 
   { 
     AutoDiff<3,SCAL> hv = Cross (uv.u, uv.v);
     Vec<3,SCAL> data;
@@ -443,7 +468,7 @@ namespace ngfem
   }
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_wDu_Cross_Dv<3,SCAL> & uvw) 
+  INLINE auto HDiv2ShapeNew (const wDu_Cross_Dv<3,SCAL> & uvw) 
   { 
     AutoDiff<3,SCAL> hv = Cross (uvw.u, uvw.v);
     Vec<3,SCAL> data;
@@ -454,7 +479,7 @@ namespace ngfem
   
 
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_uDvDw_minus_DuvDw<3,SCAL> & uvw) 
+  INLINE auto HDiv2ShapeNew (const uDvDw_minus_DuvDw<3,SCAL> & uvw) 
   { 
     /*
       AutoDiff<3,SCAL> hv =
@@ -476,7 +501,7 @@ namespace ngfem
   }
   
   template <typename SCAL>
-  INLINE auto HDiv2ShapeNew (const Class_curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
+  INLINE auto HDiv2ShapeNew (const curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
   { 
     AutoDiff<3,SCAL> hv = Cross (uvw.u*uvw.w, uvw.v) - Cross (uvw.v*uvw.w, uvw.u);
     Vec<3,SCAL> data;
@@ -577,7 +602,7 @@ namespace ngfem
     SCAL data;
   public:
 
-    INLINE THDiv2DivShape (const Class_uDvDw_Cyclic<3,SCAL> & uvw) 
+    INLINE THDiv2DivShape (const uDvDw_Cyclic<3,SCAL> & uvw) 
     { 
       data = 
         Dot (uvw.u, Cross (uvw.v, uvw.w)) +
@@ -585,7 +610,7 @@ namespace ngfem
         Dot (uvw.w, Cross (uvw.u, uvw.v));
     }
 
-    INLINE THDiv2DivShape (const Class_z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
+    INLINE THDiv2DivShape (const z_times_uDvDw_Cyclic<3,SCAL> & uvwz) 
     { 
       data = 
         Dot (uvwz.z * uvwz.u, Cross (uvwz.v, uvwz.w)) +
@@ -593,24 +618,24 @@ namespace ngfem
         Dot (uvwz.z * uvwz.w, Cross (uvwz.u, uvwz.v));
     }
 
-    INLINE THDiv2DivShape (const Class_Du_Cross_Dv<3,SCAL> & uv) 
+    INLINE THDiv2DivShape (const Du_Cross_Dv<3,SCAL> & uv) 
     { 
       data = 0.0;
     }
 
-    INLINE THDiv2DivShape (const Class_wDu_Cross_Dv<3,SCAL> & uvw) 
+    INLINE THDiv2DivShape (const wDu_Cross_Dv<3,SCAL> & uvw) 
     { 
       data = Dot (uvw.w, Cross (uvw.u, uvw.v));
     }
 
-    INLINE THDiv2DivShape (const Class_uDvDw_minus_DuvDw<3,SCAL> & uvw) 
+    INLINE THDiv2DivShape (const uDvDw_minus_DuvDw<3,SCAL> & uvw) 
     { 
       data = 
         Dot (uvw.u, Cross (uvw.v, uvw.w)) +
         Dot (uvw.v, Cross (uvw.w, uvw.u));
     }
 
-    INLINE THDiv2DivShape (const Class_curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
+    INLINE THDiv2DivShape (const curl_uDvw_minus_Duvw<3,SCAL> & uvw) 
     { 
       data = SCAL(0.0);
     }
