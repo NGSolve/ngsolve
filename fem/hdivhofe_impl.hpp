@@ -459,10 +459,10 @@ template <typename MIP, typename TFA>
               for (int k = 0; k <= pc-2-i-j; k++)
                 {
                   // grad v  x  grad (uw)
-                  shape[ii++] = Du_Cross_Dv<3> (adpol2[j], adpol1[i]*adpol3[k]);
+                  shape[ii++] = Du_Cross_Dv (adpol2[j], adpol1[i]*adpol3[k]);
         
                   // grad w  x  grad (uv)
-                  shape[ii++] = Du_Cross_Dv<3> (adpol3[k], adpol1[i]*adpol2[j]);
+                  shape[ii++] = Du_Cross_Dv (adpol3[k], adpol1[i]*adpol2[j]);
                 }     
 
 
@@ -470,7 +470,7 @@ template <typename MIP, typename TFA>
           // ned = lami[0] * nabla(lami[3]) - lami[3] * nabla(lami[0]) 
           for (int j= 0; j <= pc-2; j++)
             for (int k = 0; k <= pc-2-j; k++)
-              shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[0], lami[3], adpol2[j]*adpol3[k]);
+              shape[ii++] = curl_uDvw_minus_Duvw (lami[0], lami[3], adpol2[j]*adpol3[k]);
         }
 
         if (!ho_div_free)
@@ -654,7 +654,7 @@ template <typename MIP, typename TFA>
 	if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
 	if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	  	
 	
-	shape[i] = wDu_Cross_Dv<3> (lami[fav[0]], lami[fav[1]], muz[fav[0]]);
+	shape[i] = wDu_Cross_Dv (lami[fav[0]], lami[fav[1]], muz[fav[0]]);
 
 	Tx xi = lami[fav[1]]-lami[fav[0]];
 	Tx eta = lami[fav[2]];
@@ -688,14 +688,14 @@ template <typename MIP, typename TFA>
             // jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, adpol2);
             jac.EvalMult(p-1, eta-sum, eta, adpol2);
             for (int l = 0; l <= p-1-k; l++)
-              shape[ii++] = Du_Cross_Dv<3> (adpol2[l]*muz[fav[2]], adpol1[k]);
+              shape[ii++] = Du_Cross_Dv (adpol2[l]*muz[fav[2]], adpol1[k]);
           }
         
         IntegratedJacobiPolynomialAlpha jac(3);
         // jac.EvalScaledMult(p-1, eta-sum, 1-zeta, eta, adpol2);
         jac.EvalMult(p-1, eta-sum, eta, adpol2);
         for (int j = 0; j <= p-1; j++)
-          shape[ii++] = curl_uDvw_minus_Duvw<3> (lami[fav[0]], lami[fav[1]], adpol2[j]*muz[fav[2]]);
+          shape[ii++] = curl_uDvw_minus_Duvw (lami[fav[0]], lami[fav[1]], adpol2[j]*muz[fav[2]]);
       }    
     
     // quad faces
@@ -729,37 +729,37 @@ template <typename MIP, typename TFA>
 
 	double fac = (vnums[faces[i][fz]] > vnums[faces[i][ftrig]]) ? 1 : -1;
 
-	shape[i] = uDvDw_minus_DuvDw<3> (lami[faces[i][fmax]],
-					 lami[faces[i][ftrig]], -0.5*fac*zeta);
+	shape[i] = uDvDw_minus_DuvDw (lami[faces[i][fmax]],
+                                      lami[faces[i][ftrig]], -0.5*fac*zeta);
 					    
 
 	if (vnums[f1] < vnums[f2])
 	  {
 	    for (int k = 0; k <= p[0]-1; k++)
 	      for (int j = 0; j <= p[1]-1; j++, ii++)
-		shape[ii] = Du_Cross_Dv<3> (adpolxy1[k], -2*adpolz[j]);
+		shape[ii] = Du_Cross_Dv (adpolxy1[k], -2*adpolz[j]);
 	  }
 	else
 	  {
 	    for (int j = 0; j <= p[1]-1; j++)
 	      for (int k = 0; k <= p[0]-1; k++, ii++)
-		shape[ii] = Du_Cross_Dv<3> (adpolxy1[k],  2*adpolz[j]);
+		shape[ii] = Du_Cross_Dv (adpolxy1[k],  2*adpolz[j]);
 	  }
 	  
 
         if (vnums[f1] < vnums[f2])
           {
             for (int j= 0; j <= p[0]-1; j++, ii++)
-	      shape[ii] = Du_Cross_Dv<3> (adpolxy1[j], zeta);
+	      shape[ii] = Du_Cross_Dv (adpolxy1[j], zeta);
             for(int j=0; j<= p[1]-1;j++,ii++)
-	      shape[ii] = curl_uDvw_minus_Duvw<3> (lami[f1], lami[f], 2*adpolz[j]);
+	      shape[ii] = curl_uDvw_minus_Duvw (lami[f1], lami[f], 2*adpolz[j]);
           }  
         else
           {
             for(int j = 0; j <= p[0]-1; j++,ii++)
-	      shape[ii] = curl_uDvw_minus_Duvw<3> (lami[f1], lami[f], 2*adpolz[j]);
+	      shape[ii] = curl_uDvw_minus_Duvw (lami[f1], lami[f], 2*adpolz[j]);
             for (int j= 0; j <= p[1]-1; j++, ii++)
-	      shape[ii] = Du_Cross_Dv<3> (adpolxy1[j], zeta);
+	      shape[ii] = Du_Cross_Dv (adpolxy1[j], zeta);
           }   
       }    
 
@@ -774,20 +774,20 @@ template <typename MIP, typename TFA>
 	for(int i=0;i<=p-1;i++)
 	  for(int j=0;j<=p-1-i;j++)
 	    for(int k=0;k<=pz-1;k++)
-	      shape[ii++] = Du_Cross_Dv<3> (adpolxy1[i],adpolxy2[j]*adpolz[k]);
+	      shape[ii++] = Du_Cross_Dv (adpolxy1[i],adpolxy2[j]*adpolz[k]);
 
 	for(int i=0;i<=p-1;i++)
 	  for(int j=0;j<=p-1-i;j++)
 	    for(int k=0;k<=pz-1;k++)
-	      shape[ii++] = curl_uDvw_minus_Duvw<3> (adpolxy1[i],adpolxy2[j],adpolz[k]);
+	      shape[ii++] = curl_uDvw_minus_Duvw (adpolxy1[i],adpolxy2[j],adpolz[k]);
 
 	for(int j=0;j<=p-1;j++) 
 	  for (int k=0;k<=pz-1;k++) 
-            shape[ii++] = curl_uDvw_minus_Duvw<3> (x,y, adpolxy2[j]*adpolz[k]);
+            shape[ii++] = curl_uDvw_minus_Duvw (x,y, adpolxy2[j]*adpolz[k]);
 
     	for(int i = 0; i <= p-1; i++) 
 	  for(int j = 0; j <= p-1-i; j++) 
-            shape[ii++] = curl_uDvw_minus_Duvw<3> (z,1-z, adpolxy1[i]*adpolxy2[j]);
+            shape[ii++] = curl_uDvw_minus_Duvw (z,1-z, adpolxy1[i]*adpolxy2[j]);
 
         if (!ho_div_free)
           {  // not yet verified
@@ -806,14 +806,14 @@ template <typename MIP, typename TFA>
             for (int i = 0; i <= p; i++)
               for (int j = 0; j <= p-i; j++)
                 for (int k = 0; k < pz; k++)
-                  shape[ii++] = wDu_Cross_Dv<3> ((x-y)*adpolxy1[i], x*adpolxy2[j], z*(1-z)*adpolz[k]);
+                  shape[ii++] = wDu_Cross_Dv ((x-y)*adpolxy1[i], x*adpolxy2[j], z*(1-z)*adpolz[k]);
 
             for (int i = 0; i < p; i++)
               for (int j = 0; j < p-i; j++)
-                shape[ii++] = wDu_Cross_Dv<3> (z, x*y*adpolxy1[i], (1-x-y)*adpolxy2[j]);
+                shape[ii++] = wDu_Cross_Dv (z, x*y*adpolxy1[i], (1-x-y)*adpolxy2[j]);
 
             for (int i = 0; i < p; i++)
-              shape[ii++] = wDu_Cross_Dv<3> (z, x, y*(1-x-y)*adpolxy1[i]);
+              shape[ii++] = wDu_Cross_Dv (z, x, y*(1-x-y)*adpolxy1[i]);
 
 
             /*
