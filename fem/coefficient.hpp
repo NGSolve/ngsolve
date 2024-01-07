@@ -655,62 +655,10 @@ namespace ngfem
                        BareSliceMatrix<T,ORD> values) const
     { T_Evaluate (ir, values); }
 
-    /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const override
-    { values = val; }
-
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                AFlatMatrix<> result, AFlatMatrix<> deriv) const override
-    {
-      result = val;
-      deriv = 0.0;
-    }
-    
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result, AFlatMatrix<> deriv) const override
-    {
-      result = val;
-      deriv = 0.0;
-    }
-
-    virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                 FlatArray<AFlatMatrix<>*> input, FlatArray<AFlatMatrix<>*> dinput,
-                                 FlatArray<AFlatMatrix<>*> ddinput,
-                                 AFlatMatrix<> result, AFlatMatrix<> deriv,
-                                 AFlatMatrix<> dderiv) const override
-    {
-      result = val;
-      deriv = 0.0;
-      dderiv = 0.0;
-    }
-    */
-    
-    
     virtual void PrintReport (ostream & ost) const override;
     virtual string GetDescription () const override;
     
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override; 
-
-    /*
-    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const
-    {
-      nonzero(0) = (val != 0.0);
-    }
-    */
-
-    /*
-    virtual void NonZeroPattern (const class ProxyUserData & ud,
-                                 FlatVector<bool> nonzero,
-                                 FlatVector<bool> nonzero_deriv,
-                                 FlatVector<bool> nonzero_dderiv) const override
-    {
-      nonzero(0) = (val != 0.0);
-      nonzero_deriv = 0.0;
-      nonzero_dderiv = 0.0;
-    }
-    */
     
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<AutoDiffDiff<1,NonZero>> values) const override
@@ -899,9 +847,6 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
 
-    // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, AFlatMatrix<double> values) const;
-    // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const;
-
     template <typename MIR, typename T, ORDERING ORD>
       void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
     template <typename MIR, typename T, ORDERING ORD>
@@ -909,8 +854,6 @@ namespace ngfem
                        FlatArray<BareSliceMatrix<T,ORD>> input,                       
                        BareSliceMatrix<T,ORD> values) const
     { T_Evaluate (ir, values); }
-    
-
     
     virtual double EvaluateConst () const override { return val[0]; }
     double operator[] (int i) const { return val[i]; }
