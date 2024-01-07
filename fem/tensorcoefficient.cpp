@@ -14,6 +14,7 @@
 
 #include "tensorcoefficient.hpp"
 #include "coefficient_impl.hpp"
+#include "coefficient_matrix.hpp"
 
 #include <core/register_archive.hpp>
 #ifdef NGS_PYTHON
