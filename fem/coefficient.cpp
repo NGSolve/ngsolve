@@ -442,6 +442,41 @@ namespace ngfem
     return ZeroCF(var->Dimensions());
   }
 
+
+
+  DiffShapeCF :: ~DiffShapeCF() { }
+  
+
+
+  /// The coefficient is constant everywhere
+  class NGS_DLL_HEADER ConstantCoefficientFunctionC : public CoefficientFunction
+  {
+    ///
+    Complex val;
+  public:
+    ConstantCoefficientFunctionC() = default;
+    ConstantCoefficientFunctionC (Complex aval);
+    virtual ~ConstantCoefficientFunctionC ();
+
+    void DoArchive(Archive& ar) override
+    {
+      CoefficientFunction::DoArchive(ar);
+      ar & val;
+    }
+
+    double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
+    Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override;
+
+    void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const override;
+    void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
+    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                           BareSliceMatrix<SIMD<Complex>> values) const override;
+    
+    void PrintReport (ostream & ost) const override;
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
+    virtual shared_ptr<CoefficientFunction>
+      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
+  };
   
   ///
   ConstantCoefficientFunctionC ::   
@@ -605,6 +640,62 @@ namespace ngfem
   }
 
 
+
+  /// The coefficient is constant in every sub-domain
+  class NGS_DLL_HEADER DomainConstantCoefficientFunction  
+    : public T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative>
+  {
+    ///
+    Array<double> val;
+    typedef T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;    
+  public:
+    ///
+    DomainConstantCoefficientFunction (const Array<double> & aval);
+    ///
+    virtual int NumRegions () override { return val.Size(); }
+    ///
+    virtual ~DomainConstantCoefficientFunction ();
+    ///
+      using T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative>::Evaluate;
+      using CoefficientFunction::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override; 
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
+
+    template <typename MIR, typename T, ORDERING ORD>
+      void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
+    template <typename MIR, typename T, ORDERING ORD>
+      void T_Evaluate (const MIR & ir,
+                       FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                       BareSliceMatrix<T,ORD> values) const
+    { T_Evaluate (ir, values); }
+    
+    virtual double EvaluateConst () const override { return val[0]; }
+    double operator[] (int i) const { return val[i]; }
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
+    virtual void DoArchive (Archive & archive) override
+    {
+        CoefficientFunction::DoArchive(archive);
+        archive & val;
+    }
+    
+  protected:
+    void CheckRange (int elind) const
+    {
+      if (elind < 0 || elind >= val.Size())
+        {
+          ostringstream ost;
+          ost << "DomainConstantCoefficientFunction: Element index "
+              << elind << " out of range 0 - " << val.Size()-1 << endl;
+          throw Exception (ost.str());
+        }
+    }
+  };
+
+
+
+  
   DomainConstantCoefficientFunction :: 
   DomainConstantCoefficientFunction (const Array<double> & aval)
     : BASE(1, false), val(aval) { ; }
@@ -672,6 +763,7 @@ namespace ngfem
   ~DomainConstantCoefficientFunction ()
   { ; }
 
+#ifdef OLD
   DomainVariableCoefficientFunction ::
   DomainVariableCoefficientFunction (const EvalFunction & afun)
     : CoefficientFunction(afun.Dimension(), afun.IsResultComplex()), fun(1)
@@ -931,13 +1023,15 @@ void DomainVariableCoefficientFunction :: GenerateCode(Code &code, FlatArray<int
 {
   code.body += "// DomainVariableCoefficientFunction: not implemented";
 }
-
+#endif
+  
 /*
   template class DomainVariableCoefficientFunction<1>;
   template class DomainVariableCoefficientFunction<2>;
   template class DomainVariableCoefficientFunction<3>;
 */
 
+#ifdef OLD
 PolynomialCoefficientFunction::
 PolynomialCoefficientFunction(const Array < Array< Array<double>* >* > & polycoeffs_in,
                               const Array < Array<double>* > & polybounds_in)
@@ -1060,10 +1154,12 @@ double PolynomialCoefficientFunction::EvaluateConst () const
   return (*(*polycoeffs[0])[0])[0];
 }
 
+#endif
 
 
 //////////////////
 
+#ifdef OLD
 FileCoefficientFunction :: FileCoefficientFunction ()
   : CoefficientFunction(1, false)
 {
@@ -1217,6 +1313,7 @@ void FileCoefficientFunction :: StopWriteIps(const string & infofilename)
   info.close();
 
 }
+#endif
 
 
 class UnitVectorCoefficientFunction : public T_CoefficientFunction<UnitVectorCoefficientFunction>
@@ -4134,6 +4231,13 @@ public:
     values(0) = input[0](comp);
   }
 };
+
+shared_ptr<CoefficientFunction>
+MakeConstantCoefficientFunction (Complex c)
+{
+  return make_shared<ConstantCoefficientFunctionC>(c);
+}
+
 
 shared_ptr<CoefficientFunction>
 MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp)
@@ -7400,10 +7504,10 @@ static RegisterClassForArchive<ParameterCoefficientFunction<double>, Coefficient
 static RegisterClassForArchive<ParameterCoefficientFunction<Complex>, CoefficientFunction> regparc;
 static RegisterClassForArchive<PlaceholderCoefficientFunction, CoefficientFunction> regplacholdercf;
 static RegisterClassForArchive<DomainConstantCoefficientFunction, CoefficientFunction> regdccf;
-static RegisterClassForArchive<DomainVariableCoefficientFunction, CoefficientFunction> regdvcf;
-static RegisterClassForArchive<IntegrationPointCoefficientFunction, CoefficientFunction> regipcf;
-static RegisterClassForArchive<PolynomialCoefficientFunction, CoefficientFunction> regpolcf;
-static RegisterClassForArchive<FileCoefficientFunction, CoefficientFunction> regfilecf;
+// static RegisterClassForArchive<DomainVariableCoefficientFunction, CoefficientFunction> regdvcf;
+// static RegisterClassForArchive<IntegrationPointCoefficientFunction, CoefficientFunction> regipcf;
+// static RegisterClassForArchive<PolynomialCoefficientFunction, CoefficientFunction> regpolcf;
+// static RegisterClassForArchive<FileCoefficientFunction, CoefficientFunction> regfilecf;
 static RegisterClassForArchive<DomainWiseCoefficientFunction, CoefficientFunction> regdwcf;
 static RegisterClassForArchive<VectorialCoefficientFunction, CoefficientFunction> regveccf;
 static RegisterClassForArchive<ComponentCoefficientFunction, CoefficientFunction> regcompcf;
