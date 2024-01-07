@@ -134,7 +134,7 @@ namespace ngfem
     int inner_dim;
     using BASE = T_CoefficientFunction<MultMatMatCoefficientFunction>;
   public:
-    MultMatMatCoefficientFunction() = default;
+    // MultMatMatCoefficientFunction() = default;
     MultMatMatCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
                                    shared_ptr<CoefficientFunction> ac2)
       : T_CoefficientFunction<MultMatMatCoefficientFunction>(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
@@ -151,6 +151,7 @@ namespace ngfem
       inner_dim = dims_c1[1];
     }
 
+    auto GetCArgs() const { return tuple { c1, c2 }; }
     virtual ~MultMatMatCoefficientFunction();
     virtual string GetDescription () const override
     { return "matrix-matrix multiply"; }
@@ -164,8 +165,11 @@ namespace ngfem
 
     void DoArchive(Archive& ar) override
     {
+      /*
       BASE::DoArchive(ar);
       ar.Shallow(c1).Shallow(c2) & inner_dim;
+      cout << "archive mamat, c1 = " << c1 << ", c2 = " << c2 << endl;
+      */
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
