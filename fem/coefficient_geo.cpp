@@ -12,10 +12,166 @@
 #include <coefficient.hpp>
 #include "scalarfe.hpp"
 #include "tpintrule.hpp"
+#include <core/register_archive.hpp>
 
 namespace ngfem
 
 {
+
+  
+  
+  // ////////////////////////// Coordinate CF ////////////////////////
+
+  class CoordCoefficientFunction
+    : public T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative>
+  {
+    int dir;
+    typedef T_CoefficientFunction<CoordCoefficientFunction, CoefficientFunctionNoDerivative> BASE;
+  public:
+    CoordCoefficientFunction() = default;
+    CoordCoefficientFunction (int adir) : BASE(1, false), dir(adir) { SetVariable(true); }
+
+    void DoArchive(Archive& ar) override
+    {
+      BASE::DoArchive(ar);
+      ar & dir;
+    }
+
+    virtual string GetDescription () const override
+    {
+      string dirname;
+      switch (dir)
+        {
+        case 0: dirname = "x"; break;
+        case 1: dirname = "y"; break;
+        case 2: dirname = "z"; break;
+        default: dirname = ToLiteral(dir);
+        }
+      return string("coordinate ")+dirname;
+    }
+
+    using BASE::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      if (!ip.IsComplex())
+        return ip.GetPoint()(dir);
+      else
+        return ip.GetPointComplex()(dir).real();
+    }
+    /*
+      virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+      FlatMatrix<> result) const
+      {
+      if (!ir.IsComplex())
+      result.Col(0) = ir.GetPoints().Col(dir);
+      else
+      {
+      auto pnts = ir.GetPointsComplex().Col(dir);
+      for (auto i : Range(ir.Size()))
+      result(i,0) = pnts(i).real();
+      }
+      }
+      virtual void Evaluate(const BaseMappedIntegrationRule & ir,
+      FlatMatrix<Complex> result) const override
+      {
+      result.Col(0) = ir.GetPoints().Col(dir);
+      }
+    */
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+      auto v = Var(index);
+      // code.body += v.Assign(CodeExpr(string("mir.GetPoints()(i,")+ToLiteral(dir)+")"));
+
+      // code.Declare(code.res_type, index, Dimensions());
+      code.Declare(index, Dimensions(), IsComplex());
+      code.body += v.Assign(CodeExpr(string("points(i,")+ToLiteral(dir)+")"), false);
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      size_t nv = ir.Size();
+      __assume (nv > 0);
+
+      if(dir>=ir.DimSpace())
+        {
+          for (size_t i = 0; i < nv; i++)
+            values(0,i) = 0.0;
+          return;
+        }
+
+      if(!ir.IsComplex())
+        {
+          auto points = ir.GetPoints();
+          for (size_t i = 0; i < nv; i++)
+            values(0,i) = points(i, dir);
+        }
+      else
+        {
+          auto cpoints = ir.GetPointsComplex();
+          __assume (nv > 0);
+          for(auto i : Range(nv))
+            values(0,i) = cpoints(i,dir).real();
+        }
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                     BareSliceMatrix<T,ORD> values) const
+    { T_Evaluate (ir, values); }
+
+    /*
+      virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+      AFlatMatrix<double> values) const
+      {
+      Evaluate (ir, values);
+      }
+    */
+
+    using CoefficientFunction::Operator;
+    shared_ptr<CoefficientFunction> Operator (const string & name) const override
+    {
+      if (spacedim == -1)
+        throw Exception("cannot differentiate coordinate since we don't know the space dimension, use 'coef.spacedim=dim'");
+      if (name != "grad")
+        throw Exception ("cannot apply operator "+name+" for coordinate");
+      
+      Array<shared_ptr<CoefficientFunction>> funcs(spacedim);
+      funcs = ZeroCF(Array<int>());
+      funcs[dir] = make_shared<ConstantCoefficientFunction> (1);
+      return MakeVectorialCoefficientFunction (std::move(funcs));
+    }
+    
+    
+    
+    shared_ptr<CoefficientFunction>
+    Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dirdiff) const override
+    {
+      // if (var == shape.get())
+      if (dynamic_cast<const DiffShapeCF*>(var))
+        return MakeComponentCoefficientFunction (dirdiff, dir);
+      // return BASE::Diff (var, dirdiff);
+      
+      if (auto coordcf = dynamic_cast<const CoordCoefficientFunction*>(var))
+        if (coordcf->dir == this->dir)
+          return dirdiff;
+      
+      return ZeroCF(Dimensions());
+    }
+    
+    
+  };
+
+
+  shared_ptr<CoefficientFunction> MakeCoordinateCoefficientFunction (int comp)
+  {
+    return make_shared<CoordCoefficientFunction> (comp);
+  }
+
+
+
+  
 
   template <int D>
   class cl_NormalVectorCF : public CoefficientFunctionNoDerivative
@@ -30,7 +186,7 @@ namespace ngfem
       return "normal vector";
     }
     
-      using CoefficientFunctionNoDerivative::Evaluate;
+    using CoefficientFunctionNoDerivative::Evaluate;
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
     {
       return 0;
@@ -45,52 +201,52 @@ namespace ngfem
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const // override 
     {
       const TPMappedIntegrationRule * tpir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
-       if(!tpir)
-       {
-         if (ir[0].DimSpace() != D)
-           throw Exception("illegal dim of normal vector");
-         // FlatMatrixFixWidth<D> resD(res);
-         for (int i = 0; i < ir.Size(); i++)
-           res.Row(i).Range(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
-       }
-       else
-       {
-         int facet = tpir->GetFacet();
-         auto & mir = *tpir->GetIRs()[facet];
-         int dim = mir[0].DimSpace();
-         int ii = 0;
-         res = 0.0;
-         if(facet == 0)
-         {
-           if(dim == 1)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
-           if(dim == 2)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
-           if(dim == 3)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
-         }
-         else
-         {
-           if(dim == 1)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
-           if(dim == 2)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
-           if(dim == 3)
-             for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
-               for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
-                 res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
-         }
-      }
+      if(!tpir)
+        {
+          if (ir[0].DimSpace() != D)
+            throw Exception("illegal dim of normal vector");
+          // FlatMatrixFixWidth<D> resD(res);
+          for (int i = 0; i < ir.Size(); i++)
+            res.Row(i).Range(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+        }
+      else
+        {
+          int facet = tpir->GetFacet();
+          auto & mir = *tpir->GetIRs()[facet];
+          int dim = mir[0].DimSpace();
+          int ii = 0;
+          res = 0.0;
+          if(facet == 0)
+            {
+              if(dim == 1)
+                for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+                  for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
+                    res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
+              if(dim == 2)
+                for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+                  for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
+                    res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
+              if(dim == 3)
+                for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+                  for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
+                    res.Row(ii++).Range(0,dim) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[i]).GetNV();//res1.Row(i).Range(0,dim);
+            }
+          else
+            {
+              if(dim == 1)
+                for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+                  for(int j=0;j<tpir->GetIRs()[1]->Size();j++)
+                    res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<1>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
+              if(dim == 2)
+                for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+                  for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
+                    res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<2>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
+              if(dim == 3)
+                for(int i=0;i<tpir->GetIRs()[0]->Size();i++)
+                  for(int j=0;j<tpir->GetIRs()[1]->Size();j++)          
+                    res.Row(ii++).Range(D-dim,D) = static_cast<const DimMappedIntegrationPoint<3>&>(mir[j]).GetNV();//res1.Row(i).Range(0,dim);
+            }
+        }
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> res) const override 
@@ -101,53 +257,53 @@ namespace ngfem
 	res.Row(i).Range(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override  {
-        string miptype;
-        if(code.is_simd)
-          miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
-        else
-          miptype = "DimMappedIntegrationPoint<"+ToLiteral(D)+">*";
-        auto nv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetNV()");
-        auto nv = Var("tmp", index);
-        code.body += nv.Assign(nv_expr);
+      string miptype;
+      if(code.is_simd)
+        miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
+      else
+        miptype = "DimMappedIntegrationPoint<"+ToLiteral(D)+">*";
+      auto nv_expr = CodeExpr("static_cast<const "+miptype+">(&ip)->GetNV()");
+      auto nv = Var("tmp", index);
+      code.body += nv.Assign(nv_expr);
         
-        code.Declare (index, this->Dimensions(), this->IsComplex());  
-        for( int i : Range(D))
-          code.body += Var(index,i).Assign(nv(i), false);
+      code.Declare (index, this->Dimensions(), this->IsComplex());  
+      for( int i : Range(D))
+        code.body += Var(index,i).Assign(nv(i), false);
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
     {
       /*
-      for (size_t i = 0; i < ir.Size(); i++)
+        for (size_t i = 0; i < ir.Size(); i++)
         for (size_t j = 0; j < D; j++)
-          values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
+        values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
       */
       values.AddSize(D, ir.Size()) = Trans(ir.GetNormals());
     }
 
     /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const override 
-    {
+      virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
+      AFlatMatrix<double> values) const override 
+      {
       Evaluate (ir, values);
-    }
+      }
 
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
-                                AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
-    {
+      virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir, 
+      AFlatMatrix<double> values, AFlatMatrix<double> deriv) const
+      {
       Evaluate (ir, values);
       deriv = 0.0;
-    }
+      }
     
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input,
-                                FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    {
+      virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+      FlatArray<AFlatMatrix<>*> input,
+      FlatArray<AFlatMatrix<>*> dinput,
+      AFlatMatrix<> result,
+      AFlatMatrix<> deriv) const
+      {
       Evaluate (ir, result);
       deriv = 0.0;
-    }
+      }
     */
 
 
@@ -250,7 +406,7 @@ namespace ngfem
         code.body += Var(index,i).Assign(tv(i), false);
     }
 
-      using CoefficientFunctionNoDerivative::Evaluate;
+    using CoefficientFunctionNoDerivative::Evaluate;
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
     {
       if (consistent)
@@ -318,7 +474,7 @@ namespace ngfem
     }
     
     /*virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 
-    {
+      {
       values.AddSize(D*D, ir.Size()) = Trans(ir.GetJacobian());
       }*/
 
@@ -941,6 +1097,10 @@ namespace ngfem
         return make_shared<cl_EdgeCurvatureCF<3>>();
       }
   }
+
+
+  static RegisterClassForArchive<CoordCoefficientFunction, CoefficientFunction> regcoocf;
+  
 }
 
 

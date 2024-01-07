@@ -14,7 +14,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         l2hofe_trig.cpp l2hofe_segm.cpp l2hofe_tet.cpp l2hofetp.cpp hcurlhofe.cpp
         hcurlhofe_hex.cpp hcurlhofe_tet.cpp hcurlhofe_prism.cpp hcurlhofe_pyramid.cpp
         hcurlfe.cpp vectorfacetfe.cpp normalfacetfe.cpp hdivhofe.cpp recursive_pol_trig.cpp
-        coefficient.cpp coefficient_geo.cpp coefficient_stdmath.cpp coefficient_impl.hpp
+        coefficient.cpp coefficient_matrix.cpp coefficient_geo.cpp coefficient_stdmath.cpp coefficient_impl.hpp
         integrator.cpp specialelement.cpp elementtopology.cpp
         intrule.cpp finiteelement.cpp elementtransformation.cpp
         scalarfe.cpp hdivfe.cpp recursive_pol.cpp
