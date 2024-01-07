@@ -41,7 +41,7 @@ namespace ngfem
     // a numpy.complex converts itself to a real, and prints a warning
     // thus we check for it first
     if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
-      return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>());
+      return MakeConstantCoefficientFunction(val.cast<Complex>());
 
     try
       {
@@ -52,7 +52,7 @@ namespace ngfem
           return ZeroCF(Array<int>());
       }
     catch(const py::cast_error&) {}
-    try { return make_shared<ConstantCoefficientFunctionC> (val.cast<Complex>()); }
+    try { return MakeConstantCoefficientFunction(val.cast<Complex>()); }
     catch(const py::cast_error&) {}
 
     if (py::isinstance<py::list>(val))
@@ -809,11 +809,11 @@ val : can be one of the following:
     .def ("__add__", [] (shared_ptr<CF> coef, double val)
            {return coef + make_shared<ConstantCoefficientFunction>(val); }, py::arg("value"))
     .def ("__add__", [] (shared_ptr<CF> coef, Complex val)
-           {return coef + make_shared<ConstantCoefficientFunctionC> (val); }, py::arg("value"))
+    {return coef + MakeConstantCoefficientFunction(val); }, py::arg("value"))
     .def ("__radd__", [] (shared_ptr<CF> coef, double val)
           { return coef + make_shared<ConstantCoefficientFunction>(val); }, py::arg("value"))
     .def ("__radd__", [] (shared_ptr<CF> coef, Complex val)
-          { return coef + make_shared<ConstantCoefficientFunctionC> (val); }, py::arg("value"))
+          { return coef + MakeConstantCoefficientFunction(val); }, py::arg("value"))
 
     .def ("__sub__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
           { return c1-c2; }, py::arg("cf"))
@@ -962,7 +962,7 @@ cf : ngsolve.CoefficientFunction
     .def ("__rtruediv__", [] (shared_ptr<CF> coef, double val)
           { return make_shared<ConstantCoefficientFunction>(val) / coef; }, py::arg("value"))
     .def ("__rtruediv__", [] (shared_ptr<CF> coef, Complex val)
-          { return make_shared<ConstantCoefficientFunctionC>(val) / coef; }, py::arg("value"))
+          { return MakeConstantCoefficientFunction(val) / coef; }, py::arg("value"))
 
     .def ("__neg__", [] (shared_ptr<CF> coef)
            { return -1.0 * coef; })

@@ -680,37 +680,6 @@ namespace ngfem
 
 
   /// The coefficient is constant everywhere
-  class NGS_DLL_HEADER ConstantCoefficientFunctionC : public CoefficientFunction
-  {
-    ///
-    Complex val;
-  public:
-    ConstantCoefficientFunctionC() = default;
-    ConstantCoefficientFunctionC (Complex aval);
-    virtual ~ConstantCoefficientFunctionC ();
-
-    void DoArchive(Archive& ar) override
-    {
-      CoefficientFunction::DoArchive(ar);
-      ar & val;
-    }
-
-    double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
-    Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override;
-
-    void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const override;
-    void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
-    void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
-                           BareSliceMatrix<SIMD<Complex>> values) const override;
-    
-    void PrintReport (ostream & ost) const override;
-    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
-    virtual shared_ptr<CoefficientFunction>
-      DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override;
-  };
-
-
-  /// The coefficient is constant everywhere
   template<typename SCAL>
   class NGS_DLL_HEADER ParameterCoefficientFunction : public CoefficientFunctionNoDerivative
   {
@@ -826,61 +795,8 @@ namespace ngfem
   };
   
 
-  /// The coefficient is constant in every sub-domain
-  class NGS_DLL_HEADER DomainConstantCoefficientFunction  
-    : public T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative>
-  {
-    ///
-    Array<double> val;
-    typedef T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative> BASE;    
-  public:
-    ///
-    DomainConstantCoefficientFunction (const Array<double> & aval);
-    ///
-    virtual int NumRegions () override { return val.Size(); }
-    ///
-    virtual ~DomainConstantCoefficientFunction ();
-    ///
-      using T_CoefficientFunction<DomainConstantCoefficientFunction, CoefficientFunctionNoDerivative>::Evaluate;
-      using CoefficientFunction::Evaluate;
-    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override; 
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override;
 
-    template <typename MIR, typename T, ORDERING ORD>
-      void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const;
-    template <typename MIR, typename T, ORDERING ORD>
-      void T_Evaluate (const MIR & ir,
-                       FlatArray<BareSliceMatrix<T,ORD>> input,                       
-                       BareSliceMatrix<T,ORD> values) const
-    { T_Evaluate (ir, values); }
-    
-    virtual double EvaluateConst () const override { return val[0]; }
-    double operator[] (int i) const { return val[i]; }
-
-    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
-    virtual void DoArchive (Archive & archive) override
-    {
-        CoefficientFunction::DoArchive(archive);
-        archive & val;
-    }
-    
-  protected:
-    void CheckRange (int elind) const
-    {
-      if (elind < 0 || elind >= val.Size())
-        {
-          ostringstream ost;
-          ost << "DomainConstantCoefficientFunction: Element index "
-              << elind << " out of range 0 - " << val.Size()-1 << endl;
-          throw Exception (ost.str());
-        }
-    }
-  };
-
-
-
-
+#ifdef OLD
   ///
   // template <int DIM>
   class NGS_DLL_HEADER DomainVariableCoefficientFunction : public CoefficientFunction
@@ -935,7 +851,10 @@ namespace ngfem
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
   };
+#endif
 
+
+#ifdef OLD
   ///
   template <int DIM>
   class NGS_DLL_HEADER DomainInternalCoefficientFunction : public CoefficientFunction
@@ -972,10 +891,10 @@ namespace ngfem
     }
   
   };
+#endif
 
 
-
-
+#ifdef OLD
 
   /**
      coefficient function that is defined in every integration point.
@@ -1100,8 +1019,10 @@ namespace ngfem
     }
   
   };
+#endif
 
 
+#ifdef OLD
   /// Coefficient function that depends (piecewise polynomially) on a parameter
   class PolynomialCoefficientFunction : public CoefficientFunction
   {
@@ -1127,11 +1048,11 @@ namespace ngfem
 
     virtual double EvaluateConst () const;
   };
-
+#endif
 
 
   //////////////////
-
+#ifdef OLD
   class FileCoefficientFunction : public CoefficientFunction
   {
   private:
@@ -1176,6 +1097,7 @@ namespace ngfem
     void Reset(void);
 
   };
+#endif
 
 
 
@@ -1752,6 +1674,7 @@ public:
     DiffShapeCF() : ConstantCoefficientFunction(1) {
       SetVariable();
     }
+    ~DiffShapeCF() override;
     Array<shared_ptr<CoefficientFunction>> Eulerian_gridfunctions;
   };
 
@@ -1770,7 +1693,8 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 }
 
 
-
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeConstantCoefficientFunction (Complex c);
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeComponentCoefficientFunction (shared_ptr<CoefficientFunction> c1, int comp);
