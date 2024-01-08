@@ -6,7 +6,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         gridfunction.cpp h1hofespace.cpp hcurlhdivfes.cpp hcurlhofespace.cpp 
         hdivfes.cpp hdivhofespace.cpp hdivhosurfacefespace.cpp l2hofespace.cpp     
         linearform.cpp meshaccess.cpp ngsobject.cpp postproc.cpp	     
-        preconditioner.cpp vectorfacetfespace.cpp
+        preconditioner.cpp tangentialfacetfespace.cpp
         normalfacetfespace.cpp normalfacetsurfacefespace.cpp
         numberfespace.cpp irspace.cpp h1lumping.cpp bddc.cpp h1amg.cpp
         hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp hcurlcurlfespace.cpp tpfes.cpp hcurldivfespace.cpp fesconvert.cpp
@@ -35,7 +35,7 @@ install( FILES
         fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp hdivhosurfacefespace.hpp		   	   
         l2hofespace.hpp hdivdivsurfacespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
-        postproc.hpp preconditioner.hpp vectorfacetfespace.hpp
+        postproc.hpp preconditioner.hpp tangentialfacetfespace.hpp
         normalfacetfespace.hpp normalfacetsurfacefespace.hpp hypre_precond.hpp h1amg.hpp
         irspace.hpp h1lumping.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp hidden.hpp reorderedfespace.hpp

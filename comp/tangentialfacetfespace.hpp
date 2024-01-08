@@ -1,8 +1,8 @@
-#ifndef VECTOR_FACET_FESPACE_HPP
-#define VECTOR_FACET_FESPACE_HPP
+#ifndef TANGENTIAL_FACET_FESPACE_HPP
+#define TANGENTIAL_FACET_FESPACE_HPP
 
 /*********************************************************************/
-/* File:   vectorfacetfespace.hpp                                    */
+/* File:   tangentialfacetfespace.hpp                                */
 /* Author: A. Sinwel, Joachim Schoeberl                              */
 /* Date:   2008                                                      */
 /*********************************************************************/
@@ -13,7 +13,7 @@
 namespace ngcomp
 {
 
-  class NGS_DLL_HEADER VectorFacetFESpace : public FESpace
+  class NGS_DLL_HEADER TangentialFacetFESpace : public FESpace
   {
   protected:
     /// Level
@@ -44,15 +44,15 @@ namespace ngcomp
     
   public:
     ///
-    VectorFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
-			bool parseflags = false );
+    TangentialFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+                            bool parseflags = false );
 
-    virtual ~VectorFacetFESpace () { ; }
+    virtual ~TangentialFacetFESpace () { ; }
     static DocInfo GetDocu ();
 
     virtual string GetClassName () const override
     {
-      return "VectorFacetFESpace";
+      return "TangentialFacetFESpace";
     }
 
     void Update() override;

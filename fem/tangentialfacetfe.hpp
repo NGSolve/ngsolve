@@ -21,7 +21,7 @@ namespace ngfem
   */
   
   template <ELEMENT_TYPE ET>
-  class VectorFacetFacetFE :
+  class TangentialFacetFacetFE :
     public HCurlFiniteElement<ET_trait<ET>::DIM>,
     public VertexOrientedFE<ET>,
     public ET_trait<ET>
@@ -36,14 +36,14 @@ namespace ngfem
     using VertexOrientedFE<ET>::SetVertexNumber;
     using VertexOrientedFE<ET>::SetVertexNumbers;
 
-    VectorFacetFacetFE (int aorder)
+    TangentialFacetFacetFE (int aorder)
     {
       order = aorder;
       order_inner = INT<2>(aorder,aorder);
       ComputeNDof();
     }
 
-    VectorFacetFacetFE () { ; }
+    TangentialFacetFacetFE () { ; }
 
     HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
@@ -72,7 +72,7 @@ namespace ngfem
 
 
   template <ELEMENT_TYPE ET>
-  class VectorFacetVolumeFE : public HCurlFiniteElement<ET_trait<ET>::DIM>, public VertexOrientedFE<ET>
+  class TangentialFacetVolumeFE : public HCurlFiniteElement<ET_trait<ET>::DIM>, public VertexOrientedFE<ET>
   {
   protected:
     using ET_T = ET_trait<ET>;
@@ -86,7 +86,7 @@ namespace ngfem
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
     
-    VectorFacetVolumeFE () { highest_order_dc=false; }
+    TangentialFacetVolumeFE () { highest_order_dc=false; }
     
     HD virtual ELEMENT_TYPE ElementType() const override { return ELEMENT_TYPE(ET); }
 
@@ -135,7 +135,7 @@ namespace ngfem
           CalcShape (ip, fnr, shape);
           return;
         }
-      throw Exception("VectorFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled");
+      throw Exception("TangentialFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled");
     }
 
     using HCurlFiniteElement<ET_trait<ET>::DIM>::CalcMappedShape;
