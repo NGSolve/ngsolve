@@ -63,7 +63,7 @@ namespace ngfem
 
 
 #include "facetfe.hpp" 
-#include "vectorfacetfe.hpp"
+#include "tangentialfacetfe.hpp"
 
 
 #include "specialelement.hpp"
