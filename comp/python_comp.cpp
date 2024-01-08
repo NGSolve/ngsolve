@@ -19,7 +19,7 @@
 #include "facetfespace.hpp"
 #include "facetsurffespace.hpp"
 #include "hdivhosurfacefespace.hpp"
-#include "vectorfacetfespace.hpp"
+#include "tangentialfacetfespace.hpp"
 #include "normalfacetfespace.hpp"
 #include "normalfacetsurfacefespace.hpp"
 #include "../fem/hdivdivfe.hpp"
@@ -1479,7 +1479,7 @@ component : int
   ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface");
   
   // ExportFESpace<VectorFacetFESpace> (m, "VectorFacet");
-  ExportFESpace<VectorFacetFESpace> (m, "TangentialFacetFESpace");
+  ExportFESpace<TangentialFacetFESpace> (m, "TangentialFacetFESpace");
   ExportFESpace<NormalFacetFESpace> (m, "NormalFacetFESpace");
 
   ExportFESpace<FacetFESpace> (m, "FacetFESpace");

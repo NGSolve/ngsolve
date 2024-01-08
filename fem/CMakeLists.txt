@@ -13,7 +13,7 @@ add_library(ngfem ${NGS_LIB_TYPE}
         hdiv_equations.cpp h1hofe.cpp nodalhofe.cpp h1lofe.cpp l2hofe.cpp
         l2hofe_trig.cpp l2hofe_segm.cpp l2hofe_tet.cpp l2hofetp.cpp hcurlhofe.cpp
         hcurlhofe_hex.cpp hcurlhofe_tet.cpp hcurlhofe_prism.cpp hcurlhofe_pyramid.cpp
-        hcurlfe.cpp vectorfacetfe.cpp normalfacetfe.cpp hdivhofe.cpp recursive_pol_trig.cpp
+        hcurlfe.cpp tangentialfacetfe.cpp normalfacetfe.cpp hdivhofe.cpp recursive_pol_trig.cpp
         coefficient.cpp coefficient_matrix.cpp coefficient_geo.cpp coefficient_stdmath.cpp coefficient_impl.hpp
         integrator.cpp specialelement.cpp elementtopology.cpp
         intrule.cpp finiteelement.cpp elementtransformation.cpp
@@ -41,7 +41,7 @@ install( FILES
         hcurlhofe.hpp hcurllofe.hpp hdivdivfe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp
         integrator.hpp integratorcf.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp
         recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	
-        specialelement.hpp thdivfe.hpp tscalarfe.hpp vectorfacetfe.hpp normalfacetfe.hpp
+        specialelement.hpp thdivfe.hpp tscalarfe.hpp tangentialfacetfe.hpp normalfacetfe.hpp
         hdivlofe.hpp hdivhofefo.hpp pml.hpp precomp.hpp h1hofe_impl.hpp	
         hdivhofe_impl.hpp tscalarfe_impl.hpp thdivfe_impl.hpp
         l2hofe_impl.hpp hcurlcurlfe.hpp

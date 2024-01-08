@@ -16,7 +16,7 @@ spaces2d={"h1ho" :        { "vorb" : [VOL,BND,BBND], "order" : [3], "quad" : Tru
           "l2" :          { "vorb" : [VOL,BND]     , "order" : [1], "quad" : True }, \
           "l2ho" :        { "vorb" : [VOL,BND]     , "order" : [3], "quad" : True }, \
           "l2surf" :      { "vorb" : [BND]         , "order" : [3], "quad" : True }, \
-          "vectorfacet" : { "vorb" : [VOL,BND]     , "order" : [3], "quad" : True }, \
+          "tangentialfacet" : { "vorb" : [VOL,BND]     , "order" : [3], "quad" : True }, \
           "number" :      { "vorb" : [VOL]         , "order" : [3], "quad" : True }, \
           "hdivdiv" :     { "vorb" : [VOL]         , "order" : [3], "quad" : True }, \
           # "hcurl" :       { "vorb" : [VOL,BND]     , "order" : [1], "quad" : True }, \
@@ -34,7 +34,7 @@ spaces3d={"h1ho" :        { "vorb" : [VOL,BND,BBND,BBBND], "order" : [4] }, \
           "l2" :          { "vorb" : [VOL,BND]           , "order" : [1] }, \
           "l2ho" :        { "vorb" : [VOL,BND]           , "order" : [3] }, \
           "l2surf" :      { "vorb" : [BND]               , "order" : [3] }, \
-          "vectorfacet" : { "vorb" : [VOL,BND]           , "order" : [3] }, \
+          "tangentialfacet" : { "vorb" : [VOL,BND]           , "order" : [3] }, \
           "number" :      { "vorb" : [VOL]               , "order" : [3] }, \
           "hdivdiv" :     { "vorb" : [VOL,BND]           , "order" : [3] }, \
           # "hcurl" :       { "vorb" : [VOL,BND]           , "order" : [1] }, \

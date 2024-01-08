@@ -1,12 +1,12 @@
 /*********************************************************************/
-/* File:   vectorfacetfespace.cpp                                    */
+/* File:   tangentialfacetfespace.cpp                                */
 /* Author: A. Sinwel, Joachim Schoeberl                              */
 /* Date:   2008                                                      */
 /*********************************************************************/
 
-#include "vectorfacetfespace.hpp"
+#include "tangentialfacetfespace.hpp"
 
-#include "../fem/vectorfacetfe.hpp"
+#include "../fem/tangentialfacetfe.hpp"
 #include "../fem/hcurllofe.hpp"
 #include <../fem/hcurl_equations.hpp>
 
@@ -14,12 +14,12 @@
 namespace ngcomp
 {
 
-  VectorFacetFESpace :: VectorFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
+  TangentialFacetFESpace :: TangentialFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
 					    bool parseflags )
     : FESpace(ama, flags )
   {
-    type = "vectorfacet";
-    name = "VectorFESpace";
+    type = "tangentialfacet";
+    name = "TangentialFacetFESpace";
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder");
 
@@ -34,7 +34,7 @@ namespace ngcomp
 
     loflags.SetFlag ("low_order");
     if (!flags.GetDefineFlag ("low_order"))
-      low_order_space = make_shared<VectorFacetFESpace>(ma, loflags);
+      low_order_space = make_shared<TangentialFacetFESpace>(ma, loflags);
 
     order = int (flags.GetNumFlag ("order",0)); 
 
@@ -49,10 +49,10 @@ namespace ngcomp
     if(flags.NumFlagDefined("order") && flags.NumFlagDefined("relorder")) 
       {
 	if(var_order)
-	  cerr << " WARNING: VectorFacetFESpace: inconsistent flags: variableorder, order and relorder "
+	  cerr << " WARNING: TangentialFacetFESpace: inconsistent flags: variableorder, order and relorder "
 	       << "-> variable order space with rel_order " << rel_order << "is used, but order is ignored " << endl; 
 	else 
-	  cerr << " WARNING: VectorFacetFESpace: inconsistent flags: order and rel_order "
+	  cerr << " WARNING: TangentialFacetFESpace: inconsistent flags: order and rel_order "
 	       << "-> uniform order space with order " << order << " is used " << endl; 
       }
 
@@ -119,7 +119,7 @@ namespace ngcomp
     // Update();
   }
   
-  DocInfo VectorFacetFESpace :: GetDocu()
+  DocInfo TangentialFacetFESpace :: GetDocu()
   {
     DocInfo docu = FESpace::GetDocu();
     docu.Arg("highest_order_dc")  = "bool = False\n"
@@ -129,11 +129,11 @@ namespace ngcomp
     return docu;
   }
 
-  void VectorFacetFESpace :: Update()
+  void TangentialFacetFESpace :: Update()
   {
     FESpace::Update();
     if ( print ) 
-      *testout << "VectorFacetFESpace, order " << order << endl 
+      *testout << "TangentialFacetFESpace, order " << order << endl 
 	       << "rel_order " << rel_order << ", var_order " << var_order << endl;
 
     bool first_update = GetTimeStamp() < ma->GetTimeStamp();
@@ -161,7 +161,7 @@ namespace ngcomp
 	    fine_facet[el.Facets()] = true;
 #ifdef PARALLEL
 	if(var_order)
-	  throw Exception("MPI + variable order for VectorFacetFESpace is not implemented.");
+	  throw Exception("MPI + variable order for TangentialFacetFESpace is not implemented.");
 #endif
 
 
@@ -312,7 +312,7 @@ namespace ngcomp
 		  case ET_TET: ndof += 4*(order+1)*2; break;
 		  case ET_PRISM: ndof += 2 * (2*(order+1)+3*(2*order+1)); break;
 		  case ET_HEX: ndof += 6*(2*order+1)*2; break;
-		  default: throw Exception (string("VectorFacetFESpace: Element type not implemented"));		  
+		  default: throw Exception (string("TangentialFacetFESpace: Element type not implemented"));		  
 		  }
 	      }
 	    first_inner_dof[ne] = ndof;
@@ -328,7 +328,7 @@ namespace ngcomp
 
     if(print)
       {
-	*testout << "*** Update VectorFacetFESpace: General Information" << endl;
+	*testout << "*** Update TangentialFacetFESpace: General Information" << endl;
 	*testout << " order facet (facet) " << order_facet << endl;
 	*testout << " first_facet_dof (facet)  " << first_facet_dof << endl; 
 	*testout << " first_inner_dof (facet)  " << first_inner_dof << endl; 
@@ -338,7 +338,7 @@ namespace ngcomp
   }
 
   
-  void  VectorFacetFESpace :: UpdateCouplingDofArray ()
+  void  TangentialFacetFESpace :: UpdateCouplingDofArray ()
   {
     ctofdof.SetSize(ndof);
     ctofdof = WIREBASKET_DOF;
@@ -368,7 +368,7 @@ namespace ngcomp
     *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
   }
 
-  FiniteElement & VectorFacetFESpace :: GetFE ( ElementId ei, Allocator & lh ) const
+  FiniteElement & TangentialFacetFESpace :: GetFE ( ElementId ei, Allocator & lh ) const
   {
     if (!DefinedOn (ei))
       {
@@ -387,7 +387,7 @@ namespace ngcomp
             (ma->GetElType(ei), [&] (auto et) -> FiniteElement*
             {
               using ET_T = ET_trait<et.ElementType()>;
-              auto fe = new (lh) VectorFacetVolumeFE<et.ElementType()>();
+              auto fe = new (lh) TangentialFacetVolumeFE<et.ElementType()>();
               // ArrayMem<int,ET_T::N_VERTEX> vnums;
               ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
               auto vnums = ma->GetElVertices(ei);
@@ -414,7 +414,7 @@ namespace ngcomp
             (ma->GetElType(ei), [&] (auto et) -> FiniteElement*
             {
               using ET_T = ET_trait<et.ElementType()>;
-              auto fe = new (lh) VectorFacetFacetFE<et.ElementType()>();
+              auto fe = new (lh) TangentialFacetFacetFE<et.ElementType()>();
               //ArrayMem<int,ET_T::N_VERTEX> vnums;
               ArrayMem<int,ET_T::N_EDGE> ednums;
               auto vnums = ma->GetElVertices(ei);
@@ -434,11 +434,11 @@ namespace ngcomp
             });
         }
       case BBND: case BBBND: default:
-        throw Exception ("VectorFacetFESpace::GetFE does not support BBND or BBBND");
+        throw Exception ("TangentialFacetFESpace::GetFE does not support BBND or BBBND");
       }
   }
 
-  void VectorFacetFESpace :: GetDofNrs(ElementId ei, Array<int> & dnums) const
+  void TangentialFacetFESpace :: GetDofNrs(ElementId ei, Array<int> & dnums) const
   {
     dnums.SetSize0();
     if (!DefinedOn (ei)) return;
@@ -605,10 +605,10 @@ namespace ngcomp
     //  dnums.SetSize(0);
   }
 
-  void VectorFacetFESpace :: SetOrder (NodeId ni, int order) 
+  void TangentialFacetFESpace :: SetOrder (NodeId ni, int order) 
   {
     if (order_policy == CONSTANT_ORDER || order_policy == NODE_TYPE_ORDER)
-      throw Exception("In VectorFacetFESpace::SetOrder. Order policy is constant or node-type!");
+      throw Exception("In TangentialFacetFESpace::SetOrder. Order policy is constant or node-type!");
     else if (order_policy == OLDSTYLE_ORDER)
       order_policy = VARIABLE_ORDER;
       
@@ -620,7 +620,7 @@ namespace ngcomp
 	order_facet[ni.GetNr()] = fine_facet[ni.GetNr()] ? order : 0;
   }
   
-  int VectorFacetFESpace :: GetOrder (NodeId ni) const
+  int TangentialFacetFESpace :: GetOrder (NodeId ni) const
   {
     if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
       if (ni.GetNr() < order_facet.Size())
@@ -630,7 +630,7 @@ namespace ngcomp
   }
 
 
-  FlatArray<VorB> VectorFacetFESpace :: GetDualShapeNodes (VorB vb) const
+  FlatArray<VorB> TangentialFacetFESpace :: GetDualShapeNodes (VorB vb) const
   {
     static VorB nodes[] = { BND, VOL };
     if (int(vb) > 1)
@@ -640,17 +640,17 @@ namespace ngcomp
   }
 
 
-  shared_ptr<Table<int>> VectorFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
+  shared_ptr<Table<int>> TangentialFacetFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   { 
     return nullptr;
   }
 
-  shared_ptr<Array<int>> VectorFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
+  shared_ptr<Array<int>> TangentialFacetFESpace :: CreateDirectSolverClusters (const Flags & precflags) const
   {
     return nullptr;
   }
   
-  void VectorFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
+  void TangentialFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
   {
     dnums.SetSize0();
     if ( ma->GetDimension() == 3 )
@@ -668,36 +668,36 @@ namespace ngcomp
   }
 
 
-  void VectorFacetFESpace :: GetInnerDofNrs ( int felnr, Array<int> & dnums ) const
+  void TangentialFacetFESpace :: GetInnerDofNrs ( int felnr, Array<int> & dnums ) const
   {
     dnums.SetSize0();
   }
 
-  int VectorFacetFESpace :: GetNFacetDofs ( int felnr ) const
+  int TangentialFacetFESpace :: GetNFacetDofs ( int felnr ) const
   {
     // number of low_order_dofs = dimension - 1
     return ( first_facet_dof[felnr+1] - first_facet_dof[felnr] + dimension - 1);
   }
 
   
-  void VectorFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) const
+  void TangentialFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) const
   { 
     vnums = ma->GetElVertices(ElementId(VOL,elnr));
   };
 
   ///
-  INT<2> VectorFacetFESpace :: GetFacetOrder(int fnr) const
+  INT<2> TangentialFacetFESpace :: GetFacetOrder(int fnr) const
   { return order_facet[fnr]; };
   
-  int VectorFacetFESpace :: GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
+  int TangentialFacetFESpace :: GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 
 
 
-  void VectorFacetFESpace :: GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
+  void TangentialFacetFESpace :: GetVertexDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize0();
   }
 
-  void VectorFacetFESpace :: GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
+  void TangentialFacetFESpace :: GetEdgeDofNrs ( int elnum, Array<int> & dnums ) const
   {
     dnums.SetSize0();
     if ( ma->GetDimension() == 3 )
@@ -708,7 +708,7 @@ namespace ngcomp
       dnums.Append(j);
   }
 
-  void VectorFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
+  void TangentialFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
   {
     dnums.SetSize0();
     if ( ma->GetDimension() == 2 ) return;
@@ -719,26 +719,7 @@ namespace ngcomp
       dnums.Append(j);
   }
 
-  static RegisterFESpace<VectorFacetFESpace> init_vfacet ("vectorfacet");
-
-  /*
-  // register FESpaces
-  namespace vectorfacetfespace_cpp
-  {
-    class Init
-    { 
-    public: 
-      Init ();
-    };
-    
-    Init::Init()
-    {
-      GetFESpaceClasses().AddFESpace ("vectorfacet", VectorFacetFESpace::Create);
-    }
-    
-    Init init;
-  }
-  */
+  static RegisterFESpace<TangentialFacetFESpace> init_vfacet ("tangentialfacet");
 }
 
 

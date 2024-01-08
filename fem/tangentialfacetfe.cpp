@@ -6,7 +6,7 @@
 
 
 // #include <fem.hpp>
-#include "vectorfacetfe.hpp"
+#include "tangentialfacetfe.hpp"
 #include "hcurl_equations.hpp"
 #include <thcurlfe_impl.hpp>
 #include "hcurlfe_utils.hpp"
@@ -16,14 +16,14 @@ namespace ngfem
 {
 
   template <ELEMENT_TYPE ET> template<typename Tx, typename TFA>  
-  void VectorFacetVolumeFE<ET>::
+  void TangentialFacetVolumeFE<ET>::
   T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const
   {
-    throw ExceptionNOSIMD("VectorFacetVolume::T_CalcShape missing element "+ToString(ET));
+    throw ExceptionNOSIMD("TangentialFacetVolume::T_CalcShape missing element "+ToString(ET));
   }
 
   template <> template<typename Tx, typename TFA>  
-  void VectorFacetVolumeFE<ET_TRIG>::
+  void TangentialFacetVolumeFE<ET_TRIG>::
   T_CalcShape (Tx hx[DIM], int fanr, TFA & shape) const
   {
     if (fanr == -1) throw Exception("vector-facet element evaluated not at BND");    
@@ -44,7 +44,7 @@ namespace ngfem
 
 
   template<> template<typename Tx, typename TFA>  
-  void VectorFacetVolumeFE<ET_TET> ::
+  void TangentialFacetVolumeFE<ET_TET> ::
   T_CalcShape (Tx hx[DIM], int fanr, TFA & shape ) const
   {
     if (fanr == -1) throw Exception("vector-facet element evaluated not at BND");
@@ -68,7 +68,7 @@ namespace ngfem
   
   
   template <ELEMENT_TYPE ET>
-  void VectorFacetVolumeFE<ET>::
+  void TangentialFacetVolumeFE<ET>::
   CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                    BareSliceMatrix<SIMD<double>> shapes) const
   {
@@ -88,7 +88,7 @@ namespace ngfem
   }
 
   template <ELEMENT_TYPE ET>
-  void VectorFacetVolumeFE<ET>::
+  void TangentialFacetVolumeFE<ET>::
   Evaluate (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
             BareSliceMatrix<SIMD<double>> values) const
   {
@@ -112,7 +112,7 @@ namespace ngfem
   }
   
   template <ELEMENT_TYPE ET>
-  void VectorFacetVolumeFE<ET>::
+  void TangentialFacetVolumeFE<ET>::
   AddTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values,
             BareSliceVector<> coefs) const
   {
@@ -141,16 +141,16 @@ namespace ngfem
   /* **************************** Facet Segm ********************************* */
 
   template <ELEMENT_TYPE ET> template<typename Tx, typename TFA>  
-  void VectorFacetFacetFE<ET>::
+  void TangentialFacetFacetFE<ET>::
   T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const
   {
-    throw ExceptionNOSIMD("VectorFacetFacet::T_CalcShape missing"+ToString(ET));
+    throw ExceptionNOSIMD("TangentialFacetFacet::T_CalcShape missing"+ToString(ET));
   }
 
 
   
   template<ELEMENT_TYPE ET>
-  void VectorFacetFacetFE<ET>::CalcShape(const IntegrationPoint & ip,
+  void TangentialFacetFacetFE<ET>::CalcShape(const IntegrationPoint & ip,
                                          BareSliceMatrix<> shape) const
   {
     TIP<DIM,AutoDiff<DIM>> tip = ip;
@@ -162,7 +162,7 @@ namespace ngfem
   }
   
   template<> template <typename Tx, typename TFA>
-  void VectorFacetFacetFE<ET_SEGM>::T_CalcShape(TIP<DIM,Tx> tip,
+  void TangentialFacetFacetFE<ET_SEGM>::T_CalcShape(TIP<DIM,Tx> tip,
                                                 TFA & shape) const
   {
     // AutoDiff<1> x (ip(0),0);
@@ -190,7 +190,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetFacetFE<ET_SEGM>::ComputeNDof()
+  void TangentialFacetFacetFE<ET_SEGM>::ComputeNDof()
   {
     order = order_inner[0];
     ndof = order+1;
@@ -199,7 +199,7 @@ namespace ngfem
   /* **************************** Facet Trig ********************************* */
 
   template<> template <typename Tx, typename TFA>
-  void VectorFacetFacetFE<ET_TRIG>::T_CalcShape(TIP<DIM,Tx> tip, 
+  void TangentialFacetFacetFE<ET_TRIG>::T_CalcShape(TIP<DIM,Tx> tip, 
                                                 TFA &  shape) const
   {
     /*
@@ -263,7 +263,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetFacetFE<ET_TRIG>::ComputeNDof()
+  void TangentialFacetFacetFE<ET_TRIG>::ComputeNDof()
   {
     order = order_inner[0];
     int p = order_inner[0];
@@ -274,7 +274,7 @@ namespace ngfem
   /* **************************** Facet Quad ********************************* */
 
   template<>
-  void VectorFacetFacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip,
+  void TangentialFacetFacetFE<ET_QUAD>::CalcShape (const IntegrationPoint & ip,
                                                BareSliceMatrix<> shape) const
   {
     AutoDiff<2> x (ip(0), 0);
@@ -318,7 +318,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetFacetFE<ET_QUAD>::ComputeNDof()
+  void TangentialFacetFacetFE<ET_QUAD>::ComputeNDof()
   {
     order = max2( order_inner[0], order_inner[1] );
     ndof = 2 * (order_inner[0]+1) * (order_inner[1]+1);
@@ -328,7 +328,7 @@ namespace ngfem
   /* **************************** Volume Trig ********************************* */
 
   template<>
-  void VectorFacetVolumeFE<ET_TRIG> ::
+  void TangentialFacetVolumeFE<ET_TRIG> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     for (int i = 0; i < ndof; i++)
@@ -344,7 +344,7 @@ namespace ngfem
 
   template<>
   template<typename MIP, typename TFA>  
-  void VectorFacetVolumeFE<ET_TRIG> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  void TangentialFacetVolumeFE<ET_TRIG> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
     auto & ip = mip.IP();
     typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;    
@@ -375,7 +375,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetVolumeFE<ET_TRIG> ::
+  void TangentialFacetVolumeFE<ET_TRIG> ::
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> xshape ) const
   {
     xshape = 0.0;
@@ -406,7 +406,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetVolumeFE<ET_TRIG> :: ComputeNDof()
+  void TangentialFacetVolumeFE<ET_TRIG> :: ComputeNDof()
   {
     ndof = 0;
     for ( int i = 0; i < 3; i++ )
@@ -422,7 +422,7 @@ namespace ngfem
   /* **************************** Volume Quad ********************************* */
 
   template<>
-  void VectorFacetVolumeFE<ET_QUAD> ::
+  void TangentialFacetVolumeFE<ET_QUAD> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     shape.AddSize(ndof, 2) = 0.0;
@@ -456,7 +456,7 @@ namespace ngfem
 
 
   template<>
-  void VectorFacetVolumeFE<ET_QUAD> ::
+  void TangentialFacetVolumeFE<ET_QUAD> ::
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<2> xshape ) const
   {
     xshape = 0.0;
@@ -484,7 +484,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetVolumeFE<ET_QUAD> :: ComputeNDof()
+  void TangentialFacetVolumeFE<ET_QUAD> :: ComputeNDof()
   {
     ndof = 0;
     for ( int i = 0; i < 4; i++ )
@@ -497,16 +497,16 @@ namespace ngfem
 
   template<>
   template<typename MIP, typename TFA>  
-  void VectorFacetVolumeFE<ET_QUAD> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  void TangentialFacetVolumeFE<ET_QUAD> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
-    throw Exception("calcdualshape2 not implemented for ET_QUAD VectorFacetVolumeFE ");
+    throw Exception("calcdualshape2 not implemented for ET_QUAD TangentialFacetVolumeFE ");
   }
 
   
   /* **************************** Volume Tet ********************************* */
 
   template<>
-  void VectorFacetVolumeFE<ET_TET> ::
+  void TangentialFacetVolumeFE<ET_TET> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     for (int i = 0; i < ndof; i++)
@@ -569,7 +569,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetVolumeFE<ET_TET> ::
+  void TangentialFacetVolumeFE<ET_TET> ::
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> xshape ) const
   {
     xshape = 0.0;
@@ -609,7 +609,7 @@ namespace ngfem
 
 
   template<>
-  void VectorFacetVolumeFE<ET_TET> :: ComputeNDof()
+  void TangentialFacetVolumeFE<ET_TET> :: ComputeNDof()
   {
     ndof = 0;
     for (int i = 0; i < 4; i++)
@@ -622,7 +622,7 @@ namespace ngfem
 
   template<>
   template<typename MIP, typename TFA>  
-  void VectorFacetVolumeFE<ET_TET> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  void TangentialFacetVolumeFE<ET_TET> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
     typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
     auto & ip = mip.IP();
@@ -661,7 +661,7 @@ namespace ngfem
   /* **************************** Volume Prism ********************************* */
 
   template<>
-  void VectorFacetVolumeFE<ET_PRISM> ::
+  void TangentialFacetVolumeFE<ET_PRISM> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
@@ -738,7 +738,7 @@ namespace ngfem
   }
 
   template<>
-  int VectorFacetVolumeFE<ET_PRISM> ::
+  int TangentialFacetVolumeFE<ET_PRISM> ::
   GetNExtraShapes ( int fanr) const
   {
     if (fanr < 2) //trig shape
@@ -748,7 +748,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetVolumeFE<ET_PRISM> ::
+  void TangentialFacetVolumeFE<ET_PRISM> ::
   CalcExtraShape ( const IntegrationPoint & ip, int fanr, FlatMatrixFixWidth<3> xshape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
@@ -826,7 +826,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetVolumeFE<ET_PRISM>::ComputeNDof()
+  void TangentialFacetVolumeFE<ET_PRISM>::ComputeNDof()
   {
     ndof = 0;
     // triangles
@@ -847,16 +847,16 @@ namespace ngfem
 
   template<>
   template<typename MIP, typename TFA>  
-  void VectorFacetVolumeFE<ET_PRISM> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  void TangentialFacetVolumeFE<ET_PRISM> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
-    throw Exception("calcdualshape2 not implemented for ET_PRISM VectorFacetVolumeFE ");
+    throw Exception("calcdualshape2 not implemented for ET_PRISM TangentialFacetVolumeFE ");
   }
 
 
   /* **************************** Volume Hex ********************************* */
 
   template<>
-  void VectorFacetVolumeFE<ET_HEX> ::
+  void TangentialFacetVolumeFE<ET_HEX> ::
   CalcShape ( const IntegrationPoint & ip, int fanr, BareSliceMatrix<> shape ) const
   {
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
@@ -908,7 +908,7 @@ namespace ngfem
   }
 
   template<>
-  void VectorFacetVolumeFE<ET_HEX>::ComputeNDof()
+  void TangentialFacetVolumeFE<ET_HEX>::ComputeNDof()
   {
     ndof = 0;
     for (int i=0; i<6; i++)
@@ -921,9 +921,9 @@ namespace ngfem
 
   template<>
   template<typename MIP, typename TFA>  
-  void VectorFacetVolumeFE<ET_HEX> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  void TangentialFacetVolumeFE<ET_HEX> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
-    throw Exception("calcdualshape2 not implemented for ET_HEX VectorFacetVolumeFE ");
+    throw Exception("calcdualshape2 not implemented for ET_HEX TangentialFacetVolumeFE ");
   }
 
 
@@ -931,22 +931,22 @@ namespace ngfem
   /* **************************** Volume Pyramid ********************************* */
 
   template<>
-  void VectorFacetVolumeFE<ET_PYRAMID> ::
+  void TangentialFacetVolumeFE<ET_PYRAMID> ::
   CalcShape ( const IntegrationPoint & ip, int facet, BareSliceMatrix<> shape ) const
   {
-    throw Exception("VectorFacetVolumePyramid::CalcShape: not implemented!");
+    throw Exception("TangentialFacetVolumePyramid::CalcShape: not implemented!");
   }
 
-//   void VectorFacetVolumePyramid::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatMatrix<> shape) const
+//   void TangentialFacetVolumePyramid::CalcFacetShape (int afnr, const IntegrationPoint & ip, FlatMatrix<> shape) const
 //   {
 //     ;
 //   }
    
-//   void VectorFacetVolumePyramid::SetFacet(int afnr) const
+//   void TangentialFacetVolumePyramid::SetFacet(int afnr) const
 //   {
 //     if (qnr == afnr || tnr == afnr) return;
   
-//     VectorFacetVolumePyramid * pyramid=const_cast<VectorFacetVolumePyramid*>(this);
+//     TangentialFacetVolumePyramid * pyramid=const_cast<TangentialFacetVolumePyramid*>(this);
 //     if (afnr < 4) // triangles
 //       {
 // 	pyramid->tnr = afnr;
@@ -975,7 +975,7 @@ namespace ngfem
 //   }  
 
   template<>
-  void VectorFacetVolumeFE<ET_PYRAMID>::ComputeNDof()
+  void TangentialFacetVolumeFE<ET_PYRAMID>::ComputeNDof()
   {
     ndof = 0;
     // triangles
@@ -994,13 +994,13 @@ namespace ngfem
 
   template<>
   template<typename MIP, typename TFA>  
-  void VectorFacetVolumeFE<ET_PYRAMID> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
+  void TangentialFacetVolumeFE<ET_PYRAMID> :: CalcDualShape2 (const MIP & mip, int fnr, TFA & shape) const
   {
-    throw Exception("calcdualshape2 not implemented for ET_PYRAMID VectorFacetVolumeFE ");
+    throw Exception("calcdualshape2 not implemented for ET_PYRAMID TangentialFacetVolumeFE ");
   }
 
   template <ELEMENT_TYPE ET>
-  void VectorFacetVolumeFE<ET> :: CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const
+  void TangentialFacetVolumeFE<ET> :: CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const
   {
     shape.AddSize(ndof, bmip.DimSpace()) = 0.0;
     Switch<4-DIM>
@@ -1016,7 +1016,7 @@ namespace ngfem
   }
 
   template <ELEMENT_TYPE ET>
-  void VectorFacetVolumeFE<ET> :: CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shapes) const
+  void TangentialFacetVolumeFE<ET> :: CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shapes) const
   {
     Switch<4-DIM>
       (bmir.DimSpace()-DIM,[this,&bmir,shapes](auto CODIM)
@@ -1035,7 +1035,7 @@ namespace ngfem
   }
 
   template <ELEMENT_TYPE ET>
-  void VectorFacetVolumeFE<ET> :: EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
+  void TangentialFacetVolumeFE<ET> :: EvaluateDual (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs, BareSliceMatrix<SIMD<double>> values) const
   {
     Switch<4-DIM>
       (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
@@ -1057,7 +1057,7 @@ namespace ngfem
   }
 
   template <ELEMENT_TYPE ET>
-  void VectorFacetVolumeFE<ET> :: AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const
+  void TangentialFacetVolumeFE<ET> :: AddDualTrans (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> values, BareSliceVector<double> coefs) const
   {
     Switch<4-DIM>
       (bmir.DimSpace()-DIM,[this,&bmir,coefs,values](auto CODIM)
@@ -1076,21 +1076,21 @@ namespace ngfem
        });
   }
   
-  template class VectorFacetFacetFE<ET_SEGM>;
-  template class VectorFacetFacetFE<ET_TRIG>;
+  template class TangentialFacetFacetFE<ET_SEGM>;
+  template class TangentialFacetFacetFE<ET_TRIG>;
   
-  // template class VectorFacetVolumeFE<ET_SEGM>;
-  template class VectorFacetVolumeFE<ET_TRIG>;
-  template class VectorFacetVolumeFE<ET_QUAD>;
-  template class VectorFacetVolumeFE<ET_TET>;
-  template class VectorFacetVolumeFE<ET_PRISM>;
-  template class VectorFacetVolumeFE<ET_PYRAMID>;
-  template class VectorFacetVolumeFE<ET_HEX>;
+  // template class TangentialFacetVolumeFE<ET_SEGM>;
+  template class TangentialFacetVolumeFE<ET_TRIG>;
+  template class TangentialFacetVolumeFE<ET_QUAD>;
+  template class TangentialFacetVolumeFE<ET_TET>;
+  template class TangentialFacetVolumeFE<ET_PRISM>;
+  template class TangentialFacetVolumeFE<ET_PYRAMID>;
+  template class TangentialFacetVolumeFE<ET_HEX>;
 
-  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3 /* , VectorFacetFacetFiniteElement<2> */ >  > initrvf3 ("robinvectorfacet", 3, 1);
-  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2 /* , VectorFacetFacetFiniteElement<1> */ >  > initrvf2 ("robinvectorfacet", 2, 1);
-  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<3 /*, VectorFacetFacetFiniteElement<2> */ >  > initnvf3 ("neumannvectorfacet", 3, 1);
-  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2 /*, VectorFacetFacetFiniteElement<1> */ >  > initnvf2 ("neumannvectorfacet", 2, 1);
+  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3 /* , TangentialFacetFacetFiniteElement<2> */ >  > initrvf3 ("robinvectorfacet", 3, 1);
+  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2 /* , TangentialFacetFacetFiniteElement<1> */ >  > initrvf2 ("robinvectorfacet", 2, 1);
+  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<3 /*, TangentialFacetFacetFiniteElement<2> */ >  > initnvf3 ("neumannvectorfacet", 3, 1);
+  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2 /*, TangentialFacetFacetFiniteElement<1> */ >  > initnvf2 ("neumannvectorfacet", 2, 1);
 }
 
 
