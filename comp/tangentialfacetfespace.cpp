@@ -27,7 +27,7 @@ namespace ngcomp
 
     print = flags.GetDefineFlag("print");
 
-    ndlevel.SetSize(0);
+    // ndlevel.SetSize(0);
     Flags loflags;
     loflags.SetFlag("order", 0.0);
     if (IsComplex()) loflags.SetFlag("complex");
@@ -247,7 +247,7 @@ namespace ngcomp
     // dof tables
     // ncfacets = 0;
     int ndof_lo = (ma->GetDimension() == 2) ? nfacets : 2*nfacets;
-    ndof = ndof_lo;
+    size_t ndof = ndof_lo;
     
     first_facet_dof.SetSize(nfacets+1);
     first_facet_dof = ndof_lo;
@@ -319,10 +319,12 @@ namespace ngcomp
 	  }
       }
 
+    SetNDof (ndof);
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-      
+    */
     //no prolongation so far       
     //prol->Update();
 
@@ -679,12 +681,12 @@ namespace ngcomp
     return ( first_facet_dof[felnr+1] - first_facet_dof[felnr] + dimension - 1);
   }
 
-  
+  /*
   void TangentialFacetFESpace :: GetVertexNumbers(int elnr, Array<int>& vnums) const
   { 
     vnums = ma->GetElVertices(ElementId(VOL,elnr));
   };
-
+  */
   ///
   INT<2> TangentialFacetFESpace :: GetFacetOrder(int fnr) const
   { return order_facet[fnr]; };

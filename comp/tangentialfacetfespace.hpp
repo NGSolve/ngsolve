@@ -17,7 +17,7 @@ namespace ngcomp
   {
   protected:
     /// Level
-    int level;
+    // int level;
     /// Number of Facets
     // int nfacets;
     /// 
@@ -34,8 +34,8 @@ namespace ngcomp
     Array<INT<2> > order_facet;
     Array<bool> fine_facet;
 
-    int ndof;
-    Array<int> ndlevel;
+    // int ndof;
+    // Array<int> ndlevel;
     bool var_order;
     bool print;
 
@@ -62,9 +62,8 @@ namespace ngcomp
     virtual int GetOrder (NodeId ni) const override;
 
     
-    virtual size_t GetNDof() const throw() override { return ndof; }
-
-    virtual size_t GetNDofLevel ( int i ) const override { return ndlevel[i]; }
+    // virtual size_t GetNDof() const throw() override { return ndof; }
+    // virtual size_t GetNDofLevel ( int i ) const override { return ndlevel[i]; }
 
     virtual FlatArray<VorB> GetDualShapeNodes (VorB vb) const override;
 
@@ -88,7 +87,7 @@ namespace ngcomp
   
     // some utility functions for convenience
     ///
-    virtual void GetVertexNumbers(int elnr, Array<int>& vnums) const;
+    // virtual void GetVertexNumbers(int elnr, Array<int>& vnums) const;
     ///
     virtual INT<2> GetFacetOrder(int fnr) const;
 
