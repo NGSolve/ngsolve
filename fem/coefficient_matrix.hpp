@@ -151,7 +151,7 @@ namespace ngfem
       inner_dim = dims_c1[1];
     }
 
-    auto GetCArgs() const { return tuple { c1, c2 }; }
+    auto GetCArgs() const { return tuple { Shallow(c1), Shallow(c2) }; }
     virtual ~MultMatMatCoefficientFunction();
     virtual string GetDescription () const override
     { return "matrix-matrix multiply"; }
