@@ -318,7 +318,7 @@ namespace ngbla
 
     INLINE auto Height() const { return Spec().T::Height(); }
     INLINE auto Width() const { return Spec().T::Width(); }
-
+    
 
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
@@ -1504,7 +1504,10 @@ namespace ngbla
   template <typename TA>
   INLINE auto Conj (const Expr<TA> & a)
   {
-    return ConjExpr (a.View()); 
+    if constexpr (IsComplex<decltype(a.Spec()(0))>())
+      return ConjExpr (a.View());
+    else
+      return a.View();
   }
 
 
