@@ -339,6 +339,7 @@ namespace ngbla
     INLINE auto AsMatrix (size_t h, size_t w) const
     {
       // todo: checking
+      static_assert(std::is_same<TDIST,IC<1>>());
       return FlatMatrix<T> (h,w, data);
     }
 
