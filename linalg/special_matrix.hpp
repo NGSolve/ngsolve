@@ -508,7 +508,7 @@ namespace ngla
 
     virtual int VHeight() const override { return mat.Height(); }
     virtual int VWidth() const override { return mat.Width(); }
-
+    virtual size_t NZE() const override { return mat.Height()*mat.Width(); }
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
   };
