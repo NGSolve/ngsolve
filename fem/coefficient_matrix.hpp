@@ -16,13 +16,11 @@ namespace ngfem
     }
 
     // For archive
-    IdentityCoefficientFunction() = default;
+    // IdentityCoefficientFunction() = default;
     virtual ~IdentityCoefficientFunction ();
-    
-    void DoArchive(Archive& ar) override
-    {
-      BASE::DoArchive(ar);
-    }
+
+    auto GetCArgs() const { return tuple { Dimensions()[0] }; }
+    void DoArchive(Archive& ar) override { /* BASE::DoArchive(ar); */ }
 
     virtual string GetDescription () const override
     { return "Identity matrix"; }
@@ -420,7 +418,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> c1;
     using BASE = T_CoefficientFunction<TransposeCoefficientFunction>;
   public:
-    TransposeCoefficientFunction() = default;
+    // TransposeCoefficientFunction() = default;
     TransposeCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
       : T_CoefficientFunction<TransposeCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)
     {
@@ -432,11 +430,14 @@ namespace ngfem
     }
 
     virtual ~TransposeCoefficientFunction();
-    
+
+    auto GetCArgs() const { return tuple { c1 }; }    
     void DoArchive(Archive& ar) override
     {
+      /*
       BASE::DoArchive(ar);
       ar.Shallow(c1);
+      */
     }
 
     virtual string GetDescription () const override
@@ -613,7 +614,7 @@ class TraceCoefficientFunction : public T_CoefficientFunction<TraceCoefficientFu
   shared_ptr<CoefficientFunction> c1;
   using BASE = T_CoefficientFunction<TraceCoefficientFunction>;
 public:
-  TraceCoefficientFunction() = default;
+  // TraceCoefficientFunction() = default;
   TraceCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : T_CoefficientFunction<TraceCoefficientFunction>(1, ac1->IsComplex()), c1(ac1)
   {
@@ -628,11 +629,14 @@ public:
   
   virtual string GetDescription () const override
   { return "trace"; }
-  
+
+  auto GetCArgs() const { return tuple { c1 }; }      
   void DoArchive(Archive& ar) override
   {
+    /*
     BASE::DoArchive(ar);
     ar.Shallow(c1);
+    */
   }
   
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
