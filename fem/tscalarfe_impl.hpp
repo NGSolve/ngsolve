@@ -134,7 +134,8 @@ namespace ngfem
         for (size_t i = 0; i < hir.Size(); i++)
           {
             SIMD<double> sum1 = 0, sum2 = 0, sum3 = 0, sum4 = 0;
-            double * pcoefs = &coefs(j);
+            // double * pcoefs = &coefs(j);
+            double * pcoefs = coefs.Addr(0,j);
             size_t dist = coefs.Dist();
             T_CalcShape (GetTIP<DIM>(hir[i]), 
                          SBLambda ( [&pcoefs, dist, &sum1, &sum2, &sum3, &sum4](int j, SIMD<double> shape)
@@ -160,7 +161,8 @@ namespace ngfem
           for (size_t i = 0; i < hir.Size(); i++)
             {
               SIMD<double> sum1 = 0, sum2 = 0;
-              double * pcoefs = &coefs(j);
+              // double * pcoefs = &coefs(j);
+              double * pcoefs = coefs.Addr(0,j);
               size_t dist = coefs.Dist();
               T_CalcShape (GetTIP<DIM>(hir[i]), 
                            SBLambda ( [&pcoefs, dist,&sum1, &sum2](int j, SIMD<double> shape)
@@ -178,7 +180,8 @@ namespace ngfem
             for (size_t i = 0; i < hir.Size(); i++)
               {
                 SIMD<double> sum1 = 0, sum2 = 0, sum3 = 0;
-                double * pcoefs = &coefs(j);
+                // double * pcoefs = &coefs(j);
+                double * pcoefs = coefs.Addr(0,j);
                 size_t dist = coefs.Dist();
                 T_CalcShape (GetTIP<DIM>(hir[i]), 
                              SBLambda ( [&pcoefs, dist, &sum1,&sum2,&sum3](int j, SIMD<double> shape)
