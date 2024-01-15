@@ -52,6 +52,7 @@ namespace ngfem
     string description;
     bool is_variable = false;  // variables cannot be optimized away (e.g. for differentiation)
   public:
+    static std::true_type shallow_archive;
     typedef std::map<shared_ptr<CoefficientFunction>, shared_ptr<CoefficientFunction>> T_DJC; // DiffJacobi Cache type
     // default constructor for archive
     CoefficientFunction() = default;
