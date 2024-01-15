@@ -107,7 +107,7 @@ namespace ngla
       { Mult(x, y); return; }
     if(safety_check & 2)
       throw Exception(string("MultTransAdd or MultTrans must be implemented for (maybe) not symmetric BaseMatrix, type=")
-                      +typeid(this).name());
+                      +typeid(*this).name());
 
     // y = 0;
     y.SetZero();
