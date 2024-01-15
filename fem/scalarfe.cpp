@@ -162,7 +162,7 @@ namespace ngfem
     STACK_ARRAY(SIMD<double>, mem, 2*ir.Size());
     FlatMatrix<SIMD<double>> hvals(2, ir.Size(), mem);
     Evaluate (ir,
-              SliceMatrix<double>(GetNDof(), 2, 2*coefs.Dist(), (double*)&coefs(0)), hvals);
+              SliceMatrix<double>(GetNDof(), 2, 2*coefs.Dist(), (double*)coefs.Data()), hvals);
     for (size_t i = 0; i < ir.Size(); i++)
       values(i) = SIMD<Complex>(hvals(0,i), hvals(1,i));
   }
