@@ -613,7 +613,7 @@ namespace ngfem
     using BASE::T_DJC;
   public:
     ///
-    ConstantCoefficientFunction() = default;
+    // ConstantCoefficientFunction() = default;
     ConstantCoefficientFunction (double aval);
     ///
     virtual ~ConstantCoefficientFunction ();
@@ -621,10 +621,14 @@ namespace ngfem
 
     void DoArchive (Archive & archive) override
     {
+      /*
       BASE::DoArchive(archive);
       archive & val;
+      */
     }
 
+    auto GetCArgs() const { return tuple { val }; }
+    
     using BASE::Evaluate;
     // virtual bool ElementwiseConstant () const override { return true; }
     
@@ -688,13 +692,14 @@ namespace ngfem
     SCAL val;
   public:
     ///
-    ParameterCoefficientFunction() = default;
+    // ParameterCoefficientFunction() = default;
     ParameterCoefficientFunction (SCAL aval);
     ///
     virtual ~ParameterCoefficientFunction ();
     ///
     void DoArchive (Archive& ar) override;
-
+    auto GetCArgs() const { return tuple { val }; }
+    
     using CoefficientFunction::Evaluate;
     double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
     void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override;
@@ -1122,7 +1127,7 @@ namespace ngfem
   typedef  T_CoefficientFunction<cl_UnaryOpCF<OP>> BASE;
   using typename BASE::T_DJC;
 public:
-  cl_UnaryOpCF() = default;
+  // cl_UnaryOpCF() = default;
   cl_UnaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                 OP alam, string aname="undefined")
     : BASE(ac1->Dimension(),
@@ -1136,10 +1141,10 @@ public:
 
   virtual void DoArchive (Archive & archive) override
   {
-    BASE::DoArchive(archive);
-    archive.Shallow(c1) & name & lam;
+    BASE::DoArchive(archive);  // for reshape
+    // archive.Shallow(c1) & name & lam;
   }
-
+  auto GetCArgs() const { return tuple { c1, lam, name }; }
   /*
   virtual string GetDescription () const override
   {

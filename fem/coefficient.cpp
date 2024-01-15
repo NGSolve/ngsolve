@@ -556,8 +556,10 @@ namespace ngfem
   void ParameterCoefficientFunction<SCAL>::
   DoArchive(Archive& ar)
   {
+    /*
     CoefficientFunctionNoDerivative::DoArchive(ar);
     ar & val;
+    */
   }
 
   template<typename SCAL>
