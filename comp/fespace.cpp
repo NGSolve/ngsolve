@@ -377,6 +377,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   
   FESpace :: ~FESpace ()
   {
+    this->GetMeshAccess()->updateSignal.Remove(this);
     /*
     delete tet;
     delete pyramid;
@@ -1778,8 +1779,16 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   void FESpace :: ConnectAutoUpdate() 
   {
+    /*
     if (this->weak_from_this().expired())
       throw Exception("Given pointer is not managed by a shared ptr.");
+    if (this->DoesAutoUpdate())
+      this->GetMeshAccess()->updateSignal.Connect(this, [this]()
+      {
+        this->Update();
+        this->FinalizeUpdate();
+      });
+    */
     if (this->DoesAutoUpdate())
       this->GetMeshAccess()->updateSignal.Connect(this, [this]()
       {
