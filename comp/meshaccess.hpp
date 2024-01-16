@@ -253,7 +253,7 @@ namespace ngcomp
     DynamicTable<size_t> neighbours[4][4];
     friend class Region;
   public:
-    Signal<> updateSignal;
+    SimpleSignal updateSignal;
 
     /// for achiving ...
     MeshAccess ();
