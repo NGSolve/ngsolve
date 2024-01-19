@@ -422,6 +422,15 @@ namespace ngfem
     // mem_to_delete = NULL;
   }
 
+  IntegrationRule :: IntegrationRule (const initializer_list<IntegrationPoint> & init)
+  {
+    for (auto ip : init)
+      {
+        ip.SetNr (Size());
+        AddIntegrationPoint (ip);
+      }
+  }
+
   IntegrationRule IntegrationRule :: Copy() const
   {
     IntegrationRule ir2;
@@ -4303,6 +4312,8 @@ namespace ngcore
   template class SIMD<ngfem::MappedIntegrationPoint<1,3>>;
   template class SIMD<ngfem::MappedIntegrationPoint<2,3>>;
 
+
+  ngfem::IntegrationRule testir ( { { 1,1,1, 0.5}, {0,0,0, 0.5} } );
   
 }
 

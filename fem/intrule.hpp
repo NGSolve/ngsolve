@@ -682,6 +682,8 @@ namespace ngfem
 
     INLINE NGS_DLL_HEADER IntegrationRule (size_t asize, double (*pts)[3], double * weights);
 
+    NGS_DLL_HEADER IntegrationRule (const initializer_list<IntegrationPoint> & init);
+    
     // make it polymorphic
     HD virtual ~IntegrationRule() { ; }
 
