@@ -546,7 +546,7 @@ namespace ngcomp
         }
        
       
-      FlatMatrix<double, ColMajor> m1(Dim(), interpol_fel.GetNDof(), lh);
+      FlatMatrix<double, ColMajor> m1(Dim()*mir.Size(), interpol_fel.GetNDof(), lh);
       diffop->CalcMatrix(interpol_fel, mir, m1, lh);
       mat = m1*m2m3;
     }
