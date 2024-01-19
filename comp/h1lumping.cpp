@@ -134,7 +134,6 @@ namespace ngcomp
         throw Exception("H1LumpingFESpace only supports order 1 or 2");
       }
 
-
     ctofdof.SetSize(GetNDof());
     ctofdof = UNUSED_DOF;
     for (auto vb : Range(VOL, VorB(ma->GetDimension()+1)))
@@ -236,7 +235,6 @@ namespace ngcomp
 
       case 2:
         {
-          /*
           IntegrationRule ir7;
           ir7.Append ( IntegrationPoint( 1, 0, 0, 1.0/40));
           ir7.Append ( IntegrationPoint( 0, 1, 0, 1.0/40));
@@ -245,18 +243,8 @@ namespace ngcomp
           ir7.Append ( IntegrationPoint( 0, 0.5, 0, 1.0/15));
           ir7.Append ( IntegrationPoint( 0.5, 0.5, 0, 1.0/15));
           ir7.Append ( IntegrationPoint( 1.0/3, 1.0/3, 0, 9.0/40));
-          
           rules[ET_TRIG] = std::move(ir7);
-          */
 
-          rules[ET_TRIG] =
-            IntegrationRule ( { { 1, 0, 0, 1.0/40 },
-                                { 0, 1, 0, 1.0/40 },
-                                { 0, 0, 0, 1.0/40 },
-                                { 0.5, 0, 0, 1.0/15 },
-                                { 0, 0.5, 0, 1.0/15 },
-                                { 0.5, 0.5, 0, 1.0/15 },
-                                { 1.0/3, 1.0/3, 0, 9.0/40 } } );
           
           IntegrationRule ir15;  // tet
           ir15.Append ( IntegrationPoint( 1, 0, 0, 17./5040) );
