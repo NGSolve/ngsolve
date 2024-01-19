@@ -228,7 +228,7 @@ ANY                  1 1 1 1 | 15
     
   public:
     string type;
-    Signal<> updateSignal;
+    SimpleSignal updateSignal;
     /**
        Constructor.
        Used flags are: \\

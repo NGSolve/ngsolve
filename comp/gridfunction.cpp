@@ -112,7 +112,10 @@ namespace ngcomp
   }
 
 
-  GridFunction :: ~GridFunction() { ; }
+  GridFunction :: ~GridFunction()
+  { 
+    this->GetFESpace()->updateSignal.Remove(this);
+  }
 
 
   void GridFunction :: Update ()
@@ -123,8 +126,8 @@ namespace ngcomp
 
   void GridFunction :: ConnectAutoUpdate()
   {
-    if (this->weak_from_this().expired())
-      throw Exception("Given pointer is not managed by a shared ptr.");
+    // if (this->weak_from_this().expired())
+    // throw Exception("Given pointer is not managed by a shared ptr.");
     if (this->DoesAutoUpdate())
       this->GetFESpace()->updateSignal.Connect(this, [this](){ this->Update(); });
   }

@@ -1912,7 +1912,7 @@ active_dofs : BitArray or None
       flags.SetFlag("novisual");
       auto gf = CreateGridFunction(fes, name, flags);
       gf->Update();
-      connect_auto_update(gf.get());
+      gf->ConnectAutoUpdate(); 
       return gf;
     }), py::arg("space"), py::arg("name")="gfu",
          "creates a gridfunction in finite element space")
