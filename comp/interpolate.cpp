@@ -633,7 +633,7 @@ namespace ngcomp
           m2m3 = elmat * m3;
         }
       
-      FlatMatrix<double, ColMajor> m1(mat.Height(), interpol_fel.GetNDof(), lh);
+      FlatMatrix<double, ColMajor> m1(mat.Height()*mir.Size(), interpol_fel.GetNDof(), lh);
       diffop->CalcMatrix(interpol_fel, mir, m1, lh);
       mat = m1*m2m3;
     }
