@@ -241,6 +241,9 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         d['names'] = bnds if mesh.dim==3 else mats
         d['edge_names'] = bbnds if mesh.dim==3 else bnds
         d['funcdim'] = 0
+        fds = mesh.ngmesh.FaceDescriptors()
+        d["colors"] = [fd.color + (fd.transparency,) for fd in fds]
+
         func0 = func1
 
     if func0 is None:
