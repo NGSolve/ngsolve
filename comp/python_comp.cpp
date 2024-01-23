@@ -2114,15 +2114,14 @@ bonus_intorder : int
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
 
     .def_property_readonly("components",
-                           [](shared_ptr<GF> self)
-                           {
-                             std::vector<shared_ptr<GridFunction>>
-                               vecs(self->GetNComponents());
-                             for(auto i : Range(self->GetNComponents()))
-                               vecs[i] = self->GetComponent(i);
-                             return vecs;
-                           },
-                           "list of gridfunctions for compound gridfunction")
+                           [](shared_ptr<GF> self)-> py::tuple
+                   { 
+                     py::tuple vecs(self->GetNComponents());
+                     for (int i = 0; i < self->GetNComponents(); i++)
+                       vecs[i] = self->GetComponent(i);
+                     return vecs;
+                   },
+                  "list of gridfunctions for compound gridfunction")
 
     .def_property_readonly("vec",
                            [](shared_ptr<GF> self)
