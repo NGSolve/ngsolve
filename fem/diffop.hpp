@@ -251,7 +251,7 @@ namespace ngfem
     optional<FlatMatrix<>> GetVSEmbedding() const { return vsembedding; }
     
     ///
-    virtual string Name() const; // { return typeid(*this).name(); }
+    NGS_DLL_HEADER virtual string Name() const; // { return typeid(*this).name(); }
     /// dimension of range
     int Dim() const { return dim; }
     int VSDim() const { return vsdim; }
@@ -445,7 +445,7 @@ namespace ngfem
                               SliceMatrix<double> trans,
                               LocalHeap & lh) const;
     
-    virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
+    NGS_DLL_HEADER virtual shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
                                                        shared_ptr<CoefficientFunction> dir,
                                                        bool Eulerian = false) const;
 
