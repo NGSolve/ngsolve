@@ -163,7 +163,10 @@ namespace ngbla
 
     template <typename EXPR>
     INLINE VectorView(LocalHeapExpr<EXPR>&& lhe)
-      : VectorView(lhe.Height(), lhe.GetLocalHeap()) {}
+      : VectorView(lhe.Height(), lhe.GetLocalHeap())
+    {
+      *this = lhe.A();
+    }
 
     /// put FlatVector over fixed size vector
 
