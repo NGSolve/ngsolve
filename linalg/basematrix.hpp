@@ -172,6 +172,10 @@ namespace ngla
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const;
     void PrintOperatorInfo (ostream & ost, int level = 0) const;
 
+    // base class checks for sizes, derived BlockMatrix and ParallelMatrix check more 
+    virtual xbool SameShape (BaseMatrix & other) const;
+    // *this * other
+    virtual xbool CanCompose (BaseMatrix & other) const;
     
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const;
     static std::map<type_index, function<shared_ptr<BaseMatrix>(const BaseMatrix&)>> devmatcreator;
@@ -589,9 +593,8 @@ namespace ngla
       : bma(abma), bmb(abmb), a(aa), b(ab)
     { ; }
     SumMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb,
-                   double aa = 1, double ab = 1)
-      : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb), a(aa), b(ab)
-    { ; }
+               double aa = 1, double ab = 1);
+
     ///
     virtual bool IsComplex() const override { return bma.IsComplex() || bmb.IsComplex(); }
 
