@@ -443,6 +443,26 @@ namespace ngla
   }
 
   
+  SumMatrix ::
+  SumMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb,
+             double aa, double ab)
+    : bma(*aspbma), bmb(*aspbmb), spbma(aspbma), spbmb(aspbmb), a(aa), b(ab)
+  {
+    xbool same = spbma->SameShape(*spbmb);
+    if (same.IsFalse())
+      {
+        cout << "operator A: ";
+        spbma->PrintOperatorInfo(cout);
+        cout << endl;
+        cout << "operator B: ";
+        spbmb->PrintOperatorInfo(cout);
+        cout << endl;
+        throw Exception("matrix sizes don't match");
+      }
+  }
+
+
+  
   BaseMatrix::OperatorInfo SumMatrix :: GetOperatorInfo () const
   {
     OperatorInfo info;
@@ -505,6 +525,30 @@ namespace ngla
   }
 
 
+  xbool BaseMatrix :: SameShape (BaseMatrix & other) const
+  {
+    try
+      {
+        return ( (Height() == other.Height()) &&
+                 (Width() == other.Width()) );
+      }
+    catch (Exception & e)
+      {
+        return maybe;
+      }
+  }
+
+  xbool BaseMatrix :: CanCompose (BaseMatrix & other) const
+  {
+    try
+      {
+        return ( Width() == other.Height() );
+      }
+    catch (Exception & e)
+      {
+        return maybe;
+      }
+  }
 
 
 
