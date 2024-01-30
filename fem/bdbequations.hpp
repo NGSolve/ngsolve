@@ -1945,7 +1945,7 @@ namespace ngfem
       for (int i = 0; i < mir.Size(); i++)
         y(i,0) /= mir[i].GetMeasure();
     }
-
+#endif
 
     // using ApplySIMDIR;
     using DiffOp<DiffOpIdDual>::ApplySIMDIR;
@@ -1958,7 +1958,7 @@ namespace ngfem
 
     }
 
-
+#ifdef  UNSUED
     template <typename MIP, class TVX, class TVY>
     static void ApplyTrans (const FiniteElement & fel, const MIP & mip,
 			    const TVX & x, TVY & y,
