@@ -9,9 +9,10 @@ export EMSCRIPTEN_INCLUDE=$EMSCRIPTEN_SYSROOT/include
 export EMSCRIPTEN_BIN=$EMSCRIPTEN_SYSROOT/bin
 export EMSCRIPTEN_LIB=$EMSCRIPTEN_SYSROOT/lib/wasm32-emscripten/pic
 export SIDE_MODULE_LDFLAGS="-O2 -g0 -sWASM_BIGINT -s SIDE_MODULE=1"
-export TARGETINSTALLDIR=/root/xbuildenv/pyodide-root/cpython/installs/python-3.11.2/
+export TARGETINSTALLDIR=/root/xbuildenv/pyodide-root/cpython/installs/python-${PYTHON_VERSION}/
 export CMAKE_TOOLCHAIN_FILE=/root/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
+echo "TARGETINSTALLDIR $TARGETINSTALLDIR"
 sed -i 's/TARGET_SUPPORTS_SHARED_LIBS FALSE/TARGET_SUPPORTS_SHARED_LIBS TRUE/' $CMAKE_TOOLCHAIN_FILE
 echo 'set(CMAKE_STRIP "${EMSCRIPTEN_ROOT_PATH}/emstrip${EMCC_SUFFIX}" CACHE FILEPATH "Emscripten strip")' >> ${CMAKE_TOOLCHAIN_FILE}
 export CCACHE_DIR=/ccache
@@ -19,7 +20,7 @@ ccache -s
 
 emcmake cmake /root/ngsolve \
       -DCMAKE_CROSSCOMPILING=ON \
-      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.11" \
+      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.12" \
       -DCMAKE_MODULE_LINKER_FLAGS="$SIDE_MODULE_LDFLAGS" \
       -DCMAKE_SHARED_LINKER_FLAGS="$SIDE_MODULE_LDFLAGS" \
       -DUSE_SUPERBUILD=ON \
@@ -35,7 +36,7 @@ emcmake cmake /root/ngsolve \
       -DUSE_HYPRE:BOOL=OFF \
       -DUSE_INTERFACE:UNINITIALIZED=ON \
       -DUSE_LAPACK:BOOL=ON \
-      -DLAPACK_LIBRARIES="-lm" \
+      -DLAPACK_LIBRARIES="/root/xbuildenv/pyodide-root/packages/.libs/lib/libopenblas.a" \
       -DUSE_MKL:BOOL=OFF \
       -DUSE_MPI:BOOL=OFF \
       -DUSE_MUMPS:BOOL=OFF \
@@ -43,8 +44,7 @@ emcmake cmake /root/ngsolve \
       -DUSE_PARDISO:BOOL=OFF \
       -DUSE_PYTHON:BOOL=ON \
       -DPython3_ROOT_DIR=$TARGETINSTALLDIR \
-      -DPython3_LIBRARY=$TARGETINSTALLDIR/lib/libpython3.11.a \
-      -DPython3_INCLUDE_DIR=$TARGETINSTALLDIR/include/python3.11 \
+      -DPython3_INCLUDE_DIR=$TARGETINSTALLDIR/include/python3.12 \
       -DPython3_INCLUDE_DIRS=$TARGETINSTALLDIR/include \
       -DNG_INSTALL_DIR_PYTHON=python \
       -DNG_INSTALL_DIR_LIB=python/netgen \
@@ -62,4 +62,6 @@ emcmake cmake /root/ngsolve \
       -DBUILD_OCC=OFF \
       -DBUILD_ZLIB=ON \
 
+# cd netgen
 emmake make -j9 install
+      # -DPython3_LIBRARY=$TARGETINSTALLDIR/lib/libpython3.11.a \
