@@ -82,7 +82,7 @@ namespace ngla
       shared_ptr<T> SharedFromThis()
     { return dynamic_pointer_cast<T> (shared_from_this()); }
     /// whatever it means ... e.g. refactor sparse factorization
-    virtual void Update() { ; } 
+    virtual void Update();
     /// creates matrix of same type
     virtual shared_ptr<BaseMatrix> CreateMatrix () const;
     /// creates a matching vector, size = width

@@ -67,6 +67,11 @@ namespace ngla
     throw Exception(string("NZE not overloaded for matrix-type")
                     +typeid(*this).name());
   }
+
+  void BaseMatrix :: Update ()
+  {
+    throw Exception (string("BaseMatrix::Update not overloaded, type = ")+typeid(*this).name());        
+  }
   
   shared_ptr<BaseMatrix> BaseMatrix :: CreateMatrix () const
   {
