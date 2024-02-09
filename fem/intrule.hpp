@@ -2342,9 +2342,9 @@ namespace ngfem
     inline SIMD_IntegrationRule (ELEMENT_TYPE eltype, int order);
     SIMD_IntegrationRule (const SIMD_IntegrationRule & ir) = delete;
     SIMD_IntegrationRule (SIMD_IntegrationRule && ir) = default;
-    SIMD_IntegrationRule (const IntegrationRule & ir);
-    SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
-    SIMD_IntegrationRule (int nip, LocalHeap & lh);
+    NGS_DLL_HEADER SIMD_IntegrationRule (const IntegrationRule & ir);
+    NGS_DLL_HEADER SIMD_IntegrationRule (const IntegrationRule & ir, LocalHeap & lh);
+    NGS_DLL_HEADER SIMD_IntegrationRule (int nip, LocalHeap & lh);
     NGS_DLL_HEADER ~SIMD_IntegrationRule ()
     {
       delete [] mem_to_delete;
