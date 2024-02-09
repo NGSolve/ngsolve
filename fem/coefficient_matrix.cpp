@@ -306,6 +306,37 @@ namespace ngfem
       this -> /* template */ T_Evaluate (ir, Trans(values));
     }
 
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & mir, 
+                           BareSliceMatrix<AutoDiff<1,double>> result) const override
+    {
+      c1->Evaluate(mir, result);
+      
+      // A^{-1}' = -A^{-1} A' A^{-1}
+      const int D = c1->Dimensions()[0];      
+      ArrayMem<double, 1000> mem(4*D*D);
+      FlatMatrix<> hm(D, D, mem.Data());
+      FlatMatrix<> hmp(D, D, mem.Data()+D*D);      
+      FlatMatrix<> h1(D, D, mem.Data()+2*D*D);      
+      FlatMatrix<> h2(D, D, mem.Data()+3*D*D);      
+
+      for (auto i : Range(mir))
+        {
+          for (auto j : Range(D))
+            for (auto k : Range(D))
+              {
+                hm(j, k) = result(i, j*D +k).Value();
+                hmp(j, k) = result(i, j*D +k).DValue(0);
+              }
+          h1 = hmp*hm;
+          h2 = hm*h1;
+          for (auto j : Range(D))
+            for (auto k : Range(D))
+              result(i, j*D +k).DValue(0)=-h2(j,k);
+        }
+    }
+    
+    
     template <typename MIR, typename T, ORDERING ORD>
     void T_Evaluate(const MIR &mir, BareSliceMatrix<T, ORD> result) const
     {
