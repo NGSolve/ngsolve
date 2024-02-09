@@ -1399,7 +1399,7 @@ namespace ngbla
   }
 
   // A = U * diag(S) * V
-  extern void LapackSVD (SliceMatrix<double, ColMajor> A,
+  NGS_DLL_HEADER void LapackSVD (SliceMatrix<double, ColMajor> A,
                          SliceMatrix<double, ColMajor> U,
                          SliceMatrix<double, ColMajor> V,
                          FlatVector<double> S,                         
@@ -1418,7 +1418,7 @@ namespace ngbla
   
 
   // A = U * diag(S) * V
-  extern void LapackSVD (SliceMatrix<Complex, ColMajor> A,
+  NGS_DLL_HEADER void LapackSVD (SliceMatrix<Complex, ColMajor> A,
                          SliceMatrix<Complex, ColMajor> U,
                          SliceMatrix<Complex, ColMajor> V,
                          FlatVector<double> S,                         

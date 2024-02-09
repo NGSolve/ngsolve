@@ -498,7 +498,7 @@ namespace ngla
     Matrix<T> mat;
 
   public:
-    BaseMatrixFromMatrix (Matrix<T> amat);
+    NGS_DLL_HEADER BaseMatrixFromMatrix (Matrix<T> amat);
 
     bool IsComplex() const override { return typeid(T) == typeid(Complex); }
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
