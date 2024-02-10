@@ -71,15 +71,9 @@ namespace ngcomp
         case NG_HEX7:   return ET_HEXAMID;          
         case NG_HEX: case NG_HEX20:     return ET_HEX;
           // default:
-          /*
-#ifndef __CUDA_ARCH__
-	  throw Exception ("Netgen2NgS type conversion: Unhandled element type");
-#else
-	  return ET_POINT;
-#endif
-          */
         }
       __assume (false);
+      return ET_POINT;   // for some compiler
     }
 
     ELEMENT_TYPE GetType () const 
