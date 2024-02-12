@@ -631,8 +631,8 @@ namespace ngfem
     
 
     int order_edge[ET_trait<ET>::N_EDGE];
-    INT<DIM-1> order_facet[ET_trait<ET>::N_FACET];
-    INT<DIM> order_inner;
+    IVec<DIM-1> order_facet[ET_trait<ET>::N_FACET];
+    IVec<DIM> order_inner;
 
     
   public:
@@ -649,9 +649,9 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const override { return ET; }
     const HCurlCurlFE<ET> * Cast() const { return static_cast<const HCurlCurlFE<ET>*> (this); } 
     
-    INLINE void SetOrderFacet (int nr, INT<DIM-1,int> order) { order_facet[nr] = order; }
+    INLINE void SetOrderFacet (int nr, IVec<DIM-1,int> order) { order_facet[nr] = order; }
     INLINE void SetOrderEdge (int nr, int order) { order_edge[nr] = order; }
-    INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
+    INLINE void SetOrderInner (IVec<DIM,int> order) { order_inner = order; }
 
     virtual void ComputeNDof()
     {
@@ -1042,7 +1042,7 @@ namespace ngfem
       Tx lami[2] ={ x, 1-x };
       int ii = 0;
 
-      INT<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);
+      IVec<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);
       Tx ls = lami[e[0]], le = lami[e[1]];
 
       auto symdyadic = MakeReggeAD(ls, le);
@@ -1063,7 +1063,7 @@ namespace ngfem
 
       int ii = 0;
 
-      INT<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);
+      IVec<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);
       T xi = lam[e[0]]-lam[e[1]];
 
       auto tv = mip.GetJacobian()*Vec<1,T>(1);
@@ -1115,7 +1115,7 @@ namespace ngfem
       
       //    for (int i = 0; i < 3; i++)
       //      {
-      //        INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort(i,vnums);
+      //        IVec<2> e = ET_trait<ET_TRIG>::GetEdgeSort(i,vnums);
       //        Tx ls = llami[e[0]], le = llami[e[1]];
       
       //        // edge functions are all curl-free!
@@ -1128,7 +1128,7 @@ namespace ngfem
       
       for (int i = 0; i < 3; i++)
         {
-          INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+          IVec<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
           Tx ls = lami[e[1]], le = lami[e[0]];
 
           auto symdyadic = MakeReggeAD(ls, le);
@@ -1142,7 +1142,7 @@ namespace ngfem
 
       if (order_inner[0] > 0)
         {
-	  INT<4> f = ET_trait<ET_TRIG>::GetFaceSort(0, vnums); 
+	  IVec<4> f = ET_trait<ET_TRIG>::GetFaceSort(0, vnums); 
 	  Tx ls = lami[f[0]], le = lami[f[1]], lt = lami[f[2]];
 	  
           auto symdyadic1 = lt*MakeReggeAD(ls, le);
@@ -1182,7 +1182,7 @@ namespace ngfem
               
               if (i == facetnr)
                 {             
-                  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+                  IVec<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
                   
                   T xi = lam[e[0]]-lam[e[1]];
                   Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
@@ -1211,7 +1211,7 @@ namespace ngfem
           auto p = order_inner[0]-1;
           if( p >= 0 )
             {
-              INT<4> f =  ET_trait<ET_TRIG>::GetFaceSort(0, vnums);
+              IVec<4> f =  ET_trait<ET_TRIG>::GetFaceSort(0, vnums);
 
               DubinerBasis::Eval (p, lam[f[0]], lam[f[1]],
                                    SBLambda([&] (size_t nr, T val)
@@ -1266,7 +1266,7 @@ namespace ngfem
      
       for (int i = 0; i < 4; i++)
         {
-          INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+          IVec<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
           Tx xi  = sigma[e[1]]-sigma[e[0]];
           Tx lam_e = lami[e[0]]+lami[e[1]];  
           auto symdyadic = MakeReggeAD(xi, xi);
@@ -1318,7 +1318,7 @@ namespace ngfem
       //ArrayMem<Tx,20> u(order+2);
       /*for (int i = 0; i < 4; i++)
         {
-          INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+          IVec<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
           Tx xi = llx[e[1]]+lly[e[1]]-llx[e[0]]-lly[e[0]];
           Tx eta = llx[e[0]]*lly[e[0]]+llx[e[1]]*lly[e[1]];
 
@@ -1381,7 +1381,7 @@ namespace ngfem
               
               if (i == facetnr)
                 {             
-                  INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+                  IVec<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
                   
                   //T xi = lam[e[0]]-lam[e[1]];
                   T xi  = sigma[e[1]]-sigma[e[0]];
@@ -1397,7 +1397,7 @@ namespace ngfem
                               {
                                 shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
                                 }));
-                  /*INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+                  /*IVec<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
                   AutoDiff<2,T> xi  = sigma[e[1]]-sigma[e[0]];
                   AutoDiff<2,T> lam_e = lami[e[0]]+lami[e[1]];  
                   Vec<3, AutoDiff<2,T>> symdyadic = SymDyadProd(xi,xi);
@@ -1462,7 +1462,7 @@ namespace ngfem
                 shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{1,0},{0,0}}))*Trans(mip.GetJacobian());
               }
       
-          //INT<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
+          //IVec<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
           
           /*IntegratedLegendreMonomialExt::Calc(p+3,lx[0]-lx[1],u);
           IntegratedLegendreMonomialExt::Calc(p+3,ly[0]-ly[2],v);
@@ -1561,7 +1561,7 @@ namespace ngfem
       //horizontal edge shapes
       for (int i = 0; i < 6; i++)
         {
-          INT<2> e = ET_trait<ET_PRISM>::GetEdgeSort (i, vnums);
+          IVec<2> e = ET_trait<ET_PRISM>::GetEdgeSort (i, vnums);
           Tx ls = lx[e[1]], le = lx[e[0]], lm = lz[e[0]];
 
           auto symdyadic = lm*MakeReggeAD(ls,le);
@@ -1577,7 +1577,7 @@ namespace ngfem
       //vertical edge shapes
       for (int i = 6; i < 9; i++)
         {
-          INT<2> e = ET_trait<ET_PRISM>::GetEdgeSort (i, vnums);
+          IVec<2> e = ET_trait<ET_PRISM>::GetEdgeSort (i, vnums);
           Tx ls = lx[e[0]], lm1 = lz[e[0]], lm2 = lz[e[1]];
           auto symdyadic = ls*MakeReggeAD(lm1,lm1);
           LegendrePolynomial (order_edge[i],lm1-lm2, leg_v);
@@ -1593,7 +1593,7 @@ namespace ngfem
         {
           if (order_facet[fa][0] > 0)
             {
-              INT<4> f = ET_trait<ET_PRISM>::GetFaceSort(fa, vnums);
+              IVec<4> f = ET_trait<ET_PRISM>::GetFaceSort(fa, vnums);
               Tx ls = lx[f[0]], le = lx[f[1]], lt = lx[f[2]], lm = lz[f[0]];
               
               auto symdyadic1 = lm*lt*MakeReggeAD(ls,le);
@@ -1659,7 +1659,7 @@ namespace ngfem
       if (p > 0)
         {
           
-          INT<4> f = ET_trait<ET_PRISM>::GetFaceSort(0, vnums);
+          IVec<4> f = ET_trait<ET_PRISM>::GetFaceSort(0, vnums);
 
           Tx ls = lx[f[0]], le = lx[f[1]], lt = lx[f[2]], lm = lz[0], ln = lz[3];
 
@@ -1790,7 +1790,7 @@ namespace ngfem
 
       for (int i = 0; i < 6; i++)
         {
-          INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
+          IVec<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
           Tx ls = lam[e[1]], le = lam[e[0]];
 
           auto symdyadic = MakeReggeAD(ls, le);
@@ -1805,7 +1805,7 @@ namespace ngfem
         {
           if (order_facet[fa][0] > 0)
             {
-              INT<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
+              IVec<4> f = ET_trait<ET_TET>::GetFaceSort(fa, vnums);
               Tx ls = lam[f[0]], le = lam[f[1]], lt = lam[f[2]];
               
               auto symdyadic1 = lt*MakeReggeAD(ls, le);
@@ -1869,7 +1869,7 @@ namespace ngfem
               
               if (i == facetnr)
                 {             
-                  INT<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
+                  IVec<2> e = ET_trait<ET_TET>::GetEdgeSort (i, vnums);
                   
                   T xi = lam[e[1]]-lam[e[0]];
                   Vec<3,T> tauref = pnts[e[1]] - pnts[e[0]];
@@ -1897,7 +1897,7 @@ namespace ngfem
               auto p = order_facet[i][0]-1;
               if( p >= 0 && i == facetnr )
                 {
-                  INT<4> fav = ET_trait<ET_TET>:: GetFaceSort(facetnr, vnums);
+                  IVec<4> fav = ET_trait<ET_TET>:: GetFaceSort(facetnr, vnums);
                   Vec<3,T> adxi = pnts[fav[0]] - pnts[fav[2]];
                   Vec<3,T> adeta = pnts[fav[1]] - pnts[fav[2]];
                   T xi = lam[fav[0]];
@@ -1994,7 +1994,7 @@ namespace ngfem
       for (int i = 0; i < 12; i++)
         {
           int p = order_edge[i]; 
-          INT<2> e = ET_trait<ET_HEX>::GetEdgeSort (i, vnums);
+          IVec<2> e = ET_trait<ET_HEX>::GetEdgeSort (i, vnums);
           Tx xi  = sigma[e[1]]-sigma[e[0]];
           Tx lam_e = lami[e[0]]+lami[e[1]];
           auto symdyadic = MakeReggeAD(xi,xi);
@@ -2016,7 +2016,7 @@ namespace ngfem
           for (int j = 0; j < 4; j++)
             lam_f += lami[faces[i][j]];
           
-          INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
+          IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
           Tx xi  = sigma[f[0]] - sigma[f[1]]; 
           Tx eta = sigma[f[0]] - sigma[f[3]];
           
@@ -2115,7 +2115,7 @@ namespace ngfem
               
               if (i == facetnr)
                 {             
-                  INT<2> e = ET_trait<ET_HEX>::GetEdgeSort (i, vnums);
+                  IVec<2> e = ET_trait<ET_HEX>::GetEdgeSort (i, vnums);
                   
                   T xi  = sigma[e[1]]-sigma[e[0]];
                   Vec<3,T> tauref = pnts[e[0]] - pnts[e[1]];
@@ -2148,7 +2148,7 @@ namespace ngfem
               
               if (i == facetnr)
                 {
-                  INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
+                  IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
                   Vec<3,T> tauref1 = pnts[f[0]] - pnts[f[1]];
                   Vec<3,T> tauref2 = pnts[f[0]] - pnts[f[3]];
                   T xi  = sigma[f[0]] - sigma[f[1]]; 

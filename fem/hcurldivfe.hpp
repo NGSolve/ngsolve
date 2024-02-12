@@ -764,7 +764,7 @@ namespace ngfem
 
       for (int i = 0; i < 3; i++)
         {
-            INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);	  	  
+            IVec<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);	  	  
             Tx ls = ddlami[e[0]], le = ddlami[e[1]];
 	  	 
             IntLegNoBubble::EvalMult (maxorder_facet, le-ls, 0.25*le*ls, ha);
@@ -872,7 +872,7 @@ namespace ngfem
               
               if (i == facetnr)
                 {
-                  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+                  IVec<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
                   
                   T xi = lam[e[0]]-lam[e[1]];
                   Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
@@ -999,7 +999,7 @@ namespace ngfem
       ArrayMem<Tx,20> v(oi+3), u(oi+3);
       for (int i = 0; i < 4; i++)
         {
-	  INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
+	  IVec<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
 	  
           Tx xi = lx[e[1]]+ly[e[1]]-lx[e[0]]-ly[e[0]];
           Tx eta = lx[e[0]]*ly[e[0]]+lx[e[1]]*ly[e[1]];
@@ -1303,8 +1303,8 @@ namespace ngfem
               
               if (i == facetnr)
                 {
-                  // INT<4> fav = GetFaceSort (i, vnums);
-                  INT<4> fav = ET_trait<ET_TET>::GetFaceSort (i, vnums);
+                  // IVec<4> fav = GetFaceSort (i, vnums);
+                  IVec<4> fav = ET_trait<ET_TET>::GetFaceSort (i, vnums);
                   T xi = lam[fav[1]]-lam[fav[2]];
                   T eta = lam[fav[1]]-lam[fav[0]];
                   Vec<3,T> tauref1 = pnts[fav[1]] - pnts[fav[2]];
@@ -1460,7 +1460,7 @@ namespace ngfem
           }
 
 
-          INT<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
+          IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
           AutoDiff<3,T> xi  = sigma[f[0]] - sigma[f[1]]; 
           AutoDiff<3,T> eta = sigma[f[0]] - sigma[f[3]];
           //auto nv = GetGradient(lam_f);
@@ -1811,7 +1811,7 @@ namespace ngfem
       
       int ii = 0;
 
-      INT<4> f = ET_trait<ET_QUAD>::GetFaceSort (0, vnums);
+      IVec<4> f = ET_trait<ET_QUAD>::GetFaceSort (0, vnums);
 
       //AutoDiff<3,T> lam_f(0);
       //for (int j = 0; j < 4; j++)

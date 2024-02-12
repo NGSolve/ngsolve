@@ -24,26 +24,26 @@ namespace ngstd
   class key_trait<NT_EDGE> 
   { 
   public:
-    typedef INT<2> TKEY;
+    typedef IVec<2> TKEY;
   };
 
   template <>
   class key_trait<NT_FACE> 
   { 
   public:
-    typedef INT<3> TKEY;
+    typedef IVec<3> TKEY;
   };
 
   template <>
   class key_trait<NT_CELL> 
   { 
   public:
-    typedef INT<4> TKEY;
+    typedef IVec<4> TKEY;
   };
 
 
   template <int N>
-  bool operator < (INT<N> a, INT<N> b)
+  bool operator < (IVec<N> a, IVec<N> b)
   {
     for (int i = 0; i < N; i++)
       {
@@ -54,7 +54,7 @@ namespace ngstd
   }
 
   /*
-    bool operator < (INT<2> & nodea, INT<2> & nodeb)
+    bool operator < (IVec<2> & nodea, IVec<2> & nodeb)
     {
     if(nodea[0] < nodeb[0])
     return true;
@@ -63,7 +63,7 @@ namespace ngstd
     return false;
     }
 
-    bool operator < (INT<3> & nodea, INT<3> & nodeb)
+    bool operator < (IVec<3> & nodea, IVec<3> & nodeb)
     {
     if(nodea[0] < nodeb[0])
     return true;
@@ -78,7 +78,7 @@ namespace ngstd
     return false;
     }
 
-    bool operator < (INT<4> & nodea, INT<4> & nodeb)
+    bool operator < (IVec<4> & nodea, IVec<4> & nodeb)
     {
     if(nodea[0] < nodeb[0])
     return true;
@@ -131,7 +131,7 @@ namespace ngstd
     auto pts = ma.GetEdgePNums(nr);
     int pi1 = pts[0], pi2 = pts[1];
     cout << "GetGlobalNodeId<edge>" << endl;
-    return INT<2> (ma.GetGlobalVertexNum (pi1),
+    return IVec<2> (ma.GetGlobalVertexNum (pi1),
 		   ma.GetGlobalVertexNum (pi2));
   }
 
@@ -155,7 +155,7 @@ namespace ngstd
 	  verts.Append(p2);
       }
     QuickSort(verts);
-    return INT<3> (verts[0], verts[1], verts[2]);
+    return IVec<3> (verts[0], verts[1], verts[2]);
   }
 
   template <>
@@ -184,7 +184,7 @@ namespace ngstd
 	  }
       }
     QuickSort(verts);
-    return INT<4> (verts[0], verts[1], verts[2], verts[3]);
+    return IVec<4> (verts[0], verts[1], verts[2], verts[3]);
   }
 
   /*
@@ -220,21 +220,21 @@ namespace ngstd
   MPI_Datatype MPIT<int> :: mpi_type = MPI_INT;
   template <> struct MPIT<unsigned char> {static MPI_Datatype mpi_type;};
   MPI_Datatype MPIT<unsigned char> :: mpi_type = MPI_BYTE;
-  template <> struct MPIT<INT<2,unsigned char>> { static MPI_Datatype mpi_type;};
-  MPI_Datatype MPIT<INT<2,unsigned char>> :: mpi_type;
-  template <> struct MPIT<INT<3,unsigned char>> { static MPI_Datatype mpi_type;};
-  MPI_Datatype MPIT<INT<3,unsigned char>> :: mpi_type;
+  template <> struct MPIT<IVec<2,unsigned char>> { static MPI_Datatype mpi_type;};
+  MPI_Datatype MPIT<IVec<2,unsigned char>> :: mpi_type;
+  template <> struct MPIT<IVec<3,unsigned char>> { static MPI_Datatype mpi_type;};
+  MPI_Datatype MPIT<IVec<3,unsigned char>> :: mpi_type;
 
   class class_init_mpi_types
   {
   public:
     class_init_mpi_types()
     {
-      MPI_Type_contiguous ( 2, MPI_BYTE, &MPIT<INT<2,unsigned char>>::mpi_type);
-      MPI_Type_commit ( &MPIT<INT<2,unsigned char>>::mpi_type );
+      MPI_Type_contiguous ( 2, MPI_BYTE, &MPIT<IVec<2,unsigned char>>::mpi_type);
+      MPI_Type_commit ( &MPIT<IVec<2,unsigned char>>::mpi_type );
 
-      MPI_Type_contiguous ( 3, MPI_BYTE, &MPIT<INT<3,unsigned char>>::mpi_type);
-      MPI_Type_commit ( &MPIT<INT<3,unsigned char>>::mpi_type );
+      MPI_Type_contiguous ( 3, MPI_BYTE, &MPIT<IVec<3,unsigned char>>::mpi_type);
+      MPI_Type_commit ( &MPIT<IVec<3,unsigned char>>::mpi_type );
 
     }
   };

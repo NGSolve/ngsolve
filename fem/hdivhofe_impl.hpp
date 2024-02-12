@@ -97,7 +97,7 @@ namespace ngfem
       {
         for (int i = 0; i < 3; i++)
           {
-            INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+            IVec<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
 
             //Nedelec low order edge shape function 
             shape[i] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
@@ -129,7 +129,7 @@ namespace ngfem
     
     if (pd > 1) 
       {
-        INT<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
+        IVec<4> fav = ET_trait<ET_TRIG>::GetFaceSort (0, vnums);
 
  	// rotated gradients:
 	//if(!only_ho_div)
@@ -217,7 +217,7 @@ template <typename MIP, typename TFA>
             if (i == facetnr)
               {
 
-                INT<2> e = GetEdgeSort (i, vnums);
+                IVec<2> e = GetEdgeSort (i, vnums);
                 T xi = lam[e[1]]-lam[e[0]];
                 Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
                 
@@ -292,7 +292,7 @@ template <typename MIP, typename TFA>
           int p = order_facet[i][0]; 
           // int es = edges[i][0], ee = edges[i][1];
           // if (vnums[es] > vnums[ee]) swap (es, ee);
-          INT<2> e = GetVertexOrientedEdge (i);	  
+          IVec<2> e = GetVertexOrientedEdge (i);	  
 
           Tx xi  = sigma[e[1]]-sigma[e[0]];
           Tx lam_e = lami[e[1]]+lami[e[0]]; 
@@ -315,8 +315,8 @@ template <typename MIP, typename TFA>
     else
       ii = 0;
     
-    // INT<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
-    INT<2> p (order_inner[0], order_inner[1]); // (order_cell[0],order_cell[1]);
+    // IVec<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
+    IVec<2> p (order_inner[0], order_inner[1]); // (order_cell[0],order_cell[1]);
     int fmax = 0; 
     for (int j = 1; j < 4; j++)
       if (vnums[j] > vnums[fmax])
@@ -544,7 +544,7 @@ template <typename MIP, typename TFA>
             int p = order_facet[i][0];
 	    if (i == facetnr)
               {
-		INT<4> fav = GetFaceSort (i, vnums);
+		IVec<4> fav = GetFaceSort (i, vnums);
                 T xi = lam[fav[0]]-lam[fav[2]];
                 T eta = lam[fav[1]]-lam[fav[2]];
                 Vec<3,T> tauref1 = pnts[fav[1]] - pnts[fav[0]];
@@ -701,7 +701,7 @@ template <typename MIP, typename TFA>
     // quad faces
     for (int i = 2; i < 5; i++)
       {
-	INT<2> p = order_facet[i];
+	IVec<2> p = order_facet[i];
 	 
 	int fmax = 0;
 	for (int j = 1; j < 4; j++)
@@ -846,13 +846,13 @@ template <typename MIP, typename TFA>
     const FACE * faces = ElementTopology::GetFaces (ET_HEX);
     for (int i = 0; i < 6; i++)
       {
-	INT<2> p = order_facet[i];
+	IVec<2> p = order_facet[i];
 
 	Tx lam_f(0);
 	for (int j = 0; j < 4; j++)
 	  lam_f += lami[faces[i][j]];
 
-        INT<4> f = GetFaceSort (i, vnums);	  
+        IVec<4> f = GetFaceSort (i, vnums);	  
         Tx xi  = sigma[f[0]]-sigma[f[1]];
         Tx eta = sigma[f[0]]-sigma[f[3]];
 
@@ -986,9 +986,9 @@ template <typename MIP, typename TFA>
     int fnr = ip.FacetNr();
     double lam[] = { ip(0), ip(1), 1-ip(0)-ip(1) };
 
-    INT<2> e0 = ET_trait<ET_TRIG>::GetEdge (fnr);
+    IVec<2> e0 = ET_trait<ET_TRIG>::GetEdge (fnr);
     double fac = vnums[e0[0]] > vnums[e0[1]] ? 1 : -1;
-    INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (fnr, vnums);
+    IVec<2> e = ET_trait<ET_TRIG>::GetEdgeSort (fnr, vnums);
     AutoDiff<1> xi (lam[e[1]]-lam[e[0]], 0);
     
     ArrayMem<AutoDiff<1>,10> adpol1(order);
@@ -1019,9 +1019,9 @@ template <typename MIP, typename TFA>
     int fnr = ip.FacetNr();
     double lam[] = { (1-ip(0))*(1-ip(1)), ip(0)*(1-ip(1)), ip(0)*ip(1),(1-ip(0))*ip(1) };
 
-    INT<2> e0 = ET_trait<ET_QUAD>::GetEdge (fnr);
+    IVec<2> e0 = ET_trait<ET_QUAD>::GetEdge (fnr);
     double fac = vnums[e0[0]] > vnums[e0[1]] ? 1 : -1;
-    INT<2> e = ET_trait<ET_QUAD>::GetEdgeSort (fnr, vnums);
+    IVec<2> e = ET_trait<ET_QUAD>::GetEdgeSort (fnr, vnums);
     AutoDiff<1> xi (lam[e[1]]-lam[e[0]], 0);
     
     ArrayMem<AutoDiff<1>,10> adpol1(order);
@@ -1053,7 +1053,7 @@ template <typename MIP, typename TFA>
     int fnr = ip.FacetNr();
     double lam[] = { ip(0), ip(1), ip(2), 1-ip(0)-ip(1)-ip(2) };
     
-    INT<4> face = ET_trait<ET_TET>::GetFace(fnr);
+    IVec<4> face = ET_trait<ET_TET>::GetFace(fnr);
     
     IntegrationPoint ip2d(lam[face[0]], lam[face[1]], lam[face[2]]);
     ArrayMem<int,3> vnumsf(3);

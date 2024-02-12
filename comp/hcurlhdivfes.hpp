@@ -21,9 +21,9 @@ namespace ngcomp
 class NGS_DLL_HEADER NedelecFESpace : public FESpace
 {
   ///
-  Array<ngstd::INT<2> > edgepoints;
+  Array<IVec<2> > edgepoints;
   ///
-  Array<INT<2> > parentedges;
+  Array<IVec<2> > parentedges;
   ///
   Array<short int> finelevelofedge;
   ///

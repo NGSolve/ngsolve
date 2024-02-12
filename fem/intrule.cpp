@@ -1577,7 +1577,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<1> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             INT<1> vorder, bool compute_duffy, bool compute_points) 
+                                             IVec<1> vorder, bool compute_duffy, bool compute_points) 
   {
     int order = vorder[0];
     irx = &SelectIntegrationRule (ET_SEGM, order);
@@ -1599,7 +1599,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<2> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             INT<2> order, bool compute_duffy, bool compute_points)
+                                             IVec<2> order, bool compute_duffy, bool compute_points)
   {
     int nip = 0;
 
@@ -1718,7 +1718,7 @@ namespace ngfem
 
   template <>
   IntegrationRuleTP<3> :: IntegrationRuleTP (const ElementTransformation & eltrans,
-                                             INT<3> vorder, bool compute_duffy, bool compute_points)
+                                             IVec<3> vorder, bool compute_duffy, bool compute_points)
   {
     int order = vorder[0];
     int nip = 0;

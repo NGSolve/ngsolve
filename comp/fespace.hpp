@@ -1468,23 +1468,22 @@ ANY                  1 1 1 1 | 15
 
 
 
-#ifdef PARALLEL
 namespace ngcore
 {
+  template<typename T> struct MPI_typetrait;
+  
   template<>
-  class MPI_typetrait<ngcomp::COUPLING_TYPE>
+  struct MPI_typetrait<ngcomp::COUPLING_TYPE>
   {
-  public:
-    /// returns MPI-type 
     static MPI_Datatype MPIType () 
     { 
-      if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(char)) return MPI_CHAR;
-      if (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) return MPI_INT;
-      std::cout << "please provide MPI_Datatype for COUPLING_TYPE" << endl;
-      exit(1);
+      static_assert ( (sizeof(ngcomp::COUPLING_TYPE) == sizeof(char)) ||
+                      (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) );
+      if constexpr (sizeof(ngcomp::COUPLING_TYPE) == sizeof(char)) return MPI_typetrait<char>::MPIType();
+      if constexpr (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) return MPI_typetrait<int>::MPIType();
     }
   };
 }
-#endif
+
 
 #endif

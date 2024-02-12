@@ -399,7 +399,7 @@ namespace ngcomp
 	
 	    if(!var_order) continue; 
 	
-	    INT<3> el_orders = ma->GetElOrders(el.Nr());  
+	    IVec<3> el_orders = ma->GetElOrders(el.Nr());  
 	
 	    int i = el.Nr();
 	    for(int k=0;k<dim;k++)
@@ -438,7 +438,7 @@ namespace ngcomp
 			for(int k = 1; k < 4; k++) 
 			  if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
 		    
-			INT<2> f((fmax+3)%4,(fmax+1)%4); 
+			IVec<2> f((fmax+3)%4,(fmax+1)%4); 
 			if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
 		    
 			// fmax > f[0] > f[1]
@@ -464,7 +464,7 @@ namespace ngcomp
 	if(uniform_order_inner > -1) order_inner = uniform_order_inner;
 	if(uniform_order_facet > -1) order_facet = uniform_order_facet;
 
-	for (auto i : Range(nfa)) if (!fine_facet[i]) order_facet[i] = INT<2> (0,0); 
+	for (auto i : Range(nfa)) if (!fine_facet[i]) order_facet[i] = IVec<2> (0,0); 
 
 	// by SZ ... since order_inner_curl is not working yet for hdivhofe
 	order_inner_curl = order_inner;
@@ -549,8 +549,8 @@ namespace ngcomp
         for (size_t i = 0; i < nel; i++)
           {
             ElementId ei(VOL, i);
-            INT<3> pc = order_inner_curl[i];
-            INT<3> p = order_inner[i];
+            IVec<3> pc = order_inner_curl[i];
+            IVec<3> p = order_inner[i];
             int inci = 0;
             switch(ma->GetElType(ei))
               {
@@ -592,7 +592,7 @@ namespace ngcomp
         if (highest_order_dc)
           {
             dc_pairs.SetSize (ma->GetNFacets());
-            dc_pairs = INT<2> (-1,-1);
+            dc_pairs = IVec<2> (-1,-1);
             
             // Array<int> fnums;
             for (auto ei : ma->Elements(VOL))
@@ -621,7 +621,7 @@ namespace ngcomp
             inci = 0; 
             if(fine_facet[i])
               {
-                INT<2> p = order_facet[i]; 
+                IVec<2> p = order_facet[i]; 
                 // ma->GetFacePNums(i,pnums);
                 auto pnums = ma->GetFacePNums(i);
                 switch(pnums.Size())
@@ -650,8 +650,8 @@ namespace ngcomp
         bool have_pyramids = false;
         for (size_t i = 0; i < nel; i++)
           {
-            INT<3> p = order_inner[i];
-            INT<3> pc = order_inner_curl[i];
+            IVec<3> p = order_inner[i];
+            IVec<3> pc = order_inner_curl[i];
             int inci = 0;
 	     
             switch(ma->GetElType(ElementId(VOL,i)))
@@ -668,7 +668,7 @@ namespace ngcomp
                     auto fnums = ma->GetElFacets(i);
 		    for (int j = 0; j < fnums.Size(); j++)
                       {
-                        INT<2> pf = order_facet[fnums[j]]; 
+                        IVec<2> pf = order_facet[fnums[j]]; 
                         if (!boundary_facet[fnums[j]]) inci += pf[0]+1;
                       }
                     */
@@ -714,7 +714,7 @@ namespace ngcomp
         if (highest_order_dc)
           {
             dc_pairs.SetSize ((order+1)*ma->GetNFacets());
-            dc_pairs = INT<2> (-1,-1);
+            dc_pairs = IVec<2> (-1,-1);
             
             for (int i = 0; i < ma->GetNE(); i++)
               {
@@ -971,7 +971,7 @@ namespace ngcomp
         if (discont) return *fe; 
         
         // ArrayMem<int, 4> ednums, order_ed;
-        INT<3> order_fa;
+        IVec<3> order_fa;
         
         if(ma->GetElType(ei) == ET_SEGM)
           {
@@ -992,7 +992,7 @@ namespace ngcomp
             // hofe -> SetVertexNumbers (vnums);
             
 #ifdef NEW_HDIVFE
-            INT<3> order_fa = INT<3>(order_facet[ma->GetSElFace(selnr)][0],
+            IVec<3> order_fa = IVec<3>(order_facet[ma->GetSElFace(selnr)][0],
                                      order_facet[ma->GetSElFace(selnr)][1],0);
             if (highest_order_dc)
               {
@@ -1151,7 +1151,7 @@ namespace ngcomp
 
 //     ArrayMem<int,4> vnums;
 //     ArrayMem<int, 4> ednums, order_ed;
-//     INT<3> order_fa;
+//     IVec<3> order_fa;
 //     ma->GetSElVertices(selnr, vnums);
     
 //     if(ma->GetSElType(selnr) == ET_SEGM)
@@ -1173,7 +1173,7 @@ namespace ngcomp
 // 	hofe -> SetVertexNumbers (vnums);
 	
 // #ifdef NEW_HDIVFE
-// 	INT<3> order_fa = INT<3>(order_facet[ma->GetSElFace(selnr)][0],
+// 	IVec<3> order_fa = IVec<3>(order_facet[ma->GetSElFace(selnr)][0],
 //                                  order_facet[ma->GetSElFace(selnr)][1],0);
 //         if (highest_order_dc)
 //           {

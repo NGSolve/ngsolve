@@ -11,7 +11,7 @@ namespace ngla
 {
   
   AMG_H1 :: AMG_H1 (const BaseMatrix & sysmat,
-		    Array<INT<2> > & e2v,
+		    Array<IVec<2> > & e2v,
 		    Array<double> & weighte,
 		    int levels)
   {
@@ -157,11 +157,11 @@ namespace ngla
 
 
     // compute fine edge to coarse edge map (ecoarse)
-    HashTable<INT<2>, int> ht_ecoarse(e2v.Size());
+    HashTable<IVec<2>, int> ht_ecoarse(e2v.Size());
     for (int i = 0; i < e2v.Size(); i++)
       if (e2v[i][0] != -1)
       {
-	INT<2> ce;
+	IVec<2> ce;
 	for (int j = 0; j < 2; j++)
 	  ce[j] = vcoarse[e2v[i][j]];
 	ce.Sort();
@@ -169,11 +169,11 @@ namespace ngla
 	  ht_ecoarse.Set (ce, -1);
       }
     
-    Array<INT<2> > ce2v;
+    Array<IVec<2> > ce2v;
     for (int i = 0; i < ht_ecoarse.Size(); i++)
       for (int j = 0; j < ht_ecoarse.EntrySize(i); j++)
 	{
-	  INT<2> ce;
+	  IVec<2> ce;
 	  int efi;
 	  ht_ecoarse.GetData (i, j, ce, efi);
 	  efi = ce2v.Size();
@@ -185,7 +185,7 @@ namespace ngla
     for (int i = 0; i < e2v.Size(); i++)
       if (e2v[i][0] != -1)
       {
-	INT<2> ce;
+	IVec<2> ce;
 	for (int j = 0; j < 2; j++)
 	  ce[j] = vcoarse[e2v[i][j]];
 	ce.Sort();
@@ -323,7 +323,7 @@ namespace ngla
 
 
 
-  void SortFace (INT<4> & face)
+  void SortFace (IVec<4> & face)
   {
     if (face[3] == -1)
       {
@@ -351,8 +351,8 @@ namespace ngla
   
   AMG_HCurl :: AMG_HCurl (const BaseMatrix & sysmat,
 			  const Array<Vec<3> > & vertices,
-                          Array<INT<2> > & e2v,
-			  Array<INT<4> > & f2v,
+                          Array<IVec<2> > & e2v,
+			  Array<IVec<4> > & f2v,
 			  Array<double> & weighte,
 			  Array<double> & weightf,
 			  int levels)
@@ -426,8 +426,8 @@ namespace ngla
 
 
     // find loops of 3 edges without face
-    HashTable<INT<3>, int> faceht (f2v.Size());
-    HashTable<INT<4>, int> qfaceht (f2v.Size());
+    HashTable<IVec<3>, int> faceht (f2v.Size());
+    HashTable<IVec<4>, int> qfaceht (f2v.Size());
 
     // bool quadfacesexist = false;
     
@@ -435,13 +435,13 @@ namespace ngla
       {
        	if(f2v[i][3] == -1)
 	  {
-	    INT<3> hv  (f2v[i][0], f2v[i][1], f2v[i][2]);
+	    IVec<3> hv  (f2v[i][0], f2v[i][1], f2v[i][2]);
 	    hv.Sort();
 	    faceht.Set (hv, i);
 	  }
 	else
 	  {
-	    INT<4> hv  (f2v[i][0], f2v[i][1], f2v[i][2], f2v[i][3]);
+	    IVec<4> hv  (f2v[i][0], f2v[i][1], f2v[i][2], f2v[i][3]);
 	    hv.Sort();
 	    qfaceht.Set (hv, i);
 	    // quadfacesexist = true;
@@ -483,15 +483,15 @@ namespace ngla
 		  int ek = v2e[i][k];
 		  int vi2 = e2v[ej][0]+e2v[ej][1]-i;
 		  int vi3 = e2v[ek][0]+e2v[ek][1]-i;
-		  INT<3> f123(i, vi2, vi3);
+		  IVec<3> f123(i, vi2, vi3);
 		  f123.Sort();
 		  if (faceht.Used(f123))
 		    for (int l = 0; l < k; l++)
 		      {
 			int el = v2e[i][l];
 			int vi4 = e2v[el][0]+e2v[el][1]-i;
-			INT<3> f124(i, vi2, vi4);
-			INT<3> f134(i, vi3, vi4);
+			IVec<3> f124(i, vi2, vi4);
+			IVec<3> f134(i, vi3, vi4);
 			f124.Sort();
 			f134.Sort();
 			if (faceht.Used(f124) && faceht.Used(f134))
@@ -505,7 +505,7 @@ namespace ngla
 			    double w =  min3 (weightf[faceht.Get(f123)],
 					      weightf[faceht.Get(f124)],
 					      weightf[faceht.Get(f134)]);
-			    INT<3> f234(vi2, vi3, vi4);
+			    IVec<3> f234(vi2, vi3, vi4);
 			    f234.Sort();
 			    if (faceht.Used(f234))
 			      {
@@ -514,7 +514,7 @@ namespace ngla
 			      }
 			    else
 			      {
-				f2v.Append (INT<4> (vi2, vi3, vi4, -1));
+				f2v.Append (IVec<4> (vi2, vi3, vi4, -1));
 				weightf.Append (w);
 				faceht.Set (f234, weightf.Size()-1);
 				nf++;
@@ -547,7 +547,7 @@ namespace ngla
 
               if (i < e2 && i < e3 && v3 == v4)
                 {
-                  INT<3> face(vi1, vi2, v3);
+                  IVec<3> face(vi1, vi2, v3);
                   face.Sort();
 
                   if (!faceht.Used(face))
@@ -555,7 +555,7 @@ namespace ngla
                       *testout << "level = " << levels 
                                << " has no face " << face << endl;
                       cout << "loop found !!" << endl;
-                      f2v.Append (INT<4> (vi1, vi2, v3, -1));
+                      f2v.Append (IVec<4> (vi1, vi2, v3, -1));
                       weightf.Append (0);
                       nf++;
                     }
@@ -569,13 +569,13 @@ namespace ngla
 
 
     // compute face 2 edge table
-    HashTable<INT<2>, int> ht_edge(e2v.Size());
-    Array<INT<4> > f2e(nf);
+    HashTable<IVec<2>, int> ht_edge(e2v.Size());
+    Array<IVec<4> > f2e(nf);
 
     for (int i = 0; i < ne; i++)
       if (e2v[i][0] != -1)
 	{
-	  INT<2> ce = e2v[i];
+	  IVec<2> ce = e2v[i];
 	  ce.Sort();
 	  ht_edge.Set (ce, i);
 	}
@@ -587,7 +587,7 @@ namespace ngla
 	  f2e[i][3] = -1;
 	  for (int j = 0; j < nfv; j++)
 	    {
-	      INT<2> ce;
+	      IVec<2> ce;
 	      ce[0] = f2v[i][j];
 	      ce[1] = f2v[i][(j+1)%nfv];
 	      ce.Sort();
@@ -731,11 +731,11 @@ namespace ngla
 
 
                 // check whether weak faces will be closed
-                INT<2> ep2(vi2, vi3);
+                IVec<2> ep2(vi2, vi3);
                 ep2.Sort();
                 if (ht_edge.Used (ep2))
                   {
-                    INT<3> face(vi1, vi2, vi3);
+                    IVec<3> face(vi1, vi2, vi3);
                     face.Sort();
                     
                     double val = (faceht.Used(face)) ? face_collapse_weight[faceht.Get(face)] : 0;
@@ -750,11 +750,11 @@ namespace ngla
 // 			if(e3 == i) continue;
 // 			int vi4 = e2v[e3][0]+e2v[e3][1]-vi2;
 			
-// 			INT<2> ep2(vi3,vi4);
+// 			IVec<2> ep2(vi3,vi4);
 // 			ep2.Sort();
 // 			if (ht_edge.Used (ep2))
 // 			  {
-// 			    INT<4> face(vi1,vi2,vi3,vi4);
+// 			    IVec<4> face(vi1,vi2,vi3,vi4);
 // 			    face.Sort();
 
 // 			    if(qfaceht.Used(face))
@@ -772,25 +772,25 @@ namespace ngla
 			int vi4 = e2v[eop][0]+e2v[eop][1]-vi3;
 			if(vi4 == vi1 || vi4 == vi2) continue; // sensible?
 			
-			INT<2> epair(vi2, vi4);
+			IVec<2> epair(vi2, vi4);
 			epair.Sort();
 			if (ht_edge.Used (epair))
 			  {
-			    INT<4> f1234(vi1,vi2,vi3,vi4);  // sensible?
+			    IVec<4> f1234(vi1,vi2,vi3,vi4);  // sensible?
 			    f1234.Sort();
 			    double v1234 = (qfaceht.Used(f1234)) ? face_collapse_weight[qfaceht.Get(f1234)] : 0;
 			    if (v1234 > 0.01) continue;	
 			    
 
 			    // not possible
-			    //INT<3> f123(vi1, vi2, vi3);
+			    //IVec<3> f123(vi1, vi2, vi3);
 			    //f123.Sort();
 			    //if(faceht.Used(f123))
 			    //  cout << endl << "POSSIBLE!!" << endl;
 			    //double v123 = (faceht.Used(f123)) ? face_collapse_weight[faceht.Get(f123)] : 0;
 			    //if (v123 > 0.01) continue;
 			    
-			    INT<3> f124(vi1, vi2, vi4);
+			    IVec<3> f124(vi1, vi2, vi4);
 			    f124.Sort();
 			    double v124 = (faceht.Used(f124)) ? face_collapse_weight[faceht.Get(f124)] : 0;
 			    if (v124 > 0.01) continue;
@@ -884,11 +884,11 @@ namespace ngla
 
 
     // compute fine edge to coarse edge map (ecoarse)
-    HashTable<INT<2>, int> ht_ecoarse(ne);
+    HashTable<IVec<2>, int> ht_ecoarse(ne);
     for (int i = 0; i < ne; i++)
       if (e2v[i][0] != -1)
 	{
-	  INT<2> ce;
+	  IVec<2> ce;
 	  for (int j = 0; j < 2; j++)
 	    ce[j] = vcoarse[e2v[i][j]];
 	  if (ce[0] != ce[1])
@@ -898,11 +898,11 @@ namespace ngla
 	    }
 	}
     
-    Array<INT<2> > ce2v;
+    Array<IVec<2> > ce2v;
     for (int i = 0; i < ht_ecoarse.Size(); i++)
       for (int j = 0; j < ht_ecoarse.EntrySize(i); j++)
 	{
-	  INT<2> ce;
+	  IVec<2> ce;
 	  int efi;
 	  ht_ecoarse.GetData (i, j, ce, efi);
 	  efi = ce2v.Size();
@@ -922,7 +922,7 @@ namespace ngla
 	    continue;
 	  }
 
-	INT<2> ce;
+	IVec<2> ce;
 	for (int j = 0; j < 2; j++)
 	  ce[j] = vcoarse[e2v[i][j]];
 	
@@ -955,7 +955,7 @@ namespace ngla
 
 
     // compute fine face to coarse face map (fcoarse)
-    HashTable<INT<4>, int> ht_fcoarse(nf);
+    HashTable<IVec<4>, int> ht_fcoarse(nf);
     for (int i = 0; i < nf; i++)
       {
 	bool valid = true;
@@ -968,7 +968,7 @@ namespace ngla
 	    continue;
 	  }
 
-	INT<4> cf;
+	IVec<4> cf;
 	for (int j = 0; j < 4; j++)
 	  if (f2v[i][j] != -1)
 	    cf[j] = vcoarse[f2v[i][j]];
@@ -985,11 +985,11 @@ namespace ngla
 	  ht_fcoarse.Set (cf, -1);
       }
     
-    Array<INT<4> > cf2v;
+    Array<IVec<4> > cf2v;
     for (int i = 0; i < ht_fcoarse.Size(); i++)
       for (int j = 0; j < ht_fcoarse.EntrySize(i); j++)
 	{
-	  INT<4> cf;
+	  IVec<4> cf;
 	  int cfi;
 	  ht_fcoarse.GetData (i, j, cf, cfi);
 	  cfi = cf2v.Size();
@@ -1011,7 +1011,7 @@ namespace ngla
 	    continue;
 	  }
 
-	INT<4> cf;
+	IVec<4> cf;
 	for (int j = 0; j < 4; j++)
 	  if (f2v[i][j] != -1)
 	    cf[j] = vcoarse[f2v[i][j]];

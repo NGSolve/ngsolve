@@ -22,9 +22,9 @@ namespace ngcomp
 
     bool discont; 
     
-    Array<INT<3> > order_inner;
-    //Array<INT<3> > order_inner_curl;
-    Array<INT<2> > order_facet; 
+    Array<IVec<3> > order_inner;
+    //Array<IVec<3> > order_inner_curl;
+    Array<IVec<2> > order_facet; 
     Array<bool> fine_facet; 
     Array<bool> boundary_facet; 
  
@@ -37,7 +37,7 @@ namespace ngcomp
 
     bool RT = false; 
 
-    Array<INT<2>> dc_pairs;
+    Array<IVec<2>> dc_pairs;
     
   public:
     HDivHighOrderSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
@@ -76,7 +76,7 @@ namespace ngcomp
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     //virtual void GetSDofNrs (ElementId ei, Array<DofId> & dnums) const;
     
-    const Array<INT<2>> & GetDCPairs () const { return dc_pairs; }
+    const Array<IVec<2>> & GetDCPairs () const { return dc_pairs; }
 
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
        

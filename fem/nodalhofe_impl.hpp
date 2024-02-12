@@ -20,7 +20,7 @@ namespace ngfem
   {
     Tx lam[2] = { ip.x, 1-ip.x };
 
-    INT<2> e = GetVertexOrientedEdge (0);
+    IVec<2> e = GetVertexOrientedEdge (0);
 
     shape[0] = NodalShapePower(lam[0], order, order);
     shape[1] = NodalShapePower(lam[1], order, order);
@@ -52,7 +52,7 @@ namespace ngfem
     // edge-based shapes
     for (int i = 0; i < N_EDGE; i++)
       { 
-        INT<2> e = GetVertexOrientedEdge(i);
+        IVec<2> e = GetVertexOrientedEdge(i);
 
         auto ls = lam[e[0]];
         auto le = lam[e[1]];
@@ -66,7 +66,7 @@ namespace ngfem
 
     for (int i = 0; i < N_FACE; i++)
       { 
-        INT<4> f = GetVertexOrientedFace(i);
+        IVec<4> f = GetVertexOrientedFace(i);
 
         auto ls = lam[f[0]];
         auto le = lam[f[1]];
@@ -96,7 +96,7 @@ namespace ngfem
     // edge-based shapes
     for (int i = 0; i < N_EDGE; i++)
       { 
-        INT<2> e = GetVertexOrientedEdge(i);
+        IVec<2> e = GetVertexOrientedEdge(i);
 
         auto ls = lam[e[0]];
         auto le = lam[e[1]];
@@ -110,7 +110,7 @@ namespace ngfem
 
     for (int i = 0; i < N_FACE; i++)
       { 
-        INT<4> f = GetVertexOrientedFace(i);
+        IVec<4> f = GetVertexOrientedFace(i);
 
         auto ls = lam[f[0]];
         auto le = lam[f[1]];

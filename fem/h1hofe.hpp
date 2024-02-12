@@ -53,10 +53,10 @@ namespace ngfem
     std::array<TORDER, N_EDGE> order_edge; 
 
     /// order of face shapes
-    std::array<INT<2,TORDER>, N_FACE> order_face; 
+    std::array<IVec<2,TORDER>, N_FACE> order_face; 
 
     /// order of internal shapes (3d only)
-    std::array<INT<3,TORDER>, N_CELL > order_cell;
+    std::array<IVec<3,TORDER>, N_CELL > order_cell;
     
     bool nodalp2 = false;
 
@@ -96,10 +96,10 @@ namespace ngfem
     { for (int i = 0; i < N_FACE; i++) order_face[i] = of[i]; }
 
     /// set anisotropic face order for face nr
-    void SetOrderFace (int nr, INT<2> order) { order_face[nr] = order; }
+    void SetOrderFace (int nr, IVec<2> order) { order_face[nr] = order; }
 
     /// set anisotropic cell order
-    void SetOrderCell (INT<3> oi)  { order_cell[0] = oi; }
+    void SetOrderCell (IVec<3> oi)  { order_cell[0] = oi; }
 
     /// compute the element space dimension
     void ComputeNDof()

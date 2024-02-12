@@ -12,7 +12,7 @@ namespace ngfem
     IdentityCoefficientFunction (int dim)
       : T_CoefficientFunction<IdentityCoefficientFunction>(1, false)
     {
-      SetDimensions (ngstd::INT<2> (dim, dim) );
+      SetDimensions (ngstd::IVec<2> (dim, dim) );
     }
 
     // For archive
@@ -145,7 +145,7 @@ namespace ngfem
         throw Exception(string("Matrix dimensions don't fit: m1 is ") +
                         ToLiteral(dims_c1[0]) + " x " + ToLiteral(dims_c1[1]) +
                         ", m2 is " + ToLiteral(dims_c2[0]) + " x " + ToLiteral(dims_c2[1]) );
-      SetDimensions( ngstd::INT<2> (dims_c1[0], dims_c2[1]) );
+      SetDimensions( ngstd::IVec<2> (dims_c1[0], dims_c2[1]) );
       inner_dim = dims_c1[1];
     }
 
@@ -426,7 +426,7 @@ namespace ngfem
       if (dims_c1.Size() != 2)
         throw Exception("Transpose of non-matrix called");
 
-      SetDimensions (ngstd::INT<2> (dims_c1[1], dims_c1[0]) );
+      SetDimensions (ngstd::IVec<2> (dims_c1[1], dims_c1[0]) );
     }
 
     virtual ~TransposeCoefficientFunction();

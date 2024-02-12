@@ -34,8 +34,8 @@ namespace ngcomp
     bool fixed_order;
     bool wb_loedge, wb_edge;
     Array<TORDER> order_edge;
-    Array<INT<2,TORDER>> order_face;
-    Array<INT<3,TORDER>> order_inner;
+    Array<IVec<2,TORDER>> order_face;
+    Array<IVec<3,TORDER>> order_inner;
     Array<bool> used_vertex; 
     Array<bool> used_edge; 
     Array<bool> used_face; 
@@ -45,8 +45,8 @@ namespace ngcomp
     int uniform_order_edge;
     int uniform_order_quad;
     int uniform_order_trig;
-    Array<INT<3>> dom_order_min; 
-    Array<INT<3>> dom_order_max;
+    Array<IVec<3>> dom_order_min; 
+    Array<IVec<3>> dom_order_max;
   
     bool level_adapted_order; 
     bool nodalp2;
@@ -106,8 +106,8 @@ namespace ngcomp
     using FESpace::GetOrder;
     
     void SetEdgeOrder (int enr, int eo) { order_edge[enr] = eo; }
-    void SetFaceOrder (int fnr, INT<2> fo) { order_face[fnr] = fo; }
-    void SetElementOrder (int elnr, INT<3> elo) { order_inner[elnr] = elo; }
+    void SetFaceOrder (int fnr, IVec<2> fo) { order_face[fnr] = fo; }
+    void SetElementOrder (int elnr, IVec<3> elo) { order_inner[elnr] = elo; }
 
     /// get relative (to mesh) order of finite elements
     virtual int GetRelOrder() const override { return rel_order; }

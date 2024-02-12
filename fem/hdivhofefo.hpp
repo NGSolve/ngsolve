@@ -159,7 +159,7 @@ namespace ngfem
         // const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
         for (int i = 0; i < 3; i++)
         {
-          INT<2> e = this->GetEdgeSort (i, vnums);
+          IVec<2> e = this->GetEdgeSort (i, vnums);
           
           //Nedelec low order edge shape function 
           shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
@@ -192,7 +192,7 @@ namespace ngfem
       //Inner shapes (Face) 
       if(ORDER > 1) 
 	{
-	  INT<4> fav = this->GetFaceSort (0, vnums);
+	  IVec<4> fav = this->GetFaceSort (0, vnums);
 
 	  Tx xi  = lami[fav[2]]-lami[fav[1]];
 	  Tx eta = lami[fav[0]]; 

@@ -14,7 +14,8 @@
 namespace ngfem
 {
   using namespace ngbla;
-  using ngcore::INT;
+  // using ngcore::INT;
+
 
   
   /*
@@ -781,40 +782,40 @@ namespace ngfem
     static constexpr ELEMENT_TYPE ElementType() { return ET_POINT; }
     constexpr operator ELEMENT_TYPE() const { return ET_POINT; }
     
-    static INLINE int PolDimension (INT<1> order) { return 1; }
-    static INLINE int PolBubbleDimension (INT<1> order) { return 0; }
+    static INLINE int PolDimension (IVec<1> order) { return 1; }
+    static INLINE int PolBubbleDimension (IVec<1> order) { return 0; }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return ET_POINT; }  // dummy
 
 
 
-    static INLINE INT<2> GetEdge (int /* i */);
+    static INLINE IVec<2> GetEdge (int /* i */);
     /*
     {
       static const int edges[][2] = 
 	{ { 0, 1 } };
-      return INT<2> (edges[0][0], edges[0][1]);
+      return IVec<2> (edges[0][0], edges[0][1]);
     }
     */
 
     template <typename TVN>
-    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums);
+    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums);
     /*
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
       return e;
     }
     */
 
-    static INT<4> GetFace (int /* i */ );
+    static IVec<4> GetFace (int /* i */ );
     /*
     {
-      return INT<4> (-1, -1, -1, -1);
+      return IVec<4> (-1, -1, -1, -1);
     }
     */
     template <typename TVN>
-    static INT<4> GetFaceSort (int /*  i */ , const TVN & vnums);
+    static IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums);
     /*
     {
       return GetFace(0);
@@ -852,34 +853,34 @@ namespace ngfem
     static constexpr ELEMENT_TYPE ElementType() { return ET_SEGM; }
     constexpr operator ELEMENT_TYPE() const { return ET_SEGM; }
     
-    static INLINE int PolDimension (INT<1> order) { return order[0]+1; }
-    static INLINE int PolBubbleDimension (INT<1> order) { return (order[0] <= 1) ? 0 : order[0]-1; }
+    static INLINE int PolDimension (IVec<1> order) { return order[0]+1; }
+    static INLINE int PolBubbleDimension (IVec<1> order) { return (order[0] <= 1) ? 0 : order[0]-1; }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
 
-    static INLINE INT<2> GetEdge (int /* i */)
+    static INLINE IVec<2> GetEdge (int /* i */)
     {
       const int edges[][2] = 
 	{ { 0, 1 } };
-      return INT<2> (edges[0][0], edges[0][1]);
+      return IVec<2> (edges[0][0], edges[0][1]);
     }
 
     template <typename TVN>
-    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
+    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) Swap (e[0], e[1]);
       return e;
     }
 
 
-    static INLINE INT<4> GetFace (int /* i */ )
+    static INLINE IVec<4> GetFace (int /* i */ )
     {
-      return INT<4> (-1, -1, -1, -1);
+      return IVec<4> (-1, -1, -1, -1);
     }
 
     template <typename TVN>
-    static INLINE INT<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    static INLINE IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
     {
       return GetFace(0);
     }
@@ -914,8 +915,8 @@ namespace ngfem
     constexpr operator ELEMENT_TYPE() const { return ET_TRIG; }
     
     static constexpr int PolDimension (int order) { return (order+1)*(order+2)/2; }
-    static INLINE int PolDimension (INT<2> order) { return (order[0]+1)*(order[0]+2)/2; }
-    static INLINE int PolBubbleDimension (INT<2> order) { return (order[0] <= 2) ? 0 : (order[0]-1)*(order[0]-2)/2; }
+    static INLINE int PolDimension (IVec<2> order) { return (order[0]+1)*(order[0]+2)/2; }
+    static INLINE int PolBubbleDimension (IVec<2> order) { return (order[0] <= 2) ? 0 : (order[0]-1)*(order[0]-2)/2; }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
     
@@ -924,12 +925,12 @@ namespace ngfem
     { lam[0] = x[0]; lam[1] = x[1], lam[2] = 1-x[0]-x[1]; }
 
     
-    // static constexpr INT<2> edges[3] = { { 2, 0 }, { 1, 2 }, { 0, 1 } };
-    static constexpr array<INT<2>,3> edges = { INT<2>{ 2, 0 }, INT<2>{ 1, 2 }, INT<2>{ 0, 1 } };
+    // static constexpr IVec<2> edges[3] = { { 2, 0 }, { 1, 2 }, { 0, 1 } };
+    static constexpr array<IVec<2>,3> edges = { IVec<2>{ 2, 0 }, IVec<2>{ 1, 2 }, IVec<2>{ 0, 1 } };
     
-    static constexpr INT<2> GetEdge (int i)
+    static constexpr IVec<2> GetEdge (int i)
     {
-      constexpr INT<2> edges[] =
+      constexpr IVec<2> edges[] =
         { { 2, 0 },
 	  { 1, 2 },
 	  { 0, 1 } };
@@ -937,24 +938,24 @@ namespace ngfem
     }
 
     template <typename TVN>
-    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
+    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) Swap (e[0], e[1]);
       return e;
     }
 
 
-    static INLINE INT<4> GetFace (int /* i */ )
+    static INLINE IVec<4> GetFace (int /* i */ )
     {
       static const int face[] = { 0, 1, 2, -1 };
-      return INT<4> (face[0], face[1], face[2], -1);
+      return IVec<4> (face[0], face[1], face[2], -1);
     }
 
     template <typename TVN>
-    static INLINE INT<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    static INLINE IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
     {
-      INT<4> f = GetFace (0);
+      IVec<4> f = GetFace (0);
       if(vnums[f[0]] > vnums[f[1]]) Swap(f[0],f[1]); 
       if(vnums[f[1]] > vnums[f[2]]) Swap(f[1],f[2]);
       if(vnums[f[0]] > vnums[f[1]]) Swap(f[0],f[1]); 	
@@ -1010,8 +1011,8 @@ namespace ngfem
     constexpr operator ELEMENT_TYPE() const { return ET_QUAD; }
     
     static constexpr INLINE int PolDimension (int order) { return (order+1)*(order+1); }
-    static INLINE int PolDimension (INT<2> order) { return (order[0]+1)*(order[1]+1); }
-    static INLINE int PolBubbleDimension (INT<2> order) { return (order[0] <= 1 || order[1] <= 1) ? 0 : (order[0]-1)*(order[1]-1); }
+    static INLINE int PolDimension (IVec<2> order) { return (order[0]+1)*(order[1]+1); }
+    static INLINE int PolBubbleDimension (IVec<2> order) { return (order[0] <= 1 || order[1] <= 1) ? 0 : (order[0]-1)*(order[1]-1); }
 
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
@@ -1019,20 +1020,20 @@ namespace ngfem
 
 
 
-    static INLINE INT<2> GetEdge (int i)
+    static INLINE IVec<2> GetEdge (int i)
     {
       static const int edges[][2] = 
 	{ { 0, 1 },
 	  { 2, 3 },
 	  { 3, 0 },
 	  { 1, 2 }};
-      return INT<2> (edges[i][0], edges[i][1]);
+      return IVec<2> (edges[i][0], edges[i][1]);
     }
 
     template <typename TVN>
-    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
+    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
       return e;
     }
@@ -1041,7 +1042,7 @@ namespace ngfem
     template <typename Tx, typename TVN>
     static INLINE Tx XiEdge (int i, Tx hx[], const TVN & vnums)
     {
-      INT<2> e = GetEdgeSort (i, vnums);
+      IVec<2> e = GetEdgeSort (i, vnums);
       static const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
       Tx xi(0.0);
       for (int j = 0; j < 2; j++)
@@ -1066,18 +1067,18 @@ namespace ngfem
     }
  
 
-    static INLINE INT<4> GetFace (int /* i */ )
+    static INLINE IVec<4> GetFace (int /* i */ )
     {
       static const int face[] = 
         { 0, 1, 2, 3 };
 
-      return INT<4> (face[0], face[1], face[2], face[3]);
+      return IVec<4> (face[0], face[1], face[2], face[3]);
     }
 
     template <typename TVN>
-    static INLINE INT<4> GetFaceSort (int /*  i */ , const TVN & vnums)
+    static INLINE IVec<4> GetFaceSort (int /*  i */ , const TVN & vnums)
     {
-      INT<4> f = GetFace (0);
+      IVec<4> f = GetFace (0);
       
       int fmax = 0;
       for (int j=1; j<4; j++) 
@@ -1100,7 +1101,7 @@ namespace ngfem
     template <typename Tx, typename TVN>
     static INLINE Vec<2,Tx> XiFace (int /* i */, Tx hx[], const TVN & vnums)
     {
-      INT<4> f = GetFaceSort (0, vnums); 
+      IVec<4> f = GetFaceSort (0, vnums); 
       static const int vi[4][2] = { { 0, 0 }, { 1, 0 }, { 1, 1 }, { 0, 1 } };
       Tx xi(0), eta(0);
       for (int j = 0; j < 2; j++)
@@ -1156,12 +1157,12 @@ namespace ngfem
     constexpr operator ELEMENT_TYPE() const { return ET_TET; }
     
     static constexpr INLINE int PolDimension (int p) { return (p+1)*(p+2)*(p+3)/6; }
-    static INLINE int PolDimension (INT<3> p) { return (p[0]+1)*(p[0]+2)*(p[0]+3)/6; }
-    static INLINE int PolBubbleDimension (INT<3> p) { return (p[0] <= 3) ? 0 : (p[0]-1)*(p[0]-2)*(p[0]-3)/6;  }
+    static INLINE int PolDimension (IVec<3> p) { return (p[0]+1)*(p[0]+2)*(p[0]+3)/6; }
+    static INLINE int PolBubbleDimension (IVec<3> p) { return (p[0] <= 3) ? 0 : (p[0]-1)*(p[0]-2)*(p[0]-3)/6;  }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return ET_TRIG; }
 
-    static INLINE INT<2> GetEdge (int i)
+    static INLINE IVec<2> GetEdge (int i)
     {
       static const int edges[6][2] = 
 	{ { 3, 0 },
@@ -1170,19 +1171,19 @@ namespace ngfem
 	  { 0, 1 }, 
 	  { 0, 2 },
 	  { 1, 2 }};
-      return INT<2> (edges[i][0], edges[i][1]);
+      return IVec<2> (edges[i][0], edges[i][1]);
     }
 
     template <typename TVN>
-    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
+    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
       return e;
     }
 
 
-    static INLINE INT<4> GetFace (int i )
+    static INLINE IVec<4> GetFace (int i )
     {
       static const int faces[][4]  =
 	{ { 3, 1, 2, -1 },
@@ -1190,13 +1191,13 @@ namespace ngfem
 	  { 3, 0, 1, -1 },
 	  { 0, 2, 1, -1 } }; 
 
-      return INT<4> (faces[i][0], faces[i][1], faces[i][2], -1);
+      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], -1);
     }
 
     template <typename TVN>
-    static INLINE INT<4> GetFaceSort (int i, const TVN & vnums)
+    static INLINE IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
-      INT<4> f = GetFace (i);
+      IVec<4> f = GetFace (i);
       if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 
       if(vnums[f[1]] > vnums[f[2]]) swap(f[1],f[2]);
       if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 	
@@ -1254,13 +1255,13 @@ namespace ngfem
     static constexpr ELEMENT_TYPE ElementType() { return ET_PRISM; }
     constexpr operator ELEMENT_TYPE() const { return ET_PRISM; }
     
-    static INLINE int PolDimension (INT<3> order) { return (order[0]+1)*(order[0]+2)*(order[2]+1)/2; }
-    static INLINE int PolBubbleDimension (INT<3> p) { return (p[0] <= 2) ? 0 : (p[0]-1)*(p[0]-2)*(p[2]-1)/2; }
+    static INLINE int PolDimension (IVec<3> order) { return (order[0]+1)*(order[0]+2)*(order[2]+1)/2; }
+    static INLINE int PolBubbleDimension (IVec<3> p) { return (p[0] <= 2) ? 0 : (p[0]-1)*(p[0]-2)*(p[2]-1)/2; }
 
     static INLINE ELEMENT_TYPE FaceType(int i) { return (i < 2) ? ET_TRIG : ET_QUAD; }
 
 
-    static INLINE INT<2> GetEdge (int i)
+    static INLINE IVec<2> GetEdge (int i)
     {
 #ifndef __CUDA_ARCH__
       static 
@@ -1275,19 +1276,19 @@ namespace ngfem
 	  { 2, 5 },
 	  { 0, 3 },
 	  { 1, 4 }};
-      return INT<2> (edges[i][0], edges[i][1]);
+      return IVec<2> (edges[i][0], edges[i][1]);
     }
 
     template <typename TVN>
-    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
+    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
       return e;
     }
 
 
-    static INLINE INT<4> GetFace (int i )
+    static INLINE IVec<4> GetFace (int i )
     {
 #ifndef __CUDA_ARCH__
       static 
@@ -1301,13 +1302,13 @@ namespace ngfem
 	  { 1, 2, 5, 4 } 
 	};
 
-      return INT<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
     }
 
     template <typename TVN>
-    static INLINE INT<4> GetFaceSort (int i, const TVN & vnums)
+    static INLINE IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
-      INT<4> f = GetFace (i);
+      IVec<4> f = GetFace (i);
       if (i < 2)
 	{
 	  if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 
@@ -1327,7 +1328,7 @@ namespace ngfem
 	  
 	  if(vnums[f[f2]]<vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
 	  
-	  return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
+	  return IVec<4> (f[fmax], f[f1], f[fop], f[f2]);
 	}
     }
 
@@ -1365,10 +1366,10 @@ namespace ngfem
     
     static INLINE ELEMENT_TYPE FaceType(int i) { return (i < 4) ? ET_TRIG : ET_QUAD; }
 
-    static INLINE int PolDimension (INT<3> order) { return (order[0]+2)*(order[0]+1)*(2*order[0]+3) / 6; }
-    static INLINE int PolBubbleDimension (INT<3> p) { return (p[0] <= 2) ? 0 :  (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6; }
+    static INLINE int PolDimension (IVec<3> order) { return (order[0]+2)*(order[0]+1)*(2*order[0]+3) / 6; }
+    static INLINE int PolBubbleDimension (IVec<3> p) { return (p[0] <= 2) ? 0 :  (p[0]-1)*(p[0]-2)*(2*p[0]-3)/6; }
 
-    static INLINE INT<2> GetEdge (int i)
+    static INLINE IVec<2> GetEdge (int i)
     {
 #ifndef __CUDA_ARCH__
       static 
@@ -1383,20 +1384,20 @@ namespace ngfem
 	  { 2, 4 },
 	  { 3, 4 }};
 
-      return INT<2> (edges[i][0], edges[i][1]);
+      return IVec<2> (edges[i][0], edges[i][1]);
     }
 
     template <typename TVN>
-    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
+    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
       return e;
     }
 
 
 
-    static INLINE INT<4> GetFace (int i )
+    static INLINE IVec<4> GetFace (int i )
     {
 #ifndef __CUDA_ARCH__
       static 
@@ -1410,13 +1411,13 @@ namespace ngfem
 	  { 0, 3, 2, 1 } 
 	};
 
-      return INT<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
     }
 
     template <typename TVN>
-    static INLINE INT<4> GetFaceSort (int i, const TVN & vnums)
+    static INLINE IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
-      INT<4> f = GetFace (i);
+      IVec<4> f = GetFace (i);
       if (i < 4)
 	{
 	  if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 
@@ -1436,7 +1437,7 @@ namespace ngfem
 	  
 	  if(vnums[f[f2]]<vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
 	  
-	  return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
+	  return IVec<4> (f[fmax], f[f1], f[fop], f[f2]);
 	}
     }
 
@@ -1472,14 +1473,14 @@ namespace ngfem
     static INLINE ELEMENT_TYPE FaceType(int i) { return (i==1||i==4) ? ET_TRIG : ET_QUAD; }
 
     // TODO
-    static INLINE int PolDimension (INT<3> order) {
+    static INLINE int PolDimension (IVec<3> order) {
       int p = order[0];
       return (p+1)*(p+1)*(p+1) - (p-1) - p*(p-1);
     }
     // TODO
-    static INLINE int PolBubbleDimension (INT<3> p) { return (p[0] < 2) ? 0 :  (p[0]-1)*(p[0]-1)*(p[0]-1); }
+    static INLINE int PolBubbleDimension (IVec<3> p) { return (p[0] < 2) ? 0 :  (p[0]-1)*(p[0]-1)*(p[0]-1); }
 
-    static INLINE INT<2> GetEdge (int i)
+    static INLINE IVec<2> GetEdge (int i)
     {
 #ifndef __CUDA_ARCH__
       static 
@@ -1498,20 +1499,20 @@ namespace ngfem
           { 2, 6 },
           { 3, 6 },
         };
-      return INT<2> (edges[i][0], edges[i][1]);
+      return IVec<2> (edges[i][0], edges[i][1]);
     }
 
     template <typename TVN>
-    static INLINE INT<2> GetEdgeSort (int i, const TVN & vnums)
+    static INLINE IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
       return e;
     }
 
 
 
-    static INLINE INT<4> GetFace (int i )
+    static INLINE IVec<4> GetFace (int i )
     {
 #ifndef __CUDA_ARCH__
       static 
@@ -1526,14 +1527,14 @@ namespace ngfem
           { 3, 0, 4, 6 }
 	};
 
-      return INT<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
     }
 
     // TODO
     template <typename TVN>
-    static INLINE INT<4> GetFaceSort (int i, const TVN & vnums)
+    static INLINE IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
-      INT<4> f = GetFace (i);
+      IVec<4> f = GetFace (i);
       if (f[3] < 0)
 	{
 	  if(vnums[f[0]] > vnums[f[1]]) swap(f[0],f[1]); 
@@ -1553,7 +1554,7 @@ namespace ngfem
 	  
 	  if(vnums[f[f2]]<vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
 	  
-	  return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
+	  return IVec<4> (f[fmax], f[f1], f[fop], f[f2]);
 	}
     }
 
@@ -1590,10 +1591,10 @@ namespace ngfem
     
     static ELEMENT_TYPE FaceType(int i) { return ET_QUAD; }
 
-    static inline int PolDimension (INT<3> order) { return (order[0]+1)*(order[1]+1)*(order[2]+1); }
-    static inline int PolBubbleDimension (INT<3> p) { return (p[0] <= 1) ? 0 : (p[0]-1)*(p[1]-1)*(p[2]-1); }
+    static inline int PolDimension (IVec<3> order) { return (order[0]+1)*(order[1]+1)*(order[2]+1); }
+    static inline int PolBubbleDimension (IVec<3> p) { return (p[0] <= 1) ? 0 : (p[0]-1)*(p[1]-1)*(p[2]-1); }
 
-    static INT<2> GetEdge (int i)
+    static IVec<2> GetEdge (int i)
     {
       static const int edges[][2] = 
 	{
@@ -1610,19 +1611,19 @@ namespace ngfem
 	  { 2, 6 },
 	  { 3, 7 },
 	};
-      return INT<2> (edges[i][0], edges[i][1]);
+      return IVec<2> (edges[i][0], edges[i][1]);
     }
 
     template <typename TVN>
-    static INT<2> GetEdgeSort (int i, const TVN & vnums)
+    static IVec<2> GetEdgeSort (int i, const TVN & vnums)
     {
-      INT<2> e = GetEdge (i);
+      IVec<2> e = GetEdge (i);
       if (vnums[e[0]] > vnums[e[1]]) swap (e[0], e[1]);
       return e;
     }
 
 
-    static INT<4> GetFace (int i )
+    static IVec<4> GetFace (int i )
     {
       static const int faces[][4]  =
 	{
@@ -1634,14 +1635,14 @@ namespace ngfem
 	  { 3, 0, 4, 7 }
 	};
 
-      return INT<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
+      return IVec<4> (faces[i][0], faces[i][1], faces[i][2], faces[i][3]);
     }
 
 
     template <typename TVN>
-    static INT<4> GetFaceSort (int i, const TVN & vnums)
+    static IVec<4> GetFaceSort (int i, const TVN & vnums)
     {
-      INT<4> f = GetFace (i);
+      IVec<4> f = GetFace (i);
 
       int fmax = 0;
       for (int j=1; j<4; j++) 
@@ -1653,7 +1654,7 @@ namespace ngfem
       
       if(vnums[f[f2]]<vnums[f[f1]]) swap(f1,f2);  // fmax > f1 > f2 
       
-      return INT<4> (f[fmax], f[f1], f[fop], f[f2]);
+      return IVec<4> (f[fmax], f[f1], f[fop], f[f2]);
     }
 
 
@@ -1688,7 +1689,7 @@ namespace ngfem
 
   
   template <typename T>
-  INLINE int PolBubbleDimension (ELEMENT_TYPE ET, INT<1,T> order)
+  INLINE int PolBubbleDimension (ELEMENT_TYPE ET, IVec<1,T> order)
   {
     switch (ET)
       {
@@ -1698,7 +1699,7 @@ namespace ngfem
   }
 
   template <typename T>
-  inline int PolBubbleDimension (ELEMENT_TYPE ET, INT<2,T> order)
+  inline int PolBubbleDimension (ELEMENT_TYPE ET, IVec<2,T> order)
   {
     switch (ET)
       {
@@ -1709,7 +1710,7 @@ namespace ngfem
   }
 
   template <typename T>
-  inline int PolBubbleDimension (ELEMENT_TYPE ET, INT<3,T> order)
+  inline int PolBubbleDimension (ELEMENT_TYPE ET, IVec<3,T> order)
   {
     switch (ET)
       {

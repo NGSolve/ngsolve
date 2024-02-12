@@ -34,21 +34,21 @@ namespace ngcomp
     /// relative order to mesh-order
     int rel_order;
  
-    INT<3> rel_orders; 
+    IVec<3> rel_orders; 
 
     Array<TORDER> order_edge;
     Array<bool> fine_edge; 
     Array<bool> fine_face; 
     Array<int> cell_ngrad;
     Array<int> face_ngrad;
-    Array<INT<2,TORDER> > order_face;
-    Array<INT<3,TORDER> > order_inner;
+    Array<IVec<2,TORDER> > order_face;
+    Array<IVec<3,TORDER> > order_inner;
     Array<TORDER> order_avertex; 
     Array<bool> usegrad_edge; 
     Array<bool> usegrad_face; 
     Array<bool> usegrad_cell; 
-    Array<INT<3> > dom_order_min; 
-    Array<INT<3> > dom_order_max;
+    Array<IVec<3> > dom_order_min; 
+    Array<IVec<3> > dom_order_max;
     int maxorder, minorder; 
   
 
@@ -138,7 +138,7 @@ namespace ngcomp
     // int GetFirstFaceDof(int f) const { return first_face_dof[f]; }; 
     // int GetFirstCellDof(int c) const { return first_inner_dof[c]; }; 
 
-    INT<2> GetFaceOrder(const int i) {return order_face[i];}
+    IVec<2> GetFaceOrder(const int i) {return order_face[i];}
   
     int GetSmoothingType() const {return smoother;} 
 

@@ -44,7 +44,7 @@ namespace ngfem
     // Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
     Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
     
-    INT<2> e = GetVertexOrientedEdge (fnr);
+    IVec<2> e = GetVertexOrientedEdge (fnr);
     int p = facet_order[fnr];
 
     if (!nodal)
@@ -67,7 +67,7 @@ namespace ngfem
       Tx x = ip.x, y = ip.y;
       Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
       
-      INT<2> e = GetVertexOrientedEdge (fnr);
+      IVec<2> e = GetVertexOrientedEdge (fnr);
       int p = facet_order[fnr];
 
       LegendrePolynomial::Eval (p, sigma[e[1]]-sigma[e[0]], shape);
@@ -79,7 +79,7 @@ namespace ngfem
   {
     Tx lam[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };  // hx[0], hx[1], hx[2], 1-hx[0]-hx[1]-hx[2] };
     
-    INT<4> f = GetVertexOrientedFace (fnr);
+    IVec<4> f = GetVertexOrientedFace (fnr);
     int p = facet_order[fnr];
 
     if (!nodal)
@@ -111,7 +111,7 @@ namespace ngfem
     
     int p = facet_order[fnr];
     
-    INT<4> f = GetVertexOrientedFace (fnr);	  
+    IVec<4> f = GetVertexOrientedFace (fnr);	  
 	    
     Tx xi  = sigma[f[0]] - sigma[f[1]]; 
     Tx eta = sigma[f[0]] - sigma[f[3]];
@@ -140,7 +140,7 @@ namespace ngfem
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
     
     
-    INT<4> f = GetVertexOrientedFace (fnr);
+    IVec<4> f = GetVertexOrientedFace (fnr);
     
     int p = facet_order[fnr];
     
@@ -188,7 +188,7 @@ namespace ngfem
     lam[4] = z;
     
     
-    INT<4> f = GetVertexOrientedFace (fnr);
+    IVec<4> f = GetVertexOrientedFace (fnr);
     
     int p = facet_order[fnr];
     
