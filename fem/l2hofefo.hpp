@@ -319,7 +319,7 @@ namespace ngfem
     INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
     {
       Tx lam[2] = { ip.x, 1-ip.x };
-      INT<2> e = this -> GetEdgeSort (0, vnums);
+      IVec<2> e = this -> GetEdgeSort (0, vnums);
       // LegendrePolynomial_Old::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
       LegendrePolynomial::EvalFO<ORDER> (lam[e[1]]-lam[e[0]], shape);
     }
@@ -345,7 +345,7 @@ namespace ngfem
     INLINE void T_CalcShape (const TIP<2,Tx> & ip, TFA & shape) const
     {
       Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
-      INT<4> f = this -> GetFaceSort (0, vnums);
+      IVec<4> f = this -> GetFaceSort (0, vnums);
 
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
@@ -385,8 +385,8 @@ namespace ngfem
     {
       Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
 
-      INT<3> hvnums(V1,V2,V3);
-      INT<4> f = this -> GetFaceSort (0, hvnums);
+      IVec<3> hvnums(V1,V2,V3);
+      IVec<4> f = this -> GetFaceSort (0, hvnums);
 
       Tx x = lam[f[0]];
       Tx y = lam[f[1]];
@@ -420,7 +420,7 @@ namespace ngfem
     {
 //       Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
 // 
-//       INT<4> hvnums(V1,V2,V3,V4);
+//       IVec<4> hvnums(V1,V2,V3,V4);
 //       unsigned char sort[4] = { 0, 1, 2, 3 };
 //       if (hvnums[sort[0]] > hvnums[sort[1]]) Swap (sort[0], sort[1]);
 //       if (hvnums[sort[2]] > hvnums[sort[3]]) Swap (sort[2], sort[3]);

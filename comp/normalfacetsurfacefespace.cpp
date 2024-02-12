@@ -271,7 +271,7 @@ namespace ngcomp
 
   
   ///
-  INT<2> NormalFacetSurfaceFESpace :: GetFacetOrder(int fnr) const
+  IVec<2> NormalFacetSurfaceFESpace :: GetFacetOrder(int fnr) const
   { return order_facet[fnr]; };
   
   int NormalFacetSurfaceFESpace :: GetFirstFacetDof(int fanr) const {return (first_facet_dof[fanr]);}; 

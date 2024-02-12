@@ -135,7 +135,7 @@ namespace ngfem
     Tx x = ip.x;
     Tx lam[2] = { x, 1-x };
 
-    INT<2> e = GetEdgeSort (0, vnums);	  
+    IVec<2> e = GetEdgeSort (0, vnums);	  
     
     //Nedelec low order edge shape function 
     shape[0] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
@@ -174,7 +174,7 @@ namespace ngfem
     int ii = 3; 
     for (int i = 0; i < 3; i++)
       {
-        INT<2> e = GetEdgeSort (i, vnums);	  
+        IVec<2> e = GetEdgeSort (i, vnums);	  
 
 	//Nedelec low order edge shape function 
         shape[i] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
@@ -200,7 +200,7 @@ namespace ngfem
     int p = order_face[0][0];      
     if(p > 1) 
       {
-	INT<4> fav = GetFaceSort (0, vnums);
+	IVec<4> fav = GetFaceSort (0, vnums);
 
 	// Tx xi  = lam[fav[2]]-lam[fav[1]];
 	// Tx eta = lam[fav[0]]; 
@@ -279,7 +279,7 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       {
 	// int p = order_edge[i]; 
-        INT<2> e = GetEdgeSort (i, vnums);	  
+        IVec<2> e = GetEdgeSort (i, vnums);	  
 	
 	Tx xi  = sigma[e[1]]-sigma[e[0]];
 	Tx lam_e = lami[e[0]]+lami[e[1]];  
@@ -313,7 +313,7 @@ namespace ngfem
 
 
      
-    INT<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
+    IVec<2> p = order_face[0]; // (order_cell[0],order_cell[1]);
 
 
     if (usegrad_face[0] && p[0] >= 1 && p[1] >= 1)
@@ -391,7 +391,7 @@ namespace ngfem
     for (int i = 0; i < N_EDGE; i++)
       { 
 	int p = order_edge[i]; 
-        INT<2> e = GetEdgeSort (i, vnums);	  
+        IVec<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec low order edge shape function 
         shape[i] = uDv_minus_vDu (lam[e[0]], lam[e[1]]);
@@ -415,7 +415,7 @@ namespace ngfem
     for(int i = 0; i < N_FACE; i++) 
       if (order_face[i][0] >= 2)
         {
-          INT<4> fav = GetFaceSort (i, vnums);
+          IVec<4> fav = GetFaceSort (i, vnums);
           
           int vop = 6 - fav[0] - fav[1] - fav[2];  	
           int p = order_face[i][0];
@@ -547,7 +547,7 @@ namespace ngfem
     for (int i = 0; i < 6; i++)
       {
 	int p = order_edge[i]; 
-        INT<2> e = GetEdgeSort (i, vnums);	  
+        IVec<2> e = GetEdgeSort (i, vnums);	  
 	
 	//Nedelec0
         shape[i] = wuDv_minus_wvDu (lam[e[0]], lam[e[1]], muz[e[1]]);
@@ -577,7 +577,7 @@ namespace ngfem
     for (int i = 6; i < 9; i++)
       {
 	int p = order_edge[i]; 
-        INT<2> e = GetEdgeSort (i, vnums);	  
+        IVec<2> e = GetEdgeSort (i, vnums);	  
 
         shape[i] = wuDv_minus_wvDu (muz[e[0]], muz[e[1]], lam[e[1]]);
 	
@@ -608,7 +608,7 @@ namespace ngfem
 	int p = order_face[i][0];
 	if (p < 2) continue;
 
-	INT<4> fav = GetFaceSort (i, vnums);
+	IVec<4> fav = GetFaceSort (i, vnums);
 
         {
           // gradients 
@@ -676,8 +676,8 @@ namespace ngfem
     // quad faces
     for (int i = 2; i < 5; i++)
       {
-	INT<2> p = order_face[i];
-        INT<4> f = GetFaceSort (i, vnums);	  
+	IVec<2> p = order_face[i];
+        IVec<4> f = GetFaceSort (i, vnums);	  
 
         {
           Tx xi  = sigma[f[0]] - sigma[f[1]]; 
@@ -765,7 +765,7 @@ namespace ngfem
     
     if(order_cell[0] > 1 && order_cell[2] > 0) 
       {
-        INT<3> p = order_cell[0];
+        IVec<3> p = order_cell[0];
         if (usegrad_cell && p[0] > 1 && p[2] > 0)
           {
             // gradientfields
@@ -841,7 +841,7 @@ namespace ngfem
     for (int i = 0; i < 12; i++)
       {
 	int p = order_edge[i]; 
-        INT<2> e = GetEdgeSort (i, vnums);	  
+        IVec<2> e = GetEdgeSort (i, vnums);	  
 	
 	Tx xi  = sigma[e[1]]-sigma[e[0]];
 	Tx lam_e = lami[e[0]]+lami[e[1]];  
@@ -867,14 +867,14 @@ namespace ngfem
     const FACE * faces = ElementTopology::GetFaces (ET_HEX);
     for (int i = 0; i<6; i++)
       {
-	INT<2> p = order_face[i];
+	IVec<2> p = order_face[i];
 
 	Tx lam_f(0);
 	for (int j = 0; j < 4; j++)
 	  lam_f += lami[faces[i][j]];
 
         {
-          INT<4> f = GetFaceSort (i, vnums);	  
+          IVec<4> f = GetFaceSort (i, vnums);	  
           Tx xi  = sigma[f[0]] - sigma[f[1]]; 
           Tx eta = sigma[f[0]] - sigma[f[3]];
         
@@ -938,7 +938,7 @@ namespace ngfem
 
     
     {
-    INT<3> p = order_cell[0];
+    IVec<3> p = order_cell[0];
     if(usegrad_cell)
       if (p[0] >= 1 && p[1] >= 1 && p[2] >= 1)
         {
@@ -1031,7 +1031,7 @@ namespace ngfem
             int p = order_edge[i];
             if (i == facetnr)
               {
-                INT<2> e = GetEdgeSort (i, vnums);
+                IVec<2> e = GetEdgeSort (i, vnums);
                 T xi = sigma[e[1]]-sigma[e[0]];
                 Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
                 Vec<3,T> tau = mip.GetJacobian()*tauref;
@@ -1069,7 +1069,7 @@ namespace ngfem
 	    int p = order_face[f][0];
 	     if (f == facetnr)
 	       {
-		 INT<4> fav = GetFaceSort (facetnr, vnums);
+		 IVec<4> fav = GetFaceSort (facetnr, vnums);
 		 //AutoDiff<3,T> adxi = lami[fav[0]]-lami[fav[2]];
 		 //AutoDiff<3,T> adeta = lami[fav[1]]-lami[fav[2]];
 		 Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
@@ -1196,7 +1196,7 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       {
         int p = order_edge[i];
-        INT<2> e = GetEdgeSort (i, vnums);	  
+        IVec<2> e = GetEdgeSort (i, vnums);	  
 	
 	Tx xi  = sigma[e[1]] - sigma[e[0]];   
 	Tx lam_t = lambda[e[1]] + lambda[e[0]]; 
@@ -1221,7 +1221,7 @@ namespace ngfem
     for(int i = 4; i < 8; i++)
       {
         int p = order_edge[i];
-        INT<2> e = GetEdgeSort (i, vnums);	  
+        IVec<2> e = GetEdgeSort (i, vnums);	  
 
         shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
 
@@ -1328,7 +1328,7 @@ namespace ngfem
 	Tx fac(1.0);
 	for (int k = 1; k <= p+1; k++) fac *= (1-z);
 
-	INT<4> f = GetFaceSort (4, vnums);	  
+	IVec<4> f = GetFaceSort (4, vnums);	  
 	Tx xi  = sigma[f[0]] - sigma[f[1]]; 
 	Tx eta = sigma[f[0]] - sigma[f[3]];
 
@@ -1459,7 +1459,7 @@ namespace ngfem
             int p = order_edge[i];
             if (i == facetnr)
               {
-                INT<2> e = GetEdgeSort (i, vnums);
+                IVec<2> e = GetEdgeSort (i, vnums);
                 T xi = lam[e[1]]-lam[e[0]];
                 Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
                 auto tau = mip.GetJacobian()*tauref;
@@ -1527,7 +1527,7 @@ namespace ngfem
             int p = order_edge[i];
             if (i == facetnr)
               {
-                INT<2> e = GetEdgeSort (i, vnums);
+                IVec<2> e = GetEdgeSort (i, vnums);
                 T xi = sigma[e[1]]-sigma[e[0]];
                 Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
                 auto tau = mip.GetJacobian()*tauref;
@@ -1554,7 +1554,7 @@ namespace ngfem
           ii += order_edge[i];
 
         //do not sort face!
-        //INT<4> f = GetFaceSort (0, vnums);  
+        //IVec<4> f = GetFaceSort (0, vnums);  
         //T xi = sigma[f[0]]-sigma[f[1]]; 
         //T eta = sigma[f[0]]-sigma[f[3]]; 
         T xi = sigma[0]-sigma[1]; 
@@ -1596,7 +1596,7 @@ namespace ngfem
             int p = order_edge[i] * usegrad_edge[i];
             if (i == facetnr)
               {
-                INT<2> e = GetEdgeSort (i, vnums);
+                IVec<2> e = GetEdgeSort (i, vnums);
                 T xi = lam[e[1]]-lam[e[0]];
                 Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
                 Vec<3,T> tau = mip.GetJacobian()*tauref;
@@ -1630,7 +1630,7 @@ namespace ngfem
 	    int p = order_face[f][0];
 	     if (f == facetnr)
 	       {
-		 INT<4> fav = GetFaceSort (facetnr, vnums);
+		 IVec<4> fav = GetFaceSort (facetnr, vnums);
 		 //AutoDiff<3,T> adxi = lami[fav[0]]-lami[fav[2]];
 		 //AutoDiff<3,T> adeta = lami[fav[1]]-lami[fav[2]];
 		 Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
@@ -1730,7 +1730,7 @@ namespace ngfem
             int p = order_edge[i] * usegrad_edge[i];
             if (i == facetnr)
               {
-                INT<2> e = GetEdgeSort (i, vnums);
+                IVec<2> e = GetEdgeSort (i, vnums);
                 T xi = sigma[e[1]] - sigma[e[0]];
                 Vec<3> tauref = pnts[e[1]] - pnts[e[0]];
                 Vec<3,T> tau = mip.GetJacobian()*tauref;

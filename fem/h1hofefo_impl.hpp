@@ -52,7 +52,7 @@ namespace ngfem
 
     for (int i = 0; i < 3; i++)
       { 
-        INT<2> e = GetEdgeSort (i, vnums);
+        IVec<2> e = GetEdgeSort (i, vnums);
 	LegendrePolynomial::EvalScaledMult (ORDER-2, 
 					    lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
 					    lam[e[0]]*lam[e[1]], shape.Addr(ii));
@@ -62,7 +62,7 @@ namespace ngfem
     // inner dofs
     if (ORDER >= 3)
       {
-        INT<4> f = GetFaceSort (0, vnums);
+        IVec<4> f = GetFaceSort (0, vnums);
 	DubinerBasis::EvalMult (ORDER-3, 
 				 lam[f[0]], lam[f[1]], 
 				 lam[f[0]]*lam[f[1]]*lam[f[2]], shape+ii);
@@ -78,7 +78,7 @@ namespace ngfem
     int ii = 3;
     for (int i = 0; i < 3; i++)
       { 
-        INT<2> e = GetEdge (i);
+        IVec<2> e = GetEdge (i);
         shape[ii] = lam[e[0]] * lam[e[1]];
         ii++;
       }
@@ -108,7 +108,7 @@ namespace ngfem
     int ii = 4;
     for (int i = 0; i < 6; i++)
       { 
-        INT<2> e = GetEdgeSort (i, vnums);
+        IVec<2> e = GetEdgeSort (i, vnums);
         LegendrePolynomial::
           EvalScaledMultFO<ORDER-2> (lam[e[1]]-lam[e[0]], lam[e[0]]+lam[e[1]], 
                                      lam[e[0]]*lam[e[1]], shape+ii);
@@ -119,7 +119,7 @@ namespace ngfem
     for (int i = 0; i < 4; i++)
       if (ORDER >= 3)
 	{
-          INT<4> f = GetFaceSort (i, vnums);
+          IVec<4> f = GetFaceSort (i, vnums);
 	  int vop = 6 - f[0] - f[1] - f[2];  	
 
 	  DubinerBasis::EvalScaledMult (ORDER-3, lam[f[0]], lam[f[1]], 1-lam[vop], 
@@ -147,7 +147,7 @@ namespace ngfem
 
     for (int i = 0; i < 6; i++)
       { 
-        INT<2> e = GetEdge (i);
+        IVec<2> e = GetEdge (i);
         shape[ii] = lam[e[0]] * lam[e[1]];
         ii++;
       }
@@ -165,7 +165,7 @@ namespace ngfem
     int ii = 4;
     for (int i = 0; i < 6; i++)
       { 
-        INT<2> e = GetEdgeSort (i, vnums);
+        IVec<2> e = GetEdgeSort (i, vnums);
         Tx bub = lam[e[0]]*lam[e[1]];
         shape[ii] = bub;
         shape[ii+1] = bub * (lam[e[1]]-lam[e[0]]);
@@ -174,7 +174,7 @@ namespace ngfem
 
     for (int i = 0; i < 4; i++)
       {
-        INT<4> f = GetFace (i);
+        IVec<4> f = GetFace (i);
         shape[ii++] = lam[f[0]]*lam[f[1]]*lam[f[2]];
       }
   }

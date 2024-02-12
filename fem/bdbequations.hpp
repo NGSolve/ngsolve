@@ -342,7 +342,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-    static INT<0> GetDimensions() { return INT<0>(); };
+    static IVec<0> GetDimensions() { return IVec<0>(); };
     
     static bool SupportsVB (VorB checkvb) { return true; }
     
@@ -578,7 +578,7 @@ namespace ngfem
 
     static string Name() { return "IdBoundary"; }
     static constexpr bool SUPPORT_PML = true;
-    static INT<0> GetDimensions() { return INT<0>(); };
+    static IVec<0> GetDimensions() { return IVec<0>(); };
     
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
@@ -717,7 +717,7 @@ namespace ngfem
 
     
     static string Name() { return "hesse"; }
-    static INT<2> GetDimensions() { return { D,D }; }
+    static IVec<2> GetDimensions() { return { D,D }; }
     
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const ScalarFiniteElement<D>&> (fel); }
@@ -745,7 +745,7 @@ namespace ngfem
     typedef void DIFFOP_TRACE;
 
     static string Name() { return "hesseboundary"; }
-    static INT<2> GetDimensions() { return { D,D }; }    
+    static IVec<2> GetDimensions() { return { D,D }; }    
     
     static auto & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
@@ -1877,7 +1877,7 @@ namespace ngfem
     enum { DIM_ELEMENT = DIM_EL };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-    static INT<0> GetDimensions() { return INT<0>(); };
+    static IVec<0> GetDimensions() { return IVec<0>(); };
 
     static bool SupportsVB (VorB checkvb) { return true; }
 
@@ -2033,7 +2033,7 @@ namespace ngfem
 
     static string Name() { return "grad"; }
     static constexpr bool SUPPORT_PML = true;
-    static INT<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
+    static IVec<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
     
     
     template <typename FEL, typename MIP, typename MAT>
@@ -2124,7 +2124,7 @@ namespace ngfem
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 1 };
 
-    static INT<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
+    static IVec<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
     static constexpr bool SUPPORT_PML = true;
     static string Name() { return "gradbnd"; }
 

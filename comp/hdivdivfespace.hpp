@@ -17,8 +17,8 @@ namespace ngcomp
     // size_t ndof;
     Array<int> first_facet_dof;
     Array<int> first_element_dof;
-    Array<INT<2,int> > order_facet;
-    Array<INT<3,int> > order_inner;
+    Array<IVec<2,int> > order_facet;
+    Array<IVec<3,int> > order_inner;
     
     // add divdiv-free inner bubbles
     bool plus;

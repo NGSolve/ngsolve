@@ -175,7 +175,7 @@ namespace ngla
 
 	Array<int> rows, cols;
 	Array<TM> vals;
-	HashTable<INT<1>, int> ht_globdofs(100000);
+	HashTable<IVec<1>, int> ht_globdofs(100000);
 	// int num_globdofs = 0; 
 
 	cout << IM(4) << "collect data" << flush;

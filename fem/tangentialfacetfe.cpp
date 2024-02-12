@@ -32,7 +32,7 @@ namespace ngfem
     int first = first_facet_dof[fanr];
     int p = facet_order[fanr][0];
 
-    INT<2> e = GetVertexOrientedEdge(fanr);
+    IVec<2> e = GetVertexOrientedEdge(fanr);
     Tx xi = lami[e[0]] - lami[e[1]];
     
     LegendrePolynomial (p, xi, 
@@ -51,7 +51,7 @@ namespace ngfem
     Tx x = hx[0], y = hx[1], z = hx[2];
     Tx lami[4] = { x, y, z, 1-x-y-z };
 
-    INT<4> fav = ET_T::GetFaceSort (fanr, vnums);
+    IVec<4> fav = ET_T::GetFaceSort (fanr, vnums);
 
     Tx adxi = lami[fav[0]]-lami[fav[2]];
     Tx adeta = lami[fav[1]]-lami[fav[2]];
@@ -292,7 +292,7 @@ namespace ngfem
     // AutoDiff<2> xi  = sigma[fmax] - sigma[f1]; 
     // AutoDiff<2> eta = sigma[fmax] - sigma[f2]; 
     
-    INT<4> f = GetFaceSort (0, vnums); 
+    IVec<4> f = GetFaceSort (0, vnums); 
     AutoDiff<2> xi  = sigma[f[0]] - sigma[f[1]]; 
     AutoDiff<2> eta = sigma[f[0]] - sigma[f[3]]; 
 
@@ -358,7 +358,7 @@ namespace ngfem
       {
         int p = facet_order[fnr][0];
         
-        INT<2> e = GetVertexOrientedEdge(fnr);
+        IVec<2> e = GetVertexOrientedEdge(fnr);
         T xi = lam[e[1]]-lam[e[0]];
         Vec<2,T> tauref = pnts[e[1]] - pnts[e[0]];
         auto tau = mip.GetJacobian()*tauref;
@@ -515,7 +515,7 @@ namespace ngfem
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
     AutoDiff<3> lami[4] = { x, y, z, 1-x-y-z };
 
-    INT<4> fav = ET_T::GetFaceSort (fanr, vnums);
+    IVec<4> fav = ET_T::GetFaceSort (fanr, vnums);
 
     AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
     AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
@@ -577,7 +577,7 @@ namespace ngfem
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
     AutoDiff<3> lami[4] = { x, y, z, 1-x-y-z };
 
-    INT<4> fav = ET_trait<ET_TET>::GetFaceSort (fanr, vnums);
+    IVec<4> fav = ET_trait<ET_TET>::GetFaceSort (fanr, vnums);
 
     AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
     AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
@@ -633,8 +633,8 @@ namespace ngfem
 
     int ii = first_facet_dof[fnr];
 
-    // INT<4> fav = GetFaceSort (fnr, vnums);
-    INT<4> fav = GetVertexOrientedFace(fnr);
+    // IVec<4> fav = GetFaceSort (fnr, vnums);
+    IVec<4> fav = GetVertexOrientedFace(fnr);
     Vec<3> adxi = pnts[fav[0]] - pnts[fav[2]];
     Vec<3> adeta = pnts[fav[1]] - pnts[fav[2]];
     T xi = lam[fav[0]];
@@ -679,7 +679,7 @@ namespace ngfem
       {
 	int p = facet_order[fanr][0];
 
-	INT<4> fav = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);
+	IVec<4> fav = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);
 
 	AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
 	AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
@@ -712,7 +712,7 @@ namespace ngfem
       {
 	int p = facet_order[fanr][0];
 	 
-	INT<4> f = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);	  	
+	IVec<4> f = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);	  	
 	AutoDiff<3> xi  = sigma[f[0]] - sigma[f[1]]; 
 	AutoDiff<3> zeta = sigma[f[0]] - sigma[f[3]];
 
@@ -765,7 +765,7 @@ namespace ngfem
     if (fanr < 2)
       {
 	int p = facet_order[fanr][0];
-	INT<4> fav = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);
+	IVec<4> fav = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);
 
 	AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
 	AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
@@ -798,7 +798,7 @@ namespace ngfem
       {
 	int p = facet_order[fanr][0];
 	 
-	INT<4> f = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);	  	
+	IVec<4> f = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);	  	
 	AutoDiff<3> xi  = sigma[f[0]] - sigma[f[1]]; 
 	AutoDiff<3> zeta = sigma[f[0]] - sigma[f[3]];
 	
@@ -882,7 +882,7 @@ namespace ngfem
     {
       int p = facet_order[fanr][0];
        
-      INT<4> f = ET_trait<ET_HEX>::GetFaceSort (fanr, vnums);     
+      IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (fanr, vnums);     
       AutoDiff<3> xi  = sigma[f[0]] - sigma[f[1]]; 
       AutoDiff<3> zeta = sigma[f[0]] - sigma[f[3]];   
 

@@ -26,7 +26,7 @@ namespace ngfem
 
         double facx[] = { -1, 1, 1, -1 };
         double facy[] = { -1, -1, 1, 1 };
-        INT<4> f = GetFaceSort (0, vnums);
+        IVec<4> f = GetFaceSort (0, vnums);
         double fx = facx[f[0]];
         double fy = facy[f[0]];
         bool flip = (facx[f[0]] == facx[f[1]]);
@@ -183,7 +183,7 @@ namespace ngfem
       {
         double facx[] = { -1, 1, 1, -1 };
         double facy[] = { -1, -1, 1, 1 };
-        INT<4> f = GetFaceSort (0, vnums);
+        IVec<4> f = GetFaceSort (0, vnums);
         double fx = facx[f[0]];
         double fy = facy[f[0]];
         bool flip = (facx[f[0]] == facx[f[1]]);

@@ -327,7 +327,7 @@ namespace ngcomp
               int maxi = -1;
               for (int j = 0; j < 3; j++)
                 {
-                  INT<2> pnodes = ma->GetParentNodes(verts[j]);
+                  IVec<2> pnodes = ma->GetParentNodes(verts[j]);
                   if ( (verts.Contains(pnodes[0]) || verts.Contains(pnodes[1])) &&
                        parentface_vertices.Contains(pnodes[0]) && parentface_vertices.Contains(pnodes[1]) )
                     {
@@ -337,7 +337,7 @@ namespace ngcomp
                 }
               if (ma->GetParentElement(el).Nr() != -1)
                 if (maxi == -1) throw Exception("did not find pnodes");
-              INT<2> pnodes = ma->GetParentNodes(verts[maxi]);
+              IVec<2> pnodes = ma->GetParentNodes(verts[maxi]);
               auto vmax = verts[maxi];
               auto pnode_in_fine = verts.Contains(pnodes[0]) ? pnodes[0] : pnodes[1];
               auto pnode_not_in_fine = verts.Contains(pnodes[0]) ? pnodes[1] : pnodes[0];
@@ -634,17 +634,17 @@ global system.
       {
 	order_inner.SetSize(ma->GetNE());
 
-	order_inner = INT<3>(order);
+	order_inner = IVec<3>(order);
 
 	if(var_order)
 	  for (auto i : Range(ma->GetNE()))
-            order_inner[i] = ma->GetElOrders(i)+INT<3>(rel_order);
+            order_inner[i] = ma->GetElOrders(i)+IVec<3>(rel_order);
         
         for (auto i : Range(ma->GetNE()))
 	  {
 	    ElementId ei(VOL,i);
-	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
-	    order_inner[i] = Max(order_inner[i], INT<3>(0));
+	    order_inner[i] = order_inner[i] + IVec<3> (et_bonus_order[ma->GetElType(ei)]);
+	    order_inner[i] = Max(order_inner[i], IVec<3>(0));
 	    if (!DefinedOn (ei))
 	      order_inner[i] = 0;
 	  }
@@ -689,7 +689,7 @@ global system.
     for (auto i : Range(ma->GetNE()))
       {
 	first_element_dof[i] = ndof;
-	INT<3> pi = order_inner[i];
+	IVec<3> pi = order_inner[i];
 	switch (ma->GetElType(ElementId(VOL,i)))
 	  {
 	  case ET_SEGM:
@@ -767,7 +767,7 @@ global system.
           }
 
 	if (eltype == ET_TRIG && order_policy == CONSTANT_ORDER)
-          return *CreateL2HighOrderFE<ET_TRIG> (order, INT<3>(ngel.Vertices()), alloc);
+          return *CreateL2HighOrderFE<ET_TRIG> (order, IVec<3>(ngel.Vertices()), alloc);
 
         if (tensorproduct)
           {
@@ -779,7 +779,7 @@ global system.
               return * new (alloc) L2HighOrderFETP<ET_HEX> (order, ngel.Vertices(), alloc);
           }
         if (eltype == ET_TET && order_policy == CONSTANT_ORDER)
-          return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), alloc);
+          return *CreateL2HighOrderFE<ET_TET> (order, IVec<4>(ngel.Vertices()), alloc);
 
         /*
         return SwitchET(eltype,
@@ -874,7 +874,7 @@ global system.
   //         }
 
   //       if (eltype == ET_TET)
-  //         return *CreateL2HighOrderFE<ET_TET> (order, INT<4>(ngel.Vertices()), lh);
+  //         return *CreateL2HighOrderFE<ET_TET> (order, IVec<4>(ngel.Vertices()), lh);
 
   //       switch (eltype)
   //         {
@@ -1968,13 +1968,13 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     if (first_update)
       {
 	order_inner.SetSize(nel);
-	order_inner = INT<3>(order);
+	order_inner = IVec<3>(order);
 
 	for (size_t i = 0; i < nel; i++)
 	  {
 	    ElementId ei(BND,i);
-	    order_inner[i] = order_inner[i] + INT<3> (et_bonus_order[ma->GetElType(ei)]);
-	    order_inner[i] = Max(order_inner[i], INT<3>(0));
+	    order_inner[i] = order_inner[i] + IVec<3> (et_bonus_order[ma->GetElType(ei)]);
+	    order_inner[i] = Max(order_inner[i], IVec<3>(0));
 	    if (!DefinedOn (ei))
 	      order_inner[i] = 0;
 	  }
@@ -1988,7 +1988,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     for (int i = 0; i < nel; i++)
       {
 	first_element_dof[i] = ndof;
-	INT<3> pi = order_inner[i];
+	IVec<3> pi = order_inner[i];
 	switch (ma->GetElType(ElementId(BND, i)))
 	  {
 	  case ET_SEGM:

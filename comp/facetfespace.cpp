@@ -19,7 +19,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-    static INT<0> GetDimensions() { return INT<0>(); };
+    static IVec<0> GetDimensions() { return IVec<0>(); };
 
     typedef DiffOpIdBoundary<D> DIFFOP_TRACE;
     
@@ -388,14 +388,14 @@ for the two neighbouring elements. This allows a simple implementation of the Le
             
 		if(var_order)
 		  {
-		    INT<3> el_orders = ma->GetElOrders(i); 
+		    IVec<3> el_orders = ma->GetElOrders(i); 
 
 		    const EDGE * edges = ElementTopology::GetEdges (eltype);
 		    for(int j=0; j<fanums.Size(); j++)
 		      for(int k=0;k<2;k++)
 			if(points[edges[j][0]][k] != points[edges[j][1]][k])
 			  { 
-			    order_facet[fanums[j]] = INT<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
+			    order_facet[fanums[j]] = IVec<2>(max2(el_orders[k]+rel_order, order_facet[fanums[j]][0]),0);
 			    break; 
 			  }
 		  }
@@ -409,7 +409,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 	    
 		if(var_order) 
 		  {
-		    INT<3> el_orders = ma->GetElOrders(i); 
+		    IVec<3> el_orders = ma->GetElOrders(i); 
 
 		    // ma->GetElVertices (i, vnums);
 		    auto vnums = ma->GetElVertices(ei);
@@ -427,7 +427,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 			    for(int k = 1; k < 4; k++) 
 			      if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
 					
-			    INT<2> f((fmax+3)%4,(fmax+1)%4); 
+			    IVec<2> f((fmax+3)%4,(fmax+1)%4); 
 			    if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
 			
 			    // fmax > f[0] > f[1]

@@ -275,8 +275,8 @@ namespace ngcomp
         int p = var_order ? 0 : order; 
         order_edge = max(0, p - (type1 ? 1 : 0) + et_bonus_order[ET_SEGM]);
 
-        // order_inner = INT<3> (p,p,p); 
-        order_inner = INT<3> (0,0,0); 
+        // order_inner = IVec<3> (p,p,p); 
+        order_inner = IVec<3> (0,0,0); 
         
         fine_edge = 0; 
         // if (nfa > 0)
@@ -286,7 +286,7 @@ namespace ngcomp
             for (auto f : Range(nfa))
               order_face[f] = p+et_bonus_order[ma->GetFaceType(f)];
           else
-            order_face = INT<2> (p,p);
+            order_face = IVec<2> (p,p);
           usegrad_face = 0; 
         } 
         
@@ -363,8 +363,8 @@ namespace ngcomp
             if (!DefinedOn (VOL, index)) continue;
             auto pi = p + et_bonus_order[et];
             if (type1 && et==ET_QUAD && pi >= 1) pi--;
-            order_inner[i] = INT<3> (pi,pi,pi);
-            INT<3,TORDER> el_orders = ma->GetElOrders(i);
+            order_inner[i] = IVec<3> (pi,pi,pi);
+            IVec<3,TORDER> el_orders = ma->GetElOrders(i);
             
             ELEMENT_TYPE eltype=ma->GetElType(ei); 
             const FACE * faces = ElementTopology::GetFaces (eltype);
@@ -422,7 +422,7 @@ namespace ngcomp
                       if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
                     
                     
-                    INT<2> f((fmax+3)%4,(fmax+1)%4); 
+                    IVec<2> f((fmax+3)%4,(fmax+1)%4); 
                     if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
                     
                     // fmax > f[0] > f[1]
@@ -459,11 +459,11 @@ namespace ngcomp
         if(!var_order) { maxorder = order; minorder = order;} 
     
         if(uniform_order_inner>-1) 
-          order_inner = INT<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner); 
+          order_inner = IVec<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner); 
         if(uniform_order_edge>-1) 
           order_edge = uniform_order_edge; 
         if(uniform_order_face>-1 && dim == 3) 
-          order_face = INT<2> (uniform_order_face, uniform_order_face);
+          order_face = IVec<2> (uniform_order_face, uniform_order_face);
         /*
           Array<int> pnums;
           for (int i = 0; i < order_face.Size(); i++)
@@ -478,7 +478,7 @@ namespace ngcomp
           if(!fine_edge[i]) order_edge[i] = 0;  
         
         for(int i=0;i<order_face.Size();i++) 
-          if(!fine_face[i]) order_face[i] = INT<2> (0,0);  
+          if(!fine_face[i]) order_face[i] = IVec<2> (0,0);  
       }
 
     UpdateDofTables(); 
@@ -539,11 +539,11 @@ namespace ngcomp
           {
             first_face_dof[i] = ndof;
             /*
-            INT<2> pl = FESpace::order_face_left[i];
-            INT<2> pr = FESpace::order_face_right[i];
+            IVec<2> pl = FESpace::order_face_left[i];
+            IVec<2> pr = FESpace::order_face_right[i];
             */
-            INT<2> pl = order_face[i];
-            INT<2> pr = order_face[i];
+            IVec<2> pl = order_face[i];
+            IVec<2> pr = order_face[i];
             int ngrad = 0, ncurl = 0;
             switch (ma->GetFaceType(i))
               {
@@ -579,10 +579,10 @@ namespace ngcomp
               {
                 first_inner_dof[i] = ndof;
                 /*
-                  INT<2> pl = FESpace::order_face_left[i];
-                  INT<2> pr = FESpace::order_face_right[i];
+                  IVec<2> pl = FESpace::order_face_left[i];
+                  IVec<2> pr = FESpace::order_face_right[i];
                 */
-                INT<2> pl = order_inner[i];
+                IVec<2> pl = order_inner[i];
                 switch (ma->GetElType(ElementId(VOL,i)))
                   {
                   case ET_TET:
@@ -645,7 +645,7 @@ namespace ngcomp
       { 
 	first_face_dof[i] = ndof; 
 	auto pnums = ma->GetFacePNums (i);  
-	INT<2> p = order_face[i]; 
+	IVec<2> p = order_face[i]; 
 	switch(pnums.Size())
 	  {
 	  case 3: //Triangle   
@@ -678,7 +678,7 @@ namespace ngcomp
       {
         ElementId ei(VOL, i);
 	first_inner_dof[i] = ndof;
-	INT<3> p = order_inner[i];
+	IVec<3> p = order_inner[i];
 	switch(ma->GetElType(ei)) 
 	  {
 	  case ET_TRIG:
@@ -847,7 +847,7 @@ namespace ngcomp
 	  /*
 	  if (ma->GetFacetType (face) == ET_QUAD)
 	    {
-	      INT<2> p = order_face[face];
+	      IVec<2> p = order_face[face];
 	      int hnext = range.Next();
 	      int hfirst = hnext-p[0]-p[1];
 	      ctofdof.Range (hfirst, hnext) = WIREBASKET_DOF;
@@ -896,7 +896,7 @@ namespace ngcomp
 		    ctofdof.Range (GetFaceDofs(fnr)) = WIREBASKET_DOF;
 		    /*
 		    range = GetFaceDofs (fnr);
-		    INT<2> p = order_face[fnr];
+		    IVec<2> p = order_face[fnr];
 
 		    int hnext = range.Next();
 		    int hfirst = hnext-p[0]-p[1];
@@ -925,7 +925,7 @@ namespace ngcomp
 		    int fnr = face_nums[j];
 		    // ctofdof.Range (GetFaceDofs(fnr)) = WIREBASKET_DOF;
 		    range = GetFaceDofs (fnr);
-		    INT<2> p = order_face[fnr];
+		    IVec<2> p = order_face[fnr];
 
 		    int hnext = range.Next();
 		    int hfirst = hnext-p[0]-p[1];
@@ -1100,8 +1100,8 @@ namespace ngcomp
             case 2:
               {
                 hofe -> SetOrderCell (order_inner[ei.Nr()]);   // old style
-                INT<2,TORDER> p(order_inner[ei.Nr()][0], order_inner[ei.Nr()][1]);
-                FlatArray<INT<2,TORDER> > of(1, &p);
+                IVec<2,TORDER> p(order_inner[ei.Nr()][0], order_inner[ei.Nr()][1]);
+                FlatArray<IVec<2,TORDER> > of(1, &p);
                 hofe -> SetOrderFace (of);
                 
                 hofe -> SetUseGradCell (usegrad_cell[ei.Nr()]);  // old style
@@ -1153,9 +1153,9 @@ namespace ngcomp
             } 
           else 
             {     
-              INT<2> p = order_face[ma->GetSElFace(ei.Nr())];
-              hofe -> SetOrderCell (INT<3> (p[0],p[1],0));  // old style
-              FlatArray<INT<2> > of(1, &p);
+              IVec<2> p = order_face[ma->GetSElFace(ei.Nr())];
+              hofe -> SetOrderCell (IVec<3> (p[0],p[1],0));  // old style
+              FlatArray<IVec<2> > of(1, &p);
               hofe -> SetOrderFace (of);
               
               FlatArray<bool> augf(1, &usegrad_face[ma->GetSElFace(ei.Nr())]);
@@ -1286,8 +1286,8 @@ namespace ngcomp
 
   //       hofe -> SetOrderEdge (ord_edge);
   //       hofe -> SetOrderCell (order_inner[elnr]);   // old style
-  //       INT<2> p(order_inner[elnr][0], order_inner[elnr][1]);
-  //       FlatArray<INT<2> > of(1, &p);
+  //       IVec<2> p(order_inner[elnr][0], order_inner[elnr][1]);
+  //       FlatArray<IVec<2> > of(1, &p);
   //       hofe -> SetOrderFace (of);
 
   //       hofe -> SetUseGradEdge (ug_edge); 
@@ -1427,9 +1427,9 @@ namespace ngcomp
   //       hofe -> SetVertexNumbers (vnums);
   //       hofe -> SetOrderEdge (ord_edge);
 
-  //       INT<2> p = order_face[ma->GetSElFace(selnr)];
-  //       hofe -> SetOrderCell (INT<3> (p[0],p[1],0));  // old style
-  //       FlatArray<INT<2> > of(1, &p);
+  //       IVec<2> p = order_face[ma->GetSElFace(selnr)];
+  //       hofe -> SetOrderCell (IVec<3> (p[0],p[1],0));  // old style
+  //       FlatArray<IVec<2> > of(1, &p);
   //       hofe -> SetOrderFace (of);
 
   //       hofe -> SetUseGradEdge(ug_edge); 
@@ -1926,7 +1926,7 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i])
 	      {
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pn1 = vts[0], pn2 = vts[1];
 		pn1 = ma->GetClusterRepVertex(pn1);
 		pn2 = ma->GetClusterRepVertex(pn2); 
@@ -2012,7 +2012,7 @@ namespace ngcomp
 	  for (i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pn1 = vts[0], pn2 = vts[1];
 		table[pn1][cnt[pn1]++] = i;
 		table[pn2][cnt[pn2]++] = i;
@@ -2054,7 +2054,7 @@ namespace ngcomp
 	  for (i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pn1 = vts[0], pn2 = vts[1];
                 
 		table[pn1][cnt[pn1]++]  = i; 
@@ -2096,7 +2096,7 @@ namespace ngcomp
 	  for (i = 0; i < ned; i++)
 	    if(fine_edge[i])
 	      {
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pn1 = vts[0], pn2 = vts[1];
                 
 		pn1 = ma->GetClusterRepVertex(pn1);
@@ -2133,7 +2133,7 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i] && !IsDirichletEdge(i))
 	      {
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pn1 = vts[0], pn2 = vts[1];
                 
 		pn1 = ma->GetClusterRepVertex(pn1);
@@ -2185,7 +2185,7 @@ namespace ngcomp
 	  for(i=0;i<ned;i++) 
 	    if(fine_edge[i])
 	      {
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pn1 = vts[0], pn2 = vts[1];
                 
 		pn1 = ma->GetClusterRepVertex(pn1);
@@ -2304,7 +2304,7 @@ namespace ngcomp
 	      {
 		// int pn1, pn2;
 		// ma->GetEdgePNums (i,pn1,pn2);
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pn1 = vts[0], pn2 = vts[1];
                 
 		pn1 = ma->GetClusterRepVertex(pn1);
@@ -2585,7 +2585,7 @@ namespace ngcomp
 			for(int k=first; k<next; k++)
 			  clusters[k] = 1;
 		    
-			// INT<2> p = order_face[fnums[j]]; 
+			// IVec<2> p = order_face[fnums[j]]; 
 			// for(k=next-p[0]-p[1]; k<next; k++)
 			// clusters[k] = 1;
 		      }
@@ -2653,7 +2653,7 @@ namespace ngcomp
 			  clusters[k]=1; 
 		    
 		    
-			INT<2> p = order_face[fnums[j]]; 
+			IVec<2> p = order_face[fnums[j]]; 
 		    
 			for(int k=next-p[0]-p[1]; k<next; k++)
 			  clusters[k] = 1;
@@ -2710,7 +2710,7 @@ namespace ngcomp
 			/*	for (k=first; k < next; k++) 
 			  clusters[k]=0; 
 		      
-			  INT<2> p = order_face[fnums[j]];
+			  IVec<2> p = order_face[fnums[j]];
 			  for(k=2*(p[0]+1)*(p[0]+1);k<next;k++) //achtung
 			  clusters[k]=3;  
 			*/ 
@@ -2829,7 +2829,7 @@ namespace ngcomp
 			/*	for (k=first; k < next; k++) 
 			  clusters[k]=0; 
 		      
-			  INT<2> p = order_face[fnums[j]];
+			  IVec<2> p = order_face[fnums[j]];
 			  for(k=2*(p[0]+1)*(p[0]+1);k<next;k++) //achtung
 			  clusters[k]=3;  
 			*/ 
@@ -2877,7 +2877,7 @@ namespace ngcomp
 	      { 
 		// int pi1,pi2; 
 		// ma->GetEdgePNums(i,pi1,pi2);
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pi1 = vts[0], pi2 = vts[1];
                 
 		pi1 = ma->GetClusterRepVertex (pi1); 
@@ -2896,7 +2896,7 @@ namespace ngcomp
 		auto pnums = ma->GetFacePNums(i); 
 		if(pnums.Size() == 4) // quad face 
 		  { 
-		    //INT<2> p = order_face[i];         
+		    //IVec<2> p = order_face[i];         
 		    int first =first_face_dof[i];  
 		    int next = first_face_dof[i+1]; 
 		    // Ned_0*pol_z 
@@ -2914,7 +2914,7 @@ namespace ngcomp
 	      { 
 		// int pi1,pi2; 
 		// ma->GetEdgePNums(i,pi1,pi2);
-		INT<2> vts = ma->GetEdgePNums (i);
+		IVec<2> vts = ma->GetEdgePNums (i);
                 int pi1 = vts[0], pi2 = vts[1];
                 
 		pi1 = ma->GetClusterRepVertex (pi1); 
@@ -2936,7 +2936,7 @@ namespace ngcomp
 		auto pnums = ma->GetFacePNums(i); 
 		if(pnums.Size() == 4) // quad face 
 		  { 
-		    INT<2> p = order_face[i];        
+		    IVec<2> p = order_face[i];        
 		    // int first =first_face_dof[i];  
 		    int next = first_face_dof[i+1]; 
 		    // Ned_0*pol_z 
@@ -3189,7 +3189,7 @@ namespace ngcomp
       {
 	if(fine_edge[i])
 	  { 
-            INT<2> vts = ma->GetEdgePNums (i);
+            IVec<2> vts = ma->GetEdgePNums (i);
             int p1 = vts[0], p2 = vts[1];
 
 	    grad->CreatePosition(i,p1); 

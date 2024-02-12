@@ -274,7 +274,7 @@ namespace ngfem
             auto multxptr = GetMatVecFunction (nipx);            
             Cast().
               /*
-              Map2t3([multxptr, facx, trans2, trans3] (INT<4, size_t> i4) // base 3, base 2, base x, nr
+              Map2t3([multxptr, facx, trans2, trans3] (IVec<4, size_t> i4) // base 3, base 2, base x, nr
                      {
                        // trans3.Range(i4[0], i4[0]+i4[3]) = facx.Rows(i4[2], i4[2]+i4[3]) * trans2.Row(i4[1]);
                        multxptr (facx.Rows(i4[2], i4[2]+i4[3]), trans2.Row(i4[1]), trans3.Range(i4[0], i4[0]+i4[3]));
@@ -496,7 +496,7 @@ namespace ngfem
             NgProfiler::AddThreadFlops (tcalcx, TaskManager::GetThreadId(), 2*nipx*ndof);
             Cast().
               /*
-              Map2t3([facx_ref, facdx_ref, coefs, &gridx, &gridx_dx] (INT<4, size_t> i4)
+              Map2t3([facx_ref, facdx_ref, coefs, &gridx, &gridx_dx] (IVec<4, size_t> i4)
                      // base 3, base 2, base x, nr
                      {
                        size_t base3 = i4[0];
@@ -847,7 +847,7 @@ namespace ngfem
     // INLINE void T_CalcShape (TIP<ET_trait<ET_TET>::DIM,Tx> ip, TFA & shape) const;
 
     virtual void ComputeNDof() override { ; } 
-    virtual void SetOrder (INT<DIM> p) override { ; } 
+    virtual void SetOrder (IVec<DIM> p) override { ; } 
     virtual void PrecomputeTrace () override { ; } 
     virtual void PrecomputeGrad () override { ; }
 
@@ -995,7 +995,7 @@ namespace ngfem
       for (size_t i = 0, ii = 0, jj = 0; i <= ORDER; i++)
         for (size_t j = 0; j <= ORDER-i; j++, jj++)
           {
-            f(INT<4, size_t> (ii, jj, (i+j)*(ORDER+1), ORDER+1-i-j)); // base 3, base 2, base x, nr
+            f(IVec<4, size_t> (ii, jj, (i+j)*(ORDER+1), ORDER+1-i-j)); // base 3, base 2, base x, nr
             ii += ORDER+1-i-j;
           }
       */
@@ -1064,7 +1064,7 @@ namespace ngfem
     }
     virtual ~L2HighOrderFETP();
     virtual void ComputeNDof() override { ; } 
-    virtual void SetOrder (INT<DIM> p) override { ; } 
+    virtual void SetOrder (IVec<DIM> p) override { ; } 
     virtual void PrecomputeTrace () override { ; } 
     virtual void PrecomputeGrad () override { ; }
 
@@ -1074,7 +1074,7 @@ namespace ngfem
       Tx x = ip.x, y = ip.y;
       Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
       
-      INT<4> f = GetFaceSort (0, vnums);  
+      IVec<4> f = GetFaceSort (0, vnums);  
       
       Tx xi = sigma[f[0]]-sigma[f[1]]; 
       Tx eta = sigma[f[0]]-sigma[f[3]]; 

@@ -508,14 +508,14 @@ into the wirebasket.
 	      auto vnums = el.Vertices();
 	      auto eledges = el.Edges();
 	
-	      INT<3,TORDER> el_orders = ma->GetElOrders(i) + INT<3> (rel_order);
+	      IVec<3,TORDER> el_orders = ma->GetElOrders(i) + IVec<3> (rel_order);
 
 	      maxorder = max2 (maxorder, Max(el_orders));
 	      minorder = min2 (minorder, Min(el_orders));
 	      // for(int l=0;l<3;l++) maxorder = max2(el_orders[l],maxorder); 
 	      // for(int l=0;l<3;l++) minorder = min2(el_orders[l],minorder); 
           
-	      order_inner[i] = Max (order_inner[i], el_orders + INT<3,TORDER>(et_bonus_order[eltype]));
+	      order_inner[i] = Max (order_inner[i], el_orders + IVec<3,TORDER>(et_bonus_order[eltype]));
 	      // for(int j=0;j<dim;j++) order_inner[i][j] = max2(order_inner[i][j],el_orders[j]);
 
 	      for(int j=0;j<eledges.Size();j++)
@@ -548,7 +548,7 @@ into the wirebasket.
 			  for(int k = 1; k < 4; k++) 
 			    if(vnums[faces[j][k]] > vnums[faces[j][fmax]]) fmax = k;   
                       
-			  INT<2> f((fmax+3)%4,(fmax+1)%4); 
+			  IVec<2> f((fmax+3)%4,(fmax+1)%4); 
 			  if(vnums[faces[j][f[1]]] > vnums[faces[j][f[0]]]) swap(f[0],f[1]);
                       
 			  for(int l=0;l<2;l++)
@@ -593,9 +593,9 @@ into the wirebasket.
 	   for (int i = 0; i < nel; i++)
 	   {
 	   if (ma->GetElType(i) == ET_TRIG)
-	   order_inner = INT<3> (uniform_order_trig, uniform_order_trig, uniform_order_trig);
+	   order_inner = IVec<3> (uniform_order_trig, uniform_order_trig, uniform_order_trig);
 	   else
-	   order_inner = INT<3> (uniform_order_quad, uniform_order_quad, uniform_order_quad);
+	   order_inner = IVec<3> (uniform_order_quad, uniform_order_quad, uniform_order_quad);
 	   }
 	   }
 	*/
@@ -684,7 +684,7 @@ into the wirebasket.
         (nfa, [&] (size_t i)
          {
            int neldof = 0;             
-           INT<2> p = order_face[i];
+           IVec<2> p = order_face[i];
            switch(ma->GetFaceType(i))
              {
              case ET_TRIG:
@@ -718,7 +718,7 @@ into the wirebasket.
        {
         ElementId ei(VOL,i);
         int neldof = 0;
-	INT<3> p = order_inner[i];
+	IVec<3> p = order_inner[i];
 	switch (ma->GetElType(ei))
 	  {
 	  case ET_TRIG:
@@ -875,8 +875,8 @@ into the wirebasket.
   Array<MemoryUsage> H1HighOrderFESpace :: GetMemoryUsage () const
   {
     auto mu = FESpace::GetMemoryUsage();
-    mu += { "H1HighOrder::order_inner", order_inner.Size()*sizeof(INT<3,TORDER>), 1 };
-    mu += { "H1HighOrder::order_face", order_face.Size()*sizeof(INT<2,TORDER>), 1 };
+    mu += { "H1HighOrder::order_inner", order_inner.Size()*sizeof(IVec<3,TORDER>), 1 };
+    mu += { "H1HighOrder::order_face", order_face.Size()*sizeof(IVec<2,TORDER>), 1 };
     mu += { "H1HighOrder::order_edge", order_edge.Size()*sizeof(TORDER), 1 };
     return mu;
   }
@@ -1890,7 +1890,7 @@ into the wirebasket.
 		  clusters[k]=0; 
                 */
 
-		//INT<2> p = order_face[fnums[j]];
+		//IVec<2> p = order_face[fnums[j]];
 		//for(k=first + 2*(p[0]+1)*(p[1]+1);k<next;k++)
 		//  clusters[k]=3;  
 	      }

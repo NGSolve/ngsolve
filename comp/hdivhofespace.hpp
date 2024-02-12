@@ -38,9 +38,9 @@ namespace ngcomp
     // space is continuous/discontinuous 
     bool discont; 
     
-    Array<INT<3> > order_inner;
-    Array<INT<3> > order_inner_curl;
-    Array<INT<2> > order_facet; 
+    Array<IVec<3> > order_inner;
+    Array<IVec<3> > order_inner_curl;
+    Array<IVec<2> > order_facet; 
     Array<bool> fine_facet; 
     Array<bool> boundary_facet; 
  
@@ -60,7 +60,7 @@ namespace ngcomp
     // hide all used dofs
     bool hide_all_dofs;
     // discontinuous facet pairs:
-    Array<INT<2>> dc_pairs;
+    Array<IVec<2>> dc_pairs;
   public:
     HDivHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
                           bool parseflags=false);
@@ -128,7 +128,7 @@ namespace ngcomp
     ///
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override; 
     /// 
-    void GetFacetOrder (Array<INT<2> > & of, Array<bool> & ff) const 
+    void GetFacetOrder (Array<IVec<2> > & of, Array<bool> & ff) const 
     {of = order_facet; ff = fine_facet;};
 
     /// 
@@ -147,7 +147,7 @@ namespace ngcomp
     // virtual int LowOrderDof() const { if(discont) return(0); else return(1);} 
 
 
-    const Array<INT<2>> & GetDCPairs () const { return dc_pairs; }
+    const Array<IVec<2>> & GetDCPairs () const { return dc_pairs; }
 
     virtual bool VarOrder() const override { return var_order; } 
     virtual int GetRelOrder() const override { return rel_order; } 

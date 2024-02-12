@@ -572,7 +572,7 @@ namespace ngcomp
               cerr << "element type " << int(ma->GetElType(ei)) << " not there in hdivdivsurf" << endl;
             }
           
-          ArrayMem<INT<2>,4> order_ed;
+          ArrayMem<IVec<2>,4> order_ed;
           
           // fe->Noncontinuous() = noncontinuous;
           
