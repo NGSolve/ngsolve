@@ -51,7 +51,7 @@ namespace ngfem
     if (order >= 2)  
       {
         // end-points of edge, oriented by global vertex number
-        INT<2> edge = GetVertexOrientedEdge(0);
+        IVec<2> edge = GetVertexOrientedEdge(0);
 
         // xi \in [-1,1], oriented from smaller to larger global vertex number
         T xi = lami[edge[1]]-lami[edge[0]];   
