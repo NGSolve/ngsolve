@@ -764,7 +764,7 @@ namespace ngfem
 
   public:
     NGS_DLL_HEADER IntegrationRuleTP (const ElementTransformation & eltrans,
-                                      INT<D> order, bool compute_duffy = true, bool compute_points = true); 
+                                      IVec<D> order, bool compute_duffy = true, bool compute_points = true); 
 
     // tensor product rule for a facet
     NGS_DLL_HEADER IntegrationRuleTP (ELEMENT_TYPE eltype, FlatArray<int> sort, 

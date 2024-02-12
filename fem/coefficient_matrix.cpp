@@ -38,7 +38,7 @@ namespace ngfem
     InverseCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
       : T_CoefficientFunction<InverseCoefficientFunction>(D*D, ac1->IsComplex()), c1(ac1)
     {
-      this->SetDimensions (ngstd::INT<2> (D,D));
+      this->SetDimensions (ngstd::IVec<2> (D,D));
     }
 
     void DoArchive(Archive& ar) override
@@ -668,7 +668,7 @@ namespace ngfem
     CofactorCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
       : T_CoefficientFunction<CofactorCoefficientFunction>(D*D, ac1->IsComplex()), c1(ac1)
     {
-      this->SetDimensions (ngstd::INT<2> (D,D));
+      this->SetDimensions (ngstd::IVec<2> (D,D));
     }
 
     void DoArchive(Archive& ar) override
@@ -874,7 +874,7 @@ namespace ngfem
       if (dims_c1[0] != dims_c1[1])
         throw Exception("Sym of non-square matrix called");
     
-      SetDimensions (ngstd::INT<2> (dims_c1[0], dims_c1[0]) );
+      SetDimensions (ngstd::IVec<2> (dims_c1[0], dims_c1[0]) );
     }
 
     void DoArchive(Archive& ar) override
@@ -1011,7 +1011,7 @@ namespace ngfem
       if (dims_c1[0] != dims_c1[1])
         throw Exception("Skew of non-square matrix called");
     
-      SetDimensions (ngstd::INT<2> (dims_c1[0], dims_c1[0]) );
+      SetDimensions (IVec<2> (dims_c1[0], dims_c1[0]) );
     }
 
     void DoArchive(Archive& ar) override

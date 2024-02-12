@@ -18,10 +18,10 @@
 #include "compressedfespace.hpp"
 #include "periodic.hpp"
 
-using namespace ngmg;
 
 namespace ngcomp
 {
+  using namespace ngmg;
 
   FESpace :: FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
     : NGS_Object (ama, flags, "FESpace")

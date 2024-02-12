@@ -22,7 +22,7 @@ install( TARGETS ngstd ${ngs_install_dir} )
 install( FILES
         bessel.hpp blockalloc.hpp evalfunc.hpp
         memusage.hpp ngstd.hpp
-        stringops.hpp templates.hpp
+        stringops.hpp
         statushandler.hpp ngsstream.hpp 
         mycomplex.hpp python_ngstd.hpp ngs_utils.hpp
         bspline.hpp sample_sort.hpp

@@ -147,13 +147,13 @@ namespace ngcomp
 
     
     // generate edge points, and temporary hash table
-    ClosedHashTable<INT<2>, int> node2edge(5*ned+10);
+    ClosedHashTable<IVec<2>, int> node2edge(5*ned+10);
 
     edgepoints.SetSize0();
     
     for (size_t i = 0; i < ned; i++)
       {
-	INT<2> edge = ma->GetEdgePNums (i);
+	IVec<2> edge = ma->GetEdgePNums (i);
 	int edgedir = (edge[0] > edge[1]);
 	if (edgedir) Swap (edge[0], edge[1]);
 	node2edge.Set (edge, i);
@@ -166,12 +166,12 @@ namespace ngcomp
 		    static Timer t("build_hierarchy"); RegionTimer reg(t);
     // build edge hierarchy:
     parentedges.SetSize (ned);
-    parentedges = INT<2> (-1,-1);
+    parentedges = IVec<2> (-1,-1);
 
     for (size_t i = 0; i < ned; i++)
       {
 	// cout << "edge " << i << "/" << ned << endl;
-	INT<2> i2 (edgepoints[i][0], edgepoints[i][1]);
+	IVec<2> i2 (edgepoints[i][0], edgepoints[i][1]);
 	int pa1[2], pa2[2];
 	ma->GetParentNodes (i2[0], pa1);
 	ma->GetParentNodes (i2[1], pa2);
@@ -188,11 +188,11 @@ namespace ngcomp
 	if (issplitedge)
 	  {
 	    // edge is obtained by splitting one edge into two parts:
-	    INT<2> paedge;
+	    IVec<2> paedge;
 	    if (issplitedge == 1)
-	      paedge = INT<2> (pa1[0], pa1[1]);
+	      paedge = IVec<2> (pa1[0], pa1[1]);
 	    else
-	      paedge = INT<2> (pa2[0], pa2[1]);
+	      paedge = IVec<2> (pa2[0], pa2[1]);
 	    
 	    if (paedge[0] > paedge[1]) 
 	      Swap (paedge[0], paedge[1]);
@@ -207,16 +207,16 @@ namespace ngcomp
 	    // edge is splitting edge in middle of triangle:
 	    for (int j = 1; j <= 2; j++)
 	      {
-		INT<2> paedge1, paedge2;
+		IVec<2> paedge1, paedge2;
 		if (j == 1)
 		  {
-		    paedge1 = INT<2> (pa1[0], i2[1]);
-		    paedge2 = INT<2> (pa1[1], i2[1]);
+		    paedge1 = IVec<2> (pa1[0], i2[1]);
+		    paedge2 = IVec<2> (pa1[1], i2[1]);
 		  }
 		else
 		  {
-		    paedge1 = INT<2> (pa2[0], i2[0]);
-		    paedge2 = INT<2> (pa2[1], i2[0]);
+		    paedge1 = IVec<2> (pa2[0], i2[0]);
+		    paedge2 = IVec<2> (pa2[1], i2[0]);
 		  }
 		if (paedge1[0] > paedge1[1]) 
 		  Swap (paedge1[0], paedge1[1]);
@@ -254,16 +254,16 @@ namespace ngcomp
 		    pa1[1] != pa2[1])
 		  for (int j = 1; j <= 2; j++)
 		    {
-		      INT<2> paedge1, paedge2;
+		      IVec<2> paedge1, paedge2;
 		      if (j == 1)
 			{
-			  paedge1 = INT<2> (pa1[0], pa2[0]);
-			  paedge2 = INT<2> (pa1[1], pa2[1]);
+			  paedge1 = IVec<2> (pa1[0], pa2[0]);
+			  paedge2 = IVec<2> (pa1[1], pa2[1]);
 			}
 		      else
 			{
-			  paedge1 = INT<2> (pa1[0], pa2[1]);
-			  paedge2 = INT<2> (pa1[1], pa2[0]);
+			  paedge1 = IVec<2> (pa1[0], pa2[1]);
+			  paedge2 = IVec<2> (pa1[1], pa2[0]);
 			}
 		      
 		      int paedgenr1 = 0, paedgenr2 = 0;
@@ -299,7 +299,7 @@ namespace ngcomp
 		for (int j = 0; j < 2; j++)
 		  for (int k = 0; k < 2; k++)
 		    {
-		      INT<2> paedge (pa1[1-j], pa2[1-k]);
+		      IVec<2> paedge (pa1[1-j], pa2[1-k]);
 		      int orientpa = 1;
 		      if (paedge[0] > paedge[1]) 
 			{

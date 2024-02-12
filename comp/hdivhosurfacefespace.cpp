@@ -293,7 +293,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 	
 	// if(!var_order) continue; 
 	
-	// INT<3> el_orders = ma->GetElOrders(el.Nr());  
+	// IVec<3> el_orders = ma->GetElOrders(el.Nr());  
 	
         // int i = el.Nr();
 	// for(int k=0;k<dim;k++)
@@ -327,11 +327,11 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 
     // for (int i = 0; i < nel; i++)
     //   {
-    //     order_inner[i] = INT<3> (order,order,order);
+    //     order_inner[i] = IVec<3> (order,order,order);
     //   }
 
     // if(uniform_order_inner>-1) 
-    //   order_inner = INT<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner);
+    //   order_inner = IVec<3> (uniform_order_inner,uniform_order_inner,uniform_order_inner);
 
     UpdateDofTables(); 
     UpdateCouplingDofArray();
@@ -362,8 +362,8 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
         for (size_t i = 0; i < nel; i++)
           {
             ElementId ei(BND, i);
-            //INT<3> pc = order_inner_curl[i];
-            INT<3> p = order_inner[i];
+            //IVec<3> pc = order_inner_curl[i];
+            IVec<3> p = order_inner[i];
             int inci = 0;
             switch(ma->GetElType(ei))
               {
@@ -407,7 +407,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
         if (highest_order_dc)
           {
             dc_pairs.SetSize (ma->GetNFacets());
-            dc_pairs = INT<2> (-1,-1);
+            dc_pairs = IVec<2> (-1,-1);
             
             // Array<int> fnums;
             for (auto ei : ma->Elements(VOL))

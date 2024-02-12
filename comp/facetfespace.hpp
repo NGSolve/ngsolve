@@ -40,7 +40,7 @@ namespace ngcomp
     // relative order to mesh-order
     int rel_order; 
   
-    Array<INT<2> > order_facet;
+    Array<IVec<2> > order_facet;
     Array<bool> fine_facet;
   
     // int ndof;
@@ -112,7 +112,7 @@ namespace ngcomp
     virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & precflags) const override;
 
 
-    virtual INT<2> GetFacetOrder(int fnr) 
+    virtual IVec<2> GetFacetOrder(int fnr) 
     { return order_facet[fnr]; };
   
 

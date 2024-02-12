@@ -756,10 +756,10 @@ namespace ngcomp
         first_element_dof.SetSize (ma->GetNE()+1);
 
         order_facet.SetSize(ma->GetNFacets());
-        order_facet = INT<2>(uniform_order_facet,uniform_order_facet);
+        order_facet = IVec<2>(uniform_order_facet,uniform_order_facet);
 
         order_inner.SetSize(ma->GetNE());
-        order_inner = INT<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
+        order_inner = IVec<3>(uniform_order_inner,uniform_order_inner,uniform_order_inner);
 
         fine_facet.SetSize(ma->GetNFacets());
         fine_facet = false;
@@ -773,7 +773,7 @@ namespace ngcomp
         first_facet_dof[i] = ndof;
         if(!fine_facet[i]) continue;
         
-        INT<2> of = order_facet[i];
+        IVec<2> of = order_facet[i];
         switch(ma->GetFacetType(i))
           {
           case ET_SEGM:
@@ -793,7 +793,7 @@ namespace ngcomp
       {
         ElementId ei(VOL, i);
         first_element_dof[i] = ndof;
-        INT<3> oi = order_inner[i];
+        IVec<3> oi = order_inner[i];
         switch(ma->GetElType(ei))
           {
           case ET_TRIG:

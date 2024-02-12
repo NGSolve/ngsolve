@@ -566,7 +566,7 @@ namespace ngla
         RegionTimer reg(tbuild);
 
 	Array<int> marks(n);
-	Array<INT<2> > e2v;
+	Array<IVec<2> > e2v;
 	for (int i = 0; i < n; i++)
 	  for (int j = 0; j < this->GetRowIndices(i).Size(); j++)
 	    {
@@ -581,7 +581,7 @@ namespace ngla
 		    int ll = prol_colind[l];
 		    
 		    // if (kk >= ll) swap (kk,ll);
-		    e2v.Append (INT<2> (kk,ll));
+		    e2v.Append (IVec<2> (kk,ll));
 		  }
 	    }
 

@@ -29,7 +29,6 @@ namespace ngfem
 {
   using namespace std;
   using namespace ngstd;
-  using ngcore::INT;
   using namespace ngbla;
 }
 

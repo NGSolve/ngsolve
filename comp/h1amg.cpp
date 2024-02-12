@@ -123,7 +123,7 @@ namespace ngcomp
   template <typename SCAL>
   H1AMG_Matrix<SCAL>::H1AMG_Matrix(shared_ptr<SparseMatrixTM<SCAL>> amat,
                                    shared_ptr<BitArray> freedofs,
-                                   FlatArray<INT<2>> e2v,
+                                   FlatArray<IVec<2>> e2v,
                                    FlatArray<double> edge_weights,
                                    FlatArray<double> vertex_weights,
                                    size_t level)
@@ -274,7 +274,7 @@ namespace ngcomp
 
       Array<size_t> e2ce(num_edges);
 
-      ParallelHashTable<INT<2>, int> coarse_edge_ht;
+      ParallelHashTable<IVec<2>, int> coarse_edge_ht;
 
       ParallelFor (num_edges, [&] (size_t edge)
                    {
@@ -284,7 +284,7 @@ namespace ngcomp
                      // only edges where both coarse vertices are different and don't
                      // collapse to ground will be coarse edges
                      if (cv1 != -1 && cv2 != -1 && cv1 != cv2) {
-                       coarse_edge_ht.Do(INT<2>(cv1, cv2).Sort(), [](auto & val) { val = -1; });
+                       coarse_edge_ht.Do(IVec<2>(cv1, cv2).Sort(), [](auto & val) { val = -1; });
                      }
                    });
 
@@ -297,14 +297,14 @@ namespace ngcomp
           num_coarse_edges += coarse_edge_ht.Used(i);
         }
 
-      Array<INT<2>> coarse_e2v(num_coarse_edges);
+      Array<IVec<2>> coarse_e2v(num_coarse_edges);
 
       ParallelFor (coarse_edge_ht.NumBuckets(),
                [&] (size_t nr)
                {
                  int cnt = prefixsums[nr];
                  coarse_edge_ht.Bucket(nr).Iterate
-                   ([&cnt] (INT<2> key, int & val)
+                   ([&cnt] (IVec<2> key, int & val)
                     {
                       val = cnt++;
                     });
@@ -315,7 +315,7 @@ namespace ngcomp
                    [&] (size_t nr)
                    {
                      coarse_edge_ht.Bucket(nr).Iterate
-                       ([&coarse_e2v] (INT<2> key, int val)
+                       ([&coarse_e2v] (IVec<2> key, int val)
                         {
                           coarse_e2v[val] = key;
                         });
@@ -327,12 +327,12 @@ namespace ngcomp
                     int vertex2 = v2cv[e2v[edge][1]];
 
                     if (vertex1 != -1 && vertex2 != -1 && vertex1 != vertex2)
-                      e2ce[edge] = coarse_edge_ht.Get(INT<2>(vertex1, vertex2).Sort());
+                      e2ce[edge] = coarse_edge_ht.Get(IVec<2>(vertex1, vertex2).Sort());
                     else
                       e2ce[edge] = -1;
                   });
 
-      coarse_edge_ht = ParallelHashTable<INT<2>, int>();
+      coarse_edge_ht = ParallelHashTable<IVec<2>, int>();
 
       Array<double> coarse_edge_weights (num_coarse_edges);
       Array<double> coarse_vertex_weights (num_coarse_vertices);
@@ -461,8 +461,8 @@ namespace ngcomp
     shared_ptr<BitArray> freedofs;
     shared_ptr<H1AMG_Matrix<SCAL>> mat;
 
-    ParallelHashTable<INT<2>,double> edge_weights_ht;
-    ParallelHashTable<INT<1>,double> vertex_weights_ht;
+    ParallelHashTable<IVec<2>,double> edge_weights_ht;
+    ParallelHashTable<IVec<1>,double> vertex_weights_ht;
 
   public:
 
@@ -500,24 +500,24 @@ namespace ngcomp
       size_t num_edges = edge_weights_ht.Used();
 
       Array<double> edge_weights (num_edges);
-      Array<INT<2> > e2v (num_edges);
+      Array<IVec<2> > e2v (num_edges);
 
       edge_weights_ht.IterateParallel
-        ([&edge_weights,&e2v] (size_t i, INT<2> key, double weight)
+        ([&edge_weights,&e2v] (size_t i, IVec<2> key, double weight)
          {
            edge_weights[i] = weight;
            e2v[i] = key;
          });
-      edge_weights_ht = ParallelHashTable<INT<2>,double>();
+      edge_weights_ht = ParallelHashTable<IVec<2>,double>();
 
       Array<double> vertex_weights(num_vertices);
       vertex_weights = 0.0;
       vertex_weights_ht.IterateParallel
-        ([&vertex_weights] (size_t i, INT<1> key, double weight)
+        ([&vertex_weights] (size_t i, IVec<1> key, double weight)
          {
            vertex_weights[key[0]] = weight;
          });
-      vertex_weights_ht = ParallelHashTable<INT<1>,double>();
+      vertex_weights_ht = ParallelHashTable<IVec<1>,double>();
 
       mat = make_shared<H1AMG_Matrix<SCAL>> (smat, freedofs, e2v, edge_weights, vertex_weights, 0);
     }
@@ -560,7 +560,7 @@ namespace ngcomp
             ai(1,1) = ext_elmat(ndof, ndof);
             ai = Inv(ai);
             double weight = fabs(ai(0,0));
-            vertex_weights_ht.Do(INT<1>(dnums[i]), [weight] (auto & v) { v += weight; });
+            vertex_weights_ht.Do(IVec<1>(dnums[i]), [weight] (auto & v) { v += weight; });
           }
       }
       {
@@ -577,7 +577,7 @@ namespace ngcomp
             ai(1,2) = ai(2,1) = ext_elmat(j,ndof);
             ai = Inv(ai);
             double weight = fabs(ai(0,0));
-            edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
+            edge_weights_ht.Do(IVec<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
           }
       }
 
@@ -590,7 +590,7 @@ namespace ngcomp
           used.Set(i);
           CalcSchurComplement(elmat, schur_vertex, used, lh);
           double weight = schur_vertex(0,0);
-          vertex_weights_ht.Do(INT<1>(dnums[i]), [weight] (auto & v) { v += weight; });
+          vertex_weights_ht.Do(IVec<1>(dnums[i]), [weight] (auto & v) { v += weight; });
         }
 
       // edge weights
@@ -603,7 +603,7 @@ namespace ngcomp
             used.Set(j);
             CalcSchurComplement(elmat, schur_edge, used, lh);
             double weight = schur_edge(0,0);
-            edge_weights_ht.Do(INT<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
+            edge_weights_ht.Do(IVec<2>(dnums[j], dnums[i]).Sort(), [weight] (auto & v) { v += weight; });
           }
       */
     }

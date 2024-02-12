@@ -51,13 +51,13 @@ namespace ngfem
   SetOrderFace (FlatArray<int> & of)
   {
     for (int i = 0; i < of.Size(); i++)
-      order_face[i] = INT<2>(of[i],of[i]);
+      order_face[i] = IVec<2>(of[i],of[i]);
     ComputeNDof();
   }
   
   template <int D>
   void HDivHighOrderFiniteElement<D>::
-  SetOrderFace (FlatArray<INT<2> > & of)
+  SetOrderFace (FlatArray<IVec<2> > & of)
   {
     for (int i = 0; i < of.Size(); i++)
       order_face[i] = of[i];
@@ -66,7 +66,7 @@ namespace ngfem
 
   template <int D>
   void HDivHighOrderFiniteElement<D>::
-  SetOrderInner (INT<D> oi)
+  SetOrderInner (IVec<D> oi)
   {
     order_inner = oi;
     ComputeNDof();
@@ -117,12 +117,12 @@ namespace ngfem
   void HDivHighOrderNormalFiniteElement<D>::
   SetOrderInner (int oi)
   {
-    order_inner = INT<2>(oi,oi);
+    order_inner = IVec<2>(oi,oi);
   }
   
   template <int D>
   void HDivHighOrderNormalFiniteElement<D>::
-  SetOrderInner (INT<2> oi)
+  SetOrderInner (IVec<2> oi)
   {
     order_inner = oi;
   }
@@ -135,7 +135,7 @@ namespace ngfem
   HDivHighOrderNormalSegm<T_ORTHOPOL> :: HDivHighOrderNormalSegm (int aorder)
   // : HDivHighOrderNormalFiniteElement<1>()
   {
-    order_inner = INT<2>(aorder,aorder);
+    order_inner = IVec<2>(aorder,aorder);
     ComputeNDof();
   }
 
@@ -156,7 +156,7 @@ namespace ngfem
 
     ArrayMem<AutoDiff<1>,10> adpol1(order);
 	
-    INT<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);	  
+    IVec<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);	  
     
     shape[0] = -lam[e[0]].DValue(0);
 
@@ -185,7 +185,7 @@ namespace ngfem
   HDivHighOrderNormalQuad<T_ORTHOPOL> :: HDivHighOrderNormalQuad (int aorder)
   // : HDivHighOrderNormalFiniteElement<2>()
   {
-    order_inner = INT<2>(aorder,aorder);
+    order_inner = IVec<2>(aorder,aorder);
     ComputeNDof();
   }
 
@@ -212,7 +212,7 @@ namespace ngfem
 
     int ii = 1;
 
-    INT<2> p = order_inner;
+    IVec<2> p = order_inner;
     // int pp = max2(p[0],p[1]); 
     
     ArrayMem<AutoDiff<2>,20> pol_xi(p[0]+1), pol_eta(p[1]+1);
@@ -270,7 +270,7 @@ namespace ngfem
   HDivHighOrderNormalTrig<T_ORTHOPOL> :: HDivHighOrderNormalTrig (int aorder)
   // : HDivHighOrderNormalFiniteElement<2>()
   {
-    order_inner = INT<2>(aorder,aorder);
+    order_inner = IVec<2>(aorder,aorder);
     ComputeNDof();
   }
 
@@ -475,7 +475,7 @@ namespace ngfem
 	      }
 	    else
 	      {  // quad
-		INT<2> p(order_inner[0], order_inner[1]);
+		IVec<2> p(order_inner[0], order_inner[1]);
 		
 		int ni = ho_div_free
 		  ? p[0]*p[1] 
@@ -533,7 +533,7 @@ namespace ngfem
 
           for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
             {
-              INT<2> p = order_facet[i];
+              IVec<2> p = order_facet[i];
               if (ET_trait<ET>::FaceType(i) == ET_TRIG)
                 ndof += (p[0]*p[0]+3*p[0])/2;
               else
@@ -638,7 +638,7 @@ namespace ngfem
 	      }
 	    else
 	      {  // quad
-		INT<2> p(order_inner[0], order_inner[1]);
+		IVec<2> p(order_inner[0], order_inner[1]);
 		
 		int ni = ho_div_free
 		  ? p[0]*p[1] 
@@ -684,7 +684,7 @@ namespace ngfem
 
           for(int i = 0; i < ET_trait<ET>::N_FACE; i++)
             {
-              INT<2> p = order_facet[i];
+              IVec<2> p = order_facet[i];
               if (ET_trait<ET>::FaceType(i) == ET_TRIG)
                 nf += (p[0]*p[0]+3*p[0])/2;
               else
@@ -768,7 +768,7 @@ namespace ngfem
   /*
   HDivHighOrderFE<ET_TRIG> :: HDivHighOrderFE (int aorder)
   {
-    order_inner = INT<3>(aorder,0,0);
+    order_inner = IVec<3>(aorder,0,0);
     for (int i = 0; i < 3; i++)
       order_edge[i] = aorder;
     ComputeNDof();
@@ -807,7 +807,7 @@ namespace ngfem
 
   HDivHighOrderFE<ET_QUAD> :: HDivHighOrderFE (int aorder)
   {
-    order_inner = INT<3>(aorder,aorder,0);
+    order_inner = IVec<3>(aorder,aorder,0);
     for (int i = 0; i < 4; i++)
       order_edge[i] = aorder;
     ComputeNDof();
@@ -844,9 +844,9 @@ namespace ngfem
   /*
   HDivHighOrderFE<ET_TET> :: HDivHighOrderFE (int aorder)
   {
-    order_inner = INT<3>(aorder,aorder,aorder);
+    order_inner = IVec<3>(aorder,aorder,aorder);
     for (int i = 0; i < 4; i++)
-      order_face[i] = INT<2>(aorder,aorder);
+      order_face[i] = IVec<2>(aorder,aorder);
 
     ComputeNDof();
   }
@@ -1141,7 +1141,7 @@ namespace ngfem
     // quad faces
     for (i = 2; i < 5; i++)
       {
-	INT<2> p = order_face[i];
+	IVec<2> p = order_face[i];
 	int fmax = 0;
 
 	for (j = 1; j < 4; j++)
@@ -1420,7 +1420,7 @@ namespace ngfem
     // quad faces
     for (int i = 2; i < 5; i++)
       {
-	INT<2> p = order_face[i];
+	IVec<2> p = order_face[i];
 	 
 	int fmax = 0;
 	for (int j = 1; j < 4; j++)
@@ -1578,10 +1578,10 @@ namespace ngfem
         // quad faces
         for (int i=2; i<fa; i++)
           {
-            INT<2> p = order_face[i];
+            IVec<2> p = order_face[i];
             base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
           }
-        INT<2> p = order_face[fa];
+        IVec<2> p = order_face[fa];
         nf = p[0]*p[1]+p[0]+p[1];
       }
       
@@ -1616,12 +1616,12 @@ namespace ngfem
       {
 	//if (order_face[i][0] > 0)
         {
-          INT<2> p = order_face[i];
+          IVec<2> p = order_face[i];
           // ndof_face += p[0]*p[1]+p[0]+p[1];
           ndof += p[0]*p[1]+p[0]+p[1];
         }
       }
-    INT<3> p = order_inner;
+    IVec<3> p = order_inner;
     int ndof_inner = 3*p[0]*p[1]*p[2] + 2*p[0]*p[1] + 2 *p[1]*p[2] + 2 * p[0]*p[2] + p[0] + p[1] + p[2]; 
     //3*p*(p+1)*(p+1);
     ndof += ndof_inner;
@@ -1679,7 +1679,7 @@ namespace ngfem
     //Faces
     for (i = 0; i<6; i++)
       {
-	INT<2> p = order_face[i];
+	IVec<2> p = order_face[i];
 
 	AutoDiff<3> lam_f = 0;
 	for (j = 0; j < 4; j++)
@@ -1788,7 +1788,7 @@ namespace ngfem
       }
 
     //Inner
-    INT<3> p = order_inner;
+    IVec<3> p = order_inner;
 
     ArrayMem<AutoDiff<3>, 20> leg_x(p[0]+2), leg_y(p[1]+2), leg_z(p[2]+2);
     LegendrePolynomial (p[0]+1, 2*x-1, leg_x);
@@ -1846,7 +1846,7 @@ namespace ngfem
     //Faces
     for (i = 0; i<6; i++)
       {
-	INT<2> p = order_face[i];
+	IVec<2> p = order_face[i];
 	int fmax = 0;
 	for (j = 1; j < 4; j++)
 	  if (vnums[faces[i][j]] > vnums[faces[i][fmax]])
@@ -1875,7 +1875,7 @@ namespace ngfem
 
 
     //Inner
-    INT<3> p = order_inner;
+    IVec<3> p = order_inner;
     ArrayMem<AutoDiff<3>, 20> leg_x(p[0]+2), leg_y(p[1]+2), leg_z(p[2]+2);
     AutoDiff<3> te_1=0.; AutoDiff<3> te_2=0.; AutoDiff<3> te_3=0.;
     LegendrePolynomial (p[0]+1, 2*x-1, leg_x);
@@ -1932,10 +1932,10 @@ namespace ngfem
     // quad faces
     for (int i=0; i<fa; i++)
       {
-        INT<2> p = order_face[i];
+        IVec<2> p = order_face[i];
         base += p[0]*p[1]+p[0]+p[1];  // see ComputeNDof
       }
-    INT<2> p = order_face[fa];
+    IVec<2> p = order_face[fa];
     int nf = p[0]*p[1]+p[0]+p[1];
          
     for (int i=0; i<nf; i++)

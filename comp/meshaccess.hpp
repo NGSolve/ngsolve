@@ -26,7 +26,7 @@ namespace ngcomp
 {
   class PML_Transformation;
   
-  using ngcore::INT;
+  // using ngcore::INT;
   using netgen::Ng_Node;
   using ngfem::ELEMENT_TYPE;
   
@@ -240,9 +240,9 @@ namespace ngcomp
 
     /// store periodic vertex mapping for each identification number
     // shared ptr because Meshaccess is copy constructible
-    shared_ptr<Array<Array<INT<2>>>> periodic_node_pairs[3] = {make_shared<Array<Array<INT<2>>>>(),
-                                                               make_shared<Array<Array<INT<2>>>>(),
-                                                               make_shared<Array<Array<INT<2>>>>()};
+    shared_ptr<Array<Array<IVec<2>>>> periodic_node_pairs[3] = {make_shared<Array<Array<IVec<2>>>>(),
+                                                               make_shared<Array<Array<IVec<2>>>>(),
+                                                               make_shared<Array<Array<IVec<2>>>>()};
 
     DynamicTable<size_t> neighbours[4][4];
     friend class Region;
@@ -795,17 +795,17 @@ namespace ngcomp
     void GetEdgePNums (int enr, Array<int> & pnums) const;
     /// returns vertex numbers of edge
     /*
-    auto GetEdgePNums (size_t enr) const -> decltype(ArrayObject(INT<2>()))
+    auto GetEdgePNums (size_t enr) const -> decltype(ArrayObject(IVec<2>()))
     {
       int v2[2];
       Ng_GetEdge_Vertices (enr+1, v2);
-      return ArrayObject (INT<2> (v2[0]-1, v2[1]-1));
+      return ArrayObject (IVec<2> (v2[0]-1, v2[1]-1));
     }
     */
     auto GetEdgePNums (size_t enr) const
     {
       auto vts = mesh.GetNode<1>(enr).vertices;
-      return INT<2>(vts[0],vts[1]);
+      return IVec<2>(vts[0],vts[1]);
     }
     /// returns all elements connected to an edge
     void GetEdgeElements (int enr, Array<int> & elnums) const;
@@ -915,9 +915,9 @@ namespace ngcomp
     int GetElOrder (int enr) const
     { return mesh.GetElementOrder (enr+1); } 
     /// anisotropic order stored in Netgen
-    INT<3> GetElOrders (int enr) const
+    IVec<3> GetElOrders (int enr) const
     { 
-      INT<3> eo; 
+      IVec<3> eo; 
       mesh.GetElementOrders(enr+1,&eo[0],&eo[1],&eo[2]); 
       return eo; 
     } 
@@ -931,9 +931,9 @@ namespace ngcomp
     int GetSElOrder (int enr) const
     { return mesh.GetSurfaceElementOrder (enr+1); } 
     /// anisotropic order of suface element
-    INT<2> GetSElOrders (int enr) const
+    IVec<2> GetSElOrders (int enr) const
     { 
-      INT<2> eo; 
+      IVec<2> eo; 
       mesh.GetSurfaceElementOrders(enr+1,&eo[0],&eo[1]); 
       return eo; 
     }
@@ -961,9 +961,9 @@ namespace ngcomp
     { 
       mesh.GetParentNodes (pi, parents);
     }
-    INT<2> GetParentNodes (int pi) const
+    IVec<2> GetParentNodes (int pi) const
     {
-      INT<2,int> parents;
+      IVec<2,int> parents;
       mesh.GetParentNodes (pi, &parents[0]);
       return parents;
     }
@@ -1083,20 +1083,20 @@ namespace ngcomp
       // { return bool (Ng_IsElementCurved (elnr+1)); }
 
     [[deprecated("Use GetPeriodicNodes(NT_VERTEX, pairs) instead!")]]
-    void GetPeriodicVertices ( Array<ngstd::INT<2> > & pairs) const;
+    void GetPeriodicVertices ( Array<IVec<2> > & pairs) const;
     [[deprecated("Use GetNPeriodicNodes(NT_VERTEX) instead!")]]
     int GetNPairsPeriodicVertices () const;
     [[deprecated("Use GetPeriodicNodes(NT_VERTEX, idnr) instead")]]
-    void GetPeriodicVertices (int idnr, Array<ngstd::INT<2> > & pairs) const;
+    void GetPeriodicVertices (int idnr, Array<IVec<2> > & pairs) const;
     [[deprecated("Use GetPeriodicNodes(NT_VERTEX, idnr).Size() instead")]]
     int GetNPairsPeriodicVertices (int idnr) const;  
 
     [[deprecated("Use GetPeriodicNodes(NT_EDGE, pairs) instead!")]]
-    void GetPeriodicEdges ( Array<ngstd::INT<2> > & pairs) const;
+    void GetPeriodicEdges ( Array<IVec<2> > & pairs) const;
     [[deprecated("Use GetNPeriodicNodes(NT_EDGE) instead!")]]
     int GetNPairsPeriodicEdges () const;
     [[deprecated("Use GetPeriodicNodes(NT_EDGE, idnr) instead")]]
-    void GetPeriodicEdges (int idnr, Array<ngstd::INT<2> > & pairs) const;
+    void GetPeriodicEdges (int idnr, Array<IVec<2> > & pairs) const;
     [[deprecated("Use GetPeriodicNodes(NT_EDGE, idnr).Size() instead")]]
     int GetNPairsPeriodicEdges (int idnr) const;
 
@@ -1107,9 +1107,9 @@ namespace ngcomp
     // get number of all periodic nodes of nodetype nt
     size_t GetNPeriodicNodes(NODE_TYPE nt) const;
     // write all the node pairs of type nt into array pairs
-    void GetPeriodicNodes(NODE_TYPE nt, Array<INT<2>>& pairs) const;
+    void GetPeriodicNodes(NODE_TYPE nt, Array<IVec<2>>& pairs) const;
     // Uses 0 based identification numbers! Returns periodic node pairs of given identifcation number
-    const Array<INT<2>>& GetPeriodicNodes(NODE_TYPE nt, int idnr) const;
+    const Array<IVec<2>>& GetPeriodicNodes(NODE_TYPE nt, int idnr) const;
 
     shared_ptr<CoefficientFunction> RegionCF(VorB vb, shared_ptr<CoefficientFunction> default_value,
                                              const Array<pair<variant<string, Region>, shared_ptr<CoefficientFunction>>>& region_values);
