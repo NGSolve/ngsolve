@@ -902,15 +902,15 @@ namespace ngcomp
 
     // cout << "get edges" << endl;
 
-    Array<INT<2> > e2v (nedge);
-    e2v = INT<2> (-1, -1);
+    Array<IVec<2> > e2v (nedge);
+    e2v = IVec<2> (-1, -1);
     for (size_t i = 0; i < nedge; i++)
       if (ma->GetClusterRepEdge (i) >= 0)
 	e2v[i] = ma->GetEdgePNums (i);
 
     // cout << "get faces" << endl;
 
-    Array<INT<4> > f2v (nface);
+    Array<IVec<4> > f2v (nface);
     for (int i = 0; i < nface; i++)
       {
 	if (ma->GetClusterRepFace (i) >= 0)

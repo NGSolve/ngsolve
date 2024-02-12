@@ -19,8 +19,6 @@ namespace ngla
   using namespace std;
   using namespace ngstd;
   using namespace ngbla;
-
-  using ngcore::INT;
 }
 
 

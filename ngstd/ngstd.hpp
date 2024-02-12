@@ -37,7 +37,7 @@ Specific data types Exception, BlockAllocator, EvalFunction, AutoDiff, AutoDiffD
 namespace ngstd
 {
   using namespace ngcore;
-  using ngcore::INT;
+  // using ngcore::INT;
 } // namespace ngstd
 
 #include "ngs_utils.hpp"

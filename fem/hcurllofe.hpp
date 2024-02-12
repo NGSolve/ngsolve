@@ -951,7 +951,7 @@ static Matrix<> trans_trig;
       // horizontal edges incl. Nedelec 0
       for (int i = 0; i < 4; i++)
         {
-          INT<2> e = ET_trait<ET_PYRAMID>::GetEdge(i);	  
+          IVec<2> e = ET_trait<ET_PYRAMID>::GetEdge(i);	  
           Tx xi  = sigma[e[1]] - sigma[e[0]];   
           Tx lam_t = lambda[e[1]] + lambda[e[0]]; 
           shape[i] = uDv (0.5 * (1-z)*(1-z)*lam_t, xi);
@@ -960,7 +960,7 @@ static Matrix<> trans_trig;
       // vertical edges incl. Nedelec 0  
       for(int i = 4; i < 8; i++)
         {
-          INT<2> e = ET_trait<ET_PYRAMID>::GetEdge (i);	  
+          IVec<2> e = ET_trait<ET_PYRAMID>::GetEdge (i);	  
           shape[i] = uDv_minus_vDu (lami[e[0]], lami[e[1]]);
         }
     }

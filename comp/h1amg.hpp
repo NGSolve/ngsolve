@@ -20,7 +20,7 @@ namespace ngcomp
   public:
     H1AMG_Matrix (std::shared_ptr<ngla::SparseMatrixTM<SCAL>> amat,
                   std::shared_ptr<ngcore::BitArray> freedofs,
-                  ngcore::FlatArray<ngcore::INT<2>> e2v,
+                  ngcore::FlatArray<ngcore::IVec<2>> e2v,
                   ngcore::FlatArray<double> edge_weights,
                   ngcore::FlatArray<double> vertex_weights,
                   size_t level);

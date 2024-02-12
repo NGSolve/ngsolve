@@ -59,7 +59,7 @@ namespace ngla
   public:
 
     AMG_H1 (const BaseMatrix & sysmat,
-	    Array<ngstd::INT<2> > & e2v,
+	    Array<ngstd::IVec<2> > & e2v,
 	    Array<double> & weighte,
 	    int levels);
 
@@ -85,8 +85,8 @@ namespace ngla
 
     AMG_HCurl (const BaseMatrix & sysmat,
 	       const Array<Vec<3> > & vertices,
-	       Array<ngstd::INT<2> > & e2v,
-	       Array<ngstd::INT<4> > & f2v,
+	       Array<ngstd::IVec<2> > & e2v,
+	       Array<ngstd::IVec<4> > & f2v,
 	       Array<double> & weighte,
 	       Array<double> & weightf,
 	       int levels);

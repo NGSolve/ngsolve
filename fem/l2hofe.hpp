@@ -56,16 +56,16 @@ namespace ngfem
     using DGFiniteElement<ET>::vnums;
 
 
-    INT<DIM> order_inner; 
+    IVec<DIM> order_inner; 
 
 #ifndef __CUDA_ARCH__
     typedef PrecomputedShapesContainer<PrecomputedScalShapes<DIM> > TPRECOMP;
     static TPRECOMP precomp;
 
-    typedef HashTable<INT<2>, Matrix<>*> TPRECOMP_TRACE;
+    typedef HashTable<IVec<2>, Matrix<>*> TPRECOMP_TRACE;
     static TPRECOMP_TRACE precomp_trace;
 
-    typedef HashTable<INT<2>, Matrix<>*> TPRECOMP_GRAD;
+    typedef HashTable<IVec<2>, Matrix<>*> TPRECOMP_GRAD;
     static TPRECOMP_GRAD precomp_grad;
 #endif
 
@@ -89,7 +89,7 @@ namespace ngfem
     { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
 
     /// different orders in different directions
-    virtual void SetOrder (INT<DIM> p) override { order_inner = p; }
+    virtual void SetOrder (IVec<DIM> p) override { order_inner = p; }
 
     virtual void ComputeNDof() override
     {

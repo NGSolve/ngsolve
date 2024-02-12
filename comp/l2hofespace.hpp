@@ -34,7 +34,7 @@ namespace ngcomp
     // variable order is set to mesh_order + rel_order 
     int rel_order;
     // order of elements 
-    Array<INT<3> > order_inner;
+    Array<IVec<3> > order_inner;
     // table of first element dofnumber 
     Array<DofId> first_element_dof;
     bool all_dofs_together;
@@ -164,7 +164,7 @@ namespace ngcomp
     // variable order is set to mesh_order + rel_order 
     int rel_order;
     // order of elements 
-    Array<INT<3> > order_inner;
+    Array<IVec<3> > order_inner;
 
     bool lowest_order_wb;
     bool discontinuous;

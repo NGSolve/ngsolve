@@ -186,8 +186,8 @@ namespace ngfem
     //enum { N_FACET   = ET_trait<ET>::N_FACET };    
     //
     //size_t vnums[N_VERTEX];
-    INT<DIM-1> order_facet[ET_trait<ET>::N_FACET];
-    INT<DIM> order_inner;
+    IVec<DIM-1> order_facet[ET_trait<ET>::N_FACET];
+    IVec<DIM> order_inner;
 
     // additional div-div free bubbles
     bool plus;
@@ -209,8 +209,8 @@ namespace ngfem
     // const HDivDivFE<ET> * Cast() const { return static_cast<const HDivDivFE<ET>*> (this); }
     auto * Cast() const { return static_cast<const SHAPES*> (this); } 
     
-    INLINE void SetOrderFacet (int nr, INT<DIM-1,int> order) { order_facet[nr] = order; }
-    INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
+    INLINE void SetOrderFacet (int nr, IVec<DIM-1,int> order) { order_facet[nr] = order; }
+    INLINE void SetOrderInner (IVec<DIM,int> order) { order_inner = order; }
 
     virtual void ComputeNDof()
     {
@@ -1385,7 +1385,7 @@ namespace ngfem
               
               if (i == facetnr)
                 {
-                  INT<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
+                  IVec<2> e = ET_trait<ET_TRIG>::GetEdgeSort (i, vnums);
                   
                   T xi = lam[e[0]]-lam[e[1]];
                   Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
@@ -2402,7 +2402,7 @@ namespace ngfem
         if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0], fav[1]);
         */
         
-        INT<4> fav = GetVertexOrientedFace (fa);
+        IVec<4> fav = GetVertexOrientedFace (fa);
 
         ScaledLegendrePolynomial(p+1, lam[fav[0]]-lam[fav[1]],lam[fav[0]]+lam[fav[1]], &leg_u[0]);
         LegendrePolynomial::Eval(p+1, 2 * lam[fav[2]] - 1, &leg_v[0]);
@@ -2709,7 +2709,7 @@ namespace ngfem
     using HDivDivSurfaceFiniteElement<ET_trait<ET>::DIM>::ndof;
     using HDivDivSurfaceFiniteElement<ET_trait<ET>::DIM>::order;
 
-    INT<DIM> order_inner;
+    IVec<DIM> order_inner;
 
 
   public:
@@ -2724,7 +2724,7 @@ namespace ngfem
     virtual ELEMENT_TYPE ElementType() const { return ET; }
     const HDivDivSurfaceFE<ET> * Cast() const { return static_cast<const HDivDivSurfaceFE<ET>*> (this); } 
     
-    INLINE void SetOrderInner (INT<DIM,int> order) { order_inner = order; }
+    INLINE void SetOrderInner (IVec<DIM,int> order) { order_inner = order; }
 
     virtual void ComputeNDof()
     {

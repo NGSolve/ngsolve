@@ -20,14 +20,14 @@ namespace ngfem
   class HDivHighOrderNormalFiniteElement : public HDivNormalFiniteElement<D>
   {
   protected:
-    INT<D> order_inner;    
+    IVec<D> order_inner;    
   public:
     ///
     HDivHighOrderNormalFiniteElement ()
       : HDivNormalFiniteElement<D> (-1, -1) { ; } 
 
     void SetOrderInner (int oi) { order_inner = oi; }
-    void SetOrderInner (INT<D> oi) { order_inner = oi; }
+    void SetOrderInner (IVec<D> oi) { order_inner = oi; }
     
     virtual void ComputeNDof () = 0;
   };
@@ -156,7 +156,7 @@ namespace ngfem
       AutoDiff<1,Tx> x (ip.x, 0);
       AutoDiff<1,Tx> lam[2] = { x, 1-x };
       
-      INT<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);	  
+      IVec<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);	  
       
       shape[0] = -lam[e[0]].DValue(0);
       
@@ -288,11 +288,11 @@ namespace ngfem
       
       AutoDiff<2, Tx> sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};
             
-      INT<2> p = order_inner;
+      IVec<2> p = order_inner;
       
       ArrayMem<AutoDiff<2, Tx>,20> pol_xi(p[0]+1), pol_eta(p[1]+1);
 
-      INT<4> f = GetVertexOrientedFace (0);
+      IVec<4> f = GetVertexOrientedFace (0);
 
       AutoDiff<2, Tx> xi  = sigma[f[0]]-sigma[f[1]];
       AutoDiff<2, Tx> eta = sigma[f[0]]-sigma[f[3]];
@@ -338,8 +338,8 @@ namespace ngfem
     using VertexOrientedFE<ET>::vnums;
     
 
-    INT<DIM> order_inner;
-    INT<N_FACET,INT<DIM-1>> order_facet;  
+    IVec<DIM> order_inner;
+    IVec<N_FACET,IVec<DIM-1>> order_facet;  
 
     bool ho_div_free;
     bool only_ho_div;
@@ -364,7 +364,7 @@ namespace ngfem
     }
 
 
-    void SetOrderInner (INT<DIM> oi)
+    void SetOrderInner (IVec<DIM> oi)
     { 
       order_inner = oi; 
     }

@@ -37,7 +37,7 @@ namespace ngcomp
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
 
-    static INT<0> GetDimensions() { return INT<0>(); };
+    static IVec<0> GetDimensions() { return IVec<0>(); };
     static string Name() { return "IdIR"; }
     static bool SupportsVB (VorB checkvb) { return true; }
 

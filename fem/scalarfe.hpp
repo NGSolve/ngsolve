@@ -292,7 +292,7 @@ namespace ngfem
 
     /// assign vertex number
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-    NGS_DLL_HEADER virtual void SetOrder (INT<D> p) = 0;
+    NGS_DLL_HEADER virtual void SetOrder (IVec<D> p) = 0;
     NGS_DLL_HEADER virtual void ComputeNDof() = 0;
 
 

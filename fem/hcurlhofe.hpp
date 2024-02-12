@@ -49,13 +49,13 @@ namespace ngfem
 
     using VertexOrientedFE<ET>::vnums;
 
-    INT<N_EDGE, TORDER> order_edge;
-    INT<N_FACE, INT<2, TORDER>> order_face;
-    INT<3, TORDER> order_cell;
+    IVec<N_EDGE, TORDER> order_edge;
+    IVec<N_FACE, IVec<2, TORDER>> order_face;
+    IVec<3, TORDER> order_cell;
     
     //bool usegrad_edge[N_EDGE]; 
-    INT<N_EDGE, bool> usegrad_edge;
-    INT<N_FACE, bool> usegrad_face;
+    IVec<N_EDGE, bool> usegrad_edge;
+    IVec<N_FACE, bool> usegrad_face;
     bool usegrad_cell;
     bool type1;   
 
@@ -98,13 +98,13 @@ namespace ngfem
     }
 
     INLINE void SetOrderEdge (int nr, TORDER order) { order_edge[nr] = order; }
-    INLINE void SetOrderFace (int nr, INT<2,TORDER> order) { order_face[nr] = order; }
+    INLINE void SetOrderFace (int nr, IVec<2,TORDER> order) { order_face[nr] = order; }
 
     INLINE void SetUseGradEdge(int nr, bool uge) { usegrad_edge[nr] = uge; }
     INLINE void SetUseGradFace(int nr, bool ugf) { usegrad_face[nr] = ugf; }
 
 
-    INLINE void SetOrderCell (INT<3> oi) { order_cell = oi; }
+    INLINE void SetOrderCell (IVec<3> oi) { order_cell = oi; }
 
     /// set isotropic or anisotropic face orders
     template <typename TA>

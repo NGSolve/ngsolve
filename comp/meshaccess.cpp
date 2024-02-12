@@ -1095,7 +1095,7 @@ namespace ngcomp
         // only if it is periodic
         if (mesh.GetIdentificationType(idnr)!=2) continue;
         auto pv_buffer = mesh.GetPeriodicVertices(idnr);
-        auto pidnr = periodic_node_pairs[NT_VERTEX]->Append(Array<INT<2,int>>(pv_buffer.Size(), (INT<2,int>*) pv_buffer.Release(), true));
+        auto pidnr = periodic_node_pairs[NT_VERTEX]->Append(Array<IVec<2,int>>(pv_buffer.Size(), (IVec<2,int>*) pv_buffer.Release(), true));
 
         // build vertex map for idnr
         Array<int> vertex_map(GetNP());
@@ -1105,44 +1105,44 @@ namespace ngcomp
           vertex_map[pair[1]] = pair[0];
 
         // build vertex-pair to edge hashtable:
-        HashTable<INT<2>, int> vp2e(GetNEdges());
+        HashTable<IVec<2>, int> vp2e(GetNEdges());
         
         for (size_t enr = 0; enr < GetNEdges(); enr++)
           {
-            INT<2> vts = GetEdgePNums (enr);
+            IVec<2> vts = GetEdgePNums (enr);
             vts.Sort();
             vp2e[vts] = enr;
           }
         size_t count = 0;
         for (size_t enr = 0; enr < GetNEdges(); enr++)
           {
-            INT<2> vts = GetEdgePNums(enr);
+            IVec<2> vts = GetEdgePNums(enr);
             size_t mv1 = vertex_map[vts[0]];
             size_t mv2 = vertex_map[vts[1]];
             if(mv1 != vts[0] && mv2 != vts[1])
               count++;
           }
-        periodic_node_pairs[NT_EDGE]->Append(Array<INT<2>>(count));
+        periodic_node_pairs[NT_EDGE]->Append(Array<IVec<2>>(count));
         count = 0;
         for (size_t enr = 0; enr < GetNEdges(); enr++)
           {
-            INT<2> vts = GetEdgePNums (enr);
+            IVec<2> vts = GetEdgePNums (enr);
             int mv1 = vertex_map[vts[0]];
             int mv2 = vertex_map[vts[1]];
             if(mv1 != vts[0] && mv2 != vts[1])
               {               
                 if (mv1 > mv2) Swap(mv1,mv2);
-                int menr = vp2e.Get(INT<2>(mv1,mv2));
+                int menr = vp2e.Get(IVec<2>(mv1,mv2));
                 (*periodic_node_pairs[NT_EDGE])[pidnr][count][0] = menr;
                 (*periodic_node_pairs[NT_EDGE])[pidnr][count++][1] = enr;
               }
           }
         // build vertex-triple to face hashtable
-        HashTable<INT<3>, int> v2f(GetNFaces());
+        HashTable<IVec<3>, int> v2f(GetNFaces());
         for (auto fnr : Range(GetNFaces()))
           {
             auto pnums = GetFacePNums (fnr);
-            INT<3> i3(pnums[0], pnums[1], pnums[2]);
+            IVec<3> i3(pnums[0], pnums[1], pnums[2]);
             i3.Sort();
             v2f[i3] = fnr;
           }
@@ -1157,12 +1157,12 @@ namespace ngcomp
                 count++;
               }
           }
-        periodic_node_pairs[NT_FACE]->Append(Array<INT<2>>(count));
+        periodic_node_pairs[NT_FACE]->Append(Array<IVec<2>>(count));
         count = 0;
         for (auto fnr : Range(GetNFaces()))
           {
             auto pnums = GetFacePNums(fnr);
-            INT<3> mv(vertex_map[pnums[0]],vertex_map[pnums[1]],vertex_map[pnums[2]]);
+            IVec<3> mv(vertex_map[pnums[0]],vertex_map[pnums[1]],vertex_map[pnums[2]]);
             if(mv[0] != pnums[0] && mv[1] != pnums[1] && mv[2] != pnums[2])
               {
                 mv.Sort();
@@ -1374,7 +1374,7 @@ namespace ngcomp
     // static Timer t("getedgesurfelements"); RegionTimer reg(t);
     elnums.SetSize0();
 
-    INT<2> pts = GetEdgePNums(enr);
+    IVec<2> pts = GetEdgePNums(enr);
 
     auto velems0 = GetVertexSurfaceElements(pts[0]);
     auto velems1 = GetVertexSurfaceElements(pts[1]);
@@ -2185,7 +2185,7 @@ namespace ngcomp
     return Ng_GetNPeriodicVertices(idnr);
   }
  
-  void MeshAccess :: GetPeriodicVertices ( Array<INT<2> > & pairs) const
+  void MeshAccess :: GetPeriodicVertices ( Array<IVec<2> > & pairs) const
   {
     int npairs;
 
@@ -2200,7 +2200,7 @@ namespace ngcomp
       }
   }
  
-  void MeshAccess :: GetPeriodicVertices (int idnr, Array<INT<2> > & pairs) const
+  void MeshAccess :: GetPeriodicVertices (int idnr, Array<IVec<2> > & pairs) const
   {
     int npairs;
 
@@ -2225,7 +2225,7 @@ namespace ngcomp
     return npairs;
   }
 
-  void MeshAccess :: GetPeriodicNodes(NODE_TYPE nt, Array<INT<2>>& pairs) const
+  void MeshAccess :: GetPeriodicNodes(NODE_TYPE nt, Array<IVec<2>>& pairs) const
   {
     pairs.SetSize(0);
     pairs.SetAllocSize(GetNPeriodicNodes(nt));
@@ -2234,7 +2234,7 @@ namespace ngcomp
         pairs.Append(val);
   }
 
-  const Array<INT<2>> & MeshAccess :: GetPeriodicNodes (NODE_TYPE nt, int idnr) const
+  const Array<IVec<2>> & MeshAccess :: GetPeriodicNodes (NODE_TYPE nt, int idnr) const
   {
     if(idnr > periodic_node_pairs[nt]->Size())
       throw Exception("Not enough periodic identifications, GetPeriodicNodes is 0 based and has only periodic Identifications!");
@@ -2247,7 +2247,7 @@ namespace ngcomp
     return Ng_GetNPeriodicEdges(0);
   }
  
-  void MeshAccess :: GetPeriodicEdges ( Array<INT<2> > & pairs) const
+  void MeshAccess :: GetPeriodicEdges ( Array<IVec<2> > & pairs) const
   {
     int npairs;
 
@@ -2267,7 +2267,7 @@ namespace ngcomp
     return Ng_GetNPeriodicEdges(idnr);
   }
  
-  void MeshAccess :: GetPeriodicEdges (int idnr, Array<INT<2> > & pairs) const
+  void MeshAccess :: GetPeriodicEdges (int idnr, Array<IVec<2> > & pairs) const
   {
     int npairs;
 

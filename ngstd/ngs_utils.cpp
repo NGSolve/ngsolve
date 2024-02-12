@@ -1,5 +1,14 @@
 #include "ngstd.hpp"
 
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#undef WIN32_LEAN_AND_MEAN
+#else // WIN32
+#include <dlfcn.h>
+#endif //WIN32
+
+
 namespace ngstd
 {
 
@@ -49,7 +58,7 @@ namespace ngstd
       if(lib)
       {
 #ifdef WIN32
-        FreeLibrary(lib);
+        FreeLibrary((HMODULE)lib);
 #else // WIN32
         int rc = dlclose(lib);
         if(rc != 0) cerr << "Failed to close library " << lib_name << endl;
@@ -60,7 +69,7 @@ namespace ngstd
     void* SharedLibrary :: GetRawFunction( string func_name )
     {
 #ifdef WIN32
-      void* func = GetProcAddress(lib, func_name.c_str());
+      void* func = GetProcAddress((HMODULE)lib, func_name.c_str());
       if(func == nullptr)
         throw std::runtime_error(string("Could not find function ") + func_name + " in library " + lib_name.string());
 #else // WIN32
