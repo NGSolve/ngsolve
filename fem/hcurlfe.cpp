@@ -11,7 +11,6 @@
 
 #define FILE_HCURLFE_CPP
 
-// #include <fem.hpp>
 #include <thcurlfe_impl.hpp>
 #include "hcurlhofe_impl.hpp"
 #include "hcurllofe.hpp"
@@ -179,8 +178,8 @@ namespace ngfem
          auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM+CODIM.value>&> (bmip);
          auto trans = Trans (mip.GetJacobianInverse());
          
-         for (int i = 0; i < ndof; i++)
-           shape.Row(i).Range(DIM+CODIM.value) = trans * Vec<DIM> (shape.Row(i));
+         for (size_t i = 0; i < ndof; i++)
+           shape.Row(i) /* .Range(DIM+CODIM.value) */ = trans * Vec<DIM> (shape.Row(i));
        });
   }
 
@@ -188,7 +187,7 @@ namespace ngfem
   void HCurlFiniteElement<D> ::
   CalcMappedShape (const BaseMappedIntegrationRule & mir, BareSliceMatrix<> shapes) const
   {
-    for (int i = 0; i < mir.Size(); i++)
+    for (size_t i = 0; i < mir.Size(); i++)
       CalcMappedShape (mir[i], shapes.Cols(i*D, (i+1)*D));
   }
 

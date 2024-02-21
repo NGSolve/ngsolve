@@ -47,25 +47,12 @@ namespace ngfem
 
   public:
     using BaseHDivFiniteElement::BaseHDivFiniteElement;
-    /*
-    ///
-    INLINE HDivFiniteElement (int andof, int aorder)
-      : BaseHDivFiniteElement (andof, aorder) { ; } 
-
-    ///
-    INLINE HDivFiniteElement () { ; }
-    */
     
     ///
     HD virtual ~HDivFiniteElement () { ; }
 
     /// 
     virtual string ClassName() const;
-
-    /*
-    virtual void CalcShape (const IntegrationPoint & ip,
-			    BareSliceMatrix<> shape) const = 0;
-    */
     
     virtual void CalcDivShape (const IntegrationPoint & ip,
 			       BareSliceVector<> divshape) const;
