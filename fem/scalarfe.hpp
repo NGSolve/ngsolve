@@ -18,12 +18,6 @@ namespace ngfem
   public:
     using FiniteElement::FiniteElement;
 
-    /*
-    INLINE BaseScalarFiniteElement () { ; } 
-    INLINE BaseScalarFiniteElement (int andof, int aorder)
-      : FiniteElement (andof, aorder) { ; }
-    */
-    
     /// the name
     NGS_DLL_HEADER
     virtual string ClassName() const override;

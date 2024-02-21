@@ -33,11 +33,6 @@ namespace ngfem
   {
   public:
     using FiniteElement :: FiniteElement;
-    /*
-    INLINE BaseHCurlFiniteElement () { ; } 
-    INLINE BaseHCurlFiniteElement (int andof, int aorder)
-      : FiniteElement (andof, aorder) { ; }
-    */
     
     virtual void CalcShape (const IntegrationPoint & ip, 
 			    BareSliceMatrix<> shape) const = 0;
@@ -101,14 +96,7 @@ namespace ngfem
 
   public:
     using BaseHCurlFiniteElement::BaseHCurlFiniteElement;
-    /*
-    ///
-    INLINE HCurlFiniteElement () { ; }
 
-    /// 
-    INLINE HCurlFiniteElement (int andof, int aorder)
-      : BaseHCurlFiniteElement (andof, aorder) { ; } 
-    */
     HD virtual ~HCurlFiniteElement () { ; }
 
     virtual string ClassName() const override;
