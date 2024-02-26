@@ -111,6 +111,9 @@ def GetData(obj, args, kwargs):
                 s['Complex'] = dict(phase= 0.0, speed=2, animate=False)
             s['Complex']['animate'] = kwargs['animate_complex']
 
+        if 'colors' in kwargs:
+            d['colors'] = kwargs['colors']
+
 
         return d
 
