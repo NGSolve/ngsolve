@@ -5,7 +5,7 @@ Netgen-python allows to define 2D geometries by means of boundary curves. Curves
 
 .. code-block:: python
 
-   import netgen.geom2d as
+   import netgen.geom2d as geom2d
 
 We generate a geometry object, and add geometry control points:
 
