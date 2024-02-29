@@ -1,5 +1,5 @@
 pip_linux:
-  image: sameli/manylinux2014_x86_64_cuda_11
+  image: sameli/manylinux2014_x86_64_cuda_11.8
   stage: build
   tags:
     - pip
@@ -29,6 +29,7 @@ pip_windows:
     - pip
     - windows
   script:
+    - .\tests\build_pip.ps1 C:\Python37
     - .\tests\build_pip.ps1 C:\Python38
     - .\tests\build_pip.ps1 C:\Python39
     - .\tests\build_pip.ps1 C:\Python310
