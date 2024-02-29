@@ -10,7 +10,7 @@ make -j4
 make install
 echo "export NETGENDIR=${BASEDIR}/ngsolve-install/bin" >> ~/.bashrc
 echo "export PATH=\$NETGENDIR:\$PATH" >> ~/.bashrc
-export PYTHONPATH_TMP=`python3 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1,0,''))"`
+export PYTHONPATH_TMP=`python3 -c "import os.path, sysconfig;print(os.path.relpath(sysconfig.get_path('platlib'), sysconfig.get_path('data')))"`
 echo "export PYTHONPATH=\$NETGENDIR/../${PYTHONPATH_TMP}:\$PATH" >> ~/.bashrc
 source ~/.bashrc
 cd ${BASEDIR}/ngsolve-install/share/ngsolve/py_tutorials/intro
