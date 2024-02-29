@@ -10,8 +10,8 @@ Prerequisites
 
 Make sure that you have the following packages installed:
 
-- You need a recent compiler (GCC 7 or later)
-- We advise to have Python installed, in version 3.4 or higher (you can compile
+- You need a recent compiler
+- We advise to have Python installed, in version 3.8 or higher (you can compile
   Netgen/NGSolve also without python support). Make sure to install
   according packages in their "dev"-version to have the suitable header
   files installed. 
@@ -19,7 +19,7 @@ Make sure that you have the following packages installed:
   install according packages in their "dev"-version to have the suitable
   header files installed.
 - git (to get the sources)
-- cmake (>=3.3) for the build system
+- cmake (>=3.16) for the build system
 - libxmu-dev (you might also need the xorg-dev package)
 - libglu (again, the "dev"-version)
 - liblapacke-dev
@@ -115,7 +115,7 @@ the appropriate directory:
 
 .. code:: bash
 
-    export PYTHONPATH=$NETGENDIR/../`python3 -c "from distutils.sysconfig import get_python_lib; print(get_python_lib(1,0,''))"`
+    export PYTHONPATH=$NETGENDIR/../`python3 -c "import os.path, sysconfig;print(os.path.relpath(sysconfig.get_path('platlib'), sysconfig.get_path('data')))"`
 
 
 Everything together

@@ -2,12 +2,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING INTERNAL)
 endif(NOT CMAKE_BUILD_TYPE)
 
-if(WIN32)
-  # we are linking to object libraries on Windows
-  cmake_minimum_required(VERSION 3.12)
-else(WIN32)
-  cmake_minimum_required(VERSION 3.8)
-endif(WIN32)
+cmake_minimum_required(VERSION 3.16)
 
 # Handle superbuild first
 option( USE_SUPERBUILD   "Whether or not a superbuild should be invoked" ON)
