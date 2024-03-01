@@ -14,6 +14,7 @@ async function generateRepodata() {
 
 generateRepodata().then((result) => {
   fs.writeFileSync('pyodide-lock.json', result);
+  process.exit(0);
 }).catch((err) => {
     console.log("error", err)
     throw(err);
