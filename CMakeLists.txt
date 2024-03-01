@@ -61,6 +61,9 @@ else()
 endif()
 
 set(CMAKE_CXX_STANDARD 17)
+if(EMSCRIPTEN)
+    set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+endif()
 find_package(Netgen REQUIRED CONFIG HINTS ${CMAKE_INSTALL_PREFIX}/Contents/Resources)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
