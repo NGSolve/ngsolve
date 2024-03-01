@@ -9,7 +9,7 @@ export EMSCRIPTEN_INCLUDE=$EMSCRIPTEN_SYSROOT/include
 export EMSCRIPTEN_BIN=$EMSCRIPTEN_SYSROOT/bin
 export EMSCRIPTEN_LIB=$EMSCRIPTEN_SYSROOT/lib/wasm32-emscripten/pic
 export SIDE_MODULE_LDFLAGS="-O2 -g0 -sWASM_BIGINT -s SIDE_MODULE=1"
-export TARGETINSTALLDIR=/root/xbuildenv/pyodide-root/cpython/installs/python-3.11.2/
+export TARGETINSTALLDIR=/root/xbuildenv/pyodide-root/cpython/installs/python-${PYTHON_VERSION}/
 export CMAKE_TOOLCHAIN_FILE=/root/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
 cd

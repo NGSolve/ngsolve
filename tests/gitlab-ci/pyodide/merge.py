@@ -4,7 +4,7 @@ import os
 
 pyodide_version = os.environ['PYODIDE_VERSION']
 
-repo_file = 'repodata.json'
+repo_file = 'pyodide-lock.json'
 ori = json.load(open(repo_file))
 pkg = ori['packages']
 
@@ -59,7 +59,7 @@ pkg.update({
     },
     "netgen": {
       "name": "netgen",
-      "version": "6.2.2304",
+      "version": "6.2.2401",
       "file_name": "netgen.zip",
       "install_dir": "stdlib",
       "sha256": getHash("netgen.zip"),
@@ -76,7 +76,7 @@ pkg.update({
     },
     "ngsolve": {
       "name": "ngsolve",
-      "version": "6.2.2304",
+      "version": "6.2.2401",
       "file_name": "ngsolve.zip",
       "install_dir": "stdlib",
       "sha256": getHash("ngsolve.zip"),
@@ -85,7 +85,6 @@ pkg.update({
         "ngsolve"
       ],
       "depends": [
-        "clapack",
         "numpy",
         "netgen"
       ],
