@@ -78,6 +78,7 @@ Whetting the Appetite
    wta/navierstokes.ipynb
    wta/elasticity.ipynb 
    wta/elasticity3D.ipynb 
+   wta/rotating.ipynb 
 
    
 1. Getting started
