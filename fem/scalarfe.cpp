@@ -256,14 +256,24 @@ namespace ngfem
   
   void BaseScalarFiniteElement :: AddDualTrans (const IntegrationRule & ir, BareSliceVector<double> values, BareSliceVector<> coefs) const
   {
-    LocalHeapMem<100000> lh("adddualtranheap");
+    LocalHeapMem<10000> lh("adddualtranheap");  // for 16 mips
+    
+    STACK_ARRAY(double, mem, GetNDof());
+    FlatVector<> shape(GetNDof(), &mem[0]);
+
     auto & trafo = GetFEElementTransformation(ElementType());
-    auto & mir = trafo(ir, lh);
-    FlatVector<> shape(GetNDof(), lh);
-    for (size_t i : Range(mir))
+    
+    constexpr size_t BS = 16;
+    for (size_t i = 0; i < ir.Size(); i+= BS)
       {
-        CalcDualShape(mir[i], shape);
-        coefs += values(i) * shape;
+        HeapReset hr(lh);
+        IntRange r(i, std::min(ir.Size(), i+BS));
+        auto & mir = trafo(ir.Range(r.First(), r.Next()), lh);
+        for (size_t j : r)
+          {
+            CalcDualShape(mir[j-i], shape);
+            coefs += values(j) * shape;
+          }
       }
   }
   
