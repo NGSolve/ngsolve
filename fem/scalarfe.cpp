@@ -256,7 +256,7 @@ namespace ngfem
   
   void BaseScalarFiniteElement :: AddDualTrans (const IntegrationRule & ir, BareSliceVector<double> values, BareSliceVector<> coefs) const
   {
-    LocalHeapMem<10000> lh("adddualtranheap");
+    LocalHeapMem<100000> lh("adddualtranheap");
     auto & trafo = GetFEElementTransformation(ElementType());
     auto & mir = trafo(ir, lh);
     FlatVector<> shape(GetNDof(), lh);
