@@ -2515,48 +2515,9 @@ namespace ngcomp
     using CoefficientFunctionNoDerivative::Evaluate;
     double Evaluate(const BaseMappedIntegrationPoint& mip) const override
     {
-      Vec<3> mapped_point;
-      trafo->Evaluate(mip, mapped_point);
-      IntegrationPoint ip;
-      int elnr;
-
-      if(region.VB() == BND)
-        {
-      netgen::Point<3> p = {mapped_point[0], mapped_point[1], mapped_point[2] };
-      searchtree->GetFirstIntersecting(p, p, [&](int si)
-      {
-        if(region.Mesh()->GetNetgenMesh()
-           ->PointContainedIn2DElement({mapped_point[0],
-               mapped_point[1],
-               mapped_point[2]},
-             &ip(0),
-             si+1, false))
-          {
-            elnr = si;
-            return true;
-          }
-        return false;
-      });
-      if(region.Mesh()->GetNetgenMesh()->SurfaceElement(elnr+1).GetType() == netgen::TRIG)
-        {
-          double lam0 = 1-ip(0)-ip(1);
-          ip(1) = ip(0);
-          ip(0) = lam0;
-        }
-        }
-      else if(region.VB() == VOL)
-        {
-          Array<int> indices;
-          for(auto i : Range(region.Mask().Size()))
-            if(region.Mask().Test(i))
-              indices.Append(i);
-          elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true, &indices);
-        }
-      else
-        throw Exception("Only VOL and BND implemented yet!");
-      auto& eltrafo = region.Mesh()->GetTrafo(ElementId(region.VB(), elnr), global_alloc);
-      auto& mapped_mip = eltrafo(ip, global_alloc);
-      return func->Evaluate(mapped_mip);
+      Vec<1> result;
+      Evaluate(mip, result);
+      return result[0];
     }
 
 
@@ -2573,16 +2534,35 @@ namespace ngcomp
       netgen::Point<3> p = {mapped_point[0], mapped_point[1], mapped_point[2] };
       searchtree->GetFirstIntersecting(p, p, [&](int si)
       {
-        if(region.Mesh()->GetNetgenMesh()
-           ->PointContainedIn2DElement({mapped_point[0],
-               mapped_point[1],
-               mapped_point[2]},
-             &ip(0),
-             si+1, false))
+        if(region.Mesh()->GetDimension() == 3)
           {
+          if (region.Mesh()->GetNetgenMesh()->PointContainedIn2DElement(
+                  {mapped_point[0], mapped_point[1], mapped_point[2]}, &ip(0),
+                  si + 1, false)) {
             elnr = si;
             return true;
           }
+        }
+        else if(region.Mesh()->GetDimension() == 2)
+          {
+            // Only linear elements working for now
+            const auto& ngmesh = *region.Mesh()->GetNetgenMesh();
+            const auto& seg = ngmesh.LineSegment(si+1);
+            auto v1 = ngmesh[seg[1]] - ngmesh[seg[0]];
+            auto v1n = 1./v1.Length() * v1;
+            double eps = v1.Length() * 1e-8;
+            auto mp = netgen::Point<3> {mapped_point[0], mapped_point[1], 0.};
+            auto v2 = mp - ngmesh[seg[0]];
+            auto v2n = 1/v2.Length() * v2;
+
+            if (v1n * v2n > 1 - eps && v1.Length() > v2.Length() - eps) {
+              elnr = si;
+              ip = IntegrationPoint(v2.Length() / v1.Length());
+              return true;
+            }
+          }
+        else
+          throw Exception("Only 2D and 3D implemented yet!");
         return false;
       });
       if(region.Mesh()->GetNetgenMesh()->SurfaceElement(elnr+1).GetType() == netgen::TRIG)
