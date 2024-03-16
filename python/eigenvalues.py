@@ -110,7 +110,7 @@ def PINVIT(mata, matm, pre, num=1, maxit=20, printrates=True, GramSchmidt=True):
     return lams, uvecs
 
 
-def LOBPCG(mata, matm, pre, num=1, maxit=20, initial=None, printrates=True):
+def LOBPCG(mata, matm, pre, num=1, maxit=20, initial=None, printrates=True, largest=False):
     """Knyazev's cg-like extension of PINVIT"""
     import scipy.linalg
 
@@ -142,13 +142,24 @@ def LOBPCG(mata, matm, pre, num=1, maxit=20, initial=None, printrates=True):
         msmall = InnerProduct (vecs, matm * vecs)
     
         ev,evec = scipy.linalg.eigh(a=asmall, b=msmall)
-        lams = Vector(ev[0:num])
-        if printrates:
-            print (i, ":", list(lams), flush=True)
 
-        uvecs[:] = vecs * Matrix(evec[:,0:num])
-        vecs[num:2*num] = vecs[0:num]
-        vecs[0:num] = uvecs
+        if not largest:
+            lams = Vector(ev[0:num])
+            if printrates:
+                print (i, ":", list(lams), flush=True)
+
+            uvecs[:] = vecs * Matrix(evec[:,0:num])
+            vecs[num:2*num] = vecs[0:num]
+            vecs[0:num] = uvecs
+        else:
+            lams = Vector(ev[2*num:3*num])
+            if printrates:
+                print (i, ":", list(lams), flush=True)
+
+            uvecs[:] = vecs * Matrix(evec[:,2*num:3*num])
+            vecs[num:2*num] = vecs[0:num]
+            vecs[0:num] = uvecs
+        
     return lams, uvecs
 
 
