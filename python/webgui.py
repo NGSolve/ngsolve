@@ -32,6 +32,8 @@ def GetData(obj, args, kwargs):
         if isinstance(obj, ngs.GridFunction):
             cf = obj
             mesh = obj.space.mesh
+            if len(args) and isinstance(args[0], (ngs.Region, ngs.Mesh)):
+                mesh = args[0]
         elif isinstance(obj, ngs.CoefficientFunction):
             cf = obj
             if len(args)<1:
