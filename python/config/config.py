@@ -45,7 +45,7 @@ version = NGSOLVE_VERSION_GIT
 def get_cmake_dir():
     import netgen.config as c
     import os.path as p
-    d_python = p.dirname(p.dirname(__file__))
+    d_python = p.dirname(p.dirname(p.dirname(__file__)))
     py_to_cmake = p.relpath(
             p.dirname(c.NG_INSTALL_DIR_CMAKE),
             c.NG_INSTALL_DIR_PYTHON
