@@ -51,6 +51,3 @@ def get_cmake_dir():
             c.NG_INSTALL_DIR_PYTHON
             )
     return p.normpath(p.join(d_python,py_to_cmake, 'ngsolve'))
-
-if __name__ == '__main__':
-    print(get_cmake_dir(), end='')
