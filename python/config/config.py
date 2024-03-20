@@ -23,6 +23,13 @@ NGSOLVE_COMPILE_DEFINITIONS_PRIVATE = "@NGSOLVE_COMPILE_DEFINITIONS_PRIVATE@"
 NGSOLVE_COMPILE_INCLUDE_DIRS        = "@NGSOLVE_COMPILE_INCLUDE_DIRS@"
 NGSOLVE_COMPILE_OPTIONS             = "@NGSOLVE_COMPILE_OPTIONS@"
 
+NGSOLVE_INSTALL_DIR_PYTHON   = "@NGSOLVE_INSTALL_DIR_PYTHON@"
+NGSOLVE_INSTALL_DIR_BIN      = "@NGSOLVE_INSTALL_DIR_BIN@"
+NGSOLVE_INSTALL_DIR_LIB      = "@NGSOLVE_INSTALL_DIR_LIB@"
+NGSOLVE_INSTALL_DIR_INCLUDE  = "@NGSOLVE_INSTALL_DIR_INCLUDE@"
+NGSOLVE_INSTALL_DIR_CMAKE    = "@NGSOLVE_INSTALL_DIR_CMAKE@"
+NGSOLVE_INSTALL_DIR_RES      = "@NGSOLVE_INSTALL_DIR_RES@"
+
 NGSOLVE_VERSION = "@NGSOLVE_VERSION@"
 NGSOLVE_VERSION_GIT = "@git_version_string@"
 NGSOLVE_VERSION_PYTHON = "@NGSOLVE_VERSION_PYTHON@"
@@ -43,11 +50,10 @@ CMAKE_CXX_COMPILER_LAUNCHER  = "@CMAKE_CXX_COMPILER_LAUNCHER@"
 version = NGSOLVE_VERSION_GIT
 
 def get_cmake_dir():
-    import netgen.config as c
     import os.path as p
     d_python = p.dirname(p.dirname(p.dirname(__file__)))
     py_to_cmake = p.relpath(
-            p.dirname(c.NG_INSTALL_DIR_CMAKE),
-            c.NG_INSTALL_DIR_PYTHON
+            NGSOLVE_INSTALL_DIR_CMAKE,
+            NGSOLVE_INSTALL_DIR_PYTHON
             )
-    return p.normpath(p.join(d_python,py_to_cmake, 'ngsolve'))
+    return p.normpath(p.join(d_python,py_to_cmake))
