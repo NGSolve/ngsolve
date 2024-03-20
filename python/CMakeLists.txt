@@ -1,13 +1,21 @@
 set(NGSOLVE_USE_MKL $<BOOL:${USE_MKL}>)
-configure_file(config.py ${CMAKE_CURRENT_BINARY_DIR}/config.py @ONLY)
+configure_file(config/config.py ${CMAKE_CURRENT_BINARY_DIR}/config.py @ONLY)
 
 if(NETGEN_USE_PYTHON)
+    install (FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/config.py
+            config/__init__.py
+            config/__main__.py
+            DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/config/
+            COMPONENT ngsolve
+            )
+
     install (FILES
             ${CMAKE_CURRENT_BINARY_DIR}/config.py
             __expr.py internal.py __console.py webgui.py
             __init__.py utils.py solvers.py eigenvalues.py meshes.py
             krylovspace.py nonlinearsolvers.py bvp.py timing.py TensorProductTools.py
-            ngs2petsc.py ngscxx.py config_cli.py directsolvers.py
+            ngs2petsc.py ngscxx.py directsolvers.py
             DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve
             COMPONENT ngsolve
             )
