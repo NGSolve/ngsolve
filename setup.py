@@ -10,7 +10,7 @@ from distutils.sysconfig import get_python_lib
 from urllib.request import urlopen
 import json
 
-setup_requires = []
+setup_requires = ['pybind11-stubgen==2.5']
 
 def install_filter(cmake_manifest):
     return cmake_manifest
@@ -69,7 +69,7 @@ _cmake_args = [
     '-DUSE_SUPERBUILD:BOOL=ON',
     '-DCMAKE_BUILD_TYPE=Release',
     '-DBUILD_FOR_CONDA=ON',
-    '-DBUILD_STUB_FILES=OFF',
+    '-DBUILD_STUB_FILES=ON',
     f'-DUSE_UMFPACK={use_umfpack}',
     f'-DNGSOLVE_VERSION_PYTHON={version}',
 ]
