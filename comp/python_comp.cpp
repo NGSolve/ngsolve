@@ -2229,13 +2229,14 @@ VOL_or_BND : ngsolve.comp.VorB
             auto space = self->GetFESpace();
             auto evaluator = space->GetEvaluator();
             IntegrationPoint ip;
-            int elnr = -1;
+            // int elnr = -1;
+            ElementId ei(VOL,-1);
             if (vb == VOL)
-              elnr = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+              ei = space->GetMeshAccess()->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             else
-              elnr = space->GetMeshAccess()->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
-            if (elnr < 0) throw Exception ("point out of domain");
-            ElementId ei(vb, elnr);
+              ei = ElementId(BND, space->GetMeshAccess()->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true));
+            if (ei.IsInvalid()) throw Exception ("point out of domain");
+            // ElementId ei(vb, elnr);
             
             const FiniteElement & fel = space->GetFE(ei, glh);
 
@@ -3917,7 +3918,7 @@ deformation : ngsolve.comp.GridFunction
 			 HeapReset hr(glh);
              auto tpfes = dynamic_pointer_cast<TPHighOrderFESpace>(gf_tp->GetFESpace());
              IntegrationPoint ip;
-             int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false);
+             int elnr = tpfes->Spaces(0)[0]->GetMeshAccess()->FindElementOfPoint(Vec<2>(x,y),ip,false).Nr();
              int ndofx = tpfes->Spaces(0)[0]->GetFE(ElementId(VOL,elnr),glh).GetNDof();
              int ndofy = tpfes->Spaces(0)[1]->GetFE(ElementId(VOL,0),glh).GetNDof();
              Array<int> indices(2);
@@ -3963,7 +3964,7 @@ deformation : ngsolve.comp.GridFunction
              const Array<shared_ptr<FESpace> > & spaces = tpfes->Spaces(0);
              FlatVector<> x0(spaces[0]->GetSpatialDimension(),&x0_help[0]);
              IntegrationPoint ip;
-             int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true);
+             int elnr = spaces[0]->GetMeshAccess()->FindElementOfPoint(x0,ip,true).Nr();
              auto & felx = spaces[0]->GetFE(ElementId(elnr),lh);
              FlatVector<> shapex(felx.GetNDof(),lh);
              dynamic_cast<const BaseScalarFiniteElement &>(felx).CalcShape(ip,shapex);

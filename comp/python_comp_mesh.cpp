@@ -435,7 +435,7 @@ nr : int
                       if(reg->Mask().Test(nmesh->GetFaceDescriptor(i+1).BCProperty()-1))
                         indices.Append(i);
                     if(reg->VB() == VOL)
-                      elnr = reg->Mesh()->FindElementOfPoint(Vec<3>(x, y, z), ip, true, &indices);
+                      elnr = reg->Mesh()->FindElementOfPoint(Vec<3>(x, y, z), ip, true, &indices).Nr();
                     else
                       elnr = reg->Mesh()->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true, &indices);
                     return MeshPoint { ip(0), ip(1), ip(2), reg->Mesh().get(), reg->VB(), elnr };
@@ -917,8 +917,8 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          [](MeshAccess & ma, double x, double y, double z) 
           {
             IntegrationPoint ip;
-            int elnr = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
-            return (elnr >= 0);
+            ElementId ei = ma.FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+            return !ei.IsInvalid();
           }, 
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0
 	 ,"Check if the point (x,y,z) is in the meshed domain (is inside a volume element)")
@@ -1004,12 +1004,12 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          [](MeshAccess* ma, double x, double y, double z, VorB vb)
           {
             IntegrationPoint ip;
-            int elnr;
+            ElementId ei(VOL,-1);
             if (vb == VOL)
-              elnr = ma->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+              ei = ma->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
             else
-              elnr = ma->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true);
-            return MeshPoint { ip(0), ip(1), ip(2), ma, vb, elnr };
+              ei = ElementId(BND, ma->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true));
+            return MeshPoint { ip(0), ip(1), ip(2), ma, ei.VB(), int(ei.Nr()) };
           },
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
          py::arg("VOL_or_BND") = VOL,
