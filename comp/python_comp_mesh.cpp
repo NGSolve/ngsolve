@@ -233,6 +233,10 @@ nr : int
                                    for (auto face : mesh.GetElement(ElementId(VOL,el)).Faces())
                                      if (!fnums.Contains(face))
                                        fnums.Append(face);
+                                 for (auto el : mesh.GetVertexSurfaceElements(node.GetNr()))
+                                   for (auto face : mesh.GetElement(ElementId(BND,el)).Faces())
+                                     if (!fnums.Contains(face))
+                                       fnums.Append(face);
                                  QuickSort (fnums);
                                  return MakePyTuple(Substitute(fnums, Nr2Face));
                                }
