@@ -31,6 +31,10 @@ else()
     message(WARNING "pybind11-stubgen version is too old, if you want to create stub files for better autocompletion support upgrade it with pip.")
   else()
   message("-- Found pybind11-stubgen version: ${stubgen_version}")
+  install(CODE "\
+  set(ENV{PYTHONPATH} ${CMAKE_INSTALL_PREFIX}/${NGSOLVE_INSTALL_DIR_PYTHON})\n \
+  execute_process(COMMAND ${Python3_EXECUTABLE} -m pybind11_stubgen --ignore-all-errors ngsolve)\n \
+  ")
   install(CODE "execute_process(COMMAND ${NETGEN_PYTHON_EXECUTABLE} -m pybind11_stubgen --ignore-all-errors ngsolve)")
   install(DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/../stubs/ngsolve/ DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/ COMPONENT ngsolve)
   endif()
