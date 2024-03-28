@@ -287,9 +287,9 @@ namespace ngcomp
     else
       {
       	if(domains.Size() > 0)
-	  elnr = ma->FindElementOfPoint(point,ip,false,&domains);
+	  elnr = ma->FindElementOfPoint(point,ip,false,&domains).Nr();
 	else
-	  elnr = ma->FindElementOfPoint(point,ip,false);
+	  elnr = ma->FindElementOfPoint(point,ip,false).Nr();
       }
     if (elnr < 0) return 0;
 
