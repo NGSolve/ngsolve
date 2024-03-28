@@ -130,6 +130,7 @@ namespace ngfem
     VorB VB() const { return vb; }
     bool IsVolume() const { return vb == VOL; }
     bool IsBoundary() const { return vb == BND; }
+    bool IsInvalid() const { return nr == -1; }
     bool operator< (int_type nr2) { return nr < nr2; }
     ElementId operator++ (int) { return ElementId(vb,nr++); }
     ElementId operator++ () { return ElementId(vb,++nr); }

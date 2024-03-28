@@ -253,9 +253,8 @@ namespace ngcomp
             HeapReset hr(lh);
 
             IntegrationPoint ip;
-            auto elnr = ma->FindElementOfPoint(pe->point, ip, false);
-
-            ElementId ei(VOL, elnr);
+            ElementId ei = ma->FindElementOfPoint(pe->point, ip, false);
+            // ElementId ei(VOL, elnr);
             auto & trafo = ma->GetTrafo(ei, lh);
             auto & fel = fespace->GetFE(ei, lh);
             Array<int> dnums(fel.GetNDof(), lh);
@@ -529,9 +528,9 @@ namespace ngcomp
 		    FlatVector<TSCAL> elvec;
 		    IntegrationPoint ip;
 		    if(domains.Size() > 0)
-		      element = ma->FindElementOfPoint(parts[j]->CurvePoint(i),ip,true,&domains);
+		      element = ma->FindElementOfPoint(parts[j]->CurvePoint(i),ip,true,&domains).Nr();
 		    else
-		      element = ma->FindElementOfPoint(parts[j]->CurvePoint(i),ip,true);
+		      element = ma->FindElementOfPoint(parts[j]->CurvePoint(i),ip,true).Nr();
 		    if(element < 0)
 		      throw Exception("element for curvepoint not found");
 		    
@@ -786,12 +785,12 @@ namespace ngcomp
 		// (*testout) << "point = " << sip.GetPoint() << endl;
 		
 		IntegrationPoint gip;
-		int elnr;
+		// int elnr;
 		// elnr = ma->FindElementOfPoint (FlatVector<>(sip.GetPoint()), gip, 1);
-                elnr = ma->FindElementOfPoint (sip.GetPoint(), gip, 1);
-		ElementId ei(VOL, elnr);
+                ElementId ei = ma->FindElementOfPoint (sip.GetPoint(), gip, 1);
+		// ElementId ei(VOL, elnr);
 		// (*testout) << "elnr = " << elnr << endl;
-		if (elnr == -1) continue;
+		if (ei.IsInvalid()) continue;
 		
 		const FiniteElement & gfel = fespace->GetFE (ei, lh);
 		// ma->GetElementTransformation (elnr, geltrans);
@@ -801,7 +800,7 @@ namespace ngcomp
 		
 		// (*testout) << " =?= p = " << gsip.GetPoint() << endl;
 
-		fespace->GetDofNrs (ElementId(VOL,elnr), dnums);
+		fespace->GetDofNrs (ei, dnums);
 		
 		for (int k = 0; k < parts.Size(); k++)
 		  {
@@ -825,7 +824,7 @@ namespace ngcomp
 		    // (*testout) << "elvec, 1 = " << elvec << endl;
 
 		    elvec *= fabs (sip.GetJacobiDet()) * ip.Weight();
-		    fespace->TransformVec (ElementId(VOL,elnr), elvec, TRANSFORM_RHS);
+		    fespace->TransformVec (ei, elvec, TRANSFORM_RHS);
 
 		    // (*testout) << "final vec = " << elvec << endl;
 		    // (*testout) << "dnums = " << dnums << endl;
@@ -966,9 +965,9 @@ namespace ngcomp
 
     
     IntegrationPoint ip;
-    auto elnr = ma->FindElementOfPoint(point, ip, false);
+    auto ei = ma->FindElementOfPoint(point, ip, false);
 
-    ElementId ei(VOL, elnr);
+    // ElementId ei(VOL, elnr);
     auto & trafo = ma->GetTrafo(ei, lh);
     auto & fel = fespace->GetFE(ei, lh);
     Array<int> dnums(fel.GetNDof(), lh);
