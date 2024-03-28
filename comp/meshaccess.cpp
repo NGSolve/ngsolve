@@ -2019,7 +2019,7 @@ namespace ngcomp
     Ng_SetPointSearchStartElement(el+1);
   }
 
-  int MeshAccess :: FindElementOfPoint (FlatVector<double> point,
+  ElementId MeshAccess :: FindElementOfPoint (FlatVector<double> point,
 					IntegrationPoint & ip, 
 					bool build_searchtree,
 					int index) const
@@ -2029,41 +2029,43 @@ namespace ngcomp
     return FindElementOfPoint(point,ip,build_searchtree,&dummy);
   }
 
-  int MeshAccess :: FindElementOfPoint (FlatVector<double> point,
-					IntegrationPoint & ip,
-					bool build_searchtree,
-					const Array<int> * const indices) const
+  ElementId MeshAccess :: FindElementOfPoint (FlatVector<double> point,
+                                              IntegrationPoint & ip,
+                                              bool build_searchtree,
+                                              const Array<int> * const indices) const
   {
     // static Timer t("FindElementOfPonit");
     // RegionTracer reg(TaskManager::GetThreadId(), t);
 
-
+    if (GetNE(VOL) == 0)
+      return ElementId(BND, FindSurfaceElementOfPoint (point, ip, build_searchtree, indices));
+    
     if (indices != NULL)
       {
         switch (dim)
           {
           case 1:
-            return mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, 
-                                               &(*indices)[0],indices->Size());
+            return ElementId(VOL, mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, 
+                                                              &(*indices)[0],indices->Size()));
           case 2:
-            return mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, 
-                                               &(*indices)[0],indices->Size());
+            return ElementId(VOL, mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, 
+                                                              &(*indices)[0],indices->Size()));
           case 3:
-            return mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree,
-                                               &(*indices)[0],indices->Size());
-          }
+            return ElementId(VOL,  mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree,
+                                                               &(*indices)[0],indices->Size()));
+            }
       }
     else
       {  
         switch (dim)
           {
-          case 1: return mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, NULL, 0);
-          case 2: return mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0);
-          case 3: return mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree, NULL, 0);
+          case 1: return ElementId(VOL, mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, NULL, 0));
+          case 2: return ElementId(VOL, mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0));
+          case 3: return ElementId(VOL, mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree, NULL, 0));
           }
       }
 
-    return -1;
+    return ElementId(VOL, -1);
   }
 
 
@@ -2578,7 +2580,7 @@ namespace ngcomp
           for(auto i : Range(region.Mask().Size()))
             if(region.Mask().Test(i))
               indices.Append(i);
-          elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true, &indices);
+          elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true, &indices).Nr();
         }
       else
         throw Exception("Only VOL and BND implemented yet!");
