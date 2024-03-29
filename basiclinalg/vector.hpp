@@ -116,6 +116,7 @@ namespace ngbla
 
   // Disable this optimization with MSVC because it creates inconsistent results with different versions.
   // Following code returns 8 for compilers up to MSVC version 19.31, and returns 16 from version 19.32, see https://godbolt.org/z/v6P5vsq1M
+  #define NO_UNIQUE_ADDRESS
   /*
   struct Base{};
   struct Empty {};
