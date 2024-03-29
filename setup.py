@@ -69,7 +69,6 @@ _cmake_args = [
     '-DUSE_SUPERBUILD:BOOL=ON',
     '-DCMAKE_BUILD_TYPE=Release',
     '-DBUILD_FOR_CONDA=ON',
-    '-DBUILD_STUB_FILES=ON',
     f'-DUSE_UMFPACK={use_umfpack}',
     f'-DNGSOLVE_VERSION_PYTHON={version}',
 ]
@@ -80,7 +79,9 @@ if 'NETGEN_CCACHE' in os.environ:
 packages=['netgen', 'ngsolve']
 
 if 'darwin' in sys.platform:
-    pass
+    _cmake_args += [
+        '-DBUILD_STUB_FILES=ON',
+    ]
 elif 'linux' in sys.platform:
     _cmake_args += [
         '-DUSE_MKL:BOOL=ON',
@@ -89,6 +90,7 @@ elif 'linux' in sys.platform:
         f'-DMKL_INCLUDE_DIR:PATH={root_dir}/include',
         '-DUSE_CUDA=ON',
         '-DCMAKE_CUDA_ARCHITECTURES=all',
+        '-DBUILD_STUB_FILES=ON',
     ]
     install_requires.append('mkl')
     packages = []
@@ -99,6 +101,7 @@ elif 'win' in sys.platform:
         f'-DMKL_LIBRARY:PATH={root_dir}/Library/lib/mkl_rt.lib',
         f'-DMKL_INCLUDE_DIR:PATH={root_dir}/Library/include',
         f'-DNGSOLVE_INSTALL_DIR_TCL:PATH=Scripts',
+        '-DBUILD_STUB_FILES=OFF',
     ]
     install_requires.append('mkl')
 
