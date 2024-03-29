@@ -111,8 +111,26 @@ namespace ngbla
   template <int DIST, typename T> class FixSliceVector;
 
 #ifdef WIN32
-  #pragma warning( disable : 4848) // support for standard attribute 'no_unique_address' in C++17 and earlier is a vendor extension
-  #define NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+  // #pragma warning( disable : 4848) // support for standard attribute 'no_unique_address' in C++17 and earlier is a vendor extension
+  // #define NO_UNIQUE_ADDRESS [[msvc::no_unique_address]]
+
+  // Disable this optimization with MSVC because it creates inconsistent results with different versions.
+  // Following code returns 8 for compilers up to MSVC version 19.31, and returns 16 from version 19.32, see https://godbolt.org/z/v6P5vsq1M
+  /*
+  struct Base{};
+  struct Empty {};
+
+  template <typename T, typename TS>
+  class Class : public Base{
+      T* data;
+      [[msvc::no_unique_address]] TS size;
+  };
+
+  int f() {
+      return sizeof(Class<void, Empty>);
+  }
+  */
+
 #else
   #define NO_UNIQUE_ADDRESS [[no_unique_address]]
 #endif
