@@ -146,7 +146,8 @@ namespace ngcomp
   };
 
 
-  class ContactBoundary : public netgen::UserVisualizationObject
+  class ContactBoundary : public std::enable_shared_from_this<ContactBoundary>,
+                          netgen::UserVisualizationObject
   {
     shared_ptr<GapFunction> gap;
     shared_ptr<CoefficientFunction> normal;
@@ -194,13 +195,13 @@ namespace ngcomp
     // ContactPair<DIM> pair;
     ElementId primary_ei, secondary_ei;
     IntegrationRule primary_ir, secondary_ir;
-    ContactBoundary* cb;
+    shared_ptr<ContactBoundary> cb;
     FESpace* fes;
     GridFunction* deformation;
   public:
     MPContactElement(ElementId primary_ei, ElementId secondary_ei,
                      IntegrationRule primary_ir, IntegrationRule secondary_ir,
-                     ContactBoundary* _cb,
+                     shared_ptr<ContactBoundary> _cb,
                      GridFunction* deformation);
 
     void GetDofNrs(Array<DofId>& dnums) const override;
@@ -220,7 +221,7 @@ namespace ngcomp
                                      FlatMatrix<double> elmat,
                                      LocalHeap& lh) const override;
 
-    ContactBoundary* GetContactBoundary() const
+    shared_ptr<ContactBoundary> GetContactBoundary() const
     { return cb; }
   };
 
