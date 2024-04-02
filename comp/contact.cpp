@@ -954,7 +954,7 @@ namespace ngcomp
                    {
                      auto index = last-i;
                      auto cont_el = dynamic_cast<MPContactElement<DIM>*>(specialels[index].get());
-                     if(cont_el && cont_el->GetContactBoundary() == this)
+                     if(cont_el && cont_el->GetContactBoundary().get() == this)
                        bf->DeleteSpecialElement(index);
                    }
 
@@ -1049,7 +1049,7 @@ namespace ngcomp
                               bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
                                                     (el, ElementId(BND, other_nr[index[first]]),
                                                      std::move(primary_ir), std::move(secondary_ir),
-                                                     this, displacement.get()));
+                                                     shared_from_this(), displacement.get()));
                             }
                           else
                             {
@@ -1094,7 +1094,7 @@ namespace ngcomp
                               bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
                                                     (vei, ElementId(BND, other_nr[index[first]]),
                                                      std::move(volir), std::move(secondary_ir),
-                                                     this, displacement.get()));
+                                                     shared_from_this(), displacement.get()));
                             }
                           
                           first = next;
@@ -1109,7 +1109,7 @@ namespace ngcomp
   template<int DIM>
   MPContactElement<DIM>::MPContactElement(ElementId aprimary_ei, ElementId asecondary_ei,
                                           IntegrationRule aprimary_ir, IntegrationRule asecondary_ir,
-                                          ContactBoundary* _cb,
+                                          shared_ptr<ContactBoundary> _cb,
                                           GridFunction* _deformation)
     : primary_ei(aprimary_ei), secondary_ei(asecondary_ei),
       primary_ir(std::move(aprimary_ir)), secondary_ir(std::move(asecondary_ir)),
