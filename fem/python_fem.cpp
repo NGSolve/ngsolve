@@ -212,6 +212,14 @@ cl_BinaryOpCF<GenericATan2>::Diff(const CoefficientFunction * var,
   return (c1->Diff(var,dir)*c2 - c2->Diff(var,dir)*c1) / (c1*c1+c2*c2);
 }
 
+template <> shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericATan2>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
+{
+  if (this == var) return make_shared<ConstantCoefficientFunction>(1);
+  return (c1->DiffJacobi(var,cache)*c2 - c2->DiffJacobi(var,cache)*c1) / (c1*c1+c2*c2);
+}
+
+
 
 struct GenericPow {
   double operator() (double x, double y) const { return pow(x,y); }
