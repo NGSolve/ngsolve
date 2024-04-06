@@ -2692,7 +2692,7 @@ public:
 
 
 
-class EigCoefficientFunction : public CoefficientFunctionNoDerivative
+class EigCoefficientFunction : public CoefficientFunction // NoDerivative
 {
   shared_ptr<CoefficientFunction> cfmat;
   int dim1;
@@ -2700,7 +2700,7 @@ class EigCoefficientFunction : public CoefficientFunctionNoDerivative
   
 public:
   EigCoefficientFunction() = default;
-  EigCoefficientFunction (shared_ptr<CoefficientFunction> ac1) : CoefficientFunctionNoDerivative(ac1->Dimension() + ac1->Dimensions()[0],false), cfmat(ac1)
+  EigCoefficientFunction (shared_ptr<CoefficientFunction> ac1) : CoefficientFunction /* NoDerivative */ (ac1->Dimension() + ac1->Dimensions()[0],false), cfmat(ac1)
   {
     vecdim = cfmat->Dimensions()[0];
     dim1 = cfmat->Dimension();
@@ -2708,11 +2708,11 @@ public:
 
   void DoArchive(Archive& ar) override
   {
-    CoefficientFunctionNoDerivative::DoArchive(ar);
+    CoefficientFunction /* NoDerivative */ ::DoArchive(ar);
     ar.Shallow(cfmat) & dim1 & vecdim;
   }
   
-  using CoefficientFunctionNoDerivative::Evaluate;
+  using CoefficientFunction /* NoDerivative*/ ::Evaluate;
   double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
     return 0;
@@ -2729,6 +2729,18 @@ public:
     FlatMatrix<double> eigenvecs(vecdim,vecdim,&res[0]);
     
     CalcEigenSystem(mat,lami,eigenvecs);
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  {
+    auto in0 = input[0];
+    AutoDiffDiff<1,NonZero> nz(false);
+    for (int i = 0; i < dim1; i++)
+      nz += in0[i];
+    for (int i = 0; i < vecdim; i++)
+      values(i) = nz;
   }
 };
 
