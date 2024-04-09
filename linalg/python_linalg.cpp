@@ -831,6 +831,14 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         return false;
       }
 
+      void Update() override {
+        pybind11::gil_scoped_acquire gil;
+        if (auto overload = pybind11::get_overload(this, "Update")) {
+          overload();
+        }
+        BaseMatrix::Update();
+      }
+
     tuple<size_t, size_t> Shape() const override
       {
         pybind11::gil_scoped_acquire gil; 
