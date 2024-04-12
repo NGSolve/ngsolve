@@ -378,27 +378,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   FESpace :: ~FESpace ()
   {
     this->GetMeshAccess()->updateSignal.Remove(this);
-    /*
-    delete tet;
-    delete pyramid;
-    delete prism;
-    delete hex;
-    delete trig;
-    delete quad;
-    delete segm;
-    delete point;
-    */
-    /*
-    delete dummy_tet;
-    delete dummy_pyramid;
-    delete dummy_prism;
-    delete dummy_hex;
-    delete dummy_trig;
-    delete dummy_quad;
-    delete dummy_segm;
-    delete dummy_point;
-    */
-    // delete paralleldofs;
   }
 
 
