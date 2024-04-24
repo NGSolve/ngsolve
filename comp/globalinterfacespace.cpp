@@ -48,7 +48,7 @@ namespace ngcomp
       }
     if(fnr == -1)
       {
-        fel.CalcDShape(mip, mat.Row(0));
+        fel.CalcDShape(mip, mat);
       }
   }
 
@@ -102,6 +102,8 @@ namespace ngcomp
         : FiniteElement(afes->GetNDof(), afes->order), fes(afes),
           et(_et)
       { ; }
+
+      static int GetDim() { return DIM; }
 
       ELEMENT_TYPE ElementType() const { return et; }
       void CalcShape(const BaseMappedIntegrationPoint& mip,
@@ -261,12 +263,12 @@ namespace ngcomp
       }
 
       void CalcDShape(const BaseMappedIntegrationPoint& mip,
-                      BareSliceVector<double> dshapes) const
+                      BareSliceMatrix<double, ColMajor> dshapes) const
       {
         int order = fes->order;
-        double phi = fes->mapping->Evaluate(mip);
         if constexpr(DIM == 1)
           {
+            double phi = fes->mapping->Evaluate(mip);
             if(fes->periodic[0])
               {
                 throw Exception("CalcDShape not implemented for periodic!");
@@ -277,13 +279,63 @@ namespace ngcomp
                 LegendrePolynomial (order, 2*adphi - 1,
                                     SBLambda([&](int i, auto val)
                                     {
-                                      dshapes[i] = val.DValue(0);
+                                      dshapes(0,i) = val.DValue(0);
                                     }));
               }
           }
         else // DIM == 2
           {
-            throw Exception("CalcDShape not implemented for 2d space!");
+            Vec<2, double> phi;
+            fes->mapping->Evaluate(mip, FlatVector<double>(2, phi.Data()));
+            Vec<2, AutoDiff<1>> adphi;
+            adphi[0] = AutoDiff<1>(phi[0], 0);
+            adphi[1] = AutoDiff<1>(phi[1], 0);
+            if (fes->polar) {
+              throw Exception("CalcDShape not implemented for polar!");
+              }
+            else
+              {
+                int ndof1 = fes->periodic[0] ? 2*order+1 : order+1;
+                int ndof2 = fes->periodic[1] ? 2*order+1 : order+1;
+                ArrayMem<double, 20> shapeu(ndof1), shapev(ndof2);
+                ArrayMem<double, 20> dshapeu(ndof1), dshapev(ndof2);
+
+                if(fes->periodic[0])
+                  {
+                    throw Exception("CalcDShape not implemented for periodic!");
+                  }
+                else
+                  {
+                    LegendrePolynomial(order, -1 + 2 * adphi[0],
+                                       SBLambda([&](int i, auto val)
+                                       {
+                                          shapeu[i] = val.Value();
+                                          dshapeu[i] = val.DValue(0);
+                                        }));
+                  }
+
+                if(fes->periodic[1])
+                  {
+                    throw Exception("CalcDShape not implemented for periodic!");
+                  }
+                else
+                  {
+                    LegendrePolynomial(order, -1 + 2 * adphi[1],
+                                       SBLambda([&](int i, auto val)
+                                       {
+                                          shapev[i] = val.Value();
+                                          dshapev[i] = val.DValue(0);
+                                        }));
+                  }
+
+                auto dshape_ = dshapes.AddSize(2, ndof1*ndof2);
+                for(auto i : Range(shapeu.Size()))
+                  for (auto j : Range(shapev.Size()))
+                    {
+                      dshape_(0, i*shapev.Size()+j) = dshapeu[i] * shapev[j];
+                      dshape_(1, i*shapev.Size()+j) = shapeu[i] * dshapev[j];
+                    }
+              }
           }
       }
     };

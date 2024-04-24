@@ -32,7 +32,7 @@ namespace ngcomp
     {
     public:
       ParameterGradDiffOp ()
-        : DifferentialOperator(1, 1, VOL, 0) { ; }
+        : DifferentialOperator(VOLFE::GetDim(), 1, VOL, 0) { ; }
 
       void CalcMatrix (const FiniteElement & bfel,
                        const BaseMappedIntegrationPoint & mip,
