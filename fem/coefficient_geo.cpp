@@ -176,9 +176,15 @@ namespace ngfem
   template <int D>
   class cl_NormalVectorCF : public CoefficientFunctionNoDerivative
   {
+    BitArray inverted_faces;
   public:
-    cl_NormalVectorCF () : CoefficientFunctionNoDerivative(D,false)
-    { SetDimensions(Array<int>( { D } )); }
+    cl_NormalVectorCF (optional<BitArray> ainverted_faces = nullopt)
+      : CoefficientFunctionNoDerivative(D,false)
+    {
+      SetDimensions(Array<int>( { D } ));
+      if(ainverted_faces.has_value())
+        inverted_faces = ainverted_faces.value();
+    }
     // virtual int Dimension() const { return D; }
 
     virtual string GetDescription() const override
@@ -195,7 +201,14 @@ namespace ngfem
     {
       if (ip.DimSpace() != D)
         throw Exception("illegal dim of normal vector");
-      res = static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetNV();
+      double fac = 1.;
+      if (inverted_faces.Size())
+        {
+          auto ei = ip.GetTransformation().GetElementIndex();
+          if(inverted_faces.Test(ei))
+            fac = -1.;
+        }
+      res = fac * static_cast<const DimMappedIntegrationPoint<D>&>(ip).GetNV();
     }
 
     virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatMatrix<> res) const // override 
@@ -203,11 +216,18 @@ namespace ngfem
       const TPMappedIntegrationRule * tpir = dynamic_cast<const TPMappedIntegrationRule *>(&ir);
       if(!tpir)
         {
+          double fac = 1.;
+          if (inverted_faces.Size())
+            {
+              auto ei = ir.GetTransformation().GetElementIndex();
+              if(inverted_faces.Test(ei-1))
+                fac = -1.;
+            }
           if (ir[0].DimSpace() != D)
             throw Exception("illegal dim of normal vector");
           // FlatMatrixFixWidth<D> resD(res);
           for (int i = 0; i < ir.Size(); i++)
-            res.Row(i).Range(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+            res.Row(i).Range(D) = fac * static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
         }
       else
         {
@@ -253,10 +273,20 @@ namespace ngfem
     {
       if (ir[0].DimSpace() != D)
 	throw Exception("illegal dim of normal vector");
+
+      double fac = 1.;
+      if (inverted_faces.Size())
+        {
+          auto ei = ir.GetTransformation().GetElementIndex();
+          if(inverted_faces.Test(ei-1))
+            fac = -1.;
+        }
       for (int i = 0; i < ir.Size(); i++)
-	res.Row(i).Range(D) = static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
+	res.Row(i).Range(D) = fac * static_cast<const DimMappedIntegrationPoint<D>&>(ir[i]).GetNV();
     }
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override  {
+      if (inverted_faces.Size())
+        throw Exception("Not implemented");
       string miptype;
       if(code.is_simd)
         miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
@@ -278,7 +308,14 @@ namespace ngfem
         for (size_t j = 0; j < D; j++)
         values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
       */
-      values.AddSize(D, ir.Size()) = Trans(ir.GetNormals());
+      double fac = 1.;
+      if (inverted_faces.Size())
+        {
+          auto ei = ir.GetTransformation().GetElementIndex();
+          if(inverted_faces.Test(ei-1))
+            fac = -1.;
+        }
+      values.AddSize(D, ir.Size()) = fac * Trans(ir.GetNormals());
     }
 
     /*
@@ -327,28 +364,28 @@ namespace ngfem
     
   };
 
-  shared_ptr<CoefficientFunction> NormalVectorCF (int dim)
+  shared_ptr<CoefficientFunction> NormalVectorCF (int dim,
+                                                  optional<BitArray> inverted_faces)
   { 
     switch(dim)
       { 
       case 1:
-        return make_shared<cl_NormalVectorCF<1>>();
+        return make_shared<cl_NormalVectorCF<1>>(inverted_faces);
       case 2:
-        return make_shared<cl_NormalVectorCF<2>>();
+        return make_shared<cl_NormalVectorCF<2>>(inverted_faces);
       case 3:
-        return make_shared<cl_NormalVectorCF<3>>();
+        return make_shared<cl_NormalVectorCF<3>>(inverted_faces);
       case 4:
-        return make_shared<cl_NormalVectorCF<4>>();
+        return make_shared<cl_NormalVectorCF<4>>(inverted_faces);
       case 5:
-        return make_shared<cl_NormalVectorCF<5>>();
+        return make_shared<cl_NormalVectorCF<5>>(inverted_faces);
       case 6:
-        return make_shared<cl_NormalVectorCF<6>>();
+        return make_shared<cl_NormalVectorCF<6>>(inverted_faces);
       default:
         throw Exception (string("Normal-vector not implemented for dimension")
                          +ToString(dim));
       }
   }
-
 
   template <int D>
   class cl_TangentialVectorCF : public CoefficientFunctionNoDerivative
