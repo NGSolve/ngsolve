@@ -462,6 +462,33 @@ direction : int
     {
       return NormalVectorCF(dim);
     }
+    shared_ptr<CF> GetNormalVectorCF (ngcomp::Region& region)
+    {
+      const auto& boundaries = region.GetNeighbours(BND);
+      const auto& mesh = region.Mesh();
+      BitArray inverted_faces(boundaries.Mask().Size());
+      inverted_faces.Clear();
+      for(auto i : Range(inverted_faces))
+        if (boundaries.Mask().Test(i))
+          {
+            int dom_in;
+            if (mesh->GetDimension() == 3)
+              dom_in = mesh->GetNetgenMesh()->GetFaceDescriptor(i+1).DomainIn();
+            else if (mesh->GetDimension() == 2)
+              {
+                for(const auto& seg : mesh->GetNetgenMesh()->LineSegments())
+                  if (seg.edgenr == i + 1) {
+                    dom_in = seg.domin;
+                    break;
+                  }
+              }
+            else
+              throw Exception("Mesh dimension not supported");
+            if (!region.Mask().Test(dom_in - 1))
+              inverted_faces.SetBit(i);
+          }
+      return NormalVectorCF(mesh->GetDimension(), std::move(inverted_faces));
+    }
 
     shared_ptr<CF> GetTangentialVectorCF (int dim, bool consistent)
     {
@@ -505,9 +532,13 @@ direction : int
                   &SpecialCoefficientFunctions::GetMeshSizeCF, "local mesh-size (approximate element diameter) as CF")
     .def("xref", &SpecialCoefficientFunctions::GetReferenceCoordinateCF, py::arg("dim"),
          "element reference-coordinates")
-    .def("normal", &SpecialCoefficientFunctions::GetNormalVectorCF, py::arg("dim"),
+    .def("normal",
+         py::overload_cast<int>(&SpecialCoefficientFunctions::GetNormalVectorCF),
          "depending on contents: normal-vector to geometry or element\n"
-         "space-dimension must be provided")
+         "space-dimension must be provided.")
+    .def("normal", py::overload_cast<ngcomp::Region&>
+         (&SpecialCoefficientFunctions::GetNormalVectorCF),
+         "If region is provided, normal is pointing outwards of region (only supported on 2d/3d surface elements)")
     .def("tangential", &SpecialCoefficientFunctions::GetTangentialVectorCF, py::arg("dim"), py::arg("consistent")=false,
          "depending on contents: tangential-vector to element\n"
          "space-dimension must be provided")
