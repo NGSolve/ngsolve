@@ -1931,7 +1931,8 @@ shared_ptr<CompiledCoefficientFunctionInterface> Compile (shared_ptr<Coefficient
 
   
   NGS_DLL_HEADER
-  shared_ptr<CoefficientFunction> NormalVectorCF (int dim);
+  shared_ptr<CoefficientFunction> NormalVectorCF
+  (int dim, optional<BitArray> inverted_faces=nullopt);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> TangentialVectorCF (int dim, bool consistent);
   NGS_DLL_HEADER
