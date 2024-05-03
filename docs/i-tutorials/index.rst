@@ -269,7 +269,8 @@ Appendix
   :maxdepth: 1
   
   appendix-taskmanager/taskmanager.ipynb 
-  appendix-webgui/webgui-internal.ipynb
+  appendix-webgui/webgui.ipynb
+  appendix-webgui/webgui-internal.ipynb  
   appendix-vtk/vtk.ipynb
   appendix-pickling/pickling.ipynb
              
