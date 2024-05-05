@@ -158,7 +158,7 @@ PrivateSpace = Hidden
 def Normalize (v):
     return 1/Norm(v) * v
 
-def printmaster (*args):
+def printonce (*args):
     from mpi4py.MPI import COMM_WORLD
     if COMM_WORLD.rank == 0:
         print (*args)
