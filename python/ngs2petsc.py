@@ -95,34 +95,28 @@ class VectorMapping:
 #PETSc Preconditioner
 
 class PETScPreconditioner(ngs.BaseMatrix):
-    def __init__(self,mat,freedofs=None, flags=None):
+    def __init__(self,mat,freedofs=None, solverParameters=None):
         ngs.BaseMatrix.__init__(self)
         self.ngsmat = mat
         self.vecmap = VectorMapping (mat.row_pardofs, freedofs)
-        self.mat = CreatePETScMatrix (mat, freedofs)
-        self.precond = psc.PC().create()
-        if flags["pctype"]:
-            self.precond.setType(flags["pctype"])            
-        else:
-            self.precond.setType("gamg")
-        self.precond.setOperators(self.mat)
-        if flags["levels"]:
-            self.precond.setGAMGLevels(flags["levels"])
+        self.pscmat = CreatePETScMatrix (mat, freedofs)
+        self.precond = psc.PC().create(comm=self.pscmat.getComm())
+
+        self.precond.setOperators(self.pscmat)
+        options_object = psc.Options()
+        if solverParameters is not None:
+            for optName, optValue in solverParameters.items():
+                options_object[optName] = optValue
+
+        self.precond.setOptionsPrefix(None) # optionsPrefix)
+        self.precond.setFromOptions()
         self.precond.setUp()
-        self.pscx, self.pscy = self.mat.createVecs()
+        self.pscx, self.pscy = self.pscmat.createVecs()
 
     def Shape(self):
         return self.ngsmat.shape
     def CreateVector(self,col):
         return self.ngsmat.CreateVector(not col)
-    # def Height(self):
-    #    return self.ngsmat.height
-    # def Width(self):
-    #    return self.ngsmat.width
-    # def CreateRowVector(self):
-    #    return self.ngsmat.CreateColVector()
-    # def CreateColVector(self):
-    #    return self.ngsmat.CreateRowVector()
     
     def Mult(self,x,y):
         self.vecmap.N2P(x,self.pscx)
@@ -135,14 +129,21 @@ class PETScPreconditioner(ngs.BaseMatrix):
         self.vecmap.P2N(self.pscy, y)
         
 
+from ngsolve.comp import RegisterPreconditioner
+
+# for backward compatibility
+def MakeGAMGPreconditioner(mat, freedofs, flags):
+    flags.Set("pc_type", "gamg")
+    return PETScPreconditioner(mat, freedofs, flags)
+
+RegisterPreconditioner ("gamg", MakeGAMGPreconditioner)
+
+
 def MakePETScPreconditioner(mat, freedofs, flags):
     return PETScPreconditioner(mat, freedofs, flags)
 
-
-from ngsolve.comp import RegisterPreconditioner
-RegisterPreconditioner ("gamg", MakePETScPreconditioner)
 RegisterPreconditioner ("petsc", MakePETScPreconditioner, docflags = { \
-                "pctype" : "type of PETSc preconditioner",
+                "pc_type" : "type of PETSc preconditioner",
                 "levels" : "AMG levels" })
 
 

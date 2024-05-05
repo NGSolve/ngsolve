@@ -561,6 +561,7 @@ kwargs : kwargs
                   {
 		    py::list info;
 		    auto flags = CreateFlagsFromKwArgs(kwargs, fes_class, info);
+                    
                     Array<shared_ptr<FESpace>> spaces;
                     bool dgjumps = flags.GetDefineFlag("dgjumps");
                     for (auto fes : lspaces )
@@ -3026,7 +3027,9 @@ integrator : ngsolve.fem.LFI
   prec_class
     .def(py::init([prec_class](shared_ptr<BilinearForm> bfa, const string & type, py::kwargs kwargs)
          {
+           auto oldlevel = Logger::SetGlobalLoggingLevel(level::off);
            auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);
+           Logger::SetGlobalLoggingLevel(oldlevel);
 
            if (kwargs.contains("blockcreator"))
              {
