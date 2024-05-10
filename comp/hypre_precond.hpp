@@ -37,7 +37,7 @@ class HyprePreconditioner : public Preconditioner
 
 public:
     
-  HyprePreconditioner (const PDE & pde, const Flags & flags, const string & name);
+  // HyprePreconditioner (const PDE & pde, const Flags & flags, const string & name);
   HyprePreconditioner (const BaseMatrix & matrix, const shared_ptr<BitArray> afreedofs); 
   HyprePreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
 		       const string aname = "precond");

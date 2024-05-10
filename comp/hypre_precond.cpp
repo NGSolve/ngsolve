@@ -15,11 +15,13 @@ namespace ngcomp
 
 
 
+  /*
   HyprePreconditioner :: HyprePreconditioner (const PDE & pde, const Flags & aflags, const string & aname)  
     : Preconditioner (&pde, aflags)
   {
     bfa = pde.GetBilinearForm (flags.GetStringFlag ("bilinearform", NULL));
   }
+  */
   
 
   HyprePreconditioner :: HyprePreconditioner (const BaseMatrix & matrix, const shared_ptr<BitArray> afreedofs)
