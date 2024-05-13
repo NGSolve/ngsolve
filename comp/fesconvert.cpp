@@ -40,7 +40,7 @@ namespace ngcomp
       { throw Exception("Cannot form ConvertOperator between a parallel and a local space!"); }
 
     if ( parmat && space_a->IsParallel() && space_b->IsParallel() ) {
-      MPI_Comm comma = space_a->GetParallelDofs()->GetCommunicator(), commb = space_b->GetParallelDofs()->GetCommunicator();
+      NG_MPI_Comm comma = space_a->GetParallelDofs()->GetCommunicator(), commb = space_b->GetParallelDofs()->GetCommunicator();
       if (comma != commb)
 	{ throw Exception("Cannot convert between spaces defined on different Communicators!"); }
     }
@@ -251,7 +251,7 @@ namespace ngcomp
     tass.Stop();
 #ifdef PARALLEL
     if (space_b->IsParallel() && !localop)
-      { AllReduceDofData (cnt_b, MPI_SUM, space_b->GetParallelDofs()); }
+      { AllReduceDofData (cnt_b, NG_MPI_SUM, space_b->GetParallelDofs()); }
 #endif
 
     for (auto dofnr : Range(spmat->Height())) {
@@ -297,7 +297,7 @@ namespace ngcomp
       { throw Exception("Cannot form ConvertOperator between a parallel and a local space!"); }
 
     if ( parmat && space_a->IsParallel() && space_b->IsParallel() ) {
-      MPI_Comm comma = space_a->GetParallelDofs()->GetCommunicator(), commb = space_b->GetParallelDofs()->GetCommunicator();
+      NG_MPI_Comm comma = space_a->GetParallelDofs()->GetCommunicator(), commb = space_b->GetParallelDofs()->GetCommunicator();
       if (comma != commb)
 	{ throw Exception("Cannot convert between spaces defined on different Communicators!"); }
     }
@@ -488,7 +488,7 @@ namespace ngcomp
 
 #ifdef PARALLEL
     if (space_b->IsParallel() && !localop)
-      { AllReduceDofData (cnt_b, MPI_SUM, space_b->GetParallelDofs()); }
+      { AllReduceDofData (cnt_b, NG_MPI_SUM, space_b->GetParallelDofs()); }
 #endif
 
     bool multiple = false;

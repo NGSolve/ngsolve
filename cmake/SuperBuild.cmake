@@ -29,10 +29,10 @@ option( USE_PYTHON  "build with python interface" ON )
 # only show output on failure in ci-builds
 if(DEFINED ENV{CI})
     set (SUBPROJECT_ARGS
-        LOG_DOWNLOAD ON
-        LOG_BUILD ON
-        LOG_INSTALL ON
-        LOG_CONFIGURE ON
+        LOG_DOWNLOAD OFF
+        LOG_BUILD OFF
+        LOG_INSTALL OFF
+        LOG_CONFIGURE OFF
     )
     if(${CMAKE_VERSION} VERSION_GREATER_EQUAL "3.14.0")
         set (SUBPROJECT_ARGS
@@ -118,7 +118,7 @@ else(NETGEN_DIR)
   add_custom_target(check_submodules_start ALL ${CMAKE_COMMAND} -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} )
   add_custom_target(check_submodules_stop ALL ${CMAKE_COMMAND} -P cmake/check_submodules.cmake WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} DEPENDS ngsolve)
 
-  if (USE_MPI AND NOT METIS_DIR)
+  if (USE_MPI AND NOT METIS_DIR AND USE_MUMPS)
     # hard-coded path to self-built metis
     message(STATUS "PARMETIS/METIS will be built by superbuild")
     set (METIS_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/parmetis)

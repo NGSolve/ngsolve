@@ -99,7 +99,7 @@ namespace ngla
     }
 
 
-    void IRecvVec ( int dest, MPI_Request & request ) override
+    void IRecvVec ( int dest, NG_MPI_Request & request ) override
     {
       cout << "irecvec, and throw" << endl;
       throw Exception("ParallelRangeVector, don't know how to IRecVec");
@@ -240,8 +240,8 @@ namespace ngla
       constvec -> IRecvVec (exprocs[isender], rreqs[isender] );
     
     // if (rreqs.Size()) { // apparently Startall with 0 requests fails b/c invalid request ??
-    //   MPI_Startall(rreqs.Size(), &rreqs[0]);
-    //   MPI_Startall(sreqs.Size(), &sreqs[0]);
+    //   NG_MPI_Startall(rreqs.Size(), &rreqs[0]);
+    //   NG_MPI_Startall(sreqs.Size(), &sreqs[0]);
     // }
 
     MyMPI_WaitAll (sreqs);
@@ -260,19 +260,19 @@ namespace ngla
 
 
 
-  void ParallelBaseVector :: ISend ( int dest, MPI_Request & request ) const
+  void ParallelBaseVector :: ISend ( int dest, NG_MPI_Request & request ) const
   {
 #ifdef PARALLEL
-    MPI_Datatype mpi_t = this->paralleldofs->GetMPI_Type(dest);
-    MPI_Isend( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
+    NG_MPI_Datatype mpi_t = this->paralleldofs->GetMPI_Type(dest);
+    NG_MPI_Isend( Memory(), 1, mpi_t, dest, NG_MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
 #endif
   }
 
   /*
   void ParallelBaseVector :: Send ( int dest ) const
   {
-    MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
-    MPI_Send( Memory(), 1, mpi_t, dest, MPI_TAG_SOLVE, ngs_comm);
+    NG_MPI_Datatype mpi_t = this->paralleldofs->MyGetMPI_Type(dest);
+    NG_MPI_Send( Memory(), 1, mpi_t, dest, NG_MPI_TAG_SOLVE, ngs_comm);
   }
   */
 
@@ -305,12 +305,12 @@ namespace ngla
 	    SCAL localsum = MatKernelMaskedScalAB(me.Size(), me.Data(), 0, you.Data(), 0, ba);
 	    if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
 	      { return localsum; }
-	    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
+	    return paralleldofs->GetCommunicator().AllReduce (localsum, NG_MPI_SUM);
             // double sum = 0;
             // for (size_t i = 0; i < me.Size(); i++)
             //   if (ba.Test(i))
             //     sum += me(i) * you(i);
-            // return paralleldofs->GetCommunicator().AllReduce (sum, MPI_SUM);
+            // return paralleldofs->GetCommunicator().AllReduce (sum, NG_MPI_SUM);
           }
         Distribute();
       }
@@ -321,7 +321,7 @@ namespace ngla
     if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
       return localsum;
 
-    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
+    return paralleldofs->GetCommunicator().AllReduce (localsum, NG_MPI_SUM);
   }
 
 
@@ -348,7 +348,7 @@ namespace ngla
     if ( this->Status() == NOT_PARALLEL && parv2->Status() == NOT_PARALLEL )
       return localsum;
 
-    return paralleldofs->GetCommunicator().AllReduce (localsum, MPI_SUM);
+    return paralleldofs->GetCommunicator().AllReduce (localsum, NG_MPI_SUM);
   }
 
   template class S_ParallelBaseVector<double>;
@@ -526,14 +526,14 @@ namespace ngla
 
   
   template <typename SCAL>
-  void S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest, MPI_Request & request )
+  void S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest, NG_MPI_Request & request )
   {
 #ifdef PARALLEL
-    MPI_Datatype MPI_TS = GetMPIType<TSCAL> ();
-    MPI_Irecv( &( (*recvvalues)[dest][0]), 
+    NG_MPI_Datatype NG_MPI_TS = GetMPIType<TSCAL> ();
+    NG_MPI_Irecv( &( (*recvvalues)[dest][0]), 
 	       (*recvvalues)[dest].Size(), 
-	       MPI_TS, dest, 
-	       MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
+	       NG_MPI_TS, dest, 
+	       NG_MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
 #endif
   }
 
@@ -541,13 +541,13 @@ namespace ngla
   template <typename SCAL>
   void S_ParallelBaseVectorPtr<SCAL> :: RecvVec ( int dest)
   {
-    MPI_Status status;
+    NG_MPI_Status status;
 
-    MPI_Datatype MPI_TS = MyGetMPIType<TSCAL> ();
-    MPI_Recv( &( (*recvvalues)[dest][0]), 
+    NG_MPI_Datatype NG_MPI_TS = MyGetMPIType<TSCAL> ();
+    NG_MPI_Recv( &( (*recvvalues)[dest][0]), 
 	      (*recvvalues)[dest].Size(), 
-	      MPI_TS, dest, 
-	      MPI_TAG_SOLVE, ngs_comm, &status);
+	      NG_MPI_TS, dest, 
+	      NG_MPI_TAG_SOLVE, ngs_comm, &status);
   }
   */
 
@@ -624,7 +624,7 @@ namespace ngla
             ngbla::PairwiseInnerProduct((*this)[0]->FVDouble().Size(), ptrs2, ptrs1, res);
             
             paralleldofs->GetCommunicator()
-              .AllReduce(FlatArray(res.Height()*res.Width(), res.Data()), MPI_SUM);
+              .AllReduce(FlatArray(res.Height()*res.Width(), res.Data()), NG_MPI_SUM);
             
             return res;
           }
@@ -668,8 +668,8 @@ namespace ngla
 	    sum += L2Norm2 (fv.Row(dof));
       }
       
-    // double globsum = MyMPI_AllReduce (sum, MPI_SUM, paralleldofs->GetCommunicator()); // ngs_comm);
-    double globsum = paralleldofs->GetCommunicator().AllReduce (sum, MPI_SUM); 
+    // double globsum = MyMPI_AllReduce (sum, NG_MPI_SUM, paralleldofs->GetCommunicator()); // ngs_comm);
+    double globsum = paralleldofs->GetCommunicator().AllReduce (sum, NG_MPI_SUM); 
     return sqrt (globsum);
   }
 

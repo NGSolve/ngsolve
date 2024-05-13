@@ -475,7 +475,6 @@ mesh (netgen.Mesh): a mesh generated from Netgen
 
     .def(py::init([](const string & filename, NgMPI_Comm comm)
                   {
-		    // MPI_Comm comm = c ? c->comm : ngs_comm;
                     NGSOStream::SetGlobalActive (comm.Rank()==0);
                     auto mesh = make_shared<MeshAccess>(filename, comm);
                     mesh->GetNetgenMesh()->updateSignal.Connect( mesh.get(), [p=mesh.get()]

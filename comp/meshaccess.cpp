@@ -1023,8 +1023,8 @@ namespace ngcomp
 
     ndomains++;
     
-    // ndomains = MyMPI_AllReduce (ndomains, MPI_MAX, GetCommunicator());
-    ndomains = GetCommunicator().AllReduce (ndomains, MPI_MAX);
+    // ndomains = MyMPI_AllReduce (ndomains, NG_MPI_MAX, GetCommunicator());
+    ndomains = GetCommunicator().AllReduce (ndomains, NG_MPI_MAX);
     
     pml_trafos.SetSize(ndomains);
     
@@ -1036,7 +1036,7 @@ namespace ngcomp
         nboundaries = max2(nboundaries, elindex);
       }
     nboundaries++;
-    nboundaries = GetCommunicator().AllReduce (nboundaries, MPI_MAX);
+    nboundaries = GetCommunicator().AllReduce (nboundaries, NG_MPI_MAX);
     nregions[1] = nboundaries;
 
 
@@ -1060,7 +1060,7 @@ namespace ngcomp
               nbboundaries = max2(nbboundaries, elindex);
           }
         nbboundaries++;
-        nbboundaries = GetCommunicator().AllReduce(nbboundaries, MPI_MAX);
+        nbboundaries = GetCommunicator().AllReduce(nbboundaries, NG_MPI_MAX);
       }
 
     int & nbbboundaries = nregions[BBBND];
@@ -1078,7 +1078,7 @@ namespace ngcomp
               nbbboundaries = max2(nbbboundaries, elindex);
           }
         nbbboundaries++;
-        nbbboundaries = GetCommunicator().AllReduce(nbbboundaries, MPI_MAX);
+        nbbboundaries = GetCommunicator().AllReduce(nbbboundaries, NG_MPI_MAX);
       }
     
     // update periodic mappings
@@ -2673,7 +2673,7 @@ namespace ngcomp
 
     if (use_mpi)
       {
-        size_t glob_total = comm.Reduce (total, MPI_SUM);
+        size_t glob_total = comm.Reduce (total, NG_MPI_SUM);
         if (is_root) total = glob_total;
       }
     
@@ -2734,7 +2734,7 @@ namespace ngcomp
 	  else if (use_mpi)
 	    {
 	      static Timer t("dummy - progressreport"); RegionTimer r(t);
-	      comm.Send (nr, 0, MPI_TAG_SOLVE);
+	      comm.Send (nr, 0, NG_MPI_TAG_SOLVE);
               // changed from BSend (VSC-problem)
 	    }
 #endif
@@ -2767,11 +2767,11 @@ namespace ngcomp
 		  {
 		    if (!working[source]) continue;
 		    num_working++;
-		    MPI_Iprobe (source, MPI_TAG_SOLVE, comm, &flag, MPI_STATUS_IGNORE);
+		    NG_MPI_Iprobe (source, NG_MPI_TAG_SOLVE, comm, &flag, NG_MPI_STATUS_IGNORE);
 		    if (flag)
 		      {
 			got_flag = true;
-			comm.Recv (data, source, MPI_TAG_SOLVE);
+			comm.Recv (data, source, NG_MPI_TAG_SOLVE);
 			if (data == -1) 
 			  working[source] = 0;
 			else
@@ -2786,7 +2786,7 @@ namespace ngcomp
 		     << " (" << num_working << " procs working) " << flush;
                 BaseStatusHandler::SetThreadPercentage ( 100.0*sum / total );
 		if (!num_working) break;
-		if (!got_flag) usleep (1000);
+		if (!got_flag) std::this_thread::sleep_for(std::chrono::microseconds(1000));
 	      }
 	  }
 #endif
@@ -2795,9 +2795,9 @@ namespace ngcomp
       }
     else if (use_mpi)
       {
-	comm.Send (total, 0, MPI_TAG_SOLVE);
+	comm.Send (total, 0, NG_MPI_TAG_SOLVE);
 	size_t final = -1;
-	comm.Send (final, 0, MPI_TAG_SOLVE);
+	comm.Send (final, 0, NG_MPI_TAG_SOLVE);
       }
   }
   

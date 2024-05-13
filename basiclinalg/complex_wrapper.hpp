@@ -59,20 +59,6 @@ namespace ngbla
 }
 
 
-#ifdef PARALLEL
-#include <core/mpi_wrapper.hpp>
-namespace ngcore
-{
-  
-  template <> struct MPI_typetrait<ngbla::Complex> {
-    static MPI_Datatype MPIType ()  { return MPI_CXX_DOUBLE_COMPLEX; }
-      // return MPI_C_DOUBLE_COMPLEX;   // no MPI_SUM defined ??
-      // return MPI_DOUBLE_COMPLEX;
-  };
-}
-#endif
-
-
 namespace ngstd
 {
   using ngcore::Complex;

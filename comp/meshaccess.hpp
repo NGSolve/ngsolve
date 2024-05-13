@@ -1181,7 +1181,7 @@ namespace ngcomp
 
     /// Reduces MPI - distributed data associated with mesh-nodes
     template <typename T>
-    void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const;
+    void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, NG_MPI_Op op) const;
 
   private:
     void BuildNeighbours();
@@ -1320,7 +1320,7 @@ namespace ngcomp
 
   /// old style, compatibility for a while
   template <typename T>  [[deprecated("use ma.AllReduceNodalData instead")]]
-  void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op, const MeshAccess & ma)
+  void AllReduceNodalData (NODE_TYPE nt, Array<T> & data, NG_MPI_Op op, const MeshAccess & ma)
   {
     ma.AllReduceNodalData (nt, data, op);
   }
@@ -1330,7 +1330,7 @@ namespace ngcomp
 
   template <typename T>
   void MeshAccess::
-  AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const
+  AllReduceNodalData (NODE_TYPE nt, Array<T> & data, NG_MPI_Op op) const
   {
     NgMPI_Comm comm = GetCommunicator();
     if (comm.Size() <= 1) return;
@@ -1348,20 +1348,20 @@ namespace ngcomp
       for (auto p : GetDistantProcs(Node(nt, i)))
         dist_data[p][cnt[p]++] = data[i];
 
-    Array<MPI_Request> requests;
+    Array<NG_MPI_Request> requests;
     for (auto i : cnt.Range())
       if (cnt[i])
 	{
-	  requests.Append (comm.ISend(dist_data[i], i, MPI_TAG_SOLVE));
-	  requests.Append (comm.IRecv(recv_data[i], i, MPI_TAG_SOLVE));
+	  requests.Append (comm.ISend(dist_data[i], i, NG_MPI_TAG_SOLVE));
+	  requests.Append (comm.IRecv(recv_data[i], i, NG_MPI_TAG_SOLVE));
 	}
     MyMPI_WaitAll (requests);
     
     cnt = 0;
-    MPI_Datatype type = GetMPIType<T>();
+    NG_MPI_Datatype type = GetMPIType<T>();
     for (auto i : Range(GetNNodes(nt)))
       for (auto p : GetDistantProcs(Node(nt, i)))
-        MPI_Reduce_local (&recv_data[p][cnt[p]++],
+        NG_MPI_Reduce_local (&recv_data[p][cnt[p]++],
                           &data[i], 1, type, op);
   }
 
@@ -1370,7 +1370,7 @@ namespace ngcomp
 
   template <typename T>
   void MeshAccess::
-  AllReduceNodalData (NODE_TYPE nt, Array<T> & data, MPI_Op op) const { ; }
+  AllReduceNodalData (NODE_TYPE nt, Array<T> & data, NG_MPI_Op op) const { ; }
 
 #endif
 

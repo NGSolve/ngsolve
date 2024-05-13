@@ -6,6 +6,7 @@
 #include<regex>
 #include<cstdio>
 #include<cstdlib>
+#include<core/mpi_wrapper.hpp>
 
 #if defined __GNUC__ && !defined __EMSCRIPTEN__
 #include <unistd.h>   // for mkdtemp
@@ -20,7 +21,7 @@ namespace ngfem
       static int counter = 0;
       int rank = 0;
 #ifdef PARALLEL
-      rank = ngcore::NgMPI_Comm(MPI_COMM_WORLD).Rank();
+      rank = ngcore::NgMPI_Comm(NG_MPI_COMM_WORLD).Rank();
 #endif // PARALLEL
       filesystem::path dir;
 #ifdef WIN32

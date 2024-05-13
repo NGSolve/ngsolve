@@ -331,7 +331,7 @@ namespace ngcomp
        });
 
 #ifdef PARALLEL
-    AllReduceDofData (cnti, MPI_SUM, fes->GetParallelDofs());
+    AllReduceDofData (cnti, NG_MPI_SUM, fes->GetParallelDofs());
     // GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
     // GetVector(mdcomp).Cumulate(); 	 
     (*tempvec).SetParallelStatus(DISTRIBUTED);
@@ -830,30 +830,6 @@ namespace ngcomp
 
 
 
-#ifdef PARALLELxxx
-  template <typename T>
-  inline void MyMPI_Gather (T d, MPI_Comm comm /* = ngs_comm */)
-  {
-    static Timer t("dummy - gather"); RegionTimer r(t);
-    
-    MPI_Gather (&d, 1, GetMPIType<T>(), 
-		NULL, 1, GetMPIType<T>(), 0, comm);
-  }
-
-  template <typename T>
-  inline void MyMPI_GatherRoot (FlatArray<T> d, MPI_Comm comm /* = ngs_comm */)
-  {
-    static Timer t("dummy - gather"); RegionTimer r(t);
-
-    d[0] = T(0);
-    MPI_Gather (MPI_IN_PLACE, 1, GetMPIType<T>(), 
-		&d[0], 1, GetMPIType<T>(), 0,
-		comm);
-  }
-#endif
-
-
-
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
   void S_GridFunction<SCAL> :: SaveNodeType (ostream & ost, int mdcomp) const
   {
@@ -921,7 +897,7 @@ namespace ngcomp
 	comm.GatherRoot (size_nodes);
 	comm.GatherRoot (size_data);
 
-	Array<MPI_Request> requests;
+	Array<NG_MPI_Request> requests;
 
 	Table<Vec<N+1,int> > table_nodes(size_nodes);
 	for (int p = 1; p < ntasks; p++)

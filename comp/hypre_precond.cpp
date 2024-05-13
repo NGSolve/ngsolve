@@ -89,8 +89,8 @@ namespace ngcomp
 	global_nums[i] = num_master_dofs++;
     
     Array<int> first_master_dof(ntasks);
-    MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
-		   &first_master_dof[0], 1, MPI_INT, 
+    NG_MPI_Allgather (&num_master_dofs, 1, NG_MPI_INT, 
+		   &first_master_dof[0], 1, NG_MPI_INT, 
 		   pardofs -> GetCommunicator());
     
     int num_glob_dofs = 0;

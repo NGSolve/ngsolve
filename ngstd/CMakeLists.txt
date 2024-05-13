@@ -4,7 +4,7 @@ add_library( ngstd ${NGS_LIB_TYPE}
         blockalloc.cpp evalfunc.cpp templates.cpp
         stringops.cpp statushandler.cpp
         python_ngstd.cpp
-        bspline.cpp ngs_utils.cpp
+        bspline.cpp
         )
 
 target_compile_definitions(ngstd PUBLIC ${NGSOLVE_COMPILE_DEFINITIONS})

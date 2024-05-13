@@ -53,7 +53,7 @@ namespace ngla
 		 });
     
     if (paralleldofs!=nullptr && use_par)
-      AllReduceDofData (invdiag, MPI_SUM, paralleldofs);  
+      AllReduceDofData (invdiag, NG_MPI_SUM, paralleldofs);  
     
     ParallelFor (height, [&](size_t i)
 		 {

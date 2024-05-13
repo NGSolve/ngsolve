@@ -150,10 +150,10 @@ namespace ngla
 		  }
 	    }
 
-	comm.Send (rows, 0, MPI_TAG_SOLVE);
-	comm.Send (cols, 0, MPI_TAG_SOLVE);
-	comm.Send (vals, 0, MPI_TAG_SOLVE);
-	comm.Send (global_nums, 0, MPI_TAG_SOLVE);
+	comm.Send (rows, 0, NG_MPI_TAG_SOLVE);
+	comm.Send (cols, 0, NG_MPI_TAG_SOLVE);
+	comm.Send (vals, 0, NG_MPI_TAG_SOLVE);
+	comm.Send (global_nums, 0, NG_MPI_TAG_SOLVE);
 
 #ifdef USE_MUMPS
 	if (mat.GetInverseType() == MUMPS)
@@ -186,10 +186,10 @@ namespace ngla
 	    Array<TM> hvals;
 	    Array<int> hglobid;
 
-	    comm.Recv (hrows, src, MPI_TAG_SOLVE);
-	    comm.Recv (hcols, src, MPI_TAG_SOLVE);
-	    comm.Recv (hvals, src, MPI_TAG_SOLVE);
-	    comm.Recv (hglobid, src, MPI_TAG_SOLVE);
+	    comm.Recv (hrows, src, NG_MPI_TAG_SOLVE);
+	    comm.Recv (hcols, src, NG_MPI_TAG_SOLVE);
+	    comm.Recv (hvals, src, NG_MPI_TAG_SOLVE);
+	    comm.Recv (hglobid, src, NG_MPI_TAG_SOLVE);
 
             /*
 	    *testout << "got from P" << src << ":" << endl
@@ -261,7 +261,7 @@ namespace ngla
 	inv = matrix->InverseMatrix ();
       }
 
-    // MPI_Barrier (ngs_comm);
+    // NG_MPI_Barrier (ngs_comm);
   }
 
   template <typename TM>
@@ -292,15 +292,15 @@ namespace ngla
 	for (int i = 0; i < select.Size(); i++)
 	  lx[i] = fx(select[i]);
 	
-	MPI_Request request = comm.ISend (lx, 0, MPI_TAG_SOLVE);
-	MPI_Request_free (&request);
+	NG_MPI_Request request = comm.ISend (lx, 0, NG_MPI_TAG_SOLVE);
+	NG_MPI_Request_free (&request);
 
 	// only for MUMPS:
 	if (inv)
 	  y = (*inv) * x;
 	
-	request = comm.IRecv (lx, 0, MPI_TAG_SOLVE);
-	MPI_Wait (&request, MPI_STATUS_IGNORE);
+	request = comm.IRecv (lx, 0, NG_MPI_TAG_SOLVE);
+	NG_MPI_Wait (&request, NG_MPI_STATUS_IGNORE);
 
 
 	for (int i = 0; i < select.Size(); i++)
@@ -325,7 +325,7 @@ namespace ngla
 	    FlatArray<int> selecti = loc2glob[src];
 
 	    Array<TV> lx(selecti.Size());
-	    comm.Recv (lx, src, MPI_TAG_SOLVE);
+	    comm.Recv (lx, src, NG_MPI_TAG_SOLVE);
 
 	    if(is_x_cum) {
 	      for (int i = 0; i < selecti.Size(); i++)
@@ -339,13 +339,13 @@ namespace ngla
 
 	hy = (*inv) * hx;
 
-	Array<MPI_Request> requ;
+	Array<NG_MPI_Request> requ;
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    FlatArray<int> selecti = loc2glob[src];
 	    for (int j = 0; j < selecti.Size(); j++)
 	      exdata[src][j] = hy(selecti[j]);
-	    requ.Append (comm.ISend (exdata[src], src, MPI_TAG_SOLVE));
+	    requ.Append (comm.ISend (exdata[src], src, NG_MPI_TAG_SOLVE));
 	  }
 	MyMPI_WaitAll (requ);
       }

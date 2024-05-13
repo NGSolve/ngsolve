@@ -3371,11 +3371,11 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 if (ma->GetCommunicator().Size() > 1)
-                  MPI_Allreduce(MPI_IN_PLACE, &region_sum(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());                  
+                  NG_MPI_Allreduce(NG_MPI_IN_PLACE, &region_sum(0), ma->GetNRegions(vb), NG_MPI_DOUBLE, NG_MPI_SUM, ma->GetCommunicator());                  
                   /*
                   {
                     Vector<> rs2(ma->GetNRegions(vb));
-                    MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                    NG_MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), NG_MPI_DOUBLE, NG_MPI_SUM, ma->GetCommunicator());
                     region_sum = rs2;
                   }
                   */
@@ -3386,17 +3386,17 @@ integrator : ngsolve.fem.LFI
               else if (element_wise)
                 result = py::cast(element_sum);
               else if(dim==1) {
-                sum(0) = ma->GetCommunicator().AllReduce(sum(0), MPI_SUM);
+                sum(0) = ma->GetCommunicator().AllReduce(sum(0), NG_MPI_SUM);
                 result = py::cast(sum(0));
               }
               else {
 #ifdef PARALLEL
                 if (ma->GetCommunicator().Size() > 1)
-                  MPI_Allreduce(MPI_IN_PLACE, &sum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                  NG_MPI_Allreduce(NG_MPI_IN_PLACE, &sum(0), dim, NG_MPI_DOUBLE, NG_MPI_SUM, ma->GetCommunicator());
                 /*                  
                   {
                     Vector<> gsum(dim);
-                    MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_DOUBLE, MPI_SUM, ma->GetCommunicator());
+                    NG_MPI_Allreduce(&sum(0), &gsum(0), dim, NG_MPI_DOUBLE, NG_MPI_SUM, ma->GetCommunicator());
                     sum = gsum;
                   }
                 */
@@ -3471,13 +3471,13 @@ integrator : ngsolve.fem.LFI
               if (region_wise) {
 #ifdef PARALLEL
                 if (ma->GetCommunicator().Size() > 1)
-                  MPI_Allreduce(MPI_IN_PLACE, &region_sum(0), ma->GetNRegions(vb),
-                                MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                  NG_MPI_Allreduce(NG_MPI_IN_PLACE, &region_sum(0), ma->GetNRegions(vb),
+                                MPI_typetrait<Complex>::MPIType(), NG_MPI_SUM, ma->GetCommunicator());
                 
                 /*
                 Vector<Complex> rs2(ma->GetNRegions(vb));
                 if (ma->GetCommunicator().Size() > 1)
-                  MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                  NG_MPI_Allreduce(&region_sum(0), &rs2(0), ma->GetNRegions(vb), MPI_typetrait<Complex>::MPIType(), NG_MPI_SUM, ma->GetCommunicator());
                 region_sum = rs2;
                 */
 #endif
@@ -3487,17 +3487,17 @@ integrator : ngsolve.fem.LFI
               else if (element_wise)
                 result = py::cast(element_sum);
               else if(dim==1) {
-                sum(0) = ma->GetCommunicator().AllReduce(sum(0), MPI_SUM);
+                sum(0) = ma->GetCommunicator().AllReduce(sum(0), NG_MPI_SUM);
                 result = py::cast(sum(0));
               }
               else {
 #ifdef PARALLEL
                 if (ma->GetCommunicator().Size() > 1)
-                  MPI_Allreduce(MPI_IN_PLACE, &sum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                  NG_MPI_Allreduce(NG_MPI_IN_PLACE, &sum(0), dim, MPI_typetrait<Complex>::MPIType(), NG_MPI_SUM, ma->GetCommunicator());
                 /*
                 Vector<Complex> gsum(dim);
                 if (ma->GetCommunicator().Size() > 1) {
-                  MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), MPI_SUM, ma->GetCommunicator());
+                  NG_MPI_Allreduce(&sum(0), &gsum(0), dim, MPI_typetrait<Complex>::MPIType(), NG_MPI_SUM, ma->GetCommunicator());
 		  sum = gsum;
 		}
                 */
@@ -4388,17 +4388,6 @@ geom_free:
   If True, assembles a matrix-free operator.
 )raw_string")
 	 );
-
-   m.def("MPI_Init", [&]()
-	 {
-	   const char * progname = "ngslib";
-	   typedef const char * pchar;
-	   pchar ptrs[2] = { progname, nullptr };
-	   pchar * pptr = &ptrs[0];
-          
-	   static MyMPI mympi(1, (char**)pptr);
-	   return NgMPI_Comm(MPI_COMM_WORLD);
-	 });
 
    py::class_<ContactBoundary, shared_ptr<ContactBoundary>>
      (m, "ContactBoundary")
