@@ -463,11 +463,11 @@ namespace ngla
 	  });
 
 	// send-recv
-	Array<MPI_Request> rsend(all_dps.Size()), rrecv(all_dps.Size());
+	Array<NG_MPI_Request> rsend(all_dps.Size()), rrecv(all_dps.Size());
 	auto comm = pds.GetCommunicator();
 	for (auto kp : Range(all_dps)) {
-	  rsend[kp] = comm.ISend(send_data[kp], all_dps[kp], MPI_TAG_SOLVE);
-	  rrecv[kp] = comm.IRecv(recv_data[kp], all_dps[kp], MPI_TAG_SOLVE);
+	  rsend[kp] = comm.ISend(send_data[kp], all_dps[kp], NG_MPI_TAG_SOLVE);
+	  rrecv[kp] = comm.IRecv(recv_data[kp], all_dps[kp], NG_MPI_TAG_SOLVE);
 	}
 
 	// wait for recvs to finish and add to diagonal blocks

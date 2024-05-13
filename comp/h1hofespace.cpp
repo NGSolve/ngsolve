@@ -477,9 +477,9 @@ into the wirebasket.
 	  }
 	*/
     
-	ma->AllReduceNodalData (NT_VERTEX, used_vertex, MPI_LOR);
-	ma->AllReduceNodalData (NT_EDGE, used_edge, MPI_LOR);
-	ma->AllReduceNodalData (NT_FACE, used_face, MPI_LOR);
+	ma->AllReduceNodalData (NT_VERTEX, used_vertex, NG_MPI_LOR);
+	ma->AllReduceNodalData (NT_EDGE, used_edge, NG_MPI_LOR);
+	ma->AllReduceNodalData (NT_FACE, used_face, NG_MPI_LOR);
 
 	// timer1.Stop();
 	// timer2.Start();

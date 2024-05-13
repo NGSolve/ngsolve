@@ -24,8 +24,8 @@ namespace ngla
     shared_ptr<ParallelDofs> paralleldofs;    
     shared_ptr<BaseVector> local_vec;
     
-    Array<MPI_Request> sreqs;
-    Array<MPI_Request> rreqs;
+    Array<NG_MPI_Request> sreqs;
+    Array<NG_MPI_Request> rreqs;
 
   public:
     ParallelBaseVector ()
@@ -86,10 +86,10 @@ namespace ngla
     virtual void Distribute() const override = 0;
     // { cerr << "ERROR -- Distribute called for BaseVector, is not parallel" << endl; }
     
-    virtual void ISend ( int dest, MPI_Request & request ) const;
+    virtual void ISend ( int dest, NG_MPI_Request & request ) const;
     // virtual void Send ( int dest ) const;
     
-    virtual void IRecvVec ( int dest, MPI_Request & request ) = 0;
+    virtual void IRecvVec ( int dest, NG_MPI_Request & request ) = 0;
     // { cerr << "ERROR -- IRecvVec called for BaseVector, is not parallel" << endl; }
 
     // virtual void RecvVec ( int dest )
@@ -192,7 +192,7 @@ namespace ngla
     virtual AutoVector Range (T_Range<size_t> range) const override;
     virtual AutoVector Range (DofRange range) const override;
     
-    virtual void  IRecvVec ( int dest, MPI_Request & request ) override;
+    virtual void  IRecvVec ( int dest, NG_MPI_Request & request ) override;
     // virtual void  RecvVec ( int dest );
     virtual void AddRecvValues( int sender ) override;
     virtual AutoVector CreateVector () const override;

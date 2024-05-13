@@ -18,7 +18,7 @@ namespace ngla
 
   // extern void MyFunction();  ????
   
-  ParallelDofs :: ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
+  ParallelDofs :: ParallelDofs (NG_MPI_Comm acomm, Table<int> && adist_procs, 
 				int dim, bool iscomplex)
     : comm(acomm), dist_procs(adist_procs), es(dim), complex(iscomplex)
     
@@ -69,14 +69,14 @@ namespace ngla
 
     mpi_t.SetSize (ntasks); 
     
-    MPI_Datatype mpi_type;
+    NG_MPI_Datatype mpi_type;
     
     mpi_type = iscomplex ? GetMPIType<Complex>() : GetMPIType<double>(); 
     
     if (es != 1)
       {
-	MPI_Datatype htype;
-	MPI_Type_contiguous (es, mpi_type, &htype);
+	NG_MPI_Datatype htype;
+	NG_MPI_Type_contiguous (es, mpi_type, &htype);
 	mpi_type = htype;
       }
     
@@ -91,9 +91,9 @@ namespace ngla
 	Array<int> blocklen(len_vec);
 	blocklen = 1;
 	
-	MPI_Type_indexed (len_vec, &blocklen[0], &exdofs[0], 
+	NG_MPI_Type_indexed (len_vec, &blocklen[0], &exdofs[0], 
 			  mpi_type, &mpi_t[dest]);
-	MPI_Type_commit (&mpi_t[dest]);
+	NG_MPI_Type_commit (&mpi_t[dest]);
       }
     
     for (int i = 0; i < ntasks; i++)
@@ -105,13 +105,13 @@ namespace ngla
     size_t nlocal = 0;
     for (int i = 0; i < ndof; i++)
       if (ismasterdof.Test(i)) nlocal++;
-    global_ndof = comm.AllReduce (nlocal, MPI_SUM);
+    global_ndof = comm.AllReduce (nlocal, NG_MPI_SUM);
   }
 
   ParallelDofs :: ~ParallelDofs()  {
     for (auto dest : ngstd::Range(mpi_t.Size()))
       if ( IsExchangeProc(dest) )
-	MPI_Type_free(&mpi_t[dest]);
+	NG_MPI_Type_free(&mpi_t[dest]);
   }
 
   shared_ptr<ParallelDofs> ParallelDofs :: SubSet (shared_ptr<BitArray> take_dofs) const

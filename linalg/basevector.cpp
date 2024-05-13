@@ -810,8 +810,8 @@ namespace ngla
       else ps += p;
     }
     // if all vectors are sequential, do not reduce reduce
-    // if (MPI_Comm(comm) == MPI_COMM_NULL) return ps;
-    return pp + comm.AllReduce(ps, MPI_SUM);
+    // if (NG_MPI_Comm(comm) == NG_MPI_COMM_NULL) return ps;
+    return pp + comm.AllReduce(ps, NG_MPI_SUM);
   }
 
   Complex BlockVector :: InnerProductC (const BaseVector & v2,
@@ -826,8 +826,8 @@ namespace ngla
       else ps += p;
     }
     // if all vectors are sequential, do not reduce reduce
-    // if (MPI_Comm(comm) == MPI_COMM_NULL) return ps;
-    return pp + comm.AllReduce(ps, MPI_SUM);
+    // if (NG_MPI_Comm(comm) == NG_MPI_COMM_NULL) return ps;
+    return pp + comm.AllReduce(ps, NG_MPI_SUM);
   }
 
 

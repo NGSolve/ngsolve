@@ -33,7 +33,7 @@ namespace ngla
                 shared_ptr<BitArray> ainner,
                 shared_ptr<const Array<int>> acluster,
                 bool asymmetric)
-    : comm(MPI_COMM_NULL, false)
+    : comm(NG_MPI_COMM_NULL, false)
   { 
     static Timer timer ("Mumps Inverse");
     static Timer timer_analysis ("Mumps Inverse - analysis");
@@ -50,7 +50,7 @@ namespace ngla
 	 (pds->GetCommunicator().Size() == 1) )
       { comm = pds->GetCommunicator(); }
     else { // otherwise make an "only-me comm" from world-communicator
-      NgMPI_Comm wcomm(MPI_COMM_WORLD);
+      NgMPI_Comm wcomm(NG_MPI_COMM_WORLD);
       Array<int> procs = { wcomm.Rank() };
       comm = wcomm.SubCommunicator(procs);
     }
@@ -250,7 +250,7 @@ namespace ngla
     mumps_id.par = (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 1 : 0;
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (comm);
+    mumps_id.comm_fortran = NG_MPI_Comm_c2f (comm);
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
 
     // cout << IM(1) << "MUMPS version number is " << mumps_id.version_number << endl;
@@ -282,7 +282,7 @@ namespace ngla
     mumps_id.icntl[28]=0;  // 0..auto, 1..ptscotch 2..parmetis
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (comm);
+    mumps_id.comm_fortran = NG_MPI_Comm_c2f (comm);
     mumps_id.job = JOB_ANALYSIS;
 
 
@@ -309,7 +309,7 @@ namespace ngla
     if (id == 0)
       cout << "factor ... " << flush;
 
-    MPI_Barrier (comm);
+    NG_MPI_Barrier (comm);
 
     timer_factor.Start();
     mumps_trait<TSCAL>::MumpsFunction (&mumps_id);
@@ -495,8 +495,8 @@ namespace ngla
 	global_nums[i] = num_master_dofs++;
     
     Array<int> first_master_dof(ntasks);
-    MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
-		   &first_master_dof[0], 1, MPI_INT, 
+    NG_MPI_Allgather (&num_master_dofs, 1, NG_MPI_INT, 
+		   &first_master_dof[0], 1, NG_MPI_INT, 
 		   pardofs -> GetCommunicator());
     
     int num_glob_dofs = 0;
@@ -760,7 +760,7 @@ namespace ngla
     mumps_id.par = (ntasks == 1) ? 1 : 0;
     mumps_id.sym = symmetric ? 2 : 0;    // 1 .. spd, 2 .. general symmetric
     //mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (comm);
+    mumps_id.comm_fortran = NG_MPI_Comm_c2f (comm);
 
 
     MumpsFunction (mumps_id);
@@ -809,7 +809,7 @@ namespace ngla
 
 
     // mumps_id.comm_fortran=USE_COMM_WORLD;
-    mumps_id.comm_fortran = MPI_Comm_c2f (comm);
+    mumps_id.comm_fortran = NG_MPI_Comm_c2f (comm);
     mumps_id.job = JOB_ANALYSIS;
 
     cout << IM(1) << "analysis ... " << flush;
@@ -881,15 +881,15 @@ namespace ngla
 	for (int i = 0; i < select.Size(); i++)
 	  select_loc2glob[i] = loc2glob[select[i]];
 	
-	comm.Send (select_loc2glob, 0, MPI_TAG_SOLVE);
-	comm.Send (hx, 0, MPI_TAG_SOLVE);
+	comm.Send (select_loc2glob, 0, NG_MPI_TAG_SOLVE);
+	comm.Send (hx, 0, NG_MPI_TAG_SOLVE);
 
 	MUMPS_STRUC_C & ncid = const_cast<MUMPS_STRUC_C&> (mumps_id);
 	ncid.job = JOB_SOLVE;
 	mumps_trait<TSCAL>::MumpsFunction (&ncid);
 
-	comm.Send (select_loc2glob, 0, MPI_TAG_SOLVE);
-	comm.Recv (hx, 0, MPI_TAG_SOLVE);
+	comm.Send (select_loc2glob, 0, NG_MPI_TAG_SOLVE);
+	comm.Recv (hx, 0, NG_MPI_TAG_SOLVE);
 
 	y = 0;
 	for (int i = 0; i < select.Size(); i++)
@@ -904,8 +904,8 @@ namespace ngla
 	  {
 	    Array<int> loc2glob;
 	    Array<TV> hx;
-	    comm.Recv (loc2glob, src, MPI_TAG_SOLVE);
-	    comm.Recv (hx, src, MPI_TAG_SOLVE);
+	    comm.Recv (loc2glob, src, NG_MPI_TAG_SOLVE);
+	    comm.Recv (hx, src, NG_MPI_TAG_SOLVE);
 	    for (int j = 0; j < loc2glob.Size(); j++)
 	      rhs(loc2glob[j]) += hx[j];
 	  } 
@@ -921,12 +921,12 @@ namespace ngla
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    Array<int> loc2glob;
-	    comm.Recv (loc2glob, src, MPI_TAG_SOLVE);
+	    comm.Recv (loc2glob, src, NG_MPI_TAG_SOLVE);
 	    Array<TV> hx(loc2glob.Size());
 
 	    for (int j = 0; j < loc2glob.Size(); j++)
 	      hx[j] = rhs(loc2glob[j]);
-	    comm.Send (hx, src, MPI_TAG_SOLVE);
+	    comm.Send (hx, src, NG_MPI_TAG_SOLVE);
 	  }
       }
 

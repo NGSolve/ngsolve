@@ -177,7 +177,7 @@ namespace ngcomp
     HYPRE_Int err;	
 
     this->parallel = this->hcurlfes->GetParallelDofs()!=nullptr;
-    NgMPI_Comm comm = this->parallel ? this->hcurlfes->GetParallelDofs()->GetCommunicator() : NgMPI_Comm(MPI_COMM_WORLD);
+    NgMPI_Comm comm = this->parallel ? this->hcurlfes->GetParallelDofs()->GetCommunicator() : NgMPI_Comm(NG_MPI_COMM_WORLD);
     this->rank = comm.Rank();
     this->np = comm.Size();
     this->parallel = (np>1);
@@ -195,8 +195,8 @@ namespace ngcomp
 	  if (pardofs -> IsMasterDof(i))
 	    global_nums[i] = num_master_dofs++;
 	Array<int> first_master_dof(this->np);
-	MPI_Allgather (&num_master_dofs, 1, MPI_INT, 
-		       first_master_dof.Data(), 1, MPI_INT,
+	NG_MPI_Allgather (&num_master_dofs, 1, NG_MPI_INT, 
+		       first_master_dof.Data(), 1, NG_MPI_INT,
 		       pardofs -> GetCommunicator());    
 	int num_glob_dofs = 0;
 	for (int i = 0; i < this->np; i++)

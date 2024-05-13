@@ -103,11 +103,4 @@ inline void unreachable() {}
   #define NGS_DLL_HEADER NGCORE_API_IMPORT
 #endif
 
-
-
-#ifdef PARALLEL
-#include <unistd.h>  // for usleep (only for parallel)
-#endif
-
-
 #endif
