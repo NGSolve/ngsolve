@@ -351,8 +351,8 @@ namespace ngcomp
                   usegrad_face[ma->GetSElFace(ei.Nr())] = 1;
               }
         
-        ma->AllReduceNodalData (NT_EDGE, usegrad_edge, MPI_LOR);
-        ma->AllReduceNodalData (NT_FACE, usegrad_face, MPI_LOR);
+        ma->AllReduceNodalData (NT_EDGE, usegrad_edge, NG_MPI_LOR);
+        ma->AllReduceNodalData (NT_FACE, usegrad_face, NG_MPI_LOR);
         
 	
         for (int i = 0; i < ne; i++)
@@ -452,8 +452,8 @@ namespace ngcomp
               fine_face[ma->GetSElFace(i)] = true; 
           }
         
-        ma->AllReduceNodalData (NT_EDGE, fine_edge, MPI_LOR);
-        ma->AllReduceNodalData (NT_FACE, fine_face, MPI_LOR);
+        ma->AllReduceNodalData (NT_EDGE, fine_edge, NG_MPI_LOR);
+        ma->AllReduceNodalData (NT_FACE, fine_face, NG_MPI_LOR);
         
       	
         if(!var_order) { maxorder = order; minorder = order;} 

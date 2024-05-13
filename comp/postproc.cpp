@@ -189,7 +189,7 @@ namespace ngcomp
     progress.Done();
     
 #ifdef PARALLEL
-    AllReduceDofData (cnti, MPI_SUM, fesflux->GetParallelDofs());
+    AllReduceDofData (cnti, NG_MPI_SUM, fesflux->GetParallelDofs());
     flux.GetVector().SetParallelStatus(DISTRIBUTED);
     flux.GetVector().Cumulate(); 	 
 #endif
@@ -876,7 +876,7 @@ namespace ngcomp
 
 
 #ifdef PARALLEL
-    AllReduceDofData (cnti, MPI_SUM, fes->GetParallelDofs());
+    AllReduceDofData (cnti, NG_MPI_SUM, fes->GetParallelDofs());
     u.GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
     u.GetVector(mdcomp).Cumulate(); 	 
 #endif

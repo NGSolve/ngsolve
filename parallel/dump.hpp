@@ -248,31 +248,31 @@ namespace ngstd
 
   template<typename DT, NODE_TYPE NT>
   void packaged_buffered_send(int rank, int np, DT* a, typename key_trait<NT>::TKEY* b, int n, int pkg_size, int p,
-			      Array<MPI_Request> & requests)
+			      Array<NG_MPI_Request> & requests)
   {
-    // MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
-    MPI_Datatype mpi_type_array = GetMPIType<DT>();
+    // NG_MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    NG_MPI_Datatype mpi_type_array = GetMPIType<DT>();
 
     //get type for keys
-    // MPI_Datatype mpi_type_key;
+    // NG_MPI_Datatype mpi_type_key;
     // SetMPIType<NT>(&mpi_type_key);
     typedef typename key_trait<NT>::TKEY tkey;
-    MPI_Datatype mpi_type_key = GetMPIType<tkey>();    
+    NG_MPI_Datatype mpi_type_key = GetMPIType<tkey>();    
 
     bool has_extra = n%pkg_size;
     int n_packages = n/pkg_size + (has_extra ? 1 : 0);
 
     //send size
-    MPI_Send ( &n, 1, MPI_INT, p, 700001, MPI_COMM_WORLD);
+    NG_MPI_Send ( &n, 1, NG_MPI_INT, p, 700001, NG_MPI_COMM_WORLD);
     
     for(int k=0;k<n_packages - has_extra?1:0;k++)
       {
-	// MPI_Send ( a+k*pkg_size, pkg_size, mpi_type_array, p, 700001, MPI_COMM_WORLD); 
-	// MPI_Send ( b+k*pkg_size, pkg_size, mpi_type_key,   p, 700001, MPI_COMM_WORLD);
-	MPI_Request requ;
-	MPI_Isend ( a+k*pkg_size, pkg_size, mpi_type_array, p, 700001, MPI_COMM_WORLD, &requ); 
+	// NG_MPI_Send ( a+k*pkg_size, pkg_size, mpi_type_array, p, 700001, NG_MPI_COMM_WORLD); 
+	// NG_MPI_Send ( b+k*pkg_size, pkg_size, mpi_type_key,   p, 700001, NG_MPI_COMM_WORLD);
+	NG_MPI_Request requ;
+	NG_MPI_Isend ( a+k*pkg_size, pkg_size, mpi_type_array, p, 700001, NG_MPI_COMM_WORLD, &requ); 
 	requests += requ;
-	MPI_Isend ( b+k*pkg_size, pkg_size, mpi_type_key,   p, 700001, MPI_COMM_WORLD, &requ); 
+	NG_MPI_Isend ( b+k*pkg_size, pkg_size, mpi_type_key,   p, 700001, NG_MPI_COMM_WORLD, &requ); 
 	requests += requ;
       }
     //copy last part into new memory so full package can be sent - for simplicity!!
@@ -286,13 +286,13 @@ namespace ngstd
 	    a_ext[n%pkg_size-k-1] = a[n-1-k];
 	    b_ext[n%pkg_size-k-1] = b[n-1-k];
 	  }
-	// MPI_Send ( a_ext, pkg_size, mpi_type_array, p, 700001, MPI_COMM_WORLD); 
-	// MPI_Send ( b_ext, pkg_size, mpi_type_key,   p, 700001, MPI_COMM_WORLD); 
+	// NG_MPI_Send ( a_ext, pkg_size, mpi_type_array, p, 700001, NG_MPI_COMM_WORLD); 
+	// NG_MPI_Send ( b_ext, pkg_size, mpi_type_key,   p, 700001, NG_MPI_COMM_WORLD); 
 
-	MPI_Request requ;
-	MPI_Isend ( a_ext, pkg_size, mpi_type_array, p, 700001, MPI_COMM_WORLD, &requ); 
+	NG_MPI_Request requ;
+	NG_MPI_Isend ( a_ext, pkg_size, mpi_type_array, p, 700001, NG_MPI_COMM_WORLD, &requ); 
 	requests += requ;
-	MPI_Isend ( b_ext, pkg_size, mpi_type_key,   p, 700001, MPI_COMM_WORLD, &requ); 
+	NG_MPI_Isend ( b_ext, pkg_size, mpi_type_key,   p, 700001, NG_MPI_COMM_WORLD, &requ); 
 	requests += requ;
       }
   }
@@ -300,7 +300,7 @@ namespace ngstd
   template<typename DT, NODE_TYPE NT>
   void merge_own_in_out (int rank, int size, int pkg_size, DT* array, typename key_trait<NT>::TKEY *array_dnrs, int n, int p_in, int p_out)
   {
-    NgMPI_Comm comm(MPI_COMM_WORLD);
+    NgMPI_Comm comm(NG_MPI_COMM_WORLD);
 
     typedef typename key_trait<NT>::TKEY TKEY;
 
@@ -308,7 +308,7 @@ namespace ngstd
 
     //in-buffer
     int n_in = 0;
-    MPI_Recv( &n_in, 1, MPI_INT, p_in, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    NG_MPI_Recv( &n_in, 1, NG_MPI_INT, p_in, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 
     int in_buf_size = 2 * pkg_size;  //do not change this for now!!
 
@@ -321,7 +321,7 @@ namespace ngstd
     //out-buffer 
     int n_out = base_array_size + n_in;
   
-    MPI_Send(&n_out, 1, MPI_INT, p_out, 700001, MPI_COMM_WORLD);
+    NG_MPI_Send(&n_out, 1, NG_MPI_INT, p_out, 700001, NG_MPI_COMM_WORLD);
     int out_buf_size = pkg_size;
 
     Array<DT> out_buf(out_buf_size);
@@ -446,13 +446,13 @@ namespace ngstd
   template<typename DT, NODE_TYPE NT>
   void merge_in_in_out (int pkg_size, int rank, int np, int p1, int p2, int p_out)
   {
-    // MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
-    MPI_Datatype mpi_type_array = GetMPIType<DT>();
+    // NG_MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
+    NG_MPI_Datatype mpi_type_array = GetMPIType<DT>();
     //get type for keys
-    // MPI_Datatype mpi_type_key;
+    // NG_MPI_Datatype mpi_type_key;
     // SetMPIType<NT>(&mpi_type_key);
     typedef typename key_trait<NT>::TKEY tkey;
-    MPI_Datatype mpi_type_key = GetMPIType<tkey>();    
+    NG_MPI_Datatype mpi_type_key = GetMPIType<tkey>();    
 
     int in_buf_size = pkg_size * 2;
     DT* a1 = (DT*) malloc (sizeof(DT) * in_buf_size);
@@ -478,36 +478,36 @@ namespace ngstd
     //Communicate sizes
     int n_in1, n_in2;
     int n_out;
-    MPI_Recv( &n_in1, 1, MPI_INT, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-    MPI_Recv( &n_in2, 1, MPI_INT, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+    NG_MPI_Recv( &n_in1, 1, NG_MPI_INT, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+    NG_MPI_Recv( &n_in2, 1, NG_MPI_INT, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
   
     n_out = n_in1 + n_in2;
-    MPI_Send( &n_out, 1, MPI_INT, p_out, 700001, MPI_COMM_WORLD);
+    NG_MPI_Send( &n_out, 1, NG_MPI_INT, p_out, 700001, NG_MPI_COMM_WORLD);
   
 
     //initial filling of buffer
     if(n_in1)
       {
 	//1st halve, p1
-	MPI_Recv(a1, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	MPI_Recv(b1, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	NG_MPI_Recv(a1, pkg_size, mpi_type_array, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	NG_MPI_Recv(b1, pkg_size, mpi_type_key, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	if(n_in1>pkg_size)
 	  {
 	    //2nd halve, p1
-	    MPI_Recv(a1+pkg_size, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b1+pkg_size, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a1+pkg_size, pkg_size, mpi_type_array, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b1+pkg_size, pkg_size, mpi_type_key, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	  }
       }
     if(n_in2)
       {
 	//1st halve, p2
-	MPI_Recv(a2, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	MPI_Recv(b2, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	NG_MPI_Recv(a2, pkg_size, mpi_type_array, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	NG_MPI_Recv(b2, pkg_size, mpi_type_key, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	if(n_in2>pkg_size)
 	  {
 	    //2nd halve, p2
-	    MPI_Recv(a2+pkg_size, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b2+pkg_size, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a2+pkg_size, pkg_size, mpi_type_array, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b2+pkg_size, pkg_size, mpi_type_key, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	  }
       }
 
@@ -531,32 +531,32 @@ namespace ngstd
 	if(i1==pkg_size && index1+pkg_size<n_in1 && !have1[0]) //replace 1st halve
 	  {
 	    //1st halve, p1
-	    MPI_Recv(a1, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b1, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a1, pkg_size, mpi_type_array, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b1, pkg_size, mpi_type_key, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	    have1[0] = true;
 	    // got_from_p1++;
 	  }
 	else if (i1 == 0 && index1 !=0 && index1+pkg_size<n_in1 && !have1[1]) //replace 2nd halve
 	  {
 	    //2nd halve, p1
-	    MPI_Recv(a1+pkg_size, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b1+pkg_size, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a1+pkg_size, pkg_size, mpi_type_array, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b1+pkg_size, pkg_size, mpi_type_key, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	    have1[1] = true;
 	    // got_from_p1++;
 	  }
 	else if(i2==pkg_size && index2+pkg_size<n_in2 && !have2[0]) //replace 1st halve
 	  {
 	    //1st halve, p2
-	    MPI_Recv(a2, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b2, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a2, pkg_size, mpi_type_array, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b2, pkg_size, mpi_type_key, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	    have2[0] = true;
 	    // got_from_p2++;
 	  }
 	else if (i2 == 0 && index2 !=0 && index2+pkg_size<n_in2 && !have2[1]) //replace 2nd halve
 	  {
 	    have2[1] = true;
-	    MPI_Recv(a2+pkg_size, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b2+pkg_size, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a2+pkg_size, pkg_size, mpi_type_array, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b2+pkg_size, pkg_size, mpi_type_key, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	    // got_from_p2++;
 	  }
       
@@ -584,8 +584,8 @@ namespace ngstd
 	if(i3==pkg_size)
 	  {
 	    i3 = 0;
-	    MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, MPI_COMM_WORLD);
-	    MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, MPI_COMM_WORLD);
+	    NG_MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, NG_MPI_COMM_WORLD);
+	    NG_MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, NG_MPI_COMM_WORLD);
 	    // packages_sent++;
 	  }
       
@@ -596,16 +596,16 @@ namespace ngstd
 	if(i1==pkg_size && index1+pkg_size<n_in1 && have1[0] == false) //replace 1st halve
 	  {
 	    //1st halve, p1
-	    MPI_Recv(a1, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b1, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a1, pkg_size, mpi_type_array, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b1, pkg_size, mpi_type_key, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	    have1[0] = true;
 	    // got_from_p1++;
 	  }
 	else if (i1 == 0 && index1 !=0 && index1+pkg_size<n_in1 && have1[1] == false) //replace 2nd halve
 	  {
 	    //2nd halve, p1
-	    MPI_Recv(a1+pkg_size, pkg_size, mpi_type_array, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b1+pkg_size, pkg_size, mpi_type_key, p1, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a1+pkg_size, pkg_size, mpi_type_array, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b1+pkg_size, pkg_size, mpi_type_key, p1, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	    have1[1] = true;
 	    // got_from_p1++;
 	  }
@@ -619,8 +619,8 @@ namespace ngstd
 	if(i3==pkg_size)
 	  {
 	    i3 = 0;
-	    MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, MPI_COMM_WORLD);
-	    MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, MPI_COMM_WORLD);
+	    NG_MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, NG_MPI_COMM_WORLD);
+	    NG_MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, NG_MPI_COMM_WORLD);
 	    // packages_sent++;
 	  }
       }
@@ -630,15 +630,15 @@ namespace ngstd
 	if(i2==pkg_size && index2+pkg_size<n_in2 && have2[0] == false) //replace 1st halve
 	  {
 	    //1st halve, p2
-	    MPI_Recv(a2, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b2, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a2, pkg_size, mpi_type_array, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b2, pkg_size, mpi_type_key, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	    have2[0] = true;
 	    // got_from_p2++;
 	  }
 	else if (i2 == 0 && index2 !=0 && index2+pkg_size<n_in2 && have2[1] == false) //replace 2nd halve
 	  {
-	    MPI_Recv(a2+pkg_size, pkg_size, mpi_type_array, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    MPI_Recv(b2+pkg_size, pkg_size, mpi_type_key, p2, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(a2+pkg_size, pkg_size, mpi_type_array, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    NG_MPI_Recv(b2+pkg_size, pkg_size, mpi_type_key, p2, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	    have2[1] = true;
 	    // got_from_p2++;
 	  }
@@ -652,16 +652,16 @@ namespace ngstd
 	if(i3==pkg_size)
 	  {
 	    i3 = 0;
-	    MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, MPI_COMM_WORLD);
-	    MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, MPI_COMM_WORLD);
+	    NG_MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, NG_MPI_COMM_WORLD);
+	    NG_MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, NG_MPI_COMM_WORLD);
 	    // packages_sent++;
 	  }
       }
     if(i3!=0)
       {
 	i3 = 0;
-	MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, MPI_COMM_WORLD);
-	MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, MPI_COMM_WORLD);
+	NG_MPI_Send(a3, pkg_size, mpi_type_array, p_out, 700001, NG_MPI_COMM_WORLD);
+	NG_MPI_Send(b3, pkg_size, mpi_type_key,    p_out, 700001, NG_MPI_COMM_WORLD);
 	// packages_sent++;
       }  
 
@@ -783,29 +783,29 @@ namespace ngstd
 				     int base_array_size, int pkg_size,
 				     TSIZEFUNC sf, TFUNC f)
   {
-    // MPI_Datatype mpi_type_array = MyGetMPIType<DT>();
+    // NG_MPI_Datatype mpi_type_array = MyGetMPIType<DT>();
     typedef typename key_trait<NT>::TKEY tkey;
-    // MPI_Datatype mpi_type_key = MyGetMPIType<tkey>();     
+    // NG_MPI_Datatype mpi_type_key = MyGetMPIType<tkey>();     
 
-    NgMPI_Comm comm(MPI_COMM_WORLD);
+    NgMPI_Comm comm(NG_MPI_COMM_WORLD);
     int rank = comm.Rank();
     int np = comm.Size();
     /*
     int rank, np;
-    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-    MPI_Comm_size(MPI_COMM_WORLD, &np);
+    NG_MPI_Comm_rank(NG_MPI_COMM_WORLD, &rank);
+    NG_MPI_Comm_size(NG_MPI_COMM_WORLD, &np);
     */
     bool even = 1-rank%2;
     //first step
  
     if(rank == 0)
       {
-	Array<MPI_Request> requests;
+	Array<NG_MPI_Request> requests;
 	//packaged_send
 	packaged_buffered_send<DT,NT>(rank, np, array, array_keys, base_array_size, pkg_size, 1, requests);
 
 	int n;
-	MPI_Recv(&n, 1, MPI_INT, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	NG_MPI_Recv(&n, 1, NG_MPI_INT, NG_MPI_ANY_SOURCE, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 	int n_pkg = n/pkg_size + ( (n%pkg_size)?1:0);
 
 	sf(n);
@@ -819,20 +819,20 @@ namespace ngstd
 
 	for(int k=0;k<n_pkg-1;k++)
 	  {
-	    // MPI_Recv(&end[0]     , pkg_size, mpi_type_array, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	    // MPI_Recv(&end_keys[0], pkg_size, mpi_type_key   , MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+	    // NG_MPI_Recv(&end[0]     , pkg_size, mpi_type_array, NG_MPI_ANY_SOURCE, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	    // NG_MPI_Recv(&end_keys[0], pkg_size, mpi_type_key   , NG_MPI_ANY_SOURCE, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
 
-	    comm.Recv(end, MPI_ANY_SOURCE, 700001);
-	    comm.Recv(end_keys, MPI_ANY_SOURCE, 700001);
+	    comm.Recv(end, NG_MPI_ANY_SOURCE, 700001);
+	    comm.Recv(end_keys, NG_MPI_ANY_SOURCE, 700001);
 
 	    //cout << "0 received pkg " << k << "/" << n_pkg << endl;
 	    for(int j = 0; j < pkg_size; j++)
 	      f(end_keys[j], end[j]);
 	  }
-	// MPI_Recv(&end[0]     , pkg_size, mpi_type_array, MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	// MPI_Recv(&end_keys[0], pkg_size, mpi_type_key   , MPI_ANY_SOURCE, 700001, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-	comm.Recv(end, MPI_ANY_SOURCE, 700001);
-	comm.Recv(end_keys, MPI_ANY_SOURCE, 700001);
+	// NG_MPI_Recv(&end[0]     , pkg_size, mpi_type_array, NG_MPI_ANY_SOURCE, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	// NG_MPI_Recv(&end_keys[0], pkg_size, mpi_type_key   , NG_MPI_ANY_SOURCE, 700001, NG_MPI_COMM_WORLD, NG_MPI_STATUS_IGNORE);
+	comm.Recv(end, NG_MPI_ANY_SOURCE, 700001);
+	comm.Recv(end_keys, NG_MPI_ANY_SOURCE, 700001);
 
 	for(int j=0;(n_pkg-1)*pkg_size+j < n;j++)
 	  f(end_keys[j], end[j]);      
@@ -853,7 +853,7 @@ namespace ngstd
 	else //regular
 	  {
 	    //cout << "rank " << rank << " sends to " << rank+1 << " then gets from " << p_in1 << "/" << p_in2 << " and sends to " << p_out << endl;
-	    Array<MPI_Request> requests;
+	    Array<NG_MPI_Request> requests;
 	    packaged_buffered_send<DT,NT>(rank, np, array, array_keys, base_array_size, pkg_size, rank+1, requests);
 	    merge_in_in_out<DT,NT>(pkg_size, rank, np, p_in1, p_in2, p_out);
 	    MyMPI_WaitAll (requests);

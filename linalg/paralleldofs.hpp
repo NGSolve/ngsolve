@@ -39,7 +39,7 @@ namespace ngla
     Array<int> all_dist_procs;
     
     /// mpi-datatype to send exchange dofs
-    Array<MPI_Datatype> mpi_t;
+    Array<NG_MPI_Datatype> mpi_t;
     
     /// am I the master process ?
     BitArray ismasterdof;
@@ -54,7 +54,7 @@ namespace ngla
        Table adist_procs must provide the distant processes for each dof.
        table 
      */
-    ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
+    ParallelDofs (NG_MPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false);
 
     shared_ptr<ParallelDofs> SubSet (shared_ptr<BitArray> take_dofs) const;
@@ -87,7 +87,7 @@ namespace ngla
     bool IsExchangeProc (int proc) const
     { return exchangedofs[proc].Size() != 0; }
 
-    MPI_Datatype GetMPI_Type (int dest) const
+    NG_MPI_Datatype GetMPI_Type (int dest) const
     { return mpi_t[dest]; }
 
     const NgMPI_Comm & GetCommunicator () const { return comm; }
@@ -105,13 +105,13 @@ namespace ngla
 
 
     template <typename T>
-    void ReduceDofData (FlatArray<T> data, MPI_Op op) const;
+    void ReduceDofData (FlatArray<T> data, NG_MPI_Op op) const;
 
     template <typename T>
     void ScatterDofData (FlatArray<T> data) const;
     
     template <typename T>
-    void AllReduceDofData (FlatArray<T> data, MPI_Op op) const
+    void AllReduceDofData (FlatArray<T> data, NG_MPI_Op op) const
     {
       // if (this == NULL)  // illformed C++, shall get rid of this
         // throw Exception("AllReduceDofData for null-object");
@@ -131,7 +131,7 @@ namespace ngla
     bool complex;
     BitArray masterdofs;
   public:
-    ParallelDofs (MPI_Comm acomm, Table<int> && adist_procs, 
+    ParallelDofs (NG_MPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false)
       : es(dim), complex(iscomplex)
     { ; }
@@ -140,7 +140,7 @@ namespace ngla
     int GetNDofGlobal () const { return ndof; }
     
     int GetNTasks() const { return 1; }
-    NgMPI_Comm GetCommunicator () const { return NgMPI_Comm(MPI_COMM_WORLD); }
+    NgMPI_Comm GetCommunicator () const { return NgMPI_Comm(NG_MPI_COMM_WORLD); }
 
     shared_ptr<ParallelDofs> Range (IntRange range) const
     { return nullptr; }
@@ -161,13 +161,13 @@ namespace ngla
     void EnumerateGlobally (shared_ptr<BitArray> freedofs, Array<int> & globnum, int & num_glob_dofs) const;
     
     template <typename T>
-    void ReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }
+    void ReduceDofData (FlatArray<T> data, NG_MPI_Op op) const { ; }
 
     template <typename T>
     void ScatterDofData (FlatArray<T> data) const { ; } 
     
     template <typename T>
-    void AllReduceDofData (FlatArray<T> data, MPI_Op op) const { ; }
+    void AllReduceDofData (FlatArray<T> data, NG_MPI_Op op) const { ; }
 
     int GetEntrySize () const { return es; }
     bool IsComplex () const { return complex; }
@@ -178,7 +178,7 @@ namespace ngla
 
 
   template <typename T>
-  void ReduceDofData (FlatArray<T> data, MPI_Op op, const shared_ptr<ParallelDofs> & pardofs)
+  void ReduceDofData (FlatArray<T> data, NG_MPI_Op op, const shared_ptr<ParallelDofs> & pardofs)
   {
     if (pardofs)
       pardofs->ReduceDofData(data, op);
@@ -192,7 +192,7 @@ namespace ngla
   }
 
   template <typename T>
-  void AllReduceDofData (FlatArray<T> data, MPI_Op op, 
+  void AllReduceDofData (FlatArray<T> data, NG_MPI_Op op, 
 			 const shared_ptr<ParallelDofs> & pardofs)
   {
     if (pardofs)
@@ -205,7 +205,7 @@ namespace ngla
 #ifdef PARALLEL
 
   template <typename T>
-  void ParallelDofs::ReduceDofData (FlatArray<T> data, MPI_Op op) const
+  void ParallelDofs::ReduceDofData (FlatArray<T> data, NG_MPI_Op op) const
   {
     // if (this == NULL)  // illformed C++, shall get rid of this
     // throw Exception("ReduceDofData for null-object");
@@ -248,13 +248,13 @@ namespace ngla
 	send_data[master][nsend[master]++] = data[i];
     }
 
-    Array<MPI_Request> requests; 
+    Array<NG_MPI_Request> requests; 
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (comm.ISend(send_data[i], i, MPI_TAG_SOLVE));
+	  requests.Append (comm.ISend(send_data[i], i, NG_MPI_TAG_SOLVE));
 	if (nrecv[i])
-	  requests.Append (comm.IRecv(recv_data[i], i, MPI_TAG_SOLVE));
+	  requests.Append (comm.IRecv(recv_data[i], i, NG_MPI_TAG_SOLVE));
       }
 
     MyMPI_WaitAll (requests);
@@ -262,13 +262,13 @@ namespace ngla
     Array<int> cnt(ntasks);
     cnt = 0;
     
-    MPI_Datatype type = GetMPIType<T>();
+    NG_MPI_Datatype type = GetMPIType<T>();
     for (int i = 0; i < GetNDofLocal(); i++)
       if (IsMasterDof(i))
 	{
 	  FlatArray<int> distprocs = GetDistantProcs (i);
 	  for (int j = 0; j < distprocs.Size(); j++)
-	    MPI_Reduce_local (&recv_data[distprocs[j]][cnt[distprocs[j]]++], 
+	    NG_MPI_Reduce_local (&recv_data[distprocs[j]][cnt[distprocs[j]]++], 
 			      &data[i], 1, type, op);
 	}
   }    
@@ -336,13 +336,13 @@ namespace ngla
           for (auto p : dps)
             send_data[p][nsend[p]++] = data[i];
     
-    Array<MPI_Request> requests;
+    Array<NG_MPI_Request> requests;
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (comm.ISend (send_data[i], i, MPI_TAG_SOLVE));
+	  requests.Append (comm.ISend (send_data[i], i, NG_MPI_TAG_SOLVE));
 	if (nrecv[i])
-	  requests.Append (comm.IRecv (recv_data[i], i, MPI_TAG_SOLVE));
+	  requests.Append (comm.IRecv (recv_data[i], i, NG_MPI_TAG_SOLVE));
       }
 
     MyMPI_WaitAll (requests);

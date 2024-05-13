@@ -1091,7 +1091,7 @@ namespace ngcomp
         err = system( ("ngsld -shared "+obj_file+" -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore -o "+lib_file).c_str() );
         if (err) throw Exception ("problem calling linker");
         library = make_unique<SharedLibrary>(lib_file, dir);
-        compiled_function = library->GetFunction<lib_function> ("ApplyIPFunction");
+        compiled_function = library->GetSymbol<lib_function> ("ApplyIPFunction");
       }
     catch (const Exception & e)
       { ; } 
@@ -5380,8 +5380,8 @@ namespace ngcomp
 	      os_per = Array<int>(mnp);
 	      os_per = 0;
 	    }
-	    Array<MPI_Request> reqs;
-	    Array<MPI_Request> reqr;
+	    Array<NG_MPI_Request> reqs;
+	    Array<NG_MPI_Request> reqr;
 	    LocalHeap &lh(clh);
 	    Array<int> elnums(2, lh), elnums2(2, lh), fnums(6, lh), vnums(8, lh);
 
@@ -5494,8 +5494,8 @@ namespace ngcomp
 	      else if(loop==1) {
 		for(auto dp:Range(mnp))
 		  if(send_table[dp].Size()) {
-		    reqs.Append(comm.ISend(send_table[dp], dp, MPI_TAG_SOLVE));
-		    reqr.Append(comm.IRecv(recv_table[dp], dp, MPI_TAG_SOLVE));
+		    reqs.Append(comm.ISend(send_table[dp], dp, NG_MPI_TAG_SOLVE));
+		    reqr.Append(comm.IRecv(recv_table[dp], dp, NG_MPI_TAG_SOLVE));
 		  }
 		MyMPI_WaitAll(reqr);
 	      }

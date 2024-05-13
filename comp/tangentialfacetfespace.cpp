@@ -241,7 +241,7 @@ namespace ngcomp
 	  if (!fine_facet[i]) order_facet[i] = 0;
 
 	ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE, 
-				fine_facet, MPI_LOR);
+				fine_facet, NG_MPI_LOR);
       }
 
     // dof tables

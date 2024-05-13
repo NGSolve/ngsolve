@@ -428,7 +428,7 @@ int NGS_LoadPy (ClientData clientData,
 #ifdef PARALLEL_GL
 	  stringstream buf;
 	  buf << "ngs_py " << ifstream(filename).rdbuf();
-	  MyMPI_SendCmd (buf.str().c_str(), MPI_COMM_WORLD);
+	  MyMPI_SendCmd (buf.str().c_str(), NG_MPI_COMM_WORLD);
 #endif // PARALLEL
 	  {
         std::thread([](string init_file_)
@@ -669,7 +669,7 @@ extern "C" int NGS_DLL_HEADER Ngsolve_Init (Tcl_Interp * interp)
 extern "C" int NGS_DLL_HEADER Ngsolve_Unload (Tcl_Interp * interp)
 {
 #ifdef PARALLELGL
-  MyMPI_SendCmd ("ngs_exit", MPI_COMM_WORLD);
+  MyMPI_SendCmd ("ngs_exit", NG_MPI_COMM_WORLD);
 #endif
   return NG_TCL_OK;
 }
@@ -715,7 +715,7 @@ if(is_pardiso_available)
 #endif
 
 #ifdef PARALLELGL
-  MyMPI_SendCmd ("ngs_loadngs", MPI_COMM_WORLD);
+  MyMPI_SendCmd ("ngs_loadngs", NG_MPI_COMM_WORLD);
   // MPI_Comm_dup ( MPI_COMM_WORLD, &ngs_comm);      
   NGSOStream::SetGlobalActive (true);
 #endif
@@ -897,7 +897,7 @@ void NGS_ParallelRun (const string & message)
   if (getenv ("NGSPROFILE"))
     {
       stringstream filename;
-      filename << "ngs.prof." << NgMPI_Comm(MPI_COMM_WORLD).Rank();
+      filename << "ngs.prof." << NgMPI_Comm(NG_MPI_COMM_WORLD).Rank();
       NgProfiler::SetFileName (filename.str());
     }
 

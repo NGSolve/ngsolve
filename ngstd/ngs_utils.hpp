@@ -27,37 +27,6 @@ namespace ngstd
   // template <int N>
   // using IC = integral_constant<int,N>;
 
-  // Class to handle/load shared libraries
-  class SharedLibrary
-  {
-    filesystem::path lib_name;
-    optional<filesystem::path> directory_to_delete = nullopt;
-
-    // #ifdef WIN32
-    // HINSTANCE lib = nullptr;
-    // #else // WIN32
-    void *lib = nullptr;
-    // #endif // WIN32
-
-  public:
-    SharedLibrary() = default;
-    SharedLibrary(const filesystem::path & lib_name_, optional<filesystem::path> directory_to_delete_ = nullopt );
-
-    SharedLibrary(const SharedLibrary &) = delete;
-    SharedLibrary & operator =(const SharedLibrary &) = delete;
-
-    ~SharedLibrary();
-
-    template <typename TFunc>
-    TFunc GetFunction( string func_name )
-    {
-      return reinterpret_cast<TFunc>(GetRawFunction(func_name));
-    }
-
-    void Load( const filesystem::path & lib_name_ );
-    void Unload();
-    void* GetRawFunction( string func_name );
-  };
 }
 namespace std
 {

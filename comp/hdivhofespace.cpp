@@ -459,7 +459,7 @@ namespace ngcomp
 	  }
 
 	ma->AllReduceNodalData ((ma->GetDimension()==2) ? NT_EDGE : NT_FACE,
-				fine_facet, MPI_LOR);
+				fine_facet, NG_MPI_LOR);
 
 	if(uniform_order_inner > -1) order_inner = uniform_order_inner;
 	if(uniform_order_facet > -1) order_facet = uniform_order_facet;

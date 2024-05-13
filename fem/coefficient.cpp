@@ -6688,22 +6688,22 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
               self->library = CompileCode( codes, link_flags, keep_files );
               if(self->cf->IsComplex())
               {
-                  self->compiled_function_simd_complex = self->library->GetFunction<lib_function_simd_complex>("CompiledEvaluateSIMD");
-                  self->compiled_function_complex = self->library->GetFunction<lib_function_complex>("CompiledEvaluate");
+                  self->compiled_function_simd_complex = self->library->GetSymbol<lib_function_simd_complex>("CompiledEvaluateSIMD");
+                  self->compiled_function_complex = self->library->GetSymbol<lib_function_complex>("CompiledEvaluate");
               }
               else
               {
-                  self->compiled_function_simd = self->library->GetFunction<lib_function_simd>("CompiledEvaluateSIMD");
-                  self->compiled_function = self->library->GetFunction<lib_function>("CompiledEvaluate");
+                  self->compiled_function_simd = self->library->GetSymbol<lib_function_simd>("CompiledEvaluateSIMD");
+                  self->compiled_function = self->library->GetSymbol<lib_function>("CompiledEvaluate");
                   if(maxderiv>0)
                   {
-                      self->compiled_function_simd_deriv = self->library->GetFunction<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
-                      self->compiled_function_deriv = self->library->GetFunction<lib_function_deriv>("CompiledEvaluateDeriv");
+                      self->compiled_function_simd_deriv = self->library->GetSymbol<lib_function_simd_deriv>("CompiledEvaluateDerivSIMD");
+                      self->compiled_function_deriv = self->library->GetSymbol<lib_function_deriv>("CompiledEvaluateDeriv");
                   }
                   if(maxderiv>1)
                   {
-                      self->compiled_function_simd_dderiv = self->library->GetFunction<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
-                      self->compiled_function_dderiv = self->library->GetFunction<lib_function_dderiv>("CompiledEvaluateDDeriv");
+                      self->compiled_function_simd_dderiv = self->library->GetSymbol<lib_function_simd_dderiv>("CompiledEvaluateDDerivSIMD");
+                      self->compiled_function_dderiv = self->library->GetSymbol<lib_function_dderiv>("CompiledEvaluateDDeriv");
                   }
               }
               cout << IM(7) << "Compilation done" << endl;

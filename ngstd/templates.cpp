@@ -11,10 +11,11 @@
 #include <ngstd.hpp>
 #include <ngsolve_version.hpp>
 #include <netgen_version.hpp>
+#include <core/mpi_wrapper.hpp>
 
 namespace ngstd
 {
-  MPI_Comm ngs_comm;
+  ngcore::NG_MPI_Comm ngs_comm;
 
   // int printmessage_importance = 5;
   // bool NGSOStream :: glob_active = true;

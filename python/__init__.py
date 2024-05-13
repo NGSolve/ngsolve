@@ -60,7 +60,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     CompressCompound, PlateauFESpace, BoundaryFromVolumeCF, Interpolate, Variation, \
     Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ConvertOperator, ORDER_POLICY, VTKOutput, SetHeapSize, \
-    SetTestoutFile, ngsglobals, pml, MPI_Init, ContactBoundary, PatchwiseSolve
+    SetTestoutFile, ngsglobals, pml, ContactBoundary, PatchwiseSolve
 from .solve import Draw, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTrace, \
@@ -110,10 +110,6 @@ def _add_flags_doc(module):
             pass
 
 _add_flags_doc(comp)
-
-# from ngsolve.ngstd import MPIManager
-# MPIManager.InitMPI()
-mpi_world = MPI_Init()
 
 # from . import __expr
 # BaseVector.expr = property(__expr.VecExpr)
