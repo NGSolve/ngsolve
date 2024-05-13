@@ -501,9 +501,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
 
-    ma->AllReduceNodalData (NT_VERTEX, dirichlet_vertex, MPI_LOR);
-    ma->AllReduceNodalData (NT_EDGE, dirichlet_edge, MPI_LOR);
-    ma->AllReduceNodalData (NT_FACE, dirichlet_face, MPI_LOR);
+    ma->AllReduceNodalData (NT_VERTEX, dirichlet_vertex, NG_MPI_LOR);
+    ma->AllReduceNodalData (NT_EDGE, dirichlet_edge, NG_MPI_LOR);
+    ma->AllReduceNodalData (NT_FACE, dirichlet_face, NG_MPI_LOR);
     
     if (print)
       {
@@ -2118,8 +2118,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     paralleldofs = make_shared<ParallelDofs>
       (ma->GetCommunicator(), creator.MoveTable(), dimension, iscomplex);
 
-    if (ma->GetCommunicator().AllReduce (ctofdof.Size(), MPI_SUM))
-      paralleldofs -> AllReduceDofData (ctofdof, MPI_MAX);
+    if (ma->GetCommunicator().AllReduce (ctofdof.Size(), NG_MPI_SUM))
+      paralleldofs -> AllReduceDofData (ctofdof, NG_MPI_MAX);
   }
 
 
@@ -3205,7 +3205,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	has_dirichlet_dofs = true;
 
     auto comm = ma->GetCommunicator();
-    has_dirichlet_dofs = comm.AllReduce (has_dirichlet_dofs, MPI_LOR);
+    has_dirichlet_dofs = comm.AllReduce (has_dirichlet_dofs, NG_MPI_LOR);
 
     if (has_dirichlet_dofs)
       {

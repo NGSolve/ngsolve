@@ -61,9 +61,9 @@ namespace ngstd
 #endif
 
   
-  using ngcore::NgMPI_Comm;
-  enum { MPI_TAG_CMD = 110 };
-  enum { MPI_TAG_SOLVE = 1110 };
+  // using ngcore::NgMPI_Comm;
+  enum { NG_MPI_TAG_CMD = 110 };
+  enum { NG_MPI_TAG_SOLVE = 1110 };
 }
 
 

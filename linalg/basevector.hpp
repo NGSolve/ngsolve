@@ -728,7 +728,6 @@ namespace ngla
   {
     Array<shared_ptr<BaseVector>> vecs;
     BitArray ispar;
-    // MPI_Comm comm = MPI_COMM_NULL;
     NgMPI_Comm comm;
   public:
     BlockVector (const Array<shared_ptr<BaseVector>> & avecs);

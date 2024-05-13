@@ -106,7 +106,7 @@ namespace ngla
       int err = system( ("ngs_nvcc -shared -Xcompiler -fPIC " + src_file + " -o "+lib_file).c_str() );
       if (err) throw Exception ("problem calling compiler");
       library = make_unique<SharedLibrary>(lib_file, dir);
-      compiled_function = library->GetFunction<lib_function> ("ApplyIPFunction");
+      compiled_function = library->GetSymbol<lib_function> ("ApplyIPFunction");
     }
     
     virtual void Mult (const BaseVector & x, BaseVector & y) const override

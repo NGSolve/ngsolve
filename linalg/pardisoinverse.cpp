@@ -88,8 +88,8 @@ namespace ngla
 #else
           libmkl.Load("libmkl_rt.so");
 #endif
-          mkl_free_buffers = libmkl.GetFunction<decltype(mkl_free_buffers)>("mkl_free_buffers");
-          F77_FUNC(pardiso) = libmkl.GetFunction<decltype(pardiso_)>("pardiso_");
+          mkl_free_buffers = libmkl.GetSymbol<decltype(mkl_free_buffers)>("mkl_free_buffers");
+          F77_FUNC(pardiso) = libmkl.GetSymbol<decltype(pardiso_)>("pardiso_");
           return mkl_free_buffers && F77_FUNC(pardiso);
       }
       catch(const std::runtime_error &)

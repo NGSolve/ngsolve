@@ -2,6 +2,7 @@
 #define FILE_NGLA
 
 #include <bla.hpp>
+#include <core/mpi_wrapper.hpp>
 
 /*
 namespace ngcomp
