@@ -262,7 +262,10 @@ list (APPEND NGSOLVE_COMPILE_OPTIONS -DMAX_SYS_DIM=${MAX_SYS_DIM})
 
 #######################################################################
 if (USE_MKL)
+    set(NG_USE_MPI ${USE_MPI})
+    unset(USE_MPI CACHE)
     find_package(MKL REQUIRED)
+    set(USE_MPI ${NG_USE_MPI} CACHE STRING "enable mpi parallelization")
     target_include_directories(ngs_lapack INTERFACE "${MKL_INCLUDE_DIRS}")
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS USE_PARDISO)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS_PRIVATE USE_MKL)
