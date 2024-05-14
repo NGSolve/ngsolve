@@ -21,7 +21,8 @@ namespace ngfem
       static int counter = 0;
       int rank = 0;
 #ifdef PARALLEL
-      rank = ngcore::NgMPI_Comm(NG_MPI_COMM_WORLD).Rank();
+      if(MPI_Loaded())
+        rank = ngcore::NgMPI_Comm(NG_MPI_COMM_WORLD).Rank();
 #endif // PARALLEL
       filesystem::path dir;
 #ifdef WIN32
