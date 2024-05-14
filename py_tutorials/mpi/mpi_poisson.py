@@ -12,7 +12,7 @@ import netgen.meshing
 from ngsolve import *
 
 # initialize MPI
-comm = mpi_world
+from mpi4py.MPI import COMM_WORLD as comm
 rank = comm.rank
 np = comm.size
 
