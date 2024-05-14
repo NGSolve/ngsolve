@@ -1,4 +1,6 @@
 from ngsolve import *
+from pyngcore import MPI_Comm
+import mpi4py.MPI as mpi
 
 def find_group(comm, groups):
     mg = []
@@ -14,7 +16,7 @@ def find_group(comm, groups):
 
 #load ngsolve-mesh
 def test_load_ngs():
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     mesh = Mesh('square.vol.gz', comm)
     comm.Barrier()
 
@@ -27,7 +29,7 @@ def test_load_ngs_seq():
     
 #load ngsolve-mesh into sub-communicator
 def test_load_ngs_sub1():
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     assert comm.size>=5
     groups = [[1,2,4]]
     mygrp = find_group(comm, groups)
@@ -41,7 +43,7 @@ def test_load_ngs_sub1():
 
 #load netgen-mesh, then make ngsolve-mesh
 def test_load_ng():
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     import netgen.meshing
     ngmesh = netgen.meshing.Mesh(dim=2)
     ngmesh.Load('square.vol.gz')
@@ -50,7 +52,7 @@ def test_load_ng():
 
 #load netgen-mesh into sub-comm 
 def test_load_ng_sub1():
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     assert comm.size>=5
     groups = [[0,2,3,4]]
     sub_comm = comm.SubComm(find_group(comm, groups))
@@ -67,7 +69,7 @@ def test_load_ng_sub1():
 
 
 def test_load_dist():
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     mecomm = comm.SubComm([comm.rank])
     import netgen.meshing
     ngmesh = netgen.meshing.Mesh(dim=2, comm=mecomm)
@@ -81,7 +83,7 @@ def test_load_dist():
     comm.Barrier()
 
 def test_load_dist_sub():
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     groups = [[2,3,4]]
     sub_comm = comm.SubComm(find_group(comm, groups))
     mecomm = comm.SubComm([comm.rank])
@@ -99,7 +101,7 @@ def test_load_dist_sub():
     
 #mesh on master and then distribute
 def test_mesh_dist():
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     import netgen.meshing
     if comm.rank==0:
         from netgen.geom2d import unit_square
@@ -119,7 +121,7 @@ def test_mesh_dist():
     
 #mesh on master and then distribute into subcomm
 def test_mesh_dist_sub1():
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     groups = [[0,1,3,4]]
     assert comm.size>=5
     sub_comm = comm.SubComm(find_group(comm, groups))
@@ -149,7 +151,7 @@ def test_mesh_dist_sub1():
     
 
 if __name__ == "__main__":
-    comm = MPI_Init()
+    comm = MPI_Comm(mpi.COMM_WORLD)
     #need at least NP=5 for this test to make sense
 
     test_load_ngs()
