@@ -60,7 +60,8 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     CompressCompound, PlateauFESpace, BoundaryFromVolumeCF, Interpolate, Variation, \
     Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ConvertOperator, ORDER_POLICY, VTKOutput, SetHeapSize, \
-    SetTestoutFile, ngsglobals, pml, ContactBoundary, PatchwiseSolve
+    SetTestoutFile, ngsglobals, pml, ContactBoundary, PatchwiseSolve, \
+    HCurlAMG, APhiHCurlAMG
 from .solve import Draw, \
     SetVisualization
 from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTrace, \

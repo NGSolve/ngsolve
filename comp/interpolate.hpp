@@ -1,3 +1,6 @@
+#ifndef FILE_NGS_INTERPOLATE
+#define FILE_NGS_INTERPOLATE
+
 /**********************************************************************/
 /* File:   interpolate.cpp                                            */
 /* Author: L Kogler, M Neunteufel, J Schoeberl                        */
@@ -42,3 +45,5 @@ namespace ngcomp
   
   
 }
+
+#endif // FILE_NGS_INTERPOLATE
