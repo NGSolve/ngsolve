@@ -107,6 +107,7 @@ Whetting the Appetite
    unit-2.1.2-blockjacobi/blockjacobi.ipynb
    unit-2.1.3-multigrid/multigrid.ipynb
    unit-2.1.4-bddc/bddc.ipynb
+   unit-2.1.5-amg/amg.ipynb
    unit-2.2-eigenvalues/pinvit.ipynb
    unit-2.3-hcurlhdiv/hcurlhdiv.ipynb
    unit-2.4-Maxwell/Maxwell.ipynb
