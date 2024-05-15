@@ -8,7 +8,8 @@
 #include "linearform.hpp"
 #include "bilinearform.hpp"
 #include "preconditioner.hpp"
-#include <multigrid.hpp> 
+#include <multigrid.hpp>
+#include "hcurlamg.hpp"
 #include <pybind11/functional.h>
 #include "l2hofespace.hpp"
 #include "hcurlhofespace.hpp"
@@ -3162,6 +3163,23 @@ integrator : ngsolve.fem.LFI
     })
     ;
 
+  py::class_<HCurlAMG, shared_ptr<HCurlAMG>, Preconditioner>
+    (m, "HCurlAMG")
+    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs);
+      return make_shared<HCurlAMG>(bf, flags, "HCurlAMG");
+    }), py::arg("bf"))
+    ;
+
+  py::class_<APhiHCurlAMG, shared_ptr<APhiHCurlAMG>, HCurlAMG>
+    (m, "APhiHCurlAMG")
+    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs);
+      return make_shared<APhiHCurlAMG>(bf, flags, "APhiHCurlAMG");
+    }), py::arg("bf"))
+    ;
 
   class PythonPreconditioner : public Preconditioner
   {
