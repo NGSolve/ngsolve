@@ -107,6 +107,8 @@ def GetData(obj, args, kwargs):
             d['multidim_interpolate'] = kwargs['interpolate_multidim']
             d['multidim_animate'] = kwargs['animate']
 
+        d['deformation_scale'] = kwargs['scale']
+
         if 'is_complex' in d and d['is_complex'] and 'animate_complex' in kwargs:
             s = d['gui_settings']
             if 'Complex' not in s:
