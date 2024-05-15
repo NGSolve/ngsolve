@@ -17,7 +17,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         globalinterfacespace.cpp globalspace.cpp
         ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp
         ../multigrid/smoother.cpp contact.cpp localsolve.cpp interpolate.cpp
-        webgui.cpp
+        webgui.cpp hcurlamg.cpp
         )
 
 target_include_directories(ngcomp PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd ${CMAKE_CURRENT_SOURCE_DIR}/../linalg)
