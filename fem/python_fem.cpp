@@ -484,7 +484,7 @@ direction : int
               }
             else
               throw Exception("Mesh dimension not supported");
-            if (!region.Mask().Test(dom_in - 1))
+            if (dom_in == 0 || !region.Mask().Test(dom_in - 1))
               inverted_faces.SetBit(i);
           }
       return NormalVectorCF(mesh->GetDimension(), std::move(inverted_faces));

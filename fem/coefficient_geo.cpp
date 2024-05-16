@@ -220,7 +220,7 @@ namespace ngfem
           if (inverted_faces.Size())
             {
               auto ei = ir.GetTransformation().GetElementIndex();
-              if(inverted_faces.Test(ei-1))
+              if(inverted_faces.Test(ei))
                 fac = -1.;
             }
           if (ir[0].DimSpace() != D)
@@ -278,7 +278,7 @@ namespace ngfem
       if (inverted_faces.Size())
         {
           auto ei = ir.GetTransformation().GetElementIndex();
-          if(inverted_faces.Test(ei-1))
+          if(inverted_faces.Test(ei))
             fac = -1.;
         }
       for (int i = 0; i < ir.Size(); i++)
@@ -312,7 +312,7 @@ namespace ngfem
       if (inverted_faces.Size())
         {
           auto ei = ir.GetTransformation().GetElementIndex();
-          if(inverted_faces.Test(ei-1))
+          if(inverted_faces.Test(ei))
             fac = -1.;
         }
       values.AddSize(D, ir.Size()) = fac * Trans(ir.GetNormals());
