@@ -153,7 +153,10 @@ void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 
   static size_t global_heapsize =
     (sizeof(size_t) == 8) ? 100000000 : 10000000;
-  static LocalHeap glh(global_heapsize, "python-comp lh", true);
+  // static LocalHeap glh(global_heapsize, "python-comp lh", true);
+
+  // the global variable glh should be replaced by LocalHeapProvider
+  static LocalHeap glh(10*1000*1000, "python-comp lh", true);
 
   class LocalHeapProvider
   {
