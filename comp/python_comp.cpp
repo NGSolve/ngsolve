@@ -2110,7 +2110,7 @@ bonus_intorder : int
              reg = &py::extract<Region&>(definedon)();
            
            py::gil_scoped_release release;
-           self->Interpolate (*cf, reg, mdcomp, glh);
+           self->Interpolate (*cf, reg, mdcomp, lhp.GetLH());
          },
          py::arg("coefficient"),
          py::arg("definedon")=DummyArgument(),
@@ -2747,7 +2747,7 @@ reallocate : bool
 
     .def("Energy",[](BF & self, shared_ptr<BaseVector> x)
           {
-            return self.Energy(*x, glh);
+            return self.Energy(*x, lhp.GetLH());
           }, py::call_guard<py::gil_scoped_release>(), py::arg("x"), docu_string(R"raw_string(
 Computes the energy of EnergyIntegrators like SymbolicEnergy for given input vector.
 
@@ -2760,7 +2760,7 @@ x : ngsolve.la.BaseVector
     
     .def("Apply", [](BF & self, BaseVector& x, BaseVector & y)
 	  {
-	    self.ApplyMatrix (x, y, glh);
+	    self.ApplyMatrix (x, y, lhp.GetLH());
 	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("x"),py::arg("y"), docu_string(R"raw_string(
 Applies a (non-)linear variational formulation to x and stores the result in y.
@@ -2784,7 +2784,7 @@ y : ngsolve.BaseVector
     
     .def("ComputeInternal", [](BF & self, BaseVector & u, BaseVector & f)
 	  {
-	    self.ComputeInternal (u, f, glh );
+	    self.ComputeInternal (u, f, lhp.GetLH() );
 	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("u"),py::arg("f"), docu_string(R"raw_string(
 
@@ -2803,7 +2803,7 @@ f : ngsolve.la.BaseVector
     .def("AssembleLinearization", [](BF & self, BaseVector & ulin,
                                      bool reallocate)
 	  {
-	    self.AssembleLinearization (ulin, glh, reallocate);
+	    self.AssembleLinearization (ulin, lhp.GetLH(), reallocate);
 	  }, py::call_guard<py::gil_scoped_release>(),
          py::arg("ulin"), py::arg("reallocate")=false,
          docu_string(R"raw_string(
@@ -3340,7 +3340,7 @@ integrator : ngsolve.fem.LFI
               bool use_simd = true;
               
               ma->IterateElements
-                (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+                (vb, lhp.GetLH(), [&] (Ngs_Element el, LocalHeap & lh)
                  {
                    if(!mask.Test(el.GetIndex())) return;
                    auto & trafo = ma->GetTrafo (el, lh);
@@ -3438,7 +3438,7 @@ integrator : ngsolve.fem.LFI
               bool use_simd = true;
               
               ma->IterateElements
-                (vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
+                (vb, lhp.GetLH(), [&] (Ngs_Element el, LocalHeap & lh)
                  {
                    if(!mask.Test(el.GetIndex())) return;
                    auto & trafo = ma->GetTrafo (el, lh);
@@ -4245,7 +4245,7 @@ order : int (default: 1)
          )
      .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb)
           { 
-            self->Do(glh,time, vb);
+            self->Do(lhp.GetLH(),time, vb);
             return self->lastoutputname;
           },
           py::arg("time")=-1,
@@ -4269,7 +4269,7 @@ vb: VOL_or_BND (default VOL)
           )
      .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb, const BitArray * drawelems)
           { 
-            self->Do(glh,time, vb, drawelems);
+            self->Do(lhp.GetLH(),time, vb, drawelems);
             return self->lastoutputname;
           },
           py::arg("time")=-1,
@@ -4301,7 +4301,7 @@ drawelems: BitArray
          [&] (shared_ptr<SumOfIntegrals> bf,
               shared_ptr<SumOfIntegrals> lf,
               shared_ptr<GridFunction> gf)
-         { PatchwiseSolve(bf, lf, gf, glh); },
+         { PatchwiseSolve(bf, lf, gf, lhp.GetLH()); },
          py::arg("bf"), py::arg("lf"), py::arg("gf"));
 
    py::class_<InterpolateProxy, shared_ptr<InterpolateProxy>, ProxyFunction> (m, "InterpolateProxy");
