@@ -1071,7 +1071,9 @@ keep_files : bool
                 double max_points,
                 double thickness,
                 double tolerance,
-                int direction
+                int direction,
+                bool randomized,
+                double critical_value
                 )
     {
         Array<netgen::Point<3>> points;
@@ -1092,6 +1094,9 @@ keep_files : bool
         int rk_type = 3;
 
         netgen::FieldLineCalc linecalc(*ma->GetNetgenMesh(), eval_func, length, max_points, thickness, tolerance, rk_type, direction);
+        if(randomized)
+          linecalc.Randomized();
+        linecalc.SetCriticalValue(critical_value);
 	linecalc.GenerateFieldLines(points,num_fieldlines);
 
         auto convert = [](const auto & data) {
@@ -1123,7 +1128,9 @@ keep_files : bool
        py::arg("max_points")=500,
        py::arg("thickness")=0.0015,
        py::arg("tolerance")=0.0005,
-       py::arg("direction")=0
+       py::arg("direction")=0,
+       py::arg("randomized")=true,
+       py::arg("critical_value")=-1
     )
     ;
 
