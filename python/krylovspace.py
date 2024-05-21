@@ -42,6 +42,9 @@ printrates : bool = False
   will call
   >>> print("iteration = 1, residual = 1e-3", end="\r")
   if "\r" is passed, a final output will also be printed.
+
+plotrates : bool = False
+  matplotlib plot of errors (residuals)
 """
 
 class LinearSolver(BaseMatrix):
@@ -56,7 +59,8 @@ class LinearSolver(BaseMatrix):
                  atol : float = None,
                  callback : Optional[Callable[[int, float], None]] = None,
                  callback_sol : Optional[Callable[[BaseVector], None]] = None,
-                 printrates : bool = False):
+                 printrates : bool = False,
+                 plotrates : bool = False):
         super().__init__()
         if atol is None and tol is None:
             tol = 1e-12
@@ -69,6 +73,7 @@ class LinearSolver(BaseMatrix):
         self.callback = callback
         self.callback_sol = callback_sol
         self.printrates = printrates
+        self.plotrates = plotrates
         self.residuals = []
         self.iterations = 0
 
@@ -141,6 +146,35 @@ class LinearSolver(BaseMatrix):
         is_converged = self.iterations >= self.maxiter or residual <= self._final_residual
         if is_converged and self.printrates == "\r":
             print("{}{} {}converged in {} iterations to residual {}".format(_clear_line_command, self.name, "NOT " if residual >= self._final_residual else "", self.iterations, residual))
+
+        if self.plotrates:
+            if self.iterations==1:
+                import matplotlib.pyplot as plt
+                from IPython.display import display, clear_output
+                fig, ax = plt.subplots()
+                self.plt = plt
+                self.ax = ax
+                self.fig = fig
+                self.its = []
+                self.ress = []
+                self.clear_output=clear_output
+                self.display=display
+                plt.ioff()
+                plt.show()
+            self.its.append(self.iterations)
+            self.ress.append(residual)
+            # update_plot(plt, ax, self.its, self.ress)
+            self.ax.clear()
+            self.ax.semilogy(self.its, self.ress, label='error')
+            self.ax.set_xlabel('iteration')
+            self.ax.set_ylabel('error')
+            self.ax.set_title('CG Solver Convergence')
+            self.ax.legend()
+            self.plt.draw()
+            self.clear_output(wait=True)
+            self.display(self.fig)
+            
+            
         return is_converged
 
 class CGSolver(LinearSolver):
@@ -237,6 +271,9 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
     printrates : bool
       If set to True then the error of the iterations is displayed.
 
+    plotrates : bool
+      If set to True then the error of the iterations is plotted.
+
     initialize : bool
       If set to True then the initial guess for the CG method is set to zero. Otherwise the values of the vector sol, if provided, is used.
 
@@ -251,7 +288,7 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
 
     """
     solver = CGSolver(mat=mat, pre=pre, conjugate=conjugate, tol=tol, maxiter=maxsteps,
-                      callback=callback, printrates=printrates, **kwargs)
+                      callback=callback, printrates=printrates, plotrates=plotrates, **kwargs)
     solver.Solve(rhs=rhs, sol=sol, initialize=initialize)
     return solver.sol
 
@@ -960,3 +997,17 @@ def BramblePasciakCG(A, B, C, f, g, preA, preS, maxit=1000, tol=1e-8, \
     
     return x[0], x[1]
 
+
+
+def update_plot(plt, ax, its, ress):
+    # its.append(it)
+    # ress.append(res)
+    ax.clear()
+    ax.semilogy(its, ress, label='error')
+    ax.set_xlabel('iteration')
+    ax.set_ylabel('error')
+    ax.set_title('CG Solver Convergence')
+    ax.legend()
+    plt.draw()
+    clear_output(wait=True)
+    display(fig)
