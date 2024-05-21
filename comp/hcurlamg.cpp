@@ -387,7 +387,12 @@ namespace ngcomp
       auto lh = clh.Split();
       // flux norm matrix
       auto ncf = e2f[ei].Size();
-      if(ncf == 0) return; // unused dof
+      if(ncf == 0)
+        {
+          coll_eweights[ei] = 0;
+          return; // unused dof
+        }
+      
       FlatMatrix<double> top_part(ncf, lh);
       FlatMatrix<double> bot_part(ncf, lh);
       top_part = 0;
@@ -772,10 +777,11 @@ namespace ngcomp
     else
       blocksmoother->GSSmooth(u, f);
     auto residuum = f.CreateVector();
-    shared_ptr<BaseVector> node_residuum_v, node_update_v;
+    // shared_ptr<BaseVector> node_residuum_v, node_update_v;
 
     if(gradient)
     {
+      /*
       node_residuum_v = node_h1->CreateColVector();
       node_update_v = node_h1->CreateColVector();
       auto& node_residuum = *node_residuum_v;
@@ -785,20 +791,32 @@ namespace ngcomp
       node_residuum = *trans_gradient * residuum;
       node_update = *node_h1 * node_residuum;
       u += (*gradient) * node_update;
+      */
+      
+      residuum = f - (*mat) * u;
+      auto op = gradient*node_h1*trans_gradient;
+      u += *op * residuum;
     }
 
     {
       RegionTimer rt(timer_c);
       residuum = f - (*mat) * u;
+      /*
       auto coarse_residuum = coarse_precond->CreateColVector();
       coarse_residuum = *restriction * residuum;
       auto coarse_u = coarse_precond->CreateColVector();
       coarse_precond->Mult(coarse_residuum, coarse_u);
       u += *prolongation * coarse_u;
+      */
+
+      // auto op = 
+      // u +=  *op * residuum;
+      u +=  *(prolongation * coarse_precond * restriction) * residuum;
     }
 
     if(gradient)
     {
+      /*
       auto& node_residuum = *node_residuum_v;
       auto& node_update = *node_update_v;
       RegionTimer rt(timer_n);
@@ -806,6 +824,11 @@ namespace ngcomp
       node_residuum = *trans_gradient * residuum;
       node_update = *node_h1 * node_residuum;
       u += *gradient * node_update;
+      */
+      
+      residuum = f - (*mat) * u;
+      auto op = gradient*node_h1*trans_gradient;
+      u += *op * residuum;
     }
 
     if(smoother)
@@ -1149,4 +1172,8 @@ namespace ngcomp
                              [face_weight] (auto& fw) { fw += face_weight; });
       }
   }
+
+  static RegisterPreconditioner<HCurlAMG> inithcamg ("hcurlamg");
+
+  
 } // namespace hcurlamg
