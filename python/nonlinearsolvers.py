@@ -188,5 +188,5 @@ def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="um
                         callback=callback,
                         linesearch=linesearch,
                         printenergy=printing,
-                        print_wrong_direction=True)
+                        print_wrong_direction=False)
 
