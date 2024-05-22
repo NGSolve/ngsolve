@@ -123,7 +123,7 @@ else(NETGEN_DIR)
     message(STATUS "PARMETIS/METIS will be built by superbuild")
     set (METIS_DIR ${CMAKE_CURRENT_BINARY_DIR}/dependencies/parmetis)
     set (SUPERBUILD_METIS 1)
-  endif (USE_MPI AND NOT METIS_DIR)
+  endif (USE_MPI AND NOT METIS_DIR AND USE_MUMPS)
 
   if (USE_HYPRE AND NOT USE_MPI)
       message(FATAL_ERROR "Hypre needs MPI to be enabled (-DUSE_MPI=ON)!")
