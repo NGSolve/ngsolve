@@ -243,7 +243,7 @@ conjugate : bool = False
             s.data += w
 
         
-def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, initialize = True, conjugate=False, callback=None, **kwargs):
+def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = True, plotrates = False, initialize = True, conjugate=False, callback=None, **kwargs):
     """preconditioned conjugate gradient method
 
 
