@@ -1106,7 +1106,7 @@ namespace ngfem
                 BareSliceMatrix<Complex,ColMajor> mat,   
                 LocalHeap & lh) const override
     {
-      mat.AddSize(Dim(), bfel.GetNDof()) = 0;
+      mat.AddSize(Dim()*mir.Size(), bfel.GetNDof()) = 0;
       const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->CalcMatrix (fel[comp], mir, mat.Cols(r), lh);
