@@ -666,6 +666,9 @@ namespace ngla
     static Timer t("S_BaseVector::InnerProduct");
     RegionTimer reg(t);
 
+    if(Size() != v2.Size())
+      throw Exception (string ("BaseVector::InnerProduct: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v2.Size()));
+    
     if (conjugate)
       return ngbla::InnerProduct (FVScal(), Conj(v2.FV<SCAL>()));
     else
@@ -681,6 +684,10 @@ namespace ngla
     static Timer t("BaseVector::InnerProduct (taskhandler)");
     RegionTimer reg(t);
 
+    if(Size() != v2.Size())
+      throw Exception (string ("BaseVector::InnerProduct: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v2.Size()));
+
+    
     auto me = FVDouble();
     auto you = v2.FVDouble();
 	
