@@ -18,11 +18,7 @@ add_test(NAME unit_tests_built COMMAND ${CMAKE_COMMAND} --build . --target unit_
 macro(add_unit_test name sources)
   add_executable(test_${name} ${sources} )
   target_link_libraries(test_${name} catch_main netgen_python)
-  if (WIN32)
-    target_link_libraries(test_${name} ngsolve)
-  else(WIN32)
-    target_link_libraries(test_${name} solve)
-  endif(WIN32)
+  target_link_libraries(test_${name} ngsolve)
 
   add_dependencies(unit_tests test_${name})
   add_test(NAME unit_${name} COMMAND test_${name})
