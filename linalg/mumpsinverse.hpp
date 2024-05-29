@@ -22,6 +22,7 @@ namespace ngla
   */
 
 #ifdef USE_MUMPS
+#define OMPI_SKIP_MPICXX
 #include "dmumps_c.h"
 #include "zmumps_c.h"
 
