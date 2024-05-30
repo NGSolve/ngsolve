@@ -1387,7 +1387,7 @@ namespace ngbla
     FlatArray<int> rows;
   public:
     typedef typename TA::TELEM TELEM;
-    // typedef typename TA::TSCAL TSCAL;
+    typedef typename TA::TSCAL TSCAL;
     static constexpr bool IsLinear() { return false; }
     
     INLINE RowsArrayExpr (const TA & aa, FlatArray<int> arows) : a(aa), rows(arows) { ; }
@@ -1435,7 +1435,7 @@ namespace ngbla
   public:
     typedef typename TA::TELEM TELEM;
     static constexpr bool IsLinear() { return false; } 
-    // typedef typename TA::TSCAL TSCAL;
+    typedef typename TA::TSCAL TSCAL;
 
     INLINE ColsArrayExpr (const TA & aa, FlatArray<int> acols) : a(aa), cols(acols) { ; }
 

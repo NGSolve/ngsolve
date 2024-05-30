@@ -52,6 +52,7 @@ namespace ngla
     void SetDisjointCols(bool newval){disjointcols=newval;}
     int VHeight() const override { return height; }
     int VWidth() const override { return width; }
+    size_t GetNumElMats() const { return elmats.Size(); }
 
     AutoVector CreateRowVector () const override { return make_unique<VVector<double>> (width); } 
     AutoVector CreateColVector () const override { return make_unique<VVector<double>> (height); }
