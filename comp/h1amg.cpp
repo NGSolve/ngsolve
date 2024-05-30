@@ -528,6 +528,7 @@ namespace ngcomp
                                    ElementId id,
                                    LocalHeap & lh) override
     {
+      HeapReset hr(lh);
       // vertex weights
       // static Timer t("h1amg - addelmat");
       // static Timer t1("h1amg - addelmat calc v-schur");

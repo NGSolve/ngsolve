@@ -273,6 +273,18 @@ namespace ngcomp
       ct = MultigridPreconditioner::SMOOTHING_COARSE;
     else if (coarse == "cg")
       ct = MultigridPreconditioner::CG_COARSE;
+    else if (coarse == "direct")
+      ct = MultigridPreconditioner::EXACT_COARSE;      
+    else
+      {
+        auto creator = GetPreconditionerClasses().GetPreconditioner(coarse);
+        if (creator != nullptr)
+          {
+            coarse_pre = creator->creatorbf(lo_bfa, flags, coarse);
+            ct = MultigridPreconditioner::USER_COARSE;
+          }
+      }
+    
     mgp->SetCoarseType (ct);
     
 
