@@ -746,6 +746,7 @@ namespace ngla
     VScaleMatrix (const BaseMatrix & abm, TSCAL ascale) : bm(abm), scale(ascale) { ; }
     VScaleMatrix (shared_ptr<BaseMatrix> aspbm, TSCAL ascale)
       : bm(*aspbm), spbm(aspbm), scale(ascale) { ; }
+    TSCAL GetScalingFactor() const { return scale; }
     virtual bool IsComplex() const override
     { return bm.IsComplex() || typeid(TSCAL)==typeid(Complex); } 
     ///
