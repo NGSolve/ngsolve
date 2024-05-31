@@ -226,7 +226,78 @@ namespace ngcomp
 
 
 
+  class NGS_DLL_HEADER BASE_BDDCPreconditioner : public Preconditioner
+  {
+  public:
+    BASE_BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+                             const string aname = "bddcprecond");
+    static DocInfo GetDocu ();    
+  };
 
+  
+  template <class SCAL, class TV> class BDDCMatrix;
+
+  template <class SCAL, class TV = SCAL>
+  class NGS_DLL_HEADER BDDCPreconditioner : public BASE_BDDCPreconditioner
+  {
+    shared_ptr<S_BilinearForm<SCAL>> bfa;
+    shared_ptr<FESpace> fes;
+    shared_ptr<BDDCMatrix<SCAL,TV>> pre;
+    shared_ptr<BitArray> freedofs;
+    string inversetype;
+    string coarsetype;
+    bool block, hypre;
+  public:
+    BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+                        const string aname = "bddcprecond");
+
+    virtual ~BDDCPreconditioner()
+    {
+      ; // delete pre;
+    }
+    
+    virtual void InitLevel (shared_ptr<BitArray> _freedofs);
+
+    virtual void FinalizeLevel (const BaseMatrix *);
+    virtual void AddElementMatrix (FlatArray<int> dnums,
+				   const FlatMatrix<SCAL> & elmat,
+				   ElementId id, 
+				   LocalHeap & lh);
+
+    virtual void Update ()
+    {
+      if (timestamp < bfa->GetTimeStamp())
+        throw Exception("A BDDC preconditioner must be defined before assembling");
+    }  
+
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix();
+    }
+
+    virtual const BaseMatrix & GetMatrix() const;
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr();
+
+    virtual void CleanUpLevel ()
+    {
+      /*
+      delete pre;
+      pre = NULL;
+      */
+      pre.reset();
+    }
+
+
+    virtual void Mult (const BaseVector & x, BaseVector & y) const;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+
+    virtual const char * ClassName() const
+    { return "BDDC Preconditioner"; }
+  };
+
+  
+
+  
 
 
 
