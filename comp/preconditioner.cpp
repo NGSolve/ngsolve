@@ -539,6 +539,7 @@ namespace ngcomp
   {
     // bfa -> SetPreconditioner (this);
 
+    GaussSeidel = flags.GetDefineFlag("GS");
     block = flags.GetDefineFlag ("block");
     locprectest = flags.GetDefineFlag ("mgtest");
     locprecfile = flags.GetStringFlag ("mgfile","locprectest.out"); 
@@ -555,6 +556,8 @@ namespace ngcomp
         blockcreator = std::any_cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(flags.GetAnyFlag("blockcreator"));
         cout << IM(3) << "local pre, got blockcreator" << endl;
       }
+
+    Update();
   }
 
 
@@ -568,6 +571,8 @@ namespace ngcomp
     
     docu.Arg("block") = "bool = false\n"
       "  use block Jacobi/Gauss-Seidel";
+    docu.Arg("GS") = "bool = false\n"
+      "  use Gauss-Seidel instead of Jacobi";
     return docu;    
   }
   
@@ -628,8 +633,13 @@ namespace ngcomp
           if (dynamic_pointer_cast<ParallelMatrix> (mat))
             mat = dynamic_pointer_cast<ParallelMatrix> (mat)->GetMatrix();
 #endif
-          jacobi = dynamic_pointer_cast<BaseSparseMatrix> (mat)
-            -> CreateJacobiPrecond(bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal()));
+
+          auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (mat);
+          auto inner = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
+          if (GaussSeidel)
+            jacobi = make_shared<SymmetricGaussSeidelPrecond>(*spmat, inner);
+          else
+            jacobi = spmat -> CreateJacobiPrecond(inner);
         }
     }
 

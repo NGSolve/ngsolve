@@ -15,6 +15,8 @@ namespace ngla
   SymmetricGaussSeidelPrecond ::
   SymmetricGaussSeidelPrecond (const BaseSparseMatrix & mat, shared_ptr<BitArray> freedofs)
   {
+    if (mat.GetParallelDofs())
+      throw Exception("Parallel Gauss-Seidel not supported");
     jac = mat.CreateJacobiPrecond(freedofs);
   }
   
@@ -60,13 +62,6 @@ namespace ngla
 		   if (!inner || inner->Test(i))
 		     CalcInverse (invdiag[i]);
 		 });
-  }
-
-  ///
-  template <class TM, class TV_ROW, class TV_COL>
-  JacobiPrecond<TM,TV_ROW,TV_COL> :: ~JacobiPrecond () 
-  {
-    ;
   }
 
   ///
