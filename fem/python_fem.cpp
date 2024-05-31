@@ -2121,7 +2121,7 @@ weights : list
     .def ("__call__", [] (shared_ptr<ElementTransformation> self, IntegrationPoint & ip)
            {
              return &(*self)(ip, global_alloc);
-           }, py::arg("ip"), py::return_value_policy::reference)
+           }, py::arg("ip"), py::return_value_policy::take_ownership)
     ;
 
   if(have_numpy)
