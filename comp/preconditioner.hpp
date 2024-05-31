@@ -169,7 +169,7 @@ namespace ngcomp
     bool block;
     bool locprectest; 
     string locprecfile; 
-
+    bool GaussSeidel = false;
     string ct;
     shared_ptr<Preconditioner> coarse_pre;
     function<shared_ptr<Table<DofId>>(FESpace&)> blockcreator;

@@ -19,7 +19,7 @@ namespace ngla
   {
   public:
     virtual void GSSmooth (BaseVector & x, const BaseVector & b) const = 0;
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const = 0;
+    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y) const = 0;
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b) const = 0;
   };
 
@@ -60,9 +60,6 @@ namespace ngla
     JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
 		   shared_ptr<BitArray> ainner = nullptr, bool use_par = true);
 
-    ///
-    virtual ~JacobiPrecond ();
-
     int VHeight() const override { return height; }
     int VWidth() const override { return height; }
 
@@ -80,7 +77,7 @@ namespace ngla
     void GSSmooth (BaseVector & x, const BaseVector & b) const override;
 
     /// computes partial residual y
-    void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const override
+    void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y) const override
     {
       GSSmooth (x, b);
     }

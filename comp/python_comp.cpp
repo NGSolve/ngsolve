@@ -3124,28 +3124,26 @@ integrator : ngsolve.fem.LFI
                    }, "matrix of the preconditioner")
     ;
 
-  py::class_<LocalPreconditioner, shared_ptr<LocalPreconditioner>, Preconditioner>
-    (m,"LocalPreconditioner", LocalPreconditioner::GetDocu().GetPythonDocString().c_str())
-    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+  auto pre_local = py::class_<LocalPreconditioner, shared_ptr<LocalPreconditioner>, Preconditioner>
+    (m,"LocalPreconditioner", LocalPreconditioner::GetDocu().GetPythonDocString().c_str());
+  
+  pre_local
+    .def(py::init([pre_local](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
     {
-      auto flags = CreateFlagsFromKwArgs(kwargs);
+      auto flags = CreateFlagsFromKwArgs(kwargs, pre_local);
       return make_shared<LocalPreconditioner>(bf, flags, "local");
     }), py::arg("bf"))
-    .def_static("__flags_doc__", []()
-    {
-      py::dict flags_doc;
-      for (auto & flagdoc : LocalPreconditioner::GetDocu().arguments)
-        flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
-      return flags_doc;
+    .def_static("__flags_doc__", []() {
+      return py::dict( py::cast (LocalPreconditioner::GetDocu().arguments) );
     });
+  
 
-
-
-  py::class_<BASE_BDDCPreconditioner, shared_ptr<BASE_BDDCPreconditioner>, Preconditioner>
-    (m,"BDDCPreconditioner", BASE_BDDCPreconditioner::GetDocu().GetPythonDocString().c_str())
-    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)->shared_ptr<BASE_BDDCPreconditioner>
+  auto pre_bddc = py::class_<BASE_BDDCPreconditioner, shared_ptr<BASE_BDDCPreconditioner>, Preconditioner>
+    (m,"BDDCPreconditioner", BASE_BDDCPreconditioner::GetDocu().GetPythonDocString().c_str());
+  pre_bddc
+    .def(py::init([pre_bddc](shared_ptr<BilinearForm> bf, py::kwargs kwargs)->shared_ptr<BASE_BDDCPreconditioner>
     {
-      auto flags = CreateFlagsFromKwArgs(kwargs);
+      auto flags = CreateFlagsFromKwArgs(kwargs, pre_bddc);
       if (bf->GetFESpace()->IsComplex())
         return make_shared<BDDCPreconditioner<Complex>> (bf, flags, "bddc");
       else
