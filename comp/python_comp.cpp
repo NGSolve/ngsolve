@@ -3124,6 +3124,23 @@ integrator : ngsolve.fem.LFI
                    }, "matrix of the preconditioner")
     ;
 
+  py::class_<LocalPreconditioner, shared_ptr<LocalPreconditioner>, Preconditioner>
+    (m,"LocalPreconditioner", LocalPreconditioner::GetDocu().GetPythonDocString().c_str())
+    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs);
+      return make_shared<LocalPreconditioner>(bf, flags, "local");
+    }), py::arg("bf"))
+    .def_static("__flags_doc__", []()
+    {
+      py::dict flags_doc;
+      for (auto & flagdoc : LocalPreconditioner::GetDocu().arguments)
+        flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+      return flags_doc;
+    });
+
+    
+  
   auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
     (m,"MultiGridPreconditioner");
   prec_multigrid
@@ -3166,6 +3183,17 @@ integrator : ngsolve.fem.LFI
     })
     ;
 
+  /*
+  py::class_<H1AMG, shared_ptr<HCurlAMG>, Preconditioner>
+    (m, "HCurlAMG")
+    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs);
+      return make_shared<HCurlAMG>(bf, flags, "HCurlAMG");
+    }), py::arg("bf"))
+    ;
+  */
+  
   py::class_<HCurlAMG, shared_ptr<HCurlAMG>, Preconditioner>
     (m, "HCurlAMG")
     .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
