@@ -528,39 +528,53 @@ namespace ngcomp
 
 
 
-  // ****************************** LocalPreconditioner *******************************
 
 
-  /**
-     Local (Block-Jacobi or Block-Gauss-Seidel) preconditioner
-  */
-  class LocalPreconditioner : public Preconditioner
+
+  LocalPreconditioner :: 
+  LocalPreconditioner  (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+                        const string aname)
+
+    : Preconditioner (abfa,aflags,aname), bfa(abfa)
   {
-  protected:
-    ///
-    shared_ptr<BilinearForm> bfa;
-    ///
-    shared_ptr<BaseMatrix> jacobi;
-    ///
-    bool block;
-    bool locprectest; 
-    string locprecfile; 
+    // bfa -> SetPreconditioner (this);
 
-    string ct;
-    shared_ptr<Preconditioner> coarse_pre;
-    function<shared_ptr<Table<DofId>>(FESpace&)> blockcreator;
-  public:
-    ///
-    LocalPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
-			 const string aname = "localprecond");
-    ///
-    virtual ~LocalPreconditioner() { ; }
-    ///
-    virtual bool IsComplex() const { return jacobi->IsComplex(); }
+    block = flags.GetDefineFlag ("block");
+    locprectest = flags.GetDefineFlag ("mgtest");
+    locprecfile = flags.GetStringFlag ("mgfile","locprectest.out"); 
+
+    string smoother = flags.GetStringFlag("smoother","");
+    if ( smoother == "block" )
+      block = true;
+
+    // coarse-grid preconditioner only used in parallel!!
+    ct = "NO_COARSE";
+
+    if(flags.AnyFlagDefined("blockcreator"))
+      {
+        blockcreator = std::any_cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(flags.GetAnyFlag("blockcreator"));
+        cout << IM(3) << "local pre, got blockcreator" << endl;
+      }
+  }
+
+
+  DocInfo LocalPreconditioner :: GetDocu ()
+  {
+    DocInfo docu; //  = FESpace::GetDocu();
+    docu.short_docu = "A local preconditioner.";
+    docu.long_docu =
+      R"raw_string(additive or multiplicative point or block preconditioner
+)raw_string";      
     
-    ///
-    virtual void FinalizeLevel (const BaseMatrix * mat) 
-    {
+    docu.Arg("block") = "bool = false\n"
+      "  use block Jacobi/Gauss-Seidel";
+    return docu;    
+  }
+  
+
+  
+  void LocalPreconditioner :: FinalizeLevel (const BaseMatrix * mat)
+  {
       cout << IM(3) << "Update Local Preconditioner" << flush;
       timestamp = bfa->GetTimeStamp();
       int blocktype = int (flags.GetNumFlag ( "blocktype", -1));
@@ -619,72 +633,8 @@ namespace ngcomp
         }
     }
 
-    virtual void Update ()
-    {
-      if (GetTimeStamp() < bfa->GetTimeStamp())
-        FinalizeLevel (&bfa->GetMatrix());
-      if (test) Test();
-      if(locprectest) LocPrecTest(); 
-    }
 
-
-    ///
-    virtual const BaseMatrix & GetMatrix() const
-    {
-      if (!jacobi)
-        ThrowPreconditionerNotReady();
-      return *jacobi;
-    }
-    
-    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
-    {
-      if (!jacobi)
-        ThrowPreconditionerNotReady();
-      return jacobi;
-    }
-
-    ///
-    virtual const BaseMatrix & GetAMatrix() const
-    {
-      return bfa->GetMatrix(); 
-    }
-    ///
-    virtual const char * ClassName() const
-    { return "Local Preconditioner"; }
-    void LocPrecTest () const;
-  };
-
-
-
-
-
-  LocalPreconditioner :: 
-  LocalPreconditioner  (shared_ptr<BilinearForm> abfa, const Flags & aflags,
-                        const string aname)
-
-    : Preconditioner (abfa,aflags,aname), bfa(abfa)
-  {
-    // bfa -> SetPreconditioner (this);
-
-    block = flags.GetDefineFlag ("block");
-    locprectest = flags.GetDefineFlag ("mgtest");
-    locprecfile = flags.GetStringFlag ("mgfile","locprectest.out"); 
-
-    string smoother = flags.GetStringFlag("smoother","");
-    if ( smoother == "block" )
-      block = true;
-
-    // coarse-grid preconditioner only used in parallel!!
-    ct = "NO_COARSE";
-
-    if(flags.AnyFlagDefined("blockcreator"))
-      {
-        blockcreator = std::any_cast<function<shared_ptr<Table<DofId>>(const FESpace&)>>(flags.GetAnyFlag("blockcreator"));
-        cout << IM(3) << "local pre, got blockcreator" << endl;
-      }
-  }
-
-
+  
   void LocalPreconditioner :: LocPrecTest () const
   {
     cout << "Compute eigenvalues" << endl;

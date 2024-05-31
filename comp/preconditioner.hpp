@@ -152,8 +152,85 @@ namespace ngcomp
   ///
 
 
+  // ****************************** LocalPreconditioner *******************************
 
 
+  /**
+     Local (Block-Jacobi or Block-Gauss-Seidel) preconditioner
+  */
+  class LocalPreconditioner : public Preconditioner
+  {
+  protected:
+    ///
+    shared_ptr<BilinearForm> bfa;
+    ///
+    shared_ptr<BaseMatrix> jacobi;
+    ///
+    bool block;
+    bool locprectest; 
+    string locprecfile; 
+
+    string ct;
+    shared_ptr<Preconditioner> coarse_pre;
+    function<shared_ptr<Table<DofId>>(FESpace&)> blockcreator;
+  public:
+    ///
+    LocalPreconditioner (shared_ptr<BilinearForm> bfa, const Flags & aflags,
+			 const string aname = "localprecond");
+    ///
+    virtual ~LocalPreconditioner() { ; }
+    ///
+
+    static DocInfo GetDocu ();
+    
+    ///
+    virtual bool IsComplex() const { return jacobi->IsComplex(); }
+    
+    ///
+    virtual void FinalizeLevel (const BaseMatrix * mat);
+
+    virtual void Update ()
+    {
+      if (GetTimeStamp() < bfa->GetTimeStamp())
+        FinalizeLevel (&bfa->GetMatrix());
+      if (test) Test();
+      if(locprectest) LocPrecTest(); 
+    }
+
+
+    ///
+    virtual const BaseMatrix & GetMatrix() const
+    {
+      if (!jacobi)
+        ThrowPreconditionerNotReady();
+      return *jacobi;
+    }
+    
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
+    {
+      if (!jacobi)
+        ThrowPreconditionerNotReady();
+      return jacobi;
+    }
+
+    ///
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix(); 
+    }
+    ///
+    virtual const char * ClassName() const
+    { return "Local Preconditioner"; }
+    void LocPrecTest () const;
+  };
+
+
+
+
+
+
+
+  
   ///
   class TwoLevelPreconditioner : public Preconditioner
   {
