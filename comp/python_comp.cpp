@@ -3159,8 +3159,8 @@ integrator : ngsolve.fem.LFI
       return flags_doc;
     });
 
-  // auto pre_bddcd = py::class_<BDDCPreconditioner<double>, shared_ptr<BASE_BDDCPreconditioner>, BASE_BDDCPreconditioner>(m,"bddcd");
-  // py::class_<BDDCPreconditioner<Complex>, shared_ptr<BASE_BDDCPreconditioner>, BASE_BDDCPreconditioner>(m,"bddcc");  
+  py::class_<BDDCPreconditioner<double>, shared_ptr<BDDCPreconditioner<double>>, BASE_BDDCPreconditioner>(m,"BDDCPreconditioner_double");
+  py::class_<BDDCPreconditioner<Complex>, shared_ptr<BDDCPreconditioner<Complex>>, BASE_BDDCPreconditioner>(m,"BDDCPreconditioner_complex");  
 
   
   
