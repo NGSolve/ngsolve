@@ -3139,7 +3139,30 @@ integrator : ngsolve.fem.LFI
       return flags_doc;
     });
 
-    
+
+
+  py::class_<BASE_BDDCPreconditioner, shared_ptr<BASE_BDDCPreconditioner>, Preconditioner>
+    (m,"BDDCPreconditioner", BASE_BDDCPreconditioner::GetDocu().GetPythonDocString().c_str())
+    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)->shared_ptr<BASE_BDDCPreconditioner>
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs);
+      if (bf->GetFESpace()->IsComplex())
+        return make_shared<BDDCPreconditioner<Complex>> (bf, flags, "bddc");
+      else
+        return make_shared<BDDCPreconditioner<double>> (bf, flags, "bddc");
+    }), py::arg("bf"))
+    .def_static("__flags_doc__", []()
+    {
+      py::dict flags_doc;
+      for (auto & flagdoc : BASE_BDDCPreconditioner::GetDocu().arguments)
+        flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+      return flags_doc;
+    });
+
+  py::class_<BDDCPreconditioner<double>, shared_ptr<BASE_BDDCPreconditioner>, BASE_BDDCPreconditioner>;
+  py::class_<BDDCPreconditioner<Complex>, shared_ptr<BASE_BDDCPreconditioner>, BASE_BDDCPreconditioner>;  
+
+  
   
   auto prec_multigrid = py::class_<MGPreconditioner, shared_ptr<MGPreconditioner>, Preconditioner>
     (m,"MultiGridPreconditioner");

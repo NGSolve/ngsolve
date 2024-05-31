@@ -603,49 +603,49 @@ namespace ngcomp
     
   };
 
+  
+  BASE_BDDCPreconditioner :: 
+  BASE_BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+                           const string aname)
+    : Preconditioner (abfa, aflags, aname)
+  { ; } 
 
 
-
-
-
-
-
-
-  template <class SCAL, class TV = SCAL>
-  class NGS_DLL_HEADER BDDCPreconditioner : public Preconditioner
+  DocInfo BASE_BDDCPreconditioner :: GetDocu ()
   {
-    shared_ptr<S_BilinearForm<SCAL>> bfa;
-    shared_ptr<FESpace> fes;
-    shared_ptr<BDDCMatrix<SCAL,TV>> pre;
-    shared_ptr<BitArray> freedofs;
-    string inversetype;
-    string coarsetype;
-    bool block, hypre;
-  public:
-    BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
-                        const string aname = "bddcprecond")
-      : Preconditioner (abfa, aflags, aname)
-    {
-      bfa = dynamic_pointer_cast<S_BilinearForm<SCAL>> (abfa);
-      // bfa -> SetPreconditioner (this);
-      inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
-      coarsetype = flags.GetStringFlag("coarsetype", "none");
-      if(coarsetype=="myamg_hcurl")
-	(dynamic_pointer_cast<HCurlHighOrderFESpace>(bfa->GetFESpace()))->DoCouplingDofUpgrade(false);
-      if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
-      block = flags.GetDefineFlag("block");
-      hypre = flags.GetDefineFlag("usehypre");
-      // pre = NULL;
-      fes = bfa->GetFESpace();
-    }
-
-
-    virtual ~BDDCPreconditioner()
-    {
-      ; // delete pre;
-    }
+    DocInfo docu; //  = FESpace::GetDocu();
+    docu.short_docu = "element-level BDDC preconditioner.";
+    docu.long_docu =
+      R"raw_string(TODO
+)raw_string";      
     
-    virtual void InitLevel (shared_ptr<BitArray> _freedofs) 
+    return docu;    
+  }
+  
+
+  
+  template <class SCAL, class TV>
+  BDDCPreconditioner<SCAL, TV> ::
+  BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+                      const string aname)
+    : BASE_BDDCPreconditioner (abfa, aflags, aname)
+  {
+    bfa = dynamic_pointer_cast<S_BilinearForm<SCAL>> (abfa);
+    // bfa -> SetPreconditioner (this);
+    inversetype = flags.GetStringFlag("inverse", "sparsecholesky");
+    coarsetype = flags.GetStringFlag("coarsetype", "none");
+    if(coarsetype=="myamg_hcurl")
+      (dynamic_pointer_cast<HCurlHighOrderFESpace>(bfa->GetFESpace()))->DoCouplingDofUpgrade(false);
+    if (flags.GetDefineFlag("refelement")) Exception ("refelement - BDDC not supported");
+    block = flags.GetDefineFlag("block");
+    hypre = flags.GetDefineFlag("usehypre");
+    // pre = NULL;
+    fes = bfa->GetFESpace();
+  }
+  
+  template <class SCAL, class TV>
+  void BDDCPreconditioner<SCAL, TV> ::
+  InitLevel (shared_ptr<BitArray> _freedofs) 
     {
       freedofs = _freedofs;
       pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, flags, inversetype, coarsetype, block, hypre);
@@ -653,72 +653,15 @@ namespace ngcomp
       GetMemoryTracer().Track(*pre, "pre");
     }
 
-    virtual void FinalizeLevel (const BaseMatrix *)
-    {
-      pre -> Finalize();
-      if (test) Test();
-      timestamp = bfa->GetTimeStamp();      
-    }
 
-
-    virtual void AddElementMatrix (FlatArray<int> dnums,
-				   const FlatMatrix<SCAL> & elmat,
-				   ElementId id, 
-				   LocalHeap & lh);
-
-    virtual void Update ()
-    {
-      if (timestamp < bfa->GetTimeStamp())
-        throw Exception("A BDDC preconditioner must be defined before assembling");
-    }  
-
-    virtual const BaseMatrix & GetAMatrix() const
-    {
-      return bfa->GetMatrix();
-    }
-
-    virtual const BaseMatrix & GetMatrix() const
-    {
-      if (!pre)
-        ThrowPreconditionerNotReady();        
-      return *pre;
-    }
-
-    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
-    {
-      if (!pre)
-        ThrowPreconditionerNotReady();        
-      return pre;
-    }
-    
-
-    virtual void CleanUpLevel ()
-    {
-      /*
-      delete pre;
-      pre = NULL;
-      */
-      pre.reset();
-    }
-
-
-    virtual void Mult (const BaseVector & x, BaseVector & y) const
-    {
-      y = 0.0;
-      pre -> MultAdd (1, x, y);
-    }
-
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const
-    {
-      pre -> MultAdd (s, x, y);
-    }
-
-
-    virtual const char * ClassName() const
-    { return "BDDC Preconditioner"; }
-  };
-
-
+  template <class SCAL, class TV>
+  void BDDCPreconditioner<SCAL, TV> ::
+  FinalizeLevel (const BaseMatrix *)
+  {
+    pre -> Finalize();
+    if (test) Test();
+    timestamp = bfa->GetTimeStamp();      
+  }
 
 
   template <class SCAL, class TV>
@@ -747,7 +690,42 @@ namespace ngcomp
     if (L2Norm (helmat) != 0)
       pre -> AddMatrix(helmat, hdnums, id, lh);
   }
+
+
+  template <class SCAL, class TV>
+  const BaseMatrix & BDDCPreconditioner<SCAL, TV> ::
+  GetMatrix() const
+  {
+    if (!pre)
+      ThrowPreconditionerNotReady();        
+    return *pre;
+  }
+
+  template <class SCAL, class TV>  
+  shared_ptr<BaseMatrix> BDDCPreconditioner<SCAL, TV> ::
+  GetMatrixPtr()
+  {
+    if (!pre)
+      ThrowPreconditionerNotReady();        
+    return pre;
+  }
   
+  
+  template <class SCAL, class TV>
+  void BDDCPreconditioner<SCAL, TV> ::
+  Mult (const BaseVector & x, BaseVector & y) const
+  {
+    y = 0.0;
+    pre -> MultAdd (1, x, y);
+  }
+
+
+  template <class SCAL, class TV>
+  void BDDCPreconditioner<SCAL, TV> ::
+  MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    pre -> MultAdd (s, x, y);
+  }
 
 
 
