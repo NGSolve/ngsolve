@@ -2066,10 +2066,12 @@ namespace ngbla
 
   void AddABt (SliceMatrix<SIMD<Complex>> a, SliceMatrix<SIMD<double>> b, SliceMatrix<Complex> c)
   {
+    /*
     RegionTimer reg(timer_addabtcd);
     NgProfiler::AddThreadFlops(timer_addabtcd, TaskManager::GetThreadId(),
                                a.Height()*b.Height()*a.Width()*2*SIMD<double>::Size());
-
+    */
+    
     for (size_t i = 0; i < c.Height(); i++)
       for (size_t j = 0; j < c.Width(); j++)
         {
@@ -2123,10 +2125,12 @@ namespace ngbla
         AddABtSym(a.Rows(bs,ha), b.Rows(bs,ha), c.Rows(bs,ha).Cols(bs,ha));
         return;
       }
-    
+
+    /*
     RegionTimer reg(timer_addabtdcsym);
     NgProfiler::AddThreadFlops(timer_addabtdcsym, TaskManager::GetThreadId(),
                                a.Height()*b.Height()*a.Width()*8);
+    */
     
     // AddABt (a, b, c);
     size_t da = a.Width();
