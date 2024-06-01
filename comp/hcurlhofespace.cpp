@@ -83,6 +83,13 @@ namespace ngcomp
 	  if (!graddomains[i])
 	    gradientdomains.Clear(i);
       }
+
+    if (flags.StringFlagDefined("gradientdomains"))
+      {
+        Region gd(ma, VOL, flags.GetStringFlag("gradientdomains"));
+        gradientdomains = gd.Mask(); 
+      }
+    
     if (flags.NumListFlagDefined("gradientboundaries"))
       {
 	const Array<double> & gradbounds = flags.GetNumListFlag ("gradientboundaries");
@@ -90,6 +97,13 @@ namespace ngcomp
 	  if (!gradbounds[i])
 	    gradientboundaries.Clear(i);
       }
+
+    if (flags.StringFlagDefined("gradientboundaries"))
+      {
+        Region gd(ma, BND, flags.GetStringFlag("gradientboundaries"));
+        gradientboundaries = gd.Mask(); 
+      }
+
     
     if(flags.GetDefineFlag("nograds"))
       {
