@@ -5,7 +5,7 @@ from .utils import TimeFunction
 
 class NewtonSolver:
     def __init__(self, a, u, rhs=None, freedofs=None,
-                 inverse="umfpack", solver=None):
+                 inverse="", solver=None):
         self.a, self.u, self.inverse = a, u, inverse
         self.w = u.vec.CreateVector()
         self.r = u.vec.CreateVector()
@@ -93,7 +93,7 @@ class NewtonSolver:
                                           inverse=self.inverse)
 
 
-def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", \
+def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="", \
                dirichletvalues=None, dampfactor=1, printing=True, callback=None):
     """
     Newton's method for solving non-linear problems of the form A(u)=0.
@@ -141,7 +141,7 @@ def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", \
                         printenergy=False)
 
 
-def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="umfpack", dampfactor=1, linesearch=False, printing=True, callback=None):
+def NewtonMinimization(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="", dampfactor=1, linesearch=False, printing=True, callback=None):
     """
     Newton's method for solving non-linear problems of the form A(u)=0 involving energy integrators.
 
