@@ -242,8 +242,8 @@ namespace ngcomp
           convH1toL2.SetSize(finelevel+1);
           
           LocalHeap lh(10*1000*1000);
-          convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh);
-          convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh);
+          convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+          convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
         }
 
       auto vl2 = convL2toH1[finelevel]->CreateRowVector();
@@ -266,18 +266,18 @@ namespace ngcomp
           convH1toL2.SetSize(finelevel+1);
           
           LocalHeap lh(10*1000*1000);
-          convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh);
-          convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh);
+          convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+          convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
         }
 
       auto vl2 = convL2toH1[finelevel]->CreateRowVector();
 
-      auto shapef = convH1toL2[finelevel]->Shape();
-      auto shapec = convL2toH1[finelevel-1]->Shape();
+      auto shapec = convH1toL2[finelevel-1]->Shape();
+      auto shapef = convL2toH1[finelevel]->Shape();
 
-      vl2.Range(get<1>(shapef)) = Transpose(*convH1toL2[finelevel-1]) * v.Range(get<0>(shapef));      
-      fesL2->GetProlongation()->ProlongateInline(finelevel, vl2);
-      v.Range(get<1>(shapec)) = Transpose(*convL2toH1[finelevel]) * vl2.Range(get<0>(shapec));
+      vl2.Range(get<1>(shapef)) = Transpose(*convL2toH1[finelevel]) * v.Range(get<0>(shapef));      
+      fesL2->GetProlongation()->RestrictInline(finelevel, vl2);
+      v.Range(get<1>(shapec)) = Transpose(*convH1toL2[finelevel-1]) * vl2.Range(get<0>(shapec));
     }    
   };
 
