@@ -19,6 +19,7 @@
 #include <l2hofe.hpp>
 #include <bdbequations.hpp>
 #include <diffop_impl.hpp>
+#include <fesconvert.hpp>
 
 using namespace ngmg; 
 
@@ -197,6 +198,91 @@ namespace ngcomp
     typedef void DIFFOP_TRACE;
   };
 
+  class H1HOProlongation : public Prolongation
+  {
+    weak_ptr<H1HighOrderFESpace> fes;
+    shared_ptr<FESpace> fesL2;
+
+    mutable Array<shared_ptr<BaseMatrix>> convL2toH1;
+    mutable Array<shared_ptr<BaseMatrix>> convH1toL2;
+  public:
+    H1HOProlongation (weak_ptr<H1HighOrderFESpace> afes)
+      : fes(afes)
+    {
+      Flags flagsL2;
+      flagsL2.SetFlag ("order", fes.lock()->GetOrder());
+      fesL2 = CreateFESpace ("L2", fes.lock()->GetMeshAccess(), flagsL2);
+      fesL2->Update();
+      fesL2->FinalizeUpdate();
+      int levels = fes.lock()->GetMeshAccess()->GetNLevels();
+      convL2toH1.SetSize(levels);
+      convH1toL2.SetSize(levels);
+
+      LocalHeap lh(10*1000*1000);
+      convL2toH1[levels-1] = ConvertOperator(fesL2, fes.lock(), VOL, lh);
+      convH1toL2[levels-1] = ConvertOperator(fes.lock(), fesL2, VOL, lh);
+    }
+
+    virtual void Update (const FESpace & /* fes */) override
+    {
+      fesL2->Update();
+      fesL2->FinalizeUpdate();
+    }
+
+    ///
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
+    { return NULL; }
+
+    ///
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
+    {
+      if (convL2toH1.Size() < finelevel+1)
+        {
+          convL2toH1.SetSize(finelevel+1);
+          convH1toL2.SetSize(finelevel+1);
+          
+          LocalHeap lh(10*1000*1000);
+          convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh);
+          convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh);
+        }
+
+      auto vl2 = convL2toH1[finelevel]->CreateRowVector();
+
+      auto shapec = convH1toL2[finelevel-1]->Shape();
+      auto shapef = convL2toH1[finelevel]->Shape();
+
+      vl2.Range(get<0>(shapec)) = *convH1toL2[finelevel-1] * v.Range(get<1>(shapec));      
+      fesL2->GetProlongation()->ProlongateInline(finelevel, vl2);
+      v.Range(get<0>(shapef)) = *convL2toH1[finelevel] * vl2.Range(get<1>(shapef));
+    }    
+
+    
+    ///
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override
+    {
+      if (convL2toH1.Size() < finelevel+1)
+        {
+          convL2toH1.SetSize(finelevel+1);
+          convH1toL2.SetSize(finelevel+1);
+          
+          LocalHeap lh(10*1000*1000);
+          convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh);
+          convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh);
+        }
+
+      auto vl2 = convL2toH1[finelevel]->CreateRowVector();
+
+      auto shapef = convH1toL2[finelevel]->Shape();
+      auto shapec = convL2toH1[finelevel-1]->Shape();
+
+      vl2.Range(get<1>(shapef)) = Transpose(*convH1toL2[finelevel-1]) * v.Range(get<0>(shapef));      
+      fesL2->GetProlongation()->ProlongateInline(finelevel, vl2);
+      v.Range(get<1>(shapec)) = Transpose(*convL2toH1[finelevel]) * vl2.Range(get<0>(shapec));
+    }    
+  };
+
+
+
   
   H1HighOrderFESpace ::  
   H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
@@ -367,7 +453,9 @@ namespace ngcomp
         ;
       }
 
-    prol = make_shared<LinearProlongation> (GetMeshAccess());
+    test_ho_prolongation = flags.GetDefineFlag("hoprolongation");
+    if (!test_ho_prolongation)
+      prol = make_shared<LinearProlongation> (GetMeshAccess());
 
     needs_transform_vec = false;
   }
@@ -652,6 +740,12 @@ into the wirebasket.
                                 IntRange(low_order_space->GetNDof()),
                                 IsComplex());
     // timer3.Stop();
+
+    if (test_ho_prolongation && !prol)
+      {
+        prol = make_shared<H1HOProlongation> (dynamic_pointer_cast<H1HighOrderFESpace>(this->shared_from_this()));
+        prol->Update(*this);
+      }
   }
 
 
@@ -785,7 +879,8 @@ into the wirebasket.
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
     */
-    prol->Update(*this);
+    if (prol)
+      prol->Update(*this);
   }
 
 

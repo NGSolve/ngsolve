@@ -292,7 +292,7 @@ namespace ngcomp
     virtual ~L2HoProlongationTrig()
     { ; }
     ///
-    virtual void Update (const FESpace & fes) override
+    virtual void Update (const FESpace & /* fes */) override
     {
       size_t oldne = trig_creation_class.Size();
       size_t ne = ma->GetNE();

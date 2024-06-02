@@ -52,6 +52,7 @@ namespace ngcomp
     bool nodalp2;
     bool nodal;
     bool highest_order_dc;
+    bool test_ho_prolongation;    
   public:
 
     H1HighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags=false);
