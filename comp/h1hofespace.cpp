@@ -229,6 +229,12 @@ namespace ngcomp
       fesL2->FinalizeUpdate();
     }
 
+    virtual size_t GetNDofLevel (int level) override
+    {
+      return fes.lock()->GetNDofLevel(level);
+    }
+    
+
     ///
     virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
