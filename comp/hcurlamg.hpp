@@ -24,7 +24,7 @@ namespace ngcomp
     int coarsenings_per_level;
     bool blockjacobi_smoother;
     bool need_vertex_prolongation = false;
-    int nv;
+    int nv = 0;
 
   public:
     HCurlAMG_Matrix (bool _node_on_each_level = false,
