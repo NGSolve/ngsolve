@@ -353,6 +353,11 @@ namespace ngcomp
     highest_order_dc = flags.GetDefineFlag ("highest_order_dc");
     if (highest_order_dc && order < 2)
       throw Exception ("highest_order_dc needs order >= 2");
+
+
+    test_ho_prolongation = flags.GetDefineFlag("hoprolongation");
+    if (test_ho_prolongation)
+      no_low_order_space=true;
     
     Flags loflags = flags;
     loflags.SetFlag ("order", 1);
@@ -453,7 +458,6 @@ namespace ngcomp
         ;
       }
 
-    test_ho_prolongation = flags.GetDefineFlag("hoprolongation");
     if (!test_ho_prolongation)
       prol = make_shared<LinearProlongation> (GetMeshAccess());
 
@@ -495,6 +499,9 @@ into the wirebasket.
       "  use lowest-order edge dofs for BDDC wirebasket";
     docu.Arg("wb_fulledges") = "bool = false\n"
       "  use all edge dofs for BDDC wirebasket";
+    docu.Arg("hoprolongation") = "bool = false\n"
+      "  (experimental, only trigs) creates high order prolongation,\n"
+      "  and switches off low-order space";
     return docu;
   }
 
