@@ -1575,7 +1575,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     // size_t nd = GetNDof();
 
-    bool eliminate_internal = flags.GetDefineFlag("eliminate_internal");
+    bool eliminate_internal =
+      flags.GetDefineFlag("eliminate_internal") ||
+      flags.GetDefineFlag("condense");
+      
     auto freedofs = GetFreeDofs(eliminate_internal);
 
     if (flags.GetDefineFlag("subassembled"))
@@ -1597,6 +1600,96 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     */
 
+
+    // new version for ngs24:
+
+    Array<string> blocktypes { flags.GetStringListFlag("blocktype") };
+
+    
+    if (flags.GetStringFlag("blocktype")=="vertex" ||
+        flags.GetStringFlag("blocktype")=="edge" ||
+        flags.GetStringFlag("blocktype")=="face" ||
+        flags.GetStringFlag("blocktype")=="facet" ||
+        flags.GetStringFlag("blocktype")=="vertexedge")
+      blocktypes += flags.GetStringFlag("blocktype");
+
+    
+    if (blocktypes.Size())
+      {
+        Array<DofId> dofs;
+        
+        for ( ; !creator.Done(); creator++)
+          {
+            size_t base = 0;
+
+            if (blocktypes.Contains("vertex"))
+              {
+                for (size_t i : Range(ma->GetNV()))        
+                  {
+                    GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        creator.Add (base+i, d);
+                  }
+                base += ma->GetNV();
+              }
+
+            if (blocktypes.Contains("edge") ||
+                (ma->GetDimension()==2 && blocktypes.Contains("facet")) )
+              {
+                for (size_t i : Range(ma->GetNEdges()))        
+                  {
+                    GetDofNrs (NodeId(NT_EDGE, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        creator.Add (base+i, d);
+                  }
+                base += ma->GetNEdges();
+              }
+
+            if (blocktypes.Contains("face") ||
+                (ma->GetDimension()==3 && blocktypes.Contains("facet")) )              
+              {
+                for (size_t i : Range(ma->GetNFaces()))        
+                  {
+                    GetDofNrs (NodeId(NT_FACE, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        creator.Add (base+i, d);
+                  }
+                base += ma->GetNFaces();
+              }
+            
+            if (blocktypes.Contains("vertexedge"))
+              {
+                for (size_t i : Range(ma->GetNV()))
+                  {
+                    GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))              
+                        creator.Add (base+i, d);
+                  }
+                for (size_t i : Range(ma->GetNEdges()))        
+                  {
+                    Ng_Node<1> edge = ma->GetNode<1> (i);
+                    GetDofNrs (NodeId(NT_EDGE, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        for (int k = 0; k < 2; k++)
+                          creator.Add (base+edge.vertices[k], d);
+                  }
+                base += ma->GetNV();                
+              }
+          }
+
+        Table<int> table = creator.MoveTable();
+        return make_shared<Table<int>> (std::move(table));
+      }
+    
+
+
+    
+    
     if (flags.GetStringFlag("blocktype") == "edgepatch")
       {
         

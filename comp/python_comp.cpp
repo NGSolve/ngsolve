@@ -1225,13 +1225,34 @@ rho : ngsolve.fem.CoefficientFunction
           pycluster[i] = 0;
       return pycluster;
     })
-
-    .def("CreateSmoothingBlocks", [](FESpace& self, py::kwargs kwargs)
+    
+    .def("CreateSmoothingBlocks",
+         [](FESpace& self,
+            // variant<string,std::vector<string>,int> blocktype,
+            // bool condense,
+            py::kwargs kwargs)
          {
            auto flags = CreateFlagsFromKwArgs(kwargs);
            return self.CreateSmoothingBlocks(flags); 
-         })
-    ;
+         },
+         // py::arg("blocktype")="vertexpatch", py::arg("condense")=false,
+         docu_string(R"delimiter(
+Create table of smoothing blocks for block-Jacobi/block-Gauss-Seidel preconditioners.
+
+Every table entry describes the set of dofs belonging a Jacobi/Gauss-Seidel block.
+
+Paramters:
+
+blocktype: string | [ string ] | int
+    describes blocktype.
+    string form ["vertex", "edge", "face",  "facet", "vertexedge", ....]
+    or list of strings for combining multiple blocktypes
+    int is for backward compatibility with old style blocktypes
+
+condense: bool = False
+    boolexclude dofs eliminated by static condensation
+         )delimiter"))
+         ;
 
   py::class_<CompoundFESpace, shared_ptr<CompoundFESpace>, FESpace>
     (m,"ProductSpace")
