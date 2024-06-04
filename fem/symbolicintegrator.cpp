@@ -4926,6 +4926,17 @@ namespace ngfem
     return SIMD_SelectIntegrationRule (et, intorder);
   }
 
+
+  void SymbolicEnergy :: 
+  CalcElementMatrix (const FiniteElement & fel,
+                     const ElementTransformation & trafo, 
+                     FlatMatrix<double> elmat,
+                     LocalHeap & lh) const
+  {
+    FlatVector<double> elveclin(elmat.Height(), lh);
+    elveclin = 0.0;
+    CalcLinearizedElementMatrix (fel, trafo, elveclin, elmat, lh);
+  }
   
 
   void 
