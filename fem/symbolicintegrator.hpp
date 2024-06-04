@@ -791,10 +791,7 @@ public:
     CalcElementMatrix (const FiniteElement & fel,
 		       const ElementTransformation & trafo, 
 		       FlatMatrix<double> elmat,
-		       LocalHeap & lh) const
-    {
-      cout << "SymbolicEnergy :: CalcMatrix not implemented" << endl;
-    }
+		       LocalHeap & lh) const;
 
     virtual void 
     CalcLinearizedElementMatrix (const FiniteElement & fel,
