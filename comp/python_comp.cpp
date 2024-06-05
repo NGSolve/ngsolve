@@ -2551,6 +2551,8 @@ space : ngsolve.FESpace
                      py::arg("keep_internal") = "bool = True\n"
                      "  store harmonic extension and inner inverse matrix from static condensation\n"
                      "  set to False to save memory, and recompute local matrices on demand\n",
+                     py::arg("store_inner") = "bool = False\n"
+                     "  store inner element matrix (of static condensation)\n",
                      py::arg("eliminate_hidden") = "bool = False\n"
                      "  Set up BilinearForm for static condensation of hidden\n"
                      "  dofs. May be overruled by eliminate_internal.",
