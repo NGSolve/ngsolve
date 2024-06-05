@@ -1,7 +1,7 @@
 install(FILES
         mpi_poisson.py mpi_cmagnet.py mpi_navierstokes.py
-        mpi_timeDG.py
-        DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/mpi
+        mpi_timeDG.py ../__init__.py
+        DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/demos/mpi
         COMPONENT ngsolve_devel
        )
 
