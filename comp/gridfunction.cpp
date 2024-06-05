@@ -135,6 +135,8 @@ namespace ngcomp
   
   void GridFunction :: DoArchive (Archive & archive)
   {
+    static Timer t ("GridFunction Archive"); RegionTimer r (t);
+    
     GridFunctionCoefficientFunction::DoArchive(archive);
 
     archive & name & flags & flaglist;
@@ -529,6 +531,8 @@ namespace ngcomp
   template <class SCAL>
   void S_GridFunction<SCAL> :: Load (istream & ist, int mdcomp)
   {
+    static Timer t ("GridFunctionLoad"); RegionTimer r (t);
+    
     if (mdcomp == -1)
       {
         for (int comp = 0; comp < GetMultiDim(); comp++)
@@ -610,6 +614,7 @@ namespace ngcomp
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
   void  S_GridFunction<SCAL> :: LoadNodeType (istream & ist, int mdcomp) 
   {
+    static Timer t ("GridFunctionLoad node type"); RegionTimer r (t);    
 #ifdef PARALLEL
     const auto& ma = fespace->GetMeshAccess();
     auto comm = ma->GetCommunicator();
@@ -749,6 +754,7 @@ namespace ngcomp
   template <class SCAL>
   void S_GridFunction<SCAL> :: Save (ostream & ost, int mdcomp) const
   {
+    static Timer t ("GridFunctionSave"); RegionTimer r (t);        
     if (mdcomp == -1)
       {
         for (int comp = 0; comp < GetMultiDim(); comp++)
@@ -833,6 +839,7 @@ namespace ngcomp
   template <class SCAL>  template <int N, NODE_TYPE NTYPE>
   void S_GridFunction<SCAL> :: SaveNodeType (ostream & ost, int mdcomp) const
   {
+    static Timer t ("GridFunctionSave notetype"); RegionTimer r (t);            
 #ifdef PARALLEL
     const auto& ma = fespace->GetMeshAccess();
     auto comm = ma->GetCommunicator();
