@@ -1,23 +1,27 @@
+install(FILES __init__.py DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/demos COMPONENT ngsolve_devel)
 install(FILES
+        __init__.py
         poisson.py adaptive.py cmagnet.py navierstokes.py
         elasticity.py poisson.ipynb
-        DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/intro
+        DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/demos/intro
         COMPONENT ngsolve_devel
        )
 
 install(FILES
+        __init__.py
         mixed.py hybrid_dg.py nonlin.py taskmanager.py
         pickling.py pml.py DG/timeDG-skeleton.py DG/timeDGwave.py
         DG/timeDG.py DG/timeDGlap.py hdivdiv/hhj.py hdivdiv/tdnns.py
-        DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/howto
+        DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/demos/howto
         COMPONENT ngsolve_devel
        )
 
 install(FILES
+        __init__.py
         TensorProduct/tp_dg_1d_1d.py
         TensorProduct/tp_dg_2d_1d.py TensorProduct/tp_dg_1d_2d.py
         TensorProduct/tp_dg_2d_2d.py
-        DESTINATION ${NGSOLVE_INSTALL_DIR_RES}/ngsolve/py_tutorials/TensorProduct
+        DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve/demos/TensorProduct
         COMPONENT ngsolve_devel
        )
 
