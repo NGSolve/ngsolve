@@ -526,4 +526,53 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
     timer.Stop()
     return d
 
-__all__ = ['Draw']
+def FieldLines(
+    function: ngs.CoefficientFunction,
+    start_region: ngs.Region,
+    num_lines: int = 100,
+    length: float = 0.5,
+    name: str = "fieldlines",
+    max_points_per_line: float = 500,
+    thickness: float = 0.0015,
+    tolerance: float = 0.0005,
+    direction: int = 0,
+):
+    rules = {}
+    # use 5th order integration rule for all element types as potential starting points
+    for et in [
+        ngs.ET.TRIG,
+        ngs.ET.QUAD,
+        ngs.ET.TET,
+        ngs.ET.HEX,
+        ngs.ET.PRISM,
+        ngs.ET.PYRAMID,
+    ]:
+        rules[et] = ngs.IntegrationRule(et, 5)
+
+    # randomize starting points to choose approx num_lines, higher function values increase selection probability
+    all_mapped_points = start_region.mesh.MapToAllElements(rules, start_region)
+    values = ngs.Norm(function)(all_mapped_points).flatten()
+    sum_values = sum(values)
+
+    rand_values = np.random.rand(len(values))
+    selection = np.where(values > sum_values/num_lines * rand_values)
+    mapped_points = all_mapped_points[selection]
+
+    # generate raw staring point coordinates and call low_level interface routing
+    points = ngs.CF((ngs.x, ngs.y, ngs.z))(mapped_points)
+    data = function._BuildFieldLines(
+        start_region.mesh,
+        points,
+        len(points),
+        length,
+        max_points_per_line,
+        thickness,
+        tolerance,
+        direction,
+        False,
+    )
+    data["name"] = name
+    return data
+
+
+__all__ = ["Draw", "FieldLines"]
