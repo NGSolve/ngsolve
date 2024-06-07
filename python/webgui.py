@@ -93,16 +93,18 @@ def GetData(obj, args, kwargs):
                 deformation = kwargs['deformation']
                 if isinstance(deformation, ngs.GridFunction) and len(deformation.vecs)==dim:
                     md_deformation = True
-                    deformation = ngs.GridFunction(deformation.space)
+                    deformation_gf = ngs.GridFunction(deformation.space)
+                else:
+                    deformation_gf = deformation
 
             data = []
             for i in range(1,dim):
                 gf.vec.data = cf.vecs[i]
 
                 if md_deformation:
-                    deformation.vec.data = deformation.vecs[i]
+                    deformation_gf.vec.data = deformation.vecs[i]
 
-                data.append(BuildRenderData(mesh, gf, order=kwargs['order'], draw_surf=kwargs['draw_surf'], draw_vol=kwargs['draw_vol'], intpoints=kwargs['intpoints'], deformation=deformation, regions=regions, objects=kwargs['objects'], nodal_p1=kwargs['nodal_p1'], settings=kwargs['settings']))
+                data.append(BuildRenderData(mesh, gf, order=kwargs['order'], draw_surf=kwargs['draw_surf'], draw_vol=kwargs['draw_vol'], intpoints=kwargs['intpoints'], deformation=deformation_gf, regions=regions, objects=kwargs['objects'], nodal_p1=kwargs['nodal_p1'], settings=kwargs['settings']))
             d['multidim_data'] = data
             d['multidim_interpolate'] = kwargs['interpolate_multidim']
             d['multidim_animate'] = kwargs['animate']
