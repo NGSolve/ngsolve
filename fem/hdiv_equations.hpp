@@ -67,6 +67,26 @@ public:
       (mip.GetJacobian() * Trans (Cast(fel).GetShape(mip.IP(), lh)));
   }
 
+
+  static int DimRef() { return D; } 
+  
+  template <typename IP, typename MAT>
+  static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                 MAT && mat, LocalHeap & lh)
+  {
+    Cast(fel).CalcShape (ip, Trans(mat));
+  }
+
+  template <typename MIP, typename MAT>
+  static void CalcTransformationMatrix (const MIP & bmip,
+                                        MAT & mat, LocalHeap & lh)
+  {
+    // mat = Trans(static_cast<const MappedIntegrationPoint<D,D>&>(mip).GetJacobianInverse());
+    auto & mip = static_cast<const MappedIntegrationPoint<D,D>&>(bmip);
+    mat = 1./mip.GetJacobiDet() * mip.GetJacobian();
+  }
+    
+  
   static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                     const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
   {
