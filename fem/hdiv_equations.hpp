@@ -546,6 +546,8 @@ public:
     typedef DiffOpGradientTraceHDiv<D> DIFFOP_TRACE;
     ///
 
+
+    
 #ifdef UNUSED    
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,SliceMatrix<double,ColMajor>>::value, int>::type = 0>
