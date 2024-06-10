@@ -450,6 +450,77 @@ namespace ngfem
     }
 
 
+    static int DimRef() { return DIM_DMAT + ORIG::DIM_DMAT; }   // grad(u), u
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      int nd_u = fel.GetNDof();
+
+      FlatMatrixFixWidth<ORIG::DIM_DMAT> shape_ul(nd_u, lh);
+      FlatMatrixFixWidth<ORIG::DIM_DMAT> shape_ur(nd_u, lh);
+      FlatMatrixFixWidth<ORIG::DIM_DMAT> shape_ull(nd_u, lh);
+      FlatMatrixFixWidth<ORIG::DIM_DMAT> shape_urr(nd_u, lh);
+      FlatMatrixFixWidth<ORIG::DIM_DMAT> dshape_u_ref(nd_u, lh);
+      
+      FlatMatrixFixWidth<DIM_ELEMENT> dshape_u_ref_comp(nd_u, lh);
+      FlatMatrixFixWidth<DIM_SPACE> dshape_u(nd_u, lh);
+      
+      for (int j = 0; j < DIM_ELEMENT; j++)   // d / dxj
+        {
+          IntegrationPoint ipl(ip);
+          ipl(j) -= eps();
+          IntegrationPoint ipr(ip);
+          ipr(j) += eps();
+          IntegrationPoint ipll(ip);
+          ipll(j) -= 2*eps();
+          IntegrationPoint iprr(ip);
+          iprr(j) += 2*eps();
+          
+
+          ORIG::GenerateMatrixRef (fel, ipl, Trans(shape_ul), lh);
+          ORIG::GenerateMatrixRef (fel, ipr, Trans(shape_ur), lh);
+          ORIG::GenerateMatrixRef (fel, ipll, Trans(shape_ull), lh);
+          ORIG::GenerateMatrixRef (fel, iprr, Trans(shape_urr), lh);
+          
+          dshape_u_ref = (1.0/(12.0*eps())) * (8.0*shape_ur-8.0*shape_ul-shape_urr+shape_ull);
+          for (int l = 0; l < ORIG::DIM_DMAT; l++)
+            mat.Row(j*ORIG::DIM_DMAT+l) = dshape_u_ref.Col(l);
+        }
+
+      ORIG::GenerateMatrixRef (fel, ip, mat.Rows(DIM_DMAT, DIM_DMAT+ORIG::DIM_DMAT), lh);
+    }
+
+    
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      auto matgrad = Trans(static_cast<const MappedIntegrationPoint<DIM_SPACE,DIM_SPACE>&>(mip).GetJacobianInverse());
+      Mat<DIM_SPACE,DIM_SPACE> matshape;
+      ORIG::CalcTransformationMatrix (mip, matshape, lh);
+
+      // input: du0/dx0, du1/dx0, du2/dx0,  d0/dx1, ....
+      // output du0/dx0, du1/dx0, du2/dx0 ... 
+      
+      for (int i = 0; i < DIM_SPACE; i++)
+        for (int j = 0; j < DIM_SPACE; j++)
+          for (int k = 0; k < DIM_SPACE; k++)
+            for (int l = 0; l < DIM_SPACE; l++)
+              mat(k*DIM_SPACE+i, l*DIM_SPACE+j) = matshape(i,j) * matgrad(k,l);
+
+
+      for (int i = 0; i < DIM_SPACE; i++)
+        for (int j = 0; j < DIM_SPACE; j++)
+          for (int k = 0; k < DIM_SPACE; k++)
+            mat(i*DIM_SPACE+k, DIM_SPACE*DIM_SPACE+j) = 0.0;
+    }
+
+
+    
+
     template <typename AFEL, typename MIP, typename MAT,
               typename std::enable_if<std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
     static void GenerateMatrix (const AFEL & bfel, const MIP & mip,

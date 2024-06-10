@@ -74,6 +74,28 @@ namespace ngfem
     }
 
 
+
+
+    static int DimRef() { return D; } 
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (ip, Trans(mat));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat = Trans(static_cast<const MappedIntegrationPoint<D,D>&>(mip).GetJacobianInverse());
+    }
+    
+
+
+    
+
     static void GenerateMatrixIR (const FiniteElement & fel, 
                                   const MappedIntegrationRule<D,D> & mir,
                                   BareSliceMatrix<double,ColMajor> mat, LocalHeap & lh)
