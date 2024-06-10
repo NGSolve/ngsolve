@@ -504,7 +504,6 @@ namespace ngfem
 
       // input: du0/dx0, du1/dx0, du2/dx0,  d0/dx1, ....
       // output du0/dx0, du1/dx0, du2/dx0 ... 
-      
       for (int i = 0; i < DIM_SPACE; i++)
         for (int j = 0; j < DIM_SPACE; j++)
           for (int k = 0; k < DIM_SPACE; k++)
@@ -512,10 +511,47 @@ namespace ngfem
               mat(k*DIM_SPACE+i, l*DIM_SPACE+j) = matshape(i,j) * matgrad(k,l);
 
 
+      // numerical diff of ORIG::CalcTransformationMatrix (mip, matshape, lh);
+
       for (int i = 0; i < DIM_SPACE; i++)
         for (int j = 0; j < DIM_SPACE; j++)
           for (int k = 0; k < DIM_SPACE; k++)
-            mat(i*DIM_SPACE+k, DIM_SPACE*DIM_SPACE+j) = 0.0;
+            mat(k*DIM_SPACE+i, DIM_SPACE*DIM_SPACE+j) = 0.0;
+      
+      Mat<DIM_SPACE,DIM_SPACE> dmatshape_dxj;
+      const IntegrationPoint& ip = mip.IP();
+      const ElementTransformation & eltrans = mip.GetTransformation();      
+      for (int j = 0; j < DIM_ELEMENT; j++)   // d / dxj
+        {
+          IntegrationPoint ipl(ip);
+          ipl(j) -= eps();
+          IntegrationPoint ipr(ip);
+          ipr(j) += eps();
+          IntegrationPoint ipll(ip);
+          ipll(j) -= 2*eps();
+          IntegrationPoint iprr(ip);
+          iprr(j) += 2*eps();
+          
+          MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mipl(ipl, eltrans);
+          MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mipr(ipr, eltrans);
+          MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> mipll(ipll, eltrans);
+          MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> miprr(iprr, eltrans);
+
+          Mat<DIM_SPACE,DIM_SPACE> dml, dmll, dmr, dmrr;
+          ORIG::CalcTransformationMatrix (mipl, dml, lh);          
+          ORIG::CalcTransformationMatrix (mipr, dmr, lh);          
+          ORIG::CalcTransformationMatrix (mipll, dmll, lh);          
+          ORIG::CalcTransformationMatrix (miprr, dmrr, lh);
+
+          dmatshape_dxj = (1.0/(12.0*eps())) * (8.0*dmr-8.0*dml-dmrr+dmll);
+
+          for (int i = 0; i < DIM_SPACE; i++)
+            for (int l = 0; l < DIM_SPACE; l++)
+              for (int k = 0; k < DIM_SPACE; k++)
+                mat(k*DIM_SPACE+i, DIM_SPACE*DIM_SPACE+l) += matgrad(k,j) * dmatshape_dxj(i,l);
+        }
+
+      
     }
 
 
