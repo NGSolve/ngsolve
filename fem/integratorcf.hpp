@@ -47,14 +47,14 @@ namespace ngfem
     TSCAL T_Integrate (const ngcomp::MeshAccess & ma,
                        FlatVector<TSCAL> element_wise);
 
-    virtual double Integrate (const ngcomp::MeshAccess & ma,
+    NGS_DLL_HEADER virtual double Integrate (const ngcomp::MeshAccess & ma,
                               FlatVector<double> element_wise);
 
-    virtual Complex Integrate (const ngcomp::MeshAccess & ma,
+    NGS_DLL_HEADER virtual Complex Integrate (const ngcomp::MeshAccess & ma,
                                FlatVector<Complex> element_wise);
     
-    virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator() const;
-    virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator() const;
+    NGS_DLL_HEADER virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator() const;
+    NGS_DLL_HEADER virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator() const;
   };
   
   inline Integral operator* (double fac, const Integral & cf)
