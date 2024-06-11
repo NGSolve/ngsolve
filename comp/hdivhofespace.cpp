@@ -59,14 +59,39 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       auto & fel = dynamic_cast<const HDivFiniteElement<D>&> (bfel);
+
       int nd = fel.GetNDof();
       FlatMatrix<> shape(nd,D,lh);
+      
       Vec<D> n = sip.GetNV();
-      // Mat<D,D> mati;
       fel.CalcMappedShape(sip,shape);
       mat.Row(0) = shape * n;
     }
 
+    
+    static int DimRef() { return 1; } 
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      FlatMatrix<> tmp(fel.GetNDof(), D, lh);
+      static_cast<const BaseHDivFiniteElement&> (fel).CalcShape (ip, tmp);
+      Vec<D> nv = ElementTopology::GetNormals<D>(fel.ElementType())[ip.FacetNr()];
+      mat.Row(0) = tmp * nv;
+    }
+
+  template <typename MIP, typename MAT>
+  static void CalcTransformationMatrix (const MIP & bmip,
+                                        MAT & mat, LocalHeap & lh)
+  {
+    mat(0,0) = 1./bmip.GetMeasure();
+  }
+    
+
+    
+
+    
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir,
                                       BareSliceMatrix<SIMD<double>> mat)
