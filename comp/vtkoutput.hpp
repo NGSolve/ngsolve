@@ -16,7 +16,7 @@ namespace ngcomp
 
   public:
     ValueField() { ; };
-    ValueField(int adim, string aname);
+    NGS_DLL_HEADER ValueField(int adim, string aname);
     void SetDimension(int adim) { dim = adim; }
     int Dimension() { return dim; }
     void SetName(string aname) { name = aname; }

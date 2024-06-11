@@ -11,7 +11,7 @@
 namespace ngcomp
 {
 
-  class CompressedFESpace : public FESpace
+  class NGS_DLL_HEADER CompressedFESpace : public FESpace
   {
   protected:
     shared_ptr<FESpace> space;

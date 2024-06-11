@@ -553,7 +553,7 @@ namespace ngfem
               BareSliceVector<Complex> x) const override;
 
 
-    shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
+    NGS_DLL_HEADER shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
                                                shared_ptr<CoefficientFunction> dir,
                                                bool Eulerian) const override;
   };
