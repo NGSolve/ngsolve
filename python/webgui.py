@@ -24,6 +24,84 @@ def getMinMax( vals, fmin=None, fmax=None ):
     return funcmin, funcmax
 
 
+def _make_trig(N, x0=0, y0=0, dx=1, dy=1):
+    return [(x0+i*dx/N,y0+j*dy/N) for j in range(N+1) for i in range(N+1-j)]
+
+def _make_quad(N,  x0=0, y0=0, dx=1, dy=1):
+    return [(x0+i*dx/N,y0+j*dy/N) for j in range(N+1) for i in range(N+1-j)] + [(x0+1-i*dx/N,1-(y0+j*dy/N)) for j in range(N+1) for i in range(N+1-j)]
+
+_intrules = {}
+def get_intrules(dim:int, order: int):
+    if (dim,order) in _intrules:
+        return _intrules[(dim, order)]
+
+    rules = {}
+    if dim == 2:
+        if order > 3:
+            n = (order+2)//3
+
+            trig_points = []
+            h = 1/n
+            for i in range(n):
+                for j in range(n-i):
+                    trig_points += _make_trig(3, i*h, j*h, h, h)
+
+            for i in range(n-1):
+                for j in range(n-i-1):
+                    trig_points += _make_trig(3, (i+1)*h, (j+1)*h, -h, -h)
+
+            quad_points = []
+            for i in range(n):
+                for j in range(n):
+                    quad_points += _make_quad(3, i*h, j*h, h, h)
+
+        else:
+            trig_points =  _make_trig(order)
+            quad_points =  _make_quad(order)
+
+        rules[ngs.ET.TRIG] = ngs.IntegrationRule(trig_points, [0,]*len(trig_points))
+        rules[ngs.ET.QUAD] = ngs.IntegrationRule(quad_points, [0,]*len(quad_points))
+        
+    elif dim == 3:
+        if order > 2:
+            raise RuntimeError("only order 1 and 2 supported in 3D")
+
+        p1_tets = {}
+        p1_tets[ngs.ET.TET]   = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)]]
+        p1_tets[ngs.ET.PYRAMID]=[[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
+                                 [(1,0,0), (0,1,0), (0,0,1), (1,1,0)]]
+        p1_tets[ngs.ET.PRISM] = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
+                                 [(0,0,1), (0,1,0), (0,1,1), (1,0,0)],
+                                 [(1,0,1), (0,1,1), (1,0,0), (0,0,1)]]
+        p1_tets[ngs.ET.HEX]   = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
+                                 [(0,1,1), (1,1,1), (1,1,0), (1,0,1)],
+                                 [(1,0,1), (0,1,1), (1,0,0), (0,0,1)],
+                                 [(0,1,1), (1,1,0), (0,1,0), (1,0,0)],
+                                 [(0,0,1), (0,1,0), (0,1,1), (1,0,0)],
+                                 [(1,0,1), (1,1,0), (0,1,1), (1,0,0)]]
+
+        def makeP2Tets( p1_tets ):
+            midpoint = lambda p0, p1: tuple((0.5*(p0[i]+p1[i]) for i in range(3)))
+            p2_tets = []
+            for tet in p1_tets:
+                tet.append( midpoint(tet[0], tet[3]) )
+                tet.append( midpoint(tet[1], tet[3]) )
+                tet.append( midpoint(tet[2], tet[3]) )
+                tet.append( midpoint(tet[0], tet[1]) )
+                tet.append( midpoint(tet[0], tet[2]) )
+                tet.append( midpoint(tet[1], tet[2]) )
+                p2_tets.append(tet)
+            return p2_tets
+        for eltype in p1_tets:
+          points = p1_tets[eltype]
+          if order == 2:
+            points = makeP2Tets( points )
+          rules[eltype] = ngs.IntegrationRule( sum(points, []) )
+    else:
+        raise RuntimeError(f"invalid dimension: {dim}")
+    _intrules[(dim, order)] = rules
+    return rules
+
 @register_draw_type(ngs.Mesh, ngs.CoefficientFunction, ngs.GridFunction, ngs.comp.GridFunctionCoefficientFunction)
 def GetData(obj, args, kwargs):
         regions = {}
@@ -383,22 +461,18 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         # Bezier_points = [ [] for i in range(ndtrig) ]
         Bezier_points = []
         
-        ipts = [(i/og,j/og) for j in range(og+1) for i in range(og+1-j)]
-        ir_trig = ngs.IntegrationRule(ipts, [0,]*len(ipts))
-        ipts = ([(i/og,j/og) for j in range(og+1) for i in range(og+1-j)] + 
-                [(1-i/og,1-j/og) for j in range(og+1) for i in range(og+1-j)])
-        ir_quad = ngs.IntegrationRule(ipts, [0,]*len(ipts))
-        
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
         reg = regions[vb]
         if intpoints is not None:
             pts = mesh.MapToAllElements(intpoints, reg)
         else:
-            pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, reg)
+            pts = mesh.MapToAllElements(get_intrules(2, order), reg)
 
         pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
 
         
+        n_points_per_trig = len(get_intrules(2, order2d)[ngs.ET.TRIG])
+
         timer3minmax.Start()
         pmima = updatePMinMax(pmat, pmima)
         funcmin,funcmax = getMinMax(pmat[:,3])
@@ -408,7 +482,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         mesh_center = 0.5*(pmin+pmax)
         mesh_radius = np.linalg.norm(pmax-pmin)/2
         
-        pmat = pmat.reshape(-1, len(ir_trig), 4)
+        pmat = pmat.reshape(-1, n_points_per_trig, 4)
 
         if False:
             timer3multnumpy.Start()
@@ -416,7 +490,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
             timer3multnumpy.Stop()
         else:
             timer3multngs.Start()
-            BezierPnts = np.zeros( (len(ir_trig), pmat.shape[0], 4) )
+            BezierPnts = np.zeros( (n_points_per_trig, pmat.shape[0], 4) )
             for i in range(4):
                 ngsmat = ngs.Matrix(pmat[:,:,i].transpose())
                 BezierPnts[:,:,i] = iBvals_trig * ngsmat
@@ -430,7 +504,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         if func2 and draw_surf:
             pmat = ngs.CoefficientFunction( func2 ) (pts)   
 
-            pmat = pmat.reshape(-1, len(ir_trig), 2)
+            pmat = pmat.reshape(-1, n_points_per_trig, 2)
 
             funcmin, funcmax = getMinMax(pmat.flatten(), funcmin, funcmax)
             BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
@@ -438,7 +512,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
                 for i in range(ndtrig):
                     Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
             else:
-                BezierPnts = BezierPnts.transpose((1,0,2)).reshape(-1, len(ir_trig)//2, 4).transpose((1,0,2))
+                BezierPnts = BezierPnts.transpose((1,0,2)).reshape(-1, n_points_per_trig//2, 4).transpose((1,0,2))
 
                 for i in range(ndtrig//2):
                     Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
@@ -460,46 +534,12 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         values = []
         tets = []
 
-        midpoint = lambda p0, p1: tuple((0.5*(p0[i]+p1[i]) for i in range(3)))
-
-        def makeP2Tets( p1_tets ):
-            p2_tets = []
-            for tet in p1_tets:
-                tet.append( midpoint(tet[0], tet[3]) )
-                tet.append( midpoint(tet[1], tet[3]) )
-                tet.append( midpoint(tet[2], tet[3]) )
-                tet.append( midpoint(tet[0], tet[1]) )
-                tet.append( midpoint(tet[0], tet[2]) )
-                tet.append( midpoint(tet[1], tet[2]) )
-                p2_tets.append(tet)
-            return p2_tets
-
-        # divide any element into tets
-        p1_tets = {}
-        p1_tets[ngs.ET.TET]   = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)]]
-        p1_tets[ngs.ET.PYRAMID]=[[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
-                                 [(1,0,0), (0,1,0), (0,0,1), (1,1,0)]]
-        p1_tets[ngs.ET.PRISM] = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
-                                 [(0,0,1), (0,1,0), (0,1,1), (1,0,0)],
-                                 [(1,0,1), (0,1,1), (1,0,0), (0,0,1)]]
-        p1_tets[ngs.ET.HEX]   = [[(1,0,0), (0,1,0), (0,0,1), (0,0,0)],
-                                 [(0,1,1), (1,1,1), (1,1,0), (1,0,1)],
-                                 [(1,0,1), (0,1,1), (1,0,0), (0,0,1)],
-                                 [(0,1,1), (1,1,0), (0,1,0), (1,0,0)],
-                                 [(0,0,1), (0,1,0), (0,1,1), (1,0,0)],
-                                 [(1,0,1), (1,1,0), (0,1,1), (1,0,0)]]
-
-        intrules = {}
-        for eltype in p1_tets:
-          points = p1_tets[eltype]
-          if order3d>1:
-            points = makeP2Tets( points )
-          intrules[eltype] = ngs.IntegrationRule( sum(points, []) )
+        intrules = get_intrules(3, order3d)
 
         if intpoints is not None:
             pts = mesh.MapToAllElements(intpoints, regions[ngs.VOL])
         else:
-            pts = mesh.MapToAllElements(intrules, regions[ngs.VOL])
+            pts = mesh.MapToAllElements(get_intrules(3, order3d), regions[ngs.VOL])
             
         pmat = func1(pts)
 
