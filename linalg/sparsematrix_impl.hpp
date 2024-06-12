@@ -9,6 +9,7 @@
 /**************************************************************************/
 
 
+#include "sparsematrix.hpp"
 namespace ngla
 {
 
@@ -334,55 +335,9 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
-  InverseMatrix (shared_ptr<BitArray> subset) const {
-    // if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) {
-    if constexpr(ngbla::Height<TM>() != ngbla::Width<TM>()) { 
-	throw Exception("Tried to invert SparseMatrix with non-square entries!");
-	return nullptr;
-      }
-      else if constexpr(MAX_SYS_DIM < ngbla::Height<TM>()) {
-	throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need at least ")+to_string(mat_traits<TM>::HEIGHT));
-      }
-    else {
-      if ( this->GetInverseType() == SUPERLU_DIST )
-	throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
-
-
-      if ( BaseSparseMatrix :: GetInverseType() == SUPERLU )
-	{
-#ifdef USE_SUPERLU
-	  return new SuperLUInverse<TM,TV_ROW,TV_COL> (*this, subset);
-#else
-	  throw Exception ("SparseMatrix::InverseMatrix:  SuperLUInverse not available");
-#endif
-	}
-      else if (  BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
-	{
-	  if(is_pardiso_available)
-	    return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM, TV_ROW, TV_COL>>(this->shared_from_this()), subset);
-	  else
-	    throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-	}
-      else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
-	{
-#ifdef USE_UMFPACK
-	  return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM, TV_ROW, TV_COL>>(this->shared_from_this()), subset);
-#else
-	  throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
-#endif
-	}
-      else if (  BaseSparseMatrix :: GetInverseType()  == MUMPS)
-	{
-#ifdef USE_MUMPS
-	  return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*this, subset);
-#else
-	  throw Exception ("SparseMatrix::InverseMatrix: MumpsInverse not available");
-#endif
-	}
-      else
-	return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM, TV_ROW, TV_COL>>(this->shared_from_this()), subset);
-      //#endif
-    }
+  InverseMatrix (shared_ptr<BitArray> subset) const
+  {
+    return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), subset, nullptr);
   }
 
   // template <class TM>
@@ -392,68 +347,7 @@ namespace ngla
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   InverseMatrix (shared_ptr<const Array<int>> clusters) const
   {
-    // if constexpr(mat_traits<TM>::HEIGHT != mat_traits<TM>::WIDTH) {
-    if constexpr(ngbla::Height<TM>() != ngbla::Width<TM>()) { 
-	throw Exception("Tried to invert SparseMatrix with non-square entries!");
-	return nullptr;
-      }
-    else if constexpr(MAX_SYS_DIM < ngbla::Height<TM>() ) {
-	throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need at least ")+to_string(ngbla::Height<TM>()));
-      }
-    else {
-      // #ifndef ASTRID
-      // #ifdef USE_SUPERLU
-      //     return new SuperLUInverse<TM> (*this, 0, clusters);
-      // #else
-      // #ifdef USE_PARDISO
-      //     return new PardisoInverse<TM,TV_ROW,TV_COL> (*this, 0, clusters);
-      // #else
-      //     return new SparseCholesky<TM,TV_ROW,TV_COL> (*this, 0, clusters);
-      // #endif
-      // #endif
-      // #endif
-
-      // #ifdef ASTRID
-
-      if ( this->GetInverseType() == SUPERLU_DIST )
-	throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
-
-      if (  BaseSparseMatrix :: GetInverseType()  == SUPERLU )
-	{
-#ifdef USE_SUPERLU
-	  return make_shared<SuperLUInverse<TM,TV_ROW,TV_COL>> (*this, 0, clusters);
-#else
-	  throw Exception ("SparseMatrix::InverseMatrix:  SuperLUInverse not available");
-#endif
-	}
-      else if ( BaseSparseMatrix :: GetInverseType()  == PARDISO ||  BaseSparseMatrix :: GetInverseType()  == PARDISOSPD)
-	{
-	  if(is_pardiso_available)
-	    return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), nullptr, clusters);
-	  else
-	    throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-	}
-      else if (  BaseSparseMatrix :: GetInverseType()  == UMFPACK)
-	{
-#ifdef USE_UMFPACK
-	  return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), nullptr, clusters);
-#else
-	  throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
-#endif
-	}
-      else if ( BaseSparseMatrix :: GetInverseType()  == MUMPS )
-	{
-#ifdef USE_MUMPS
-	  return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*this, nullptr, clusters);
-#else
-	  throw Exception ("SparseMatrix::InverseMatrix:  MumpsInverse not available");
-#endif
-	}
-      else
-	{
-	  return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>> (dynamic_pointer_cast<const SparseMatrix<TM,TV_ROW,TV_COL>>(this->shared_from_this()), nullptr, clusters);
-	}
-    }
+    return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), nullptr, clusters);
   }
 
   template <class TM, class TV_ROW, class TV_COL>
