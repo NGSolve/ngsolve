@@ -884,7 +884,10 @@ namespace ngla
 #include <sparsematrix_spec.hpp>
 #endif
 
-  
+shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatrix> A,
+                                                 shared_ptr<BitArray> subset,
+                                                 shared_ptr<const Array<int>> clusters);
+
 #ifdef FILE_SPARSEMATRIX_CPP
 #define SPARSEMATRIX_EXTERN
 #else

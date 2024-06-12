@@ -2070,6 +2070,116 @@ namespace ngla
   }
 
 
+template <class TM, class TV_ROW, class TV_COL>
+shared_ptr<BaseMatrix> InverseSparseMatrixTM (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> A, shared_ptr<BitArray> const &subset, shared_ptr<const Array<int>>  const &clusters)
+{
+  switch(A->GetInverseType())
+  {
+    case(SUPERLU_DIST):
+    {
+    	throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
+      return nullptr;
+      break;
+    }
+    case (SUPERLU):
+    {
+  #ifdef USE_SUPERLU
+      return new SuperLUInverse<TM,TV_ROW,TV_COL> (*A, subset, clusters);
+  #else
+      throw Exception ("SparseMatrix::InverseMatrix:  SuperLUInverse not available");
+      return nullptr;
+  #endif
+      break;
+    }
+    case(PARDISO):
+    case(PARDISOSPD):
+    {
+      if(is_pardiso_available)
+        return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>>(A, subset, clusters);
+      else
+      {
+        throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
+        return nullptr;
+      }
+      break;
+    }
+    case(UMFPACK):
+    {
+#ifdef USE_UMFPACK
+	  return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>>(A, subset, clusters);
+#else
+	  throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
+#endif
+      break;
+    }
+    case(MUMPS):
+    {
+#ifdef USE_MUMPS
+	  return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*A, subset, clusters);
+#else
+	  throw Exception ("SparseMatrix::InverseMatrix: MumpsInverse not available");
+#endif
+      break;
+    }
+    default:
+    {
+    	return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>>(A, subset, clusters);
+    }
+  }
+}
+
+
+shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatrix> baseA,
+                                                 shared_ptr<BitArray> subset,
+                                                 shared_ptr<const Array<int>> clusters)
+{
+  auto [dynH, dynW] = baseA->EntrySizes();
+
+  shared_ptr<BaseMatrix> inv = nullptr;
+
+  if ( dynH == dynW )
+  {
+    Switch<MAX_SYS_DIM>(dynH - 1, [&](auto HM)
+    {
+      constexpr int H = HM + 1;
+
+      if constexpr(H == 1)
+      {
+        if ( auto A = dynamic_pointer_cast<const SparseMatrix<double>>(baseA) )
+        {
+          inv = InverseSparseMatrixTM<double>(A, subset, clusters);
+        }
+        else
+        {
+          inv = InverseSparseMatrixTM<Complex>(dynamic_pointer_cast<const SparseMatrix<Complex>>(baseA), subset, clusters);
+        }
+      }
+      else
+      {
+        if (auto A = dynamic_pointer_cast<const SparseMatrix<Mat<H, H, double>>>(baseA))
+        {
+          inv = InverseSparseMatrixTM(A, subset, clusters);
+        }
+        else
+        {
+          inv = InverseSparseMatrixTM(dynamic_pointer_cast<const SparseMatrix<Mat<H, H, Complex>>>(baseA), subset, clusters);
+        }
+      }
+    });
+
+    if ( inv == nullptr )
+    {
+      throw Exception("SparseMatrix inverse not available for block-size " + std::to_string(dynH) + " matrix");
+    }
+  }
+  else
+  {
+    throw Exception("SparseMatrix inverse not available for non-square " + std::to_string(dynH) + "x" + std::to_string(dynW) + " matrix");
+  }
+  return inv;
+}
+
+
   //  template class SparseMatrix<double>;
 #define NONExx
 #ifdef NONExx
