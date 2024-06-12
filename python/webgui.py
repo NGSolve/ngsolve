@@ -595,6 +595,8 @@ def FieldLines(
     all_mapped_points = start_region.mesh.MapToAllElements(rules, start_region)
     values = ngs.Norm(function)(all_mapped_points).flatten()
     sum_values = sum(values)
+    max_value = max(values)
+    min_value = min(values)
 
     rand_values = np.random.rand(len(values))
     selection = np.where(values > sum_values/num_lines * rand_values)
@@ -614,6 +616,8 @@ def FieldLines(
         False,
     )
     data["name"] = name
+    data["min"] = min_value
+    data["max"] = max_value
     return data
 
 
