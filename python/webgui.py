@@ -647,19 +647,19 @@ def FieldLines(
         )
         if a == 0:
             global_data = data
-            global_data["min"] = min_value
-            global_data["max"] = max_value
+            global_data["min"] = min(values)
+            global_data["max"] = max(values)
             if function.is_complex:
                 global_data["max_phase_dist"] = np.pi / 180 * 15
                 global_data["phase"] = [phi]
                 global_data["offset"] = [0]
             else:
                 global_data["max_phase_dist"] = 0.5
-                global_data["min"] = min(global_data["min"], min_value)
-                global_data["max"] = max(global_data["max"], max_value)
         else:
             AddFieldLines(global_data, data)
             global_data["phase"].append(phi)
+            global_data["min"] = min(global_data["min"], min(values))
+            global_data["max"] = max(global_data["max"], max(values))
 
     global_data["fade_dist"] = 0.0
     global_data["name"] = name
