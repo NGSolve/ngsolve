@@ -1,7 +1,7 @@
 import math
 import numpy as np
 import ngsolve as ngs
-
+from typing import Optional
 from netgen.webgui import Draw, register_draw_type, WebGLScene, encodeData
 
 
@@ -184,15 +184,15 @@ def GetData(obj, args, kwargs):
 
                 data.append(BuildRenderData(mesh, gf, order=kwargs['order'], draw_surf=kwargs['draw_surf'], draw_vol=kwargs['draw_vol'], intpoints=kwargs['intpoints'], deformation=deformation_gf, regions=regions, objects=kwargs['objects'], nodal_p1=kwargs['nodal_p1'], settings=kwargs['settings']))
             d['multidim_data'] = data
-            d['multidim_interpolate'] = kwargs['interpolate_multidim']
-            d['multidim_animate'] = kwargs['animate']
+        d['multidim_interpolate'] = kwargs['interpolate_multidim']
+        d['multidim_animate'] = kwargs['animate']
 
         d['deformation_scale'] = kwargs['scale']
 
-        if 'is_complex' in d and d['is_complex'] and 'animate_complex' in kwargs:
+        if 'is_complex' in d and d['is_complex'] or 'animate_complex' in kwargs:
             s = d['gui_settings']
             if 'Complex' not in s:
-                s['Complex'] = dict(phase= 0.0, speed=2, animate=False)
+                s['Complex'] = dict(phase= 0.0, speed=1, animate=False)
             s['Complex']['animate'] = kwargs['animate_complex']
 
         if 'colors' in kwargs:
@@ -568,9 +568,22 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
     timer.Stop()
     return d
 
+def AddFieldLines(data: dict, add_data: dict):
+    if "num_points" not in data:
+        data["num_points"] = [len(data["value"])]
+
+    data["num_points"].append(len(add_data["value"]))
+    data["pstart"] += add_data["pstart"]
+    data["pend"] += add_data["pend"]
+    data["value"] += add_data["value"]
+
+    return data
+
 def FieldLines(
     function: ngs.CoefficientFunction,
-    start_region: ngs.Region,
+    start_region: Optional[ngs.Region] = None,
+    mesh: Optional[ngs.Mesh] = None,
+    start_points: Optional[list] = None,
     num_lines: int = 100,
     length: float = 0.5,
     name: str = "fieldlines",
@@ -579,6 +592,7 @@ def FieldLines(
     tolerance: float = 0.0005,
     direction: int = 0,
 ):
+    assert start_region or (mesh and start_points), "Either start_region or mesh and start_points must be provided"
     rules = {}
     # use 5th order integration rule for all element types as potential starting points
     for et in [
@@ -591,34 +605,65 @@ def FieldLines(
     ]:
         rules[et] = ngs.IntegrationRule(et, 5)
 
-    # randomize starting points to choose approx num_lines, higher function values increase selection probability
-    all_mapped_points = start_region.mesh.MapToAllElements(rules, start_region)
-    values = ngs.Norm(function)(all_mapped_points).flatten()
-    sum_values = sum(values)
-    max_value = max(values)
-    min_value = min(values)
+    if function.is_complex:
+        num_lines = num_lines // 10
 
-    rand_values = np.random.rand(len(values))
-    selection = np.where(values > sum_values/num_lines * rand_values)
-    mapped_points = all_mapped_points[selection]
+    if start_points is not None:
+        all_mapped_points = mesh(start_points[:,0], start_points[:,1], start_points[:,2])
+    else:
+        mesh = start_region.mesh
+        all_mapped_points = mesh.MapToAllElements(rules, start_region)
 
-    # generate raw staring point coordinates and call low_level interface routing
-    points = ngs.CF((ngs.x, ngs.y, ngs.z))(mapped_points)
-    data = function._BuildFieldLines(
-        start_region.mesh,
-        points,
-        len(points),
-        length,
-        max_points_per_line,
-        thickness,
-        tolerance,
-        direction,
-        False,
-    )
-    data["name"] = name
-    data["min"] = min_value
-    data["max"] = max_value
-    return data
+    num_angles = 100 if function.is_complex else 1
+    for a in range(num_angles):
+        phi = 2 * np.pi * a / num_angles
+
+        if function.is_complex:
+            cf = ngs.cos(phi) * function.real - ngs.sin(phi) * function.imag
+        else:
+            cf = function
+
+        # randomize starting points to choose approx num_lines, higher function values increase selection probability
+        values = ngs.Norm(cf)(all_mapped_points).flatten()
+        sum_values = sum(values)
+
+        rand_values = np.random.rand(len(values))
+        selection = np.where(values > sum_values/num_lines * rand_values)
+        mapped_points = all_mapped_points[selection]
+
+        # generate raw staring point coordinates and call low_level interface routing
+        points = ngs.CF((ngs.x, ngs.y, ngs.z))(mapped_points)
+
+        data = cf._BuildFieldLines(
+            mesh,
+            points,
+            len(points),
+            length,
+            max_points_per_line,
+            thickness,
+            tolerance,
+            direction,
+            False,
+        )
+        if a == 0:
+            global_data = data
+            global_data["min"] = min_value
+            global_data["max"] = max_value
+            if function.is_complex:
+                global_data["max_phase_dist"] = np.pi / 180 * 15
+                global_data["phase"] = [phi]
+                global_data["offset"] = [0]
+            else:
+                global_data["max_phase_dist"] = 0.5
+                global_data["min"] = min(global_data["min"], min_value)
+                global_data["max"] = max(global_data["max"], max_value)
+        else:
+            AddFieldLines(global_data, data)
+            global_data["phase"].append(phi)
+
+    global_data["fade_dist"] = 0.0
+    global_data["name"] = name
+    return global_data
 
 
 __all__ = ["Draw", "FieldLines"]
