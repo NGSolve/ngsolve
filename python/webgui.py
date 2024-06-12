@@ -666,4 +666,4 @@ def FieldLines(
     return global_data
 
 
-__all__ = ["Draw", "FieldLines"]
+__all__ = ["Draw", "FieldLines", "AddFieldLines"]
