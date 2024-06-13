@@ -9,10 +9,133 @@
 #include "../fem/tangentialfacetfe.hpp"
 #include "../fem/hcurllofe.hpp"
 #include <../fem/hcurl_equations.hpp>
+#include <../fem/diffop_impl.hpp>
 
 
 namespace ngcomp
 {
+
+
+
+  template<int D>
+  class DiffOpTangentialComponentHCurl: public DiffOp<DiffOpTangentialComponentHCurl<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = D };
+    enum { DIFFORDER = 0 };
+
+    static Array<int> GetDimensions() { return Array<int> ({D}); }
+
+    /*
+      template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HDivDivFiniteElement<D> & fel =
+        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
+      fel.CalcMappedShape_Matrix (mip,Trans(mat));
+    }
+    */
+    
+    template <typename FEL,typename SIP,typename MAT>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      MAT && mat,LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      auto & fel = dynamic_cast<const HCurlFiniteElement<D>&> (bfel);
+
+      int nd = fel.GetNDof();
+      FlatMatrix<> shape(nd,D,lh);
+      
+      Vec<D> n = sip.GetNV();
+      fel.CalcMappedShape(sip,shape);
+      Mat<D,D> proj = Id<D>(); //  - OuterProduct(n,n);
+      for (int i = 0; i < D; i++)
+        for (int j = 0; j < D; j++)
+          proj(i,j) -= n(i)*n(j);
+      mat = proj*Trans(shape);
+    }
+
+    
+    static int DimRef() { return D; } 
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      static_cast<const BaseHCurlFiniteElement&> (fel).CalcShape (ip, Trans(mat));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & bmip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<D,D>&>(bmip);
+      Vec<D> n = mip.GetNV();
+      Mat<D,D> proj = Id<D>(); //  - OuterProduct(n,n);
+      for (int i = 0; i < D; i++)
+        for (int j = 0; j < D; j++)
+          proj(i,j) -= n(i)*n(j);
+      
+      mat = proj * Trans(mip.GetJacobianInverse());
+    }
+    
+
+    
+
+#ifdef NONE
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      // static Timer t("HDivDivFE - DiffOpNormalComponent", NoTracing);
+      // RegionTracer regtr(TaskManager::GetThreadId(), t);    
+
+      auto & fel = static_cast<const HDivFiniteElement<D>&> (bfel);
+      fel.CalcMappedNormalShape (bmir, mat);
+      /*
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D> &> (bmir);
+      LocalHeapMem<100000> lh("normalcomp");
+      auto & fel = dynamic_cast<const HDivFiniteElement<D>&> (bfel);
+      int nd = fel.GetNDof();
+      FlatMatrix<SIMD<double>> shape(nd*D, mir.Size(), lh);
+      fel.CalcMappedShape (mir, shape);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto nv = mir[i].GetNV();
+          for (size_t j = 0; j < nd; j++)
+            {
+              SIMD<double> sum = 0.0;
+              for (size_t k = 0; k < D; k++)
+                sum += shape(j*D+k, i) * nv(k);
+              mat(j, i) = sum;
+            }
+        }
+      */
+    }
+#endif    
+    /*
+    using DiffOp<DiffOpIdHDivDiv<D> >::ApplySIMDIR;    
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
+    }
+
+    using DiffOp<DiffOpIdHDivDiv<D> >::AddTransSIMDIR;        
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
+    }    
+    */
+  };
+
+
+  
 
   TangentialFacetFESpace :: TangentialFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
 					    bool parseflags )
@@ -108,9 +231,11 @@ namespace ngcomp
         break;
       case 2:
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<2>>> ());
+        additional_evaluators.Set ("tangentialcomponent", make_shared<T_DifferentialOperator<DiffOpTangentialComponentHCurl<2>>> ());        
         break;
       case 3:
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        additional_evaluators.Set ("tangentialcomponent", make_shared<T_DifferentialOperator<DiffOpTangentialComponentHCurl<3>>> ());                
         break;
       default:
         break;

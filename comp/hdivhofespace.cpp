@@ -40,7 +40,8 @@ namespace ngcomp
     enum { DIFFORDER = 0 };
     // enum { DIM_STRESS = D };
 
-    static Array<int> GetDimensions() { return Array<int> ({1}); }
+    // static Array<int> GetDimensions() { return Array<int> ({1}); }
+    static Array<int> GetDimensions() { return Array<int>(0); }
 
     /*
       template <typename FEL,typename SIP>
