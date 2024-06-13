@@ -28,11 +28,12 @@ class ImplicitEuler:
 
     def Integrate(self, u_start: ngs.GridFunction,
                   end_time: float,
-                  start_time: float = 0.,
+                  start_time: Optional[float] = None,
                   newton_args: Optional[dict] = None,
                   callback: Optional[Callable] = None):
         u = u_start
-        self.time.Set(start_time)
+        if start_time is not None:
+            self.time.Set(start_time)
         while self.time.Get() < end_time * (1-1e-10):
             dt = min(self.dt.Get(), end_time - self.time.Get())
             self.time.Set(self.time.Get() + dt)
@@ -83,10 +84,11 @@ class Newmark:
                   end_time: float,
                   v: Optional[ngs.GridFunction] = None,
                   a: Optional[ngs.GridFunction] = None,
-                  start_time: float = 0.,
+                  start_time: Optional[float] = None,
                   newton_args: Optional[dict] = None,
                   callback: Optional[Callable] = None):
-        self.time.Set(start_time)
+        if start_time is not None:
+            self.time.Set(start_time)
         if v is None:
             v = ngs.GridFunction(u.space)
         if a is None:
