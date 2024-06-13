@@ -20,4 +20,4 @@ def dynamic_metadata(field, settings):
 
 
 def get_requires_for_dynamic_metadata(_settings):
-    return ["toml", "ngsolve"]
+    return []
