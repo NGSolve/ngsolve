@@ -191,7 +191,7 @@ namespace ngfem
       throw Exception("Transform not overloaed, desc = "+GetDescription());
     
     auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
-    if (transformation.replace.find(thisptr) != transformation.replace.end())
+    if (transformation.replace.find(thisptr) != transformation.replace.end()) 
       return transformation.replace[thisptr];
     
     return thisptr;

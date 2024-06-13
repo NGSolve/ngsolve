@@ -430,6 +430,12 @@ when building the system matrices.
     .def_property_readonly("dt",
          [](const spProxy self) { return self->Dt(); },
          "time derivative")
+    .def_property_readonly("anti_dt",
+         [](const spProxy self) { return self->AntiDt(); },
+         "time anti-derivative")
+    .def_property_readonly("dt_order", 
+         [](spProxy self) { return self->OrderDt(); },
+         "time anti-derivative")
     
     .def("Other", 
          [](const spProxy self, py::object bnd)
@@ -2458,7 +2464,8 @@ diffop : ngsolve.fem.DifferentialOperator
               throw py::index_error();
             return igls->icfs[nr];
           })
-    .def ("Replace", &SumOfIntegrals::Replace)    
+    .def ("Replace", &SumOfIntegrals::Replace)
+    .def ("GetProxies", &SumOfIntegrals::GetProxies, py::arg("trial")=true)
     .def ("Diff", &SumOfIntegrals::Diff)
     .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")

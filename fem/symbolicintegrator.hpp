@@ -40,7 +40,8 @@ protected:
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
   mutable SymbolTable<weak_ptr<ProxyFunction>> additional_proxies;
 
-  mutable shared_ptr<ProxyFunction> dt;
+  mutable weak_ptr<ProxyFunction> dt;
+  mutable shared_ptr<ProxyFunction> anti_dt;
   // int dim;
 public:
   NGS_DLL_HEADER ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
@@ -71,8 +72,12 @@ public:
 
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Deriv() const;
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Trace() const;
+  
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Dt() const;  
+  NGS_DLL_HEADER shared_ptr<ProxyFunction> AntiDt() const;
+  NGS_DLL_HEADER int OrderDt() const;    
 
+  
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const;
 
   NGS_DLL_HEADER const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
