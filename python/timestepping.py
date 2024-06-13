@@ -14,7 +14,7 @@ class ImplicitEuler:
 
         self.time = time
         proxies = equation.GetProxies()
-        udt = list(filter(lambda u: u.dt_order > 0, proxies))
+        udt = list(filter(lambda u: u.dt_order == 1, proxies))
         if len(udt) != 1:
             raise ValueError("Only du/dt allowed in implicit euler!")
         udt = udt[0]
