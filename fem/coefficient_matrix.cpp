@@ -495,6 +495,20 @@ namespace ngfem
       func(*this);
     }
 
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<DeterminantCoefficientFunction<D>>
+        (c1->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       // auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.res_type+">";
       auto mat_type = "Mat<"+ToString(D)+","+ToString(D)+","+code.GetType(this->IsComplex())+">";
@@ -684,6 +698,19 @@ namespace ngfem
     {
       c1->TraverseTree (func);
       func(*this);
+    }
+
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<CofactorCoefficientFunction<D>>(c1->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
     }
 
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {

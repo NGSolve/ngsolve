@@ -6107,6 +6107,22 @@ public:
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
 
+  shared_ptr<CoefficientFunction>
+  Transform(CoefficientFunction::T_Transform& transformation) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if(transformation.cache.count(thisptr))
+      return transformation.cache[thisptr];
+    if(transformation.replace.count(thisptr))
+      return transformation.replace[thisptr];
+    Array<shared_ptr<CoefficientFunction>> cfs;
+    for(auto cf : ci)
+      cfs.Append(cf->Transform(transformation));
+    auto newcf = make_shared<VectorialCoefficientFunction>(std::move(cfs));
+    transformation.cache[thisptr] = newcf;
+    return newcf;
+  }
+
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
     for (auto cf : ci)
