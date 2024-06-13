@@ -86,6 +86,19 @@ namespace ngfem
 
     auto begin() const { return icfs.begin(); }
     auto end() const { return icfs.end(); }
+
+    shared_ptr<SumOfIntegrals>
+    Replace (std::map<shared_ptr<CoefficientFunction>, shared_ptr<CoefficientFunction>> replace)
+
+    {
+      auto repl = make_shared<SumOfIntegrals>();
+      CoefficientFunction::T_Transform transform;
+      transform.replace = replace;
+      for (auto & icf : icfs)
+        repl->icfs += make_shared<Integral> (icf->cf->Transform(transform), icf->dx);
+      return repl;
+    }
+
     
     shared_ptr<SumOfIntegrals>
     Diff (shared_ptr<CoefficientFunction> var,

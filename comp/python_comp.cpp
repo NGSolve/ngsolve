@@ -426,6 +426,11 @@ when building the system matrices.
          [](const spProxy self)
          { return self->Trace(); },
          "take canonical boundary trace")
+    
+    .def_property_readonly("dt",
+         [](const spProxy self) { return self->Dt(); },
+         "time derivative")
+    
     .def("Other", 
          [](const spProxy self, py::object bnd)
          {
@@ -464,7 +469,7 @@ when building the system matrices.
            for (size_t i = 0; i < ops.Size(); i++)
              l.append (ops.GetName(i));
            return l;
-         },"returns list of available differential operators")
+         },"returns list of available differential operators")    
     .def("__diffop__", &ProxyFunction::Evaluator)
     .def("VSEmbedding",
          [] (const spProxy self) -> optional<Matrix<double>>
@@ -2453,6 +2458,7 @@ diffop : ngsolve.fem.DifferentialOperator
               throw py::index_error();
             return igls->icfs[nr];
           })
+    .def ("Replace", &SumOfIntegrals::Replace)    
     .def ("Diff", &SumOfIntegrals::Diff)
     .def ("DiffShape", &SumOfIntegrals::DiffShape)
     .def ("Derive", &SumOfIntegrals::Diff, "depricated: use 'Diff' instead")

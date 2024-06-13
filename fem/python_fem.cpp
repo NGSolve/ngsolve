@@ -955,6 +955,14 @@ cf : ngsolve.CoefficientFunction
           },
           "Compute shape derivative in direction", 
           py::arg("direction")=1.0,  py::arg("Eulerian")=std::vector<shared_ptr<CoefficientFunction>> ())
+
+    .def ("Replace", [] (shared_ptr<CF> coef,
+                         std::map<shared_ptr<CoefficientFunction>, shared_ptr<CoefficientFunction>> replace)
+    {
+      CoefficientFunction::T_Transform transform;
+      transform.replace = replace;
+      return coef->Transform (transform);
+    })
     
     // it's using the complex functions anyway ...
     // it seems to take the double-version now

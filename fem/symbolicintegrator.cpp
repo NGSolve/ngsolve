@@ -117,6 +117,12 @@ namespace ngfem
     return trace_proxy;
   }
 
+  shared_ptr<ProxyFunction> ProxyFunction ::Dt() const
+  {
+    if (!dt) dt = make_shared<ProxyFunction> (*this);
+    return dt;
+  }
+
   shared_ptr<ProxyFunction> ProxyFunction :: Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
     auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);
