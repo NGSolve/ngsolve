@@ -184,16 +184,16 @@ def GetData(obj, args, kwargs):
 
                 data.append(BuildRenderData(mesh, gf, order=kwargs['order'], draw_surf=kwargs['draw_surf'], draw_vol=kwargs['draw_vol'], intpoints=kwargs['intpoints'], deformation=deformation_gf, regions=regions, objects=kwargs['objects'], nodal_p1=kwargs['nodal_p1'], settings=kwargs['settings']))
             d['multidim_data'] = data
-        d['multidim_interpolate'] = kwargs['interpolate_multidim']
-        d['multidim_animate'] = kwargs['animate']
+        d['multidim_interpolate'] = kwargs.get('interpolate_multidim', False)
+        d['multidim_animate'] = kwargs.get('animate', False)
 
-        d['deformation_scale'] = kwargs['scale']
+        d['deformation_scale'] = kwargs.get('scale', 1.0)
 
         if 'is_complex' in d and d['is_complex'] or 'animate_complex' in kwargs:
             s = d['gui_settings']
             if 'Complex' not in s:
                 s['Complex'] = dict(phase= 0.0, speed=1, animate=False)
-            s['Complex']['animate'] = kwargs['animate_complex']
+            s['Complex']['animate'] = kwargs.get('animate_complex', False)
 
         if 'colors' in kwargs:
             d['colors'] = kwargs['colors']
