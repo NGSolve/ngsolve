@@ -69,7 +69,8 @@ namespace ngfem
   {
     return string(testfunction ? "test-function" : "trial-function")
       + string(" diffop = ")
-      + (evaluator ? evaluator->Name() : (trace_evaluator ? trace_evaluator->Name() : string("???")));
+      + (evaluator ? evaluator->Name() : (trace_evaluator ? trace_evaluator->Name() : string("???")))
+      + ((OrderDt() > 0) ? "order-dt="+ToString(OrderDt()) : string());
   }
 
   shared_ptr<ProxyFunction> ProxyFunction :: Deriv() const
@@ -117,12 +118,32 @@ namespace ngfem
     return trace_proxy;
   }
 
-  shared_ptr<ProxyFunction> ProxyFunction ::Dt() const
+  shared_ptr<ProxyFunction> ProxyFunction :: Dt() const
   {
-    if (!dt) dt = make_shared<ProxyFunction> (*this);
-    return dt;
+    if (dt.lock())
+      return dt.lock();
+
+    auto newdt = make_shared<ProxyFunction> (*this);
+    newdt -> anti_dt = const_pointer_cast<ProxyFunction>(dynamic_pointer_cast<const ProxyFunction>(this->shared_from_this()));
+    
+    dt = newdt;
+    return newdt;
   }
 
+  shared_ptr<ProxyFunction> ProxyFunction :: AntiDt() const
+  {
+    return anti_dt;
+  }
+
+  int ProxyFunction :: OrderDt() const
+  {
+    int cnt = 0;
+    const ProxyFunction * ptr = this;
+    while ( (ptr = ptr->AntiDt().get()) ) cnt++;
+    return cnt;
+  }
+
+  
   shared_ptr<ProxyFunction> ProxyFunction :: Other(shared_ptr<CoefficientFunction> _boundary_values) const
   {
     auto other = make_shared<ProxyFunction> (fes, testfunction, is_complex, evaluator, deriv_evaluator, trace_evaluator, trace_deriv_evaluator,ttrace_evaluator, ttrace_deriv_evaluator);

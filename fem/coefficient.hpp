@@ -1591,7 +1591,7 @@ public:
   { throw Exception ("binarycf "+opname+" does not provide Operator"); }
 
   virtual shared_ptr<CoefficientFunction>
-  Transform (CoefficientFunction::T_Transform & transformation) const  
+  Transform (CoefficientFunction::T_Transform & transformation) const override
   { throw Exception ("binarycf "+opname+" does not provide a transformation"); }
   
   virtual shared_ptr<CoefficientFunction>

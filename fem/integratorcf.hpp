@@ -99,6 +99,27 @@ namespace ngfem
       return repl;
     }
 
+    Array<shared_ptr<ProxyFunction>> GetProxies (bool trialproxies)
+    {
+      Array<shared_ptr<ProxyFunction>> proxies;
+
+      for (auto & icf : icfs)
+        icf->cf->TraverseTree
+          ( [&] (CoefficientFunction & nodecf)
+          {
+            auto proxy = dynamic_pointer_cast<ProxyFunction> ((&nodecf)->shared_from_this());
+            if (proxy) 
+              {
+                if (proxy->IsTrialFunction() == trialproxies)
+                  {
+                    if (!proxies.Contains(proxy))
+                      proxies.Append(proxy);
+                  }
+              }
+          });
+
+      return proxies;
+    }
     
     shared_ptr<SumOfIntegrals>
     Diff (shared_ptr<CoefficientFunction> var,
