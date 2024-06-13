@@ -278,14 +278,20 @@ namespace ngfem
 
     bool IsVariable() const { return is_variable; }
     void SetVariable (bool var = true) { is_variable = var; }
-    
+
+    struct T_Transform {
+      std::map<shared_ptr<CoefficientFunction>, shared_ptr<CoefficientFunction>> replace;
+      std::map<shared_ptr<CoefficientFunction>, shared_ptr<CoefficientFunction>> cache;
+    };
+    virtual shared_ptr<CoefficientFunction> Transform (T_Transform & transformation) const;
+
     virtual shared_ptr<CoefficientFunction>
       Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const;
     // returns Jacobi-matrix (possible as higher order tensor)
     virtual shared_ptr<CoefficientFunction>
       DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const;
 
-
+    
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
     virtual shared_ptr<CoefficientFunction> Operator (shared_ptr<class DifferentialOperator> diffop) const;
     
@@ -1583,6 +1589,10 @@ public:
   virtual shared_ptr<CoefficientFunction>
   Operator (const string & name) const override
   { throw Exception ("binarycf "+opname+" does not provide Operator"); }
+
+  virtual shared_ptr<CoefficientFunction>
+  Transform (CoefficientFunction::T_Transform & transformation) const  
+  { throw Exception ("binarycf "+opname+" does not provide a transformation"); }
   
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override

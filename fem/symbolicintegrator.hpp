@@ -38,7 +38,9 @@ protected:
   shared_ptr<CoefficientFunction> boundary_values; // for DG - apply
 
   SymbolTable<shared_ptr<DifferentialOperator>> additional_diffops;
-  mutable SymbolTable<weak_ptr<ProxyFunction>> additional_proxies;  
+  mutable SymbolTable<weak_ptr<ProxyFunction>> additional_proxies;
+
+  mutable shared_ptr<ProxyFunction> dt;
   // int dim;
 public:
   NGS_DLL_HEADER ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
@@ -69,6 +71,7 @@ public:
 
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Deriv() const;
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Trace() const;
+  NGS_DLL_HEADER shared_ptr<ProxyFunction> Dt() const;  
 
   NGS_DLL_HEADER shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const;
 
@@ -232,6 +235,7 @@ public:
     */
   }
 
+  
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override;
 };

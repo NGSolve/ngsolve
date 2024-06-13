@@ -183,6 +183,19 @@ namespace ngfem
     auto sp = const_cast<CoefficientFunction*>(this)->shared_from_this();
     return MakeTensorTransposeCoefficientFunction (sp, i, j);
   }
+
+  shared_ptr<CoefficientFunction>
+  CoefficientFunction :: Transform (CoefficientFunction::T_Transform & transformation) const
+  {
+    if (InputCoefficientFunctions().Size())
+      throw Exception("Transform not overloaed, desc = "+GetDescription());
+    
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (transformation.replace.find(thisptr) != transformation.replace.end())
+      return transformation.replace[thisptr];
+    
+    return thisptr;
+  }
   
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const
@@ -2433,6 +2446,19 @@ public:
     if (this == var) return dir;
     return InnerProduct(c1->Diff(var,dir),c2) + InnerProduct(c1,c2->Diff(var,dir));
   }
+
+  shared_ptr<CoefficientFunction>
+  Transform (CoefficientFunction::T_Transform & transformation) const
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (transformation.cache.find(thisptr) != transformation.cache.end())
+      return transformation.cache[thisptr];
+    if (transformation.replace.find(thisptr) != transformation.replace.end())
+      return transformation.replace[thisptr];
+    auto newcf = InnerProduct (c1->Transform(transformation), c2->Transform(transformation));
+    transformation.cache[thisptr] = newcf;
+    return newcf;
+  }
   
   shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
   {
@@ -3569,6 +3595,8 @@ cl_BinaryOpCF<GenericPlus>::DiffJacobi(const CoefficientFunction * var, T_DJC & 
   return res;
 }
 
+
+
 template <> 
 shared_ptr<CoefficientFunction>
 cl_BinaryOpCF<GenericPlus>::Operator(const string & name) const
@@ -3658,6 +3686,22 @@ shared_ptr<CoefficientFunction> CWMult (shared_ptr<CoefficientFunction> cf1,
     return ZeroCF( cf1->Dimensions() );
   return BinaryOpCF (cf1, cf2, gen_mult, "*");
 }
+
+template <> 
+shared_ptr<CoefficientFunction>
+cl_BinaryOpCF<GenericMult>::Transform (CoefficientFunction::T_Transform & transformation) const
+{
+  auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+  if (transformation.cache.find(thisptr) != transformation.cache.end())
+    return transformation.cache[thisptr];
+  if (transformation.replace.find(thisptr) != transformation.replace.end())
+    return transformation.replace[thisptr];
+  auto newcf = c1->Transform(transformation)*c2->Transform(transformation);
+  transformation.cache[thisptr] = newcf;
+  return newcf;
+}
+
+
 
 
 template <> 
