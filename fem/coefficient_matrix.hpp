@@ -163,6 +163,21 @@ namespace ngfem
       func(*this);
     }
 
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<MultMatMatCoefficientFunction>
+        (c1->Transform(transformation),
+         c2->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+
     void DoArchive(Archive& ar) override
     {
       /*
@@ -430,6 +445,20 @@ namespace ngfem
     }
 
     virtual ~TransposeCoefficientFunction();
+
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<TransposeCoefficientFunction>
+        (c1->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
 
     auto GetCArgs() const { return tuple { c1 }; }    
     void DoArchive(Archive& ar) override
@@ -707,6 +736,19 @@ public:
     */
     for (int i = 0; i < d; i++)
       values(0) = values(0)+in0(i*(d+1));   // logical or
+  }
+
+  shared_ptr<CoefficientFunction>
+  Transform(CoefficientFunction::T_Transform& transformation) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if(transformation.cache.count(thisptr))
+      return transformation.cache[thisptr];
+    if(transformation.replace.count(thisptr))
+      return transformation.replace[thisptr];
+    auto newcf = make_shared<TraceCoefficientFunction>(c1->Transform(transformation));
+    transformation.cache[thisptr] = newcf;
+    return newcf;
   }
 
   using T_CoefficientFunction<TraceCoefficientFunction>::Evaluate;

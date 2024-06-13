@@ -1177,6 +1177,19 @@ public:
           .Assign( Var(inputs[0], i, c1->Dimensions()).Func(name), false);
   }
 
+  shared_ptr<CoefficientFunction>
+  Transform(CoefficientFunction::T_Transform& transformation) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if(transformation.cache.count(thisptr))
+      return transformation.cache[thisptr];
+    if(transformation.replace.count(thisptr))
+      return transformation.replace[thisptr];
+    auto newcf = make_shared<cl_UnaryOpCF>(c1->Transform(transformation), lam, name);
+    transformation.cache[thisptr] = newcf;
+    return newcf;
+  }
+
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
   {
     c1->TraverseTree (func);
@@ -1398,6 +1411,19 @@ public:
       archive.Shallow(c1).Shallow(c2) & opname;
   }
 
+  shared_ptr<CoefficientFunction>
+  Transform(CoefficientFunction::T_Transform& transformation) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if(transformation.cache.count(thisptr))
+      return transformation.cache[thisptr];
+    if(transformation.replace.count(thisptr))
+      return transformation.replace[thisptr];
+    auto newcf = make_shared<cl_BinaryOpCF<OP>>(c1->Transform(transformation), c2->Transform(transformation), lam, opname);
+    transformation.cache[thisptr] = newcf;
+    return newcf;
+  }
+
   virtual string GetDescription () const override
   {
     return string("binary operation '")+opname+"'";
@@ -1590,10 +1616,6 @@ public:
   Operator (const string & name) const override
   { throw Exception ("binarycf "+opname+" does not provide Operator"); }
 
-  virtual shared_ptr<CoefficientFunction>
-  Transform (CoefficientFunction::T_Transform & transformation) const override
-  { throw Exception ("binarycf "+opname+" does not provide a transformation"); }
-  
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
   { throw Exception ("binarycf "+opname+" does not provide a derivative"); }
