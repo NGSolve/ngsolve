@@ -1092,8 +1092,16 @@ keep_files : bool
         {
             vec = 0.0;
             LocalHeapMem<1000> lh("CF evaluate");
-            auto& trafo = ma->GetTrafo(ElementId(VOL, elnr), lh);
-            auto& mip = trafo(IntegrationPoint(lami[0], lami[1], lami[2]),lh);
+            auto eid = ElementId(VOL, elnr);
+
+            Vec<3> lam(lami[0], lami[1], lami[2]);
+            if(ma->GetElType(eid) == ET_TRIG) {
+              lam[0] = 1-lami[0]-lami[1];
+              lam[1] = lami[0];
+            }
+
+            auto& trafo = ma->GetTrafo(eid, lh);
+            auto& mip = trafo(IntegrationPoint(lam[0], lam[1], lam[2]),lh);
             FlatVector<double> fv(3, &vec[0]);
             cf->Evaluate(mip, fv);
             return vec.Length2()>0.0;
