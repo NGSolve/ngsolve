@@ -1621,6 +1621,19 @@ public:
     func(*this);
   }
 
+  shared_ptr<CoefficientFunction>
+  Transform(CoefficientFunction::T_Transform& transformation) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if(transformation.cache.count(thisptr))
+      return transformation.cache[thisptr];
+    if(transformation.replace.count(thisptr))
+      return transformation.replace[thisptr];
+    auto newcf = make_shared<ScaleCoefficientFunction>(scal, c1->Transform(transformation));
+    transformation.cache[thisptr] = newcf;
+    return newcf;
+  }
+
   virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
   { return Array<shared_ptr<CoefficientFunction>>({ c1 }); }
 
@@ -2448,12 +2461,12 @@ public:
   }
 
   shared_ptr<CoefficientFunction>
-  Transform (CoefficientFunction::T_Transform & transformation) const
+  Transform (CoefficientFunction::T_Transform & transformation) const override
   {
     auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
-    if (transformation.cache.find(thisptr) != transformation.cache.end())
+    if (transformation.cache.count(thisptr))
       return transformation.cache[thisptr];
-    if (transformation.replace.find(thisptr) != transformation.replace.end())
+    if (transformation.replace.count(thisptr))
       return transformation.replace[thisptr];
     auto newcf = InnerProduct (c1->Transform(transformation), c2->Transform(transformation));
     transformation.cache[thisptr] = newcf;
