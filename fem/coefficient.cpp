@@ -5012,6 +5012,58 @@ public:
       values(0,k) = temp(0,k);
   }
 
+
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  {
+    Vector<AutoDiffDiff<1,NonZero>> temp(c1->Dimension());
+    
+    c1->NonZeroPattern (ud, temp);
+
+    size_t actdim = c1->Dimension();
+    for (int dir = 0; dir < vectors.Size(); dir++)
+      {
+        Vector<AutoDiffDiff<1,NonZero>> vi(vectors[dir]->Dimension());
+        vectors[dir]->NonZeroPattern(ud, vi);
+        
+        size_t newdim = actdim / vi.Height();
+        for (size_t i = 0; i < newdim; i++)
+          temp(i) = temp(i)*vi(0);
+        for (size_t j = 1; j < vi.Height(); j++)
+          for (size_t i = 0; i < newdim; i++)
+            temp(i) += temp(j*newdim+i)*vi(j);
+        actdim = newdim;
+      }
+    values(0) = temp(0);
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  {
+    Vector<AutoDiffDiff<1,NonZero>> temp(c1->Dimension());
+    temp = input[0];
+
+    size_t actdim = c1->Dimension();
+    for (int dir = 0; dir < vectors.Size(); dir++)
+      {
+        auto vi = input[dir+1].Range(vectors[dir]->Dimension());
+
+        size_t newdim = actdim / vi.Height();
+        for (size_t i = 0; i < newdim; i++)
+          temp(i) = temp(i)*vi(0);
+        for (size_t j = 1; j < vi.Height(); j++)
+          for (size_t i = 0; i < newdim; i++)
+            temp(i) += temp(j*newdim+i)*vi(j);
+        actdim = newdim;
+      }
+    values(0) = temp(0);
+  }
+
+  
+
+  
   /*
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                         shared_ptr<CoefficientFunction> dir) const override
@@ -5174,6 +5226,41 @@ public:
         for (int k = 0; k < dimafter; k++, ii++)
           values.Row(i*dimafter+k) += pw_mult(vi.Row(j), temp.Row(ii));
   }
+
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  {
+    Vector<AutoDiffDiff<1,NonZero>> temp(c1->Dimension()), vi(vec->Dimension());
+    c1->NonZeroPattern (ud, temp);
+    vec->NonZeroPattern (ud, vi);
+    
+    values.Range(Dimension()) = NonZero(false);
+    values = NonZero(false);
+
+    for (int i = 0, ii = 0; i < dimbefore; i++)
+      for (int j = 0; j < vec->Dimension(); j++)
+        for (int k = 0; k < dimafter; k++, ii++)
+          values(i*dimafter+k) += vi(j)*temp(ii);
+  }
+
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  {
+    auto temp = input[0];
+    auto vi = input[1];
+    
+    values = NonZero(false);
+
+    for (int i = 0, ii = 0; i < dimbefore; i++)
+      for (int j = 0; j < vec->Dimension(); j++)
+        for (int k = 0; k < dimafter; k++, ii++)
+          values(i*dimafter+k) += vi(j)*temp(ii);
+  }
+  
+  
 
   /*
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
