@@ -5,14 +5,19 @@ from .utils import TimeFunction
 
 class NewtonSolver:
     def __init__(self, a, u, rhs=None, freedofs=None,
-                 inverse="", solver=None):
+                 inverse="", solver=None, lin_solver_cls=None,
+                 lin_solver_args=None):
         self.a, self.u, self.inverse = a, u, inverse
         self.w = u.vec.CreateVector()
         self.r = u.vec.CreateVector()
         self.rhs = rhs
         self.uh = u.vec.CreateVector()
         self.inv = None if solver is None else solver
-        if solver:
+        self.lin_solver_cls = lin_solver_cls
+        self.lin_solver_args = lin_solver_args
+        if lin_solver_cls is not None:
+            assert solver is None
+        if solver or lin_solver_cls:
             self.inverse = "given"
         else:
             self.freedofs = freedofs or u.space.FreeDofs(a.condense)
@@ -87,7 +92,10 @@ class NewtonSolver:
 
     def _UpdateInverse(self):
         if self.inverse in ("sparsecholesky", "given") and self.inv:
-            self.inv.Update()
+            if self.lin_solver_cls is not None and self.inv is None:
+                self.inv = self.lin_solver_cls(mat=self.a.mat, **(self.lin_solver_args or {}))
+            else:
+                self.inv.Update()
         else:
             self.inv = self.a.mat.Inverse(self.freedofs,
                                           inverse=self.inverse)
