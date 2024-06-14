@@ -22,9 +22,9 @@ class ImplicitEuler:
         self.dt = ngs.Parameter(dt) if (isinstance(dt, float) or isinstance(dt, int)) else dt
         self.bfmstar = ngs.BilinearForm(udt.space)
         self.bfmstar += equation.Replace({ udt : 1/self.dt * (udt.anti_dt-self.gfu_old) })
-        self.bfmstar.Assemble()
         self.c = pc_cls(self.bfmstar, **(pc_args or {}))
-        self.lin_solver = lin_solver_cls(mat=self.bfmstar.mat, pre=self.c, **(lin_solver_args or {}))
+        self._lin_solver_cls = lin_solver_cls
+        self._lin_solver_args = lin_solver_args
 
     def Integrate(self, u_start: ngs.GridFunction,
                   end_time: float,
@@ -47,9 +47,12 @@ class ImplicitEuler:
         if dt is not None:
             self.dt.Set(dt)
         self.gfu_old.vec.data = u.vec
+        lin_solver = self._lin_solver_cls(mat=self.bfmstar,
+                                         pre=self.c,
+                                         **(self._lin_solver_args or {}))
         newton = ngs.nonlinearsolvers.NewtonSolver(a=self.bfmstar,
                                                    u=u,
-                                                   solver=self.lin_solver)
+                                                   solver=lin_solver)
         newton.Solve(**(newton_args or {}))
 
 class Newmark:
@@ -76,9 +79,9 @@ class Newmark:
         vel_new = 2/self.dt * (u-self.gfu_old) - self.gfv_old
         acc_new = 2/self.dt * (vel_new-self.gfv_old) - self.gfa_old
         self.bfmstar += equation.Replace({ udt2: acc_new })
-        self.bfmstar.Assemble()
         self.c = pc_cls(self.bfmstar, **(pc_args or {}))
-        self.lin_solver = lin_solver_cls(mat=self.bfmstar.mat, pre=self.c, **(lin_solver_args or {}))
+        self._lin_solver_cls = lin_solver_cls
+        self._lin_solver_args = lin_solver_args
 
     def Integrate(self, u: ngs.GridFunction,
                   end_time: float,
@@ -111,9 +114,12 @@ class Newmark:
         self.gfu_old.vec.data = u.vec
         self.gfv_old.vec.data = v.vec
         self.gfa_old.vec.data = a.vec
+        lin_solver = self._lin_solver_cls(mat=self.bfmstar,
+                                          pre=self.c,
+                                          **(self._lin_solver_args or {}))
         newton = ngs.nonlinearsolvers.NewtonSolver(a=self.bfmstar,
                                                    u=u,
-                                                   solver=self.lin_solver)
+                                                   solver=lin_solver)
         newton.Solve(**(newton_args or {}))
         v.vec.data = 2/self.dt.Get() * (u.vec - self.gfu_old.vec) - self.gfv_old.vec
         a.vec.data = 2/self.dt.Get() * (v.vec - self.gfv_old.vec) - self.gfa_old.vec
