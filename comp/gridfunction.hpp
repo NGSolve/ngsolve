@@ -39,6 +39,7 @@ namespace ngcomp
                                      int acomp = 0);
     GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, 
                                      shared_ptr<BilinearFormIntegrator> abfi, int acomp = 0);
+    GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, shared_ptr<ProxyFunction> proxy);
     
     virtual ~GridFunctionCoefficientFunction ();
     void DoArchive(Archive& ar) override;
