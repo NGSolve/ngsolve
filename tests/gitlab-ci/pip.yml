@@ -16,11 +16,11 @@ pip_macos:
     - macosx
     - m1
   script:
-    - ./tests/build_pip_mac.sh 3.8
-    - ./tests/build_pip_mac.sh 3.9
-    - ./tests/build_pip_mac.sh 3.10
-    - ./tests/build_pip_mac.sh 3.11
     - ./tests/build_pip_mac.sh 3.12
+    - ./tests/build_pip_mac.sh 3.11
+    - ./tests/build_pip_mac.sh 3.10
+    - ./tests/build_pip_mac.sh 3.9
+    - ./tests/build_pip_mac.sh 3.8
   when: manual
 
 pip_windows:
@@ -29,12 +29,12 @@ pip_windows:
     - pip
     - windows
   script:
-    - .\tests\build_pip.ps1 C:\Python37
-    - .\tests\build_pip.ps1 C:\Python38
-    - .\tests\build_pip.ps1 C:\Python39
-    - .\tests\build_pip.ps1 C:\Python310
-    - .\tests\build_pip.ps1 C:\Python311
     - .\tests\build_pip.ps1 C:\Python312
+    - .\tests\build_pip.ps1 C:\Python311
+    - .\tests\build_pip.ps1 C:\Python310
+    - .\tests\build_pip.ps1 C:\Python39
+    - .\tests\build_pip.ps1 C:\Python38
+    - .\tests\build_pip.ps1 C:\Python37
   when: manual
 
 pip_pyodide:

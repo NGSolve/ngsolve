@@ -14,7 +14,7 @@ export NETGEN_CCACHE=1
 
 $py tests/fix_auditwheel_policy.py
 
-for pyversion in 38 39 310 311 312
+for pyversion in 312 311 310 39 38
 do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
@@ -27,12 +27,11 @@ do
     rename linux_ manylinux_2_17_x86_64.manylinux2014_ ngsolve*.whl
     mv ngsolve*.whl wheelhouse/ || true
     $PYDIR/pip uninstall -y netgen-mesher
+    $PYDIR/pip install -U twine
+    $PYDIR/twine upload --skip-existing wheelhouse/ngsolve*-cp${pyversion}*manylinux*.whl
 
     #$PYDIR/pip install --extra-index-url https://test.pypi.org/simple/ wheelhouse/ngsolve-avx2-*-cp${pyversion}-*.whl
     #$PYDIR/python3 -c 'import ngsolve'
     #cd ../tests/pytest
     #$PYDIR/python3 -m pytest
 done
-
-$PYDIR/pip install -U twine
-$PYDIR/twine upload wheelhouse/*manylinux*.whl
