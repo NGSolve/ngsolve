@@ -13,7 +13,7 @@ if len(version)>2:
     version = version[:2]
 if len(version)>1:
     version = '.post'.join(version)
-    if len(sys.argv)==1 and not 'NGS_NO_DEV_PIP_VERSION' in os.environ:
+    if len(sys.argv)>1 or not 'NGS_NO_DEV_PIP_VERSION' in os.environ:
         version += '.dev'
 else:
     version = version[0]
