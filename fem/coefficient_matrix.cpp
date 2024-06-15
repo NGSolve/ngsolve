@@ -476,7 +476,7 @@ namespace ngfem
       if (dims_c1.Size() != 2)
         throw Exception("Determinant of non-matrix called");
       if (dims_c1[0] != dims_c1[1])
-        throw Exception("Determinant of non-symmetric matrix called");
+        throw Exception("Determinant of non-square matrix called");
     }
 
     virtual string GetDescription () const override
