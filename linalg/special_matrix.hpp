@@ -51,7 +51,7 @@ namespace ngla
 
 
   template <typename TM=double>
-  class DiagonalMatrix : public BaseMatrix
+  class NGS_DLL_HEADER DiagonalMatrix : public BaseMatrix
   {
     shared_ptr<VVector<TM>> diag;
   public:

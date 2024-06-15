@@ -99,33 +99,33 @@ namespace ngfem
 
     HD virtual ~HCurlFiniteElement () { ; }
 
-    virtual string ClassName() const override;
+    virtual string NGS_DLL_HEADER ClassName() const override;
 
   
     /// compute curl of shape, default: numerical diff
-    void CalcCurlShape (const IntegrationPoint & ip, 
+    void NGS_DLL_HEADER CalcCurlShape (const IntegrationPoint & ip,
                         BareSliceMatrix<> curlshape) const override;
     
     /// compute shape
-    void CalcMappedShape (const BaseMappedIntegrationPoint & mip, BareSliceMatrix<> shape) const override;
+    void NGS_DLL_HEADER CalcMappedShape (const BaseMappedIntegrationPoint & mip, BareSliceMatrix<> shape) const override;
 
 
-    void CalcMappedShape (const BaseMappedIntegrationRule & bmir, BareSliceMatrix<> shapes) const override;
+    void NGS_DLL_HEADER CalcMappedShape (const BaseMappedIntegrationRule & bmir, BareSliceMatrix<> shapes) const override;
 
-    void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip,
+    void NGS_DLL_HEADER CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip,
                           BareSliceMatrix<SIMD<double>> shape) const override;
     
-    void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+    void NGS_DLL_HEADER CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir,
                           BareSliceMatrix<SIMD<double>> shapes) const override;
     
     /// compute curl of shape
-    void CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
+    void NGS_DLL_HEADER CalcMappedCurlShape (const BaseMappedIntegrationPoint & mip,
                               BareSliceMatrix<> curlshape) const override;
     
-    void CalcMappedCurlShape (const BaseMappedIntegrationRule & mir, 
+    void NGS_DLL_HEADER CalcMappedCurlShape (const BaseMappedIntegrationRule & mir,
                               BareSliceMatrix<> curlshape) const override;
     
-    void CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir, 
+    void NGS_DLL_HEADER CalcMappedCurlShape (const SIMD_BaseMappedIntegrationRule & mir,
                               BareSliceMatrix<SIMD<double>> curlshapes) const override;
 
     ///
