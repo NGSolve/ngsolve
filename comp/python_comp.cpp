@@ -484,6 +484,10 @@ when building the system matrices.
              return Matrix<>{embedding.value()};
            return {};
          },"get the vector space embedding (returns None if the embedding is 'identity')")
+
+    .def("ReplaceFunction", [](shared_ptr<ProxyFunction> proxy, shared_ptr<GridFunction> gf) {
+      return make_shared<GridFunctionCoefficientFunction>(gf, proxy); },
+      "replace proxyfunction by GridFunction, apply the same operator")
     ;
 
   m.def("SetHeapSize",

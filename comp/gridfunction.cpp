@@ -111,6 +111,10 @@ namespace ngcomp
     // cacheblocksize = 1;
   }
 
+  GridFunctionCoefficientFunction ::
+  GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, shared_ptr<ProxyFunction> proxy)
+    : GridFunctionCoefficientFunction(agf, proxy->Evaluator(), proxy->TraceEvaluator(), proxy->TTraceEvaluator())
+  { }
 
   GridFunction :: ~GridFunction()
   { 
