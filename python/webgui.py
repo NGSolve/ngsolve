@@ -28,7 +28,7 @@ def _make_trig(N, x0=0, y0=0, dx=1, dy=1):
     return [(x0+i*dx/N,y0+j*dy/N) for j in range(N+1) for i in range(N+1-j)]
 
 def _make_quad(N,  x0=0, y0=0, dx=1, dy=1):
-    return [(x0+i*dx/N,y0+j*dy/N) for j in range(N+1) for i in range(N+1-j)] + [(x0+1-i*dx/N,1-(y0+j*dy/N)) for j in range(N+1) for i in range(N+1-j)]
+    return [(x0+i*dx/N,y0+j*dy/N) for j in range(N+1) for i in range(N+1-j)] + [(x0+dx-i*dx/N,1-(y0+j*dy/N)) for j in range(N+1) for i in range(N+1-j)]
 
 _intrules = {}
 def get_intrules(dim:int, order: int):
