@@ -422,6 +422,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  NODAL ..... use the same order for nodes of same shape,\n"
       "  VARIABLE ... use an individual order for each edge, face and cell,\n"
       "  OLDSTYLE .. as it used to be for the last decade";
+    docu.Arg("print") = "bool = False\n"
+      "  (historic) print some output into file set by 'SetTestoutFile'";
     return docu;
   }
 
