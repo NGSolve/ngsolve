@@ -70,7 +70,7 @@ namespace ngfem
     return string(testfunction ? "test-function" : "trial-function")
       + string(" diffop = ")
       + (evaluator ? evaluator->Name() : (trace_evaluator ? trace_evaluator->Name() : string("???")))
-      + ((OrderDt() > 0) ? "order-dt="+ToString(OrderDt()) : string());
+      + ((OrderDt() > 0) ? " order-dt="+ToString(OrderDt()) : string());
   }
 
   shared_ptr<ProxyFunction> ProxyFunction :: Deriv() const
