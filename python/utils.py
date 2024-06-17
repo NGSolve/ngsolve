@@ -163,3 +163,5 @@ def printonce (*args):
     if COMM_WORLD.rank == 0:
         print (*args)
         
+
+def dt(u): return u.dt
