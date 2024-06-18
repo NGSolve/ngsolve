@@ -91,14 +91,17 @@ class NewtonSolver:
         u.vec.data += w
 
     def _UpdateInverse(self):
-        if self.inverse in ("sparsecholesky", "given") and self.inv:
+        if self.inverse == "given":
             if self.lin_solver_cls is not None and self.inv is None:
                 self.inv = self.lin_solver_cls(mat=self.a.mat, **(self.lin_solver_args or {}))
             else:
                 self.inv.Update()
         else:
-            self.inv = self.a.mat.Inverse(self.freedofs,
-                                          inverse=self.inverse)
+            if self.inv == "sparsecholesky" and self.inv is not None:
+                self.inv.Update()
+            else:
+                self.inv = self.a.mat.Inverse(self.freedofs,
+                                              inverse=self.inverse)
 
 
 def Newton(a, u, freedofs=None, maxit=100, maxerr=1e-11, inverse="", \
