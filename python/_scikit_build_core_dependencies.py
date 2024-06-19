@@ -8,10 +8,10 @@ def dynamic_metadata(field, settings):
         msg = "No inline configuration is supported"
         raise ValueError(msg)
 
-    import toml
+    import tomllib
     import importlib.metadata
 
-    config = toml.load("pyproject.toml")
+    config = tomllib.load(open("pyproject.toml", "rb"))
     dependencies = config["project"].get("dependencies", [])
 
     ngs_version = importlib.metadata.version("ngsolve")
