@@ -232,7 +232,7 @@ namespace ngcomp
   };
 
 
-  class VectorL2FESpace : public CompoundFESpace
+  class NGS_DLL_HEADER VectorL2FESpace : public CompoundFESpace
   {
     bool piola = false;
     bool covariant = false;
