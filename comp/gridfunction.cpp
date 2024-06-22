@@ -101,8 +101,9 @@ namespace ngcomp
     nested = flags.GetDefineFlagX ("nested").IsMaybeTrue();
     visual = !flags.GetDefineFlag ("novisual");
     multidim = int (flags.GetNumFlag ("multidim", 1));
-    autoupdate = flags.GetDefineFlag ("autoupdate");
-
+    autoupdate = flags.GetDefineFlagX ("autoupdate").IsMaybeTrue();
+    ConnectAutoUpdate();
+    
     auto comp_space = dynamic_pointer_cast<CompoundFESpace>(fespace);
     if(comp_space)
       for([[maybe_unused]] auto i : Range(comp_space->GetNSpaces()))
