@@ -439,7 +439,7 @@ namespace ngcomp
 
     if (parseflags) CheckFlags(flags);
 
-    var_order = 0;
+    var_order = false;
 
     if (flags.NumFlagDefined("order"))
       order =  int (flags.GetNumFlag("order",0));
@@ -448,7 +448,7 @@ namespace ngcomp
 	if(flags.NumFlagDefined("relorder"))
 	  {
 	    order=0;
-	    var_order = 1;
+	    var_order = true;
 	    rel_order = int (flags.GetNumFlag("relorder",0));
 	  }
 	else
@@ -460,12 +460,6 @@ namespace ngcomp
 	throw Exception ("Flag 'variableorder' for l2ho is obsolete. \n  Either choose uniform order by -order= .. \n -relorder=.. for relative mesh order ");
       }
 
-    /*
-    integrator[VOL] = CreateBFI("mass", ma->GetDimension(),
-                           make_shared<ConstantCoefficientFunction>(1));
-    if (dimension > 1)
-      integrator[VOL] = make_shared<BlockBilinearFormIntegrator> (integrator[VOL], dimension);
-    */
 
     SetDefinedOn(BND, BitArray(ma->GetNRegions(BND)).Clear());
 
@@ -475,7 +469,6 @@ namespace ngcomp
         {
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<1>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<1>>>();
-          // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<1>>>());
           break;
         }
@@ -483,7 +476,6 @@ namespace ngcomp
         {
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
-          // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
           additional_evaluators.Set ("normal", make_shared<T_DifferentialOperator<DiffOpNormal<2>>>());          
           break;
@@ -492,7 +484,6 @@ namespace ngcomp
         {
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
-          // evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
           break;
         }
@@ -505,10 +496,6 @@ namespace ngcomp
         additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTransGrad>(flux_evaluator[VOL], dimension));        
 	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
 	// evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
-        /*
-	boundary_flux_evaluator =
-	  make_shared<BlockDifferentialOperator> (boundary_flux_evaluator, dimension);
-        */
       }
 
 
@@ -520,11 +507,11 @@ namespace ngcomp
     Flags loflags;
     loflags.SetFlag ("order", 0.0);
     loflags.SetFlag ("dim", dimension);
-    if (dgjumps){ *testout << "(L2HOFES:)setting loflag dgjumps " << endl; loflags.SetFlag ("dgjumps");}
+    if (dgjumps) loflags.SetFlag ("dgjumps");
     if (iscomplex) loflags.SetFlag ("complex");
 
 
-    if(all_dofs_together)
+    if (all_dofs_together)
       {
         bool alltrig = true;
         for (auto el : ma->Elements(VOL))
