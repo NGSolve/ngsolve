@@ -81,7 +81,11 @@ namespace ngcomp
     timing = flags.GetDefineFlag("timing");
     print = flags.GetDefineFlag("print");
     dgjumps = flags.GetDefineFlag("dgjumps");
-    autoupdate = flags.GetDefineFlag("autoupdate");
+    
+    autoupdate = flags.GetDefineFlagX("autoupdate").IsMaybeTrue();
+    ConnectAutoUpdate();
+
+    
     no_low_order_space = flags.GetDefineFlagX("low_order_space").IsFalse() ||
       flags.GetDefineFlag("no_low_order_space");
     if (dgjumps) 
