@@ -855,6 +855,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     facet_coloring = Table<int>();
        
     level_updated = ma->GetNLevels();
+    if (prol)
+        prol->Update(*this);
+
     if (timing) Timing();
     updateSignal.Emit();
     // CheckCouplingTypes();

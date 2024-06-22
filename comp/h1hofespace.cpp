@@ -212,21 +212,33 @@ namespace ngcomp
       Flags flagsL2;
       flagsL2.SetFlag ("order", fes.lock()->GetOrder());
       fesL2 = CreateFESpace ("L2", fes.lock()->GetMeshAccess(), flagsL2);
-      fesL2->Update();
-      fesL2->FinalizeUpdate();
-      int levels = fes.lock()->GetMeshAccess()->GetNLevels();
-      convL2toH1.SetSize(levels);
-      convH1toL2.SetSize(levels);
+      // fesL2->Update();
+      // fesL2->FinalizeUpdate();
+      // int levels = fes.lock()->GetMeshAccess()->GetNLevels();
+      // convL2toH1.SetSize(levels);
+      // convH1toL2.SetSize(levels);
 
-      LocalHeap lh(10*1000*1000);
-      convL2toH1[levels-1] = ConvertOperator(fesL2, fes.lock(), VOL, lh);
-      convH1toL2[levels-1] = ConvertOperator(fes.lock(), fesL2, VOL, lh);
+      // LocalHeap lh(10*1000*1000);
+      // convL2toH1[levels-1] = ConvertOperator(fesL2, fes.lock(), VOL, lh);
+      // convH1toL2[levels-1] = ConvertOperator(fes.lock(), fesL2, VOL, lh);
     }
 
-    virtual void Update (const FESpace & /* fes */) override
+    virtual void Update (const FESpace & /* fes*/) override
     {
       fesL2->Update();
       fesL2->FinalizeUpdate();
+      
+      int levels = fes.lock()->GetMeshAccess()->GetNLevels();
+      if (convL2toH1.Size() < levels)
+        {
+          convL2toH1.SetSize(levels);
+          convH1toL2.SetSize(levels);
+          
+          LocalHeap lh(10*1000*1000);
+          convL2toH1[levels-1] = ConvertOperator(fesL2, fes.lock(), VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+          convH1toL2[levels-1] = ConvertOperator(fes.lock(), fesL2, VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+        }
+
     }
 
     virtual size_t GetNDofLevel (int level) override
@@ -242,6 +254,7 @@ namespace ngcomp
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override
     {
+        /*
       if (convL2toH1.Size() < finelevel+1)
         {
           convL2toH1.SetSize(finelevel+1);
@@ -251,6 +264,7 @@ namespace ngcomp
           convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
           convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
         }
+        */
 
       auto vl2 = convL2toH1[finelevel]->CreateRowVector();
 
@@ -266,6 +280,7 @@ namespace ngcomp
     ///
     virtual void RestrictInline (int finelevel, BaseVector & v) const override
     {
+      /*
       if (convL2toH1.Size() < finelevel+1)
         {
           convL2toH1.SetSize(finelevel+1);
@@ -275,7 +290,7 @@ namespace ngcomp
           convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
           convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
         }
-
+        */
       auto vl2 = convL2toH1[finelevel]->CreateRowVector();
 
       auto shapec = convH1toL2[finelevel-1]->Shape();
@@ -757,7 +772,7 @@ into the wirebasket.
     if (test_ho_prolongation && !prol)
       {
         prol = make_shared<H1HOProlongation> (dynamic_pointer_cast<H1HighOrderFESpace>(this->shared_from_this()));
-        prol->Update(*this);
+        // prol->Update(*this);
       }
   }
 
