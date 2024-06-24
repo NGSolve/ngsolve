@@ -23,6 +23,8 @@
 #include <../fem/hdivhofefo.hpp>  
 #include <../fem/hcurlhdiv_dshape.hpp> 
 #include <../fem/diffop_impl.hpp>
+#include <multigrid.hpp> 
+#include <fesconvert.hpp>
 
 namespace ngcomp
 {
@@ -142,6 +144,104 @@ namespace ngcomp
 
 
 
+  class HDivHOProlongation : public Prolongation
+  {
+    HDivHighOrderFESpace * fes;
+    shared_ptr<FESpace> fesL2;
+
+    mutable Array<shared_ptr<BaseMatrix>> convL2toH1;
+    mutable Array<shared_ptr<BaseMatrix>> convH1toL2;
+  public:
+    HDivHOProlongation (HDivHighOrderFESpace * afes)
+    {
+      fes = afes;
+      Flags flagsL2;
+      flagsL2.SetFlag ("order", fes->GetOrder());
+      fesL2 = CreateFESpace ("VectorL2", fes->GetMeshAccess(), flagsL2);
+    }
+
+    virtual void Update (const FESpace & cfes) override
+    {
+        FESpace & fes = const_cast<FESpace&>(cfes);
+      fesL2->Update();
+      fesL2->FinalizeUpdate();
+      
+      int levels = fes.GetMeshAccess()->GetNLevels();
+      if (convL2toH1.Size() < levels)
+        {
+          convL2toH1.SetSize(levels);
+          convH1toL2.SetSize(levels);
+          
+          LocalHeap lh(10*1000*1000);
+          convL2toH1[levels-1] = ConvertOperator(fesL2, dynamic_pointer_cast<FESpace>(fes.shared_from_this()), VOL, lh, 
+                                        nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, false);
+          convH1toL2[levels-1] = ConvertOperator(dynamic_pointer_cast<FESpace>(fes.shared_from_this()), fesL2, VOL, lh, 
+                                        nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, false);
+        }
+
+    }
+
+
+    virtual size_t GetNDofLevel (int level) override
+    {
+      return fes->GetNDofLevel(level);
+    }
+  
+
+    ///
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
+    { return NULL; }
+
+    ///
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
+    {
+        /*
+      if (convL2toH1.Size() < finelevel+1)
+        {
+          convL2toH1.SetSize(finelevel+1);
+          convH1toL2.SetSize(finelevel+1);
+          
+          LocalHeap lh(10*1000*1000);
+          convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+          convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+        }
+        */
+
+      auto vl2 = convL2toH1[finelevel]->CreateRowVector();
+
+      auto shapec = convH1toL2[finelevel-1]->Shape();
+      auto shapef = convL2toH1[finelevel]->Shape();
+
+      vl2.Range(get<0>(shapec)) = *convH1toL2[finelevel-1] * v.Range(get<1>(shapec));      
+      fesL2->GetProlongation()->ProlongateInline(finelevel, vl2);
+      v.Range(get<0>(shapef)) = *convL2toH1[finelevel] * vl2.Range(get<1>(shapef));
+    }    
+
+    
+    ///
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override
+    {
+      /*
+      if (convL2toH1.Size() < finelevel+1)
+        {
+          convL2toH1.SetSize(finelevel+1);
+          convH1toL2.SetSize(finelevel+1);
+          
+          LocalHeap lh(10*1000*1000);
+          convL2toH1[finelevel] = ConvertOperator(fesL2, fes.lock(), VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+          convH1toL2[finelevel] = ConvertOperator(fes.lock(), fesL2, VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+        }
+        */
+      auto vl2 = convL2toH1[finelevel]->CreateRowVector();
+
+      auto shapec = convH1toL2[finelevel-1]->Shape();
+      auto shapef = convL2toH1[finelevel]->Shape();
+
+      vl2.Range(get<1>(shapef)) = Transpose(*convL2toH1[finelevel]) * v.Range(get<0>(shapef));      
+      fesL2->GetProlongation()->RestrictInline(finelevel, vl2);
+      v.Range(get<1>(shapec)) = Transpose(*convH1toL2[finelevel-1]) * vl2.Range(get<0>(shapec));
+    }    
+  };
 
 
 
@@ -301,6 +401,10 @@ namespace ngcomp
       default:
         ;
       }
+
+
+   if (flags.GetDefineFlag("hoprolongation"))
+        prol = make_shared<HDivHOProlongation> (this);
   }
   
   HDivHighOrderFESpace:: ~HDivHighOrderFESpace () 
@@ -1346,8 +1450,9 @@ namespace ngcomp
   shared_ptr<Table<int>> HDivHighOrderFESpace :: CreateSmoothingBlocks (const Flags & precflags) const
   {
     {
-      auto blocktype = precflags.GetStringFlag ("blocktype", "");
-      if (blocktype == "edgepatch" || blocktype == "facepatch" || blocktype == "vertexpatch")
+      // auto blocktype = precflags.GetStringFlag ("blocktype", "");
+      // if (blocktype == "edgepatch" || blocktype == "facepatch" || blocktype == "vertexpatch")
+      if (precflags.StringFlagDefined("blocktype") || precflags.StringListFlagDefined("blocktype"))
         return FESpace::CreateSmoothingBlocks(precflags);
     }
     
@@ -1650,7 +1755,7 @@ namespace ngcomp
 
     int default_ds = low_order_space ? 0 : 1;
     int clustertype = int(precflags.GetNumFlag("ds_cluster",default_ds)); 
-    cout << " DirectSolverCluster Clustertype " << clustertype << endl; 
+    cout << IM(3) << " DirectSolverCluster Clustertype " << clustertype << endl; 
   
     Array<int> vnums,elnums; 
     Array<int> orient; 
@@ -1660,6 +1765,7 @@ namespace ngcomp
     int nfa = ma->GetNFaces();
 
     Array<int> ednums, fnums, pnums;
+    auto freedofs = GetFreeDofs();
   
     switch (clustertype)
       {
@@ -1673,7 +1779,7 @@ namespace ngcomp
         clusters = 0;
 
         for(int i=0; i<nfa; i++ )
-          if( fine_facet[i] )
+          if( fine_facet[i] && freedofs->Test(i))
             clusters[i] = 1;
         break;
 
