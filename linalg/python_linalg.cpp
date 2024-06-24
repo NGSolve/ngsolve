@@ -1702,15 +1702,12 @@ maxsteps : int
                             py::list vecs, Complex shift,
                             optional<string> inverse)
         {
-          int nev;
-          {
-            py::gil_scoped_acquire acq;
-            if (py::len(vecs) > mata->Height())
-              throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
-                               + " is greater than matrix dimension "
-                               + ToString(mata->Height()));
-            nev = py::len(vecs);
-          }
+          if (py::len(vecs) > mata->Height())
+            throw Exception ("number of eigenvectors to compute "+ToString(py::len(vecs))
+                             + " is greater than matrix dimension "
+                             + ToString(mata->Height()));
+          int nev = py::len(vecs);
+          py::gil_scoped_release release_gil;
           if (mata->IsComplex())
             {
               Arnoldi<Complex> arnoldi (mata, matm, freedofs);
@@ -1758,7 +1755,6 @@ maxsteps : int
             }
         },
         py::arg("mata"), py::arg("matm"), py::arg("freedofs"), py::arg("vecs"), py::arg("shift")=DummyArgument(), py::arg("inverse")=nullopt,
-        py::call_guard<py::gil_scoped_release>(),
         docu_string(R"raw_string(
 Shift-and-invert Arnoldi eigenvalue solver
 
