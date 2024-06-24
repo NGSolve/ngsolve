@@ -62,6 +62,6 @@ v = B*w
 
 # Create numpy matrix from Matrix
 from numpy import *
-AA = mat(A)
-xx = mat(x).T
-print( AA*xx - mat(A*x).T )
+AA = asmatrix(A)
+xx = asmatrix(x).T
+print( AA*xx - asmatrix(A*x).T )
