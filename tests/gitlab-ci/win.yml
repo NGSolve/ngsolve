@@ -8,7 +8,6 @@
     - windows
     - x64
   before_script:
-    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%
     - set NG_USE_NATIVE_ARCH=OFF
     - call tests\gitlab-ci\win\set_vars.bat
 
@@ -21,30 +20,15 @@ win_build:
     - cd %CI_PROJECT_DIR%
     - call tests\gitlab-ci\win\upload.bat
     - IF %errorlevel% NEQ 0 exit /b %errorlevel%
-
-win_test:
-  <<: *win
-  stage: test
-  script:
+    - cd %CI_PROJECT_DIR%
     - call tests\gitlab-ci\win\test.bat
     - IF %errorlevel% NEQ 0 exit /b %errorlevel%
-  needs: ["win_build"]
-
-win_cleanup:
-  <<: *win
-  stage: cleanup
-  script:
-    - call tests\gitlab-ci\win\cleanup.bat
-  when: always
-  allow_failure: true
-  needs: ["win_test"]
 
 .template_win_avx: &win_avx
   tags:
     - windows
     - x64
   before_script:
-    - set CI_DIR=C:\ci\%CI_PIPELINE_ID%_avx
     - set NG_USE_NATIVE_ARCH=ON
     - call tests\gitlab-ci\win\set_vars.bat
   only:
@@ -57,22 +41,8 @@ win_avx_build:
   script:
     - call tests\gitlab-ci\win\build.bat
     - IF %errorlevel% NEQ 0 exit /b %errorlevel%
-
-win_avx_test:
-  <<: *win_avx
-  stage: test
-  script:
+    - cd %CI_PROJECT_DIR%
     - call tests\gitlab-ci\win\test.bat
-  needs: ["win_avx_build"]
-
-win_avx_cleanup:
-  <<: *win_avx
-  stage: cleanup
-  script:
-    - call tests\gitlab-ci\win\cleanup.bat
-  when: always
-  allow_failure: true
-  needs: ["win_avx_test"]
 
 deploy_win:
   stage: deploy

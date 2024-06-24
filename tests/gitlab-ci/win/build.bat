@@ -1,7 +1,3 @@
-mkdir %SRC_DIR%
-xcopy . %SRC_DIR%\ /O /X /E /H /K /Q
-cd %SRC_DIR%
-
 pip3 install --upgrade pybind11-stubgen
 
 git submodule update --init --recursive
