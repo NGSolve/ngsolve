@@ -4,10 +4,9 @@ set NETGEN_BUILD_DIR=%CI_DIR%\build
 set CMAKE_INSTALL_PREFIX=%CI_DIR%\install
 set SRC_DIR=%CI_DIR%\src
 set NETGENDIR=%CMAKE_INSTALL_PREFIX%\bin
-set PATH=%NETGENDIR%;%PATH%
+set PATH=%NETGENDIR%;C:\python312;C:\python312\bin;C:\python312\Scripts;C:\tools\;%PATH%
 set PYTHONPATH=%CMAKE_INSTALL_PREFIX%\lib\site-packages
-set CLCACHE_BASEDIR=%CI_DIR%
+set CCACHE_BASEDIR=%CI_DIR%
 set HOME=%USERPROFILE%
-call ccache . -M 20000000000
-call ccache . -c
-call ccache . -s
+call ccache -M 20G
+call ccache -s
