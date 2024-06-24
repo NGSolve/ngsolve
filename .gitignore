@@ -18,3 +18,13 @@ ng*.trace
 .ipynb_checkpoints/
 dist
 _skbuild
+
+build
+em_build
+em_install
+__pycache__
+vtk_example2_step*.vtu
+vtk_example3_step*.vtu
+tests/pytest/*.log
+tests/pytest/*.log_*
+docs/i-tutorials/unit-5a.1-mpi/solution.pickle*
