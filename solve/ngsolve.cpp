@@ -754,7 +754,7 @@ if(is_pardiso_available)
     PyEval_InitThreads();
 #endif
 
-    py::module main_module = py::module::import("__main__");
+    py::module::import("__main__");
 
     // only relevant for gui+mpi -> undefined
     // if (MyMPI_GetId(MPI_COMM_WORLD) == 0)
