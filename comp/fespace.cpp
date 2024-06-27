@@ -421,11 +421,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
     docu.Arg("low_order_space") = "bool = True\n"
       "  Generate a lowest order space together with the high-order space,\n"
       "  needed for some preconditioners.";
+    docu.Arg("hoprolongation") 
+      = "bool = False\n"
+        "  Create high order prolongation operators,\n"
+        "  only available for H1 and L2 on simplicial meshes";
     docu.Arg("order_policy") = "ORDER_POLICY = ORDER_POLICY.OLDSTYLE\n"
-      "  CONSTANT .. use the same fixed order for all elements,\n"
-      "  NODAL ..... use the same order for nodes of same shape,\n"
-      "  VARIABLE ... use an individual order for each edge, face and cell,\n"
-      "  OLDSTYLE .. as it used to be for the last decade";
+                               "  CONSTANT .. use the same fixed order for all elements,\n"
+                               "  NODAL ..... use the same order for nodes of same shape,\n"
+                               "  VARIABLE ... use an individual order for each edge, face and cell,\n"
+                               "  OLDSTYLE .. as it used to be for the last decade";
     docu.Arg("print") = "bool = False\n"
       "  (historic) print some output into file set by 'SetTestoutFile'";
     return docu;

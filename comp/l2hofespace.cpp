@@ -188,8 +188,8 @@ namespace ngcomp
     int order;
     const Array<int> & first_dofs;
     Array<size_t> els_on_level;
-    array<Matrix<double>,64> trigprolsL;
-    array<Matrix<double>,64> trigprolsR;
+    array<Matrix<double>,32> trigprolsL;
+    array<Matrix<double>,32> trigprolsR;
     Array<int> trig_creation_class;  // which prol to use ?
 
   private:
@@ -197,23 +197,23 @@ namespace ngcomp
     {
       Array<size_t> hverts{verts};
       int classnr = 0;
-      if (hverts[0] > hverts[1]) { Swap(hverts[0], hverts[1]); classnr += 1; }
-      if (hverts[2] > hverts[3]) { Swap(hverts[2], hverts[3]); classnr += 2; }
-      if (hverts[1] > hverts[2]) { Swap(hverts[1], hverts[2]); classnr += 4; }
-      if (hverts[0] > hverts[1]) { Swap(hverts[0], hverts[1]); classnr += 8; }
-      if (hverts[2] > hverts[3]) { Swap(hverts[2], hverts[3]); classnr += 16; }
-      if (hverts[1] > hverts[2]) { Swap(hverts[1], hverts[2]); classnr += 32; }
+      // sorting network for 4 elements, 5 comparisons:
+      int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
+      for (int i = 0; i < 5; i++)
+         if (hverts[pairs[i][0]] > hverts[pairs[i][1]])
+         {
+                classnr += 1 << i;
+                swap(hverts[pairs[i][0]], hverts[pairs[i][1]]);
+        }
       return classnr;
     }
     Array<size_t> GetClassRealization (int classnr)
     {
       Array<size_t> verts{1,2,3,4};
-      if (classnr & 32) Swap(verts[1], verts[2]);
-      if (classnr & 16) Swap(verts[2], verts[3]);
-      if (classnr & 8) Swap(verts[0], verts[1]);
-      if (classnr & 4) Swap(verts[1], verts[2]);
-      if (classnr & 2) Swap(verts[2], verts[3]);
-      if (classnr & 1) Swap(verts[0], verts[1]);
+      int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
+      for (int i = 4; i >= 0; i--)
+        if (classnr & (1 << i))
+          swap(verts[pairs[i][0]], verts[pairs[i][1]]);
       return verts;
     }
     
@@ -223,12 +223,12 @@ namespace ngcomp
     L2HoProlongationTrig(shared_ptr<MeshAccess> ama, int aorder, const Array<int> & afirst_dofs)
       : ma(ama), order(aorder), first_dofs(afirst_dofs) 
     {
-      ma->EnableTable("parentfaces");
-      ma->EnableTable("parentedges");
-      ma->GetNetgenMesh()->UpdateTopology();
+      // ma->EnableTable("parentfaces");
+      // ma->EnableTable("parentedges");
+      // ma->GetNetgenMesh()->UpdateTopology();
       // assume constant order, trig mesh
       
-      for (int classnr = 0; classnr < 64; classnr++)
+      for (int classnr = 0; classnr < 32; classnr++)
         {
           Array<size_t> verts{GetClassRealization(classnr)};
           
@@ -296,7 +296,6 @@ namespace ngcomp
     {
       size_t oldne = trig_creation_class.Size();
       size_t ne = ma->GetNE();
-      
       cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", ne = " << ne << endl;
       
       while (els_on_level.Size() < ma->GetNLevels())
@@ -306,59 +305,53 @@ namespace ngcomp
       cout << IM(3) << "els_on_level = " << endl << els_on_level << endl;
       
       trig_creation_class.SetSize(ne);
-      
-      Array<size_t> verts(4);
+      Array<IVec<3, size_t>> trig_creation_verts(ne);
       for (size_t i = oldne; i < ne; i++)
-        {
-          int face = ma->GetElFaces({VOL,i})[0];
-          verts.Range(0,3) = ma->GetElement({VOL,i}).Vertices();
+        for (int j = 0; j < 3; j++)
+          trig_creation_verts[i][j] = ma->GetElement({VOL,i}).Vertices()[j];
 
-          ElementId el{VOL,i};
-          while(el.Nr() != -1)
-            {
-              // cout << "el = " << el << ", verts = " << verts << endl;
-              if (el.Nr() < oldne) break;
+      BitArray isparent(ne);
+      BitArray isdone(ne);
+      isdone.Clear();
 
-              auto [info, parentfaces] = ma->GetParentFaces(face);
-              auto parentface = get<0>(parentfaces);
-              if (parentface == -1) break;
-              auto parentface_vertices = ma->GetFacePNums(parentface);
-              // find vertex maxi s.t. one of maxi's parents is in trig
-              int maxi = -1;
-              for (int j = 0; j < 3; j++)
-                {
-                  IVec<2> pnodes = ma->GetParentNodes(verts[j]);
-                  if ( (verts.Contains(pnodes[0]) || verts.Contains(pnodes[1])) &&
-                       parentface_vertices.Contains(pnodes[0]) && parentface_vertices.Contains(pnodes[1]) )
-                    {
-                      maxi = j;
-                      break;
-                    }
-                }
-              if (ma->GetParentElement(el).Nr() != -1)
-                if (maxi == -1) throw Exception("did not find pnodes");
-              IVec<2> pnodes = ma->GetParentNodes(verts[maxi]);
-              auto vmax = verts[maxi];
-              auto pnode_in_fine = verts.Contains(pnodes[0]) ? pnodes[0] : pnodes[1];
-              auto pnode_not_in_fine = verts.Contains(pnodes[0]) ? pnodes[1] : pnodes[0];
-              auto third_node = verts[0]+verts[1]+verts[2]-vmax-pnode_in_fine;
-
-              verts[0] = pnode_in_fine;
-              verts[1] = third_node;
-              verts[2] = pnode_not_in_fine;
-              verts[3] = vmax;
-              // cout << "parent verts = " << verts << endl;
-              
-              // classify parent element:
-              int classnr = GetClassNr(verts);
-
-              trig_creation_class[el.Nr()] = classnr;
-              
-              el = ma->GetParentElement(el);
-              face = parentface;
+      Array<size_t> verts(4);
+      while (true)
+      {
+        isparent.Clear();
+        for (size_t i = oldne; i < ne; i++)
+          if (!isdone[i])
+            {     
+              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+              if(parent!=-1)
+                isparent.SetBit(parent);
             }
-        }
-      // cout << "classnrs = " << endl << trig_creation_class << endl;
+        bool found = false;
+        for (size_t i = ne; i-- > oldne; )
+          if (!isparent[i] && !isdone[i])
+            {
+              int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
+              verts[3] = trig_creation_verts[i][newest_vertex];
+              IVec<2> pnodes = ma->GetParentNodes(verts[3]);
+              if (trig_creation_verts[i].Contains(pnodes[1]))
+                pnodes = { pnodes[1], pnodes[0] }; 
+
+              verts[0] = pnodes[0];
+              verts[1] = trig_creation_verts[i][0]+trig_creation_verts[i][1]+trig_creation_verts[i][2]-verts[0]-verts[3];
+              verts[2] = pnodes[1];
+              trig_creation_class[i] = GetClassNr(verts);
+
+              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+              if (parent != -1) 
+                {
+                  trig_creation_verts[parent] = trig_creation_verts[i];
+                  trig_creation_verts[parent][newest_vertex] = verts[2];
+                }
+              isdone.SetBit(i);
+              found = true;
+            }
+        if (!found) break;
+      }
+
     }
     
     ///
@@ -419,6 +412,262 @@ namespace ngcomp
   };
 
   
+
+  class L2HoProlongationTet : public Prolongation
+  {
+    ///
+    shared_ptr<MeshAccess> ma;
+    ///
+    int order;
+    const Array<int> & first_dofs;
+    Array<size_t> els_on_level;
+    array<Matrix<double>,1024> tetprolsL;
+    array<Matrix<double>,1024> tetprolsR;
+    Array<int> tet_creation_class;  // which prol to use ?
+
+  private:
+    int GetClassNr (FlatArray<size_t> verts)
+    {
+      Array<size_t> hverts{verts};
+      int classnr = 0;
+      int pairs[][2] = { {0,1}, {0,2}, {0,3}, {0,4}, {1,2}, {1,3}, {1,4}, {2,3}, {2,4}, {3,4} };
+      for (int i = 0; i < 10; i++)
+        if (hverts[pairs[i][0]] > hverts[pairs[i][1]])
+          {
+            classnr += 1 << i;
+            swap(hverts[pairs[i][0]], hverts[pairs[i][1]]);
+          }
+      return classnr;
+    }
+    Array<size_t> GetClassRealization (int classnr)
+    {
+      Array<size_t> verts{1,2,3,4,5};
+      int pairs[][2] = { {0,1}, {0,2}, {0,3}, {0,4}, {1,2}, {1,3}, {1,4}, {2,3}, {2,4}, {3,4} };
+      for (int i = 9; i >= 0; i--)
+        if (classnr & (1 << i))
+          swap(verts[pairs[i][0]], verts[pairs[i][1]]);
+      return verts;
+    }
+    
+    
+  public:
+    ///
+    L2HoProlongationTet(shared_ptr<MeshAccess> ama, int aorder, const Array<int> & afirst_dofs)
+      : ma(ama), order(aorder), first_dofs(afirst_dofs) 
+    {
+      for (int classnr = 0; classnr < 1024; classnr++)
+        {
+          Array<size_t> verts{GetClassRealization(classnr)};
+          
+          size_t vertsc[5] = { verts[0], verts[1], verts[2], verts[3] };
+          size_t vertsfL[5] = { verts[4], verts[1], verts[2], verts[3] };
+          size_t vertsfR[5] = { verts[0], verts[1], verts[2], verts[4] };
+          // cout << "coarse: " << vertsc[0] << " " << vertsc[1] << " " << vertsc[2] << endl;
+          // cout << "fine:   " << vertsf[0] << " " << vertsf[1] << " " << vertsf[2] << endl;
+          
+          L2HighOrderFE<ET_TET> felc(order);
+          felc.SetVertexNumbers (vertsc);
+
+          L2HighOrderFE<ET_TET> felfL(order);
+          felfL.SetVertexNumbers (vertsfL);
+          L2HighOrderFE<ET_TET> felfR(order);
+          felfR.SetVertexNumbers (vertsfR);
+          
+          IntegrationRule ir(ET_TET, 2*order);
+          size_t ndof = felfL.GetNDof();
+          Matrix massfL(ndof, ndof), massfcL(ndof, ndof);
+          Matrix massfR(ndof, ndof), massfcR(ndof, ndof);          
+          Vector shapef(ndof), shapec(ndof);
+          massfL = 0.;
+          massfcL = 0.;
+          massfR = 0.;
+          massfcR = 0.;
+          
+          for (IntegrationPoint ip : ir)
+            {
+              IntegrationPoint ipcL(0.5*ip(0), ip(1), ip(2));
+              IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)-ip(2)), ip(1), ip(2));              
+
+              felc.CalcShape (ipcL, shapec);
+              felfL.CalcShape (ip, shapef);
+
+              massfL += ip.Weight() * shapef * Trans(shapef);
+              massfcL += ip.Weight() * shapef * Trans(shapec);
+
+              felc.CalcShape (ipcR, shapec);
+              felfR.CalcShape (ip, shapef);
+              massfR += ip.Weight() * shapef * Trans(shapef);
+              massfcR += ip.Weight() * shapef * Trans(shapec);
+            }
+          CalcInverse (massfL);
+          tetprolsL[classnr].SetSize(ndof, ndof);
+          tetprolsL[classnr] = massfL * massfcL;
+          CalcInverse (massfR);
+          tetprolsR[classnr].SetSize(ndof, ndof);
+          tetprolsR[classnr] = massfR * massfcR;
+        }
+
+      /*
+      for (auto & m : trigprolsL)
+        cout << m << endl;
+      for (auto & m : trigprolsR)
+        cout << m << endl;
+      */
+    }
+
+    ///
+    virtual ~L2HoProlongationTet()
+    { ; }
+    ///
+    virtual void Update (const FESpace & /* fes */) override
+    {
+      size_t oldne = tet_creation_class.Size();
+      size_t ne = ma->GetNE();
+      cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", ne = " << ne << endl;
+      
+      while (els_on_level.Size() < ma->GetNLevels())
+        els_on_level.Append(oldne);
+      els_on_level[ma->GetNLevels()-1] = ne;
+
+      cout << IM(3) << "els_on_level = " << endl << els_on_level << endl;
+
+      if (ma->GetNLevels() == 1)
+        {
+          tet_creation_class.SetSize(ne);
+          tet_creation_class = 0;
+          return;
+        }
+
+      tet_creation_class.SetSize(ne);
+      Array<IVec<4, size_t>> tet_creation_verts(ne);
+      for (size_t i = oldne; i < ne; i++)
+        for (int j = 0; j < 4; j++)
+          tet_creation_verts[i][j] = ma->GetElement({VOL,i}).Vertices()[j];
+
+      BitArray isparent(ne);
+      BitArray isdone(ne);
+      isdone.Clear();
+      Array<size_t> verts(5);
+      while (true)
+      {
+        isparent.Clear();
+        for (size_t i = oldne; i < ne; i++)
+          if (!isdone[i])
+            {     
+              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+              if(parent!=-1)
+                isparent.SetBit(parent);
+            }
+        bool found = false;
+        for (size_t i = ne; i-- > oldne; )
+          if (!isparent[i] && !isdone[i])
+            {
+              int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
+              verts[4] = tet_creation_verts[i][newest_vertex];
+              IVec<2> pnodes = ma->GetParentNodes(verts[4]);
+              if (tet_creation_verts[i].Contains(pnodes[1]))
+                pnodes = { pnodes[1], pnodes[0] }; 
+              if (!tet_creation_verts[i].Contains(pnodes[0]))
+              {
+                cout << "p0 not found" << endl;
+                cout << "i = " << i << endl;
+                cout << "newest_vertex = " << newest_vertex << endl;
+                cout << "trig_creation_verts[i] = " << tet_creation_verts[i] << endl;
+                cout << "pnodes = " << pnodes << endl;
+              }
+              verts[0] = pnodes[0];
+              verts[3] = pnodes[1];
+              const size_t v23tab[4][4] =
+                  {
+                      {99, 2, 3, 1},
+                      {3, 99, 3, 2},
+                      {1, 0, 99, 0},
+                      {2, 0, 1, 99}};
+              int vi0=-1, vi4=-1;
+              for (int j = 0; j < 4; j++)
+                if (tet_creation_verts[i][j] == verts[4])
+                  vi4 = j;
+              for (int j = 0; j < 4; j++)
+                if (tet_creation_verts[i][j] == verts[0])
+                  vi0 = j;
+
+              if (vi0 == -1)
+                throw Exception("vi0 not found");
+              if (vi4 == -1)
+                throw Exception("vi4 not found");
+
+              verts[1] = tet_creation_verts[i][v23tab[vi0][vi4]];
+              verts[2] = tet_creation_verts[i][v23tab[vi4][vi0]];
+              tet_creation_class[i] = GetClassNr(verts);
+
+              int parent = ma->GetParentElement(ElementId(VOL, i)).Nr();
+              if (parent != -1)
+              {
+                tet_creation_verts[parent] = tet_creation_verts[i];
+                tet_creation_verts[parent][newest_vertex] = verts[3];
+                }
+              isdone.SetBit(i);
+              found = true;
+            }
+        
+        if (!found) break;
+      }
+    }
+    
+    ///
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
+    { return NULL; }
+
+    ///
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
+    {
+      FlatVector<> fv = v.FV<double>();
+      size_t ne = els_on_level[finelevel];
+      size_t nec = els_on_level[finelevel-1];
+      int ndel = first_dofs[1];
+      cout << IM(5) << "prolongate, nec = " << nec << ", ne = " << ne << endl;
+      Vector<> tmp(ndel);
+      for (size_t i = nec; i < ne; i++)
+        {
+          int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+          if(parent!=-1)
+            {
+              int classnr = tet_creation_class[i];
+              tmp = fv.Range(ndel*parent, ndel*(parent+1));
+              fv.Range(ndel*i, ndel*(i+1)) = tetprolsR[classnr] * tmp;
+              fv.Range(ndel*parent, ndel*(parent+1)) = tetprolsL[classnr] * tmp;
+            }
+        }
+    }
+    
+    
+    ///
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override
+    {
+      FlatVector<> fv = v.FV<double>();
+
+      size_t ne = els_on_level[finelevel];
+      size_t nec = els_on_level[finelevel-1];
+      int ndel = first_dofs[1];
+      cout << IM(5) << "restrict, nec = " << nec << ", ne = " << ne << endl;
+      Vector<> tmp(ndel);
+      for (size_t i = ne-1; i >= nec; i--)
+        {
+          int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+          if(parent!=-1)
+            {
+              int classnr = tet_creation_class[i];
+              tmp = Trans (tetprolsR[classnr]) * fv.Range(ndel*i, ndel*(i+1)) +
+                Trans (tetprolsL[classnr]) * fv.Range(ndel*parent, ndel*(parent+1));
+              fv.Range(ndel*parent, ndel*(parent+1)) = tmp;
+            }
+        }
+    }
+ 
+  };
+
+
+
 
   
 
@@ -511,17 +760,22 @@ namespace ngcomp
     if (iscomplex) loflags.SetFlag ("complex");
 
 
-    if (all_dofs_together)
+   if (all_dofs_together)
       {
-        bool alltrig = true;
+        bool allsimplex = true;
         for (auto el : ma->Elements(VOL))
-          if (el.GetType() != ET_TRIG)
-            alltrig = false;
-        alltrig = !ma->GetCommunicator().AllReduce (!alltrig, NG_MPI_LOR);
-        if (alltrig && ma->GetNLevels()==1)
-          prol = make_shared<L2HoProlongationTrig>(ma,order,first_element_dof);
+          if (el.GetType() != ET_TRIG && el.GetType() != ET_TET)
+            allsimplex = false;
+        allsimplex = !ma->GetCommunicator().AllReduce(!allsimplex, NG_MPI_LOR);
+        if (allsimplex && ma->GetNLevels() == 1)
+          {
+            if (ma->GetDimension() == 3)
+              prol = make_shared<L2HoProlongationTet>(ma, order, first_element_dof);
+            else
+              prol = make_shared<L2HoProlongationTrig>(ma, order, first_element_dof);
+          }
         else
-          prol = make_shared<L2HoProlongation>(ma,first_element_dof);          
+          prol = make_shared<L2HoProlongation>(ma, first_element_dof);
       }
     else
       {
@@ -3481,7 +3735,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
     { return NULL; }
 
-    virtual size_t GetNDofLevel (int level)
+    virtual size_t GetNDofLevel (int level) override
     {
         return els_on_level[level] * (order+1)*(order+2)/2 * ma->GetDimension();
     }
