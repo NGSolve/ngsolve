@@ -201,10 +201,10 @@ namespace ngcomp
       int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
       for (int i = 0; i < 5; i++)
          if (hverts[pairs[i][0]] > hverts[pairs[i][1]])
-         {
-                classnr += 1 << i;
-                swap(hverts[pairs[i][0]], hverts[pairs[i][1]]);
-        }
+           {
+             classnr += 1 << i;
+             swap(hverts[pairs[i][0]], hverts[pairs[i][1]]);
+           }
       return classnr;
     }
     Array<size_t> GetClassRealization (int classnr)
@@ -219,15 +219,9 @@ namespace ngcomp
     
     
   public:
-    ///
     L2HoProlongationTrig(shared_ptr<MeshAccess> ama, int aorder, const Array<int> & afirst_dofs)
       : ma(ama), order(aorder), first_dofs(afirst_dofs) 
     {
-      // ma->EnableTable("parentfaces");
-      // ma->EnableTable("parentedges");
-      // ma->GetNetgenMesh()->UpdateTopology();
-      // assume constant order, trig mesh
-      
       for (int classnr = 0; classnr < 32; classnr++)
         {
           Array<size_t> verts{GetClassRealization(classnr)};
@@ -235,8 +229,6 @@ namespace ngcomp
           size_t vertsc[3] = { verts[0], verts[1], verts[2] };
           size_t vertsfL[3] = { verts[3], verts[1], verts[2] };
           size_t vertsfR[3] = { verts[0], verts[1], verts[3] };
-          // cout << "coarse: " << vertsc[0] << " " << vertsc[1] << " " << vertsc[2] << endl;
-          // cout << "fine:   " << vertsf[0] << " " << vertsf[1] << " " << vertsf[2] << endl;
           
           L2HighOrderFE<ET_TRIG> felc(order);
           felc.SetVertexNumbers (vertsc);
@@ -279,13 +271,6 @@ namespace ngcomp
           trigprolsR[classnr].SetSize(ndof, ndof);
           trigprolsR[classnr] = massfR * massfcR;
         }
-
-      /*
-      for (auto & m : trigprolsL)
-        cout << m << endl;
-      for (auto & m : trigprolsR)
-        cout << m << endl;
-      */
     }
 
     ///
@@ -320,11 +305,9 @@ namespace ngcomp
         isparent.Clear();
         for (size_t i = oldne; i < ne; i++)
           if (!isdone[i])
-            {     
-              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-              if(parent!=-1)
-                isparent.SetBit(parent);
-            }
+            if (auto parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent != -1)
+              isparent.SetBit(parent);
+            
         bool found = false;
         for (size_t i = ne; i-- > oldne; )
           if (!isparent[i] && !isdone[i])
@@ -370,19 +353,15 @@ namespace ngcomp
       cout << IM(5) << "prolongate, nec = " << nec << ", ne = " << ne << endl;
       Vector<> tmp(ndel);
       for (size_t i = nec; i < ne; i++)
-        {
-          int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-          if(parent!=-1)
-            {
-              int classnr = trig_creation_class[i];
-              tmp = fv.Range(ndel*parent, ndel*(parent+1));
+        if (int parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent!=-1)
+          {
+            int classnr = trig_creation_class[i];
+            tmp = fv.Range(ndel*parent, ndel*(parent+1));
 
-              fv.Range(ndel*i, ndel*(i+1)) = trigprolsR[classnr] * tmp;
-              fv.Range(ndel*parent, ndel*(parent+1)) = trigprolsL[classnr] * tmp;
-            }
-        }
+            fv.Range(ndel*i, ndel*(i+1)) = trigprolsR[classnr] * tmp;
+            fv.Range(ndel*parent, ndel*(parent+1)) = trigprolsL[classnr] * tmp;
+          }
     }
-    
     
     ///
     virtual void RestrictInline (int finelevel, BaseVector & v) const override
@@ -396,20 +375,15 @@ namespace ngcomp
       cout << IM(5) << "restrict, nec = " << nec << ", ne = " << ne << endl;
       Vector<> tmp(ndel);
       for (size_t i = ne-1; i >= nec; i--)
-        {
-          int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
-          if(parent!=-1)
-            {
-              int classnr = trig_creation_class[i];
-
-              tmp = Trans (trigprolsR[classnr]) * fv.Range(ndel*i, ndel*(i+1)) +
-                Trans (trigprolsL[classnr]) * fv.Range(ndel*parent, ndel*(parent+1));
-              fv.Range(ndel*parent, ndel*(parent+1)) = tmp;
-            }
-        }
+        if(int parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent!=-1)
+          {
+            int classnr = trig_creation_class[i];
+            tmp = Trans (trigprolsR[classnr]) * fv.Range(ndel*i, ndel*(i+1)) +
+                  Trans (trigprolsL[classnr]) * fv.Range(ndel*parent, ndel*(parent+1));
+            fv.Range(ndel*parent, ndel*(parent+1)) = tmp;
+          }
     }
- 
-  };
+   };
 
   
 
