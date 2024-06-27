@@ -23,6 +23,11 @@ build
 em_build
 em_install
 __pycache__
+vtk_example1.vtu
+vtk_example2.pvd
+vtk_example2.vtu
+vtk_example3.pvd
+vtk_example3.vtu
 vtk_example2_step*.vtu
 vtk_example3_step*.vtu
 tests/pytest/*.log
