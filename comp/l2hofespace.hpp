@@ -226,6 +226,7 @@ namespace ngcomp
   class NGS_DLL_HEADER VectorL2FESpace : public CompoundFESpace
   {
     bool piola = false;
+    bool piola2 = false;  // piola mapping with vertex oriended coordinates (new for prolongation)
     bool covariant = false;
   public:
     VectorL2FESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags = false);
