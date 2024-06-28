@@ -17,7 +17,7 @@ namespace ngfem
     { for (int i = 0; i < N_VERTEX; i++) vnums[i] = avnums[i]; }
     /// assign vertex number
     INLINE void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
-
+    INLINE FlatArray<const int> GetVertexNumbers () const { return { N_VERTEX, vnums }; }
     auto GetVertexOrientedEdge (int nr) const
     {
       return ET_trait<ET>::GetEdgeSort (nr, vnums);

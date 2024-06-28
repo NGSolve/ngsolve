@@ -2753,15 +2753,37 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       FlatVector<> hv(feli.GetNDof(), lh);
       feli.CalcShape(mip.IP(), hv);
 
-      // for (int i = 0; i < DIM_ELEMENT; i++)
-      // feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
       Mat<DIM_SPACE,DIM_ELEMENT> trafo = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
-      IVec<3> verts = dynamic_cast<const VertexOrientedFE<ET_TRIG> &>(feli).GetVertexOrientedFace(0);
-      Mat<3, 2> gradv = {{0, 1}, {-1, 0}, {1, -1}};
-      gradv = gradv * Trans(trafo);
-      for (int j = 0; j < 2; j++)
-        for (int i = 0; i < feli.GetNDof(); i++)
-          mat.Col(i + j * feli.GetNDof()) = hv(i)*gradv.Row(verts[j]);
+      if constexpr(DIM_ELEMENT==2)
+        {
+          IVec<3> verts = dynamic_cast<const VertexOrientedFE<ET_TRIG> &>(feli).GetVertexOrientedFace(0);
+          Mat<3, 2> gradv = {{0, 1}, {-1, 0}, {1, -1}};
+          gradv = gradv * Trans(trafo);
+          for (int j = 0; j < 2; j++)
+            for (int i = 0; i < feli.GetNDof(); i++)
+              mat.Col(i + j * feli.GetNDof()) = hv(i)*gradv.Row(verts[j]);
+        }
+      else
+        {
+          // IVec<4> verts = dynamic_cast<const VertexOrientedFE<ET_TET> &>(feli).GetVertexOrientedFace(0);
+
+          IVec<4> verts = { 0, 1, 2, 3 };
+          auto vnums = dynamic_cast<const VertexOrientedFE<ET_TET> &>(feli).GetVertexNumbers();
+          
+          if (vnums[verts[0]] > vnums[verts[1]]) Swap (verts[0], verts[1]);
+          if (vnums[verts[2]] > vnums[verts[3]]) Swap (verts[2], verts[3]);
+          if (vnums[verts[0]] > vnums[verts[2]]) Swap (verts[0], verts[2]);
+          if (vnums[verts[1]] > vnums[verts[3]]) Swap (verts[1], verts[3]);
+          if (vnums[verts[1]] > vnums[verts[2]]) Swap (verts[1], verts[2]);
+
+          Vec<3> gradv[4] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {-1, -1, -1}};
+          for (int j = 0; j < 3; j++)
+            {
+              Vec<3> base = trafo * Cross(gradv[verts[j]]-gradv[verts[3]], gradv[verts[(j+1)%3]]-gradv[verts[3]]);
+              for (int i = 0; i < feli.GetNDof(); i++)  
+                mat.Col(i + j * feli.GetNDof()) = hv(i) * base;
+            }
+        }
     }
   };
 
@@ -3799,6 +3821,334 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   };
 
   
+    /// VectorL2Ho prolongaton
+  class VectorL2HoProlongationTet : public Prolongation
+  {
+    ///
+    shared_ptr<MeshAccess> ma;
+    ///
+    int order;
+    // const Array<int> & first_dofs;
+    Array<size_t> els_on_level;
+    array<Matrix<double>,1024> prolsL;
+    array<Matrix<double>,1024> prolsR;
+    Array<int> tet_creation_class;  // which prol to use ?
+
+  private:
+    int GetClassNr (FlatArray<size_t> verts)
+    {
+      Array<size_t> hverts{verts};
+      int classnr = 0;
+      int pairs[][2] = { {0,1}, {0,2}, {0,3}, {0,4}, {1,2}, {1,3}, {1,4}, {2,3}, {2,4}, {3,4} };
+      for (int i = 0; i < 10; i++)
+        if (hverts[pairs[i][0]] > hverts[pairs[i][1]])
+          {
+            classnr += 1 << i;
+            swap(hverts[pairs[i][0]], hverts[pairs[i][1]]);
+          }
+      return classnr;
+    }
+    Array<size_t> GetClassRealization (int classnr)
+    {
+      Array<size_t> verts{1,2,3,4,5};
+      int pairs[][2] = { {0,1}, {0,2}, {0,3}, {0,4}, {1,2}, {1,3}, {1,4}, {2,3}, {2,4}, {3,4} };
+      for (int i = 9; i >= 0; i--)
+        if (classnr & (1 << i))
+          swap(verts[pairs[i][0]], verts[pairs[i][1]]);
+      return verts;
+    }
+    
+  public:
+    ///
+    VectorL2HoProlongationTet(shared_ptr<MeshAccess> ama, int aorder, bool piola, bool covariant) // , const Array<int> & afirst_dofs)
+      : ma(ama), order(aorder)  // , first_dofs(afirst_dofs) 
+    {
+      int dim = ma->GetDimension();
+      LocalHeap lh(10 * 1000 * 1000);
+      for (int classnr = 0; classnr < 1024; classnr++)
+      {
+        Array<size_t> verts{GetClassRealization(classnr)};
+
+        size_t vertsc[4] = { verts[0], verts[1], verts[2], verts[3] };
+        size_t vertsfL[4] = { verts[4], verts[1], verts[2], verts[3] };
+        size_t vertsfR[4] = { verts[0], verts[1], verts[2], verts[4] };
+
+        L2HighOrderFE<ET_TET> felc(order);
+        felc.SetVertexNumbers(vertsc);
+        L2HighOrderFE<ET_TET> felfL(order);
+        felfL.SetVertexNumbers(vertsfL);
+        L2HighOrderFE<ET_TET> felfR(order);
+        felfR.SetVertexNumbers(vertsfR);
+
+        IntegrationRule ir(ET_TET, 2 * order);
+        size_t ndof = felfL.GetNDof();
+        Matrix<> massfL(dim * ndof, dim * ndof), massfcL(dim * ndof, dim * ndof);
+        Matrix<> massfR(dim * ndof, dim * ndof), massfcR(dim * ndof, dim * ndof);
+        Vector<> shapef(ndof), shapec(ndof);
+        Matrix<> mshapef(dim * ndof, dim), mshapec(dim * ndof, dim);
+
+        massfL = 0.;
+        massfcL = 0.;
+        massfR = 0.;
+        massfcR = 0.;
+
+        if (!piola)
+          for (IntegrationPoint ip : ir)
+            {
+              IntegrationPoint ipcL(0.5*ip(0), ip(1), ip(2));
+              IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)-ip(2)), ip(1), ip(2));              
+
+              Mat<3,3> id = Identity(dim);
+
+              felc.CalcShape (ipcL, shapec);
+              felfL.CalcShape (ip, shapef);
+   
+              for (int j = 0; j < dim; j++)
+                for (int i = 0; i < ndof; i++)
+                  mshapec.Row(j*ndof+i) = shapec(i)*id.Col(j);
+
+              for (int j = 0; j < dim; j++)
+                for (int i = 0; i < ndof; i++)
+                  mshapef.Row(j*ndof+i) = shapef(i)*id.Col(j);
+
+              massfL += ip.Weight() * mshapef * Trans(mshapef);
+              massfcL += ip.Weight() * mshapef * Trans(mshapec);
+
+              felc.CalcShape (ipcR, shapec);
+              felfR.CalcShape (ip, shapef);
+
+              for (int j = 0; j < dim; j++)
+                for (int i = 0; i < ndof; i++)
+                  mshapec.Row(j*ndof+i) = shapec(i)*id.Col(j);
+              for (int j = 0; j < dim; j++)
+                for (int i = 0; i < ndof; i++)
+                  mshapef.Row(j*ndof+i) = shapef(i)*id.Col(j);
+
+              massfR += ip.Weight() * mshapef * Trans(mshapef);
+              massfcR += ip.Weight() * mshapef * Trans(mshapec);
+            }
+
+          Matrix<> vertid = {{1, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0, 0, 0 }};
+          Matrix<> vertl = {{0.5, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0, 0, 0 }};
+          Matrix<> vertr = {{1, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0.5, 0, 0 }};
+
+          FE_ElementTransformation<3,3> trafoid(ET_TET, vertid);
+          FE_ElementTransformation<3,3> trafol(ET_TET, vertl);
+          FE_ElementTransformation<3,3> trafor(ET_TET, vertr);
+
+          VectorFiniteElement vecfc(felc, dim);
+          VectorFiniteElement vecfL(felfL, dim);
+          VectorFiniteElement vecfR(felfR, dim);
+
+          if (piola)
+            for (IntegrationPoint ip : ir)
+            {
+              IntegrationPoint ipcL(0.5*ip(0), ip(1), ip(2));
+              IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)-ip(2)), ip(1), ip(2));              
+
+              MappedIntegrationPoint<3,3> mipfl(ip, trafol);
+              MappedIntegrationPoint<3,3> mipcl(ipcL, trafoid);
+              MappedIntegrationPoint<3,3> mipfr(ip, trafor);
+              MappedIntegrationPoint<3,3> mipcr(ipcR, trafoid);
+
+              DiffOpIdVectorL2Piola2<3>::GenerateMatrix(vecfc, mipcl, Trans(mshapec), lh);
+              DiffOpIdVectorL2Piola2<3>::GenerateMatrix(vecfL, mipfl, Trans(mshapef), lh);
+
+              massfL += ip.Weight() * mshapef * Trans(mshapef);
+              massfcL += ip.Weight() * mshapef * Trans(mshapec);
+
+              DiffOpIdVectorL2Piola2<3>::GenerateMatrix(vecfc, mipcr, Trans(mshapec), lh);
+              DiffOpIdVectorL2Piola2<3>::GenerateMatrix(vecfR, mipfr, Trans(mshapef), lh);
+
+              massfR += ip.Weight() * mshapef * Trans(mshapef);
+              massfcR += ip.Weight() * mshapef * Trans(mshapec);
+            }
+
+          CalcInverse (massfL);
+          prolsL[classnr].SetSize(dim*ndof, dim*ndof);
+          prolsL[classnr] = massfL * massfcL;
+          CalcInverse (massfR);
+          prolsR[classnr].SetSize(dim*ndof, dim*ndof);
+          prolsR[classnr] = massfR * massfcR;
+      }
+    }
+
+    ///
+    virtual ~VectorL2HoProlongationTet() { }
+    ///
+    virtual void Update (const FESpace & /* fes */) override
+    {
+      size_t oldne = tet_creation_class.Size();
+      size_t ne = ma->GetNE();
+      cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", ne = " << ne << endl;
+      
+      while (els_on_level.Size() < ma->GetNLevels())
+        els_on_level.Append(oldne);
+      els_on_level[ma->GetNLevels()-1] = ne;
+
+      cout << IM(3) << "els_on_level = " << endl << els_on_level << endl;
+      
+      tet_creation_class.SetSize(ne);
+      Array<IVec<4, size_t>> tet_creation_verts(ne);
+      for (size_t i = oldne; i < ne; i++)
+        for (int j = 0; j < 4; j++)
+          tet_creation_verts[i][j] = ma->GetElement({VOL,i}).Vertices()[j];
+
+      if (ma->GetNLevels() == 1)
+        return;
+
+      BitArray isparent(ne);
+      BitArray isdone(ne);
+      isdone.Clear();
+
+      Array<size_t> verts(5);
+      while (true)
+      {
+        isparent.Clear();
+        for (size_t i = oldne; i < ne; i++)
+          if (!isdone[i])
+            if (auto parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent != -1)
+              isparent.SetBit(parent);
+            
+        bool found = false;
+        for (size_t i = ne; i-- > oldne; )
+          if (!isparent[i] && !isdone[i])
+            {
+              int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
+              verts[4] = tet_creation_verts[i][newest_vertex];
+              IVec<2> pnodes = ma->GetParentNodes(verts[4]);
+              if (tet_creation_verts[i].Contains(pnodes[1]))
+                pnodes = { pnodes[1], pnodes[0] }; 
+
+            /*
+              verts[0] = pnodes[0];
+              verts[1] = tet_creation_verts[i][0]+tet_creation_verts[i][1]+tet_creation_verts[i][2]-verts[0]-verts[3];
+              verts[2] = pnodes[1];
+            */
+              verts[0] = pnodes[0];
+              verts[3] = pnodes[1];
+              const size_t v23tab[4][4] =
+                  {
+                      {99, 2, 3, 1},
+                      {3, 99, 3, 2},
+                      {1, 0, 99, 0},
+                      {2, 0, 1, 99}};
+              int vi0=-1, vi4=-1;
+              for (int j = 0; j < 4; j++)
+                if (tet_creation_verts[i][j] == verts[4])
+                  vi4 = j;
+              for (int j = 0; j < 4; j++)
+                if (tet_creation_verts[i][j] == verts[0])
+                  vi0 = j;
+
+              if (vi0 == -1)
+                throw Exception("vi0 not found");
+              if (vi4 == -1)
+                throw Exception("vi4 not found");
+
+              verts[1] = tet_creation_verts[i][v23tab[vi0][vi4]];
+              verts[2] = tet_creation_verts[i][v23tab[vi4][vi0]];
+
+
+              tet_creation_class[i] = GetClassNr(verts);
+
+              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+              if (parent != -1) 
+                {
+                  tet_creation_verts[parent] = tet_creation_verts[i];
+                  tet_creation_verts[parent][newest_vertex] = verts[3];
+                }
+              isdone.SetBit(i);
+              found = true;
+            }
+        if (!found) break;
+      }
+    }
+    
+    ///
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
+    { return nullptr; }
+
+    virtual size_t GetNDofLevel (int level) override
+    {
+        return els_on_level[level] * (order+1)*(order+2)*(order+3)/6 
+        * ma->GetDimension();
+    }
+
+
+    ///
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
+    {
+      int dim = ma->GetDimension();
+
+      FlatVector<> fv = v.FV<double>();
+      
+      size_t ne = els_on_level[finelevel];
+      size_t nec = els_on_level[finelevel-1];
+      int ndel = (order+1)*(order+2)*(order+3)/6;
+
+      Vector<> tmp1(dim*ndel), tmp2(dim*ndel);
+
+      size_t scal_ndofc = nec*ndel;  
+      size_t scal_ndoff = ne*ndel;
+
+      for (int i = dim - 1; i > 0; i--)
+        for (size_t j = scal_ndofc; j-- > 0; )
+          fv(i*scal_ndoff+j) = fv(i*scal_ndofc+j);
+      auto fvm = fv.AsMatrix(dim, scal_ndoff);
+      for (size_t i = nec; i < ne; i++)
+        {
+          int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+          if(parent!=-1)
+            {
+              int classnr = tet_creation_class[i];
+
+              tmp1.AsMatrix(dim, ndel) = fvm.Cols(parent*ndel, (parent+1)*ndel);
+
+              tmp2 = prolsR[classnr] * tmp1;
+              fvm.Cols(i*ndel, (i+1)*ndel) = tmp2.AsMatrix(dim, ndel);
+
+              tmp2 = prolsL[classnr] * tmp1;
+              fvm.Cols(parent*ndel, (parent+1)*ndel) = tmp2.AsMatrix(dim, ndel);
+            }
+        }
+    }
+     
+    ///
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override
+    {
+      int dim = ma->GetDimension();
+      FlatVector<> fv = v.FV<double>();
+      
+      size_t ne = els_on_level[finelevel];
+      size_t nec = els_on_level[finelevel-1];
+      int ndel = (order+1)*(order+2)*(order+3)/6;
+
+      Vector<double> tmp(dim*ndel), tmpL(dim*ndel), tmpR(dim*ndel);
+
+      size_t scal_ndofc = nec*ndel;  
+      size_t scal_ndoff = ne*ndel;  
+      auto fvm = fv.AsMatrix(dim, scal_ndoff);
+
+      for (size_t i = ne-1; i >= nec; i--)
+        {
+          int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+          if(parent!=-1)
+            {
+              int classnr = tet_creation_class[i];
+              tmpR.AsMatrix(dim,ndel) = fvm.Cols(i*ndel, (i+1)*ndel);
+              tmpL.AsMatrix(dim,ndel) = fvm.Cols(parent*ndel, (parent+1)*ndel);
+              tmp = Trans(prolsR[classnr]) * tmpR +
+                    Trans(prolsL[classnr]) * tmpL;
+              fvm.Cols(ndel*parent, ndel*(parent+1)) = tmp.AsMatrix(dim,ndel);
+            }
+        }
+      for (int i = 0; i < dim; i++)
+        for (size_t j = 0; j < scal_ndofc; j++)
+          fv(i*scal_ndofc+j) = fv(i*scal_ndoff+j);
+      } 
+  };
+
 
 
 
@@ -3911,7 +4261,12 @@ One can evaluate the vector-valued function, and one can take the gradient.
       additional_evaluators.Set("dual", evaluator[VOL]);
 
       if (flags.GetDefineFlag("hoprolongation"))
-        prol = make_shared<VectorL2HoProlongationTrig> (ma, order, piola2, covariant);
+        {
+          if (ma->GetDimension()==2)
+            prol = make_shared<VectorL2HoProlongationTrig> (ma, order, piola2, covariant);
+          else if (ma->GetDimension()==3)
+            prol = make_shared<VectorL2HoProlongationTet> (ma, order, piola2, covariant);
+        }
     }
 
   FiniteElement & VectorL2FESpace ::GetFE (ElementId ei, Allocator & alloc) const
