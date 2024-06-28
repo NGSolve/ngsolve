@@ -2732,6 +2732,39 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   void  L2SurfaceHighOrderFESpace ::GetInnerDofNrs (int elnr, Array<int> & dnums) const
   { GetDofNrs ( elnr, dnums ); return; }
 
+
+  template <int DIM_SPC, VorB VB = VOL>
+  class DiffOpIdVectorL2Piola2 : public DiffOp<DiffOpIdVectorL2Piola2<DIM_SPC,VB> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = DIM_SPC };
+    enum { DIM_ELEMENT = DIM_SPC-VB };
+    enum { DIM_DMAT = DIM_SPC };
+    enum { DIFFORDER = 0 };
+
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      HeapReset hr(lh);
+      FlatVector<> hv(feli.GetNDof(), lh);
+      feli.CalcShape(mip.IP(), hv);
+
+      // for (int i = 0; i < DIM_ELEMENT; i++)
+      // feli.CalcShape (mip.IP(), mat.Row(i).Range(fel.GetRange(i)));
+      Mat<DIM_SPACE,DIM_ELEMENT> trafo = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();
+      IVec<3> verts = dynamic_cast<const VertexOrientedFE<ET_TRIG> &>(feli).GetVertexOrientedFace(0);
+      Mat<3, 2> gradv = {{0, 1}, {-1, 0}, {1, -1}};
+      gradv = gradv * Trans(trafo);
+      for (int j = 0; j < 2; j++)
+        for (int i = 0; i < feli.GetNDof(); i++)
+          mat.Col(i + j * feli.GetNDof()) = hv(i)*gradv.Row(verts[j]);
+    }
+  };
+
   template <int DIM_SPC, VorB VB = VOL>
   class DiffOpIdVectorL2Piola : public DiffOp<DiffOpIdVectorL2Piola<DIM_SPC,VB> >
   {
@@ -3472,175 +3505,161 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     int order;
     // const Array<int> & first_dofs;
     Array<size_t> els_on_level;
-    array<Matrix<double>,64> trigprolsL;
-    array<Matrix<double>,64> trigprolsR;
+    array<Matrix<double>,32> trigprolsL;
+    array<Matrix<double>,32> trigprolsR;
     Array<int> trig_creation_class;  // which prol to use ?
 
   private:
-    int GetClassNr (FlatArray<size_t> verts)
+  int GetClassNr (FlatArray<size_t> verts)
     {
       Array<size_t> hverts{verts};
       int classnr = 0;
-      if (hverts[0] > hverts[1]) { Swap(hverts[0], hverts[1]); classnr += 1; }
-      if (hverts[2] > hverts[3]) { Swap(hverts[2], hverts[3]); classnr += 2; }
-      if (hverts[1] > hverts[2]) { Swap(hverts[1], hverts[2]); classnr += 4; }
-      if (hverts[0] > hverts[1]) { Swap(hverts[0], hverts[1]); classnr += 8; }
-      if (hverts[2] > hverts[3]) { Swap(hverts[2], hverts[3]); classnr += 16; }
-      if (hverts[1] > hverts[2]) { Swap(hverts[1], hverts[2]); classnr += 32; }
+      // sorting network for 4 elements, 5 comparisons:
+      int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
+      for (int i = 0; i < 5; i++)
+         if (hverts[pairs[i][0]] > hverts[pairs[i][1]])
+           {
+             classnr += 1 << i;
+             swap(hverts[pairs[i][0]], hverts[pairs[i][1]]);
+           }
       return classnr;
     }
     Array<size_t> GetClassRealization (int classnr)
     {
       Array<size_t> verts{1,2,3,4};
-      if (classnr & 32) Swap(verts[1], verts[2]);
-      if (classnr & 16) Swap(verts[2], verts[3]);
-      if (classnr & 8) Swap(verts[0], verts[1]);
-      if (classnr & 4) Swap(verts[1], verts[2]);
-      if (classnr & 2) Swap(verts[2], verts[3]);
-      if (classnr & 1) Swap(verts[0], verts[1]);
+      int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
+      for (int i = 4; i >= 0; i--)
+        if (classnr & (1 << i))
+          swap(verts[pairs[i][0]], verts[pairs[i][1]]);
       return verts;
     }
-    
+
     
   public:
     ///
     VectorL2HoProlongationTrig(shared_ptr<MeshAccess> ama, int aorder, bool piola, bool covariant) // , const Array<int> & afirst_dofs)
       : ma(ama), order(aorder)  // , first_dofs(afirst_dofs) 
     {
-      ma->EnableTable("parentfaces");
-      ma->EnableTable("parentedges");
-      ma->GetNetgenMesh()->UpdateTopology();
-      // assume constant order, trig mesh
-      
       int dim = ma->GetDimension();
-      for (int classnr = 0; classnr < 64; classnr++)
-        {
-          Array<size_t> verts{GetClassRealization(classnr)};
-          
-          size_t vertsc[3] = { verts[0], verts[1], verts[2] };
-          size_t vertsfL[3] = { verts[3], verts[1], verts[2] };
-          size_t vertsfR[3] = { verts[0], verts[1], verts[3] };
-          // cout << "coarse: " << vertsc[0] << " " << vertsc[1] << " " << vertsc[2] << endl;
-          // cout << "fine:   " << vertsf[0] << " " << vertsf[1] << " " << vertsf[2] << endl;
-          
-          L2HighOrderFE<ET_TRIG> felc(order);
-          felc.SetVertexNumbers (vertsc);
+      LocalHeap lh(10 * 1000 * 1000);
+      for (int classnr = 0; classnr < 32; classnr++)
+      {
+        Array<size_t> verts{GetClassRealization(classnr)};
 
-          L2HighOrderFE<ET_TRIG> felfL(order);
-          felfL.SetVertexNumbers (vertsfL);
-          L2HighOrderFE<ET_TRIG> felfR(order);
-          felfR.SetVertexNumbers (vertsfR);
-          
-          int orderc[] = { 0, 1, 2 };
-          int orderl[] = { 0, 1, 2 };
-          int orderr[] = { 0, 1, 2 };
-          if (vertsc[orderc[0]] > vertsc[orderc[1]]) Swap(orderc[0], orderc[1]);
-          if (vertsc[orderc[1]] > vertsc[orderc[2]]) Swap(orderc[1], orderc[2]);
-          if (vertsc[orderc[0]] > vertsc[orderc[1]]) Swap(orderc[0], orderc[1]);
+        size_t vertsc[3] = {verts[0], verts[1], verts[2]};
+        size_t vertsfL[3] = {verts[3], verts[1], verts[2]};
+        size_t vertsfR[3] = {verts[0], verts[1], verts[3]};
 
-          if (vertsfL[orderl[0]] > vertsfL[orderl[1]]) Swap(orderl[0], orderl[1]);
-          if (vertsfL[orderl[1]] > vertsfL[orderl[2]]) Swap(orderl[1], orderl[2]);
-          if (vertsfL[orderl[0]] > vertsfL[orderl[1]]) Swap(orderl[0], orderl[1]);
+        L2HighOrderFE<ET_TRIG> felc(order);
+        felc.SetVertexNumbers(vertsc);
 
-          if (vertsfR[orderr[0]] > vertsfR[orderr[1]]) Swap(orderr[0], orderr[1]);
-          if (vertsfR[orderr[1]] > vertsfR[orderr[2]]) Swap(orderr[1], orderr[2]);
-          if (vertsfR[orderr[0]] > vertsfR[orderr[1]]) Swap(orderr[0], orderr[1]);
+        L2HighOrderFE<ET_TRIG> felfL(order);
+        felfL.SetVertexNumbers(vertsfL);
+        L2HighOrderFE<ET_TRIG> felfR(order);
+        felfR.SetVertexNumbers(vertsfR);
 
-          Mat<3,2> gradlam { { 1, 0 }, { 0, 1 }, { -1, -1 } };
-          Mat<2,2> jacpermc, jacperml, jacpermr;
-          jacpermc.Col(0) = gradlam.Row(orderc[0]);
-          jacpermc.Col(1) = gradlam.Row(orderc[1]);
-          jacperml.Col(0) = gradlam.Row(orderl[0]);
-          jacperml.Col(1) = gradlam.Row(orderl[1]);
-          jacpermr.Col(0) = gradlam.Row(orderr[0]);
-          jacpermr.Col(1) = gradlam.Row(orderr[1]);
+        IntegrationRule ir(ET_TRIG, 2 * order);
+        size_t ndof = felfL.GetNDof();
+        Matrix<> massfL(dim * ndof, dim * ndof), massfcL(dim * ndof, dim * ndof);
+        Matrix<> massfR(dim * ndof, dim * ndof), massfcR(dim * ndof, dim * ndof);
+        Vector<> shapef(ndof), shapec(ndof);
+        Matrix<> mshapef(dim * ndof, dim), mshapec(dim * ndof, dim);
 
+        massfL = 0.;
+        massfcL = 0.;
+        massfR = 0.;
+        massfcR = 0.;
 
-           
-          IntegrationRule ir(ET_TRIG, 2*order);
-          size_t ndof = felfL.GetNDof();
-          Matrix massfL(dim*ndof, dim*ndof), massfcL(dim*ndof, dim*ndof);
-          Matrix massfR(dim*ndof, dim*ndof), massfcR(dim*ndof, dim*ndof);          
-          Vector shapef(ndof), shapec(ndof);
-          Matrix mshapef(dim*ndof, dim), mshapec(dim*ndof, dim);
-          massfL = 0.;
-          massfcL = 0.;
-          massfR = 0.;
-          massfcR = 0.;
-          
+        if (!piola)
           for (IntegrationPoint ip : ir)
             {
               IntegrationPoint ipcL(0.5*ip(0), ip(1));
               IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)), ip(1));              
 
+              Mat<2,2> id = Identity(dim);
+              // Mat<2,2> jacl{ { 0.5, 0 }, { 0, 1 } };
+              // Mat<2,2> jacr{ { 0.5, -0.5 }, { 0, 1 } };
+
               felc.CalcShape (ipcL, shapec);
               felfL.CalcShape (ip, shapef);
-
-              Mat<2,2> id = Identity(dim);
-              Mat<2,2> jacl{ { 0.5, 0 }, { 0, 1 } };
-              Mat<2,2> jacr{ { 0.5, -0.5 }, { 0, 1 } };
-              /*
-              jacl = Trans(jacperml) * Trans(jacl) * Inv(Trans(jacpermc));
-              jacr = Trans(jacpermr) * Trans(jacr) * Inv(Trans(jacpermc));
-              jacl = Inv(Trans(jacpermc * jacl * Inv(jacperml)));
-              jacr = Inv(Trans(jacpermc * jacr * Inv(jacpermr)));
-              */
-              Mat<2,2> trafol = id;
-              Mat<2,2> trafor = id;
-
-              if (piola) 
-                {
-                  trafol = 1.0/Det(jacl)*jacl;
-                  trafor = 1.0/Det(jacr)*jacr;
-                }
-              if (covariant)
-                {
-                   trafol = Trans(jacl);
-                   trafor = Trans(jacr);     
-                }
-
+   
               for (int j = 0; j < dim; j++)
                 for (int i = 0; i < ndof; i++)
                   mshapec.Row(j*ndof+i) = shapec(i)*id.Col(j);
 
               for (int j = 0; j < dim; j++)
                 for (int i = 0; i < ndof; i++)
-                  mshapef.Row(j*ndof+i) = shapef(i)*trafol.Col(j);
+                  mshapef.Row(j*ndof+i) = shapef(i)*id.Col(j);
 
-                  
               massfL += ip.Weight() * mshapef * Trans(mshapef);
               massfcL += ip.Weight() * mshapef * Trans(mshapec);
 
               felc.CalcShape (ipcR, shapec);
               felfR.CalcShape (ip, shapef);
+
               for (int j = 0; j < dim; j++)
                 for (int i = 0; i < ndof; i++)
                   mshapec.Row(j*ndof+i) = shapec(i)*id.Col(j);
               for (int j = 0; j < dim; j++)
                 for (int i = 0; i < ndof; i++)
-                  mshapef.Row(j*ndof+i) = shapef(i)*trafor.Col(j);
-              
+                  mshapef.Row(j*ndof+i) = shapef(i)*id.Col(j);
+
               massfR += ip.Weight() * mshapef * Trans(mshapef);
               massfcR += ip.Weight() * mshapef * Trans(mshapec);
             }
+
+          Matrix<> vertid = {{1, 0}, {0, 1}, {0, 0}};
+          Matrix<> vertl = {{0.5, 0}, {0, 1}, {0, 0}};
+          Matrix<> vertr = {{1 , 0}, {0, 1}, {0.5, 0}};
+
+          FE_ElementTransformation<2, 2> trafoid(ET_TRIG, vertid);
+          FE_ElementTransformation<2, 2> trafol(ET_TRIG, vertl);
+          FE_ElementTransformation<2, 2> trafor(ET_TRIG, vertr);
+
+          VectorFiniteElement vecfc(felc, 2);
+          VectorFiniteElement vecfL(felfL, 2);
+          VectorFiniteElement vecfR(felfR, 2);
+
+          if (piola)
+            for (IntegrationPoint ip : ir)
+            {
+              IntegrationPoint ipcL(0.5*ip(0), ip(1));
+              IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)), ip(1));              
+
+              MappedIntegrationPoint<2, 2> mipfl(ip, trafol);
+              MappedIntegrationPoint<2, 2> mipcl(ipcL, trafoid);
+              MappedIntegrationPoint<2, 2> mipfr(ip, trafor);
+              MappedIntegrationPoint<2, 2> mipcr(ipcR, trafoid);
+
+              DiffOpIdVectorL2Piola2<2>::GenerateMatrix(vecfc, mipcl, Trans(mshapec), lh);
+              DiffOpIdVectorL2Piola2<2>::GenerateMatrix(vecfL, mipfl, Trans(mshapef), lh);
+
+              massfL += ip.Weight() * mshapef * Trans(mshapef);
+              massfcL += ip.Weight() * mshapef * Trans(mshapec);
+
+              DiffOpIdVectorL2Piola2<2>::GenerateMatrix(vecfc, mipcr, Trans(mshapec), lh);
+              DiffOpIdVectorL2Piola2<2>::GenerateMatrix(vecfR, mipfr, Trans(mshapef), lh);
+
+              massfR += ip.Weight() * mshapef * Trans(mshapef);
+              massfcR += ip.Weight() * mshapef * Trans(mshapec);
+            }
+
           CalcInverse (massfL);
           trigprolsL[classnr].SetSize(dim*ndof, dim*ndof);
           trigprolsL[classnr] = massfL * massfcL;
           CalcInverse (massfR);
           trigprolsR[classnr].SetSize(dim*ndof, dim*ndof);
           trigprolsR[classnr] = massfR * massfcR;
-        }
+      }
     }
 
     ///
-    virtual ~VectorL2HoProlongationTrig()
-    { ; }
+    virtual ~VectorL2HoProlongationTrig() { }
     ///
     virtual void Update (const FESpace & /* fes */) override
     {
       size_t oldne = trig_creation_class.Size();
       size_t ne = ma->GetNE();
-      
       cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", ne = " << ne << endl;
       
       while (els_on_level.Size() < ma->GetNLevels())
@@ -3650,64 +3669,55 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       cout << IM(3) << "els_on_level = " << endl << els_on_level << endl;
       
       trig_creation_class.SetSize(ne);
-      
-      Array<size_t> verts(4);
+      Array<IVec<3, size_t>> trig_creation_verts(ne);
       for (size_t i = oldne; i < ne; i++)
-        {
-          int face = ma->GetElFaces({VOL,i})[0];
-          verts.Range(0,3) = ma->GetElement({VOL,i}).Vertices();
+        for (int j = 0; j < 3; j++)
+          trig_creation_verts[i][j] = ma->GetElement({VOL,i}).Vertices()[j];
 
-          ElementId el{VOL,i};
-          while(el.Nr() != -1)
+      BitArray isparent(ne);
+      BitArray isdone(ne);
+      isdone.Clear();
+
+      Array<size_t> verts(4);
+      while (true)
+      {
+        isparent.Clear();
+        for (size_t i = oldne; i < ne; i++)
+          if (!isdone[i])
+            if (auto parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent != -1)
+              isparent.SetBit(parent);
+            
+        bool found = false;
+        for (size_t i = ne; i-- > oldne; )
+          if (!isparent[i] && !isdone[i])
             {
-              // cout << "el = " << el << ", verts = " << verts << endl;
-              if (el.Nr() < oldne) break;
+              int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
+              verts[3] = trig_creation_verts[i][newest_vertex];
+              IVec<2> pnodes = ma->GetParentNodes(verts[3]);
+              if (trig_creation_verts[i].Contains(pnodes[1]))
+                pnodes = { pnodes[1], pnodes[0] }; 
 
-              auto [info, parentfaces] = ma->GetParentFaces(face);
-              auto parentface = get<0>(parentfaces);
-              if (parentface == -1) break;
-              auto parentface_vertices = ma->GetFacePNums(parentface);
-              // find vertex maxi s.t. one of maxi's parents is in trig
-              int maxi = -1;
-              for (int j = 0; j < 3; j++)
+              verts[0] = pnodes[0];
+              verts[1] = trig_creation_verts[i][0]+trig_creation_verts[i][1]+trig_creation_verts[i][2]-verts[0]-verts[3];
+              verts[2] = pnodes[1];
+              trig_creation_class[i] = GetClassNr(verts);
+
+              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+              if (parent != -1) 
                 {
-                  IVec<2> pnodes = ma->GetParentNodes(verts[j]);
-                  if ( (verts.Contains(pnodes[0]) || verts.Contains(pnodes[1])) &&
-                       parentface_vertices.Contains(pnodes[0]) && parentface_vertices.Contains(pnodes[1]) )
-                    {
-                      maxi = j;
-                      break;
-                    }
+                  trig_creation_verts[parent] = trig_creation_verts[i];
+                  trig_creation_verts[parent][newest_vertex] = verts[2];
                 }
-              if (ma->GetParentElement(el).Nr() != -1)
-                if (maxi == -1) throw Exception("did not find pnodes");
-              IVec<2> pnodes = ma->GetParentNodes(verts[maxi]);
-              auto vmax = verts[maxi];
-              auto pnode_in_fine = verts.Contains(pnodes[0]) ? pnodes[0] : pnodes[1];
-              auto pnode_not_in_fine = verts.Contains(pnodes[0]) ? pnodes[1] : pnodes[0];
-              auto third_node = verts[0]+verts[1]+verts[2]-vmax-pnode_in_fine;
-
-              verts[0] = pnode_in_fine;
-              verts[1] = third_node;
-              verts[2] = pnode_not_in_fine;
-              verts[3] = vmax;
-              // cout << "parent verts = " << verts << endl;
-              
-              // classify parent element:
-              int classnr = GetClassNr(verts);
-
-              trig_creation_class[el.Nr()] = classnr;
-              
-              el = ma->GetParentElement(el);
-              face = parentface;
+              isdone.SetBit(i);
+              found = true;
             }
-        }
-      // cout << "classnrs = " << endl << trig_creation_class << endl;
+        if (!found) break;
+      }
     }
     
     ///
     virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
+    { return nullptr; }
 
     virtual size_t GetNDofLevel (int level) override
     {
@@ -3732,7 +3742,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       size_t scal_ndoff = ne*ndel;  
 
       for (int i = dim-1; i > 0; i--)
-        for (size_t j = scal_ndofc-1; j > 0; j--)
+        for (size_t j = scal_ndofc; j-- > 0; )
           fv(i*scal_ndoff+j) = fv(i*scal_ndofc+j);
       auto fvm = fv.AsMatrix(dim, scal_ndoff);
       for (size_t i = nec; i < ne; i++)
@@ -3785,9 +3795,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
       for (int i = 0; i < dim; i++)
         for (size_t j = 0; j < scal_ndofc; j++)
           fv(i*scal_ndofc+j) = fv(i*scal_ndoff+j);
-      
-    }
- 
+      } 
   };
 
   
@@ -3837,6 +3845,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
 
       piola = flags.GetDefineFlag ("piola");
       covariant = flags.GetDefineFlag ("covariant");
+      piola2 = flags.GetDefineFlag ("piola2");
 
       if (piola)
         {
@@ -3854,6 +3863,19 @@ One can evaluate the vector-valued function, and one can take the gradient.
               break;
             }
         }
+      else if (piola2)
+        {
+          switch (ma->GetDimension())
+            {
+            case 2:
+              evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola2<2>>>();
+              break;
+            case 3:
+              evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola2<3>>>();
+              break;
+            }
+        }
+      
       else if (covariant)
         {
           switch (ma->GetDimension())
@@ -3889,7 +3911,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
       additional_evaluators.Set("dual", evaluator[VOL]);
 
       if (flags.GetDefineFlag("hoprolongation"))
-        prol = make_shared<VectorL2HoProlongationTrig> (ma, order, piola, covariant);
+        prol = make_shared<VectorL2HoProlongationTrig> (ma, order, piola2, covariant);
     }
 
   FiniteElement & VectorL2FESpace ::GetFE (ElementId ei, Allocator & alloc) const
