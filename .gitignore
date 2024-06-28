@@ -18,6 +18,8 @@ ng*.trace
 .ipynb_checkpoints/
 dist
 _skbuild
+.vscode
+ngsolve-py3.egg-info
 
 build
 em_build
