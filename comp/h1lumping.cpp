@@ -157,6 +157,35 @@ namespace ngcomp
         });
   }
 
+  shared_ptr<BaseMatrix> 
+  H1LumpingFESpace :: GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                     shared_ptr<Region> defon, LocalHeap & lh) const
+  {
+    auto v = make_shared<VVector<double>>(GetNDof());
+    *v = 0.0;
+    auto rls = GetIntegrationRules();
+    Array<DofId> dnums;
+    if (!defon)
+      defon = make_shared<Region>(ma, VOL, ".*");
+    for (auto el : defon->GetElements())
+    {
+      HeapReset hr(lh);
+      GetDofNrs(el, dnums);
+      auto &trafo = ma->GetTrafo(el, lh);
+      auto &ir = rls[el.GetType()];
+      auto &mir = trafo(ir, lh);
+      FlatVector<> rhoi(ir.Size(), lh);
+      rhoi = 1;
+      if (rho)
+        rho->Evaluate(mir, rhoi.AsMatrix(ir.Size(), 1)); 
+      for (int i = 0; i < ir.Size(); i++)
+        rhoi(i) *= mir[i].GetWeight();
+
+      v->AddIndirect(dnums, rhoi);
+    }
+    return make_shared<DiagonalMatrix<double>>(v);
+  }
+
   void H1LumpingFESpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
   {
     dnums.SetSize0();

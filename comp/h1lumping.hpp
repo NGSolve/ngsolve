@@ -19,6 +19,11 @@ namespace ngcomp
 
     void Update() override;
     
+    virtual shared_ptr<BaseMatrix> 
+    GetMassOperator (shared_ptr<CoefficientFunction> rho,
+                     shared_ptr<Region> defon, LocalHeap & lh) const override;
+
+
     void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     
     FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
