@@ -80,8 +80,6 @@ namespace ngcomp
     virtual int GetNFacetDofs (int felnr) const;
 
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
-
-    virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
     ///
     virtual shared_ptr<Array<int>> CreateDirectSolverClusters (const Flags & precflags) const override;
   
