@@ -7,6 +7,7 @@
    Symbolic integrators
 */
 
+#include <cassert>
 #include <variant>
 // #include <fem.hpp>
 #include "integratorcf.hpp"
