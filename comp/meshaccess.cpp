@@ -1464,21 +1464,17 @@ namespace ngcomp
 
     // 2D case: as it was before: one volume element, is it still needed ???
     // ArrayMem<int, 9> vnums;
-    auto vnums = GetFacePNums(fnr);
-
-    /*
-    ArrayMem<int, 50> vels;
-    GetVertexElements (vnums[0], vels);
-    */
-    auto vels = GetVertexElements(vnums[0]);
-    int faces[8];
-    elnums.SetSize (0);
-    for (int i = 0; i < vels.Size(); i++)
+    if (dim == 2)
       {
-	int nfa = Ng_GetElement_Faces (vels[i]+1, faces, 0);
-	for (int j = 0; j < nfa; j++)
-	  if (faces[j]-1 == fnr)
-	    elnums.Append (vels[i]);
+        auto vnums = GetFacePNums(fnr);
+        auto vels = GetVertexElements(vnums[0]);
+
+        elnums.SetSize (0);
+        for (auto el : vels) 
+          {
+            if (ArrayObject(mesh.GetElement<2>(el).faces).Contains(fnr))
+              elnums.Append (el);          
+          }
       }
   }
 
