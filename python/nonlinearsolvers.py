@@ -97,7 +97,7 @@ class NewtonSolver:
             else:
                 self.inv.Update()
         else:
-            if self.inv == "sparsecholesky" and self.inv is not None:
+            if self.inverse == "sparsecholesky" and self.inv is not None:
                 self.inv.Update()
             else:
                 self.inv = self.a.mat.Inverse(self.freedofs,
