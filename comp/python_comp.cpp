@@ -426,7 +426,9 @@ when building the system matrices.
          [](const spProxy self)
          { return self->Trace(); },
          "take canonical boundary trace")
-    
+    .def_property_readonly("primary",
+         [](const spProxy self) { return self->Primary(); },
+         "returns my primary proxy")
     .def_property_readonly("dt",
          [](const spProxy self) { return self->Dt(); },
          "time derivative")
