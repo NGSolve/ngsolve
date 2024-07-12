@@ -2806,7 +2806,3 @@ static RegisterClassForArchive<BoundaryFromVolumeCoefficientFunction, Coefficien
 static RegisterClassForArchive<Region> regregion;
 
 }
-
-
-
-
