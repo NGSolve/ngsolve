@@ -14,6 +14,17 @@
 #include <ngs_stdcpp_include.hpp>  // for INLINE
 #include "complex_wrapper.hpp"
 
+
+#if defined(NETGEN_ENABLE_CHECK_RANGE) && !defined(__CUDA_ARCH__)
+#define NETGEN_CHECK_SHAPE(a,b) \
+  { if(a.Shape() != b.Shape()) \
+      ngcore::ThrowException(__FILE__ ":" NETGEN_CORE_NGEXEPTION_STR(__LINE__) "\t: shapes don't match"); }
+#else // defined(NETGEN_ENABLE_CHECK_RANGE) && !defined(__CUDA_ARCH__)
+#define NETGEN_CHECK_SHAPE(a,b)
+#endif // defined(NETGEN_ENABLE_CHECK_RANGE) && !defined(__CUDA_ARCH__)
+
+
+
 namespace ngbla
 {
   using namespace std;
@@ -210,7 +221,6 @@ namespace ngbla
 
 
 
-
   /**
      Expr is the base class for all matrix template expressions.
      Barton and Nackman Trick for template polymorphism, function Spec.
@@ -267,23 +277,23 @@ namespace ngbla
 
   
   INLINE constexpr auto CombinedSize(undefined_size s1, undefined_size s2) {
-    NETGEN_CHECK_SAME(s1, s2); return s1; }
+    NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s1; }
   INLINE constexpr auto CombinedSize(undefined_size s1, size_t s2) {
-    NETGEN_CHECK_SAME(s1, s2); return s2; }  
+    NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s2; }  
   INLINE constexpr auto CombinedSize(size_t s1, undefined_size s2) {
-    NETGEN_CHECK_SAME(s1, s2); return s1; }  
+    NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s1; }  
   INLINE constexpr auto CombinedSize(size_t s1, size_t s2) {
-    NETGEN_CHECK_SAME(s1, s2); return s1; }
+    NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s1; }
   template <int S1> INLINE constexpr auto CombinedSize(IC<S1> s1, undefined_size s2) {
-    NETGEN_CHECK_SAME(s1, s2); return s1; }  
+    NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s1; }  
   template <int S1> INLINE constexpr auto CombinedSize(IC<S1> s1, size_t s2) {
-    NETGEN_CHECK_SAME(s1, s2); return s1; }  
+    NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s1; }  
   template <int S1, int S2> INLINE constexpr auto CombinedSize(IC<S1> s1, IC<S2> s2) {
-    NETGEN_CHECK_SAME(s1, s2); return s1; }  
+    NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s1; }  
   template <int S2> INLINE constexpr auto CombinedSize(undefined_size s1, IC<S2> s2) {
-    NETGEN_CHECK_SAME(s1, s2); return s2; }  
+    NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s2; }  
   template <int S2> INLINE constexpr auto CombinedSize(size_t s1, IC<S2> s2) {
-     NETGEN_CHECK_SAME(s1, s2); return s2; }  
+     NETGEN_CHECK_SAME(size_t(s1), size_t(s2)); return s2; }  
 
   template <typename T1, typename T2>
   INLINE constexpr auto CombinedSize(tuple<T1> tup1, tuple<T2> tup2)
