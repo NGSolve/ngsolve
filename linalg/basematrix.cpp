@@ -286,7 +286,7 @@ namespace ngla
         Mult (vecx, vecy);
         dmat.Col(i) = fy;
       }
-    return std::move(dmat);
+    return dmat;
   }
 
   template Matrix<double> BaseMatrix :: ToDense<double>() const;
