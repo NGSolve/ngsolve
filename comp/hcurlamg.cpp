@@ -310,7 +310,7 @@ namespace ngcomp
         v_weights = 0.;
 
         bool use_h1amg = true;
-        int count = 0;
+        // int count = 0;
         auto h1_freedofs = GetH1FreeDofs(e2v, e2f, freedofs);
         if(use_h1amg)
           node_h1 = make_shared<H1AMG_Matrix<SCAL>>
@@ -459,7 +459,7 @@ namespace ngcomp
                     }
                 }
             }
-          auto face = faces[0];
+          // auto face = faces[0];
           // find center face neighbours - neighbours have 2 common neighbour faces
           Array<IVec<2>> neighbours(faces.Size());
           for(auto i : Range(neighbours))
@@ -577,7 +577,7 @@ namespace ngcomp
           coll_eweights[ei] = lami[0] + double(e2f[ei].Size())/50.;
         }
     }, TasksPerThread(100));
-    return std::move(coll_eweights);
+    return coll_eweights;
   }
 
   template<typename SCAL>
@@ -1122,7 +1122,7 @@ namespace ngcomp
     auto ndofhc = 6;
     auto ndofh1 = 4;
     auto dnumshc = dnums.Range(ndofhc);
-    auto dnumsh1 = dnums.Range(ndofhc, END);
+    // auto dnumsh1 = dnums.Range(ndofhc, END);
     FlatMatrix<SCAL> elmathc = belmat.Rows(ndofhc).Cols(ndofhc) | lh;
     double reg = 1e-10 * L2Norm(elmathc);
     for(auto i : Range(ndofhc))

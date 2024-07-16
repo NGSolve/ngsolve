@@ -29,6 +29,7 @@ using namespace ngmg;
 #include "../parallel/dump.hpp"
 
 
+
 template <NODE_TYPE NT, typename TELEM>
 class NodalArray
 {
