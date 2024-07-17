@@ -1498,6 +1498,7 @@ namespace ngfem
     static_assert(DIM_ELEMENT <= DIM_SPACE, "DIM-source > DIM-range !!");    
     FlatArray< MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL> > mips;
   public:
+    typedef SCAL TSCAL;    
     MappedIntegrationRule (const IntegrationRule & ir, 
 			   const ElementTransformation & aeltrans, 
 			   Allocator & lh);
