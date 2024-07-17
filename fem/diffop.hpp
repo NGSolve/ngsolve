@@ -47,7 +47,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     { 
-      throw Exception("DIFFOP::GenerateMatrix should not be here, diffop = ", typeid(DOP).name());
+      Exception::Throw("DIFFOP::GenerateMatrix should not be here, diffop = ", typeid(DOP).name());
     }
 
     /// tbd
@@ -166,21 +166,22 @@ namespace ngfem
 
     static int DimRef()
     {
-      throw Exception ("DIFFOP::DimRef should not be here, diffop = ", typeid(DOP).name());
+      Exception::Throw ("DIFFOP::DimRef should not be here, diffop = ", typeid(DOP).name());
     }
 
     template <typename FEL, typename IP, typename MAT>
     static void GenerateMatrixRef (const FEL & fel, const IP & ip,
                                    MAT & mat, LocalHeap & lh)
     { 
-      cout << "DIFFOP::GenerateMatrixRef should not be here, diffop = " << typeid(DOP).name() << endl;
+      // cout << "DIFFOP::GenerateMatrixRef should not be here, diffop = " << typeid(DOP).name() << endl;
+      Exception::Throw("DIFFOP::GenerateMatrixRef should not be here, diffop = ", typeid(DOP).name());
     }
     
     template <typename MIP, typename MAT>
     static void CalcTransformationMatrix (const MIP & mip,
                                           MAT & mat, LocalHeap & lh)
     { 
-      cout << "DIFFOP::CalcTransformationMatrix should not be here, diffop = " << typeid(DOP).name() << endl;
+      Exception::Throw("DIFFOP::CalcTransformationMatrix should not be here, diffop = ", typeid(DOP).name());      
     }
 
     static shared_ptr<CoefficientFunction>
@@ -188,7 +189,7 @@ namespace ngfem
                shared_ptr<CoefficientFunction> dir,
                bool Eulerian) 
     {
-      throw Exception ("shape derivative not implemented for DifferentialOperator", Name());
+      Exception::Throw ("shape derivative not implemented for DifferentialOperator", Name());
     }
 
   };
