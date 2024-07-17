@@ -47,7 +47,7 @@ namespace ngfem
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
     { 
-      throw Exception(string("DIFFOP::GenerateMatrix should not be here, diffop = ")+typeid(DOP).name());
+      throw Exception("DIFFOP::GenerateMatrix should not be here, diffop = ", typeid(DOP).name());
     }
 
     /// tbd
@@ -65,7 +65,7 @@ namespace ngfem
     template <typename FEL, typename MIR>
     static void GenerateMatrixSIMDIR (const FEL & fel, const MIR & mir, BareSliceMatrix<SIMD<double>> mat)
     {
-      throw ExceptionNOSIMD (string("generate matrix simdir not implemented for diffop ") + typeid(DOP).name());
+      throw ExceptionNOSIMD ("generate matrix simdir not implemented for diffop ", typeid(DOP).name());
     }
     /**
        Applies the B-matrix.
@@ -105,7 +105,7 @@ namespace ngfem
                              const TVX & x, TVY & y)
     // LocalHeap & lh)
     {
-      throw ExceptionNOSIMD (string("apply simdir not implemented for diffop ") + typeid(DOP).name());
+      throw ExceptionNOSIMD ("apply simdir not implemented for diffop ", typeid(DOP).name());
     }
 
 
@@ -161,12 +161,12 @@ namespace ngfem
                                 const TVX & x, TVY & y)
     // LocalHeap & lh)
     {
-      throw ExceptionNOSIMD (string("AddTrans simdir not implemented for diffop ") + typeid(DOP).name());
+      throw ExceptionNOSIMD ("AddTrans simdir not implemented for diffop ", typeid(DOP).name());
     }
 
     static int DimRef()
     {
-      throw Exception (string("DIFFOP::DimRef should not be here, diffop = ")+typeid(DOP).name());
+      throw Exception ("DIFFOP::DimRef should not be here, diffop = ", typeid(DOP).name());
     }
 
     template <typename FEL, typename IP, typename MAT>
@@ -188,7 +188,7 @@ namespace ngfem
                shared_ptr<CoefficientFunction> dir,
                bool Eulerian) 
     {
-      throw Exception (string("shape derivative not implemented for DifferentialOperator")+Name());
+      throw Exception ("shape derivative not implemented for DifferentialOperator", Name());
     }
 
   };

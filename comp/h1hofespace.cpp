@@ -175,7 +175,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      throw Exception(string("DiffOpDual not available for mat ")+typeid(mat).name());
+      throw Exception("DiffOpDual not available for mat ", typeid(mat).name());
     }
   };
   
