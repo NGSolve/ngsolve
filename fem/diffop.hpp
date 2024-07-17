@@ -189,7 +189,7 @@ namespace ngfem
                shared_ptr<CoefficientFunction> dir,
                bool Eulerian) 
     {
-      Exception::Throw ("shape derivative not implemented for DifferentialOperator", Name());
+      Exception::Throw ("shape derivative not implemented for DifferentialOperator", typeid(DOP).name());
     }
 
   };

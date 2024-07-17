@@ -54,16 +54,16 @@ namespace ngfem
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
                                 MAT & mat, LocalHeap & lh)
     {
-      throw Exception("PML not supported for diffop ", DIFFOP::Name(),
-                      "\nit might be enough to set SUPPORT_PML to true in the diffop");
+      Exception::Throw("PML not supported for diffop ", DIFFOP::Name(),
+                       "\nit might be enough to set SUPPORT_PML to true in the diffop");
     }
     template <typename DIFFOP, typename FEL, typename MIR, typename TVX, typename TVY>
     static void ApplyIR (const FEL & fel, const MIR & mir,
                          const TVX & x, TVY & y,
                          LocalHeap & lh)
     {
-      throw Exception("PML not supported for diffop ", DIFFOP::Name(), 
-                      " ApplyIR\nit might be enough to set SUPPORT_PML to true in the diffop");
+      Exception::Throw("PML not supported for diffop ", DIFFOP::Name(), 
+                       " ApplyIR\nit might be enough to set SUPPORT_PML to true in the diffop");
     }
   };
   
