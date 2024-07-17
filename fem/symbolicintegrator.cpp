@@ -1214,6 +1214,9 @@ namespace ngfem
     cache_cfs = FindCacheCF(*cf);
 
     for (auto proxy : trial_proxies)
+      if (proxy->OrderDt() != 0)
+        throw Exception("time-derivatives not allowed in spatial integrators");
+    for (auto proxy : trial_proxies)
       if (!proxy->Evaluator()->SupportsVB(vb))
         throw Exception ("Trialfunction does not support "+ToString(vb)+"-forms, maybe a Trace() operator is missing, type = "+proxy->Evaluator()->Name());
     for (auto proxy : test_proxies)
