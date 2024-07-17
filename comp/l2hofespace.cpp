@@ -288,6 +288,13 @@ namespace ngcomp
       els_on_level[ma->GetNLevels()-1] = ne;
 
       cout << IM(3) << "els_on_level = " << endl << els_on_level << endl;
+
+      if (ma->GetNLevels() == 1)
+        {
+          trig_creation_class.SetSize(ne);
+          trig_creation_class = 0;
+          return;
+        }
       
       trig_creation_class.SetSize(ne);
       Array<IVec<3, size_t>> trig_creation_verts(ne);
