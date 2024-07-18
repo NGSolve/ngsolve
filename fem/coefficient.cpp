@@ -5324,7 +5324,7 @@ public:
         elementwise_constant = false;
   }
 
-  auto GetCArgs() const { return tuple  { Array{ci} }; }
+  auto GetCArgs() const { return tuple  { Array<shared_ptr<CoefficientFunction>>{ci} }; }
   /*
   void DoArchive(Archive& ar) override
   {
