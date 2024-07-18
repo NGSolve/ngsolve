@@ -634,7 +634,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
   // ------------------------------------------------------------------------
   FiniteElement & FacetFESpace :: GetFE (ElementId ei, Allocator  & lh) const
   {
-    if (!DefinedOn (ei))
+    if (!DefinedOn (ei) || ei.VB() == BBND || ei.VB() == BBBND)
       {
         return
           SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
@@ -787,10 +787,6 @@ for the two neighbouring elements. This allows a simple implementation of the Le
           }
         // return *fe2d;
         }
-      case BBND:
-        throw Exception("No BBND GetFE implemented for FacetFESpace");
-      case BBBND: default:
-        throw Exception("No BBBND GetFE implemented for FacetFESpace");
       }
   }
 
