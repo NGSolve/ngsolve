@@ -933,7 +933,7 @@ namespace ngfem
           {
             auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE>&> (bmip);
             T_CalcShape (GetTIPHesse (mip),
-                         SBLambda ([ddshape] (size_t i, auto shape)
+                         SBLambda ([ddshape,DIMSPACE] (size_t i, auto shape)
                          {
                            auto row = ddshape.Row(i);
                            for (int d1 = 0; d1 < DIMSPACE; d1++)
@@ -959,7 +959,7 @@ namespace ngfem
           {
             auto & mip = static_cast<const SIMD<MappedIntegrationPoint<DIM,DIMSPACE>>&> (bmip);
             T_CalcShape (GetTIPHesse (mip),
-                         SBLambda ([ddshape] (size_t i, auto shape)
+                         SBLambda ([ddshape,DIMSPACE] (size_t i, auto shape)
                          {
                            auto row = ddshape.Row(i);
                            for (int d1 = 0; d1 < DIMSPACE; d1++)
