@@ -914,6 +914,7 @@ namespace ngfem
   CalcMappedDDShape (const BaseMappedIntegrationPoint & bmip, 
                      BareSliceMatrix<> ddshape) const
   {
+    /*
     auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIM>&> (bmip);
     T_CalcShape (GetTIPHesse (mip),
                  SBLambda ([ddshape] (size_t i, auto shape)
@@ -923,9 +924,55 @@ namespace ngfem
                                for (int d2 = 0; d2 < DIM; d2++)
                                  row(d1*DIM+d2) = shape.DDValue(d1,d2);
                            }));
+    */
+    Iterate<4-DIM>
+      ([&](auto CODIM)
+      {
+        constexpr auto DIMSPACE = DIM+CODIM.value;
+        if (bmip.DimSpace() == DIMSPACE)
+          {
+            auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE>&> (bmip);
+            T_CalcShape (GetTIPHesse (mip),
+                         SBLambda ([ddshape] (size_t i, auto shape)
+                         {
+                           auto row = ddshape.Row(i);
+                           for (int d1 = 0; d1 < DIMSPACE; d1++)
+                             for (int d2 = 0; d2 < DIMSPACE; d2++)
+                               row(d1*DIMSPACE+d2) = shape.DDValue(d1,d2);
+                         }));
+          }
+      });
   }
 
 
+
+  template <class FEL, ELEMENT_TYPE ET, class BASE>
+  void T_ScalarFiniteElement<FEL,ET,BASE> ::   
+  CalcMappedDDShape (const SIMD<BaseMappedIntegrationPoint> & bmip, 
+                     BareSliceMatrix<SIMD<double>> ddshape) const
+  {
+    Iterate<4-DIM>
+      ([&](auto CODIM)
+      {
+        constexpr auto DIMSPACE = DIM+CODIM.value;
+        if (bmip.DimSpace() == DIMSPACE)
+          {
+            auto & mip = static_cast<const SIMD<MappedIntegrationPoint<DIM,DIMSPACE>>&> (bmip);
+            T_CalcShape (GetTIPHesse (mip),
+                         SBLambda ([ddshape] (size_t i, auto shape)
+                         {
+                           auto row = ddshape.Row(i);
+                           for (int d1 = 0; d1 < DIMSPACE; d1++)
+                             for (int d2 = 0; d2 < DIMSPACE; d2++)
+                               row(d1*DIMSPACE+d2) = shape.DDValue(d1,d2);
+                         }));
+          }
+      });
+  }
+
+
+
+  
 #endif
 
   template <class FEL, ELEMENT_TYPE ET, class BASE>  

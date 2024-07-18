@@ -32,10 +32,20 @@ namespace ngfem
                         BareSliceMatrix<SIMD<double>> mat)
   {
     auto & fel = static_cast<const FEL&>(bfel);
+    size_t nd = fel.GetNDof();
+
+    STACK_ARRAY(SIMD<double>, mem, nd*D*D);
+    FlatMatrix<SIMD<double>> ddshape(nd, D*D, mem);
+
+    for (size_t i = 0; i < bmir.Size(); i++)
+      {
+        fel.CalcMappedDDShape(bmir[i], ddshape);
+        mat.Col(i) = ddshape.AsVector();
+      }
+
+    /*
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<D-1,D>&> (bmir);
       
-    size_t nd_u = fel.GetNDof();
-    
     STACK_ARRAY(SIMD<double>, mem1, 6*D*nd_u);
     FlatMatrix<SIMD<double>> shape_u(nd_u*D, 4, &mem1[0]);
 
@@ -94,6 +104,7 @@ namespace ngfem
                   mat(k*D*D+l*D+j, i) = dshape_u(l);
               }
         }
+    */
   }
 
   
@@ -102,6 +113,20 @@ namespace ngfem
   ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
   {
+    auto & fel_u = static_cast<const FEL&>(fel);
+    size_t nd = fel_u.GetNDof();
+
+    STACK_ARRAY(SIMD<double>, mem, nd*D*D);
+    FlatMatrix<SIMD<double>> ddshape(nd, D*D, mem);
+
+    y.Rows(D*D).Cols(bmir.Size()) = 0.0;
+    for (size_t i = 0; i < bmir.Size(); i++)
+      {
+        fel_u.CalcMappedDDShape(bmir[i], ddshape);
+        for (size_t j = 0; j < nd; j++)
+          y.Col(i) += x(j)*ddshape.Row(j);
+      }
+    /*
       int size = (bmir.Size()+1)*500*SIMD<double>::Size();
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
@@ -181,6 +206,7 @@ namespace ngfem
                 }
             }
         }
+    */
   }
 
 
@@ -189,6 +215,22 @@ namespace ngfem
   AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                   BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y)
   {
+    auto & fel_u = static_cast<const FEL&>(fel);
+    size_t nd = fel_u.GetNDof();
+
+    STACK_ARRAY(SIMD<double>, mem, nd*D*D);
+    FlatMatrix<SIMD<double>> ddshape(nd, D*D, mem);
+
+    for (size_t i = 0; i < bmir.Size(); i++)
+      {
+        fel_u.CalcMappedDDShape(bmir[i], ddshape);
+        for (size_t j = 0; j < nd; j++)
+          y(j) += HSum(InnerProduct(ddshape.Row(j), x.Col(i)));
+      }
+
+
+    /*
+    
       size_t size = (bmir.Size()+1)*500*SIMD<double>::Size();
       STACK_ARRAY(char, data, size);
       LocalHeap lh(data, size);
@@ -265,6 +307,7 @@ namespace ngfem
             fel_u.AddGradTrans (mirr, hx2, y);
           }
         }
+    */
   }
 
   template class DiffOpHesseBoundary<3,ScalarFiniteElement<2>>;
