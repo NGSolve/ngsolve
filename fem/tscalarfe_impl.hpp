@@ -935,8 +935,9 @@ namespace ngfem
     Switch<4-DIM>
       (bmip.DimSpace()-DIM, [&] (auto CODIM)
       {
-        constexpr int DIMSPACE = DIM+CODIM.value;         
-        auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE>&> (bmip);
+        constexpr int DIM_ = DIM;        
+        constexpr int DIMSPACE = int(DIM)+int(CODIM.value); 
+        auto & mip = static_cast<const MappedIntegrationPoint<DIM_,DIMSPACE>&> (bmip);
         T_CalcShape (GetTIPHesse (mip),
                      SBLambda ([ddshape,DIMSPACE] (size_t i, auto shape)
                      {
