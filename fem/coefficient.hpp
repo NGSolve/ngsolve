@@ -1387,7 +1387,7 @@ public:
   using BASE::Evaluate;
   using typename BASE::T_DJC;    
 public:
-  cl_BinaryOpCF() = default;
+  // cl_BinaryOpCF() = default;
   cl_BinaryOpCF (shared_ptr<CoefficientFunction> ac1, 
                  shared_ptr<CoefficientFunction> ac2, 
                  OP alam, string aopname)
@@ -1404,13 +1404,16 @@ public:
     this->elementwise_constant = c1->ElementwiseConstant() && c2->ElementwiseConstant();
     SetDimensions (c1->Dimensions());
   }
-
+  
+  auto GetCArgs() const { return tuple { c1, c2, lam, opname }; }
+  virtual void DoArchive (Archive & archive) override { }   
+  /*
   virtual void DoArchive (Archive & archive) override
   {
       BASE::DoArchive(archive);
       archive.Shallow(c1).Shallow(c2) & opname;
   }
-
+  */
   shared_ptr<CoefficientFunction>
   Transform(CoefficientFunction::T_Transform& transformation) const override
   {

@@ -467,16 +467,19 @@ namespace ngfem
     ///
     Complex val;
   public:
-    ConstantCoefficientFunctionC() = default;
-    ConstantCoefficientFunctionC (Complex aval);
-    virtual ~ConstantCoefficientFunctionC ();
+    // ConstantCoefficientFunctionC() = default;
+    ConstantCoefficientFunctionC (Complex aval); //  : val(aval) { } 
+    ~ConstantCoefficientFunctionC () = default;
 
+    /*
     void DoArchive(Archive& ar) override
     {
       CoefficientFunction::DoArchive(ar);
       ar & val;
     }
-
+    */
+    auto GetCArgs() const { return tuple { val }; }
+    
     double Evaluate (const BaseMappedIntegrationPoint & ip) const override;
     Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override;
 
@@ -497,9 +500,6 @@ namespace ngfem
     : CoefficientFunction(1, true), val(aval) 
   { ; }
 
-  ConstantCoefficientFunctionC ::
-  ~ConstantCoefficientFunctionC ()
-  { ; }
   
   double ConstantCoefficientFunctionC :: Evaluate (const BaseMappedIntegrationPoint & ip) const
   {
@@ -5308,7 +5308,7 @@ class DomainWiseCoefficientFunction : public T_CoefficientFunction<DomainWiseCoe
   typedef T_CoefficientFunction<DomainWiseCoefficientFunction> BASE;
   using BASE::Evaluate;
 public:
-  DomainWiseCoefficientFunction() = default;
+  // DomainWiseCoefficientFunction() = default;
   DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
     : BASE(1, false), ci(aci) 
   { 
@@ -5324,6 +5324,8 @@ public:
         elementwise_constant = false;
   }
 
+  auto GetCArgs() const { return tuple  { Array{ci} }; }
+  /*
   void DoArchive(Archive& ar) override
   {
     BASE::DoArchive(ar);
@@ -5333,6 +5335,7 @@ public:
     for(auto& cf : ci)
       ar.Shallow(cf);
   }
+  */
 
   virtual bool DefinedOn (const ElementTransformation & trafo) override
   {
@@ -5558,17 +5561,20 @@ class OtherCoefficientFunction : public T_CoefficientFunction<OtherCoefficientFu
   typedef T_CoefficientFunction<OtherCoefficientFunction> BASE;
   using BASE::Evaluate;
 public:
-  OtherCoefficientFunction() = default;
+  // OtherCoefficientFunction() = default;
   OtherCoefficientFunction (shared_ptr<CoefficientFunction> ac1)
     : BASE(ac1->Dimension(), ac1->IsComplex()), c1(ac1)
   { SetDimensions(ac1->Dimensions()); }
 
+  /*
   void DoArchive(Archive& ar) override
   {
     BASE::DoArchive(ar);
     ar.Shallow(c1);
   }
-
+  */
+  auto GetCArgs() const { return tuple { c1 }; }
+  
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     throw Exception ("OtherCF::GenerateCode not available");
@@ -5705,7 +5711,7 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
     shared_ptr<CoefficientFunction> cf_else;
     typedef T_CoefficientFunction<IfPosCoefficientFunction> BASE;
   public:
-    IfPosCoefficientFunction() = default;
+    // IfPosCoefficientFunction() = default;
     IfPosCoefficientFunction (shared_ptr<CoefficientFunction> acf_if,
                               shared_ptr<CoefficientFunction> acf_then,
                               shared_ptr<CoefficientFunction> acf_else)
@@ -5717,12 +5723,14 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
         throw Exception(string("In IfPosCoefficientFunction: dim(cf_then) == ") + ToLiteral(acf_then->Dimension()) + string(" != dim(cf_else) == ") + ToLiteral(acf_else->Dimension()));
       SetDimensions(cf_then->Dimensions());
     }
-
+    /*
     void DoArchive(Archive& ar) override
     {
       BASE::DoArchive(ar);
       ar.Shallow(cf_if).Shallow(cf_then).Shallow(cf_else);
     }
+    */
+    auto GetCArgs() const { return tuple { cf_if, cf_then, cf_else }; }    
 
     virtual ~IfPosCoefficientFunction () { ; }
     ///
@@ -5785,34 +5793,8 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
           values(j,i) = IfPos(if_values(0,i), then_values(j,i), else_values(j,i));
     }
     
-    /*
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> hvalues) const override
-    {
-      auto values = hvalues.AddSize(ir.Size(), Dimension());
-      
-      STACK_ARRAY(double, hmem1, ir.Size());
-      FlatMatrix<> if_values(ir.Size(), 1, hmem1);
-      STACK_ARRAY(double, hmem2, ir.Size()*values.Width());
-      FlatMatrix<> then_values(ir.Size(), values.Width(), hmem2);
-      STACK_ARRAY(double, hmem3, ir.Size()*values.Width());
-      FlatMatrix<> else_values(ir.Size(), values.Width(), hmem3);
-      
-      cf_if->Evaluate (ir, if_values);
-      cf_then->Evaluate (ir, then_values);
-      cf_else->Evaluate (ir, else_values);
-      
-      for (int i = 0; i < ir.Size(); i++)
-        if (if_values(i) > 0)
-          values.Row(i) = then_values.Row(i);
-        else
-          values.Row(i) = else_values.Row(i);
-
-      // for (int i = 0; i < ir.Size(); i++)
-      //   values(i) = (if_values(i) > 0) ? then_values(i) : else_values(i);
-    }
-    */
     
-      using T_CoefficientFunction<IfPosCoefficientFunction>::Evaluate;
+    using T_CoefficientFunction<IfPosCoefficientFunction>::Evaluate;
     virtual void Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> values) const override
     {
       if(cf_if->Evaluate(ip)>0)
@@ -5820,56 +5802,6 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       else
         cf_else->Evaluate(ip,values);
     }
-
-    /*
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override
-    {
-      size_t nv = ir.Size(), dim = Dimension();
-      STACK_ARRAY(SIMD<double>, hmem1, nv);
-      ABareMatrix<double> if_values(&hmem1[0], nv);
-      STACK_ARRAY(SIMD<double>, hmem2, nv*dim);
-      ABareMatrix<double> then_values(&hmem2[0], nv);
-      STACK_ARRAY(SIMD<double>, hmem3, nv*dim);
-      ABareMatrix<double> else_values(&hmem3[0], nv);
-      
-      cf_if->Evaluate (ir, if_values);
-      cf_then->Evaluate (ir, then_values);
-      cf_else->Evaluate (ir, else_values);
-      for (size_t k = 0; k < dim; k++)
-        for (size_t i = 0; i < nv; i++)
-          values(k,i) = ngstd::IfPos (if_values.Get(i),
-                                      then_values.Get(k,i),
-                                      else_values.Get(k,i));
-    }
-
-    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, FlatArray<AFlatMatrix<double>*> input,
-                           AFlatMatrix<double> values) const override
-    {
-      size_t nv = ir.Size(), dim = Dimension();      
-      auto if_values = *input[0];
-      auto then_values = *input[1];
-      auto else_values = *input[2];
-      
-      for (size_t k = 0; k < dim; k++)
-        for (size_t i = 0; i < nv; i++)
-          values.Get(k,i) = ngstd::IfPos (if_values.Get(i),
-                                          then_values.Get(k,i),
-                                          else_values.Get(k,i)); 
-    }
-    
-    virtual void Evaluate (const BaseMappedIntegrationRule & ir, FlatArray<FlatMatrix<>*> input,
-                           FlatMatrix<double> values) const 
-    {
-      FlatMatrix<> if_values = *input[0];
-      FlatMatrix<> then_values = *input[1];
-      FlatMatrix<> else_values = *input[2];
-      for (int i = 0; i < if_values.Height(); i++)
-        values.Row(i) = (if_values(i) > 0) ? then_values.Row(i) : else_values.Row(i);
-    }
-    */
-
-    // virtual bool IsComplex() const { return cf_then->IsComplex() | cf_else->IsComplex(); }
-    // virtual int Dimension() const { return cf_then->Dimension(); }
 
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
     {
@@ -5905,163 +5837,6 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
         code.body += "}\n";
       }
     }
-
-    /*
-    virtual Array<int> Dimensions() const
-    {
-      return cf_then->Dimensions();
-    }
-    */
-
-    /*
-    [[deprecated]]
-    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                                FlatMatrix<> values,
-                                FlatMatrix<> deriv) const override
-    {
-      STACK_ARRAY(double, hmem1, ir.Size());
-      FlatMatrix<> if_values(ir.Size(), 1, hmem1);
-      STACK_ARRAY(double, hmem2, ir.Size()*values.Width());
-      FlatMatrix<> then_values(ir.Size(), values.Width(), hmem2);
-      STACK_ARRAY(double, hmem3, ir.Size()*values.Width());
-      FlatMatrix<> else_values(ir.Size(), values.Width(), hmem3);
-      STACK_ARRAY(double, hmem4, ir.Size()*values.Width());
-      FlatMatrix<> then_deriv(ir.Size(), values.Width(), hmem4);
-      STACK_ARRAY(double, hmem5, ir.Size()*values.Width());
-      FlatMatrix<> else_deriv(ir.Size(), values.Width(), hmem5);
-
-      
-      cf_if->Evaluate (ir, if_values);
-      cf_then->EvaluateDeriv (ir, then_values, then_deriv);
-      cf_else->EvaluateDeriv (ir, else_values, else_deriv);
-      
-      for (int i = 0; i < ir.Size(); i++)
-        if (if_values(i) > 0)
-          {
-            values.Row(i) = then_values.Row(i);
-            deriv.Row(i) = then_deriv.Row(i);
-          }
-        else
-          {
-            values.Row(i) = else_values.Row(i);
-            deriv.Row(i) = else_deriv.Row(i);
-          }
-    }
-    */
-    
-    /*
-    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                                FlatMatrix<Complex> result,
-                                FlatMatrix<Complex> deriv) const
-    {
-      Evaluate (ir, result);
-      deriv = 0;
-    }
-
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatMatrix<> result,
-                                 FlatMatrix<> deriv,
-                                 FlatMatrix<> dderiv) const
-    {
-      EvaluateDeriv (ir, result, deriv);
-      dderiv = 0;
-    }
-
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatMatrix<Complex> result,
-                                 FlatMatrix<Complex> deriv,
-                                 FlatMatrix<Complex> dderiv) const
-    {
-      EvaluateDeriv (ir, result, deriv);
-      dderiv = 0;
-    }
-
-    
-    virtual void EvaluateDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatArray<FlatMatrix<>*> input,
-                                 FlatArray<FlatMatrix<>*> dinput,
-                                 FlatMatrix<> result,
-                                 FlatMatrix<> deriv) const
-    {
-      EvaluateDeriv (ir, result, deriv);
-    }
-
-    virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & ir,
-                                 FlatArray<FlatMatrix<>*> input,
-                                 FlatArray<FlatMatrix<>*> dinput,
-                                 FlatArray<FlatMatrix<>*> ddinput,
-                                 FlatMatrix<> result,
-                                 FlatMatrix<> deriv,
-                                 FlatMatrix<> dderiv) const
-    {
-      EvaluateDDeriv (ir, result, deriv, dderiv);
-    }
-    */
-
-    // virtual bool ElementwiseConstant () const { return false; }
-    
-    // virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero) const;
-
-    /*
-    virtual void PrintReport (ostream & ost) const;
-    virtual void PrintReportRec (ostream & ost, int level) const;
-    virtual string GetName () const;
-    */
-
-    /*
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                AFlatMatrix<> values,
-                                AFlatMatrix<> deriv) const
-    {
-      int dim = Dimension();
-      STACK_ARRAY(SIMD<double>, hmem1, ir.Size());
-      AFlatMatrix<> if_values(1, ir.IR().GetNIP(), hmem1);
-      STACK_ARRAY(SIMD<double>, hmem2, ir.Size()*dim);
-      AFlatMatrix<> then_values(dim, ir.IR().GetNIP(), hmem2);
-      STACK_ARRAY(SIMD<double>, hmem3, ir.Size()*dim);
-      AFlatMatrix<> else_values(dim, ir.IR().GetNIP(), hmem3);
-      STACK_ARRAY(SIMD<double>, hmem4, ir.Size()*dim);
-      AFlatMatrix<> then_deriv(dim, ir.IR().GetNIP(), hmem4);
-      STACK_ARRAY(SIMD<double>, hmem5, ir.Size()*dim);
-      AFlatMatrix<> else_deriv(dim, ir.IR().GetNIP(), hmem5);
-
-      cf_if->Evaluate (ir, if_values);
-      cf_then->EvaluateDeriv (ir, then_values, then_deriv);
-      cf_else->EvaluateDeriv (ir, else_values, else_deriv);
-      
-      for (int i = 0; i < ir.Size(); i++)
-        for (int j = 0; j < dim; j++)
-          {
-            values.Get(j,i) = IfPos(if_values.Get(0,i), then_values.Get(j,i), else_values.Get(j,i));
-            deriv.Get(j,i) = IfPos(if_values.Get(0,i), then_deriv.Get(j,i), else_deriv.Get(j,i));
-          }
-    }
-
-    virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
-                                FlatArray<AFlatMatrix<>*> input,
-                                FlatArray<AFlatMatrix<>*> dinput,
-                                AFlatMatrix<> result,
-                                AFlatMatrix<> deriv) const
-    {
-      size_t nv = ir.Size(), dim = Dimension();      
-      auto if_values = *input[0];
-      auto then_values = *input[1];
-      auto else_values = *input[2];
-      auto then_deriv = *dinput[1];
-      auto else_deriv = *dinput[2];
-      
-      for (size_t k = 0; k < dim; k++)
-        for (size_t i = 0; i < nv; i++)
-          {
-            result.Get(k,i) = ngstd::IfPos (if_values.Get(i),
-                                            then_values.Get(k,i),
-                                            else_values.Get(k,i));
-            deriv.Get(k,i) = ngstd::IfPos (if_values.Get(i),
-                                           then_deriv.Get(k,i),
-                                           else_deriv.Get(k,i));
-          }
-    }
-    */
     
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
     {
@@ -6076,23 +5851,6 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
       return Array<shared_ptr<CoefficientFunction>>( { cf_if, cf_then, cf_else } );
     }
 
-    /*
-    virtual void NonZeroPattern (const class ProxyUserData & ud, FlatVector<bool> nonzero,
-                                 FlatVector<bool> nonzero_deriv, FlatVector<bool> nonzero_dderiv) const override
-    {
-      int dim = Dimension();
-      Vector<bool> v1(dim), d1(dim), dd1(dim);
-      Vector<bool> v2(dim), d2(dim), dd2(dim);
-      cf_then->NonZeroPattern (ud, v1, d1, dd1);
-      cf_else->NonZeroPattern (ud, v2, d2, dd2);
-      for (int i = 0; i < dim; i++)
-        {
-          nonzero(i) = v1(i) || v2(i);
-          nonzero_deriv(i) = d1(i) || d2(i);
-          nonzero_dderiv(i) = dd1(i) || dd2(i);
-        }
-    }  
-    */
 
     virtual void NonZeroPattern (const class ProxyUserData & ud,
                                  FlatVector<AutoDiffDiff<1,NonZero>> values) const override
