@@ -726,7 +726,6 @@ namespace ngfem
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
                                 MAT && mat, LocalHeap & lh)
     {
-      HeapReset hr(lh);
       Cast(fel).CalcMappedDDShape(mip, Trans(mat));
     }
   };
@@ -756,13 +755,14 @@ namespace ngfem
 				MAT && mat, LocalHeap & lh)
     {
       HeapReset hr(lh);
-      int nd = Cast(fel).GetNDof();
       
+      /*
+        // old
+      int nd = Cast(fel).GetNDof();
       auto ddshape = Cast(fel).GetDDShape(mip.IP(), lh);
       auto jinv = mip.GetJacobianInverse();
       auto dshape = Cast(fel).GetDShape (mip.IP(), lh);
       
-
       for( int n = 0; n < nd; n++)
 	{
 	  for( int i = 0; i < D; i++)
@@ -780,11 +780,11 @@ namespace ngfem
 		}		  
 	    }
 	}
-      
+
       //for non-curved elements, we are finished, otherwise derivatives of Jacobian have to be computed...
       if (!mip.GetTransformation().IsCurvedElement()) return;
 
-      
+
       Mat<D-1,D-1> hesse[D];
       switch(D)
         {
@@ -798,6 +798,7 @@ namespace ngfem
           throw Exception("Not implemented in DiffOpHesseBoundary!");
           break;
         }
+
       FlatMatrix<> tmp(D, (D-1)*(D-1), lh);
 
       for (int i = 0; i < D; i++)
@@ -810,7 +811,7 @@ namespace ngfem
         }
 
       FlatMatrix<> tmpmat(nd, (D-1)*(D-1), lh);
-      tmpmat = dshape*jinv*tmp;
+      tmpmat = dshape*jinv*tmp;    
 
       for( int n = 0; n < nd; n++)
 	{
@@ -828,7 +829,78 @@ namespace ngfem
 		}		  
 	    }
 	}
+      */
+
+      /*
+        // new
+      int nd = Cast(fel).GetNDof();
+        
+      auto ddshape = Cast(fel).GetDDShape(mip.IP(), lh);
+      auto dshape  = Cast(fel).GetDShape (mip.IP(), lh);
+      Mat<D-1,D> jinv = mip.GetJacobianInverse();
+      
+      for( int n = 0; n < nd; n++)
+        {
+          Mat<D-1,D-1> ddref = ddshape.Row(n).AsMatrix(D-1,D-1);
+          Mat<D,D> ddphys = Trans(jinv)*ddref*jinv;
+          mat.Col(n).AsMatrix(D,D) = ddphys;
+        }
+      
+      //for non-curved elements, we are finished, otherwise derivatives of Jacobian have to be computed...
+      if (!mip.GetTransformation().IsCurvedElement()) return;
+
+      Vec<D,Mat<D-1,D-1>> hesse;
+      mip.CalcHesse(hesse);
+
+      Mat<D,(D-1)*(D-1)> tmp;
+
+      for (int i = 0; i < D; i++)
+        for (int j = 0; j < D-1; j++)
+          for (int k = 0; k < D-1; k++)
+            tmp(i,j*(D-1)+k) = hesse[i](j,k);
+
+      FlatMatrix<> tmpmat(nd, (D-1)*(D-1), lh);
+      tmpmat = dshape*(jinv*tmp);
+
+      for( int n = 0; n < nd; n++)
+        {
+          Mat<D-1,D-1> ddref = tmpmat.Row(n).AsMatrix(D-1,D-1);
+          Mat<D,D> ddphys = Trans(jinv)*ddref*jinv;
+          mat.Col(n).AsMatrix(D,D) -= ddphys;
+        }
+      */
+      /*
+        // new new
+      auto ddshape = Cast(fel).GetDDShape(mip.IP(), lh);
+      Mat<D-1,D> jinv = mip.GetJacobianInverse();
+
+      Mat<(D-1)*(D-1),D*D> trans;
+      for (int i = 0; i < D; i++)
+        for (int j = 0; j < D; j++)
+          for (int k = 0; k < D-1; k++)
+            for (int l = 0; l < D-1; l++)
+              trans(k*(D-1)+l, i*D+j) = jinv(k,i)*jinv(l,j);
+      
+      if (mip.GetTransformation().IsCurvedElement())
+        {
+          auto dshape  = Cast(fel).GetDShape (mip.IP(), lh);
+          
+          Vec<D,Mat<D-1,D-1>> hesse = mip.CalcHesse();
+          Mat<D,(D-1)*(D-1)> tmp;
+          
+          for (int i = 0; i < D; i++)
+            for (int j = 0; j < D-1; j++)
+              for (int k = 0; k < D-1; k++)
+                tmp(i,j*(D-1)+k) = hesse[i](j,k);
+          
+          ddshape -= dshape*(jinv*tmp);
+        }
+      
+      mat = Trans(ddshape*trans);
+      */
+      Cast(fel).CalcMappedDDShape(mip, Trans(mat));
     }
+    
 
     static constexpr double eps() { return 1e-4; }     
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,

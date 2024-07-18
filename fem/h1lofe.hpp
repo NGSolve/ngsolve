@@ -965,7 +965,7 @@ namespace ngfem
     Tx z = ip.z;
     
     // if (z == 1) z -= 1e-10;
-    z -= 1e-10;
+    z -= Tx(1e-10);
     
     shape[0] = (1-z-x)*(1-z-y) / (1-z);
     shape[1] = x*(1-z-y) / (1-z);

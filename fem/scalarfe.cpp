@@ -733,6 +733,17 @@ namespace ngfem
 
 
 
+  template<int D>
+  void ScalarFiniteElement<D> :: CalcMappedDDShape (const SIMD<BaseMappedIntegrationPoint> & bmip, 
+                                                    BareSliceMatrix<SIMD<double>> hddshape) const
+  {
+    throw ExceptionNOSIMD("ScalarFiniteElement::CalcMappedDDShape simd not implemented");
+  }
+
+
+
+  
+
 
   void BaseScalarFiniteElement :: GetDiagMassMatrix (FlatVector<> mass) const
   {

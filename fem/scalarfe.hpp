@@ -88,7 +88,9 @@ namespace ngfem
     NGS_DLL_HEADER virtual void CalcMappedDDShape (const BaseMappedIntegrationPoint & mip, 
                                                    BareSliceMatrix<> ddshape) const = 0;
 
-
+    /// compute ddshape, matrix: ndof x (spacedim spacedim)
+    NGS_DLL_HEADER virtual void CalcMappedDDShape (const SIMD<BaseMappedIntegrationPoint> & mip, 
+                                                   BareSliceMatrix<SIMD<double>> ddshape) const = 0;
 
 
     
@@ -208,10 +210,13 @@ namespace ngfem
     NGS_DLL_HEADER virtual void CalcDDShape (const IntegrationPoint & ip, 
                                              BareSliceMatrix<> ddshape) const override;
     
-    /// compute dshape, matrix: ndof x (spacedim spacedim)
+    /// compute ddshape, matrix: ndof x (spacedim spacedim)
     NGS_DLL_HEADER virtual void CalcMappedDDShape (const BaseMappedIntegrationPoint & mip, 
                                                    BareSliceMatrix<> ddshape) const override;
 
+    /// compute ddshape, matrix: ndof x (spacedim spacedim)
+    NGS_DLL_HEADER virtual void CalcMappedDDShape (const SIMD<BaseMappedIntegrationPoint> & mip, 
+                                                   BareSliceMatrix<SIMD<double>> ddshape) const override;
 
 
     /**
