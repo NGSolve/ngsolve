@@ -195,7 +195,8 @@ namespace ngbla
     }
 
     /// access operator
-    INLINE TELEM & operator() (size_t i, size_t j) const
+    template <typename I, typename J>
+    INLINE TELEM & operator() (I i, J j) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height());
       NETGEN_CHECK_RANGE(j, 0, Width());
