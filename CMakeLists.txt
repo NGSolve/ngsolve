@@ -219,7 +219,7 @@ if(APPLE)
 endif(APPLE)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-Wno-undefined-var-template -Wno-vla-cxx-extension>)
+    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-Wno-undefined-var-template -Wno-vla-extension>)
 endif()
 
 
