@@ -25,22 +25,22 @@
 
 
 template <typename T>
-struct SaveIndex
+struct SafeIndex
 {
   T i;
-  SaveIndex(T ai) : i(ai) { };
+  SafeIndex(T ai) : i(ai) { };
   operator T() const { return i; }
   auto operator++() { return ++i; }
   auto operator++(int) { return i++; }
 };
 
 template <typename T>
-struct IsSave<SaveIndex<T>> {
+struct IsSafe<SafeIndex<T>> {
   constexpr operator bool() const { return true; } };
 
 namespace std {
   template <typename T>  
-  struct is_integral<SaveIndex<T>> {
+  struct is_integral<SafeIndex<T>> {
     static constexpr bool value = true;
   };
 }
@@ -513,14 +513,14 @@ namespace ngbla
 	  if (T::IsLinear())
 	    {
 	      auto hw = h*w;
-              for (SaveIndex<size_t> i : Range(hw))  
+              for (SafeIndex<size_t> i : Range(hw))  
                 TOP()(dest(i), src(i));
 	    }
 	  else
 	    {
               if (w > 0)
-                for (SaveIndex<size_t> i = 0, k = 0; i < h; i++)
-                  for (SaveIndex<size_t> j = 0; j < w; j++, k++)
+                for (SafeIndex<size_t> i = 0, k = 0; i < h; i++)
+                  for (SafeIndex<size_t> j = 0; j < w; j++, k++)
                     TOP() (dest(i,j), src(k));
 	    }
 	}
@@ -529,13 +529,13 @@ namespace ngbla
           if (w > 0)
             {
               if (T::IsLinear())
-                for (SaveIndex<size_t> i = 0, k = 0; i < h; i++)
-                  for (SaveIndex<size_t> j = 0; j < w; j++, k++)
+                for (SafeIndex<size_t> i = 0, k = 0; i < h; i++)
+                  for (SafeIndex<size_t> j = 0; j < w; j++, k++)
                     TOP() (dest(k), src(i,j));                    
               else
                 {
-                  for (SaveIndex<size_t> i = 0; i < h; i++)
-                    for (SaveIndex<size_t> j = 0; j < w; j++)
+                  for (SafeIndex<size_t> i = 0; i < h; i++)
+                    for (SafeIndex<size_t> j = 0; j < w; j++)
                       TOP() (dest(i,j), src(i,j));                        
                 }
             }
@@ -999,9 +999,9 @@ namespace ngbla
 
       if (wa >= 1)
 	{
-	  auto sum = a(i,0) * b(0,j...);
+	  auto sum = a(i,SafeIndex(0)) * b(0,j...);
 	  for (size_t k = 1; k < wa; k++)
-	    sum += a(i,k) * b(k,j...);
+	    sum += a(i,SafeIndex(k)) * b(k,j...);
           return sum;
 	}
 
