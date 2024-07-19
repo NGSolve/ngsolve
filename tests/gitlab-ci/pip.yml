@@ -34,7 +34,6 @@ pip_windows:
     - .\tests\build_pip.ps1 C:\Python310
     - .\tests\build_pip.ps1 C:\Python39
     - .\tests\build_pip.ps1 C:\Python38
-    - .\tests\build_pip.ps1 C:\Python37
   when: manual
 
 pip_pyodide:
