@@ -5578,10 +5578,10 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
              else
                rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
 
-             Mat<DIM-1> trans = mir[0].GetMeasure() * rhoi;
+             // Mat<DIM-1> trans = mir[0].GetMeasure() * rhoi; // does not fit
 
-             if (piola)
-               trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
+             // if (piola) // the only option by now
+             Mat<DIM-1> trans = (1/mir[0].GetMeasure()) * Trans(mir[0].GetJacobian()) * rhoi * mir[0].GetJacobian();
 
 
              for (int i = 0; i < melx.Width(); i++)
