@@ -146,35 +146,12 @@ namespace ngcomp
   {
     if(ei.VB()==VOL || ei.VB()==BND)
       {
-        /*
-	Array<int> forient(6);
-	if (ma->GetDimension() == 2)
-	  ma->GetElEdges (ei.Nr(), dnums, forient);
-	else
-	  ma->GetElFaces (ei.Nr(), dnums, forient);
-        */
         dnums = ma->GetElement(ei).Facets();
         
 	if (!DefinedOn (ei))
 	  dnums = -1;
         return;
       }
-
-    /*
-    if(ei.VB()==BND)
-      {
-	if (ma->GetDimension() == 2)
-	  {
-	    int eoa[12];
-	    Array<int> eorient(12, eoa);
-	    ma->GetSElEdges (ei.Nr(), dnums, eorient);
-	    if (!DefinedOn(ei))
-	      dnums = -1;
-            
-          }
-    // (*testout) << "el = " << elnr << ", dofs = " << dnums << endl;
-      }
-    */
     
     if(ei.VB()==BBND || ei.VB()==BBBND)
       {
@@ -182,18 +159,8 @@ namespace ngcomp
         return;
       }
 
-    /*
-      int eoa[12];
-      Array<int> eorient(12, eoa);
-      GetMeshAccess().GetSElEdges (selnr, dnums, eorient);
-      
-      if (!DefinedOnBoundary (ma->GetSElIndex (selnr)))
-      dnums = -1;
-    */
     dnums.SetSize (1);
     dnums = -1;
-    
-    // (*testout) << "sel = " << selnr << ", dofs = " << dnums << endl;
   }
 
   /*
@@ -264,23 +231,9 @@ namespace ngcomp
   GetTransformationFactors (ElementId ei, FlatVector<> fac) const
   {
     auto vnums = ma->GetElVertices(ei);
-
-    /*
-    for (auto [i,e] : Enumerate(ET_trait<ET_TRIG>::edges))
-      fac[i] = vnums[e[0]] > vnums[e[1]] ? 1 : -1;
-    */
     
     for (auto [e,fi] : Zip(ET_trait<ET_TRIG>::edges, fac))
       fi = vnums[e[0]] > vnums[e[1]] ? 1 : -1;
-    
-    
-    /*
-      // old
-      Array<int> edge_nums, edge_orient;
-      ma->GetElEdges (elnr, edge_nums, edge_orient);
-      for (int i = 0; i < 3; i++)
-      fac(i) = edge_orient[i];
-    */
   }
 
 

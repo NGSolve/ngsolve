@@ -893,7 +893,7 @@ into the wirebasket.
         hndof += neldof;
       }
     first_element_dof[ne] = hndof;
-    // ndof = hndof;
+
     SetNDof(hndof);
     
     if (print)
@@ -903,11 +903,6 @@ into the wirebasket.
         (*testout) << "h1 first inner = " << first_element_dof << endl;
       }
 
-    /*
-    while (ma->GetNLevels() > ndlevel.Size())
-      ndlevel.Append (ndof);
-    ndlevel.Last() = ndof;
-    */
     if (prol)
       prol->Update(*this);
   }
@@ -1348,12 +1343,6 @@ into the wirebasket.
     return *hofe;
   }
  
-  /*
-  size_t H1HighOrderFESpace :: GetNDofLevel (int alevel) const
-  {
-    return ndlevel[alevel];
-  }
-  */
 
   void H1HighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {
