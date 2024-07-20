@@ -1077,7 +1077,7 @@ namespace ngcomp
         if (discont) return *fe; 
         
         // ArrayMem<int, 4> ednums, order_ed;
-        IVec<3> order_fa;
+        // IVec<3> order_fa;
         
         if(ma->GetElType(ei) == ET_SEGM)
           {

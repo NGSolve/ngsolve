@@ -787,6 +787,8 @@ for the two neighbouring elements. This allows a simple implementation of the Le
           }
         // return *fe2d;
         }
+      default:
+        throw Exception("FacetFESpace::GetFE - should not be here");
       }
   }
 
