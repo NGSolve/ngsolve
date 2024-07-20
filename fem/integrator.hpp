@@ -10,7 +10,7 @@
 
 // #include "elementtransformation.hpp"
 #include "finiteelement.hpp"
-#include "diffop.hpp"
+#include "differentialoperator.hpp"
 
 namespace ngfem
 {

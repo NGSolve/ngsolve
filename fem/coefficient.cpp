@@ -6489,7 +6489,8 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
         stringstream s;
         string pointer_code;
         string top_code = ""
-          "#include<fem.hpp>\n"
+          "#include<coefficient.hpp>\n"
+          "#include<symbolicintegrator.hpp>\n"          
           "#if defined(__GNUC__) || defined(__clang__)\n"
           "#pragma GCC diagnostic ignored \"-Wunused-but-set-variable\"\n"
           "#pragma GCC diagnostic ignored \"-Wunused-variable\"\n"          

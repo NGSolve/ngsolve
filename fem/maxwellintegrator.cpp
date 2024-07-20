@@ -13,7 +13,7 @@
 
 // #include <fem.hpp>
 #include "hcurl_equations.hpp"
-#include <diffop_impl.hpp>
+#include "diffop_impl.hpp"
 
 int link_maxwellintegrator;
 
