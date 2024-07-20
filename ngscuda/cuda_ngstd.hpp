@@ -181,6 +181,19 @@ namespace ngs_cuda
   };
 }
 
+template <typename T>
+struct IsSafe<Dev<T>> {
+  constexpr operator bool() const { return true; } };
+
+namespace std {
+  template <typename T>  
+  struct is_integral<Dev<T>> {
+    static constexpr bool value = is_integral<T>::value;
+  };
+}
+
+
+
 namespace ngcore 
 {
   using ngs_cuda::Dev;
