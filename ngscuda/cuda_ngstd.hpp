@@ -182,12 +182,12 @@ namespace ngs_cuda
 }
 
 template <typename T>
-struct IsSafe<Dev<T>> {
+struct IsSafe<ngs_cuda::Dev<T>> {
   constexpr operator bool() const { return true; } };
 
 namespace std {
   template <typename T>  
-  struct is_integral<Dev<T>> {
+  struct is_integral<ngs_cuda::Dev<T>> {
     static constexpr bool value = is_integral<T>::value;
   };
 }
