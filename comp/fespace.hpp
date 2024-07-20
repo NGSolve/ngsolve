@@ -1419,48 +1419,6 @@ ANY                  1 1 1 1 | 15
     }
   };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ifdef OLD
-  // #ifdef PARALLEL
-
-  class ParallelMeshDofs : public ParallelDofs
-  {
-    shared_ptr<MeshAccess> ma;
-    Array<Node> dofnodes;
-  public:
-    ParallelMeshDofs (shared_ptr<MeshAccess> ama, const Array<Node> & adofnodes, 
-		      int dim = 1, bool iscomplex = false);
-
-    shared_ptr<MeshAccess> GetMeshAccess() const { return ma; }
-    const Array<Node> & GetDofNodes() const { return dofnodes; }
-  };
-  
-  // #else
-
-#ifdef NOPARALLEL
-  
-  class ParallelMeshDofs : public ParallelDofs 
-  {
-  public:
-    ParallelMeshDofs (shared_ptr<MeshAccess> ama, const Array<NodeId> & adofnodes, 
-		      int dim = 1, bool iscomplex = false)
-    { ndof = adofnodes.Size(); }
-  };
-
-#endif
-#endif
   
 }
 
