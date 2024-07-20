@@ -1027,7 +1027,7 @@ namespace ngfem
     enum { DIM         = DIFFOP::DIM };
     
   public:
-    NGS_DLL_HEADER T_DifferentialOperator()
+    T_DifferentialOperator()
       : DifferentialOperator(DIFFOP::DIM_DMAT, 1, VorB(int(DIM_SPACE)-int(DIM_ELEMENT)), DIFFOP::DIFFORDER)
     {
       static ngcore::RegisterClassForArchive<ngfem::T_DifferentialOperator<DIFFOP>, DifferentialOperator> reg;
