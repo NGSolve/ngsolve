@@ -860,7 +860,7 @@ namespace ngcomp
       }
 #endif
 
-    shared_ptr<MeshAccess> ma = nullptr; //pde->GetMeshAccess();
+    // shared_ptr<MeshAccess> ma = nullptr; //pde->GetMeshAccess();
 
     size_t nedge = ma->GetNEdges(); 
     size_t nface = ma->GetNFaces(); 

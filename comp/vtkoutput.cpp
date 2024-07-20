@@ -75,7 +75,7 @@ namespace ngcomp
         case ET_HEXAMID: throw Exception("hexamid not handled in vtk output");
       }
     }
-    else if(order==2)
+    if(order==2)
     {
       switch(et) {
         case ET_POINT: throw Exception("Have no second order points");
@@ -91,8 +91,8 @@ namespace ngcomp
         case ET_HEXAMID: throw Exception("hexamid not handled in vtk output");          
       }
     }
-    else
-      throw Exception("Invalid element order: " + ToString(order));
+    
+    throw Exception("Invalid element order: " + ToString(order));
   }
  
   VTKCell :: VTKCell(ELEMENT_TYPE et, int order, const std::map<tuple<int,int,int>, int> &m,
