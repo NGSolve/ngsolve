@@ -1,3 +1,7 @@
+#ifndef FILE_INTEGRATORCF
+#define FILE_INTEGRATORCF
+
+
 // WIP, need a bit more design ...
 
 #include "coefficient.hpp"
@@ -239,3 +243,6 @@ namespace ngfem
   };
   
 }
+
+
+#endif
