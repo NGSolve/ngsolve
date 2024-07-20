@@ -45,7 +45,7 @@ namespace ngstd
 #include "blockalloc.hpp"
 #include "memusage.hpp"
 
-#include "evalfunc.hpp"
+// #include "evalfunc.hpp"
 #include "sample_sort.hpp"
 
 // #include "polorder.hpp"

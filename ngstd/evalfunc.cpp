@@ -11,7 +11,7 @@
 
 
 #include <ngstd.hpp>
-// #include <evalfunc.hpp>
+#include "evalfunc.hpp"
 
 
 namespace ngstd
