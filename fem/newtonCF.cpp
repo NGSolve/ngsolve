@@ -9,6 +9,7 @@
 // #include <ngstd.hpp>
 #include <cassert>
 #include "symbolicintegrator.hpp"
+#include "diffop.hpp"
 
 namespace std {
     

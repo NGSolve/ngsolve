@@ -7,8 +7,9 @@
    Finite Element Integrators
 */
 
-#include <integrator.hpp>
-  
+#include "integrator.hpp"
+#include "diffop.hpp"
+
 namespace ngfem
 {
 

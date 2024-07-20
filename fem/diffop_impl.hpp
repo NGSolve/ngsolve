@@ -13,6 +13,18 @@
 namespace ngfem
 {
 
+  /*
+  template <typename DIFFOP>
+  T_DifferentialOperator<DIFFOP> :: T_DifferentialOperator()
+    : DifferentialOperator(DIFFOP::DIM_DMAT, 1, VorB(int(DIM_SPACE)-int(DIM_ELEMENT)), DIFFOP::DIFFORDER)
+  {
+    static ngcore::RegisterClassForArchive<ngfem::T_DifferentialOperator<DIFFOP>, DifferentialOperator> reg;
+    Array<int> hdims;
+    hdims = DIFFOP::GetDimensions();
+    SetDimensions ( hdims );
+  }
+  */
+  
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
   CalcMatrix (const FiniteElement & bfel,

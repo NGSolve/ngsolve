@@ -32,7 +32,7 @@ install( TARGETS ngfem ${ngs_install_dir} )
 
 install( FILES
         bdbequations.hpp hcurl_equations.hpp		
-        elasticity_equations.hpp diffop.hpp bdbintegrator.hpp
+        elasticity_equations.hpp differentialoperator.hpp diffop.hpp bdbintegrator.hpp
         coefficient.hpp coefficient_impl.hpp coefficient_stdmath.hpp
         elementtopology.hpp elementtransformation.hpp facetfe.hpp	
         facethofe.hpp fem.hpp finiteelement.hpp

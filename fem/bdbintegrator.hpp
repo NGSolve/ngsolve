@@ -10,6 +10,8 @@
 // #include "fastmat.hpp"
 
 #include "integrator.hpp"
+#include "diffop.hpp"
+
 
 namespace ngfem
 {
