@@ -314,7 +314,8 @@ namespace ngbla
 
     
     /// constant element access
-    template<typename I, typename std::enable_if<std::is_integral<I>::value, int>::type = 0>    
+    // template<typename I, typename std::enable_if<std::is_integral<I>::value, int>::type = 0>
+    template<typename I, typename std::enable_if<std::is_convertible<I,size_t>::value, int>::type = 0>
     INLINE TELEM & operator() (I i) const
     {
       NETGEN_CHECK_RANGE(i,0,Size());
