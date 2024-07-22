@@ -38,12 +38,14 @@ template <typename T>
 struct IsSafe<SafeIndex<T>> {
   constexpr operator bool() const { return true; } };
 
+/*
 namespace std {
   template <typename T>  
   struct is_integral<SafeIndex<T>> {
     static constexpr bool value = true;
   };
 }
+*/
 
 namespace ngbla
 {
