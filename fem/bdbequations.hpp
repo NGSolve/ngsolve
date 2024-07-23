@@ -590,6 +590,25 @@ namespace ngfem
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
     }
 
+
+    static int DimRef() { return 1; } 
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (ip, mat.Row(0));      
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat(0,0) = 1;
+    }
+    
+    
+
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
