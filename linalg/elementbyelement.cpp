@@ -684,9 +684,9 @@ namespace ngla
   template class ElementByElementMatrix<double>;
   template class ElementByElementMatrix<Complex>;
 
-  
-  ConstantElementByElementMatrix ::
-  ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<> amatrix,
+  template <typename SCAL>
+  ConstantElementByElementMatrix<SCAL> ::
+  ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<SCAL> amatrix,
                                   Table<int> acol_dnums, Table<int> arow_dnums)
   : h(ah), w(aw), matrix(amatrix), col_dnums(std::move(acol_dnums)), row_dnums(std::move(arow_dnums))
   {
@@ -701,7 +701,7 @@ namespace ngla
         compress.Append(i);
     if (num_zero_rows)
       {
-        Matrix cmatrix(compress.Size(), matrix.Width());
+        Matrix<SCAL> cmatrix(compress.Size(), matrix.Width());
         for (int i = 0; i < compress.Size(); i++)
           cmatrix.Row(i) = matrix.Row(compress[i]);
 
@@ -724,7 +724,7 @@ namespace ngla
         compress.Append(i);
     if (num_zero_cols)
       {
-        Matrix cmatrix(matrix.Height(), compress.Size());
+        Matrix<SCAL> cmatrix(matrix.Height(), compress.Size());
         for (int i = 0; i < compress.Size(); i++)
           cmatrix.Col(i) = matrix.Col(compress[i]);
 
@@ -938,21 +938,23 @@ namespace ngla
         for (auto nr : Range(nblocks))        
           col_coloring[col[nr]][cntcol[col[nr]]++] = nr;
       }
-
-    
   }
 
-  AutoVector ConstantElementByElementMatrix :: CreateRowVector () const
-  {
-    return make_unique<VVector<>> (w);
-  }
   
-  AutoVector ConstantElementByElementMatrix :: CreateColVector () const 
+  template <typename SCAL>  
+  AutoVector ConstantElementByElementMatrix<SCAL> :: CreateRowVector () const
   {
-    return make_unique<VVector<>> (h);
+    return make_unique<VVector<SCAL>> (w);
   }
 
-  BaseMatrix::OperatorInfo ConstantElementByElementMatrix :: GetOperatorInfo () const
+  template <typename SCAL>  
+  AutoVector ConstantElementByElementMatrix<SCAL> :: CreateColVector () const 
+  {
+    return make_unique<VVector<SCAL>> (h);
+  }
+
+  template <typename SCAL>  
+  BaseMatrix::OperatorInfo ConstantElementByElementMatrix<SCAL> :: GetOperatorInfo () const
   {
     OperatorInfo info;
     info.name = string("ConstantEBEMatrix (bs = ") + ToString(matrix.Height()) + "x"
@@ -961,16 +963,16 @@ namespace ngla
     info.width = Width();
     return info;
   }
-    
-  
-  void ConstantElementByElementMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+
+  template <typename SCAL>  
+  void ConstantElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ConstantEBE mult add");
     static Timer tcol("ConstantEBE mult coloring");
     static Timer tpmult("ConstantEBE mult parallel mult");
 
-    auto fx = x.FV<double>();
-    auto fy = y.FV<double>();
+    auto fx = x.FV<SCAL>();
+    auto fy = y.FV<SCAL>();
 
     if (!disjoint_cols)
       {
@@ -992,8 +994,8 @@ namespace ngla
             (col.Size(), [&] (IntRange r)
              {
                constexpr size_t BS = 128;
-               Matrix<> hx(BS, matrix.Width());
-               Matrix<> hy(BS, matrix.Height());
+               Matrix<SCAL> hx(BS, matrix.Width());
+               Matrix<SCAL> hy(BS, matrix.Height());
                
                for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                  {
@@ -1030,8 +1032,8 @@ namespace ngla
                }
              */
              constexpr size_t BS = 128;
-             Matrix<> hx(BS, matrix.Width());
-             Matrix<> hy(BS, matrix.Height());
+             Matrix<SCAL> hx(BS, matrix.Width());
+             Matrix<SCAL> hy(BS, matrix.Height());
 
              for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                {
@@ -1051,15 +1053,16 @@ namespace ngla
            }, TasksPerThread(2));
       }
   }
-  
-  void ConstantElementByElementMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+
+  template <typename SCAL>    
+  void ConstantElementByElementMatrix<SCAL> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ConstantEBE mult trans add");
     static Timer tcol("ConstantEBE mult trans coloring");
     static Timer tpmult("ConstantEBE mult trans mult");    
 
-    auto fx = x.FV<double>();
-    auto fy = y.FV<double>();
+    auto fx = x.FV<SCAL>();
+    auto fy = y.FV<SCAL>();
     
     if (!disjoint_rows)
       { // use coloring
@@ -1070,8 +1073,8 @@ namespace ngla
             (col.Size(), [&] (IntRange r)
              {
                constexpr size_t BS = 128;
-               Matrix<> hx(BS, matrix.Height());
-               Matrix<> hy(BS, matrix.Width());
+               Matrix<SCAL> hx(BS, matrix.Height());
+               Matrix<SCAL> hy(BS, matrix.Width());
                
                for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                  {
@@ -1100,8 +1103,8 @@ namespace ngla
           (row_dnums.Size(), [&] (IntRange r)
            {
              constexpr size_t BS = 128;
-             Matrix<> hx(BS, matrix.Height());
-             Matrix<> hy(BS, matrix.Width());
+             Matrix<SCAL> hx(BS, matrix.Height());
+             Matrix<SCAL> hy(BS, matrix.Width());
 
              for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
                {
@@ -1125,7 +1128,12 @@ namespace ngla
            });
       }
   }
+  
+  
+  template class ConstantElementByElementMatrix<double>;
+  template class ConstantElementByElementMatrix<Complex>;
 
+  
   void StructuredElementByElementMatrix :: Mult (const BaseVector & x, BaseVector & y) const
   {
     auto hx = x.FV<double>().AsMatrix(num, matrix.Width());

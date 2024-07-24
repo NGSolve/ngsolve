@@ -122,17 +122,17 @@ namespace ngla
     void InitMemoryTracing() const;
   };  
 
-
+  template <class SCAL = double>
   class NGS_DLL_HEADER ConstantElementByElementMatrix : public BaseMatrix
   {
     size_t h, w;
-    Matrix<> matrix;
+    Matrix<SCAL> matrix;
     Table<int> col_dnums;
     Table<int> row_dnums;
     bool disjoint_rows, disjoint_cols;
     Table<int> row_coloring, col_coloring;
   public:
-    ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<> amatrix,
+    ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<SCAL> amatrix,
                                     Table<int> acol_dnums, Table<int> arow_dnums);
 
     virtual int VHeight() const override { return h; }
@@ -146,7 +146,7 @@ namespace ngla
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;
     
-    FlatMatrix<> GetMatrix() const { return matrix; }
+    FlatMatrix<SCAL> GetMatrix() const { return matrix; }
     FlatTable<int> GetRowDNums() const { return row_dnums; }
     FlatTable<int> GetColDNums() const { return col_dnums; }
 
