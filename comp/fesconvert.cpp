@@ -467,7 +467,7 @@ namespace ngcomp
 	    { bdofs[i][c++] = dimb * dnumsb[l] + ll; }
       }
 
-      auto mat = make_shared<ConstantElementByElementMatrix>
+      auto mat = make_shared<ConstantElementByElementMatrix<>>
 	(space_b->GetNDof(), space_a->GetNDof(),
 	 elmat, std::move(bdofs), std::move(adofs));
 
@@ -481,7 +481,7 @@ namespace ngcomp
       // dummy op for empty FESpace
       Table<DofId> xdofs(0, 0), ydofs(0, 0);
       Matrix<> mat(0,0);
-      op = make_shared<ConstantElementByElementMatrix>
+      op = make_shared<ConstantElementByElementMatrix<>>
 	(space_b->GetNDof(), space_a->GetNDof(),
 	 mat, std::move(ydofs), std::move(xdofs));
     }

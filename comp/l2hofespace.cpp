@@ -1475,7 +1475,7 @@ global system.
         for (size_t i = 0; i < xa.Size(); i++)
           xa[i] = i;
         
-        auto bx = make_shared<ConstantElementByElementMatrix>
+        auto bx = make_shared<ConstantElementByElementMatrix<>>
           (elclass_inds.Size()*ir.Size(), GetNDof(),
            bmat, std::move(xdofsout), std::move(xdofsin));
             
@@ -1839,7 +1839,7 @@ global system.
                 (*cnt)(d) += 1;
           }
 
-        auto mat = make_shared<ConstantElementByElementMatrix>
+        auto mat = make_shared<ConstantElementByElementMatrix<>>
           (tracespace->GetNDof(), this->GetNDof(),
            trace_op_x, std::move(ydofs), std::move(xdofs));
 
@@ -4705,7 +4705,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
         for (size_t i = 0; i < xa.Size(); i++)
           xa[i] = i;
         
-        auto bx = make_shared<ConstantElementByElementMatrix>
+        auto bx = make_shared<ConstantElementByElementMatrix<>>
           (elclass_inds.Size()*ir.Size()*DIM, GetNDof(),
            bmat, std::move(xdofsout), std::move(xdofsin));
             

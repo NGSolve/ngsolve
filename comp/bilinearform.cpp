@@ -993,7 +993,7 @@ namespace ngcomp
             // cout << "elmat = " << elmat << endl;
             // cout << "xdofs = " << xdofs << endl;
             // cout << "ydofs = " << ydofs << endl;
-            auto mat = make_shared<ConstantElementByElementMatrix>
+            auto mat = make_shared<ConstantElementByElementMatrix<>>
               (fesy->GetNDof(), fesx->GetNDof(),
                elmat, std::move(ydofs), std::move(xdofs));
             
@@ -1338,11 +1338,11 @@ namespace ngcomp
                     ya[i*dimyref+j] = j*nip+i;
               }
             
-            auto bx = make_shared<ConstantElementByElementMatrix>
+            auto bx = make_shared<ConstantElementByElementMatrix<>>
               (nip*dimxref, fesx->GetNDof(),
                bmatx, std::move(xdofsout), std::move(xdofsin));
             
-            auto by = make_shared<ConstantElementByElementMatrix>
+            auto by = make_shared<ConstantElementByElementMatrix<>>
               (nip*dimyref, fesy->GetNDof(),
                bmaty, std::move(ydofsout), std::move(ydofsin));
 

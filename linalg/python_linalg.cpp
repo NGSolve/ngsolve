@@ -1202,7 +1202,7 @@ inverse : string
          py::arg("mat"), py::arg("label"), py::arg("logfile")="stdout", py::arg("comm")=std::nullopt)
     ;
   
-  py::class_<ConstantElementByElementMatrix, shared_ptr<ConstantElementByElementMatrix>, BaseMatrix>
+  py::class_<ConstantElementByElementMatrix<>, shared_ptr<ConstantElementByElementMatrix<>>, BaseMatrix>
     (m, "ConstEBEMatrix")
     .def(py::init<> ([] (size_t h, size_t w, Matrix<> mat,
                          py::list pycdofs, py::list pyrdofs)
@@ -1210,14 +1210,14 @@ inverse : string
                        auto rdofs = makeCTable<int> (pyrdofs);
                        auto cdofs = makeCTable<int> (pycdofs);
                        
-                       return make_shared<ConstantElementByElementMatrix> (h, w, mat,
+                       return make_shared<ConstantElementByElementMatrix<double>> (h, w, mat,
                                                                            std::move(cdofs), std::move(rdofs));
                      }),
          py::arg("h"), py::arg("w"), py::arg("matrix"),
          py::arg("col_ind"), py::arg("row_ind"))
-    .def_property_readonly("mat", &ConstantElementByElementMatrix::GetMatrix)
-    .def_property_readonly("row_ind", &ConstantElementByElementMatrix::GetRowDNums)
-    .def_property_readonly("col_ind", &ConstantElementByElementMatrix::GetColDNums)
+    .def_property_readonly("mat", &ConstantElementByElementMatrix<>::GetMatrix)
+    .def_property_readonly("row_ind", &ConstantElementByElementMatrix<>::GetRowDNums)
+    .def_property_readonly("col_ind", &ConstantElementByElementMatrix<>::GetColDNums)
     ;
 
   m.def("ChebyshevIteration", [](shared_ptr<BaseMatrix> mat, shared_ptr<BaseMatrix> pre,
