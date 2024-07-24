@@ -100,7 +100,7 @@ namespace ngla
     bool disjoint_rows, disjoint_cols;
     size_t numblocks;
   public:
-    DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat);
+    DevConstantElementByElementMatrix (const ConstantElementByElementMatrix<> & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 

@@ -90,10 +90,10 @@ namespace ngla
                                               return make_shared<DevDiagonalMatrix>(diagmat.AsVector());
                                             });
     
-    BaseMatrix::RegisterDeviceMatrixCreator(typeid(ConstantElementByElementMatrix),
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(ConstantElementByElementMatrix<>),
                                             [] (const BaseMatrix & mat) -> shared_ptr<BaseMatrix>
                                             {
-                                              auto & ebe_mat = dynamic_cast<const ConstantElementByElementMatrix&>(mat);
+                                              auto & ebe_mat = dynamic_cast<const ConstantElementByElementMatrix<>&>(mat);
                                               return make_shared<DevConstantElementByElementMatrix>(ebe_mat);
                                             });
 
@@ -305,7 +305,7 @@ namespace ngla
   bool synckernels = true;
   
   DevConstantElementByElementMatrix ::
-  DevConstantElementByElementMatrix (const ConstantElementByElementMatrix & mat)
+  DevConstantElementByElementMatrix (const ConstantElementByElementMatrix<> & mat)
     : h(mat.Height()), w(mat.Width()),
       devmat(mat.GetMatrix()),
       rowdnums(mat.GetRowDNums()), coldnums(mat.GetColDNums()),
