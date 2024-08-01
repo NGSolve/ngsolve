@@ -782,7 +782,10 @@ namespace ngcomp
                       if (!boundary_facet[f]) inci += order_facet[f][0]+1;
 		  }
 		if (RT)
-		  inci += (p[0]+1) * (p[0]+2)/2;
+                  {
+                    if (p[0] > 0)
+                      inci += (p[0]+1) * (p[0]+2)/2;
+                  }
 		// inci += 4*(p[0]+1);
                 break;
               case ET_PRISM:
