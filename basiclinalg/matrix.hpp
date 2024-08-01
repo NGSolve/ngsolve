@@ -621,7 +621,7 @@ namespace ngbla
     {
       this->h = m2.h;      
       this->w = m2.w;
-      Swap (this->data, m2.data);
+      ngcore::Swap (this->data, m2.data);
       return *this;
     }
 
@@ -995,7 +995,7 @@ namespace ngbla
     INLINE MatrixFixWidth & operator= (MatrixFixWidth && m)
     {
       this->h = m.h;
-      Swap (this->data, m.data);
+      ngcore::Swap (this->data, m.data);
       return *this;
     }
 
