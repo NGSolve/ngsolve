@@ -359,7 +359,7 @@ namespace ngbla
       return VectorView<T,decltype(declval<TS>()/size_t()), decltype(declval<TDIST>()*size_t())> ( (size-first+dist2-1)/dist2, dist2*dist, Addr(first));
     }
 
-    INLINE auto Reverted() const
+    INLINE auto Reversed() const
     {
       return VectorView { Size(), -Dist(), Addr(Size()-1) };
     }
