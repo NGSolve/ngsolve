@@ -1465,6 +1465,15 @@ namespace ngbla
       return *this;
     }
     
+    auto Swap (MatrixView & m) 
+    {
+      ngcore::Swap (data, m.data);
+      ngcore::Swap (h, m.h);
+      ngcore::Swap (w, m.w);
+      ngcore::Swap (dist, m.dist);
+      return *this;
+    }
+        
     auto Reshape(size_t h2, size_t w2)
     {
       static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView::Reshape needs unused-dist");            
