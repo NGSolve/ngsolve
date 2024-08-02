@@ -193,9 +193,68 @@ namespace ngbla
         func(y(i), s*sum);
       }
   }
+
+
+  
+  template <typename TM, size_t SX, typename FUNC>
+  void NgGEMV_Short (Complex s, BareSliceMatrix<TM,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
+  {
+    Vec<SX,Complex> hx;
+    for (size_t j = 0; j < SX; j++)
+      hx(j) = x(j);
+    
+    size_t i = 0;
+    /*
+    for ( ; i+2 <= y.Size(); i+=2)
+      {
+        Complex sum0 = 0;
+        Complex sum1 = 0;
+
+        for (size_t j = 0; j < SX; j++)
+          {
+            Complex xj = hx(j);
+            sum0 += a(i  ,j) * xj;
+            sum1 += a(i+1,j) * xj;
+          }
+        
+        func(y(i  ), s*sum0);
+        func(y(i+1), s*sum1);
+      }
+    */
+    for ( ; i < y.Size(); i++)
+      {
+        Complex sum = 0;
+        for (size_t j = 0; j < SX; j++)
+          sum += a(i,j) * hx(j);
+        func(y(i), s*sum);
+      }
+  }
+
+  void Test1 (Complex s, BareSliceMatrix<double,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y)
+  {
+    NgGEMV_Short<double,2> (s, a, x, y,[](Complex & y, Complex sum) { y+=sum; });
+  }
+  
   template <typename TM, typename FUNC>
   void NgGEMV (Complex s, BareSliceMatrix<TM,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
   {
+    /*
+      // dit not improve ...
+    typedef void (*pmv)(Complex, BareSliceMatrix<TM,ColMajor>, SliceVector<Complex>, SliceVector<Complex>, FUNC) NETGEN_NOEXCEPT;
+    static pmv dispatch_matvec[12];
+    static auto init_matvec = [] ()
+    {
+      Iterate<std::size(dispatch_matvec)> ([&] (auto i)
+      { dispatch_matvec[i] = &NgGEMV_Short<TM,i,FUNC>; });
+      return 1;
+    }();
+
+    if (x.Size() < std::size(dispatch_matvec))
+      {
+        (*dispatch_matvec[x.Size()])(s, a, x, y, func);
+        return;
+      }
+    */
     // static Timer t("Complex MatVec, ColMajor, SliceVec"); RegionTimer reg(t);
     // t.AddFlops (2*sizeof(TM)/8*x.Size()*y.Size());
     /*
@@ -282,7 +341,7 @@ namespace ngbla
         func(y(i  ), s*sum0);
         func(y(i+1), s*sum1);
       }
-    
+
     for ( ; i < y.Size(); i++)
       {
         Complex sum = 0;
