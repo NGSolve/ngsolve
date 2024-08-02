@@ -1378,7 +1378,7 @@ namespace ngcomp
                       }
                   }
                 
-                auto diagmat = make_shared<BlockDiagonalMatrix> (std::move(diag));
+                auto diagmat = make_shared<BlockDiagonalMatrix<double>> (std::move(diag));
                 mat = TransposeOperator(by) * diagmat * bx;
               }
             else

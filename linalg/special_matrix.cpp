@@ -287,8 +287,9 @@ namespace ngla
 #endif
   
 
-  BlockDiagonalMatrix ::
-  BlockDiagonalMatrix(Tensor<3> _blockdiag)
+  template <typename T>  
+  BlockDiagonalMatrix<T> ::
+  BlockDiagonalMatrix(Tensor<3,T> _blockdiag)
     : blockdiag(std::move(_blockdiag))
   {
     blocks = blockdiag.GetSize();
@@ -319,7 +320,7 @@ namespace ngla
               cout << IM(3) << "can reduce subblocks by factor " << sub << endl;
               // cout << "nonzero = " << endl << nonzero << endl;
               
-              Tensor<3> newblockdiag(blocks*sub, subdimy, subdimx);
+              Tensor<3,T> newblockdiag(blocks*sub, subdimy, subdimx);
               for (int i = 0; i < blocks; i++)
                 for (int j = 0; j < sub; j++)
                   newblockdiag(i*sub+j,STAR,STAR) =
@@ -337,25 +338,28 @@ namespace ngla
 
     cout << IM(5) << "Blockdiag, final shape = " << dimy << " x " << dimx << endl;    
   }
-
-  ostream & BlockDiagonalMatrix :: Print (ostream & ost) const
+  
+  template <typename T>  
+  ostream & BlockDiagonalMatrix<T> :: Print (ostream & ost) const
   {
     ost << "BlockDiagmatrix, blocks = " << blocks << " of dim " << dimy << " x " << dimx << endl;
     return ost;
   }
-    
-  AutoVector BlockDiagonalMatrix :: CreateRowVector () const
+
+  template <typename T>    
+  AutoVector BlockDiagonalMatrix<T> :: CreateRowVector () const
   {
-    return make_unique<VVector<double>>(VWidth());
-  }
-  
-  AutoVector BlockDiagonalMatrix :: CreateColVector () const
-  {
-    return make_unique<VVector<double>>(VHeight());    
+    return make_unique<VVector<T>>(VWidth());
   }
 
+  template <typename T>      
+  AutoVector BlockDiagonalMatrix<T> :: CreateColVector () const
+  {
+    return make_unique<VVector<T>>(VHeight());    
+  }
 
-  void BlockDiagonalMatrix :: Mult (const BaseVector & x, BaseVector & y) const
+  template <typename T>
+  void BlockDiagonalMatrix<T> :: Mult (const BaseVector & x, BaseVector & y) const
   {
     // cout << "BlockDiagonalMult, dims = " << dimx << " x " << dimy << endl;
     static Timer t("BlockDiagonalMatrix::Mult"); RegionTimer r(t);
@@ -363,8 +367,8 @@ namespace ngla
 
     if (dimx == 1 && dimy == 1)
       {
-        auto fx = x.FV<double>();
-        auto fy = y.FV<double>();
+        auto fx = x.FV<T>();
+        auto fy = y.FV<T>();
         ParallelFor
           (blocks, [&] (size_t i)
            {
@@ -375,18 +379,18 @@ namespace ngla
 
     if (dimx == 2 && dimy == 2)
       {
-        auto fx = x.FV<Vec<2>>();
-        auto fy = y.FV<Vec<2>>();
+        auto fx = x.FV<Vec<2,T>>();
+        auto fy = y.FV<Vec<2,T>>();
         ParallelFor
           (blocks, [&] (size_t i)
            {
-             fy(i) = Mat<2,2>(blockdiag(i,STAR,STAR)) * fx(i);
+             fy(i) = Mat<2,2,T>(blockdiag(i,STAR,STAR)) * fx(i);
            });
         return;
       }
     
-    auto fx = x.FV<double>();
-    auto fy = y.FV<double>();
+    auto fx = x.FV<T>();
+    auto fy = y.FV<T>();
     ParallelFor
       (blocks, [&] (size_t i)
        {
@@ -395,11 +399,12 @@ namespace ngla
   }
 
   
-  void BlockDiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  template <typename T>
+  void BlockDiagonalMatrix<T> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("BlockDiagonalMatrix::MultAdd"); RegionTimer r(t);
-    auto fx = x.FV<double>();
-    auto fy = y.FV<double>();
+    auto fx = x.FV<T>();
+    auto fy = y.FV<T>();
     // for (size_t i = 0; i < blocks; i++)
     ParallelFor
       (blocks, [&] (size_t i)
@@ -407,13 +412,14 @@ namespace ngla
          fy.Range(i*dimy, (i+1)*dimy) += s* blockdiag(i,STAR,STAR) * fx.Range(i*dimx, (i+1)*dimx);
        });
   }
-  
-  void BlockDiagonalMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+
+  template <typename T>  
+  void BlockDiagonalMatrix<T> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("BlockDiagonalMatrix::MultTransAdd"); RegionTimer r(t);
     
-    auto fx = x.FV<double>();
-    auto fy = y.FV<double>();
+    auto fx = x.FV<T>();
+    auto fy = y.FV<T>();
     // for (size_t i = 0; i < blocks; i++)
     ParallelFor
       (blocks, [&] (size_t i)
@@ -421,13 +427,17 @@ namespace ngla
          fy.Range(i*dimx, (i+1)*dimx) += s* Trans(blockdiag(i,STAR,STAR)) * fx.Range(i*dimy, (i+1)*dimy);
        });
   }
-  
-  shared_ptr<BaseMatrix> BlockDiagonalMatrix :: InverseMatrix (shared_ptr<BitArray> subset) const
+
+  template <typename T>    
+  shared_ptr<BaseMatrix> BlockDiagonalMatrix<T> :: InverseMatrix (shared_ptr<BitArray> subset) const
   {
     cout << "blockdiagmatrix, Inverse not implemented" << endl;
     return nullptr;
   }
   
+
+  template class BlockDiagonalMatrix<double>;
+  template class BlockDiagonalMatrix<Complex>;
 
 
 

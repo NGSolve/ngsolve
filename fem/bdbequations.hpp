@@ -2011,6 +2011,25 @@ namespace ngfem
       Cast(fel).CalcShape (mip.IP(), mat.Row(0));
       mat.Row(0).Range(fel.GetNDof()) /= mip.GetMeasure();
     }
+
+    static int DimRef() { return 1; } 
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcShape (ip, mat.Row(0));      
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat(0,0) = 1.0 / mip.GetMeasure();
+    }
+
+
+    
 #ifdef UNUSED
     template <typename MAT>
     static void GenerateMatrixIR (const FiniteElement & fel,
@@ -2030,7 +2049,7 @@ namespace ngfem
       Cast(fel).CalcShape (mir.IR(), mat);
       for (int i = 0; i < mir.Size(); i++)
         mat.Col(i).Range(0,fel.GetNDof()) /= mir[i].GetMeasure();
-    }
+    }    
 
 #ifdef  UNSUED
     template <typename MIP, class TVX, class TVY>

@@ -86,16 +86,16 @@ namespace ngla
   };
 
 
-
+  template <typename TM=double>  
   class BlockDiagonalMatrix : public BaseMatrix
   {
-    Tensor<3> blockdiag;  
+    Tensor<3,TM> blockdiag;  
     int blocks, dimy, dimx;
   public:
-    typedef double TSCAL;
+    // typedef double TSCAL;
     
-    BlockDiagonalMatrix(Tensor<3> _blockdiag);
-    bool IsComplex() const override { return false; } 
+    BlockDiagonalMatrix(Tensor<3,TM> _blockdiag);
+    bool IsComplex() const override { return ngbla::IsComplex<TM>(); } 
 
     int VHeight() const override { return blocks*dimy; }
     int VWidth() const override { return blocks*dimx; }
