@@ -1434,6 +1434,153 @@ namespace ngfem
   };
 
 
+
+
+
+  /*
+    LegendreFunctions(m).Eval(n, x, values)
+    evaluates the first (n+1) non-zero associated Legendre functions of order m,
+    which are P_m^m(x) ... P_{m+n}^m
+  */
+  class LegendreFunctions : public RecursivePolynomialNonStatic<LegendreFunctions>
+  {
+    int  m;
+  public:
+    LegendreFunctions (size_t _m) : m(_m) { }
+
+    template <typename T, typename S>
+    LegendreFunctions (size_t mmax, size_t n, T x, S && values)
+    {
+      values.Rows(m+1).Cols(n+1) = 0.0;
+      for (size_t i = 0; i <= mmax; i++)
+        {
+          LegendreFunctions l2(i);
+          l2.Eval(n-i, x, values.Row(i).Range(i,n-i+1));
+        }
+    }
+    
+    template <class S>
+    INLINE double P0(S x) const
+    {
+      S prod = 1.0;
+      double factor = 1;
+      S somx2 = sqrt(1.0-x*x);
+      for (size_t i = 1; i <= m; i++)
+        {
+          prod *= -factor * somx2;
+          factor += 2;
+        }
+      return prod;
+    }
+    
+    template <class S>
+    INLINE S P1(S x) const 
+    { 
+      return (2*m+1)*x * P0(x);
+    }
+    
+    template <typename TI>
+    // INLINE const double A (TI i) const { return (2*(i+m)-1)/double(i); }
+    INLINE const double A (TI i) const
+    {
+      int ii = i; int im = m;
+      double a = (2*(ii+im)-1)/double(i); return a;
+    } 
+    template <typename TI>
+    INLINE const double B (TI i) const { return 0; } 
+    template <typename TI>
+    // INLINE const double C (TI i) const { return (-i-2*m+1)/double(i); }
+    INLINE const double C (TI i) const
+    {
+      int ii = i; int im = m;
+      double c = (-ii-2*im+1)/double(ii); return c;
+    } 
+    template <typename TI>
+    INLINE const double D (TI i) const { return 1; } 
+  };
+  
+
+
+  /*
+    sqrt( (2n+1) * (n-m)! / (n+m)! ) * P^m_n
+  */
+  class NormalizedLegendreFunctions : public RecursivePolynomialNonStatic<NormalizedLegendreFunctions>
+  {
+    int  m;
+  public:
+    NormalizedLegendreFunctions (size_t _m) : m(_m) { }
+    
+    template <typename T, typename S>
+    NormalizedLegendreFunctions (size_t mmax, size_t nmax, T x, S && values)
+    {
+      /*
+      values.Rows(mmax+1).Cols(nmax+1) = 0.0;
+      for (size_t i = 0; i <= mmax; i++)
+        NormalizedLegendreFunctions(i).Eval(nmax-i, x, values.Row(i).Range(i,nmax+1));
+      */
+
+      // better stability for m > 1000
+
+      auto y = Trans(values);
+      
+      y = 0.0;
+      double u = -sqrt((1-x)*(1+x));
+      y(0,0)=1;
+      
+      for (double m = 0; m <= mmax; m++)
+        {
+          if (m > 0)
+            y(m,m)=y(m-1,m-1)*u*sqrt((2*m-1.0)/(2*m));
+          if (m < nmax)
+            y(m+1,m)=x*y(m,m)*sqrt(2*m+1.0);
+          for (int n = m+2; n <= nmax; n++)
+            y(n,m)=((2*n-1)*x*y(n-1,m) - 
+                    sqrt((n+m-1.0)*(n-m-1.0))*y(n-2,m))
+              /sqrt((n-m+0.0)*(n+m));
+        }
+      for (int n = 0; n <= nmax; n++)
+        for (int m = 0; m <= n; m++)
+          y(n,m)=y(n,m)*sqrt(2*n+1.0);
+    }
+    
+    template <class S>
+    INLINE double P0(S x) const
+    {
+      S prod = 2*m+1;
+      for (size_t i = 1; i <= m; i++)
+        prod *= (1-x*x) * (1 - 1.0/(2*i));
+      return sqrt(prod) * ( (m%2) ? -1 : 1 );
+    }
+    
+    template <class S>
+  INLINE S P1(S x) const 
+    { 
+      return sqrt(2*m+3.0)*x * P0(x);
+    }
+    
+    template <typename TI>
+    INLINE const double A (TI i) const
+    {
+      int ii = i, im = m;
+      return sqrt( (2*ii+2*im-1.0)*(2*ii+2*im+1.0) / (ii*(ii+2*im)) );
+    } 
+    template <typename TI>
+    INLINE double B (TI i) const { return 0; } 
+    template <typename TI>
+    INLINE const double C (TI i) const
+    {
+      int ii = i, im = m;      
+      return -sqrt( (ii-1)*(ii+2*im-1.0)*(2*ii+2*im+1.0) / (ii*(ii+2*im)*(2*ii+2*im-3.0)) );
+    }
+    
+    template <typename TI>
+    INLINE const double D (TI i) const { return 1; } 
+  };
+
+
+
+  
+  
     
 
   /* ******************** Jacobi Polynomial  (with fixed alpha, beta)  ************ */
