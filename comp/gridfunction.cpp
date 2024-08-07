@@ -971,7 +971,7 @@ namespace ngcomp
   ComponentGridFunction ::
   ComponentGridFunction (shared_ptr<GridFunction> agf_parent, int acomp)
     : GridFunction (dynamic_cast<const CompoundFESpace&> (*agf_parent->GetFESpace())[acomp],
-                    agf_parent->GetName()+"."+ToString (acomp+1), Flags()),
+                    agf_parent->GetName()+"."+ToString (acomp+1), Flags().SetFlag("autoupdate",false)),
       gf_parent(agf_parent), comp(acomp)
   { 
     this->SetVisual(agf_parent->GetVisual());
