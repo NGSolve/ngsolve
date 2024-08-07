@@ -222,8 +222,9 @@ namespace ngbla
         SIMD<double,SW> s_sumr = s.real()*sumr - s.imag()*sumi;
         SIMD<double,SW> s_sumi = s.real()*sumi + s.imag()*sumr;
 
+        auto ysub = y.Range(i, i+SW);
         for (size_t k = 0; k < SW; k++)
-          func(y(i+k), Complex(s_sumr[k], s_sumi[k]));
+          func(ysub(k), Complex(s_sumr[k], s_sumi[k]));
       }
            
     for ( ; i < y.Size(); i++)
@@ -237,7 +238,7 @@ namespace ngbla
 
   void Test1 (Complex s, BareSliceMatrix<double,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y)
   {
-    NgGEMV_Short<2> (s, a, x, y,[](Complex & y, Complex sum) { y+=sum; });
+    NgGEMV_Short<2> (s, a, x, y,[](Complex & y, Complex sum) { y=sum; });
   }
   
   template <typename FUNC>
@@ -378,8 +379,10 @@ namespace ngbla
         SIMD<double,MSW> s_sumr = s.real()*sumr - s.imag()*sumi;
         SIMD<double,MSW> s_sumi = s.real()*sumi + s.imag()*sumr;
 
-        for (size_t k = 0; k < MSW; k++)
-          func(y(i+k), Complex(s_sumr[k], s_sumi[k]));
+        auto ysub = y.Range(i, i+MSW);
+        Iterate<MSW> ([&] (auto k) {
+          func(ysub(k), Complex(s_sumr[k], s_sumi[k]));
+        });
       }
     
     for ( ; i+SW <= y.Size(); i+= SW)
@@ -397,8 +400,9 @@ namespace ngbla
         SIMD<double,SW> s_sumr = s.real()*sumr - s.imag()*sumi;
         SIMD<double,SW> s_sumi = s.real()*sumi + s.imag()*sumr;
 
+        auto ysub = y.Range(i, i+SW);        
         for (size_t k = 0; k < SW; k++)
-          func(y(i+k), Complex(s_sumr[k], s_sumi[k]));
+          func(ysub(k), Complex(s_sumr[k], s_sumi[k]));
       }
            
     for ( ; i < y.Size(); i++)
