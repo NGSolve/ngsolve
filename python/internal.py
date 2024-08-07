@@ -58,7 +58,18 @@ def VideoFinalize():
     ngsolve.solve.Tcl_Eval("Ng_VideoClip .ndraw finalize;\n")
 
 def SnapShot(filename):
-    ngsolve.solve.Tcl_Eval("Ng_SnapShot .ndraw {};\n".format(filename))
+    tmp_filename = filename.lower()
+    needs_conversion = not tmp_filename.endswith(".ppm")
+    if needs_conversion:
+        tmp_filename += ".ppm"
+    ngsolve.solve.Tcl_Eval("Ng_SnapShot .ndraw {};\n".format(tmp_filename))
+    ngsolve.Redraw(True)
+
+    if needs_conversion:
+        from PIL import Image
+        im = Image.open(tmp_filename)
+        im.save(filename)
+        os.remove(tmp_filename)
 
 def Move(dx, dy):
     ngsolve.solve.Tcl_Eval("Ng_MouseMove 0 0 {} {} move; redraw;\n".format(dx, -dy))
