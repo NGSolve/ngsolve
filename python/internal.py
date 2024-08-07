@@ -2,6 +2,7 @@
 # Visualization settings
 
 import ngsolve.solve
+import os
 
 # list of possible attributes -- necessary to provide autocompletion
 visoptions_variables = ['usetexture', 'invcolor', 'imaginary', 'lineartexture', 'numtexturecols', 'showclipsolution', 'showsurfacesolution', 'drawfieldlines', 'drawpointcurves', 'numfieldlines', 'fieldlinesrandomstart', 'fieldlinesstartarea', 'fieldlinesstartareap1x', 'fieldlinesstartareap1y', 'fieldlinesstartareap1z', 'fieldlinesstartareap2x', 'fieldlinesstartareap2y', 'fieldlinesstartareap2z', 'fieldlinesstartface', 'fieldlinesfilename', 'fieldlinestolerance', 'fieldlinesrktype', 'fieldlineslength', 'fieldlinesmaxpoints', 'fieldlinesthickness', 'fieldlinesvecfunction', 'fieldlinesphase', 'fieldlinesonlyonephase', 'lineplotfile', 'lineplotsource', 'lineplotusingx', 'lineplotusingy', 'lineplotautoscale', 'lineplotxmin', 'lineplotxmax', 'lineplotymin', 'lineplotymax', 'lineplotcurrentnum', 'lineplotinfos', 'lineplotselected', 'lineplotselector', 'lineplotcolor', 'lineplotsizex', 'lineplotsizey', 'lineplotselectedeval', 'lineplotdatadescr', 'lineplotxcoordselector', 'lineplotycoordselector', 'evaluatefilenames', 'evaluatefiledescriptions', 'clipsolution', 'scalfunction', 'vecfunction', 'evaluate', 'gridsize', 'xoffset', 'yoffset', 'autoscale', 'redrawperiodic', 'logscale', 'mminval', 'mmaxval', 'isolines', 'isosurf', 'subdivisions', 'numiso', 'autoredraw', 'autoredrawtime', 'simulationtime', 'multidimcomponent', 'deformation', 'scaledeform1', 'scaledeform2']
