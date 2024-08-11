@@ -24,7 +24,7 @@ using ngfem::ELEMENT_TYPE;
 #include "coefficient_stdmath.hpp"
 #include "gridfunction.hpp"
 #include "linearform.hpp"
-
+#include "mptools.hpp"
 
 namespace ngfem
 {
@@ -2754,6 +2754,36 @@ x1y1z1, x2y1z1, ..., xNy1z1, x1y2z1, ...
 If linear is True the function will be interpolated linearly between the values. Otherwise the nearest voxel value is taken.
 
 )delimiter");
+
+  py::class_<SphericalHarmonics> (m, "Sphericalharmonics")
+    .def_property_readonly("order", [](SphericalHarmonics& self) { return self.Order(); })
+    .def("__setitem__", [](SphericalHarmonics& self, tuple<int,int> nm, Complex val)
+    { self.Coef(get<0>(nm), get<1>(nm)) = val; })
+    .def("__getitem__", [](SphericalHarmonics& self, tuple<int,int> nm)
+    { return self.Coef(get<0>(nm), get<1>(nm)); })
+    .def("RotateZ", [](SphericalHarmonics& self, double alpha) { self.RotateZ(alpha); })
+    .def("RotateY", [](SphericalHarmonics& self, double alpha) { self.RotateY(alpha); })
+    ;
+
+  py::class_<SphericalHarmonicsCF, shared_ptr<SphericalHarmonicsCF>, CoefficientFunction> (m, "SphericalHarmonicsCF")
+    .def(py::init<int>())
+    .def_property_readonly("sh", [](SphericalHarmonicsCF& self) -> SphericalHarmonics& { return self.SH(); })
+    ;
+
+  py::class_<MultiPoleCF<MPRegular>, shared_ptr<MultiPoleCF<MPRegular>>, CoefficientFunction> (m, "RegularMultiPoleCF")
+    .def(py::init<int,double,Vec<3>>())
+    .def_property_readonly("sh", [](MultiPoleCF<MPRegular>& self) -> SphericalHarmonics& { return self.SH(); })
+    .def("ShiftZ", [](MultiPoleCF<MPRegular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
+    ;
+
+  py::class_<MultiPoleCF<MPSingular>, shared_ptr<MultiPoleCF<MPSingular>>, CoefficientFunction> (m, "SingularMultiPoleCF")
+    .def(py::init<int,double,Vec<3>>())
+    .def_property_readonly("sh", [](MultiPoleCF<MPSingular>& self) -> SphericalHarmonics& { return self.SH(); })
+    .def("ShiftZ", [](MultiPoleCF<MPSingular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
+    .def("ShiftZ", [](MultiPoleCF<MPSingular>& self, double z, MultiPoleCF<MPSingular> & target) { self.ShiftZ(z, target.MP()); })        
+    ;
+
+
 
       const string header = R"CODE(
 #include <comp.hpp>
