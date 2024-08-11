@@ -48,7 +48,7 @@ install( FILES
         diffop_impl.hpp hcurlhofe_impl.hpp thcurlfe.hpp tpdiffop.hpp tpintrule.hpp
         thcurlfe_impl.hpp symbolicintegrator.hpp hcurlhdiv_dshape.hpp code_generation.hpp 
         tensorcoefficient.hpp tensorproductintegrator.hpp fe_interfaces.hpp python_fem.hpp
-        voxelcoefficientfunction.hpp
+        voxelcoefficientfunction.hpp mptools.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

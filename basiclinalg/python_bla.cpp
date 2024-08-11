@@ -636,10 +636,12 @@ vals : tuple
     PyDefROBracketOperator<Vec<1>, double>(m, v1);
 
     py::class_<Vec<2>> v2(m, "Vec2D");
+    v2.def(py::init<double,double>());    
     PyVecAccess<Vec<2>>(m, v2);
     PyDefROBracketOperator<Vec<2>, double>(m, v2);
 
     py::class_<Vec<3>> v3(m, "Vec3D");
+    v3.def(py::init<double,double,double>());
     PyVecAccess<Vec<3>>(m, v3);
     PyDefROBracketOperator<Vec<3>, double>(m, v3);
 
