@@ -361,7 +361,8 @@ namespace ngbla
 
     INLINE auto Reversed() const
     {
-      return VectorView { Size(), -Dist(), Addr(Size()-1) };
+      // return VectorView { Size(), -Dist(), Addr(Size()-1) };
+      return VectorView<T,TS,decltype(-declval<TDIST>())> { Size(), -Dist(), Addr(Size()-1) };
     }
     
     INLINE auto operator+(int i) const { return VectorView(size-i, dist, data+i*dist); }
