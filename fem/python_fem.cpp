@@ -2774,6 +2774,7 @@ If linear is True the function will be interpolated linearly between the values.
     .def(py::init<int,double,Vec<3>>())
     .def_property_readonly("sh", [](MultiPoleCF<MPRegular>& self) -> SphericalHarmonics& { return self.SH(); })
     .def("ShiftZ", [](MultiPoleCF<MPRegular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
+    .def("Transform", [](MultiPoleCF<MPRegular>& self, MultiPoleCF<MPRegular> & target) { self.Transform(target); })    
     ;
 
   py::class_<MultiPoleCF<MPSingular>, shared_ptr<MultiPoleCF<MPSingular>>, CoefficientFunction> (m, "SingularMultiPoleCF")
@@ -2781,6 +2782,8 @@ If linear is True the function will be interpolated linearly between the values.
     .def_property_readonly("sh", [](MultiPoleCF<MPSingular>& self) -> SphericalHarmonics& { return self.SH(); })
     .def("ShiftZ", [](MultiPoleCF<MPSingular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
     .def("ShiftZ", [](MultiPoleCF<MPSingular>& self, double z, MultiPoleCF<MPSingular> & target) { self.ShiftZ(z, target.MP()); })        
+    .def("Transform", [](MultiPoleCF<MPSingular>& self, MultiPoleCF<MPRegular> & target) { self.Transform(target); })
+    .def("Transform", [](MultiPoleCF<MPSingular>& self, MultiPoleCF<MPSingular> & target) { self.Transform(target); })        
     ;
 
 
