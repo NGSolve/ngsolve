@@ -36,7 +36,24 @@ namespace ngfem
     {
       return FlatVector<Complex> (2*n+1, &coefs(n*(n+1)-n)); 
     }
-  
+
+    auto Polar (Vec<3> x) const
+    {
+      double phi, theta;
+      if (x(0) == 0 && x(1) == 0)
+        {
+          phi = 0;
+          theta = x(2) > 0 ? 0 : M_PI;
+        }
+      else
+        {
+          phi = atan2(x(1), x(0));
+          theta = acos(x(2)/L2Norm(x));
+        }
+      return tuple{theta, phi};
+    }
+    
+    
     Complex Eval (Vec<3> x) const
     {
       double phi, theta;
@@ -182,7 +199,32 @@ namespace ngfem
     }
 
 
+    void Calc (Vec<3> x, FlatVector<Complex> shapes)
+    {
+      auto [theta, phi] = Polar(x);
 
+      Matrix legfunc(order+1, order+1);
+      NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
+      Vector<Complex> exp_imphi(order+1);
+      Complex exp_iphi(cos(phi), sin(phi));
+      Complex prod = 1.0;
+      for (int i = 0; i <= order; i++)
+        {
+          exp_imphi(i) = prod;
+          prod *= -exp_iphi;
+        }
+
+      int ii = 0;
+      for (int n = 0; n <= order; n++)
+        {
+          for (int m = -n; m < 0; m++, ii++)
+            shapes(ii) = conj(exp_imphi(-m)) * legfunc(-m, n);
+          for (int m = 0; m <= n; m++, ii++)
+            shapes(ii) = exp_imphi(m) * legfunc(m, n);
+        }
+
+      shapes /= sqrt(4*M_PI);
+    }
 
     
     void RotateZ (double alpha)
@@ -486,6 +528,29 @@ namespace ngfem
 
 
   
+  // hn1 = jn+ i*yn
+  class MPSingular
+  {
+  public:
+    template <typename T>
+    static void Eval (int order, double r, T && values)
+    {
+      SphericalHankel1(order, r, values);
+    }
+  };
+  
+  // jn
+  class MPRegular
+  {
+  public:    
+    template <typename T>
+    static void Eval (int order, double r, T && values)
+    {
+      SphericalBessel (order, r, values);
+    }
+  };
+  
+  
 
 
   template <typename RADIAL>
@@ -518,7 +583,55 @@ namespace ngfem
       return sum;
     }
 
+    // only for singular MPs useful
+    void AddCharge (Vec<3> x, Complex c)
+    {
+      if (L2Norm(x) < 1e-10)
+        {
+          sh.Coef(0,0) += c;
+          return;
+        }
 
+      /*
+      MultiPole<MPSingular> mps(0, kappa);
+      MultiPole<MPSingular> trans(sh.Order(), kappa);
+      mps.Coef(0,0) = c;
+      mps.Transform(trans, -x);
+      sh.Coefs() += trans.SH().Coefs();
+      // cout << "trafo, x = " << x << ", coefs = " << endl << trans.SH().Coefs() << endl;
+      */
+      
+      Vector<Complex> radial(sh.Order()+1);
+      Vector<Complex> sh_shapes(sqr (sh.Order()+1));
+
+      RADIAL::Eval(sh.Order(), kappa*L2Norm(x), radial);
+      sh.Calc(x, sh_shapes);
+
+      for (int i = 0; i <= sh.Order(); i++)
+        {
+          IntRange r(sqr(i), sqr(i+1));
+          sh.Coefs().Range(r) += c * sqrt(4*M_PI) * radial(i).real()*Conj(sh_shapes.Range(r));
+        }
+    }
+
+
+    template <typename TARGET>
+    void Transform (MultiPole<TARGET> & target, Vec<3> dist)
+    {
+      double len = L2Norm(dist);
+      double theta = acos (dist(2) / len);
+      double phi = atan2(dist(1), dist(0));
+      // cout << "phi = " << phi << ", theta = " << theta << endl;
+      MultiPole<RADIAL> tmp(*this);
+      tmp.SH().RotateZ(phi);
+      tmp.SH().RotateY(theta);
+      tmp.ShiftZ(-len, target);
+      target.SH().RotateY(-theta); 
+      target.SH().RotateZ(-phi);
+    }
+    
+
+    
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET> & target)
     {
@@ -542,10 +655,13 @@ namespace ngfem
         for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
       for (int l = 0; l <= os+ot; l++)
         trafo(l,0) *= sqrt(2*l+1);
-      
-      for (int l = 1; l < os+ot; l++)   
-        trafo(l,1) = -1.0/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*trafo(l+1,0)-sh.CalcAmn(0,l-1)*trafo(l-1,0));
-      trafo(0,1) = -trafo(1,0);
+
+      if (os > 0)
+        {
+          for (int l = 1; l < os+ot; l++)   
+            trafo(l,1) = -1.0/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*trafo(l+1,0)-sh.CalcAmn(0,l-1)*trafo(l-1,0));
+          trafo(0,1) = -trafo(1,0);
+        }
       
       for (int n = 1; n < os; n++)
         {
@@ -553,7 +669,7 @@ namespace ngfem
             trafo(l,n+1) = -1.0/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*trafo(l+1,n)-sh.CalcAmn(0,l-1)*trafo(l-1,n)-sh.CalcAmn(0,n-1)*trafo(l,n-1));
           trafo(0,n+1) = pow(-1,n+1)*trafo(n+1,0);
         }
-      
+
       Vector<Complex> hv1(os+1), hv2(ot+1);
       for (int n = 0; n <= os; n++)
         hv1(n) = sh.Coef(n,0);
@@ -600,29 +716,6 @@ namespace ngfem
     }
   };
 
-  
-  // hn1 = jn+ i*yn
-  class MPSingular
-  {
-  public:
-    template <typename T>
-    static void Eval (int order, double r, T && values)
-    {
-      SphericalHankel1(order, r, values);
-    }
-  };
-  
-  // jn
-  class MPRegular
-  {
-  public:    
-    template <typename T>
-    static void Eval (int order, double r, T && values)
-    {
-      SphericalBessel (order, r, values);
-    }
-  };
-  
 
   class SphericalHarmonicsCF : public CoefficientFunction
   {
@@ -683,6 +776,8 @@ namespace ngfem
     void Transform (MultiPoleCF<TARGET> & target)
     {
       Vec<3> dist = target.Center() - center;
+      mp.Transform (target.MP(), dist);
+      /*
       // cout << "dist = " << dist << endl;
       double len = L2Norm(dist);
       double theta = acos (dist(2) / len);
@@ -694,6 +789,7 @@ namespace ngfem
       tmp.ShiftZ(-len, target.MP());
       target.SH().RotateY(-theta); 
       target.SH().RotateZ(-phi);
+      */
     }
     
   };
