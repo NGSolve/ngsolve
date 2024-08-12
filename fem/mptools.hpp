@@ -14,6 +14,7 @@ namespace ngfem
 {
 
 
+  
   class SphericalHarmonics
   {
     size_t order;
@@ -240,6 +241,11 @@ namespace ngfem
 
       Matrix<> normalized_leg_func(order+2, order+2);
       NormalizedLegendreFunctions(order+1, order+1, c, normalized_leg_func);
+
+      if (alpha < 0)
+        for (int i = 1; i <= order; i+=2)
+          normalized_leg_func.Row(i) *= -1;
+      
       // cout << "leg = " << endl << normalized_leg_func << endl;
       Vector<> Dmn(2*order+1), invDmn(2*order+1);
       
@@ -262,7 +268,6 @@ namespace ngfem
           // H(1,m)
           Vector tmp = 1.0/sqrt(2*n+3) * normalized_leg_func.Col(n+1).Range(n+2);
           for (int m = 1; m < tmp.Size(); m += 2) tmp(m) *= -1;
-          // cout << "tmp = " << tmp << endl;
           for (int m = 1; m <= n; m++)
             trafo.Col(n+1)(m) = 1/CalcBmn(0,n+1) * (  CalcBmn(-m-1, n+1)*(1-c)/2 * tmp(m+1)
                                                       - CalcBmn(m-1,n+1)*(1+c)/2 * tmp(m-1)
@@ -316,6 +321,10 @@ namespace ngfem
               dst = src;
             }
 
+
+
+
+          // cout << "trafo = " << trafo << endl;
           
           // for (int m = 1; m <= n; m+=2)
           // trafo.Row(m) *= -1;
@@ -323,8 +332,8 @@ namespace ngfem
           // check orthogonality
           // cout << "trafo: " << endl << trafo << endl;
           // cout << "ortho: " << endl << trafo*Trans(trafo) << endl;
+          // auto rdlevel = trafo.Rows(ij+1).Cols(n-ij, n+ij+1);
           /*
-            auto rdlevel = trafo.Rows(ij+1).Cols(n-ij, n+ij+1);
             cout << "n = " << ij << ", err ortho = " << L2Norm( Matrix(rdlevel*Trans(rdlevel)) - Identity(ij+1))
             << " row0 = " << L2Norm2(rdlevel.Row(0))-1 
             << " row1 = " << L2Norm2(rdlevel.Row(1))-1 
@@ -334,7 +343,8 @@ namespace ngfem
           Vector<Complex> old = cn;
           
           cn = Trans(trafo) * old.Range(n, 2*n+1);
-          cn.Reversed() += Trans(trafo.Rows(1,n+1)) * old.Range(0,n).Reversed(); 
+          cn.Slice(0,1).Reversed() += Trans(trafo.Rows(1,n+1)) * old.Range(0,n).Reversed();
+
           for (int m = 1; m <= n; m+=2)
             {
               cn(n+m) *= -1;
@@ -518,7 +528,7 @@ namespace ngfem
       int ot = target.SH().Order();
 
       target.SH().Coefs()=0.0;
-      Matrix<Complex> trafo(os+ot+1, os+1);
+      Matrix<Complex> trafo(os+ot+1, os+1), trafom(os+ot+1, os+1);
       trafo = Complex(0.0);
 
       // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
@@ -551,35 +561,42 @@ namespace ngfem
       for (int n = 0; n <= ot; n++)
         target.SH().Coef(n,0) = hv2(n);
       // cout << "hv2 = " << hv2 << endl;
-                                       
+
       for (int m = 1; m <= min(os,ot); m++)
         {
-          Matrix<Complex> trafom(ot+1-m, os+1-m);
           trafom = Complex(0.0);
           // fill recursive
+
+          // (187)
+          for (int l = m; l <= os+ot-m; l++)
+            trafom(l,m) = 1/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*trafo(l-1, m-1)-sh.CalcBmn(m-1,l+1)*trafo(l+1,m-1));
+          
+          for (int n = m; n < os; n++)
+            {
+              for (int l = m+1; l < os+ot-n; l++)
+                trafom(l,n+1) = -1.0/sh.CalcAmn(m,n) * (sh.CalcAmn(m,l)*trafom(l+1,n)
+                                                        -sh.CalcAmn(m,l-1)*trafom(l-1,n)
+                                                        -sh.CalcAmn(m,n-1)*trafom(l,n-1));
+              trafom(m,n+1) = pow(-1,m+n+1)*trafom(n+1,m);
+            }
+
+          // if (m == 1)
+          // cout << "trafom = " << trafom.Rows(m,ot+1).Cols(m,os+1) << endl;
           
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,m);
-          hv2.Range(m,ot+1) = trafom * hv1.Range(m,os+1);
+          hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,m) = hv2(n);
-          
+          // cout << "m = " << m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,-m);
-          hv2.Range(m,ot+1) = trafom * hv1.Range(m,os+1);
+          hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,-m) = hv2(n);
-          
-          trafo.Rows(ot+1-m).Cols(os+1-m) = trafom;
+          // cout << "m = " << -m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;          
+          trafo = trafom; // swap ? 
         }
-      
-      /*
-      // recurrence
-      for (int m = 1; m <= sh.Order(); m++)
-      {
-          
-      }
-      */
     }
   };
 
@@ -648,7 +665,8 @@ namespace ngfem
 
     Complex & Coef(int n, int m) { return mp.Coef(n,m); } 
     auto & SH() { return mp.SH(); }
-    auto & MP() { return mp; }    
+    auto & MP() { return mp; }
+    Vec<3> Center() const { return center; }
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("real eval not available"); }
@@ -660,6 +678,24 @@ namespace ngfem
 
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET> & target) { mp.ShiftZ(z, target); }
+
+    template <typename TARGET>
+    void Transform (MultiPoleCF<TARGET> & target)
+    {
+      Vec<3> dist = target.Center() - center;
+      // cout << "dist = " << dist << endl;
+      double len = L2Norm(dist);
+      double theta = acos (dist(2) / len);
+      double phi = atan2(dist(1), dist(0));
+      // cout << "phi = " << phi << ", theta = " << theta << endl;
+      MultiPole<RADIAL> tmp{mp};
+      tmp.SH().RotateZ(phi);
+      tmp.SH().RotateY(theta);
+      tmp.ShiftZ(-len, target.MP());
+      target.SH().RotateY(-theta); 
+      target.SH().RotateZ(-phi);
+    }
+    
   };
   
 }
