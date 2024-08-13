@@ -906,9 +906,11 @@ namespace ngfem
       void AddSingularNode (const SingularMLMultiPole::Node & singnode)
       {
         Vec<3> dist = center-singnode.center;
-        if (L2Norm(dist) > 1.5*(r+singnode.r))
+        if (L2Norm(dist) > 4*(r+singnode.r))
           {
             singnode.mp.TransformAdd(mp, dist);
+            // if (L2Norm(mp.SH().Coefs()) > 1e6)
+            // cout << "reg to sing expansion, large norm: " << L2Norm(mp.SH().Coefs()) << endl;
             return;
           }
 
@@ -948,8 +950,13 @@ namespace ngfem
         if (childs[0])
           {
             for (auto & ch : childs)
-              mp.TransformAdd (ch->mp, ch->center-center);
+              {
+                mp.TransformAdd (ch->mp, ch->center-center);
+                // cout << "localize, r = " << r << ",  me = " << L2Norm(mp.SH().Coefs()) << ", child = " << L2Norm(ch->mp.SH().Coefs()) << endl;
+                ch->LocalizeExpansion();
+              }
             mp = MultiPole<MPRegular>(0, mp.Kappa());
+            mp.SH().Coefs()=0.0;
           }
       }
       
