@@ -98,7 +98,9 @@ namespace ngfem
   
     Complex EvalOrder (int n, double theta, double phi) const
     {
-      static Timer t("mptool sh evalorder"); RegionTimer rg(t);
+      static Timer t("mptool sh evalorder");
+
+      RegionTimer rg(t);
       
       Matrix legfunc(order+1, order+1);
       NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
@@ -136,7 +138,9 @@ namespace ngfem
   
     void EvalOrders (double theta, double phi, FlatVector<Complex> vals) const
     {
-      static Timer t("mptool sh evalorders"); RegionTimer rg(t);
+      static Timer ts("mptool sh evalorders small");
+      static Timer tl("mptool sh evalorders large");
+      RegionTimer rg(order < 10 ? ts : tl);
       
       Matrix legfunc(order+1, order+1);
       NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
@@ -562,6 +566,7 @@ namespace ngfem
     auto & SH() { return sh; }
     const auto & SH() const { return sh; }
     double Kappa() const { return kappa; }
+    int Order() const { return sh.Order(); }
     
     Complex Eval (Vec<3> x) const
     {
@@ -660,6 +665,14 @@ namespace ngfem
       else
         SphericalHankel1 (os+ot, kappa*abs(z), trafo.Col(0));
 
+
+      if (L2Norm(trafo.Col(0)) > 1e12)
+        {
+          cout << "large Hankel: " << L2Norm(trafo.Col(0)) << endl;
+          cout << "kappa z = " << kappa*z << ", os = " << os << ", ot = " << ot << endl;
+        }
+
+      
       if (z < 0)
         for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
       
@@ -866,6 +879,7 @@ namespace ngfem
 
     void CalcMP()
     {
+      static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);      
       root.CalcMP();
       havemp = true;
     }
@@ -903,11 +917,33 @@ namespace ngfem
       Node (Vec<3> acenter, double ar, int order, double kappa)
         : center(acenter), r(ar), mp(order, kappa) { }
 
+
+      void CreateChilds()
+      {
+        if (childs[0]) throw Exception("have already childs");
+        // create children nodes:
+        for (int i = 0; i < 8; i++)
+          {
+            Vec<3> cc = center;
+            cc(0) += (i&1) ? r/2 : -r/2;
+            cc(1) += (i&2) ? r/2 : -r/2;
+            cc(2) += (i&4) ? r/2 : -r/2;
+            childs[i] = make_unique<Node> (cc, r/2, max(mp.SH().Order()/2, 3), mp.Kappa());
+          }
+      }
+      
       void AddSingularNode (const SingularMLMultiPole::Node & singnode)
       {
         Vec<3> dist = center-singnode.center;
-        if (L2Norm(dist) > 4*(r+singnode.r))
+        if (L2Norm(dist) > 3*(r+singnode.r))
           {
+            if (singnode.mp.Order() > 2 * mp.Order() && singnode.childs[0])
+              {
+                for (auto & child : singnode.childs)
+                  AddSingularNode (*child);
+                return;
+              }
+
             singnode.mp.TransformAdd(mp, dist);
             // if (L2Norm(mp.SH().Coefs()) > 1e6)
             // cout << "reg to sing expansion, large norm: " << L2Norm(mp.SH().Coefs()) << endl;
@@ -923,17 +959,8 @@ namespace ngfem
         if (r > singnode.r)
           {
             if (!childs[0])
-              {
-                // create children nodes:
-                for (int i = 0; i < 8; i++)
-                  {
-                    Vec<3> cc = center;
-                    cc(0) += (i&1) ? r/2 : -r/2;
-                    cc(1) += (i&2) ? r/2 : -r/2;
-                    cc(2) += (i&4) ? r/2 : -r/2;
-                    childs[i] = make_unique<Node> (cc, r/2, max(mp.SH().Order()/2, 3), mp.Kappa());
-                  }
-              }
+              CreateChilds();
+
             for (auto & ch : childs)
               ch -> AddSingularNode (singnode);
             return;
@@ -947,6 +974,9 @@ namespace ngfem
 
       void LocalizeExpansion()
       {
+        if (mp.Order() > 20 && !childs[0])
+          CreateChilds();
+
         if (childs[0])
           {
             for (auto & ch : childs)
@@ -988,8 +1018,16 @@ namespace ngfem
       : root(center, r, order, asingmp->Kappa()), singmp(asingmp)
     {
       if (!singmp->havemp) throw Exception("first call Calc for singular MP");
-      root.AddSingularNode(singmp->root);
-      root.LocalizeExpansion();
+
+      {
+        static Timer t("mptool compute regular MLMP"); RegionTimer rg(t);            
+        root.AddSingularNode(singmp->root);
+      }
+
+      {
+        static Timer t("mptool expand regular MLMP"); RegionTimer rg(t);                  
+        root.LocalizeExpansion();
+      }
     }
 
     Complex Evaluate (Vec<3> p) const
