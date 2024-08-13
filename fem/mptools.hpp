@@ -53,20 +53,9 @@ namespace ngfem
       return tuple{theta, phi};
     }
     
-    
     Complex Eval (Vec<3> x) const
     {
-      double phi, theta;
-      if (x(0) == 0 && x(1) == 0)
-        {
-          phi = 0;
-          theta = x(2) > 0 ? 0 : M_PI;
-        }
-      else
-        {
-          phi = atan2(x(1), x(0));
-          theta = acos(x(2)/L2Norm(x));
-        }
+      auto [theta, phi] = Polar(x);
       return Eval(theta, phi);
     }
   
@@ -100,21 +89,10 @@ namespace ngfem
     }
 
 
-
-
+    
     Complex EvalOrder (int n, Vec<3> x) const
     {
-      double phi, theta;
-      if (x(0) == 0 && x(1) == 0)
-        {
-          phi = 0;
-          theta = x(2) > 0 ? 0 : M_PI;
-        }
-      else
-        {
-          phi = atan2(x(1), x(0));
-          theta = acos(x(2)/L2Norm(x));
-        }
+      auto [theta, phi] = Polar (x);
       return EvalOrder(n, theta, phi);
     }
   
@@ -152,17 +130,7 @@ namespace ngfem
 
     void EvalOrders (Vec<3> x, FlatVector<Complex> vals) const
     {
-      double phi, theta;
-      if (x(0) == 0 && x(1) == 0)
-        {
-          phi = 0;
-          theta = x(2) > 0 ? 0 : M_PI;
-        }
-      else
-        {
-          phi = atan2(x(1), x(0));
-          theta = acos(x(2)/L2Norm(x));
-        }
+      auto [theta, phi] = Polar(x);
       return EvalOrders(theta, phi, vals);
     }
   
@@ -253,21 +221,21 @@ namespace ngfem
 
 
 
-    double CalcAmn (int m, int n)
+    static double CalcAmn (int m, int n)
     {
       if (m < 0) m=-m;
       if (n < m) return 0;
       return sqrt( (n+1.0+m)*(n+1.0-m) / ( (2*n+1)*(2*n+3) ));
     }
   
-    double CalcBmn (int m, int n)
+    static double CalcBmn (int m, int n)
     {
       double sgn = (m >= 0) ? 1 : -1;
       if ( (m > n) || (-m > n) ) return 0;
       return sgn * sqrt( (n-m-1.0)*(n-m) / ( (2*n-1.0)*(2*n+1))); 
     }
   
-    double CalcDmn (int m, int n)
+    static double CalcDmn (int m, int n)
     {
       double sgn = (m >= 0) ? 1 : -1;
       return sgn/2 * sqrt((n-m)*(n+m+1));
@@ -285,7 +253,7 @@ namespace ngfem
       NormalizedLegendreFunctions(order+1, order+1, c, normalized_leg_func);
 
       if (alpha < 0)
-        for (int i = 1; i <= order; i+=2)
+        for (int i = 1; i <= order+1; i+=2)
           normalized_leg_func.Row(i) *= -1;
       
       // cout << "leg = " << endl << normalized_leg_func << endl;
@@ -364,23 +332,16 @@ namespace ngfem
             }
 
 
-
-
-          // cout << "trafo = " << trafo << endl;
-          
-          // for (int m = 1; m <= n; m+=2)
-          // trafo.Row(m) *= -1;
-          
-          // check orthogonality
-          // cout << "trafo: " << endl << trafo << endl;
-          // cout << "ortho: " << endl << trafo*Trans(trafo) << endl;
-          // auto rdlevel = trafo.Rows(ij+1).Cols(n-ij, n+ij+1);
           /*
-            cout << "n = " << ij << ", err ortho = " << L2Norm( Matrix(rdlevel*Trans(rdlevel)) - Identity(ij+1))
-            << " row0 = " << L2Norm2(rdlevel.Row(0))-1 
-            << " row1 = " << L2Norm2(rdlevel.Row(1))-1 
-            << endl;
+          double errortho = L2Norm( Matrix(trafo*Trans(trafo) - Identity(n+1)));
+          if (errortho > 1e-10)
+            {
+              cout << "n = " << n << " order = " << Order() << ", alpha = " << alpha << ", errortho = " << errortho << endl;
+              if (n < 10)
+                cout << trafo*Trans(trafo) << endl;
+            }
           */
+          
           FlatVector<Complex> cn = CoefsN(n);
           Vector<Complex> old = cn;
           
@@ -399,9 +360,18 @@ namespace ngfem
 
 
 
+  /*
   // from A. Barnett 
   // http://www.fresco.org.uk/functions/barnett/index.htm
 
+  spherical bessel functions of first (the j_n) and second (the y_n) kind.
+
+  j0(r) = sin(r)/r
+  j1(r) = (sin(r)-r cos(r)) / r**2
+
+  y0(r) = -cos(r)/r
+  y1(r) = (-cos(r)-r*sin(r)) / r**2
+  */
   void SBESJY (double x, int lmax,
                FlatVector<double> j,
                FlatVector<double> y,
@@ -410,7 +380,7 @@ namespace ngfem
   {
     if (x < 1e-8)
       {
-        cout << "special treatment for small x" << endl;
+        cout << "TODO: special treatment for small x" << endl;
         return;
       }
 
@@ -426,7 +396,7 @@ namespace ngfem
         if (abs(cf1) < 1e-8) cf1 = 1e-8;
         double c = cf1;
         double d = 0;
-        for (int l = 1; l < 1000; l++)
+        for (int l = 1; l < 10000; l++)
           {
             c = tk-1/c;
             d = tk-d;
@@ -451,7 +421,9 @@ namespace ngfem
             jp(l-1) = sl*j(l-1) - j(l);
           }
       }
-    double den = j(0);
+
+    double j0 = j(0);
+    double jp0 = jp(0);
 
     // C------ CALCULATE THE L=0 SPHERICAL BESSEL FUNCTIONS DIRECTLY
     j(0) = xinv * sin(x);
@@ -459,7 +431,7 @@ namespace ngfem
     jp(0) = -y(0)-xinv*j(0);
     yp(0) = j(0)-xinv*y(0);
 
-    double omega = j(0)/den;
+    double omega = (abs(j0)>abs(jp0)) ? j(0)/j0 : jp(0) / jp0;    // fix for x \approx 2 pi
     double sl = 0;
     for (int l = 1; l <=lmax; l++)
       {
@@ -473,7 +445,6 @@ namespace ngfem
 
 
   
-  // Gumerov+Duraiswami book, page 57 (unstable)
   template <typename T>
   void SphericalBessel (int n, double rho, T && values)
   {
@@ -487,7 +458,18 @@ namespace ngfem
     Vector j(n+1), y(n+1), jp(n+1), yp(n+1);
     SBESJY (rho, n, j, y, jp, yp);
     values = j;
+
+    if (n > 0 && rho != 0)
+      {
+        double j0 = sin(rho)/rho;
+        double err = abs(j0-j(0));
+        if (err > 1e-8)
+          cout << "j0 is wrong: " << j(0) << " != " << j0 << endl;
+      }
     /*
+    // the naive implementation is unstable
+    // see, e.g. Gumerov+Duraiswami book, page 57
+      
     if (n >= 0)
       values(0) = sin(rho)/rho;
     if (n >= 1)
@@ -502,7 +484,7 @@ namespace ngfem
   template <typename T>
   void SphericalHankel1 (int n, double rho, T && values)
   {
-    Complex imag(0,1);
+    // Complex imag(0,1);
     /*
     if (n >= 0)
       values(0) = exp(imag*rho) / (imag*rho);
@@ -520,6 +502,19 @@ namespace ngfem
       }
     Vector j(n+1), y(n+1), jp(n+1), yp(n+1);
     SBESJY (rho, n, j, y, jp, yp);
+
+    if (n > 0 && rho != 0)
+      {
+        double j0 = sin(rho)/rho;
+        double err = abs(j0-j(0));
+        if (err > 1e-8)
+          cout << "j0 is wrong: " << j(0) << " != " << j0 << endl;
+
+        double y0 = -cos(rho)/rho;
+        err = rho*abs(y0-y(0));
+        if (err > 1e-8)
+          cout << "y0 is wrong: " << y(0) << " != " << y0 << endl;
+      }
 
     values = j + Complex(0,1) * y;
   }
@@ -558,18 +553,18 @@ namespace ngfem
   {
     SphericalHarmonics sh;
     double kappa;
-    // Vec<3> center;
-    // double r;
     
   public:
-    MultiPole (int aorder, double akappa) // , Vec<3> acenter = Vec<3>{0,0,0}, double ar = 1)
-      : sh(aorder), kappa(akappa) { } // , center(acenter), r(ar) { }
+    MultiPole (int aorder, double akappa) 
+      : sh(aorder), kappa(akappa) { }
 
     Complex & Coef(int n, int m) { return sh.Coef(n,m); }
     auto & SH() { return sh; }
+    const auto & SH() const { return sh; }
+    double Kappa() const { return kappa; }
+    
     Complex Eval (Vec<3> x) const
     {
-      // x -= center;
       Vector<Complex> radial(sh.Order()+1);
       Vector<Complex> shvals(sh.Order()+1);
       
@@ -583,24 +578,17 @@ namespace ngfem
       return sum;
     }
 
-    // only for singular MPs useful
     void AddCharge (Vec<3> x, Complex c)
     {
+      if constexpr (std::is_same<RADIAL,MPSingular>())
+        throw Exception("AddCharge assumes singular MP");
+                        
       if (L2Norm(x) < 1e-10)
         {
-          sh.Coef(0,0) += c;
+          sh.Coef(0,0) += c * Complex(0,1)*kappa/sqrt(4*M_PI);
           return;
         }
 
-      /*
-      MultiPole<MPSingular> mps(0, kappa);
-      MultiPole<MPSingular> trans(sh.Order(), kappa);
-      mps.Coef(0,0) = c;
-      mps.Transform(trans, -x);
-      sh.Coefs() += trans.SH().Coefs();
-      // cout << "trafo, x = " << x << ", coefs = " << endl << trans.SH().Coefs() << endl;
-      */
-      
       Vector<Complex> radial(sh.Order()+1);
       Vector<Complex> sh_shapes(sqr (sh.Order()+1));
 
@@ -610,33 +598,54 @@ namespace ngfem
       for (int i = 0; i <= sh.Order(); i++)
         {
           IntRange r(sqr(i), sqr(i+1));
-          sh.Coefs().Range(r) += c * sqrt(4*M_PI) * radial(i).real()*Conj(sh_shapes.Range(r));
+          sh.Coefs().Range(r) += c * Complex(0,1)*kappa * radial(i).real()*Conj(sh_shapes.Range(r));
         }
     }
 
 
     template <typename TARGET>
-    void Transform (MultiPole<TARGET> & target, Vec<3> dist)
+    void Transform (MultiPole<TARGET> & target, Vec<3> dist) const
     {
       double len = L2Norm(dist);
       double theta = acos (dist(2) / len);
       double phi = atan2(dist(1), dist(0));
-      // cout << "phi = " << phi << ", theta = " << theta << endl;
+
       MultiPole<RADIAL> tmp(*this);
       tmp.SH().RotateZ(phi);
       tmp.SH().RotateY(theta);
       tmp.ShiftZ(-len, target);
-      target.SH().RotateY(-theta); 
+
+      /*
+      // testing ....
+      tmp.SH().RotateY(-theta);
+      tmp.SH().RotateZ(-phi);
+      double err =  L2Norm(tmp.SH().Coefs()-this->SH().Coefs());
+      if (err > 1e-5)
+        {
+          cout << "phi = " << phi << ", theta = " << theta << endl;
+          cout << "norm = " << L2Norm(tmp.SH().Coefs()) << "   ";
+          cout << "rotation err = " << err << ", order = " << tmp.SH().Order() << endl;
+          cout << "vec = " << this->SH().Coefs() << endl;
+        }
+      */
+      
+      target.SH().RotateY(-theta);
       target.SH().RotateZ(-phi);
     }
     
-
+    template <typename TARGET>
+    void TransformAdd (MultiPole<TARGET> & target, Vec<3> dist) const
+    {
+      MultiPole<TARGET> tmp{target};
+      Transform(tmp, dist);
+      target.SH().Coefs() += tmp.SH().Coefs();
+    }
     
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET> & target)
     {
       static Timer t("mptool ShiftZ"); RegionTimer rg(t);
-
+      
       int os = sh.Order();
       int ot = target.SH().Order();
 
@@ -650,9 +659,10 @@ namespace ngfem
         SphericalBessel (os+ot, kappa*abs(z), trafo.Col(0));
       else
         SphericalHankel1 (os+ot, kappa*abs(z), trafo.Col(0));
-      
+
       if (z < 0)
         for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
+      
       for (int l = 0; l <= os+ot; l++)
         trafo(l,0) *= sqrt(2*l+1);
 
@@ -711,11 +721,280 @@ namespace ngfem
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,-m) = hv2(n);
           // cout << "m = " << -m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;          
-          trafo = trafom; // swap ? 
+          trafo.Swap (trafom); //  = trafom; // swap ? 
         }
     }
   };
 
+
+
+  class SingularMLMultiPole
+  {
+    struct Node
+    {
+      Vec<3> center;
+      double r;
+      std::array<unique_ptr<Node>,8> childs;
+      MultiPole<MPSingular> mp;
+
+      Array<Vec<3>> loc_pnts;
+      Array<Complex> loc_charges;
+      
+      Node (Vec<3> acenter, double ar, int order, double kappa)
+        : center(acenter), r(ar), mp(order, kappa) { }
+
+
+      void AddCharge (Vec<3> x, Complex c)
+      {
+        if (childs[0])
+          {
+            // directly send to childs:
+
+            int childnum  = 0;
+            if (x(0) > center(0)) childnum += 1;
+            if (x(1) > center(1)) childnum += 2;
+            if (x(2) > center(2)) childnum += 4;
+            childs[childnum] -> AddCharge(x, c);
+            return;
+          }
+
+        
+        loc_pnts.Append(x);
+        loc_charges.Append(c);
+
+        if (loc_pnts.Size() < 4 || r < 1e-8)
+          return;
+
+        // create children nodes:
+        for (int i = 0; i < 8; i++)
+          {
+            Vec<3> cc = center;
+            cc(0) += (i&1) ? r/2 : -r/2;
+            cc(1) += (i&2) ? r/2 : -r/2;
+            cc(2) += (i&4) ? r/2 : -r/2;
+            childs[i] = make_unique<Node> (cc, r/2, max(mp.SH().Order()/2, 3), mp.Kappa());
+          }
+
+        for (int i = 0; i < loc_pnts.Size(); i++)
+          AddCharge (loc_pnts[i], loc_charges[i]);
+
+        loc_pnts.SetSize0();
+        loc_charges.SetSize0();
+      }
+
+      Complex Evaluate(Vec<3> p) const
+      {
+        Complex sum = 0;
+        if (childs[0])
+          {
+            for (auto & child : childs)
+              sum += child->Evaluate(p);
+            return sum;
+          }
+        
+        for (int i = 0; i < loc_pnts.Size(); i++)
+          {
+            double rho = L2Norm(p-loc_pnts[i]);
+            sum += loc_charges[i]*(1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho;
+          }
+        return sum;
+      }
+
+
+      void CalcMP()
+      {
+        mp.SH().Coefs() = 0.0;
+        if (childs[0])
+          {
+            for (auto & child : childs)
+              {
+                child->CalcMP();
+                child->mp.TransformAdd(mp, center-child->center);
+              }
+          }
+        else
+          {
+            for (int i = 0; i < loc_pnts.Size(); i++)
+              mp.AddCharge(loc_pnts[i]-center, loc_charges[i]);
+          }
+      }
+      
+      Complex EvaluateMP(Vec<3> p) const
+      {
+        if (L2Norm(p-center) > 2*r)
+          return mp.Eval(p-center);
+        
+        if (!childs[0])
+          return Evaluate(p);
+          
+        Complex sum = 0.0;
+        for (auto & child : childs)
+          sum += child->EvaluateMP(p);
+        return sum;
+      }
+      
+      
+      void Print (ostream & ost) const
+      {
+        ost << "c = " << center << ", r = " << r << endl;
+        for (int i = 0; i < loc_pnts.Size(); i++)
+          ost << "xi = " << loc_pnts[i] << ", ci = " << loc_charges[i] << endl;
+
+        for (int i = 0; i < 8; i++)
+          if (childs[i]) childs[i] -> Print (ost);
+      }
+    };
+    
+    Node root;
+    bool havemp = false;
+    
+  public:
+    SingularMLMultiPole (Vec<3> center, double r, int order, double kappa)
+      : root(center, r, order, kappa) { }
+
+    double Kappa() const { return root.mp.Kappa(); }
+    
+    void AddCharge(Vec<3> x, Complex c)
+    {
+      root.AddCharge(x, c);
+    }
+
+    void Print (ostream & ost) const
+    {
+      root.Print(ost);
+    }
+
+    void CalcMP()
+    {
+      root.CalcMP();
+      havemp = true;
+    }
+
+    Complex Evaluate (Vec<3> p) const
+    {
+      if (havemp)
+        return root.EvaluateMP(p);
+      else
+        return root.Evaluate(p);
+    }
+
+    friend class RegularMLMultiPole;
+  };
+
+
+  inline ostream & operator<< (ostream & ost, const SingularMLMultiPole & mlmp)
+  {
+    mlmp.Print(ost);
+    return ost;
+  }
+
+
+  class RegularMLMultiPole
+  {
+    struct Node
+    {
+      Vec<3> center;
+      double r;
+      std::array<unique_ptr<Node>,8> childs;
+      MultiPole<MPRegular> mp;
+
+      Array<const SingularMLMultiPole::Node*> singnodes;
+
+      Node (Vec<3> acenter, double ar, int order, double kappa)
+        : center(acenter), r(ar), mp(order, kappa) { }
+
+      void AddSingularNode (const SingularMLMultiPole::Node & singnode)
+      {
+        Vec<3> dist = center-singnode.center;
+        if (L2Norm(dist) > 1.5*(r+singnode.r))
+          {
+            singnode.mp.TransformAdd(mp, dist);
+            return;
+          }
+
+        if (singnode.mp.SH().Order() < 5 || singnode.childs[0]==nullptr)
+          {
+            singnodes.Append(&singnode);
+            return;
+          }
+        
+        if (r > singnode.r)
+          {
+            if (!childs[0])
+              {
+                // create children nodes:
+                for (int i = 0; i < 8; i++)
+                  {
+                    Vec<3> cc = center;
+                    cc(0) += (i&1) ? r/2 : -r/2;
+                    cc(1) += (i&2) ? r/2 : -r/2;
+                    cc(2) += (i&4) ? r/2 : -r/2;
+                    childs[i] = make_unique<Node> (cc, r/2, max(mp.SH().Order()/2, 3), mp.Kappa());
+                  }
+              }
+            for (auto & ch : childs)
+              ch -> AddSingularNode (singnode);
+            return;
+          }
+        else
+          {
+            for (auto & childsing : singnode.childs)
+              AddSingularNode (*childsing);
+          }
+      }
+
+      void LocalizeExpansion()
+      {
+        if (childs[0])
+          {
+            for (auto & ch : childs)
+              mp.TransformAdd (ch->mp, ch->center-center);
+            mp = MultiPole<MPRegular>(0, mp.Kappa());
+          }
+      }
+      
+      Complex Evaluate (Vec<3> p) const
+      {
+        Complex sum = 0.0;
+        if (childs[0])
+          {
+            int childnum = 0;
+            if (p(0) > center(0)) childnum += 1;
+            if (p(1) > center(1)) childnum += 2;
+            if (p(2) > center(2)) childnum += 4;
+            sum = childs[childnum]->Evaluate(p);
+          }
+        else
+          sum = mp.Eval(p-center);
+        
+        for (auto sn : singnodes)
+          sum += sn->Evaluate(p);
+        return sum;
+      }
+    };
+    
+    Node root;
+    shared_ptr<SingularMLMultiPole> singmp;
+    
+  public:
+    RegularMLMultiPole (shared_ptr<SingularMLMultiPole> asingmp, Vec<3> center, double r, int order)
+      : root(center, r, order, asingmp->Kappa()), singmp(asingmp)
+    {
+      if (!singmp->havemp) throw Exception("first call Calc for singular MP");
+      root.AddSingularNode(singmp->root);
+      root.LocalizeExpansion();
+    }
+
+    Complex Evaluate (Vec<3> p) const
+    {
+      if (L2Norm(p-root.center) > root.r) return 0.0;
+      return root.Evaluate(p);
+    }
+  };
+  
+
+
+  // ******************** Coefficient Functions *********************
 
   class SphericalHarmonicsCF : public CoefficientFunction
   {
@@ -753,7 +1032,7 @@ namespace ngfem
     MultiPole<RADIAL> mp;
     Vec<3> center;
   public:
-    MultiPoleCF (int order, int kappa, Vec<3> acenter)
+    MultiPoleCF (int order, double kappa, Vec<3> acenter)
       : CoefficientFunction(1, true), mp(order, kappa), center(acenter) { }
 
     Complex & Coef(int n, int m) { return mp.Coef(n,m); } 
@@ -775,24 +1054,49 @@ namespace ngfem
     template <typename TARGET>
     void Transform (MultiPoleCF<TARGET> & target)
     {
-      Vec<3> dist = target.Center() - center;
-      mp.Transform (target.MP(), dist);
-      /*
-      // cout << "dist = " << dist << endl;
-      double len = L2Norm(dist);
-      double theta = acos (dist(2) / len);
-      double phi = atan2(dist(1), dist(0));
-      // cout << "phi = " << phi << ", theta = " << theta << endl;
-      MultiPole<RADIAL> tmp{mp};
-      tmp.SH().RotateZ(phi);
-      tmp.SH().RotateY(theta);
-      tmp.ShiftZ(-len, target.MP());
-      target.SH().RotateY(-theta); 
-      target.SH().RotateZ(-phi);
-      */
+      mp.Transform (target.MP(), target.Center()-center);
     }
     
   };
+
+  
+  class SingularMLMultiPoleCF : public CoefficientFunction
+  {
+    shared_ptr<SingularMLMultiPole> mlmp;
+  public:
+    SingularMLMultiPoleCF (Vec<3> center, double r, int order, double kappa)
+      : CoefficientFunction(1, true), mlmp{make_shared<SingularMLMultiPole>(center, r, order, kappa)} { }
+    
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    { throw Exception("real eval not available"); }
+    
+    virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const override
+    {
+      values(0) = mlmp->Evaluate(mip.GetPoint());
+    }
+    
+    shared_ptr<SingularMLMultiPole> MLMP() { return mlmp; }
+  };
+  
+
+  class RegularMLMultiPoleCF : public CoefficientFunction
+  {
+    RegularMLMultiPole mlmp;
+  public:
+    RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPoleCF> asingmp, Vec<3> center, double r, int order)
+      : CoefficientFunction(1, true), mlmp(asingmp->MLMP(), center, r, order) { } 
+    
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    { throw Exception("real eval not available"); }
+
+    virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const override
+    {
+      values(0) = mlmp.Evaluate(mip.GetPoint());
+    }
+
+    RegularMLMultiPole & MLMP() { return mlmp; }
+  };
+
   
 }
 #endif

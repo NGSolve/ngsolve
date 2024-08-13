@@ -2765,6 +2765,13 @@ If linear is True the function will be interpolated linearly between the values.
     .def("RotateY", [](SphericalHarmonics& self, double alpha) { self.RotateY(alpha); })
     ;
 
+  py::class_<SingularMLMultiPole> (m, "SingularMLMP")
+    .def(py::init<Vec<3>,double,int,double>())
+    .def("AddCharge", &SingularMLMultiPole::AddCharge)
+    .def("Calc", &SingularMLMultiPole::CalcMP)
+    .def("__str__", [](SingularMLMultiPole& mlmp) { return ToString<>(mlmp); })
+    ;
+
   py::class_<SphericalHarmonicsCF, shared_ptr<SphericalHarmonicsCF>, CoefficientFunction> (m, "SphericalHarmonicsCF")
     .def(py::init<int>())
     .def_property_readonly("sh", [](SphericalHarmonicsCF& self) -> SphericalHarmonics& { return self.SH(); })
@@ -2787,7 +2794,16 @@ If linear is True the function will be interpolated linearly between the values.
     .def("Transform", [](MultiPoleCF<MPSingular>& self, MultiPoleCF<MPSingular> & target) { self.Transform(target); })        
     ;
 
+  py::class_<SingularMLMultiPoleCF, shared_ptr<SingularMLMultiPoleCF>, CoefficientFunction> (m, "SingularMLMultiPoleCF")
+    .def(py::init<Vec<3>, double, int, double>())
+    .def_property_readonly("mlmp", [](SingularMLMultiPoleCF& self) -> SingularMLMultiPole& { return *self.MLMP(); })
+    ;
+  py::class_<RegularMLMultiPoleCF, shared_ptr<RegularMLMultiPoleCF>, CoefficientFunction> (m, "RegularMLMultiPoleCF")
+    .def(py::init<shared_ptr<SingularMLMultiPoleCF>,Vec<3>, double, int>())
+    // .def_property_readonly("mlmp", [](MLMultiPoleCF& self) -> MLMultiPole& { return self.MLMP(); })
+    ;
 
+  
 
       const string header = R"CODE(
 #include <comp.hpp>
