@@ -580,7 +580,7 @@ namespace ngfem
 
     void AddCharge (Vec<3> x, Complex c)
     {
-      if constexpr (std::is_same<RADIAL,MPSingular>())
+      if constexpr (!std::is_same<RADIAL,MPSingular>())
         throw Exception("AddCharge assumes singular MP");
                         
       if (L2Norm(x) < 1e-10)
