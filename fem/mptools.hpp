@@ -249,7 +249,6 @@ namespace ngfem
     void RotateY (double alpha)
     {
       static Timer t("mptool sh RotateY"); RegionTimer rg(t);
-      
       double s = sin(alpha);
       double c = cos(alpha);
 
@@ -340,9 +339,9 @@ namespace ngfem
           double errortho = L2Norm( Matrix(trafo*Trans(trafo) - Identity(n+1)));
           if (errortho > 1e-10)
             {
-              cout << "n = " << n << " order = " << Order() << ", alpha = " << alpha << ", errortho = " << errortho << endl;
+              *testout << "n = " << n << " order = " << Order() << ", alpha = " << alpha << ", errortho = " << errortho << endl;
               if (n < 10)
-                cout << trafo*Trans(trafo) << endl;
+                *testout << trafo*Trans(trafo) << endl;
             }
           */
           
@@ -363,6 +362,180 @@ namespace ngfem
   };
 
 
+  // https://fortran-lang.discourse.group/t/looking-for-spherical-bessel-and-hankel-functions-of-first-and-second-kind-and-arbitrary-order/2308/2
+
+  // adapted from fmm3d
+template <typename Tz> 
+void besseljs3d (int nterms, Tz z, double scale,
+                 FlatVector<Tz> fjs, FlatVector<Tz> fjder)
+{
+  /*
+c**********************************************************************
+c
+c PURPOSE:
+c
+c	This subroutine evaluates the first NTERMS spherical Bessel 
+c	functions and if required, their derivatives.
+c	It incorporates a scaling parameter SCALE so that
+c       
+c		fjs_n(z)=j_n(z)/SCALE^n
+c		fjder_n(z)=\frac{\partial fjs_n(z)}{\partial z}
+c
+c INPUT:
+c
+c    nterms (integer): order of expansion of output array fjs 
+c    z     (complex *16): argument of the spherical Bessel functions
+c    scale    (real *8) : scaling factor (discussed above)
+c    ifder  (integer): flag indicating whether to calculate "fjder"
+c		          0	NO
+c		          1	YES
+c OUTPUT:
+c    fjs   (complex *16): array of scaled Bessel functions.
+c    fjder (complex *16): array of derivs of scaled Bessel functions.
+c
+c
+  */
+
+  
+  // c ... Initializing ...
+
+  // set to asymptotic values if argument is sufficiently small
+  if (abs(z) < 1e-200)
+    {
+      fjs(0) = 1;
+      for (int i = 1; i <= nterms; i++)
+        fjs(i) = 0.0;
+
+      if (fjder.Size())
+        {
+          fjder = 0.0;
+          fjder(1) = 1.0/(3*scale);
+        }
+      return;
+    }
+
+
+  //  ... Step 1: recursion up to find ntop, starting from nterms
+
+  Tz zinv=1.0/z;
+
+  Tz fjm1 = 0.0;
+  Tz fj0 = 1.0;
+
+  /*
+    c
+    cc     note max point for upward recurrence is
+    c      hard coded to nterms + 1000,
+    c      this might cause loss of accuracy for some
+    c      arguments in the complex plane for large 
+    c      nterms. For example, it is a terrible idea
+    c      to use this code for z>>nterms^2
+  */
+  
+  // int lwfjs = nterms + 100000;
+  int ntop = nterms+1000;
+
+  for (int i = nterms; ; i++)
+    {
+      double dcoef = 2*i+1.0;
+      Tz fj1 = dcoef*zinv*fj0-fjm1;
+      double dd = sqr(abs(fj1));
+      if (dd > 1e40)
+        {
+          ntop=i+1;
+          break;
+        }
+      fjm1 = fj0;
+      fj0 = fj1;
+      if (i > nterms+100000)
+        throw Exception("bessel failed 1");
+    }
+
+  Array<bool> iscale(ntop+1);
+  Vector<Tz> fjtmp(ntop+1);
+
+  /*
+    c ... Step 2: Recursion back down to generate the unscaled jfuns:
+    c             if magnitude exceeds UPBOUND2, rescale and continue the 
+    c	      recursion (saving the order at which rescaling occurred 
+    c	      in array iscale.
+  */
+
+  iscale = false;
+
+  fjtmp(ntop) = 0.0;
+  fjtmp(ntop-1) = 1.0;
+  for (int i = ntop-1; i>=1; i--)
+    {
+      double dcoef = 2*i+1.0;
+      fjtmp(i-1) = dcoef*zinv*fjtmp(i)-fjtmp(i+1);
+      double dd = sqr(abs(fjtmp(i-1)));
+      if (dd > 1e40)
+        {
+          fjtmp(i) *= 1e-40;
+          fjtmp(i-1) *= 1e-40;
+          iscale[i] = true;
+        }
+    }
+
+  /*
+    c
+    c ...  Step 3: go back up to the top and make sure that all
+    c              Bessel functions are scaled by the same factor
+    c              (i.e. the net total of times rescaling was invoked
+    c              on the way down in the previous loop).
+    c              At the same time, add scaling to fjs array.
+    c
+  */
+  
+  double scalinv = 1.0/scale;
+  double sctot = 1.0;
+  for (int i = 1; i <= ntop; i++)
+    {
+      sctot *= scalinv;
+      if (iscale[i-1])
+        sctot *= 1e-40;
+      fjtmp(i) *= sctot;
+    }
+  
+  //  Determine the normalization parameter:
+  
+  fj0=sin(z)*zinv;
+  Tz fj1=fj0*zinv-cos(z)*zinv;
+  
+  double d0=abs(fj0);
+  double d1=abs(fj1);
+  Tz zscale;
+  if (d1 > d0) 
+    zscale=fj1/(fjtmp(1)*scale);
+  else
+    zscale=fj0/fjtmp(0);
+
+  // Scale the jfuns by zscale:
+      
+  Tz ztmp=zscale;
+  for (int i = 0; i <= nterms; i++)
+    fjs(i)=fjtmp(i)*ztmp;
+
+
+  // Finally, calculate the derivatives if desired:
+
+  if (fjder.Size())
+    {
+      fjder(0) = -fjs(1)*scale;
+      for (int i = 1; i <= nterms; i++)
+        {
+          double dc1=i/(2*i+1.0);
+          double dc2=1.0-dc1;
+          dc1=dc1*scalinv;
+          dc2=dc2*scale;
+          fjder(i)=(dc1*fjtmp(i-1)-dc2*fjtmp(i+1))*ztmp;
+        }
+    }
+}
+
+
+  
 
   /*
   // from A. Barnett 
@@ -452,6 +625,14 @@ namespace ngfem
   template <typename T>
   void SphericalBessel (int n, double rho, T && values)
   {
+    // if (n < 50 && rho < 50)
+      {
+        Vector<double> j(n+1), jp(n+1);
+        besseljs3d<double> (n, rho, 1.0,  j, jp);
+        values = j;
+        return;
+      }
+
     if (rho == 0)
       {
         if (n >= 0) values(0) = 1;
@@ -462,7 +643,7 @@ namespace ngfem
     Vector j(n+1), y(n+1), jp(n+1), yp(n+1);
     SBESJY (rho, n, j, y, jp, yp);
     values = j;
-
+    /*
     if (n > 0 && rho != 0)
       {
         double j0 = sin(rho)/rho;
@@ -470,6 +651,7 @@ namespace ngfem
         if (err > 1e-8)
           cout << "j0 is wrong: " << j(0) << " != " << j0 << endl;
       }
+    */
     /*
     // the naive implementation is unstable
     // see, e.g. Gumerov+Duraiswami book, page 57
@@ -618,8 +800,9 @@ namespace ngfem
       MultiPole<RADIAL> tmp(*this);
       tmp.SH().RotateZ(phi);
       tmp.SH().RotateY(theta);
-      tmp.ShiftZ(-len, target);
 
+      tmp.ShiftZ(-len, target);
+      
       /*
       // testing ....
       tmp.SH().RotateY(-theta);
@@ -665,13 +848,13 @@ namespace ngfem
       else
         SphericalHankel1 (os+ot, kappa*abs(z), trafo.Col(0));
 
-
-      if (L2Norm(trafo.Col(0)) > 1e12)
+      /*
+      if (L2Norm(trafo.Col(0)) > 1e5 || std::isnan(L2Norm(trafo.Col(0))))
         {
-          cout << "large Hankel: " << L2Norm(trafo.Col(0)) << endl;
-          cout << "kappa z = " << kappa*z << ", os = " << os << ", ot = " << ot << endl;
+          *testout << "large Hankel: " << L2Norm(trafo.Col(0)) << endl;
+          *testout << "kappa z = " << kappa*z << ", os = " << os << ", ot = " << ot << endl;
         }
-
+      */
       
       if (z < 0)
         for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
@@ -856,6 +1039,15 @@ namespace ngfem
         for (int i = 0; i < 8; i++)
           if (childs[i]) childs[i] -> Print (ost);
       }
+
+      double Norm () const
+      {
+        double norm = L2Norm(mp.SH().Coefs());
+        if (childs[0])
+          for (auto & ch : childs)
+            norm += ch->Norm();
+        return norm;
+      }
     };
     
     Node root;
@@ -877,6 +1069,11 @@ namespace ngfem
       root.Print(ost);
     }
 
+    double Norm() const
+    {
+      return root.Norm();
+    }
+    
     void CalcMP()
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);      
@@ -935,7 +1132,8 @@ namespace ngfem
       void AddSingularNode (const SingularMLMultiPole::Node & singnode)
       {
         Vec<3> dist = center-singnode.center;
-        if (L2Norm(dist) > 3*(r+singnode.r))
+        // if (L2Norm(dist) > 3*(r+singnode.r))
+        if (L2Norm(dist)*mp.Kappa() > 1*(mp.Order()+singnode.mp.Order()))
           {
             if (singnode.mp.Order() > 2 * mp.Order() && singnode.childs[0])
               {
@@ -981,11 +1179,12 @@ namespace ngfem
           {
             for (auto & ch : childs)
               {
-                mp.TransformAdd (ch->mp, ch->center-center);
+                if (L2Norm(mp.SH().Coefs()) > 0)
+                  mp.TransformAdd (ch->mp, ch->center-center);
                 // cout << "localize, r = " << r << ",  me = " << L2Norm(mp.SH().Coefs()) << ", child = " << L2Norm(ch->mp.SH().Coefs()) << endl;
                 ch->LocalizeExpansion();
               }
-            mp = MultiPole<MPRegular>(0, mp.Kappa());
+            // mp = MultiPole<MPRegular>(0, mp.Kappa());
             mp.SH().Coefs()=0.0;
           }
       }
@@ -1008,6 +1207,15 @@ namespace ngfem
           sum += sn->Evaluate(p);
         return sum;
       }
+
+      double Norm() const
+      {
+        double norm = L2Norm(mp.SH().Coefs());
+        if (childs[0])
+          for (auto & ch : childs)
+            norm += ch->Norm();
+        return norm;
+      }
     };
     
     Node root;
@@ -1022,11 +1230,13 @@ namespace ngfem
       {
         static Timer t("mptool compute regular MLMP"); RegionTimer rg(t);            
         root.AddSingularNode(singmp->root);
+        cout << "norm after S->R conversion: " << root.Norm() << endl;
       }
 
       {
         static Timer t("mptool expand regular MLMP"); RegionTimer rg(t);                  
         root.LocalizeExpansion();
+        cout << "norm after local expansion: " << root.Norm() << endl;        
       }
     }
 
