@@ -2769,6 +2769,7 @@ If linear is True the function will be interpolated linearly between the values.
     .def(py::init<Vec<3>,double,int,double>())
     .def("AddCharge", &SingularMLMultiPole::AddCharge)
     .def("Calc", &SingularMLMultiPole::CalcMP)
+    .def("Norm", &SingularMLMultiPole::Norm)    
     .def("__str__", [](SingularMLMultiPole& mlmp) { return ToString<>(mlmp); })
     ;
 
