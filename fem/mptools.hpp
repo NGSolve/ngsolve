@@ -917,9 +917,7 @@ c
         trafo(l,0) *= sqrt(2*l+1);
 
       double prod = 1.0;
-      // for (int l = 0; l <= os+ot; l++, prod *= inv_tscale)
-      // trafo(l,0) *= prod;
-      
+
       if (os > 0)
         {
           for (int l = 1; l < os+ot; l++)   
@@ -954,26 +952,18 @@ c
 
           // (187)
           for (int l = m; l <= os+ot-m; l++)
-            trafom(l,m) = 1/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*pow(target.Scale(),l-1)*pow(1/scale,m-1)*trafo(l-1, m-1)
-                                                 -sh.CalcBmn(m-1,l+1)*pow(target.Scale(),l+1)*pow(1/scale,m-1)*trafo(l+1,m-1));
+            trafom(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*trafo(l-1, m-1)
+                                                     -sh.CalcBmn(m-1,l+1)*tscale*trafo(l+1,m-1));
           
           for (int n = m; n < os; n++)
             {
               for (int l = m+1; l < os+ot-n; l++)
-                trafom(l,n+1) = -1.0/sh.CalcAmn(m,n) * (sh.CalcAmn(m,l)*trafom(l+1,n)
-                                                        -sh.CalcAmn(m,l-1)*trafom(l-1,n)
-                                                        -sh.CalcAmn(m,n-1)*trafom(l,n-1));
-              trafom(m,n+1) = pow(-1,m+n+1)*trafom(n+1,m);
+                trafom(l,n+1) = -scale/sh.CalcAmn(m,n) * (sh.CalcAmn(m,l)*tscale*trafom(l+1,n)
+                                                          -sh.CalcAmn(m,l-1)*inv_tscale*trafom(l-1,n)
+                                                          -sh.CalcAmn(m,n-1)*scale*trafom(l,n-1));
+              trafom(m,n+1) = pow(-scale*tscale,n+1-m)*trafom(n+1,m);
             }
 
-          
-          double prod = 1;
-          for (int i = 0; i <= os; i++, prod *= scale)
-            trafom.Col(i) *= prod;
-          prod = 1;
-          for (int i = 0; i <= os+ot; i++, prod /= target.Scale())
-            trafom.Row(i) *= prod;
-          
           
           /*
           // if (m == 1)
@@ -984,35 +974,14 @@ c
           
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,m);
-          /*
-          prod = 1;
-          for (int i = 0; i <= os; i++, prod *= scale)
-            hv1(i) *= prod;
-          */
-          
           hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-          /*
-          prod = 1;
-          for (int i = 0; i <= ot; i++, prod /= target.Scale())
-            hv2(i) *= prod;
-          */
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,m) = hv2(n);
           
           // cout << "m = " << m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,-m);
-          /*
-          prod = 1;
-          for (int i = 0; i <= os; i++, prod *= scale)
-            hv1(i) *= prod;
-          */
           hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-          /*
-          prod = 1;
-          for (int i = 0; i <= ot; i++, prod /= target.Scale())
-            hv2(i) *= prod;
-          */
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,-m) = hv2(n);
           // cout << "m = " << -m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;          
@@ -1025,7 +994,7 @@ c
 
   static int MPOrder (double rho_kappa)
   {
-    return max (10, int(2*rho_kappa));
+    return max (20, int(4*rho_kappa));
   }
 
   class SingularMLMultiPole
@@ -1340,7 +1309,8 @@ c
         
         Vec<3> dist = center-singnode.center;
 
-        if (L2Norm(dist)*mp.Kappa() > (mp.Order()+singnode.mp.Order()))
+        // if (L2Norm(dist)*mp.Kappa() > (mp.Order()+singnode.mp.Order()))
+        if (L2Norm(dist) > 2*(r + singnode.r))
           {
             if (singnode.mp.Order() > 2 * mp.Order() &&
                 singnode.childs[0] &&
@@ -1355,7 +1325,7 @@ c
             singnode.mp.TransformAdd(mp, dist);
             return;
           }
-
+        /*
         if ( ( (r+singnode.r) * mp.Kappa() < 10) && 
              (L2Norm(dist) > 3*(r + singnode.r)) )
           {
@@ -1371,6 +1341,7 @@ c
             mp += tmp;
             return;
           }
+        */
 
         if ( singnode.childs[0]==nullptr
              // || singnode.mp.SH().Order() == singnode.childs[0]->mp.SH().Order()
