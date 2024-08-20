@@ -925,20 +925,30 @@ c
           trafo(0,n+1) = pow(-1,n+1)*trafo(n+1,0);
         }
 
+
+      double prod = 1;
+      for (int i = 0; i <= os; i++, prod *= scale)
+        trafo.Col(i) *= prod;
+      prod = 1;
+      for (int i = 0; i <= os+ot; i++, prod /= target.Scale())
+        trafo.Row(i) *= prod;
       
       Vector<Complex> hv1(os+1), hv2(ot+1);
       for (int n = 0; n <= os; n++)
         hv1(n) = sh.Coef(n,0);
 
+      /*
       double prod = 1;
       for (int i = 0; i <= os; i++, prod*=scale)
         hv1(i) *= prod;
+      */
       
       hv2 = trafo.Rows(ot+1) * hv1;
-
+      /*
       prod = 1;
       for (int i = 0; i <= ot; i++, prod /= target.Scale())
         hv2(i) *= prod;
+      */
       
       for (int n = 0; n <= ot; n++)
         target.SH().Coef(n,0) = hv2(n);
@@ -951,7 +961,8 @@ c
 
           // (187)
           for (int l = m; l <= os+ot-m; l++)
-            trafom(l,m) = 1/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*trafo(l-1, m-1)-sh.CalcBmn(m-1,l+1)*trafo(l+1,m-1));
+            trafom(l,m) = 1/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*pow(target.Scale(),l-1)*pow(1/scale,m-1)*trafo(l-1, m-1)
+                                                 -sh.CalcBmn(m-1,l+1)*pow(target.Scale(),l+1)*pow(1/scale,m-1)*trafo(l+1,m-1));
           
           for (int n = m; n < os; n++)
             {
@@ -963,6 +974,14 @@ c
             }
 
           
+          double prod = 1;
+          for (int i = 0; i <= os; i++, prod *= scale)
+            trafom.Col(i) *= prod;
+          prod = 1;
+          for (int i = 0; i <= os+ot; i++, prod /= target.Scale())
+            trafom.Row(i) *= prod;
+          
+          
           /*
           // if (m == 1)
           cout << "m = " << m << endl;
@@ -972,28 +991,35 @@ c
           
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,m);
+          /*
           prod = 1;
           for (int i = 0; i <= os; i++, prod *= scale)
             hv1(i) *= prod;
+          */
           
           hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          /*
           prod = 1;
           for (int i = 0; i <= ot; i++, prod /= target.Scale())
             hv2(i) *= prod;
+          */
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,m) = hv2(n);
           
           // cout << "m = " << m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,-m);
+          /*
           prod = 1;
           for (int i = 0; i <= os; i++, prod *= scale)
             hv1(i) *= prod;
+          */
           hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          /*
           prod = 1;
           for (int i = 0; i <= ot; i++, prod /= target.Scale())
             hv2(i) *= prod;
-          
+          */
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,-m) = hv2(n);
           // cout << "m = " << -m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;          
