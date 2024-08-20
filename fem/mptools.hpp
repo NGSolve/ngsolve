@@ -642,52 +642,16 @@ c
 
   
   template <typename T>
-  void SphericalBessel (int n, double rho, T && values)
+  void SphericalBessel (int n, double rho, double scale, T && values)
   {
-    // if (n < 50 && rho < 50)
-      {
-        Vector<double> j(n+1), jp(n+1);
-        besseljs3d<double> (n, rho, 1.0,  j, jp);
-        values = j;
-        return;
-      }
-
-    if (rho == 0)
-      {
-        if (n >= 0) values(0) = 1;
-        for (int i = 1; i <= n; i++)
-          values(i) = 0;
-      }
-
-    Vector j(n+1), y(n+1), jp(n+1), yp(n+1);
-    SBESJY (rho, n, j, y, jp, yp);
+    Vector<double> j(n+1), jp(n+1);
+    besseljs3d<double> (n, rho, scale,  j, jp);
     values = j;
-    /*
-    if (n > 0 && rho != 0)
-      {
-        double j0 = sin(rho)/rho;
-        double err = abs(j0-j(0));
-        if (err > 1e-8)
-          cout << "j0 is wrong: " << j(0) << " != " << j0 << endl;
-      }
-    */
-    /*
-    // the naive implementation is unstable
-    // see, e.g. Gumerov+Duraiswami book, page 57
-      
-    if (n >= 0)
-      values(0) = sin(rho)/rho;
-    if (n >= 1)
-      values(1) = (sin(rho)-rho*cos(rho)) / (rho*rho);
-
-    for (int i = 2; i <= n; i++)
-      values(i) = (2*i-1)/rho * values(i-1) - values(i-2);
-    */
   }
 
 
   template <typename T>
-  void SphericalHankel1 (int n, double rho, T && values)
+  void SphericalHankel1 (int n, double rho, double scale, T && values)
   {
     // Complex imag(0,1);
     /*
@@ -708,20 +672,16 @@ c
     Vector j(n+1), y(n+1), jp(n+1), yp(n+1);
     SBESJY (rho, n, j, y, jp, yp);
 
-    if (n > 0 && rho != 0)
-      {
-        double j0 = sin(rho)/rho;
-        double err = abs(j0-j(0));
-        if (err > 1e-8)
-          cout << "j0 is wrong: " << j(0) << " != " << j0 << endl;
-
-        double y0 = -cos(rho)/rho;
-        err = rho*abs(y0-y(0));
-        if (err > 1e-8)
-          cout << "y0 is wrong: " << y(0) << " != " << y0 << endl;
-      }
-
     values = j + Complex(0,1) * y;
+    if (scale != 1.0)
+      {
+        double prod = 1.0;
+        for (int i = 0; i <= n; i++)
+          {
+            values(i) *= prod;
+            prod *= scale;
+          }
+      }
   }
 
 
@@ -733,9 +693,9 @@ c
   {
   public:
     template <typename T>
-    static void Eval (int order, double r, T && values)
+    static void Eval (int order, double r, double scale, T && values)
     {
-      SphericalHankel1(order, r, values);
+      SphericalHankel1(order, r, scale,  values);
     }
   };
   
@@ -744,9 +704,9 @@ c
   {
   public:    
     template <typename T>
-    static void Eval (int order, double r, T && values)
+    static void Eval (int order, double r, double scale, T && values)
     {
-      SphericalBessel (order, r, values);
+      SphericalBessel (order, r, 1.0/scale, values);
     }
   };
   
@@ -758,17 +718,18 @@ c
   {
     SphericalHarmonics sh;
     double kappa;
-    
+    double scale;
   public:
-    MultiPole (int aorder, double akappa) 
-      : sh(aorder), kappa(akappa) { }
+    MultiPole (int aorder, double akappa, double ascale = 1) 
+      : sh(aorder), kappa(akappa), scale(ascale) { }
 
     Complex & Coef(int n, int m) { return sh.Coef(n,m); }
     auto & SH() { return sh; }
     const auto & SH() const { return sh; }
     double Kappa() const { return kappa; }
+    double Scale() const { return scale; }    
     int Order() const { return sh.Order(); }
-
+    
     MultiPole<RADIAL> Truncate(int neworder) const
     {
       if (neworder > sh.Order()) neworder=sh.Order();
@@ -789,7 +750,7 @@ c
       Vector<Complex> radial(sh.Order()+1);
       Vector<Complex> shvals(sh.Order()+1);
       
-      RADIAL::Eval(sh.Order(), kappa*L2Norm(x), radial);
+      RADIAL::Eval(sh.Order(), kappa*L2Norm(x), scale, radial);
       sh.EvalOrders (x, shvals);
       
       Complex sum = 0;
@@ -817,7 +778,7 @@ c
       Vector<Complex> radial(sh.Order()+1);
       Vector<Complex> sh_shapes(sqr (sh.Order()+1));
 
-      RADIAL::Eval(sh.Order(), kappa*L2Norm(x), radial);
+      RADIAL::Eval(sh.Order(), kappa*L2Norm(x), 1.0/scale, radial);
       // cout << "radial = " << radial << endl;
       sh.Calc(x, sh_shapes);
 
@@ -930,9 +891,9 @@ c
       // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
       // RADIAL::Eval(os+ot, kappa*abs(z), trafo.Col(0));
       if (typeid(RADIAL) == typeid(TARGET))
-        SphericalBessel (os+ot, kappa*abs(z), trafo.Col(0));
+        SphericalBessel (os+ot, kappa*abs(z), 1.0, trafo.Col(0));
       else
-        SphericalHankel1 (os+ot, kappa*abs(z), trafo.Col(0));
+        SphericalHankel1 (os+ot, kappa*abs(z), 1.0, trafo.Col(0));
 
       /*
       if (L2Norm(trafo.Col(0)) > 1e5 || std::isnan(L2Norm(trafo.Col(0))))
@@ -964,10 +925,21 @@ c
           trafo(0,n+1) = pow(-1,n+1)*trafo(n+1,0);
         }
 
+      
       Vector<Complex> hv1(os+1), hv2(ot+1);
       for (int n = 0; n <= os; n++)
         hv1(n) = sh.Coef(n,0);
+
+      double prod = 1;
+      for (int i = 0; i <= os; i++, prod*=scale)
+        hv1(i) *= prod;
+      
       hv2 = trafo.Rows(ot+1) * hv1;
+
+      prod = 1;
+      for (int i = 0; i <= ot; i++, prod /= target.Scale())
+        hv2(i) *= prod;
+      
       for (int n = 0; n <= ot; n++)
         target.SH().Coef(n,0) = hv2(n);
       // cout << "hv2 = " << hv2 << endl;
@@ -990,18 +962,38 @@ c
               trafom(m,n+1) = pow(-1,m+n+1)*trafom(n+1,m);
             }
 
+          
+          /*
           // if (m == 1)
-          // cout << "trafom = " << trafom.Rows(m,ot+1).Cols(m,os+1) << endl;
+          cout << "m = " << m << endl;
+          cout << "trafom = " << trafom.Rows(m,ot+1).Cols(m,os+1) << endl;
+          cout << trafom.Rows(ot+1,os+ot-m+1).Cols(m,os+1) << endl;          
+          */
           
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,m);
+          prod = 1;
+          for (int i = 0; i <= os; i++, prod *= scale)
+            hv1(i) *= prod;
+          
           hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          prod = 1;
+          for (int i = 0; i <= ot; i++, prod /= target.Scale())
+            hv2(i) *= prod;
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,m) = hv2(n);
+          
           // cout << "m = " << m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,-m);
+          prod = 1;
+          for (int i = 0; i <= os; i++, prod *= scale)
+            hv1(i) *= prod;
           hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          prod = 1;
+          for (int i = 0; i <= ot; i++, prod /= target.Scale())
+            hv2(i) *= prod;
+          
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,-m) = hv2(n);
           // cout << "m = " << -m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;          
@@ -1033,7 +1025,7 @@ c
       Array<tuple<Vec<3>, Vec<3>, Complex>> dipoles;
       
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa)
+        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(1.0, r*kappa))
       {
         // cout << "singml, add node, level = " << level << endl;
         if (level < nodes_on_level.Size())
@@ -1294,7 +1286,7 @@ c
       Array<const SingularMLMultiPole::Node*> singnodes;
 
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
-        : center(acenter), r(ar), level(alevel),  mp(order, kappa)
+        : center(acenter), r(ar), level(alevel),  mp(order, kappa, 1.0/min(1.0, kappa*r))
       {
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
@@ -1514,8 +1506,8 @@ c
     MultiPole<RADIAL> mp;
     Vec<3> center;
   public:
-    MultiPoleCF (int order, double kappa, Vec<3> acenter)
-      : CoefficientFunction(1, true), mp(order, kappa), center(acenter) { }
+    MultiPoleCF (int order, double kappa, Vec<3> acenter, double scale = 1)
+      : CoefficientFunction(1, true), mp(order, kappa, scale), center(acenter) { }
 
     Complex & Coef(int n, int m) { return mp.Coef(n,m); } 
     auto & SH() { return mp.SH(); }

@@ -2780,14 +2780,14 @@ If linear is True the function will be interpolated linearly between the values.
     ;
 
   py::class_<MultiPoleCF<MPRegular>, shared_ptr<MultiPoleCF<MPRegular>>, CoefficientFunction> (m, "RegularMultiPoleCF")
-    .def(py::init<int,double,Vec<3>>())
+    .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("scale")=1.0)    
     .def_property_readonly("sh", [](MultiPoleCF<MPRegular>& self) -> SphericalHarmonics& { return self.SH(); })
     .def("ShiftZ", [](MultiPoleCF<MPRegular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
     .def("Transform", [](MultiPoleCF<MPRegular>& self, MultiPoleCF<MPRegular> & target) { self.Transform(target); })    
     ;
 
   py::class_<MultiPoleCF<MPSingular>, shared_ptr<MultiPoleCF<MPSingular>>, CoefficientFunction> (m, "SingularMultiPoleCF")
-    .def(py::init<int,double,Vec<3>>())
+    .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("scale")=1.0)
     .def_property_readonly("sh", [](MultiPoleCF<MPSingular>& self) -> SphericalHarmonics& { return self.SH(); })
     .def("AddCharge", [](MultiPoleCF<MPSingular>& self, Vec<3> x, Complex c) { self.MP().AddCharge(x, c); })
     .def("AddDipole", [](MultiPoleCF<MPSingular>& self, Vec<3> x, Vec<3> d, Complex c) { self.MP().AddDipole(x, d, c); })
