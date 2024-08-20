@@ -888,12 +888,17 @@ c
       Matrix<Complex> trafo(os+ot+1, os+1), trafom(os+ot+1, os+1);
       trafo = Complex(0.0);
 
+
+      double tscale = target.Scale();
+      double inv_tscale = 1.0/tscale;
+
+      
       // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
       // RADIAL::Eval(os+ot, kappa*abs(z), trafo.Col(0));
       if (typeid(RADIAL) == typeid(TARGET))
-        SphericalBessel (os+ot, kappa*abs(z), 1.0, trafo.Col(0));
+        SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
       else
-        SphericalHankel1 (os+ot, kappa*abs(z), 1.0, trafo.Col(0));
+        SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
 
       /*
       if (L2Norm(trafo.Col(0)) > 1e5 || std::isnan(L2Norm(trafo.Col(0))))
@@ -911,48 +916,36 @@ c
       for (int l = 0; l <= os+ot; l++)
         trafo(l,0) *= sqrt(2*l+1);
 
+      double prod = 1.0;
+      // for (int l = 0; l <= os+ot; l++, prod *= inv_tscale)
+      // trafo(l,0) *= prod;
+      
       if (os > 0)
         {
           for (int l = 1; l < os+ot; l++)   
-            trafo(l,1) = -1.0/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*trafo(l+1,0)-sh.CalcAmn(0,l-1)*trafo(l-1,0));
-          trafo(0,1) = -trafo(1,0);
+            trafo(l,1) = -scale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)-sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
+          trafo(0,1) = -scale*tscale*trafo(1,0);
         }
       
       for (int n = 1; n < os; n++)
         {
           for (int l = 1; l < os+ot-n; l++)
-            trafo(l,n+1) = -1.0/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*trafo(l+1,n)-sh.CalcAmn(0,l-1)*trafo(l-1,n)-sh.CalcAmn(0,n-1)*trafo(l,n-1));
-          trafo(0,n+1) = pow(-1,n+1)*trafo(n+1,0);
+            trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)-sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)-sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
+          trafo(0,n+1) = pow(-scale*tscale,n+1)*trafo(n+1,0);
         }
 
 
-      double prod = 1;
-      for (int i = 0; i <= os; i++, prod *= scale)
-        trafo.Col(i) *= prod;
       prod = 1;
-      for (int i = 0; i <= os+ot; i++, prod /= target.Scale())
-        trafo.Row(i) *= prod;
       
       Vector<Complex> hv1(os+1), hv2(ot+1);
       for (int n = 0; n <= os; n++)
         hv1(n) = sh.Coef(n,0);
-
-      /*
-      double prod = 1;
-      for (int i = 0; i <= os; i++, prod*=scale)
-        hv1(i) *= prod;
-      */
       
       hv2 = trafo.Rows(ot+1) * hv1;
-      /*
-      prod = 1;
-      for (int i = 0; i <= ot; i++, prod /= target.Scale())
-        hv2(i) *= prod;
-      */
       
       for (int n = 0; n <= ot; n++)
         target.SH().Coef(n,0) = hv2(n);
-      // cout << "hv2 = " << hv2 << endl;
+
 
       for (int m = 1; m <= min(os,ot); m++)
         {
