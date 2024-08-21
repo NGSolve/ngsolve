@@ -1272,6 +1272,7 @@ c
       std::array<unique_ptr<Node>,8> childs;
       MultiPole<MPRegular> mp;
       Array<Vec<3>> targets;
+      int total_targets;
 
       Array<const SingularMLMultiPole::Node*> singnodes;
 
@@ -1451,6 +1452,27 @@ c
           AddTarget (t);
         targets.SetSize0();
       }
+
+      void CalcTotalTargets()
+      {
+        total_targets = targets.Size();
+        for (auto & child : childs)
+          if (child)
+            {
+              child->CalcTotalTargets();
+              total_targets += child->total_targets;
+            }
+      }
+
+      void RemoveEmptyTrees()
+      {
+        for (auto & child : childs)
+          if (child)
+            child->RemoveEmptyTrees();
+        if (total_targets == 0)
+          mp = MultiPole<MPRegular>(-1, mp.Kappa());          
+      }
+      
     };
     
     Node root;
@@ -1500,6 +1522,10 @@ c
     void CalcMP(shared_ptr<SingularMLMultiPole> asingmp)
     {
       singmp = asingmp;
+
+      root.CalcTotalTargets();
+      root.RemoveEmptyTrees();
+        
       root.AddSingularNode(singmp->root, false);
 
       int maxlevel = 0;
