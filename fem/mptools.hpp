@@ -140,7 +140,8 @@ namespace ngfem
     {
       static Timer ts("mptool sh evalorders small");
       static Timer tl("mptool sh evalorders large");
-      RegionTimer rg(order < 10 ? ts : tl);
+      // RegionTimer rg(order < 30 ? ts : tl);
+      // if (order > 30) tl.Start();
       
       Matrix legfunc(order+1, order+1);
       NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
@@ -168,6 +169,8 @@ namespace ngfem
         }
 
       vals /= sqrt(4*M_PI);
+
+      // if (order > 30) tl.Stop();      
     }
 
 
@@ -249,14 +252,14 @@ namespace ngfem
     void RotateY (double alpha)
     {
       LocalHeap lh(8*4*sqr(order) + 10*order + 500);
-      static Timer t("mptool sh RotateY"); RegionTimer rg(t);
+      // static Timer t("mptool sh RotateY"); RegionTimer rg(t);
       static Timer t1("mptool sh RotateY 1");
       static Timer t2("mptool sh RotateY 2");
       static Timer t3("mptool sh RotateY 3");
       static Timer t23("mptool sh RotateY 23");
       static Timer tlp("mptool sh RotateY loop");      
       
-      t1.Start();
+      // t1.Start();
       double s = sin(alpha);
       double c = cos(alpha);
 
@@ -269,9 +272,9 @@ namespace ngfem
       
       // cout << "leg = " << endl << normalized_leg_func << endl;
       Vector<> Dmn(2*order+1), invDmn(2*order+1);
-      t1.Stop();
+      // t1.Stop();
 
-      RegionTimer rlp(tlp);
+      // RegionTimer rlp(tlp);
       ArrayMem<double, 1000> trafomem( (order+1)*(2*order+1));
       for (int n=1; n <= order; n++)
         {
@@ -747,6 +750,8 @@ c
     
     Complex Eval (Vec<3> x) const
     {
+      if (sh.Order() < 0) return 0;
+
       Vector<Complex> radial(sh.Order()+1);
       Vector<Complex> shvals(sh.Order()+1);
       
@@ -765,7 +770,7 @@ c
       if constexpr (!std::is_same<RADIAL,MPSingular>())
         throw Exception("AddCharge assumes singular MP");
       
-      static Timer t("mptool AddCharge"); RegionTimer rg(t);      
+      // static Timer t("mptool AddCharge"); RegionTimer rg(t);      
       
       if (L2Norm(x) < 1e-10)
         {
@@ -792,7 +797,7 @@ c
     
     void AddDipole (Vec<3> x, Vec<3> d, Complex c)
     {
-      static Timer t("mptool AddDipole"); RegionTimer rg(t);      
+      // static Timer t("mptool AddDipole"); RegionTimer rg(t);      
       /*
       double eps = 1e-4;
       AddCharge(x+eps*d, -c/(2*eps));
@@ -829,6 +834,7 @@ c
       
       static Timer t("mptool Transform "+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));      
       RegionTimer reg(t);
+      
       double len = L2Norm(dist);
       double theta, phi;
 
@@ -878,8 +884,8 @@ c
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET> & target)
     {
-      static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
-      RegionTimer rg(t);
+      // static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
+      // RegionTimer rg(t);
       
       int os = sh.Order();
       int ot = target.SH().Order();
@@ -916,8 +922,6 @@ c
       for (int l = 0; l <= os+ot; l++)
         trafo(l,0) *= sqrt(2*l+1);
 
-      double prod = 1.0;
-
       if (os > 0)
         {
           for (int l = 1; l < os+ot; l++)   
@@ -933,8 +937,6 @@ c
         }
 
 
-      prod = 1;
-      
       Vector<Complex> hv1(os+1), hv2(ot+1);
       for (int n = 0; n <= os; n++)
         hv1(n) = sh.Coef(n,0);
@@ -994,7 +996,7 @@ c
 
   static int MPOrder (double rho_kappa)
   {
-    return max (20, int(4*rho_kappa));
+    return max (20, int(2*rho_kappa));
   }
 
   class SingularMLMultiPole
@@ -1197,7 +1199,8 @@ c
     SingularMLMultiPole (Vec<3> center, double r, int order, double kappa)
       : root(center, r, 0, order, kappa)
     {
-      nodes_on_level = 0;      
+      nodes_on_level = 0;
+      nodes_on_level[0] = 1;
     }
 
     double Kappa() const { return root.mp.Kappa(); }
@@ -1226,8 +1229,6 @@ c
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
 
-      // nodes_on_level = 0;
-      
       root.CalcMP();
 
       int maxlevel = 0;
@@ -1270,11 +1271,13 @@ c
       int level;
       std::array<unique_ptr<Node>,8> childs;
       MultiPole<MPRegular> mp;
+      Array<Vec<3>> targets;
 
       Array<const SingularMLMultiPole::Node*> singnodes;
 
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
-        : center(acenter), r(ar), level(alevel),  mp(order, kappa, 1.0/min(1.0, kappa*r))
+      // : center(acenter), r(ar), level(alevel),  mp(order, kappa, 1.0/min(1.0, kappa*r))
+        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(1.0, r*kappa))        
       {
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
@@ -1294,8 +1297,8 @@ c
             childs[i] = make_unique<Node> (cc, r/2, level+1, max(mp.SH().Order()/2, 8), mp.Kappa());
           }
       }
-      
-      void AddSingularNode (const SingularMLMultiPole::Node & singnode)
+
+      void AddSingularNode (const SingularMLMultiPole::Node & singnode, bool allow_refine)
       {
         if (singnode.mp.SH().Order() < 0) return;
         if (L2Norm(singnode.mp.SH().Coefs()) == 0) return;
@@ -1317,35 +1320,17 @@ c
                 singnode.childs[0]->mp.Order() < singnode.mp.Order())
               {
                 for (auto & child : singnode.childs)
-                  AddSingularNode (*child);
+                  AddSingularNode (*child, allow_refine);
                 return;
               }
 
-            static Timer t("mptool transform Helmholtz-criterion"); RegionTimer r(t);
+            // static Timer t("mptool transform Helmholtz-criterion"); RegionTimer r(t);
             singnode.mp.TransformAdd(mp, dist);
             return;
           }
-        /*
-        if ( ( (r+singnode.r) * mp.Kappa() < 10) && 
-             (L2Norm(dist) > 3*(r + singnode.r)) )
-          {
-            static Timer t("mptool transform Laplace-criterion"); RegionTimer r(t);       
-            
-            // int truncorder = max(10, int(L2Norm(dist)*mp.Kappa()));
-            int truncorder = 5;
-            auto mptrunc = singnode.mp.Truncate(truncorder);
-            // mptrunc.TransformAdd(mp, dist);
 
-            MultiPole<MPRegular> tmp{mp.Truncate(truncorder)};
-            mptrunc.Transform(tmp, dist);
-            mp += tmp;
-            return;
-          }
-        */
 
-        if ( singnode.childs[0]==nullptr
-             // || singnode.mp.SH().Order() == singnode.childs[0]->mp.SH().Order()
-             )
+        if ( singnode.childs[0]==nullptr )
           {
             singnodes.Append(&singnode);
             return;
@@ -1353,24 +1338,38 @@ c
         
         if (r > singnode.r)
           {
-            if (!childs[0])
-              CreateChilds();
-
-            for (auto & ch : childs)
-              ch -> AddSingularNode (singnode);
-            return;
+            if (allow_refine)
+              {
+                if (!childs[0])
+                  CreateChilds();
+                
+                for (auto & ch : childs)
+                  ch -> AddSingularNode (singnode, allow_refine);
+              }
+            else
+              {
+                if (childs[0])
+                  {
+                    for (auto & ch : childs)
+                      ch -> AddSingularNode (singnode, allow_refine);
+                    return;
+                  }
+                
+                singnodes.Append(&singnode);
+              }
           }
         else
           {
             for (auto & childsing : singnode.childs)
-              AddSingularNode (*childsing);
+              AddSingularNode (*childsing, allow_refine);
           }
       }
 
-      void LocalizeExpansion()
+      void LocalizeExpansion(bool allow_refine)
       {
-        if (mp.Order() > 20 && !childs[0])
-          CreateChilds();
+        if (allow_refine)
+          if (mp.Order() > 20 && !childs[0])
+            CreateChilds();
 
         if (childs[0])
           {
@@ -1378,7 +1377,7 @@ c
               {
                 if (L2Norm(mp.SH().Coefs()) > 0)
                   mp.TransformAdd (ch->mp, ch->center-center);
-                ch->LocalizeExpansion();
+                ch->LocalizeExpansion(allow_refine);
               }
             mp = MultiPole<MPRegular>(-1, mp.Kappa());
             //mp.SH().Coefs()=0.0;
@@ -1387,6 +1386,7 @@ c
       
       Complex Evaluate (Vec<3> p) const
       {
+        // *testout << "eval p = " << p << ", level = " << level << ", center = " << center <<  ", r = " << r << endl;
         Complex sum = 0.0;
         if (childs[0])
           {
@@ -1399,11 +1399,20 @@ c
         else
           sum = mp.Eval(p-center);
 
-        static Timer t("mptool Eval singular nodes");
-        t.Start();
+        // *testout << "sing nodes: " << singnodes.Size() << endl;
+        // *testout << "look for lcals, eval p = " << p << ", level = " << level << ", center = " << center <<  ", r = " << r << ", child[0] = " << childs[0] << endl;        
+        // static Timer t("mptool Eval singular nodes");
+        // t.Start();
         for (auto sn : singnodes)
-          sum += sn->EvaluateMP(p);
-        t.Stop();
+          {
+            /*
+            *testout << "singnode, c = " << sn->center << ", r= " << r
+                     << " charges = " << sn->charges.Size() << ", child[0] = " << sn->childs[0] 
+                     << ", dist = " << L2Norm(center-sn->center) << endl;
+            */
+            sum += sn->EvaluateMP(p);
+          }
+        // t.Stop();
         return sum;
       }
 
@@ -1415,6 +1424,33 @@ c
             norm += ch->Norm();
         return norm;
       }
+
+
+      void AddTarget (Vec<3> x)
+      {
+        if (childs[0])
+          {
+            // directly send to childs:
+            int childnum  = 0;
+            if (x(0) > center(0)) childnum += 1;
+            if (x(1) > center(1)) childnum += 2;
+            if (x(2) > center(2)) childnum += 4;
+            childs[childnum] -> AddTarget( x );
+            return;
+          }
+
+        targets.Append( x );
+
+        if (r*mp.Kappa() < 1e-8) return;
+        if (targets.Size() < 20 && r*mp.Kappa() < 1)
+          return;
+
+        CreateChilds();
+
+        for (auto t : targets)
+          AddTarget (t);
+        targets.SetSize0();
+      }
     };
     
     Node root;
@@ -1422,14 +1458,15 @@ c
     
   public:
     RegularMLMultiPole (shared_ptr<SingularMLMultiPole> asingmp, Vec<3> center, double r, int order)
-      : root(center, r, 1, order, asingmp->Kappa()), singmp(asingmp)
+      : root(center, r, 0, order, asingmp->Kappa()), singmp(asingmp)
     {
       if (!singmp->havemp) throw Exception("first call Calc for singular MP");
 
       nodes_on_level = 0;
+      nodes_on_level[0] = 1;
       {
         static Timer t("mptool compute regular MLMP"); RegionTimer rg(t);            
-        root.AddSingularNode(singmp->root);
+        root.AddSingularNode(singmp->root, true);
         // cout << "norm after S->R conversion: " << root.Norm() << endl;
       }
 
@@ -1443,16 +1480,47 @@ c
       
       {
         static Timer t("mptool expand regular MLMP"); RegionTimer rg(t);                  
-        root.LocalizeExpansion();
+        root.LocalizeExpansion(true);
         // cout << "norm after local expansion: " << root.Norm() << endl;        
       }
     }
 
+    RegularMLMultiPole (Vec<3> center, double r, int order, double kappa)
+      : root(center, r, 0, order, kappa)
+    {
+      nodes_on_level = 0;
+      nodes_on_level[0] = 1;
+    }
+    
+    void AddTarget (Vec<3> t)
+    {
+      root.AddTarget (t);
+    }
+
+    void CalcMP(shared_ptr<SingularMLMultiPole> asingmp)
+    {
+      singmp = asingmp;
+      root.AddSingularNode(singmp->root, false);
+
+      int maxlevel = 0;
+      for (auto [i,num] : Enumerate(RegularMLMultiPole::nodes_on_level))
+        if (num > 0) maxlevel = i;
+
+      for (int i = 0; i <= maxlevel; i++)
+        cout << "reg " << i << ": " << RegularMLMultiPole::nodes_on_level[i] << endl;
+
+      root.LocalizeExpansion(false);
+    }
+
+    
     Complex Evaluate (Vec<3> p) const
     {
+      // static Timer t("mptool Eval MLMP regular"); RegionTimer r(t);
       if (L2Norm(p-root.center) > root.r) return 0.0;
       return root.Evaluate(p);
     }
+
+    
   };
   
   Array<size_t> RegularMLMultiPole::nodes_on_level(100);
