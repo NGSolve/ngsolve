@@ -66,6 +66,32 @@ namespace ngcomp {
                 }
             }
         }
+      bool changed = true;
+      while(changed)
+        {
+          changed = false;
+          for (auto i : Range(dofmap))
+            {
+              if(dofmap[dofmap[i]] != dofmap[i])
+                {
+                  dofmap[i] = dofmap[dofmap[i]];
+                  changed = true;
+                }
+            }
+        }
+      changed = true;
+      while(changed)
+        {
+          changed = false;
+          for (auto i : Range(vertex_map))
+            {
+              if(vertex_map[vertex_map[i]] != vertex_map[i])
+                {
+                  vertex_map[i] = vertex_map[vertex_map[i]];
+                  changed = true;
+                }
+            }
+        }
       ctofdof.SetSize(dofmap.Size());
       for (auto i : Range(ctofdof.Size()))
         ctofdof[i] = space->GetDofCouplingType(i);
