@@ -205,7 +205,8 @@ namespace ngfem
     void RotateZ (double alpha)
     {
       // static Timer t("mptool sh RotateZ"); RegionTimer rg(t);
-      
+      if (order < 0) return;
+
       Vector<Complex> exp_imalpha(order+1);
       Complex exp_ialpha(cos(alpha), sin(alpha));
       Complex prod = 1.0;
@@ -1018,6 +1019,7 @@ c
 
       Array<tuple<Vec<3>, Complex>> charges;
       Array<tuple<Vec<3>, Vec<3>, Complex>> dipoles;
+      int total_sources;
       
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
         : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(2.0, r*kappa))
@@ -1131,20 +1133,32 @@ c
         return sum;
       }
 
-
+      void CalcTotalSources()
+      {
+        total_sources = charges.Size() + dipoles.Size();
+        for (auto & child : childs)
+          if (child)
+            {
+              child->CalcTotalSources();
+              total_sources += child->total_sources;
+            }
+      }
+      
       void CalcMP()
       {
         mp.SH().Coefs() = 0.0;
         if (childs[0])
           {
-            /*
-            for (auto & child : childs)
-              child->CalcMP();
-            */
-            ParallelFor (8, [&] (int nr)
-            {
-              childs[nr] -> CalcMP();
-            });
+            if (total_sources < 1000)
+              for (auto & child : childs)
+                child->CalcMP();
+            else
+              ParallelFor (8, [&] (int nr)
+                           {
+                             childs[nr] -> CalcMP();
+                           });
+
+            
             for (auto & child : childs)            
               child->mp.TransformAdd(mp, center-child->center);
           }
@@ -1240,7 +1254,6 @@ c
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
 
-      root.CalcMP();
       /*
       int maxlevel = 0;
       for (auto [i,num] : Enumerate(nodes_on_level))
@@ -1249,6 +1262,8 @@ c
       for (int i = 0; i <= maxlevel; i++)
         cout << "sing " <<  i << ": " << nodes_on_level[i] << endl;
       */
+      root.CalcTotalSources();
+      root.CalcMP();
       
       havemp = true;
     }
@@ -1363,16 +1378,17 @@ c
               }
             else
               {
-                /*
-                for (auto & ch : childs)
-                  if (ch)
-                    ch -> AddSingularNode (singnode, allow_refine);
-                */
-                ParallelFor (8, [&] (int nr)
-                {
-                  if (childs[nr])
-                    childs[nr] -> AddSingularNode (singnode, allow_refine);
-                });
+                if (total_targets < 1000)
+                  for (auto & ch : childs)
+                    if (ch)
+                      ch -> AddSingularNode (singnode, allow_refine);
+                else
+                  ParallelFor (8, [&] (int nr)
+                               {
+                                 if (childs[nr])
+                                   childs[nr] -> AddSingularNode (singnode, allow_refine);
+                               });
+                
                 if (targets.Size())
                   singnodes.Append(&singnode);
               }
