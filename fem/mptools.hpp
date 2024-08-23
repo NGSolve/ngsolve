@@ -1379,9 +1379,11 @@ c
             else
               {
                 if (total_targets < 1000)
-                  for (auto & ch : childs)
-                    if (ch)
-                      ch -> AddSingularNode (singnode, allow_refine);
+                  {
+                    for (auto & ch : childs)
+                      if (ch)
+                        ch -> AddSingularNode (singnode, allow_refine);
+                  }
                 else
                   ParallelFor (8, [&] (int nr)
                                {
