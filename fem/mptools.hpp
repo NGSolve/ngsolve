@@ -1023,7 +1023,6 @@ c
       
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
         : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(2.0, r*kappa))
-      // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, r*kappa)
       {
         // cout << "singml, add node, level = " << level << endl;
         if (level < nodes_on_level.Size())
@@ -1304,9 +1303,7 @@ c
       Array<const SingularMLMultiPole::Node*> singnodes;
 
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
-      // : center(acenter), r(ar), level(alevel),  mp(order, kappa, 1.0/min(1.0, kappa*r))
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(4.0, r*kappa))
-          // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, r*kappa)  
+        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0/min(1.0, 0.25*r*kappa))
       {
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
