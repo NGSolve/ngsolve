@@ -1136,7 +1136,17 @@ namespace ngfem
   }
 
 
+
+
+
+  
   static RegisterClassForArchive<CoordCoefficientFunction, CoefficientFunction> regcoocf;
+
+
+
+
+
+
   
 }
 
