@@ -251,15 +251,10 @@ namespace ngfem
     
     void RotateY (double alpha)
     {
-      LocalHeap lh(8*4*sqr(order) + 10*order + 500);
-      // static Timer t("mptool sh RotateY"); RegionTimer rg(t);
-      static Timer t1("mptool sh RotateY 1");
-      static Timer t2("mptool sh RotateY 2");
-      static Timer t3("mptool sh RotateY 3");
-      static Timer t23("mptool sh RotateY 23");
-      static Timer tlp("mptool sh RotateY loop");      
+      LocalHeap lh(8*6*sqr(order) + 8*15*order + 500);
       
-      // t1.Start();
+      static Timer t("mptool sh RotateY"); RegionTimer rg(t);
+
       double s = sin(alpha);
       double c = cos(alpha);
 
@@ -271,18 +266,13 @@ namespace ngfem
           normalized_leg_func.Row(i) *= -1;
       
       // cout << "leg = " << endl << normalized_leg_func << endl;
-      Vector<> Dmn(2*order+1), invDmn(2*order+1);
-      // t1.Stop();
+      FlatVector<> Dmn(2*order+1, lh);
 
-      // RegionTimer rlp(tlp);
-      ArrayMem<double, 1000> trafomem( (order+1)*(2*order+1));
       for (int n=1; n <= order; n++)
         {
           HeapReset hr(lh);
-          // RegionTimer r23(t23);
           
-          // Matrix<double> trafo(n+1, 2*n+1);
-          FlatMatrix<double> trafo(n+1, 2*n+1, trafomem.Data());
+          FlatMatrix<double> trafo(n+1, 2*n+1, lh); 
           /*
             Recursive Computation of Spherical Harmonic Rotation Coefficients of Large Degree
             Nail A. Gumerov and Ramani Duraiswami
@@ -290,7 +280,7 @@ namespace ngfem
             
             page 130 
           */
-          // t2.Start();
+
           // Step 2
           // H(0,m)
           trafo.Col(n) = 1.0/sqrt(2*n+1) * normalized_leg_func.Col(n).Range(n+1);
@@ -307,36 +297,33 @@ namespace ngfem
           // Step 4
           // diamond - recursion
           for (int mp = -n; mp <= n; mp++)
-            {
-              Dmn(order+mp) = CalcDmn(mp, n);
-              invDmn(order+mp) = 1.0/Dmn(order+mp);
-            }
-          
+            Dmn(order+mp) = CalcDmn(mp, n);
+
           for (int mp = 1; mp < n; mp++)
             {
+              double invDmn = 1.0 / Dmn(order+mp);
               for (int m = mp; m < n; m++)
-                trafo(m, n+mp+1) = invDmn(order+mp,n) * ( Dmn(order+mp-1) *trafo(m  ,n+mp-1)
-                                                          -Dmn(order+m-1)*trafo(m-1,n+mp)
-                                                          +Dmn(order+m)  *trafo(m+1,n+mp));
+                trafo(m, n+mp+1) = invDmn  * ( Dmn(order+mp-1) *trafo(m  ,n+mp-1)
+                                               -Dmn(order+m-1)*trafo(m-1,n+mp)
+                                               +Dmn(order+m)  *trafo(m+1,n+mp));
               int m = n;
-              trafo(m, n+mp+1) = invDmn(order+mp,n) * ( Dmn(order+mp-1,n)*trafo(m  ,n+mp-1)
-                                                        -Dmn(order+m-1,n)*trafo(m-1,n+mp));
+              trafo(m, n+mp+1) = invDmn * ( Dmn(order+mp-1,n)*trafo(m  ,n+mp-1)
+                                            -Dmn(order+m-1,n)*trafo(m-1,n+mp));
             }
       
           // Step 5
           // diamond - recursion, negative      
           for (int mp = 0; mp > -n; mp--)
             {
+              double invDmn = 1.0 / Dmn(order+mp-1);              
               for (int m = -mp+1; m < n; m++)
-                trafo(m, n+mp-1) = invDmn(order+mp-1,n) * (  Dmn(order+mp,n)*trafo(m  ,n+mp+1)
-                                                             +Dmn(order+m-1,n)*trafo(m-1,n+mp)
-                                                             -Dmn(order+m  ,n)*trafo(m+1,n+mp));
+                trafo(m, n+mp-1) = invDmn * (  Dmn(order+mp,n)*trafo(m  ,n+mp+1)
+                                               +Dmn(order+m-1,n)*trafo(m-1,n+mp)
+                                               -Dmn(order+m  ,n)*trafo(m+1,n+mp));
               int m = n;
-              trafo(m, n+mp-1) = invDmn(order+mp-1,n) * (  Dmn(order+mp,n)*trafo(m  ,n+mp+1)
-                                                           +Dmn(order+m-1,n)*trafo(m-1,n+mp));
+              trafo(m, n+mp-1) = invDmn * (  Dmn(order+mp,n)*trafo(m  ,n+mp+1)
+                                             +Dmn(order+m-1,n)*trafo(m-1,n+mp));
             }
-
-      
           // Step 6
           // symmetries in m and mp
           for (int m = 0; m <= n; m++)
@@ -351,8 +338,6 @@ namespace ngfem
               auto src = trafo.Col(n-m).Range(m, n+1);
               dst = src;
             }
-
-
           /*
           double errortho = L2Norm( Matrix(trafo*Trans(trafo) - Identity(n+1)));
           if (errortho > 1e-10)
@@ -363,8 +348,6 @@ namespace ngfem
             }
           */
 
-          // t2.Stop();
-          // t3.Start();
           
           FlatVector<Complex> cn = CoefsN(n);
           FlatVector<Complex> old = cn | lh;
@@ -377,7 +360,6 @@ namespace ngfem
               cn(n+m) *= -1;
               cn(n-m) *= -1;
             }
-          // t3.Stop();
         }
     }
     
@@ -876,6 +858,9 @@ c
     template <typename TARGET>
     void TransformAdd (MultiPole<TARGET> & target, Vec<3> dist) const
     {
+      if (SH().Order() < 0) return;
+      if (target.SH().Order() < 0) return;      
+      
       MultiPole<TARGET> tmp{target};
       Transform(tmp, dist);
       target.SH().Coefs() += tmp.SH().Coefs();
@@ -884,15 +869,23 @@ c
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET> & target)
     {
-      // static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
-      // RegionTimer rg(t);
+      static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
+      
+      RegionTimer rg(t);
       
       int os = sh.Order();
       int ot = target.SH().Order();
-
+      
       target.SH().Coefs()=0.0;
-      Matrix<Complex> trafo(os+ot+1, os+1), trafom(os+ot+1, os+1);
-      trafo = Complex(0.0);
+
+      LocalHeap lh( 16*( (os+ot+1)*(os+1) + (os+1 + ot+1) ) + 8*2*(os+ot+1) + 500);
+
+      FlatMatrix<Complex> trafo(os+ot+1, os+1, lh); 
+      FlatVector<Complex> hv1(os+1, lh), hv2(ot+1, lh);
+      FlatVector<double> amn(os+ot+1, lh);
+      FlatVector<double> inv_amn(os+ot+1, lh);
+      
+      // trafo = Complex(0.0);
 
 
       double tscale = target.Scale();
@@ -925,69 +918,80 @@ c
       if (os > 0)
         {
           for (int l = 1; l < os+ot; l++)   
-            trafo(l,1) = -scale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)-sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
+            trafo(l,1) = -scale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
+                                                   -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
           trafo(0,1) = -scale*tscale*trafo(1,0);
         }
       
       for (int n = 1; n < os; n++)
         {
           for (int l = 1; l < os+ot-n; l++)
-            trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)-sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)-sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
+            trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)
+                                                     -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)
+                                                     -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
           trafo(0,n+1) = pow(-scale*tscale,n+1)*trafo(n+1,0);
         }
 
 
-      Vector<Complex> hv1(os+1), hv2(ot+1);
+      
       for (int n = 0; n <= os; n++)
         hv1(n) = sh.Coef(n,0);
-      
       hv2 = trafo.Rows(ot+1) * hv1;
-      
       for (int n = 0; n <= ot; n++)
         target.SH().Coef(n,0) = hv2(n);
 
+      
 
       for (int m = 1; m <= min(os,ot); m++)
         {
-          trafom = Complex(0.0);
-          // fill recursive
-
-          // (187)
+          // fill recursive formula (187)
           for (int l = m; l <= os+ot-m; l++)
-            trafom(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*trafo(l-1, m-1)
-                                                     -sh.CalcBmn(m-1,l+1)*tscale*trafo(l+1,m-1));
-          
+            trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*trafo(l-1, m-1)
+                                                    -sh.CalcBmn(m-1,l+1)*tscale*trafo(l+1,m-1));
+
+          for (int l = m-1; l < os+ot-m; l++)
+            {
+              amn(l) = sh.CalcAmn(m,l);
+              inv_amn(l) = scale/amn(l);
+            }
+
+          double prod = 1; 
           for (int n = m; n < os; n++)
             {
               for (int l = m+1; l < os+ot-n; l++)
-                trafom(l,n+1) = -scale/sh.CalcAmn(m,n) * (sh.CalcAmn(m,l)*tscale*trafom(l+1,n)
-                                                          -sh.CalcAmn(m,l-1)*inv_tscale*trafom(l-1,n)
-                                                          -sh.CalcAmn(m,n-1)*scale*trafom(l,n-1));
-              trafom(m,n+1) = pow(-scale*tscale,n+1-m)*trafom(n+1,m);
+                trafo(l,n+1) = -inv_amn(n) * (amn(l)*tscale*trafo(l+1,n)
+                                              -amn(l-1)*inv_tscale*trafo(l-1,n)
+                                              -amn(n-1)*scale*trafo(l,n-1));
+
+              prod *= -scale*tscale;
+              trafo(m,n+1) = prod*trafo(n+1,m);              
             }
 
-          
           /*
-          // if (m == 1)
-          cout << "m = " << m << endl;
-          cout << "trafom = " << trafom.Rows(m,ot+1).Cols(m,os+1) << endl;
-          cout << trafom.Rows(ot+1,os+ot-m+1).Cols(m,os+1) << endl;          
+          *testout << "norm trafo = " << L2Norm(trafo.Rows(m, ot+1).Cols(m,os+1)) << endl;
+          if ( L2Norm(trafo.Rows(m, ot+1).Cols(m,os+1)) > 1e30)
+            {
+              *testout << trafo.Rows(m, ot+1).Cols(m,os+1) << endl;
+              for (int i = m; i < os+1; i++)
+                {
+                  *testout << "norm col " << i << " = " << L2Norm(trafo.Col(i).Range(m,os+ot-i)) << endl;
+                  *testout << "col " << i << " = " << trafo.Col(i).Range(m,os+ot-i) << endl;
+                }
+              throw Exception("large mat");
+            }
           */
-          
+            
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,m);
-          hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,m) = hv2(n);
           
-          // cout << "m = " << m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,-m);
-          hv2.Range(m,ot+1) = trafom.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
           for (int n = m; n <= ot; n++)
             target.SH().Coef(n,-m) = hv2(n);
-          // cout << "m = " << -m << ", hv1 = " << hv1 << ", hv2 = " << hv2 << endl;          
-          trafo.Swap (trafom); //  = trafom; // swap ? 
         }
     }
   };
@@ -998,6 +1002,7 @@ c
   {
     return max (20, int(2*rho_kappa));
   }
+  static constexpr int maxdirect = 50;
 
   class SingularMLMultiPole
   {
@@ -1015,7 +1020,8 @@ c
       Array<tuple<Vec<3>, Vec<3>, Complex>> dipoles;
       
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(1.0, r*kappa))
+        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(2.0, r*kappa))
+      // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, r*kappa)
       {
         // cout << "singml, add node, level = " << level << endl;
         if (level < nodes_on_level.Size())
@@ -1053,7 +1059,7 @@ c
         charges.Append( tuple{x,c} );
 
         if (r*mp.Kappa() < 1e-8) return;
-        if (charges.Size() < 20 && r*mp.Kappa() < 1)
+        if (charges.Size() < maxdirect && r*mp.Kappa() < 1)
           return;
 
         CreateChilds();
@@ -1084,7 +1090,7 @@ c
 
         dipoles.Append (tuple{x,d,c});
 
-        if (dipoles.Size() < 20 || r < 1e-8)
+        if (dipoles.Size() < maxdirect || r < 1e-8)
           return;
         
         CreateChilds();
@@ -1131,11 +1137,16 @@ c
         mp.SH().Coefs() = 0.0;
         if (childs[0])
           {
+            /*
             for (auto & child : childs)
-              {
-                child->CalcMP();
-                child->mp.TransformAdd(mp, center-child->center);
-              }
+              child->CalcMP();
+            */
+            ParallelFor (8, [&] (int nr)
+            {
+              childs[nr] -> CalcMP();
+            });
+            for (auto & child : childs)            
+              child->mp.TransformAdd(mp, center-child->center);
           }
         else
           {
@@ -1230,13 +1241,14 @@ c
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
 
       root.CalcMP();
-
+      /*
       int maxlevel = 0;
       for (auto [i,num] : Enumerate(nodes_on_level))
         if (num > 0) maxlevel = i;
 
       for (int i = 0; i <= maxlevel; i++)
         cout << "sing " <<  i << ": " << nodes_on_level[i] << endl;
+      */
       
       havemp = true;
     }
@@ -1278,7 +1290,8 @@ c
 
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
       // : center(acenter), r(ar), level(alevel),  mp(order, kappa, 1.0/min(1.0, kappa*r))
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(1.0, r*kappa))        
+        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(4.0, r*kappa))
+          // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, r*kappa)  
       {
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
@@ -1301,6 +1314,7 @@ c
 
       void AddSingularNode (const SingularMLMultiPole::Node & singnode, bool allow_refine)
       {
+        if (mp.SH().Order() < 0) return;
         if (singnode.mp.SH().Order() < 0) return;
         if (L2Norm(singnode.mp.SH().Coefs()) == 0) return;
         if (level > 20)
@@ -1349,14 +1363,18 @@ c
               }
             else
               {
-                if (childs[0])
-                  {
-                    for (auto & ch : childs)
-                      ch -> AddSingularNode (singnode, allow_refine);
-                    return;
-                  }
-                
-                singnodes.Append(&singnode);
+                /*
+                for (auto & ch : childs)
+                  if (ch)
+                    ch -> AddSingularNode (singnode, allow_refine);
+                */
+                ParallelFor (8, [&] (int nr)
+                {
+                  if (childs[nr])
+                    childs[nr] -> AddSingularNode (singnode, allow_refine);
+                });
+                if (targets.Size())
+                  singnodes.Append(&singnode);
               }
           }
         else
@@ -1389,6 +1407,7 @@ c
       {
         // *testout << "eval p = " << p << ", level = " << level << ", center = " << center <<  ", r = " << r << endl;
         Complex sum = 0.0;
+        /*
         if (childs[0])
           {
             int childnum = 0;
@@ -1397,23 +1416,21 @@ c
             if (p(2) > center(2)) childnum += 4;
             sum = childs[childnum]->Evaluate(p);
           }
+        */
+        int childnum = 0;
+        if (p(0) > center(0)) childnum += 1;
+        if (p(1) > center(1)) childnum += 2;
+        if (p(2) > center(2)) childnum += 4;
+        if (childs[childnum])
+          sum = childs[childnum]->Evaluate(p);
         else
           sum = mp.Eval(p-center);
 
-        // *testout << "sing nodes: " << singnodes.Size() << endl;
-        // *testout << "look for lcals, eval p = " << p << ", level = " << level << ", center = " << center <<  ", r = " << r << ", child[0] = " << childs[0] << endl;        
-        // static Timer t("mptool Eval singular nodes");
-        // t.Start();
+
+        static Timer t("mptool direct evaluate"); RegionTimer r(t);
         for (auto sn : singnodes)
-          {
-            /*
-            *testout << "singnode, c = " << sn->center << ", r= " << r
-                     << " charges = " << sn->charges.Size() << ", child[0] = " << sn->childs[0] 
-                     << ", dist = " << L2Norm(center-sn->center) << endl;
-            */
-            sum += sn->EvaluateMP(p);
-          }
-        // t.Stop();
+          sum += sn->EvaluateMP(p);
+
         return sum;
       }
 
@@ -1443,7 +1460,7 @@ c
         targets.Append( x );
 
         if (r*mp.Kappa() < 1e-8) return;
-        if (targets.Size() < 20 && r*mp.Kappa() < 1)
+        if (targets.Size() < maxdirect && r*mp.Kappa() < 1)
           return;
 
         CreateChilds();
@@ -1468,9 +1485,14 @@ c
       {
         for (auto & child : childs)
           if (child)
-            child->RemoveEmptyTrees();
+            {
+              child->RemoveEmptyTrees();
+              // if (child->total_targets == 0)
+              // child = nullptr;
+            }
+
         if (total_targets == 0)
-          mp = MultiPole<MPRegular>(-1, mp.Kappa());          
+          mp = MultiPole<MPRegular>(-1, mp.Kappa());
       }
       
     };
@@ -1492,13 +1514,15 @@ c
         // cout << "norm after S->R conversion: " << root.Norm() << endl;
       }
 
-      
+
+      /*
       int maxlevel = 0;
       for (auto [i,num] : Enumerate(nodes_on_level))
         if (num > 0) maxlevel = i;
 
       for (int i = 0; i <= maxlevel; i++)
         cout << "reg " << i << ": " << nodes_on_level[i] << endl;
+      */
       
       {
         static Timer t("mptool expand regular MLMP"); RegionTimer rg(t);                  
@@ -1528,16 +1552,22 @@ c
         
       root.AddSingularNode(singmp->root, false);
 
+      /*
       int maxlevel = 0;
       for (auto [i,num] : Enumerate(RegularMLMultiPole::nodes_on_level))
         if (num > 0) maxlevel = i;
 
       for (int i = 0; i <= maxlevel; i++)
         cout << "reg " << i << ": " << RegularMLMultiPole::nodes_on_level[i] << endl;
+      */
 
       root.LocalizeExpansion(false);
     }
 
+    double Norm() const
+    {
+      return root.Norm();
+    }
     
     Complex Evaluate (Vec<3> p) const
     {
