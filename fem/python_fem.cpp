@@ -519,7 +519,11 @@ direction : int
     {
       return EdgeCurvatureCF(dim);
     }
-
+    shared_ptr<CF> GetNumElsOnFacetCF()
+    {
+      return ngcomp::NumElsOnFacetCF();
+    }
+        
   };
 
   ExportStdMathFunctions(m);
@@ -570,6 +574,8 @@ direction : int
     .def("EdgeCurvature", &SpecialCoefficientFunctions::GetEdgeCurvatureCF, py::arg("dim"),
          "EdgeCurvature \n"
          "space-dimension must be provided")
+    .def("num_els_on_facet", &SpecialCoefficientFunctions::GetNumElsOnFacetCF,
+         "number of elements on facet, available for element-bnd integrals, and surface integrals")
     ;
   static SpecialCoefficientFunctions specialcf;
   

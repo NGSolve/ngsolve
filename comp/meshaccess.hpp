@@ -1281,6 +1281,12 @@ namespace ngcomp
   MakeTrafoCF(shared_ptr<CoefficientFunction> func,
               shared_ptr<CoefficientFunction> trafo,
               Region region);
+
+
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> NumElsOnFacetCF ();
+  
+
   
   /**
      Controls the progress - output.

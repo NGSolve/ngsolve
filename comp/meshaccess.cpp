@@ -2601,6 +2601,52 @@ namespace ngcomp
   }
 
 
+
+
+
+  class cl_NumElsOnFacetCF : public CoefficientFunctionNoDerivative
+  {
+  public:
+    cl_NumElsOnFacetCF ()
+      : CoefficientFunctionNoDerivative(1,false)
+    { ; }
+
+    virtual string GetDescription() const override
+    {
+      return "number of els on facet";
+    }
+    
+    using CoefficientFunctionNoDerivative::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override 
+    {
+      throw Exception ("old eval not overloaded");
+    }
+    virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<> res) const override 
+    {
+      auto & trafo  = mip.GetTransformation();
+      const ngcomp::MeshAccess * ma = static_cast<const ngcomp::MeshAccess*> (trafo.GetMesh());
+      auto ei = trafo.GetElementId();
+      auto fnr = mip.IP().FacetNr(); // local facet nr
+      
+      auto facets = ma->GetElFacets(ei);
+      
+      Array<int> elnums;
+      ma -> GetFacetElements(facets[fnr], elnums);
+      res(0) = elnums.Size();
+    }
+  };
+
+  
+  shared_ptr<CoefficientFunction> NumElsOnFacetCF ()
+  {
+    return make_shared<cl_NumElsOnFacetCF>();
+  }
+
+
+
+
+
+  
   
 
 #ifdef PARALLEL
