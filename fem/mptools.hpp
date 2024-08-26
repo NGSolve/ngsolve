@@ -805,6 +805,16 @@ c
     }
 
 
+    void ChangeScaleTo (double newscale)
+    {
+      double fac = scale/newscale;
+      double prod = 1;
+      for (int n = 0; n <= sh.Order(); n++, prod*= fac)
+        sh.CoefsN(n) *= prod;
+      scale = newscale;
+    }
+
+    
     template <typename TARGET>
     void Transform (MultiPole<TARGET> & target, Vec<3> dist) const
     {
@@ -836,8 +846,16 @@ c
       tmp.SH().RotateZ(phi);
       tmp.SH().RotateY(theta);
 
+      // double normbefore = L2Norm(tmp.SH().Coefs());
       tmp.ShiftZ(-len, target);
-      
+      /*
+      double normafter = L2Norm(target.SH().Coefs());
+      if (normafter > 1)
+        *testout << "siftZ, so = " << tmp.SH().Order()
+                 << ", to = " << target.SH().Order() << ", z = " << len << ", kz = " << len*tmp.Kappa()
+                 << ", snorm = " << normbefore << ", tnorm = " << normafter << endl;
+      */
+                 
       /*
       // testing ....
       tmp.SH().RotateY(-theta);
@@ -866,7 +884,8 @@ c
       Transform(tmp, dist);
       target.SH().Coefs() += tmp.SH().Coefs();
     }
-    
+
+#ifdef VER1
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET> & target)
     {
@@ -876,6 +895,15 @@ c
       
       int os = sh.Order();
       int ot = target.SH().Order();
+
+      if (os > 100 && ot > 100 && abs(z)*kappa > 0.3*min(os,ot) && is_same<RADIAL,TARGET>())
+        {
+          MultiPole<TARGET> tmp {target};
+          ShiftZ(z/2, tmp);
+          tmp.ShiftZ(z/2, target);
+          return;
+        }
+
       
       target.SH().Coefs()=0.0;
 
@@ -933,6 +961,8 @@ c
           trafo(0,n+1) = pow(-scale*tscale,n+1)*trafo(n+1,0);
         }
 
+      cout << "m = " << 0 << endl
+           << trafo.Rows(0,ot+1) << endl;
 
       
       for (int n = 0; n <= os; n++)
@@ -942,7 +972,6 @@ c
         target.SH().Coef(n,0) = hv2(n);
 
       
-
       for (int m = 1; m <= min(os,ot); m++)
         {
           // fill recursive formula (187)
@@ -950,6 +979,12 @@ c
             trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*trafo(l-1, m-1)
                                                     -sh.CalcBmn(m-1,l+1)*tscale*trafo(l+1,m-1));
 
+
+          /*
+          cout << "m = " << m << endl;
+          cout << "             norm col0 = " << L2Norm(trafo.Col(m).Range(m,os+ot-m+1)) << endl;
+          */
+          
           for (int l = m-1; l < os+ot-m; l++)
             {
               amn(l) = sh.CalcAmn(m,l);
@@ -969,6 +1004,12 @@ c
             }
 
           /*
+          cout << "                            norm trafo = "
+               << L2Norm(trafo.Rows(m,ot+1).Cols(m,os+1)) 
+               << " ortho " << L2Norm( Trans(trafo.Rows(m,ot+1).Cols(m,os+1))*trafo.Rows(m,ot+1).Cols(m,os+1)
+                                       - Identity(os+1-m)) << endl;
+          */
+          /*
           *testout << "norm trafo = " << L2Norm(trafo.Rows(m, ot+1).Cols(m,os+1)) << endl;
           if ( L2Norm(trafo.Rows(m, ot+1).Cols(m,os+1)) > 1e30)
             {
@@ -981,7 +1022,10 @@ c
               throw Exception("large mat");
             }
           */
-            
+
+          cout << "m = " << m << endl
+               << trafo.Rows(m,ot+1).Cols(m,os+1) << endl;
+          
           for (int n = m; n <= os; n++)
             hv1(n) = sh.Coef(n,m);
           hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
@@ -995,7 +1039,390 @@ c
             target.SH().Coef(n,-m) = hv2(n);
         }
     }
+#endif
+
+
+#ifdef VER2
+    
+    template <typename TARGET>
+    void ShiftZ (double z, MultiPole<TARGET> & target)
+    {
+      static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
+      RegionTimer rg(t);
+      
+      int os = sh.Order();
+      int ot = target.SH().Order();
+      
+      target.SH().Coefs()=0.0;
+
+      LocalHeap lh( 16*( (os+ot+1)*(os+1) + (os+1 + ot+1) ) + 8*2*(os+ot+1) + 500);
+
+      FlatMatrix<Complex> trafo(os+ot+1, os+1, lh); 
+      FlatVector<Complex> hv1(os+1, lh), hv2(ot+1, lh);
+      FlatVector<double> amn(os+ot+1, lh);
+      FlatVector<double> inv_amn(os+ot+1, lh);
+      
+      // trafo = Complex(0.0);
+
+      double tscale = target.Scale();
+      double inv_tscale = 1.0/tscale;
+
+      
+      // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
+      // RADIAL::Eval(os+ot, kappa*abs(z), trafo.Col(0));
+      if (typeid(RADIAL) == typeid(TARGET))
+        SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
+      else
+        SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
+      
+      if (z < 0)
+        for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
+      
+      // for (int l = 0; l <= os+ot; l++)
+      // trafo(l,0) *= sqrt(2*l+1);
+
+      if (os > 0)
+        {
+          for (int l = 1; l < os+ot; l++)
+            {
+              /*
+              trafo(l,1) = -scale/sh.CalcAmn(0,0) *
+                (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
+                 -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
+              */
+
+              int m = 0, n = 0;
+              double fac = ((2*l+1.0)/(2*n+1.0));
+              trafo(l,n+1) = -scale/ ( sqrt((n+1+m)*(n+1-m)) * fac)   *
+                (sqrt( (l+1+m)*(l+1-m)) * tscale * trafo(l+1,n)
+                 -sqrt( (l+m)*(l-m) )  * inv_tscale * trafo(l-1,n)
+                 -sqrt( (n+m)*(n-m) ) * fac * scale * trafo(l,n-1));
+            }
+          trafo(0,1) = -scale*tscale*trafo(1,0);
+        }
+      
+      for (int n = 1; n < os; n++)
+        {
+          for (int l = 1; l < os+ot-n; l++)
+            {
+              /*
+                trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)
+                -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)
+                -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
+              */
+              
+              int m = 0;
+              double fac = ((2*l+1.0)/(2*n+1.0));
+              trafo(l,n+1) = -scale / ( sqrt((n+1+m)*(n+1-m)) * fac)   *
+                (sqrt( (l+1+m)*(l+1-m)) * tscale * trafo(l+1,n)
+                 -sqrt( (l+m)*(l-m) )  * inv_tscale * trafo(l-1,n)
+                 -sqrt( (n+m)*(n-m) ) * fac * scale * trafo(l,n-1));
+            }
+          trafo(0,n+1) = pow(-scale*tscale,n+1)*trafo(n+1,0);
+        }
+
+      
+      Matrix<Complex> scaledtrafo(os+ot+1, os+1);
+      for (int l = 0; l <= os+ot; l++)
+        for (int n = 0; n <= os; n++)
+          scaledtrafo(l,n) = trafo(l,n) * sqrt( (2*l+1)*(2*n+1) );
+
+      // cout << "m = " << 0 << endl
+      // << scaledtrafo.Rows(0,ot+1) << endl;
+      
+      for (int n = 0; n <= os; n++)
+        hv1(n) = sh.Coef(n,0) * sqrt(2*n+1);
+      hv2 = trafo.Rows(ot+1) * hv1;
+      for (int n = 0; n <= ot; n++)
+        target.SH().Coef(n,0) = hv2(n) * sqrt(2*n+1);
+
+      
+      for (int m = 1; m <= min(os,ot); m++)
+        {
+          // fill recursive formula (187)
+          for (int l = m; l <= os+ot-m; l++)
+            {
+              trafo(l,m) = scale/sh.CalcBmn(-m, m) *
+                (sh.CalcBmn(-m, l)*inv_tscale * trafo(l-1, m-1) * sqrt( (2*l-1)*(2*m-1) )
+                 -sh.CalcBmn(m-1,l+1)*tscale * trafo(l+1,m-1) * sqrt( (2*l+3)*(2*m-1)) );
+              trafo(l,m) /= sqrt( (2*l+1)*(2*m+1) );
+            }
+
+          cout << "m = " << m << endl;
+          cout << "             norm col0 = " << L2Norm(trafo.Col(m).Range(m,os+ot-m+1)) << endl;
+          
+          for (int l = m-1; l < os+ot-m; l++)
+            {
+              amn(l) = sh.CalcAmn(m,l);
+              inv_amn(l) = scale/amn(l);
+            }
+
+          double prod = 1; 
+          for (int n = m; n < os; n++)
+            {
+              for (int l = m+1; l < os+ot-n; l++)
+                {
+                  /*
+                    trafo(l,n+1) = -inv_amn(n) * (amn(l)*tscale*trafo(l+1,n)
+                    -amn(l-1)*inv_tscale*trafo(l-1,n)
+                    -amn(n-1)*scale*trafo(l,n-1));
+                  */
+                  
+                
+                  double fac = ((2*l+1.0)/(2*n+1.0));
+                  trafo(l,n+1) = -scale / ( sqrt((n+1+m)*(n+1-m)) * fac)   *
+                    (sqrt( (l+1+m)*(l+1-m)) * tscale * trafo(l+1,n)
+                     -sqrt( (l+m)*(l-m) )  * inv_tscale * trafo(l-1,n)
+                     -sqrt( (n+m)*(n-m) ) * fac * scale * trafo(l,n-1));
+                }
+              prod *= -scale*tscale;
+              trafo(m,n+1) = prod*trafo(n+1,m);              
+            }
+
+          double normleft = 0;
+          for (int l = m; l <= ot; l++)
+            for (int n = m; n <= min(l,os); n++)
+              normleft += sqr(abs(trafo(l,n)));
+          normleft = sqrt(normleft);
+          cout << "                            norm trafo = "
+               << L2Norm(trafo.Rows(m,ot+1).Cols(m,os+1)) << ",  normleft = " << normleft << endl;
+          
+          // << " ortho " << L2Norm( Trans(trafo.Rows(m,ot+1).Cols(m,os+1))*trafo.Rows(m,ot+1).Cols(m,os+1)
+          // - Identity(os+1-m)) << endl;
+          /*
+          *testout << "norm trafo = " << L2Norm(trafo.Rows(m, ot+1).Cols(m,os+1)) << endl;
+          if ( L2Norm(trafo.Rows(m, ot+1).Cols(m,os+1)) > 1e30)
+            {
+              *testout << trafo.Rows(m, ot+1).Cols(m,os+1) << endl;
+              for (int i = m; i < os+1; i++)
+                {
+                  *testout << "norm col " << i << " = " << L2Norm(trafo.Col(i).Range(m,os+ot-i)) << endl;
+                  *testout << "col " << i << " = " << trafo.Col(i).Range(m,os+ot-i) << endl;
+                }
+              throw Exception("large mat");
+            }
+          */
+
+
+          /*
+          Matrix<Complex> scaledtrafo(os+ot+1, os+1);
+          for (int l = 0; l <= os+ot; l++)
+            for (int n = 0; n <= os; n++)
+              scaledtrafo(l,n) = trafo(l,n) * sqrt( (2*l+1)*(2*n+1) );
+          
+          cout << "m = " << m << endl
+               << scaledtrafo.Rows(m,ot+1).Cols(m,os+1) << endl;
+          */
+          
+          for (int n = m; n <= os; n++)
+            hv1(n) = sh.Coef(n,m) * sqrt(2*n+1);
+          hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          for (int n = m; n <= ot; n++)
+            target.SH().Coef(n,m) = hv2(n)*sqrt(2*n+1);
+          
+          for (int n = m; n <= os; n++)
+            hv1(n) = sh.Coef(n,-m) * sqrt(2*n+1);
+          hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          for (int n = m; n <= ot; n++)
+            target.SH().Coef(n,-m) = hv2(n) * sqrt(2*n+1);
+        }
+    }
+#endif
+
+
+
+
+    template <typename TARGET>
+    void ShiftZ (double z, MultiPole<TARGET> & target)
+    {
+      static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
+      RegionTimer rg(t);
+      
+      int os = sh.Order();
+      int ot = target.SH().Order();
+      
+      target.SH().Coefs()=0.0;
+
+      LocalHeap lh( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*2*(os+ot+1) + 500);
+
+      FlatMatrix<Complex> trafo(os+ot+1, max(os,ot)+1, lh);
+      FlatMatrix<Complex> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
+      FlatVector<Complex> hv1(os+1, lh), hv2(ot+1, lh);
+      
+      // trafo = Complex(0.0);
+
+      double tscale = target.Scale();
+      double inv_tscale = 1.0/tscale;
+
+      FlatVector<double> amn(os+ot+1, lh);
+      FlatVector<double> inv_amn(os+ot+1, lh);
+
+      
+      
+      // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
+      // RADIAL::Eval(os+ot, kappa*abs(z), trafo.Col(0));
+      if (typeid(RADIAL) == typeid(TARGET))
+        SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
+      else
+        SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
+      
+      if (z < 0)
+        for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
+
+      for (int l = 0; l <= os+ot; l++)
+        trafo(l,0) *= sqrt(2*l+1);
+      
+      // for (int l = 0; l <= os+ot; l++)
+      // trafo(l,0) *= sqrt(2*l+1);
+
+      if (os > 0)
+        {
+          for (int l = 1; l < os+ot; l++)   
+            trafo(l,1) = -scale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
+                                                   -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
+          trafo(0,1) = -scale*tscale*trafo(1,0);
+        }
+
+      for (int n = 1; n < trafo.Width()-1; n++)
+        {
+          for (int l = 1; l < os+ot-n; l++)
+            trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)
+                                                     -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)
+                                                     -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
+          trafo(0,n+1) = pow(-scale*tscale,n+1)*trafo(n+1,0);
+        }
+      
+      Matrix<Complex> scaledtrafo(os+ot+1, os+1);
+      for (int l = 0; l <= os+ot; l++)
+        for (int n = 0; n <= os; n++)
+          scaledtrafo(l,n) = trafo(l,n) * sqrt( (2*l+1)*(2*n+1) );
+      
+      for (int n = 0; n <= os; n++)
+        hv1(n) = sh.Coef(n,0);
+      hv2 = trafo.Rows(ot+1) * hv1;
+      for (int n = 0; n <= ot; n++)
+        target.SH().Coef(n,0) = hv2(n);
+
+      
+      for (int m = 1; m <= min(os,ot); m++)
+        {
+          trafo.Swap (oldtrafo);
+          trafo = 0.0;
+          // fill recursive formula (187)
+          for (int l = m; l <= os+ot-m; l++)
+            trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)
+                                                    -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));
+
+
+          for (int l = m-1; l < os+ot-m; l++)
+            {
+              amn(l) = sh.CalcAmn(m,l);
+              inv_amn(l) = scale/amn(l);
+            }
+
+          if (typeid(RADIAL) != typeid(TARGET))
+            
+            {
+              for (int n = m; n < trafo.Width()-1; n++)
+                {
+                  for (int l = n+1; l < os+ot-n; l++)
+                    trafo(l,n+1) = -inv_amn(n) * (amn(l)*tscale*trafo(l+1,n)
+                                                  -amn(l-1)*inv_tscale*trafo(l-1,n)
+                                                  -amn(n-1)*scale*trafo(l,n-1));
+                }
+            }
+
+          else
+
+            {
+              /*
+              for (int n = m; n < trafo.Width()-1; n++)
+                {
+                  for (int l = n+1; l < os+ot-n; l++)
+                    trafo(l,n+1) = -inv_amn(n) * (amn(l)*tscale*trafo(l+1,n)
+                                                  -amn(l-1)*inv_tscale*trafo(l-1,n)
+                                                  -amn(n-1)*scale*trafo(l,n-1));
+                }
+              */
+
+
+         for (int n = m; n < trafo.Width()-1; n++)
+            {
+              // int l = 2*order-n-1;
+              int l = trafo.Height()-n-2;
+
+              trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                                                        - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)
+                                                        + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+
+              trafo(l-1,n) = tscale/amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
+                                                - amn(n-1)* scale*trafo(l,n-1)
+                                                + amn(n)* 1/scale*trafo(l,n+1));
+            }
+
+          // the same thing 1 row up
+          for (int n = m; n < trafo.Width()-2; n++)
+            {
+              // int l = 2*order-n-2;
+              int l = trafo.Height()-n-3;
+
+              trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
+                                                        - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)
+                                                        + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) );
+
+              trafo(l-1,n) = tscale/amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
+                                                -amn(n-1)* scale*trafo(l,n-1) +
+                                                amn(n)   * 1/scale*trafo(l,n+1)) ;
+            }
+
+
+            // for (int l = 2*order; l >= m; l--)
+            //   for (int n = m+1; n < min(2*order-l,l); n++)
+          for (int l = trafo.Height()-1; l >= m; l--)
+            for (int n = m+1; n < min<int>(trafo.Height()-1-l,l); n++)
+              {
+                trafo(l-1,n) = tscale/amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
+                                                  -amn(n-1)* scale*trafo(l,n-1)
+                                                  +amn(n)  * 1/scale*trafo(l,n+1)) ;
+              }
+            }
+
+          
+          /*
+          cout << "m = " << m << endl
+               << trafo << endl;
+          */
+          for (int n = m; n < os; n++)
+            for (int l = n+1; l <= os; l++)
+              trafo(n,l) = pow(-scale*tscale, l-n) * trafo(l,n);
+
+          /*
+          cout << "                            norm trafo = "
+               << L2Norm(trafo.Rows(m,ot+1).Cols(m,os+1)) << endl;
+          */
+          
+          for (int n = m; n <= os; n++)
+            hv1(n) = sh.Coef(n,m);
+          hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          for (int n = m; n <= ot; n++)
+            target.SH().Coef(n,m) = hv2(n);
+          
+          for (int n = m; n <= os; n++)
+            hv1(n) = sh.Coef(n,-m);
+          hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+          for (int n = m; n <= ot; n++)
+            target.SH().Coef(n,-m) = hv2(n);
+        }
+    }
+    
+
+    
+
+
+    
   };
+  
+  
 
   // ***************** parameters ****************
 
@@ -1022,7 +1449,8 @@ c
       int total_sources;
       
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(2.0, r*kappa))
+        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(1.0, 1*r*kappa))
+          // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0)
       {
         // cout << "singml, add node, level = " << level << endl;
         if (level < nodes_on_level.Size())
@@ -1304,6 +1732,7 @@ c
 
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
         : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0/min(1.0, 0.25*r*kappa))
+          // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0)
       {
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
