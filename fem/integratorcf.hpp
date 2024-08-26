@@ -59,6 +59,11 @@ namespace ngfem
     
     NGS_DLL_HEADER virtual shared_ptr<BilinearFormIntegrator> MakeBilinearFormIntegrator() const;
     NGS_DLL_HEADER virtual shared_ptr<LinearFormIntegrator> MakeLinearFormIntegrator() const;
+
+    NGS_DLL_HEADER virtual shared_ptr<Integral> CreateSameIntegralType (shared_ptr<CoefficientFunction> _cf)
+    {
+      return make_shared<Integral> (_cf, dx);
+    }    
   };
   
   inline Integral operator* (double fac, const Integral & cf)
@@ -99,7 +104,7 @@ namespace ngfem
       CoefficientFunction::T_Transform transform;
       transform.replace = replace;
       for (auto & icf : icfs)
-        repl->icfs += make_shared<Integral> (icf->cf->Transform(transform), icf->dx);
+        repl->icfs += icf->CreateSameIntegralType (icf->cf->Transform(transform));
       return repl;
     }
 
@@ -131,7 +136,7 @@ namespace ngfem
     {
       auto deriv = make_shared<SumOfIntegrals>();
       for (auto & icf : icfs)
-        deriv->icfs += make_shared<Integral> (icf->cf->Diff(var.get(), dir), icf->dx);
+        deriv->icfs += icf->CreateSameIntegralType (icf->cf->Diff(var.get(), dir));
       return deriv;
     }
 
@@ -158,17 +163,17 @@ namespace ngfem
             {
             case VOL:
               if (icf->dx.element_vb == VOL)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + divdir*icf->cf, icf->dx);
+                deriv->icfs += icf->CreateSameIntegralType ( icf->cf->Diff(&shape, dir) + divdir*icf->cf);
               else
                 throw Exception("In DiffShape: for vb=VOL only element_vb=VOL implemented!");
               break;
             case BND:
               if (icf->dx.element_vb == VOL)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + sdivdir*icf->cf, icf->dx);
+                deriv->icfs += icf->CreateSameIntegralType ( icf->cf->Diff(&shape, dir) + sdivdir*icf->cf);
               else if (icf->dx.element_vb == BND && dir->Dimension() == 3)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir) + bsdivdir*icf->cf, icf->dx);
+                deriv->icfs += icf->CreateSameIntegralType ( icf->cf->Diff(&shape, dir) + bsdivdir*icf->cf);
               else if (icf->dx.element_vb == BND && dir->Dimension() == 2)
-                deriv->icfs += make_shared<Integral> ( icf->cf->Diff(&shape, dir), icf->dx);
+                deriv->icfs += icf->CreateSameIntegralType ( icf->cf->Diff(&shape, dir));
               else
                 throw Exception("In DiffShape: for vb=BND something went wrong!");
               break;
@@ -185,7 +190,7 @@ namespace ngfem
     {
       auto compiled = make_shared<SumOfIntegrals>();
       for (auto & icf : icfs)
-        compiled->icfs += make_shared<Integral> (::ngfem::Compile (icf->cf, realcompile, 2, wait, keep_files), icf->dx);
+        compiled->icfs += icf->CreateSameIntegralType (::ngfem::Compile (icf->cf, realcompile, 2, wait, keep_files));
       return compiled;
     }
 
@@ -207,14 +212,14 @@ namespace ngfem
   inline auto operator* (double fac, SumOfIntegrals c1)
   {
     SumOfIntegrals faccf;
-    for (auto & ci : c1.icfs) faccf.icfs += make_shared<Integral>(fac*(*ci));
+    for (auto & ci : c1.icfs) faccf.icfs += ci->CreateSameIntegralType(fac*(ci->cf));
     return faccf;
   }
 
   inline auto operator* (Complex fac, SumOfIntegrals c1)
   {
     SumOfIntegrals faccf;
-    for (auto & ci : c1.icfs) faccf.icfs += make_shared<Integral>(fac*(*ci));
+    for (auto & ci : c1.icfs) faccf.icfs += ci->CreateSameIntegralType(fac*(ci->cf));
     return faccf;
   }
 
