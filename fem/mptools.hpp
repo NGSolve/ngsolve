@@ -349,7 +349,6 @@ namespace ngfem
             }
           */
 
-          
           FlatVector<Complex> cn = CoefsN(n);
           FlatVector<Complex> old = cn | lh;
           
@@ -846,29 +845,7 @@ c
       tmp.SH().RotateZ(phi);
       tmp.SH().RotateY(theta);
 
-      // double normbefore = L2Norm(tmp.SH().Coefs());
       tmp.ShiftZ(-len, target);
-      /*
-      double normafter = L2Norm(target.SH().Coefs());
-      if (normafter > 1)
-        *testout << "siftZ, so = " << tmp.SH().Order()
-                 << ", to = " << target.SH().Order() << ", z = " << len << ", kz = " << len*tmp.Kappa()
-                 << ", snorm = " << normbefore << ", tnorm = " << normafter << endl;
-      */
-                 
-      /*
-      // testing ....
-      tmp.SH().RotateY(-theta);
-      tmp.SH().RotateZ(-phi);
-      double err =  L2Norm(tmp.SH().Coefs()-this->SH().Coefs());
-      if (err > 1e-5)
-        {
-          cout << "phi = " << phi << ", theta = " << theta << endl;
-          cout << "norm = " << L2Norm(tmp.SH().Coefs()) << "   ";
-          cout << "rotation err = " << err << ", order = " << tmp.SH().Order() << endl;
-          cout << "vec = " << this->SH().Coefs() << endl;
-        }
-      */
       
       target.SH().RotateY(-theta);
       target.SH().RotateZ(-phi);
@@ -1243,7 +1220,7 @@ c
       
       target.SH().Coefs()=0.0;
 
-      LocalHeap lh( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*2*(os+ot+1) + 500);
+      LocalHeap lh( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 500);
 
       FlatMatrix<Complex> trafo(os+ot+1, max(os,ot)+1, lh);
       FlatMatrix<Complex> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
@@ -1257,7 +1234,13 @@ c
       FlatVector<double> amn(os+ot+1, lh);
       FlatVector<double> inv_amn(os+ot+1, lh);
 
-      
+      FlatVector<double> powscale(os+1, lh);
+      double prod = 1;
+      for (int i = 0; i <= os; i++)
+        {
+          powscale(i) = prod;
+          prod *= -scale*tscale;
+        }
       
       // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
       // RADIAL::Eval(os+ot, kappa*abs(z), trafo.Col(0));
@@ -1292,11 +1275,6 @@ c
           trafo(0,n+1) = pow(-scale*tscale,n+1)*trafo(n+1,0);
         }
       
-      Matrix<Complex> scaledtrafo(os+ot+1, os+1);
-      for (int l = 0; l <= os+ot; l++)
-        for (int n = 0; n <= os; n++)
-          scaledtrafo(l,n) = trafo(l,n) * sqrt( (2*l+1)*(2*n+1) );
-      
       for (int n = 0; n <= os; n++)
         hv1(n) = sh.Coef(n,0);
       hv2 = trafo.Rows(ot+1) * hv1;
@@ -1306,12 +1284,6 @@ c
       
       for (int m = 1; m <= min(os,ot); m++)
         {
-          trafo.Swap (oldtrafo);
-          trafo = 0.0;
-          // fill recursive formula (187)
-          for (int l = m; l <= os+ot-m; l++)
-            trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)
-                                                    -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));
 
 
           for (int l = m-1; l < os+ot-m; l++)
@@ -1323,7 +1295,12 @@ c
           if (typeid(RADIAL) != typeid(TARGET))
             
             {
-              for (int n = m; n < trafo.Width()-1; n++)
+              // fill recursive formula (187)
+              for (int l = m; l <= os+ot-m; l++)
+                trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*trafo(l-1, m-1)  
+                                                        -sh.CalcBmn(m-1,l+1)*tscale*trafo(l+1,m-1));  
+              
+              for (int n = m; n < os; n++)
                 {
                   for (int l = n+1; l < os+ot-n; l++)
                     trafo(l,n+1) = -inv_amn(n) * (amn(l)*tscale*trafo(l+1,n)
@@ -1345,56 +1322,64 @@ c
                 }
               */
 
-
-         for (int n = m; n < trafo.Width()-1; n++)
-            {
-              // int l = 2*order-n-1;
-              int l = trafo.Height()-n-2;
-
-              trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                                                        - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)
-                                                        + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
-
-              trafo(l-1,n) = tscale/amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
-                                                - amn(n-1)* scale*trafo(l,n-1)
-                                                + amn(n)* 1/scale*trafo(l,n+1));
+              trafo.Swap (oldtrafo);
+              trafo = 0.0;
+              
+              // fill recursive formula (187)
+              for (int l = m; l <= os+ot-m; l++)
+                trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)  
+                                                        -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));  
+              
+              for (int n = m; n < trafo.Width()-1; n++)
+                {
+                  // int l = 2*order-n-1;
+                  int l = trafo.Height()-n-2;
+                  
+                  trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                                                            - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
+                                                            + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                  
+                  trafo(l-1,n) = tscale/amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
+                                                    - amn(n-1)* scale*trafo(l,n-1)
+                                                    + amn(n)* 1/scale*trafo(l,n+1));
+                }
+              
+              // the same thing 1 row up
+              for (int n = m; n < trafo.Width()-2; n++)
+                {
+                  // int l = 2*order-n-2;
+                  int l = trafo.Height()-n-3;
+                  
+                  trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
+                                                            - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
+                                                            + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
+                  
+                  trafo(l-1,n) = tscale/amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
+                                                    -amn(n-1)* scale*trafo(l,n-1) +
+                                                    amn(n)   * 1/scale*trafo(l,n+1)) ;
+                }
+              
+              
+              // for (int l = 2*order; l >= m; l--)
+              //   for (int n = m+1; n < min(2*order-l,l); n++)
+              for (int l = trafo.Height()-1; l >= m; l--)
+                for (int n = m+1; n < min<int>(trafo.Height()-1-l,l); n++)
+                  {
+                    trafo(l-1,n) = tscale/amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
+                                                      -amn(n-1)* scale*trafo(l,n-1)
+                                                      +amn(n)  * 1/scale*trafo(l,n+1)) ;
+                  }
             }
-
-          // the same thing 1 row up
-          for (int n = m; n < trafo.Width()-2; n++)
-            {
-              // int l = 2*order-n-2;
-              int l = trafo.Height()-n-3;
-
-              trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
-                                                        - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)
-                                                        + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) );
-
-              trafo(l-1,n) = tscale/amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
-                                                -amn(n-1)* scale*trafo(l,n-1) +
-                                                amn(n)   * 1/scale*trafo(l,n+1)) ;
-            }
-
-
-            // for (int l = 2*order; l >= m; l--)
-            //   for (int n = m+1; n < min(2*order-l,l); n++)
-          for (int l = trafo.Height()-1; l >= m; l--)
-            for (int n = m+1; n < min<int>(trafo.Height()-1-l,l); n++)
-              {
-                trafo(l-1,n) = tscale/amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
-                                                  -amn(n-1)* scale*trafo(l,n-1)
-                                                  +amn(n)  * 1/scale*trafo(l,n+1)) ;
-              }
-            }
-
+          
           
           /*
-          cout << "m = " << m << endl
-               << trafo << endl;
+            cout << "m = " << m << endl
+            << trafo << endl;
           */
           for (int n = m; n < os; n++)
             for (int l = n+1; l <= os; l++)
-              trafo(n,l) = pow(-scale*tscale, l-n) * trafo(l,n);
+              trafo(n,l) = powscale(l-n) * trafo(l,n);              
+              // trafo(n,l) = pow(-scale*tscale, l-n) * trafo(l,n);
 
           /*
           cout << "                            norm trafo = "
@@ -1430,7 +1415,7 @@ c
   {
     return max (20, int(2*rho_kappa));
   }
-  static constexpr int maxdirect = 50;
+  static constexpr int maxdirect = 100;
 
   class SingularMLMultiPole
   {
@@ -1642,6 +1627,15 @@ c
             norm += ch->Norm();
         return norm;
       }
+      
+      size_t NumCoefficients() const
+      {
+        size_t num = sqr(mp.SH().Order()+1);
+        if (childs[0])
+          for (auto & ch : childs)
+            num += ch->NumCoefficients();
+        return num;
+      }
     };
     
     Node root;
@@ -1675,6 +1669,11 @@ c
     double Norm() const
     {
       return root.Norm();
+    }
+
+    size_t NumCoefficients() const
+    {
+      return root.NumCoefficients();
     }
     
     void CalcMP()
@@ -1887,7 +1886,15 @@ c
         return norm;
       }
 
-
+      size_t NumCoefficients() const
+      {
+        size_t num = sqr(mp.SH().Order()+1);
+        if (childs[0])
+          for (auto & ch : childs)
+            num += ch->NumCoefficients();
+        return num;
+      }
+      
       void AddTarget (Vec<3> x)
       {
         if (childs[0])
@@ -2012,7 +2019,12 @@ c
     {
       return root.Norm();
     }
-    
+
+    size_t NumCoefficients() const
+    {
+      return root.NumCoefficients();
+    }
+
     Complex Evaluate (Vec<3> p) const
     {
       // static Timer t("mptool Eval MLMP regular"); RegionTimer r(t);
