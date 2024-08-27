@@ -459,6 +459,7 @@ namespace ngfem
 
     Vec<3,T> DivShape()
     {
+      /*
       T vx = v.DValue(0), vy = v.DValue(1), vz = v.DValue(2);
 
       T cross1 = l2.DValue(1)*l3.DValue(2) - l2.DValue(2)*l3.DValue(1);
@@ -471,6 +472,9 @@ namespace ngfem
 		     vx * l1.DValue(1) * cross1 + vy * l1.DValue(1) * cross2 + vz * l1.DValue(1) * cross3 - vy * trace_sigma,
 		     vx * l1.DValue(2) * cross1 + vy * l1.DValue(2) * cross2 + vz * l1.DValue(2) * cross3 - vz * trace_sigma
 		     );
+      */
+      auto l2l3 = Cross(l2,l3);
+      return Dot(v,l2l3) * GetGradient(l1) - Dot(l1,l2l3)/3 * GetGradient(v);
     }
 
     Vec<9,T> CurlShape()
