@@ -402,6 +402,71 @@ namespace ngcomp
 
 
 
+
+  template <> class DiffOpCurlHCurlDiv<3> : public DiffOp<DiffOpCurlHCurlDiv<3> >
+  {
+    
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = 3 };
+    enum { DIM_ELEMENT = 3 };
+    enum { DIM_DMAT = 9 };
+    enum { DIFFORDER = 1 };
+    
+    static string Name() { return "curl"; }
+    static IVec<2> GetDimensions() { return { 3,3 }; }
+    
+    /*
+    template <typename FEL,typename SIP>
+    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
+      SliceMatrix<double,ColMajor> mat,LocalHeap & lh)
+    {
+      const HCurlDivFiniteElement<D> & fel =
+        dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);
+
+      fel.CalcMappedCurlShape (sip, Trans(mat));
+    }
+    */
+
+    
+        
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      const HCurlDivFiniteElement<3> & fel = 
+        dynamic_cast<const HCurlDivFiniteElement<3>&> (bfel);
+      
+      size_t nd = fel.GetNDof();
+      
+      FlatMatrix<> curl_shape(nd, 9, lh);      
+      fel.CalcCurlShape (mip.IP(), curl_shape);
+      
+      Mat<3> jac = mip.GetJacobian();
+      Mat<3> jacinv = mip.GetJacobianInverse();
+      double det = fabs (mip.GetJacobiDet());
+      
+      for (size_t i = 0; i < nd; i++)
+        {
+          Mat<3,3> cs = curl_shape.Row(i).AsMatrix(3,3);
+          Mat<3,3> tcs = 1/sqr(det) * jac * cs * Trans(jac);
+          cout << "tcs = " << cs << endl;
+          curl_shape.Row(i).AsMatrix(3,3) = tcs;
+        }
+        
+      /*
+      //Mat<D> jacinv = sip.GetJacobianInverse();
+      double det = fabs (sip.GetJacobiDet());
+      Mat<D> sjac = (1.0/(det*det)) * jac;          
+      mat = sjac * Trans (curl_shape);
+      */
+    }
+    
+    
+  };
+
+  
+
   template <int D>
   class NGS_DLL_HEADER HCurlDivMassIntegrator 
     : public T_BDBIntegrator<DiffOpIdHCurlDiv<D>, DiagDMat<D*D> >
@@ -456,6 +521,7 @@ namespace ngcomp
       additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDivDual<2>>> ());
       break;
     case 3:
+      additional_evaluators.Set ("curlT",make_shared<T_DifferentialOperator<DiffOpCurlHCurlDiv<3>>> ());
       additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDivDual<3>>> ());
       break;
     default:
