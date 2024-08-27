@@ -66,8 +66,47 @@ namespace ngfem
     return sum;
   }
 
-  
 
+  template <int D, typename SCAL>
+  inline auto Outer (const AutoDiff<D,SCAL> & u, const AutoDiff<D,SCAL> & v)
+  {
+    Mat<D,D,SCAL> res;
+    for (int i = 0; i < D; i++)
+      for (int j = 0; j < D; j++)      
+        res(i,j) = u.DValue(i) * v.DValue(j);
+    return res;
+  }
+
+  template <int D, typename SCAL>
+  inline auto SymOuter (const AutoDiff<D,SCAL> & u, const AutoDiff<D,SCAL> & v)
+  {
+    Mat<D,D,SCAL> res;
+    for (int i = 0; i < D; i++)
+      res(i,i) = u.DValue(i) * v.DValue(i);
+    for (int i = 0; i < D; i++)
+      for (int j = 0; j < i; j++)      
+        res(j,i) = res(i,j) =
+          0.5 * (u.DValue(i) * v.DValue(j) + u.DValue(j) * v.DValue(i));
+    return res;
+  }
+
+  template <int D, typename SCAL>
+  inline auto MSkew (const AutoDiff<D,SCAL> & u)
+  {
+    Mat<D,D,SCAL> res;
+    res(0,0) = 0;
+    res(0,1) = -u.DValue(2);
+    res(0,2) = u.DValue(1);
+
+    res(1,0) = u.DValue(2);
+    res(1,1) = 0;
+    res(1,2) = -u.DValue(0);
+
+    res(2,0) = -u.DValue(1);
+    res(2,1) = u.DValue(0);
+    res(2,2) = 0;
+    return res;
+  }
 }
 
 

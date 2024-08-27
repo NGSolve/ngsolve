@@ -230,7 +230,7 @@ namespace ngfem
       
       Cast() -> T_CalcShape (TIP<DIM, AutoDiffDiff<DIM>> (adp), SBLambda([&] (int nr, auto val)
                                           {
-                                            shape.Row(nr).Range(DIM) = val.CurlShape();
+                                            shape.Row(nr) = val.CurlShape();
                                           }));
     }
     

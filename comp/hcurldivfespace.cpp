@@ -434,6 +434,7 @@ namespace ngcomp
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT && mat, LocalHeap & lh)
     {
+      HeapReset hr(lh);
       const HCurlDivFiniteElement<3> & fel = 
         dynamic_cast<const HCurlDivFiniteElement<3>&> (bfel);
       
@@ -441,27 +442,16 @@ namespace ngcomp
       
       FlatMatrix<> curl_shape(nd, 9, lh);      
       fel.CalcCurlShape (mip.IP(), curl_shape);
-      
+
       Mat<3> jac = mip.GetJacobian();
-      Mat<3> jacinv = mip.GetJacobianInverse();
-      double det = fabs (mip.GetJacobiDet());
-      
+      double det = mip.GetJacobiDet();
       for (size_t i = 0; i < nd; i++)
         {
           Mat<3,3> cs = curl_shape.Row(i).AsMatrix(3,3);
           Mat<3,3> tcs = 1/sqr(det) * jac * cs * Trans(jac);
-          cout << "tcs = " << cs << endl;
-          curl_shape.Row(i).AsMatrix(3,3) = tcs;
+          mat.Col(i).AsMatrix(3,3) = tcs;
         }
-        
-      /*
-      //Mat<D> jacinv = sip.GetJacobianInverse();
-      double det = fabs (sip.GetJacobiDet());
-      Mat<D> sjac = (1.0/(det*det)) * jac;          
-      mat = sjac * Trans (curl_shape);
-      */
     }
-    
     
   };
 

@@ -475,25 +475,16 @@ namespace ngfem
 
     Vec<9,T> CurlShape()
     {
-      Vec<9,T> res;
+      Mat<3,3,T> res;
       auto vl1 = Cross (v, l1);
       auto l2l3 = Cross (l2,l3);
-      for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++)
-          res(3*i+j) = vl1.DValue(i)*l2l3.DValue(j);
 
-      // 1/3 curl (tr A I) = 1/3  hat(grad(v)) * det (grad l1, grad l2, grad l3)  ???
-      auto det = -Dot (l1, Cross(l2, l3));
-      res(5) += det/3 * v.DValue(0);
-      res(7) -= det/3 * v.DValue(0);
+      res = Outer(vl1, l2l3);
       
-      res(2) -= det/3 * v.DValue(1);
-      res(6) += det/3 * v.DValue(1);
-      
-      res(1) += det/3 * v.DValue(2);
-      res(3) -= det/3 * v.DValue(2);
-      return res;
-      // throw Exception("not implemented for T_Dl1_o_Dl2xDl3_v");
+      // 1/3 curl (tr A I) = 1/3  MSkew(grad(v)) * det (grad l1, grad l2, grad l3)
+      auto det = Dot (l1, Cross(l2, l3));
+      res -= det/3 * MSkew(v);
+      return res.AsVector();
     }
 
   };
