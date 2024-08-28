@@ -1952,6 +1952,22 @@ public:
       default: return "scalar-tensor multiply";
       }
   }
+
+  shared_ptr<CoefficientFunction>
+  Transform(CoefficientFunction::T_Transform& transformation) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if(transformation.cache.count(thisptr))
+      return transformation.cache[thisptr];
+    if(transformation.replace.count(thisptr))
+      return transformation.replace[thisptr];
+    auto newcf = make_shared<MultScalVecCoefficientFunction>
+      (c1->Transform(transformation),
+       c2->Transform(transformation));
+    transformation.cache[thisptr] = newcf;
+    return newcf;
+  }
+
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -5801,6 +5817,22 @@ class IfPosCoefficientFunction : public T_CoefficientFunction<IfPosCoefficientFu
         cf_then->Evaluate(ip,values);
       else
         cf_else->Evaluate(ip,values);
+    }
+
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<IfPosCoefficientFunction>
+        (cf_if->Transform(transformation),
+         cf_then->Transform(transformation),
+         cf_else->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
     }
 
     void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override

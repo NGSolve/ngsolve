@@ -919,6 +919,20 @@ namespace ngfem
     virtual string GetDescription () const override
     { return "symmetric"; }
 
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<SymmetricCoefficientFunction>(c1->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+
+
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
       FlatArray<int> hdims = Dimensions();        
       for (int i : Range(hdims[0]))
