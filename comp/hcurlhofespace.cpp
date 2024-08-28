@@ -1618,7 +1618,6 @@ namespace ngcomp
 
     bool eliminate_internal = precflags.GetDefineFlag("eliminate_internal");
     int i, j, k, first; 
-    int ncnt; 
     int ni = ne;
     if (eliminate_internal) ni = 0; 
     
@@ -1641,7 +1640,7 @@ namespace ngcomp
 
 
 
-
+    cout << "hcurl smoothingblocks, SmoothingType = " << SmoothingType << endl;
 
     if (precflags.GetDefineFlag("subassembled"))
       {
@@ -1671,15 +1670,514 @@ namespace ngcomp
       }
 
 
-
-
-
-
-
-
-
     cout << IM(5) << "SmoothingType " << SmoothingType << endl;
     cout << IM(5) << " Use H(Curl)-Block smoothing " ;
+
+
+
+    FilteredTableCreator creator(GetFreeDofs().get());
+
+    for ( ; !creator.Done(); creator++)
+      {
+        switch(SmoothingType)           
+	  {
+          case 1: // Clustering + AFW(loE)   (former 10)
+            {
+              if (creator.GetMode() == 1)
+             	cout << IM(5) << " Line-Clustering and  AFW(loE)  " << endl;
+
+              for (size_t i = 0; i < ned; i++)
+                if (fine_edge[i])
+                  {
+                    IVec<2> vts = ma->GetEdgePNums (i);
+                    int pn1 = vts[0], pn2 = vts[1];
+                    
+                    pn1 = ma->GetClusterRepVertex(pn1);
+                    pn2 = ma->GetClusterRepVertex(pn2);
+                    // table[pn1][cnt[pn1]++] = i;
+                    creator.Add (pn1, i);
+                    if (pn1 != pn2)
+                      // table[pn2][cnt[pn2]++] = i;
+                      creator.Add (pn2, i);
+                    
+                    int nr = ma->GetClusterRepEdge (i);
+                    if(!excl_grads)
+                      for (j = first_edge_dof[i]; j < first_edge_dof[i+1]; j++)
+                        // table[nr][cnt[nr]++] = j;
+                        creator.Add (nr, j);
+                  }
+
+              for (size_t i = 0; i < nfa; i++)
+                if(fine_face[i])
+                  {
+                    int nr = ma->GetClusterRepFace (i);
+                    int first = first_face_dof[i] + excl_grads*face_ngrad[i];
+                    for (j = first; j < first_face_dof[i+1]; j++)
+                      // table[nr][cnt[nr]++] = j;
+                      creator.Add(nr,j);
+                  }
+              
+              for (size_t i = 0; i < ni; i++)
+                {
+                  int nr = ma->GetClusterRepElement (i);
+                  int first = first_inner_dof[i] + excl_grads*cell_ngrad[i];
+                  for (j = first; j < first_inner_dof[i+1]; j++)
+                    // table[nr][cnt[nr]++] = j;
+                    creator.Add(nr, j);
+                }
+               
+              break;
+            }
+
+          case 2: // Clustering with AFW(hoEdges) 
+            {
+              if (creator.GetMode() == 1)
+                cout << IM(5) << " Line-Clustering and AFW(hoE)  " << endl;
+
+              for (size_t i=0;i<ned;i++) 
+                if(fine_edge[i] && !IsDirichletEdge(i))
+                  {
+                    IVec<2> vts = ma->GetEdgePNums (i);
+                    int pn1 = vts[0], pn2 = vts[1];
+                    
+                    pn1 = ma->GetClusterRepVertex(pn1);
+                    pn2 = ma->GetClusterRepVertex(pn2);
+                    int ecl = ma->GetClusterRepEdge(i);
+                    // table[pn1][cnt[pn1]++] = i;
+                    creator.Add (pn1, i);
+                    if(!excl_grads)
+                      for(j=first_edge_dof[i]; j<first_edge_dof[i+1]; j++)
+                        // table[pn1][cnt[pn1]++] = j;
+                        creator.Add (pn1, j);
+                    if(pn1!=pn2)
+                      {
+                        // table[pn2][cnt[pn2]++] = i; 
+                        // table[ecl][cnt[ecl]++] = i;
+                        creator.Add (pn2, i);
+                        creator.Add (ecl, i);
+                        
+                        // ho-edges
+                        if(!excl_grads)
+                          for(j=first_edge_dof[i]; j<first_edge_dof[i+1]; j++)
+                            {		    
+                              // table[pn2][cnt[pn2]++] = j;
+                              // table[ecl][cnt[ecl]++] = j;
+                              creator.Add (pn2, j);
+                              creator.Add (ecl, j);
+                            }
+                      }
+                  }
+              
+              // Stack of horizontal edges, quadfaces and prism faces 
+              //  (+ inner) 
+              for(size_t i=0;i<nfa;i++) 
+                if(fine_face[i] && !IsDirichletFace(i)) 
+                  { 
+                    int fcl = ma->GetClusterRepFace(i); 
+                    int first = first_face_dof[i] + excl_grads*face_ngrad[i];
+                    //	if(fcl  >= nv + ned) // quad-faces (prism) 
+                    for(j=first; j< first_face_dof[i+1]; j++) 
+                      // table[fcl][cnt[fcl]++] = j;
+                      creator.Add (fcl, j);
+                  }
+              
+              for(size_t i=0;i<ni;i++) 
+                { 
+                  // Stack: plane-face + inner
+                  int ccl = ma->GetClusterRepElement(i); 
+                  int first = first_inner_dof[i] + excl_grads*cell_ngrad[i];
+                  for(j=first;j<first_inner_dof[i+1];j++) 
+                    // table[ccl][cnt[ccl]++] = j;
+                    creator.Add (ccl, j);
+                }
+              
+              break;
+            }
+
+          case 3:  // Stack-AFW(hoEdges) 
+            {
+              if (creator.GetMode() == 1)              
+                cout << IM(5) << " Line-Clustering: AFW(hoE) - (horizE)F - (trigF)I " << endl;
+
+              	  // Stack-AFW(hoEdges) 
+              for(size_t i=0;i<ned;i++) 
+                if(fine_edge[i])
+                  {
+                    IVec<2> vts = ma->GetEdgePNums (i);
+                    int pn1 = vts[0], pn2 = vts[1];
+                    
+                    pn1 = ma->GetClusterRepVertex(pn1);
+                    pn2 = ma->GetClusterRepVertex(pn2);
+                    int ecl = ma->GetClusterRepEdge(i);
+                    // table[pn1][cnt[pn1]++] = i;
+                    creator.Add (pn1, i);
+                    if(!excl_grads)
+                      for(j=first_edge_dof[i]; j<first_edge_dof[i+1]; j++)
+                        // table[pn1][cnt[pn1]++] = j;
+                        creator.Add (pn1, j);
+                    
+                    if(pn1!=pn2)
+                      {
+                        // table[pn2][cnt[pn2]++] = i; 
+                        // table[ecl][cnt[ecl]++] = i;
+                        creator.Add (pn2, i);
+                        creator.Add (ecl, i);
+                        // ho-edges
+                        if(!excl_grads)
+                          for(j=first_edge_dof[i]; j<first_edge_dof[i+1]; j++)
+                            {		    
+                              // table[pn2][cnt[pn2]++] = j;
+                              // table[ecl][cnt[ecl]++] = j;
+                              creator.Add (pn2, j);
+                              creator.Add (ecl, j);
+                            }
+                      }
+                  }
+	  
+              // Stack of horizontal edges, quadfaces and prism faces 
+              //  (+ inner) 
+              for (size_t i=0;i<nfa;i++) 
+                if(fine_face[i]) 
+                  { 
+                    int fcl = ma->GetClusterRepFace(i); 
+                    int first = first_face_dof[i] + excl_grads*face_ngrad[i];
+                    
+                    for(j=first; j< first_face_dof[i+1]; j++) 
+                      // table[fcl][cnt[fcl]++] = j;
+                      creator.Add (fcl, j);
+                  }
+              
+              for(size_t i=0;i<ni;i++) 
+                { 
+                  // Stack: plane-face + inner
+                  int ccl = ma->GetClusterRepElement(i);
+                  int first = first_inner_dof[i] + excl_grads*cell_ngrad[i]; 
+                  for(j=first;j<first_inner_dof[i+1];j++) 
+                    // table[ccl][cnt[ccl]++] = j;
+                    creator.Add (ccl, j);
+                  
+                  // inner to quad-face (horizontal edge stack) 
+                  // each face different stack 
+                  
+                  auto fanums = ma->GetElFaces(ElementId(VOL,i)); 
+                  
+                  for(j=0;j<fanums.Size();j++) 
+                    { 
+                      int fcl = ma->GetClusterRepFace(fanums[j]);
+                      if(fcl != ccl)
+                        for(k=first;k<first_inner_dof[i+1];k++) 
+                          // table[fcl][cnt[fcl]++] = k;
+                          creator.Add (fcl, k);
+                    } 
+                  
+                }  
+              
+              for(size_t i=0;i<nfa;i++) 
+                if(fine_face[i]) 
+                  { 
+                    vnums = ma->GetFacePNums(i); 
+                    if(vnums.Size()==4) continue; 
+                    int fcl = ma->GetClusterRepFace(i); 
+                    auto ednums = ma->GetFaceEdges(i); 
+                    
+                    for(j=0;j<ednums.Size();j++)
+                      {
+                        int ecl = ma->GetClusterRepEdge(ednums[j]); 
+                        if(ecl==fcl) continue; 
+                        int first = first_face_dof[i] + excl_grads*face_ngrad[i];
+                        for(k=first; k<first_face_dof[i+1]; k++)
+                          // table[ecl][cnt[ecl]++] = k;
+                          creator.Add (ecl, k);
+                      }
+                  }
+
+              
+              break;
+            }
+            
+          case 4: // AFW(loE) + E  + F + I (noLineClusters) 
+            {
+              if (creator.GetMode() == 1)              
+              	cout << IM(5) << " AFW(loE) + E + F + I (noClusters)" << endl;
+
+              for (size_t i = 0; i < ned; i++)
+                if(fine_edge[i])
+                  {
+                    IVec<2> vts = ma->GetEdgePNums (i);
+                    int pn1 = vts[0], pn2 = vts[1];
+                    // table[pn1][cnt[pn1]++] = i;
+                    // table[pn2][cnt[pn2]++] = i;
+                    creator.Add (pn1, i);
+                    creator.Add (pn2, i);
+                  }
+              int nnv = nv; 
+              
+              
+              if(augmented==1)
+                { 
+                  nnv += nv; 
+                  for(i=0;i<nv;i++)
+                    // table[nv+i][cnt[nv+i]++] = ned+i;
+                    creator.Add (nv+i, ned+i);
+                } 
+              
+              if(!excl_grads)
+                for (i =0; i<ned ; i++)
+                  for (j = first_edge_dof[i]; j < first_edge_dof[i+1]; j++)
+                    // table[nnv+i][cnt[nnv+i]++] = j;
+                    creator.Add(nnv+i, j);
+              
+              for (size_t i = 0; i < nfa; i++)
+                { 
+                  int first = first_face_dof[i] + excl_grads*face_ngrad[i]; 
+                  for (j = first; j < first_face_dof[i+1]; j++)
+                    // table[nnv+ned+i][cnt[nnv+ned+i]++] = j;
+                    creator.Add (nnv+ned+i, j);
+                }
+	      
+              for (size_t i = 0; i < ni; i++)
+                { 
+                  // int first = first_inner_dof[i] + excl_grads*cell_ngrad[i];
+                  for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
+                    // table[nnv+ned+nfa+i][cnt[nnv+ned+nfa+i]++] = j;
+                    creator.Add (nnv+ned+nfa+i, j);
+                }
+              
+              break;
+            }
+            
+          case 5: // AFW(hoE) + E  + F + I (noLineClusters) 
+            {
+              if (creator.GetMode() == 1)              
+                cout << IM(5) << " AFW(hoE) + E + F + I (noClusters)" << endl;
+
+              for (size_t i = 0; i < ned; i++)
+                if(fine_edge[i])
+                  {
+                    IVec<2> vts = ma->GetEdgePNums (i);
+                    int pn1 = vts[0], pn2 = vts[1];
+                    
+                    // table[pn1][cnt[pn1]++]  = i; 
+                    // table[pn2][cnt[pn2]++]  = i;
+                    creator.Add (pn1, i);
+                    creator.Add (pn2, i);
+                    
+                    if(!excl_grads)
+                      for(j=first_edge_dof[i];j<first_edge_dof[i+1];j++) 
+                        {
+                          // table[pn1][cnt[pn1]++]  = j; 
+                          // table[pn2][cnt[pn2]++]  = j;
+                          creator.Add (pn1, j);
+                          creator.Add (pn2, j);
+                        }
+                  }
+              
+              int nnv = nv; 
+              /* if(augmented==1)
+                 { 
+                 nnv += nv; 
+                 for(i=0;i<nv;i++)
+                 table[i][cnt[i]++] = ned+i;
+                 } */ 
+              for (size_t i = 0; i < nfa; i++)
+                { 
+                  int first = first_face_dof[i] + excl_grads*face_ngrad[i]; 
+                  for (j = first; j < first_face_dof[i+1]; j++)
+                    // table[nnv+ned+i][cnt[nnv+ned+i]++] = j;
+                    creator.Add (nnv+ned+i, j);
+                }
+              
+              for (size_t i = 0; i < ni; i++)
+                { 
+                  // int first = first_inner_dof[i] + excl_grads*cell_ngrad[i];
+                  for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
+                    // table[nnv+ned+nfa+i][cnt[nnv+ned+nfa+i]++] = j;
+                    creator.Add (nnv+ned+nfa+i, j);
+                }
+              
+              break;
+            }
+
+          case 6: // der hier is nur fuer testzwecke !!!
+            {
+              if (creator.GetMode() == 1)
+              	cout << IM(5) << "Jacobi (Diag)" << endl;
+
+              int ii=0; 
+              
+              for (size_t i = 0; i < ned; i++)
+                if(fine_edge[i])
+                  //table[ii++][0] = i;
+                  creator.Add (ii++, i);
+
+              for (size_t i =0; i<ned ; i++)
+                if(fine_edge[i])
+                  for (j = first_edge_dof[i]; j < first_edge_dof[i+1]; j++)
+                    // table[ii++][0] = j;
+                    creator.Add (ii++, j);
+	  
+              for (size_t i = 0; i < nfa; i++)
+                { 
+                  if(fine_face[i]) 
+                    {
+                      int first = first_face_dof[i]; 
+                      for (j = first; j < first_face_dof[i+1]; j++)
+                        // table[ii++][0] = j;
+                        creator.Add (ii++, j);
+                    }
+                }
+	      
+              for (size_t i = 0; i < ni; i++)
+                { 
+                  for (j = first_inner_dof[i]; j < first_inner_dof[i+1]; j++)
+                    // table[ii++][0] = j;
+                    creator.Add (ii++,j);
+                }
+
+              
+              break;
+            }
+            
+          case 7:
+            {
+              // AFW(ho-E) - Edge-Blocks ???
+              // Stack-AFW(hoEdges) ???
+              
+              if (creator.GetMode() == 1)
+              	cout << IM(5) << "EDGE-blocks (noClusters)" << endl;
+              
+              for (size_t i=0;i<ned;i++) 
+                if(fine_edge[i])
+                  {
+                    // int pn1, pn2;
+                    // ma->GetEdgePNums (i,pn1,pn2);
+                    IVec<2> vts = ma->GetEdgePNums (i);
+                    int pn1 = vts[0], pn2 = vts[1];
+                    
+                    pn1 = ma->GetClusterRepVertex(pn1);
+                    pn2 = ma->GetClusterRepVertex(pn2);
+                    //	int ecl = ma->GetClusterRepEdge(i);
+                    // table[pn1][cnt[pn1]++] = i;
+                    creator.Add (pn1, i);
+                    
+                    if(!excl_grads)
+                      for(j=first_edge_dof[i]; j<first_edge_dof[i+1]; j++)
+                        // table[pn1][cnt[pn1]++] = j;
+                        creator.Add (pn1, j);
+                    if(pn1!=pn2)
+                      {
+                        // table[pn2][cnt[pn2]++] = i;
+                        creator.Add (pn2, i);
+                        // //  table[ecl][cnt[ecl]++] = i;  was already commented
+                        // ho-edges
+                        if(!excl_grads)
+                          for(j=first_edge_dof[i]; j<first_edge_dof[i+1]; j++)
+                            {		    
+                              // table[pn2][cnt[pn2]++] = j;
+                              creator.Add (pn2, j);
+                              
+                              // //  table[ecl][cnt[ecl]++] = j; was already commendted
+                            }
+                      }
+                  }
+              
+              for (size_t i = 0; i < ned; i++)
+                {
+                  first = first_edge_dof[i];
+                  int ndof = first_edge_dof[i+1]-first;
+                  for (j = 0; j < ndof; j++)
+                    // table[nv+i][cnt[nv+i]++] = first+j;
+                    creator.Add (nv+i, first+j);
+                }
+              
+              for (size_t i = 0; i < nfa; i++)
+                {
+                  first = first_face_dof[i];
+                  int ndof = first_face_dof[i+1]-first;
+                  auto f2ed = ma->GetFaceEdges (i);
+                  for (k = 0; k < f2ed.Size(); k++)
+                    for (j = 0; j < ndof; j++)
+                      // table[nv+f2ed[k]][cnt[nv+f2ed[k]]++] = first+j;
+                      creator.Add (nv+f2ed[k], first+j);
+                }
+              
+              for (size_t i = 0; i < ni; i++)
+                {
+                  auto enums = ma->GetElEdges (ElementId(VOL,i));
+                  first = first_inner_dof[i];
+                  int ndof = first_inner_dof[i+1] - first_inner_dof[i];
+                  for (j = 0; j < enums.Size(); j++)
+                    for (k = 0; k < ndof; k++)
+                      // table[nv+enums[j]][cnt[nv+enums[j]]++] = first + k;
+                      creator.Add (nv+enums[j], first+k);
+                } 
+              
+              
+              break;
+            }
+            
+          case 21:
+            {
+              if (creator.GetMode() == 1)
+                cout << IM(5) << "wave equation blocks" << endl;
+              
+              
+              int ds_order = int(precflags.GetNumFlag ("ds_order", 0));
+              if (ds_order < 0) ds_order = 0;	  
+              
+              for (size_t i =0; i<ned ; i++)
+                for (j = first_edge_dof[i]+ds_order; j < first_edge_dof[i+1]; j++)
+                  // table[i][cnt[i]++] = j;
+                  creator.Add(i,j);
+              
+              for (size_t i = 0; i < nfa; i++)
+                {
+                  // cnt[ned+i] = first_face_dof[i+1] - first_face_dof[i] - excl_grads*face_ngrad[i];
+                  
+                  int first = first_face_dof[i];
+                  int p = order_face[i][0];
+                  
+                  int ii = first;
+                  for (int j = 0; j <= p-2; j++)
+                    for (int k = 0; k <= p-2-j; k++, ii++)
+                      if (j+k+2 > ds_order)
+                        // table[ned+i][cnt[ned+i]++] = ii;
+                        creator.Add (ned+i, ii);
+                  // cnt[ned+i]++;
+                  //clusters[first+ii] = 1;
+	      
+                  // other combination
+                  for (int j = 0; j <= p-2; j++)
+                    for (int k = 0; k <= p-2-j; k++, ii++)
+                      if (j+k+2 > ds_order)
+                        // table[ned+i][cnt[ned+i]++] = ii;
+                        creator.Add (ned+i, ii);
+                  // cnt[ned+i]++;
+                  // clusters[first+ii] = 1;
+                  
+                  // type 3
+                  for (int j = 0; j <= p-2; j++, ii++)
+                    if (j+2 > ds_order)
+                      // table[ned+i][cnt[ned+i]++] = ii;
+                      creator.Add(ned+i, ii);
+                  // cnt[ned+i]++;
+                  // clusters[first+ii] = 1;
+                }
+
+              break;
+            }
+
+          default: 
+            throw Exception("HCurlHoFeSpace:: CreateSmoothingBlocks chosen Blocktype not valid \n Choose blocktype 1-6 "); 
+          }
+      }
+    
+    return make_shared<Table<int>> (creator.MoveTable());
+ 
+    
+#ifdef OLD
+    int ncnt; 
+
     switch(SmoothingType) 
       {
       case 4: // former 11 
@@ -2424,7 +2922,9 @@ namespace ngcomp
       }
     //(*testout) << "H(Curl)-table = " << table << endl;	
     
-    return make_shared<Table<int>> (table); 
+    return make_shared<Table<int>> (table);
+#endif
+    
   }
 
     
