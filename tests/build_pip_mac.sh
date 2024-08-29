@@ -1,7 +1,10 @@
 set -e
 rm -rf _skbuild dist ../venv_ngs
 
-cd external_dependencies/netgen && git remote update && cd ../..
+cd external_dependencies/netgen
+git remote update
+bash tests/build_pip_mac.sh $1
+cd ../..
 
 export PATH=/Applications/CMake.app/Contents/bin:$PATH
 export NETGEN_CCACHE=1

@@ -15,6 +15,7 @@ $env:NETGEN_CCACHE = 1
 
 cd external_dependencies\netgen
 git remote update
+.\tests\build_pip.ps1 $args[0]
 cd ..\..
 
 $py=$args[0]

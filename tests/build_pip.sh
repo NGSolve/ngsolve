@@ -6,7 +6,10 @@ sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /
 yum -y update
 yum -y install ninja-build fontconfig-devel tk-devel tcl-devel libXmu-devel mesa-libGLU-devel ccache
 
-cd external_dependencies/netgen && git remote update && cd ../..
+cd external_dependencies/netgen
+git remote update
+bash tests/build_pip.sh
+cd ../..
 
 rm -rf wheelhouse
 mkdir wheelhouse
