@@ -67,7 +67,11 @@ def SnapShot(filename):
     ngsolve.Redraw(True)
 
     if needs_conversion:
+        import time
         from PIL import Image
+        t0 = time.time()
+        while not os.path.exists(tmp_filename) and time.time()-t0 < 5:
+            time.sleep(0.1)
         im = Image.open(tmp_filename)
         im.save(filename)
         os.remove(tmp_filename)
