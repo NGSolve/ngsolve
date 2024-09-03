@@ -165,7 +165,7 @@ namespace ngla
   }
 
 
-  shared_ptr<BaseMatrix> Projector :: CreateSparseMatrix() const
+  shared_ptr<BaseSparseMatrix> Projector :: CreateSparseMatrix() const
   {
     Array<int> indi(Height()), indj(Width());
     Array<double> vals(Height());
@@ -192,7 +192,7 @@ namespace ngla
 
 
   template <typename TM>  
-  shared_ptr<BaseMatrix> DiagonalMatrix<TM> :: CreateSparseMatrix() const
+  shared_ptr<BaseSparseMatrix> DiagonalMatrix<TM> :: CreateSparseMatrix() const
   {
     Array<int> indi(Height()), indj(Width());
     Array<TM> vals(Height());

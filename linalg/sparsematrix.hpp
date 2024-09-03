@@ -233,9 +233,9 @@ namespace ngla
       return *this;
     }
 
-    virtual shared_ptr<BaseMatrix> CreateSparseMatrix() const override 
+    virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override 
     {
-      return const_cast<BaseSparseMatrix*>(this)->shared_from_this();
+      return dynamic_pointer_cast<BaseSparseMatrix>(const_cast<BaseSparseMatrix*>(this)->shared_from_this());
     }
 
     virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (shared_ptr<BitArray> inner = nullptr) const 
