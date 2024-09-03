@@ -1097,12 +1097,18 @@ namespace ngcomp
         auto pv_buffer = mesh.GetPeriodicVertices(idnr);
         auto pidnr = periodic_node_pairs[NT_VERTEX]->Append(Array<IVec<2,int>>(pv_buffer.Size(), (IVec<2,int>*) pv_buffer.Release(), true));
 
+        BitArray corner_vertices(GetNP());
+        corner_vertices.Clear();
         // build vertex map for idnr
         Array<int> vertex_map(GetNP());
         for (auto i : Range(GetNP()))
           vertex_map[i] = i;
         for (const auto& pair : (*periodic_node_pairs[NT_VERTEX])[pidnr])
-          vertex_map[pair[1]] = pair[0];
+          {
+            vertex_map[pair[1]] = pair[0];
+            if(pair[0] == pair[1])
+              corner_vertices.SetBit(pair[0]);
+          }
 
         // build vertex-pair to edge hashtable:
         HashTable<IVec<2>, int> vp2e(GetNEdges());
@@ -1119,7 +1125,8 @@ namespace ngcomp
             IVec<2> vts = GetEdgePNums(enr);
             size_t mv1 = vertex_map[vts[0]];
             size_t mv2 = vertex_map[vts[1]];
-            if(mv1 != vts[0] && mv2 != vts[1])
+            if((mv1 != vts[0] || corner_vertices[vts[0]]) &&
+               (mv2 != vts[1] || corner_vertices[vts[1]]))
               count++;
           }
         periodic_node_pairs[NT_EDGE]->Append(Array<IVec<2>>(count));
@@ -1129,7 +1136,9 @@ namespace ngcomp
             IVec<2> vts = GetEdgePNums (enr);
             int mv1 = vertex_map[vts[0]];
             int mv2 = vertex_map[vts[1]];
-            if(mv1 != vts[0] && mv2 != vts[1])
+            // it is enough that one is different (for corner of cake piece)
+            if((mv1 != vts[0] || corner_vertices.Test(vts[0])) &&
+               (mv2 != vts[1] || corner_vertices.Test(vts[1])))
               {               
                 if (mv1 > mv2) Swap(mv1,mv2);
                 int menr = vp2e.Get(IVec<2>(mv1,mv2));
@@ -1151,8 +1160,9 @@ namespace ngcomp
         for (auto fnr : Range(GetNFaces()))
           {
             auto pnums = GetFacePNums(fnr);
-            if(vertex_map[pnums[0]] != pnums[0] && vertex_map[pnums[1]] != pnums[1] &&
-               vertex_map[pnums[2]] != pnums[2])
+            if((vertex_map[pnums[0]] != pnums[0] || corner_vertices.Test(pnums[0]))
+               && (vertex_map[pnums[1]] != pnums[1] || corner_vertices.Test(pnums[1]))
+               && (vertex_map[pnums[2]] != pnums[2] || corner_vertices.Test(pnums[2])))
               {
                 count++;
               }
@@ -1163,7 +1173,9 @@ namespace ngcomp
           {
             auto pnums = GetFacePNums(fnr);
             IVec<3> mv(vertex_map[pnums[0]],vertex_map[pnums[1]],vertex_map[pnums[2]]);
-            if(mv[0] != pnums[0] && mv[1] != pnums[1] && mv[2] != pnums[2])
+            if((mv[0] != pnums[0] || corner_vertices[mv[0]])
+               && (mv[1] != pnums[1] || corner_vertices[mv[1]])
+               && (mv[2] != pnums[2] || corner_vertices[mv[2]]))
               {
                 mv.Sort();
                 int mfnr = v2f[mv];
