@@ -293,7 +293,7 @@ namespace ngla
   template Matrix<Complex> BaseMatrix :: ToDense<Complex>() const;
 
 
-  shared_ptr<BaseMatrix> BaseMatrix::CreateSparseMatrix() const
+  shared_ptr<BaseSparseMatrix> BaseMatrix::CreateSparseMatrix() const
   {
     throw Exception(string("CreateSparseMatrix not overloaded, type = ") + typeid(*this).name());
   }
@@ -452,6 +452,11 @@ namespace ngla
     return info;
   }
 
+  shared_ptr<BaseSparseMatrix> Transpose :: CreateSparseMatrix() const
+  {
+    return spbm->CreateSparseMatrix()->CreateTranspose();
+  }
+
   
   SumMatrix ::
   SumMatrix (shared_ptr<BaseMatrix> aspbma, shared_ptr<BaseMatrix> aspbmb,
@@ -491,7 +496,7 @@ namespace ngla
     return info;
   }
 
-  shared_ptr<BaseMatrix> SumMatrix :: CreateSparseMatrix() const 
+  shared_ptr<BaseSparseMatrix> SumMatrix :: CreateSparseMatrix() const 
   {
     auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (spbma->CreateSparseMatrix());
     auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (spbmb->CreateSparseMatrix());
@@ -520,9 +525,12 @@ namespace ngla
 
 
   template <typename TSCAL>
-  shared_ptr<BaseMatrix> VScaleMatrix<TSCAL> :: CreateSparseMatrix() const 
+  shared_ptr<BaseSparseMatrix> VScaleMatrix<TSCAL> :: CreateSparseMatrix() const 
   {
-    auto sp = dynamic_pointer_cast<SparseMatrixTM<double>> (spbm->CreateSparseMatrix());
+    // auto sp = dynamic_pointer_cast<SparseMatrixTM<double>> (spbm->CreateSparseMatrix());
+    auto sp = spbm->CreateSparseMatrix();
+    if (sp == spbm)
+      sp = dynamic_pointer_cast<BaseSparseMatrix>(spbm ->CreateMatrix());
     sp->AsVector() *= scale;
     return sp;
   }
@@ -532,7 +540,7 @@ namespace ngla
 
   
   
-  shared_ptr<BaseMatrix> ProductMatrix :: CreateSparseMatrix() const 
+  shared_ptr<BaseSparseMatrix> ProductMatrix :: CreateSparseMatrix() const 
   {
     auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (spbma->CreateSparseMatrix());
     auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (spbmb->CreateSparseMatrix());

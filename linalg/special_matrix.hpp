@@ -35,7 +35,7 @@ namespace ngla
     bool KeepValues() const { return keep_values; }
     shared_ptr<BitArray> Mask() const { return bits; }
 
-    virtual shared_ptr<BaseMatrix> CreateSparseMatrix() const override;
+    virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
     AutoVector CreateRowVector() const override
     { throw Exception("CreateRowVector not implemented for Projector!"); }
@@ -78,7 +78,7 @@ namespace ngla
     const BaseVector & AsVector() const override { return *diag; }
     ostream & Print (ostream & ost) const override;
 
-    virtual shared_ptr<BaseMatrix> CreateSparseMatrix() const override;
+    virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;
