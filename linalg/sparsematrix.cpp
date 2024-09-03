@@ -1395,6 +1395,85 @@ namespace ngla
   }
 
 
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
+  MatAdd (double sa, const SparseMatrixTM<double> & mata,
+          double sb, const SparseMatrixTM<double> & matb)
+  {
+    if (mata.Shape() != matb.Shape())
+      throw Exception("MatAdd, A.shape = "
+                      +ToString(mata.Height())+"x"+ToString(mata.Width())
+                      + " != "
+                      +ToString(matb.Height())+"x"+ToString(matb.Width())                      
+                      + " = B.shape");
+    
+    Array<int> cnt(mata.Height());
+    cnt = 0;
+
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+       {
+         Array<BaseSparseMatrix::ColIdx*> ptrs(2);
+         Array<int> sizes(2);
+         for (int i : r)
+           {
+             ptrs[0] = mata.GetRowIndices(i).Addr(0);
+             ptrs[1] = matb.GetRowIndices(i).Addr(0);
+             sizes[0] = mata.GetRowIndices(i).Size();
+             sizes[1] = matb.GetRowIndices(i).Size();
+             int cnti = 0;
+             MergeArrays(ptrs, sizes, [&cnti] (int col) { cnti++; } );
+             cnt[i] = cnti;
+           }
+       },
+       TasksPerThread(10));
+
+
+    auto sum = make_shared<SparseMatrix<double>>(cnt, matb.Width());
+    sum->AsVector() = 0.0;
+    
+    // fill col-indices
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+      {
+        Array<BaseSparseMatrix::ColIdx*> ptrs(2);
+        Array<int> sizes(2);
+        for (int i : r)
+          {
+            BaseSparseMatrix::ColIdx * ptr = sum->GetRowIndices(i).Addr(0);
+            ptrs[0] = mata.GetRowIndices(i).Addr(0);
+            ptrs[1] = matb.GetRowIndices(i).Addr(0);
+            sizes[0] = mata.GetRowIndices(i).Size();
+            sizes[1] = matb.GetRowIndices(i).Size();
+            MergeArrays(ptrs, sizes, [&ptr] (int col)
+                         {
+                           *ptr = col;
+                           ptr++;
+                         } );
+          }
+      }, TasksPerThread(10));
+    
+
+    // quick hack, very slow:
+
+    ParallelForRange (mata.Height(), [&] (IntRange r)
+    {
+      for (auto i : r)
+        {
+          auto mata_ci = mata.GetRowIndices(i);
+          auto mata_vals = mata.GetRowValues(i);
+          auto matb_ci = matb.GetRowIndices(i);
+          auto matb_vals = matb.GetRowValues(i);
+
+          for (auto j : mata_ci.Range())
+            (*sum)(i, mata_ci[j]) += sa*mata_vals(j);
+          for (auto j : matb_ci.Range())
+            (*sum)(i, matb_ci[j]) += sb*matb_vals(j);
+        }
+    });
+    return sum;
+  }
+
+  
   template <typename TM_Res, typename TM1, typename TM2>
   shared_ptr<SparseMatrixTM<TM_Res>>
   MatMult (const SparseMatrixTM<TM1> & mata, const SparseMatrixTM<TM2> & matb)

@@ -233,6 +233,11 @@ namespace ngla
       return *this;
     }
 
+    virtual shared_ptr<BaseMatrix> CreateSparseMatrix() const override 
+    {
+      return const_cast<BaseSparseMatrix*>(this)->shared_from_this();
+    }
+
     virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (shared_ptr<BitArray> inner = nullptr) const 
     {
       throw Exception ("BaseSparseMatrix::CreateJacobiPrecond");
@@ -875,6 +880,10 @@ namespace ngla
   [[deprecated("Use sparsematrix->CreateTranspose() instead!")]]            
   NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>> TransposeMatrix (const SparseMatrixTM<double> & mat);
 
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
+  MatAdd (double sa, const SparseMatrixTM<double> & mata,
+          double sb, const SparseMatrixTM<double> & matb);
+  
   NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
   MatMult (const SparseMatrixTM<double> & mata, const SparseMatrixTM<double> & matb);
   NGS_DLL_HEADER shared_ptr<SparseMatrixTM<Complex>>

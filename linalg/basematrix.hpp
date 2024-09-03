@@ -155,6 +155,8 @@ namespace ngla
     template <typename TSCAL>
       Matrix<TSCAL> ToDense() const;
 
+    virtual shared_ptr<BaseMatrix> CreateSparseMatrix() const;
+    
     // time per run
     double Timing (int runs = 10) const;
     
@@ -568,6 +570,8 @@ namespace ngla
       return ost;
     }
 
+    virtual shared_ptr<BaseMatrix> CreateSparseMatrix() const override;
+    
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
     {
       return make_shared<ProductMatrix>(bma.CreateDeviceMatrix(), bmb.CreateDeviceMatrix());
@@ -689,7 +693,7 @@ namespace ngla
       bmb.MultAdd (Vector(b*alpha), x, y);
     }
 
-
+    virtual shared_ptr<BaseMatrix> CreateSparseMatrix() const override;
     
     virtual int VHeight() const override
     {
@@ -810,6 +814,8 @@ namespace ngla
       info.childs += &bm;
       return info;
     }
+
+    virtual shared_ptr<BaseMatrix> CreateSparseMatrix() const override;
     
     virtual shared_ptr<BaseMatrix> CreateDeviceMatrix() const override
     {
