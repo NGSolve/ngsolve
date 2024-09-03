@@ -293,6 +293,11 @@ namespace ngla
   template Matrix<Complex> BaseMatrix :: ToDense<Complex>() const;
 
 
+  shared_ptr<BaseMatrix> BaseMatrix::CreateSparseMatrix() const
+  {
+    throw Exception(string("CreateSparseMatrix not overloaded, type = ") + typeid(*this).name());
+  }
+  
   double BaseMatrix::Timing (int runs) const
   {
     Timer t("timing");
@@ -486,7 +491,14 @@ namespace ngla
     return info;
   }
 
+  shared_ptr<BaseMatrix> SumMatrix :: CreateSparseMatrix() const 
+  {
+    auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (spbma->CreateSparseMatrix());
+    auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (spbmb->CreateSparseMatrix());
+    return MatAdd (a, *spa, b, *spb);
+  }
   
+    
   
   BaseMatrix::OperatorInfo ProductMatrix :: GetOperatorInfo () const
   {
@@ -506,6 +518,27 @@ namespace ngla
     return info;
   }
 
+
+  template <typename TSCAL>
+  shared_ptr<BaseMatrix> VScaleMatrix<TSCAL> :: CreateSparseMatrix() const 
+  {
+    auto sp = dynamic_pointer_cast<SparseMatrixTM<double>> (spbm->CreateSparseMatrix());
+    sp->AsVector() *= scale;
+    return sp;
+  }
+
+  template class VScaleMatrix<double>;
+  template class VScaleMatrix<Complex>;
+
+  
+  
+  shared_ptr<BaseMatrix> ProductMatrix :: CreateSparseMatrix() const 
+  {
+    auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (spbma->CreateSparseMatrix());
+    auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (spbmb->CreateSparseMatrix());
+    return MatMult (*spa, *spb);
+  }
+  
 
   
   void BaseMatrix :: PrintOperatorInfo (ostream & ost, int level) const
@@ -529,6 +562,8 @@ namespace ngla
       }
   }
 
+
+  
 
   xbool BaseMatrix :: SameShape (BaseMatrix & other) const
   {

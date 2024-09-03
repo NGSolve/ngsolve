@@ -1107,6 +1107,11 @@ inverse : string
              return py::cast(m.ToDense<Complex>());
          })
 
+    .def("CreateSparseMatrix", [](BM & m)
+    {
+      return m.CreateSparseMatrix();
+    })
+
     .def("__timing__", &BaseMatrix::Timing, py::arg("runs")=10)
     .def("Update", [](BM &m) { m.Update(); }, py::call_guard<py::gil_scoped_release>(), "Update matrix")
     .def("CreateDeviceMatrix", &BaseMatrix::CreateDeviceMatrix)
@@ -1461,6 +1466,7 @@ inverse : string
            return mv;
          },
          "project vector inline")
+    /*
     .def("CreateSparseMatrix", [](const Projector & proj)
          {
            Array<int> indi(proj.Height()), indj(proj.Width());
@@ -1486,6 +1492,7 @@ inverse : string
            return SparseMatrix<double>::CreateFromCOO (indi, indj, vals, proj.Height(), proj.Height());           
          },
          "create a spasre matrix from projector")
+    */
     ;
   
   py::class_<ngla::IdentityMatrix, shared_ptr<ngla::IdentityMatrix>, BaseMatrix> (m, "IdentityMatrix")

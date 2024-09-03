@@ -163,6 +163,48 @@ namespace ngla
     else
       setval (*bits, x.SV<double>());
   }
+
+
+  shared_ptr<BaseMatrix> Projector :: CreateSparseMatrix() const
+  {
+    Array<int> indi(Height()), indj(Width());
+    Array<double> vals(Height());
+    for (int i : Range(Height()))
+      {
+        indi[i] = i;
+        indj[i] = i;
+      }
+    auto mask = Mask();
+    if (KeepValues())
+      {
+        vals = false;
+        for (int i : Range(Height()))
+          if ( (*mask)[i] ) vals[i] = true;
+      }
+    else
+      {
+        vals = false;
+        for (int i : Range(Height()))
+          if ( !(*mask)[i] ) vals[i] = true;
+      }
+    return SparseMatrix<double>::CreateFromCOO (indi, indj, vals, Height(), Height());           
+  }
+
+
+  template <typename TM>  
+  shared_ptr<BaseMatrix> DiagonalMatrix<TM> :: CreateSparseMatrix() const
+  {
+    Array<int> indi(Height()), indj(Width());
+    Array<TM> vals(Height());
+    for (int i : Range(Height()))
+      {
+        indi[i] = i;
+        indj[i] = i;
+        vals[i] = (*diag)(i);
+      }
+    return SparseMatrix<TM>::CreateFromCOO (indi, indj, vals, Height(), Height());           
+  }
+
   
 
 
