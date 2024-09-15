@@ -12,11 +12,13 @@ namespace ngfem
   {
     if(eulerian)
       throw Exception("DiffShape Eulerian not implemented for Hesse!");
-    return - (TransposeCF(dir->Operator("hesse")->Reshape(Array<int>{D,D*D})) * proxy->Primary()->Operator("Grad"))->Reshape(Array<int>{D,D})
-      - 2*SymmetricCF(TransposeCF(dir->Operator("Grad")) * proxy);
-    // return - TransposeCF(dir->Operator("hesse")->Reshape(Array<int>{D,D,D}) * proxy->Primary()->Operator("Grad"))
-    //   - 2 * proxy * dir->Operator("Grad");
-  }
+
+    auto grad_proxy = proxy->Primary()->Operator("Grad")->Reshape(Array<int>{-1,D});
+    auto hesse_grad_dir = proxy->Reshape(Array<int>({-1,D})) * dir->Operator("Grad");
+    return - (grad_proxy * dir->Operator("hesse")->Reshape(Array<int>{D,-1}))->Reshape(Array<int>{-1,D,D})
+      - hesse_grad_dir->Reshape(Array<int>{-1,D,D})->TensorTranspose(1,2)
+      - hesse_grad_dir->Reshape(Array<int>{-1,D,D});
+  };
 
   template <int D, typename FEL>
   shared_ptr<CoefficientFunction>
