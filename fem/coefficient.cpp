@@ -243,11 +243,17 @@ namespace ngfem
       }
   }
 
+  shared_ptr<CoefficientFunction> CoefficientFunction ::
+  Primary() const
+  {
+    throw Exception(string("Primary not implemented for CF ")+
+                    Demangle(typeid(*this).name()));
+  }
   
   shared_ptr<CoefficientFunction> CoefficientFunction ::
   Operator (const string & name) const
   {
-    throw Exception(string("Operator ") + name + string(" not overloaded for CF ")+typeid(*this).name());
+    throw Exception(string("Operator ") + name + string(" not overloaded for CF ")+Demangle(typeid(*this).name()));
   }
 
   shared_ptr<CoefficientFunction> CoefficientFunction ::

@@ -488,6 +488,11 @@ namespace ngcomp
     throw Exception("GetComponent: Not a GridFunction on a Compound FESpace!");
   }
 
+  shared_ptr<CoefficientFunction>
+  GridFunctionCoefficientFunction :: Primary () const
+  {
+    return gf_shared_ptr;
+  }
 
   shared_ptr<CoefficientFunction>
   GridFunction :: Operator (shared_ptr<DifferentialOperator> diffop) const
@@ -514,6 +519,27 @@ namespace ngcomp
     return coef;
   }
 
+  shared_ptr<CoefficientFunction>
+  GridFunction :: Operator (const string& name) const
+  {
+    if (!GetFESpace()->GetAdditionalEvaluators().Used(name))
+      throw Exception(string("Operator \"") + name + string("\" does not exist for ") + GetFESpace()->GetClassName() + string("!"));
+    auto diffop = GetFESpace()->GetAdditionalEvaluators()[name];
+    auto self = dynamic_pointer_cast<GridFunction>
+      (const_cast<GridFunction*>(this)->shared_from_this());
+    shared_ptr<GridFunctionCoefficientFunction> coef;
+    if(diffop->SupportsVB(VOL))
+       coef = make_shared<GridFunctionCoefficientFunction> (self, diffop);
+    else if(diffop->SupportsVB(BND))
+      coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,diffop);
+    else if(diffop->SupportsVB(BBND))
+      coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
+    else
+      throw Exception ("Operator does not support any of the supported VBs");
+    coef->SetDimensions(diffop->Dimensions());
+    coef->generated_from_operator = name;
+    return coef;
+  }
 
   template <int N>
   bool MyLess (const Vec<N,int>& a, const Vec<N,int>& b)

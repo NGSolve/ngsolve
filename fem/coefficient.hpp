@@ -291,7 +291,9 @@ namespace ngfem
     virtual shared_ptr<CoefficientFunction>
       DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const;
 
-    
+
+    // returns primary operator
+    virtual shared_ptr<CoefficientFunction> Primary () const;
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const;
     virtual shared_ptr<CoefficientFunction> Operator (shared_ptr<class DifferentialOperator> diffop) const;
     
