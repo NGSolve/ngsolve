@@ -747,6 +747,11 @@ namespace ngfem
     {
       Cast(fel).CalcMappedDDShape(mip, Trans(mat));
     }
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir,
+               bool eulerian);
   };
 
 
@@ -933,6 +938,11 @@ namespace ngfem
     using DiffOp<DiffOpHesseBoundary<D,FEL>>::AddTransSIMDIR;    
     static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                                 BareSliceMatrix<SIMD<double>> x, BareSliceVector<double> y);
+
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir,
+               bool eulerian);
   };
 
 
