@@ -15,9 +15,10 @@ namespace ngfem
 
     auto grad_proxy = proxy->Primary()->Operator("Grad")->Reshape(Array<int>{-1,D});
     auto hesse_grad_dir = proxy->Reshape(Array<int>({-1,D})) * dir->Operator("Grad");
-    return - (grad_proxy * dir->Operator("hesse")->Reshape(Array<int>{D,-1}))->Reshape(Array<int>{-1,D,D})
-      - hesse_grad_dir->Reshape(Array<int>{-1,D,D})->TensorTranspose(1,2)
-      - hesse_grad_dir->Reshape(Array<int>{-1,D,D});
+    const auto& shape = proxy->Dimensions();
+    return - (grad_proxy * dir->Operator("hesse")->Reshape(Array<int>{D,-1}))->Reshape(shape)
+      - hesse_grad_dir->Reshape(Array<int>{-1,D,D})->TensorTranspose(1,2)->Reshape(shape)
+  - hesse_grad_dir->Reshape(shape);
   };
 
   template <int D, typename FEL>
