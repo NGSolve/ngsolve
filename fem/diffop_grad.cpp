@@ -10,8 +10,10 @@ namespace ngfem
              bool Eulerian)
   {
     if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpGradient");
-    return -TransposeCF(dir->Operator("Grad")) * proxy;
-    // return -dir->Operator("grad") * proxy;
+    // return -TransposeCF(dir->Operator("Grad")) * proxy;
+
+    auto shape = proxy -> Dimensions();
+    return -(proxy->Reshape(Array<int>({-1,D})) * dir->Operator("Grad")) -> Reshape(shape);
   }
 
   template <int D, typename FEL>
