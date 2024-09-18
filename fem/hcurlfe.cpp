@@ -169,7 +169,7 @@ namespace ngfem
   CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
                    BareSliceMatrix<> shape) const
   {
-    CalcShape (bmip.IP(), shape);
+    CalcShape (bmip.IP(), shape.Cols(DIM));
 
     Switch<4-DIM>
       (bmip.DimSpace()-DIM,
@@ -179,7 +179,7 @@ namespace ngfem
          auto trans = Trans (mip.GetJacobianInverse());
          
          for (size_t i = 0; i < ndof; i++)
-           shape.Row(i) /* .Range(DIM+CODIM.value) */ = trans * Vec<DIM> (shape.Row(i));
+           shape.Row(i) /* .Range(DIM+CODIM.value) */ = trans * Vec<DIM> (shape.Row(i).Range(DIM));
        });
   }
 
