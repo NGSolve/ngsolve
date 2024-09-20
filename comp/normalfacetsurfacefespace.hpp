@@ -25,7 +25,7 @@ namespace ngcomp
     int ndof;
     Array<int> ndlevel;
     bool var_order;
-    bool print;
+    bool print = false;
 
     
   public:
