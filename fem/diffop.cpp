@@ -1041,6 +1041,15 @@ namespace ngfem
              shared_ptr<CoefficientFunction> dir,
              bool Eulerian) const 
   {
+    try
+      {
+        return diffop->DiffShape(proxy, dir, Eulerian);
+      }
+    catch (const Exception & e)
+      {
+        cout << "component could not compute shape deriv for vectorial cf" << endl;
+      }
+    
     int ddim = diffop->Dim();
     Array<shared_ptr<CoefficientFunction>> proxys(dim);
     
