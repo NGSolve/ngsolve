@@ -88,7 +88,7 @@ def test_blas(use_legacy_ops):
     op_blas = pF * pF.trans
     assert same(op, op_blas)
     assert check_optimization(op, options, {0: "optimized node matrix-matrix multiply",
-                                            12: "Matrix transpose"})
+                                            13: "Matrix transpose"})
 
     op = fem.Einsum('ij,jk->ik', pF, pF, **options)
     op_blas = pF * pF
