@@ -1188,6 +1188,7 @@ public:
     if(transformation.replace.count(thisptr))
       return transformation.replace[thisptr];
     auto newcf = make_shared<cl_UnaryOpCF>(c1->Transform(transformation), lam, name);
+    newcf->SetDimensions(BASE::Dimensions());
     transformation.cache[thisptr] = newcf;
     return newcf;
   }
