@@ -27,7 +27,9 @@ def _patched_parse_manifests(self):
 # patch the parse_manifests function to point to the actual ngsolve cmake project within the superbuild
 skbuild.cmaker.CMaker._parse_manifests = _patched_parse_manifests
 
-version = check_output([sys.executable,'tests/get_python_version_string_from_git.py'], cwd='.').decode('utf-8').strip()
+utils_command = [sys.executable, os.path.join('external_dependencies', 'netgen', 'tests', 'utils.py')]
+git_version = check_output([*utils_command, '--get-git-version']).decode('utf-8').strip()
+version = check_output([*utils_command, '--get-version']).decode('utf-8').strip()
 
 # check if release alread exists on pypi
 try:
