@@ -859,108 +859,108 @@ namespace ngfem {
 #endif // NGS_PYTHON
         }
 
-        LeviCivitaCoefficientFunction::LeviCivitaCoefficientFunction(int adim) : BASE(1), dim{adim}
-        {
-          Array<int> dims(dim);
-          char symbol = 'a';
-          for (size_t i : Range(dim)) {
-            dims[i] = dim;
-            mi.Append(Index{symbol++, i, static_cast<size_t>(dim)});
-          }
 
-          SetDimensions(dims.Part(0));
-        }
+        // LeviCivitaCoefficientFunction::LeviCivitaCoefficientFunction(int adim) : BASE(1), dim{adim}
+        // {
+        //   Array<int> dims(dim);
+        //   char symbol = 'a';
+        //   for (size_t i : Range(dim)) {
+        //     dims[i] = dim;
+        //     mi.Append(Index{symbol++, i, static_cast<size_t>(dim)});
+        //   }
 
-        void LeviCivitaCoefficientFunction::DoArchive(Archive &ar)
-        {
-          BASE::DoArchive(ar);
-          ar & dim;
-          mi.DoArchive(ar);
-        }
+        //   SetDimensions(dims.Part(0));
+        // }
 
-        void LeviCivitaCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index,
-                                    bool skip_zeroes) const
-        {
-          LocalHeap lh(100000, "Levi-Cevita code gen");
+        // void LeviCivitaCoefficientFunction::DoArchive(Archive &ar)
+        // {
+        //   BASE::DoArchive(ar);
+        //   ar & dim;
+        //   mi.DoArchive(ar);
+        // }
 
-          auto dims = Dimensions();
+        // void LeviCivitaCoefficientFunction::GenerateCode(Code &code, FlatArray<int> inputs, int index,
+        //                             bool skip_zeroes) const
+        // {
+        //   LocalHeap lh(100000, "Levi-Cevita code gen");
 
-          auto nzvec =
-              nonzero_pattern(const_cast<LeviCivitaCoefficientFunction *>(this)
-                                  ->shared_from_this());
+        //   auto dims = Dimensions();
 
-          for (size_t I : Range(Dimension())) {
+        //   auto nzvec =
+        //       nonzero_pattern(const_cast<LeviCivitaCoefficientFunction *>(this)
+        //                           ->shared_from_this());
 
-            if (skip_zeroes && !nzvec[I])
-              continue;
+        //   for (size_t I : Range(Dimension())) {
 
-            const auto I_array = split(I, mi);
+        //     if (skip_zeroes && !nzvec[I])
+        //       continue;
 
-            if (is_even_iota_permutation(I_array.begin(), I_array.end()))
-              code.body += Var(index, I, dims).Assign(Var(1.0));
-            else if (is_odd_iota_permutation(I_array.begin(), I_array.end()))
-              code.body += Var(index, I, dims).Assign(Var(-1.0));
-            else
-              code.body += Var(index, I, dims).Assign(Var(0.0));
-          }
-        }
+        //     const auto I_array = split(I, mi);
+        //     if (is_even_iota_permutation(I_array.begin(), I_array.end()))
+        //       code.body += Var(index, I, dims).Assign(Var(1.0));
+        //     else if (is_odd_iota_permutation(I_array.begin(), I_array.end()))
+        //       code.body += Var(index, I, dims).Assign(Var(-1.0));
+        //     else
+        //       code.body += Var(index, I, dims).Assign(Var(0.0));
+        //   }
+        // }
 
-        void LeviCivitaCoefficientFunction::NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatVector<AutoDiffDiff<1, NonZero>> values) const
-        {
-          for (size_t I : Range(Dimension())) {
-            const auto I_array = split(I, mi);
+        // void LeviCivitaCoefficientFunction::NonZeroPattern(const class ProxyUserData &ud,
+        //                               FlatVector<AutoDiffDiff<1, NonZero>> values) const
+        // {
+        //   for (size_t I : Range(Dimension())) {
+        //     const auto I_array = split(I, mi);
 
-            if (is_even_iota_permutation(I_array.begin(), I_array.end()))
-              values(I) = true;
-            else if (is_odd_iota_permutation(I_array.begin(), I_array.end()))
-              values(I) = true;
-            else
-              values(I) = false;
-          }
-        }
+        //     if (is_even_iota_permutation(I_array.begin(), I_array.end()))
+        //       values(I) = true;
+        //     else if (is_odd_iota_permutation(I_array.begin(), I_array.end()))
+        //       values(I) = true;
+        //     else
+        //       values(I) = false;
+        //   }
+        // }
 
-        void LeviCivitaCoefficientFunction::NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatArray<FlatVector<AutoDiffDiff<1, NonZero>>> input,
-                                      FlatVector<AutoDiffDiff<1, NonZero>> values) const
-        {
-          NonZeroPattern(ud, values);
-        }
-
-
-        double
-        LeviCivitaCoefficientFunction::Evaluate(
-            const BaseMappedIntegrationPoint &ip) const
-        {
-          if (Dimension() == 1)
-            return BASE::Evaluate(ip);
-          throw Exception(
-              "LeviCivitaCF scalar evaluate called for non-scalar result");
-        }
+        // void LeviCivitaCoefficientFunction::NonZeroPattern(const class ProxyUserData &ud,
+        //                               FlatArray<FlatVector<AutoDiffDiff<1, NonZero>>> input,
+        //                               FlatVector<AutoDiffDiff<1, NonZero>> values) const
+        // {
+        //   NonZeroPattern(ud, values);
+        // }
 
 
-        shared_ptr<CoefficientFunction>
-        LeviCivitaCoefficientFunction::Diff(
-            const CoefficientFunction *var,
-            shared_ptr<CoefficientFunction> dir) const
-        {
-          if (this == var)
-            return dir;
+        // double
+        // LeviCivitaCoefficientFunction::Evaluate(
+        //     const BaseMappedIntegrationPoint &ip) const
+        // {
+        //   if (Dimension() == 1)
+        //     return BASE::Evaluate(ip);
+        //   throw Exception(
+        //       "LeviCivitaCF scalar evaluate called for non-scalar result");
+        // }
 
-          return ZeroCF(Dimensions());
-        }
 
-        shared_ptr<CoefficientFunction>
-        LeviCivitaCoefficientFunction::DiffJacobi(
-                                                  const CoefficientFunction *var, T_DJC & cache) const
-        {
-          if (this == var)
-            return IdentityCF(Dimensions());
+        // shared_ptr<CoefficientFunction>
+        // LeviCivitaCoefficientFunction::Diff(
+        //     const CoefficientFunction *var,
+        //     shared_ptr<CoefficientFunction> dir) const
+        // {
+        //   if (this == var)
+        //     return dir;
 
-          Array<int> dims{Dimensions()};
-          dims.Append(Dimensions());
-          return ZeroCF(dims);
-        }
+        //   return ZeroCF(Dimensions());
+        // }
+
+        // shared_ptr<CoefficientFunction>
+        // LeviCivitaCoefficientFunction::DiffJacobi(
+        //                                           const CoefficientFunction *var, T_DJC & cache) const
+        // {
+        //   if (this == var)
+        //     return IdentityCF(Dimensions());
+
+        //   Array<int> dims{Dimensions()};
+        //   dims.Append(Dimensions());
+        //   return ZeroCF(dims);
+        // }
 
 
         string validate_signature(string signature)
@@ -1458,9 +1458,39 @@ namespace ngfem {
     using namespace tensor_internal;
 
 
-    shared_ptr<CoefficientFunction> LeviCivitaCF(int dimension) {
-        return make_shared<LeviCivitaCoefficientFunction>(dimension);
-    }
+    // shared_ptr<CoefficientFunction> LeviCivitaCF(int dimension) {
+    //     return make_shared<LeviCivitaCoefficientFunction>(dimension);
+    // }
+    shared_ptr<CoefficientFunction> LeviCivitaCF(int dimension)
+    {
+      auto mone = make_shared<ConstantCoefficientFunction>(-1.0);
+      auto one = make_shared<ConstantCoefficientFunction>(1.0);
+      auto zero = ZeroCF(Array<int>{1});
+      size_t full_dim = 1;
+      for(auto i : Range(dimension))
+        full_dim *= dimension;
+      Array<shared_ptr<CoefficientFunction>> cfs(full_dim);
+      cfs = zero;
+      Array<int> indices(dimension);
+      for(auto i : Range(dimension))
+        indices[i] = i;
+      do
+        {
+          int index = 0;
+          for(auto i : Range(dimension))
+            index += indices[i] * pow(dimension, (dimension-1-i));
+          int sign = 1;
+          for(size_t i = 0; i < dimension-1; i++)
+            for(size_t j = i+1; j < dimension; j++)
+              sign *= (indices[j] - indices[i]);
+          cfs[index] = sign > 0 ? one : mone;
+        }
+      while(std::next_permutation(indices.begin(), indices.end()));
+      auto cf = MakeVectorialCoefficientFunction(std::move(cfs));
+      Array<int> dims(dimension);
+      dims = dimension;
+      return cf->Reshape(dims);
+    };
 
     shared_ptr<CoefficientFunction> EinsumCF(const string &index_signature,
                                              const Array<shared_ptr<CoefficientFunction>> &cfs,
@@ -1468,7 +1498,7 @@ namespace ngfem {
         return make_shared<EinsumCoefficientFunction>(expand_ellipses(index_signature, cfs), cfs, options);
     }
 
-    static RegisterClassForArchive<LeviCivitaCoefficientFunction, CoefficientFunction> reglevicivitacf;
+// static RegisterClassForArchive<LeviCivitaCoefficientFunction, CoefficientFunction> reglevicivitacf;
     static RegisterClassForArchive<EinsumCoefficientFunction, CoefficientFunction> regeinsumcf;
 
 } // namespace ngfem

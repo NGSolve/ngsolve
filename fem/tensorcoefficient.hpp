@@ -191,77 +191,79 @@ namespace ngfem {
         optimize_identities(string, const Array<shared_ptr<CoefficientFunction>>& cfs,
                             const map<string, bool> &options);
 
-        class LeviCivitaCoefficientFunction
-            : public T_CoefficientFunction<LeviCivitaCoefficientFunction> {
-          using BASE = T_CoefficientFunction<LeviCivitaCoefficientFunction>;
 
-          int dim = 0;
-          MultiIndex mi{};
+        // class LeviCivitaCoefficientFunction
+        //     : public T_CoefficientFunction<LeviCivitaCoefficientFunction> {
+        //   using BASE = T_CoefficientFunction<LeviCivitaCoefficientFunction>;
 
-        public:
-          LeviCivitaCoefficientFunction() = default;
+        //   int dim = 0;
+        //   MultiIndex mi{};
 
-          LeviCivitaCoefficientFunction(int adim);
+        // public:
+        //   LeviCivitaCoefficientFunction() = default;
 
-          virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override {
-            func(*this);
-          }
+        //   LeviCivitaCoefficientFunction(int adim);
 
-          virtual string GetDescription() const override { return string("Levi-Civita Symbol"); }
+        //   virtual void TraverseTree(const function<void(CoefficientFunction &)> &func) override {
+        //     func(*this);
+        //   }
 
-          virtual void DoArchive(Archive &ar) override;
+        //   virtual string GetDescription() const override { return string("Levi-Civita Symbol"); }
 
-          virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
-            GenerateCode(code, inputs, index, false);
-          }
+        //   virtual void DoArchive(Archive &ar) override;
 
-          virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index,
-                                    bool skip_zeroes = true) const;
+        //   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+        //     GenerateCode(code, inputs, index, false);
+        //   }
 
-          virtual void NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatVector<AutoDiffDiff<1,NonZero>> values) const override;
+        //   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index,
+        //                             bool skip_zeroes = true) const;
 
-          virtual void NonZeroPattern(const class ProxyUserData &ud,
-                                      FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
-                                      FlatVector<AutoDiffDiff<1,NonZero>> values) const override;
+        //   virtual void NonZeroPattern(const class ProxyUserData &ud,
+        //                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override;
 
-          using BASE::Evaluate;
-          using typename BASE::T_DJC;
+        //   virtual void NonZeroPattern(const class ProxyUserData &ud,
+        //                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+        //                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override;
 
-          virtual double Evaluate(const BaseMappedIntegrationPoint &ip) const override;
+        //   using BASE::Evaluate;
+        //   using typename BASE::T_DJC;
 
-          template<typename MIR, typename T, ORDERING ORD>
-          void T_Evaluate(const MIR &ir, BareSliceMatrix<T, ORD> values) const
-          {
-            auto val = T(0.0);
-            values.AddSize(Dimension(), ir.Size()) = val;
-            auto ir_size = ir.Size();
-            for (size_t I: Range(Dimension())) {
-              const auto I_array = split(I, mi);
-              if (is_even_iota_permutation(I_array.begin(), I_array.end()))
-                val = 1.0;
-              else if (is_odd_iota_permutation(I_array.begin(), I_array.end()))
-                val = -1.0;
-              else
-                continue;
-              for (auto q: Range(ir_size))
-                values(I, q) = val;
-            }
-          }
+        //   virtual double Evaluate(const BaseMappedIntegrationPoint &ip) const override;
 
-          template<typename MIR, typename T, ORDERING ORD>
-          void T_Evaluate(const MIR &ir, FlatArray<BareSliceMatrix<T, ORD>> input,
-                          BareSliceMatrix<T, ORD> values) const
-          {
-            T_Evaluate(ir, values);
-          }
+        //   template<typename MIR, typename T, ORDERING ORD>
+        //   void T_Evaluate(const MIR &ir, BareSliceMatrix<T, ORD> values) const
+        //   {
+        //     auto val = T(0.0);
+        //     values.AddSize(Dimension(), ir.Size()) = val;
+        //     auto ir_size = ir.Size();
+        //     for (size_t I: Range(Dimension())) {
+        //       const auto I_array = split(I, mi);
+        //       cout << "check I: " << I_array << endl;
+        //       if (is_even_iota_permutation(I_array.begin(), I_array.end()))
+        //         val = 1.0;
+        //       else if (is_odd_iota_permutation(I_array.begin(), I_array.end()))
+        //         val = -1.0;
+        //       else
+        //         continue;
+        //       for (auto q: Range(ir_size))
+        //         values(I, q) = val;
+        //     }
+        //   }
+
+        //   template<typename MIR, typename T, ORDERING ORD>
+        //   void T_Evaluate(const MIR &ir, FlatArray<BareSliceMatrix<T, ORD>> input,
+        //                   BareSliceMatrix<T, ORD> values) const
+        //   {
+        //     T_Evaluate(ir, values);
+        //   }
 
 
-          shared_ptr<CoefficientFunction> Diff(const CoefficientFunction *var,
-                                               shared_ptr<CoefficientFunction> dir) const override;
+        //   shared_ptr<CoefficientFunction> Diff(const CoefficientFunction *var,
+        //                                        shared_ptr<CoefficientFunction> dir) const override;
 
-          shared_ptr<CoefficientFunction> DiffJacobi(const CoefficientFunction *var, T_DJC & cache) const override;
-        };
+        //   shared_ptr<CoefficientFunction> DiffJacobi(const CoefficientFunction *var, T_DJC & cache) const override;
+        // };
 
         class EinsumCoefficientFunction
             : public T_CoefficientFunction<EinsumCoefficientFunction>
