@@ -321,7 +321,7 @@ namespace ngla
 	      }
 	    cout << "wrote matrix to file 'pardiso.err', please check" << endl;
 	  }
-	throw Exception("PardisoInverse: Setup and Factorization failed.");
+	throw Exception("PardisoInverse: Setup and Factorization failed \n error = "+errmsg);
       }
 
     memory_allocated_in_pardiso_lib = 1024*params[15];
