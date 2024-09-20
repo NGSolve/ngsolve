@@ -1,10 +1,11 @@
 #! /bin/bash
 set -e
 ulimit -n 1024000 # lower open file limit, seems to affect performance
-sed -i 's/mirrorlist/#mirrorlist/g' /etc/yum.repos.d/CentOS-*
-sed -i 's|#baseurl=http://mirror.centos.org|baseurl=http://vault.centos.org|g' /etc/yum.repos.d/CentOS-*
 yum -y update
-yum -y install ninja-build fontconfig-devel tk-devel tcl-devel libXmu-devel mesa-libGLU-devel ccache
+yum -y install ninja-build fontconfig-devel tk-devel tcl-devel libXmu-devel mesa-libGLU-devel
+
+curl https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/c/ccache-3.7.7-1.el8.x86_64.rpm -o ccache.rpm
+dnf -y install ccache.rpm
 
 cd external_dependencies/netgen
 git remote update
@@ -13,17 +14,22 @@ cd ../..
 
 rm -rf wheelhouse
 mkdir wheelhouse
-py=/opt/python/cp39-cp39/bin/python 
-export NETGEN_VERSION=`$py tests/get_python_version_string_from_git.py external_dependencies/netgen`
+export NETGEN_VERSION=`/opt/python/cp312-cp312/bin/python external_dependencies/netgen/tests/utils.py --get-version --dir=./external_dependencies/netgen`
 export NETGEN_CCACHE=1
+echo "Netgen version: $NETGEN_VERSION"
 
-$py tests/fix_auditwheel_policy.py
-
-for pyversion in 312 311 310 39 38
+for pyversion in 313 312 311 310 39 38
 do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
     $PYDIR/pip install -U pytest-check numpy wheel scikit-build mkl==2023.* mkl-devel==2023.*
+
+    # wait until netgen pip package is available
+    cd external_dependencies/netgen
+    $PYDIR/python3 ./tests/utils.py --wait-pip
+    cd ../..
+
+    $PYDIR/python3 ./external_dependencies/netgen/tests/utils.py --check-pip --package ngsolve || continue
     $PYDIR/pip install netgen-mesher==$NETGEN_VERSION
 
     sed -i 's/set(DLL_EXT ".so")/set(DLL_EXT ".so.2")/' /opt/python/cp${pyversion}-cp${pyversion}/lib/cmake/mkl/MKLConfig.cmake

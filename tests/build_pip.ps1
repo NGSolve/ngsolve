@@ -12,14 +12,20 @@ if (test-path ..\venv_ngs) {
 
 
 $env:NETGEN_CCACHE = 1
+$py=$args[0]
 
 cd external_dependencies\netgen
 git remote update
 .\tests\build_pip.ps1 $args[0]
+& $py\python.exe tests\utils.py --wait-pip
 cd ..\..
 
-$py=$args[0]
-$netgen_version=(& $py\python.exe tests\get_python_version_string_from_git.py external_dependencies\netgen)
+$netgen_version=(& $py\python.exe external_dependencies\netgen\tests\utils.py --get-version --dir=.\external_dependencies\netgen)
+
+& $py\python.exe external_dependencies\netgen\tests\utils.py --check-pip --package ngsolve
+if ($LASTEXITCODE -ne 0) {
+    exit 0
+}
 
 & $py\python.exe -m venv --clear ..\venv_ngs
 ..\venv_ngs\scripts\Activate.ps1
