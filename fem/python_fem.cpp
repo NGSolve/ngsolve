@@ -638,8 +638,8 @@ val : can be one of the following:
               if (coef->Dimension() != dimension)
                 throw Exception("dims does not fit to dimension of CoefficientFunction");
 
-              coef->SetDimensions(cdims);
-              // coef = coef->Reshape(cdims);
+              // coef->SetDimensions(cdims);
+              coef = coef->Reshape(cdims);
             }
           return coef;
         }),
