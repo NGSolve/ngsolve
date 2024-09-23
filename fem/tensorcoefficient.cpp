@@ -1467,7 +1467,7 @@ namespace ngfem {
       auto one = make_shared<ConstantCoefficientFunction>(1.0);
       auto zero = ZeroCF(Array<int>{1});
       size_t full_dim = 1;
-      for(auto i : Range(dimension))
+      for([[maybe_unused]] auto i : Range(dimension))
         full_dim *= dimension;
       Array<shared_ptr<CoefficientFunction>> cfs(full_dim);
       cfs = zero;
