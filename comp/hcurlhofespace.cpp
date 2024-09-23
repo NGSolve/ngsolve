@@ -3587,7 +3587,7 @@ namespace ngcomp
     else
       h1def.Clear();
     for(int i=0; i<definedon[VOL].Size(); i++)
-      if(definedon[VOL][i] > 0)
+      if(definedon[VOL][i])
 	h1def.SetBit(i);
     fesh1->SetDefinedOn(VOL,h1def);
 
@@ -3597,7 +3597,7 @@ namespace ngcomp
     else
       h1defb.Clear();
     for(int i=0; i<definedon[BND].Size(); i++)
-      if(definedon[BND][i] > 0)
+      if(definedon[BND][i])
 	h1defb.SetBit(i);
     fesh1->SetDefinedOn(BND,h1defb);
 
