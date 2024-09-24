@@ -201,18 +201,17 @@ namespace ngcomp
 
   class H1HOProlongation : public Prolongation
   {
-    weak_ptr<H1HighOrderFESpace> fes;
+    weak_ptr<FESpace> fes;
     shared_ptr<FESpace> fesL2;
 
     mutable Array<shared_ptr<BaseMatrix>> convL2toH1;
     mutable Array<shared_ptr<BaseMatrix>> convH1toL2;
   public:
-    H1HOProlongation (weak_ptr<H1HighOrderFESpace> afes)
-      : fes(afes)
+    H1HOProlongation (const FESpace & afes)
     {
       Flags flagsL2;
-      flagsL2.SetFlag ("order", fes.lock()->GetOrder());
-      fesL2 = CreateFESpace ("L2", fes.lock()->GetMeshAccess(), flagsL2);
+      flagsL2.SetFlag ("order", afes.GetOrder());
+      fesL2 = CreateFESpace ("L2", afes.GetMeshAccess(), flagsL2);
       // fesL2->Update();
       // fesL2->FinalizeUpdate();
       // int levels = fes.lock()->GetMeshAccess()->GetNLevels();
@@ -224,8 +223,9 @@ namespace ngcomp
       // convH1toL2[levels-1] = ConvertOperator(fes.lock(), fesL2, VOL, lh);
     }
 
-    virtual void Update (const FESpace & /* fes*/) override
+    virtual void Update (const FESpace & afes) override
     {
+      fes = dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(&afes)->shared_from_this());
       fesL2->Update();
       fesL2->FinalizeUpdate();
       
@@ -482,7 +482,8 @@ namespace ngcomp
 
     if (!test_ho_prolongation)
       prol = make_shared<LinearProlongation> (GetMeshAccess());
-
+    else
+      prol = make_shared<H1HOProlongation> (*this);      
     needs_transform_vec = false;
   }
 
@@ -770,11 +771,13 @@ into the wirebasket.
                                 IsComplex());
     // timer3.Stop();
 
+    /*
     if (test_ho_prolongation && !prol)
       {
         prol = make_shared<H1HOProlongation> (dynamic_pointer_cast<H1HighOrderFESpace>(this->shared_from_this()));
         // prol->Update(*this);
       }
+    */
   }
 
 
