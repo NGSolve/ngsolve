@@ -203,6 +203,7 @@ namespace ngcomp
   {
     weak_ptr<FESpace> fes;
     shared_ptr<FESpace> fesL2;
+    VorB vb;
 
     mutable Array<shared_ptr<BaseMatrix>> convL2toH1;
     mutable Array<shared_ptr<BaseMatrix>> convH1toL2;
@@ -211,7 +212,16 @@ namespace ngcomp
     {
       Flags flagsL2;
       flagsL2.SetFlag ("order", afes.GetOrder());
-      fesL2 = CreateFESpace ("L2", afes.GetMeshAccess(), flagsL2);
+      if(std::none_of(afes.DefinedOn(VOL).begin(), afes.DefinedOn(VOL).end(), [](bool b) { return b; }))
+        {
+          fesL2 = CreateFESpace("l2surf", afes.GetMeshAccess(), flagsL2);
+          vb = BND;
+        }
+      else
+        {
+          fesL2 = CreateFESpace ("L2", afes.GetMeshAccess(), flagsL2);
+          vb = VOL;
+        }
       // fesL2->Update();
       // fesL2->FinalizeUpdate();
       // int levels = fes.lock()->GetMeshAccess()->GetNLevels();
@@ -236,8 +246,8 @@ namespace ngcomp
           convH1toL2.SetSize(levels);
           
           LocalHeap lh(10*1000*1000);
-          convL2toH1[levels-1] = ConvertOperator(fesL2, fes.lock(), VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
-          convH1toL2[levels-1] = ConvertOperator(fes.lock(), fesL2, VOL, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+          convL2toH1[levels-1] = ConvertOperator(fesL2, fes.lock(), vb, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
+          convH1toL2[levels-1] = ConvertOperator(fes.lock(), fesL2, vb, lh, nullptr, nullptr, NULL, nullptr, false, true, true, 0, 0, true);
         }
 
     }
