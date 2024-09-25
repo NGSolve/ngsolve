@@ -186,6 +186,7 @@ namespace ngcomp
     shared_ptr<MeshAccess> ma;
     ///
     int order;
+    VorB vb;
     const Array<int> & first_dofs;
     Array<size_t> els_on_level;
     array<Matrix<double>,32> trigprolsL;
@@ -222,6 +223,7 @@ namespace ngcomp
     L2HoProlongationTrig(shared_ptr<MeshAccess> ama, int aorder, const Array<int> & afirst_dofs)
       : ma(ama), order(aorder), first_dofs(afirst_dofs) 
     {
+      vb = ma->GetDimension() == 3 ? BND : VOL;
       for (int classnr = 0; classnr < 32; classnr++)
         {
           Array<size_t> verts{GetClassRealization(classnr)};
@@ -280,7 +282,7 @@ namespace ngcomp
     virtual void Update (const FESpace & /* fes */) override
     {
       size_t oldne = trig_creation_class.Size();
-      size_t ne = ma->GetNE();
+      size_t ne = ma->GetDimension() == 3 ? ma->GetNSE() : ma->GetNE();
       cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", ne = " << ne << endl;
       
       while (els_on_level.Size() < ma->GetNLevels())
@@ -300,7 +302,7 @@ namespace ngcomp
       Array<IVec<3, size_t>> trig_creation_verts(ne);
       for (size_t i = oldne; i < ne; i++)
         for (int j = 0; j < 3; j++)
-          trig_creation_verts[i][j] = ma->GetElement({VOL,i}).Vertices()[j];
+          trig_creation_verts[i][j] = ma->GetElement({vb,i}).Vertices()[j];
 
       BitArray isparent(ne);
       BitArray isdone(ne);
@@ -312,14 +314,14 @@ namespace ngcomp
         isparent.Clear();
         for (size_t i = oldne; i < ne; i++)
           if (!isdone[i])
-            if (auto parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent != -1)
+            if (auto parent = ma->GetParentElement (ElementId(vb,i)).Nr(); parent != -1)
               isparent.SetBit(parent);
             
         bool found = false;
         for (size_t i = ne; i-- > oldne; )
           if (!isparent[i] && !isdone[i])
             {
-              int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
+              int newest_vertex = ma->GetElement(ElementId(vb,i)).newest_vertex;
               verts[3] = trig_creation_verts[i][newest_vertex];
               IVec<2> pnodes = ma->GetParentNodes(verts[3]);
               if (trig_creation_verts[i].Contains(pnodes[1]))
@@ -330,7 +332,7 @@ namespace ngcomp
               verts[2] = pnodes[1];
               trig_creation_class[i] = GetClassNr(verts);
 
-              int parent = ma->GetParentElement (ElementId(VOL,i)).Nr();
+              int parent = ma->GetParentElement (ElementId(vb,i)).Nr();
               if (parent != -1) 
                 {
                   trig_creation_verts[parent] = trig_creation_verts[i];
@@ -360,7 +362,7 @@ namespace ngcomp
       cout << IM(5) << "prolongate, nec = " << nec << ", ne = " << ne << endl;
       Vector<> tmp(ndel);
       for (size_t i = nec; i < ne; i++)
-        if (int parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent!=-1)
+        if (int parent = ma->GetParentElement (ElementId(vb,i)).Nr(); parent!=-1)
           {
             int classnr = trig_creation_class[i];
             tmp = fv.Range(ndel*parent, ndel*(parent+1));
@@ -382,7 +384,7 @@ namespace ngcomp
       cout << IM(5) << "restrict, nec = " << nec << ", ne = " << ne << endl;
       Vector<> tmp(ndel);
       for (size_t i = ne-1; i >= nec; i--)
-        if(int parent = ma->GetParentElement (ElementId(VOL,i)).Nr(); parent!=-1)
+        if(int parent = ma->GetParentElement (ElementId(vb,i)).Nr(); parent!=-1)
           {
             int classnr = trig_creation_class[i];
             tmp = Trans (trigprolsR[classnr]) * fv.Range(ndel*i, ndel*(i+1)) +
@@ -2112,6 +2114,16 @@ global system.
 
     if (order == 0)
       prol = make_shared<ElementProlongation> (*this, BND);
+    else
+      {
+        bool allsimplex = true;
+        for (auto el : ma->Elements(BND))
+          if (el.GetType() != ET_TRIG)
+            allsimplex = false;
+        allsimplex = !ma->GetCommunicator().AllReduce(!allsimplex, NG_MPI_LOR);
+        if(ma->GetDimension() == 3 && allsimplex && ma->GetNLevels() ==1)
+          prol = make_shared<L2HoProlongationTrig>(ma, order, first_element_dof);
+      }
 
     
     if (dimension > 1)
