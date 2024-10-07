@@ -1,7 +1,7 @@
 FROM ubuntu:23.10
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYODIDE_VERSION=0.26.0a3
-ENV EMSDK_VERSION=3.1.52
+ENV PYODIDE_VERSION=0.26.2
+ENV EMSDK_VERSION=3.1.58
 ENV PYTHON_VERSION=3.12.1
 RUN apt-get update && apt-get -y upgrade
 RUN apt-get update && apt-get -y install \
@@ -53,4 +53,4 @@ RUN cp /root/ngsolve/tests/gitlab-ci/pyodide/generate_repodata.js .
 RUN node generate_repodata.js
 RUN rm *.whl
 RUN python3 /root/ngsolve/tests/gitlab-ci/pyodide/merge.py
-RUN cd /root/output/ && tar -cvjSf ngsolve_pyodide.tar.bz2 pyodide
+RUN cd /root/output/ && tar -cvjSf ngsolve_pyodide_${PYODIDE_VERSION}.tar.bz2 pyodide
