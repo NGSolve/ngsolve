@@ -1894,7 +1894,7 @@ namespace ngfem
 
 
   template <int DIM_SPC, VorB VB = VOL>
-  class DiffOpIdVectorH1 : public DiffOp<DiffOpIdVectorH1<DIM_SPC> >
+  class DiffOpIdVectorH1 : public DiffOp<DiffOpIdVectorH1<DIM_SPC, VB> >
   {
   public:
     enum { DIM = 1 };
@@ -2713,6 +2713,7 @@ namespace ngfem
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<1,BND> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<2,BND> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<3,BND> >;
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpIdVectorH1<3,BBND> >;
 
 
 
