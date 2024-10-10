@@ -1959,7 +1959,7 @@ namespace ngfem
         }
     }
 
-    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::ApplySIMDIR;    
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC, VB>>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
@@ -1971,7 +1971,7 @@ namespace ngfem
         }
     }
 
-    using DiffOp<DiffOpIdVectorH1<DIM_SPC>>::AddTransSIMDIR;        
+    using DiffOp<DiffOpIdVectorH1<DIM_SPC, VB>>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
     {
