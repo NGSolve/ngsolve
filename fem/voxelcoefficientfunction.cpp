@@ -1,5 +1,9 @@
 
 #include "voxelcoefficientfunction.hpp"
+#include <core/register_archive.hpp>
+#ifdef NGS_PYTHON
+#include <core/python_ngcore.hpp> // for shallow archive
+#endif // NGS_PYTHON
 
 namespace ngfem
 {
@@ -169,4 +173,8 @@ namespace ngfem
 
   template class VoxelCoefficientFunction<double>;
   template class VoxelCoefficientFunction<Complex>;
+  static RegisterClassForArchive<VoxelCoefficientFunction<double>,
+                                 CoefficientFunction> regvd;
+  static RegisterClassForArchive<VoxelCoefficientFunction<Complex>,
+                                 CoefficientFunction> regvc;
 } // namespace ngfem
