@@ -392,6 +392,7 @@ nr : int
     .def(py::init<shared_ptr<MeshAccess>,VorB,BitArray>(), py::arg("mesh"), py::arg("vb"), py::arg("mask"))
     .def("Mask",[](Region & reg) { return reg.MaskPtr(); }, "BitArray mask of the region")
     .def("VB", [](Region & reg) { return VorB(reg); }, "VorB of the region")
+    .def(NGSPickle<Region>())
     .def("Split", [](Region& self)
     {
       py::list regions;

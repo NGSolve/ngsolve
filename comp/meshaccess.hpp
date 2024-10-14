@@ -248,6 +248,7 @@ namespace ngcomp
     friend class Region;
   public:
     SimpleSignal updateSignal;
+    static std::true_type shallow_archive;
 
     /// for achiving ...
     MeshAccess ();
@@ -1228,6 +1229,8 @@ namespace ngcomp
     operator const BitArray & () const { return *mask; }
     shared_ptr<BitArray> MaskPtr() { return mask; }
     const shared_ptr<MeshAccess> & Mesh() const { return mesh; }
+    void DoArchive(Archive& ar)
+    { ar & mesh & vb & mask; }
     Region operator+ (const Region & r2) const
     {
       return Region (mesh, vb, BitArray(*mask).Or(r2.Mask()));
