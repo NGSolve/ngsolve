@@ -161,6 +161,7 @@ struct GenericBSpline {
 
 struct GenericBSpline2D {
   shared_ptr<BSpline2D> sp;
+  GenericBSpline2D() = default;
   GenericBSpline2D( const BSpline2D &asp ) : sp(make_shared<BSpline2D>(asp)) {;}
   GenericBSpline2D( shared_ptr<BSpline2D> asp ) : sp(asp) {;}
 
@@ -168,8 +169,10 @@ struct GenericBSpline2D {
   SIMD<Complex> operator() (SIMD<Complex> y,SIMD<Complex> x) const { throw Exception("BSpline2D not available for SIMD<complex>"); }
   Complex operator() (Complex y,Complex x) const { throw Exception("BSpline2D not available for complex"); }
   static string Name() { return "bspline2d"; }
-  void DoArchive(Archive& ar) {}
+  void DoArchive(Archive& ar) { ar & sp; }
 };
+
+static RegisterClassForArchive<cl_BinaryOpCF<GenericBSpline2D>, CoefficientFunction> regbspline2d;
 
 template <> void
 cl_UnaryOpCF<GenericBSpline>::GenerateCode(Code &code, FlatArray<int> inputs, int index) const
@@ -1639,6 +1642,7 @@ extrapolate: bool = True
           {
             return BinaryOpCF (cx, cy, GenericBSpline2D(sp), "BSpline2D");
           }, py::arg("cx"), py::arg("cy"))
+    .def(NGSPickle<BSpline2D>())
     ;
 
   m.def ("LoggingCF", LoggingCF, py::arg("cf"), py::arg("logfile")="stdout");
