@@ -30,6 +30,8 @@ namespace ngfem
     Complex EvaluateComplex(const BaseMappedIntegrationPoint& ip) const override;
 
     void Evaluate(const BaseMappedIntegrationPoint& mip, FlatVector<Complex> values) const override;
+    auto GetCArgs() const
+    { return make_tuple(start, end, dim_vals, values, linear); }
 
   private:
     SCAL T_Evaluate(const BaseMappedIntegrationPoint& ip) const;
