@@ -733,7 +733,12 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	     throw Exception ("slices with non-unit distance not allowed");
 	   return self.Range(IntRange(start1,start1+n1))->VectorRange(IntRange(start2, start2+n2));
 	 })
-    
+
+    .def(py::pickle([](const MultiVector & mv)
+                    { return py::make_tuple(makePyTuple(ArrayObject(mv))); },
+                    [](py::tuple state)
+                    { return make_shared<MultiVector>(makeCArray<shared_ptr<BaseVector>>(state[0])); }))
+                    
     .def_property("data",
                   [](shared_ptr<MultiVector> self)
                   { return self; },
