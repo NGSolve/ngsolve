@@ -58,6 +58,8 @@ namespace ngcomp {
                 {
                   space->GetDofNrs(NodeId(node_type,node_pair[0]),master_dofnrs);
                   space->GetDofNrs(NodeId(node_type,node_pair[1]),minion_dofnrs);
+                  if(master_dofnrs.Size() == 0 || minion_dofnrs.Size() == 0)
+                    continue;
                   for(auto i : Range(master_dofnrs.Size()))
                     {
                     dofmap[minion_dofnrs[i]] = dofmap[master_dofnrs[i]];
