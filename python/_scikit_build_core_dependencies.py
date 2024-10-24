@@ -1,3 +1,6 @@
+import sys
+
+
 def dynamic_metadata(field, settings):
 
     if field != "dependencies":
@@ -8,7 +11,11 @@ def dynamic_metadata(field, settings):
         msg = "No inline configuration is supported"
         raise ValueError(msg)
 
-    import tomllib
+    if sys.version_info >= (3, 11):
+        import tomllib
+    else:
+        import tomli as tomllib
+
     import importlib.metadata
 
     config = tomllib.load(open("pyproject.toml", "rb"))
