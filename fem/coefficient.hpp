@@ -1785,7 +1785,8 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
-  MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci);
+  MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci,
+                                     optional<VorB> vb=nullopt);
   
 
 
