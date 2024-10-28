@@ -5375,12 +5375,14 @@ class DomainWiseCoefficientFunction : public T_CoefficientFunction<DomainWiseCoe
 {
   Array<shared_ptr<CoefficientFunction>> ci;
   typedef T_CoefficientFunction<DomainWiseCoefficientFunction> BASE;
+  optional<VorB> vb;
   using BASE::Evaluate;
 public:
   // DomainWiseCoefficientFunction() = default;
-  DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
-    : BASE(1, false), ci(aci) 
-  { 
+  DomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci,
+                                 optional<VorB> avb = nullopt)
+    : BASE(1, false), ci(aci), vb(avb)
+  {
     for (auto & cf : ci)
       if (cf && cf->IsComplex()) is_complex = true;
     for (auto & cf : ci)
@@ -5393,7 +5395,7 @@ public:
         elementwise_constant = false;
   }
 
-  auto GetCArgs() const { return tuple  { Array<shared_ptr<CoefficientFunction>>{ci} }; }
+  auto GetCArgs() const { return tuple  { Array<shared_ptr<CoefficientFunction>>{ci}, vb }; }
   /*
   void DoArchive(Archive& ar) override
   {
@@ -5408,6 +5410,8 @@ public:
 
   virtual bool DefinedOn (const ElementTransformation & trafo) override
   {
+    if(vb && *vb != trafo.VB())
+      return false;
     int matindex = trafo.GetElementIndex();
     return (matindex < ci.Size() && ci[matindex]);
   }
@@ -5489,7 +5493,7 @@ public:
         cfop.Append (cf->Operator(name));
       else
         cfop.Append (nullptr);
-    return MakeDomainWiseCoefficientFunction(std::move (cfop));
+    return MakeDomainWiseCoefficientFunction(std::move (cfop), vb);
   }
   
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
@@ -5502,11 +5506,13 @@ public:
         ci_deriv.Append (cf->Diff(var, dir));
       else
         ci_deriv.Append (nullptr);
-    return MakeDomainWiseCoefficientFunction(std::move (ci_deriv));
+    return MakeDomainWiseCoefficientFunction(std::move (ci_deriv), vb);
   }  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
+    if(vb && ip.GetTransformation().VB() != *vb)
+      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
     Vec<1> res;
     Evaluate (ip, res);
     return res(0);
@@ -5515,6 +5521,8 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<> result) const override
   {
+    if(vb && ip.GetTransformation().VB() != *vb)
+      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
     result = 0;
     int matindex = ip.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
@@ -5523,6 +5531,8 @@ public:
 
   virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
   {
+    if(vb && ir[0].GetTransformation().VB() != *vb)
+      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
     int matindex = ir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
       ci[matindex] -> Evaluate (ir, values);
@@ -5533,6 +5543,8 @@ public:
   template <typename MIR, typename T, ORDERING ORD>
   void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
   {
+    if(vb && ir[0].GetTransformation().VB() != *vb)
+      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
     int matindex = ir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
       ci[matindex] -> Evaluate (ir, values);
@@ -5545,6 +5557,8 @@ public:
                    FlatArray<BareSliceMatrix<T,ORD>> input,                       
                    BareSliceMatrix<T,ORD> values) const
   {
+    if(vb && ir[0].GetTransformation().VB() != *vb)
+      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
     int matindex = ir.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
       values.AddSize(Dimension(), ir.Size()) = input[matindex];
@@ -5556,6 +5570,8 @@ public:
   virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
                         FlatVector<Complex> result) const override
   {
+    if(vb && ip.GetTransformation().VB() != *vb)
+      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
     result = 0;
     int matindex = ip.GetTransformation().GetElementIndex();
     if (matindex < ci.Size() && ci[matindex])
@@ -5564,6 +5580,8 @@ public:
   
   virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override
   {
+    if(vb && ip.GetTransformation().VB() != *vb)
+      throw Exception("Try to evaluate domainwise function defined on " + ToString(*vb) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
     Vec<1,Complex> res;
     Evaluate (ip, res);
     return res(0);
@@ -5624,11 +5642,13 @@ public:
 };
 
   shared_ptr<CoefficientFunction>
-  MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci)
+  MakeDomainWiseCoefficientFunction (Array<shared_ptr<CoefficientFunction>> aci,
+                                     optional<VorB> vb)
   {
     for(auto cf : aci)
       if (cf && !cf->IsZeroCF())
-        return make_shared<DomainWiseCoefficientFunction> (std::move (aci));
+        return make_shared<DomainWiseCoefficientFunction> (std::move (aci),
+                                                           vb);
     for(auto cf : aci)
       if(cf)
         return ZeroCF(cf->Dimensions());
@@ -5665,6 +5685,14 @@ public:
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     throw Exception ("OtherCF::GenerateCode not available");
+  }
+
+  shared_ptr<CoefficientFunction> Diff(const CoefficientFunction *var,
+                                       shared_ptr<CoefficientFunction> dir) const override
+  {
+    if(this == var)
+      return dir;
+    return make_shared<OtherCoefficientFunction>(c1->Diff(var, dir));
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
