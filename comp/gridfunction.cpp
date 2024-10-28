@@ -2833,6 +2833,7 @@ namespace ngcomp
     IntegrationPoint ip(lam1, lam2, lam3);
     ElementId ei(VOL, elnr);
     ElementTransformation & trafo = ma->GetTrafo (ei, lh);
+    if(!cf->DefinedOn(trafo)) return false;
     BaseMappedIntegrationPoint & mip = trafo(ip, lh);
     if (!cf -> IsComplex())
       cf -> Evaluate (mip, FlatVector<>(GetComponents(), values));
