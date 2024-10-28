@@ -64,6 +64,8 @@ namespace ngcomp
     SetNDof(dim);
     evaluator[VOL] = make_shared<VolDiffOp>(basis);
     evaluator[BND] = make_shared<VolDiffOp>(basis,BND);
+    evaluator[BBND] = make_shared<VolDiffOp>(basis,BBND);    
+    evaluator[BBBND] = make_shared<VolDiffOp>(basis,BBBND);    
   }
 
   void GlobalSpace :: AddOperator (string name, VorB vb, shared_ptr<CoefficientFunction> dbasis)
