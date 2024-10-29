@@ -31,8 +31,8 @@ namespace ngcomp
       ELEMENT_TYPE type;
       bool complex;
     public:
-      FE(int adim, ELEMENT_TYPE atype, bool acomplex)
-        : FiniteElement(adim, 5), type(atype), complex(acomplex) { };
+      FE(int adim, int aorder, ELEMENT_TYPE atype, bool acomplex)
+        : FiniteElement(adim, aorder), type(atype), complex(acomplex) { };
       ELEMENT_TYPE ElementType() const override { return type; }
       bool ComplexShapes() const override { return complex; }
       
@@ -64,7 +64,25 @@ namespace ngcomp
                   BareSliceVector<Complex> x, 
                   FlatVector<Complex> flux,
                   LocalHeap & lh) const override;
-      
+
+      void Apply (const FiniteElement & fel,
+                  const BaseMappedIntegrationRule & mir,
+                  BareSliceVector<double> x, 
+                  BareSliceMatrix<double> flux,
+                  LocalHeap & lh) const override;
+
+      void ApplyTrans (const FiniteElement & fel,
+                       const BaseMappedIntegrationRule & mir,
+                       FlatMatrix<double> flux,
+                       BareSliceVector<double> x, 
+                       LocalHeap & lh) const override;
+
+      /*
+      void AddTrans (const FiniteElement & bfel,
+                     const SIMD_BaseMappedIntegrationRule & bmir,
+                     BareSliceMatrix<SIMD<double>> flux,
+                     BareSliceVector<double> x) const override;
+      */
     };
 
     

@@ -1928,9 +1928,8 @@ active_dofs : BitArray or None
                               return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,diffop);
                             case BBND:
                               return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,diffop);
-                              break;
                             case BBBND:
-                              throw Exception ("there are no Operators with BBBND");
+                              return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,nullptr,diffop);
                             }
                         }
 
@@ -2232,7 +2231,8 @@ bonus_intorder : int
                 coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,diffop);
                 break;
               case BBBND:
-                throw Exception ("there are no Operators with BBBND");
+                coef = make_shared<GridFunctionCoefficientFunction> (self, nullptr,nullptr,nullptr,diffop);
+                break;
               }
             coef->SetDimensions(diffop->Dimensions());
             coef->generated_from_operator = name;

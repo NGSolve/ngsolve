@@ -87,7 +87,7 @@ namespace ngcomp
                                        shared_ptr<DifferentialOperator>()), // gridfunction-CF with null-ptr diffop
       */
       GridFunctionCoefficientFunction (afespace->GetEvaluator(VOL), afespace->GetEvaluator(BND),
-                                       afespace->GetEvaluator(BBND)),
+                                       afespace->GetEvaluator(BBND), afespace->GetEvaluator(BBBND)),
       name(aname), flags(aflags),       
       fespace(afespace)
   {
@@ -114,8 +114,9 @@ namespace ngcomp
 
   GridFunctionCoefficientFunction ::
   GridFunctionCoefficientFunction (shared_ptr<GridFunction> agf, shared_ptr<ProxyFunction> proxy)
-    : GridFunctionCoefficientFunction(agf, proxy->Evaluator(), proxy->TraceEvaluator(), proxy->TTraceEvaluator())
-  { }
+    : GridFunctionCoefficientFunction(agf, proxy->Evaluator(), proxy->TraceEvaluator(),
+                                      proxy->TTraceEvaluator())
+  { } 
 
   GridFunction :: ~GridFunction()
   { 
@@ -1225,9 +1226,10 @@ namespace ngcomp
   GridFunctionCoefficientFunction (shared_ptr<DifferentialOperator> adiffop,
                                    shared_ptr<DifferentialOperator> atrace_diffop,
 				   shared_ptr<DifferentialOperator> attrace_diffop,
+				   shared_ptr<DifferentialOperator> atttrace_diffop,
                                    int acomp)
     : CoefficientFunctionNoDerivative(1, false),
-      diffop{adiffop,atrace_diffop, attrace_diffop},
+      diffop{adiffop,atrace_diffop, attrace_diffop, atttrace_diffop},
       comp (acomp) 
   {
     ; // SetDimensions (gf->Dimensions());
@@ -1247,11 +1249,12 @@ namespace ngcomp
 				   shared_ptr<DifferentialOperator> adiffop,
                                    shared_ptr<DifferentialOperator> atrace_diffop,
 				   shared_ptr<DifferentialOperator> attrace_diffop,
+				   shared_ptr<DifferentialOperator> atttrace_diffop,                                   
                                    int acomp)
     : CoefficientFunctionNoDerivative(1,agf->IsComplex()),
       gf_shared_ptr(agf),
       gf(agf.get()),
-      diffop{adiffop,atrace_diffop,attrace_diffop},
+      diffop{adiffop,atrace_diffop,attrace_diffop, atttrace_diffop},
       comp (acomp) 
   {
     fes = gf->GetFESpace();
@@ -1298,7 +1301,7 @@ namespace ngcomp
 
   int GridFunctionCoefficientFunction::Dimension() const
   {
-    for (auto vb : { VOL, BND, BBND })
+    for (auto vb : { VOL, BND, BBND, BBBND })
       if (diffop[vb])
         return diffop[vb]->Dim();
     /*

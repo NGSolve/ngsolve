@@ -5544,7 +5544,7 @@ namespace ngcomp
       {
         static Timer timer ("Apply Matrix - mixed"); RegionTimer reg(timer);
 
-        for (auto vb : { VOL, BND, BBND } )
+        for (auto vb : { VOL, BND, BBND, BBBND } )
           if (VB_parts[vb].Size())
             {        
               IterateElements 
