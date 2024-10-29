@@ -49,20 +49,7 @@ namespace ngcomp
       x += basisvecs.Row(i).AsMatrix(dim, vecdim) * flux.Row(i);
   }
 
-  /*
-  void GlobalSpace::VolDiffOp::  
-  AddTrans (const FiniteElement & bfel,
-            const SIMD_BaseMappedIntegrationRule & bmir,
-            BareSliceMatrix<SIMD<double>> flux,
-            BareSliceVector<double> x) const
-  {
-    Matrix<SIMD<double>> basisvecs(basis->Dimension(), bmir.Size());
-    basis -> Evaluate (bmir, basisvecs);
-    for (size_t i = 0; i < dim; i++)
-      for (size_t j = 0; j < vecdim; j++)
-        x(i) += InnerProduct (basisvecs.Row(i*vecdim+j), flux.Row(j));
-  }
-  */
+
   
   void GlobalSpace::VolDiffOp::CalcMatrix
     (const FiniteElement & bfel,
@@ -93,6 +80,47 @@ namespace ngcomp
   }
 
 
+
+  void GlobalSpace::VolDiffOp::    
+  CalcMatrix (const FiniteElement & fel,
+              const SIMD_BaseMappedIntegrationRule & mir,
+              BareSliceMatrix<SIMD<double>> mat) const
+  {
+    basis -> Evaluate (mir, mat);
+  }
+
+
+  void GlobalSpace::VolDiffOp::    
+  Apply (const FiniteElement & bfel,
+         const SIMD_BaseMappedIntegrationRule & bmir,
+         BareSliceVector<double> x, 
+         BareSliceMatrix<SIMD<double>> flux) const
+  {
+    // Matrix<SIMD<double>> basisvecs(basis->Dimension(), bmir.Size());
+    STACK_ARRAY(SIMD<double>, mem, basis->Dimension()*bmir.Size());
+    FlatMatrix<SIMD<double>> basisvecs(basis->Dimension(), bmir.Size(), mem);
+    basis -> Evaluate (bmir, basisvecs);
+    flux.Rows(vecdim).Cols(bmir.Size()) = 0.0;
+    for (size_t i = 0; i < dim; i++)
+      flux += x(i) * basisvecs.Rows(i*vecdim, (i+1)*vecdim);
+  }
+  
+
+  void GlobalSpace::VolDiffOp::  
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            BareSliceMatrix<SIMD<double>> flux,
+            BareSliceVector<double> x) const
+  {
+    // Matrix<SIMD<double>> basisvecs(basis->Dimension(), bmir.Size());
+    STACK_ARRAY(SIMD<double>, mem, basis->Dimension()*bmir.Size());
+    FlatMatrix<SIMD<double>> basisvecs(basis->Dimension(), bmir.Size(), mem);
+    basis -> Evaluate (bmir, basisvecs);
+    for (size_t i = 0; i < dim; i++)
+      x(i) += HSum(InnerProduct (basisvecs.Rows(i*vecdim, (i+1)*vecdim), flux));
+  }
+
+  
   
 
   GlobalSpace::GlobalSpace(shared_ptr<MeshAccess> ama,

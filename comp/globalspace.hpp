@@ -77,12 +77,20 @@ namespace ngcomp
                        BareSliceVector<double> x, 
                        LocalHeap & lh) const override;
 
-      /*
+      void CalcMatrix (const FiniteElement & fel,
+                       const SIMD_BaseMappedIntegrationRule & mir,
+                       BareSliceMatrix<SIMD<double>> mat) const override;
+
+      void Apply (const FiniteElement & bfel,
+                  const SIMD_BaseMappedIntegrationRule & bmir,
+                  BareSliceVector<double> x, 
+                  BareSliceMatrix<SIMD<double>> flux) const override;
+      
+      
       void AddTrans (const FiniteElement & bfel,
                      const SIMD_BaseMappedIntegrationRule & bmir,
                      BareSliceMatrix<SIMD<double>> flux,
                      BareSliceVector<double> x) const override;
-      */
     };
 
     
