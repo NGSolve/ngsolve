@@ -1623,6 +1623,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         flags.GetStringFlag("blocktype")=="edge" ||
         flags.GetStringFlag("blocktype")=="face" ||
         flags.GetStringFlag("blocktype")=="facet" ||
+        flags.GetStringFlag("blocktype")=="vertexpatch" ||        
         flags.GetStringFlag("blocktype")=="vertexedge")
       blocktypes += flags.GetStringFlag("blocktype");
 
@@ -1693,6 +1694,48 @@ lot of new non-zero entries in the matrix!\n" << endl;
                   }
                 base += ma->GetNV();                
               }
+
+            if (blocktypes.Contains("vertexpatch"))
+              {
+                for (size_t i : Range(ma->GetNV()))
+                  {
+                    GetDofNrs (NodeId(NT_VERTEX, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))              
+                        creator.Add (base+i, d);
+                  }
+                for (size_t i : Range(ma->GetNEdges()))        
+                  {
+                    Ng_Node<1> edge = ma->GetNode<1> (i);
+                    GetDofNrs (NodeId(NT_EDGE, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        for (int k = 0; k < 2; k++)
+                          creator.Add (base+edge.vertices[k], d);
+                  }
+                for (size_t i : Range(ma->GetNFaces()))        
+                  {
+                    auto vnums = ma->GetFacePNums(i);
+                    GetDofNrs (NodeId(NT_FACE, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        for (auto v : vnums)
+                          creator.Add (base+v, d);
+                  }
+                // 3D only
+                for (size_t i : Range(ma->GetNElements(3)))
+                  {
+                    auto vnums = ma->GetElement({VOL,i}).Vertices();
+                    GetDofNrs (NodeId(NT_CELL, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        for (auto v : vnums)
+                          creator.Add (base+v, d);
+                  }
+                base += ma->GetNV();                
+              }
+
+
           }
 
         Table<int> table = creator.MoveTable();
