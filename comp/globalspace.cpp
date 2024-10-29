@@ -18,6 +18,52 @@ namespace ngcomp
         mat(j,i) = basisvec(ii++);
   }
 
+
+  void GlobalSpace::VolDiffOp::
+  Apply (const FiniteElement & fel,
+         const BaseMappedIntegrationRule & mir,
+         BareSliceVector<double> x, 
+         BareSliceMatrix<double> flux,
+         LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<double> basisvecs(mir.Size(), basis->Dimension(), lh);
+    basis -> Evaluate (mir, basisvecs);
+    for (int i = 0; i < mir.Size(); i++)
+      flux.Row(i) = Trans(basisvecs.Row(i).AsMatrix(dim, vecdim)) * x;
+  }
+
+  void GlobalSpace::VolDiffOp::  
+  ApplyTrans (const FiniteElement & fel,
+              const BaseMappedIntegrationRule & mir,
+              FlatMatrix<double> flux,
+              BareSliceVector<double> bx, 
+              LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<double> basisvecs(mir.Size(), basis->Dimension(), lh);
+    basis -> Evaluate (mir, basisvecs);
+    auto x = bx.Range(dim);
+    x = 0.0;
+    for (int i = 0; i < mir.Size(); i++)
+      x += basisvecs.Row(i).AsMatrix(dim, vecdim) * flux.Row(i);
+  }
+
+  /*
+  void GlobalSpace::VolDiffOp::  
+  AddTrans (const FiniteElement & bfel,
+            const SIMD_BaseMappedIntegrationRule & bmir,
+            BareSliceMatrix<SIMD<double>> flux,
+            BareSliceVector<double> x) const
+  {
+    Matrix<SIMD<double>> basisvecs(basis->Dimension(), bmir.Size());
+    basis -> Evaluate (bmir, basisvecs);
+    for (size_t i = 0; i < dim; i++)
+      for (size_t j = 0; j < vecdim; j++)
+        x(i) += InnerProduct (basisvecs.Row(i*vecdim+j), flux.Row(j));
+  }
+  */
+  
   void GlobalSpace::VolDiffOp::CalcMatrix
     (const FiniteElement & bfel,
      const BaseMappedIntegrationPoint & mip,
@@ -53,7 +99,9 @@ namespace ngcomp
                            const Flags& flags)
     : FESpace(ama, flags)
   {
-    order = 5;
+    if (!flags.NumFlagDefined("order"))
+      order = 5;
+    
     basis = std::any_cast<shared_ptr<CoefficientFunction>>(flags.GetAnyFlag("basis"));
 
     dim = CalcDim(basis);
@@ -75,7 +123,7 @@ namespace ngcomp
   
   FiniteElement & GlobalSpace :: GetFE (ElementId ei, Allocator & lh) const
   {
-    return *new (lh) FE(dim, ma->GetElType(ei), complex_basis);
+    return *new (lh) FE(dim, order, ma->GetElType(ei), complex_basis);
   }
   
   void GlobalSpace :: GetDofNrs (ElementId ei, Array<DofId> & dnums) const
