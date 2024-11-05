@@ -1032,10 +1032,25 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                               return GetInverseName( m.GetInverseType());
                                             })
 
-    .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs, optional<string> inverse, const Flags & flags)
+    .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs,
+                       std::variant<std::monostate,string,py::object> inverse, const Flags & flags)
     {
-      if (inverse && *inverse != "")
-        m.SetInverseType(*inverse);
+      if (string * invstr = get_if<string>(&inverse))
+        if (*invstr != "")
+          m.SetInverseType(*invstr);
+
+      if (py::object * invobj = get_if<py::object>(&inverse))
+        {
+          std::function<shared_ptr<BaseMatrix>(shared_ptr<BaseMatrix>,shared_ptr<BitArray>)> func =
+            [&](shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> subset) -> shared_ptr<BaseMatrix>
+            {
+              py::gil_scoped_acquire acq;
+              py::object inv = (*invobj)(py::cast(mat), py::cast(subset));
+              return py::cast<shared_ptr<BaseMatrix>> (inv);
+            };
+          m.SetInverseCreator(func);
+        }
+      
       m.SetInverseFlags (flags);
       return m.InverseMatrix(freedofs);
     }
