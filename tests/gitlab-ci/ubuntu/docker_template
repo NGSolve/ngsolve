@@ -17,7 +17,6 @@ RUN apt-get update && apt-get -y install \
         libtbb-dev \
         libxi-dev \
         libxmu-dev \
-        ipython3 \
         openssh-client \
         occt-misc \
         pandoc \
@@ -28,15 +27,6 @@ RUN apt-get update && apt-get -y install \
         python3-pytest \
         python3-scipy \
         python3-tk \
-        python3-sphinx \
-        python3-sphinx-rtd-theme \
-        python3-ipython \
-        python3-nbsphinx \
-        python3-jupyter-server \
-        python3-jupyter-client \
-        python3-ipykernel \
-        python3-ipyparallel \
-        python3-selenium \
         python3-markupsafe \
         python3-docutils \
         python3-jinja2 \
@@ -58,6 +48,24 @@ RUN apt-get update && apt-get -y install \
         libxkbcommon0 \
         libxrandr2 \
         zip
+RUN pip3 install --break-system-packages \
+        ipykernel \
+        ipyparallel \
+        nbsphinx \
+        nbstripout \
+        nest-asyncio \
+        notebook \
+        playwright \
+        pybind11-stubgen \
+        sphinx \
+        sphinx-rtd-theme \
+        tensorflow \
+        webgui_jupyter_widgets \
+        widgetsnbextension
+RUN python3 -m playwright install
+RUN python3 -m playwright install-deps
+RUN pip3 install --break-system-packages git+https://github.com/PySpice-org/PySpice.git
+RUN ln -s /usr/lib/x86_64-linux-gnu/libngspice.so.0  /usr/lib/x86_64-linux-gnu/libngspice.so
 ENV PATH="/opt/netgen/bin:${PATH}"
 ADD . /root/src/ngsolve
 

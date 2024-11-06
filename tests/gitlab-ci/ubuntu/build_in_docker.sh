@@ -41,20 +41,6 @@ cd
 mkdir -p build/ngsolve
 cd build/ngsolve
 
-if [ "$IMAGE_NAME" == "avx" ]
-then
-    pip3 install --break-system-packages \
-        widgetsnbextension \
-        nbstripout \
-        webgui_jupyter_widgets \
-        pybind11-stubgen \
-        tensorflow \
-
-    pip3 install --break-system-packages git+https://github.com/PySpice-org/PySpice.git
-    ln -s /usr/lib/x86_64-linux-gnu/libngspice.so.0  /usr/lib/x86_64-linux-gnu/libngspice.so
-
-fi
-
 mkdir -p /logs/
 pip3 freeze > /logs/pip_freeze.log
 
