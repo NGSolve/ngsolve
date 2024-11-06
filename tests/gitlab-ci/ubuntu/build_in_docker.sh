@@ -27,7 +27,6 @@ fi
 
 if [ "$IMAGE_NAME" == "mpi" ] || [ "$IMAGE_NAME" == "avx" ]
 then
-    apt-get update && apt-get -y install libopenmpi-dev openmpi-bin gfortran python3-mpi4py python3-petsc4py libngspice0
   export PYTHONPATH=/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib/python3/dist-packages
   export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=ON -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF -DBUILD_STUB_FILES=OFF"
 fi
@@ -44,42 +43,14 @@ cd build/ngsolve
 
 if [ "$IMAGE_NAME" == "avx" ]
 then
-    apt-get install -y \
-      rsync \
-      libasound2 \
-      libatk-bridge2.0-0 \
-      libatk1.0-0 \
-      libcups2 \
-      libdrm2 \
-      libgbm1 \
-      libnss3 \
-      libpango1.0-0 \
-      libxcomposite1 \
-      libxdamage1 \
-      libxfixes3 \
-      libxkbcommon0 \
-      libxrandr2 \
-
-    pip3 install \
-        sphinx \
-        sphinx_rtd_theme \
-        ipython \
-        nbsphinx \
-        jupyter \
-        jupyter-client \
-        nbstripout \
-        ipykernel \
+    pip3 install --break-system-packages \
         widgetsnbextension \
-        ipyparallel \
-        selenium \
+        nbstripout \
         webgui_jupyter_widgets \
-        markupsafe \
         pybind11-stubgen \
-        docutils \
-        Jinja2 \
         tensorflow \
 
-    pip3 install git+https://github.com/PySpice-org/PySpice.git
+    pip3 install --break-system-packages git+https://github.com/PySpice-org/PySpice.git
     ln -s /usr/lib/x86_64-linux-gnu/libngspice.so.0  /usr/lib/x86_64-linux-gnu/libngspice.so
 
 fi
@@ -127,7 +98,7 @@ then
   cd ~/build/ngsolve/ngsolve
   export NGS_NUM_THREADS=4
   echo "build docu"
-  ipython profile create --parallel --profile=default
+  ipython3 profile create --parallel --profile=default
   echo 'c.MPILauncher.mpi_args = ["--allow-run-as-root"]' >> ~/.ipython/profile_default/ipcluster_config.py
   # export SHOW_LOGS=1
   if [[ $SHOW_LOGS ]];

@@ -8,7 +8,7 @@ stages:
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
   UBUNTU_VERSION_LATEST: "rolling"
-  UBUNTU_VERSION_LTS: "22.04"
+  UBUNTU_VERSION_LTS: "24.04"
 
 include:
   - tests/gitlab-ci/win.yml

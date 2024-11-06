@@ -17,6 +17,7 @@ RUN apt-get update && apt-get -y install \
         libtbb-dev \
         libxi-dev \
         libxmu-dev \
+        ipython3 \
         openssh-client \
         occt-misc \
         pandoc \
@@ -27,8 +28,35 @@ RUN apt-get update && apt-get -y install \
         python3-pytest \
         python3-scipy \
         python3-tk \
+        python3-sphinx \
+        python3-sphinx-rtd-theme \
+        python3-ipython \
+        python3-nbsphinx \
+        python3-jupyter-server \
+        python3-jupyter-client \
+        python3-ipykernel \
+        python3-ipyparallel \
+        python3-selenium \
+        python3-markupsafe \
+        python3-docutils \
+        python3-jinja2 \
         tcl-dev \
         tk-dev \
+        libopenmpi-dev \
+        openmpi-bin \
+        gfortran \
+        python3-mpi4py \
+        python3-petsc4py \
+        libngspice0 \
+        rsync \
+        libdrm2 \
+        libgbm1 \
+        libnss3 \
+        libxcomposite1 \
+        libxdamage1 \
+        libxfixes3 \
+        libxkbcommon0 \
+        libxrandr2 \
         zip
 ENV PATH="/opt/netgen/bin:${PATH}"
 ADD . /root/src/ngsolve
