@@ -1267,7 +1267,7 @@ blocktype: string | [ string ] | int
     int is for backward compatibility with old style blocktypes
 
 condense: bool = False
-    boolexclude dofs eliminated by static condensation
+    exclude dofs eliminated by static condensation
          )delimiter"))
          ;
 
