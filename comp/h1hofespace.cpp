@@ -1448,6 +1448,10 @@ into the wirebasket.
   shared_ptr<Table<int>> H1HighOrderFESpace :: 
   CreateSmoothingBlocks (const Flags & precflags) const
   {
+    if (precflags.StringFlagDefined("blocktype") || precflags.StringListFlagDefined("blocktype"))
+      return FESpace::CreateSmoothingBlocks(precflags);
+
+    
     static Timer t("H1HighOrderFESpace :: CreateSmoothingBlocks");
     RegionTimer reg(t);
 
