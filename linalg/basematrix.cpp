@@ -13,6 +13,10 @@
 
 namespace ngla
 {
+
+  SymbolTable<BaseMatrix::T_INVCREATOR> BaseMatrix :: invcreators;
+
+  
   BaseMatrix :: BaseMatrix()
     : paralleldofs (NULL)
   {
