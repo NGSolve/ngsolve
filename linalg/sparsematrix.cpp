@@ -1266,6 +1266,7 @@ namespace ngla
     else if (ainversetype == "masterinverse") SetInverseType ( MASTERINVERSE );
     else if (ainversetype == "sparsecholesky") SetInverseType ( SPARSECHOLESKY );
     else if (ainversetype == "umfpack")       SetInverseType ( UMFPACK );
+    else if (invcreators.Used(ainversetype)) invcreator = invcreators[ainversetype];
     else
       {
         throw Exception (ToString("undefined inverse ")+ainversetype+
