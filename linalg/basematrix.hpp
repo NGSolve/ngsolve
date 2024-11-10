@@ -145,11 +145,11 @@ namespace ngla
     virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
     virtual INVERSETYPE  GetInverseType () const;
 
-    typedef  std::function<shared_ptr<BaseMatrix>(shared_ptr<BaseMatrix>,shared_ptr<BitArray>)> T_INVCREATOR;
-    // mutable std::function<shared_ptr<BaseMatrix>(shared_ptr<BaseMatrix>,shared_ptr<BitArray>)> invcreator;
+    typedef  std::function<shared_ptr<BaseMatrix>(shared_ptr<BaseMatrix>,
+                                                  shared_ptr<BitArray>,
+                                                  shared_ptr<const Array<int>>)> T_INVCREATOR;
     mutable T_INVCREATOR invcreator;
-    void SetInverseCreator(std::function<shared_ptr<BaseMatrix>(shared_ptr<BaseMatrix>,shared_ptr<BitArray>)> ainvcreator) const
-    { invcreator = ainvcreator; }
+    void SetInverseCreator(T_INVCREATOR ainvcreator) const { invcreator = ainvcreator; }
 
     static SymbolTable<T_INVCREATOR> invcreators;
     static void RegisterInverseCreator(string name, T_INVCREATOR creator);

@@ -620,7 +620,7 @@ namespace ngla
   {
     if (invcreator)
       return invcreator(const_pointer_cast<ParallelMatrix>
-                        (dynamic_pointer_cast<const ParallelMatrix>(this->shared_from_this())), subset);
+                        (dynamic_pointer_cast<const ParallelMatrix>(this->shared_from_this())), subset, nullptr);
     
     
     if (auto diagmat = dynamic_pointer_cast<DiagonalMatrix<double>>(mat))

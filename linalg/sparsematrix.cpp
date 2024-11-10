@@ -2215,7 +2215,7 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
                                                  shared_ptr<const Array<int>> clusters)
 {
   if (baseA->invcreator)
-    return baseA->invcreator(const_pointer_cast<BaseSparseMatrix>(baseA), subset);
+    return baseA->invcreator(const_pointer_cast<BaseSparseMatrix>(baseA), subset, clusters);
   
   auto [dynH, dynW] = baseA->EntrySizes();
 
