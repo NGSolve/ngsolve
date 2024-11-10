@@ -152,7 +152,7 @@ namespace ngla
     { invcreator = ainvcreator; }
 
     static SymbolTable<T_INVCREATOR> invcreators;
-    void RegisterInverseCreator(string name, T_INVCREATOR creator) { invcreators[name] = creator; }
+    static void RegisterInverseCreator(string name, T_INVCREATOR creator);
     
     virtual void SetInverseFlags (const Flags & flags) { ; }
     virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const

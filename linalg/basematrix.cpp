@@ -15,7 +15,10 @@ namespace ngla
 {
 
   SymbolTable<BaseMatrix::T_INVCREATOR> BaseMatrix :: invcreators;
-
+  void BaseMatrix :: RegisterInverseCreator(string name, T_INVCREATOR creator)
+  {
+    invcreators.Set (name, creator);
+  }
   
   BaseMatrix :: BaseMatrix()
     : paralleldofs (NULL)
