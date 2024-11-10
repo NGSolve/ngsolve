@@ -618,6 +618,11 @@ namespace ngla
 
   shared_ptr<BaseMatrix> ParallelMatrix::InverseMatrix (shared_ptr<BitArray> subset) const
   {
+    if (invcreator)
+      return invcreator(const_pointer_cast<ParallelMatrix>
+                        (dynamic_pointer_cast<const ParallelMatrix>(this->shared_from_this())), subset);
+    
+    
     if (auto diagmat = dynamic_pointer_cast<DiagonalMatrix<double>>(mat))
       {
         auto locinv = make_shared<DiagonalMatrix<double>>(diagmat->Height());
@@ -702,6 +707,10 @@ namespace ngla
 
   INVERSETYPE ParallelMatrix::SetInverseType (string ainversetype) const
   {
+    invcreator = nullptr;
+    if (invcreators.Used(ainversetype))
+      invcreator = invcreators[ainversetype];
+    
     return mat->SetInverseType (ainversetype);
   }
   

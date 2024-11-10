@@ -1258,7 +1258,9 @@ namespace ngla
   {
     INVERSETYPE old_invtype = inversetype;
 
-    if      (ainversetype == "pardiso" )      SetInverseType ( PARDISO );
+    invcreator = nullptr;
+    if (invcreators.Used(ainversetype)) invcreator = invcreators[ainversetype];
+    else if (ainversetype == "pardiso" )      SetInverseType ( PARDISO );
     else if (ainversetype == "pardisospd")    SetInverseType ( PARDISOSPD );
     else if (ainversetype == "superlu")       SetInverseType ( SUPERLU );
     else if (ainversetype == "superlu_dist")  SetInverseType ( SUPERLU_DIST );
@@ -1266,7 +1268,6 @@ namespace ngla
     else if (ainversetype == "masterinverse") SetInverseType ( MASTERINVERSE );
     else if (ainversetype == "sparsecholesky") SetInverseType ( SPARSECHOLESKY );
     else if (ainversetype == "umfpack")       SetInverseType ( UMFPACK );
-    else if (invcreators.Used(ainversetype)) invcreator = invcreators[ainversetype];
     else
       {
         throw Exception (ToString("undefined inverse ")+ainversetype+
