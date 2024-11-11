@@ -338,6 +338,8 @@ namespace ngla
     { 
       return asvec; 
     }
+
+    tuple<int,int> EntryShape() const { return { entry_height, entry_width }; }
     
     FlatVector<TSCAL> GetRowValue (int row, int j)
     {
@@ -345,9 +347,10 @@ namespace ngla
       return FlatVector<TSCAL> (entry_size, p);
     }
     
-    FlatMatrix<TSCAL> GetRowValueMat (int row, int j)
+    FlatMatrix<TSCAL> GetRowValueMat (int row, int j) const
     {
-      TSCAL * p = asvec(entry_size * (firsti[row] + j)).Data(0);
+      // TSCAL * p = asvec(entry_size * (firsti[row] + j)).Data(0);
+      TSCAL * p = &asvec(entry_size * (firsti[row] + j));
       return FlatMatrix<TSCAL> (entry_height, entry_width, p);
     }
   };

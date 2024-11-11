@@ -42,7 +42,8 @@ namespace ngla
     Array<suite_long> rowstart, indices;
     Array<TSCAL> values;
 
-    bool symmetric, is_complex;
+    bool symmetric;
+    static constexpr bool is_complex = ngbla::IsComplex<TM>();    
 
     void SetMatrixType();
 
@@ -52,14 +53,16 @@ namespace ngla
   public:
 
     ///
-    UmfpackInverseTM (shared_ptr<const SparseMatrixTM<TM>> a,
+    UmfpackInverseTM (// shared_ptr<const SparseMatrixTM<TM>> a,
+                      shared_ptr<const S_BaseSparseMatrix<TSCAL>> a,
 		      shared_ptr<BitArray> ainner = nullptr,
 		      shared_ptr<const Array<int>> acluster = nullptr,
 		      int symmetric = 0);
     ///
 
     template <typename TSUBSET>
-    void GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset);
+    // void GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset);
+    void GetUmfpackMatrix (const S_BaseSparseMatrix<TSCAL> & a, TSUBSET subset);
 
     virtual ~UmfpackInverseTM ();
     ///

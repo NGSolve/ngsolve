@@ -62,7 +62,8 @@ namespace ngla
 
   template<class TM>
   UmfpackInverseTM<TM> ::
-  UmfpackInverseTM (shared_ptr<const SparseMatrixTM<TM>> a,
+  UmfpackInverseTM (// shared_ptr<const SparseMatrixTM<TM>> a,
+                    shared_ptr<const S_BaseSparseMatrix<TSCAL>> a,
 		    shared_ptr<BitArray> ainner,
 		    shared_ptr<const Array<int>> acluster,
 		    int asymmetric)
@@ -76,7 +77,7 @@ namespace ngla
 
     symmetric = asymmetric;
     //is_complex = mat_traits<TM>::IS_COMPLEX;
-    is_complex = ngbla::IsComplex<TM>();
+    // is_complex = ngbla::IsComplex<TM>();
 
     (*testout) << "Umfpack, symmetric = " << symmetric << endl;
 
@@ -90,15 +91,20 @@ namespace ngla
 	throw Exception("Invalid parameters inner/cluster. Thrown by UmfpackInverse.");
       }
 
+
+    
+    auto [eh,ew] = a->EntryShape();
     // if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
-    if ( ngbla::Width<TM>() != ngbla::Height<TM>() )
+    // if ( ngbla::Width<TM>() != ngbla::Height<TM>() )
+    if (eh != ew)
       {
 	cout << "UmfpackInverse: Each entry in the square matrix has to be a square matrix!" << endl;
 	throw Exception("No Square Matrix. Thrown by UmfpackInverse.");
       }
 
 
-    entrysize = ngbla::Height<TM>(); // mat_traits<TM>::HEIGHT;
+    // entrysize = ngbla::Height<TM>(); // mat_traits<TM>::HEIGHT;
+    entrysize = eh;
     height = a->Height() * entrysize;
 
     *testout << "matrix.InverseTpye = " <<  a->GetInverseType() << endl;
@@ -169,7 +175,8 @@ namespace ngla
 
   template<class TM> template <typename TSUBSET>
   void UmfpackInverseTM<TM> ::
-  GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset)
+  // GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset)
+  GetUmfpackMatrix (const S_BaseSparseMatrix<TSCAL> & a, TSUBSET subset)
   {
     Array<int> icompress (a.Height());
     icompress = -1;
@@ -235,7 +242,7 @@ namespace ngla
 	    int ri = entrysize*icompress[i];
 
 	    FlatArray ind = a.GetRowIndices(i);
-	    FlatVector<TM> values = a.GetRowValues(i);
+	    // FlatVector<TM> values = a.GetRowValues(i);
 
 	    for (int j = 0; j < ind.Size(); j++)
 	      {
@@ -251,7 +258,8 @@ namespace ngla
                         // set entry
                         size_t index = rowstart[row]+counter[row];
                         indices[index] = col;
-                        this->values[index] = Access(values[j],k,l);
+                        // this->values[index] = Access(values[j],k,l);
+                        this->values[index] = a.GetRowValueMat(i, j)(k,l);
                         counter[row]++;
 
                         // set transposed entry
@@ -259,7 +267,8 @@ namespace ngla
                           {
                             size_t index = rowstart[col]+counter[col];
                             indices[index] = row;
-                            this->values[index] = Access(values[j],k,l);
+                            // this->values[index] = Access(values[j],k,l);
+                            this->values[index] = a.GetRowValueMat(i, j)(k,l);                            
                             counter[col]++;
                           }
                       }
@@ -293,7 +302,7 @@ namespace ngla
 	  {
 	    if (!subset.Used(i)) continue;
 	    FlatArray ind = a.GetRowIndices(i);
-	    FlatVector<TM> values = a.GetRowValues(i);
+	    // FlatVector<TM> values = a.GetRowValues(i);
 
 	    int ci = entrysize*icompress[i];
 
@@ -306,7 +315,8 @@ namespace ngla
 		    for (int l=0; l<entrysize; l++ )
 		      {
 			indices[rowstart[ci+k]+counter+l] = ccol+l;
-			this->values[rowstart[ci+k]+counter+l] = Access(values[j],k,l);
+			// this->values[rowstart[ci+k]+counter+l] = Access(values[j],k,l);
+                        this->values[rowstart[ci+k]+counter+l] = a.GetRowValueMat(i, j)(k,l);
 		      }
 		  counter+=entrysize;
 		}
@@ -558,11 +568,13 @@ namespace ngla
   void UmfpackInverseTM<TM> :: SetMatrixType() // TM entry)
   {
     // if (mat_traits<TM>::IS_COMPLEX)
+    /*
     if (ngbla::IsComplex<TM>())
       is_complex = true;
     else
       is_complex = false;
-
+    */
+    
     if (print)
       cout << ", sym = " << int(symmetric)
 	   << ", complex = " << is_complex << endl;
