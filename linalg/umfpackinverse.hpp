@@ -22,11 +22,12 @@
 namespace ngla
 {
 
-  template<class TM>
-  class UmfpackInverseTM : public SparseFactorization
+  template<class SCAL>
+  class S_UmfpackInverse : public SparseFactorization
   {
   public:
-    typedef typename mat_traits<TM>::TSCAL TSCAL;
+    // typedef typename mat_traits<TM>::TSCAL TSCAL;
+    typedef SCAL TSCAL;
 
   protected:
     typedef SuiteSparse_long suite_long;
@@ -53,9 +54,8 @@ namespace ngla
   public:
 
     ///
-    UmfpackInverseTM (// shared_ptr<const SparseMatrixTM<TM>> a,
-                      shared_ptr<const S_BaseSparseMatrix<TSCAL>> a,
-		      shared_ptr<BitArray> ainner = nullptr,
+    S_UmfpackInverse (shared_ptr<const S_BaseSparseMatrix<TSCAL>> a,
+                      shared_ptr<BitArray> ainner = nullptr,
 		      shared_ptr<const Array<int>> acluster = nullptr,
 		      int symmetric = 0);
     ///
@@ -64,7 +64,7 @@ namespace ngla
     // void GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset);
     void GetUmfpackMatrix (const S_BaseSparseMatrix<TSCAL> & a, TSUBSET subset);
 
-    virtual ~UmfpackInverseTM ();
+    virtual ~S_UmfpackInverse ();
     ///
     int VHeight() const { return height/entrysize; }
     ///
@@ -85,7 +85,7 @@ namespace ngla
   template<class TM,
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW,
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class UmfpackInverse : public UmfpackInverseTM<TM>
+  class UmfpackInverse : public S_UmfpackInverse<typename mat_traits<TM>::TSCAL>
   {
     using UmfpackInverseTM<TM>::height;
     using UmfpackInverseTM<TM>::is_complex;
@@ -106,7 +106,7 @@ namespace ngla
 		    shared_ptr<BitArray> ainner = nullptr,
 		    shared_ptr<const Array<int>> acluster = nullptr,
 		    int symmetric = 0)
-      : UmfpackInverseTM<TM> (a, ainner, acluster, symmetric) { ; }
+      : S_UmfpackInverse<TSCAL> (a, ainner, acluster, symmetric) { ; }
 
     virtual ~UmfpackInverse () { ; }
     ///
