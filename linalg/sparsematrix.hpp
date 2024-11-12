@@ -339,7 +339,7 @@ namespace ngla
       return asvec; 
     }
 
-    tuple<int,int> EntryShape() const { return { entry_height, entry_width }; }
+    // tuple<int,int> EntryShape() const { return { entry_height, entry_width }; }
     
     FlatVector<TSCAL> GetRowValue (int row, int j)
     {

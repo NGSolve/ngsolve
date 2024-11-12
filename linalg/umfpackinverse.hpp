@@ -44,7 +44,7 @@ namespace ngla
     Array<TSCAL> values;
 
     bool symmetric;
-    static constexpr bool is_complex = ngbla::IsComplex<TM>();    
+    static constexpr bool is_complex = ngbla::IsComplex<TSCAL>();
 
     void SetMatrixType();
 
@@ -58,13 +58,13 @@ namespace ngla
                       shared_ptr<BitArray> ainner = nullptr,
 		      shared_ptr<const Array<int>> acluster = nullptr,
 		      int symmetric = 0);
+    virtual ~S_UmfpackInverse();
     ///
 
     template <typename TSUBSET>
     // void GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset);
     void GetUmfpackMatrix (const S_BaseSparseMatrix<TSCAL> & a, TSUBSET subset);
 
-    virtual ~S_UmfpackInverse ();
     ///
     int VHeight() const { return height/entrysize; }
     ///
@@ -77,44 +77,69 @@ namespace ngla
 
     virtual Array<MemoryUsage> GetMemoryUsage () const
     {
-      return { MemoryUsage ("Umfpack", nze*sizeof(TM), 1) };
+      return { MemoryUsage ("Umfpack", nze*sizeof(TSCAL)*entrysize*entrysize, 1) };
     }
   };
 
 
+  
+  template<class SCAL, class SCAL_VEC>
+  class S_UmfpackInverse_SVec : public S_UmfpackInverse<SCAL>
+  {
+    typedef S_UmfpackInverse<SCAL> BASE;
+  protected:
+    using typename BASE::TSCAL;    
+    using BASE::height;
+    using BASE::is_complex;
+    using BASE::compressed_height;
+    using BASE::entrysize;
+    using BASE::rowstart;
+    using BASE::indices;
+    using BASE::compressed;
+    using BASE::compress;
+    
+    using S_UmfpackInverse<SCAL>::S_UmfpackInverse;
+    static constexpr bool is_vector_complex = ngbla::IsComplex<SCAL_VEC>();
+    
+    AutoVector CreateRowVector () const override { return CreateBaseVector(height/entrysize, is_vector_complex, entrysize); }
+    AutoVector CreateColVector () const override { return CreateBaseVector(height/entrysize, is_vector_complex, entrysize); }
+
+    void Mult (const BaseVector & x, BaseVector & y) const override;
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;
+  };
+  
+
   template<class TM,
 	   class TV_ROW = typename mat_traits<TM>::TV_ROW,
 	   class TV_COL = typename mat_traits<TM>::TV_COL>
-  class UmfpackInverse : public S_UmfpackInverse<typename mat_traits<TM>::TSCAL>
+  class UmfpackInverse : public S_UmfpackInverse_SVec<typename mat_traits<TM>::TSCAL, typename mat_traits<TV_COL>::TSCAL>
   {
-    using UmfpackInverseTM<TM>::height;
-    using UmfpackInverseTM<TM>::is_complex;
-    using UmfpackInverseTM<TM>::compressed_height;
-    using UmfpackInverseTM<TM>::entrysize;
-    using UmfpackInverseTM<TM>::rowstart;
-    using UmfpackInverseTM<TM>::indices;
-    using UmfpackInverseTM<TM>::compressed;
-    using UmfpackInverseTM<TM>::compress;
-
   public:
+    typedef S_UmfpackInverse_SVec<typename mat_traits<TM>::TSCAL, typename mat_traits<TV_COL>::TSCAL> BASE;
+    
+    using typename BASE::TSCAL;
     typedef TV_COL TV;
     typedef TV_ROW TVX;
-    typedef typename mat_traits<TM>::TSCAL TSCAL;
+    
+  private:
+    using BASE::height;
+    using BASE::is_complex;
+    using BASE::is_vector_complex;    
+    using BASE::compressed_height;
+    using BASE::entrysize;
+    using BASE::rowstart;
+    using BASE::indices;
+    using BASE::compressed;
+    using BASE::compress;
 
-    ///
+  public:
     UmfpackInverse (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> a,
 		    shared_ptr<BitArray> ainner = nullptr,
 		    shared_ptr<const Array<int>> acluster = nullptr,
 		    int symmetric = 0)
-      : S_UmfpackInverse<TSCAL> (a, ainner, acluster, symmetric) { ; }
+      : BASE (a, ainner, acluster, symmetric) { ; }
 
-    virtual ~UmfpackInverse () { ; }
-    ///
-    void Mult (const BaseVector & x, BaseVector & y) const override;
-    void MultTrans (const BaseVector & x, BaseVector & y) const override;
-    ///
-    AutoVector CreateRowVector () const override { return make_unique<VVector<TV>> (height/entrysize); }
-    AutoVector CreateColVector () const override { return make_unique<VVector<TV>> (height/entrysize); }
+    // virtual ~UmfpackInverse () { ; }
   };
 
 }

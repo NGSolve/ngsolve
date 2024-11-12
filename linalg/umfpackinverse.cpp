@@ -60,9 +60,9 @@ namespace ngla
   };
 
 
-  template<class TM>
-  UmfpackInverseTM<TM> ::
-  UmfpackInverseTM (// shared_ptr<const SparseMatrixTM<TM>> a,
+  template<class SCAL>
+  S_UmfpackInverse<SCAL> ::
+  S_UmfpackInverse (// shared_ptr<const SparseMatrixTM<TM>> a,
                     shared_ptr<const S_BaseSparseMatrix<TSCAL>> a,
 		    shared_ptr<BitArray> ainner,
 		    shared_ptr<const Array<int>> acluster,
@@ -93,7 +93,7 @@ namespace ngla
 
 
     
-    auto [eh,ew] = a->EntryShape();
+    auto [eh,ew] = a->EntrySizes();
     // if ( int( mat_traits<TM>::WIDTH) != int(mat_traits<TM>::HEIGHT) )
     // if ( ngbla::Width<TM>() != ngbla::Height<TM>() )
     if (eh != ew)
@@ -173,8 +173,8 @@ namespace ngla
   }
 
 
-  template<class TM> template <typename TSUBSET>
-  void UmfpackInverseTM<TM> ::
+  template<class SCAL> template <typename TSUBSET>
+  void S_UmfpackInverse<SCAL> ::
   // GetUmfpackMatrix (const SparseMatrixTM<TM> & a, TSUBSET subset)
   GetUmfpackMatrix (const S_BaseSparseMatrix<TSCAL> & a, TSUBSET subset)
   {
@@ -327,18 +327,18 @@ namespace ngla
 
 
 
-  template<class TM, class TV_ROW, class TV_COL>
-  void UmfpackInverse<TM,TV_ROW,TV_COL> ::
+  template<class SCAL, class SCAL_VEC>
+  void S_UmfpackInverse_SVec<SCAL,SCAL_VEC> ::
   Mult (const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer(string("Umfpack Solve, mat = ") + typeid(TM).name() + ", vec = " + typeid(TV_ROW).name());
+    static Timer timer(string("Umfpack Solve, mat = ") + typeid(SCAL).name() + ", vec = " + typeid(SCAL_VEC).name());
     RegionTimer reg (timer);
 
+    /*
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
-
+    
     int nrhs = fx.Size() / (height/entrysize);
-
     if(nrhs>1) throw Exception("UmfpackInverse: Multiple right-hand sides not supported.");
 
     // bool is_vector_complex = mat_traits<TVX>::IS_COMPLEX;
@@ -356,7 +356,8 @@ namespace ngla
 	cout << "size(y) = " << y.Size() << endl;
 	cout << "height = " << height/entrysize << endl;
       }
-
+    */
+    
     if (this->values.Size() == 0)
       {
         y = 0.0;
@@ -365,12 +366,15 @@ namespace ngla
 
     double *data = reinterpret_cast<double *>(this->values.Data());
 
+    auto fx = x.FV<SCAL_VEC>();
+    auto fy = y.FV<SCAL_VEC>();
+    
     if (is_complex)
       {
         // complex matrix and vectors
         FlatVector<TSCAL> mx(height, (TSCAL*)fx.Data());
         FlatVector<TSCAL> my(height, (TSCAL*)fy.Data());
-
+        
         Vector<TSCAL> hx(compressed_height);
         Vector<TSCAL> hy(compressed_height);
 
@@ -431,13 +435,16 @@ namespace ngla
 
 
 
-  template<class TM, class TV_ROW, class TV_COL>
-  void UmfpackInverse<TM,TV_ROW,TV_COL> ::
+  // template<class TM, class TV_ROW, class TV_COL>
+  // void UmfpackInverse<TM,TV_ROW,TV_COL> ::
+  template<class SCAL, class SCAL_VEC>
+  void S_UmfpackInverse_SVec<SCAL,SCAL_VEC> ::
   MultTrans (const BaseVector & x, BaseVector & y) const
   {
-    static Timer timer(string("Umfpack Solve, mat = ") + typeid(TM).name() + ", vec = " + typeid(TV_ROW).name());
+    static Timer timer(string("Umfpack Solve, mat = ") + typeid(SCAL).name() + ", vec = " + typeid(SCAL_VEC).name());
     RegionTimer reg (timer);
 
+    /*
     FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
@@ -446,7 +453,7 @@ namespace ngla
     if(nrhs>1) throw Exception("UmfpackInverse: Multiple right-hand sides not supported.");
 
     // bool is_vector_complex = mat_traits<TVX>::IS_COMPLEX;
-    bool is_vector_complex = ngbla::IsComplex<TVX>();
+    // bool is_vector_complex = ngbla::IsComplex<TVX>();
     if(is_complex && !is_vector_complex) throw Exception("UmfpackInverse: Cannot solve with complex matrix and real vector.");
 
     if (fx.Size() != fy.Size())
@@ -460,9 +467,12 @@ namespace ngla
 	cout << "size(y) = " << y.Size() << endl;
 	cout << "height = " << height/entrysize << endl;
       }
-
+    */
 
     double *data = reinterpret_cast<double *>(this->values.Data());
+
+    auto fx = x.FV<SCAL_VEC>();
+    auto fy = y.FV<SCAL_VEC>();
 
     if (is_complex)
       {
@@ -535,16 +545,16 @@ namespace ngla
 
 
   
-  template<class TM>
-  ostream & UmfpackInverseTM<TM> :: Print (ostream & ost) const
+  template<class SCAL>
+  ostream & S_UmfpackInverse<SCAL> :: Print (ostream & ost) const
   {
     cout << "UmfpackInverse::Print not implemented!" << endl;
     return ost;
   }
 
 
-  template<class TM>
-  UmfpackInverseTM<TM> :: ~UmfpackInverseTM()
+  template<class SCAL>
+  S_UmfpackInverse<SCAL> :: ~S_UmfpackInverse()
   {
     if(is_complex)
       {
@@ -564,8 +574,8 @@ namespace ngla
 
 
 
-  template<class TM>
-  void UmfpackInverseTM<TM> :: SetMatrixType() // TM entry)
+  template<class SCAL>
+  void S_UmfpackInverse<SCAL> :: SetMatrixType() // TM entry)
   {
     // if (mat_traits<TM>::IS_COMPLEX)
     /*
@@ -580,12 +590,12 @@ namespace ngla
 	   << ", complex = " << is_complex << endl;
   }
 
-  template<class TM>
-  void UmfpackInverseTM<TM> :: Update()
+  template<class SCAL>
+  void S_UmfpackInverse<SCAL> :: Update()
   {
     cout << IM(3) << "call umfpack update..." << flush;
 
-    auto castmatrix = dynamic_pointer_cast<const SparseMatrix<TM>>(matrix.lock());
+    auto castmatrix = dynamic_pointer_cast<const S_BaseSparseMatrix<TSCAL>>(matrix.lock());
 
     if (inner)
       GetUmfpackMatrix (*castmatrix, SubsetFree (*inner));
@@ -631,60 +641,70 @@ namespace ngla
 
 
 
-  template class UmfpackInverseTM<double>;
-  template class UmfpackInverseTM<Complex>;
+  template class S_UmfpackInverse<double>;
+  template class S_UmfpackInverse<Complex>;
+
+
+  template class S_UmfpackInverse_SVec<double,double>;
+  template class S_UmfpackInverse_SVec<double,Complex>;
+  template class S_UmfpackInverse_SVec<Complex,Complex>;
+
+
+#ifdef NONE
+  
   template class UmfpackInverse<double>;
   template class UmfpackInverse<Complex>;
   template class UmfpackInverse<double,Complex,Complex>;
 #if MAX_SYS_DIM >= 1
-  template class UmfpackInverseTM<Mat<1,1,double> >;
-  template class UmfpackInverseTM<Mat<1,1,Complex> >;
+  // template class UmfpackInverseTM<Mat<1,1,double> >;
+  // template class UmfpackInverseTM<Mat<1,1,Complex> >;
   template class UmfpackInverse<Mat<1,1,double> >;
   template class UmfpackInverse<Mat<1,1,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 2
-  template class UmfpackInverseTM<Mat<2,2,double> >;
-  template class UmfpackInverseTM<Mat<2,2,Complex> >;
+  // template class UmfpackInverseTM<Mat<2,2,double> >;
+  // template class UmfpackInverseTM<Mat<2,2,Complex> >;
   template class UmfpackInverse<Mat<2,2,double> >;
   template class UmfpackInverse<Mat<2,2,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 3
-  template class UmfpackInverseTM<Mat<3,3,double> >;
-  template class UmfpackInverseTM<Mat<3,3,Complex> >;
+  // template class UmfpackInverseTM<Mat<3,3,double> >;
+  // template class UmfpackInverseTM<Mat<3,3,Complex> >;
   template class UmfpackInverse<Mat<3,3,double> >;
   template class UmfpackInverse<Mat<3,3,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 4
-  template class UmfpackInverseTM<Mat<4,4,double> >;
-  template class UmfpackInverseTM<Mat<4,4,Complex> >;
+  // template class UmfpackInverseTM<Mat<4,4,double> >;
+  // template class UmfpackInverseTM<Mat<4,4,Complex> >;
   template class UmfpackInverse<Mat<4,4,double> >;
   template class UmfpackInverse<Mat<4,4,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 5
-  template class UmfpackInverseTM<Mat<5,5,double> >;
-  template class UmfpackInverseTM<Mat<5,5,Complex> >;
+  // template class UmfpackInverseTM<Mat<5,5,double> >;
+  // template class UmfpackInverseTM<Mat<5,5,Complex> >;
   template class UmfpackInverse<Mat<5,5,double> >;
   template class UmfpackInverse<Mat<5,5,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 6
-  template class UmfpackInverseTM<Mat<6,6,double> >;
-  template class UmfpackInverseTM<Mat<6,6,Complex> >;
+  // template class UmfpackInverseTM<Mat<6,6,double> >;
+  // template class UmfpackInverseTM<Mat<6,6,Complex> >;
   template class UmfpackInverse<Mat<6,6,double> >;
   template class UmfpackInverse<Mat<6,6,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 7
-  template class UmfpackInverseTM<Mat<7,7,double> >;
-  template class UmfpackInverseTM<Mat<7,7,Complex> >;
+  // template class UmfpackInverseTM<Mat<7,7,double> >;
+  // template class UmfpackInverseTM<Mat<7,7,Complex> >;
   template class UmfpackInverse<Mat<7,7,double> >;
   template class UmfpackInverse<Mat<7,7,Complex> >;
 #endif
 #if MAX_SYS_DIM >= 8
-  template class UmfpackInverseTM<Mat<8,8,double> >;
-  template class UmfpackInverseTM<Mat<8,8,Complex> >;
+  // template class UmfpackInverseTM<Mat<8,8,double> >;
+  // template class UmfpackInverseTM<Mat<8,8,Complex> >;
   template class UmfpackInverse<Mat<8,8,double> >;
   template class UmfpackInverse<Mat<8,8,Complex> >;
 #endif
-
+#endif
+  
 
 }
 
