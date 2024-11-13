@@ -1693,8 +1693,17 @@ namespace ngcomp
     if (diffop[vb])
       diffop[vb]->Apply (fel, ir, elu, values);
     else
-      throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
-
+      {
+        bool foundone = false;
+        for (auto i : {VOL, BND, BBND, BBBND})
+          if (diffop[i] && diffop[i]->SupportsVB(vb))
+            {
+              diffop[i]->Apply (fel, ir, elu, values);
+              foundone = true;
+            }
+        if (!foundone)
+          throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");
+      }
 
     if (ud)
       {
