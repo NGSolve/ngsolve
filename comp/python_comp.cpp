@@ -2761,6 +2761,14 @@ reallocate : bool
                                            return mat;
                                          }, "matrix of the assembled bilinear form")
 
+    .def ("GetMatrixLevel", [](shared_ptr<BF> self, optional<int> level)
+    {
+      if (level)
+        return self->GetMatrixPtr(*level);
+      else
+        return self->GetMatrixPtr();
+    }, py::arg("level")=nullopt, "returns matrix from multigrid level, default is finest level")
+
     .def_property_readonly("components", [](shared_ptr<BilinearForm> self)-> py::list
                    { 
                      py::list bfs;
