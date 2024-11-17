@@ -3140,7 +3140,7 @@ namespace ngcomp
 
           {
             cout << IM(3) << "assemble mixed bilinearform" << endl;
-            BaseStatusHandler::PushStatus ("Assemble Matrix");
+            BaseStatusHandler::Region ("Assemble Matrix");
       
             BaseMatrix & mat = GetMatrix();
             mat = 0.0;
@@ -3873,7 +3873,7 @@ namespace ngcomp
     }
 
     RegionTimer reg (timer);
-    BaseStatusHandler::PushStatus ("Assemble Linearization");
+    BaseStatusHandler::Region ("Assemble Linearization");
 
     if (specialelements_timestamp > graph_timestamp)
       {
@@ -4471,7 +4471,7 @@ namespace ngcomp
         throw (Exception (string(e.what()) +
                           string("\n in AssembleLinearization\n")));
       }
-    BaseStatusHandler::PopStatus();
+    // BaseStatusHandler::PopStatus();
   }
 
 

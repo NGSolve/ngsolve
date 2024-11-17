@@ -19,6 +19,13 @@ namespace ngstd
     static void SetTerminate(void);
     static void UnSetTerminate(void);
     static bool ShouldTerminate(void);
+
+    class Region
+    {
+    public:
+      Region(const char * str) { PushStatus(str); }
+      ~Region() { PopStatus(); }
+    };
   };
 
 }
