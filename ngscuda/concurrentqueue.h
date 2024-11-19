@@ -651,10 +651,10 @@ namespace details
 struct ProducerToken
 {
 	template<typename T, typename Traits>
-	explicit ProducerToken(ConcurrentQueue<T, Traits>& queue);
+	__host__ __device__ explicit ProducerToken(ConcurrentQueue<T, Traits>& queue);
 	
 	template<typename T, typename Traits>
-	explicit ProducerToken(BlockingConcurrentQueue<T, Traits>& queue);
+	__host__ __device__ explicit ProducerToken(BlockingConcurrentQueue<T, Traits>& queue);
 	
 	ProducerToken(ProducerToken&& other) MOODYCAMEL_NOEXCEPT
 		: producer(other.producer)
@@ -692,7 +692,7 @@ struct ProducerToken
 	// but not which one; that's up to the user to track.
 	inline bool valid() const { return producer != nullptr; }
 	
-	~ProducerToken()
+	__host__ __device__ ~ProducerToken()
 	{
 		if (producer != nullptr) {
 			producer->token = nullptr;
@@ -716,10 +716,10 @@ protected:
 struct ConsumerToken
 {
 	template<typename T, typename Traits>
-	explicit ConsumerToken(ConcurrentQueue<T, Traits>& q);
+	__host__ __device__ explicit ConsumerToken(ConcurrentQueue<T, Traits>& q);
 	
 	template<typename T, typename Traits>
-	explicit ConsumerToken(BlockingConcurrentQueue<T, Traits>& q);
+	__host__ __device__ explicit ConsumerToken(BlockingConcurrentQueue<T, Traits>& q);
 	
 	ConsumerToken(ConsumerToken&& other) MOODYCAMEL_NOEXCEPT
 		: initialOffset(other.initialOffset), lastKnownGlobalOffset(other.lastKnownGlobalOffset), itemsConsumedFromCurrent(other.itemsConsumedFromCurrent), currentProducer(other.currentProducer), desiredProducer(other.desiredProducer)
@@ -992,7 +992,7 @@ public:
 	// production is disabled because Traits::INITIAL_IMPLICIT_PRODUCER_HASH_SIZE is 0,
 	// or Traits::MAX_SUBQUEUE_SIZE has been defined and would be surpassed).
 	// Thread-safe.
-	inline bool enqueue(T const& item)
+	__host__ __device__ inline bool enqueue(T const& item)
 	{
 		MOODYCAMEL_CONSTEXPR_IF (INITIAL_IMPLICIT_PRODUCER_HASH_SIZE == 0) return false;
 		else return inner_enqueue<CanAlloc>(item);
@@ -1013,7 +1013,7 @@ public:
 	// Allocates memory if required. Only fails if memory allocation fails (or
 	// Traits::MAX_SUBQUEUE_SIZE has been defined and would be surpassed).
 	// Thread-safe.
-	inline bool enqueue(producer_token_t const& token, T const& item)
+	__host__ __device__ inline bool enqueue(producer_token_t const& token, T const& item)
 	{
 		return inner_enqueue<CanAlloc>(token, item);
 	}
@@ -1122,7 +1122,7 @@ public:
 	// were checked (so, the queue is likely but not guaranteed to be empty).
 	// Never allocates. Thread-safe.
 	template<typename U>
-	bool try_dequeue(U& item)
+	__host__ __device__ bool try_dequeue(U& item)
 	{
 		// Instead of simply trying each producer in turn (which could cause needless contention on the first
 		// producer), we score them heuristically.
@@ -1180,7 +1180,7 @@ public:
 	// were checked (so, the queue is likely but not guaranteed to be empty).
 	// Never allocates. Thread-safe.
 	template<typename U>
-	bool try_dequeue(consumer_token_t& token, U& item)
+	__host__ __device__ bool try_dequeue(consumer_token_t& token, U& item)
 	{
 		// The idea is roughly as follows:
 		// Every 256 items from one producer, make everyone rotate (increase the global offset) -> this means the highest efficiency consumer dictates the rotation speed of everyone else, more or less
@@ -1297,7 +1297,7 @@ public:
 	// was checked (so, the queue is likely but not guaranteed to be empty).
 	// Never allocates. Thread-safe.
 	template<typename U>
-	inline bool try_dequeue_from_producer(producer_token_t const& producer, U& item)
+	inline __host__ __device__ bool try_dequeue_from_producer(producer_token_t const& producer, U& item)
 	{
 		return static_cast<ExplicitProducer*>(producer.producer)->dequeue(item);
 	}
@@ -1708,7 +1708,7 @@ private:
 		{
 		}
 		
-		virtual ~ProducerBase() { }
+		__host__ __device__ virtual ~ProducerBase() { }
 		
 		template<typename U>
 		inline bool dequeue(U& element)
@@ -1785,7 +1785,7 @@ private:
 			new_block_index(0);		// This creates an index with double the number of current entries, i.e. EXPLICIT_INITIAL_INDEX_SIZE
 		}
 		
-		~ExplicitProducer()
+		__host__ __device__ ~ExplicitProducer()
 		{
 			// Destruct any elements not yet dequeued.
 			// Since we're in the destructor, we can assume all elements
@@ -2428,7 +2428,7 @@ private:
 			new_block_index();
 		}
 		
-		~ImplicitProducer()
+		__host__ __device__ ~ImplicitProducer()
 		{
 			// Note that since we're in the destructor we can assume that all enqueue/dequeue operations
 			// completed already; this means that all undequeued elements are placed contiguously across

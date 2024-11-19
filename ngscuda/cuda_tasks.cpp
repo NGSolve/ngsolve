@@ -6,6 +6,7 @@
 
 #include <la.hpp>
 #include "cuda_linalg.hpp"
+#include <nvfunctional>
 
 using namespace std;
 
@@ -17,8 +18,9 @@ class Task
 {
 public:
   int nr, size;
-  const std::function<void(int nr, int size)> * pfunc;
-  std::atomic<int> * cnt;
+  const nvstd::function<void(int nr, int size)> * pfunc;
+  // std::atomic<int> * cnt;
+  int * cnt;
   
   Task & operator++(int)
   {
@@ -34,61 +36,47 @@ public:
   typedef moodycamel::ConsumerToken TCToken; 
   
   
-  static std::atomic<bool> stop{false};
-  static std::vector<std::thread> threads;
-  static TQueue queue;
+  // __device__ static std::atomic<bool> stop{false};
+  __device__ static bool stop{false};
+  // __device__ static std::vector<std::thread> threads;
+  __device__ static TQueue * queue;
   
-  __global__ void StartWorkers(int num)
+  __device__ void Worker()
   {
     stop = false;
-    for (int i = 0; i < num; i++)
-      {
-        TimeLine * patl = timeline.get();
-        threads.push_back
-          (std::thread([patl]()
-          {
-            if (patl)
-              timeline = std::make_unique<TimeLine>();
           
-            TPToken ptoken(queue); 
-            TCToken ctoken(queue); 
-            
-            while(true)
-              {
-                if (stop) break;
-
-                Task task;
-                if(!queue.try_dequeue_from_producer(ptoken, task)) 
-                  if(!queue.try_dequeue(ctoken, task))  
-                    continue; 
-                
-                (*task.pfunc)(task.nr, task.size);
-                (*task.cnt)++;
-              }
-            
-            if (patl)
-              patl -> AddTimeLine(std::move(*timeline));
-          }));
+    TPToken ptoken(*queue); 
+    TCToken ctoken(*queue); 
+    
+    while(true)
+      {
+        if (stop) break;
+        
+        Task task;
+        if(!queue->try_dequeue_from_producer(ptoken, task)) 
+          if(!queue->try_dequeue(ctoken, task))  
+            continue; 
+        
+        (*task.pfunc)(task.nr, task.size);
+        // (*task.cnt)++;
+        atomicAdd(task.cnt, 1);
       }
   }
 
 __global__ void StopWorkers()
-  {
-    stop = true;
-    for (auto & t : threads)
-      t.join();
-    threads.clear();
+{
+  stop = true;
   }
 
   
 __global__ void RunParallel (int num,
-                    const std::function<void(int nr, int size)> & func)
+                             const nvstd::function<void(int nr, int size)> & func)
   {
-    TPToken ptoken(queue);
-    TCToken ctoken(queue);
+    TPToken ptoken(*queue);
+    TCToken ctoken(*queue);
     
-    std::atomic<int> cnt{0};
-
+    // std::atomic<int> cnt{0};
+    int cnt = 0;
 
     for (size_t i = 0; i < num; i++)
       {
@@ -97,7 +85,7 @@ __global__ void RunParallel (int num,
         task.size = num;
         task.pfunc = &func;
         task.cnt = &cnt;
-        queue.enqueue(ptoken, task);
+        queue->enqueue(ptoken, task);
       }
 
     /*
@@ -113,20 +101,40 @@ __global__ void RunParallel (int num,
     while (cnt < num)
       {
         Task task;
-        if(!queue.try_dequeue_from_producer(ptoken, task)) 
-          if(!queue.try_dequeue(ctoken, task))
+        if(!queue->try_dequeue_from_producer(ptoken, task)) 
+          if(!queue->try_dequeue(ctoken, task))
             continue; 
         
         (*task.pfunc)(task.nr, task.size);
-        (*task.cnt)++;
+        // (*task.cnt)++;
+        atomicAdd(task.cnt, 1);
+
       }
   }
 
 
+// #ifdef __CUDACC__
+
+__global__ void RunAll() // int n, F f)
+{
+  int bid = blockIdx.x;
+  if (bid == 0)
+        ; // RunParallel (10, [] __device__ (int nr, int size) { ; });
+  else
+    Worker();
+}
+
+__host__ void StartDeviceJob()
+{
+  RunAll<<<10, 64>>>();
+}
+
+// #endif
+
 
 namespace ngla
 {
-
   
+  ;
   
 }
