@@ -18,7 +18,7 @@ add_compile_definitions(CUDA)
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library(${lib_name} SHARED
-    cuda_linalg.cpp unifiedvector.cpp
+    cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp
     cuda_ngstd.cpp cuda_ngbla.hpp cuda_applyIR.cpp
     linalg_kernels.cu dev_sparsecholesky.cpp dev_blockjacobi.cpp cuda_profiler.cu
 )
