@@ -181,6 +181,9 @@ namespace ngs_cuda
   };
 }
 
+
+template <typename T> struct IsSafe<T>;
+
 template <typename T>
 struct IsSafe<ngs_cuda::Dev<T>> {
   constexpr operator bool() const { return true; } };
