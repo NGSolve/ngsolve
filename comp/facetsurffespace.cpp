@@ -461,8 +461,10 @@ namespace ngcomp
       {
       case VOL:
         {
-          throw Exception("Volume elements not available for FacetSurfaceSpace");
-	  break;
+          SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+                      {
+                        return *new (lh) DummyFE<et.ElementType()> ();
+                      });
         }            
       case BND:
         {
@@ -573,7 +575,10 @@ namespace ngcomp
         
       case BBND:
 	{
-	  dnums += GetEdgeDofs(ma->GetElEdges(ei)[0]);
+          if(ma->GetDimension() == 3)
+            dnums += GetEdgeDofs(ma->GetElEdges(ei)[0]);
+          else if(ma->GetDimension() == 2)
+            dnums += GetEdgeDofs(ma->GetElVertices(ei)[0]);
           break;
 	}
 
