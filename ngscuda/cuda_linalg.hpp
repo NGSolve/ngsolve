@@ -87,6 +87,9 @@ namespace ngla
   };
 
 
+  // compatibility between elder ngsolve (template or not)
+  typedef decltype (ConstantElementByElementMatrix (5,5,Matrix<>(),
+                                                  declval<Table<int>>(), declval<Table<int>>())) T_ConstEBEMatrix;
   
   class DevConstantElementByElementMatrix : public DevMatrix
   {
@@ -100,7 +103,7 @@ namespace ngla
     bool disjoint_rows, disjoint_cols;
     size_t numblocks;
   public:
-    DevConstantElementByElementMatrix (const ConstantElementByElementMatrix<> & mat);
+    DevConstantElementByElementMatrix (const T_ConstEBEMatrix & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
