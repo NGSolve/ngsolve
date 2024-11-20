@@ -92,7 +92,18 @@ namespace ngs_cuda
     __device__ auto & operator*= (T2 other) { data *= other; return *this; }
   };
     
+}
 
+namespace ngcore {
+  template <typename T>
+  struct IsSafe<ngs_cuda::Dev<T>> {
+    constexpr operator bool() const { return true; }
+  };
+}
+
+
+namespace ngs_cuda
+{
 
   /*
   template <typename T>
@@ -180,13 +191,6 @@ namespace ngs_cuda
     T * DevData () const { return (T*)this->data; }
   };
 }
-
-
-template <typename T> struct IsSafe<T>;
-
-template <typename T>
-struct IsSafe<ngs_cuda::Dev<T>> {
-  constexpr operator bool() const { return true; } };
 
 namespace std {
   template <typename T>  
