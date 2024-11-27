@@ -1386,6 +1386,13 @@ allow_fail : bool
                    throw Exception("Meshpoint not in mesh!");
                  auto & trafo = p.mesh->GetTrafo(ElementId(p.vb, p.nr), lh);
                  auto & mip = trafo(IntegrationPoint(p.x,p.y,p.z),lh);
+                 if (testout)
+                   {
+                     testout->precision(16);
+                     *testout << "type trafo = " << typeid(trafo).name() << endl;
+                     *testout << "p = " << p.x << ", " << p.y << ", " << p.z << endl;
+                     *testout << "mip = " << mip << endl;
+                   }
                  return py::cast(self)(&mip);
                });
   
