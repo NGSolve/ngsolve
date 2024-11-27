@@ -1,4 +1,5 @@
-FROM ubuntu:23.10
+# syntax=docker/dockerfile:1.7-labs
+FROM ubuntu:24.10 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYODIDE_VERSION=0.26.2
 ENV EMSDK_VERSION=3.1.58
@@ -18,6 +19,7 @@ RUN apt-get update && apt-get -y install \
         autoconf \
         libtool \
         unzip \
+        zip \
         xxd \
         wget
 
@@ -32,25 +34,31 @@ WORKDIR /root/output
 RUN wget https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-core-${PYODIDE_VERSION}.tar.bz2
 RUN tar xvf pyodide-core-${PYODIDE_VERSION}.tar.bz2
 RUN ln -s /usr/bin/python3 /usr/bin/python
-RUN rm /usr/lib/python3.11/EXTERNALLY-MANAGED
-RUN pip install cmake
+RUN pip install --break-system-packages cmake
+
+FROM builder AS build_occ
 ADD ./tests/gitlab-ci/pyodide/build_opencascade.sh /root/
 RUN bash /root/build_opencascade.sh
-ADD . /root/ngsolve
-RUN mkdir /root/ngsolve/build
-WORKDIR /root/ngsolve/build
+
+FROM builder as build_ngsolve
+COPY --from=build_occ /opt/opencascade /opt/opencascade
+RUN mkdir /root/ngsolve_build
+WORKDIR /root/ngsolve_build
+COPY --exclude=tests/gitlab-ci --exclude=*.json --exclude=external_dependencies/netgen/*.json . /root/ngsolve
+COPY tests/gitlab-ci/pyodide/build_in_docker.sh /root/ngsolve/tests/gitlab-ci/pyodide/
 RUN --mount=type=cache,target=/ccache/ bash /root/ngsolve/tests/gitlab-ci/pyodide/build_in_docker.sh
-WORKDIR /root/output/pyodide
 RUN rm /opt/netgen/python/*/*.a
-RUN apt install -y zip
 WORKDIR /opt/netgen/python
 RUN zip -r pyngcore.zip pyngcore
 RUN zip -r netgen.zip netgen
 RUN zip -r ngsolve.zip ngsolve
-RUN cp /opt/netgen/python/*.zip /root/output/pyodide
+
+FROM builder
+COPY --from=build_ngsolve /opt/netgen/python/*.zip /root/output/pyodide
 WORKDIR /root/output/pyodide
-RUN cp /root/ngsolve/tests/gitlab-ci/pyodide/generate_repodata.js .
+COPY tests/gitlab-ci/pyodide/generate_repodata.js .
 RUN node generate_repodata.js
 RUN rm *.whl
-RUN python3 /root/ngsolve/tests/gitlab-ci/pyodide/merge.py
+COPY tests/gitlab-ci/pyodide/merge.py .
+RUN python3 merge.py
 RUN cd /root/output/ && tar -cvjSf ngsolve_pyodide_${PYODIDE_VERSION}.tar.bz2 pyodide

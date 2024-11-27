@@ -39,3 +39,5 @@ emcmake cmake .. \
       ${SUBPROJECT_CMAKE_ARGS}
 
 emmake make -j9 install
+cd /root/
+rm -rf OCCT-7_6_3

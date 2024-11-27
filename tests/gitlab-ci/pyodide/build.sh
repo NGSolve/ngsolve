@@ -1,3 +1,4 @@
+set -e
 docker build -t ngsolve_pyodide -f tests/gitlab-ci/pyodide/Dockerfile .
 rm -rf dist
 mkdir -p dist
