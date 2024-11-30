@@ -298,13 +298,16 @@ namespace ngcomp
     Complex alpha;
     public:
 
-    CartesianPML_Transformation(FlatMatrix<double> _bounds, Complex _alpha) 
-      : PML_TransformationDim<DIM>(), alpha(_alpha) 
+    CartesianPML_Transformation(Mat<DIM,2> _bounds, Complex _alpha) 
+      : PML_TransformationDim<DIM>(), bounds(_bounds), alpha(_alpha)
     {
+      /*
       bounds = 0.;
       for (int i : Range(min(int(_bounds.Height()),DIM)))
         for (int j : Range(min(int(_bounds.Width()),2)))
           bounds(i,j)=_bounds(i,j);
+      */
+      ;
     }
     
     ~CartesianPML_Transformation() {;}
