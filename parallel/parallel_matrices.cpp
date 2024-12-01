@@ -260,8 +260,6 @@ namespace ngla
 	matrix->SetInverseType (mat.GetInverseType());
 	inv = matrix->InverseMatrix ();
       }
-
-    // NG_MPI_Barrier (ngs_comm);
   }
 
   template <typename TM>
@@ -291,17 +289,14 @@ namespace ngla
 	Array<TV> lx (select.Size());
 	for (int i = 0; i < select.Size(); i++)
 	  lx[i] = fx(select[i]);
-	
-	NG_MPI_Request request = comm.ISend (lx, 0, NG_MPI_TAG_SOLVE);
-	NG_MPI_Request_free (&request);
+
+	NgMPI_Request(comm.ISend (lx, 0, NG_MPI_TAG_SOLVE)).Wait();
 
 	// only for MUMPS:
 	if (inv)
 	  y = (*inv) * x;
 	
-	request = comm.IRecv (lx, 0, NG_MPI_TAG_SOLVE);
-	NG_MPI_Wait (&request, NG_MPI_STATUS_IGNORE);
-
+	NgMPI_Request(comm.IRecv (lx, 0, NG_MPI_TAG_SOLVE)).Wait();
 
 	for (int i = 0; i < select.Size(); i++)
 	  fy(select[i]) += s * lx[i];
@@ -339,7 +334,6 @@ namespace ngla
 
 	hy = (*inv) * hx;
 
-	// Array<NG_MPI_Request> requ;
         NgMPI_Requests requ;
 	for (int src = 1; src < ntasks; src++)
 	  {
