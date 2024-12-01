@@ -2254,10 +2254,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	    if (IsRegularDof(d)) dofnodes[d] = ni;
 	} 
 
-    // paralleldofs = make_shared<ParallelMeshDofs> (ma, dofnodes, dimension, iscomplex);
-    // paralleldofs = make_shared<ParallelDofs>
-    // (ma->GetCommunicator(), Nodes2Table(*ma, dofnodes), dimension, iscomplex);
-
     TableCreator<int> creator(ndof);
     for ( ; !creator.Done(); creator++)
       for (size_t i = 0; i < ndof; i++)

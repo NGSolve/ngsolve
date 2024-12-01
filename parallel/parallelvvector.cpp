@@ -1,6 +1,3 @@
-// #ifdef PARALLEL
-
-
 #include <parallelngs.hpp>
 #include <la.hpp>
 
@@ -509,33 +506,8 @@ namespace ngla
   template <typename SCAL>
   NgMPI_Request S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest )
   {
-    /*
-#ifdef PARALLEL
-    NG_MPI_Request request;
-    NG_MPI_Datatype NG_MPI_TS = GetMPIType<TSCAL> ();
-    NG_MPI_Irecv( &( (*recvvalues)[dest][0]), 
-	       (*recvvalues)[dest].Size(), 
-	       NG_MPI_TS, dest, 
-	       NG_MPI_TAG_SOLVE, this->paralleldofs->GetCommunicator(), &request);
-    return request;               
-#endif
-    */
     return this->paralleldofs->GetCommunicator().IRecv ((*recvvalues)[dest], dest, NG_MPI_TAG_SOLVE);
   }
-
-  /*
-  template <typename SCAL>
-  void S_ParallelBaseVectorPtr<SCAL> :: RecvVec ( int dest)
-  {
-    NG_MPI_Status status;
-
-    NG_MPI_Datatype NG_MPI_TS = MyGetMPIType<TSCAL> ();
-    NG_MPI_Recv( &( (*recvvalues)[dest][0]), 
-	      (*recvvalues)[dest].Size(), 
-	      NG_MPI_TS, dest, 
-	      NG_MPI_TAG_SOLVE, ngs_comm, &status);
-  }
-  */
 
 
   template <typename SCAL>
@@ -674,8 +646,4 @@ namespace ngla
   template class S_ParallelBaseVectorPtr<double>;
   template class S_ParallelBaseVectorPtr<Complex>;
 }
-
-
-
-// #endif
 

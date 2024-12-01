@@ -105,7 +105,6 @@ namespace ngla
 
 
 
-
   inline ParallelBaseVector * dynamic_cast_ParallelBaseVector (BaseVector * x)
   {
     // cout << "my dynamic * cast" << endl;
@@ -126,7 +125,7 @@ namespace ngla
       }
     return dynamic_cast<const ParallelBaseVector*> (x);
   }
-  
+
   inline ParallelBaseVector & dynamic_cast_ParallelBaseVector (BaseVector & x)
   {
     // cout << "my dynamic cast" << endl;
@@ -135,6 +134,7 @@ namespace ngla
       return dynamic_cast<ParallelBaseVector&> (**ax);
     return dynamic_cast<ParallelBaseVector&> (x);
   }
+
   inline const ParallelBaseVector & dynamic_cast_ParallelBaseVector (const BaseVector & x)
   {
     // cout << "my dynamic cast" << endl;
