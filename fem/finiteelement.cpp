@@ -23,13 +23,14 @@ namespace ngfem
     return "FiniteElement"; 
   }
 
-  void FiniteElement :: SetVertexNumbers (FlatArray<int> vnums)
+  FiniteElement * FiniteElement :: SetVertexNumbers (FlatArray<int> vnums)
   {
     SwitchET (ElementType(), [&](auto et)
               {
                 if (auto vofe = dynamic_cast<VertexOrientedFE<et.ElementType()>*>(this))
                   vofe->SetVertexNumbers(vnums);
               });
+    return this;
   }
 
   
@@ -160,9 +161,10 @@ namespace ngfem
   }
   */
 
-  void VectorFiniteElement :: SetVertexNumbers (FlatArray<int> vnums)
+  VectorFiniteElement * VectorFiniteElement :: SetVertexNumbers (FlatArray<int> vnums)
   {
     const_cast<FiniteElement&>(scalar_fe).SetVertexNumbers(vnums);
+    return this;
   }
 
   void VectorFiniteElement :: Interpolate (const ElementTransformation & trafo,
