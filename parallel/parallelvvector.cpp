@@ -649,7 +649,6 @@ namespace ngla
 	    sum += L2Norm2 (fv.Row(dof));
       }
       
-    // double globsum = MyMPI_AllReduce (sum, NG_MPI_SUM, paralleldofs->GetCommunicator()); // ngs_comm);
     double globsum = paralleldofs->GetCommunicator().AllReduce (sum, NG_MPI_SUM); 
     return sqrt (globsum);
   }

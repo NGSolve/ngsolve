@@ -339,15 +339,16 @@ namespace ngla
 
 	hy = (*inv) * hx;
 
-	Array<NG_MPI_Request> requ;
+	// Array<NG_MPI_Request> requ;
+        NgMPI_Requests requ;
 	for (int src = 1; src < ntasks; src++)
 	  {
 	    FlatArray<int> selecti = loc2glob[src];
 	    for (int j = 0; j < selecti.Size(); j++)
 	      exdata[src][j] = hy(selecti[j]);
-	    requ.Append (comm.ISend (exdata[src], src, NG_MPI_TAG_SOLVE));
+	    requ += comm.ISend (exdata[src], src, NG_MPI_TAG_SOLVE);
 	  }
-	MyMPI_WaitAll (requ);
+	requ.WaitAll();
       }
 
     // if (is_x_cum)
@@ -838,21 +839,6 @@ namespace ngla
   {
     y.Distribute();
     size_t count = 0;
-    /*
-      for (auto p:paralleldofs->GetDistantProcs()) {
-      auto exdofs = paralleldofs->GetExchangeDofs(p);
-      if (p<MyMPI_GetId(paralleldofs->GetCommunicator())) {
-      for (auto k:Range(exdofs.Size())) {
-      y.FVDouble()[count++] -= s*x.FVDouble()[exdofs[k]];
-      }
-      }
-      else {
-      for (auto k:Range(exdofs.Size())) {
-      y.FVDouble()[count++] += s*x.FVDouble()[exdofs[k]];
-      }
-      }
-      }
-    */
     auto me = paralleldofs->GetCommunicator().Rank();
     auto fx = x.FVDouble();
     auto fy = y.FVDouble();
