@@ -288,8 +288,8 @@ namespace ngfem
     { 
       for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; 
     }
-    void SetVertexNumbers (FlatArray<int> vnums) override
-    { VertexOrientedFE<ET>::SetVertexNumbers(vnums); }
+    DGFiniteElement * SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ET>::SetVertexNumbers(vnums); return this; }
     
 
     /// assign vertex number
