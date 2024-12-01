@@ -1367,11 +1367,11 @@ namespace ngcomp
     requests.WaitAll();
     
     cnt = 0;
-    NG_MPI_Datatype type = GetMPIType<T>();
+    auto type = GetMPIType<T>();
     for (auto i : Range(GetNNodes(nt)))
       for (auto p : GetDistantProcs(Node(nt, i)))
         NG_MPI_Reduce_local (&recv_data[p][cnt[p]++],
-                          &data[i], 1, type, op);
+                             &data[i], 1, type, op);
   }
 
 

@@ -1433,7 +1433,7 @@ namespace ngcore
   template<>
   struct MPI_typetrait<ngcomp::COUPLING_TYPE>
   {
-    static NG_MPI_Datatype MPIType () 
+    static auto MPIType () 
     { 
       static_assert ( (sizeof(ngcomp::COUPLING_TYPE) == sizeof(char)) ||
                       (sizeof(ngcomp::COUPLING_TYPE) == sizeof(int)) );
