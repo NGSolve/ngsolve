@@ -5380,8 +5380,7 @@ namespace ngcomp
 	      os_per = Array<int>(mnp);
 	      os_per = 0;
 	    }
-	    Array<NG_MPI_Request> reqs;
-	    Array<NG_MPI_Request> reqr;
+	    NgMPI_Requests reqs, reqr;
 	    LocalHeap &lh(clh);
 	    Array<int> elnums(2, lh), elnums2(2, lh), fnums(6, lh), vnums(8, lh);
 
@@ -5494,13 +5493,13 @@ namespace ngcomp
 	      else if(loop==1) {
 		for(auto dp:Range(mnp))
 		  if(send_table[dp].Size()) {
-		    reqs.Append(comm.ISend(send_table[dp], dp, NG_MPI_TAG_SOLVE));
-		    reqr.Append(comm.IRecv(recv_table[dp], dp, NG_MPI_TAG_SOLVE));
+		    reqs += comm.ISend(send_table[dp], dp, NG_MPI_TAG_SOLVE);
+		    reqr += comm.IRecv(recv_table[dp], dp, NG_MPI_TAG_SOLVE);
 		  }
-		MyMPI_WaitAll(reqr);
+                reqr.WaitAll();
 	      }
 	    }
-	    if(reqs.Size()) MyMPI_WaitAll(reqs);
+            reqs.WaitAll();
 	  }
         // #endif
 

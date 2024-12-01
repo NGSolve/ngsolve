@@ -1357,14 +1357,14 @@ namespace ngcomp
       for (auto p : GetDistantProcs(Node(nt, i)))
         dist_data[p][cnt[p]++] = data[i];
 
-    Array<NG_MPI_Request> requests;
+    NgMPI_Requests requests;
     for (auto i : cnt.Range())
       if (cnt[i])
 	{
-	  requests.Append (comm.ISend(dist_data[i], i, NG_MPI_TAG_SOLVE));
-	  requests.Append (comm.IRecv(recv_data[i], i, NG_MPI_TAG_SOLVE));
+	  requests += comm.ISend(dist_data[i], i, NG_MPI_TAG_SOLVE);
+	  requests += comm.IRecv(recv_data[i], i, NG_MPI_TAG_SOLVE);
 	}
-    MyMPI_WaitAll (requests);
+    requests.WaitAll();
     
     cnt = 0;
     NG_MPI_Datatype type = GetMPIType<T>();
