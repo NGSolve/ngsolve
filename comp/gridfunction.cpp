@@ -339,11 +339,14 @@ namespace ngcomp
        });
 
 #ifdef PARALLEL
-    AllReduceDofData (cnti, NG_MPI_SUM, fes->GetParallelDofs());
-    // GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
-    // GetVector(mdcomp).Cumulate(); 	 
-    (*tempvec).SetParallelStatus(DISTRIBUTED);
-    (*tempvec).Cumulate(); 	 
+    if (fes->GetParallelDofs())
+      {
+        fes->GetParallelDofs()->AllReduceDofData (cnti, NG_MPI_SUM);
+        // GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
+        // GetVector(mdcomp).Cumulate(); 	 
+        (*tempvec).SetParallelStatus(DISTRIBUTED);
+        (*tempvec).Cumulate();
+      }
 #endif
 
     ParallelForRange

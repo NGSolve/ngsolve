@@ -372,7 +372,8 @@ namespace ngcomp
       int ndof = fes->GetNDof();      
 
       if (!local)
-	AllReduceDofData (weight, NG_MPI_SUM, fes->GetParallelDofs());
+        if (auto pd = fes->GetParallelDofs(); pd)
+          pd -> AllReduceDofData (weight, NG_MPI_SUM);
       
       ParallelFor (weight.Size(),
                    [&] (size_t i)

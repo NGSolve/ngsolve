@@ -188,11 +188,12 @@ namespace ngcomp
 
     progress.Done();
     
-#ifdef PARALLEL
-    AllReduceDofData (cnti, NG_MPI_SUM, fesflux->GetParallelDofs());
-    flux.GetVector().SetParallelStatus(DISTRIBUTED);
-    flux.GetVector().Cumulate(); 	 
-#endif
+    if (auto pd = fesflux->GetParallelDofs(); pd)
+      {
+        pd->AllReduceDofData (cnti, NG_MPI_SUM);
+        flux.GetVector().SetParallelStatus(DISTRIBUTED);
+        flux.GetVector().Cumulate();
+      }
 
     FlatVector<SCAL> fluxi(dimflux, clh);
     ArrayMem<int,1> dnumsflux(1);
@@ -873,15 +874,15 @@ namespace ngcomp
 	single_bli->SetSimdEvaluate(sbli_uses_simd);
 
       }
+    
+    if (fes->GetParallelDofs())
+      {
+        fes->GetParallelDofs()->AllReduceDofData (cnti, NG_MPI_SUM);
+        u.GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
+        u.GetVector(mdcomp).Cumulate();
+      }
 
-
-#ifdef PARALLEL
-    AllReduceDofData (cnti, NG_MPI_SUM, fes->GetParallelDofs());
-    u.GetVector(mdcomp).SetParallelStatus(DISTRIBUTED);
-    u.GetVector(mdcomp).Cumulate(); 	 
-#endif
-
-
+    
     ParallelForRange
       (cnti.Size(), [&] (IntRange r)
        {
