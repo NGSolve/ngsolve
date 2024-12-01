@@ -3491,7 +3491,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   FiniteElement & CompoundFESpace :: GetFE (ElementId ei, Allocator & alloc) const
   {
-    FlatArray<const FiniteElement*> fea(spaces.Size(), alloc);
+    FlatArray<FiniteElement*> fea(spaces.Size(), alloc);
     if (!all_the_same)
       {
         for (int i = 0; i < fea.Size(); i++)

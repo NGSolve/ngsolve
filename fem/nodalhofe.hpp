@@ -29,8 +29,11 @@ namespace ngfem
     using ET_trait<ET>::PolDimension;
     using ET_trait<ET>::PolBubbleDimension;
 
+    
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;    
+    void SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ET>::SetVertexNumbers(vnums); }
     using ET_trait<ET>::ElementType;
 
     /// builds a functional element of order aorder.
