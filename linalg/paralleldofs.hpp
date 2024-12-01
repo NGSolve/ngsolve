@@ -174,42 +174,41 @@ namespace ngla
   };
   
 #endif
+  
 
-
-
+  
   template <typename T>
+  [[deprecated("use pardofs.ReduceDofData")]]
   void ReduceDofData (FlatArray<T> data, NG_MPI_Op op, const shared_ptr<ParallelDofs> & pardofs)
   {
     if (pardofs)
       pardofs->ReduceDofData(data, op);
   }
-
+  
   template <typename T>
+  [[deprecated("use pardofs.ScatterDofData")]]   
   void ScatterDofData (FlatArray<T> data, const shared_ptr<ParallelDofs> & pardofs)
   {
     if (pardofs)
       pardofs->ScatterDofData (data);
   }
-
+  
   template <typename T>
+  [[deprecated("use pardofs.AllReduceDofData")]]
   void AllReduceDofData (FlatArray<T> data, NG_MPI_Op op, 
 			 const shared_ptr<ParallelDofs> & pardofs)
   {
     if (pardofs)
       pardofs->AllReduceDofData (data, op);
   }
-
-
+  
 
 
 #ifdef PARALLEL
 
   template <typename T>
-  void ParallelDofs::ReduceDofData (FlatArray<T> data, NG_MPI_Op op) const
+  void ParallelDofs :: ReduceDofData (FlatArray<T> data, NG_MPI_Op op) const
   {
-    // if (this == NULL)  // illformed C++, shall get rid of this
-    // throw Exception("ReduceDofData for null-object");
-    
     static Timer t0("ParallelDofs :: ReduceDofData");
     RegionTimer rt(t0);
 
@@ -224,6 +223,7 @@ namespace ngla
     nrecv = 0;
 
     /** Count send/recv size **/
+    /*
     for (int i = 0; i < GetNDofLocal(); i++) {
       auto dps = GetDistantProcs(i);
       if(!dps.Size()) continue;
@@ -234,12 +234,24 @@ namespace ngla
       else
 	nsend[master]++;
     }
+    */
+    for (int i = 0; i < GetNDofLocal(); i++)
+      if (auto dps = GetDistantProcs(i); dps.Size())
+        {
+          if (rank < dps[0])
+            for (auto p : dps)
+              nrecv[p]++;
+          else
+            nsend[dps[0]]++;
+        }
 
+    
     Table<T> send_data(nsend);
     Table<T> recv_data(nrecv);
 
     /** Fill send_data **/
     nsend = 0;
+    /*
     for (int i = 0; i < GetNDofLocal(); i++) {
       auto dps = GetDistantProcs(i);
       if(!dps.Size()) continue;
@@ -247,6 +259,11 @@ namespace ngla
       if(master!=rank)
 	send_data[master][nsend[master]++] = data[i];
     }
+    */
+    for (int i = 0; i < GetNDofLocal(); i++)
+      if (auto dps = GetDistantProcs(i); dps.Size())
+        if (rank > dps[0])
+          send_data[dps[0]][nsend[dps[0]]++] = data[i];
 
     NgMPI_Requests requests; 
     for (int i = 0; i < ntasks; i++)
@@ -262,14 +279,20 @@ namespace ngla
     cnt = 0;
     
     NG_MPI_Datatype type = GetMPIType<T>();
+    /*
     for (int i = 0; i < GetNDofLocal(); i++)
       if (IsMasterDof(i))
 	{
 	  FlatArray<int> distprocs = GetDistantProcs (i);
 	  for (int j = 0; j < distprocs.Size(); j++)
 	    NG_MPI_Reduce_local (&recv_data[distprocs[j]][cnt[distprocs[j]]++], 
-			      &data[i], 1, type, op);
+                                 &data[i], 1, type, op);
 	}
+    */
+    for (int i = 0; i < GetNDofLocal(); i++)
+      if (IsMasterDof(i))
+        for (auto p : GetDistantProcs (i))
+          NG_MPI_Reduce_local (&recv_data[p][cnt[p]++], &data[i], 1, type, op);
   }    
 
 
@@ -292,18 +315,6 @@ namespace ngla
     nrecv = 0;
 
     /** Count send/recv size **/
-    /*
-    for (int i = 0; i < GetNDofLocal(); i++) {
-      auto dps = GetDistantProcs(i);
-      if(!dps.Size()) continue;
-      int master = min2(rank, dps[0]);
-      if(rank==master)
-	for(auto p:dps)
-	  nsend[p]++;
-      else
-	nrecv[master]++;
-    }
-    */
     for (int i = 0; i < GetNDofLocal(); i++) 
       if (auto dps = GetDistantProcs(i); dps.Size() > 0)
         {
@@ -319,16 +330,6 @@ namespace ngla
 
     /** Fill send_data **/
     nsend = 0;
-    /*
-    for (int i = 0; i < GetNDofLocal(); i++) {
-      auto dps = GetDistantProcs(i);
-      if(!dps.Size()) continue;
-      int master = min2(rank, dps[0]);
-      if(rank==master)
-	for(auto p:dps)
-	  send_data[p][nsend[p]++] = data[i];
-    }
-    */
     for (int i = 0; i < GetNDofLocal(); i++) 
       if (auto dps = GetDistantProcs(i); dps.Size() > 0)
         if (rank < dps[0])
@@ -348,18 +349,6 @@ namespace ngla
     Array<int> cnt(ntasks);
     cnt = 0;
 
-    /*
-    for (int i = 0; i < GetNDofLocal(); i++)
-      if (!IsMasterDof(i))
-	{
-	  FlatArray<int> distprocs = GetDistantProcs (i);
-	  
-	  int master = ntasks;
-	  for (int j = 0; j < distprocs.Size(); j++)
-	    master = min (master, distprocs[j]);
-	  data[i] = recv_data[master][cnt[master]++];
-	}
-    */
     for (int i = 0; i < GetNDofLocal(); i++)
       if (!IsMasterDof(i))
 	{

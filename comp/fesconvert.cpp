@@ -249,10 +249,9 @@ namespace ngcomp
     else // use_simd
       { it_els(fill_lam); }
     tass.Stop();
-#ifdef PARALLEL
     if (space_b->IsParallel() && !localop)
-      { AllReduceDofData (cnt_b, NG_MPI_SUM, space_b->GetParallelDofs()); }
-#endif
+      if (auto pd = space_b->GetParallelDofs(); pd)
+        pd -> AllReduceDofData (cnt_b, NG_MPI_SUM); 
 
     for (auto dofnr : Range(spmat->Height())) {
       if ( (cnt_b[dofnr] > 1) && ( !range_dofs || range_dofs->Test(dofnr) ) ) {
@@ -486,10 +485,9 @@ namespace ngcomp
 	 mat, std::move(ydofs), std::move(xdofs));
     }
 
-#ifdef PARALLEL
     if (space_b->IsParallel() && !localop)
-      { AllReduceDofData (cnt_b, NG_MPI_SUM, space_b->GetParallelDofs()); }
-#endif
+      if (auto pd = space_b->GetParallelDofs(); pd)
+        pd->AllReduceDofData (cnt_b, NG_MPI_SUM);
 
     bool multiple = false;
     for (auto c : cnt_b)

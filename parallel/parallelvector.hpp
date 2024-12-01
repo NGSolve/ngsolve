@@ -9,14 +9,8 @@
 
 
 
-// #ifdef PARALLEL
-
 namespace ngla
 {
-  // using ngparallel::ParallelDofs;
-  // using ngla::ParallelDofs;
-
-
   class NGS_DLL_HEADER ParallelBaseVector : virtual public BaseVector
   {
   protected:
@@ -269,5 +263,4 @@ namespace ngla
   
 }
 
-// #endif
 #endif
