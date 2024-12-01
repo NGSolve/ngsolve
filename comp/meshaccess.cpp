@@ -1022,8 +1022,6 @@ namespace ngcomp
     */
 
     ndomains++;
-    
-    // ndomains = MyMPI_AllReduce (ndomains, NG_MPI_MAX, GetCommunicator());
     ndomains = GetCommunicator().AllReduce (ndomains, NG_MPI_MAX);
     
     pml_trafos.SetSize(ndomains);

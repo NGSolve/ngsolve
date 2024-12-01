@@ -463,15 +463,15 @@ namespace ngla
 	  });
 
 	// send-recv
-	Array<NG_MPI_Request> rsend(all_dps.Size()), rrecv(all_dps.Size());
+        NgMPI_Requests rsend, rrecv;
 	auto comm = pds.GetCommunicator();
 	for (auto kp : Range(all_dps)) {
-	  rsend[kp] = comm.ISend(send_data[kp], all_dps[kp], NG_MPI_TAG_SOLVE);
-	  rrecv[kp] = comm.IRecv(recv_data[kp], all_dps[kp], NG_MPI_TAG_SOLVE);
+	  rsend += comm.ISend(send_data[kp], all_dps[kp], NG_MPI_TAG_SOLVE);
+	  rrecv += comm.IRecv(recv_data[kp], all_dps[kp], NG_MPI_TAG_SOLVE);
 	}
 
 	// wait for recvs to finish and add to diagonal blocks
-	MyMPI_WaitAll(rrecv);
+	rrecv.WaitAll();
 	sds = 0;
 	iterate_ex_blocks([&](auto block_num, auto block, auto p){
 	    auto pos = all_dps.Pos(p);
@@ -483,7 +483,7 @@ namespace ngla
 	    diag_block += buf_block;
 	  });
 
-	MyMPI_WaitAll(rsend); // wait for sends to finish !!
+	rsend.WaitAll(); // wait for sends to finish !!
       }
     }
 

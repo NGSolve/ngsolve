@@ -248,7 +248,7 @@ namespace ngstd
 
   template<typename DT, NODE_TYPE NT>
   void packaged_buffered_send(int rank, int np, DT* a, typename key_trait<NT>::TKEY* b, int n, int pkg_size, int p,
-			      Array<NG_MPI_Request> & requests)
+			      NgMPI_Requests & requests)
   {
     // NG_MPI_Datatype mpi_type_array = MPIT<DT>::mpi_type;
     NG_MPI_Datatype mpi_type_array = GetMPIType<DT>();
@@ -800,7 +800,7 @@ namespace ngstd
  
     if(rank == 0)
       {
-	Array<NG_MPI_Request> requests;
+	NgMPI_Requests requests;
 	//packaged_send
 	packaged_buffered_send<DT,NT>(rank, np, array, array_keys, base_array_size, pkg_size, 1, requests);
 
@@ -836,7 +836,7 @@ namespace ngstd
 
 	for(int j=0;(n_pkg-1)*pkg_size+j < n;j++)
 	  f(end_keys[j], end[j]);      
-	MyMPI_WaitAll (requests);
+	requests.WaitAll();
 	// free(end);
 	// free(end_keys);
       }
@@ -853,10 +853,10 @@ namespace ngstd
 	else //regular
 	  {
 	    //cout << "rank " << rank << " sends to " << rank+1 << " then gets from " << p_in1 << "/" << p_in2 << " and sends to " << p_out << endl;
-	    Array<NG_MPI_Request> requests;
+	    NgMPI_Requests requests;
 	    packaged_buffered_send<DT,NT>(rank, np, array, array_keys, base_array_size, pkg_size, rank+1, requests);
 	    merge_in_in_out<DT,NT>(pkg_size, rank, np, p_in1, p_in2, p_out);
-	    MyMPI_WaitAll (requests);
+	    requests.WaitAll();
 	  }
       }
     else
