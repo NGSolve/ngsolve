@@ -467,7 +467,7 @@ namespace ngcomp
           for(auto fi : Range(faces))
             {
               if(neighbours[fi][0] != -1 && neighbours[fi][1] != -1) continue;
-              int te1;
+              int te1 = 0;
               for(auto e : f2e[faces[fi]])
                 {
                   if(ei == e) continue;
@@ -478,7 +478,7 @@ namespace ngcomp
                 {
                   if(neighbours[fo][0] != -1 && neighbours[fo][1] != -1) continue;
                   if(neighbours[fi][0] == fo || fi == fo) continue;
-                  int te2;
+                  int te2 = 0;
                   for(auto e : f2e[faces[fo]])
                     {
                       if(ei == e) continue;
