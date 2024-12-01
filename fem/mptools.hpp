@@ -813,7 +813,6 @@ c
       scale = newscale;
     }
 
-    
     template <typename TARGET>
     void Transform (MultiPole<TARGET> & target, Vec<3> dist) const
     {
@@ -2095,12 +2094,12 @@ c
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET> & target) { mp.ShiftZ(z, target); }
 
+    using CoefficientFunction::Transform;        
     template <typename TARGET>
     void Transform (MultiPoleCF<TARGET> & target)
     {
       mp.Transform (target.MP(), target.Center()-center);
     }
-    
   };
 
   

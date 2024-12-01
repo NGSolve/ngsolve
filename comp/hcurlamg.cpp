@@ -512,7 +512,7 @@ namespace ngcomp
                   if(j == -1) continue;
                   if(i < j)
                     {
-                      int top_edge1, bot_edge1, top_edge2, bot_edge2;
+                      int top_edge1=-1, bot_edge1=-1, top_edge2=-1, bot_edge2=-1;
                       for(auto e1 : f2e[faces[i]])
                         {
                           if(e1 == ei) continue;

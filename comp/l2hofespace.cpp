@@ -3649,20 +3649,20 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               massfcR += ip.Weight() * mshapef * Trans(mshapec);
             }
 
-          Matrix<> vertid = {{1, 0}, {0, 1}, {0, 0}};
-          Matrix<> vertl = {{0.5, 0}, {0, 1}, {0, 0}};
-          Matrix<> vertr = {{1 , 0}, {0, 1}, {0.5, 0}};
-
-          FE_ElementTransformation<2, 2> trafoid(ET_TRIG, vertid);
-          FE_ElementTransformation<2, 2> trafol(ET_TRIG, vertl);
-          FE_ElementTransformation<2, 2> trafor(ET_TRIG, vertr);
-
-          VectorFiniteElement vecfc(felc, 2);
-          VectorFiniteElement vecfL(felfL, 2);
-          VectorFiniteElement vecfR(felfR, 2);
-
-          if (piola)
-            for (IntegrationPoint ip : ir)
+        Matrix<> vertid = {{1, 0}, {0, 1}, {0, 0}};
+        Matrix<> vertl = {{0.5, 0}, {0, 1}, {0, 0}};
+        Matrix<> vertr = {{1 , 0}, {0, 1}, {0.5, 0}};
+        
+        FE_ElementTransformation<2, 2> trafoid(ET_TRIG, vertid);
+        FE_ElementTransformation<2, 2> trafol(ET_TRIG, vertl);
+        FE_ElementTransformation<2, 2> trafor(ET_TRIG, vertr);
+        
+        VectorFiniteElement vecfc(felc, 2);
+        VectorFiniteElement vecfL(felfL, 2);
+        VectorFiniteElement vecfR(felfR, 2);
+        
+        if (piola)
+          for (IntegrationPoint ip : ir)
             {
               IntegrationPoint ipcL(0.5*ip(0), ip(1));
               IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)), ip(1));              
@@ -3680,17 +3680,17 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
               DiffOpIdVectorL2Piola2<2>::GenerateMatrix(vecfc, mipcr, Trans(mshapec), lh);
               DiffOpIdVectorL2Piola2<2>::GenerateMatrix(vecfR, mipfr, Trans(mshapef), lh);
-
+              
               massfR += ip.Weight() * mshapef * Trans(mshapef);
               massfcR += ip.Weight() * mshapef * Trans(mshapec);
             }
-
-          CalcInverse (massfL);
-          trigprolsL[classnr].SetSize(dim*ndof, dim*ndof);
-          trigprolsL[classnr] = massfL * massfcL;
-          CalcInverse (massfR);
-          trigprolsR[classnr].SetSize(dim*ndof, dim*ndof);
-          trigprolsR[classnr] = massfR * massfcR;
+        
+        CalcInverse (massfL);
+        trigprolsL[classnr].SetSize(dim*ndof, dim*ndof);
+        trigprolsL[classnr] = massfL * massfcL;
+        CalcInverse (massfR);
+        trigprolsR[classnr].SetSize(dim*ndof, dim*ndof);
+        trigprolsR[classnr] = massfR * massfcR;
       }
     }
 

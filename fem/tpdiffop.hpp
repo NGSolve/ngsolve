@@ -25,6 +25,7 @@ namespace ngfem
     virtual IntRange UsedDofs(const FiniteElement & fel) const override { return IntRange(0, fel.GetNDof()); }
 
     virtual bool operator== (const TPDifferentialOperator & diffop2) const { return false; }
+    virtual bool operator== (const DifferentialOperator & diffop2) const override { return false; }
     
     shared_ptr<DifferentialOperator> & GetEvaluators( int num)
     {
