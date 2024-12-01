@@ -7,11 +7,14 @@
 
 # circular convection; time-DG with skeleton-formulation
 
+
 from netgen.geom2d import unit_square
 import netgen.meshing
 
 
 from ngsolve import *
+
+SetNumThreads(1)
 
 from mpi4py.MPI import COMM_WORLD as comm
 rank = comm.rank
