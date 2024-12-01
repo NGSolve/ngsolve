@@ -54,7 +54,7 @@ namespace ngla
        Table adist_procs must provide the distant processes for each dof.
        table 
      */
-    ParallelDofs (NG_MPI_Comm acomm, Table<int> && adist_procs, 
+    ParallelDofs (NgMPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false);
 
     shared_ptr<ParallelDofs> SubSet (shared_ptr<BitArray> take_dofs) const;
@@ -131,7 +131,7 @@ namespace ngla
     bool complex;
     BitArray masterdofs;
   public:
-    ParallelDofs (NG_MPI_Comm acomm, Table<int> && adist_procs, 
+    ParallelDofs (NgMPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false)
       : es(dim), complex(iscomplex)
     { ; }

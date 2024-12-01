@@ -18,7 +18,7 @@ namespace ngla
 
   // extern void MyFunction();  ????
   
-  ParallelDofs :: ParallelDofs (NG_MPI_Comm acomm, Table<int> && adist_procs, 
+  ParallelDofs :: ParallelDofs (NgMPI_Comm acomm, Table<int> && adist_procs, 
 				int dim, bool iscomplex)
     : comm(acomm), dist_procs(adist_procs), es(dim), complex(iscomplex)
     
