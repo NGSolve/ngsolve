@@ -248,16 +248,15 @@ namespace ngla
 	send_data[master][nsend[master]++] = data[i];
     }
 
-    Array<NG_MPI_Request> requests; 
+    NgMPI_Requests requests; 
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (comm.ISend(send_data[i], i, NG_MPI_TAG_SOLVE));
+	  requests += comm.ISend(send_data[i], i, NG_MPI_TAG_SOLVE);
 	if (nrecv[i])
-	  requests.Append (comm.IRecv(recv_data[i], i, NG_MPI_TAG_SOLVE));
+	  requests += comm.IRecv(recv_data[i], i, NG_MPI_TAG_SOLVE);
       }
-
-    MyMPI_WaitAll (requests);
+    requests.WaitAll();
 
     Array<int> cnt(ntasks);
     cnt = 0;
@@ -336,16 +335,15 @@ namespace ngla
           for (auto p : dps)
             send_data[p][nsend[p]++] = data[i];
     
-    Array<NG_MPI_Request> requests;
+    NgMPI_Requests requests;
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests.Append (comm.ISend (send_data[i], i, NG_MPI_TAG_SOLVE));
+	  requests += comm.ISend (send_data[i], i, NG_MPI_TAG_SOLVE);
 	if (nrecv[i])
-	  requests.Append (comm.IRecv (recv_data[i], i, NG_MPI_TAG_SOLVE));
+	  requests += comm.IRecv (recv_data[i], i, NG_MPI_TAG_SOLVE);
       }
-
-    MyMPI_WaitAll (requests);
+    requests.WaitAll();
 
     Array<int> cnt(ntasks);
     cnt = 0;
