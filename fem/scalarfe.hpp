@@ -288,6 +288,9 @@ namespace ngfem
     { 
       for (int i = 0; i < avnums.Size(); i++) vnums[i] = avnums[i]; 
     }
+    void SetVertexNumbers (FlatArray<int> vnums) override
+    { VertexOrientedFE<ET>::SetVertexNumbers(vnums); }
+    
 
     /// assign vertex number
     void SetVertexNumber (int nr, int vnum) { vnums[nr] = vnum; }
@@ -301,7 +304,7 @@ namespace ngfem
     NGS_DLL_HEADER void CalcTraceMatrix (int facet, FlatMatrix<> trace) const;
     NGS_DLL_HEADER void CalcGradientMatrix (FlatMatrix<> gmat) const;
 
-    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const;
+    HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const override;
 
     NGS_DLL_HEADER virtual void GetGradient (FlatVector<> coefs, FlatMatrixFixWidth<D> grad) const;
     NGS_DLL_HEADER virtual void GetGradientTrans (FlatMatrixFixWidth<D> grad, FlatVector<> coefs) const;
