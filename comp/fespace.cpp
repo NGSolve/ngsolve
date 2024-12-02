@@ -1586,8 +1586,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
   shared_ptr<Table<int>> FESpace :: CreateSmoothingBlocks (const Flags & flags) const
   {
-    // size_t nd = GetNDof();
-
     bool eliminate_internal =
       flags.GetDefineFlag("eliminate_internal") ||
       flags.GetDefineFlag("condense");
@@ -1623,6 +1621,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         flags.GetStringFlag("blocktype")=="edge" ||
         flags.GetStringFlag("blocktype")=="face" ||
         flags.GetStringFlag("blocktype")=="facet" ||
+        flags.GetStringFlag("blocktype")=="element" ||        
         flags.GetStringFlag("blocktype")=="vertexpatch" ||        
         flags.GetStringFlag("blocktype")=="vertexedge")
       blocktypes += flags.GetStringFlag("blocktype");
@@ -1672,6 +1671,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
                         creator.Add (base+i, d);
                   }
                 base += ma->GetNFaces();
+              }
+
+            if (blocktypes.Contains("element"))
+              {
+                for (int i : Range(ma->GetNE(VOL)))
+                  {
+                    GetDofNrs ( ElementId(VOL,i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        creator.Add (base+i, d);
+                  }
+                base += ma->GetNE(VOL);
               }
             
             if (blocktypes.Contains("vertexedge"))
@@ -1735,7 +1746,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 base += ma->GetNV();                
               }
 
-
+            if (creator.GetMode()==1)
+              creator.SetSize(base);
           }
 
         Table<int> table = creator.MoveTable();
