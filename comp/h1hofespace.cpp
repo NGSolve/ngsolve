@@ -535,6 +535,9 @@ into the wirebasket.
     docu.Arg("hoprolongation") = "bool = false\n"
       "  (experimental, only trigs) creates high order prolongation,\n"
       "  and switches off low-order space";
+    docu.Arg("orderinner");
+    docu.Arg("orderedge");
+    docu.Arg("orderface");    
     return docu;
   }
 
@@ -2548,6 +2551,10 @@ into the wirebasket.
     docu.Arg("dirichletz_bbbnd") = "regexpr\n"
       "  Dirichlet bbboundary for the third component";
 
+    docu.Arg("orderinner");
+    docu.Arg("orderedge");
+    docu.Arg("orderface");    
+    
     return docu;
   }
 
