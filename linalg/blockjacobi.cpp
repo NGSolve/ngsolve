@@ -1297,6 +1297,25 @@ namespace ngla
   }
 
 
+  template <class TM, class TV_ROW, class TV_COL>
+  shared_ptr<BaseSparseMatrix> BlockJacobiPrecond<TM,TV_ROW,TV_COL> :: 
+  CreateSparseMatrix() const
+  {
+    Array<int> ia, ja;
+    Array<TM> vals;
+    for (size_t i = 0; i < invdiag.Size(); i++)
+      {
+        auto block = (*blocktable)[i];
+        for (int j = 0; j < block.Size(); j++)
+          for (int k = 0; k < block.Size(); k++)
+            {
+              ia += block[j];
+              ja += block[k];
+              vals += invdiag[i](j,k);
+            }
+      }
+    return SparseMatrixTM<TM>::CreateFromCOO (ia, ja, vals, Height(), Width());
+  }
 
 
 
