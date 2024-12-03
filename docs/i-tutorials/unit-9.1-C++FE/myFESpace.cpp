@@ -125,7 +125,7 @@ void ExportMyFESpace(py::module m)
 
   cout << "called ExportMyFESpace" << endl;
 
-  ExportFESpace<MyFESpace>(m, "MyFESpace", true)
+  ExportFESpace<MyFESpace>(m, "MyFESpace")
     .def("GetNVert", &MyFESpace::GetNVert, 
             "return number of vertices")
     ;

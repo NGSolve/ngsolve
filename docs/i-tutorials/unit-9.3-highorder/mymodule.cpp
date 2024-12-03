@@ -16,7 +16,7 @@ extern "C" void mymodule(py::object & res) {
   py::module m = py::module::create_extension_module("", "", &def);    
 
   using namespace ngcomp;
-  ExportFESpace<MyHighOrderFESpace>(m, "MyHighOrderFESpace", true);
+  ExportFESpace<MyHighOrderFESpace>(m, "MyHighOrderFESpace");
 
   
   res = m;    
