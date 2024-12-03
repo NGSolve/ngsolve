@@ -64,6 +64,13 @@ namespace ngcomp
                        shared_ptr<SumOfIntegrals> lf,
                        shared_ptr<GridFunction> gf,
                        LocalHeap & lh);
+
+
+  shared_ptr<BaseMatrix>
+  CreateMatrixFreeOperator (shared_ptr<FESpace> source_fes,
+                            shared_ptr<FESpace> target_fes,
+                            std::function<tuple<Matrix<>,Array<int>,Array<int>>(ElementId)> creator,
+                            LocalHeap & lh);
 }
 
 namespace ngfem
@@ -4403,6 +4410,14 @@ drawelems: BitArray
          { PatchwiseSolve(bf, lf, gf, lhp.GetLH()); },
          py::arg("bf"), py::arg("lf"), py::arg("gf"));
 
+   m.def("MatrixFreeOperator",
+         [&] (shared_ptr<FESpace> source_fes, py::object lam)
+         {
+           auto creator = py::cast<std::function<tuple<Matrix<>,Array<int>,Array<int>>(ElementId)>> (lam);
+           return CreateMatrixFreeOperator(source_fes, nullptr, creator, lhp.GetLH());
+         });
+
+   
    py::class_<InterpolateProxy, shared_ptr<InterpolateProxy>, ProxyFunction> (m, "InterpolateProxy");
    m.def("Interpolate", 
          [] (shared_ptr<CoefficientFunction> cf, shared_ptr<FESpace> fes, int bonus_intorder, std::optional<std::string> opname)
