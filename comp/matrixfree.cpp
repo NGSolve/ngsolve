@@ -38,7 +38,7 @@ namespace ngcomp
             source_fes->GetDofNrs(ElementId(VOL,elclass_inds[i]), dofs);
             for (int j = 0; j < sind.Size(); j++)
               sdofs[i][j] = dofs[sind[j]];
-            for (int j = 0; j < sind.Size(); j++)
+            for (int j = 0; j < tind.Size(); j++)
               tdofs[i][j] = dofs[tind[j]];
           }
 
