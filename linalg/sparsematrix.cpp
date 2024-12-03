@@ -138,6 +138,7 @@ namespace ngla
     firsti.Swap (graph.firsti);
     colnr.Swap (graph.colnr);
     CalcBalancing ();
+    mem_tracer = std::move(graph.mem_tracer);
   }
 
 

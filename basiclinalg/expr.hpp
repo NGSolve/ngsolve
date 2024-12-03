@@ -11,6 +11,7 @@
 #include <core/localheap.hpp>
 #include <core/exception.hpp>
 
+#include <cstddef>
 #include <ngs_stdcpp_include.hpp>  // for INLINE
 #include "complex_wrapper.hpp"
 
@@ -265,6 +266,7 @@ namespace ngbla
     explicit constexpr undefined_size(IC<S> s) : size(s) { }
     explicit constexpr operator size_t() const { return size; }
     explicit constexpr operator int() const { return size; }    
+    explicit constexpr operator ptrdiff_t() const { return size; }
   };
 
     
