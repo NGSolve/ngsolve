@@ -224,6 +224,10 @@ namespace ngcomp
       : ma(ama), order(aorder), first_dofs(afirst_dofs) 
     {
       vb = ma->GetDimension() == 3 ? BND : VOL;
+    }
+    
+    void CalcMatrices()
+    {
       for (int classnr = 0; classnr < 32; classnr++)
         {
           Array<size_t> verts{GetClassRealization(classnr)};
@@ -297,6 +301,8 @@ namespace ngcomp
           trig_creation_class = 0;
           return;
         }
+
+      CalcMatrices();
       
       trig_creation_class.SetSize(ne);
       Array<IVec<3, size_t>> trig_creation_verts(ne);
@@ -437,6 +443,9 @@ namespace ngcomp
     ///
     L2HoProlongationTet(shared_ptr<MeshAccess> ama, int aorder, const Array<int> & afirst_dofs)
       : ma(ama), order(aorder), first_dofs(afirst_dofs) 
+    { }
+
+    void CalcMatrices()
     {
       for (int classnr = 0; classnr < 1024; classnr++)
         {
@@ -521,6 +530,8 @@ namespace ngcomp
           return;
         }
 
+      CalcMatrices();
+      
       tet_creation_class.SetSize(ne);
       Array<IVec<4, size_t>> tet_creation_verts(ne);
       for (size_t i = oldne; i < ne; i++)
