@@ -23,6 +23,7 @@ namespace ngcomp
       and the flags from the define command in the pde-file
     */
     MyHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags);
+    virtual ~MyHighOrderFESpace() { } 
 
     // a name for our new fe-space
     string GetClassName () const override
