@@ -12,7 +12,9 @@
 #include <finiteelement.hpp>
 #include <diffop.hpp>
 #include <symbolicintegrator.hpp>   // for ProxyFunction
-#include <la.hpp>
+
+#include <basevector.hpp>
+#include <basematrix.hpp>
 
 #include "ngsobject.hpp"
 

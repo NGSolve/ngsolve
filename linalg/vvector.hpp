@@ -1,3 +1,8 @@
+#ifndef FILE_VVECTOR
+#define FILE_VVECTOR
+
+#include "basevector.hpp"
+
 namespace ngla
 {
 
@@ -197,3 +202,7 @@ namespace ngla
   extern template class VVector<double>;
   extern template class VVector<Complex>;
 }
+
+
+
+#endif

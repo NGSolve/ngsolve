@@ -5,7 +5,7 @@ add_library(ngla ${NGS_LIB_TYPE}
         blockjacobi.cpp cg.cpp chebyshev.cpp commutingAMG.cpp eigen.cpp	     
         jacobi.cpp order.cpp pardisoinverse.cpp sparsecholesky.cpp	     
         sparsematrix.cpp sparsematrix_dyn.cpp special_matrix.cpp superluinverse.cpp		     
-        mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp   
+        mumpsinverse.cpp elementbyelement.cpp arnoldi.cpp paralleldofs.cpp diagonalmatrix.cpp
         python_linalg.cpp umfpackinverse.cpp
         ../parallel/parallelvvector.cpp ../parallel/parallel_matrices.cpp 
 )
@@ -40,7 +40,7 @@ install( FILES
         basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp multivector.hpp
         chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp   
         pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp
-        sparsematrix_impl.hpp sparsematrix_dyn.hpp
+        sparsematrix_impl.hpp sparsematrix_dyn.hpp diagonalmatrix.hpp
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp
         umfpackinverse.hpp vvector.hpp python_linalg.hpp
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp

@@ -10,7 +10,12 @@
 
 #define FILE_BASEVECTOR_CPP
 
-#include <la.hpp>
+// #include <la.hpp>
+
+#include "basevector.hpp"
+#include "vvector.hpp"
+#include "multivector.hpp"
+
 #include "../parallel/parallelvector.hpp"   // for BlockVector
 
 /*

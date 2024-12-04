@@ -9,6 +9,8 @@
 
 
 #include "fespace.hpp"
+#include <sparsematrix.hpp>
+
 
 namespace ngcomp
 {

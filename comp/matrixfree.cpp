@@ -1,4 +1,6 @@
 #include <fespace.hpp>
+#include <elementbyelement.hpp>
+
 using namespace ngcomp;
 
 namespace ngcomp
@@ -8,7 +10,7 @@ namespace ngcomp
                                                    std::function<tuple<Matrix<>,Array<int>,Array<int>>(ElementId)> creator,
                                                    LocalHeap & lh)
   {
-    bool mixed = target_fes != nullptr;
+    // bool mixed = target_fes != nullptr;
     if (!target_fes) target_fes = source_fes;
     auto ma = source_fes->GetMeshAccess();
 
@@ -22,7 +24,7 @@ namespace ngcomp
         if (elclass_inds.Size() == 0) continue;
       
         ElementId ei(VOL,elclass_inds[0]);
-        auto & trafo = ma->GetTrafo(ei, lh);
+        // auto & trafo = ma->GetTrafo(ei, lh);
         // auto & felx = source_fes->GetFE (ei, lh);
         // auto & fely = GetTestSpace()->GetFE (ei, lh);
         // MixedFiniteElement fel(felx, fely);

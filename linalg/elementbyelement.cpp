@@ -8,7 +8,10 @@
    Element by element matrix
 */
 
-#include <la.hpp>
+// #include <la.hpp>
+
+#include "elementbyelement.hpp"
+
 namespace ngla
 {
   using namespace ngla;

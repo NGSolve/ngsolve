@@ -15,6 +15,7 @@
 #include <l2hofetp.hpp>
 #include <bdbequations.hpp>
 #include <diffop_impl.hpp>
+#include <diagonalmatrix.hpp>
 
 using namespace ngmg;
 

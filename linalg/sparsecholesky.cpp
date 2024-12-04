@@ -7,10 +7,12 @@
 /* *************************************************************************/
 
 #include <core/register_archive.hpp>
-#include <la.hpp>
 
 #include <core/concurrentqueue.h>
 #include <core/taskmanager.hpp>
+
+// #include <la.hpp>
+#include "sparsecholesky.hpp"
 
 
 typedef moodycamel::ConcurrentQueue<int> TQueue; 

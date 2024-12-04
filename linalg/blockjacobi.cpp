@@ -5,8 +5,8 @@
 /**************************************************************************/
 
 
-#include <la.hpp>
-
+// #include <la.hpp>
+#include "blockjacobi.hpp"
 
 namespace ngla
 {

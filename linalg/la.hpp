@@ -27,6 +27,7 @@ namespace ngla
 #include "jacobi.hpp"
 #include "blockjacobi.hpp"
 #include "commutingAMG.hpp"
+#include "diagonalmatrix.hpp"
 #include "special_matrix.hpp"
 #include "elementbyelement.hpp"
 #include "cg.hpp"

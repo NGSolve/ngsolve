@@ -10,6 +10,9 @@
 
 #include "fespace.hpp"
 #include <specialelement.hpp>
+#include <sparsematrix.hpp>
+#include <elementbyelement.hpp>
+
 
 namespace ngcomp
 {
@@ -746,40 +749,6 @@ namespace ngcomp
 
 
 
-  template <class TM>
-  class NGS_DLL_HEADER T_BilinearFormDiagonal : public S_BilinearForm<typename mat_traits<TM>::TSCAL>
-  {
-
-  public:
-    typedef typename mat_traits<TM>::TSCAL TSCAL;
-    typedef typename mat_traits<TM>::TV_COL TV_COL;
-    typedef DiagonalMatrix<TM> TMATRIX;
-    shared_ptr<TMATRIX> mymatrix;
-    
-  protected:
-
-  public:
-    T_BilinearFormDiagonal (shared_ptr<FESpace> afespace, const string & aname,
-			    const Flags & flags);
-    virtual ~T_BilinearFormDiagonal ();
-
-    virtual void AllocateMatrix () override;
-
-    virtual void AddElementMatrix (FlatArray<int> dnums1,
-				   FlatArray<int> dnums2,
-				   BareSliceMatrix<TSCAL> elmat,
-				   ElementId id, bool addatomic, 
-				   LocalHeap & lh) override;
-
-    virtual void AddDiagElementMatrix (FlatArray<int> dnums1,
-				       FlatVector<TSCAL> diag,
-				       bool inner_element, int elnr,
-				       LocalHeap & lh) override;
-  };
-
-
-
-
 
   class ComponentBilinearForm : public BilinearForm
   {
@@ -982,30 +951,6 @@ namespace ngcomp
   };  
   
 
-  
-
-  /**
-     This bilinearform stores the element-matrices
-   */
-  template<class SCAL>
-  class ElementByElement_BilinearForm : public S_BilinearForm<SCAL>
-  {
-  public:
-    ElementByElement_BilinearForm (shared_ptr<FESpace> afespace, 
-                                   const string & aname,
-                                   const Flags & flags);
-    virtual ~ElementByElement_BilinearForm () override;
-    
-    virtual void AllocateMatrix () override;
-    // virtual AutoVector CreateRowVector() const override;
-    // virtual AutoVector CreateColVector() const override;
-    
-    virtual void AddElementMatrix (FlatArray<int> dnums1,
-                                   FlatArray<int> dnums2,
-                                   BareSliceMatrix<SCAL> elmat,
-                                   ElementId id, bool addatomic,
-                                   LocalHeap & lh) override;    
-  };
   
   
   

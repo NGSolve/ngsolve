@@ -9,7 +9,7 @@
 /*********************************************************************/
 
 #include <bilinearform.hpp>
-#include <la.hpp>
+// #include <la.hpp>
 
 namespace ngmg
 {

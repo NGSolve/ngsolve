@@ -14,9 +14,6 @@
 namespace ngfem
 {
   using namespace ngbla;
-  // using ngcore::INT;
-
-
   
   /*
     Toplogy of reference elements

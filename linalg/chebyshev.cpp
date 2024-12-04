@@ -10,7 +10,9 @@ Chebyshev iteration
   
 */ 
 
-#include <la.hpp>
+// #include <la.hpp>
+#include "chebyshev.hpp"
+
 namespace ngla
 {
   using namespace ngla;

@@ -9,6 +9,7 @@
 
 #include "fespace.hpp"
 #include "h1hofespace.hpp"
+#include <sparsematrix.hpp>
 
 namespace ngcomp
 {
@@ -23,7 +24,7 @@ namespace ngcomp
   protected:
 
     typedef short TORDER;
-
+    
     // Level
     int level;
     Array<DofId> first_edge_dof;

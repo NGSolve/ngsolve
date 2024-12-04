@@ -11,6 +11,10 @@
    Element by element matrix
 */
 
+
+#include "basematrix.hpp"
+#include "blockjacobi.hpp"
+
 namespace ngla
 {
 
