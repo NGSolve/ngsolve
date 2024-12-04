@@ -8,6 +8,9 @@
 /**************************************************************************/
 
 
+#include "vvector.hpp"
+#include "basematrix.hpp"
+
 namespace ngla
 {
 

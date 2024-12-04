@@ -8,7 +8,15 @@
    base class in matrix hierarchy
 */
 
-#include <la.hpp>
+// #include <la.hpp>
+
+#include "basevector.hpp"
+// #include "vvector.hpp"
+#include "multivector.hpp"
+#include "basematrix.hpp"
+#include "sparsematrix.hpp"
+#include "special_matrix.hpp"
+
 #include <../parallel/parallel_matrices.hpp>
 
 namespace ngla

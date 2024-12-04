@@ -7149,6 +7149,38 @@ namespace ngcomp
 
 
 
+
+  template <class TM>
+  class NGS_DLL_HEADER T_BilinearFormDiagonal : public S_BilinearForm<typename mat_traits<TM>::TSCAL>
+  {
+
+  public:
+    typedef typename mat_traits<TM>::TSCAL TSCAL;
+    typedef typename mat_traits<TM>::TV_COL TV_COL;
+    typedef DiagonalMatrix<TM> TMATRIX;
+    shared_ptr<TMATRIX> mymatrix;
+    
+  protected:
+
+  public:
+    T_BilinearFormDiagonal (shared_ptr<FESpace> afespace, const string & aname,
+			    const Flags & flags);
+    virtual ~T_BilinearFormDiagonal ();
+
+    virtual void AllocateMatrix () override;
+
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+				   FlatArray<int> dnums2,
+				   BareSliceMatrix<TSCAL> elmat,
+				   ElementId id, bool addatomic, 
+				   LocalHeap & lh) override;
+
+    virtual void AddDiagElementMatrix (FlatArray<int> dnums1,
+				       FlatVector<TSCAL> diag,
+				       bool inner_element, int elnr,
+				       LocalHeap & lh) override;
+  };
+
   
 
 
@@ -7335,6 +7367,87 @@ namespace ngcomp
 
 
 
+
+
+  /**
+     This bilinearform stores the element-matrices
+   */
+  template<class SCAL>
+  class ElementByElement_BilinearForm : public S_BilinearForm<SCAL>
+  {
+  public:
+    ElementByElement_BilinearForm (shared_ptr<FESpace> afespace, 
+                                   const string & aname,
+                                   const Flags & flags);
+    virtual ~ElementByElement_BilinearForm () override;
+    
+    virtual void AllocateMatrix () override;
+    // virtual AutoVector CreateRowVector() const override;
+    // virtual AutoVector CreateColVector() const override;
+    
+    virtual void AddElementMatrix (FlatArray<int> dnums1,
+                                   FlatArray<int> dnums2,
+                                   BareSliceMatrix<SCAL> elmat,
+                                   ElementId id, bool addatomic,
+                                   LocalHeap & lh) override;    
+  };
+  
+
+
+
+  
+  template <class SCAL>
+  ElementByElement_BilinearForm<SCAL> :: 
+  ElementByElement_BilinearForm (shared_ptr<FESpace> afespace, const string & aname,
+                                 const Flags & flags)
+    : S_BilinearForm<SCAL> (afespace, aname, flags)
+  { ; }
+
+  template <class SCAL>
+  ElementByElement_BilinearForm<SCAL> :: ~ElementByElement_BilinearForm ()
+  { ; }
+
+
+
+  
+  template <class SCAL>
+  void ElementByElement_BilinearForm<SCAL> :: AllocateMatrix ()
+  {
+    auto fespace = this->fespace;
+    this->mats.Append (make_shared<ElementByElementMatrix<SCAL>> (fespace->GetNDof(), this->ma->GetNE()+this->ma->GetNSE() ));
+  }
+
+  /*
+  template<class SCAL>
+    AutoVector ElementByElement_BilinearForm<SCAL> :: CreateRowVector() const
+  {
+    return make_unique<VVector<SCAL>> (this->GetTrialSpace()->GetNDof());
+  }
+  template<class SCAL>
+    AutoVector ElementByElement_BilinearForm<SCAL> :: CreateColVector() const
+  {
+    return make_unique<VVector<SCAL>> (this->GetTestSpace()->GetNDof());
+  }
+  */
+
+  template<class SCAL>
+  void ElementByElement_BilinearForm<SCAL> :: 
+  AddElementMatrix (FlatArray<int> dnums1,
+                    FlatArray<int> dnums2,
+                    BareSliceMatrix<SCAL> elmat,
+                    ElementId id, bool addatomic,
+                    LocalHeap & lh)
+  {
+    int nr = id.Nr();
+    if (id.IsBoundary()) nr += this->ma->GetNE();
+
+    if (addatomic) throw Exception ("atomic add for EBE Matrix not implemented");    
+    dynamic_cast<ElementByElementMatrix<SCAL>&> (this->GetMatrix()).AddElementMatrix (nr, dnums1, dnums2, elmat);
+  }
+  
+
+
+  
 
 
 
@@ -7768,56 +7881,11 @@ namespace ngcomp
     return make_unique<S_BaseVectorPtr<SCAL>> (afespace->GetNDof(), afespace->GetDimension());
   }
   */
-  
-  template <class SCAL>
-  ElementByElement_BilinearForm<SCAL> :: 
-  ElementByElement_BilinearForm (shared_ptr<FESpace> afespace, const string & aname,
-                                 const Flags & flags)
-    : S_BilinearForm<SCAL> (afespace, aname, flags)
-  { ; }
-
-  template <class SCAL>
-  ElementByElement_BilinearForm<SCAL> :: ~ElementByElement_BilinearForm ()
-  { ; }
 
 
 
-  
-  template <class SCAL>
-  void ElementByElement_BilinearForm<SCAL> :: AllocateMatrix ()
-  {
-    auto fespace = this->fespace;
-    this->mats.Append (make_shared<ElementByElementMatrix<SCAL>> (fespace->GetNDof(), this->ma->GetNE()+this->ma->GetNSE() ));
-  }
 
-  /*
-  template<class SCAL>
-    AutoVector ElementByElement_BilinearForm<SCAL> :: CreateRowVector() const
-  {
-    return make_unique<VVector<SCAL>> (this->GetTrialSpace()->GetNDof());
-  }
-  template<class SCAL>
-    AutoVector ElementByElement_BilinearForm<SCAL> :: CreateColVector() const
-  {
-    return make_unique<VVector<SCAL>> (this->GetTestSpace()->GetNDof());
-  }
-  */
 
-  template<class SCAL>
-  void ElementByElement_BilinearForm<SCAL> :: 
-  AddElementMatrix (FlatArray<int> dnums1,
-                    FlatArray<int> dnums2,
-                    BareSliceMatrix<SCAL> elmat,
-                    ElementId id, bool addatomic,
-                    LocalHeap & lh)
-  {
-    int nr = id.Nr();
-    if (id.IsBoundary()) nr += this->ma->GetNE();
-
-    if (addatomic) throw Exception ("atomic add for EBE Matrix not implemented");    
-    dynamic_cast<ElementByElementMatrix<SCAL>&> (this->GetMatrix()).AddElementMatrix (nr, dnums1, dnums2, elmat);
-  }
-  
 
   template class ElementByElement_BilinearForm<double>;
   template class ElementByElement_BilinearForm<Complex>;

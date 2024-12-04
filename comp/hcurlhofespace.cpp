@@ -11,6 +11,7 @@
 
 // #include <../fem/hcurlhdiv_dshape.hpp> 
 #include <multigrid.hpp>
+#include <special_matrix.hpp>   // for embedding
 
 // extern template class ngla::VFlatVector<double>;
 

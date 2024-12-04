@@ -9,10 +9,12 @@
 
 
 #include <core/mpi_wrapper.hpp>
+#include <ngstd.hpp>
 
 namespace ngla
 {
-
+  using namespace ngstd;
+  
 #ifdef PARALLEL
 
   /**

@@ -9,8 +9,6 @@
 
 
 #include <nginterface_v2.hpp>
-#include <core/ranges.hpp>
-
 #include <elementtopology.hpp>
 
 namespace ngfem
@@ -26,7 +24,6 @@ namespace ngcomp
 {
   class PML_Transformation;
   
-  // using ngcore::INT;
   using netgen::Ng_Node;
   using ngfem::ELEMENT_TYPE;
   

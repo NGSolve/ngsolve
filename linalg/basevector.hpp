@@ -7,10 +7,13 @@
 /* Date:   7. Feb. 2003                                              */
 /*********************************************************************/
 
-
+#include <bla.hpp>
+#include "paralleldofs.hpp"
 
 namespace ngla
 {
+  using namespace ngbla;
+  
   class BaseVector;
   class AutoVector;
   class MultiVector;

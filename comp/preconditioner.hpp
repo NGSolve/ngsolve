@@ -7,8 +7,10 @@
 /* Date:   10. Jul. 2000                                             */
 /*********************************************************************/
 
-#include <la.hpp>
+// #include <la.hpp>
+#include <basematrix.hpp>
 #include <mgpre.hpp>
+#include <chebyshev.hpp>
 
 namespace ngcomp
 {

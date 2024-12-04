@@ -11,6 +11,10 @@
   sparse cholesky factorization
 */
 
+#include "basematrix.hpp"
+#include "sparsematrix.hpp"
+#include "order.hpp"
+
 namespace ngla
 {
 

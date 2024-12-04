@@ -21,6 +21,8 @@
 #include <diffop_impl.hpp>
 #include <fesconvert.hpp>
 
+#include <special_matrix.hpp>   // for embedding
+
 using namespace ngmg; 
 
 
