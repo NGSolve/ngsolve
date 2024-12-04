@@ -1527,9 +1527,16 @@ namespace ngfem
           // static Timer tsimd(string("SymbolicBFI::CalcElementMatrixAddSIMD")+typeid(SCAL).name()+typeid(SCAL_SHAPES).name()+typeid(SCAL_RES).name(), NoTracing);          
           // RegionTracer regsimd(TaskManager::GetThreadId(), tsimd);
  
-          const SIMD_IntegrationRule& ir = Get_SIMD_IntegrationRule (fel, lh);
-          SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
+          const SIMD_IntegrationRule& bigir = Get_SIMD_IntegrationRule (fel, lh);
 
+          constexpr size_t BS = 64;
+          for (size_t ii = 0; ii < bigir.Size(); ii+=BS)
+            {
+              HeapReset hr(lh);
+              int bs = min2(BS, bigir.Size()-ii);
+              auto ir = bigir.Range(ii, ii+bs);
+          
+          SIMD_BaseMappedIntegrationRule & mir = trafo(ir, lh);
           // NgProfiler::StopThreadTimer (timer_SymbBFIstart, TaskManager::GetThreadId());
 
           ProxyUserData ud;
@@ -1771,7 +1778,7 @@ namespace ngfem
               k1 += proxy1->Dimension();
               k1nr++;
             }
-
+            }
           // ir.NothingToDelete();
           return;
         }
