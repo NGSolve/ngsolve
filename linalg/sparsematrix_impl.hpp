@@ -750,7 +750,34 @@ namespace ngla
   {
     ; 
   }
+  
 
+  template <class TM, class TV>
+  shared_ptr<BaseJacobiPrecond>
+  SparseMatrixSymmetric<TM,TV> :: CreateJacobiPrecond (shared_ptr<BitArray> inner) const 
+  { 
+    return make_shared<JacobiPrecondSymmetric<TM,TV>> (*this, inner);
+  }
+  
+
+  template <class TM, class TV>  
+  shared_ptr<BaseBlockJacobiPrecond>
+  SparseMatrixSymmetric<TM,TV> :: CreateBlockJacobiPrecond (shared_ptr<Table<int>> blocks,
+                                                            const BaseVector * constraint,
+                                                            bool parallel,
+                                                            shared_ptr<BitArray> freedofs) const
+  { 
+    // return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
+    return make_shared<BlockJacobiPrecondSymmetric<TM,TV>>
+      ( dynamic_pointer_cast<const SparseMatrixSymmetric>
+        (this->shared_from_this()),
+        blocks);
+  }
+  
+
+
+
+  
   template <class TM, class TV>
   void SparseMatrixSymmetric<TM,TV> :: 
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
