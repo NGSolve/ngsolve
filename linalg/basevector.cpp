@@ -11,11 +11,13 @@
 #define FILE_BASEVECTOR_CPP
 
 #include <la.hpp>
-
-// #ifdef PARALLEL
 #include "../parallel/parallelvector.hpp"   // for BlockVector
-// #endif
 
+/*
+#include <bla.hpp>
+#include <paralleldofs.hpp>
+#include <basevector.hpp>
+*/
 
 namespace ngla
 {
