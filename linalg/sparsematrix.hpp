@@ -796,24 +796,12 @@ namespace ngla
       this->AddElementMatrixSymmetric (dnums1, elmat, use_atomic);
     }
     
-    virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (shared_ptr<BitArray> inner) const override
-    { 
-      return make_shared<JacobiPrecondSymmetric<TM,TV>> (*this, inner);
-    }
-
+    virtual shared_ptr<BaseJacobiPrecond> CreateJacobiPrecond (shared_ptr<BitArray> inner) const override;
     virtual shared_ptr<BaseBlockJacobiPrecond>
       CreateBlockJacobiPrecond (shared_ptr<Table<int>> blocks,
                                 const BaseVector * constraint = 0,
                                 bool parallel  = 1,
-                                shared_ptr<BitArray> freedofs = NULL) const override
-    { 
-      // return make_shared<BlockJacobiPrecondSymmetric<TM,TV>> (*this, blocks);
-      return make_shared<BlockJacobiPrecondSymmetric<TM,TV>>
-        ( dynamic_pointer_cast<const SparseMatrixSymmetric>
-          (this->shared_from_this()),
-          blocks);
-    }
-
+                                shared_ptr<BitArray> freedofs = NULL) const override;
 
     virtual shared_ptr<BaseSparseMatrix> Restrict (const SparseMatrixTM<double> & prol,
 					 shared_ptr<BaseSparseMatrix> cmat = nullptr) const override;
