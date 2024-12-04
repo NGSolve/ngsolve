@@ -212,7 +212,11 @@ namespace ngcomp
     {
       Flags flagsL2;
       flagsL2.SetFlag ("order", afes.GetOrder());
-      if(std::none_of(afes.DefinedOn(VOL).begin(), afes.DefinedOn(VOL).end(), [](bool b) { return b; }))
+      bool hasvol=false;
+      for (auto regid : Range(afes.GetMeshAccess()->GetNRegions(VOL)))
+        if (afes.DefinedOn(VOL,regid)) hasvol=true;
+      // if(std::none_of(afes.DefinedOn(VOL).begin(), afes.DefinedOn(VOL).end(), [](bool b) { return b; }))
+      if(!hasvol)
         {
           fesL2 = CreateFESpace("l2surf", afes.GetMeshAccess(), flagsL2);
           vb = BND;

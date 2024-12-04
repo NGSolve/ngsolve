@@ -893,7 +893,8 @@ global system.
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
     */
-    if(low_order_space) prol->Update(*this);
+    // if(low_order_space) prol->Update(*this);
+    if (prol) prol->Update(*this);
 
     UpdateCouplingDofArray();
   }
