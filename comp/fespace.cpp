@@ -128,12 +128,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         Region dir(ma, BND, flags.GetStringFlag("dirichlet"));
         dirichlet_constraints[BND] |= dir.Mask(); // that's what it was before, can we just assign ? 
-        /*
-        std::regex pattern(flags.GetStringFlag("dirichlet"));
-        for (int i : Range(ma->GetNRegions(BND)))
-          if (std::regex_match (string(ma->GetMaterial(BND, i)), pattern))
-            dirichlet_constraints[BND].SetBit(i);
-        */
       }
 
     dirichlet_constraints[BBND].SetSize (ma->GetNRegions(BBND));
@@ -148,13 +142,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         Region dir(ma, BBND, flags.GetStringFlag("dirichlet_bbnd"));
         dirichlet_constraints[BBND] |= dir.Mask(); // that's what it was before, can we just assign ? 
-        
-        /*
-        std::regex pattern(flags.GetStringFlag("dirichlet_bbnd"));
-        for (int i : Range(ma->GetNRegions(BBND)))
-          if (std::regex_match (string(ma->GetMaterial(BBND, i)), pattern))
-            dirichlet_constraints[BBND].SetBit(i);
-        */
       }
 
     dirichlet_constraints[BBBND].SetSize (ma->GetNRegions(BBBND));
@@ -169,13 +156,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       {
         Region dir(ma, BBBND, flags.GetStringFlag("dirichlet_bbbnd"));
         dirichlet_constraints[BBBND] |= dir.Mask(); // that's what it was before, can we just assign ? 
-        /*
-        std::regex pattern(flags.GetStringFlag("dirichlet_bbbnd"));
-        for (int i : Range(ma->GetNRegions(BBBND)))
-          if (std::regex_match (string(ma->GetMaterial(BBBND, i)), pattern))
-            
-            dirichlet_constraints[BBBND].SetBit(i);
-        */
       }
     
     if (flags.NumListFlagDefined("definedon") || 
@@ -330,26 +310,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     
     level_updated = -1;
-    /*
-    point = NULL;
-    segm = NULL;
-    trig = NULL;
-    quad = NULL;
-    tet = NULL;
-    prism = NULL;
-    pyramid = NULL;
-    hex = NULL;
-    */
-    /*
-    dummy_tet = new DummyFE<ET_TET>();
-    dummy_pyramid = new DummyFE<ET_PYRAMID>();
-    dummy_prism = new DummyFE<ET_PRISM>();
-    dummy_hex = new DummyFE<ET_HEX>();
-    dummy_trig = new DummyFE<ET_TRIG>();
-    dummy_quad = new DummyFE<ET_QUAD>();
-    dummy_segm = new DummyFE<ET_SEGM>();
-    dummy_point = new DummyFE<ET_POINT>();
-    */
+
     for(auto vb : {VOL,BND,BBND})
       {
 	evaluator[vb] = nullptr;
@@ -551,14 +512,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
 
     for (auto vb : { BND, BBND, BBBND })
-      {
-        auto & dc = dirichlet_constraints[int(vb)];
-        if (dc.Size())
-          for (FESpace::Element el : Elements(vb))
-            if (dc[el.GetIndex()])
-              for (int d : el.GetDofs())
-                if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
-      }
+      if (auto & dc = dirichlet_constraints[int(vb)]; dc.Size())
+        for (FESpace::Element el : Elements(vb))
+          if (dc[el.GetIndex()])
+            for (int d : el.GetDofs())
+              if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
     
     /*
     Array<DofId> dnums;
@@ -2885,25 +2843,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
     if (order == 0)
     {
-      // tet     = new ScalarFE<ET_TET,0>;
-      // prism   = new FE_Prism0;
-      // pyramid = new FE_Pyramid0;
-      // hex     = new FE_Hex0;
-      // trig    = new ScalarFE<ET_TRIG,0>;
-      // quad    = new ScalarFE<ET_QUAD,0>;
-      // segm    = new FE_Segm0;
-
       n_el_dofs = 1;
     }
     else
     {
-      // tet     = new ScalarFE<ET_TET,1>;
-      // prism   = new FE_Prism1;
-      // pyramid = new FE_Pyramid1;
-      // trig    = new ScalarFE<ET_TRIG,1>;
-      // quad    = new ScalarFE<ET_QUAD,1>;
-      // segm    = new FE_Segm1;
-
       if (ma->GetDimension() == 2)
         n_el_dofs = 4;
       else
@@ -3166,17 +3109,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
     
   }
   
-    /*
-  size_t SurfaceElementFESpace :: GetNDofLevel (int level) const
-  {
-    return ndlevel[level];
-  }
-*/
-
-
-
-
-
 
 
   CompoundFESpace :: CompoundFESpace (shared_ptr<MeshAccess> ama,
@@ -3264,9 +3196,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
 
     SetNDof (cummulative_nd.Last());
-    // while (ma->GetNLevels() > ndlevel.Size())
-    // ndlevel.Append (cummulative_nd.Last());
-
 
     /*
     free_dofs = make_shared<BitArray> (GetNDof());
