@@ -192,7 +192,7 @@ namespace ngcomp
     array<Matrix<double>,32> trigprolsL;
     array<Matrix<double>,32> trigprolsR;
     Array<int> trig_creation_class;  // which prol to use ?
-
+    bool haveprols=false;
   private:
     int GetClassNr (FlatArray<size_t> verts)
     {
@@ -228,6 +228,8 @@ namespace ngcomp
     
     void CalcMatrices()
     {
+      if (haveprols) return;
+      haveprols=true;
       for (int classnr = 0; classnr < 32; classnr++)
         {
           Array<size_t> verts{GetClassRealization(classnr)};
@@ -413,7 +415,7 @@ namespace ngcomp
     array<Matrix<double>,1024> tetprolsL;
     array<Matrix<double>,1024> tetprolsR;
     Array<int> tet_creation_class;  // which prol to use ?
-
+    bool haveprols=false;
   private:
     int GetClassNr (FlatArray<size_t> verts)
     {
@@ -447,8 +449,26 @@ namespace ngcomp
 
     void CalcMatrices()
     {
+      static Timer t("L2HOProlTet calc matrices"); RegionTimer reg(t);
+      if (haveprols) return;
+      haveprols=true;
+
+      IntegrationRule ir(ET_TET, 2*order);
+      L2HighOrderFE<ET_TET> fel(order);      
+      size_t ndof = fel.GetNDof();
+      Matrix massfL(ndof, ndof), massfcL(ndof, ndof);
+      Matrix massfR(ndof, ndof), massfcR(ndof, ndof);          
+
+      Matrix shapesf(ndof, ir.Size());
+      Matrix shapesfw(ndof, ir.Size());
+      Matrix shapesc(ndof, ir.Size());
+
+      
       for (int classnr = 0; classnr < 1024; classnr++)
         {
+          tetprolsL[classnr].SetSize(ndof, ndof);
+          tetprolsR[classnr].SetSize(ndof, ndof);
+          
           Array<size_t> verts{GetClassRealization(classnr)};
           
           size_t vertsc[5] = { verts[0], verts[1], verts[2], verts[3] };
@@ -464,47 +484,33 @@ namespace ngcomp
           felfL.SetVertexNumbers (vertsfL);
           L2HighOrderFE<ET_TET> felfR(order);
           felfR.SetVertexNumbers (vertsfR);
-          
-          IntegrationRule ir(ET_TET, 2*order);
-          size_t ndof = felfL.GetNDof();
-          Matrix massfL(ndof, ndof), massfcL(ndof, ndof);
-          Matrix massfR(ndof, ndof), massfcR(ndof, ndof);          
-          Vector shapef(ndof), shapec(ndof);
-          massfL = 0.;
-          massfcL = 0.;
-          massfR = 0.;
-          massfcR = 0.;
-          
-          for (IntegrationPoint ip : ir)
+
+          IntegrationRule ircl, ircr;
+          for (auto i : Range(ir))
             {
-              IntegrationPoint ipcL(0.5*ip(0), ip(1), ip(2));
-              IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)-ip(2)), ip(1), ip(2));              
-
-              felc.CalcShape (ipcL, shapec);
-              felfL.CalcShape (ip, shapef);
-
-              massfL += ip.Weight() * shapef * Trans(shapef);
-              massfcL += ip.Weight() * shapef * Trans(shapec);
-
-              felc.CalcShape (ipcR, shapec);
-              felfR.CalcShape (ip, shapef);
-              massfR += ip.Weight() * shapef * Trans(shapef);
-              massfcR += ip.Weight() * shapef * Trans(shapec);
+              auto ip = ir[i];
+              ircl += IntegrationPoint(0.5*ip(0), ip(1), ip(2));
+              ircr += IntegrationPoint(0.5*(1+ip(0)-ip(1)-ip(2)), ip(1), ip(2));              
             }
-          CalcInverse (massfL);
-          tetprolsL[classnr].SetSize(ndof, ndof);
-          tetprolsL[classnr] = massfL * massfcL;
-          CalcInverse (massfR);
-          tetprolsR[classnr].SetSize(ndof, ndof);
-          tetprolsR[classnr] = massfR * massfcR;
+          
+          felc.CalcShape(ircl, shapesc);
+          felfL.CalcShape(ir, shapesf);
+          for (auto i : Range(ir))
+            shapesfw.Col(i) = ir[i].Weight()*shapesf.Col(i);
+          massfL = shapesfw * Trans(shapesf);
+          massfcL = shapesfw * Trans(shapesc);
+          for (size_t i = 0; i < ndof; i++)
+            tetprolsL[classnr].Row(i) = 1.0/massfL(i,i) * massfcL.Row(i);
+              
+          felc.CalcShape(ircr, shapesc);
+          felfR.CalcShape(ir, shapesf);
+          for (auto i : Range(ir))
+            shapesfw.Col(i) = ir[i].Weight()*shapesf.Col(i);
+          massfR = shapesfw * Trans(shapesf);
+          massfcR = shapesfw * Trans(shapesc);
+          for (size_t i = 0; i < ndof; i++)
+            tetprolsR[classnr].Row(i) = 1.0/massfR(i,i) * massfcR.Row(i);
         }
-
-      /*
-      for (auto & m : trigprolsL)
-        cout << m << endl;
-      for (auto & m : trigprolsR)
-        cout << m << endl;
-      */
     }
 
     ///
