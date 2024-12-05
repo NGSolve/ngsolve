@@ -10,7 +10,7 @@ Conjugate Gradient Soler
   
 */ 
 
-#include <la.hpp>
+#include "eigen.hpp"
 
 namespace ngla
 {

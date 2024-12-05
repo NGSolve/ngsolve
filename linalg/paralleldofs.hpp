@@ -14,6 +14,7 @@
 namespace ngla
 {
   using namespace ngstd;
+
   
 #ifdef PARALLEL
 
@@ -334,7 +335,6 @@ namespace ngla
 
 #endif //PARALLEL
 
-
   class DofRange : public T_Range<size_t>
   {
     shared_ptr<ParallelDofs> pardofs;
@@ -344,8 +344,6 @@ namespace ngla
       : T_Range<size_t>(range), pardofs(apardofs) { ; }
     shared_ptr<ParallelDofs> GetParallelDofs() const { return pardofs; }
   };
-  
-
 }
 
 

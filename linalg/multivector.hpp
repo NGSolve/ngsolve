@@ -7,6 +7,8 @@
 /* Date:   June 2020                                                 */
 /*********************************************************************/
 
+#include "basevector.hpp"
+
 namespace ngla {
 
   /* TODO: 

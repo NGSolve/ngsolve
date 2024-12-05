@@ -6,11 +6,13 @@
 
 
 
-#include <la.hpp>
+// #include <la.hpp>
+#include <ngstd.hpp>
+#include "order.hpp"
+
 namespace ngla
 {
-  using namespace ngla;
-
+  
 
   /* 
 
