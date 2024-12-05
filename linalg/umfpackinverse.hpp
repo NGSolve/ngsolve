@@ -18,7 +18,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 
 #include <umfpack.h>
-
+#include "sparsecholesky.hpp"   // for SparseFactorization
 namespace ngla
 {
 

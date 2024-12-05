@@ -10,7 +10,8 @@
   
 */ 
 
-#include <la.hpp>
+#include "cg.hpp"
+#include "sparsematrix.hpp"
 
 namespace ngla
 {

@@ -2,7 +2,7 @@
 #define FILE_ORDER
 
 /* *************************************************************************/
-/* File:   order.hh                                                       */
+/* File:   order.hpp                                                      */
 /* Author: Joachim Schoeberl                                              */
 /* Date:   18. Jun. 97                                                    */
 /* *************************************************************************/
@@ -10,6 +10,8 @@
 
 namespace ngla
 {
+  using namespace ngcore;
+  using namespace ngstd;  
 
   /*
     reordering for sparse cholesky factoriztion

@@ -10,7 +10,10 @@ Arnoldi Eigenvalue Solver
   
 */ 
 
-#include <la.hpp>
+// #include <la.hpp>
+#include "vvector.hpp"
+#include "arnoldi.hpp"
+#include "cg.hpp"
 
 namespace ngla
 {

@@ -13,6 +13,7 @@
 
 namespace ngla
 {
+  
   class NGS_DLL_HEADER ParallelBaseVector : virtual public BaseVector
   {
   protected:
