@@ -3,6 +3,9 @@
 #include "h1amg.hpp"
 #include "hcurlamg.hpp"
 
+#include <special_matrix.hpp>
+#include <jacobi.hpp>
+
 namespace ngcomp
 {
   shared_ptr<SparseMatrixTM<double>> ToSparseMatrix( const Embedding & e )
