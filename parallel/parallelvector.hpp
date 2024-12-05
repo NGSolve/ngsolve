@@ -9,6 +9,7 @@
 
 #include <vvector.hpp>
 #include <multivector.hpp>
+#include <paralleldofs.hpp>
 
 namespace ngla
 {

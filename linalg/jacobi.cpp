@@ -6,6 +6,8 @@
 
 
 #include "jacobi.hpp"
+#include "paralleldofs.hpp"
+
 
 namespace ngla
 {

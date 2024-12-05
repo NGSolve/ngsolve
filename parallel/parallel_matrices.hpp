@@ -10,6 +10,7 @@
 
 #include <basematrix.hpp>
 #include <sparsematrix.hpp>
+#include <paralleldofs.hpp>
 
 namespace ngla
 {

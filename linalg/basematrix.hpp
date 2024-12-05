@@ -11,11 +11,12 @@
 
 #include "basevector.hpp"
 #include "multivector.hpp"
+// #include "paralleldofs.hpp"
 
 namespace ngla
 {
-
-
+  class ParallelDofs;
+  
   // sets the solver which is used for InverseMatrix
   enum INVERSETYPE { PARDISO, PARDISOSPD, SPARSECHOLESKY, SUPERLU, SUPERLU_DIST, MUMPS, MASTERINVERSE, UMFPACK };
   extern string GetInverseName (INVERSETYPE type);
