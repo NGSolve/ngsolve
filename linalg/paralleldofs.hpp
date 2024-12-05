@@ -260,16 +260,7 @@ namespace ngla
     cnt = 0;
     
     NG_MPI_Datatype type = GetMPIType<T>();
-    /*
-    for (int i = 0; i < GetNDofLocal(); i++)
-      if (IsMasterDof(i))
-	{
-	  FlatArray<int> distprocs = GetDistantProcs (i);
-	  for (int j = 0; j < distprocs.Size(); j++)
-	    NG_MPI_Reduce_local (&recv_data[distprocs[j]][cnt[distprocs[j]]++], 
-                                 &data[i], 1, type, op);
-	}
-    */
+
     recv_requests.WaitAll();
     for (int i = 0; i < GetNDofLocal(); i++)
       if (IsMasterDof(i))

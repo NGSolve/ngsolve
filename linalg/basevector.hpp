@@ -8,7 +8,8 @@
 /*********************************************************************/
 
 #include <bla.hpp>
-#include "paralleldofs.hpp"
+#include <core/mpi_wrapper.hpp>
+// #include "paralleldofs.hpp"
 
 namespace ngla
 {
@@ -17,6 +18,7 @@ namespace ngla
   class BaseVector;
   class AutoVector;
   class MultiVector;
+  class DofRange;
   
   template <class SCAL> class S_BaseVector;
 

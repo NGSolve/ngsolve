@@ -7,6 +7,7 @@
 
 // #include <la.hpp>
 #include "blockjacobi.hpp"
+#include "paralleldofs.hpp"
 
 namespace ngla
 {
