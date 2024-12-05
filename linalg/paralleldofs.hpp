@@ -226,18 +226,6 @@ namespace ngla
     nrecv = 0;
 
     /** Count send/recv size **/
-    /*
-    for (int i = 0; i < GetNDofLocal(); i++) {
-      auto dps = GetDistantProcs(i);
-      if(!dps.Size()) continue;
-      int master = min2(rank, dps[0]);
-      if(rank==master)
-	for(auto p:dps)
-	  nrecv[p]++;
-      else
-	nsend[master]++;
-    }
-    */
     for (int i = 0; i < GetNDofLocal(); i++)
       if (auto dps = GetDistantProcs(i); dps.Size())
         {
@@ -247,36 +235,26 @@ namespace ngla
           else
             nsend[dps[0]]++;
         }
-
     
     Table<T> send_data(nsend);
     Table<T> recv_data(nrecv);
 
     /** Fill send_data **/
     nsend = 0;
-    /*
-    for (int i = 0; i < GetNDofLocal(); i++) {
-      auto dps = GetDistantProcs(i);
-      if(!dps.Size()) continue;
-      int master = min2(rank, dps[0]);
-      if(master!=rank)
-	send_data[master][nsend[master]++] = data[i];
-    }
-    */
     for (int i = 0; i < GetNDofLocal(); i++)
       if (auto dps = GetDistantProcs(i); dps.Size())
         if (rank > dps[0])
           send_data[dps[0]][nsend[dps[0]]++] = data[i];
 
-    NgMPI_Requests requests; 
+    NgMPI_Requests send_requests; 
+    NgMPI_Requests recv_requests; 
     for (int i = 0; i < ntasks; i++)
       {
 	if (nsend[i])
-	  requests += comm.ISend(send_data[i], i, NG_MPI_TAG_SOLVE);
+	  send_requests += comm.ISend(send_data[i], i, NG_MPI_TAG_SOLVE);
 	if (nrecv[i])
-	  requests += comm.IRecv(recv_data[i], i, NG_MPI_TAG_SOLVE);
+	  recv_requests += comm.IRecv(recv_data[i], i, NG_MPI_TAG_SOLVE);
       }
-    requests.WaitAll();
 
     Array<int> cnt(ntasks);
     cnt = 0;
@@ -292,10 +270,13 @@ namespace ngla
                                  &data[i], 1, type, op);
 	}
     */
+    recv_requests.WaitAll();
     for (int i = 0; i < GetNDofLocal(); i++)
       if (IsMasterDof(i))
         for (auto p : GetDistantProcs (i))
           NG_MPI_Reduce_local (&recv_data[p][cnt[p]++], &data[i], 1, type, op);
+
+    send_requests.WaitAll();    
   }    
 
 
