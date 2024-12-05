@@ -11,6 +11,8 @@
 // #include <comp.hpp>
 #include "fespace.hpp"
 #include <multigrid.hpp>
+#include <diagonalmatrix.hpp>
+#include <special_matrix.hpp>
 
 #include "../fem/h1lofe.hpp"
 #include <bdbequations.hpp>

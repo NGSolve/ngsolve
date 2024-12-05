@@ -1,6 +1,8 @@
 #ifdef NGS_PYTHON
 #include <la.hpp>
-#include <parallelngs.hpp>
+// #include <parallelngs.hpp>
+#include "../parallel/parallelvector.hpp"
+#include "../parallel/parallel_matrices.hpp"
 #include "../ngstd/python_ngstd.hpp"
 using namespace ngla;
 // include netgen-header to get access to PyMPI

@@ -39,10 +39,6 @@ namespace ngmg
 
 
 #include <parallelngs.hpp>
-namespace ngcomp
-{
-  using namespace ngparallel;
-}
 
 
 // #include "pmltrafo.hpp"

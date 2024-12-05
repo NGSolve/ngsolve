@@ -1,6 +1,6 @@
-#include <parallelngs.hpp>
-#include <la.hpp>
-
+// #include <parallelngs.hpp>
+// #include <la.hpp>
+#include "parallelvector.hpp"
 
 namespace ngla
 {

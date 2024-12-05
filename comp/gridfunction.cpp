@@ -4,6 +4,7 @@
 // #include <comp.hpp>
 #include "gridfunction.hpp"
 #include <multigrid.hpp>
+#include <diagonalmatrix.hpp>  // Projector
 
 #include <parallelngs.hpp>
 #include <stdlib.h>

@@ -4,6 +4,11 @@
 #include <multigrid.hpp>
 // #include <solve.hpp>
 #include <parallelngs.hpp>
+#include <eigen.hpp>
+#include <special_matrix.hpp>
+#include <sparsecholesky.hpp>
+#include <jacobi.hpp>
+#include <commutingAMG.hpp>
 
 
 namespace ngcomp

@@ -9,7 +9,8 @@
 */
 
 #include <multigrid.hpp>
-#include <parallelngs.hpp>
+// #include <parallelngs.hpp>
+#include <cg.hpp>
 
 namespace ngmg
 {

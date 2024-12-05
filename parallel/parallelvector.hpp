@@ -7,7 +7,8 @@
 /* Date:   2007,2011                                                      */
 /* ************************************************************************/
 
-
+#include <vvector.hpp>
+#include <multivector.hpp>
 
 namespace ngla
 {
