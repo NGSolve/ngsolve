@@ -352,7 +352,7 @@ namespace ngla
 			   shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw()
     : S_BaseVectorPtr<SCAL> (as, aes)
   { 
-    recvvalues = NULL;
+    // recvvalues = NULL;
     if ( apd != 0 )
       {
 	this -> SetParallelDofs ( apd );
@@ -373,7 +373,7 @@ namespace ngla
 			   shared_ptr<ParallelDofs> apd, PARALLEL_STATUS stat) throw()
     : S_BaseVectorPtr<SCAL> (as, aes, adata)
   { 
-    recvvalues = NULL;
+    // recvvalues = NULL;
     if ( apd != 0 )
       {
 	this -> SetParallelDofs ( apd );
@@ -393,7 +393,7 @@ namespace ngla
   template <class SCAL>
   S_ParallelBaseVectorPtr<SCAL> :: ~S_ParallelBaseVectorPtr ()
   {
-    delete recvvalues;
+    ; // delete recvvalues;
   }
 
 
@@ -410,8 +410,9 @@ namespace ngla
     Array<int> exdofs(ntasks);
     for (int i = 0; i < ntasks; i++)
       exdofs[i] = this->es * this->paralleldofs->GetExchangeDofs(i).Size();
-    delete this->recvvalues;
-    this -> recvvalues = new Table<TSCAL> (exdofs);
+    // delete this->recvvalues;
+    // this -> recvvalues = new Table<TSCAL> (exdofs);
+    recvvalues = Table<TSCAL> (exdofs);
 
     // Initiate persistent send/recv requests for vector cumulate operation
     // auto dps = paralleldofs->GetDistantProcs();
@@ -506,7 +507,7 @@ namespace ngla
   template <typename SCAL>
   NgMPI_Request S_ParallelBaseVectorPtr<SCAL> :: IRecvVec ( int dest )
   {
-    return this->paralleldofs->GetCommunicator().IRecv ((*recvvalues)[dest], dest, NG_MPI_TAG_SOLVE);
+    return this->paralleldofs->GetCommunicator().IRecv (recvvalues[dest], dest, NG_MPI_TAG_SOLVE);
   }
 
 
@@ -514,7 +515,7 @@ namespace ngla
   void S_ParallelBaseVectorPtr<SCAL> :: AddRecvValues( int sender )
   {
     FlatArray<int> exdofs = paralleldofs->GetExchangeDofs(sender);
-    FlatMatrix<SCAL> rec (exdofs.Size(), this->es, &(*this->recvvalues)[sender][0]);
+    FlatMatrix<SCAL> rec (exdofs.Size(), this->es, &(this->recvvalues)[sender][0]);
     for (int i = 0; i < exdofs.Size(); i++)
       (*this) (exdofs[i]) += rec.Row(i);
   }

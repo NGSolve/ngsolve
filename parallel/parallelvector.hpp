@@ -170,7 +170,7 @@ namespace ngla
     using ParallelBaseVector :: sreqs;
     using ParallelBaseVector :: rreqs;
 
-    Table<SCAL> * recvvalues;
+    Table<SCAL> recvvalues;
 
     using S_BaseVectorPtr<TSCAL> :: pdata;
     using ParallelBaseVector :: local_vec;
