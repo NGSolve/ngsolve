@@ -7,7 +7,7 @@
 
 #define FILE_SPARSEMATRIX_CPP
 
-// #include <la.hpp>
+#include <la.hpp>
 #include "sparsematrix.hpp"
 #include "jacobi.hpp"
 #include "blockjacobi.hpp"
