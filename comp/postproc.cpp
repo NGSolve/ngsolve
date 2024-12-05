@@ -9,6 +9,7 @@
 */
 
 // #include <comp.hpp>
+#include <paralleldofs.hpp>
 #include "gridfunction.hpp"
 
 #include <variant>

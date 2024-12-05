@@ -16,7 +16,7 @@
 #include <basevector.hpp>
 #include <basematrix.hpp>
 
-#include <paralleldofs.hpp>
+// #include <paralleldofs.hpp>
 
 
 #include "ngsobject.hpp"

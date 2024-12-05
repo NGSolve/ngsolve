@@ -1,6 +1,8 @@
 // #include <comp.hpp>
+
+// #include <parallelngs.hpp>
+#include <parallelvector.hpp>
 #include "linearform.hpp"
-#include <parallelngs.hpp>
 
 
 namespace ngcomp

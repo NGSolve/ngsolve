@@ -335,17 +335,6 @@ namespace ngla
 
 #endif //PARALLEL
 
-  class DofRange : public T_Range<size_t>
-  {
-    shared_ptr<ParallelDofs> pardofs;
-  public:
-    DofRange () { }
-    DofRange (T_Range<size_t> range, shared_ptr<ParallelDofs> apardofs)
-      : T_Range<size_t>(range), pardofs(apardofs) { ; }
-    shared_ptr<ParallelDofs> GetParallelDofs() const { return pardofs; }
-  };
 }
-
-
 
 #endif

@@ -1,7 +1,9 @@
 #ifndef H1AMG_HPP_
 #define H1AMG_HPP_
 
-#include <la.hpp>
+// #include <la.hpp>
+#include <basematrix.hpp>
+#include <sparsematrix.hpp>
 
 namespace ngcomp
 {
