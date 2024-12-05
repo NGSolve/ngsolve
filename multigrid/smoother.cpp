@@ -8,7 +8,10 @@
    Smoothing operators
 */
 
-#include <parallelngs.hpp>
+// #include <parallelngs.hpp>
+#include <jacobi.hpp>
+#include <sparsecholesky.hpp>
+
 #include <multigrid.hpp>
 #include <linearform.hpp>
 #include <bilinearform.hpp>

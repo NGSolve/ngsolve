@@ -7,6 +7,10 @@
 /* Date:   2007,2011                                                      */
 /* ************************************************************************/
 
+
+#include <basematrix.hpp>
+#include <sparsematrix.hpp>
+
 namespace ngla
 {
 

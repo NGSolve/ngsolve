@@ -5,9 +5,13 @@
 /*********************************************************************/
 
  
-#include <la.hpp>
+// #include <la.hpp>
 #include "../linalg/mumpsinverse.hpp"
-#include <parallelngs.hpp>
+#include "parallelvector.hpp"
+#include "parallel_matrices.hpp"
+#include <diagonalmatrix.hpp>
+
+// #include <parallelngs.hpp>
 
 
 namespace ngla

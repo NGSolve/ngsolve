@@ -1,6 +1,8 @@
 #include "fespace.hpp"
 #include <parallelngs.hpp>
-
+#include <elementbyelement.hpp>
+#include <diagonalmatrix.hpp>
+#include <special_matrix.hpp>
 
 namespace ngcomp
 {

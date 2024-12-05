@@ -8,6 +8,8 @@
 #include "tpfes.hpp"
 
 #include <parallelngs.hpp>
+#include <diagonalmatrix.hpp>
+
 #include "../fem/h1lofe.hpp"
 #include "../fem/tensorproductintegrator.hpp"
 
