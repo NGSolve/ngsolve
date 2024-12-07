@@ -9,14 +9,13 @@
 */
 
 
-#include <la.hpp>
+#include "paralleldofs.hpp"
+#include "../basiclinalg/complex_wrapper.hpp"
 
 #ifdef PARALLEL
 
 namespace ngla
 {
-
-  // extern void MyFunction();  ????
   
   ParallelDofs :: ParallelDofs (NgMPI_Comm acomm, Table<int> && adist_procs, 
 				int dim, bool iscomplex)
@@ -174,8 +173,8 @@ namespace ngla
 
 }
 
+#else // PARALLEL
 
-#else 
 namespace ngla
 {
   

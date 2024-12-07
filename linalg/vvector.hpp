@@ -18,7 +18,7 @@ namespace ngla
   {
   protected:
     TSCAL * pdata;
-    int es;
+    int es;    // entry size in in term of TSCALs
     bool ownmem;
     
   public:

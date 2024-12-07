@@ -21,7 +21,6 @@ namespace ngla
 
   class ParallelDofs;
   
-  // class DofRange;
   class DofRange : public T_Range<size_t>
   {
     shared_ptr<ParallelDofs> pardofs;
@@ -772,14 +771,20 @@ namespace ngla
   };
 
 
-
+  /*
   inline VVecExpr<VSumExpr<VVecExpr<BaseVector>, VVecExpr<BaseVector> > >
   operator+ (const BaseVector & a, const BaseVector & b)
   {
     typedef VSumExpr<VVecExpr<BaseVector>, VVecExpr<BaseVector> > TRES;
     return TRES (a, b);
   }
+  */
+  inline auto operator+ (const BaseVector & a, const BaseVector & b)
+  {
+    return VSumExpr<VVecExpr<BaseVector>,VVecExpr<BaseVector>> (a,b); 
+  }
 
+  /*
   template <class TA>
   inline VVecExpr<VSumExpr<VVecExpr<TA>, VVecExpr<BaseVector> > >
   operator+ (const VVecExpr<TA> & a, const BaseVector & b)
@@ -787,6 +792,13 @@ namespace ngla
     typedef VSumExpr<VVecExpr<TA>, VVecExpr<BaseVector> > TRES;
     return TRES (a, b);
   }
+  */
+  template <class TA>
+  inline auto operator+ (const VVecExpr<TA> & a, const BaseVector & b)
+  {
+    return VSumExpr<VVecExpr<TA>,VVecExpr<BaseVector>> (a,b);
+  }
+  
 
   template <class TB>
   inline VVecExpr<VSumExpr<VVecExpr<BaseVector>, VVecExpr<TB> > >

@@ -2,7 +2,7 @@
 #include <nginterface.h>
 // #include <parallelngs.hpp>
 #include <parallelvector.hpp>
-#include <stdlib.h>
+// #include <stdlib.h>
 // #include <comp.hpp>
 #include "gridfunction.hpp"
 #include <multigrid.hpp>

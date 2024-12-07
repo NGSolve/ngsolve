@@ -273,14 +273,6 @@ namespace ngla
     void AssignTo (TS s, BaseVector & v) const
     { 
       CheckSize (v);
-      /*
-      if (m.Height() != v.Size() || m.Width() != x.Size())
-	throw Exception (ToString ("matrix-vector: size does not fit\n") +
-                         "matrix-type = " + typeid(m).name() +
-			 "Matrix:     " + ToString(m.Height()) + " x " + ToString(m.Width()) + "\n"
-			 "Vector in : " + ToString(x.Size()) + "\n"
-			 "Vector res: " + ToString(v.Size()));
-      */
       m.Mult (x, v);
       v *= s;
     }
@@ -289,10 +281,6 @@ namespace ngla
     void AddTo (TS s, BaseVector & v) const
     { 
       CheckSize (v);
-      /*
-      if (m.Height() != v.Size() || m.Width() != x.Size())
-	throw Exception ("matrix-vector MultAdd: size does not fit");
-      */
       m.MultAdd (s, x, v);
     }
 
@@ -854,7 +842,6 @@ namespace ngla
   {
     bool has_format;
     size_t size;
-    // bool is_complex;
   public:
     ///
     IdentityMatrix ()
@@ -862,7 +849,6 @@ namespace ngla
     IdentityMatrix (size_t asize, bool ais_complex)
       : has_format(true), size(asize) { is_complex=ais_complex; }
     
-    // virtual bool IsComplex() const override { return is_complex; }
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
     ///
@@ -933,7 +919,7 @@ namespace ngla
   };
 
   
-  /* *********************** operator<< ********************** */
+  /* *********************** operators  ********************** */
 
   // default is ProductMatrix, but optimizations for
   // ParallelMatrices
@@ -959,8 +945,8 @@ namespace ngla
 
   
   shared_ptr<BaseMatrix> TransposeOperator (shared_ptr<BaseMatrix> mat);
+
   
-  /// output operator for matrices
   inline ostream & operator<< (ostream & ost, const BaseMatrix & m)
   {
     return m.Print(ost);

@@ -1,5 +1,3 @@
-// #include <comp.hpp>
-
 #include "bilinearform.hpp"
 #include "linearform.hpp"
 #include "gridfunction.hpp"
@@ -13,6 +11,7 @@
 #include "../fem/h1lofe.hpp"
 #include "../fem/tensorproductintegrator.hpp"
 
+
 namespace ngcomp
 {
   
@@ -22,20 +21,6 @@ namespace ngcomp
                         FlatMatrix<Complex> & evecs)
   { ; }
 
-  /*
-  void MinusMultAB (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
-  {
-    c = -a * b | Lapack;
-  }
-  void MinusMultABt (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
-  {
-    c = -a * Trans(b) | Lapack;
-  }
-  void AddAB (SliceMatrix<Complex> a, SliceMatrix<Complex> b, SliceMatrix<Complex> c)
-  {
-    c += a*b | Lapack;
-  }
-  */
 
   template <typename T>
   inline void AInvBt (ngbla::FlatMatrix<T> a, ngbla::FlatMatrix<T> b)
@@ -2458,13 +2443,6 @@ namespace ngcomp
                                        NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
                                                                    d.Height()*d.Width()*c.Width());
                                        
-                                       // V1:
-                                       // he = 0.0;
-                                       // he -= d * Trans(c) | Lapack;
-                                       // V2:
-                                       // he = -d * Trans(c) | Lapack;
-                                       // V3:
-                                       // MinusMultABt (d, c, he);
                                        he = -d * Trans(c);
                                      }
                                      
@@ -2472,8 +2450,6 @@ namespace ngcomp
                                      if (!symmetric)
                                        {
                                          FlatMatrix<SCAL> het (sizeo, sizei, lh);
-                                         // het = -b*d | Lapack;
-                                         // MinusMultAB (b, d, het);
                                          het = -b * d;
                                          harmonicexttrans_ptr->AddElementMatrix(el.Nr(),ednums,idnums,het);
                                        }
@@ -2483,8 +2459,6 @@ namespace ngcomp
                                        RegionTimer reg (statcondtimer_mult);
                                        NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
                                                                    b.Height()*b.Width()*he.Width());
-                                       // a += b * he | Lapack;
-                                       // AddAB (b, he, a);
                                        a += b * he;
                                      }
                                      
