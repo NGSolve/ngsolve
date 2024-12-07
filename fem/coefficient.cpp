@@ -6712,6 +6712,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
             s << " ) {" << endl;
             s << code.header << endl;
             s << "[[maybe_unused]] auto points = mir.GetPoints();" << endl;
+            s << "[[maybe_unused]] auto normals = mir.GetNormals();" << endl;
             s << "[[maybe_unused]] auto domain_index = mir.GetTransformation().GetElementIndex();" << endl;
             s << "for ( auto i : Range(mir)) {" << endl;
             s << "[[maybe_unused]] auto & ip = mir[i];" << endl;

@@ -436,7 +436,7 @@ namespace ngfem
     INLINE SCAL operator() (int i) const { return point(i); }
 
     ///
-    INLINE const Vec<R,SCAL> GetNV () const { return normalvec; }
+    INLINE const Vec<R,SCAL> & GetNV () const { return normalvec; }
     /// 
     INLINE void SetNV ( Vec<R,SCAL> vec) { normalvec = vec; }
     ///
@@ -1481,6 +1481,7 @@ namespace ngfem
     int DimSpace() const;
     
     virtual SliceMatrix<> GetPoints() const = 0;
+    virtual SliceMatrix<> GetNormals() const = 0;    
     virtual SliceMatrix<Complex> GetPointsComplex() const
     { throw Exception("don't have complex ir"); }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et) { throw Exception ("ComputeNormalsAndMeasure(ET) not overloaded"); }
@@ -1551,6 +1552,13 @@ namespace ngfem
                             const_cast<double*> (&mips[0].GetPoint()(0)));
     }
 
+    virtual SliceMatrix<> GetNormals() const
+    {
+      return SliceMatrix<> (mips.Size(), DIM_SPACE*sizeof(SCAL)/sizeof(double),
+                            sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(double),
+                            const_cast<double*> (&mips[0].GetNV()(0)));
+    }
+
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et);
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
     virtual bool IsComplex() const { return false; } 
@@ -1615,6 +1623,12 @@ namespace ngfem
                                    sizeof(MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE, SCAL>) / sizeof(Complex),
                                    const_cast<Complex*> (&mips[0].GetPointComplex()(0)));
     }
+
+    virtual SliceMatrix<> GetNormals() const
+    {
+      throw Exception("never tested");
+    }
+    
 
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr);
     virtual bool IsComplex() const { return true; }     

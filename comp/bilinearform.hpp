@@ -922,17 +922,21 @@ namespace ngcomp
     Array<ProxyFunction*> trialproxies;
     
     typedef void (*lib_function)(size_t nip, double * input, size_t dist_input,
-                                 double * output, size_t dist_output);
+                                 double * output, size_t dist_output,
+                                 size_t dist, double * points, double * normals);
 
     unique_ptr<SharedLibrary> library;
     lib_function compiled_function = nullptr;
     
     size_t dimx, dimy;
     size_t nip;
+    Matrix<double> points;
+    Matrix<double> normals;
     
   public:
     ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
                             const Array<ProxyFunction*> & atrialproxies,
+                            Matrix<double> apoints, Matrix<double> anormals,
                             size_t adimx, size_t adimy, size_t anip);
     
     AutoVector CreateColVector() const override;

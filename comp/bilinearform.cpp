@@ -182,6 +182,7 @@ namespace ngcomp
     if (flags.GetDefineFlag ("store_inner")) SetStoreInner (1);
     geom_free = flags.GetDefineFlag("geom_free");
     matrix_free_bdb = flags.GetDefineFlag("matrix_free_bdb");
+    nonlinear_matrix_free_bdb = flags.GetDefineFlag("nonlinear_matrix_free_bdb");
     
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
@@ -1003,8 +1004,10 @@ namespace ngcomp
   ApplyIntegrationPoints ::
   ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
                           const Array<ProxyFunction*> & atrialproxies,
+                          Matrix<> apoints, Matrix<> anormals,
                           size_t adimx, size_t adimy, size_t anip)
-    : coefs(acoefs), trialproxies{atrialproxies}, dimx(adimx), dimy(adimy), nip(anip)
+    : coefs(acoefs), trialproxies{atrialproxies}, dimx(adimx), dimy(adimy), nip(anip),
+      points(std::move(apoints)), normals(std::move(anormals))
   { 
       // make my own code
     
@@ -1020,7 +1023,8 @@ namespace ngcomp
     s <<
       "#include <cstddef>\n"
       "extern \"C\" void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
-      "                      double * output, size_t dist_output) {\n";
+      "                      double * output, size_t dist_output,\n"
+      "                      size_t dist, double * pnts, double * nvs) {\n";
 
     int base_output = 0;
     for (auto cf : coefs)
@@ -1039,6 +1043,11 @@ namespace ngcomp
                   " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
                 s << "bool constexpr has_values_" << step << " = true;\n" << endl;
               }
+
+        s << "[[maybe_unused]] auto points = [dist,pnts](size_t i, int comp)\n"
+          " { return pnts[i+comp*dist]; };\n";
+        s << "[[maybe_unused]] auto normals = [dist,nvs](size_t i, int comp)\n"
+          " { return nvs[i+comp*dist]; };\n";
         
         s << "for (size_t i = 0; i < nip; i++) {\n";
         s << code.body << endl;
@@ -1101,11 +1110,12 @@ namespace ngcomp
       {
         FlatMatrix<double> mx = x.FV<double>().AsMatrix(dimx, nip);
         FlatMatrix<double> my = y.FV<double>().AsMatrix(dimy, nip);
-        ParallelForRange(nip, [this,mx, my] (IntRange r)
+        ParallelForRange(nip, [this,mx, my, pts=FlatMatrix<>(points), nvs=FlatMatrix<>(normals)] (IntRange r)
                          {
                            this->compiled_function(r.Size(),
                                                    mx.Cols(r).Data(), mx.Dist(),
-                                                   my.Cols(r).Data(), my.Dist());
+                                                   my.Cols(r).Data(), my.Dist(),
+                                                   nip, pts.Cols(r).Data(), nvs.Cols(r).Data());
                          });
         return;
       }
@@ -1363,10 +1373,12 @@ namespace ngcomp
                 auto diagmat = make_shared<BlockDiagonalMatrix<double>> (std::move(diag));
                 mat = TransposeOperator(by) * diagmat * bx;
               }
-            else
+            else // linear
               {
                 Tensor<3> diagx(dimx, dimxref, nip);
                 Tensor<3> diagy(dimy, dimyref, nip);
+                Matrix<> points(ma->GetDimension(), nip);
+                Matrix<> normals(ma->GetDimension(), nip);
                 
                 for (auto i : Range(elclass_inds))
                   {
@@ -1374,7 +1386,7 @@ namespace ngcomp
                     ElementId ei(VOL, elclass_inds[i]);
                     auto & trafo = ma->GetTrafo(ei, lh);
                     auto & mir = trafo(ir, lh);
-                    if (bfi->ElementVB() != VOL) 
+                    if (bfi->ElementVB() != VOL)
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
                     
                     FlatMatrix<> transx(dimx, dimxref, lh);
@@ -1409,6 +1421,8 @@ namespace ngcomp
                         diagx(STAR,STAR,i*ir.Size()+j) = transx;
                         diagy(STAR,STAR,i*ir.Size()+j) = transy;
                       }
+                    points.Cols(i*ir.Size(), (i+1)*ir.Size()) = Trans(mir.GetPoints());
+                    normals.Cols(i*ir.Size(), (i+1)*ir.Size()) = Trans(mir.GetNormals());
                   }
                 
                 shared_ptr<CoefficientFunction> coef = bfi -> GetCoefficientFunction();
@@ -1419,13 +1433,14 @@ namespace ngcomp
                     diffcfs += coef -> DiffJacobi(proxy, cache);                  
                   }
                 
-                auto ipop = make_shared<ApplyIntegrationPoints> (std::move(diffcfs), trialproxies, dimx, dimy, nip);
+                auto ipop = make_shared<ApplyIntegrationPoints> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
+                                                                 dimx, dimy, nip);
                 
                 auto diagmatx = make_shared<BlockDiagonalMatrixSoA> (std::move(diagx));
                 auto diagmaty = make_shared<BlockDiagonalMatrixSoA> (std::move(diagy));
                 
                 mat = TransposeOperator(diagmaty * by) * ipop * (diagmatx * bx);
-              }
+              } // linear
             
             if (sum)
               sum = sum + mat;
