@@ -287,6 +287,7 @@ namespace ngfem
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override  {
       if (inverted_faces.Size())
         throw Exception("Not implemented");
+      /*
       string miptype;
       if(code.is_simd)
         miptype = "SIMD<DimMappedIntegrationPoint<"+ToLiteral(D)+">>*";
@@ -299,6 +300,11 @@ namespace ngfem
       code.Declare (index, this->Dimensions(), this->IsComplex());  
       for( int i : Range(D))
         code.body += Var(index,i).Assign(nv(i), false);
+      */
+
+      code.Declare (index, this->Dimensions(), this->IsComplex());  
+      for( int i : Range(D))
+        code.body += Var(index,i).Assign(CodeExpr("normals(i,"+ToLiteral(i)+")"), false);
     }
 
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir, BareSliceMatrix<SIMD<double>> values) const override 

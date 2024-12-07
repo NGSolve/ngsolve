@@ -46,6 +46,8 @@ namespace ngfem
     { throw Exception("TPMappedIntegrationRule::Range not implemented"); }
     virtual SliceMatrix<> GetPoints() const
     { throw Exception("TPMappedIntegrationRule::GetPoints not implemented"); }
+    virtual SliceMatrix<> GetNormals() const
+    { throw Exception("TPMappedIntegrationRule::GetNormals not implemented"); }
     virtual void ComputeNormalsAndMeasure (ELEMENT_TYPE et, int facetnr)
     { throw Exception("TPMappedIntegrationRule::ComputeNormalsAndMeasure not implemented"); }
     virtual bool IsComplex() const
