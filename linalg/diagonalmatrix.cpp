@@ -509,7 +509,26 @@ namespace ngla
     nonzero.SetSize(dimy, dimx);
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
-        nonzero(i,j) = L2Norm(blockdiag(i,j,STAR));
+        nonzero(i,j) = L2Norm(blockdiag(i,j,STAR)) > 0;
+
+
+    TableCreator<int> creator;
+    for ( ; !creator.Done(); creator++)
+      for (int i = 0; i < dimy; i++)
+        for (int j = 0; j < dimx; j++)
+          if (nonzero(i,j))
+            creator.Add (i,j);
+    sparse = creator.MoveTable();
+
+
+    TableCreator<int> creatorT;
+    for ( ; !creatorT.Done(); creatorT++)
+      for (int i = 0; i < dimy; i++)
+        for (int j = 0; j < dimx; j++)
+          if (nonzero(i,j))
+            creatorT.Add (i,j);
+    sparseT = creatorT.MoveTable();
+    
   }
 
   ostream & BlockDiagonalMatrixSoA :: Print (ostream & ost) const
@@ -539,6 +558,60 @@ namespace ngla
   }
 
 
+
+  void BlockDiagonalMatrixSoA :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("BlockDiagonalMatrixSoA::Mult"); RegionTimer r(t);
+
+    auto mx = x.FV<double>().AsMatrix(dimy, blocks);
+    auto my = y.FV<double>().AsMatrix(dimx, blocks);
+
+    int nthreads = max (blocks/1024, TasksPerThread(2));
+    ParallelForRange
+      (blocks, [blockdiag=FlatTensor(blockdiag),mx,my,this] (IntRange r)
+       {
+         for (size_t j = 0; j < sparse.Size(); j++)
+           {
+             switch (sparse[j].Size())
+               {
+               case 1:
+                 {
+                   my.Row(j).Range(r) = pw_mult(blockdiag(j, sparse[j][0],STAR).Range(r), mx.Row(sparse[j][0]).Range(r));
+                   break;
+                 }
+               case 2:
+                 {
+                   my.Row(j).Range(r) =
+                     pw_mult(blockdiag(j, sparse[j][0],STAR).Range(r), mx.Row(sparse[j][0]).Range(r))
+                     +pw_mult(blockdiag(j, sparse[j][1],STAR).Range(r), mx.Row(sparse[j][1]).Range(r));
+                   break;
+                 }
+               case 3:
+                 {
+                   my.Row(j).Range(r) =
+                     pw_mult(blockdiag(j, sparse[j][0],STAR).Range(r), mx.Row(sparse[j][0]).Range(r))
+                     +pw_mult(blockdiag(j, sparse[j][1],STAR).Range(r), mx.Row(sparse[j][1]).Range(r))
+                     +pw_mult(blockdiag(j, sparse[j][2],STAR).Range(r), mx.Row(sparse[j][2]).Range(r));
+                   break;
+                 }
+               default:
+                 {
+                   my.Row(j).Range(r) = 0.0;
+                   for (size_t k : sparse[j])
+                     my.Row(j).Range(r) += pw_mult(blockdiag(j,k,STAR).Range(r), mx.Row(k).Range(r));
+                 }
+               }
+           }
+       }, nthreads); // TasksPerThread(3));
+
+    size_t numnz = 0;
+    for (int i = 0; i < dimx; i++)
+      for (int j = 0; j < dimy; j++)
+        if (nonzero(j,i)) numnz++;
+    t.AddFlops (blocks*numnz);
+  }
+
+  
   
   void BlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
@@ -551,10 +624,71 @@ namespace ngla
        {
          for (int i = 0; i < dimy; i++)
            for (int j = 0; j < dimx; j++)
-             if (nonzero(i,j) != 0)
+             if (nonzero(i,j))
                my.Row(i).Range(r) += s* pw_mult (blockdiag(i,j,STAR).Range(r), mx.Row(j).Range(r));
        });
+
+    size_t numnz = 0;
+    for (int i = 0; i < dimx; i++)
+      for (int j = 0; j < dimy; j++)
+        if (nonzero(j,i)) numnz++;
+    t.AddFlops (blocks*numnz);
   }
+
+
+  void BlockDiagonalMatrixSoA :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("BlockDiagonalMatrixSoA::MultTrans"); RegionTimer r(t);
+
+    auto mx = x.FV<double>().AsMatrix(dimy, blocks);
+    auto my = y.FV<double>().AsMatrix(dimx, blocks);
+
+    int nthreads = max (blocks/1024, TasksPerThread(2));
+    ParallelForRange
+      (blocks, [blockdiag=FlatTensor(blockdiag),mx,my,this] (IntRange r)
+       {
+         for (size_t j = 0; j < sparseT.Size(); j++)
+           {
+             switch (sparseT[j].Size())
+               {
+               case 1:
+                 {
+                   my.Row(j).Range(r) = pw_mult(blockdiag(sparseT[j][0],j,STAR).Range(r), mx.Row(sparseT[j][0]).Range(r));
+                   break;
+                 }
+               case 2:
+                 {
+                   my.Row(j).Range(r) =
+                     pw_mult(blockdiag(sparseT[j][0],j,STAR).Range(r), mx.Row(sparseT[j][0]).Range(r))
+                     +pw_mult(blockdiag(sparseT[j][1],j,STAR).Range(r), mx.Row(sparseT[j][1]).Range(r));
+                   break;
+                 }
+               case 3:
+                 {
+                   my.Row(j).Range(r) =
+                     pw_mult(blockdiag(sparseT[j][0],j,STAR).Range(r), mx.Row(sparseT[j][0]).Range(r))
+                     +pw_mult(blockdiag(sparseT[j][1],j,STAR).Range(r), mx.Row(sparseT[j][1]).Range(r))
+                     +pw_mult(blockdiag(sparseT[j][2],j,STAR).Range(r), mx.Row(sparseT[j][2]).Range(r));
+                   break;
+                 }
+               default:
+                 {
+                   my.Row(j).Range(r) = 0.0;
+                   for (size_t k : sparseT[j])
+                     my.Row(j).Range(r) += pw_mult(blockdiag(k,j,STAR).Range(r), mx.Row(k).Range(r));
+                 }
+               }
+           }
+       }, nthreads); // TasksPerThread(3));
+
+    size_t numnz = 0;
+    for (int i = 0; i < dimx; i++)
+      for (int j = 0; j < dimy; j++)
+        if (nonzero(j,i)) numnz++;
+    t.AddFlops (blocks*numnz);
+  }
+
+
   
   void BlockDiagonalMatrixSoA :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
@@ -562,15 +696,22 @@ namespace ngla
 
     auto mx = x.FV<double>().AsMatrix(dimy, blocks);
     auto my = y.FV<double>().AsMatrix(dimx, blocks);
-    // for (size_t i = 0; i < blocks; i++)
+
+    int nthreads = max (blocks/1024, TasksPerThread(2));
     ParallelForRange
-      (blocks, [&] (IntRange r)
+      (blocks, [blockdiag=FlatTensor(blockdiag),mx,my,s,this] (IntRange r)
        {
-         for (int i = 0; i < dimx; i++)
-           for (int j = 0; j < dimy; j++)
-             if (nonzero(j,i) != 0)               
+         for (size_t i = 0; i < dimx; i++)
+           for (size_t j = 0; j < dimy; j++)
+             if (nonzero(j,i)) 
                my.Row(i).Range(r) += s* pw_mult(blockdiag(j,i,STAR).Range(r), mx.Row(j).Range(r));
-       });
+       }, nthreads); // TasksPerThread(3));
+
+    size_t numnz = 0;
+    for (int i = 0; i < dimx; i++)
+      for (int j = 0; j < dimy; j++)
+        if (nonzero(j,i)) numnz++;
+    t.AddFlops (blocks*numnz);
   }
   
 

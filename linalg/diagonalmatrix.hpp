@@ -119,7 +119,8 @@ namespace ngla
   {
     Tensor<3> blockdiag;  
     int blocks, dimy, dimx;
-    Matrix<double> nonzero;
+    Matrix<bool> nonzero;
+    Table<int> sparse, sparseT; // sparse non-zero pattern
   public:
     typedef double TSCAL;
     
@@ -135,12 +136,14 @@ namespace ngla
     AutoVector CreateRowVector () const override;
     AutoVector CreateColVector () const override;
 
-    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;    
+    void Mult (const BaseVector & x, BaseVector & y) const override;    
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;    
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     // shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const override;
 
     FlatTensor<3> GetBlockDiag () const { return blockdiag; }
-    FlatMatrix<double> GetNonZeroPattern() const { return nonzero; }
+    FlatMatrix<bool> GetNonZeroPattern() const { return nonzero; }
   };
 
 }

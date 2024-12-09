@@ -494,7 +494,7 @@ namespace ngla
     Array<int> nonzeroinds, nonzeroinds_trans;
     for (int i = 0; i < dimy; i++)
       for (int j = 0; j < dimx; j++)
-        if (nonzero(i,j) != 0)
+        if (nonzero(i,j))
           {
             nonzeroinds.Append(i*dimx+j);
             nonzeroinds.Append(j);
