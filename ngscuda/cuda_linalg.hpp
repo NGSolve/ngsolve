@@ -117,7 +117,7 @@ namespace ngla
   {
     double * dev_data; // Tensor<3> blockdiag;  
     int blocks, dimy, dimx;
-    Matrix<double> nonzero;
+    Matrix<bool> nonzero;
     Array<Dev<int>> indices, indices_trans;
  public:
     DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
