@@ -781,7 +781,7 @@ namespace ngla
   */
   inline auto operator+ (const BaseVector & a, const BaseVector & b)
   {
-    return VSumExpr<VVecExpr<BaseVector>,VVecExpr<BaseVector>> (a,b); 
+    return VVecExpr<VSumExpr<VVecExpr<BaseVector>,VVecExpr<BaseVector>>>{{a,b}};
   }
 
   /*
