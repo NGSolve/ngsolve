@@ -538,7 +538,7 @@ namespace ngcomp
         size_t nface = ma->GetNFaces();
         size_t ncell = ma->GetNE();
 
-        ndof = nedge;
+        size_t ndof = nedge;
         
         first_edge_dof.SetSize (nedge+1); 
         for (auto i : Range(nedge))
@@ -622,6 +622,8 @@ namespace ngcomp
               }
             first_inner_dof[ncell] = ndof;
           }
+
+        SetNDof (ndof);
         return;
       }
 
@@ -638,7 +640,7 @@ namespace ngcomp
     for(int i = 0; i < ned; i++) 
       if (fine_edge[i] == 1) nedfine++; 
 
-    ndof = ned; // Nedelec (order = 0) !!   
+    size_t ndof = ned; // Nedelec (order = 0) !!   
        
     first_edge_dof.SetSize (ned+1); 
     for (int i = 0; i < ned; i++)
@@ -1483,12 +1485,12 @@ namespace ngcomp
   // }
     
 
-
+  /*
   size_t HCurlHighOrderFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
-
+  */
 
   void HCurlHighOrderFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {

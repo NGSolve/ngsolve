@@ -150,7 +150,6 @@ namespace ngcomp
 
     print = flags.GetDefineFlag("print");
 
-    ndlevel.SetSize(0);
     Flags loflags;
     loflags.SetFlag("order", 0.0);
     if (IsComplex()) loflags.SetFlag("complex");
@@ -376,7 +375,7 @@ namespace ngcomp
     // dof tables
     // ncfacets = 0;
     int ndof_lo = nfacets;
-    ndof = ndof_lo;
+    size_t ndof = ndof_lo;
     
     first_facet_dof.SetSize(nfacets+1);
     first_facet_dof = ndof_lo;
@@ -449,10 +448,13 @@ namespace ngcomp
 	  }
       }
 
+    /*
     while (ma->GetNLevels() > ndlevel.Size())
       ndlevel.Append (ndof);
     ndlevel.Last() = ndof;
-      
+    */
+    SetNDof (ndof);
+    
     //no prolongation so far       
     //prol->Update();
 

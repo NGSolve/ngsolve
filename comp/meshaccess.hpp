@@ -155,30 +155,6 @@ namespace ngcomp
     INLINE auto end () const { return DimElementIterator<VB,DIM>(ma, r.Next()); }
   };
 
-  /*
-  class NodeIterator
-  {
-    NodeId ni;
-  public:
-    NodeIterator (NodeId ani) : ni(ani) { ; }
-    NodeIterator operator++ () { return NodeIterator(++ni); }
-    INLINE NodeId operator*() const { return ni; }
-    bool operator!=(NodeIterator id2) const { return ni != id2.ni; }
-    bool operator==(NodeIterator id2) const { return ni == id2.ni; }
-  };
-
-  class NodeRange : public IntRange
-  {
-    NODE_TYPE nt;
-  public:
-    NodeRange (NODE_TYPE ant, IntRange ar) 
-      : IntRange(ar), nt(ant) { ; } 
-    NodeIterator begin () const { return NodeIterator(NodeId(nt,IntRange::First())); }
-    NodeIterator end () const { return NodeIterator(NodeId(nt,IntRange::Next())); }
-    NodeId operator[] (size_t nr) { return NodeId(nt, IntRange::First()+nr); }
-  };
-  */
-
   /** 
       Access to mesh topology and geometry.
 
@@ -662,7 +638,7 @@ namespace ngcomp
     
     void SetDeformation (shared_ptr<GridFunction> def = nullptr);
 
-    const shared_ptr<GridFunction> & GetDeformation () const
+    shared_ptr<GridFunction> GetDeformation () const
     {
       return deformation;
     }
@@ -817,15 +793,6 @@ namespace ngcomp
     void GetFaceEdges (int fnr, Array<int> & edges) const;
     INLINE auto GetFaceEdges (size_t fnr) const
     { return ArrayObject(mesh.GetFaceEdges(fnr)); }
-    /*
-    {
-      ArrayMem<int,4> f2ed;
-      GetFaceEdges (fnr, f2ed);
-      f2ed.NothingToDelete(); // dynamic allocation never needed
-      return f2ed;
-    }
-    */
-    
     void GetEdgeFaces (int enr, Array<int> & faces) const;
     /// returns elements connected to a face
     void GetFaceElements (int fnr, Array<int> & elnums) const;
@@ -911,7 +878,6 @@ namespace ngcomp
     }
 
 
-    // void GetVertexElements (int vnr, Array<int> & elnrs) const;
     /// element order stored in Netgen
     int GetElOrder (int enr) const
     { return mesh.GetElementOrder (enr+1); } 

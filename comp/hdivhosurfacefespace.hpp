@@ -15,7 +15,7 @@ namespace ngcomp
   {
   protected:
     
-    int ndof;
+    // int ndof;
     
     Array<DofId> first_facet_dof;
     Array<DofId> first_inner_dof;
@@ -28,7 +28,7 @@ namespace ngcomp
     Array<bool> fine_facet; 
     Array<bool> boundary_facet; 
  
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
     int uniform_order_inner; 
     int uniform_order_facet; 
 
@@ -64,7 +64,7 @@ namespace ngcomp
     virtual void UpdateDofTables() override; 
     virtual void UpdateCouplingDofArray() override;   
     
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     
     virtual FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;            
 

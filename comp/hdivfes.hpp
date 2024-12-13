@@ -19,7 +19,7 @@ namespace ngcomp
   class RaviartThomasFESpace : public FESpace
   {
     ///
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
   public:
     ///
     /*
@@ -42,9 +42,9 @@ namespace ngcomp
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     ///
-    virtual size_t GetNDofLevel (int level) const override;
+    // virtual size_t GetNDofLevel (int level) const override;
 
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;

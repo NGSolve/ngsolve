@@ -2711,13 +2711,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     */
   }
-  
+
+  /*
   size_t NonconformingFESpace :: GetNDof () const throw()
   {
     // return ma->GetNEdges();
     return ma->GetNFacets();
   }
-
+  */
 
   void NonconformingFESpace :: Update()
   {
@@ -2725,6 +2726,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ctofdof = UNUSED_DOF;
     for (auto el : ma->Elements(VOL))
       ctofdof[el.Facets()] = WIREBASKET_DOF;
+
+    SetNDof (ma->GetNFacets());
     
     /*
     if (ma->GetNLevels() > ndlevel.Size())
@@ -2837,12 +2840,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     throw Exception ("NonconormingFE: only bnd");
   }
-  
+
+  /*
   size_t NonconformingSurfaceFESpace :: GetNDof () const throw()
   {
     return ma->GetNEdges();
   }
-
+  */
 
   void NonconformingSurfaceFESpace :: Update()
   {
@@ -2850,7 +2854,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ctofdof = UNUSED_DOF;
     for (auto el : ma->Elements(BND))
       ctofdof[el.Edges()] = WIREBASKET_DOF;
-    
+    SetNDof (ma->GetNEdges()); 
   }
 
   void NonconformingSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
