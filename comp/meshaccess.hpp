@@ -237,9 +237,12 @@ namespace ngcomp
 
     /// store periodic vertex mapping for each identification number
     // shared ptr because Meshaccess is copy constructible
+    /*
     shared_ptr<Array<Array<IVec<2>>>> periodic_node_pairs[3] = {make_shared<Array<Array<IVec<2>>>>(),
                                                                make_shared<Array<Array<IVec<2>>>>(),
                                                                make_shared<Array<Array<IVec<2>>>>()};
+    */
+    Array<Array<IVec<2>>> periodic_node_pairs[3];
 
     DynamicTable<size_t> neighbours[4][4];
     friend class Region;
@@ -1102,7 +1105,7 @@ namespace ngcomp
     
     int GetNPeriodicIdentifications() const
     {
-      return periodic_node_pairs[NT_VERTEX]->Size();
+      return periodic_node_pairs[NT_VERTEX].Size();
     }
     // get number of all periodic nodes of nodetype nt
     size_t GetNPeriodicNodes(NODE_TYPE nt) const;
