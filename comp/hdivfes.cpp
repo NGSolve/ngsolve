@@ -107,8 +107,9 @@ namespace ngcomp
   void RaviartThomasFESpace :: Update()
   {
     shared_ptr<MeshAccess> ma = GetMeshAccess();
-    int level = ma->GetNLevels();
-    
+    /*
+      int level = ma->GetNLevels();
+
     if (level == ndlevel.Size())
       return;
     
@@ -116,7 +117,9 @@ namespace ngcomp
       ndlevel.Append (ma->GetNEdges());
     else
       ndlevel.Append (ma->GetNFaces());
-
+    */
+    SetNDof (ma->GetNFacets());
+    
     // FinalizeUpdate (lh);
   }
 
@@ -129,7 +132,8 @@ namespace ngcomp
       default: throw Exception ("Element type not available for RaviartThomasFESpace::GetFE");
       }
   }
-  
+
+  /*
   size_t RaviartThomasFESpace :: GetNDof () const throw()
   {
     return ndlevel.Last();
@@ -139,7 +143,7 @@ namespace ngcomp
   {
     return ndlevel[level];
   }
-  
+  */
   
   
   void RaviartThomasFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const

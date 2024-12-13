@@ -59,7 +59,7 @@ namespace ngcomp
     bool usegrad;  
     bool var_order; 
   
-    int ndof;
+    // int ndof;
     int nedfine; 
     int uniform_order_inner;
     int uniform_order_face; 
@@ -96,7 +96,7 @@ namespace ngcomp
     ///
     virtual void DoArchive (Archive & archive) override;
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     virtual void SetOrder (NodeId ni, int order) override;
     virtual int GetOrder (NodeId ni) const override;
     using FESpace::GetOrder;

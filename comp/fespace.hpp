@@ -922,7 +922,7 @@ ANY                  1 1 1 1 | 15
   class NGS_DLL_HEADER NonconformingFESpace : public FESpace
   {
     ///
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
 
   public:
     NonconformingFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
@@ -936,7 +936,7 @@ ANY                  1 1 1 1 | 15
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   };
@@ -947,7 +947,7 @@ ANY                  1 1 1 1 | 15
   class NGS_DLL_HEADER NonconformingSurfaceFESpace : public FESpace
   {
     ///
-    Array<int> ndlevel;
+    // Array<int> ndlevel;
 
   public:
     NonconformingSurfaceFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags=false);
@@ -961,7 +961,7 @@ ANY                  1 1 1 1 | 15
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    virtual size_t GetNDof () const throw() override;
+    // virtual size_t GetNDof () const throw() override;
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   };

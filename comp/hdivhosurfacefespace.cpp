@@ -343,7 +343,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     size_t nfa = ma->GetNEdges();
     size_t dim = ma->GetDimension();
     
-    ndof = nfa;
+    size_t ndof = nfa;
     first_facet_dof = ndof;
 
     if(dim==3)
@@ -450,7 +450,9 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
       {
 	throw Exception ("you should not be here - only 2D manifolds supported");
       }    
-        
+
+    SetNDof (ndof);
+    
     if(print) 
       {
         (*testout) << "ndof hdivhofespace update = " << endl << ndof << endl;        
@@ -571,12 +573,14 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
         throw Exception ("illegal element in HDivHOFeSpace::GetDivFE");
       }
   }
-  
+
+  /*
   size_t HDivHighOrderSurfaceFESpace :: GetNDof () const throw()
   {
     return ndof;
   }
-
+  */
+  
   void HDivHighOrderSurfaceFESpace :: GetDofNrs (ElementId ei, Array<int> & dnums) const
   {    
     dnums.SetSize0();
