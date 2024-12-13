@@ -1406,12 +1406,10 @@ namespace ngcomp
     fnums.SetSize (6);
     orient.SetSize (6);
     int nfa = 
-      Ng_GetElement_Faces (elnr+1, &fnums[0], &orient[0]);
+      // Ng_GetElement_Faces (elnr+1, &fnums[0], &orient[0]);
+      mesh.GetElement_Faces (elnr, &fnums[0], &orient[0]);
     fnums.SetSize (nfa);
     orient.SetSize (nfa);
-
-    for (int i = 0; i < nfa; i++)
-      fnums[i]--;
   }
 
   int MeshAccess :: 
@@ -1424,8 +1422,8 @@ namespace ngcomp
   void MeshAccess :: 
   GetSElFace (int selnr, int & fnum, int & orient) const
   {
-    fnum = Ng_GetSurfaceElement_Face (selnr+1, &orient);
-    fnum--;
+    // fnum = Ng_GetSurfaceElement_Face (selnr+1, &orient);
+    fnum = mesh.GetSurfaceElement_Face (selnr, &orient);
   }
 
   void MeshAccess :: GetFacePNums (int fnr, Array<int> & pnums) const
