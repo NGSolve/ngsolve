@@ -1511,7 +1511,7 @@ namespace ngcomp
     elnums.SetSize0();    
     for (auto sel : GetVertexSurfaceElements(v0))
       {
-        int sface = Ng_GetSurfaceElement_Face (sel+1)-1;
+        int sface = GetSElFace(sel);
         if (sface == fnr)
           elnums.Append (sel);
       }
