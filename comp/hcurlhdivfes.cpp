@@ -1336,7 +1336,7 @@ namespace ngcomp {
       low_order_space -> Update();
 
     int i, j;
-
+    
     int level = ma->GetNLevels();
     int ne = ma->GetNE();
     int nse = ma->GetNSE();
