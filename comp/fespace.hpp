@@ -288,14 +288,7 @@ ANY                  1 1 1 1 | 15
       order_policy = op;
     }
     
-    virtual void SetOrder (ELEMENT_TYPE et, TORDER order)
-    {
-      if (order_policy == CONSTANT_ORDER || order_policy == OLDSTYLE_ORDER)
-        order_policy = NODE_TYPE_ORDER;
-      et_bonus_order[et] = order - this->order;
-
-      timestamp = 0;  // rerun first_update
-    }
+    virtual void SetOrder (ELEMENT_TYPE et, TORDER order);
 
     virtual void SetOrder (NodeId ni, int order); 
     virtual int GetOrder (NodeId ni) const; 
