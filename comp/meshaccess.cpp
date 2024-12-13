@@ -2020,12 +2020,13 @@ namespace ngcomp
       }
   }
 
-
+  /*
   void MeshAccess :: SetPointSearchStartElement(const int el) const
   {
     Ng_SetPointSearchStartElement(el+1);
   }
-
+  */
+  
   ElementId MeshAccess :: FindElementOfPoint (FlatVector<double> point,
 					IntegrationPoint & ip, 
 					bool build_searchtree,
@@ -2184,6 +2185,7 @@ namespace ngcomp
     return mesh.GetCurveOrder();
   }
 
+  /*
   int MeshAccess :: GetNPairsPeriodicVertices () const 
   {
     return Ng_GetNPeriodicVertices(0);
@@ -2225,7 +2227,8 @@ namespace ngcomp
 	pairs[i][1]--;
       }
   }
-
+  */
+  
   size_t MeshAccess :: GetNPeriodicNodes(NODE_TYPE nt) const
   {
     size_t npairs = 0;
@@ -2250,7 +2253,7 @@ namespace ngcomp
     return (*periodic_node_pairs[nt])[idnr];
   }
 
-
+  /*
   int MeshAccess :: GetNPairsPeriodicEdges () const 
   {
     return Ng_GetNPeriodicEdges(0);
@@ -2290,7 +2293,8 @@ namespace ngcomp
 	pairs[i][1]--;
       }
   }
-
+  */
+  
   void MeshAccess::GetVertexSurfaceElements (size_t vnr, Array<int> & elems) const
   {
     elems = GetVertexSurfaceElements(vnr);
@@ -2315,7 +2319,7 @@ namespace ngcomp
     higher_integration_order[elnr] = false;
   }
 
-
+  /*
   void MeshAccess :: InitPointCurve(double red, double green, double blue) const
   {
     Ng_InitPointCurve(red, green, blue);
@@ -2325,7 +2329,7 @@ namespace ngcomp
   {
     Ng_AddPointCurvePoint(&(point(0)));
   }
-
+  */
 
   const Table<size_t> & MeshAccess :: GetElementsOfClass (VorB vb) const
   {
@@ -2661,15 +2665,17 @@ namespace ngcomp
   
 
 #ifdef PARALLEL
- 
+
+  /*
   size_t MeshAccess ::GetGlobalNodeNum (NodeId node) const
   {
-    /** There is only one global node **/
+    // There is only one global node
     if (node.GetType() == NT_GLOBAL)
       { return 0; }
     int glob = NgPar_GetGlobalNodeNum (node.GetType(), node.GetNr());
     return glob;
   }
+*/
 
   size_t MeshAccess :: GetGlobalVertexNum (int locnum) const
   {

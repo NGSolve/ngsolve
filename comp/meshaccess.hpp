@@ -1050,11 +1050,11 @@ namespace ngcomp
 	}
     }
     
-
+    /*
     // (old style optimization)
     [[deprecated("functionality not useful anymore, just remove function call!")]]            
     void SetPointSearchStartElement(const int el) const;
-
+    */
 
     
     ElementId FindElementOfPoint (FlatVector<double> point,
@@ -1080,6 +1080,7 @@ namespace ngcomp
     { return GetElement(ElementId(VOL,elnr)).is_curved; }
       // { return bool (Ng_IsElementCurved (elnr+1)); }
 
+    /*
     [[deprecated("Use GetPeriodicNodes(NT_VERTEX, pairs) instead!")]]
     void GetPeriodicVertices ( Array<IVec<2> > & pairs) const;
     [[deprecated("Use GetNPeriodicNodes(NT_VERTEX) instead!")]]
@@ -1097,7 +1098,8 @@ namespace ngcomp
     void GetPeriodicEdges (int idnr, Array<IVec<2> > & pairs) const;
     [[deprecated("Use GetPeriodicNodes(NT_EDGE, idnr).Size() instead")]]
     int GetNPairsPeriodicEdges (int idnr) const;
-
+    */
+    
     int GetNPeriodicIdentifications() const
     {
       return periodic_node_pairs[NT_VERTEX]->Size();
@@ -1144,9 +1146,10 @@ namespace ngcomp
 
     // void PrecomputeGeometryData(int intorder);
 
+    /*
     void InitPointCurve(double red = 1, double green = 0, double blue = 0) const;
     void AddPointCurvePoint(const Vec<3> & point) const;
-
+    */
 
     
     template <int DIMS, int DIMR> friend class Ng_ElementTransformation;
@@ -1166,10 +1169,11 @@ namespace ngcomp
        Returns the global number of the node.
        Currently, this function works only for vertex-nodes.
      */
-
+    /*
     [[deprecated("should not need global numbers")]]                    
     size_t GetGlobalNodeNum (NodeId node) const;
-
+    */
+    
     size_t GetGlobalVertexNum (int locnum) const;
     
     FlatArray<int> GetDistantProcs (NodeId node) const
