@@ -137,7 +137,7 @@ namespace ngla
   public:
     ParallelDofs (NgMPI_Comm acomm, Table<int> && adist_procs, 
 		  int dim = 1, bool iscomplex = false)
-      : es(dim), complex(iscomplex), ndof(adist_procs.Size())
+      : ndof(adist_procs.Size()), es(dim), complex(iscomplex)
     { ; }
     
     int GetNDofLocal () const { return ndof; }
