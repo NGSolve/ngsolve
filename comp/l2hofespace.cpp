@@ -1,5 +1,5 @@
 /*********************************************************************/
-/* File:   l2hofespace.cpp                                         */
+/* File:   l2hofespace.cpp                                           */
 /* Author: Start                                                     */
 /* Date:   24. Feb. 2003                                             */
 /*********************************************************************/
@@ -561,7 +561,7 @@ namespace ngcomp
             }
         bool found = false;
         for (size_t i = ne; i-- > oldne; )
-          if (!isparent[i] && !isdone[i])
+          if ( /* !isparent[i] && */ !isdone[i])
             {
               int newest_vertex = ma->GetElement(ElementId(VOL,i)).newest_vertex;
               verts[4] = tet_creation_verts[i][newest_vertex];
@@ -570,11 +570,12 @@ namespace ngcomp
                 pnodes = { pnodes[1], pnodes[0] }; 
               if (!tet_creation_verts[i].Contains(pnodes[0]))
               {
-                cout << "p0 not found" << endl;
-                cout << "i = " << i << endl;
-                cout << "newest_vertex = " << newest_vertex << endl;
-                cout << "trig_creation_verts[i] = " << tet_creation_verts[i] << endl;
-                cout << "pnodes = " << pnodes << endl;
+                cout << "no vertex parent in element parents" << endl;
+                cout << "element = " << i << endl;
+                cout << "newest_vertex, loc=" << newest_vertex
+                     << ", glob=" << tet_creation_verts[i][newest_vertex] << endl;
+                cout << "tet_creation_verts[i] = " << tet_creation_verts[i] << endl;
+                cout << "parent nodes = " << ma->GetParentNodes(verts[4]) << endl;
               }
               verts[0] = pnodes[0];
               verts[3] = pnodes[1];
