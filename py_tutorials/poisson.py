@@ -2,7 +2,7 @@
 # with Dirichlet boundary condition u = 0
 
 from ngsolve import *
-from netgen.geom2d import unit_square
+# from netgen.geom2d import unit_square
 
 ngsglobals.msg_level = 1
 
