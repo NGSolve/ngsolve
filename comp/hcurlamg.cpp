@@ -1124,7 +1124,7 @@ namespace ngcomp
       return;
     auto ndofhc = 6;
     auto ndofh1 = 4;
-    auto dnumshc = dnums.Range(ndofhc);
+    auto dnumshc = dnums.Range(0,ndofhc);
     // auto dnumsh1 = dnums.Range(ndofhc, END);
     FlatMatrix<SCAL> elmathc = belmat.Rows(ndofhc).Cols(ndofhc) | lh;
     double reg = 1e-10 * L2Norm(elmathc);
