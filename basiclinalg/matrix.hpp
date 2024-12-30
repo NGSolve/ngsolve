@@ -243,9 +243,19 @@ namespace ngbla
       return FlatMatrix (next-first, w, data+first*w);
     }
 
+    INLINE FlatMatrix Rows (size_t next) const
+    {
+      return FlatMatrix (next, w, data);
+    }
+
     INLINE SliceMatrix<T> Cols (size_t first, size_t next) const
     {
       return SliceMatrix<T> (h, next-first, w, data+first);
+    }
+
+    INLINE SliceMatrix<T> Cols (size_t next) const
+    {
+      return SliceMatrix<T> (h, next, w, data);
     }
 
     INLINE FlatMatrix Rows (IntRange range) const
@@ -1356,6 +1366,12 @@ namespace ngbla
         return MatrixView<T,ORD,TH,size_t,TDIST>  (h, next-first, Dist(), Addr(0,first));
     }
 
+    INLINE auto Cols (size_t next) const
+    {
+      return Cols(0, next);
+    }
+
+    
     INLINE auto Rows (size_t first, size_t next) const
     {
       if constexpr (ORD==RowMajor)
@@ -1367,6 +1383,11 @@ namespace ngbla
     INLINE auto Rows (IntRange range) const
     {
       return Rows (range.First(), range.Next());
+    }
+
+    INLINE auto Rows (size_t next) const
+    {
+      return Rows (0, next);
     }
 
     template <int R>
