@@ -27,6 +27,10 @@ def test_node_access():
             assert len(mesh[face].vertices) == 3
             for v in mesh[face].vertices:
                 assert v in cell.vertices
+                
+            print (mesh[face].vertices)
+            print (mesh[face].edges)
+            
             assert len(mesh[face].edges) == 3
             for e in mesh[face].edges:
                 assert e in cell.edges
