@@ -1769,7 +1769,7 @@ namespace ngcomp
               lin->GetIndirect(dnums,elveclin);
               int n1 = dnums1.Size()*fespace->GetDimension();
               FlatVector<SCAL> elveclin1(n1,&elveclin(0));
-              FlatVector<SCAL> elveclin2(n1,&elveclin(n1));
+              FlatVector<SCAL> elveclin2(dnums2.Size() * fespace->GetDimension(),&elveclin(n1));
               fespace->TransformVec(ei1,elveclin1,TRANSFORM_SOL);
               fespace->TransformVec(ei2,elveclin2,TRANSFORM_SOL);
             }
