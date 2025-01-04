@@ -1,7 +1,8 @@
 from ngsolve import *
 from netgen.geom2d import unit_square
 
-mesh = Mesh(unit_square.GenerateMesh(maxh=0.2))
+ngmesh = unit_square.GenerateMesh(maxh=0.2)
+mesh = Mesh(ngmesh)
 
 fes = H1(mesh, order=2)
 u = fes.TrialFunction()
