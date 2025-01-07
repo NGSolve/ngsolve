@@ -26,7 +26,6 @@
 #include <regex>
 
 
-
 namespace ngcomp
 {
 
