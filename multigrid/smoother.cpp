@@ -60,19 +60,16 @@ namespace ngmg
 
   void GSSmoother :: Update (bool force_update)
   {
-    int i;
     jac.SetSize (biform.GetNLevels());
-    for (i = 0; i < biform.GetNLevels(); i++)
+    for (int i = 0; i < biform.GetNLevels(); i++)
       {
-	if (biform.GetMatrixPtr(i))
+	if (biform.GetMatrixPtr(i) && (force_update || !jac[i]))
           {
             jac[i] = dynamic_cast<const BaseSparseMatrix&> (*biform.GetMatrixPtr(i))
               .CreateJacobiPrecond(biform.GetFESpace()->GetFreeDofs());
             string name = "GSSmootherLevel" + ToString(i);
             GetMemoryTracer().Track(*jac[i], name);
           }
-	else
-	  jac[i] = NULL;
       }
   }
 
