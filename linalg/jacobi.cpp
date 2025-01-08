@@ -40,8 +40,9 @@ namespace ngla
   JacobiPrecond<TM,TV_ROW,TV_COL> ::
   JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
 		 shared_ptr<BitArray> ainner, bool use_par)
-    : mat(amat), inner(ainner)
-  { 
+  // : mat(amat), inner(ainner)
+    : mat(amat), inner(make_shared<BitArray>(*ainner))
+  {
     static Timer t("Jacobiprecond::ctor"); RegionTimer r(t);
     SetParallelDofs (mat.GetParallelDofs());
 
