@@ -41,12 +41,12 @@ namespace ngla
   JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
 		 shared_ptr<BitArray> ainner, bool use_par)
   // : mat(amat), inner(ainner)
-    : mat(amat), inner(make_shared<BitArray>(*ainner))
+    : mat(amat), inner(ainner?make_shared<BitArray>(*ainner):nullptr),
+      height(amat.Height())
   {
     static Timer t("Jacobiprecond::ctor"); RegionTimer r(t);
     SetParallelDofs (mat.GetParallelDofs());
 
-    height = mat.Height();
     invdiag.SetSize (height); 
 
     ParallelFor (height, [&](size_t i)
