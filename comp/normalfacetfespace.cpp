@@ -559,7 +559,14 @@ namespace ngcomp
             });
         }
       case BBND: case BBBND: default:
-        throw Exception ("NormalFacetFESpace::GetFE does not support BBND or BBBND");
+        {
+          return
+            SwitchET (ma->GetElType(ei), [&] (auto et) -> FiniteElement&
+            {
+              return *new (lh) /*HCurl*/DummyFE<et.ElementType()> ();
+            });
+        }
+        // throw Exception ("NormalFacetFESpace::GetFE does not support BBND or BBBND");
       }
   }
 
