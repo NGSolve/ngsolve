@@ -206,5 +206,7 @@ PYBIND11_MODULE(ngscuda, m) {
              }
          })
     ;
+  
+  ExportDemo(m);
 }
 

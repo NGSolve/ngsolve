@@ -80,6 +80,7 @@ namespace ngcomp
     { space->VTransformVC(ei, vec, tt); }    
 
     auto & GetVertexMap() const { return vertex_map; }
+    auto & GetDofMap() const { return dofmap; }    
   protected:
     // overload in quasiperiodic space
     virtual void DofMapped(size_t from, size_t to, size_t idnr) { ; }
