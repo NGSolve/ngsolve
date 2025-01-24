@@ -1641,6 +1641,9 @@ used_idnrs : list of int = None
                   }), py::arg("fespace"), py::arg("phase")=nullopt,
                   py::arg("use_idnrs")=py::list(), py::arg("autoupdate")=false)
     .def (NGSPickle<PeriodicFESpace>())
+    .def_property_readonly("dofmap", [](PeriodicFESpace & self) {
+      return Array<int>(self.GetDofMap());  // better: return buffer
+    })
     ;
 
   py::class_<QuasiPeriodicFESpace<double>, shared_ptr<QuasiPeriodicFESpace<double>>, PeriodicFESpace>(m, "QuasiPeriodicD")
