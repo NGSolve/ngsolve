@@ -25,7 +25,7 @@ add_library(${lib_name} SHARED
 
 set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp dev_sparsecholesky.cpp dev_blockjacobi.cpp PROPERTIES LANGUAGE CUDA)
 
-target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --extended-lambda >)
+target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr -allow-unsupported-compiler --extended-lambda >)
 
 target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve netgen_python)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_SEPARABLE_COMPILATION ON)
