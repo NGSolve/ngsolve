@@ -152,6 +152,9 @@ namespace ngla
     void CalcBalancing ();
     const Partitioning & GetBalancing() const { return balance; } 
 
+    void EmbedHeight (size_t starti, size_t newheight);
+    void EmbedWidth (size_t starti, size_t newwidth);
+    
     ostream & Print (ostream & ost) const;
 
     virtual Array<MemoryUsage> GetMemoryUsage () const;    
