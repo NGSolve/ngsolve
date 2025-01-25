@@ -50,7 +50,7 @@ fi
 ")
 
 set(nvcc_flags "")
-foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} "-fPIC")
+foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} "-fPIC" "-allow-unsupported-compiler")
     set(nvcc_flags "${nvcc_flags} -Xcompiler ${opt}")
     message("add opt ", ${opt})
 endforeach()
