@@ -1131,6 +1131,18 @@ namespace ngla
            });
       }
   }
+
+
+  template <typename SCAL>      
+  shared_ptr<BaseSparseMatrix> ConstantElementByElementMatrix<SCAL> :: 
+  CreateSparseMatrix() const
+  {
+    auto spm = make_shared<SparseMatrix<SCAL>> (h, w, col_dnums, row_dnums, false);
+    spm->SetZero();
+    for (size_t i = 0; i < col_dnums.Size(); i++)
+      spm->AddElementMatrix(col_dnums[i], row_dnums[i], matrix);
+    return spm;
+  }
   
   
   template class ConstantElementByElementMatrix<double>;

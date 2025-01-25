@@ -6,6 +6,7 @@
 
 
 #include <special_matrix.hpp>
+#include "sparsematrix.hpp"
 
 namespace ngla
 {
@@ -104,6 +105,22 @@ namespace ngla
     y += s*x.Range(range);
   }
 
+  shared_ptr<BaseSparseMatrix> Embedding :: CreateSparseMatrix() const
+  {
+    Array<int> ai(range.Size()), aj(range.Size());
+    Array<double> vals(range.Size());
+
+    for (int i = 0; i < range.Size(); i++)
+      {
+        ai[i] = range.First()+i;
+        aj[i] = i;
+      }
+    vals = 1;
+    
+    return SparseMatrix<double>::CreateFromCOO (ai, aj, vals, Height(), Width());
+  }
+
+  
   
   BaseMatrix::OperatorInfo EmbeddedMatrix :: GetOperatorInfo () const
   {
@@ -142,7 +159,12 @@ namespace ngla
   }
 
 
-
+  shared_ptr<BaseSparseMatrix> EmbeddedMatrix :: CreateSparseMatrix() const
+  {
+    auto mat1 = mat->CreateSparseMatrix();
+    mat1 -> EmbedHeight(range.First(), Height());
+    return mat1;
+  }
 
 
   void EmbeddingTranspose :: Mult (const BaseVector & x, BaseVector & y) const

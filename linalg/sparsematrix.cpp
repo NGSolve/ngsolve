@@ -1224,6 +1224,25 @@ namespace ngla
       if (same_nze[i] != i) sum++;
     cout << "same_nze = " << sum << "out of " << size << endl;
   }
+
+  void MatrixGraph :: EmbedHeight (size_t starti, size_t newheight)
+  {
+    Array<size_t> tmp_firsti = std::move(firsti);
+    firsti = Array<size_t>(newheight+1);
+    firsti.Range(0, starti) = 0;
+    firsti.Range(starti, starti+size+1) = tmp_firsti;
+    firsti.Range(starti+size+1, newheight+1) = tmp_firsti.Last();
+    size = newheight;
+  }
+  
+  void MatrixGraph :: EmbedWidth (size_t starti, size_t newwidth)
+  {
+    for (auto & ci : colnr)
+      ci += starti;
+    width = newwidth;
+  }
+
+
   
   ostream & MatrixGraph :: Print (ostream & ost) const
   {
