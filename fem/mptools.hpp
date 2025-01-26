@@ -1276,7 +1276,7 @@ c
       
       for (int n = 0; n <= os; n++)
         hv1(n) = sh.Coef(n,0);
-      hv2 = trafo.Rows(ot+1) * hv1;
+      hv2 = trafo.Rows(ot+1).Cols(os+1) * hv1;
       for (int n = 0; n <= ot; n++)
         target.SH().Coef(n,0) = hv2(n);
 
