@@ -10,7 +10,7 @@ else()
   set(lib_name ngscudalib)
 endif()
 
-set (CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS}" "-allow-unsupported-compiler")
+string(APPEND CMAKE_CUDA_FLAGS " --allow-unsupported-compiler")
 
 find_package(CUDAToolkit)
 enable_language(CUDA)
