@@ -36,7 +36,7 @@ do
     sed -i 's/set(DLL_EXT ".so")/set(DLL_EXT ".so.2")/' /opt/python/cp${pyversion}-cp${pyversion}/lib/cmake/mkl/MKLConfig.cmake
     rm -rf _skbuild
     $PYDIR/pip wheel --no-clean . || cat /builds/ngsolve/ngsolve/_skbuild/*/cmake-build/dependencies/Stamp/ngsolve/ngsolve-build.log
-    rename linux_ manylinux_2_28_x86_64_ ngsolve*.whl
+    rename linux_ manylinux_2_28_ ngsolve*.whl
     mv ngsolve*.whl wheelhouse/ || true
     $PYDIR/pip uninstall -y netgen-mesher
     $PYDIR/pip install -U twine
