@@ -1,6 +1,7 @@
 #! /bin/bash
 set -e
-# ulimit -n 1024000 # lower open file limit, seems to affect performance
+ulimit -n 1024000 # lower open file limit, seems to affect performance
+alias ulimit=echo
 yum -y update
 yum -y install ninja-build fontconfig-devel tk-devel tcl-devel libXmu-devel mesa-libGLU-devel
 
@@ -35,7 +36,7 @@ do
     sed -i 's/set(DLL_EXT ".so")/set(DLL_EXT ".so.2")/' /opt/python/cp${pyversion}-cp${pyversion}/lib/cmake/mkl/MKLConfig.cmake
     rm -rf _skbuild
     $PYDIR/pip wheel --no-clean . || cat /builds/ngsolve/ngsolve/_skbuild/*/cmake-build/dependencies/Stamp/ngsolve/ngsolve-build.log
-    rename linux_ manylinux_2_17_x86_64.manylinux2014_ ngsolve*.whl
+    rename linux_ manylinux_2_28_x86_64_ ngsolve*.whl
     mv ngsolve*.whl wheelhouse/ || true
     $PYDIR/pip uninstall -y netgen-mesher
     $PYDIR/pip install -U twine
