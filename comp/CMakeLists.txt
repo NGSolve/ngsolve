@@ -42,7 +42,7 @@ install( FILES
         hypre_ams_precond.hpp facetsurffespace.hpp
         compressedfespace.hpp plateaufespace.hpp globalinterfacespace.hpp globalspace.hpp
         python_comp.hpp fesconvert.hpp contact.hpp interpolate.hpp
-        webgui.hpp
+        webgui.hpp hcurlcurlfespace.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
