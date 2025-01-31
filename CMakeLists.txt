@@ -164,16 +164,7 @@ include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
 add_library(netgen_libs INTERFACE)
 install(TARGETS netgen_libs ${ngs_install_dir})
-if(EMSCRIPTEN AND NETGEN_PYTHON)
-  # special build: leave dependencies open, just pass build flags
-  target_compile_options(netgen_libs INTERFACE $<TARGET_PROPERTY:ngcore,INTERFACE_COMPILE_OPTIONS>)
-  target_compile_definitions(netgen_libs INTERFACE $<TARGET_PROPERTY:ngcore,INTERFACE_COMPILE_DEFINITIONS>)
-  target_include_directories(netgen_libs INTERFACE $<TARGET_PROPERTY:ngcore,INTERFACE_INCLUDE_DIRECTORIES>)
-  target_compile_options(netgen_libs INTERFACE $<TARGET_PROPERTY:nglib,INTERFACE_COMPILE_OPTIONS>)
-else(EMSCRIPTEN AND NETGEN_PYTHON)
-  target_link_libraries(netgen_libs INTERFACE nglib ngcore)
-endif(EMSCRIPTEN AND NETGEN_PYTHON)
-
+target_link_libraries(netgen_libs INTERFACE nglib ngcore)
 
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 if(NETGEN_USE_GUI)
