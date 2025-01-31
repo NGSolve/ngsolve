@@ -59,7 +59,7 @@ pkg.update({
     },
     "netgen": {
       "name": "netgen",
-      "version": "6.2.2401",
+      "version": "6.2.2406",
       "file_name": "netgen.zip",
       "install_dir": "stdlib",
       "sha256": getHash("netgen.zip"),
@@ -76,7 +76,7 @@ pkg.update({
     },
     "ngsolve": {
       "name": "ngsolve",
-      "version": "6.2.2401",
+      "version": "6.2.2406",
       "file_name": "ngsolve.zip",
       "install_dir": "stdlib",
       "sha256": getHash("ngsolve.zip"),
@@ -85,6 +85,7 @@ pkg.update({
         "ngsolve"
       ],
       "depends": [
+        "openblas",
         "numpy",
         "netgen"
       ],
@@ -93,7 +94,7 @@ pkg.update({
     },
     "pyngcore": {
       "name": "pyngcore",
-      "version": "0.0.1",
+      "version": "6.2.2406",
       "file_name": "pyngcore.zip",
       "install_dir": "stdlib",
       "sha256": getHash("pyngcore.zip"),

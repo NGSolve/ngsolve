@@ -36,7 +36,7 @@ emcmake cmake /root/ngsolve \
       -DUSE_HYPRE:BOOL=OFF \
       -DUSE_INTERFACE:UNINITIALIZED=ON \
       -DUSE_LAPACK:BOOL=ON \
-      -DLAPACK_LIBRARIES="/root/xbuildenv/pyodide-root/packages/.libs/lib/libopenblas.a" \
+      -DLAPACK_LIBRARIES="/root/output/pyodide/libopenblas.so" \
       -DUSE_MKL:BOOL=OFF \
       -DUSE_MPI:BOOL=OFF \
       -DUSE_MUMPS:BOOL=OFF \
