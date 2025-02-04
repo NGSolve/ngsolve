@@ -265,7 +265,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
      
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
-        py::dynamic_attr() // add dynamic attributes
+                                                 py::dynamic_attr(), // add dynamic attributes
+                                                 py::buffer_protocol()
       )
     .def(py::init([] (size_t s, bool is_complex, int es) -> shared_ptr<BaseVector>
                   { return CreateBaseVector(s,is_complex, es); }),
@@ -293,6 +294,31 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 #endif
         */
       } )
+
+    .def_buffer([](BaseVector & self) -> py::buffer_info {
+      
+      if (!self.IsComplex())
+        return py::buffer_info
+          (
+           self.FVDouble().Data(),                       /* Pointer to buffer */
+           sizeof(double),                               /* Size of one scalar */
+           py::format_descriptor<double>::format(),      /* Python struct-style format descriptor */
+           1,                                            /* Number of dimensions */
+           { self.FVDouble().Size() },                              /* Buffer dimensions */
+           { sizeof(double)  }                           /* Strides (in bytes) for each index */
+        );
+      else
+        return py::buffer_info
+          (
+           self.FVComplex().Data(),                       /* Pointer to buffer */
+           sizeof(Complex),                               /* Size of one scalar */
+           py::format_descriptor<Complex>::format(),      /* Python struct-style format descriptor */
+           1,                                            /* Number of dimensions */
+           { self.FVComplex().Size() },                              /* Buffer dimensions */
+           { sizeof(Complex)  }                           /* Strides (in bytes) for each index */
+        );
+    })
+    
     .def(py::pickle([] (const BaseVector& bv)
                     {
                       MemoryView mv((void*) &bv.FVDouble()[0], sizeof(double) * bv.FVDouble().Size());
