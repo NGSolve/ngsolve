@@ -2070,8 +2070,8 @@ weights : list
         getNumpyFieldDescriptor<double>( "x", offsetof(MeshPoint, x) ),
         getNumpyFieldDescriptor<double>( "y", offsetof(MeshPoint, y) ),
         getNumpyFieldDescriptor<double>( "z", offsetof(MeshPoint, z) ),
-        getNumpyFieldDescriptor<size_t>( "meshptr", offsetof(MeshPoint, mesh) ),
-        getNumpyFieldDescriptor<int>( "VorB", offsetof(MeshPoint, vb) ),
+        getNumpyFieldDescriptor<uintptr_t>( "meshptr", offsetof(MeshPoint, mesh) ),
+        getNumpyFieldDescriptor<uint8_t>( "VorB", offsetof(MeshPoint, vb) ),
         getNumpyFieldDescriptor<int>( "nr", offsetof(MeshPoint, nr) )
     });
   }
