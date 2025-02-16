@@ -263,7 +263,7 @@ namespace ngfem
       if(code.deriv)
         body += "}\n";
       else
-        body += "} /* else ";
+        body += "} else ";
     }
     body += "{\n";
     if(testfunction)
@@ -280,7 +280,7 @@ namespace ngfem
       };
     body += "}\n";
     if (!testfunction && code.deriv == 0)
-      body += "*/\n";
+      body += "\n";
   
 
     string func_string = testfunction ? "testfunction" : "trialfunction";
