@@ -20,7 +20,7 @@ namespace ngcomp
 namespace ngfem
 {
 
-  class ProxyFunction : public CoefficientFunction
+  class NGS_DLL_HEADER ProxyFunction : public CoefficientFunction
 {
 protected:
   shared_ptr<ngcomp::FESpace> fes;
@@ -44,7 +44,7 @@ protected:
   mutable shared_ptr<ProxyFunction> anti_dt;
   // int dim;
 public:
-  NGS_DLL_HEADER ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
+  ProxyFunction (shared_ptr<ngcomp::FESpace> afes,
                                 bool atestfunction, bool ais_complex,
                                 shared_ptr<DifferentialOperator> aevaluator, 
                                 shared_ptr<DifferentialOperator> aderiv_evaluator,
@@ -61,7 +61,7 @@ public:
 
   string GetDescription () const override;
 
-  NGS_DLL_HEADER virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
+  void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override;
   
   const shared_ptr<DifferentialOperator> & Evaluator() const { return evaluator; }
   const shared_ptr<DifferentialOperator> & DerivEvaluator() const { return deriv_evaluator; }
@@ -70,19 +70,19 @@ public:
   const shared_ptr<DifferentialOperator> & TTraceEvaluator() const { return ttrace_evaluator; }
   const shared_ptr<DifferentialOperator> & TTraceDerivEvaluator() const { return ttrace_deriv_evaluator; }
 
-  NGS_DLL_HEADER shared_ptr<ProxyFunction> Deriv() const;
-  NGS_DLL_HEADER shared_ptr<ProxyFunction> Trace() const;
-  NGS_DLL_HEADER shared_ptr<CoefficientFunction> Primary() const override
+  shared_ptr<ProxyFunction> Deriv() const;
+  shared_ptr<ProxyFunction> Trace() const;
+  shared_ptr<CoefficientFunction> Primary() const override
   { return primaryproxy; }
   
-  NGS_DLL_HEADER shared_ptr<ProxyFunction> Dt() const;  
-  NGS_DLL_HEADER shared_ptr<ProxyFunction> AntiDt() const;
-  NGS_DLL_HEADER int OrderDt() const;    
+  shared_ptr<ProxyFunction> Dt() const;  
+  shared_ptr<ProxyFunction> AntiDt() const;
+  int OrderDt() const;    
 
   
-  NGS_DLL_HEADER shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const;
+  shared_ptr<ProxyFunction> Other(shared_ptr<CoefficientFunction> _boundary_values) const;
 
-  NGS_DLL_HEADER const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
+  const shared_ptr<CoefficientFunction> & BoundaryValues() const { return boundary_values; } 
 
   void SetAdditionalEvaluator (string name, shared_ptr<DifferentialOperator> diffop)
   {
@@ -101,10 +101,10 @@ public:
     return additional_diffops;
   }
 
-  NGS_DLL_HEADER virtual shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const;
+  virtual shared_ptr<ProxyFunction> GetAdditionalProxy (string name) const;
   
-  NGS_DLL_HEADER shared_ptr<CoefficientFunction> Operator (const string & name) const override;
-  NGS_DLL_HEADER shared_ptr<CoefficientFunction> Operator (shared_ptr<DifferentialOperator> diffop) const override;
+  shared_ptr<CoefficientFunction> Operator (const string & name) const override;
+  shared_ptr<CoefficientFunction> Operator (shared_ptr<DifferentialOperator> diffop) const override;
     
   const shared_ptr<ngcomp::FESpace> & GetFESpace() const { return fes; }
   void SetFESpace(shared_ptr<ngcomp::FESpace> fespace) { fes = fespace; }
@@ -118,44 +118,44 @@ public:
     return tmp(0);
   }
 
-  NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<> result) const override;
 
-  NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
+  virtual void Evaluate (const BaseMappedIntegrationPoint & ip,
                          FlatVector<Complex> result) const override;
 
-  NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                                         BareSliceMatrix<> result) const override;
 
-  NGS_DLL_HEADER virtual void Evaluate (const BaseMappedIntegrationRule & ir,
+  virtual void Evaluate (const BaseMappedIntegrationRule & ir,
                                         BareSliceMatrix<Complex> result) const override;
 
   // virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
   // AFlatMatrix<double> values) const;
 
-  NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          BareSliceMatrix<SIMD<double>> values) const override;
-  NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          BareSliceMatrix<SIMD<Complex>> values) const override;
 
   /*
-  NGS_DLL_HEADER virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+  virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                          FlatArray<AFlatMatrix<double>*> input,
                          AFlatMatrix<double> values) const override;
 
-  NGS_DLL_HEADER virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
+  virtual void EvaluateDeriv (const BaseMappedIntegrationRule & mir,
                               FlatMatrix<> result,
                               FlatMatrix<> deriv) const override;
 
-  NGS_DLL_HEADER virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
+  virtual void EvaluateDDeriv (const BaseMappedIntegrationRule & mir,
                                FlatMatrix<> result,
                                FlatMatrix<> deriv,
                                FlatMatrix<> dderiv) const override;
 
-  NGS_DLL_HEADER virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+  virtual void EvaluateDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                               AFlatMatrix<double> values, AFlatMatrix<double> deriv) const override;
   
-  NGS_DLL_HEADER virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
+  virtual void EvaluateDDeriv (const SIMD_BaseMappedIntegrationRule & ir,
                                AFlatMatrix<double> values, AFlatMatrix<double> deriv,
                                AFlatMatrix<double> dderiv) const override;
   */
@@ -217,7 +217,7 @@ public:
   // virtual bool ElementwiseConstant () const  override{ return true; }
 
   // the old one, to be replaced
-  NGS_DLL_HEADER void NonZeroPattern (const class ProxyUserData & ud,
+  void NonZeroPattern (const class ProxyUserData & ud,
                                       FlatVector<bool> nonzero,
                                       FlatVector<bool> nonzero_deriv,
                                       FlatVector<bool> nonzero_dderiv) const;
