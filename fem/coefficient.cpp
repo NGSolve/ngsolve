@@ -7579,6 +7579,16 @@ static RegisterClassForArchive<T_MultVecVecSameCoefficientFunction<7>, Coefficie
 static RegisterClassForArchive<T_MultVecVecSameCoefficientFunction<8>, CoefficientFunction> regmvvs8;
 static RegisterClassForArchive<T_MultVecVecSameCoefficientFunction<9>, CoefficientFunction> regmvvs9;
 
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<1>, CoefficientFunction> regmvv1;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<2>, CoefficientFunction> regmvv2;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<3>, CoefficientFunction> regmvv3;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<4>, CoefficientFunction> regmvv4;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<5>, CoefficientFunction> regmvv5;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<6>, CoefficientFunction> regmvv6;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<7>, CoefficientFunction> regmvv7;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<8>, CoefficientFunction> regmvv8;
+static RegisterClassForArchive<T_MultVecVecCoefficientFunction<9>, CoefficientFunction> regmvv9;
+
 // static RegisterClassForArchive<DomainVariableCoefficientFunction, CoefficientFunction> regdvcf;
 // static RegisterClassForArchive<IntegrationPointCoefficientFunction, CoefficientFunction> regipcf;
 // static RegisterClassForArchive<PolynomialCoefficientFunction, CoefficientFunction> regpolcf;
