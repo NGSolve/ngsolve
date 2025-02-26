@@ -944,19 +944,19 @@ namespace ngla
   template <class TM, class TV>
   AutoVector ParallelMumpsInverse<TM,TV> :: CreateVector () const
   {
-    return make_unique<ParallelVVector<TV>> (paralleldofs->GetNDofLocal(), paralleldofs);
+    return make_unique<ParallelVVector<TV>> (paralleldofs);
   }
 
   template <class TM, class TV>
   AutoVector ParallelMumpsInverse<TM,TV> :: CreateRowVector () const
   {
-    return make_unique<ParallelVVector<TV>> (paralleldofs->GetNDofLocal(), paralleldofs);
+    return make_unique<ParallelVVector<TV>> (paralleldofs);
   }
 
   template <class TM, class TV>
   AutoVector ParallelMumpsInverse<TM,TV> :: CreateColVector () const
   {
-    return make_unique<ParallelVVector<TV>> (paralleldofs->GetNDofLocal(), paralleldofs);
+    return make_unique<ParallelVVector<TV>> (paralleldofs);
   }
 
 
