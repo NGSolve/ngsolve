@@ -22,16 +22,18 @@ if config.is_python_package and sys.platform.startswith('win'):
     os.environ["PATH"] += os.pathsep + netgen_dir
 
 if config.USE_MKL and config.MKL_LINK == 'sdl':
-    import importlib.util
-    if importlib.util.find_spec("mkl") is not None:
+    import importlib.metadata
+    try:
+        importlib.metadata.version('mkl')
         import ctypes
-        import importlib.metadata
         for f in importlib.metadata.files('intel_openmp'):
             if f.match('*libiomp?.so') or f.match('*libiomp?md.dll'):
-                ctypes.CDLL(str(f.locate()))
+                ctypes.CDLL(str(f.locate()), mode=ctypes.RTLD_GLOBAL)
         for f in importlib.metadata.files('mkl'):
             if f.match('*mkl_rt*'):
-                ctypes.CDLL(str(f.locate()))
+                ctypes.CDLL(str(f.locate()), mode=ctypes.RTLD_GLOBAL)
+    except importlib.metadata.PackageNotFoundError:
+        pass
 
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
