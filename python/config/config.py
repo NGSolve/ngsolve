@@ -11,7 +11,6 @@ USE_CCACHE           = _cmake_to_bool("@USE_CCACHE@")
 USE_HYPRE            = _cmake_to_bool("@USE_HYPRE@")
 USE_LAPACK           = _cmake_to_bool("@USE_LAPACK@")
 USE_MKL              = _cmake_to_bool("@USE_MKL@")
-USE_MKL              = _cmake_to_bool("@USE_MKL@")
 USE_MUMPS            = _cmake_to_bool("@USE_MUMPS@")
 USE_PARDISO          = _cmake_to_bool("@USE_PARDISO@")
 USE_UMFPACK          = _cmake_to_bool("@USE_UMFPACK@")
@@ -48,6 +47,8 @@ CMAKE_INSTALL_PREFIX         = "@CMAKE_INSTALL_PREFIX@"
 CMAKE_CXX_COMPILER_LAUNCHER  = "@CMAKE_CXX_COMPILER_LAUNCHER@"
 
 version = NGSOLVE_VERSION_GIT
+
+MKL_LINK = "@MKL_LINK@"
 
 def get_cmake_dir():
     import os.path as p

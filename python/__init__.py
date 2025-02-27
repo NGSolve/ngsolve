@@ -21,15 +21,17 @@ if config.is_python_package and sys.platform.startswith('win'):
     os.add_dll_directory(netgen_dir)
     os.environ["PATH"] += os.pathsep + netgen_dir
 
-if config.is_python_package and config.USE_MKL:
-    import ctypes
-    import importlib.metadata
-    for f in importlib.metadata.files('intel_openmp'):
-        if f.match('*libiomp?.so') or f.match('*libiomp?md.dll'):
-            ctypes.CDLL(str(f.locate()))
-    for f in importlib.metadata.files('mkl'):
-        if f.match('*mkl_rt*'):
-            ctypes.CDLL(str(f.locate()))
+if config.USE_MKL and config.MKL_LINK == 'sdl':
+    import importlib.util
+    if importlib.util.find_spec("mkl") is not None:
+        import ctypes
+        import importlib.metadata
+        for f in importlib.metadata.files('intel_openmp'):
+            if f.match('*libiomp?.so') or f.match('*libiomp?md.dll'):
+                ctypes.CDLL(str(f.locate()))
+        for f in importlib.metadata.files('mkl'):
+            if f.match('*mkl_rt*'):
+                ctypes.CDLL(str(f.locate()))
 
 from .ngslib import __version__, ngstd, bla, la, fem, comp, solve
 
