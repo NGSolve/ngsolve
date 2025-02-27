@@ -11,7 +11,6 @@ if(NETGEN_USE_PYTHON)
             )
 
     install (FILES
-            ${CMAKE_CURRENT_BINARY_DIR}/config.py
             __expr.py internal.py __console.py webgui.py
             __init__.py utils.py solvers.py eigenvalues.py meshes.py
             krylovspace.py nonlinearsolvers.py bvp.py preconditioners.py timing.py TensorProductTools.py
