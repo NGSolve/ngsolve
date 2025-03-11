@@ -430,17 +430,16 @@ nr : int
                       throw Exception("Evaluate on BBND and BBBND regions not implemented!");
                     IntegrationPoint ip;
                     int elnr;
-                    Array<int> indices;
-                    auto nmesh = reg->Mesh()->GetNetgenMesh();
-                    for(auto i : Range(nmesh->GetNFD()))
-                      if(reg->Mask().Test(nmesh->GetFaceDescriptor(i+1).BCProperty()-1))
-                        indices.Append(i);
+                    Array<int> indices(reg->Mask().Size());
+                    Vec<3> p(x, y, z);
                     if(reg->VB() == VOL)
-                      elnr = reg->Mesh()->FindElementOfPoint(Vec<3>(x, y, z), ip, true, &indices).Nr();
+                      elnr = reg->Mesh()->FindElementOfPoint(p, ip, true, &indices).Nr();
+                    else if(reg->VB() == BND)
+                      elnr = reg->Mesh()->FindSurfaceElementOfPoint(p, ip, true, &indices);
                     else
-                      elnr = reg->Mesh()->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true, &indices);
+                      throw Exception("VorB not implemented!");
                     return MeshPoint { ip(0), ip(1), ip(2), reg->Mesh().get(), reg->VB(), elnr };
-                  });
+                  }, py::arg("x"), py::arg("y")=0., py::arg("z")=0.);
 
   py::implicitly_convertible <Region, BitArray> ();
 
