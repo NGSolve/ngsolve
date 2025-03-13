@@ -526,7 +526,7 @@ namespace ngla
       for (int i = 0; i < dimy; i++)
         for (int j = 0; j < dimx; j++)
           if (nonzero(i,j))
-            creatorT.Add (i,j);
+            creatorT.Add (j, i);
     sparseT = creatorT.MoveTable();
     
   }
