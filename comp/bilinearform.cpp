@@ -1122,13 +1122,14 @@ namespace ngcomp
                          });
         return;
       }
-    
+
+    try
+      {
     ParallelForRange
       (nip, [&](IntRange r)
        {
          constexpr size_t BS = 256;
          LocalHeap lh(1000000);
-         
          for (size_t ii = r.First(); ii < r.Next(); ii+=BS)
            {
              IntRange r2(ii, min(ii+BS, r.Next()));               
@@ -1152,7 +1153,7 @@ namespace ngcomp
                  ud.AssignMemory (proxy, r2.Size(), proxy->Evaluator()->Dim(), lh);
                  
                  // ttransx.Start();
-                 SliceMatrix<double> (dimx, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
+                 SliceMatrix<double> (nexti-starti, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
                                       (double*)(ud.GetAMemory (proxy)).Data()) = 
                    x.FV<double>().AsMatrix(dimx, nip).Cols(r2).Rows(starti, nexti);
                  // ttransx.Stop();
@@ -1179,6 +1180,12 @@ namespace ngcomp
              // ttransy.Stop();
            }
        }, TasksPerThread(3));
+      }
+    catch (Exception & e)
+      {
+        cout << "In ApplyIntegrationRule, e = " << e.What() << endl;
+        throw(e);
+      }
   }
 
   
