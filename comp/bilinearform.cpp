@@ -1042,6 +1042,9 @@ namespace ngcomp
                 s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
                   " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
                 s << "bool constexpr has_values_" << step << " = true;\n" << endl;
+                // Declare dummy com_ variables to avoid compile errors (won't be used since has_values = true)
+                for(auto i : Range(proxycf->Dimension()))
+                  s << Var("comp", step,i, proxycf->Dimensions()).Declare("double", 0.0);
               }
 
         s << "[[maybe_unused]] auto points = [dist,pnts](size_t i, int comp)\n"
