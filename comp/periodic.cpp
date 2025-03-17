@@ -105,9 +105,11 @@ namespace ngcomp {
     
   void PeriodicFESpace :: DoArchive(Archive & archive)
     {
-      FESpace::DoArchive(archive);
-      archive.Shallow(space);
-      archive & dofmap & vertex_map & used_idnrs;
+      if(archive.Input())
+        {
+          Update();
+          FinalizeUpdate();
+        }
     }
 
   FiniteElement& PeriodicFESpace :: GetFE (ElementId ei, Allocator & alloc) const
