@@ -168,6 +168,21 @@ def test_pickle_periodic(phase):
     assert u2.space.is_complex == is_complex
     assert Integrate(Norm(u-u2),mesh) < 1e-14
 
+
+def test_pickle_compress():
+    periodic = SplineGeometry()
+    pnts = [ (0,0), (1,0), (1,1), (0,1) ]
+    pnums = [periodic.AppendPoint(*p) for p in pnts]
+    periodic.Append ( ["line", pnums[0], pnums[1]],bc="outer")
+    lright = periodic.Append ( ["line", pnums[1], pnums[2]], bc="periodic")
+    periodic.Append ( ["line", pnums[2], pnums[3]], bc="outer")
+    periodic.Append ( ["line", pnums[0], pnums[3]], leftdomain=0, rightdomain=1, copy=lright, bc="periodic")
+    mesh = Mesh(periodic.GenerateMesh(maxh=0.2))
+    fes = Compress(Periodic(H1(mesh,order=3, dirichlet="outer")))
+    data = pickle.dumps(fes)
+    fes2 = pickle.loads(data)
+    assert fes.ndof == fes2.ndof
+
 def test_pickle_CoefficientFunctions():
     import netgen.csg as csg
     import numpy as np
@@ -302,3 +317,4 @@ if __name__ == "__main__":
     test_pickle_CoefficientFunctions()
     test_pickle_multidim()
     test_pickle_secondorder_mesh()
+    test_pickle_compress()
