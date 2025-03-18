@@ -2072,6 +2072,16 @@ global system.
     static string Name() { return "grad"; }
   };
 
+  class TraceDifferentialHolder : public DifferentialOperator
+  {
+    shared_ptr<DifferentialOperator> trace;
+  public:
+    TraceDifferentialHolder(shared_ptr<DifferentialOperator> atrace)
+      : DifferentialOperator(1, 1, VOL, 0), trace(atrace) { ; }
+
+    shared_ptr<DifferentialOperator> GetTrace() const override
+    { return trace; }
+  };
 
   L2SurfaceHighOrderFESpace ::
   L2SurfaceHighOrderFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool parseflags)
@@ -2158,7 +2168,9 @@ global system.
       }
     }
 
-    additional_evaluators.Set ("dual", evaluator[BND]);
+    additional_evaluators.Set ("dual",
+                               make_shared<TraceDifferentialHolder>
+                               (evaluator[BND]));
   }
 
   L2SurfaceHighOrderFESpace :: ~L2SurfaceHighOrderFESpace ()
