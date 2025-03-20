@@ -2,6 +2,7 @@
 #include "numberfespace.hpp"
 #include <diffop_impl.hpp>
 #include <paralleldofs.hpp>
+#include <multigrid.hpp>
 
 namespace ngcomp
 {
@@ -74,8 +75,17 @@ namespace ngcomp
   };
 
 
-
-
+  class NumberProlongation : public Prolongation
+  {
+  public:
+    shared_ptr<SparseMatrix<double>> CreateProlongationMatrix(int finelevel) const override
+    {
+      // todo
+      return nullptr;
+    }
+    void ProlongateInline(int finelevel, BaseVector&v) const override {}
+    void RestrictInline(int finelevel, BaseVector&v) const override {}
+  };
 
   NumberFESpace::NumberFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
       : FESpace (ama, flags)
@@ -85,6 +95,7 @@ namespace ngcomp
       evaluator[BND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BBND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
       evaluator[BBBND] = make_shared<T_DifferentialOperator<NumberDiffOp>>();
+      prol = make_shared<NumberProlongation> ();
 
 
     if (dimension > 1)
