@@ -1955,25 +1955,28 @@ namespace ngcomp
     LocalHeapMem<10000> lh("MeshAccess - elementvolume");
 
     ElementTransformation & trans = GetTrafo (ElementId(VOL, elnr), lh);
-    ConstantCoefficientFunction ccf(1);
+    // ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 1)
       {
-	SourceIntegrator<1> si (&ccf);
+	// SourceIntegrator<1> si (&ccf);
+        static SourceIntegrator<1> si(make_shared<ConstantCoefficientFunction>(1));        
 	FlatVector<> elvec(fe->GetNDof(), lh);
 	si.CalcElementVector (*fe, trans, elvec, lh);
 	return elvec(0);
       }
     else if (GetDimension() == 2)
       {
-	SourceIntegrator<2> si (&ccf);
+	// SourceIntegrator<2> si (&ccf);
+        static SourceIntegrator<2> si(make_shared<ConstantCoefficientFunction>(1));                
 	FlatVector<> elvec(fe->GetNDof(), lh);
 	si.CalcElementVector (*fe, trans, elvec, lh);
 	return elvec(0);
       }
     else
       {
-	SourceIntegrator<3> si(&ccf);
+	// SourceIntegrator<3> si(&ccf);
+        static SourceIntegrator<3> si(make_shared<ConstantCoefficientFunction>(1));                        
 	FlatVector<> elvec(fe->GetNDof(), lh);
 	si.CalcElementVector (*fe, trans, elvec, lh);
 	return elvec(0);
@@ -2002,18 +2005,20 @@ namespace ngcomp
     LocalHeapMem<10000> lh("MeshAccess - surfaceelementvolume");
 
     ElementTransformation & trans = GetTrafo (sei, lh);
-    ConstantCoefficientFunction ccf(1);
+    // ConstantCoefficientFunction ccf(1);
 
     if (GetDimension() == 2)
       {
-	NeumannIntegrator<2> si( &ccf );
+	// NeumannIntegrator<2> si( &ccf );
+        static NeumannIntegrator<2> si(make_shared<ConstantCoefficientFunction>(1));
 	FlatVector<> elvec (fe->GetNDof(), lh);
 	si.CalcElementVector (*fe, trans, elvec, lh);
 	return elvec(0);
       }
     else
       {
-	NeumannIntegrator<3> si( &ccf );
+	// NeumannIntegrator<3> si( &ccf );
+        static NeumannIntegrator<3> si(make_shared<ConstantCoefficientFunction>(1));        
 	FlatVector<> elvec (fe->GetNDof(), lh);
 	si.CalcElementVector (*fe, trans, elvec, lh);
 	return elvec(0);
