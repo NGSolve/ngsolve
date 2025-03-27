@@ -105,6 +105,7 @@ Available options timings are:
           "61 .. C = A^t B,  A=n*k, B=n*m, C = k*m\n"
           "70 .. C += A B^t,  A=n*k, B=m*k, C = n*m, A,B SIMD\n"
 	  "80 .. (x,y)        inner product, size n\n"
+          "81 .. x += y       vector add, size n\n"
           "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
           "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
           "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
@@ -888,6 +889,22 @@ Available options timings are:
         }
       }
 
+    if (what == 0 || what == 81)
+      {
+	Vector x(n), y(n);
+        double tot = n;
+        size_t its = 1e8 / tot + 1;
+	x = 1; y = 1;
+        {
+          Timer t("InnerProduct");
+          t.Start();
+          for (size_t j = 0; j < its; j++)
+            x += y;
+          t.Stop();
+          cout << "Vector add GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+          timings.push_back(make_tuple("Vector add", 1e-9 * tot *its / t.GetTime()));
+        }
+      }
     
     if (what == 0 || what == 100)
       {
