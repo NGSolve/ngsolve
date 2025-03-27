@@ -1433,7 +1433,8 @@ class T_BIntegrator : public LinearFormIntegrator
 {
 protected:
   DVecOp dvecop;
-  DifferentialOperator * diffop = new T_DifferentialOperator<DIFFOP>;
+  // DifferentialOperator * diffop = new T_DifferentialOperator<DIFFOP>;
+  unique_ptr<DifferentialOperator> diffop = make_unique<T_DifferentialOperator<DIFFOP>>();  
 public:
   enum { DIM_SPACE = DIFFOP::DIM_SPACE };
   enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
