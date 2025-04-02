@@ -144,8 +144,8 @@ namespace ngla
 
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const override;
     
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (SCAL s, const BaseVector & x, BaseVector & y) const override;
+    virtual void MultTransAdd (SCAL s, const BaseVector & x, BaseVector & y) const override;
     
     virtual AutoVector CreateRowVector () const override;
     virtual AutoVector CreateColVector () const override;

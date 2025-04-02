@@ -693,7 +693,8 @@ namespace ngla
                                   Table<int> acol_dnums, Table<int> arow_dnums)
   : h(ah), w(aw), matrix(amatrix), col_dnums(std::move(acol_dnums)), row_dnums(std::move(arow_dnums))
   {
-
+    is_complex = std::is_same<SCAL, Complex>();
+    
     // checking zero entries:
     int num_zero_rows = 0;
     Array<int> compress;
@@ -968,7 +969,7 @@ namespace ngla
   }
 
   template <typename SCAL>  
-  void ConstantElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
+  void ConstantElementByElementMatrix<SCAL> :: MultAdd (SCAL s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ConstantEBE mult add");
     static Timer tcol("ConstantEBE mult coloring");
@@ -1058,7 +1059,7 @@ namespace ngla
   }
 
   template <typename SCAL>    
-  void ConstantElementByElementMatrix<SCAL> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  void ConstantElementByElementMatrix<SCAL> :: MultTransAdd (SCAL s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ConstantEBE mult trans add");
     static Timer tcol("ConstantEBE mult trans coloring");
