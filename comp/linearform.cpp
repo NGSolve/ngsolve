@@ -464,8 +464,16 @@ namespace ngcomp
 		  
 		      int elvec_size = dnums.Size()*fespace->GetDimension();
 		      FlatVector<TSCAL> elvec(elvec_size, lh);
-		      dynamic_cast<const FacetLinearFormIntegrator*>(parts[j].get()) 
-			  -> CalcFacetVector (fel,facnr,eltrans,vnums,seltrans, elvec, lh);
+
+		      // dynamic_cast<const FacetLinearFormIntegrator*>(parts[j].get()) 
+                      // -> CalcFacetVector (fel,facnr,eltrans,vnums,seltrans, elvec, lh);
+
+
+                      const auto & lfi = dynamic_cast<const FacetLinearFormIntegrator*>(parts[j].get());
+                      auto & mapped_trafo = eltrans.AddDeformation(lfi->GetDeformation().get(), lh);
+                      auto & mapped_strafo = seltrans.AddDeformation(lfi->GetDeformation().get(), lh);
+                      lfi -> CalcFacetVector (fel,facnr,mapped_trafo,vnums,mapped_strafo, elvec, lh);
+                      
 		      if (printelvec)
 			{
 			  testout->precision(8);
