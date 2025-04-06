@@ -63,6 +63,21 @@ namespace ngcomp {
 
     ctofdof.SetSize(ndof);
     ctofdof = LOCAL_DOF;
+
+    Array<int> dnums(0,lh);
+    Array<COUPLING_TYPE> cts(0,lh);
+    ndof = 0;
+    for (auto i : Range(ma->GetNE(vb))) {
+      HeapReset hr(lh);
+      size_t nd = space->GetFE(ElementId(vb, i), lh).GetNDof();
+      space->GetDofNrs(ElementId(vb, i), dnums);
+      for (int i = 0; i < dnums.Size(); i++)
+      {
+        COUPLING_TYPE ct = space->GetDofCouplingType(dnums[i]);
+        ctofdof[ndof+i] = ct >= LOCAL_DOF ? LOCAL_DOF : ct;
+      }
+      ndof += nd;
+    }
   }
            
   FiniteElement& DiscontinuousFESpace :: GetFE (ElementId ei, Allocator & alloc) const
