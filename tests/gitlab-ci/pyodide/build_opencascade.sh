@@ -21,7 +21,7 @@ cd build
 
 emcmake cmake .. \
       -DCMAKE_CROSSCOMPILING=ON \
-      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.11" \
+      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.12" \
       -DCMAKE_INSTALL_PREFIX=/opt/opencascade \
       -DBUILD_LIBRARY_TYPE:STRING=Static \
       -DBUILD_MODULE_FoundationClasses:BOOL=ON \

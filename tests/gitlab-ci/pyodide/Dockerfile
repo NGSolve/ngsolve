@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7-labs
 FROM ubuntu:24.10 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYODIDE_VERSION=0.27.2
+ENV PYODIDE_VERSION=0.27.5
 ENV EMSDK_VERSION=3.1.58
 ENV PYTHON_VERSION=3.12.7
 RUN apt-get update && apt-get -y upgrade
@@ -37,7 +37,7 @@ RUN cd pyodide && unzip openblas*.zip
 RUN cd pyodide && rm -r *.whl* *.tar fonts
 RUN ls pyodide/*.zip | grep -v python_stdlib.zip | xargs rm -f --
 RUN ln -s /usr/bin/python3 /usr/bin/python
-RUN pip install --break-system-packages cmake
+RUN pip install --break-system-packages "cmake<4"
 
 FROM builder AS build_occ
 ADD ./tests/gitlab-ci/pyodide/build_opencascade.sh /root/
