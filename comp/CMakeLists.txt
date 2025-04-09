@@ -26,9 +26,9 @@ target_link_libraries (ngcomp PUBLIC ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES}
 target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS ngcomp ${ngs_install_dir} )
 
-#if(NETGEN_USE_GUI)
-  #target_link_libraries(ngcomp PUBLIC nggui PRIVATE ${NETGEN_OPENGL_LIBRARIES})
-#endif(NETGEN_USE_GUI)
+if(NETGEN_USE_GUI)
+  target_link_libraries(ngcomp PUBLIC nggui)
+endif(NETGEN_USE_GUI)
 
 install( FILES
         bilinearform.hpp comp.hpp facetfespace.hpp	   

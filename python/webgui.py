@@ -480,7 +480,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
 
         pmin, pmax = [ngs.Vector(p) for p in zip(*pmima)]
         mesh_center = 0.5*(pmin+pmax)
-        mesh_radius = np.linalg.norm(pmax-pmin)/2
+        mesh_radius = float(np.linalg.norm(pmax-pmin)/2)
         
         pmat = pmat.reshape(-1, n_points_per_trig, 4)
 

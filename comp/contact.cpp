@@ -2,12 +2,9 @@
 
 #include "contact.hpp"
 
-#undef NETGEN_USE_GUI // TODO: implement interface in netgen to draw lines (to avoid linking opengl here)
-
 #if NETGEN_USE_GUI
-#include <incopengl.hpp>
 #include <visual.hpp>
-#include <visualization/vssolution.hpp>
+#include <visualization/mvdraw.hpp>
 #endif // NETGEN_USE_GUI
 
 
@@ -859,15 +856,15 @@ namespace ngcomp
       return;
 
 #if NETGEN_USE_GUI
-    glBegin (GL_LINES);
+    Array<netgen::Point<3>> points(2*primary_points.Size());
     for (auto i : Range(primary_points.Size()))
       {
         auto & mp = primary_points[i];
         auto & sp = secondary_points[i];
-        glVertex3d (mp(0), mp(1), mp(2));
-        glVertex3d (sp(0), sp(1), sp(2));
+        points[2*i] = netgen::Point<3>(mp[0], mp[1], mp[2]);
+        points[2*i+1] = netgen::Point<3>(sp[0], sp[1], sp[2]);
       }
-    glEnd();
+    MyOpenGLLines(points);
 #endif // NETGEN_USE_GUI
   }
 
