@@ -868,12 +868,10 @@ namespace ngla
 
         Array<AutoVector> vi(maxsteps);
         Matrix<SCAL> h(maxsteps+1, maxsteps);
-        Matrix<SCAL> h2(maxsteps+1, maxsteps);
         Vector<SCAL> gammai(maxsteps), ci(maxsteps), si(maxsteps);
 
 
         h = SCAL(0.0);
-        h2 = SCAL(0.0);
 
 	if (initialize)
 	  {
@@ -918,15 +916,25 @@ namespace ngla
                 av = hv;
               }
 
+            /*
             for (int i = 0; i <= j; i++)
               h2(i,j) = h(i,j) = S_InnerProduct<IPTYPE> (*vi[i], av);
 
             w = av;
             for (int i = 0; i <= j; i++)
               w -= h(i,j) * (*vi[i]);
-
-            v = (1.0 / sqrt (S_InnerProduct<IPTYPE> (w, w))) * w;
-            h2(j+1,j) = h(j+1,j) = S_InnerProduct<IPTYPE> (v, av);
+            */
+            w = av;
+            for (int i = 0; i <= j; i++)
+              {
+                h(i,j) = S_InnerProduct<IPTYPE> (*vi[i], w);  
+                w -= h(i,j) * (*vi[i]);
+              }
+            
+            // v = (1.0 / sqrt (S_InnerProduct<IPTYPE> (w, w))) * w;
+            // h2(j+1,j) = h(j+1,j) = S_InnerProduct<IPTYPE> (v, av);
+            h(j+1,j) = sqrt (S_InnerProduct<IPTYPE> (w, w));
+            v = 1./h(j+1,j) * w;
 
             for (int i = 0; i < j; i++)
               {
@@ -951,7 +959,7 @@ namespace ngla
           }
         
         j--;
-        cout << IM(5) << "gmres - Triangular matrix" << endl << h.Rows(0,j+2).Cols(0,j+2) << endl;
+        cout << IM(5) << "gmres - Triangular matrix" << endl << h.Rows(0,j+2).Cols(0,j+1) << endl;
         Vector<SCAL> y(maxsteps);
         for (int i = j; i >= 0; i--)
           {
