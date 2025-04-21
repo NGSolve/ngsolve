@@ -1,6 +1,7 @@
 #include <core/register_archive.hpp>
 // #include <fem.hpp>
 #include <coefficient.hpp>
+#include <coefficient_matrix.hpp>
 #include "scalarfe.hpp"
 #include <../ngstd/evalfunc.hpp>
 #include <algorithm>
@@ -211,7 +212,11 @@ namespace ngfem
   cl_UnaryOpCF<GenericExp>::DiffJacobi(const CoefficientFunction * var, T_DJC & cache) const
   {
     if (this == var) return make_shared<ConstantCoefficientFunction> (1);
-    return const_cast<cl_UnaryOpCF<GenericExp>*>(this)->shared_from_this() * c1->DiffJacobi(var, cache);
+    if (Dimensions().Size() == 0)
+      return const_cast<cl_UnaryOpCF<GenericExp>*>(this)->shared_from_this() * c1->DiffJacobi(var, cache);
+    else
+      return make_shared<MultDiagMatCoefficientFunction> (const_cast<cl_UnaryOpCF<GenericExp>*>(this)->shared_from_this(),
+                                                          c1->DiffJacobi(var, cache));
   }
 
 

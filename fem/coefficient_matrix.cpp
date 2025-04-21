@@ -20,6 +20,7 @@
 namespace ngfem
 {
   MultMatMatCoefficientFunction :: ~MultMatMatCoefficientFunction() { }
+  MultDiagMatCoefficientFunction :: ~MultDiagMatCoefficientFunction() { }
   TransposeCoefficientFunction :: ~TransposeCoefficientFunction() { }
   TraceCoefficientFunction :: ~TraceCoefficientFunction() { }    
   IdentityCoefficientFunction :: ~IdentityCoefficientFunction () {  }
@@ -1324,6 +1325,7 @@ namespace ngfem
   
   
   template class T_CoefficientFunction<MultMatMatCoefficientFunction>;
+  template class T_CoefficientFunction<MultDiagMatCoefficientFunction>;  
   template class T_CoefficientFunction<TransposeCoefficientFunction>;
   template class T_CoefficientFunction<TraceCoefficientFunction>;
   template class T_CoefficientFunction<IdentityCoefficientFunction>;    
@@ -1335,6 +1337,7 @@ namespace ngfem
   static RegisterClassForArchive<IdentityCoefficientFunction, CoefficientFunction> regidentitycf;
   
   static RegisterClassForArchive<MultMatMatCoefficientFunction, CoefficientFunction> regmultmatmatcf;
+  static RegisterClassForArchive<MultDiagMatCoefficientFunction, CoefficientFunction> regmultdiagmatcf;  
 
   static RegisterClassForArchive<InverseCoefficientFunction<1>, CoefficientFunction> reginversecf1;
   static RegisterClassForArchive<InverseCoefficientFunction<2>, CoefficientFunction> reginversecf2;
