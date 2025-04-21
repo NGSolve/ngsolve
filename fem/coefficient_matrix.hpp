@@ -427,6 +427,195 @@ namespace ngfem
 
 
 
+  /*
+    Diagonal-matrix(vector c1) * tensor c2
+   */
+  
+  class MultDiagMatCoefficientFunction : public T_CoefficientFunction<MultDiagMatCoefficientFunction>
+  {
+    shared_ptr<CoefficientFunction> c1; 
+    shared_ptr<CoefficientFunction> c2;
+    size_t numcols;
+    using BASE = T_CoefficientFunction<MultDiagMatCoefficientFunction>;
+  public:
+    MultDiagMatCoefficientFunction (shared_ptr<CoefficientFunction> ac1,
+                                    shared_ptr<CoefficientFunction> ac2)
+      : T_CoefficientFunction<MultDiagMatCoefficientFunction>(1, ac1->IsComplex()||ac2->IsComplex()), c1(ac1), c2(ac2)
+    {
+      auto dims_c1 = c1 -> Dimensions();
+      auto dims_c2 = c2 -> Dimensions();
+      if (dims_c1.Size() != 1)
+        throw Exception("MultDiagMat: first argument must be vector");
+      if (dims_c2.Size() < 1)
+        throw Exception("MultDiagMat: second argument must be tensor");
+      if (dims_c1[0] != dims_c2[0])
+        throw Exception(string("MultDiagMat dimensions don't fit"));
+      
+      SetDimensions( dims_c2 );
+      numcols = 1;
+      for (auto d : dims_c2.Range(1,END))
+        numcols *= d;
+    }
+
+    auto GetCArgs() const { return tuple { c1, c2 }; }
+    
+    virtual ~MultDiagMatCoefficientFunction();
+    virtual string GetDescription () const override
+    { return "diagmat-matrix multiply"; }
+  
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      c1->TraverseTree (func);
+      c2->TraverseTree (func);
+      func(*this);
+    }
+
+    shared_ptr<CoefficientFunction>
+    Transform(CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      auto newcf = make_shared<MultDiagMatCoefficientFunction>
+        (c1->Transform(transformation),
+         c2->Transform(transformation));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+
+    void DoArchive(Archive& ar) override
+    {} 
+
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override {
+      FlatArray<int> hdims = Dimensions();
+      code.Declare (index, hdims, IsComplex());
+      
+      for (int i : Range(hdims[0]))
+        for (int j : Range(hdims[1])) {
+          CodeExpr s = Var(inputs[0], i) * Var(inputs[1], i, j);
+          code.body += Var(index, i, j).Assign(s, false);
+        }
+    }
+
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ c1, c2 }); }  
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      size_t dim1 = c1->Dimension();
+      Vector<AutoDiffDiff<1,NonZero>> va(dim1);
+      c1->NonZeroPattern (ud, va);
+      c2->NonZeroPattern (ud, values);
+
+      for (size_t i = 0, ii=0; i < dim1; i++)
+        for (size_t j = 0; j < numcols; j++, ii++)
+          values(ii) *= va(i);
+    }
+
+  
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+    {
+      auto va = input[0];
+      auto vb = input[1];
+
+      size_t dim1 = c1->Dimension();
+      for (size_t i = 0, ii=0; i < dim1; i++)
+        for (size_t j = 0; j < numcols; j++, ii++)
+          values(ii) = va(i)*vb(ii);
+    }
+
+    using T_CoefficientFunction<MultDiagMatCoefficientFunction>::Evaluate;
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      throw Exception ("MultDiagMatCF:: scalar evaluate for matrix called");
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & mir, BareSliceMatrix<T,ORD> values) const 
+    {
+      size_t dim1 = c1->Dimension();
+      STACK_ARRAY(T, hmem1, mir.Size()*dim1);
+      FlatMatrix<T,ORD> va(dim1, mir.Size(), &hmem1[0]);
+
+      c1->Evaluate (mir, va);
+      c2->Evaluate (mir, values);
+
+      for (size_t i = 0, ii=0; i < dim1; i++)
+        for (size_t j = 0; j < numcols; j++, ii++)
+          for (size_t k = 0; k < mir.Size(); k++)
+            values(ii,k) *= va(i,k);
+    }
+
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      auto va = input[0];
+      auto vb = input[1];
+
+      size_t dim1 = c1->Dimension();      
+      for (size_t i = 0, ii=0; i < dim1; i++)
+        for (size_t j = 0; j < numcols; j++, ii++)
+          for (size_t k = 0; k < ir.Size(); k++)
+            values(ii,k) = va(i,k) * vb(ii,k);
+    }
+
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (var == this) return dir;
+      return make_shared<MultDiagMatCoefficientFunction>(c1->Diff(var,dir), c2) +
+        make_shared<MultDiagMatCoefficientFunction>(c1, c2->Diff(var,dir));
+    }
+
+    /*
+      TODO
+    shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
+    {    
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if (cache.find(thisptr) != cache.end())
+        return cache[thisptr];
+
+      int h = Dimensions()[0];
+      int w = Dimensions()[1];
+      int dimvar = var->Dimension();
+
+      if (this == var)
+        return IdentityCF(this->Dimensions());
+
+      Array<int> dimres{h,w};
+      dimres += var->Dimensions();
+
+      auto diffc1 = c1->DiffJacobi (var, cache);
+      auto diffc2 = c2->DiffJacobi (var, cache);
+    
+      auto diffc1_trans = diffc1 -> TensorTranspose( 0, 1 ) -> Reshape( inner_dim, h*dimvar );
+      auto prod1 = c2->Transpose() * diffc1_trans;
+      Array<int> dimtmp{w, h};
+      dimtmp += var->Dimensions();
+      auto prod1trans = prod1->Reshape(dimtmp) -> TensorTranspose( 0, 1 );
+    
+      auto diffc2_trans = diffc2 -> Reshape( Array<int>{inner_dim,w*dimvar} );
+      auto prod2 = c1 * diffc2_trans;
+      auto prod2trans = prod2->Reshape(dimres);
+
+      auto res = prod1trans + prod2trans;
+      cache[thisptr] = res;
+      return res;
+    }
+    */
+  };
+
+
+
+
+  
 
   class TransposeCoefficientFunction : public T_CoefficientFunction<TransposeCoefficientFunction>
   {
@@ -830,6 +1019,7 @@ public:
 
   
   extern template class T_CoefficientFunction<MultMatMatCoefficientFunction>;
+  extern template class T_CoefficientFunction<MultDiagMatCoefficientFunction>;  
   extern template class T_CoefficientFunction<TransposeCoefficientFunction>;
   extern template class T_CoefficientFunction<TraceCoefficientFunction>;    
   extern template class T_CoefficientFunction<IdentityCoefficientFunction>;      
