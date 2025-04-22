@@ -429,6 +429,10 @@ namespace ngfem
 
   /*
     Diagonal-matrix(vector c1) * tensor c2
+    plan:
+    C = A*B in sense of
+    C_ijk = A_ij B_ik
+    with i.. single index, and j,k multi-index
    */
   
   class MultDiagMatCoefficientFunction : public T_CoefficientFunction<MultDiagMatCoefficientFunction>

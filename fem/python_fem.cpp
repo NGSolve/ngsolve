@@ -195,6 +195,12 @@ cl_UnaryOpCF<GenericBSpline>::Diff(const CoefficientFunction * var,
   return UnaryOpCF(c1, GenericBSpline(lam.sp->Differentiate())) * c1->Diff(var, dir);
 }
 
+template <> shared_ptr<CoefficientFunction>
+cl_UnaryOpCF<GenericBSpline>::DiffJacobi(const CoefficientFunction * var,
+                                         T_DJC & cache) const 
+{
+  return BASE::DiffJacobi(var, cache);
+}
 
 
 

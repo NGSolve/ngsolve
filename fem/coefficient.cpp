@@ -3959,6 +3959,14 @@ shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, s
     return ConjCF(c1->Diff(var, dir));
   }
 
+  template <> 
+  shared_ptr<CoefficientFunction>
+  cl_UnaryOpCF<GenericConj>::DiffJacobi(const CoefficientFunction * var,
+                                        T_DJC & cache) const 
+  {
+    return BASE::DiffJacobi(var, cache);
+  }
+
 
   shared_ptr<CoefficientFunction> ConjCF (shared_ptr<CoefficientFunction> c1)
   {

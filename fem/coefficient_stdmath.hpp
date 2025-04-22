@@ -13,12 +13,14 @@ namespace ngfem
   
   struct GenericSin {
     template <typename T> T operator() (T x) const { return sin(x); }
+    template <typename T> T Diff (T x) const { return cos(x); }    
     static string Name() { return "sin"; }
     void DoArchive(Archive& ar) {}
   };
 
   struct GenericCos {
     template <typename T> T operator() (T x) const { return cos(x); }
+    template <typename T> T Diff (T x) const { return -sin(x); }    
     static string Name() { return "cos"; }
     void DoArchive(Archive& ar) {}
   };
@@ -52,12 +54,14 @@ namespace ngfem
 
   struct GenericSinh {
     template <typename T> T operator() (T x) const { return sinh(x); }
+    template <typename T> T Diff (T x) const { return cosh(x); }            
     static string Name() { return "sinh"; }
     void DoArchive(Archive& ar) {}
   };
   
   struct GenericCosh {
     template <typename T> T operator() (T x) const { return cosh(x); }
+    template <typename T> T Diff (T x) const { return sinh(x); }        
     static string Name() { return "cosh"; }
     void DoArchive(Archive& ar) {}
   };
@@ -66,6 +70,7 @@ namespace ngfem
 
   struct GenericExp {
     template <typename T> T operator() (T x) const { return exp(x); }
+    template <typename T> T Diff (T x) const { return exp(x); }
     static string Name() { return "exp"; }
     void DoArchive(Archive& ar) {}
   };
@@ -94,6 +99,7 @@ struct GenericFloor {
   SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no floor for simd"); }  
   // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no floor for AD"); }
   AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no floor for ADD"); }
+  template <typename T> T Diff (T x) const { throw Exception("Generic Floor not differentiable"); }  
   static string Name() { return "floor"; }
   void DoArchive(Archive& ar) {}
 };
@@ -104,6 +110,7 @@ struct GenericCeil {
   SIMD<Complex> operator() (SIMD<Complex> x) const { throw ExceptionNOSIMD("no ceil for simd"); }  
   // AutoDiff<1> operator() (AutoDiff<1> x) const { throw Exception("no ceil for AD"); }
   AutoDiffDiff<1> operator() (AutoDiffDiff<1> x) const { throw Exception("no ceil for ADD"); }
+  template <typename T> T Diff (T x) const { throw Exception("Generic Ceil not differentiable"); }    
   static string Name() { return "ceil"; }
   void DoArchive(Archive& ar) {}
 };
