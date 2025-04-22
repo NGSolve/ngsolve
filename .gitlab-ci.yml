@@ -7,7 +7,7 @@ stages:
 
 variables:
   GIT_SUBMODULE_STRATEGY: recursive
-  UBUNTU_VERSION_LATEST: "rolling"
+  UBUNTU_VERSION_LATEST: "24.10"
   UBUNTU_VERSION_LTS: "24.04"
 
 include:
