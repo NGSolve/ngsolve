@@ -1322,6 +1322,14 @@ namespace ngfem
     return make_shared<SkewCoefficientFunction> (coef);
   }
 
+
+  shared_ptr<CoefficientFunction>
+  MakeMultDiagMatCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                  shared_ptr<CoefficientFunction> c2)
+  {
+    return make_shared<MultDiagMatCoefficientFunction> (c1,c2);
+  }
+
   
   
   template class T_CoefficientFunction<MultMatMatCoefficientFunction>;

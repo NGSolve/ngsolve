@@ -1293,11 +1293,24 @@ public:
   
   virtual shared_ptr<CoefficientFunction>
   Diff (const CoefficientFunction * var, shared_ptr<CoefficientFunction> dir) const override
-  { throw Exception ("unarycf "+name+" does not provide a derivative"); }
+  {
+    if (this == var) return dir;
+    return CWMult (lam.Diff(c1), c1->Diff(var, dir));
+    
+    // throw Exception ("unarycf "+name+" does not provide a derivative");
+  }
 
   virtual shared_ptr<CoefficientFunction>
   DiffJacobi (const CoefficientFunction * var, T_DJC & cache) const override
-  { return BASE::DiffJacobi(var, cache); }
+  {
+    if (this == var) return make_shared<ConstantCoefficientFunction> (1);
+    if (this->Dimensions().Size() == 0)
+      return lam.Diff(c1) * c1->DiffJacobi(var, cache);
+    else
+      return MakeMultDiagMatCoefficientFunction (lam.Diff(c1), 
+                                             c1->DiffJacobi(var, cache));
+    // return BASE::DiffJacobi(var, cache);
+  }
 
   
   /*
@@ -1774,6 +1787,16 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   MakeSingleContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
                                             shared_ptr<CoefficientFunction> vec,
                                             int index);
+
+  // diag(c1) * c2
+  // general tensor (TODO)
+  // C = A*B in sense of
+  // C_ijk = A_ij B_ik
+  //  with i.. single index, and j,k multi-index
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction>
+  MakeMultDiagMatCoefficientFunction (shared_ptr<CoefficientFunction> c1,
+                                  shared_ptr<CoefficientFunction> c2);
+
 
   NGS_DLL_HEADER shared_ptr<CoefficientFunction>
   MakeCoordinateCoefficientFunction (int comp);
