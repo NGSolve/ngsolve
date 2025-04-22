@@ -1459,6 +1459,112 @@ public:
   
 };
 
+
+
+
+
+
+class OneVectorCoefficientFunction : public T_CoefficientFunction<OneVectorCoefficientFunction>
+{
+  using BASE = T_CoefficientFunction<OneVectorCoefficientFunction>;
+public:
+  OneVectorCoefficientFunction () : T_CoefficientFunction<OneVectorCoefficientFunction>(1, false)
+  {
+    SetDimension(1);
+  }
+  
+  OneVectorCoefficientFunction (int dim) : T_CoefficientFunction<OneVectorCoefficientFunction>(dim, false)
+  { } 
+
+
+  void DoArchive (Archive & archive) override { } 
+
+  virtual void PrintReport (ostream & ost) const override
+  {
+    ost << "OneVectorCoefficientFunction";
+  }
+
+  virtual string GetDescription() const override
+  {
+    return "OneVectorCF";
+  }
+
+  virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+  {
+    func(*this);
+  }
+
+  virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+  {
+    for (int i : Range(Dimension()))
+      code.body += Var(index,i, Dimensions()).Assign(string("1.0"));
+  }
+
+  using T_CoefficientFunction<OneVectorCoefficientFunction>::Evaluate;
+  virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+  {
+    if (Dimension() > 1)
+      throw Exception ("OneVectorCF:: scalar evaluate for non scalar called");
+    return 1.0;
+  }
+ 
+  virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                        FlatVector<> result) const override
+  {
+    result = 1.0;
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    values.AddSize(Dimension(), ir.Size()) = T(1.0);
+  }
+
+  template <typename MIR, typename T, ORDERING ORD>
+  void T_Evaluate (const MIR & ir,
+                   FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                   BareSliceMatrix<T,ORD> values) const
+  {
+    values.AddSize(Dimension(), ir.Size()) = T(1.0);
+  }
+
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  {
+    values = AutoDiffDiff<1,NonZero>(true);
+  }
+  
+  virtual void NonZeroPattern (const class ProxyUserData & ud,
+                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
+  {
+    values = AutoDiffDiff<1,NonZero>(true);
+  }
+
+  using CoefficientFunction::Operator;
+  shared_ptr<CoefficientFunction> Operator (const string & name) const override
+  {
+    if (spacedim == -1)
+      throw Exception("cannot differentiate constant since we don't know the space dimension, use 'coef.spacedim=dim'");
+    if (name != "grad")
+      throw Exception ("cannot apply operator "+name+" for constant");
+    return ZeroCF ( Array( { spacedim } ) );
+  }
+  
+  shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                        shared_ptr<CoefficientFunction> dir) const override
+  {
+    return ZeroCF(Dimensions());
+  }
+  
+};
+
+
+
+
+
+
 class ZeroCoefficientFunction : public T_CoefficientFunction<ZeroCoefficientFunction>
 {
   using BASE = T_CoefficientFunction<ZeroCoefficientFunction>;
@@ -4132,6 +4238,20 @@ cl_UnaryOpCF<GenericIdentity>::Operator(const string & name) const
     return make_shared<UnitVectorCoefficientFunction> (dim, coord);
   }
 
+  shared_ptr<CoefficientFunction> OneVectorCF (FlatArray<int> dims)
+  {
+    if (dims.Size()==0)
+      return ConstantCF(1.0);
+    
+    int prod = 1;
+    for (auto d : dims)
+      prod *= d;
+    auto cf = make_shared<OneVectorCoefficientFunction> (prod);
+    if (dims.Size() != 1)
+      return cf->Reshape(dims);
+    else
+      return cf;
+  }
 
   shared_ptr<CoefficientFunction> ZeroCF (FlatArray<int> dims)
   {
@@ -7617,6 +7737,7 @@ static RegisterClassForArchive<NormCoefficientFunctionC, CoefficientFunction> re
 static RegisterClassForArchive<MultMatVecCoefficientFunction, CoefficientFunction> regmultmatveccf;
 static RegisterClassForArchive<ZeroCoefficientFunction, CoefficientFunction> regzerocf;
 static RegisterClassForArchive<UnitVectorCoefficientFunction, CoefficientFunction> regunitcf;
+static RegisterClassForArchive<OneVectorCoefficientFunction, CoefficientFunction> regoneveccf;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericPlus>, CoefficientFunction> regcfplus;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMinus>, CoefficientFunction> regcfminus;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMult>, CoefficientFunction> regcfmult;
