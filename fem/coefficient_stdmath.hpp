@@ -78,6 +78,9 @@ namespace ngfem
   struct GenericLog {
     template <typename T> T operator() (T x) const { return log(x); }
     static string Name() { return "log"; }
+    auto Diff (shared_ptr<CoefficientFunction> x) const {
+      return OneVectorCF(x->Dimensions()) / x;
+    }    
     void DoArchive(Archive& ar) {}
   };
 
