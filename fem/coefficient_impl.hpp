@@ -10,6 +10,7 @@ namespace ngfem
   {
     template <typename T> T operator() (T x) const { return x; }
     static string Name() { return  " "; }
+    template <typename T> T Diff (T x) const { throw Exception("no GenericIdentity::Diff"); }        
     void DoArchive(Archive& ar) {}
   };
 
