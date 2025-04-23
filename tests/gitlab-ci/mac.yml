@@ -10,7 +10,6 @@ mac_build:
   stage: build
   script:
     - source $CI_PROJECT_DIR/tests/gitlab-ci/mac/build.sh
-    - source $CI_PROJECT_DIR/tests/gitlab-ci/mac/upload.sh
 
 mac_test:
   <<: *mac
