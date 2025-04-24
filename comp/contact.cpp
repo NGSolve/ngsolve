@@ -2,6 +2,10 @@
 
 #include "contact.hpp"
 
+// disable contact pair visualization due to linking issues with netgen gui lib
+#undef NETGEN_USE_GUI
+#define NETGEN_USE_GUI 0
+
 #if NETGEN_USE_GUI
 #include <visual.hpp>
 #include <visualization/mvdraw.hpp>
