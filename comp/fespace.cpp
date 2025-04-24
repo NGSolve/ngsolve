@@ -3798,6 +3798,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     symmetric = flags.GetDefineFlag("symmetric");
     deviatoric = flags.GetDefineFlag("deviatoric");
     skewsymmetric = flags.GetDefineFlag("skewsymmetric");
+    dgjumps = space->UsesDGCoupling();
     
     if (deviatoric && !symmetric) throw Exception ("non-symmetric and deviatoric not supported");
     if (symmetric && skewsymmetric) throw Exception ("symmetric and skewsymmetric - not much would remain"); 
