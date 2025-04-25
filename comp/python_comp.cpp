@@ -2219,12 +2219,14 @@ bonus_intorder : int
          "returns list of available differential operators")
     
     .def("Operator",
-         [](shared_ptr<GF> self, string name, VorB vb)
+         [](shared_ptr<GF> self, string name, optional<VorB> optvb)
           {
             if (!self->GetFESpace()->GetAdditionalEvaluators().Used(name))
               throw Exception(string("Operator \"") + name + string("\" does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
             auto diffop = self->GetFESpace()->GetAdditionalEvaluators()[name];
 
+            VorB vb = optvb.value_or(diffop->VB());
+            
             if (!diffop->SupportsVB(vb))
               throw Exception(string("Operator \"") + name + string("\" does not support vb = ") + ToString(vb) + string("!"));
 
@@ -2247,7 +2249,7 @@ bonus_intorder : int
             coef->SetDimensions(diffop->Dimensions());
             coef->generated_from_operator = name;
             return coef;
-          }, py::arg("name"), py::arg("VOL_or_BND")=VOL, docu_string(R"raw_string(
+          }, py::arg("name"), py::arg("VOL_or_BND")=nullopt, docu_string(R"raw_string(
 Get access to an operator depending on the FESpace.
 
 Parameters:
