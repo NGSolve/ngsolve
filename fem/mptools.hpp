@@ -249,13 +249,47 @@ namespace ngfem
       return sgn/2 * sqrt((n-m)*(n+m+1));
     }
     
+    // Nail A. Gumerov and Ramani Duraiswami book, formula (2.2.12)
+    // add directional derivative divided by kappa to res, both multipoles need same scaling
+    void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics & res, double scale = 1)
+    {
+      double fx = d(0);
+      double fy = d(1);
+      double fz = d(2);
+      double invscale = 1./scale;
+      
+      for (int n = 0; n < order; n++)
+        for (int m = -n; m <= n; m++)
+          {
+            double amn = CalcAmn(m,n);
+            double bmn1 = CalcBmn(-m-1, n+1);
+            double bmn2 = CalcBmn(m-1,n+1);
+            
+            res.Coef(n+1, m-1) += invscale * Complex(0.5*fx,0.5*fy)*bmn2 * Coef(n,m);
+            res.Coef(n+1, m  ) -= invscale * fz*amn * Coef(n,m);                
+            res.Coef(n+1, m+1) += invscale * Complex(0.5*fx,-0.5*fy)*bmn1 * Coef(n,m);
+            
+            res.Coef(n, m) += scale * Complex(-0.5*fx,0.5*fy)*bmn2 * Coef(n+1,m-1);
+            res.Coef(n, m) += scale * fz*amn * Coef(n+1,m);
+            res.Coef(n, m) += scale * Complex(-0.5*fx,-0.5*fy)*bmn1 * Coef(n+1,m+1);
+          }
+    }
     
     void RotateY (double alpha)
     {
       LocalHeap lh(8*6*sqr(order) + 8*15*order + 500);
       
       static Timer t("mptool sh RotateY"); RegionTimer rg(t);
-
+      /*
+      static std::map<int, unique_ptr<Timer<>>> timers;
+      static std::map<int, unique_ptr<Timer<>>> timerstrafo;      
+      if (timers.find(order)==timers.end())
+        {
+          timers[order] = make_unique<Timer<>> (string("mptools sh RotateY ")+ToString(order));
+          timerstrafo[order] = make_unique<Timer<>> (string("mptools sh RotateY trafo ")+ToString(order));
+        }
+      RegionTimer rg(*timers[order]);
+      */
       double s = sin(alpha);
       double c = cos(alpha);
 
@@ -325,6 +359,8 @@ namespace ngfem
               trafo(m, n+mp-1) = invDmn * (  Dmn(order+mp,n)*trafo(m  ,n+mp+1)
                                              +Dmn(order+m-1,n)*trafo(m-1,n+mp));
             }
+
+          // RegionTimer rgtrafo(*timerstrafo[order]);                    
           // Step 6
           // symmetries in m and mp
           for (int m = 0; m <= n; m++)
@@ -787,10 +823,11 @@ c
       return;
       */
       
-      // book, formula (2.2.20)
       if constexpr (!std::is_same<RADIAL,MPSingular>())
         throw Exception("AddCharge assumes singular MP");
 
+      /*
+      // book, formula (2.2.20)
       // dipole in origin:
       MultiPole<MPSingular> tmp(1, kappa);
       tmp.SH().Coef(1,1)  += Complex(0,1)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(0)*c;
@@ -801,6 +838,11 @@ c
       
       tmp.SH().Coef(1,0) += -Complex(0,1)*kappa*kappa*sh.CalcAmn(0,0)/sqrt(4*M_PI) *d(2)*c;
       tmp.TransformAdd (*this, -x);
+      */
+
+      MultiPole<MPSingular> tmp(Order(), kappa, Scale());
+      tmp.AddCharge(x, c);
+      tmp.SH().DirectionalDiffAdd (kappa*d,  this->SH(), Scale());
     }
 
 
