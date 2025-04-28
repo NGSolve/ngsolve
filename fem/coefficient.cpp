@@ -5457,27 +5457,15 @@ public:
           values(i*dimafter+k) += vi(j)*temp(ii);
   }
   
-  
 
-  /*
   shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
                                         shared_ptr<CoefficientFunction> dir) const override
   {
-    if (this == var) return dir;
-    return MakeVectorContractionCoefficientFunction (c1->Diff(var, dir), first, Array<int> (num), Array<int> (dist));
-  }  
-
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
+    if (var == this) return dir;
+    return
+      make_shared<SingleContractionCoefficientFunction> (c1->Diff(var,dir), vec, index) +
+      make_shared<SingleContractionCoefficientFunction> (c1, vec->Diff(var,dir), index);
   }
-
-  virtual void NonZeroPattern (const class ProxyUserData & ud,
-                               FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
-                               FlatVector<AutoDiffDiff<1,NonZero>> values) const override
-  {
-  }
-  */
 };
 
 shared_ptr<CoefficientFunction>
