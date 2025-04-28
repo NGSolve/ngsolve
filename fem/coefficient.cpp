@@ -5463,8 +5463,8 @@ public:
   {
     if (var == this) return dir;
     return
-      make_shared<SingleContractionCoefficientFunction> (c1->Diff(var,dir), vec, index) +
-      make_shared<SingleContractionCoefficientFunction> (c1, vec->Diff(var,dir), index);
+      MakeSingleContractionCoefficientFunction(c1->Diff(var,dir), vec, index) +
+      MakeSingleContractionCoefficientFunction(c1, vec->Diff(var,dir), index);
   }
 };
 
@@ -5473,7 +5473,10 @@ MakeSingleContractionCoefficientFunction (shared_ptr<CoefficientFunction> c1,
                                           shared_ptr<CoefficientFunction> vec,
                                           int index)
 {
-  return make_shared<SingleContractionCoefficientFunction> (c1, vec, index);
+  auto res = make_shared<SingleContractionCoefficientFunction> (c1, vec, index);
+  if (c1->IsZeroCF() || vec->IsZeroCF())
+    return ZeroCF(res->Dimensions());
+  return res;
 }
 
 
