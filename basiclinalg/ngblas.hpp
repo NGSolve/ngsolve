@@ -654,9 +654,19 @@ namespace ngbla
 
   template <bool ADD, ORDERING ord>
   extern NGS_DLL_HEADER  
+  void NgGEMV (Complex s, BareSliceMatrix<double,ord> a, FlatVector<const Complex> x, FlatVector<Complex> y) NETGEN_NOEXCEPT;
+
+  
+  template <bool ADD, ORDERING ord>
+  extern NGS_DLL_HEADER  
   void NgGEMV (Complex s, BareSliceMatrix<Complex,ord> a, SliceVector<Complex> x, SliceVector<Complex> y) NETGEN_NOEXCEPT;
 
-
+  template <bool ADD, bool POS, ORDERING ord>
+  INLINE void NgGEMV (BareSliceMatrix<double,ord> a, FlatVector<const Complex> x, FlatVector<Complex> y)
+  {
+    NgGEMV<ADD,ord> (POS ? 1.0 : -1.0, a, x, y);
+  }
+  
   
   template <> INLINE void NgGEMV<false,true> (BareSliceMatrix<double,RowMajor> a, FlatVector<const double> x, FlatVector<double> y)
   {
