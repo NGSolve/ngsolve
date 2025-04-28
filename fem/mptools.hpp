@@ -387,8 +387,8 @@ namespace ngfem
 
           FlatVector<Complex> cn = CoefsN(n);
           FlatVector<Complex> old = cn | lh;
-          
-          cn = Trans(trafo) * old.Range(n, 2*n+1);
+
+          cn.Slice(0,1) = Trans(trafo) * old.Range(n, 2*n+1);
           cn.Slice(0,1).Reversed() += Trans(trafo.Rows(1,n+1)) * old.Range(0,n).Reversed();
 
           for (int m = 1; m <= n; m+=2)
