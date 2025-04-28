@@ -4746,7 +4746,7 @@ MakeSubTensorCoefficientFunction (shared_ptr<CoefficientFunction> c1, int first,
 
   if (trivial)
     {
-      cout << IM(2) << "optimizing out trivial sub-tensor" << endl;
+      cout << IM(5) << "optimizing out trivial sub-tensor" << endl;
       return c1;
     }
   
