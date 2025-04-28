@@ -1822,7 +1822,9 @@ namespace ngcomp
   shared_ptr<GridFunctionCoefficientFunction>
   GridFunctionCoefficientFunction :: GetTrace() const
   {
-    auto tracecf = make_shared<GridFunctionCoefficientFunction> (*this);
+    // auto tracecf = make_shared<GridFunctionCoefficientFunction> (*this);
+    shared_ptr<GridFunction> hgf = gf_shared_ptr ? gf_shared_ptr : dynamic_pointer_cast<GridFunction> (gf->shared_from_this());
+    auto tracecf = make_shared<GridFunctionCoefficientFunction> (hgf, diffop[0], diffop[1], diffop[2], diffop[3]);
     for (int i = 0; i < 4; i++)
       if (tracecf->diffop[i])
         {
