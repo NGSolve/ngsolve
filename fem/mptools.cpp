@@ -1,0 +1,686 @@
+#include "mptools.hpp"
+
+namespace ngfem
+{
+
+  Complex SphericalHarmonics :: Eval (double theta, double phi) const
+  {
+    static Timer t("mptool sh evaluate"); RegionTimer rg(t);
+    
+    Matrix legfunc(order+1, order+1);
+    NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
+    Vector<Complex> exp_imphi(order+1);
+    Complex exp_iphi(cos(phi), sin(phi));
+    Complex prod = 1.0;
+    for (int i = 0; i <= order; i++)
+      {
+        exp_imphi(i) = prod;
+        prod *= -exp_iphi;
+      }
+
+    Complex sum = 0.0;
+    int ii = 0;
+    for (int n = 0; n <= order; n++)
+      {
+        for (int m = -n; m < 0; m++, ii++)
+          sum += coefs(ii) * conj(exp_imphi(-m)) * legfunc(-m, n);
+        for (int m = 0; m <= n; m++, ii++)
+          sum += coefs(ii) * exp_imphi(m) * legfunc(m, n);
+      }
+
+    sum /= sqrt(4*M_PI);
+    return sum;
+  }
+
+
+  Complex SphericalHarmonics :: EvalOrder (int n, double theta, double phi) const
+  {
+    static Timer t("mptool sh evalorder");
+
+    RegionTimer rg(t);
+      
+    Matrix legfunc(order+1, order+1);
+    NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
+    Vector<Complex> exp_imphi(order+1);
+    Complex exp_iphi(cos(phi), sin(phi));
+    Complex prod = 1.0;
+    for (int i = 0; i <= order; i++)
+      {
+        exp_imphi(i) = prod;
+        prod *= -exp_iphi;
+      }
+
+    Complex sum = 0.0;
+    auto coefsn = CoefsN(n);
+    int ii = 0;
+    // for (int n = 0; n <= order; n++)
+    {
+      for (int m = -n; m < 0; m++, ii++)
+        sum += coefsn(ii) * conj(exp_imphi(-m)) * legfunc(-m, n);
+      for (int m = 0; m <= n; m++, ii++)
+        sum += coefsn(ii) * exp_imphi(m) * legfunc(m, n);
+    }
+
+    sum /= sqrt(4*M_PI);
+    return sum;
+  }
+
+
+
+  void SphericalHarmonics :: EvalOrders (double theta, double phi, FlatVector<Complex> vals) const
+  {
+    static Timer ts("mptool sh evalorders small");
+    static Timer tl("mptool sh evalorders large");
+    // RegionTimer rg(order < 30 ? ts : tl);
+    // if (order > 30) tl.Start();
+      
+    Matrix legfunc(order+1, order+1);
+    NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
+    Vector<Complex> exp_imphi(order+1);
+    Complex exp_iphi(cos(phi), sin(phi));
+    Complex prod = 1.0;
+    for (int i = 0; i <= order; i++)
+      {
+        exp_imphi(i) = prod;
+        prod *= -exp_iphi;
+      }
+
+
+    for (int n = 0; n <= order; n++)
+      {
+        auto coefsn = CoefsN(n);
+        int ii = 0;
+          
+        Complex sum = 0.0;
+        for (int m = -n; m < 0; m++, ii++)
+          sum += coefsn(ii) * conj(exp_imphi(-m)) * legfunc(-m, n);
+        for (int m = 0; m <= n; m++, ii++)
+          sum += coefsn(ii) * exp_imphi(m) * legfunc(m, n);
+        vals(n) = sum;
+      }
+
+    vals /= sqrt(4*M_PI);
+
+    // if (order > 30) tl.Stop();      
+  }
+
+
+  void SphericalHarmonics :: Calc (Vec<3> x, FlatVector<Complex> shapes)
+  {
+    auto [theta, phi] = Polar(x);
+
+    Matrix legfunc(order+1, order+1);
+    NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
+    Vector<Complex> exp_imphi(order+1);
+    Complex exp_iphi(cos(phi), sin(phi));
+    Complex prod = 1.0;
+    for (int i = 0; i <= order; i++)
+      {
+        exp_imphi(i) = prod;
+        prod *= -exp_iphi;
+      }
+
+    int ii = 0;
+    for (int n = 0; n <= order; n++)
+      {
+        for (int m = -n; m < 0; m++, ii++)
+          shapes(ii) = conj(exp_imphi(-m)) * legfunc(-m, n);
+        for (int m = 0; m <= n; m++, ii++)
+          shapes(ii) = exp_imphi(m) * legfunc(m, n);
+      }
+
+    shapes /= sqrt(4*M_PI);
+  }
+
+  
+  
+
+  // Nail A. Gumerov and Ramani Duraiswami book, formula (2.2.12)
+  // add directional derivative divided by kappa to res, both multipoles need same scaling
+  void SphericalHarmonics :: DirectionalDiffAdd (Vec<3> d, SphericalHarmonics & res, double scale)
+  {
+    double fx = d(0);
+    double fy = d(1);
+    double fz = d(2);
+    double invscale = 1./scale;
+      
+    for (int n = 0; n < order; n++)
+      for (int m = -n; m <= n; m++)
+        {
+          double amn = CalcAmn(m,n);
+          double bmn1 = CalcBmn(-m-1, n+1);
+          double bmn2 = CalcBmn(m-1,n+1);
+            
+          res.Coef(n+1, m-1) += invscale * Complex(0.5*fx,0.5*fy)*bmn2 * Coef(n,m);
+          res.Coef(n+1, m  ) -= invscale * fz*amn * Coef(n,m);                
+          res.Coef(n+1, m+1) += invscale * Complex(0.5*fx,-0.5*fy)*bmn1 * Coef(n,m);
+            
+          res.Coef(n, m) += scale * Complex(-0.5*fx,0.5*fy)*bmn2 * Coef(n+1,m-1);
+          res.Coef(n, m) += scale * fz*amn * Coef(n+1,m);
+          res.Coef(n, m) += scale * Complex(-0.5*fx,-0.5*fy)*bmn1 * Coef(n+1,m+1);
+        }
+  }
+
+
+
+
+
+  void SphericalHarmonics :: RotateZ (double alpha)
+  {
+    // static Timer t("mptool sh RotateZ"); RegionTimer rg(t);
+    if (order < 0) return;
+
+    Vector<Complex> exp_imalpha(order+1);
+    Complex exp_ialpha(cos(alpha), sin(alpha));
+    Complex prod = 1.0;
+    for (int i = 0; i <= order; i++)
+      {
+        exp_imalpha(i) = prod;
+        prod *= exp_ialpha;
+      }
+
+    int ii = 0;
+    for (int n = 0; n <= order; n++)
+      {
+        for (int m = -n; m < 0; m++, ii++)
+          coefs(ii) *= conj(exp_imalpha(-m));
+        for (int m = 0; m <= n; m++, ii++)
+          coefs(ii) *= exp_imalpha(m);
+      }
+  }
+
+
+
+    
+  void SphericalHarmonics :: RotateY (double alpha)
+  {
+    LocalHeap lh(8*6*sqr(order) + 8*15*order + 500);
+      
+    static Timer t("mptool sh RotateY"); RegionTimer rg(t);
+    /*
+      static std::map<int, unique_ptr<Timer<>>> timers;
+      static std::map<int, unique_ptr<Timer<>>> timerstrafo;      
+      if (timers.find(order)==timers.end())
+      {
+      timers[order] = make_unique<Timer<>> (string("mptools sh RotateY ")+ToString(order));
+      timerstrafo[order] = make_unique<Timer<>> (string("mptools sh RotateY trafo ")+ToString(order));
+      }
+      RegionTimer rg(*timers[order]);
+    */
+    double s = sin(alpha);
+    double c = cos(alpha);
+
+    FlatMatrix<> normalized_leg_func(order+2, order+2, lh);
+    NormalizedLegendreFunctions(order+1, order+1, c, normalized_leg_func);
+
+    if (alpha < 0)
+      for (int i = 1; i <= order+1; i+=2)
+        normalized_leg_func.Row(i) *= -1;
+      
+    // cout << "leg = " << endl << normalized_leg_func << endl;
+    FlatVector<> Dmn(2*order+1, lh);
+
+    for (int n=1; n <= order; n++)
+      {
+        HeapReset hr(lh);
+          
+        FlatMatrix<double> trafo(n+1, 2*n+1, lh); 
+        /*
+          Recursive Computation of Spherical Harmonic Rotation Coefficients of Large Degree
+          Nail A. Gumerov and Ramani Duraiswami
+          within Excursions in Harmonic Analysis, Volume 3
+            
+          page 130 
+        */
+
+        // Step 2
+        // H(0,m)
+        trafo.Col(n) = 1.0/sqrt(2*n+1) * normalized_leg_func.Col(n).Range(n+1);
+        for (int m = 1; m <= n; m += 2) trafo(m,n) *= -1;
+        // Step 3
+        // H(1,m)
+        FlatVector<double> tmp = 1.0/sqrt(2*n+3) * normalized_leg_func.Col(n+1).Range(n+2) | lh;
+        for (int m = 1; m < tmp.Size(); m += 2) tmp(m) *= -1;
+        for (int m = 1; m <= n; m++)
+          trafo.Col(n+1)(m) = 1/CalcBmn(0,n+1) * (  CalcBmn(-m-1, n+1)*(1-c)/2 * tmp(m+1)
+                                                    - CalcBmn(m-1,n+1)*(1+c)/2 * tmp(m-1)
+                                                    - CalcAmn(m,n) * s*tmp(m));
+
+        // Step 4
+        // diamond - recursion
+        for (int mp = -n; mp <= n; mp++)
+          Dmn(order+mp) = CalcDmn(mp, n);
+
+        for (int mp = 1; mp < n; mp++)
+          {
+            double invDmn = 1.0 / Dmn(order+mp);
+            for (int m = mp; m < n; m++)
+              trafo(m, n+mp+1) = invDmn  * ( Dmn(order+mp-1) *trafo(m  ,n+mp-1)
+                                             -Dmn(order+m-1)*trafo(m-1,n+mp)
+                                             +Dmn(order+m)  *trafo(m+1,n+mp));
+            int m = n;
+            trafo(m, n+mp+1) = invDmn * ( Dmn(order+mp-1,n)*trafo(m  ,n+mp-1)
+                                          -Dmn(order+m-1,n)*trafo(m-1,n+mp));
+          }
+      
+        // Step 5
+        // diamond - recursion, negative      
+        for (int mp = 0; mp > -n; mp--)
+          {
+            double invDmn = 1.0 / Dmn(order+mp-1);              
+            for (int m = -mp+1; m < n; m++)
+              trafo(m, n+mp-1) = invDmn * (  Dmn(order+mp,n)*trafo(m  ,n+mp+1)
+                                             +Dmn(order+m-1,n)*trafo(m-1,n+mp)
+                                             -Dmn(order+m  ,n)*trafo(m+1,n+mp));
+            int m = n;
+            trafo(m, n+mp-1) = invDmn * (  Dmn(order+mp,n)*trafo(m  ,n+mp+1)
+                                           +Dmn(order+m-1,n)*trafo(m-1,n+mp));
+          }
+
+        // RegionTimer rgtrafo(*timerstrafo[order]);                    
+        // Step 6
+        // symmetries in m and mp
+        for (int m = 0; m <= n; m++)
+          {
+            auto dst = trafo.Row(m).Range(n+m, n+n+1);
+            auto src = trafo.Col(n+m).Range(m, n+1);
+            dst = src;
+          }
+        for (int m = 0; m <= n; m++)
+          {
+            auto dst = trafo.Row(m).Range(n-n, n-m+1).Reversed();
+            auto src = trafo.Col(n-m).Range(m, n+1);
+            dst = src;
+          }
+        /*
+          double errortho = L2Norm( Matrix(trafo*Trans(trafo) - Identity(n+1)));
+          if (errortho > 1e-10)
+          {
+          *testout << "n = " << n << " order = " << Order() << ", alpha = " << alpha << ", errortho = " << errortho << endl;
+          if (n < 10)
+          *testout << trafo*Trans(trafo) << endl;
+          }
+        */
+
+        FlatVector<Complex> cn = CoefsN(n);
+        FlatVector<Complex> old = cn | lh;
+
+        cn.Slice(0,1) = Trans(trafo) * old.Range(n, 2*n+1);
+        cn.Slice(0,1).Reversed() += Trans(trafo.Rows(1,n+1)) * old.Range(0,n).Reversed();
+
+        for (int m = 1; m <= n; m+=2)
+          {
+            cn(n+m) *= -1;
+            cn(n-m) *= -1;
+          }
+      }
+  }
+
+
+
+
+
+
+
+
+
+  // https://fortran-lang.discourse.group/t/looking-for-spherical-bessel-and-hankel-functions-of-first-and-second-kind-and-arbitrary-order/2308/2
+
+  // adapted from fmm3d
+  template <typename Tz> 
+  void T_besseljs3d (int nterms, Tz z, double scale,
+                     FlatVector<Tz> fjs, FlatVector<Tz> fjder)
+  {
+    /*
+      c**********************************************************************
+      c
+      c PURPOSE:
+      c
+      c	This subroutine evaluates the first NTERMS spherical Bessel 
+      c	functions and if required, their derivatives.
+      c	It incorporates a scaling parameter SCALE so that
+      c       
+      c		fjs_n(z)=j_n(z)/SCALE^n
+      c		fjder_n(z)=\frac{\partial fjs_n(z)}{\partial z}
+      c
+      c INPUT:
+      c
+      c    nterms (integer): order of expansion of output array fjs 
+      c    z     (complex *16): argument of the spherical Bessel functions
+      c    scale    (real *8) : scaling factor (discussed above)
+      c    ifder  (integer): flag indicating whether to calculate "fjder"
+      c		          0	NO
+      c		          1	YES
+      c OUTPUT:
+      c    fjs   (complex *16): array of scaled Bessel functions.
+      c    fjder (complex *16): array of derivs of scaled Bessel functions.
+      c
+      c
+    */
+
+  
+    // c ... Initializing ...
+
+    // set to asymptotic values if argument is sufficiently small
+    if (abs(z) < 1e-200)
+      {
+        fjs(0) = 1;
+        for (int i = 1; i <= nterms; i++)
+          fjs(i) = 0.0;
+
+        if (fjder.Size())
+          {
+            fjder = 0.0;
+            fjder(1) = 1.0/(3*scale);
+          }
+        return;
+      }
+
+
+    //  ... Step 1: recursion up to find ntop, starting from nterms
+
+    Tz zinv=1.0/z;
+
+    Tz fjm1 = 0.0;
+    Tz fj0 = 1.0;
+
+    /*
+      c
+      cc     note max point for upward recurrence is
+      c      hard coded to nterms + 1000,
+      c      this might cause loss of accuracy for some
+      c      arguments in the complex plane for large 
+      c      nterms. For example, it is a terrible idea
+      c      to use this code for z>>nterms^2
+    */
+  
+    // int lwfjs = nterms + 100000;
+    int ntop = nterms+1000;
+
+    for (int i = nterms; ; i++)
+      {
+        double dcoef = 2*i+1.0;
+        Tz fj1 = dcoef*zinv*fj0-fjm1;
+        double dd = sqr(abs(fj1));
+        if (dd > 1e40)
+          {
+            ntop=i+1;
+            break;
+          }
+        fjm1 = fj0;
+        fj0 = fj1;
+        if (i > nterms+100000)
+          throw Exception("bessel failed 1");
+      }
+
+    Array<bool> iscale(ntop+1);
+    Vector<Tz> fjtmp(ntop+1);
+
+    /*
+      c ... Step 2: Recursion back down to generate the unscaled jfuns:
+      c             if magnitude exceeds UPBOUND2, rescale and continue the 
+      c	      recursion (saving the order at which rescaling occurred 
+      c	      in array iscale.
+    */
+
+    iscale = false;
+
+    fjtmp(ntop) = 0.0;
+    fjtmp(ntop-1) = 1.0;
+    for (int i = ntop-1; i>=1; i--)
+      {
+        double dcoef = 2*i+1.0;
+        fjtmp(i-1) = dcoef*zinv*fjtmp(i)-fjtmp(i+1);
+        double dd = sqr(abs(fjtmp(i-1)));
+        if (dd > 1e40)
+          {
+            fjtmp(i) *= 1e-40;
+            fjtmp(i-1) *= 1e-40;
+            iscale[i] = true;
+          }
+      }
+
+    /*
+      c
+      c ...  Step 3: go back up to the top and make sure that all
+      c              Bessel functions are scaled by the same factor
+      c              (i.e. the net total of times rescaling was invoked
+      c              on the way down in the previous loop).
+      c              At the same time, add scaling to fjs array.
+      c
+    */
+  
+    double scalinv = 1.0/scale;
+    double sctot = 1.0;
+    for (int i = 1; i <= ntop; i++)
+      {
+        sctot *= scalinv;
+        if (iscale[i-1])
+          sctot *= 1e-40;
+        fjtmp(i) *= sctot;
+      }
+  
+    //  Determine the normalization parameter:
+  
+    fj0=sin(z)*zinv;
+    Tz fj1=fj0*zinv-cos(z)*zinv;
+  
+    double d0=abs(fj0);
+    double d1=abs(fj1);
+    Tz zscale;
+    if (d1 > d0) 
+      zscale=fj1/(fjtmp(1)*scale);
+    else
+      zscale=fj0/fjtmp(0);
+
+    // Scale the jfuns by zscale:
+      
+    Tz ztmp=zscale;
+    for (int i = 0; i <= nterms; i++)
+      fjs(i)=fjtmp(i)*ztmp;
+
+
+    // Finally, calculate the derivatives if desired:
+
+    if (fjder.Size())
+      {
+        fjder(0) = -fjs(1)*scale;
+        for (int i = 1; i <= nterms; i++)
+          {
+            double dc1=i/(2*i+1.0);
+            double dc2=1.0-dc1;
+            dc1=dc1*scalinv;
+            dc2=dc2*scale;
+            fjder(i)=(dc1*fjtmp(i-1)-dc2*fjtmp(i+1))*ztmp;
+          }
+      }
+  }
+  
+
+  void besseljs3d (int nterms, double z, double scale, FlatVector<double> fjs, FlatVector<double> fjder)
+  {
+    T_besseljs3d (nterms, z, scale, fjs, fjder);
+  }
+  void besseljs3d (int nterms, Complex z, double scale, FlatVector<Complex> fjs, FlatVector<Complex> fjder)
+  {
+    T_besseljs3d (nterms, z, scale, fjs, fjder);
+  }
+
+  /*
+  // from A. Barnett 
+  // http://www.fresco.org.uk/functions/barnett/index.htm
+
+  spherical bessel functions of first (the j_n) and second (the y_n) kind.
+
+  j0(r) = sin(r)/r
+  j1(r) = (sin(r)-r cos(r)) / r**2
+
+  y0(r) = -cos(r)/r
+  y1(r) = (-cos(r)-r*sin(r)) / r**2
+  */
+  void SBESJY (double x, int lmax,
+               FlatVector<double> j,
+               FlatVector<double> y,
+               FlatVector<double> jp,
+               FlatVector<double> yp)
+  {
+    if (x < 1e-8)
+      {
+        cout << "TODO: special treatment for small x" << endl;
+        return;
+      }
+
+    double xinv = 1/x;
+
+    if (lmax > 0)
+      {
+        double twoxi = 2*xinv;
+        double sl = lmax*xinv;
+        double tk = 2*sl+3*xinv;
+        double cf1 = sl;
+        double den = 1;
+        if (abs(cf1) < 1e-8) cf1 = 1e-8;
+        double c = cf1;
+        double d = 0;
+        for (int l = 1; l < 10000; l++)
+          {
+            c = tk-1/c;
+            d = tk-d;
+            if (abs(c) < 1e-8) c = 1e-8;
+            if (abs(d) < 1e-8) d = 1e-8;
+            d = 1/d;
+            double dcf1 = d*c;
+            cf1 *= dcf1;
+            if (d < 0) den = -den;
+            if (abs(dcf1-1) < 1e-10)
+              break;
+            tk += twoxi;
+            // nfp = l;
+          }
+
+        j(lmax) = den;
+        jp(lmax) = cf1*den;
+        for (int l = lmax; l >= 1; l--)
+          {
+            j(l-1) = (sl+xinv)*j(l) + jp(l);
+            sl = sl-xinv;
+            jp(l-1) = sl*j(l-1) - j(l);
+          }
+      }
+
+    double j0 = j(0);
+    double jp0 = jp(0);
+
+    // C------ CALCULATE THE L=0 SPHERICAL BESSEL FUNCTIONS DIRECTLY
+    j(0) = xinv * sin(x);
+    y(0) = -xinv * cos(x);
+    jp(0) = -y(0)-xinv*j(0);
+    yp(0) = j(0)-xinv*y(0);
+
+    double omega = (abs(j0)>abs(jp0)) ? j(0)/j0 : jp(0) / jp0;    // fix for x \approx 2 pi
+    double sl = 0;
+    for (int l = 1; l <=lmax; l++)
+      {
+        j(l) *= omega;
+        jp(l) *= omega;
+        y(l) = sl*y(l-1) - yp(l-1);
+        sl += xinv;
+        yp(l) = y(l-1) - (sl+xinv)*y(l);
+      }
+  }
+
+
+
+  /* ************************************** Multipole class ******************************* */
+
+  template <typename RADIAL>
+  Complex MultiPole<RADIAL> :: Eval (Vec<3> x) const
+  {
+    if (sh.Order() < 0) return 0;
+
+    Vector<Complex> radial(sh.Order()+1);
+    Vector<Complex> shvals(sh.Order()+1);
+      
+    RADIAL::Eval(sh.Order(), kappa*L2Norm(x), scale, radial);
+    sh.EvalOrders (x, shvals);
+      
+    Complex sum = 0;
+    for (int i = 0; i <= sh.Order(); i++)
+      sum +=  shvals(i) * radial(i);
+
+    return sum;
+  }
+
+
+  template <typename RADIAL>
+  void MultiPole<RADIAL> :: AddCharge (Vec<3> x, Complex c)
+  {      
+    if constexpr (!std::is_same<RADIAL,MPSingular>())
+      throw Exception("AddCharge assumes singular MP");
+      
+    // static Timer t("mptool AddCharge"); RegionTimer rg(t);      
+      
+    if (L2Norm(x) < 1e-10)
+      {
+        sh.Coef(0,0) += c * Complex(0,1)*kappa/sqrt(4*M_PI);
+        return;
+      }
+
+    // cout << "add charge, kappa rho = " << kappa*L2Norm(x) << ", order = " << sh.Order() << endl;
+      
+    Vector<Complex> radial(sh.Order()+1);
+    Vector<Complex> sh_shapes(sqr (sh.Order()+1));
+
+    RADIAL::Eval(sh.Order(), kappa*L2Norm(x), 1.0/scale, radial);
+    // cout << "radial = " << radial << endl;
+    sh.Calc(x, sh_shapes);
+
+    for (int i = 0; i <= sh.Order(); i++)
+      {
+        IntRange r(sqr(i), sqr(i+1));
+        sh.Coefs().Range(r) += c * Complex(0,1)*kappa * radial(i).real()*Conj(sh_shapes.Range(r));
+      }
+  }
+
+  template <typename RADIAL>
+  void MultiPole<RADIAL> :: AddDipole (Vec<3> x, Vec<3> d, Complex c)
+  {
+    // static Timer t("mptool AddDipole"); RegionTimer rg(t);      
+    /*
+      double eps = 1e-4;
+      AddCharge(x+eps*d, -c/(2*eps));
+      AddCharge(x-eps*d, c/(2*eps));
+      return;
+    */
+      
+    if constexpr (!std::is_same<RADIAL,MPSingular>())
+      throw Exception("AddCharge assumes singular MP");
+
+    /*
+    // book, formula (2.2.20)
+    // dipole in origin:
+    MultiPole<MPSingular> tmp(1, kappa);
+    tmp.SH().Coef(1,1)  += Complex(0,1)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(0)*c;
+    tmp.SH().Coef(1,-1) += Complex(0,1)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(0)*c;
+
+    tmp.SH().Coef(1,1)  += Complex(1,0)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(1)*c;
+    tmp.SH().Coef(1,-1) -= Complex(1,0)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(1)*c;
+      
+    tmp.SH().Coef(1,0) += -Complex(0,1)*kappa*kappa*sh.CalcAmn(0,0)/sqrt(4*M_PI) *d(2)*c;
+    tmp.TransformAdd (*this, -x);
+    */
+
+    MultiPole<MPSingular> tmp(Order(), kappa, Scale());
+    tmp.AddCharge(x, c);
+    tmp.SH().DirectionalDiffAdd (kappa*d,  this->SH(), Scale());
+  }
+
+
+
+
+  
+  template class MultiPole<MPRegular>;
+  template class MultiPole<MPSingular>;
+
+  
+}
