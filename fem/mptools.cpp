@@ -678,9 +678,14 @@ namespace ngfem
 
 
 
+
+
   
   template class MultiPole<MPRegular>;
   template class MultiPole<MPSingular>;
+
+  Array<size_t> RegularMLMultiPole::nodes_on_level(100);
+  Array<size_t> SingularMLMultiPole::nodes_on_level(100);
 
   
 }

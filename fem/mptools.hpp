@@ -306,6 +306,7 @@ namespace ngfem
       target.SH().Coefs() += tmp.SH().Coefs();
     }
 
+    
 #ifdef VER1
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET> & target)
@@ -1152,7 +1153,7 @@ namespace ngfem
   }
 
 
-  class RegularMLMultiPole
+  class NGS_DLL_HEADER RegularMLMultiPole
   {
     static Array<size_t> nodes_on_level;
     
@@ -1474,11 +1475,15 @@ namespace ngfem
     
   };
   
-  Array<size_t> RegularMLMultiPole::nodes_on_level(100);
-  Array<size_t> SingularMLMultiPole::nodes_on_level(100);
 
+
+
+
+
+  
   // ******************** Coefficient Functions *********************
 
+  
   class SphericalHarmonicsCF : public CoefficientFunction
   {
     SphericalHarmonics sh;
