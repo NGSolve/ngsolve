@@ -34,7 +34,7 @@ namespace ngfem
 
     auto CoefsN (int n) const
     {
-      return FlatVector<Complex> (2*n+1, &coefs(n*(n+1)-n)); 
+      return coefs.RangeN(n*n, 2*n+1);
     }
 
     static std::tuple<double,double> Polar (Vec<3> x)
