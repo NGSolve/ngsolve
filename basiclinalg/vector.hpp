@@ -350,6 +350,14 @@ namespace ngbla
       return Range (range.First(), range.Next());
     }
 
+    INLINE auto RangeN (size_t first, size_t n) const
+    {
+      NETGEN_CHECK_RANGE(first+n,first,Size()+1);
+      return VectorView<T,size_t,TDIST> (n, dist, data+first*dist);
+    }
+
+
+    
     /*
     template <int S> 
     INLINE auto Range (IC<S> r) const
