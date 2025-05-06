@@ -5626,7 +5626,35 @@ public:
       else
         ci_deriv.Append (nullptr);
     return MakeDomainWiseCoefficientFunction(std::move (ci_deriv), vb);
-  }  
+  }
+
+  shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, typename BASE::T_DJC & cache) const override
+  {
+    auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+    if (cache.find(thisptr) != cache.end())
+      return cache[thisptr];
+
+    if (this == var)
+      return IdentityCF(this->Dimensions());
+
+    int dimvar = var->Dimension();
+    Array<int> dimres;
+    dimres += this->Dimensions();
+    dimres += var->Dimensions();
+
+    Array<shared_ptr<CoefficientFunction>> diff_ci;
+    for (auto & cf : ci)
+      if (cf)
+        diff_ci.Append (cf->DiffJacobi (var, cache) -> Reshape(cf->Dimension()*dimvar));
+      else
+        diff_ci.Append (nullptr);
+    auto res = MakeDomainWiseCoefficientFunction (std::move(diff_ci)) -> Reshape(dimvar,this->Dimension()) -> Reshape(dimres);
+
+    cache[thisptr] = res;
+    return res;
+
+  }
+  
   
   virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
   {
