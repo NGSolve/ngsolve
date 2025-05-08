@@ -430,7 +430,13 @@ nr : int
                       throw Exception("Evaluate on BBND and BBBND regions not implemented!");
                     IntegrationPoint ip;
                     int elnr;
-                    Array<int> indices(reg->Mask().Size());
+                    Array<int> indices;
+                    // TODO: Do this differently, this is super inefficient...
+                    for(auto i : Range(reg->Mask()))
+                      if(reg->Mask()[i])
+                        {
+                          indices.Append(i+1);
+                        }
                     Vec<3> p(x, y, z);
                     if(reg->VB() == VOL)
                       elnr = reg->Mesh()->FindElementOfPoint(p, ip, true, &indices).Nr();
