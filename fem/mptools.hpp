@@ -170,6 +170,7 @@ namespace ngfem
     Vector j(n+1), y(n+1), jp(n+1), yp(n+1);
     SBESJY (rho, n, j, y, jp, yp);
 
+    /*
     values = j + Complex(0,1) * y;
     if (scale != 1.0)
       {
@@ -179,6 +180,17 @@ namespace ngfem
             values(i) *= prod;
             prod *= scale;
           }
+      }
+    */
+
+    // the bessel-evaluation with scale (but don't see a difference):
+    besseljs3d (n, rho, 1/scale,  j, jp);
+    
+    double prod = 1.0;
+    for (int i = 0; i <= n; i++)
+      {
+        values(i) = j(i) + prod * Complex(0,y(i));
+        prod *= scale;
       }
   }
 
@@ -940,6 +952,13 @@ namespace ngfem
   };
   
 
+  inline ostream & operator<< (ostream & ost, const RegularMLMultiPole & mlmp)
+  {
+    // mlmp.Print(ost);
+    ost << "RegularMLMultiPole" << endl;
+    return ost;
+  }
+
 
 
 
@@ -1033,20 +1052,20 @@ namespace ngfem
 
   class RegularMLMultiPoleCF : public CoefficientFunction
   {
-    RegularMLMultiPole mlmp;
+    shared_ptr<RegularMLMultiPole> mlmp;
   public:
     RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPoleCF> asingmp, Vec<3> center, double r, int order)
-      : CoefficientFunction(1, true), mlmp(asingmp->MLMP(), center, r, order) { } 
+      : CoefficientFunction(1, true), mlmp{make_shared<RegularMLMultiPole>(asingmp->MLMP(), center, r, order)} { } 
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("real eval not available"); }
 
     virtual void Evaluate (const BaseMappedIntegrationPoint & mip, FlatVector<Complex> values) const override
     {
-      values(0) = mlmp.Evaluate(mip.GetPoint());
+      values(0) = mlmp->Evaluate(mip.GetPoint());
     }
 
-    RegularMLMultiPole & MLMP() { return mlmp; }
+    shared_ptr<RegularMLMultiPole> MLMP() { return mlmp; }
   };
 
   
