@@ -856,6 +856,41 @@ namespace ngfem
         for (int n = m; n <= ot; n++)
           target.SH().Coef(n,-m) = hv2(n);
       }
+
+
+    /*
+    if (L2Norm(target.SH().Coefs()) > 1000 * L2Norm(SH().Coefs()))
+      {
+        *testout << "unstable shift" << endl;
+        *testout << "Norm(me) = " << L2Norm(SH().Coefs()) << ", Norm(target) = " << L2Norm(target.SH().Coefs()) << endl;
+        for (int i = 0; i <= SH().Order(); i++)
+          *testout << "me-order[" << i << "]-norm = " << L2Norm(SH().CoefsN(i)) << endl;
+        for (int i = 0; i <= target.SH().Order(); i++)
+          *testout << "other-order[" << i << "]-norm = " << L2Norm(target.SH().CoefsN(i)) << endl;
+      }
+
+    double normtN = L2Norm(target.SH().CoefsN(ot));
+    double normtNm = L2Norm(target.SH().CoefsN(ot-1));
+    double normtNmm = L2Norm(target.SH().CoefsN(ot-2));
+    if (normtN > normtNm && normtNm > normtNmm && normtN > 1e-10)
+      {
+        *testout << "divergent result" << typeid(RADIAL).name() << " - " << typeid(TARGET).name() << endl;
+        *testout << "z = " << z << ", scale = " << Scale() << ", target-scale = " << target.Scale() << endl;
+        for (int i = 0; i <= SH().Order(); i++)
+          *testout << "me-order[" << i << "]-norm = " << L2Norm(SH().CoefsN(i)) << endl;
+        for (int i = 0; i <= target.SH().Order(); i++)
+          *testout << "other-order[" << i << "]-norm = " << L2Norm(target.SH().CoefsN(i)) << endl;
+
+
+        if (typeid(RADIAL) == typeid(TARGET))
+          SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
+        else
+          //SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
+          SphericalHankel1 (os+ot, kappa*abs(z), 0.5, trafo.Col(0));
+        *testout << "tscale = " << tscale << endl;
+        *testout << "trafo.col0 = " << trafo.Col(0) << endl;
+      }
+    */
   }
 
 

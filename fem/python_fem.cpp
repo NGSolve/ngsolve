@@ -2789,7 +2789,7 @@ If linear is True the function will be interpolated linearly between the values.
     .def("RotateY", [](SphericalHarmonics& self, double alpha) { self.RotateY(alpha); })
     ;
 
-  py::class_<SingularMLMultiPole> (m, "SingularMLMP")
+  py::class_<SingularMLMultiPole, shared_ptr<SingularMLMultiPole>> (m, "SingularMLMP")
     .def(py::init<Vec<3>,double,int,double>())
     .def("AddCharge", &SingularMLMultiPole::AddCharge)
     .def("AddDipole", &SingularMLMultiPole::AddDipole)
@@ -2798,6 +2798,12 @@ If linear is True the function will be interpolated linearly between the values.
     .def("__str__", [](SingularMLMultiPole& mlmp) { return ToString<>(mlmp); })
     ;
 
+  py::class_<RegularMLMultiPole, shared_ptr<RegularMLMultiPole>> (m, "RegularMLMP")
+    .def("Norm", &RegularMLMultiPole::Norm)    
+    .def("__str__", [](RegularMLMultiPole& mlmp) { return ToString<>(mlmp); })
+    ;
+
+  
   py::class_<SphericalHarmonicsCF, shared_ptr<SphericalHarmonicsCF>, CoefficientFunction> (m, "SphericalHarmonicsCF")
     .def(py::init<int>())
     .def_property_readonly("sh", [](SphericalHarmonicsCF& self) -> SphericalHarmonics& { return self.SH(); })
@@ -2822,12 +2828,12 @@ If linear is True the function will be interpolated linearly between the values.
     ;
 
   py::class_<SingularMLMultiPoleCF, shared_ptr<SingularMLMultiPoleCF>, CoefficientFunction> (m, "SingularMLMultiPoleCF")
-    .def(py::init<Vec<3>, double, int, double>())
-    .def_property_readonly("mlmp", [](SingularMLMultiPoleCF& self) -> SingularMLMultiPole& { return *self.MLMP(); })
+    .def(py::init<Vec<3>, double, int, double>(), py::arg("center"), py::arg("r"), py::arg("order")=-1, py::arg("kappa"))
+    .def_property_readonly("mlmp", [](SingularMLMultiPoleCF& self) { return self.MLMP(); })
     ;
   py::class_<RegularMLMultiPoleCF, shared_ptr<RegularMLMultiPoleCF>, CoefficientFunction> (m, "RegularMLMultiPoleCF")
-    .def(py::init<shared_ptr<SingularMLMultiPoleCF>,Vec<3>, double, int>())
-    // .def_property_readonly("mlmp", [](MLMultiPoleCF& self) -> MLMultiPole& { return self.MLMP(); })
+    .def(py::init<shared_ptr<SingularMLMultiPoleCF>,Vec<3>, double, int>(), py::arg("mp"), py::arg("center"), py::arg("r"), py::arg("order")=-1)
+    .def_property_readonly("mlmp", [](RegularMLMultiPoleCF& self) { return self.MLMP(); })
     ;
 
   
