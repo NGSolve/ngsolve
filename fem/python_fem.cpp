@@ -2785,6 +2785,9 @@ If linear is True the function will be interpolated linearly between the values.
     { self.Coef(get<0>(nm), get<1>(nm)) = val; })
     .def("__getitem__", [](SphericalHarmonics& self, tuple<int,int> nm)
     { return self.Coef(get<0>(nm), get<1>(nm)); })
+    .def_property_readonly("coefs",
+                           [](SphericalHarmonics& self) { return self.Coefs(); },
+                           "coefficient vector")
     .def("RotateZ", [](SphericalHarmonics& self, double alpha) { self.RotateZ(alpha); })
     .def("RotateY", [](SphericalHarmonics& self, double alpha) { self.RotateY(alpha); })
     ;
