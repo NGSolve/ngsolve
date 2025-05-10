@@ -42,7 +42,7 @@ install( FILES
         bandmatrix.hpp cholesky.hpp matrix.hpp ng_lapack.hpp 
         vector.hpp bla.hpp expr.hpp symmetricmatrix.hpp clapack.h     
         tensor.hpp triangular.hpp householder.hpp eigensystem.hpp calcinverse.hpp
-        ngblas.hpp simd_complex.hpp complex_wrapper.hpp
+        ngblas.hpp simd_complex.hpp complex_wrapper.hpp ectypes.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
