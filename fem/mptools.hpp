@@ -270,6 +270,19 @@ namespace ngfem
       scale = newscale;
     }
 
+    Vector<double> Spectrum (bool scaled) const
+    {
+      Vector<double> spec(Order()+1);
+      double fac = 1;
+      for (int n = 0; n <= Order(); n++)
+        {
+          spec(n) = fac * L2Norm2(sh.CoefsN(n));
+          if (!scaled) fac *= sqr(scale);
+        }
+      return spec;
+    }
+
+    
     template <typename TARGET>
     void Transform (MultiPole<TARGET> & target, Vec<3> dist) const
     {
