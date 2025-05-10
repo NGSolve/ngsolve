@@ -183,15 +183,26 @@ namespace ngfem
       }
     */
 
-    // the bessel-evaluation with scale (but don't see a difference):
-    besseljs3d (n, rho, 1/scale,  j, jp);
     
-    double prod = 1.0;
-    for (int i = 0; i <= n; i++)
+    // the bessel-evaluation with scale
+    besseljs3d (n, rho, 1/scale,  j, jp);
+
+    // Bessel y directly with the recurrence formula for (y, yp):
+    double x = rho;
+    double xinv = 1/x;
+    y(0) = -xinv * cos(x);
+    yp(0) = j(0)-xinv*y(0);
+
+    double sl = 0;
+    for (int l = 1; l <= n; l++)
       {
-        values(i) = j(i) + prod * Complex(0,y(i));
-        prod *= scale;
+        y(l) = scale * (sl*y(l-1) - yp(l-1));
+        sl += xinv;
+        yp(l) = scale * y(l-1) - (sl+xinv)*y(l);
       }
+    
+    for (int i = 0; i <= n; i++)
+      values(i) = Complex (j(i), y(i));
   }
 
 
