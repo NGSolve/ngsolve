@@ -1,7 +1,5 @@
 #include "mptools.hpp"
 
-// #include <ectypes.hpp>
-
 namespace ngfem
 {
 
@@ -164,7 +162,7 @@ namespace ngfem
   }
 
 
-
+  
 
 
   void SphericalHarmonics :: RotateZ (double alpha)
@@ -680,19 +678,14 @@ namespace ngfem
     target.SH().Coefs()=0.0;
 
     
-    LocalHeap lh(2 * ( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 500));
+    LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 500));
 
-    FlatMatrix<Complex> trafo(os+ot+1, max(os,ot)+1, lh);
-    FlatMatrix<Complex> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
+    typedef typename std::conditional<std::is_same<RADIAL,TARGET>::value, double, Complex>::type trafo_type;
+    
+    FlatMatrix<trafo_type> trafo(os+ot+1, max(os,ot)+1, lh);
+    FlatMatrix<trafo_type> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
     FlatVector<Complex> hv1(os+1, lh), hv2(ot+1, lh);
 
-    /*
-    FlatMatrix<EC_Complex> trafo(os+ot+1, max(os,ot)+1, lh);
-    FlatMatrix<EC_Complex> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
-    FlatVector<EC_Complex> hv1(os+1, lh), hv2(ot+1, lh);
-    */
-    
-    // trafo = Complex(0.0);
 
     double tscale = target.Scale();
     double inv_tscale = 1.0/tscale;
@@ -709,8 +702,7 @@ namespace ngfem
       }
       
     // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
-    // RADIAL::Eval(os+ot, kappa*abs(z), trafo.Col(0));
-    if (typeid(RADIAL) == typeid(TARGET))
+    if constexpr (std::is_same<RADIAL,TARGET>::value)
       SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
     else
       SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
@@ -720,9 +712,6 @@ namespace ngfem
 
     for (int l = 0; l <= os+ot; l++)
       trafo(l,0) *= sqrt(2*l+1);
-      
-    // for (int l = 0; l <= os+ot; l++)
-    // trafo(l,0) *= sqrt(2*l+1);
 
     if (os > 0)
       {
@@ -740,7 +729,13 @@ namespace ngfem
                                                    -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
         trafo(0,n+1) = pow(-scale*tscale,n+1)*trafo(n+1,0);
       }
-      
+
+    // use symmetry of matrix (up to scaling)
+    // important for small kappa, and R->R
+    for (int n = 0; n < trafo.Width(); n++)
+      for (int l = n+1; l < trafo.Width(); l++)
+        trafo(n,l) = pow(-scale*tscale,l-n) * trafo(l,n);
+    
     for (int n = 0; n <= os; n++)
       hv1(n) = sh.Coef(n,0);
     hv2 = trafo.Rows(ot+1).Cols(os+1) * hv1;
@@ -789,7 +784,7 @@ namespace ngfem
             */
 
             trafo.Swap (oldtrafo);
-            trafo = Complex(0.0);
+            trafo = trafo_type(0.0);
               
             // fill recursive formula (187)
             for (int l = m; l <= os+ot-m; l++)
