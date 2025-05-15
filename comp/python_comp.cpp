@@ -4539,12 +4539,13 @@ geom_free:
        cout << "WARNING: ContactBoundary constructor with FESpace is deprecated, fes will be set correctly in Update!" << endl;
        return make_shared<ContactBoundary>(master, minion, draw_pairs, volume);
      }), "fes"_a, "master"_a, "minion"_a, "draw_pairs"_a = false, "volume"_a = false)
-     .def(py::init<Region, Region, bool,bool>(),
+     .def(py::init<Region, Region, bool, bool, bool>(),
           R"delimiter(
 Class for managing contact interfaces.
 The created object must be kept alive in python as long as
 operations of it are used!
-)delimiter", "master"_a, "minion"_a, "draw_pairs"_a=false, "volume"_a=false)
+)delimiter", "master"_a, "minion"_a, "draw_pairs"_a=false, "volume"_a=false,
+          "element_boundary"_a = false)
      .def("AddEnergy", &ContactBoundary::AddEnergy,
           "form"_a, "deformed"_a = false)
      .def("AddIntegrator", &ContactBoundary::AddIntegrator,
