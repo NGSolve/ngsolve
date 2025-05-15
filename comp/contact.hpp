@@ -161,10 +161,10 @@ namespace ngcomp
     bool draw_pairs = false;
     Array<Vec<3>> primary_points;
     Array<Vec<3>> secondary_points;
-    bool volume;
+    bool volume, element_boundary;
   public:
     void Draw();
-    ContactBoundary(Region _master, Region _other, bool draw_pairs = false, bool _volume=false);
+    ContactBoundary(Region _master, Region _other, bool draw_pairs = false, bool _volume=false, bool element_boundary=false);
 
     ~ContactBoundary();
 
