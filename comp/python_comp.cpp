@@ -2195,6 +2195,8 @@ bonus_intorder : int
 
     .def("MDComponent", [] (shared_ptr<GF> self, int mdcomp)
          {
+          if (self->GetMultiDim() <= mdcomp || mdcomp < 0)
+            throw Exception(string("MDComponent: ") + ToString(mdcomp) + string(" is out of range from [0, ") + ToString(self->GetMultiDim()) + string(")"));
            return make_shared<GridFunctionCoefficientFunction> (self, mdcomp); 
          }, py::arg("mdcomp"), "select component of multidim GridFunction")
     
