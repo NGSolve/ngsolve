@@ -702,14 +702,6 @@ namespace ngfem
     trafo = trafo_type(0.0);
     
     double tscale = target.Scale();
-    /*
-    if (typeid(RADIAL) != typeid(TARGET))
-      {
-        tscale = 1.0/tscale;
-        scale = 1.0/scale;
-      }
-    */
-    
     double inv_tscale = 1.0/tscale;
 
     /*
@@ -730,13 +722,12 @@ namespace ngfem
         powscale(i) = prod;
         prod *= -scale*tscale;
       }
-    // *testout << "tscale = " << tscale << ", invtscale = " << inv_tscale << endl;
+    
     // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
     if constexpr (std::is_same<RADIAL,TARGET>::value)
       SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
     else
       SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
-    // SphericalHankel1 (os+ot, kappa*abs(z), tscale, trafo.Col(0));
 
     if (z < 0)
       for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
@@ -782,7 +773,6 @@ namespace ngfem
       
     for (int m = 1; m <= min(os,ot); m++)
       {
-
 
         for (int l = m-1; l < os+ot-m; l++)
           {
@@ -856,12 +846,63 @@ namespace ngfem
                                            trafo(l-1,n).imag());
                 }
 
+
+
+
+            // the imaginary part started from the yn:
+            // diagonal down
+            for (int n = m; n < trafo.Width()-1; n++)
+              {
+                int l = n+1;
+                // *testout << "old: " << trafo(l,n+1) << ", new: ";
+                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
+                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                // *testout << trafo(l,n+1) << endl;
+                // *testout << "old2: " << trafo(l-1,n) << ", new: ";
+
+                trafo(l+1,n) = 
+                  1.0 / (amn(l)  *   tscale) * (amn(l-1)/tscale * trafo(l-1,n)
+                                                + amn(n-1)* scale*trafo(l,n-1)
+                                                - amn(n)* 1/scale*trafo(l,n+1));
+                // *testout << trafo(l-1,n) << endl;
+              }
+
+            // the next diagonal down
+            for (int n = m; n < trafo.Width()-1; n++)
+              {
+                // int l = 2*order-n-1;
+               int l = n+2;
+               // *testout << "old: " << trafo(l,n+1) << ", new: ";
+               trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                                                         - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
+                                                         + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+               // *testout << trafo(l,n+1) << endl;
+               // *testout << "old2: " << trafo(l-1,n) << ", new: ";
+
+                trafo(l+1,n) = 
+                  1.0 / (amn(l)  *   tscale) * (amn(l-1)/tscale * trafo(l-1,n)
+                                                + amn(n-1)* scale*trafo(l,n-1)
+                                                - amn(n)* 1/scale*trafo(l,n+1));
+                // *testout << trafo(l-1,n) << endl;
+              }
+            
+              
+            for (int l = m; l < trafo.Height()-1; l++)
+              for (int n = m+1; n < min<int>(trafo.Height()-1-l,l-1 ); n++)
+                {
+                  trafo(l+1,n)  = Complex (trafo(l+1,n).real(),
+                                           1/(tscale*amn(l)) * ( amn(l-1)/tscale*trafo(l-1,n)
+                                                                 +amn(n-1)* scale*trafo(l,n-1)
+                                                                 -amn(n)  * 1/scale*trafo(l,n+1)).imag());
+                }
+
             /*
             *testout << "m = " << m << endl;
             Matrix<> mat = Real(trafo.Rows(m, ot+1).Cols(m,os+1));
-            *testout << "Norm real = " << L2Norm(mat) << endl;
+            *testout << "Norm real = " << L2Norm2(mat) << endl;
             mat = Imag(trafo.Rows(m, ot+1).Cols(m,os+1)); 
-            *testout << "Norm imag = " << L2Norm(mat) << endl;
+            *testout << "Norm imag = " << L2Norm2(mat) << endl;
             */
           }
 
