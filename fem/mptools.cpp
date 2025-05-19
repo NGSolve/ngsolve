@@ -664,8 +664,21 @@ namespace ngfem
   }
 #endif
   
+  /*
+    for S->S:  targetscale <= sourcescale <= 1
+    for S->R:  targetscale >= 1 >= sourcescale
+    for R->R:  targetscale >= sourcescale >= 1
+
+    trafoscaled(k,l) = ss^l / ts^k * trafo(k,l)
+
+    trafo(k,l) = trafo(l,k)  <==>   trafoscale(k,l) = (ss*ts)^(l-k) trafoscale(l,k)
+    
+    S->S : Col0 ok, Row0 may become very small
+   */
 
 
+#define VER3
+#ifdef VER3
   template <typename RADIAL> template <typename TARGET>
   void MultiPole<RADIAL> :: ShiftZ (double z, MultiPole<TARGET> & target)
   {
@@ -686,10 +699,27 @@ namespace ngfem
     FlatMatrix<trafo_type> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
     FlatVector<Complex> hv1(os+1, lh), hv2(ot+1, lh);
 
-
+    trafo = trafo_type(0.0);
+    
     double tscale = target.Scale();
+    /*
+    if (typeid(RADIAL) != typeid(TARGET))
+      {
+        tscale = 1.0/tscale;
+        scale = 1.0/scale;
+      }
+    */
+    
     double inv_tscale = 1.0/tscale;
 
+    /*
+    *testout << "SiftZ" +ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()) << endl;
+    *testout << "z = " << z << endl;
+    *testout << "os = " << os << ", ot = " <<  ot << endl;
+    *testout << "scale = " << Scale() << ", tscale = " << target.Scale() << endl;
+    */
+
+    
     FlatVector<double> amn(os+ot+1, lh);
     FlatVector<double> inv_amn(os+ot+1, lh);
 
@@ -700,13 +730,14 @@ namespace ngfem
         powscale(i) = prod;
         prod *= -scale*tscale;
       }
-      
+    // *testout << "tscale = " << tscale << ", invtscale = " << inv_tscale << endl;
     // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
     if constexpr (std::is_same<RADIAL,TARGET>::value)
       SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
     else
       SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
-      
+    // SphericalHankel1 (os+ot, kappa*abs(z), tscale, trafo.Col(0));
+
     if (z < 0)
       for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
 
@@ -727,20 +758,26 @@ namespace ngfem
           trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)
                                                    -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)
                                                    -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
-        trafo(0,n+1) = pow(-scale*tscale,n+1)*trafo(n+1,0);
+        trafo(0,n+1) = powscale(n+1)*trafo(n+1,0);
       }
 
     // use symmetry of matrix (up to scaling)
     // important for small kappa, and R->R
     for (int n = 0; n < trafo.Width(); n++)
       for (int l = n+1; l < trafo.Width(); l++)
-        trafo(n,l) = pow(-scale*tscale,l-n) * trafo(l,n);
+        trafo(n,l) = powscale(l-n) * trafo(l,n);
+
+    // *testout << "trafo0" << endl << trafo.Rows(os+ot+1).Cols(os+1) << endl;
+    // *testout << "norm trafo col 0 = " << L2Norm(trafo.Rows(ot+1).Col(0)) << endl;
+    // *testout << "norm trafo0 = " << L2Norm(trafo.Rows(ot+1).Cols(os+1)) << endl;
+    // *testout << "trafo0 = " << trafo.Rows(ot+1).Cols(os+1) << endl;
     
     for (int n = 0; n <= os; n++)
       hv1(n) = sh.Coef(n,0);
     hv2 = trafo.Rows(ot+1).Cols(os+1) * hv1;
     for (int n = 0; n <= ot; n++)
       target.SH().Coef(n,0) = hv2(n);
+
 
       
     for (int m = 1; m <= min(os,ot); m++)
@@ -753,14 +790,19 @@ namespace ngfem
             inv_amn(l) = scale/amn(l);
           }
 
-        if (typeid(RADIAL) != typeid(TARGET))
-            
+        
+        if constexpr (!std::is_same<RADIAL,TARGET>::value)
           {
+
+            trafo.Swap (oldtrafo);
+            trafo = trafo_type(0.0);
+
             // fill recursive formula (187)
             for (int l = m; l <= os+ot-m; l++)
-              trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*trafo(l-1, m-1)  
-                                                      -sh.CalcBmn(m-1,l+1)*tscale*trafo(l+1,m-1));  
-              
+              trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)  
+                                                      -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));  
+            
+            // unstable for large kappa
             for (int n = m; n < os; n++)
               {
                 for (int l = n+1; l < os+ot-n; l++)
@@ -768,6 +810,59 @@ namespace ngfem
                                                 -amn(l-1)*inv_tscale*trafo(l-1,n)
                                                 -amn(n-1)*scale*trafo(l,n-1));
               }
+
+
+            
+            // fix real part by wall-reccurence:
+            for (int n = m; n < trafo.Width()-1; n++)
+              {
+                // int l = 2*order-n-1;
+                int l = trafo.Height()-n-2;
+                // *testout << "old: " << trafo(l,n+1) << ", new: ";
+                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
+                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                // *testout << trafo(l,n+1) << endl;
+
+                // *testout << "old2: " << trafo(l-1,n) << ", new: ";                
+                trafo(l-1,n) = tscale/amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
+                                                  - amn(n-1)* scale*trafo(l,n-1)
+                                                  + amn(n)* 1/scale*trafo(l,n+1));
+                // *testout << trafo(l-1,n) << endl;                
+              }
+
+            // the same thing 1 row up
+            for (int n = m; n < trafo.Width()-2; n++)
+              {
+                // int l = 2*order-n-2;
+                int l = trafo.Height()-n-3;
+                  
+                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
+                                                          - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
+                                                          + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
+                  
+                trafo(l-1,n) = tscale/amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
+                                                  -amn(n-1)* scale*trafo(l,n-1) +
+                                                  amn(n)   * 1/scale*trafo(l,n+1)) ;
+              }
+
+            for (int l = trafo.Height()-1; l >= m; l--)
+              for (int n = m+1; n < min<int>(trafo.Height()-1-l,l); n++)
+                {
+                  trafo(l-1,n)  = Complex (
+                                           (tscale/amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
+                                                               -amn(n-1)* scale*trafo(l,n-1)
+                                                               +amn(n)  * 1/scale*trafo(l,n+1))).real(),
+                                           trafo(l-1,n).imag());
+                }
+
+            /*
+            *testout << "m = " << m << endl;
+            Matrix<> mat = Real(trafo.Rows(m, ot+1).Cols(m,os+1));
+            *testout << "Norm real = " << L2Norm(mat) << endl;
+            mat = Imag(trafo.Rows(m, ot+1).Cols(m,os+1)); 
+            *testout << "Norm imag = " << L2Norm(mat) << endl;
+            */
           }
 
         else
@@ -821,8 +916,6 @@ namespace ngfem
               }
               
               
-            // for (int l = 2*order; l >= m; l--)
-            //   for (int n = m+1; n < min(2*order-l,l); n++)
             for (int l = trafo.Height()-1; l >= m; l--)
               for (int n = m+1; n < min<int>(trafo.Height()-1-l,l); n++)
                 {
@@ -833,19 +926,16 @@ namespace ngfem
           }
           
           
-        /*
-          cout << "m = " << m << endl
-          << trafo << endl;
-        */
+        // *testout << "m = " << m << endl
+        // << trafo << endl;
+
         for (int n = m; n < os; n++)
           for (int l = n+1; l <= os; l++)
             trafo(n,l) = powscale(l-n) * trafo(l,n);              
         // trafo(n,l) = pow(-scale*tscale, l-n) * trafo(l,n);
 
-        /*
-          cout << "                            norm trafo = "
-          << L2Norm(trafo.Rows(m,ot+1).Cols(m,os+1)) << endl;
-        */
+        // *testout << "norm trafo " << m << " = " 
+        // << L2Norm(trafo.Rows(m,ot+1).Cols(m,os+1)) << endl;
           
         for (int n = m; n <= os; n++)
           hv1(n) = sh.Coef(n,m);
@@ -895,7 +985,7 @@ namespace ngfem
       }
     */
   }
-
+#endif
 
   
   
