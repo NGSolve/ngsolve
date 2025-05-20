@@ -162,13 +162,13 @@ namespace ngfem
       values(i) = (2*i-1)/rho * values(i-1) - values(i-2);
     */
     
-    if (rho < 1e-8)
+    if (rho < 1e-100)
       {
         values = Complex(0);
         return;
       }
     Vector j(n+1), y(n+1), jp(n+1), yp(n+1);
-    SBESJY (rho, n, j, y, jp, yp);
+    // SBESJY (rho, n, j, y, jp, yp);
 
     /*
     values = j + Complex(0,1) * y;
