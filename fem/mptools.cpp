@@ -1334,21 +1334,19 @@ namespace ngfem
     if constexpr (!std::is_same<RADIAL,MPSingular>())
       throw Exception("AddCharge assumes singular MP");
       
-    // static Timer t("mptool AddCharge"); RegionTimer rg(t);      
-      
-    if (L2Norm(x) < 1e-10)
+    // static Timer t("mptool AddCharge"); RegionTimer rg(t);
+    if (L2Norm(x) < 1e-50)
       {
         sh.Coef(0,0) += c * Complex(0,1)*kappa/sqrt(4*M_PI);
         return;
       }
-
     // cout << "add charge, kappa rho = " << kappa*L2Norm(x) << ", order = " << sh.Order() << endl;
       
     Vector<Complex> radial(sh.Order()+1);
     Vector<Complex> sh_shapes(sqr (sh.Order()+1));
 
     RADIAL::Eval(sh.Order(), kappa*L2Norm(x), 1.0/scale, radial);
-    // cout << "radial = " << radial << endl;
+    // cout << "radial = " << Real(radial) << endl;
     sh.Calc(x, sh_shapes);
 
     for (int i = 0; i <= sh.Order(); i++)
