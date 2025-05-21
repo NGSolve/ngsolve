@@ -1048,9 +1048,7 @@ namespace ngcomp
                       while (first < cntpair)
                         {
                           int next = first;
-                          while (next < cntpair && other_nr[index[next]] == other_nr[index[first]])
-                            if(element_boundary && this_ir[index[i]].FacetNr() != other_ir[index[i]].FacetNr())
-                              break;
+                          while ((next < cntpair && other_nr[index[next]] == other_nr[index[first]]) && (!element_boundary || this_ir[index[next]].FacetNr() == this_ir[index[first]].FacetNr()))
                             next++;
                           // cout << "interval = [" << first << ", " << next << ")" << endl;
                           
