@@ -826,8 +826,10 @@ namespace ngcomp
   }
 
   ContactBoundary::ContactBoundary(Region _master, Region _other,
-                                   bool _draw_pairs, bool _volume)
-    : master(_master), other(_other), draw_pairs(_draw_pairs), volume(_volume)
+                                   bool _draw_pairs, bool _volume,
+                                   bool _element_boundary)
+    : master(_master), other(_other), draw_pairs(_draw_pairs), volume(_volume),
+      element_boundary(_element_boundary)
   {
 #if NETGEN_USE_GUI
     if(draw_pairs)
@@ -971,21 +973,45 @@ namespace ngcomp
                       HeapReset hr(lh);
                       if(!mask.Test(el.GetIndex())) return;
                       auto& trafo = mesh->GetTrafo(el, lh);
-                      IntegrationRule ir(trafo.GetElementType(), intorder);
-                      MappedIntegrationRule<DIM-1, DIM> mir(ir, trafo, lh);
-
-                      FlatArray<IntegrationPoint> this_ir(ir.Size(), lh);
-                      FlatArray<IntegrationPoint> other_ir(ir.Size(), lh);
-                      FlatArray<size_t> other_nr(ir.Size(), lh);
+                      Array<unique_ptr<MappedIntegrationRule<DIM-1, DIM>>> mirs;
+                      if (element_boundary)
+                        {
+                          auto eltype = trafo.GetElementType();
+                          Facet2ElementTrafo transform(eltype, BND);
+                          auto nfacet = transform.GetNFacets();
+                          for(int facnr : Range(nfacet))
+                            {
+                              auto etfacet = transform.FacetType(facnr);
+                              IntegrationRule ir_facet(etfacet, intorder);
+                              IntegrationRule & ir_facet_vol = transform(facnr, ir_facet, lh);
+                              mirs.Append(make_unique<MappedIntegrationRule<DIM-1, DIM>>(ir_facet_vol, trafo, lh));
+                            }
+                        }
+                      else
+                        {
+                          IntegrationRule ir(trafo.GetElementType(), intorder);
+                          mirs.Append(make_unique<MappedIntegrationRule<DIM-1, DIM>>(ir, trafo, lh));
+                        }
+                      int npts = 0;
+                      for(const auto& mir : mirs)
+                        npts += mir->Size();
+                      FlatArray<IntegrationPoint> this_ir(npts, lh);
+                      FlatArray<IntegrationPoint> other_ir(npts, lh);
+                      FlatArray<size_t> other_nr(npts, lh);
 
                       int cntpair = 0;
-                      for(const auto& mip : mir)                        
+                      for(const auto& mir : mirs)
+                      for(auto& mip : *mir)
                         {
                           auto pair = tgap->CreateContactPair(mip, lh,
                                                               both_sides);
                           if (pair.has_value())
                             {
                               this_ir[cntpair] =  (*pair).primary_ip;
+                              if(element_boundary)
+                                this_ir[cntpair].SetFacetNr
+                                  (mip.IP().FacetNr(),
+                                   mip.IP().VB());
                               other_ir[cntpair] = (*pair).secondary_ip;
                               other_nr[cntpair] = (*pair).secondary_el.Nr();
                               cntpair++;
@@ -1022,7 +1048,7 @@ namespace ngcomp
                       while (first < cntpair)
                         {
                           int next = first;
-                          while (next < cntpair && other_nr[index[next]] == other_nr[index[first]])
+                          while ((next < cntpair && other_nr[index[next]] == other_nr[index[first]]) && (!element_boundary || this_ir[index[next]].FacetNr() == this_ir[index[first]].FacetNr()))
                             next++;
                           // cout << "interval = [" << first << ", " << next << ")" << endl;
                           
