@@ -34,5 +34,5 @@ python --version
 
 pip3 install scikit-build wheel numpy twine mkl-devel==2022.* mkl==2022.*
 pip3 install netgen-mesher==$netgen_version
-python setup.py bdist_wheel -G"Visual Studio 16 2019"
+python setup.py bdist_wheel -G"Visual Studio 17 2022"
 python -m twine upload dist\*.whl
