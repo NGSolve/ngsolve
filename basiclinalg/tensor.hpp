@@ -371,7 +371,7 @@ public:
   
   ~Tensor() 
   {
-    delete this->Data();
+    delete [] this->Data();
   }
 
   FlatTensor<DIM,T> operator= (double d)
