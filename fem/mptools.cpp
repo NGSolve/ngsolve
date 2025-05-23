@@ -3,7 +3,8 @@
 namespace ngfem
 {
 
-  Complex SphericalHarmonics :: Eval (double theta, double phi) const
+  template <typename entry_type>
+  entry_type SphericalHarmonics<entry_type> :: Eval (double theta, double phi) const
   {
     static Timer t("mptool sh evaluate"); RegionTimer rg(t);
     
@@ -18,14 +19,14 @@ namespace ngfem
         prod *= -exp_iphi;
       }
 
-    Complex sum = 0.0;
+    entry_type sum{0.0};
     int ii = 0;
     for (int n = 0; n <= order; n++)
       {
         for (int m = -n; m < 0; m++, ii++)
-          sum += coefs(ii) * conj(exp_imphi(-m)) * legfunc(-m, n);
+          sum += conj(exp_imphi(-m)) * legfunc(-m, n) * coefs(ii);
         for (int m = 0; m <= n; m++, ii++)
-          sum += coefs(ii) * exp_imphi(m) * legfunc(m, n);
+          sum += exp_imphi(m) * legfunc(m, n) * coefs(ii);
       }
 
     sum /= sqrt(4*M_PI);
@@ -33,7 +34,8 @@ namespace ngfem
   }
 
 
-  Complex SphericalHarmonics :: EvalOrder (int n, double theta, double phi) const
+  template <typename entry_type>  
+  entry_type SphericalHarmonics<entry_type> :: EvalOrder (int n, double theta, double phi) const
   {
     static Timer t("mptool sh evalorder");
 
@@ -50,15 +52,15 @@ namespace ngfem
         prod *= -exp_iphi;
       }
 
-    Complex sum = 0.0;
+    entry_type sum{0.0};
     auto coefsn = CoefsN(n);
     int ii = 0;
     // for (int n = 0; n <= order; n++)
     {
       for (int m = -n; m < 0; m++, ii++)
-        sum += coefsn(ii) * conj(exp_imphi(-m)) * legfunc(-m, n);
+        sum += conj(exp_imphi(-m)) * legfunc(-m, n) * coefsn(ii);
       for (int m = 0; m <= n; m++, ii++)
-        sum += coefsn(ii) * exp_imphi(m) * legfunc(m, n);
+        sum += exp_imphi(m) * legfunc(m, n) * coefsn(ii);
     }
 
     sum /= sqrt(4*M_PI);
@@ -67,7 +69,8 @@ namespace ngfem
 
 
 
-  void SphericalHarmonics :: EvalOrders (double theta, double phi, FlatVector<Complex> vals) const
+  template <typename entry_type>
+  void SphericalHarmonics<entry_type> :: EvalOrders (double theta, double phi, FlatVector<entry_type> vals) const
   {
     static Timer ts("mptool sh evalorders small");
     static Timer tl("mptool sh evalorders large");
@@ -91,11 +94,11 @@ namespace ngfem
         auto coefsn = CoefsN(n);
         int ii = 0;
           
-        Complex sum = 0.0;
+        entry_type sum{0.0};
         for (int m = -n; m < 0; m++, ii++)
-          sum += coefsn(ii) * conj(exp_imphi(-m)) * legfunc(-m, n);
+          sum += conj(exp_imphi(-m)) * legfunc(-m, n) * coefsn(ii);
         for (int m = 0; m <= n; m++, ii++)
-          sum += coefsn(ii) * exp_imphi(m) * legfunc(m, n);
+          sum += exp_imphi(m) * legfunc(m, n) * coefsn(ii);
         vals(n) = sum;
       }
 
@@ -104,8 +107,9 @@ namespace ngfem
     // if (order > 30) tl.Stop();      
   }
 
-
-  void SphericalHarmonics :: Calc (Vec<3> x, FlatVector<Complex> shapes)
+  
+  template <typename entry_type>
+  void SphericalHarmonics<entry_type> :: Calc (Vec<3> x, FlatVector<Complex> shapes)
   {
     auto [theta, phi] = Polar(x);
 
@@ -137,7 +141,9 @@ namespace ngfem
 
   // Nail A. Gumerov and Ramani Duraiswami book, formula (2.2.12)
   // add directional derivative divided by kappa to res, both multipoles need same scaling
-  void SphericalHarmonics :: DirectionalDiffAdd (Vec<3> d, SphericalHarmonics & res, double scale)
+  template <typename entry_type>  
+  void SphericalHarmonics<entry_type> ::
+  DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale)
   {
     double fx = d(0);
     double fy = d(1);
@@ -165,7 +171,8 @@ namespace ngfem
   
 
 
-  void SphericalHarmonics :: RotateZ (double alpha)
+  template <typename entry_type>
+  void SphericalHarmonics<entry_type> :: RotateZ (double alpha)
   {
     // static Timer t("mptool sh RotateZ"); RegionTimer rg(t);
     if (order < 0) return;
@@ -191,8 +198,8 @@ namespace ngfem
 
 
 
-    
-  void SphericalHarmonics :: RotateY (double alpha)
+  template <typename entry_type>    
+  void SphericalHarmonics<entry_type> :: RotateY (double alpha)
   {
     LocalHeap lh(8*6*sqr(order) + 8*15*order + 500);
       
@@ -302,8 +309,8 @@ namespace ngfem
           }
         */
 
-        FlatVector<Complex> cn = CoefsN(n);
-        FlatVector<Complex> old = cn | lh;
+        FlatVector<entry_type> cn = CoefsN(n);
+        FlatVector<entry_type> old = cn | lh;
 
         cn.Slice(0,1) = Trans(trafo) * old.Range(n, 2*n+1);
         cn.Slice(0,1).Reversed() += Trans(trafo.Rows(1,n+1)) * old.Range(0,n).Reversed();
@@ -679,8 +686,8 @@ namespace ngfem
 
 #define VER3
 #ifdef VER3
-  template <typename RADIAL> template <typename TARGET>
-  void MultiPole<RADIAL> :: ShiftZ (double z, MultiPole<TARGET> & target)
+  template <typename RADIAL, typename entry_type> template <typename TARGET>
+  void MultiPole<RADIAL,entry_type> :: ShiftZ (double z, MultiPole<TARGET> & target)
   {
     static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
     RegionTimer rg(t);
@@ -761,7 +768,7 @@ namespace ngfem
     // *testout << "trafo0" << endl << trafo.Rows(os+ot+1).Cols(os+1) << endl;
     // *testout << "norm trafo col 0 = " << L2Norm(trafo.Rows(ot+1).Col(0)) << endl;
     // *testout << "norm trafo0 = " << L2Norm(trafo.Rows(ot+1).Cols(os+1)) << endl;
-    // *testout << "trafo0 = " << trafo.Rows(ot+1).Cols(os+1) << endl;
+    *testout << "trafo0 = " << trafo.Rows(ot+1).Cols(os+1) << endl;
     
     for (int n = 0; n <= os; n++)
       hv1(n) = sh.Coef(n,0);
@@ -897,13 +904,11 @@ namespace ngfem
                                                                  -amn(n)  * 1/scale*trafo(l,n+1)).imag());
                 }
 
-            /*
             *testout << "m = " << m << endl;
             Matrix<> mat = Real(trafo.Rows(m, ot+1).Cols(m,os+1));
             *testout << "Norm real = " << L2Norm2(mat) << endl;
             mat = Imag(trafo.Rows(m, ot+1).Cols(m,os+1)); 
             *testout << "Norm imag = " << L2Norm2(mat) << endl;
-            */
           }
 
         else
@@ -1309,8 +1314,8 @@ namespace ngfem
 
   /* ************************************** Multipole class ******************************* */
 
-  template <typename RADIAL>
-  Complex MultiPole<RADIAL> :: Eval (Vec<3> x) const
+  template <typename RADIAL, typename entry_type>
+  entry_type MultiPole<RADIAL,entry_type> :: Eval (Vec<3> x) const
   {
     if (sh.Order() < 0) return 0;
 
@@ -1328,8 +1333,8 @@ namespace ngfem
   }
 
 
-  template <typename RADIAL>
-  void MultiPole<RADIAL> :: AddCharge (Vec<3> x, Complex c)
+  template <typename RADIAL, typename entry_type>
+  void MultiPole<RADIAL,entry_type> :: AddCharge (Vec<3> x, entry_type c)
   {      
     if constexpr (!std::is_same<RADIAL,MPSingular>())
       throw Exception("AddCharge assumes singular MP");
@@ -1356,8 +1361,8 @@ namespace ngfem
       }
   }
 
-  template <typename RADIAL>
-  void MultiPole<RADIAL> :: AddDipole (Vec<3> x, Vec<3> d, Complex c)
+  template <typename RADIAL, typename entry_type>
+  void MultiPole<RADIAL, entry_type> :: AddDipole (Vec<3> x, Vec<3> d, entry_type c)
   {
     // static Timer t("mptool AddDipole"); RegionTimer rg(t);      
     /*
@@ -1394,6 +1399,8 @@ namespace ngfem
 
 
 
+  template class SphericalHarmonics<Complex>;
+  template class SphericalHarmonics<Vec<3,Complex>>;  
   
   template class MultiPole<MPRegular>;
   template class MultiPole<MPSingular>;

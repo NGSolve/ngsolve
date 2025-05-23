@@ -14,20 +14,20 @@ namespace ngfem
 {
 
 
-  
+  template <typename entry_type = Complex>
   class NGS_DLL_HEADER SphericalHarmonics
   {
     int order;
-    Vector<Complex> coefs;
+    Vector<entry_type> coefs;
 
   public:
     SphericalHarmonics (int aorder)
       : order(aorder), coefs(sqr(order+1)) { coefs=0.0; }
 
     int Order() const { return order; }
-    FlatVector<Complex> Coefs() const { return coefs; }
-
-    Complex & Coef(int n, int m)
+    FlatVector<entry_type> Coefs() const { return coefs; }
+    
+    entry_type & Coef(int n, int m)
     {
       return coefs(n*(n+1) + m);  
     }
@@ -53,29 +53,29 @@ namespace ngfem
       return { theta, phi };
     }
     
-    Complex Eval (Vec<3> x) const
+    entry_type Eval (Vec<3> x) const
     {
       auto [theta, phi] = Polar(x);
       return Eval(theta, phi);
     }
   
-    Complex Eval (double theta, double phi) const;
+    entry_type Eval (double theta, double phi) const;
     
-    Complex EvalOrder (int n, Vec<3> x) const
+    entry_type EvalOrder (int n, Vec<3> x) const
     {
       auto [theta, phi] = Polar (x);
       return EvalOrder(n, theta, phi);
     }
   
-    Complex EvalOrder (int n, double theta, double phi) const;
+    entry_type EvalOrder (int n, double theta, double phi) const;
 
-    void EvalOrders (Vec<3> x, FlatVector<Complex> vals) const
+    void EvalOrders (Vec<3> x, FlatVector<entry_type> vals) const
     {
       auto [theta, phi] = Polar(x);
       return EvalOrders(theta, phi, vals);
     }
   
-    void EvalOrders (double theta, double phi, FlatVector<Complex> vals) const;
+    void EvalOrders (double theta, double phi, FlatVector<entry_type> vals) const;
     
     void Calc (Vec<3> x, FlatVector<Complex> shapes);
 
@@ -106,7 +106,7 @@ namespace ngfem
     
     // Nail A. Gumerov and Ramani Duraiswami book, formula (2.2.12)
     // add directional derivative divided by kappa to res, both multipoles need same scaling
-    void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics & res, double scale = 1);
+    void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale = 1);
 
   };
 
@@ -234,10 +234,10 @@ namespace ngfem
   
 
 
-  template <typename RADIAL>
+  template <typename RADIAL, typename entry_type=Complex>
   class NGS_DLL_HEADER MultiPole
   {
-    SphericalHarmonics sh;
+    SphericalHarmonics<entry_type> sh;
     double kappa;
     double scale;
   public:
@@ -266,10 +266,10 @@ namespace ngfem
       return *this;
     }
     
-    Complex Eval (Vec<3> x) const;
+    entry_type Eval (Vec<3> x) const;
 
-    void AddCharge (Vec<3> x, Complex c);
-    void AddDipole (Vec<3> x, Vec<3> d, Complex c);
+    void AddCharge (Vec<3> x, entry_type c);
+    void AddDipole (Vec<3> x, Vec<3> d, entry_type c);
     
     
     void ChangeScaleTo (double newscale)
@@ -993,7 +993,7 @@ namespace ngfem
   
   class SphericalHarmonicsCF : public CoefficientFunction
   {
-    SphericalHarmonics sh;
+    SphericalHarmonics<Complex> sh;
   public:
     SphericalHarmonicsCF (int order)
       : CoefficientFunction(1, true), sh(order) { }

@@ -2779,17 +2779,17 @@ If linear is True the function will be interpolated linearly between the values.
 
 )delimiter");
 
-  py::class_<SphericalHarmonics> (m, "Sphericalharmonics")
-    .def_property_readonly("order", [](SphericalHarmonics& self) { return self.Order(); })
-    .def("__setitem__", [](SphericalHarmonics& self, tuple<int,int> nm, Complex val)
+  py::class_<SphericalHarmonics<Complex>> (m, "Sphericalharmonics")
+    .def_property_readonly("order", [](SphericalHarmonics<Complex>& self) { return self.Order(); })
+    .def("__setitem__", [](SphericalHarmonics<Complex>& self, tuple<int,int> nm, Complex val)
     { self.Coef(get<0>(nm), get<1>(nm)) = val; })
-    .def("__getitem__", [](SphericalHarmonics& self, tuple<int,int> nm)
+    .def("__getitem__", [](SphericalHarmonics<Complex>& self, tuple<int,int> nm)
     { return self.Coef(get<0>(nm), get<1>(nm)); })
     .def_property_readonly("coefs",
-                           [](SphericalHarmonics& self) { return self.Coefs(); },
+                           [](SphericalHarmonics<Complex>& self) { return self.Coefs(); },
                            "coefficient vector")
-    .def("RotateZ", [](SphericalHarmonics& self, double alpha) { self.RotateZ(alpha); })
-    .def("RotateY", [](SphericalHarmonics& self, double alpha) { self.RotateY(alpha); })
+    .def("RotateZ", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateZ(alpha); })
+    .def("RotateY", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateY(alpha); })
     ;
 
   py::class_<SingularMLMultiPole, shared_ptr<SingularMLMultiPole>> (m, "SingularMLMP")
@@ -2809,12 +2809,12 @@ If linear is True the function will be interpolated linearly between the values.
   
   py::class_<SphericalHarmonicsCF, shared_ptr<SphericalHarmonicsCF>, CoefficientFunction> (m, "SphericalHarmonicsCF")
     .def(py::init<int>())
-    .def_property_readonly("sh", [](SphericalHarmonicsCF& self) -> SphericalHarmonics& { return self.SH(); })
+    .def_property_readonly("sh", [](SphericalHarmonicsCF& self) -> SphericalHarmonics<Complex>& { return self.SH(); })
     ;
 
   py::class_<MultiPoleCF<MPRegular>, shared_ptr<MultiPoleCF<MPRegular>>, CoefficientFunction> (m, "RegularMultiPoleCF")
     .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("scale")=1.0)    
-    .def_property_readonly("sh", [](MultiPoleCF<MPRegular>& self) -> SphericalHarmonics& { return self.SH(); })
+    .def_property_readonly("sh", [](MultiPoleCF<MPRegular>& self) -> SphericalHarmonics<Complex>& { return self.SH(); })
     .def("ShiftZ", [](MultiPoleCF<MPRegular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
     .def("Transform", [](MultiPoleCF<MPRegular>& self, MultiPoleCF<MPRegular> & target) { self.Transform(target); })
     .def("Spectrum", [](MultiPoleCF<MPRegular>& self, bool scaled) { return self.MP().Spectrum(scaled); }, py::arg("scaled"))    
@@ -2822,7 +2822,7 @@ If linear is True the function will be interpolated linearly between the values.
 
   py::class_<MultiPoleCF<MPSingular>, shared_ptr<MultiPoleCF<MPSingular>>, CoefficientFunction> (m, "SingularMultiPoleCF")
     .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("scale")=1.0)
-    .def_property_readonly("sh", [](MultiPoleCF<MPSingular>& self) -> SphericalHarmonics& { return self.SH(); })
+    .def_property_readonly("sh", [](MultiPoleCF<MPSingular>& self) -> SphericalHarmonics<Complex>& { return self.SH(); })
     .def("AddCharge", [](MultiPoleCF<MPSingular>& self, Vec<3> x, Complex c) { self.MP().AddCharge(x, c); })
     .def("AddDipole", [](MultiPoleCF<MPSingular>& self, Vec<3> x, Vec<3> d, Complex c) { self.MP().AddDipole(x, d, c); })
     .def("ShiftZ", [](MultiPoleCF<MPSingular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
