@@ -1336,6 +1336,28 @@ namespace ngfem
     return sum;
   }
 
+  template <typename RADIAL, typename entry_type>
+  entry_type MultiPole<RADIAL,entry_type> :: EvalDirectionalDerivative (Vec<3> x, Vec<3> d) const
+  {
+    cout << "EvalDirectionalDerivativeMultiPole<" << typeid(RADIAL).name() << ">" << endl;
+    if (sh.Order() < 0) return entry_type{0.0};
+    Vector<Complex> radial(sh.Order()+1);
+    Vector<entry_type> shvals(sh.Order()+1);
+
+    MultiPole<RADIAL, entry_type> tmp(Order(), kappa, scale);
+    auto tmp_sh = this->SH();
+    tmp.SH() = this->SH();
+    RADIAL::Eval(sh.Order(), kappa*L2Norm(x), scale, radial);
+    tmp.SH().DirectionalDiffAdd(kappa*d, tmp_sh, scale);
+    tmp_sh.EvalOrders(x, shvals);
+
+    entry_type sum{0.0};
+    for (int i = 0; i <= sh.Order(); i++)
+      sum +=  radial(i) * shvals(i);
+
+    return sum;
+  }
+
 
   template <typename RADIAL, typename entry_type>
   void MultiPole<RADIAL,entry_type> :: AddCharge (Vec<3> x, entry_type c)
@@ -1379,7 +1401,7 @@ namespace ngfem
     */
       
     if constexpr (!std::is_same<RADIAL,MPSingular>())
-      throw Exception("AddCharge assumes singular MP");
+      throw Exception("AddDipole assumes singular MP");
 
     /*
     // book, formula (2.2.20)
