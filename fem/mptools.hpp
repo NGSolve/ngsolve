@@ -265,6 +265,7 @@ namespace ngfem
     }
     
     entry_type Eval (Vec<3> x) const;
+    entry_type EvalDirectionalDerivative (Vec<3> x, Vec<3> d) const;
 
     void AddCharge (Vec<3> x, entry_type c);
     void AddDipole (Vec<3> x, Vec<3> d, entry_type c);
@@ -486,6 +487,31 @@ namespace ngfem
         return sum;
       }
 
+      entry_type EvaluateDeriv(Vec<3> p, Vec<3> d) const
+      {
+        entry_type sum = 0;
+        if (childs[0])
+        {
+            for (auto & child : childs)
+              sum += child->EvaluateDeriv(p, d);
+            return sum;
+        }
+
+        if (dipoles.Size())
+            throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLMultiPole");
+
+        cout << "Direct EvaluateDerivative Singular" << endl;
+        for (auto [x,c] : charges)
+          if (double rho = L2Norm(p-x); rho > 0)
+          {
+            Vec<3> drhodp = 1.0/rho * (p-x);
+            Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
+            (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
+            sum += dGdrho * InnerProduct(drhodp, d) * c;
+          }
+        return sum;
+      }
+
       void CalcTotalSources()
       {
         total_sources = charges.Size() + dipoles.Size();
@@ -547,17 +573,38 @@ namespace ngfem
           sum += child->EvaluateMP(p);
         return sum;
       }
-      
-      
-      void Print (ostream & ost) const
+
+      entry_type EvaluateMPDeriv(Vec<3> p, Vec<3> d) const
       {
-        ost << "c = " << center << ", r = " << r << endl;
+        // cout << "EvaluateMPDeriv Singular, p = " << p << ", d = " << d << ", r = " << r << ", center = " << center <<  endl;
+        // cout << "Norm: " << L2Norm(p-center) << " > " << 3*r << endl;
+        // cout << "charges.Size() = " << charges.Size() << ", dipoles.Size() = " << dipoles.Size() << endl;
+        if (charges.Size() || dipoles.Size() || !childs[0])
+          return EvaluateDeriv(p, d);
+
+        if (L2Norm(p-center) > 3*r)
+          return mp.EvalDirectionalDerivative(p-center, d);
+
+        entry_type sum{0.0};
+        for (auto & child : childs)
+          sum += child->EvaluateMPDeriv(p, d);
+        return sum;
+      }
+
+      void Print (ostream & ost, size_t childnr = -1) const
+      {
+        if (childnr == -1)
+          ost << "c = " << center << ", r = " << r << ", level = " << level << endl;
+        else
+          ost << "c = " << center << ", r = " << r << ", level = " << level << ", childnr = " << childnr << endl;
         // for (int i = 0; i < loc_pnts.Size(); i++)
         for (auto [x,c] : charges)
           ost << "xi = " << x << ", ci = " << c << endl;
+        for (auto [x,d,c] : dipoles)
+          ost << "xi = " << x << ", di = " << d << ", ci = " << c << endl;
 
         for (int i = 0; i < 8; i++)
-          if (childs[i]) childs[i] -> Print (ost);
+          if (childs[i]) childs[i] -> Print (ost, i);
       }
 
       double Norm () const
@@ -843,6 +890,28 @@ namespace ngfem
         return sum;
       }
 
+      elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d) const
+      {
+        elem_type sum{0.0};
+        // cout << "EvaluateDirectionalDerivative RegularMLMP, r = " << r << ", level = " << level << ", center = " << center << endl;
+        // cout << "Singnodes: " << singnodes.Size() << ", childs: " << childs[0] << endl;
+
+        int childnum = 0;
+        if (p(0) > center(0)) childnum += 1;
+        if (p(1) > center(1)) childnum += 2;
+        if (p(2) > center(2)) childnum += 4;
+        if (childs[childnum])
+          sum = childs[childnum]->EvaluateDirectionalDerivative(p, d);
+        else
+          sum = mp.EvalDirectionalDerivative(p-center, d);
+
+        static Timer t("mptool direct evaluate deriv"); RegionTimer r(t);
+        for (auto sn : singnodes)
+          sum += sn->EvaluateMPDeriv(p, d);
+
+        return sum;
+      }
+
       double Norm() const
       {
         double norm = L2Norm(mp.SH().Coefs());
@@ -912,6 +981,20 @@ namespace ngfem
           mp = MultiPole<MPRegular>(-1, mp.Kappa());
       }
       
+
+      void Print (ostream & ost, size_t childnr = -1) const
+      {
+        if (childnr == -1)
+          ost << "c = " << center << ", r = " << r << ", level = " << level << endl;
+        else
+          ost << "c = " << center << ", r = " << r << ", level = " << level << ", childnr = " << childnr << endl;
+        for (auto x : targets)
+          ost << "xi = " << x << endl;
+
+        for (int i = 0; i < 8; i++)
+          if (childs[i]) childs[i] -> Print (ost, i);
+      }
+
     };
     
     Node root;
@@ -981,6 +1064,11 @@ namespace ngfem
       root.LocalizeExpansion(false);
     }
 
+    void Print (ostream & ost) const
+    {
+      root.Print(ost);
+    }
+
     double Norm() const
     {
       return root.Norm();
@@ -998,14 +1086,19 @@ namespace ngfem
       return root.Evaluate(p);
     }
 
-    
+    elem_type EvaluateDirectionalDerivative (Vec<3> p, Vec<3> d) const
+    {
+        if (L2Norm(p-root.center) > root.r) return elem_type{0.0};
+        return root.EvaluateDirectionalDerivative(p, d);
+    }
+
   };
-  
+
   template <typename elem_type>
   inline ostream & operator<< (ostream & ost, const RegularMLMultiPole<elem_type> & mlmp)
   {
-    // mlmp.Print(ost);
-    ost << "RegularMLMultiPole" << endl;
+    mlmp.Print(ost);
+    // ost << "RegularMLMultiPole" << endl;
     return ost;
   }
 

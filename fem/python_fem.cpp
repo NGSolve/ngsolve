@@ -2799,6 +2799,13 @@ If linear is True the function will be interpolated linearly between the values.
     .def("Calc", &SingularMLMultiPole<Complex>::CalcMP)
     .def("Norm", &SingularMLMultiPole<Complex>::Norm)    
     .def("__str__", [](SingularMLMultiPole<Complex>& mlmp) { return ToString<>(mlmp); })
+    .def("Print", [](const SingularMLMultiPole<Complex> &self) {
+        py::scoped_ostream_redirect stream(
+            std::cout,
+            py::module_::import("sys").attr("stdout")
+        );
+        self.Print(std::cout);
+    })
     ;
 
   py::class_<SingularMLMultiPole<Vec<3,Complex>>, shared_ptr<SingularMLMultiPole<Vec<3,Complex>>>> (m, "SingularMLMP3")
@@ -2813,6 +2820,13 @@ If linear is True the function will be interpolated linearly between the values.
   py::class_<RegularMLMultiPole<Complex>, shared_ptr<RegularMLMultiPole<Complex>>> (m, "RegularMLMP")
     .def("Norm", &RegularMLMultiPole<Complex>::Norm)    
     .def("__str__", [](RegularMLMultiPole<Complex>& mlmp) { return ToString<>(mlmp); })
+    .def("Print", [](const RegularMLMultiPole<Complex> &self) {
+        py::scoped_ostream_redirect stream(
+            std::cout,
+            py::module_::import("sys").attr("stdout")
+        );
+        self.Print(std::cout);
+    })
     ;
 
   
