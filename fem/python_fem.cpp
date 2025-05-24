@@ -2792,18 +2792,27 @@ If linear is True the function will be interpolated linearly between the values.
     .def("RotateY", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateY(alpha); })
     ;
 
-  py::class_<SingularMLMultiPole, shared_ptr<SingularMLMultiPole>> (m, "SingularMLMP")
+  py::class_<SingularMLMultiPole<Complex>, shared_ptr<SingularMLMultiPole<Complex>>> (m, "SingularMLMP")
     .def(py::init<Vec<3>,double,int,double>())
-    .def("AddCharge", &SingularMLMultiPole::AddCharge)
-    .def("AddDipole", &SingularMLMultiPole::AddDipole)
-    .def("Calc", &SingularMLMultiPole::CalcMP)
-    .def("Norm", &SingularMLMultiPole::Norm)    
-    .def("__str__", [](SingularMLMultiPole& mlmp) { return ToString<>(mlmp); })
+    .def("AddCharge", &SingularMLMultiPole<Complex>::AddCharge)
+    .def("AddDipole", &SingularMLMultiPole<Complex>::AddDipole)
+    .def("Calc", &SingularMLMultiPole<Complex>::CalcMP)
+    .def("Norm", &SingularMLMultiPole<Complex>::Norm)    
+    .def("__str__", [](SingularMLMultiPole<Complex>& mlmp) { return ToString<>(mlmp); })
     ;
 
-  py::class_<RegularMLMultiPole, shared_ptr<RegularMLMultiPole>> (m, "RegularMLMP")
-    .def("Norm", &RegularMLMultiPole::Norm)    
-    .def("__str__", [](RegularMLMultiPole& mlmp) { return ToString<>(mlmp); })
+  py::class_<SingularMLMultiPole<Vec<3,Complex>>, shared_ptr<SingularMLMultiPole<Vec<3,Complex>>>> (m, "SingularMLMP3")
+    .def(py::init<Vec<3>,double,int,double>())
+    .def("AddCurrent", &SingularMLMultiPole<Vec<3,Complex>>::AddCurrent, py::arg("sp"), py::arg("ep"), py::arg("j"), py::arg("num")=100)
+    .def("Calc", &SingularMLMultiPole<Vec<3,Complex>>::CalcMP)
+    // .def("Norm", &SingularMLMultiPole<Complex>::Norm)    
+    // .def("__str__", [](SingularMLMultiPole<Complex>& mlmp) { return ToString<>(mlmp); })
+    ;
+
+  
+  py::class_<RegularMLMultiPole<Complex>, shared_ptr<RegularMLMultiPole<Complex>>> (m, "RegularMLMP")
+    .def("Norm", &RegularMLMultiPole<Complex>::Norm)    
+    .def("__str__", [](RegularMLMultiPole<Complex>& mlmp) { return ToString<>(mlmp); })
     ;
 
   
@@ -2832,13 +2841,34 @@ If linear is True the function will be interpolated linearly between the values.
     .def("Spectrum", [](MultiPoleCF<MPSingular>& self, bool scaled) { return self.MP().Spectrum(scaled); }, py::arg("scaled"))
     ;
 
-  py::class_<SingularMLMultiPoleCF, shared_ptr<SingularMLMultiPoleCF>, CoefficientFunction> (m, "SingularMLMultiPoleCF")
-    .def(py::init<Vec<3>, double, int, double>(), py::arg("center"), py::arg("r"), py::arg("order")=-1, py::arg("kappa"))
-    .def_property_readonly("mlmp", [](SingularMLMultiPoleCF& self) { return self.MLMP(); })
+  py::class_<MultiPoleCF<MPSingular,Vec<3,Complex>>, shared_ptr<MultiPoleCF<MPSingular,Vec<3,Complex>>>, CoefficientFunction> (m, "BiotSavartCF")
+    .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("scale")=1.0)
+    .def("AddCurrent", [](MultiPoleCF<MPSingular,Vec<3,Complex>>& self, Vec<3> sp, Vec<3> ep, Complex j, int num)
+    { self.MP().AddCurrent(sp, ep, j, num); },
+      py::arg("sp"), py::arg("ep"), py::arg("j"), py::arg("num")=100
+      )
     ;
-  py::class_<RegularMLMultiPoleCF, shared_ptr<RegularMLMultiPoleCF>, CoefficientFunction> (m, "RegularMLMultiPoleCF")
-    .def(py::init<shared_ptr<SingularMLMultiPoleCF>,Vec<3>, double, int>(), py::arg("mp"), py::arg("center"), py::arg("r"), py::arg("order")=-1)
-    .def_property_readonly("mlmp", [](RegularMLMultiPoleCF& self) { return self.MLMP(); })
+
+
+
+  
+  py::class_<SingularMLMultiPoleCF<Complex>, shared_ptr<SingularMLMultiPoleCF<Complex>>, CoefficientFunction> (m, "SingularMLMultiPoleCF")
+    .def(py::init<Vec<3>, double, int, double>(), py::arg("center"), py::arg("r"), py::arg("order")=-1, py::arg("kappa"))
+    .def_property_readonly("mlmp", [](SingularMLMultiPoleCF<Complex>& self) { return self.MLMP(); })
+    ;
+  py::class_<RegularMLMultiPoleCF<Complex>, shared_ptr<RegularMLMultiPoleCF<Complex>>, CoefficientFunction> (m, "RegularMLMultiPoleCF")
+    .def(py::init<shared_ptr<SingularMLMultiPoleCF<Complex>>,Vec<3>, double, int>(), py::arg("mp"), py::arg("center"), py::arg("r"), py::arg("order")=-1)
+    .def_property_readonly("mlmp", [](RegularMLMultiPoleCF<Complex>& self) { return self.MLMP(); })
+    ;
+
+
+  py::class_<SingularMLMultiPoleCF<Vec<3,Complex>>, shared_ptr<SingularMLMultiPoleCF<Vec<3,Complex>>>, CoefficientFunction> (m, "BiotSavartSingularMLCF")
+    .def(py::init<Vec<3>, double, int, double>(), py::arg("center"), py::arg("r"), py::arg("order")=-1, py::arg("kappa"))
+    .def_property_readonly("mlmp", [](SingularMLMultiPoleCF<Vec<3,Complex>>& self) { return self.MLMP(); })
+    ;
+  py::class_<RegularMLMultiPoleCF<Vec<3,Complex>>, shared_ptr<RegularMLMultiPoleCF<Vec<3,Complex>>>, CoefficientFunction> (m, "BiotSavartRegularMLCF")
+    .def(py::init<shared_ptr<SingularMLMultiPoleCF<Vec<3,Complex>>>,Vec<3>, double, int>(), py::arg("mp"), py::arg("center"), py::arg("r"), py::arg("order")=-1)
+    .def_property_readonly("mlmp", [](RegularMLMultiPoleCF<Vec<3,Complex>>& self) { return self.MLMP(); })
     ;
 
   
