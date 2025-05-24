@@ -687,7 +687,7 @@ namespace ngfem
 #define VER3
 #ifdef VER3
   template <typename RADIAL, typename entry_type> template <typename TARGET>
-  void MultiPole<RADIAL,entry_type> :: ShiftZ (double z, MultiPole<TARGET> & target)
+  void MultiPole<RADIAL,entry_type> :: ShiftZ (double z, MultiPole<TARGET,entry_type> & target)
   {
     static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
     RegionTimer rg(t);
@@ -704,7 +704,7 @@ namespace ngfem
     
     FlatMatrix<trafo_type> trafo(os+ot+1, max(os,ot)+1, lh);
     FlatMatrix<trafo_type> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
-    FlatVector<Complex> hv1(os+1, lh), hv2(ot+1, lh);
+    FlatVector<entry_type> hv1(os+1, lh), hv2(ot+1, lh);
 
     trafo = trafo_type(0.0);
     
@@ -1040,6 +1040,10 @@ namespace ngfem
   template void MultiPole<MPSingular> :: ShiftZ (double z, MultiPole<MPRegular> & target);  
   template void MultiPole<MPSingular> :: ShiftZ (double z, MultiPole<MPSingular> & target);
 
+  template void MultiPole<MPRegular,Vec<3,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<3,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<3,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<3,Complex>> & target);  
+  template void MultiPole<MPSingular,Vec<3,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<3,Complex>> & target);
+
 
 
 
@@ -1317,17 +1321,17 @@ namespace ngfem
   template <typename RADIAL, typename entry_type>
   entry_type MultiPole<RADIAL,entry_type> :: Eval (Vec<3> x) const
   {
-    if (sh.Order() < 0) return 0;
+    if (sh.Order() < 0) return entry_type{0.0};
 
     Vector<Complex> radial(sh.Order()+1);
-    Vector<Complex> shvals(sh.Order()+1);
+    Vector<entry_type> shvals(sh.Order()+1);
       
     RADIAL::Eval(sh.Order(), kappa*L2Norm(x), scale, radial);
     sh.EvalOrders (x, shvals);
       
-    Complex sum = 0;
+    entry_type sum{0.0};
     for (int i = 0; i <= sh.Order(); i++)
-      sum +=  shvals(i) * radial(i);
+      sum +=  radial(i) * shvals(i);
 
     return sum;
   }
@@ -1342,7 +1346,7 @@ namespace ngfem
     // static Timer t("mptool AddCharge"); RegionTimer rg(t);
     if (L2Norm(x) < 1e-50)
       {
-        sh.Coef(0,0) += c * Complex(0,1)*kappa/sqrt(4*M_PI);
+        sh.Coef(0,0) += Complex(0,1)*kappa/sqrt(4*M_PI) * c;
         return;
       }
     // cout << "add charge, kappa rho = " << kappa*L2Norm(x) << ", order = " << sh.Order() << endl;
@@ -1357,7 +1361,9 @@ namespace ngfem
     for (int i = 0; i <= sh.Order(); i++)
       {
         IntRange r(sqr(i), sqr(i+1));
-        sh.Coefs().Range(r) += c * Complex(0,1)*kappa * radial(i).real()*Conj(sh_shapes.Range(r));
+        // sh.Coefs().Range(r) += c * Complex(0,1)*kappa * radial(i).real()*Conj(sh_shapes.Range(r));
+        for (auto j : r)
+          sh.Coefs()(j) += Complex(0,1)*kappa * radial(i).real()*Conj(sh_shapes(j)) * c;       
       }
   }
 
@@ -1389,24 +1395,54 @@ namespace ngfem
     tmp.TransformAdd (*this, -x);
     */
 
-    MultiPole<MPSingular> tmp(Order(), kappa, Scale());
+    MultiPole<MPSingular, entry_type> tmp(Order(), kappa, Scale());
     tmp.AddCharge(x, c);
     tmp.SH().DirectionalDiffAdd (kappa*d,  this->SH(), Scale());
   }
 
 
+  
+  template <typename RADIAL, typename entry_type>
+  void MultiPole<RADIAL, entry_type> :: AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
+  {
+    if constexpr (!std::is_same<RADIAL,MPSingular>() || !std::is_same<entry_type, Vec<3,Complex>>())
+      throw Exception("AddCurrent needs a singular vectorial MP");
 
+    Vec<3> tau = ep-sp;
+    Vec<3> tau_num = 1.0/num *  tau;
+    for (int i = 0; i < num; i++)
+      {
+        for (int k = 0; k < 3; k++)
+          {
+            Vec<3> ek{0.0}; ek(k) = 1;
+            Vec<3> cp = Cross(tau, ek);
+            Vec<3,Complex> source{0.0};
+            source(k) = j/double(num);
+            if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
+              AddDipole (sp+i*tau_num, cp, source);
+          }
+      }
+  }
 
 
 
   template class SphericalHarmonics<Complex>;
   template class SphericalHarmonics<Vec<3,Complex>>;  
   
-  template class MultiPole<MPRegular>;
   template class MultiPole<MPSingular>;
+  template class MultiPole<MPRegular>;
+  template class MultiPole<MPSingular, Vec<3,Complex>>;
+  template class MultiPole<MPRegular, Vec<3,Complex>>;    
 
-  Array<size_t> RegularMLMultiPole::nodes_on_level(100);
-  Array<size_t> SingularMLMultiPole::nodes_on_level(100);
+  
+  template<>
+  Array<size_t> RegularMLMultiPole<Complex>::nodes_on_level(100);
+  template<>  
+  Array<size_t> SingularMLMultiPole<Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLMultiPole<Vec<3,Complex>>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLMultiPole<Vec<3,Complex>>::nodes_on_level(100);
 
   
 }
