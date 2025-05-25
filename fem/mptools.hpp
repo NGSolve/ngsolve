@@ -373,6 +373,7 @@ namespace ngfem
 
       Array<tuple<Vec<3>, entry_type>> charges;
       Array<tuple<Vec<3>, Vec<3>, entry_type>> dipoles;
+      Array<tuple<Vec<3>, Vec<3>, Complex,int>> currents;
       int total_sources;
       
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
@@ -424,9 +425,12 @@ namespace ngfem
           AddCharge (x,c);
         for (auto [x,d,c] : dipoles)
           AddDipole (x,d,c);
+        for (auto [sp,ep,j,num] : currents)
+          AddCurrent (sp,ep,j,num);
         
         charges.SetSize0();
-        dipoles.SetSize0();        
+        dipoles.SetSize0();
+        currents.SetSize0();
       }
 
 
@@ -455,11 +459,66 @@ namespace ngfem
           AddCharge (x,c);
         for (auto [x,d,c] : dipoles)
           AddDipole (x,d,c);
+        for (auto [sp,ep,j,num] : currents)
+          AddCurrent (sp,ep,j,num);
 
         charges.SetSize0();
         dipoles.SetSize0();        
+        currents.SetSize0();        
       }
 
+      void AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
+      {
+        if (childs[0])
+          {
+            // split line and send to childs
+            Array<double> split;
+            split.Append(0);
+            for (int i = 0; i < 3; i++)
+              if (sp(i) < center(i) != ep(i) < center(i))
+                split += (center(i)-sp(i)) / (ep(i)-sp(i));  // segment cuts i-th coordinate plane
+            split.Append(1);
+            BubbleSort(split);
+
+            for (int i = 0; i < split.Size()-1; i++)
+              if (split[i+1] > split[i])
+                {
+                  Vec<3> spi = sp + split[i]*(ep-sp);
+                  Vec<3> epi = sp + split[i+1]*(ep-sp);
+                  
+                  Vec<3> x = 0.5*(spi+epi);
+                  
+                  int childnum  = 0;
+                  if (x(0) > center(0)) childnum += 1;
+                  if (x(1) > center(1)) childnum += 2;
+                  if (x(2) > center(2)) childnum += 4;
+                  childs[childnum] -> AddCurrent(spi, epi, j, num);
+                }
+            return;
+          }
+        
+        currents.Append (tuple{sp,ep,j,num});
+
+        // if (currents.Size() < maxdirect || r < 1e-8)
+        if (currents.Size() < 4 || r < 1e-8)        
+          return;
+        
+        CreateChilds();
+
+        for (auto [x,c] : charges)
+          AddCharge (x,c);
+        for (auto [x,d,c] : dipoles)
+          AddDipole (x,d,c);
+        for (auto [sp,ep,j,num] : currents)
+          AddCurrent (sp,ep,j,num);
+
+        charges.SetSize0();
+        dipoles.SetSize0();
+        currents.SetSize0();
+      }
+
+
+      
       
       entry_type Evaluate(Vec<3> p) const
       {
@@ -484,6 +543,28 @@ namespace ngfem
               sum += dGdrho * InnerProduct(drhodp, d) * c;
             }
 
+        for (auto [sp,ep,j,num] : currents)
+          {
+            // should use explizit formula instead ...
+            
+            Vec<3> tau = ep-sp;
+            Vec<3> tau_num = 1.0/num *  tau;
+            for (int i = 0; i < num; i++)
+              {
+                Vec<3> x = sp+(i+0.5)*tau_num;
+                
+                if (double rho = L2Norm(p-x); rho > 0)
+                  {
+                    Vec<3> drhodp = 1.0/rho * (p-x);
+                    Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
+                      (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
+
+                    if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
+                      sum += j*dGdrho * Cross(drhodp, tau_num);
+                  }
+              }
+          }
+        
         return sum;
       }
 
@@ -543,7 +624,7 @@ namespace ngfem
           }
         else
           {
-            if (charges.Size()+dipoles.Size() == 0)
+            if (charges.Size()+dipoles.Size()+currents.Size() == 0)
               {
                 mp = MultiPole<MPSingular,entry_type> (-1, mp.Kappa());
                 return;
@@ -554,6 +635,9 @@ namespace ngfem
             
             for (auto [x,d,c] : dipoles)
               mp.AddDipole (x-center, d, c);
+
+            for (auto [sp,ep,j,num] : currents)
+              mp.AddCurrent (sp-center, ep-center, j, num);
           }
       }
       
@@ -649,26 +733,29 @@ namespace ngfem
       root.AddDipole(x, d, c);
     }
 
-    void AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num=100)
+    void AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
     {
-    if constexpr (!std::is_same<entry_type, Vec<3,Complex>>())
-      throw Exception("AddCurrent needs a singular vectorial MP");
-
-    Vec<3> tau = ep-sp;
-    Vec<3> tau_num = 1.0/num *  tau;
-    for (int i = 0; i < num; i++)
-      {
-        for (int k = 0; k < 3; k++)
-          {
-            Vec<3> ek{0.0}; ek(k) = 1;
-            Vec<3> cp = Cross(tau, ek);
-            Vec<3,Complex> source{0.0};
-            source(k) = j/double(num);
-            if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
-              root.AddDipole (sp+(i+0.5)*tau_num, cp, source);
-          }
-      }
-    // root.AddDipole(x, d, c);
+      if constexpr (!std::is_same<entry_type, Vec<3,Complex>>())
+        throw Exception("AddCurrent needs a singular vectorial MP");
+      
+      root.AddCurrent (sp, ep, j, num);
+      /*
+         // for testing
+      Vec<3> tau = ep-sp;
+      Vec<3> tau_num = 1.0/num *  tau;
+      for (int i = 0; i < num; i++)
+        {
+          for (int k = 0; k < 3; k++)
+            {
+              Vec<3> ek{0.0}; ek(k) = 1;
+              Vec<3> cp = Cross(tau, ek);
+              Vec<3,Complex> source{0.0};
+              source(k) = j/double(num);
+              if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
+                root.AddDipole (sp+(i+0.5)*tau_num, cp, source);
+            }
+        }
+      */
     }
     
     void Print (ostream & ost) const
