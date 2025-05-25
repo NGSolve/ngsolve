@@ -143,7 +143,7 @@ namespace ngfem
   // add directional derivative divided by kappa to res, both multipoles need same scaling
   template <typename entry_type>  
   void SphericalHarmonics<entry_type> ::
-  DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale)
+  DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale) const
   {
     double fx = d(0);
     double fy = d(1);
@@ -1419,7 +1419,7 @@ namespace ngfem
             Vec<3,Complex> source{0.0};
             source(k) = j/double(num);
             if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
-              AddDipole (sp+i*tau_num, cp, source);
+              AddDipole (sp+(i+0.5)*tau_num, cp, source);
           }
       }
   }
