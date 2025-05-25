@@ -27,10 +27,8 @@ namespace ngfem
     int Order() const { return order; }
     FlatVector<entry_type> Coefs() const { return coefs; }
     
-    entry_type & Coef(int n, int m)
-    {
-      return coefs(n*(n+1) + m);  
-    }
+    entry_type & Coef(int n, int m) { return coefs(n*(n+1) + m); }
+    entry_type Coef(int n, int m) const { return coefs(n*(n+1) + m); }    
 
     auto CoefsN (int n) const
     {
@@ -106,7 +104,7 @@ namespace ngfem
     
     // Nail A. Gumerov and Ramani Duraiswami book, formula (2.2.12)
     // add directional derivative divided by kappa to res, both multipoles need same scaling
-    void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale = 1);
+    void DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale = 1) const;
 
   };
 
@@ -620,7 +618,7 @@ namespace ngfem
             Vec<3,Complex> source{0.0};
             source(k) = j/double(num);
             if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
-              root.AddDipole (sp+i*tau_num, cp, source);
+              root.AddDipole (sp+(i+0.5)*tau_num, cp, source);
           }
       }
     // root.AddDipole(x, d, c);
