@@ -1336,6 +1336,15 @@ namespace ngfem
     return sum;
   }
 
+  template <typename RADIAL, typename entry_type>
+  entry_type MultiPole<RADIAL,entry_type> :: EvalDirectionalDerivative (Vec<3> x, Vec<3> d) const
+  {
+    if (sh.Order() < 0) return entry_type{0.0};
+    MultiPole<RADIAL, entry_type> tmp(Order(), kappa, scale);
+    this->SH().DirectionalDiffAdd(kappa*d, tmp.SH(), scale);
+    return tmp.Eval(x);
+  }
+
 
   template <typename RADIAL, typename entry_type>
   void MultiPole<RADIAL,entry_type> :: AddCharge (Vec<3> x, entry_type c)
@@ -1379,7 +1388,7 @@ namespace ngfem
     */
       
     if constexpr (!std::is_same<RADIAL,MPSingular>())
-      throw Exception("AddCharge assumes singular MP");
+      throw Exception("AddDipole assumes singular MP");
 
     /*
     // book, formula (2.2.20)
