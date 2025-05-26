@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1.7-labs
 FROM ubuntu:24.10 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYODIDE_VERSION=0.27.5
+ENV PYODIDE_VERSION=0.27.6
 ENV EMSDK_VERSION=3.1.58
 ENV PYTHON_VERSION=3.12.7
 RUN apt-get update && apt-get -y upgrade
