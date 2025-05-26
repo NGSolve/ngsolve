@@ -581,7 +581,6 @@ namespace ngfem
         if (dipoles.Size())
             throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLMultiPole");
 
-        cout << "Direct EvaluateDerivative Singular" << endl;
         for (auto [x,c] : charges)
           if (double rho = L2Norm(p-x); rho > 0)
           {
