@@ -34,7 +34,7 @@ namespace ngla
 
     void DoArchive(Archive& ar) override;
 
-    virtual bool IsComplex() const override { return matrix.lock()->IsComplex(); }
+    // virtual bool IsComplex() const override { return matrix.lock()->IsComplex(); }
 
     virtual void Smooth (BaseVector & u, const BaseVector & f, BaseVector & y) const;
 
