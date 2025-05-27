@@ -2114,7 +2114,9 @@ namespace ngla
 		       shared_ptr<const Array<int>> acluster)
     : matrix(amatrix),
       inner(ainner), cluster(acluster)
-  { 
+  {
+    this->is_complex = amatrix->IsComplex();
+    
     smooth_is_projection = true;
     if (cluster)
       {
