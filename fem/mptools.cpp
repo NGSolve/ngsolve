@@ -1044,6 +1044,10 @@ namespace ngfem
   template void MultiPole<MPSingular,Vec<3,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<3,Complex>> & target);  
   template void MultiPole<MPSingular,Vec<3,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<3,Complex>> & target);
 
+  template void MultiPole<MPRegular,Vec<4,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<4,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<4,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<4,Complex>> & target);  
+  template void MultiPole<MPSingular,Vec<4,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<4,Complex>> & target);
+
 
 
 
@@ -1442,6 +1446,8 @@ namespace ngfem
   template class MultiPole<MPRegular>;
   template class MultiPole<MPSingular, Vec<3,Complex>>;
   template class MultiPole<MPRegular, Vec<3,Complex>>;    
+  template class MultiPole<MPSingular, Vec<4,Complex>>;
+  template class MultiPole<MPRegular, Vec<4,Complex>>;    
 
   
   template<>
@@ -1452,6 +1458,10 @@ namespace ngfem
   Array<size_t> RegularMLMultiPole<Vec<3,Complex>>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLMultiPole<Vec<3,Complex>>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLMultiPole<Vec<4,Complex>>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLMultiPole<Vec<4,Complex>>::nodes_on_level(100);
 
   
 }
