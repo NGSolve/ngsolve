@@ -1090,6 +1090,11 @@ coupling : bool
          { return self->GetProlongation(); },
          "Return prolongation operator for use in multi-grid")
 
+    .def("SetHarmonicProlongation",
+         [] (const shared_ptr<FESpace> self, shared_ptr<BilinearForm> bfa)
+         { self->SetHarmonicProlongation(bfa); },
+         "use harmonic prolongation w.r.t. bilinear-form")
+    
     .def("TrialFunction",
          [] (const shared_ptr<FESpace> self)
          {

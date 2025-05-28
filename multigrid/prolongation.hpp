@@ -8,7 +8,7 @@
 /*********************************************************************/
 
 namespace ngcomp { class NedelecFESpace; }
-
+namespace ngla { class SparseFactorization; } 
 namespace ngmg
 {
 
@@ -227,6 +227,25 @@ namespace ngmg
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
 
     ///
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override;
+  };
+
+  class NGS_DLL_HEADER HarmonicProlongation : public Prolongation
+  {
+    shared_ptr<Prolongation> baseprol;
+    shared_ptr<BilinearForm> bfa;
+    Array<shared_ptr<BaseMatrix>> innerinverses;
+    Array<size_t> edges_on_level;
+  public:
+    HarmonicProlongation (shared_ptr<Prolongation> abaseprol,
+                          shared_ptr<BilinearForm> abfa);
+
+    virtual void Update (const FESpace & fes) override;
+    
+    virtual size_t GetNDofLevel (int level) override { return baseprol->GetNDofLevel(level); } 
+
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override;
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
     virtual void RestrictInline (int finelevel, BaseVector & v) const override;
   };
 }

@@ -92,6 +92,7 @@ ANY                  1 1 1 1 | 15
 
 
   class FESpace;
+  class BilinearForm;
 
   // will be size_t some day 
   typedef int DofId;
@@ -639,7 +640,7 @@ ANY                  1 1 1 1 | 15
     /// Set multigrid prolongation
     // void SetProlongation (ngmg::Prolongation * aprol)
     // { prol = aprol; }
-
+    virtual void SetHarmonicProlongation (shared_ptr<BilinearForm> bfa);
 
     /// returns function-evaluator
     shared_ptr<DifferentialOperator> GetEvaluator (VorB vb = VOL) const

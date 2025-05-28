@@ -283,7 +283,7 @@ namespace ngcomp
       if (first_dofs.Size() < ma->GetNLevels())
         first_dofs += fes.GetFirstFacetDof();
       
-      *testout << /* IM(3) << */ "edges_on_level = " << endl << edges_on_level << endl;
+      // *testout << /* IM(3) << */ "edges_on_level = " << endl << edges_on_level << endl;
 
       if (ma->GetNLevels() == 1)
         {
@@ -324,7 +324,7 @@ namespace ngcomp
                   auto minpa = Min(paverts);
                   edge_creation_class[i] = myverts.Contains(minpa) ? 0 : 1;
                 }
-          *testout << "createionclass = " << edge_creation_class << endl;
+          // *testout << "createionclass = " << edge_creation_class << endl;
           break;
 
           
@@ -370,7 +370,7 @@ namespace ngcomp
           if (r.Size() > 0)
             tmp.Row(i) = fv.Range(r);
         }
-      *testout << "tmp-c = " << endl << tmp << endl;
+      // *testout << "tmp-c = " << endl << tmp << endl;
       
       for (int i = edges_on_level[finelevel-1]; i < edges_on_level[finelevel]; i++)
         if (auto parents = get<1>(ma->GetParentEdges(i)); parents[1] == -1)
@@ -379,19 +379,45 @@ namespace ngcomp
             tmp.Row(i) = segmprolsR[edge_creation_class[i]] * tmp.Row(pe);
           }
 
-      *testout << "tmp-f = " << endl << tmp << endl;      
+      // *testout << "tmp-f = " << endl << tmp << endl;      
       for (size_t i = 0; i < first_dofs[finelevel].Size()-1; i++)
         {
           IntRange r(first_dofs[finelevel][i], first_dofs[finelevel][i+1]);
           if (r.Size() > 0)
             fv.Range(r) = tmp.Row(i);
         }
-      *testout << "rv = " << fv << endl;
+      // *testout << "rv = " << fv << endl;
     }
     
     virtual void RestrictInline (int finelevel, BaseVector & v) const override
     {
-      throw Exception("FacetProl, restrictinline not implemented");      
+      auto fv = v.FV<double>();
+      Matrix<double> tmp(edges_on_level[finelevel], dofs_per_edge);
+      tmp = 0.0;
+      
+      for (size_t i = 0; i < first_dofs[finelevel].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel][i], first_dofs[finelevel][i+1]);
+          if (r.Size() > 0)
+            tmp.Row(i) = fv.Range(r);
+        }
+      
+      for (int i = edges_on_level[finelevel-1]; i < edges_on_level[finelevel]; i++)
+        if (auto parents = get<1>(ma->GetParentEdges(i)); parents[1] == -1)
+          {
+            int pe = parents[0];
+            tmp.Row(pe) += Trans(segmprolsR[edge_creation_class[i]]) * tmp.Row(i);
+          }
+
+      fv = 0.0;
+      for (size_t i = 0; i < first_dofs[finelevel-1].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel-1][i], first_dofs[finelevel-1][i+1]);
+          if (r.Size() > 0)
+            fv.Range(r) = tmp.Row(i);
+        }
+      // *testout << "rv = " << fv << endl;
+
     }
     
   };
