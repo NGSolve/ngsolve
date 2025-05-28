@@ -88,6 +88,8 @@ namespace ngcomp
     using FESpace::GetDofNrs;
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
 
+    const auto & GetFirstFacetDof() const { return first_facet_dof; }
+    
     IntRange GetFacetDofs (int nr) const
     { 
       return IntRange (first_facet_dof[nr], first_facet_dof[nr+1]); 
