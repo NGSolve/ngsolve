@@ -10,6 +10,7 @@
 
 #include <multigrid.hpp>
 #include <hcurlhdivfes.hpp>
+#include <sparsecholesky.hpp>
 
 namespace ngmg
 {
@@ -832,5 +833,112 @@ namespace ngmg
       }
   }
 
+  
+  HarmonicProlongation ::
+  HarmonicProlongation (shared_ptr<Prolongation> abaseprol,
+                        shared_ptr<BilinearForm> abfa)
+    : baseprol(abaseprol), bfa(abfa)
+  {
+    auto fes = bfa->GetTrialSpace();
+    auto ma = fes->GetMeshAccess();
+
+    edges_on_level.Append (ma->GetNEdges());
+    innerinverses.Append(nullptr);
+  }
+
+
+  
+  void HarmonicProlongation :: Update (const FESpace & fes)
+  {
+    baseprol->Update(fes);
+    auto ma = fes.GetMeshAccess();
+
+    int levels = ma->GetNLevels();
+    // cout << "update Harmonic prol, levels = " << levels << endl;
+    // cout << "ndof = " << fes.GetNDof() << endl;
+    // cout << "innerinv.size = " << innerinverses.Size() << endl;
+    
+    *testout << "harmonic prol, have levels " << levels << endl;
+    
+    size_t nedge = ma->GetNEdges();
+    
+    while (edges_on_level.Size() < ma->GetNLevels())
+      edges_on_level.Append(nedge);
+    
+    if (innerinverses.Size() >= ma->GetNLevels()) return;
+
+    
+    if (levels==1)
+      {
+        innerinverses.Append (nullptr);
+        return;
+      }
+    
+    // cout << "harmonic ext, still here" << endl;
+    
+    auto harm_inner = make_shared<BitArray>(fes.GetNDof());
+    *harm_inner = *fes.GetFreeDofs(bfa->UsesEliminateInternal());
+    // *testout << "freedofs = " << *harm_inner << endl;
+    // cout << "freedofs.numset = " << harm_inner->NumSet() << endl;
+    int nedgec = edges_on_level[levels-2];
+    int nedgef = edges_on_level[levels-1];
+
+    *testout << "edges_on_level = " << edges_on_level << endl;
+    *testout << "levels = " << levels << endl;
+    *testout << "nec, nef = " << nedgec << ", " << nedgef << endl;
+
+    for (auto e : Range(0, nedgec))
+      {
+        Array<DofId> dnums;
+        fes.GetEdgeDofNrs(e, dnums);
+        for (auto d : dnums)
+          harm_inner->Clear(d);
+      }
+    
+    // *testout << "innerdofs after coarse = " << *harm_inner << endl;
+    for (auto e : Range(nedgec, nedgef))
+      {
+        if (auto parents = get<1>(ma->GetParentEdges(e)); parents[1] == -1) // from splitting of one edge
+          {        
+            Array<DofId> dnums;
+            fes.GetEdgeDofNrs(e, dnums);
+            for (auto d : dnums)
+              harm_inner->Clear(d);
+          }
+      }
+
+    innerinverses.Append (nullptr);
+    // *testout << "innerdofs = " << *harm_inner << endl;
+    LocalHeap lh(10*1000*1000);
+    // *testout << "call assemble matrix" << endl;
+    bfa->Assemble(lh);
+    // *testout << "have matrix" << endl;
+    // cout << "assemble is back" << endl;
+    // cout << "mat.size = " << bfa->GetMatrix().Height() << endl;
+    // *testout << "mat = " << endl;
+    // *testout << bfa->GetMatrix() << endl;
+    innerinverses.Last() = bfa->GetMatrix().InverseMatrix(harm_inner);
+  }
+  
+  shared_ptr<SparseMatrix< double >> HarmonicProlongation :: CreateProlongationMatrix( int finelevel ) const 
+  { return NULL; }
+    
+  void HarmonicProlongation :: ProlongateInline (int finelevel, BaseVector & v) const 
+  {
+    baseprol->ProlongateInline (finelevel, v);
+
+    auto tmp = bfa->GetMatrix(finelevel).CreateColVector();
+    tmp = bfa->GetMatrix(finelevel) * v;
+    v -= *innerinverses[finelevel] * tmp;
+  }
+  
+  void HarmonicProlongation :: RestrictInline (int finelevel, BaseVector & v) const
+  {
+    auto tmp = bfa->GetMatrix(finelevel).CreateColVector();
+
+    tmp = *innerinverses[finelevel] * v;
+    v -= bfa->GetMatrix(finelevel) * tmp;
+    baseprol->RestrictInline (finelevel, v);
+  }
 
 }

@@ -425,6 +425,13 @@ lot of new non-zero entries in the matrix!\n" << endl;
       ndof_level.Append (ndof);
     ndof_level.Last() = ndof;
   }
+
+  void FESpace :: SetHarmonicProlongation (shared_ptr<BilinearForm> bfa)
+  {
+    prol = make_shared<HarmonicProlongation> (prol, // dynamic_pointer_cast<FESpace>(this->shared_from_this()),
+                                              bfa);
+    if (prol) prol->Update(*this);
+  }
   
   void FESpace :: Update()
   {
@@ -3282,7 +3289,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     // cout << "AtomicDofs = " << endl << is_atomic_dof << endl;
 
-    prol -> Update(*this);
+    // prol -> Update(*this);  // do we need that ? 
 
     UpdateCouplingDofArray();
 
