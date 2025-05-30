@@ -426,10 +426,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ndof_level.Last() = ndof;
   }
 
-  void FESpace :: SetHarmonicProlongation (shared_ptr<BilinearForm> bfa)
+  void FESpace :: SetHarmonicProlongation (shared_ptr<BilinearForm> bfa, string inverse)
   {
-    prol = make_shared<HarmonicProlongation> (prol, // dynamic_pointer_cast<FESpace>(this->shared_from_this()),
-                                              bfa);
+    prol = make_shared<HarmonicProlongation> (prol, bfa, inverse);
     if (prol) prol->Update(*this);
   }
   
@@ -526,102 +525,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     */
     if (low_order_space) low_order_space -> FinalizeUpdate();
 
-    RegionTimer reg (timer);
-    // timer1.Start();
-    dirichlet_dofs.SetSize (GetNDof());
-    dirichlet_dofs.Clear();
-
-    /*
-    if (dirichlet_boundaries.Size())
-      for (FESpace::Element el : Elements(BND))
-        if (dirichlet_boundaries[el.GetIndex()])
-          for (int d : el.GetDofs())
-            if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
-    */
-
-    for (auto vb : { BND, BBND, BBBND })
-      if (auto & dc = dirichlet_constraints[int(vb)]; dc.Size())
-        for (FESpace::Element el : Elements(vb))
-          if (dc[el.GetIndex()])
-            for (int d : el.GetDofs())
-              if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
+    UpdateFreeDofs();
     
-    /*
-    Array<DofId> dnums;
-    for (auto i : Range(dirichlet_vertex))
-      if (dirichlet_vertex[i])
-	{
-	  GetDofNrs (NodeId(NT_VERTEX,i), dnums);
-	  for (DofId d : dnums)
-	    if (d != -1) dirichlet_dofs.Set (d);
-	}
-    */
-    // timer1.Stop();
-    // timer2.Start();
-    ParallelForRange
-      (dirichlet_vertex.Size(),
-       [&] (IntRange r)
-       {
-         Array<DofId> dnums;
-         for (auto i : r)
-           if (dirichlet_vertex[i])
-             {
-               GetDofNrs (NodeId(NT_VERTEX,i), dnums);
-               for (DofId d : dnums)
-                 if (IsRegularDof(d)) dirichlet_dofs.SetBitAtomic (d);
-             }
-       });
-    // timer2.Stop();
-    /*
-    for (auto i : Range(dirichlet_edge))
-      if (dirichlet_edge[i])
-	{
-	  GetDofNrs (NodeId(NT_EDGE,i), dnums);
-	  for (DofId d : dnums)
-	    if (d != -1) dirichlet_dofs.Set (d);
-	}
-    */
-    ParallelForRange
-      (dirichlet_edge.Size(),
-       [&] (IntRange r)
-       {
-         Array<DofId> dnums;         
-         for (auto i : r)
-           if (dirichlet_edge[i])
-             {
-               GetDofNrs (NodeId(NT_EDGE,i), dnums);
-               for (DofId d : dnums)
-                 if (IsRegularDof(d)) dirichlet_dofs.SetBitAtomic (d);
-             }
-       });
-
-    Array<DofId> dnums;             
-    for (int i : Range(dirichlet_face))
-      if (dirichlet_face[i])
-	{
-	  GetFaceDofNrs (i, dnums);
-	  for (DofId d : dnums)
-	    if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
-	}
-    
-    // tcolbits.Start();
-    free_dofs = make_shared<BitArray>(GetNDof());
-    *free_dofs = dirichlet_dofs;
-    free_dofs->Invert();
-    
-    for (auto i : Range(ctofdof))
-      if (!(ctofdof[i] & VISIBLE_DOF)) //hidden or unused
-	free_dofs->Clear(i);
-
-    external_free_dofs = make_shared<BitArray>(GetNDof());
-    *external_free_dofs = *free_dofs;
-    for (auto i : Range(ctofdof))
-      if (ctofdof[i] & CONDENSABLE_DOF)
-	external_free_dofs->Clear(i);
-
-    if (print)
-      *testout << "freedofs = " << endl << *free_dofs << endl;
-    // tcolbits.Stop();
     
     UpdateParallelDofs();
 
@@ -853,6 +758,108 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // CheckCouplingTypes();
   }
 
+
+  void FESpace :: UpdateFreeDofs()
+  {
+    RegionTimer reg (timer);
+    // timer1.Start();
+    dirichlet_dofs.SetSize (GetNDof());
+    dirichlet_dofs.Clear();
+
+    /*
+    if (dirichlet_boundaries.Size())
+      for (FESpace::Element el : Elements(BND))
+        if (dirichlet_boundaries[el.GetIndex()])
+          for (int d : el.GetDofs())
+            if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
+    */
+
+    for (auto vb : { BND, BBND, BBBND })
+      if (auto & dc = dirichlet_constraints[int(vb)]; dc.Size())
+        for (FESpace::Element el : Elements(vb))
+          if (dc[el.GetIndex()])
+            for (int d : el.GetDofs())
+              if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
+    
+    /*
+    Array<DofId> dnums;
+    for (auto i : Range(dirichlet_vertex))
+      if (dirichlet_vertex[i])
+	{
+	  GetDofNrs (NodeId(NT_VERTEX,i), dnums);
+	  for (DofId d : dnums)
+	    if (d != -1) dirichlet_dofs.Set (d);
+	}
+    */
+    // timer1.Stop();
+    // timer2.Start();
+    ParallelForRange
+      (dirichlet_vertex.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;
+         for (auto i : r)
+           if (dirichlet_vertex[i])
+             {
+               GetDofNrs (NodeId(NT_VERTEX,i), dnums);
+               for (DofId d : dnums)
+                 if (IsRegularDof(d)) dirichlet_dofs.SetBitAtomic (d);
+             }
+       });
+    // timer2.Stop();
+    /*
+    for (auto i : Range(dirichlet_edge))
+      if (dirichlet_edge[i])
+	{
+	  GetDofNrs (NodeId(NT_EDGE,i), dnums);
+	  for (DofId d : dnums)
+	    if (d != -1) dirichlet_dofs.Set (d);
+	}
+    */
+    ParallelForRange
+      (dirichlet_edge.Size(),
+       [&] (IntRange r)
+       {
+         Array<DofId> dnums;         
+         for (auto i : r)
+           if (dirichlet_edge[i])
+             {
+               GetDofNrs (NodeId(NT_EDGE,i), dnums);
+               for (DofId d : dnums)
+                 if (IsRegularDof(d)) dirichlet_dofs.SetBitAtomic (d);
+             }
+       });
+
+    Array<DofId> dnums;             
+    for (int i : Range(dirichlet_face))
+      if (dirichlet_face[i])
+	{
+	  GetFaceDofNrs (i, dnums);
+	  for (DofId d : dnums)
+	    if (IsRegularDof(d)) dirichlet_dofs.SetBit (d);
+	}
+    
+    // tcolbits.Start();
+    free_dofs = make_shared<BitArray>(GetNDof());
+    *free_dofs = dirichlet_dofs;
+    free_dofs->Invert();
+    
+    for (auto i : Range(ctofdof))
+      if (!(ctofdof[i] & VISIBLE_DOF)) //hidden or unused
+	free_dofs->Clear(i);
+
+    external_free_dofs = make_shared<BitArray>(GetNDof());
+    *external_free_dofs = *free_dofs;
+    for (auto i : Range(ctofdof))
+      if (ctofdof[i] & CONDENSABLE_DOF)
+	external_free_dofs->Clear(i);
+
+    if (print)
+      *testout << "freedofs = " << endl << *free_dofs << endl;
+    // tcolbits.Stop();
+    
+  }
+  
   const Table<int> & FESpace :: FacetColoring() const
   {
     if (facet_coloring.Size()) return facet_coloring;
@@ -3330,6 +3337,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
     FESpace::FinalizeUpdate();
 
 
+  }
+
+  void CompoundFESpace :: UpdateFreeDofs()
+  {
     // dirichlet-dofs from sub-spaces
     // ist das umsonst ? (JS)
     // haben jetzt ja immer dirichlet-dofs
@@ -3379,8 +3390,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
 
       }
   }
-
-
 
   void CompoundFESpace :: UpdateCouplingDofArray()
   {
