@@ -836,8 +836,8 @@ namespace ngmg
   
   HarmonicProlongation ::
   HarmonicProlongation (shared_ptr<Prolongation> abaseprol,
-                        shared_ptr<BilinearForm> abfa)
-    : baseprol(abaseprol), bfa(abfa)
+                        shared_ptr<BilinearForm> abfa, string ainverse)
+    : baseprol(abaseprol), bfa(abfa), inverse(ainverse)
   {
     auto fes = bfa->GetTrialSpace();
     auto ma = fes->GetMeshAccess();
@@ -858,7 +858,7 @@ namespace ngmg
     // cout << "ndof = " << fes.GetNDof() << endl;
     // cout << "innerinv.size = " << innerinverses.Size() << endl;
     
-    *testout << "harmonic prol, have levels " << levels << endl;
+    // *testout << "harmonic prol, have levels " << levels << endl;
     
     size_t nedge = ma->GetNEdges();
     
@@ -883,10 +883,13 @@ namespace ngmg
     int nedgec = edges_on_level[levels-2];
     int nedgef = edges_on_level[levels-1];
 
+    /*
     *testout << "edges_on_level = " << edges_on_level << endl;
     *testout << "levels = " << levels << endl;
     *testout << "nec, nef = " << nedgec << ", " << nedgef << endl;
+    */
 
+    
     for (auto e : Range(0, nedgec))
       {
         Array<DofId> dnums;
@@ -898,7 +901,7 @@ namespace ngmg
     // *testout << "innerdofs after coarse = " << *harm_inner << endl;
     for (auto e : Range(nedgec, nedgef))
       {
-        if (auto parents = get<1>(ma->GetParentEdges(e)); parents[1] == -1) // from splitting of one edge
+        if (auto parents = get<1>(ma->GetParentEdges(e)); parents[0] < nedgec && parents[1] == -1) // from splitting of one edge
           {        
             Array<DofId> dnums;
             fes.GetEdgeDofNrs(e, dnums);
@@ -917,6 +920,9 @@ namespace ngmg
     // cout << "mat.size = " << bfa->GetMatrix().Height() << endl;
     // *testout << "mat = " << endl;
     // *testout << bfa->GetMatrix() << endl;
+
+    auto & mat = bfa->GetMatrix();
+    mat.SetInverseType(inverse);
     innerinverses.Last() = bfa->GetMatrix().InverseMatrix(harm_inner);
   }
   

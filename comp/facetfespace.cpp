@@ -204,7 +204,7 @@ namespace ngcomp
       haveprols=true;
       for (int classnr = 0; classnr < 2; classnr++)
         {
-          *testout << "classnr = " << classnr << endl;
+          // *testout << "classnr = " << classnr << endl;
           std::array<size_t,3> verts{0,1,2};
           if (classnr == 1) swap(verts[0], verts[1]);
 
@@ -218,9 +218,9 @@ namespace ngcomp
           felfL.SetVertexNumbers (vertsfL);
           L2HighOrderFE<ET_SEGM> felfR(order);
           felfR.SetVertexNumbers (vertsfR);
-          *testout << "vc = " << vertsc[0] << "-" << vertsc[1] << endl;
-          *testout << "vfL = " << vertsfL[0] << "-" << vertsfL[1] << endl;
-          *testout << "vfR = " << vertsfR[0] << "-" << vertsfR[1] << endl;
+          // *testout << "vc = " << vertsc[0] << "-" << vertsc[1] << endl;
+          // *testout << "vfL = " << vertsfL[0] << "-" << vertsfL[1] << endl;
+          // *testout << "vfR = " << vertsfR[0] << "-" << vertsfR[1] << endl;
           
           IntegrationRule ir(ET_SEGM, 2*order);
           size_t ndof = felfL.GetNDof();
@@ -239,7 +239,7 @@ namespace ngcomp
               IntegrationPoint ipcR(0.5*(1+ip(0)));
 
               felc.CalcShape (ipcL, shapec);
-              *testout << "ipcL = " << ipcL << ", shapec = " << shapec << endl;
+              // *testout << "ipcL = " << ipcL << ", shapec = " << shapec << endl;
               felfL.CalcShape (ip, shapef);
 
               massfL += ip.Weight() * shapef * Trans(shapef);
@@ -257,14 +257,14 @@ namespace ngcomp
           segmprolsR[classnr].SetSize(ndof, ndof);
           segmprolsR[classnr] = massfR * massfcR;
           
-          *testout << "prolmatrixL = " << endl << segmprolsL[classnr] << endl;
-          *testout << "prolmatrixR = " << endl << segmprolsR[classnr] << endl;
+          // *testout << "prolmatrixL = " << endl << segmprolsL[classnr] << endl;
+          // *testout << "prolmatrixR = " << endl << segmprolsR[classnr] << endl;
         }
     }
 
     virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
     {
-      return NULL;  // shouldn't it be nullptr ? 
+      return nullptr;  // or NULL ? 
     }
 
     virtual void Update (const FESpace & bfes) override
@@ -273,13 +273,13 @@ namespace ngcomp
       
       size_t oldnedge = edge_creation_class.Size();
       size_t nedge = ma->GetNEdges();
-      *testout << /* IM(3) << */ "update prol, level = " << ma->GetNLevels() <<  ", nedge = " << nedge << endl;
+      cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", nedge = " << nedge << endl;
 
       while (edges_on_level.Size() < ma->GetNLevels())
         edges_on_level.Append(oldnedge);
       edges_on_level[ma->GetNLevels()-1] = nedge;
 
-      *testout << "update first_dofs, first_dofs.Size() == " << first_dofs.Size() << ", levels = " << ma->GetNLevels() << endl;
+      // *testout << "update first_dofs, first_dofs.Size() == " << first_dofs.Size() << ", levels = " << ma->GetNLevels() << endl;
       if (first_dofs.Size() < ma->GetNLevels())
         first_dofs += fes.GetFirstFacetDof();
       
@@ -328,7 +328,7 @@ namespace ngcomp
           break;
 
           
-          bool found = false;
+          // bool found = false;
           /*
           for (size_t i = ne; i-- > oldne; )
           if (!isparent[i] && !isdone[i])
@@ -526,8 +526,10 @@ namespace ngcomp
       }
 
     if (flags.GetDefineFlag("hoprolongation"))
-      prol = make_shared<FacetHOProlongation2D> (GetMeshAccess(), order);
-        
+      {
+        prol = make_shared<FacetHOProlongation2D> (GetMeshAccess(), order);
+        ma->GetNetgenMesh()->GetTopology().EnableTable("parentedges", true);
+      }
     additional_evaluators.Set ("dual", evaluator[VOL]);
   }
   

@@ -236,9 +236,10 @@ namespace ngmg
     shared_ptr<BilinearForm> bfa;
     Array<shared_ptr<BaseMatrix>> innerinverses;
     Array<size_t> edges_on_level;
+    string inverse;
   public:
     HarmonicProlongation (shared_ptr<Prolongation> abaseprol,
-                          shared_ptr<BilinearForm> abfa);
+                          shared_ptr<BilinearForm> abfa, string ainverse);
 
     virtual void Update (const FESpace & fes) override;
     

@@ -1091,8 +1091,9 @@ coupling : bool
          "Return prolongation operator for use in multi-grid")
 
     .def("SetHarmonicProlongation",
-         [] (const shared_ptr<FESpace> self, shared_ptr<BilinearForm> bfa)
-         { self->SetHarmonicProlongation(bfa); },
+         [] (const shared_ptr<FESpace> self, shared_ptr<BilinearForm> bfa, string inverse)
+         { self->SetHarmonicProlongation(bfa, inverse); },
+         py::arg("bf"), py::arg("inverse")="sparsecholesky",
          "use harmonic prolongation w.r.t. bilinear-form")
     
     .def("TrialFunction",
@@ -3240,6 +3241,8 @@ integrator : ngsolve.fem.LFI
                     auto mgpre = make_shared<MGPreconditioner>(bfa,flags, name);
                     if(lo_precond.has_value())
                       mgpre->SetCoarsePreconditioner(lo_precond.value());
+                    if (bfa->GetNLevels() > 0)
+                      mgpre->Update();
                     return mgpre;
                   }), py::arg("bf"), "name"_a = "multigrid", "lo_preconditioner"_a = nullopt)
     .def_static("__flags_doc__", [prec_class] ()
@@ -3254,6 +3257,8 @@ integrator : ngsolve.fem.LFI
                     "    'block': Block smoother";
                   mg_flags["coarsetype"] = "string = direct\n"
                     "  How to solve coarse problem.";
+                  mg_flags["cycle"] = "int = 1\n"
+                    "  multigrid cycle (0 only smoothing, 1..V-cycle, 2..W-cycle.";
                   mg_flags["coarsesmoothingsteps"] = "int = 1\n"
                     "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
                   mg_flags["updatealways"] = "bool = False\n";

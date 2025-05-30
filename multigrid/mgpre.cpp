@@ -121,8 +121,10 @@ namespace ngmg
 	      checksumcgpre = checksum;
 	    */
 
-	    shared_ptr<BitArray> freedofs = biform->GetFESpace()->GetFreeDofs();
-            
+            bool condense = biform->UsesEliminateInternal();
+	    shared_ptr<BitArray> freedofs = biform->GetFESpace()->GetFreeDofs(condense);
+            *testout << "freedofs for coarse, condense = " << int(condense) << endl
+                     << *freedofs << endl;
 	    if (!freedofs)
 	      coarsegridpre =
 		dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix();
