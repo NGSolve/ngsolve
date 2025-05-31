@@ -423,6 +423,280 @@ namespace ngcomp
   };
 
 
+
+
+  // 1D facets of 2D elements
+  // prolongate only on coarsegrid edges
+  class FacetHOProlongation3D : public Prolongation
+  {
+    shared_ptr<MeshAccess> ma;
+    int order;
+    int dofs_per_face = -1;
+    Array<Array<int>> first_dofs;
+    Array<size_t> faces_on_level;
+
+    array<Matrix<double>,32> trigprolsL;
+    array<Matrix<double>,32> trigprolsR;
+
+    Array<int> face_creation_class;  // which prol to use ?
+    bool haveprols = false;
+
+
+  private:
+    int GetClassNr (FlatArray<size_t> verts)
+    {
+      Array<size_t> hverts{verts};
+      int classnr = 0;
+      // sorting network for 4 elements, 5 comparisons:
+      int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
+      for (int i = 0; i < 5; i++)
+         if (hverts[pairs[i][0]] > hverts[pairs[i][1]])
+           {
+             classnr += 1 << i;
+             swap(hverts[pairs[i][0]], hverts[pairs[i][1]]);
+           }
+      return classnr;
+    }
+    Array<size_t> GetClassRealization (int classnr)
+    {
+      Array<size_t> verts{1,2,3,4};
+      int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
+      for (int i = 4; i >= 0; i--)
+        if (classnr & (1 << i))
+          swap(verts[pairs[i][0]], verts[pairs[i][1]]);
+      return verts;
+    }
+
+    
+  public:
+    FacetHOProlongation3D(shared_ptr<MeshAccess> ama, int aorder)
+      : ma(ama), order(aorder) { }
+
+    void CalcMatrices()
+    {
+      if (haveprols) return;
+      haveprols=true;
+
+      for (int classnr = 0; classnr < 32; classnr++)
+        {
+          Array<size_t> verts{GetClassRealization(classnr)};
+          
+          size_t vertsc[3] = { verts[0], verts[1], verts[2] };
+          size_t vertsfL[3] = { verts[3], verts[1], verts[2] };
+          size_t vertsfR[3] = { verts[0], verts[1], verts[3] };
+          
+          L2HighOrderFE<ET_TRIG> felc(order);
+          felc.SetVertexNumbers (vertsc);
+
+          L2HighOrderFE<ET_TRIG> felfL(order);
+          felfL.SetVertexNumbers (vertsfL);
+          L2HighOrderFE<ET_TRIG> felfR(order);
+          felfR.SetVertexNumbers (vertsfR);
+          
+          IntegrationRule ir(ET_TRIG, 2*order);
+          size_t ndof = felfL.GetNDof();
+          dofs_per_face = ndof;
+          Matrix massfL(ndof, ndof), massfcL(ndof, ndof);
+          Matrix massfR(ndof, ndof), massfcR(ndof, ndof);          
+          Vector shapef(ndof), shapec(ndof);
+          massfL = 0.;
+          massfcL = 0.;
+          massfR = 0.;
+          massfcR = 0.;
+          
+          for (IntegrationPoint ip : ir)
+            {
+              IntegrationPoint ipcL(0.5*ip(0), ip(1));
+              IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)), ip(1));              
+
+              felc.CalcShape (ipcL, shapec);
+              felfL.CalcShape (ip, shapef);
+
+              massfL += ip.Weight() * shapef * Trans(shapef);
+              massfcL += ip.Weight() * shapef * Trans(shapec);
+
+              felc.CalcShape (ipcR, shapec);
+              felfR.CalcShape (ip, shapef);
+              massfR += ip.Weight() * shapef * Trans(shapef);
+              massfcR += ip.Weight() * shapef * Trans(shapec);
+            }
+          CalcInverse (massfL);
+          trigprolsL[classnr].SetSize(ndof, ndof);
+          trigprolsL[classnr] = massfL * massfcL;
+          CalcInverse (massfR);
+          trigprolsR[classnr].SetSize(ndof, ndof);
+          trigprolsR[classnr] = massfR * massfcR;
+        }
+    }
+
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
+    {
+      return nullptr;  // or NULL ? 
+    }
+
+    virtual void Update (const FESpace & bfes) override
+    {
+      auto & fes = dynamic_cast<const FacetFESpace&> (bfes);
+      
+      size_t oldnface = face_creation_class.Size();
+      size_t nface = ma->GetNFaces();
+      cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", nface = " << nface << endl;
+
+      while (faces_on_level.Size() < ma->GetNLevels())
+        faces_on_level.Append(oldnface);
+      faces_on_level[ma->GetNLevels()-1] = nface;
+
+      if (first_dofs.Size() < ma->GetNLevels())
+        first_dofs += fes.GetFirstFacetDof();
+      
+      cout << IM(3) << "faces_on_level = " << endl << faces_on_level << endl;
+
+      if (ma->GetNLevels() == 1)
+        {
+          face_creation_class.SetSize(nface);
+          face_creation_class = 0;
+          return;
+        }
+      
+      CalcMatrices();
+
+      face_creation_class.SetSize(nface);
+      // edge_creation_class = 0;
+      
+
+      BitArray isparent(nface);
+      BitArray isdone(nface);
+      isdone.Clear();
+      
+      Array<size_t> verts(4);
+
+      while (true)
+        {
+          // isparent.Clear();
+          for (size_t i = oldnface; i < nface; i++)
+            if (!isdone[i])
+              if (auto parents = get<1>(ma->GetParentFaces(i)); parents[1] == -1)
+                {
+                  auto myverts = ma->GetFacePNums(i);
+                  auto paverts = ma->GetFacePNums(parents[0]);
+
+                  std::array<size_t,4> verts;
+                  
+                  for (int i = 0; i < 3; i++)
+                    if (!myverts.Contains(paverts[i]))
+                      verts[0] = paverts[i];
+
+                  for (int i = 0; i < 3; i++)
+                    if (!paverts.Contains(myverts[i]))
+                      verts[3] = myverts[i];
+
+                  auto between = ma->GetParentNodes(verts[3]);
+                  verts[2] = between[0]+between[1]-verts[0];
+                  verts[1] = paverts[0]+paverts[1]+paverts[2] - verts[0]-verts[2];
+                  
+                  face_creation_class[i] = GetClassNr(FlatArray<size_t>(4, &verts[0]));
+                }
+          // *testout << "createionclass = " << face_creation_class << endl;
+          break;
+
+          
+          // bool found = false;
+          /*
+          for (size_t i = ne; i-- > oldne; )
+          if (!isparent[i] && !isdone[i])
+            {
+              int newest_vertex = ma->GetElement(ElementId(vb,i)).newest_vertex;
+              verts[3] = trig_creation_verts[i][newest_vertex];
+              IVec<2> pnodes = ma->GetParentNodes(verts[3]);
+              if (trig_creation_verts[i].Contains(pnodes[1]))
+                pnodes = { pnodes[1], pnodes[0] }; 
+
+              verts[0] = pnodes[0];
+              verts[1] = trig_creation_verts[i][0]+trig_creation_verts[i][1]+trig_creation_verts[i][2]-verts[0]-verts[3];
+              verts[2] = pnodes[1];
+              trig_creation_class[i] = GetClassNr(verts);
+
+              int parent = ma->GetParentElement (ElementId(vb,i)).Nr();
+              if (parent != -1) 
+                {
+                  trig_creation_verts[parent] = trig_creation_verts[i];
+                  trig_creation_verts[parent][newest_vertex] = verts[2];
+                }
+              isdone.SetBit(i);
+              found = true;
+            }
+        if (!found) break;
+          */
+        }
+    }
+   
+    
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
+    {
+      auto fv = v.FV<double>();
+      Matrix<double> tmp(faces_on_level[finelevel], dofs_per_face);
+      tmp = 0.0;
+      
+      for (size_t i = 0; i < first_dofs[finelevel-1].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel-1][i], first_dofs[finelevel-1][i+1]);
+          if (r.Size() > 0)
+            tmp.Row(i) = fv.Range(r);
+        }
+
+      for (int i = faces_on_level[finelevel-1]; i < faces_on_level[finelevel]; i++)
+        if (auto parents = get<1>(ma->GetParentFaces(i)); parents[1] == -1)
+          {
+            int pe = parents[0];
+            tmp.Row(i) = trigprolsL[face_creation_class[i]] * tmp.Row(pe);
+          }
+      
+      for (size_t i = 0; i < first_dofs[finelevel].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel][i], first_dofs[finelevel][i+1]);
+          if (r.Size() > 0)
+            fv.Range(r) = tmp.Row(i);
+        }
+    }
+    
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override
+    {
+      auto fv = v.FV<double>();
+      Matrix<double> tmp(faces_on_level[finelevel], dofs_per_face);
+      tmp = 0.0;
+      
+      for (size_t i = 0; i < first_dofs[finelevel].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel][i], first_dofs[finelevel][i+1]);
+          if (r.Size() > 0)
+            tmp.Row(i) = fv.Range(r);
+        }
+      
+      // for (int i = faces_on_level[finelevel-1]; i < faces_on_level[finelevel]; i++)
+      for (int i = faces_on_level[finelevel]-1; i >= faces_on_level[finelevel-1]; i--)      
+        if (auto parents = get<1>(ma->GetParentFaces(i)); parents[1] == -1)
+          {
+            int pe = parents[0];
+            tmp.Row(pe) += Trans(trigprolsL[face_creation_class[i]]) * tmp.Row(i);
+            tmp.Row(i) = 0.0;  // optional, for testing
+          }
+
+      fv = 0.0;
+      for (size_t i = 0; i < first_dofs[finelevel-1].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel-1][i], first_dofs[finelevel-1][i+1]);
+          if (r.Size() > 0)
+            fv.Range(r) = tmp.Row(i);
+        }
+
+    }
+    
+  };
+
+
+
+
+
   
 
   FacetFESpace ::  FacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, bool checkflags)
@@ -527,8 +801,16 @@ namespace ngcomp
 
     if (flags.GetDefineFlag("hoprolongation"))
       {
-        prol = make_shared<FacetHOProlongation2D> (GetMeshAccess(), order);
-        ma->GetNetgenMesh()->GetTopology().EnableTable("parentedges", true);
+        if (ma->GetDimension()==2)
+          {
+            prol = make_shared<FacetHOProlongation2D> (GetMeshAccess(), order);
+            ma->GetNetgenMesh()->GetTopology().EnableTable("parentedges", true);
+          }
+        if (ma->GetDimension()==3)
+          {
+            prol = make_shared<FacetHOProlongation3D> (GetMeshAccess(), order);
+            ma->GetNetgenMesh()->GetTopology().EnableTable("parentfaces", true);
+          }
       }
     additional_evaluators.Set ("dual", evaluator[VOL]);
   }

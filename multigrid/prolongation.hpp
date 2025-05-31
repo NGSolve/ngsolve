@@ -233,9 +233,9 @@ namespace ngmg
   class NGS_DLL_HEADER HarmonicProlongation : public Prolongation
   {
     shared_ptr<Prolongation> baseprol;
-    shared_ptr<BilinearForm> bfa;
+    weak_ptr<BilinearForm> wbfa;
     Array<shared_ptr<BaseMatrix>> innerinverses;
-    Array<size_t> edges_on_level;
+    Array<size_t> facets_on_level;
     string inverse;
   public:
     HarmonicProlongation (shared_ptr<Prolongation> abaseprol,
