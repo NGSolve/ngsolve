@@ -172,25 +172,27 @@ namespace ngcomp
           dofs_per_facet = ndof;
 
           Matrix massf(ndof, ndof), massfc(ndof, ndof);          
-          Matrix shapef(ndof,2), shapec(ndof,2);
+          Matrix shapef(ndof,1), shapec(ndof,1), shapeftrans(ndof, 1);
 
           massf = 0.;
           massfc = 0.;
-          
+          Mat<1,1> trafo;
           for (IntegrationPoint ip : ir)
             {
               IntegrationPoint ipc(0.5*(1+ip(0)));
+              trafo(0,0) = 2;
 
               felc.CalcShape (ipc, shapec);
               felf.CalcShape (ip, shapef);
-              massf += ip.Weight() * shapef * Trans(shapef);
-              massfc += ip.Weight() * shapef * Trans(shapec);
+              shapeftrans = shapef * trafo;
+              massf += ip.Weight() * shapeftrans * Trans(shapeftrans);
+              massfc += ip.Weight() * shapeftrans * Trans(shapec);
             }
 
           CalcInverse (massf);
           facetprol[classnr].SetSize(ndof, ndof);
-          facetprol[classnr] = 0.5*massf * massfc;
-          *testout << "prol " << classnr << " = " << endl << facetprol[classnr] << endl;
+          facetprol[classnr] = massf * massfc;
+          // *testout << "prol " << classnr << " = " << endl << facetprol[classnr] << endl;
         }
     }
 
@@ -296,23 +298,24 @@ namespace ngcomp
           dofs_per_facet = ndof;
           
           Matrix massf(ndof, ndof), massfc(ndof, ndof);
-          Matrix shapef(ndof,3), shapec(ndof,3);
+          Matrix shapef(ndof,2), shapeftrans(ndof, 2), shapec(ndof,2);
           
           massf = 0.;
           massfc = 0.;
-          
+          Mat<2,2> trafo { { 2, 0 }, { 0, 1 } };
           for (IntegrationPoint ip : ir)
             {
               IntegrationPoint ipc(0.5*ip(0), ip(1));
 
               felc.CalcShape (ipc, shapec);
               felf.CalcShape (ip, shapef);
-              massf += ip.Weight() * shapef * Trans(shapef);
-              massfc += ip.Weight() * shapef * Trans(shapec);
+              shapeftrans = shapef * trafo;              
+              massf += ip.Weight() * shapeftrans * Trans(shapeftrans);
+              massfc += ip.Weight() * shapeftrans * Trans(shapec);
             }
           CalcInverse (massf);
           facetprol[classnr].SetSize(ndof, ndof);
-          facetprol[classnr] = 0.5*massf * massfc;
+          facetprol[classnr] = massf * massfc;
         }
     }
 
@@ -658,8 +661,6 @@ namespace ngcomp
 	    for (int i = 0; i < ne; i++)
 	      {
 		first_inner_dof[i] = ndof;
-		
-		// only trigs supported:
 		auto fnums = ma->GetElFacets(ElementId(VOL,i));
 		ndof += fnums.Size();
 	      }
@@ -708,13 +709,6 @@ namespace ngcomp
       }
 
     SetNDof (ndof);
-    /*
-    while (ma->GetNLevels() > ndlevel.Size())
-      ndlevel.Append (ndof);
-    ndlevel.Last() = ndof;
-    */
-    //no prolongation so far       
-    //prol->Update();
 
     if(print)
       {
@@ -732,11 +726,10 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
     ctofdof = WIREBASKET_DOF;
-    // int first,next;
-    for(int facet=0; facet<ma->GetNFacets(); facet++)
+
+    for(int facet=0; facet < ma->GetNFacets(); facet++)
       {
         COUPLING_TYPE ct = fine_facet[facet] ? WIREBASKET_DOF : UNUSED_DOF;
-        // TODO: all_dofs_together
 
         if (!all_dofs_together)
           {
@@ -748,22 +741,11 @@ namespace ngcomp
                 ctofdof[2*facet+1] = ct;
               }
 
-            /*
-            first = first_facet_dof[facet];
-            next = first_facet_dof[facet+1];
-            for(int j=first ; j<next; j++)
-              ctofdof[j] = INTERFACE_DOF;
-            */
             IntRange r = GetFacetDofs(facet);
             ctofdof[r] = INTERFACE_DOF;
           }
         else
           {
-            // first = first_facet_dof[facet];
-            // next = first_facet_dof[facet+1];
-            // for(int j=first ; j<next; j++)
-            // ctofdof[j] = INTERFACE_DOF;
-
             IntRange r = GetFacetDofs(facet);
             ctofdof[r] = INTERFACE_DOF;
             
@@ -812,12 +794,13 @@ namespace ngcomp
               // ArrayMem<int,ET_T::N_VERTEX> vnums;
               ArrayMem<int,ET_T::N_FACET> fanums, order_fa;
               auto vnums = ma->GetElVertices(ei);
+              /*
               if(ET_T::DIM==2)
                 fanums = ma->GetElEdges(ei);
               else
                 fanums = ma->GetElFaces(ei);
-              assert(vnums.Size() == ET_T::N_VERTEX);
-              assert(fanums.Size() == ET_T::N_FACET);
+              */
+              fanums = ma->GetElFacets(ei);
               order_fa.SetSize(fanums.Size());
               for (auto i : Range(fanums.Size()))
                 order_fa[i] = order_facet[fanums[i]][0];
@@ -839,11 +822,9 @@ namespace ngcomp
               //ArrayMem<int,ET_T::N_VERTEX> vnums;
               ArrayMem<int,ET_T::N_EDGE> ednums;
               auto vnums = ma->GetElVertices(ei);
-              assert(vnums.Size() == ET_T::N_VERTEX);
               fe->SetVertexNumbers(vnums);
               if (et.ElementType() == ET_SEGM)
                 {
-                  // ArrayMem<int,ET_T::N_EDGE> ednums;
                   auto ednums = ma->GetElEdges(ei);
                   fe->SetOrder(order_facet[ednums[0]][0]-reduceorder);
                 }
@@ -866,171 +847,150 @@ namespace ngcomp
     
     if(ei.VB()==VOL)
       {
-    if (!highest_order_dc)
-      {
-	Array<int> fanums; // facet numbers
-	// int first,next;
-	
-	fanums.SetSize(0);
-	
-	
-	if(ma->GetDimension() == 3)
-	  fanums = ma->GetElFaces (ei);
-	else // dim=2
-	  fanums = ma->GetElEdges (ei);
-	
-	for(int i=0; i<fanums.Size(); i++)
-	  {
-            if (!all_dofs_together)
+        if (!highest_order_dc)
+          {
+            for (auto f : ma->GetElFacets(ei))
               {
-                if ( ma->GetDimension() == 2 )
-                  dnums.Append(fanums[i]); // low_order
-                else
+                if (!all_dofs_together)
                   {
-                    dnums.Append(2*fanums[i]);
-                    dnums.Append(2*fanums[i]+1);
+                    if ( ma->GetDimension() == 2 )
+                      dnums.Append(f); // low_order
+                    else
+                      {
+                        dnums.Append(2*f);
+                        dnums.Append(2*f+1);
+                      }
+                  }
+                
+                dnums += GetFacetDofs(f);
+              }
+              
+          }
+        else
+          {
+            if (ma->GetDimension() == 2)
+              {
+                auto fanums = ma->GetElEdges (ei);
+	    
+                int innerdof = first_inner_dof[ei.Nr()];
+                for(int i=0; i<fanums.Size(); i++)
+                  {
+                    int facetdof = first_facet_dof[fanums[i]];
+                    for (int j = 0; j <= order; j++)
+                      {
+                        if (j == 0 && !all_dofs_together)
+                          {
+                            dnums.Append(fanums[i]);
+                          }
+                        else if (j < order)
+                          {
+                            dnums.Append (facetdof++);
+                          }
+                        else
+                          {
+                            dnums.Append (innerdof++);
+                          }
+                      }
                   }
               }
-
-            dnums += GetFacetDofs(fanums[i]);
-            /*
-	    first = first_facet_dof[fanums[i]];
-	    next = first_facet_dof[fanums[i]+1];
-	    for(int j=first ; j<next; j++)
-	      dnums.Append(j);
-            */
-	  }
-      }
-    else
-      {
-	if (ma->GetDimension() == 2)
-	  {
-	    // Array<int> fanums; // facet numbers
-	    
-	    // fanums.SetSize(0);
-            
-	    auto fanums = ma->GetElEdges (ei);
-	    
-	    int innerdof = first_inner_dof[ei.Nr()];
-	    for(int i=0; i<fanums.Size(); i++)
-	      {
-		int facetdof = first_facet_dof[fanums[i]];
-		for (int j = 0; j <= order; j++)
-		  {
-		    if (j == 0 && !all_dofs_together)
-		      {
-			dnums.Append(fanums[i]);
-		      }
-		    else if (j < order)
-		      {
-			dnums.Append (facetdof++);
-		      }
-		    else
-		      {
-			dnums.Append (innerdof++);
-		      }
-		  }
-	      }
-	  }
-	else
-	  {
-	    // Array<int> fanums; // facet numbers
-	    
-	    // fanums.SetSize(0);
-	    
-	    ELEMENT_TYPE et = ma->GetElType (ei);
-	    auto fanums = ma->GetElFaces (ei);
-	    
-	    int innerdof = first_inner_dof[ei.Nr()];
-	    for(int i=0; i<fanums.Size(); i++)
-	      {
-		ELEMENT_TYPE ft = ElementTopology::GetFacetType (et, i);
-		
-		int facetdof = first_facet_dof[fanums[i]];
-		
-		if (ft == ET_TRIG)
-		  {
-		    for (int j = 0; j <= order; j++)
-		      for (int k = 0; k <= order-j; k++)
-			{
-			  if (j+k == 0)
-			    {
-			      dnums.Append(2*fanums[i]);
-			      dnums.Append(2*fanums[i]+1);
-			    }
-			  else if (j+k < order)
-			    {
-			      dnums.Append (facetdof++);
-			      dnums.Append (facetdof++);
-			    }
-			  else
-			    {
-			      dnums.Append (innerdof++);
-			      dnums.Append (innerdof++);
-			    }
-			}
-		  }
-		else
-		  {
-		    for (int j = 0; j <= order; j++)
-		      for (int k = 0; k <= order; k++)
-			{
-			  if (j+k == 0)
-			    {
-			      dnums.Append(2*fanums[i]);
-			      dnums.Append(2*fanums[i]+1);
-			    }
-			  else if ( (j < order) && (k < order) )
-			    {
-			      dnums.Append (facetdof++);
-			      dnums.Append (facetdof++);
-			    }
-			  else
-			    {
-			      dnums.Append (innerdof++);
-			      dnums.Append (innerdof++);
-			    }
-			}
-		  }
-	      }
-	  }
-      }
-      
-    // *testout << "dnums = " << endl << dnums << endl;
-      }
-    if(ei.VB()==BND)
-      {
-    ArrayMem<int, 1> fanums(1);
-    int first, next;
-
-
-    if ( ma->GetDimension() == 2 )
-      {
-	auto fanums = ma->GetElEdges (ei);
-        if (!all_dofs_together)
-          dnums.Append(fanums[0]);
-
-	first = first_facet_dof[fanums[0]];
-	next = first_facet_dof[fanums[0]+1];
-	for ( int j = first; j < next; j++ )
-	  dnums.Append(j);
-      } 
-    else // 3D
-      {
-	fanums[0] = ma->GetSElFace(ei.Nr());
-        if (!all_dofs_together)
-          {
-            dnums.Append( 2*fanums[0] );
-            dnums.Append( 2*fanums[0]+1 );
+            else
+              {
+                ELEMENT_TYPE et = ma->GetElType (ei);
+                auto fanums = ma->GetElFaces (ei);
+                
+                int innerdof = first_inner_dof[ei.Nr()];
+                for(int i=0; i<fanums.Size(); i++)
+                  {
+                    ELEMENT_TYPE ft = ElementTopology::GetFacetType (et, i);
+                    
+                    int facetdof = first_facet_dof[fanums[i]];
+                    
+                    if (ft == ET_TRIG)
+                      {
+                        for (int j = 0; j <= order; j++)
+                          for (int k = 0; k <= order-j; k++)
+                            {
+                              if (j+k == 0 && !all_dofs_together)
+                                {
+                                  dnums.Append(2*fanums[i]);
+                                  dnums.Append(2*fanums[i]+1);
+                                }
+                              else if (j+k < order)
+                                {
+                                  dnums.Append (facetdof++);
+                                  dnums.Append (facetdof++);
+                                }
+                              else
+                                {
+                                  dnums.Append (innerdof++);
+                                  dnums.Append (innerdof++);
+                                }
+                            }
+                      }
+                    else
+                      {
+                        for (int j = 0; j <= order; j++)
+                          for (int k = 0; k <= order; k++)
+                            {
+                              if (j+k == 0 && !all_dofs_together)
+                                {
+                                  dnums.Append(2*fanums[i]);
+                                  dnums.Append(2*fanums[i]+1);
+                                }
+                              else if ( (j < order) && (k < order) )
+                                {
+                                  dnums.Append (facetdof++);
+                                  dnums.Append (facetdof++);
+                                }
+                              else
+                                {
+                                  dnums.Append (innerdof++);
+                                  dnums.Append (innerdof++);
+                                }
+                            }
+                      }
+                  }
+              }
           }
         
-	first = first_facet_dof[fanums[0]];
-	next = first_facet_dof[fanums[0]+1];
-	for ( int j = first; j < next; j++ )
-	  dnums.Append(j);
-
+        // *testout << "dnums = " << endl << dnums << endl;
       }
+    
+    if(ei.VB()==BND)
+      {
+        ArrayMem<int, 1> fanums(1);
 
+        if ( ma->GetDimension() == 2 )
+          {
+            auto fanums = ma->GetElEdges (ei);
+            if (!all_dofs_together)
+              dnums.Append(fanums[0]);
+            
+            /*
+              first = first_facet_dof[fanums[0]];
+              next = first_facet_dof[fanums[0]+1];
+              for ( int j = first; j < next; j++ )
+              dnums.Append(j);
+            */
+            dnums += GetFacetDofs(fanums[0]);        
+          } 
+        else // 3D
+          {
+            fanums[0] = ma->GetSElFace(ei.Nr());
+            if (!all_dofs_together)
+              {
+                dnums.Append( 2*fanums[0] );
+                dnums.Append( 2*fanums[0]+1 );
+              }
+            
+            /*
+              first = first_facet_dof[fanums[0]];
+              next = first_facet_dof[fanums[0]+1];
+              for ( int j = first; j < next; j++ )
+              dnums.Append(j);
+            */
+            dnums += GetFacetDofs(fanums[0]);        
+          }
       }
     //if(ei.VB()==BBND)
     //  dnums.SetSize(0);
@@ -1103,6 +1063,8 @@ namespace ngcomp
   void TangentialFacetFESpace :: GetInnerDofNrs ( int felnr, Array<int> & dnums ) const
   {
     dnums.SetSize0();
+    if (highest_order_dc)
+      dnums += IntRange(first_inner_dof[felnr], first_inner_dof[felnr+1]);
   }
 
   int TangentialFacetFESpace :: GetNFacetDofs ( int felnr ) const
