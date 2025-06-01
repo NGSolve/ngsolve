@@ -485,14 +485,16 @@ namespace ngcomp
 
     if (flags.GetDefineFlag("hoprolongation"))
       {
+        int order_continuous = order;
+        if (highest_order_dc) order_continuous--;
         if (ma->GetDimension()==2)
           {
-            prol = make_shared<TangentialFacetHOProlongation2D> (GetMeshAccess(), order);
+            prol = make_shared<TangentialFacetHOProlongation2D> (GetMeshAccess(), order_continuous);
             ma->GetNetgenMesh()->GetTopology().EnableTable("parentedges", true);
           }
         if (ma->GetDimension()==3)
           {
-            prol = make_shared<TangentialFacetHOProlongation3D> (GetMeshAccess(), order);
+            prol = make_shared<TangentialFacetHOProlongation3D> (GetMeshAccess(), order_continuous);
             ma->GetNetgenMesh()->GetTopology().EnableTable("parentfaces", true);
           }
       }
