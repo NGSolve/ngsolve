@@ -10,6 +10,7 @@
 #include "../fem/hcurllofe.hpp"
 #include <../fem/hcurl_equations.hpp>
 #include <../fem/diffop_impl.hpp>
+#include <multigrid.hpp>
 
 
 namespace ngcomp
@@ -135,6 +136,239 @@ namespace ngcomp
   };
 
 
+
+  using ngmg::FacetProlongation;
+  
+  // 1D facets of 2D elements
+  // prolongate only on coarsegrid edges
+  class TangentialFacetHOProlongation2D : public FacetProlongation<2>
+  {
+    int order;
+
+  public:
+    TangentialFacetHOProlongation2D(shared_ptr<MeshAccess> ama, int aorder)
+      : FacetProlongation<2>(ama), order(aorder) { }
+
+    void CalcMatrices()
+    {
+      if (haveprols) return;
+      haveprols=true;
+      for (int classnr = 0; classnr < 2; classnr++)
+        {
+          std::array<size_t,3> verts{0,1,2};
+          if (classnr == 1) swap(verts[0], verts[1]);
+
+          size_t vertsc[2] = { verts[0], verts[1] };
+          size_t vertsf[2] = { verts[0], verts[2] };
+
+          TangentialFacetFacetFE<ET_SEGM> felc(order);
+          felc.SetVertexNumbers (vertsc);
+
+          TangentialFacetFacetFE<ET_SEGM> felf(order);
+          felf.SetVertexNumbers (vertsf);
+          
+          IntegrationRule ir(ET_SEGM, 2*order);
+          size_t ndof = felf.GetNDof();
+          dofs_per_facet = ndof;
+
+          Matrix massf(ndof, ndof), massfc(ndof, ndof);          
+          Matrix shapef(ndof,2), shapec(ndof,2);
+
+          massf = 0.;
+          massfc = 0.;
+          
+          for (IntegrationPoint ip : ir)
+            {
+              IntegrationPoint ipc(0.5*(1+ip(0)));
+
+              felc.CalcShape (ipc, shapec);
+              felf.CalcShape (ip, shapef);
+              massf += ip.Weight() * shapef * Trans(shapef);
+              massfc += ip.Weight() * shapef * Trans(shapec);
+            }
+
+          CalcInverse (massf);
+          facetprol[classnr].SetSize(ndof, ndof);
+          facetprol[classnr] = 0.5*massf * massfc;
+          *testout << "prol " << classnr << " = " << endl << facetprol[classnr] << endl;
+        }
+    }
+
+    virtual void Update (const FESpace & bfes) override
+    {
+      auto & fes = dynamic_cast<const TangentialFacetFESpace&> (bfes);
+      
+      size_t oldnfacet = prol_class.Size();
+      size_t nfacet = ma->GetNFacets();
+      cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", nfacet = " << nfacet << endl;
+
+      while (facets_on_level.Size() < ma->GetNLevels())
+        facets_on_level.Append(oldnfacet);
+      facets_on_level[ma->GetNLevels()-1] = nfacet;
+
+      // *testout << "update first_dofs, first_dofs.Size() == " << first_dofs.Size() << ", levels = " << ma->GetNLevels() << endl;
+      if (first_dofs.Size() < ma->GetNLevels())
+        first_dofs += fes.GetFirstFacetDof();
+      
+      // *testout << /* IM(3) << */ "facets_on_level = " << endl << facets_on_level << endl;
+
+      if (ma->GetNLevels() == 1)
+        {
+          prol_class.SetSize(nfacet);
+          prol_class = 0;
+          return;
+        }
+      
+      CalcMatrices();
+
+      prol_class.SetSize(nfacet);
+
+      // Array<size_t> verts(4);
+      for (size_t i = oldnfacet; i < nfacet; i++)
+        if (auto parents = get<1>(ma->GetParentEdges(i)); parents[1] == -1)
+          {
+            auto myverts = ma->GetEdgePNums(i);
+            auto paverts = ma->GetEdgePNums(parents[0]);
+            auto minpa = Min(paverts);
+            prol_class[i] = myverts.Contains(minpa) ? 0 : 1;
+          }
+    }
+  };
+
+
+
+  // 1D facets of 2D elements
+  // prolongate only on coarsegrid edges
+  class TangentialFacetHOProlongation3D : public FacetProlongation<3>
+  {
+    int order;
+
+  private:
+    int GetClassNr (FlatArray<size_t> verts)
+    {
+      Array<size_t> hverts{verts};
+      int classnr = 0;
+      // sorting network for 4 elements, 5 comparisons:
+      int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
+      for (int i = 0; i < 5; i++)
+         if (hverts[pairs[i][0]] > hverts[pairs[i][1]])
+           {
+             classnr += 1 << i;
+             swap(hverts[pairs[i][0]], hverts[pairs[i][1]]);
+           }
+      return classnr;
+    }
+    Array<size_t> GetClassRealization (int classnr)
+    {
+      Array<size_t> verts{1,2,3,4};
+      int pairs[][2] = { {0,1}, {2,3}, {0,2}, {1,3}, {1,2} };
+      for (int i = 4; i >= 0; i--)
+        if (classnr & (1 << i))
+          swap(verts[pairs[i][0]], verts[pairs[i][1]]);
+      return verts;
+    }
+
+    
+  public:
+    TangentialFacetHOProlongation3D(shared_ptr<MeshAccess> ama, int aorder)
+      : FacetProlongation<3>(ama), order(aorder) { }
+
+    void CalcMatrices()
+    {
+      if (haveprols) return;
+      haveprols=true;
+
+      for (int classnr = 0; classnr < 32; classnr++)
+        {
+          Array<size_t> verts{GetClassRealization(classnr)};
+          
+          size_t vertsc[3] = { verts[0], verts[1], verts[2] };
+          size_t vertsf[3] = { verts[3], verts[1], verts[2] };
+          
+          TangentialFacetFacetFE<ET_TRIG> felc(order);
+          felc.SetVertexNumbers (vertsc);
+
+          TangentialFacetFacetFE<ET_TRIG> felf(order);
+          felf.SetVertexNumbers (vertsf);
+          
+          IntegrationRule ir(ET_TRIG, 2*order);
+          size_t ndof = felf.GetNDof();
+          dofs_per_facet = ndof;
+          
+          Matrix massf(ndof, ndof), massfc(ndof, ndof);
+          Matrix shapef(ndof,3), shapec(ndof,3);
+          
+          massf = 0.;
+          massfc = 0.;
+          
+          for (IntegrationPoint ip : ir)
+            {
+              IntegrationPoint ipc(0.5*ip(0), ip(1));
+
+              felc.CalcShape (ipc, shapec);
+              felf.CalcShape (ip, shapef);
+              massf += ip.Weight() * shapef * Trans(shapef);
+              massfc += ip.Weight() * shapef * Trans(shapec);
+            }
+          CalcInverse (massf);
+          facetprol[classnr].SetSize(ndof, ndof);
+          facetprol[classnr] = 0.5*massf * massfc;
+        }
+    }
+
+    virtual void Update (const FESpace & bfes) override
+    {
+      auto & fes = dynamic_cast<const TangentialFacetFESpace&> (bfes);
+      
+      size_t oldnfacet = prol_class.Size();
+      size_t nfacet = ma->GetNFacets();
+      cout << IM(3) << "update prol, level = " << ma->GetNLevels() <<  ", nfacet = " << nfacet << endl;
+
+      while (facets_on_level.Size() < ma->GetNLevels())
+        facets_on_level.Append(oldnfacet);
+      facets_on_level[ma->GetNLevels()-1] = nfacet;
+
+      if (first_dofs.Size() < ma->GetNLevels())
+        first_dofs += fes.GetFirstFacetDof();
+      
+      cout << IM(3) << "facets_on_level = " << endl << facets_on_level << endl;
+
+      if (ma->GetNLevels() == 1)
+        {
+          prol_class.SetSize(nfacet);
+          prol_class = 0;
+          return;
+        }
+      
+      CalcMatrices();
+
+      prol_class.SetSize(nfacet);
+      
+      for (size_t i = oldnfacet; i < nfacet; i++)
+        if (auto parents = get<1>(ma->GetParentFaces(i)); parents[1] == -1)
+          {
+            auto myverts = ma->GetFacePNums(i);
+            auto paverts = ma->GetFacePNums(parents[0]);
+            
+            std::array<size_t,4> verts;
+            
+            for (int i = 0; i < 3; i++)
+              if (!myverts.Contains(paverts[i]))
+                verts[0] = paverts[i];
+            
+            for (int i = 0; i < 3; i++)
+              if (!paverts.Contains(myverts[i]))
+                verts[3] = myverts[i];
+            
+            auto between = ma->GetParentNodes(verts[3]);
+            verts[2] = between[0]+between[1]-verts[0];
+            verts[1] = paverts[0]+paverts[1]+paverts[2] - verts[0]-verts[2];
+            
+            prol_class[i] = GetClassNr(verts);
+          }
+    }
+  };
+  
   
 
   TangentialFacetFESpace :: TangentialFacetFESpace (shared_ptr<MeshAccess> ama, const Flags & flags, 
@@ -151,12 +385,18 @@ namespace ngcomp
     print = flags.GetDefineFlag("print");
 
     // ndlevel.SetSize(0);
+
+    all_dofs_together = !flags.GetDefineFlagX ("all_dofs_together").IsFalse();
+    if (flags.GetDefineFlag("hoprolongation"))
+      all_dofs_together = true;
+    
+    
     Flags loflags;
     loflags.SetFlag("order", 0.0);
     if (IsComplex()) loflags.SetFlag("complex");
 
     loflags.SetFlag ("low_order");
-    if (!flags.GetDefineFlag ("low_order"))
+    if (!flags.GetDefineFlag ("low_order") && !all_dofs_together)
       low_order_space = make_shared<TangentialFacetFESpace>(ma, loflags);
 
     order = int (flags.GetNumFlag ("order",0)); 
@@ -224,6 +464,7 @@ namespace ngcomp
       *testout << "highest_order_dc is active!" << endl;
     }
     hide_highest_order_dc = flags.GetDefineFlag("hide_highest_order_dc");
+
     
     switch (ma->GetDimension())
       {
@@ -240,6 +481,22 @@ namespace ngcomp
       default:
         break;
       }
+
+
+    if (flags.GetDefineFlag("hoprolongation"))
+      {
+        if (ma->GetDimension()==2)
+          {
+            prol = make_shared<TangentialFacetHOProlongation2D> (GetMeshAccess(), order);
+            ma->GetNetgenMesh()->GetTopology().EnableTable("parentedges", true);
+          }
+        if (ma->GetDimension()==3)
+          {
+            prol = make_shared<TangentialFacetHOProlongation3D> (GetMeshAccess(), order);
+            ma->GetNetgenMesh()->GetTopology().EnableTable("parentfaces", true);
+          }
+      }
+
     
     // Update();
   }
@@ -372,7 +629,9 @@ namespace ngcomp
     // dof tables
     // ncfacets = 0;
     int ndof_lo = (ma->GetDimension() == 2) ? nfacets : 2*nfacets;
+    if (all_dofs_together) ndof_lo = 0;
     size_t ndof = ndof_lo;
+
     
     first_facet_dof.SetSize(nfacets+1);
     first_facet_dof = ndof_lo;
@@ -383,7 +642,9 @@ namespace ngcomp
 	  {
 	    first_facet_dof[i] = ndof;
             int inc = order_facet[i][0];
+            if (all_dofs_together) inc++;
 	    if (highest_order_dc) inc--;
+            if (!fine_facet[i]) ndof = 0;
             if (inc > 0) ndof += inc;
 	  }
 	first_facet_dof[nfacets] = ndof;
@@ -417,7 +678,7 @@ namespace ngcomp
 
 	    inci = ( pnums.Size() == 3 ) ?
 	      ( ((p[0]+1)*(p[0]+2)) - 2) :  ( 2 * (p[0]+1) * (p[1]+1) - 2 );
-
+            if (all_dofs_together) inci+=2;
 	    first_facet_dof[i] = ndof;
             if (fine_facet[i])
               ndof += inci;
@@ -473,18 +734,39 @@ namespace ngcomp
     for(int facet=0; facet<ma->GetNFacets(); facet++)
       {
         COUPLING_TYPE ct = fine_facet[facet] ? WIREBASKET_DOF : UNUSED_DOF;
-	if ( ma->GetDimension() == 2 )
-	  ctofdof[facet] = ct; // low_order
-	else
-	  {
-	    ctofdof[2*facet] = ct;
-	    ctofdof[2*facet+1] = ct;
-	  }
-	
-	first = first_facet_dof[facet];
-	next = first_facet_dof[facet+1];
-	for(int j=first ; j<next; j++)
-	  ctofdof[j] = INTERFACE_DOF;
+        // TODO: all_dofs_together
+
+        if (!all_dofs_together)
+          {
+            if ( ma->GetDimension() == 2 )
+              ctofdof[facet] = ct; // low_order
+            else
+              {
+                ctofdof[2*facet] = ct;
+                ctofdof[2*facet+1] = ct;
+              }
+            
+            first = first_facet_dof[facet];
+            next = first_facet_dof[facet+1];
+            for(int j=first ; j<next; j++)
+              ctofdof[j] = INTERFACE_DOF;
+          }
+        else
+          {
+            first = first_facet_dof[facet];
+            next = first_facet_dof[facet+1];
+            for(int j=first ; j<next; j++)
+              ctofdof[j] = INTERFACE_DOF;
+            
+            if ( ma->GetDimension() == 2 )
+              ctofdof[first] = ct; // low_order
+            else
+              {
+                ctofdof[first] = ct;
+                ctofdof[first+1] = ct;
+              }
+          }
+            
       }
     if (highest_order_dc)	  
       for(int el=0; el<ma->GetNE(); el++)	      
@@ -492,7 +774,7 @@ namespace ngcomp
 	  for (int k = first_inner_dof[el]; k < first_inner_dof[el+1]; k++)
 	    ctofdof[k] = hide_highest_order_dc ? HIDDEN_DOF : LOCAL_DOF;
 	}	  
-    *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
+    // *testout << " VECTORFACETFESPACE - ctofdof = \n" << ctofdof << endl;
   }
 
   FiniteElement & TangentialFacetFESpace :: GetFE ( ElementId ei, Allocator & lh ) const
@@ -587,13 +869,16 @@ namespace ngcomp
 	
 	for(int i=0; i<fanums.Size(); i++)
 	  {
-	    if ( ma->GetDimension() == 2 )
-	      dnums.Append(fanums[i]); // low_order
-	    else
-	      {
-		dnums.Append(2*fanums[i]);
-		dnums.Append(2*fanums[i]+1);
-	      }
+            if (!all_dofs_together)
+              {
+                if ( ma->GetDimension() == 2 )
+                  dnums.Append(fanums[i]); // low_order
+                else
+                  {
+                    dnums.Append(2*fanums[i]);
+                    dnums.Append(2*fanums[i]+1);
+                  }
+              }
 	    
 	    first = first_facet_dof[fanums[i]];
 	    next = first_facet_dof[fanums[i]+1];
@@ -617,7 +902,7 @@ namespace ngcomp
 		int facetdof = first_facet_dof[fanums[i]];
 		for (int j = 0; j <= order; j++)
 		  {
-		    if (j == 0)
+		    if (j == 0 && !all_dofs_together)
 		      {
 			dnums.Append(fanums[i]);
 		      }
@@ -707,7 +992,8 @@ namespace ngcomp
     if ( ma->GetDimension() == 2 )
       {
 	auto fanums = ma->GetElEdges (ei);
-	dnums.Append(fanums[0]);
+        if (!all_dofs_together)
+          dnums.Append(fanums[0]);
 
 	first = first_facet_dof[fanums[0]];
 	next = first_facet_dof[fanums[0]+1];
@@ -717,9 +1003,12 @@ namespace ngcomp
     else // 3D
       {
 	fanums[0] = ma->GetSElFace(ei.Nr());
-	dnums.Append( 2*fanums[0] );
-	dnums.Append( 2*fanums[0]+1 );
-
+        if (!all_dofs_together)
+          {
+            dnums.Append( 2*fanums[0] );
+            dnums.Append( 2*fanums[0]+1 );
+          }
+        
 	first = first_facet_dof[fanums[0]];
 	next = first_facet_dof[fanums[0]+1];
 	for ( int j = first; j < next; j++ )
@@ -775,14 +1064,17 @@ namespace ngcomp
   void TangentialFacetFESpace :: GetFacetDofNrs ( int felnr, Array<int> & dnums ) const
   {
     dnums.SetSize0();
-    if ( ma->GetDimension() == 3 )
+    if (!all_dofs_together)
       {
-	dnums.Append( 2*felnr );
-	dnums.Append (2*felnr+1);
+        if ( ma->GetDimension() == 3 )
+          {
+            dnums.Append( 2*felnr );
+            dnums.Append (2*felnr+1);
+          }
+        else
+          dnums.Append ( felnr );
       }
-    else
-      dnums.Append ( felnr );
-
+    
     int first = first_facet_dof[felnr];
     int next = first_facet_dof[felnr+1];
     for (int j = first; j < next; j++ )
@@ -798,7 +1090,10 @@ namespace ngcomp
   int TangentialFacetFESpace :: GetNFacetDofs ( int felnr ) const
   {
     // number of low_order_dofs = dimension - 1
-    return ( first_facet_dof[felnr+1] - first_facet_dof[felnr] + dimension - 1);
+    if (all_dofs_together)
+      return first_facet_dof[felnr+1] - first_facet_dof[felnr];
+    else
+      return ( first_facet_dof[felnr+1] - first_facet_dof[felnr] + dimension - 1);
   }
 
   /*
@@ -825,7 +1120,8 @@ namespace ngcomp
     if ( ma->GetDimension() == 3 )
       return;
 
-    dnums.Append(elnum);
+    if (!all_dofs_together)
+      dnums.Append(elnum);
     for (int j=first_facet_dof[elnum]; j<first_facet_dof[elnum+1]; j++)
       dnums.Append(j);
   }
@@ -835,8 +1131,11 @@ namespace ngcomp
     dnums.SetSize0();
     if ( ma->GetDimension() == 2 ) return;
 
-    dnums.Append( 2*felnr);
-    dnums.Append (2*felnr+1);
+    if (!all_dofs_together)
+      {
+        dnums.Append( 2*felnr);
+        dnums.Append (2*felnr+1);
+      }
     for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
       dnums.Append(j);
   }

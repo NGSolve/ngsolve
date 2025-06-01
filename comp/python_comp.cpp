@@ -3259,6 +3259,8 @@ integrator : ngsolve.fem.LFI
                     "  How to solve coarse problem.";
                   mg_flags["cycle"] = "int = 1\n"
                     "  multigrid cycle (0 only smoothing, 1..V-cycle, 2..W-cycle.";
+                  mg_flags["smoothingsteps"] = "int = 1\n"
+                    "  number of (pre and post-)smoothing steps";
                   mg_flags["coarsesmoothingsteps"] = "int = 1\n"
                     "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
                   mg_flags["updatealways"] = "bool = False\n";
