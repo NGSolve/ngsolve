@@ -644,7 +644,7 @@ namespace ngcomp
             int inc = order_facet[i][0];
             if (all_dofs_together) inc++;
 	    if (highest_order_dc) inc--;
-            if (!fine_facet[i]) ndof = 0;
+            if (!fine_facet[i]) inc = 0;
             if (inc > 0) ndof += inc;
 	  }
 	first_facet_dof[nfacets] = ndof;
@@ -730,7 +730,7 @@ namespace ngcomp
   {
     ctofdof.SetSize(ndof);
     ctofdof = WIREBASKET_DOF;
-    int first,next;
+    // int first,next;
     for(int facet=0; facet<ma->GetNFacets(); facet++)
       {
         COUPLING_TYPE ct = fine_facet[facet] ? WIREBASKET_DOF : UNUSED_DOF;
@@ -745,25 +745,35 @@ namespace ngcomp
                 ctofdof[2*facet] = ct;
                 ctofdof[2*facet+1] = ct;
               }
-            
+
+            /*
             first = first_facet_dof[facet];
             next = first_facet_dof[facet+1];
             for(int j=first ; j<next; j++)
               ctofdof[j] = INTERFACE_DOF;
+            */
+            IntRange r = GetFacetDofs(facet);
+            ctofdof[r] = INTERFACE_DOF;
           }
         else
           {
-            first = first_facet_dof[facet];
-            next = first_facet_dof[facet+1];
-            for(int j=first ; j<next; j++)
-              ctofdof[j] = INTERFACE_DOF;
+            // first = first_facet_dof[facet];
+            // next = first_facet_dof[facet+1];
+            // for(int j=first ; j<next; j++)
+            // ctofdof[j] = INTERFACE_DOF;
+
+            IntRange r = GetFacetDofs(facet);
+            ctofdof[r] = INTERFACE_DOF;
             
-            if ( ma->GetDimension() == 2 )
-              ctofdof[first] = ct; // low_order
-            else
+            if (r.Size())
               {
-                ctofdof[first] = ct;
-                ctofdof[first+1] = ct;
+                if ( ma->GetDimension() == 2 )
+                  ctofdof[r.First()] = ct; // low_order
+                else
+                  {
+                    ctofdof[r.First()] = ct;
+                    ctofdof[r.First()+1] = ct;
+                  }
               }
           }
             
@@ -857,7 +867,7 @@ namespace ngcomp
     if (!highest_order_dc)
       {
 	Array<int> fanums; // facet numbers
-	int first,next;
+	// int first,next;
 	
 	fanums.SetSize(0);
 	
@@ -879,11 +889,14 @@ namespace ngcomp
                     dnums.Append(2*fanums[i]+1);
                   }
               }
-	    
+
+            dnums += GetFacetDofs(fanums[i]);
+            /*
 	    first = first_facet_dof[fanums[i]];
 	    next = first_facet_dof[fanums[i]+1];
 	    for(int j=first ; j<next; j++)
 	      dnums.Append(j);
+            */
 	  }
       }
     else
@@ -1068,17 +1081,20 @@ namespace ngcomp
       {
         if ( ma->GetDimension() == 3 )
           {
-            dnums.Append( 2*felnr );
+            dnums.Append (2*felnr );
             dnums.Append (2*felnr+1);
           }
         else
           dnums.Append ( felnr );
       }
-    
+
+    dnums += GetFacetDofs(felnr);
+    /*
     int first = first_facet_dof[felnr];
     int next = first_facet_dof[felnr+1];
     for (int j = first; j < next; j++ )
       dnums.Append(j);
+    */
   }
 
 
@@ -1122,8 +1138,9 @@ namespace ngcomp
 
     if (!all_dofs_together)
       dnums.Append(elnum);
-    for (int j=first_facet_dof[elnum]; j<first_facet_dof[elnum+1]; j++)
-      dnums.Append(j);
+    //for (int j=first_facet_dof[elnum]; j<first_facet_dof[elnum+1]; j++)
+    // dnums.Append(j);
+    dnums += GetFacetDofs(elnum);
   }
 
   void TangentialFacetFESpace :: GetFaceDofNrs (int felnr, Array<int> & dnums) const
@@ -1133,11 +1150,12 @@ namespace ngcomp
 
     if (!all_dofs_together)
       {
-        dnums.Append( 2*felnr);
-        dnums.Append (2*felnr+1);
+        dnums.Append(2*felnr);
+        dnums.Append(2*felnr+1);
       }
-    for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
-      dnums.Append(j);
+    // for (int j=first_facet_dof[felnr]; j<first_facet_dof[felnr+1]; j++)
+    // dnums.Append(j);
+    dnums += GetFacetDofs(felnr);    
   }
 
   static RegisterFESpace<TangentialFacetFESpace> init_vfacet ("tangentialfacet");

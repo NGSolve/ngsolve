@@ -236,6 +236,7 @@ namespace ngmg
     weak_ptr<BilinearForm> wbfa;
     Array<shared_ptr<BaseMatrix>> innerinverses;
     Array<size_t> facets_on_level;
+    Array<shared_ptr<BitArray>> freedofs;
     string inverse;
   public:
     HarmonicProlongation (shared_ptr<Prolongation> abaseprol,

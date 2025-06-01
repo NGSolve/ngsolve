@@ -3342,8 +3342,6 @@ lot of new non-zero entries in the matrix!\n" << endl;
   void CompoundFESpace :: UpdateFreeDofs()
   {
     // dirichlet-dofs from sub-spaces
-    // ist das umsonst ? (JS)
-    // haben jetzt ja immer dirichlet-dofs
     bool has_dirichlet_dofs = false;
     for (int i = 0; i < spaces.Size(); i++)
       if (spaces[i]->GetFreeDofs()) 

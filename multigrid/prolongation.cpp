@@ -11,7 +11,7 @@
 #include <multigrid.hpp>
 #include <hcurlhdivfes.hpp>
 #include <sparsecholesky.hpp>
-
+#include <diagonalmatrix.hpp>
 namespace ngmg
 {
 
@@ -844,6 +844,7 @@ namespace ngmg
 
     facets_on_level.Append (ma->GetNEdges());
     innerinverses.Append(nullptr);
+    freedofs.Append(nullptr);
   }
 
 
@@ -863,6 +864,7 @@ namespace ngmg
     auto bfa = wbfa.lock();
     if (!bfa) throw Exception ("HarmonicProl: bfa is gone");
 
+    
     auto harm_inner = make_shared<BitArray>(fes.GetNDof());
     *harm_inner = *fes.GetFreeDofs(bfa->UsesEliminateInternal());
 
@@ -880,6 +882,7 @@ namespace ngmg
         if (levels==1)
           {
             innerinverses.Append (nullptr);
+            freedofs.Append (nullptr);            
             return;
           }
         
@@ -929,6 +932,7 @@ namespace ngmg
         if (levels==1)
           {
             innerinverses.Append (nullptr);
+            freedofs.Append (nullptr);
             return;
           }
         
@@ -970,6 +974,8 @@ namespace ngmg
     auto & mat = bfa->GetMatrix();
     mat.SetInverseType(inverse);
     innerinverses.Last() = bfa->GetMatrix().InverseMatrix(harm_inner);
+
+    freedofs.Append (make_shared<BitArray> (*fes.GetFreeDofs(bfa->UsesEliminateInternal())));
   }
   
   shared_ptr<SparseMatrix< double >> HarmonicProlongation :: CreateProlongationMatrix( int finelevel ) const 
@@ -981,7 +987,9 @@ namespace ngmg
     if (!bfa) throw Exception ("HarmonicProl: bfa is gone");
     
     baseprol->ProlongateInline (finelevel, v);
-
+    Projector proj(freedofs[finelevel], true);
+    proj.Project (v);
+    
     auto tmp = bfa->GetMatrix(finelevel).CreateColVector();
     tmp = bfa->GetMatrix(finelevel) * v;
     v -= *innerinverses[finelevel] * tmp;
@@ -996,6 +1004,10 @@ namespace ngmg
 
     tmp = *innerinverses[finelevel] * v;
     v -= bfa->GetMatrix(finelevel) * tmp;
+
+    Projector proj(freedofs[finelevel], true);
+    proj.Project (v);
+    
     baseprol->RestrictInline (finelevel, v);
   }
 
