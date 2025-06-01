@@ -1631,7 +1631,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
         flags.GetStringFlag("blocktype")=="face" ||
         flags.GetStringFlag("blocktype")=="facet" ||
         flags.GetStringFlag("blocktype")=="element" ||        
-        flags.GetStringFlag("blocktype")=="vertexpatch" ||        
+        flags.GetStringFlag("blocktype")=="vertexpatch" ||
+        flags.GetStringFlag("blocktype")=="edgepatch" ||                
         flags.GetStringFlag("blocktype")=="vertexedge")
       blocktypes += flags.GetStringFlag("blocktype");
 
@@ -1755,6 +1756,39 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 base += ma->GetNV();                
               }
 
+            if (blocktypes.Contains("edgepatch"))
+              {
+                for (size_t i : Range(ma->GetNEdges()))        
+                  {
+                    GetDofNrs (NodeId(NT_EDGE, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        creator.Add (base+i, d);
+                  }
+                for (size_t i : Range(ma->GetNFaces()))        
+                  {
+                    auto edges = ma->GetFaceEdges(i);
+                    GetDofNrs (NodeId(NT_FACE, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        for (auto e : edges)
+                          creator.Add (base+e, d);
+                  }
+                // 3D only
+                for (size_t i : Range(ma->GetNElements(3)))
+                  {
+                    auto enums = ma->GetElement({VOL,i}).Edges();
+                    GetDofNrs (NodeId(NT_CELL, i), dofs);
+                    for (auto d : dofs)
+                      if (IsRegularDof(d))
+                        for (auto e : enums)
+                          creator.Add (base+e, d);
+                  }
+                base += ma->GetNEdges();                
+              }
+
+
+            
             if (creator.GetMode()==1)
               creator.SetSize(base);
           }
