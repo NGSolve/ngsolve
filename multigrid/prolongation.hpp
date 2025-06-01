@@ -249,6 +249,127 @@ namespace ngmg
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
     virtual void RestrictInline (int finelevel, BaseVector & v) const override;
   };
+
+
+
+
+  
+  template <int DIM>
+  class FacetProlongation : public Prolongation
+  {
+  protected:
+    shared_ptr<MeshAccess> ma;
+    
+    int dofs_per_facet = -1;
+    Array<Array<int>> first_dofs;
+    Array<int> prol_class;  // which prol to use ?
+    Array<size_t> facets_on_level;
+
+    static constexpr int NUMPROL = (DIM==2) ? 2 : 32;
+    array<Matrix<double>,NUMPROL> facetprol;
+    
+    bool haveprols = false;
+    
+  public:
+    FacetProlongation (shared_ptr<MeshAccess> ama)
+      : ma(ama) { }
+
+
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
+    {
+      return nullptr;  // or NULL ? 
+    }
+
+    
+    virtual void ProlongateInline (int finelevel, BaseVector & v) const override
+    {
+      auto fv = v.FV<double>();
+      Matrix<double> tmp(facets_on_level[finelevel], dofs_per_facet);
+      tmp = 0.0;
+      
+      for (size_t i = 0; i < first_dofs[finelevel-1].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel-1][i], first_dofs[finelevel-1][i+1]);
+          if (r.Size() > 0)
+            tmp.Row(i) = fv.Range(r);
+        }
+
+      if constexpr (DIM==2)
+        {
+          for (int i = facets_on_level[finelevel-1]; i < facets_on_level[finelevel]; i++)
+            if (auto parents = get<1>(ma->GetParentEdges(i)); parents[1] == -1)
+              {
+                int pe = parents[0];
+                tmp.Row(i) = facetprol[prol_class[i]] * tmp.Row(pe);
+              }
+        }
+      else
+        {
+          for (int i = facets_on_level[finelevel-1]; i < facets_on_level[finelevel]; i++)
+          if (auto parents = get<1>(ma->GetParentFaces(i)); parents[1] == -1)
+            {
+              int pe = parents[0];
+              tmp.Row(i) = facetprol[prol_class[i]] * tmp.Row(pe);
+            }
+        }
+      
+      for (size_t i = 0; i < first_dofs[finelevel].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel][i], first_dofs[finelevel][i+1]);
+          if (r.Size() > 0)
+            fv.Range(r) = tmp.Row(i);
+        }
+    }
+    
+    virtual void RestrictInline (int finelevel, BaseVector & v) const override
+    {
+      auto fv = v.FV<double>();
+      Matrix<double> tmp(facets_on_level[finelevel], dofs_per_facet);
+      tmp = 0.0;
+      
+      for (size_t i = 0; i < first_dofs[finelevel].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel][i], first_dofs[finelevel][i+1]);
+          if (r.Size() > 0)
+            tmp.Row(i) = fv.Range(r);
+        }
+
+
+      if constexpr (DIM==2)
+        {
+          for (int i = facets_on_level[finelevel-1]; i < facets_on_level[finelevel]; i++)
+            if (auto parents = get<1>(ma->GetParentEdges(i)); parents[1] == -1)
+              {
+                int pe = parents[0];
+                tmp.Row(pe) += Trans(facetprol[prol_class[i]]) * tmp.Row(i);
+              }
+        }
+      else
+        {
+          // for (int i = facets_on_level[finelevel-1]; i < facets_on_level[finelevel]; i++)
+          for (int i = facets_on_level[finelevel]-1; i >= facets_on_level[finelevel-1]; i--)      
+            if (auto parents = get<1>(ma->GetParentFaces(i)); parents[1] == -1)
+              {
+                int pe = parents[0];
+                tmp.Row(pe) += Trans(facetprol[prol_class[i]]) * tmp.Row(i);
+                tmp.Row(i) = 0.0;  // optional, for testing
+              }
+        }
+      
+      fv = 0.0;
+      for (size_t i = 0; i < first_dofs[finelevel-1].Size()-1; i++)
+        {
+          IntRange r(first_dofs[finelevel-1][i], first_dofs[finelevel-1][i+1]);
+          if (r.Size() > 0)
+            fv.Range(r) = tmp.Row(i);
+        }
+
+    }
+    
+  };
+  
+  
+  
 }
 
 
