@@ -41,6 +41,7 @@ namespace ngcomp
 
     bool highest_order_dc;
     bool hide_highest_order_dc;
+    bool all_dofs_together;
     
   public:
     ///
@@ -90,6 +91,7 @@ namespace ngcomp
     virtual IVec<2> GetFacetOrder(int fnr) const;
 
     virtual int GetFirstFacetDof(int fanr) const;
+    const auto & GetFirstFacetDof() const { return first_facet_dof; }
 
     virtual bool UsesHighestOrderDiscontinuous() const {return highest_order_dc;};
 
