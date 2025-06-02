@@ -51,6 +51,10 @@ namespace ngla
                  FlatArray<TM> val, size_t h, size_t w)
   {
     static Timer t("SparseMatrix::CreateFromCOO"); RegionTimer r(t);
+    static Timer t1("SparseMatrix::CreateFromCOO 1");
+    static Timer t2("SparseMatrix::CreateFromCOO 2");
+    static Timer t3("SparseMatrix::CreateFromCOO 3");
+
     Array<int> cnt(h);
 
     /*
@@ -58,20 +62,25 @@ namespace ngla
     for (auto i : indi) cnt[i]++;
     */
 
+    t1.Start();
     DynamicTable<int> tab(h);
     for (size_t i = 0; i < indi.Size(); i++)
       tab.AddUnique(indi[i], indj[i]);
+    t1.Stop();
     for (size_t i = 0; i < h; i++)
       cnt[i] = tab.EntrySize(i);
     
     auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
+    t2.Start();
     for (auto k : ngstd::Range(indi))
       matrix->CreatePosition(indi[k], indj[k]);
+    t2.Stop();
     matrix->SetZero();
 
+    t3.Start();
     for (auto k : ngstd::Range(indi))
       (*matrix)(indi[k], indj[k]) += val[k];
-
+    t3.Stop();
     return matrix;
   }
   

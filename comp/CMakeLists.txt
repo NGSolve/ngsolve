@@ -17,7 +17,7 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         globalinterfacespace.cpp globalspace.cpp
         ../multigrid/mgpre.cpp ../multigrid/prolongation.cpp
         ../multigrid/smoother.cpp contact.cpp localsolve.cpp interpolate.cpp
-        webgui.cpp hcurlamg.cpp matrixfree.cpp
+        webgui.cpp hcurlamg.cpp matrixfree.cpp potentialtools.cpp
         )
 
 target_include_directories(ngcomp PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd ${CMAKE_CURRENT_SOURCE_DIR}/../linalg)
@@ -43,7 +43,7 @@ install( FILES
         hypre_ams_precond.hpp facetsurffespace.hpp
         compressedfespace.hpp plateaufespace.hpp globalinterfacespace.hpp globalspace.hpp
         python_comp.hpp fesconvert.hpp contact.hpp interpolate.hpp
-        webgui.hpp hcurlcurlfespace.hpp
+        webgui.hpp hcurlcurlfespace.hpp potentialtools.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

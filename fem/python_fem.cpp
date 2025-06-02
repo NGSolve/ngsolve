@@ -2869,6 +2869,7 @@ If linear is True the function will be interpolated linearly between the values.
   py::class_<SingularMLMultiPoleCF<Complex>, shared_ptr<SingularMLMultiPoleCF<Complex>>, CoefficientFunction> (m, "SingularMLMultiPoleCF")
     .def(py::init<Vec<3>, double, int, double>(), py::arg("center"), py::arg("r"), py::arg("order")=-1, py::arg("kappa"))
     .def_property_readonly("mlmp", [](SingularMLMultiPoleCF<Complex>& self) { return self.MLMP(); })
+    .def("CreateRegularExpansion", &SingularMLMultiPoleCF<Complex>::CreateRegularExpansion, py::arg("center"), py::arg("r"))
     ;
   py::class_<RegularMLMultiPoleCF<Complex>, shared_ptr<RegularMLMultiPoleCF<Complex>>, CoefficientFunction> (m, "RegularMLMultiPoleCF")
     .def(py::init<shared_ptr<SingularMLMultiPoleCF<Complex>>,Vec<3>, double, int>(), py::arg("mp"), py::arg("center"), py::arg("r"), py::arg("order")=-1)
@@ -2878,6 +2879,7 @@ If linear is True the function will be interpolated linearly between the values.
 
   py::class_<SingularMLMultiPoleCF<Vec<3,Complex>>, shared_ptr<SingularMLMultiPoleCF<Vec<3,Complex>>>, CoefficientFunction> (m, "BiotSavartSingularMLCF")
     .def(py::init<Vec<3>, double, int, double>(), py::arg("center"), py::arg("r"), py::arg("order")=-1, py::arg("kappa"))
+    .def("CreateRegularExpansion", &SingularMLMultiPoleCF<Vec<3,Complex>>::CreateRegularExpansion, py::arg("center"), py::arg("r"))    
     .def_property_readonly("mlmp", [](SingularMLMultiPoleCF<Vec<3,Complex>>& self) { return self.MLMP(); })
     ;
   py::class_<RegularMLMultiPoleCF<Vec<3,Complex>>, shared_ptr<RegularMLMultiPoleCF<Vec<3,Complex>>>, CoefficientFunction> (m, "BiotSavartRegularMLCF")
