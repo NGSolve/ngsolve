@@ -46,6 +46,7 @@
 #include "postproc.hpp"
 #include "interpolate.hpp"
 #include "fesconvert.hpp"
+#include "potentialtools.hpp"
 #include "vtkoutput.hpp"
 #include "webgui.hpp"
 
@@ -4543,6 +4544,11 @@ geom_free:
 )raw_string")
 	 );
 
+
+   // from potentialtools
+   m.def("AddCurrentDensity", &AddCurrentDensity);
+
+   
    py::class_<ContactBoundary, shared_ptr<ContactBoundary>>
      (m, "ContactBoundary")
      .def(py::init([](shared_ptr<FESpace> fes, Region master, Region minion,

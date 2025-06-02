@@ -1,4 +1,6 @@
 #include "mptools.hpp"
+#include "meshaccess.hpp"
+
 
 namespace ngfem
 {
@@ -768,7 +770,7 @@ namespace ngfem
     // *testout << "trafo0" << endl << trafo.Rows(os+ot+1).Cols(os+1) << endl;
     // *testout << "norm trafo col 0 = " << L2Norm(trafo.Rows(ot+1).Col(0)) << endl;
     // *testout << "norm trafo0 = " << L2Norm(trafo.Rows(ot+1).Cols(os+1)) << endl;
-    *testout << "trafo0 = " << trafo.Rows(ot+1).Cols(os+1) << endl;
+    // *testout << "trafo0 = " << trafo.Rows(ot+1).Cols(os+1) << endl;
     
     for (int n = 0; n <= os; n++)
       hv1(n) = sh.Coef(n,0);
@@ -904,11 +906,11 @@ namespace ngfem
                                                                  -amn(n)  * 1/scale*trafo(l,n+1)).imag());
                 }
 
-            *testout << "m = " << m << endl;
-            Matrix<> mat = Real(trafo.Rows(m, ot+1).Cols(m,os+1));
-            *testout << "Norm real = " << L2Norm2(mat) << endl;
-            mat = Imag(trafo.Rows(m, ot+1).Cols(m,os+1)); 
-            *testout << "Norm imag = " << L2Norm2(mat) << endl;
+            // *testout << "m = " << m << endl;
+            // Matrix<> mat = Real(trafo.Rows(m, ot+1).Cols(m,os+1));
+            // *testout << "Norm real = " << L2Norm2(mat) << endl;
+            // mat = Imag(trafo.Rows(m, ot+1).Cols(m,os+1)); 
+            // *testout << "Norm imag = " << L2Norm2(mat) << endl;
           }
 
         else
@@ -1438,6 +1440,14 @@ namespace ngfem
   }
 
 
+  
+  template <typename entry_type>
+  shared_ptr<RegularMLMultiPoleCF<entry_type>>
+  SingularMLMultiPoleCF<entry_type> :: CreateRegularExpansion(Vec<3> center, double r) const
+  {
+    mlmp->CalcMP();
+    return make_shared<RegularMLMultiPoleCF<entry_type>> (this->MLMP(), center, r, -1);
+  }
 
   template class SphericalHarmonics<Complex>;
   template class SphericalHarmonics<Vec<3,Complex>>;  
@@ -1449,6 +1459,10 @@ namespace ngfem
   template class MultiPole<MPSingular, Vec<4,Complex>>;
   template class MultiPole<MPRegular, Vec<4,Complex>>;    
 
+
+  
+  template class SingularMLMultiPoleCF<Complex>;
+  template class SingularMLMultiPoleCF<Vec<3,Complex>>;
   
   template<>
   Array<size_t> RegularMLMultiPole<Complex>::nodes_on_level(100);
@@ -1462,6 +1476,10 @@ namespace ngfem
   Array<size_t> RegularMLMultiPole<Vec<4,Complex>>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLMultiPole<Vec<4,Complex>>::nodes_on_level(100);
+
+
+  template class SingularMLMultiPole<Complex>;
+  template class SingularMLMultiPole<Vec<3,Complex>>;
 
   
 }

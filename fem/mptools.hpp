@@ -10,6 +10,12 @@
 #include <coefficient.hpp>
 #include <recursive_pol.hpp>
 
+
+namespace ngcomp
+{
+  class Region;
+}
+
 namespace ngfem
 {
 
@@ -570,7 +576,7 @@ namespace ngfem
 
       entry_type EvaluateDeriv(Vec<3> p, Vec<3> d) const
       {
-        entry_type sum = 0;
+        entry_type sum{0.0};
         if (childs[0])
         {
             for (auto & child : childs)
@@ -727,7 +733,7 @@ namespace ngfem
       root.AddCharge(x, c);
     }
 
-    void AddDipole(Vec<3> x, Vec<3> d, Complex c)
+    void AddDipole(Vec<3> x, Vec<3> d, entry_type c)
     {
       root.AddDipole(x, d, c);
     }
@@ -756,7 +762,7 @@ namespace ngfem
         }
       */
     }
-    
+
     void Print (ostream & ost) const
     {
       root.Print(ost);
@@ -1226,6 +1232,9 @@ namespace ngfem
 
 
 
+  template <typename entry_type> class RegularMLMultiPoleCF;
+  
+
   template <typename RADIAL, typename entry_type=Complex>
   class MultiPoleCF : public CoefficientFunction
   {
@@ -1285,7 +1294,8 @@ namespace ngfem
       
     }
     
-    shared_ptr<SingularMLMultiPole<entry_type>> MLMP() { return mlmp; }
+    shared_ptr<SingularMLMultiPole<entry_type>> MLMP() const { return mlmp; }
+    shared_ptr<RegularMLMultiPoleCF<entry_type>> CreateRegularExpansion(Vec<3> center, double r) const;
   };
   
 
@@ -1296,6 +1306,8 @@ namespace ngfem
   public:
     RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPoleCF<entry_type>> asingmp, Vec<3> center, double r, int order)
       : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLMultiPole<entry_type>>(asingmp->MLMP(), center, r, order)} { } 
+    RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPole<entry_type>> asingmp, Vec<3> center, double r, int order)
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLMultiPole<entry_type>>(asingmp, center, r, order)} { } 
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("real eval not available"); }
