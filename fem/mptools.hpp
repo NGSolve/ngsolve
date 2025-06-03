@@ -1070,7 +1070,7 @@ namespace ngfem
             }
 
         if (total_targets == 0)
-          mp = MultiPole<MPRegular>(-1, mp.Kappa());
+          mp = MultiPole<MPRegular,elem_type>(-1, mp.Kappa());
       }
       
 
