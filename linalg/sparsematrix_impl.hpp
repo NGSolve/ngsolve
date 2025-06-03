@@ -51,7 +51,6 @@ namespace ngla
                  FlatArray<TM> val, size_t h, size_t w)
   {
     static Timer t("SparseMatrix::CreateFromCOO"); RegionTimer r(t);
-    static Timer t0("SparseMatrix::CreateFromCOO sort");
     static Timer t1("SparseMatrix::CreateFromCOO 1");
     static Timer t2("SparseMatrix::CreateFromCOO 2");
     static Timer t3("SparseMatrix::CreateFromCOO 3");
@@ -130,8 +129,14 @@ namespace ngla
     matrix->SetZero();
 
     t3.Start();
+    /*
     for (auto k : ngstd::Range(indi))
       (*matrix)(indi[k], indj[k]) += val[k];
+    */
+    ParallelFor (indi.Size(), [&](size_t k)
+    {
+      AtomicAdd ( (*matrix)(indi[k], indj[k]),  val[k]);
+    });
     t3.Stop();
     return matrix;    
   }
