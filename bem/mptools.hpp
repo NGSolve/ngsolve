@@ -16,9 +16,10 @@ namespace ngcomp
   class Region;
 }
 
-namespace ngfem
+namespace ngsbem
 {
-
+  using namespace ngfem;
+  
 
   template <typename entry_type = Complex>
   class NGS_DLL_HEADER SphericalHarmonics
