@@ -2,7 +2,8 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( ngsbem ${NGS_LIB_TYPE}
         ${ngsbem_object_libs}
-        mptools.cpp potentialtools.cpp python_bem.cpp
+        mptools.cpp potentialtools.cpp python_bem.cpp ngbem.cpp
+        intrules_SauterSchwab.cpp
         )
 
 target_include_directories(ngsbem PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_CURRENT_SOURCE_DIR}/../ngstd ${CMAKE_CURRENT_SOURCE_DIR}/../linalg)
@@ -13,6 +14,7 @@ install( TARGETS ngsbem ${ngs_install_dir} )
 
 install( FILES
         mptools.hpp potentialtools.hpp
+        intrules_SauterSchwab.hpp        
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
