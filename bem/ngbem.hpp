@@ -1,7 +1,6 @@
 #ifndef NGBEM_hpp
 #define NGBEM_hpp
 
-// #include "hmat.hpp"
 #include "bem_diffops.hpp"
 
 namespace ngsbem
@@ -49,13 +48,6 @@ namespace ngsbem
     Table<int> elems4dof; // contains list of elems contributing to bnd-dof
     Table<int> elems4dof2; // contains list of elems contributing to bnd-dof
 
-    /*
-    //  ClusterTree define cluster pairs, i.e., the blocks of the hmatrix
-    shared_ptr<ClusterTree> trial_ct; 
-    shared_ptr<ClusterTree> test_ct;
-    */
-    
-    // shared_ptr<HMatrix<T>> hmatrix;
     shared_ptr<BaseMatrix> matrix;
 
 
@@ -67,13 +59,7 @@ namespace ngsbem
                       BEMParameters param);
     virtual ~IntegralOperator() = default;
 
-    /** GetHMatrix returns the #hmatrix. */
     shared_ptr<BaseMatrix> GetMatrix() const { return matrix; }
-
-    /** CalcHMatrix fills the #hmatrix, i.e., memory for farfield blocks is allocated and 
-        all blocks are computed. */
-    // void CalcHMatrix(HMatrix<T> & hmatrix, LocalHeap &lh, struct BEMParameters &param) const;
-
 
     virtual shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const = 0;
     
