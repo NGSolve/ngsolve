@@ -14,8 +14,6 @@ using namespace ngsbem;
 
 void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 {
-  cout << "exporting ngsolve-bem" << endl;
-
   py::class_<SphericalHarmonics<Complex>> (m, "Sphericalharmonics")
     .def_property_readonly("order", [](SphericalHarmonics<Complex>& self) { return self.Order(); })
     .def("__setitem__", [](SphericalHarmonics<Complex>& self, tuple<int,int> nm, Complex val)
