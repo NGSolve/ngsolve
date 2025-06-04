@@ -164,6 +164,7 @@ namespace ngsbem
                  shared_ptr<DifferentialOperator> _evaluator,
                  KERNEL _kernel, int _intorder);
 
+    using CoefficientFunctionNoDerivative::Evaluate;
     double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("eval not implemented"); }
 

@@ -218,22 +218,53 @@ namespace ngsbem
   class MPSingular
   {
   public:
+    /*
     template <typename T>
     static void Eval (int order, double r, double scale, T && values)
     {
       SphericalHankel1(order, r, scale,  values);
     }
+    */
+
+    template <typename T>
+    static void Eval (int order, double kappa, double r, double rtyp, T && values)
+    {
+      double scale = Scale(kappa, rtyp);
+      SphericalHankel1(order, r*kappa, scale,  values);
+    }
+
+    static double Scale (double kappa, double rtyp)
+    {
+      return min(1.0, rtyp*kappa);      
+    }
   };
+
+
   
   // jn
   class MPRegular
   {
-  public:    
+  public:
+    /*
     template <typename T>
     static void Eval (int order, double r, double scale, T && values)
     {
       SphericalBessel (order, r, 1.0/scale, values);
     }
+    */
+
+    template <typename T>
+    static void Eval (int order, double kappa, double r, double rtyp, T && values)
+    {
+      double scale = Scale(kappa, rtyp);
+      SphericalBessel (order, r*kappa, 1.0/scale, values);      
+    }
+
+    static double Scale (double kappa, double rtyp)
+    {
+      return 1.0/ min(1.0, 0.25*rtyp*kappa);
+    }
+    
   };
   
   
@@ -244,22 +275,30 @@ namespace ngsbem
   {
     SphericalHarmonics<entry_type> sh;
     double kappa;
-    double scale;
+    double rtyp;
+    // double scale;
   public:
+  /*
     MultiPole (int aorder, double akappa, double ascale = 1) 
       : sh(aorder), kappa(akappa), scale(ascale) { }
+  */
 
+    MultiPole (int aorder, double akappa, double artyp) 
+    : sh(aorder), kappa(akappa), rtyp(artyp) { }
+
+  
     entry_type & Coef(int n, int m) { return sh.Coef(n,m); }
     auto & SH() { return sh; }
     const auto & SH() const { return sh; }
     double Kappa() const { return kappa; }
-    double Scale() const { return scale; }    
+    double Scale() const { return RADIAL::Scale(kappa, rtyp); }
+    double RTyp() const { return rtyp; }
     int Order() const { return sh.Order(); }
     
     MultiPole Truncate(int neworder) const
     {
       if (neworder > sh.Order()) neworder=sh.Order();
-      MultiPole nmp(neworder, kappa);
+      MultiPole nmp(neworder, kappa, rtyp);
       nmp.sh.Coefs() = sh.Coefs().Range(sqr(neworder+1));
       return nmp;
     }
@@ -278,15 +317,27 @@ namespace ngsbem
     void AddDipole (Vec<3> x, Vec<3> d, entry_type c);
     void AddCurrent (Vec<3> ap, Vec<3> ep, Complex j, int num=100);
     
-    
+    /*
     void ChangeScaleTo (double newscale)
     {
-      double fac = scale/newscale;
+      double fac = Scale()/newscale;
       double prod = 1;
       for (int n = 0; n <= sh.Order(); n++, prod*= fac)
         sh.CoefsN(n) *= prod;
       scale = newscale;
     }
+    */
+    void ChangeRTypTo (double new_rtyp)
+    {
+      // double fac = Scale()/newscale;
+      double fac = RADIAL::Scale(kappa, rtyp) / RADIAL::Scale(kappa, new_rtyp);
+      double prod = 1;
+      for (int n = 0; n <= sh.Order(); n++, prod*= fac)
+        sh.CoefsN(n) *= prod;
+      // scale = newscale;
+      rtyp = new_rtyp;
+    }
+    
 
     Vector<double> Spectrum (bool scaled) const
     {
@@ -295,7 +346,7 @@ namespace ngsbem
       for (int n = 0; n <= Order(); n++)
         {
           spec(n) = fac * L2Norm2(sh.CoefsN(n));
-          if (!scaled) fac *= sqr(scale);
+          if (!scaled) fac *= sqr(Scale());
         }
       return spec;
     }
@@ -632,7 +683,7 @@ namespace ngsbem
           {
             if (charges.Size()+dipoles.Size()+currents.Size() == 0)
               {
-                mp = MultiPole<MPSingular,entry_type> (-1, mp.Kappa());
+                mp = MultiPole<MPSingular,entry_type> (-1, mp.Kappa(), 1.);
                 return;
               }
 
@@ -947,7 +998,7 @@ namespace ngsbem
                   mp.TransformAdd (ch->mp, ch->center-center);
                 ch->LocalizeExpansion(allow_refine);
               }
-            mp = MultiPole<MPRegular,elem_type>(-1, mp.Kappa());
+            mp = MultiPole<MPRegular,elem_type>(-1, mp.Kappa(), 1.);
             //mp.SH().Coefs()=0.0;
           }
       }
@@ -1071,7 +1122,7 @@ namespace ngsbem
             }
 
         if (total_targets == 0)
-          mp = MultiPole<MPRegular,elem_type>(-1, mp.Kappa());
+          mp = MultiPole<MPRegular,elem_type>(-1, mp.Kappa(),1.);
       }
       
 
