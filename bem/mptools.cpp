@@ -709,7 +709,9 @@ namespace ngsbem
     FlatVector<entry_type> hv1(os+1, lh), hv2(ot+1, lh);
 
     trafo = trafo_type(0.0);
-    
+
+    double scale = Scale();
+    // double tscale = target.Scale();
     double tscale = target.Scale();
     double inv_tscale = 1.0/tscale;
 
@@ -1332,7 +1334,8 @@ namespace ngsbem
     Vector<Complex> radial(sh.Order()+1);
     Vector<entry_type> shvals(sh.Order()+1);
       
-    RADIAL::Eval(sh.Order(), kappa*L2Norm(x), scale, radial);
+    // RADIAL::Eval(sh.Order(), kappa*L2Norm(x), scale, radial);
+    RADIAL::Eval(sh.Order(), kappa, L2Norm(x), rtyp, radial);
     sh.EvalOrders (x, shvals);
       
     entry_type sum{0.0};
@@ -1346,8 +1349,8 @@ namespace ngsbem
   entry_type MultiPole<RADIAL,entry_type> :: EvalDirectionalDerivative (Vec<3> x, Vec<3> d) const
   {
     if (sh.Order() < 0) return entry_type{0.0};
-    MultiPole<RADIAL, entry_type> tmp(Order(), kappa, scale);
-    this->SH().DirectionalDiffAdd(kappa*d, tmp.SH(), scale);
+    MultiPole<RADIAL, entry_type> tmp(Order(), kappa, RTyp());
+    this->SH().DirectionalDiffAdd(kappa*d, tmp.SH(), Scale());
     return tmp.Eval(x);
   }
 
@@ -1368,8 +1371,10 @@ namespace ngsbem
       
     Vector<Complex> radial(sh.Order()+1);
     Vector<Complex> sh_shapes(sqr (sh.Order()+1));
-
-    RADIAL::Eval(sh.Order(), kappa*L2Norm(x), 1.0/scale, radial);
+    
+    // RADIAL::Eval(sh.Order(), kappa*L2Norm(x), 1.0/scale, radial);
+    RADIAL::Eval(sh.Order(), kappa, L2Norm(x), rtyp, radial);
+    
     // cout << "radial = " << Real(radial) << endl;
     sh.Calc(x, sh_shapes);
 
@@ -1410,7 +1415,7 @@ namespace ngsbem
     tmp.TransformAdd (*this, -x);
     */
 
-    MultiPole<MPSingular, entry_type> tmp(Order(), kappa, Scale());
+    MultiPole<MPSingular, entry_type> tmp(Order(), kappa, RTyp());
     tmp.AddCharge(x, c);
     tmp.SH().DirectionalDiffAdd (kappa*d,  this->SH(), Scale());
   }

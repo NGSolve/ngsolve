@@ -46,7 +46,7 @@
 #include "postproc.hpp"
 #include "interpolate.hpp"
 #include "fesconvert.hpp"
-#include "potentialtools.hpp"
+// #include "potentialtools.hpp"
 #include "vtkoutput.hpp"
 #include "webgui.hpp"
 
