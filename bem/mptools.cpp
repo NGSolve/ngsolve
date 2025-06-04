@@ -2,7 +2,7 @@
 #include "meshaccess.hpp"
 
 
-namespace ngfem
+namespace ngsbem
 {
 
   template <typename entry_type>

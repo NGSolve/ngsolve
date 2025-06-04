@@ -4545,10 +4545,6 @@ geom_free:
 	 );
 
 
-   // from potentialtools
-   m.def("AddCurrentDensity", &AddCurrentDensity);
-
-   
    py::class_<ContactBoundary, shared_ptr<ContactBoundary>>
      (m, "ContactBoundary")
      .def(py::init([](shared_ptr<FESpace> fes, Region master, Region minion,

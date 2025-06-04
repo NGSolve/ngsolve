@@ -155,6 +155,7 @@ include_directories (BEFORE
   ${PROJECT_SOURCE_DIR}/fem
   ${PROJECT_SOURCE_DIR}/linalg
   ${PROJECT_SOURCE_DIR}/comp
+  ${PROJECT_SOURCE_DIR}/bem
   ${PROJECT_SOURCE_DIR}/multigrid
   ${PROJECT_SOURCE_DIR}/parallel
   ${PROJECT_SOURCE_DIR}/solve
@@ -551,6 +552,7 @@ add_subdirectory(basiclinalg)
 add_subdirectory(parallel)
 add_subdirectory(linalg)
 add_subdirectory(fem)
+add_subdirectory(bem)
 add_subdirectory(multigrid)
 add_subdirectory(comp)
 add_subdirectory(solve)

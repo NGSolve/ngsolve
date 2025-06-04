@@ -10,7 +10,7 @@
 #include <meshaccess.hpp>
 
 
-namespace ngcomp
+namespace ngsbem
 {
   
   extern void AddCurrentDensity (SingularMLMultiPole<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current, ngcomp::Region reg);
