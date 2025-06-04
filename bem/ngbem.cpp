@@ -35,10 +35,12 @@ namespace ngsbem
     auto mesh = trial_space->GetMeshAccess(); // trialspace
     auto mesh2 = test_space->GetMeshAccess(); // testspace
 
+    /*
     if (trial_definedon)
       cout << "trial is definedon: " << (*trial_definedon).Mask() << endl;
     if (test_definedon)
       cout << "test is definedon: " << (*test_definedon).Mask() << endl;
+    */
     
     // setup global-2-boundary mappings;
     BitArray bnddofs(trial_space->GetNDof());
@@ -412,7 +414,7 @@ namespace ngsbem
       }
     */
 
-    TableCreator<int> create_nbels;
+    TableCreator<int> create_nbels(trial_mesh->GetNE(BND));
     for ( ; !create_nbels.Done(); create_nbels++)    
       for (auto i : Range(pairs))
         create_nbels.Add (get<0>(pairs[i]), get<1>(pairs[i]));
