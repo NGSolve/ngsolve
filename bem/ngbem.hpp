@@ -22,8 +22,6 @@ namespace ngsbem
     const double eps;
     /* method defines the low rank approximation method */
     const string method;
-    // testing hmatrix accuracy
-    bool testhmatrix;
   };
 
 
