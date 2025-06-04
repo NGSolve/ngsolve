@@ -224,7 +224,8 @@ namespace ngsbem
   public:
     typedef double value_type;
     static string Name() { return "LaplaceSL"; }
-
+    static auto Shape() { return IVec<2>(1,1); }
+    
     template <typename T>        
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
@@ -251,7 +252,8 @@ namespace ngsbem
   public:
     typedef double value_type;
     static string Name() { return "LaplaceDL"; }
-
+    static auto Shape() { return IVec<2>(1,1); }
+    
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
@@ -273,7 +275,8 @@ namespace ngsbem
   public:
     typedef double value_type;
     static string Name() { return "LaplaceSL"; }
-
+    static auto Shape() { return IVec<2>(3,3); }
+    
     template <typename T>        
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
@@ -305,6 +308,7 @@ namespace ngsbem
   public:
     typedef Complex value_type;
     static string Name() { return "HelmholtzSL"; }
+    static auto Shape() { return IVec<2>(1,1); }
     
     /** Construction of the kernel specifies the wavenumber $\kappa$. */
     HelmholtzSLKernel (double _kappa) : kappa(_kappa) { }
@@ -337,6 +341,7 @@ namespace ngsbem
   public:
     typedef Complex value_type;
     static string Name() { return "HelmholtzDL"; }
+    static auto Shape() { return IVec<2>(1,1); }
     
     HelmholtzDLKernel (double _kappa) : kappa(_kappa) { }
 
@@ -366,6 +371,8 @@ namespace ngsbem
   public:
     typedef Complex value_type;
     static string Name() { return "HelmholtzHS"; }
+    static auto Shape() { return IVec<2>(1,1); }
+    
     HelmholtzHSKernel (double _kappa) : kappa(_kappa) { }
     template <typename T>        
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -407,6 +414,7 @@ namespace ngsbem
   public:
     typedef Complex value_type;
     static string Name() { return "Helmholtz Combined Field"; }
+    static auto Shape() { return IVec<2>(1,1); }
     
     CombinedFieldKernel (double _kappa) : kappa(_kappa) { }
 
@@ -437,7 +445,8 @@ namespace ngsbem
   public:
     typedef Complex value_type;
     static string Name() { return "MaxwellSL"; }
-
+    static auto Shape() { return IVec<2>(4,4); }
+    
     MaxwellSLKernel (const MaxwellSLKernel&) = default;
     MaxwellSLKernel (MaxwellSLKernel&&) = default;
     MaxwellSLKernel (double _kappa) : kappa(_kappa)
@@ -477,6 +486,7 @@ namespace ngsbem
   public:
     typedef Complex value_type;
     static string Name() { return "MaxwellDL"; }
+    static auto Shape() { return IVec<2>(3,3); }
     
     MaxwellDLKernel (double _kappa) : kappa(_kappa) { }
     

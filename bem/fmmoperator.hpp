@@ -53,20 +53,21 @@ namespace ngsbem
   {
   protected:
     Array<Vec<3>> xpts, ypts, xnv, ynv;
+    IVec<2> kernelshape;
   public:
     Base_FMM_Operator(Array<Vec<3>> _xpts, Array<Vec<3>> _ypts,
-                   Array<Vec<3>> _xnv, Array<Vec<3>> _ynv)
+                      Array<Vec<3>> _xnv, Array<Vec<3>> _ynv, IVec<2> _kernelshape)
       : xpts(std::move(_xpts)), ypts(std::move(_ypts)),
-        xnv(std::move(_xnv)), ynv(std::move(_ynv))
+        xnv(std::move(_xnv)), ynv(std::move(_ynv)), kernelshape(_kernelshape)
     { }
     
     AutoVector CreateRowVector () const override
     {
-      return make_unique<VVector<TSCAL>>(xpts.Size());
+      return make_unique<VVector<TSCAL>>(xpts.Size() * kernelshape[1]);
     }
     AutoVector CreateColVector () const override
     {
-      return make_unique<VVector<TSCAL>>(ypts.Size());
+      return make_unique<VVector<TSCAL>>(ypts.Size() * kernelshape[0]);
     }
   };
 
@@ -82,7 +83,7 @@ namespace ngsbem
   public:
     FMM_Operator(KERNEL _kernel, Array<Vec<3>> _xpts, Array<Vec<3>> _ypts,
                  Array<Vec<3>> _xnv, Array<Vec<3>> _ynv)
-      : BASE(std::move(_xpts), std::move( _ypts), std::move(_xnv), std::move(_ynv)),
+      : BASE(std::move(_xpts), std::move( _ypts), std::move(_xnv), std::move(_ynv), KERNEL::Shape()),
       kernel(_kernel)
     { }
 
@@ -94,6 +95,7 @@ namespace ngsbem
       auto fy = y.FV<typename KERNEL::value_type>();
       
       fy = 0;
+      // cout << "slow FMM, kernel = " << typeid(KERNEL).name() << endl;
       if constexpr (std::is_same<KERNEL, class LaplaceSLKernel<3>>())
         {
           for (size_t ix = 0; ix < xpts.Size(); ix++)
@@ -116,6 +118,17 @@ namespace ngsbem
               }
             }
         }
+
+      else if constexpr (std::is_same<KERNEL, class LaplaceHSKernel<3>>())
+        {
+          if (fx.Size() != 3*xpts.Size() || fy.Size() != 3*ypts.Size())
+            throw Exception ("hs, wrong size");
+          for (size_t ix = 0; ix < xpts.Size(); ix++)
+            for (size_t iy = 0; iy < ypts.Size(); iy++)
+              // fy(iy) += __Kernel(xpts[ix], ypts[iy]) * fx(ix);
+              fy.Range(3*iy,3*iy+3) += __Kernel(xpts[ix], ypts[iy]) * fx.Range(3*ix,3*ix+3);
+        }
+      
       else if constexpr (std::is_same<KERNEL, class HelmholtzSLKernel<3>>())
         {
           for (size_t ix = 0; ix < xpts.Size(); ix++)
@@ -156,11 +169,32 @@ namespace ngsbem
               }
         }
       else
-        throw Exception("fmm not available");
+        throw Exception(string("fmm not available")+typeid(KERNEL).name());
     }
 
     void MultTrans(const BaseVector & x, BaseVector & y) const override
     {
+      auto fx = x.FV<typename KERNEL::value_type>();
+      auto fy = y.FV<typename KERNEL::value_type>();
+      
+      fy = 0;
+      
+      if constexpr (std::is_same<KERNEL, class LaplaceDLKernel<3>>())
+        {
+          // This is slow, but works for now:
+          for (size_t ix = 0; ix < xpts.Size(); ix++)
+            for (size_t iy = 0; iy < ypts.Size(); iy++)
+              {
+                double norm = L2Norm(xpts[ix]-ypts[iy]);
+                if (norm > 0)
+                  {
+                    double nxy = InnerProduct(ynv[iy], xpts[ix]-ypts[iy]);
+                    auto kern = nxy / (4 * M_PI * norm*norm*norm);
+                    fx(iy) += kern * fy(ix);
+                  }
+              }
+        }
+      else
         throw Exception("KERNEL " + std::string(typeid(KERNEL).name()) + " doesn't have MultTrans overloaded");
     };
 
