@@ -1,31 +1,11 @@
 #ifndef NGBEM_hpp
 #define NGBEM_hpp
 
-// #include "hmat.hpp"
 #include "bem_diffops.hpp"
 
 namespace ngsbem
 {
   using namespace ngcomp;
-
-  /** BEMParameters. 
-      All parameters to define approximation of the layer potential operators. */
-  struct BEMParameters
-  {
-    /* intorder defines integration rule for singular pairings. */  
-    const int intorder;
-    /* leafsize is the minimal size of a #Custer */
-    const int leafsize;
-    /* eta defines admissibily condition for cluster pairs*/
-    const double eta;
-    /* eps defines low rank approximation */
-    const double eps;
-    /* method defines the low rank approximation method */
-    const string method;
-    // testing hmatrix accuracy
-    bool testhmatrix;
-  };
-
 
   /** The IntegralOperator provides methods for the assembly of and access to a matrix 
       resulting from a variational formulation of a boundary integral equation.*/
@@ -38,9 +18,9 @@ namespace ngsbem
 
     optional<Region> trial_definedon;
     optional<Region> test_definedon;
-    
-    /* parameters that specify the appoximation of linear operators and solving */
-    BEMParameters param;
+
+    // integration order
+    int intorder;
 
     /* boundary to global fe dofs mappings */
     Array<DofId> mapglob2bnd;
@@ -51,13 +31,6 @@ namespace ngsbem
     Table<int> elems4dof; // contains list of elems contributing to bnd-dof
     Table<int> elems4dof2; // contains list of elems contributing to bnd-dof
 
-    /*
-    //  ClusterTree define cluster pairs, i.e., the blocks of the hmatrix
-    shared_ptr<ClusterTree> trial_ct; 
-    shared_ptr<ClusterTree> test_ct;
-    */
-    
-    // shared_ptr<HMatrix<T>> hmatrix;
     shared_ptr<BaseMatrix> matrix;
 
 
@@ -66,25 +39,13 @@ namespace ngsbem
     /** Constructor. */
     IntegralOperator (shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                       optional<Region> _definedon_trial, optional<Region> _definedon_test,
-                      BEMParameters param);
+                      int _intorder);
     virtual ~IntegralOperator() = default;
 
-    /** GetHMatrix returns the #hmatrix. */
     shared_ptr<BaseMatrix> GetMatrix() const { return matrix; }
-
-    /** CalcHMatrix fills the #hmatrix, i.e., memory for farfield blocks is allocated and 
-        all blocks are computed. */
-    // void CalcHMatrix(HMatrix<T> & hmatrix, LocalHeap &lh, struct BEMParameters &param) const;
-
 
     virtual shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const = 0;
     
-    /** CalcBlockMatrix computes the block of entries with trialdofs and testdofs indices. */
-    virtual void CalcBlockMatrix(FlatMatrix<T> matrix,
-                                 FlatArray<DofId> trialdofs, FlatArray<DofId> testdofs, 
-                                 LocalHeap &lh) const = 0;
-
-
     virtual void CalcElementMatrix(FlatMatrix<T> matrix,
                                    ElementId ei_trial, ElementId ei_test,
                                    LocalHeap &lh) const = 0;
@@ -116,7 +77,7 @@ namespace ngsbem
     using BASE::trial_definedon; 
     using BASE::test_definedon;
        
-    using BASE::param;
+    using BASE::intorder;
 
     using BASE::mapglob2bnd;
     using BASE::mapbnd2glob;
@@ -151,28 +112,25 @@ namespace ngsbem
                             shared_ptr<DifferentialOperator> _trial_evaluator, 
                             shared_ptr<DifferentialOperator> _test_evaluator, 
                             KERNEL _kernel,
-                            struct BEMParameters _param);
+                            int _intorder);
 
     GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                             shared_ptr<DifferentialOperator> _trial_evaluator, 
                             shared_ptr<DifferentialOperator> _test_evaluator, 
                             KERNEL _kernel,
-                            struct BEMParameters _param)
+                            int _intorder)
       : GenericIntegralOperator (_trial_space, _test_space,
                                  nullopt, nullopt,
-                                 _trial_evaluator, _test_evaluator, _kernel, _param) { }
+                                 _trial_evaluator, _test_evaluator, _kernel, _intorder) { }
 
     GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                             KERNEL _kernel,
-                            struct BEMParameters _param)
+                            int _intorder)
       : GenericIntegralOperator (_trial_space, _test_space,
                                  _trial_space -> GetEvaluator(BND),
                                  _test_space -> GetEvaluator(BND),
-                                 _kernel, _param) { } 
+                                 _kernel, _intorder) { }
 
-
-    void CalcBlockMatrix(FlatMatrix<value_type> matrix, FlatArray<DofId> trialdofs, FlatArray<DofId> testdofs, 
-			 LocalHeap &lh) const override;
 
     void CalcElementMatrix(FlatMatrix<value_type> matrix,
                            ElementId ei_trial, ElementId ei_test,
@@ -199,12 +157,12 @@ namespace ngsbem
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
     KERNEL kernel;
-    BEMParameters param;
+    int intorder;
   public:
     PotentialCF (shared_ptr<GridFunction> _gf,
                  optional<Region> _definedon,    
                  shared_ptr<DifferentialOperator> _evaluator,
-                 KERNEL _kernel, BEMParameters _param);
+                 KERNEL _kernel, int _intorder);
 
     double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("eval not implemented"); }
@@ -391,7 +349,7 @@ namespace ngsbem
       // return kern;
       return Vec<1,decltype(kern)> (kern);
     }
-
+    double GetKappa() const { return kappa; }
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
   };
 
@@ -418,7 +376,7 @@ namespace ngsbem
       // return kern;
       return Vec<2,decltype(kern)> ({kern, kernnxny});
     }
-    
+    double GetKappa() const { return kappa; }
     Array<KernelTerm> terms =
       {
         KernelTerm{1.0, 0, 0, 0},
@@ -495,7 +453,7 @@ namespace ngsbem
       auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
       return Vec<1,decltype(kern)> (kern);
     }
-
+    double GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
   };
 
@@ -529,7 +487,7 @@ namespace ngsbem
         * (Complex(0,kappa)*norm - Complex(1,0)*T(1.)) * (x-y);
       return kern;
     }
-
+    double GetKappa() const { return kappa; }
     Array<KernelTerm> terms =
       {
         KernelTerm{ 1.0, 0, 1, 2},  // factor, comp, trial, test
