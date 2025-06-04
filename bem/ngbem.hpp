@@ -391,7 +391,7 @@ namespace ngsbem
       // return kern;
       return Vec<1,decltype(kern)> (kern);
     }
-
+    double GetKappa() const { return kappa; }
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
   };
 
@@ -418,7 +418,7 @@ namespace ngsbem
       // return kern;
       return Vec<2,decltype(kern)> ({kern, kernnxny});
     }
-    
+    double GetKappa() const { return kappa; }
     Array<KernelTerm> terms =
       {
         KernelTerm{1.0, 0, 0, 0},
@@ -495,7 +495,7 @@ namespace ngsbem
       auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
       return Vec<1,decltype(kern)> (kern);
     }
-
+    double GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
   };
 
@@ -529,7 +529,7 @@ namespace ngsbem
         * (Complex(0,kappa)*norm - Complex(1,0)*T(1.)) * (x-y);
       return kern;
     }
-
+    double GetKappa() const { return kappa; }
     Array<KernelTerm> terms =
       {
         KernelTerm{ 1.0, 0, 1, 2},  // factor, comp, trial, test
