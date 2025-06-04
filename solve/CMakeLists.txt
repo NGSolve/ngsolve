@@ -2,7 +2,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( ngsolve ${NGSOLVE_LIB_TYPE} ${ngsolve_object_libs} ngsolve.cpp python_solve.cpp)
 target_include_directories(ngsolve PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS})
-target_link_libraries(ngsolve PUBLIC netgen_libs solve ngcomp ngfem ngbla ngla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>" )
+target_link_libraries(ngsolve PUBLIC netgen_libs solve ngcomp ngfem ngsbem ngbla ngla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>" )
 install( TARGETS ngsolve ${ngs_install_dir} )
 add_library(solve ALIAS ngsolve)
 
