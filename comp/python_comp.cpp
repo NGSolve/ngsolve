@@ -1927,30 +1927,35 @@ active_dofs : BitArray or None
                       auto fes = gf->GetFESpace();
                       bool generated_from_deriv = state[1].cast<bool>();
                       string generated_from_operator = state[2].cast<string>();
+                      shared_ptr<GridFunctionCoefficientFunction> ret;
                       if (generated_from_deriv)
-                        return make_shared<GridFunctionCoefficientFunction> (gf,
+                        ret = make_shared<GridFunctionCoefficientFunction> (gf,
                                                                              fes->GetFluxEvaluator(),
                                                                              fes->GetFluxEvaluator(BND),
                                                                              fes->GetFluxEvaluator(BBND));
                       
-                      if (fes->GetAdditionalEvaluators().Used(generated_from_operator))
+                      else if
+                        (fes->GetAdditionalEvaluators().Used(generated_from_operator))
                         {
                           auto diffop = fes->GetAdditionalEvaluators()[generated_from_operator];
                           shared_ptr<GridFunctionCoefficientFunction> coef;
                           switch(diffop->VB())
                             {
                             case VOL:
-                              return make_shared<GridFunctionCoefficientFunction> (gf, diffop);
+                              ret = make_shared<GridFunctionCoefficientFunction> (gf, diffop);
                             case BND:
-                              return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,diffop);
+                              ret = make_shared<GridFunctionCoefficientFunction> (gf, nullptr,diffop);
                             case BBND:
-                              return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,diffop);
+                              ret = make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,diffop);
                             case BBBND:
-                              return make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,nullptr,diffop);
+                              ret = make_shared<GridFunctionCoefficientFunction> (gf, nullptr,nullptr,nullptr,diffop);
                             }
                         }
-
-                      throw Exception("cannot unpickle GridFunctionCoefficientFunction");
+                      if(!ret)
+                        throw Exception("cannot unpickle GridFunctionCoefficientFunction");
+                      ret->generated_from_deriv = generated_from_deriv;
+                      ret->generated_from_operator = generated_from_operator;
+                      return ret;
                     }))
     .def("Trace",  [](shared_ptr<GridFunctionCoefficientFunction> self)
          { return self->GetTrace(); },
