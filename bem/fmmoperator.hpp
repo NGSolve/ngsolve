@@ -117,7 +117,8 @@ namespace ngsbem
               double norm = L2Norm(xpts[ix]-ypts[iy]);
               if (norm > 0)
               {
-                double nxy = InnerProduct(ynv[iy], xpts[ix]-ypts[iy]);
+                // double nxy = InnerProduct(ynv[iy], xpts[ix]-ypts[iy]);
+                double nxy = InnerProduct(xnv[ix], -xpts[ix]+ypts[iy]);
                 auto kern = nxy / (4 * M_PI * norm*norm*norm);
                 fy(iy) += kern * fx(ix);
               }
@@ -193,8 +194,8 @@ namespace ngsbem
                 double norm = L2Norm(xpts[ix]-ypts[iy]);
                 if (norm > 0)
                   {
-                    double nxy = InnerProduct(ynv[iy], xpts[ix]-ypts[iy]);                 
-                    // double nxy = InnerProduct(xnv[ix], ypts[iy]-xpts[ix]);
+                    // double nxy = InnerProduct(ynv[iy], xpts[ix]-ypts[iy]);                 
+                    double nxy = InnerProduct(xnv[ix], ypts[iy]-xpts[ix]);
                     auto kern = nxy / (4 * M_PI * norm*norm*norm);
                     fy(ix) += kern * fx(iy);
                   }
@@ -210,7 +211,6 @@ namespace ngsbem
   // using Helmholtz, with small kappa
   // TODO: kappa=1e-10 working for all EXCEPT DL::Mult
 
-  
   template <>
   void FMM_Operator<LaplaceSLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
   {
@@ -221,7 +221,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-10;
+    double kappa = 1e-4;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
 
@@ -322,7 +322,6 @@ namespace ngsbem
       fy.Range(3*i,3*i+3) = Real(regmp.Evaluate(ypts[i]));
     });
   }
-
 
   // ********************** operators for Helmholtz ********************  
   
