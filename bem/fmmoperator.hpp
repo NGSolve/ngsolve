@@ -53,13 +53,18 @@ namespace ngsbem
   {
   protected:
     Array<Vec<3>> xpts, ypts, xnv, ynv;
+    Vec<3> cx, cy;
+    double rx, ry;
     IVec<2> kernelshape;
   public:
     Base_FMM_Operator(Array<Vec<3>> _xpts, Array<Vec<3>> _ypts,
                       Array<Vec<3>> _xnv, Array<Vec<3>> _ynv, IVec<2> _kernelshape)
       : xpts(std::move(_xpts)), ypts(std::move(_ypts)),
         xnv(std::move(_xnv)), ynv(std::move(_ynv)), kernelshape(_kernelshape)
-    { }
+    {
+      std::tie(cx, rx, cy, ry) = GetMidAndRadius(xpts, ypts);
+    }
+      
     
     AutoVector CreateRowVector () const override
     {
@@ -89,7 +94,7 @@ namespace ngsbem
 
     void Mult(const BaseVector & x, BaseVector & y) const override
     {
-      static Timer tall("ngbem fmm apply"); RegionTimer reg(tall);
+      static Timer tall("ngbem fmm apply"+KERNEL::Name()); RegionTimer reg(tall);
       
       auto fx = x.FV<typename KERNEL::value_type>();
       auto fy = y.FV<typename KERNEL::value_type>();
@@ -200,6 +205,126 @@ namespace ngsbem
 
   };
 
+  // ********************** operators for Laplace ********************
+  // using Helmholtz, with small kappa
+  // TODO: kappa=1e-10 working for all EXCEPT DL::Mult
+
+  
+  template <>
+  void FMM_Operator<LaplaceSLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
+  {
+    static Timer tall("ngbem fmm apply LaplaceSL (ngfmm)"); RegionTimer reg(tall);
+    
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    double kappa = 1e-4;
+
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
+
+    for (int i = 0; i < xpts.Size(); i++)
+      singmp->AddCharge(xpts[i], fx(i));
+
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Complex> regmp (cy, ry, int(3*kappa*ry), kappa);
+    for (int i = 0; i < ypts.Size(); i++)
+      regmp.AddTarget(ypts[i]);
+    regmp.CalcMP(singmp);
+    
+    ParallelFor (ypts.Size(), [&](int i) {
+      fy(i) = Real(regmp.Evaluate(ypts[i]));
+    });
+  }
+
+  template <>
+  void FMM_Operator<LaplaceDLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
+  {
+    static Timer tall("ngbem fmm apply LaplaceDL (ngfmm)"); RegionTimer reg(tall);
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    double kappa = 1e-4;
+
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
+
+    for (int i = 0; i < xpts.Size(); i++)
+      singmp->AddDipole(xpts[i], -xnv[i], fx(i));
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Complex> regmp (cy, ry, int(3*kappa*ry), kappa);
+    for (int i = 0; i < ypts.Size(); i++)
+      regmp.AddTarget(ypts[i]);
+    regmp.CalcMP(singmp);
+
+    ParallelFor (ypts.Size(), [&](int i) {
+      fy(i) = Real(regmp.Evaluate(ypts[i]));
+    });
+  }
+
+  template <>
+  void FMM_Operator<LaplaceDLKernel<3>> :: MultTrans(const BaseVector & x, BaseVector & y) const 
+  {
+    static Timer tall("ngbem fmm apply LaplaceDL MultTrans (ngfmm)"); RegionTimer reg(tall);
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    
+    double kappa = 1e-4;
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, int(3*kappa*rx), kappa);
+
+    for (int i = 0; i < ypts.Size(); i++)
+      singmp->AddCharge(ypts[i], fx(i));
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Complex> regmp (cx, rx, int(3*kappa*ry), kappa);
+    for (int i = 0; i < xpts.Size(); i++)
+      regmp.AddTarget(xpts[i]);
+    regmp.CalcMP(singmp);
+
+    ParallelFor (xpts.Size(), [&](int i) {
+      fy(i) = Real (regmp.EvaluateDirectionalDerivative(xpts[i], xnv[i]));
+    });
+  }
+  
+
+  template <>
+  void FMM_Operator<LaplaceHSKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
+  {
+    static Timer tall("ngbem fmm apply LaplaceHS (ngfmm)"); RegionTimer reg(tall);
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    double kappa = 1e-4;
+
+    auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, int(3*kappa*rx), kappa);
+
+    for (int i = 0; i < xpts.Size(); i++)
+      singmp->AddCharge(xpts[i], Vec<3> (fx.Range(3*i,3*i+3)));
+
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Vec<3,Complex>> regmp (cy, ry, int(3*kappa*ry), kappa);
+    for (int i = 0; i < ypts.Size(); i++)
+      regmp.AddTarget(ypts[i]);
+    regmp.CalcMP(singmp);
+
+    ParallelFor (ypts.Size(), [&](int i) {
+      fy.Range(3*i,3*i+3) = Real(regmp.Evaluate(ypts[i]));
+    });
+  }
+
+
+  // ********************** operators for Helmholtz ********************  
+  
 
   template <>
   void FMM_Operator<HelmholtzSLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 

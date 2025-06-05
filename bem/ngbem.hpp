@@ -274,7 +274,7 @@ namespace ngsbem
   {
   public:
     typedef double value_type;
-    static string Name() { return "LaplaceSL"; }
+    static string Name() { return "LaplaceHL"; }
     static auto Shape() { return IVec<2>(3,3); }
     
     template <typename T>        
