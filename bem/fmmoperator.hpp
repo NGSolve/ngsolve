@@ -193,7 +193,8 @@ namespace ngsbem
                 double norm = L2Norm(xpts[ix]-ypts[iy]);
                 if (norm > 0)
                   {
-                    double nxy = InnerProduct(xnv[ix], ypts[iy]-xpts[ix]);
+                    double nxy = InnerProduct(ynv[iy], xpts[ix]-ypts[iy]);                 
+                    // double nxy = InnerProduct(xnv[ix], ypts[iy]-xpts[ix]);
                     auto kern = nxy / (4 * M_PI * norm*norm*norm);
                     fy(ix) += kern * fx(iy);
                   }
