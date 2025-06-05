@@ -780,7 +780,7 @@ namespace ngsbem
 
     double Kappa() const { return root.mp.Kappa(); }
     
-    void AddCharge(Vec<3> x, Complex c)
+    void AddCharge(Vec<3> x, entry_type c)
     {
       root.AddCharge(x, c);
     }
