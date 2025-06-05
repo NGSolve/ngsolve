@@ -220,7 +220,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-4;
+    double kappa = 1e-10;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
 
