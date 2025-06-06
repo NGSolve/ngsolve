@@ -276,12 +276,7 @@ namespace ngsbem
     SphericalHarmonics<entry_type> sh;
     double kappa;
     double rtyp;
-    // double scale;
   public:
-  /*
-    MultiPole (int aorder, double akappa, double ascale = 1) 
-      : sh(aorder), kappa(akappa), scale(ascale) { }
-  */
 
     MultiPole (int aorder, double akappa, double artyp) 
     : sh(aorder), kappa(akappa), rtyp(artyp) { }
@@ -379,7 +374,10 @@ namespace ngsbem
         phi = atan2(dist(1), dist(0));
         
       
-      MultiPole<RADIAL,entry_type> tmp(*this);
+      // MultiPole<RADIAL,entry_type> tmp{*this};
+      MultiPole<RADIAL,entry_type> tmp(Order(), kappa, rtyp);
+      tmp.SH().Coefs() = SH().Coefs();
+      
       tmp.SH().RotateZ(phi);
       tmp.SH().RotateY(theta);
 
@@ -434,11 +432,9 @@ namespace ngsbem
       Array<tuple<Vec<3>, Vec<3>, Complex,int>> currents;
       int total_sources;
       
-      Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, min(1.0, r*kappa))
-          // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0)
+      Node (Vec<3> acenter, double ar, int alevel, double akappa)
+        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar) // min(1.0, ar*akappa))
       {
-        // cout << "singml, add node, level = " << level << endl;
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
       }
@@ -453,7 +449,7 @@ namespace ngsbem
             cc(0) += (i&1) ? r/2 : -r/2;
             cc(1) += (i&2) ? r/2 : -r/2;
             cc(2) += (i&4) ? r/2 : -r/2;
-            childs[i] = make_unique<Node> (cc, r/2, level+1, max(mp.SH().Order()/2, 8), mp.Kappa());
+            childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa());
           }
       }
       
@@ -772,7 +768,7 @@ namespace ngsbem
     
   public:
     SingularMLMultiPole (Vec<3> center, double r, int order, double kappa)
-      : root(center, r, 0, order, kappa)
+      : root(center, r, 0, kappa)
     {
       nodes_on_level = 0;
       nodes_on_level[0] = 1;
@@ -887,7 +883,7 @@ namespace ngsbem
       Array<const typename SingularMLMultiPole<elem_type>::Node*> singnodes;
 
       Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0/min(1.0, 0.25*r*kappa))
+        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, ar) // 1.0/min(1.0, 0.25*r*kappa))
           // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0)
       {
         if (level < nodes_on_level.Size())
@@ -1293,8 +1289,8 @@ namespace ngsbem
     MultiPole<RADIAL, entry_type> mp;
     Vec<3> center;
   public:
-    MultiPoleCF (int order, double kappa, Vec<3> acenter, double scale = 1)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mp(order, kappa, scale), center(acenter) { }
+    MultiPoleCF (int order, double kappa, Vec<3> acenter, double rtyp = 1)
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mp(order, kappa, rtyp), center(acenter) { }
 
     entry_type & Coef(int n, int m) { return mp.Coef(n,m); } 
     auto & SH() { return mp.SH(); }
