@@ -21,3 +21,24 @@ def test_transform():
     meshpnt = mesh(1,1,1)
     assert mp(meshpnt) == pytest.approx(mp2(meshpnt))
 
+
+
+    
+def test_singulartransform():
+    box = Box((-10,-10,-10), (10,10,10))
+    mesh = Mesh(OCCGeometry(box).GenerateMesh(maxh=5))
+
+    kappa = 0.01
+    order = 20
+    mp = SingularMLMultiPoleCF((0,0,0), r=1, order=-1, kappa=kappa)
+    num = 200
+    for i in range(num):
+        z = i/num
+        mp.mlmp.AddCharge((0.1, 0, z), 1/num)
+
+    val1 = mp(mesh(1,1,4))
+    mp.mlmp.Calc()
+    val2 = mp(mesh(1,1,4))
+
+    assert val1 == pytest.approx(val2)
+
