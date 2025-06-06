@@ -218,13 +218,11 @@ namespace ngsbem
   class MPSingular
   {
   public:
-    /*
     template <typename T>
     static void Eval (int order, double r, double scale, T && values)
     {
       SphericalHankel1(order, r, scale,  values);
     }
-    */
 
     template <typename T>
     static void Eval (int order, double kappa, double r, double rtyp, T && values)
@@ -245,13 +243,11 @@ namespace ngsbem
   class MPRegular
   {
   public:
-    /*
     template <typename T>
     static void Eval (int order, double r, double scale, T && values)
     {
       SphericalBessel (order, r, 1.0/scale, values);
     }
-    */
 
     template <typename T>
     static void Eval (int order, double kappa, double r, double rtyp, T && values)

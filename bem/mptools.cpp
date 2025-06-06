@@ -1372,8 +1372,9 @@ namespace ngsbem
     Vector<Complex> radial(sh.Order()+1);
     Vector<Complex> sh_shapes(sqr (sh.Order()+1));
     
-    // RADIAL::Eval(sh.Order(), kappa*L2Norm(x), 1.0/scale, radial);
-    RADIAL::Eval(sh.Order(), kappa, L2Norm(x), rtyp, radial);
+    RADIAL::Eval(sh.Order(), kappa*L2Norm(x), 1.0/Scale(), radial);
+    // RADIAL::Eval(sh.Order(), kappa, L2Norm(x), rtyp, radial);
+    // MPRegular::Eval(sh.Order(), kappa, L2Norm(x), rtyp, radial);
     
     // cout << "radial = " << Real(radial) << endl;
     sh.Calc(x, sh_shapes);

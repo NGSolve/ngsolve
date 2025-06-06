@@ -221,7 +221,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-8;
+    double kappa = 1e-12;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
 
@@ -238,7 +238,6 @@ namespace ngsbem
     ParallelFor (ypts.Size(), [&](int i) {
       fy(i) = Real(regmp.Evaluate(ypts[i]));
     });
-
 
     /*
     Vector<double> fyslow(fy.Size());
@@ -276,7 +275,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-5;
+    double kappa = 1e-12;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
 
@@ -291,12 +290,9 @@ namespace ngsbem
 
     ParallelFor (ypts.Size(), [&](int i) {
       fy(i) = Real(regmp.Evaluate(ypts[i]));
-      // fy(i) = Real(singmp->Evaluate(ypts[i]));
     });
 
-
     /*
-
     Vector<double> fyslow(fy.Size());
     fyslow = 0.0;
     for (size_t ix = 0; ix < xpts.Size(); ix++)
