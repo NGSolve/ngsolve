@@ -15,7 +15,7 @@ if(NETGEN_USE_PYTHON)
             __init__.py utils.py solvers.py eigenvalues.py meshes.py
             krylovspace.py nonlinearsolvers.py bvp.py preconditioners.py timing.py TensorProductTools.py
             ngs2petsc.py ngscxx.py directsolvers.py timestepping.py
-            _scikit_build_core_dependencies.py
+            _scikit_build_core_dependencies.py solve_implementation.py
             DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve
             COMPONENT ngsolve
             )
