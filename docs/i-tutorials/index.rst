@@ -266,6 +266,14 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
    unit-10.2-tensorflow/TensorFlowNGSolve.ipynb
 
 
+11. Boundary element and Fast Multi-pole methods
+
+.. toctree::
+   :maxdepth: 1
+
+   unit-11.1-fmm/intro_fmm.ipynb 
+    
+   
 Appendix
 ========
 
