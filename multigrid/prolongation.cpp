@@ -841,7 +841,11 @@ namespace ngmg
   {
     auto fes = abfa->GetTrialSpace();
     auto ma = fes->GetMeshAccess();
-
+    if (ma->GetDimension()==2)
+      ma->GetNetgenMesh()->GetTopology().EnableTable("parentedges", true);
+    if (ma->GetDimension()==3)
+      ma->GetNetgenMesh()->GetTopology().EnableTable("parentfaces", true);
+    
     facets_on_level.Append (ma->GetNEdges());
     innerinverses.Append(nullptr);
     freedofs.Append(nullptr);
@@ -916,6 +920,12 @@ namespace ngmg
                 fes.GetEdgeDofNrs(e, dnums);
                 for (auto d : dnums)
                   harm_inner->Clear(d);
+                for (auto v : ma->GetEdgePNums(e))
+                  {
+                    fes.GetVertexDofNrs(v, dnums);
+                    for (auto d : dnums)
+                      harm_inner->Clear(d);
+                  }
               }
           }
       }
