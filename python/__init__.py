@@ -75,6 +75,7 @@ from .utils import x, y, z, dx, ds, grad, Grad, curl, div, Deviator, PyId, PyTra
 from . import solvers
 from . import preconditioners
 from . import timestepping
+from .solve_implementation import Solve
 
 try:
     from netgen.occ import unit_square, unit_cube
