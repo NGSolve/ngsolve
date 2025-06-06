@@ -132,22 +132,22 @@ class Equation:
         self.lhs.Solve(self.rhs, *args, **kwargs)
 
 
-def _create_lin_appl(a: BilinearForm, gfu: GridFunction) -> LinearApplication:
+def _create_lin_appl(self, gfu: GridFunction) -> LinearApplication:
     if not isinstance(gfu, GridFunction):
         raise TypeError("gfu must be a GridFunction")
-    return LinearApplication(a, gfu)
+    return LinearApplication(self, gfu)
 
 
-def _create_nonlin_appl(a: BilinearForm, gfu: GridFunction) -> NonLinearApplication:
+def _create_nonlin_appl(self, gfu: GridFunction) -> NonLinearApplication:
     if not isinstance(gfu, GridFunction):
         raise TypeError("gfu must be a GridFunction")
-    return NonLinearApplication(a, gfu)
+    return NonLinearApplication(self, gfu)
 
 
-def _cf_on_region(cf: CoefficientFunction, region: Region) -> Dirichlet:
+def _cf_on_region(self, region: Region) -> Dirichlet:
     if not isinstance(region, Region):
         raise TypeError("region must be a Region")
-    return Dirichlet(cf, region)
+    return Dirichlet(self, region)
 
 
 CoefficientFunction.__or__ = _cf_on_region
