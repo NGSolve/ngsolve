@@ -221,7 +221,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-4;
+    double kappa = 1e-8;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
 
@@ -238,6 +238,33 @@ namespace ngsbem
     ParallelFor (ypts.Size(), [&](int i) {
       fy(i) = Real(regmp.Evaluate(ypts[i]));
     });
+
+
+    /*
+    Vector<double> fyslow(fy.Size());
+    fyslow = 0.0;
+    for (size_t ix = 0; ix < xpts.Size(); ix++)
+      for (size_t iy = 0; iy < ypts.Size(); iy++)
+        fyslow(iy) += __Kernel(xpts[ix], ypts[iy]) * fx(ix);
+
+    cout << "norm(fy) = " << L2Norm(fy) << endl;
+    cout << "SL diff to slow Laplace: " << L2Norm(fy-fyslow) << endl;
+
+    Vector<double> fyslowkappa(fy.Size());
+    fyslowkappa = 0.0;
+    for (size_t ix = 0; ix < xpts.Size(); ix++)
+      for (size_t iy = 0; iy < ypts.Size(); iy++)
+        {
+          double norm = L2Norm(xpts[ix]-ypts[iy]);
+          if (norm > 0)
+            {
+              auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
+              fyslowkappa(iy) += Real(kern * fx(ix));
+            }
+        }
+    cout << "SL diff to slow Helmholtz: " << L2Norm(fy-fyslowkappa) << endl;
+    cout << "slow Helmholtz diff to slow Laplace: " << L2Norm(fyslow-fyslowkappa) << endl;
+    */
   }
 
   template <>
@@ -249,7 +276,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-4;
+    double kappa = 1e-5;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
 
@@ -264,7 +291,48 @@ namespace ngsbem
 
     ParallelFor (ypts.Size(), [&](int i) {
       fy(i) = Real(regmp.Evaluate(ypts[i]));
+      // fy(i) = Real(singmp->Evaluate(ypts[i]));
     });
+
+
+    /*
+
+    Vector<double> fyslow(fy.Size());
+    fyslow = 0.0;
+    for (size_t ix = 0; ix < xpts.Size(); ix++)
+      for (size_t iy = 0; iy < ypts.Size(); iy++)
+        {
+          // fyslow(iy) += __Kernel(xpts[ix], ypts[iy]) * fx(ix);
+          double norm = L2Norm(xpts[ix]-ypts[iy]);
+          if (norm > 0)
+            {
+              double nxy = InnerProduct(xnv[ix], -xpts[ix]+ypts[iy]);
+              auto kern = nxy / (4 * M_PI * norm*norm*norm);
+              fyslow(iy) += kern * fx(ix);
+            }
+        }
+    
+    cout << "norm(fy) = " << L2Norm(fy) << endl;
+    cout << "DL diff to slow Laplace: " << L2Norm(fy-fyslow) << endl;
+    */
+    
+    /*
+    Vector<double> fyslowkappa(fy.Size());
+    fyslowkappa = 0.0;
+    for (size_t ix = 0; ix < xpts.Size(); ix++)
+      for (size_t iy = 0; iy < ypts.Size(); iy++)
+        {
+          double norm = L2Norm(xpts[ix]-ypts[iy]);
+          if (norm > 0)
+            {
+              auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
+              fyslowkappa(iy) += Real(kern * fx(ix));
+            }
+        }
+    cout << "DL diff to slow Helmholtz: " << L2Norm(fy-fyslowkappa) << endl;
+    cout << "slow Helmholtz diff to slow Laplace: " << L2Norm(fyslow-fyslowkappa) << endl;
+    */
+    
   }
 
   template <>
@@ -277,7 +345,7 @@ namespace ngsbem
     fy = 0;
     if (L2Norm(x) == 0) return;
     
-    double kappa = 1e-4;
+    double kappa = 1e-12;
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, int(3*kappa*ry), kappa);
 
     for (int i = 0; i < ypts.Size(); i++)
@@ -304,7 +372,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-4;
+    double kappa = 1e-12;
 
     auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, int(3*kappa*rx), kappa);
 
