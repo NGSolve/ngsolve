@@ -925,8 +925,8 @@ into the wirebasket.
         (*testout) << "h1 first inner = " << first_element_dof << endl;
       }
 
-    if (prol)
-      prol->Update(*this);
+    // if (prol)
+    // prol->Update(*this);
   }
 
 
