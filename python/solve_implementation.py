@@ -1,10 +1,18 @@
 import functools
 
-from ngsolve import BilinearForm, GridFunction, CoefficientFunction, Region, BND
+from ngsolve import (
+    BilinearForm,
+    GridFunction,
+    CoefficientFunction,
+    Region,
+    BND,
+    Preconditioner,
+)
 from .nonlinearsolvers import NewtonSolver
+from .krylovspace import GMResSolver, LinearSolver
 
 
-class FunctionOnRegion:
+class Dirichlet:
     def __init__(self, cf, region):
         self.cf = cf
         self.region = region
@@ -18,8 +26,11 @@ class Application:
     def Solve(
         self,
         rhs,
-        dirichlet: FunctionOnRegion | CoefficientFunction | None = None,
-        **kwargs
+        *args,
+        dirichlet: Dirichlet | CoefficientFunction | None = None,
+        pre: Preconditioner | None = None,
+        printrates: bool = False,
+        **kwargs,
     ):
         raise NotImplementedError("Solve method must be implemented in subclasses")
 
@@ -31,8 +42,9 @@ class NonLinearApplication(Application):
     def Solve(
         self,
         rhs=None,
-        dirichlet: FunctionOnRegion | CoefficientFunction | None = None,
-        **kwargs
+        dirichlet: Dirichlet | CoefficientFunction | None = None,
+        printing: bool = False,
+        **kwargs,
     ):
         solver_args = {}
 
@@ -42,7 +54,7 @@ class NonLinearApplication(Application):
         solver = NewtonSolver(self.a, self.gf, **solver_args)
         if dirichlet is not None:
             dirichlet_gf = GridFunction(self.gf.space)
-            if isinstance(dirichlet, FunctionOnRegion):
+            if isinstance(dirichlet, Dirichlet):
                 dirichlet_gf.Set(dirichlet.cf, definedon=dirichlet.region)
             else:
                 dirichlet_gf.Set(dirichlet, BND)
@@ -59,13 +71,27 @@ class LinearApplication(Application):
     def Solve(
         self,
         rhs,
-        dirichlet: FunctionOnRegion | CoefficientFunction | None = None,
-        **kwargs
+        *args,
+        dirichlet: Dirichlet | CoefficientFunction | None = None,
+        pre: Preconditioner | None = None,
+        lin_solver=None,
+        lin_solver_args: dict | None = None,
+        printrates: bool = False,
     ):
         self.a.Assemble()
+        for arg in args:
+            if isinstance(arg, Dirichlet) or isinstance(arg, CoefficientFunction):
+                assert dirichlet is None, "Only one dirichlet condition can be set"
+                dirichlet = arg
+            if isinstance(arg, Preconditioner):
+                assert pre is None, "Only one preconditioner can be set"
+                pre = arg
+            if isinstance(arg, type) and issubclass(arg, LinearSolver):
+                assert lin_solver is None, "Only one linear solver can be set"
+                lin_solver = arg
         rhs.Assemble()
         if dirichlet is not None:
-            if isinstance(dirichlet, FunctionOnRegion):
+            if isinstance(dirichlet, Dirichlet):
                 self.gf.Set(dirichlet.cf, definedon=dirichlet.region)
             else:
                 self.gf.Set(dirichlet, BND)
@@ -73,10 +99,24 @@ class LinearApplication(Application):
         else:
             self.gf.vec[:] = 0.0
         if self.a.condense:
-            rhs.vec += self.a.harmonic_extension_trans * rhs.vec
-        self.gf.vec.data += (
-            self.a.mat.Inverse(self.a.space.FreeDofs(self.a.condense)) * rhs.vec
-        )
+            rhs.vec.data += self.a.harmonic_extension_trans * rhs.vec
+        if pre is None and lin_solver is None:
+            ainv = self.a.mat.Inverse(self.a.space.FreeDofs(self.a.condense))
+        else:
+            if lin_solver is None:
+                lin_solver = GMResSolver
+            if lin_solver_args is None:
+                lin_solver_args = {}
+            if pre is None:
+                freedofs = self.a.space.FreeDofs(self.a.condense)
+            else:
+                freedofs = None
+            if "printrates" not in lin_solver_args:
+                lin_solver_args["printrates"] = printrates
+            ainv = lin_solver(
+                mat=self.a.mat, pre=pre, freedofs=freedofs, **lin_solver_args
+            )
+        self.gf.vec.data += ainv * rhs.vec
         if self.a.condense:
             self.gf.vec.data += self.a.harmonic_extension * self.gf.vec
             self.gf.vec.data += self.a.inner_solve * rhs.vec
@@ -104,10 +144,10 @@ def _create_nonlin_appl(a: BilinearForm, gfu: GridFunction) -> NonLinearApplicat
     return NonLinearApplication(a, gfu)
 
 
-def _cf_on_region(cf: CoefficientFunction, region: Region) -> FunctionOnRegion:
+def _cf_on_region(cf: CoefficientFunction, region: Region) -> Dirichlet:
     if not isinstance(region, Region):
         raise TypeError("region must be a Region")
-    return FunctionOnRegion(cf, region)
+    return Dirichlet(cf, region)
 
 
 CoefficientFunction.__or__ = _cf_on_region
