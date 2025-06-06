@@ -27,8 +27,8 @@ class Application:
         self,
         rhs,
         *args,
-        dirichlet: Dirichlet | CoefficientFunction | None = None,
-        pre: Preconditioner | None = None,
+        dirichlet = None,
+        pre = None,
         printrates: bool = False,
         **kwargs,
     ):
@@ -42,7 +42,7 @@ class NonLinearApplication(Application):
     def Solve(
         self,
         rhs=None,
-        dirichlet: Dirichlet | CoefficientFunction | None = None,
+        dirichlet = None,
         printing: bool = False,
         **kwargs,
     ):
@@ -72,10 +72,10 @@ class LinearApplication(Application):
         self,
         rhs,
         *args,
-        dirichlet: Dirichlet | CoefficientFunction | None = None,
-        pre: Preconditioner | None = None,
+        dirichlet = None,
+        pre = None,
         lin_solver=None,
-        lin_solver_args: dict | None = None,
+        lin_solver_args = None,
         printrates: bool = False,
     ):
         self.a.Assemble()
