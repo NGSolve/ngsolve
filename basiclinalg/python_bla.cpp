@@ -637,13 +637,26 @@ vals : tuple
 
     py::class_<Vec<2>> v2(m, "Vec2D");
     v2.def(py::init<double,double>());    
+    v2.def(py::init([](py::tuple t) {
+      if (py::len(t) != 2)
+          throw py::value_error("Vec3D needs a tuple of length 3");
+        return Vec<2>(t[0].cast<double>(), t[1].cast<double>());
+      }), py::arg("t"));
     PyVecAccess<Vec<2>>(m, v2);
     PyDefROBracketOperator<Vec<2>, double>(m, v2);
 
     py::class_<Vec<3>> v3(m, "Vec3D");
     v3.def(py::init<double,double,double>());
+    v3.def(py::init([](py::tuple t) {
+        if (py::len(t) != 3)
+          throw py::value_error("Vec3D needs a tuple of length 3");
+        return Vec<3>(t[0].cast<double>(), t[1].cast<double>(), t[2].cast<double>());
+      }), py::arg("t"));
     PyVecAccess<Vec<3>>(m, v3);
     PyDefROBracketOperator<Vec<3>, double>(m, v3);
+
+    py::implicitly_convertible<py::tuple, Vec<2>>();
+    py::implicitly_convertible<py::tuple, Vec<3>>();
 
     ///////////////////////////////////////////////////////////////////////////////////////
     // Matrix types
