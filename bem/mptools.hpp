@@ -583,6 +583,7 @@ namespace ngsbem
             return sum;
           }
 
+        // static Timer t("fmm direct eval"); RegionTimer reg(t);
         for (auto [x,c] : charges)
           if (double rho = L2Norm(p-x); rho > 0)
             sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;

@@ -209,12 +209,11 @@ namespace ngsbem
 
   // ********************** operators for Laplace ********************
   // using Helmholtz, with small kappa
-  // TODO: kappa=1e-10 working for all EXCEPT DL::Mult
 
   template <>
   void FMM_Operator<LaplaceSLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
   {
-    static Timer tall("ngbem fmm apply LaplaceSL xxxx (ngfmm)"); RegionTimer reg(tall);
+    static Timer tall("ngbem fmm apply LaplaceSL (ngfmm)"); RegionTimer reg(tall);
     
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
