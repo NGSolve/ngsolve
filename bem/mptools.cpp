@@ -205,7 +205,7 @@ namespace ngsbem
   {
     LocalHeap lh(8*6*sqr(order) + 8*15*order + 500);
       
-    static Timer t("mptool sh RotateY"); RegionTimer rg(t);
+    // static Timer t("mptool sh RotateY"); RegionTimer rg(t);
     /*
       static std::map<int, unique_ptr<Timer<>>> timers;
       static std::map<int, unique_ptr<Timer<>>> timerstrafo;      
@@ -691,14 +691,15 @@ namespace ngsbem
   template <typename RADIAL, typename entry_type> template <typename TARGET>
   void MultiPole<RADIAL,entry_type> :: ShiftZ (double z, MultiPole<TARGET,entry_type> & target)
   {
-    static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
-    RegionTimer rg(t);
+    // static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
+    // RegionTimer rg(t);
       
     int os = sh.Order();
     int ot = target.SH().Order();
       
     target.SH().Coefs()=0.0;
-
+    // *testout << "siftz " << typeid(RADIAL).name() << " -> " << typeid(TARGET).name() << endl;
+    // *testout << "shiftz, norm input = " << L2Norm(SH().Coefs()) << endl;
     
     LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 500));
 
@@ -746,6 +747,9 @@ namespace ngsbem
     for (int l = 0; l <= os+ot; l++)
       trafo(l,0) *= sqrt(2*l+1);
 
+
+    // *testout << "Norm Col0 = " << L2Norm(trafo.Col(0)) << endl;
+    
     if (os > 0)
       {
         for (int l = 1; l < os+ot; l++)   

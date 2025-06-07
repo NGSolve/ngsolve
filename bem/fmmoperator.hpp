@@ -214,27 +214,47 @@ namespace ngsbem
   template <>
   void FMM_Operator<LaplaceSLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
   {
-    static Timer tall("ngbem fmm apply LaplaceSL (ngfmm)"); RegionTimer reg(tall);
+    static Timer tall("ngbem fmm apply LaplaceSL xxxx (ngfmm)"); RegionTimer reg(tall);
     
     auto fx = x.FV<double>();
     auto fy = y.FV<double>();
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-12;
+    double kappa = 1e-6;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
 
     for (int i = 0; i < xpts.Size(); i++)
       singmp->AddCharge(xpts[i], fx(i));
 
-    singmp->CalcMP();
 
+    static Timer tsing("call sing");
+    {
+      RegionTimer regsing(tsing);    
+      singmp->CalcMP();
+
+      // *testout << "norm sing = " << singmp->Norm() << endl;
+    }
+    
+
+    static Timer taddtar("call reg add target");    
+    
     RegularMLMultiPole<Complex> regmp (cy, ry, int(3*kappa*ry), kappa);
+    taddtar.Start();
     for (int i = 0; i < ypts.Size(); i++)
       regmp.AddTarget(ypts[i]);
-    regmp.CalcMP(singmp);
+    taddtar.Stop();
     
+    
+    static Timer treg("call reg");
+    {
+      RegionTimer regreg(treg);    
+      regmp.CalcMP(singmp);
+      // *testout << "norm reg = " << regmp.Norm() << endl;      
+    }
+
+    static Timer teval("ngbem fmm apply LaplaceSL eval"); RegionTimer regeval(teval);    
     ParallelFor (ypts.Size(), [&](int i) {
       fy(i) = Real(regmp.Evaluate(ypts[i]));
     });
@@ -275,7 +295,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-12;
+    double kappa = 1e-6;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
 
@@ -341,7 +361,7 @@ namespace ngsbem
     fy = 0;
     if (L2Norm(x) == 0) return;
     
-    double kappa = 1e-12;
+    double kappa = 1e-6;
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, int(3*kappa*ry), kappa);
 
     for (int i = 0; i < ypts.Size(); i++)
@@ -368,7 +388,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-12;
+    double kappa = 1e-6;
 
     auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, int(3*kappa*rx), kappa);
 

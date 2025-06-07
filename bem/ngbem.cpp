@@ -439,10 +439,10 @@ namespace ngsbem
             test_space->GetDofNrs (ei_test, test_dnums);
             
             FlatMatrix<value_type> elmat(test_dnums.Size(), trial_dnums.Size(), lh);
-            tassSS.Start();
+            // tassSS.Start();
             CalcElementMatrix (elmat, ei_trial, ei_test, lh);
-            tassSS.Stop();
-            tasscorr.Start();        
+            // tassSS.Stop();
+            // tasscorr.Start();        
             
             // subtract terms from fmm:
             
@@ -489,7 +489,7 @@ namespace ngsbem
                 kernel_shapesj = kernel_ixiy * Trans(shapesj1);
                 elmat -= shapesi1 * kernel_shapesj;
               }
-            tasscorr.Stop();        
+            // tasscorr.Stop();        
             nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, elmat);
           }
       });
@@ -530,12 +530,12 @@ namespace ngsbem
     auto mesh = this->trial_space->GetMeshAccess();  
     auto mesh2 = this->test_space->GetMeshAccess();  
     
-    static Timer tall("ngbem - elementmatrix " + KERNEL::Name());
-    RegionTimer reg(tall);
+    // static Timer tall("ngbem - elementmatrix " + KERNEL::Name());
+    // RegionTimer reg(tall);
 
-    static Timer t1("ngbem - elementmatrix, part1  " + KERNEL::Name());
+    // static Timer t1("ngbem - elementmatrix, part1  " + KERNEL::Name());
 
-    t1.Start();
+    // t1.Start();
     IntegrationRule irtrig(ET_TRIG, intorder);
     /*
     auto [ identic_panel_x, identic_panel_y, identic_panel_weight ] =
@@ -548,7 +548,7 @@ namespace ngsbem
       CommonEdgeIntegrationRule(param.intorder);
     */
     matrix = 0; 
-    t1.Stop();
+    // t1.Stop();
 
     Vec<3> x,y,nx,ny;
     typedef decltype(kernel.Evaluate (x,y,nx,ny)) KERNEL_COMPS_T;
