@@ -272,7 +272,20 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
    :maxdepth: 1
 
    unit-11.1-fmm/intro_fmm.ipynb 
-    
+   unit-11.1-fmm/basisfunctions.ipynb
+   unit-11.1-fmm/layerpotentials.ipynb
+   unit-11.1-fmm/BiotSavart.ipynb
+
+
+BEM for the Laplace equation
+
+.. toctree::
+   :maxdepth: 1
+
+   unit-11.2-bem-Laplace/Laplace_DtN_indirect.ipynb
+   unit-11.2-bem-Laplace/Laplace_DtN_direct.ipynb
+   unit-11.2-bem-Laplace/Laplace_NtD_indirect.ipynb
+   unit-11.2-bem-Laplace/Laplace_NtD_direct.ipynb
    
 Appendix
 ========
