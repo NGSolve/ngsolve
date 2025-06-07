@@ -7,6 +7,8 @@
 #include "mptools.hpp"
 #include "potentialtools.hpp"
 #include "ngbem.hpp"
+#include "mp_coefficient.hpp"
+
 
 using namespace ngsbem;
 
@@ -71,7 +73,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     ;
 
   py::class_<MultiPoleCF<MPRegular>, shared_ptr<MultiPoleCF<MPRegular>>, CoefficientFunction> (m, "RegularMultiPoleCF")
-    .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("scale")=1.0)    
+    .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("rad")=1.0)    
     .def_property_readonly("sh", [](MultiPoleCF<MPRegular>& self) -> SphericalHarmonics<Complex>& { return self.SH(); })
     .def("ShiftZ", [](MultiPoleCF<MPRegular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
     .def("Transform", [](MultiPoleCF<MPRegular>& self, MultiPoleCF<MPRegular> & target) { self.Transform(target); })
@@ -91,7 +93,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     ;
 
   py::class_<MultiPoleCF<MPSingular,Vec<3,Complex>>, shared_ptr<MultiPoleCF<MPSingular,Vec<3,Complex>>>, CoefficientFunction> (m, "BiotSavartCF")
-    .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("scale")=1.0)
+    .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("rad")=1.0)
     .def("AddCurrent", [](MultiPoleCF<MPSingular,Vec<3,Complex>>& self, Vec<3> sp, Vec<3> ep, Complex j, int num)
     { self.MP().AddCurrent(sp, ep, j, num); },
       py::arg("sp"), py::arg("ep"), py::arg("j"), py::arg("num")=100

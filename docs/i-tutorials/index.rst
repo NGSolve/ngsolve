@@ -268,6 +268,7 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
 
 11. Boundary element and Fast Multi-pole methods
 ================================================
+Lucy Weggler and Joachim Schöberl
 
 .. toctree::
    :maxdepth: 1
