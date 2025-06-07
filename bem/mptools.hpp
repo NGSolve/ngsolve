@@ -353,8 +353,8 @@ namespace ngsbem
           return;
         }
       
-      static Timer t("mptool Transform "+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));      
-      RegionTimer reg(t);
+      // static Timer t("mptool Transform "+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));      
+      // RegionTimer reg(t);
       
       double len = L2Norm(dist);
       double theta, phi;
@@ -465,7 +465,8 @@ namespace ngsbem
 
         charges.Append( tuple{x,c} );
 
-        if (r*mp.Kappa() < 1e-8) return;
+        // if (r*mp.Kappa() < 1e-8) return;
+        if (level > 20) return;
         if (charges.Size() < maxdirect && r*mp.Kappa() < 1)
           return;
 
@@ -834,6 +835,7 @@ namespace ngsbem
       for (int i = 0; i <= maxlevel; i++)
         cout << "sing " <<  i << ": " << nodes_on_level[i] << endl;
       */
+      
       root.CalcTotalSources();
       root.CalcMP();
       
@@ -1019,7 +1021,7 @@ namespace ngsbem
           sum = mp.Eval(p-center);
 
 
-        static Timer t("mptool direct evaluate"); RegionTimer r(t);
+        // static Timer t("mptool direct evaluate"); RegionTimer r(t);
         for (auto sn : singnodes)
           sum += sn->EvaluateMP(p);
 
@@ -1081,7 +1083,8 @@ namespace ngsbem
 
         targets.Append( x );
 
-        if (r*mp.Kappa() < 1e-8) return;
+        // if (r*mp.Kappa() < 1e-8) return;
+        if (level > 20) return;        
         if (targets.Size() < maxdirect && r*mp.Kappa() < 1)
           return;
 
@@ -1181,6 +1184,8 @@ namespace ngsbem
 
     void CalcMP(shared_ptr<SingularMLMultiPole<elem_type>> asingmp)
     {
+      static Timer t("mptool regular MLMP"); RegionTimer rg(t);
+      
       singmp = asingmp;
 
       root.CalcTotalTargets();
@@ -1197,6 +1202,7 @@ namespace ngsbem
         cout << "reg " << i << ": " << RegularMLMultiPole::nodes_on_level[i] << endl;
       */
 
+      static Timer tloc("mptool regular localize expansion"); RegionTimer rloc(tloc);      
       root.LocalizeExpansion(false);
     }
 
