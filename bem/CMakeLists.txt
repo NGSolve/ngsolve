@@ -13,7 +13,7 @@ target_link_libraries(ngsbem ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:n
 install( TARGETS ngsbem ${ngs_install_dir} )
 
 install( FILES
-        mptools.hpp potentialtools.hpp
+        mptools.hpp potentialtools.hpp mp_coefficient.hpp
         intrules_SauterSchwab.hpp        
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel

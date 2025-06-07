@@ -233,8 +233,6 @@ namespace ngsbem
     {
       RegionTimer regsing(tsing);    
       singmp->CalcMP();
-
-      // *testout << "norm sing = " << singmp->Norm() << endl;
     }
     
 
@@ -251,7 +249,6 @@ namespace ngsbem
     {
       RegionTimer regreg(treg);    
       regmp.CalcMP(singmp);
-      // *testout << "norm reg = " << regmp.Norm() << endl;      
     }
 
     static Timer teval("ngbem fmm apply LaplaceSL eval"); RegionTimer regeval(teval);    
