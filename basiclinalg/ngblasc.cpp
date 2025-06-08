@@ -72,7 +72,7 @@ namespace ngbla
   template <typename TM, typename TV, typename FUNC>
   void NgGEMV (Complex s, BareSliceMatrix<TM,RowMajor> a, FlatVector<const TV> x, FlatVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
   {
-    static Timer t("Complex MatVec"); RegionTimer reg(t);
+    // static Timer t("Complex MatVec"); RegionTimer reg(t);
     
     for (size_t i = 0; i < y.Size(); i++)
       {
@@ -85,7 +85,7 @@ namespace ngbla
   template <typename TM, typename TV, typename FUNC>
   void NgGEMV (Complex s, BareSliceMatrix<TM,ColMajor> a, FlatVector<const TV> x, FlatVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
   {
-    static Timer t("Complex MatVec, ColMajor"); RegionTimer reg(t);
+    // static Timer t("Complex MatVec, ColMajor"); RegionTimer reg(t);
     
     for (size_t i = 0; i < y.Size(); i++)
       {
@@ -181,7 +181,7 @@ namespace ngbla
   template <typename TM, typename FUNC>
   void NgGEMV (Complex s, BareSliceMatrix<TM,RowMajor> a, SliceVector<Complex> x, SliceVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
   {
-    static Timer t("Complex MatVec, RowMajor, SliceVec"); RegionTimer reg(t);
+    // static Timer t("Complex MatVec, RowMajor, SliceVec"); RegionTimer reg(t);
     
     for (size_t i = 0; i < y.Size(); i++)
       {
@@ -418,8 +418,8 @@ namespace ngbla
   template <typename FUNC>
   void NgGEMV (Complex s, BareSliceMatrix<Complex,ColMajor> a, SliceVector<Complex> x, SliceVector<Complex> y, FUNC func) NETGEN_NOEXCEPT  
   {
-    static Timer t("Complex MatVec, ColMajor, SliceVec"); RegionTimer reg(t);
-    t.AddFlops (4*x.Size()*y.Size());
+    // static Timer t("Complex MatVec, ColMajor, SliceVec"); RegionTimer reg(t);
+    // t.AddFlops (4*x.Size()*y.Size());
     
     /*
       // dit not improve ...

@@ -291,7 +291,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-6;
+    double kappa = 1e-16;
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
@@ -326,9 +326,7 @@ namespace ngsbem
     
     cout << "norm(fy) = " << L2Norm(fy) << endl;
     cout << "DL diff to slow Laplace: " << L2Norm(fy-fyslow) << endl;
-    */
-    
-    /*
+
     Vector<double> fyslowkappa(fy.Size());
     fyslowkappa = 0.0;
     for (size_t ix = 0; ix < xpts.Size(); ix++)
@@ -344,7 +342,6 @@ namespace ngsbem
     cout << "DL diff to slow Helmholtz: " << L2Norm(fy-fyslowkappa) << endl;
     cout << "slow Helmholtz diff to slow Laplace: " << L2Norm(fyslow-fyslowkappa) << endl;
     */
-    
   }
 
   template <>
@@ -357,7 +354,7 @@ namespace ngsbem
     fy = 0;
     if (L2Norm(x) == 0) return;
     
-    double kappa = 1e-6;
+    double kappa = 1e-16;
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, kappa);
 
     for (int i = 0; i < ypts.Size(); i++)
@@ -384,7 +381,7 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-6;
+    double kappa = 1e-16;
 
     auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, kappa);
 
