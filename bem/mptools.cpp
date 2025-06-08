@@ -1916,11 +1916,11 @@ namespace ngsbem
   
     fj0=sin(z)*zinv;
     Tz fj1=fj0*zinv-cos(z)*zinv;
-    if (abs(z) < 1e-4)
+    if (abs(z) < 1e-2)
       {
         fj1 = 1.0/3 * z - 1.0/30 * z*z*z + 1.0/840 * z*z*z*z*z;
+        // |err| < 8/9! * 0.01**7  = 2e-19
       }
-
     
     double d0=abs(fj0);
     double d1=abs(fj1);
