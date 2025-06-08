@@ -79,6 +79,7 @@ Whetting the Appetite
    wta/elasticity.ipynb 
    wta/elasticity3D.ipynb 
    wta/rotating.ipynb
+   wta/solverlayers.ipynb
    wta/fembem.ipynb
 
    
@@ -279,7 +280,7 @@ Lucy Weggler and Joachim Schöberl
    unit-11.1-fmm/BiotSavart.ipynb
 
 
-BEM for the Laplace equation
+BEM for the Laplace and Helmhotlz equations
 
 .. toctree::
    :maxdepth: 1
@@ -288,6 +289,8 @@ BEM for the Laplace equation
    unit-11.2-bem-Laplace/Laplace_DtN_direct.ipynb
    unit-11.2-bem-Laplace/Laplace_NtD_indirect.ipynb
    unit-11.2-bem-Laplace/Laplace_NtD_direct.ipynb
+
+   unit-11.3-bem-Helmholtz/BurtonMiller.ipynb   
    
 Appendix
 ========
