@@ -220,9 +220,9 @@ namespace ngsbem
 
     fy = 0;
     if (L2Norm(x) == 0) return;
-    double kappa = 1e-6;
+    double kappa = 1e-16;
 
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
     for (int i = 0; i < xpts.Size(); i++)
       singmp->AddCharge(xpts[i], fx(i));
@@ -237,7 +237,7 @@ namespace ngsbem
 
     static Timer taddtar("call reg add target");    
     
-    RegularMLMultiPole<Complex> regmp (cy, ry, int(3*kappa*ry), kappa);
+    RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
     taddtar.Start();
     for (int i = 0; i < ypts.Size(); i++)
       regmp.AddTarget(ypts[i]);
@@ -293,13 +293,13 @@ namespace ngsbem
     if (L2Norm(x) == 0) return;
     double kappa = 1e-6;
 
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
     for (int i = 0; i < xpts.Size(); i++)
       singmp->AddDipole(xpts[i], -xnv[i], fx(i));
     singmp->CalcMP();
 
-    RegularMLMultiPole<Complex> regmp (cy, ry, int(3*kappa*ry), kappa);
+    RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
     for (int i = 0; i < ypts.Size(); i++)
       regmp.AddTarget(ypts[i]);
     regmp.CalcMP(singmp);
@@ -358,13 +358,13 @@ namespace ngsbem
     if (L2Norm(x) == 0) return;
     
     double kappa = 1e-6;
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, int(3*kappa*ry), kappa);
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, kappa);
 
     for (int i = 0; i < ypts.Size(); i++)
       singmp->AddCharge(ypts[i], fx(i));
     singmp->CalcMP();
 
-    RegularMLMultiPole<Complex> regmp (cx, rx, int(3*kappa*rx), kappa);
+    RegularMLMultiPole<Complex> regmp (cx, rx, kappa);
     for (int i = 0; i < xpts.Size(); i++)
       regmp.AddTarget(xpts[i]);
     regmp.CalcMP(singmp);
@@ -386,14 +386,14 @@ namespace ngsbem
     if (L2Norm(x) == 0) return;
     double kappa = 1e-6;
 
-    auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, int(3*kappa*rx), kappa);
+    auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, kappa);
 
     for (int i = 0; i < xpts.Size(); i++)
       singmp->AddCharge(xpts[i], Vec<3> (fx.Range(3*i,3*i+3)));
 
     singmp->CalcMP();
 
-    RegularMLMultiPole<Vec<3,Complex>> regmp (cy, ry, int(3*kappa*ry), kappa);
+    RegularMLMultiPole<Vec<3,Complex>> regmp (cy, ry, kappa);
     for (int i = 0; i < ypts.Size(); i++)
       regmp.AddTarget(ypts[i]);
     regmp.CalcMP(singmp);
@@ -417,7 +417,7 @@ namespace ngsbem
     if (L2Norm(x) == 0) return;
     double kappa = kernel.GetKappa();
 
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
     for (int i = 0; i < xpts.Size(); i++)
       singmp->AddCharge(xpts[i], fx(i));
@@ -427,7 +427,7 @@ namespace ngsbem
     /*
     RegularMLMultiPole regmp (singmp, cy, ry, int(3*kappa*ry));
     */
-    RegularMLMultiPole<Complex> regmp (cy, ry, int(3*kappa*ry), kappa);
+    RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
     for (int i = 0; i < ypts.Size(); i++)
       regmp.AddTarget(ypts[i]);
     regmp.CalcMP(singmp);
@@ -449,13 +449,13 @@ namespace ngsbem
     fy = 0;
     if (L2Norm(x) == 0) return;
     double kappa = kernel.GetKappa();
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(3*kappa*rx), kappa);
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
     for (int i = 0; i < xpts.Size(); i++)
       singmp->AddDipole(xpts[i], -xnv[i], fx(i));
     singmp->CalcMP();
 
-    RegularMLMultiPole<Complex> regmp (cy, ry, int(3*kappa*ry), kappa);
+    RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
     for (int i = 0; i < ypts.Size(); i++)
       regmp.AddTarget(ypts[i]);
     regmp.CalcMP(singmp);
@@ -475,13 +475,13 @@ namespace ngsbem
     fy = 0;
     if (L2Norm(x) == 0) return;
     double kappa = kernel.GetKappa();
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, int(3*kappa*ry), kappa);
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, kappa);
 
     for (int i = 0; i < ypts.Size(); i++)
       singmp->AddCharge(ypts[i], fx(i));
     singmp->CalcMP();
 
-    RegularMLMultiPole<Complex> regmp (cx, rx, int(3*kappa*rx), kappa);
+    RegularMLMultiPole<Complex> regmp (cx, rx, kappa);
     for (int i = 0; i < xpts.Size(); i++)
       regmp.AddTarget(xpts[i]);
     regmp.CalcMP(singmp);
@@ -508,7 +508,7 @@ namespace ngsbem
     double kappa = kernel.GetKappa();
     
     t1.Start();
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, int(2*kappa*rx), kappa);
+    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
     for (int i = 0; i < xpts.Size(); i++)
       {
         singmp->AddCharge(xpts[i], Complex(0,-kappa)*fx(i));
@@ -524,7 +524,7 @@ namespace ngsbem
     t3.Start();
     // RegularMLMultiPole regmp (singmp, cy, ry, int(2*kappa*ry));
 
-    RegularMLMultiPole<Complex> regmp (cy, ry, int(3*kappa*ry), kappa);
+    RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
     for (int i = 0; i < ypts.Size(); i++)
       regmp.AddTarget(ypts[i]);
 

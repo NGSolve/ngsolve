@@ -36,7 +36,7 @@ def test_singularmltransform():
 
     kappa = 0.01
     order = 20
-    mp = SingularMLMultiPoleCF((0,0,0), r=1, order=-1, kappa=kappa)
+    mp = SingularMLMultiPoleCF((0,0,0), r=1, kappa=kappa)
     num = 200
     for i in range(num):
         z = i/num

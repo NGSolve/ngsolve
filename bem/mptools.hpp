@@ -767,7 +767,7 @@ namespace ngsbem
     bool havemp = false;
     
   public:
-    SingularMLMultiPole (Vec<3> center, double r, int order, double kappa)
+    SingularMLMultiPole (Vec<3> center, double r, double kappa)
       : root(center, r, 0, kappa)
     {
       nodes_on_level = 0;
@@ -883,7 +883,7 @@ namespace ngsbem
 
       Array<const typename SingularMLMultiPole<elem_type>::Node*> singnodes;
 
-      Node (Vec<3> acenter, double ar, int alevel, int order, double kappa)
+      Node (Vec<3> acenter, double ar, int alevel, double kappa)
         : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, ar) // 1.0/min(1.0, 0.25*r*kappa))
           // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0)
       {
@@ -902,7 +902,7 @@ namespace ngsbem
             cc(0) += (i&1) ? r/2 : -r/2;
             cc(1) += (i&2) ? r/2 : -r/2;
             cc(2) += (i&4) ? r/2 : -r/2;
-            childs[i] = make_unique<Node> (cc, r/2, level+1, max(mp.SH().Order()/2, 8), mp.Kappa());
+            childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa());
           }
       }
 
@@ -1143,8 +1143,8 @@ namespace ngsbem
     shared_ptr<SingularMLMultiPole<elem_type>> singmp;
     
   public:
-  RegularMLMultiPole (shared_ptr<SingularMLMultiPole<elem_type>> asingmp, Vec<3> center, double r, int order)
-      : root(center, r, 0, order, asingmp->Kappa()), singmp(asingmp)
+  RegularMLMultiPole (shared_ptr<SingularMLMultiPole<elem_type>> asingmp, Vec<3> center, double r)
+      : root(center, r, 0, asingmp->Kappa()), singmp(asingmp)
     {
       if (!singmp->havemp) throw Exception("first call Calc for singular MP");
 
@@ -1173,8 +1173,8 @@ namespace ngsbem
       }
     }
 
-    RegularMLMultiPole (Vec<3> center, double r, int order, double kappa)
-      : root(center, r, 0, order, kappa)
+    RegularMLMultiPole (Vec<3> center, double r, double kappa)
+      : root(center, r, 0, kappa)
     {
       nodes_on_level = 0;
       nodes_on_level[0] = 1;

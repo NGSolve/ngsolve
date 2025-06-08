@@ -85,8 +85,8 @@ namespace ngsbem
   {
     shared_ptr<SingularMLMultiPole<entry_type>> mlmp;
   public:
-    SingularMLMultiPoleCF (Vec<3> center, double r, int order, double kappa)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<SingularMLMultiPole<entry_type>>(center, r, order, kappa)} { }
+    SingularMLMultiPoleCF (Vec<3> center, double r, double kappa)
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<SingularMLMultiPole<entry_type>>(center, r, kappa)} { }
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("real eval not available"); }
@@ -113,10 +113,10 @@ namespace ngsbem
   {
     shared_ptr<RegularMLMultiPole<entry_type>> mlmp;
   public:
-    RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPoleCF<entry_type>> asingmp, Vec<3> center, double r, int order)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLMultiPole<entry_type>>(asingmp->MLMP(), center, r, order)} { } 
-    RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPole<entry_type>> asingmp, Vec<3> center, double r, int order)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLMultiPole<entry_type>>(asingmp, center, r, order)} { } 
+    RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPoleCF<entry_type>> asingmp, Vec<3> center, double r)
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLMultiPole<entry_type>>(asingmp->MLMP(), center, r)} { } 
+    RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPole<entry_type>> asingmp, Vec<3> center, double r)
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLMultiPole<entry_type>>(asingmp, center, r)} { } 
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("real eval not available"); }
