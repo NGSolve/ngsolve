@@ -1218,7 +1218,7 @@ namespace ngsbem
     int ot = target.SH().Order();
 
     double scale = Scale();
-    double inv_scale = 1.0/Scale();    
+    double inv_scale = 1.0/scale;
     double tscale = target.Scale();
     double inv_tscale = 1.0/tscale;
 
@@ -1367,7 +1367,7 @@ namespace ngsbem
                 if (n > m)
                 trafo(l-1,n) = tscale/amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
                                                   - amn(n-1)* scale*trafo(l,n-1)
-                                                  + amn(n)* 1/scale*trafo(l,n+1));
+                                                  + amn(n)* inv_scale*trafo(l,n+1));
               }
 
             
@@ -1864,7 +1864,7 @@ namespace ngsbem
         if (i > nterms+100000)
           throw Exception("bessel failed 1");
       }
-
+    
     Array<bool> iscale(ntop+1);
     Vector<Tz> fjtmp(ntop+1);
 
@@ -1916,7 +1916,12 @@ namespace ngsbem
   
     fj0=sin(z)*zinv;
     Tz fj1=fj0*zinv-cos(z)*zinv;
-  
+    if (abs(z) < 1e-4)
+      {
+        fj1 = 1.0/3 * z - 1.0/30 * z*z*z + 1.0/840 * z*z*z*z*z;
+      }
+
+    
     double d0=abs(fj0);
     double d1=abs(fj1);
     Tz zscale;
@@ -2171,7 +2176,7 @@ namespace ngsbem
   SingularMLMultiPoleCF<entry_type> :: CreateRegularExpansion(Vec<3> center, double r) const
   {
     mlmp->CalcMP();
-    return make_shared<RegularMLMultiPoleCF<entry_type>> (this->MLMP(), center, r, -1);
+    return make_shared<RegularMLMultiPoleCF<entry_type>> (this->MLMP(), center, r);
   }
 
   template class SphericalHarmonics<Complex>;
