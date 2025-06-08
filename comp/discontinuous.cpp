@@ -102,21 +102,34 @@ namespace ngcomp {
   {
     dnums.SetSize0();
     if (CoDimension(ni.GetType(), ma->GetDimension()) == int(vb))
-      dnums += IntRange(first_element_dof[ni.GetNr()], first_element_dof[ni.GetNr()+1]);
+      {
+        auto nr = ni.GetNr();
+        if (ma->GetDimension()==2 && ni.GetType()==NT_FACE)
+          {
+            Array<int> elnums;
+            ma->GetFaceElements(nr, elnums);
+            if (elnums.Size() == 1)
+              nr = elnums[0];
+            else
+              return;
+          }
+        dnums += IntRange(first_element_dof[nr], first_element_dof[nr+1]);
+      }
   }
   
   void DiscontinuousFESpace :: GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const
   {
-    throw Exception ("DiscontinuousFESpace :: GetVertexDofNrs not implemented");    
+    GetDofNrs(NodeId(NT_VERTEX,vnr), dnums);
   }
   
   void DiscontinuousFESpace :: GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
+
   {
-    throw Exception ("DiscontinuousFESpace :: GetEdgeDofNrs not implemented");    
+    GetDofNrs(NodeId(NT_EDGE,ednr), dnums);    
   }
     
   void DiscontinuousFESpace :: GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
   {
-    throw Exception ("DiscontinuousFESpace :: GetFacetDofNrs not implemented");        
+    GetDofNrs(NodeId(NT_FACE,fanr), dnums);
   }
 }

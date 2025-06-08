@@ -908,7 +908,8 @@ namespace ngmg
             Array<DofId> dnums;
             fes.GetEdgeDofNrs(e, dnums);
             for (auto d : dnums)
-              harm_inner->Clear(d);
+              if (IsRegularDof(d))
+                harm_inner->Clear(d);
           }
         
         // *testout << "innerdofs after coarse = " << *harm_inner << endl;
@@ -919,12 +920,14 @@ namespace ngmg
                 Array<DofId> dnums;
                 fes.GetEdgeDofNrs(e, dnums);
                 for (auto d : dnums)
-                  harm_inner->Clear(d);
+                  if (IsRegularDof(d))                  
+                    harm_inner->Clear(d);
                 for (auto v : ma->GetEdgePNums(e))
                   {
                     fes.GetVertexDofNrs(v, dnums);
                     for (auto d : dnums)
-                      harm_inner->Clear(d);
+                      if (IsRegularDof(d))                      
+                        harm_inner->Clear(d);
                   }
               }
           }
@@ -954,7 +957,8 @@ namespace ngmg
             Array<DofId> dnums;
             fes.GetFaceDofNrs(f, dnums);
             for (auto d : dnums)
-              harm_inner->Clear(d);
+              if (IsRegularDof(d))              
+                harm_inner->Clear(d);
           }
 
         // TODO: locally refined meshes with direct parent on coarse level 
@@ -968,7 +972,8 @@ namespace ngmg
                 Array<DofId> dnums;
                 fes.GetFaceDofNrs(f, dnums);
                 for (auto d : dnums)
-                  harm_inner->Clear(d);
+                  if (IsRegularDof(d))                  
+                    harm_inner->Clear(d);
               }
           }
       }

@@ -61,16 +61,19 @@ namespace ngcomp {
   
   void HiddenFESpace :: GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const
   {
-    throw Exception ("HiddenFESpace :: GetVertexDofNrs not implemented");    
+    space->GetVertexDofNrs(vnr, dnums);
+    dnums = -2; 
   }
   
   void HiddenFESpace :: GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const
   {
-    throw Exception ("HiddenFESpace :: GetEdgeDofNrs not implemented");    
+    space->GetEdgeDofNrs(ednr, dnums);
+    dnums = -2; 
   }
     
   void HiddenFESpace :: GetFaceDofNrs (int fanr, Array<DofId> & dnums) const
   {
-    throw Exception ("HiddenFESpace :: GetFacetDofNrs not implemented");        
+    space->GetFaceDofNrs(fanr, dnums);
+    dnums = -2; 
   }
 }
