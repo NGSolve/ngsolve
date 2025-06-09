@@ -290,7 +290,7 @@ BEM for the Laplace and Helmhotlz equations
    unit-11.2-bem-Laplace/Laplace_NtD_indirect.ipynb
    unit-11.2-bem-Laplace/Laplace_NtD_direct.ipynb
 
-   unit-11.3-bem-Helmholtz/BurtonMiller.ipynb   
+   unit-11.3-bem-Helmholtz/BrakhageWerner.ipynb   
    
 Appendix
 ========
