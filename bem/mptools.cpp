@@ -1337,7 +1337,7 @@ namespace ngsbem
             
             
             trafo.Swap (oldtrafo);
-            trafo = trafo_type(1.0/0.0);  // needs initialization ???
+            trafo = trafo_type(0.0);  // needs initialization ???
             trafo.Col(m-1) = trafo_type(0.0);  // for wall initial value
             
             // fill recursive formula (187)
