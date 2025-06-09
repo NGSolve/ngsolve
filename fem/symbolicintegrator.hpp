@@ -604,6 +604,7 @@ public:
 
   class SymbolicFacetLinearFormIntegrator : public FacetLinearFormIntegrator
   {
+  protected:
     shared_ptr<CoefficientFunction> cf;
     Array<ProxyFunction*> proxies;
     Array<CoefficientFunction*> cache_cfs;
