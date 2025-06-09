@@ -1337,7 +1337,8 @@ namespace ngsbem
             
             
             trafo.Swap (oldtrafo);
-            trafo = trafo_type(0.0);
+            // trafo = trafo_type(0.0);
+            // trafo = trafo_type(1e99);   
 
             // fill recursive formula (187)
             for (int l = m; l <= os+ot-m; l++)
@@ -1542,7 +1543,8 @@ namespace ngsbem
               }
             
             trafo.Swap (oldtrafo);
-            trafo = trafo_type(0.0);
+            // trafo = trafo_type(0.0);
+            // trafo = trafo_type(1e99);
             
             // fill recursive formula (187)
             for (int l = m; l <= os+ot-m; l++)
@@ -1687,7 +1689,7 @@ namespace ngsbem
               }
             
             trafo.Swap (oldtrafo);
-            trafo = trafo_type(0.0);
+            // trafo = trafo_type(1e99);
             
             // fill recursive formula (187)
             for (int l = m; l <= os+ot-m; l++)
