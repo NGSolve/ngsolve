@@ -1347,6 +1347,7 @@ namespace ngsbem
                                                         -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));
               }
 
+            /*
             // unstable for large kappa
             for (int n = m; n < os; n++)
               {
@@ -1355,7 +1356,7 @@ namespace ngsbem
                                                 -amn(l-1)*inv_tscale*trafo(l-1,n)
                                                 -amn(n-1)*scale*trafo(l,n-1));
               }
-            
+            */
             
             // fix real part by wall-reccurence:
             for (int n = m; n < trafo.Width()-1; n++)
@@ -1465,6 +1466,7 @@ namespace ngsbem
     if constexpr (std::is_same<RADIAL,MPSingular>::value && std::is_same<TARGET,MPSingular>::value)
       {
         // sing->sing transformation
+        /*
         static Timer t("mptool ShiftZ sing->sing"); RegionTimer rg(t);
         static Timer tfill("mptool ShiftZ sing->sing fill");
         static Timer tmult("mptool ShiftZ sing->sing mult");
@@ -1473,8 +1475,8 @@ namespace ngsbem
         static Timer tinit("mptool ShiftZ sing->sing init");
         static Timer tlevel0("mptool ShiftZ sing->sing level0");
         static Timer tcleanup("mptool ShiftZ sing->sing cleanup");                        
-
-        tlevel0.Start();
+        */
+        // tlevel0.Start();
         LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 500));
 
         typedef double trafo_type;
@@ -1484,8 +1486,6 @@ namespace ngsbem
         FlatVector<entry_type> hv1(os+1, lh), hv2(ot+1, lh);
         
         trafo = trafo_type(0.0);
-
-
         
         FlatVector<double> amn(os+ot+1, lh);
         FlatVector<double> tscale_inv_amn(os+ot+1, lh);
@@ -1539,11 +1539,11 @@ namespace ngsbem
         for (int n = 0; n <= ot; n++)
           target.SH().Coef(n,0) = hv2(n);
         
-        tlevel0.Stop();
+        // tlevel0.Stop();
       
         for (int m = 1; m <= min(os,ot); m++)
           {
-            tinit.Start();
+            // tinit.Start();
             for (int l = m-1; l < os+ot-m; l++)
               {
                 amn(l) = sh.CalcAmn(m,l);
@@ -1552,20 +1552,17 @@ namespace ngsbem
             
             trafo.Swap (oldtrafo);
             // trafo = trafo_type(0.0);
-            trafo = trafo_type(1.0/0.0);
+            // trafo = trafo_type(1.0/0.0);
             // trafo.Col(m-1) = trafo_type(0.0);  // for wall initial value
             
             // fill recursive formula (187)
             for (int l = m; l <= os+ot-m; l++)
               trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)  
                                                       -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));  
-            tinit.Stop();
-            
-            twall.Start();
-
-
+            // tinit.Stop();
+            // twall.Start();
             {
-              int l = trafo.Height()-m-2;
+              int l = os+ot-m-1;
               if (m < trafo.Width()-1)
                 trafo(l,m+1) = scale/sh.CalcBmn(-m,m+1)* ( // sh.CalcBmn(m-1,m) * scale*trafo(l,m-1)
                                                            - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m)     
@@ -1573,20 +1570,20 @@ namespace ngsbem
             }
             for (int n = m+1; n < trafo.Width()-1; n++)
               {
-                int l = trafo.Height()-n-2;
+                int l = os+ot-n-1;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
                                                           + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
                 
                 trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
                                                       - amn(n-1)* scale*trafo(l,n-1)
-                                                      + amn(n)* 1/scale*trafo(l,n+1));
+                                                      + amn(n)* inv_scale*trafo(l,n+1));
               }
             
             // the same thing 1 row up
             {
-              int l = trafo.Height()-m-3;
-              if (m < trafo.Width()-1)              
+              int l = os+ot-m-2;
+              if (m < trafo.Width()-2)          
                 trafo(l,m+1) = scale/sh.CalcBmn(-m,m+1)* (// sh.CalcBmn(m-1,m)     * scale*trafo(l,m-1)
                                                           - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,m)   
                                                           + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,m) );
@@ -1594,7 +1591,7 @@ namespace ngsbem
             for (int n = m+1; n < trafo.Width()-2; n++)
               {
                 // int l = 2*order-n-2;
-                int l = trafo.Height()-n-3;
+                int l = os+ot-n-2;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
                                                           + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
@@ -1603,29 +1600,28 @@ namespace ngsbem
                                                       -amn(n-1)* scale*trafo(l,n-1) +
                                                       amn(n)   * 1/scale*trafo(l,n+1)) ;
               }
-            twall.Stop();
             
-            tfill.Start();
+            // twall.Stop();
+            // tfill.Start();
+            
             for (int l = os+ot-m; l >= m; l--)
-              {
-                for (int n = m+1; n < min<int>(os+ot-l,l); n++)
-                  {
-                    trafo(l-1,n) = tscale_inv_amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
-                                                          -amn(n-1)* scale*trafo(l,n-1)
-                                                          +amn(n)  * inv_scale*trafo(l,n+1)) ;
-                  }
-              }
+              for (int n = m+1; n < min<int>(os+ot-l,l); n++)
+                {
+                  trafo(l-1,n) = tscale_inv_amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
+                                                        -amn(n-1)* scale*trafo(l,n-1)
+                                                        +amn(n)  * inv_scale*trafo(l,n+1)) ;
+                }
             
-            tfill.Stop();
-            tfill.AddFlops (sqr( (os+ot)/2-m ));
+            // thhfill.Stop();
+            // tfill.AddFlops (sqr( (os+ot)/2-m ));
 
-            ttrans.Start();
+            // ttrans.Start();
             for (int n = m; n < os; n++)
               for (int l = n+1; l <= os; l++)
                 trafo(n,l) = powscale(l-n) * trafo(l,n);              
-            ttrans.Stop();
+            // ttrans.Stop();
             
-            tmult.Start();
+            // tmult.Start();
             for (int n = m; n <= os; n++)
               hv1(n) = sh.Coef(n,m);
             hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
@@ -1637,9 +1633,10 @@ namespace ngsbem
             hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
             for (int n = m; n <= ot; n++)
               target.SH().Coef(n,-m) = hv2(n);
-            tmult.Stop();
+
+            // tmult.Stop();
           }
-        RegionTimer cleanup(tcleanup);
+        // RegionTimer cleanup(tcleanup);
       }
     
     
