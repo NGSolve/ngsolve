@@ -584,9 +584,16 @@ namespace ngsbem
           }
 
         // static Timer t("fmm direct eval"); RegionTimer reg(t);
-        for (auto [x,c] : charges)
-          if (double rho = L2Norm(p-x); rho > 0)
-            sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
+        if (mp.Kappa() < 1e-8)
+          {
+            for (auto [x,c] : charges)
+              if (double rho = L2Norm(p-x); rho > 0)
+                sum += (1/(4*M_PI))*Complex(1,rho*mp.Kappa()) / rho * c;
+          }
+        else
+          for (auto [x,c] : charges)
+            if (double rho = L2Norm(p-x); rho > 0)
+              sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
         
         for (auto [x,d,c] : dipoles)
           if (double rho = L2Norm(p-x); rho > 0)
