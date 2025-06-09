@@ -781,20 +781,14 @@ namespace ngfem
                         const FiniteElement & volumefel2, int LocalFacetNr2,
                         const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
                         FlatVector<double> elx, FlatVector<double> ely,
-                        LocalHeap & lh) const
-    { 
-      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for inner facets not implemented!");
-    }
+                        LocalHeap & lh) const;
     virtual void
       ApplyFacetMatrix (const FiniteElement & volumefel1, int LocalFacetNr1,
                         const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
                         const FiniteElement & volumefel2, int LocalFacetNr2,
                         const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
                         FlatVector<Complex> elx, FlatVector<Complex> ely,
-                        LocalHeap & lh) const
-    { 
-      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for inner facets not implemented!");
-    }
+                        LocalHeap & lh) const;
 
 
     virtual void
@@ -841,19 +835,13 @@ namespace ngfem
                         const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                         const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
                         FlatVector<double> elx, FlatVector<double> ely,
-                        LocalHeap & lh) const
-    { 
-      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
-    }
+                        LocalHeap & lh) const;
     virtual void
       ApplyFacetMatrix (const FiniteElement & volumefel, int LocalFacetNr,
                         const ElementTransformation & eltrans, FlatArray<int> & ElVertices,
                         const ElementTransformation & seltrans, FlatArray<int> & SElVertices,
                         FlatVector<Complex> elx, FlatVector<Complex> ely,
-                        LocalHeap & lh) const
-    { 
-      throw Exception ("FacetBilinearFormIntegrator::ApplyFacetMatrix for boundary facets not implemented!");
-    }
+                        LocalHeap & lh) const;
 
 
     // calculate traces in integration points
