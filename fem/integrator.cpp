@@ -706,13 +706,55 @@ namespace ngfem
   }
 
   
+  void FacetBilinearFormIntegrator ::ApplyFacetMatrix(
+      const FiniteElement & volumefel1, int LocalFacetNr1,
+      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+      const FiniteElement & volumefel2, int LocalFacetNr2,
+      const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+      FlatVector<double> elx, FlatVector<double> ely,
+      LocalHeap & lh) const
+  {
+    FlatMatrix<double> mat(ely.Size(), elx.Size(), lh);
+    CalcFacetMatrix (volumefel1, LocalFacetNr1, eltrans1, ElVertices1,
+                     volumefel2, LocalFacetNr2, eltrans2, ElVertices2, mat, lh);
+    ely = mat * elx;
+  }
 
+  void FacetBilinearFormIntegrator ::ApplyFacetMatrix(
+      const FiniteElement & volumefel1, int LocalFacetNr1,
+      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+      const FiniteElement & volumefel2, int LocalFacetNr2,
+      const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+      FlatVector<Complex> elx, FlatVector<Complex> ely,
+      LocalHeap & lh) const
+  {
+    FlatMatrix<Complex> mat(ely.Size(), elx.Size(), lh);
+    CalcFacetMatrix (volumefel1, LocalFacetNr1, eltrans1, ElVertices1,
+                     volumefel2, LocalFacetNr2, eltrans2, ElVertices2, mat, lh);
+    ely = mat * elx;
+  }
 
+  void FacetBilinearFormIntegrator ::ApplyFacetMatrix(
+      const FiniteElement &volumefel, int LocalFacetNr,
+      const ElementTransformation &eltrans, FlatArray<int> &ElVertices,
+      const ElementTransformation &seltrans, FlatArray<int> &SElVertices,
+      FlatVector<double> elx, FlatVector<double> ely, LocalHeap &lh) const
+  {
+    FlatMatrix<double> mat(ely.Size(), elx.Size(), lh);
+    CalcFacetMatrix (volumefel, LocalFacetNr, eltrans, ElVertices, seltrans, SElVertices, mat, lh);
+    ely = mat * elx;
+  }
 
-
-
-
-
+  void FacetBilinearFormIntegrator ::ApplyFacetMatrix(
+      const FiniteElement &volumefel, int LocalFacetNr,
+      const ElementTransformation &eltrans, FlatArray<int> &ElVertices,
+      const ElementTransformation &seltrans, FlatArray<int> &SElVertices,
+      FlatVector<Complex> elx, FlatVector<Complex> ely, LocalHeap &lh) const
+  {
+    FlatMatrix<Complex> mat(ely.Size(), elx.Size(), lh);
+    CalcFacetMatrix (volumefel, LocalFacetNr, eltrans, ElVertices, seltrans, SElVertices, mat, lh);
+    ely = mat * elx;
+  }
 
 
   /*
