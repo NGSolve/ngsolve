@@ -48,6 +48,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   py::class_<SingularMLMultiPole<Vec<3,Complex>>, shared_ptr<SingularMLMultiPole<Vec<3,Complex>>>> (m, "SingularMLMP3")
     .def(py::init<Vec<3>,double,double>())
     .def("AddCurrent", &SingularMLMultiPole<Vec<3,Complex>>::AddCurrent, py::arg("sp"), py::arg("ep"), py::arg("j"), py::arg("num")=100)
+    .def("AddCurrentDensity", [](SingularMLMultiPole<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current,
+                                 ngcomp::Region reg) { AddCurrentDensity(mp,current,reg); })
+    
     .def("Calc", &SingularMLMultiPole<Vec<3,Complex>>::CalcMP)
     // .def("Norm", &SingularMLMultiPole<Complex>::Norm)    
     // .def("__str__", [](SingularMLMultiPole<Complex>& mlmp) { return ToString<>(mlmp); })
@@ -100,6 +103,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       )
     ;
 
+   // from potentialtools
+
 
 
   
@@ -125,9 +130,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     ;
 
   
-
-   // from potentialtools
-   m.def("AddCurrentDensity", &AddCurrentDensity);
 
    
 
