@@ -230,7 +230,10 @@ namespace ngcomp
 
     shared_ptr<Smoother> sm = nullptr;
     //    const char * smoother = flags.GetStringFlag ("smoother", "point");
-    smoothertype = flags.GetStringFlag ("smoother", "point");
+    
+    smoothertype = flags.GetStringFlag ("smoother",
+                                        (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
+                                         ? "block" : "point");
 
     if (smoothertype == "point")
       {
@@ -240,14 +243,9 @@ namespace ngcomp
       {
 	sm = make_shared<AnisotropicSmoother> (*ma, *lo_bfa);
       }
-    else if (smoothertype == "block") 
+    else if (smoothertype == "block")
       {
-	// if (!lfconstraint)
         sm = make_shared<BlockSmoother> (*ma, *lo_bfa, flags);
-          /*
-            else
-            sm = new BlockSmoother (*ma, *lo_bfa, *lfconstraint, flags);
-          */
       }
     /*
     else if (smoothertype == "potential")
@@ -256,7 +254,9 @@ namespace ngcomp
       }
     */
     else
-      cerr << "Unknown Smoother " << smoothertype << endl;
+      throw Exception("Unknown smoother type '"+ToString(smoothertype)+"', allowed types are\n"
+                      "'point', 'line', 'block'");
+    // cerr << "Unknown Smoother " << smoothertype << endl;
 
     if (!sm)
       throw Exception ("smoother could not be allocated"); 

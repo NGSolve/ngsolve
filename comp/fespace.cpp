@@ -1635,7 +1635,24 @@ lot of new non-zero entries in the matrix!\n" << endl;
         flags.GetStringFlag("blocktype")=="edgepatch" ||                
         flags.GetStringFlag("blocktype")=="vertexedge")
       blocktypes += flags.GetStringFlag("blocktype");
-
+    
+    for (auto type : blocktypes)
+      {
+        Array<string> types { "vertex", "edge", "face", "facet", "vertexpatch", "edgepatch", "vertexedge" };
+        if (!types.Contains(type))
+          {
+            throw Exception("FESpace::CreateSmoothingBlocks type '"+ToString(type)+"' not available, available types are:\n"
+                            "vertex ... all dofs associated with vertices\n"
+                            "edge ..... all dofs associated with edges\n"
+                            "face ..... all dofs associated with faces\n"
+                            "facet .... all dofs associated with faces\n"
+                            "vertexpatch .. all dofs associated with the open vertex patch\n"
+                            "edgepatch .... all dofs associated with the open edge patch\n"
+                            "vertexedge ... all dofs on edges connected to vertex+vertex dofs\n"
+                            );
+          }
+      }
+    
     
     if (blocktypes.Size())
       {
