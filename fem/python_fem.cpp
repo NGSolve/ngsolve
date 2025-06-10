@@ -912,6 +912,14 @@ val : can be one of the following:
     .def ("__pow__", [m] (shared_ptr<CF> c1, double c2) { return m.attr("pow")(c1, c2); })
     .def ("__rpow__", [m] (shared_ptr<CF> c1, double c2) { return m.attr("pow")(c2, c1); })
     .def ("__pow__", [m] (shared_ptr<CF> c1, shared_ptr<CF> c2) { return m.attr("pow")(c1, c2); })
+    .def("__or__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
+          {
+            return InnerProduct(c1, c2);
+          }, py::arg("cf"))
+    .def("__or__", [] (shared_ptr<CF> c1, const ngcomp::Region& c2)
+          {
+            py::module::import("ngsolve").attr("solve_implementation").attr("Dirichlet")(c1,c2);
+          }, py::arg("cf"))
 
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
