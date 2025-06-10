@@ -116,6 +116,7 @@ docu_test:
   variables:
     IMAGE_NAME: "avx"
     UBUNTU_VERSION: $UBUNTU_VERSION_LTS
+    SHOW_LOGS: "1"
   when: manual
   after_script:
     - /home/gitlab-runner/deploy/deploy_docu_test.sh $CI_PIPELINE_ID
