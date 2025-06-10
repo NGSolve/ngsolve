@@ -82,6 +82,7 @@ Whetting the Appetite
    wta/solverlayers.ipynb
    wta/fembem.ipynb
 
+   wta/wheretogo.ipynb
    
 1. Getting started
 ===================
