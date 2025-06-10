@@ -2813,7 +2813,11 @@ reallocate : bool
                            { return self->UsesEliminateInternal(); },
                            "use static condensation ?"
                            )
-                           
+
+    .def("__call__", [](shared_ptr<BF> self, shared_ptr<GridFunction> u)
+    {
+      return py::module::import("ngsolve").attr("solve_implementation").attr("NonLinearApplication")(self, u);
+    }, py::arg("gfu"))
     .def("__call__", [](BF & self, const GridFunction & u, const GridFunction & v)
           {
             auto au = self.GetMatrix().CreateColVector();
