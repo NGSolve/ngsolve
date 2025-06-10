@@ -138,11 +138,6 @@ def _create_lin_appl(self, gfu: GridFunction) -> LinearApplication:
     return LinearApplication(self, gfu)
 
 
-def _create_nonlin_appl(self, gfu: GridFunction) -> NonLinearApplication:
-    if not isinstance(gfu, GridFunction):
-        raise TypeError("gfu must be a GridFunction")
-    return NonLinearApplication(self, gfu)
-
 
 def _cf_on_region(self, region: Region) -> Dirichlet:
     if not isinstance(region, Region):
@@ -152,7 +147,6 @@ def _cf_on_region(self, region: Region) -> Dirichlet:
 
 CoefficientFunction.__or__ = _cf_on_region
 BilinearForm.__mul__ = _create_lin_appl
-BilinearForm.__call__ = _create_nonlin_appl
 
 
 @functools.wraps(Application.Solve)
