@@ -138,14 +138,6 @@ def _create_lin_appl(self, gfu: GridFunction) -> LinearApplication:
     return LinearApplication(self, gfu)
 
 
-
-def _cf_on_region(self, region: Region) -> Dirichlet:
-    if not isinstance(region, Region):
-        raise TypeError("region must be a Region")
-    return Dirichlet(self, region)
-
-
-CoefficientFunction.__or__ = _cf_on_region
 BilinearForm.__mul__ = _create_lin_appl
 
 
