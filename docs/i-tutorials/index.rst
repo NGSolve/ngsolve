@@ -268,7 +268,7 @@ There are further ngsxfem-tutorials `here <https://github.com/ngsxfem/ngsxfem-ju
    unit-10.2-tensorflow/TensorFlowNGSolve.ipynb
 
 
-11. Boundary element and Fast Multi-pole methods
+11. Boundary element and Fast Multipole methods
 ================================================
 Lucy Weggler and Joachim Schöberl
 
