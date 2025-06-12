@@ -33,6 +33,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def(py::init<Vec<3>,double,double>())
     .def("AddCharge", &SingularMLMultiPole<Complex>::AddCharge)
     .def("AddDipole", &SingularMLMultiPole<Complex>::AddDipole)
+    .def("AddChargeDensity", [](SingularMLMultiPole<Complex> & mp, shared_ptr<CoefficientFunction> charge,
+                                ngcomp::Region reg) { AddChargeDensity(mp,charge,reg); })
+    
     .def("Calc", &SingularMLMultiPole<Complex>::CalcMP)
     .def("Norm", &SingularMLMultiPole<Complex>::Norm)    
     .def("__str__", [](SingularMLMultiPole<Complex>& mlmp) { return ToString<>(mlmp); })

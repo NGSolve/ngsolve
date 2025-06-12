@@ -12,6 +12,8 @@
 
 namespace ngsbem
 {
+
+  extern void AddChargeDensity (SingularMLMultiPole<Complex> & mp, shared_ptr<CoefficientFunction> current, ngcomp::Region reg);
   
   extern void AddCurrentDensity (SingularMLMultiPole<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current, ngcomp::Region reg);
  
