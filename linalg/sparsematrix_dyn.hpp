@@ -42,20 +42,19 @@ namespace ngla
           fm = matvec(i);
         }
     }
-
+    
     virtual int VHeight() const override { return size; }
     virtual int VWidth() const override { return width; }
-
+    
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-
+    
     AutoVector CreateRowVector() const override
-    { throw Exception("CreateRowVector not implemented for SparseMatrixDynamic!"); }
+    { throw make_unique<VVector<TSCAL>> (VWidth()); }
     AutoVector CreateColVector() const override
-    { throw  Exception("CreateColVector not implemented for SparseMatrixDynamic!"); }
-
+    { throw make_unique<VVector<TSCAL>> (VHeight()); }
+    
     virtual tuple<int,int> EntrySizes() const override { return { bh, bw }; }
-
   };
   
 

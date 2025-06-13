@@ -174,7 +174,7 @@ namespace ngsbem
         (BND, lh, [&] (auto el, LocalHeap & llh)
         {
           if (el.GetType() == ET_QUAD)
-            classnr[el.Nr()] == -1;
+            classnr[el.Nr()] = -1;
           else
             classnr[el.Nr()] = 
               SwitchET<ET_SEGM, ET_TRIG, ET_TET>
