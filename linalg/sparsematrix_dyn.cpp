@@ -127,7 +127,7 @@ namespace ngla
 
     int maxbs = 0;
     for (int i = 0; i < nblocks; i++)
-      maxbs = cum_block_size[i+1]-cum_block_size[i];
+      maxbs = max(maxbs, cum_block_size[i+1]-cum_block_size[i]);
     Array<int> nbs(maxbs+1);
     nbs = 0;
     for (int i = 0; i < nblocks; i++)
@@ -174,7 +174,6 @@ namespace ngla
   template <typename TSCAL>  
   AutoVector SparseMatrixVariableBlocks<TSCAL> :: CreateRowVector () const
   {
-    cout << "CreateRowVector, w = " << width << endl;
     return CreateBaseVector(width, false, 1);    
   }
 
