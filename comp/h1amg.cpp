@@ -1,5 +1,5 @@
 #include "h1amg.hpp"
-#include "preconditioner.hpp"
+// #include "preconditioner.hpp"
 // #include <comp.hpp>
 using namespace ngcomp;
 
@@ -455,42 +455,30 @@ namespace ngcomp
       smoother->GSSmoothBack (x, b, smoothing_steps);
   }
 
+
+  
+
   template <class SCAL>
-  class H1AMG_Preconditioner : public Preconditioner
+  DocInfo H1AMG_Preconditioner<SCAL> :: GetDocu()
   {
-    shared_ptr<BitArray> freedofs;
-    shared_ptr<H1AMG_Matrix<SCAL>> mat;
+    DocInfo docu;
+    docu.short_docu = "Nodal AMG preconditioner for H1-problems";
 
-    ParallelHashTable<IVec<2>,double> edge_weights_ht;
-    ParallelHashTable<IVec<1>,double> vertex_weights_ht;
+    docu.long_docu =
+      R"raw_string(using agglomeration-based AMG
+)raw_string";      
+    
+    docu.Arg("blockjustfortest") = "bool = false\n"
+      "  use block Jacobi/Gauss-Seidel";
 
-  public:
-
-    static shared_ptr<Preconditioner> CreateBF (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
-    {
-      if (bfa->GetFESpace()->IsComplex())
-        return make_shared<H1AMG_Preconditioner<Complex>> (bfa, flags, name);
-      else
-        return make_shared<H1AMG_Preconditioner<double>> (bfa, flags, name);
-    }
-
-    H1AMG_Preconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
-                          const string aname = "H1AMG_cprecond")
-      : Preconditioner (abfa, aflags, aname)
-    {
-      if (is_same<SCAL,double>::value)
-        cout << IM(3) << "Create H1AMG" << endl;
-      else
-        cout << IM(3) << "Create H1AMG, complex" << endl;
-    }
+    return docu;
+  }
 
 
-    virtual void InitLevel (shared_ptr<BitArray> _freedofs) override
-    {
-      freedofs = _freedofs;
-    }
+  
 
-    virtual void FinalizeLevel (const BaseMatrix * matrix) override
+  template <class SCAL>  
+  void H1AMG_Preconditioner<SCAL> :: FinalizeLevel (const BaseMatrix * matrix) 
     {
       auto smat = dynamic_pointer_cast<SparseMatrixTM<SCAL>> (const_cast<BaseMatrix*>(matrix)->shared_from_this());
       if (!smat)
@@ -523,11 +511,12 @@ namespace ngcomp
     }
 
 
-    virtual void AddElementMatrix (FlatArray<int> dnums,
-                                   const FlatMatrix<SCAL> & elmat,
-                                   ElementId id,
-                                   LocalHeap & lh) override
-    {
+  template <class SCAL>  
+  void H1AMG_Preconditioner<SCAL> :: AddElementMatrix (FlatArray<int> dnums,
+                                                       const FlatMatrix<SCAL> & elmat,
+                                                       ElementId id,
+                                                       LocalHeap & lh)
+  {
       HeapReset hr(lh);
       // vertex weights
       // static Timer t("h1amg - addelmat");
@@ -609,18 +598,15 @@ namespace ngcomp
       */
     }
 
-    virtual void Update () override { ; }
 
-    virtual const BaseMatrix & GetMatrix() const override 
-    {
-      return *mat;
-    }
-
-
-  };
-
+  
+  
   template class H1AMG_Matrix<double>;
   template class H1AMG_Matrix<Complex>;
+
+  template class H1AMG_Preconditioner<double>;
+  template class H1AMG_Preconditioner<Complex>;
+  
   // static RegisterPreconditioner<H1AMG_Preconditioner<double> > initpre ("h1amg");
   auto initpre = [] () {
     GetPreconditionerClasses().AddPreconditioner("h1amg",
