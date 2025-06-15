@@ -9,6 +9,7 @@
 #include "bilinearform.hpp"
 #include "preconditioner.hpp"
 #include <multigrid.hpp>
+#include "h1amg.hpp"
 #include "hcurlamg.hpp"
 #include <pybind11/functional.h>
 #include "l2hofespace.hpp"
@@ -3290,16 +3291,22 @@ integrator : ngsolve.fem.LFI
     })
     ;
 
-  /*
-  py::class_<H1AMG, shared_ptr<HCurlAMG>, Preconditioner>
-    (m, "HCurlAMG")
+
+  py::class_<H1AMG_Preconditioner<double>, shared_ptr<H1AMG_Preconditioner<double>>, Preconditioner>
+    (m, "H1AMG")
     .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
     {
       auto flags = CreateFlagsFromKwArgs(kwargs);
-      return make_shared<HCurlAMG>(bf, flags, "HCurlAMG");
+      return make_shared<H1AMG_Preconditioner<double>>(bf, flags, "HCurlAMG");
     }), py::arg("bf"))
+    .def_static("__flags_doc__", []()
+    {
+      py::dict flags_doc;
+      for (auto & flagdoc : H1AMG_Preconditioner<double>::GetDocu().arguments)
+        flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+      return flags_doc;
+    });
     ;
-  */
   
   py::class_<HCurlAMG, shared_ptr<HCurlAMG>, Preconditioner>
     (m, "HCurlAMG")
