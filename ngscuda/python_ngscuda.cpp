@@ -3,6 +3,7 @@
 #include "../ngstd/python_ngstd.hpp"
 #include "cuda_linalg.hpp"
 #include "cuda_profiler.hpp"
+#include "ngs_cudss.hpp"
 
 // TODO: always use ngs_cuda?
 using namespace ngbla;
@@ -205,6 +206,13 @@ PYBIND11_MODULE(ngscuda, m) {
                    << ", time = " << t.GetTime() << " MFlops = " << t.GetMFlops() << endl;
              }
          })
+    ;
+
+  py::class_<CudssMatrix, BaseMatrix, shared_ptr<CudssMatrix>> (m, "CudssMatrix")
+    .def(py::init<shared_ptr<BaseMatrix>>())
+    .def("Analyze", &CudssMatrix::Analyze)
+    .def("Factor", &CudssMatrix::Factor)
+    .def("MultAdd", &CudssMatrix::MultAdd)
     ;
   
   // ExportDemo(m);
