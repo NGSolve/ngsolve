@@ -159,16 +159,19 @@ namespace ngcomp
 
   /* *********************** HCurlAMG_Matrix  **************************** */
 
+
+  
   template<typename SCAL>
   class HCurlAMG_Matrix : public BaseMatrix
   {
   protected:
     // parameters:
-    int smoothing_steps = 1;
+    HCurlAMG_Parameters param;
+    // int smoothing_steps = 1;
     bool node_on_each_level;
-    bool use_smoothed_prolongation;
-    int coarsenings_per_level;
-    bool blockjacobi_smoother;
+    // bool use_smoothed_prolongation;
+    // int coarsenings_per_level;
+    // bool blockjacobi_smoother;
     bool need_vertex_prolongation = false;
 
 
@@ -183,16 +186,20 @@ namespace ngcomp
     shared_ptr<SparseMatrixTM<double>> gradient, trans_gradient;
     shared_ptr<BaseMatrix> node_h1;
     shared_ptr<BaseMatrix> coarse_precond;
-
+    
   public:
-    HCurlAMG_Matrix (bool _node_on_each_level = false,
-                     bool _use_smoothed_prolongation = true,
-                     int _coarsenings_per_level = 3,
-                     bool _blockjacobi_smoother = true)
-      : node_on_each_level(_node_on_each_level),
-        use_smoothed_prolongation(_use_smoothed_prolongation),
-        coarsenings_per_level(_coarsenings_per_level),
-        blockjacobi_smoother(_blockjacobi_smoother)
+    HCurlAMG_Matrix (HCurlAMG_Parameters aparam,
+                     bool _node_on_each_level = false
+                     // bool _use_smoothed_prolongation = true
+                     // int _coarsenings_per_level = 3,
+                     // bool _blockjacobi_smoother = true
+                     )
+      
+      : param(aparam),
+        node_on_each_level(_node_on_each_level)
+        // use_smoothed_prolongation(_use_smoothed_prolongation)
+        // coarsenings_per_level(_coarsenings_per_level),
+        // blockjacobi_smoother(_blockjacobi_smoother)
     {}
 
     HCurlAMG_Matrix(shared_ptr<SparseMatrixTM<SCAL>> _mat,
@@ -201,8 +208,9 @@ namespace ngcomp
                     FlatArray<IVec<2>> e2v,
                     FlatArray<double> edge_weights,
                     FlatArray<double> face_weights,
-                    size_t level)
-      : HCurlAMG_Matrix()
+                    size_t level,
+                    HCurlAMG_Parameters aparam)
+      : HCurlAMG_Matrix(aparam)
     {
       for(const auto& verts : e2v)
         nv = max3(nv, verts[0], verts[1]);
@@ -218,15 +226,15 @@ namespace ngcomp
               FlatArray<double> face_weights,
               size_t level);
 
+    
     int VHeight() const override { return size; }
     int VWidth() const override { return size; }
     bool IsComplex() const override { return is_same<SCAL, Complex>(); }
-    AutoVector CreateRowVector() const override
-    { return mat->CreateColVector(); }
-    AutoVector CreateColVector() const override
-    { return mat->CreateRowVector(); }
+    AutoVector CreateRowVector() const override { return mat->CreateColVector(); }
+    AutoVector CreateColVector() const override { return mat->CreateRowVector(); }
 
     void Mult(const BaseVector& f, BaseVector& u) const override;
+    
   protected:
 
     Array<double> CalcEdgeCollapseWeights(FlatArray<IVec<3>> f2e,
@@ -300,8 +308,8 @@ namespace ngcomp
     auto ne = edge_weights.Size();
     auto nf = f2e.Size();
 
-    *testout << "HCurlAMG_Matrx::init" << endl;
-    *testout << "size = " << size << ", nedge = " << ne << ", nface = " << nf << endl;
+    if (param.verbose > 1)
+      cout << IM(0) << "init level, matsize = " << size << ", nedge = " << ne << ", nface = " << nf << endl;
     
     TableCreator<int> e2f_creator(ne);
     for(;!e2f_creator.Done(); e2f_creator++)
@@ -314,7 +322,7 @@ namespace ngcomp
     AMGInfo cinfo;
     Table<int> ce2f;
 
-    for(auto coarsening : Range(coarsenings_per_level))
+    for(auto coarsening : Range(param.coarsenings_per_level))
       {
         if(coarsening == 0)
           {
@@ -330,7 +338,7 @@ namespace ngcomp
             auto nce = cinfo.e2v.Size();
             
             // build smoother
-            if(blockjacobi_smoother)
+            if(param.block_smoother)
               {
                 TableCreator<int> smoothing_blocks_creator(nce);
                 for(; !smoothing_blocks_creator.Done(); smoothing_blocks_creator++)
@@ -381,44 +389,50 @@ namespace ngcomp
 
     // smoothed prolongation
     Array<int> nne(ne);
-    if(use_smoothed_prolongation)
+    if(param.use_smoothed_prolongation)
       {
+        static Timer tsmprol("smoothed prolongation"); RegionTimer rsmprol(tsmprol);
         nne = 0;
         for(auto i : Range(ne))
           if(e2f[i].Size() > 0)
             nne[i] = 1 + 2 * e2f[i].Size();
         auto smoothprol = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, ne);
         double alpha = 0.5;
-        for(auto i : Range(ne))
-          {
-            if(e2f[i].Size() == 0) continue; // unused dofs
-            ArrayMem<int, 10> row_indices;
-            row_indices.Append(i);
-            for(auto face : e2f[i])
-              for(auto edge : f2e[face])
-                if(edge != i)
-                  row_indices.Append(edge);
-            QuickSort(row_indices);
+        
+        // for(auto i : Range(ne))
+        ParallelForRange(ne, [&](IntRange r)
+        {
+          Array<int> row_indices;
+          for (auto i : r)
+            {
+              if(e2f[i].Size() == 0) continue; // unused dofs
+              row_indices.SetSize0();
+              row_indices.Append(i);
+              for(auto face : e2f[i])
+                for(auto edge : f2e[face])
+                  if(edge != i)
+                    row_indices.Append(edge);
+              QuickSort(row_indices);
 
-            for(auto j : row_indices)
-              (*smoothprol)(i,j) = 0.;
-            (*smoothprol)(i,i) += edge_weights[i];
-            auto verts = e2v[i];
-            for(auto face : e2f[i])
-              {
-                for(auto e : f2e[face])
-                  {
-                    auto v2 = e2v[e];
-                    auto orientation = verts[0] == v2[0] || verts[1] == v2[1] ? -1. : 1.;
-                    if(e == i) orientation = 1.;
-                    (*smoothprol)(i,e) += orientation * face_weights[face];
-                  }
-              }
-            auto diag = (*smoothprol)(i,i);
-            for(auto j : smoothprol->GetRowIndices(i))
-              (*smoothprol)(i,j) *= -alpha/diag;
-            (*smoothprol)(i,i) += 1.;
-          }
+              for(auto j : row_indices)
+                (*smoothprol)(i,j) = 0.;
+              (*smoothprol)(i,i) += edge_weights[i];
+              auto verts = e2v[i];
+              for(auto face : e2f[i])
+                {
+                  for(auto e : f2e[face])
+                    {
+                      auto v2 = e2v[e];
+                      auto orientation = verts[0] == v2[0] || verts[1] == v2[1] ? -1. : 1.;
+                      if(e == i) orientation = 1.;
+                      (*smoothprol)(i,e) += orientation * face_weights[face];
+                    }
+                }
+              auto diag = (*smoothprol)(i,i);
+              for(auto j : smoothprol->GetRowIndices(i))
+                (*smoothprol)(i,j) *= -alpha/diag;
+              (*smoothprol)(i,i) += 1.;
+            }});
         prolongation = MatMult(*smoothprol, *prolongation);
         cout << IM(5) << "Smoothed prol nze: " << prolongation->NZE() << endl;
         cout << IM(5) << "Smoothed prol nze per row: " << double(prolongation->NZE())/prolongation->Height() << endl;
@@ -488,7 +502,7 @@ namespace ngcomp
         coarse_precond = make_shared<HCurlAMG_Matrix<SCAL>>
           (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(coarsemat),
            cinfo.freedofs, cinfo.f2e, cinfo.e2v, cinfo.edge_weights,
-           cinfo.face_weights, level+1);
+           cinfo.face_weights, level+1, param);
       }
   }
 
@@ -519,8 +533,7 @@ namespace ngcomp
   (FlatArray<IVec<3>> f2e, FlatArray<IVec<2>> e2v, FlatArray<double> edge_weights,
    FlatArray<double> face_weights, FlatTable<int> e2f) const
   {
-    static Timer timer("HCurlAMG::CalcEdgeCollapse");
-    RegionTimer rt(timer);
+    static Timer timer("HCurlAMG::CalcEdgeCollapseWeights"); RegionTimer rt(timer);
     auto ne = e2v.Size();
 
     Array<double> coll_eweights(ne);
@@ -719,7 +732,7 @@ namespace ngcomp
           LapackEigenValuesSymmetric(sum, cor_sum, lami);
           coll_eweights[ei] = lami[0] + double(e2f[ei].Size())/50.;
         }
-    }, TasksPerThread(100));
+    }, TasksPerThread(10));
     return coll_eweights;
   }
 
@@ -916,9 +929,10 @@ namespace ngcomp
 
     u = 0.;
     if(smoother)
-      smoother->GSSmooth(u, f); //, smoothing_steps);
+      for (int k = 0; k < param.smoothing_steps; k++)      
+        smoother->GSSmooth(u, f);
     else
-      blocksmoother->GSSmooth(u, f);
+      blocksmoother->GSSmooth(u, f, param.smoothing_steps);
     
     auto residuum = f.CreateVector();
 
@@ -945,9 +959,10 @@ namespace ngcomp
       }
     
     if(smoother)
-      smoother->GSSmoothBack(u, f); //, smoothing_steps);
+      for (int k = 0; k < param.smoothing_steps; k++)
+        smoother->GSSmoothBack(u, f);
     else
-      blocksmoother->GSSmoothBack(u, f);
+      blocksmoother->GSSmoothBack(u, f, param.smoothing_steps);
   }
 
 
@@ -960,11 +975,36 @@ namespace ngcomp
   {
     fes = bfa->GetFESpace();
     node_on_each_level = true; // flags.GetDefineFlag("dirichlet_on_each_level");
+
+    param.verbose = int(flags.GetNumFlag("verbose", 0));
+    param.smoothing_steps = int(flags.GetNumFlag("smoothingsteps", 1));    
+    param.use_smoothed_prolongation = flags.GetDefineFlagX("smoothedprolongation").IsMaybeTrue();
   }
 
+
+  DocInfo HCurlAMG :: GetDocu()
+  {
+    DocInfo docu;
+    docu.short_docu = "AMG-predconditioner for edge elements";
+
+    docu.long_docu =
+      R"raw_string(using agglomeration-based AMG
+)raw_string";      
+    
+    docu.Arg("smoothingsteps") = "int = 3\n"
+      "  number of pre and post-smoothing steps";
+    docu.Arg("smoothedprolongation") = "bool = true\n"
+      "  use smoothed prolongation";
+    docu.Arg("verbose") = "int = 3\n"
+      "  verbosity level, 0..no output, 5..most output";
+
+    return docu;
+  }
+
+  
   template<typename SCAL>
   void HCurlAMG :: AddElementMatrixCommon(FlatArray<int> dnums,
-                                          const FlatMatrix<SCAL> & elmat,
+                                          FlatMatrix<SCAL> elmat,
                                           ElementId id, LocalHeap & lh)
   {
     auto ndof = dnums.Size();
@@ -1013,8 +1053,16 @@ namespace ngcomp
 
   void HCurlAMG :: FinalizeLevel(const BaseMatrix* matrix)
   {
-    static Timer timer("HCurlAMG::FinalizeLevel");
-    RegionTimer rt(timer);
+    static Timer timer("HCurlAMG::FinalizeLevel"); RegionTimer rt(timer);
+
+    if (param.verbose >= 1)
+      cout << IM(0) << "Create AMG matrix" << endl;
+    if (param.verbose >= 2)
+      {
+        cout << IM(0) << "smoothingsteps = " << param.smoothing_steps << endl;
+        cout << IM(0) << "smoothedprolongation = " << int(param.use_smoothed_prolongation) << endl;        
+      }
+    
     auto num_edges = matrix->Height();
     auto num_faces = face_weights_ht.Used();
 
@@ -1022,6 +1070,10 @@ namespace ngcomp
     Array<double> face_weights(num_faces);
     Array<IVec<3>> f2e(num_faces);
 
+    ParallelForRange (edge_weights.Size(), [&](IntRange r) {
+      edge_weights.Range(r) = 0.0;
+    });
+    
     edge_weights_ht.IterateParallel
       ([&edge_weights](size_t i, IVec<1> key, double weight)
       {
@@ -1046,14 +1098,14 @@ namespace ngcomp
         auto amat = dynamic_pointer_cast<SparseMatrixTM<Complex>>
           (const_cast<BaseMatrix*>(matrix)->shared_from_this());
         mat = make_shared<HCurlAMG_Matrix<Complex>>(amat, freedofs, f2e, e2v,
-                                                    edge_weights, face_weights, 0);
+                                                    edge_weights, face_weights, 0, param);
       }
     else
       {
         auto amat = dynamic_pointer_cast<SparseMatrixTM<double>>
           (const_cast<BaseMatrix*>(matrix)->shared_from_this());
         mat = make_shared<HCurlAMG_Matrix<double>>(amat, freedofs, f2e, e2v,
-                                                   edge_weights, face_weights, 0);
+                                                   edge_weights, face_weights, 0, param);
       }
   }
 
@@ -1078,7 +1130,7 @@ namespace ngcomp
                FlatArray<IVec<2>> e2v,
                FlatArray<double> edge_weights,
                FlatArray<double> face_weights,
-               size_t level);
+               size_t level, HCurlAMG_Parameters aparam);
   protected:
     void BuildCoarseMat(const typename BASE::AMGInfo& cinfo, int level) override;
     shared_ptr<BitArray>
@@ -1122,14 +1174,14 @@ namespace ngcomp
   }
 
   void APhiHCurlAMG::AddElementMatrix(FlatArray<int> dnums,
-                                      const FlatMatrix<double> & elmat,
+                                      FlatMatrix<double> elmat,
                                       ElementId id, LocalHeap & lh)
   {
     AddElementMatrixCommon(dnums, elmat, id, lh);
   }
 
   void APhiHCurlAMG::AddElementMatrix(FlatArray<int> dnums,
-                                      const FlatMatrix<Complex> & elmat,
+                                      FlatMatrix<Complex> elmat,
                                       ElementId id, LocalHeap & lh)
   {
     AddElementMatrixCommon(dnums, elmat, id, lh);
@@ -1172,6 +1224,9 @@ namespace ngcomp
     for(auto verts : e2v)
       nv = max3(nv, verts[0], verts[1]);
 
+    param.block_smoother = false; // blocks are singular
+    param.use_smoothed_prolongation = false;
+    
     if(matrix->IsComplex())
       {
         // auto amat = dynamic_pointer_cast<SparseMatrixTM<Complex>>
@@ -1179,7 +1234,7 @@ namespace ngcomp
         auto amat = dynamic_pointer_cast<SparseMatrixTM<Complex>>
           (bfa->GetMatrixPtr());
         mat = make_shared<APhiMatrix<Complex>>(amat, freedofs, f2e, e2v,
-                                               edge_weights, face_weights, 0);
+                                               edge_weights, face_weights, 0, param);
       }
     else
       {
@@ -1188,7 +1243,7 @@ namespace ngcomp
         auto amat = dynamic_pointer_cast<SparseMatrixTM<double>>
           (bfa->GetMatrixPtr());
         mat = make_shared<APhiMatrix<double>>(amat, freedofs, f2e, e2v,
-                                              edge_weights, face_weights, 0);
+                                              edge_weights, face_weights, 0, param);
       }
   }
 
@@ -1199,8 +1254,8 @@ namespace ngcomp
                                  FlatArray<IVec<2>> e2v,
                                  FlatArray<double> edge_weights,
                                  FlatArray<double> face_weights,
-                                 size_t level)
-    : HCurlAMG_Matrix<SCAL>(true, false, 3, false)
+                                 size_t level, HCurlAMG_Parameters param)
+    : HCurlAMG_Matrix<SCAL>(param, true /* false, 3, false */)
   {
     this->need_vertex_prolongation = true;
     hcurlsize = e2v.Size();
@@ -1251,7 +1306,7 @@ namespace ngcomp
         this->coarse_precond = make_shared<APhiMatrix<SCAL>>
           (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(coarsemat),
            cinfo.freedofs, cinfo.f2e, cinfo.e2v, cinfo.edge_weights,
-           cinfo.face_weights, level+1);
+           cinfo.face_weights, level+1, this->param);
       }
   }
 
@@ -1285,7 +1340,7 @@ namespace ngcomp
 
   template<typename SCAL>
   void APhiHCurlAMG::AddElementMatrixCommon(FlatArray<int> dnums,
-                                            const FlatMatrix<SCAL> & belmat,
+                                            FlatMatrix<SCAL> belmat,
                                             ElementId id, LocalHeap & lh)
   {
     if(dnums.Size() != 10)
@@ -1347,6 +1402,7 @@ namespace ngcomp
   }
 
   static RegisterPreconditioner<HCurlAMG> inithcamg ("hcurlamg");
+  static RegisterPreconditioner<APhiHCurlAMG> initaphiamg ("APhiamg");
 
   
 } // namespace hcurlamg

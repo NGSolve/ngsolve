@@ -108,16 +108,25 @@ namespace ngla
   shared_ptr<BaseSparseMatrix> Embedding :: CreateSparseMatrix() const
   {
     Array<int> ai(range.Size()), aj(range.Size());
-    Array<double> vals(range.Size());
 
     for (int i = 0; i < range.Size(); i++)
       {
         ai[i] = range.First()+i;
         aj[i] = i;
       }
-    vals = 1;
-    
-    return SparseMatrix<double>::CreateFromCOO (ai, aj, vals, Height(), Width());
+
+    if (IsComplex())
+      {
+        Array<Complex> vals(range.Size());
+        vals = 1.;
+        return SparseMatrix<Complex>::CreateFromCOO (ai, aj, vals, Height(), Width());
+      }
+    else
+      {
+        Array<double> vals(range.Size());
+        vals = 1.;
+        return SparseMatrix<double>::CreateFromCOO (ai, aj, vals, Height(), Width());
+      }
   }
 
   
@@ -193,6 +202,36 @@ namespace ngla
   }
 
 
+  shared_ptr<BaseSparseMatrix> EmbeddingTranspose :: CreateSparseMatrix() const
+  {
+    Array<int> ai(range.Size()), aj(range.Size());
+
+    for (int i = 0; i < range.Size(); i++)
+      {
+        ai[i] = range.First()+i;
+        aj[i] = i;
+      }
+
+    if (IsComplex())
+      {
+        Array<Complex> vals(range.Size());
+        vals = 1.;
+        return SparseMatrix<Complex>::CreateFromCOO (aj, ai, vals, Height(), Width());
+      }
+    else
+      {
+        Array<double> vals(range.Size());
+        vals = 1.;
+        return SparseMatrix<double>::CreateFromCOO (aj, ai, vals, Height(), Width());
+      }
+  }
+
+
+
+
+
+  
+
   BaseMatrix::OperatorInfo EmbeddedTransposeMatrix :: GetOperatorInfo () const
   {
     OperatorInfo info;
@@ -225,8 +264,6 @@ namespace ngla
     auto ry = y.Range(range);    
     mat->MultTransAdd(s, x, ry);
   }
-
-
 
 
 
