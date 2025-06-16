@@ -182,6 +182,8 @@ namespace ngla
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+
+    virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;    
   };
 
 

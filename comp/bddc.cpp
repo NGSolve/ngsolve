@@ -668,7 +668,7 @@ namespace ngcomp
   template <class SCAL, class TV>
   void BDDCPreconditioner<SCAL, TV> ::
   AddElementMatrix (FlatArray<int> dnums,
-		    const FlatMatrix<SCAL> & elmat,
+		    FlatMatrix<SCAL> elmat,
 		    ElementId id, 
 		    LocalHeap & lh)
   {

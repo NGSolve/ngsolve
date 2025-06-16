@@ -513,7 +513,7 @@ namespace ngcomp
 
   template <class SCAL>  
   void H1AMG_Preconditioner<SCAL> :: AddElementMatrix (FlatArray<int> dnums,
-                                                       const FlatMatrix<SCAL> & elmat,
+                                                       FlatMatrix<SCAL> elmat,
                                                        ElementId id,
                                                        LocalHeap & lh)
   {

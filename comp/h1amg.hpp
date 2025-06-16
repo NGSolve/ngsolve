@@ -81,7 +81,7 @@ namespace ngcomp
     virtual void FinalizeLevel (const BaseMatrix * matrix) override;
 
     virtual void AddElementMatrix (FlatArray<int> dnums,
-                                   const FlatMatrix<SCAL> & elmat,
+                                   FlatMatrix<SCAL> elmat,
                                    ElementId id,
                                    LocalHeap & lh) override;
 

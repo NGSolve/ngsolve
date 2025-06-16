@@ -9,6 +9,15 @@
 namespace ngcomp
 {
 
+  struct HCurlAMG_Parameters
+  {
+    int verbose = 0;
+    int smoothing_steps = 3;
+    int coarsenings_per_level = 3; // number of binary coarsenings per level
+    bool block_smoother = true;    // block or point smoother ?
+    bool use_smoothed_prolongation = true;  
+  };
+
   class HCurlAMG : public Preconditioner
   {
   protected:
@@ -18,19 +27,23 @@ namespace ngcomp
     ParallelHashTable<IVec<3>, double> face_weights_ht;
     shared_ptr<FESpace> fes;
     bool node_on_each_level;
+    HCurlAMG_Parameters param;
+
   public:
     HCurlAMG(shared_ptr<BilinearForm> _bfa, const Flags& _flags,
              const string& name = "HCurl_AMG");
 
+    static DocInfo GetDocu ();    
+    
     void InitLevel(shared_ptr<BitArray> _freedofs) override
     { freedofs = _freedofs; }
 
-    void AddElementMatrix(FlatArray<int> dnums, const FlatMatrix<double> & elmat,
+    void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<double> elmat,
                           ElementId id, LocalHeap & lh) override
     {
       AddElementMatrixCommon(dnums, elmat, id, lh);
     }
-    void AddElementMatrix(FlatArray<int> dnums, const FlatMatrix<Complex> & elmat,
+    void AddElementMatrix(FlatArray<int> dnums, FlatMatrix<Complex> elmat,
                           ElementId id, LocalHeap & lh) override
     {
       AddElementMatrixCommon(dnums, elmat, id, lh);
@@ -45,7 +58,7 @@ namespace ngcomp
   private:
     template<typename SCAL>
     void AddElementMatrixCommon(FlatArray<int> dnums,
-                                const FlatMatrix<SCAL> & elmat,
+                                FlatMatrix<SCAL> elmat,
                                 ElementId id, LocalHeap & lh);
   };
 
@@ -68,14 +81,14 @@ namespace ngcomp
     { return *mat; }
 
     void AddElementMatrix(FlatArray<int> dnums,
-                          const FlatMatrix<double> & elmat,
+                          FlatMatrix<double> elmat,
                           ElementId id, LocalHeap & lh) override;
     void AddElementMatrix(FlatArray<int> dnums,
-                          const FlatMatrix<Complex> & elmat,
+                          FlatMatrix<Complex> elmat,
                           ElementId id, LocalHeap & lh) override;
     template<typename SCAL>
     void AddElementMatrixCommon(FlatArray<int> dnums,
-                                const FlatMatrix<SCAL> & belmat,
+                                FlatMatrix<SCAL> belmat,
                                 ElementId id, LocalHeap & lh);
   };
 } // namespace ngcomp

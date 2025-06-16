@@ -3310,12 +3310,23 @@ integrator : ngsolve.fem.LFI
   
   py::class_<HCurlAMG, shared_ptr<HCurlAMG>, Preconditioner>
     (m, "HCurlAMG")
-    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs) -> shared_ptr<HCurlAMG>
     {
       auto flags = CreateFlagsFromKwArgs(kwargs);
-      return make_shared<HCurlAMG>(bf, flags, "HCurlAMG");
+      if (typeid(*(bf->GetTrialSpace())) == typeid (HCurlHighOrderFESpace))
+        return make_shared<HCurlAMG>(bf, flags, "HCurlAMG");
+      else
+        return make_shared<APhiHCurlAMG>(bf, flags, "APhiHCurlAMG");
+        
     }), py::arg("bf"))
-    ;
+    .def_static("__flags_doc__", []()
+    {
+      py::dict flags_doc;
+      for (auto & flagdoc : HCurlAMG::GetDocu().arguments)
+        flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+      return flags_doc;
+    });
+    
 
   py::class_<APhiHCurlAMG, shared_ptr<APhiHCurlAMG>, HCurlAMG>
     (m, "APhiHCurlAMG")

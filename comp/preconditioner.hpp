@@ -99,12 +99,12 @@ namespace ngcomp
     virtual void InitLevel (shared_ptr<BitArray> freedofs = NULL) { ; }
     virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL) { ; }
     virtual void AddElementMatrix (FlatArray<int> dnums,
-				   const FlatMatrix<double> & elmat,
+				   FlatMatrix<double> elmat,
 				   ElementId ei, 
 				   LocalHeap & lh) { ; }
 
     virtual void AddElementMatrix (FlatArray<int> dnums,
-				   const FlatMatrix<Complex> & elmat,
+				   FlatMatrix<Complex> elmat,
 				   ElementId ei, 
 				   LocalHeap & lh) { ; }
 
@@ -186,12 +186,12 @@ namespace ngcomp
     static DocInfo GetDocu ();
     
     ///
-    virtual bool IsComplex() const { return jacobi->IsComplex(); }
+    virtual bool IsComplex() const override { return jacobi->IsComplex(); }
     
     ///
-    virtual void FinalizeLevel (const BaseMatrix * mat);
+    virtual void FinalizeLevel (const BaseMatrix * mat) override;
 
-    virtual void Update ()
+    virtual void Update () override
     {
       if (GetTimeStamp() < bfa->GetTimeStamp())
         FinalizeLevel (&bfa->GetMatrix());
@@ -201,14 +201,14 @@ namespace ngcomp
 
 
     ///
-    virtual const BaseMatrix & GetMatrix() const
+    virtual const BaseMatrix & GetMatrix() const override
     {
       if (!jacobi)
         ThrowPreconditionerNotReady();
       return *jacobi;
     }
     
-    virtual shared_ptr<BaseMatrix> GetMatrixPtr()
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr() override
     {
       if (!jacobi)
         ThrowPreconditionerNotReady();
@@ -216,12 +216,12 @@ namespace ngcomp
     }
 
     ///
-    virtual const BaseMatrix & GetAMatrix() const
+    virtual const BaseMatrix & GetAMatrix() const override
     {
       return bfa->GetMatrix(); 
     }
     ///
-    virtual const char * ClassName() const
+    virtual const char * ClassName() const override
     { return "Local Preconditioner"; }
     void LocPrecTest () const;
   };
@@ -258,29 +258,29 @@ namespace ngcomp
       ; // delete pre;
     }
     
-    virtual void InitLevel (shared_ptr<BitArray> _freedofs);
+    virtual void InitLevel (shared_ptr<BitArray> _freedofs) override;
 
-    virtual void FinalizeLevel (const BaseMatrix *);
+    virtual void FinalizeLevel (const BaseMatrix *) override;
     virtual void AddElementMatrix (FlatArray<int> dnums,
-				   const FlatMatrix<SCAL> & elmat,
+				   FlatMatrix<SCAL> elmat,
 				   ElementId id, 
-				   LocalHeap & lh);
+				   LocalHeap & lh) override;
 
-    virtual void Update ()
+    virtual void Update () override
     {
       if (timestamp < bfa->GetTimeStamp())
         throw Exception("A BDDC preconditioner must be defined before assembling");
     }  
 
-    virtual const BaseMatrix & GetAMatrix() const
+    virtual const BaseMatrix & GetAMatrix() const override
     {
       return bfa->GetMatrix();
     }
 
-    virtual const BaseMatrix & GetMatrix() const;
-    virtual shared_ptr<BaseMatrix> GetMatrixPtr();
+    virtual const BaseMatrix & GetMatrix() const override;
+    virtual shared_ptr<BaseMatrix> GetMatrixPtr() override;
 
-    virtual void CleanUpLevel ()
+    virtual void CleanUpLevel () override
     {
       /*
       delete pre;
@@ -290,10 +290,10 @@ namespace ngcomp
     }
 
 
-    virtual void Mult (const BaseVector & x, BaseVector & y) const;
-    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const;
+    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
-    virtual const char * ClassName() const
+    virtual const char * ClassName() const override
     { return "BDDC Preconditioner"; }
   };
 
