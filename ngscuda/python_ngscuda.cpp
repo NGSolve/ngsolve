@@ -208,13 +208,23 @@ PYBIND11_MODULE(ngscuda, m) {
          })
     ;
 
-  py::class_<CudssMatrix, BaseMatrix, shared_ptr<CudssMatrix>> (m, "CudssMatrix")
-    .def(py::init<shared_ptr<BaseMatrix>>())
-    .def("Analyze", &CudssMatrix::Analyze)
-    .def("Factor", &CudssMatrix::Factor)
-    .def("MultAdd", &CudssMatrix::MultAdd)
-    ;
+  py::class_<CudssMatrix, BaseMatrix, shared_ptr<CudssMatrix>>(m, "CudssMatrix")
+      .def(py::init([](shared_ptr<BaseMatrix> matrix) {
+        return make_shared<CudssMatrix>(matrix, nullptr);
+      }))
+      .def(py::init(
+          [](shared_ptr<BaseMatrix> matrix, shared_ptr<BitArray> freedofs) {
+            return make_shared<CudssMatrix>(matrix, freedofs);
+          }))
+      .def("Analyze", &CudssMatrix::Analyze)
+      .def("Factor", &CudssMatrix::Factor)
+      ;
+
+  BaseMatrix::RegisterInverseCreator("cudss", [](shared_ptr<BaseMatrix> m,
+                                                 shared_ptr<BitArray> freedofs,
+                                                 shared_ptr<const Array<int>> cluster) {
+    return make_shared<CudssMatrix>(m, freedofs, cluster);
+  });
   
   // ExportDemo(m);
 }
-

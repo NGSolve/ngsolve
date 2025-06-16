@@ -65,6 +65,13 @@ namespace ngbla
     return hvec;
   }
   
+  inline Vector<Complex> D2H (FlatVector<Dev<Complex>> dvec)
+  {
+    Vector<Complex> hvec(dvec.Size());
+    cudaMemcpy (hvec.Data(), dvec.Data(), sizeof(Complex)*hvec.Size(), cudaMemcpyDeviceToHost);
+    return hvec;
+  }
+  
 
   
     
