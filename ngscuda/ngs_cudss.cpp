@@ -23,16 +23,25 @@ cudssHandle_t Get_Cudss_Handle() {
 CudssMatrix::CudssMatrix(shared_ptr<BaseMatrix> m,
                          shared_ptr<BitArray> freedofs,
                          shared_ptr<const Array<int>> cluster)
-    : map_inner_dofs(freedofs, cluster) {
+  : map_inner_dofs(freedofs, cluster),
+    matrix(dynamic_pointer_cast<BaseSparseMatrix>(m))
+{
   cudss_handle = Get_Cudss_Handle();
 
   width = m->Width();
   height = m->Height();
 
   is_complex = m->IsComplex();
+  Update();
+}
+
+void CudssMatrix::Update()
+{
   auto mview_type = CUDSS_MVIEW_FULL;
   auto mat_type = CUDSS_MTYPE_GENERAL;
   auto data_type = CUDA_R_64F;
+  auto m = matrix.lock();
+  bool first_time = col_indices.Size() == 0;
 
   shared_ptr<MatrixGraph> p_mat = nullptr;
 
@@ -54,11 +63,14 @@ CudssMatrix::CudssMatrix(shared_ptr<BaseMatrix> m,
     if (map_inner_dofs)
       p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat);
 
-    c_values = make_unique<Vector<Dev<Complex>>>(p_sparse_mat->NZE());
+    if(first_time)
+      {
+        c_values = make_unique<Vector<Dev<Complex>>>(p_sparse_mat->NZE());
+        c_rhs = make_unique<Vector<Dev<Complex>>>(p_sparse_mat->Width());
+        c_solution = make_unique<Vector<Dev<Complex>>>(p_sparse_mat->Width());
+        nze = c_values->Size();
+      }
     c_values->H2D(p_sparse_mat->GetValues());
-    c_rhs = make_unique<Vector<Dev<Complex>>>(p_sparse_mat->Width());
-    c_solution = make_unique<Vector<Dev<Complex>>>(p_sparse_mat->Width());
-    nze = c_values->Size();
     p_mat = dynamic_pointer_cast<MatrixGraph>(p_sparse_mat);
   } else {
     shared_ptr<SparseMatrixTM<double>> p_sparse_mat =
@@ -77,11 +89,14 @@ CudssMatrix::CudssMatrix(shared_ptr<BaseMatrix> m,
     if (map_inner_dofs)
       p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat);
 
-    values = make_unique<Vector<Dev<double>>>(p_sparse_mat->NZE());
+    if (first_time)
+      {
+        values = make_unique<Vector<Dev<double>>>(p_sparse_mat->NZE());
+        rhs = make_unique<Vector<Dev<double>>>(p_sparse_mat->Width());
+        solution = make_unique<Vector<Dev<double>>>(p_sparse_mat->Width());
+        nze = values->Size();
+      }
     values->H2D(p_sparse_mat->GetValues());
-    nze = values->Size();
-    rhs = make_unique<Vector<Dev<double>>>(p_sparse_mat->Width());
-    solution = make_unique<Vector<Dev<double>>>(p_sparse_mat->Width());
 
     auto &mat = *p_sparse_mat;
 
@@ -121,30 +136,30 @@ CudssMatrix::CudssMatrix(shared_ptr<BaseMatrix> m,
     solution_data = solution->Data();
   }
 
-  checkCall(cudssMatrixCreateCsr(&dev_matrix, inner_height, inner_width, nze,
-                                 row_start.Data(), nullptr, col_indices.Data(),
-                                 val_data, CUDA_R_32I, data_type, mat_type,
-                                 mview_type, CUDSS_BASE_ZERO));
+  if(first_time)
+    {
+      checkCall(cudssMatrixCreateCsr(&dev_matrix, inner_height, inner_width, nze,
+                                     row_start.Data(), nullptr, col_indices.Data(),
+                                     val_data, CUDA_R_32I, data_type, mat_type,
+                                     mview_type, CUDSS_BASE_ZERO));
 
-  checkCall(cudssMatrixCreateDn(&dev_rhs, inner_width, 1, inner_width, rhs_data,
-                                data_type, CUDSS_LAYOUT_COL_MAJOR));
+      checkCall(cudssMatrixCreateDn(&dev_rhs, inner_width, 1, inner_width, rhs_data,
+                                    data_type, CUDSS_LAYOUT_COL_MAJOR));
 
-  checkCall(cudssMatrixCreateDn(&dev_solution, inner_width, 1, inner_width,
-                                solution_data, data_type,
-                                CUDSS_LAYOUT_COL_MAJOR));
+      checkCall(cudssMatrixCreateDn(&dev_solution, inner_width, 1, inner_width,
+                                    solution_data, data_type,
+                                    CUDSS_LAYOUT_COL_MAJOR));
 
-  checkCall(cudssConfigCreate(&dev_config));
-  checkCall(cudssDataCreate(cudss_handle, &dev_data));
+      checkCall(cudssConfigCreate(&dev_config));
+      // int hybrid_mode = 1;
+      // checkCall(cudssConfigSet(dev_config, CUDSS_CONFIG_HYBRID_MODE, &hybrid_mode,
+      //                         sizeof(hybrid_mode)));
+      checkCall(cudssDataCreate(cudss_handle, &dev_data));
 
-  cout << "cudss start analyze, nze = " << nze << ", height = " << inner_height
-       << ", width = " << inner_width << endl;
-  auto t0 = WallTime();
-  Analyze();
-  auto t1 = WallTime();
-  cout << "Time to analyze: " << t1 - t0 << " seconds" << endl;
-  Factor();
-  auto t2 = WallTime();
-  cout << "Time to factor:  " << t2 - t1 << " seconds" << endl;
+      cout << "cudss start analyze, nze = " << nze << ", height = " << inner_height
+           << ", width = " << inner_width << endl;
+      Analyze();
+    }
   size_t lu_nnz = 0;
   size_t bytes_written = 0;
   checkCall(cudssDataGet(cudss_handle, dev_data, CUDSS_DATA_LU_NNZ, &lu_nnz,
@@ -154,6 +169,16 @@ CudssMatrix::CudssMatrix(shared_ptr<BaseMatrix> m,
        << (1.0 * lu_nnz * (is_complex ? sizeof(Complex) : sizeof(double)) /
            (1024.0 * 1024.0 * 1024.0))
        << endl;
+  Factor();
+}
+
+CudssMatrix::~CudssMatrix()
+{
+  checkCall(cudssMatrixDestroy(dev_matrix));
+  checkCall(cudssMatrixDestroy(dev_solution));
+  checkCall(cudssMatrixDestroy(dev_rhs));
+  checkCall(cudssDataDestroy(cudss_handle, dev_data));
+  checkCall(cudssConfigDestroy(dev_config));
 }
 
 void CudssMatrix::Analyze() {

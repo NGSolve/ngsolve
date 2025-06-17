@@ -130,7 +130,10 @@ public:
   AutoVector CreateColVector() const override {
     return make_unique<UnifiedVector>(Height());
   }
+  ~CudssMatrix();
 
+  void Update() override;
+  // bool SupportsUpdate() const override { return true; }
   void Analyze();
   void Factor();
   void MultAdd(double s, const BaseVector &x, BaseVector &y) const override;
@@ -139,6 +142,7 @@ public:
   int VHeight() const override { return height; }
 
 private:
+  weak_ptr<BaseSparseMatrix> matrix;
   void checkCall(cudssStatus_t status) const;
   MapInnerDofs map_inner_dofs;
   cudssHandle_t cudss_handle;
