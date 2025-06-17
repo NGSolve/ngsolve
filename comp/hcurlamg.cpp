@@ -167,13 +167,8 @@ namespace ngcomp
   protected:
     // parameters:
     HCurlAMG_Parameters param;
-    // int smoothing_steps = 1;
     bool node_on_each_level;
-    // bool use_smoothed_prolongation;
-    // int coarsenings_per_level;
-    // bool blockjacobi_smoother;
     bool need_vertex_prolongation = false;
-
 
     size_t size;
     int nv = 0;
@@ -197,9 +192,6 @@ namespace ngcomp
       
       : param(aparam),
         node_on_each_level(_node_on_each_level)
-        // use_smoothed_prolongation(_use_smoothed_prolongation)
-        // coarsenings_per_level(_coarsenings_per_level),
-        // blockjacobi_smoother(_blockjacobi_smoother)
     {}
 
     HCurlAMG_Matrix(shared_ptr<SparseMatrixTM<SCAL>> _mat,
@@ -212,7 +204,8 @@ namespace ngcomp
                     HCurlAMG_Parameters aparam)
       : HCurlAMG_Matrix(aparam)
     {
-      for(const auto& verts : e2v)
+      nv = 0;
+      for (auto verts : e2v)
         nv = max3(nv, verts[0], verts[1]);
       nv++;
       Init(_mat, freedofs, f2e, e2v, edge_weights, face_weights, level);
@@ -309,7 +302,7 @@ namespace ngcomp
     auto nf = f2e.Size();
 
     if (param.verbose > 1)
-      cout << IM(0) << "init level, matsize = " << size << ", nedge = " << ne << ", nface = " << nf << endl;
+      cout << IM(0) << "init level " << level << ", matsize = " << size << ", nedge = " << ne << ", nface = " << nf << endl;
     
     TableCreator<int> e2f_creator(ne);
     for(;!e2f_creator.Done(); e2f_creator++)
@@ -370,7 +363,9 @@ namespace ngcomp
                                           *cinfo.vert_prolongation);
           }
 
-        if((cinfo.e2v.Size() < 10) || (cinfo.e2v.Size() == ne))
+        if ( (cinfo.e2v.Size() < param.max_coarse) ||
+             (level >= param.max_level) || 
+             (cinfo.e2v.Size() == ne))
           break;
         if(coarsening < 2)
           {
@@ -492,8 +487,10 @@ namespace ngcomp
     cout << IM(5) << "coarse mat nze per row: " << double(coarsemat->NZE())/coarsemat->Height() << endl;
     auto nce = cinfo.e2v.Size();
     auto ne = mat->Height();
-    if((nce < 10) || (nce == ne))
+    if ( (nce < param.max_coarse) || (level >= param.max_level) || (nce == ne))
       {
+        if (param.verbose >= 2)
+          cout << IM(0) << "coarse direct inverse, size = " << coarsemat->Height() << endl;
         coarsemat->SetInverseType(SPARSECHOLESKY);
         coarse_precond = coarsemat->InverseMatrix(cinfo.freedofs);
       }
@@ -979,6 +976,8 @@ namespace ngcomp
     param.verbose = int(flags.GetNumFlag("verbose", 0));
     param.smoothing_steps = int(flags.GetNumFlag("smoothingsteps", 1));    
     param.use_smoothed_prolongation = flags.GetDefineFlagX("smoothedprolongation").IsMaybeTrue();
+    param.max_coarse = int(flags.GetNumFlag("maxcoarse", 10));
+    param.max_level = int(flags.GetNumFlag("maxlevel", 20));
   }
 
 
@@ -995,6 +994,10 @@ namespace ngcomp
       "  number of pre and post-smoothing steps";
     docu.Arg("smoothedprolongation") = "bool = true\n"
       "  use smoothed prolongation";
+    docu.Arg("maxcoarse") = "int = 10\n"
+      "  maximal dofs on level to switch to direct solver\n";
+    docu.Arg("maxlevel") = "int = 20\n"
+      "  maximal refinement levels to switch to direct solver\n";
     docu.Arg("verbose") = "int = 3\n"
       "  verbosity level, 0..no output, 5..most output";
 
@@ -1007,13 +1010,13 @@ namespace ngcomp
                                           FlatMatrix<SCAL> elmat,
                                           ElementId id, LocalHeap & lh)
   {
+    if(L2Norm2(elmat) == 0)
+      return;
+
     auto ndof = dnums.Size();
-    auto ma = fes->GetMeshAccess();
+    auto & ma = fes->GetMeshAccess();
     HeapReset hr(lh);
     BitArray used(ndof, lh);
-
-    if(L2Norm(elmat) == 0)
-      return;
 
     FlatMatrix<SCAL> schur_edge(1, lh);
     for(auto i : Range(ndof))
@@ -1060,7 +1063,9 @@ namespace ngcomp
     if (param.verbose >= 2)
       {
         cout << IM(0) << "smoothingsteps = " << param.smoothing_steps << endl;
-        cout << IM(0) << "smoothedprolongation = " << int(param.use_smoothed_prolongation) << endl;        
+        cout << IM(0) << "smoothedprolongation = " << int(param.use_smoothed_prolongation) << endl;
+        cout << IM(0) << "maxcoarse = " << param.max_coarse << endl;                
+        cout << IM(0) << "maxlevel = " << param.max_level << endl;                
       }
     
     auto num_edges = matrix->Height();
@@ -1121,6 +1126,7 @@ namespace ngcomp
   class APhiMatrix : public HCurlAMG_Matrix<SCAL>
   {
     using BASE = HCurlAMG_Matrix<SCAL>;
+    using BASE::param;
     size_t hcurlsize;
     size_t h1size;
   public:
@@ -1294,7 +1300,7 @@ namespace ngcomp
     cout << IM(5) << "coarse mat nze per row: " << double(coarsemat->NZE())/coarsemat->Height() << endl;
     auto nce = chcurlsize;
     auto ne = hcurlsize;
-    if((nce < 10) || (nce == ne))
+    if((nce < param.max_coarse) || (nce == ne))
       {
         for(auto i : Range(chcurlsize, csize))
           cinfo.freedofs->Clear(i);

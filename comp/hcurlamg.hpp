@@ -15,7 +15,9 @@ namespace ngcomp
     int smoothing_steps = 3;
     int coarsenings_per_level = 3; // number of binary coarsenings per level
     bool block_smoother = true;    // block or point smoother ?
-    bool use_smoothed_prolongation = true;  
+    bool use_smoothed_prolongation = true;
+    int max_coarse = 10;
+    int max_level = 20;
   };
 
   class HCurlAMG : public Preconditioner
