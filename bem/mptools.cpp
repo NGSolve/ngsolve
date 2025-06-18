@@ -2219,6 +2219,7 @@ namespace ngsbem
 
   template class SphericalHarmonics<Complex>;
   template class SphericalHarmonics<Vec<3,Complex>>;  
+  template class SphericalHarmonics<Vec<4,Complex>>;
   
   template class MultiPole<MPSingular>;
   template class MultiPole<MPRegular>;

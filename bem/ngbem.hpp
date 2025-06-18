@@ -371,7 +371,7 @@ namespace ngsbem
   public:
     typedef Complex value_type;
     static string Name() { return "HelmholtzHS"; }
-    static auto Shape() { return IVec<2>(1,1); }
+    static auto Shape() { return IVec<2>(4,4); }
     
     HelmholtzHSKernel (double _kappa) : kappa(_kappa) { }
     template <typename T>        
