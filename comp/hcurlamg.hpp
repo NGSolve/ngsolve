@@ -18,6 +18,10 @@ namespace ngcomp
     bool use_smoothed_prolongation = true;
     int max_coarse = 10;
     int max_level = 20;
+    bool potential_smooth_on_each_level = true;
+    
+    typedef enum { potential_amg, potential_direct, potential_local } PotentialSmootherType;
+    PotentialSmootherType potential_smoother;
   };
 
   class HCurlAMG : public Preconditioner

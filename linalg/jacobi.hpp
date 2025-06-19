@@ -25,8 +25,8 @@ namespace ngla
     virtual void SmoothBack (BaseVector & x, const BaseVector & b, int steps = 1) const = 0;
   };
 
-    
-  class BaseJacobiPrecond : virtual public BaseMSMPrecond
+  
+  class BaseJacobiPrecond : public BaseMSMPrecond
   {
   public:
     virtual void Smooth (BaseVector & x, const BaseVector & b, int steps = 1) const override
@@ -48,7 +48,7 @@ namespace ngla
   {
     shared_ptr<BaseJacobiPrecond> jac;
   public:
-    SymmetricGaussSeidelPrecond (const BaseSparseMatrix & mat, shared_ptr<BitArray> freedofs);
+    SymmetricGaussSeidelPrecond (shared_ptr<BaseSparseMatrix> mat, shared_ptr<BitArray> freedofs);
     int VHeight() const override { return jac->VHeight(); }
     int VWidth() const override { return jac->VHeight(); }
 
@@ -61,11 +61,11 @@ namespace ngla
   
   /// A Jaboci preconditioner for general sparse matrices
   template <class TM, class TV_ROW, class TV_COL>
-  class JacobiPrecond : virtual public BaseJacobiPrecond,
-			virtual public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
+  class JacobiPrecond : public BaseJacobiPrecond,
+			public S_BaseMatrix<typename mat_traits<TM>::TSCAL>
   {
   protected:
-    const SparseMatrix<TM,TV_ROW,TV_COL> & mat;
+    shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> mat;
     ///
     shared_ptr<BitArray> inner;
     ///
@@ -77,7 +77,7 @@ namespace ngla
     typedef typename mat_traits<TM>::TSCAL TSCAL;
 
     ///
-    JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
+    JacobiPrecond (shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
 		   shared_ptr<BitArray> ainner = nullptr, bool use_par = true);
 
     int VHeight() const override { return height; }
@@ -91,8 +91,8 @@ namespace ngla
     void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override
     { MultAdd (s, x, y); }
     ///
-    AutoVector CreateRowVector() const override { return mat.CreateColVector(); }
-    AutoVector CreateColVector() const override { return mat.CreateRowVector(); }
+    AutoVector CreateRowVector() const override { return mat->CreateColVector(); }
+    AutoVector CreateColVector() const override { return mat->CreateRowVector(); }
     ///
     void GSSmooth (BaseVector & x, const BaseVector & b, int steps) const override;
 
@@ -128,7 +128,7 @@ namespace ngla
     typedef TV TVX;
 
     ///
-    JacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
+    JacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM,TV>> amat, 
 			    shared_ptr<BitArray> ainner = nullptr, bool use_par = true);
 
     ///

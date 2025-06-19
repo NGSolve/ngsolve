@@ -1169,7 +1169,7 @@ inverse : string
   py::class_<BaseSparseMatrix, shared_ptr<BaseSparseMatrix>, BaseMatrix>
     (m, "BaseSparseMatrix", "sparse matrix of any type")
     
-    .def("CreateSmoother", [](BaseSparseMatrix & m, shared_ptr<BitArray> ba,
+    .def("CreateSmoother", [](shared_ptr<BaseSparseMatrix> m, shared_ptr<BitArray> ba,
                               bool GS) 
          {
            if (GS) {
@@ -1178,7 +1178,7 @@ inverse : string
              return py::cast(pre);
            }
            else {
-             auto pre = m.CreateJacobiPrecond(ba);
+             auto pre = m->CreateJacobiPrecond(ba);
              py::gil_scoped_acquire acq;
              return py::cast(pre);
            }
