@@ -156,9 +156,7 @@ namespace ngcomp
   class HCurlAMG_Matrix : public BaseMatrix
   {
   protected:
-    // parameters:
     HCurlAMG_Parameters param;
-    bool node_on_each_level;
     bool need_vertex_prolongation = false;
 
     size_t size;
@@ -174,12 +172,8 @@ namespace ngcomp
     shared_ptr<BaseMatrix> coarse_precond;
     
   public:
-    HCurlAMG_Matrix (HCurlAMG_Parameters aparam,
-                     bool _node_on_each_level = false)
-      
-      : param(aparam),
-        node_on_each_level(_node_on_each_level)
-    {}
+    HCurlAMG_Matrix (HCurlAMG_Parameters aparam)
+      : param(aparam) {}
 
     HCurlAMG_Matrix(shared_ptr<SparseMatrixTM<SCAL>> _mat,
                     shared_ptr<BitArray> freedofs,
@@ -307,12 +301,18 @@ namespace ngcomp
       {
         if(coarsening == 0)
           {
-            auto coll_weights = CalcEdgeCollapseWeights(f2e, e2v, edge_weights,
+            Array<double> coll_weights = CalcEdgeCollapseWeights(f2e, e2v, edge_weights,
                                                         face_weights, e2f);
+
+
+            // double sum = 0;
+            // for (auto w : coll_weights) sum += w;
+            // cout << "collaps weights = " << sum << endl;
             
             cinfo = CalcCoarsening(coll_weights, freedofs,
                                    f2e, e2v, e2f, edge_weights, face_weights,
                                    nv, level, coarsening);
+
             prolongation = cinfo.prolongation;
             if(need_vertex_prolongation)
               vert_prolongation = cinfo.vert_prolongation;
@@ -337,7 +337,7 @@ namespace ngcomp
           }
         else
           {
-            auto coll_weights = CalcEdgeCollapseWeights(cinfo.f2e, cinfo.e2v,
+            Array<double> coll_weights = CalcEdgeCollapseWeights(cinfo.f2e, cinfo.e2v,
                                                         cinfo.edge_weights,
                                                         cinfo.face_weights, ce2f);
 
@@ -422,7 +422,7 @@ namespace ngcomp
       }
 
     // Node correction only on first level seems enough in most cases
-    if(node_on_each_level || level == 0)
+    if(param.potential_smooth_on_each_level || level == 0)
       {
         nne = 2;
         for(auto e : Range(ne))
@@ -442,7 +442,7 @@ namespace ngcomp
     restriction = dynamic_pointer_cast<SparseMatrixTM<double>>
       (prolongation->CreateTranspose());
 
-    if(node_on_each_level || level == 0)
+    if(param.potential_smooth_on_each_level || level == 0)
       {
         trans_gradient = dynamic_pointer_cast<SparseMatrixTM<double>>(gradient->CreateTranspose());
         auto h1mat = mat->Restrict(*gradient);
@@ -450,17 +450,29 @@ namespace ngcomp
         Array<double> v_weights(nv);
         v_weights = 0.;
 
-        bool use_h1amg = true;
+        // bool use_h1amg = true;
         // int count = 0;
         auto h1_freedofs = GetH1FreeDofs(e2v, e2f, freedofs);
-        if(use_h1amg)
-          node_h1 = make_shared<H1AMG_Matrix<SCAL>>
-            (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(h1mat), h1_freedofs, e2v,
-             edge_weights, v_weights, 0);
-        else
+        switch (param.potential_smoother)
           {
-            h1mat->SetInverseType(SPARSECHOLESKY);
-            node_h1 = h1mat->InverseMatrix(h1_freedofs);
+          case HCurlAMG_Parameters::potential_amg:
+            {
+              node_h1 = make_shared<H1AMG_Matrix<SCAL>>
+                (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(h1mat), h1_freedofs, e2v,
+                 edge_weights, v_weights, 0);
+              break;
+            }
+          case HCurlAMG_Parameters::potential_direct:
+            {
+              h1mat->SetInverseType(SPARSECHOLESKY);
+              node_h1 = h1mat->InverseMatrix(h1_freedofs);
+              break;
+            }
+          case HCurlAMG_Parameters::potential_local:
+            {
+              node_h1 = h1mat->CreateJacobiPrecond(h1_freedofs);
+              break;
+            }
           }
       }
   }
@@ -543,6 +555,7 @@ namespace ngcomp
       top_part = 0;
       bot_part = 0;
       auto verts = e2v[ei];
+      if (verts[0] == -1 && verts[1] == -1) return;
       const auto& faces = e2f[ei];
       for(auto i : Range(faces))
         {
@@ -758,6 +771,7 @@ namespace ngcomp
         if (e2f[i].Size() == 0) continue; // unused dof
         auto e = indices[i];
         auto verts = e2v[e];
+        if ((verts[0] == -1) && (verts[1] == -1)) continue;
         unused_vertex[verts[0]] = false;
         unused_vertex[verts[1]] = false;
         if (coll_weights[e] >= 0.1 &&
@@ -797,6 +811,7 @@ namespace ngcomp
       {
         if(e2f[e].Size() == 0) continue; // unused dof
         auto v = e2v[e];
+        if (v[0] == -1 && v[1] == -1) continue;
         auto cv = IVec<2>(vert_map[v[0]], vert_map[v[1]]);
         if(cv[0] == cv[1]) continue;
         if(cv[0] > cv[1])
@@ -901,7 +916,8 @@ namespace ngcomp
     for(auto e : Range(e2v.Size()))
       if(!freedofs->Test(e))
         for(auto v : e2v[e])
-          cfreeverts.Clear(vert_map[v]);
+          if (v != -1)
+            cfreeverts.Clear(vert_map[v]);
     cfd->Set();
     for(auto ce : Range(nce))
       {
@@ -959,13 +975,24 @@ namespace ngcomp
     : Preconditioner(bfa, flags, name)
   {
     fes = bfa->GetFESpace();
-    node_on_each_level = true; // flags.GetDefineFlag("dirichlet_on_each_level");
+    param.potential_smooth_on_each_level = true; // flags.GetDefineFlag("dirichlet_on_each_level");
 
     param.verbose = int(flags.GetNumFlag("verbose", 0));
     param.smoothing_steps = int(flags.GetNumFlag("smoothingsteps", 1));    
     param.use_smoothed_prolongation = flags.GetDefineFlagX("smoothedprolongation").IsMaybeTrue();
     param.max_coarse = int(flags.GetNumFlag("maxcoarse", 10));
     param.max_level = int(flags.GetNumFlag("maxlevel", 20));
+
+    auto potsmoother = flags.GetStringFlag("potentialsmoother", "amg");
+    if (potsmoother == "amg")
+      param.potential_smoother = HCurlAMG_Parameters::potential_amg;
+    else if (potsmoother == "direct")
+      param.potential_smoother = HCurlAMG_Parameters::potential_direct;
+    else if (potsmoother == "local")
+      param.potential_smoother = HCurlAMG_Parameters::potential_local;
+    else
+      throw Exception("nothing known about potentialsmoother = "+potsmoother +"\n"
+                      "available are 'direct', 'amg', 'local'\n");
   }
 
 
@@ -988,7 +1015,8 @@ namespace ngcomp
       "  maximal refinement levels to switch to direct solver\n";
     docu.Arg("verbose") = "int = 3\n"
       "  verbosity level, 0..no output, 5..most output";
-
+    docu.Arg("potentialsmoother") = "string = 'amg'\n"
+      "  suported are 'direct', 'amg', 'local'\n";
     return docu;
   }
 
@@ -1064,7 +1092,7 @@ namespace ngcomp
     Array<IVec<3>> f2e(num_faces);
 
     ParallelForRange (edge_weights.Size(), [&](IntRange r) {
-      edge_weights.Range(r) = 0.0;
+      edge_weights.Range(r) = -1;
     });
     
     edge_weights_ht.IterateParallel
@@ -1083,8 +1111,10 @@ namespace ngcomp
     face_weights_ht = ParallelHashTable<IVec<3>, double>();
 
     Array<IVec<2>> e2v(num_edges);
+    e2v = IVec<2>(-1,-1);
     for(auto edge : ma->Edges())
-      e2v[edge.GetNr()] = ma->GetEdgePNums(edge.GetNr()).Sort();
+      if (edge_weights[edge.GetNr()] >= 0.0)
+        e2v[edge.GetNr()] = ma->GetEdgePNums(edge.GetNr()).Sort();
 
     if(matrix->IsComplex())
       {
@@ -1249,7 +1279,7 @@ namespace ngcomp
                                  FlatArray<double> edge_weights,
                                  FlatArray<double> face_weights,
                                  size_t level, HCurlAMG_Parameters param)
-    : HCurlAMG_Matrix<SCAL>(param, true /* false, 3, false */)
+    : HCurlAMG_Matrix<SCAL>(param /* , true, false, 3, false */)
   {
     this->need_vertex_prolongation = true;
     hcurlsize = e2v.Size();

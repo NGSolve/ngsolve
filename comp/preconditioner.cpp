@@ -642,7 +642,7 @@ namespace ngcomp
           auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (mat);
           auto inner = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
           if (GaussSeidel)
-            jacobi = make_shared<SymmetricGaussSeidelPrecond>(*spmat, inner);
+            jacobi = make_shared<SymmetricGaussSeidelPrecond>(spmat, inner);
           else
             jacobi = spmat -> CreateJacobiPrecond(inner);
         }

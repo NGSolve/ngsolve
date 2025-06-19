@@ -1525,7 +1525,8 @@ namespace ngfem
       else
         incr = 0;
     }
-    
+
+    virtual ~MappedIntegrationRule() { }
     INLINE MappedIntegrationPoint<DIM_ELEMENT, DIM_SPACE> & operator[] (size_t i) const
     { 
       // return mips[i];

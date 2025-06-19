@@ -233,7 +233,8 @@ namespace ngla
       throw Exception(string("MAX_SYS_DIM = ")+to_string(MAX_SYS_DIM)+string(", need ")+to_string(mat_traits<TM>::HEIGHT));
       return nullptr;
     }
-    else return make_shared<JacobiPrecond<TM,TV_ROW,TV_COL>> (*this, inner);
+    else return make_shared<JacobiPrecond<TM,TV_ROW,TV_COL>> ( dynamic_pointer_cast<SparseMatrix>
+                                                               (const_cast<SparseMatrix*>(this)->shared_from_this()), inner);
   }
   
   template <class TM, class TV_ROW, class TV_COL>    
@@ -860,7 +861,8 @@ namespace ngla
   shared_ptr<BaseJacobiPrecond>
   SparseMatrixSymmetric<TM,TV> :: CreateJacobiPrecond (shared_ptr<BitArray> inner) const 
   { 
-    return make_shared<JacobiPrecondSymmetric<TM,TV>> (*this, inner);
+    return make_shared<JacobiPrecondSymmetric<TM,TV>> ( dynamic_pointer_cast<SparseMatrixSymmetric>
+                                                        (const_cast<SparseMatrixSymmetric*>(this)->shared_from_this()), inner);
   }
   
 

@@ -15,11 +15,11 @@ namespace ngla
 
   
   SymmetricGaussSeidelPrecond ::
-  SymmetricGaussSeidelPrecond (const BaseSparseMatrix & mat, shared_ptr<BitArray> freedofs)
+  SymmetricGaussSeidelPrecond (shared_ptr<BaseSparseMatrix> mat, shared_ptr<BitArray> freedofs)
   {
-    if (mat.GetParallelDofs())
+    if (mat->GetParallelDofs())
       throw Exception("Parallel Gauss-Seidel not supported");
-    jac = mat.CreateJacobiPrecond(freedofs);
+    jac = mat->CreateJacobiPrecond(freedofs);
   }
   
   void SymmetricGaussSeidelPrecond ::
@@ -38,21 +38,21 @@ namespace ngla
   
   template <class TM, class TV_ROW, class TV_COL>
   JacobiPrecond<TM,TV_ROW,TV_COL> ::
-  JacobiPrecond (const SparseMatrix<TM,TV_ROW,TV_COL> & amat, 
+  JacobiPrecond (shared_ptr<SparseMatrix<TM,TV_ROW,TV_COL>> amat, 
 		 shared_ptr<BitArray> ainner, bool use_par)
   // : mat(amat), inner(ainner)
     : mat(amat), inner(ainner?make_shared<BitArray>(*ainner):nullptr),
-      height(amat.Height())
+      height(amat->Height())
   {
     static Timer t("Jacobiprecond::ctor"); RegionTimer r(t);
-    SetParallelDofs (mat.GetParallelDofs());
+    SetParallelDofs (mat->GetParallelDofs());
 
     invdiag.SetSize (height); 
 
     ParallelFor (height, [&](size_t i)
 		 {
 		   if (!inner || inner->Test(i))
-		     invdiag[i] = mat(i,i);
+		     invdiag[i] = (*mat)(i,i);
                    else
                      invdiag[i] = TM(0.0);
 		 });
@@ -116,7 +116,7 @@ namespace ngla
   {
     static Timer timer("JacobiPrecond::GSSmooth");
     RegionTimer reg (timer);
-    timer.AddFlops (mat.NZE());
+    timer.AddFlops (mat->NZE());
 
     FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
     const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
@@ -125,7 +125,7 @@ namespace ngla
       for (int i = 0; i < height; i++)
         if (!this->inner || this->inner->Test(i))
           {
-            TV_ROW ax = mat.RowTimesVector (i, fx);
+            TV_ROW ax = mat->RowTimesVector (i, fx);
             fx(i) += invdiag[i] * (fb(i) - ax);
           }
   }
@@ -138,7 +138,7 @@ namespace ngla
   {
     static Timer timer("JacobiPrecond::GSSmoothBack");
     RegionTimer reg (timer);
-    timer.AddFlops (mat.NZE());
+    timer.AddFlops (mat->NZE());
 
     FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
     const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
@@ -147,7 +147,7 @@ namespace ngla
       for (int i = height-1; i >= 0; i--)
         if (!this->inner || this->inner->Test(i))
           {
-            TV_ROW ax = mat.RowTimesVector (i, fx);
+            TV_ROW ax = mat->RowTimesVector (i, fx);
             fx(i) += invdiag[i] * (fb(i) - ax);
           }
   }
@@ -167,7 +167,7 @@ namespace ngla
 
   template <class TM, class TV>
   JacobiPrecondSymmetric<TM,TV> ::
-  JacobiPrecondSymmetric (const SparseMatrixSymmetric<TM,TV> & amat, 
+  JacobiPrecondSymmetric (shared_ptr<SparseMatrixSymmetric<TM,TV>> amat, 
 			  shared_ptr<BitArray> ainner, bool use_par)
     : JacobiPrecond<TM,TV,TV> (amat, ainner, use_par)
   { 
@@ -186,7 +186,7 @@ namespace ngla
     const FlatVector<TVX> fb = b.FV<TVX> ();
 
     const SparseMatrixSymmetric<TM,TV> & smat =
-      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
+      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (*(this->mat));
 
     for (int k = 0; k < steps; k++)
       {
@@ -223,7 +223,7 @@ namespace ngla
     FlatVector<TVX> fy = y.FV<TVX> ();
 
     const SparseMatrixSymmetric<TM,TV> & smat =
-      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
+      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (*(this->mat));
 
     // input, y = b - (D+L^t) x
     // (L+D) x_new := b - L^t x  = y + D x
@@ -261,7 +261,7 @@ namespace ngla
     // dynamic_cast<const T_BaseVector<TVX> &> (b).FV();
 
     const SparseMatrixSymmetric<TM,TV> & smat =
-      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
+      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (*(this->mat));
 
     for (int k = 0; k < steps; k++)
       {
@@ -293,7 +293,8 @@ namespace ngla
     static Timer timer("JacobiPrecondSymmetric::GSSmoothBack-help");
     RegionTimer reg (timer);
   
-    const SparseMatrixSymmetric<TM,TV>& smat = dynamic_cast<const SparseMatrixSymmetric<TM,TV>&>(this->mat);
+    const SparseMatrixSymmetric<TM,TV>& smat =
+      dynamic_cast<const SparseMatrixSymmetric<TM,TV>&>(*(this->mat));
   
     FlatVector<TVX> fx = x.FV<TVX>();
     FlatVector<TVX> fy = y.FV<TVX>();
