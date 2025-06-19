@@ -1468,12 +1468,13 @@ inverse : string
   py::class_<BaseJacobiPrecond, shared_ptr<BaseJacobiPrecond>, BaseMatrix>
     (m, "Smoother",
      "Jacobi and Gauss-Seidel smoothing")
-    .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b)
-         { jac.GSSmooth (x, b); }, py::call_guard<py::gil_scoped_release>(),
-         py::arg("x"), py::arg("b"),
+    .def("Smooth", [&](BaseJacobiPrecond & jac, BaseVector & x, BaseVector & b, int steps)
+    { jac.GSSmooth (x, b, steps); }, py::call_guard<py::gil_scoped_release>(),
+      py::arg("x"), py::arg("b"), py::arg("steps")=1, 
          "performs one step Gauss-Seidel iteration for the linear system A x = b")
     .def("SmoothBack", &BaseJacobiPrecond::GSSmoothBack,
-         py::arg("x"), py::arg("b"), py::call_guard<py::gil_scoped_release>(),
+         py::arg("x"), py::arg("b"), py::arg("steps")=1,
+         py::call_guard<py::gil_scoped_release>(),
          "performs one step Gauss-Seidel iteration for the linear system A x = b in reverse order")
     ;
 
