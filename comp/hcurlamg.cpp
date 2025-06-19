@@ -426,19 +426,19 @@ namespace ngcomp
       {
         nne = 2;
         for(auto e : Range(ne))
-          if(e2f[e].Size() == 0)
+          if(e2f[e].Size() == 0 || (e2v[e][0]==-1 && e2v[e][1]==-1))
             nne[e] = 0;
         gradient = make_shared<SparseMatrix<double, SCAL, SCAL>>(nne, nv);
         for(auto e : Range(ne))
           {
             if(e2f[e].Size() == 0) continue;
+            if (e2v[e][0]==-1 && e2v[e][1]==-1) continue;
             (*gradient)(e, e2v[e][0]) = 1;
             (*gradient)(e, e2v[e][1]) = -1;
           }
       }
 
     coarse_precond = BuildCoarsePrecond(cinfo, level);
-    
     restriction = dynamic_pointer_cast<SparseMatrixTM<double>>
       (prolongation->CreateTranspose());
 
@@ -446,7 +446,6 @@ namespace ngcomp
       {
         trans_gradient = dynamic_pointer_cast<SparseMatrixTM<double>>(gradient->CreateTranspose());
         auto h1mat = mat->Restrict(*gradient);
-
         Array<double> v_weights(nv);
         v_weights = 0.;
 
@@ -470,7 +469,8 @@ namespace ngcomp
             }
           case HCurlAMG_Parameters::potential_local:
             {
-              node_h1 = h1mat->CreateJacobiPrecond(h1_freedofs);
+              // node_h1 = h1mat->CreateJacobiPrecond(h1_freedofs);
+              node_h1 = make_shared<SymmetricGaussSeidelPrecond> (h1mat, h1_freedofs);
               break;
             }
           }
