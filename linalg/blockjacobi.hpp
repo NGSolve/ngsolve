@@ -9,6 +9,7 @@
 
 
 #include "sparsematrix.hpp"
+#include "jacobi.hpp"
 
 namespace ngla
 {
@@ -16,7 +17,7 @@ namespace ngla
   /**
      Base class for Block - Jacobi and Block Gauss Seidel smoother.
   */
-  class NGS_DLL_HEADER BaseBlockJacobiPrecond : virtual public BaseMatrix
+  class NGS_DLL_HEADER BaseBlockJacobiPrecond : virtual public BaseMSMPrecond
   {
   protected:
     /// the table defining the blocks
@@ -38,6 +39,17 @@ namespace ngla
     /// deletes the table
     virtual ~BaseBlockJacobiPrecond ();
 
+    virtual void Smooth (BaseVector & x, const BaseVector & b, int steps = 1) const override
+    {
+      GSSmooth (x, b, steps);
+    }
+    virtual void SmoothBack (BaseVector & x, const BaseVector & b, int steps = 1) const override
+    {
+      GSSmoothBack (x, b, steps);
+    }
+
+
+    
     /// performs steps Gauss-Seidel steps for the equation A x = b
     virtual void GSSmooth (BaseVector & x, const BaseVector & b,
 			   int steps = 1) const = 0;

@@ -139,18 +139,9 @@ namespace ngcomp
     FlatMatrix<SCAL> c = a.Rows(unused_dofs).Cols(unused_dofs) | lh;
     FlatMatrix<SCAL> hb1 (b1.Height(), b1.Width(), lh);
 
-    if (n > 10)
-      {
-        LapackInverse (c);
-        hb1 = c * b1 | Lapack;
-        s -= b2 * hb1 | Lapack;
-      }
-    else
-      {
-        CalcInverse (c);
-        hb1 = c * b1;
-        s -= b2 * hb1;
-      }
+    CalcInverse (c);
+    hb1 = c * b1;
+    s -= b2 * hb1;
   }
 
 
@@ -174,8 +165,8 @@ namespace ngcomp
     int nv = 0;
     
     shared_ptr<SparseMatrixTM<SCAL>> mat;
-    shared_ptr<BaseJacobiPrecond> smoother;
-    shared_ptr<BaseBlockJacobiPrecond> blocksmoother;
+    shared_ptr<BaseMSMPrecond> smoother;
+    
     shared_ptr<SparseMatrixTM<double>> prolongation, restriction;
     shared_ptr<SparseMatrixTM<double>> vert_prolongation, vert_restriction;
     shared_ptr<SparseMatrixTM<double>> gradient, trans_gradient;
@@ -184,11 +175,7 @@ namespace ngcomp
     
   public:
     HCurlAMG_Matrix (HCurlAMG_Parameters aparam,
-                     bool _node_on_each_level = false
-                     // bool _use_smoothed_prolongation = true
-                     // int _coarsenings_per_level = 3,
-                     // bool _blockjacobi_smoother = true
-                     )
+                     bool _node_on_each_level = false)
       
       : param(aparam),
         node_on_each_level(_node_on_each_level)
@@ -208,10 +195,10 @@ namespace ngcomp
       for (auto verts : e2v)
         nv = max3(nv, verts[0], verts[1]);
       nv++;
-      Init(_mat, freedofs, f2e, e2v, edge_weights, face_weights, level);
+      Setup(_mat, freedofs, f2e, e2v, edge_weights, face_weights, level);
     }
 
-    void Init(shared_ptr<SparseMatrixTM<SCAL>> _mat,
+    void Setup(shared_ptr<SparseMatrixTM<SCAL>> _mat,
               shared_ptr<BitArray> freedofs,
               FlatArray<IVec<3>> f2e,
               FlatArray<IVec<2>> e2v,
@@ -235,7 +222,7 @@ namespace ngcomp
                                           FlatArray<double> edge_weights,
                                           FlatArray<double> face_weights,
                                           FlatTable<int> e2f) const;
-    struct AMGInfo
+    struct CoarseInfo
     {
       Array<IVec<3>> f2e;
       Array<IVec<2>> e2v;
@@ -245,7 +232,8 @@ namespace ngcomp
       shared_ptr<SparseMatrixTM<double>> prolongation;
       shared_ptr<SparseMatrixTM<double>> vert_prolongation;
     };
-    virtual void BuildCoarseMat(const AMGInfo& cinfo, int level);
+    
+    virtual shared_ptr<BaseMatrix> BuildCoarsePrecond(const CoarseInfo& cinfo, int level);
 
     virtual shared_ptr<BitArray>
     GetHCurlFreeDofs(shared_ptr<BitArray> freedofs) const
@@ -265,7 +253,7 @@ namespace ngcomp
                                                FlatTable<int> e2f,
                                                shared_ptr<BitArray> freedofs) const;
 
-    AMGInfo CalcCoarsening(FlatArray<double> coll_weights,
+    CoarseInfo CalcCoarsening(FlatArray<double> coll_weights,
                            shared_ptr<BitArray> freedofs,
                            FlatArray<IVec<3>> f2e,
                            FlatArray<IVec<2>> e2v,
@@ -285,7 +273,7 @@ namespace ngcomp
   
   template<typename SCAL>
   void HCurlAMG_Matrix<SCAL> ::
-  Init (shared_ptr<SparseMatrixTM<SCAL>> _mat,
+  Setup (shared_ptr<SparseMatrixTM<SCAL>> _mat,
         shared_ptr<BitArray> freedofs,
         FlatArray<IVec<3>> f2e,
         FlatArray<IVec<2>> e2v,
@@ -302,7 +290,7 @@ namespace ngcomp
     auto nf = f2e.Size();
 
     if (param.verbose > 1)
-      cout << IM(0) << "init level " << level << ", matsize = " << size << ", nedge = " << ne << ", nface = " << nf << endl;
+      cout << IM(0) << "setup level " << level << ", matsize = " << size << ", nedge = " << ne << ", nface = " << nf << endl;
     
     TableCreator<int> e2f_creator(ne);
     for(;!e2f_creator.Done(); e2f_creator++)
@@ -312,7 +300,7 @@ namespace ngcomp
     Table<int> e2f = e2f_creator.MoveTable();
 
     int coarse_nv = nv;
-    AMGInfo cinfo;
+    CoarseInfo cinfo;
     Table<int> ce2f;
 
     for(auto coarsening : Range(param.coarsenings_per_level))
@@ -340,7 +328,7 @@ namespace ngcomp
                       for(auto j : prolongation->GetRowIndices(i))
                         smoothing_blocks_creator.Add(j, i);
                 auto smoothing_blocks = make_shared<Table<int>>(smoothing_blocks_creator.MoveTable());
-                blocksmoother = mat->CreateBlockJacobiPrecond(smoothing_blocks);
+                smoother = mat->CreateBlockJacobiPrecond(smoothing_blocks);
               }
             else
               {
@@ -449,7 +437,8 @@ namespace ngcomp
           }
       }
 
-    BuildCoarseMat(cinfo, level);
+    coarse_precond = BuildCoarsePrecond(cinfo, level);
+    
     restriction = dynamic_pointer_cast<SparseMatrixTM<double>>
       (prolongation->CreateTranspose());
 
@@ -477,26 +466,29 @@ namespace ngcomp
   }
 
   template<typename SCAL>
-  void HCurlAMG_Matrix<SCAL> :: BuildCoarseMat(const AMGInfo& cinfo,
-                                               int level)
+  shared_ptr<BaseMatrix> HCurlAMG_Matrix<SCAL> ::
+  BuildCoarsePrecond (const CoarseInfo& cinfo, int level)
   {
     auto coarsemat = mat->Restrict(*prolongation);
+    
     cout << IM(5) << "mat nze: " << mat->NZE() << endl;
     cout << IM(5) << "mat nze per row: " << double(mat->NZE())/mat->Height() << endl;
     cout << IM(5) << "coarse mat nze: " << coarsemat->NZE() << endl;
     cout << IM(5) << "coarse mat nze per row: " << double(coarsemat->NZE())/coarsemat->Height() << endl;
+    
     auto nce = cinfo.e2v.Size();
     auto ne = mat->Height();
+    
     if ( (nce < param.max_coarse) || (level >= param.max_level) || (nce == ne))
       {
         if (param.verbose >= 2)
           cout << IM(0) << "coarse direct inverse, size = " << coarsemat->Height() << endl;
         coarsemat->SetInverseType(SPARSECHOLESKY);
-        coarse_precond = coarsemat->InverseMatrix(cinfo.freedofs);
+        return coarsemat->InverseMatrix(cinfo.freedofs);
       }
     else
       {
-        coarse_precond = make_shared<HCurlAMG_Matrix<SCAL>>
+        return make_shared<HCurlAMG_Matrix<SCAL>>
           (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(coarsemat),
            cinfo.freedofs, cinfo.f2e, cinfo.e2v, cinfo.edge_weights,
            cinfo.face_weights, level+1, param);
@@ -734,7 +726,7 @@ namespace ngcomp
   }
 
   template<typename SCAL>
-  typename HCurlAMG_Matrix<SCAL>::AMGInfo HCurlAMG_Matrix<SCAL> ::
+  typename HCurlAMG_Matrix<SCAL>::CoarseInfo HCurlAMG_Matrix<SCAL> ::
   CalcCoarsening(FlatArray<double> coll_weights,
                  shared_ptr<BitArray> freedofs,
                  FlatArray<IVec<3>> f2e,
@@ -744,9 +736,11 @@ namespace ngcomp
                  FlatArray<double> face_weights,
                  int nv, int level, int coarsening) const
   {
-    AMGInfo info;
+    CoarseInfo info;
+    
     auto ne = edge_weights.Size();
     auto nf = f2e.Size();
+    
     Array<int> indices(ne);
     for(auto i : Range(ne))
       indices[i] = i;
@@ -761,25 +755,25 @@ namespace ngcomp
 
     for(int i = ne-1; i >= 0; i--)
       {
-        if(e2f[i].Size() == 0) continue; // unused dof
+        if (e2f[i].Size() == 0) continue; // unused dof
         auto e = indices[i];
         auto verts = e2v[e];
         unused_vertex[verts[0]] = false;
         unused_vertex[verts[1]] = false;
-        if(coll_weights[e] >= 0.1 && !collapsed_vertex[verts[0]] &&
-           !collapsed_vertex[verts[1]])
+        if (coll_weights[e] >= 0.1 &&
+            !collapsed_vertex[verts[0]] && !collapsed_vertex[verts[1]])
           {
             collapsed_edge[e] = true;
             collapsed_vertex[verts[0]] = true;
             collapsed_vertex[verts[1]] = true;
           }
       }
+    
     collapsed_vertex = false;
-    for(auto e : Range(ne))
-      if(collapsed_edge[e])
-        {
-          collapsed_vertex[max2(e2v[e][0], e2v[e][1])] = true;
-        }
+    for (auto e : Range(ne))
+      if (collapsed_edge[e])
+        collapsed_vertex[max2(e2v[e][0], e2v[e][1])] = true;
+
     size_t ncv = 0; // number of coarse vertices
     Array<int> vert_map(nv);
     for(auto i : Range(nv))
@@ -845,6 +839,8 @@ namespace ngcomp
               }
           }
       }
+
+    
     info.edge_weights.SetSize(nce);
     info.edge_weights = 0.;
     for(auto edge : Range(ne))
@@ -925,15 +921,11 @@ namespace ngcomp
     static Timer timer_c("Coarse correction");
 
     u = 0.;
-    if(smoother)
-      for (int k = 0; k < param.smoothing_steps; k++)      
-        smoother->GSSmooth(u, f);
-    else
-      blocksmoother->GSSmooth(u, f, param.smoothing_steps);
+    smoother->Smooth(u, f, param.smoothing_steps);
     
     auto residuum = f.CreateVector();
 
-    if(gradient)
+    if (gradient)
       {
         residuum = f - (*mat) * u;
         auto op = gradient*node_h1*trans_gradient;
@@ -948,18 +940,14 @@ namespace ngcomp
       u += *op * residuum;      
     }
 
-    if(gradient)
+    if (gradient)
       {
         residuum = f - (*mat) * u;
         auto op = gradient*node_h1*trans_gradient;
         u += *op * residuum;
       }
     
-    if(smoother)
-      for (int k = 0; k < param.smoothing_steps; k++)
-        smoother->GSSmoothBack(u, f);
-    else
-      blocksmoother->GSSmoothBack(u, f, param.smoothing_steps);
+    smoother->SmoothBack(u, f, param.smoothing_steps);    
   }
 
 
@@ -1138,7 +1126,7 @@ namespace ngcomp
                FlatArray<double> face_weights,
                size_t level, HCurlAMG_Parameters aparam);
   protected:
-    void BuildCoarseMat(const typename BASE::AMGInfo& cinfo, int level) override;
+    shared_ptr<BaseMatrix> BuildCoarsePrecond(const typename BASE::CoarseInfo& cinfo, int level) override;
     shared_ptr<BitArray>
     GetHCurlFreeDofs(shared_ptr<BitArray> freedofs) const override
     {
@@ -1267,13 +1255,15 @@ namespace ngcomp
     hcurlsize = e2v.Size();
     h1size = freedofs->Size() - hcurlsize;
     this->nv = h1size;
-    this->Init(_mat, freedofs, f2e, e2v, edge_weights, face_weights, level);
+    this->Setup(_mat, freedofs, f2e, e2v, edge_weights, face_weights, level);
   }
 
   template<typename SCAL>
-  void APhiMatrix<SCAL> :: BuildCoarseMat(const typename BASE::AMGInfo& cinfo,
-                                          int level)
+  shared_ptr<BaseMatrix> APhiMatrix<SCAL> ::
+  BuildCoarsePrecond (const typename BASE::CoarseInfo& cinfo, int level)
   {
+    shared_ptr<BaseMatrix> coarsepre;
+    
     auto chcurlsize = this->prolongation->Width();
     auto ch1size = this->vert_prolongation->Width();
     auto csize = chcurlsize + ch1size;
@@ -1305,15 +1295,17 @@ namespace ngcomp
         for(auto i : Range(chcurlsize, csize))
           cinfo.freedofs->Clear(i);
         coarsemat->SetInverseType(SPARSECHOLESKY);
-        this->coarse_precond = coarsemat->InverseMatrix(cinfo.freedofs);
+        coarsepre = coarsemat->InverseMatrix(cinfo.freedofs);
       }
     else
       {
-        this->coarse_precond = make_shared<APhiMatrix<SCAL>>
+        coarsepre = make_shared<APhiMatrix<SCAL>>
           (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(coarsemat),
            cinfo.freedofs, cinfo.f2e, cinfo.e2v, cinfo.edge_weights,
            cinfo.face_weights, level+1, this->param);
       }
+
+    return coarsepre;
   }
 
   template<typename SCAL> shared_ptr<BitArray>

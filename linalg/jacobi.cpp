@@ -112,7 +112,7 @@ namespace ngla
   ///
   template <class TM, class TV_ROW, class TV_COL>
   void JacobiPrecond<TM,TV_ROW,TV_COL> ::
-  GSSmooth (BaseVector & x, const BaseVector & b) const 
+  GSSmooth (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static Timer timer("JacobiPrecond::GSSmooth");
     RegionTimer reg (timer);
@@ -121,19 +121,20 @@ namespace ngla
     FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
     const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
 
-    for (int i = 0; i < height; i++)
-      if (!this->inner || this->inner->Test(i))
-	{
-	  TV_ROW ax = mat.RowTimesVector (i, fx);
-	  fx(i) += invdiag[i] * (fb(i) - ax);
-	}
+    for (int k = 0; k < steps; k++)
+      for (int i = 0; i < height; i++)
+        if (!this->inner || this->inner->Test(i))
+          {
+            TV_ROW ax = mat.RowTimesVector (i, fx);
+            fx(i) += invdiag[i] * (fb(i) - ax);
+          }
   }
 
 
   ///
   template <class TM, class TV_ROW, class TV_COL>
   void JacobiPrecond<TM,TV_ROW,TV_COL> ::
-  GSSmoothBack (BaseVector & x, const BaseVector & b) const 
+  GSSmoothBack (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static Timer timer("JacobiPrecond::GSSmoothBack");
     RegionTimer reg (timer);
@@ -142,12 +143,13 @@ namespace ngla
     FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
     const FlatVector<TV_ROW> fb = b.FV<TV_ROW> ();
 
-    for (int i = height-1; i >= 0; i--)
-      if (!this->inner || this->inner->Test(i))
-	{
-	  TV_ROW ax = mat.RowTimesVector (i, fx);
-	  fx(i) += invdiag[i] * (fb(i) - ax);
-	}
+    for (int k = 0; k < steps; k++)    
+      for (int i = height-1; i >= 0; i--)
+        if (!this->inner || this->inner->Test(i))
+          {
+            TV_ROW ax = mat.RowTimesVector (i, fx);
+            fx(i) += invdiag[i] * (fb(i) - ax);
+          }
   }
 
   ///
@@ -175,7 +177,7 @@ namespace ngla
   ///
   template <class TM, class TV>
   void JacobiPrecondSymmetric<TM,TV> ::
-  GSSmooth (BaseVector & x, const BaseVector & b) const 
+  GSSmooth (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static int timer = NgProfiler::CreateTimer ("JacobiPrecondSymmetric::GSSmooth");
     NgProfiler::RegionTimer reg (timer);
@@ -186,23 +188,26 @@ namespace ngla
     const SparseMatrixSymmetric<TM,TV> & smat =
       dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
 
-    // x := b - L^t x
-    for (int i = 0; i < this->height; i++)
-      if (!this->inner || this->inner->Test(i))
-	{
-	  smat.AddRowTransToVectorNoDiag (i, -fx(i), fx);
-	  fx(i) = fb(i);
-	}
-      else
-	fx(i) = TVX(0);
-    
-    // x := (L+D)^{-1} x
-    for (int i = 0; i < this->height; i++)
-      if (!this->inner || this->inner->Test(i))
-	{
-	  TVX hv = fx(i) - smat.RowTimesVectorNoDiag (i, fx);
-	  fx(i) = this->invdiag[i] * hv;
-	}
+    for (int k = 0; k < steps; k++)
+      {
+        // x := b - L^t x
+        for (int i = 0; i < this->height; i++)
+          if (!this->inner || this->inner->Test(i))
+            {
+              smat.AddRowTransToVectorNoDiag (i, -fx(i), fx);
+              fx(i) = fb(i);
+            }
+          else
+            fx(i) = TVX(0);
+        
+        // x := (L+D)^{-1} x
+        for (int i = 0; i < this->height; i++)
+          if (!this->inner || this->inner->Test(i))
+            {
+              TVX hv = fx(i) - smat.RowTimesVectorNoDiag (i, fx);
+              fx(i) = this->invdiag[i] * hv;
+            }
+      }
   }
 
 
@@ -245,7 +250,7 @@ namespace ngla
   ///
   template <class TM, class TV>
   void JacobiPrecondSymmetric<TM,TV> ::
-  GSSmoothBack (BaseVector & x, const BaseVector & b) const 
+  GSSmoothBack (BaseVector & x, const BaseVector & b, int steps) const 
   {
     static int timer = NgProfiler::CreateTimer ("JacobiPrecondSymmetric::GSSmoothBack");
     NgProfiler::RegionTimer reg (timer);
@@ -257,25 +262,28 @@ namespace ngla
 
     const SparseMatrixSymmetric<TM,TV> & smat =
       dynamic_cast<const SparseMatrixSymmetric<TM,TV>&> (this->mat);
-    
-    for (int i = this->height-1; i >= 0; i--)
-      if (!this->inner || this->inner->Test(i))
-	{
-	  fx(i) = fb(i) - smat.RowTimesVectorNoDiag (i, fx);
-	}
-      else
-	fx(i) = TVX(0);
 
-    
-    for (int i = this->height-1; i >= 0; i--)
-      if (!this->inner || this->inner->Test(i))
-	{
-	  TVX val = this->invdiag[i] * fx(i);
-	  fx(i) = val;
-	  smat.AddRowTransToVectorNoDiag (i, -val, fx);
-	}	 
-      else
-	fx(i) = TVX(0);
+    for (int k = 0; k < steps; k++)
+      {
+        for (int i = this->height-1; i >= 0; i--)
+          if (!this->inner || this->inner->Test(i))
+            {
+              fx(i) = fb(i) - smat.RowTimesVectorNoDiag (i, fx);
+            }
+          else
+            fx(i) = TVX(0);
+        
+        
+        for (int i = this->height-1; i >= 0; i--)
+          if (!this->inner || this->inner->Test(i))
+            {
+              TVX val = this->invdiag[i] * fx(i);
+              fx(i) = val;
+              smat.AddRowTransToVectorNoDiag (i, -val, fx);
+            }	 
+          else
+            fx(i) = TVX(0);
+      }
   }
 
   template <class TM, class TV>

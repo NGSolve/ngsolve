@@ -17,13 +17,30 @@ namespace ngla
      Jacobi and Gauss Seidel smoother
      for scalar, block and system matrices
   */
-
-  class BaseJacobiPrecond : virtual public BaseMatrix
+  
+  class BaseMSMPrecond : virtual public BaseMatrix
   {
   public:
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b) const = 0;
+    virtual void Smooth (BaseVector & x, const BaseVector & b, int steps = 1) const = 0;
+    virtual void SmoothBack (BaseVector & x, const BaseVector & b, int steps = 1) const = 0;
+  };
+
+    
+  class BaseJacobiPrecond : virtual public BaseMSMPrecond
+  {
+  public:
+    virtual void Smooth (BaseVector & x, const BaseVector & b, int steps = 1) const override
+    {
+      GSSmooth (x, b, steps);
+    }
+    virtual void SmoothBack (BaseVector & x, const BaseVector & b, int steps = 1) const override
+    {
+      GSSmoothBack (x, b, steps);
+    }
+    
+    virtual void GSSmooth (BaseVector & x, const BaseVector & b, int steps = 1) const = 0;
     virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y) const = 0;
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b) const = 0;
+    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b, int steps = 1) const = 0;
   };
 
 
@@ -77,17 +94,17 @@ namespace ngla
     AutoVector CreateRowVector() const override { return mat.CreateColVector(); }
     AutoVector CreateColVector() const override { return mat.CreateRowVector(); }
     ///
-    void GSSmooth (BaseVector & x, const BaseVector & b) const override;
+    void GSSmooth (BaseVector & x, const BaseVector & b, int steps) const override;
 
     /// computes partial residual y
     void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y) const override
     {
-      GSSmooth (x, b);
+      GSSmooth (x, b, 1);
     }
 
 
     ///
-    void GSSmoothBack (BaseVector & x, const BaseVector & b) const override;
+    void GSSmoothBack (BaseVector & x, const BaseVector & b, int steps) const override;
 
     ///
     virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
@@ -115,19 +132,19 @@ namespace ngla
 			    shared_ptr<BitArray> ainner = nullptr, bool use_par = true);
 
     ///
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b) const;
+    virtual void GSSmooth (BaseVector & x, const BaseVector & b, int steps) const override;
 
     /// computes partial residual y
-    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const;
+    virtual void GSSmooth (BaseVector & x, const BaseVector & b, BaseVector & y /* , BaseVector & help */) const override;
 
     ///
-    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b) const;
+    virtual void GSSmoothBack (BaseVector & x, const BaseVector & b, int steps) const override;
     virtual void GSSmoothBack (BaseVector & x, const BaseVector & b, BaseVector & y) const;
 
     ///
     virtual void GSSmoothNumbering (BaseVector & x, const BaseVector & b,
 				    const Array<int> & numbering, 
-				    int forward = 1) const;
+				    int forward = 1) const override;
   };
 
 }
