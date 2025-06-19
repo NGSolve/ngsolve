@@ -145,16 +145,22 @@ namespace ngcomp
 
       ParallelFor (num_edges, [&] (size_t i)
                    {
-                     for (size_t j = 0; j < 2; j++)
-                       AtomicAdd(sum_vertex_weights[e2v[i][j]], edge_weights[i]);
+                     if (edge_weights[i] >= 0)
+                       for (size_t j = 0; j < 2; j++)
+                         AtomicAdd(sum_vertex_weights[e2v[i][j]], edge_weights[i]);
                    });
 
       ParallelFor (num_edges, [&] (size_t i)
                    {
-                     double vstr1 = sum_vertex_weights[e2v[i][0]];
-                     double vstr2 = sum_vertex_weights[e2v[i][1]];
-
-                     edge_collapse_weights[i] = edge_weights[i] * (vstr1+vstr2) / (vstr1 * vstr2);
+                     if (edge_weights[i] >= 0)
+                       {
+                         double vstr1 = sum_vertex_weights[e2v[i][0]];
+                         double vstr2 = sum_vertex_weights[e2v[i][1]];
+                         
+                         edge_collapse_weights[i] = edge_weights[i] * (vstr1+vstr2) / (vstr1 * vstr2);
+                       }
+                     else
+                       edge_collapse_weights[i] = 0.0;
                    });
 
       // sort edges by collapse weights
@@ -172,7 +178,6 @@ namespace ngcomp
                    });
       */
 
-
       // which edges to collapse ?
 
       Array<bool> vertex_collapse(num_vertices);
@@ -184,8 +189,9 @@ namespace ngcomp
       for ( ; !v2e_creator.Done(); v2e_creator++)
         ParallelFor (num_edges, [&] (size_t e)
                      {
-                       for (int j = 0; j < 2; j++)
-                         v2e_creator.Add (e2v[e][j], e);
+                       if (e2v[e][0] != -1)
+                         for (int j = 0; j < 2; j++)
+                           v2e_creator.Add (e2v[e][j], e);
                      });
       Table<int> v2e = v2e_creator.MoveTable();
 
@@ -226,12 +232,12 @@ namespace ngcomp
             (*freedofs)[i] == false)
           isolated_verts.SetBit(i);
 
-      
       RunParallelDependency (edge_dag,
                              [&] (int edgenr)
                              {
                                auto v0 = e2v[edgenr][0];
                                auto v1 = e2v[edgenr][1];
+                               if (v0 == -1 || v1 == -1) return;
                                if (edge_collapse_weights[edgenr] >= 0.01 && !vertex_collapse[v0] && !vertex_collapse[v1]
                                    && !isolated_verts[v0] && !isolated_verts[v1])
                                  // && (*freedofs)[v0] && (*freedofs)[v1])
@@ -252,7 +258,6 @@ namespace ngcomp
             auto v1 = e2v[e][1];
             vertex_collapse[max2(v0,v1)] = true;
           }
-
 
       // vertex 2 coarse vertex
       Array<size_t> v2cv(num_vertices);
@@ -278,6 +283,7 @@ namespace ngcomp
 
       ParallelFor (num_edges, [&] (size_t edge)
                    {
+                     if (e2v[edge][0] == -1) return;
                      size_t cv1 = v2cv[e2v[edge][0]];
                      size_t cv2 = v2cv[e2v[edge][1]];
 
@@ -323,6 +329,11 @@ namespace ngcomp
 
       ParallelFor(num_edges, [&] (int edge)
                   {
+                    if (e2v[edge][0] == -1)
+                      {
+                        e2ce[edge] = -1;
+                        return;
+                      }
                     int vertex1 = v2cv[e2v[edge][0]];
                     int vertex2 = v2cv[e2v[edge][1]];
 
@@ -345,6 +356,7 @@ namespace ngcomp
                     if (e2ce[e] != -1)
                       AtomicAdd(coarse_edge_weights[e2ce[e]], edge_weights[e]);
                     int v0 = e2v[e][0], v1 = e2v[e][1];
+                    if (e2v[e][0] == -1) return;                    
                     bool free0 = (*freedofs)[v0], free1 = (*freedofs)[v1];
                     if (free0 && !free1 && v2cv[v0] != -1)
                       AtomicAdd(coarse_vertex_weights[v2cv[v0]], edge_weights[e]);
@@ -397,6 +409,7 @@ namespace ngcomp
 
                for (auto e : v2e[i])
                  {
+                   if (e2v[e][0]==-1 || e2v[e][1]==-1) continue;
                    auto v2 = e2v[e][0]+e2v[e][1]-i;
                    (*smoothprol)(i,v2) = 0.0;
                  }
@@ -404,6 +417,7 @@ namespace ngcomp
 
                for (auto e : v2e[i])
                  {
+                   if (e2v[e][0]==-1 || e2v[e][1]==-1) continue;                   
                    auto v2 = e2v[e][0]+e2v[e][1]-i;
                    (*smoothprol)(i,v2) = 0.5*edge_weights[e]/sum;
                  }
