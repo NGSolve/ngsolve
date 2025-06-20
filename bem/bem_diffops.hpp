@@ -144,9 +144,20 @@ namespace ngsbem
     enum { DIFFORDER = 1 };
 
     static string Name() { return "Helmholtz"; }
+    static int DimRef() { return 3; }
 
     static const ScalarFiniteElement<2> & Cast (const FiniteElement & fel) 
     { return static_cast<const ScalarFiniteElement<2>&> (fel); }
+
+    // mat is 3xndof
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                    MAT && mat, LocalHeap & lh)
+    {
+        auto matvec = mat.Rows(0,2);
+        Cast(fel).CalcDShape (ip, Trans(matvec));
+        Cast(fel).CalcShape(ip, mat.Row(2));
+    }
 
     ///
     // mat is 4 x ndof
@@ -167,6 +178,22 @@ namespace ngsbem
       Cast(fel).CalcShape(mip.IP(), mat.Row(3));
       // *testout << "scalar mat = " << endl << mat << mat;
       // *testout << "mat2 = " << mat << endl;      
+    }
+
+    // mat is 4x3
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & bmip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<2,3>&>(bmip); 
+      Vec<3> nv = mip.GetNV();
+      mat = 0.0;
+      mat.Rows(0,3).Cols(0,2) = Trans(mip.GetJacobianInverse());
+      auto gradmat = mat.Rows(0,3).Cols(0,2);
+      for (int j = 0; j < 2; j++)
+        gradmat.Col(j) = Cross(nv, Vec<3> (gradmat.Col(j)));
+
+      mat(3,2) = 1.0;
     }
 
     /// mat is (ndof*4) x mip.Size()

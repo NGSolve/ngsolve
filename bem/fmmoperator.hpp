@@ -148,6 +148,24 @@ namespace ngsbem
                   }
               }
         }
+      else if constexpr (std::is_same<KERNEL, class HelmholtzHSKernel<3>>())
+       {
+          if (fx.Size() != 4*xpts.Size() || fy.Size() != 4*ypts.Size())
+            throw Exception ("HelmholtzHSKernel, wrong size");
+
+          for (size_t ix = 0; ix < xpts.Size(); ix++)
+            for (size_t iy = 0; iy < ypts.Size(); iy++)
+            {
+              double norm = L2Norm(xpts[ix]-ypts[iy]);
+              if (norm > 0)
+                {
+                  auto kappa = kernel.GetKappa();
+                  auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
+                  fy.Range(4*iy,4*iy+3) += kern * fx.Range(4*ix,4*ix+3);
+                  fy(4*iy+3) += -kappa * kappa * InnerProduct(xnv[ix], ynv[iy])* kern * fx(4*ix+3);
+                }
+            }
+        }
       else if constexpr (std::is_same<KERNEL, class CombinedFieldKernel<3>>())
         {
           /*
@@ -485,6 +503,41 @@ namespace ngsbem
 
     ParallelFor (xpts.Size(), [&](int i) {
       fy(i) = regmp.EvaluateDirectionalDerivative(xpts[i], xnv[i]);
+    });
+  }
+
+  template <>
+  void FMM_Operator<HelmholtzHSKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
+  {
+    static Timer tall("ngbem fmm apply HelmholtzHS (ngfmm)"); RegionTimer reg(tall);
+    auto fx = x.FV<Complex>();
+    auto fy = y.FV<Complex>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    double kappa = kernel.GetKappa();
+
+    auto singmp = make_shared<SingularMLMultiPole<Vec<6,Complex>>>(cx, rx, kappa);
+
+    for (int i = 0; i < xpts.Size(); i++){
+      Vec<6,Complex> charge;
+      charge.Range(0,3) = fx.Range(4*i,4*i+3);
+      charge.Range(3,6) = -kappa * kappa * fx(4*i+3) * xnv[i];
+      singmp->AddCharge(xpts[i], charge);
+    }
+
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Vec<6,Complex>> regmp (cy, ry, kappa);
+    for (int i = 0; i < ypts.Size(); i++){
+      regmp.AddTarget(ypts[i]);
+    }
+    regmp.CalcMP(singmp);
+
+    ParallelFor (ypts.Size(), [&](int i) {
+      Vec<6,Complex> eval = regmp.Evaluate(ypts[i]);
+      fy.Range(4*i,4*i+3) = eval.Range(0,3);
+      fy(4*i+3) = InnerProduct(eval.Range(3,6), ynv[i]);
     });
   }
 

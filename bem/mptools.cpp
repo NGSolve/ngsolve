@@ -1809,6 +1809,10 @@ namespace ngsbem
   template void MultiPole<MPSingular,Vec<4,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<4,Complex>> & target);  
   template void MultiPole<MPSingular,Vec<4,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<4,Complex>> & target);
 
+  template void MultiPole<MPRegular,Vec<6,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<6,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<6,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<6,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<6,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<6,Complex>> & target);
+
 
 
 
@@ -2219,6 +2223,8 @@ namespace ngsbem
 
   template class SphericalHarmonics<Complex>;
   template class SphericalHarmonics<Vec<3,Complex>>;  
+  template class SphericalHarmonics<Vec<4,Complex>>;
+  template class SphericalHarmonics<Vec<6,Complex>>;
   
   template class MultiPole<MPSingular>;
   template class MultiPole<MPRegular>;
@@ -2226,6 +2232,8 @@ namespace ngsbem
   template class MultiPole<MPRegular, Vec<3,Complex>>;    
   template class MultiPole<MPSingular, Vec<4,Complex>>;
   template class MultiPole<MPRegular, Vec<4,Complex>>;    
+  template class MultiPole<MPSingular, Vec<6,Complex>>;
+  template class MultiPole<MPRegular, Vec<6,Complex>>;
 
 
   
@@ -2244,6 +2252,10 @@ namespace ngsbem
   Array<size_t> RegularMLMultiPole<Vec<4,Complex>>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLMultiPole<Vec<4,Complex>>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLMultiPole<Vec<6,Complex>>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLMultiPole<Vec<6,Complex>>::nodes_on_level(100);
 
 
   template class SingularMLMultiPole<Complex>;
