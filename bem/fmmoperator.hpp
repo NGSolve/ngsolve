@@ -192,6 +192,24 @@ namespace ngsbem
                   }
               }
         }
+      else if constexpr (std::is_same<KERNEL, class MaxwellSLKernel<3>>())
+        {
+          if (fx.Size() != 4*xpts.Size() || fy.Size() != 4*ypts.Size())
+            throw Exception ("MaxwellSL, wrong size");
+
+          auto kappa = kernel.GetKappa();
+          for (size_t ix = 0; ix < xpts.Size(); ix++)
+            for (size_t iy = 0; iy < ypts.Size(); iy++)
+            {
+              double norm = L2Norm(xpts[ix]-ypts[iy]);
+              if (norm > 0)
+              {
+                auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
+                fy.Range(4*iy,4*iy+3) += kappa * kern * fx.Range(4*ix,4*ix+3);
+                fy(4*iy+3) -= 1.0/kappa * kern * fx(4*ix+3);
+              }
+            }
+        }
       else
         throw Exception(string("fmm not available")+typeid(KERNEL).name());
     }
@@ -590,7 +608,38 @@ namespace ngsbem
     });
     t4.Stop();
   }
-  
+
+  template <>
+  void FMM_Operator<MaxwellSLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
+  {
+    static Timer tall("ngbem fmm apply MaxwellSL (ngfmm)"); RegionTimer reg(tall);
+    auto fx = x.FV<Complex>();
+    auto fy = y.FV<Complex>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    double kappa = kernel.GetKappa();
+
+    auto singmp = make_shared<SingularMLMultiPole<Vec<4,Complex>>>(cx, rx, kappa);
+
+    for (int i = 0; i < xpts.Size(); i++){
+      Vec<4,Complex> charge;
+      charge.Range(0,3) = kappa * fx.Range(4*i,4*i+3);
+      charge[3] = -1.0 / kappa * fx(4*i+3);
+      singmp->AddCharge(xpts[i], charge);
+    }
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Vec<4,Complex>> regmp (cy, ry, kappa);
+    for (int i = 0; i < ypts.Size(); i++){
+      regmp.AddTarget(ypts[i]);
+    }
+    regmp.CalcMP(singmp);
+
+    ParallelFor (ypts.Size(), [&](int i) {
+      fy.Range(4*i, 4*i+4) = regmp.Evaluate(ypts[i]);
+    });
+  }
 }
 
 
