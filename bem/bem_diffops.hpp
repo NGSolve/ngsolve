@@ -324,9 +324,20 @@ namespace ngsbem
     enum { DIFFORDER = 1 };
 
     static string Name() { return "Maxwell"; }
+    static int DimRef() { return 3; }
     
     static const HDivFiniteElement<2> & Cast (const FiniteElement & fel) 
     { return static_cast<const HDivFiniteElement<2>&> (fel); }
+
+    // mat is 3xndof
+    template<typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      auto matvec = mat.Rows(0,2); // 2D vector field
+      Cast(fel).CalcShape (ip, Trans(matvec));
+      Cast(fel).CalcDivShape (ip, mat.Row(2)); //divergence
+    }
 
     ///
     // mat is 4 x ndof
@@ -341,6 +352,17 @@ namespace ngsbem
       mat.Row(3) =
         1.0/mip.GetJacobiDet() * 
 	Cast(fel).GetDivShape(mip.IP(),lh).Col(0);
+    }
+
+    // mat is 4x3
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & bmip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+        auto & mip = static_cast<const MappedIntegrationPoint<2,3>&>(bmip);
+        mat = 0.0;
+        mat.Rows(0,3).Cols(0,2) = (1.0 / mip.GetJacobiDet()) * mip.GetJacobian();
+        mat(3,2) = 1.0 / mip.GetJacobiDet();
     }
 
     /// mat is (ndof*4) x mip.Size()
