@@ -1,6 +1,7 @@
 #ifndef FILE_FMMOPERATOR
 #define FILE_FMMOPERATOR
 #include <mptools.hpp>
+#include <bla.hpp>
 
 namespace ngsbem
 {
@@ -207,6 +208,26 @@ namespace ngsbem
                 auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
                 fy.Range(4*iy,4*iy+3) += kappa * kern * fx.Range(4*ix,4*ix+3);
                 fy(4*iy+3) -= 1.0/kappa * kern * fx(4*ix+3);
+              }
+            }
+        }
+
+      else if constexpr (std::is_same<KERNEL, class MaxwellDLKernel<3>>())
+        {
+          if (fx.Size() != 3*xpts.Size() || fy.Size() != 3*ypts.Size())
+            throw Exception ("MaxwellDL, wrong size");
+
+          auto kappa = kernel.GetKappa();
+          for (size_t ix = 0; ix < xpts.Size(); ix++)
+            for (size_t iy = 0; iy < ypts.Size(); iy++)
+            {
+              double norm = L2Norm(xpts[ix]-ypts[iy]);
+              if (norm > 0)
+              {
+                auto G = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm * norm * norm)
+                  * (Complex(1,0) - Complex(0,kappa)*norm);
+                Vec<3, Complex> kern = G * (xpts[ix]-ypts[iy]);
+                fy.Range(3*iy,3*iy+3) += Cross(kern, Vec<3, Complex> (fx.Range(3*ix,3*ix+3)));
               }
             }
         }
@@ -638,6 +659,46 @@ namespace ngsbem
 
     ParallelFor (ypts.Size(), [&](int i) {
       fy.Range(4*i, 4*i+4) = regmp.Evaluate(ypts[i]);
+    });
+  }
+
+  template <>
+  void FMM_Operator<MaxwellDLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const
+  {
+    static Timer tall("ngbem fmm apply MaxwellDL (ngfmm)"); RegionTimer reg(tall);
+    auto fx = x.FV<Complex>();
+    auto fy = y.FV<Complex>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    double kappa = kernel.GetKappa();
+
+    auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, kappa);
+
+    for (int i = 0; i < xpts.Size(); i++){
+      Vec<3,Complex> n_cross_m = fx.Range(3*i, 3*i+3);
+
+      // Add dipoles similar to AddCurrentDensity
+      for (int k = 0; k < 3; k++)
+      {
+        Vec<3> ek{0.0}; ek(k) = 1;
+        Vec<3> n_cross_m_real = Real(n_cross_m);
+        Vec<3> n_cross_m_imag = Imag(n_cross_m);
+
+        singmp->AddDipole(xpts[i], Cross(n_cross_m_real, ek), ek);
+        singmp->AddDipole(xpts[i], Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
+      }
+    }
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Vec<3,Complex>> regmp (cy, ry, kappa);
+    for (int i = 0; i < ypts.Size(); i++){
+      regmp.AddTarget(ypts[i]);
+    }
+    regmp.CalcMP(singmp);
+
+    ParallelFor (ypts.Size(), [&](int i) {
+      fy.Range(3*i, 3*i+3) = regmp.Evaluate(ypts[i]);
     });
   }
 }
