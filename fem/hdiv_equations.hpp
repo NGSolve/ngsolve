@@ -179,6 +179,14 @@ public:
   {
     return static_cast<const FEL&> (fel);
   }
+  static int DimRef() { return D-1; }
+
+  template <typename IP, typename MAT>
+  static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                 MAT && mat, LocalHeap & lh)
+  {
+    Cast(fel).CalcShape (ip, Trans(mat));
+  }
   
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
@@ -188,6 +196,13 @@ public:
       Trans (Cast(fel).GetShape(mip.IP(),lh));
   }
   
+  template <typename MIP, typename MAT>
+  static void CalcTransformationMatrix (const MIP & bmip,
+                                        MAT & mat, LocalHeap & lh)
+  {
+    auto & mip = static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip);
+    mat = 1./mip.GetJacobiDet() * mip.GetJacobian();
+  }
   /*
   template <typename AFEL, typename MIP, class TVX, class TVY>
   static void ApplyTrans (const AFEL & fel, const MIP & mip,
