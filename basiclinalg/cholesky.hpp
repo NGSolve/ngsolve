@@ -503,7 +503,7 @@ namespace ngbla
     
     int n = mat.Height();
     STACK_ARRAY(T, mem, n);
-    FlatVector<T> dinv(n, &mem);
+    FlatVector<T> dinv(n, &mem[0]);
     
     for (size_t i = 0; i < n; i++)
       // CalcInverse (mat(i,i), dinv(i));
@@ -528,7 +528,7 @@ namespace ngbla
   {
     size_t n = mat.Height();
     STACK_ARRAY(T,mem, n);
-    FlatVector<T> dinv(n, &mem);
+    FlatVector<T> dinv(n, &mem[0]);
     
     for (size_t i = 0; i < n; i++)
       {
