@@ -96,9 +96,18 @@ namespace ngsbem
     enum { DIFFORDER = 1 };
 
     static string Name() { return "rotatedtrace"; }
-    
+    static int DimRef() { return 2; }
+
     static const HCurlFiniteElement<2> & Cast (const FiniteElement & fel) 
     { return static_cast<const HCurlFiniteElement<2>&> (fel); }
+
+    // mat is 2 x ndof
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                    MAT && mat, LocalHeap & lh)
+    {
+        Cast(fel).CalcShape (ip, Trans(mat));
+    }
 
     ///
     // mat is 3 x ndof
@@ -112,6 +121,19 @@ namespace ngsbem
           Vec<3> shape = mat.Col(i);
           mat.Col(i) = Cross(mip.GetNV(), shape);
         }
+    }
+
+    // mat is 3 x 2
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & bmip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+        auto & mip = static_cast<const MappedIntegrationPoint<2,3>&>(bmip);
+        Vec<3> nv = mip.GetNV();
+        mat = Trans(mip.GetJacobianInverse());
+
+        for (int j = 0; j < 2; j++)
+          mat.Col(j) = Cross(nv, Vec<3> (mat.Col(j)));
     }
 
     /// mat is (ndof*3) x mip.Size()
