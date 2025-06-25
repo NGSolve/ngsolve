@@ -915,7 +915,21 @@ namespace ngmg
         // *testout << "innerdofs after coarse = " << *harm_inner << endl;
         for (auto e : Range(nedgec, nedgef))
           {
-            if (auto parents = get<1>(ma->GetParentEdges(e)); parents[0] < nedgec && parents[1] == -1) // from splitting of one edge
+
+            int e2 = e;
+            bool isext = true;
+            while (e2 >= nedgec)
+              {
+                auto pa1 = get<1>(ma->GetParentEdges(e2));
+                if (pa1[1] != -1) isext = false;
+                e2 = pa1[0];
+              }
+            if (!isext) continue;
+            
+            /*
+            if (auto parents = get<1>(ma->GetParentEdges(e));
+                parents[0] < nedgec && parents[1] == -1) // from splitting of one edge
+            */
               {        
                 Array<DofId> dnums;
                 fes.GetEdgeDofNrs(e, dnums);
@@ -964,17 +978,31 @@ namespace ngmg
         // TODO: locally refined meshes with direct parent on coarse level 
         for (auto f : Range(nfacec, nfacef))
           {
+            /*
             auto pa1 = get<1>(ma->GetParentFaces(f));
             if (pa1[1] != -1) continue;
 
-            if (auto parents = get<1>(ma->GetParentFaces(pa1[0])); parents[0] < nfacec && parents[1] == -1) // from splitting of one face
-              {        
-                Array<DofId> dnums;
-                fes.GetFaceDofNrs(f, dnums);
-                for (auto d : dnums)
-                  if (IsRegularDof(d))                  
-                    harm_inner->Clear(d);
+            if (auto parents = get<1>(ma->GetParentFaces(pa1[0]));
+                parents[0] < nfacec && parents[1] == -1) // from splitting of one face
+            */
+            
+            int f2 = f;
+            bool isext = true;
+            while (f2 >= nfacec)
+              {
+                auto pa1 = get<1>(ma->GetParentFaces(f2));
+                if (pa1[1] != -1) isext = false;
+                f2 = pa1[0];
               }
+            if (!isext) continue;
+            
+            {        
+              Array<DofId> dnums;
+              fes.GetFaceDofNrs(f, dnums);
+              for (auto d : dnums)
+                if (IsRegularDof(d))                  
+                  harm_inner->Clear(d);
+            }
           }
       }
     

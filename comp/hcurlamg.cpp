@@ -113,6 +113,8 @@ namespace ngcomp
   void CalcSchurComplement(const MAT a, FlatMatrix<SCAL> s,
                            const BitArray& used, LocalHeap& lh)
   {
+    // static Timer t("HCurlAMG CalcSchurComplement"); RegionTimer reg(t);
+    
     if (s.Height() == 0) return;
     if (s.Height() == a.Height())
       {
@@ -535,204 +537,223 @@ namespace ngcomp
    FlatArray<double> face_weights, FlatTable<int> e2f) const
   {
     static Timer timer("HCurlAMG::CalcEdgeCollapseWeights"); RegionTimer rt(timer);
+    static Timer timer_evp("HCurlAMG::CalcEdgeCollapseWeights-evp");
+    static Timer timer_topbot("HCurlAMG::CalcEdgeCollapseWeights-topbot");    
     auto ne = e2v.Size();
 
     Array<double> coll_eweights(ne);
     LocalHeap clh(20*1000*1000, "HCurlAMG::CalcEdgeCollapse");
-    ParallelFor(ne, [&](size_t ei)
+    ParallelForRange(ne, [&](IntRange r)
     {
       auto lh = clh.Split();
-      // flux norm matrix
-      auto ncf = e2f[ei].Size();
-      if(ncf == 0)
+      Array<IVec<2>> neighbours;
+      for (auto ei : r)
         {
-          coll_eweights[ei] = 0;
-          return; // unused dof
-        }
-      
-      FlatMatrix<double> top_part(ncf, lh);
-      FlatMatrix<double> bot_part(ncf, lh);
-      top_part = 0;
-      bot_part = 0;
-      auto verts = e2v[ei];
-      if (verts[0] == -1 && verts[1] == -1) return;
-      const auto& faces = e2f[ei];
-      for(auto i : Range(faces))
-        {
-          for(auto oe : f2e[faces[i]])
+          HeapReset hr(lh);
+          
+          // flux norm matrix
+          auto ncf = e2f[ei].Size();
+          if(ncf == 0)
             {
-              if(oe == ei) continue;
-              auto overts = e2v[oe];
-              if(overts[0] == verts[0] || overts[1] == verts[0])
-                top_part(i, i) += edge_weights[oe];
-              if(overts[0] == verts[1] || overts[1] == verts[1])
-                bot_part(i, i) += edge_weights[oe];
+              coll_eweights[ei] = 0;
+              continue;
             }
-        }
-      CalcInverse(top_part);
-      CalcInverse(bot_part);
-      FlatMatrix<double> sum = top_part + bot_part | lh;
-      CalcInverse(sum);
-      // make m-tilde
-      FlatVector<double> ones(ncf, lh);
-      ones = 1.;
-      FlatVector<double> col_sum = Trans(sum) * ones | lh;
-      double denominator = 0.;
-      for(auto v : col_sum)
-        denominator += v;
-      denominator += edge_weights[ei];
-      for(auto i : Range(ncf))
-        for(auto j : Range(ncf))
-          sum(i,j) -= col_sum[i] * col_sum[j] / denominator;
-      for(auto i : Range(faces))
-        sum(i,i) += face_weights[faces[i]];
-      if(sum.Height() != 0)
-        {
-          top_part = 0.;
-          bot_part = 0.;
-          for(auto i : Range(faces))
+          
+          FlatMatrix<double> top_part(ncf, lh);
+          FlatMatrix<double> bot_part(ncf, lh);
+          top_part = 0;
+          bot_part = 0;
+          auto verts = e2v[ei];
+          if (verts[0] == -1 && verts[1] == -1) continue;
+          
+          auto faces = e2f[ei];
+          for (auto i : Range(faces))
             {
-              auto face = faces[i];
-              for(auto oe : f2e[face])
+              for(auto oe : f2e[faces[i]])
                 {
-                  if(oe == ei) continue;
+                  if (oe == ei) continue;
                   auto overts = e2v[oe];
-                  if(verts[0] == overts[0] || verts[0] == overts[1])
-                    {
-                      for(auto oface : e2f[oe])
-                        {
-                          if(oface == face) continue;
-                          top_part(i,i) += face_weights[oface];
-                        }
-                      top_part(i,i) += edge_weights[oe];
-                    }
-                  if(verts[1] == overts[0] || verts[1] == overts[1])
-                    {
-                      for(auto oface : e2f[oe])
-                        {
-                          if(oface == face) continue;
-                          bot_part(i,i) += face_weights[oface];
-                        }
-                      bot_part(i,i) += edge_weights[oe];
-                    }
+                  if(overts[0] == verts[0] || overts[1] == verts[0])
+                    top_part(i, i) += edge_weights[oe];
+                  if(overts[0] == verts[1] || overts[1] == verts[1])
+                    bot_part(i, i) += edge_weights[oe];
                 }
             }
-          // auto face = faces[0];
-          // find center face neighbours - neighbours have 2 common neighbour faces
-          Array<IVec<2>> neighbours(faces.Size());
-          for(auto i : Range(neighbours))
-            neighbours[i] = IVec<2>(-1,-1);
-          for(auto fi : Range(faces))
-            {
-              if(neighbours[fi][0] != -1 && neighbours[fi][1] != -1) continue;
-              int te1 = 0;
-              for(auto e : f2e[faces[fi]])
-                {
-                  if(ei == e) continue;
-                  if(verts[0] == e2v[e][0] || verts[0] == e2v[e][1])
-                    te1 = e;
-                }
-              for(auto fo : Range(faces))
-                {
-                  if(neighbours[fo][0] != -1 && neighbours[fo][1] != -1) continue;
-                  if(neighbours[fi][0] == fo || fi == fo) continue;
-                  int te2 = 0;
-                  for(auto e : f2e[faces[fo]])
-                    {
-                      if(ei == e) continue;
-                      if(verts[0] == e2v[e][0] || verts[0] == e2v[e][1])
-                        te2 = e;
-                    }
-                  for(auto f : e2f[te1])
-                    {
-                      if(f == faces[fi] || f == faces[fo]) continue;
-                      auto edges = f2e[f];
-                      if(edges[0] == te2 || edges[1] == te2 || edges[2] == te2)
-                        {
-                          if(neighbours[fi][0] == -1)
-                            neighbours[fi][0] = fo;
-                          else
-                            neighbours[fi][1] = fo;
-                          if(neighbours[fo][0] == -1)
-                            neighbours[fo][0] = fi;
-                          else
-                            neighbours[fo][1] = fi;
-                        }
-                    }
-                }
-            }
-          for(auto i : Range(neighbours))
-            neighbours[i].Sort();
-          for(auto i : Range(neighbours))
-            {
-              for(auto j : neighbours[i])
-                {
-                  if(j == -1) continue;
-                  if(i < j)
-                    {
-                      int top_edge1=-1, bot_edge1=-1, top_edge2=-1, bot_edge2=-1;
-                      for(auto e1 : f2e[faces[i]])
-                        {
-                          if(e1 == ei) continue;
-                          if(e2v[e1][0] == verts[0] || e2v[e1][1] == verts[0])
-                            top_edge1 = e1;
-                          if(e2v[e1][0] == verts[1] || e2v[e1][1] == verts[1])
-                            bot_edge1 = e1;
-                        }
-                      for(auto e2 : f2e[faces[j]])
-                        {
-                          if(e2 == ei) continue;
-                          if(e2v[e2][0] == verts[0] || e2v[e2][1] == verts[0])
-                            top_edge2 = e2;
-                          if(e2v[e2][0] == verts[1] || e2v[e2][1] == verts[1])
-                            bot_edge2 = e2;
-                        }
-                      for(auto f : e2f[top_edge1])
-                        {
-                          auto edges = f2e[f];
-                          if(edges[0] == top_edge2 || edges[1] == top_edge2 ||
-                             edges[2] == top_edge2)
-                            {
-                              top_part(i,j) -= face_weights[f];
-                              top_part(j,i) -= face_weights[f];
-                            }
-                        }
-                      for(auto f : e2f[bot_edge1])
-                        {
-                          auto edges = f2e[f];
-                          if(edges[0] == bot_edge2 || edges[1] == bot_edge2 ||
-                             edges[2] == bot_edge2)
-                            {
-                              bot_part(i,j) -= face_weights[f];
-                              bot_part(j,i) -= face_weights[f];
-                            }
-                        }
-                    }
-                }
-            }
-          double eps = 1e-10 * L2Norm(top_part);
-          for(auto &d : top_part.Diag())
-            d += eps;
-          eps = 1e-10 * L2Norm(bot_part);
-          for(auto &d : bot_part.Diag())
-            d += eps;
           CalcInverse(top_part);
           CalcInverse(bot_part);
-          FlatMatrix<double> cor_sum = top_part + bot_part | lh;
-          CalcInverse(cor_sum);
-          FlatVector<double> col_sum = Trans(cor_sum) * ones | lh;
+          FlatMatrix<double> sum = top_part + bot_part | lh;
+          CalcInverse(sum);
+          
+          // make m-tilde
+          FlatVector<double> ones(ncf, lh);
+          ones = 1.;
+          FlatVector<double> col_sum = Trans(sum) * ones | lh;
           double denominator = 0.;
           for(auto v : col_sum)
             denominator += v;
           denominator += edge_weights[ei];
-          for(auto i : Range(ncf))
-            for(auto j : Range(ncf))
-              cor_sum(i,j) -= col_sum[i] * col_sum[j] / denominator;
+          for (int i : Range(ncf))
+            sum.Row(i) -= 1.0/denominator * col_sum[i] * col_sum;
+          
           for(auto i : Range(faces))
-            cor_sum(i,i) += face_weights[faces[i]];
-          Vector<double> lami(ncf);
-          LapackEigenValuesSymmetric(sum, cor_sum, lami);
-          coll_eweights[ei] = lami[0] + double(e2f[ei].Size())/50.;
+            sum(i,i) += face_weights[faces[i]];
+          if(sum.Height() != 0)
+            {
+              // timer_topbot.Start();
+              top_part = 0.;
+              bot_part = 0.;
+              for(auto i : Range(faces))
+                {
+                  auto face = faces[i];
+                  for(auto oe : f2e[face])
+                    {
+                      if(oe == ei) continue;
+                      auto overts = e2v[oe];
+                      if(verts[0] == overts[0] || verts[0] == overts[1])
+                        {
+                          for(auto oface : e2f[oe])
+                            {
+                              if(oface == face) continue;
+                              top_part(i,i) += face_weights[oface];
+                            }
+                          top_part(i,i) += edge_weights[oe];
+                        }
+                      if(verts[1] == overts[0] || verts[1] == overts[1])
+                        {
+                          for(auto oface : e2f[oe])
+                            {
+                              if(oface == face) continue;
+                              bot_part(i,i) += face_weights[oface];
+                            }
+                          bot_part(i,i) += edge_weights[oe];
+                        }
+                    }
+                }
+              // auto face = faces[0];
+              // find center face neighbours - neighbours have 2 common neighbour faces
+              // Array<IVec<2>> neighbours(faces.Size());
+              neighbours.SetSize(faces.Size());
+              
+              for(auto i : Range(neighbours))
+                neighbours[i] = IVec<2>(-1,-1);
+              for(auto fi : Range(faces))
+                {
+                  if(neighbours[fi][0] != -1 && neighbours[fi][1] != -1) continue;
+                  int te1 = 0;
+                  for(auto e : f2e[faces[fi]])
+                    {
+                      if(ei == e) continue;
+                      if(verts[0] == e2v[e][0] || verts[0] == e2v[e][1])
+                        te1 = e;
+                    }
+                  for(auto fo : Range(faces))
+                    {
+                      if(neighbours[fo][0] != -1 && neighbours[fo][1] != -1) continue;
+                      if(neighbours[fi][0] == fo || fi == fo) continue;
+                      int te2 = 0;
+                      for(auto e : f2e[faces[fo]])
+                        {
+                          if(ei == e) continue;
+                          if(verts[0] == e2v[e][0] || verts[0] == e2v[e][1])
+                            te2 = e;
+                        }
+                      for(auto f : e2f[te1])
+                        {
+                          if(f == faces[fi] || f == faces[fo]) continue;
+                          auto edges = f2e[f];
+                          if(edges[0] == te2 || edges[1] == te2 || edges[2] == te2)
+                            {
+                              if(neighbours[fi][0] == -1)
+                                neighbours[fi][0] = fo;
+                              else
+                                neighbours[fi][1] = fo;
+                              if(neighbours[fo][0] == -1)
+                                neighbours[fo][0] = fi;
+                              else
+                                neighbours[fo][1] = fi;
+                            }
+                        }
+                    }
+                }
+              for(auto i : Range(neighbours))
+                neighbours[i].Sort();
+              for(auto i : Range(neighbours))
+                {
+                  for(auto j : neighbours[i])
+                    {
+                      if(j == -1) continue;
+                      if(i < j)
+                        {
+                          int top_edge1=-1, bot_edge1=-1, top_edge2=-1, bot_edge2=-1;
+                          for(auto e1 : f2e[faces[i]])
+                            {
+                              if(e1 == ei) continue;
+                              if(e2v[e1][0] == verts[0] || e2v[e1][1] == verts[0])
+                                top_edge1 = e1;
+                              if(e2v[e1][0] == verts[1] || e2v[e1][1] == verts[1])
+                                bot_edge1 = e1;
+                            }
+                          for(auto e2 : f2e[faces[j]])
+                            {
+                              if(e2 == ei) continue;
+                              if(e2v[e2][0] == verts[0] || e2v[e2][1] == verts[0])
+                                top_edge2 = e2;
+                              if(e2v[e2][0] == verts[1] || e2v[e2][1] == verts[1])
+                                bot_edge2 = e2;
+                            }
+                          for(auto f : e2f[top_edge1])
+                            {
+                              auto edges = f2e[f];
+                              if(edges[0] == top_edge2 || edges[1] == top_edge2 ||
+                                 edges[2] == top_edge2)
+                                {
+                                  top_part(i,j) -= face_weights[f];
+                                  top_part(j,i) -= face_weights[f];
+                                }
+                            }
+                          for(auto f : e2f[bot_edge1])
+                            {
+                              auto edges = f2e[f];
+                              if(edges[0] == bot_edge2 || edges[1] == bot_edge2 ||
+                                 edges[2] == bot_edge2)
+                                {
+                                  bot_part(i,j) -= face_weights[f];
+                                  bot_part(j,i) -= face_weights[f];
+                                }
+                            }
+                        }
+                    }
+                }
+
+              // timer_topbot.Stop();
+              
+              double eps = 1e-10 * L2Norm(top_part);
+              for(auto &d : top_part.Diag())
+                d += eps;
+              eps = 1e-10 * L2Norm(bot_part);
+              for(auto &d : bot_part.Diag())
+                d += eps;
+              CalcInverse(top_part);
+              CalcInverse(bot_part);
+              FlatMatrix<double> cor_sum = top_part + bot_part | lh;
+              CalcInverse(cor_sum);
+              FlatVector<double> col_sum = Trans(cor_sum) * ones | lh;
+              double denominator = 0.;
+              for(auto v : col_sum)
+                denominator += v;
+              denominator += edge_weights[ei];
+              for(auto i : Range(ncf))
+                for(auto j : Range(ncf))
+                  cor_sum(i,j) -= col_sum[i] * col_sum[j] / denominator;
+              for(auto i : Range(faces))
+                cor_sum(i,i) += face_weights[faces[i]];
+              FlatVector<double> lami(ncf, lh);
+
+              // timer_evp.Start();
+              LapackEigenValuesSymmetric(sum, cor_sum, lami);
+              // timer_evp.Stop();
+              coll_eweights[ei] = lami[0] + double(e2f[ei].Size())/50.;
+            }
         }
     }, TasksPerThread(10));
     return coll_eweights;
@@ -1026,6 +1047,7 @@ namespace ngcomp
                                           FlatMatrix<SCAL> elmat,
                                           ElementId id, LocalHeap & lh)
   {
+    // static Timer t("addelmat"); RegionTimer reg(t);
     if(L2Norm2(elmat) == 0)
       return;
 
