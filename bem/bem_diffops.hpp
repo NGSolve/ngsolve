@@ -253,9 +253,20 @@ namespace ngsbem
     enum { DIFFORDER = 1 };
 
     static string Name() { return "Maxwell"; }
-    
+    static int DimRef() { return 3; }
+
     static const HCurlFiniteElement<2> & Cast (const FiniteElement & fel) 
     { return static_cast<const HCurlFiniteElement<2>&> (fel); }
+
+    // mat is 3 x ndof
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                    MAT && mat, LocalHeap & lh)
+    {
+        auto matvec = mat.Rows(0,2);
+        Cast(fel).CalcShape (ip, Trans(mat));
+        Cast(fel).CalcCurlShape(ip, Trans(mat.Rows(2,3)));
+    }
 
     ///
     // mat is 4 x ndof
@@ -278,6 +289,22 @@ namespace ngsbem
 	Cast(fel).GetCurlShape(mip.IP(),lh).Col(0);
       // *testout << "scalar mat = " << endl << mat << mat;
       // *testout << "mat2 = " << mat << endl;      
+    }
+
+    // mat is 4x3
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & bmip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<2,3>&>(bmip);
+      Vec<3> nv = mip.GetNV();
+      mat = 0.0;
+      mat.Rows(0,3).Cols(0,2) = Trans(mip.GetJacobianInverse());
+      auto matvec = mat.Rows(0,3).Cols(0,2);
+      for (int j = 0; j < 2; j++)
+        matvec.Col(j) = Cross(nv, Vec<3> (matvec.Col(j)));
+
+      mat(3,2) = 1.0 / mip.GetJacobiDet();
     }
 
     /// mat is (ndof*4) x mip.Size()
