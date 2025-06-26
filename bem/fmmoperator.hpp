@@ -701,6 +701,46 @@ namespace ngsbem
       fy.Range(3*i, 3*i+3) = regmp.Evaluate(ypts[i]);
     });
   }
+
+  // https://weggler.github.io/ngbem/short_and_sweet/Maxwell_Formulations.html
+  template <>
+  void FMM_Operator<MaxwellDLKernel<3>> :: MultTrans(const BaseVector & x, BaseVector & y) const
+  {
+    static Timer tall("ngbem fmm apply MaxwellDL MultTrans (ngfmm)"); RegionTimer reg(tall);
+    auto fx = x.FV<Complex>();
+    auto fy = y.FV<Complex>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    double kappa = kernel.GetKappa();
+
+    auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cy, ry, kappa);
+
+    for (int i = 0; i < ypts.Size(); i++){
+      Vec<3,Complex> current = fx.Range(3*i, 3*i+3);
+
+      for (int k = 0; k < 3; k++)
+      {
+        Vec<3> ek{0.0}; ek(k) = 1;
+        Vec<3> current_real = Real(current);
+        Vec<3> current_imag = Imag(current);
+
+        singmp->AddDipole(xpts[i], Cross(current_real, ek), ek);
+        singmp->AddDipole(xpts[i], Cross(current_imag, ek), Complex(0,1)*ek);
+      }
+    }
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Vec<3,Complex>> regmp (cx, rx, kappa);
+    for (int i = 0; i < xpts.Size(); i++){
+      regmp.AddTarget(xpts[i]);
+    }
+    regmp.CalcMP(singmp);
+
+    ParallelFor (xpts.Size(), [&](int i) {
+      fy.Range(3*i, 3*i+3) = regmp.Evaluate(xpts[i]);
+    });
+  }
 }
 
 
