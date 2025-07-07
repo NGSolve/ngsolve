@@ -552,6 +552,8 @@ namespace ngcomp
     string smoother = flags.GetStringFlag("smoother","");
     if ( smoother == "block" )
       block = true;
+    if (bfa->UsesEliminateInternal())
+      flags.SetFlag("condense");
 
     // coarse-grid preconditioner only used in parallel!!
     ct = "NO_COARSE";
@@ -578,6 +580,8 @@ namespace ngcomp
       "  use block Jacobi/Gauss-Seidel";
     docu.Arg("GS") = "bool = false\n"
       "  use Gauss-Seidel instead of Jacobi";
+    docu.Arg("blocktype") = "string = undefined\n"
+      "  uses block Jacobi with blocks defined by space";
     return docu;    
   }
   
@@ -587,6 +591,18 @@ namespace ngcomp
   {
       cout << IM(3) << "Update Local Preconditioner" << flush;
       timestamp = bfa->GetTimeStamp();
+
+
+      if (flags.StringFlagDefined("blocktype"))
+        {
+          auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
+          jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
+            .CreateBlockJacobiPrecond(blocks);
+          return;
+        }
+
+
+      
       int blocktype = int (flags.GetNumFlag ( "blocktype", -1));
       
       // if (MyMPI_GetNTasks() != 1) return;
