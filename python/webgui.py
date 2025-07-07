@@ -4,6 +4,7 @@ import ngsolve as ngs
 from typing import Optional
 from netgen.webgui import Draw, register_draw_type, WebGLScene, encodeData
 
+np.seterr(all='ignore', divide='ignore', invalid='ignore') # , over='ignore')  
 
 def updatePMinMax( pmat, pmima=None ):
     pmima_new = [ngs.Vector(pmat[:,i], copy=False).MinMax(ignore_inf=True) for i in range(3)]
