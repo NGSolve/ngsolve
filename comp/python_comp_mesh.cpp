@@ -1006,18 +1006,18 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                              })
     ;
     PyDefVectorized(mesh_access, "__call__",
-         [](MeshAccess* ma, double x, double y, double z, VorB vb)
+      [](MeshAccess* ma, double x, double y, double z, VorB vb, double tol)
           {
             IntegrationPoint ip;
             ElementId ei(VOL,-1);
             if (vb == VOL)
-              ei = ma->FindElementOfPoint(Vec<3>(x, y, z), ip, true);
+              ei = ma->FindElementOfPoint(Vec<3>(x, y, z), ip, true, nullptr, tol);
             else
               ei = ElementId(BND, ma->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true));
             return MeshPoint { ip(0), ip(1), ip(2), ma, ei.VB(), int(ei.Nr()) };
           },
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,
-         py::arg("VOL_or_BND") = VOL,
+         py::arg("VOL_or_BND") = VOL, py::arg("tol") = 1e-4,
 	 docu_string("Get a MappedIntegrationPoint in the point (x,y,z) on the matching volume (VorB=VOL, default) or surface (VorB=BND) element. BBND elements aren't supported"));
 
   

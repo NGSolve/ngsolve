@@ -2035,17 +2035,18 @@ namespace ngcomp
   ElementId MeshAccess :: FindElementOfPoint (FlatVector<double> point,
 					IntegrationPoint & ip, 
 					bool build_searchtree,
-					int index) const
+                                        int index, double tol) const
   {
     ArrayMem<int,1> dummy(1);
     dummy[0] = index;
-    return FindElementOfPoint(point,ip,build_searchtree,&dummy);
+    return FindElementOfPoint(point,ip,build_searchtree,&dummy, tol);
   }
 
   ElementId MeshAccess :: FindElementOfPoint (FlatVector<double> point,
                                               IntegrationPoint & ip,
                                               bool build_searchtree,
-                                              const Array<int> * const indices) const
+                                              const Array<int> * const indices,
+                                              double tol) const
   {
     // static Timer t("FindElementOfPonit");
     // RegionTracer reg(TaskManager::GetThreadId(), t);
@@ -2059,22 +2060,22 @@ namespace ngcomp
           {
           case 1:
             return ElementId(VOL, mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, 
-                                                              &(*indices)[0],indices->Size()));
+                                                              &(*indices)[0],indices->Size(), tol));
           case 2:
             return ElementId(VOL, mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, 
-                                                              &(*indices)[0],indices->Size()));
+                                                              &(*indices)[0],indices->Size(), tol));
           case 3:
             return ElementId(VOL,  mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree,
-                                                               &(*indices)[0],indices->Size()));
+                                                               &(*indices)[0],indices->Size(), tol));
             }
       }
     else
       {  
         switch (dim)
           {
-          case 1: return ElementId(VOL, mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, NULL, 0));
-          case 2: return ElementId(VOL, mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0));
-          case 3: return ElementId(VOL, mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree, NULL, 0));
+          case 1: return ElementId(VOL, mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, NULL, 0, tol));
+          case 2: return ElementId(VOL, mesh.FindElementOfPoint<2> (&point(0), &ip(0), build_searchtree, NULL, 0, tol));
+          case 3: return ElementId(VOL, mesh.FindElementOfPoint<3> (&point(0), &ip(0), build_searchtree, NULL, 0, tol));
           }
       }
 
