@@ -1029,11 +1029,12 @@ namespace ngcomp
     ElementId FindElementOfPoint (FlatVector<double> point,
                                   IntegrationPoint & ip, 
                                   bool build_searchtree,
-                                  const Array<int> * const indices = NULL) const;
+                                  const Array<int> * const indices = NULL,
+                                  double tol = 1e-4) const;
     ElementId FindElementOfPoint (FlatVector<double> point,
                                   IntegrationPoint & ip, 
                                   bool build_searchtree,
-                                  int index) const;
+                                  int index, double tol = 1e-4) const;
     int FindSurfaceElementOfPoint (FlatVector<double> point,
 				   IntegrationPoint & ip, 
 				   bool build_searchtree,
