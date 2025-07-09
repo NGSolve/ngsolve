@@ -283,7 +283,6 @@ endif (USE_MUMPS)
 
 #######################################################################
 add_library(netgen_python INTERFACE )
-install( TARGETS netgen_python ${ngs_install_dir} )
 if (NETGEN_USE_PYTHON)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS NGS_PYTHON)
     if(BUILD_FOR_CONDA AND NOT WIN32)
