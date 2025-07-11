@@ -27,7 +27,7 @@ set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp dev
 
 target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --extended-lambda >)
 
-target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve netgen_python)
+target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve $<BUILD_INTERFACE:netgen_python>)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_SEPARABLE_COMPILATION ON)
 if(CMAKE_PROJECT_NAME STREQUAL "NGSolve")
   install( TARGETS ${lib_name} ${ngs_install_dir} )
