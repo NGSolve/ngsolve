@@ -59,7 +59,7 @@ class NonLinearApplication(Application):
             else:
                 dirichlet_gf.Set(dirichlet, BND)
             solver.SetDirichlet(dirichlet_gf.vec)
-        solver.Solve(**kwargs)
+        solver.Solve(printing=printing, **kwargs)
 
 
 class LinearApplication(Application):
@@ -91,7 +91,16 @@ class LinearApplication(Application):
                 lin_solver = arg
         rhs.Assemble()
         if dirichlet is not None:
-            if isinstance(dirichlet, Dirichlet):
+            if isinstance(dirichlet, list):
+                for i in range(len(dirichlet)):
+                    if dirichlet[i] is not None:
+                        if isinstance(dirichlet[i], Dirichlet):
+                            self.gf.components[i].Set(
+                                dirichlet[i].cf, definedon=dirichlet[i].region
+                            )
+                        else:
+                            self.gf.components[i].Set(dirichlet[i], BND)
+            elif isinstance(dirichlet, Dirichlet):
                 self.gf.Set(dirichlet.cf, definedon=dirichlet.region)
             else:
                 self.gf.Set(dirichlet, BND)
