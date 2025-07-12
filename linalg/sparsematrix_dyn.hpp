@@ -50,9 +50,9 @@ namespace ngla
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     
     AutoVector CreateRowVector() const override
-    { throw make_unique<VVector<TSCAL>> (VWidth()); }
+    { return make_unique<VVector<TSCAL>> (VWidth()); }
     AutoVector CreateColVector() const override
-    { throw make_unique<VVector<TSCAL>> (VHeight()); }
+    { return make_unique<VVector<TSCAL>> (VHeight()); }
     
     virtual tuple<int,int> EntrySizes() const override { return { bh, bw }; }
   };
