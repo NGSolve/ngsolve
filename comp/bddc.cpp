@@ -237,12 +237,17 @@ namespace ngcomp
 
       if (coarse)
       {
-        flags.SetFlag ("not_register_for_auto_update");
+        Flags cflags = flags;
+        if (flags.FlagsFlagDefined("coarseflags"))
+          cflags = flags.GetFlagsFlag("coarseflags");
+        cflags.SetFlag ("not_register_for_auto_update");
 	auto creator = GetPreconditionerClasses().GetPreconditioner(coarsetype);
 	if(creator == nullptr)
 	  throw Exception("Nothing known about preconditioner " + coarsetype);
-        inv = creator->creatorbf (bfa, flags, "wirebasket"+coarsetype);
+        inv = creator->creatorbf (bfa, cflags, "wirebasket"+coarsetype);
         dynamic_pointer_cast<Preconditioner>(inv) -> InitLevel(wb_free_dofs);
+        // cout << "create coarse preconditioner, type = " << coarsetype << endl;
+        // cout << "flags = " << endl << flags << endl;
       }
     }
 
@@ -619,6 +624,11 @@ namespace ngcomp
     docu.long_docu =
       R"raw_string(TODO
 )raw_string";      
+
+    docu.Arg("coarsetype") = "direct\n"
+      "  preconditioner for wirebasket system, available: 'direct', 'h1amg'";
+    docu.Arg("coarseflags") = "{}\n"
+      "  flags for coarse preconditioner";
     
     return docu;    
   }
