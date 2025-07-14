@@ -126,6 +126,7 @@ namespace ngcomp
                                    FlatArray<IVec<2>> e2v,
                                    FlatArray<double> edge_weights,
                                    FlatArray<double> vertex_weights,
+                                   const H1AMG_Parameters & param,
                                    size_t level)
   : mat(amat)
   {
@@ -136,6 +137,11 @@ namespace ngcomp
 
       cout << IM(3) << "H1AMG: level = " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
 
+      if (param.verbose >= 1)
+        cout << IM(0) << "H1AMG: level " << level << ", num_edges = " << num_edges << ", nv = " << num_vertices << endl;
+      
+      
+      
       size = mat->Height();
 
       Array<double> edge_collapse_weights(num_edges);
@@ -437,14 +443,14 @@ namespace ngcomp
                       coarse_freedofs->SetBitAtomic(v2cv[v]);
                   });
 
-      if ( (num_coarse_vertices < 10) || (num_coarse_vertices == num_vertices) )
+      if ( (num_coarse_vertices < param.max_coarse) || (num_coarse_vertices == num_vertices) )
 	{
 	  coarsemat->SetInverseType(SPARSECHOLESKY);
 	  coarse_precond = coarsemat->InverseMatrix(coarse_freedofs);
 	}
       else
         coarse_precond = make_shared<H1AMG_Matrix> (dynamic_pointer_cast<SparseMatrixTM<SCAL>> (coarsemat), coarse_freedofs,
-                                                    coarse_e2v, coarse_edge_weights, coarse_vertex_weights, level+1);
+                                                    coarse_e2v, coarse_edge_weights, coarse_vertex_weights, param, level+1);
 
       // restriction = TransposeMatrix (*prolongation);
       restriction = dynamic_pointer_cast<SparseMatrixTM<double>>(prolongation->CreateTranspose());
@@ -521,7 +527,7 @@ namespace ngcomp
          });
       vertex_weights_ht = ParallelHashTable<IVec<1>,double>();
 
-      mat = make_shared<H1AMG_Matrix<SCAL>> (smat, freedofs, e2v, edge_weights, vertex_weights, 0);
+      mat = make_shared<H1AMG_Matrix<SCAL>> (smat, freedofs, e2v, edge_weights, vertex_weights, param, 0);
     }
 
 

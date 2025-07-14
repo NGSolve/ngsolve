@@ -9,6 +9,20 @@
 namespace ngcomp
 {
   using namespace ngla;
+
+
+
+  struct H1AMG_Parameters
+  {
+    int verbose = 0;
+    int smoothing_steps = 3;
+    int coarsenings_per_level = 3; // number of binary coarsenings per level
+    bool block_smoother = true;    // block or point smoother ?
+    bool use_smoothed_prolongation = true;
+    int max_coarse = 10;
+    int max_level = 20;
+  };
+
   
   template <class SCAL>
   class NGS_DLL_HEADER H1AMG_Matrix : public ngla::BaseMatrix
@@ -26,6 +40,7 @@ namespace ngcomp
                   ngcore::FlatArray<ngcore::IVec<2>> e2v,
                   ngcore::FlatArray<double> edge_weights,
                   ngcore::FlatArray<double> vertex_weights,
+                  const H1AMG_Parameters & param,                  
                   size_t level);
 
     virtual int VHeight() const override { return size; }
@@ -50,7 +65,9 @@ namespace ngcomp
 
     ParallelHashTable<IVec<2>,double> edge_weights_ht;
     ParallelHashTable<IVec<1>,double> vertex_weights_ht;
-
+    
+    H1AMG_Parameters param;
+    
   public:
 
     static shared_ptr<Preconditioner> CreateBF (shared_ptr<BilinearForm> bfa, const Flags & flags, const string & name)
@@ -71,6 +88,12 @@ namespace ngcomp
         cout << IM(3) << "Create H1AMG" << endl;
       else
         cout << IM(3) << "Create H1AMG, complex" << endl;
+      
+      param.verbose = int(flags.GetNumFlag("verbose", 0));
+      param.smoothing_steps = int(flags.GetNumFlag("smoothingsteps", 1));    
+      param.use_smoothed_prolongation = flags.GetDefineFlagX("smoothedprolongation").IsMaybeTrue();
+      param.max_coarse = int(flags.GetNumFlag("maxcoarse", 10));
+      param.max_level = int(flags.GetNumFlag("maxlevel", 20));
     }
 
     virtual void InitLevel (shared_ptr<BitArray> _freedofs) override

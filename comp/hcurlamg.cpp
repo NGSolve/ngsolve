@@ -458,9 +458,10 @@ namespace ngcomp
           {
           case HCurlAMG_Parameters::potential_amg:
             {
+              H1AMG_Parameters defaultparam;
               node_h1 = make_shared<H1AMG_Matrix<SCAL>>
                 (dynamic_pointer_cast<SparseMatrixTM<SCAL>>(h1mat), h1_freedofs, e2v,
-                 edge_weights, v_weights, 0);
+                 edge_weights, v_weights, defaultparam, 0);
               break;
             }
           case HCurlAMG_Parameters::potential_direct:
