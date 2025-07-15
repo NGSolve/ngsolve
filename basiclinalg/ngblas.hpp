@@ -584,9 +584,9 @@ namespace ngbla
       }
   }
 
-  template <typename TM, typename TVX, typename TVY>
-   extern void TestFunc (TM m, TVX x, TVY y);
-
+  // template <typename TM, typename TVX, typename TVY>
+  // extern void TestFunc (TM m, TVX x, TVY y);
+  
   
   template <typename TS, typename T> constexpr bool IsVec = false;
   template <typename TS, int S> constexpr bool IsVec<TS, Vec<S,TS>> = true;  
@@ -647,6 +647,16 @@ namespace ngbla
   extern NGS_DLL_HEADER  
   void NgGEMV (double s, BareSliceMatrix<double,ord> a, SliceVector<double> x, SliceVector<double> y) NETGEN_NOEXCEPT;
   */
+
+
+
+
+
+
+
+  /* *********************** GEMV - SliceVector **************************** */
+
+
   
   template <bool ADD, ORDERING ord>
   extern NGS_DLL_HEADER  
@@ -728,7 +738,20 @@ namespace ngbla
 
   
   
-
+  template <bool ADD, bool POS, typename TM, ORDERING ORD, typename TX, typename TY>
+  INLINE void NgGEMV (BareSliceMatrix<TM,ORD> a, SliceVector<TX> x, SliceVector<TY> y)
+  {
+    if constexpr (std::is_same<TM,double>() && std::is_same<TX,TY>() && IsVec<Complex,TX>)
+      {
+        constexpr int VS = sizeof(TX)/sizeof(double);
+        SliceMatrix<double> mx(x.Size(), VS, x.Dist()*VS, (double*)(void*)x.Addr(0));
+        SliceMatrix<double> my(y.Size(), VS, y.Dist()*VS, (double*)(void*)y.Addr(0));
+        NgGEMM<ADD,POS> (a.AddSize(x.Size(), y.Size()),make_SliceMatrix(mx), make_SliceMatrix(my));
+        return;
+      }
+    
+    NgGEMV<ADD> (POS ? 1.0 : -1.0, a, x, y);
+  }
 
 
 
@@ -894,9 +917,14 @@ namespace ngbla
                          FlatVector<const TB>(prod.View().B().Range(0,w)),
                          FlatVector<T>(self.Spec().Range(0,h)));
       else
+        NgGEMV<ADD,POS> (make_BareSliceMatrix(prod.View().A()),
+                         SliceVector<TB>(prod.View().B().Range(0,w)),
+                         SliceVector<T>(self.Spec().Range(0,h)));
+        /*
         NgGEMV<ADD> (POS ? 1.0 : -1.0, make_BareSliceMatrix(prod.View().A()),
                      SliceVector<TB>(prod.View().B().Range(0,w)),
                      SliceVector<T>(self.Spec().Range(0,h)));
+        */
       return self.Spec();
     }
   };
