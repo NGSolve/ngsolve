@@ -448,7 +448,8 @@ ANY                  1 1 1 1 | 15
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
     BitArray GetDofs (const Region & reg) const;
     Table<int> CreateDofTable (VorB vorb) const;
-
+    virtual void SelectDofs (const string & name, BitArray & dofs) const;
+                  
     /// get coupling types of dofs
     virtual void GetDofCouplingTypes (int elnr, Array<COUPLING_TYPE> & dnums) const;
     
@@ -1141,7 +1142,8 @@ ANY                  1 1 1 1 | 15
     void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;
     void GetFaceDofNrs (int fanr, Array<DofId> & dnums) const override;
     void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
-
+    void SelectDofs (const string & name, BitArray & dofs) const override;
+    
     void SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                         LocalHeap & lh) const override;
     void ApplyM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,

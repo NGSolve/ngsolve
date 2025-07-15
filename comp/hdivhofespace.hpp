@@ -143,6 +143,8 @@ namespace ngcomp
 	} 
     }
 
+    void SelectDofs (const string & name, BitArray & dofs) const override;
+
     int GetFirstInnerDof(int elnr) const { return(first_inner_dof[elnr]);}; 
     // virtual int LowOrderDof() const { if(discont) return(0); else return(1);} 
 

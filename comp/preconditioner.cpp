@@ -592,12 +592,21 @@ namespace ngcomp
       cout << IM(3) << "Update Local Preconditioner" << flush;
       timestamp = bfa->GetTimeStamp();
 
-
-      if (flags.StringFlagDefined("blocktype"))
+      if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {
           auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
-          jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-            .CreateBlockJacobiPrecond(blocks);
+          shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();          
+          auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (mat);
+          
+          if (GaussSeidel)
+            jacobi = make_shared<SymmetricBlockGaussSeidelPrecond>(spmat, blocks);
+          else
+            jacobi = spmat -> CreateBlockJacobiPrecond(blocks);
+
+            /*
+            jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
+              .CreateBlockJacobiPrecond(blocks);
+            */
           return;
         }
 
@@ -629,7 +638,7 @@ namespace ngcomp
           shared_ptr<Table<int>> blocks = blockcreator(*bfa->GetFESpace());
           // cout << "created blocks: " << *blocks << endl;
           jacobi = dynamic_cast<const BaseSparseMatrix&> (bfa->GetMatrix())
-            .CreateBlockJacobiPrecond(blocks, 0, parallel, bfa->GetFESpace()->GetFreeDofs());
+            .CreateBlockJacobiPrecond(blocks); // , 0, parallel, bfa->GetFESpace()->GetFreeDofs());
           return;
         }
       
