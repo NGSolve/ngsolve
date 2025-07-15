@@ -1081,6 +1081,11 @@ lot of new non-zero entries in the matrix!\n" << endl;
     return creator.MoveTable();
   }
 
+  void FESpace :: SelectDofs (const string & name, BitArray & dofs) const
+  {
+    dofs.Clear();
+  }
+  
   /*
   void FESpace :: CheckCouplingTypeArray() const
   {
@@ -1624,7 +1629,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     // new version for ngs24:
 
     Array<string> blocktypes { flags.GetStringListFlag("blocktype") };
-
+    std::map<string, optional<string>> filtered_blocktypes;
     
     if (flags.GetStringFlag("blocktype")=="vertex" ||
         flags.GetStringFlag("blocktype")=="edge" ||
@@ -1636,8 +1641,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
         flags.GetStringFlag("blocktype")=="vertexedge")
       blocktypes += flags.GetStringFlag("blocktype");
     
-    for (auto type : blocktypes)
+    for (auto fulltype : blocktypes)
       {
+        auto pos = fulltype.find(':');
+        string type, filter;
+        if (pos != std::string::npos)
+          {
+            type = fulltype.substr(0, pos);
+            filter = fulltype.substr(pos+1);
+            filtered_blocktypes[type] = filter;
+          }
+        else
+          {
+            type = fulltype;
+            filtered_blocktypes[type] = nullopt;
+          }
+
         Array<string> types { "vertex", "edge", "face", "facet", "vertexpatch", "edgepatch", "vertexedge" };
         if (!types.Contains(type))
           {
@@ -1657,6 +1676,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     if (blocktypes.Size())
       {
         Array<DofId> dofs;
+        BitArray filtermask(GetNDof());
         
         for ( ; !creator.Done(); creator++)
           {
@@ -1733,8 +1753,18 @@ lot of new non-zero entries in the matrix!\n" << endl;
                 base += ma->GetNV();                
               }
 
-            if (blocktypes.Contains("vertexpatch"))
+            // if (blocktypes.Contains("vertexpatch"))
+            if (filtered_blocktypes.count("vertexpatch"))
               {
+                optional<string> filter = filtered_blocktypes[string("vertexpatch")];
+                if (filter)
+                  {
+                    SelectDofs (*filter, filtermask);
+                    filtermask &= *freedofs;
+                    creator.SetFilter (&filtermask);
+                  }
+
+                  
                 for (size_t i : Range(ma->GetNV()))
                   {
                     GetDofNrs (NodeId(NT_VERTEX, i), dofs);
@@ -1770,7 +1800,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
                         for (auto v : vnums)
                           creator.Add (base+v, d);
                   }
-                base += ma->GetNV();                
+                base += ma->GetNV();
+
+                if (filter)
+                  creator.SetFilter (freedofs.get());                  
               }
 
             if (blocktypes.Contains("edgepatch"))
@@ -3684,7 +3717,20 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }      
   }
 
-  
+  void CompoundFESpace :: SelectDofs (const string & name, BitArray & dofs) const
+  {
+    dofs.Clear();
+    for (int i = 0; i < spaces.Size(); i++)
+      {
+        IntRange r = GetRange(i);
+        BitArray dofsi(r.Size());
+        spaces[i]->SelectDofs(name, dofsi);
+
+        for (size_t j = 0; j < r.Size(); j++)
+          if (dofsi.Test(j))
+            dofs.SetBit(r.First()+j);
+      }
+  }
 
   void CompoundFESpace :: SolveM(CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                                  LocalHeap & lh) const

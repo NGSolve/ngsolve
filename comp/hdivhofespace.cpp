@@ -978,7 +978,19 @@ namespace ngcomp
     return 0;
   }
 
+  void HDivHighOrderFESpace :: SelectDofs (const string & name, BitArray & dofs) const
+  {
+    if (name == "hdivlo")
+      {
+        dofs.Clear();
+        for (size_t i = 0; i < first_facet_dof[0]; i++)
+          dofs.SetBit(i);
+      }
+    else
+      FESpace :: SelectDofs(name, dofs);
+  }
 
+  
   template <ELEMENT_TYPE ET>
   FiniteElement & HDivHighOrderFESpace :: T_GetFE (int elnr, bool onlyhdiv, Allocator & lh) const
   {
