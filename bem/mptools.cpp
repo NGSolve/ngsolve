@@ -204,7 +204,7 @@ namespace ngsbem
   template <typename entry_type>    
   void SphericalHarmonics<entry_type> :: RotateY (double alpha)
   {
-    LocalHeap lh(8*6*sqr(order) + 8*15*order + 500);
+    LocalHeap lh(8*6*sqr(order) + 8*15*order + 2*sizeof(entry_type)*(order+3) + 500);
       
     // static Timer t("mptool sh RotateY"); RegionTimer rg(t);
     /*
@@ -1233,7 +1233,7 @@ namespace ngsbem
         // cnt++;
         // *testout << "sing-reg, cnt = " << cnt << endl;
         // *testout << "norm in = " << L2Norm(SH().Coefs()) << endl;
-        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 500));
+        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 2*sizeof(entry_type)*(os+ot+5) + 500));
         
         typedef Complex trafo_type;
         
@@ -1477,7 +1477,7 @@ namespace ngsbem
         static Timer tcleanup("mptool ShiftZ sing->sing cleanup");                        
         */
         // tlevel0.Start();
-        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 500));
+        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 2*sizeof(entry_type)*(os+ot+3)+ 8*3*(os+ot+1) + 500));
 
         typedef double trafo_type;
         
@@ -1647,7 +1647,7 @@ namespace ngsbem
       {
         // reg->reg transformation
         
-        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 500));
+        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 2*sizeof(entry_type)*(os+ot+3) + 500));
         
         typedef double trafo_type;
         
@@ -1801,6 +1801,10 @@ namespace ngsbem
   template void MultiPole<MPSingular> :: ShiftZ (double z, MultiPole<MPRegular> & target);  
   template void MultiPole<MPSingular> :: ShiftZ (double z, MultiPole<MPSingular> & target);
 
+  template void MultiPole<MPRegular,Vec<1,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<1,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<1,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<1,Complex>> & target);  
+  template void MultiPole<MPSingular,Vec<1,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<1,Complex>> & target);
+
   template void MultiPole<MPRegular,Vec<3,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<3,Complex>> & target);
   template void MultiPole<MPSingular,Vec<3,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<3,Complex>> & target);  
   template void MultiPole<MPSingular,Vec<3,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<3,Complex>> & target);
@@ -1812,6 +1816,14 @@ namespace ngsbem
   template void MultiPole<MPRegular,Vec<6,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<6,Complex>> & target);
   template void MultiPole<MPSingular,Vec<6,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<6,Complex>> & target);
   template void MultiPole<MPSingular,Vec<6,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<6,Complex>> & target);
+
+  template void MultiPole<MPRegular,Vec<16,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<16,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<16,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<16,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<16,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<16,Complex>> & target);
+
+  template void MultiPole<MPRegular,Vec<64,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<64,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<64,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<64,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<64,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<64,Complex>> & target);
 
 
 
@@ -2222,18 +2234,29 @@ namespace ngsbem
   }
 
   template class SphericalHarmonics<Complex>;
+  template class SphericalHarmonics<Vec<1,Complex>>;    
   template class SphericalHarmonics<Vec<3,Complex>>;  
   template class SphericalHarmonics<Vec<4,Complex>>;
   template class SphericalHarmonics<Vec<6,Complex>>;
+  template class SphericalHarmonics<Vec<16,Complex>>;
+  template class SphericalHarmonics<Vec<64,Complex>>;  
   
   template class MultiPole<MPSingular>;
   template class MultiPole<MPRegular>;
+  template class MultiPole<MPSingular, Vec<1,Complex>>;
+  template class MultiPole<MPRegular, Vec<1,Complex>>;    
   template class MultiPole<MPSingular, Vec<3,Complex>>;
   template class MultiPole<MPRegular, Vec<3,Complex>>;    
   template class MultiPole<MPSingular, Vec<4,Complex>>;
   template class MultiPole<MPRegular, Vec<4,Complex>>;    
   template class MultiPole<MPSingular, Vec<6,Complex>>;
   template class MultiPole<MPRegular, Vec<6,Complex>>;
+
+  template class MultiPole<MPSingular, Vec<16,Complex>>;
+  template class MultiPole<MPRegular, Vec<16,Complex>>;
+
+  template class MultiPole<MPSingular, Vec<64,Complex>>;
+  template class MultiPole<MPRegular, Vec<64,Complex>>;
 
 
   
