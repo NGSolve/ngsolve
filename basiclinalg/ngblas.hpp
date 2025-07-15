@@ -585,11 +585,23 @@ namespace ngbla
   }
 
   template <typename TM, typename TVX, typename TVY>
-  extern void TestFunc (TM m, TVX x, TVY y);
+   extern void TestFunc (TM m, TVX x, TVY y);
 
+  
+  template <typename TS, typename T> constexpr bool IsVec = false;
+  template <typename TS, int S> constexpr bool IsVec<TS, Vec<S,TS>> = true;  
+  
   template <bool ADD, bool POS, typename TM, ORDERING ORD, typename TX, typename TY>
   INLINE void NgGEMV (BareSliceMatrix<TM,ORD> a, FlatVector<const TX> x, FlatVector<TY> y)
   {
+    if constexpr (std::is_same<TM,double>() && std::is_same<TX,TY>() && IsVec<Complex,TX>)
+      {
+        FlatMatrix<double> mx(x.Size(), sizeof(TX)/sizeof(double), (double*)(void*)x.Addr(0));
+        FlatMatrix<double> my(y.Size(), sizeof(TX)/sizeof(double), (double*)(void*)y.Addr(0));
+        NgGEMM<ADD,POS> (a.AddSize(x.Size(), y.Size()),SliceMatrix(mx), SliceMatrix(my));
+        return;
+      }
+
     if (!ADD)
       {
         if (!POS)
@@ -714,6 +726,8 @@ namespace ngbla
   }
 
 
+  
+  
 
 
 
