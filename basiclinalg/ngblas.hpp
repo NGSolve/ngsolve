@@ -598,7 +598,7 @@ namespace ngbla
       {
         FlatMatrix<double> mx(x.Size(), sizeof(TX)/sizeof(double), (double*)(void*)x.Addr(0));
         FlatMatrix<double> my(y.Size(), sizeof(TX)/sizeof(double), (double*)(void*)y.Addr(0));
-        NgGEMM<ADD,POS> (a.AddSize(x.Size(), y.Size()),SliceMatrix(mx), SliceMatrix(my));
+        NgGEMM<ADD,POS> (a.AddSize(x.Size(), y.Size()),make_SliceMatrix(mx), make_SliceMatrix(my));
         return;
       }
 
