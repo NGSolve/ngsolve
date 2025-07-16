@@ -877,6 +877,34 @@ namespace ngsbem
   class NGS_DLL_HEADER RegularMLMultiPole
   {
     static Array<size_t> nodes_on_level;
+
+    
+    struct RecordingRS
+    {
+      const MultiPole<MPSingular,elem_type> * mpS;
+      MultiPole<MPRegular,elem_type> * mpR;
+      Vec<3> dist;
+      double len, theta, phi;
+    public:
+      RecordingRS() = default;
+      RecordingRS (const MultiPole<MPSingular,elem_type> * ampS,
+                   MultiPole<MPRegular,elem_type> * ampR,
+                   Vec<3> adist)
+        : mpS(ampS), mpR(ampR), dist(adist)
+      {
+        len = L2Norm(dist);
+        if (len < 1e-30)
+          theta = 0;
+        else
+          theta = acos (dist(2) / len);
+        
+        if (sqr(dist(0))+sqr(dist(1)) < 1e-30)
+          phi = 0;
+        else
+          phi = atan2(dist(1), dist(0));
+      }
+    };
+
     
     struct Node
     {
@@ -912,8 +940,9 @@ namespace ngsbem
             childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa());
           }
       }
-
-      void AddSingularNode (const typename SingularMLMultiPole<elem_type>::Node & singnode, bool allow_refine)
+      
+      void AddSingularNode (const typename SingularMLMultiPole<elem_type>::Node & singnode, bool allow_refine,
+                            Array<RecordingRS> * recording)
       {
         if (mp.SH().Order() < 0) return;
         if (singnode.mp.SH().Order() < 0) return;
@@ -936,12 +965,15 @@ namespace ngsbem
                 singnode.childs[0]->mp.Order() < singnode.mp.Order())
               {
                 for (auto & child : singnode.childs)
-                  AddSingularNode (*child, allow_refine);
+                  AddSingularNode (*child, allow_refine, recording);
                 return;
               }
 
             // static Timer t("mptool transform Helmholtz-criterion"); RegionTimer r(t);
-            singnode.mp.TransformAdd(mp, dist);
+            if (recording)
+              *recording += RecordingRS(&singnode.mp, &mp, dist);
+            else
+              singnode.mp.TransformAdd(mp, dist);
             return;
           }
 
@@ -960,21 +992,21 @@ namespace ngsbem
                   CreateChilds();
                 
                 for (auto & ch : childs)
-                  ch -> AddSingularNode (singnode, allow_refine);
+                  ch -> AddSingularNode (singnode, allow_refine, recording);
               }
             else
               {
-                if (total_targets < 1000)
+                if (total_targets < 1000 || recording)
                   {
                     for (auto & ch : childs)
                       if (ch)
-                        ch -> AddSingularNode (singnode, allow_refine);
+                        ch -> AddSingularNode (singnode, allow_refine, recording);
                   }
                 else
                   ParallelFor (8, [&] (int nr)
                                {
                                  if (childs[nr])
-                                   childs[nr] -> AddSingularNode (singnode, allow_refine);
+                                   childs[nr] -> AddSingularNode (singnode, allow_refine, recording);
                                });
                 
                 if (targets.Size())
@@ -984,7 +1016,7 @@ namespace ngsbem
         else
           {
             for (auto & childsing : singnode.childs)
-              AddSingularNode (*childsing, allow_refine);
+              AddSingularNode (*childsing, allow_refine, recording);
           }
       }
 
@@ -1158,8 +1190,8 @@ namespace ngsbem
       nodes_on_level = 0;
       nodes_on_level[0] = 1;
       {
-        static Timer t("mptool compute regular MLMP"); RegionTimer rg(t);            
-        root.AddSingularNode(singmp->root, true);
+        static Timer t("mptool compute regular MLMP"); RegionTimer rg(t);
+        root.AddSingularNode(singmp->root, true, nullptr);
         // cout << "norm after S->R conversion: " << root.Norm() << endl;
       }
 
@@ -1200,9 +1232,27 @@ namespace ngsbem
 
       root.CalcTotalTargets();
       root.RemoveEmptyTrees();
-        
-      root.AddSingularNode(singmp->root, false);
 
+      
+      root.AddSingularNode(singmp->root, false, nullptr);
+      /*
+      Array<RecordingRS> recording;      
+      root.AddSingularNode(singmp->root, false, &recording);
+      // cout << "recorded: " << recording.Size() << endl;
+      QuickSort (recording, [] (auto & a, auto & b)
+      {
+        if (a.len < (1-1e-8) * b.len) return true;
+        if (a.len > (1+1e-8) * b.len) return false;
+        return a.theta < b.theta;
+      });
+      for (auto & record : recording)
+        {
+          record.mpS->TransformAdd(*record.mpR, record.dist);
+          // *testout << record.len << ", " << record.theta << ", " << record.phi << endl;
+        }
+      */
+
+      
       /*
       int maxlevel = 0;
       for (auto [i,num] : Enumerate(RegularMLMultiPole::nodes_on_level))
