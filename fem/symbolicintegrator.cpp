@@ -1174,7 +1174,7 @@ namespace ngfem
     simd_evaluate = true;
     
     if (cf->Dimension() != 1)
-        throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
+        throw Exception ("SymbolicBFI needs scalar-valued CoefficientFunction");
     trial_cum.Append(0);
     test_cum.Append(0);
     has_interpolate = false;
@@ -3470,7 +3470,7 @@ namespace ngfem
     : cf(acf), vb(avb) // , element_boundary(eb)
   {
     if (cf->Dimension() != 1)
-      throw Exception ("SymblicLFI needs scalar-valued CoefficientFunction");
+      throw Exception ("SymbolicLFI needs scalar-valued CoefficientFunction");
     test_cum.Append(0);    
     cf->TraverseTree
       ( [&] (CoefficientFunction & nodecf)
@@ -3679,7 +3679,7 @@ namespace ngfem
     simd_evaluate = true;
     
     if (cf->Dimension() != 1)
-        throw Exception ("SymblicBFI needs scalar-valued CoefficientFunction");
+        throw Exception ("SymbolicBFI needs scalar-valued CoefficientFunction");
     trial_cum.Append(0);
     test_cum.Append(0);    
     cf->TraverseTree
@@ -4827,7 +4827,7 @@ namespace ngfem
     // if (element_boundary) simd_evaluate = false;
     
     if (cf->Dimension() != 1)
-      throw Exception ("SymblicEnergy needs scalar-valued CoefficientFunction");
+      throw Exception ("SymbolicEnergy needs scalar-valued CoefficientFunction");
     
     trial_cum.Append(0);
     cf->TraverseTree
