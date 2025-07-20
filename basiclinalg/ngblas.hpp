@@ -1159,7 +1159,7 @@ namespace ngbla
 
 
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
-  extern void NgGEMMBare (size_t ah, size_t aw, size_t bw, BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c);
+  extern NGS_DLL_HEADER void NgGEMMBare (size_t ah, size_t aw, size_t bw, BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c);
 
 
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
