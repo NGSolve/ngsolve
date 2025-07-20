@@ -591,6 +591,243 @@ namespace ngbla
 
 
 
+
+
+  /* *********************** GEMM Complex ******************************** */
+
+
+  template <bool ADD, bool POS>
+  void Func (Complex & y, Complex sum)
+  {
+    if constexpr (ADD)
+      {
+        if constexpr (POS)
+          y += sum;
+        else
+          y -= sum;
+      }
+    else
+      {
+        if constexpr (POS)
+          y = sum;
+        else
+          y = -sum;
+      }
+  }
+
+
+  template <bool ADD, bool POS, ORDERING OA, ORDERING OB>  
+  void NgGEMMFunc2 (size_t ah, size_t aw, size_t bw,
+                    BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
+  {
+    size_t i = 0;
+    for ( ; i+4 <= ah; i+=4)
+      {
+        size_t j = 0;
+        for ( ; j+4 < bw; j+=4)
+          {
+            SIMD<double,4> sum00 = 0;
+            SIMD<double,4> sum10 = 0;
+            SIMD<double,4> sum20 = 0;
+            SIMD<double,4> sum30 = 0;
+            SIMD<double,4> sum01 = 0;
+            SIMD<double,4> sum11 = 0;
+            SIMD<double,4> sum21 = 0;
+            SIMD<double,4> sum31 = 0;
+            for (size_t k = 0; k < aw; k++)
+              {
+                SIMD<double,2> a0_((double*)(void*)a.Addr(i+0,k));
+                SIMD<double,2> a1_((double*)(void*)a.Addr(i+1,k));
+                SIMD<double,2> a2_((double*)(void*)a.Addr(i+2,k));
+                SIMD<double,2> a3_((double*)(void*)a.Addr(i+3,k));
+                SIMD<double,2> b0_((double*)(void*)b.Addr(k,j+0));
+                SIMD<double,2> b1_((double*)(void*)b.Addr(k,j+1));
+                SIMD<double,2> b2_((double*)(void*)b.Addr(k,j+2));
+                SIMD<double,2> b3_((double*)(void*)b.Addr(k,j+3));
+                SIMD<double,4> a0(a0_, a0_);
+                SIMD<double,4> a1(a1_, a1_);
+                SIMD<double,4> a2(a2_, a2_);
+                SIMD<double,4> a3(a3_, a3_);
+                SIMD<double,4> b0(b0_, b1_);
+                SIMD<double,4> b1(b2_, b3_);
+                
+                FMAComplex (a0,b0,sum00);
+                FMAComplex (a1,b0,sum10);
+                FMAComplex (a2,b0,sum20);
+                FMAComplex (a3,b0,sum30);
+                FMAComplex (a0,b1,sum01);
+                FMAComplex (a1,b1,sum11);
+                FMAComplex (a2,b1,sum21);
+                FMAComplex (a3,b1,sum31);
+              }
+            Func<ADD,POS>(c(i+0,j  ), Complex(sum00[0], sum00[1]));
+            Func<ADD,POS>(c(i+0,j+1), Complex(sum00[2], sum00[3]));  
+            Func<ADD,POS>(c(i+0,j+2), Complex(sum01[0], sum01[1]));  
+            Func<ADD,POS>(c(i+0,j+3), Complex(sum01[2], sum01[3]));  
+            Func<ADD,POS>(c(i+1,j  ), Complex(sum10[0], sum10[1]));  
+            Func<ADD,POS>(c(i+1,j+1), Complex(sum10[2], sum10[3]));  
+            Func<ADD,POS>(c(i+1,j+2), Complex(sum11[0], sum11[1]));  
+            Func<ADD,POS>(c(i+1,j+3), Complex(sum11[2], sum11[3]));
+
+            Func<ADD,POS>(c(i+2,j  ), Complex(sum20[0], sum20[1]));
+            Func<ADD,POS>(c(i+2,j+1), Complex(sum20[2], sum20[3]));  
+            Func<ADD,POS>(c(i+2,j+2), Complex(sum21[0], sum21[1]));  
+            Func<ADD,POS>(c(i+2,j+3), Complex(sum21[2], sum21[3]));  
+            Func<ADD,POS>(c(i+3,j  ), Complex(sum30[0], sum30[1]));  
+            Func<ADD,POS>(c(i+3,j+1), Complex(sum30[2], sum30[3]));  
+            Func<ADD,POS>(c(i+3,j+2), Complex(sum31[0], sum31[1]));  
+            Func<ADD,POS>(c(i+3,j+3), Complex(sum31[2], sum31[3]));
+          }
+        for ( ; j < bw; j++)
+          {
+            Complex sum0 = 0;
+            Complex sum1 = 0;
+            Complex sum2 = 0;
+            Complex sum3 = 0;
+            for (size_t k = 0; k < aw; k++)
+              {
+                sum0 += a(i+0,k)*b(k,j);
+                sum1 += a(i+1,k)*b(k,j);
+                sum2 += a(i+2,k)*b(k,j);
+                sum3 += a(i+3,k)*b(k,j);
+              }
+            Func<ADD,POS>(c(i+0,j), sum0);  
+            Func<ADD,POS>(c(i+1,j), sum1);          
+            Func<ADD,POS>(c(i+2,j), sum2);  
+            Func<ADD,POS>(c(i+3,j), sum3);          
+          }
+      }
+    for ( ; i < ah; i++)
+      for (size_t j = 0; j < bw; j++)
+        {
+          Complex sum = 0;
+          for (size_t k = 0; k < aw; k++)
+            sum += a(i,k)*b(k,j);
+          Func<ADD,POS>(c(i,j), sum);          
+        }
+
+    
+
+    /*
+    for (size_t i = 0; i < ah; i++)
+      for (size_t j = 0; j < bw; j++)
+        {
+          Complex sum = 0;
+          for (size_t k = 0; k < aw; k++)
+            sum += a(i,k)*b(k,j);
+          Func<ADD,POS>(c(i,j), sum);          
+        }
+    */
+  }
+
+  template <bool ADD, bool POS, ORDERING OA, ORDERING OB>  
+  void NgGEMMFunc (size_t ah, size_t aw, size_t bw,
+                   BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
+  {
+    constexpr size_t BH=48;
+    constexpr size_t BW=48;
+
+    for (size_t i = 0; i < ah; i+= BH)
+      {
+        size_t imax = min(ah, i+BH);
+        size_t jmax = min(aw, BW);
+        NgGEMMFunc2<ADD,POS,OA,OB> (imax-i, jmax, bw, a.Rows(i,imax).Cols(0,jmax), b.Rows(0,jmax), c.Rows(i,imax));
+        for (size_t j = BW; j < aw; j+= BW)
+          {
+            size_t jmax = min(aw, j+BW);
+            NgGEMMFunc2<true,POS,OA,OB> (imax-i, jmax-j, bw, a.Rows(i,imax).Cols(j,jmax), b.Rows(j,jmax), c.Rows(i,imax));            
+          }
+      }
+  }
   
+  template <>
+  void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<false,true> (ah, aw, bw, a, b, c); }
+  
+  template <>
+  void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<false,true> (ah, aw, bw, a, b, c); }
+  
+  template <>
+  void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<false,true> (ah, aw, bw, a, b, c); }
+
+  template <>
+  void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<false,true> (ah, aw, bw, a, b, c); }
+
+
+  template <>
+  void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<true,true> (ah, aw, bw, a, b, c); }
+  
+  template <>
+  void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<true,true> (ah, aw, bw, a, b, c); }
+  
+  template <>
+  void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<true,true> (ah, aw, bw, a, b, c); }
+
+  template <>
+  void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<true,true> (ah, aw, bw, a, b, c); }
+
+
+
+
+  template <>
+  void NgGEMMBare<true,false>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<true,false> (ah, aw, bw, a, b, c); }
+  
+  template <>
+  void NgGEMMBare<true,false>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<true,false> (ah, aw, bw, a, b, c); }
+  
+  template <>
+  void NgGEMMBare<true,false>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<true,false> (ah, aw, bw, a, b, c); }
+
+  template <>
+  void NgGEMMBare<true,false>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<true,false> (ah, aw, bw, a, b, c); }
+
+
+  
+
+  template <>
+  void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<false,false> (ah, aw, bw, a, b, c); }
+  
+  template <>
+  void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<false,false> (ah, aw, bw, a, b, c); }
+  
+  template <>
+  void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<false,false> (ah, aw, bw, a, b, c); }
+
+  template <>
+  void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
+                              BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
+  { NgGEMMFunc<false,false> (ah, aw, bw, a, b, c); }
+
+
+
 }
 
