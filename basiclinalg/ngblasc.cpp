@@ -624,7 +624,7 @@ namespace ngbla
     for ( ; i+4 <= ah; i+=4)
       {
         size_t j = 0;
-        for ( ; j+4 < bw; j+=4)
+        for ( ; j+4 <= bw; j+=4)
           {
             SIMD<double,4> sum00 = 0;
             SIMD<double,4> sum10 = 0;
