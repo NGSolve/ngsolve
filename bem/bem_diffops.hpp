@@ -263,7 +263,7 @@ namespace ngsbem
     static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
                                     MAT && mat, LocalHeap & lh)
     {
-        auto matvec = mat.Rows(0,2);
+      // auto matvec = mat.Rows(0,2);
         Cast(fel).CalcShape (ip, Trans(mat));
         Cast(fel).CalcCurlShape(ip, Trans(mat.Rows(2,3)));
     }
