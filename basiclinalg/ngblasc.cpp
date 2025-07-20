@@ -741,43 +741,43 @@ namespace ngbla
   }
   
   template <>
-  void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<false,true> (ah, aw, bw, a, b, c); }
   
   template <>
-  void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<false,true> (ah, aw, bw, a, b, c); }
   
   template <>
-  void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<false,true> (ah, aw, bw, a, b, c); }
 
   template <>
-  void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<false,true>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<false,true> (ah, aw, bw, a, b, c); }
 
 
   template <>
-  void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<true,true> (ah, aw, bw, a, b, c); }
   
   template <>
-  void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<true,true> (ah, aw, bw, a, b, c); }
   
   template <>
-  void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<true,true> (ah, aw, bw, a, b, c); }
 
   template <>
-  void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<true,true>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<true,true> (ah, aw, bw, a, b, c); }
 
@@ -785,22 +785,22 @@ namespace ngbla
 
 
   template <>
-  NGS_DLL_HEADER void NgGEMMBare<true,false,RowMajor,RowMajor>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<true,false>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<true,false> (ah, aw, bw, a, b, c); }
   
   template <>
-  NGS_DLL_HEADER void NgGEMMBare<true,false,ColMajor,RowMajor>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<true,false>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<true,false> (ah, aw, bw, a, b, c); }
   
   template <>
-  NGS_DLL_HEADER void NgGEMMBare<true,false,RowMajor,ColMajor>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<true,false>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<true,false> (ah, aw, bw, a, b, c); }
 
   template <>
-  NGS_DLL_HEADER void NgGEMMBare<true,false,ColMajor,ColMajor>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<true,false>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<true,false> (ah, aw, bw, a, b, c); }
 
@@ -808,22 +808,22 @@ namespace ngbla
   
 
   template <>
-  void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<false,false> (ah, aw, bw, a, b, c); }
   
   template <>
-  void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,RowMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<false,false> (ah, aw, bw, a, b, c); }
   
   template <>
-  void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,RowMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<false,false> (ah, aw, bw, a, b, c); }
 
   template <>
-  void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
+  NGS_DLL_HEADER void NgGEMMBare<false,false>(size_t ah, size_t aw, size_t bw,
                               BareSliceMatrix<Complex,ColMajor> a, BareSliceMatrix<Complex,ColMajor> b, BareSliceMatrix<Complex,RowMajor> c)
   { NgGEMMFunc<false,false> (ah, aw, bw, a, b, c); }
 
