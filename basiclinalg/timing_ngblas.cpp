@@ -69,6 +69,10 @@ Available options timings are:
           411 .. Complex MatVec    A<RowMajor> = nxn SliceVector x,y
           412 .. Complex MatVec    A<ColMajor> = nxn FlatVector x,y
           413 .. Complex MatVec    A<ColMajor> = nxn SliceVector x,y
+          420 .. Complex MatMat    RowMajor,RowMajor
+          421 .. Complex MatMat    RowMajor,ColMajor
+          422 .. Complex MatMat    ColMajor,RowMajor
+          423 .. Complex MatMat    ColMajor,ColMajor
 )raw_string");
   }
 
@@ -80,45 +84,6 @@ Available options timings are:
       {
 
         cout << GetTimingHelpString() << flush;
-        /*
-        cout << "Available options timings are:\n"
-          "-1 .. this help\n"
-          "0 ... run all timings\n"
-          "1 ... A = B,   A,B = n*m,   A = aligned, fixed dist\n"
-          "2 ... A = 0,   A = n*m,     but sliced\n"
-          "3 ... A = B^t, A = n*m, \n"
-          "5 ... y = A*x,   A = n*m\n"
-          "6 ... y = A^t*x,   A = n*m\n"
-          "7 ... y += A^t*x(ind),   A = n*m\n"
-          "10 .. C = A * B,   A=n*m, B=m*k, C=n*k\n"
-          "11 .. C += A * B,   A=n*m, B=m*k, C=n*k\n"
-          // "20 .. C = A * B    A=n*m, B=n*k', C=n*k', k'=round(k), B aligned\n"
-          "20 .. X = T * X       T=n*n triangular, X=n*m "
-          "21 .. X = T^-1 * X     T=n*n triangular, X=n*m "
-          "22 .. T^-1             T=n*n triangular"
-          "50 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n"
-          "51 .. C += A * B^t,   A=n*k, B=m*k, C=n*m,  A,B aligned\n"
-          "52 .. C = A * B^t,   A=n*k, B=m*k, C=n*m\n"
-          "53 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n, complex B"          
-          "54 .. C += A * B^t,   A=n*k, B=m*k, C=n*m\n, complex A,B"          
-          "60 .. C -= A^t * D B,  A=n*k, B=n*m, C = k*m, D=diag\n"
-          "61 .. C = A^t B,  A=n*k, B=n*m, C = k*m\n"
-          "70 .. C += A B^t,  A=n*k, B=m*k, C = n*m, A,B SIMD\n"
-	  "80 .. (x,y)        inner product, size n\n"
-          "81 .. x += y       vector add, size n\n"
-          "100.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW\n"
-          "101.. MultAddKernel  C += A * B,  A=4*n, B=n*3SW, B aligned\n"
-          "110.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW\n"
-          "111.. MultAddKernel2  C += A * B,  A=4*n, B=n*m, m multiple of 3*SW, B aligned\n"
-          "150.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n"
-          "151.. ScalKernel     C = A * B^t,  A=4*n, B = 3*n\n, A,B aligned\n"
-          "200.. CalcInverse        A = nxn\n"
-          "201.. CalcInverse by LU  A = nxn\n"          
-          "205.. LDL                A = nxn\n"
-          "210.. CalcInverseLapack  A = nxn\n"
-          "300.. CalcSVD            A = nxn\n"
-             << endl;
-        */
         return list<tuple<string,double>>();
       }
 
@@ -1270,6 +1235,113 @@ Available options timings are:
         }
       }
      
+
+    if (what == 0 || what == 420)
+      {
+        
+        Matrix<Complex> a(n,m), b(m,k), c(n,k);
+        a = Complex(1); b = Complex(2,3);
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
+            a(i,j) = Complex(sin(i+1) * cos(j), cos(i));
+        for (size_t i = 0; i < m; i++)
+          for (size_t j = 0; j < k; j++)
+            b(i,j) = Complex(cos(i+3) * cos(j), sin(j));
+
+        Timer t("C = A*B");
+
+        size_t tot = 4*n*m*k;
+        size_t its = 1e10 / tot + 1;
+        t.Start();
+        for (int j = 0; j < its; j++)
+          c=a*b;
+        t.Stop();
+        t.AddFlops(tot);
+        cout << "MatMat,complex, RowMajor, RowMajor, GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+        timings.push_back(make_tuple("MatMat,complex, RowMajor, RowMajor", 1e-9 * tot*its / t.GetTime()));
+      }
+
+    if (what == 0 || what == 421)
+      {
+        
+        Matrix<Complex> a(n,m), c(n,k);
+        Matrix<Complex,ColMajor> b(m,k);
+        
+        a = Complex(1); b = Complex(2,3);
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
+            a(i,j) = Complex(sin(i+1) * cos(j), cos(i));
+        for (size_t i = 0; i < m; i++)
+          for (size_t j = 0; j < k; j++)
+            b(i,j) = Complex(cos(i+3) * cos(j), sin(j));
+
+        Timer t("C = A*B");
+
+        size_t tot = 4*n*m*k;
+        size_t its = 1e10 / tot + 1;
+        t.Start();
+        for (int j = 0; j < its; j++)
+          c=a*b;
+        t.Stop();
+        t.AddFlops(tot);
+        cout << "MatMat,complex, RowMajor, ColMajor, GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+        timings.push_back(make_tuple("MatMat,complex, RowMajor, ColMajor", 1e-9 * tot*its / t.GetTime()));
+      }
+
+
+    if (what == 0 || what == 422)
+      {
+        
+        Matrix<Complex> b(m,k), c(n,k);
+        Matrix<Complex,ColMajor> a(n,m);
+        a = Complex(1); b = Complex(2,3);
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
+            a(i,j) = Complex(sin(i+1) * cos(j), cos(i));
+        for (size_t i = 0; i < m; i++)
+          for (size_t j = 0; j < k; j++)
+            b(i,j) = Complex(cos(i+3) * cos(j), sin(j));
+
+        Timer t("C = A*B");
+
+        size_t tot = 4*n*m*k;
+        size_t its = 1e10 / tot + 1;
+        t.Start();
+        for (int j = 0; j < its; j++)
+          c=a*b;
+        t.Stop();
+        t.AddFlops(tot);
+        cout << "MatMat,complex, ColMajor, RowMajor, GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+        timings.push_back(make_tuple("MatMat,complex, ColMajor, RowMajor", 1e-9 * tot*its / t.GetTime()));
+      }
+
+    if (what == 0 || what == 423)
+      {
+        
+        Matrix<Complex> c(n,k);
+        Matrix<Complex,ColMajor> a(n,m), b(m,k);
+        
+        a = Complex(1); b = Complex(2,3);
+        for (size_t i = 0; i < n; i++)
+          for (size_t j = 0; j < m; j++)
+            a(i,j) = Complex(sin(i+1) * cos(j), cos(i));
+        for (size_t i = 0; i < m; i++)
+          for (size_t j = 0; j < k; j++)
+            b(i,j) = Complex(cos(i+3) * cos(j), sin(j));
+
+        Timer t("C = A*B");
+
+        size_t tot = 4*n*m*k;
+        size_t its = 1e10 / tot + 1;
+        t.Start();
+        for (int j = 0; j < its; j++)
+          c=a*b;
+        t.Stop();
+        t.AddFlops(tot);
+        cout << "MatMat,complex, ColMajor, ColMajor, GFlops = " << 1e-9 * tot*its / t.GetTime() << endl;
+        timings.push_back(make_tuple("MatMat,complex, ColMajor, ColMajor", 1e-9 * tot*its / t.GetTime()));
+      }
+
 
     
     return timings;
