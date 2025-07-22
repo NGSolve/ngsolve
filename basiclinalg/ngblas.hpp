@@ -1156,7 +1156,12 @@ namespace ngbla
     }
   };
   
+  // typedef void (*pmatmatcRR)(size_t, size_t, BareSliceMatrix<Complex,RowMajor>, BareSliceMatrix<Complex,RowMajor>,BareSliceMatrix<Complex,RowMajor>);
 
+  template <ORDERING OA, ORDERING OB>
+  using pmatmatc =  void (*)(size_t, size_t, BareSliceMatrix<Complex, OA>, BareSliceMatrix<Complex,OB>,BareSliceMatrix<Complex,RowMajor>);
+  template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
+  extern NGS_DLL_HEADER pmatmatc<OA,OB> dispatch_matmatc[9];
 
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
   extern NGS_DLL_HEADER void NgGEMMBare (size_t ah, size_t aw, size_t bw, BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c);
@@ -1168,6 +1173,12 @@ namespace ngbla
     size_t ah = a.Height();
     size_t aw = a.Width();
     size_t bw = b.Width();
+    if (aw < std::size(dispatch_matmatc<ADD,POS,OA,OB>))
+      {
+        (*dispatch_matmatc<ADD,POS,OA,OB>[aw])(ah, bw, make_BareSliceMatrix(a), make_BareSliceMatrix(b), make_BareSliceMatrix(c));
+        return;
+      }
+
     NgGEMMBare<ADD,POS>(ah, aw, bw, make_BareSliceMatrix(a), make_BareSliceMatrix(b), make_BareSliceMatrix(c));
   }
   
