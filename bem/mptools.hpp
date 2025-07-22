@@ -418,6 +418,17 @@ namespace ngsbem
   static constexpr int maxdirect = 100;
 
 
+  template <typename SCAL, auto S>
+  FlatMatrix<SCAL> VecVector2Matrix (FlatVector<Vec<S,SCAL>> vec)
+  {
+    return FlatMatrix<SCAL> (vec.Size(), S, vec.Data()->Data());
+  }
+  inline FlatMatrix<Complex> VecVector2Matrix (FlatVector<Complex> vec)
+  {
+    return FlatMatrix<Complex> (vec.Size(), 1, vec.Data());
+  }
+  
+
   template <typename entry_type=Complex>
   class SingularMLMultiPole
   {
@@ -966,9 +977,15 @@ namespace ngsbem
       for (int i = 0; i < batch.Size(); i++) {
         tmp_source.SH().Coefs() = batch[i]->mpS->SH().Coefs();
         tmp_source.SH().RotateZ(batch[i]->phi);
+
+        auto vec_source_mat = VecVector2Matrix (vec_source.SH().Coefs());
+        auto tmp_source_mat = VecVector2Matrix (tmp_source.SH().Coefs());
+        vec_source_mat.Cols(i*vec_length, (i+1)*vec_length) = tmp_source_mat;
+        /*
         for (int j=0; j < tmp_source.SH().Coefs().Size(); j++) {
           vec_source.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length) = tmp_source.SH().Coefs()[j];
         }
+        */
       }
 
       vec_source.SH().RotateY(theta);
@@ -1120,7 +1137,17 @@ namespace ngsbem
 
         if (childs[0])
           {
-            ParallelFor(8, [&] (int nr)
+            if (total_targets < 1000)
+              {
+                if (L2Norm(mp.SH().Coefs()) > 0)
+                  for (int nr = 0; nr < 8; nr++)
+                    {
+                      mp.TransformAdd (childs[nr]->mp, childs[nr]->center-center);
+                      childs[nr]->LocalizeExpansion(allow_refine);
+                    }
+              }
+            else
+              ParallelFor(8, [&] (int nr)
               {
                 if (L2Norm(mp.SH().Coefs()) > 0)
                   mp.TransformAdd (childs[nr]->mp, childs[nr]->center-center);
@@ -1328,7 +1355,7 @@ namespace ngsbem
       
       // root.AddSingularNode(singmp->root, false, nullptr);
       // /*
-      Array<RecordingRS> recording;      
+      Array<RecordingRS> recording;
       root.AddSingularNode(singmp->root, false, &recording);
       // cout << "recorded: " << recording.Size() << endl;
       QuickSort (recording, [] (auto & a, auto & b)
@@ -1382,7 +1409,7 @@ namespace ngsbem
         cout << "reg " << i << ": " << RegularMLMultiPole::nodes_on_level[i] << endl;
       */
 
-      static Timer tloc("mptool regular localize expansion"); RegionTimer rloc(tloc);      
+      static Timer tloc("mptool regular localize expansion"); RegionTimer rloc(tloc);
       root.LocalizeExpansion(false);
     }
 
