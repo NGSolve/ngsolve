@@ -616,6 +616,107 @@ namespace ngbla
   }
 
 
+  template <size_t AW, bool ADD, bool POS, ORDERING OA, ORDERING OB>  
+  void NgGEMMFuncSmall (size_t ah, size_t bw,
+                        BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
+  {
+    size_t i = 0;
+    for( ; i+2 <= bw; i+= 2)
+      {
+        Vec<AW,SIMD<double,4>> bi;
+        for (size_t k = 0; k < AW; k++)
+          {
+            SIMD<double,2> bi0((double*)(void*)b.Addr(k,i));
+            SIMD<double,2> bi1((double*)(void*)b.Addr(k,i+1));
+            bi(k) = SIMD<double,4>(bi0,bi1);
+          }
+
+        for (size_t j = 0; j < ah; j++)
+          {
+            SIMD<double,4> sum(0.0);
+            for (size_t k = 0; k < AW; k++)
+              {
+                SIMD<double,2> a0((double*)(void*)a.Addr(j,k));
+                SIMD<double,4> aj(a0,a0);
+                FMAComplex (aj,bi(k),sum);
+              }
+            Func<ADD,POS>(c(j,i), Complex(sum[0], sum[1]));
+            Func<ADD,POS>(c(j,i+1), Complex(sum[2], sum[3]));
+          }
+      }
+    for( ; i+1 <= bw; i+= 1)
+      {
+        Vec<AW,SIMD<double,2>> bi;
+        for (size_t k = 0; k < AW; k++)
+          {
+            SIMD<double,2> bi0((double*)(void*)b.Addr(k,i));
+            bi(k) = bi0;
+          }
+
+        for (size_t j = 0; j < ah; j++)
+          {
+            SIMD<double,2> sum(0.0);
+            for (size_t k = 0; k < AW; k++)
+              {
+                SIMD<double,2> aj((double*)(void*)a.Addr(j,k));
+                FMAComplex (aj,bi(k),sum);
+              }
+            Func<ADD,POS>(c(j,i), Complex(sum[0], sum[1]));
+          }
+      }
+  }
+
+  
+  template <> NGS_DLL_HEADER pmatmatc<RowMajor,RowMajor> dispatch_matmatc<false,false,RowMajor,RowMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<RowMajor,RowMajor> dispatch_matmatc<false,true,RowMajor,RowMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<RowMajor,RowMajor> dispatch_matmatc<true,false,RowMajor,RowMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<RowMajor,RowMajor> dispatch_matmatc<true,true,RowMajor,RowMajor>[9];
+
+  template <> NGS_DLL_HEADER pmatmatc<ColMajor,RowMajor> dispatch_matmatc<false,false, ColMajor,RowMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<ColMajor,RowMajor> dispatch_matmatc<false,true, ColMajor,RowMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<ColMajor,RowMajor> dispatch_matmatc<true,false, ColMajor,RowMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<ColMajor,RowMajor> dispatch_matmatc<true,true, ColMajor,RowMajor>[9];
+
+  template <> NGS_DLL_HEADER pmatmatc<RowMajor,ColMajor> dispatch_matmatc<false,false,RowMajor,ColMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<RowMajor,ColMajor> dispatch_matmatc<false,true,RowMajor,ColMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<RowMajor,ColMajor> dispatch_matmatc<true,false,RowMajor,ColMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<RowMajor,ColMajor> dispatch_matmatc<true,true,RowMajor,ColMajor>[9];
+
+  template <> NGS_DLL_HEADER pmatmatc<ColMajor,ColMajor> dispatch_matmatc<false,false, ColMajor,ColMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<ColMajor,ColMajor> dispatch_matmatc<false,true, ColMajor,ColMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<ColMajor,ColMajor> dispatch_matmatc<true,false, ColMajor,ColMajor>[9];
+  template <> NGS_DLL_HEADER pmatmatc<ColMajor,ColMajor> dispatch_matmatc<true,true, ColMajor,ColMajor>[9];
+
+
+
+  
+  auto init_matmatc = [] ()
+  {
+    Iterate<std::size(dispatch_matmatc<false,false,RowMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<false,false,RowMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,false,false,RowMajor,RowMajor>; });
+    Iterate<std::size(dispatch_matmatc<false,true ,RowMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<false,true ,RowMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,false,true ,RowMajor,RowMajor>; });
+    Iterate<std::size(dispatch_matmatc<true ,false,RowMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<true ,false,RowMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,true ,false,RowMajor,RowMajor>; });
+    Iterate<std::size(dispatch_matmatc<true ,true ,RowMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<true ,true ,RowMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,true ,true ,RowMajor,RowMajor>; });
+                      
+    Iterate<std::size(dispatch_matmatc<false,false, ColMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<false,false, ColMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,false,false,ColMajor,RowMajor>; });
+    Iterate<std::size(dispatch_matmatc<false,true , ColMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<false,true , ColMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,false,true ,ColMajor,RowMajor>; });
+    Iterate<std::size(dispatch_matmatc<true ,false, ColMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<true ,false, ColMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,true ,false,ColMajor,RowMajor>; });
+    Iterate<std::size(dispatch_matmatc<true ,true , ColMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<true ,true , ColMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,true ,true ,ColMajor,RowMajor>; });
+
+    Iterate<std::size(dispatch_matmatc<false,false,RowMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<false,false,RowMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,false,false,RowMajor,ColMajor>; });
+    Iterate<std::size(dispatch_matmatc<false,true ,RowMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<false,true ,RowMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,false,true ,RowMajor,ColMajor>; });
+    Iterate<std::size(dispatch_matmatc<true ,false,RowMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<true ,false,RowMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,true ,false,RowMajor,ColMajor>; });
+    Iterate<std::size(dispatch_matmatc<true ,true ,RowMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<true ,true ,RowMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,true ,true ,RowMajor,ColMajor>; });
+                      
+    Iterate<std::size(dispatch_matmatc<false,false, ColMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<false,false, ColMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,false,false,ColMajor,ColMajor>; });
+    Iterate<std::size(dispatch_matmatc<false,true , ColMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<false,true , ColMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,false,true ,ColMajor,ColMajor>; });
+    Iterate<std::size(dispatch_matmatc<true ,false, ColMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<true ,false, ColMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,true ,false,ColMajor,ColMajor>; });
+    Iterate<std::size(dispatch_matmatc<true ,true , ColMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<true ,true , ColMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,true ,true ,ColMajor,ColMajor>; });
+
+
+    return 1;
+  }();
+  
+
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>  
   void NgGEMMFunc2 (size_t ah, size_t aw, size_t bw,
                     BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
