@@ -20,6 +20,12 @@ namespace ngsbem
 {
   using namespace ngfem;
   
+  template<typename T>
+  constexpr int VecLength = 1;  // Default: Complex has length 1
+
+  template<int N>
+  constexpr int VecLength<Vec<N, Complex>> = N;  // Specialization: Vec<N,Complex> has length N
+
 
   template <typename entry_type = Complex>
   class NGS_DLL_HEADER SphericalHarmonics
@@ -142,7 +148,7 @@ namespace ngsbem
                FlatVector<double> jp,
                FlatVector<double> yp);
 
-  
+
   
   template <typename T>
   void SphericalBessel (int n, double rho, double scale, T && values)
@@ -905,6 +911,92 @@ namespace ngsbem
       }
     };
 
+    static void ProcessBatch(FlatArray<RecordingRS*> batch, double len, double theta) {
+      constexpr int vec_length = VecLength<elem_type>;
+      int batch_size = batch.Size();
+      int N = batch_size * vec_length;
+      // *testout << "Processing batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", Type: " << typeid(elem_type).name() << ", len = " << len << ", theta = " << theta << endl;
+
+      if (N <= 1 || batch_size <= 1) {
+        for (auto* rec : batch) {
+          rec->mpS->TransformAdd(*rec->mpR, rec->dist);
+        }
+      }
+      else if (N <= 3) {
+        ProcessVectorizedBatch<3, vec_length>(batch, len, theta);
+      }
+      else if (N <= 4) {
+        ProcessVectorizedBatch<4, vec_length>(batch, len, theta);
+      }
+      else if (N <= 6) {
+        ProcessVectorizedBatch<6, vec_length>(batch, len, theta);
+      }
+      else if (N <= 12) {
+        ProcessVectorizedBatch<12, vec_length>(batch, len, theta);
+      }
+      else if (N <= 24) {
+        ProcessVectorizedBatch<24, vec_length>(batch, len, theta);
+      }
+      else if (N <= 48) {
+        ProcessVectorizedBatch<48, vec_length>(batch, len, theta);
+      }
+      else if (N <= 96) {
+        ProcessVectorizedBatch<96, vec_length>(batch, len, theta);
+      }
+      else if (N <= 192) {
+        ProcessVectorizedBatch<192, vec_length>(batch, len, theta);
+      }
+      else {
+        // Split large batches
+        ProcessBatch(batch.Range(0, 192 / vec_length), len, theta);
+        ProcessBatch(batch.Range(192 / vec_length, batch_size), len, theta);
+      }
+    }
+
+
+    template<int N, int vec_length>
+    static void ProcessVectorizedBatch(FlatArray<RecordingRS*> batch, double len, double theta) {
+      // *testout << "Processing vectorized batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
+      MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp());
+      MultiPole<MPSingular, elem_type> tmp_source{*batch[0]->mpS};
+      MultiPole<MPRegular, elem_type> tmp_target{*batch[0]->mpR};
+      MultiPole<MPRegular, Vec<N,Complex>> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp());
+
+      // Copy multipoles into vectorized multipole
+      for (int i = 0; i < batch.Size(); i++) {
+        tmp_source.SH().Coefs() = batch[i]->mpS->SH().Coefs();
+        tmp_source.SH().RotateZ(batch[i]->phi);
+        for (int j=0; j < tmp_source.SH().Coefs().Size(); j++) {
+          vec_source.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length) = tmp_source.SH().Coefs()[j];
+        }
+      }
+
+      vec_source.SH().RotateY(theta);
+      vec_source.ShiftZ(-len, vec_target);
+      vec_target.SH().RotateY(-theta);
+
+      // Copy vectorized multipole into individual multipoles
+      for (int i = 0; i < batch.Size(); i++) {
+        if constexpr(vec_length == 1) {
+          for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
+            tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j][i];
+          }
+        }
+        else {
+          for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
+            tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length);
+          }
+        }
+        tmp_target.SH().RotateZ(-batch[i]->phi);
+        // batch[i]->mpR->SH().Coefs() += tmp_target.SH().Coefs();
+        // ParallelFor(tmp_target.SH().Coefs().Size(), [&](int j) {
+        for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
+          AtomicAdd(batch[i]->mpR->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
+        // });
+      }
+
+    }
+
     
     struct Node
     {
@@ -1234,8 +1326,8 @@ namespace ngsbem
       root.RemoveEmptyTrees();
 
       
-      root.AddSingularNode(singmp->root, false, nullptr);
-      /*
+      // root.AddSingularNode(singmp->root, false, nullptr);
+      // /*
       Array<RecordingRS> recording;      
       root.AddSingularNode(singmp->root, false, &recording);
       // cout << "recorded: " << recording.Size() << endl;
@@ -1245,12 +1337,40 @@ namespace ngsbem
         if (a.len > (1+1e-8) * b.len) return false;
         return a.theta < b.theta;
       });
+
+      double current_len = -1e100;
+      double current_theta = -1e100;
+      Array<RecordingRS*> current_batch;
+      Array<Array<RecordingRS*>> batch_group;
+      Array<double> group_lengths;
+      Array<double> group_thetas;
       for (auto & record : recording)
         {
-          record.mpS->TransformAdd(*record.mpR, record.dist);
-          // *testout << record.len << ", " << record.theta << ", " << record.phi << endl;
+          bool len_changed = fabs(record.len - current_len) > 1e-8;
+          bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
+          if ((len_changed || theta_changed) && current_batch.Size() > 0) {
+            // ProcessBatch(current_batch, current_len, current_theta);
+            batch_group.Append(current_batch);
+            group_lengths.Append(current_len);
+            group_thetas.Append(current_theta);
+            current_batch.SetSize(0);
+            }
+
+          current_len = record.len;
+          current_theta = record.theta;
+          current_batch.Append(&record);
         }
-      */
+      if (current_batch.Size() > 0) {
+        // ProcessBatch(current_batch, current_len, current_theta);
+        batch_group.Append(current_batch);
+        group_lengths.Append(current_len);
+        group_thetas.Append(current_theta);
+      }
+
+      ParallelFor(batch_group.Size(), [&](int i) {
+          ProcessBatch(batch_group[i], group_lengths[i], group_thetas[i]);
+      });
+      // */
 
       
       /*
@@ -1295,6 +1415,7 @@ namespace ngsbem
     }
 
   };
+
 
   template <typename elem_type>
   inline ostream & operator<< (ostream & ost, const RegularMLMultiPole<elem_type> & mlmp)
