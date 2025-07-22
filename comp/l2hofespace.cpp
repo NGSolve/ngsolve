@@ -2848,6 +2848,29 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     enum { DIM_DMAT = DIM_SPC };
     enum { DIFFORDER = 0 };
 
+
+    static int DimRef() { return DIM_ELEMENT; } 
+
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & bfel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      mat.AddSize(DIM_ELEMENT, bfel.GetNDof()) = 0.0;
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      for (int i = 0; i < DIM_ELEMENT; i++)
+        feli.CalcShape (ip, mat.Row(i).Range(fel.GetRange(i)));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & bmip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      auto & mip = static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&>(bmip);
+      mat = (1.0/mip.GetJacobiDet()) * mip.GetJacobian();      
+    }
+
+    
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT && mat, LocalHeap & lh)
@@ -3125,6 +3148,46 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
 
     static Array<int> GetDimensions() { return Array<int> ( { DIM_SPC, DIM_SPC } ); };
 
+    static int DimRef() { return DIM_DMAT + DIM_ELEMENT; }
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & bfel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+
+      int ndofi = feli.GetNDof();
+      FlatMatrix<> grad (ndofi, DIM_SPC, lh);
+      feli.CalcDShape(ip, grad);
+
+      // Mat<DIM_SPC,DIM_SPC> trans = 1/(mip.GetJacobiDet())*mip.GetJacobian();
+      mat.AddSize(DimRef(), bfel.GetNDof()) = 0.0;
+      for (int i = 0; i < DIM_SPC; i++)
+        for (int j = 0; j < DIM_SPC; j++)
+          mat.Row(i*DIM_SPC+j).Range(i*ndofi, (i+1)*ndofi) = grad.Col(j);
+
+      FlatVector<> val (ndofi, lh);
+      feli.CalcShape(ip, val);
+      for (int i = 0; i < DIM_SPC; i++)
+        mat.Row(DIM_SPC*DIM_SPC+i).Range(i*ndofi, (i+1)*ndofi) = val;
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat = 0.0;
+      Mat<DIM_SPC,DIM_SPC> cov_trans = Trans(Inv(mip.GetJacobian()));
+      Mat<DIM_SPC,DIM_SPC> piola_trans = 1/(mip.GetJacobiDet())*mip.GetJacobian();
+
+      for (int i = 0; i < DIM_SPC; i++)
+        for (int j = 0; j < DIM_SPC; j++)
+          for (int k = 0; k < DIM_SPC; k++)
+            for (int l = 0; l < DIM_SPC; l++)
+              mat(i*DIM_SPC+k,j*DIM_SPC+l) = cov_trans(k,l)*piola_trans(i,j);
+    }    
+    
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
@@ -3288,7 +3351,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
           for (int j = 0; j < DIM_SPC; j++)
             for (int k = 0; k < DIM_SPC; k++)
               for (int l = 0; l < DIM_SPC; l++)
-                grad(j*DIM_SPC+k, i) += trans(l,j)*y(k*DIM_SPC+l, i);
+                grad(j*DIM_SPC+k, i) += trans(l,j)*y(l*DIM_SPC+k, i);
         }
 
       for (size_t k = 0; k < DIM_SPC; k++)
@@ -4256,11 +4319,13 @@ One can evaluate the vector-valued function, and one can take the gradient.
               evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<2>>>();
               flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivVectorL2Piola<2>>> ();
               additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradVectorL2Piola<2>>> ());
+              additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorL2Piola<2>>> ());
               break;
             case 3:
               evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdVectorL2Piola<3>>>();
               flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivVectorL2Piola<3>>> ();
               additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradVectorL2Piola<3>>> ());
+              additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradVectorL2Piola<3>>> ());
               break;
             }
         }
