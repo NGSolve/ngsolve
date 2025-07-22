@@ -1459,7 +1459,6 @@ namespace ngcomp
                   ipop = make_shared<ApplyIntegrationPoints<3,3>> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
                                                                    dimx, dimy, nip);
 
-                auto [s1,s2,s3] = diagy.Shape();
                 
                 auto diagmatx = make_shared<BlockDiagonalMatrixSoA> (std::move(diagx));
                 auto diagmaty = make_shared<BlockDiagonalMatrixSoA> (std::move(diagy));
