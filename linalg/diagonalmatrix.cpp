@@ -511,8 +511,7 @@ namespace ngla
       for (int j = 0; j < dimx; j++)
         nonzero(i,j) = L2Norm(blockdiag(i,j,STAR)) > 0;
 
-
-    TableCreator<int> creator;
+    TableCreator<int> creator(dimy);
     for ( ; !creator.Done(); creator++)
       for (int i = 0; i < dimy; i++)
         for (int j = 0; j < dimx; j++)
@@ -520,15 +519,13 @@ namespace ngla
             creator.Add (i,j);
     sparse = creator.MoveTable();
 
-
-    TableCreator<int> creatorT;
+    TableCreator<int> creatorT(dimx);
     for ( ; !creatorT.Done(); creatorT++)
       for (int i = 0; i < dimy; i++)
         for (int j = 0; j < dimx; j++)
           if (nonzero(i,j))
             creatorT.Add (j, i);
     sparseT = creatorT.MoveTable();
-    
   }
 
   ostream & BlockDiagonalMatrixSoA :: Print (ostream & ost) const
