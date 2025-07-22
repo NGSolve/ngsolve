@@ -1001,7 +1001,8 @@ namespace ngcomp
     D bock-diagonal
    */
 
-  ApplyIntegrationPoints ::
+  template <int DIM_ELEMENT, int DIM_SPACE>
+  ApplyIntegrationPoints<DIM_ELEMENT,DIM_SPACE> ::
   ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
                           const Array<ProxyFunction*> & atrialproxies,
                           Matrix<> apoints, Matrix<> anormals,
@@ -1090,18 +1091,21 @@ namespace ngcomp
     catch (const Exception & e)
       { ; } 
   }
-  
-  AutoVector ApplyIntegrationPoints :: CreateColVector() const
+
+  template <int DIM_ELEMENT, int DIM_SPACE>  
+  AutoVector ApplyIntegrationPoints<DIM_ELEMENT,DIM_SPACE>  :: CreateColVector() const
   {
     return make_unique<VVector<double>> (nip*dimy);
   }
-  
-  AutoVector ApplyIntegrationPoints :: CreateRowVector() const
+
+  template <int DIM_ELEMENT, int DIM_SPACE>  
+  AutoVector ApplyIntegrationPoints<DIM_ELEMENT,DIM_SPACE>  :: CreateRowVector() const
   {
     return make_unique<VVector<double>> (nip*dimx);
   }
-  
-  void ApplyIntegrationPoints :: Mult (const BaseVector & x, BaseVector & y) const
+
+  template <int DIM_ELEMENT, int DIM_SPACE>  
+  void ApplyIntegrationPoints<DIM_ELEMENT,DIM_SPACE>  :: Mult (const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ApplyIntegrationPoints"); RegionTimer reg(t);
     static Timer teval("ApplyIntegrationPoints eval");
@@ -1136,15 +1140,19 @@ namespace ngcomp
              HeapReset hr(lh);
              
              SIMD_IntegrationRule simdir(r2.Size(), lh);               
-             FE_ElementTransformation<2,2> trafo(ET_TRIG);
-             SIMD_MappedIntegrationRule<2,2> simdmir(simdir, trafo, 0, lh); // don't actually compute
-             
+             FE_ElementTransformation<DIM_ELEMENT,DIM_SPACE> trafo(DIM_ELEMENT==2 ? ET_TRIG : ET_TET);
+             SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> simdmir(simdir, trafo, 0, lh); // don't actually compute
+
              // tmir.Stop();
              
              ProxyUserData ud(trialproxies.Size(), 0, lh);
              trafo.userdata = &ud;
-             ScalarFE<ET_TRIG,1> dummyfe;
-             ud.fel = &dummyfe;
+             ScalarFE<ET_TRIG,1> dummyfe2d;
+             ScalarFE<ET_TET,1> dummyfe3d;
+             if (points.Height()==2)
+               ud.fel = &dummyfe2d;
+             else
+               ud.fel = &dummyfe3d;
              
              int starti = 0;
              for (auto proxy : trialproxies)
@@ -1442,9 +1450,16 @@ namespace ngcomp
                     CoefficientFunction::T_DJC cache;
                     diffcfs += coef -> DiffJacobi(proxy, cache);                  
                   }
-                
-                auto ipop = make_shared<ApplyIntegrationPoints> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
-                                                                 dimx, dimy, nip);
+
+                shared_ptr<BaseMatrix> ipop;
+                if (ma->GetDimension()==2)
+                  ipop = make_shared<ApplyIntegrationPoints<2,2>> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
+                                                                   dimx, dimy, nip);
+                else
+                  ipop = make_shared<ApplyIntegrationPoints<3,3>> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
+                                                                   dimx, dimy, nip);
+
+                auto [s1,s2,s3] = diagy.Shape();
                 
                 auto diagmatx = make_shared<BlockDiagonalMatrixSoA> (std::move(diagx));
                 auto diagmaty = make_shared<BlockDiagonalMatrixSoA> (std::move(diagy));
