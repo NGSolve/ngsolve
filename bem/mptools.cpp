@@ -1817,13 +1817,25 @@ namespace ngsbem
   template void MultiPole<MPSingular,Vec<6,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<6,Complex>> & target);
   template void MultiPole<MPSingular,Vec<6,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<6,Complex>> & target);
 
-  template void MultiPole<MPRegular,Vec<16,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<16,Complex>> & target);
-  template void MultiPole<MPSingular,Vec<16,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<16,Complex>> & target);
-  template void MultiPole<MPSingular,Vec<16,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<16,Complex>> & target);
+  template void MultiPole<MPRegular,Vec<12,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<12,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<12,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<12,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<12,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<12,Complex>> & target);
 
-  template void MultiPole<MPRegular,Vec<64,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<64,Complex>> & target);
-  template void MultiPole<MPSingular,Vec<64,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<64,Complex>> & target);
-  template void MultiPole<MPSingular,Vec<64,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<64,Complex>> & target);
+  template void MultiPole<MPRegular,Vec<24,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<24,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<24,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<24,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<24,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<24,Complex>> & target);
+
+  template void MultiPole<MPRegular,Vec<48,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<48,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<48,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<48,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<48,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<48,Complex>> & target);
+
+  template void MultiPole<MPRegular,Vec<96,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<96,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<96,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<96,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<96,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<96,Complex>> & target);
+
+  template void MultiPole<MPRegular,Vec<192,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<192,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<192,Complex>> :: ShiftZ (double z, MultiPole<MPRegular,Vec<192,Complex>> & target);
+  template void MultiPole<MPSingular,Vec<192,Complex>> :: ShiftZ (double z, MultiPole<MPSingular,Vec<192,Complex>> & target);
 
 
 
@@ -2238,8 +2250,11 @@ namespace ngsbem
   template class SphericalHarmonics<Vec<3,Complex>>;  
   template class SphericalHarmonics<Vec<4,Complex>>;
   template class SphericalHarmonics<Vec<6,Complex>>;
-  template class SphericalHarmonics<Vec<16,Complex>>;
-  template class SphericalHarmonics<Vec<64,Complex>>;  
+  template class SphericalHarmonics<Vec<12,Complex>>;
+  template class SphericalHarmonics<Vec<24,Complex>>;
+  template class SphericalHarmonics<Vec<48,Complex>>;
+  template class SphericalHarmonics<Vec<96,Complex>>;
+  template class SphericalHarmonics<Vec<192,Complex>>;
   
   template class MultiPole<MPSingular>;
   template class MultiPole<MPRegular>;
@@ -2251,12 +2266,16 @@ namespace ngsbem
   template class MultiPole<MPRegular, Vec<4,Complex>>;    
   template class MultiPole<MPSingular, Vec<6,Complex>>;
   template class MultiPole<MPRegular, Vec<6,Complex>>;
-
-  template class MultiPole<MPSingular, Vec<16,Complex>>;
-  template class MultiPole<MPRegular, Vec<16,Complex>>;
-
-  template class MultiPole<MPSingular, Vec<64,Complex>>;
-  template class MultiPole<MPRegular, Vec<64,Complex>>;
+  template class MultiPole<MPSingular, Vec<12,Complex>>;
+  template class MultiPole<MPRegular, Vec<12,Complex>>;
+  template class MultiPole<MPSingular, Vec<24,Complex>>;
+  template class MultiPole<MPRegular, Vec<24,Complex>>;
+  template class MultiPole<MPSingular, Vec<48,Complex>>;
+  template class MultiPole<MPRegular, Vec<48,Complex>>;
+  template class MultiPole<MPSingular, Vec<96,Complex>>;
+  template class MultiPole<MPRegular, Vec<96,Complex>>;
+  template class MultiPole<MPSingular, Vec<192,Complex>>;
+  template class MultiPole<MPRegular, Vec<192,Complex>>;
 
 
   
