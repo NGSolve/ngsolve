@@ -915,7 +915,7 @@ namespace ngcomp
   };
 
 
-
+  template <int DIM_ELEMENT, int DIM_SPACE>
   class ApplyIntegrationPoints : public BaseMatrix
   {
     Array<shared_ptr<CoefficientFunction>> coefs;
