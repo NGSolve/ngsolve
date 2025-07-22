@@ -475,6 +475,31 @@ namespace ngla
           }
       }
     return this->CreateFromCOO(indi, indj, val, this->Height(), this->Width());
+
+    /*
+      // needs parallelization and testing
+    Array<int> cnt(this->Height());
+    cnt = 0;
+    size_t cnt0 = 0;
+    for (auto i : Range(this->Height()))
+      for (auto j : Range(firsti[i], firsti[i+1]))
+        if (ngbla::L2Norm2(data[j]) > tol*tol)
+          cnt[i]++;
+        else
+          cnt0++;
+
+    cout << "zero-els = " << cnt0 << endl;
+
+
+    auto matrix = make_shared<SparseMatrix<TM>> (cnt, this->Width());
+
+    for (auto i : Range(this->Height()))
+      for (auto j : Range(firsti[i], firsti[i+1]))
+        if (ngbla::L2Norm2(data[j]) > tol*tol)
+          (*matrix)(i, colnr[i]) =  data[j];
+
+    return matrix;
+    */
   }
 
   template <class TM>
