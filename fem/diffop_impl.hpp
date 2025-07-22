@@ -312,10 +312,12 @@ namespace ngfem
   
   template <typename DIFFOP>
   void T_DifferentialOperator<DIFFOP> ::
-  CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
+  CalcTransformationMatrix (const BaseMappedIntegrationPoint & bmip,
                             SliceMatrix<double> trans,
                             LocalHeap & lh) const
   {
+    const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE> & mip =
+      static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPACE>&> (bmip);
     DIFFOP::CalcTransformationMatrix(mip, trans, lh);    
   }
   
