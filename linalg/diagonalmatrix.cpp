@@ -526,6 +526,8 @@ namespace ngla
           if (nonzero(i,j))
             creatorT.Add (j, i);
     sparseT = creatorT.MoveTable();
+
+    // cout << "blockdiagSoA, nonzero = " << sparse.AsArray().Size() << " of " << dimx*dimy << endl;
   }
 
   ostream & BlockDiagonalMatrixSoA :: Print (ostream & ost) const
@@ -648,6 +650,11 @@ namespace ngla
            {
              switch (sparseT[j].Size())
                {
+               case 0:
+                 {
+                   my.Row(j).Range(r) = 0.0;
+                   break;
+                 }
                case 1:
                  {
                    my.Row(j).Range(r) = pw_mult(blockdiag(sparseT[j][0],j,STAR).Range(r), mx.Row(sparseT[j][0]).Range(r));
@@ -670,9 +677,20 @@ namespace ngla
                  }
                default:
                  {
-                   my.Row(j).Range(r) = 0.0;
-                   for (size_t k : sparseT[j])
-                     my.Row(j).Range(r) += pw_mult(blockdiag(k,j,STAR).Range(r), mx.Row(k).Range(r));
+                   my.Row(j).Range(r) =
+                     pw_mult(blockdiag(sparseT[j][0],j,STAR).Range(r), mx.Row(sparseT[j][0]).Range(r))
+                     +pw_mult(blockdiag(sparseT[j][1],j,STAR).Range(r), mx.Row(sparseT[j][1]).Range(r))
+                     +pw_mult(blockdiag(sparseT[j][2],j,STAR).Range(r), mx.Row(sparseT[j][2]).Range(r))
+                     +pw_mult(blockdiag(sparseT[j][3],j,STAR).Range(r), mx.Row(sparseT[j][3]).Range(r));
+                   size_t k = 4;
+                   for ( ; k+4 <= sparseT[j].Size(); k+=4) 
+                     my.Row(j).Range(r) +=
+                       pw_mult(blockdiag(sparseT[j][k+0],j,STAR).Range(r), mx.Row(sparseT[j][k+0]).Range(r))
+                       +pw_mult(blockdiag(sparseT[j][k+1],j,STAR).Range(r), mx.Row(sparseT[j][k+1]).Range(r))
+                       +pw_mult(blockdiag(sparseT[j][k+2],j,STAR).Range(r), mx.Row(sparseT[j][k+2]).Range(r))
+                       +pw_mult(blockdiag(sparseT[j][k+3],j,STAR).Range(r), mx.Row(sparseT[j][k+3]).Range(r));
+                   for ( ; k < sparseT[j].Size(); k++) // size_t k : sparseT[j])
+                     my.Row(j).Range(r) += pw_mult(blockdiag(sparseT[j][k],j,STAR).Range(r), mx.Row(sparseT[j][k]).Range(r));
                  }
                }
            }
