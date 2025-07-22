@@ -1120,12 +1120,12 @@ namespace ngsbem
 
         if (childs[0])
           {
-            for (auto & ch : childs)
+            ParallelFor(8, [&] (int nr)
               {
                 if (L2Norm(mp.SH().Coefs()) > 0)
-                  mp.TransformAdd (ch->mp, ch->center-center);
-                ch->LocalizeExpansion(allow_refine);
-              }
+                  mp.TransformAdd (childs[nr]->mp, childs[nr]->center-center);
+                childs[nr]->LocalizeExpansion(allow_refine);
+              });
             mp = MultiPole<MPRegular,elem_type>(-1, mp.Kappa(), 1.);
             //mp.SH().Coefs()=0.0;
           }
@@ -1369,7 +1369,7 @@ namespace ngsbem
 
       ParallelFor(batch_group.Size(), [&](int i) {
           ProcessBatch(batch_group[i], group_lengths[i], group_thetas[i]);
-      });
+      }, TasksPerThread(4));
       // */
 
       
