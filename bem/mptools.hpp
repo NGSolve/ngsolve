@@ -1139,12 +1139,12 @@ namespace ngsbem
           {
             if (total_targets < 1000)
               {
-                if (L2Norm(mp.SH().Coefs()) > 0)
-                  for (int nr = 0; nr < 8; nr++)
-                    {
+                for (int nr = 0; nr < 8; nr++)
+                  {
+                    if (L2Norm(mp.SH().Coefs()) > 0)
                       mp.TransformAdd (childs[nr]->mp, childs[nr]->center-center);
-                      childs[nr]->LocalizeExpansion(allow_refine);
-                    }
+                    childs[nr]->LocalizeExpansion(allow_refine);
+                  }
               }
             else
               ParallelFor(8, [&] (int nr)
