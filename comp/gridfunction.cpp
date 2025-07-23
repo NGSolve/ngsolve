@@ -1625,7 +1625,8 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<double>> bvalues) const
   {
-    if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
+    // if (gf -> GetLevelUpdated() < gf->GetFESpace()->GetMeshAccess()->GetNLevels())
+    if (gf -> GetLevelUpdated() < gf->GetMeshAccess()->GetNLevels())
       {
         bvalues.AddSize(Dimension(), ir.Size()) = 0.0;
         return;
