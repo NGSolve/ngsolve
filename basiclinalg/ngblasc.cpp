@@ -688,31 +688,28 @@ namespace ngbla
   template <> NGS_DLL_HEADER pmatmatc<ColMajor,ColMajor> dispatch_matmatc<true,true, ColMajor,ColMajor>[9];
 
 
+  template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
+  void InitMatMatC()
+  {
+    Iterate<std::size(dispatch_matmatc<ADD,POS,OA,OB>)> ([&] (auto i)
+    { dispatch_matmatc<ADD,POS,OA,OB>[i] = &NgGEMMFuncSmall<i,ADD,POS,OA,OB>; });    
+  }
 
+  template <ORDERING OA, ORDERING OB>
+  void InitMatMatC2()
+  {
+    InitMatMatC<false,false,OA,OB>();
+    InitMatMatC<false,true,OA,OB>();
+    InitMatMatC<true,false,OA,OB>();
+    InitMatMatC<true,true,OA,OB>();
+  }
   
   auto init_matmatc = [] ()
   {
-    Iterate<std::size(dispatch_matmatc<false,false,RowMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<false,false,RowMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,false,false,RowMajor,RowMajor>; });
-    Iterate<std::size(dispatch_matmatc<false,true ,RowMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<false,true ,RowMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,false,true ,RowMajor,RowMajor>; });
-    Iterate<std::size(dispatch_matmatc<true ,false,RowMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<true ,false,RowMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,true ,false,RowMajor,RowMajor>; });
-    Iterate<std::size(dispatch_matmatc<true ,true ,RowMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<true ,true ,RowMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,true ,true ,RowMajor,RowMajor>; });
-                      
-    Iterate<std::size(dispatch_matmatc<false,false, ColMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<false,false, ColMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,false,false,ColMajor,RowMajor>; });
-    Iterate<std::size(dispatch_matmatc<false,true , ColMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<false,true , ColMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,false,true ,ColMajor,RowMajor>; });
-    Iterate<std::size(dispatch_matmatc<true ,false, ColMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<true ,false, ColMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,true ,false,ColMajor,RowMajor>; });
-    Iterate<std::size(dispatch_matmatc<true ,true , ColMajor,RowMajor>)> ([&] (auto i) { dispatch_matmatc<true ,true , ColMajor,RowMajor>[i] = &NgGEMMFuncSmall<i,true ,true ,ColMajor,RowMajor>; });
-
-    Iterate<std::size(dispatch_matmatc<false,false,RowMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<false,false,RowMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,false,false,RowMajor,ColMajor>; });
-    Iterate<std::size(dispatch_matmatc<false,true ,RowMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<false,true ,RowMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,false,true ,RowMajor,ColMajor>; });
-    Iterate<std::size(dispatch_matmatc<true ,false,RowMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<true ,false,RowMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,true ,false,RowMajor,ColMajor>; });
-    Iterate<std::size(dispatch_matmatc<true ,true ,RowMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<true ,true ,RowMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,true ,true ,RowMajor,ColMajor>; });
-                      
-    Iterate<std::size(dispatch_matmatc<false,false, ColMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<false,false, ColMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,false,false,ColMajor,ColMajor>; });
-    Iterate<std::size(dispatch_matmatc<false,true , ColMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<false,true , ColMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,false,true ,ColMajor,ColMajor>; });
-    Iterate<std::size(dispatch_matmatc<true ,false, ColMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<true ,false, ColMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,true ,false,ColMajor,ColMajor>; });
-    Iterate<std::size(dispatch_matmatc<true ,true , ColMajor,ColMajor>)> ([&] (auto i) { dispatch_matmatc<true ,true , ColMajor,ColMajor>[i] = &NgGEMMFuncSmall<i,true ,true ,ColMajor,ColMajor>; });
-
-
+    InitMatMatC2<RowMajor,RowMajor>();
+    InitMatMatC2<RowMajor,ColMajor>();
+    InitMatMatC2<ColMajor,RowMajor>();
+    InitMatMatC2<ColMajor,ColMajor>();
     return 1;
   }();
   
