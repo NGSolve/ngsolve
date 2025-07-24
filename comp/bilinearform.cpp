@@ -1001,8 +1001,7 @@ namespace ngcomp
     D bock-diagonal
    */
 
-  template <int DIM_ELEMENT, int DIM_SPACE>
-  ApplyIntegrationPoints<DIM_ELEMENT,DIM_SPACE> ::
+  ApplyIntegrationPoints :: 
   ApplyIntegrationPoints (Array<shared_ptr<CoefficientFunction>> acoefs,
                           const Array<ProxyFunction*> & atrialproxies,
                           Matrix<> apoints, Matrix<> anormals,
@@ -1092,20 +1091,17 @@ namespace ngcomp
       { ; } 
   }
 
-  template <int DIM_ELEMENT, int DIM_SPACE>  
-  AutoVector ApplyIntegrationPoints<DIM_ELEMENT,DIM_SPACE>  :: CreateColVector() const
+  AutoVector ApplyIntegrationPoints :: CreateColVector() const
   {
     return make_unique<VVector<double>> (nip*dimy);
   }
 
-  template <int DIM_ELEMENT, int DIM_SPACE>  
-  AutoVector ApplyIntegrationPoints<DIM_ELEMENT,DIM_SPACE>  :: CreateRowVector() const
+  AutoVector ApplyIntegrationPoints :: CreateRowVector() const
   {
     return make_unique<VVector<double>> (nip*dimx);
   }
 
-  template <int DIM_ELEMENT, int DIM_SPACE>  
-  void ApplyIntegrationPoints<DIM_ELEMENT,DIM_SPACE>  :: Mult (const BaseVector & x, BaseVector & y) const
+  void ApplyIntegrationPoints :: Mult (const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ApplyIntegrationPoints"); RegionTimer reg(t);
     static Timer teval("ApplyIntegrationPoints eval");
@@ -1139,20 +1135,34 @@ namespace ngcomp
              IntRange r2(ii, min(ii+BS, r.Next()));               
              HeapReset hr(lh);
              
-             SIMD_IntegrationRule simdir(r2.Size(), lh);               
-             FE_ElementTransformation<DIM_ELEMENT,DIM_SPACE> trafo(DIM_ELEMENT==2 ? ET_TRIG : ET_TET);
-             SIMD_MappedIntegrationRule<DIM_ELEMENT,DIM_SPACE> simdmir(simdir, trafo, 0, lh); // don't actually compute
+             SIMD_IntegrationRule simdir(r2.Size(), lh);
 
+             FE_ElementTransformation<2,2> trafo2d(ET_TRIG);
+             FE_ElementTransformation<3,3> trafo3d(ET_TET);
+
+             SIMD_MappedIntegrationRule<2,2> simdmir2d(simdir, trafo2d, 0, lh); // don't actually compute
+             SIMD_MappedIntegrationRule<3,3> simdmir3d(simdir, trafo3d, 0, lh); // don't actually compute
+
+             const SIMD_BaseMappedIntegrationRule & simdmir =
+               (points.Height() == 2) ?
+               ((SIMD_BaseMappedIntegrationRule&)simdmir2d) : 
+               ((SIMD_BaseMappedIntegrationRule&)simdmir3d);
+             
              // tmir.Stop();
              
              ProxyUserData ud(trialproxies.Size(), 0, lh);
-             trafo.userdata = &ud;
              ScalarFE<ET_TRIG,1> dummyfe2d;
              ScalarFE<ET_TET,1> dummyfe3d;
              if (points.Height()==2)
-               ud.fel = &dummyfe2d;
+               {
+                 trafo2d.userdata = &ud;
+                 ud.fel = &dummyfe2d;
+               }
              else
-               ud.fel = &dummyfe3d;
+               {
+                 trafo3d.userdata = &ud;                 
+                 ud.fel = &dummyfe3d;
+               }
              
              int starti = 0;
              for (auto proxy : trialproxies)
@@ -1452,13 +1462,8 @@ namespace ngcomp
                   }
 
                 shared_ptr<BaseMatrix> ipop;
-                if (ma->GetDimension()==2)
-                  ipop = make_shared<ApplyIntegrationPoints<2,2>> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
-                                                                   dimx, dimy, nip);
-                else
-                  ipop = make_shared<ApplyIntegrationPoints<3,3>> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
-                                                                   dimx, dimy, nip);
-
+                ipop = make_shared<ApplyIntegrationPoints> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
+                                                            dimx, dimy, nip);
                 
                 auto diagmatx = make_shared<BlockDiagonalMatrixSoA> (std::move(diagx));
                 auto diagmaty = make_shared<BlockDiagonalMatrixSoA> (std::move(diagy));
