@@ -971,6 +971,8 @@ namespace ngsbem
     void CalcMP()
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
+      static Timer ts2mp("mptool compute singular MLMP - source2mp");
+      static Timer tS2S("mptool compute singular MLMP - S->S");      
 
       /*
       int maxlevel = 0;
@@ -985,7 +987,10 @@ namespace ngsbem
       Array<Node*> nodes_to_process;
       root.CalcTotalSources();
       root.CalcMP(&recording, &nodes_to_process);
-      ParallelFor(nodes_to_process.Size(), [&](int i){
+
+      {
+        RegionTimer rs2mp(ts2mp);
+        ParallelFor(nodes_to_process.Size(), [&](int i){
           auto node = nodes_to_process[i];
           for (auto [x,c]: node->charges)
             node->mp.AddCharge(x-node->center, c);
@@ -993,8 +998,9 @@ namespace ngsbem
             node->mp.AddDipole(x-node->center, d, c);
           for (auto [sp,ep,j,num]: node->currents)
             node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
-      });
-
+        }, TasksPerThread(4));
+      }
+      
       QuickSort (recording, [] (auto & a, auto & b)
       {
         if (a.len < (1-1e-8) * b.len) return true;
@@ -1029,6 +1035,8 @@ namespace ngsbem
         group_thetas.Append(current_theta);
       }
 
+      {
+        RegionTimer rS2S(tS2S);
       // ParallelFor(batch_group.Size(), [&](int i) {
       for (int i = 0; i < batch_group.Size(); i++){
           // *testout << "Processing batch " << i << " of size " << batch_group[i].Size() << ", with len = " << group_lengths[i] << ", theta = " << group_thetas[i] << endl;
@@ -1041,7 +1049,7 @@ namespace ngsbem
               ProcessBatch(sub_batch, group_lengths[i], group_thetas[i]);
           }, TasksPerThread(4));
       }
-      // }, TasksPerThread(4));
+      }
       
       havemp = true;
     }
@@ -1514,6 +1522,7 @@ namespace ngsbem
     void CalcMP(shared_ptr<SingularMLMultiPole<elem_type>> asingmp)
     {
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
+      static Timer trec("mptool regular MLMP - recording"); 
       
       singmp = asingmp;
 
@@ -1524,7 +1533,11 @@ namespace ngsbem
       // root.AddSingularNode(singmp->root, false, nullptr);
       // /*
       Array<RecordingRS> recording;
-      root.AddSingularNode(singmp->root, false, &recording);
+      {
+        RegionTimer rrec(trec);
+        root.AddSingularNode(singmp->root, false, &recording);
+      }
+      
       // cout << "recorded: " << recording.Size() << endl;
       QuickSort (recording, [] (auto & a, auto & b)
       {
