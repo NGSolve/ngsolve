@@ -1477,14 +1477,13 @@ namespace ngfem
     for (int k = 0; k < hflux.Height(); k++)
       diffop->Apply(fel, mir, x.Range(k*ndi, (k+1)*ndi), hflux.Rows(k,k+1));
 
+    flux.AddSize(vdim*vdim, mir.Size()) = 0;
     for (int i = 0, ii = 0; i < vdim; i++)
-      for (int j = 0; j <= i; j++, ii++)
+      for (int j = 0; j < i; j++, ii++)
         {
           flux.Row(i*vdim+j).Range(0, mir.Size()) = hflux.Row(ii);
           flux.Row(j*vdim+i).Range(0, mir.Size()) = -hflux.Row(ii);
         }
-    
-    // cout << "symmat, apply, x = " << x.Range(bfel.GetNDof()) << ", y = " << flux.AddSize(vdim*vdim, mir.Size()) << endl;
   }
 
 
