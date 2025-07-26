@@ -493,7 +493,7 @@ namespace ngsbem
                 elmat -= shapesi1 * kernel_shapesj;
               }
             // tasscorr.Stop();        
-            nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, elmat);
+            nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, elmat, true);
           }
       });
 
