@@ -395,14 +395,18 @@ namespace ngsbem
     }
     
     template <typename TARGET>
-    void TransformAdd (MultiPole<TARGET,entry_type> & target, Vec<3> dist) const
+    void TransformAdd (MultiPole<TARGET,entry_type> & target, Vec<3> dist, bool atomic = false) const
     {
       if (SH().Order() < 0) return;
       if (target.SH().Order() < 0) return;      
       
       MultiPole<TARGET,entry_type> tmp{target};
       Transform(tmp, dist);
-      target.SH().Coefs() += tmp.SH().Coefs();
+      if (!atomic)
+        target.SH().Coefs() += tmp.SH().Coefs();
+      else
+        for (int j = 0; j < target.SH().Coefs().Size(); j++)        
+          AtomicAdd(target.SH().Coefs()[j], tmp.SH().Coefs()[j]);        
     }
 
     template <typename TARGET>
@@ -463,7 +467,7 @@ namespace ngsbem
 
       if (N <= 1 || batch_size <= 1) {
         for (auto* rec : batch) {
-          rec->mp_source->TransformAdd(*rec->mp_target, rec->dist);
+          rec->mp_source->TransformAdd(*rec->mp_target, rec->dist, true);
         }
       }
       else if (N <= 3) {
@@ -983,9 +987,17 @@ namespace ngsbem
         cout << "sing " <<  i << ": " << nodes_on_level[i] << endl;
       */
       
+      root.CalcTotalSources();
+
+      if (false)
+        // direct evaluation of S->S
+        root.CalcMP(nullptr, nullptr);
+      else
+        {
+          
       Array<RecordingSS> recording;
       Array<Node*> nodes_to_process;
-      root.CalcTotalSources();
+      
       root.CalcMP(&recording, &nodes_to_process);
 
       {
@@ -1050,6 +1062,7 @@ namespace ngsbem
           }, TasksPerThread(4));
       }
       }
+        }
       
       havemp = true;
     }
