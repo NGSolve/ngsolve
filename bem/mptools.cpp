@@ -206,7 +206,7 @@ namespace ngsbem
   {
     LocalHeap lh(8*6*sqr(order) + 8*15*order + 2*sizeof(entry_type)*(order+3) + 500);
       
-    // static Timer t("mptool sh RotateY"); RegionTimer rg(t);
+    static Timer t("mptool sh RotateY"); RegionTimer rg(t);
     /*
       static std::map<int, unique_ptr<Timer<>>> timers;
       static std::map<int, unique_ptr<Timer<>>> timerstrafo;      
@@ -1211,8 +1211,8 @@ namespace ngsbem
   template <typename RADIAL, typename entry_type> template <typename TARGET>
   void MultiPole<RADIAL,entry_type> :: ShiftZ (double z, MultiPole<TARGET,entry_type> & target)
   {
-    // static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
-    // RegionTimer rg(t);
+    static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
+    RegionTimer rg(t);
       
     int os = sh.Order();
     int ot = target.SH().Order();

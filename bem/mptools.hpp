@@ -106,6 +106,32 @@ namespace ngsbem
 
     
     void RotateZ (double alpha);
+
+    template <typename FUNC>
+    void RotateZ (double alpha, FUNC func) const
+    {
+      if (order < 0) return;
+      
+      Vector<Complex> exp_imalpha(order+1);
+      Complex exp_ialpha(cos(alpha), sin(alpha));
+      Complex prod = 1.0;
+      for (int i = 0; i <= order; i++)
+        {
+          exp_imalpha(i) = prod;
+          prod *= exp_ialpha;
+        }
+      
+      int ii = 0;
+      for (int n = 0; n <= order; n++)
+        {
+          for (int m = -n; m < 0; m++, ii++)
+            func(ii, conj(exp_imalpha(-m)));
+          for (int m = 0; m <= n; m++, ii++)
+            func(ii, exp_imalpha(m));
+        };
+    };
+  
+    
     void RotateY (double alpha);
 
     
@@ -503,6 +529,11 @@ namespace ngsbem
 
     template<int N, int vec_length>
     static void ProcessVectorizedBatch(FlatArray<RecordingSS*> batch, double len, double theta) {
+      static Timer ttobatch("mptools - copy to batch");
+      static Timer ttobatch1("mptools - copy to batch 1");
+      static Timer ttobatch2("mptools - copy to batch 2");
+      static Timer ttobatch3("mptools - copy to batch 3");
+      static Timer tfrombatch("mptools - copy from batch");      
       // *testout << "Processing vectorized S->S batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp());
       MultiPole<MPSingular, entry_type> tmp_source{*batch[0]->mp_source};
@@ -510,24 +541,41 @@ namespace ngsbem
       MultiPole<MPSingular, Vec<N,Complex>> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp());
 
       // Copy multipoles into vectorized multipole
+      ttobatch.Start();
+      /*
       for (int i = 0; i < batch.Size(); i++) {
-        tmp_source.SH().Coefs() = batch[i]->mp_source->SH().Coefs();
+        {
+          RegionTimer r1(ttobatch1);
+          tmp_source.SH().Coefs() = batch[i]->mp_source->SH().Coefs();
+        }
         tmp_source.SH().RotateZ(batch[i]->phi);
 
-        auto vec_source_mat = VecVector2Matrix (vec_source.SH().Coefs());
-        auto tmp_source_mat = VecVector2Matrix (tmp_source.SH().Coefs());
-        vec_source_mat.Cols(i*vec_length, (i+1)*vec_length) = tmp_source_mat;
-        /*
-        for (int j=0; j < tmp_source.SH().Coefs().Size(); j++) {
-          vec_source.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length) = tmp_source.SH().Coefs()[j];
+        {
+          RegionTimer r3(ttobatch3);
+          auto vec_source_mat = VecVector2Matrix (vec_source.SH().Coefs());
+          auto tmp_source_mat = VecVector2Matrix (tmp_source.SH().Coefs());
+          vec_source_mat.Cols(i*vec_length, (i+1)*vec_length) = tmp_source_mat;
         }
-        */
       }
+      */
+      for (int i = 0; i < batch.Size(); i++)
+        {
+          auto source_i = VecVector2Matrix (batch[i]->mp_source->SH().Coefs());
+          auto source_mati = VecVector2Matrix (vec_source.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+          batch[i]->mp_source->SH().RotateZ(batch[i]->phi,
+                                            [source_i, source_mati] (size_t ii, Complex factor)
+                                            {
+                                              source_mati.Row(ii) = factor * source_i.Row(ii);
+                                            });
+        }
 
+      ttobatch.Stop();
+      
       vec_source.SH().RotateY(theta);
       vec_source.ShiftZ(-len, vec_target);
       vec_target.SH().RotateY(-theta);
 
+      tfrombatch.Start();
       // Copy vectorized multipole into individual multipoles
       for (int i = 0; i < batch.Size(); i++) {
         if constexpr(vec_length == 1) {
@@ -545,6 +593,7 @@ namespace ngsbem
         for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
           AtomicAdd(batch[i]->mp_target->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
       }
+      tfrombatch.Stop();
 
     }
 
@@ -1156,6 +1205,9 @@ namespace ngsbem
 
     template<int N, int vec_length>
     static void ProcessVectorizedBatch(FlatArray<RecordingRS*> batch, double len, double theta) {
+      static Timer ttobatch("mptools - copy to batch 2");
+      static Timer tfrombatch("mptools - copy from batch 2");      
+      
       // *testout << "Processing vectorized batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp());
       MultiPole<MPSingular, elem_type> tmp_source{*batch[0]->mpS};
@@ -1163,6 +1215,7 @@ namespace ngsbem
       MultiPole<MPRegular, Vec<N,Complex>> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp());
 
       // Copy multipoles into vectorized multipole
+      ttobatch.Start();
       for (int i = 0; i < batch.Size(); i++) {
         tmp_source.SH().Coefs() = batch[i]->mpS->SH().Coefs();
         tmp_source.SH().RotateZ(batch[i]->phi);
@@ -1176,12 +1229,14 @@ namespace ngsbem
         }
         */
       }
+      ttobatch.Stop();
 
       vec_source.SH().RotateY(theta);
       vec_source.ShiftZ(-len, vec_target);
       vec_target.SH().RotateY(-theta);
 
       // Copy vectorized multipole into individual multipoles
+      tfrombatch.Start();
       for (int i = 0; i < batch.Size(); i++) {
         if constexpr(vec_length == 1) {
           for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
@@ -1200,6 +1255,7 @@ namespace ngsbem
           AtomicAdd(batch[i]->mpR->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
         // });
       }
+      tfrombatch.Stop();
 
     }
 
@@ -1244,7 +1300,7 @@ namespace ngsbem
       {
         if (mp.SH().Order() < 0) return;
         if (singnode.mp.SH().Order() < 0) return;
-        if (L2Norm(singnode.mp.SH().Coefs()) == 0) return;
+        // if (L2Norm(singnode.mp.SH().Coefs()) == 0) return;
         if (level > 20)
           {
             singnodes.Append(&singnode);            

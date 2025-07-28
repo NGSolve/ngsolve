@@ -1471,6 +1471,7 @@ namespace ngbla
                                BareSliceMatrix<double> c)
 
   {
+    // static Timer t("MultAtBSmallWA"); RegionTimer reg(t);
     if constexpr (WA <= 4) //  && OP == SET)
       {
         // MultAtBSmallWA2<WA> (ha, wb, a, b, c);
@@ -1534,6 +1535,8 @@ namespace ngbla
   void REGCALL MultAtB_intern (size_t ha, size_t wa, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
                                BareSliceMatrix<double> c)
   {
+    // static Timer t("MultAtB_intern"); RegionTimer reg(t);
+    
     constexpr size_t BBW = 120;
     constexpr size_t ABH = 120;
 
