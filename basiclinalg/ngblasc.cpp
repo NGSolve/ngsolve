@@ -620,6 +620,7 @@ namespace ngbla
   void NgGEMMFuncSmall (size_t ah, size_t bw,
                         BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
   {
+    // static Timer t("NgGEMMC - small"); RegionTimer reg(t);
     size_t i = 0;
     for( ; i+2 <= bw; i+= 2)
       {
@@ -822,6 +823,8 @@ namespace ngbla
   void NgGEMMFunc (size_t ah, size_t aw, size_t bw,
                    BareSliceMatrix<Complex,OA> a, BareSliceMatrix<Complex,OB> b, BareSliceMatrix<Complex,RowMajor> c)
   {
+    // static Timer t("NgGEMMC"); RegionTimer reg(t);
+    
     constexpr size_t BH=48;
     constexpr size_t BW=48;
 
