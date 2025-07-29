@@ -1472,6 +1472,7 @@ namespace ngbla
 
   {
     // static Timer t("MultAtBSmallWA"); RegionTimer reg(t);
+    
     if constexpr (WA <= 4) //  && OP == SET)
       {
         // MultAtBSmallWA2<WA> (ha, wb, a, b, c);

@@ -1337,8 +1337,8 @@ namespace ngsbem
             
             
             trafo.Swap (oldtrafo);
-            trafo = trafo_type(0.0);  // needs initialization ???
-            trafo.Col(m-1) = trafo_type(0.0);  // for wall initial value
+            // trafo = trafo_type(0.0);  // needs initialization ???
+            // trafo.Col(m-1) = trafo_type(0.0);  // for wall initial value
             
             // fill recursive formula (187)
             for (int l = m; l <= os+ot-m; l++)
@@ -1359,14 +1359,21 @@ namespace ngsbem
             */
             
             // fix real part by wall-reccurence:
-            for (int n = m; n < trafo.Width()-1; n++)
+            {
+              int n = m;
+              int l = trafo.Height()-n-2;
+              if (n+1 < trafo.Width())
+                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
+                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+            }
+            for (int n = m+1; n < trafo.Width()-1; n++)
               {
                 int l = trafo.Height()-n-2;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
                                                           + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
                 
-                if (n > m)
                 trafo(l-1,n) = tscale/amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
                                                   - amn(n-1)* scale*trafo(l,n-1)
                                                   + amn(n)* inv_scale*trafo(l,n+1));
@@ -1374,7 +1381,16 @@ namespace ngsbem
 
             
             // the same thing 1 row up
-            for (int n = m; n < trafo.Width()-2; n++)
+            {
+              // int l = 2*order-n-2;
+              int n = m;
+              int l = trafo.Height()-n-3;
+              if (n+1 < trafo.Width())                
+                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
+                                                          - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
+                                                          + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
+            }
+            for (int n = m+1; n < trafo.Width()-2; n++)
               {
                 // int l = 2*order-n-2;
                 int l = trafo.Height()-n-3;
@@ -1383,7 +1399,6 @@ namespace ngsbem
                                                           - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
                                                           + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
 
-                if (n > m)                
                 trafo(l-1,n) = tscale/amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
                                                   -amn(n-1)* scale*trafo(l,n-1) +
                                                   amn(n)   * 1/scale*trafo(l,n+1)) ;
@@ -1402,14 +1417,20 @@ namespace ngsbem
             
             // the imaginary part started from the yn:
             // diagonal down
-            for (int n = m; n < trafo.Width()-1; n++)
+            {
+              int n = m; 
+              int l = n+1;
+              if (n+1 < trafo.Width())              
+                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
+                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+            }
+            for (int n = m+1; n < trafo.Width()-1; n++)
               {
                 int l = n+1;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
                                                           + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
-
-                if (n > m)
                 trafo(l+1,n) = 
                   1.0 / (amn(l)  *   tscale) * (amn(l-1)/tscale * trafo(l-1,n)
                                                 + amn(n-1)* scale*trafo(l,n-1)
@@ -1417,14 +1438,21 @@ namespace ngsbem
               }
             
             // the next diagonal down
-            for (int n = m; n < trafo.Width()-1; n++)
+            {
+              int n = m;
+              int l = n+2;
+              if (n+1 < trafo.Width())              
+                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
+                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+            }
+            for (int n = m+1; n < trafo.Width()-1; n++)
               {
                 int l = n+2;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
                                                           + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
 
-                if (n > m)                
                 trafo(l+1,n) = 
                   1.0 / (amn(l)  *   tscale) * (amn(l-1)/tscale * trafo(l-1,n)
                                                 + amn(n-1)* scale*trafo(l,n-1)
@@ -1729,7 +1757,17 @@ namespace ngsbem
                                                          -sh.CalcBmn(m-1,l+1)*1/scale*oldtrafo(m-1,l+1));  
             
 
-            for (int n = m; n < trafo.Height()-1; n++)
+            {
+              int n = m;   // the case n = m
+              int l = trafo.Width()-n-2;
+              if (l > 0 && n+1 < trafo.Height()-1)
+                {
+                  trafo(n+1,l) = 1/tscale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * 1/tscale*trafo(n-1,l)
+                                                               - sh.CalcBmn(m-1,l+1)*1/scale*oldtrafo(n,l+1)     
+                                                               + sh.CalcBmn(-m,l)  * scale*oldtrafo(n,l-1) );
+                }
+            }
+            for (int n = m+1; n < trafo.Height()-1; n++)
               {
                 int l = trafo.Width()-n-2;
                 if (l > 0)
@@ -1738,15 +1776,25 @@ namespace ngsbem
                                                                  - sh.CalcBmn(m-1,l+1)*1/scale*oldtrafo(n,l+1)     
                                                                  + sh.CalcBmn(-m,l)  * scale*oldtrafo(n,l-1) );
                     
-                    if (n > m)
-                      trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)  *   1/scale*trafo(n,l+1)
-                                                               - amn(n-1)* 1/tscale*trafo(n-1,l)
-                                                               + amn(n)* tscale*trafo(n+1,l));
+                    trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)  *   1/scale*trafo(n,l+1)
+                                                             - amn(n-1)* 1/tscale*trafo(n-1,l)
+                                                             + amn(n)* tscale*trafo(n+1,l));
                   }
               }
             
             // the same thing 1 row up
-            for (int n = m; n < trafo.Height()-2; n++)
+            {
+              int n = m;   // the case n = m
+              int l = trafo.Width()-n-3;
+              if (l > 0 && n+1 < trafo.Height())
+                {
+                  trafo(n+1,l) = 1/tscale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n)     * 1/tscale*trafo(n-1,l)
+                                                               - sh.CalcBmn(m-1,l+1) * 1/scale* oldtrafo(n,l+1)   
+                                                               + sh.CalcBmn(-m,l)    * scale* oldtrafo(n,l-1) ); 
+                }
+            }
+
+            for (int n = m+1; n < trafo.Height()-2; n++)
               {
                 int l = trafo.Width()-n-3;
                 if (l > 0)
@@ -1755,10 +1803,9 @@ namespace ngsbem
                                                                  - sh.CalcBmn(m-1,l+1) * 1/scale* oldtrafo(n,l+1)   
                                                                  + sh.CalcBmn(-m,l)    * scale* oldtrafo(n,l-1) ); 
                     
-                    if (n > m)
-                      trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)   * inv_scale*trafo(n,l+1)
-                                                               -amn(n-1)* inv_tscale*trafo(n-1,l) +
-                                                               amn(n)   * tscale*trafo(n+1,l)) ;
+                    trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)   * inv_scale*trafo(n,l+1)
+                                                             -amn(n-1)* inv_tscale*trafo(n-1,l) +
+                                                             amn(n)   * tscale*trafo(n+1,l)) ;
                   }
               }
               
@@ -2147,7 +2194,7 @@ namespace ngsbem
 
   template <typename RADIAL, typename entry_type>
   void MultiPole<RADIAL,entry_type> :: AddCharge (Vec<3> x, entry_type c)
-  {      
+  {
     if constexpr (!std::is_same<RADIAL,MPSingular>())
       throw Exception("AddCharge assumes singular MP");
       
