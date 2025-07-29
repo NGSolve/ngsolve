@@ -536,7 +536,7 @@ namespace ngsbem
       static Timer tfrombatch("mptools - copy from batch");      
       // *testout << "Processing vectorized S->S batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp());
-      MultiPole<MPSingular, entry_type> tmp_source{*batch[0]->mp_source};
+      // MultiPole<MPSingular, entry_type> tmp_source{*batch[0]->mp_source};
       MultiPole<MPSingular, entry_type> tmp_target{*batch[0]->mp_target};
       MultiPole<MPSingular, Vec<N,Complex>> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp());
 
@@ -578,18 +578,25 @@ namespace ngsbem
       tfrombatch.Start();
       // Copy vectorized multipole into individual multipoles
       for (int i = 0; i < batch.Size(); i++) {
-        if constexpr(vec_length == 1) {
-          for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
-            tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j][i];
-          }
-        }
-        else {
-          for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
-            tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length);
-          }
-        }
-        tmp_target.SH().RotateZ(-batch[i]->phi);
+        // if constexpr(vec_length == 1) {
+        //   for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
+        //     tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j][i];
+        //   }
+        // }
+        // else {
+        //   for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
+        //     tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length);
+        //   }
+        // }
+        // tmp_target.SH().RotateZ(-batch[i]->phi);
         // batch[i]->mp_target->SH().Coefs() += tmp_target.SH().Coefs();
+        auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
+        auto source_mati = VecVector2Matrix (vec_target.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+        tmp_target.SH().RotateZ(-batch[i]->phi,
+                                          [source_i, source_mati] (size_t ii, Complex factor)
+                                          {
+                                            source_i.Row(ii) = factor * source_mati.Row(ii);
+                                          });
         for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
           AtomicAdd(batch[i]->mp_target->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
       }
@@ -1210,25 +1217,23 @@ namespace ngsbem
       
       // *testout << "Processing vectorized batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp());
-      MultiPole<MPSingular, elem_type> tmp_source{*batch[0]->mpS};
+      // MultiPole<MPSingular, elem_type> tmp_source{*batch[0]->mpS};
       MultiPole<MPRegular, elem_type> tmp_target{*batch[0]->mpR};
       MultiPole<MPRegular, Vec<N,Complex>> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp());
 
       // Copy multipoles into vectorized multipole
       ttobatch.Start();
-      for (int i = 0; i < batch.Size(); i++) {
-        tmp_source.SH().Coefs() = batch[i]->mpS->SH().Coefs();
-        tmp_source.SH().RotateZ(batch[i]->phi);
-
-        auto vec_source_mat = VecVector2Matrix (vec_source.SH().Coefs());
-        auto tmp_source_mat = VecVector2Matrix (tmp_source.SH().Coefs());
-        vec_source_mat.Cols(i*vec_length, (i+1)*vec_length) = tmp_source_mat;
-        /*
-        for (int j=0; j < tmp_source.SH().Coefs().Size(); j++) {
-          vec_source.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length) = tmp_source.SH().Coefs()[j];
-        }
-        */
+      for (int i = 0; i < batch.Size(); i++)
+      {
+        auto source_i = VecVector2Matrix (batch[i]->mpS->SH().Coefs());
+        auto source_mati = VecVector2Matrix (vec_source.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+        batch[i]->mpS->SH().RotateZ(batch[i]->phi,
+            [source_i, source_mati] (size_t ii, Complex factor)
+            {
+                source_mati.Row(ii) = factor * source_i.Row(ii);
+            });
       }
+
       ttobatch.Stop();
 
       vec_source.SH().RotateY(theta);
@@ -1238,22 +1243,15 @@ namespace ngsbem
       // Copy vectorized multipole into individual multipoles
       tfrombatch.Start();
       for (int i = 0; i < batch.Size(); i++) {
-        if constexpr(vec_length == 1) {
-          for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
-            tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j][i];
-          }
-        }
-        else {
-          for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
-            tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length);
-          }
-        }
-        tmp_target.SH().RotateZ(-batch[i]->phi);
-        // batch[i]->mpR->SH().Coefs() += tmp_target.SH().Coefs();
-        // ParallelFor(tmp_target.SH().Coefs().Size(), [&](int j) {
+        auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
+        auto source_mati = VecVector2Matrix (vec_target.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+        tmp_target.SH().RotateZ(-batch[i]->phi,
+                                          [source_i, source_mati] (size_t ii, Complex factor)
+                                          {
+                                            source_i.Row(ii) = factor * source_mati.Row(ii);
+                                          });
         for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
           AtomicAdd(batch[i]->mpR->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
-        // });
       }
       tfrombatch.Stop();
 
