@@ -452,15 +452,16 @@ namespace ngsbem
 
 
   template <typename SCAL, auto S>
-  FlatMatrix<SCAL> VecVector2Matrix (FlatVector<Vec<S,SCAL>> vec)
+  inline auto VecVector2Matrix (FlatVector<Vec<S,SCAL>> vec)
   {
-    return FlatMatrix<SCAL> (vec.Size(), S, vec.Data()->Data());
-  }
-  inline FlatMatrix<Complex> VecVector2Matrix (FlatVector<Complex> vec)
-  {
-    return FlatMatrix<Complex> (vec.Size(), 1, vec.Data());
+    return FlatMatrixFixWidth<S,SCAL> (vec.Size(), vec.Data()->Data());
   }
   
+  inline auto VecVector2Matrix (FlatVector<Complex> vec)
+  {
+    return FlatMatrixFixWidth<1,Complex> (vec.Size(), vec.Data());    
+  }
+
 
   template <typename entry_type=Complex>
   class SingularMLMultiPole
@@ -590,15 +591,16 @@ namespace ngsbem
         // }
         // tmp_target.SH().RotateZ(-batch[i]->phi);
         // batch[i]->mp_target->SH().Coefs() += tmp_target.SH().Coefs();
-        auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
+        // auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
         auto source_mati = VecVector2Matrix (vec_target.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+        auto target_mati = VecVector2Matrix (batch[i]->mp_target->SH().Coefs());
         tmp_target.SH().RotateZ(-batch[i]->phi,
-                                          [source_i, source_mati] (size_t ii, Complex factor)
-                                          {
-                                            source_i.Row(ii) = factor * source_mati.Row(ii);
-                                          });
-        for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
-          AtomicAdd(batch[i]->mp_target->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
+                                [source_mati, target_mati] (size_t ii, Complex factor)
+                                {
+                                  AtomicAdd (target_mati.Row(ii), factor * source_mati.Row(ii));
+                                });
+        //for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
+        // AtomicAdd(batch[i]->mp_target->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
       }
       tfrombatch.Stop();
 
@@ -1032,7 +1034,9 @@ namespace ngsbem
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
       static Timer ts2mp("mptool compute singular MLMP - source2mp");
-      static Timer tS2S("mptool compute singular MLMP - S->S");      
+      static Timer tS2S("mptool compute singular MLMP - S->S");
+      static Timer trec("mptool comput singular recording");
+      static Timer tsort("mptool comput singular sort");      
 
       /*
       int maxlevel = 0;
@@ -1053,9 +1057,12 @@ namespace ngsbem
           
       Array<RecordingSS> recording;
       Array<Node*> nodes_to_process;
-      
-      root.CalcMP(&recording, &nodes_to_process);
 
+      {
+        RegionTimer reg(trec);
+      root.CalcMP(&recording, &nodes_to_process);
+      }
+      
       {
         RegionTimer rs2mp(ts2mp);
         ParallelFor(nodes_to_process.Size(), [&](int i){
@@ -1068,14 +1075,17 @@ namespace ngsbem
             node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
         }, TasksPerThread(4));
       }
-      
+
+      {
+      RegionTimer reg(tsort);
       QuickSort (recording, [] (auto & a, auto & b)
       {
         if (a.len < (1-1e-8) * b.len) return true;
         if (a.len > (1+1e-8) * b.len) return false;
         return a.theta < b.theta;
       });
-
+      }
+      
       double current_len = -1e100;
       double current_theta = -1e100;
       Array<RecordingSS*> current_batch;
@@ -1243,15 +1253,18 @@ namespace ngsbem
       // Copy vectorized multipole into individual multipoles
       tfrombatch.Start();
       for (int i = 0; i < batch.Size(); i++) {
-        auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
+        // auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
         auto source_mati = VecVector2Matrix (vec_target.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+        auto targeti = VecVector2Matrix(batch[i]->mpR->SH().Coefs());
+        
         tmp_target.SH().RotateZ(-batch[i]->phi,
-                                          [source_i, source_mati] (size_t ii, Complex factor)
+                                [source_mati, targeti] (size_t ii, Complex factor)
                                           {
-                                            source_i.Row(ii) = factor * source_mati.Row(ii);
+                                            // source_i.Row(ii) = factor * source_mati.Row(ii);
+                                            AtomicAdd (VectorView(targeti.Row(ii)), factor * source_mati.Row(ii));
                                           });
-        for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
-          AtomicAdd(batch[i]->mpR->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
+        // for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
+        // AtomicAdd(batch[i]->mpR->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
       }
       tfrombatch.Stop();
 
@@ -1589,7 +1602,8 @@ namespace ngsbem
     void CalcMP(shared_ptr<SingularMLMultiPole<elem_type>> asingmp)
     {
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
-      static Timer trec("mptool regular MLMP - recording"); 
+      static Timer trec("mptool regular MLMP - recording");
+      static Timer tsort("mptool regular MLMP - sort");       
       
       singmp = asingmp;
 
@@ -1606,13 +1620,16 @@ namespace ngsbem
       }
       
       // cout << "recorded: " << recording.Size() << endl;
+      {
+      RegionTimer reg(tsort);
       QuickSort (recording, [] (auto & a, auto & b)
       {
         if (a.len < (1-1e-8) * b.len) return true;
         if (a.len > (1+1e-8) * b.len) return false;
         return a.theta < b.theta;
       });
-
+      }
+      
       double current_len = -1e100;
       double current_theta = -1e100;
       Array<RecordingRS*> current_batch;

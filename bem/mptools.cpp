@@ -206,7 +206,10 @@ namespace ngsbem
   {
     LocalHeap lh(8*6*sqr(order) + 8*15*order + 2*sizeof(entry_type)*(order+3) + 500);
       
-    static Timer t("mptool sh RotateY"); RegionTimer rg(t);
+    static Timer t("mptool sh RotateY"+ToString(sizeof(entry_type)/sizeof(Complex)));
+    // RegionTimer rg(t);
+    RegionTracer rt(TaskManager::GetThreadId(), t, order);
+    
     /*
       static std::map<int, unique_ptr<Timer<>>> timers;
       static std::map<int, unique_ptr<Timer<>>> timerstrafo;      

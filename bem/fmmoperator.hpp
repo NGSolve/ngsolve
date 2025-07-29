@@ -585,9 +585,10 @@ namespace ngsbem
   void FMM_Operator<CombinedFieldKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
   {
     static Timer tall("ngbem fmm apply CombinedField (ngfmm)"); RegionTimer reg(tall);
-    static Timer t1("ngbem fmm apply CombinedField (ngfmm) find center/rad + fill");
+    static Timer t1("ngbem fmm apply CombinedField (ngfmm) fill");
     static Timer t2("ngbem fmm apply CombinedField (ngfmm) sing");
-    static Timer t3("ngbem fmm apply CombinedField (ngfmm) reg");
+    static Timer t3a("ngbem fmm apply CombinedField (ngfmm) reg add targets");
+    static Timer t3("ngbem fmm apply CombinedField (ngfmm) reg");    
     static Timer t4("ngbem fmm apply CombinedField (ngfmm) eval");        
     auto fx = x.FV<Complex>();
     auto fy = y.FV<Complex>();
@@ -614,9 +615,11 @@ namespace ngsbem
     // RegularMLMultiPole regmp (singmp, cy, ry, int(2*kappa*ry));
 
     RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
+    t3a.Start();
     for (int i = 0; i < ypts.Size(); i++)
       regmp.AddTarget(ypts[i]);
-
+    t3a.Stop();
+    
     regmp.CalcMP(singmp);
     // cout << "reg norm = " << regmp.Norm() << ", coefs = " << regmp.NumCoefficients() << endl;
     t3.Stop();
