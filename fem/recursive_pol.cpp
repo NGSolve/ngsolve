@@ -150,8 +150,9 @@ namespace ngfem
       }
   }
 
-
-
+  Matrix<double,ColMajor> NormalizedLegendreFunctions :: matA;
+  Matrix<double,ColMajor> NormalizedLegendreFunctions :: matB;
+  
 
   class InitRecPol
   {
@@ -161,7 +162,9 @@ namespace ngfem
       LegendrePolynomial::Calc(1000);
       IntLegNoBubble::Calc(1000);
       JacobiPolynomialAlpha::Calc(100,100); 
-      IntegratedJacobiPolynomialAlpha::Calc(100,100); 
+      IntegratedJacobiPolynomialAlpha::Calc(100,100);
+
+      NormalizedLegendreFunctions::Calc(100);
     }
   };
 
