@@ -530,11 +530,8 @@ namespace ngsbem
 
     template<int N, int vec_length>
     static void ProcessVectorizedBatch(FlatArray<RecordingSS*> batch, double len, double theta) {
-      static Timer ttobatch("mptools - copy to batch");
-      static Timer ttobatch1("mptools - copy to batch 1");
-      static Timer ttobatch2("mptools - copy to batch 2");
-      static Timer ttobatch3("mptools - copy to batch 3");
-      static Timer tfrombatch("mptools - copy from batch");      
+      // static Timer ttobatch("mptools - copy to batch");
+      // static Timer tfrombatch("mptools - copy from batch");      
       // *testout << "Processing vectorized S->S batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp());
       // MultiPole<MPSingular, entry_type> tmp_source{*batch[0]->mp_source};
@@ -542,7 +539,7 @@ namespace ngsbem
       MultiPole<MPSingular, Vec<N,Complex>> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp());
 
       // Copy multipoles into vectorized multipole
-      ttobatch.Start();
+      // ttobatch.Start();
       /*
       for (int i = 0; i < batch.Size(); i++) {
         {
@@ -570,13 +567,13 @@ namespace ngsbem
                                             });
         }
 
-      ttobatch.Stop();
+      // ttobatch.Stop();
       
       vec_source.SH().RotateY(theta);
       vec_source.ShiftZ(-len, vec_target);
       vec_target.SH().RotateY(-theta);
 
-      tfrombatch.Start();
+      // tfrombatch.Start();
       // Copy vectorized multipole into individual multipoles
       for (int i = 0; i < batch.Size(); i++) {
         // if constexpr(vec_length == 1) {
@@ -602,7 +599,7 @@ namespace ngsbem
         //for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
         // AtomicAdd(batch[i]->mp_target->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
       }
-      tfrombatch.Stop();
+      // tfrombatch.Stop();
 
     }
 
@@ -1222,8 +1219,8 @@ namespace ngsbem
 
     template<int N, int vec_length>
     static void ProcessVectorizedBatch(FlatArray<RecordingRS*> batch, double len, double theta) {
-      static Timer ttobatch("mptools - copy to batch 2");
-      static Timer tfrombatch("mptools - copy from batch 2");      
+      // static Timer ttobatch("mptools - copy to batch 2");
+      // static Timer tfrombatch("mptools - copy from batch 2");      
       
       // *testout << "Processing vectorized batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp());
@@ -1232,7 +1229,7 @@ namespace ngsbem
       MultiPole<MPRegular, Vec<N,Complex>> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp());
 
       // Copy multipoles into vectorized multipole
-      ttobatch.Start();
+      // ttobatch.Start();
       for (int i = 0; i < batch.Size(); i++)
       {
         auto source_i = VecVector2Matrix (batch[i]->mpS->SH().Coefs());
@@ -1244,14 +1241,14 @@ namespace ngsbem
             });
       }
 
-      ttobatch.Stop();
+      // ttobatch.Stop();
 
       vec_source.SH().RotateY(theta);
       vec_source.ShiftZ(-len, vec_target);
       vec_target.SH().RotateY(-theta);
 
       // Copy vectorized multipole into individual multipoles
-      tfrombatch.Start();
+      // tfrombatch.Start();
       for (int i = 0; i < batch.Size(); i++) {
         // auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
         auto source_mati = VecVector2Matrix (vec_target.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
@@ -1266,7 +1263,7 @@ namespace ngsbem
         // for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
         // AtomicAdd(batch[i]->mpR->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
       }
-      tfrombatch.Stop();
+      // tfrombatch.Stop();
 
     }
 
