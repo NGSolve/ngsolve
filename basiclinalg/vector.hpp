@@ -1196,9 +1196,21 @@ namespace ngbla
     for (int i = 0; i < DIM; i++)
       AtomicAdd (x(i), y(i));
   }
-  
 
+
+  template <typename T, typename TS, typename TDIST, typename TB>
+  inline void AtomicAdd (VectorView<T,TS,TDIST> v, const Expr<TB> & v2)
+  {
+    auto viewv2 = v2.View();
+    auto combsize = CombinedSize(v.Size(), v2.Height());
+    for (size_t i = 0; i < combsize; i++)
+      AtomicAdd (v(i), viewv2(i));
+  }
+
+  
 }
+
+
 
 namespace ngstd
 {
