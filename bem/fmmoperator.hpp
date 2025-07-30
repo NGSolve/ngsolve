@@ -599,11 +599,12 @@ namespace ngsbem
     
     t1.Start();
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
-    for (int i = 0; i < xpts.Size(); i++)
+    // for (int i = 0; i < xpts.Size(); i++)
+    ParallelFor (xpts.Size(), [&](int i)
       {
         singmp->AddCharge(xpts[i], Complex(0,-kappa)*fx(i));
         singmp->AddDipole(xpts[i], -xnv[i], fx(i));        
-      }
+      });
 
     t1.Stop();
     t2.Start();

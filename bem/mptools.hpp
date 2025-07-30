@@ -615,6 +615,8 @@ namespace ngsbem
       Array<tuple<Vec<3>, Vec<3>, entry_type>> dipoles;
       Array<tuple<Vec<3>, Vec<3>, Complex,int>> currents;
       int total_sources;
+      std::mutex node_mutex;
+      atomic<bool> have_childs;
       
       Node (Vec<3> acenter, double ar, int alevel, double akappa)
         : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar) // min(1.0, ar*akappa))
@@ -635,12 +637,13 @@ namespace ngsbem
             cc(2) += (i&4) ? r/2 : -r/2;
             childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa());
           }
+        have_childs = true;
       }
       
 
       void AddCharge (Vec<3> x, entry_type c)
       {
-        if (childs[0])
+        if (have_childs) // quick check without locking 
           {
             // directly send to childs:
             int childnum  = 0;
@@ -651,6 +654,21 @@ namespace ngsbem
             return;
           }
 
+        lock_guard<mutex> guard(node_mutex);
+
+        if (have_childs) // test again after locking 
+          {
+            // directly send to childs:
+            int childnum  = 0;
+            if (x(0) > center(0)) childnum += 1;
+            if (x(1) > center(1)) childnum += 2;
+            if (x(2) > center(2)) childnum += 4;
+            childs[childnum] -> AddCharge(x, c);
+            return;
+          }
+
+
+        
         charges.Append( tuple{x,c} );
 
         // if (r*mp.Kappa() < 1e-8) return;
@@ -675,7 +693,7 @@ namespace ngsbem
 
       void AddDipole (Vec<3> x, Vec<3> d, entry_type c)
       {
-        if (childs[0])
+        if (have_childs)
           {
             // directly send to childs:
 
@@ -687,6 +705,23 @@ namespace ngsbem
             return;
           }
 
+        lock_guard<mutex> guard(node_mutex);
+
+        if (have_childs)
+          {
+            // directly send to childs:
+
+            int childnum  = 0;
+            if (x(0) > center(0)) childnum += 1;
+            if (x(1) > center(1)) childnum += 2;
+            if (x(2) > center(2)) childnum += 4;
+            childs[childnum] -> AddDipole(x, d, c);
+            return;
+          }
+
+
+
+        
         dipoles.Append (tuple{x,d,c});
 
         if (dipoles.Size() < maxdirect || r < 1e-8)
@@ -706,6 +741,7 @@ namespace ngsbem
         currents.SetSize0();        
       }
 
+      // not parallel yet
       void AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
       {
         if (childs[0])
@@ -735,7 +771,7 @@ namespace ngsbem
                 }
             return;
           }
-        
+
         currents.Append (tuple{sp,ep,j,num});
 
         // if (currents.Size() < maxdirect || r < 1e-8)
