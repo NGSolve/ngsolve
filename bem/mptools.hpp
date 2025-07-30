@@ -1211,7 +1211,7 @@ namespace ngsbem
     };
 
     static void ProcessBatchRS(FlatArray<RecordingRS*> batch, double len, double theta) {
-      static Timer t("ProcessBatchRS"); RegionTimer reg(t, int(batch.Size()));
+      static Timer t("ProcessBatchRS"); RegionTimer reg(t, batch.Size());
       constexpr int vec_length = VecLength<elem_type>;
       int batch_size = batch.Size();
       int N = batch_size * vec_length;
