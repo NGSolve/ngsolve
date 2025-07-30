@@ -5,7 +5,6 @@
 
 namespace ngsbem
 {
-
   template <typename entry_type>
   entry_type SphericalHarmonics<entry_type> :: Eval (double theta, double phi) const
   {
