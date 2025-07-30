@@ -1211,7 +1211,7 @@ namespace ngsbem
     };
 
     static void ProcessBatchRS(FlatArray<RecordingRS*> batch, double len, double theta) {
-      static Timer t("ProcessBatchRS"); RegionTimer reg(t, batch.Size());
+      // static Timer t("ProcessBatchRS"); RegionTimer reg(t, batch.Size());
       constexpr int vec_length = VecLength<elem_type>;
       int batch_size = batch.Size();
       int N = batch_size * vec_length;
@@ -1278,8 +1278,8 @@ namespace ngsbem
     template<int N, int vec_length>
     static void ProcessVectorizedBatch(FlatArray<RecordingRS*> batch, double len, double theta) {
 
-      static Timer t("ProcessVectorizedBatch, N = "+ToString(N) + ", vec_len = " + ToString(vec_length));
-      RegionTimer reg(t, batch[0]->mpS->SH().Order());
+      // static Timer t("ProcessVectorizedBatch, N = "+ToString(N) + ", vec_len = " + ToString(vec_length));
+      // RegionTimer reg(t, batch[0]->mpS->SH().Order());
       // static Timer ttobatch("mptools - copy to batch 2");
       // static Timer tfrombatch("mptools - copy from batch 2");      
       
@@ -1477,18 +1477,8 @@ namespace ngsbem
       
       elem_type Evaluate (Vec<3> p) const
       {
-        // *testout << "eval p = " << p << ", level = " << level << ", center = " << center <<  ", r = " << r << endl;
         elem_type sum{0.0};
-        /*
-        if (childs[0])
-          {
-            int childnum = 0;
-            if (p(0) > center(0)) childnum += 1;
-            if (p(1) > center(1)) childnum += 2;
-            if (p(2) > center(2)) childnum += 4;
-            sum = childs[childnum]->Evaluate(p);
-          }
-        */
+
         int childnum = 0;
         if (p(0) > center(0)) childnum += 1;
         if (p(1) > center(1)) childnum += 2;
@@ -1498,8 +1488,6 @@ namespace ngsbem
         else
           sum = mp.Eval(p-center);
 
-
-        // static Timer t("mptool direct evaluate"); RegionTimer r(t);
         for (auto sn : singnodes)
           sum += sn->EvaluateMP(p);
 
