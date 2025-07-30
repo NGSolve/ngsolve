@@ -297,8 +297,9 @@ namespace ngsbem
     
     RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
     taddtar.Start();
-    for (int i = 0; i < ypts.Size(); i++)
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
+    });
     taddtar.Stop();
     
     
@@ -359,8 +360,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
-    for (int i = 0; i < ypts.Size(); i++)
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (ypts.Size(), [&](int i) {
@@ -422,8 +424,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Complex> regmp (cx, rx, kappa);
-    for (int i = 0; i < xpts.Size(); i++)
+    ParallelFor (xpts.Size(), [&](int i){
       regmp.AddTarget(xpts[i]);
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (xpts.Size(), [&](int i) {
@@ -452,8 +455,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Vec<3,Complex>> regmp (cy, ry, kappa);
-    for (int i = 0; i < ypts.Size(); i++)
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (ypts.Size(), [&](int i) {
@@ -487,8 +491,9 @@ namespace ngsbem
     RegularMLMultiPole regmp (singmp, cy, ry, int(3*kappa*ry));
     */
     RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
-    for (int i = 0; i < ypts.Size(); i++)
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
+    });
     regmp.CalcMP(singmp);
 
     
@@ -516,8 +521,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
-    for (int i = 0; i < ypts.Size(); i++)
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (ypts.Size(), [&](int i) {
@@ -543,8 +549,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Complex> regmp (cx, rx, kappa);
-    for (int i = 0; i < xpts.Size(); i++)
+    ParallelFor (xpts.Size(), [&](int i){
       regmp.AddTarget(xpts[i]);
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (xpts.Size(), [&](int i) {
@@ -575,9 +582,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Vec<6,Complex>> regmp (cy, ry, kappa);
-    for (int i = 0; i < ypts.Size(); i++){
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
-    }
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (ypts.Size(), [&](int i) {
@@ -624,8 +631,9 @@ namespace ngsbem
 
     RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
     t3a.Start();
-    for (int i = 0; i < ypts.Size(); i++)
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
+    });
     t3a.Stop();
     
     regmp.CalcMP(singmp);
@@ -663,9 +671,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Vec<4,Complex>> regmp (cy, ry, kappa);
-    for (int i = 0; i < ypts.Size(); i++){
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
-    }
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (ypts.Size(), [&](int i) {
@@ -703,9 +711,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Vec<3,Complex>> regmp (cy, ry, kappa);
-    for (int i = 0; i < ypts.Size(); i++){
+    ParallelFor (ypts.Size(), [&](int i){
       regmp.AddTarget(ypts[i]);
-    }
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (ypts.Size(), [&](int i) {
@@ -743,9 +751,9 @@ namespace ngsbem
     singmp->CalcMP();
 
     RegularMLMultiPole<Vec<3,Complex>> regmp (cx, rx, kappa);
-    for (int i = 0; i < xpts.Size(); i++){
+    ParallelFor (xpts.Size(), [&](int i){
       regmp.AddTarget(xpts[i]);
-    }
+    });
     regmp.CalcMP(singmp);
 
     ParallelFor (xpts.Size(), [&](int i) {
