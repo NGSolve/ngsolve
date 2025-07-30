@@ -1339,7 +1339,7 @@ namespace ngsbem
       Array<Vec<3>> targets;
       int total_targets;
       std::mutex node_mutex;
-      atomic<bool> have_childs;
+      atomic<bool> have_childs{false};
 
       Array<const typename SingularMLMultiPole<elem_type>::Node*> singnodes;
 
