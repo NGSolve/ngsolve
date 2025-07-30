@@ -1531,12 +1531,77 @@ namespace ngbla
     dispatch_atb<OP==ADD || OP==SUB, OP==SET || OP==ADD>::ptrs[wa-i] (ha, wa-i, wb, a, b, c);    
   }
 
+
+  template <OPERATION OP, size_t WB>
+  void MultAtB_SmallWB (size_t ha, size_t wa,
+                        BareSliceMatrix<double> a, BareSliceMatrix<double> b,
+                        BareSliceMatrix<double> c)
+  {
+    size_t i = 0;
+
+    for ( ; i+4 <= wa; i+=4)
+      {
+        SIMD<double,WB> sum0{0.0};
+        SIMD<double,WB> sum1{0.0};
+        SIMD<double,WB> sum2{0.0};
+        SIMD<double,WB> sum3{0.0};
+        
+        for (size_t j = 0; j < ha; j++)
+          {
+            SIMD<double,WB> bj(b.Addr(j,0));
+            sum0 += a(j,i+0) * bj;
+            sum1 += a(j,i+1) * bj;
+            sum2 += a(j,i+2) * bj;
+            sum3 += a(j,i+3) * bj;
+          }
+        
+        if constexpr ((OP == SUB) || (OP == SETNEG))
+          {
+            sum0 = -sum0;
+            sum1 = -sum1;
+            sum2 = -sum2;
+            sum3 = -sum3;
+          }
+        if constexpr ((OP == ADD) || (OP == SUB))
+          {
+            sum0 += SIMD<double,WB>(c.Addr(i  ,0));
+            sum1 += SIMD<double,WB>(c.Addr(i+1,0));
+            sum2 += SIMD<double,WB>(c.Addr(i+2,0));
+            sum3 += SIMD<double,WB>(c.Addr(i+3,0));
+          }
+        sum0.Store(c.Addr(i+0,0));
+        sum1.Store(c.Addr(i+1,0));
+        sum2.Store(c.Addr(i+2,0));
+        sum3.Store(c.Addr(i+3,0));
+      }
+
+    
+    for ( ; i < wa; i++)
+      {
+        SIMD<double,WB> sum{0.0};
+        for (size_t j = 0; j < ha; j++)
+          sum += a(j,i) * SIMD<double,WB>(b.Addr(j,0));
+        if constexpr ((OP == SUB) || (OP == SETNEG))
+          sum = -sum;
+        if constexpr ((OP == ADD) || (OP == SUB))
+          sum += SIMD<double,WB>(c.Addr(i,0));
+        sum.Store(c.Addr(i,0));
+      }
+  }
+  
+  
   
   template <OPERATION OP>
   void REGCALL MultAtB_intern (size_t ha, size_t wa, size_t wb, BareSliceMatrix<double> a, BareSliceMatrix<double> b,
                                BareSliceMatrix<double> c)
   {
     // static Timer t("MultAtB_intern"); RegionTimer reg(t);
+    if (wb <= 8)
+      {
+        if (wb > 0)
+          Switch<8> (wb-1, [=](auto WB) { MultAtB_SmallWB<OP, WB+1> (ha, wa, a, b, c); });
+        return;
+      }
     
     constexpr size_t BBW = 120;
     constexpr size_t ABH = 120;
