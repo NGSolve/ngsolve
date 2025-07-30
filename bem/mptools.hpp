@@ -616,7 +616,7 @@ namespace ngsbem
       Array<tuple<Vec<3>, Vec<3>, Complex,int>> currents;
       int total_sources;
       std::mutex node_mutex;
-      atomic<bool> have_childs;
+      atomic<bool> have_childs{false};
       
       Node (Vec<3> acenter, double ar, int alevel, double akappa)
         : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar) // min(1.0, ar*akappa))
@@ -1210,7 +1210,8 @@ namespace ngsbem
       }
     };
 
-    static void ProcessBatch(FlatArray<RecordingRS*> batch, double len, double theta) {
+    static void ProcessBatchRS(FlatArray<RecordingRS*> batch, double len, double theta) {
+      static Timer t("ProcessBatchRS"); RegionTimer reg(t, batch.Size());
       constexpr int vec_length = VecLength<elem_type>;
       int batch_size = batch.Size();
       int N = batch_size * vec_length;
@@ -1247,14 +1248,38 @@ namespace ngsbem
       }
       else {
         // Split large batches
+        /*
         ProcessBatch(batch.Range(0, 192 / vec_length), len, theta);
         ProcessBatch(batch.Range(192 / vec_length, batch_size), len, theta);
+        */
+
+        /*
+        ParallelFor (2, [&] (int i)
+        {
+          if (i == 0)
+            ProcessBatchRS(batch.Range(0, 192 / vec_length), len, theta);
+          else
+            ProcessBatchRS(batch.Range(192 / vec_length, batch_size), len, theta);            
+        }, 2);
+        */
+
+        
+        size_t chunksize = 192/vec_length;
+        size_t num = (batch.Size()+chunksize-1) / chunksize;
+        ParallelFor (num, [&](int i)
+        {
+          ProcessBatchRS(batch.Range(i*chunksize, min((i+1)*chunksize, batch.Size())), len, theta);          
+        }, num);
+
       }
     }
 
 
     template<int N, int vec_length>
     static void ProcessVectorizedBatch(FlatArray<RecordingRS*> batch, double len, double theta) {
+
+      static Timer t("ProcessVectorizedBatch, N = "+ToString(N) + ", vec_len = " + ToString(vec_length));
+      RegionTimer reg(t, batch[0]->mpS->SH().Order());
       // static Timer ttobatch("mptools - copy to batch 2");
       // static Timer tfrombatch("mptools - copy from batch 2");      
       
@@ -1693,7 +1718,7 @@ namespace ngsbem
       }
 
       ParallelFor(batch_group.Size(), [&](int i) {
-          ProcessBatch(batch_group[i], group_lengths[i], group_thetas[i]);
+          ProcessBatchRS(batch_group[i], group_lengths[i], group_thetas[i]);
       }, TasksPerThread(4));
       // */
 
