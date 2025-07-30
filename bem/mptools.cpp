@@ -336,7 +336,7 @@ namespace ngsbem
           transformN (n, lh);
       }
     else
-      ParallelForRange (IntRange(1,order+1), [this, &lh, transformN] (IntRange r)
+      ParallelForRange (IntRange(1,order+1), [&lh, transformN] (IntRange r)
       {
         auto slh = lh.Split();
         for (auto n : r)
