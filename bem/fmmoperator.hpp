@@ -281,8 +281,9 @@ namespace ngsbem
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
-    for (int i = 0; i < xpts.Size(); i++)
+    ParallelFor (xpts.Size(), [&](int i){
       singmp->AddCharge(xpts[i], fx(i));
+    });
 
 
     static Timer tsing("call sing");
@@ -352,8 +353,9 @@ namespace ngsbem
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
-    for (int i = 0; i < xpts.Size(); i++)
+    ParallelFor (xpts.Size(), [&](int i){
       singmp->AddDipole(xpts[i], -xnv[i], fx(i));
+    });
     singmp->CalcMP();
 
     RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
@@ -414,8 +416,9 @@ namespace ngsbem
     double kappa = 1e-16;
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, kappa);
 
-    for (int i = 0; i < ypts.Size(); i++)
+    ParallelFor (ypts.Size(), [&](int i){
       singmp->AddCharge(ypts[i], fx(i));
+    });
     singmp->CalcMP();
 
     RegularMLMultiPole<Complex> regmp (cx, rx, kappa);
@@ -442,8 +445,9 @@ namespace ngsbem
 
     auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, kappa);
 
-    for (int i = 0; i < xpts.Size(); i++)
+    ParallelFor (xpts.Size(), [&](int i){
       singmp->AddCharge(xpts[i], Vec<3> (fx.Range(3*i,3*i+3)));
+    });
 
     singmp->CalcMP();
 
@@ -473,8 +477,9 @@ namespace ngsbem
 
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
-    for (int i = 0; i < xpts.Size(); i++)
+    ParallelFor (xpts.Size(), [&](int i){
       singmp->AddCharge(xpts[i], fx(i));
+    });
 
     singmp->CalcMP();
 
@@ -505,8 +510,9 @@ namespace ngsbem
     double kappa = kernel.GetKappa();
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cx, rx, kappa);
 
-    for (int i = 0; i < xpts.Size(); i++)
+    ParallelFor (xpts.Size(), [&](int i){
       singmp->AddDipole(xpts[i], -xnv[i], fx(i));
+    });
     singmp->CalcMP();
 
     RegularMLMultiPole<Complex> regmp (cy, ry, kappa);
@@ -531,8 +537,9 @@ namespace ngsbem
     double kappa = kernel.GetKappa();
     auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, kappa);
 
-    for (int i = 0; i < ypts.Size(); i++)
+    ParallelFor (ypts.Size(), [&](int i){
       singmp->AddCharge(ypts[i], fx(i));
+    });
     singmp->CalcMP();
 
     RegularMLMultiPole<Complex> regmp (cx, rx, kappa);
@@ -558,12 +565,12 @@ namespace ngsbem
 
     auto singmp = make_shared<SingularMLMultiPole<Vec<6,Complex>>>(cx, rx, kappa);
 
-    for (int i = 0; i < xpts.Size(); i++){
+    ParallelFor (xpts.Size(), [&](int i){
       Vec<6,Complex> charge;
       charge.Range(0,3) = fx.Range(4*i,4*i+3);
       charge.Range(3,6) = -kappa * kappa * fx(4*i+3) * xnv[i];
       singmp->AddCharge(xpts[i], charge);
-    }
+    });
 
     singmp->CalcMP();
 
@@ -647,12 +654,12 @@ namespace ngsbem
 
     auto singmp = make_shared<SingularMLMultiPole<Vec<4,Complex>>>(cx, rx, kappa);
 
-    for (int i = 0; i < xpts.Size(); i++){
+    ParallelFor (xpts.Size(), [&](int i){
       Vec<4,Complex> charge;
       charge.Range(0,3) = kappa * fx.Range(4*i,4*i+3);
       charge[3] = -1.0 / kappa * fx(4*i+3);
       singmp->AddCharge(xpts[i], charge);
-    }
+    });
     singmp->CalcMP();
 
     RegularMLMultiPole<Vec<4,Complex>> regmp (cy, ry, kappa);
@@ -679,7 +686,7 @@ namespace ngsbem
 
     auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, kappa);
 
-    for (int i = 0; i < xpts.Size(); i++){
+    ParallelFor (xpts.Size(), [&](int i){
       Vec<3,Complex> n_cross_m = fx.Range(3*i, 3*i+3);
 
       // Add dipoles similar to AddCurrentDensity
@@ -692,7 +699,7 @@ namespace ngsbem
         singmp->AddDipole(xpts[i], Cross(n_cross_m_real, ek), ek);
         singmp->AddDipole(xpts[i], Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
       }
-    }
+    });
     singmp->CalcMP();
 
     RegularMLMultiPole<Vec<3,Complex>> regmp (cy, ry, kappa);
@@ -720,7 +727,7 @@ namespace ngsbem
 
     auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cy, ry, kappa);
 
-    for (int i = 0; i < ypts.Size(); i++){
+    ParallelFor (ypts.Size(), [&](int i){
       Vec<3,Complex> current = fx.Range(3*i, 3*i+3);
 
       for (int k = 0; k < 3; k++)
@@ -732,7 +739,7 @@ namespace ngsbem
         singmp->AddDipole(xpts[i], Cross(current_real, ek), ek);
         singmp->AddDipole(xpts[i], Cross(current_imag, ek), Complex(0,1)*ek);
       }
-    }
+    });
     singmp->CalcMP();
 
     RegularMLMultiPole<Vec<3,Complex>> regmp (cx, rx, kappa);
