@@ -202,9 +202,9 @@ namespace ngsbem
 
 
   template <typename entry_type>    
-  void SphericalHarmonics<entry_type> :: RotateY (double alpha)
+  void SphericalHarmonics<entry_type> :: RotateY (double alpha, bool parallel)
   {
-    LocalHeap lh(8*6*sqr(order) + 8*15*order + 2*sizeof(entry_type)*(order+3) + 500);
+    LocalHeap lh(8*6*sqr(order) + 8*15*order + 2*sizeof(entry_type)*(order+3) + 500, nullptr, parallel);
       
     // static Timer t("mptool sh RotateY"+ToString(sizeof(entry_type)/sizeof(Complex)));
     // RegionTimer rg(t, order);
@@ -233,11 +233,12 @@ namespace ngsbem
     // cout << "leg = " << endl << normalized_leg_func << endl;
     FlatVector<> Dmn(2*order+1, lh);
 
-    for (int n=1; n <= order; n++)
+    // for (int n=1; n <= order; n++)
+    auto transformN = [normalized_leg_func,Dmn,s,c,this] (int n, LocalHeap & lh)
       {
         HeapReset hr(lh);
           
-        FlatMatrix<double> trafo(n+1, 2*n+1, lh); 
+        FlatMatrix<double,RowMajor> trafo(n+1, 2*n+1, lh); 
         /*
           Recursive Computation of Spherical Harmonic Rotation Coefficients of Large Degree
           Nail A. Gumerov and Ramani Duraiswami
@@ -326,7 +327,21 @@ namespace ngsbem
             cn(n+m) *= -1;
             cn(n-m) *= -1;
           }
+      };
+
+
+    if (!parallel)
+      {
+        for (int n = 1; n <= order; n++)
+          transformN (n, lh);
       }
+    else
+      ParallelForRange (IntRange(1,order+1), [this, &lh, transformN] (IntRange r)
+      {
+        auto slh = lh.Split();
+        for (auto n : r)
+          transformN (n, slh);
+      }, TasksPerThread(4));
   }
 
 

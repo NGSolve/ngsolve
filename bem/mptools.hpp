@@ -132,7 +132,7 @@ namespace ngsbem
     };
   
     
-    void RotateY (double alpha);
+    void RotateY (double alpha, bool parallel = false);
 
     
     static double CalcAmn (int m, int n)
@@ -571,7 +571,7 @@ namespace ngsbem
       
       vec_source.SH().RotateY(theta);
       vec_source.ShiftZ(-len, vec_target);
-      vec_target.SH().RotateY(-theta);
+      vec_target.SH().RotateY(-theta, vec_target.SH().Order() >= 100);
 
       // tfrombatch.Start();
       // Copy vectorized multipole into individual multipoles
@@ -1245,7 +1245,7 @@ namespace ngsbem
 
       vec_source.SH().RotateY(theta);
       vec_source.ShiftZ(-len, vec_target);
-      vec_target.SH().RotateY(-theta);
+      vec_target.SH().RotateY(-theta); 
 
       // Copy vectorized multipole into individual multipoles
       // tfrombatch.Start();
