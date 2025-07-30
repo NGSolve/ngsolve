@@ -888,7 +888,7 @@ namespace ngsbem
       
       void CalcMP(Array<RecordingSS> * recording, Array<Node*> * nodes_to_process)
       {
-        mp.SH().Coefs() = 0.0;
+        // mp.SH().Coefs() = 0.0;
         if (childs[0])
           {
             if (total_sources < 1000 || recording)
