@@ -170,6 +170,13 @@ namespace ngsbem
   }
 
 
+  template <typename entry_type>
+  void SphericalHarmonics<entry_type> :: FlipZ ()
+  {
+    throw Exception ("FlipZ not correct!!");
+    for (int n = 1; n <= order; n+=2)
+      CoefsN(n) *= -1;
+  }
   
 
 
@@ -335,6 +342,14 @@ namespace ngsbem
           transformN (n, lh);
       }
     else
+      /*
+      TaskManager::CreateJob ([this, &lh, transformN] (TaskInfo & ti)
+      {
+        auto slh = lh.Split();
+        for (auto n = ti.task_nr+1; n <= this->order; n += ti.ntasks)
+          transformN (n, slh);          
+      }, TasksPerThread(4));
+      */
       ParallelForRange (IntRange(1,order+1), [&lh, transformN] (IntRange r)
       {
         auto slh = lh.Split();

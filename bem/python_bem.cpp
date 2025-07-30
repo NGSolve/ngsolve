@@ -27,6 +27,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                            "coefficient vector")
     .def("RotateZ", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateZ(alpha); })
     .def("RotateY", [](SphericalHarmonics<Complex>& self, double alpha) { self.RotateY(alpha); })
+    .def("FlipZ", [](SphericalHarmonics<Complex>& self) { self.FlipZ(); })    
     ;
 
   py::class_<SingularMLMultiPole<Complex>, shared_ptr<SingularMLMultiPole<Complex>>> (m, "SingularMLMP")
