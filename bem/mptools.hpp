@@ -1338,6 +1338,8 @@ namespace ngsbem
       MultiPole<MPRegular,elem_type> mp;
       Array<Vec<3>> targets;
       int total_targets;
+      std::mutex node_mutex;
+      atomic<bool> have_childs;
 
       Array<const typename SingularMLMultiPole<elem_type>::Node*> singnodes;
 
@@ -1362,6 +1364,7 @@ namespace ngsbem
             cc(2) += (i&4) ? r/2 : -r/2;
             childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa());
           }
+        have_childs = true;
       }
       
       void AddSingularNode (const typename SingularMLMultiPole<elem_type>::Node & singnode, bool allow_refine,
@@ -1545,7 +1548,8 @@ namespace ngsbem
       
       void AddTarget (Vec<3> x)
       {
-        if (childs[0])
+        // if (childs[0])
+        if (have_childs) // quick check without locking
           {
             // directly send to childs:
             int childnum  = 0;
@@ -1555,6 +1559,20 @@ namespace ngsbem
             childs[childnum] -> AddTarget( x );
             return;
           }
+
+        lock_guard<mutex> guard(node_mutex);
+
+        if (have_childs) // test again after locking
+        {
+          // directly send to childs:
+          int childnum  = 0;
+          if (x(0) > center(0)) childnum += 1;
+          if (x(1) > center(1)) childnum += 2;
+          if (x(2) > center(2)) childnum += 4;
+          childs[childnum] -> AddTarget(x);
+          return;
+        }
+
 
         targets.Append( x );
 
