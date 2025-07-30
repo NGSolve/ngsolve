@@ -104,7 +104,8 @@ namespace ngsbem
     
     void Calc (Vec<3> x, FlatVector<Complex> shapes);
 
-    
+
+    void FlipZ ();    
     void RotateZ (double alpha);
 
     template <typename FUNC>
@@ -130,7 +131,40 @@ namespace ngsbem
             func(ii, exp_imalpha(m));
         };
     };
-  
+
+    template <typename FUNC>
+    void RotateZFlip (double alpha, bool flip, FUNC func) const
+    {
+      if (order < 0) return;
+      
+      Vector<Complex> exp_imalpha(order+1);
+      Complex exp_ialpha(cos(alpha), sin(alpha));
+      Complex prod = 1.0;
+      for (int i = 0; i <= order; i++)
+        {
+          exp_imalpha(i) = prod;
+          prod *= exp_ialpha;
+        }
+      
+      int ii = 0;
+
+      auto FlipFactor = [] (int n, int m, bool flip)->double
+      {
+        if (flip)
+          return ((n-m)%2) == 1 ? -1 : 1;
+        return 1.0;
+      };
+      
+      for (int n = 0; n <= order; n++)
+        {
+          for (int m = -n; m < 0; m++, ii++)
+            func(ii, FlipFactor(n,m,flip)*conj(exp_imalpha(-m)));
+          for (int m = 0; m <= n; m++, ii++)
+            func(ii, FlipFactor(n,m,flip)*exp_imalpha(m));
+        };
+    };
+
+    
     
     void RotateY (double alpha, bool parallel = false);
 
@@ -474,6 +508,7 @@ namespace ngsbem
       MultiPole<MPSingular,entry_type> * mp_target;
       Vec<3> dist;
       double len, theta, phi;
+      bool flipz;
     public:
       RecordingSS() = default;
       RecordingSS (const MultiPole<MPSingular,entry_type> * amp_source,
@@ -481,7 +516,10 @@ namespace ngsbem
                    Vec<3> adist)
         : mp_source(amp_source), mp_target(amp_target), dist(adist)
       {
-        std::tie(len, theta, phi) = SphericalCoordinates(dist);
+        std::tie(len, theta, phi) = SphericalCoordinates(adist);
+        // flipz = false;       
+        flipz = theta > M_PI/2;
+        if (flipz) theta = M_PI-theta;
       }
     };
 
@@ -530,77 +568,38 @@ namespace ngsbem
 
     template<int N, int vec_length>
     static void ProcessVectorizedBatch(FlatArray<RecordingSS*> batch, double len, double theta) {
-      // static Timer ttobatch("mptools - copy to batch");
-      // static Timer tfrombatch("mptools - copy from batch");      
+
       // *testout << "Processing vectorized S->S batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp());
-      // MultiPole<MPSingular, entry_type> tmp_source{*batch[0]->mp_source};
-      MultiPole<MPSingular, entry_type> tmp_target{*batch[0]->mp_target};
       MultiPole<MPSingular, Vec<N,Complex>> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp());
 
       // Copy multipoles into vectorized multipole
-      // ttobatch.Start();
-      /*
-      for (int i = 0; i < batch.Size(); i++) {
-        {
-          RegionTimer r1(ttobatch1);
-          tmp_source.SH().Coefs() = batch[i]->mp_source->SH().Coefs();
-        }
-        tmp_source.SH().RotateZ(batch[i]->phi);
-
-        {
-          RegionTimer r3(ttobatch3);
-          auto vec_source_mat = VecVector2Matrix (vec_source.SH().Coefs());
-          auto tmp_source_mat = VecVector2Matrix (tmp_source.SH().Coefs());
-          vec_source_mat.Cols(i*vec_length, (i+1)*vec_length) = tmp_source_mat;
-        }
-      }
-      */
       for (int i = 0; i < batch.Size(); i++)
         {
           auto source_i = VecVector2Matrix (batch[i]->mp_source->SH().Coefs());
           auto source_mati = VecVector2Matrix (vec_source.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
-          batch[i]->mp_source->SH().RotateZ(batch[i]->phi,
+          batch[i]->mp_source->SH().RotateZFlip(batch[i]->phi, batch[i]->flipz,
                                             [source_i, source_mati] (size_t ii, Complex factor)
                                             {
                                               source_mati.Row(ii) = factor * source_i.Row(ii);
                                             });
         }
-
-      // ttobatch.Stop();
       
-      vec_source.SH().RotateY(theta);
+      vec_source.SH().RotateY(theta, vec_source.SH().Order() >= 100);
       vec_source.ShiftZ(-len, vec_target);
       vec_target.SH().RotateY(-theta, vec_target.SH().Order() >= 100);
 
-      // tfrombatch.Start();
       // Copy vectorized multipole into individual multipoles
-      for (int i = 0; i < batch.Size(); i++) {
-        // if constexpr(vec_length == 1) {
-        //   for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
-        //     tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j][i];
-        //   }
-        // }
-        // else {
-        //   for (int j = 0; j < tmp_target.SH().Coefs().Size(); j ++) {
-        //     tmp_target.SH().Coefs()[j] = vec_target.SH().Coefs()[j].Range(i*vec_length, (i+1)*vec_length);
-        //   }
-        // }
-        // tmp_target.SH().RotateZ(-batch[i]->phi);
-        // batch[i]->mp_target->SH().Coefs() += tmp_target.SH().Coefs();
-        // auto source_i = VecVector2Matrix (tmp_target.SH().Coefs());
-        auto source_mati = VecVector2Matrix (vec_target.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
-        auto target_mati = VecVector2Matrix (batch[i]->mp_target->SH().Coefs());
-        tmp_target.SH().RotateZ(-batch[i]->phi,
-                                [source_mati, target_mati] (size_t ii, Complex factor)
-                                {
-                                  AtomicAdd (target_mati.Row(ii), factor * source_mati.Row(ii));
-                                });
-        //for (int j = 0; j < tmp_target.SH().Coefs().Size(); j++)
-        // AtomicAdd(batch[i]->mp_target->SH().Coefs()[j], tmp_target.SH().Coefs()[j]);
+      for (int i = 0; i < batch.Size(); i++)
+        {
+          auto source_mati = VecVector2Matrix (vec_target.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+          auto target_mati = VecVector2Matrix (batch[i]->mp_target->SH().Coefs());
+          batch[i]->mp_target->SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
+                                      [source_mati, target_mati] (size_t ii, Complex factor)
+                                      {
+                                        AtomicAdd (target_mati.Row(ii), factor * source_mati.Row(ii));
+                                      });
       }
-      // tfrombatch.Stop();
-
     }
 
     struct Node
