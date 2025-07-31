@@ -199,11 +199,11 @@ namespace ngsbem
   // https://fortran-lang.discourse.group/t/looking-for-spherical-bessel-and-hankel-functions-of-first-and-second-kind-and-arbitrary-order/2308/2
   NGS_DLL_HEADER  
   void besseljs3d (int nterms, double z, double scale,
-                   FlatVector<double> fjs, FlatVector<double> fjder);
+                   SliceVector<double> fjs, SliceVector<double> fjder = FlatVector<double>(0, nullptr));
 
   NGS_DLL_HEADER  
   void besseljs3d (int nterms, Complex z, double scale,
-                   FlatVector<Complex> fjs, FlatVector<Complex> fjder);
+                   SliceVector<Complex> fjs, SliceVector<Complex> fjder = FlatVector<Complex>(0, nullptr));
 
   
   /*
@@ -227,9 +227,12 @@ namespace ngsbem
   template <typename T>
   void SphericalBessel (int n, double rho, double scale, T && values)
   {
+    besseljs3d (n, rho, scale,  values);
+    /*
     Vector<double> j(n+1), jp(n+1);
     besseljs3d (n, rho, scale,  j, jp);
     values = j;
+    */
   }
 
 
@@ -253,21 +256,6 @@ namespace ngsbem
         return;
       }
     Vector j(n+1), y(n+1), jp(n+1), yp(n+1);
-    // SBESJY (rho, n, j, y, jp, yp);
-
-    /*
-    values = j + Complex(0,1) * y;
-    if (scale != 1.0)
-      {
-        double prod = 1.0;
-        for (int i = 0; i <= n; i++)
-          {
-            values(i) *= prod;
-            prod *= scale;
-          }
-      }
-    */
-
     
     // the bessel-evaluation with scale
     besseljs3d (n, rho, 1/scale,  j, jp);
