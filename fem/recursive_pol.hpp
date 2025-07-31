@@ -1539,7 +1539,7 @@ namespace ngfem
       auto y = Trans(values);
       
       y = 0.0;
-      double u = -sqrt((1-x)*(1+x));
+      T u = -sqrt((1-x)*(1+x));
       y(0,0)=1;
 
       if (mmax+1 > matA.Height() || nmax > matA.Width())
@@ -1564,9 +1564,9 @@ namespace ngfem
                 y(m,m)=y(m-1,m-1)*u*sqrt((2*m-1.0)/(2*m));
               if (m < nmax)
                 {
-                  double valold = y(m,m);
+                  T valold = y(m,m);
                   
-                  double val = x*valold*sqrt(2*m+1.0);
+                  T val = x*valold*sqrt(2*m+1.0);
                   y(m+1,m)=val;
                   
                   auto coefsA = matA.Col(m);
@@ -1574,7 +1574,7 @@ namespace ngfem
                   
                   for (int n = m+2; n <= nmax; n++)
                     {
-                      double valnew = coefsA(n) * x * val - coefsB(n) * valold;
+                      T valnew = coefsA(n) * x * val - coefsB(n) * valold;
                       y(n,m) = valnew;
                       valold = val;
                       val = valnew;
