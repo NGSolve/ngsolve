@@ -1926,7 +1926,7 @@ namespace ngsbem
   // adapted from fmm3d
   template <typename Tz> 
   void T_besseljs3d (int nterms, Tz z, double scale,
-                     FlatVector<Tz> fjs, FlatVector<Tz> fjder)
+                     SliceVector<Tz> fjs, SliceVector<Tz> fjder)
   {
     /*
       c**********************************************************************
@@ -2099,11 +2099,11 @@ namespace ngsbem
   }
   
 
-  void besseljs3d (int nterms, double z, double scale, FlatVector<double> fjs, FlatVector<double> fjder)
+  void besseljs3d (int nterms, double z, double scale, SliceVector<double> fjs, SliceVector<double> fjder)
   {
     T_besseljs3d (nterms, z, scale, fjs, fjder);
   }
-  void besseljs3d (int nterms, Complex z, double scale, FlatVector<Complex> fjs, FlatVector<Complex> fjder)
+  void besseljs3d (int nterms, Complex z, double scale, SliceVector<Complex> fjs, SliceVector<Complex> fjder)
   {
     T_besseljs3d (nterms, z, scale, fjs, fjder);
   }
@@ -2230,30 +2230,19 @@ namespace ngsbem
     if constexpr (!std::is_same<RADIAL,MPSingular>())
       throw Exception("AddCharge assumes singular MP");
       
-    // static Timer t("mptool AddCharge"); RegionTimer rg(t);
-    if (L2Norm(x) < 1e-50)
-      {
-        sh.Coef(0,0) += Complex(0,1)*kappa/sqrt(4*M_PI) * c;
-        return;
-      }
-    // cout << "add charge, kappa rho = " << kappa*L2Norm(x) << ", order = " << sh.Order() << endl;
-      
-    Vector<Complex> radial(sh.Order()+1);
+    Vector<double> radial(sh.Order()+1);    
     Vector<Complex> sh_shapes(sqr (sh.Order()+1));
     
-    RADIAL::Eval(sh.Order(), kappa*L2Norm(x), 1.0/Scale(), radial);
-    // RADIAL::Eval(sh.Order(), kappa, L2Norm(x), rtyp, radial);
-    // MPRegular::Eval(sh.Order(), kappa, L2Norm(x), rtyp, radial);
-    
-    // cout << "radial = " << Real(radial) << endl;
+    // SphericalBessel(sh.Order(), kappa*L2Norm(x), Scale(), radial);
+    besseljs3d(sh.Order(), kappa*L2Norm(x), Scale(), radial);
     sh.Calc(x, sh_shapes);
 
     for (int i = 0; i <= sh.Order(); i++)
       {
         IntRange r(sqr(i), sqr(i+1));
-        // sh.Coefs().Range(r) += c * Complex(0,1)*kappa * radial(i).real()*Conj(sh_shapes.Range(r));
+        // sh.Coefs().Range(r) += c * Complex(0,1)*kappa * radial(i)*Conj(sh_shapes.Range(r));
         for (auto j : r)
-          sh.Coefs()(j) += Complex(0,1)*kappa * radial(i).real()*Conj(sh_shapes(j)) * c;       
+          sh.Coefs()(j) += Complex(0,1)*kappa * radial(i)*Conj(sh_shapes(j)) * c;       
       }
   }
 
@@ -2270,20 +2259,6 @@ namespace ngsbem
       
     if constexpr (!std::is_same<RADIAL,MPSingular>())
       throw Exception("AddDipole assumes singular MP");
-
-    /*
-    // book, formula (2.2.20)
-    // dipole in origin:
-    MultiPole<MPSingular> tmp(1, kappa);
-    tmp.SH().Coef(1,1)  += Complex(0,1)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(0)*c;
-    tmp.SH().Coef(1,-1) += Complex(0,1)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(0)*c;
-
-    tmp.SH().Coef(1,1)  += Complex(1,0)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(1)*c;
-    tmp.SH().Coef(1,-1) -= Complex(1,0)*sqr(kappa)*sh.CalcBmn(-1,1)/(2*sqrt(4*M_PI)) * d(1)*c;
-      
-    tmp.SH().Coef(1,0) += -Complex(0,1)*kappa*kappa*sh.CalcAmn(0,0)/sqrt(4*M_PI) *d(2)*c;
-    tmp.TransformAdd (*this, -x);
-    */
 
     MultiPole<MPSingular, entry_type> tmp(Order(), kappa, RTyp());
     tmp.AddCharge(x, c);
