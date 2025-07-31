@@ -1652,10 +1652,10 @@ extrapolate: bool = True
   extrapolate values if outside given x/y coordinates (instead of throwing an exception)
 )raw")
     .def("__str__", &ToString<BSpline2D>)
-    .def("__call__", [] (shared_ptr<BSpline2D> self, double x, double y)
+    .def("__call__", py::vectorize([](shared_ptr<BSpline2D> self, double x, double y)
           {
             return self->Evaluate(x, y);
-          },
+          }),
       py::arg("x"), py::arg("y"),
       py::return_value_policy::move)
     .def("__call__", [](shared_ptr<BSpline2D> sp, shared_ptr<CF> cx, shared_ptr<CF> cy)
