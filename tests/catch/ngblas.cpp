@@ -339,7 +339,7 @@ void TestSIMD()
     SECTION ("exp") {
       SIMD<double,4> x{-20, -0.2, 0.7, 4.8};
       auto ex = myexp(x);
-      SIMD<double,4> e1 { exp(x[0]), exp[1]), exp(x[2]), exp(x[3]) };
+      SIMD<double,4> e1 { exp(x[0]), exp([1]), exp(x[2]), exp(x[3]) };
       CHECK( 1.0 + HSum( (ex-e1)*(ex-e1) )  == Approx(1.0) );
     }
 
