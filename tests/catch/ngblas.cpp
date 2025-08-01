@@ -328,6 +328,16 @@ void TestSIMD()
         CHECK(sum4[3] == Approx(sum_d));
     }
 
+    SECTION ("sincos") {
+      SIMD<double,4> x{-20, -0.2, 0.7, 4.8}
+      auto [s,c] = sincos(x);
+      SIMD<double,4> s1 { sin(x[0]), sin(x[1]), sin(x[2]), sin(x[3]) };
+      SIMD<double,4> c1 { cos(x[0]), cos(x[1]), cos(x[2]), cos(x[3]) };
+      CHECK( 1.0 + HSum( (s-s1)*(s-s1) + (c-c1)*(c-c1) )  == Approx(1.0) );
+    }
+
+    
+
 }
 
 TEST_CASE ("SIMD<double>", "[simd]") { TestSIMD<>(); }
