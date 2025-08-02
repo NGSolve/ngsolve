@@ -329,7 +329,7 @@ void TestSIMD()
     }
 
     SECTION ("sincos") {
-      SIMD<double,4> x{-20, -0.2, 0.7, 4.8};
+      SIMD<double,4> x{-20., -0.2, 0.7, 4.8};
       auto [s,c] = sincos(x);
       SIMD<double,4> s1 { sin(x[0]), sin(x[1]), sin(x[2]), sin(x[3]) };
       SIMD<double,4> c1 { cos(x[0]), cos(x[1]), cos(x[2]), cos(x[3]) };
@@ -337,7 +337,7 @@ void TestSIMD()
     }
 
     SECTION ("exp") {
-      SIMD<double,4> x{-20, -0.2, 0.7, 4.8};
+      SIMD<double,4> x{-20., -0.2, 0.7, 4.8};
       auto ex = myexp(x);
       SIMD<double,4> e1 { exp(x[0]), exp(x[1]), exp(x[2]), exp(x[3]) };
       CHECK( 1.0 + HSum( (ex-e1)*(ex-e1) )  == Approx(1.0) );
