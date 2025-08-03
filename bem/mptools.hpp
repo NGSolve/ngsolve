@@ -40,6 +40,9 @@ namespace ngsbem
     Vec<S,T> res;
     for (int i = 0; i < S; i++)
       res(i) = HSum(v(i));
+    // Iterate<S> ([&](auto i) {
+    // res.HTData().template Elem<i.value>() = HSum(v.HTData().template Elem<i.value>());
+    // });
     return res;
   }
   
@@ -47,15 +50,8 @@ namespace ngsbem
   template <typename T, size_t S> class MakeSimdCl;
   
   template <typename T, size_t S>
-  auto MakeSimd (array<T,S> aa)
-  {
-    MakeSimdCl  sa{aa};
-    return sa.Get();
-  }
+  auto MakeSimd (array<T,S> aa)  { return MakeSimdCl(aa).Get(); }
 
-  template <typename T>
-  auto MyTestFunc(T i) { return i*i; }
-  
   
   template <typename T, size_t S>
   class MakeSimdCl
@@ -78,7 +74,8 @@ namespace ngsbem
     array<Vec<VS,T>,S> a;
   public:
     MakeSimdCl (array<Vec<VS,T>,S> aa) : a(aa)  { ; }
-  auto Get() const
+    
+    auto Get() const
     {
       array<T,S> ai;
       Vec<VS, decltype(MakeSimd(ai))> res;
@@ -88,13 +85,12 @@ namespace ngsbem
             ai[j] = a[j](i);
           res(i) = MakeSimd(ai);
         }
-    return res;
+      return res;
     }
   };
   
 
-
-
+  
   template <size_t S>
   class MakeSimdCl<Complex,S>
   {
@@ -116,7 +112,9 @@ namespace ngsbem
   
 
 
-
+  
+  
+  
   template <typename Tfirst, size_t S, typename ...Trest>
   class MakeSimdCl<std::tuple<Tfirst,Trest...>,S>
   {
@@ -129,20 +127,25 @@ namespace ngsbem
       for (int i = 0; i < S; i++)
         a0[i] = std::get<0> (a[i]);
       
-      if constexpr (std::tuple_size<tuple<Tfirst,Trest...>>::value == 2)
+      if constexpr (std::tuple_size<tuple<Tfirst,Trest...>>::value == 1)
         {
-          array<Trest...,S> a1;    
-          for (int i = 0; i < S; i++)
-            a1[i] = std::get<1> (a[i]);
-          
-          return tuple (MakeSimd(a0), MakeSimd(a1));
+          return tuple(MakeSimd(a0));
         }
       else
         {
-        throw Exception("MakeSimd only implemented for tuples of size 2");
-        // array<tuple<Trest...>,S> arest;
-        // return tuple_cat ( tuple (MakeSimd(a0)), tuple(MakeSimd(arest)) );
+          array<tuple<Trest...>,S> arest;
+          for (int i = 0; i < S; i++)
+            arest[i] = skip_first(a[i]);
+          
+          return tuple_cat ( tuple (MakeSimd(a0)), MakeSimd(arest) );
         }
+    }
+
+    template <typename... Ts>
+    static auto skip_first(const std::tuple<Ts...>& t) {
+      return std::apply([](auto first, auto... rest) {
+        return std::make_tuple(rest...);
+      }, t);
     }
   };
   
@@ -617,7 +620,7 @@ namespace ngsbem
   template <typename entry_type=Complex>
   class SingularMLMultiPole
   {
-    using simd_entry_type = typename std::invoke_result<decltype(&MakeSimd<entry_type,FMM_SW>), std::array<entry_type,FMM_SW>>::type;    
+    using simd_entry_type = decltype(MakeSimd(declval<std::array<entry_type,FMM_SW>>()));
     static Array<size_t> nodes_on_level;    
     
     struct RecordingSS
@@ -732,7 +735,7 @@ namespace ngsbem
       Array<tuple<Vec<3>, Vec<3>, entry_type>> dipoles;
       Array<tuple<Vec<3>, Vec<3>, Complex,int>> currents;
 
-      using simd_entry_type = typename std::invoke_result<decltype(&MakeSimd<entry_type,FMM_SW>), std::array<entry_type,FMM_SW>>::type;
+      using simd_entry_type = decltype(MakeSimd(declval<std::array<entry_type,FMM_SW>>()));      
       Array<tuple<Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_charges;
       
       int total_sources;
@@ -927,16 +930,27 @@ namespace ngsbem
           }
 
         // static Timer t("fmm direct eval"); RegionTimer reg(t);
-        if (simd_charges.Size() && mp.Kappa() < 1e-8)
+        if (simd_charges.Size())
           {
             simd_entry_type vsum{0.0};
-            for (auto [x,c] : simd_charges)
-              {
-                auto rho = L2Norm(p-x);
-                auto kernel = (1/(4*M_PI))*SIMD<Complex,FMM_SW> (1,rho*mp.Kappa()) / rho;
-                kernel = If(rho > SIMD<double,FMM_SW>(0.0), kernel, SIMD<Complex,FMM_SW>(0.0));
-                vsum += kernel * c;
-              }
+            if (mp.Kappa() < 1e-8)
+              for (auto [x,c] : simd_charges)
+                {
+                  auto rho = L2Norm(p-x);
+                  auto kernel = (1/(4*M_PI))*SIMD<Complex,FMM_SW> (1,rho*mp.Kappa()) / rho;
+                  kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
+                  vsum += kernel * c;
+                }
+            else
+              for (auto [x,c] : simd_charges)
+                {
+                  auto rho = L2Norm(p-x);
+                  auto [si,co] = sincos(rho*mp.Kappa());
+                  auto kernel = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) / rho;
+                  kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
+                  vsum += kernel * c;
+                }
+              
             sum += HSum(vsum);
           }
         else
