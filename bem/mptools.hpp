@@ -72,7 +72,7 @@ namespace ngsbem
   
 
 
-  template <typename T, size_t S, size_t VS>
+  template <typename T, size_t S, int VS>
   class MakeSimdCl<Vec<VS,T>,S>
   {
     array<Vec<VS,T>,S> a;
