@@ -26,6 +26,135 @@ namespace ngsbem
   template<int N>
   constexpr int VecLength<Vec<N, Complex>> = N;  // Specialization: Vec<N,Complex> has length N
 
+
+
+  constexpr int FMM_SW = 4;
+
+
+  // ************************ SIMD - creation (should end up in simd.hpp) ************* 
+
+
+  template <int S, typename T, int SW>
+  Vec<S,T> HSum (Vec<S,SIMD<T,SW>> v)
+  {
+    Vec<S,T> res;
+    for (int i = 0; i < S; i++)
+      res(i) = HSum(v(i));
+    return res;
+  }
+  
+  
+  template <typename T, size_t S> class MakeSimdCl;
+  
+  template <typename T, size_t S>
+  auto MakeSimd (array<T,S> aa)
+  {
+    MakeSimdCl  sa{aa};
+    return sa.Get();
+  }
+
+  template <typename T>
+  auto MyTestFunc(T i) { return i*i; }
+  
+  
+  template <typename T, size_t S>
+  class MakeSimdCl
+  {
+    array<T,S> a;
+  public:
+    MakeSimdCl (array<T,S> aa) : a(aa)  { ; }
+    auto Get() const
+    {
+      SIMD<T,S> sa( [this] (auto i) { return (this->a)[i]; });
+      return sa;
+    }
+  };
+  
+
+
+  template <typename T, size_t S, size_t VS>
+  class MakeSimdCl<Vec<VS,T>,S>
+  {
+    array<Vec<VS,T>,S> a;
+  public:
+    MakeSimdCl (array<Vec<VS,T>,S> aa) : a(aa)  { ; }
+  auto Get() const
+    {
+      array<T,S> ai;
+      Vec<VS, decltype(MakeSimd(ai))> res;
+      for (int i = 0; i < VS; i++)
+        {
+          for (int j = 0; j < S; j++)
+            ai[j] = a[j](i);
+          res(i) = MakeSimd(ai);
+        }
+    return res;
+    }
+  };
+  
+
+
+
+  template <size_t S>
+  class MakeSimdCl<Complex,S>
+  {
+    array<Complex,S> a;
+  public:
+    MakeSimdCl (array<Complex,S> aa) : a(aa)  { ; }
+    auto Get() const
+    {
+      array<double,S> ar, ai;
+      for (int j = 0; j < S; j++)
+        {
+          ar[j] = Real(a[j]);
+          ai[j] = Imag(a[j]);
+        }
+      
+      return SIMD<Complex,S> (MakeSimd(ar), MakeSimd(ai));
+    }
+  };
+  
+
+
+
+  template <typename Tfirst, size_t S, typename ...Trest>
+  class MakeSimdCl<std::tuple<Tfirst,Trest...>,S>
+  {
+    array<std::tuple<Tfirst,Trest...>,S> a;
+  public:
+    MakeSimdCl (array<std::tuple<Tfirst,Trest...>,S> aa) : a(aa)  { ; }
+    auto Get() const
+    {
+      array<Tfirst,S> a0;
+      for (int i = 0; i < S; i++)
+        a0[i] = std::get<0> (a[i]);
+      
+      if constexpr (std::tuple_size<tuple<Tfirst,Trest...>>::value == 2)
+        {
+          array<Trest...,S> a1;    
+          for (int i = 0; i < S; i++)
+            a1[i] = std::get<1> (a[i]);
+          
+          return tuple (MakeSimd(a0), MakeSimd(a1));
+        }
+      else
+        {
+        throw Exception("MakeSimd only implemented for tuples of size 2");
+        // array<tuple<Trest...>,S> arest;
+        // return tuple_cat ( tuple (MakeSimd(a0)), tuple(MakeSimd(arest)) );
+        }
+    }
+  };
+  
+
+  
+
+
+
+
+
+
+  
   inline std::tuple<double, double, double> SphericalCoordinates(Vec<3> dist){
     double len, theta, phi;
     len = L2Norm(dist);
@@ -488,6 +617,7 @@ namespace ngsbem
   template <typename entry_type=Complex>
   class SingularMLMultiPole
   {
+    using simd_entry_type = typename std::invoke_result<decltype(&MakeSimd<entry_type,FMM_SW>), std::array<entry_type,FMM_SW>>::type;    
     static Array<size_t> nodes_on_level;    
     
     struct RecordingSS
@@ -601,6 +731,10 @@ namespace ngsbem
       Array<tuple<Vec<3>, entry_type>> charges;
       Array<tuple<Vec<3>, Vec<3>, entry_type>> dipoles;
       Array<tuple<Vec<3>, Vec<3>, Complex,int>> currents;
+
+      using simd_entry_type = typename std::invoke_result<decltype(&MakeSimd<entry_type,FMM_SW>), std::array<entry_type,FMM_SW>>::type;
+      Array<tuple<Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_charges;
+      
       int total_sources;
       std::mutex node_mutex;
       atomic<bool> have_childs{false};
@@ -793,16 +927,32 @@ namespace ngsbem
           }
 
         // static Timer t("fmm direct eval"); RegionTimer reg(t);
-        if (mp.Kappa() < 1e-8)
+        if (simd_charges.Size() && mp.Kappa() < 1e-8)
           {
-            for (auto [x,c] : charges)
-              if (double rho = L2Norm(p-x); rho > 0)
-                sum += (1/(4*M_PI))*Complex(1,rho*mp.Kappa()) / rho * c;
+            simd_entry_type vsum{0.0};
+            for (auto [x,c] : simd_charges)
+              {
+                auto rho = L2Norm(p-x);
+                auto kernel = (1/(4*M_PI))*SIMD<Complex,FMM_SW> (1,rho*mp.Kappa()) / rho;
+                kernel = If(rho > SIMD<double,FMM_SW>(0.0), kernel, SIMD<Complex,FMM_SW>(0.0));
+                vsum += kernel * c;
+              }
+            sum += HSum(vsum);
           }
         else
-          for (auto [x,c] : charges)
-            if (double rho = L2Norm(p-x); rho > 0)
-              sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
+          {
+            if (mp.Kappa() < 1e-8)
+              {
+                for (auto [x,c] : charges)
+                  if (double rho = L2Norm(p-x); rho > 0)
+                    sum += (1/(4*M_PI))*Complex(1,rho*mp.Kappa()) / rho * c;
+              }
+            else
+              for (auto [x,c] : charges)
+                if (double rho = L2Norm(p-x); rho > 0)
+                  sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
+          }
+
         
         for (auto [x,d,c] : dipoles)
           if (double rho = L2Norm(p-x); rho > 0)
@@ -903,6 +1053,26 @@ namespace ngsbem
                 return;
               }
 
+            
+            // make simd charges, comment this block for testing ...
+            simd_charges.SetSize( (charges.Size()+FMM_SW-1)/FMM_SW);
+            size_t i = 0, ii = 0;
+            for ( ; i+FMM_SW <= charges.Size(); i+=FMM_SW, ii++)
+              {
+                std::array<tuple<Vec<3>,entry_type>, FMM_SW> ca;
+                for (int j = 0; j < FMM_SW; j++) ca[j] = charges[i+j];
+                simd_charges[ii] = MakeSimd(ca);
+              }
+            if (i < charges.Size())
+              {
+                std::array<tuple<Vec<3>,entry_type>, FMM_SW> ca;
+                int j = 0;
+                for ( ; i+j < charges.Size(); j++) ca[j] = charges[i+j];
+                for ( ; j < FMM_SW; j++) ca[j] = tuple( get<0>(ca[0]), entry_type{0.0} );
+                simd_charges[ii] = MakeSimd(ca);                
+              }
+
+            
             if (nodes_to_process)
                 *nodes_to_process += this;
             else {
