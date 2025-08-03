@@ -56,6 +56,17 @@ namespace ngcore
     auto & imag() { return im; }
 
 
+    auto Lo() const
+    {
+      if constexpr (N == 2) return Complex(re.Lo(), im.Lo());
+      else return SIMD<Complex,N/2> (re.Lo(), im.Lo());
+    }
+    auto Hi() const
+    {
+      if constexpr (N == 2) return Complex(re.Hi(), im.Hi());
+      else return SIMD<Complex,N/2> (re.Hi(), im.Hi());
+    }
+    
     // Numbers in SIMD structure are not necessarily in same order as in memory
     // for instance:
     // [x0,y0,x1,y1,x2,y2,x3,y3] -> [x0,x2,x1,x3,y0,y2,y1,y3]
@@ -266,6 +277,15 @@ namespace ngcore
     return SIMD<Complex, N> (IfPos (a.real(), b.real(), c.real()),
                              IfPos (a.real(), b.imag(), c.imag()));
   }
+
+
+  template <int N>
+  INLINE SIMD<Complex, N> If (SIMD<mask64, N> a, SIMD<Complex, N> b, SIMD<Complex, N> c)
+  {
+    return SIMD<Complex, N> (If (a, b.real(), c.real()),
+                             If (a, b.imag(), c.imag()));
+  }
+
 }
 
 
