@@ -929,7 +929,9 @@ namespace ngsbem
             return sum;
           }
 
-        // static Timer t("fmm direct eval"); RegionTimer reg(t);
+        {
+          // static Timer t("fmm direct eval"); RegionTimer reg(t);
+          // t.AddFlops (charges.Size());
         if (simd_charges.Size())
           {
             simd_entry_type vsum{0.0};
@@ -966,6 +968,7 @@ namespace ngsbem
                 if (double rho = L2Norm(p-x); rho > 0)
                   sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
           }
+        }
 
         if (simd_dipoles.Size())
         {
@@ -1085,7 +1088,6 @@ namespace ngsbem
                 return;
               }
 
-            
             // make simd charges, comment this block for testing ...
             simd_charges.SetSize( (charges.Size()+FMM_SW-1)/FMM_SW);
             size_t i = 0, ii = 0;
