@@ -67,7 +67,6 @@ namespace ngsbem
   };
   
 
-
   template <typename T, size_t S, int VS>
   class MakeSimdCl<Vec<VS,T>,S>
   {
@@ -737,6 +736,7 @@ namespace ngsbem
 
       using simd_entry_type = decltype(MakeSimd(declval<std::array<entry_type,FMM_SW>>()));      
       Array<tuple<Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_charges;
+      Array<tuple<Vec<3,SIMD<double,FMM_SW>>, Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_dipoles;
       
       int total_sources;
       std::mutex node_mutex;
@@ -970,15 +970,33 @@ namespace ngsbem
           }
         }
 
-        
-        for (auto [x,d,c] : dipoles)
+        if (simd_dipoles.Size())
+        {
+          simd_entry_type vsum{0.0};
+          for (auto [x,d,c] : simd_dipoles)
+          {
+            auto rho = L2Norm(p-x);
+            auto drhodp = (1.0/rho) * (p-x);
+            auto [si,co] = sincos(rho*mp.Kappa());
+            auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) * 
+                          (-1.0/(rho*rho) + SIMD<Complex,FMM_SW>(0, mp.Kappa())/rho);
+            auto kernel = dGdrho * InnerProduct(drhodp, d);
+            kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
+            vsum += kernel * c;
+          }
+          sum += HSum(vsum);
+        }
+        else
+        {
+          for (auto [x,d,c] : dipoles)
           if (double rho = L2Norm(p-x); rho > 0)
-            {
+          {
               Vec<3> drhodp = 1.0/rho * (p-x);
               Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
-                (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
+              (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
               sum += dGdrho * InnerProduct(drhodp, d) * c;
-            }
+          }
+        }
 
         for (auto [sp,ep,j,num] : currents)
           {
@@ -1087,6 +1105,24 @@ namespace ngsbem
                 for ( ; j < FMM_SW; j++) ca[j] = tuple( get<0>(ca[0]), entry_type{0.0} );
                 simd_charges[ii] = MakeSimd(ca);                
               }
+
+            simd_dipoles.SetSize( (dipoles.Size()+FMM_SW-1)/FMM_SW);
+            i = 0, ii = 0;
+            for ( ; i+FMM_SW <= dipoles.Size(); i+=FMM_SW, ii++)
+              {
+                std::array<tuple<Vec<3>,Vec<3>,entry_type>, FMM_SW> di;
+                for (int j = 0; j < FMM_SW; j++) di[j] = dipoles[i+j];
+                simd_dipoles[ii] = MakeSimd(di);
+              }
+            if (i < dipoles.Size())
+              {
+                std::array<tuple<Vec<3>,Vec<3>,entry_type>, FMM_SW> di;
+                int j = 0;
+                for ( ; i+j < dipoles.Size(); j++) di[j] = dipoles[i+j];
+                for ( ; j < FMM_SW; j++) di[j] = tuple( get<0>(di[0]), get<1>(di[0]), entry_type{0.0} );
+                simd_dipoles[ii] = MakeSimd(di);
+              }
+
             
             if (nodes_to_process)
                 *nodes_to_process += this;
