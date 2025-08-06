@@ -669,75 +669,7 @@ namespace ngcomp
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
     {
-      auto & fel = static_cast<const FEL&>(bfel);
-      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
-      
-      size_t nd_u = fel.GetNDof();
-
-      STACK_ARRAY(SIMD<double>, mem1, 2*D*D*nd_u);
-      FlatMatrix<SIMD<double>> shape_u_tmp(nd_u*D*D, 1, &mem1[0]);
-
-      FlatMatrix<SIMD<double>> dshape_u_ref(nd_u*D*D, 1, &mem1[D*D*nd_u]);
-
-      LocalHeapMem<10000> lh("diffopgrad-lh");
-
-      auto & ir = mir.IR();
-      for (size_t i = 0; i < mir.Size(); i++)
-        {
-          const SIMD<IntegrationPoint> & ip = ir[i];
-          const ElementTransformation & eltrans = mir[i].GetTransformation();
-
-          // double eps = 1e-4;
-          for (size_t j = 0; j < D; j++)   // d / dxj
-            {
-              HeapReset hr(lh);
-              SIMD<IntegrationPoint> ipts[4];
-              ipts[0] = ip;
-              ipts[0](j) -= eps();
-              ipts[1] = ip;
-              ipts[1](j) += eps();              
-              ipts[2] = ip;
-              ipts[2](j) -= 2*eps();
-              ipts[3] = ip;
-              ipts[3](j) += 2*eps();
-
-
-              SIMD_IntegrationRule ir1(1, &ipts[2]);
-              SIMD_MappedIntegrationRule<D,D> mirl1(ir1, eltrans, lh);
-              fel.CalcMappedShape (mirl1, shape_u_tmp);
-              dshape_u_ref = 1.0/(12.0*eps()) * shape_u_tmp;
-              SIMD_IntegrationRule ir2(1, &ipts[3]);
-              SIMD_MappedIntegrationRule<D,D> mirl2(ir2, eltrans, lh);
-              fel.CalcMappedShape (mirl2, shape_u_tmp);
-              dshape_u_ref -= 1.0/(12.0*eps()) * shape_u_tmp;
-              SIMD_IntegrationRule ir3(1, &ipts[0]);
-              SIMD_MappedIntegrationRule<D,D> mirl3(ir3, eltrans, lh);
-              fel.CalcMappedShape (mirl3, shape_u_tmp);
-              dshape_u_ref -= 8.0/(12.0*eps()) * shape_u_tmp;
-              SIMD_IntegrationRule ir4(1, &ipts[1]);
-              SIMD_MappedIntegrationRule<D,D> mirl4(ir4, eltrans, lh);
-              fel.CalcMappedShape (mirl4, shape_u_tmp);
-              dshape_u_ref += 8.0/(12.0*eps()) * shape_u_tmp;
-              
-              for (size_t l = 0; l < D*D; l++)
-                for (size_t k = 0; k < nd_u; k++)
-                  mat(k*D*D*D+j*D*D+l, i) = dshape_u_ref(k*D*D+l, 0);
-            }
-          
-          
-          for (size_t j = 0; j < D*D; j++)
-            for (size_t k = 0; k < nd_u; k++)
-              {
-                Vec<D,SIMD<double>> dshape_u_ref, dshape_u;
-                for (size_t l = 0; l < D; l++)
-                  dshape_u_ref(l) = mat(k*D*D*D+l*D*D+j, i);
-                
-                dshape_u = Trans(mir[i].GetJacobianInverse()) * dshape_u_ref;
-                
-                for (size_t l = 0; l < D; l++)
-                  mat(k*D*D*D+l*D*D+j, i) = dshape_u(l);
-              }
-        }
+      CalcSIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(bfel),static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), mat, eps());
     }
     
     using DiffOp<DiffOpGradientHCurlCurl<D>>::ApplySIMDIR;
@@ -837,29 +769,25 @@ namespace ngcomp
     }
 
     
-    // static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-    //                                   const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
-    // {
-    //   size_t nd_u = static_cast<const FEL&>(bfel).GetNDof();
-    //   auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
+    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
+                                      const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      size_t nd_u = static_cast<const FEL&>(bfel).GetNDof();
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<D,D>&> (bmir);
       
-    //   STACK_ARRAY(SIMD<double>, mem1, mir.Size()*D*D*D*nd_u);
-    //   FlatMatrix<SIMD<double>> bmat(nd_u*D*D*D, mir.Size(), &mem1[0]);
+      STACK_ARRAY(SIMD<double>, mem1, mir.Size()*D*D*D*nd_u);
+      FlatMatrix<SIMD<double>> bmat(nd_u*D*D*D, mir.Size(), &mem1[0]);
 
-    //   /*
-    //     no known conversion from 'SIMD<MappedIntegrationPoint<2, 2> >' to 'const ngfem::BaseMappedIntegrationPoint' for 1st argument
-    //     virtual void CalcMappedShape (const BaseMappedIntegrationPoint & bmip,
-    //   */
-    //   CalcSIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(bfel), mir, bmat, eps());
+      CalcSIMDDShapeFE<FEL,D,D,D*D>(static_cast<const FEL&>(bfel),static_cast<const SIMD_MappedIntegrationRule<D,D> &>(bmir), bmat, eps());
       
-    //   for (size_t i=0; i<D; i++)
-    //     for (size_t j=0; j<D; j++)
-    //       for (size_t k=0; k<D; k++)
-    //         {
-    //           //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
-    //           mat.Row(k*D*D+j*D+i).Range(bmir.Size()) = 0.5*(bmat.Row(i*D*D+(D*k+j))+bmat.Row(j*D*D+(D*i+k))-bmat.Row(k*D*D+(D*i+j)));
-    //         }
-    // }
+      for (size_t i=0; i<D; i++)
+        for (size_t j=0; j<D; j++)
+          for (size_t k=0; k<D; k++)
+            {
+              //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
+              mat.Row(k*D*D+j*D+i).Range(bmir.Size()) = 0.5*(bmat.Row(i*D*D+(D*k+j))+bmat.Row(j*D*D+(D*i+k))-bmat.Row(k*D*D+(D*i+j)));
+            }
+    }
     
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
@@ -1371,6 +1299,7 @@ namespace ngcomp
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 2 };
     static constexpr double eps() { return 1e-4; } 
+    static Array<int> GetDimensions() { return Array<int> (0); };
 
     
     ///
@@ -1399,7 +1328,6 @@ namespace ngcomp
     {
       HeapReset hr(lh);
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
-      
       typedef typename TVX::TSCAL TSCAL;
       if constexpr (!std::is_same<TSCAL,double>())
                      {
@@ -1407,24 +1335,17 @@ namespace ngcomp
                      }
       else
         {
-          Vec<D*D*D*D,TSCAL> Riemann;
-          DiffOpRiemannHCurlCurl<D>::Apply(fel, mip, x, Riemann, lh);
+          Mat<D*(D-1)/2,D*(D-1)/2,TSCAL> Qmat;
+          FlatVector<TSCAL> Q(D*D,Qmat.Data());
+          DiffOpCurvatureHCurlCurl<D>::Apply(fel, mip, x, Q, lh);
+
           Mat<D,D> g;
-          
           bfel.EvaluateMappedShape (mip, x, g);
 
-          Mat<D,D> ginv = Inv(g);
-
-	  y(0) = TSCAL(0);
-
-	  for (size_t i = 0; i < D; i++)
-            for (size_t j = 0; j < D; j++)
-	      for (size_t k = 0; k < D; k++)
-		for (size_t l = 0; l < D; l++)
-		  {
-                    y(0) += ginv(i,l) * ginv(j,k) * Riemann(D*(D*(D*i+j)+k)+l);
-		  }
-	  
+          if constexpr (D==2)
+              y(0) = 2.0/Det(g)*Q(0);
+          else
+              y(0) = 2.0/Det(g)*InnerProduct(g,Qmat);
         }
     }
 
@@ -1439,11 +1360,10 @@ namespace ngcomp
     {
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
 
-
-      size_t size = bmir.Size()*SIMD<double>::Size()*D*D*D*D;
+      size_t size = bmir.Size()*SIMD<double>::Size()*D*(D-1)/2*D*(D-1)/2;
       STACK_ARRAY(SIMD<double>, mem, size);
-      FlatMatrix<SIMD<double>> Riemann(D*D*D*D, bmir.Size(), mem);
-      DiffOpRiemannHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Riemann);
+      FlatMatrix<SIMD<double>> Q(D*(D-1)/2*D*(D-1)/2, bmir.Size(), mem);
+      DiffOpCurvatureHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Q);
       
       STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
       FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
@@ -1454,19 +1374,16 @@ namespace ngcomp
           Mat<D,D,SIMD<double>> G_m;
           for (size_t j = 0; j < D*D; j++)
             G_m(j) = G(j,m);
-          Mat<D,D,SIMD<double>> invG = Inv(G_m);  
 
-
-	  y(0,m) = SIMD<double>(0);
-
-	  
-	  for (size_t i = 0; i < D; i++)
-            for (size_t j = 0; j < D; j++)
-	      for (size_t k = 0; k < D; k++)
-		for (size_t l = 0; l < D; l++)
-		  {
-                    y(0,m) += invG(i,l) * invG(j,k) * Riemann(D*(D*(D*i+j)+k)+l,m);
-		  }
+          if constexpr (D==2)
+              y(0,m) = 2.0/Det(G_m)*Q(0,m);
+          else
+            {
+              Mat<D,D,SIMD<double>> Qmat_m;
+              for (size_t j = 0; j < D*D; j++)
+                Qmat_m(j) = Q(j,m);
+              y(0,m) = 2.0/Det(G_m)*InnerProduct(G_m,Qmat_m);
+            }
         }
     }
     
@@ -1520,14 +1437,30 @@ namespace ngcomp
                      }
       else
         {
-          Vec<1,TSCAL> scalar;
-          Vec<D*D,TSCAL> Ricci;
-          DiffOpRicciHCurlCurl<D>::Apply(fel, mip, x, Ricci, lh);
-          DiffOpScalarHCurlCurl<D>::Apply(fel, mip, x, scalar, lh);
-          Mat<D,D> g;
-          bfel.EvaluateMappedShape (mip, x, g);
+          if constexpr (D==2)
+          {
+            y = TSCAL(0.0);
+          }
+          else if constexpr (D==3)
+          {
+            Mat<3,3,TSCAL> Qmat;
+            FlatVector<TSCAL> Q(D*D,Qmat.Data());
+            DiffOpCurvatureHCurlCurl<D>::Apply(fel, mip, x, Q, lh);
+            Mat<D,D,TSCAL> g;
+            bfel.EvaluateMappedShape (mip, x, g);
+            y = -1.0/Det(g)*(g*Qmat*g).AsVector();
+          }
+          else
+          {
+            Vec<1,TSCAL> scalar;
+            Vec<D*D,TSCAL> Ricci;
+            DiffOpRicciHCurlCurl<D>::Apply(fel, mip, x, Ricci, lh);
+            DiffOpScalarHCurlCurl<D>::Apply(fel, mip, x, scalar, lh);
+            Mat<D,D> g;
+            bfel.EvaluateMappedShape (mip, x, g);
 
-	  y = Ricci - 0.5*scalar*g.AsVector();
+            y = Ricci - 0.5*scalar*g.AsVector();
+          }
         }
     }
 
@@ -1542,26 +1475,52 @@ namespace ngcomp
     {
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
 
-      size_t size = bmir.Size()*SIMD<double>::Size()*D*D;
-      STACK_ARRAY(SIMD<double>, mem, size);
-      STACK_ARRAY(SIMD<double>, mem2, bmir.Size()*SIMD<double>::Size());
-      FlatMatrix<SIMD<double>> Ricci(D*D, bmir.Size(), &mem[0]);
-      FlatMatrix<SIMD<double>> scalar(1, bmir.Size(), &mem2[0]);
-      DiffOpRicciHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Ricci);
-      DiffOpScalarHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, scalar);
-      
-      STACK_ARRAY(SIMD<double>, mem3, D*D*bmir.Size()*SIMD<double>::Size());
-      FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem3[0]);
-      bfel.Evaluate (bmir, x, G);
-      
-      for (size_t m = 0; m < bmir.Size(); m++)
-        {
-	  // Mat<D,D,SIMD<double>> Ricci_m;
-	  // for (size_t j = 0; j < D*D; j++)
-	  //   Ricci_m(j) = Ricci(j,m);
+      if constexpr (D==2)
+      {
+        y.AddSize(D*D, bmir.Size()) = SIMD<double>(0.0);
+      }
+      else if constexpr (D==3)
+      {
+        size_t size = bmir.Size()*SIMD<double>::Size()*3*3;
+        STACK_ARRAY(SIMD<double>, mem, size);
+        FlatMatrix<SIMD<double>> Q(3*3, bmir.Size(), mem);
+        DiffOpCurvatureHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Q);
+        
+        STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+        FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
+        bfel.Evaluate (bmir, x, G);
 
-	  y.Col(m).Range(0,D*D) = Ricci.Col(m) - 0.5*scalar(0,m)*G.Col(m);
+        for (size_t m = 0; m < bmir.Size(); m++)
+        {
+          Mat<D,D,SIMD<double>> G_m;
+          Mat<D,D,SIMD<double>> Qmat_m;
+          for (size_t j = 0; j < D*D; j++)
+          {
+            Qmat_m(j) = Q(j,m);
+            G_m(j) = G(j,m);
+          }
+          y.Col(m).Range(0,D*D) = -1.0/Det(G_m)*(G_m*Qmat_m*G_m).AsVector();
         }
+      }
+      else
+      {
+        size_t size = bmir.Size()*SIMD<double>::Size()*D*D;
+        STACK_ARRAY(SIMD<double>, mem, size);
+        STACK_ARRAY(SIMD<double>, mem2, bmir.Size()*SIMD<double>::Size());
+        FlatMatrix<SIMD<double>> Ricci(D*D, bmir.Size(), &mem[0]);
+        FlatMatrix<SIMD<double>> scalar(1, bmir.Size(), &mem2[0]);
+        DiffOpRicciHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Ricci);
+        DiffOpScalarHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, scalar);
+        
+        STACK_ARRAY(SIMD<double>, mem3, D*D*bmir.Size()*SIMD<double>::Size());
+        FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem3[0]);
+        bfel.Evaluate (bmir, x, G);
+        
+        for (size_t m = 0; m < bmir.Size(); m++)
+        {
+          y.Col(m).Range(0,D*D) = Ricci.Col(m) - 0.5*scalar(0,m)*G.Col(m);
+        }
+      }
     }
     
   };
@@ -1576,7 +1535,13 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = (D*(D-1)/2)*(D*(D-1)/2) };
     enum { DIFFORDER = 2 };
-    static Array<int> GetDimensions() { return Array<int> ( { (D*(D-1)/2),(D*(D-1)/2) } ); };
+    static Array<int> GetDimensions() 
+    { 
+      if constexpr (D == 2)
+        return Array<int> (0); // in 2D the curvature tensor is just a scalar
+      else
+        return Array<int> ( { (D*(D-1)/2),(D*(D-1)/2) } ); 
+    };
     
     template <typename AFEL, typename SIP, typename MAT,
               typename std::enable_if<!std::is_convertible<MAT,BareSliceMatrix<double,ColMajor>>::value, int>::type = 0>
@@ -1632,7 +1597,7 @@ namespace ngcomp
             {
 
               //Sign convention of Lee "Introduction to Riemannian Manifolds"
-              //Q = R1221 = -0.5*inc(g) + Gamma_01^q*Gamma_10q-Gamma_22^q*Gamma_00q
+              //Q = R1221 = -0.5*inc(g) + Gamma_01^q*Gamma_10q-Gamma_11^q*Gamma_00q
               bfel.EvaluateMappedIncShape(mip, x, y);
               y(0) *= -0.5;
               for (size_t q=0; q<D; q++)
@@ -1648,7 +1613,7 @@ namespace ngcomp
               y.Range(0,9) *= -0.5;
 
               //Sign convention of Lee "Introduction to Riemannian Manifolds"
-	      // Q=-1/4*eps_ikl*eps_jmn*Riem_klmn
+	            // Q=-1/4*eps_ikl*eps_jmn*Riem_klmn
               // Q_xx = <Q(x),x> = -R_yzyz
               // Q_xy = <Q(y),x> =  R_xzyz
               // Q_xz = <Q(z),x> = -R_xyyz
@@ -1729,7 +1694,7 @@ namespace ngcomp
         }
       if constexpr (D==2) // exploit that in two dimensions the Riemann curvature tensor consists only of one independent number
         {
-	  //Sign convention of Lee "Introduction to Riemannian Manifolds"
+	        //Sign convention of Lee "Introduction to Riemannian Manifolds"
           //Q = R1221 = -0.5*inc(g) + Gamma_01^q*Gamma_10q-Gamma_22^q*Gamma_00q
 	  
           bfel.EvaluateIncShape(bmir, x, y);
@@ -1826,7 +1791,7 @@ namespace ngcomp
       {
       case 1:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<1>>> ());
-	break;
+	      break;
       case 2:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<2>>> ());
         additional_evaluators.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<2>>> ());
@@ -1837,8 +1802,8 @@ namespace ngcomp
         additional_evaluators.Set ("inc", make_shared<T_DifferentialOperator<DiffOpIncHCurlCurl<2>>> ());
         additional_evaluators.Set ("curvature", make_shared<T_DifferentialOperator<DiffOpCurvatureHCurlCurl<2>>> ());
         additional_evaluators.Set ("scalar", make_shared<T_DifferentialOperator<DiffOpScalarHCurlCurl<2>>> ());	
-	additional_evaluators.Set ("Einstein", make_shared<T_DifferentialOperator<DiffOpEinsteinHCurlCurl<2>>> ());
-	break;
+	      additional_evaluators.Set ("Einstein", make_shared<T_DifferentialOperator<DiffOpEinsteinHCurlCurl<2>>> ());
+	      break;
       case 3:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurlCurl<3>>> ());
         additional_evaluators.Set ("christoffel", make_shared<T_DifferentialOperator<DiffOpChristoffelHCurlCurl<3>>> ());
@@ -1850,9 +1815,9 @@ namespace ngcomp
         additional_evaluators.Set ("inc", make_shared<T_DifferentialOperator<DiffOpIncHCurlCurl<3>>> ());
         additional_evaluators.Set ("curvature", make_shared<T_DifferentialOperator<DiffOpCurvatureHCurlCurl<3>>> ());
         additional_evaluators.Set ("edgettcomponent", make_shared<T_DifferentialOperator<DiffOpEdgeTTComponentHCurlCurl<3>>> ());
-	additional_evaluators.Set ("scalar", make_shared<T_DifferentialOperator<DiffOpScalarHCurlCurl<3>>> ());
-	additional_evaluators.Set ("Einstein", make_shared<T_DifferentialOperator<DiffOpEinsteinHCurlCurl<3>>> ());
-	break;
+	      additional_evaluators.Set ("scalar", make_shared<T_DifferentialOperator<DiffOpScalarHCurlCurl<3>>> ());
+	      additional_evaluators.Set ("Einstein", make_shared<T_DifferentialOperator<DiffOpEinsteinHCurlCurl<3>>> ());
+	      break;
       default:
         ;
       }

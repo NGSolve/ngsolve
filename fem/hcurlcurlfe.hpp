@@ -88,6 +88,9 @@ namespace ngfem
                                    BareSliceVector<> coefs) const = 0;
 
     
+    virtual void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip, 
+                                         BareSliceMatrix<SIMD<double>> shapes) const = 0;
+
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                                          BareSliceMatrix<SIMD<double>> shapes) const = 0;
     
@@ -930,6 +933,23 @@ namespace ngfem
                                                                        }));
       else
         throw Exception("HCurlCurl::CalcMappedCurlShape implemented only for TRIG and TET");
+    }
+
+
+    virtual void CalcMappedShape (const SIMD<BaseMappedIntegrationPoint> & bmip, 
+                                         BareSliceMatrix<SIMD<double>> shape) const override
+    {
+      Switch<4-DIM>
+        (bmip.DimSpace()-DIM,[this, &bmip, shape](auto CODIM)
+         {
+           constexpr auto DIMSPACE = DIM+CODIM.value;
+           auto & mip = static_cast<const SIMD<MappedIntegrationPoint<DIM,DIM+CODIM.value>>&> (bmip);
+            this->Cast() -> T_CalcShape (GetTIP(mip),
+                                          SBLambda ([shape,DIMSPACE] (size_t j, auto val) 
+                                                    {
+                                                      shape.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(0).Range(0,sqr(DIMSPACE)) = val.Value().AsVector();
+                                                    }));
+         });
     }
       
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
