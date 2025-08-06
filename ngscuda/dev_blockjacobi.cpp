@@ -2,7 +2,6 @@
 #include "cuda_profiler.hpp"
 #include <la.hpp>
 
-using namespace ngla;
 
 
 namespace ngla

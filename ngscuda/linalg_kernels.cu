@@ -5,11 +5,9 @@
 #include <vector.hpp>
 #include <matrix.hpp>
 // #include <bla.hpp>
-using namespace ngbla;
 
 
 #include "cuda_ngstd.hpp"
-using namespace ngs_cuda;
 
 #include "linalg_kernels.hpp"
 

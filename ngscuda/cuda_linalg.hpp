@@ -12,7 +12,6 @@
 #include <cusparse.h>
 
 #include "cuda_ngstd.hpp"
-using namespace ngs_cuda;
 
 namespace ngla
 {
