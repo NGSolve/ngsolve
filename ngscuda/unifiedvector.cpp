@@ -50,7 +50,7 @@ namespace ngla
   {
     // ::SetScalar (d, size, dev_data); 
     // ::SetScalar (d, FlatVector<Dev<double>> (size, dev_data));
-    ::SetScalar (d, FVDev()); 
+    ngs_cuda::SetScalar (d, FVDev());
       
     host_uptodate = false;
     dev_uptodate = true;
