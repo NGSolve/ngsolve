@@ -1227,6 +1227,34 @@ namespace ngstd
 
 namespace ngcore
 {
+
+  template <typename T, size_t S> class MakeSimdCl;
+  
+  template <typename T, size_t S, int VS>
+  class MakeSimdCl<ngbla::Vec<VS,T>,S>
+  {
+    std::array<ngbla::Vec<VS,T>,S> a;
+  public:
+    MakeSimdCl (std::array<ngbla::Vec<VS,T>,S> aa) : a(aa)  { ; }
+    
+    auto Get() const
+    {
+      std::array<T,S> ai;
+      ngbla::Vec<VS, decltype(MakeSimd(ai))> res;
+      for (int i = 0; i < VS; i++)
+        {
+          for (int j = 0; j < S; j++)
+            ai[j] = a[j](i);
+          res(i) = MakeSimd(ai);
+        }
+      return res;
+    }
+  };
+  
+  
+
+
+  
   template<typename T> struct MPI_typetrait;
   
   template<int S, typename T>

@@ -11,11 +11,6 @@
 #include <recursive_pol.hpp>
 
 
-namespace ngcomp
-{
-  class Region;
-}
-
 namespace ngsbem
 {
   using namespace ngfem;
@@ -46,112 +41,6 @@ namespace ngsbem
     return res;
   }
   
-  
-  template <typename T, size_t S> class MakeSimdCl;
-  
-  template <typename T, size_t S>
-  auto MakeSimd (array<T,S> aa)  { return MakeSimdCl(aa).Get(); }
-
-  
-  template <typename T, size_t S>
-  class MakeSimdCl
-  {
-    array<T,S> a;
-  public:
-    MakeSimdCl (array<T,S> aa) : a(aa)  { ; }
-    auto Get() const
-    {
-      SIMD<T,S> sa( [this] (auto i) { return (this->a)[i]; });
-      return sa;
-    }
-  };
-  
-
-  template <typename T, size_t S, int VS>
-  class MakeSimdCl<Vec<VS,T>,S>
-  {
-    array<Vec<VS,T>,S> a;
-  public:
-    MakeSimdCl (array<Vec<VS,T>,S> aa) : a(aa)  { ; }
-    
-    auto Get() const
-    {
-      array<T,S> ai;
-      Vec<VS, decltype(MakeSimd(ai))> res;
-      for (int i = 0; i < VS; i++)
-        {
-          for (int j = 0; j < S; j++)
-            ai[j] = a[j](i);
-          res(i) = MakeSimd(ai);
-        }
-      return res;
-    }
-  };
-  
-
-  
-  template <size_t S>
-  class MakeSimdCl<Complex,S>
-  {
-    array<Complex,S> a;
-  public:
-    MakeSimdCl (array<Complex,S> aa) : a(aa)  { ; }
-    auto Get() const
-    {
-      array<double,S> ar, ai;
-      for (int j = 0; j < S; j++)
-        {
-          ar[j] = Real(a[j]);
-          ai[j] = Imag(a[j]);
-        }
-      
-      return SIMD<Complex,S> (MakeSimd(ar), MakeSimd(ai));
-    }
-  };
-  
-
-
-  
-  
-  
-  template <typename Tfirst, size_t S, typename ...Trest>
-  class MakeSimdCl<std::tuple<Tfirst,Trest...>,S>
-  {
-    array<std::tuple<Tfirst,Trest...>,S> a;
-  public:
-    MakeSimdCl (array<std::tuple<Tfirst,Trest...>,S> aa) : a(aa)  { ; }
-    auto Get() const
-    {
-      array<Tfirst,S> a0;
-      for (int i = 0; i < S; i++)
-        a0[i] = std::get<0> (a[i]);
-      
-      if constexpr (std::tuple_size<tuple<Tfirst,Trest...>>::value == 1)
-        {
-          return tuple(MakeSimd(a0));
-        }
-      else
-        {
-          array<tuple<Trest...>,S> arest;
-          for (int i = 0; i < S; i++)
-            arest[i] = skip_first(a[i]);
-          
-          return tuple_cat ( tuple (MakeSimd(a0)), MakeSimd(arest) );
-        }
-    }
-
-    template <typename... Ts>
-    static auto skip_first(const std::tuple<Ts...>& t) {
-      return std::apply([](auto first, auto... rest) {
-        return std::make_tuple(rest...);
-      }, t);
-    }
-  };
-  
-
-  
-
-
 
 
 
