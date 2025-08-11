@@ -286,6 +286,31 @@ namespace ngcore
                              If (a, b.imag(), c.imag()));
   }
 
+
+
+  
+  template <typename T, size_t S> class MakeSimdCl;
+  
+  template <size_t S>
+  class MakeSimdCl<Complex,S>
+  {
+    std::array<Complex,S> a;
+  public:
+    MakeSimdCl (std::array<Complex,S> aa) : a(aa)  { ; }
+    auto Get() const
+    {
+      std::array<double,S> ar, ai;
+      for (int j = 0; j < S; j++)
+        {
+          ar[j] = ngbla::Real(a[j]);
+          ai[j] = ngbla::Imag(a[j]);
+        }
+      
+      return SIMD<Complex,S> (MakeSimd(ar), MakeSimd(ai));
+    }
+  };
+  
+  
 }
 
 
