@@ -84,6 +84,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def_property_readonly("sh", [](MultiPoleCF<MPRegular>& self) -> SphericalHarmonics<Complex>& { return self.SH(); })
     .def("ShiftZ", [](MultiPoleCF<MPRegular>& self, double z, MultiPoleCF<MPRegular> & target) { self.ShiftZ(z, target.MP()); })
     .def("Transform", [](MultiPoleCF<MPRegular>& self, MultiPoleCF<MPRegular> & target) { self.Transform(target); })
+    .def("TransformAdd", [](MultiPoleCF<MPRegular>& self, MultiPoleCF<MPRegular> & target) { self.TransformAdd(target); })
     .def("Spectrum", [](MultiPoleCF<MPRegular>& self, bool scaled) { return self.MP().Spectrum(scaled); }, py::arg("scaled"))    
     ;
 
@@ -96,6 +97,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("ShiftZ", [](MultiPoleCF<MPSingular>& self, double z, MultiPoleCF<MPSingular> & target) { self.ShiftZ(z, target.MP()); })        
     .def("Transform", [](MultiPoleCF<MPSingular>& self, MultiPoleCF<MPRegular> & target) { self.Transform(target); })
     .def("Transform", [](MultiPoleCF<MPSingular>& self, MultiPoleCF<MPSingular> & target) { self.Transform(target); })
+    .def("TransformAdd", [](MultiPoleCF<MPSingular>& self, MultiPoleCF<MPRegular> & target) { self.TransformAdd(target); })
+    .def("TransformAdd", [](MultiPoleCF<MPSingular>& self, MultiPoleCF<MPSingular> & target) { self.TransformAdd(target); })
     .def("Spectrum", [](MultiPoleCF<MPSingular>& self, bool scaled) { return self.MP().Spectrum(scaled); }, py::arg("scaled"))
     ;
 

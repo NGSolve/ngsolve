@@ -78,6 +78,11 @@ namespace ngsbem
     {
       mp.Transform (target.MP(), target.Center()-center);
     }
+    template <typename TARGET>
+    void TransformAdd (MultiPoleCF<TARGET, entry_type> & target)
+    {
+      mp.TransformAdd (target.MP(), target.Center()-center);
+    }
   };
 
   template <typename entry_type>
