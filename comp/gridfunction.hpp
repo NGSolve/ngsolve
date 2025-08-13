@@ -164,7 +164,7 @@ namespace ngcomp
 
     // const FESpace & GetFESpace() const { return *fespace; }
     ///
-    shared_ptr<FESpace> GetFESpace() const { return fespace; }
+    const shared_ptr<FESpace> & GetFESpace() const { return fespace; }
     ///
     const shared_ptr<MeshAccess> & GetMeshAccess() const { return fespace->GetMeshAccess(); }
     ///
