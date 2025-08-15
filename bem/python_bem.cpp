@@ -150,11 +150,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   py::class_<IntegralOperator<double>, shared_ptr<IntegralOperator<double>>> (m, "IntegralOperator")
     .def_property_readonly("mat", &IntegralOperator<double>::GetMatrix)
-    .def("GetPotential", &IntegralOperator<double>::GetPotential)
+    .def("GetPotential", &IntegralOperator<double>::GetPotential,
+         py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
     ;
   py::class_<IntegralOperator<Complex>, shared_ptr<IntegralOperator<Complex>>> (m, "IntegralOperatorC")
     .def_property_readonly("mat", &IntegralOperator<Complex>::GetMatrix)
-    .def("GetPotential", &IntegralOperator<Complex>::GetPotential)    
+    .def("GetPotential", &IntegralOperator<Complex>::GetPotential,
+         py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)         
     ;
 
 
