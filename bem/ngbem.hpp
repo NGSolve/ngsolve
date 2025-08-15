@@ -56,7 +56,8 @@ namespace ngsbem
     CalcFarFieldBlock(FlatArray<DofId> trialdofs, FlatArray<DofId> testdofs,
                       LocalHeap &lh) const;
     */
-    virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf) const = 0;
+    virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf,
+                                                         optional<int> io, bool nearfield_experimental) const = 0;
   };
 
 
@@ -145,7 +146,8 @@ namespace ngsbem
     
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
     
-    virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf) const override;
+    virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf,
+                                                         optional<int> io, bool nearfield_experimental) const override;
   };
 
 
@@ -158,11 +160,12 @@ namespace ngsbem
     shared_ptr<DifferentialOperator> evaluator;
     KERNEL kernel;
     int intorder;
+    bool nearfield;
   public:
     PotentialCF (shared_ptr<GridFunction> _gf,
                  optional<Region> _definedon,    
                  shared_ptr<DifferentialOperator> _evaluator,
-                 KERNEL _kernel, int _intorder);
+                 KERNEL _kernel, int _intorder, bool anearfield);
 
     using CoefficientFunctionNoDerivative::Evaluate;
     double Evaluate (const BaseMappedIntegrationPoint & ip) const override

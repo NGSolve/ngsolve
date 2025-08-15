@@ -835,10 +835,10 @@ namespace ngsbem
   
   template <typename KERNEL>
   shared_ptr<CoefficientFunction> GenericIntegralOperator<KERNEL> ::
-  GetPotential(shared_ptr<GridFunction> gf) const
+  GetPotential(shared_ptr<GridFunction> gf, optional<int> io, bool nearfield_experimental) const
   {
     return  make_shared<PotentialCF<KERNEL>> (gf, trial_definedon, trial_evaluator,
-                                              kernel, intorder);
+                                              kernel, io.value_or(intorder), nearfield_experimental);
   }
 
 
@@ -847,12 +847,159 @@ namespace ngsbem
   PotentialCF (shared_ptr<GridFunction> _gf,
                optional<Region> _definedon,                   
                shared_ptr<DifferentialOperator> _evaluator,
-               KERNEL _kernel, int _intorder)
+               KERNEL _kernel, int _intorder, bool _nearfield)
     : CoefficientFunctionNoDerivative (_evaluator->Dim(), std::is_same<typename KERNEL::value_type,Complex>()),
-      gf(_gf), definedon(_definedon), evaluator(_evaluator), kernel(_kernel), intorder(_intorder)
+      gf(_gf), definedon(_definedon), evaluator(_evaluator), kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
   {
     ;
   }
+
+
+  // minimize the function f(x) = 1/2 x a x + b x + c
+  // returns (x, f(x))
+  tuple<double,double> MinimizeOnSegm (double a, double b, double c)
+  {
+    if (a > 0)
+      {
+        double x = -b/a;
+        if (x > 0 && x < 1)
+          return { x, 0.5*a*x*x + b*x + c };
+      }
+    double val0 = c;
+    double val1 = 0.5*a+b+c;
+    if (val0 < val1)
+      return { 0, val0 };
+    else
+      return { 1, val1 };
+  }
+                         
+  // 1/2 x^T A x + b x + c
+  Vec<2> MinimizeOnTrig (Mat<2,2> a, Vec<2> b, double c)
+  {
+    if (a(0,0) > 0 && Det(a) > 0)
+      {
+        Vec<2> sol = -Inv(a)*b;
+        if (sol(0) > 0 && sol(1) > 0 && sol(0)+sol(1) < 1)
+          return sol;
+      }
+
+    
+    auto [x0,val0] = MinimizeOnSegm(a(0,0), b(0), c);
+    auto [x1,val1] = MinimizeOnSegm(a(1,1), b(1), c);
+    Vec<2> p{1,0}, d{-1,1};
+    Vec<2> g = a*p + b;
+    auto [x2,val2] = MinimizeOnSegm(InnerProduct(a*d,d), InnerProduct(g,d), 0.5*a(0,0)+b(0)+c);  // (1,0) + (-1,1)*s
+
+    if (val0 < val1 && val0 < val2)
+      return { x0, 0 };
+    if (val1 < val2)
+      return { 0, x1 };
+    return p+x2*d;
+  }
+
+  
+  IntegrationRule GetIntegrationRule(Vec<3> x, const ElementTransformation & trafo, int intorder, bool nearfield)
+  {
+    if (!nearfield || trafo.GetElementType() != ET_TRIG)
+      return IntegrationRule(trafo.GetElementType(), intorder);
+
+
+    IntegrationPoint ip(1.0/3, 1.0/3);
+    MappedIntegrationPoint<2,3>  mip(ip, trafo);
+    double elsize = L2Norm(mip.GetJacobian());
+    double dist = L2Norm(x-mip.GetPoint());
+
+    if (dist < elsize)
+      {
+        /*
+        IntegrationPoint ip(0.,0.);
+        MappedIntegrationPoint<2,3>  mip(ip, trafo);
+        // dist = || x - (mip+Jac*uv) ||
+        Mat<3,2> jac = mip.GetJacobian();
+        Mat<2,2> a = Trans(jac)*jac;
+        Vec<2> b = -Trans(jac) * (x-mip.GetPoint());
+        Vec<2> uv = MinimizeOnTrig(a, b, 0);
+        */
+
+        IntegrationPoint ip(1./3, 1./3);
+        // *testout << endl;
+        for (int j = 0; j < 5; j++) // SQP steps
+          {
+            // *testout << "j = " << j << endl;
+            MappedIntegrationPoint<2,3>  mip(ip, trafo);
+            // dist = || x - (mip+Jac*(uv-ip) + 1/2*Hesse(uv-ip, uv-ip)) ||
+            Mat<3,2> jac = mip.GetJacobian();
+            Vec<2> ipvec { ip(0), ip(1) };
+            auto Hesse = mip.CalcHesse();
+            Vec<3,Vec<2>> Hesseip
+              {
+                Hesse[0]*ipvec,
+                Hesse[1]*ipvec,
+                Hesse[2]*ipvec
+              };
+            Vec<3> Hesseipip
+              {
+                InnerProduct(Hesseip(0), ipvec),
+                InnerProduct(Hesseip(1), ipvec),
+                InnerProduct(Hesseip(2), ipvec)
+              };
+            Mat<3,2> jacphip = jac;
+            jacphip.Row(0) -= Hesseip(0);
+            jacphip.Row(1) -= Hesseip(1);
+            jacphip.Row(2) -= Hesseip(2);
+            Mat<2,2> a = Trans(jac)*jac;
+            Vec<2> b = -Trans(jacphip) * (x-mip.GetPoint()+jac*ipvec + 0.5*Hesseipip);
+            Vec<2> uv = MinimizeOnTrig(a, b, 0);
+            // *testout << "res = " << (a*uv+b) << endl;
+            ip = IntegrationPoint(uv(0), uv(1));
+            // *testout << "uv = " << uv << endl;
+          }
+
+        /*
+        *testout << "x = " << x << endl;
+        *testout << "v0 = " << mip.GetPoint() << endl;
+        *testout << "v1 = " << mip.GetPoint()+jac.Col(0) << endl;
+        *testout << "v2 = " << mip.GetPoint()+jac.Col(1) << endl;
+        *testout << "uv = " << uv << endl;
+        *testout << "xhat = " << mip.GetPoint()+jac*uv << endl;
+        */
+        IntegrationRule irsegm(ET_SEGM, intorder);
+        IntegrationRule irtrig(trafo.GetElementType(), intorder);            
+        IntegrationRule ir;
+
+        Vec<2> corners[] = { Vec<2>(0,0), Vec<2>(1,0), Vec<2>(0,1) };
+        for (int j = 0; j < 3; j++)
+          {
+            Vec<2> v0 = corners[j];
+            Vec<2> v1 = corners[(j+1)%3];
+            Vec<2> v2 { ip(0), ip(1) };
+            Mat<2,2> sides;
+            sides.Col(0) = v0-v2;
+            sides.Col(1) = v1-v2;
+            double factor = Det(sides);
+
+            if (fabs(factor) > 1e-12)
+              for (auto ip1 : irsegm)
+                for (auto ip2 : irsegm)
+                  {
+                    Vec<2> ipxy = v0 + ip1(0)*(1-ip2(0))*(v1-v0) + ip2(0)*(v2-v0);
+                    ir.AddIntegrationPoint (IntegrationPoint(ipxy(0), ipxy(1), 0,
+                                                             ip1.Weight()*ip2.Weight()*(1-ip2(0))*factor));
+                  }
+            /*
+              for (auto ip : irtrig)
+                {
+                  Vec<2> ipxy = v0 + ip(0)*(v1-v0) + ip(1)*(v2-v0);
+                  ir.AddIntegrationPoint (IntegrationPoint(ipxy(0), ipxy(1), 0, ip.Weight()*factor));
+                }
+            */
+          }
+        return ir;
+      }
+    return IntegrationRule(trafo.GetElementType(), intorder);    
+  }
+
+
   
   template <typename KERNEL> template <typename T>
   void PotentialCF<KERNEL> :: T_Evaluate(const BaseMappedIntegrationPoint & mip,
@@ -881,7 +1028,10 @@ namespace ngsbem
           space->GetDofNrs(ei, dnums);
           FlatVector<T> elvec(fel.GetNDof(), lh);
           gf->GetElementVector(dnums, elvec);
-          IntegrationRule ir(fel.ElementType(), intorder);
+          
+          // IntegrationRule ir(fel.ElementType(), intorder);
+          IntegrationRule ir = GetIntegrationRule(mip23.GetPoint(), trafo, intorder, nearfield);
+          
           SIMD_IntegrationRule simd_ir(ir);
           SIMD_MappedIntegrationRule<2,3> miry(simd_ir, trafo, lh);
           FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
@@ -911,6 +1061,13 @@ namespace ngsbem
   void PotentialCF<KERNEL> :: T_Evaluate(const BaseMappedIntegrationRule & bmir,
                                          BareSliceMatrix<T> result) const
   {
+    if (nearfield)
+      {
+        for (int i = 0; i < bmir.Size(); i++)
+          T_Evaluate(bmir[i], result.Row(i).Range(0,Dimension()));
+        return;
+      }
+    
     try
       {
         static Timer t("ngbem evaluate potential (ip)"); RegionTimer reg(t);
