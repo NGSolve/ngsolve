@@ -905,6 +905,11 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          {
            ma.SetElOrder(id.Nr(), order);
          }, py::arg("eid"), py::arg("order"), "For backward compatibility, not recommended to use")
+    .def("SetElementOrders",
+         [](MeshAccess & ma, ElementId id, tuple<int,int,int> orders)
+         {
+           ma.SetElOrders(id.Nr(), get<0>(orders), get<1>(orders), get<2>(orders));
+         }, py::arg("eid"), py::arg("orders"), "Set anisotropic element order (expert only)")
     
     .def("Curve", //  &MeshAccess::Curve,
          [] (MeshAccess * self, int order)
