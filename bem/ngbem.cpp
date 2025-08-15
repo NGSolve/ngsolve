@@ -1033,22 +1033,29 @@ namespace ngsbem
           IntegrationRule ir = GetIntegrationRule(mip23.GetPoint(), trafo, intorder, nearfield);
           
           SIMD_IntegrationRule simd_ir(ir);
-          SIMD_MappedIntegrationRule<2,3> miry(simd_ir, trafo, lh);
-          FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
-          
-          evaluator->Apply (fel, miry, elvec, vals);
-          for (int iy = 0; iy < miry.Size(); iy++)
-            {
-              Vec<3,SIMD<double>> x = mip23.GetPoint();
-              Vec<3,SIMD<double>> nx = mip23.GetNV();
 
-              Vec<3,SIMD<double>> y = miry[iy].GetPoint();
-              Vec<3,SIMD<double>> ny = miry[iy].GetNV();
+          static constexpr int bs = 64;
+          for (int k = 0; k < simd_ir.Size(); k += bs)
+            {
+              HeapReset hr(lh);
+              auto simd_ir_range = simd_ir.Range(k, min(simd_ir.Size(), size_t(k+bs)));
+              SIMD_MappedIntegrationRule<2,3> miry(simd_ir_range, trafo, lh);
+              FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
               
-              for (auto term : kernel.terms)
+              evaluator->Apply (fel, miry, elvec, vals);
+              for (int iy = 0; iy < miry.Size(); iy++)
                 {
-                  auto kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
-                  simd_result(term.test_comp) += miry[iy].GetWeight()*kernel_ * vals(term.trial_comp,iy);
+                  Vec<3,SIMD<double>> x = mip23.GetPoint();
+                  Vec<3,SIMD<double>> nx = mip23.GetNV();
+                  
+                  Vec<3,SIMD<double>> y = miry[iy].GetPoint();
+                  Vec<3,SIMD<double>> ny = miry[iy].GetNV();
+                  
+                  for (auto term : kernel.terms)
+                    {
+                      auto kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
+                      simd_result(term.test_comp) += miry[iy].GetWeight()*kernel_ * vals(term.trial_comp,iy);
+                    }
                 }
             }
         }
