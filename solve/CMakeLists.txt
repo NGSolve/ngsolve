@@ -29,7 +29,7 @@ if(NETGEN_USE_PYTHON)
     if(WIN32)
         set_target_properties( ngslib PROPERTIES SUFFIX ".pyd" )
     else(WIN32)
-        target_link_libraries(ngslib PRIVATE ngstd ngbla ngla ngfem ngcomp)
+        target_link_libraries(ngslib PRIVATE ngstd ngbla ngla ngfem ngcomp ngsbem)
     endif(WIN32)
 
     set_target_properties(ngslib PROPERTIES INSTALL_RPATH "${NETGEN_RPATH_TOKEN}/../${NETGEN_PYTHON_RPATH}")
