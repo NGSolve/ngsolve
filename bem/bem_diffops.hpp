@@ -23,6 +23,8 @@ namespace ngsbem
     enum { DIM_DMAT = 3 };
     enum { DIFFORDER = 1 };
 
+    static bool SupportsVB (VorB checkvb) { return checkvb==BND; }
+    
     static string Name() { return "boundaryrot"; }
     
     static const ScalarFiniteElement<2> & Cast (const FiniteElement & fel) 
