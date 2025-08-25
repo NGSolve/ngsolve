@@ -12,7 +12,7 @@ namespace ngsbem
     return 1.0 / (4*M_PI) / L2Norm(px-py);
   }
 
-  inline std::tuple<Vec<3>, double, Vec<3>, double> GetMidAndRadius(const Array<Vec<3>>& xpts, const Array<Vec<3>>& ypts)
+  inline std::tuple<Vec<3>, double> GetCenterAndRadius(const Array<Vec<3>>& xpts)
   {
     Vec<3> xmax(-1e99, -1e99, -1e99);
     Vec<3> xmin(1e99, 1e99, 1e99);
@@ -30,25 +30,10 @@ namespace ngsbem
     for (int j = 0; j < 3; j++)
       rx = max(rx, xmax(j)-xmin(j));
 
-    Vec<3> ymax(-1e99, -1e99, -1e99);
-    Vec<3> ymin(1e99, 1e99, 1e99);
-    for (auto yi : ypts)
-      {
-        for (int j = 0; j < 3; j++)
-          {
-            ymin(j) = min(ymin(j), yi(j));
-            ymax(j) = max(ymax(j), yi(j));
-          }
-      }
-
-    Vec<3> cy = 0.5*(ymin+ymax);
-    double ry = 0;
-    for (int j = 0; j < 3; j++)
-      ry = max(ry, ymax(j)-ymin(j));
-
-    return std::make_tuple(cx, rx, cy, ry);
+    return { cx, rx };
   }
-
+  
+  
   template <typename TSCAL>
   class Base_FMM_Operator : public BaseMatrix
   {
@@ -63,7 +48,8 @@ namespace ngsbem
       : xpts(std::move(_xpts)), ypts(std::move(_ypts)),
         xnv(std::move(_xnv)), ynv(std::move(_ynv)), kernelshape(_kernelshape)
     {
-      std::tie(cx, rx, cy, ry) = GetMidAndRadius(xpts, ypts);
+      std::tie(cx, rx) = GetCenterAndRadius(xpts);      
+      std::tie(cy, ry) = GetCenterAndRadius(ypts);      
     }
       
     

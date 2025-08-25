@@ -823,7 +823,20 @@ namespace ngsbem
           // t.AddFlops (charges.Size());
         if (simd_charges.Size())
           {
+            // static Timer t("regmp, evaluate, simd charges"); RegionTimer r(t);
+            
             simd_entry_type vsum{0.0};
+            if (mp.Kappa() < 1e-12)
+              {
+                for (auto [x,c] : simd_charges)
+                  {
+                    auto rho2 = L2Norm2(p-x);
+                    auto kernel = (1/(4*M_PI)) * rsqrt(rho2);
+                    kernel = If(rho2 > 0.0, kernel, SIMD<double,FMM_SW>(0.0));
+                    vsum += kernel * c;
+                  }
+              }
+            else
             if (mp.Kappa() < 1e-8)
               for (auto [x,c] : simd_charges)
                 {
@@ -1585,6 +1598,7 @@ namespace ngsbem
         else
           sum = mp.Eval(p-center);
 
+        // static Timer t("regmp, evaluate, singnode"); RegionTimer r(t);
         for (auto sn : singnodes)
           sum += sn->EvaluateMP(p);
 
