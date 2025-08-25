@@ -144,11 +144,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
 
+  py::class_<BaseIntegralOperator, shared_ptr<BaseIntegralOperator>> (m, "BaseIntegralOperator")
+    ;
 
-
-
-
-  py::class_<IntegralOperator<double>, shared_ptr<IntegralOperator<double>>> (m, "IntegralOperator")
+  py::class_<IntegralOperator<double>,shared_ptr<IntegralOperator<double>>, BaseIntegralOperator> (m, "IntegralOperator")
     .def_property_readonly("mat", &IntegralOperator<double>::GetMatrix)
     .def("GetPotential", &IntegralOperator<double>::GetPotential,
          py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
@@ -288,6 +287,74 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         py::arg("trial_definedon")=nullopt, py::arg("test_definedon")=nullopt,        
         py::arg("intorder")=3);
   
+
+
+
+  class BasePotentialOperatorAndTest
+  {
+  public:
+    shared_ptr<BasePotentialOperator> pot;
+    shared_ptr<ProxyFunction> test_proxy;
+  };
+
+  
+  py::class_<BasePotentialOperator, shared_ptr<BasePotentialOperator>> (m, "PotentialOperator")
+    .def("__mul__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<CoefficientFunction> test_proxy) {
+      return BasePotentialOperatorAndTest { pot, dynamic_pointer_cast<ProxyFunction>(test_proxy) };
+    })
+    ;
+  
+  py::class_<BasePotentialOperatorAndTest> (m, "BasePotentialOperatorAndTest")
+    .def("__mul__", [](BasePotentialOperatorAndTest pottest, DifferentialSymbol dx)
+    {
+      auto iop = pottest.pot->MakeIntegralOperator(pottest.test_proxy, dx);
+      if (auto diop = dynamic_pointer_cast<IntegralOperator<double>>(iop); diop)
+        return py::cast(diop);
+      if (auto ciop = dynamic_pointer_cast<IntegralOperator<Complex>>(iop); ciop)
+        return py::cast(ciop);
+      throw Exception("neither double nor complex?");
+    })
+    ;
+  
+  m.def("LaplaceSL", [](shared_ptr<SumOfIntegrals> potential) -> shared_ptr<BasePotentialOperator> {
+    if (potential->icfs.Size()!=1) throw Exception("need one integral");
+    auto igl = potential->icfs[0];
+    if (igl->dx.vb != BND) throw Exception("need boundary integral");
+    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    auto fes = proxy->GetFESpace();
+    optional<Region> definedon;
+    if (igl->dx.definedon)
+      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+
+    if (proxy->Dimension() == 1)
+      {
+        LaplaceSLKernel<3> kernel;
+        return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+                                                                   kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+      }
+    else
+      {
+        LaplaceHSKernel<3> kernel;
+        return make_shared<PotentialOperator<LaplaceHSKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+                                                                   kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+      }
+  });
+
+
+
+  m.def("LaplaceDL", [](shared_ptr<SumOfIntegrals> potential) -> shared_ptr<BasePotentialOperator> {
+    if (potential->icfs.Size()!=1) throw Exception("need one integral");
+    auto igl = potential->icfs[0];
+    if (igl->dx.vb != BND) throw Exception("need boundary integral");
+    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    auto fes = proxy->GetFESpace();
+    LaplaceDLKernel<3> kernel;
+    optional<Region> definedon;
+    if (igl->dx.definedon)
+      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+    return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+                                                               kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+  });
 
 }
 

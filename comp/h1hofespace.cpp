@@ -20,7 +20,7 @@
 #include <bdbequations.hpp>
 #include <diffop_impl.hpp>
 #include <fesconvert.hpp>
-
+#include <../bem/bem_diffops.hpp>
 #include <special_matrix.hpp>   // for embedding
 
 using namespace ngmg; 
@@ -487,6 +487,8 @@ namespace ngcomp
       case 3:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<3>>> ());
 	additional_evaluators.Set ("hesseboundary", make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>> ());
+        additional_evaluators.Set ("curl", make_shared<T_DifferentialOperator<ngsbem::DiffOpBoundaryRot>> ());
+        
 	if (dimension > 1)
 	  { additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (make_shared<T_DifferentialOperator<DiffOpDualH1<3,3>>> (), dimension)); }
 	else
@@ -2514,7 +2516,7 @@ into the wirebasket.
           additional_evaluators.Set ("Gradboundary", make_shared<T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3>>>());
           additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualVectorH1<3,3>>> ());
           additional_evaluators.Set ("hesse", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesse<3>>>(), 3));
-          additional_evaluators.Set ("hesseboundary", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>>(), 3));          
+          additional_evaluators.Set ("hesseboundary", make_shared<VectorDifferentialOperator>(make_shared<T_DifferentialOperator<DiffOpHesseBoundary<3>>>(), 3));
           break;
         }
     }
