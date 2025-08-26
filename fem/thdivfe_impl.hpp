@@ -235,6 +235,7 @@ namespace ngfem
   CalcMappedDivShape (const SIMD_BaseMappedIntegrationRule & bmir, 
                       BareSliceMatrix<SIMD<double>> divshapes) const
   {
+    /*
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
     for (size_t i = 0; i < mir.Size(); i++)
       {
@@ -246,6 +247,29 @@ namespace ngfem
                                    divshapesi(j) = val;
                                  }));
       }
+    */
+    Iterate<4-DIM>
+      ([this,&bmir,divshapes](auto CODIM)
+      {
+        constexpr int DIMSPACE = DIM+CODIM.value;
+        if (bmir.DimSpace() == DIMSPACE)
+          {
+            // cout << "use new div, dim " << DIMSPACE << endl;
+             auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+             for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 auto divshapesi = divshapes.Col(i);
+                 auto invJ = 1.0/mir[i].GetJacobiDet();
+                 static_cast<const FEL*> (this) ->                 
+                   T_CalcShape (GetTIPGrad<DIM>(mir[i].IP()),
+                                SBLambda ([divshapesi,invJ] (size_t j, THDiv2DivShape<DIM,SIMD<double>> val)
+                                          {
+                                            divshapesi(j) = invJ*val; 
+                                          }));
+               }
+           }
+       });
+   
   }
 
   template <class FEL, ELEMENT_TYPE ET>
@@ -384,6 +408,8 @@ namespace ngfem
   EvaluateDiv (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceVector<> coefs,
                BareVector<SIMD<double>> values) const
   {
+    /*
+    cout << "evaldiv, simd" << endl
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
     for (size_t i = 0; i < mir.Size(); i++)
       {
@@ -399,6 +425,31 @@ namespace ngfem
                                  }));
         values(i) = sum;
       }
+    */
+    Iterate<4-DIM>
+      ([this,&bmir,coefs,values](auto CODIM)
+      {
+        constexpr int DIMSPACE = DIM+CODIM.value;
+        if (bmir.DimSpace() == DIMSPACE)
+          {
+            auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+            for (size_t i = 0; i < mir.Size(); i++)
+               {
+                 SIMD<double> sum(0.0);                 
+                 static_cast<const FEL*> (this) ->                 
+                   T_CalcShape (GetTIPGrad<DIM>(mir[i].IP()),
+                                SBLambda ([=,&sum] (size_t j, THDiv2DivShape<DIM,SIMD<double>> divshape)
+                                          {
+                                            // auto vshape = HDiv2DivShapeNew (s); 
+                                            // shapesi.Range(j*vshape.Size(), (j+1)*vshape.Size()) = vshape;
+                                            // divshapesi(j) = HDiv2DivShapeNew (s);
+                                            sum += coefs(j) * divshape.Get();                                            
+                                          }));
+                 values(i) = 1/mir[i].GetJacobiDet() * sum;
+               }
+           }
+       });
+    
   }
   
   template <class FEL, ELEMENT_TYPE ET>
