@@ -161,53 +161,6 @@ namespace ngsbem
 
 
 
-  class BasePotentialOperator
-  {
-  public:
-    shared_ptr<ProxyFunction> proxy;
-    optional<Region> definedon;
-    shared_ptr<DifferentialOperator> evaluator;
-    int intorder;
-  public:
-    BasePotentialOperator (shared_ptr<ProxyFunction> _proxy,
-                           optional<Region> _definedon,    
-                           shared_ptr<DifferentialOperator> _evaluator,
-                           int _intorder)
-      : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
-    virtual ~BasePotentialOperator() { } 
-    virtual shared_ptr<BaseIntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) = 0;    
-  };
-  
-  
-  template  <typename KERNEL>
-  class PotentialOperator : public BasePotentialOperator
-  {
-  public:
-    KERNEL kernel;
-  public:
-    PotentialOperator (shared_ptr<ProxyFunction> _proxy,
-                       optional<Region> _definedon,    
-                       shared_ptr<DifferentialOperator> _evaluator,
-                       KERNEL _kernel, int _intorder)
-      : BasePotentialOperator (_proxy, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
-
-    shared_ptr<BaseIntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) override
-    {
-      auto festest = test_proxy->GetFESpace();
-      optional<Region> definedon_test;
-      if (dx.definedon)
-        definedon_test = Region(festest->GetMeshAccess(), dx.vb, get<1> (*(dx.definedon)));
-      
-      return make_shared<GenericIntegralOperator<KERNEL>> (proxy->GetFESpace(),
-                                                           festest, 
-                                                           definedon,
-                                                           definedon_test,
-                                                           proxy->Evaluator(),
-                                                           test_proxy->Evaluator(),
-                                                           kernel,
-                                                           2 + intorder + festest->GetOrder()+dx.bonus_intorder);
-    }
-  };  
 
 
 
@@ -265,6 +218,87 @@ namespace ngsbem
     void T_Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
                     BareSliceMatrix<SIMD<T>> result) const;
   };
+
+
+
+
+
+
+
+
+
+
+  
+
+  class BasePotentialOperator
+  {
+  public:
+    shared_ptr<ProxyFunction> proxy;
+    optional<Region> definedon;
+    shared_ptr<DifferentialOperator> evaluator;
+    int intorder;
+  public:
+    BasePotentialOperator (shared_ptr<ProxyFunction> _proxy,
+                           optional<Region> _definedon,    
+                           shared_ptr<DifferentialOperator> _evaluator,
+                           int _intorder)
+      : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
+    virtual ~BasePotentialOperator() { } 
+    virtual shared_ptr<BaseIntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) = 0;
+    virtual shared_ptr<CoefficientFunction> MakePotentialCF(shared_ptr<GridFunction> gf) = 0;
+  };
+  
+  
+  template  <typename KERNEL>
+  class PotentialOperator : public BasePotentialOperator
+  {
+  public:
+    KERNEL kernel;
+  public:
+    PotentialOperator (shared_ptr<ProxyFunction> _proxy,
+                       optional<Region> _definedon,    
+                       shared_ptr<DifferentialOperator> _evaluator,
+                       KERNEL _kernel, int _intorder)
+      : BasePotentialOperator (_proxy, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
+
+    shared_ptr<BaseIntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) override
+    {
+      auto festest = test_proxy->GetFESpace();
+      optional<Region> definedon_test;
+      if (dx.definedon)
+        definedon_test = Region(festest->GetMeshAccess(), dx.vb, get<1> (*(dx.definedon)));
+      
+      return make_shared<GenericIntegralOperator<KERNEL>> (proxy->GetFESpace(),
+                                                           festest, 
+                                                           definedon,
+                                                           definedon_test,
+                                                           proxy->Evaluator(),
+                                                           test_proxy->Evaluator(),
+                                                           kernel,
+                                                           2 + intorder + festest->GetOrder()+dx.bonus_intorder);
+    }
+    
+    shared_ptr<CoefficientFunction> MakePotentialCF(shared_ptr<GridFunction> gf) override
+    {
+      return make_shared<PotentialCF<KERNEL>>(gf, definedon, evaluator, kernel, 2+intorder, true);
+    }
+  };  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
   
 
   struct KernelTerm

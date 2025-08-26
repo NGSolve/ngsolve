@@ -199,7 +199,7 @@ namespace ngsbem
 
           int dim = evaluator.DimRef();
           Matrix<double,ColMajor> bmat_(dim*ir.Size(), felx.GetNDof());
-          
+          bmat_ = 0.0;
           for (int i : Range(ir.Size()))
             evaluator.CalcMatrix(felx, ir[i], bmat_.Rows(dim*i, dim*(i+1)), lh);
           
@@ -454,7 +454,8 @@ namespace ngsbem
             
             FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir.Size(), lh);
             FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir.Size(), lh);
-            
+            shapesi = 0.;
+            shapesj = 0.;
             test_evaluator -> CalcMatrix(test_fel, test_mir, Trans(shapesi), lh);
             trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
             
@@ -577,8 +578,10 @@ namespace ngsbem
       FlatMatrix<SIMD<double>> mshapesi(feli.GetNDof()*test_evaluator->Dim(), mirx.Size(), lh);
       FlatMatrix<SIMD<value_type>> mshapesi_kern(feli.GetNDof(), mirx.Size(), lh);
       FlatMatrix<SIMD<double>> mshapesj(felj.GetNDof()*trial_evaluator->Dim(), miry.Size(), lh);
-      
-      test_evaluator->CalcMatrix(feli, mirx, mshapesi);
+
+      mshapesi = 0.;
+      mshapesj = 0.;
+      test_evaluator->CalcMatrix(feli, mirx, mshapesi);  // only used are set for compound fe !!!
       trial_evaluator->CalcMatrix(felj, miry, mshapesj);
                     
       FlatVector<Vec<KERNEL_COMPS_T::SIZE, SIMD<value_type>>> kernel_values(mirx.Size(), lh);
@@ -788,7 +791,8 @@ namespace ngsbem
           
           FlatMatrix<> shapesi(feli.GetNDof(), test_evaluator->Dim()*irtrig.Size(), lh);
           FlatMatrix<> shapesj(felj.GetNDof(), trial_evaluator->Dim()*irtrig.Size(), lh);
-          
+          shapesi = 0.0;
+          shapesj = 0.0;
           test_evaluator -> CalcMatrix(feli, mirx, Trans(shapesi), lh);
           trial_evaluator-> CalcMatrix(felj, miry, Trans(shapesj), lh);
           
@@ -1190,6 +1194,14 @@ namespace ngsbem
         }
     */
   }
+
+
+
+
+  template class PotentialCF<LaplaceSLKernel<3>>;
+  template class PotentialCF<LaplaceDLKernel<3>>;
+  template class PotentialCF<LaplaceHSKernel<3>>;  
+
   
   
   template class GenericIntegralOperator<LaplaceSLKernel<3>>;
