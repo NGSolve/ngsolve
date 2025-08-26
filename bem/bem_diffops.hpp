@@ -430,7 +430,9 @@ namespace ngsbem
               mat.Col(j).Range(4*i,4*i+3) = shape;
             }
         }
-      
+
+      Cast(fel).CalcMappedDivShape (mir, mat.RowSlice(3, 4));
+      /*
       constexpr size_t BS=16;
       LocalHeapMem<BS*SIMD<double>::Size()*sizeof(SIMD<MappedIntegrationPoint<2,2>>)+64> lh("genmatlh");
       FE_ElementTransformation<2,2> trafo2d(fel.ElementType());
@@ -443,6 +445,7 @@ namespace ngsbem
         }
       for (size_t i = 0; i < mir.Size(); i++)
         mat.Col(i).Slice(3,4).Range(fel.GetNDof()) *= 1.0 / mir[i].GetJacobiDet();
+      */
     }
 
     using DiffOp<DiffOpMaxwellNew>::ApplySIMDIR;
