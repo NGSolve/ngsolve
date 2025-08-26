@@ -302,6 +302,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("__mul__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<CoefficientFunction> test_proxy) {
       return BasePotentialOperatorAndTest { pot, dynamic_pointer_cast<ProxyFunction>(test_proxy) };
     })
+    .def("__call__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<GridFunction> gf) {
+      return pot->MakePotentialCF(gf);
+    })
     ;
   
   py::class_<BasePotentialOperatorAndTest> (m, "BasePotentialOperatorAndTest")
@@ -332,12 +335,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                    kernel, fes->GetOrder()+igl->dx.bonus_intorder);
       }
-    else
+    if (proxy->Dimension() == 3)
       {
         LaplaceHSKernel<3> kernel;
         return make_shared<PotentialOperator<LaplaceHSKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                    kernel, fes->GetOrder()+igl->dx.bonus_intorder);
       }
+    throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
   });
 
 
