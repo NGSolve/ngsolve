@@ -7,6 +7,7 @@
 #include <../fem/hcurlhofe.hpp> 
 #include <../fem/hcurllofe.hpp>
 #include <../fem/hcurl_equations.hpp> 
+#include <../bem/bem_diffops.hpp>
 #include <diffop_impl.hpp>
 
 // #include <../fem/hcurlhdiv_dshape.hpp> 
@@ -182,6 +183,7 @@ namespace ngcomp
       case 3:
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
+        additional_evaluators.Set ("rotated_trace", make_shared<T_DifferentialOperator<ngsbem::DiffOpRotatedTrace>> ());
         break;
       default:
         ;

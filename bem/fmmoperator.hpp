@@ -490,6 +490,36 @@ namespace ngsbem
   }
 
   template <>
+  void FMM_Operator<HelmholtzSLVecKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const
+  {
+    static Timer tall("ngbem fmm apply HelmholtzSLVec (ngfmm)"); RegionTimer reg(tall);
+    auto fx = x.FV<Complex>();
+    auto fy = y.FV<Complex>();
+
+    fy = 0;
+    if (L2Norm(x) == 0) return;
+    double kappa = kernel.GetKappa();
+
+    auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cx, rx, kappa);
+
+    ParallelFor (xpts.Size(), [&](int i){
+      singmp->AddCharge(xpts[i], Vec<3,Complex>(fx.Range(3*i,3*i+3)));
+    });
+
+    singmp->CalcMP();
+
+    RegularMLMultiPole<Vec<3,Complex>> regmp (cy, ry, kappa);
+    ParallelFor (ypts.Size(), [&](int i){
+      regmp.AddTarget(ypts[i]);
+    });
+    regmp.CalcMP(singmp);
+
+    ParallelFor (ypts.Size(), [&](int i) {
+      fy.Range(3*i,3*i+3) = regmp.Evaluate(ypts[i]);
+    });
+  }
+
+  template <>
   void FMM_Operator<HelmholtzDLKernel<3>> :: Mult(const BaseVector & x, BaseVector & y) const 
   {
     static Timer tall("ngbem fmm apply HelmholtzDL (ngfmm)"); RegionTimer reg(tall);

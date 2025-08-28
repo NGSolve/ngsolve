@@ -499,6 +499,34 @@ namespace ngsbem
   };
 
 
+  template <int DIM> class HelmholtzSLVecKernel;
+
+  template<>
+  class HelmholtzSLVecKernel<3>
+  {
+    double kappa;
+  public:
+    typedef Complex value_type;
+    static string Name() { return "HelmholtzSLVec"; }
+    static auto Shape() { return IVec<2>(3,3); }
+
+    HelmholtzSLVecKernel (double _kappa) : kappa(_kappa) { }
+
+    template <typename T>
+    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
+    {
+      T norm = L2Norm(x-y);
+      auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
+      return Vec<1,decltype(kern)> (kern);
+    }
+    double GetKappa() const { return kappa; }
+    Array<KernelTerm> terms =
+      {
+        KernelTerm{1.0, 0, 0, 0},
+        KernelTerm{1.0, 0, 1, 1},
+        KernelTerm{1.0, 0, 2, 2},
+      };
+  };
 
 
   template <int DIM> class HelmholtzHSKernel;

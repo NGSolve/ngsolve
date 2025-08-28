@@ -1267,6 +1267,12 @@ namespace ngsbem
   template class PotentialCF<LaplaceSLKernel<3>>;
   template class PotentialCF<LaplaceDLKernel<3>>;
   template class PotentialCF<LaplaceHSKernel<3>>;  
+  template class PotentialCF<HelmholtzSLKernel<3>>;
+  template class PotentialCF<HelmholtzSLVecKernel<3>>;
+  template class PotentialCF<HelmholtzDLKernel<3>>;
+  template class PotentialCF<HelmholtzHSKernel<3>>;
+  template class PotentialCF<MaxwellSLKernel<3>>;
+  template class PotentialCF<MaxwellDLKernel<3>>;
 
   
   
@@ -1275,6 +1281,7 @@ namespace ngsbem
   template class GenericIntegralOperator<LaplaceHSKernel<3>>;
   
   template class GenericIntegralOperator<HelmholtzSLKernel<3>>;
+  template class GenericIntegralOperator<HelmholtzSLVecKernel<3>>;
   template class GenericIntegralOperator<HelmholtzDLKernel<3>>;
   template class GenericIntegralOperator<HelmholtzHSKernel<3>>;
   
