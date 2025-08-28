@@ -852,12 +852,78 @@ namespace ngsbem
                optional<Region> _definedon,                   
                shared_ptr<DifferentialOperator> _evaluator,
                KERNEL _kernel, int _intorder, bool _nearfield)
+  /*
     : CoefficientFunctionNoDerivative (_evaluator->Dim(), std::is_same<typename KERNEL::value_type,Complex>()),
       gf(_gf), definedon(_definedon), evaluator(_evaluator), kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
+  */
+    : BasePotentialCF(_gf, _definedon, _evaluator, std::is_same<typename KERNEL::value_type,Complex>()),
+      kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
   {
     ;
   }
 
+
+
+  template <typename KERNEL>
+  void PotentialCF<KERNEL> ::
+  BuildLocalExpansion(const Region & reg)
+  {
+    // find center and radius of sources
+    // cs, rs = ..
+
+#ifdef TODOLOCALEXPANSION    
+    // add function to all kernels
+    // creats shared_ptr<MultiPole<properdim>
+    auto singmp = kernel.CreateMultipoleExpansion(cs, rs);
+
+    LocalHeapMem<100000> lh("PotentialCF::BuildLocalExpansion");
+
+    auto space = this->gf->GetFESpace();
+    auto mesh = space->GetMeshAccess();
+    
+    auto & mirx = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);
+    
+    typedef typename KERNEL::value_type T;
+    for (size_t i = 0; i < mesh->GetNSE(); i++)
+      {
+        HeapReset hr(lh);
+        ElementId ei(BND, i);
+        if (!space->DefinedOn(ei)) continue;
+          
+        const FiniteElement &fel = space->GetFE(ei, lh);
+        const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
+        
+        Array<DofId> dnums(fel.GetNDof(), lh);
+        space->GetDofNrs(ei, dnums);
+        FlatVector<T> elvec(fel.GetNDof(), lh);
+        gf->GetElementVector(dnums, elvec);
+        
+        IntegrationRule ir(fel.ElementType(), intorder);
+        MappedIntegrationRule<2,3> miry(ir, trafo, lh);
+        FlatMatrix<T> vals(evaluator->Dim(), miry.Size(), lh);
+        
+        evaluator->Apply (fel, miry, elvec, vals);
+        
+        // add vals to multipole ...
+        for (int j = 0; j < miry.Size(); j++)
+          kernel.AddSource (*singmp, miry[i].GetPoint(), miry[i].GetNormal(), vals.Row(i));
+      }
+
+    singmp->CalcMP();
+    
+    local_expansion = singmp->CreateLocalExpansion(cy, ry);
+    
+    ParallelFor (ypts.Size(), [&](int i){
+      local_expansion.AddTarget(ypts[i]);
+    });
+
+    local_expansion.CalcMP(singmp);
+#endif
+  }
+
+
+
+  
 
   // minimize the function f(x) = 1/2 x a x + b x + c
   // returns (x, f(x))

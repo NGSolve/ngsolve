@@ -288,7 +288,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         py::arg("intorder")=3);
   
 
-
+  py::class_<BasePotentialCF, CoefficientFunction, shared_ptr<BasePotentialCF>> (m, "PotentialCF")
+    .def("BuildLocalExpansion", [](BasePotentialCF & potcf, const Region & region) { potcf.BuildLocalExpansion(region); })
+    ;
 
   class BasePotentialOperatorAndTest
   {
@@ -297,7 +299,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     shared_ptr<ProxyFunction> test_proxy;
   };
 
-  
   py::class_<BasePotentialOperator, shared_ptr<BasePotentialOperator>> (m, "PotentialOperator")
     .def("__mul__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<CoefficientFunction> test_proxy) {
       return BasePotentialOperatorAndTest { pot, dynamic_pointer_cast<ProxyFunction>(test_proxy) };
