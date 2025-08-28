@@ -2,6 +2,7 @@
 #define NGBEM_hpp
 
 #include "bem_diffops.hpp"
+#include "mptools.hpp"
 #include "../fem/integratorcf.hpp"
 
 namespace ngsbem
@@ -162,16 +163,30 @@ namespace ngsbem
 
 
 
+  class BasePotentialCF : public CoefficientFunctionNoDerivative
+  {
+  protected:
+    shared_ptr<GridFunction> gf;
+    optional<Region> definedon;
+    shared_ptr<DifferentialOperator> evaluator;
 
+  public:
+    BasePotentialCF (shared_ptr<GridFunction> _gf,
+                     optional<Region> _definedon,    
+                     shared_ptr<DifferentialOperator> _evaluator, bool is_complex)
+      : CoefficientFunctionNoDerivative (_evaluator->Dim(), is_complex), 
+        gf(_gf), definedon(_definedon), evaluator(_evaluator) { } 
+
+    virtual  ~BasePotentialCF() = default;
+    
+    virtual void BuildLocalExpansion(const Region & reg) = 0;
+  };
 
   
 
   template  <typename KERNEL>
-  class PotentialCF : public CoefficientFunctionNoDerivative
+  class PotentialCF : public BasePotentialCF
   {
-    shared_ptr<GridFunction> gf;
-    optional<Region> definedon;
-    shared_ptr<DifferentialOperator> evaluator;
     KERNEL kernel;
     int intorder;
     bool nearfield;
@@ -181,6 +196,10 @@ namespace ngsbem
                  shared_ptr<DifferentialOperator> _evaluator,
                  KERNEL _kernel, int _intorder, bool anearfield);
 
+
+
+    void BuildLocalExpansion(const Region & reg) override;
+    
     using CoefficientFunctionNoDerivative::Evaluate;
     double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("eval not implemented"); }
@@ -245,7 +264,7 @@ namespace ngsbem
       : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
     virtual ~BasePotentialOperator() { } 
     virtual shared_ptr<BaseIntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) = 0;
-    virtual shared_ptr<CoefficientFunction> MakePotentialCF(shared_ptr<GridFunction> gf) = 0;
+    virtual shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) = 0;
   };
   
   
@@ -278,7 +297,7 @@ namespace ngsbem
                                                            2 + intorder + festest->GetOrder()+dx.bonus_intorder);
     }
     
-    shared_ptr<CoefficientFunction> MakePotentialCF(shared_ptr<GridFunction> gf) override
+    shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
     {
       return make_shared<PotentialCF<KERNEL>>(gf, definedon, evaluator, kernel, 2+intorder, true);
     }
@@ -333,6 +352,28 @@ namespace ngsbem
     }
     
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };
+
+
+    
+    auto CreateMultipoleExpansion (Vec<3> c, double r)
+    {
+      return make_shared<SingularMLMultiPole<Complex>> (c, r, 1e-16);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r)
+    {
+      return make_shared<RegularMLMultiPole<Complex>> (c, r, 1e-16);
+    }
+    
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, FlatVector<Complex> val)
+    {
+      mp.AddCharge (pnt, val(0));
+    }
+
+    void Evaluate (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, FlatVector<Complex> val)
+    {
+      val(0) = mp.Evaluate (pnt);
+    }
   };
 
 
