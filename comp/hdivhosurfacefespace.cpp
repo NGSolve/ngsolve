@@ -56,6 +56,7 @@ public:
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
 
+    static int DimRef() { return 1; }
     static const FEL & Cast(const FiniteElement & fel)
     {
         return static_cast<const FEL&> (fel);
@@ -67,6 +68,27 @@ public:
     {
       mat = (1.0 / mip.GetJacobiDet()) * 
 	Trans (static_cast<const FEL&>(fel).GetDivShape(mip.IP(),lh));
+    }
+
+    template<typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+        Cast(fel).CalcDivShape (ip, mat.Row(0));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & bmip,
+                                              MAT & mat, LocalHeap & lh)
+    {
+        auto & mip = static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip);
+        mat = 1./mip.GetJacobiDet();
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
+    {
+      Cast(fel).CalcMappedDivShape (mir, mat);
     }
 
   static string Name() { return "div"; }

@@ -361,6 +361,58 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                                                                kernel, fes->GetOrder()+igl->dx.bonus_intorder);
   });
 
+  m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
+    if (potential->icfs.Size()!=1) throw Exception("need one integral");
+    auto igl = potential->icfs[0];
+    if (igl->dx.vb != BND) throw Exception("need boundary integral");
+    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    auto fes = proxy->GetFESpace();
+    optional<Region> definedon;
+    if (igl->dx.definedon)
+      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+
+    if (proxy->Dimension() == 3)
+    {
+      HelmholtzSLVecKernel<3> kernel(kappa);
+      return make_shared<PotentialOperator<HelmholtzSLVecKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+                                                            kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+    }
+    else if (proxy->Dimension() == 1)
+    {
+      HelmholtzSLKernel<3> kernel(kappa);
+      return make_shared<PotentialOperator<HelmholtzSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+                                                            kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+    }
+    else
+      throw Exception("only dim=1 and dim=3 HelmholtzSL are supported");
+  });
+
+  m.def("HelmholtzDL", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
+    if (potential->icfs.Size()!=1) throw Exception("need one integral");
+    auto igl = potential->icfs[0];
+    if (igl->dx.vb != BND) throw Exception("need boundary integral");
+    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    auto fes = proxy->GetFESpace();
+    optional<Region> definedon;
+    if (igl->dx.definedon)
+      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+
+    if (proxy->Dimension() == 3)
+    {
+      MaxwellDLKernel<3> kernel(kappa);
+      return make_shared<PotentialOperator<MaxwellDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+                                                            kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+    }
+    else if (proxy->Dimension() == 1)
+    {
+      HelmholtzDLKernel<3> kernel(kappa);
+      return make_shared<PotentialOperator<HelmholtzDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+                                                            kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+    }
+    else
+      throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
+  });
+
 }
 
 #endif // NGS_PYTHON
