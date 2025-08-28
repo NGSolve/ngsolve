@@ -326,6 +326,16 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
     auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
     auto fes = proxy->GetFESpace();
+    
+    auto tmpfes = fes;
+    auto tmpeval = proxy->Evaluator();
+    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
+      {
+        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
+        tmpeval = compeval->BaseDiffOp();
+      }
+    
+    
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
@@ -334,13 +344,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       {
         LaplaceSLKernel<3> kernel;
         return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                   kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+                                                                   kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
       }
     if (proxy->Dimension() == 3)
       {
         LaplaceHSKernel<3> kernel;
         return make_shared<PotentialOperator<LaplaceHSKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                   kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+                                                                   kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
       }
     throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
   });
@@ -353,12 +363,21 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
     auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
     auto fes = proxy->GetFESpace();
+
+    auto tmpfes = fes;
+    auto tmpeval = proxy->Evaluator();
+    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
+      {
+        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
+        tmpeval = compeval->BaseDiffOp();
+      }
+        
     LaplaceDLKernel<3> kernel;
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
     return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                               kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+                                                               kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
   });
 
   m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
@@ -367,6 +386,15 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
     auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
     auto fes = proxy->GetFESpace();
+
+    auto tmpfes = fes;
+    auto tmpeval = proxy->Evaluator();
+    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
+      {
+        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
+        tmpeval = compeval->BaseDiffOp();
+      }
+    
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
@@ -375,13 +403,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     {
       HelmholtzSLVecKernel<3> kernel(kappa);
       return make_shared<PotentialOperator<HelmholtzSLVecKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                            kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+                                                                      kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
-    {
+      {
       HelmholtzSLKernel<3> kernel(kappa);
       return make_shared<PotentialOperator<HelmholtzSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                            kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+                                                                   kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     }
     else
       throw Exception("only dim=1 and dim=3 HelmholtzSL are supported");
@@ -393,6 +421,15 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
     auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
     auto fes = proxy->GetFESpace();
+
+    auto tmpfes = fes;
+    auto tmpeval = proxy->Evaluator();
+    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
+      {
+        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
+        tmpeval = compeval->BaseDiffOp();
+      }
+    
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
@@ -401,13 +438,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     {
       MaxwellDLKernel<3> kernel(kappa);
       return make_shared<PotentialOperator<MaxwellDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                            kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+                                                                 kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
     {
       HelmholtzDLKernel<3> kernel(kappa);
       return make_shared<PotentialOperator<HelmholtzDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                            kernel, fes->GetOrder()+igl->dx.bonus_intorder);
+                                                                   kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     }
     else
       throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
