@@ -426,6 +426,8 @@ namespace ngfem
         values(i) = sum;
       }
     */
+
+    /*
     Iterate<4-DIM>
       ([this,&bmir,coefs,values](auto CODIM)
       {
@@ -449,7 +451,20 @@ namespace ngfem
                }
            }
        });
-    
+    */
+
+    auto & mir = bmir;
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        SIMD<double> sum(0.0);                 
+        static_cast<const FEL*> (this) ->                 
+          T_CalcShape (GetTIPGrad<DIM>(mir[i].IP()),
+                       SBLambda ([=,&sum] (size_t j, THDiv2DivShape<DIM,SIMD<double>> divshape)
+                       {
+                         sum += coefs(j) * divshape.Get();                                            
+                       }));
+        values(i) = 1/mir[i].GetJacobiDet() * sum;
+      }
   }
   
   template <class FEL, ELEMENT_TYPE ET>
