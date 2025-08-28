@@ -184,6 +184,7 @@ namespace ngcomp
         additional_evaluators.Set ("grad", make_shared<T_DifferentialOperator<DiffOpGradientHCurl<3>>> ());
         additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpHCurlDual<3>>> ());
         additional_evaluators.Set ("rotated_trace", make_shared<T_DifferentialOperator<ngsbem::DiffOpRotatedTrace>> ());
+        additional_evaluators.Set ("surface_curl", make_shared<T_DifferentialOperator<ngsbem::DiffOpCurlBoundaryEdge<>>> ());        
         break;
       default:
         ;

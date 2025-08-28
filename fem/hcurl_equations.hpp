@@ -643,6 +643,17 @@ namespace ngfem
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 1 };
 
+    static string Name() { return "curl"; }
+
+    static const FEL & Cast(const FiniteElement & fel)
+    {
+        return static_cast<const FEL&> (fel);
+    }
+
+    
+    static int DimRef() { return 1; }
+
+    
     static constexpr bool SUPPORT_PML = true;
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
@@ -651,6 +662,22 @@ namespace ngfem
       mat = 1.0/mip.GetJacobiDet() * 
 	Trans (static_cast<const FEL&>(fel).GetCurlShape(mip.IP(),lh));
     }
+    
+    template<typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcCurlShape (ip, Trans(mat));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      // auto & mip = static_cast<const MappedIntegrationPoint<D-1,D>&>(bmip);
+      mat = 1./mip.GetJacobiDet();
+    }
+    
 
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
@@ -701,6 +728,8 @@ public:
   enum { DIM_DMAT = 3 };
   enum { DIFFORDER = 1 };
 
+  static string Name() { return "curl"; }
+  
     static constexpr bool SUPPORT_PML = true;
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
