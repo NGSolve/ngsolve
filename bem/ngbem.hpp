@@ -170,6 +170,7 @@ namespace ngsbem
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
 
+       
   public:
     BasePotentialCF (shared_ptr<GridFunction> _gf,
                      optional<Region> _definedon,    
@@ -190,6 +191,12 @@ namespace ngsbem
     KERNEL kernel;
     int intorder;
     bool nearfield;
+
+    // typedef decltype (defvar<KERNEL>().CreateLocalExpansion(Vec<3>(), double())) LOCAL_EXPANSION;
+    using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::CreateLocalExpansion),KERNEL,Vec<3>,double>;
+
+    LOCAL_EXPANSION local_expansion;
+    
   public:
     PotentialCF (shared_ptr<GridFunction> _gf,
                  optional<Region> _definedon,    
@@ -329,6 +336,36 @@ namespace ngsbem
   };
   
 
+  class BaseKernel
+  {
+  public:
+    shared_ptr<SingularMLMultiPole<Complex>> CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      throw Exception("Create Multipole Expansion not implemented");
+    }
+
+    shared_ptr<RegularMLMultiPole<Complex>> CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      throw Exception("Create Local Expansion not implemented");      
+    }
+
+    template <typename TV>
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    {
+      throw Exception("Addsource not implemented");            
+    }
+
+    template <typename TV>    
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, BareSliceVector<TV> val) const
+    {
+      throw Exception("Evaluate not implemented");            
+    }
+  };
+
+
+
+  
+  
   /** LaplaceSLkernel is the kernel for the single layer potential of 
       the Laplace equation $ \Delta u = 0 \,.$  */
   template <int DIM> class LaplaceSLKernel;
@@ -336,7 +373,7 @@ namespace ngsbem
   /** LaplaceSLkernel in 3D reads 
       $$ G(x-y) = \frac{1}{4\,\pi \, | x-y| }, \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
   template<>
-  class LaplaceSLKernel<3> 
+  class LaplaceSLKernel<3> : public BaseKernel
   {
   public:
     typedef double value_type;
@@ -355,24 +392,26 @@ namespace ngsbem
 
 
     
-    auto CreateMultipoleExpansion (Vec<3> c, double r)
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
     {
       return make_shared<SingularMLMultiPole<Complex>> (c, r, 1e-16);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r)
+    auto CreateLocalExpansion (Vec<3> c, double r) const
     {
       return make_shared<RegularMLMultiPole<Complex>> (c, r, 1e-16);
     }
-    
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, FlatVector<Complex> val)
+
+    template <typename TV>
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
     {
       mp.AddCharge (pnt, val(0));
     }
 
-    void Evaluate (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, FlatVector<Complex> val)
+    template <typename TV>    
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, BareSliceVector<TV> val) const
     {
-      val(0) = mp.Evaluate (pnt);
+      val(0) = Real(mp.Evaluate (pnt));
     }
   };
 
@@ -386,7 +425,7 @@ namespace ngsbem
           \frac{ \langle n(y), x-y\rangle }{ | x-y|^3 }, 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
   template<>
-  class LaplaceDLKernel<3> 
+  class LaplaceDLKernel<3> : public BaseKernel
   {
   public:
     typedef double value_type;
@@ -409,7 +448,7 @@ namespace ngsbem
   template <int DIM> class LaplaceHSKernel;
   
   template<>
-  class LaplaceHSKernel<3> 
+  class LaplaceHSKernel<3> : public BaseKernel 
   {
   public:
     typedef double value_type;
@@ -441,7 +480,7 @@ namespace ngsbem
       $$ G(x-y) = \frac{1 }{4\,\pi} \,\frac{e^{i\,\kappa \, |x-y| }{|x-y|} \, 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
   template<>
-  class HelmholtzSLKernel<3> 
+  class HelmholtzSLKernel<3> : public BaseKernel
   {
     double kappa;
   public:
@@ -474,7 +513,7 @@ namespace ngsbem
           \langle n(y), x-y\rangle \cdot \left( 1 - i\,\kappa\, | x-y| \right), 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
   template<>
-  class HelmholtzDLKernel<3> 
+  class HelmholtzDLKernel<3> : public BaseKernel
   {
     double kappa;
   public:
@@ -532,7 +571,7 @@ namespace ngsbem
   template <int DIM> class HelmholtzHSKernel;
   
   template<>
-  class HelmholtzHSKernel<3> 
+  class HelmholtzHSKernel<3> : public BaseKernel
   {
     double kappa;
   public:
@@ -575,7 +614,7 @@ namespace ngsbem
           \left( \langle n_y, x-y\rangle (1- i\,\kappa\, | x-y|) - i\,\kappa\,|x-y|^2 \right), 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
   template<>
-  class CombinedFieldKernel<3> 
+  class CombinedFieldKernel<3> : public BaseKernel
   {
     double kappa;
   public:
@@ -606,7 +645,7 @@ namespace ngsbem
   template <int D> class MaxwellSLKernel;
 
   template<>
-  class MaxwellSLKernel<3> 
+  class MaxwellSLKernel<3> : public BaseKernel
   {
     double kappa;
   public:
@@ -647,7 +686,7 @@ namespace ngsbem
           \langle n(y), x-y\rangle \cdot \left( 1 - i\,\kappa\, | x-y| \right), 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
   template<>
-  class MaxwellDLKernel<3> 
+  class MaxwellDLKernel<3> : public BaseKernel
   {
     double kappa;
   public:

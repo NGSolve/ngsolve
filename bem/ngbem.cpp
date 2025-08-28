@@ -871,23 +871,48 @@ namespace ngsbem
     // find center and radius of sources
     // cs, rs = ..
 
-#ifdef TODOLOCALEXPANSION    
-    // add function to all kernels
-    // creats shared_ptr<MultiPole<properdim>
-    auto singmp = kernel.CreateMultipoleExpansion(cs, rs);
-
     LocalHeapMem<100000> lh("PotentialCF::BuildLocalExpansion");
 
     auto space = this->gf->GetFESpace();
     auto mesh = space->GetMeshAccess();
+
     
-    auto & mirx = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);
+    Vec<3> smax(-1e99, -1e99, -1e99);
+    Vec<3> smin(1e99, 1e99, 1e99);
+    
+    for (size_t i = 0; i < mesh->GetNSE(); i++)
+      {
+        HeapReset hr(lh);
+        ElementId ei(BND, i);
+        if (!space->DefinedOn(ei)) continue;
+
+        const FiniteElement &fel = space->GetFE(ei, lh);
+        const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
+        IntegrationRule ir(fel.ElementType(), intorder);
+        MappedIntegrationRule<2,3> miry(ir, trafo, lh);
+
+        for (int k = 0; k < miry.Size(); k++)
+          for (int j = 0; j < 3; j++)
+            {
+              smin(j) = min(smin(j), miry[k].GetPoint()(j));
+              smax(j) = max(smax(j), miry[k].GetPoint()(j));
+            }
+      }
+
+    Vec<3> cs = 0.5*(smin+smax);
+    double rs = 0;
+    for (int j = 0; j < 3; j++)
+      rs = max(rs, smax(j)-smin(j));
+    
+
+    auto singmp = kernel.CreateMultipoleExpansion(cs, rs);
     
     typedef typename KERNEL::value_type T;
     for (size_t i = 0; i < mesh->GetNSE(); i++)
       {
         HeapReset hr(lh);
         ElementId ei(BND, i);
+
         if (!space->DefinedOn(ei)) continue;
           
         const FiniteElement &fel = space->GetFE(ei, lh);
@@ -900,25 +925,58 @@ namespace ngsbem
         
         IntegrationRule ir(fel.ElementType(), intorder);
         MappedIntegrationRule<2,3> miry(ir, trafo, lh);
-        FlatMatrix<T> vals(evaluator->Dim(), miry.Size(), lh);
+        FlatMatrix<T> vals(miry.Size(), evaluator->Dim(), lh);
         
-        evaluator->Apply (fel, miry, elvec, vals);
+        evaluator->Apply (fel, miry, elvec, vals, lh);
         
         // add vals to multipole ...
         for (int j = 0; j < miry.Size(); j++)
-          kernel.AddSource (*singmp, miry[i].GetPoint(), miry[i].GetNormal(), vals.Row(i));
+          {
+            vals.Row(j) *= miry[j].GetWeight();
+            kernel.AddSource (*singmp, miry[j].GetPoint(), miry[j].GetNV(), make_BareSliceVector(vals.Row(j)));
+          }
       }
 
     singmp->CalcMP();
+
+    Vec<3> tmax(-1e99, -1e99, -1e99);
+    Vec<3> tmin(1e99, 1e99, 1e99);
+    Array<Vec<3>> tpoints;
+    auto tmesh = reg.Mesh();
+    for (auto el : reg.GetElements())
+      {      
+        HeapReset hr(lh);
+        // if (!space->DefinedOn(ei)) continue;
+        // const FiniteElement &fel = space->GetFE(ei, lh);
+        
+        const ElementTransformation &trafo = tmesh->GetTrafo(el, lh);
+        IntegrationRule ir(trafo.GetElementType(), intorder);
+        MappedIntegrationRule<2,3> miry(ir, trafo, lh);
+
+        for (int k = 0; k < miry.Size(); k++)
+          {
+            tpoints.Append (Vec<3>(miry[k].GetPoint()));
+            for (int j = 0; j < 3; j++)
+              {
+                tmin(j) = min(tmin(j), miry[k].GetPoint()(j));
+                tmax(j) = max(tmax(j), miry[k].GetPoint()(j));
+              }
+          }
+      }
+
+    Vec<3> ct = 0.5*(tmin+tmax);
+    double rt = 0;
+    for (int j = 0; j < 3; j++)
+      rt = max(rt, tmax(j)-tmin(j));
     
-    local_expansion = singmp->CreateLocalExpansion(cy, ry);
+
+    local_expansion = kernel.CreateLocalExpansion(ct, rt);
     
-    ParallelFor (ypts.Size(), [&](int i){
-      local_expansion.AddTarget(ypts[i]);
+    ParallelFor (tpoints.Size(), [&](int i){
+      local_expansion->AddTarget(tpoints[i]);
     });
 
-    local_expansion.CalcMP(singmp);
-#endif
+    local_expansion->CalcMP(singmp);
   }
 
 
@@ -1138,6 +1196,18 @@ namespace ngsbem
   void PotentialCF<KERNEL> :: T_Evaluate(const BaseMappedIntegrationRule & bmir,
                                          BareSliceMatrix<T> result) const
   {
+    
+    if constexpr (std::is_same<typename KERNEL::value_type,T>())
+      if (local_expansion)
+        {
+          auto & mir = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);        
+          for (int j = 0; j < mir.Size(); j++)
+            kernel.EvaluateMP (*local_expansion, Vec<3>(mir[j].GetPoint()), make_BareSliceVector(result.Row(j)));
+          return;
+        }
+    
+
+    
     if (nearfield)
       {
         for (int i = 0; i < bmir.Size(); i++)
