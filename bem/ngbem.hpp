@@ -290,6 +290,17 @@ namespace ngsbem
     shared_ptr<BaseIntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) override
     {
       auto festest = test_proxy->GetFESpace();
+      
+      auto tmpfes = festest;
+      auto tmpeval = proxy->Evaluator();
+      while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
+        {
+          // auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval);
+          int component = compeval->Component();
+          tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[component];
+          tmpeval = compeval->BaseDiffOp();
+        }
+      
       optional<Region> definedon_test;
       if (dx.definedon)
         definedon_test = Region(festest->GetMeshAccess(), dx.vb, get<1> (*(dx.definedon)));
@@ -301,7 +312,7 @@ namespace ngsbem
                                                            proxy->Evaluator(),
                                                            test_proxy->Evaluator(),
                                                            kernel,
-                                                           2 + intorder + festest->GetOrder()+dx.bonus_intorder);
+                                                           2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder);
     }
     
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
