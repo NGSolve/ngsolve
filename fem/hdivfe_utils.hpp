@@ -563,6 +563,7 @@ namespace ngfem
   {
   public:
     INLINE operator SCAL () const { return SCAL(0.0); }
+    INLINE SCAL Get() const { return SCAL(0.0); }    
   };
 
   template <typename SCAL> class THDiv2DivShape<2,SCAL>
