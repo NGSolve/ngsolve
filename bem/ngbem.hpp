@@ -541,7 +541,7 @@ namespace ngsbem
   template <int DIM> class HelmholtzSLVecKernel;
 
   template<>
-  class HelmholtzSLVecKernel<3>
+  class HelmholtzSLVecKernel<3> : public BaseKernel
   {
     double kappa;
   public:
