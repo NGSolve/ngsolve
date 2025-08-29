@@ -12,8 +12,7 @@ namespace ngsbem
 
 
   
-  template <typename T>  
-  IntegralOperator<T> ::
+  IntegralOperator ::
   IntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                    optional<Region> _trial_definedon, optional<Region> _test_definedon,
                    int _intorder)
@@ -24,24 +23,11 @@ namespace ngsbem
     if (!test_space)
       test_space = trial_space;
 
-    /*
-    trial_ct = make_shared<ClusterTree>(trial_space, param.leafsize);
-    if (trial_space == test_space)
-      test_ct = trial_ct; // the same
-    else
-      test_ct = make_shared<ClusterTree>(test_space, param.leafsize);
-    */
+    auto mesh = trial_space->GetMeshAccess(); 
+    auto mesh2 = test_space->GetMeshAccess(); 
 
-    auto mesh = trial_space->GetMeshAccess(); // trialspace
-    auto mesh2 = test_space->GetMeshAccess(); // testspace
 
     /*
-    if (trial_definedon)
-      cout << "trial is definedon: " << (*trial_definedon).Mask() << endl;
-    if (test_definedon)
-      cout << "test is definedon: " << (*test_definedon).Mask() << endl;
-    */
-    
     // setup global-2-boundary mappings;
     BitArray bnddofs(trial_space->GetNDof());
     bnddofs.Clear();
@@ -57,30 +43,6 @@ namespace ngsbem
           }
       }
 
-        
-    mapglob2bnd.SetSize(trial_space->GetNDof());
-    mapglob2bnd = -1;
-    for (int i = 0; i < trial_space->GetNDof(); i++)
-      if (bnddofs.Test(i))
-	{
-	  mapglob2bnd[i] = mapbnd2glob.Size();
-	  mapbnd2glob.Append(i);
-	}
-
-    // run through surface elements and add elem to related trial dofs
-    // Table-creator creates table with one big block of memory,
-    // avoids memory fragmentation 
-    TableCreator<int> creator;
-    Array<DofId> dnumsi;
-    for ( ; !creator.Done(); creator++)
-      for (int i = 0; i < mesh->GetNSE(); i++)
-        {
-          trial_space->GetDofNrs( ElementId(BND, i), dnumsi); 
-          for (auto d : dnumsi)
-            creator.Add (d, i);
-        }
-    elems4dof = creator.MoveTable();
-
     BitArray bnddofs2(test_space->GetNDof());
     bnddofs2.Clear();
     for (int i = 0; i < mesh2->GetNSE(); i++)
@@ -94,26 +56,7 @@ namespace ngsbem
               bnddofs2.SetBit(d);
           }
       }
-    
-    mapglob2bnd2.SetSize(test_space->GetNDof());
-    mapglob2bnd2 = -1;
-    for (int i = 0; i < test_space->GetNDof(); i++)
-      if (bnddofs2.Test(i))
-	{
-	  mapglob2bnd2[i] = mapbnd2glob2.Size();
-	  mapbnd2glob2.Append(i);
-	}
-
-    // run through surface elements and add elem to related test dofs
-    TableCreator<int> creator2;
-    for ( ; !creator2.Done(); creator2++)
-      for (int i = 0; i < mesh2->GetNSE(); i++)
-        {
-          test_space->GetDofNrs( ElementId(BND, i), dnumsi); 
-          for (auto d : dnumsi)
-            creator2.Add (d, i);
-        }
-    elems4dof2 = creator2.MoveTable();
+    */
   }
 
 
@@ -512,7 +455,7 @@ namespace ngsbem
                           shared_ptr<DifferentialOperator> _test_evaluator, 
                           KERNEL _kernel,
                           int _intorder)
-  : IntegralOperator<value_type>(_trial_space, _test_space, _definedon_trial, _definedon_test, _intorder), kernel(_kernel),
+  : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test, _intorder), kernel(_kernel),
     trial_evaluator(_trial_evaluator), test_evaluator(_test_evaluator)
   {
     LocalHeap lh(100000000);
@@ -541,17 +484,7 @@ namespace ngsbem
 
     // t1.Start();
     IntegrationRule irtrig(ET_TRIG, intorder);
-    /*
-    auto [ identic_panel_x, identic_panel_y, identic_panel_weight ] =
-      IdenticPanelIntegrationRule(param.intorder);
-
-    auto [ common_vertex_x, common_vertex_y, common_vertex_weight ] =
-      CommonVertexIntegrationRule(param.intorder);
-    
-    auto [ common_edge_x, common_edge_y, common_edge_weight ] =
-      CommonEdgeIntegrationRule(param.intorder);
-    */
-    matrix = 0; 
+    matrix = 0.; 
     // t1.Stop();
 
     Vec<3> x,y,nx,ny;
@@ -852,10 +785,6 @@ namespace ngsbem
                optional<Region> _definedon,                   
                shared_ptr<DifferentialOperator> _evaluator,
                KERNEL _kernel, int _intorder, bool _nearfield)
-  /*
-    : CoefficientFunctionNoDerivative (_evaluator->Dim(), std::is_same<typename KERNEL::value_type,Complex>()),
-      gf(_gf), definedon(_definedon), evaluator(_evaluator), kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
-  */
     : BasePotentialCF(_gf, _definedon, _evaluator, std::is_same<typename KERNEL::value_type,Complex>()),
       kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
   {
@@ -868,9 +797,6 @@ namespace ngsbem
   void PotentialCF<KERNEL> ::
   BuildLocalExpansion(const Region & reg)
   {
-    // find center and radius of sources
-    // cs, rs = ..
-
     LocalHeapMem<100000> lh("PotentialCF::BuildLocalExpansion");
 
     auto space = this->gf->GetFESpace();
@@ -946,8 +872,6 @@ namespace ngsbem
     for (auto el : reg.GetElements())
       {      
         HeapReset hr(lh);
-        // if (!space->DefinedOn(ei)) continue;
-        // const FiniteElement &fel = space->GetFE(ei, lh);
         
         const ElementTransformation &trafo = tmesh->GetTrafo(el, lh);
         IntegrationRule ir(trafo.GetElementType(), intorder);
@@ -1039,21 +963,11 @@ namespace ngsbem
 
     if (dist < elsize)
       {
-        /*
-        IntegrationPoint ip(0.,0.);
-        MappedIntegrationPoint<2,3>  mip(ip, trafo);
-        // dist = || x - (mip+Jac*uv) ||
-        Mat<3,2> jac = mip.GetJacobian();
-        Mat<2,2> a = Trans(jac)*jac;
-        Vec<2> b = -Trans(jac) * (x-mip.GetPoint());
-        Vec<2> uv = MinimizeOnTrig(a, b, 0);
-        */
-
+        // use SQP to find projection of x onto (curved) triangle
+        
         IntegrationPoint ip(1./3, 1./3);
-        // *testout << endl;
         for (int j = 0; j < 5; j++) // SQP steps
           {
-            // *testout << "j = " << j << endl;
             MappedIntegrationPoint<2,3>  mip(ip, trafo);
             // dist = || x - (mip+Jac*(uv-ip) + 1/2*Hesse(uv-ip, uv-ip)) ||
             Mat<3,2> jac = mip.GetJacobian();
@@ -1078,19 +992,11 @@ namespace ngsbem
             Mat<2,2> a = Trans(jac)*jac;
             Vec<2> b = -Trans(jacphip) * (x-mip.GetPoint()+jac*ipvec + 0.5*Hesseipip);
             Vec<2> uv = MinimizeOnTrig(a, b, 0);
-            // *testout << "res = " << (a*uv+b) << endl;
             ip = IntegrationPoint(uv(0), uv(1));
-            // *testout << "uv = " << uv << endl;
           }
 
-        /*
-        *testout << "x = " << x << endl;
-        *testout << "v0 = " << mip.GetPoint() << endl;
-        *testout << "v1 = " << mip.GetPoint()+jac.Col(0) << endl;
-        *testout << "v2 = " << mip.GetPoint()+jac.Col(1) << endl;
-        *testout << "uv = " << uv << endl;
-        *testout << "xhat = " << mip.GetPoint()+jac*uv << endl;
-        */
+        
+        // generate Duffy integration rules on split triangles
         IntegrationRule irsegm(ET_SEGM, intorder);
         IntegrationRule irtrig(trafo.GetElementType(), intorder);            
         IntegrationRule ir;
@@ -1114,13 +1020,6 @@ namespace ngsbem
                     ir.AddIntegrationPoint (IntegrationPoint(ipxy(0), ipxy(1), 0,
                                                              ip1.Weight()*ip2.Weight()*(1-ip2(0))*factor));
                   }
-            /*
-              for (auto ip : irtrig)
-                {
-                  Vec<2> ipxy = v0 + ip(0)*(v1-v0) + ip(1)*(v2-v0);
-                  ir.AddIntegrationPoint (IntegrationPoint(ipxy(0), ipxy(1), 0, ip.Weight()*factor));
-                }
-            */
           }
         return ir;
       }
@@ -1281,54 +1180,10 @@ namespace ngsbem
                                          BareSliceMatrix<SIMD<T>> result) const
   {
     static Timer t("ngbem evaluate potential (ir-simd)"); RegionTimer reg(t);
-    // cout << "Potential - eval (simd) called" << endl;
     throw ExceptionNOSIMD ("PotentialCF::Evaluate (SIMD) not available");
     
     result.AddSize(Dimension(), ir.Size()) = SIMD<T>(0.0);
     return;
-    /*
-    LocalHeapMem<100000> lh("Potential::Eval");
-    auto space = this->gf->GetFESpace();
-    auto mesh = space->GetMeshAccess();
-    
-    result = T(0.0);
-    auto & mip23 = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip);
-    if constexpr (std::is_same<typename KERNEL::value_type,T>())
-      for (size_t i = 0; i < mesh->GetNSE(); i++)
-        {
-          HeapReset hr(lh);
-          ElementId ei(BND, i);
-          
-          const FiniteElement &fel = space->GetFE(ei, lh);
-          const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
-          
-          Array<DofId> dnums(fel.GetNDof(), lh);
-          space->GetDofNrs(ei, dnums);
-          FlatVector<T> elvec(fel.GetNDof(), lh);
-          gf->GetElementVector(dnums, elvec);
-          
-          IntegrationRule ir(fel.ElementType(), param.intorder);
-          MappedIntegrationRule<2,3> mir(ir, trafo, lh);
-          FlatMatrix<T> vals(ir.Size(), evaluator->Dim(), lh);
-          
-          evaluator->Apply (fel, mir, elvec, vals, lh);
-          
-          for (int j = 0; j < ir.Size(); j++)
-            {
-              Vec<3> x = mir[j].GetPoint();
-              Vec<3> y = mip23.GetPoint();
-              
-              Vec<3> nx = mir[j].GetNV();
-              Vec<3> ny = mip23.GetNV();
-              
-              for (auto term : kernel.terms)
-                {
-                  auto kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
-                  result(term.test_comp) += mir[j].GetWeight()*kernel_ * vals(j, term.trial_comp);
-                }
-            }
-        }
-    */
   }
 
 

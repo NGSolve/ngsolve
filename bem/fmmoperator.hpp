@@ -51,8 +51,10 @@ namespace ngsbem
       std::tie(cx, rx) = GetCenterAndRadius(xpts);      
       std::tie(cy, ry) = GetCenterAndRadius(ypts);      
     }
+
+    int VHeight() const override { return  ypts.Size()*kernelshape[0]; }
+    int VWidth() const override { return  xpts.Size()*kernelshape[1]; }
       
-    
     AutoVector CreateRowVector () const override
     {
       return make_unique<VVector<TSCAL>>(xpts.Size() * kernelshape[1]);

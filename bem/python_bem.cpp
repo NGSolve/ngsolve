@@ -16,6 +16,9 @@ using namespace ngsbem;
 
 void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 {
+
+  // ****************************   Multipole stuff *********************************
+  
   py::class_<SphericalHarmonics<Complex>> (m, "Sphericalharmonics")
     .def_property_readonly("order", [](SphericalHarmonics<Complex>& self) { return self.Order(); })
     .def("__setitem__", [](SphericalHarmonics<Complex>& self, tuple<int,int> nm, Complex val)
@@ -140,27 +143,17 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
    
 
-  /////////////////////////////////////////////////////////////////////////////////////
+  // ************************** Potential and integral operators *******************************************
 
 
 
-  py::class_<BaseIntegralOperator, shared_ptr<BaseIntegralOperator>> (m, "BaseIntegralOperator")
-    ;
-
-  py::class_<IntegralOperator<double>,shared_ptr<IntegralOperator<double>>, BaseIntegralOperator> (m, "IntegralOperator")
-    .def_property_readonly("mat", &IntegralOperator<double>::GetMatrix)
-    .def("GetPotential", &IntegralOperator<double>::GetPotential,
+  py::class_<IntegralOperator,shared_ptr<IntegralOperator>> (m, "IntegralOperator")
+    .def_property_readonly("mat", &IntegralOperator::GetMatrix)
+    .def("GetPotential", &IntegralOperator::GetPotential,
          py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
     ;
-  py::class_<IntegralOperator<Complex>, shared_ptr<IntegralOperator<Complex>>> (m, "IntegralOperatorC")
-    .def_property_readonly("mat", &IntegralOperator<Complex>::GetMatrix)
-    .def("GetPotential", &IntegralOperator<Complex>::GetPotential,
-         py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)         
-    ;
-
-
   
-  m.def("SingleLayerPotentialOperator", [](shared_ptr<FESpace> space, int intorder) -> shared_ptr<IntegralOperator<>>
+  m.def("SingleLayerPotentialOperator", [](shared_ptr<FESpace> space, int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<LaplaceSLKernel<3>>>(space, space, LaplaceSLKernel<3>(), intorder);
     
@@ -168,7 +161,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   m.def("SingleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space,
                                            optional<Region> trial_definedon, optional<Region> test_definedon,
-                                           int intorder) -> shared_ptr<IntegralOperator<>>
+                                           int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<LaplaceSLKernel<3>>>(trial_space, test_space,
                                                                     trial_definedon, test_definedon,
@@ -183,7 +176,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   m.def("DoubleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space,
                                            optional<Region> trial_definedon, optional<Region> test_definedon,
-                                           int intorder) -> shared_ptr<IntegralOperator<>>
+                                           int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<LaplaceDLKernel<3>>>(trial_space, test_space,
                                                                     trial_definedon, test_definedon,
@@ -196,7 +189,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
   m.def("HypersingularOperator", [](shared_ptr<FESpace> space, optional<Region> definedon,
-                                    int intorder) -> shared_ptr<IntegralOperator<>>
+                                    int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<LaplaceHSKernel<3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(),
@@ -209,7 +202,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   
 
   m.def("HelmholtzSingleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,
-                                                    int intorder) -> shared_ptr<IntegralOperator<Complex>>
+                                                    int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<HelmholtzSLKernel<3>>>(trial_space, test_space, HelmholtzSLKernel<3>(kappa), intorder);
     
@@ -218,7 +211,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
   m.def("HelmholtzDoubleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,
-                                                    int intorder) -> shared_ptr<IntegralOperator<Complex>>
+                                                    int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<HelmholtzDLKernel<3>>>(trial_space, test_space, HelmholtzDLKernel<3>(kappa), intorder);
     
@@ -228,7 +221,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HelmholtzCombinedFieldOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space,
                                              optional<Region> trial_definedon, optional<Region> test_definedon,
                                              double kappa,
-                                             int intorder) -> shared_ptr<IntegralOperator<Complex>>
+                                             int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<CombinedFieldKernel<3>>>(trial_space, test_space, trial_definedon, test_definedon,
                                                                         trial_space -> GetEvaluator(BND),
@@ -240,7 +233,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         py::arg("kappa"), py::arg("intorder")=3);
 
 
-    m.def("HelmholtzHypersingularOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,  int intorder) -> shared_ptr<IntegralOperator<Complex>>
+    m.def("HelmholtzHypersingularOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,  int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<HelmholtzHSKernel<3>>>(trial_space, test_space, make_shared<T_DifferentialOperator<DiffOpHelmholtz>>(),  make_shared<T_DifferentialOperator<DiffOpHelmholtz>>(), HelmholtzHSKernel<3>(kappa), intorder);
     
@@ -248,7 +241,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
   m.def("MaxwellSingleLayerPotentialOperator", [](shared_ptr<FESpace> space, double kappa, optional<Region> definedon,
-                                                  int intorder) -> shared_ptr<IntegralOperator<Complex>>
+                                                  int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<MaxwellSLKernel<3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpMaxwellNew>>(),
@@ -260,7 +253,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   
   m.def("MaxwellSingleLayerPotentialOperatorCurl", [](shared_ptr<FESpace> space, double kappa, optional<Region> definedon,
-                                                      int intorder) -> shared_ptr<IntegralOperator<Complex>>
+                                                      int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<MaxwellSLKernel<3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpMaxwell>>(),
@@ -276,7 +269,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("MaxwellDoubleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space,
                                                   double kappa, 
                                                   optional<Region> trial_definedon, optional<Region> test_definedon,
-                                                  int intorder) -> shared_ptr<IntegralOperator<Complex>>
+                                                  int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<MaxwellDLKernel<3>>>(trial_space, test_space,
                                                                     trial_definedon, test_definedon,
@@ -312,9 +305,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("__mul__", [](BasePotentialOperatorAndTest pottest, DifferentialSymbol dx)
     {
       auto iop = pottest.pot->MakeIntegralOperator(pottest.test_proxy, dx);
-      if (auto diop = dynamic_pointer_cast<IntegralOperator<double>>(iop); diop)
+      if (auto diop = dynamic_pointer_cast<IntegralOperator>(iop); diop)
         return py::cast(diop);
-      if (auto ciop = dynamic_pointer_cast<IntegralOperator<Complex>>(iop); ciop)
+      if (auto ciop = dynamic_pointer_cast<IntegralOperator>(iop); ciop)
         return py::cast(ciop);
       throw Exception("neither double nor complex?");
     })

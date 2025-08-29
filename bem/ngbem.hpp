@@ -10,17 +10,10 @@ namespace ngsbem
   using namespace ngcomp;
 
 
-  class BaseIntegralOperator
-  {
-  public:
-    virtual ~BaseIntegralOperator() = default;
-  };
-  
   
   /** The IntegralOperator provides methods for the assembly of and access to a matrix 
       resulting from a variational formulation of a boundary integral equation.*/
-  template <typename T = double>
-  class IntegralOperator : public BaseIntegralOperator
+  class IntegralOperator 
   {
   protected:
     shared_ptr<FESpace> trial_space; 
@@ -32,21 +25,10 @@ namespace ngsbem
     // integration order
     int intorder;
 
-    /* boundary to global fe dofs mappings */
-    Array<DofId> mapglob2bnd;
-    Array<DofId> mapbnd2glob;
-    Array<DofId> mapglob2bnd2;
-    Array<DofId> mapbnd2glob2;
-
-    Table<int> elems4dof; // contains list of elems contributing to bnd-dof
-    Table<int> elems4dof2; // contains list of elems contributing to bnd-dof
-
     shared_ptr<BaseMatrix> matrix;
-
 
   public:
 
-    /** Constructor. */
     IntegralOperator (shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                       optional<Region> _definedon_trial, optional<Region> _definedon_test,
                       int _intorder);
@@ -55,17 +37,7 @@ namespace ngsbem
     shared_ptr<BaseMatrix> GetMatrix() const { return matrix; }
 
     virtual shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const = 0;
-    
-    virtual void CalcElementMatrix(FlatMatrix<T> matrix,
-                                   ElementId ei_trial, ElementId ei_test,
-                                   LocalHeap &lh) const = 0;
-    
-    /** CalcFarFieldBlock computes a low-rank approximation of block with trialdofs and testdofs. */
-    /*
-    virtual unique_ptr<LowRankMatrix<T>>
-    CalcFarFieldBlock(FlatArray<DofId> trialdofs, FlatArray<DofId> testdofs,
-                      LocalHeap &lh) const;
-    */
+
     virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf,
                                                          optional<int> io, bool nearfield_experimental) const = 0;
   };
@@ -76,11 +48,11 @@ namespace ngsbem
       the kernel the specific potential,i.e. a fundamental solution or its 
       derivative of specific pde. */
   template <typename KERNEL>
-  class GenericIntegralOperator : public IntegralOperator<typename KERNEL::value_type>
+  class GenericIntegralOperator : public IntegralOperator // <typename KERNEL::value_type>
   {
     KERNEL kernel;
     typedef typename KERNEL::value_type value_type;
-    typedef IntegralOperator<typename KERNEL::value_type> BASE;
+    typedef IntegralOperator BASE;
     
     using BASE::trial_space; 
     using BASE::test_space;
@@ -89,17 +61,6 @@ namespace ngsbem
     using BASE::test_definedon;
        
     using BASE::intorder;
-
-    using BASE::mapglob2bnd;
-    using BASE::mapbnd2glob;
-    using BASE::mapglob2bnd2;
-    using BASE::mapbnd2glob2;
-
-    using BASE::elems4dof; 
-    using BASE::elems4dof2; 
-    
-    // using BASE::trial_ct; 
-    // using BASE::test_ct;
     
     using BASE::matrix;
 
@@ -107,6 +68,7 @@ namespace ngsbem
     shared_ptr<DifferentialOperator> test_evaluator;
 
 
+    // Sauter-Schwab integration rules:
     Array<Vec<2>> identic_panel_x, identic_panel_y;
     Array<double> identic_panel_weight;
     
@@ -145,13 +107,8 @@ namespace ngsbem
 
     void CalcElementMatrix(FlatMatrix<value_type> matrix,
                            ElementId ei_trial, ElementId ei_test,
-                           LocalHeap &lh) const override;
-
-    /*
-    unique_ptr<LowRankMatrix<value_type>>
-    CalcFarFieldBlock(FlatArray<DofId> trialdofs, FlatArray<DofId> testdofs,
-                      LocalHeap &lh) const override;
-    */
+                           LocalHeap &lh) const;
+ 
 
     
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
@@ -270,7 +227,7 @@ namespace ngsbem
                            int _intorder)
       : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
     virtual ~BasePotentialOperator() { } 
-    virtual shared_ptr<BaseIntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) = 0;
+    virtual shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) = 0;
     virtual shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) = 0;
   };
   
@@ -287,7 +244,7 @@ namespace ngsbem
                        KERNEL _kernel, int _intorder)
       : BasePotentialOperator (_proxy, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
 
-    shared_ptr<BaseIntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) override
+    shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) override
     {
       auto festest = test_proxy->GetFESpace();
       
