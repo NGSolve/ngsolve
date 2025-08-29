@@ -155,7 +155,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   
   m.def("SingleLayerPotentialOperator", [](shared_ptr<FESpace> space, int intorder) -> shared_ptr<IntegralOperator>
   {
-    return make_unique<GenericIntegralOperator<LaplaceSLKernel<3>>>(space, space, LaplaceSLKernel<3>(), intorder);
+    return make_unique<GenericIntegralOperator<LaplaceSLKernel<3>>>(space, space, nullopt, nullopt,
+                                                                    space->GetEvaluator(BND), space->GetEvaluator(BND),
+                                                                    LaplaceSLKernel<3>(), intorder);
     
   }, py::arg("space"), py::arg("intorder")=3);
 
@@ -204,7 +206,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HelmholtzSingleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,
                                                     int intorder) -> shared_ptr<IntegralOperator>
   {
-    return make_unique<GenericIntegralOperator<HelmholtzSLKernel<3>>>(trial_space, test_space, HelmholtzSLKernel<3>(kappa), intorder);
+    return make_unique<GenericIntegralOperator<HelmholtzSLKernel<3>>>(trial_space, test_space, nullopt, nullopt,
+                                                                      trial_space -> GetEvaluator(BND),
+                                                                      test_space -> GetEvaluator(BND),
+                                                                      HelmholtzSLKernel<3>(kappa), intorder);
     
   }, py::arg("trial_space"), py::arg("test_space")=nullptr, py::arg("kappa"), py::arg("intorder")=3);
 
@@ -213,7 +218,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HelmholtzDoubleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,
                                                     int intorder) -> shared_ptr<IntegralOperator>
   {
-    return make_unique<GenericIntegralOperator<HelmholtzDLKernel<3>>>(trial_space, test_space, HelmholtzDLKernel<3>(kappa), intorder);
+    return make_unique<GenericIntegralOperator<HelmholtzDLKernel<3>>>(trial_space, test_space, nullopt, nullopt,
+                                                                      trial_space -> GetEvaluator(BND),
+                                                                      test_space -> GetEvaluator(BND),
+                                                                      HelmholtzDLKernel<3>(kappa), intorder);
     
   }, py::arg("trial_space"), py::arg("test_space")=nullptr, py::arg("kappa"), py::arg("intorder")=3);
 
@@ -235,7 +243,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
     m.def("HelmholtzHypersingularOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,  int intorder) -> shared_ptr<IntegralOperator>
   {
-    return make_unique<GenericIntegralOperator<HelmholtzHSKernel<3>>>(trial_space, test_space, make_shared<T_DifferentialOperator<DiffOpHelmholtz>>(),  make_shared<T_DifferentialOperator<DiffOpHelmholtz>>(), HelmholtzHSKernel<3>(kappa), intorder);
+    return make_unique<GenericIntegralOperator<HelmholtzHSKernel<3>>>(trial_space, test_space, nullopt, nullopt,
+                                                                      make_shared<T_DifferentialOperator<DiffOpHelmholtz>>(),
+                                                                      make_shared<T_DifferentialOperator<DiffOpHelmholtz>>(),
+                                                                      HelmholtzHSKernel<3>(kappa), intorder);
     
   }, py::arg("trial_space"), py::arg("test_space")=nullptr, py::arg("kappa"), py::arg("intorder")=3);
 

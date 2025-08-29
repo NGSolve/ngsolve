@@ -22,8 +22,23 @@ namespace ngsbem
     optional<Region> trial_definedon;
     optional<Region> test_definedon;
 
+    shared_ptr<DifferentialOperator> trial_evaluator;
+    shared_ptr<DifferentialOperator> test_evaluator;
+    
     // integration order
     int intorder;
+
+
+    // Sauter-Schwab integration rules:
+    Array<Vec<2>> identic_panel_x, identic_panel_y;
+    Array<double> identic_panel_weight;
+    
+    Array<Vec<2>> common_vertex_x, common_vertex_y;
+    Array<double> common_vertex_weight;
+
+    Array<Vec<2>> common_edge_x, common_edge_y;
+    Array<double> common_edge_weight;
+    
 
     shared_ptr<BaseMatrix> matrix;
 
@@ -31,7 +46,10 @@ namespace ngsbem
 
     IntegralOperator (shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                       optional<Region> _definedon_trial, optional<Region> _definedon_test,
+                      shared_ptr<DifferentialOperator> _trial_evaluator, 
+                      shared_ptr<DifferentialOperator> _test_evaluator, 
                       int _intorder);
+    
     virtual ~IntegralOperator() = default;
 
     shared_ptr<BaseMatrix> GetMatrix() const { return matrix; }
@@ -53,31 +71,7 @@ namespace ngsbem
     KERNEL kernel;
     typedef typename KERNEL::value_type value_type;
     typedef IntegralOperator BASE;
-    
-    using BASE::trial_space; 
-    using BASE::test_space;
 
-    using BASE::trial_definedon; 
-    using BASE::test_definedon;
-       
-    using BASE::intorder;
-    
-    using BASE::matrix;
-
-    shared_ptr<DifferentialOperator> trial_evaluator;
-    shared_ptr<DifferentialOperator> test_evaluator;
-
-
-    // Sauter-Schwab integration rules:
-    Array<Vec<2>> identic_panel_x, identic_panel_y;
-    Array<double> identic_panel_weight;
-    
-    Array<Vec<2>> common_vertex_x, common_vertex_y;
-    Array<double> common_vertex_weight;
-
-    Array<Vec<2>> common_edge_x, common_edge_y;
-    Array<double> common_edge_weight;
-    
     
   public:
     GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
@@ -87,28 +81,10 @@ namespace ngsbem
                             KERNEL _kernel,
                             int _intorder);
 
-    GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
-                            shared_ptr<DifferentialOperator> _trial_evaluator, 
-                            shared_ptr<DifferentialOperator> _test_evaluator, 
-                            KERNEL _kernel,
-                            int _intorder)
-      : GenericIntegralOperator (_trial_space, _test_space,
-                                 nullopt, nullopt,
-                                 _trial_evaluator, _test_evaluator, _kernel, _intorder) { }
-
-    GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
-                            KERNEL _kernel,
-                            int _intorder)
-      : GenericIntegralOperator (_trial_space, _test_space,
-                                 _trial_space -> GetEvaluator(BND),
-                                 _test_space -> GetEvaluator(BND),
-                                 _kernel, _intorder) { }
-
 
     void CalcElementMatrix(FlatMatrix<value_type> matrix,
                            ElementId ei_trial, ElementId ei_test,
                            LocalHeap &lh) const;
- 
 
     
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
@@ -290,7 +266,7 @@ namespace ngsbem
 
 
 
-
+  //  ****************************  The kernels **********************************
 
 
   
