@@ -15,50 +15,42 @@ namespace ngsbem
   IntegralOperator ::
   IntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                    optional<Region> _trial_definedon, optional<Region> _test_definedon,
+                   shared_ptr<DifferentialOperator> _trial_evaluator, 
+                   shared_ptr<DifferentialOperator> _test_evaluator, 
                    int _intorder)
     : trial_space(_trial_space), test_space(_test_space),
       trial_definedon(_trial_definedon), test_definedon(_test_definedon),
+      trial_evaluator(_trial_evaluator), test_evaluator(_test_evaluator),
       intorder(_intorder)
   {
     if (!test_space)
       test_space = trial_space;
 
-    auto mesh = trial_space->GetMeshAccess(); 
-    auto mesh2 = test_space->GetMeshAccess(); 
-
-
-    /*
-    // setup global-2-boundary mappings;
-    BitArray bnddofs(trial_space->GetNDof());
-    bnddofs.Clear();
-    for (int i = 0; i < mesh->GetNSE(); i++)
-      {
-        ElementId ei(BND, i);
-        if (!trial_definedon || (*trial_definedon).Mask().Test(mesh->GetElIndex(ei)))
-          {
-            Array<DofId> dnums;
-            trial_space->GetDofNrs(ei, dnums);
-            for (auto d : dnums)
-              bnddofs.SetBit(d);
-          }
-      }
-
-    BitArray bnddofs2(test_space->GetNDof());
-    bnddofs2.Clear();
-    for (int i = 0; i < mesh2->GetNSE(); i++)
-      {
-        ElementId ei(BND, i);        
-        if (!test_definedon || (*test_definedon).Mask().Test(mesh->GetElIndex(ei)))
-          {
-            Array<DofId> dnums;
-            test_space->GetDofNrs(ElementId(BND,i), dnums);
-            for (auto d : dnums)
-              bnddofs2.SetBit(d);
-          }
-      }
-    */
+    tie(identic_panel_x, identic_panel_y, identic_panel_weight) = IdenticPanelIntegrationRule(intorder);
+    tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
+    tie(common_edge_x, common_edge_y, common_edge_weight) = CommonEdgeIntegrationRule(intorder);
   }
 
+
+
+  template <typename KERNEL>
+  GenericIntegralOperator<KERNEL> ::
+  GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
+                          optional<Region> _definedon_trial, optional<Region> _definedon_test,                          
+                          shared_ptr<DifferentialOperator> _trial_evaluator, 
+                          shared_ptr<DifferentialOperator> _test_evaluator, 
+                          KERNEL _kernel,
+                          int _intorder)
+  : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test,
+                     _trial_evaluator, _test_evaluator, _intorder), kernel(_kernel)
+  {
+    LocalHeap lh(100000000);
+
+    matrix = this->CreateMatrixFMM(lh);
+  }
+
+
+  
 
   template <typename KERNEL>
   shared_ptr<BaseMatrix> GenericIntegralOperator<KERNEL> ::
@@ -447,26 +439,6 @@ namespace ngsbem
   }
   
 
-  template <typename KERNEL>
-  GenericIntegralOperator<KERNEL> ::
-  GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
-                          optional<Region> _definedon_trial, optional<Region> _definedon_test,                          
-                          shared_ptr<DifferentialOperator> _trial_evaluator, 
-                          shared_ptr<DifferentialOperator> _test_evaluator, 
-                          KERNEL _kernel,
-                          int _intorder)
-  : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test, _intorder), kernel(_kernel),
-    trial_evaluator(_trial_evaluator), test_evaluator(_test_evaluator)
-  {
-    LocalHeap lh(100000000);
-
-    tie(identic_panel_x, identic_panel_y, identic_panel_weight) = IdenticPanelIntegrationRule(intorder);
-    tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
-    tie(common_edge_x, common_edge_y, common_edge_weight) = CommonEdgeIntegrationRule(intorder);
-    
-    matrix = this->CreateMatrixFMM(lh);
-  }
-
 
   template <typename KERNEL>
   void GenericIntegralOperator<KERNEL> ::
@@ -769,6 +741,18 @@ namespace ngsbem
       }
   }
 
+
+
+
+
+
+
+  // ********************************* Potential ********************************************** 
+  
+
+
+
+  
   
   template <typename KERNEL>
   shared_ptr<CoefficientFunction> GenericIntegralOperator<KERNEL> ::
