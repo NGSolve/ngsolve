@@ -296,16 +296,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("BuildLocalExpansion", [](BasePotentialCF & potcf, const Region & region) { potcf.BuildLocalExpansion(region); })
     ;
 
-  class BasePotentialOperatorAndTest
-  {
-  public:
-    shared_ptr<BasePotentialOperator> pot;
-    shared_ptr<ProxyFunction> test_proxy;
-  };
-
   py::class_<BasePotentialOperator, shared_ptr<BasePotentialOperator>> (m, "PotentialOperator")
     .def("__mul__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<CoefficientFunction> test_proxy) {
-      return BasePotentialOperatorAndTest { pot, dynamic_pointer_cast<ProxyFunction>(test_proxy) };
+      return BasePotentialOperatorAndTest (pot, test_proxy); //  { pot, dynamic_pointer_cast<ProxyFunction>(test_proxy) };
     })
     .def("__call__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<GridFunction> gf) {
       return pot->MakePotentialCF(gf);
@@ -315,12 +308,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   py::class_<BasePotentialOperatorAndTest> (m, "BasePotentialOperatorAndTest")
     .def("__mul__", [](BasePotentialOperatorAndTest pottest, DifferentialSymbol dx)
     {
-      auto iop = pottest.pot->MakeIntegralOperator(pottest.test_proxy, dx);
-      if (auto diop = dynamic_pointer_cast<IntegralOperator>(iop); diop)
-        return py::cast(diop);
-      if (auto ciop = dynamic_pointer_cast<IntegralOperator>(iop); ciop)
-        return py::cast(ciop);
-      throw Exception("neither double nor complex?");
+      return pottest.MakeIntegralOperator(dx); 
     })
     ;
   

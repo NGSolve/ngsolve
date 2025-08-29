@@ -23,7 +23,11 @@ namespace ngsbem
     optional<Region> test_definedon;
 
     shared_ptr<DifferentialOperator> trial_evaluator;
+    shared_ptr<CoefficientFunction> trial_factor;
+    
     shared_ptr<DifferentialOperator> test_evaluator;
+    shared_ptr<CoefficientFunction> test_factor;
+    
     
     // integration order
     int intorder;
@@ -46,8 +50,8 @@ namespace ngsbem
 
     IntegralOperator (shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                       optional<Region> _definedon_trial, optional<Region> _definedon_test,
-                      shared_ptr<DifferentialOperator> _trial_evaluator, 
-                      shared_ptr<DifferentialOperator> _test_evaluator, 
+                      shared_ptr<DifferentialOperator> _trial_evaluator, shared_ptr<CoefficientFunction> _trial_factor,
+                      shared_ptr<DifferentialOperator> _test_evaluator, shared_ptr<CoefficientFunction> _test_factor,
                       int _intorder);
     
     virtual ~IntegralOperator() = default;
@@ -76,12 +80,25 @@ namespace ngsbem
   public:
     GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                             optional<Region> _definedon_trial, optional<Region> _definedon_test,
-                            shared_ptr<DifferentialOperator> _trial_evaluator, 
-                            shared_ptr<DifferentialOperator> _test_evaluator, 
+                            shared_ptr<DifferentialOperator> _trial_evaluator, shared_ptr<CoefficientFunction> _trial_factor,
+                            shared_ptr<DifferentialOperator> _test_evaluator, shared_ptr<CoefficientFunction> _test_factor,
                             KERNEL _kernel,
                             int _intorder);
 
 
+    GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
+                            optional<Region> _definedon_trial, optional<Region> _definedon_test,
+                            shared_ptr<DifferentialOperator> _trial_evaluator, 
+                            shared_ptr<DifferentialOperator> _test_evaluator, 
+                            KERNEL _kernel,
+                            int _intorder)
+      : GenericIntegralOperator (_trial_space, _test_space, _definedon_trial, _definedon_test,
+                                 _trial_evaluator, nullptr, _test_evaluator, nullptr,
+                                 _kernel, _intorder) { } 
+
+
+
+    
     void CalcElementMatrix(FlatMatrix<value_type> matrix,
                            ElementId ei_trial, ElementId ei_test,
                            LocalHeap &lh) const;
@@ -203,7 +220,9 @@ namespace ngsbem
                            int _intorder)
       : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
     virtual ~BasePotentialOperator() { } 
-    virtual shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) = 0;
+    virtual shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
+                                                              shared_ptr<CoefficientFunction> test_factor,
+                                                              DifferentialSymbol dx) = 0;
     virtual shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) = 0;
   };
   
@@ -220,7 +239,9 @@ namespace ngsbem
                        KERNEL _kernel, int _intorder)
       : BasePotentialOperator (_proxy, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
 
-    shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy, DifferentialSymbol dx) override
+    shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
+                                                      shared_ptr<CoefficientFunction> test_factor,
+                                                      DifferentialSymbol dx) override
     {
       auto festest = test_proxy->GetFESpace();
       
@@ -242,8 +263,8 @@ namespace ngsbem
                                                            festest, 
                                                            definedon,
                                                            definedon_test,
-                                                           proxy->Evaluator(),
-                                                           test_proxy->Evaluator(),
+                                                           proxy->Evaluator(), nullptr,
+                                                           test_proxy->Evaluator(), test_factor, 
                                                            kernel,
                                                            2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder);
     }
@@ -256,13 +277,77 @@ namespace ngsbem
 
 
 
+  inline Array < tuple<shared_ptr<CoefficientFunction>, shared_ptr<ProxyFunction> > >
+  CreateProxyLinearization (shared_ptr<CoefficientFunction> cf, bool trial)
+  {
+    cout << "createProxylin" << endl;
+
+    
+    Array<tuple<shared_ptr<CoefficientFunction>, shared_ptr<ProxyFunction> >>  proxylin;
+
+    Array<ProxyFunction*> proxies;
+    
+    cf->TraverseTree
+      ([&] (CoefficientFunction & nodecf)
+      {
+        cout << "check node" << endl;
+        if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
+          if ((proxy->IsTrialFunction() == trial) &&  (!proxies.Contains(proxy)))
+            proxies.Append (proxy);
+      });
+    
+    cout << "proxies: " << proxies.Size() << endl;
+    
+    for (auto proxy : proxies)
+      if (!proxy->Evaluator()->SupportsVB(BND))
+        throw Exception ("Testfunction does not support BND-forms, maybe a Trace() operator is missing");
+
+    for (auto proxy : proxies)
+      {
+        CoefficientFunction::T_DJC cache;
+        shared_ptr<ProxyFunction> spproxy = dynamic_pointer_cast<ProxyFunction> (proxy->shared_from_this());
+        proxylin += tuple { cf->DiffJacobi(proxy, cache), spproxy };
+      }
+
+    return proxylin;
+  }
+    
 
 
+  class BasePotentialOperatorAndTest
+  {
+    shared_ptr<BasePotentialOperator> pot;
+    shared_ptr<ProxyFunction> test_proxy;
+    shared_ptr<CoefficientFunction> test_factor;
+  public:
 
+    BasePotentialOperatorAndTest (shared_ptr<BasePotentialOperator> _pot,
+                                  shared_ptr<CoefficientFunction> _test_proxy)
+      : pot(_pot)
+    {
+      test_proxy = dynamic_pointer_cast<ProxyFunction>(_test_proxy);
 
+      if (!test_proxy)
+        {
+          auto proxylin = CreateProxyLinearization (_test_proxy, false);
 
+          cout << "got an expression for potential-test, linearization is: " << endl;
+          for (auto [factor, proxy] : proxylin)
+            {
+              cout << "proxy = " << *proxy << endl;
+              cout << "factor = " << *factor << endl;
+              test_proxy = proxy;
+              test_factor = factor;
+            }
+        }
+    }
 
-
+    
+    shared_ptr<IntegralOperator> MakeIntegralOperator (DifferentialSymbol dx)
+    {
+      return pot->MakeIntegralOperator(test_proxy, test_factor, dx);
+    }
+  };
 
 
 
