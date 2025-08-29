@@ -10,6 +10,86 @@
 namespace ngsbem
 {
 
+  
+  class DifferentialOperatorWithFactor : public DifferentialOperator
+  {
+    shared_ptr<DifferentialOperator> diffop;
+    shared_ptr<CoefficientFunction> factor;
+
+  public:
+    DifferentialOperatorWithFactor (shared_ptr<DifferentialOperator> adiffop,
+                                    shared_ptr<CoefficientFunction> afactor)
+      : DifferentialOperator(afactor->Dimensions()[0], 1, adiffop->VB(), adiffop->DiffOrder()),
+        diffop(adiffop), factor(afactor)
+    { ; }
+
+    int DimRef() const override { return diffop->DimRef(); }
+
+
+
+    void CalcMatrix (const FiniteElement & fel,
+                     const BaseMappedIntegrationPoint & mip,
+                     BareSliceMatrix<double,ColMajor> mat, 
+                     LocalHeap & lh) const override
+    {
+      FlatMatrix<double,ColMajor> hmat(diffop->Dim(), fel.GetNDof(), lh);
+      diffop -> CalcMatrix (fel, mip, hmat, lh);
+
+      auto dims = factor->Dimensions();      
+      FlatMatrix<double> factorx(dims[0], dims[1], lh);
+      factor->Evaluate (mip, factorx.AsVector());
+
+      mat = factorx * hmat;
+    }
+    
+    void CalcMatrix (const FiniteElement & fel,
+                     const SIMD_BaseMappedIntegrationRule & mir,
+                     BareSliceMatrix<SIMD<double>> mat) const override
+    {
+      // *testout << "CalcMatrix SIMD" << endl;      
+      Matrix<SIMD<double>> hmat (fel.GetNDof()*diffop->Dim(), mir.Size());
+      diffop -> CalcMatrix (fel, mir, hmat);
+
+      Matrix<SIMD<double>> fac(factor->Dimension(), mir.Size());
+      factor -> Evaluate (mir, fac);
+
+      auto dims = factor -> Dimensions();
+
+      mat.Rows(fel.GetNDof()*dims[1]).Cols(mir.Size()) = SIMD<double>(0.0);
+      
+      for (size_t i = 0; i < mir.Size(); i++)
+        for (size_t j = 0; j < dims[0]; j++)
+          for (size_t k = 0; k < dims[1]; k++)
+            mat.Col(i).Slice(j,dims[0]) += fac(j*dims[1]+k, i) * hmat.Col(i).Slice(k, dims[1]);
+    }
+    
+
+    void CalcMatrix (const FiniteElement & fel,
+                     const IntegrationPoint & ip,
+                     BareSliceMatrix<double,ColMajor> mat,
+                     LocalHeap & lh) const override
+    {
+      diffop -> CalcMatrix(fel, ip, mat, lh);
+    }
+
+    void CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
+                                   SliceMatrix<double> trans,
+                                   LocalHeap & lh) const override
+    {
+      HeapReset hr(lh);
+      auto dims = factor->Dimensions();
+      
+      FlatMatrix<double> factorx(dims[0], dims[1], lh);
+      factor->Evaluate (mip, factorx.AsVector());
+
+      FlatMatrix<double> basetrans(diffop->Dim(), diffop->DimRef(), lh);
+      diffop -> CalcTransformationMatrix(mip, basetrans, lh);
+
+      trans = factorx * basetrans;
+    }
+    
+  };
+
 
   
   IntegralOperator ::
@@ -27,6 +107,9 @@ namespace ngsbem
     if (!test_space)
       test_space = trial_space;
 
+    if (test_factor)
+      test_evaluator = make_shared<DifferentialOperatorWithFactor>(test_evaluator, test_factor);
+    
     tie(identic_panel_x, identic_panel_y, identic_panel_weight) = IdenticPanelIntegrationRule(intorder);
     tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
     tie(common_edge_x, common_edge_y, common_edge_weight) = CommonEdgeIntegrationRule(intorder);

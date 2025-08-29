@@ -199,9 +199,9 @@ namespace ngsbem
 
 
 
-
-
-
+  
+  
+  
 
 
   
@@ -280,23 +280,16 @@ namespace ngsbem
   inline Array < tuple<shared_ptr<CoefficientFunction>, shared_ptr<ProxyFunction> > >
   CreateProxyLinearization (shared_ptr<CoefficientFunction> cf, bool trial)
   {
-    cout << "createProxylin" << endl;
-
-    
     Array<tuple<shared_ptr<CoefficientFunction>, shared_ptr<ProxyFunction> >>  proxylin;
-
     Array<ProxyFunction*> proxies;
     
     cf->TraverseTree
       ([&] (CoefficientFunction & nodecf)
       {
-        cout << "check node" << endl;
         if (auto proxy = dynamic_cast<ProxyFunction*> (&nodecf))
           if ((proxy->IsTrialFunction() == trial) &&  (!proxies.Contains(proxy)))
             proxies.Append (proxy);
       });
-    
-    cout << "proxies: " << proxies.Size() << endl;
     
     for (auto proxy : proxies)
       if (!proxy->Evaluator()->SupportsVB(BND))
@@ -337,7 +330,7 @@ namespace ngsbem
               cout << "proxy = " << *proxy << endl;
               cout << "factor = " << *factor << endl;
               test_proxy = proxy;
-              test_factor = factor;
+              test_factor = factor -> Reshape (_test_proxy->Dimension(), proxy->Dimension() );
             }
         }
     }

@@ -229,6 +229,26 @@ namespace ngfem
       Cast(fel).CalcMappedDShape (mip, Trans(mat));
     }
 
+
+    static int DimRef() { return D-1; } 
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & fel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      Cast(fel).CalcDShape (ip, Trans(mat));
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat = Trans(static_cast<const MappedIntegrationPoint<D-1,D>&>(mip).GetJacobianInverse());
+    }
+
+
+    
+
     static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
