@@ -15,12 +15,13 @@ namespace ngsbem
   IntegralOperator ::
   IntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                    optional<Region> _trial_definedon, optional<Region> _test_definedon,
-                   shared_ptr<DifferentialOperator> _trial_evaluator, 
-                   shared_ptr<DifferentialOperator> _test_evaluator, 
+                   shared_ptr<DifferentialOperator> _trial_evaluator, shared_ptr<CoefficientFunction> _trial_factor,
+                   shared_ptr<DifferentialOperator> _test_evaluator, shared_ptr<CoefficientFunction> _test_factor,
                    int _intorder)
     : trial_space(_trial_space), test_space(_test_space),
       trial_definedon(_trial_definedon), test_definedon(_test_definedon),
-      trial_evaluator(_trial_evaluator), test_evaluator(_test_evaluator),
+      trial_evaluator(_trial_evaluator), trial_factor(_trial_factor),
+      test_evaluator(_test_evaluator), test_factor(_test_factor),
       intorder(_intorder)
   {
     if (!test_space)
@@ -37,12 +38,13 @@ namespace ngsbem
   GenericIntegralOperator<KERNEL> ::
   GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                           optional<Region> _definedon_trial, optional<Region> _definedon_test,                          
-                          shared_ptr<DifferentialOperator> _trial_evaluator, 
-                          shared_ptr<DifferentialOperator> _test_evaluator, 
+                          shared_ptr<DifferentialOperator> _trial_evaluator, shared_ptr<CoefficientFunction> _trial_factor,
+                          shared_ptr<DifferentialOperator> _test_evaluator, shared_ptr<CoefficientFunction> _test_factor,
                           KERNEL _kernel,
                           int _intorder)
   : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test,
-                     _trial_evaluator, _test_evaluator, _intorder), kernel(_kernel)
+                     _trial_evaluator, _trial_factor,
+                     _test_evaluator, _test_factor, _intorder), kernel(_kernel)
   {
     LocalHeap lh(100000000);
 
