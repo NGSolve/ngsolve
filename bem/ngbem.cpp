@@ -107,6 +107,9 @@ namespace ngsbem
     if (!test_space)
       test_space = trial_space;
 
+    if (trial_factor)
+      trial_evaluator = make_shared<DifferentialOperatorWithFactor>(trial_evaluator, trial_factor);
+
     if (test_factor)
       test_evaluator = make_shared<DifferentialOperatorWithFactor>(test_evaluator, test_factor);
     

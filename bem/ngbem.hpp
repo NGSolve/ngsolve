@@ -210,15 +210,16 @@ namespace ngsbem
   {
   public:
     shared_ptr<ProxyFunction> proxy;
+    shared_ptr<CoefficientFunction> factor;
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
     int intorder;
   public:
-    BasePotentialOperator (shared_ptr<ProxyFunction> _proxy,
+    BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, shared_ptr<CoefficientFunction> _factor,
                            optional<Region> _definedon,    
                            shared_ptr<DifferentialOperator> _evaluator,
                            int _intorder)
-      : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
+      : proxy(_proxy), factor(_factor), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
     virtual ~BasePotentialOperator() { } 
     virtual shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
                                                               shared_ptr<CoefficientFunction> test_factor,
@@ -234,10 +235,11 @@ namespace ngsbem
     KERNEL kernel;
   public:
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
+                       shared_ptr<CoefficientFunction> _factor,                       
                        optional<Region> _definedon,    
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel, int _intorder)
-      : BasePotentialOperator (_proxy, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
+      : BasePotentialOperator (_proxy, _factor, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
 
     shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
                                                       shared_ptr<CoefficientFunction> test_factor,
@@ -263,7 +265,7 @@ namespace ngsbem
                                                            festest, 
                                                            definedon,
                                                            definedon_test,
-                                                           proxy->Evaluator(), nullptr,
+                                                           proxy->Evaluator(), factor,
                                                            test_proxy->Evaluator(), test_factor, 
                                                            kernel,
                                                            2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder);
@@ -277,10 +279,10 @@ namespace ngsbem
 
 
 
-  inline Array < tuple<shared_ptr<CoefficientFunction>, shared_ptr<ProxyFunction> > >
+  inline Array < tuple <shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction>  >>
   CreateProxyLinearization (shared_ptr<CoefficientFunction> cf, bool trial)
   {
-    Array<tuple<shared_ptr<CoefficientFunction>, shared_ptr<ProxyFunction> >>  proxylin;
+    Array<tuple<shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction>>>  proxylin;
     Array<ProxyFunction*> proxies;
     
     cf->TraverseTree
@@ -299,13 +301,26 @@ namespace ngsbem
       {
         CoefficientFunction::T_DJC cache;
         shared_ptr<ProxyFunction> spproxy = dynamic_pointer_cast<ProxyFunction> (proxy->shared_from_this());
-        proxylin += tuple { cf->DiffJacobi(proxy, cache), spproxy };
+        proxylin += tuple { spproxy, cf->DiffJacobi(proxy, cache) };
       }
 
     return proxylin;
   }
     
+  inline tuple < shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction> >
+  GetProxyAndFactor (shared_ptr<CoefficientFunction> cf, bool trial)
+  {
+    if (auto proxy = dynamic_pointer_cast<ProxyFunction>(cf))
+      return { proxy, nullptr };
+    
+    auto proxylin = CreateProxyLinearization (cf, trial);
+    if (proxylin.Size() != 1)
+      throw Exception(string("need exactly one")+(trial?"trial":"test") + "-proxy");
 
+    // return proxylin[0];
+    auto [proxy,factor] = proxylin[0];
+    return { proxy, factor->Reshape(cf->Dimension(), proxy->Dimension()) };
+  }        
 
   class BasePotentialOperatorAndTest
   {
@@ -318,6 +333,8 @@ namespace ngsbem
                                   shared_ptr<CoefficientFunction> _test_proxy)
       : pot(_pot)
     {
+      tie(test_proxy,test_factor) = GetProxyAndFactor(_test_proxy, false);
+      /*
       test_proxy = dynamic_pointer_cast<ProxyFunction>(_test_proxy);
 
       if (!test_proxy)
@@ -333,6 +350,7 @@ namespace ngsbem
               test_factor = factor -> Reshape (_test_proxy->Dimension(), proxy->Dimension() );
             }
         }
+      */
     }
 
     

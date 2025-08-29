@@ -316,7 +316,11 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
-    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+
+    
+    // auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    auto [proxy,factor] = GetProxyAndFactor(igl->cf, true);
+    
     auto fes = proxy->GetFESpace();
     
     auto tmpfes = fes;
@@ -327,7 +331,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         tmpeval = compeval->BaseDiffOp();
       }
     
-    
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
@@ -335,13 +338,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (proxy->Dimension() == 1)
       {
         LaplaceSLKernel<3> kernel;
-        return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+        return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
                                                                    kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
       }
     if (proxy->Dimension() == 3)
       {
         LaplaceHSKernel<3> kernel;
-        return make_shared<PotentialOperator<LaplaceHSKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+        return make_shared<PotentialOperator<LaplaceHSKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
                                                                    kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
       }
     throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
@@ -368,7 +371,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
-    return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+    return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
                                                                kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
   });
 
@@ -394,13 +397,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (proxy->Dimension() == 3)
     {
       HelmholtzSLVecKernel<3> kernel(kappa);
-      return make_shared<PotentialOperator<HelmholtzSLVecKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<HelmholtzSLVecKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
                                                                       kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
       {
       HelmholtzSLKernel<3> kernel(kappa);
-      return make_shared<PotentialOperator<HelmholtzSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<HelmholtzSLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
                                                                    kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     }
     else
@@ -429,13 +432,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (proxy->Dimension() == 3)
     {
       MaxwellDLKernel<3> kernel(kappa);
-      return make_shared<PotentialOperator<MaxwellDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<MaxwellDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
                                                                  kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
     {
       HelmholtzDLKernel<3> kernel(kappa);
-      return make_shared<PotentialOperator<HelmholtzDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<HelmholtzDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
                                                                    kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     }
     else
