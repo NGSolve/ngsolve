@@ -884,9 +884,9 @@ namespace ngsbem
         ElementId ei(BND, i);
         if (!space->DefinedOn(ei)) continue;
 
-        const FiniteElement &fel = space->GetFE(ei, lh);
+        // const FiniteElement &fel = space->GetFE(ei, lh);
         const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
-        IntegrationRule ir(fel.ElementType(), intorder);
+        IntegrationRule ir(trafo.GetElementType(), intorder);
         MappedIntegrationRule<2,3> miry(ir, trafo, lh);
 
         for (int k = 0; k < miry.Size(); k++)
@@ -898,11 +898,9 @@ namespace ngsbem
       }
 
     Vec<3> cs = 0.5*(smin+smax);
-    double rs = 0;
-    for (int j = 0; j < 3; j++)
-      rs = max(rs, smax(j)-smin(j));
-    
+    double rs = MaxNorm(smax-smin);
 
+    // cout << "cs = " << cs << ", rs = " << rs << endl;
     auto singmp = kernel.CreateMultipoleExpansion(cs, rs);
     
     typedef typename KERNEL::value_type T;
@@ -961,18 +959,16 @@ namespace ngsbem
       }
 
     Vec<3> ct = 0.5*(tmin+tmax);
-    double rt = 0;
-    for (int j = 0; j < 3; j++)
-      rt = max(rt, tmax(j)-tmin(j));
+    double rt = MaxNorm(tmax-tmin);
+    // cout << "ct = " << ct << ", rt = " << rt << endl;
     
-
-    local_expansion = kernel.CreateLocalExpansion(ct, rt);
+    local_expansion = kernel.CreateLocalExpansion(ct, /* 1e-5 * */ rt); 
     
     ParallelFor (tpoints.Size(), [&](int i){
       local_expansion->AddTarget(tpoints[i]);
     });
 
-    local_expansion->CalcMP(singmp);
+    local_expansion->CalcMP(singmp, false);
   }
 
 
