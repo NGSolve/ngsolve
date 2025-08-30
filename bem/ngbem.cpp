@@ -1173,7 +1173,7 @@ namespace ngsbem
         {
           auto & mir = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);        
           for (int j = 0; j < mir.Size(); j++)
-            kernel.EvaluateMP (*local_expansion, Vec<3>(mir[j].GetPoint()), make_BareSliceVector(result.Row(j)));
+            kernel.EvaluateMP (*local_expansion, Vec<3>(mir[j].GetPoint()), Vec<3>(mir[j].GetNV()), make_BareSliceVector(result.Row(j)));
           return;
         }
     
