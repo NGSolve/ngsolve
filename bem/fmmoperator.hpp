@@ -112,138 +112,29 @@ namespace ngsbem
 
     void MultTrans(const BaseVector & x, BaseVector & y) const override
     {
-      auto fx = x.FV<typename KERNEL::value_type>();
-      auto fy = y.FV<typename KERNEL::value_type>();
-      
-      fy = 0;
-      
-      if constexpr (std::is_same<KERNEL, class LaplaceDLKernel<3>>())
-        {
-          // This is slow, but works for now:
-          for (size_t ix = 0; ix < xpts.Size(); ix++)
-            for (size_t iy = 0; iy < ypts.Size(); iy++)
-              {
-                double norm = L2Norm(xpts[ix]-ypts[iy]);
-                if (norm > 0)
-                  {
-                    // double nxy = InnerProduct(ynv[iy], xpts[ix]-ypts[iy]);                 
-                    double nxy = InnerProduct(xnv[ix], ypts[iy]-xpts[ix]);
-                    auto kern = nxy / (4 * M_PI * norm*norm*norm);
-                    fy(ix) += kern * fx(iy);
-                  }
-              }
-        }
-      else
-        throw Exception("KERNEL " + std::string(typeid(KERNEL).name()) + " doesn't have MultTrans overloaded");
-    };
+        static Timer tall("ngbem fmm apply Trans "+KERNEL::Name()); RegionTimer reg(tall);
 
+        auto shape = KERNEL::Shape();
+        auto matx = x.FV<typename KERNEL::value_type>().AsMatrix(xpts.Size(), shape[0]);
+        auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[1]);
+
+        maty = 0;
+        auto singmp = kernel.CreateMultipoleExpansion (cy, ry);
+        ParallelFor (ypts.Size(), [&](int i){
+          kernel.AddSourceTrans(*singmp, ypts[i], ynv[i], matx.Row(i));
+        });
+        singmp->CalcMP();
+        auto regmp = kernel.CreateLocalExpansion (cx, rx);
+        ParallelFor (xpts.Size(), [&](int i){
+          regmp->AddTarget(xpts[i]);
+        });
+        regmp->CalcMP(singmp);
+        ParallelFor (xpts.Size(), [&](int i) {
+          kernel.EvaluateMPTrans(*regmp, xpts[i], xnv[i], maty.Row(i));
+        });
+    };
   };
 
-  // ********************** operators for Laplace ********************
-  // using Helmholtz, with small kappa
-
-
-  template <>
-  void FMM_Operator<LaplaceDLKernel<3>> :: MultTrans(const BaseVector & x, BaseVector & y) const 
-  {
-    static Timer tall("ngbem fmm apply LaplaceDL MultTrans (ngfmm)"); RegionTimer reg(tall);
-    auto fx = x.FV<double>();
-    auto fy = y.FV<double>();
-
-    fy = 0;
-    if (L2Norm(x) == 0) return;
-    
-    double kappa = 1e-16;
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, kappa);
-
-    ParallelFor (ypts.Size(), [&](int i){
-      singmp->AddCharge(ypts[i], fx(i));
-    });
-    singmp->CalcMP();
-
-    RegularMLMultiPole<Complex> regmp (cx, rx, kappa);
-    ParallelFor (xpts.Size(), [&](int i){
-      regmp.AddTarget(xpts[i]);
-    });
-    regmp.CalcMP(singmp);
-
-    ParallelFor (xpts.Size(), [&](int i) {
-      fy(i) = Real (regmp.EvaluateDirectionalDerivative(xpts[i], xnv[i]));
-    });
-  }
-  
-
-
-  // ********************** operators for Helmholtz ********************  
-  
-
-  template <>
-  void FMM_Operator<HelmholtzDLKernel<3>> :: MultTrans(const BaseVector & x, BaseVector & y) const 
-  {
-    static Timer tall("ngbem fmm apply HelmholtzDL MultTrans (ngfmm)"); RegionTimer reg(tall);
-    auto fx = x.FV<Complex>();
-    auto fy = y.FV<Complex>();
-
-    fy = 0;
-    if (L2Norm(x) == 0) return;
-    double kappa = kernel.GetKappa();
-    auto singmp = make_shared<SingularMLMultiPole<Complex>>(cy, ry, kappa);
-
-    ParallelFor (ypts.Size(), [&](int i){
-      singmp->AddCharge(ypts[i], fx(i));
-    });
-    singmp->CalcMP();
-
-    RegularMLMultiPole<Complex> regmp (cx, rx, kappa);
-    ParallelFor (xpts.Size(), [&](int i){
-      regmp.AddTarget(xpts[i]);
-    });
-    regmp.CalcMP(singmp);
-
-    ParallelFor (xpts.Size(), [&](int i) {
-      fy(i) = regmp.EvaluateDirectionalDerivative(xpts[i], xnv[i]);
-    });
-  }
-
-  // https://weggler.github.io/ngbem/short_and_sweet/Maxwell_Formulations.html
-  template <>
-  void FMM_Operator<MaxwellDLKernel<3>> :: MultTrans(const BaseVector & x, BaseVector & y) const
-  {
-    static Timer tall("ngbem fmm apply MaxwellDL MultTrans (ngfmm)"); RegionTimer reg(tall);
-    auto fx = x.FV<Complex>();
-    auto fy = y.FV<Complex>();
-
-    fy = 0;
-    if (L2Norm(x) == 0) return;
-    double kappa = kernel.GetKappa();
-
-    auto singmp = make_shared<SingularMLMultiPole<Vec<3,Complex>>>(cy, ry, kappa);
-
-    ParallelFor (ypts.Size(), [&](int i){
-      Vec<3,Complex> current = fx.Range(3*i, 3*i+3);
-
-      for (int k = 0; k < 3; k++)
-      {
-        Vec<3> ek{0.0}; ek(k) = 1;
-        Vec<3> current_real = Real(current);
-        Vec<3> current_imag = Imag(current);
-
-        singmp->AddDipole(xpts[i], Cross(current_real, ek), ek);
-        singmp->AddDipole(xpts[i], Cross(current_imag, ek), Complex(0,1)*ek);
-      }
-    });
-    singmp->CalcMP();
-
-    RegularMLMultiPole<Vec<3,Complex>> regmp (cx, rx, kappa);
-    ParallelFor (xpts.Size(), [&](int i){
-      regmp.AddTarget(xpts[i]);
-    });
-    regmp.CalcMP(singmp);
-
-    ParallelFor (xpts.Size(), [&](int i) {
-      fy.Range(3*i, 3*i+3) = regmp.Evaluate(xpts[i]);
-    });
-  }
 }
 
 
