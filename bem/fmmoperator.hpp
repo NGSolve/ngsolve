@@ -20,9 +20,7 @@ namespace ngsbem
       }
 
     Vec<3> cx = 0.5*(xmin+xmax);
-    double rx = 0;
-    for (int j = 0; j < 3; j++)
-      rx = max(rx, xmax(j)-xmin(j));
+    double rx = MaxNorm(xmax-xmin);
 
     return { cx, rx };
   }
@@ -81,8 +79,8 @@ namespace ngsbem
 
       auto shape = KERNEL::Shape();
       
-      auto matx = x.FV<typename KERNEL::value_type>().AsMatrix(xpts.Size(), shape[0]);
-      auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[1]);      
+      auto matx = x.FV<typename KERNEL::value_type>().AsMatrix(xpts.Size(), shape[1]);
+      auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[0]);      
       
       maty = 0;
       auto singmp = kernel.CreateMultipoleExpansion (cx, rx);
