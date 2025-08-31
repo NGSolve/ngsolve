@@ -488,7 +488,8 @@ namespace ngsbem
 
   static constexpr int MPOrder (double rho_kappa)
   {
-    return max (20, int(2*rho_kappa));
+    // return max (20, int(2*rho_kappa));
+    return 20+int(2*rho_kappa);
   }
   static constexpr int maxdirect = 100;
 
@@ -1559,7 +1560,7 @@ namespace ngsbem
       void LocalizeExpansion(bool allow_refine)
       {
         if (allow_refine)
-          if (mp.Order() > 20 && !childs[0])
+          if (mp.Order() > 30 && !childs[0])
             CreateChilds();
 
         if (childs[0])

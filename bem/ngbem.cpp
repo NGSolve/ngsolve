@@ -843,7 +843,7 @@ namespace ngsbem
   
   
   template <typename KERNEL>
-  shared_ptr<CoefficientFunction> GenericIntegralOperator<KERNEL> ::
+  shared_ptr<BasePotentialCF> GenericIntegralOperator<KERNEL> ::
   GetPotential(shared_ptr<GridFunction> gf, optional<int> io, bool nearfield_experimental) const
   {
     return  make_shared<PotentialCF<KERNEL>> (gf, trial_definedon, trial_evaluator,
@@ -962,7 +962,7 @@ namespace ngsbem
     double rt = MaxNorm(tmax-tmin);
     // cout << "ct = " << ct << ", rt = " << rt << endl;
     
-    local_expansion = kernel.CreateLocalExpansion(ct, /* 1e-5 * */ rt); 
+    local_expansion = kernel.CreateLocalExpansion(ct, rt); 
     
     ParallelFor (tpoints.Size(), [&](int i){
       local_expansion->AddTarget(tpoints[i]);
@@ -1264,6 +1264,7 @@ namespace ngsbem
   template class PotentialCF<HelmholtzSLVecKernel<3>>;
   template class PotentialCF<HelmholtzDLKernel<3>>;
   template class PotentialCF<HelmholtzHSKernel<3>>;
+  template class PotentialCF<CombinedFieldKernel<3>>;  
   template class PotentialCF<MaxwellSLKernel<3>>;
   template class PotentialCF<MaxwellDLKernel<3>>;
 
