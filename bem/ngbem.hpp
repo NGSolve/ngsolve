@@ -142,7 +142,6 @@ namespace ngsbem
     int intorder;
     bool nearfield;
 
-    // typedef decltype (defvar<KERNEL>().CreateLocalExpansion(Vec<3>(), double())) LOCAL_EXPANSION;
     using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::CreateLocalExpansion),KERNEL,Vec<3>,double>;
 
     LOCAL_EXPANSION local_expansion;
@@ -251,7 +250,6 @@ namespace ngsbem
       auto tmpeval = proxy->Evaluator();
       while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
         {
-          // auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval);
           int component = compeval->Component();
           tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[component];
           tmpeval = compeval->BaseDiffOp();
@@ -334,23 +332,6 @@ namespace ngsbem
       : pot(_pot)
     {
       tie(test_proxy,test_factor) = GetProxyAndFactor(_test_proxy, false);
-      /*
-      test_proxy = dynamic_pointer_cast<ProxyFunction>(_test_proxy);
-
-      if (!test_proxy)
-        {
-          auto proxylin = CreateProxyLinearization (_test_proxy, false);
-
-          cout << "got an expression for potential-test, linearization is: " << endl;
-          for (auto [factor, proxy] : proxylin)
-            {
-              cout << "proxy = " << *proxy << endl;
-              cout << "factor = " << *factor << endl;
-              test_proxy = proxy;
-              test_factor = factor -> Reshape (_test_proxy->Dimension(), proxy->Dimension() );
-            }
-        }
-      */
     }
 
     
@@ -428,6 +409,7 @@ namespace ngsbem
   class LaplaceSLKernel<3> : public BaseKernel
   {
   public:
+    LaplaceSLKernel<3> () = default;
     typedef double value_type;
     static string Name() { return "LaplaceSL"; }
     static auto Shape() { return IVec<2>(1,1); }
