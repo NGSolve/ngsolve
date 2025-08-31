@@ -395,10 +395,22 @@ namespace ngsbem
       throw Exception("Addsource not implemented");            
     }
 
+    template <typename entry, typename TV>
+    void AddSourceTrans(SingularMLMultiPole<entry> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
+    {
+      throw Exception("AddSourceTrans not implemented");
+    }
+
     template <typename TV>
     void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
     {
       throw Exception("Evaluate not implemented");            
+    }
+
+    template <typename entry, typename TV>
+    void EvaluateMPTrans(RegularMLMultiPole<entry> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
+    {
+      throw Exception("EvaluateMPTrans not implemented");
     }
   };
 
@@ -494,9 +506,19 @@ namespace ngsbem
       mp.AddDipole(pnt, -nv, val(0));
     }
 
+    void AddSourceTrans(SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      mp.AddCharge(pnt, val(0));
+    }
+
     void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       val(0) = Real(mp.Evaluate (pnt));
+    }
+
+    void EvaluateMPTrans(RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      val(0) = Real(mp.EvaluateDirectionalDerivative(pnt, nv));
     }
   };
 
@@ -647,9 +669,19 @@ namespace ngsbem
       mp.AddDipole(pnt, -nv, val(0));
     }
 
+    void AddSourceTrans(SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      mp.AddCharge(pnt, val(0));
+    }
+
     void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val(0) = mp.Evaluate (pnt);
+    }
+
+    void EvaluateMPTrans(RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
     }
   };
 
@@ -885,6 +917,7 @@ namespace ngsbem
 
   template <int D> class MaxwellDLKernel;
 
+  // https://weggler.github.io/ngbem/short_and_sweet/Maxwell_Formulations.html
   /** MaxwellDLkernel for 3D in matrix representation reads
       $$  \left( \begin{array}{ccc} 0 & -\frac{\partial G_\kappa(x-y)}{\partial x_3} & \frac{\partial G_\kappa(x-y)}{\partial x_2} \\ \frac{\partial G_\kappa(x-y)}{\partial x_3} & 0 & -\frac{\partial G_\kappa(x-y)}{\partial x_1} \\ -\frac{\partial G_\kappa(x-y)}{\partial x_2} & \frac{\partial G_\kappa(x-y)}{\partial x_1} & 0 \end{array}\right)\,,$$ with 
    $$ G_\kappa(x-y) = \frac{1}{4\,\pi} \, \frac{e^{i\,\kappa\,|x-y|}}{|x-y|^3} \, 
@@ -943,7 +976,25 @@ namespace ngsbem
       }
     }
 
+    void AddSourceTrans(SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      Vec<3,Complex> n_cross_m = val.Range(0, 3);
+      for (int k = 0; k < 3; k++)
+      {
+        Vec<3> ek{0.0}; ek(k) = 1;
+        Vec<3> n_cross_m_real = Real(n_cross_m);
+        Vec<3> n_cross_m_imag = Imag(n_cross_m);
+        mp.AddDipole(pnt, Cross(n_cross_m_real, ek), ek);
+        mp.AddDipole(pnt, Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
+      }
+    }
+
     void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val = mp.Evaluate (pnt);
+    }
+
+    void EvaluateMPTrans(RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val = mp.Evaluate (pnt);
     }
