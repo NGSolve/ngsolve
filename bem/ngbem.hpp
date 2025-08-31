@@ -390,13 +390,13 @@ namespace ngsbem
     }
 
     template <typename TV>
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
     {
       throw Exception("Addsource not implemented");            
     }
 
     template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
     {
       throw Exception("Evaluate not implemented");            
     }
@@ -440,14 +440,12 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Complex>> (c, r, 1e-16);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       mp.AddCharge (pnt, val(0));
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       val(0) = Real(mp.Evaluate (pnt));
     }
@@ -491,14 +489,12 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Complex>> (c, r, 1e-16);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       mp.AddDipole(pnt, -nv, val(0));
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       val(0) = Real(mp.Evaluate (pnt));
     }
@@ -540,14 +536,12 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Vec<3,Complex>>> (c, r, 1e-16);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       mp.AddCharge(pnt, val);
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       val = Real(mp.Evaluate (pnt));
     }
@@ -594,14 +588,12 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Complex>> (c, r, kappa);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       mp.AddCharge(pnt, val(0));
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val(0) = mp.Evaluate (pnt);
     }
@@ -650,14 +642,12 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Complex>> (c, r, kappa);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       mp.AddDipole(pnt, -nv, val(0));
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val(0) = mp.Evaluate (pnt);
     }
@@ -702,14 +692,12 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Vec<3,Complex>>> (c, r, kappa);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       mp.AddCharge(pnt, val);
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val = mp.Evaluate (pnt);
     }
@@ -757,8 +745,7 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Vec<6,Complex>>> (c, r, kappa);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       Vec<6,Complex> charge;
       charge.Range(0,3) = val.Range(0,3);
@@ -766,8 +753,7 @@ namespace ngsbem
       mp.AddCharge(pnt, charge);
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       Vec<6,Complex> eval = mp.Evaluate (pnt);
       val.Range(0,3) = eval.Range(0,3);
@@ -822,15 +808,13 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Complex>> (c, r, kappa);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       mp.AddCharge(pnt, Complex(0, -kappa)*val(0));
       mp.AddDipole(pnt, -nv, val(0));
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val(0) = mp.Evaluate (pnt);
     }
@@ -880,8 +864,7 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Vec<4,Complex>>> (c, r, kappa);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       Vec<4,Complex> charge;
       charge.Range(0,3) = kappa * val.Range(0, 3);
@@ -889,8 +872,7 @@ namespace ngsbem
       mp.AddCharge(pnt, charge);
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val = mp.Evaluate (pnt);
     }
@@ -948,8 +930,7 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Vec<3,Complex>>> (c, r, kappa);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       Vec<3,Complex> n_cross_m = val.Range(0, 3);
       for (int k = 0; k < 3; k++)
@@ -962,8 +943,7 @@ namespace ngsbem
       }
     }
 
-    template <typename TV>
-    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val = mp.Evaluate (pnt);
     }

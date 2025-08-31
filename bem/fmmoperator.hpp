@@ -84,15 +84,19 @@ namespace ngsbem
     void Mult(const BaseVector & x, BaseVector & y) const override
     {
       static Timer tall("ngbem fmm apply "+KERNEL::Name()); RegionTimer reg(tall);
-      
-      auto fx = x.FV<typename KERNEL::value_type>();
-      auto fy = y.FV<typename KERNEL::value_type>();
-      
-      fy = 0;
+
       auto shape = KERNEL::Shape();
+      
+      // auto fx = x.FV<typename KERNEL::value_type>();
+      // auto fy = y.FV<typename KERNEL::value_type>();
+      auto matx = x.FV<typename KERNEL::value_type>().AsMatrix(xpts.Size(), shape[0]);
+      auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[1]);      
+      
+      maty = 0;
       auto singmp = kernel.CreateMultipoleExpansion (cx, rx);
       ParallelFor (xpts.Size(), [&](int i){
-        kernel.AddSource(*singmp, xpts[i], xnv[i], make_BareSliceVector(fx.Range(shape[0]*i,shape[0]*(i+1))));
+        // kernel.AddSource(*singmp, xpts[i], xnv[i], make_BareSliceVector(fx.Range(shape[0]*i,shape[0]*(i+1))));
+        kernel.AddSource(*singmp, xpts[i], xnv[i], matx.Row(i));
       });
       singmp->CalcMP();
       auto regmp = kernel.CreateLocalExpansion (cy, ry);
@@ -101,7 +105,8 @@ namespace ngsbem
       });
       regmp->CalcMP(singmp);
       ParallelFor (ypts.Size(), [&](int i) {
-        kernel.EvaluateMP(*regmp, ypts[i], ynv[i], make_BareSliceVector(fy.Range(shape[1]*i,shape[1]*(i+1))));
+        //kernel.EvaluateMP(*regmp, ypts[i], ynv[i], make_BareSliceVector(fy.Range(shape[1]*i,shape[1]*(i+1))));
+        kernel.EvaluateMP(*regmp, ypts[i], ynv[i], maty.Row(i)); 
       });
     }
 
