@@ -6,12 +6,6 @@
 namespace ngsbem
 {
   
-  inline double __Kernel(Vec<3> px, Vec<3> py)
-  {
-    if (L2Norm2(px-py)==0) return 0.0;
-    return 1.0 / (4*M_PI) / L2Norm(px-py);
-  }
-
   inline std::tuple<Vec<3>, double> GetCenterAndRadius(const Array<Vec<3>>& xpts)
   {
     Vec<3> xmax(-1e99, -1e99, -1e99);
@@ -87,15 +81,12 @@ namespace ngsbem
 
       auto shape = KERNEL::Shape();
       
-      // auto fx = x.FV<typename KERNEL::value_type>();
-      // auto fy = y.FV<typename KERNEL::value_type>();
       auto matx = x.FV<typename KERNEL::value_type>().AsMatrix(xpts.Size(), shape[0]);
       auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[1]);      
       
       maty = 0;
       auto singmp = kernel.CreateMultipoleExpansion (cx, rx);
       ParallelFor (xpts.Size(), [&](int i){
-        // kernel.AddSource(*singmp, xpts[i], xnv[i], make_BareSliceVector(fx.Range(shape[0]*i,shape[0]*(i+1))));
         kernel.AddSource(*singmp, xpts[i], xnv[i], matx.Row(i));
       });
       singmp->CalcMP();
@@ -105,7 +96,6 @@ namespace ngsbem
       });
       regmp->CalcMP(singmp);
       ParallelFor (ypts.Size(), [&](int i) {
-        //kernel.EvaluateMP(*regmp, ypts[i], ynv[i], make_BareSliceVector(fy.Range(shape[1]*i,shape[1]*(i+1))));
         kernel.EvaluateMP(*regmp, ypts[i], ynv[i], maty.Row(i)); 
       });
     }
