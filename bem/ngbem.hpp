@@ -8,7 +8,7 @@
 namespace ngsbem
 {
   using namespace ngcomp;
-
+  class BasePotentialCF;
 
   
   /** The IntegralOperator provides methods for the assembly of and access to a matrix 
@@ -60,8 +60,8 @@ namespace ngsbem
 
     virtual shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const = 0;
 
-    virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf,
-                                                         optional<int> io, bool nearfield_experimental) const = 0;
+    virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
+                                                     optional<int> io, bool nearfield_experimental) const = 0;
   };
 
 
@@ -106,7 +106,7 @@ namespace ngsbem
     
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
     
-    virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf,
+    virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
                                                          optional<int> io, bool nearfield_experimental) const override;
   };
 

@@ -445,6 +445,38 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
   });
 
+
+
+  m.def("HelmholtzCF", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
+    if (potential->icfs.Size()!=1) throw Exception("need one integral");
+    auto igl = potential->icfs[0];
+    if (igl->dx.vb != BND) throw Exception("need boundary integral");
+    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    auto fes = proxy->GetFESpace();
+
+    auto tmpfes = fes;
+    auto tmpeval = proxy->Evaluator();
+    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
+      {
+        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
+        tmpeval = compeval->BaseDiffOp();
+      }
+    
+    optional<Region> definedon;
+    if (igl->dx.definedon)
+      definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
+
+    if (proxy->Dimension() == 1)
+    {
+      CombinedFieldKernel<3> kernel(kappa);
+      return make_shared<PotentialOperator<CombinedFieldKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+                                                                     kernel, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+    }
+    else
+      throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
+  });
+
+  
 }
 
 #endif // NGS_PYTHON
