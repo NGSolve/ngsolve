@@ -21,10 +21,13 @@ namespace ngsbem
                                     shared_ptr<CoefficientFunction> afactor)
       : DifferentialOperator(afactor->Dimensions()[0], 1, adiffop->VB(), adiffop->DiffOrder()),
         diffop(adiffop), factor(afactor)
-    { ; }
+    {
+      ;
+    }
 
     int DimRef() const override { return diffop->DimRef(); }
 
+    virtual IntRange UsedDofs(const FiniteElement & fel) const { return diffop->UsedDofs(fel); }
 
 
     void CalcMatrix (const FiniteElement & fel,
@@ -39,7 +42,8 @@ namespace ngsbem
       FlatMatrix<double> factorx(dims[0], dims[1], lh);
       factor->Evaluate (mip, factorx.AsVector());
 
-      mat = factorx * hmat;
+      IntRange used = diffop->UsedDofs(fel);
+      mat.Cols(used) = factorx * hmat.Cols(used);
     }
     
     void CalcMatrix (const FiniteElement & fel,
@@ -48,6 +52,7 @@ namespace ngsbem
     {
       // *testout << "CalcMatrix SIMD" << endl;      
       Matrix<SIMD<double>> hmat (fel.GetNDof()*diffop->Dim(), mir.Size());
+      // hmat = SIMD<double>(0.0);
       diffop -> CalcMatrix (fel, mir, hmat);
 
       Matrix<SIMD<double>> fac(factor->Dimension(), mir.Size());
@@ -70,6 +75,10 @@ namespace ngsbem
                      LocalHeap & lh) const override
     {
       diffop -> CalcMatrix(fel, ip, mat, lh);
+      /*
+      *testout << "calcmatrix mip" << endl
+               << mat.Rows(Dim()).Cols(fel.GetNDof()) << endl;
+      */
     }
 
     void CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
@@ -86,6 +95,7 @@ namespace ngsbem
       diffop -> CalcTransformationMatrix(mip, basetrans, lh);
 
       trans = factorx * basetrans;
+      // *testout << "trans = " << trans << endl;
     }
     
   };
@@ -219,10 +229,13 @@ namespace ngsbem
           if (elclass_inds.Size() == 0) continue;
           ElementId ei(BND, elclass_inds[0]);
           auto & felx = fes.GetFE (ei, lh);
-
+          
           int dim = evaluator.DimRef();
           Matrix<double,ColMajor> bmat_(dim*ir.Size(), felx.GetNDof());
           bmat_ = 0.0;
+
+          // IntRange r1 = evaluator.UsedDofs(felx);   // TODO
+          
           for (int i : Range(ir.Size()))
             evaluator.CalcMatrix(felx, ir[i], bmat_.Rows(dim*i, dim*(i+1)), lh);
           
@@ -272,7 +285,6 @@ namespace ngsbem
                   mir[j].GetWeight()*transformation;
               }
           }
-
       auto diagmat = make_shared<BlockDiagonalMatrix<typename KERNEL::value_type>>(std::move(weights));
       
       return diagmat*evalx;
@@ -385,8 +397,12 @@ namespace ngsbem
             
             FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir.Size(), lh);
             FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir.Size(), lh);
-            shapesi = 0.;
-            shapesj = 0.;
+            // shapesi = 0.;
+            // shapesj = 0.;
+
+            IntRange test_range = test_evaluator->UsedDofs(test_fel);  
+            IntRange trial_range = trial_evaluator->UsedDofs(trial_fel);  
+            
             test_evaluator -> CalcMatrix(test_fel, test_mir, Trans(shapesi), lh);
             trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
             
@@ -422,7 +438,7 @@ namespace ngsbem
                     shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
                   }
                 kernel_shapesj = kernel_ixiy * Trans(shapesj1);
-                elmat -= shapesi1 * kernel_shapesj;
+                elmat.Rows(test_range).Cols(trial_range) -= shapesi1.Rows(test_range) * kernel_shapesj.Cols(trial_range);
               }
             // tasscorr.Stop();        
             nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, elmat, true);
@@ -480,8 +496,11 @@ namespace ngsbem
       FlatMatrix<SIMD<value_type>> mshapesi_kern(feli.GetNDof(), mirx.Size(), lh);
       FlatMatrix<SIMD<double>> mshapesj(felj.GetNDof()*trial_evaluator->Dim(), miry.Size(), lh);
 
-      mshapesi = 0.;
-      mshapesj = 0.;
+      // mshapesi = 0.;
+      // mshapesj = 0.;
+
+      IntRange test_range = test_evaluator->UsedDofs(feli);  
+      IntRange trial_range = trial_evaluator->UsedDofs(felj);  
       test_evaluator->CalcMatrix(feli, mirx, mshapesi);  // only used are set for compound fe !!!
       trial_evaluator->CalcMatrix(felj, miry, mshapesj);
                     
@@ -504,9 +523,9 @@ namespace ngsbem
               mshapesi_kern.Col(k2) = term.fac*kernel_ * mshapesi_comp.Col(k2);
             }
           
-          AddABt (mshapesi_kern, 
-                  mshapesj.RowSlice(term.trial_comp, trial_evaluator->Dim()).AddSize(felj.GetNDof(), miry.Size()),
-                  elmat);
+          AddABt (mshapesi_kern.Rows(test_range), 
+                  mshapesj.RowSlice(term.trial_comp, trial_evaluator->Dim()).AddSize(felj.GetNDof(), miry.Size()).Rows(trial_range),
+                  elmat.Rows(test_range).Cols(trial_range));
         }
     };
 
