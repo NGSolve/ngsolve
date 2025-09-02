@@ -1,3 +1,7 @@
+default:
+  artifacts:
+    expire_in: 6 mos
+
 stages:
   - build
   - test
