@@ -208,32 +208,32 @@ namespace ngcomp
 
   void H1LumpingFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   {
-    dnums.SetSize(1);
-    dnums[0] = vnr;
+    dnums.SetSize0();
+    dnums.Append(vnr);
   }
 
   void H1LumpingFESpace :: GetEdgeDofNrs (int ednr, Array<int> & dnums) const
   {
+    dnums.SetSize0();
     if (order == 1) return;
-    dnums.SetSize(1);
-    dnums[0] = nvert + ednr;
+    dnums.Append(nvert + ednr);
   }
 
   void H1LumpingFESpace :: GetFaceDofNrs (int fanr, Array<int> & dnums) const
   {
+    dnums.SetSize0();
     if (order == 1) return;
     if (ma->GetDimension()==3)
     {
-      dnums.SetSize(1);
-      dnums[0] =  nvert+nedge+fanr;
+      dnums.Append(nvert+nedge+fanr);
     }
   }
 
   void H1LumpingFESpace :: GetInnerDofNrs (int elnr, Array<int> & dnums) const
   {
+    dnums.SetSize0();
     if (order == 1) return;
-    dnums.SetSize(1);
-    dnums[0] = nvert+nedge+nface+elnr;
+    dnums.Append(nvert+nedge+nface+elnr);
   }
 
   FiniteElement & H1LumpingFESpace :: GetFE (ElementId ei, Allocator & alloc) const
