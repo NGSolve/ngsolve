@@ -251,11 +251,24 @@ namespace ngsbem
     return y*sign(z) * atan (x*y / (abs(z)*r)) + z * log(r+x);
   }
 
+  double km1 (double x, double y, double z)
+  {
+    if (z == 0) return 0;    
+    double r = sqrt(x*x+y*y+z*z);    
+    return sgn(z)/y * atan (y*x / (abs(z)*r));
+  }
+
   double H (double x, double y, double z)
   {
     return 1/(4*M_PI) * (k1(x,y,z) - y * k0(x,y,z));
   }
-
+  
+    
+  double HDL (double x, double y, double z)
+  {
+    return 1/(4*M_PI) * (y * km1(x,y,z) - sgn(y) * k0(x,y,z));
+  }
+  
   
   double LaplaceSL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
   {
@@ -366,4 +379,123 @@ namespace ngsbem
       };
     return sum;
   }
+
+
+
+
+
+
+  double LaplaceDL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
+  {
+    Vec<3> vi[3] = { v0, v1, v2 };
+    Vec<3> n = Cross(v1-v0, v2-v0);
+    n /= L2Norm(n);
+
+    double h = InnerProduct(x-v0, n);
+    Vec<3> xhat = x - h*n;
+
+    auto IntEdge = [=] (Vec<3> ve0, Vec<3> ve1, Vec<3> nu)
+    {
+      Vec<3> ex = ve1 - ve0; ex /= L2Norm(ex);
+      Vec<3> ey = n;
+      Vec<3> ez = nu;
+      double xp = InnerProduct(x-ve0, ex);
+      double yp = InnerProduct(x-ve0, ey);
+      double zp = InnerProduct(x-ve0, ez);
+
+      double l = L2Norm(ve0-ve1);
+      double anaint = HDL(l-xp, yp, zp) - HDL(-xp, yp, zp);
+      return anaint;
+    };
+
+    double sum = 0;
+    for (int i = 0; i < 3; i++)
+      {
+        auto ve0 = vi[i];
+        auto ve1 = vi[(i+1)%3];
+        Vec<3> tau = ve1-ve0;
+        tau /= L2Norm(tau);
+        double intedge = IntEdge (ve0, ve1, Cross(n, tau));
+        sum += intedge;
+      };
+    return sum;
+  }
+
+  
+
+
+
+  
+  double LaplaceDL_Triangle_exp (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
+  {
+    Vec<3> vi[3] = { v0, v1, v2 };
+    Vec<3> n = Cross(v1-v0, v2-v0);
+    n /= L2Norm(n);
+
+    double h = InnerProduct(x-v0, n);
+    Vec<3> xhat = x - h*n;
+    // h = fabs(h);
+
+    // cout << "x = " << x << ", h = " << h << ", xhat = " << xhat << endl;
+    auto f = [=] (Vec<3> y, Vec<3> nu) {
+      // double r = L2Norm(x-y);
+      // double rho = sqrt(std::max(0., r*r-h*h));
+      double rho = L2Norm(xhat-y);
+      double r = sqrt(rho*rho+h*h);
+      // return 1/(4*M_PI) * (r-h)/(rho*rho) * InnerProduct(xhat-y, nu);
+      return 1/(4*M_PI) * (h/r-sgn(h))/(rho*rho) * InnerProduct(xhat-y, nu);
+    };
+
+    IntegrationRule ir(ET_SEGM, 20);
+    auto IntEdge = [=,&ir] (Vec<3> ve0, Vec<3> ve1, Vec<3> nu)
+    {
+      /*
+      double fac = L2Norm(ve1-ve0);
+      double sum = 0;
+      for (auto ip : ir)
+        {
+          Vec<3> y = ve0 + ip(0) * (ve1-ve0);
+          sum += ip.Weight()*fac * f(y, nu);
+        }
+      */
+
+      // cout << "num edge int = " << sum;
+
+      Vec<3> ex = ve1 - ve0; ex /= L2Norm(ex);
+      Vec<3> ey = n;
+      Vec<3> ez = nu;
+      double xp = InnerProduct(x-ve0, ex);
+      double yp = InnerProduct(x-ve0, ey);
+      double zp = InnerProduct(x-ve0, ez);
+      // cout << "ve0= " << ve0 << ", ve1 = " << ve1 << endl;
+      // cout << "x-ve0 = " << x-ve0 << endl;
+      // cout << "ex = " << ex << endl;
+        
+      // cout << "xp = " << xp << endl;
+      double l = L2Norm(ve0-ve1);
+      // cout << "xp = " << xp << ", yp = " << yp << ", zp = " << zp << endl;
+      // cout << "H1 = " << H(l-xp, yp, zp) << ", H2 = " <<  H(-xp, yp, zp) << endl;
+      double anaint = HDL(l-xp, yp, zp) - HDL(-xp, yp, zp);
+      // cout << " =?= " << anaint << " = analytic int" << endl;
+      
+      return anaint;
+    };
+
+    
+    double sum = 0;
+    for (int i = 0; i < 3; i++)
+      {
+        auto ve0 = vi[i];
+        auto ve1 = vi[(i+1)%3];
+        Vec<3> tau = ve1-ve0;
+        tau /= L2Norm(tau);
+        double intedge = IntEdge (ve0, ve1, Cross(n, tau));
+        sum += intedge;
+      };
+    return sum;
+  }
 }
+  
+
+
+
