@@ -254,7 +254,8 @@ namespace ngsbem
   double km1 (double x, double y, double z)
   {
     if (z == 0) return 0;    
-    double r = sqrt(x*x+y*y+z*z);    
+    double r = sqrt(x*x+y*y+z*z);
+    if (y == 0) return sign(z) * x / (abs(z)*r);
     return sgn(z)/y * atan (y*x / (abs(z)*r));
   }
 
