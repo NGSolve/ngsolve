@@ -21,10 +21,13 @@ namespace ngsbem
                                     shared_ptr<CoefficientFunction> afactor)
       : DifferentialOperator(afactor->Dimensions()[0], 1, adiffop->VB(), adiffop->DiffOrder()),
         diffop(adiffop), factor(afactor)
-    { ; }
+    {
+      ;
+    }
 
     int DimRef() const override { return diffop->DimRef(); }
 
+    virtual IntRange UsedDofs(const FiniteElement & fel) const { return diffop->UsedDofs(fel); }
 
 
     void CalcMatrix (const FiniteElement & fel,
@@ -39,7 +42,8 @@ namespace ngsbem
       FlatMatrix<double> factorx(dims[0], dims[1], lh);
       factor->Evaluate (mip, factorx.AsVector());
 
-      mat = factorx * hmat;
+      IntRange used = diffop->UsedDofs(fel);
+      mat.Cols(used) = factorx * hmat.Cols(used);
     }
     
     void CalcMatrix (const FiniteElement & fel,
@@ -48,6 +52,7 @@ namespace ngsbem
     {
       // *testout << "CalcMatrix SIMD" << endl;      
       Matrix<SIMD<double>> hmat (fel.GetNDof()*diffop->Dim(), mir.Size());
+      // hmat = SIMD<double>(0.0);
       diffop -> CalcMatrix (fel, mir, hmat);
 
       Matrix<SIMD<double>> fac(factor->Dimension(), mir.Size());
@@ -70,6 +75,10 @@ namespace ngsbem
                      LocalHeap & lh) const override
     {
       diffop -> CalcMatrix(fel, ip, mat, lh);
+      /*
+      *testout << "calcmatrix mip" << endl
+               << mat.Rows(Dim()).Cols(fel.GetNDof()) << endl;
+      */
     }
 
     void CalcTransformationMatrix (const BaseMappedIntegrationPoint & mip,
@@ -86,6 +95,7 @@ namespace ngsbem
       diffop -> CalcTransformationMatrix(mip, basetrans, lh);
 
       trans = factorx * basetrans;
+      // *testout << "trans = " << trans << endl;
     }
     
   };
@@ -219,10 +229,13 @@ namespace ngsbem
           if (elclass_inds.Size() == 0) continue;
           ElementId ei(BND, elclass_inds[0]);
           auto & felx = fes.GetFE (ei, lh);
-
+          
           int dim = evaluator.DimRef();
           Matrix<double,ColMajor> bmat_(dim*ir.Size(), felx.GetNDof());
           bmat_ = 0.0;
+
+          // IntRange r1 = evaluator.UsedDofs(felx);   // TODO
+          
           for (int i : Range(ir.Size()))
             evaluator.CalcMatrix(felx, ir[i], bmat_.Rows(dim*i, dim*(i+1)), lh);
           
@@ -255,25 +268,6 @@ namespace ngsbem
       int cnt = 0;
       for (auto nr : compress_els) if (nr!=-1) cnt++;
 
-
-      /*
-      VVector<typename KERNEL::value_type> weights(cnt*ir.Size());
-      for (auto el : mesh->Elements(BND))
-        if (compress_els[el.Nr()] != -1)
-          {
-            HeapReset hr(lh);
-            auto & trafo = mesh->GetTrafo(el, lh);
-            auto & mir = trafo(ir, lh);
-            for (auto j : Range(mir.Size()))
-              {
-                Mat<1,1> transformation;  // todo: general dimensions
-                evaluator.CalcTransformationMatrix(mir[j], transformation, lh);
-                weights(compress_els[el.Nr()]*mir.Size()+j) = mir[j].GetWeight()*transformation(0,0);
-              }
-          }
-      auto diagmat = make_shared<DiagonalMatrix<typename KERNEL::value_type>>(std::move(weights));
-      */
-
       Tensor<3, typename KERNEL::value_type> weights(cnt*ir.Size(),
                                                      evaluator.Dim(), evaluator.DimRef());
       Matrix<double> transformation(evaluator.Dim(), evaluator.DimRef()); 
@@ -291,7 +285,6 @@ namespace ngsbem
                   mir[j].GetWeight()*transformation;
               }
           }
-
       auto diagmat = make_shared<BlockDiagonalMatrix<typename KERNEL::value_type>>(std::move(weights));
       
       return diagmat*evalx;
@@ -366,79 +359,6 @@ namespace ngsbem
     nearfield_correction->SetZero();
 
 
-    /*
-    for (auto i : Range(pairs))
-      {
-        HeapReset hr(lh);
-        ElementId ei_trial(BND,get<0> (pairs[i]));
-        ElementId ei_test(BND,get<1> (pairs[i]));
-
-        auto & trial_trafo = trial_mesh -> GetTrafo(ei_trial, lh);
-        auto & test_trafo = test_mesh -> GetTrafo(ei_test, lh);
-        auto & trial_fel = trial_space->GetFE(ei_trial, lh);
-        auto & test_fel = test_space->GetFE(ei_test, lh);
-
-        Array<DofId> trial_dnums(trial_fel.GetNDof(), lh);
-        Array<DofId> test_dnums(test_fel.GetNDof(), lh);
-        
-        trial_space->GetDofNrs (ei_trial, trial_dnums);        
-        test_space->GetDofNrs (ei_test, test_dnums);
-
-        FlatMatrix<value_type> elmat(test_dnums.Size(), trial_dnums.Size(), lh);
-        tassSS.Start();
-        CalcElementMatrix (elmat, ei_trial, ei_test, lh);
-        tassSS.Stop();
-        tasscorr.Start();        
-
-        // subtract terms from fmm:
-        
-        MappedIntegrationRule<2,3> trial_mir(ir, trial_trafo, lh);
-        MappedIntegrationRule<2,3> test_mir(ir, test_trafo, lh);
-          
-        FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir.Size(), lh);
-        FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir.Size(), lh);
-          
-        test_evaluator -> CalcMatrix(test_fel, test_mir, Trans(shapesi), lh);
-        trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
-          
-        for (auto term : kernel.terms)
-          {
-            HeapReset hr(lh);
-            FlatMatrix<value_type> kernel_ixiy(ir.Size(), ir.Size(), lh);
-            for (int ix = 0; ix < ir.Size(); ix++)
-              {
-                for (int iy = 0; iy < ir.Size(); iy++)
-                  {
-                    Vec<3> x = test_mir[ix].GetPoint();
-                    Vec<3> y = trial_mir[iy].GetPoint();
-                    
-                    Vec<3> nx = test_mir[ix].GetNV();
-                    Vec<3> ny = trial_mir[iy].GetNV();
-                    value_type kernel_ = 0.0;
-                    if (L2Norm2(x-y) > 0)
-                      kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
-
-                    double fac = test_mir[ix].GetWeight()*trial_mir[iy].GetWeight();
-                    kernel_ixiy(ix, iy) = term.fac*fac*kernel_;
-                  }
-              }
-            
-            FlatMatrix<value_type> kernel_shapesj(ir.Size(), trial_fel.GetNDof(), lh);
-            FlatMatrix<> shapesi1(test_fel.GetNDof(), ir.Size(), lh);
-            FlatMatrix<> shapesj1(trial_fel.GetNDof(), ir.Size(), lh);
-              
-            for (int j = 0; j < ir.Size(); j++)
-              {
-                shapesi1.Col(j) = shapesi.Col(test_evaluator->Dim()*j+term.test_comp);
-                shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
-              }
-            kernel_shapesj = kernel_ixiy * Trans(shapesj1);
-            elmat -= shapesi1 * kernel_shapesj;
-          }
-        tasscorr.Stop();        
-        nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, elmat);
-      }
-    */
 
     TableCreator<int> create_nbels(trial_mesh->GetNE(BND));
     for ( ; !create_nbels.Done(); create_nbels++)    
@@ -477,8 +397,12 @@ namespace ngsbem
             
             FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir.Size(), lh);
             FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir.Size(), lh);
-            shapesi = 0.;
-            shapesj = 0.;
+            // shapesi = 0.;
+            // shapesj = 0.;
+
+            IntRange test_range = test_evaluator->UsedDofs(test_fel);  
+            IntRange trial_range = trial_evaluator->UsedDofs(trial_fel);  
+            
             test_evaluator -> CalcMatrix(test_fel, test_mir, Trans(shapesi), lh);
             trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
             
@@ -514,7 +438,7 @@ namespace ngsbem
                     shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
                   }
                 kernel_shapesj = kernel_ixiy * Trans(shapesj1);
-                elmat -= shapesi1 * kernel_shapesj;
+                elmat.Rows(test_range).Cols(trial_range) -= shapesi1.Rows(test_range) * kernel_shapesj.Cols(trial_range);
               }
             // tasscorr.Stop();        
             nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, elmat, true);
@@ -572,8 +496,11 @@ namespace ngsbem
       FlatMatrix<SIMD<value_type>> mshapesi_kern(feli.GetNDof(), mirx.Size(), lh);
       FlatMatrix<SIMD<double>> mshapesj(felj.GetNDof()*trial_evaluator->Dim(), miry.Size(), lh);
 
-      mshapesi = 0.;
-      mshapesj = 0.;
+      // mshapesi = 0.;
+      // mshapesj = 0.;
+
+      IntRange test_range = test_evaluator->UsedDofs(feli);  
+      IntRange trial_range = trial_evaluator->UsedDofs(felj);  
       test_evaluator->CalcMatrix(feli, mirx, mshapesi);  // only used are set for compound fe !!!
       trial_evaluator->CalcMatrix(felj, miry, mshapesj);
                     
@@ -596,9 +523,9 @@ namespace ngsbem
               mshapesi_kern.Col(k2) = term.fac*kernel_ * mshapesi_comp.Col(k2);
             }
           
-          AddABt (mshapesi_kern, 
-                  mshapesj.RowSlice(term.trial_comp, trial_evaluator->Dim()).AddSize(felj.GetNDof(), miry.Size()),
-                  elmat);
+          AddABt (mshapesi_kern.Rows(test_range), 
+                  mshapesj.RowSlice(term.trial_comp, trial_evaluator->Dim()).AddSize(felj.GetNDof(), miry.Size()).Rows(trial_range),
+                  elmat.Rows(test_range).Cols(trial_range));
         }
     };
 
@@ -843,7 +770,7 @@ namespace ngsbem
   
   
   template <typename KERNEL>
-  shared_ptr<CoefficientFunction> GenericIntegralOperator<KERNEL> ::
+  shared_ptr<BasePotentialCF> GenericIntegralOperator<KERNEL> ::
   GetPotential(shared_ptr<GridFunction> gf, optional<int> io, bool nearfield_experimental) const
   {
     return  make_shared<PotentialCF<KERNEL>> (gf, trial_definedon, trial_evaluator,
@@ -884,9 +811,9 @@ namespace ngsbem
         ElementId ei(BND, i);
         if (!space->DefinedOn(ei)) continue;
 
-        const FiniteElement &fel = space->GetFE(ei, lh);
+        // const FiniteElement &fel = space->GetFE(ei, lh);
         const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
-        IntegrationRule ir(fel.ElementType(), intorder);
+        IntegrationRule ir(trafo.GetElementType(), intorder);
         MappedIntegrationRule<2,3> miry(ir, trafo, lh);
 
         for (int k = 0; k < miry.Size(); k++)
@@ -898,11 +825,9 @@ namespace ngsbem
       }
 
     Vec<3> cs = 0.5*(smin+smax);
-    double rs = 0;
-    for (int j = 0; j < 3; j++)
-      rs = max(rs, smax(j)-smin(j));
-    
+    double rs = MaxNorm(smax-smin);
 
+    // cout << "cs = " << cs << ", rs = " << rs << endl;
     auto singmp = kernel.CreateMultipoleExpansion(cs, rs);
     
     typedef typename KERNEL::value_type T;
@@ -961,18 +886,16 @@ namespace ngsbem
       }
 
     Vec<3> ct = 0.5*(tmin+tmax);
-    double rt = 0;
-    for (int j = 0; j < 3; j++)
-      rt = max(rt, tmax(j)-tmin(j));
+    double rt = MaxNorm(tmax-tmin);
+    // cout << "ct = " << ct << ", rt = " << rt << endl;
     
-
-    local_expansion = kernel.CreateLocalExpansion(ct, rt);
+    local_expansion = kernel.CreateLocalExpansion(ct, rt); 
     
     ParallelFor (tpoints.Size(), [&](int i){
       local_expansion->AddTarget(tpoints[i]);
     });
 
-    local_expansion->CalcMP(singmp);
+    local_expansion->CalcMP(singmp, false);
   }
 
 
@@ -1173,7 +1096,7 @@ namespace ngsbem
         {
           auto & mir = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);        
           for (int j = 0; j < mir.Size(); j++)
-            kernel.EvaluateMP (*local_expansion, Vec<3>(mir[j].GetPoint()), make_BareSliceVector(result.Row(j)));
+            kernel.EvaluateMP (*local_expansion, Vec<3>(mir[j].GetPoint()), Vec<3>(mir[j].GetNV()), make_BareSliceVector(result.Row(j)));
           return;
         }
     
@@ -1268,6 +1191,7 @@ namespace ngsbem
   template class PotentialCF<HelmholtzSLVecKernel<3>>;
   template class PotentialCF<HelmholtzDLKernel<3>>;
   template class PotentialCF<HelmholtzHSKernel<3>>;
+  template class PotentialCF<CombinedFieldKernel<3>>;  
   template class PotentialCF<MaxwellSLKernel<3>>;
   template class PotentialCF<MaxwellDLKernel<3>>;
 
