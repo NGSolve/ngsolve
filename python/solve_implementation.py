@@ -51,6 +51,10 @@ class NonLinearApplication(Application):
         if rhs is not None and rhs != 0:
             rhs.Assemble()
             solver_args["rhs"] = rhs
+        if "freedofs" in kwargs:
+            solver_args["freedofs"] = kwargs.pop("freedofs")
+        if "inverse" in kwargs:
+            solver_args["inverse"] = kwargs.pop("inverse")
         solver = NewtonSolver(self.a, self.gf, **solver_args)
         if dirichlet is not None:
             dirichlet_gf = GridFunction(self.gf.space)

@@ -488,7 +488,8 @@ namespace ngsbem
 
   static constexpr int MPOrder (double rho_kappa)
   {
-    return max (20, int(2*rho_kappa));
+    // return max (20, int(2*rho_kappa));
+    return 20+int(2*rho_kappa);
   }
   static constexpr int maxdirect = 100;
 
@@ -1559,7 +1560,7 @@ namespace ngsbem
       void LocalizeExpansion(bool allow_refine)
       {
         if (allow_refine)
-          if (mp.Order() > 20 && !childs[0])
+          if (mp.Order() > 30 && !childs[0])
             CreateChilds();
 
         if (childs[0])
@@ -1774,7 +1775,7 @@ namespace ngsbem
       root.AddTarget (t);
     }
 
-    void CalcMP(shared_ptr<SingularMLMultiPole<elem_type>> asingmp)
+    void CalcMP(shared_ptr<SingularMLMultiPole<elem_type>> asingmp, bool onlytargets = true)
     {
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
       static Timer trec("mptool regular MLMP - recording");
@@ -1783,15 +1784,17 @@ namespace ngsbem
       singmp = asingmp;
 
       root.CalcTotalTargets();
-      root.RemoveEmptyTrees();
+      if (onlytargets)
+        root.RemoveEmptyTrees();
 
       
-      // root.AddSingularNode(singmp->root, false, nullptr);
+      // root.AddSingularNode(singmp->root, !onlytargets, nullptr);
+
       // /*
       Array<RecordingRS> recording;
       {
         RegionTimer rrec(trec);
-        root.AddSingularNode(singmp->root, false, &recording);
+        root.AddSingularNode(singmp->root, !onlytargets, &recording);
       }
       
       // cout << "recorded: " << recording.Size() << endl;
@@ -1850,7 +1853,7 @@ namespace ngsbem
       */
 
       static Timer tloc("mptool regular localize expansion"); RegionTimer rloc(tloc);
-      root.LocalizeExpansion(false);
+      root.LocalizeExpansion(!onlytargets);
     }
 
     void Print (ostream & ost) const
@@ -1871,7 +1874,9 @@ namespace ngsbem
     elem_type Evaluate (Vec<3> p) const
     {
       // static Timer t("mptool Eval MLMP regular"); RegionTimer r(t);
-      if (L2Norm(p-root.center) > root.r) return elem_type{0.0};
+      // if (L2Norm(p-root.center) > root.r) return elem_type{0.0};
+      if (MaxNorm(p-root.center) > root.r)
+        return singmp->Evaluate(p);
       return root.Evaluate(p);
     }
 

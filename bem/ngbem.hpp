@@ -8,7 +8,7 @@
 namespace ngsbem
 {
   using namespace ngcomp;
-
+  class BasePotentialCF;
 
   
   /** The IntegralOperator provides methods for the assembly of and access to a matrix 
@@ -60,8 +60,8 @@ namespace ngsbem
 
     virtual shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const = 0;
 
-    virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf,
-                                                         optional<int> io, bool nearfield_experimental) const = 0;
+    virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
+                                                     optional<int> io, bool nearfield_experimental) const = 0;
   };
 
 
@@ -106,7 +106,7 @@ namespace ngsbem
     
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
     
-    virtual shared_ptr<CoefficientFunction> GetPotential(shared_ptr<GridFunction> gf,
+    virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
                                                          optional<int> io, bool nearfield_experimental) const override;
   };
 
@@ -142,7 +142,6 @@ namespace ngsbem
     int intorder;
     bool nearfield;
 
-    // typedef decltype (defvar<KERNEL>().CreateLocalExpansion(Vec<3>(), double())) LOCAL_EXPANSION;
     using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::CreateLocalExpansion),KERNEL,Vec<3>,double>;
 
     LOCAL_EXPANSION local_expansion;
@@ -251,7 +250,6 @@ namespace ngsbem
       auto tmpeval = proxy->Evaluator();
       while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
         {
-          // auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval);
           int component = compeval->Component();
           tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[component];
           tmpeval = compeval->BaseDiffOp();
@@ -334,23 +332,6 @@ namespace ngsbem
       : pot(_pot)
     {
       tie(test_proxy,test_factor) = GetProxyAndFactor(_test_proxy, false);
-      /*
-      test_proxy = dynamic_pointer_cast<ProxyFunction>(_test_proxy);
-
-      if (!test_proxy)
-        {
-          auto proxylin = CreateProxyLinearization (_test_proxy, false);
-
-          cout << "got an expression for potential-test, linearization is: " << endl;
-          for (auto [factor, proxy] : proxylin)
-            {
-              cout << "proxy = " << *proxy << endl;
-              cout << "factor = " << *factor << endl;
-              test_proxy = proxy;
-              test_factor = factor -> Reshape (_test_proxy->Dimension(), proxy->Dimension() );
-            }
-        }
-      */
     }
 
     
@@ -390,15 +371,27 @@ namespace ngsbem
     }
 
     template <typename TV>
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
     {
       throw Exception("Addsource not implemented");            
     }
 
-    template <typename TV>    
-    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, BareSliceVector<TV> val) const
+    template <typename entry, typename TV>
+    void AddSourceTrans(SingularMLMultiPole<entry> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
+    {
+      throw Exception("AddSourceTrans not implemented");
+    }
+
+    template <typename TV>
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
     {
       throw Exception("Evaluate not implemented");            
+    }
+
+    template <typename entry, typename TV>
+    void EvaluateMPTrans(RegularMLMultiPole<entry> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
+    {
+      throw Exception("EvaluateMPTrans not implemented");
     }
   };
 
@@ -416,6 +409,7 @@ namespace ngsbem
   class LaplaceSLKernel<3> : public BaseKernel
   {
   public:
+    LaplaceSLKernel<3> () = default;
     typedef double value_type;
     static string Name() { return "LaplaceSL"; }
     static auto Shape() { return IVec<2>(1,1); }
@@ -429,8 +423,6 @@ namespace ngsbem
     }
     
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };
-
-
     
     auto CreateMultipoleExpansion (Vec<3> c, double r) const
     {
@@ -442,14 +434,12 @@ namespace ngsbem
       return make_shared<RegularMLMultiPole<Complex>> (c, r, 1e-16);
     }
 
-    template <typename TV>
-    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<TV> val) const
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       mp.AddCharge (pnt, val(0));
     }
 
-    template <typename TV>    
-    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, BareSliceVector<TV> val) const
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
       val(0) = Real(mp.Evaluate (pnt));
     }
@@ -482,6 +472,36 @@ namespace ngsbem
     }
 
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Complex>> (c, r, 1e-16);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Complex>> (c, r, 1e-16);
+    }
+
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      mp.AddDipole(pnt, -nv, val(0));
+    }
+
+    void AddSourceTrans(SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      mp.AddCharge(pnt, val(0));
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      val(0) = Real(mp.Evaluate (pnt));
+    }
+
+    void EvaluateMPTrans(RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      val(0) = Real(mp.EvaluateDirectionalDerivative(pnt, nv));
+    }
   };
 
 
@@ -509,6 +529,26 @@ namespace ngsbem
         KernelTerm{1.0, 0, 1, 1},
         KernelTerm{1.0, 0, 2, 2},
       };
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Vec<3,Complex>>> (c, r, 1e-16);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Vec<3,Complex>>> (c, r, 1e-16);
+    }
+
+    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      mp.AddCharge(pnt, val);
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      val = Real(mp.Evaluate (pnt));
+    }
   };
 
 
@@ -541,6 +581,26 @@ namespace ngsbem
     }
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Complex>> (c, r, kappa);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Complex>> (c, r, kappa);
+    }
+
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      mp.AddCharge(pnt, val(0));
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val(0) = mp.Evaluate (pnt);
+    }
   };
 
 
@@ -575,6 +635,36 @@ namespace ngsbem
     }
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Complex>> (c, r, kappa);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Complex>> (c, r, kappa);
+    }
+
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      mp.AddDipole(pnt, -nv, val(0));
+    }
+
+    void AddSourceTrans(SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      mp.AddCharge(pnt, val(0));
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val(0) = mp.Evaluate (pnt);
+    }
+
+    void EvaluateMPTrans(RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
+    }
   };
 
 
@@ -605,6 +695,26 @@ namespace ngsbem
         KernelTerm{1.0, 0, 1, 1},
         KernelTerm{1.0, 0, 2, 2},
       };
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Vec<3,Complex>>> (c, r, kappa);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Vec<3,Complex>>> (c, r, kappa);
+    }
+
+    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      mp.AddCharge(pnt, val);
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val = mp.Evaluate (pnt);
+    }
   };
 
 
@@ -638,6 +748,31 @@ namespace ngsbem
         KernelTerm{1.0, 0, 2, 2},
 	KernelTerm{1.0, 1, 3, 3},
       };
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Vec<6,Complex>>> (c, r, kappa);
+    }
+ 
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Vec<6,Complex>>> (c, r, kappa);
+    }
+
+    void AddSource (SingularMLMultiPole<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      Vec<6,Complex> charge;
+      charge.Range(0,3) = val.Range(0,3);
+      charge.Range(3,6) = -kappa * kappa * val(3) * nv;
+      mp.AddCharge(pnt, charge);
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      Vec<6,Complex> eval = mp.Evaluate (pnt);
+      val.Range(0,3) = eval.Range(0,3);
+      val(3) = InnerProduct(eval.Range(3,6), nv);
+    }
   };
 
 
@@ -676,6 +811,27 @@ namespace ngsbem
     }
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Complex>> (c, r, kappa);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Complex>> (c, r, kappa);
+    }
+
+    void AddSource (SingularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      mp.AddCharge(pnt, Complex(0, -kappa)*val(0));
+      mp.AddDipole(pnt, -nv, val(0));
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val(0) = mp.Evaluate (pnt);
+    }
   };
 
   
@@ -711,6 +867,29 @@ namespace ngsbem
     }
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Vec<4,Complex>>> (c, r, kappa);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Vec<4,Complex>>> (c, r, kappa);
+    }
+
+    void AddSource (SingularMLMultiPole<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      Vec<4,Complex> charge;
+      charge.Range(0,3) = kappa * val.Range(0, 3);
+      charge(3) = -1.0/kappa * val(3);
+      mp.AddCharge(pnt, charge);
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val = mp.Evaluate (pnt);
+    }
   };
 
 
@@ -720,6 +899,7 @@ namespace ngsbem
 
   template <int D> class MaxwellDLKernel;
 
+  // https://weggler.github.io/ngbem/short_and_sweet/Maxwell_Formulations.html
   /** MaxwellDLkernel for 3D in matrix representation reads
       $$  \left( \begin{array}{ccc} 0 & -\frac{\partial G_\kappa(x-y)}{\partial x_3} & \frac{\partial G_\kappa(x-y)}{\partial x_2} \\ \frac{\partial G_\kappa(x-y)}{\partial x_3} & 0 & -\frac{\partial G_\kappa(x-y)}{\partial x_1} \\ -\frac{\partial G_\kappa(x-y)}{\partial x_2} & \frac{\partial G_\kappa(x-y)}{\partial x_1} & 0 \end{array}\right)\,,$$ with 
    $$ G_\kappa(x-y) = \frac{1}{4\,\pi} \, \frac{e^{i\,\kappa\,|x-y|}}{|x-y|^3} \, 
@@ -754,6 +934,52 @@ namespace ngsbem
         KernelTerm{ 1.0, 2, 0, 1},
         KernelTerm{-1.0, 2, 1, 0},
       };    
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLMultiPole<Vec<3,Complex>>> (c, r, kappa);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLMultiPole<Vec<3,Complex>>> (c, r, kappa);
+    }
+
+    void AddSource (SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      Vec<3,Complex> n_cross_m = val.Range(0, 3);
+      for (int k = 0; k < 3; k++)
+      {
+        Vec<3> ek{0.0}; ek(k) = 1;
+        Vec<3> n_cross_m_real = Real(n_cross_m);
+        Vec<3> n_cross_m_imag = Imag(n_cross_m);
+        mp.AddDipole(pnt, Cross(n_cross_m_real, ek), ek);
+        mp.AddDipole(pnt, Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
+      }
+    }
+
+    void AddSourceTrans(SingularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      Vec<3,Complex> n_cross_m = val.Range(0, 3);
+      for (int k = 0; k < 3; k++)
+      {
+        Vec<3> ek{0.0}; ek(k) = 1;
+        Vec<3> n_cross_m_real = Real(n_cross_m);
+        Vec<3> n_cross_m_imag = Imag(n_cross_m);
+        mp.AddDipole(pnt, Cross(n_cross_m_real, ek), ek);
+        mp.AddDipole(pnt, Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
+      }
+    }
+
+    void EvaluateMP (RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val = mp.Evaluate (pnt);
+    }
+
+    void EvaluateMPTrans(RegularMLMultiPole<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      val = mp.Evaluate (pnt);
+    }
   };
 
   
