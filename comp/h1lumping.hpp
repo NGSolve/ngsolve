@@ -25,6 +25,12 @@ namespace ngcomp
 
 
     void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
+    void GetVertexDofNrs (int vnr, Array<int> & dnums) const override;
+    void GetEdgeDofNrs (int ednr, Array<int> & dnums) const override;
+    void GetFaceDofNrs (int fanr, Array<int> & dnums) const override;
+    void GetInnerDofNrs (int elnr, Array<int> & dnums) const override;
+
+
     
     FiniteElement & GetFE (ElementId ei, Allocator & alloc) const override;
 
