@@ -27,7 +27,7 @@ namespace ngsbem
 
     int DimRef() const override { return diffop->DimRef(); }
 
-    virtual IntRange UsedDofs(const FiniteElement & fel) const { return diffop->UsedDofs(fel); }
+    virtual IntRange UsedDofs(const FiniteElement & fel) const override { return diffop->UsedDofs(fel); }
 
 
     void CalcMatrix (const FiniteElement & fel,

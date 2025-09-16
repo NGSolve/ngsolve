@@ -2267,6 +2267,28 @@ namespace ngsbem
   }
 
 
+  template <typename RADIAL, typename entry_type>
+  void MultiPole<RADIAL, entry_type> :: AddPlaneWave (Vec<3> d, entry_type c)
+  {
+    if constexpr (!std::is_same<RADIAL,MPRegular>())
+      throw Exception("AddPlaneWave assumes regular MP");
+
+    MultiPole<RADIAL, entry_type> tmp(Order(), kappa, RTyp());
+    entry_type fac = kappa / sqrt(M_PI) * c;
+    for (int i = 0; i <= Order(); i++)
+      {
+        tmp.Coef(i,0) += sqrt(2*i+1) * fac;
+        fac *= Complex(0,1);
+      }
+
+    auto [theta, phi] = SH().Polar(d);
+    tmp.SH().RotateY(-theta);
+    tmp.SH().RotateZ(-phi);
+    this->SH().Coefs() += tmp.SH().Coefs();
+  }
+
+
+  
   
   template <typename RADIAL, typename entry_type>
   void MultiPole<RADIAL, entry_type> :: AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)

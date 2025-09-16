@@ -396,6 +396,7 @@ namespace ngsbem
 
     void AddCharge (Vec<3> x, entry_type c);
     void AddDipole (Vec<3> x, Vec<3> d, entry_type c);
+    void AddPlaneWave (Vec<3> d, entry_type c);    
     void AddCurrent (Vec<3> ap, Vec<3> ep, Complex j, int num=100);
     
     /*
@@ -479,7 +480,19 @@ namespace ngsbem
 
     template <typename TARGET>
     void ShiftZ (double z, MultiPole<TARGET,entry_type> & target);
+
     
+    template <typename TARGET>
+    void In2Out (MultiPole<TARGET,entry_type> & target, double r) const
+    {
+      Vector<Complex> rad(Order()+1);
+      Vector<Complex> radout(target.Order()+1);      
+      RADIAL::Eval(Order(), kappa, r, RTyp(), rad);
+      TARGET::Eval(target.Order(), kappa, r, target.RTyp(), radout);
+      target.SH().Coefs() = 0;
+      for (int j = 0; j <= std::min(Order(), target.Order()); j++)
+        target.SH().CoefsN(j) = rad(j)/radout(j) * SH().CoefsN(j);
+    }
   };
   
   
