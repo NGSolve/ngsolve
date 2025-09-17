@@ -477,6 +477,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                      return mesh;
                   }),
          py::arg("ngmesh"),
+         py::call_guard<py::gil_scoped_release>(),
          "Make an NGSolve-mesh from a Netgen-mesh")
 
     .def(py::init([](const string & filename, NgMPI_Comm comm)
@@ -490,6 +491,7 @@ mesh (netgen.Mesh): a mesh generated from Netgen
                     return mesh;
                   }),
          py::arg("filename"), py::arg("comm")=NgMPI_Comm{},
+         py::call_guard<py::gil_scoped_release>(),
          "Load a mesh from file.\n"
          "In MPI-parallel mode the mesh is distributed over the MPI-group given by the communicator (WIP!)")
     
