@@ -89,6 +89,7 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> cf;
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies;
+    Array<CoefficientFunction*> cf_gridfunctions;
     bool deformed;
 
   public:
@@ -123,6 +124,7 @@ namespace ngcomp
     shared_ptr<CoefficientFunction> cf;
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies, test_proxies;
+    Array<CoefficientFunction*> cf_gridfunctions;
     bool deformed;
   public:
     ContactIntegrator(shared_ptr<CoefficientFunction> _cf,

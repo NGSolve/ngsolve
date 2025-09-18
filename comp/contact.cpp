@@ -445,6 +445,9 @@ namespace ngcomp
          auto proxy = dynamic_cast<ProxyFunction*>(&nodecf);
          if (proxy && !proxy->IsTestFunction() && !trial_proxies.Contains(proxy))
            trial_proxies.Append(proxy);
+         auto gf = dynamic_cast<GridFunction*>(&nodecf);
+         if (gf && !cf_gridfunctions.Contains(&nodecf))
+           cf_gridfunctions.Append(&nodecf);
        });
     fes = trial_proxies[0]->GetFESpace();
   }
@@ -546,7 +549,7 @@ namespace ngcomp
                                         LocalHeap& lh)
   {
     HeapReset hr(lh);
-    ProxyUserData ud(trial_proxies.Size(), lh);
+    ProxyUserData ud(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
     const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
     ud.fel = & primary_fel;
 
@@ -561,6 +564,9 @@ namespace ngcomp
           proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
       }
+
+    for(auto gf : cf_gridfunctions)
+        ud.AssignMemory(gf, primary_mir.Size(), gf->Dimension(), lh);
 
     FlatMatrix<> dderiv(primary_mir.Size(), 1,lh);
     FlatMatrix<AutoDiffDiff<1,double>> ddval(primary_mir.Size(), 1, lh);
@@ -670,6 +676,10 @@ namespace ngcomp
 
          if(proxy && proxy->IsTestFunction() && !test_proxies.Contains(proxy))
            test_proxies.Append(proxy);
+
+         auto gf = dynamic_cast<GridFunction*>(&nodecf);
+         if (gf && !cf_gridfunctions.Contains(&nodecf))
+           cf_gridfunctions.Append(&nodecf);
        });
     if(trial_proxies.Size())
       fes = trial_proxies[0]->GetFESpace();
@@ -741,21 +751,34 @@ namespace ngcomp
                                             FlatMatrix<double> elmat,
                                             LocalHeap& lh)
   {
+    static Timer t("ContactIntegrator::CalcLinearizedAdd");
+    // static Timer teval("ContactIntegrator::CalcLinearizedAdd-Evaluate");
+    RegionTimer rt(t);
     HeapReset hr(lh);
-    ProxyUserData ud(trial_proxies.Size(), lh);
+    ProxyUserData ud(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
+    ProxyUserData ud2(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
+    auto & secondary_mir = *primary_mir.GetOtherMIR();
     const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
+    const_cast<ElementTransformation&>(secondary_mir.GetTransformation()).userdata = &ud2;
     ud.fel = & primary_fel;
+    ud2.fel = & secondary_fel;
 
     for(auto proxy : trial_proxies)
       {
         IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
         ud.AssignMemory(proxy, primary_mir.Size(), proxy->Dimension(), lh);
         if(proxy->IsOther())
-          proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
+          proxy->Evaluator()->Apply(secondary_fel, secondary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
         else
           proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
+      }
+
+    for(auto gf : cf_gridfunctions)
+      {
+        ud.AssignMemory(gf, primary_mir.Size(), gf->Dimension(), lh);
+        ud2.AssignMemory(gf, secondary_mir.Size(), gf->Dimension(), lh);
       }
 
     FlatMatrix<> dderiv(primary_mir.Size(), 1,lh);
