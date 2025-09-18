@@ -13,6 +13,7 @@ namespace ngstd
 
   class BSpline 
   {
+    shared_ptr<BSpline> diff = nullptr;
     int order;
     Array<double> t;
     Array<double> c;
@@ -48,6 +49,7 @@ namespace ngstd
     NGS_DLL_HEADER SIMD<double> operator() (SIMD<double> x) const;
     // NGS_DLL_HEADER SIMD<Complex> operator() (SIMD<Complex> x) const;
     
+    int GetOrder() const { return order; }
     friend ostream & operator<< (ostream & ost, const BSpline & sp);
   };
 
