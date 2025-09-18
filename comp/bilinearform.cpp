@@ -4424,7 +4424,7 @@ namespace ngcomp
                   pre->AddElementMatrix(dnums, elmat, ElementId(BND, i), lh);
               }
             }
-        });
+        }, 10*TaskManager::GetNumThreads());
         timerspecial.Stop();
       
       
