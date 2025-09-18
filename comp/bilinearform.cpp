@@ -3865,10 +3865,14 @@ namespace ngcomp
                                                       bool reallocate)
   {
     static Timer timer ("Assemble Linearization");
-    static Timer timervol ("Assemble Linearization - volume");
-    static Timer timerbound ("Assemble Linearization - boundary");
-    static Timer timerbbound ("Assemble Linearization - co dim 2");
     static Timer timerspecial ("Assemble Linearization - SpecialElements");
+    static Timer<> timers[4] = {
+      Timer("Assemble Linearization - volume"),
+      Timer("Assemble Linearization - boundary"),
+      Timer("Assemble Linearization - co dim 2"),
+      Timer("Assemble Linearization - co dim 3")
+    };
+
     // static Timer timerVB[] = { timervol, timerbound, timerbbound };
 
     static mutex addelmatboundary1_mutex;
@@ -3965,7 +3969,7 @@ namespace ngcomp
         for (VorB vb : { VOL, BND, BBND, BBBND })
           if (VB_parts[vb].Size() || ((vb == VOL) && facetwise_skeleton_parts[BND].Size())) 
           {
-            RegionTimer reg(timervol);
+            RegionTimer reg(timers[int(vb)]);
             ProgressOutput progress(ma,string("assemble ") + ToString(vb) + string(" element"), ma->GetNE(vb));
 
             /*
