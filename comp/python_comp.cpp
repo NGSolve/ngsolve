@@ -3313,10 +3313,7 @@ integrator : ngsolve.fem.LFI
     .def(py::init([](shared_ptr<BilinearForm> bf, py::kwargs kwargs) -> shared_ptr<HCurlAMG>
     {
       auto flags = CreateFlagsFromKwArgs(kwargs);
-      if (typeid(*(bf->GetTrialSpace())) == typeid (HCurlHighOrderFESpace))
-        return make_shared<HCurlAMG>(bf, flags, "HCurlAMG");
-      else
-        return make_shared<APhiHCurlAMG>(bf, flags, "APhiHCurlAMG");
+      return make_shared<HCurlAMG>(bf, flags, "HCurlAMG");
         
     }), py::arg("bf"))
     .def_static("__flags_doc__", []()
