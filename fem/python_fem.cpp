@@ -1616,7 +1616,7 @@ vals : list
       py::return_value_policy::move)
     .def("__call__", [](shared_ptr<BSpline> sp, shared_ptr<CF> coef)
           {
-            return UnaryOpCF (coef, GenericBSpline(sp) /* , GenericBSpline(sp) */);
+            return UnaryOpCF (coef, GenericBSpline(sp), "bspline order " + ToString(sp->GetOrder()) /* , GenericBSpline(sp) */);
           }, py::arg("cf"))
     .def("Integrate", 
          [](const BSpline & sp) { return make_shared<BSpline>(sp.Integrate()); }, "Integrate the BSpline")
