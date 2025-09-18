@@ -125,6 +125,8 @@ namespace ngcomp
     shared_ptr<FESpace> fes;
     Array<ProxyFunction*> trial_proxies, test_proxies;
     Array<CoefficientFunction*> cf_gridfunctions;
+    Array<shared_ptr<CoefficientFunction>> dcf_dtest;  // derivatives by test-functions
+    Matrix<shared_ptr<CoefficientFunction>> ddcf_dtest_dtrial;  // derivatives by test- and trial-functions
     bool deformed;
   public:
     ContactIntegrator(shared_ptr<CoefficientFunction> _cf,

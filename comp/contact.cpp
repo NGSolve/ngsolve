@@ -690,6 +690,35 @@ namespace ngcomp
         else
           throw Exception("No trial or test function found in ContactIntegrator");
       }
+
+    dcf_dtest.SetSize(test_proxies.Size());
+    ddcf_dtest_dtrial.SetSize(test_proxies.Size(), trial_proxies.Size());
+    for (int i = 0; i < test_proxies.Size(); i++)
+      {
+        try
+          {
+            CoefficientFunction::T_DJC cache;
+            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i], cache);
+          }
+        catch (const Exception& e)
+          {
+            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+          for (auto j : Range(trial_proxies))
+            {
+              if (dcf_dtest[i])
+                try
+                  {
+                    CoefficientFunction::T_DJC cache2;
+                      ddcf_dtest_dtrial(i, j) = dcf_dtest[i]->DiffJacobi(trial_proxies[j], cache2);
+                  }
+                catch (const Exception& e)
+                  {
+                    cout << IM(1) << "ddcf_dtest_dtrial has thrown exception " << e.What() << endl;
+                  }
+            }
+      }
+
   }
 
   void ContactIntegrator::ApplyAdd(const FiniteElement& primary_fel,
@@ -793,18 +822,33 @@ namespace ngcomp
           auto proxy2 = test_proxies[l1];
 
           FlatTensor<3> proxyvalues(lh, primary_mir.Size(), proxy2->Dimension(), proxy1->Dimension());
-          for (int k = 0; k < proxy1->Dimension(); k++)
-            for (int l = 0; l < proxy2->Dimension(); l++)
-              {
-                ud.trialfunction = proxy1;
-                ud.trial_comp = k;
-                ud.testfunction = proxy2;
-                ud.test_comp = l;
+          FlatMatrix<> proxyvalues2(primary_mir.Size(), proxy2->Dimension()*proxy1->Dimension(), lh);
 
-                cf -> Evaluate (primary_mir, dval);
-                for (size_t i = 0; i < primary_mir.Size(); i++)
-                  proxyvalues(i,l,k) = dval(i,0).DValue(0);
-              }
+          if (ddcf_dtest_dtrial(l1, k1))
+            {
+              // RegionTimer rtcf(tdcf);
+              ddcf_dtest_dtrial(l1, k1)->Evaluate(primary_mir, proxyvalues2);
+              for (int k = 0; k < proxy1->Dimension(); k++)
+                for (int l = 0; l < proxy2->Dimension(); l++)
+                  for (size_t i = 0; i < primary_mir.Size(); i++)
+                    proxyvalues(i,l,k) = proxyvalues2(i, l*proxy1->Dimension() + k);
+            }
+          else
+          {
+            // RegionTimer rt(teval);
+            for (int k = 0; k < proxy1->Dimension(); k++)
+              for (int l = 0; l < proxy2->Dimension(); l++)
+                {
+                  ud.trialfunction = proxy1;
+                  ud.trial_comp = k;
+                  ud.testfunction = proxy2;
+                  ud.test_comp = l;
+
+                  cf -> Evaluate (primary_mir, dval);
+                  for (size_t i = 0; i < primary_mir.Size(); i++)
+                    proxyvalues(i,l,k) = dval(i,0).DValue(0);
+                }
+          }
 
           for (int i = 0; i < primary_mir.Size(); i++)
             proxyvalues(i,STAR,STAR) *= primary_mir[i].GetWeight();
