@@ -21,7 +21,7 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
 
     m.def ("Tcl_Eval", &Ng_TclCmd);
 
-    m.def ("Draw", [](shared_ptr<CoefficientFunction> cf, shared_ptr<MeshAccess> ma, string name,
+    m.def ("Draw", [](shared_ptr<CoefficientFunction> cf, variant<shared_ptr<MeshAccess>, Region*> ma_or_region, string name,
                       int sd, bool autoscale, double min, double max,
                       bool draw_vol, bool draw_surf, bool reset, string title, string number_format, string unit, py::kwargs kwargs)
               {
@@ -34,6 +34,11 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                     Ng_TclCmd ("Ng_Vis_Set parameters;\n");
                     Ng_ClearSolutionData();
                   }
+                shared_ptr<MeshAccess> ma;
+                if(ma_or_region.index() == 0)
+                  ma = get<shared_ptr<MeshAccess>>(ma_or_region);
+                else
+                  ma = get<Region*>(ma_or_region)->Mesh();
                 ma->SelectMesh();
                 netgen::SolutionData * vis;
                 if(dynamic_cast<ProlongateCoefficientFunction *>(cf.get()))
@@ -60,6 +65,14 @@ void NGS_DLL_HEADER ExportNgsolve(py::module &m ) {
                   soldata.draw_surfaces = py::cast<shared_ptr<BitArray>>(kwargs["surfaces"]);
                 if(kwargs.contains("volumes"))
                   soldata.draw_volumes = py::cast<shared_ptr<BitArray>>(kwargs["volumes"]);
+                if(ma_or_region.index() == 1)
+                  {
+                    auto reg = get<Region*>(ma_or_region);
+                    if(reg->VB() == VOL)
+                      soldata.draw_volumes = make_shared<BitArray>(reg->Mask());
+                    else
+                      soldata.draw_surfaces = make_shared<BitArray>(reg->Mask());
+                  }
                 /*
                 if (flags.GetDefineFlag("volume"))
                   soldata.draw_surface = false;
