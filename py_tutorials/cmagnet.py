@@ -1,29 +1,26 @@
-from netgen.csg import *
+from netgen.occ import *
 from ngsolve import *
 
 
 def MakeGeometry():
-    geometry = CSGeometry()
-    box = OrthoBrick(Pnt(-1,-1,-1),Pnt(2,1,2)).bc("outer")
+    box = Box((-1,-1,-1), (2,1,2))
+    box.faces.name = "outer"
+    core = Box((0,-0.05,0), (0.8,0.05,1)) - \
+        Box((0.1,-1,0.1), (0.7,1,0.9)) - \
+        Box((0.5,-1,0.4), (1,1,0.6))
+    core.solids.name = "core"
+    core.solids.maxh = 0.02
 
-    core = OrthoBrick(Pnt(0,-0.05,0),Pnt(0.8,0.05,1))- \
-           OrthoBrick(Pnt(0.1,-1,0.1),Pnt(0.7,1,0.9))- \
-           OrthoBrick(Pnt(0.5,-1,0.4),Pnt(1,1,0.6)).maxh(0.2).mat("core")
-    
-    coil = (Cylinder(Pnt(0.05,0,0), Pnt(0.05,0,1), 0.3) - \
-            Cylinder(Pnt(0.05,0,0), Pnt(0.05,0,1), 0.15)) * \
-            OrthoBrick (Pnt(-1,-1,0.3),Pnt(1,1,0.7)).maxh(0.2).mat("coil")
-    
-    geometry.Add ((box-core-coil).mat("air"))
-    geometry.Add (core)
-    geometry.Add (coil)
-    return geometry
-
+    coil = Cylinder((0.05,0,0.3), (0,0,1), 0.3, 0.4) - \
+        Cylinder((0.05,0,0.3), (0,0,1), 0.15, 0.4)
+    coil.solids.name = "coil"
+    air = box - core - coil
+    air.solids.name = "air"
+    return Glue([core, coil, air])
 
 
-ngmesh = MakeGeometry().GenerateMesh(maxh=0.5)
-ngmesh.Save("coil.vol")
-mesh = Mesh(ngmesh)
+
+mesh = MakeGeometry().GenerateMesh(maxh=0.5)
 
 # curve elements for geometry approximation
 mesh.Curve(5)
