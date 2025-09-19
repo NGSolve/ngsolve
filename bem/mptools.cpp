@@ -81,7 +81,7 @@ namespace ngsbem
     // if (order > 30) tl.Start();
 
     ArrayMem<double,1600> mem(sqr(order+1));
-    FlatMatrix legfunc(order+1, order+1, mem.Data());
+    FlatMatrix<double> legfunc(order+1, order+1, mem.Data());
     NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
     VectorMem<40,Complex> exp_imphi(order+1);
     Complex exp_iphi(cos(phi), sin(phi));
