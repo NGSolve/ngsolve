@@ -5839,7 +5839,13 @@ public:
   {
     if(this == var)
       return dir;
-    return make_shared<OtherCoefficientFunction>(c1->Diff(var, dir));
+
+    auto diff_cf = c1->Diff(var, dir);
+
+    if (diff_cf->IsZeroCF())
+      return diff_cf;
+
+    return make_shared<OtherCoefficientFunction>(diff_cf);
   }
 
   virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override

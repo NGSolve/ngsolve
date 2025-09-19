@@ -18,6 +18,9 @@ namespace ngstd
       }
     c.Range(order,ac.Size()+order) = ac;
     t.Range(order,at.Size()+order) = at;
+
+    if(order >= 2)
+      diff = make_shared<BSpline>(Differentiate());
   }
   
   
@@ -167,6 +170,8 @@ namespace ngstd
 
   SIMD<double> BSpline :: Evaluate (SIMD<double> x) const
   {
+    // static Timer timer_bspline("BSpline::Evaluate SIMD");
+    // RegionTimer reg (timer_bspline);
     constexpr int simdSize = SIMD<double>::Size();
     if( order < 6)
       {
@@ -259,13 +264,14 @@ namespace ngstd
   
   AutoDiff<1,double> BSpline :: operator() (AutoDiff<1,double> x) const
   {
+    if(!diff) throw Exception("BSpline::operator()(AutoDiff) not implemented for order < 2");
     // double eps = 1e-5;
     double val = (*this)(x.Value());
     // double valr = (*this)(x.Value()+eps);
     // double vall = (*this)(x.Value()-eps);
     // double dval = (valr-vall) / (2*eps);
 
-    double dval2 = Differentiate()(x.Value());
+    double dval2 = (*diff)(x.Value());
     // cout << "dval = " << dval << " =?= " << dval2 << endl;
 
     AutoDiff<1,double> res(val);
@@ -299,13 +305,14 @@ namespace ngstd
   
   AutoDiff<1,SIMD<double>> BSpline :: operator() (AutoDiff<1,SIMD<double>> x) const
   {
+    if(!diff) throw Exception("BSpline::operator()(AutoDiff) not implemented for order < 2");
     // double eps = 1e-5;
     SIMD<double> val = (*this)(x.Value());
     // double valr = (*this)(x.Value()+eps);
     // double vall = (*this)(x.Value()-eps);
     // double dval = (valr-vall) / (2*eps);
 
-    SIMD<double> dval2 = Differentiate()(x.Value());
+    SIMD<double> dval2 = (*diff)(x.Value());
     // cout << "dval = " << dval << " =?= " << dval2 << endl;
 
     AutoDiff<1,SIMD<double>> res(val);
