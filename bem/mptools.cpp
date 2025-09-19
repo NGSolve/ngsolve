@@ -1441,7 +1441,7 @@ namespace ngsbem
   SingularMLExpansionCF<entry_type> :: CreateRegularExpansion(Vec<3> center, double r) const
   {
     mlmp->CalcMP();
-    return make_shared<RegularMLExpansionCF<entry_type>> (this->MLMP(), center, r);
+    return make_shared<RegularMLExpansionCF<entry_type>> (this->MLExpansion(), center, r);
   }
 
   template class SphericalHarmonics<Complex>;
