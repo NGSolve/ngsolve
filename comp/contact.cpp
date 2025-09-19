@@ -445,6 +445,9 @@ namespace ngcomp
          auto proxy = dynamic_cast<ProxyFunction*>(&nodecf);
          if (proxy && !proxy->IsTestFunction() && !trial_proxies.Contains(proxy))
            trial_proxies.Append(proxy);
+         auto gf = dynamic_cast<GridFunction*>(&nodecf);
+         if (gf && !cf_gridfunctions.Contains(&nodecf))
+           cf_gridfunctions.Append(&nodecf);
        });
     fes = trial_proxies[0]->GetFESpace();
   }
@@ -546,7 +549,7 @@ namespace ngcomp
                                         LocalHeap& lh)
   {
     HeapReset hr(lh);
-    ProxyUserData ud(trial_proxies.Size(), lh);
+    ProxyUserData ud(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
     const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
     ud.fel = & primary_fel;
 
@@ -561,6 +564,9 @@ namespace ngcomp
           proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
       }
+
+    for(auto gf : cf_gridfunctions)
+        ud.AssignMemory(gf, primary_mir.Size(), gf->Dimension(), lh);
 
     FlatMatrix<> dderiv(primary_mir.Size(), 1,lh);
     FlatMatrix<AutoDiffDiff<1,double>> ddval(primary_mir.Size(), 1, lh);
@@ -670,6 +676,10 @@ namespace ngcomp
 
          if(proxy && proxy->IsTestFunction() && !test_proxies.Contains(proxy))
            test_proxies.Append(proxy);
+
+         auto gf = dynamic_cast<GridFunction*>(&nodecf);
+         if (gf && !cf_gridfunctions.Contains(&nodecf))
+           cf_gridfunctions.Append(&nodecf);
        });
     if(trial_proxies.Size())
       fes = trial_proxies[0]->GetFESpace();
@@ -680,6 +690,35 @@ namespace ngcomp
         else
           throw Exception("No trial or test function found in ContactIntegrator");
       }
+
+    dcf_dtest.SetSize(test_proxies.Size());
+    ddcf_dtest_dtrial.SetSize(test_proxies.Size(), trial_proxies.Size());
+    for (int i = 0; i < test_proxies.Size(); i++)
+      {
+        try
+          {
+            CoefficientFunction::T_DJC cache;
+            dcf_dtest[i] = cf->DiffJacobi(test_proxies[i], cache);
+          }
+        catch (const Exception& e)
+          {
+            cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+          }
+          for (auto j : Range(trial_proxies))
+            {
+              if (dcf_dtest[i])
+                try
+                  {
+                    CoefficientFunction::T_DJC cache2;
+                      ddcf_dtest_dtrial(i, j) = dcf_dtest[i]->DiffJacobi(trial_proxies[j], cache2);
+                  }
+                catch (const Exception& e)
+                  {
+                    cout << IM(1) << "ddcf_dtest_dtrial has thrown exception " << e.What() << endl;
+                  }
+            }
+      }
+
   }
 
   void ContactIntegrator::ApplyAdd(const FiniteElement& primary_fel,
@@ -741,21 +780,34 @@ namespace ngcomp
                                             FlatMatrix<double> elmat,
                                             LocalHeap& lh)
   {
+    static Timer t("ContactIntegrator::CalcLinearizedAdd");
+    // static Timer teval("ContactIntegrator::CalcLinearizedAdd-Evaluate");
+    RegionTimer rt(t);
     HeapReset hr(lh);
-    ProxyUserData ud(trial_proxies.Size(), lh);
+    ProxyUserData ud(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
+    ProxyUserData ud2(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
+    auto & secondary_mir = *primary_mir.GetOtherMIR();
     const_cast<ElementTransformation&>(primary_mir.GetTransformation()).userdata = &ud;
+    const_cast<ElementTransformation&>(secondary_mir.GetTransformation()).userdata = &ud2;
     ud.fel = & primary_fel;
+    ud2.fel = & secondary_fel;
 
     for(auto proxy : trial_proxies)
       {
         IntRange trial_range = proxy->IsOther() ? IntRange(proxy->Evaluator()->BlockDim() * primary_fel.GetNDof(), elx.Size()) : IntRange(0, proxy->Evaluator()->BlockDim() * primary_fel.GetNDof());
         ud.AssignMemory(proxy, primary_mir.Size(), proxy->Dimension(), lh);
         if(proxy->IsOther())
-          proxy->Evaluator()->Apply(secondary_fel, *primary_mir.GetOtherMIR(), elx.Range(trial_range),
+          proxy->Evaluator()->Apply(secondary_fel, secondary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
         else
           proxy->Evaluator()->Apply(primary_fel, primary_mir, elx.Range(trial_range),
                                     ud.GetMemory(proxy), lh);
+      }
+
+    for(auto gf : cf_gridfunctions)
+      {
+        ud.AssignMemory(gf, primary_mir.Size(), gf->Dimension(), lh);
+        ud2.AssignMemory(gf, secondary_mir.Size(), gf->Dimension(), lh);
       }
 
     FlatMatrix<> dderiv(primary_mir.Size(), 1,lh);
@@ -770,18 +822,33 @@ namespace ngcomp
           auto proxy2 = test_proxies[l1];
 
           FlatTensor<3> proxyvalues(lh, primary_mir.Size(), proxy2->Dimension(), proxy1->Dimension());
-          for (int k = 0; k < proxy1->Dimension(); k++)
-            for (int l = 0; l < proxy2->Dimension(); l++)
-              {
-                ud.trialfunction = proxy1;
-                ud.trial_comp = k;
-                ud.testfunction = proxy2;
-                ud.test_comp = l;
+          FlatMatrix<> proxyvalues2(primary_mir.Size(), proxy2->Dimension()*proxy1->Dimension(), lh);
 
-                cf -> Evaluate (primary_mir, dval);
-                for (size_t i = 0; i < primary_mir.Size(); i++)
-                  proxyvalues(i,l,k) = dval(i,0).DValue(0);
-              }
+          if (ddcf_dtest_dtrial(l1, k1))
+            {
+              // RegionTimer rtcf(tdcf);
+              ddcf_dtest_dtrial(l1, k1)->Evaluate(primary_mir, proxyvalues2);
+              for (int k = 0; k < proxy1->Dimension(); k++)
+                for (int l = 0; l < proxy2->Dimension(); l++)
+                  for (size_t i = 0; i < primary_mir.Size(); i++)
+                    proxyvalues(i,l,k) = proxyvalues2(i, l*proxy1->Dimension() + k);
+            }
+          else
+          {
+            // RegionTimer rt(teval);
+            for (int k = 0; k < proxy1->Dimension(); k++)
+              for (int l = 0; l < proxy2->Dimension(); l++)
+                {
+                  ud.trialfunction = proxy1;
+                  ud.trial_comp = k;
+                  ud.testfunction = proxy2;
+                  ud.test_comp = l;
+
+                  cf -> Evaluate (primary_mir, dval);
+                  for (size_t i = 0; i < primary_mir.Size(); i++)
+                    proxyvalues(i,l,k) = dval(i,0).DValue(0);
+                }
+          }
 
           for (int i = 0; i < primary_mir.Size(); i++)
             proxyvalues(i,STAR,STAR) *= primary_mir[i].GetWeight();
