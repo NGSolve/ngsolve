@@ -33,7 +33,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("FlipZ", [](SphericalHarmonics<Complex>& self) { self.FlipZ(); })    
     ;
 
-  py::class_<SingularMLExpansion<Complex>, shared_ptr<SingularMLExpansion<Complex>>> (m, "SingularMLMP")
+  py::class_<SingularMLExpansion<Complex>, shared_ptr<SingularMLExpansion<Complex>>> (m, "SingularMLExpansion")
     .def(py::init<Vec<3>,double,double>())
     .def("AddCharge", &SingularMLExpansion<Complex>::AddCharge)
     .def("AddDipole", &SingularMLExpansion<Complex>::AddDipole)
@@ -52,7 +52,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     })
     ;
 
-  py::class_<SingularMLExpansion<Vec<3,Complex>>, shared_ptr<SingularMLExpansion<Vec<3,Complex>>>> (m, "SingularMLMP3")
+  py::class_<SingularMLExpansion<Vec<3,Complex>>, shared_ptr<SingularMLExpansion<Vec<3,Complex>>>> (m, "SingularMLExpansion3")
     .def(py::init<Vec<3>,double,double>())
     .def("AddCurrent", &SingularMLExpansion<Vec<3,Complex>>::AddCurrent, py::arg("sp"), py::arg("ep"), py::arg("j"), py::arg("num")=100)
     .def("AddCurrentDensity", [](SingularMLExpansion<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current,
@@ -64,7 +64,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     ;
 
   
-  py::class_<RegularMLExpansion<Complex>, shared_ptr<RegularMLExpansion<Complex>>> (m, "RegularMLMP")
+  py::class_<RegularMLExpansion<Complex>, shared_ptr<RegularMLExpansion<Complex>>> (m, "RegularMLExpansion")
     .def("Norm", &RegularMLExpansion<Complex>::Norm)    
     .def("__str__", [](RegularMLExpansion<Complex>& mlmp) { return ToString<>(mlmp); })
     .def("Print", [](const RegularMLExpansion<Complex> &self) {
@@ -82,7 +82,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def_property_readonly("sh", [](SphericalHarmonicsCF& self) -> SphericalHarmonics<Complex>& { return self.SH(); })
     ;
 
-  py::class_<SphericalExpansionCF<Regular>, shared_ptr<SphericalExpansionCF<Regular>>, CoefficientFunction> (m, "RegularMultiPoleCF")
+  py::class_<SphericalExpansionCF<Regular>, shared_ptr<SphericalExpansionCF<Regular>>, CoefficientFunction> (m, "RegularExpansionCF")
     .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("rad")=1.0)    
     .def_property_readonly("sh", [](SphericalExpansionCF<Regular>& self) -> SphericalHarmonics<Complex>& { return self.SH(); })
     .def("AddPlaneWave", [](SphericalExpansionCF<Regular>& self, Vec<3> d, Complex c) { self.MP().AddPlaneWave(d, c); })
@@ -94,7 +94,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("Spectrum", [](SphericalExpansionCF<Regular>& self, bool scaled) { return self.MP().Spectrum(scaled); }, py::arg("scaled"))    
     ;
 
-  py::class_<SphericalExpansionCF<Singular>, shared_ptr<SphericalExpansionCF<Singular>>, CoefficientFunction> (m, "SingularMultiPoleCF")
+  py::class_<SphericalExpansionCF<Singular>, shared_ptr<SphericalExpansionCF<Singular>>, CoefficientFunction> (m, "SingularExpansionCF")
     .def(py::init<int,double,Vec<3>,double>(), py::arg("order"), py::arg("kappa"),  py::arg("center"), py::arg("rad")=1.0)
     .def_property_readonly("sh", [](SphericalExpansionCF<Singular>& self) -> SphericalHarmonics<Complex>& { return self.SH(); })
     .def("AddCharge", [](SphericalExpansionCF<Singular>& self, Vec<3> x, Complex c) { self.MP().AddCharge(x, c); })
@@ -124,23 +124,23 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   
   py::class_<SingularMLExpansionCF<Complex>, shared_ptr<SingularMLExpansionCF<Complex>>, CoefficientFunction> (m, "SingularMLExpansionCF")
     .def(py::init<Vec<3>, double, double>(), py::arg("center"), py::arg("r"), py::arg("kappa"))
-    .def_property_readonly("mlmp", [](SingularMLExpansionCF<Complex>& self) { return self.MLMP(); })
+    .def_property_readonly("expansion", [](SingularMLExpansionCF<Complex>& self) { return self.MLExpansion(); })
     .def("CreateRegularExpansion", &SingularMLExpansionCF<Complex>::CreateRegularExpansion, py::arg("center"), py::arg("r"))
     ;
   py::class_<RegularMLExpansionCF<Complex>, shared_ptr<RegularMLExpansionCF<Complex>>, CoefficientFunction> (m, "RegularMLExpansionCF")
-    .def(py::init<shared_ptr<SingularMLExpansionCF<Complex>>,Vec<3>, double>(), py::arg("mp"), py::arg("center"), py::arg("r"))
-    .def_property_readonly("mlmp", [](RegularMLExpansionCF<Complex>& self) { return self.MLMP(); })
+    .def(py::init<shared_ptr<SingularMLExpansionCF<Complex>>,Vec<3>, double>(), py::arg("singularexpansion"), py::arg("center"), py::arg("r"))
+    .def_property_readonly("expansion", [](RegularMLExpansionCF<Complex>& self) { return self.MLExpansion(); })
     ;
 
 
   py::class_<SingularMLExpansionCF<Vec<3,Complex>>, shared_ptr<SingularMLExpansionCF<Vec<3,Complex>>>, CoefficientFunction> (m, "BiotSavartSingularMLCF")
     .def(py::init<Vec<3>, double, double>(), py::arg("center"), py::arg("r"), py::arg("kappa"))
     .def("CreateRegularExpansion", &SingularMLExpansionCF<Vec<3,Complex>>::CreateRegularExpansion, py::arg("center"), py::arg("r"))    
-    .def_property_readonly("mlmp", [](SingularMLExpansionCF<Vec<3,Complex>>& self) { return self.MLMP(); })
+    .def_property_readonly("expansion", [](SingularMLExpansionCF<Vec<3,Complex>>& self) { return self.MLExpansion(); })
     ;
   py::class_<RegularMLExpansionCF<Vec<3,Complex>>, shared_ptr<RegularMLExpansionCF<Vec<3,Complex>>>, CoefficientFunction> (m, "BiotSavartRegularMLCF")
     .def(py::init<shared_ptr<SingularMLExpansionCF<Vec<3,Complex>>>,Vec<3>, double>(), py::arg("mp"), py::arg("center"), py::arg("r"))
-    .def_property_readonly("mlmp", [](RegularMLExpansionCF<Vec<3,Complex>>& self) { return self.MLMP(); })
+    .def_property_readonly("expansion", [](RegularMLExpansionCF<Vec<3,Complex>>& self) { return self.MLExpansion(); })
     ;
 
   

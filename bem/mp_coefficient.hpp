@@ -108,7 +108,7 @@ namespace ngsbem
       
     }
     
-    shared_ptr<SingularMLExpansion<entry_type>> MLMP() const { return mlmp; }
+    shared_ptr<SingularMLExpansion<entry_type>> MLExpansion() const { return mlmp; }
     shared_ptr<RegularMLExpansionCF<entry_type>> CreateRegularExpansion(Vec<3> center, double r) const;
   };
   
@@ -119,7 +119,7 @@ namespace ngsbem
     shared_ptr<RegularMLExpansion<entry_type>> mlmp;
   public:
     RegularMLExpansionCF (shared_ptr<SingularMLExpansionCF<entry_type>> asingmp, Vec<3> center, double r)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp->MLMP(), center, r)} { } 
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp->MLExpansion(), center, r)} { } 
     RegularMLExpansionCF (shared_ptr<SingularMLExpansion<entry_type>> asingmp, Vec<3> center, double r)
       : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp, center, r)} { } 
     
@@ -136,7 +136,7 @@ namespace ngsbem
         values = mlmp->Evaluate(mip.GetPoint());
     }
 
-    shared_ptr<RegularMLExpansion<entry_type>> MLMP() { return mlmp; }
+    shared_ptr<RegularMLExpansion<entry_type>> MLExpansion() { return mlmp; }
   };
 
   
