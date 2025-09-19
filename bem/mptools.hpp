@@ -303,7 +303,7 @@ namespace ngsbem
 
   
   // hn1 = jn+ i*yn
-  class MPSingular
+  class Singular
   {
   public:
     template <typename T>
@@ -329,7 +329,7 @@ namespace ngsbem
 
   
   // jn
-  class MPRegular
+  class Regular
   {
   public:
     template <typename T>
@@ -357,14 +357,14 @@ namespace ngsbem
 
 
   template <typename RADIAL, typename entry_type=Complex>
-  class NGS_DLL_HEADER MultiPole
+  class NGS_DLL_HEADER SphericalExpansion
   {
     SphericalHarmonics<entry_type> sh;
     double kappa;
     double rtyp;
   public:
 
-    MultiPole (int aorder, double akappa, double artyp) 
+    SphericalExpansion (int aorder, double akappa, double artyp) 
     : sh(aorder), kappa(akappa), rtyp(artyp) { }
 
   
@@ -376,15 +376,15 @@ namespace ngsbem
     double RTyp() const { return rtyp; }
     int Order() const { return sh.Order(); }
     
-    MultiPole Truncate(int neworder) const
+    SphericalExpansion Truncate(int neworder) const
     {
       if (neworder > sh.Order()) neworder=sh.Order();
-      MultiPole nmp(neworder, kappa, rtyp);
+      SphericalExpansion nmp(neworder, kappa, rtyp);
       nmp.sh.Coefs() = sh.Coefs().Range(sqr(neworder+1));
       return nmp;
     }
 
-    MultiPole & operator+= (const MultiPole & mp2)
+    SphericalExpansion & operator+= (const SphericalExpansion & mp2)
     {
       size_t commonsize = min(SH().Coefs().Size(), mp2.SH().Coefs().Size());
       SH().Coefs().Range(commonsize) += mp2.SH().Coefs().Range(commonsize);
@@ -435,7 +435,7 @@ namespace ngsbem
 
     
     template <typename TARGET>
-    void Transform (MultiPole<TARGET,entry_type> & target, Vec<3> dist) const
+    void Transform (SphericalExpansion<TARGET,entry_type> & target, Vec<3> dist) const
     {
       if (target.SH().Order() < 0) return;
       if (SH().Order() < 0)
@@ -450,8 +450,8 @@ namespace ngsbem
       auto [len, theta, phi] = SphericalCoordinates(dist);
         
       
-      // MultiPole<RADIAL,entry_type> tmp{*this};
-      MultiPole<RADIAL,entry_type> tmp(Order(), kappa, rtyp);
+      // SphericalExpansion<RADIAL,entry_type> tmp{*this};
+      SphericalExpansion<RADIAL,entry_type> tmp(Order(), kappa, rtyp);
       tmp.SH().Coefs() = SH().Coefs();
       
       tmp.SH().RotateZ(phi);
@@ -464,12 +464,12 @@ namespace ngsbem
     }
     
     template <typename TARGET>
-    void TransformAdd (MultiPole<TARGET,entry_type> & target, Vec<3> dist, bool atomic = false) const
+    void TransformAdd (SphericalExpansion<TARGET,entry_type> & target, Vec<3> dist, bool atomic = false) const
     {
       if (SH().Order() < 0) return;
       if (target.SH().Order() < 0) return;      
       
-      MultiPole<TARGET,entry_type> tmp{target};
+      SphericalExpansion<TARGET,entry_type> tmp{target};
       Transform(tmp, dist);
       if (!atomic)
         target.SH().Coefs() += tmp.SH().Coefs();
@@ -479,11 +479,11 @@ namespace ngsbem
     }
 
     template <typename TARGET>
-    void ShiftZ (double z, MultiPole<TARGET,entry_type> & target);
+    void ShiftZ (double z, SphericalExpansion<TARGET,entry_type> & target);
 
     
     template <typename TARGET>
-    void In2Out (MultiPole<TARGET,entry_type> & target, double r) const
+    void In2Out (SphericalExpansion<TARGET,entry_type> & target, double r) const
     {
       Vector<Complex> rad(Order()+1);
       Vector<Complex> radout(target.Order()+1);      
@@ -520,22 +520,22 @@ namespace ngsbem
 
 
   template <typename entry_type=Complex>
-  class SingularMLMultiPole
+  class SingularMLExpansion
   {
     using simd_entry_type = decltype(MakeSimd(declval<std::array<entry_type,FMM_SW>>()));
     static Array<size_t> nodes_on_level;    
     
     struct RecordingSS
     {
-      const MultiPole<MPSingular,entry_type> * mp_source;
-      MultiPole<MPSingular,entry_type> * mp_target;
+      const SphericalExpansion<Singular,entry_type> * mp_source;
+      SphericalExpansion<Singular,entry_type> * mp_target;
       Vec<3> dist;
       double len, theta, phi;
       bool flipz;
     public:
       RecordingSS() = default;
-      RecordingSS (const MultiPole<MPSingular,entry_type> * amp_source,
-                   MultiPole<MPSingular,entry_type> * amp_target,
+      RecordingSS (const SphericalExpansion<Singular,entry_type> * amp_source,
+                   SphericalExpansion<Singular,entry_type> * amp_target,
                    Vec<3> adist)
         : mp_source(amp_source), mp_target(amp_target), dist(adist)
       {
@@ -593,8 +593,8 @@ namespace ngsbem
     static void ProcessVectorizedBatch(FlatArray<RecordingSS*> batch, double len, double theta) {
 
       // *testout << "Processing vectorized S->S batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
-      MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp());
-      MultiPole<MPSingular, Vec<N,Complex>> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp());
+      SphericalExpansion<Singular, Vec<N,Complex>> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp());
+      SphericalExpansion<Singular, Vec<N,Complex>> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp());
 
       // Copy multipoles into vectorized multipole
       for (int i = 0; i < batch.Size(); i++)
@@ -631,7 +631,7 @@ namespace ngsbem
       double r;
       int level;
       std::array<unique_ptr<Node>,8> childs;
-      MultiPole<MPSingular, entry_type> mp;
+      SphericalExpansion<Singular, entry_type> mp;
 
       Array<tuple<Vec<3>, entry_type>> charges;
       Array<tuple<Vec<3>, Vec<3>, entry_type>> dipoles;
@@ -950,7 +950,7 @@ namespace ngsbem
         }
 
         if (dipoles.Size())
-            throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLMultiPole");
+            throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
 
         for (auto [x,c] : charges)
           if (double rho = L2Norm(p-x); rho > 0)
@@ -1000,7 +1000,7 @@ namespace ngsbem
           {
             if (charges.Size()+dipoles.Size()+currents.Size() == 0)
               {
-                mp = MultiPole<MPSingular,entry_type> (-1, mp.Kappa(), 1.);
+                mp = SphericalExpansion<Singular,entry_type> (-1, mp.Kappa(), 1.);
                 return;
               }
 
@@ -1128,7 +1128,7 @@ namespace ngsbem
     bool havemp = false;
     
   public:
-    SingularMLMultiPole (Vec<3> center, double r, double kappa)
+    SingularMLExpansion (Vec<3> center, double r, double kappa)
       : root(center, r, 0, kappa)
     {
       nodes_on_level = 0;
@@ -1299,12 +1299,12 @@ namespace ngsbem
     }
 
     template <typename entry_type2>
-    friend class RegularMLMultiPole;
+    friend class RegularMLExpansion;
   };
 
 
   template <typename entry_type>
-  inline ostream & operator<< (ostream & ost, const SingularMLMultiPole<entry_type> & mlmp)
+  inline ostream & operator<< (ostream & ost, const SingularMLExpansion<entry_type> & mlmp)
   {
     mlmp.Print(ost);
     return ost;
@@ -1312,21 +1312,21 @@ namespace ngsbem
 
 
   template <typename elem_type=Complex>
-  class NGS_DLL_HEADER RegularMLMultiPole
+  class NGS_DLL_HEADER RegularMLExpansion
   {
     static Array<size_t> nodes_on_level;
 
     
     struct RecordingRS
     {
-      const MultiPole<MPSingular,elem_type> * mpS;
-      MultiPole<MPRegular,elem_type> * mpR;
+      const SphericalExpansion<Singular,elem_type> * mpS;
+      SphericalExpansion<Regular,elem_type> * mpR;
       Vec<3> dist;
       double len, theta, phi;
     public:
       RecordingRS() = default;
-      RecordingRS (const MultiPole<MPSingular,elem_type> * ampS,
-                   MultiPole<MPRegular,elem_type> * ampR,
+      RecordingRS (const SphericalExpansion<Singular,elem_type> * ampS,
+                   SphericalExpansion<Regular,elem_type> * ampR,
                    Vec<3> adist)
         : mpS(ampS), mpR(ampR), dist(adist)
       {
@@ -1408,10 +1408,10 @@ namespace ngsbem
       // static Timer tfrombatch("mptools - copy from batch 2");      
       
       // *testout << "Processing vectorized batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
-      MultiPole<MPSingular, Vec<N,Complex>> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp());
-      // MultiPole<MPSingular, elem_type> tmp_source{*batch[0]->mpS};
-      MultiPole<MPRegular, elem_type> tmp_target{*batch[0]->mpR};
-      MultiPole<MPRegular, Vec<N,Complex>> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp());
+      SphericalExpansion<Singular, Vec<N,Complex>> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp());
+      // SphericalExpansion<Singular, elem_type> tmp_source{*batch[0]->mpS};
+      SphericalExpansion<Regular, elem_type> tmp_target{*batch[0]->mpR};
+      SphericalExpansion<Regular, Vec<N,Complex>> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp());
 
       // Copy multipoles into vectorized multipole
       // ttobatch.Start();
@@ -1459,13 +1459,13 @@ namespace ngsbem
       double r;
       int level;
       std::array<unique_ptr<Node>,8> childs;
-      MultiPole<MPRegular,elem_type> mp;
+      SphericalExpansion<Regular,elem_type> mp;
       Array<Vec<3>> targets;
       int total_targets;
       std::mutex node_mutex;
       atomic<bool> have_childs{false};
 
-      Array<const typename SingularMLMultiPole<elem_type>::Node*> singnodes;
+      Array<const typename SingularMLExpansion<elem_type>::Node*> singnodes;
 
       Node (Vec<3> acenter, double ar, int alevel, double kappa)
         : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, ar) // 1.0/min(1.0, 0.25*r*kappa))
@@ -1491,7 +1491,7 @@ namespace ngsbem
         have_childs = true;
       }
       
-      void AddSingularNode (const typename SingularMLMultiPole<elem_type>::Node & singnode, bool allow_refine,
+      void AddSingularNode (const typename SingularMLExpansion<elem_type>::Node & singnode, bool allow_refine,
                             Array<RecordingRS> * recording)
       {
         if (mp.SH().Order() < 0) return;
@@ -1594,7 +1594,7 @@ namespace ngsbem
                   mp.TransformAdd (childs[nr]->mp, childs[nr]->center-center);
                 childs[nr]->LocalizeExpansion(allow_refine);
               });
-            mp = MultiPole<MPRegular,elem_type>(-1, mp.Kappa(), 1.);
+            mp = SphericalExpansion<Regular,elem_type>(-1, mp.Kappa(), 1.);
             //mp.SH().Coefs()=0.0;
           }
       }
@@ -1610,12 +1610,16 @@ namespace ngsbem
         if (childs[childnum])
           sum = childs[childnum]->Evaluate(p);
         else
-          sum = mp.Eval(p-center);
+          {
+            // static Timer t("regmp, evaluate reg"); RegionTimer r(t);          
+            sum = mp.Eval(p-center);
+          }
 
-        // static Timer t("regmp, evaluate, singnode"); RegionTimer r(t);
+        {
+          // static Timer t("regmp, evaluate, singnode"); RegionTimer r(t);
         for (auto sn : singnodes)
           sum += sn->EvaluateMP(p);
-
+        }
         return sum;
       }
 
@@ -1723,7 +1727,7 @@ namespace ngsbem
             }
 
         if (total_targets == 0)
-          mp = MultiPole<MPRegular,elem_type>(-1, mp.Kappa(),1.);
+          mp = SphericalExpansion<Regular,elem_type>(-1, mp.Kappa(),1.);
       }
       
 
@@ -1743,10 +1747,10 @@ namespace ngsbem
     };
     
     Node root;
-    shared_ptr<SingularMLMultiPole<elem_type>> singmp;
+    shared_ptr<SingularMLExpansion<elem_type>> singmp;
     
   public:
-  RegularMLMultiPole (shared_ptr<SingularMLMultiPole<elem_type>> asingmp, Vec<3> center, double r)
+  RegularMLExpansion (shared_ptr<SingularMLExpansion<elem_type>> asingmp, Vec<3> center, double r)
       : root(center, r, 0, asingmp->Kappa()), singmp(asingmp)
     {
       if (!singmp->havemp) throw Exception("first call Calc for singular MP");
@@ -1776,7 +1780,7 @@ namespace ngsbem
       }
     }
 
-    RegularMLMultiPole (Vec<3> center, double r, double kappa)
+    RegularMLExpansion (Vec<3> center, double r, double kappa)
       : root(center, r, 0, kappa)
     {
       nodes_on_level = 0;
@@ -1788,7 +1792,7 @@ namespace ngsbem
       root.AddTarget (t);
     }
 
-    void CalcMP(shared_ptr<SingularMLMultiPole<elem_type>> asingmp, bool onlytargets = true)
+    void CalcMP(shared_ptr<SingularMLExpansion<elem_type>> asingmp, bool onlytargets = true)
     {
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
       static Timer trec("mptool regular MLMP - recording");
@@ -1858,11 +1862,11 @@ namespace ngsbem
       
       /*
       int maxlevel = 0;
-      for (auto [i,num] : Enumerate(RegularMLMultiPole::nodes_on_level))
+      for (auto [i,num] : Enumerate(RegularMLExpansion::nodes_on_level))
         if (num > 0) maxlevel = i;
 
       for (int i = 0; i <= maxlevel; i++)
-        cout << "reg " << i << ": " << RegularMLMultiPole::nodes_on_level[i] << endl;
+        cout << "reg " << i << ": " << RegularMLExpansion::nodes_on_level[i] << endl;
       */
 
       static Timer tloc("mptool regular localize expansion"); RegionTimer rloc(tloc);
@@ -1903,10 +1907,10 @@ namespace ngsbem
 
 
   template <typename elem_type>
-  inline ostream & operator<< (ostream & ost, const RegularMLMultiPole<elem_type> & mlmp)
+  inline ostream & operator<< (ostream & ost, const RegularMLExpansion<elem_type> & mlmp)
   {
     mlmp.Print(ost);
-    // ost << "RegularMLMultiPole" << endl;
+    // ost << "RegularMLExpansion" << endl;
     return ost;
   }
 

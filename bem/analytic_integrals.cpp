@@ -278,7 +278,7 @@ namespace ngsbem
     n /= L2Norm(n);
 
     double h = InnerProduct(x-v0, n);
-    Vec<3> xhat = x - h*n;
+    // Vec<3> xhat = x - h*n;
     h = fabs(h);
 
     auto IntEdge = [=] (Vec<3> ve0, Vec<3> ve1, Vec<3> nu)
@@ -314,7 +314,7 @@ namespace ngsbem
 
   
 
-  
+#ifdef EXPERIMENTAL
   double LaplaceSL_Triangle_exp (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
   {
     Vec<3> vi[3] = { v0, v1, v2 };
@@ -380,7 +380,7 @@ namespace ngsbem
       };
     return sum;
   }
-
+#endif 
 
 
 
@@ -392,8 +392,8 @@ namespace ngsbem
     Vec<3> n = Cross(v1-v0, v2-v0);
     n /= L2Norm(n);
 
-    double h = InnerProduct(x-v0, n);
-    Vec<3> xhat = x - h*n;
+    // double h = InnerProduct(x-v0, n);
+    // Vec<3> xhat = x - h*n;
 
     auto IntEdge = [=] (Vec<3> ve0, Vec<3> ve1, Vec<3> nu)
     {
@@ -426,7 +426,7 @@ namespace ngsbem
 
 
 
-  
+#ifdef EXPERIMENTAL
   double LaplaceDL_Triangle_exp (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
   {
     Vec<3> vi[3] = { v0, v1, v2 };
@@ -495,8 +495,10 @@ namespace ngsbem
       };
     return sum;
   }
+#endif
+
 }
-  
+
 
 
 

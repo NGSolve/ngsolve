@@ -5,7 +5,7 @@
 namespace ngsbem
 {
   
-  void AddChargeDensity (SingularMLMultiPole<Complex> & mp, shared_ptr<CoefficientFunction> charge, ngcomp::Region reg)
+  void AddChargeDensity (SingularMLExpansion<Complex> & mp, shared_ptr<CoefficientFunction> charge, ngcomp::Region reg)
   {
     LocalHeap lh(10*1000*1000);
     auto ma = reg.Mesh();
@@ -26,7 +26,7 @@ namespace ngsbem
   }
 
 
-  void AddCurrentDensity (SingularMLMultiPole<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current, ngcomp::Region reg)
+  void AddCurrentDensity (SingularMLExpansion<Vec<3,Complex>> & mp, shared_ptr<CoefficientFunction> current, ngcomp::Region reg)
   {
     LocalHeap lh(10*1000*1000);
     auto ma = reg.Mesh();
