@@ -41,16 +41,16 @@ namespace ngsbem
 
 
 
-  template <typename entry_type> class RegularMLMultiPoleCF;
+  template <typename entry_type> class RegularMLExpansionCF;
   
 
   template <typename RADIAL, typename entry_type=Complex>
-  class MultiPoleCF : public CoefficientFunction
+  class SphericalExpansionCF : public CoefficientFunction
   {
-    MultiPole<RADIAL, entry_type> mp;
+    SphericalExpansion<RADIAL, entry_type> mp;
     Vec<3> center;
   public:
-    MultiPoleCF (int order, double kappa, Vec<3> acenter, double rtyp = 1)
+    SphericalExpansionCF (int order, double kappa, Vec<3> acenter, double rtyp = 1)
       : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mp(order, kappa, rtyp), center(acenter) { }
 
     entry_type & Coef(int n, int m) { return mp.Coef(n,m); } 
@@ -70,28 +70,28 @@ namespace ngsbem
     }
 
     template <typename TARGET>
-    void ShiftZ (double z, MultiPole<TARGET, entry_type> & target) { mp.ShiftZ(z, target); }
+    void ShiftZ (double z, SphericalExpansion<TARGET, entry_type> & target) { mp.ShiftZ(z, target); }
 
     using CoefficientFunction::Transform;        
     template <typename TARGET>
-    void Transform (MultiPoleCF<TARGET, entry_type> & target)
+    void Transform (SphericalExpansionCF<TARGET, entry_type> & target)
     {
       mp.Transform (target.MP(), target.Center()-center);
     }
     template <typename TARGET>
-    void TransformAdd (MultiPoleCF<TARGET, entry_type> & target)
+    void TransformAdd (SphericalExpansionCF<TARGET, entry_type> & target)
     {
       mp.TransformAdd (target.MP(), target.Center()-center);
     }
   };
 
   template <typename entry_type>
-  class SingularMLMultiPoleCF : public CoefficientFunction
+  class SingularMLExpansionCF : public CoefficientFunction
   {
-    shared_ptr<SingularMLMultiPole<entry_type>> mlmp;
+    shared_ptr<SingularMLExpansion<entry_type>> mlmp;
   public:
-    SingularMLMultiPoleCF (Vec<3> center, double r, double kappa)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<SingularMLMultiPole<entry_type>>(center, r, kappa)} { }
+    SingularMLExpansionCF (Vec<3> center, double r, double kappa)
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<SingularMLExpansion<entry_type>>(center, r, kappa)} { }
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("real eval not available"); }
@@ -108,20 +108,20 @@ namespace ngsbem
       
     }
     
-    shared_ptr<SingularMLMultiPole<entry_type>> MLMP() const { return mlmp; }
-    shared_ptr<RegularMLMultiPoleCF<entry_type>> CreateRegularExpansion(Vec<3> center, double r) const;
+    shared_ptr<SingularMLExpansion<entry_type>> MLMP() const { return mlmp; }
+    shared_ptr<RegularMLExpansionCF<entry_type>> CreateRegularExpansion(Vec<3> center, double r) const;
   };
   
 
   template <typename entry_type>
-  class RegularMLMultiPoleCF : public CoefficientFunction
+  class RegularMLExpansionCF : public CoefficientFunction
   {
-    shared_ptr<RegularMLMultiPole<entry_type>> mlmp;
+    shared_ptr<RegularMLExpansion<entry_type>> mlmp;
   public:
-    RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPoleCF<entry_type>> asingmp, Vec<3> center, double r)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLMultiPole<entry_type>>(asingmp->MLMP(), center, r)} { } 
-    RegularMLMultiPoleCF (shared_ptr<SingularMLMultiPole<entry_type>> asingmp, Vec<3> center, double r)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLMultiPole<entry_type>>(asingmp, center, r)} { } 
+    RegularMLExpansionCF (shared_ptr<SingularMLExpansionCF<entry_type>> asingmp, Vec<3> center, double r)
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp->MLMP(), center, r)} { } 
+    RegularMLExpansionCF (shared_ptr<SingularMLExpansion<entry_type>> asingmp, Vec<3> center, double r)
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp, center, r)} { } 
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("real eval not available"); }
@@ -136,7 +136,7 @@ namespace ngsbem
         values = mlmp->Evaluate(mip.GetPoint());
     }
 
-    shared_ptr<RegularMLMultiPole<entry_type>> MLMP() { return mlmp; }
+    shared_ptr<RegularMLExpansion<entry_type>> MLMP() { return mlmp; }
   };
 
   

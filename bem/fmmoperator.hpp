@@ -76,7 +76,7 @@ namespace ngsbem
     void Mult(const BaseVector & x, BaseVector & y) const override
     {
       static Timer tall("ngbem fmm apply "+KERNEL::Name()); RegionTimer reg(tall);
-
+      
       auto shape = KERNEL::Shape();
       
       auto matx = x.FV<typename KERNEL::value_type>().AsMatrix(xpts.Size(), shape[1]);
@@ -93,9 +93,13 @@ namespace ngsbem
         regmp->AddTarget(ypts[i]);
       });
       regmp->CalcMP(singmp);
+
+      static Timer teval("ngbem fmm apply "+KERNEL::Name() + " eval"); 
+      teval.Start();
       ParallelFor (ypts.Size(), [&](int i) {
         kernel.EvaluateMP(*regmp, ypts[i], ynv[i], maty.Row(i)); 
       });
+      teval.Stop();
     }
 
     void MultTrans(const BaseVector & x, BaseVector & y) const override
