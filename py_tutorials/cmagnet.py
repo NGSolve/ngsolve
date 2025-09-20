@@ -9,7 +9,7 @@ def MakeGeometry():
         Box((0.1,-1,0.1), (0.7,1,0.9)) - \
         Box((0.5,-1,0.4), (1,1,0.6))
     core.solids.name = "core"
-    core.solids.maxh = 0.02
+    core.solids.maxh = 0.03
 
     coil = Cylinder((0.05,0,0.3), (0,0,1), 0.3, 0.4) - \
         Cylinder((0.05,0,0.3), (0,0,1), 0.15, 0.4)
