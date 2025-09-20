@@ -953,18 +953,17 @@ namespace ngsbem
           for (auto [x,c,d,c2] : simd_chargedipoles)
             {
               auto rho = L2Norm(p-x);
-              auto [si,co] = sincos(rho*mp.Kappa());
+              auto rhokappa = rho*mp.Kappa();
+              auto invrho = If(rho>0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+              auto [si,co] = sincos(rhokappa);
 
-              auto kernelc = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) / rho;                
-              kernelc = If(rho > 0.0, kernelc, SIMD<Complex,FMM_SW>(0.0));
+              auto kernelc = (1/(4*M_PI))*invrho*SIMD<Complex,FMM_SW>(co,si);
               vsum += kernelc * c;   
+
+              auto kernel = 
+                invrho*invrho * InnerProduct(p-x, d) * 
+                kernelc * SIMD<Complex,FMM_SW>(-1.0, rhokappa);
               
-              auto drhodp = (1.0/rho) * (p-x);
-              auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) * 
-                (-1.0/(rho*rho) + SIMD<Complex,FMM_SW>(0, mp.Kappa())/rho);
-              auto kernel = dGdrho * InnerProduct(drhodp, d);
-              
-              kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
               vsum += kernel * c2;
             }
           sum += HSum(vsum);
