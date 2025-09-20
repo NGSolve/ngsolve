@@ -88,10 +88,13 @@ namespace ngsbem
         kernel.AddSource(*singmp, xpts[i], xnv[i], matx.Row(i));
       });
       singmp->CalcMP();
+      static Timer taddlocal("ngbem fmm add local");
+      taddlocal.Start();
       auto regmp = kernel.CreateLocalExpansion (cy, ry);
       ParallelFor (ypts.Size(), [&](int i){
         regmp->AddTarget(ypts[i]);
       });
+      taddlocal.Stop();
       regmp->CalcMP(singmp);
 
       static Timer teval("ngbem fmm apply "+KERNEL::Name() + " eval"); 

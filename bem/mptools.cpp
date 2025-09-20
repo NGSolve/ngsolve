@@ -239,13 +239,13 @@ namespace ngsbem
         normalized_leg_func.Row(i) *= -1;
       
     // cout << "leg = " << endl << normalized_leg_func << endl;
-    FlatVector<> Dmn(2*order+1, lh);
 
     // for (int n=1; n <= order; n++)
-    auto transformN = [normalized_leg_func,Dmn,s,c,this] (int n, LocalHeap & lh)
+    auto transformN = [normalized_leg_func,s,c,this] (int n, LocalHeap & lh)
       {
         HeapReset hr(lh);
           
+        FlatVector<> Dmn(2*order+1, lh);
         FlatMatrix<double,RowMajor> trafo(n+1, 2*n+1, lh); 
         /*
           Recursive Computation of Spherical Harmonic Rotation Coefficients of Large Degree

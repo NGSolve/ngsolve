@@ -305,7 +305,11 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   
   py::class_<BasePotentialCF, CoefficientFunction, shared_ptr<BasePotentialCF>> (m, "PotentialCF")
-    .def("BuildLocalExpansion", [](BasePotentialCF & potcf, const Region & region) { potcf.BuildLocalExpansion(region); })
+    .def("BuildLocalExpansion", [](shared_ptr<BasePotentialCF> potcf, const Region & region)
+    {
+      potcf->BuildLocalExpansion(region);
+      return potcf;
+    })
     ;
 
   py::class_<BasePotentialOperator, shared_ptr<BasePotentialOperator>> (m, "PotentialOperator")
