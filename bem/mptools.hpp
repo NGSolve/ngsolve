@@ -683,11 +683,14 @@ namespace ngsbem
           AddCharge (x,c);
         for (auto [x,d,c] : dipoles)
           AddDipole (x,d,c);
+        for (auto [x,c,d,c2] : chargedipoles)
+          AddChargeDipole (x,c,d,c2);
         for (auto [sp,ep,j,num] : currents)
           AddCurrent (sp,ep,j,num);
         
         charges.SetSize0();
         dipoles.SetSize0();
+        chargedipoles.SetSize0();        
         currents.SetSize0();
       }
 
@@ -753,8 +756,35 @@ namespace ngsbem
 
       void AddChargeDipole (Vec<3> x, entry_type c, Vec<3> dir, entry_type c2)
       {
+        if (have_childs)
+          {
+            // directly send to childs:
+            int childnum = GetChildNum(x);
+            childs[childnum] -> AddChargeDipole(x, c, dir, c2);
+            return;
+          }
+
+        lock_guard<mutex> guard(node_mutex);
+
+        if (have_childs)
+          {
+            // directly send to childs:
+            int childnum = GetChildNum(x);
+            childs[childnum] -> AddChargeDipole(x, c, dir, c2);
+            return;
+          }
+        
+        chargedipoles.Append (tuple{x,c,dir,c2});
+
+        if (chargedipoles.Size() < maxdirect || r < 1e-8)
+          return;
+
+        SendSourcesToChilds();
+
+        /*
         AddCharge (x, c);
         AddDipole (x, dir, c2);
+        */
       }
 
       
@@ -913,6 +943,53 @@ namespace ngsbem
           }
         }
 
+
+        
+        if (simd_chargedipoles.Size())
+        {
+          // static Timer t("mptool singmp, evaluate, simd chargedipoles"); RegionTimer r(t);
+          
+          simd_entry_type vsum{0.0};
+          for (auto [x,c,d,c2] : simd_chargedipoles)
+            {
+              auto rho = L2Norm(p-x);
+              auto [si,co] = sincos(rho*mp.Kappa());
+
+              auto kernelc = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) / rho;                
+              kernelc = If(rho > 0.0, kernelc, SIMD<Complex,FMM_SW>(0.0));
+              vsum += kernelc * c;   
+              
+              auto drhodp = (1.0/rho) * (p-x);
+              auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) * 
+                (-1.0/(rho*rho) + SIMD<Complex,FMM_SW>(0, mp.Kappa())/rho);
+              auto kernel = dGdrho * InnerProduct(drhodp, d);
+              
+              kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
+              vsum += kernel * c2;
+            }
+          sum += HSum(vsum);
+        }
+        else
+        {
+          // static Timer t("mptool singmp, evaluate, chargedipoles"); RegionTimer r(t);
+          
+          for (auto [x,c,d,c2] : chargedipoles)
+            if (double rho = L2Norm(p-x); rho > 0)
+              {
+                sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
+                  
+                Vec<3> drhodp = 1.0/rho * (p-x);
+                Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
+                  (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
+                
+                sum += dGdrho * InnerProduct(drhodp, d) * c2;
+              }
+        }
+
+
+
+
+        
         for (auto [sp,ep,j,num] : currents)
           {
             // should use explizit formula instead ...
@@ -950,6 +1027,8 @@ namespace ngsbem
 
         if (dipoles.Size())
             throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
+        if (chargedipoles.Size())
+            throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
 
         for (auto [x,c] : charges)
           if (double rho = L2Norm(p-x); rho > 0)
@@ -964,7 +1043,7 @@ namespace ngsbem
 
       void CalcTotalSources()
       {
-        total_sources = charges.Size() + dipoles.Size();
+        total_sources = charges.Size() + dipoles.Size() + chargedipoles.Size();
         for (auto & child : childs)
           if (child)
             {
@@ -997,7 +1076,7 @@ namespace ngsbem
           }
         else
           {
-            if (charges.Size()+dipoles.Size()+currents.Size() == 0)
+            if (charges.Size()+dipoles.Size()+chargedipoles.Size()+currents.Size() == 0)
               {
                 mp = SphericalExpansion<Singular,entry_type> (-1, mp.Kappa(), 1.);
                 return;
@@ -1037,6 +1116,27 @@ namespace ngsbem
                 for ( ; j < FMM_SW; j++) di[j] = tuple( get<0>(di[0]), get<1>(di[0]), entry_type{0.0} );
                 simd_dipoles[ii] = MakeSimd(di);
               }
+
+
+            simd_chargedipoles.SetSize( (chargedipoles.Size()+FMM_SW-1)/FMM_SW);
+            i = 0, ii = 0;
+            for ( ; i+FMM_SW <= chargedipoles.Size(); i+=FMM_SW, ii++)
+              {
+                std::array<tuple<Vec<3>,entry_type,Vec<3>,entry_type>, FMM_SW> di;
+                for (int j = 0; j < FMM_SW; j++) di[j] = chargedipoles[i+j];
+                simd_chargedipoles[ii] = MakeSimd(di);
+              }
+            if (i < chargedipoles.Size())
+              {
+                std::array<tuple<Vec<3>,entry_type,Vec<3>,entry_type>, FMM_SW> di;
+                int j = 0;
+                for ( ; i+j < chargedipoles.Size(); j++) di[j] = chargedipoles[i+j];
+                for ( ; j < FMM_SW; j++) di[j] = tuple( get<0>(di[0]), entry_type{0.0}, get<2>(di[0]), entry_type{0.0} );
+                simd_chargedipoles[ii] = MakeSimd(di);
+              }
+
+
+
             
             if (nodes_to_process)
                 *nodes_to_process += this;
@@ -1047,6 +1147,9 @@ namespace ngsbem
               for (auto [x,d,c] : dipoles)
                 mp.AddDipole (x-center, d, c);
 
+              for (auto [x,c,d,c2] : chargedipoles)
+                mp.AddChargeDipole (x-center, c, d, c2);
+              
               for (auto [sp,ep,j,num] : currents)
                 mp.AddCurrent (sp-center, ep-center, j, num);
             }
@@ -1055,7 +1158,7 @@ namespace ngsbem
       
       entry_type EvaluateMP(Vec<3> p) const
       {
-        if (charges.Size() || dipoles.Size())
+        if (charges.Size() || dipoles.Size() || chargedipoles.Size())
           return Evaluate(p);
         
         if (L2Norm(p-center) > 3*r)
@@ -1075,7 +1178,7 @@ namespace ngsbem
         // cout << "EvaluateMPDeriv Singular, p = " << p << ", d = " << d << ", r = " << r << ", center = " << center <<  endl;
         // cout << "Norm: " << L2Norm(p-center) << " > " << 3*r << endl;
         // cout << "charges.Size() = " << charges.Size() << ", dipoles.Size() = " << dipoles.Size() << endl;
-        if (charges.Size() || dipoles.Size() || !childs[0])
+        if (charges.Size() || dipoles.Size() || chargedipoles.Size() || !childs[0])
           return EvaluateDeriv(p, d);
 
         if (L2Norm(p-center) > 3*r)
@@ -1098,6 +1201,8 @@ namespace ngsbem
           ost << "xi = " << x << ", ci = " << c << endl;
         for (auto [x,d,c] : dipoles)
           ost << "xi = " << x << ", di = " << d << ", ci = " << c << endl;
+        for (auto [x,c,d,c2] : chargedipoles)
+          ost << "xi = " << x << ", c = " << c << ", di = " << d << ", ci = " << c2 << endl;
 
         for (int i = 0; i < 8; i++)
           if (childs[i]) childs[i] -> Print (ost, i);
@@ -1231,6 +1336,8 @@ namespace ngsbem
             node->mp.AddCharge(x-node->center, c);
           for (auto [x,d,c]: node->dipoles)
             node->mp.AddDipole(x-node->center, d, c);
+          for (auto [x,c,d,c2]: node->chargedipoles)
+            node->mp.AddChargeDipole(x-node->center, c, d, c2);
           for (auto [sp,ep,j,num]: node->currents)
             node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
         }, TasksPerThread(4));
