@@ -14,6 +14,7 @@ install( TARGETS ngsbem ${ngs_install_dir} )
 
 install( FILES
         mptools.hpp potentialtools.hpp mp_coefficient.hpp
+        kernels.hpp bem_diffops.hpp
         intrules_SauterSchwab.hpp analytic_integrals.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel

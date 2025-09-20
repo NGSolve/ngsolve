@@ -395,28 +395,24 @@ namespace ngsbem
     entry_type EvalDirectionalDerivative (Vec<3> x, Vec<3> d) const;
 
     void AddCharge (Vec<3> x, entry_type c);
-    void AddDipole (Vec<3> x, Vec<3> d, entry_type c);
+    void AddDipole (Vec<3> x, Vec<3> dir, entry_type c);
+    void AddChargeDipole (Vec<3> x, entry_type c, Vec<3> dir, entry_type c2)
+    {
+      // TODO: add them at once
+      AddCharge (x, c);
+      AddDipole (x, dir, c2);
+    }
+    
     void AddPlaneWave (Vec<3> d, entry_type c);    
     void AddCurrent (Vec<3> ap, Vec<3> ep, Complex j, int num=100);
     
-    /*
-    void ChangeScaleTo (double newscale)
-    {
-      double fac = Scale()/newscale;
-      double prod = 1;
-      for (int n = 0; n <= sh.Order(); n++, prod*= fac)
-        sh.CoefsN(n) *= prod;
-      scale = newscale;
-    }
-    */
+
     void ChangeRTypTo (double new_rtyp)
     {
-      // double fac = Scale()/newscale;
       double fac = RADIAL::Scale(kappa, rtyp) / RADIAL::Scale(kappa, new_rtyp);
       double prod = 1;
       for (int n = 0; n <= sh.Order(); n++, prod*= fac)
         sh.CoefsN(n) *= prod;
-      // scale = newscale;
       rtyp = new_rtyp;
     }
     
@@ -635,11 +631,14 @@ namespace ngsbem
 
       Array<tuple<Vec<3>, entry_type>> charges;
       Array<tuple<Vec<3>, Vec<3>, entry_type>> dipoles;
+      Array<tuple<Vec<3>, entry_type, Vec<3>, entry_type>> chargedipoles;
       Array<tuple<Vec<3>, Vec<3>, Complex,int>> currents;
 
       using simd_entry_type = decltype(MakeSimd(declval<std::array<entry_type,FMM_SW>>()));      
       Array<tuple<Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_charges;
       Array<tuple<Vec<3,SIMD<double,FMM_SW>>, Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_dipoles;
+      Array<tuple<Vec<3,SIMD<double,FMM_SW>>, simd_entry_type,
+                  Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_chargedipoles;
       
       int total_sources;
       std::mutex node_mutex;
@@ -652,7 +651,15 @@ namespace ngsbem
           nodes_on_level[level]++;
       }
 
-
+      int GetChildNum (Vec<3> x) const
+      {
+        int childnum  = 0;
+        if (x(0) > center(0)) childnum += 1;
+        if (x(1) > center(1)) childnum += 2;
+        if (x(2) > center(2)) childnum += 4;
+        return childnum;
+      }
+      
       void CreateChilds()
       {
         if (childs[0]) throw Exception("have already childs");
@@ -668,41 +675,8 @@ namespace ngsbem
       }
       
 
-      void AddCharge (Vec<3> x, entry_type c)
+      void SendSourcesToChilds()
       {
-        if (have_childs) // quick check without locking 
-          {
-            // directly send to childs:
-            int childnum  = 0;
-            if (x(0) > center(0)) childnum += 1;
-            if (x(1) > center(1)) childnum += 2;
-            if (x(2) > center(2)) childnum += 4;
-            childs[childnum] -> AddCharge(x, c);
-            return;
-          }
-
-        lock_guard<mutex> guard(node_mutex);
-
-        if (have_childs) // test again after locking 
-          {
-            // directly send to childs:
-            int childnum  = 0;
-            if (x(0) > center(0)) childnum += 1;
-            if (x(1) > center(1)) childnum += 2;
-            if (x(2) > center(2)) childnum += 4;
-            childs[childnum] -> AddCharge(x, c);
-            return;
-          }
-
-
-        
-        charges.Append( tuple{x,c} );
-
-        // if (r*mp.Kappa() < 1e-8) return;
-        if (level > 20) return;
-        if (charges.Size() < maxdirect && r*mp.Kappa() < 1)
-          return;
-
         CreateChilds();
 
         for (auto [x,c] : charges)
@@ -717,17 +691,43 @@ namespace ngsbem
         currents.SetSize0();
       }
 
+      
+      void AddCharge (Vec<3> x, entry_type c)
+      {
+        if (have_childs) // quick check without locking 
+          {
+            // directly send to childs:
+            int childnum = GetChildNum(x);
+            childs[childnum] -> AddCharge(x, c);
+            return;
+          }
+
+        lock_guard<mutex> guard(node_mutex);
+
+        if (have_childs) // test again after locking 
+          {
+            int childnum  = GetChildNum(x);
+            childs[childnum] -> AddCharge(x, c);
+            return;
+          }
+
+        charges.Append( tuple{x,c} );
+
+        // if (r*mp.Kappa() < 1e-8) return;
+        if (level > 20) return;
+        if (charges.Size() < maxdirect && r*mp.Kappa() < 1)
+          return;
+        
+        SendSourcesToChilds();
+      }
+
 
       void AddDipole (Vec<3> x, Vec<3> d, entry_type c)
       {
         if (have_childs)
           {
             // directly send to childs:
-
-            int childnum  = 0;
-            if (x(0) > center(0)) childnum += 1;
-            if (x(1) > center(1)) childnum += 2;
-            if (x(2) > center(2)) childnum += 4;
+            int childnum = GetChildNum(x);
             childs[childnum] -> AddDipole(x, d, c);
             return;
           }
@@ -737,37 +737,27 @@ namespace ngsbem
         if (have_childs)
           {
             // directly send to childs:
-
-            int childnum  = 0;
-            if (x(0) > center(0)) childnum += 1;
-            if (x(1) > center(1)) childnum += 2;
-            if (x(2) > center(2)) childnum += 4;
+            int childnum = GetChildNum(x);
             childs[childnum] -> AddDipole(x, d, c);
             return;
           }
-
-
-
         
         dipoles.Append (tuple{x,d,c});
 
         if (dipoles.Size() < maxdirect || r < 1e-8)
           return;
-        
-        CreateChilds();
 
-        for (auto [x,c] : charges)
-          AddCharge (x,c);
-        for (auto [x,d,c] : dipoles)
-          AddDipole (x,d,c);
-        for (auto [sp,ep,j,num] : currents)
-          AddCurrent (sp,ep,j,num);
-
-        charges.SetSize0();
-        dipoles.SetSize0();        
-        currents.SetSize0();        
+        SendSourcesToChilds();
       }
 
+
+      void AddChargeDipole (Vec<3> x, entry_type c, Vec<3> dir, entry_type c2)
+      {
+        AddCharge (x, c);
+        AddDipole (x, dir, c2);
+      }
+
+      
       // not parallel yet
       void AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
       {
@@ -804,6 +794,12 @@ namespace ngsbem
         // if (currents.Size() < maxdirect || r < 1e-8)
         if (currents.Size() < 4 || r < 1e-8)        
           return;
+
+        SendSourcesToChilds();
+        /*
+        // if (currents.Size() < maxdirect || r < 1e-8)
+        if (currents.Size() < 4 || r < 1e-8)        
+          return;
         
         CreateChilds();
 
@@ -817,6 +813,7 @@ namespace ngsbem
         charges.SetSize0();
         dipoles.SetSize0();
         currents.SetSize0();
+        */
       }
 
 
@@ -837,7 +834,7 @@ namespace ngsbem
           // t.AddFlops (charges.Size());
         if (simd_charges.Size())
           {
-            // static Timer t("regmp, evaluate, simd charges"); RegionTimer r(t);
+            // static Timer t("mptool singmp, evaluate, simd charges"); RegionTimer r(t);
             
             simd_entry_type vsum{0.0};
             if (mp.Kappa() < 1e-12)
@@ -888,6 +885,8 @@ namespace ngsbem
 
         if (simd_dipoles.Size())
         {
+          // static Timer t("mptool singmp, evaluate, simd dipoles"); RegionTimer r(t);
+          
           simd_entry_type vsum{0.0};
           for (auto [x,d,c] : simd_dipoles)
           {
@@ -1038,7 +1037,6 @@ namespace ngsbem
                 for ( ; j < FMM_SW; j++) di[j] = tuple( get<0>(di[0]), get<1>(di[0]), entry_type{0.0} );
                 simd_dipoles[ii] = MakeSimd(di);
               }
-
             
             if (nodes_to_process)
                 *nodes_to_process += this;
@@ -1147,6 +1145,11 @@ namespace ngsbem
       root.AddDipole(x, d, c);
     }
 
+    void AddChargeDipole(Vec<3> x, entry_type c, Vec<3> dir, entry_type c2)
+    {
+      root.AddChargeDipole(x, c, dir, c2);
+    }
+    
     void AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
     {
       if constexpr (!std::is_same<entry_type, Vec<3,Complex>>())
@@ -1611,14 +1614,14 @@ namespace ngsbem
           sum = childs[childnum]->Evaluate(p);
         else
           {
-            // static Timer t("regmp, evaluate reg"); RegionTimer r(t);          
+            // static Timer t("mptool regmp, evaluate reg"); RegionTimer r(t);          
             sum = mp.Eval(p-center);
           }
 
         {
-          // static Timer t("regmp, evaluate, singnode"); RegionTimer r(t);
-        for (auto sn : singnodes)
-          sum += sn->EvaluateMP(p);
+          // static Timer t("mptool regmp, evaluate, singnode"); RegionTimer r(t);
+          for (auto sn : singnodes)
+            sum += sn->EvaluateMP(p);
         }
         return sum;
       }
