@@ -543,7 +543,7 @@ namespace ngsbem
     };
 
 
-    static void ProcessBatch(FlatArray<RecordingSS*> batch, double len, double theta) {
+    static void ProcessBatchSS(FlatArray<RecordingSS*> batch, double len, double theta) {
       constexpr int vec_length = VecLength<entry_type>;
       int batch_size = batch.Size();
       int N = batch_size * vec_length;
@@ -555,42 +555,45 @@ namespace ngsbem
         }
       }
       else if (N <= 3) {
-        ProcessVectorizedBatch<3, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchSS<3, vec_length>(batch, len, theta);
       }
       else if (N <= 4) {
-        ProcessVectorizedBatch<4, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchSS<4, vec_length>(batch, len, theta);
       }
       else if (N <= 6) {
-        ProcessVectorizedBatch<6, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchSS<6, vec_length>(batch, len, theta);
       }
       else if (N <= 12) {
-        ProcessVectorizedBatch<12, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchSS<12, vec_length>(batch, len, theta);
       }
       else if (N <= 24) {
-        ProcessVectorizedBatch<24, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchSS<24, vec_length>(batch, len, theta);
       }
       else if (N <= 48) {
-        ProcessVectorizedBatch<48, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchSS<48, vec_length>(batch, len, theta);
       }
       else if (N <= 96) {
-        ProcessVectorizedBatch<96, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchSS<96, vec_length>(batch, len, theta);
       }
       else if (N <= 192) {
-        ProcessVectorizedBatch<192, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchSS<192, vec_length>(batch, len, theta);
       }
       else {
         // Split large batches
-        ProcessBatch(batch.Range(0, 192 / vec_length), len, theta);
-        ProcessBatch(batch.Range(192 / vec_length, batch_size), len, theta);
+        ProcessBatchSS(batch.Range(0, 192 / vec_length), len, theta);
+        ProcessBatchSS(batch.Range(192 / vec_length, batch_size), len, theta);
       }
     }
 
     template<int N, int vec_length>
-    static void ProcessVectorizedBatch(FlatArray<RecordingSS*> batch, double len, double theta) {
+    static void ProcessVectorizedBatchSS(FlatArray<RecordingSS*> batch, double len, double theta) {
 
       // *testout << "Processing vectorized S->S batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
-      SphericalExpansion<Singular, Vec<N,Complex>> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp());
-      SphericalExpansion<Singular, Vec<N,Complex>> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp());
+      double kappa = batch[0]->mp_source->Kappa();
+      int so = batch[0]->mp_source->Order();
+      int to = batch[0]->mp_target->Order();
+      SphericalExpansion<Singular, Vec<N,Complex>> vec_source(so, kappa, batch[0]->mp_source->RTyp());
+      SphericalExpansion<Singular, Vec<N,Complex>> vec_target(to, kappa, batch[0]->mp_target->RTyp());
 
       // Copy multipoles into vectorized multipole
       for (int i = 0; i < batch.Size(); i++)
@@ -1313,87 +1316,89 @@ namespace ngsbem
       
       root.CalcTotalSources();
 
-      if (false)
+      if constexpr (false)
         // direct evaluation of S->S
         root.CalcMP(nullptr, nullptr);
       else
         {
           
-      Array<RecordingSS> recording;
-      Array<Node*> nodes_to_process;
+          Array<RecordingSS> recording;
+          Array<Node*> nodes_to_process;
 
-      {
-        RegionTimer reg(trec);
-      root.CalcMP(&recording, &nodes_to_process);
-      }
+          {
+            RegionTimer reg(trec);
+            root.CalcMP(&recording, &nodes_to_process);
+          }
       
-      {
-        RegionTimer rs2mp(ts2mp);
-        ParallelFor(nodes_to_process.Size(), [&](int i){
-          auto node = nodes_to_process[i];
-          for (auto [x,c]: node->charges)
-            node->mp.AddCharge(x-node->center, c);
-          for (auto [x,d,c]: node->dipoles)
-            node->mp.AddDipole(x-node->center, d, c);
-          for (auto [x,c,d,c2]: node->chargedipoles)
-            node->mp.AddChargeDipole(x-node->center, c, d, c2);
-          for (auto [sp,ep,j,num]: node->currents)
-            node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
-        }, TasksPerThread(4));
-      }
-
-      {
-      RegionTimer reg(tsort);
-      QuickSort (recording, [] (auto & a, auto & b)
-      {
-        if (a.len < (1-1e-8) * b.len) return true;
-        if (a.len > (1+1e-8) * b.len) return false;
-        return a.theta < b.theta;
-      });
-      }
+          {
+            RegionTimer rs2mp(ts2mp);
+            ParallelFor(nodes_to_process.Size(), [&](int i)
+            {
+              auto node = nodes_to_process[i];
+              for (auto [x,c]: node->charges)
+                node->mp.AddCharge(x-node->center, c);
+              for (auto [x,d,c]: node->dipoles)
+                node->mp.AddDipole(x-node->center, d, c);
+              for (auto [x,c,d,c2]: node->chargedipoles)
+                node->mp.AddChargeDipole(x-node->center, c, d, c2);
+              for (auto [sp,ep,j,num]: node->currents)
+                node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
+            }, TasksPerThread(4));
+          }
+          
+          {
+            RegionTimer reg(tsort);
+            QuickSort (recording, [] (auto & a, auto & b)
+            {
+              if (a.len < (1-1e-8) * b.len) return true;
+              if (a.len > (1+1e-8) * b.len) return false;
+              return a.theta < b.theta;
+            });
+          }
       
-      double current_len = -1e100;
-      double current_theta = -1e100;
-      Array<RecordingSS*> current_batch;
-      Array<Array<RecordingSS*>> batch_group;
-      Array<double> group_lengths;
-      Array<double> group_thetas;
-      for (auto & record : recording)
-        {
-          bool len_changed = fabs(record.len - current_len) > 1e-8;
-          bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
-          if ((len_changed || theta_changed) && current_batch.Size() > 0) {
+          double current_len = -1e100;
+          double current_theta = -1e100;
+          Array<RecordingSS*> current_batch;
+          Array<Array<RecordingSS*>> batch_group;
+          Array<double> group_lengths;
+          Array<double> group_thetas;
+          for (auto & record : recording)
+            {
+              bool len_changed = fabs(record.len - current_len) > 1e-8;
+              bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
+              if ((len_changed || theta_changed) && current_batch.Size() > 0) {
+                batch_group.Append(current_batch);
+                group_lengths.Append(current_len);
+                group_thetas.Append(current_theta);
+                current_batch.SetSize(0);
+              }
+              
+              current_len = record.len;
+              current_theta = record.theta;
+              current_batch.Append(&record);
+            }
+          
+          if (current_batch.Size() > 0) {
             batch_group.Append(current_batch);
             group_lengths.Append(current_len);
             group_thetas.Append(current_theta);
-            current_batch.SetSize(0);
+          }
+
+          {
+            RegionTimer rS2S(tS2S);
+            // ParallelFor(batch_group.Size(), [&](int i) {
+            for (int i = 0; i < batch_group.Size(); i++){
+              // *testout << "Processing batch " << i << " of size " << batch_group[i].Size() << ", with len = " << group_lengths[i] << ", theta = " << group_thetas[i] << endl;
+              int chunk_size = 24;
+              if (batch_group[i].Size() < chunk_size)
+                ProcessBatchSS(batch_group[i], group_lengths[i], group_thetas[i]);
+              else
+                ParallelForRange(IntRange(batch_group[i].Size()), [&](IntRange range) {
+                  auto sub_batch = batch_group[i].Range(range.First(), range.Next());
+                  ProcessBatchSS(sub_batch, group_lengths[i], group_thetas[i]);
+                }, TasksPerThread(4));
             }
-
-          current_len = record.len;
-          current_theta = record.theta;
-          current_batch.Append(&record);
-        }
-      if (current_batch.Size() > 0) {
-        batch_group.Append(current_batch);
-        group_lengths.Append(current_len);
-        group_thetas.Append(current_theta);
-      }
-
-      {
-        RegionTimer rS2S(tS2S);
-      // ParallelFor(batch_group.Size(), [&](int i) {
-      for (int i = 0; i < batch_group.Size(); i++){
-          // *testout << "Processing batch " << i << " of size " << batch_group[i].Size() << ", with len = " << group_lengths[i] << ", theta = " << group_thetas[i] << endl;
-        int chunk_size = 24;
-        if (batch_group[i].Size() < chunk_size)
-            ProcessBatch(batch_group[i], group_lengths[i], group_thetas[i]);
-        else
-          ParallelForRange(IntRange(batch_group[i].Size()), [&](IntRange range) {
-              auto sub_batch = batch_group[i].Range(range.First(), range.Next());
-              ProcessBatch(sub_batch, group_lengths[i], group_thetas[i]);
-          }, TasksPerThread(4));
-      }
-      }
+          }
         }
       
       havemp = true;
@@ -1456,28 +1461,28 @@ namespace ngsbem
         }
       }
       else if (N <= 3) {
-        ProcessVectorizedBatch<3, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchRS<3, vec_length>(batch, len, theta);
       }
       else if (N <= 4) {
-        ProcessVectorizedBatch<4, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchRS<4, vec_length>(batch, len, theta);
       }
       else if (N <= 6) {
-        ProcessVectorizedBatch<6, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchRS<6, vec_length>(batch, len, theta);
       }
       else if (N <= 12) {
-        ProcessVectorizedBatch<12, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchRS<12, vec_length>(batch, len, theta);
       }
       else if (N <= 24) {
-        ProcessVectorizedBatch<24, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchRS<24, vec_length>(batch, len, theta);
       }
       else if (N <= 48) {
-        ProcessVectorizedBatch<48, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchRS<48, vec_length>(batch, len, theta);
       }
       else if (N <= 96) {
-        ProcessVectorizedBatch<96, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchRS<96, vec_length>(batch, len, theta);
       }
       else if (N <= 192) {
-        ProcessVectorizedBatch<192, vec_length>(batch, len, theta);
+        ProcessVectorizedBatchRS<192, vec_length>(batch, len, theta);
       }
       else {
         // Split large batches
@@ -1509,7 +1514,7 @@ namespace ngsbem
 
 
     template<int N, int vec_length>
-    static void ProcessVectorizedBatch(FlatArray<RecordingRS*> batch, double len, double theta) {
+    static void ProcessVectorizedBatchRS(FlatArray<RecordingRS*> batch, double len, double theta) {
 
       // static Timer t("ProcessVectorizedBatch, N = "+ToString(N) + ", vec_len = " + ToString(vec_length));
       // RegionTimer reg(t, batch[0]->mpS->SH().Order());
@@ -1570,6 +1575,7 @@ namespace ngsbem
       std::array<unique_ptr<Node>,8> childs;
       SphericalExpansion<Regular,elem_type> mp;
       Array<Vec<3>> targets;
+      Array<tuple<Vec<3>,double>> vol_targets;      
       int total_targets;
       std::mutex node_mutex;
       atomic<bool> have_childs{false};
@@ -1668,7 +1674,7 @@ namespace ngsbem
                                    childs[nr] -> AddSingularNode (singnode, allow_refine, recording);
                                });
                 
-                if (targets.Size())
+                if (targets.Size()+vol_targets.Size())
                   singnodes.Append(&singnode);
               }
           }
@@ -1754,6 +1760,14 @@ namespace ngsbem
         return sum;
       }
 
+      void TraverseTree (const std::function<void(Node&)> & func)
+      {
+        func(*this);
+        for (auto & child : childs)
+          if (child)
+            child->TraverseTree(func);
+      }
+      
       double Norm() const
       {
         double norm = L2Norm(mp.SH().Coefs());
@@ -1771,17 +1785,23 @@ namespace ngsbem
             num += ch->NumCoefficients();
         return num;
       }
-      
+
+      int GetChildNum (Vec<3> x) const
+      {
+        int childnum  = 0;
+        if (x(0) > center(0)) childnum += 1;
+        if (x(1) > center(1)) childnum += 2;
+        if (x(2) > center(2)) childnum += 4;
+        return childnum;
+      }
+
       void AddTarget (Vec<3> x)
       {
         // if (childs[0])
         if (have_childs) // quick check without locking
           {
             // directly send to childs:
-            int childnum  = 0;
-            if (x(0) > center(0)) childnum += 1;
-            if (x(1) > center(1)) childnum += 2;
-            if (x(2) > center(2)) childnum += 4;
+            int childnum  = GetChildNum(x);
             childs[childnum] -> AddTarget( x );
             return;
           }
@@ -1791,14 +1811,10 @@ namespace ngsbem
         if (have_childs) // test again after locking
         {
           // directly send to childs:
-          int childnum  = 0;
-          if (x(0) > center(0)) childnum += 1;
-          if (x(1) > center(1)) childnum += 2;
-          if (x(2) > center(2)) childnum += 4;
+          int childnum  = GetChildNum(x);
           childs[childnum] -> AddTarget(x);
           return;
         }
-
 
         targets.Append( x );
 
@@ -1811,12 +1827,58 @@ namespace ngsbem
 
         for (auto t : targets)
           AddTarget (t);
+        for (auto [x,r] : vol_targets)
+          AddVolumeTarget (x,r);
+
         targets.SetSize0();
+        vol_targets.SetSize0();
       }
+
+
+      void AddVolumeTarget (Vec<3> x, double tr)
+      {
+        if (MaxNorm(x-center) > r+tr) return;
+
+        if (have_childs)
+          {
+            for (auto & child : childs)
+              child->AddVolumeTarget(x, tr);
+            return;
+          }
+
+        
+        lock_guard<mutex> guard(node_mutex);
+        
+        if (have_childs)
+          {
+            for (auto & child : childs)
+              child->AddVolumeTarget(x, tr);
+            return;
+          }
+
+        
+        vol_targets.Append (tuple(x,tr));
+
+        if (level > 20) return;
+        if (vol_targets.Size() < maxdirect && (r*mp.Kappa() < 1))
+          return;
+
+        CreateChilds();
+
+        for (auto t : targets)
+          AddTarget (t);
+        for (auto [x,r] : vol_targets)
+          AddVolumeTarget (x,r);
+
+        targets.SetSize0();
+        vol_targets.SetSize0();
+      }
+
+      
 
       void CalcTotalTargets()
       {
-        total_targets = targets.Size();
+        total_targets = targets.Size() + vol_targets.Size();
         for (auto & child : childs)
           if (child)
             {
@@ -1901,73 +1963,94 @@ namespace ngsbem
       root.AddTarget (t);
     }
 
+    void AddVolumeTarget (Vec<3> t, double r)
+    {
+      root.AddVolumeTarget (t, r);
+    }
+
     void CalcMP(shared_ptr<SingularMLExpansion<elem_type>> asingmp, bool onlytargets = true)
     {
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
+      static Timer tremove("removeempty");
       static Timer trec("mptool regular MLMP - recording");
       static Timer tsort("mptool regular MLMP - sort");       
       
       singmp = asingmp;
 
+      
       root.CalcTotalTargets();
+      // cout << "before remove empty trees:" << endl;
+      // PrintStatistics(cout);
+      
+      tremove.Start();
       if (onlytargets)
         root.RemoveEmptyTrees();
+      tremove.Stop();
 
-      
-      // root.AddSingularNode(singmp->root, !onlytargets, nullptr);
+      // cout << "after remove empty trees:" << endl;
+      // PrintStatistics(cout);
 
-      // /*
-      Array<RecordingRS> recording;
-      {
-        RegionTimer rrec(trec);
-        root.AddSingularNode(singmp->root, !onlytargets, &recording);
-      }
-      
-      // cout << "recorded: " << recording.Size() << endl;
-      {
-      RegionTimer reg(tsort);
-      QuickSort (recording, [] (auto & a, auto & b)
-      {
-        if (a.len < (1-1e-8) * b.len) return true;
-        if (a.len > (1+1e-8) * b.len) return false;
-        return a.theta < b.theta;
-      });
-      }
-      
-      double current_len = -1e100;
-      double current_theta = -1e100;
-      Array<RecordingRS*> current_batch;
-      Array<Array<RecordingRS*>> batch_group;
-      Array<double> group_lengths;
-      Array<double> group_thetas;
-      for (auto & record : recording)
+      // cout << "starting S-R converion" << endl;
+      // PrintStatistics(cout);
+
+
+      if constexpr (false)
         {
-          bool len_changed = fabs(record.len - current_len) > 1e-8;
-          bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
-          if ((len_changed || theta_changed) && current_batch.Size() > 0) {
+          root.AddSingularNode(singmp->root, !onlytargets, nullptr);
+        }
+      else
+        {  // use recording
+          Array<RecordingRS> recording;
+          {
+            RegionTimer rrec(trec);
+            root.AddSingularNode(singmp->root, !onlytargets, &recording);
+          }
+          
+          // cout << "recorded: " << recording.Size() << endl;
+          {
+            RegionTimer reg(tsort);
+            QuickSort (recording, [] (auto & a, auto & b)
+            {
+              if (a.len < (1-1e-8) * b.len) return true;
+              if (a.len > (1+1e-8) * b.len) return false;
+              return a.theta < b.theta;
+            });
+          }
+          
+          double current_len = -1e100;
+          double current_theta = -1e100;
+          Array<RecordingRS*> current_batch;
+          Array<Array<RecordingRS*>> batch_group;
+          Array<double> group_lengths;
+          Array<double> group_thetas;
+          for (auto & record : recording)
+            {
+              bool len_changed = fabs(record.len - current_len) > 1e-8;
+              bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
+              if ((len_changed || theta_changed) && current_batch.Size() > 0) {
+                // ProcessBatch(current_batch, current_len, current_theta);
+                batch_group.Append(current_batch);
+                group_lengths.Append(current_len);
+                group_thetas.Append(current_theta);
+                current_batch.SetSize(0);
+              }
+              
+              current_len = record.len;
+              current_theta = record.theta;
+              current_batch.Append(&record);
+            }
+          if (current_batch.Size() > 0) {
             // ProcessBatch(current_batch, current_len, current_theta);
             batch_group.Append(current_batch);
             group_lengths.Append(current_len);
             group_thetas.Append(current_theta);
-            current_batch.SetSize(0);
-            }
-
-          current_len = record.len;
-          current_theta = record.theta;
-          current_batch.Append(&record);
+          }
+          
+          ParallelFor(batch_group.Size(), [&](int i) {
+            ProcessBatchRS(batch_group[i], group_lengths[i], group_thetas[i]);
+          }, TasksPerThread(4));
         }
-      if (current_batch.Size() > 0) {
-        // ProcessBatch(current_batch, current_len, current_theta);
-        batch_group.Append(current_batch);
-        group_lengths.Append(current_len);
-        group_thetas.Append(current_theta);
-      }
-
-      ParallelFor(batch_group.Size(), [&](int i) {
-          ProcessBatchRS(batch_group[i], group_lengths[i], group_thetas[i]);
-      }, TasksPerThread(4));
-      // */
-
+          
       
       /*
       int maxlevel = 0;
@@ -1978,10 +2061,44 @@ namespace ngsbem
         cout << "reg " << i << ": " << RegularMLExpansion::nodes_on_level[i] << endl;
       */
 
+      // cout << "starting R-R converion" << endl;
+      // PrintStatistics(cout);
+      
       static Timer tloc("mptool regular localize expansion"); RegionTimer rloc(tloc);
       root.LocalizeExpansion(!onlytargets);
+
+
+      // cout << "R-R conversion done" << endl;
+      // PrintStatistics(cout);      
     }
 
+    void PrintStatistics (ostream & ost)
+    {
+      int levels = 0;
+      int cnt = 0;
+      root.TraverseTree( [&](Node & node) {
+        levels = max(levels, node.level);
+        cnt++;
+      });
+      ost << "levels: " << levels << endl;
+      ost << "nodes: " << cnt << endl;
+
+      Array<int> num_on_level(levels+1);
+      Array<int> order_on_level(levels+1);
+      Array<int> coefs_on_level(levels+1);            
+      num_on_level = 0;
+      order_on_level = 0;
+      root.TraverseTree( [&](Node & node) {
+        num_on_level[node.level]++;
+        order_on_level[node.level] = max(order_on_level[node.level],node.mp.Order());
+        coefs_on_level[node.level] += node.mp.SH().Coefs().Size();
+      });
+
+      cout << "num on level" << endl;
+      for (int i = 0; i < num_on_level.Size(); i++)
+        cout << i << ": " << num_on_level[i] << ", order = " << order_on_level[i] << ", coefs " << coefs_on_level[i] << endl;
+    }
+    
     void Print (ostream & ost) const
     {
       root.Print(ost);
@@ -2001,6 +2118,7 @@ namespace ngsbem
     {
       // static Timer t("mptool Eval MLMP regular"); RegionTimer r(t);
       // if (L2Norm(p-root.center) > root.r) return elem_type{0.0};
+      
       if (MaxNorm(p-root.center) > root.r)
         return singmp->Evaluate(p);
       return root.Evaluate(p);

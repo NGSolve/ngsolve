@@ -887,15 +887,50 @@ namespace ngsbem
 
     Vec<3> ct = 0.5*(tmin+tmax);
     double rt = MaxNorm(tmax-tmin);
-    // cout << "ct = " << ct << ", rt = " << rt << endl;
     
-    local_expansion = kernel.CreateLocalExpansion(ct, rt); 
     
+    double l2 = ceil (log2 (rt/rs));
+    rt = exp2 (l2) * rs;
+    
+    local_expansion = kernel.CreateLocalExpansion(ct, rt);
+
+    for (auto el : reg.GetElements())
+      {      
+        HeapReset hr(lh);
+        
+        const ElementTransformation &trafo = tmesh->GetTrafo(el, lh);
+        IntegrationRule ir(trafo.GetElementType(), intorder);
+        MappedIntegrationRule<2,3> miry(ir, trafo, lh);
+
+
+        Vec<3> elmax(-1e99, -1e99, -1e99);
+        Vec<3> elmin(1e99, 1e99, 1e99);
+          
+        for (int k = 0; k < miry.Size(); k++)
+          {
+            for (int j = 0; j < 3; j++)
+              {
+                elmin(j) = min(elmin(j), miry[k].GetPoint()(j));
+                elmax(j) = max(elmax(j), miry[k].GetPoint()(j));
+              }
+          }
+
+        Vec<3> el_center = 0.5 * (elmin+elmax);
+        double el_rad = 0.5 * L2Norm(elmax-elmin);
+        local_expansion -> AddVolumeTarget (el_center, el_rad);
+      }
+
+
+    
+    /*
     ParallelFor (tpoints.Size(), [&](int i){
       local_expansion->AddTarget(tpoints[i]);
     });
+    */
 
-    local_expansion->CalcMP(singmp, false);
+    // local_expansion -> PrintStatistics(cout);
+    
+    local_expansion->CalcMP(singmp, true);
   }
 
 

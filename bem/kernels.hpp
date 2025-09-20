@@ -485,10 +485,9 @@ namespace ngsbem
 
     void AddSource (SingularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      /*
-      mp.AddCharge(pnt, Complex(0, -kappa)*val(0));
-      mp.AddDipole(pnt, -nv, val(0));
-      */
+      // mp.AddCharge(pnt, Complex(0, -kappa)*val(0));
+      // mp.AddDipole(pnt, -nv, val(0));
+
       mp.AddChargeDipole (pnt, Complex(0, -kappa)*val(0), -nv, val(0));
     }
 
