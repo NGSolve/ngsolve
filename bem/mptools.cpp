@@ -6,10 +6,32 @@
 
 namespace ngsbem
 {
+
+
+  Array<double> sqrt_int(10001);
+  Array<double> inv_sqrt_int(10001);
+  Array<double> sqrt_n_np1(10001);        // sqrt(n*(n+1))  
+  Array<double> inv_sqrt_2np1_2np3(10001);  // 1/sqrt( (2n+1)*(2n+3) )
+  
+  auto init_sqrt_int = []() 
+  {
+    for (size_t n = 0; n <= sqrt_int.Size(); n++)
+      {
+        sqrt_int[n] = sqrt(n);
+        inv_sqrt_int[n] = 1.0/sqrt(n);
+        sqrt_n_np1[n] = sqrt(n*(n+1));
+        inv_sqrt_2np1_2np3[n] = 1.0/sqrt( (2*n+1)*(2*n+3) );
+      }
+    return 1;
+  }();
+
+
+
+  
   template <typename entry_type>
   entry_type SphericalHarmonics<entry_type> :: Eval (double theta, double phi) const
   {
-    static Timer t("mptool sh evaluate"); RegionTimer rg(t);
+    // static Timer t("mptool sh evaluate"); RegionTimer rg(t);
     
     Matrix legfunc(order+1, order+1);
     NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
@@ -75,40 +97,37 @@ namespace ngsbem
   template <typename entry_type>
   void SphericalHarmonics<entry_type> :: EvalOrders (double theta, double phi, FlatVector<entry_type> vals) const
   {
-    static Timer ts("mptool sh evalorders small");
-    static Timer tl("mptool sh evalorders large");
+    // static Timer ts("mptool sh evalorders small");
+    // static Timer tl("mptool sh evalorders large");
     // RegionTimer rg(order < 30 ? ts : tl);
     // if (order > 30) tl.Start();
 
     ArrayMem<double,1600> mem(sqr(order+1));
     FlatMatrix<double> legfunc(order+1, order+1, mem.Data());
     NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
+
     VectorMem<40,Complex> exp_imphi(order+1);
     Complex exp_iphi(cos(phi), sin(phi));
-    Complex prod = 1.0;
+    Complex prod = 1.0 / sqrt(4*M_PI);
     for (int i = 0; i <= order; i++)
       {
         exp_imphi(i) = prod;
         prod *= -exp_iphi;
       }
 
-
     for (int n = 0; n <= order; n++)
       {
         auto coefsn = CoefsN(n);
-        int ii = 0;
-          
-        entry_type sum{0.0};
-        for (int m = -n; m < 0; m++, ii++)
-          sum += conj(exp_imphi(-m)) * legfunc(-m, n) * coefsn(ii);
-        for (int m = 0; m <= n; m++, ii++)
-          sum += exp_imphi(m) * legfunc(m, n) * coefsn(ii);
-        vals(n) = sum;
+        
+        entry_type sum1{exp_imphi(0)*legfunc(0,n)*coefsn(n)}, sum2{0.0};
+        for (int m = 1; m <= n; m++)
+          {
+            sum1 += exp_imphi(m) * legfunc(m, n) * coefsn(n+m);
+            sum2 += conj(exp_imphi(m)) * legfunc(m, n) * coefsn(n-m);
+          }
+        
+        vals(n) = sum1+sum2;        
       }
-
-    vals /= sqrt(4*M_PI);
-
-    // if (order > 30) tl.Stop();      
   }
 
   
@@ -117,27 +136,32 @@ namespace ngsbem
   {
     auto [theta, phi] = Polar(x);
 
-    Matrix legfunc(order+1, order+1);
+    ArrayMem<double,1600> mem(sqr(order+1));
+    FlatMatrix<double> legfunc(order+1, order+1, mem.Data());
     NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
-    Vector<Complex> exp_imphi(order+1);
+    
+    VectorMem<50,Complex> exp_imphi(order+1);
     Complex exp_iphi(cos(phi), sin(phi));
-    Complex prod = 1.0;
+    
+    Complex prod = 1.0/sqrt(4*M_PI);
     for (int i = 0; i <= order; i++)
       {
         exp_imphi(i) = prod;
         prod *= -exp_iphi;
       }
 
-    int ii = 0;
+    size_t ii = 0;
     for (int n = 0; n <= order; n++)
       {
-        for (int m = -n; m < 0; m++, ii++)
-          shapes(ii) = conj(exp_imphi(-m)) * legfunc(-m, n);
-        for (int m = 0; m <= n; m++, ii++)
-          shapes(ii) = exp_imphi(m) * legfunc(m, n);
+        size_t base = ii+n;
+        shapes(base) = exp_imphi(0)*legfunc(0,n);
+        for (ptrdiff_t m = 1; m <= n; m++)
+          {
+            shapes(base-m) = conj(exp_imphi(m))*legfunc(m,n);
+            shapes(base+m) = exp_imphi(m)*legfunc(m,n);
+          }
+        ii = base+n+1;
       }
-
-    shapes /= sqrt(4*M_PI);
   }
 
   
@@ -149,6 +173,8 @@ namespace ngsbem
   void SphericalHarmonics<entry_type> ::
   DirectionalDiffAdd (Vec<3> d, SphericalHarmonics<entry_type> & res, double scale) const
   {
+    // static Timer t("mptool Directional Diff Add"); RegionTimer rg(t);
+    
     double fx = d(0);
     double fy = d(1);
     double fz = d(2);
@@ -188,7 +214,7 @@ namespace ngsbem
     // static Timer t("mptool sh RotateZ"); RegionTimer rg(t);
     if (order < 0) return;
 
-    Vector<Complex> exp_imalpha(order+1);
+    VectorMem<40,Complex> exp_imalpha(order+1);
     Complex exp_ialpha(cos(alpha), sin(alpha));
     Complex prod = 1.0;
     for (int i = 0; i <= order; i++)
@@ -213,7 +239,6 @@ namespace ngsbem
   void SphericalHarmonics<entry_type> :: RotateY (double alpha, bool parallel)
   {
     LocalHeap lh(8*6*sqr(order) + 8*15*order + 2*sizeof(entry_type)*(order+3) + 500, nullptr, parallel);
-      
     // static Timer t("mptool sh RotateY"+ToString(sizeof(entry_type)/sizeof(Complex)));
     // RegionTimer rg(t, order);
     
@@ -1350,11 +1375,13 @@ namespace ngsbem
   template <typename RADIAL, typename entry_type>
   void SphericalExpansion<RADIAL,entry_type> :: AddCharge (Vec<3> x, entry_type c)
   {
+    // static Timer t("mptool AddCharge"); RegionTimer reg(t);
+    
     if constexpr (!std::is_same<RADIAL,Singular>())
       throw Exception("AddCharge assumes singular MP");
-      
-    Vector<double> radial(sh.Order()+1);    
-    Vector<Complex> sh_shapes(sqr (sh.Order()+1));
+    
+    VectorMem<50,double> radial(sh.Order()+1);    
+    VectorMem<1000,Complex> sh_shapes(sqr (sh.Order()+1));
     
     // SphericalBessel(sh.Order(), kappa*L2Norm(x), Scale(), radial);
     besseljs3d(sh.Order(), kappa*L2Norm(x), Scale(), radial);
@@ -1362,10 +1389,9 @@ namespace ngsbem
 
     for (int i = 0; i <= sh.Order(); i++)
       {
-        IntRange r(sqr(i), sqr(i+1));
-        // sh.Coefs().Range(r) += c * Complex(0,1)*kappa * radial(i)*Conj(sh_shapes.Range(r));
-        for (auto j : r)
-          sh.Coefs()(j) += Complex(0,1)*kappa * radial(i)*Conj(sh_shapes(j)) * c;       
+        entry_type radc = Complex(0,kappa*radial(i)) * c;
+        for (auto j : IntRange(sqr(i), sqr(i+1)))
+          sh.Coefs()(j) += Conj(sh_shapes(j)) * radc;
       }
   }
 

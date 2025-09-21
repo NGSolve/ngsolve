@@ -1544,7 +1544,7 @@ namespace ngfem
 
       if (mmax+1 > matA.Height() || nmax > matA.Width())
         {
-          for (double m = 0; m <= mmax; m++)
+          for (int m = 0; m <= mmax; m++)
             {
               if (m > 0)
                 y(m,m)=y(m-1,m-1)*u*sqrt((2*m-1.0)/(2*m));
@@ -1558,7 +1558,7 @@ namespace ngfem
         }
       else
         {
-          for (double m = 0; m <= mmax; m++)
+          for (int m = 0; m <= mmax; m++)
             {
               if (m > 0)
                 y(m,m)=y(m-1,m-1)*u*sqrt((2*m-1.0)/(2*m));

@@ -127,7 +127,13 @@ namespace ngsbem
         ParallelFor (xpts.Size(), [&](int i) {
           kernel.EvaluateMPTrans(*regmp, xpts[i], xnv[i], maty.Row(i));
         });
-    };
+    }
+
+    BaseMatrix::OperatorInfo GetOperatorInfo () const override
+    {
+      return { string("FMM_Operator ")+KERNEL::Name(), this->Height(), this->Width() };
+    }
+    
   };
 
 }

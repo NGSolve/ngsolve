@@ -619,7 +619,7 @@ namespace ngla
 
 
     BaseMatrix::OperatorInfo GetOperatorInfo () const override
-    { return { string("SparseMatrix")+typeid(TM).name(), this->Height(), this->Width() }; }
+    { return { string("SparseMatrix")+typeid(TM).name()+" (nze="+ToString(this->NZE())+")", this->Height(), this->Width() }; }
     
     virtual shared_ptr<BaseJacobiPrecond>
       CreateJacobiPrecond (shared_ptr<BitArray> inner) const override;
