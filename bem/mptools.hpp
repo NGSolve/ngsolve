@@ -25,6 +25,11 @@ namespace ngsbem
 
   constexpr int FMM_SW = 4;
 
+  extern Array<double> sqrt_int;
+  extern Array<double> inv_sqrt_int;
+  extern Array<double> sqrt_n_np1;    // sqrt(n*(n+1))
+  extern Array<double> inv_sqrt_2np1_2np3;  // 1/sqrt( (2n+1)*(2n+3) )
+  
 
   // ************************ SIMD - creation (should end up in simd.hpp) ************* 
 
@@ -188,19 +193,25 @@ namespace ngsbem
     
     void RotateY (double alpha, bool parallel = false);
 
-    
     static double CalcAmn (int m, int n)
     {
       if (m < 0) m=-m;
       if (n < m) return 0;
-      return sqrt( (n+1.0+m)*(n+1.0-m) / ( (2*n+1)*(2*n+3) ));
+
+      if (2*n+1 < sqrt_int.Size())
+        return sqrt_int[n+1+m]*sqrt_int[n+1-m] * inv_sqrt_2np1_2np3[n];
+      else
+        return sqrt( (n+1.0+m)*(n+1.0-m) / ( (2*n+1)*(2*n+3) ));
     }
   
     static double CalcBmn (int m, int n)
     {
       double sgn = (m >= 0) ? 1 : -1;
-      if ( (m > n) || (-m > n) ) return 0;
-      return sgn * sqrt( (n-m-1.0)*(n-m) / ( (2*n-1.0)*(2*n+1))); 
+      if ( (m >= n) || (-m > n) ) return 0;
+      if (n <= inv_sqrt_2np1_2np3.Size())
+        return sgn * sqrt_n_np1[n-m-1] * inv_sqrt_2np1_2np3[n-1];
+      else
+        return sgn * sqrt( (n-m-1.0)*(n-m) / ( (2*n-1.0)*(2*n+1)));
     }
   
     static double CalcDmn (int m, int n)
@@ -691,10 +702,10 @@ namespace ngsbem
         for (auto [sp,ep,j,num] : currents)
           AddCurrent (sp,ep,j,num);
         
-        charges.SetSize0();
-        dipoles.SetSize0();
-        chargedipoles.SetSize0();        
-        currents.SetSize0();
+        charges.DeleteAll();
+        dipoles.DeleteAll();
+        chargedipoles.DeleteAll();        
+        currents.DeleteAll();
       }
 
       
@@ -721,7 +732,7 @@ namespace ngsbem
 
         // if (r*mp.Kappa() < 1e-8) return;
         if (level > 20) return;
-        if (charges.Size() < maxdirect && r*mp.Kappa() < 1)
+        if (charges.Size() < maxdirect && r*mp.Kappa() < 5)
           return;
         
         SendSourcesToChilds();
@@ -749,8 +760,9 @@ namespace ngsbem
           }
         
         dipoles.Append (tuple{x,d,c});
-
-        if (dipoles.Size() < maxdirect || r < 1e-8)
+        
+        if (level > 20) return;
+        if (dipoles.Size() < maxdirect)
           return;
 
         SendSourcesToChilds();
@@ -951,6 +963,7 @@ namespace ngsbem
         if (simd_chargedipoles.Size())
         {
           // static Timer t("mptool singmp, evaluate, simd chargedipoles"); RegionTimer r(t);
+          // t.AddFlops (simd_chargedipoles.Size()*FMM_SW);
           
           simd_entry_type vsum{0.0};
           for (auto [x,c,d,c2] : simd_chargedipoles)
@@ -974,6 +987,7 @@ namespace ngsbem
         else
         {
           // static Timer t("mptool singmp, evaluate, chargedipoles"); RegionTimer r(t);
+          // t.AddFlops (chargedipoles.Size());
           
           for (auto [x,c,d,c2] : chargedipoles)
             if (double rho = L2Norm(p-x); rho > 0)
@@ -1137,8 +1151,6 @@ namespace ngsbem
                 simd_chargedipoles[ii] = MakeSimd(di);
               }
 
-
-
             
             if (nodes_to_process)
                 *nodes_to_process += this;
@@ -1226,6 +1238,14 @@ namespace ngsbem
           for (auto & ch : childs)
             num += ch->NumCoefficients();
         return num;
+      }
+
+      void TraverseTree (const std::function<void(Node&)> & func)
+      {
+        func(*this);
+        for (auto & child : childs)
+          if (child)
+            child->TraverseTree(func);
       }
     };
     
@@ -1400,7 +1420,9 @@ namespace ngsbem
             }
           }
         }
-      
+
+      // cout << "have singular:" << endl;
+      // PrintStatistics (cout);
       havemp = true;
     }
 
@@ -1412,6 +1434,41 @@ namespace ngsbem
         return root.Evaluate(p);
     }
 
+
+    void PrintStatistics (ostream & ost)
+    {
+      int levels = 0;
+      int cnt = 0;
+      root.TraverseTree( [&](Node & node) {
+        levels = max(levels, node.level);
+        cnt++;
+      });
+      ost << "levels: " << levels << endl;
+      ost << "nodes: " << cnt << endl;
+
+      Array<int> num_on_level(levels+1);
+      Array<int> order_on_level(levels+1);
+      Array<size_t> coefs_on_level(levels+1);            
+      num_on_level = 0;
+      order_on_level = 0;
+      root.TraverseTree( [&](Node & node) {
+        num_on_level[node.level]++;
+        order_on_level[node.level] = max(order_on_level[node.level],node.mp.Order());
+        coefs_on_level[node.level] += node.mp.SH().Coefs().Size();
+      });
+
+      cout << "num on level" << endl;
+      for (int i = 0; i < num_on_level.Size(); i++)
+        cout << i << ": " << num_on_level[i] << ", order = " << order_on_level[i] << ", coefs " << coefs_on_level[i] << endl;
+
+      size_t totcoefs = 0;
+      for (auto n : coefs_on_level)
+        totcoefs += n;
+      cout << "total mem in coefs: " << sizeof(entry_type)*totcoefs / sqr(1024) << " MB" << endl;
+    }
+
+
+    
     template <typename entry_type2>
     friend class RegularMLExpansion;
   };
@@ -1583,7 +1640,9 @@ namespace ngsbem
       Array<const typename SingularMLExpansion<elem_type>::Node*> singnodes;
 
       Node (Vec<3> acenter, double ar, int alevel, double kappa)
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, ar) // 1.0/min(1.0, 0.25*r*kappa))
+        : center(acenter), r(ar), level(alevel),
+          // mp(MPOrder(ar*kappa), kappa, ar) // 1.0/min(1.0, 0.25*r*kappa))
+          mp(-1, kappa, ar)
           // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0)
       {
         if (level < nodes_on_level.Size())
@@ -1820,7 +1879,7 @@ namespace ngsbem
 
         // if (r*mp.Kappa() < 1e-8) return;
         if (level > 20) return;        
-        if (targets.Size() < maxdirect && r*mp.Kappa() < 1)
+        if (targets.Size() < maxdirect && r*mp.Kappa() < 5)
           return;
 
         CreateChilds();
@@ -1860,7 +1919,7 @@ namespace ngsbem
         vol_targets.Append (tuple(x,tr));
 
         if (level > 20) return;
-        if (vol_targets.Size() < maxdirect && (r*mp.Kappa() < 1))
+        if (vol_targets.Size() < maxdirect && (r*mp.Kappa() < 5))
           return;
 
         CreateChilds();
@@ -1900,6 +1959,18 @@ namespace ngsbem
         if (total_targets == 0)
           mp = SphericalExpansion<Regular,elem_type>(-1, mp.Kappa(),1.);
       }
+
+      void AllocateMemory()
+      {
+        for (auto & child : childs)
+          if (child)
+            child->AllocateMemory();
+
+        if (total_targets > 0)
+          mp = SphericalExpansion<Regular,elem_type>(MPOrder(r*mp.Kappa()), mp.Kappa(), r); // -1, mp.Kappa(),1.);
+      }
+
+
       
 
       void Print (ostream & ost, size_t childnr = -1) const
@@ -1981,13 +2052,17 @@ namespace ngsbem
       root.CalcTotalTargets();
       // cout << "before remove empty trees:" << endl;
       // PrintStatistics(cout);
-      
+
+      /*
       tremove.Start();
       if (onlytargets)
         root.RemoveEmptyTrees();
       tremove.Stop();
+      */
+      
+      root.AllocateMemory();
 
-      // cout << "after remove empty trees:" << endl;
+      // cout << "after allocating regular:" << endl;
       // PrintStatistics(cout);
 
       // cout << "starting S-R converion" << endl;
@@ -2085,7 +2160,7 @@ namespace ngsbem
 
       Array<int> num_on_level(levels+1);
       Array<int> order_on_level(levels+1);
-      Array<int> coefs_on_level(levels+1);            
+      Array<size_t> coefs_on_level(levels+1);            
       num_on_level = 0;
       order_on_level = 0;
       root.TraverseTree( [&](Node & node) {
@@ -2097,6 +2172,11 @@ namespace ngsbem
       cout << "num on level" << endl;
       for (int i = 0; i < num_on_level.Size(); i++)
         cout << i << ": " << num_on_level[i] << ", order = " << order_on_level[i] << ", coefs " << coefs_on_level[i] << endl;
+
+      size_t totcoefs = 0;
+      for (auto n : coefs_on_level)
+        totcoefs += n;
+      cout << "total mem in coefs: " << sizeof(elem_type)*totcoefs / sqr(1024) << " MB" << endl;
     }
     
     void Print (ostream & ost) const
