@@ -20,7 +20,7 @@ ccache -s
 
 emcmake cmake /root/ngsolve \
       -DCMAKE_CROSSCOMPILING=ON \
-      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.12" \
+      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.13" \
       -DCMAKE_MODULE_LINKER_FLAGS="$SIDE_MODULE_LDFLAGS" \
       -DCMAKE_SHARED_LINKER_FLAGS="$SIDE_MODULE_LDFLAGS" \
       -DUSE_SUPERBUILD=ON \
@@ -44,7 +44,7 @@ emcmake cmake /root/ngsolve \
       -DUSE_PARDISO:BOOL=OFF \
       -DUSE_PYTHON:BOOL=ON \
       -DPython3_ROOT_DIR=$TARGETINSTALLDIR \
-      -DPython3_INCLUDE_DIR=$TARGETINSTALLDIR/include/python3.12 \
+      -DPython3_INCLUDE_DIR=$TARGETINSTALLDIR/include/python3.13 \
       -DPython3_INCLUDE_DIRS=$TARGETINSTALLDIR/include \
       -DNG_INSTALL_DIR_PYTHON=python \
       -DNG_INSTALL_DIR_LIB=python/netgen \
