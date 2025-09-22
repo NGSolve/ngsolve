@@ -13,15 +13,15 @@ export TARGETINSTALLDIR=/root/xbuildenv/pyodide-root/cpython/installs/python-${P
 export CMAKE_TOOLCHAIN_FILE=/root/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
 cd
-wget https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/V7_6_3.zip
-unzip V7_6_3.zip
-cd OCCT-7_6_3
+wget https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/V7_9_1.zip
+unzip V7_9_1.zip
+cd OCCT-7_9_1
 mkdir build
 cd build
 
 emcmake cmake .. \
       -DCMAKE_CROSSCOMPILING=ON \
-      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.12" \
+      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.13" \
       -DCMAKE_INSTALL_PREFIX=/opt/opencascade \
       -DBUILD_LIBRARY_TYPE:STRING=Static \
       -DBUILD_MODULE_FoundationClasses:BOOL=ON \
@@ -40,4 +40,4 @@ emcmake cmake .. \
 
 emmake make -j9 install
 cd /root/
-rm -rf OCCT-7_6_3
+rm -rf OCCT-7_9_1

@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7-labs
-FROM ubuntu:24.10 AS builder
+FROM ubuntu:25.10 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYODIDE_VERSION=0.27.6
+ENV PYODIDE_VERSION=0.28.3
 ENV EMSDK_VERSION=3.1.58
-ENV PYTHON_VERSION=3.12.7
+ENV PYTHON_VERSION=3.13.2
 RUN apt-get update && apt-get -y upgrade
 RUN apt-get update && apt-get -y install \
         nodejs \
@@ -34,7 +34,7 @@ WORKDIR /root/output
 RUN wget https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2
 RUN tar xvf pyodide-${PYODIDE_VERSION}.tar.bz2
 RUN cd pyodide && unzip openblas*.zip
-RUN cd pyodide && rm -r *.whl* *.tar fonts
+RUN cd pyodide && rm -rf *.whl* *.tar
 RUN ls pyodide/*.zip | grep -v python_stdlib.zip | xargs rm -f --
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN pip install --break-system-packages "cmake<4"
