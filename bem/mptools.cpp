@@ -14,14 +14,14 @@ namespace ngsbem
   {
     size_t N = 10001;
     sqrt_int.SetSize(N);
-    inv_sqrt_int.SetSize(N);
+    // inv_sqrt_int.SetSize(N);
     sqrt_n_np1.SetSize(N);  // // sqrt(n*(n+1))  
     inv_sqrt_2np1_2np3.SetSize(N);  // 1/sqrt( (2n+1)*(2n+3) )
     
-    for (size_t n = 0; n <= sqrt_int.Size(); n++)
+    for (size_t n = 0; n < sqrt_int.Size(); n++)
       {
         sqrt_int[n] = sqrt(n);
-        inv_sqrt_int[n] = 1.0/sqrt(n);
+        // inv_sqrt_int[n] = 1.0/sqrt(n);
         sqrt_n_np1[n] = sqrt(n*(n+1));
         inv_sqrt_2np1_2np3[n] = 1.0/sqrt( (2*n+1)*(2*n+3) );
       }

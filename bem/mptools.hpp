@@ -47,7 +47,7 @@ namespace ngsbem
   {
   public:
     Array<double> sqrt_int;
-    Array<double> inv_sqrt_int;
+    // Array<double> inv_sqrt_int;
     Array<double> sqrt_n_np1;    // sqrt(n*(n+1))
     Array<double> inv_sqrt_2np1_2np3;  // 1/sqrt( (2n+1)*(2n+3) )
     
