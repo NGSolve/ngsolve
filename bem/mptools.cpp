@@ -8,13 +8,16 @@ namespace ngsbem
 {
 
 
-  Array<double> sqrt_int(10001);
-  Array<double> inv_sqrt_int(10001);
-  Array<double> sqrt_n_np1(10001);        // sqrt(n*(n+1))  
-  Array<double> inv_sqrt_2np1_2np3(10001);  // 1/sqrt( (2n+1)*(2n+3) )
-  
-  auto init_sqrt_int = []() 
+  PrecomputedSqrts presqrt;
+
+  PrecomputedSqrts :: PrecomputedSqrts()
   {
+    size_t N = 10001;
+    sqrt_int.SetSize(N);
+    inv_sqrt_int.SetSize(N);
+    sqrt_n_np1.SetSize(N);  // // sqrt(n*(n+1))  
+    inv_sqrt_2np1_2np3.SetSize(N);  // 1/sqrt( (2n+1)*(2n+3) )
+    
     for (size_t n = 0; n <= sqrt_int.Size(); n++)
       {
         sqrt_int[n] = sqrt(n);
@@ -22,9 +25,7 @@ namespace ngsbem
         sqrt_n_np1[n] = sqrt(n*(n+1));
         inv_sqrt_2np1_2np3[n] = 1.0/sqrt( (2*n+1)*(2*n+3) );
       }
-    return 1;
-  }();
-
+  }
 
 
   

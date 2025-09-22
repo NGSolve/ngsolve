@@ -25,10 +25,6 @@ namespace ngsbem
 
   constexpr int FMM_SW = 4;
 
-  extern Array<double> sqrt_int;
-  extern Array<double> inv_sqrt_int;
-  extern Array<double> sqrt_n_np1;    // sqrt(n*(n+1))
-  extern Array<double> inv_sqrt_2np1_2np3;  // 1/sqrt( (2n+1)*(2n+3) )
   
 
   // ************************ SIMD - creation (should end up in simd.hpp) ************* 
@@ -47,7 +43,19 @@ namespace ngsbem
   }
   
 
-
+  class NGS_DLL_HEADER PrecomputedSqrts
+  {
+  public:
+    Array<double> sqrt_int;
+    Array<double> inv_sqrt_int;
+    Array<double> sqrt_n_np1;    // sqrt(n*(n+1))
+    Array<double> inv_sqrt_2np1_2np3;  // 1/sqrt( (2n+1)*(2n+3) )
+    
+    PrecomputedSqrts();
+  };
+  
+  extern NGS_DLL_HEADER PrecomputedSqrts presqrt;
+  
 
 
   
@@ -193,13 +201,15 @@ namespace ngsbem
     
     void RotateY (double alpha, bool parallel = false);
 
+    
+    
     static double CalcAmn (int m, int n)
     {
       if (m < 0) m=-m;
       if (n < m) return 0;
 
-      if (2*n+1 < sqrt_int.Size())
-        return sqrt_int[n+1+m]*sqrt_int[n+1-m] * inv_sqrt_2np1_2np3[n];
+      if (2*n+1 < presqrt.sqrt_int.Size())
+        return presqrt.sqrt_int[n+1+m]*presqrt.sqrt_int[n+1-m] * presqrt.inv_sqrt_2np1_2np3[n];
       else
         return sqrt( (n+1.0+m)*(n+1.0-m) / ( (2*n+1)*(2*n+3) ));
     }
@@ -208,8 +218,8 @@ namespace ngsbem
     {
       double sgn = (m >= 0) ? 1 : -1;
       if ( (m >= n) || (-m > n) ) return 0;
-      if (n <= inv_sqrt_2np1_2np3.Size())
-        return sgn * sqrt_n_np1[n-m-1] * inv_sqrt_2np1_2np3[n-1];
+      if (n <= presqrt.inv_sqrt_2np1_2np3.Size())
+        return sgn * presqrt.sqrt_n_np1[n-m-1] * presqrt.inv_sqrt_2np1_2np3[n-1];
       else
         return sgn * sqrt( (n-m-1.0)*(n-m) / ( (2*n-1.0)*(2*n+1)));
     }
@@ -812,7 +822,7 @@ namespace ngsbem
             Array<double> split;
             split.Append(0);
             for (int i = 0; i < 3; i++)
-              if (sp(i) < center(i) != ep(i) < center(i))
+              if ((sp(i) < center(i)) != (ep(i) < center(i)))
                 split += (center(i)-sp(i)) / (ep(i)-sp(i));  // segment cuts i-th coordinate plane
             split.Append(1);
             BubbleSort(split);
