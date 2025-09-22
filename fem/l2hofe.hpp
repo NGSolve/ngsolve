@@ -71,6 +71,7 @@ namespace ngfem
 
   public:
     using ET_trait<ET>::ElementType;
+    using BaseScalarFiniteElement::CalcShape;
     
     INLINE L2HighOrderFE () { ; }
     INLINE L2HighOrderFE (int aorder)
