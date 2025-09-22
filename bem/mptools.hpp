@@ -1482,6 +1482,9 @@ namespace ngsbem
   }
 
 
+  // *********************************** Regular multilevel Expansion
+  
+
   template <typename elem_type=Complex>
   class NGS_DLL_HEADER RegularMLExpansion
   {
@@ -1649,8 +1652,13 @@ namespace ngsbem
           nodes_on_level[level]++;
       }
 
-
-      void CreateChilds()
+      void Allocate()
+      {
+        mp = SphericalExpansion<Regular,elem_type>(MPOrder(r*mp.Kappa()), mp.Kappa(), r);
+      }
+      
+      
+      void CreateChilds(bool allocate = false)
       {
         if (childs[0]) throw Exception("have already childs");
         // create children nodes:
@@ -1661,6 +1669,8 @@ namespace ngsbem
             cc(1) += (i&2) ? r/2 : -r/2;
             cc(2) += (i&4) ? r/2 : -r/2;
             childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa());
+            if (allocate)
+              childs[i] -> Allocate();
           }
         have_childs = true;
       }
@@ -1713,7 +1723,7 @@ namespace ngsbem
             if (allow_refine)
               {
                 if (!childs[0])
-                  CreateChilds();
+                  CreateChilds(true);
                 
                 for (auto & ch : childs)
                   ch -> AddSingularNode (singnode, allow_refine, recording);
@@ -1748,7 +1758,7 @@ namespace ngsbem
       {
         if (allow_refine)
           if (mp.Order() > 30 && !childs[0])
-            CreateChilds();
+            CreateChilds(allow_refine);
 
         if (childs[0])
           {
@@ -1967,7 +1977,8 @@ namespace ngsbem
             child->AllocateMemory();
 
         if (total_targets > 0)
-          mp = SphericalExpansion<Regular,elem_type>(MPOrder(r*mp.Kappa()), mp.Kappa(), r); // -1, mp.Kappa(),1.);
+          Allocate();
+        // mp = SphericalExpansion<Regular,elem_type>(MPOrder(r*mp.Kappa()), mp.Kappa(), r); // -1, mp.Kappa(),1.);
       }
 
 
@@ -1996,7 +2007,8 @@ namespace ngsbem
       : root(center, r, 0, asingmp->Kappa()), singmp(asingmp)
     {
       if (!singmp->havemp) throw Exception("first call Calc for singular MP");
-
+      root.Allocate();
+      
       nodes_on_level = 0;
       nodes_on_level[0] = 1;
       {
