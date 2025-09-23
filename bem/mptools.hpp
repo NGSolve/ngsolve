@@ -884,19 +884,14 @@ namespace ngsbem
             return sum;
           }
 
-        {
-          // static Timer t("fmm direct eval"); RegionTimer reg(t);
-          // t.AddFlops (charges.Size());
         if (simd_charges.Size())
           {
             // static Timer t("mptool singmp, evaluate, simd charges"); RegionTimer r(t);
+            // t.AddFlops (charges.Size());
             
             simd_entry_type vsum{0.0};
             if (mp.Kappa() < 1e-12)
               {
-                static Timer t("mptool singmp, evaluate, simd charges"); RegionTimer r(t);
-                t.AddFlops (simd_charges.Size()*FMM_SW);
-            
                 for (auto [x,c] : simd_charges)
                   {
                     auto rho = L2Norm(p-x);
@@ -912,8 +907,7 @@ namespace ngsbem
                     */
                   }
               }
-            else
-            if (mp.Kappa() < 1e-8)
+            else if (mp.Kappa() < 1e-8)
               for (auto [x,c] : simd_charges)
                 {
                   auto rho = L2Norm(p-x);
@@ -930,7 +924,7 @@ namespace ngsbem
                   kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
                   vsum += kernel * c;
                 }
-              
+            
             sum += HSum(vsum);
           }
         else
@@ -946,41 +940,40 @@ namespace ngsbem
                 if (double rho = L2Norm(p-x); rho > 0)
                   sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
           }
-        }
 
         if (simd_dipoles.Size())
-        {
-          // static Timer t("mptool singmp, evaluate, simd dipoles"); RegionTimer r(t);
-          
-          simd_entry_type vsum{0.0};
-          for (auto [x,d,c] : simd_dipoles)
           {
-            auto rho = L2Norm(p-x);
-            auto drhodp = (1.0/rho) * (p-x);
-            auto [si,co] = sincos(rho*mp.Kappa());
-            auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) * 
-                          (-1.0/(rho*rho) + SIMD<Complex,FMM_SW>(0, mp.Kappa())/rho);
-            auto kernel = dGdrho * InnerProduct(drhodp, d);
-            kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
-            vsum += kernel * c;
+            // static Timer t("mptool singmp, evaluate, simd dipoles"); RegionTimer r(t);
+            
+            simd_entry_type vsum{0.0};
+            for (auto [x,d,c] : simd_dipoles)
+              {
+                auto rho = L2Norm(p-x);
+                auto drhodp = (1.0/rho) * (p-x);
+                auto [si,co] = sincos(rho*mp.Kappa());
+                auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) * 
+                  (-1.0/(rho*rho) + SIMD<Complex,FMM_SW>(0, mp.Kappa())/rho);
+                auto kernel = dGdrho * InnerProduct(drhodp, d);
+                kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
+                vsum += kernel * c;
+              }
+            sum += HSum(vsum);
           }
-          sum += HSum(vsum);
-        }
         else
-        {
-          for (auto [x,d,c] : dipoles)
-          if (double rho = L2Norm(p-x); rho > 0)
           {
-              Vec<3> drhodp = 1.0/rho * (p-x);
-              Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
-              (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
-              sum += dGdrho * InnerProduct(drhodp, d) * c;
+            for (auto [x,d,c] : dipoles)
+              if (double rho = L2Norm(p-x); rho > 0)
+                {
+                  Vec<3> drhodp = 1.0/rho * (p-x);
+                  Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
+                    (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
+                  sum += dGdrho * InnerProduct(drhodp, d) * c;
+                }
           }
-        }
-
-
-        
-        if (simd_chargedipoles.Size())
+      
+      
+      
+      if (simd_chargedipoles.Size())
         {
           // static Timer t("mptool singmp, evaluate, simd chargedipoles"); RegionTimer r(t);
           // t.AddFlops (simd_chargedipoles.Size()*FMM_SW);
@@ -992,10 +985,10 @@ namespace ngsbem
               auto rhokappa = rho*mp.Kappa();
               auto invrho = If(rho>0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
               auto [si,co] = sincos(rhokappa);
-
+              
               auto kernelc = (1/(4*M_PI))*invrho*SIMD<Complex,FMM_SW>(co,si);
               vsum += kernelc * c;   
-
+              
               auto kernel = 
                 invrho*invrho * InnerProduct(p-x, d) * 
                 kernelc * SIMD<Complex,FMM_SW>(-1.0, rhokappa);
@@ -1004,7 +997,7 @@ namespace ngsbem
             }
           sum += HSum(vsum);
         }
-        else
+      else
         {
           // static Timer t("mptool singmp, evaluate, chargedipoles"); RegionTimer r(t);
           // t.AddFlops (chargedipoles.Size());
@@ -1013,7 +1006,7 @@ namespace ngsbem
             if (double rho = L2Norm(p-x); rho > 0)
               {
                 sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
-                  
+                
                 Vec<3> drhodp = 1.0/rho * (p-x);
                 Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
                   (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
