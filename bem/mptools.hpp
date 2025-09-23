@@ -894,12 +894,22 @@ namespace ngsbem
             simd_entry_type vsum{0.0};
             if (mp.Kappa() < 1e-12)
               {
+                static Timer t("mptool singmp, evaluate, simd charges"); RegionTimer r(t);
+                t.AddFlops (simd_charges.Size()*FMM_SW);
+            
                 for (auto [x,c] : simd_charges)
                   {
+                    auto rho = L2Norm(p-x);
+                    auto kernel = 1/(4*M_PI)/rho;
+                    kernel = If(rho > 0.0, kernel, SIMD<double,FMM_SW>(0.0));
+                    vsum += kernel * c;
+
+                    /*
                     auto rho2 = L2Norm2(p-x);
                     auto kernel = (1/(4*M_PI)) * rsqrt(rho2);
                     kernel = If(rho2 > 0.0, kernel, SIMD<double,FMM_SW>(0.0));
                     vsum += kernel * c;
+                    */
                   }
               }
             else
