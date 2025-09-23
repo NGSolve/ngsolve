@@ -264,7 +264,7 @@ namespace ngfem
                    T_CalcShape (GetTIPGrad<DIM>(mir[i].IP()),
                                 SBLambda ([divshapesi,invJ] (size_t j, THDiv2DivShape<DIM,SIMD<double>> val)
                                           {
-                                            divshapesi(j) = invJ*val; 
+                                            divshapesi(j) = invJ*val.Get(); 
                                           }));
                }
            }
