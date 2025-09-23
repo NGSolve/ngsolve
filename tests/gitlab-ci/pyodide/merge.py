@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+from pathlib import Path
 
 pyodide_version = os.environ["PYODIDE_VERSION"]
 
@@ -15,7 +16,7 @@ for name in pkg:
     ):
         p["file_name"] = (
             f"https://cdn.jsdelivr.net/pyodide/v{pyodide_version}/full/"
-            + p["file_name"]
+            + Path(p["file_name"]).name
         )
     pkg[name] = p
 
@@ -57,7 +58,7 @@ pkg.update(
             "sha256": getHash("ngsolve.zip"),
             "package_type": "cpython_module",
             "imports": ["ngsolve"],
-            "depends": ["openblas", "numpy", "netgen"],
+            "depends": ["libopenblas", "numpy", "netgen"],
             "unvendored_tests": False,
             "shared_library": True,
         },
@@ -69,7 +70,7 @@ pkg.update(
             "sha256": getHash("pyngcore.zip"),
             "package_type": "cpython_module",
             "imports": ["pyngcore"],
-            "depends": [],
+            "depends": ["numpy"],
             "unvendored_tests": False,
             "shared_library": True,
         },

@@ -8,20 +8,24 @@ export EMSCRIPTEN_SYSROOT=$(em-config CACHE)/sysroot
 export EMSCRIPTEN_INCLUDE=$EMSCRIPTEN_SYSROOT/include
 export EMSCRIPTEN_BIN=$EMSCRIPTEN_SYSROOT/bin
 export EMSCRIPTEN_LIB=$EMSCRIPTEN_SYSROOT/lib/wasm32-emscripten/pic
-export SIDE_MODULE_LDFLAGS="-O2 -g0 -sWASM_BIGINT -s SIDE_MODULE=1"
 export TARGETINSTALLDIR=/root/xbuildenv/pyodide-root/cpython/installs/python-${PYTHON_VERSION}/
 export CMAKE_TOOLCHAIN_FILE=/root/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
 cd
-wget https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/V7_9_1.zip
-unzip V7_9_1.zip
-cd OCCT-7_9_1
+wget https://github.com/Open-Cascade-SAS/OCCT/archive/refs/tags/V${OCC_VERSION}.zip
+unzip V${OCC_VERSION}.zip
+cd OCCT-${OCC_VERSION}
+patch -p1 < /root/occ.patch
+sed -i 's/-fexceptions/-fwasm-exceptions/g' adm/cmake/occt_defs_flags.cmake
 mkdir build
 cd build
 
 emcmake cmake .. \
+      -DCMAKE_BUILD_TYPE=Release \
       -DCMAKE_CROSSCOMPILING=ON \
-      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.13" \
+      -DCMAKE_C_FLAGS="-I$TARGETINSTALLDIR/include/python3.13 -g0 -sSUPPORT_LONGJMP=0 -fwasm-exceptions -O2 -fvisibility=hidden" \
+      -DCMAKE_CXX_FLAGS="-I$TARGETINSTALLDIR/include/python3.13 -g0 -sSUPPORT_LONGJMP=0 -fwasm-exceptions -O2 -fvisibility=hidden" \
+      -DCMAKE_CXX_FLAGS_RELEASE="" \
       -DCMAKE_INSTALL_PREFIX=/opt/opencascade \
       -DBUILD_LIBRARY_TYPE:STRING=Static \
       -DBUILD_MODULE_FoundationClasses:BOOL=ON \
@@ -38,6 +42,9 @@ emcmake cmake .. \
       -DBUILD_DOC_Overview:BOOL=OFF \
       ${SUBPROJECT_CMAKE_ARGS}
 
+set -o pipefail
 emmake make -j9 install
+# export VERBOSE=1
+# emmake make -j9 install 2>&1 | tee /root/build_occ.log
 cd /root/
-rm -rf OCCT-7_9_1
+rm -rf OCCT-${OCC_VERSION}

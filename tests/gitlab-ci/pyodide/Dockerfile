@@ -1,9 +1,12 @@
 # syntax=docker/dockerfile:1.7-labs
 FROM ubuntu:25.10 AS builder
 ENV DEBIAN_FRONTEND=noninteractive
-ENV PYODIDE_VERSION=0.28.3
-ENV EMSDK_VERSION=3.1.58
-ENV PYTHON_VERSION=3.13.2
+ENV PYODIDE_VERSION=0.29.0
+ENV EMSDK_VERSION=4.0.9
+ENV PYTHON_MAJOR=3
+ENV PYTHON_MINOR=13
+ENV PYTHON_PATCH=2
+ENV PYTHON_VERSION=${PYTHON_MAJOR}.${PYTHON_MINOR}.${PYTHON_PATCH}
 RUN apt-get update && apt-get -y upgrade
 RUN apt-get update && apt-get -y install \
         nodejs \
@@ -33,18 +36,21 @@ RUN mkdir /root/output
 WORKDIR /root/output
 RUN wget https://github.com/pyodide/pyodide/releases/download/${PYODIDE_VERSION}/pyodide-${PYODIDE_VERSION}.tar.bz2
 RUN tar xvf pyodide-${PYODIDE_VERSION}.tar.bz2
-RUN cd pyodide && unzip openblas*.zip
+RUN cd pyodide && unzip libopenblas*.zip
 RUN cd pyodide && rm -rf *.whl* *.tar
 RUN ls pyodide/*.zip | grep -v python_stdlib.zip | xargs rm -f --
 RUN ln -s /usr/bin/python3 /usr/bin/python
 RUN pip install --break-system-packages "cmake<4"
 
 FROM builder AS build_occ
+ENV OCC_VERSION 7_9_3
 ADD ./tests/gitlab-ci/pyodide/build_opencascade.sh /root/
+ADD ./tests/gitlab-ci/pyodide/occ.patch /root/
 RUN bash /root/build_opencascade.sh
 
 FROM builder as build_ngsolve
 COPY --from=build_occ /opt/opencascade /opt/opencascade
+ADD ./tests/gitlab-ci/pyodide/pybind11.patch /root/
 RUN mkdir /root/ngsolve_build
 WORKDIR /root/ngsolve_build
 COPY . /root/ngsolve
@@ -58,6 +64,8 @@ RUN zip -r ngsolve.zip ngsolve
 
 FROM builder
 COPY --from=build_ngsolve /opt/netgen/python/*.zip /root/output/pyodide
+COPY --from=build_ngsolve /root/*.log /root/output/pyodide
+COPY --from=build_occ /root/*.log /root/output/pyodide
 WORKDIR /root/output/pyodide
 COPY tests/gitlab-ci/pyodide/generate_repodata.js .
 RUN node generate_repodata.js
