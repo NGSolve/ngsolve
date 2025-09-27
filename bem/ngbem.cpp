@@ -329,6 +329,13 @@ namespace ngsbem
                       }
                   }
         }
+
+    /*
+    pairs.SetSize0();
+    for (ElementId ei : trial_mesh->Elements(BND))
+      for (ElementId ej : trial_mesh->Elements(BND))
+        pairs.Append ( { ei.Nr(), ej.Nr() });
+    */
     
     tfind.Stop();
     tsetupgraph.Start();
@@ -438,6 +445,7 @@ namespace ngsbem
                     shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
                   }
                 kernel_shapesj = kernel_ixiy * Trans(shapesj1);
+
                 elmat.Rows(test_range).Cols(trial_range) -= shapesi1.Rows(test_range) * kernel_shapesj.Cols(trial_range);
               }
             // tasscorr.Stop();        
@@ -448,6 +456,7 @@ namespace ngsbem
     
     tassemble.Stop();
     return TransposeOperator(evaly) * fmmop * evalx + nearfield_correction;
+    // return nearfield_correction;
   }
   
 
@@ -1087,7 +1096,7 @@ namespace ngsbem
           gf->GetElementVector(dnums, elvec);
           
           // IntegrationRule ir(fel.ElementType(), intorder);
-          IntegrationRule ir = GetIntegrationRule(mip23.GetPoint(), trafo, intorder, nearfield);
+          IntegrationRule ir = GetIntegrationRule(mip.GetPoint(), trafo, intorder, nearfield);
           
           SIMD_IntegrationRule simd_ir(ir);
 
@@ -1102,15 +1111,16 @@ namespace ngsbem
               evaluator->Apply (fel, miry, elvec, vals);
               for (int iy = 0; iy < miry.Size(); iy++)
                 {
-                  Vec<3,SIMD<double>> x = mip23.GetPoint();
+                  Vec<3,SIMD<double>> x = mip.GetPoint();
                   Vec<3,SIMD<double>> nx = mip23.GetNV();
                   
                   Vec<3,SIMD<double>> y = miry[iy].GetPoint();
                   Vec<3,SIMD<double>> ny = miry[iy].GetNV();
-                  
+
+                  auto eval = kernel.Evaluate(x, y, nx, ny);
                   for (auto term : kernel.terms)
                     {
-                      auto kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
+                      auto kernel_ = term.fac * eval(term.kernel_comp);
                       simd_result(term.test_comp) += miry[iy].GetWeight()*kernel_ * vals(term.trial_comp,iy);
                     }
                 }
@@ -1187,7 +1197,7 @@ namespace ngsbem
                     
                     for (auto term : kernel.terms)
                       {
-                        auto kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
+                        auto kernel_ = term.fac * kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
                         simd_result(term.test_comp, ix) += miry[iy].GetWeight()*kernel_ * vals(term.trial_comp,iy);
                       }
                   }
@@ -1222,6 +1232,7 @@ namespace ngsbem
   template class PotentialCF<LaplaceSLKernel<3>>;
   template class PotentialCF<LaplaceDLKernel<3>>;
   template class PotentialCF<LaplaceHSKernel<3>>;  
+  template class PotentialCF<LameSLKernel<3>>;
   template class PotentialCF<HelmholtzSLKernel<3>>;
   template class PotentialCF<HelmholtzSLVecKernel<3>>;
   template class PotentialCF<HelmholtzDLKernel<3>>;
@@ -1235,6 +1246,7 @@ namespace ngsbem
   template class GenericIntegralOperator<LaplaceSLKernel<3>>;
   template class GenericIntegralOperator<LaplaceDLKernel<3>>;
   template class GenericIntegralOperator<LaplaceHSKernel<3>>;
+  template class GenericIntegralOperator<LameSLKernel<3>>;
   
   template class GenericIntegralOperator<HelmholtzSLKernel<3>>;
   template class GenericIntegralOperator<HelmholtzSLVecKernel<3>>;
