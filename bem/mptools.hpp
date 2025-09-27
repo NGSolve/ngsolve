@@ -1055,7 +1055,14 @@ namespace ngsbem
         }
 
         if (dipoles.Size())
-            throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
+          {
+            static int cnt = 0;
+            cnt++;
+            if (cnt < 3)
+              cout << "we know what we do - evaluateDeriv not implemented for dipoles in SingularMLExpansion" << endl;
+            // return sum;
+            // throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
+          }
         if (chargedipoles.Size())
             throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
 

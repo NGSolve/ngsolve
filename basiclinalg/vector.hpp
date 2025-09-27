@@ -978,8 +978,13 @@ namespace ngbla
   }
 
 
-
-
+  template <int S, typename T = double>
+  auto UnitVec(size_t i)
+  {
+    Vec<S,T> ei = T(0.0);
+    ei(i) = T(1.0);
+    return ei;
+  }
 
   template <class TV, class TSCAL> class Scalar2ElemVector
   {
