@@ -33,7 +33,7 @@ namespace ngsbem
   entry_type SphericalHarmonics<entry_type> :: Eval (double theta, double phi) const
   {
     // static Timer t("mptool sh evaluate"); RegionTimer rg(t);
-    
+
     Matrix legfunc(order+1, order+1);
     NormalizedLegendreFunctions (order, order, cos(theta), legfunc);
     Vector<Complex> exp_imphi(order+1);

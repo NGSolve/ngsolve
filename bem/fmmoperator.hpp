@@ -41,7 +41,7 @@ namespace ngsbem
         xnv(std::move(_xnv)), ynv(std::move(_ynv)), kernelshape(_kernelshape)
     {
       std::tie(cx, rx) = GetCenterAndRadius(xpts);      
-      std::tie(cy, ry) = GetCenterAndRadius(ypts);      
+      std::tie(cy, ry) = GetCenterAndRadius(ypts);
     }
 
     int VHeight() const override { return  ypts.Size()*kernelshape[0]; }
@@ -71,7 +71,44 @@ namespace ngsbem
                  Array<Vec<3>> _xnv, Array<Vec<3>> _ynv)
       : BASE(std::move(_xpts), std::move( _ypts), std::move(_xnv), std::move(_ynv), KERNEL::Shape()),
       kernel(_kernel)
-    { }
+    {
+
+      /*
+      // build matrix block for testing
+      int nump = 3;
+      auto shape = KERNEL::Shape();
+      Vector<typename KERNEL::value_type> x(nump*shape[1]);
+      Vector<typename KERNEL::value_type> y(nump*shape[0]);
+      auto matx = x.AsMatrix(nump, shape[1]);
+      auto maty = y.AsMatrix(nump, shape[0]);      
+
+      Matrix<typename KERNEL::value_type> mat(y.Size(),x.Size());
+      for (int i = 0; i < x.Size(); i++)
+        {
+          x = 0.0;
+          x(i) = 1;
+          
+          maty = 0;
+          auto singmp = kernel.CreateMultipoleExpansion (cx, rx);
+          ParallelFor (nump, [&](int i){
+            kernel.AddSource(*singmp, xpts[i], xnv[i], matx.Row(i));
+          });
+          singmp->CalcMP();
+          
+          auto regmp = kernel.CreateLocalExpansion (cy, ry);
+          ParallelFor (nump, [&](int i){
+            regmp->AddTarget(xpts[i]);
+          });
+          regmp->CalcMP(singmp);
+          ParallelFor (nump, [&](int i) {
+            kernel.EvaluateMP(*regmp, xpts[i], ynv[i], maty.Row(i)); 
+          });
+
+          mat.Col(i) = y;
+        }
+      *testout << "fmm-matrix = " << endl << mat << endl;
+      */
+    }
 
     void Mult(const BaseVector & x, BaseVector & y) const override
     {

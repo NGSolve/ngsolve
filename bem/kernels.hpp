@@ -646,6 +646,127 @@ namespace ngsbem
   };
 
 
+
+
+
+  /*
+    Dissertation Guenther Of
+    "BETI–Gebietszerlegungsmethoden
+    mit schnellen Randelementverfahren
+    und Anwendungen"
+    page 85
+   */
+
+  template <int D> class LameSLKernel;
+
+  template<>
+  class LameSLKernel<3> : public BaseKernel
+  {
+    double E, nu;
+    double alpha;
+  public:
+    typedef double value_type;
+    
+    static string Name() { return "LameSL"; }
+    static auto Shape() { return IVec<2>(3,3); }
+    
+    LameSLKernel (const LameSLKernel&) = default;
+    LameSLKernel (LameSLKernel&&) = default;
+    LameSLKernel (double _E, double _nu) : E(_E), nu(_nu)
+    {
+      alpha = (1+nu)/((1-nu)*2*E);
+
+      terms += { 3-4*nu, 0, 0, 0 };
+      terms += { 3-4*nu, 0, 1, 1 };
+      terms += { 3-4*nu, 0, 2, 2 };
+
+      terms += { 1, 1, 0, 0 };
+      terms += { 1, 2, 0, 1 };
+      terms += { 1, 2, 1, 0 };
+
+      terms += { 1, 3, 0, 2 };
+      terms += { 1, 3, 2, 0 };
+      terms += { 1, 4, 1, 1 };
+
+      terms += { 1, 5, 1, 2 };
+      terms += { 1, 5, 2, 1 };
+      terms += { 1, 6, 2, 2 };
+    }
+
+    Array<KernelTerm> terms;
+
+    template <typename T>    
+    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
+    {
+      T norm = L2Norm(x-y);
+      auto lapkern = alpha / (4 * M_PI * norm);  // lapkern times factor
+
+      return Vec<7,T> { lapkern,
+                        (x(0)-y(0))*(x(0)-y(0))/sqr(norm) * lapkern,
+                        (x(0)-y(0))*(x(1)-y(1))/sqr(norm) * lapkern,
+                        (x(0)-y(0))*(x(2)-y(2))/sqr(norm) * lapkern,
+                        (x(1)-y(1))*(x(1)-y(1))/sqr(norm) * lapkern,
+                        (x(1)-y(1))*(x(2)-y(2))/sqr(norm) * lapkern,
+                        (x(2)-y(2))*(x(2)-y(2))/sqr(norm) * lapkern
+      };
+    }
+
+    
+    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<SingularMLExpansion<Vec<6,Complex>>> (c, r, 1e-16);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r) const
+    {
+      return make_shared<RegularMLExpansion<Vec<6,Complex>>> (c, r, 1e-16);
+    }
+
+    
+    void AddSource (SingularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      Vec<6> charge = 0.0;
+      charge.Range(0,3) = val;
+      mp.AddCharge(pnt, charge);   // Row 1+2
+
+      Mat<3,3> jacobi = OuterProduct(pnt, val) + InnerProduct(pnt, val) * Id<3>();
+
+      for (int k = 0; k < 3; k++)
+        {
+          Vec<6> dipole_charge = 0.0; 
+          dipole_charge.Range(3,6) = jacobi.Col(k);
+          
+          auto ek = UnitVec<3>(k);          
+          mp.AddDipole(pnt, -ek, dipole_charge);          
+        }
+    }
+
+    void EvaluateMP (RegularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      Vec<6> mpval = Real(mp.Evaluate (pnt));
+      val.Range(0,3) = 0;
+      val += (3-4*nu)*alpha * mpval.Range(0,3);  // Row 1
+      
+      val -= alpha/2 * mpval.Range(3,6);        // Row 3
+
+      // Row 2
+      Mat<3,3> jacobi = 0.0; 
+      for (int k = 0; k < 3; k++)    
+        {
+          auto ek = UnitVec<3>(k);
+          jacobi.Col(k) = Real(mp.EvaluateDirectionalDerivative(pnt, ek).Range(0,3));
+        }
+
+      val -= alpha/2 * ( Trans(jacobi) * pnt + Trace(jacobi) * pnt);
+    }
+  };
+
+
+
+
+
+  
+
 }
 
 

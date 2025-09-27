@@ -515,7 +515,7 @@ namespace ngbla
         }
 
 
-      if (TB::IsLinear())
+      if constexpr (TB::IsLinear())
 	{
 	  if (T::IsLinear())
 	    {
@@ -1492,8 +1492,39 @@ namespace ngbla
   }
 
 
+  /* ************************* OuterProduct ********************** */
+  
+  template <class TA, class TB>
+  class OuterProductExpr : public Expr<OuterProductExpr<TA,TB>>
+  {
+    TA a;
+    TB b;
+  public:
+    OuterProductExpr (TA aa, TB ab) : a(aa), b(ab) { ; }
+
+    // INLINE auto operator() (size_t i) const { return a[i] * b(i); }  
+    INLINE auto operator() (size_t i, size_t j) const { return a[i] * b[j]; }
+
+    INLINE auto View() const { return *this; }
+    INLINE auto Shape() const
+    {
+      return tuple<size_t,size_t> (a.Size(), b.Width());
+    }
+    
+    INLINE const auto A() const { return a; }
+    INLINE const auto B() const { return b; }
+    INLINE auto Height() const { return a.Size(); }
+    INLINE auto Width() const { return b.Size(); }
+
+    static constexpr bool IsLinear() { return false; }         
+  };
 
 
+  template <typename TA, typename TB>
+  INLINE auto OuterProduct (const Expr<TA> & a, const Expr<TB> & b)
+  {
+    return OuterProductExpr (a.View(), b.View());
+  }
 
 
 
