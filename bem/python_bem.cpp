@@ -197,10 +197,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HypersingularOperator", [](shared_ptr<FESpace> space, optional<Region> definedon,
                                     int intorder) -> shared_ptr<IntegralOperator>
   {
-    return make_unique<GenericIntegralOperator<LaplaceHSKernel<3>>>(space, space, definedon, definedon,
+    return make_unique<GenericIntegralOperator<LaplaceSLKernel<3,3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(),
                                                                     make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(), 
-                                                                    LaplaceHSKernel<3>(), intorder);
+                                                                    LaplaceSLKernel<3,3>(), intorder);
     
   }, py::arg("space"), py::arg("definedon")=nullopt,
         py::arg("intorder")=3);
