@@ -201,53 +201,6 @@ namespace ngsbem
   };
 
 
-  template <int DIM> class LaplaceHSKernel;
-  
-  template<>
-  class LaplaceHSKernel<3> : public BaseKernel 
-  {
-  public:
-    typedef double value_type;
-    static string Name() { return "LaplaceHL"; }
-    static auto Shape() { return IVec<2>(3,3); }
-    
-    template <typename T>        
-    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
-    {
-      T norm = L2Norm(x-y);
-      // return 1.0 / (4 * M_PI * norm);   
-      return Vec<1,T> (1.0 / (4 * M_PI * norm));
-    }
-    
-    Array<KernelTerm> terms =
-      {
-        KernelTerm{1.0, 0, 0, 0},
-        KernelTerm{1.0, 0, 1, 1},
-        KernelTerm{1.0, 0, 2, 2},
-      };
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
-    {
-      return make_shared<SingularMLExpansion<Vec<3,Complex>>> (c, r, 1e-16);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r) const
-    {
-      return make_shared<RegularMLExpansion<Vec<3,Complex>>> (c, r, 1e-16);
-    }
-
-    void AddSource (SingularMLExpansion<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      mp.AddCharge(pnt, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      val = Real(mp.Evaluate (pnt));
-    }
-  };
-
-
   /** HelmholtzSLkernel is the kernel for the double layer potential of the 
       Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,. $ */
   template <int DIM> class HelmholtzSLKernel;
