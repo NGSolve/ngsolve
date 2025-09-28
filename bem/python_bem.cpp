@@ -481,7 +481,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (proxy->Dimension() == 1)
       return make_shared<PotentialOperator<CombinedFieldKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
                                                                      CombinedFieldKernel<3>(kappa), tmpfes->GetOrder()+igl->dx.bonus_intorder);
-    throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
+    throw Exception("only dim=1 HelmholtzCF is supported");
   });
 
 
@@ -511,7 +511,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return make_shared<PotentialOperator<LameSLKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
                                                               LameSLKernel<3>{E,nu}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
 
-    throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
+    throw Exception("only dim=3 LameSL is supported");
   });
 
 
