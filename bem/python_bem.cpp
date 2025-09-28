@@ -353,8 +353,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
                                                                  LaplaceSLKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     if (proxy->Dimension() == 3)
-      return make_shared<PotentialOperator<LaplaceHSKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
-                                                                 LaplaceHSKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+      return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, factor, definedon, proxy->Evaluator(),
+                                                                 LaplaceSLKernel<3,3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
 
     throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
   });
@@ -379,8 +379,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
-    return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
-                                                               LaplaceDLKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+    if (proxy->Dimension() == 1)
+      return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+                                                                LaplaceDLKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+    if (proxy->Dimension() == 3)
+      return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+                                                                LaplaceDLKernel<3,3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+    throw Exception("only dim=1 and dim=3 LaplaceDL are supported");
   });
 
   m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
