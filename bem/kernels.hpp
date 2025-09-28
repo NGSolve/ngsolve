@@ -2,6 +2,7 @@
 #define KERNELS_hpp
 
 #include "mptools.hpp"
+#include <type_traits>
 
 
 //  ****************************  The kernels **********************************
@@ -62,18 +63,26 @@ namespace ngsbem
   
   /** LaplaceSLkernel is the kernel for the single layer potential of 
       the Laplace equation $ \Delta u = 0 \,.$  */
-  template <int DIM> class LaplaceSLKernel;
+  template <int DIM, int COMPS=1> class LaplaceSLKernel;
 
   /** LaplaceSLkernel in 3D reads 
       $$ G(x-y) = \frac{1}{4\,\pi \, | x-y| }, \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<>
-  class LaplaceSLKernel<3> : public BaseKernel
+  template<int COMPS>
+  class LaplaceSLKernel<3, COMPS> : public BaseKernel
   {
   public:
-    LaplaceSLKernel<3> () = default;
+    LaplaceSLKernel<3,COMPS>()
+    {
+      for (size_t i = 0; i < COMPS; i++)
+        terms += {1.0, 0, i, i};
+    };
     typedef double value_type;
+    using mp_type = typename std::conditional<COMPS == 1,
+                                              Complex,
+                                              Vec<COMPS, Complex>>::type;
+
     static string Name() { return "LaplaceSL"; }
-    static auto Shape() { return IVec<2>(1,1); }
+    static auto Shape() { return IVec<2>(COMPS,COMPS); }
     
     template <typename T>        
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -83,45 +92,59 @@ namespace ngsbem
       return Vec<1,T> (1.0 / (4 * M_PI * norm));
     }
     
-    Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };
+    Array<KernelTerm> terms;
     
     auto CreateMultipoleExpansion (Vec<3> c, double r) const
     {
-      return make_shared<SingularMLExpansion<Complex>> (c, r, 1e-16);
+      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16);
     }
 
     auto CreateLocalExpansion (Vec<3> c, double r) const
     {
-      return make_shared<RegularMLExpansion<Complex>> (c, r, 1e-16);
+      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16);
     }
 
-    void AddSource (SingularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
-      mp.AddCharge (pnt, val(0));
+      if constexpr (COMPS == 1)
+        mp.AddCharge (pnt, val(0));
+      else
+        mp.AddCharge (pnt, val);
     }
 
-    void EvaluateMP (RegularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
-      val(0) = Real(mp.Evaluate (pnt));
+      if constexpr (COMPS == 1)
+        val(0) = Real(mp.Evaluate (pnt));
+      else
+        val = Real(mp.Evaluate (pnt));
     }
   };
 
 
   /** LaplaceDLkernel is the kernel for the double layer potential of 
       the Laplace equation $ \Delta u = 0 \,.$  */
-  template <int DIM> class LaplaceDLKernel;
+  template <int DIM, int COMPS=1> class LaplaceDLKernel;
 
   /** LaplaceDLkernel in 3D reads 
       $$ \frac{\partial }{ \partial n_y} G(x-y) = \frac{1}{4\,\pi} \, 
           \frac{ \langle n(y), x-y\rangle }{ | x-y|^3 }, 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<>
-  class LaplaceDLKernel<3> : public BaseKernel
+  template<int COMPS>
+  class LaplaceDLKernel<3, COMPS> : public BaseKernel
   {
   public:
+    LaplaceDLKernel<3,COMPS>()
+    {
+      for (size_t i = 0; i < COMPS; i++)
+        terms += {1.0, 0, i, i};
+    };
     typedef double value_type;
+    using mp_type = typename std::conditional<COMPS == 1,
+                                                  Complex,
+                                                  Vec<COMPS, Complex>>::type;
     static string Name() { return "LaplaceDL"; }
-    static auto Shape() { return IVec<2>(1,1); }
+    static auto Shape() { return IVec<2>(COMPS,COMPS); }
     
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -132,36 +155,48 @@ namespace ngsbem
       return Vec<1,T> (nxy / (4 * M_PI * norm*norm*norm));
     }
 
-    Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
+    Array<KernelTerm> terms;
 
     auto CreateMultipoleExpansion (Vec<3> c, double r) const
     {
-      return make_shared<SingularMLExpansion<Complex>> (c, r, 1e-16);
+      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16);
     }
 
     auto CreateLocalExpansion (Vec<3> c, double r) const
     {
-      return make_shared<RegularMLExpansion<Complex>> (c, r, 1e-16);
+      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16);
     }
 
-    void AddSource (SingularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
-      mp.AddDipole(pnt, -nv, val(0));
+      if constexpr (COMPS == 1)
+        mp.AddDipole(pnt, -nv, val(0));
+      else
+        mp.AddDipole(pnt, -nv, val);
     }
 
-    void AddSourceTrans(SingularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    void AddSourceTrans(SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
-      mp.AddCharge(pnt, val(0));
+      if constexpr (COMPS == 1)
+        mp.AddCharge (pnt, val(0));
+      else
+        mp.AddCharge (pnt, val);
     }
 
-    void EvaluateMP (RegularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
-      val(0) = Real(mp.Evaluate (pnt));
+      if constexpr (COMPS == 1)
+        val(0) = Real(mp.Evaluate (pnt));
+      else
+        val = Real(mp.Evaluate (pnt));
     }
 
-    void EvaluateMPTrans(RegularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    void EvaluateMPTrans(RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
-      val(0) = Real(mp.EvaluateDirectionalDerivative(pnt, nv));
+      if constexpr (COMPS == 1)
+        val(0) = Real(mp.EvaluateDirectionalDerivative(pnt, nv));
+      else
+        val = Real(mp.EvaluateDirectionalDerivative(pnt, nv));
     }
   };
 
