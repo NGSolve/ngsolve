@@ -197,10 +197,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HypersingularOperator", [](shared_ptr<FESpace> space, optional<Region> definedon,
                                     int intorder) -> shared_ptr<IntegralOperator>
   {
-    return make_unique<GenericIntegralOperator<LaplaceHSKernel<3>>>(space, space, definedon, definedon,
+    return make_unique<GenericIntegralOperator<LaplaceSLKernel<3,3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(),
                                                                     make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(), 
-                                                                    LaplaceHSKernel<3>(), intorder);
+                                                                    LaplaceSLKernel<3,3>(), intorder);
     
   }, py::arg("space"), py::arg("definedon")=nullopt,
         py::arg("intorder")=3);
@@ -353,8 +353,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
                                                                  LaplaceSLKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
     if (proxy->Dimension() == 3)
-      return make_shared<PotentialOperator<LaplaceHSKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
-                                                                 LaplaceHSKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+      return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, factor, definedon, proxy->Evaluator(),
+                                                                 LaplaceSLKernel<3,3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
 
     throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
   });
@@ -379,8 +379,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
-    return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
-                                                               LaplaceDLKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+    if (proxy->Dimension() == 1)
+      return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+                                                                LaplaceDLKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+    if (proxy->Dimension() == 3)
+      return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+                                                                LaplaceDLKernel<3,3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
+    throw Exception("only dim=1 and dim=3 LaplaceDL are supported");
   });
 
   m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
@@ -476,7 +481,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (proxy->Dimension() == 1)
       return make_shared<PotentialOperator<CombinedFieldKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
                                                                      CombinedFieldKernel<3>(kappa), tmpfes->GetOrder()+igl->dx.bonus_intorder);
-    throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
+    throw Exception("only dim=1 HelmholtzCF is supported");
   });
 
 
@@ -506,7 +511,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return make_shared<PotentialOperator<LameSLKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
                                                               LameSLKernel<3>{E,nu}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
 
-    throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
+    throw Exception("only dim=3 LameSL is supported");
   });
 
 
