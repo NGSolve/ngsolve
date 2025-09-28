@@ -2344,6 +2344,39 @@ namespace ngfem
         mat.Rows(DIM_SPC*i, DIM_SPC*(i+1)).Cols(fel.GetRange(i)) = Trans(hmat);
     }
 
+    static int DimRef() { return DIM_SPC*DIM_ELEMENT; } 
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & bfel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      HeapReset hr(lh);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const ScalarFiniteElement<DIM_ELEMENT>&> (fel[0]);
+      FlatMatrix<> hmat(feli.GetNDof(), DIM_ELEMENT, lh);
+      feli.CalcDShape(ip, hmat);
+      int ndof = feli.GetNDof();
+      mat.Rows(DIM_SPACE*DIM_ELEMENT).Cols(DIM_SPC*ndof) = 0.0;
+      for (int i = 0; i < DIM_SPACE; i++)
+        mat.Rows(i*DIM_ELEMENT, (i+1)*DIM_ELEMENT).Cols(i*ndof,(i+1)*ndof)
+          = Trans(hmat);
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      FlatMatrix<> hmat(DIM_SPC, DIM_ELEMENT, lh);      
+      hmat = Trans(static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPC>&>(mip).GetJacobianInverse());
+      mat.Rows(DIM_DMAT).Cols(DIM_DMAT) = 0.0;
+      for (int i = 0; i < DIM_SPACE; i++)
+        mat.Rows(i*DIM_SPC, (i+1)*DIM_SPC).Cols(i*DIM_ELEMENT, (i+1)*DIM_ELEMENT) = hmat;
+    }
+    
+
+
+
+
     
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
                                       const SIMD_BaseMappedIntegrationRule & mir,
