@@ -349,10 +349,12 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
 
-    if (proxy->Dimension() == 1)
+    int dim = factor ? factor->Dimensions()[0] : proxy->Dimension();
+    
+    if (dim == 1)
       return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
                                                                  LaplaceSLKernel<3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
-    if (proxy->Dimension() == 3)
+    if (dim == 3)
       return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, factor, definedon, proxy->Evaluator(),
                                                                  LaplaceSLKernel<3,3>{}, tmpfes->GetOrder()+igl->dx.bonus_intorder);
 
