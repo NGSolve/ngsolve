@@ -318,13 +318,11 @@ namespace ngsbem
       {
         if (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))\
           {
-            cout << "found a compound" << endl;
             tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
             tmpeval = compeval->BaseDiffOp();
           }
         else if (auto diffopfac = dynamic_pointer_cast<DifferentialOperatorWithFactor> (tmpeval))
           {
-            cout << "found a diffopfac" << endl;            
             tmpeval = diffopfac->BaseDiffOp();
           }
         else
