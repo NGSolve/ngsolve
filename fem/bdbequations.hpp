@@ -2368,7 +2368,7 @@ namespace ngfem
     {
       FlatMatrix<> hmat(DIM_SPC, DIM_ELEMENT, lh);      
       hmat = Trans(static_cast<const MappedIntegrationPoint<DIM_ELEMENT,DIM_SPC>&>(mip).GetJacobianInverse());
-      mat.Rows(DIM_DMAT).Cols(DIM_DMAT) = 0.0;
+      mat.Rows(DIM_DMAT).Cols(DIM_ELEMENT*DIM_SPC) = 0.0;
       for (int i = 0; i < DIM_SPACE; i++)
         mat.Rows(i*DIM_SPC, (i+1)*DIM_SPC).Cols(i*DIM_ELEMENT, (i+1)*DIM_ELEMENT) = hmat;
     }
