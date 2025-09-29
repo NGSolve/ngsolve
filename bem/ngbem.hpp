@@ -353,7 +353,13 @@ namespace ngsbem
              nullptr };
 
     // return { proxy, factor->Reshape(cf->Dimension(), proxy->Dimension()) };
-  }        
+  }
+
+  inline shared_ptr<ProxyFunction>
+  GetProxyWithFactor (shared_ptr<CoefficientFunction> cf, bool trial)
+  {
+    return std::get<0> (GetProxyAndFactor(cf, trial));
+  }
 
   class BasePotentialOperatorAndTest
   {
