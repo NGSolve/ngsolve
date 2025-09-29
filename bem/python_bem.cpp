@@ -333,33 +333,26 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
     
-    auto [proxy,factor] = GetProxyAndFactor(igl->cf, true);
+    auto proxy = GetProxyWithFactor(igl->cf, true);
 
     auto fes = proxy->GetFESpace();
-    /*
-    auto tmpfes = fes;
-    auto tmpeval = proxy->Evaluator();
-    while (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))
-      {
-        tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
-        tmpeval = compeval->BaseDiffOp();
-      }
-    */
     int fesorder = GetFESOrder (proxy);
     
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
 
-    int dim = factor ? factor->Dimensions()[0] : proxy->Dimension();
-    
-    if (dim == 1)
-      return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
-                                                                 LaplaceSLKernel<3>{}, fesorder /* tmpfes->GetOrder()*/ +igl->dx.bonus_intorder);
-    if (dim == 3)
-      return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, factor, definedon, proxy->Evaluator(),
-                                                                   LaplaceSLKernel<3,3>{}, fesorder /* tmpfes->GetOrder() */+igl->dx.bonus_intorder);
-
+    switch (proxy->Dimension())
+      {
+      case 1:
+        return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+                                                                   LaplaceSLKernel<3>{}, fesorder+igl->dx.bonus_intorder);
+      case 3:
+        return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+                                                                     LaplaceSLKernel<3,3>{}, fesorder+igl->dx.bonus_intorder);
+      default:
+        ;
+      }
     throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
   });
 
