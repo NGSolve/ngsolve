@@ -67,6 +67,7 @@ cd ngsolve
 
 if [ "$IMAGE_NAME" == "avx" ]
 then
+  python3 -m playwright install-deps
   ## build and upload docu to server
 
   # first build ngsxfem
