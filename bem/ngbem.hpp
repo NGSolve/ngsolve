@@ -2,6 +2,7 @@
 #define NGBEM_hpp
 
 #include "bem_diffops.hpp"
+#include "diffopwithfactor.hpp"
 #include "kernels.hpp"
 #include "../fem/integratorcf.hpp"
 
@@ -304,7 +305,35 @@ namespace ngsbem
 
     return proxylin;
   }
+
+  
+  inline int GetFESOrder (shared_ptr<ProxyFunction> proxy)
+  {
+    auto fes = proxy->GetFESpace();
     
+    auto tmpfes = fes;
+    auto tmpeval = proxy->Evaluator();
+
+    while (true)
+      {
+        if (auto compeval = dynamic_pointer_cast<CompoundDifferentialOperator>(tmpeval))\
+          {
+            cout << "found a compound" << endl;
+            tmpfes = (*dynamic_pointer_cast<CompoundFESpace>(tmpfes))[compeval->Component()];
+            tmpeval = compeval->BaseDiffOp();
+          }
+        else if (auto diffopfac = dynamic_pointer_cast<DifferentialOperatorWithFactor> (tmpeval))
+          {
+            cout << "found a diffopfac" << endl;            
+            tmpeval = diffopfac->BaseDiffOp();
+          }
+        else
+          break;
+      }
+    
+    return tmpfes->GetOrder();
+  }
+  
   inline tuple < shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction> >
   GetProxyAndFactor (shared_ptr<CoefficientFunction> cf, bool trial)
   {
@@ -317,7 +346,15 @@ namespace ngsbem
 
     // return proxylin[0];
     auto [proxy,factor] = proxylin[0];
-    return { proxy, factor->Reshape(cf->Dimension(), proxy->Dimension()) };
+
+    auto diffopwith = make_shared<DifferentialOperatorWithFactor> (proxy->Evaluator(),
+                                                                   factor->Reshape(cf->Dimension(), proxy->Dimension()));
+    
+    return { make_shared<ProxyFunction> (proxy->GetFESpace(), proxy->IsTestFunction(), proxy->IsComplex(),
+                                         diffopwith, nullptr, nullptr, nullptr, nullptr, nullptr),
+             nullptr };
+
+    // return { proxy, factor->Reshape(cf->Dimension(), proxy->Dimension()) };
   }        
 
   class BasePotentialOperatorAndTest
