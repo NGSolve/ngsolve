@@ -63,7 +63,7 @@ RUN pip3 install --break-system-packages \
         webgui_jupyter_widgets \
         widgetsnbextension
 RUN python3 -m playwright install
-RUN python3 -m playwright install-deps
+RUN python3 -m playwright install-deps firefox
 RUN pip3 install --break-system-packages git+https://github.com/PySpice-org/PySpice.git
 RUN ln -s /usr/lib/x86_64-linux-gnu/libngspice.so.0  /usr/lib/x86_64-linux-gnu/libngspice.so
 ENV PATH="/opt/netgen/bin:${PATH}"
