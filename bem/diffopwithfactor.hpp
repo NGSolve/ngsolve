@@ -102,20 +102,16 @@ namespace ngsbem
                 BareSliceMatrix<SIMD<double>> flux) const override
     {
       auto dims = factor->Dimensions();
-      
+
       Matrix<SIMD<double>> tmpflux(dims[1], mir.Size());
       Matrix<SIMD<double>> factorx(dims[0]*dims[1], mir.Size());
       
       diffop -> Apply (fel, mir, x, tmpflux);
       factor -> Evaluate (mir, factorx);
-      // *testout << "tmpflux = " << endl << tmpflux << endl;
-      // *testout << "factorx = " << endl << factorx << endl;
       flux.Rows(0, dims[0]).Cols(0, mir.Size()) = SIMD<double>(0.0);
       for (int i = 0; i < dims[0]; i++)
         for (int j = 0; j < dims[1]; j++)
-          flux.Row(i).Range(mir.Size()) += pw_mult(flux.Row(i*dims[1]+j), tmpflux.Row(j));
-
-      // *testout << "flux = " << endl << flux.Rows(0, dims[0]).Cols(0, mir.Size()) << endl;      
+          flux.Row(i).Range(mir.Size()) += pw_mult(factorx.Row(i*dims[1]+j), tmpflux.Row(j));
     }
 
     
