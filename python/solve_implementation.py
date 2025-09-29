@@ -58,7 +58,16 @@ class NonLinearApplication(Application):
         solver = NewtonSolver(self.a, self.gf, **solver_args)
         if dirichlet is not None:
             dirichlet_gf = GridFunction(self.gf.space)
-            if isinstance(dirichlet, Dirichlet):
+            if isinstance(dirichlet, list):
+                for i in range(len(dirichlet)):
+                    if dirichlet[i] is not None:
+                        if isinstance(dirichlet[i], Dirichlet):
+                            dirichlet_gf.components[i].Set(
+                                dirichlet[i].cf, definedon=dirichlet[i].region
+                            )
+                        else:
+                            dirichlet_gf.components[i].Set(dirichlet[i], BND)
+            elif isinstance(dirichlet, Dirichlet):
                 dirichlet_gf.Set(dirichlet.cf, definedon=dirichlet.region)
             else:
                 dirichlet_gf.Set(dirichlet, BND)
