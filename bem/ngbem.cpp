@@ -10,6 +10,14 @@
 namespace ngsbem
 {
 
+
+  IntOpFlags :: IntOpFlags (const Flags & flags)
+  {
+    auto use_fmm_flag = flags.GetDefineFlagX("use_fmm");
+    if (use_fmm_flag.IsTrue()) use_fmm = true;
+    if (use_fmm_flag.IsFalse()) use_fmm = false;    
+
+  }
   
   
   IntegralOperator ::
