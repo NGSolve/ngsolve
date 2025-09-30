@@ -24,10 +24,10 @@ namespace ngsbem
     optional<Region> test_definedon;
 
     shared_ptr<DifferentialOperator> trial_evaluator;
-    shared_ptr<CoefficientFunction> trial_factor;
+    // shared_ptr<CoefficientFunction> trial_factor;
     
     shared_ptr<DifferentialOperator> test_evaluator;
-    shared_ptr<CoefficientFunction> test_factor;
+    // shared_ptr<CoefficientFunction> test_factor;
     
     
     // integration order
@@ -51,8 +51,8 @@ namespace ngsbem
 
     IntegralOperator (shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                       optional<Region> _definedon_trial, optional<Region> _definedon_test,
-                      shared_ptr<DifferentialOperator> _trial_evaluator, shared_ptr<CoefficientFunction> _trial_factor,
-                      shared_ptr<DifferentialOperator> _test_evaluator, shared_ptr<CoefficientFunction> _test_factor,
+                      shared_ptr<DifferentialOperator> _trial_evaluator, //  shared_ptr<CoefficientFunction> _trial_factor,
+                      shared_ptr<DifferentialOperator> _test_evaluator, // shared_ptr<CoefficientFunction> _test_factor,
                       int _intorder);
     
     virtual ~IntegralOperator() = default;
@@ -79,24 +79,26 @@ namespace ngsbem
 
     
   public:
+    /*
     GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                             optional<Region> _definedon_trial, optional<Region> _definedon_test,
                             shared_ptr<DifferentialOperator> _trial_evaluator, shared_ptr<CoefficientFunction> _trial_factor,
                             shared_ptr<DifferentialOperator> _test_evaluator, shared_ptr<CoefficientFunction> _test_factor,
                             KERNEL _kernel,
                             int _intorder);
-
+    */
 
     GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                             optional<Region> _definedon_trial, optional<Region> _definedon_test,
                             shared_ptr<DifferentialOperator> _trial_evaluator, 
                             shared_ptr<DifferentialOperator> _test_evaluator, 
                             KERNEL _kernel,
-                            int _intorder)
+                            int _intorder);
+    /*
       : GenericIntegralOperator (_trial_space, _test_space, _definedon_trial, _definedon_test,
                                  _trial_evaluator, nullptr, _test_evaluator, nullptr,
                                  _kernel, _intorder) { } 
-
+    */
 
 
     
@@ -210,19 +212,19 @@ namespace ngsbem
   {
   public:
     shared_ptr<ProxyFunction> proxy;
-    shared_ptr<CoefficientFunction> factor;
+    // shared_ptr<CoefficientFunction> factor;
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
     int intorder;
   public:
-    BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, shared_ptr<CoefficientFunction> _factor,
+    BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, // shared_ptr<CoefficientFunction> _factor,
                            optional<Region> _definedon,    
                            shared_ptr<DifferentialOperator> _evaluator,
                            int _intorder)
-      : proxy(_proxy), factor(_factor), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
+      : proxy(_proxy), /* factor(_factor), */ definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
     virtual ~BasePotentialOperator() { } 
     virtual shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
-                                                              shared_ptr<CoefficientFunction> test_factor,
+                                                              // shared_ptr<CoefficientFunction> test_factor,
                                                               DifferentialSymbol dx) = 0;
     virtual shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) = 0;
   };
@@ -235,14 +237,14 @@ namespace ngsbem
     KERNEL kernel;
   public:
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
-                       shared_ptr<CoefficientFunction> _factor,                       
+                       // shared_ptr<CoefficientFunction> _factor,                       
                        optional<Region> _definedon,    
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel, int _intorder)
-      : BasePotentialOperator (_proxy, _factor, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
+      : BasePotentialOperator (_proxy, /* _factor, */ _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
 
     shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
-                                                      shared_ptr<CoefficientFunction> test_factor,
+                                                      // shared_ptr<CoefficientFunction> test_factor,
                                                       DifferentialSymbol dx) override
     {
       auto festest = test_proxy->GetFESpace();
@@ -264,8 +266,8 @@ namespace ngsbem
                                                            festest, 
                                                            definedon,
                                                            definedon_test,
-                                                           proxy->Evaluator(), factor,
-                                                           test_proxy->Evaluator(), test_factor, 
+                                                           proxy->Evaluator(), // nullptr, // factor,
+                                                           test_proxy->Evaluator(), // nullptr, // test_factor, 
                                                            kernel,
                                                            2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder);
     }
@@ -364,21 +366,26 @@ namespace ngsbem
   class BasePotentialOperatorAndTest
   {
     shared_ptr<BasePotentialOperator> pot;
+    shared_ptr<ProxyFunction> test_proxy_with_factor;    
+    /*
     shared_ptr<ProxyFunction> test_proxy;
     shared_ptr<CoefficientFunction> test_factor;
+    */
   public:
 
     BasePotentialOperatorAndTest (shared_ptr<BasePotentialOperator> _pot,
                                   shared_ptr<CoefficientFunction> _test_proxy)
       : pot(_pot)
     {
-      tie(test_proxy,test_factor) = GetProxyAndFactor(_test_proxy, false);
+      // tie(test_proxy,test_factor) = GetProxyAndFactor(_test_proxy, false);
+      test_proxy_with_factor = GetProxyWithFactor(_test_proxy, false);      
     }
 
     
     shared_ptr<IntegralOperator> MakeIntegralOperator (DifferentialSymbol dx)
     {
-      return pot->MakeIntegralOperator(test_proxy, test_factor, dx);
+      // return pot->MakeIntegralOperator(test_proxy, test_factor, dx);
+      return pot->MakeIntegralOperator(test_proxy_with_factor, dx);
     }
   };
 

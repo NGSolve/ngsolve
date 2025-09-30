@@ -345,10 +345,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     switch (proxy->Dimension())
       {
       case 1:
-        return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+        return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                    LaplaceSLKernel<3>{}, fesorder+igl->dx.bonus_intorder);
       case 3:
-        return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+        return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, definedon, proxy->Evaluator(),
                                                                      LaplaceSLKernel<3,3>{}, fesorder+igl->dx.bonus_intorder);
       default:
         ;
@@ -379,10 +379,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
     if (proxy->Dimension() == 1)
-      return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                 LaplaceDLKernel<3>{}, fesorder+igl->dx.bonus_intorder);
     if (proxy->Dimension() == 3)
-      return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, definedon, proxy->Evaluator(),
                                                                 LaplaceDLKernel<3,3>{}, fesorder+igl->dx.bonus_intorder);
     throw Exception("only dim=1 and dim=3 LaplaceDL are supported");
   });
@@ -411,13 +411,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
     if (proxy->Dimension() == 3)
     {
-      return make_shared<PotentialOperator<HelmholtzSLVecKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<HelmholtzSLVecKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                       HelmholtzSLVecKernel<3>(kappa), fesorder+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
       {
       HelmholtzSLKernel<3> kernel(kappa);
-      return make_shared<PotentialOperator<HelmholtzSLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<HelmholtzSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                    kernel, fesorder+igl->dx.bonus_intorder);
     }
     else
@@ -448,13 +448,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (proxy->Dimension() == 3)
     {
       MaxwellDLKernel<3> kernel(kappa);
-      return make_shared<PotentialOperator<MaxwellDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<MaxwellDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                  kernel, fesorder+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
     {
       HelmholtzDLKernel<3> kernel(kappa);
-      return make_shared<PotentialOperator<HelmholtzDLKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<HelmholtzDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                    kernel, fesorder+igl->dx.bonus_intorder);
     }
     else
@@ -486,7 +486,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
 
     if (proxy->Dimension() == 1)
-      return make_shared<PotentialOperator<CombinedFieldKernel<3>>> (proxy, nullptr, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<CombinedFieldKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                                      CombinedFieldKernel<3>(kappa), fesorder+igl->dx.bonus_intorder);
     throw Exception("only dim=1 HelmholtzCF is supported");
   });
@@ -498,7 +498,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
     
-    auto [proxy,factor] = GetProxyAndFactor(igl->cf, true);
+    // auto [proxy,factor] = GetProxyAndFactor(igl->cf, true);
+    auto proxy = GetProxyWithFactor(igl->cf, true);
     
     auto fes = proxy->GetFESpace();
 
@@ -518,7 +519,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
 
     if (proxy->Dimension() == 3)
-      return make_shared<PotentialOperator<LameSLKernel<3>>> (proxy, factor, definedon, proxy->Evaluator(),
+      return make_shared<PotentialOperator<LameSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
                                                               LameSLKernel<3>{E,nu}, fesorder /* tmpfes->GetOrder()*/ +igl->dx.bonus_intorder);
 
     throw Exception("only dim=3 LameSL is supported");

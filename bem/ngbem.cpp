@@ -15,23 +15,25 @@ namespace ngsbem
   IntegralOperator ::
   IntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
                    optional<Region> _trial_definedon, optional<Region> _test_definedon,
-                   shared_ptr<DifferentialOperator> _trial_evaluator, shared_ptr<CoefficientFunction> _trial_factor,
-                   shared_ptr<DifferentialOperator> _test_evaluator, shared_ptr<CoefficientFunction> _test_factor,
+                   shared_ptr<DifferentialOperator> _trial_evaluator, // shared_ptr<CoefficientFunction> _trial_factor,
+                   shared_ptr<DifferentialOperator> _test_evaluator, // shared_ptr<CoefficientFunction> _test_factor,
                    int _intorder)
     : trial_space(_trial_space), test_space(_test_space),
       trial_definedon(_trial_definedon), test_definedon(_test_definedon),
-      trial_evaluator(_trial_evaluator), trial_factor(_trial_factor),
-      test_evaluator(_test_evaluator), test_factor(_test_factor),
+      trial_evaluator(_trial_evaluator), // trial_factor(_trial_factor),
+      test_evaluator(_test_evaluator), // test_factor(_test_factor),
       intorder(_intorder)
   {
     if (!test_space)
       test_space = trial_space;
 
+    /*
     if (trial_factor)
       trial_evaluator = make_shared<DifferentialOperatorWithFactor>(trial_evaluator, trial_factor);
 
     if (test_factor)
       test_evaluator = make_shared<DifferentialOperatorWithFactor>(test_evaluator, test_factor);
+    */
     
     tie(identic_panel_x, identic_panel_y, identic_panel_weight) = IdenticPanelIntegrationRule(intorder);
     tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
@@ -39,7 +41,7 @@ namespace ngsbem
   }
 
 
-
+  /*
   template <typename KERNEL>
   GenericIntegralOperator<KERNEL> ::
   GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
@@ -56,7 +58,24 @@ namespace ngsbem
 
     matrix = this->CreateMatrixFMM(lh);
   }
+  */
+  
 
+  template <typename KERNEL>
+  GenericIntegralOperator<KERNEL> ::
+  GenericIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
+                          optional<Region> _definedon_trial, optional<Region> _definedon_test,                          
+                          shared_ptr<DifferentialOperator> _trial_evaluator,
+                          shared_ptr<DifferentialOperator> _test_evaluator, 
+                          KERNEL _kernel,
+                          int _intorder)
+  : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test,
+                     _trial_evaluator, _test_evaluator, _intorder), kernel(_kernel)
+  {
+    LocalHeap lh(100000000);
+
+    matrix = this->CreateMatrixFMM(lh);
+  }
 
   
 
