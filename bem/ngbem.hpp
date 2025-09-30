@@ -11,6 +11,21 @@ namespace ngsbem
   using namespace ngcomp;
   class BasePotentialCF;
 
+  class IntOpFlags
+  {
+    bool use_fmm = true;
+  public:
+    IntOpFlags () = default;
+    IntOpFlags (const Flags & flags);
+    bool UseFMM() const { return use_fmm; }
+  };
+
+  inline ostream & operator<< (ostream & ost, const IntOpFlags & ioflags)
+  {
+    ost << "use_fmm = " << ioflags.UseFMM() << endl;
+    return ost;
+  }
+
   
   /** The IntegralOperator provides methods for the assembly of and access to a matrix 
       resulting from a variational formulation of a boundary integral equation.*/
@@ -215,20 +230,40 @@ namespace ngsbem
     // shared_ptr<CoefficientFunction> factor;
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
+    IntOpFlags ioflags;
     int intorder;
+    
   public:
     BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, // shared_ptr<CoefficientFunction> _factor,
                            optional<Region> _definedon,    
                            shared_ptr<DifferentialOperator> _evaluator,
                            int _intorder)
-      : proxy(_proxy), /* factor(_factor), */ definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; } 
+      : proxy(_proxy), /* factor(_factor), */ definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; }
+
+    BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, // shared_ptr<CoefficientFunction> _factor,
+                           optional<Region> _definedon,    
+                           shared_ptr<DifferentialOperator> _evaluator,
+                           IntOpFlags _ioflags, 
+                           int _intorder)
+      : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), ioflags(_ioflags), intorder(_intorder) { ; } 
+
+
+
+    
     virtual ~BasePotentialOperator() { } 
     virtual shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
                                                               // shared_ptr<CoefficientFunction> test_factor,
                                                               DifferentialSymbol dx) = 0;
     virtual shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) = 0;
+
+    virtual void Print (ostream & ost) const = 0;
   };
-  
+
+  inline ostream & operator<< (ostream & ost, const BasePotentialOperator & intop)
+  {
+    intop.Print(ost);
+    return ost;
+  }
   
   template  <typename KERNEL>
   class PotentialOperator : public BasePotentialOperator
@@ -242,6 +277,15 @@ namespace ngsbem
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel, int _intorder)
       : BasePotentialOperator (_proxy, /* _factor, */ _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
+
+    PotentialOperator (shared_ptr<ProxyFunction> _proxy,
+                       // shared_ptr<CoefficientFunction> _factor,                       
+                       optional<Region> _definedon,    
+                       shared_ptr<DifferentialOperator> _evaluator,
+                       KERNEL _kernel,
+                       IntOpFlags _ioflags, 
+                       int _intorder)
+      : BasePotentialOperator (_proxy, _definedon, _evaluator, _ioflags, _intorder), kernel(_kernel) { ; }
 
     shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
                                                       // shared_ptr<CoefficientFunction> test_factor,
@@ -275,6 +319,13 @@ namespace ngsbem
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
     {
       return make_shared<PotentialCF<KERNEL>>(gf, definedon, evaluator, kernel, 2+intorder, true);
+    }
+
+    virtual void Print (ostream & ost) const override
+    {
+      ost << "Potential operator:" << endl;
+      ost << "Kernel: " << kernel.Name() << endl;
+      ost << ioflags << endl;
     }
   };  
 

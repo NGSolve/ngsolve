@@ -319,6 +319,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("__call__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<GridFunction> gf) {
       return pot->MakePotentialCF(gf);
     })
+    .def("__str__", [](BasePotentialOperator & self) { return ToString(self); })
     ;
   
   py::class_<BasePotentialOperatorAndTest> (m, "BasePotentialOperatorAndTest")
@@ -328,7 +329,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     })
     ;
   
-  m.def("LaplaceSL", [](shared_ptr<SumOfIntegrals> potential) -> shared_ptr<BasePotentialOperator> {
+  m.def("LaplaceSL", [&](shared_ptr<SumOfIntegrals> potential, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
@@ -337,6 +338,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
     auto fes = proxy->GetFESpace();
     int fesorder = GetFESOrder (proxy);
+
+    auto flags = CreateFlagsFromKwArgs(kwargs); 
+    IntOpFlags ioflags(flags);
+    // cout << ioflags << endl;
     
     optional<Region> definedon;
     if (igl->dx.definedon)
@@ -346,10 +351,12 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       {
       case 1:
         return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                   LaplaceSLKernel<3>{}, fesorder+igl->dx.bonus_intorder);
+                                                                   LaplaceSLKernel<3>{}, ioflags, 
+                                                                   fesorder+igl->dx.bonus_intorder);
       case 3:
         return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                     LaplaceSLKernel<3,3>{}, fesorder+igl->dx.bonus_intorder);
+                                                                     LaplaceSLKernel<3,3>{}, ioflags,
+                                                                     fesorder+igl->dx.bonus_intorder);
       default:
         ;
       }
@@ -523,7 +530,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                                                               LameSLKernel<3>{E,nu}, fesorder /* tmpfes->GetOrder()*/ +igl->dx.bonus_intorder);
 
     throw Exception("only dim=3 LameSL is supported");
-  });
+    }, py::arg("term"), py::arg("E"), py::arg("nu"));
 
 
 
