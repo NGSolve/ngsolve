@@ -320,7 +320,7 @@ namespace ngcomp
 
     if (coarse_pre)
       {
-	mgp->SetCoarseGridPreconditioner (shared_ptr<BaseMatrix> (const_cast<BaseMatrix*>(&coarse_pre->GetMatrix()), NOOP_Deleter));
+	mgp->SetCoarseGridPreconditioner (coarse_pre);
       }
 
     if (bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
@@ -431,7 +431,7 @@ namespace ngcomp
         blocksmoother->SetDirectSolverCluster(cluster);
   }
 
-  void MGPreconditioner::SetCoarsePreconditioner(shared_ptr<Preconditioner> prec)
+  void MGPreconditioner::SetCoarsePreconditioner(shared_ptr<BaseMatrix> prec)
   {
       coarse_pre = prec;
       mgp->SetCoarseType (MultigridPreconditioner::USER_COARSE);

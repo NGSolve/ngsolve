@@ -414,7 +414,7 @@ namespace ngcomp
     ///
     // MGPreconditioner * low_order_preconditioner;
     ///
-    shared_ptr<Preconditioner> coarse_pre;
+    shared_ptr<BaseMatrix> coarse_pre;
     ///
     int finesmoothingsteps;
     ///
@@ -462,7 +462,7 @@ namespace ngcomp
     void MgTest () const;
 
     void SetDirectSolverCluster(shared_ptr<Array<int>> cluster);
-    void SetCoarsePreconditioner(shared_ptr<Preconditioner> prec);
+    void SetCoarsePreconditioner(shared_ptr<BaseMatrix> prec);
   };
 
   class CommutingAMGPreconditioner : public Preconditioner
