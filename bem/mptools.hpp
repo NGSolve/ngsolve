@@ -58,6 +58,15 @@ namespace ngsbem
   
 
 
+  class FMM_Parameters
+  {
+  public:
+    int maxdirect = 100;
+    int minorder = 20;    // order = minorder + 2 kappa r 
+  };
+
+
+  
   
   inline std::tuple<double, double, double> SphericalCoordinates(Vec<3> dist){
     double len, theta, phi;
@@ -665,6 +674,7 @@ namespace ngsbem
                   Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_chargedipoles;
       
       int total_sources;
+      // const FMM_Parameters & fmm_params;
       std::mutex node_mutex;
       atomic<bool> have_childs{false};
       
@@ -742,7 +752,7 @@ namespace ngsbem
 
         // if (r*mp.Kappa() < 1e-8) return;
         if (level > 20) return;
-        if (charges.Size() < maxdirect && r*mp.Kappa() < 5)
+        if (charges.Size() < /* fmm_params. */ maxdirect && r*mp.Kappa() < 5)
           return;
         
         SendSourcesToChilds();
@@ -1269,12 +1279,13 @@ namespace ngsbem
       }
     };
     
-    Node root;
+    Node root;    
     bool havemp = false;
+    FMM_Parameters fmm_params;
     
   public:
-    SingularMLExpansion (Vec<3> center, double r, double kappa)
-      : root(center, r, 0, kappa)
+    SingularMLExpansion (Vec<3> center, double r, double kappa, FMM_Parameters _params = FMM_Parameters())
+      : root(center, r, 0, kappa), fmm_params(_params)
     {
       nodes_on_level = 0;
       nodes_on_level[0] = 1;
