@@ -7286,19 +7286,37 @@ namespace ngcomp
                     ElementId id, bool addatomic, 
                     LocalHeap & lh) 
   {
-    if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
-    
-    for (int i = 0; i < dnums1.Size(); i++)
-      if (IsRegularDof(dnums1[i]))
-        {
-          TM & mij = (*mymatrix)(dnums1[i]); // , dnums1[i]);
-          int hi = Height (mij);
-          int wi = Width (mij);
+    // if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
 
-          for (int k = 0; k < hi; k++)
-            for (int l = 0; l < wi; l++)
-              mij(k,l) += elmat(i*hi+k, i*wi+l);
-        }
+    if (!addatomic)
+      {
+        for (int i = 0; i < dnums1.Size(); i++)
+          if (IsRegularDof(dnums1[i]))
+            {
+              TM & mij = (*mymatrix)(dnums1[i]); // , dnums1[i]);
+              int hi = Height (mij);
+              int wi = Width (mij);
+              
+              for (int k = 0; k < hi; k++)
+                for (int l = 0; l < wi; l++)
+                  mij(k,l) += elmat(i*hi+k, i*wi+l);
+            }
+      }
+    else
+      {
+        for (int i = 0; i < dnums1.Size(); i++)
+          if (IsRegularDof(dnums1[i]))
+            {
+              TM & mij = (*mymatrix)(dnums1[i]); // , dnums1[i]);
+              int hi = Height (mij);
+              int wi = Width (mij);
+              
+              for (int k = 0; k < hi; k++)
+                for (int l = 0; l < wi; l++)
+                  AtomicAdd (mij(k,l), elmat(i*hi+k, i*wi+l));
+            }
+      }
+          
   }
 
 
@@ -7311,13 +7329,23 @@ namespace ngcomp
                     ElementId id, bool addatomic,
                     LocalHeap & lh) 
   {
-    if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
-    
-    for (int i = 0; i < dnums1.Size(); i++)
-      if (IsRegularDof(dnums1[i]))
-        (*mymatrix)(dnums1[i]) += elmat(i, i);
-  }
+    // if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
 
+    if (!addatomic)
+      {
+        
+        for (int i = 0; i < dnums1.Size(); i++)
+          if (IsRegularDof(dnums1[i]))
+            (*mymatrix)(dnums1[i]) += elmat(i, i);
+      }
+    else
+      {
+        
+        for (int i = 0; i < dnums1.Size(); i++)
+          if (IsRegularDof(dnums1[i]))
+            AtomicAdd ( (*mymatrix)(dnums1[i]), elmat(i, i));
+      }
+  }      
 
 
 
