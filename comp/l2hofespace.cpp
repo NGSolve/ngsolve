@@ -751,6 +751,8 @@ namespace ngcomp
         additional_evaluators.Set ("Grad", make_shared<BlockDifferentialOperatorTransGrad>(flux_evaluator[VOL], dimension));        
 	flux_evaluator[VOL] = make_shared<BlockDifferentialOperator> (flux_evaluator[VOL], dimension);
 	// evaluator[BND] = make_shared<BlockDifferentialOperator> (evaluator[BND], dimension);
+
+        additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (additional_evaluators["dual"], dimension));
       }
 
 

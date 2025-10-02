@@ -675,6 +675,8 @@ namespace ngcomp
         for (auto vb : { VOL,BND, BBND, BBBND })
           if (evaluator[vb])
             evaluator[vb] = make_shared<BlockDifferentialOperator> (evaluator[vb], dimension);
+
+        additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (additional_evaluators["dual"], dimension));        
       }
 
     if (flags.GetDefineFlag("hoprolongation"))
