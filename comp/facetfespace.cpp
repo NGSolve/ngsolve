@@ -22,6 +22,8 @@ namespace ngcomp
     enum { DIFFORDER = 0 };
     static IVec<0> GetDimensions() { return IVec<0>(); };
 
+    static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
+    
     typedef DiffOpIdBoundary<D> DIFFOP_TRACE;
     
     template <typename FEL, typename MIP, typename MAT>
@@ -137,6 +139,159 @@ namespace ngcomp
   };
 
 
+
+
+
+
+  /// Identity
+  template <int D>
+  class DiffOpIdFacetDual : public DiffOp<DiffOpIdFacetDual<D> >
+  {
+  public:
+    enum { DIM = 1 };
+    enum { DIM_SPACE = D };
+    enum { DIM_ELEMENT = D };
+    enum { DIM_DMAT = 1 };
+    enum { DIFFORDER = 0 };
+    static IVec<0> GetDimensions() { return IVec<0>(); };
+
+    typedef DiffOpIdDual<D-1,D> DIFFOP_TRACE;
+    
+    template <typename FEL, typename MIP, typename MAT>
+    static void GenerateMatrix (const FEL & bfel, const MIP & mip,
+                                MAT && mat, LocalHeap & lh)
+    {
+      int facetnr = mip.IP().FacetNr();
+      if (facetnr >= 0)
+        {
+          mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+          fel_facet.Facet(facetnr).CalcShape(mip.IP(), 
+                                             mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+          mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)) /= mip.GetMeasure();          
+        }
+      else
+        {
+          // if (mip.BaseMappedIntegrationPoint::ElementVB() == BND)
+          if (mip.IP().VB() == BND) 
+            {
+              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
+              fel.CalcShape (mip.IP(), mat.Row(0));
+
+              mat.Row(0).Range(fel.GetNDof()) /= mip.GetMeasure();                        
+            }
+          else
+            throw Exception("cannot evaluate facet-fe inside element");
+        }
+    }
+
+    static void GenerateMatrixSIMDIR (const FiniteElement & fel,
+                                      const SIMD_BaseMappedIntegrationRule & mir,
+                                      BareSliceMatrix<SIMD<double>> mat)
+    {
+      int facetnr = mir.IR()[0].FacetNr();
+      if (facetnr >= 0)
+        {
+          mat.AddSize(fel.GetNDof(), mir.Size()) = 0.0;
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (fel);
+          fel_facet.Facet(facetnr).CalcShape(mir.IR(), 
+                                             mat.Rows(fel_facet.GetFacetDofs(facetnr)));
+          for (int j = 0; j < mir.Size(); j++)
+            mat.Rows(fel_facet.GetFacetDofs(facetnr)).Col(j) /= mir[j].GetMeasure();
+        }
+      else
+        {
+          throw ExceptionNOSIMD("facet-simd-bnd not ready");
+        }
+    }
+
+    
+    using DiffOp<DiffOpIdFacetDual<D>>::ApplySIMDIR;          
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+
+      int facetnr = mir.IR()[0].FacetNr();
+      if (facetnr < 0)
+        throw Exception("cannot evaluate facet-fe inside element, apply simd");
+      else
+        {
+          fel_facet.Facet(facetnr).Evaluate(mir.IR(),
+                                            x.Range(fel_facet.GetFacetDofs(facetnr)),
+                                            y.Row(0));
+          for (int j = 0; j < mir.Size(); j++)
+            y(j) /= mir[j].GetMeasure();
+        }
+    }
+
+    using DiffOp<DiffOpIdFacetDual<D>>::AddTransSIMDIR;          
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+
+      int facetnr = mir.IR()[0].FacetNr();
+      if (facetnr < 0)
+        throw Exception("cannot evaluate facet-fe inside element, add trans simd");
+      else
+        {
+          VectorMem<40, SIMD<double>> hy(mir.Size());
+          hy = y.Row(0);
+          for (int j = 0; j < mir.Size(); j++)
+            hy(j) /= mir[j].GetMeasure();          
+          fel_facet.Facet(facetnr).AddTrans(mir.IR(),
+                                            hy,
+                                            x.Range(fel_facet.GetFacetDofs(facetnr)));
+        }
+    }
+
+
+    static int DimRef() { return 1; }     
+    
+    template <typename IP, typename MAT>
+    static void GenerateMatrixRef (const FiniteElement & bfel, const IP & ip,
+                                   MAT && mat, LocalHeap & lh)
+    {
+      int facetnr = ip.FacetNr();
+      if (facetnr >= 0)
+        {
+          mat.AddSize(DIM_DMAT, bfel.GetNDof()) = 0.0;
+          const FacetVolumeFiniteElement<D> & fel_facet = static_cast<const FacetVolumeFiniteElement<D>&> (bfel);
+          fel_facet.Facet(facetnr).CalcShape(ip, 
+                                             mat.Row(0).Range(fel_facet.GetFacetDofs(facetnr)));
+        }
+      else
+        throw Exception ("DiffOpIdFacet::MatrixRef, not on face");
+    }
+
+    template <typename MIP, typename MAT>
+    static void CalcTransformationMatrix (const MIP & mip,
+                                          MAT & mat, LocalHeap & lh)
+    {
+      mat(0,0) = 1.0 / mip.GetMeasure();
+    }
+
+    
+    static shared_ptr<CoefficientFunction>
+    DiffShape (shared_ptr<CoefficientFunction> proxy,
+               shared_ptr<CoefficientFunction> dir,
+               bool Eulerian)
+    {
+      // if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdFacet");
+      // return ZeroCF(Array<int>());
+      throw Exception("DiffShape not implemented for DiffOpIdFacetDual");      
+    }
+
+  };
+
+
+
+
+
+
+
+  
     template <int D>
   class DiffOpGradFacet : public DiffOp<DiffOpGradFacet<D> >
   {
@@ -500,6 +655,7 @@ namespace ngcomp
         integrator[BND] = make_shared<RobinIntegrator<2>> (one);
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<2>>>();
 
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacet<3>>>());
       }
     else
       {
@@ -507,6 +663,8 @@ namespace ngcomp
 	evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<3>>>();
         integrator[BND] = make_shared<RobinIntegrator<3>> (one);
         flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradFacet<3>>>();
+
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacetDual<3>>>());        
       }
 
     if (dimension > 1)
@@ -532,7 +690,7 @@ namespace ngcomp
             ma->GetNetgenMesh()->GetTopology().EnableTable("parentfaces", true);
           }
       }
-    additional_evaluators.Set ("dual", evaluator[VOL]);
+    // additional_evaluators.Set ("dual", evaluator[VOL]);
   }
   
 
