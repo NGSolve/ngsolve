@@ -728,7 +728,9 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<2>>>());
-          additional_evaluators.Set ("normal", make_shared<T_DifferentialOperator<DiffOpNormal<2>>>());          
+          additional_evaluators.Set ("normal", make_shared<T_DifferentialOperator<DiffOpNormal<2>>>());
+
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdDual<2,2>>>());
           break;
         }
       case 3:
@@ -736,6 +738,8 @@ namespace ngcomp
           evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<3>>>();
           flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<3>>>();
           additional_evaluators.Set ("Grad", make_shared<T_DifferentialOperator<DiffOpGradient<3>>>());
+
+          additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdDual<3,3>>>());
           break;
         }
       }
@@ -788,7 +792,7 @@ namespace ngcomp
     lowest_order_ct =
       flags.GetDefineFlagX ("lowest_order_wb").IsTrue() ? WIREBASKET_DOF : LOCAL_DOF;
 
-    additional_evaluators.Set ("dual", evaluator[VOL]);
+    // additional_evaluators.Set ("dual", evaluator[VOL]);
 
     switch (ma->GetDimension())
       {
