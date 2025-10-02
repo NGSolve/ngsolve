@@ -340,7 +340,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     int fesorder = GetFESOrder (proxy);
 
     auto flags = CreateFlagsFromKwArgs(kwargs); 
-    IntOpFlags ioflags(flags);
+    IntOp_Parameters ioparams(flags);
     // cout << ioflags << endl;
     
     optional<Region> definedon;
@@ -351,11 +351,11 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       {
       case 1:
         return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                   LaplaceSLKernel<3>{}, ioflags, 
+                                                                   LaplaceSLKernel<3>{}, ioparams, 
                                                                    fesorder+igl->dx.bonus_intorder);
       case 3:
         return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                     LaplaceSLKernel<3,3>{}, ioflags,
+                                                                     LaplaceSLKernel<3,3>{}, ioparams,
                                                                      fesorder+igl->dx.bonus_intorder);
       default:
         ;

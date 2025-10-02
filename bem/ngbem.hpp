@@ -11,18 +11,22 @@ namespace ngsbem
   using namespace ngcomp;
   class BasePotentialCF;
 
-  class IntOpFlags
+  class IntOp_Parameters
   {
     bool use_fmm = true;
+    int fmm_maxdirect = 100;
   public:
-    IntOpFlags () = default;
-    IntOpFlags (const Flags & flags);
+    IntOp_Parameters () = default;
+    IntOp_Parameters (const Flags & flags);
+    
     bool UseFMM() const { return use_fmm; }
+    int FMMMaxDirect() const { return fmm_maxdirect; }    
   };
 
-  inline ostream & operator<< (ostream & ost, const IntOpFlags & ioflags)
+  inline ostream & operator<< (ostream & ost, const IntOp_Parameters & ioflags)
   {
     ost << "use_fmm = " << ioflags.UseFMM() << endl;
+    ost << "fmm_maxdirect = " << ioflags.FMMMaxDirect() << endl;
     return ost;
   }
 
@@ -230,7 +234,7 @@ namespace ngsbem
     // shared_ptr<CoefficientFunction> factor;
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
-    IntOpFlags ioflags;
+    IntOp_Parameters ioflags;
     int intorder;
     
   public:
@@ -243,7 +247,7 @@ namespace ngsbem
     BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, // shared_ptr<CoefficientFunction> _factor,
                            optional<Region> _definedon,    
                            shared_ptr<DifferentialOperator> _evaluator,
-                           IntOpFlags _ioflags, 
+                           IntOp_Parameters _ioflags, 
                            int _intorder)
       : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), ioflags(_ioflags), intorder(_intorder) { ; } 
 
@@ -283,7 +287,7 @@ namespace ngsbem
                        optional<Region> _definedon,    
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel,
-                       IntOpFlags _ioflags, 
+                       IntOp_Parameters _ioflags, 
                        int _intorder)
       : BasePotentialOperator (_proxy, _definedon, _evaluator, _ioflags, _intorder), kernel(_kernel) { ; }
 
