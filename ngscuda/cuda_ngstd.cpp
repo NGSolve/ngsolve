@@ -10,8 +10,13 @@ namespace ngs_cuda
 {
 
   // Print device properties
-  void printDevProp(cudaDeviceProp devProp)
+  void printDevProp(cudaDeviceProp devProp, int device_id)
   {
+    int clock_rate, kernel_exec_timeout, device_overlap;
+    cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, device_id);
+    cudaDeviceGetAttribute(&kernel_exec_timeout, cudaDevAttrKernelExecTimeout, device_id);
+    cudaDeviceGetAttribute(&device_overlap, cudaDevAttrConcurrentManagedAccess, device_id);
+
     printf("Major revision number:         %d\n",  devProp.major);
     printf("Minor revision number:         %d\n",  devProp.minor);
     printf("Name:                          %s\n",  devProp.name);
@@ -25,12 +30,12 @@ namespace ngs_cuda
       printf("Maximum dimension %d of block:  %d\n", i, devProp.maxThreadsDim[i]);
     for (int i = 0; i < 3; ++i)
       printf("Maximum dimension %d of grid:   %d\n", i, devProp.maxGridSize[i]);
-    printf("Clock rate:                    %d\n",  devProp.clockRate);
+    printf("Clock rate:                    %d\n",  clock_rate);
     printf("Total constant memory:         %lu\n",  devProp.totalConstMem);
     printf("Texture alignment:             %lu\n",  devProp.textureAlignment);
-    printf("Concurrent copy and execution: %s\n",  (devProp.deviceOverlap ? "Yes" : "No"));
+    printf("Concurrent copy and execution: %s\n",  (device_overlap ? "Yes" : "No"));
     printf("Number of multiprocessors:     %d\n",  devProp.multiProcessorCount);
-    printf("Kernel execution timeout:      %s\n",  (devProp.kernelExecTimeoutEnabled ? "Yes" : "No"));
+    printf("Kernel execution timeout:      %s\n",  (kernel_exec_timeout ? "Yes" : "No"));
     return;
   }
 
@@ -50,8 +55,11 @@ namespace ngs_cuda
         // Get device properties
         cudaDeviceProp devProp;
         cudaGetDeviceProperties(&devProp, i);
+        int clock_rate;
+        cudaDeviceGetAttribute(&clock_rate, cudaDevAttrClockRate, i);
+
         if(i==0)
-          gpu_clock = devProp.clockRate * 1000;
+          gpu_clock = clock_rate * 1000;
 
         if (verbose == 1)
           {
@@ -61,7 +69,7 @@ namespace ngs_cuda
         if (verbose >= 2)
           {
             cout << endl << "CUDA Device " << i << endl;
-            printDevProp(devProp);
+            printDevProp(devProp, i);
           }
       }
 
