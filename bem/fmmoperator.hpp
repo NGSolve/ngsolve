@@ -34,11 +34,13 @@ namespace ngsbem
     Vec<3> cx, cy;
     double rx, ry;
     IVec<2> kernelshape;
+    FMM_Parameters fmm_params;
   public:
     Base_FMM_Operator(Array<Vec<3>> _xpts, Array<Vec<3>> _ypts,
-                      Array<Vec<3>> _xnv, Array<Vec<3>> _ynv, IVec<2> _kernelshape)
+                      Array<Vec<3>> _xnv, Array<Vec<3>> _ynv, IVec<2> _kernelshape,
+                      const FMM_Parameters & _params)
       : xpts(std::move(_xpts)), ypts(std::move(_ypts)),
-        xnv(std::move(_xnv)), ynv(std::move(_ynv)), kernelshape(_kernelshape)
+        xnv(std::move(_xnv)), ynv(std::move(_ynv)), kernelshape(_kernelshape), fmm_params(_params)
     {
       std::tie(cx, rx) = GetCenterAndRadius(xpts);      
       std::tie(cy, ry) = GetCenterAndRadius(ypts);
@@ -65,11 +67,11 @@ namespace ngsbem
     KERNEL kernel;
     typedef Base_FMM_Operator<typename KERNEL::value_type> BASE;
     using BASE::xpts, BASE::ypts, BASE::xnv, BASE::ynv, BASE::cx, BASE::cy, BASE::rx, BASE::ry;
-
+    using BASE::fmm_params;
   public:
     FMM_Operator(KERNEL _kernel, Array<Vec<3>> _xpts, Array<Vec<3>> _ypts,
-                 Array<Vec<3>> _xnv, Array<Vec<3>> _ynv)
-      : BASE(std::move(_xpts), std::move( _ypts), std::move(_xnv), std::move(_ynv), KERNEL::Shape()),
+                 Array<Vec<3>> _xnv, Array<Vec<3>> _ynv, const FMM_Parameters & fmm_params)
+      : BASE(std::move(_xpts), std::move( _ypts), std::move(_xnv), std::move(_ynv), KERNEL::Shape(), fmm_params),
       kernel(_kernel)
     {
 
@@ -120,14 +122,14 @@ namespace ngsbem
       auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[0]);      
       
       maty = 0;
-      auto singmp = kernel.CreateMultipoleExpansion (cx, rx);
+      auto singmp = kernel.CreateMultipoleExpansion (cx, rx, fmm_params);
       ParallelFor (xpts.Size(), [&](int i){
         kernel.AddSource(*singmp, xpts[i], xnv[i], matx.Row(i));
       });
       singmp->CalcMP();
       static Timer taddlocal("ngbem fmm add local");
       taddlocal.Start();
-      auto regmp = kernel.CreateLocalExpansion (cy, ry);
+      auto regmp = kernel.CreateLocalExpansion (cy, ry, fmm_params);
       ParallelFor (ypts.Size(), [&](int i){
         regmp->AddTarget(ypts[i]);
       });
@@ -151,12 +153,12 @@ namespace ngsbem
         auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[1]);
 
         maty = 0;
-        auto singmp = kernel.CreateMultipoleExpansion (cy, ry);
+        auto singmp = kernel.CreateMultipoleExpansion (cy, ry, fmm_params);
         ParallelFor (ypts.Size(), [&](int i){
           kernel.AddSourceTrans(*singmp, ypts[i], ynv[i], matx.Row(i));
         });
         singmp->CalcMP();
-        auto regmp = kernel.CreateLocalExpansion (cx, rx);
+        auto regmp = kernel.CreateLocalExpansion (cx, rx, fmm_params);
         ParallelFor (xpts.Size(), [&](int i){
           regmp->AddTarget(xpts[i]);
         });

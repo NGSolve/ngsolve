@@ -15,18 +15,30 @@ namespace ngsbem
   {
     bool use_fmm = true;
     int fmm_maxdirect = 100;
+    int fmm_minorder = 20;
   public:
     IntOp_Parameters () = default;
     IntOp_Parameters (const Flags & flags);
     
     bool UseFMM() const { return use_fmm; }
-    int FMMMaxDirect() const { return fmm_maxdirect; }    
+    int FMMMaxDirect() const { return fmm_maxdirect; }
+    int FMMMinOrder() const { return fmm_minorder; }
+
+    operator FMM_Parameters() const
+    {
+      FMM_Parameters fmm_params;
+      fmm_params.maxdirect = fmm_maxdirect;
+      fmm_params.minorder = fmm_minorder;      
+      return fmm_params;
+    }
+      
   };
 
   inline ostream & operator<< (ostream & ost, const IntOp_Parameters & ioflags)
   {
     ost << "use_fmm = " << ioflags.UseFMM() << endl;
     ost << "fmm_maxdirect = " << ioflags.FMMMaxDirect() << endl;
+    ost << "fmm_minorder = " << ioflags.FMMMinOrder() << endl;    
     return ost;
   }
 
@@ -51,7 +63,7 @@ namespace ngsbem
     
     // integration order
     int intorder;
-
+    IntOp_Parameters io_params;
 
     // Sauter-Schwab integration rules:
     Array<Vec<2>> identic_panel_x, identic_panel_y;
@@ -72,7 +84,7 @@ namespace ngsbem
                       optional<Region> _definedon_trial, optional<Region> _definedon_test,
                       shared_ptr<DifferentialOperator> _trial_evaluator, //  shared_ptr<CoefficientFunction> _trial_factor,
                       shared_ptr<DifferentialOperator> _test_evaluator, // shared_ptr<CoefficientFunction> _test_factor,
-                      int _intorder);
+                      int _intorder, const IntOp_Parameters & _io_params);
     
     virtual ~IntegralOperator() = default;
 
@@ -112,7 +124,7 @@ namespace ngsbem
                             shared_ptr<DifferentialOperator> _trial_evaluator, 
                             shared_ptr<DifferentialOperator> _test_evaluator, 
                             KERNEL _kernel,
-                            int _intorder);
+                            int _intorder, const IntOp_Parameters & _io_params = IntOp_Parameters());
     /*
       : GenericIntegralOperator (_trial_space, _test_space, _definedon_trial, _definedon_test,
                                  _trial_evaluator, nullptr, _test_evaluator, nullptr,
@@ -141,7 +153,7 @@ namespace ngsbem
     shared_ptr<GridFunction> gf;
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
-
+    IntOp_Parameters io_params;
        
   public:
     BasePotentialCF (shared_ptr<GridFunction> _gf,
@@ -164,7 +176,7 @@ namespace ngsbem
     int intorder;
     bool nearfield;
 
-    using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::CreateLocalExpansion),KERNEL,Vec<3>,double>;
+    using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::CreateLocalExpansion),KERNEL,Vec<3>,double,FMM_Parameters>;
 
     LOCAL_EXPANSION local_expansion;
     
@@ -234,7 +246,7 @@ namespace ngsbem
     // shared_ptr<CoefficientFunction> factor;
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
-    IntOp_Parameters ioflags;
+    IntOp_Parameters io_params;
     int intorder;
     
   public:
@@ -247,9 +259,9 @@ namespace ngsbem
     BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, // shared_ptr<CoefficientFunction> _factor,
                            optional<Region> _definedon,    
                            shared_ptr<DifferentialOperator> _evaluator,
-                           IntOp_Parameters _ioflags, 
+                           IntOp_Parameters _io_params, 
                            int _intorder)
-      : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), ioflags(_ioflags), intorder(_intorder) { ; } 
+      : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), io_params(_io_params), intorder(_intorder) { ; } 
 
 
 
@@ -287,9 +299,9 @@ namespace ngsbem
                        optional<Region> _definedon,    
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel,
-                       IntOp_Parameters _ioflags, 
+                       IntOp_Parameters _io_params, 
                        int _intorder)
-      : BasePotentialOperator (_proxy, _definedon, _evaluator, _ioflags, _intorder), kernel(_kernel) { ; }
+      : BasePotentialOperator (_proxy, _definedon, _evaluator, _io_params, _intorder), kernel(_kernel) { ; }
 
     shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
                                                       // shared_ptr<CoefficientFunction> test_factor,
@@ -317,7 +329,8 @@ namespace ngsbem
                                                            proxy->Evaluator(), // nullptr, // factor,
                                                            test_proxy->Evaluator(), // nullptr, // test_factor, 
                                                            kernel,
-                                                           2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder);
+                                                           2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder,
+                                                           io_params);
     }
     
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
@@ -329,7 +342,7 @@ namespace ngsbem
     {
       ost << "Potential operator:" << endl;
       ost << "Kernel: " << kernel.Name() << endl;
-      ost << ioflags << endl;
+      ost << io_params << endl;
     }
   };  
 

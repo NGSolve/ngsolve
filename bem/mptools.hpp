@@ -525,12 +525,14 @@ namespace ngsbem
 
   // ***************** parameters ****************
 
+  /*
   static constexpr int MPOrder (double rho_kappa)
   {
     // return max (20, int(2*rho_kappa));
     return 20+int(2*rho_kappa);
   }
   static constexpr int maxdirect = 100;
+  */
 
 
   template <typename SCAL, auto S>
@@ -674,12 +676,13 @@ namespace ngsbem
                   Vec<3,SIMD<double,FMM_SW>>, simd_entry_type>> simd_chargedipoles;
       
       int total_sources;
-      // const FMM_Parameters & fmm_params;
+      const FMM_Parameters & fmm_params;
       std::mutex node_mutex;
       atomic<bool> have_childs{false};
       
-      Node (Vec<3> acenter, double ar, int alevel, double akappa)
-        : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar) // min(1.0, ar*akappa))
+      Node (Vec<3> acenter, double ar, int alevel, double akappa, const FMM_Parameters & afmm_params)
+      // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar), fmm_params(afmm_params)
+        : center(acenter), r(ar), level(alevel), mp(afmm_params.minorder+2*ar*akappa, akappa, ar), fmm_params(afmm_params)
       {
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
@@ -703,7 +706,7 @@ namespace ngsbem
             cc(0) += (i&1) ? r/2 : -r/2;
             cc(1) += (i&2) ? r/2 : -r/2;
             cc(2) += (i&4) ? r/2 : -r/2;
-            childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa());
+            childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa(), fmm_params);
           }
         have_childs = true;
       }
@@ -752,7 +755,7 @@ namespace ngsbem
 
         // if (r*mp.Kappa() < 1e-8) return;
         if (level > 20) return;
-        if (charges.Size() < /* fmm_params. */ maxdirect && r*mp.Kappa() < 5)
+        if (charges.Size() < fmm_params.maxdirect && r*mp.Kappa() < 5)
           return;
         
         SendSourcesToChilds();
@@ -782,7 +785,7 @@ namespace ngsbem
         dipoles.Append (tuple{x,d,c});
         
         if (level > 20) return;
-        if (dipoles.Size() < maxdirect)
+        if (dipoles.Size() < fmm_params.maxdirect)
           return;
 
         SendSourcesToChilds();
@@ -811,7 +814,7 @@ namespace ngsbem
         
         chargedipoles.Append (tuple{x,c,dir,c2});
 
-        if (chargedipoles.Size() < maxdirect || r < 1e-8)
+        if (chargedipoles.Size() < fmm_params.maxdirect || r < 1e-8)
           return;
 
         SendSourcesToChilds();
@@ -1279,13 +1282,13 @@ namespace ngsbem
       }
     };
     
+    FMM_Parameters fmm_params;
     Node root;    
     bool havemp = false;
-    FMM_Parameters fmm_params;
     
   public:
     SingularMLExpansion (Vec<3> center, double r, double kappa, FMM_Parameters _params = FMM_Parameters())
-      : root(center, r, 0, kappa), fmm_params(_params)
+      : fmm_params(_params), root(center, r, 0, kappa, fmm_params)
     {
       nodes_on_level = 0;
       nodes_on_level[0] = 1;
@@ -1672,11 +1675,13 @@ namespace ngsbem
       atomic<bool> have_childs{false};
 
       Array<const typename SingularMLExpansion<elem_type>::Node*> singnodes;
+      const FMM_Parameters & params;
 
-      Node (Vec<3> acenter, double ar, int alevel, double kappa)
+      
+      Node (Vec<3> acenter, double ar, int alevel, double kappa, const FMM_Parameters & _params)
         : center(acenter), r(ar), level(alevel),
           // mp(MPOrder(ar*kappa), kappa, ar) // 1.0/min(1.0, 0.25*r*kappa))
-          mp(-1, kappa, ar)
+          mp(-1, kappa, ar), params(_params)
           // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*kappa), kappa, 1.0)
       {
         if (level < nodes_on_level.Size())
@@ -1685,7 +1690,8 @@ namespace ngsbem
 
       void Allocate()
       {
-        mp = SphericalExpansion<Regular,elem_type>(MPOrder(r*mp.Kappa()), mp.Kappa(), r);
+        // mp = SphericalExpansion<Regular,elem_type>(MPOrder(r*mp.Kappa()), mp.Kappa(), r);
+        mp = SphericalExpansion<Regular,elem_type>(params.minorder+2*r*mp.Kappa(), mp.Kappa(), r);        
       }
       
       
@@ -1699,7 +1705,7 @@ namespace ngsbem
             cc(0) += (i&1) ? r/2 : -r/2;
             cc(1) += (i&2) ? r/2 : -r/2;
             cc(2) += (i&4) ? r/2 : -r/2;
-            childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa());
+            childs[i] = make_unique<Node> (cc, r/2, level+1, mp.Kappa(), params);
             if (allocate)
               childs[i] -> Allocate();
           }
@@ -1920,7 +1926,7 @@ namespace ngsbem
 
         // if (r*mp.Kappa() < 1e-8) return;
         if (level > 20) return;        
-        if (targets.Size() < maxdirect && r*mp.Kappa() < 5)
+        if (targets.Size() < params.maxdirect && r*mp.Kappa() < 5)
           return;
 
         CreateChilds();
@@ -1960,7 +1966,7 @@ namespace ngsbem
         vol_targets.Append (tuple(x,tr));
 
         if (level > 20) return;
-        if (vol_targets.Size() < maxdirect && (r*mp.Kappa() < 5))
+        if (vol_targets.Size() < params.maxdirect && (r*mp.Kappa() < 5))
           return;
 
         CreateChilds();
@@ -2034,9 +2040,10 @@ namespace ngsbem
     shared_ptr<SingularMLExpansion<elem_type>> singmp;
     
   public:
-  RegularMLExpansion (shared_ptr<SingularMLExpansion<elem_type>> asingmp, Vec<3> center, double r)
-      : root(center, r, 0, asingmp->Kappa()), singmp(asingmp)
-    {
+  RegularMLExpansion (shared_ptr<SingularMLExpansion<elem_type>> asingmp, Vec<3> center, double r,
+                      const FMM_Parameters & _param)
+  : root(center, r, 0, asingmp->Kappa(), _param), singmp(asingmp)
+  {
       if (!singmp->havemp) throw Exception("first call Calc for singular MP");
       root.Allocate();
       
@@ -2065,13 +2072,13 @@ namespace ngsbem
       }
     }
 
-    RegularMLExpansion (Vec<3> center, double r, double kappa)
-      : root(center, r, 0, kappa)
-    {
-      nodes_on_level = 0;
-      nodes_on_level[0] = 1;
-    }
-    
+  RegularMLExpansion (Vec<3> center, double r, double kappa, const FMM_Parameters & _param)
+  : root(center, r, 0, kappa, _param)
+  {
+    nodes_on_level = 0;
+    nodes_on_level[0] = 1;
+  }
+  
     void AddTarget (Vec<3> t)
     {
       root.AddTarget (t);

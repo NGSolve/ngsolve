@@ -119,9 +119,9 @@ namespace ngsbem
     shared_ptr<RegularMLExpansion<entry_type>> mlmp;
   public:
     RegularMLExpansionCF (shared_ptr<SingularMLExpansionCF<entry_type>> asingmp, Vec<3> center, double r)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp->MLExpansion(), center, r)} { } 
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp->MLExpansion(), center, r, FMM_Parameters())} { } 
     RegularMLExpansionCF (shared_ptr<SingularMLExpansion<entry_type>> asingmp, Vec<3> center, double r)
-      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp, center, r)} { } 
+      : CoefficientFunction(sizeof(entry_type)/sizeof(Complex), true), mlmp{make_shared<RegularMLExpansion<entry_type>>(asingmp, center, r, FMM_Parameters())} { } 
     
     virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
     { throw Exception("real eval not available"); }
