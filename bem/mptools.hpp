@@ -2035,14 +2035,15 @@ namespace ngsbem
       }
 
     };
-    
+
+    FMM_Parameters fmm_params;
     Node root;
     shared_ptr<SingularMLExpansion<elem_type>> singmp;
     
   public:
   RegularMLExpansion (shared_ptr<SingularMLExpansion<elem_type>> asingmp, Vec<3> center, double r,
-                      const FMM_Parameters & _param)
-  : root(center, r, 0, asingmp->Kappa(), _param), singmp(asingmp)
+                      const FMM_Parameters & _params)
+  : fmm_params(_params), root(center, r, 0, asingmp->Kappa(), fmm_params), singmp(asingmp)
   {
       if (!singmp->havemp) throw Exception("first call Calc for singular MP");
       root.Allocate();
