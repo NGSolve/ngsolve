@@ -270,6 +270,22 @@ namespace ngsbem
                   }
         }
 
+
+    if (!io_params.UseFMM())
+      {
+        pairs.SetSize0();
+        for (ElementId ei : trial_mesh->Elements(BND))
+          if (trial_space->DefinedOn(ei))      
+            if (!trial_definedon || (*trial_definedon).Mask().Test(trial_mesh->GetElIndex(ei)))     
+              {
+                for (ElementId ej : test_mesh->Elements(BND))
+                  if (test_space->DefinedOn(ej))                    
+                    if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(ej)))
+                      pairs.Append ( { ei.Nr(), ej.Nr() });
+              }
+      }
+    
+
     /*
     pairs.SetSize0();
     for (ElementId ei : trial_mesh->Elements(BND))
@@ -318,6 +334,7 @@ namespace ngsbem
       {
         for (auto nrtest : nbels[ei_trial.Nr()])
           {
+            HeapReset hr(lh);            
             ElementId ei_test(BND, nrtest);
             
             auto & trial_trafo = trial_mesh -> GetTrafo(ei_trial, lh);
@@ -386,7 +403,8 @@ namespace ngsbem
                   }
                 kernel_shapesj = kernel_ixiy * Trans(shapesj1);
 
-                elmat.Rows(test_range).Cols(trial_range) -= shapesi1.Rows(test_range) * kernel_shapesj.Cols(trial_range);
+                if (io_params.UseFMM())
+                  elmat.Rows(test_range).Cols(trial_range) -= shapesi1.Rows(test_range) * kernel_shapesj.Cols(trial_range);
               }
             // tasscorr.Stop();        
             nearfield_correction -> AddElementMatrix (test_dnums, trial_dnums, elmat, true);
@@ -395,8 +413,10 @@ namespace ngsbem
 
     
     tassemble.Stop();
-    return TransposeOperator(evaly) * fmmop * evalx + nearfield_correction;
-    // return nearfield_correction;
+    if (io_params.UseFMM())
+      return TransposeOperator(evaly) * fmmop * evalx + nearfield_correction;
+    else
+      return nearfield_correction;
   }
   
 
