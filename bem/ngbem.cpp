@@ -18,6 +18,7 @@ namespace ngsbem
     if (use_fmm_flag.IsFalse()) use_fmm = false;    
 
     fmm_maxdirect = int(flags.GetNumFlag("fmm_maxdirect", fmm_maxdirect));
+    fmm_minorder = int(flags.GetNumFlag("fmm_minorder", fmm_minorder));
   }
   
   
@@ -26,12 +27,12 @@ namespace ngsbem
                    optional<Region> _trial_definedon, optional<Region> _test_definedon,
                    shared_ptr<DifferentialOperator> _trial_evaluator, // shared_ptr<CoefficientFunction> _trial_factor,
                    shared_ptr<DifferentialOperator> _test_evaluator, // shared_ptr<CoefficientFunction> _test_factor,
-                   int _intorder)
+                   int _intorder, const IntOp_Parameters & _io_params)
     : trial_space(_trial_space), test_space(_test_space),
       trial_definedon(_trial_definedon), test_definedon(_test_definedon),
       trial_evaluator(_trial_evaluator), // trial_factor(_trial_factor),
       test_evaluator(_test_evaluator), // test_factor(_test_factor),
-      intorder(_intorder)
+      intorder(_intorder), io_params(_io_params)
   {
     if (!test_space)
       test_space = trial_space;
@@ -77,9 +78,10 @@ namespace ngsbem
                           shared_ptr<DifferentialOperator> _trial_evaluator,
                           shared_ptr<DifferentialOperator> _test_evaluator, 
                           KERNEL _kernel,
-                          int _intorder)
+                          int _intorder, const IntOp_Parameters & _io_params)
   : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test,
-                     _trial_evaluator, _test_evaluator, _intorder), kernel(_kernel)
+                     _trial_evaluator, _test_evaluator, _intorder, _io_params),
+    kernel(_kernel)
   {
     LocalHeap lh(100000000);
 
@@ -159,7 +161,7 @@ namespace ngsbem
           if (compress_els[i] != -1)
             creator.Add (classnr[i], i);
       Table<size_t> table = creator.MoveTable();
-
+      
       shared_ptr<BaseMatrix> evalx;
       
       for (auto elclass_inds : table)
@@ -231,7 +233,7 @@ namespace ngsbem
     auto evalx = create_eval(*trial_space, compress_trial_els, *trial_evaluator);
     auto evaly = create_eval(*test_space, compress_test_els, *test_evaluator);    
     auto fmmop = make_shared<FMM_Operator<KERNEL>> (kernel, std::move(xpts), std::move(ypts),
-                                                    std::move(xnv), std::move(ynv));
+                                                    std::move(xnv), std::move(ynv), io_params);
 
 
     if (trial_mesh != test_mesh)
@@ -775,7 +777,7 @@ namespace ngsbem
     double rs = MaxNorm(smax-smin);
 
     // cout << "cs = " << cs << ", rs = " << rs << endl;
-    auto singmp = kernel.CreateMultipoleExpansion(cs, rs);
+    auto singmp = kernel.CreateMultipoleExpansion(cs, rs, io_params);
     
     typedef typename KERNEL::value_type T;
     for (size_t i = 0; i < mesh->GetNSE(); i++)
@@ -839,7 +841,7 @@ namespace ngsbem
     double l2 = ceil (log2 (rt/rs));
     rt = exp2 (l2) * rs;
     
-    local_expansion = kernel.CreateLocalExpansion(ct, rt);
+    local_expansion = kernel.CreateLocalExpansion(ct, rt, io_params);
 
     for (auto el : reg.GetElements())
       {      

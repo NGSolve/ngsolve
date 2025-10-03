@@ -470,7 +470,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
 
-  m.def("HelmholtzCF", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
+  m.def("HelmholtzCF", [](shared_ptr<SumOfIntegrals> potential, double kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
@@ -487,6 +487,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       }
     */
     int fesorder = GetFESOrder (proxy);
+
+    auto flags = CreateFlagsFromKwArgs(kwargs); 
+    IntOp_Parameters ioparams(flags);
     
     optional<Region> definedon;
     if (igl->dx.definedon)
@@ -494,7 +497,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
     if (proxy->Dimension() == 1)
       return make_shared<PotentialOperator<CombinedFieldKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                     CombinedFieldKernel<3>(kappa), fesorder+igl->dx.bonus_intorder);
+                                                                     CombinedFieldKernel<3>(kappa), ioparams,
+                                                                     fesorder+igl->dx.bonus_intorder);
     throw Exception("only dim=1 HelmholtzCF is supported");
   });
 

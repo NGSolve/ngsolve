@@ -94,14 +94,14 @@ namespace ngsbem
     
     Array<KernelTerm> terms;
     
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16);
+      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16);
+      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
@@ -157,14 +157,14 @@ namespace ngsbem
 
     Array<KernelTerm> terms;
 
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16);
+      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16);
+      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
@@ -231,14 +231,14 @@ namespace ngsbem
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
 
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Complex>> (c, r, kappa);
+      return make_shared<SingularMLExpansion<Complex>> (c, r, kappa, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Complex>> (c, r, kappa);
+      return make_shared<RegularMLExpansion<Complex>> (c, r, kappa, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
@@ -285,14 +285,14 @@ namespace ngsbem
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
 
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Complex>> (c, r, kappa);
+      return make_shared<SingularMLExpansion<Complex>> (c, r, kappa, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Complex>> (c, r, kappa);
+      return make_shared<RegularMLExpansion<Complex>> (c, r, kappa, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
@@ -345,14 +345,14 @@ namespace ngsbem
         KernelTerm{1.0, 0, 2, 2},
       };
 
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Vec<3,Complex>>> (c, r, kappa);
+      return make_shared<SingularMLExpansion<Vec<3,Complex>>> (c, r, kappa, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Vec<3,Complex>>> (c, r, kappa);
+      return make_shared<RegularMLExpansion<Vec<3,Complex>>> (c, r, kappa, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
@@ -398,14 +398,14 @@ namespace ngsbem
 	KernelTerm{1.0, 1, 3, 3},
       };
 
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Vec<6,Complex>>> (c, r, kappa);
+      return make_shared<SingularMLExpansion<Vec<6,Complex>>> (c, r, kappa, fmm_params);
     }
  
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Vec<6,Complex>>> (c, r, kappa);
+      return make_shared<RegularMLExpansion<Vec<6,Complex>>> (c, r, kappa, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
@@ -461,14 +461,14 @@ namespace ngsbem
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
 
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Complex>> (c, r, kappa);
+      return make_shared<SingularMLExpansion<Complex>> (c, r, kappa, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Complex>> (c, r, kappa);
+      return make_shared<RegularMLExpansion<Complex>> (c, r, kappa, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
@@ -519,14 +519,14 @@ namespace ngsbem
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
 
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Vec<4,Complex>>> (c, r, kappa);
+      return make_shared<SingularMLExpansion<Vec<4,Complex>>> (c, r, kappa, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Vec<4,Complex>>> (c, r, kappa);
+      return make_shared<RegularMLExpansion<Vec<4,Complex>>> (c, r, kappa, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
@@ -586,14 +586,14 @@ namespace ngsbem
         KernelTerm{-1.0, 2, 1, 0},
       };    
 
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Vec<3,Complex>>> (c, r, kappa);
+      return make_shared<SingularMLExpansion<Vec<3,Complex>>> (c, r, kappa, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Vec<3,Complex>>> (c, r, kappa);
+      return make_shared<RegularMLExpansion<Vec<3,Complex>>> (c, r, kappa, fmm_params);
     }
 
     void AddSource (SingularMLExpansion<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
@@ -700,14 +700,14 @@ namespace ngsbem
     }
 
     
-    auto CreateMultipoleExpansion (Vec<3> c, double r) const
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Vec<6,Complex>>> (c, r, 1e-16);
+      return make_shared<SingularMLExpansion<Vec<6,Complex>>> (c, r, 1e-16, fmm_params);
     }
 
-    auto CreateLocalExpansion (Vec<3> c, double r) const
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Vec<6,Complex>>> (c, r, 1e-16);
+      return make_shared<RegularMLExpansion<Vec<6,Complex>>> (c, r, 1e-16, fmm_params);
     }
 
     
