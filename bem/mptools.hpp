@@ -2073,8 +2073,8 @@ namespace ngsbem
       }
     }
 
-  RegularMLExpansion (Vec<3> center, double r, double kappa, const FMM_Parameters & _param)
-  : root(center, r, 0, kappa, _param)
+  RegularMLExpansion (Vec<3> center, double r, double kappa, const FMM_Parameters & _params)
+  : fmm_params(_params), root(center, r, 0, kappa, fmm_params)
   {
     nodes_on_level = 0;
     nodes_on_level[0] = 1;
