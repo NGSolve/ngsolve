@@ -19,7 +19,7 @@ export NETGEN_VERSION=`/opt/python/cp312-cp312/bin/python external_dependencies/
 export NETGEN_CCACHE=1
 echo "Netgen version: $NETGEN_VERSION"
 
-for pyversion in 313 312 311 310 39
+for pyversion in 314 313 312 311 310
 do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
