@@ -1,5 +1,5 @@
 pip_linux:
-  image: sameli/manylinux_2_28_x86_64_cuda_12.9
+  image: cerbsim/manylinux_2_28_x86_64_cuda_12.9
   stage: build
   tags:
     - pip
