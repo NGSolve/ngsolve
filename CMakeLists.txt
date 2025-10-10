@@ -163,9 +163,22 @@ include_directories (BEFORE
   )
 include_directories (AFTER ${NETGEN_INCLUDE_DIRS})
 
-add_library(netgen_libs INTERFACE)
-install(TARGETS netgen_libs ${ngs_install_dir})
-target_link_libraries(netgen_libs INTERFACE nglib ngcore)
+# add_library(netgen_libs INTERFACE)
+# install(TARGETS netgen_libs ${ngs_install_dir})
+# target_link_libraries(netgen_libs INTERFACE nglib ngcore)
+
+
+add_library(netgen_lib INTERFACE)
+install(TARGETS netgen_lib ${ngs_install_dir})
+target_link_libraries(netgen_lib INTERFACE nglib)
+
+add_library(netgen_core_lib INTERFACE)
+install(TARGETS netgen_core_lib ${ngs_install_dir})
+target_link_libraries(netgen_core_lib INTERFACE ngcore)
+
+
+
+
 
 file(RELATIVE_PATH BIN_TO_LIB_RELPATH ${NETGEN_BINARY_DIR} ${NETGEN_LIBRARY_DIR})
 if(NETGEN_USE_GUI)
