@@ -24,6 +24,7 @@ target_include_directories(ngcomp PRIVATE ${NETGEN_PYTHON_INCLUDE_DIRS} ${CMAKE_
 
 target_link_libraries (ngcomp PUBLIC ngfem ngla ngbla ngstd ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>" ${HYPRE_LIBRARIES})
 target_link_libraries(ngcomp ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
+target_link_libraries(ngcomp PUBLIC netgen_lib)
 install( TARGETS ngcomp ${ngs_install_dir} )
 
 # disable contact pair visualization due to linking issues with netgen gui lib

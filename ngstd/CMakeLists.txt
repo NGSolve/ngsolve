@@ -14,7 +14,7 @@ target_include_directories(ngstd PUBLIC ${NGSOLVE_INCLUDE_DIRS} )
 
 add_dependencies( ngstd generate_version_file )
 
-target_link_libraries(ngstd PUBLIC netgen_libs)
+target_link_libraries(ngstd PUBLIC netgen_core_lib)
 target_link_libraries(ngstd PUBLIC ${MPI_CXX_LIBRARIES} PRIVATE "$<BUILD_INTERFACE:netgen_python>")
 target_link_libraries(ngstd ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS ngstd ${ngs_install_dir} )
