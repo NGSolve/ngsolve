@@ -3,27 +3,27 @@
 
 namespace ngstd
 {
-
+  
   /** Access to statusbar. (and more)
    */
 
   class NGS_DLL_HEADER BaseStatusHandler
-  {
-  public:
-    static void PushStatus (const char * str);
+    {
+    public:
+    static void PushStatus (const std::string& str);
     static void PopStatus ();
     static void SetThreadPercentage (double percent);
-
+    
     static void GetStatus (string & str, double & percent);
-
+    
     static void SetTerminate(void);
     static void UnSetTerminate(void);
     static bool ShouldTerminate(void);
-
+    
     class Region
     {
     public:
-      Region(const char * str) { PushStatus(str); }
+      Region(const string& str) { PushStatus(str); }
       ~Region() { PopStatus(); }
     };
   };
