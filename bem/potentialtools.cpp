@@ -50,8 +50,8 @@ namespace ngsbem
                 Vec<3> curi_real = Real(curi.Row(j));
                 Vec<3> curi_imag = Imag(curi.Row(j));
 
-                mp.AddDipole (mir[j].GetPoint(), Cross(curi_real, ek), mir[j].GetWeight()*ek);
-                mp.AddDipole (mir[j].GetPoint(), Cross(curi_imag, ek), Complex(0,1)*mir[j].GetWeight()*ek);
+                mp.AddDipole (mir[j].GetPoint(), ek, mir[j].GetWeight()*Cross(curi_real, ek));
+                mp.AddDipole (mir[j].GetPoint(), ek, Complex(0,1)*mir[j].GetWeight()*Cross(curi_imag, ek));
               }
           }
       }
