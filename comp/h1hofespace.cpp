@@ -475,6 +475,10 @@ namespace ngcomp
       {
       case 1:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<1>>> ());
+	if (dimension > 1)
+	  { additional_evaluators.Set ("dual", make_shared<BlockDifferentialOperator> (make_shared<T_DifferentialOperator<DiffOpDualH1<1,1>>>(), dimension)); }
+	else
+	  { additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpDualH1<1,1>>> ()); }
         break;
       case 2:
         additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
