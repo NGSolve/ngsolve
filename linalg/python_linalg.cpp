@@ -4,6 +4,8 @@
 #include "../parallel/parallelvector.hpp"
 #include "../parallel/parallel_matrices.hpp"
 #include "../ngstd/python_ngstd.hpp"
+#include "sparsefactorization_interface.hpp"
+
 using namespace ngla;
 // include netgen-header to get access to PyMPI
 #include <myadt.hpp>
@@ -1491,6 +1493,67 @@ inverse : string
          }, py::call_guard<py::gil_scoped_release>(),
          "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
     ;
+
+  class SparseFactorizationInterfaceTrampoline
+      : public SparseFactorizationInterface,
+        public py::trampoline_self_life_support {
+  public:
+    using SparseFactorizationInterface::SparseFactorizationInterface;
+    virtual void Analyze() override {
+      pybind11::gil_scoped_acquire gil;
+      if( const auto overload = pybind11::get_overload(this, "Analyze"); overload) 
+        overload();
+      else
+        SparseFactorizationInterface::Analyze();
+    }
+    virtual void Factor() override {
+      pybind11::gil_scoped_acquire gil;
+      if( const auto overload = pybind11::get_overload(this, "Factor"); overload) 
+        overload();
+      else
+        SparseFactorizationInterface::Factor();
+    }
+    virtual void Solve(const BaseVector &rhs,
+                       BaseVector &solution) const override {
+      pybind11::gil_scoped_acquire gil;
+      if( const auto overload = pybind11::get_overload(this, "Solve"); overload) 
+        overload(rhs.shared_from_this(), solution.shared_from_this());
+      else
+        throw Exception("Solve not overloaded in Python");
+    }
+
+    virtual ~SparseFactorizationInterfaceTrampoline() {}
+  };
+
+
+  py::class_<SparseFactorizationInterface, BaseMatrix, py::smart_holder,
+             SparseFactorizationInterfaceTrampoline>(
+      m, "SparseFactorizationInterface", py::dynamic_attr())
+      .def("GetInnerMatrix", &SparseFactorizationInterface::GetInnerMatrix)
+      .def(py::init([](shared_ptr<SparseMatrix<double>> mat,
+                       shared_ptr<BitArray> inner = nullptr) {
+             return make_shared<SparseFactorizationInterfaceTrampoline>(mat,
+                                                                        inner);
+           }),
+           py::arg("mat"), py::arg("freedofs") = nullptr) //,
+      .def("Update", &SparseFactorizationInterface::Update)
+      .def("Analyze", &SparseFactorizationInterface::Analyze)
+      .def("Factor", &SparseFactorizationInterface::Factor)
+      ;
+
+  m.def("RegisterInverseType", [](const string &name, py::object creator) {
+    BaseMatrix::RegisterInverseCreator(
+        name, [creator](shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> freedofs,
+                  shared_ptr<const Array<int>> cluster) {
+          py::gil_scoped_acquire gil;
+          if (cluster)
+            throw Exception("cluster not supported");
+          auto obj = creator(mat, freedofs);
+          auto sf = py::cast<shared_ptr<SparseFactorizationInterface>>(obj);
+          sf->Update();
+          return sf;
+        });
+  });
 
   py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d")
     .def(NGSPickle<SparseCholesky<double>>())
