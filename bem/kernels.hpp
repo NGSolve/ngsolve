@@ -203,22 +203,28 @@ namespace ngsbem
 
   /** HelmholtzSLkernel is the kernel for the double layer potential of the 
       Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,. $ */
-  template <int DIM> class HelmholtzSLKernel;
+  template <int DIM, int COMPS=1> class HelmholtzSLKernel;
 
   /** HelmholtzSLkernel in 3D reads 
       $$ G(x-y) = \frac{1 }{4\,\pi} \,\frac{e^{i\,\kappa \, |x-y| }{|x-y|} \, 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<>
-  class HelmholtzSLKernel<3> : public BaseKernel
+  template<int COMPS>
+  class HelmholtzSLKernel<3, COMPS> : public BaseKernel
   {
     double kappa;
   public:
     typedef Complex value_type;
+    using mp_type = typename std::conditional<COMPS == 1,
+                                              Complex,
+                                              Vec<COMPS, Complex>>::type;
     static string Name() { return "HelmholtzSL"; }
-    static auto Shape() { return IVec<2>(1,1); }
+    static auto Shape() { return IVec<2>(COMPS,COMPS); }
     
     /** Construction of the kernel specifies the wavenumber $\kappa$. */
-    HelmholtzSLKernel (double _kappa) : kappa(_kappa) { }
+    HelmholtzSLKernel (double _kappa) : kappa(_kappa) {
+      for (size_t i = 0; i < COMPS; i++)
+        terms += {1.0, 0, i, i};
+    }
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -229,26 +235,32 @@ namespace ngsbem
       return Vec<1,decltype(kern)> (kern);
     }
     double GetKappa() const { return kappa; }
-    Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
+    Array<KernelTerm> terms;
 
     auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Complex>> (c, r, kappa, fmm_params);
+      return make_shared<SingularMLExpansion<mp_type>> (c, r, kappa, fmm_params);
     }
 
     auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Complex>> (c, r, kappa, fmm_params);
+      return make_shared<RegularMLExpansion<mp_type>> (c, r, kappa, fmm_params);
     }
 
-    void AddSource (SingularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      mp.AddCharge(pnt, val(0));
+      if constexpr (COMPS == 1)
+        mp.AddCharge (pnt, val(0));
+      else
+        mp.AddCharge (pnt, val);
     }
 
-    void EvaluateMP (RegularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      val(0) = mp.Evaluate (pnt);
+      if constexpr (COMPS == 1)
+        val(0) = mp.Evaluate (pnt);
+      else
+        val = mp.Evaluate (pnt);
     }
   };
 
@@ -313,56 +325,6 @@ namespace ngsbem
     void EvaluateMPTrans(RegularMLExpansion<Complex> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
-    }
-  };
-
-
-  template <int DIM> class HelmholtzSLVecKernel;
-
-  template<>
-  class HelmholtzSLVecKernel<3> : public BaseKernel
-  {
-    double kappa;
-  public:
-    typedef Complex value_type;
-    static string Name() { return "HelmholtzSLVec"; }
-    static auto Shape() { return IVec<2>(3,3); }
-
-    HelmholtzSLVecKernel (double _kappa) : kappa(_kappa) { }
-
-    template <typename T>
-    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
-    {
-      T norm = L2Norm(x-y);
-      auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
-      return Vec<1,decltype(kern)> (kern);
-    }
-    double GetKappa() const { return kappa; }
-    Array<KernelTerm> terms =
-      {
-        KernelTerm{1.0, 0, 0, 0},
-        KernelTerm{1.0, 0, 1, 1},
-        KernelTerm{1.0, 0, 2, 2},
-      };
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<Vec<3,Complex>>> (c, r, kappa, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<Vec<3,Complex>>> (c, r, kappa, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      mp.AddCharge(pnt, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<Vec<3,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      val = mp.Evaluate (pnt);
     }
   };
 
