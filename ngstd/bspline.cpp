@@ -28,15 +28,14 @@ namespace ngstd
   {
     if (order <= 1) throw Exception ("cannot differentiate B-spline of order <= 1");
     //we should create td and cd WITHOUT padding on the leftmost elements
-    Array<double> cd(c.Size()-order);
-    Array<double> td(t.Size()-order);
-    td = t.Range(order,t.Size());
-    cd = 0;
-    for (int j = order; j < t.Size()-order+1; j++)
-      if (t[j+order-1] != t[j])
-        cd[j-order] = (order-1) * (c[j]-c[j-1]) / (t[j+order-1] - t[j]);
+    Array<double> cd(c.Size()-1);
+    Array<double> td(t.Size()-2);
+    td = t.Range(1,t.Size()-1);
+    for (int j = 0; j < c.Size() - 1; ++j)
+      if (t[j+order] != t[j+1])
+        cd[j] = (order-1) * (c[j+1]-c[j]) / (t[j+order] - t[j+1]);
       else
-        cd[j-order] = 0;
+        cd[j] = 0;
     // throw Exception ("cannot differentiate, B-spline is discontinuous");
     return BSpline (order-1, std::move(td), std::move(cd));
   }
