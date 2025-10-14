@@ -415,6 +415,11 @@ if(NOT WIN32)
   set(ngscxx_flags "${ngscxx_flags} -fPIC")
 endif()
 
+if(MSVC)
+  set(ngscxx_flags "${ngscxx_flags} /MD")
+endif(MSVC)
+
+
 # include directories
 set(ngscxx_include_dirs ${NETGEN_MPI_CXX_INCLUDE_PATH} ${MKL_INCLUDE_DIRS} ${MUMPS_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS} ${UMFPACK_INCLUDE_DIR} ${VTUNE_INCLUDE_DIR})
 
