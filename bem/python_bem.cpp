@@ -418,8 +418,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
     if (proxy->Dimension() == 3)
     {
-      return make_shared<PotentialOperator<HelmholtzSLVecKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                      HelmholtzSLVecKernel<3>(kappa), fesorder+igl->dx.bonus_intorder);
+      return make_shared<PotentialOperator<HelmholtzSLKernel<3,3>>> (proxy, definedon, proxy->Evaluator(),
+                                                                      HelmholtzSLKernel<3,3>(kappa), fesorder+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
       {
