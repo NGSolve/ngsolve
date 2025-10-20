@@ -2502,7 +2502,6 @@ namespace ngcomp
   {
     shared_ptr<CoefficientFunction> func, trafo;
     Region region;
-    unique_ptr<netgen::BoxTree<3>> searchtree;
   public:
     TrafoCF(shared_ptr<CoefficientFunction> _func,
             shared_ptr<CoefficientFunction> _trafo,
@@ -2510,30 +2509,6 @@ namespace ngcomp
       : CoefficientFunctionNoDerivative(_func->Dimension()),
         func(_func), trafo(_trafo), region(_region)
     {
-      if(region.VB() == BND)
-        {
-          netgen::Box<3> box(netgen::Box<3>::EMPTY_BOX);
-          for(const auto& el : region.GetElements())
-            for(auto v : el.Points())
-              {
-                auto p = region.Mesh()->GetPoint<3>(v);
-                box.Add({ p[0], p[1], p[2] });
-              }
-
-          box.Scale(1.4);
-          searchtree = make_unique<netgen::BoxTree<3>>(box);
-          for(const auto& el : region.GetElements())
-            {
-              netgen::Box<3> box (netgen::Box<3>::EMPTY_BOX);
-              for(auto v : el.Points())
-                {
-                  auto p = region.Mesh()->GetPoint<3>(v);
-                  box.Add({ p[0], p[1], p[2] });
-                }
-              box.Scale(1.4);
-              searchtree->Insert(box, el.Nr());
-            }
-        }
     }
 
     using CoefficientFunctionNoDerivative::Evaluate;
@@ -2552,60 +2527,38 @@ namespace ngcomp
       trafo->Evaluate(mip, mapped_point);
       IntegrationPoint ip;
       int elnr;
+      Array<int> indices;
+      for(auto i : Range(region.Mask().Size()))
+        if(region.Mask().Test(i))
+          indices.Append(i+1);
 
       if(region.VB() == BND)
         {
-      netgen::Point<3> p = {mapped_point[0], mapped_point[1], mapped_point[2] };
-      searchtree->GetFirstIntersecting(p, p, [&](int si)
-      {
-        if(region.Mesh()->GetDimension() == 3)
-          {
-          if (region.Mesh()->GetNetgenMesh()->PointContainedIn2DElement(
-                  {mapped_point[0], mapped_point[1], mapped_point[2]}, &ip(0),
-                  si + 1, false)) {
-            elnr = si;
-            return true;
-          }
-        }
-        else if(region.Mesh()->GetDimension() == 2)
-          {
-            // Only linear elements working for now
-            const auto& ngmesh = *region.Mesh()->GetNetgenMesh();
-            const auto& seg = ngmesh.LineSegment(si+1);
-            auto v1 = ngmesh[seg[1]] - ngmesh[seg[0]];
-            auto v1n = 1./v1.Length() * v1;
-            double eps = v1.Length() * 1e-8;
-            auto mp = netgen::Point<3> {mapped_point[0], mapped_point[1], 0.};
-            auto v2 = mp - ngmesh[seg[0]];
-            auto v2n = 1/v2.Length() * v2;
-
-            if (v1n * v2n > 1 - eps && v1.Length() > v2.Length() - eps) {
-              elnr = si;
-              ip = IntegrationPoint(v2.Length() / v1.Length());
-              return true;
-            }
-          }
-        else
-          throw Exception("Only 2D and 3D implemented yet!");
-        return false;
-      });
-      if(region.Mesh()->GetNetgenMesh()->SurfaceElement(elnr+1).GetType() == netgen::TRIG)
-        {
-          double lam0 = 1-ip(0)-ip(1);
-          ip(1) = ip(0);
-          ip(0) = lam0;
-        }
+          elnr = region.Mesh()->FindSurfaceElementOfPoint(mapped_point,
+                                                          ip, true,
+                                                          &indices);
         }
       else if(region.VB() == VOL)
         {
           Array<int> indices;
           for(auto i : Range(region.Mask().Size()))
             if(region.Mask().Test(i))
-              indices.Append(i);
-          elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true, &indices).Nr();
+              indices.Append(i+1);
+          elnr = region.Mesh()->FindElementOfPoint(mapped_point, ip, true,
+                                                   &indices).Nr();
+        }
+      else if(region.VB() == BBND)
+        {
+          if(region.Mesh()->GetDimension() != 3)
+            throw Exception("TrafoCF with BBND only implemented for 3D meshes!");
+          auto& m = region.Mesh()->GetNetgenMeshX();
+          elnr = m.FindElementOfPoint<1>(&mapped_point(0), &ip(0), true,
+                                         indices.Data(), 0);
         }
       else
-        throw Exception("Only VOL and BND implemented yet!");
+        {
+          throw Exception("TrafoCF not implemented for BBBND!");
+        }
       auto& eltrafo = region.Mesh()->GetTrafo(ElementId(region.VB(), elnr), global_alloc);
       auto& mapped_mip = eltrafo(ip, global_alloc);
       func->Evaluate(mapped_mip, result);
