@@ -1201,7 +1201,7 @@ namespace ngcomp
     shared_ptr<BitArray> MaskPtr() { return mask; }
     const shared_ptr<MeshAccess> & Mesh() const { return mesh; }
     void DoArchive(Archive& ar)
-    { ar & mesh & vb & mask; }
+    { ar.Shallow(mesh) & vb & mask; }
     Region operator+ (const Region & r2) const
     {
       return Region (mesh, vb, BitArray(*mask).Or(r2.Mask()));
