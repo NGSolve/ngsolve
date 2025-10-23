@@ -2783,9 +2783,11 @@ namespace ngfem
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradVectorH1<2> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradVectorH1<3> >;
 
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientBoundary<1> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientBoundary<2> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradientBoundary<3> >;
 
+  extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradBoundaryVectorH1<1> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradBoundaryVectorH1<2> >;
   extern template class NGS_DLL_HEADER T_DifferentialOperator<DiffOpGradBoundaryVectorH1<3> >;
 
