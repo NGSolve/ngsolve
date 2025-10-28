@@ -267,11 +267,16 @@ namespace ngcomp
 
 
 
-  void GridFunction :: AddMultiDimComponent (BaseVector & v)
+  void GridFunction :: AddMultiDimComponent (BaseVector & v, bool copy)
   {
     vec.SetSize (vec.Size()+1);
-    vec[multidim] = v.CreateVector();
-    *vec[multidim] = v;
+    if (copy)
+      {
+        vec[multidim] = v.CreateVector();
+        *vec[multidim] = v;
+      }
+    else
+      vec[multidim] = v.shared_from_this();
     multidim++;
     flags.SetFlag ("multidim", multidim);
   }
