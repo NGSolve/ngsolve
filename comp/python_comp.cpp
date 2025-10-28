@@ -2357,7 +2357,8 @@ diffop : ngsolve.fem.DifferentialOperator
 
 )raw_string"))
 
-    .def("AddMultiDimComponent", &GridFunction::AddMultiDimComponent)
+    .def("AddMultiDimComponent", &GridFunction::AddMultiDimComponent,
+         py::arg("vec"), py::arg("copy")=true)
     ;
 
   py::class_<S_GridFunction<double>, shared_ptr<S_GridFunction<double>>, GridFunction>
