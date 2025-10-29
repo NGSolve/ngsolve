@@ -8,8 +8,11 @@ import ngsolve.la as ngla
 import scipy.sparse as sp
 import numpy as np
 
+from ngsolve import TimeFunction
+
 
 class CudssSolver(ngla.SparseFactorizationInterface):
+    @TimeFunction
     def Analyze(self):
         self._mat = self.GetInnerMatrix()
         csr = sp.csr_matrix(self._mat.CSR())
@@ -18,9 +21,11 @@ class CudssSolver(ngla.SparseFactorizationInterface):
         self.solver = nvs.DirectSolver(csr, self._tmp, options=options)
         self.solver.plan()
 
+    @TimeFunction
     def Factor(self):
         self.solver.factorize()
 
+    @TimeFunction
     def Solve(self, b, sol):
         self.solver.reset_operands(b=b.FV().NumPy())
         sol.FV().NumPy()[:] = self.solver.solve()
