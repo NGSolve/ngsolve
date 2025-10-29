@@ -1,4 +1,4 @@
-from ngsolve.la import InnerProduct
+from ngsolve.la import InnerProduct, SparseFactorizationInterface
 from math import sqrt
 from ngsolve import Projector, Norm
 from .utils import TimeFunction
@@ -97,7 +97,7 @@ class NewtonSolver:
             else:
                 self.inv.Update()
         else:
-            if self.inverse == "sparsecholesky" and self.inv is not None:
+            if self.inv is not None and (self.inverse == "sparsecholesky" or isinstance(self.inv, SparseFactorizationInterface)):
                 self.inv.Update()
             else:
                 self.inv = self.a.mat.Inverse(self.freedofs,
