@@ -39,7 +39,8 @@ namespace ngfem
 
     // a numpy.complex converts itself to a real, and prints a warning
     // thus we check for it first
-    if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
+    // if (string(py::str(val.get_type())) == "<class 'numpy.complex128'>")
+    if (string(py::str(py::type::of(val))) == "<class 'numpy.complex128'>")
       return MakeConstantCoefficientFunction(val.cast<Complex>());
 
     try
@@ -71,7 +72,8 @@ namespace ngfem
           cflist[i] = MakeCoefficient(et[i]);
         return MakeVectorialCoefficientFunction(std::move(cflist));
       }
-    throw std::invalid_argument(string("Cannot make CoefficientFunction from ") + string(py::str(val)) + " of type " + string(py::str(val.get_type())));
+    // throw std::invalid_argument(string("Cannot make CoefficientFunction from ") + string(py::str(val)) + " of type " + string(py::str(val.get_type())));
+    throw std::invalid_argument(string("Cannot make CoefficientFunction from ") + string(py::str(val)) + " of type " + string(py::str(py::type::of(val))));
   }
 
   Array<shared_ptr<CoefficientFunction>> MakeCoefficients (py::object py_coef)
@@ -1221,7 +1223,8 @@ keep_files : bool
                 throw std::invalid_argument(
                     string("Cannot make CoefficientFunction from ")
                     + string(py::str(val)) + " of type "
-                    + string(py::str(val.get_type())));
+                    // + string(py::str(val.get_type())));
+                    + string(py::str(py::type::of(val))));
             }
             return CreateMinimizationCF(expr, stps, tol, rtol, maxiter, allow_fail);
           }
@@ -1333,7 +1336,8 @@ kwargs:
                 throw std::invalid_argument(
                     string("Cannot make CoefficientFunction from ")
                     + string(py::str(val)) + " of type "
-                    + string(py::str(val.get_type())));
+                    // + string(py::str(val.get_type())));
+                    + string(py::str(py::type::of(val))));
             }
             return CreateNewtonCF(expr, stps, tol, rtol, maxiter, allow_fail);
           }

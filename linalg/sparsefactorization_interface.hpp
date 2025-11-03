@@ -80,7 +80,7 @@ struct MapInnerDofs {
   ProjectMatrix(shared_ptr<const SparseMatrixTM<T>> m) {
     Array<int> rowi, coli;
     Array<T> vals;
-    auto &dofs = *inner;
+    // auto &dofs = *inner;
 
     auto vals_ori = m->GetValues();
 

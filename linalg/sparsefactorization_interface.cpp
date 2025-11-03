@@ -62,7 +62,7 @@ void SparseFactorizationInterface::Update() {
     inner_rhs = p_sparse_mat->CreateColVector();
     inner_solution = p_sparse_mat->CreateColVector();
 
-    auto &mat = *p_sparse_mat;
+    // auto &mat = *p_sparse_mat;
 
     p_mat = dynamic_pointer_cast<const MatrixGraph>(p_sparse_mat);
   }
