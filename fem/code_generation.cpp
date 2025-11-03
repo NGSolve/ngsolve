@@ -249,13 +249,15 @@ namespace ngfem
                 }
             }
 
+            CCode() : s("") { } 
+          
             CCode(const CCode &c) :
               s(c.s)
             {
                 Check();
             }
 
-            CCode(string as = "") : s(as) {
+            CCode(string as) : s(as) {
                 Check();
             }
 
