@@ -33,6 +33,14 @@ string FMAOp (OP op, bool callasm = true)
     return (op == SET || op == ADD) ? "FMAnonasm" : "FNMAnonasm";
 }
 
+
+string unroll1 =
+  R"raw_string(#if defined(__GNUC__) || defined(__clang__)
+#pragma GCC unroll 4  // Or #pragma unroll 4 for CUDA/OpenCL only
+#endif
+)raw_string";
+
+
 /*
   C = A * B
   C += A * B
@@ -1437,7 +1445,8 @@ void GenerateShortSum (ostream & out, int wa, OP op)
   out << "double * pa2 = pa;\n"
       << "double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
-  out << "#pragma unroll 1\n";
+  // out << "#pragma unroll 1\n";
+  out << unroll1;
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
       << "{\n";
   if (op == SET || op == SETNEG)
@@ -1467,7 +1476,8 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       << "double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
 
-  out << "#pragma unroll 1\n";  
+  // out << "#pragma unroll 1\n";
+  out << unroll1;  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
       << "{\n";
   if (op == SET || op == SETNEG)
@@ -1551,7 +1561,8 @@ void GenerateShortSum (ostream & out, int wa, OP op)
           << "double * pc2 = pc;\n"
           << "__assume(ha>0);\n";
   
-      out << "#pragma unroll 1\n";  
+      // out << "#pragma unroll 1\n";
+      out << unroll1;      
       out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
           << "{\n";
       if (op == SET || op == SETNEG)
@@ -1593,7 +1604,8 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       << "double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
 
-  out << "#pragma unroll 1\n";    
+  // out << "#pragma unroll 1\n";
+  out << unroll1;  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
       << "{\n";
 
@@ -1631,7 +1643,8 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       << "double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
   
-  out << "#pragma unroll 1\n";  
+  // out << "#pragma unroll 1\n";
+  out << unroll1;  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
       << "{\n";
   if (op == SET || op == SETNEG)
@@ -1662,7 +1675,8 @@ void GenerateShortSum (ostream & out, int wa, OP op)
       << "double * pc2 = pc;\n"
       << "__assume(ha>0);\n";
   
-  out << "#pragma unroll 1\n";  
+  // out << "#pragma unroll 1\n";
+  out << unroll1;
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pc2 += dc)\n"
       << "{\n";
   if (op == SET || op == SETNEG)
@@ -1710,7 +1724,8 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
     else
       out << "SIMD<double> sum" << k << "(pc2); pc2 += dc;\n";
   
-  out << "#pragma unroll 1\n";
+  // out << "#pragma unroll 1\n";
+  out << unroll1;  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n";
   out << "SIMD<double> bjk(pb2);\n";
@@ -1742,7 +1757,8 @@ void GenerateAtB_SmallWA (ostream & out, int wa, OP op)
     else
       out << "SIMD<double> sum" << k << "(pc2,mask); pc2 += dc;\n";
   
-  out << "#pragma unroll 1\n";  
+  // out << "#pragma unroll 1\n";
+  out << unroll1;  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n"
       << "SIMD<double> bjk(pb2, mask);\n";    
@@ -1801,7 +1817,8 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
         out << "SIMD<double> sum" << k << "2(pc2+2*SW); pc2 += dc;\n";
       }
   
-  out << "#pragma unroll 1\n";
+  // out << "#pragma unroll 1\n";
+  out << unroll1;  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n";
   out << "SIMD<double> bjk0(pb2);\n";
@@ -1852,7 +1869,8 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
     else
       out << "SIMD<double> sum" << k << "(pc2); pc2 += dc;\n";
   
-  out << "#pragma unroll 1\n";
+  // out << "#pragma unroll 1\n";
+  out << unroll1;  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n";
   out << "SIMD<double> bjk(pb2);\n";
@@ -1891,7 +1909,8 @@ void GenerateAtB_SmallWA2 (ostream & out, int wa, OP op)
     else
       out << "SIMD<double> sum" << k << "(pc2,mask); pc2 += dc;\n";
   
-  out << "#pragma unroll 1\n";  
+  // out << "#pragma unroll 1\n";
+  out << unroll1;  
   out << "for (size_t j = 0; j < ha; j++, pa2 += da, pb2 += db)\n"
       << "{\n"
       << "SIMD<double> bjk(pb2, mask);\n";    
