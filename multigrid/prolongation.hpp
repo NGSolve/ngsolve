@@ -67,6 +67,11 @@ namespace ngmg
       y = tmp.Range(0, VWidth());
     }
 
+    shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override
+    {
+      return prol->CreateProlongationMatrix(level);
+    }
+
     AutoVector CreateRowVector() const override { return make_unique<VVector<double>> (VWidth()); }
     AutoVector CreateColVector() const override { return make_unique<VVector<double>> (VHeight()); }
   };

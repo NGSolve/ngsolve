@@ -226,6 +226,11 @@ namespace ngcomp
     {
       vb = ma->GetDimension() == 3 ? BND : VOL;
     }
+
+    size_t GetNDofLevel (int level) override
+    {
+      return els_on_level[level] * (order+1)*(order+2)/2;
+    }
     
     void CalcMatrices()
     {
@@ -357,7 +362,78 @@ namespace ngcomp
     
     ///
     virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
+    {
+      auto ndel = first_dofs[1]; // dofs per element
+      int fine_els = els_on_level[finelevel];
+      int coarse_els = els_on_level[finelevel-1];
+      int old_coarse_els = finelevel > 1 ? els_on_level[finelevel-2] : 0;
+      auto ndc = coarse_els * ndel; // number of coarse dofs
+      auto ndf = fine_els * ndel; // number of fine dofs
+      Array<int> indicesPerRow(ndf);
+      Array<int> max_parent(fine_els);
+      indicesPerRow = ndel;
+      for(auto i : Range(fine_els))
+        {
+          max_parent[i] = i;
+          int parent = i;
+          while(parent >= coarse_els)
+            {
+              parent = ma->GetParentElement(ElementId(vb, parent)).Nr();
+              if(parent != -1)
+                max_parent[i] = parent;
+            }
+        }
+      MatrixGraph mg(indicesPerRow, ndc);
+      for(auto elnr : Range(fine_els))
+        {
+          for(int j = elnr * ndel; j < (elnr+1) * ndel; j++)
+            for(int k = max_parent[elnr] * ndel;
+                k < (max_parent[elnr]+1) * ndel; k++)
+              mg.CreatePosition(j, k);
+        }
+      auto spprol = make_shared<SparseMatrix<double>>(std::move(mg));
+      auto& prol = *spprol;
+      prol.AsVector() = 0.;
+
+      for(auto i : Range(coarse_els))
+        for(auto k : Range(ndel * i, ndel * (i+1)))
+          prol(k,k) = 1.;
+
+      auto matmul = [&](const auto& prolR, const auto& prolL,
+                        const auto& rangeR, const auto& rangeL,
+                        const auto& rangeMax_parent,
+                        bool right)
+      {
+        auto n = rangeL.Size();
+        Matrix<double> b(n,n);
+        for(auto [i,r1] : Enumerate(rangeL))
+          for(auto [j,r2] : Enumerate(rangeMax_parent))
+            b(i,j) = prol(r1,r2);
+        Matrix<double> cL = prolL * b;
+        Matrix<double> cR = prolR * b;
+        for(auto [i,r1] : Enumerate(rangeL))
+          for(auto [j,r2] : Enumerate(rangeMax_parent))
+            prol(r1,r2) = cL(i,j);
+        for(auto [i,r1] : Enumerate(rangeR))
+          for(auto [j,r2] : Enumerate(rangeMax_parent))
+            prol(r1,r2) = cR(i,j);
+      };
+      for(auto i : Range(coarse_els, fine_els))
+        {
+          int child = i;
+          int parent = ma->GetParentElement (ElementId(vb,child)).Nr();
+          auto range_max_parent = Range(ndel * max_parent[i],
+                                        ndel*(max_parent[i]+1));
+          auto range_child = Range(ndel * child,
+                                   ndel * (child+1));
+          auto range_parent = Range(ndel * parent,
+                                    ndel * (parent+1));
+          int classnr = trig_creation_class[child];
+          matmul(trigprolsR[classnr], trigprolsL[classnr],
+                 range_child, range_parent, range_max_parent, false);
+        }
+      return spprol;
+    }
 
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override
