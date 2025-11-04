@@ -265,8 +265,15 @@ namespace ngcomp
     
 
     ///
-    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
+    shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
+    {
+      auto spconvH1toL2 = dynamic_pointer_cast<SparseMatrix<double>>(convH1toL2[finelevel-1]->CreateSparseMatrix());
+      auto spconvL2toH1 = dynamic_pointer_cast<SparseMatrix<double>>(convL2toH1[finelevel]->CreateSparseMatrix());
+      auto l2prol = fesL2->GetProlongation()->CreateProlongationMatrix(finelevel);
+      auto matmul = MatMult(*l2prol, *spconvH1toL2);
+      return dynamic_pointer_cast<SparseMatrix<double>>
+        (MatMult(*spconvL2toH1, *matmul));
+    }
 
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override
