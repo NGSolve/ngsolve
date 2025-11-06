@@ -510,7 +510,7 @@ namespace ngla
           for (int j = 0; j < entrysize; j++)
             hx(i*entrysize+j) = GetReal(mx(compress[i]*entrysize+j));
 
-        int status = umfpack_dl_solve ( UMFPACK_Aat, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
+        int status = umfpack_dl_solve ( UMFPACK_A, &rowstart[0], &indices[0], data, &hy(0), &hx(0), this->Numeric, nullptr, nullptr );
         umfpack_dl_report_status( nullptr, status );
         if( status!= UMFPACK_OK ) throw Exception("UmfpackInverse: Solve failed.");
 
