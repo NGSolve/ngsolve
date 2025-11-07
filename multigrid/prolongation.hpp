@@ -67,6 +67,11 @@ namespace ngmg
       y = tmp.Range(0, VWidth());
     }
 
+    shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override
+    {
+      return prol->CreateProlongationMatrix(level);
+    }
+
     AutoVector CreateRowVector() const override { return make_unique<VVector<double>> (VWidth()); }
     AutoVector CreateColVector() const override { return make_unique<VVector<double>> (VHeight()); }
   };
@@ -219,9 +224,7 @@ namespace ngmg
     }
 
     ///
-    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
-
+    shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override;
 
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;
