@@ -847,6 +847,10 @@ kwargs : kwargs
     
     .def_property_readonly ("ndof", [](shared_ptr<FESpace> self) { return self->GetNDof(); },
                             "number of degrees of freedom")
+    .def("GetNDofLevel", [](shared_ptr<FESpace> self, int level)
+         {
+           return self->GetNDofLevel(level);
+         }, py::arg("level"))
 
     .def_property_readonly ("ndofglobal",
                             [](shared_ptr<FESpace> self) { return self->GetNDofGlobal(); },
