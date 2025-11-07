@@ -1499,13 +1499,15 @@ namespace ngla
   
   template <typename TM_Res, typename TM1, typename TM2>
   shared_ptr<SparseMatrixTM<TM_Res>>
-  MatMult (const SparseMatrixTM<TM1> & mata, const SparseMatrixTM<TM2> & matb)
+  MatMult (const SparseMatrixTM<TM1> & mata, const SparseMatrixTM<TM2> & matb, bool sort_output)
   {
     static Timer t ("sparse matrix multiplication");
     static Timer t1a ("sparse matrix multiplication - setup a");
     static Timer t1b ("sparse matrix multiplication - setup b");
     static Timer t1b1 ("sparse matrix multiplication - setup b1");
-    static Timer t2 ("sparse matrix multiplication - mult"); 
+    static Timer t2 ("sparse matrix multiplication - mult");
+
+    static Timer tsort ("sparse matrix multiplication - sort");     
     RegionTimer reg(t);
 
     t1a.Start();
@@ -1514,6 +1516,7 @@ namespace ngla
     Array<int> cnt(mata.Height());
     cnt = 0;
 
+    /*
     ParallelForRange
       (mata.Height(), [&] (IntRange r)
        {
@@ -1535,7 +1538,37 @@ namespace ngla
            }
        },
        TasksPerThread(10));
+    */
 
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+       {
+         Array<int8_t> flags(matb.Width());
+         flags = 0;
+         Array<int> list;
+
+         for (int i : r)
+           {
+             for (int cola : mata.GetRowIndices(i))
+               for (int col : matb.GetRowIndices(cola))
+                 {
+                   if (!flags[col])
+                     {
+                       flags[col]=1;
+                       list += col;
+                     }
+                 }
+
+             cnt[i] = list.Size();
+             for (auto c : list)
+               flags[c] = 0;
+             list.SetSize(0);
+           }
+       },
+        TasksPerThread(10));
+
+    
+    
     t1a.Stop();
     t1b.Start();
     t1b1.Start();
@@ -1560,6 +1593,8 @@ namespace ngla
     prod->AsVector() = 0.0;
     t1b1.Stop();
     // fill col-indices
+
+    /*
     ParallelForRange
       (mata.Height(), [&] (IntRange r)
        {
@@ -1584,11 +1619,50 @@ namespace ngla
            }
        },
        TasksPerThread(10));
+    */
+    
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+       {
+         Array<int8_t> flags(matb.Width());
+         flags = 0;
+         Array<int> list;
 
+         for (int i : r)
+           {
+             for (int cola : mata.GetRowIndices(i))
+               for (int col : matb.GetRowIndices(cola))
+                 {
+                   if (!flags[col])
+                     {
+                       flags[col]=1;
+                       list += col;
+                     }
+                 }
+
+             cnt[i] = list.Size();
+             for (auto c : list)
+               flags[c] = 0;
+
+             // tsort.Start();
+             // QuickSort (list);
+             if (sort_output)
+               std::sort(list.Data(), list.Data()+list.Size());
+             // tsort.Stop();
+             prod->GetRowIndices(i) = list;
+             list.SetSize(0);
+           }
+       },
+        TasksPerThread(10));
+
+
+    
+    
 
     t1b.Stop();
     t2.Start();
-    
+
+    /*
     ParallelForRange
       (mata.Height(), [&] (IntRange r)
        {
@@ -1600,16 +1674,10 @@ namespace ngla
 
          size_t nhash = 2048;
          while (nhash < 2*maxci) nhash *= 2;
+         nhash *= 2;
          ArrayMem<thash,2048> hash(nhash);
          size_t nhashm1 = nhash-1;
 
-         /*
-         // constexpr unsigned int nhash = 1024; // power of 2, fits well onto stack and cash ..
-         // constexpr unsigned int nhash = 16384;
-         size_t nhash = 16384;
-         thash hash[nhash];
-         */
-         
          for (auto i : r)
            {
              auto mata_ci = mata.GetRowIndices(i);
@@ -1647,20 +1715,68 @@ namespace ngla
            }
        },
        TasksPerThread(10));
+    */
+    
+
+
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+       {
+         
+         size_t maxci = 0;
+         for (auto i : r)
+           maxci = max2(maxci, size_t (prod->GetRowIndices(i).Size()));
+
+         LocalHeap lh(8 * 16 * (maxci+5));
+         
+         for (auto i : r)
+           {
+             HeapReset hr(lh);
+             
+             auto mata_ci = mata.GetRowIndices(i);
+             auto matc_ci = prod->GetRowIndices(i);
+             auto matc_vals = prod->GetRowValues(i);
+
+             ClosedHashTable<int,int> hash(matc_ci.Size()*8, lh);
+             
+             for (int k = 0; k < matc_ci.Size(); k++)
+               hash.Set(matc_ci[k], k);
+
+             for (int j : Range(mata_ci))
+               {
+                 auto vala = mata.GetRowValues(i)[j];
+                 int rowb = mata.GetRowIndices(i)[j];
+                 
+                 auto matb_ci = matb.GetRowIndices(rowb);
+                 auto matb_vals = matb.GetRowValues(rowb);
+                 for (int k = 0; k < matb_ci.Size(); k++)
+                   {
+                     auto colb = matb_ci[k];
+                     auto kc = hash[colb];
+                     matc_vals[kc] += vala * matb_vals[k];                      
+                   }
+               }
+           }
+       },
+       TasksPerThread(10));
+
+    
+    
 
     t2.Stop();
     return prod;
   }
 
   shared_ptr<SparseMatrixTM<double>> MatMult (const SparseMatrixTM<double> & mata,
-                                              const SparseMatrixTM<double> & matb)
+                                              const SparseMatrixTM<double> & matb, bool sort_output)
   {
-    return MatMult<double, double, double>(mata, matb);
+    return MatMult<double, double, double>(mata, matb, sort_output);
   }
   shared_ptr<SparseMatrixTM<std::complex<double>>> MatMult (const SparseMatrixTM<std::complex<double>> & mata,
-                                              const SparseMatrixTM<std::complex<double>> & matb)
+                                                            const SparseMatrixTM<std::complex<double>> & matb,
+                                                            bool sort_output)
   {
-    return MatMult<std::complex<double>, std::complex<double>, std::complex<double>>(mata, matb);
+    return MatMult<std::complex<double>, std::complex<double>, std::complex<double>>(mata, matb, sort_output);
   }
 
   template <class TM, class TV>
@@ -1810,8 +1926,8 @@ namespace ngla
     // auto prolT = TransposeMatrix(prol);
     auto prolT = dynamic_pointer_cast<SparseMatrixTM<double>> (prol.CreateTranspose());
 
-    auto prod1 = MatMult<double, double, double>(*this, prol);
-    auto prod = MatMult<double, double, double>(*prolT, *prod1);
+    auto prod1 = MatMult<double, double, double>(*this, prol, true);
+    auto prod = MatMult<double, double, double>(*prolT, *prod1, true);
     return prod;
   }
 
@@ -1825,8 +1941,8 @@ namespace ngla
     // auto prolT = TransposeMatrix(prol);
     auto prolT = dynamic_pointer_cast<SparseMatrixTM<double>> (prol.CreateTranspose());
     
-    auto prod1 = MatMult<std::complex<double>, std::complex<double>, double>(*this, prol);
-    auto prod = MatMult<std::complex<double>, double, std::complex<double>>(*prolT, *prod1);
+    auto prod1 = MatMult<std::complex<double>, std::complex<double>, double>(*this, prol, true);
+    auto prod = MatMult<std::complex<double>, double, std::complex<double>>(*prolT, *prod1, true);
     return prod;
   }
 
@@ -1845,8 +1961,8 @@ namespace ngla
     auto prolT = dynamic_pointer_cast<SparseMatrixTM<double>> (prol.CreateTranspose());    
     auto full = MakeFullMatrix(*this);
 
-    auto prod1 = MatMult<double, double, double>(*full, prol);
-    auto prod = MatMult<double, double, double>(*prolT, *prod1);
+    auto prod1 = MatMult<double, double, double>(*full, prol, true);
+    auto prod = MatMult<double, double, double>(*prolT, *prod1, true);
 
     auto prodhalf = GetSymmetricMatrix (*prod);
     return prodhalf;
