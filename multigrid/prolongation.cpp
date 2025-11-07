@@ -698,7 +698,16 @@ namespace ngmg
 
   CompoundProlongation :: 
   CompoundProlongation(const CompoundFESpace * aspace)
-    : space(aspace) { ; }
+    : space(aspace)
+  {
+    for(const auto& fes : space->Spaces())
+      {
+        if(fes->GetProlongation())
+          prols.Append(fes->GetProlongation());
+        else
+          prols.Append(nullptr);
+      }
+  }
 
   CompoundProlongation :: 
   CompoundProlongation(const CompoundFESpace * aspace,
@@ -752,7 +761,53 @@ namespace ngmg
     return make_shared<BitArray>(inner);
   }
 
-  
+  shared_ptr<SparseMatrix<double>> CompoundProlongation ::
+  CreateProlongationMatrix(int finelevel) const
+  {
+    Array<shared_ptr<SparseMatrix<double>>> mats;
+    // if any of the prolongations cannot create a matrix, return nullptr
+    for(auto& prol : prols)
+      {
+        mats.Append (prol->CreateProlongationMatrix(finelevel));
+        if(!mats.Last())
+          return nullptr;
+      }
+    Array<int> indices_per_row(space->GetNDofLevel(finelevel));
+    size_t offset = 0;
+    for(auto& mat : mats)
+      {
+        for(int i = 0; i < mat->Height(); i++)
+          indices_per_row[offset + i] = mat->GetRowIndices(i).Size();
+        offset += mat->Height();
+      }
+    MatrixGraph mg(indices_per_row, space->GetNDofLevel(finelevel-1));
+    offset = 0;
+    size_t offset_col = 0;
+    for(auto& mat : mats)
+      {
+        for(int i = 0; i < mat->Height(); i++)
+          {
+            for(auto col : mat->GetRowIndices(i))
+              mg.CreatePosition(offset + i, offset_col + col);
+          }
+        offset += mat->Height();
+        offset_col += mat->Width();
+      }
+    shared_ptr<SparseMatrix<double>> prol = make_shared<SparseMatrix<double>>(std::move(mg));
+    offset = 0;
+    offset_col = 0;
+    for(auto& mat : mats)
+      {
+        for(int i = 0; i < mat->Height(); i++)
+          {
+            for(auto col : mat->GetRowIndices(i))
+              (*prol)(offset + i, offset_col + col) = (*mat)(i, col);
+          }
+        offset += mat->Height();
+        offset_col += mat->Width();
+      }
+    return prol;
+  }
 
   void CompoundProlongation :: 
   ProlongateInline (int finelevel, BaseVector & v) const
