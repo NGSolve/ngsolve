@@ -1662,6 +1662,10 @@ namespace ngla
     t1b.Stop();
     t2.Start();
 
+
+    // summing sparse vectors to product matrix:
+
+    
     /*
     ParallelForRange
       (mata.Height(), [&] (IntRange r)
@@ -1718,7 +1722,8 @@ namespace ngla
     */
     
 
-
+    /*
+    // ngsolve closedhashtable:
     ParallelForRange
       (mata.Height(), [&] (IntRange r)
        {
@@ -1736,11 +1741,79 @@ namespace ngla
              auto mata_ci = mata.GetRowIndices(i);
              auto matc_ci = prod->GetRowIndices(i);
              auto matc_vals = prod->GetRowValues(i);
-
+             
              ClosedHashTable<int,int> hash(matc_ci.Size()*8, lh);
              
+             for (size_t k = 0; k < matc_ci.Size(); k++)
+               hash[matc_ci[k]] = k;
+
+             for (int j : Range(mata_ci))
+               {
+                 auto vala = mata.GetRowValues(i)[j];
+                 int rowb = mata.GetRowIndices(i)[j];
+                 
+                 auto matb_ci = matb.GetRowIndices(rowb);
+                 auto matb_vals = matb.GetRowValues(rowb);
+                 for (size_t k = 0; k < matb_ci.Size(); k++)
+                   matc_vals[hash[matb_ci[k]]] += vala * matb_vals[k];
+               }
+           }
+       },
+       TasksPerThread(10));
+    */
+
+    // ngsolve index vector:
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+       {
+         Array<int> inverse(prod->Width());
+         
+         for (auto i : r)
+           {
+             auto mata_ci = mata.GetRowIndices(i);
+             auto matc_ci = prod->GetRowIndices(i);
+             auto matc_vals = prod->GetRowValues(i);
+             
+             for (size_t k = 0; k < matc_ci.Size(); k++)
+               inverse[matc_ci[k]] = k;
+
+             for (int j : Range(mata_ci))
+               {
+                 auto vala = mata.GetRowValues(i)[j];
+                 int rowb = mata.GetRowIndices(i)[j];
+                 
+                 auto matb_ci = matb.GetRowIndices(rowb);
+                 auto matb_vals = matb.GetRowValues(rowb);
+                 for (size_t k = 0; k < matb_ci.Size(); k++)
+                   matc_vals[inverse[matb_ci[k]]] += vala * matb_vals[k];
+               }
+           }
+       },
+       TasksPerThread(10));
+
+    
+
+    /*
+      // using C++ unordered_map
+    ParallelForRange
+      (mata.Height(), [&] (IntRange r)
+       {
+         
+         size_t maxci = 0;
+         for (auto i : r)
+           maxci = max2(maxci, size_t (prod->GetRowIndices(i).Size()));
+
+         std::unordered_map<int,int> map;
+         map.reserve(maxci);
+         
+         for (auto i : r)
+           {
+             auto mata_ci = mata.GetRowIndices(i);
+             auto matc_ci = prod->GetRowIndices(i);
+             auto matc_vals = prod->GetRowValues(i);
+             
              for (int k = 0; k < matc_ci.Size(); k++)
-               hash.Set(matc_ci[k], k);
+               map[matc_ci[k]] = k;
 
              for (int j : Range(mata_ci))
                {
@@ -1752,15 +1825,16 @@ namespace ngla
                  for (int k = 0; k < matb_ci.Size(); k++)
                    {
                      auto colb = matb_ci[k];
-                     auto kc = hash[colb];
+                     auto kc = map[colb];
                      matc_vals[kc] += vala * matb_vals[k];                      
                    }
                }
+
+             map.clear();
            }
        },
        TasksPerThread(10));
-
-    
+    */
     
 
     t2.Stop();
