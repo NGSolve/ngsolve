@@ -368,7 +368,7 @@ namespace ngla
     }
 };
   
-
+  /*
   // using std::priority_queue
   template <typename T, typename FUNC>
   INLINE void MergeArraysQueue (FlatArray<T*> ptrs,
@@ -401,7 +401,7 @@ namespace ngla
       }
     }
   }
-
+  */
 
   
 
