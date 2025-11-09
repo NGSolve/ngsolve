@@ -358,8 +358,52 @@ namespace ngla
       }
   }
 
+  
+  struct Element {
+    int value;
+    size_t spanIndex;
+    size_t elemIndex;
+    bool operator>(const Element& other) const {
+      return value > other.value;
+    }
+};
+  
+
+  // using std::priority_queue
+  template <typename T, typename FUNC>
+  INLINE void MergeArraysQueue (FlatArray<T*> ptrs,
+                                FlatArray<int> sizes,
+                                FUNC f)
+  {
+    std::priority_queue<Element, std::vector<Element>, std::greater<Element>> minHeap;
+    
+    int lastValue = INT_MIN;
+    bool first = true;
+
+    for (size_t i = 0; i < ptrs.Size(); ++i) {
+      if (sizes[i] != 0)
+        minHeap.push({ptrs[i][0], i, 0});
+    }
+    
+    while (!minHeap.empty()) {
+      Element cur = minHeap.top();
+      minHeap.pop();
+      
+      if (first || cur.value != lastValue) {
+        f(cur.value);
+        lastValue = cur.value;
+        first = false;
+      }
+      
+      // Push next element from the current span
+      if (cur.elemIndex + 1 < sizes[cur.spanIndex]) {
+        minHeap.push({ptrs[cur.spanIndex][cur.elemIndex + 1], cur.spanIndex, cur.elemIndex + 1});
+      }
+    }
+  }
 
 
+  
 
   inline void MergeSortedArrays (FlatArray<int> in1, FlatArray<int> in2,
                                  Array<int> & out)
@@ -1612,15 +1656,15 @@ namespace ngla
                }
              BaseSparseMatrix::ColIdx * ptr = prod->GetRowIndices(i).Addr(0);
              MergeArrays(ptrs, sizes, [&ptr] (int col)
-                         {
-                           *ptr = col;
-                           ptr++;
-                         } );
+             {
+               *ptr = col;
+               ptr++;
+             } );
            }
        },
        TasksPerThread(10));
     */
-    
+
     ParallelForRange
       (mata.Height(), [&] (IntRange r)
        {
@@ -1645,18 +1689,15 @@ namespace ngla
                flags[c] = 0;
 
              // tsort.Start();
-             // QuickSort (list);
              if (sort_output)
-               std::sort(list.Data(), list.Data()+list.Size());
+               QuickSort (list);
+             // std::sort(list.Data(), list.Data()+list.Size());
              // tsort.Stop();
              prod->GetRowIndices(i) = list;
              list.SetSize(0);
            }
        },
         TasksPerThread(10));
-
-
-    
     
 
     t1b.Stop();
