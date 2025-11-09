@@ -2614,6 +2614,7 @@ int main (int argn, char **argv)
 
   out <<
 R"raw_string(
+/*
 template <typename Tuple, std::size_t ... Is>
 auto pop_front2_impl(const Tuple& tuple, std::index_sequence<Is...>)
 {
@@ -2650,6 +2651,8 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
                  return get<0>(tup);
   else if constexpr (tuple_size<tuple<SIMD<double,N>, Args...>>() == 2)
       return Concat2(get<0>(tup), get<1>(tup));
+  else if constexpr (tuple_size<tuple<SIMD<double,N>, Args...>>() == 4)
+      return Concat2 ( Concat2(get<0>(tup), get<1>(tup)), Concat2(get<2>(tup), get<3>(tup))); 
   else
     {
       auto front = Concat2(get<0>(tup), get<1>(tup));
@@ -2657,6 +2660,7 @@ auto Concat (tuple<SIMD<double,N>, Args...> tup)
       return Concat(std::tuple_cat(make_tuple(front), rest));
     }
 }
+*/
 )raw_string"
       << endl;
 
