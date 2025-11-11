@@ -202,7 +202,7 @@ namespace ngfem
       if (ip.DimSpace() != D)
         throw Exception("illegal dim of normal vector");
       double fac = 1.;
-      if (inverted_faces.Size())
+      if (ip.GetTransformation().VB() == BND && inverted_faces.Size())
         {
           auto ei = ip.GetTransformation().GetElementIndex();
           if(inverted_faces.Test(ei))
@@ -217,7 +217,7 @@ namespace ngfem
       if(!tpir)
         {
           double fac = 1.;
-          if (inverted_faces.Size())
+          if (ir.GetTransformation().VB() == BND && inverted_faces.Size())
             {
               auto ei = ir.GetTransformation().GetElementIndex();
               if(inverted_faces.Test(ei))
@@ -275,7 +275,7 @@ namespace ngfem
 	throw Exception("illegal dim of normal vector");
 
       double fac = 1.;
-      if (inverted_faces.Size())
+      if (ir.GetTransformation().VB() == BND && inverted_faces.Size())
         {
           auto ei = ir.GetTransformation().GetElementIndex();
           if(inverted_faces.Test(ei))
@@ -315,7 +315,7 @@ namespace ngfem
         values(j,i) = static_cast<const SIMD<DimMappedIntegrationPoint<D>>&>(ir[i]).GetNV()(j).Data();
       */
       double fac = 1.;
-      if (inverted_faces.Size())
+      if (ir.GetTransformation().VB() == BND && inverted_faces.Size())
         {
           auto ei = ir.GetTransformation().GetElementIndex();
           if(inverted_faces.Test(ei))
