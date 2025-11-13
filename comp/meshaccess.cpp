@@ -2562,6 +2562,8 @@ namespace ngcomp
       auto& eltrafo = region.Mesh()->GetTrafo(ElementId(region.VB(), elnr), global_alloc);
       auto& mapped_mip = eltrafo(ip, global_alloc);
       func->Evaluate(mapped_mip, result);
+      global_alloc.Delete(&mapped_mip);
+      global_alloc.Delete(&eltrafo);
     }
 
     
