@@ -8,12 +8,17 @@ SparseFactorizationInterface::SparseFactorizationInterface(
     shared_ptr<const BaseMatrix> m, shared_ptr<BitArray> inner_dofs,
     shared_ptr<const Array<int>> cluster)
     : SparseFactorization(dynamic_pointer_cast<const BaseSparseMatrix>(m),
-                          inner_dofs, cluster),
-      map_inner_dofs(inner_dofs, cluster) {
+                          inner_dofs, cluster)
+{
   width = m->Width();
   height = m->Height();
 
   is_complex = m->IsComplex();
+}
+
+void SparseFactorizationInterface::SetSubset(shared_ptr<BitArray> inner, shared_ptr<const Array<int>> cluster) {
+    SparseFactorization::SetSubset(inner, cluster);
+    map_inner_dofs.Init(inner, cluster);
 }
 
 void SparseFactorizationInterface::Update() {
