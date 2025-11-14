@@ -1530,7 +1530,7 @@ inverse : string
              SparseFactorizationInterfaceTrampoline>(
       m, "SparseFactorizationInterface", py::dynamic_attr())
       .def("GetInnerMatrix", &SparseFactorizationInterface::GetInnerMatrix)
-      .def(py::init([](shared_ptr<SparseMatrix<double>> mat,
+      .def(py::init([](shared_ptr<BaseSparseMatrix> mat,
                        shared_ptr<BitArray> inner = nullptr) {
              return make_shared<SparseFactorizationInterfaceTrampoline>(mat,
                                                                         inner);
@@ -1546,10 +1546,9 @@ inverse : string
         name, [creator](shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> freedofs,
                   shared_ptr<const Array<int>> cluster) {
           py::gil_scoped_acquire gil;
-          if (cluster)
-            throw Exception("cluster not supported");
-          auto obj = creator(mat, freedofs);
+          auto obj = creator(mat);
           auto sf = py::cast<shared_ptr<SparseFactorizationInterface>>(obj);
+          sf->SetSubset(freedofs, cluster);
           sf->Update();
           return sf;
         });

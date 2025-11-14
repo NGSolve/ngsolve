@@ -28,9 +28,13 @@ namespace ngla
 
   public:
     SparseFactorization (shared_ptr<const BaseSparseMatrix> amatrix,
-			 shared_ptr<BitArray> ainner,
-			 shared_ptr<const Array<int>> acluster);
+			 shared_ptr<BitArray> ainner = nullptr,
+			 shared_ptr<const Array<int>> acluster = nullptr);
     SparseFactorization() {}
+
+    void SetSubset
+      (shared_ptr<BitArray> ainner,
+        shared_ptr<const Array<int>> acluster=nullptr);
 
     void DoArchive(Archive& ar) override;
 

@@ -39,6 +39,7 @@ void SparseFactorizationInterface::Update() {
     if (map_inner_dofs)
       p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat);
 
+    inner_mat = p_sparse_mat;
     p_mat = dynamic_pointer_cast<const MatrixGraph>(p_sparse_mat);
   } else {
     shared_ptr<const SparseMatrixTM<double>> p_sparse_mat =
@@ -59,13 +60,12 @@ void SparseFactorizationInterface::Update() {
       p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat);
 
     inner_mat = p_sparse_mat;
-    inner_rhs = p_sparse_mat->CreateColVector();
-    inner_solution = p_sparse_mat->CreateColVector();
-
-    // auto &mat = *p_sparse_mat;
 
     p_mat = dynamic_pointer_cast<const MatrixGraph>(p_sparse_mat);
   }
+
+  inner_rhs = inner_mat->CreateColVector();
+  inner_solution = inner_mat->CreateColVector();
 
   auto &mat = *p_mat;
 
