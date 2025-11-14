@@ -2112,12 +2112,20 @@ namespace ngla
   SparseFactorization (shared_ptr<const BaseSparseMatrix> amatrix,
 		       shared_ptr<BitArray> ainner,
 		       shared_ptr<const Array<int>> acluster)
-    : matrix(amatrix),
-      inner(ainner), cluster(acluster)
+    : matrix(amatrix)
   {
     this->is_complex = amatrix->IsComplex();
-    
     smooth_is_projection = true;
+
+    SetSubset (ainner, acluster);
+  }
+
+  void SparseFactorization :: SetSubset (shared_ptr<BitArray> ainner,
+            shared_ptr<const Array<int>> acluster)
+  {
+    inner = ainner;
+    cluster = acluster;
+    
     if (cluster)
       {
 	int first_cluster = 0;

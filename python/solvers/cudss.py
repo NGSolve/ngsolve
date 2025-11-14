@@ -14,15 +14,21 @@ from ngsolve import TimeFunction
 class CudssSolver(ngla.SparseFactorizationInterface):
     @TimeFunction
     def Analyze(self):
+        self.solver = None
+        self._tmp = None
+        pass
+
+    @TimeFunction
+    def Factor(self):
+        if self.solver is not None:
+            self.solver.free()
+            del self.solver
         self._mat = self.GetInnerMatrix()
         csr = sp.csr_matrix(self._mat.CSR())
         self._tmp = np.empty(csr.shape[1], dtype=csr.dtype)
         options = make_directsolver_options()
         self.solver = nvs.DirectSolver(csr, self._tmp, options=options)
         self.solver.plan()
-
-    @TimeFunction
-    def Factor(self):
         self.solver.factorize()
 
     @TimeFunction
