@@ -32,7 +32,7 @@ namespace ngla
 			 shared_ptr<const Array<int>> acluster = nullptr);
     SparseFactorization() {}
 
-    void SetSubset
+    virtual void SetSubset
       (shared_ptr<BitArray> ainner,
         shared_ptr<const Array<int>> acluster=nullptr);
 

@@ -17,9 +17,13 @@ struct MapInnerDofs {
   Array<int> embed;
   size_t size = 0;
 
-  MapInnerDofs(shared_ptr<BitArray> ainner,
+  MapInnerDofs() {}
+
+  void Init(shared_ptr<BitArray> ainner,
                shared_ptr<const Array<int>> acluster = nullptr)
-      : inner(ainner), cluster(acluster) {
+  {
+    inner = ainner;
+    cluster = acluster;
     if (!inner && !cluster) {
       size = 0;
       return;
@@ -125,6 +129,8 @@ public:
                                shared_ptr<const Array<int>> acluster = nullptr);
 
   virtual ~SparseFactorizationInterface() {}
+
+  void SetSubset(shared_ptr<BitArray> inner, shared_ptr<const Array<int>> cluster) override;
 
   AutoVector CreateRowVector() const override {
     return make_unique<VVector<double>>(Width());
