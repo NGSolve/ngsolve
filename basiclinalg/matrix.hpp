@@ -1107,7 +1107,7 @@ namespace ngbla
     // 
     MatrixView() = default;
     // : h{0}, w{0}, dist{0}, data{nullptr} { } 
-    INLINE MatrixView(const MatrixView &) = default;
+    MatrixView(const MatrixView &) = default;
 
     template <typename T2, typename TH2, typename TW2, typename TDIST2,
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
