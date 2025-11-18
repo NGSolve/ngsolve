@@ -65,6 +65,8 @@ namespace ngla
                   s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
                     " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
                   s << "bool constexpr has_values_" << step << " = true;\n" << endl;
+                  for (int i = 0; i < proxycf->Dimension(); i++)
+                    s << Var("comp", step,i,proxycf->Dimensions()).Declare("double", 0.0);
                 }
 
 
