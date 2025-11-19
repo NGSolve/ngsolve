@@ -435,7 +435,8 @@ namespace ngsbem
         
         
         FlatVector<double> amn(os+ot+1, lh);
-        FlatVector<double> inv_amn(os+ot+1, lh);
+        FlatVector<double> tscale_inv_amn(os+ot+1, lh);
+        FlatVector<double> inv_tscale_inv_amn(os+ot+1, lh);
         
         FlatVector<double> powscale(os+ot+1, lh);
         double prod = 1;
@@ -514,7 +515,8 @@ namespace ngsbem
             for (int l = m-1; l < os+ot-m; l++)
               {
                 amn(l) = sh.CalcAmn(m,l);
-                inv_amn(l) = scale/amn(l);
+                tscale_inv_amn(l) = tscale/amn(l);
+                inv_tscale_inv_amn(l) = 1/(tscale*amn(l));
               }
             
             
@@ -556,7 +558,7 @@ namespace ngsbem
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
                                                           + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
                 
-                trafo(l-1,n) = tscale/amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
+                trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
                                                   - amn(n-1)* scale*trafo(l,n-1)
                                                   + amn(n)* inv_scale*trafo(l,n+1));
               }
@@ -581,7 +583,7 @@ namespace ngsbem
                                                           - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
                                                           + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
 
-                trafo(l-1,n) = tscale/amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
+                trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
                                                   -amn(n-1)* scale*trafo(l,n-1) +
                                                   amn(n)   * 1/scale*trafo(l,n+1)) ;
               }
@@ -590,7 +592,7 @@ namespace ngsbem
               for (int n = m+1; n < min<int>(trafo.Height()-1-l,l); n++)
                 {
                   trafo(l-1,n)  = Complex (
-                                           (tscale/amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
+                                           (tscale_inv_amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
                                                                -amn(n-1)* scale*trafo(l,n-1)
                                                                +amn(n)  * 1/scale*trafo(l,n+1))).real(),
                                            trafo(l-1,n).imag());
@@ -614,7 +616,7 @@ namespace ngsbem
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
                                                           + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
                 trafo(l+1,n) = 
-                  1.0 / (amn(l)  *   tscale) * (amn(l-1)/tscale * trafo(l-1,n)
+                  inv_tscale_inv_amn(l) * (amn(l-1)/tscale * trafo(l-1,n)
                                                 + amn(n-1)* scale*trafo(l,n-1)
                                                 - amn(n)* 1/scale*trafo(l,n+1));
               }
@@ -636,7 +638,7 @@ namespace ngsbem
                                                           + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
 
                 trafo(l+1,n) = 
-                  1.0 / (amn(l)  *   tscale) * (amn(l-1)/tscale * trafo(l-1,n)
+                  inv_tscale_inv_amn(l) * (amn(l-1)/tscale * trafo(l-1,n)
                                                 + amn(n-1)* scale*trafo(l,n-1)
                                                 - amn(n)* 1/scale*trafo(l,n+1));
               }
@@ -646,7 +648,7 @@ namespace ngsbem
               for (int n = m+1; n < min<int>(trafo.Height()-1-l,l-1 ); n++)
                 {
                   trafo(l+1,n)  = Complex (trafo(l+1,n).real(),
-                                           1/(tscale*amn(l)) * ( amn(l-1)/tscale*trafo(l-1,n)
+                                           inv_tscale_inv_amn(l) * ( amn(l-1)/tscale*trafo(l-1,n)
                                                                  +amn(n-1)* scale*trafo(l,n-1)
                                                                  -amn(n)  * 1/scale*trafo(l,n+1)).imag());
                 }
