@@ -1,40 +1,65 @@
-
 try:
-    import nvmath
     import nvmath.sparse.advanced as nvs
+    from nvmath.internal import utils
+    from nvmath.internal.tensor_ifc_numpy import NumpyTensor
 except ImportError:
     raise ImportError("CUDSS solver requires nvmath-python module.")
+
 import ngsolve.la as ngla
 import scipy.sparse as sp
 import numpy as np
 
 from ngsolve import TimeFunction
 
-
 class CudssSolver(ngla.SparseFactorizationInterface):
+    solver: nvs.DirectSolver = None
+
     @TimeFunction
     def Analyze(self):
-        self.solver = None
-        self._tmp = None
-        pass
+        if hasattr(self, "solver") and self.solver is not None:
+            self.solver.free()
+            del self.solver
+
+        csr = sp.csr_matrix(self.GetInnerMatrix().CSR())
+
+        options = make_directsolver_options()
+        self.extract_symmetric = (csr != csr.T).nnz == 0
+        if self.extract_symmetric:
+            csr = sp.triu(csr, format="csr")
+            options.sparse_system_type = nvs.DirectSolverMatrixType.SYMMETRIC
+            options.sparse_system_view = nvs.DirectSolverMatrixViewType.UPPER
+
+        tmp = np.empty(csr.shape[1], dtype=csr.dtype)
+        self.solver = nvs.DirectSolver(csr, tmp, options=options)
+        self.solver.plan()
+        self._is_first_factor_call = True
 
     @TimeFunction
     def Factor(self):
-        if self.solver is not None:
-            self.solver.free()
-            del self.solver
-        self._mat = self.GetInnerMatrix()
-        csr = sp.csr_matrix(self._mat.CSR())
-        self._tmp = np.empty(csr.shape[1], dtype=csr.dtype)
-        options = make_directsolver_options()
-        self.solver = nvs.DirectSolver(csr, self._tmp, options=options)
-        self.solver.plan()
+        if not self._is_first_factor_call:
+            mat = self.GetInnerMatrix()
+            if self.extract_symmetric:
+                csr = sp.csr_matrix(mat.CSR())
+                csr = sp.triu(csr, format="csr")
+                values = csr.data
+            else:
+                values = mat.AsVector().FV().NumPy()
+            stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)
+            values_tensor = NumpyTensor(values)
+            self.solver.a.values.copy_(values_tensor, stream_holder)
         self.solver.factorize()
+        self._is_first_factor_call = False
 
     @TimeFunction
     def Solve(self, b, sol):
-        self.solver.reset_operands(b=b.FV().NumPy())
+        stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)
+        self.solver.b.copy_(NumpyTensor(b.FV().NumPy()), stream_holder)
         sol.FV().NumPy()[:] = self.solver.solve()
+
+    def __del__(self):
+        if self.solver is not None:
+            self.solver.free()
+            del self.solver
 
 
 ngla.RegisterInverseType("cudss", CudssSolver)
