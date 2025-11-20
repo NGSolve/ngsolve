@@ -147,6 +147,7 @@ typedef CoefficientFunction CF;
 
 struct GenericBSpline {
   shared_ptr<BSpline> sp;
+  GenericBSpline() = default;
   GenericBSpline( const BSpline &asp ) : sp(make_shared<BSpline>(asp)) {;}
   GenericBSpline( shared_ptr<BSpline> asp ) : sp(asp) {;}
   template <typename T> T operator() (T x) const { return (*sp)(x); }
@@ -173,6 +174,7 @@ struct GenericBSpline2D {
   void DoArchive(Archive& ar) { ar & sp; }
 };
 
+static RegisterClassForArchive<cl_UnaryOpCF<GenericBSpline>, CoefficientFunction> regbspline;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericBSpline2D>, CoefficientFunction> regbspline2d;
 
 template <> void
