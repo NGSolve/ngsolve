@@ -466,7 +466,7 @@ namespace ngsbem
             for (int l = 1; l < os+ot; l++)   
               trafo(l,1) = -scale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
                                                      -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
-            trafo(0,1) = -scale*tscale*trafo(1,0);
+            trafo(0,1) = -powscale(1)*trafo(1,0);
           }
         
         for (int n = 1; n < trafo.Width()-1; n++)
@@ -549,14 +549,14 @@ namespace ngsbem
               if (n+1 < trafo.Width())
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
             }
             for (int n = m+1; n < trafo.Width()-1; n++)
               {
                 int l = trafo.Height()-n-2;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
                 
                 trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
                                                   - amn(n-1)* scale*trafo(l,n-1)
@@ -572,7 +572,7 @@ namespace ngsbem
               if (n+1 < trafo.Width())                
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
-                                                          + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
+                                                          + sh.CalcBmn(-m,l)    * inv_tscale* oldtrafo(l-1,n) ); 
             }
             for (int n = m+1; n < trafo.Width()-2; n++)
               {
@@ -581,11 +581,11 @@ namespace ngsbem
                 
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
-                                                          + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
+                                                          + sh.CalcBmn(-m,l)    * inv_tscale* oldtrafo(l-1,n) ); 
 
                 trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
                                                   -amn(n-1)* scale*trafo(l,n-1) +
-                                                  amn(n)   * 1/scale*trafo(l,n+1)) ;
+                                                  amn(n)   * inv_scale*trafo(l,n+1)) ;
               }
                 
             for (int l = trafo.Height()-1; l >= m; l--)
@@ -594,7 +594,7 @@ namespace ngsbem
                   trafo(l-1,n)  = Complex (
                                            (tscale_inv_amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
                                                                -amn(n-1)* scale*trafo(l,n-1)
-                                                               +amn(n)  * 1/scale*trafo(l,n+1))).real(),
+                                                               +amn(n)  * inv_scale*trafo(l,n+1))).real(),
                                            trafo(l-1,n).imag());
                 }
             
@@ -607,18 +607,18 @@ namespace ngsbem
               if (n+1 < trafo.Width())              
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
             }
             for (int n = m+1; n < trafo.Width()-1; n++)
               {
                 int l = n+1;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
                 trafo(l+1,n) = 
                   inv_tscale_inv_amn(l) * (amn(l-1)/tscale * trafo(l-1,n)
                                                 + amn(n-1)* scale*trafo(l,n-1)
-                                                - amn(n)* 1/scale*trafo(l,n+1));
+                                                - amn(n)* inv_scale*trafo(l,n+1));
               }
             
             // the next diagonal down
@@ -628,19 +628,19 @@ namespace ngsbem
               if (n+1 < trafo.Width())              
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
             }
             for (int n = m+1; n < trafo.Width()-1; n++)
               {
                 int l = n+2;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
 
                 trafo(l+1,n) = 
                   inv_tscale_inv_amn(l) * (amn(l-1)/tscale * trafo(l-1,n)
                                                 + amn(n-1)* scale*trafo(l,n-1)
-                                                - amn(n)* 1/scale*trafo(l,n+1));
+                                                - amn(n)* inv_scale*trafo(l,n+1));
               }
             
             
@@ -648,9 +648,9 @@ namespace ngsbem
               for (int n = m+1; n < min<int>(trafo.Height()-1-l,l-1 ); n++)
                 {
                   trafo(l+1,n)  = Complex (trafo(l+1,n).real(),
-                                           inv_tscale_inv_amn(l) * ( amn(l-1)/tscale*trafo(l-1,n)
+                                           inv_tscale_inv_amn(l) * ( amn(l-1)*inv_tscale*trafo(l-1,n)
                                                                  +amn(n-1)* scale*trafo(l,n-1)
-                                                                 -amn(n)  * 1/scale*trafo(l,n+1)).imag());
+                                                                 -amn(n)  * inv_scale*trafo(l,n+1)).imag());
                 }
             
             for (int n = m; n < os; n++)
@@ -778,14 +778,14 @@ namespace ngsbem
               if (m < trafo.Width()-1)
                 trafo(l,m+1) = scale/sh.CalcBmn(-m,m+1)* ( // sh.CalcBmn(m-1,m) * scale*trafo(l,m-1)
                                                            - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m)     
-                                                           + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,m) );
+                                                           + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,m) );
             }
             for (int n = m+1; n < trafo.Width()-1; n++)
               {
                 int l = os+ot-n-1;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * 1/tscale*oldtrafo(l-1,n) );
+                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
                 
                 trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
                                                       - amn(n-1)* scale*trafo(l,n-1)
@@ -798,7 +798,7 @@ namespace ngsbem
               if (m < trafo.Width()-2)          
                 trafo(l,m+1) = scale/sh.CalcBmn(-m,m+1)* (// sh.CalcBmn(m-1,m)     * scale*trafo(l,m-1)
                                                           - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,m)   
-                                                          + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,m) );
+                                                          + sh.CalcBmn(-m,l)    * inv_tscale* oldtrafo(l-1,m) );
             }
             for (int n = m+1; n < trafo.Width()-2; n++)
               {
@@ -806,11 +806,11 @@ namespace ngsbem
                 int l = os+ot-n-2;
                 trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
                                                           - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
-                                                          + sh.CalcBmn(-m,l)    * 1/tscale* oldtrafo(l-1,n) ); 
+                                                          + sh.CalcBmn(-m,l)    * inv_tscale* oldtrafo(l-1,n) ); 
                 
                 trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
                                                       -amn(n-1)* scale*trafo(l,n-1) +
-                                                      amn(n)   * 1/scale*trafo(l,n+1)) ;
+                                                      amn(n)   * inv_scale*trafo(l,n+1)) ;
               }
             
             // twall.Stop();
@@ -863,7 +863,7 @@ namespace ngsbem
         
         typedef double trafo_type;
         
-        FlatMatrix<trafo_type> trafo(os+ot+1, os+ot+1, lh);
+        FlatMatrix<trafo_type> trafo(max(os,ot)+1, os+ot+1, lh);
         FlatMatrix<trafo_type> oldtrafo(os+ot+1, os+ot+1, lh);     
         FlatVector<entry_type> hv1(os+1, lh), hv2(ot+1, lh);
         
@@ -895,17 +895,17 @@ namespace ngsbem
         if (ot > 0)
           {
             for (int l = 1; l < os+ot; l++)   
-              trafo(1,l) = -1/tscale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)/scale*trafo(0,l+1)
+              trafo(1,l) = -inv_tscale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)/scale*trafo(0,l+1)
                                                         -sh.CalcAmn(0,l-1)*scale*trafo(0,l-1));
-            trafo(1,0) = 1.0/(-scale*tscale)*trafo(0,1);
+            trafo(1,0) = -powscale(1)*trafo(0,1);
           }
         
         for (int n = 1; n < trafo.Height()-1; n++)
           {
             for (int l = 1; l < os+ot-n; l++)
-              trafo(n+1,l) = -1.0/tscale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*1/scale*trafo(n,l+1)
+              trafo(n+1,l) = -inv_tscale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*inv_scale*trafo(n,l+1)
                                                             -sh.CalcAmn(0,l-1)*scale*trafo(n,l-1)
-                                                            -sh.CalcAmn(0,n-1)*1/tscale*trafo(n-1,l));
+                                                            -sh.CalcAmn(0,n-1)*inv_tscale*trafo(n-1,l));
             trafo(n+1,0) = powscale(n+1)*trafo(0,n+1);
           }
         
@@ -928,7 +928,7 @@ namespace ngsbem
             for (int l = m-1; l < os+ot-m; l++)
               {
                 amn(l) = sh.CalcAmn(m,l);
-                inv_scale_inv_amn(l) = 1.0/scale/amn(l);
+                inv_scale_inv_amn(l) = inv_scale/amn(l);
               }
             
             trafo.Swap (oldtrafo);
@@ -937,60 +937,54 @@ namespace ngsbem
             // fill recursive formula (187)
             trafo.Row(m-1) = trafo_type(0.0); // for wall initial value
             for (int l = m; l <= os+ot-m; l++)
-              trafo(m,l) = 1/tscale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*scale*oldtrafo(m-1,l-1)  
-                                                         -sh.CalcBmn(m-1,l+1)*1/scale*oldtrafo(m-1,l+1));  
+              trafo(m,l) = inv_tscale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*scale*oldtrafo(m-1,l-1)  
+                                                         -sh.CalcBmn(m-1,l+1)*inv_scale*oldtrafo(m-1,l+1));  
             
 
             {
               int n = m;   // the case n = m
               int l = trafo.Width()-n-2;
-              if (l > 0 && n+1 < trafo.Height()-1)
+              if (n+1 < trafo.Height()-1)
                 {
-                  trafo(n+1,l) = 1/tscale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * 1/tscale*trafo(n-1,l)
-                                                               - sh.CalcBmn(m-1,l+1)*1/scale*oldtrafo(n,l+1)     
+                  trafo(n+1,l) = inv_tscale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * 1/tscale*trafo(n-1,l)
+                                                               - sh.CalcBmn(m-1,l+1)*inv_scale*oldtrafo(n,l+1)     
                                                                + sh.CalcBmn(-m,l)  * scale*oldtrafo(n,l-1) );
                 }
             }
             for (int n = m+1; n < trafo.Height()-1; n++)
               {
                 int l = trafo.Width()-n-2;
-                if (l > 0)
-                  {
-                    trafo(n+1,l) = 1/tscale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * 1/tscale*trafo(n-1,l)
-                                                                 - sh.CalcBmn(m-1,l+1)*1/scale*oldtrafo(n,l+1)     
-                                                                 + sh.CalcBmn(-m,l)  * scale*oldtrafo(n,l-1) );
-                    
-                    trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)  *   1/scale*trafo(n,l+1)
-                                                             - amn(n-1)* 1/tscale*trafo(n-1,l)
-                                                             + amn(n)* tscale*trafo(n+1,l));
-                  }
+                trafo(n+1,l) = inv_tscale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * inv_tscale*trafo(n-1,l)
+                                                                - sh.CalcBmn(m-1,l+1)*inv_scale*oldtrafo(n,l+1)
+                                                                + sh.CalcBmn(-m,l)  * scale*oldtrafo(n,l-1) );
+
+                trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)  *   inv_scale*trafo(n,l+1)
+                                                            - amn(n-1)* inv_tscale*trafo(n-1,l)
+                                                            + amn(n)* tscale*trafo(n+1,l));
               }
             
             // the same thing 1 row up
             {
               int n = m;   // the case n = m
               int l = trafo.Width()-n-3;
-              if (l > 0 && n+1 < trafo.Height())
+              if (n+1 < trafo.Height())
                 {
-                  trafo(n+1,l) = 1/tscale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n)     * 1/tscale*trafo(n-1,l)
-                                                               - sh.CalcBmn(m-1,l+1) * 1/scale* oldtrafo(n,l+1)   
-                                                               + sh.CalcBmn(-m,l)    * scale* oldtrafo(n,l-1) ); 
+                  trafo(n+1,l) = inv_tscale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n)     * 1/tscale*trafo(n-1,l)
+                                                               - sh.CalcBmn(m-1,l+1) * inv_scale* oldtrafo(n,l+1)
+                                                               + sh.CalcBmn(-m,l)    * scale* oldtrafo(n,l-1) );
                 }
             }
 
             for (int n = m+1; n < trafo.Height()-2; n++)
               {
                 int l = trafo.Width()-n-3;
-                if (l > 0)
-                  {
-                    trafo(n+1,l) = 1/tscale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * 1/tscale*trafo(n-1,l)
-                                                                 - sh.CalcBmn(m-1,l+1) * 1/scale* oldtrafo(n,l+1)   
-                                                                 + sh.CalcBmn(-m,l)    * scale* oldtrafo(n,l-1) ); 
-                    
-                    trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)   * inv_scale*trafo(n,l+1)
-                                                             -amn(n-1)* inv_tscale*trafo(n-1,l) +
-                                                             amn(n)   * tscale*trafo(n+1,l)) ;
-                  }
+                trafo(n+1,l) = inv_tscale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * inv_tscale*trafo(n-1,l)
+                                                                - sh.CalcBmn(m-1,l+1) * inv_scale* oldtrafo(n,l+1)
+                                                                + sh.CalcBmn(-m,l)    * scale* oldtrafo(n,l-1) );
+
+                trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)   * inv_scale*trafo(n,l+1)
+                                                            -amn(n-1)* inv_tscale*trafo(n-1,l) +
+                                                            amn(n)   * tscale*trafo(n+1,l)) ;
               }
               
 
