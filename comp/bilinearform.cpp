@@ -2886,7 +2886,7 @@ namespace ngcomp
                                }
                            }
                        }                             
-                   });
+                   }, 10*TaskManager::GetNumThreads());
                 cout << IM(3) << "\rassemble inner facet element " << nf << "/" << nf << endl;
               } // if (elementwise_skeleton_parts.Size())
                 
@@ -3009,7 +3009,7 @@ namespace ngcomp
                               }
                             }//end for (numintegrators)
                         }//end for nse                  
-                    });//end of parallel
+                    }, 10*TaskManager::GetNumThreads());//end of parallel
                 // cout << "\rassemble facet surface element " << ne << "/" << ne << endl;  
               } // if facetwise_skeleton_parts[BND].size
             
@@ -3069,7 +3069,7 @@ namespace ngcomp
                   assembledspecialelements = true;
                   lh.CleanUp();
                 }
-            });
+            }, 10*TaskManager::GetNumThreads());
             if(assembledspecialelements) cout << IM(3) << "\rassemble special element " 
                                               << specialelements.Size() << "/" << specialelements.Size() << endl;
             tspecial.Stop();
