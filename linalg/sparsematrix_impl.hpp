@@ -460,21 +460,43 @@ namespace ngla
   DeleteZeroElements(double tol) const
   {
     static Timer t("SparseMatrix::DeleteZeroElements"); RegionTimer reg(t);
-    Array<int> indi, indj;
-    Array<TM> val;
-    for (auto i : Range(this->Height()))
+    size_t h = this->Height();
+    Array<int> cnt(h);
+    Array<bool> keep(data.Size());
+    cnt = 0;
+    keep = false;
+    ParallelForRange( h, [&](IntRange r)
       {
-        for (auto j : Range(firsti[i], firsti[i+1]))
-          {
+        for (auto i : r)
+          for (auto j : Range(firsti[i], firsti[i+1]))
             if (ngbla::L2Norm2(data[j]) > tol*tol)
+            {
+              keep[j] = true;
+              cnt[i]++;
+            }
+      }, 5*TaskManager::GetNumThreads());
+
+    auto matrix = make_shared<SparseMatrix<TM>> (cnt, h);
+    cnt = 0;
+
+    ParallelForRange( h, [&](IntRange r)
+      {
+        for (auto i : r)
+        {
+          auto cols = matrix->GetRowIndices(i);
+          auto vals = matrix->GetRowValues(i);
+          int icol = 0;
+          size_t firsti_new = matrix->firsti[i];
+          for (auto j : Range(firsti[i], firsti[i+1]))
+            if (keep[j])
               {
-                indi.Append (i);
-                indj.Append (colnr[j]);
-                val.Append (data[j]);
+                cols[icol] = colnr[j];
+                vals[icol] = data[j];
+                icol++;
               }
-          }
-      }
-    return this->CreateFromCOO(indi, indj, val, this->Height(), this->Width());
+        }
+      }, 5*TaskManager::GetNumThreads());
+    return matrix;
 
     /*
       // needs parallelization and testing
