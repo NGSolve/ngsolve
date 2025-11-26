@@ -25,7 +25,10 @@ add_library(${lib_name} SHARED
 
 set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp dev_sparsecholesky.cpp dev_blockjacobi.cpp PROPERTIES LANGUAGE CUDA)
 
-target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --extended-lambda >)
+# warnign 611: warning #611-D: overloaded virtual function ... only partially overridden
+# warning 20011: calling a __host__ function(...) from a __host__ __device__ function(...) is not allowed
+# warning 20014: calling a __host__ function(...) from a __host__ __device__ function(...) is not allowed
+target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --diag-suppress=611 --diag-suppress=20011 --diag-suppress=20014  --extended-lambda >)
 
 target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve $<BUILD_INTERFACE:netgen_python>)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_SEPARABLE_COMPILATION ON)
