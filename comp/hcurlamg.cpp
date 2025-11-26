@@ -170,6 +170,7 @@ namespace ngcomp
     shared_ptr<SparseMatrixTM<double>> prolongation, restriction;
     shared_ptr<SparseMatrixTM<double>> vert_prolongation, vert_restriction;
     shared_ptr<SparseMatrixTM<double>> gradient, trans_gradient;
+    shared_ptr<SparseMatrixTM<double>> lo_embedding, lo_restriction;
     shared_ptr<BaseMatrix> node_h1;
     shared_ptr<BaseMatrix> coarse_precond;
     
@@ -284,6 +285,19 @@ namespace ngcomp
     
     auto ne = edge_weights.Size();
     auto nf = f2e.Size();
+
+    if(size != ne)
+      {
+        Array<int> indperrow(ne);
+        indperrow = 1;
+        MatrixGraph graph(indperrow, size);
+        for(auto i : Range(ne))
+          graph.CreatePosition(i, i);
+        lo_restriction = make_shared<SparseMatrix<double>>(std::move(graph));
+        for(auto i : Range(ne))
+          (*lo_restriction)(i,i) = 1.;
+        lo_embedding = dynamic_pointer_cast<SparseMatrixTM<double>>(lo_restriction->CreateTranspose());
+      }
 
     if (param.verbose > 1)
       cout << IM(0) << "setup level " << level << ", matsize = " << size << ", nedge = " << ne << ", nface = " << nf << endl;
@@ -967,6 +981,8 @@ namespace ngcomp
       {
         residuum = f - (*mat) * u;
         auto op = gradient*node_h1*trans_gradient;
+        if(lo_embedding)
+          op = lo_embedding * op * lo_restriction;
         u += *op * residuum;
       }
     
@@ -975,6 +991,8 @@ namespace ngcomp
       residuum = f - (*mat) * u;
 
       auto op = prolongation * coarse_precond * restriction;
+      if(lo_embedding)
+        op = lo_embedding * op * lo_restriction;
       u += *op * residuum;      
     }
 
@@ -982,6 +1000,8 @@ namespace ngcomp
       {
         residuum = f - (*mat) * u;
         auto op = gradient*node_h1*trans_gradient;
+        if(lo_embedding)
+          op = lo_embedding * op * lo_restriction;
         u += *op * residuum;
       }
     
@@ -1107,7 +1127,7 @@ namespace ngcomp
         cout << IM(0) << "maxlevel = " << param.max_level << endl;                
       }
     
-    auto num_edges = matrix->Height();
+    auto num_edges = edge_weights_ht.Used();
     auto num_faces = face_weights_ht.Used();
 
     Array<double> edge_weights(num_edges);
