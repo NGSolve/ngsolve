@@ -173,7 +173,7 @@ namespace ngfem
 #ifdef WIN32
       string linker_cmd = linker.value_or("ngsld.bat");
       lib_file.concat(".dll");
-      string slink = "cmd /C \" + linker_cmd + " /OUT:" + lib_file.string() + " " + object_files;
+      string slink = "cmd /C \"" + linker_cmd + " /OUT:" + lib_file.string() + " " + object_files;
       for (auto flag : link_flags)
         slink += " "+flag;
       slink += " \"";
