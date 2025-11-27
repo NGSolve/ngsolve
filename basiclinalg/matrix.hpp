@@ -1742,6 +1742,7 @@ namespace ngbla
     double operator() (int i) const
     {
       static_assert (true, "linear access of id");
+      return 0;
       // cerr << "id, linear access" << endl; return 0;
     }
     ///
