@@ -393,9 +393,6 @@ namespace ngsbem
   template <typename RADIAL, typename entry_type> template <typename TARGET>
   void SphericalExpansion<RADIAL,entry_type> :: ShiftZ (double z, SphericalExpansion<TARGET,entry_type> & target)
   {
-    // static Timer t("mptool ShiftZ"+ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()));
-    // RegionTimer rg(t);
-      
     int os = sh.Order();
     int ot = target.SH().Order();
 
@@ -405,615 +402,136 @@ namespace ngsbem
     double inv_tscale = 1.0/tscale;
 
     target.SH().Coefs()=0.0;
-    // *testout << "siftz " << typeid(RADIAL).name() << " -> " << typeid(TARGET).name() << endl;
-    // *testout << "shiftz, norm input = " << L2Norm(SH().Coefs()) << endl;
 
+    LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 2*sizeof(entry_type)*(os+ot+3)+ 8*3*(os+ot+1) + 500));
+
+    constexpr bool is_rr = std::is_same<RADIAL,Regular>::value && std::is_same<TARGET,Regular>::value;
+    using trafo_type =
+        std::conditional_t<
+            std::is_same<RADIAL, Singular>::value && std::is_same<TARGET, Regular>::value,
+            Complex,
+            double
+        >;
+
+    FlatMatrix<trafo_type> trafo(os+ot+1, max(os,ot)+1, lh);
+    FlatMatrix<trafo_type> oldtrafo(os+ot+1, max(os,ot)+1, lh);
+    FlatVector<entry_type> hv1(os+1, lh), hv2(ot+1, lh);
+
+    trafo = trafo_type(0.0);
+
+    FlatVector<double> bmn(os+ot+1, lh);
+    FlatVector<double> scale_inv_bmn(os+ot+1, lh);
+    FlatVector<double> powscale(os+ot+1, lh);
+    
+    // initial values
     if constexpr (std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Regular>::value)
-      {
-        // sing->reg trafo
-        // static int cnt = 0;
-        // cnt++;
-        // *testout << "sing-reg, cnt = " << cnt << endl;
-        // *testout << "norm in = " << L2Norm(SH().Coefs()) << endl;
-        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 2*sizeof(entry_type)*(os+ot+5) + 500));
-        
-        typedef Complex trafo_type;
-        
-        FlatMatrix<trafo_type> trafo(os+ot+1, max(os,ot)+1, lh);
-        FlatMatrix<trafo_type> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
-        FlatVector<entry_type> hv1(os+1, lh), hv2(ot+1, lh);
-        
-        trafo = trafo_type(0.0);
-        
-        
-        /*
-         *testout << "SiftZ" +ToString(typeid(RADIAL).name())+ToString(typeid(TARGET).name()) << endl;
-         *testout << "z = " << z << endl;
-         *testout << "os = " << os << ", ot = " <<  ot << endl;
-         *testout << "scale = " << Scale() << ", tscale = " << target.Scale() << endl;
-         */
-        
-        
-        FlatVector<double> amn(os+ot+1, lh);
-        FlatVector<double> tscale_inv_amn(os+ot+1, lh);
-        FlatVector<double> inv_tscale_inv_amn(os+ot+1, lh);
-        
-        FlatVector<double> powscale(os+ot+1, lh);
-        double prod = 1;
-        for (int i = 0; i <= os; i++)
-          {
-            powscale(i) = prod;
-            prod *= -scale*tscale;
-          }
-        
-        // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
-        // if constexpr (std::is_same<RADIAL,TARGET>::value)
-        // SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
-        // else
-        SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
-        
-        if (z < 0)
-          for (int l = 1; l < trafo.Height(); l+=2) trafo(l,0) *= -1;
-        
-        for (int l = 0; l <= os+ot; l++)
-          trafo(l,0) *= sqrt(2*l+1);
-        
-        
-        // *testout << "Norm Col0 = " << L2Norm(trafo.Col(0)) << endl;
-        
-        if (os > 0)
-          {
-            for (int l = 1; l < os+ot; l++)   
-              trafo(l,1) = -scale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
-                                                     -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
-            trafo(0,1) = -powscale(1)*trafo(1,0);
-          }
-        
-        for (int n = 1; n < trafo.Width()-1; n++)
-          {
-            for (int l = 1; l < os+ot-n; l++)
-              trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)
-                                                       -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)
-                                                       -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
-            trafo(0,n+1) = powscale(n+1)*trafo(n+1,0);
-          }
-        
-        // use symmetry of matrix (up to scaling)
-        // important for small kappa, and R->R
-        for (int n = 0; n < trafo.Width(); n++)
-          for (int l = n+1; l < trafo.Width(); l++)
-            trafo(n,l) = powscale(l-n) * trafo(l,n);
-        
-        /*
-          if constexpr (std::is_same<RADIAL,Regular>::value && std::is_same<TARGET,Regular>::value)
-          {
-          *testout << "RR, old" << endl;
-          *testout << "trafo0 = " << trafo.Rows(ot+1).Cols(os+1) << endl;
-          }
-        */
-        
-    
-        // *testout << "trafo0" << endl << trafo.Rows(os+ot+1).Cols(os+1) << endl;
-        // *testout << "norm trafo col 0 = " << L2Norm(trafo.Rows(ot+1).Col(0)) << endl;
-        // *testout << "norm trafo0 = " << L2Norm(trafo.Rows(ot+1).Cols(os+1)) << endl;
-        // *testout << "norm trafo0,real = " << L2Norm(Real(trafo.Rows(ot+1).Cols(os+1))) << endl;    
-        // *testout << "norm trafo0,imag = " << L2Norm(Imag(trafo.Rows(ot+1).Cols(os+1))) << endl;    
-
-
-        // *testout << "trafo0,real = " << Real(trafo.Rows(ot+1).Cols(os+1)) << endl;    
-        // *testout << "trafo0,imag = " << Imag(trafo.Rows(ot+1).Cols(os+1)) << endl;    
-// *testout << "trafo0 = " << trafo.Rows(ot+1).Cols(os+1) << endl;
-        
-        for (int n = 0; n <= os; n++)
-          hv1(n) = sh.Coef(n,0);
-        hv2 = trafo.Rows(ot+1).Cols(os+1) * hv1;
-        for (int n = 0; n <= ot; n++)
-          target.SH().Coef(n,0) = hv2(n);
-        
-        for (int m = 1; m <= min(os,ot); m++)
-          {
-            for (int l = m-1; l < os+ot-m; l++)
-              {
-                amn(l) = sh.CalcAmn(m,l);
-                tscale_inv_amn(l) = tscale/amn(l);
-                inv_tscale_inv_amn(l) = 1/(tscale*amn(l));
-              }
-            
-            
-            trafo.Swap (oldtrafo);
-            // trafo = trafo_type(0.0);  // needs initialization ???
-            // trafo.Col(m-1) = trafo_type(0.0);  // for wall initial value
-            
-            // fill recursive formula (187)
-            for (int l = m; l <= os+ot-m; l++)
-              {
-                trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)  
-                                                        -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));
-              }
-
-            /*
-            // unstable for large kappa
-            for (int n = m; n < os; n++)
-              {
-                for (int l = n+1; l < os+ot-n; l++)
-                  trafo(l,n+1) = -inv_amn(n) * (amn(l)*tscale*trafo(l+1,n)
-                                                -amn(l-1)*inv_tscale*trafo(l-1,n)
-                                                -amn(n-1)*scale*trafo(l,n-1));
-              }
-            */
-            
-            // fix real part by wall-reccurence:
-            {
-              int n = m;
-              int l = trafo.Height()-n-2;
-              if (n+1 < trafo.Width())
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
-            }
-            for (int n = m+1; n < trafo.Width()-1; n++)
-              {
-                int l = trafo.Height()-n-2;
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
-                
-                trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
-                                                  - amn(n-1)* scale*trafo(l,n-1)
-                                                  + amn(n)* inv_scale*trafo(l,n+1));
-              }
-
-            
-            // the same thing 1 row up
-            {
-              // int l = 2*order-n-2;
-              int n = m;
-              int l = trafo.Height()-n-3;
-              if (n+1 < trafo.Width())                
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
-                                                          + sh.CalcBmn(-m,l)    * inv_tscale* oldtrafo(l-1,n) ); 
-            }
-            for (int n = m+1; n < trafo.Width()-2; n++)
-              {
-                // int l = 2*order-n-2;
-                int l = trafo.Height()-n-3;
-                
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
-                                                          + sh.CalcBmn(-m,l)    * inv_tscale* oldtrafo(l-1,n) ); 
-
-                trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
-                                                  -amn(n-1)* scale*trafo(l,n-1) +
-                                                  amn(n)   * inv_scale*trafo(l,n+1)) ;
-              }
-                
-            for (int l = trafo.Height()-1; l >= m; l--)
-              for (int n = m+1; n < min<int>(trafo.Height()-1-l,l); n++)
-                {
-                  trafo(l-1,n)  = Complex (
-                                           (tscale_inv_amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
-                                                               -amn(n-1)* scale*trafo(l,n-1)
-                                                               +amn(n)  * inv_scale*trafo(l,n+1))).real(),
-                                           trafo(l-1,n).imag());
-                }
-            
-            
-            // the imaginary part started from the yn:
-            // diagonal down
-            {
-              int n = m; 
-              int l = n+1;
-              if (n+1 < trafo.Width())              
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
-            }
-            for (int n = m+1; n < trafo.Width()-1; n++)
-              {
-                int l = n+1;
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
-                trafo(l+1,n) = 
-                  inv_tscale_inv_amn(l) * (amn(l-1)/tscale * trafo(l-1,n)
-                                                + amn(n-1)* scale*trafo(l,n-1)
-                                                - amn(n)* inv_scale*trafo(l,n+1));
-              }
-            
-            // the next diagonal down
-            {
-              int n = m;
-              int l = n+2;
-              if (n+1 < trafo.Width())              
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
-            }
-            for (int n = m+1; n < trafo.Width()-1; n++)
-              {
-                int l = n+2;
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
-
-                trafo(l+1,n) = 
-                  inv_tscale_inv_amn(l) * (amn(l-1)/tscale * trafo(l-1,n)
-                                                + amn(n-1)* scale*trafo(l,n-1)
-                                                - amn(n)* inv_scale*trafo(l,n+1));
-              }
-            
-            
-            for (int l = m; l < trafo.Height()-1; l++)
-              for (int n = m+1; n < min<int>(trafo.Height()-1-l,l-1 ); n++)
-                {
-                  trafo(l+1,n)  = Complex (trafo(l+1,n).real(),
-                                           inv_tscale_inv_amn(l) * ( amn(l-1)*inv_tscale*trafo(l-1,n)
-                                                                 +amn(n-1)* scale*trafo(l,n-1)
-                                                                 -amn(n)  * inv_scale*trafo(l,n+1)).imag());
-                }
-            
-            for (int n = m; n < os; n++)
-              for (int l = n+1; l <= os; l++)
-                trafo(n,l) = powscale(l-n) * trafo(l,n);              
-              
-            for (int n = m; n <= os; n++)
-              hv1(n) = sh.Coef(n,m);
-            hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-            for (int n = m; n <= ot; n++)
-              target.SH().Coef(n,m) = hv2(n);
-            
-            for (int n = m; n <= os; n++)
-              hv1(n) = sh.Coef(n,-m);
-            hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-            for (int n = m; n <= ot; n++)
-              target.SH().Coef(n,-m) = hv2(n);
-          }
-      }
-
-    
-
-    
-
+    {
+      SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
+    }
+    if constexpr (is_rr)
+    {
+      std::swap(scale, inv_tscale);
+      std::swap(tscale, inv_scale);
+      z = -z;
+      SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
+    }
     if constexpr (std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Singular>::value)
+    {
+      SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
+    }
+
+    double prod = 1;
+    for (int i = 0; i <= os; i++, prod *= -scale*tscale)
+      powscale(i) = prod;
+    
+    // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
+    if (z < 0)
+      for (int l = 1; l < trafo.Height(); l+=2)
+        trafo(l,0) *= -1;
+    
+    for (int l = 0; l <= os+ot; l++)
+      trafo(l,0) *= sqrt(2*l+1);
+
+    if (os > 0)
+    {
+      for (int l = 1; l < os+ot; l++)
+        trafo(l,1) = -scale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
+              -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
+      trafo(0,1) = -scale*tscale*trafo(1,0);
+    }
+
+    for (int n = 1; n < trafo.Width()-1; n++)
+    {
+      for (int l = 1; l < os+ot-n; l++)
+        trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)
+              -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)
+              -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
+      trafo(0,n+1) = powscale(n+1)*trafo(n+1,0);
+    }
+    
+    // use symmetry of matrix (up to scaling)
+    for (int n = 0; n < trafo.Width(); n++)
+      for (int l = n+1; l < trafo.Width(); l++)
+        trafo(n,l) = powscale(l-n) * trafo(l,n);
+
+    for (int n = 0; n <= os; n++)
+      hv1(n) = sh.Coef(n,0);
+    if constexpr (is_rr)
+      hv2 = Trans(trafo.Rows(ot+1).Cols(os+1)) * hv1;
+    else
+      hv2 = trafo.Rows(ot+1).Cols(os+1) * hv1;
+    for (int n = 0; n <= ot; n++)
+      target.SH().Coef(n,0) = hv2(n);
+    
+    // recursion over m
+    for (int m = 1; m <= min(os,ot); m++)
+    {
+      for (int l = m-1; l < os+ot-m; l++)
       {
-        // sing->sing transformation
-        /*
-        static Timer t("mptool ShiftZ sing->sing"); RegionTimer rg(t);
-        static Timer tfill("mptool ShiftZ sing->sing fill");
-        static Timer tmult("mptool ShiftZ sing->sing mult");
-        static Timer ttrans("mptool ShiftZ sing->sing trans");        
-        static Timer twall("mptool ShiftZ sing->sing wall");
-        static Timer tinit("mptool ShiftZ sing->sing init");
-        static Timer tlevel0("mptool ShiftZ sing->sing level0");
-        static Timer tcleanup("mptool ShiftZ sing->sing cleanup");                        
-        */
-        // tlevel0.Start();
-        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 2*sizeof(entry_type)*(os+ot+3)+ 8*3*(os+ot+1) + 500));
-
-        typedef double trafo_type;
-        
-        FlatMatrix<trafo_type> trafo(os+ot+1, max(os,ot)+1, lh);
-        FlatMatrix<trafo_type> oldtrafo(os+ot+1, max(os,ot)+1, lh);     
-        FlatVector<entry_type> hv1(os+1, lh), hv2(ot+1, lh);
-        
-        trafo = trafo_type(0.0);
-        
-        FlatVector<double> amn(os+ot+1, lh);
-        FlatVector<double> tscale_inv_amn(os+ot+1, lh);
-        
-        FlatVector<double> powscale(os+ot+1, lh);
-        double prod = 1;
-        for (int i = 0; i <= os; i++, prod *= -scale*tscale)
-          powscale(i) = prod;
-
-        
-        // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
-        SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
-        
-        if (z < 0)
-          for (int l = 1; l < trafo.Height(); l+=2)
-            trafo(l,0) *= -1;
-        
-        for (int l = 0; l <= os+ot; l++)
-          trafo(l,0) *= sqrt(2*l+1);
-        
-
-        // *testout << "Norm Col0 = " << L2Norm(trafo.Col(0)) << endl;
-        
-        if (os > 0)
-          {
-            for (int l = 1; l < os+ot; l++)   
-              trafo(l,1) = -scale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
-                                                     -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
-            trafo(0,1) = -scale*tscale*trafo(1,0);
-          }
-        
-        for (int n = 1; n < trafo.Width()-1; n++)
-          {
-            for (int l = 1; l < os+ot-n; l++)
-              trafo(l,n+1) = -scale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,n)
-                                                       -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,n)
-                                                       -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
-            trafo(0,n+1) = powscale(n+1)*trafo(n+1,0);
-          }
-        
-        // use symmetry of matrix (up to scaling)
-        // important for small kappa, and R->R
-        for (int n = 0; n < trafo.Width(); n++)
-          for (int l = n+1; l < trafo.Width(); l++)
-            trafo(n,l) = powscale(l-n) * trafo(l,n);
-        
-        
-        for (int n = 0; n <= os; n++)
-          hv1(n) = sh.Coef(n,0);
-        hv2 = trafo.Rows(ot+1).Cols(os+1) * hv1;
-        for (int n = 0; n <= ot; n++)
-          target.SH().Coef(n,0) = hv2(n);
-        
-        // tlevel0.Stop();
-      
-        for (int m = 1; m <= min(os,ot); m++)
-          {
-            // tinit.Start();
-            for (int l = m-1; l < os+ot-m; l++)
-              {
-                amn(l) = sh.CalcAmn(m,l);
-                tscale_inv_amn(l) = tscale/amn(l);
-              }
-            
-            trafo.Swap (oldtrafo);
-            // trafo = trafo_type(0.0);
-            // trafo = trafo_type(1.0/0.0);
-            // trafo.Col(m-1) = trafo_type(0.0);  // for wall initial value
-            
-            // fill recursive formula (187)
-            for (int l = m; l <= os+ot-m; l++)
-              trafo(l,m) = scale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)  
-                                                      -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));  
-            // tinit.Stop();
-            // twall.Start();
-            {
-              int l = os+ot-m-1;
-              if (m < trafo.Width()-1)
-                trafo(l,m+1) = scale/sh.CalcBmn(-m,m+1)* ( // sh.CalcBmn(m-1,m) * scale*trafo(l,m-1)
-                                                           - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m)     
-                                                           + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,m) );
-            }
-            for (int n = m+1; n < trafo.Width()-1; n++)
-              {
-                int l = os+ot-n-1;
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)     
-                                                          + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
-                
-                trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)  *   tscale*trafo(l+1,n)
-                                                      - amn(n-1)* scale*trafo(l,n-1)
-                                                      + amn(n)* inv_scale*trafo(l,n+1));
-              }
-            
-            // the same thing 1 row up
-            {
-              int l = os+ot-m-2;
-              if (m < trafo.Width()-2)          
-                trafo(l,m+1) = scale/sh.CalcBmn(-m,m+1)* (// sh.CalcBmn(m-1,m)     * scale*trafo(l,m-1)
-                                                          - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,m)   
-                                                          + sh.CalcBmn(-m,l)    * inv_tscale* oldtrafo(l-1,m) );
-            }
-            for (int n = m+1; n < trafo.Width()-2; n++)
-              {
-                // int l = 2*order-n-2;
-                int l = os+ot-n-2;
-                trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * scale*trafo(l,n-1)
-                                                          - sh.CalcBmn(m-1,l+1) * tscale* oldtrafo(l+1,n)   
-                                                          + sh.CalcBmn(-m,l)    * inv_tscale* oldtrafo(l-1,n) ); 
-                
-                trafo(l-1,n) = tscale_inv_amn(l-1) * (amn(l)   * tscale*trafo(l+1,n)
-                                                      -amn(n-1)* scale*trafo(l,n-1) +
-                                                      amn(n)   * inv_scale*trafo(l,n+1)) ;
-              }
-            
-            // twall.Stop();
-            // tfill.Start();
-            
-            for (int l = os+ot-m; l >= m; l--)
-              for (int n = m+1; n < min<int>(os+ot-l,l); n++)
-                {
-                  trafo(l-1,n) = tscale_inv_amn(l-1)* ( amn(l)  * tscale*trafo(l+1,n)
-                                                        -amn(n-1)* scale*trafo(l,n-1)
-                                                        +amn(n)  * inv_scale*trafo(l,n+1)) ;
-                }
-            
-            // thhfill.Stop();
-            // tfill.AddFlops (sqr( (os+ot)/2-m ));
-
-            // ttrans.Start();
-            for (int n = m; n < os; n++)
-              for (int l = n+1; l <= os; l++)
-                trafo(n,l) = powscale(l-n) * trafo(l,n);              
-            // ttrans.Stop();
-            
-            // tmult.Start();
-            for (int n = m; n <= os; n++)
-              hv1(n) = sh.Coef(n,m);
-            hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-            for (int n = m; n <= ot; n++)
-              target.SH().Coef(n,m) = hv2(n);
-            
-            for (int n = m; n <= os; n++)
-              hv1(n) = sh.Coef(n,-m);
-            hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-            for (int n = m; n <= ot; n++)
-              target.SH().Coef(n,-m) = hv2(n);
-
-            // tmult.Stop();
-          }
-        // RegionTimer cleanup(tcleanup);
+        bmn(l) = sh.CalcBmn(-m,l);
+        scale_inv_bmn(l) = scale/bmn(l);
       }
-    
-    
-    
-
-    
-    if constexpr (std::is_same<RADIAL,Regular>::value && std::is_same<TARGET,Regular>::value)
+        
+      trafo.Swap (oldtrafo);
+        
+      // fill recursive formula (187)
+      for (int l = m; l <= trafo.Height()-1-m; l++)
+        trafo(l,m) = scale_inv_bmn(m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)
+              -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));  
+      for (int l = m; l <= trafo.Height()-1-m; l++)
+        trafo(l,m+1) = scale_inv_bmn(m+1)* ( // sh.CalcBmn(m-1,m) * scale*trafo(l,m-1)
+              - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m)
+              + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,m) );
+      // fill recursive formula (182)
+      for (int n = m+1; n < trafo.Width()-1; n++)
       {
-        // reg->reg transformation
+        for (int l = n-1; l <= trafo.Height()-1-m; l++)
+          trafo(l,n+1) = scale_inv_bmn(n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
+                       - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)
+                       + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
+      }
         
-        LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 8*3*(os+ot+1) + 2*sizeof(entry_type)*(os+ot+3) + 500));
-        
-        typedef double trafo_type;
-        
-        FlatMatrix<trafo_type> trafo(max(os,ot)+1, os+ot+1, lh);
-        FlatMatrix<trafo_type> oldtrafo(os+ot+1, os+ot+1, lh);     
-        FlatVector<entry_type> hv1(os+1, lh), hv2(ot+1, lh);
-        
-        trafo = trafo_type(0.0);
-        
-    
-        FlatVector<double> amn(os+ot+1, lh);
-        FlatVector<double> inv_scale_inv_amn(os+ot+1, lh);
-        
-        FlatVector<double> powscale(os+ot+1, lh);
-        double prod = 1;
-        for (int i = 0; i <= os; i++)
-          {
-            powscale(i) = prod;
-            prod /= -scale*tscale;
-          }
+      for (int n = m; n < os; n++)
+        for (int l = n+1; l <= os; l++)
+          trafo(n,l) = powscale(l-n) * trafo(l,n);
 
+      for (int n = m; n <= os; n++)
+        hv1(n) = sh.Coef(n,m);
+      if constexpr (is_rr)
+        hv2.Range(m,ot+1) = Trans(trafo.Rows(m,ot+1).Cols(m,os+1)) * hv1.Range(m,os+1);
+      else
+        hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+      for (int n = m; n <= ot; n++)
+        target.SH().Coef(n,m) = hv2(n);
         
-        // (185) from paper 'fast, exact, stable, Gumerov+Duraiswami
-        SphericalBessel (os+ot, kappa*abs(z), 1/scale, trafo.Row(0));
-        
-        if (z > 0)
-          for (int l = 1; l < trafo.Width(); l+=2) trafo(0,l) *= -1;
-        
-        for (int l = 0; l <= os+ot; l++)
-          trafo(0,l) *= sqrt(2*l+1);
-        
-
-        if (ot > 0)
-          {
-            for (int l = 1; l < os+ot; l++)   
-              trafo(1,l) = -inv_tscale/sh.CalcAmn(0,0) * (sh.CalcAmn(0,l)/scale*trafo(0,l+1)
-                                                        -sh.CalcAmn(0,l-1)*scale*trafo(0,l-1));
-            trafo(1,0) = -powscale(1)*trafo(0,1);
-          }
-        
-        for (int n = 1; n < trafo.Height()-1; n++)
-          {
-            for (int l = 1; l < os+ot-n; l++)
-              trafo(n+1,l) = -inv_tscale/sh.CalcAmn(0,n) * (sh.CalcAmn(0,l)*inv_scale*trafo(n,l+1)
-                                                            -sh.CalcAmn(0,l-1)*scale*trafo(n,l-1)
-                                                            -sh.CalcAmn(0,n-1)*inv_tscale*trafo(n-1,l));
-            trafo(n+1,0) = powscale(n+1)*trafo(0,n+1);
-          }
-        
-        // use symmetry of matrix (up to scaling)
-        // important for small kappa, and R->R
-        for (int n = 0; n < trafo.Height(); n++)
-          for (int l = n+1; l < trafo.Height(); l++)
-            trafo(l,n) = powscale(l-n) * trafo(n,l);
-
-        
-        for (int n = 0; n <= os; n++)
-          hv1(n) = sh.Coef(n,0);
-        hv2 = trafo.Rows(ot+1).Cols(os+1) * hv1;
-        for (int n = 0; n <= ot; n++)
-          target.SH().Coef(n,0) = hv2(n);
-
-        for (int m = 1; m <= min(os,ot); m++)
-          {
-            
-            for (int l = m-1; l < os+ot-m; l++)
-              {
-                amn(l) = sh.CalcAmn(m,l);
-                inv_scale_inv_amn(l) = inv_scale/amn(l);
-              }
-            
-            trafo.Swap (oldtrafo);
-            // trafo = trafo_type(1.0/0.0);
-            
-            // fill recursive formula (187)
-            trafo.Row(m-1) = trafo_type(0.0); // for wall initial value
-            for (int l = m; l <= os+ot-m; l++)
-              trafo(m,l) = inv_tscale/sh.CalcBmn(-m, m) * (sh.CalcBmn(-m, l)*scale*oldtrafo(m-1,l-1)  
-                                                         -sh.CalcBmn(m-1,l+1)*inv_scale*oldtrafo(m-1,l+1));  
-            
-
-            {
-              int n = m;   // the case n = m
-              int l = trafo.Width()-n-2;
-              if (n+1 < trafo.Height()-1)
-                {
-                  trafo(n+1,l) = inv_tscale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n) * 1/tscale*trafo(n-1,l)
-                                                               - sh.CalcBmn(m-1,l+1)*inv_scale*oldtrafo(n,l+1)     
-                                                               + sh.CalcBmn(-m,l)  * scale*oldtrafo(n,l-1) );
-                }
-            }
-            for (int n = m+1; n < trafo.Height()-1; n++)
-              {
-                int l = trafo.Width()-n-2;
-                trafo(n+1,l) = inv_tscale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n) * inv_tscale*trafo(n-1,l)
-                                                                - sh.CalcBmn(m-1,l+1)*inv_scale*oldtrafo(n,l+1)
-                                                                + sh.CalcBmn(-m,l)  * scale*oldtrafo(n,l-1) );
-
-                trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)  *   inv_scale*trafo(n,l+1)
-                                                            - amn(n-1)* inv_tscale*trafo(n-1,l)
-                                                            + amn(n)* tscale*trafo(n+1,l));
-              }
-            
-            // the same thing 1 row up
-            {
-              int n = m;   // the case n = m
-              int l = trafo.Width()-n-3;
-              if (n+1 < trafo.Height())
-                {
-                  trafo(n+1,l) = inv_tscale/sh.CalcBmn(-m,n+1)* (// sh.CalcBmn(m-1,n)     * 1/tscale*trafo(n-1,l)
-                                                               - sh.CalcBmn(m-1,l+1) * inv_scale* oldtrafo(n,l+1)
-                                                               + sh.CalcBmn(-m,l)    * scale* oldtrafo(n,l-1) );
-                }
-            }
-
-            for (int n = m+1; n < trafo.Height()-2; n++)
-              {
-                int l = trafo.Width()-n-3;
-                trafo(n+1,l) = inv_tscale/sh.CalcBmn(-m,n+1)* (sh.CalcBmn(m-1,n)     * inv_tscale*trafo(n-1,l)
-                                                                - sh.CalcBmn(m-1,l+1) * inv_scale* oldtrafo(n,l+1)
-                                                                + sh.CalcBmn(-m,l)    * scale* oldtrafo(n,l-1) );
-
-                trafo(n,l-1) = inv_scale_inv_amn(l-1) * (amn(l)   * inv_scale*trafo(n,l+1)
-                                                            -amn(n-1)* inv_tscale*trafo(n-1,l) +
-                                                            amn(n)   * tscale*trafo(n+1,l)) ;
-              }
-              
-
-            for (int l = trafo.Width()-1; l >= m; l--)
-              for (int n = m+1; n < min<int>(trafo.Width()-1-l,l); n++)
-                {
-                  trafo(n,l-1) = inv_scale_inv_amn(l-1)* ( amn(l)  * inv_scale*trafo(n,l+1)
-                                                           -amn(n-1)* inv_tscale*trafo(n-1,l)
-                                                           +amn(n)  * tscale*trafo(n+1,l)) ;
-                }
-
-
-            for (int n = m; n < os; n++)
-              for (int l = n+1; l <= os; l++)
-                trafo(l,n) = powscale(l-n) * trafo(n,l);
-
-            
-            for (int n = m; n <= os; n++)
-              hv1(n) = sh.Coef(n,m);
-            hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-            for (int n = m; n <= ot; n++)
-              target.SH().Coef(n,m) = hv2(n);
-            
-            for (int n = m; n <= os; n++)
-              hv1(n) = sh.Coef(n,-m);
-            hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-            for (int n = m; n <= ot; n++)
-              target.SH().Coef(n,-m) = hv2(n);
-          }
+      for (int n = m; n <= os; n++)
+        hv1(n) = sh.Coef(n,-m);
+      if constexpr (is_rr)
+        hv2.Range(m,ot+1) = Trans(trafo.Rows(m,ot+1).Cols(m,os+1)) * hv1.Range(m,os+1);
+      else
+        hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+      for (int n = m; n <= ot; n++)
+        target.SH().Coef(n,-m) = hv2(n);
       }
   }
 
