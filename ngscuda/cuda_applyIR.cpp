@@ -99,15 +99,11 @@ namespace ngla
 
       auto dir = CreateTempDir();
       auto prefix = dir.append("GPUcode");
-      auto src_file = filesystem::path(prefix).concat(".cu").u8string();
-      auto lib_file = filesystem::path(prefix).concat(".so").u8string();
-      
+      auto src_file = filesystem::path(prefix).concat(".cu");
       ofstream codefile(src_file);
       codefile << s.str();
       codefile.close();
-      int err = system( ("ngs_nvcc -shared -Xcompiler -fPIC " + src_file + " -o "+lib_file).c_str() );
-      if (err) throw Exception ("problem calling compiler");
-      library = make_unique<SharedLibrary>(lib_file, dir);
+      library = CompileCode( {src_file}, {}, false, "ngs_nvcc", "ngs_nvlink" );
       compiled_function = library->GetSymbol<lib_function> ("ApplyIPFunction");
     }
     

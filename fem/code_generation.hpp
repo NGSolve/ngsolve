@@ -287,7 +287,7 @@ namespace ngfem
   }
 
   std::filesystem::path CreateTempDir();
-  unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files = false );
+  unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files = false, optional<string> compiler = nullopt, optional<string> linker = nullopt);
   namespace detail {
       string GenerateL2ElementCode(int order);
   }
