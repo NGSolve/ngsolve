@@ -30,7 +30,7 @@ namespace ngcore
 #ifdef USE_MYCOMPLEX
   typedef ngstd::MyComplex<double> Complex;
   using std::fabs;
-  inline double fabs (Complex v) { return ngstd::abs (v); }
+  INLINE double fabs (Complex v) { return ngstd::abs (v); }
 #else
   typedef std::complex<double> Complex;
   using std::fabs;
