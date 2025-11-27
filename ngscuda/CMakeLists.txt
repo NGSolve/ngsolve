@@ -28,7 +28,17 @@ set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp dev
 # warnign 611: warning #611-D: overloaded virtual function ... only partially overridden
 # warning 20011: calling a __host__ function(...) from a __host__ __device__ function(...) is not allowed
 # warning 20014: calling a __host__ function(...) from a __host__ __device__ function(...) is not allowed
-target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --diag-suppress=611 --diag-suppress=20011 --diag-suppress=20012  --diag-suppress=20013 --diag-suppress=20014 --diag-suppress=20015  --extended-lambda >)
+set(nvcc_flags 
+  --expt-relaxed-constexpr
+  --extended-lambda
+  --diag-suppress=611
+  --diag-suppress=20011
+  --diag-suppress=20012
+  --diag-suppress=20013
+  --diag-suppress=20014
+  --diag-suppress=20015
+)
+target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${nvcc_flags}>)
 
 target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve $<BUILD_INTERFACE:netgen_python>)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_SEPARABLE_COMPILATION ON)
@@ -52,7 +62,7 @@ if [ -f ${CMAKE_CUDA_COMPILER} ]
 fi
 ")
 
-set(nvcc_flags "")
+list(JOIN nvcc_flags " " nvcc_flags)
 foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} "-fPIC")
     set(nvcc_flags "${nvcc_flags} -Xcompiler ${opt}")
     message("add opt ", ${opt})
