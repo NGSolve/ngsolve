@@ -123,17 +123,24 @@ namespace ngfem
 
 
   
-    unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files )
+    unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files, optional<string> compiler, optional<string> linker)
     {
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");
       string object_files;
       filesystem::path lib_dir = CreateTempDir();
       string chdir_cmd = "cd " + lib_dir.string() + " && ";
+
       for(auto i : Range(codes.size())) {
         filesystem::path src_file;
         if(std::holds_alternative<filesystem::path>(codes[i]))
+        {
             src_file = filesystem::absolute(std::get<filesystem::path>(codes[i]));
+            // copy file to lib_dir
+            auto dest_file = filesystem::path(lib_dir) / src_file.filename();
+            filesystem::copy_file(src_file, dest_file, filesystem::copy_options::overwrite_existing);
+            src_file = dest_file;
+        }
         else
         {
             string code = std::get<string>(codes[i]);
@@ -142,14 +149,17 @@ namespace ngfem
             codefile << code;
             codefile.close();
         }
+        src_file = src_file.filename();
         cout << IM(3) << "compiling..." << endl;
         tcompile.Start();
 #ifdef WIN32
+        string compiler_cmd = compiler.value_or("ngscxx.bat");
         string scompile = "cmd /C \"ngscxx.bat " + src_file.string();
         object_files += " " + filesystem::path(src_file).replace_extension(".obj ").string();
 #else // WIN32
+        string compiler_cmd = compiler.value_or("ngscxx");
         auto obj_file = " " + filesystem::path(src_file).replace_extension(".o").string();
-        string scompile = "ngscxx -c " + src_file.string() + " -o " + obj_file;
+        string scompile = compiler_cmd + " -c " + src_file.string() + " -o " + obj_file;
         object_files += obj_file;
 #endif // WIN32
         int err = system((chdir_cmd + scompile).c_str());
@@ -161,14 +171,18 @@ namespace ngfem
       tlink.Start();
       auto lib_file = filesystem::path(lib_dir).append("library");
 #ifdef WIN32
+      string linker_cmd = linker.value_or("ngsld.bat");
       lib_file.concat(".dll");
-      string slink = "cmd /C \"ngsld.bat /OUT:" + lib_file.string() + " " + object_files;
+      string slink = "cmd /C \" + linker_cmd + " /OUT:" + lib_file.string() + " " + object_files;
       for (auto flag : link_flags)
         slink += " "+flag;
       slink += " \"";
 #else // WIN32
       lib_file.concat(".so");
-      string slink = "ngsld -shared " + object_files + " -o " + lib_file.string() + " -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore";
+      string linker_cmd = linker.value_or("ngsld");
+      string slink = linker_cmd + " -shared " + object_files + " -o " + lib_file.string();
+      if(!linker)
+        slink += " -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore";
       for (auto flag : link_flags)
         slink += " "+flag;
 #endif // WIN32

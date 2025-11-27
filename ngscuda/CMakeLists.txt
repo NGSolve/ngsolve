@@ -54,8 +54,7 @@ if(NETGEN_USE_PYTHON)
     install(TARGETS ngscuda DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 endif(NETGEN_USE_PYTHON)
 
-set( ngs_nvcc_header "\
-${ngscxx_set_script_dir}
+set( ngs_nvcc_header "${ngscxx_header}
 if [ -f ${CMAKE_CUDA_COMPILER} ]
   then NVCC=${CMAKE_CUDA_COMPILER}
   else NVCC=nvcc
@@ -65,14 +64,24 @@ fi
 list(JOIN nvcc_flags " " nvcc_flags)
 foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} "-fPIC")
     set(nvcc_flags "${nvcc_flags} -Xcompiler ${opt}")
-    message("add opt ", ${opt})
 endforeach()
+set(ngs_nvcc_command "$NVCC ${ngscxx_define_flags} -arch=native ${nvcc_flags} ${ngscxx_includes} $*\n")
+
+if(CCACHE_FOUND)
+      set(ngs_nvcc_command "
+if [ -f ${CCACHE_FOUND} ]
+  then ${CCACHE_FOUND} ${ngs_nvcc_command}
+  else ${ngs_nvcc_command}
+fi")
+endif()
+
+set(ngs_nvlink_command "$NVCC $*\n")
 
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvcc
-              CONTENT "${ngs_nvcc_header}\n$NVCC ${ngscxx_define_flags} -arch=native ${nvcc_flags} ${ngscxx_includes} $*\n"
+              CONTENT "${ngs_nvcc_header}\n${ngs_nvcc_command}\n"
               CONDITION $<COMPILE_LANGUAGE:CXX>
-              )
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink CONTENT "${ngs_nvcc_header}\n$NGSCXX ${ngsld_flags} $*\n")
+)
+file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink CONTENT "${ngs_nvcc_header}\n${ngs_nvlink_command}\n")
 install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvcc DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 
