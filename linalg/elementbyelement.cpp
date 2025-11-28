@@ -961,7 +961,8 @@ namespace ngla
   BaseMatrix::OperatorInfo ConstantElementByElementMatrix<SCAL> :: GetOperatorInfo () const
   {
     OperatorInfo info;
-    info.name = string("ConstantEBEMatrix (bs = ") + ToString(matrix.Height()) + "x"
+    info.name = string("ConstantEBEMatrix (blocks = ")+ToString(col_dnums.Size())+
+      ", bs = " + ToString(matrix.Height()) + "x"
       + ToString (matrix.Width()) + ")";
     info.height = Height();
     info.width = Width();
