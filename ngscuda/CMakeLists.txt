@@ -37,6 +37,7 @@ set(nvcc_flags
   --diag-suppress=20013
   --diag-suppress=20014
   --diag-suppress=20015
+  -rdc=true
 )
 target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${nvcc_flags}>)
 
@@ -75,7 +76,7 @@ if [ -f ${CCACHE_FOUND} ]
 fi")
 endif()
 
-set(ngs_nvlink_command "$NVCC $*\n")
+set(ngs_nvlink_command "$NVCC -rdc=true -arch=native $*\n")
 
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvcc
               CONTENT "${ngs_nvcc_header}\n${ngs_nvcc_command}\n"

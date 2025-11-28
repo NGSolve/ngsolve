@@ -44,16 +44,20 @@ namespace ngfem
           link_flags.push_back(flag);
     }
 
-    string Code::AddPointer(const void *p)
+    string Code::AddPointer(const void *p, string name, string type, string qualifiers)
     {
-        string name = "compiled_code_pointer" + ToString(id_counter++);
-        top += "extern \"C\" void* " + name + ";\n";
+        if(name == "")
+          name = "compiled_code_pointer" + ToString(id_counter++);
+        top += "extern \"C\" " + qualifiers + " " + type + " " + name + ";\n";
         stringstream s_ptr;
 #ifdef WIN32
         s_ptr << "0x";
 #endif
         s_ptr << std::hex << p;
-        pointer += "void *" + name + " = reinterpret_cast<void*>(" + s_ptr.str() + ");\n";
+        string value_expression = s_ptr.str();
+        if(type.find('*') != string::npos)
+          value_expression = "reinterpret_cast<" + type + ">(" + value_expression + ")";
+        pointer += "[[maybe_unused]] " + qualifiers + " " + type + " " + name + " = " + value_expression + ";\n";
         return name;
     }
 
@@ -163,7 +167,7 @@ namespace ngfem
         object_files += obj_file;
 #endif // WIN32
         int err = system((chdir_cmd + scompile).c_str());
-        if (err) throw Exception ("problem calling compiler");
+        if (err) throw Exception ("problem calling compiler, command: " + scompile);
         tcompile.Stop();
       }
 
@@ -187,7 +191,7 @@ namespace ngfem
         slink += " "+flag;
 #endif // WIN32
       int err = system((chdir_cmd + slink).c_str());
-      if (err) throw Exception ("problem calling linker");      
+      if (err) throw Exception ("problem calling linker, command: " + slink);
       tlink.Stop();
       cout << IM(3) << "done" << endl;
       if(keep_files)

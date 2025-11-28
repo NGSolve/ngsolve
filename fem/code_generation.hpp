@@ -57,7 +57,7 @@ namespace ngfem
 
     string pointer;
 
-    NGS_DLL_HEADER string AddPointer(const void *p );
+    NGS_DLL_HEADER string AddPointer(const void *p, string name = "", string type = "void *", string qualifiers = "");
 
     void AddLinkFlag(string flag);
 
