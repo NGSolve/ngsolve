@@ -486,7 +486,7 @@ namespace ngla
           auto cols = matrix->GetRowIndices(i);
           auto vals = matrix->GetRowValues(i);
           int icol = 0;
-          size_t firsti_new = matrix->firsti[i];
+          // size_t firsti_new = matrix->firsti[i];
           for (auto j : Range(firsti[i], firsti[i+1]))
             if (keep[j])
               {
