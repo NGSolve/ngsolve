@@ -105,43 +105,6 @@ namespace ngcore {
 namespace ngs_cuda
 {
 
-  /*
-  template <typename T>
-  class DevVar
-  {
-    T * ptr;
-  public:
-    DevVar()
-    {
-      cudaMalloc (&ptr, sizeof(T));
-    }
-
-    DevVar(T val)
-    {
-      cudaMalloc (&ptr, sizeof(T));
-      cudaMemcpy (ptr, &val, sizeof(T), cudaMemcpyHostToDevice);
-    }
-
-    operator T () const
-    {
-      T tmp;
-      cudaMemcpy (&tmp, ptr, sizeof(T), cudaMemcpyDeviceToHost);    
-      return tmp;
-    }
-
-    T * DevPtr() const { return ptr; }
-    T & DevRef() const { return *ptr; }
-
-  };
-
-  template <typename T>
-  inline ostream & operator<< (ostream & ost, DevVar<T> & var)
-  {
-    ost << T(var);
-    return ost;
-  }
-  */
-
     // TODO: Resize + error checking
   class DevStackMemory
   {
