@@ -152,9 +152,9 @@ namespace ngbla
     /// linear element access ? 
     static constexpr bool IsLinear() { return std::is_same<type_dist,IC<1>>(); }
     
-    INLINE VectorView () = default;
-    INLINE VectorView (const VectorView&) = default;
-    INLINE VectorView (VectorView&&) = default;
+    VectorView () = default;
+    VectorView (const VectorView&) = default;
+    VectorView (VectorView&&) = default;
     
     template <typename T2, typename TS2, typename TDIST2,
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,

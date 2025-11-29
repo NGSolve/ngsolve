@@ -290,7 +290,7 @@ namespace ngbla
 #else
   struct undefined_size
     {
-      INLINE undefined_size() = default;
+      undefined_size() = default;
       INLINE undefined_size(size_t s) { }
       template <int S>
       INLINE explicit constexpr undefined_size(IC<S> s) { }
