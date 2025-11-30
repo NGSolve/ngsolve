@@ -42,8 +42,9 @@ namespace ngs_cuda
   template <typename T>
   class Dev 
   {
-  public:
     T data;
+  public:
+    Dev() = delete;
     static Dev<T> * Malloc(size_t size)
     {
       Dev<T> * ptr;
@@ -66,7 +67,7 @@ namespace ngs_cuda
 
     void H2D (T val)
     {
-      cudaMemcpy (&data, &val, sizeof(T), cudaMemcpyHostToDevice);
+      cudaMemcpy (this, &val, sizeof(T), cudaMemcpyHostToDevice);
     }
 
 
@@ -82,7 +83,7 @@ namespace ngs_cuda
 
     
     __device__ Dev<T> & operator= (T d2) { data = d2; return *this; }
-    __device__ operator T() const { return data; } 
+    __device__ operator T() const { return data; }
     
     template <typename T2>
     __device__ auto & operator+= (T2 other) { data += other; return *this; }
