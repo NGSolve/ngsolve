@@ -84,6 +84,7 @@ namespace ngs_cuda
     
     __device__ Dev<T> & operator= (T d2) { data = d2; return *this; }
     __device__ operator T() const { return data; }
+    __device__ const T& operator*() const { return data; }
     
     template <typename T2>
     __device__ auto & operator+= (T2 other) { data += other; return *this; }
@@ -92,7 +93,16 @@ namespace ngs_cuda
     template <typename T2>
     __device__ auto & operator*= (T2 other) { data *= other; return *this; }
   };
-    
+
+
+  template <typename T>
+  Dev<T> * Host2Device (const T& val)
+  {
+    auto ptr = Dev<T>::Malloc(1);
+    ptr->H2D(val);
+    return ptr;
+  }
+  
 }
 
 namespace ngcore {
