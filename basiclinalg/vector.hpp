@@ -148,91 +148,162 @@ namespace ngbla
     NO_UNIQUE_ADDRESS TDIST dist;
     */
 
-    template <typename LT, typename LTS, typename LTDIST>
-    class Layout
+
+    // the data ...
+    
+    template <typename LT>
+    class Layout1
     {
       LT * data;
+    public:
+      Layout1() = default;
+      Layout1(const Layout1&) = default;      
+      Layout1(Layout1&&) = default;
+
+      Layout1& operator= (const Layout1&) = default;
+      Layout1& operator= (Layout1&&) = default;
+      
+      ~Layout1() = default;
+      
+      INLINE Layout1 (LT * adata) : data(adata) { } 
+      INLINE auto Data() const { return data; }
+    };
+
+
+    
+    // add the size:  variable, constant, undefined_size
+    
+    template <typename LT, typename LTS>
+    class Layout2 : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
       LTS size;
+    public:
+      Layout2() = default;
+      Layout2(const Layout2&) = default;      
+      Layout2(Layout2&&) = default;
+
+      Layout2& operator= (const Layout2&) = default;
+      Layout2& operator= (Layout2&&) = default;      
+      ~Layout2() = default;
+      
+      INLINE Layout2 (LT * adata, LTS asize)
+        : BASE(adata), size(asize) { }
+      INLINE Layout2 (LT * adata)
+        : BASE(adata) { }
+
+      
+      INLINE auto Size() const { return size; }
+      using BASE::Data;
+    };
+
+    
+    template <typename LT, int IDIST>
+    class Layout2<LT,IC<IDIST>> : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
+    public:
+      Layout2() = default;
+      Layout2(const Layout2&) = default;      
+      Layout2(Layout2&&) = default;
+
+      Layout2& operator= (const Layout2&) = default;
+      Layout2& operator= (Layout2&&) = default;      
+      ~Layout2() = default;
+      
+      INLINE Layout2 (LT * adata, IC<IDIST> asize)
+        : BASE(adata) { }
+      INLINE Layout2 (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Size() const { return IC<IDIST>(); }
+      using BASE::Data;
+    };
+
+
+#if !defined(NETGEN_ENABLE_CHECK_RANGE)
+    
+    template <typename LT>
+    class Layout2<LT,undefined_size> : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
+    public:
+      Layout2() = default;
+      Layout2(const Layout2&) = default;      
+      Layout2(Layout2&&) = default;
+
+      Layout2& operator= (const Layout2&) = default;
+      Layout2& operator= (Layout2&&) = default;      
+      ~Layout2() = default;
+      
+      INLINE Layout2 (LT * adata, undefined_size asize)
+        : BASE(adata) { }
+      INLINE Layout2 (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Size() const { return undefined_size(); }
+      using BASE::Data;
+    };
+
+#endif
+
+    
+    // add the distance:  variable, constant
+    
+    template <typename LT, typename LTS, typename LTDIST>
+    class Layout : public Layout2<LT,LTS>
+    {
+      typedef Layout2<LT,LTS> BASE;
       LTDIST dist;
     public:
       Layout() = default;
       Layout(const Layout&) = default;      
       Layout(Layout&&) = default;
+
+      Layout& operator= (const Layout&) = default;
+      Layout& operator= (Layout&&) = default;
+      ~Layout() = default;
       
       INLINE Layout (LT * adata, LTS asize, LTDIST adist)
-        : data(adata), size{asize}, dist{adist} { }
+        : BASE(adata,asize), dist{adist} { }
       INLINE Layout (LT * adata, LTS asize)
-        : data(adata), size(asize) { }
+        : BASE(adata,asize) { }
       INLINE Layout (LT * adata)
-        : data(adata) { }
-
-
-      Layout& operator= (const Layout&) = default;
-      Layout& operator= (Layout&&) = default;
+        : BASE(adata) { }
       
-      ~Layout() = default;
-      
-      INLINE auto Size() const { return size; }
       INLINE auto Dist() const { return dist; }
-      INLINE auto Data() const { return data; }
-    };
-
-    template <typename LT, typename LTS, int IDIST>
-    class Layout<LT, LTS, IC<IDIST>>
-    {
-      LT * data;
-      LTS size;
-    public:
-      Layout() = default;
-      Layout(const Layout&) = default;      
-      Layout(Layout&&) = default;
-      
-      INLINE Layout (LT * adata, LTS asize, IC<IDIST> adist)
-        : data(adata), size{asize} { }
-      INLINE Layout (LT * adata, LTS asize)
-        : data(adata), size(asize) { }
-      INLINE Layout (LT * adata)
-        : data(adata) { }
-
-
-      Layout& operator= (const Layout&) = default;
-      Layout& operator= (Layout&&) = default;
-      
-      ~Layout() = default;
-      
-      INLINE auto Size() const { return size; }
-      INLINE auto Dist() const { return IC<IDIST>(); }
-      INLINE auto Data() const { return data; }
-    };
-
-    template <typename LT, int ISIZE, int IDIST>
-    class Layout<LT, IC<ISIZE>, IC<IDIST>>
-    {
-      LT * data;
-    public:
-      Layout() = default;
-      Layout(const Layout&) = default;      
-      Layout(Layout&&) = default;
-      
-      INLINE Layout (LT * adata, IC<ISIZE> asize, IC<IDIST> adist)
-        : data(adata) { }
-      INLINE Layout (LT * adata, IC<ISIZE> asize)
-        : data(adata) { }
-      INLINE Layout (LT * adata)
-        : data(adata) { }
-
-      Layout& operator= (const Layout&) = default;
-      Layout& operator= (Layout&&) = default;
-      
-      ~Layout() = default;
-      
-      INLINE auto Size() const { return IC<ISIZE>(); }
-      INLINE auto Dist() const { return IC<IDIST>(); }
-      INLINE auto Data() const { return data; }
+      using BASE::Data;
+      using BASE::Size;      
     };
 
     
+    template <typename LT, typename LTS, int IDIST>
+    class Layout<LT, LTS, IC<IDIST>> : public Layout2<LT,LTS>
+    {
+      typedef Layout2<LT,LTS> BASE;      
+    public:
+      Layout() = default;
+      Layout(const Layout&) = default;      
+      Layout(Layout&&) = default;
+
+      Layout& operator= (const Layout&) = default;
+      Layout& operator= (Layout&&) = default;
+      ~Layout() = default;
+      
+      INLINE Layout (LT * adata, LTS asize, IC<IDIST> adist)
+        : BASE(adata,asize) { }
+      INLINE Layout (LT * adata, LTS asize)
+        : BASE(adata,asize) { }
+      INLINE Layout (LT * adata)
+        : BASE(adata) { }
+
+      INLINE auto Dist() const { return IC<IDIST>(); }
+      using BASE::Data;
+      using BASE::Size;      
+    };
+    
     Layout<T,TS,TDIST> layout;
+
     
   public:
     typedef T TELEM;
