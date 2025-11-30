@@ -25,15 +25,15 @@ namespace ngbla
   template <typename T>  
   class Vector<Dev<T>> : public FlatVector<Dev<T>>
   { 
-    using FlatVector<Dev<T>>::size;
-    using FlatVector<Dev<T>>::data;
+    using FlatVector<Dev<T>>::Size;
+    using FlatVector<Dev<T>>::Data;
 
   public:
     Vector (Vector&) = delete;
     Vector (Vector&&v2)
       : FlatVector<Dev<T>>(v2.Size(), v2.Data())
     {
-      v2.data = nullptr;
+      v2.layout = { nullptr, 0 };      
     }
          
     Vector (size_t asize)
@@ -52,17 +52,17 @@ namespace ngbla
 
     void D2H (FlatVector<T> vec) const
     {
-      cudaMemcpy (vec.Data(), data, sizeof(T)*size, cudaMemcpyDeviceToHost);
+      cudaMemcpy (vec.Data(), Data(), sizeof(T)*Size(), cudaMemcpyDeviceToHost);
     }
 
     void H2D (FlatVector<T> vec)
     {
-      cudaMemcpy (data, vec.Data(), sizeof(T)*size, cudaMemcpyHostToDevice);
+      cudaMemcpy (Data(), vec.Data(), sizeof(T)*Size(), cudaMemcpyHostToDevice);
     }
 
     Vector<T> D2H() const
     {
-      Vector<T> vh(size);
+      Vector<T> vh(Size());
       D2H (vh);
       return vh;
     }
