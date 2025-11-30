@@ -935,7 +935,6 @@ namespace ngbla
   template <class TA, class TS> 
   class ScaleExpr : public Expr<ScaleExpr<TA,TS> >
   {
-  public:
     TA a;
     TS s;
   public:

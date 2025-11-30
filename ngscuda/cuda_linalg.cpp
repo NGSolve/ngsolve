@@ -676,6 +676,7 @@ namespace ngla
   }
 
 
+  
 
 
   void TestCudaNGBla()
@@ -683,7 +684,8 @@ namespace ngla
     cout << "Testing Cuda-ngbla" << endl;
 
     Vector<double> x(10), y(10);
-    x = 3;
+    for (int i = 0; i < x.Size(); i++)
+      x(i) = 13+i;
     Vector<Dev<double>> vx(x), vy(10);
 
     // x = 5;
