@@ -325,7 +325,7 @@ namespace ngbla
     INLINE auto ViewRW() { return this->View(); }    
 
     void Dump (ostream & ost) const
-    { ost << "VectorView (size=" << size << ", dist=" << dist() << ")"; }
+    { ost << "VectorView (size=" << Size() << ", dist=" << Dist() << ")"; }
 
 
     /// assign memory for vector on local heap
