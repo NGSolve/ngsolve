@@ -4,6 +4,9 @@
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 
+#include <vector.hpp>
+#include <matrix.hpp>
+
 #include "cuda_ngstd.hpp"
 #include "linalg_kernels.hpp"
 

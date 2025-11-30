@@ -66,6 +66,7 @@ namespace ngs_cuda
     }
 
     void H2D (T val)
+
     {
       cudaMemcpy (this, &val, sizeof(T), cudaMemcpyHostToDevice);
     }
@@ -83,7 +84,16 @@ namespace ngs_cuda
 
     
     __device__ Dev<T> & operator= (T d2) { data = d2; return *this; }
-    __device__ operator T() const { return data; }
+
+    __host__ __device__ operator T() const
+    {
+#ifdef __CUDA_ARCH__
+      return data;
+#else
+      return D2H();
+#endif
+    }
+    
     __device__ const T& operator*() const { return data; }
     
     template <typename T2>
