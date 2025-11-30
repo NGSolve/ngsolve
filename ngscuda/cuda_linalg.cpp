@@ -684,18 +684,16 @@ namespace ngla
     cout << "Testing Cuda-ngbla" << endl;
 
     Vector<double> x(10), y(10);
-    for (int i = 0; i < x.Size(); i++)
-      x(i) = 13+i;
+    for (int i = 0; i < x.Size(); i++) x(i) = 10+i;
+    
     Vector<Dev<double>> vx(x), vy(10);
 
-    // x = 5;
-    // vx.D2H (x);
     cout << "x = " << x << endl;
 
-    vy.Range(0,10) = 3.7*vx.Range(0,10);
+    vy.Range(0,10) = 4.*vx + vx;
     vy.D2H (y);
-    cout << "y = " << y << endl;
     
+    cout << "y = " << y << endl;
   }
   
     
