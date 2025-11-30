@@ -573,9 +573,6 @@ namespace ngbla
 
     enum { COL_MAJOR = 0 };  // matrix is stored col-major
 
-    void Dump (ostream & ost) const { ost << "Matrix"; }
-
-
 
     template<typename TOP, typename TB>
     INLINE auto & Assign (const Expr<TB> & v)
@@ -735,6 +732,11 @@ namespace ngbla
     {
       return (*this) *= (1./s);
     }
+
+
+    void Dump (ostream & ost) const
+    { ost << "Matexpr (h=" << Height() << ", w=" << Width() << ")"; }
+    
   };
 
 
@@ -838,6 +840,7 @@ namespace ngbla
   {
     TA a;
   public:
+    MinusExpr (const MinusExpr&) = default;
     MinusExpr (TA aa) : a(aa) { ; }
 
     template <typename ...I>
@@ -850,7 +853,10 @@ namespace ngbla
     INLINE auto Width() const { return a.Width(); }
     INLINE TA A() const { return a; }
 
-    static constexpr bool IsLinear() { return TA::IsLinear(); } 
+    static constexpr bool IsLinear() { return TA::IsLinear(); }
+    void Dump (ostream & ost) const
+    { ost << "-("; a.Dump(ost); ost << ")"; }
+    
   };
 
   template <typename TA>
@@ -929,11 +935,13 @@ namespace ngbla
   template <class TA, class TS> 
   class ScaleExpr : public Expr<ScaleExpr<TA,TS> >
   {
+  public:
     TA a;
     TS s;
   public:
     static constexpr bool IsLinear() { return TA::IsLinear(); }
 
+    ScaleExpr (const ScaleExpr&) = default;
     INLINE ScaleExpr (TA aa, TS as) : a(aa), s(as) { ; }
     
     // INLINE auto operator() (size_t i) const { return s * a(i); }

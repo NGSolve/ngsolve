@@ -675,5 +675,26 @@ namespace ngla
     ux.InvalidateHost();
   }
 
+
+
+
+  void TestCudaNGBla()
+  {
+    cout << "Testing Cuda-ngbla" << endl;
+
+    Vector<double> x(10), y(10);
+    x = 3;
+    Vector<Dev<double>> vx(x), vy(10);
+
+    // x = 5;
+    // vx.D2H (x);
+    cout << "x = " << x << endl;
+
+    vy.Range(0,10) = 3.7*vx.Range(0,10);
+    vy.D2H (y);
+    cout << "y = " << y << endl;
+    
+  }
+  
     
 }

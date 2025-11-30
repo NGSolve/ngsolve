@@ -1,8 +1,18 @@
 #ifndef CUDA_NGBLA
 #define CUDA_NGBLA
 
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+
 #include "cuda_ngstd.hpp"
 #include "linalg_kernels.hpp"
+
+
+namespace ngla
+{
+  cublasHandle_t Get_CuBlas_Handle ();
+}
+
 
 namespace ngbla
 {
@@ -39,7 +49,7 @@ namespace ngbla
     {
       Dev<T>::Free(data);
     }
-         
+
     void D2H (FlatVector<T> vec) const
     {
       cudaMemcpy (vec.Data(), data, sizeof(T)*size, cudaMemcpyDeviceToHost);
@@ -64,7 +74,154 @@ namespace ngbla
     cudaMemcpy (hvec.Data(), dvec.Data(), sizeof(double)*hvec.Size(), cudaMemcpyDeviceToHost);
     return hvec;
   }
+
+#ifdef __CUDACC__  
+  template <typename TS, typename TD>
+  __global__ void kernel_Assign (size_t n,  TD pod_dst, TS pod_src)
+  {
+    auto dst = *pod_dst;
+    auto src = *pod_src;
+    
+    int tid = blockIdx.x*blockDim.x+threadIdx.x;
+    for (int i = tid; i < n; i += blockDim.x*gridDim.x)
+      if (i < 5)
+        dst(i) = src.S();
+      else
+        dst(i) = src.A()(i);
+  }
+#endif
+
+  template <typename T>
+  class AsPOD
+  {
+    std::array<char, sizeof(T)> data;
+  public:
+    AsPOD(const AsPOD&) = default;
+    INLINE AsPOD (const T & adata)
+    {
+      char * pdata = (char*)(void*)&adata;
+      for (int i = 0; i < sizeof(T); i++)
+        data[i] = pdata[i];
+    }
+
+    INLINE const T & operator* () const
+    {
+      T * val = (T*)(void*)&data[0];
+      return *val;
+    }
+    INLINE int operator[] (int i) const { return data[i]; }
+  };
   
+
+  template <typename TOP, typename T, typename TS, typename TDIST, typename TB>
+  class assign_trait<TOP, VectorView<T,TS,TDIST>, TB,
+                     enable_if_t < std::is_same<std::invoke_result_t<VectorView<T,TS,TDIST>,size_t>, Dev<double>&>::value, int>>
+  {
+  public:
+    static INLINE VectorView<T,TS,TDIST> & Assign (MatExpr<VectorView<T,TS,TDIST>> & self, const Expr<TB> & v)
+    {
+
+#if not defined(__CUDA_ARCH__)
+      cout << "gpu expr template" << endl;
+      cout << "res.size = " << self.Height() << "x" << self.Width() << endl;
+      cout << "expr.size = " << v.Spec().Height() << "x" << v.Spec().Width() << endl;
+      cout << "type = " << typeid(v.Spec()).name() << endl;
+      cout << "expr = "; v.Spec().Dump(cout); cout << endl;
+      cout << "sizeof(v) = " << sizeof(v.Spec()) << endl;
+      cout << "host, S = " << v.Spec().S () << endl;
+      cout << "triv copy = " << std::is_trivially_copyable<TB>::value << endl;
+      cout << "triv copy dst = " << std::is_trivially_copyable<VectorView<T,TS,TDIST>>::value << endl;      
+      auto vspec = v.Spec();
+      int * ip = (int*)(void*)(&vspec);
+      for (int i = 0; i < 6; i++)
+        cout << "int[" << i << "] = " << ip[i] << endl;
+      double * dp = (double*)(void*)(&vspec);
+      for (int i = 0; i < 3; i++)
+        cout << "double[" << i << "] = " << dp[i] << endl;
+#endif      
+
+      AsPOD src_pod{v.Spec()};
+      AsPOD dst_pod{self.Spec()};
+      
+#if not defined(__CUDA_ARCH__)      
+      for (int i = 0; i < sizeof(v.Spec()); i++)
+        cout << "data[" << i << "] = " << src_pod[i] << endl;
+#endif
+      
+      /*
+      DeviceParallelFor
+        (diag.Size(),
+         [ddiag=diag.DevData(), dx=ux.DevData(), dy=uy.DevData()] DEVICE_LAMBDA (auto tid)
+         {
+           dy[tid] = ddiag[tid]*dx[tid];
+         });
+      */
+
+#ifdef __CUDACC__
+      ngs_cuda::DeviceParallelFor
+        (self.Height(),
+         [dst_pod, src_pod] DEVICE_LAMBDA (auto tid) -> void
+         {
+           TB v = *src_pod;
+           auto devself = *dst_pod;
+           // devself(tid) = v.S();
+           // devself(tid) = src_pod[tid];
+           // devself(tid) = 42; // devv(tid);
+           // devself(tid) = v(tid);
+           // devself(tid) = v.S();
+           // devself(tid) = sizeof(devv);
+           double * dp = (double*)(void*)(&v);
+           /*
+           if (tid < 3)
+             devself(tid) = dp[tid];
+           else
+             // devself(tid) = sizeof(v.A());
+             */
+           if (tid == 0)
+             devself(tid) = (char*)(&v.s) - (char*)(&v);
+           // devself(tid) = offsetof(TB, a);
+           else if (tid == 1)
+             devself(tid) = offsetof(TB, s);
+           else if (tid == 2)
+             devself(tid) = sizeof(v);
+           else if (tid == 3)
+             devself(tid) = sizeof(v.a);
+           else if (tid == 4)
+             devself(tid) = sizeof(v.s);
+             // devself(tid) = dp[2]*v.A()(tid);
+    });
+        
+      /*
+      ngs_cuda::DeviceParallelFor
+        (self.Height(),
+         [devself=self.Spec(), devv=v.Spec()] DEVICE_LAMBDA (auto tid) -> void
+         {
+           // devself(tid) = 42; // devv(tid);
+           // devself(tid) = devv(tid);
+           // devself(tid) = devv.S();
+           // devself(tid) = sizeof(devv);
+           double * dp = (double*)(void*)(&devv);           
+           int * ip = (int*)(void*)(&devv);
+           if (tid < 6)
+             devself(tid) = ip[tid];
+           else if (tid < 9)
+             devself(tid) = dp[tid-6];             
+           else
+             devself(tid) = -1;
+         });
+      */
+
+
+      // kernel_Assign<<<self.Height()/256+1,256>>> (self.Height(), AsPOD(self.Spec()), AsPOD(v.Spec()));
+
+      
+#endif
+      
+      return self.Spec();
+    }
+  };    
+
+
 
   
     

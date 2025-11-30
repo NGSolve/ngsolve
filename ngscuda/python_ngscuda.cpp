@@ -11,6 +11,7 @@ using namespace ngs_cuda;
 
 namespace ngla {
   extern void InitApplyIntegrationPoints ();
+  void TestCudaNGBla();
 }
 
 PYBIND11_MODULE(ngscuda, m) {
@@ -206,7 +207,10 @@ PYBIND11_MODULE(ngscuda, m) {
              }
          })
     ;
+
+
   
+  m.def("TestCudaNGBla", &TestCudaNGBla);
   // ExportDemo(m);
 }
 
