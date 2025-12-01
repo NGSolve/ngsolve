@@ -258,6 +258,13 @@ namespace ngla
 
   void UnifiedVector :: UpdateHost () const
   {
+    static mutex mtx;
+
+    if (host_uptodate)
+      return;
+
+    auto lock = lock_guard<mutex>(mtx);
+
     if (host_uptodate)
       return;
 
@@ -273,6 +280,13 @@ namespace ngla
 
   void UnifiedVector :: UpdateDevice () const
   {
+    static mutex mtx;
+
+    if (dev_uptodate)
+      return;
+
+    auto lock = lock_guard<mutex>(mtx);
+
     if (dev_uptodate)
       return;
 
