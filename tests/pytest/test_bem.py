@@ -10,7 +10,7 @@ from ngsolve.bem import *
     "order_source_1, order_source_2, order_target_1, order_target_2",
     [
         (80, 80, 80, 80),
-        (80, 82, 79, 83),
+        (80, 82, 79, 81),
     ],
 )
 def test_transform(order_source_1, order_source_2, order_target_1, order_target_2):
@@ -35,6 +35,7 @@ def test_transform(order_source_1, order_source_2, order_target_1, order_target_
     
     R2 = RegularExpansionCF(order_target_2, kappa, (3+dx,3+dy,3+dz), rad=1)
     R.Transform(R2)
+    meshpnt = mesh(3,3,3)
     assert S(meshpnt) == pytest.approx(R2(meshpnt), rel=1e-10)
 
     
