@@ -778,8 +778,19 @@ namespace ngla
     
     // cout << "disjoint_rows = " << disjoint_rows << ", disjoint_cols = " << disjoint_cols << endl;
 
-
-
+    output_onto = disjoint_cols && (col_dnums.AsArray().Size() == Height());
+    if (output_onto)
+      {
+        output_matrix = true;
+        output_matrix_trans = true;
+        for (size_t i = 0; i < col_dnums.Size(); i++)
+          for (size_t j = 0; j < matrix.Height(); j++)
+            {
+              if (col_dnums[i][j] != i*matrix.Height()+j) output_matrix = false;
+              if (col_dnums[i][j] != j*col_dnums.Size()+i) output_matrix_trans = false;
+            }
+      }
+    
     if (!disjoint_rows)
       {
         Array<MyMutex> locks(w);

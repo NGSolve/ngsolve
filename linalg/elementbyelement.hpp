@@ -131,10 +131,13 @@ namespace ngla
   {
     size_t h, w;
     Matrix<SCAL> matrix;
-    Table<int> col_dnums;
-    Table<int> row_dnums;
+    Table<int> col_dnums;   // output
+    Table<int> row_dnums;   // input
     bool disjoint_rows, disjoint_cols;
     Table<int> row_coloring, col_coloring;
+    bool output_onto = false;
+    bool output_matrix = false;
+    bool output_matrix_trans = false;
   public:
     ConstantElementByElementMatrix (size_t ah, size_t aw, Matrix<SCAL> amatrix,
                                     Table<int> acol_dnums, Table<int> arow_dnums);
