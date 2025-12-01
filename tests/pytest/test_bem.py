@@ -33,7 +33,7 @@ def test_transform(order_source_1, order_source_2, order_target_1, order_target_
     meshpnt = mesh(2,2,2)
     assert S(meshpnt) == pytest.approx(R(meshpnt), rel=1e-10)
     
-    R2 = RegularExpansionCF(order_target_2, kappa, (3+dx,3+dy,3+dz), rad=2)
+    R2 = RegularExpansionCF(order_target_2, kappa, (3+dx,3+dy,3+dz), rad=1)
     R.Transform(R2)
     assert S(meshpnt) == pytest.approx(R2(meshpnt), rel=1e-10)
 
