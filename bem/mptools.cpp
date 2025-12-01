@@ -477,7 +477,7 @@ namespace ngsbem
     for (int n = 0; n <= os; n++)
       hv1(n) = sh.Coef(n,0);
     if constexpr (is_rr)
-      hv2 = Trans(trafo.Rows(ot+1).Cols(os+1)) * hv1;
+      hv2 = Trans(trafo.Rows(os+1).Cols(ot+1)) * hv1;
     else
       hv2 = trafo.Rows(ot+1).Cols(os+1) * hv1;
     for (int n = 0; n <= ot; n++)
@@ -521,7 +521,7 @@ namespace ngsbem
       for (int n = m; n <= os; n++)
         hv1(n) = sh.Coef(n,m);
       if constexpr (is_rr)
-        hv2.Range(m,ot+1) = Trans(trafo.Rows(m,ot+1).Cols(m,os+1)) * hv1.Range(m,os+1);
+        hv2.Range(m,ot+1) = Trans(trafo.Rows(m,os+1).Cols(m,ot+1)) * hv1.Range(m,os+1);
       else
         hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
       for (int n = m; n <= ot; n++)
@@ -530,7 +530,7 @@ namespace ngsbem
       for (int n = m; n <= os; n++)
         hv1(n) = sh.Coef(n,-m);
       if constexpr (is_rr)
-        hv2.Range(m,ot+1) = Trans(trafo.Rows(m,ot+1).Cols(m,os+1)) * hv1.Range(m,os+1);
+        hv2.Range(m,ot+1) = Trans(trafo.Rows(m,os+1).Cols(m,ot+1)) * hv1.Range(m,os+1);
       else
         hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
       for (int n = m; n <= ot; n++)
