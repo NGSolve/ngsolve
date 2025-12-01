@@ -498,10 +498,13 @@ namespace ngsbem
       for (int l = m; l <= trafo.Height()-1-m; l++)
         trafo(l,m) = scale_inv_bmn(m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)
               -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));  
+      if (m < trafo.Width()-1)
+      {
       for (int l = m; l <= trafo.Height()-1-m; l++)
         trafo(l,m+1) = scale_inv_bmn(m+1)* ( // sh.CalcBmn(m-1,m) * scale*trafo(l,m-1)
               - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m)
               + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,m) );
+      }
       // fill recursive formula (182)
       for (int n = m+1; n < trafo.Width()-1; n++)
       {
