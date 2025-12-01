@@ -4,115 +4,18 @@
 #include <cuda_runtime.h>
 #include <ngstd.hpp>
 
+#include "cuda_core.hpp"
 #include "cuda_profiler.hpp"
 
 namespace ngs_cuda
 {
   using namespace ngstd;
 
-  // from CUDA C++ Programming Guide:
-  // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
-#ifdef __CUDA_ARCH__
-#if __CUDA_ARCH__ < 600
-  inline __device__ double atomicAdd(double* address, double val)
-  {
-      unsigned long long int* address_as_ull =
-                                (unsigned long long int*)address;
-      unsigned long long int old = *address_as_ull, assumed;
-
-      do {
-          assumed = old;
-          old = atomicCAS(address_as_ull, assumed,
-                          __double_as_longlong(val +
-                                 __longlong_as_double(assumed)));
-
-      // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-      } while (assumed != old);
-
-      return __longlong_as_double(old);
-  }
-#endif
-#endif
 
   
   extern int gpu_clock;
   void InitCUDA (int verbose = 2);
 
-
-  template <typename T>
-  class Dev 
-  {
-    T data;
-  public:
-    Dev() = delete;
-    static Dev<T> * Malloc(size_t size)
-    {
-      Dev<T> * ptr;
-      if (auto err = cudaMalloc (&ptr, size*sizeof(T)))
-        throw Exception("cudaMalloc error, ec="+ToString(err));
-      return ptr;        
-    }
-    
-    static void Free(Dev<T> * data)
-    {
-        cudaFree (data);   
-    }
-
-    T D2H() const
-    {
-      T res;
-      cudaMemcpy (&res, &data, sizeof(T), cudaMemcpyDeviceToHost);
-      return res;
-    }
-
-    void H2D (T val)
-
-    {
-      cudaMemcpy (this, &val, sizeof(T), cudaMemcpyHostToDevice);
-    }
-
-
-    void D2H (FlatArray<T> hosta)
-    {
-      cudaMemcpy (hosta.Data(), &data, hosta.Size()*sizeof(T), cudaMemcpyDeviceToHost);
-    }
-
-    void H2D (FlatArray<T> hosta)
-    {
-      cudaMemcpy (&data, hosta.Data(), hosta.Size()*sizeof(T), cudaMemcpyHostToDevice);
-    }
-
-    
-    __device__ Dev<T> & operator= (T d2) { data = d2; return *this; }
-
-    __host__ __device__ operator T() const
-    {
-#ifdef __CUDA_ARCH__
-      return data;
-#else
-      return D2H();
-#endif
-    }
-    
-    __device__ const T& operator*() const { return data; }
-    
-    template <typename T2>
-    __device__ auto & operator+= (T2 other) { data += other; return *this; }
-    template <typename T2>
-    __device__ auto & operator-= (T2 other) { data -= other; return *this; }
-    template <typename T2>
-    __device__ auto & operator*= (T2 other) { data *= other; return *this; }
-  };
-
-
-  template <typename T>
-  Dev<T> * Host2Device (const T& val)
-  {
-    auto ptr = Dev<T>::Malloc(1);
-    ptr->H2D(val);
-    return ptr;
-  }
-  
 }
 
 namespace ngcore {

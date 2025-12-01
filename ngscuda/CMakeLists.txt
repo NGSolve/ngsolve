@@ -90,6 +90,7 @@ install( FILES
         cuda_linalg.hpp
         cuda_profiler.hpp
         unifiedvector.hpp
+        cuda_core.hpp
         cuda_ngstd.hpp
         cuda_ngbla.hpp
         linalg_kernels.hpp
