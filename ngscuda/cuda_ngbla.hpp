@@ -53,6 +53,15 @@ namespace ngbla
       Dev<T>::Free(Data());
     }
 
+
+    template<typename TB>
+    Vector & operator= (const Expr<TB> & v)
+    {
+      MatExpr<FlatVector<Dev<T>> >::operator= (v);
+      return *this;
+    }
+
+    
     void D2H (FlatVector<T> vec) const
     {
       cudaMemcpy (vec.Data(), Data(), sizeof(T)*Size(), cudaMemcpyDeviceToHost);
@@ -78,6 +87,7 @@ namespace ngbla
     return hvec;
   }
 
+#ifdef OLDOLD
 #ifdef __CUDACC__  
   template <typename TS, typename TD>
   __global__ void kernel_Assign (size_t n,  TD pod_dst, TS pod_src)
@@ -114,6 +124,8 @@ namespace ngbla
     }
     INLINE int operator[] (int i) const { return data[i]; }
   };
+#endif
+  
   
 
   template <typename TOP, typename T, typename TS, typename TDIST, typename TB>
@@ -130,7 +142,8 @@ namespace ngbla
         (self.Height(),
          [devself=self.Spec(), devv=v.Spec()] DEVICE_LAMBDA (auto tid) -> void
          {
-           devself(tid) = devv(tid);
+           // devself(tid) = devv(tid);
+           TOP()(devself(tid),devv(tid));
          });
 
 #endif

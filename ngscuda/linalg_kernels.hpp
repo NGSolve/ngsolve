@@ -8,38 +8,6 @@ namespace ngs_cuda
 
 
  
-// Kernel wrapper only available if we are compiling the current file with the cuda compiler
-#ifdef __CUDACC__
-
-   
-template<class F> __global__
-void CUDA_forall(int n, F f)
-{
-  int tid = blockIdx.x*blockDim.x+threadIdx.x;
-  for (int i = tid; i < n; i += blockDim.x*gridDim.x)
-    f(i);
-}
-
-template<class F> __global__
-void CUDA_forall2(int n, F f)
-{
-  int tid = (blockIdx.x*blockDim.y+threadIdx.y)*blockDim.x+threadIdx.x;
-  for (int i = tid; i < n; i += blockDim.x*blockDim.y*gridDim.x)
-    f(i);
-}
-    
-#define DEVICE_LAMBDA __device__
-
-template <class F>
-inline void DeviceParallelFor (int n, F f)
-{
-  // CUDA_forall<<<512,256>>> (n, f);
-  CUDA_forall<<<n/256+1,256>>> (n, f);
-  // CUDA_forall<<<4096,32>>> (n, f);           // slower
-  // CUDA_forall2<<<512,dim3(16,16)>>> (n, f);  // same performance
-}   
-
-#endif // __CUDACC__
 
 
 // own ngsolve cuda-kernels:
