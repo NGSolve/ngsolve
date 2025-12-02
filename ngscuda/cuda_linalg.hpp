@@ -101,8 +101,10 @@ namespace ngla
 
     bool disjoint_rows, disjoint_cols;
     size_t numblocks;
+    bool output_onto = false;
   public:
     DevConstantElementByElementMatrix (const T_ConstEBEMatrix & mat);
+    void Mult (const BaseVector & x, BaseVector & y) const override;    
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
@@ -120,7 +122,9 @@ namespace ngla
     Array<Dev<int>> indices, indices_trans;
  public:
     DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
+    void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;    
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     int VHeight() const override { return dimy*blocks; }
     int VWidth() const override { return dimx*blocks; }
