@@ -8,6 +8,7 @@ using namespace ngcomp;
 
 namespace ngla
 {
+  extern bool synckernels;
   
   class DevApplyIntegrationPoints : public DevMatrix
   {
@@ -150,7 +151,7 @@ namespace ngla
       // uy.UpdateDevice();
 
       compiled_function(nip, ux.FVDevRO(), nip, uy.FVDev(), nip);
-      cudaDeviceSynchronize();
+      if (synckernels) cudaDeviceSynchronize();
     }
 
     virtual int VHeight() const override { return h; }

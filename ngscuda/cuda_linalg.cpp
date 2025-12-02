@@ -14,8 +14,8 @@ namespace ngla
   
   cublasHandle_t Get_CuBlas_Handle ()
   {
-    static Timer tblashandle("CUDA create cublas handle");
-    RegionTimer reg(tblashandle);
+    // static Timer tblashandle("CUDA create cublas handle");
+    // RegionTimer reg(tblashandle);
 
     static cublasHandle_t handle;
     static bool first_call = true;
@@ -314,7 +314,77 @@ namespace ngla
   {
     disjoint_rows = (mat.GetRowColoring().Size() == 0);
     disjoint_cols = (mat.GetColColoring().Size() == 0);
+
+    output_onto = disjoint_cols && (mat.GetColDNums().AsArray().Size() == Height());
   }
+
+
+  void DevConstantElementByElementMatrix ::
+  Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DevConstantEBEMatrix::Mult"); RegionTimer reg(t);
+    static Timer tmult("DevConstantEBEMatrix::Mult - mult");
+    static Timer tcopyin("DevConstantEBEMatrix::Mult - copyin");
+    static Timer tcopyout("DevConstantEBEMatrix::Mult - copyout");
+    
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    if (synckernels) cudaDeviceSynchronize();
+
+
+    if (!output_onto)
+      {
+        uy = 0.0;
+        MultAdd (1, x, y);
+        return;
+      }
+
+    
+      {
+        DevStackArray<double> dev_hx(numblocks*devmat.Width());
+        DevStackArray<double> dev_hy(numblocks*devmat.Height());
+
+        tcopyin.Start();
+        // ConstEBEKernelCopyIn (numblocks, devmat.Width(), rowdnums.DevData(), ux.DevData(), dev_hx.DevData());
+	DeviceParallelFor
+          (numblocks*devmat.Width(),
+           [locx=dev_hx.DevData(), globx=ux.DevData(), idx=rowdnums.DevData()] DEVICE_LAMBDA (auto tid)
+           {
+             locx[tid] = globx[idx[tid]];
+           });
+        if (synckernels) cudaDeviceSynchronize();
+        tcopyin.Stop();
+        
+        // dev_hy = dev_hx * Trans(mat)
+        tmult.Start();
+        FlatMatrix<Dev<double>> matx(numblocks, devmat.Width(), dev_hx.Data());
+        FlatMatrix<Dev<double>> maty(numblocks, devmat.Height(), dev_hy.Data());
+        // MultMatMat (matx, Trans(devmat), maty, s, 0);
+        maty = matx * Trans(devmat);
+        if (synckernels) cudaDeviceSynchronize();
+        tmult.Stop();
+        
+        tcopyout.Start();        
+        // ConstEBEKernelCopyOut (numblocks, devmat.Height(), coldnums.DevData(), dev_hy.DevData(), uy.DevData());
+        DeviceParallelFor
+          (numblocks*devmat.Height(),
+           [globy=uy.DevData(), locy=dev_hy.DevData(), idx=coldnums.DevData() ] DEVICE_LAMBDA (auto tid)
+           {
+             // atomicAdd((double*)globy+idx[tid], locy[tid]);
+             globy[idx[tid]] = locy[tid];
+           });
+ 
+        if (synckernels) cudaDeviceSynchronize();
+        tcopyout.Stop();
+      }
+
+    uy.InvalidateHost();    
+  }
+
 
   
   void DevConstantElementByElementMatrix ::
@@ -331,8 +401,7 @@ namespace ngla
     ux.UpdateDevice();
     uy.UpdateDevice();
 
-    if (synckernels)
-     cudaDeviceSynchronize();
+    if (synckernels) cudaDeviceSynchronize();
     
     // if (disjoint_cols)
     if (true)
@@ -509,6 +578,46 @@ namespace ngla
     indices = nonzeroinds;
     indices_trans = nonzeroinds_trans;
 }
+
+  void DevBlockDiagonalMatrixSoA :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DevBlockDiagonalMatrixSoA::Mult"); RegionTimer reg(t);
+    
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+
+    FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
+    FlatMatrix<Dev<double>> b(dimx, blocks,  (Dev<double>*)ux.DevData());
+    FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
+
+    {
+      static Timer t("DevBlockDiagonalMatrixSoA::Mult");
+      CudaRegionTimer rt(t);
+    
+    DeviceParallelFor
+      (res.Width(),
+       [a,b,res,inds=FlatArray(indices)] DEVICE_LAMBDA (auto i)
+       {
+         for (int j = 0; j < res.Height(); j++)
+           res(j,i) = 0;
+         
+         for (int j = 0; j < inds.Size(); j+=3)
+           {
+             int rowa = inds[j];
+             int rowb = inds[j+1];
+             int rowres = inds[j+2];
+             res(rowres,i) += a(rowa,i) * b(rowb,i);
+           }
+       });
+    }
+    
+    if (synckernels) cudaDeviceSynchronize();
+    uy.InvalidateHost();
+  }
+
+  
   
   void DevBlockDiagonalMatrixSoA :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
@@ -530,6 +639,10 @@ namespace ngla
     FlatMatrix<Dev<double>> res(dimy, blocks,  (Dev<double>*)uy.DevData());
     // DevBlockDiagonalMatrixSoAMultAddVecs (s, indices, a, b, res);
 
+    {
+    static Timer t("DevBlockDiagonalMatrixSoA::MultTransAdd");
+    CudaRegionTimer rt(t);
+    
     DeviceParallelFor
       (res.Width(),
        [a,b,res,inds=FlatArray(indices),s] DEVICE_LAMBDA (auto i)
@@ -542,11 +655,52 @@ namespace ngla
              res(rowres,i) += s * a(rowa,i) * b(rowb,i);
            }
        });
+    }
     
     if (synckernels) cudaDeviceSynchronize();
 
     uy.InvalidateHost();
   }
+
+  void DevBlockDiagonalMatrixSoA :: MultTrans (const BaseVector & x, BaseVector & y) const
+  {
+    static Timer t("DevBlockDiagonalMatrixSoA::MultTrans"); RegionTimer reg(t);
+    
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+    ux.UpdateDevice();
+    uy.UpdateDevice();
+      
+    FlatMatrix<Dev<double>> a(dimx*dimy, blocks, (Dev<double>*)dev_data);
+    FlatMatrix<Dev<double>> b(dimy, blocks,  (Dev<double>*)ux.DevData());
+    FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)uy.DevData());
+
+
+    {
+      static Timer t("DevBlockDiagonalMatrixSoA::MultTrans");
+      CudaRegionTimer rt(t);
+    
+    DeviceParallelFor
+      (res.Width(),
+       [a,b,res,inds=FlatArray(indices)] DEVICE_LAMBDA (auto i)
+       {
+         for (int j = 0; j < res.Height(); j++)
+           res(j,i) = 0;
+         
+         for (int j = 0; j < inds.Size(); j+=3)
+           {
+             int rowa = inds[j];
+             int rowb = inds[j+2];
+             int rowres = inds[j+1];
+             res(rowres,i) += a(rowa,i) * b(rowb,i);
+           }
+       });
+    }
+    
+    if (synckernels) cudaDeviceSynchronize();
+    uy.InvalidateHost();
+  }
+
 
   void DevBlockDiagonalMatrixSoA :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
@@ -587,8 +741,6 @@ namespace ngla
       
     uy.InvalidateHost();
   }
-
-
   
 
   

@@ -225,6 +225,9 @@ namespace ngbla
                         SliceMatrix<Dev<double>, ORDERING::ColMajor> c,
                        double alpha, double beta)
   {
+    static Timer t("cublasDgemm");
+    CudaRegionTimer rt(t);
+
     cublasStatus_t stat =
       cublasDgemm(ngla::Get_CuBlas_Handle(), 
                   ORDA==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 

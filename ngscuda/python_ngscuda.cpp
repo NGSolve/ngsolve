@@ -12,6 +12,8 @@ using namespace ngs_cuda;
 namespace ngla {
   extern void InitApplyIntegrationPoints ();
   void TestCudaNGBla();
+  extern bool synckernels;
+  
 }
 
 PYBIND11_MODULE(ngscuda, m) {
@@ -124,7 +126,7 @@ PYBIND11_MODULE(ngscuda, m) {
   m.def("__time_tracer__", TimeProfiler);
   m.def("SetCudaTimer", CudaRegionTimer::SetCudaTimer);
   
-  
+  m.def("SetSyncKernels", [](bool sync) { synckernels = sync; });
   
   py::class_<Matrix<Dev<double>>> (m, "DevMatrix")
     .def(py::init<FlatMatrix<double>>())
