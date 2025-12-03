@@ -363,7 +363,7 @@ namespace ngcomp
     order = aflags.GetNumFlag("order", 0);
     DefineNumFlag("discontinuous");
 		
-    noncontinuous = int(aflags.GetNumFlag("discontinuous", 0));
+    noncontinuous = int(aflags.GetDefineFlag("discontinuous"));
 
     if (ma->GetDimension() != 3)
       throw Exception("HDivDivSurface only supports 2D manifolds");
