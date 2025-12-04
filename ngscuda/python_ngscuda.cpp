@@ -49,6 +49,10 @@ PYBIND11_MODULE(ngscuda, m) {
 
     .def("UpdateHost", &UnifiedVector::UpdateHost)
     .def("UpdateDevice", &UnifiedVector::UpdateDevice)
+    .def_property_readonly("dev_ptr", [](UnifiedVector& self)
+    {
+        return reinterpret_cast<uintptr_t>(self.DevData());
+    })
     ;
 
 
