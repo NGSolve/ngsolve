@@ -1657,7 +1657,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
             filtered_blocktypes[type] = nullopt;
           }
 
-        Array<string> types { "vertex", "edge", "face", "facet", "vertexpatch", "edgepatch", "vertexedge" };
+        Array<string> types { "vertex", "edge", "face", "facet", "element", "vertexpatch", "edgepatch", "vertexedge" };
         if (!types.Contains(type))
           {
             throw Exception("FESpace::CreateSmoothingBlocks type '"+ToString(type)+"' not available, available types are:\n"
