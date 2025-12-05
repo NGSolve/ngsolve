@@ -1,5 +1,6 @@
 #include "coefficient.hpp"
 #include <algorithm>
+#include <filesystem>
 #include<l2hofe_impl.hpp>
 #include<l2hofefo.hpp>
 #include<regex>
@@ -132,6 +133,8 @@ namespace ngfem
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");
       string object_files;
+
+      filesystem::path cwd = filesystem::absolute(".");
       filesystem::path lib_dir = CreateTempDir();
       string chdir_cmd = "cd " + lib_dir.string() + " && ";
 
@@ -140,10 +143,14 @@ namespace ngfem
         if(std::holds_alternative<filesystem::path>(codes[i]))
         {
             src_file = filesystem::absolute(std::get<filesystem::path>(codes[i]));
-            // copy file to lib_dir
-            auto dest_file = filesystem::path(lib_dir) / src_file.filename();
-            filesystem::copy_file(src_file, dest_file, filesystem::copy_options::overwrite_existing);
-            src_file = dest_file;
+            if(src_file.string().find(filesystem::temp_directory_path().string()) == 0)
+            {
+              // src_file is a temporary file outside lib_dir, copy it and use it's name for compilation
+              // to avoid ccache misses
+              auto dest_file = filesystem::path(lib_dir) / src_file.filename();
+              filesystem::copy_file(src_file, dest_file, filesystem::copy_options::overwrite_existing);
+              src_file = dest_file.filename();
+            }
         }
         else
         {
@@ -152,8 +159,8 @@ namespace ngfem
             ofstream codefile(src_file);
             codefile << code;
             codefile.close();
+            src_file = src_file.filename();
         }
-        src_file = src_file.filename();
         cout << IM(3) << "compiling..." << endl;
         tcompile.Start();
 #ifdef WIN32
