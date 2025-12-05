@@ -134,9 +134,17 @@ namespace ngla
   
   BaseVector & UnifiedVector :: Scale (double scal)
   {
+    /*
     UpdateDevice();
     cublasDscal (Get_CuBlas_Handle(), size, &scal, (double*)dev_data, 1);
     host_uptodate = false;
+    */
+    DeviceParallelFor
+      (size, [devvec = this->FVDev(), scal] DEVICE_LAMBDA (size_t tid)
+      {
+        devvec(tid) *= scal;
+      });
+    
     return *this;
   }
 
