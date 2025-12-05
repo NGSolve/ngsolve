@@ -36,6 +36,9 @@ namespace ngs_cuda
 
 
 
+  extern cudaStream_t ngs_cuda_stream;
+  
+
   // Kernel wrapper only available if we are compiling the current file with the cuda compiler
 #ifdef __CUDACC__
    
@@ -61,15 +64,54 @@ namespace ngs_cuda
   inline void DeviceParallelFor (int n, F f)
   {
     // CUDA_forall<<<512,256>>> (n, f);
-    CUDA_forall<<<n/256+1,256>>> (n, f);
+    CUDA_forall<<<n/256+1,256, 0, ngs_cuda_stream>>> (n, f);
     // CUDA_forall<<<4096,32>>> (n, f);           // slower
     // CUDA_forall2<<<512,dim3(16,16)>>> (n, f);  // same performance
   }   
 
 #endif // __CUDACC__
 
+  
 
+  class CudaGraph
+  {
+    cudaGraph_t graph;
+    cudaGraphExec_t instance;    
+    cudaStream_t stream;
+    cudaStream_t prev_stream;
+    
+  public:
+    CudaGraph()
+    {
+      cudaStreamCreate(&stream);
+    }
 
+    ~CudaGraph()
+    {
+      // TODO: delete graph, instance, stream
+    }
+
+    
+    void BeginCapture()
+    {
+      cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
+      prev_stream = ngs_cuda_stream;
+      ngs_cuda_stream = stream;
+    }
+
+    void EndCapture()
+    {
+      cudaStreamEndCapture(stream, &graph);
+      cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
+      ngs_cuda_stream = prev_stream;
+    }
+
+    void Launch()
+    {
+      cudaGraphLaunch(instance, stream);
+    }
+  };
+  
 
 
 

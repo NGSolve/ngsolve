@@ -81,6 +81,10 @@ namespace ngs_cuda
     cudaDeviceSetSharedMemConfig ( cudaSharedMemBankSizeEightByte );
   }
 
+
+  cudaStream_t ngs_cuda_stream = cudaStreamDefault;  
+
+  
   DevStackMemory stackmemory;
 
   DevBitArray :: DevBitArray (size_t asize)

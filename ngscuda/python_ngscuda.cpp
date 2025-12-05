@@ -215,6 +215,14 @@ PYBIND11_MODULE(ngscuda, m) {
     ;
 
 
+
+  py::class_<CudaGraph> (m, "CudaGraph")
+    .def(py::init<>())
+    .def("BeginCapture", &CudaGraph::BeginCapture)
+    .def("EndCapture", &CudaGraph::EndCapture)
+    .def("Launch", &CudaGraph::Launch)
+    ;
+  
   
   m.def("TestCudaNGBla", &TestCudaNGBla);
   // ExportDemo(m);
