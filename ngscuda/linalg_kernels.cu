@@ -27,7 +27,7 @@ void SetScalar1 (double val, int n, double * x)
 {
   static Timer t("CUDA::SetScalar");
   CudaRegionTimer rt(t);
-  SetScalarKernel<<<512,256>>> (val, n, x);
+  SetScalarKernel<<<512,256,0,ngs_cuda_stream>>> (val, n, x);
 } 
 
 
@@ -77,7 +77,7 @@ void SetVector (double val, int n, Dev<double> * x, Dev<double> * y)
 {
   static Timer t("CUDA::SetVector");
   CudaRegionTimer rt(t);
-  SetVectorKernel<<<512,256>>> (val, n, x, y);
+  SetVectorKernel<<<512,256,0,ngs_cuda_stream>>> (val, n, x, y);
 } 
 
 
@@ -92,7 +92,7 @@ __global__ void MyDaxpyKernel (double val, int n, double * x, double * y)
 void MyDaxpy1 (double val, int n, double * x, double * y)
 {
 // cout << "MyDaxpy" << endl;
-  MyDaxpyKernel<<<512,256>>> (val, n, x, y);
+  MyDaxpyKernel<<<512,256,0,ngs_cuda_stream>>> (val, n, x, y);
 } 
 
 
@@ -117,7 +117,7 @@ __global__ void MultDiagonalKernel (int n, double * D, double * x, double * y)
 
 void MultDiagonal (int n, double * D, double * x, double * y)
 {
-  MultDiagonalKernel<<<512,256>>> (n, D, x, y);
+  MultDiagonalKernel<<<512,256,0,ngs_cuda_stream>>> (n, D, x, y);
 } 
 
 
@@ -131,7 +131,7 @@ __global__ void MultAddDiagonalKernel (int n, double alpha, double * D, double *
 
 void MultAddDiagonal (int n, double alpha, double * D, double * x, double * y)
 {
-  MultAddDiagonalKernel<<<512,256>>> (n, alpha, D, x, y);
+  MultAddDiagonalKernel<<<512,256,0,ngs_cuda_stream>>> (n, alpha, D, x, y);
 } 
 
 
@@ -176,7 +176,7 @@ __global__ void ManyMatVecKernel (FlatArray<Dev<MatVecData>> matvecs,
 void ManyMatVec (FlatArray<Dev<MatVecData>> matvecs, 
                         BareVector<Dev<double>> x, BareVector<Dev<double>> y)
 {
-  ManyMatVecKernel<<<512,dim3(16,16)>>> (matvecs, x, y);
+  ManyMatVecKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (matvecs, x, y);
 }
 
 
@@ -197,7 +197,7 @@ __global__ void ConstEBEKernelCopyInKernel (int numblocks, int bs, int * row_dnu
 void ConstEBEKernelCopyIn (int numblocks, int bs, int * row_dnums, double * dev_ux, double * dev_hx)
 {
    // ConstEBEKernelCopyInKernel<<<512,256>>> (numblocks, bs, row_dnums, dev_ux, dev_hx);
-   ConstEBEKernelCopyInKernel<<<512,dim3(16,16)>>> (numblocks, bs, row_dnums, dev_ux, dev_hx);
+  ConstEBEKernelCopyInKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (numblocks, bs, row_dnums, dev_ux, dev_hx);
 }
 
 __global__ void ConstEBEKernelCopyOutKernel (int numblocks, int bs, int *  col_dnums, double * dev_hy, double * dev_uy)
@@ -212,7 +212,7 @@ __global__ void ConstEBEKernelCopyOutKernel (int numblocks, int bs, int *  col_d
 
 void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, double * dev_hy, double * dev_uy)
 {
-  ConstEBEKernelCopyOutKernel<<<512,dim3(16,16)>>> (numblocks, bs, col_dnums, dev_hy, dev_uy);
+  ConstEBEKernelCopyOutKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (numblocks, bs, col_dnums, dev_hy, dev_uy);
 }
 
 
@@ -229,7 +229,7 @@ __global__ void ConstEBEKernelCopyInIdxKernel (int numblocks, int * idx, int bs,
 
 void ConstEBEKernelCopyInIdx (int numblocks, int * idx, int bs, int * row_dnums, double * dev_ux, double * dev_hx)
 {
-  ConstEBEKernelCopyInIdxKernel<<<512,dim3(16,16)>>> (numblocks, idx, bs, row_dnums, dev_ux, dev_hx);
+  ConstEBEKernelCopyInIdxKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (numblocks, idx, bs, row_dnums, dev_ux, dev_hx);
 }
 
 __global__ void ConstEBEKernelCopyOutIdxKernel (int numblocks, int * idx, int bs, int *  col_dnums, double * dev_hy, double * dev_uy)
@@ -244,7 +244,7 @@ __global__ void ConstEBEKernelCopyOutIdxKernel (int numblocks, int * idx, int bs
 
 void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * col_dnums, double * dev_hy, double * dev_uy)
 {
-  ConstEBEKernelCopyOutIdxKernel<<<512,dim3(16,16)>>> (numblocks, idx, bs, col_dnums, dev_hy, dev_uy);
+  ConstEBEKernelCopyOutIdxKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (numblocks, idx, bs, col_dnums, dev_hy, dev_uy);
 }
 
 
@@ -264,7 +264,7 @@ __global__ void DevBlockDiagonalMatrixSoAMultAddVecsKernel (double s, int size, 
 
 void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res)
 {    
-  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256>>> (s, size, a, b, res);
+  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256,0,ngs_cuda_stream>>> (s, size, a, b, res);
 }
 
 
@@ -295,7 +295,7 @@ void DevBlockDiagonalMatrixSoAMultAddVecs (double s, FlatArray<Dev<int>> inds,
                                            SliceMatrix<Dev<double>> b,
                                            SliceMatrix<Dev<double>> res)
 {
-  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256>>> (s, inds, a, b, res);
+  DevBlockDiagonalMatrixSoAMultAddVecsKernel<<<512,256,0,ngs_cuda_stream>>> (s, inds, a, b, res);
 }
 
 
@@ -335,9 +335,9 @@ void DevProjectorMultAdd (double s, size_t size, const double * a, double * b,
                           const unsigned char * bits, bool keep_values)
 {
   if (keep_values)
-    DevProjectorMultAddKernel1<<<512,256>>>(s, size, a, b, bits);
+    DevProjectorMultAddKernel1<<<512,256,0,ngs_cuda_stream>>>(s, size, a, b, bits);
   else
-    DevProjectorMultAddKernel2<<<512,256>>>(s, size, a, b, bits);
+    DevProjectorMultAddKernel2<<<512,256,0,ngs_cuda_stream>>>(s, size, a, b, bits);
 }
 
 __global__ void DevProjectorProjectKernel1 (size_t size, double * a, const unsigned char * bits)
@@ -370,9 +370,9 @@ void DevProjectorProject (size_t size, double * a, const unsigned char * bits,
                           bool keep_values)
 {
   if (keep_values)
-    DevProjectorProjectKernel1<<<512,256>>>(size, a, bits);
+    DevProjectorProjectKernel1<<<512,256,0,ngs_cuda_stream>>>(size, a, bits);
   else 
-    DevProjectorProjectKernel2<<<512,256>>>(size, a, bits);
+    DevProjectorProjectKernel2<<<512,256,0,ngs_cuda_stream>>>(size, a, bits);
 }
 
 

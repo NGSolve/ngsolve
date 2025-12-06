@@ -17,7 +17,7 @@ namespace ngla
     unique_ptr<SharedLibrary> library;
 
     typedef void (*lib_function)(size_t nip, BareVector<Dev<double>> input, size_t dist_input,
-                                 BareVector<Dev<double>> output, size_t dist_output);
+                                 BareVector<Dev<double>> output, size_t dist_output, cudaStream_t stream);
     lib_function compiled_function = nullptr;
 
     unique_ptr<Matrix<Dev<double>>> dev_points, dev_normals;
@@ -93,12 +93,13 @@ namespace ngla
       allcode.body += "\n}\n"; // end kernel
       allcode.body +=
         "extern \"C\" void ApplyIPFunction (size_t nip, BareVector<Dev<double>> input, size_t dist_input,\n"
-        "                      BareVector<Dev<double>> output, size_t dist_output) {\n"
-        "  ApplyIPFunctionKernel<<<256,256>>> (nip, (double*)input.Data(), dist_input, (double*)output.Data(), dist_output); } \n";
+        "                      BareVector<Dev<double>> output, size_t dist_output, cudaStream_t stream) {\n"
+        "  ApplyIPFunctionKernel<<<256,256,0,stream>>> (nip, (double*)input.Data(), dist_input, (double*)output.Data(), dist_output); } \n";
 
       stringstream s_top;
       s_top <<
         "#include <bla.hpp>\n"
+        "#include <cuda_core.hpp>\n"        
         "#include <cuda_linalg.hpp>\n"
         "#include <cstddef>\n"
         "using namespace ngbla;\n"
@@ -150,7 +151,7 @@ namespace ngla
       // ux.UpdateDevice();
       // uy.UpdateDevice();
 
-      compiled_function(nip, ux.FVDevRO(), nip, uy.FVDev(), nip);
+      compiled_function(nip, ux.FVDevRO(), nip, uy.FVDev(), nip, ngs_cuda_stream);
       if (synckernels) cudaDeviceSynchronize();
     }
 

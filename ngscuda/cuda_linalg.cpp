@@ -23,7 +23,7 @@ namespace ngla
     if (first_call)
       {
         first_call = false;
-        cublasCreate (&handle);
+        cublasCreate_v2 (&handle);
       }
     return handle;
   }
