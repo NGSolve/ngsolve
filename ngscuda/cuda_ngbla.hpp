@@ -227,7 +227,7 @@ namespace ngbla
   {
     static Timer t("cublasDgemm");
     CudaRegionTimer rt(t);
-
+    cublasSetStream(ngla::Get_CuBlas_Handle(), ngs_cuda_stream);
     cublasStatus_t stat =
       cublasDgemm(ngla::Get_CuBlas_Handle(), 
                   ORDA==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 
