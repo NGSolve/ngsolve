@@ -42,7 +42,8 @@ namespace ngla
   UnifiedVector :: ~UnifiedVector ()
   {
     // cudaFree(dev_data);
-    Dev<double>::Free(dev_data);
+    if (dev_data)
+      Dev<double>::Free(dev_data);
     delete[] host_data;
   }
 
@@ -378,7 +379,7 @@ namespace ngla
       initial_dev_uptodate =  uptr->IsDevUptodate();
     }
     else
-    {
+      {
       auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
       if (err != 0)
         throw Exception("UnifiedVector allocation error, ec="+ToString(err));
