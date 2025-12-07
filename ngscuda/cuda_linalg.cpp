@@ -266,7 +266,8 @@ namespace ngla
   {
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
-
+    
+    /*
     ux.UpdateDevice();
     uy.UpdateDevice();
 
@@ -278,7 +279,15 @@ namespace ngla
              dy[tid] = ddiag[tid]*dx[tid];
            });
 
-    uy.InvalidateHost();    
+    uy.InvalidateHost();
+    */
+
+    DeviceParallelFor
+      (diag.Size(),
+       [ddiag=diag.DevData(), dx=ux.FVDevRO(), dy=uy.FVDev()] DEVICE_LAMBDA (auto tid)
+           {
+             dy(tid) = ddiag[tid]*dx(tid);
+           });
   }
   
   void DevDiagonalMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const

@@ -109,7 +109,7 @@ namespace ngs_cuda
     void Launch()
     {
       cudaGraphLaunch(instance, ngs_cuda_stream);
-      cudaStreamSynchronize(ngs_cuda_stream);
+      // cudaStreamSynchronize(ngs_cuda_stream);
     }
   };
   
