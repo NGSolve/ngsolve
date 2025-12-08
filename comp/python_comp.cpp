@@ -836,6 +836,29 @@ kwargs : kwargs
                        }
                      throw Exception("components only available for ProductSpace");                     
                    }, "deprecated, will be only available for ProductSpace")
+    .def("GetDirichletRegion",
+	 [](shared_ptr<FESpace> self, VorB vb)
+	  {
+            auto region = Region(self->GetMeshAccess(), vb);
+            region.Mask().Clear();
+            region.Mask() = self->GetDirichletBoundaries(vb);
+            return region;
+	  },
+         py::arg("vb") = BND,
+	 "Return boundary Dirichlet mesh-region of FESpace")
+    .def("GetDefinedOnRegion",
+	 [](shared_ptr<FESpace> self, VorB vb)
+	  {
+            auto region = Region(self->GetMeshAccess(), vb);
+            region.Mask().Clear();
+            const Array<bool> & definedon = self->GetDefinedOn(vb); 
+            for (int i = 0; i < definedon.Size(); i++)
+              if (definedon[i]) region.Mask().SetBit(i);
+            return region;
+	  },
+         py::arg("vb") = VOL,
+	 "Return mesh-region where FESpace is defined on")
+
     .def("Range",
          [] (shared_ptr<FESpace> self, int comp)
          {
