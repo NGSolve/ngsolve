@@ -790,6 +790,7 @@ namespace ngla
               if (col_dnums[i][j] != j*col_dnums.Size()+i) output_matrix_trans = false;
             }
       }
+    // cout << "output_matrix = " << int(output_matrix) << ", output_matrix_trans = " << int(output_matrix_trans) << endl;
     
     if (!disjoint_rows)
       {

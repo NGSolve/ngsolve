@@ -1294,7 +1294,7 @@ namespace ngcomp
             
             Matrix<double,ColMajor> bmatx_(ir.Size()*dimxref, felx.GetNDof());
             Matrix<double,ColMajor> bmaty_(ir.Size()*dimyref, fely.GetNDof());
-        
+
             for (int i : Range(ir.Size()))
               {
                 int starti = i*dimxref;
@@ -1318,6 +1318,17 @@ namespace ngcomp
 
             Matrix bmatx = bmatx_;
             Matrix bmaty = bmaty_;
+
+            if (!linear)  // transpose intpnt <--> comp
+              {
+                for (int i : Range(ir.Size()))
+                  for (int j : Range(dimxref))
+                    bmatx.Row(j*ir.Size()+i) = bmatx_.Row(i*dimxref+j);
+                for (int i : Range(ir.Size()))
+                  for (int j : Range(dimyref))
+                    bmaty.Row(j*ir.Size()+i) = bmaty_.Row(i*dimyref+j);
+              }
+            
             
             Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
             Table<DofId> xdofsout(elclass_inds.Size(), bmatx.Height());
@@ -1350,12 +1361,25 @@ namespace ngcomp
               }
             else
               {
+                /*
                 for (size_t i = 0; i < nip; i++)
                   for (size_t j = 0; j < dimxref; j++)
                     xa[i*dimxref+j] = j*nip+i;
+                */
+
+                for (size_t i = 0; i < nel; i++)
+                  for (size_t k = 0; k < dimxref*ir.Size(); k++)
+                    xdofsout[i][k] = i+k*nel;
+                
+                /*
                 for (size_t i = 0; i < nip; i++)
                   for (size_t j = 0; j < dimyref; j++)
                     ya[i*dimyref+j] = j*nip+i;
+                */
+
+                for (size_t i = 0; i < nel; i++)
+                  for (size_t k = 0; k < dimyref*ir.Size(); k++)
+                    ydofsout[i][k] = i+k*nel;
               }
             
             auto bx = make_shared<ConstantElementByElementMatrix<>>
@@ -1446,11 +1470,21 @@ namespace ngcomp
                           }
 
                         transy *= mir[j].GetWeight();
-                        diagx(STAR,STAR,i*ir.Size()+j) = transx;
-                        diagy(STAR,STAR,i*ir.Size()+j) = transy;
+                        // diagx(STAR,STAR,i*ir.Size()+j) = transx;  // old
+                        // diagy(STAR,STAR,i*ir.Size()+j) = transy;  // old
+                        diagx(STAR,STAR,i+j*nel) = transx;
+                        diagy(STAR,STAR,i+j*nel) = transy; 
                       }
+
+                    /*
                     points.Cols(i*ir.Size(), (i+1)*ir.Size()) = Trans(mir.GetPoints());
                     normals.Cols(i*ir.Size(), (i+1)*ir.Size()) = Trans(mir.GetNormals());
+                    */
+                    for (int j = 0; j < ir.Size(); j++)
+                      {
+                        points.Col(i+j*nel) = mir.GetPoints().Row(j);   // untested
+                        normals.Col(i+j*nel) = mir.GetNormals().Row(j); // untested
+                      }
                   }
                 
                 shared_ptr<CoefficientFunction> coef = bfi -> GetCoefficientFunction();
