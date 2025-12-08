@@ -144,6 +144,8 @@ namespace ngla
 
     FlatTensor<3> GetBlockDiag () const { return blockdiag; }
     FlatMatrix<bool> GetNonZeroPattern() const { return nonzero; }
+    FlatTable<int> GetSparseMatrix() const { return sparse; }
+    FlatTable<int> GetSparseMatrixTrans() const { return sparseT; }
   };
 
 }

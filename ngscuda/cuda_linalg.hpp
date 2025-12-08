@@ -120,6 +120,7 @@ namespace ngla
     int blocks, dimy, dimx;
     Matrix<bool> nonzero;
     Array<Dev<int>> indices, indices_trans;
+    DevTable<int> sparse, sparseT;
  public:
     DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
     void Mult (const BaseVector & x, BaseVector & y) const override;
