@@ -803,7 +803,7 @@ restart : int = None
             h[:] = 0
             for i in range(k+1):
                 h[i] = innerproduct(Q[i],q)
-                q.data += (-1)* h[i] * Q[i]
+                q -= h[i] * Q[i]
             h[k+1] = norm(q)
             if abs(h[k+1]) < 1e-12:
                 return h, None
