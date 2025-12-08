@@ -553,7 +553,8 @@ namespace ngla
   
   DevBlockDiagonalMatrixSoA ::
   DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat)
-    : nonzero(mat.GetNonZeroPattern())
+    : nonzero(mat.GetNonZeroPattern()),
+      sparse(mat.GetSparseMatrix()), sparseT(mat.GetSparseMatrixTrans())
   {
     FlatTensor<3> blockdiag = mat.GetBlockDiag ();
     // tie(dimy, dimx, blocks) = blockdiag.Shape();
