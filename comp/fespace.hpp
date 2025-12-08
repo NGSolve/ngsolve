@@ -532,8 +532,13 @@ ANY                  1 1 1 1 | 15
     void SetDefinedOnBoundary (const BitArray & defon)
      { SetDefinedOn(BND,defon); }
 
+    const Array<bool> & GetDefinedOn (VorB vb) const { return definedon[vb]; }
+
     ///
     void SetDirichletBoundaries (const BitArray & dirbnds);
+    const BitArray & GetDirichletBoundaries (VorB vb) const { return dirichlet_constraints[vb]; }
+
+
     /// Get reference element for tet, prism, trig, etc ..
     // const FiniteElement & GetFE (ELEMENT_TYPE type) const;
 
