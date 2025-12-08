@@ -554,6 +554,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            p.SetValues (self, value);
          })
     .def("__iadd__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self += other; return self;}, py::arg("vec"))
+    .def("__iadd__", [](BaseVector & self,  DynamicVectorExpression & other) -> BaseVector& { other.AddTo(1, self); return self;}, py::arg("vec"))    
     .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;}, py::arg("vec"))
     .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))
     .def("__imul__", [](BaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))

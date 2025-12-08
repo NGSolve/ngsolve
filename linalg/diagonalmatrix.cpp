@@ -539,8 +539,12 @@ namespace ngla
   BaseMatrix::OperatorInfo BlockDiagonalMatrixSoA :: GetOperatorInfo () const
   {
     OperatorInfo info;
+    int nze = 0;
+    for (int i = 0; i < nonzero.Height(); i++)
+      for (int j = 0; j < nonzero.Width(); j++)
+        if (nonzero(i,j)) nze++;
     info.name = string("BlockDiagonalMatrixSoA (bs = ") + ToString(dimy) + "x"
-      + ToString (dimx) + ")";
+      + ToString (dimx) + ", nze = " + ToString(nze) + ", blocks = " + ToString(blocks) + ")";
     info.height = Height();
     info.width = Width();
     return info;
