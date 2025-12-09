@@ -582,7 +582,6 @@ namespace ngla
             nonzeroinds_trans.Append(i*dimx+j);
             nonzeroinds_trans.Append(i);
             nonzeroinds_trans.Append(j);
-        
         }
 
     indices = nonzeroinds;
@@ -605,7 +604,8 @@ namespace ngla
     {
       static Timer t("DevBlockDiagonalMatrixSoA::Mult");
       CudaRegionTimer rt(t);
-    
+
+      /*
     DeviceParallelFor
       (res.Width(),
        [a,b,res,inds=FlatArray(indices)] DEVICE_LAMBDA (auto i)
@@ -619,6 +619,23 @@ namespace ngla
              int rowb = inds[j+1];
              int rowres = inds[j+2];
              res(rowres,i) += a(rowa,i) * b(rowb,i);
+           }
+       });           
+      */
+
+    DeviceParallelFor
+      (res.Width(),
+       [a,b,res,dimx=this->dimx,sparse=FlatTable<int>(sparse)] DEVICE_LAMBDA (auto i)
+       {
+         for (int j = 0; j < sparse.Size(); j++)
+           {
+             double sum = 0;
+             for (int k = 0; k < sparse[j].Size(); k++)
+               {
+                 int ind = sparse[j][k];
+                 sum += a(j*dimx+ind,i) * b(ind,i);
+               }
+             res(j,i) = sum;
            }
        });
     }
@@ -689,7 +706,8 @@ namespace ngla
     {
       static Timer t("DevBlockDiagonalMatrixSoA::MultTrans");
       CudaRegionTimer rt(t);
-    
+
+      /*
     DeviceParallelFor
       (res.Width(),
        [a,b,res,inds=FlatArray(indices)] DEVICE_LAMBDA (auto i)
@@ -705,6 +723,26 @@ namespace ngla
              res(rowres,i) += a(rowa,i) * b(rowb,i);
            }
        });
+      */
+      
+    DeviceParallelFor
+      (res.Width(),
+       [a,b,res,dimx=this->dimx,sparseT=FlatTable<int>(sparseT)] DEVICE_LAMBDA (auto i)
+       {
+         for (int j = 0; j < sparseT.Size(); j++)
+           {
+             double sum = 0;
+             for (int k = 0; k < sparseT[j].Size(); k++)
+               {
+                 int ind = sparseT[j][k];
+                 sum += a(ind*dimx+j,i) * b(ind,i);
+               }
+             res(j,i) = sum;
+           }
+       });
+
+
+    
     }
     
     if (synckernels) cudaDeviceSynchronize();
