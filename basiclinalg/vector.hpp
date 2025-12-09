@@ -358,7 +358,7 @@ namespace ngbla
     template <int S>
     INLINE VectorView (Vec<S,T> & v)
       // : data(v.Data()), size(v.Size()), dist(IC<1>()) { }
-      : layout{v.Data(), TS(v.Size()), IC<1>()} {}
+      : layout{v.Data(), TS(v.Size()), (TDIST)IC<1>()} {}
 
     
     /*
