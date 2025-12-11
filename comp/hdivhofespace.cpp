@@ -320,7 +320,8 @@ namespace ngcomp
     ho_div_free = flags.GetDefineFlag("hodivfree"); 
     fixed_order = flags.GetDefineFlag ("fixedorder");
     RT = flags.GetDefineFlag ("RT");
-
+    if (order==0) RT = true;
+    
     uniform_order_inner = int (flags.GetNumFlag ("orderinner", -1));
     
     if(flags.NumFlagDefined("orderedge") || flags.NumFlagDefined ("orderface")) 
