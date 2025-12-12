@@ -44,7 +44,13 @@ namespace ngs_cuda
   {
     int devCount;
     printf("CUDA Device Query...\n"); 
-    cudaGetDeviceCount(&devCount);
+    
+    cudaError_t err = cudaGetDeviceCount(&devCount);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaGetDeviceCount() failed: %s\n", cudaGetErrorString(err));
+        return;
+    }
+    
     if (devCount == 1)
       printf("There is %d CUDA device.\n", devCount);
     else
