@@ -84,7 +84,12 @@ namespace ngs_cuda
     if(verbose >= 1)
       cout << "Using device " << dev_id << endl;
 
+
+#if defined(CUDA_VERSION)
+#if CUDA_VERSION >= 3020 && CUDA_VERSION < 12000 // CUDA 3.2 to CUDA 11.x
     cudaDeviceSetSharedMemConfig ( cudaSharedMemBankSizeEightByte );
+#endif
+#endif
   }
 
 
