@@ -325,6 +325,8 @@ namespace ngla
     disjoint_cols = (mat.GetColColoring().Size() == 0);
 
     output_onto = disjoint_cols && (mat.GetColDNums().AsArray().Size() == Height());
+    output_matrix = mat.OutputMatrix();
+    output_matrix_trans = mat.OutputMatrixTrans();
   }
 
 
@@ -667,7 +669,7 @@ namespace ngla
     // DevBlockDiagonalMatrixSoAMultAddVecs (s, indices, a, b, res);
 
     {
-    static Timer t("DevBlockDiagonalMatrixSoA::MultTransAdd");
+    static Timer t("DevBlockDiagonalMatrixSoA::MultAdd");
     CudaRegionTimer rt(t);
     
     DeviceParallelFor
@@ -771,6 +773,7 @@ namespace ngla
     FlatMatrix<Dev<double>> res(dimx, blocks,  (Dev<double>*)uy.DevData());
     // DevBlockDiagonalMatrixSoAMultAddVecs (s, indices_trans, a, b, res);
 
+    /*
     DeviceParallelFor
       (res.Width(),
        [a,b,res,inds=FlatArray(indices),s] DEVICE_LAMBDA (auto i)
@@ -783,7 +786,25 @@ namespace ngla
              res(rowres,i) += s * a(rowa,i) * b(rowb,i);
            }
        });
+    */
 
+    DeviceParallelFor
+      (res.Width(),
+       [a,b,res,dimx=this->dimx,sparseT=FlatTable<int>(sparseT)] DEVICE_LAMBDA (auto i)
+       {
+         for (int j = 0; j < sparseT.Size(); j++)
+           {
+             double sum = 0;
+             for (int k = 0; k < sparseT[j].Size(); k++)
+               {
+                 int ind = sparseT[j][k];
+                 sum += a(ind*dimx+j,i) * b(ind,i);
+               }
+             res(j,i) += s*sum;
+           }
+       });
+
+    
     
     if (synckernels) cudaDeviceSynchronize();
       

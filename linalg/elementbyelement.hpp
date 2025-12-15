@@ -160,7 +160,10 @@ namespace ngla
     FlatTable<int> GetColDNums() const { return col_dnums; }
 
     FlatTable<int> GetRowColoring() const { return row_coloring; }    
-    FlatTable<int> GetColColoring() const { return col_coloring; }    
+    FlatTable<int> GetColColoring() const { return col_coloring; }
+
+    bool OutputMatrix() const { return output_matrix; }
+    bool OutputMatrixTrans() const { return output_matrix_trans; } 
   };
 
   class NGS_DLL_HEADER StructuredElementByElementMatrix : public BaseMatrix
