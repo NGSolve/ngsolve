@@ -461,6 +461,7 @@ namespace ngla
   {
     static Timer t("SparseMatrix::DeleteZeroElements"); RegionTimer reg(t);
     size_t h = this->Height();
+    size_t w = this->Width();
     Array<int> cnt(h);
     Array<bool> keep(data.Size());
     cnt = 0;
@@ -476,7 +477,7 @@ namespace ngla
             }
       }, 5*TaskManager::GetNumThreads());
 
-    auto matrix = make_shared<SparseMatrix<TM>> (cnt, h);
+    auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
     cnt = 0;
 
     ParallelForRange( h, [&](IntRange r)
