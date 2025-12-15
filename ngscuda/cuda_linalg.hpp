@@ -102,6 +102,9 @@ namespace ngla
     bool disjoint_rows, disjoint_cols;
     size_t numblocks;
     bool output_onto = false;
+    bool output_matrix = false;
+    bool output_matrix_trans = false;
+
   public:
     DevConstantElementByElementMatrix (const T_ConstEBEMatrix & mat);
     void Mult (const BaseVector & x, BaseVector & y) const override;    
