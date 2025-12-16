@@ -603,6 +603,7 @@ def FieldLines(
         ngs.ET.HEX,
         ngs.ET.PRISM,
         ngs.ET.PYRAMID,
+        ngs.ET.SEGM
     ]:
         rules[et] = ngs.IntegrationRule(et, 5)
 
