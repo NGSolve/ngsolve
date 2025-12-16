@@ -790,7 +790,7 @@ namespace ngla
 
     DeviceParallelFor
       (res.Width(),
-       [a,b,res,dimx=this->dimx,sparseT=FlatTable<int>(sparseT)] DEVICE_LAMBDA (auto i)
+       [a,b,s,res,dimx=this->dimx,sparseT=FlatTable<int>(sparseT)] DEVICE_LAMBDA (auto i)
        {
          for (int j = 0; j < sparseT.Size(); j++)
            {
