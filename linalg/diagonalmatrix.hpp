@@ -47,6 +47,10 @@ namespace ngla
       Mult (v, res);
       return res;
     }
+    AutoVector EvaluateTrans(BaseVector & v) const override
+    {
+      return this->Evaluate(v);
+    }
     
   };
 
