@@ -196,7 +196,7 @@ namespace ngla
     double beta = 1;
 
     size_t bufferSize = 0;
-    void* dBuffer = NULL;
+    // void* dBuffer = NULL;
 
     cusparseDnVecDescr_t descr_x, descr_y;
     cusparseCreateDnVec (&descr_x, ux.Size(), ux.DevData(), CUDA_R_64F);
@@ -205,14 +205,18 @@ namespace ngla
     cusparseSpMV_bufferSize(Get_CuSparse_Handle(), CUSPARSE_OPERATION_NON_TRANSPOSE,
                             &alpha, descr, descr_x, &beta, descr_y, CUDA_R_64F,
                             CUSPARSE_SPMV_ALG_DEFAULT, &bufferSize);
-    cudaMalloc(&dBuffer, bufferSize);
+    //cudaMalloc(&dBuffer, bufferSize);
 
+    {
+      DevStackArray<Dev<char>> dBuffer(bufferSize);
+      
     cusparseSpMV(Get_CuSparse_Handle(), 
                  CUSPARSE_OPERATION_NON_TRANSPOSE, &alpha, descr,
                  descr_x, &beta, descr_y, CUDA_R_64F,
-                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer);
+                 CUSPARSE_SPMV_ALG_DEFAULT, dBuffer.DevData());
 
-    cudaFree(dBuffer);
+    }
+    // cudaFree(dBuffer);
 
     cusparseDestroyDnVec(descr_x);
     cusparseDestroyDnVec(descr_y);
