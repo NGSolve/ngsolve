@@ -310,13 +310,15 @@ ep : double
     name = "QMR"
 
     def __init__(self, *args, pre2 : Preconditioner = None,
+                 matT = None,
                  ep : float = 1., **kwargs):
         super().__init__(*args, **kwargs)
         self.pre2 = pre2
         self.ep = ep
+        self.matT = matT if matT is not None else self.mat.T
 
     def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
-        u, mat, ep, pre1, pre2 = sol, self.mat, self.ep, self.pre, self.pre2
+        u, mat, matT, ep, pre1, pre2 = sol, self.mat, self.matT, self.ep, self.pre, self.pre2
         r = rhs.CreateVector()
         v = rhs.CreateVector()
         v_tld = rhs.CreateVector()
@@ -399,7 +401,7 @@ ep : double
             rho = InnerProduct(y,y)
             rho = sqrt(rho)
 
-            w_tld.data = mat.T * q
+            w_tld.data = matT * q
             w_tld.data -= beta * w
 
             z.data = pre2.T * w_tld if pre2 else w_tld

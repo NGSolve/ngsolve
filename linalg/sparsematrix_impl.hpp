@@ -355,6 +355,23 @@ namespace ngla
       AddRowTransToVector (i, s*fx(i), fy);
 
     timer.AddFlops (this->NZE());
+
+
+    /*
+    static Timer t("SparseMatrix::MultTransAdd"); RegionTimer reg(t);
+    t.AddFlops (this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(double)));
+
+    ParallelForRange
+      (balance, [&] (IntRange myrange)
+       {
+         FlatVector<TVY> fx = x.FV<TVY>(); 
+         FlatVector<TVX> fy = y.FV<TVX>(); 
+
+         for (auto i : myrange)
+           AddRowTransToVectorAtomic (i, s*fx(i), fy);
+       });
+    */
+    
   }
 
 
@@ -755,36 +772,38 @@ namespace ngla
   
   template <class TM>
   shared_ptr<BaseSparseMatrix> SparseMatrixTM<TM> ::
-  CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&,int)> & creator) const
+  CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&,int)> & creator,
+                     bool sorted) const
   {
     Array<int> cnt(this->Width());
     cnt = 0;
     ParallelFor (this->Height(), [&] (int i)
-                 {
-                   for (int c : this->GetRowIndices(i))
-                     AsAtomic (cnt[c]) ++;
-                 });
-
+    {
+      for (int c : this->GetRowIndices(i))
+        AsAtomic (cnt[c]) ++;
+    });
+    
     auto trans = creator(cnt, this->Height());
 
     cnt = 0;
     ParallelFor (this->Height(), [&] (int i)
-                 {
-                   for (int ci : Range(this->GetRowIndices(i)))
-                     {
-                       int c = this->GetRowIndices(i)[ci];
-                       int pos = AsAtomic(cnt[c])++;
-                       trans -> GetRowIndices(c)[pos] = i;
-                       trans -> GetRowValues(c)[pos] = Trans(this->GetRowValues(i)[ci]);
-                     }
-                 });
-
-    ParallelFor (trans->Height(), [&] (int r)
-                 {
-                   auto rowvals = trans->GetRowValues(r);
-                   BubbleSort (trans->GetRowIndices(r),
-                               FlatArray(rowvals.Size(), rowvals.Data()));
-                 });
+    {
+      for (int ci : Range(this->GetRowIndices(i)))
+        {
+          int c = this->GetRowIndices(i)[ci];
+          int pos = AsAtomic(cnt[c])++;
+          trans -> GetRowIndices(c)[pos] = i;
+          trans -> GetRowValues(c)[pos] = Trans(this->GetRowValues(i)[ci]);
+        }
+    });
+    
+    if (sorted)
+      ParallelFor (trans->Height(), [&] (int r)
+      {
+        auto rowvals = trans->GetRowValues(r);
+        BubbleSort (trans->GetRowIndices(r),
+                    FlatArray(rowvals.Size(), rowvals.Data()));
+      });
 
     return trans;
   }

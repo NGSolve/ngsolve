@@ -1521,7 +1521,7 @@ namespace ngcomp
 
   void BilinearForm :: ReAssemble (LocalHeap & lh, bool reallocate)
   {
-    if (nonassemble)
+    if (nonassemble || matrix_free_bdb)
       {
         Assemble(lh);
         return;

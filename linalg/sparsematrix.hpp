@@ -258,7 +258,7 @@ namespace ngla
       throw Exception ("BaseSparseMatrix::CreateBlockJacobiPrecond");
     }
 
-    virtual shared_ptr<BaseSparseMatrix> CreateTranspose() const
+    virtual shared_ptr<BaseSparseMatrix> CreateTranspose(bool sorted = true) const
     {
       throw Exception ("BaseSparseMatrix::CreateTranspose");      
     }
@@ -561,7 +561,7 @@ namespace ngla
     virtual tuple<int,int> EntrySizes() const override { return { ngbla::Height<TM>(), ngbla::Width<TM>() }; }
     
     shared_ptr<BaseSparseMatrix>
-      CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&, int)> & creator) const;
+      CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&, int)> & creator, bool sorted) const;
 
   public:
     using BaseMatrix::GetMemoryTracer;
@@ -638,11 +638,11 @@ namespace ngla
     
     virtual shared_ptr<BaseSparseMatrix> Reorder (const Array<size_t> & reorder) const override;
     
-    virtual shared_ptr<BaseSparseMatrix> CreateTranspose() const override
+    virtual shared_ptr<BaseSparseMatrix> CreateTranspose(bool sorted) const override
     {
       return this->CreateTransposeTM
         ( [](const Array<int> & elsperrow, int width) -> shared_ptr<SparseMatrixTM<decltype(Trans(TM()))>>
-          { return make_shared<SparseMatrix<decltype(Trans(TM())), TV_COL, TV_ROW>> (elsperrow, width); } );
+          { return make_shared<SparseMatrix<decltype(Trans(TM())), TV_COL, TV_ROW>> (elsperrow, width); }, sorted );
     }
 
     virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const override;
@@ -669,6 +669,20 @@ namespace ngla
       for (size_t j = first; j < last; j++)
         vec[colpi[j]] += Trans(datap[j]) * el; 
     }
+
+    void AddRowTransToVectorAtomic (int row, TVY el, FlatVector<TVX> vec) const
+    {
+      size_t first = firsti[row];
+      size_t last = firsti[row+1];
+
+      const ColIdx * colpi = colnr.Addr(0);
+      const TM * datap = data.Addr(0);
+
+      for (size_t j = first; j < last; j++)
+        // vec[colpi[j]] += Trans(datap[j]) * el;
+        AtomicAdd (vec[colpi[j]], Trans(datap[j]) * el);
+    }
+
     
     ///
     void AddRowConjTransToVector (int row, TVY el, FlatVector<TVX> vec) const
