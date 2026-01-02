@@ -537,7 +537,8 @@ class TFQMRSolver(LinearSolver):
         rstar = rhs.CreateVector()
         d = rhs.CreateVector()
         x = rhs.CreateVector()
-        z = rhs.CreateVector()                        
+        z = rhs.CreateVector()
+        tmp = rhs.CreateVector()                                
         d[:] = 0
         
         if Norm(rhs)==0:
@@ -600,10 +601,14 @@ class TFQMRSolver(LinearSolver):
                 u += w
                 v *= beta**2
                 v += beta*uhat
-                uhat.data = pre@mat * u
+                # uhat.data = pre@mat * u
+                tmp.data = mat*u
+                uhat.data = pre*tmp
                 v += uhat
             else:
-                uhat.data = pre@mat * uNext
+                # uhat.data = pre@mat * uNext
+                tmp.data = mat*uNext
+                uhat.data = pre*tmp
                 u.data = uNext
                 rhoLast = rho
             
