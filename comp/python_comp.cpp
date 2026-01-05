@@ -4612,6 +4612,7 @@ The created object must be kept alive in python as long as
 operations of it are used!
 )delimiter", "master"_a, "minion"_a, "draw_pairs"_a=false, "volume"_a=false,
           "element_boundary"_a = false)
+     .def(NGSPickle<ContactBoundary>())
      .def("AddEnergy", &ContactBoundary::AddEnergy,
           "form"_a, "deformed"_a = false)
      .def("AddIntegrator", &ContactBoundary::AddIntegrator,

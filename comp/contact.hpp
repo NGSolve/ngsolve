@@ -191,6 +191,10 @@ namespace ngcomp
     const auto& GetIntegrators(bool def) const { return def ? deformed_integrators : undeformed_integrators; }    
     shared_ptr<FESpace> GetFESpace() const { return fes; }
     tuple<FlatArray<Vec<3>>, FlatArray<Vec<3>>> GetDrawingPairs() { return {primary_points, secondary_points}; }
+    auto GetCArgs() {
+      return std::make_tuple(master, other, draw_pairs, volume, element_boundary);
+    }
+    void DoArchive(Archive& ar);
   };
 
   template<int DIM>
