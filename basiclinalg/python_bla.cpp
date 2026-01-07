@@ -654,6 +654,7 @@ vals : tuple
       }), py::arg("t"));
     PyVecAccess<Vec<3>>(m, v3);
     PyDefROBracketOperator<Vec<3>, double>(m, v3);
+    ExportArray<Vec<3>>(m);
 
     py::implicitly_convertible<py::tuple, Vec<2>>();
     py::implicitly_convertible<py::tuple, Vec<3>>();

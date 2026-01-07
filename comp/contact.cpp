@@ -1,3 +1,4 @@
+#include <core/register_archive.hpp>
 #include <netgen_config.hpp>
 
 #include "contact.hpp"
@@ -1199,6 +1200,10 @@ namespace ngcomp
       }
   }
 
+  void ContactBoundary :: DoArchive(Archive& ar)
+  {
+    ar & primary_points & secondary_points;
+  }
 
   template<int DIM>
   MPContactElement<DIM>::MPContactElement(ElementId aprimary_ei, ElementId asecondary_ei,
@@ -1401,7 +1406,5 @@ namespace ngcomp
   template class MPContactElement<2>;
   template class MPContactElement<3>;
 
-
-
-  
+  RegisterClassForArchive<ContactBoundary> regcb;
 } // namespace ngcomp
