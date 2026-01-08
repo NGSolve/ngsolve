@@ -74,7 +74,9 @@ from importlib import metadata as importlib_metadata
 def _from_dist_files():
     # Use the wheel’s file manifest (most reliable)
     candidates = []
-    for dist_name in ("nvidia-cudss-cu12", "nvidia_cudss_cu12", "nvidia-cudss"):  # try common variants
+    # for dist_name in ("nvidia-cudss-cu12", "nvidia_cudss_cu12", "nvidia-cudss"):  # try common variants
+    for dist_name in ("nvidia-cudss-cu12", "nvidia_cudss_cu12", "nvidia-cudss",
+                      "nvidia-cudss-cu13", "nvidia_cudss_cu13"):  # try common variants
         try:
             dist = importlib_metadata.distribution(dist_name)
         except importlib_metadata.PackageNotFoundError:
