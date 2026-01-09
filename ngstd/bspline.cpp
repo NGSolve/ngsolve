@@ -290,11 +290,11 @@ namespace ngstd
     double dval = (valr-vall) / (2*eps);
     double ddval = (valr+vall-2*val) / (eps*eps);
     */
-    auto diff = Differentiate();
-    auto ddiff = diff.Differentiate();
+    if(!diff || !diff->diff) throw Exception("BSpline::operator()(AutoDiffDiff) not implemented for order < 3");
+    auto ddiff = diff->diff;
     double val = (*this)(x.Value());
-    double dval = diff(x.Value());
-    double ddval = ddiff(x.Value());
+    double dval = (*diff)(x.Value());
+    double ddval = (*ddiff)(x.Value());
 
     AutoDiffDiff<1,double> res(val);
     res.DValue(0) = dval * x.DValue(0);
@@ -331,11 +331,11 @@ namespace ngstd
     double dval = (valr-vall) / (2*eps);
     double ddval = (valr+vall-2*val) / (eps*eps);
     */
-    auto diff = Differentiate();
-    auto ddiff = diff.Differentiate();
+    if(!diff || !diff->diff) throw Exception("BSpline::operator()(AutoDiffDiff) not implemented for order < 3");
+    auto ddiff = diff->diff;
     SIMD<double> val = (*this)(x.Value());
-    SIMD<double> dval = diff(x.Value());
-    SIMD<double> ddval = ddiff(x.Value());
+    SIMD<double> dval = (*diff)(x.Value());
+    SIMD<double> ddval = (*ddiff)(x.Value());
 
     AutoDiffDiff<1,SIMD<double>> res(val);
     res.DValue(0) = dval * x.DValue(0);
