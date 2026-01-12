@@ -1409,19 +1409,6 @@ namespace ngbla
 }
 
 
-
-namespace ngstd
-{
-  template <typename ARCHIVE, int S, typename T>
-  inline auto & operator& (ARCHIVE & ar, ngbla::Vec<S,T> & v)
-  {
-    for (int i = 0; i < S; i++)
-      ar & v(i);
-    return ar;
-  }
-}
-
-
 namespace ngcore
 {
 
