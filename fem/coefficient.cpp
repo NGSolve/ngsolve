@@ -7768,6 +7768,7 @@ static RegisterClassForArchive<cl_BinaryOpCF<GenericMinus>, CoefficientFunction>
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMult>, CoefficientFunction> regcfmult;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericDiv>, CoefficientFunction> regcfdiv;
 static RegisterClassForArchive<cl_UnaryOpCF<GenericIdentity>, CoefficientFunction> regcfid;
+static RegisterClassForArchive<cl_UnaryOpCF<GenericConj>, CoefficientFunction> regcfconj;
 static RegisterClassForArchive<IfPosCoefficientFunction, CoefficientFunction> regfifpos;
 static RegisterClassForArchive<RealCF, CoefficientFunction> regrealcf;
 static RegisterClassForArchive<ImagCF, CoefficientFunction> regimagcf;
