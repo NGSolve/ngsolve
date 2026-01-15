@@ -798,6 +798,8 @@ namespace ngfem {
 
           auto np = py::module::import("numpy");
 
+          bool new_numpy_einsum_layout = np.attr("__version__").attr("__ge__")("2.4.1").cast<bool>();
+
           using namespace pybind11::literals;
           py::object einsum_path = np.attr("einsum_path");
 
@@ -851,7 +853,7 @@ namespace ngfem {
               if (!drop_from_old[i])
                 old_inputs.Append(tp_inputs[i]);
 
-            string new_signature = py::extract<py::str>(op[1])();
+            string new_signature = py::cast<string>(op[new_numpy_einsum_layout ? 1 : 2]);
 
             tp_inputs = old_inputs;
             tp_inputs.Append(EinsumCF(new_signature, new_inputs, options));
