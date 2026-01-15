@@ -851,7 +851,8 @@ namespace ngfem {
               if (!drop_from_old[i])
                 old_inputs.Append(tp_inputs[i]);
 
-            string new_signature = py::extract<py::str>(op[2])();
+            string new_signature = py::extract<py::str>(op[1])();
+
             tp_inputs = old_inputs;
             tp_inputs.Append(EinsumCF(new_signature, new_inputs, options));
           }
