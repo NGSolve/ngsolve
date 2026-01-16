@@ -18,5 +18,5 @@ if [ -n "${CI_COMMIT_REF_NAME:-}" ]; then
   scp -P 692 *.tar.bz2 deploy@ngsolve.org:/opt/data/files/
   tar xvf *.tar.bz2
   ssh -p 692 deploy@ngsolve.org "mkdir -p /opt/data/files/pyodide-0.29.0/${CI_COMMIT_REF_NAME}"
-  scp -P 692 pyodide/pyngcore.zip pyodide/netgen.zip pyodide/ngsolve.zip deploy@ngsolve.org:/opt/data/files/pyodide-0.29.0/${CI_COMMIT_REF_NAME}/
+  scp -P 692 pyodide/libngcore.zip pyodide/libnglib.zip pyodide/pyngcore.zip pyodide/netgen.zip pyodide/ngsolve.zip deploy@ngsolve.org:/opt/data/files/pyodide-0.29.0/${CI_COMMIT_REF_NAME}/
 fi
