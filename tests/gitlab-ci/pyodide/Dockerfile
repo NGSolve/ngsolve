@@ -56,11 +56,13 @@ WORKDIR /root/ngsolve_build
 COPY . /root/ngsolve
 COPY tests/gitlab-ci/pyodide/build_in_docker.sh /root/ngsolve/tests/gitlab-ci/pyodide/
 RUN --mount=type=cache,target=/ccache/ bash /root/ngsolve/tests/gitlab-ci/pyodide/build_in_docker.sh
-RUN rm /opt/netgen/python/*/*.a
+RUN rm -f /opt/netgen/python/*/*.a
 WORKDIR /opt/netgen/python
 RUN zip -r pyngcore.zip pyngcore
 RUN zip -r netgen.zip netgen
 RUN zip -r ngsolve.zip ngsolve
+RUN zip libngcore.zip libngcore.so
+RUN zip libnglib.zip libnglib.so
 
 FROM builder
 COPY --from=build_ngsolve /opt/netgen/python/*.zip /root/output/pyodide
@@ -69,7 +71,7 @@ COPY --from=build_occ /root/*.log /root/output/pyodide
 WORKDIR /root/output/pyodide
 COPY tests/gitlab-ci/pyodide/generate_repodata.js .
 RUN node generate_repodata.js
-RUN rm *.whl libopenblas.so
+RUN rm -f *.whl libopenblas.so
 COPY tests/gitlab-ci/pyodide/merge.py .
 RUN python3 merge.py
 RUN cd /root/output/ && tar -cvjSf ngsolve_pyodide_${PYODIDE_VERSION}.tar.bz2 pyodide
