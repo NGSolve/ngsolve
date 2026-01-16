@@ -365,7 +365,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
 
-  m.def("LaplaceDL", [](shared_ptr<SumOfIntegrals> potential) -> shared_ptr<BasePotentialOperator> {
+  m.def("LaplaceDL", [](shared_ptr<SumOfIntegrals> potential, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
@@ -381,20 +381,22 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       }
     */
     int fesorder = GetFESOrder (proxy);
+    auto flags = CreateFlagsFromKwArgs(kwargs);
+    IntOp_Parameters ioparams(flags);
     
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
     if (proxy->Dimension() == 1)
       return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                LaplaceDLKernel<3>{}, fesorder+igl->dx.bonus_intorder);
+                                                                LaplaceDLKernel<3>{}, ioparams, fesorder+igl->dx.bonus_intorder);
     if (proxy->Dimension() == 3)
       return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                LaplaceDLKernel<3,3>{}, fesorder+igl->dx.bonus_intorder);
+                                                                LaplaceDLKernel<3,3>{}, ioparams, fesorder+igl->dx.bonus_intorder);
     throw Exception("only dim=1 and dim=3 LaplaceDL are supported");
   });
 
-  m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
+  m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, double kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
@@ -411,6 +413,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       }
     */
     int fesorder = GetFESOrder (proxy);
+    auto flags = CreateFlagsFromKwArgs(kwargs);
+    IntOp_Parameters ioparams(flags);
     
     optional<Region> definedon;
     if (igl->dx.definedon)
@@ -419,19 +423,19 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (proxy->Dimension() == 3)
     {
       return make_shared<PotentialOperator<HelmholtzSLKernel<3,3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                      HelmholtzSLKernel<3,3>(kappa), fesorder+igl->dx.bonus_intorder);
+                                                                      HelmholtzSLKernel<3,3>(kappa), ioparams, fesorder+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
       {
       HelmholtzSLKernel<3> kernel(kappa);
       return make_shared<PotentialOperator<HelmholtzSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                   kernel, fesorder+igl->dx.bonus_intorder);
+                                                                   kernel, ioparams, fesorder+igl->dx.bonus_intorder);
     }
     else
       throw Exception("only dim=1 and dim=3 HelmholtzSL are supported");
   });
 
-  m.def("HelmholtzDL", [](shared_ptr<SumOfIntegrals> potential, double kappa) -> shared_ptr<BasePotentialOperator> {
+  m.def("HelmholtzDL", [](shared_ptr<SumOfIntegrals> potential, double kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
@@ -448,6 +452,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       }
     */
     int fesorder = GetFESOrder (proxy);    
+    auto flags = CreateFlagsFromKwArgs(kwargs);
+    IntOp_Parameters ioparams(flags);
     optional<Region> definedon;
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
@@ -456,13 +462,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     {
       MaxwellDLKernel<3> kernel(kappa);
       return make_shared<PotentialOperator<MaxwellDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                 kernel, fesorder+igl->dx.bonus_intorder);
+                                                                 kernel, ioparams, fesorder+igl->dx.bonus_intorder);
     }
     else if (proxy->Dimension() == 1)
     {
       HelmholtzDLKernel<3> kernel(kappa);
       return make_shared<PotentialOperator<HelmholtzDLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                                   kernel, fesorder+igl->dx.bonus_intorder);
+                                                                   kernel, ioparams, fesorder+igl->dx.bonus_intorder);
     }
     else
       throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
@@ -504,7 +510,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
 
-  m.def("LameSL", [](shared_ptr<SumOfIntegrals> potential, double E, double nu) -> shared_ptr<BasePotentialOperator> {
+  m.def("LameSL", [](shared_ptr<SumOfIntegrals> potential, double E, double nu, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
@@ -513,6 +519,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     auto proxy = GetProxyWithFactor(igl->cf, true);
     
     auto fes = proxy->GetFESpace();
+    auto flags = CreateFlagsFromKwArgs(kwargs);
+    IntOp_Parameters ioparams(flags);
 
     /*
     auto tmpfes = fes;
@@ -531,7 +539,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
     if (proxy->Dimension() == 3)
       return make_shared<PotentialOperator<LameSLKernel<3>>> (proxy, definedon, proxy->Evaluator(),
-                                                              LameSLKernel<3>{E,nu}, fesorder /* tmpfes->GetOrder()*/ +igl->dx.bonus_intorder);
+                                                              LameSLKernel<3>{E,nu}, ioparams, fesorder /* tmpfes->GetOrder()*/ +igl->dx.bonus_intorder);
 
     throw Exception("only dim=3 LameSL is supported");
     }, py::arg("term"), py::arg("E"), py::arg("nu"));
