@@ -255,12 +255,28 @@ namespace ngsbem
         mp.AddCharge (pnt, val);
     }
 
+    void AddSourceTrans(SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      if constexpr (COMPS == 1)
+        mp.AddCharge (pnt, val(0));
+      else
+        mp.AddCharge (pnt, val);
+    }
+
     void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       if constexpr (COMPS == 1)
         val(0) = mp.Evaluate (pnt);
       else
         val = mp.Evaluate (pnt);
+    }
+
+    void EvaluateMPTrans(RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      if constexpr (COMPS == 1)
+        val(0) = mp.Evaluate(pnt);
+      else
+        val = mp.Evaluate(pnt);
     }
   };
 
