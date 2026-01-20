@@ -568,6 +568,13 @@ public:
 			FlatVector<double> ely,
 			void * precomputed,
 			LocalHeap & lh) const override;
+    NGS_DLL_HEADER virtual void
+    ApplyElementMatrix (const FiniteElement & fel,
+                        const ElementTransformation & trafo,
+                        const FlatVector<Complex> elx,
+                        FlatVector<Complex> ely,
+                        void * precomputed,
+                        LocalHeap & lh) const override;
 
     template <typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
