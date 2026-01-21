@@ -50,6 +50,7 @@ namespace ngfem
     bool is_complex = false;
     int spacedim = -1;  // needed for grad(x), grad(1), ...
     string description;
+    string equivalence_key; // cfa.equivalence_key == cfb.equivalence_key  =>  cfa and cfb are equivalent (will always produce same values)
     bool is_variable = false;  // variables cannot be optimized away (e.g. for differentiation)
   public:
     static std::true_type shallow_archive;
@@ -76,6 +77,8 @@ namespace ngfem
 
     virtual void DoArchive(Archive& ar) { ar & dimension & dims & is_complex; }
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const;
+    virtual void CalcEquivalenceKey();
+    const string & EquivalenceKey();
     ///
     virtual int NumRegions () { return INT_MAX; }
     virtual bool DefinedOn (const ElementTransformation & trafo) { return true; }
@@ -635,6 +638,8 @@ namespace ngfem
       */
     }
 
+    void CalcEquivalenceKey() override;
+
     auto GetCArgs() const { return tuple { val }; }
     
     using BASE::Evaluate;
@@ -1163,6 +1168,11 @@ public:
   { return c1->DefinedOn(trafo); } 
 
   // virtual bool ElementwiseConstant () const override { return c1->ElementwiseConstant(); }
+
+  void CalcEquivalenceKey() override
+  {
+    this->equivalence_key = name + "(" + c1->EquivalenceKey() + ")";
+  }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -1447,6 +1457,24 @@ public:
   {
     return string("binary operation '")+opname+"'";
   }
+
+  void CalcEquivalenceKey() override
+  {
+    string s1 = c1->EquivalenceKey();
+    string s2 = c2->EquivalenceKey();
+
+    if(opname.size()>2) // atan2, pow, etc.
+      this->equivalence_key = opname + "(" + s1 + "," + s2 + ")";
+    else
+    {
+      // sort for commutative operations
+      if ( (opname == "+" || opname == "*")  && (s1 > s2) )
+        swap (s1, s2);
+
+      this->equivalence_key = "(" + s1 + opname + s2 + ")";
+    }
+  }
+  
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     // code.Declare (code.res_type, index, this->Dimensions());

@@ -388,6 +388,16 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                   {
                     code_uses_tensors = val;
                   }, "Use tensors in code-generation")
+
+    .def_property("code_uses_equivalence_keys",
+                  [] (GlobalDummyVariables&)
+                  {
+                    return code_uses_equivalence_keys;
+                  },
+                  [] (GlobalDummyVariables&, bool val)
+                  {
+                    code_uses_equivalence_keys = val;
+                  }, "Use equivalence keys in code-generation")
                   
     ;
 

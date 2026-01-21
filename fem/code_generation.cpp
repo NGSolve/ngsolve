@@ -15,6 +15,7 @@
 namespace ngfem
 {
   bool code_uses_tensors = false;
+  bool code_uses_equivalence_keys = false;
 
   filesystem::path CreateTempDir()
   {
