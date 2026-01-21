@@ -1097,7 +1097,13 @@ keep_files : bool
                              ret["childs"] = list;
                              return ret;
                            })
-    
+
+    .def_property_readonly("_equivalence_key",
+                          [] (shared_ptr<CF> cf)
+                          {
+                            return cf->EquivalenceKey();
+                          })
+
     .def (NGSPickle<CoefficientFunction>())
     .def("_BuildFieldLines", [](shared_ptr<CoefficientFunction > cf, shared_ptr<ngcomp::MeshAccess> ma,
                 const std::vector<std::tuple<double,double,double>> & start_points,

@@ -18,21 +18,26 @@ namespace ngfem
   using namespace ngbla;
   
   NGS_DLL_HEADER extern bool code_uses_tensors;
+  NGS_DLL_HEADER extern bool code_uses_equivalence_keys;
 
   template <typename T>
-  inline string ToLiteral(const T & val)
+  inline string HexLiteral(const T & val)
   {
       stringstream ss;
 #if (defined __cpp_hex_float) && (__cpp_hex_float <= __cplusplus)
       ss << std::hexfloat;
       ss << val;
-      ss << " /* (" << std::setprecision(16) << std::scientific;
-      ss << val << ") */";
 #else
       ss << std::setprecision(16) << std::scientific;
       ss << val;
 #endif
       return ss.str();
+  }
+
+  template <typename T>
+  inline string ToLiteral(const T & val)
+  {
+      return HexLiteral(val) + " /* " + ToString(val) + " */";
   }
 
   template<>
