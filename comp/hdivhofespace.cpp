@@ -805,7 +805,8 @@ namespace ngcomp
                 break; 
               case ET_PYRAMID: 
                 inci=0;
-                have_pyramids=true;
+                if(DefinedOn(ElementId(VOL,i)))
+                  have_pyramids=true;
                 break; 
               default:
                 inci = 0;
@@ -997,6 +998,9 @@ namespace ngcomp
   {
     Ngs_Element ngel = ma->GetElement<ET_trait<ET>::DIM,VOL> (elnr);
     if (!DefinedOn(ngel)) return * new (lh) HDivDummyFE<ET>();
+
+    if(ET == ET_PYRAMID)
+      throw Exception("HDivHighOrderFESpace: Pyramid elements not implemented yet!");
     
     HDivHighOrderFE<ET> * hofe =  new (lh) HDivHighOrderFE<ET> ();
 
@@ -1036,7 +1040,7 @@ namespace ngcomp
             
           case ET_TET:     return T_GetFE<ET_TET> (elnr, false, alloc);
           case ET_PRISM:   return T_GetFE<ET_PRISM> (elnr, false, alloc);
-            // case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, alloc);
+          case ET_PYRAMID: return T_GetFE<ET_PYRAMID> (elnr, false, alloc);
           case ET_HEX:     return T_GetFE<ET_HEX> (elnr, false, alloc);
             
           default:
