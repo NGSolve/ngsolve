@@ -114,6 +114,11 @@ namespace ngfem
        Each column a vector ...
      */
     HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<> coefs, BareSliceMatrix<> values) const;
+    HD NGS_DLL_HEADER virtual void Evaluate (const IntegrationRule & ir, SliceMatrix<Complex> coefs, BareSliceMatrix<Complex> values) const
+    {
+      Evaluate (ir, SliceMatrix<double>(coefs.Height(), 2*coefs.Width(), 2*coefs.Dist(), (double*)coefs.Data()),
+                BareSliceMatrix<double>(values.Height(), 2*values.Width(), 2*values.Dist(), (double*)values.Data()));
+    }
     
     /**
        Evaluate function in points of integrationrule ir, transpose operation.

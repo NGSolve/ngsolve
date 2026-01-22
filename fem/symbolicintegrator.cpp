@@ -3719,6 +3719,9 @@ namespace ngfem
 
     // comment in for experimental new Apply
     dcf_dtest.SetSize(test_proxies.Size());
+    ddcf_dtest_dtrial.SetSize(test_proxies.Size(), trial_proxies.Size());
+
+    /*
     if (symbolic_integrator_uses_diff)    
       for (int i = 0; i < test_proxies.Size(); i++)
         {
@@ -3733,6 +3736,38 @@ namespace ngfem
             cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
             }
         }
+    */
+
+    if (symbolic_integrator_uses_diff)
+      {
+        for (auto i : Range(test_proxies))
+          {
+            try
+              {
+                CoefficientFunction::T_DJC cache;
+                dcf_dtest[i] = cf->DiffJacobi(test_proxies[i], cache);
+              }
+            catch (const Exception& e)
+              {
+                cout << IM(5) << "dcf_dtest has thrown exception " << e.What() << endl;
+              }
+            for (auto j : Range(trial_proxies))
+              {
+                if (dcf_dtest[i])
+                  try
+                    {
+                      CoefficientFunction::T_DJC cache2;
+                      ddcf_dtest_dtrial(i, j) = dcf_dtest[i]->DiffJacobi(trial_proxies[j], cache2);
+                    }
+                  catch (const Exception& e)
+                    {
+                      cout << IM(5) << "ddcf_dtest_dtrial has thrown exception " << e.What() << endl;
+                    }
+              }
+          }
+      }
+
+    
 
     
     cout << IM(6) << "num test_proxies " << test_proxies.Size() << endl;
@@ -3858,18 +3893,30 @@ namespace ngfem
 
           mir1.ComputeNormalsAndMeasure (eltype1, LocalFacetNr1);
           mir2.ComputeNormalsAndMeasure (eltype2, LocalFacetNr2);
-          
-          for (int k = 0; k < proxy1->Dimension(); k++)
-            for (int l = 0; l < proxy2->Dimension(); l++)
+
+          {
+            // RegionTimer reg(teval);
+
+            if (ddcf_dtest_dtrial(l1, k1))
               {
-                ud.trialfunction = proxy1;
-                ud.trial_comp = k;
-                ud.testfunction = proxy2;
-                ud.test_comp = l;
-                
-                cf -> Evaluate (mir1, val);
-                proxyvalues(STAR,l,k) = val.Col(0);
+                FlatMatrix<TSCAL> mproxyvalues(mir1.Size(), proxy1->Dimension() * proxy2->Dimension(),
+                                               proxyvalues.Data());
+                ddcf_dtest_dtrial(l1, k1)->Evaluate(mir1, mproxyvalues);
               }
+
+            else
+              for (int k = 0; k < proxy1->Dimension(); k++)
+                for (int l = 0; l < proxy2->Dimension(); l++)
+                  {
+                    ud.trialfunction = proxy1;
+                    ud.trial_comp = k;
+                    ud.testfunction = proxy2;
+                    ud.test_comp = l;
+                    
+                    cf -> Evaluate (mir1, val);
+                    proxyvalues(STAR,l,k) = val.Col(0);
+                  }
+          }
 
           for (int i = 0; i < mir1.Size(); i++)
             // proxyvalues(i,STAR,STAR) *= measure(i) * ir_facet[i].Weight();
@@ -3879,35 +3926,40 @@ namespace ngfem
           IntRange test_range  = proxy2->IsOther() ? IntRange(proxy2->Evaluator()->BlockDim()*fel1_test.GetNDof(), elmat.Height()) : IntRange(0, proxy2->Evaluator()->BlockDim()*fel1_test.GetNDof());
 
           auto loc_elmat = elmat.Rows(test_range).Cols(trial_range);
-          FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
-          FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
+          // FlatMatrix<SCAL_SHAPES,ColMajor> bmat1(proxy1->Dimension(), loc_elmat.Width(), lh);
+          // FlatMatrix<SCAL_SHAPES,ColMajor> bmat2(proxy2->Dimension(), loc_elmat.Height(), lh);
 
           constexpr size_t BS = 16;
           for (size_t i = 0; i < mir1.Size(); i+=BS)
             {
               int rest = min2(size_t(BS), mir1.Size()-i);
               HeapReset hr(lh);
-              FlatMatrix<TSCAL,ColMajor> bdbmat1(rest*proxy2->Dimension(), loc_elmat.Width(), lh);
+              FlatMatrix<TSCAL,ColMajor> bbmat1(rest*proxy1->Dimension(), loc_elmat.Height(), lh);
               FlatMatrix<TSCAL,ColMajor> bbmat2(rest*proxy2->Dimension(), loc_elmat.Height(), lh);
+              FlatMatrix<TSCAL,ColMajor> bdbmat1(rest*proxy2->Dimension(), loc_elmat.Width(), lh);
 
-              for (int j = 0; j < rest; j++)
-                {
-                  int ii = i+j;
-                  IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);
-                  if (proxy1->IsOther())
-                    proxy1->Evaluator()->CalcMatrix(fel2_trial, mir2[ii], bmat1, lh);
-                  else
-                    proxy1->Evaluator()->CalcMatrix(fel1_trial, mir1[ii], bmat1, lh);
-                  
-                  if (proxy2->IsOther())
-                    proxy2->Evaluator()->CalcMatrix(fel2_test, mir2[ii], bmat2, lh);
-                  else
-                    proxy2->Evaluator()->CalcMatrix(fel1_test, mir1[ii], bmat2, lh);
-                  
-                  bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bmat1;
-                  bbmat2.Rows(r2) = bmat2;
-                }
+              {
+                // RegionTimer reg2(t2);                
+                if (proxy1->IsOther())
+                  proxy1->Evaluator()->CalcMatrix(fel2_trial, mir2.Range(i,i+rest, lh), bbmat1.Rows(0,rest*proxy1->Dimension()), lh);
+                else
+                  proxy1->Evaluator()->CalcMatrix(fel1_trial, mir1.Range(i,i+rest, lh), bbmat1.Rows(0,rest*proxy1->Dimension()), lh);
 
+                for (int j = 0; j < rest; j++)
+                  {
+                    int ii = i+j;
+                    IntRange r1 = proxy1->Dimension() * IntRange(j,j+1);                    
+                    IntRange r2 = proxy2->Dimension() * IntRange(j,j+1);                    
+                    bdbmat1.Rows(r2) = proxyvalues(ii,STAR,STAR) * bbmat1.Rows(r1);
+                  }
+                
+                if (proxy2->IsOther())
+                  proxy2->Evaluator()->CalcMatrix(fel2_test, mir2.Range(i,i+rest, lh), bbmat2.Rows(0,rest*proxy2->Dimension()), lh);
+                else
+                  proxy2->Evaluator()->CalcMatrix(fel1_test, mir1.Range(i,i+rest, lh), bbmat2.Rows(0,rest*proxy2->Dimension()), lh);
+              }
+
+              // RegionTimer reg3(t3);
               IntRange r1 = proxy1->Evaluator()->UsedDofs(proxy1->IsOther() ? fel2_trial : fel1_trial);
               IntRange r2 = proxy2->Evaluator()->UsedDofs(proxy2->IsOther() ? fel2_test : fel1_test);
               loc_elmat.Rows(r2).Cols(r1) += Trans (bbmat2.Cols(r2)) * bdbmat1.Cols(r1);
