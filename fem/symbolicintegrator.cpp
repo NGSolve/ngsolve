@@ -3035,71 +3035,9 @@ namespace ngfem
   }
 
 
-  void
-  SymbolicBilinearFormIntegrator :: ApplyElementMatrix (const FiniteElement & fel,
-                                                        const ElementTransformation & trafo,
-                                                        const FlatVector<Complex> elx,
-                                                        FlatVector<Complex> ely,
-                                                        void * precomputed,
-                                                        LocalHeap & lh) const
-  {
-    auto save_userdata = trafo.PushUserData();
-
-    if (element_vb != VOL)
-      {
-        throw Exception("SymbolicBilinearFormIntegrator::ApplyElementMatrix: complex EB not yet implemented for complex");
-        return;
-      }
-    // no simd
-    HeapReset hr(lh);
-    const MixedFiniteElement * mixedfe = dynamic_cast<const MixedFiniteElement*> (&fel);
-    const FiniteElement & fel_trial = mixedfe ? mixedfe->FETrial() : fel;
-    const FiniteElement & fel_test = mixedfe ? mixedfe->FETest() : fel;
-
-    ProxyUserData ud(trial_proxies.Size(), lh);
-    const_cast<ElementTransformation&>(trafo).userdata = &ud;
-    ud.fel = &fel;
-
-    IntegrationRule ir = GetIntegrationRule (fel, lh);
-
-    BaseMappedIntegrationRule & mir = trafo(ir, lh);
-
-    PrecomputeCacheCF(cache_cfs, mir, lh);
-
-    for (ProxyFunction * proxy : trial_proxies)
-      ud.AssignMemory (proxy, 2 * ir.GetNIP(), proxy->Dimension(), lh);
-
-    for (ProxyFunction * proxy : trial_proxies)
-      {
-        auto dmem = ud.GetMemory(proxy);
-        FlatMatrix<Complex> cmem(ir.GetNIP(), proxy->Dimension(), (Complex*) dmem.Data());
-        proxy->Evaluator()->Apply(fel_trial, mir, elx, cmem, lh);
-      }
-
-    ely = 0;
-    FlatVector<Complex> ely1(ely.Size(), lh);
-
-    FlatMatrix<Complex> val(mir.Size(), 1,lh);
-    for (auto proxy : test_proxies)
-      {
-        HeapReset hr(lh);
-        FlatMatrix<Complex> proxyvalues(mir.Size(), proxy->Dimension(), lh);
-        for (int k = 0; k < proxy->Dimension(); k++)
-          {
-            ud.testfunction = proxy;
-            ud.test_comp = k;
-            cf -> Evaluate (mir, val);
-            proxyvalues.Col(k) = val.Col(0);
-          }
-
-        for (int i = 0; i < mir.Size(); i++)
-          proxyvalues.Row(i) *= mir[i].GetWeight();
-
-        proxy->Evaluator()->ApplyTrans(fel_test, mir, proxyvalues, ely1, lh);
-        ely += ely1;
-      }
-  }
-
+ 
+  
+  
   template <typename SCAL, typename SCAL_SHAPES>
   void SymbolicBilinearFormIntegrator ::
   T_ApplyElementMatrixEB (const FiniteElement & fel, 
