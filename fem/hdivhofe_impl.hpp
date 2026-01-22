@@ -67,6 +67,23 @@ namespace ngfem
   };
 
   template<>
+  class HDivHighOrderFE_Shape<ET_PYRAMID> : public HDivHighOrderFE<ET_PYRAMID>
+  {
+  public:
+    template<typename Tx, typename TFA>
+    void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
+    {
+      throw Exception("HDivHO Pyramids not yet implemented");
+    }
+
+    template <typename MIP, typename TFA>
+    inline void CalcDualShape2 (const MIP & mip, TFA & shape) const
+    {
+      throw Exception(string("CalcDualShape missing for HighOrderHDiv element ")+ElementTopology::GetElementName(ET_PYRAMID));
+    }
+  };
+
+  template<>
   class HDivHighOrderFE_Shape<ET_HEX> : public HDivHighOrderFE<ET_HEX>
   {
   public:
