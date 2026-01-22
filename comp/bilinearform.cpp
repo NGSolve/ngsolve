@@ -2753,7 +2753,8 @@ namespace ngcomp
                              ElementId ei2(VOL, el2);
                              fnums2 = ma->GetElFacets(ei2);
                              int facnr2 = fnums2.Pos(facet2);
-                             
+
+                             /*
                              {
                                lock_guard<mutex> guard(printmatasstatus2_mutex);
                                cnt++;
@@ -2762,6 +2763,7 @@ namespace ngcomp
                                  cout << IM(3) << "\rassemble inner facet element " << cnt << "/" << nf << flush;
                                BaseStatusHandler::SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                              }
+                             */
                              
                              const FiniteElement & fel1 = fespace->GetFE (ei1, lh);
                              const FiniteElement & fel2 = fespace->GetFE (ei2, lh);
@@ -2906,11 +2908,16 @@ namespace ngcomp
 
                                  int dim = fespace->GetDimension();
 
-                                 for (int i = 0; i < dnums.Size(); ++i)
-                                   for (int j = 0; j < dnums.Size(); ++j)
-                                     for (int di = 0; di < dim; ++di)
-                                       for (int dj = 0; dj < dim; ++dj)
-                                         compressed_elmat(dim*dnums_to_compressed[i]+di,dim*dnums_to_compressed[j]+dj) += elmat(i*dim+di,j*dim+dj);
+                                 if (dim == 1)
+                                   for (int i = 0; i < dnums.Size(); ++i)
+                                     for (int j = 0; j < dnums.Size(); ++j)
+                                       compressed_elmat(dnums_to_compressed[i],dnums_to_compressed[j]) += elmat(i,j);
+                                 else
+                                   for (int i = 0; i < dnums.Size(); ++i)
+                                     for (int j = 0; j < dnums.Size(); ++j)
+                                       for (int di = 0; di < dim; ++di)
+                                         for (int dj = 0; dj < dim; ++dj)
+                                           compressed_elmat(dim*dnums_to_compressed[i]+di,dim*dnums_to_compressed[j]+dj) += elmat(i*dim+di,j*dim+dj);
 
                                  {
                                    // lock_guard<mutex> guard(addelemfacin_mutex);

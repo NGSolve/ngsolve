@@ -300,6 +300,7 @@ namespace ngbla
   inline auto operator/ (undefined_size ud, size_t i) { return ud; }
   inline auto operator- (undefined_size ud, size_t i) { return ud; }
   inline auto operator+ (undefined_size ud, size_t i) { return ud; }
+  inline auto operator* (size_t i, undefined_size ud) { return ud; }
 #endif
 
   
