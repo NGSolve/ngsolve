@@ -912,7 +912,12 @@ namespace ngcomp
       }
     
     for (auto el : Range (ma->GetNE()))
-      ctofdof[GetElementDofs(el)] = local_ct;
+      {
+        if(DefinedOn(ElementId(VOL, el)))
+          ctofdof[GetElementDofs(el)] = local_ct;
+        else
+          ctofdof[GetElementDofs(el)] = UNUSED_DOF;
+      }
   }
 
 
