@@ -1171,7 +1171,7 @@ public:
 
   void CalcEquivalenceKey() override
   {
-    this->equivalence_key = name + "(" + c1->EquivalenceKey() + ")";
+    this->equivalence_key = name + "(" + c1->EquivalenceKey() + ToString(this->Dimensions()) + ")";
   }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
