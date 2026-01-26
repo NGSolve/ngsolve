@@ -390,8 +390,8 @@ namespace ngsbem
 
 
   
-  template <typename RADIAL, typename entry_type> template <typename TARGET>
-  void SphericalExpansion<RADIAL,entry_type> :: ShiftZ (double z, SphericalExpansion<TARGET,entry_type> & target)
+  template <typename RADIAL, typename entry_type, typename T_Kappa> template <typename TARGET>
+  void SphericalExpansion<RADIAL,entry_type,T_Kappa> :: ShiftZ (double z, SphericalExpansion<TARGET,entry_type,T_Kappa> & target)
   {
     int os = sh.Order();
     int ot = target.SH().Order();
@@ -408,7 +408,7 @@ namespace ngsbem
     constexpr bool is_rr = std::is_same<RADIAL,Regular>::value && std::is_same<TARGET,Regular>::value;
     using trafo_type =
         std::conditional_t<
-            std::is_same<RADIAL, Singular>::value && std::is_same<TARGET, Regular>::value,
+            std::is_same<RADIAL, Singular>::value && std::is_same<TARGET, Regular>::value || std::is_same<T_Kappa, Complex>::value,
             Complex,
             double
         >;
@@ -582,6 +582,46 @@ namespace ngsbem
   template void SphericalExpansion<Singular,Vec<192,Complex>> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<192,Complex>> & target);
   template void SphericalExpansion<Singular,Vec<192,Complex>> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<192,Complex>> & target);
 
+
+  template void SphericalExpansion<Regular,Complex,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Complex,Complex> & target);
+  template void SphericalExpansion<Singular,Complex,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Complex,Complex> & target);
+  template void SphericalExpansion<Singular,Complex,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Complex,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<1,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<1,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<1,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<1,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<1,Complex>,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<3,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<3,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<3,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<3,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<3,Complex>,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<4,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<4,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<4,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<4,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<4,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<4,Complex>,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<6,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<6,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<6,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<6,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<6,Complex>,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<12,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<12,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<12,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<12,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<12,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<12,Complex>,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<24,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<24,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<24,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<24,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<24,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<24,Complex>,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<48,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<48,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<48,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<48,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<48,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<48,Complex>,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<96,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<96,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<96,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<96,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<96,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<96,Complex>,Complex> & target);
+
+  template void SphericalExpansion<Regular,Vec<192,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<192,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<192,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Regular,Vec<192,Complex>,Complex> & target);
+  template void SphericalExpansion<Singular,Vec<192,Complex>,Complex> :: ShiftZ (double z, SphericalExpansion<Singular,Vec<192,Complex>,Complex> & target);
 
 
 
@@ -861,8 +901,8 @@ namespace ngsbem
 
   /* ************************************** Multipole class ******************************* */
 
-  template <typename RADIAL, typename entry_type>
-  entry_type SphericalExpansion<RADIAL,entry_type> :: Eval (Vec<3> x) const
+  template <typename RADIAL, typename entry_type, typename T_Kappa>
+  entry_type SphericalExpansion<RADIAL,entry_type,T_Kappa> :: Eval (Vec<3> x) const
   {
     if (sh.Order() < 0) return entry_type{0.0};
 
@@ -880,25 +920,26 @@ namespace ngsbem
     return sum;
   }
 
-  template <typename RADIAL, typename entry_type>
-  entry_type SphericalExpansion<RADIAL,entry_type> :: EvalDirectionalDerivative (Vec<3> x, Vec<3> d) const
+  template <typename RADIAL, typename entry_type, typename T_Kappa>
+  entry_type SphericalExpansion<RADIAL,entry_type,T_Kappa> :: EvalDirectionalDerivative (Vec<3> x, Vec<3> d) const
   {
     if (sh.Order() < 0) return entry_type{0.0};
-    SphericalExpansion<RADIAL, entry_type> tmp(Order(), kappa, RTyp());
-    this->SH().DirectionalDiffAdd(kappa*d, tmp.SH(), Scale());
+    SphericalExpansion<RADIAL, entry_type,T_Kappa> tmp(Order(), kappa, RTyp());
+    // this->SH().DirectionalDiffAdd(kappa*d, tmp.SH(), Scale());
+    this->SH().DirectionalDiffAdd(abs(kappa)*d, tmp.SH(), Scale());
     return tmp.Eval(x);
   }
 
 
-  template <typename RADIAL, typename entry_type>
-  void SphericalExpansion<RADIAL,entry_type> :: AddCharge (Vec<3> x, entry_type c)
+  template <typename RADIAL, typename entry_type, typename T_Kappa>
+  void SphericalExpansion<RADIAL,entry_type,T_Kappa> :: AddCharge (Vec<3> x, entry_type c)
   {
     // static Timer t("mptool AddCharge"); RegionTimer reg(t);
     
     if constexpr (!std::is_same<RADIAL,Singular>())
       throw Exception("AddCharge assumes singular MP");
     
-    VectorMem<50,double> radial(sh.Order()+1);    
+    VectorMem<50,T_Kappa> radial(sh.Order()+1);
     VectorMem<1000,Complex> sh_shapes(sqr (sh.Order()+1));
     
     // SphericalBessel(sh.Order(), kappa*L2Norm(x), Scale(), radial);
@@ -907,14 +948,15 @@ namespace ngsbem
 
     for (int i = 0; i <= sh.Order(); i++)
       {
-        entry_type radc = Complex(0,kappa*radial(i)) * c;
+        // entry_type radc = Complex(0,kappa*radial(i)) * c;
+        entry_type radc = kappa*radial(i) * Complex(0,1) * c;
         for (auto j : IntRange(sqr(i), sqr(i+1)))
           sh.Coefs()(j) += Conj(sh_shapes(j)) * radc;
       }
   }
 
-  template <typename RADIAL, typename entry_type>
-  void SphericalExpansion<RADIAL, entry_type> :: AddDipole (Vec<3> x, Vec<3> d, entry_type c)
+  template <typename RADIAL, typename entry_type, typename T_Kappa>
+  void SphericalExpansion<RADIAL, entry_type, T_Kappa> :: AddDipole (Vec<3> x, Vec<3> d, entry_type c)
   {
     // static Timer t("mptool AddDipole"); RegionTimer rg(t);      
     /*
@@ -927,19 +969,20 @@ namespace ngsbem
     if constexpr (!std::is_same<RADIAL,Singular>())
       throw Exception("AddDipole assumes singular MP");
 
-    SphericalExpansion<Singular, entry_type> tmp(Order(), kappa, RTyp());
+    SphericalExpansion<Singular, entry_type, T_Kappa> tmp(Order(), kappa, RTyp());
     tmp.AddCharge(x, c);
-    tmp.SH().DirectionalDiffAdd (kappa*d,  this->SH(), Scale());
+    // tmp.SH().DirectionalDiffAdd (kappa*d,  this->SH(), Scale());
+    tmp.SH().DirectionalDiffAdd (abs(kappa)*d,  this->SH(), Scale());
   }
 
 
-  template <typename RADIAL, typename entry_type>
-  void SphericalExpansion<RADIAL, entry_type> :: AddPlaneWave (Vec<3> d, entry_type c)
+  template <typename RADIAL, typename entry_type, typename T_Kappa>
+  void SphericalExpansion<RADIAL, entry_type, T_Kappa> :: AddPlaneWave (Vec<3> d, entry_type c)
   {
     if constexpr (!std::is_same<RADIAL,Regular>())
       throw Exception("AddPlaneWave assumes regular MP");
 
-    SphericalExpansion<RADIAL, entry_type> tmp(Order(), kappa, RTyp());
+    SphericalExpansion<RADIAL, entry_type, T_Kappa> tmp(Order(), kappa, RTyp());
     entry_type fac = kappa / sqrt(M_PI) * c;
     for (int i = 0; i <= Order(); i++)
       {
@@ -956,8 +999,8 @@ namespace ngsbem
 
   
   
-  template <typename RADIAL, typename entry_type>
-  void SphericalExpansion<RADIAL, entry_type> :: AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
+  template <typename RADIAL, typename entry_type, typename T_Kappa>
+  void SphericalExpansion<RADIAL, entry_type, T_Kappa> :: AddCurrent (Vec<3> sp, Vec<3> ep, Complex j, int num)
   {
     if constexpr (!std::is_same<RADIAL,Singular>() || !std::is_same<entry_type, Vec<3,Complex>>())
       throw Exception("AddCurrent needs a singular vectorial MP");
@@ -1020,6 +1063,26 @@ namespace ngsbem
   template class SphericalExpansion<Singular, Vec<192,Complex>>;
   template class SphericalExpansion<Regular, Vec<192,Complex>>;
 
+  template class SphericalExpansion<Singular, Complex, Complex>;
+  template class SphericalExpansion<Regular, Complex, Complex>;
+  template class SphericalExpansion<Singular, Vec<1,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<1,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<3,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<3,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<4,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<4,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<6,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<6,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<12,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<12,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<24,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<24,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<48,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<48,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<96,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<96,Complex>, Complex>;
+  template class SphericalExpansion<Singular, Vec<192,Complex>, Complex>;
+  template class SphericalExpansion<Regular, Vec<192,Complex>, Complex>;
 
   
   template class SingularMLExpansionCF<Complex>;
@@ -1041,6 +1104,23 @@ namespace ngsbem
   Array<size_t> RegularMLExpansion<Vec<6,Complex>>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLExpansion<Vec<6,Complex>>::nodes_on_level(100);
+
+  template<>
+  Array<size_t> RegularMLExpansion<Complex,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Complex,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLExpansion<Vec<3,Complex>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<3,Complex>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLExpansion<Vec<4,Complex>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<4,Complex>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLExpansion<Vec<6,Complex>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<6,Complex>,Complex>::nodes_on_level(100);
 
 
   template class SingularMLExpansion<Complex>;
