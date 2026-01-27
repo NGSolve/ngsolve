@@ -58,7 +58,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     MultiGridPreconditioner, ElementId, FESpace, ProductSpace, H1, HCurl, \
     HDiv, L2, VectorH1, VectorL2, SurfaceL2, TangentialSurfaceL2, HDivDiv, HCurlCurl, HCurlDiv, \
     HDivSurface, HDivDivSurface, FacetFESpace, TangentialFacetFESpace, \
-    NormalFacetFESpace, NormalFacetSurface, \
+    NormalFacetFESpace, NormalFacetSurface, HDivDivFacetSpace, \
     FacetSurface, VectorSurfaceL2, VectorFacetFESpace, VectorFacetSurface, \
     NodalFESpace, VectorNodalFESpace, H1LumpingFESpace, \
     NumberSpace, Periodic, Discontinuous, Hidden, VectorValued, MatrixValued, Compress, \

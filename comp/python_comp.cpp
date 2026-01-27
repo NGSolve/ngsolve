@@ -18,6 +18,7 @@
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
 #include "hcurlcurlfespace.hpp"
+#include "Hddf.hpp"
 #include "facetfespace.hpp"
 #include "facetsurffespace.hpp"
 #include "hdivhosurfacefespace.hpp"
@@ -1570,6 +1571,8 @@ component : int
   ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv");
 
   ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
+  
+  ExportFESpace<HDivDivFacetSpace>(m, "HDivDivFacetSpace");
   
   ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface");
   
