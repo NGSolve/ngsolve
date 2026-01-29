@@ -5,6 +5,7 @@
 #include "diffopwithfactor.hpp"
 #include "kernels.hpp"
 #include "../fem/integratorcf.hpp"
+#include <type_traits>
 
 namespace ngsbem
 {
@@ -166,7 +167,11 @@ namespace ngsbem
     virtual void BuildLocalExpansion(const Region & reg) = 0;
   };
 
-  
+  // BaseKernel::GetDifferentiatedKernel returns void; a real overload returns a kernel object.
+  template <class K>
+  struct HasDiffKernelOverload
+    : std::integral_constant<bool,
+        !std::is_void<decltype(std::declval<const K&>().GetDifferentiatedKernel(std::declval<const string&>()))>::value> {};
 
   template  <typename KERNEL>
   class PotentialCF : public BasePotentialCF
@@ -186,15 +191,21 @@ namespace ngsbem
                  KERNEL _kernel, int _intorder, bool anearfield);
 
 
-    /*
+    // virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
+    // {
+    //   auto diffkernel = kernel.GetDifferentiatedKernel(name);
+    //   return make_shared<PotentialCF<decltype(diffkernel)>> (this->gf, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
+    // }
     virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
     {
-      auto diffkernel = kernel.GetDifferentiatedKernel("grad");
-      auto diffCF = make_shared<PotentialCF<decltype(diffkernel)> (this->gf, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
-      return diffCF;
+      if constexpr (HasDiffKernelOverload<KERNEL>::value)
+      {
+        auto diffkernel = kernel.GetDifferentiatedKernel(name);
+        return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
+      }
+      else
+        throw Exception("Kernel does not support differentiated kernel '"+name+"'");
     }
-    */
-    
     
     void BuildLocalExpansion(const Region & reg) override;
     
@@ -472,4 +483,3 @@ namespace ngsbem
 
 
 #endif
-
