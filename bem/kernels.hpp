@@ -73,7 +73,65 @@ namespace ngsbem
   template<int COMPS>
   class DiffLaplaceSLKernel<3, COMPS> : public BaseKernel
   {
+  public:
+  Array<KernelTerm> terms =
+    {
+      KernelTerm{1.0, 0, 0, 0},
+      KernelTerm{1.0, 1, 0, 1},
+      KernelTerm{1.0, 2, 0, 2},
+    };
+    DiffLaplaceSLKernel<3,COMPS>()
+    {
+      // for (size_t i = 0; i < COMPS; i++)
+      //   terms += { 1.0, 0, i, i};
+    };
+    typedef double value_type;
+    using mp_type = typename std::conditional<COMPS == 1,
+                                              Complex,
+                                              Vec<COMPS, Complex>>::type;
+
+    static string Name() { return "DiffLaplaceSL"; }
+    static auto Shape() { return IVec<2>(3,1); }
+
+    template <typename T>
+    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
+    {
+      T norm = L2Norm(x-y);
+      auto xy = x-y;
+      // T nxy = InnerProduct(nx, -xy);
+      auto kern = 1.0 *  (4 * M_PI * norm*norm*norm) * xy;
+      return kern;
+      // auto kern = -1.0 / (4 * M_PI * norm*norm*norm);
+      // return Vec<3,decltype(kern)> (kern);
+    }
     
+    // Array<KernelTerm> terms;
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
+    {
+      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
+    {
+      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
+    }
+
+    void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      if constexpr (COMPS == 1)
+        mp.AddCharge (pnt, val(0));
+      else
+        mp.AddCharge (pnt, val);
+    }
+
+    void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
+    {
+      if constexpr (COMPS == 1)
+        val(0) = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
+      else
+        val = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
+    }
   };
 
 
@@ -134,9 +192,9 @@ namespace ngsbem
 
     auto GetDifferentiatedKernel(const string &name) const {
       if (name == "grad")
-        return DiffLaplaceSLKernel<3, COMPS>();
+        return DiffLaplaceSLKernel<3>();
       else
-        throw Exception("don't know how to appy diffop "+name);
+        throw Exception("don't know how to apply diffop "+name);
     }
   };
 
@@ -764,4 +822,3 @@ namespace ngsbem
 
 
 #endif
-
