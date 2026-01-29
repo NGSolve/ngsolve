@@ -756,7 +756,9 @@ namespace ngsbem
     : BasePotentialCF(_gf, _definedon, _evaluator, std::is_same<typename KERNEL::value_type,Complex>()),
       kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
   {
-    ;
+    IVec<2> shape = kernel.Shape();
+    if (shape[0] > 1)
+      this->SetDimensions( Array<int>( { shape[0] } ));
   }
 
 
