@@ -30,7 +30,7 @@ namespace ngsbem
     shared_ptr<RegularMLExpansion<Complex>> CreateLocalExpansion (Vec<3> c, double r) const
     {
       throw Exception("Create Local Expansion not implemented");      
-    }
+    }    
 
     template <typename TV, typename T_Kappa>
     void AddSource (SingularMLExpansion<Complex, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
@@ -55,6 +55,10 @@ namespace ngsbem
     {
       throw Exception("EvaluateMPTrans not implemented");
     }
+
+    void GetDifferentiatedKernel(const string &name) const {
+      throw Exception("GetDifferentiatedKernel not overloaded");
+    }
   };
 
 
@@ -64,6 +68,14 @@ namespace ngsbem
   /** LaplaceSLkernel is the kernel for the single layer potential of 
       the Laplace equation $ \Delta u = 0 \,.$  */
   template <int DIM, int COMPS=1> class LaplaceSLKernel;
+
+  template <int DIM, int COMPS=1> class DiffLaplaceSLKernel;
+  template<int COMPS>
+  class DiffLaplaceSLKernel<3, COMPS> : public BaseKernel
+  {
+    
+  };
+
 
   /** LaplaceSLkernel in 3D reads 
       $$ G(x-y) = \frac{1}{4\,\pi \, | x-y| }, \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
@@ -118,6 +130,13 @@ namespace ngsbem
         val(0) = Real(mp.Evaluate (pnt));
       else
         val = Real(mp.Evaluate (pnt));
+    }
+
+    auto GetDifferentiatedKernel(const string &name) const {
+      if (name == "grad")
+        return DiffLaplaceSLKernel<3, COMPS>();
+      else
+        throw Exception("don't know how to appy diffop "+name);
     }
   };
 

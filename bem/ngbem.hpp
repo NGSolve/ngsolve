@@ -154,7 +154,6 @@ namespace ngsbem
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
     IntOp_Parameters io_params;
-       
   public:
     BasePotentialCF (shared_ptr<GridFunction> _gf,
                      optional<Region> _definedon,    
@@ -163,7 +162,7 @@ namespace ngsbem
         gf(_gf), definedon(_definedon), evaluator(_evaluator) { } 
 
     virtual  ~BasePotentialCF() = default;
-    
+
     virtual void BuildLocalExpansion(const Region & reg) = 0;
   };
 
@@ -187,7 +186,16 @@ namespace ngsbem
                  KERNEL _kernel, int _intorder, bool anearfield);
 
 
-
+    /*
+    virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
+    {
+      auto diffkernel = kernel.GetDifferentiatedKernel("grad");
+      auto diffCF = make_shared<PotentialCF<decltype(diffkernel)> (this->gf, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
+      return diffCF;
+    }
+    */
+    
+    
     void BuildLocalExpansion(const Region & reg) override;
     
     using CoefficientFunctionNoDerivative::Evaluate;
