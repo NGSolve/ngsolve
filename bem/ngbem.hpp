@@ -311,7 +311,7 @@ namespace ngsbem
                        optional<Region> _definedon,    
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel, int _intorder)
-      : BasePotentialOperator (_proxy, /* _factor, */ _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
+      : BasePotentialOperator (_proxy, /* _factor, */ _definedon, _evaluator, _intorder), kernel(_kernel) { ; } 
 
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
                        // shared_ptr<CoefficientFunction> _factor,                       

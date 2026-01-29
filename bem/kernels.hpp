@@ -127,10 +127,18 @@ namespace ngsbem
 
     void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
+      /*
       if constexpr (COMPS == 1)
         val(0) = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
       else
         val = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
+      */
+      for (int i = 0; i < 3; i++)
+        {
+          Vec<3> ei = 0;
+          ei(i) = 1;
+          val(i) = Real(mp.EvaluateDirectionalDerivative (pnt, ei));
+        }
     }
   };
 
