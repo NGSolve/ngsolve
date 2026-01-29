@@ -6,6 +6,9 @@
 #include "../ngstd/python_ngstd.hpp"
 #include "sparsefactorization_interface.hpp"
 
+// SparseSolv preconditioners
+#include "sparsesolv_precond.hpp"
+
 using namespace ngla;
 // include netgen-header to get access to PyMPI
 #include <myadt.hpp>
@@ -1944,6 +1947,186 @@ shift : object
     solvers.append(GetInverseName(SPARSECHOLESKY));
     return solvers;
   });
+
+  // ==========================================================================
+  // SparseSolv Preconditioners
+  // Based on JP-MARs/SparseSolv (https://github.com/JP-MARs/SparseSolv)
+  // ==========================================================================
+
+  py::class_<SparseSolvICPreconditioner<double>,
+             shared_ptr<SparseSolvICPreconditioner<double>>,
+             BaseMatrix>(m, "ICPreconditioner",
+    R"raw_string(
+Incomplete Cholesky (IC) Preconditioner using shifted IC decomposition.
+
+Based on SparseSolv library by JP-MARs.
+
+Supports Dirichlet boundary conditions through the freedofs parameter.
+
+Example usage:
+
+.. code-block:: python
+
+    from ngsolve import *
+    from ngsolve.krylovspace import CGSolver
+
+    # Create bilinear form with Dirichlet BC
+    fes = H1(mesh, order=2, dirichlet="left|right|top|bottom")
+    u, v = fes.TnT()
+    a = BilinearForm(fes)
+    a += grad(u)*grad(v)*dx
+    a.Assemble()
+
+    # Create IC preconditioner with FreeDofs
+    pre = ICPreconditioner(a.mat, freedofs=fes.FreeDofs(), shift=1.1)
+    pre.Update()
+
+    # Use with CGSolver
+    inv = CGSolver(a.mat, pre, printrates=True, tol=1e-10)
+    gfu.vec.data = inv * f.vec
+
+Parameters:
+
+mat : ngsolve.la.SparseMatrix
+  The sparse matrix to precondition (must be SPD on free DOFs)
+
+freedofs : ngsolve.BitArray, optional
+  BitArray indicating free DOFs. Constrained DOFs are treated as identity.
+  If None, all DOFs are considered free.
+
+shift : float
+  Shift parameter for IC decomposition (default: 1.05).
+  Larger values improve stability but reduce preconditioner quality.
+
+)raw_string")
+    .def(py::init([](py::object mat, py::object freedofs, double shift) {
+      auto sp_mat = py::cast<shared_ptr<SparseMatrix<double>>>(mat);
+      shared_ptr<BitArray> sp_freedofs = nullptr;
+      if (!freedofs.is_none()) {
+        sp_freedofs = py::cast<shared_ptr<BitArray>>(freedofs);
+      }
+      return make_shared<SparseSolvICPreconditioner<double>>(sp_mat, sp_freedofs, shift);
+    }), py::arg("mat"), py::arg("freedofs") = py::none(), py::arg("shift") = 1.05,
+        "Create IC preconditioner from SparseMatrix")
+    .def("Update", &SparseSolvICPreconditioner<double>::Update,
+        "Update preconditioner (recompute factorization after matrix change)")
+    .def_property("shift",
+        &SparseSolvICPreconditioner<double>::GetShift,
+        &SparseSolvICPreconditioner<double>::SetShift,
+        "Shift parameter for IC decomposition");
+
+  py::class_<SparseSolvSGSPreconditioner<double>,
+             shared_ptr<SparseSolvSGSPreconditioner<double>>,
+             BaseMatrix>(m, "SGSPreconditioner",
+    R"raw_string(
+Symmetric Gauss-Seidel (SGS) Preconditioner.
+
+Based on SparseSolv library by JP-MARs.
+
+Supports Dirichlet boundary conditions through the freedofs parameter.
+
+Example usage:
+
+.. code-block:: python
+
+    from ngsolve import *
+    from ngsolve.krylovspace import CGSolver
+
+    # Problem with Dirichlet BC
+    fes = H1(mesh, order=2, dirichlet="left|right|top|bottom")
+    u, v = fes.TnT()
+    a = BilinearForm(fes)
+    a += grad(u)*grad(v)*dx
+    a.Assemble()
+
+    pre = SGSPreconditioner(a.mat, freedofs=fes.FreeDofs())
+    pre.Update()
+    inv = CGSolver(a.mat, pre, printrates=True)
+    gfu.vec.data = inv * f.vec
+
+Parameters:
+
+mat : ngsolve.la.SparseMatrix
+  The sparse matrix to precondition (must be SPD on free DOFs)
+
+freedofs : ngsolve.BitArray, optional
+  BitArray indicating free DOFs. Constrained DOFs are treated as identity.
+  If None, all DOFs are considered free.
+
+)raw_string")
+    .def(py::init([](py::object mat, py::object freedofs) {
+      auto sp_mat = py::cast<shared_ptr<SparseMatrix<double>>>(mat);
+      shared_ptr<BitArray> sp_freedofs = nullptr;
+      if (!freedofs.is_none()) {
+        sp_freedofs = py::cast<shared_ptr<BitArray>>(freedofs);
+      }
+      return make_shared<SparseSolvSGSPreconditioner<double>>(sp_mat, sp_freedofs);
+    }), py::arg("mat"), py::arg("freedofs") = py::none(),
+        "Create SGS preconditioner from SparseMatrix")
+    .def("Update", &SparseSolvSGSPreconditioner<double>::Update,
+        "Update preconditioner (recompute after matrix change)");
+
+  py::class_<SparseSolvILUPreconditioner<double>,
+             shared_ptr<SparseSolvILUPreconditioner<double>>,
+             BaseMatrix>(m, "ILUPreconditioner",
+    R"raw_string(
+Incomplete LU (ILU) Preconditioner using shifted ILU decomposition.
+
+Based on SparseSolv library by JP-MARs.
+
+Suitable for general (non-symmetric) matrices. For symmetric positive definite
+matrices, ICPreconditioner is more efficient.
+
+Supports Dirichlet boundary conditions through the freedofs parameter.
+
+Example usage:
+
+.. code-block:: python
+
+    from ngsolve import *
+    from ngsolve.krylovspace import GMRESSolver
+
+    # Problem with Dirichlet BC
+    fes = H1(mesh, order=2, dirichlet="left|right|top|bottom")
+    u, v = fes.TnT()
+    a = BilinearForm(fes)
+    a += grad(u)*grad(v)*dx + u*v*dx  # Non-symmetric possible
+    a.Assemble()
+
+    pre = ILUPreconditioner(a.mat, freedofs=fes.FreeDofs(), shift=1.1)
+    pre.Update()
+    inv = GMRESSolver(a.mat, pre, printrates=True, tol=1e-10)
+    gfu.vec.data = inv * f.vec
+
+Parameters:
+
+mat : ngsolve.la.SparseMatrix
+  The sparse matrix to precondition
+
+freedofs : ngsolve.BitArray, optional
+  BitArray indicating free DOFs. Constrained DOFs are treated as identity.
+  If None, all DOFs are considered free.
+
+shift : float
+  Shift parameter for ILU decomposition (default: 1.05).
+  Larger values improve stability but reduce preconditioner quality.
+
+)raw_string")
+    .def(py::init([](py::object mat, py::object freedofs, double shift) {
+      auto sp_mat = py::cast<shared_ptr<SparseMatrix<double>>>(mat);
+      shared_ptr<BitArray> sp_freedofs = nullptr;
+      if (!freedofs.is_none()) {
+        sp_freedofs = py::cast<shared_ptr<BitArray>>(freedofs);
+      }
+      return make_shared<SparseSolvILUPreconditioner<double>>(sp_mat, sp_freedofs, shift);
+    }), py::arg("mat"), py::arg("freedofs") = py::none(), py::arg("shift") = 1.05,
+        "Create ILU preconditioner from SparseMatrix")
+    .def("Update", &SparseSolvILUPreconditioner<double>::Update,
+        "Update preconditioner (recompute factorization after matrix change)")
+    .def_property("shift",
+        &SparseSolvILUPreconditioner<double>::GetShift,
+        &SparseSolvILUPreconditioner<double>::SetShift,
+        "Shift parameter for ILU decomposition");
 }
 
 

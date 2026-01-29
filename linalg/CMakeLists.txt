@@ -1,5 +1,8 @@
 include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
+# SparseSolv headers (header-only library)
+include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/sparsesolv)
+
 add_library(ngla ${NGS_LIB_TYPE}
         basematrix.cpp basevector.cpp multivector.cpp
         blockjacobi.cpp cg.cpp chebyshev.cpp commutingAMG.cpp eigen.cpp	     
@@ -39,14 +42,22 @@ endif()
 
 install( FILES
         basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp multivector.hpp
-        chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp   
+        chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp
         pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp
         sparsematrix_impl.hpp sparsematrix_dyn.hpp diagonalmatrix.hpp
         special_matrix.hpp superluinverse.hpp mumpsinverse.hpp
         umfpackinverse.hpp vvector.hpp python_linalg.hpp
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp
         sparsefactorization_interface.hpp
+        sparsesolv_precond.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
+       )
+
+# Install SparseSolv headers
+install( DIRECTORY sparsesolv
+        DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
+        COMPONENT ngsolve_devel
+        FILES_MATCHING PATTERN "*.hpp"
        )
 

@@ -34,5 +34,6 @@ namespace ngla
 #include "chebyshev.hpp"
 #include "eigen.hpp"
 #include "arnoldi.hpp"
+#include "sparsesolv_precond.hpp"
 
 #endif
