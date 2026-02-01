@@ -86,7 +86,7 @@ namespace ngcomp
             shape(Index(v0,v1, IVec<3>(i,j,k))) = B(i,j,k);
           }
 
-      // make C0-cont
+      // make C1-cont
       for (int v0 = 0; v0 < 3; v0++)
         {
           int v1 = (v0+1)%3;
