@@ -31,6 +31,7 @@
 #include "numberfespace.hpp"
 #include "irspace.hpp"
 #include "h1lumping.hpp"
+#include "HCTspace.hpp"
 #include "hidden.hpp"
 #include "reorderedfespace.hpp"
 #include "compressedfespace.hpp"
@@ -1562,7 +1563,12 @@ component : int
   ExportFESpace<H1LumpingFESpace> (m, "H1LumpingFESpace")
     .def("GetIntegrationRules", &H1LumpingFESpace::GetIntegrationRules)
     ;
+
+  ExportFESpace<HCT_FESpace> (m, "HCT_FESpace")
+    .def("GetIntegrationRules", &HCT_FESpace::GetIntegrationRules)
+    ;
     
+
 
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
