@@ -472,6 +472,19 @@ namespace ngla
     return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), nullptr, clusters);
   }
 
+  template <class TM, class TV>
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (shared_ptr<BitArray> subset) const
+  {
+    return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), subset, nullptr);
+  }
+
+  template <class TM, class TV>
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> ::
+  InverseMatrix (shared_ptr<const Array<int>> clusters) const
+  {
+    return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), nullptr, clusters);
+  }
+
   template <class TM, class TV_ROW, class TV_COL>
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   DeleteZeroElements(double tol) const

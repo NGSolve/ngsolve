@@ -117,7 +117,7 @@ protected:
   shared_ptr<BaseVector> inner_rhs, inner_solution;
   MapInnerDofs map_inner_dofs;
   bool is_complex = false;
-  bool is_symmetric = false;
+  xbool is_symmetric = maybe;
   bool is_symmetric_storage = false;
   bool is_analyzed = false;
   int width, height, inner_width, inner_height;
@@ -152,6 +152,9 @@ public:
   virtual void Analyze() {}
   virtual void Factor() {}
   virtual void Solve(const BaseVector &rhs, BaseVector &solution) const = 0;
+
+  bool IsSymmetricStorage() const { return is_symmetric_storage; }
+  xbool IsSymmetric() const override { return is_symmetric_storage; }
 };
 
 } // namespace ngla
