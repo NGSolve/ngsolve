@@ -23,11 +23,12 @@ class CudssSolver(ngla.SparseFactorizationInterface):
         csr = sp.csr_matrix(self.GetInnerMatrix().CSR())
 
         options = make_directsolver_options()
-        self.extract_symmetric = (csr != csr.T).nnz == 0
+        self.extract_symmetric = self.is_symmetric.is_true or (csr != csr.T).nnz == 0
         if self.extract_symmetric:
-            csr = sp.triu(csr, format="csr")
+            if not self.is_symmetric_storage:
+                csr = sp.tril(csr, format="csr")
             options.sparse_system_type = nvs.DirectSolverMatrixType.SYMMETRIC
-            options.sparse_system_view = nvs.DirectSolverMatrixViewType.UPPER
+            options.sparse_system_view = nvs.DirectSolverMatrixViewType.LOWER
 
         tmp = np.empty(csr.shape[1], dtype=csr.dtype)
         self.solver = nvs.DirectSolver(csr, tmp, options=options)

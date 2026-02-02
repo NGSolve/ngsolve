@@ -107,6 +107,9 @@ struct MapInnerDofs {
     auto res = SparseMatrixTM<T>::CreateFromCOO(rowi, coli, vals,
                                                 project.Size(), project.Size());
     res->SetSPD(m->IsSPD());
+    
+    if(dynamic_cast<const SparseMatrixSymmetric<T>*>(m.get()))
+        return make_shared<SparseMatrixSymmetric<T>>(*res);
     return res;
   }
 };
