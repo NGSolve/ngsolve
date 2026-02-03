@@ -3,6 +3,7 @@
 
 #include "mptools.hpp"
 #include <type_traits>
+#include <variant>
 
 
 //  ****************************  The kernels **********************************
@@ -61,29 +62,56 @@ namespace ngsbem
     }
   };
 
-
-
-  
-  
-  /** LaplaceSLkernel is the kernel for the single layer potential of 
+  // *********** STANDARD KERNELS DEFINITIONS **********************
+  /** LaplaceSLkernel is the kernel for the single layer potential of
       the Laplace equation $ \Delta u = 0 \,.$  */
   template <int DIM, int COMPS=1> class LaplaceSLKernel;
+
+  /** LaplaceDLkernel is the kernel for the double layer potential of
+      the Laplace equation $ \Delta u = 0 \,.$  */
+  template <int DIM, int COMPS=1> class LaplaceDLKernel;
+
+  /** HelmholtzSLkernel is the kernel for the double layer potential of the
+      Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,. $ */
+  template <int DIM, int COMPS=1, typename T_Kappa=double> class HelmholtzSLKernel;
+
+  /** HelmholtzDLkernel is the kernel for the double layer potential of
+      the Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,.$ */
+  template <int DIM, typename T_Kappa=double> class HelmholtzDLKernel;
+
+  /** CombinedFieldKernel is a kernel for the combined field integral equation
+      is considered for the Helmholtz equation. */
+  template <int DIM, typename T_Kappa = double> class CombinedFieldKernel;
+
+  template <int D> class MaxwellSLKernel;
+
+  template <int D, typename T_Kappa=double> class MaxwellDLKernel;
+
+  /*
+    Dissertation Guenther Of
+    "BETI–Gebietszerlegungsmethoden
+    mit schnellen Randelementverfahren
+    und Anwendungen"
+    page 85
+   */
+  template <int D> class LameSLKernel;
+
+  // *********** DIFF KERNELS **********************
+  
 
   template <int DIM, int COMPS=1> class DiffLaplaceSLKernel;
   template<int COMPS>
   class DiffLaplaceSLKernel<3, COMPS> : public BaseKernel
   {
   public:
-  Array<KernelTerm> terms =
-    {
-      KernelTerm{1.0, 0, 0, 0},
-      KernelTerm{1.0, 1, 0, 1},
-      KernelTerm{1.0, 2, 0, 2},
-    };
+    // Component-wise gradient: output is a flattened (3 x COMPS) matrix
+    // [d/dx u0, d/dy u0, d/dz u0, d/dx u1, ...].
+    Array<KernelTerm> terms;
     DiffLaplaceSLKernel<3,COMPS>()
     {
-      // for (size_t i = 0; i < COMPS; i++)
-      //   terms += { 1.0, 0, i, i};
+      for (size_t c = 0; c < COMPS; c++)
+        for (size_t i = 0; i < 3; i++)
+          terms += KernelTerm{1.0, i, c, 3*c+i};
     };
     typedef double value_type;
     using mp_type = typename std::conditional<COMPS == 1,
@@ -91,21 +119,16 @@ namespace ngsbem
                                               Vec<COMPS, Complex>>::type;
 
     static string Name() { return "DiffLaplaceSL"; }
-    static auto Shape() { return IVec<2>(3,1); }
+    static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
       auto xy = x-y;
-      // T nxy = InnerProduct(nx, -xy);
       auto kern = 1.0 *  (4 * M_PI * norm*norm*norm) * xy;
       return kern;
-      // auto kern = -1.0 / (4 * M_PI * norm*norm*norm);
-      // return Vec<3,decltype(kern)> (kern);
     }
-    
-    // Array<KernelTerm> terms;
 
     auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
@@ -127,21 +150,90 @@ namespace ngsbem
 
     void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
     {
-      /*
-      if constexpr (COMPS == 1)
-        val(0) = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
-      else
-        val = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
-      */
       for (int i = 0; i < 3; i++)
-        {
-          Vec<3> ei = 0;
-          ei(i) = 1;
-          val(i) = Real(mp.EvaluateDirectionalDerivative (pnt, ei));
-        }
+      {
+        Vec<3> ei = 0;
+        ei(i) = 1;
+        auto deri = mp.EvaluateDirectionalDerivative (pnt, ei);
+        if constexpr (COMPS == 1)
+          val(i) = Real(deri);
+        else
+          for (int c = 0; c < COMPS; c++)
+            val(3*c+i) = Real(deri(c));
+      }
     }
   };
 
+
+  // grad_x G = exp(i*kappa*r) * (i*kappa*r - 1) * (x - y) / (4*pi*r^3)
+  template <int DIM, int COMPS=1, typename T_Kappa=double> class DiffHelmholtzSLKernel;
+  template<int COMPS, typename T_Kappa>
+  class DiffHelmholtzSLKernel<3, COMPS, T_Kappa> : public BaseKernel
+  {
+      T_Kappa kappa;
+  public:
+    // Component-wise gradient: output is a flattened (3 x COMPS) matrix
+    // [d/dx u0, d/dy u0, d/dz u0, d/dx u1, ...].
+    Array<KernelTerm> terms;
+    DiffHelmholtzSLKernel(T_Kappa _kappa) : kappa(_kappa)
+    {
+      for (size_t c = 0; c < COMPS; c++)
+        for (size_t i = 0; i < 3; i++)
+          terms += KernelTerm{1.0, i, c, 3*c+i};
+    };
+    typedef Complex value_type;
+    using mp_type = typename std::conditional<COMPS == 1,
+                                              Complex,
+                                              Vec<COMPS, Complex>>::type;
+
+    static string Name() { return "DiffHelmholtzSL"; }
+    static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
+
+    template <typename T>
+    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
+    {
+      T norm = L2Norm(x-y);
+      auto xy = x-y;
+      auto kern = exp(kappa*Complex(0,1)*norm) / (4 * M_PI * norm*norm*norm)
+        * (kappa*Complex(0,1)*norm - Complex(1,0)*T(1.)) * xy;
+      return kern;
+    }
+
+    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
+    {
+      return make_shared<SingularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
+    }
+
+    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
+    {
+      return make_shared<RegularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
+    }
+
+    void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      if constexpr (COMPS == 1)
+        mp.AddCharge (pnt, val(0));
+      else
+        mp.AddCharge (pnt, val);
+    }
+
+    void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    {
+      for (int i = 0; i < 3; i++)
+      {
+        Vec<3> ei = 0;
+        ei(i) = 1;
+        auto deri = mp.EvaluateDirectionalDerivative (pnt, ei);
+        if constexpr (COMPS == 1)
+          val(i) = deri;
+        else
+          for (int c = 0; c < COMPS; c++)
+            val(3*c+i) = deri(c);
+      }
+    }
+  };
+
+  // *********** STANDARD KERNELS **********************
 
   /** LaplaceSLkernel in 3D reads 
       $$ G(x-y) = \frac{1}{4\,\pi \, | x-y| }, \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
@@ -200,16 +292,11 @@ namespace ngsbem
 
     auto GetDifferentiatedKernel(const string &name) const {
       if (name == "grad")
-        return DiffLaplaceSLKernel<3>();
+        return DiffLaplaceSLKernel<3,COMPS>();
       else
         throw Exception("don't know how to apply diffop "+name);
     }
   };
-
-
-  /** LaplaceDLkernel is the kernel for the double layer potential of 
-      the Laplace equation $ \Delta u = 0 \,.$  */
-  template <int DIM, int COMPS=1> class LaplaceDLKernel;
 
   /** LaplaceDLkernel in 3D reads 
       $$ \frac{\partial }{ \partial n_y} G(x-y) = \frac{1}{4\,\pi} \, 
@@ -286,9 +373,6 @@ namespace ngsbem
   };
 
 
-  /** HelmholtzSLkernel is the kernel for the double layer potential of the 
-      Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,. $ */
-  template <int DIM, int COMPS=1, typename T_Kappa=double> class HelmholtzSLKernel;
 
   /** HelmholtzSLkernel in 3D reads 
       $$ G(x-y) = \frac{1 }{4\,\pi} \,\frac{e^{i\,\kappa \, |x-y| }{|x-y|} \, 
@@ -364,12 +448,29 @@ namespace ngsbem
       else
         val = mp.Evaluate(pnt);
     }
+
+    auto GetDifferentiatedKernel(const string &name) const {
+      if constexpr (COMPS == 3)
+        {
+          using diff_t =
+            std::variant<DiffHelmholtzSLKernel<3,3,T_Kappa>,
+                         MaxwellDLKernel<3,T_Kappa>>;
+
+          if (name == "grad")
+            return diff_t(DiffHelmholtzSLKernel<3,3,T_Kappa>(kappa));
+          if (name == "curl")
+            return diff_t(MaxwellDLKernel<3,T_Kappa>(kappa));
+        }
+      else
+        {
+          if (name == "grad")
+            return DiffHelmholtzSLKernel<3,COMPS,T_Kappa>(kappa);
+        }
+
+      throw Exception("don't know how to apply diffop "+name);
+    }
   };
 
-
-  /** HelmholtzDLkernel is the kernel for the double layer potential of 
-      the Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,.$ */
-  template <int DIM, typename T_Kappa=double> class HelmholtzDLKernel;
 
   /** HelmholtzDLkernel in 3D reads
       $$ \frac{\partial }{ \partial n_y} G(x-y) = \frac{1}{4\,\pi} \, \frac{e^{i\,\kappa\,|x-y|}}{|x-y|^3} \, 
@@ -491,14 +592,6 @@ namespace ngsbem
   };
 
 
-
-
-  
-
-  /** CombinedFieldKernel is a kernel for the combined field integral equation 
-      is considered for the Helmholtz equation. */
-  template <int DIM, typename T_Kappa = double> class CombinedFieldKernel;
-
   /** CombinedFieldKernel in 3D reads
       $$ G(x-y) = \frac{1}{4\,\pi} \, \frac{e^{i\,\kappa\,|x-y|}}{|x-y|^3} \, 
           \left( \langle n_y, x-y\rangle (1- i\,\kappa\, | x-y|) - i\,\kappa\,|x-y|^2 \right), 
@@ -554,11 +647,7 @@ namespace ngsbem
     }
   };
 
-  
 
-  
-
-  template <int D> class MaxwellSLKernel;
 
   template<>
   class MaxwellSLKernel<3> : public BaseKernel
@@ -612,12 +701,6 @@ namespace ngsbem
     }
   };
 
-
-
-
-  
-
-  template <int D, typename T_Kappa=double> class MaxwellDLKernel;
 
   // https://weggler.github.io/ngbem/short_and_sweet/Maxwell_Formulations.html
   /** MaxwellDLkernel for 3D in matrix representation reads
@@ -704,19 +787,6 @@ namespace ngsbem
     }
   };
 
-
-
-
-
-  /*
-    Dissertation Guenther Of
-    "BETI–Gebietszerlegungsmethoden
-    mit schnellen Randelementverfahren
-    und Anwendungen"
-    page 85
-   */
-
-  template <int D> class LameSLKernel;
 
   template<>
   class LameSLKernel<3> : public BaseKernel
@@ -819,12 +889,6 @@ namespace ngsbem
       val -= alpha/2 * ( Trans(jacobi) * pnt + Trace(jacobi) * pnt);
     }
   };
-
-
-
-
-
-  
 
 }
 
