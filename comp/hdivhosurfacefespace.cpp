@@ -91,6 +91,28 @@ public:
       Cast(fel).CalcMappedDivShape (mir, mat);
     }
 
+    using DiffOp<DiffOpDivHDivSurface<D,FEL>>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).EvaluateDiv (mir, x, y.Row(0));
+    }
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      Vector<> xr(fel.GetNDof()), xi(fel.GetNDof());
+      Vector<SIMD<double>> yre(mir.Size()), yim(mir.Size());
+
+      xr = Real(x);
+      xi = Imag(x);
+      Cast(fel).EvaluateDiv (mir, xr, yre);
+      Cast(fel).EvaluateDiv (mir, xi, yim);
+
+      for (size_t i = 0; i < mir.Size(); i++)
+        y(0,i) = SIMD<Complex>(yre(i), yim(i));
+    }
+
   static string Name() { return "div"; }
 
   static shared_ptr<CoefficientFunction>
@@ -681,6 +703,3 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
 
   static RegisterFESpace<HDivHighOrderSurfaceFESpace> init ("hdivhosurface");
 }
-
-
-
