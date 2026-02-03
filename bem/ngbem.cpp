@@ -756,7 +756,9 @@ namespace ngsbem
     : BasePotentialCF(_gf, _definedon, _evaluator, std::is_same<typename KERNEL::value_type,Complex>()),
       kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
   {
-    ;
+    IVec<2> shape = kernel.Shape();
+    if (shape[0] > 1)
+      this->SetDimensions( Array<int>( { shape[0] } ));
   }
 
 
@@ -1207,6 +1209,13 @@ namespace ngsbem
   template class PotentialCF<MaxwellDLKernel<3>>;
   template class PotentialCF<MaxwellDLKernel<3,Complex>>;
 
+  template class PotentialCF<DiffLaplaceSLKernel<3>>;
+  template class PotentialCF<DiffLaplaceSLKernel<3,3>>;
+  template class PotentialCF<DiffHelmholtzSLKernel<3>>;
+  template class PotentialCF<DiffHelmholtzSLKernel<3,3>>;
+  template class PotentialCF<DiffHelmholtzSLKernel<3,1,Complex>>;
+  template class PotentialCF<DiffHelmholtzSLKernel<3,3,Complex>>;
+
   
   
   template class GenericIntegralOperator<LaplaceSLKernel<3>>;
@@ -1229,4 +1238,11 @@ namespace ngsbem
   template class GenericIntegralOperator<MaxwellSLKernel<3>>;
   template class GenericIntegralOperator<MaxwellDLKernel<3>>;    
   template class GenericIntegralOperator<MaxwellDLKernel<3,Complex>>;
+
+  template class GenericIntegralOperator<DiffLaplaceSLKernel<3>>;
+  template class GenericIntegralOperator<DiffLaplaceSLKernel<3,3>>;
+  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3>>;
+  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,3>>;
+  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,1,Complex>>;
+  template class GenericIntegralOperator<DiffHelmholtzSLKernel<3,3,Complex>>;
 }
