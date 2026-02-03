@@ -235,13 +235,13 @@ public:
   static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
                            BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
   {
-    Vector<> xr(fel.GetNDof()), xi(fel.GetNDof());
+    // Vector<> xr(fel.GetNDof()), xi(fel.GetNDof());
     Matrix<SIMD<double>> yre(D, mir.Size()), yim(D, mir.Size());
 
-    xr = Real(x);
-    xi = Imag(x);
-    Cast(fel).Evaluate (mir, xr, yre);
-    Cast(fel).Evaluate (mir, xi, yim);
+    // xr = Real(x);
+    // xi = Imag(x);
+    Cast(fel).Evaluate (mir, Real(x), yre);
+    Cast(fel).Evaluate (mir, Imag(x), yim);
 
     for (int j = 0; j < D; j++)
       for (size_t i = 0; i < mir.Size(); i++)
