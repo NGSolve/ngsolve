@@ -588,11 +588,15 @@ namespace ngbla
 
 
 
-   //  template <typename TS, typename TDIST>
-   // auto Real(VectorView<Complex, TS, TDIST> vec){
-   //     return VectorView<double, TS, TDIST>(vec.Size(), vec.Dist(), (double*)vec.Addr());
-   // }
+  template <typename TS, typename TDIST>
+  auto Real(VectorView<Complex, TS, TDIST> vec){
+    return VectorView<double, TS, TDIST>(vec.Size(), vec.Dist(), (double*)vec.Data());
+  }
 
+  template <typename TS, typename TDIST>
+  auto Imag(VectorView<Complex, TS, TDIST> vec){
+    return VectorView<double, TS, TDIST>(vec.Size(), vec.Dist(), ((double*)vec.Data())+1);
+  }
 
 
 
