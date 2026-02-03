@@ -336,6 +336,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     ;
 
   py::class_<BasePotentialOperator, shared_ptr<BasePotentialOperator>> (m, "PotentialOperator")
+    .def("Operator", [](shared_ptr<BasePotentialOperator> pot, string name) {
+        return pot->MakeDiffBasePotential(name);
+    })
     .def("__mul__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<CoefficientFunction> test_proxy) {
       return BasePotentialOperatorAndTest (pot, test_proxy); //  { pot, dynamic_pointer_cast<ProxyFunction>(test_proxy) };
     })
