@@ -40,7 +40,7 @@ class CudssSolver(ngla.SparseFactorizationInterface):
         if not self._is_first_factor_call:
             mat = self.GetInnerMatrix()
             if self.extract_symmetric and not self.is_symmetric_storage:
-                values = sp.tril(sp.csr_matrix(mat.CSR())), format="csr").data
+                values = sp.tril(sp.csr_matrix(mat.CSR()), format="csr").data
             else:
                 values = mat.AsVector().FV().NumPy()
             stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)
