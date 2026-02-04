@@ -1703,6 +1703,9 @@ used_idnrs : list of int = None
     .def_property_readonly("dofmap", [](PeriodicFESpace & self) {
       return Array<int>(self.GetDofMap());  // better: return buffer
     })
+    .def_property_readonly("base_space", [](PeriodicFESpace & self) {
+      return self.GetBaseSpace();
+    })
     ;
 
   py::class_<QuasiPeriodicFESpace<double>, shared_ptr<QuasiPeriodicFESpace<double>>, PeriodicFESpace>(m, "QuasiPeriodicD")
