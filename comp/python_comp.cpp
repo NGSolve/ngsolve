@@ -1570,7 +1570,8 @@ component : int
     ;
     
   ExportFESpace<JKM_FESpace> (m, "JKM_FESpace")
-    .def("GetIntegrationRules", &JKM_FESpace::GetIntegrationRules)
+    .def("GetIntegrationRules", &JKM_FESpace::GetIntegrationRules,
+         py::arg("bonus_intorder")=2)
     ;
 
 

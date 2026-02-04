@@ -18,7 +18,7 @@ namespace ngcomp
     static DocInfo GetDocu();
     void Update() override;
     void FinalizeUpdate() override;
-    std::map<ELEMENT_TYPE, IntegrationRule> GetIntegrationRules() const;
+    std::map<ELEMENT_TYPE, IntegrationRule> GetIntegrationRules(int bonus_intorder=2) const;
 
     void GetDofNrs(ElementId ei, Array<int> &dnums) const override;
     FiniteElement &GetFE(ElementId ei, Allocator &alloc) const override;
