@@ -276,18 +276,13 @@ namespace ngcomp
             default: edgenr = 2; break;
             }
 
-          bool swapped = false;
-          if (vnums[v0] > vnums[v1])
-            {
-              swapped = true;
-              Swap(v0,v1);
-            }
+          int v0orig = v0;
+          if (vnums[v0] > vnums[v1]) { Swap(v0,v1); }
           
           Tx lamloc[3] = { lam[v0]-lam[minlam],
                            lam[v1]-lam[minlam],
                            lam[minlam]*3 };
           
-
           // set to 0:
           for (int i = 0; i < ndof; i++)
             shape[i] = T_SymRotRot_Dl2xDl1_v (x,x, Tx(0.));            
@@ -302,17 +297,17 @@ namespace ngcomp
           // shape functions on internal edges, on boundary vertex:
           for (int i = 0; i < 3; i++)
             {
+              double sign = (v0orig==i) ? 1 : -1;
               // the HHJ basis:
               if (v0 == i)
                 {
                   shape[ii] = T_SymRotRot_Dl2xDl1_v (lamloc[0]-2*lamloc[1], lamloc[2], lamloc[0]);
-                  shape[ii+1] = T_SymRotRot_Dl2xDl1_v (lamloc[1], lamloc[2], lamloc[0]);                  
+                  shape[ii+1] = T_SymRotRot_Dl2xDl1_v (lamloc[1], lamloc[2], sign*lamloc[0]);                  
                 }
               if (v1 == i)
                 {
                   shape[ii] = T_SymRotRot_Dl2xDl1_v (lamloc[1]-2*lamloc[0], lamloc[2], lamloc[1]);
-                  // double vz = swapped ? 1.0 : -1.0;
-                  shape[ii+1] = T_SymRotRot_Dl2xDl1_v (lamloc[0], lamloc[2], lamloc[1]);                  
+                  shape[ii+1] = T_SymRotRot_Dl2xDl1_v (lamloc[0], lamloc[2], sign*lamloc[1]);                  
                 }
               ii+=2;
             }
