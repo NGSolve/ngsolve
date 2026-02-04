@@ -1205,27 +1205,27 @@ namespace ngfem
   
 
   
-
+  template <typename T>
   class T_SymRotRot_Dl2xDl1_v
   {
-    AutoDiff<2> l1,l2,v;
+    AutoDiff<2,T> l1,l2,v;
   public:
-    T_SymRotRot_Dl2xDl1_v  (AutoDiff<2> lam1, AutoDiff<2> lam2, AutoDiff<2> av) : l1(lam1), l2(lam2), v(av) { ; }
-    Vec<3> Shape() { return Vec<3> (v.Value()*(l1.DValue(1)*l2.DValue(1)),
-      v.Value()*(l1.DValue(0)*l2.DValue(0)),
-      -0.5*v.Value()*(l1.DValue(1)*l2.DValue(0) + l1.DValue(0)*l2.DValue(1))
-      ); }
-
-    Vec<2> DivShape()
+    T_SymRotRot_Dl2xDl1_v  (AutoDiff<2,T> lam1, AutoDiff<2,T> lam2, AutoDiff<2,T> av) : l1(lam1), l2(lam2), v(av) { ; }
+    Vec<3,T> Shape() { return Vec<3,T> (v.Value()*(l1.DValue(1)*l2.DValue(1)),
+                                        v.Value()*(l1.DValue(0)*l2.DValue(0)),
+                                        -0.5*v.Value()*(l1.DValue(1)*l2.DValue(0) + l1.DValue(0)*l2.DValue(1))
+                                        ); }
+    
+    Vec<2,T> DivShape()
     {
       // todo
       // double lam1 = l1.Value();
-      double lam1x = l1.DValue(0);
-      double lam1y = l1.DValue(1);
+      T lam1x = l1.DValue(0);
+      T lam1y = l1.DValue(1);
       // double lam2 = l2.Value();
-      double lam2x = l2.DValue(0);
-      double lam2y = l2.DValue(1);
-      return Vec<2> (
+      T lam2x = l2.DValue(0);
+      T  lam2y = l2.DValue(1);
+      return Vec<2,T> (
         v.DValue(0)*(lam1y*lam2y) - 0.5*v.DValue(1)*(lam1x*lam2y+lam1y*lam2x),
         -0.5*v.DValue(0)*(lam1x*lam2y+lam1y*lam2x) + v.DValue(1)*(lam1x*lam2x)
         ); 
