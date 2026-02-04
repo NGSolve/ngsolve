@@ -3,6 +3,7 @@
 #include "../fem/hdivdivfe.hpp"
 #include <bdbequations.hpp>
 #include <diffop_impl.hpp>
+#include <hdivdiv_equations.hpp>
 
 
 
@@ -20,163 +21,7 @@ namespace ngcomp
 {
 
 
-
-  template<int D>
-  class MyDiffOpIdHDivDiv: public DiffOp<MyDiffOpIdHDivDiv<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
-
-    static Array<int> GetDimensions() { return Array<int> ({D,D}); }
-
-    template <typename FEL,typename SIP>
-    static void GenerateMatrix(const FEL & bfel,const SIP & mip,
-                               BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
-    {
-      const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-      fel.CalcMappedShape_Matrix (mip,Trans(mat));
-    }
-
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT && mat,LocalHeap & lh)
-    {
-      const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-      int nd = fel.GetNDof();
-      FlatMatrix<> shape(nd,DIM_DMAT,lh);
-      fel.CalcMappedShape_Matrix(sip,shape);
-      for(int i=0; i<nd; i++)
-        for(int j = 0; j <DIM_DMAT; j++)
-          mat(j,i) = shape(i,j);
-
-    }
-
-    /*
-    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & mir,
-                                      BareSliceMatrix<SIMD<double>> mat)
-    {
-      // static Timer t("HDivDivFE - DiffOpId", NoTracing);
-      // RegionTracer regtr(TaskManager::GetThreadId(), t);    
-
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedShape_Matrix (mir, mat);      
-    }
-
-    using DiffOp<DiffOpIdHDivDiv<D> >::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).Evaluate_Matrix (mir, x, y);
-    }
-
-    using DiffOp<DiffOpIdHDivDiv<D> >::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
-                                BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).AddTrans_Matrix (mir, y, x);
-    }
-    */
-    
-    static shared_ptr<CoefficientFunction>
-    DiffShape (shared_ptr<CoefficientFunction> proxy,
-               shared_ptr<CoefficientFunction> dir,
-               bool Eulerian)
-    {
-      if (Eulerian) throw Exception("DiffShape Eulerian not implemented for DiffOpIdDivDiv");      
-      return -2*TraceCF(dir->Operator("Grad"))*proxy + 2*SymmetricCF(dir->Operator("Grad") * proxy);
-    }
-  };
-
-
-  template<int D>
-  class DiffOpDivHDivDiv: public DiffOp<DiffOpDivHDivDiv<D> >
-  {
-  public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = (D*(D+1))/2 };
-
-    static string Name() { return "div"; }
-
-    template <typename FEL,typename SIP>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      BareSliceMatrix<double,ColMajor> mat,LocalHeap & lh)
-    {
-      static Timer t("HDivDivFE - div IP", NoTracing);
-      RegionTracer regtr(TaskManager::GetThreadId(), t);    
-      
-      const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-
-      fel.CalcMappedDivShape (sip, Trans(mat));
-    }
-
-    template <typename FEL,typename SIP,typename MAT>
-    static void GenerateMatrix(const FEL & bfel,const SIP & sip,
-      MAT && mat,LocalHeap & lh)
-    {
-      static Timer t("HDivDivFE - div IP 2", NoTracing);
-      RegionTracer regtr(TaskManager::GetThreadId(), t);    
-
-      HeapReset hr(lh);
-      const HDivDivFiniteElement<D> & fel =
-        dynamic_cast<const HDivDivFiniteElement<D>&> (bfel);
-
-      int nd = fel.GetNDof();
-      FlatMatrix<> divshape(nd, D, lh);
-      fel.CalcMappedDivShape (sip, divshape);
-      for (int i=0; i<nd; i++)
-        for (int j=0; j<D; j++)
-          mat(j,i) = divshape(i,j);
-
-    }
-
-    static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
-                                      const SIMD_BaseMappedIntegrationRule & mir,
-                                      BareSliceMatrix<SIMD<double>> mat)
-    {
-      // static Timer t("HDivDivFE - div IR", NoTracing);
-      // RegionTracer regtr(TaskManager::GetThreadId(), t);
-      
-      dynamic_cast<const HDivDivFiniteElement<D>&> (bfel).CalcMappedDivShape (mir, mat);      
-    }
-
-    using DiffOp<DiffOpDivHDivDiv<D> >::ApplySIMDIR;    
-    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                           BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
-    {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (fel).EvaluateDiv (mir, x, y); 
-    }
-
-    using DiffOp<DiffOpDivHDivDiv<D> >::AddTransSIMDIR;        
-    static void AddTransSIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
-                              BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
-    {
-      dynamic_cast<const HDivDivFiniteElement<D>&> (fel).AddDivTrans (mir, y, x);
-    }
-
-  };
-
-
-
-
   
-
-
-
-
-  
-  // class JKMFE_Triangle : public HDivDivFiniteElement<2>, public VertexOrientedFE<ET_TRIG>
   class JKMFE_Triangle : public T_HDivDivFE<ET_TRIG,JKMFE_Triangle>
   {
     static constexpr int DIM=2;
@@ -230,17 +75,6 @@ namespace ngcomp
     virtual ~JKMFE_Triangle() {}
     ELEMENT_TYPE ElementType() const override { return ET_TRIG; }
 
-    /*
-    virtual void CalcMappedShape_Matrix (const MappedIntegrationPoint<DIM,DIM> & mip,
-                                         BareSliceMatrix<double> shape) const override
-    {
-      T_CalcShape (GetTIP(mip), 
-                   SBLambda([&](int nr,auto val)
-                   {
-                     VecToSymMat<DIM> (val.Shape(), shape.Row(nr));
-                   }));
-    }
-    */
 
    template <typename T, typename TFA> 
    void T_CalcShape (TIP<DIM,AutoDiff<DIM,T>> tip, TFA & shape) const
@@ -248,8 +82,6 @@ namespace ngcomp
       Cast() -> T_CalcShape (TIP<DIM,AutoDiffDiff<DIM,T>> (tip), shape);
     }
 
-    
-    
    template <typename T, typename TFA> 
    void T_CalcShape (TIP<2,AutoDiffDiff<2,T>> ip, TFA & shape) const
     {
@@ -336,7 +168,7 @@ namespace ngcomp
   {
     order = int(flags.GetNumFlag("order", 1));
 
-    evaluator[VOL] = make_shared<T_DifferentialOperator<MyDiffOpIdHDivDiv<2>>>();
+    evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDivDiv<2>>>();
     flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpDivHDivDiv<2>>>();
   } 
 
