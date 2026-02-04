@@ -265,12 +265,18 @@ class ProxyUserData
   FlatArray<const ProxyFunction*> remember_first;
   FlatArray<FlatMatrix<double>> remember_second;
   FlatArray<FlatMatrix<SIMD<double>>> remember_asecond;
+  FlatArray<FlatMatrix<Complex>> remember_csecond;
+  FlatArray<FlatMatrix<SIMD<Complex>>> remember_acsecond;
 
   FlatArray<const CoefficientFunction*> remember_cf_first;
   FlatArray<FlatMatrix<double>> remember_cf_second;  
   FlatArray<FlatMatrix<SIMD<double>>> remember_cf_asecond;
+  FlatArray<FlatMatrix<Complex>> remember_cf_csecond;
+  FlatArray<FlatMatrix<SIMD<Complex>>> remember_cf_acsecond;
   FlatArray<bool> remember_cf_computed;
 public:
+  xbool complex = maybe;
+
   class ProxyFunction * testfunction = nullptr;
   int test_comp;
   class ProxyFunction * trialfunction = nullptr;
@@ -285,28 +291,42 @@ public:
   
   ProxyUserData ()
     : remember_first(0,nullptr), remember_second(0,nullptr), remember_asecond(0,nullptr),
-      remember_cf_first(0, nullptr), remember_cf_second(0,nullptr),remember_cf_asecond(0,nullptr), remember_cf_computed(0, nullptr)
+      remember_csecond(0,nullptr), remember_acsecond(0,nullptr),
+      remember_cf_first(0, nullptr), remember_cf_second(0,nullptr),remember_cf_asecond(0,nullptr),
+      remember_cf_csecond(0,nullptr), remember_cf_acsecond(0,nullptr),
+      remember_cf_computed(0, nullptr)
   { ; }
   ProxyUserData (size_t ntrial, size_t ncf, LocalHeap & lh)
     : remember_first(ntrial, lh), remember_second(ntrial, lh),
-      remember_asecond(ntrial, lh),
+      remember_asecond(ntrial, lh), remember_csecond(ntrial, lh),
+      remember_acsecond(ntrial, lh),
       remember_cf_first(ncf, lh), remember_cf_second(ncf, lh),
-      remember_cf_asecond(ncf, lh),      
+      remember_cf_asecond(ncf, lh), remember_cf_csecond(ncf, lh),
+      remember_cf_acsecond(ncf, lh),
       remember_cf_computed(ncf, lh)
   { remember_first = nullptr; remember_cf_first = nullptr; }
 
   ProxyUserData (int ntrial, LocalHeap & lh)
     : ProxyUserData (ntrial, 0, lh) { ; } 
   
-  void AssignMemory (const ProxyFunction * proxy, size_t h, size_t w, LocalHeap & lh)
+  void AssignMemory (const ProxyFunction * proxy, size_t h, size_t w, LocalHeap & lh,
+      xbool complex=maybe)
   {
     for (size_t i = 0; i < remember_first.Size(); i++)
       {
         if (remember_first[i] == nullptr)
           {
             remember_first[i] = proxy;
-            new (&remember_second[i]) FlatMatrix<> (h, w, lh);
-            new (&remember_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
+            if (!complex.IsTrue())
+              {
+                new (&remember_second[i]) FlatMatrix<> (h, w, lh);
+                new (&remember_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
+              }
+            if (!complex.IsFalse())
+              {
+                new (&remember_csecond[i]) FlatMatrix<Complex> (h, w, lh);
+                new (&remember_acsecond[i]) FlatMatrix<SIMD<Complex>> (w, (h+SIMD<Complex>::Size()-1)/SIMD<Complex>::Size(), lh);
+              }
             return;
           }
       }
@@ -327,16 +347,39 @@ public:
     throw Exception ("no space for userdata - memory available");
   }
 
+  void AssignMemory (const ProxyFunction * proxy, FlatMatrix<SIMD<Complex>> mat)
+  {
+    for (size_t i = 0; i < remember_first.Size(); i++)
+      {
+        if (remember_first[i] == nullptr || remember_first[i] == proxy)
+          {
+            remember_first[i] = proxy;
+            new (&remember_acsecond[i]) FlatMatrix<SIMD<Complex>> (mat);
+            return;
+          }
+      }
+    throw Exception ("no space for userdata - memory available");
+  }
+
   
-  void AssignMemory (const CoefficientFunction * cf, size_t h, size_t w, LocalHeap & lh)
+  void AssignMemory (const CoefficientFunction * cf, size_t h, size_t w, LocalHeap & lh,
+      xbool complex=maybe)
   {
     for (size_t i = 0; i < remember_cf_first.Size(); i++)
       {
         if (remember_cf_first[i] == nullptr)
           {
             remember_cf_first[i] = cf;
-            new (&remember_cf_second[i]) FlatMatrix<double> (h, w, lh);            
-            new (&remember_cf_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
+            if(!complex.IsTrue())
+              {
+                new (&remember_cf_second[i]) FlatMatrix<double> (h, w, lh);
+                new (&remember_cf_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
+              }
+            if (!complex.IsFalse())
+              {
+                new (&remember_cf_csecond[i]) FlatMatrix<Complex> (h, w, lh);
+                new (&remember_cf_acsecond[i]) FlatMatrix<SIMD<Complex>> (w, (h+SIMD<Complex>::Size()-1)/SIMD<Complex>::Size(), lh);
+              }
             remember_cf_computed[i] = false;
             return;
           }
@@ -359,6 +402,21 @@ public:
     throw Exception ("no space for userdata - memory available");
   }
 
+  void AssignMemory (const CoefficientFunction * cf, FlatMatrix<SIMD<Complex>> mat)
+  {
+    for (size_t i = 0; i < remember_cf_first.Size(); i++)
+      {
+        if (remember_cf_first[i] == nullptr || remember_cf_first[i] == cf)
+          {
+            remember_cf_first[i] = cf;
+            new (&remember_cf_acsecond[i]) FlatMatrix<SIMD<Complex>> (mat);
+            remember_cf_computed[i] = true;
+            return;
+          }
+      }
+    throw Exception ("no space for userdata - memory available");
+  }
+
   
 
   bool HasMemory (const ProxyFunction * proxy) const
@@ -373,17 +431,33 @@ public:
   {
     return remember_second[remember_first.PosSure(proxy)];
   }
+  FlatMatrix<Complex> GetMemoryC (const ProxyFunction * proxy) const
+  {
+    return remember_csecond[remember_first.PosSure(proxy)];
+  }
   FlatMatrix<SIMD<double>> GetAMemory (const ProxyFunction * proxy) const
   {
     return remember_asecond[remember_first.PosSure(proxy)];
+  }
+  FlatMatrix<SIMD<Complex>> GetAMemoryC (const ProxyFunction * proxy) const
+  {
+    return remember_acsecond[remember_first.PosSure(proxy)];
   }
   FlatMatrix<double> GetMemory (const CoefficientFunction * cf) const
   {
     return remember_cf_second[remember_cf_first.PosSure(cf)];
   }
+  FlatMatrix<Complex> GetMemoryC (const CoefficientFunction * cf) const
+  {
+    return remember_cf_csecond[remember_cf_first.PosSure(cf)];
+  }
   FlatMatrix<SIMD<double>> GetAMemory (const CoefficientFunction * cf) const
   {
     return remember_cf_asecond[remember_cf_first.PosSure(cf)];
+  }
+  FlatMatrix<SIMD<Complex>> GetAMemoryC (const CoefficientFunction * cf) const
+  {
+    return remember_cf_acsecond[remember_cf_first.PosSure(cf)];
   }
   bool Computed (const CoefficientFunction * cf) const
   {
@@ -569,11 +643,19 @@ public:
 			void * precomputed,
 			LocalHeap & lh) const override;
 
+    NGS_DLL_HEADER virtual void
+    ApplyElementMatrix (const FiniteElement & fel,
+			const ElementTransformation & trafo,
+			const FlatVector<Complex> elx,
+			FlatVector<Complex> ely,
+			void * precomputed,
+			LocalHeap & lh) const override;
+
     template <typename SCAL, typename SCAL_SHAPES>
     void T_ApplyElementMatrixEB (const FiniteElement & fel, 
                                  const ElementTransformation & trafo, 
-                                 const FlatVector<double> elx, 
-                                 FlatVector<double> ely,
+                                 const FlatVector<SCAL> elx,
+                                 FlatVector<SCAL> ely,
                                  void * precomputed,
                                  LocalHeap & lh) const;
 
