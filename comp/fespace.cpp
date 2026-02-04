@@ -1339,7 +1339,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         evaluator = block_evaluator->BaseDiffOp();
       }
     auto trial = make_shared<ProxyFunction>(nullptr, // dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
-                                            false, false, evaluator,
+                                            false, IsComplex(), evaluator,
                                             nullptr, nullptr, nullptr, nullptr, nullptr);
     auto test  = make_shared<ProxyFunction>(nullptr, // dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
                                             true, false, evaluator,
@@ -2404,7 +2404,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<FESpace*>(this)->shared_from_this());
 
-    auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
+    auto proxy = make_shared<ProxyFunction>  (fes, testfunction, testfunction ? false : fes->IsComplex(),
                                               fes->GetEvaluator(),
                                               fes->GetFluxEvaluator(),
                                               fes->GetEvaluator(BND),

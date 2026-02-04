@@ -1573,6 +1573,15 @@ namespace ngcomp
         return;
       }
 
+    ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
+    if (ud)
+      {
+        if (ud->HasMemory(this) && ud->Computed(this))
+          {
+            hvalues.AddSize(ir.Size(), Dimension()) = ud->GetMemoryC(this);
+            return;
+          }
+      }
     
     LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3b");
     // static Timer timer ("GFCoeffFunc::Eval-vec", NoTracing);
@@ -1624,6 +1633,15 @@ namespace ngcomp
       diffop[vb]->Apply (fel, ir, elu, values, lh2);
     else
       throw Exception ("don't know how I shall evaluate complex "+ToString(vb));
+
+    if (ud)
+      {
+        if (ud->HasMemory(this))
+          {
+            ud->GetMemoryC(this) = values;
+            ud->SetComputed(this);
+          }
+      }
   }
 
   void GridFunctionCoefficientFunction ::   
@@ -1735,6 +1753,16 @@ namespace ngcomp
         values = 0.0;
         return;
       }
+
+    ProxyUserData * ud = (ProxyUserData*)ir.GetTransformation().userdata;
+    if (ud)
+      {
+        if (ud->HasMemory(this) && ud->Computed(this))
+          {
+            bvalues.AddSize(Dimension(), ir.Size()) = ud->GetAMemoryC(this);
+            return;
+          }
+      }
     
     const ElementTransformation & trafo = ir.GetTransformation();
     
@@ -1789,6 +1817,15 @@ namespace ngcomp
       diffop[vb]->Apply (fel, ir, elu, values);    
     else
       throw Exception ("GridFunctionCoefficientFunction: SIMD: don't know how I shall evaluate");    
+
+    if (ud)
+      {
+        if (ud->HasMemory(this))
+          {
+            ud->GetAMemoryC(this) = bvalues;
+            ud->SetComputed(this);
+          }
+      }
   }
 
 
