@@ -188,6 +188,43 @@ namespace ngcomp
       : BASE(15 /* not used? */, aorder)
     {
       ndof = 15;
+
+
+      /*
+      // check n-continuity:
+      double eps = 1e-8;
+      IntegrationPoint ip1(eps, eps/2);
+      IntegrationPoint ip2(eps/2, eps);      
+
+      
+      Matrix shape1(15, 4);
+      Matrix shape2(15, 4);
+      const ElementTransformation & trafo = GetFEElementTransformation (ET_TRIG);
+      MappedIntegrationPoint<2,2> mip1(ip1, trafo);
+      MappedIntegrationPoint<2,2> mip2(ip2, trafo);
+      
+      CalcMappedShape_Matrix (mip1, shape1);
+      CalcMappedShape_Matrix (mip2, shape2);
+
+      cout << "shape1 = " << shape1 << endl;
+      cout << "shape2 = " << shape2 << endl;
+      Vec<2> n {1,-1};
+
+      Matrix shape1n(15,2), shape2n(15,2);
+
+      for (int i = 0; i < ndof; i++)
+        {
+          shape1n.Row(i) = shape1.Row(i).AsMatrix(2,2) * n;
+          shape2n.Row(i) = shape2.Row(i).AsMatrix(2,2) * n;
+        }
+
+      cout << "shape1n = " << shape1n << endl;
+      cout << "shape2n = " << shape2n << endl;
+      cout << "diff = " << shape1n-shape2n << endl;
+
+      
+      throw ExceptionNOSIMD ("JKM trig, stop");
+      */
     }
 
     virtual ~JKMFE_Triangle() {}
@@ -239,7 +276,12 @@ namespace ngcomp
             default: edgenr = 2; break;
             }
 
-          if (vnums[v0] > vnums[v1]) Swap(v0,v1);
+          bool swapped = false;
+          if (vnums[v0] > vnums[v1])
+            {
+              swapped = true;
+              Swap(v0,v1);
+            }
           
           Tx lamloc[3] = { lam[v0]-lam[minlam],
                            lam[v1]-lam[minlam],
@@ -263,12 +305,13 @@ namespace ngcomp
               // the HHJ basis:
               if (v0 == i)
                 {
-                  shape[ii] = T_SymRotRot_Dl2xDl1_v (lamloc[0], lamloc[2], lamloc[0]);
+                  shape[ii] = T_SymRotRot_Dl2xDl1_v (lamloc[0]-2*lamloc[1], lamloc[2], lamloc[0]);
                   shape[ii+1] = T_SymRotRot_Dl2xDl1_v (lamloc[1], lamloc[2], lamloc[0]);                  
                 }
               if (v1 == i)
                 {
-                  shape[ii] = T_SymRotRot_Dl2xDl1_v (lamloc[1], lamloc[2], lamloc[1]);
+                  shape[ii] = T_SymRotRot_Dl2xDl1_v (lamloc[1]-2*lamloc[0], lamloc[2], lamloc[1]);
+                  // double vz = swapped ? 1.0 : -1.0;
                   shape[ii+1] = T_SymRotRot_Dl2xDl1_v (lamloc[0], lamloc[2], lamloc[1]);                  
                 }
               ii+=2;
