@@ -180,9 +180,9 @@ namespace ngcomp
   }
 
 
-  std::map<ELEMENT_TYPE, IntegrationRule> JKM_FESpace::GetIntegrationRules() const
+  std::map<ELEMENT_TYPE, IntegrationRule> JKM_FESpace::GetIntegrationRules(int bonus_intorder) const
   {
-    IntegrationRule irtrig(ET_TRIG, 2*order);
+    IntegrationRule irtrig(ET_TRIG, 2*order+bonus_intorder);
 
     IntegrationRule ir;
 
