@@ -353,7 +353,7 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
     
     int dofs_per_face = order+1;
     
-    Mat<2,2> tautau = OuterProduct(tau, tau);
+    // Mat<2,2> tautau = OuterProduct(tau, tau);
     
     for (int i = 0; i <= order; i++)
       {
