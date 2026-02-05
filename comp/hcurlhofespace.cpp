@@ -1177,6 +1177,10 @@ namespace ngcomp
               hofe -> SetOrderCell (IVec<3> (p[0],p[1],0));  // old style
               FlatArray<IVec<2> > of(1, &p);
               hofe -> SetOrderFace (of);
+
+              if (highest_order_dc)
+                for (int j = 0; j < ngel.Edges().Size(); j++)
+                  hofe->SetOrderEdge (j, order_edge[ngel.Edges()[j]]-1);
               
               FlatArray<bool> augf(1, &usegrad_face[ma->GetSElFace(ei.Nr())]);
               hofe -> SetUseGradFace(augf); 
