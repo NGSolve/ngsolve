@@ -95,12 +95,16 @@ namespace ngcomp
     else
       throw ExceptionNOSIMD ("JKM trig, no simd");
   }
+}
 
 
+namespace ngfem
+{
+  template class T_HDivDivFE<ET_TRIG,ngcomp::JKMFE_Triangle>;
+}
 
-
-
-  
+namespace ngcomp
+{
 
   // ***************************** JKM FESpace *****************************
 
