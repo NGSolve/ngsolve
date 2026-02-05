@@ -4,7 +4,7 @@
 #include "fespace.hpp"
 #include "../fem/hdivdivfe.hpp"
 
-namespace ngcomp
+namespace ngfem
 {
 
   
@@ -80,8 +80,13 @@ namespace ngcomp
   };
 
 
+  extern template class T_HDivDivFE<ET_TRIG,JKMFE_Triangle>;
+}
 
 
+
+namespace ngcomp
+{
   
   class JKM_FESpace : public FESpace
   { 
