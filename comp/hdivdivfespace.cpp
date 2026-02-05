@@ -743,6 +743,8 @@ namespace ngcomp
       "  Create discontinuous HDivDiv space";
     docu.Arg("plus") = "bool = False\n"
       "  Add additional internal element bubble";
+    docu.Arg("orderinner") = "int = order\n"
+      "  Modify order of internal basis functions";
     return docu;
   }
 

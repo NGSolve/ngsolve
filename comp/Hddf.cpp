@@ -3,6 +3,7 @@
 #include <comp.hpp>
 
 #include "Hddf.hpp"
+#include "JKMspace.hpp"
 
 using namespace ngcomp;
 
@@ -208,9 +209,8 @@ namespace ngcomp
     
   public:
     HDivDivFacetHOElement(int order) :
-      HDivDivFacetElement(ET==ET_TRIG ? 3*(order+1) : 
-                            ET==ET_TET ? 2 * (order + 1) * (order + 2) : 0,
-                            order) {}
+      HDivDivFacetElement(ET==ET_TRIG ? 3*(order+1) :
+                          (ET==ET_TET ? 4 * 9 : 0) , order) {}
 
     ~HDivDivFacetHOElement() {}
 
@@ -297,8 +297,6 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShapes(const IntegrationPoint &ip, Sli
   }
 */
 
-  
-
 
 template <>
 void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, SliceMatrix<double> shapes) const 
@@ -366,9 +364,58 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
 
 
   
+  template <>
+  HDivDivFacetHOElement<ET_TET> ::  HDivDivFacetHOElement(int order) :
+    HDivDivFacetElement(order >= 1 ? 4*9 : 0, order) { }
+
+  template <>
+  void HDivDivFacetHOElement<ET_TET> :: CalcShapes(const IntegrationPoint &ip, SliceMatrix<double> shapes) const 
+  {
+    if (order < 1) return;
+
+    
+    LocalHeapMem<1000> lh("hddf");
+    if (ip.VB() != BND)
+      throw Exception("only boundary integration points allowed");
+    
+    shapes = 0;
+    int facenr = ip.FacetNr();
+    
+    Facet2ElementTrafo f2e(ET_TET,GetVertexNumbers());
+    Mat<3,2> jac = f2e.GetJacobian(facenr, lh);
+    // Mat<2,3> invjac = Inv(jac);
+    Mat<2,3> invjac = Inv(Trans(jac)*jac) * Trans(jac);
+    
+    IntegrationPoint ip0 = f2e(facenr, IntegrationPoint(Vec<2>(0,0)));
+
+    Vec<3> vec3d(ip(0)-ip0(0), ip(1)-ip0(1), ip(2)-ip0(2));
+    IntegrationPoint ip2d = invjac * vec3d;
+
+    
+    
+    // hardcoded: jkmtrig inner bubbles
+    JKMFE_Triangle jkmtrig(1);
+
+    Matrix shapes2d(15,4);
+
+    FE_ElementTransformation<2,2> trafo2d(ET_TRIG);
+    MappedIntegrationPoint<2,2> mip2d(ip2d,trafo2d);
+    jkmtrig.CalcMappedShape_Matrix(mip2d, shapes2d);
+
+    
+    int base = ip.FacetNr() * 9;
+    Mat<3,2> trans = jac;  // 1/Jacobidet ?
+    
+    for (int i = 0; i < 9; i++)
+      {
+        Mat<2,2> shape2d = shapes2d.Row(6+i).AsMatrix(2,2);
+        Mat<3,3> shape3d = trans * shape2d * Trans(trans);
+        shapes.Row(base+i) = shape3d.AsVector();
+      }
+  }
 
 
-
+  
 
   /*
   Implementation of the Differential Operators
@@ -401,7 +448,7 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
       Cast(fel).CalcShapes(mip.IP(), Trans(mat));
 
       Vec<D> n = ElementTopology::GetNormals<D>(mip.GetTransformation().GetElementType())[mip.IP().FacetNr()];
-      Vec<2> tau(-n(1),n(0));
+      // Vec<2> tau(-n(1),n(0));
       double factor = 1 / L2Norm(Cof(jacobian) * n);
 
       for (int i = 0; i < fel.GetNDof(); i++)
@@ -446,74 +493,10 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
       }
     }
   };
-  // define the square root
+
 
   template <int DIM> class DiffOpDivHDDFacet;
 
-
-  /*
-  template<>
-  class DiffOpCurlHCCFacet<3> : public DiffOp<DiffOpCurlHCCFacet<3>>
-  {
-  public:
-    enum
-    {
-      DIM = 1,
-      DIM_SPACE = 3,
-      DIM_ELEMENT = 3,
-      DIM_DMAT = 9,
-      DIFFORDER = 1,
-    };
-
-    static auto &Cast(const FiniteElement &fel)
-    {
-      return static_cast<const HDivDivFacetElement &>(fel);
-    }
-    static Array<int> GetDimensions() { return Array<int>({3, 3}); }
-
-    template <typename MIP, typename MAT>
-    static void GenerateMatrix(const FiniteElement &fel,
-                               const MIP &mip,
-                               MAT &&mat, LocalHeap &lh)
-    {
-
-      Mat<3, 3> jacobian = mip.GetJacobian();
-
-      double factor = 1;
-
-      switch (mip.IP().VB())
-      {
-      case BND:
-      {
-        Vec<3> n = ElementTopology::GetNormals<3>(ET_TET)[mip.IP().FacetNr()];
-        factor = 1 / L2Norm(Cof(mip.GetJacobian()) * n);
-        // factor = 1;
-        Cast(fel).CalcFaceCurlShapes(mip.IP(), Trans(mat));
-        break;
-      }
-      case BBND:
-      {
-        Vec<3> t = GetTangents()[mip.IP().FacetNr()];
-        factor = 1 / L2Norm(jacobian * t);
-        Cast(fel).CalcEdgeCurlShapes(mip.IP(), Trans(mat));
-        break;
-      }
-      default:
-      {
-        throw Exception("only boundary integration points allowed");
-      }
-      }
-
-      for (int i = 0; i < fel.GetNDof(); i++)
-      {
-        // FlatMatrix<> shapei(3, 3, &mat(0, i));
-        FlatMatrix<> shapei = mat.Col(i).AsMatrix(3,3);
-        Mat<3, 3> trafo_shapei = factor * Cof(jacobian)*Mat<3, 3>(shapei) * Trans(jacobian);
-        shapei = trafo_shapei;
-      }
-    }
-  };
-  */
   
   template<>
   class DiffOpDivHDDFacet<2> : public DiffOp<DiffOpDivHDDFacet<2>>
@@ -578,6 +561,69 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
 
 
 
+  template<>
+  class DiffOpDivHDDFacet<3> : public DiffOp<DiffOpDivHDDFacet<3>>
+  {
+  public:
+    enum
+    {
+      DIM = 1,
+      DIM_SPACE = 3,
+      DIM_ELEMENT = 3,
+      DIM_DMAT = 3,
+      DIFFORDER = 1,
+    };
+
+    static auto &Cast(const FiniteElement &fel)
+    {
+      return static_cast<const HDivDivFacetElement &>(fel);
+    }
+    static Array<int> GetDimensions() { return Array<int>({3,}); }
+
+    template <typename MIP, typename MAT>
+    static void GenerateMatrix(const FiniteElement &fel,
+                               const MIP &mip,
+                               MAT &&mat, LocalHeap &lh)
+    {
+      throw Exception ("DiffOpDivHDDFacet<3>  not ready");
+      Mat<3,3> jacobian = mip.GetJacobian();
+      /*
+      double factor = 1;
+
+      switch (mip.IP().VB())
+      {
+      case BND:
+      {
+        Cast(fel).CalcFaceDivShapes(mip.IP(), Trans(mat));
+
+        Vec<2> t = GetTangentsTrig()[mip.IP().FacetNr()];
+        factor = 1 / L2Norm(jacobian * t);
+        break;
+      }
+      case BBND:
+      {
+        Cast(fel).CalcEdgeDivShapes(mip.IP(), Trans(mat));
+        break;
+      }
+      default:
+      {
+        throw Exception("only boundary integration points allowed");
+      }
+      }
+
+      for (int i = 0; i < fel.GetNDof(); i++)
+      {
+        // FlatMatrix<> shapei(3, 3, &mat(0, i));
+        FlatVector<> shapei = mat.Col(i);
+        // Vec<2> trafo_shapei = factor*Cof(jacobian)*Vec<2>(shapei);
+        Vec<2> trafo_shapei = factor*jacobian*Vec<2>(shapei);
+        shapei = trafo_shapei;
+      }
+      */
+    }
+  };
+
+
 
 
 
@@ -596,12 +642,10 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDDFacet<2>>>();
         additional_evaluators.Set("div", make_shared<T_DifferentialOperator<DiffOpDivHDDFacet<2>>>());        
         break;
-        /*
       case 3:
-        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHCCFacet<3>>>();
-        additional_evaluators.Set("curl", make_shared<T_DifferentialOperator<DiffOpCurlHCCFacet<3>>>());
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdHDDFacet<3>>>();
+        additional_evaluators.Set("curl", make_shared<T_DifferentialOperator<DiffOpDivHDDFacet<3>>>());
         break;
-        */
       default:
         throw Exception ("HDDFacet, unsupported dim");
       }
@@ -612,7 +656,8 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
     if (ma->GetDimension()==2)
       dofs_per_face = (order + 1);
     else
-      dofs_per_face = (order + 1) * (order + 2) / 2;
+      dofs_per_face = (order>=1) ? 9 : 0;
+        
   }
 
   void HDivDivFacetSpace::Update()
@@ -639,14 +684,12 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
         Ngs_Element ngel = ma->GetElement(ei);
         switch (ngel.GetType())
           {
-            /*
           case ET_TET:
             {
               auto *fe = new (alloc) HDivDivFacetHOElement<ET_TET>(order);
               fe->VertexOrientedFE<ET_TET>::SetVertexNumbers(ngel.vertices);
               return *fe;          
             }
-            */
           case ET_TRIG:
             {
               auto *fe = new (alloc) HDivDivFacetHOElement<ET_TRIG>(order);
@@ -654,7 +697,7 @@ void HDivDivFacetHOElement<ET_TRIG> :: CalcShapes(const IntegrationPoint &ip, Sl
               return *fe;          
             }
           default:
-            throw Exception("element type"+ToString(ngel.GetType())+" not implemented");
+            throw Exception("element type "+ToString(ngel.GetType())+" not implemented");
           }
       }
 
