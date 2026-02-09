@@ -1,6 +1,7 @@
 import hashlib
 import json
 import os
+from pathlib import Path
 
 pyodide_version = os.environ["PYODIDE_VERSION"]
 
@@ -15,7 +16,7 @@ for name in pkg:
     ):
         p["file_name"] = (
             f"https://cdn.jsdelivr.net/pyodide/v{pyodide_version}/full/"
-            + p["file_name"]
+            + Path(p["file_name"]).name
         )
     pkg[name] = p
 
@@ -37,6 +38,28 @@ pkg.update(
             "imports": [],
             "depends": [],
         },
+        "libngcore": {
+            "name": "libngcore",
+            "version": "6.2.2406",
+            "file_name": "libngcore.zip",
+            "install_dir": "dynlib",
+            "sha256": getHash("libngcore.zip"),
+            "package_type": "shared_library",
+            "imports": [],
+            "depends": [],
+            "unvendored_tests": False,
+        },
+        "libnglib": {
+            "name": "libnglib",
+            "version": "6.2.2406",
+            "file_name": "libnglib.zip",
+            "install_dir": "dynlib",
+            "sha256": getHash("libnglib.zip"),
+            "package_type": "shared_library",
+            "imports": [],
+            "depends": ["libngcore"],
+            "unvendored_tests": False,
+        },
         "netgen": {
             "name": "netgen",
             "version": "6.2.2406",
@@ -45,7 +68,7 @@ pkg.update(
             "sha256": getHash("netgen.zip"),
             "package_type": "cpython_module",
             "imports": ["netgen"],
-            "depends": ["pyngcore", "webgui-jupyter-widgets"],
+            "depends": ["libnglib", "webgui-jupyter-widgets", "pyngcore"],
             "unvendored_tests": False,
             "shared_library": True,
         },
@@ -57,7 +80,7 @@ pkg.update(
             "sha256": getHash("ngsolve.zip"),
             "package_type": "cpython_module",
             "imports": ["ngsolve"],
-            "depends": ["openblas", "numpy", "netgen"],
+            "depends": ["libopenblas", "numpy", "netgen"],
             "unvendored_tests": False,
             "shared_library": True,
         },
@@ -69,7 +92,7 @@ pkg.update(
             "sha256": getHash("pyngcore.zip"),
             "package_type": "cpython_module",
             "imports": ["pyngcore"],
-            "depends": [],
+            "depends": ["numpy", "libngcore"],
             "unvendored_tests": False,
             "shared_library": True,
         },

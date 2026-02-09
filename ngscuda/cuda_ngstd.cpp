@@ -44,7 +44,13 @@ namespace ngs_cuda
   {
     int devCount;
     printf("CUDA Device Query...\n"); 
-    cudaGetDeviceCount(&devCount);
+    
+    cudaError_t err = cudaGetDeviceCount(&devCount);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaGetDeviceCount() failed: %s\n", cudaGetErrorString(err));
+        return;
+    }
+    
     if (devCount == 1)
       printf("There is %d CUDA device.\n", devCount);
     else
@@ -78,9 +84,18 @@ namespace ngs_cuda
     if(verbose >= 1)
       cout << "Using device " << dev_id << endl;
 
+
+#if defined(CUDA_VERSION)
+#if CUDA_VERSION >= 3020 && CUDA_VERSION < 12000 // CUDA 3.2 to CUDA 11.x
     cudaDeviceSetSharedMemConfig ( cudaSharedMemBankSizeEightByte );
+#endif
+#endif
   }
 
+
+  cudaStream_t ngs_cuda_stream = cudaStreamDefault;  
+
+  
   DevStackMemory stackmemory;
 
   DevBitArray :: DevBitArray (size_t asize)

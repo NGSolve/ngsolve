@@ -1294,7 +1294,7 @@ namespace ngcomp
             
             Matrix<double,ColMajor> bmatx_(ir.Size()*dimxref, felx.GetNDof());
             Matrix<double,ColMajor> bmaty_(ir.Size()*dimyref, fely.GetNDof());
-        
+
             for (int i : Range(ir.Size()))
               {
                 int starti = i*dimxref;
@@ -1318,6 +1318,17 @@ namespace ngcomp
 
             Matrix bmatx = bmatx_;
             Matrix bmaty = bmaty_;
+
+            if (!linear)  // transpose intpnt <--> comp
+              {
+                for (int i : Range(ir.Size()))
+                  for (int j : Range(dimxref))
+                    bmatx.Row(j*ir.Size()+i) = bmatx_.Row(i*dimxref+j);
+                for (int i : Range(ir.Size()))
+                  for (int j : Range(dimyref))
+                    bmaty.Row(j*ir.Size()+i) = bmaty_.Row(i*dimyref+j);
+              }
+            
             
             Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
             Table<DofId> xdofsout(elclass_inds.Size(), bmatx.Height());
@@ -1350,12 +1361,25 @@ namespace ngcomp
               }
             else
               {
+                /*
                 for (size_t i = 0; i < nip; i++)
                   for (size_t j = 0; j < dimxref; j++)
                     xa[i*dimxref+j] = j*nip+i;
+                */
+
+                for (size_t i = 0; i < nel; i++)
+                  for (size_t k = 0; k < dimxref*ir.Size(); k++)
+                    xdofsout[i][k] = i+k*nel;
+                
+                /*
                 for (size_t i = 0; i < nip; i++)
                   for (size_t j = 0; j < dimyref; j++)
                     ya[i*dimyref+j] = j*nip+i;
+                */
+
+                for (size_t i = 0; i < nel; i++)
+                  for (size_t k = 0; k < dimyref*ir.Size(); k++)
+                    ydofsout[i][k] = i+k*nel;
               }
             
             auto bx = make_shared<ConstantElementByElementMatrix<>>
@@ -1446,11 +1470,21 @@ namespace ngcomp
                           }
 
                         transy *= mir[j].GetWeight();
-                        diagx(STAR,STAR,i*ir.Size()+j) = transx;
-                        diagy(STAR,STAR,i*ir.Size()+j) = transy;
+                        // diagx(STAR,STAR,i*ir.Size()+j) = transx;  // old
+                        // diagy(STAR,STAR,i*ir.Size()+j) = transy;  // old
+                        diagx(STAR,STAR,i+j*nel) = transx;
+                        diagy(STAR,STAR,i+j*nel) = transy; 
                       }
+
+                    /*
                     points.Cols(i*ir.Size(), (i+1)*ir.Size()) = Trans(mir.GetPoints());
                     normals.Cols(i*ir.Size(), (i+1)*ir.Size()) = Trans(mir.GetNormals());
+                    */
+                    for (int j = 0; j < ir.Size(); j++)
+                      {
+                        points.Col(i+j*nel) = mir.GetPoints().Row(j);   // untested
+                        normals.Col(i+j*nel) = mir.GetNormals().Row(j); // untested
+                      }
                   }
                 
                 shared_ptr<CoefficientFunction> coef = bfi -> GetCoefficientFunction();
@@ -1487,7 +1521,7 @@ namespace ngcomp
 
   void BilinearForm :: ReAssemble (LocalHeap & lh, bool reallocate)
   {
-    if (nonassemble)
+    if (nonassemble || matrix_free_bdb)
       {
         Assemble(lh);
         return;
@@ -2719,7 +2753,8 @@ namespace ngcomp
                              ElementId ei2(VOL, el2);
                              fnums2 = ma->GetElFacets(ei2);
                              int facnr2 = fnums2.Pos(facet2);
-                             
+
+                             /*
                              {
                                lock_guard<mutex> guard(printmatasstatus2_mutex);
                                cnt++;
@@ -2728,6 +2763,7 @@ namespace ngcomp
                                  cout << IM(3) << "\rassemble inner facet element " << cnt << "/" << nf << flush;
                                BaseStatusHandler::SetThreadPercentage ( 100.0*(gcnt) / (loopsteps) );
                              }
+                             */
                              
                              const FiniteElement & fel1 = fespace->GetFE (ei1, lh);
                              const FiniteElement & fel2 = fespace->GetFE (ei2, lh);
@@ -2872,11 +2908,16 @@ namespace ngcomp
 
                                  int dim = fespace->GetDimension();
 
-                                 for (int i = 0; i < dnums.Size(); ++i)
-                                   for (int j = 0; j < dnums.Size(); ++j)
-                                     for (int di = 0; di < dim; ++di)
-                                       for (int dj = 0; dj < dim; ++dj)
-                                         compressed_elmat(dim*dnums_to_compressed[i]+di,dim*dnums_to_compressed[j]+dj) += elmat(i*dim+di,j*dim+dj);
+                                 if (dim == 1)
+                                   for (int i = 0; i < dnums.Size(); ++i)
+                                     for (int j = 0; j < dnums.Size(); ++j)
+                                       compressed_elmat(dnums_to_compressed[i],dnums_to_compressed[j]) += elmat(i,j);
+                                 else
+                                   for (int i = 0; i < dnums.Size(); ++i)
+                                     for (int j = 0; j < dnums.Size(); ++j)
+                                       for (int di = 0; di < dim; ++di)
+                                         for (int dj = 0; dj < dim; ++dj)
+                                           compressed_elmat(dim*dnums_to_compressed[i]+di,dim*dnums_to_compressed[j]+dj) += elmat(i*dim+di,j*dim+dj);
 
                                  {
                                    // lock_guard<mutex> guard(addelemfacin_mutex);
@@ -2886,7 +2927,7 @@ namespace ngcomp
                                }
                            }
                        }                             
-                   });
+                   }, 10*TaskManager::GetNumThreads());
                 cout << IM(3) << "\rassemble inner facet element " << nf << "/" << nf << endl;
               } // if (elementwise_skeleton_parts.Size())
                 
@@ -3009,7 +3050,7 @@ namespace ngcomp
                               }
                             }//end for (numintegrators)
                         }//end for nse                  
-                    });//end of parallel
+                    }, 10*TaskManager::GetNumThreads());//end of parallel
                 // cout << "\rassemble facet surface element " << ne << "/" << ne << endl;  
               } // if facetwise_skeleton_parts[BND].size
             
@@ -3069,7 +3110,7 @@ namespace ngcomp
                   assembledspecialelements = true;
                   lh.CleanUp();
                 }
-            });
+            }, 10*TaskManager::GetNumThreads());
             if(assembledspecialelements) cout << IM(3) << "\rassemble special element " 
                                               << specialelements.Size() << "/" << specialelements.Size() << endl;
             tspecial.Stop();

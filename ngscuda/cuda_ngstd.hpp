@@ -4,94 +4,18 @@
 #include <cuda_runtime.h>
 #include <ngstd.hpp>
 
+#include "cuda_core.hpp"
 #include "cuda_profiler.hpp"
 
 namespace ngs_cuda
 {
   using namespace ngstd;
 
-  // from CUDA C++ Programming Guide:
-  // https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#atomic-functions
-#ifdef __CUDA_ARCH__
-#if __CUDA_ARCH__ < 600
-  inline __device__ double atomicAdd(double* address, double val)
-  {
-      unsigned long long int* address_as_ull =
-                                (unsigned long long int*)address;
-      unsigned long long int old = *address_as_ull, assumed;
-
-      do {
-          assumed = old;
-          old = atomicCAS(address_as_ull, assumed,
-                          __double_as_longlong(val +
-                                 __longlong_as_double(assumed)));
-
-      // Note: uses integer comparison to avoid hang in case of NaN (since NaN != NaN)
-      } while (assumed != old);
-
-      return __longlong_as_double(old);
-  }
-#endif
-#endif
 
   
   extern int gpu_clock;
   void InitCUDA (int verbose = 2);
 
-
-  template <typename T>
-  class Dev 
-  {
-  public:
-    T data;
-    static Dev<T> * Malloc(size_t size)
-    {
-      Dev<T> * ptr;
-      if (auto err = cudaMalloc (&ptr, size*sizeof(T)))
-        throw Exception("cudaMalloc error, ec="+ToString(err));
-      return ptr;        
-    }
-    
-    static void Free(Dev<T> * data)
-    {
-        cudaFree (data);   
-    }
-
-    T D2H() const
-    {
-      T res;
-      cudaMemcpy (&res, &data, sizeof(T), cudaMemcpyDeviceToHost);
-      return res;
-    }
-
-    void H2D (T val)
-    {
-      cudaMemcpy (&data, &val, sizeof(T), cudaMemcpyHostToDevice);
-    }
-
-
-    void D2H (FlatArray<T> hosta)
-    {
-      cudaMemcpy (hosta.Data(), &data, hosta.Size()*sizeof(T), cudaMemcpyDeviceToHost);
-    }
-
-    void H2D (FlatArray<T> hosta)
-    {
-      cudaMemcpy (&data, hosta.Data(), hosta.Size()*sizeof(T), cudaMemcpyHostToDevice);
-    }
-
-    
-    __device__ Dev<T> & operator= (T d2) { data = d2; return *this; }
-    __device__ operator T() const { return data; } 
-    
-    template <typename T2>
-    __device__ auto & operator+= (T2 other) { data += other; return *this; }
-    template <typename T2>
-    __device__ auto & operator-= (T2 other) { data -= other; return *this; }
-    template <typename T2>
-    __device__ auto & operator*= (T2 other) { data *= other; return *this; }
-  };
-    
 }
 
 namespace ngcore {
@@ -104,43 +28,6 @@ namespace ngcore {
 
 namespace ngs_cuda
 {
-
-  /*
-  template <typename T>
-  class DevVar
-  {
-    T * ptr;
-  public:
-    DevVar()
-    {
-      cudaMalloc (&ptr, sizeof(T));
-    }
-
-    DevVar(T val)
-    {
-      cudaMalloc (&ptr, sizeof(T));
-      cudaMemcpy (ptr, &val, sizeof(T), cudaMemcpyHostToDevice);
-    }
-
-    operator T () const
-    {
-      T tmp;
-      cudaMemcpy (&tmp, ptr, sizeof(T), cudaMemcpyDeviceToHost);    
-      return tmp;
-    }
-
-    T * DevPtr() const { return ptr; }
-    T & DevRef() const { return *ptr; }
-
-  };
-
-  template <typename T>
-  inline ostream & operator<< (ostream & ost, DevVar<T> & var)
-  {
-    ost << T(var);
-    return ost;
-  }
-  */
 
     // TODO: Resize + error checking
   class DevStackMemory

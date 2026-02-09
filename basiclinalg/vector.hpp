@@ -8,6 +8,7 @@
 /**************************************************************************/
 
 #include "expr.hpp"
+#include "core/archive.hpp"
 #include <core/hashtable.hpp>   // for SparseVector
 
 namespace ngbla
@@ -141,9 +142,170 @@ namespace ngbla
   {
   protected:
     typedef MatExpr<VectorView> BASE;
+    
+    /*
     T * __restrict data;
     NO_UNIQUE_ADDRESS TS size;
     NO_UNIQUE_ADDRESS TDIST dist;
+    */
+
+
+    // the data ...
+    
+    template <typename LT>
+    class Layout1
+    {
+      LT * data;
+    public:
+      Layout1() = default;
+      Layout1(const Layout1&) = default;      
+      Layout1(Layout1&&) = default;
+
+      Layout1& operator= (const Layout1&) = default;
+      Layout1& operator= (Layout1&&) = default;
+      
+      ~Layout1() = default;
+      
+      INLINE Layout1 (LT * adata) : data(adata) { } 
+      INLINE auto Data() const { return data; }
+    };
+
+
+    
+    // add the size:  variable, constant, undefined_size
+    
+    template <typename LT, typename LTS>
+    class Layout2 : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
+      LTS size;
+    public:
+      Layout2() = default;
+      Layout2(const Layout2&) = default;      
+      Layout2(Layout2&&) = default;
+
+      Layout2& operator= (const Layout2&) = default;
+      Layout2& operator= (Layout2&&) = default;      
+      ~Layout2() = default;
+      
+      INLINE Layout2 (LT * adata, LTS asize)
+        : BASE(adata), size(asize) { }
+      INLINE Layout2 (LT * adata)
+        : BASE(adata) { }
+
+      
+      INLINE auto Size() const { return size; }
+      using BASE::Data;
+    };
+
+    
+    template <typename LT, int IDIST>
+    class Layout2<LT,IC<IDIST>> : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
+    public:
+      Layout2() = default;
+      Layout2(const Layout2&) = default;      
+      Layout2(Layout2&&) = default;
+
+      Layout2& operator= (const Layout2&) = default;
+      Layout2& operator= (Layout2&&) = default;      
+      ~Layout2() = default;
+      
+      INLINE Layout2 (LT * adata, IC<IDIST> asize)
+        : BASE(adata) { }
+      INLINE Layout2 (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Size() const { return IC<IDIST>(); }
+      using BASE::Data;
+    };
+
+
+#if !defined(NETGEN_ENABLE_CHECK_RANGE)
+    
+    template <typename LT>
+    class Layout2<LT,undefined_size> : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
+    public:
+      Layout2() = default;
+      Layout2(const Layout2&) = default;      
+      Layout2(Layout2&&) = default;
+
+      Layout2& operator= (const Layout2&) = default;
+      Layout2& operator= (Layout2&&) = default;      
+      ~Layout2() = default;
+      
+      INLINE Layout2 (LT * adata, undefined_size asize)
+        : BASE(adata) { }
+      INLINE Layout2 (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Size() const { return undefined_size(); }
+      using BASE::Data;
+    };
+
+#endif
+
+    
+    // add the distance:  variable, constant
+    
+    template <typename LT, typename LTS, typename LTDIST>
+    class Layout : public Layout2<LT,LTS>
+    {
+      typedef Layout2<LT,LTS> BASE;
+      LTDIST dist;
+    public:
+      Layout() = default;
+      Layout(const Layout&) = default;      
+      Layout(Layout&&) = default;
+
+      Layout& operator= (const Layout&) = default;
+      Layout& operator= (Layout&&) = default;
+      ~Layout() = default;
+      
+      INLINE Layout (LT * adata, LTS asize, LTDIST adist)
+        : BASE(adata,asize), dist{adist} { }
+      INLINE Layout (LT * adata, LTS asize)
+        : BASE(adata,asize) { }
+      INLINE Layout (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Dist() const { return dist; }
+      using BASE::Data;
+      using BASE::Size;      
+    };
+
+    
+    template <typename LT, typename LTS, int IDIST>
+    class Layout<LT, LTS, IC<IDIST>> : public Layout2<LT,LTS>
+    {
+      typedef Layout2<LT,LTS> BASE;      
+    public:
+      Layout() = default;
+      Layout(const Layout&) = default;      
+      Layout(Layout&&) = default;
+
+      Layout& operator= (const Layout&) = default;
+      Layout& operator= (Layout&&) = default;
+      ~Layout() = default;
+      
+      INLINE Layout (LT * adata, LTS asize, IC<IDIST> adist)
+        : BASE(adata,asize) { }
+      INLINE Layout (LT * adata, LTS asize)
+        : BASE(adata,asize) { }
+      INLINE Layout (LT * adata)
+        : BASE(adata) { }
+
+      INLINE auto Dist() const { return IC<IDIST>(); }
+      using BASE::Data;
+      using BASE::Size;      
+    };
+    
+    Layout<T,TS,TDIST> layout;
+
+    
   public:
     typedef T TELEM;
     typedef typename mat_traits<T>::TSCAL TSCAL;
@@ -152,33 +314,38 @@ namespace ngbla
     /// linear element access ? 
     static constexpr bool IsLinear() { return std::is_same<type_dist,IC<1>>(); }
     
-    INLINE VectorView () = default;
-    INLINE VectorView (const VectorView&) = default;
-    INLINE VectorView (VectorView&&) = default;
+    VectorView () = default;
+    VectorView (const VectorView&) = default;
+    VectorView (VectorView&&) = default;
     
     template <typename T2, typename TS2, typename TDIST2,
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
               enable_if_t<is_constructible<TS,TS2>::value, int> =0,
               enable_if_t<is_constructible<TDIST,TDIST2>::value, int> =0>
     INLINE VectorView (const VectorView<T2,TS2,TDIST2> & v2)
-      : data{v2.Data()}, size{TS(v2.Size())}, dist{TDIST(v2.Dist())} { }
+      : layout(v2.Data(), TS(v2.Size()), TDIST(v2.Dist())) { }
+    // : data{v2.Data()}, size{TS(v2.Size())}, dist{TDIST(v2.Dist())} { }
     
     INLINE explicit VectorView (T * adata)
-      : data(adata)
+    // : data(adata)
+      : layout(adata)
     {
       ; // static_assert(std::is_same<type_dist,IC<1>>());
     } 
     INLINE VectorView (TS asize, T * adata)
-      : data(adata), size(asize)
+    // : data(adata), size(asize)
+      : layout(adata, asize) 
     {
       static_assert(std::is_same<type_dist,IC<1>>());
     } 
     INLINE VectorView (TS asize, TDIST adist, T * adata)
-      : data(adata), size(asize), dist(adist) { } 
+    // : data(adata), size(asize), dist(adist) { }
+      : layout(adata, asize, adist) { } 
 
     /// allocate FlatVector on local heap
     INLINE VectorView (size_t as, LocalHeap & lh) 
-      :  data(lh.Alloc<T> (as)), size(as), dist(IC<1>()) { }
+    // :  data(lh.Alloc<T> (as)), size(as), dist(IC<1>()) { }
+      : layout(lh.Alloc<T> (as), as, IC<1>()) { }
 
     template <typename EXPR>
     INLINE VectorView(LocalHeapExpr<EXPR>&& lhe)
@@ -191,7 +358,8 @@ namespace ngbla
 
     template <int S>
     INLINE VectorView (Vec<S,T> & v)
-      : data(v.Data()), size(v.Size()), dist(IC<1>()) { }
+      // : data(v.Data()), size(v.Size()), dist(IC<1>()) { }
+      : layout{v.Data(), TS(v.Size()), (TDIST)IC<1>()} {}
 
     
     /*
@@ -201,7 +369,8 @@ namespace ngbla
     */
     template <int S>
     INLINE VectorView (const Vec<S,T> & v)
-      : data(const_cast<T*>(v.Data())), size(v.Size()), dist(IC<1>()) { }
+    // : data(const_cast<T*>(v.Data())), size(v.Size()), dist(IC<1>()) { }
+      : layout(const_cast<T*>(v.Data()), v.Size(), IC<1>()) { }
     /*
     template <int S>
     INLINE VectorView (Vec<S,const T> & v)
@@ -211,38 +380,46 @@ namespace ngbla
       : data(const_cast<T*>(v.Data())), size(v.Size()), dist(IC<1>()) { } 
     */
     
-    INLINE auto Size() const { return size; }
-    INLINE auto Dist() const { return dist; }
-    INLINE auto Shape() const { return tuple(size); }
+    INLINE auto Size() const { return layout.Size(); }
+    INLINE auto Dist() const { return layout.Dist(); }
+    INLINE auto Shape() const { return tuple(layout.Size()); }
     
 
-    INLINE auto Height () const { return size; }
+    INLINE auto Height () const { return layout.Size(); }
     INLINE auto Width () const { return IC<1>(); }
 
-    INLINE auto Range () const { return IntRange (0, size); }
+    INLINE auto Range () const { return IntRange (0, layout.Size()); }
 
-    INLINE T * Addr(size_t i) const { return data+i*dist; }
-    INLINE T * Data() const { return data; }
+    INLINE T * Addr(size_t i) const { return layout.Data()+i*layout.Dist(); }
+    INLINE T * Data() const { return layout.Data(); }
 
     INLINE auto View() const { return VectorView(*this); }         
     INLINE auto ViewRW() { return this->View(); }    
 
+    void Dump (ostream & ost) const
+    { ost << "VectorView (size=" << Size() << ", dist=" << Dist() << ")"; }
 
 
     /// assign memory for vector on local heap
     INLINE void AssignMemory (size_t as, LocalHeap & lh) 
     {
+      /*
       size = as;
       dist = IC<1>();
       data = lh.Alloc<T>(size);
+      */
+      layout = { lh.Alloc<T>(as), as, IC<1>() };
     }
 
     /// assign memory for vector
     void AssignMemory (size_t as, T * mem) 
     {
+      /*
       size = as;
       dist = IC<1>(); 
       data = mem;
+      */
+      layout = { mem, as, IC<1>() };
     }
     
     INLINE auto & operator= (const VectorView & v)
@@ -295,7 +472,7 @@ namespace ngbla
     {
       NETGEN_CHECK_RANGE(D,0,Size()+1);
       for (int i = 0; i < D; i++)
-	data[i*dist] = v(i);
+	Data()[i*Dist()] = v(i);
       return *this;
     }
     
@@ -303,13 +480,13 @@ namespace ngbla
     INLINE TELEM & operator[] (size_t i) 
     {
       NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*dist]; 
+      return Data()[i*Dist()]; 
     }
 
     INLINE const TELEM & operator[] (size_t i) const
     {
       NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*dist]; 
+      return Data()[i*Dist()]; 
     }
 
     
@@ -319,14 +496,14 @@ namespace ngbla
     INLINE TELEM & operator() (I i) const
     {
       NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*dist]; 
+      return Data()[i*Dist()]; 
     }
 
     /// element access. index j is ignored
     INLINE TELEM & operator() (size_t i, size_t j) const
     {
       NETGEN_CHECK_RANGE(i,0,Size());
-      return data[i*dist]; 
+      return Data()[i*Dist()]; 
     }
     
     RowsArrayExpr<VectorView> operator() (FlatArray<int> rows) const
@@ -337,7 +514,7 @@ namespace ngbla
     INLINE auto Range (size_t first, size_t next) const
     {
       NETGEN_CHECK_RANGE(next,first,Size()+1);
-      return VectorView<T,size_t,TDIST> (next-first, dist, data+first*dist);
+      return VectorView<T,size_t,TDIST> (next-first, Dist(), Data()+first*Dist());
     }
 
     INLINE auto Range (size_t next) const
@@ -353,7 +530,7 @@ namespace ngbla
     INLINE auto RangeN (size_t first, size_t n) const
     {
       NETGEN_CHECK_RANGE(first+n,first,Size()+1);
-      return VectorView<T,size_t,TDIST> (n, dist, data+first*dist);
+      return VectorView<T,size_t,TDIST> (n, Dist(), Data()+first*Dist());
     }
 
 
@@ -369,7 +546,7 @@ namespace ngbla
     INLINE auto Slice(size_t first, size_t dist2) const
     {
       // return VectorView<T,decltype(declval<TS>()/size_t()), decltype(declval<TDIST>()*size_t())> (size/dist2, dist2*dist, Addr(first));
-      return VectorView<T,decltype(declval<TS>()/size_t()), decltype(declval<TDIST>()*size_t())> ( (size-first+dist2-1)/dist2, dist2*dist, Addr(first));
+      return VectorView<T,decltype(declval<TS>()/size_t()), decltype(declval<TDIST>()*size_t())> ( (Size()-first+dist2-1)/dist2, dist2*Dist(), Addr(first));
     }
 
     INLINE auto Reversed() const
@@ -378,15 +555,15 @@ namespace ngbla
       return VectorView<T,TS,decltype(-declval<TDIST>())> { Size(), -Dist(), Addr(Size()-1) };
     }
     
-    INLINE auto operator+(int i) const { return VectorView(size-i, dist, data+i*dist); }
+    INLINE auto operator+(int i) const { return VectorView(Size()-i, Dist(), Data()+i*Dist()); }
 
-    INLINE auto RemoveConst() const { return VectorView<typename remove_const<T>::type,TS,TDIST>(size, dist, const_cast<typename remove_const<T>::type*> (data)); }
+    INLINE auto RemoveConst() const { return VectorView<typename remove_const<T>::type,TS,TDIST>(Size(), Dist(), const_cast<typename remove_const<T>::type*> (Data())); }
     
     INLINE auto AsMatrix (size_t h, size_t w) const
     {
       // todo: checking
       static_assert(std::is_same<TDIST,IC<1>>());
-      return FlatMatrix<T> (h,w, data);
+      return FlatMatrix<T> (h,w, Data());
     }
 
     class Iterator
@@ -404,7 +581,7 @@ namespace ngbla
     };
     
     INLINE Iterator begin() const { return Iterator (*this, 0); }
-    INLINE Iterator end() const { return Iterator (*this, size); }
+    INLINE Iterator end() const { return Iterator (*this, Size()); }
     
   };
     
@@ -412,12 +589,20 @@ namespace ngbla
 
 
 
+  template <typename TS, typename TDIST>
+  auto Real(VectorView<Complex, TS, TDIST> vec) {
+    auto dist2 = vec.Dist() + vec.Dist();
+    return VectorView<double, TS, decltype(dist2)>(vec.Size(), dist2, (double*)vec.Data());
+  }
+
+  template <typename TS, typename TDIST>
+  auto Imag(VectorView<Complex, TS, TDIST> vec) {
+    auto dist2 = vec.Dist() + vec.Dist();
+    return VectorView<double, TS, decltype(dist2)>(vec.Size(), dist2, ((double*)vec.Data())+1);
+  }
 
 
 
-
-
-  
 
   /**
      A Vector class with memory allocation/deallocation
@@ -445,8 +630,11 @@ namespace ngbla
     }
 
     Vector (Vector && v2)
-      : FlatVector<T> (v2.size, v2.data)
-    { v2.data = nullptr; v2.size = 0; } 
+      : FlatVector<T> (v2.Size(), v2.Data())
+    {
+      v2.layout = { nullptr, 0 };
+      // v2.data = nullptr; v2.size = 0;
+    } 
     
     /// allocate and compute 
     template<typename TB>
@@ -467,7 +655,7 @@ namespace ngbla
 
 
     /// deallocate vector
-    ~Vector() { delete [] this->data; }
+    ~Vector() { delete [] this->Data(); }
 
     /// set vector to constant values
     Vector & operator= (TSCAL scal)
@@ -479,6 +667,7 @@ namespace ngbla
     /// set vector size
     void SetSize(size_t as)
     {
+      /*
       if (this->size == as) return;
       delete [] this->data;
       this->size = as;
@@ -486,6 +675,10 @@ namespace ngbla
         this->data = new T[this->size];
       else
         this->data = nullptr;
+      */
+      if (this->Size() == as) return;
+      delete [] this->Data();
+      this->layout = { (as != 0) ? new T[as] : nullptr , as, IC<1>() };
     }
 
     /// evaluate matrix expression
@@ -505,8 +698,9 @@ namespace ngbla
 
     Vector & operator= (Vector && v2)
     {
-      this->size = v2.size;
-      Swap (this->data, v2.data);
+      // this->size = v2.size;
+      // Swap (this->data, v2.data);
+      Swap (this->layout, v2.layout);
       return *this;
     }
 
@@ -545,7 +739,7 @@ namespace ngbla
                                                            &mem[0] : new T[as]) { ; }
 
     /// deallocates dynamic memory
-    INLINE ~VectorMem() { if (this->Size() > S) delete [] this->data; }
+    INLINE ~VectorMem() { if (this->Size() > S) delete [] this->Data(); }
 
     /// assigns constant value
     INLINE VectorMem & operator= (TSCAL scal)
@@ -845,6 +1039,12 @@ namespace ngbla
 
     INLINE /* const */ FlatVector<T> Range(size_t first, size_t next) 
     { return FlatVector<T> (next-first, data+first); }
+
+    void DoArchive(Archive & ar)
+    {
+      for (size_t i = 0; i < S; i++)
+        ar & data[i];
+    }
 
     const T * begin() const { return data.Ptr(); }
     const T * end() const { return data.Ptr()+S; }
@@ -1214,19 +1414,6 @@ namespace ngbla
   }
 
   
-}
-
-
-
-namespace ngstd
-{
-  template <typename ARCHIVE, int S, typename T>
-  inline auto & operator& (ARCHIVE & ar, ngbla::Vec<S,T> & v)
-  {
-    for (int i = 0; i < S; i++)
-      ar & v(i);
-    return ar;
-  }
 }
 
 

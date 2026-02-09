@@ -1,12 +1,14 @@
 
 #include <la.hpp>
 #include <comp.hpp>
+#include <memory>
 #include "cuda_linalg.hpp"
 
 using namespace ngcomp;
 
 namespace ngla
 {
+  extern bool synckernels;
   
   class DevApplyIntegrationPoints : public DevMatrix
   {
@@ -15,8 +17,10 @@ namespace ngla
     unique_ptr<SharedLibrary> library;
 
     typedef void (*lib_function)(size_t nip, BareVector<Dev<double>> input, size_t dist_input,
-                                 BareVector<Dev<double>> output, size_t dist_output);
+                                 BareVector<Dev<double>> output, size_t dist_output, cudaStream_t stream);
     lib_function compiled_function = nullptr;
+
+    unique_ptr<Matrix<Dev<double>>> dev_points, dev_normals;
     
   public:
     DevApplyIntegrationPoints (const ApplyIntegrationPoints & aipmat)
@@ -39,21 +43,15 @@ namespace ngla
           proxyoffset.Append (starti);
           starti += proxy->Evaluator()->Dim();
         }
-      
-      stringstream s;
-      s <<
-        "#include <bla.hpp>\n"
-        "#include <cuda_linalg.hpp>\n"
-        "#include <cstddef>\n"
-        "using namespace ngbla;\n"
-        "__global__ void ApplyIPFunctionKernel (size_t nip, double * input, size_t dist_input,\n"
-        "                      double * output, size_t dist_output) {\n";
-      
+
+      Code allcode;
+
       int base_output = 0;
       for (auto cf : aipmat.GetCFs())
         {
           auto compiledcf = Compile (cf, false);
           Code code = compiledcf->GenerateProgram(0, false);
+          stringstream s;
           
           s << "{\n";
           // cout << code.header << endl;
@@ -69,6 +67,11 @@ namespace ngla
                     s << Var("comp", step,i,proxycf->Dimensions()).Declare("double", 0.0);
                 }
 
+          s << "[[maybe_unused]] auto points = [](size_t i, int comp)\n"
+            " { return pnts[i+comp*dist_pnts]; };\n";
+          s << "[[maybe_unused]] auto normals = [](size_t i, int comp)\n"
+            " { return nvs[i+comp*dist_normals]; };\n";
+        
 
           s << "int tid = blockIdx.x*blockDim.x+threadIdx.x;\n"
             << "for (int i = tid; i < nip; i += blockDim.x*gridDim.x) {\n";
@@ -83,31 +86,57 @@ namespace ngla
           base_output += cf->Dimension();
           
           s << "}\n}";
+
+          allcode.body += s.str();
         }
-      s << "}\n";
 
-      s << 
+      allcode.body += "\n}\n"; // end kernel
+      allcode.body +=
         "extern \"C\" void ApplyIPFunction (size_t nip, BareVector<Dev<double>> input, size_t dist_input,\n"
-        "                      BareVector<Dev<double>> output, size_t dist_output) {\n"
-        "  ApplyIPFunctionKernel<<<256,256>>> (nip, (double*)input.Data(), dist_input, (double*)output.Data(), dist_output); } \n";
+        "                      BareVector<Dev<double>> output, size_t dist_output, cudaStream_t stream) {\n"
+        "  ApplyIPFunctionKernel<<<256,256,0,stream>>> (nip, (double*)input.Data(), dist_input, (double*)output.Data(), dist_output); } \n";
 
+      stringstream s_top;
+      s_top <<
+        "#include <bla.hpp>\n"
+        "#include <cuda_core.hpp>\n"        
+        "#include <cuda_linalg.hpp>\n"
+        "#include <cstddef>\n"
+        "using namespace ngbla;\n"
+      ;
+
+      auto points = aipmat.GetPoints();
+      if(allcode.body.find("points") != string::npos)
+        dev_points = make_unique<Matrix<Dev<double>>>(points);
+      allcode.AddPointer(dev_points ?  dev_points->Data() : nullptr, "pnts", "double *", "__device__");
+      allcode.AddPointer((void*)points.Dist(), "dist_pnts", "uint", "__device__");
+
+      auto normals = aipmat.GetNormals();
+      // s_top << "size_t dist_normals = " << normals.Dist() << ";\n";
+      if(allcode.body.find("normals") != string::npos)
+        dev_normals = make_unique<Matrix<Dev<double>>>(normals);
+      allcode.AddPointer(dev_normals ?  dev_normals->Data() : nullptr, "nvs", "double *", "__device__");
+      allcode.AddPointer((void*)normals.Dist(), "dist_normals", "uint", "__device__");
+
+      s_top << "__global__ void ApplyIPFunctionKernel (size_t nip, double * input, size_t dist_input,\n"
+        "                      double * output, size_t dist_output) {\n";
       
+      allcode.top += s_top.str();
       
-      cout << IM(9) << s.str() << endl;
+      cout << IM(9) << allcode.body << endl;
 
       // CUDA - compilation:
 
       auto dir = CreateTempDir();
       auto prefix = dir.append("GPUcode");
-      auto src_file = filesystem::path(prefix).concat(".cu").u8string();
-      auto lib_file = filesystem::path(prefix).concat(".so").u8string();
+
+      auto src_file = filesystem::path(prefix).concat(".cu");
+      auto ptr_file = filesystem::path(prefix).concat("_ptrs.cu");
       
-      ofstream codefile(src_file);
-      codefile << s.str();
-      codefile.close();
-      int err = system( ("ngs_nvcc -shared -Xcompiler -fPIC " + src_file + " -o "+lib_file).c_str() );
-      if (err) throw Exception ("problem calling compiler");
-      library = make_unique<SharedLibrary>(lib_file, dir);
+      ofstream{src_file} << allcode.top << allcode.body;
+      ofstream{ptr_file} << allcode.pointer;
+
+      library = CompileCode( {src_file, ptr_file}, {}, false, "ngs_nvcc", "ngs_nvlink" );
       compiled_function = library->GetSymbol<lib_function> ("ApplyIPFunction");
     }
     
@@ -122,8 +151,8 @@ namespace ngla
       // ux.UpdateDevice();
       // uy.UpdateDevice();
 
-      compiled_function(nip, ux.FVDevRO(), nip, uy.FVDev(), nip);
-      cudaDeviceSynchronize();
+      compiled_function(nip, ux.FVDevRO(), nip, uy.FVDev(), nip, ngs_cuda_stream);
+      if (synckernels) cudaDeviceSynchronize();
     }
 
     virtual int VHeight() const override { return h; }

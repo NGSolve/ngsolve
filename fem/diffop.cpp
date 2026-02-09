@@ -1140,11 +1140,30 @@ namespace ngfem
     */
     for (int ii = 0; ii < sqr(vdim); ii++)
       tens(ii,STAR,ii,STAR) = smat;
-
-    
 //      cout << "mat, SIMD bmat tensor = " << tens << endl;
   }
 
+  
+  void MatrixDifferentialOperator ::
+  Apply (const FiniteElement & bfel,
+         const BaseMappedIntegrationPoint & mip,
+         BareSliceVector<double> x, 
+         FlatVector<double> flux,
+         LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+
+    auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
+    size_t ndi = fel.GetNDof();
+    size_t dimi = diffop->Dim();
+    FlatMatrix<double,ColMajor> mat(dimi, ndi, lh);
+    diffop->CalcMatrix (fel, mip, mat, lh);
+
+    for (int j = 0; j < sqr(vdim); j++)
+      flux.Range(j*dimi, (j+1)*dimi) = mat * x.Range(j*ndi, (j+1)*ndi);
+  }
+  
+  
   void MatrixDifferentialOperator ::
   Apply (const FiniteElement & bfel,
          const SIMD_BaseMappedIntegrationRule & mir,

@@ -355,6 +355,23 @@ namespace ngla
       AddRowTransToVector (i, s*fx(i), fy);
 
     timer.AddFlops (this->NZE());
+
+
+    /*
+    static Timer t("SparseMatrix::MultTransAdd"); RegionTimer reg(t);
+    t.AddFlops (this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(double)));
+
+    ParallelForRange
+      (balance, [&] (IntRange myrange)
+       {
+         FlatVector<TVY> fx = x.FV<TVY>(); 
+         FlatVector<TVX> fy = y.FV<TVX>(); 
+
+         for (auto i : myrange)
+           AddRowTransToVectorAtomic (i, s*fx(i), fy);
+       });
+    */
+    
   }
 
 
@@ -455,26 +472,62 @@ namespace ngla
     return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), nullptr, clusters);
   }
 
+  template <class TM, class TV>
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> :: InverseMatrix (shared_ptr<BitArray> subset) const
+  {
+    return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), subset, nullptr);
+  }
+
+  template <class TM, class TV>
+  shared_ptr<BaseMatrix> SparseMatrixSymmetric<TM,TV> ::
+  InverseMatrix (shared_ptr<const Array<int>> clusters) const
+  {
+    return CreateSparseMatrixInverse(dynamic_pointer_cast<const BaseSparseMatrix>(this->shared_from_this()), nullptr, clusters);
+  }
+
   template <class TM, class TV_ROW, class TV_COL>
   shared_ptr<BaseMatrix> SparseMatrix<TM,TV_ROW,TV_COL> ::
   DeleteZeroElements(double tol) const
   {
     static Timer t("SparseMatrix::DeleteZeroElements"); RegionTimer reg(t);
-    Array<int> indi, indj;
-    Array<TM> val;
-    for (auto i : Range(this->Height()))
+    size_t h = this->Height();
+    size_t w = this->Width();
+    Array<int> cnt(h);
+    Array<bool> keep(data.Size());
+    cnt = 0;
+    keep = false;
+    ParallelForRange( h, [&](IntRange r)
       {
-        for (auto j : Range(firsti[i], firsti[i+1]))
-          {
+        for (auto i : r)
+          for (auto j : Range(firsti[i], firsti[i+1]))
             if (ngbla::L2Norm2(data[j]) > tol*tol)
+            {
+              keep[j] = true;
+              cnt[i]++;
+            }
+      }, 5*TaskManager::GetNumThreads());
+
+    auto matrix = make_shared<SparseMatrix<TM>> (cnt, w);
+    cnt = 0;
+
+    ParallelForRange( h, [&](IntRange r)
+      {
+        for (auto i : r)
+        {
+          auto cols = matrix->GetRowIndices(i);
+          auto vals = matrix->GetRowValues(i);
+          int icol = 0;
+          // size_t firsti_new = matrix->firsti[i];
+          for (auto j : Range(firsti[i], firsti[i+1]))
+            if (keep[j])
               {
-                indi.Append (i);
-                indj.Append (colnr[j]);
-                val.Append (data[j]);
+                cols[icol] = colnr[j];
+                vals[icol] = data[j];
+                icol++;
               }
-          }
-      }
-    return this->CreateFromCOO(indi, indj, val, this->Height(), this->Width());
+        }
+      }, 5*TaskManager::GetNumThreads());
+    return matrix;
 
     /*
       // needs parallelization and testing
@@ -732,36 +785,38 @@ namespace ngla
   
   template <class TM>
   shared_ptr<BaseSparseMatrix> SparseMatrixTM<TM> ::
-  CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&,int)> & creator) const
+  CreateTransposeTM (const function<shared_ptr<SparseMatrixTM<decltype(ngbla::Trans(TM()))>>(const Array<int>&,int)> & creator,
+                     bool sorted) const
   {
     Array<int> cnt(this->Width());
     cnt = 0;
     ParallelFor (this->Height(), [&] (int i)
-                 {
-                   for (int c : this->GetRowIndices(i))
-                     AsAtomic (cnt[c]) ++;
-                 });
-
+    {
+      for (int c : this->GetRowIndices(i))
+        AsAtomic (cnt[c]) ++;
+    });
+    
     auto trans = creator(cnt, this->Height());
 
     cnt = 0;
     ParallelFor (this->Height(), [&] (int i)
-                 {
-                   for (int ci : Range(this->GetRowIndices(i)))
-                     {
-                       int c = this->GetRowIndices(i)[ci];
-                       int pos = AsAtomic(cnt[c])++;
-                       trans -> GetRowIndices(c)[pos] = i;
-                       trans -> GetRowValues(c)[pos] = Trans(this->GetRowValues(i)[ci]);
-                     }
-                 });
-
-    ParallelFor (trans->Height(), [&] (int r)
-                 {
-                   auto rowvals = trans->GetRowValues(r);
-                   BubbleSort (trans->GetRowIndices(r),
-                               FlatArray(rowvals.Size(), rowvals.Data()));
-                 });
+    {
+      for (int ci : Range(this->GetRowIndices(i)))
+        {
+          int c = this->GetRowIndices(i)[ci];
+          int pos = AsAtomic(cnt[c])++;
+          trans -> GetRowIndices(c)[pos] = i;
+          trans -> GetRowValues(c)[pos] = Trans(this->GetRowValues(i)[ci]);
+        }
+    });
+    
+    if (sorted)
+      ParallelFor (trans->Height(), [&] (int r)
+      {
+        auto rowvals = trans->GetRowValues(r);
+        BubbleSort (trans->GetRowIndices(r),
+                    FlatArray(rowvals.Size(), rowvals.Data()));
+      });
 
     return trans;
   }

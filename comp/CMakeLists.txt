@@ -9,7 +9,8 @@ add_library( ngcomp ${NGS_LIB_TYPE}
         preconditioner.cpp tangentialfacetfespace.cpp
         normalfacetfespace.cpp normalfacetsurfacefespace.cpp
         numberfespace.cpp irspace.cpp h1lumping.cpp bddc.cpp h1amg.cpp
-        hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp hcurlcurlfespace.cpp tpfes.cpp hcurldivfespace.cpp fesconvert.cpp
+        hypre_precond.cpp hdivdivfespace.cpp hdivdivsurfacespace.cpp hcurlcurlfespace.cpp
+        Hddf.cpp tpfes.cpp hcurldivfespace.cpp HCTspace.cpp JKMspace.cpp fesconvert.cpp
         python_comp.cpp python_comp_mesh.cpp ../fem/python_fem.cpp vtkoutput.cpp
         periodic.cpp discontinuous.cpp hidden.cpp reorderedfespace.cpp
         hypre_ams_precond.cpp facetsurffespace.cpp
@@ -35,9 +36,10 @@ install( TARGETS ngcomp ${ngs_install_dir} )
 install( FILES
         bilinearform.hpp comp.hpp facetfespace.hpp	   
         fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   
-        hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp hdivhosurfacefespace.hpp		   	   
-        l2hofespace.hpp hdivdivsurfacespace.hpp tpfes.hpp linearform.hpp meshaccess.hpp ngsobject.hpp	   
-        postproc.hpp preconditioner.hpp tangentialfacetfespace.hpp
+        hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp hdivhosurfacefespace.hpp
+        l2hofespace.hpp hdivdivsurfacespace.hpp HCTspace.hpp JKMspace.hpp tpfes.hpp
+        linearform.hpp meshaccess.hpp ngsobject.hpp	   
+        postproc.hpp preconditioner.hpp tangentialfacetfespace.hpp Hddf.hpp
         normalfacetfespace.hpp normalfacetsurfacefespace.hpp hypre_precond.hpp h1amg.hpp
         irspace.hpp h1lumping.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
         discontinuous.hpp hidden.hpp reorderedfespace.hpp

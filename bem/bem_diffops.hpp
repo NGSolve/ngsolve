@@ -155,6 +155,31 @@ namespace ngsbem
             }
         }
     }
+
+    using DiffOp<DiffOpRotatedTrace>::ApplySIMDIR;
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
+    {
+      Cast(fel).Evaluate (mir, x, y);
+      for (int j = 0; j < mir.Size(); j++)
+        {
+          Vec<3,SIMD<double>> nv = static_cast<const SIMD<ngfem::MappedIntegrationPoint<2,3>>&>(mir[j]).GetNV();
+          Vec<3,SIMD<double>> val = y.Col(j).Range(0,3);
+          y.Col(j).Range(0,3) = Cross(nv, val);
+        }
+    }
+
+    static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      Cast(fel).Evaluate (mir, x, y);
+      for (int j = 0; j < mir.Size(); j++)
+        {
+          Vec<3,SIMD<double>> nv = static_cast<const SIMD<ngfem::MappedIntegrationPoint<2,3>>&>(mir[j]).GetNV();
+          Vec<3,SIMD<Complex>> val = y.Col(j).Range(0,3);
+          y.Col(j).Range(0,3) = Cross(nv, val);
+        }
+    }
   };
 
   // rotated + scalar

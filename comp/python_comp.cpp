@@ -18,6 +18,7 @@
 #include "hdivdivfespace.hpp"
 #include "hcurldivfespace.hpp"
 #include "hcurlcurlfespace.hpp"
+#include "Hddf.hpp"
 #include "facetfespace.hpp"
 #include "facetsurffespace.hpp"
 #include "hdivhosurfacefespace.hpp"
@@ -30,6 +31,8 @@
 #include "numberfespace.hpp"
 #include "irspace.hpp"
 #include "h1lumping.hpp"
+#include "HCTspace.hpp"
+#include "JKMspace.hpp"
 #include "hidden.hpp"
 #include "reorderedfespace.hpp"
 #include "compressedfespace.hpp"
@@ -388,6 +391,16 @@ ANY_DOF: Any used dof (LOCAL_DOF or INTERFACE_DOF or WIREBASKET_DOF)
                   {
                     code_uses_tensors = val;
                   }, "Use tensors in code-generation")
+
+    .def_property("code_uses_equivalence_keys",
+                  [] (GlobalDummyVariables&)
+                  {
+                    return code_uses_equivalence_keys;
+                  },
+                  [] (GlobalDummyVariables&, bool val)
+                  {
+                    code_uses_equivalence_keys = val;
+                  }, "Use equivalence keys in code-generation")
                   
     ;
 
@@ -836,6 +849,29 @@ kwargs : kwargs
                        }
                      throw Exception("components only available for ProductSpace");                     
                    }, "deprecated, will be only available for ProductSpace")
+    .def("GetDirichletRegion",
+	 [](shared_ptr<FESpace> self, VorB vb)
+	  {
+            auto region = Region(self->GetMeshAccess(), vb);
+            region.Mask().Clear();
+            region.Mask() = self->GetDirichletBoundaries(vb);
+            return region;
+	  },
+         py::arg("vb") = BND,
+	 "Return boundary Dirichlet mesh-region of FESpace")
+    .def("GetDefinedOnRegion",
+	 [](shared_ptr<FESpace> self, VorB vb)
+	  {
+            auto region = Region(self->GetMeshAccess(), vb);
+            region.Mask().Clear();
+            const Array<bool> & definedon = self->GetDefinedOn(vb); 
+            for (int i = 0; i < definedon.Size(); i++)
+              if (definedon[i]) region.Mask().SetBit(i);
+            return region;
+	  },
+         py::arg("vb") = VOL,
+	 "Return mesh-region where FESpace is defined on")
+
     .def("Range",
          [] (shared_ptr<FESpace> self, int comp)
          {
@@ -1528,7 +1564,16 @@ component : int
   ExportFESpace<H1LumpingFESpace> (m, "H1LumpingFESpace")
     .def("GetIntegrationRules", &H1LumpingFESpace::GetIntegrationRules)
     ;
+
+  ExportFESpace<HCT_FESpace> (m, "HCT_FESpace")
+    .def("GetIntegrationRules", &HCT_FESpace::GetIntegrationRules)
+    ;
     
+  ExportFESpace<JKM_FESpace> (m, "JKM_FESpace")
+    .def("GetIntegrationRules", &JKM_FESpace::GetIntegrationRules,
+         py::arg("bonus_intorder")=2)
+    ;
+
 
   ExportFESpace<L2HighOrderFESpace> (m, "L2");
 
@@ -1537,6 +1582,10 @@ component : int
   ExportFESpace<HCurlDivFESpace> (m, "HCurlDiv");
 
   ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
+  
+  ExportFESpace<HDivDivFacetSpace>(m, "HDivDivFacetSpace")
+    .def("GetDivConstraintSpace", &HDivDivFacetSpace::GetDivConstraintSpace)
+    ;
   
   ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface");
   
@@ -1655,6 +1704,9 @@ used_idnrs : list of int = None
     .def (NGSPickle<PeriodicFESpace>())
     .def_property_readonly("dofmap", [](PeriodicFESpace & self) {
       return Array<int>(self.GetDofMap());  // better: return buffer
+    })
+    .def_property_readonly("base_space", [](PeriodicFESpace & self) {
+      return self.GetBaseSpace();
     })
     ;
 
@@ -4589,6 +4641,7 @@ The created object must be kept alive in python as long as
 operations of it are used!
 )delimiter", "master"_a, "minion"_a, "draw_pairs"_a=false, "volume"_a=false,
           "element_boundary"_a = false)
+     .def(NGSPickle<ContactBoundary>())
      .def("AddEnergy", &ContactBoundary::AddEnergy,
           "form"_a, "deformed"_a = false)
      .def("AddIntegrator", &ContactBoundary::AddIntegrator,

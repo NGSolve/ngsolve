@@ -24,6 +24,11 @@ namespace ngfem
 
     virtual string GetDescription () const override
     { return "Identity matrix"; }
+
+    void CalcEquivalenceKey() override
+    {
+      this->equivalence_key = "identity(" + ToString(Dimensions()[0]) + ")";
+    }
   
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
     {
@@ -155,6 +160,11 @@ namespace ngfem
     virtual ~MultMatMatCoefficientFunction();
     virtual string GetDescription () const override
     { return "matrix-matrix multiply"; }
+
+    void CalcEquivalenceKey() override
+    {
+      this->equivalence_key = "(" + c1->EquivalenceKey() + "@" + c2->EquivalenceKey() + ")";
+    }
   
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
     {
@@ -664,6 +674,11 @@ namespace ngfem
 
     virtual string GetDescription () const override
     { return "Matrix transpose"; }
+
+    void CalcEquivalenceKey() override
+    {
+      this->equivalence_key = "transpose(" + c1->EquivalenceKey() + ")";
+    }
   
     virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
     {
@@ -851,6 +866,11 @@ public:
   
   virtual string GetDescription () const override
   { return "trace"; }
+
+  void CalcEquivalenceKey() override
+  {
+    this->equivalence_key = "trace(" + c1->EquivalenceKey() + ")";
+  }
 
   auto GetCArgs() const { return tuple { c1 }; }      
   void DoArchive(Archive& ar) override

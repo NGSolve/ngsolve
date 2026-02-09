@@ -1,0 +1,18 @@
+diff --git a/tools/pybind11Common.cmake b/tools/pybind11Common.cmake
+index 1c1d4f88..87864d5f 100644
+--- a/tools/pybind11Common.cmake
++++ b/tools/pybind11Common.cmake
+@@ -88,11 +88,11 @@ if(CMAKE_SYSTEM_NAME MATCHES Emscripten AND NOT _pybind11_no_exceptions)
+   set_property(
+     TARGET ${_tmp_config_target}
+     APPEND
+-    PROPERTY INTERFACE_LINK_OPTIONS -fexceptions)
++    PROPERTY INTERFACE_LINK_OPTIONS -fwasm-exceptions)
+   set_property(
+     TARGET ${_tmp_config_target}
+     APPEND
+-    PROPERTY INTERFACE_COMPILE_OPTIONS -fexceptions)
++    PROPERTY INTERFACE_COMPILE_OPTIONS -fwasm-exceptions)
+   unset(_tmp_config_target)
+ endif()
+ 

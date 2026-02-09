@@ -194,6 +194,14 @@ namespace ngcomp {
         if (IsRegularDof(d)) d = dofmap[d];
     }
 
+  void PeriodicFESpace :: SelectDofs(const string& name, BitArray & dofs) const
+  {
+    space->SelectDofs(name, dofs);
+    for(auto d : Range(dofs))
+      if(dofmap[d] != d)
+        dofs.Clear(d);
+  }
+
     void PeriodicFESpace :: GetVertexDofNrs (int vnr,  Array<DofId> & dnums) const
     { 
       space->GetVertexDofNrs(vnr, dnums); 

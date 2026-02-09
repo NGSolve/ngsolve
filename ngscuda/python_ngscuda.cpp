@@ -11,6 +11,9 @@ using namespace ngs_cuda;
 
 namespace ngla {
   extern void InitApplyIntegrationPoints ();
+  void TestCudaNGBla();
+  extern bool synckernels;
+  
 }
 
 PYBIND11_MODULE(ngscuda, m) {
@@ -46,6 +49,25 @@ PYBIND11_MODULE(ngscuda, m) {
 
     .def("UpdateHost", &UnifiedVector::UpdateHost)
     .def("UpdateDevice", &UnifiedVector::UpdateDevice)
+    .def_property_readonly("__cuda_array_interface__", [](UnifiedVector& self)
+    {
+        self.UpdateDevice();
+        auto ptr = reinterpret_cast<uintptr_t>(self.DevData());
+        py::dict cai;
+        cai["version"] = 2;
+        cai["shape"]   = py::make_tuple(self.Size());
+        // "<f8" = little-endian float64
+        cai["typestr"] = "<f8";
+        // data: (ptr, readonly_flag)
+        cai["data"] = py::make_tuple(ptr, false);
+        // contiguous 1D, so no strides
+        cai["strides"] = py::none();
+        return cai;
+    })
+    .def_property_readonly("dev_ptr", [](UnifiedVector& self)
+    {
+        return reinterpret_cast<uintptr_t>(self.DevData());
+    })
     ;
 
 
@@ -123,7 +145,7 @@ PYBIND11_MODULE(ngscuda, m) {
   m.def("__time_tracer__", TimeProfiler);
   m.def("SetCudaTimer", CudaRegionTimer::SetCudaTimer);
   
-  
+  m.def("SetSyncKernels", [](bool sync) { synckernels = sync; });
   
   py::class_<Matrix<Dev<double>>> (m, "DevMatrix")
     .def(py::init<FlatMatrix<double>>())
@@ -206,7 +228,18 @@ PYBIND11_MODULE(ngscuda, m) {
              }
          })
     ;
+
+
+
+  py::class_<CudaGraph> (m, "CudaGraph")
+    .def(py::init<>())
+    .def("BeginCapture", &CudaGraph::BeginCapture)
+    .def("EndCapture", &CudaGraph::EndCapture)
+    .def("Launch", &CudaGraph::Launch)
+    ;
   
+  
+  m.def("TestCudaNGBla", &TestCudaNGBla);
   // ExportDemo(m);
 }
 

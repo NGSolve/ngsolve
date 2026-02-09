@@ -27,7 +27,7 @@ namespace ngla
   public:
     DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat);
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
-    // void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     int VHeight() const override { return h; }
     int VWidth() const override { return w; }
   };
@@ -66,6 +66,29 @@ namespace ngla
   }
     
 
+  __global__ void BlockJacobiTransKernel (double s, FlatArray<Dev<BlockJacobiCtr>> ctrs, 
+                                          BareVector<Dev<double>> x, BareVector<Dev<double>> y)
+  {
+    for (int i = blockIdx.x*blockDim.y+threadIdx.y; i < ctrs.Size(); i += gridDim.x*blockDim.y)
+      {
+        BlockJacobiCtr mv = ctrs[i];
+        size_t h = mv.mat.Height();
+        size_t w = mv.mat.Width();
+     
+        for (int r = threadIdx.x; r < w; r += blockDim.x)
+          {
+            double sum = 0;
+            for (int c = 0; c < h; c++)
+              sum += mv.mat(c,r) * x(mv.indices[c]);
+            atomicAdd((double*)&y(mv.indices[r]), s*sum);
+          }
+      }
+  }
+    
+
+
+
+  
   DevBlockJacobiMatrix :: DevBlockJacobiMatrix (const BlockJacobiPrecond<double> & mat)
     : h(mat.Height()), w(mat.Width()),
       matrices(mat.MatrixData()), indices(mat.GetBlockTable()->AsArray())
@@ -92,8 +115,6 @@ namespace ngla
   {
     UnifiedVectorWrapper ux(x);
     UnifiedVectorWrapper uy(y);
-    // ux.UpdateDevice();
-    // uy.UpdateDevice();
     
     {
       static Timer t("DevBlockJacobi::MultAdd");
@@ -102,7 +123,22 @@ namespace ngla
       BlockJacobiKernel<<<512,dim3(16,16)>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
     }
     
-    // uy.InvalidateHost();
   }
+
+  void DevBlockJacobiMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
+  {
+    UnifiedVectorWrapper ux(x);
+    UnifiedVectorWrapper uy(y);
+    
+    {
+      static Timer t("DevBlockJacobi::MultAddTrans");
+      CudaRegionTimer rt(t);
+
+      BlockJacobiTransKernel<<<512,dim3(16,16)>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
+    }
+    
+  }
+
+
   
 }

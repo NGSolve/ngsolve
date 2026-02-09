@@ -42,7 +42,8 @@ namespace ngla
   UnifiedVector :: ~UnifiedVector ()
   {
     // cudaFree(dev_data);
-    Dev<double>::Free(dev_data);
+    if (dev_data)
+      Dev<double>::Free(dev_data);
     delete[] host_data;
   }
 
@@ -134,9 +135,17 @@ namespace ngla
   
   BaseVector & UnifiedVector :: Scale (double scal)
   {
+    /*
     UpdateDevice();
     cublasDscal (Get_CuBlas_Handle(), size, &scal, (double*)dev_data, 1);
     host_uptodate = false;
+    */
+    DeviceParallelFor
+      (this->size, [devvec = this->FVDev(), scal] DEVICE_LAMBDA (size_t tid)
+      {
+        devvec(tid) *= scal;
+      });
+    
     return *this;
   }
 
@@ -149,16 +158,26 @@ namespace ngla
   BaseVector & UnifiedVector :: Set (double scal, const BaseVector & v)
   {
     UnifiedVectorWrapper uv(v);
+    /*
     uv.UpdateDevice();
     SetVector (scal, Size(), uv.DevData(), DevData());
     host_uptodate = false;
-    dev_uptodate = true;    
+    dev_uptodate = true;
+    */
+    
+    DeviceParallelFor
+      (this->size, [me = this->FVDev(), other=uv.FVDevRO(), scal] DEVICE_LAMBDA (size_t tid)
+      {
+        me(tid) = scal * other(tid);
+      });
+    
     return *this;
   }
   
   
   BaseVector & UnifiedVector :: Add (double scal, const BaseVector & v)
   {
+#ifdef OLD
     if (auto v2 = dynamic_cast<const UnifiedVector*> (&v))
       {
         UpdateDevice();
@@ -181,6 +200,14 @@ namespace ngla
       {
         FVDouble() += scal * v.FVDouble();
       }
+#endif
+
+    UnifiedVectorWrapper uv(v);    
+    DeviceParallelFor
+      (this->size, [me = this->FVDev(), other=uv.FVDevRO(), scal] DEVICE_LAMBDA (size_t tid)
+      {
+        me(tid) += scal * other(tid);
+      });
 
     return *this;
   }
@@ -198,6 +225,7 @@ namespace ngla
         uv2->UpdateDevice();
         
         double res;
+        cublasSetStream(ngla::Get_CuBlas_Handle(), ngs_cuda_stream);        
         cublasDdot (Get_CuBlas_Handle(), 
                     size, (double*)dev_data, 1, (double*)uv2->dev_data, 1, &res);
         return res;
@@ -212,6 +240,7 @@ namespace ngla
   {
     UpdateDevice();
     double res;
+    cublasSetStream(ngla::Get_CuBlas_Handle(), ngs_cuda_stream);    
     cublasDnrm2(Get_CuBlas_Handle(), size, (double*)dev_data, 1, &res);
     return res;
   }
@@ -258,6 +287,13 @@ namespace ngla
 
   void UnifiedVector :: UpdateHost () const
   {
+    static mutex mtx;
+
+    if (host_uptodate)
+      return;
+
+    auto lock = lock_guard<mutex>(mtx);
+
     if (host_uptodate)
       return;
 
@@ -273,6 +309,13 @@ namespace ngla
 
   void UnifiedVector :: UpdateDevice () const
   {
+    static mutex mtx;
+
+    if (dev_uptodate)
+      return;
+
+    auto lock = lock_guard<mutex>(mtx);
+
     if (dev_uptodate)
       return;
 
@@ -336,7 +379,7 @@ namespace ngla
       initial_dev_uptodate =  uptr->IsDevUptodate();
     }
     else
-    {
+      {
       auto err = cudaMalloc((void**)&dev_data, size*sizeof(double));
       if (err != 0)
         throw Exception("UnifiedVector allocation error, ec="+ToString(err));

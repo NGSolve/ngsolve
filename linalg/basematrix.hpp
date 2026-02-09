@@ -106,6 +106,12 @@ namespace ngla
       Mult (v, res);
       return res;
     }
+    virtual AutoVector EvaluateTrans(BaseVector & v) const 
+    {
+      auto res = CreateRowVector();
+      MultTrans (v, res);
+      return res;
+    }
     
     /// y = matrix * x. 
     virtual void Mult (const BaseVector & x, BaseVector & y) const;
