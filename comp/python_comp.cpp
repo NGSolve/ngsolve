@@ -1583,7 +1583,9 @@ component : int
 
   ExportFESpace<HCurlCurlFESpace> (m, "HCurlCurl");
   
-  ExportFESpace<HDivDivFacetSpace>(m, "HDivDivFacetSpace");
+  ExportFESpace<HDivDivFacetSpace>(m, "HDivDivFacetSpace")
+    .def("GetDivConstraintSpace", &HDivDivFacetSpace::GetDivConstraintSpace)
+    ;
   
   ExportFESpace<HDivDivSurfaceSpace> (m, "HDivDivSurface");
   

@@ -8,30 +8,36 @@
 namespace ngcomp
 {
 
-    class HDivDivFacetSpace;
-    class HDivDivFacetElement; // forward declaration
+  // class HDivDivFacetSpace;
+  // class HDivDivFacetElement; // forward declaration
 
-    class HDivDivFacetSpace : public FESpace
-    {
-    private:
-      int order;
-      int dofs_per_face;  // for uniform order
-      
-      Array<int> first_face_dof; // for variable order (TODO)
+  class HDivDivFacetSpace : public FESpace
+  {
+  private:
+    int order;
+    int dofs_per_face;  // for uniform order
+    int dofs_per_edge;
+    bool bubble = true;
+    bool JKM = false;
 
-    public:
-        HDivDivFacetSpace(shared_ptr<MeshAccess> ama, const Flags &flags);
+    int first_facet_dof;
+    // Array<int> first_face_dof; // for variable order (TODO)
+    // Array<int> first_edge_dof; // for variable order (TODO)
 
-        string GetClassName() const override { return "HDivDivFacetSpace"; }
+  public:
+    HDivDivFacetSpace(shared_ptr<MeshAccess> ama, const Flags &flags);
 
-        // static DocInfo GetDocu();
+    string GetClassName() const override { return "HDivDivFacetSpace"; }
 
-        void Update() override;
+    static DocInfo GetDocu();
 
-        void GetDofNrs(ElementId ei, Array<DofId> &dnums) const override;
+    void Update() override;
 
-        FiniteElement &GetFE(ElementId ei, Allocator &alloc) const override;
-    };
+    void GetDofNrs(ElementId ei, Array<DofId> &dnums) const override;
+
+    FiniteElement &GetFE(ElementId ei, Allocator &alloc) const override;
+    shared_ptr<FESpace> GetDivConstraintSpace() const;
+  };
 }; // namespace ngcomp
 
 #endif
