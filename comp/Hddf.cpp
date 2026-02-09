@@ -1156,6 +1156,7 @@ void HDivDivFacetHOElement<ET_TET> :: CalcShape(const IntegrationPoint &ip, Slic
                 return *fe;
               }
             default:
+              ;
             }
         }
 
