@@ -169,8 +169,8 @@ void ExportSparseMatrix(py::module m)
                   // return SparseMatrix<double>::CreateFromCOO (cindi,cindj,cvalues, h,w);
                 }, py::arg("col_ind"), py::arg("row_ind"), py::arg("matrices"), py::arg("h"), py::arg("w"))
     
-    .def("CreateTranspose", [] (const SparseMatrix<T> & sp)
-         { return sp.CreateTranspose (); }, "Return transposed matrix")
+    .def("CreateTranspose", [] (const SparseMatrix<T> & sp, bool sorted)
+    { return sp.CreateTranspose (sorted); }, py::arg("sorted")=true, "Return transposed matrix")
 
     .def("__matmul__", [] (const SparseMatrix<double> & a, const SparseMatrix<double> & b)
          { return MatMult(a,b); }, py::arg("mat"))
@@ -377,6 +377,15 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            return hv;
          },
          "creates a new vector of same type, copy contents")
+    .def("copy", [] (BaseVector & self)
+         {
+           auto hv = shared_ptr<BaseVector>(self.CreateVector());
+           *hv = self;
+           return hv;
+         },
+         "creates a new vector of same type, copy contents (scipy compatibility)")
+    .def_property_readonly("dtype", [](BaseVector & self)
+      { return self.IsComplex() ? py::dtype::of<Complex>() : py::dtype::of<double>(); })
     
     .def("Assign",[](BaseVector & self, BaseVector & v2, py::object s)->void
                                    { 
@@ -554,7 +563,9 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            p.SetValues (self, value);
          })
     .def("__iadd__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self += other; return self;}, py::arg("vec"))
+    .def("__iadd__", [](BaseVector & self,  DynamicVectorExpression & other) -> BaseVector& { other.AddTo(1, self); return self;}, py::arg("vec"))
     .def("__isub__", [](BaseVector & self,  BaseVector & other) -> BaseVector& { self -= other; return self;}, py::arg("vec"))
+    .def("__isub__", [](BaseVector & self,  DynamicVectorExpression & other) -> BaseVector& { other.AddTo(-1, self); return self;}, py::arg("vec"))
     .def("__imul__", [](BaseVector & self,  double scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))
     .def("__imul__", [](BaseVector & self,  Complex scal) -> BaseVector& { self *= scal; return self;}, py::arg("value"))
     .def("__itruediv__", [](BaseVector & self,  double scal) -> BaseVector& { self /= scal; return self;}, py::arg("value"))
@@ -1000,6 +1011,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                            { return self.Width(); }, "Width of the matrix" )
     .def_property_readonly("is_complex", [] ( BaseMatrix & self)
                            { return self.IsComplex(); }, "is the matrix complex-valued ?" )
+    .def_property_readonly("is_symmetric", &BaseMatrix::IsSymmetric)
     .def_property_readonly("nze", [] ( BaseMatrix & self)
                            { return self.NZE(); }, "number of non-zero elements")
     .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
@@ -1145,9 +1157,22 @@ inverse : string
       { return mat->IsComplex() ? py::dtype::of<Complex>() : py::dtype::of<double>(); })
     .def("matvec", [](shared_ptr<BM> mat, shared_ptr<BaseVector> x) -> shared_ptr<BaseVector>
          {
+           return mat->Evaluate(*x);
+           /*
            shared_ptr<BaseVector> y = mat->CreateColVector();
            *y = *mat * *x;
            return y;
+           */
+         })
+    .def("rmatvec", [](shared_ptr<BM> mat, shared_ptr<BaseVector> x) -> shared_ptr<BaseVector>
+         {
+           return mat->EvaluateTrans(*x);
+           /*
+           shared_ptr<BaseVector> y = mat->CreateRowVector();
+           // *y = *mat * *x;
+           mat->MultTrans(*x,*y);
+           return y;
+           */
          })
 
     .def("ToDense", [](BM & m)
@@ -1539,6 +1564,7 @@ inverse : string
       .def("Update", &SparseFactorizationInterface::Update)
       .def("Analyze", &SparseFactorizationInterface::Analyze)
       .def("Factor", &SparseFactorizationInterface::Factor)
+      .def_property_readonly("is_symmetric_storage", &SparseFactorizationInterface::IsSymmetricStorage)
       ;
 
   m.def("RegisterInverseType", [](const string &name, py::object creator) {

@@ -59,7 +59,7 @@ def Grad(func):
 
 
 def curl(func):
-    if func.derivname == "curl":
+    if getattr(func, "derivname", None) == "curl":
         return func.Deriv()
     add = func.Operator("curl")
     if add:

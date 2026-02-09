@@ -3087,6 +3087,56 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
         }
     }
 
+    // using DiffOp<DiffOpIdVectorL2Piola<DIM_SPC,VB>>::ApplyIR;
+    /*
+    template <typename FEL, class MIR, class TVX, class TVY>
+    static void ApplyIR (const FEL & fel, const MIR & mir,
+			 const TVX & x, TVY & y,
+			 LocalHeap & lh)
+    */
+
+
+    template <typename T>
+    static void T_ApplyIR (const FiniteElement & bfel, const BaseMappedIntegrationRule & bmir,
+                           BareSliceVector<T> x, BareSliceMatrix<T> y, LocalHeap & lh)
+    {
+      // static Timer t("DiffOpIdVectorL2Piola::ApplyIR");
+      // RegionTimer rt(t);
+      HeapReset hr(lh);
+
+      auto & mir = static_cast<const MappedIntegrationRule<DIM_ELEMENT,DIM_SPC>&> (bmir);
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[0]);
+      size_t ndofi = feli.GetNDof();
+
+      FlatMatrixFixWidth<DIM_ELEMENT, T> matx(ndofi, lh);
+      for (size_t k = 0; k < DIM_ELEMENT; k++)
+        matx.Col(k) = x.Range(k*ndofi, (k+1)*ndofi);
+
+      FlatMatrixFixWidth<DIM_ELEMENT, T> maty(mir.Size(), lh);
+
+      feli.Evaluate(mir.IR(), matx, maty);
+
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto jac = mir[i].GetJacobian();
+          y.Row(i).Range(0,DIM_ELEMENT) = 1/Det(jac)*jac*maty.Row(i);
+        }
+    }
+    
+    static void ApplyIR (const FiniteElement & bfel, const BaseMappedIntegrationRule & bmir,
+                         BareSliceVector<Complex> x, BareSliceMatrix<Complex> y, LocalHeap & lh)
+    {
+      T_ApplyIR<Complex>(bfel, bmir, x, y, lh);      
+    }
+
+    static void ApplyIR (const FiniteElement & bfel, const BaseMappedIntegrationRule & bmir,
+                         BareSliceVector<double> x, BareSliceMatrix<double> y, LocalHeap & lh)
+    {
+      T_ApplyIR<double>(bfel, bmir, x, y, lh);
+    }
+
+    
 
     using DiffOp<DiffOpIdVectorL2Piola<DIM_SPC,VB>>::ApplySIMDIR;
     static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & bmir,

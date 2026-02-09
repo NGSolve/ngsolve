@@ -28,15 +28,16 @@ namespace ngstd
   {
     if (order <= 1) throw Exception ("cannot differentiate B-spline of order <= 1");
     //we should create td and cd WITHOUT padding on the leftmost elements
-    Array<double> cd(c.Size()-1);
-    Array<double> td(t.Size()-2);
-    td = t.Range(1,t.Size()-1);
-    for (int j = 0; j < c.Size() - 1; ++j)
-      if (t[j+order] != t[j+1])
-        cd[j] = (order-1) * (c[j+1]-c[j]) / (t[j+order] - t[j+1]);
-      else
-        cd[j] = 0;
-    // throw Exception ("cannot differentiate, B-spline is discontinuous");
+    Array<double> td(t.Size()-order);
+    Array<double> cd(c.Size()-order);
+    td = t.Range(order,t.Size());
+    for (int j = 0; j < cd.Size(); j++)
+      {
+        double denom = t[order+j + order-1] - t[order+j];
+        cd[j] = (denom != 0.0)
+          ? (order-1) * (c[order+j] - c[order + j - 1]) / denom
+              : 0.0;
+      }
     return BSpline (order-1, std::move(td), std::move(cd));
   }
   
@@ -90,6 +91,10 @@ namespace ngstd
   
   double BSpline :: Evaluate (double x) const
   {
+#ifdef NETGEN_ENABLE_CHECK_RANGE
+    if (x < t[order] || x > t[t.Size()-1])
+      throw Exception("BSpline::Evaluate: x out of range: " + ToString(x) + "\t[" + ToString(t[order]) + "," + ToString(t[t.Size()-1]) + "]");
+#endif
     // static Timer timer_bspline("BSpline::Evaluate");
     // timer_bspline.AddFlops(1);
     // RegionTimer reg (timer_bspline);
@@ -172,6 +177,11 @@ namespace ngstd
     // static Timer timer_bspline("BSpline::Evaluate SIMD");
     // RegionTimer reg (timer_bspline);
     constexpr int simdSize = SIMD<double>::Size();
+#ifdef NETGEN_ENABLE_CHECK_RANGE
+    for(auto i = 0; i < simdSize; i++)
+      if( x[i] < t[order] || x[i] > t[t.Size()-1])
+        throw Exception("BSpline::Evaluate(SIMD) x out of range: " + ToString(x[i]) + "\t[" + ToString(t[order]) + "," + ToString(t[t.Size()-1]) + "]");
+#endif
     if( order < 6)
       {
         SIMD<int64_t> pos(-1);
@@ -289,11 +299,11 @@ namespace ngstd
     double dval = (valr-vall) / (2*eps);
     double ddval = (valr+vall-2*val) / (eps*eps);
     */
-    auto diff = Differentiate();
-    auto ddiff = diff.Differentiate();
+    if(!diff || !diff->diff) throw Exception("BSpline::operator()(AutoDiffDiff) not implemented for order < 3");
+    auto ddiff = diff->diff;
     double val = (*this)(x.Value());
-    double dval = diff(x.Value());
-    double ddval = ddiff(x.Value());
+    double dval = (*diff)(x.Value());
+    double ddval = (*ddiff)(x.Value());
 
     AutoDiffDiff<1,double> res(val);
     res.DValue(0) = dval * x.DValue(0);
@@ -330,11 +340,11 @@ namespace ngstd
     double dval = (valr-vall) / (2*eps);
     double ddval = (valr+vall-2*val) / (eps*eps);
     */
-    auto diff = Differentiate();
-    auto ddiff = diff.Differentiate();
+    if(!diff || !diff->diff) throw Exception("BSpline::operator()(AutoDiffDiff) not implemented for order < 3");
+    auto ddiff = diff->diff;
     SIMD<double> val = (*this)(x.Value());
-    SIMD<double> dval = diff(x.Value());
-    SIMD<double> ddval = ddiff(x.Value());
+    SIMD<double> dval = (*diff)(x.Value());
+    SIMD<double> ddval = (*ddiff)(x.Value());
 
     AutoDiffDiff<1,SIMD<double>> res(val);
     res.DValue(0) = dval * x.DValue(0);

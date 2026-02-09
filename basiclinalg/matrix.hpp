@@ -1742,7 +1742,8 @@ namespace ngbla
     double operator() (int i) const
     {
       static_assert (true, "linear access of id");
-      cerr << "id, linear access" << endl; return 0;
+      return 0;
+      // cerr << "id, linear access" << endl; return 0;
     }
     ///
     double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
@@ -1764,7 +1765,11 @@ namespace ngbla
     INLINE Identity (size_t s) : size(s) { ; }
 
     INLINE double operator() (int i) const
-    { cerr << "Identity, linear access" << endl; return 0; }
+    {
+      static_assert (true, "linear access of Identity");
+      return 0;
+      // cerr << "Identity, linear access" << endl; return 0;
+    }
 
     INLINE double operator() (int i, int j) const { return (i == j) ? 1 : 0; }
     INLINE auto View() const { return Identity(size); }

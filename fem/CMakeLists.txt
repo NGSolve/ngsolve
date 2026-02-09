@@ -38,7 +38,7 @@ install( FILES
         facethofe.hpp fem.hpp finiteelement.hpp
         shapefunction_utils.hpp hcurlfe_utils.hpp hdivfe_utils.hpp
         h1hofefo.hpp h1hofefo_impl.hpp h1hofe.hpp nodalhofe.hpp nodalhofe_impl.hpp h1lofe.hpp hcurlfe.hpp
-        hcurlhofe.hpp hcurllofe.hpp hdivdivfe.hpp hdiv_equations.hpp hdivfe.hpp hdivhofe.hpp
+        hcurlhofe.hpp hcurllofe.hpp hdivdivfe.hpp hdiv_equations.hpp hdivdiv_equations.hpp hdivfe.hpp hdivhofe.hpp
         integrator.hpp integratorcf.hpp intrule.hpp l2hofefo.hpp l2hofe.hpp recursive_pol.hpp
         recursive_pol_tet.hpp recursive_pol_trig.hpp scalarfe.hpp	
         specialelement.hpp thdivfe.hpp tscalarfe.hpp tangentialfacetfe.hpp normalfacetfe.hpp

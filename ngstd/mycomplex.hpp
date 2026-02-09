@@ -76,7 +76,7 @@ INLINE const T arg(const MyComplex<T> &A)
 }
 
 template <class T>
-const MyComplex<T> conj(const MyComplex<T> &A)
+INLINE const MyComplex<T> conj(const MyComplex<T> &A)
 {
   return MyComplex<T>(A.a, -A.b);
 }

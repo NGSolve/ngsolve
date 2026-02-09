@@ -25,7 +25,21 @@ add_library(${lib_name} SHARED
 
 set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp dev_sparsecholesky.cpp dev_blockjacobi.cpp PROPERTIES LANGUAGE CUDA)
 
-target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:--expt-relaxed-constexpr --extended-lambda >)
+# warnign 611: warning #611-D: overloaded virtual function ... only partially overridden
+# warning 20011: calling a __host__ function(...) from a __host__ __device__ function(...) is not allowed
+# warning 20014: calling a __host__ function(...) from a __host__ __device__ function(...) is not allowed
+set(nvcc_flags 
+  --expt-relaxed-constexpr
+  --extended-lambda
+  --diag-suppress=611
+  --diag-suppress=20011
+  --diag-suppress=20012
+  --diag-suppress=20013
+  --diag-suppress=20014
+  --diag-suppress=20015
+  -rdc=true
+)
+target_compile_options(${lib_name} PUBLIC $<$<COMPILE_LANGUAGE:CUDA>:${nvcc_flags}>)
 
 target_link_libraries(${lib_name} PUBLIC CUDA::cusparse CUDA::cublas CUDA::cudart ngsolve $<BUILD_INTERFACE:netgen_python>)
 set_target_properties(${lib_name} PROPERTIES POSITION_INDEPENDENT_CODE ON CUDA_SEPARABLE_COMPILATION ON)
@@ -41,25 +55,34 @@ if(NETGEN_USE_PYTHON)
     install(TARGETS ngscuda DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 endif(NETGEN_USE_PYTHON)
 
-set( ngs_nvcc_header "\
-${ngscxx_set_script_dir}
+set( ngs_nvcc_header "${ngscxx_header}
 if [ -f ${CMAKE_CUDA_COMPILER} ]
   then NVCC=${CMAKE_CUDA_COMPILER}
   else NVCC=nvcc
 fi
 ")
 
-set(nvcc_flags "")
+list(JOIN nvcc_flags " " nvcc_flags)
 foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} "-fPIC")
     set(nvcc_flags "${nvcc_flags} -Xcompiler ${opt}")
-    message("add opt ", ${opt})
 endforeach()
+set(ngs_nvcc_command "$NVCC ${ngscxx_define_flags} -arch=native ${nvcc_flags} ${ngscxx_includes} $*\n")
+
+if(CCACHE_FOUND)
+      set(ngs_nvcc_command "
+if [ -f ${CCACHE_FOUND} ]
+  then ${CCACHE_FOUND} ${ngs_nvcc_command}
+  else ${ngs_nvcc_command}
+fi")
+endif()
+
+set(ngs_nvlink_command "$NVCC -rdc=true -arch=native $*\n")
 
 file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvcc
-              CONTENT "${ngs_nvcc_header}\n$NVCC ${ngscxx_define_flags} -arch=native ${nvcc_flags} ${ngscxx_includes} $*\n"
+              CONTENT "${ngs_nvcc_header}\n${ngs_nvcc_command}\n"
               CONDITION $<COMPILE_LANGUAGE:CXX>
-              )
-file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink CONTENT "${ngs_nvcc_header}\n$NGSCXX ${ngsld_flags} $*\n")
+)
+file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink CONTENT "${ngs_nvcc_header}\n${ngs_nvlink_command}\n")
 install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvcc DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngs_nvlink DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
 
@@ -67,6 +90,7 @@ install( FILES
         cuda_linalg.hpp
         cuda_profiler.hpp
         unifiedvector.hpp
+        cuda_core.hpp
         cuda_ngstd.hpp
         cuda_ngbla.hpp
         linalg_kernels.hpp

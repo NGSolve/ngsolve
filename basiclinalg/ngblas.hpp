@@ -412,10 +412,10 @@ namespace ngbla
 
   
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
-  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c);
+  INLINE void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c);
 
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
-  void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double,ColMajor> c);
+  INLINE void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double,ColMajor> c);
   
   
 
@@ -428,7 +428,7 @@ namespace ngbla
   // t   t    C += A*B
   
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
-  inline void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
+  INLINE void NgGEMM (SliceMatrix<double,orda> a, SliceMatrix<double, ordb> b, SliceMatrix<double> c)
   {
     // static Timer t("generic MM, add/pos/ord="+ToString(ADD)+ToString(POS)+ToString(orda)+ToString(ordb));
     // RegionTimer r(t);

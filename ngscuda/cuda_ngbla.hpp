@@ -1,8 +1,21 @@
 #ifndef CUDA_NGBLA
 #define CUDA_NGBLA
 
+#include <cuda_runtime.h>
+#include <cublas_v2.h>
+
+#include <vector.hpp>
+#include <matrix.hpp>
+
 #include "cuda_ngstd.hpp"
 #include "linalg_kernels.hpp"
+
+
+namespace ngla
+{
+  cublasHandle_t Get_CuBlas_Handle ();
+}
+
 
 namespace ngbla
 {
@@ -15,15 +28,15 @@ namespace ngbla
   template <typename T>  
   class Vector<Dev<T>> : public FlatVector<Dev<T>>
   { 
-    using FlatVector<Dev<T>>::size;
-    using FlatVector<Dev<T>>::data;
+    using FlatVector<Dev<T>>::Size;
+    using FlatVector<Dev<T>>::Data;
 
   public:
     Vector (Vector&) = delete;
     Vector (Vector&&v2)
       : FlatVector<Dev<T>>(v2.Size(), v2.Data())
     {
-      v2.data = nullptr;
+      v2.layout = { nullptr, 0 };      
     }
          
     Vector (size_t asize)
@@ -37,22 +50,31 @@ namespace ngbla
     
     ~Vector()
     {
-      Dev<T>::Free(data);
+      Dev<T>::Free(Data());
     }
-         
+
+
+    template<typename TB>
+    Vector & operator= (const Expr<TB> & v)
+    {
+      MatExpr<FlatVector<Dev<T>> >::operator= (v);
+      return *this;
+    }
+
+    
     void D2H (FlatVector<T> vec) const
     {
-      cudaMemcpy (vec.Data(), data, sizeof(T)*size, cudaMemcpyDeviceToHost);
+      cudaMemcpy (vec.Data(), Data(), sizeof(T)*Size(), cudaMemcpyDeviceToHost);
     }
 
     void H2D (FlatVector<T> vec)
     {
-      cudaMemcpy (data, vec.Data(), sizeof(T)*size, cudaMemcpyHostToDevice);
+      cudaMemcpy (Data(), vec.Data(), sizeof(T)*Size(), cudaMemcpyHostToDevice);
     }
 
     Vector<T> D2H() const
     {
-      Vector<T> vh(size);
+      Vector<T> vh(Size());
       D2H (vh);
       return vh;
     }
@@ -64,7 +86,73 @@ namespace ngbla
     cudaMemcpy (hvec.Data(), dvec.Data(), sizeof(double)*hvec.Size(), cudaMemcpyDeviceToHost);
     return hvec;
   }
+
+#ifdef OLDOLD
+#ifdef __CUDACC__  
+  template <typename TS, typename TD>
+  __global__ void kernel_Assign (size_t n,  TD pod_dst, TS pod_src)
+  {
+    auto dst = *pod_dst;
+    auto src = *pod_src;
+    
+    int tid = blockIdx.x*blockDim.x+threadIdx.x;
+    for (int i = tid; i < n; i += blockDim.x*gridDim.x)
+      if (i < 5)
+        dst(i) = src.S();
+      else
+        dst(i) = src.A()(i);
+  }
+#endif
+
+  template <typename T>
+  class AsPOD
+  {
+    std::array<char, sizeof(T)> data;
+  public:
+    AsPOD(const AsPOD&) = default;
+    INLINE AsPOD (const T & adata)
+    {
+      char * pdata = (char*)(void*)&adata;
+      for (int i = 0; i < sizeof(T); i++)
+        data[i] = pdata[i];
+    }
+
+    INLINE const T & operator* () const
+    {
+      T * val = (T*)(void*)&data[0];
+      return *val;
+    }
+    INLINE int operator[] (int i) const { return data[i]; }
+  };
+#endif
   
+  
+
+  template <typename TOP, typename T, typename TS, typename TDIST, typename TB>
+  class assign_trait<TOP, VectorView<T,TS,TDIST>, TB,
+                     enable_if_t < std::is_same<std::invoke_result_t<VectorView<T,TS,TDIST>,size_t>, Dev<double>&>::value, int>>
+  {
+  public:
+    static INLINE VectorView<T,TS,TDIST> & Assign (MatExpr<VectorView<T,TS,TDIST>> & self, const Expr<TB> & v)
+    {
+
+#ifdef __CUDACC__ 
+      
+      ngs_cuda::DeviceParallelFor
+        (self.Height(),
+         [devself=self.Spec(), devv=v.Spec()] DEVICE_LAMBDA (auto tid) -> void
+         {
+           // devself(tid) = devv(tid);
+           TOP()(devself(tid),devv(tid));
+         });
+
+#endif
+
+      return self.Spec();
+    }
+  };    
+
+
 
   
     
@@ -137,6 +225,9 @@ namespace ngbla
                         SliceMatrix<Dev<double>, ORDERING::ColMajor> c,
                        double alpha, double beta)
   {
+    static Timer t("cublasDgemm");
+    CudaRegionTimer rt(t);
+    cublasSetStream(ngla::Get_CuBlas_Handle(), ngs_cuda_stream);
     cublasStatus_t stat =
       cublasDgemm(ngla::Get_CuBlas_Handle(), 
                   ORDA==ORDERING::RowMajor ? CUBLAS_OP_T : CUBLAS_OP_N, 

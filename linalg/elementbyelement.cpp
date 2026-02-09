@@ -778,8 +778,20 @@ namespace ngla
     
     // cout << "disjoint_rows = " << disjoint_rows << ", disjoint_cols = " << disjoint_cols << endl;
 
-
-
+    output_onto = disjoint_cols && (col_dnums.AsArray().Size() == Height());
+    if (output_onto)
+      {
+        output_matrix = true;
+        output_matrix_trans = true;
+        for (size_t i = 0; i < col_dnums.Size(); i++)
+          for (size_t j = 0; j < matrix.Height(); j++)
+            {
+              if (col_dnums[i][j] != i*matrix.Height()+j) output_matrix = false;
+              if (col_dnums[i][j] != j*col_dnums.Size()+i) output_matrix_trans = false;
+            }
+      }
+    // cout << "output_matrix = " << int(output_matrix) << ", output_matrix_trans = " << int(output_matrix_trans) << endl;
+    
     if (!disjoint_rows)
       {
         Array<MyMutex> locks(w);
@@ -961,7 +973,8 @@ namespace ngla
   BaseMatrix::OperatorInfo ConstantElementByElementMatrix<SCAL> :: GetOperatorInfo () const
   {
     OperatorInfo info;
-    info.name = string("ConstantEBEMatrix (bs = ") + ToString(matrix.Height()) + "x"
+    info.name = string("ConstantEBEMatrix (blocks = ")+ToString(col_dnums.Size())+
+      ", bs = " + ToString(matrix.Height()) + "x"
       + ToString (matrix.Width()) + ")";
     info.height = Height();
     info.width = Width();
@@ -1035,24 +1048,45 @@ namespace ngla
                  fy(col_dnums[i]) += s * hy;
                }
              */
-             constexpr size_t BS = 128;
-             Matrix<SCAL> hx(BS, matrix.Width());
-             Matrix<SCAL> hy(BS, matrix.Height());
 
-             for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+
+             if (output_matrix_trans)
                {
-                 size_t li = min2(bi+BS, r.Next());
-                 size_t num = li-bi; 
-                 for (size_t i = 0; i < num; i++)
-                   hx.Row(i) = fx(row_dnums[bi+i]);
-                 {
-                   // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
-                   // RegionTimer reg(tpmult);
-                   // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
-                   hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
-                 }
-                 for (size_t i = 0; i < num; i++)
-                   fy(col_dnums[bi+i]) += s * hy.Row(i);
+                 constexpr size_t BS = 128;
+                 Matrix<SCAL> hx(BS, matrix.Width());
+
+                 auto hy = Trans(fy.AsMatrix(matrix.Height(), row_dnums.Size()));
+                 for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+                   {
+                     size_t li = min2(bi+BS, r.Next());
+                     size_t num = li-bi; 
+                     for (size_t i = 0; i < num; i++)
+                       hx.Row(i) = fx(row_dnums[bi+i]);
+                     
+                     hy.Rows(bi,li) = hx.Rows(0, num) * Trans(matrix);
+                   }
+               }
+             else
+               {
+                 constexpr size_t BS = 128;
+                 Matrix<SCAL> hx(BS, matrix.Width());
+                 Matrix<SCAL> hy(BS, matrix.Height());
+                 
+                 for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+                   {
+                     size_t li = min2(bi+BS, r.Next());
+                     size_t num = li-bi; 
+                     for (size_t i = 0; i < num; i++)
+                       hx.Row(i) = fx(row_dnums[bi+i]);
+                     {
+                       // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                       // RegionTimer reg(tpmult);
+                       // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                       hy.Rows(0, num) = hx.Rows(0, num) * Trans(matrix);
+                     }
+                     for (size_t i = 0; i < num; i++)
+                       fy(col_dnums[bi+i]) += s * hy.Row(i);
+                   }
                }
            }, TasksPerThread(2));
       }
@@ -1106,28 +1140,51 @@ namespace ngla
         ParallelForRange
           (row_dnums.Size(), [&] (IntRange r)
            {
-             constexpr size_t BS = 128;
-             Matrix<SCAL> hx(BS, matrix.Height());
-             Matrix<SCAL> hy(BS, matrix.Width());
 
-             for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+             if (output_matrix_trans)
                {
-                 size_t li = min2(bi+BS, r.Next());
-                 size_t num = li-bi;
+                 constexpr size_t BS = 128;
+                 Matrix<SCAL> hy(BS, matrix.Width());
                  
-                 for (size_t i = 0; i < num; i++)
-                   hx.Row(i) = fx(col_dnums[bi+i]);
+                 for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+                   {
+                     size_t li = min2(bi+BS, r.Next());
+                     size_t num = li-bi;
+
+                     auto hx = Trans(fx.AsMatrix(matrix.Height(), row_dnums.Size()));
                  
-                 {
-                   // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
-                   // RegionTimer reg(tpmult);
-                   // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
-                   
-                   hy.Rows(0, num) = hx.Rows(0, num) * matrix;
-                 }
+                     hy.Rows(0, num) = hx.Rows(bi, li) * matrix;
+                     
+                     for (size_t i = 0; i < num; i++)
+                       fy(row_dnums[bi+i]) += s * hy.Row(i);
+                   }
+               }
+
+             else
+               {
+                 constexpr size_t BS = 128;
+                 Matrix<SCAL> hx(BS, matrix.Height());
+                 Matrix<SCAL> hy(BS, matrix.Width());
                  
-                 for (size_t i = 0; i < num; i++)
-                   fy(row_dnums[bi+i]) += s * hy.Row(i);
+                 for (size_t bi = r.First(); bi < r.Next(); bi+= BS)
+                   {
+                     size_t li = min2(bi+BS, r.Next());
+                     size_t num = li-bi;
+                     
+                     for (size_t i = 0; i < num; i++)
+                       hx.Row(i) = fx(col_dnums[bi+i]);
+                     
+                     {
+                       // NgProfiler::AddThreadFlops(tpmult, TaskManager::GetThreadId(), num*matrix.Height()*matrix.Width());
+                       // RegionTimer reg(tpmult);
+                       // RegionTracer rt(TaskManager::GetThreadId(), tpmult);
+                       
+                       hy.Rows(0, num) = hx.Rows(0, num) * matrix;
+                     }
+                     
+                     for (size_t i = 0; i < num; i++)
+                       fy(row_dnums[bi+i]) += s * hy.Row(i);
+                   }
                }
            });
       }

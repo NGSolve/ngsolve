@@ -292,6 +292,10 @@ def CG(mat, rhs, pre=None, sol=None, tol=1e-12, maxsteps = 100, printrates = Tru
     solver.Solve(rhs=rhs, sol=sol, initialize=initialize)
     return solver.sol
 
+
+
+
+
 class QMRSolver(LinearSolver):
     """Quasi Minimal Residuum method
 
@@ -310,13 +314,15 @@ ep : double
     name = "QMR"
 
     def __init__(self, *args, pre2 : Preconditioner = None,
+                 matT = None,
                  ep : float = 1., **kwargs):
         super().__init__(*args, **kwargs)
         self.pre2 = pre2
         self.ep = ep
+        self.matT = matT if matT is not None else self.mat.T
 
     def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
-        u, mat, ep, pre1, pre2 = sol, self.mat, self.ep, self.pre, self.pre2
+        u, mat, matT, ep, pre1, pre2 = sol, self.mat, self.matT, self.ep, self.pre, self.pre2
         r = rhs.CreateVector()
         v = rhs.CreateVector()
         v_tld = rhs.CreateVector()
@@ -399,7 +405,7 @@ ep : double
             rho = InnerProduct(y,y)
             rho = sqrt(rho)
 
-            w_tld.data = mat.T * q
+            w_tld.data = matT * q
             w_tld.data -= beta * w
 
             z.data = pre2.T * w_tld if pre2 else w_tld
@@ -494,6 +500,169 @@ def QMR(mat, rhs, fdofs, pre1=None, pre2=None, sol=None, maxsteps = 100, printra
                      pre2=pre2, maxiter=maxsteps,
                      printrates=printrates, ep=ep,
                      tol=tol).Solve(rhs=rhs, sol=sol, initialize=initialize)
+
+
+
+
+
+
+
+class TFQMRSolver(LinearSolver):
+    """Transpose-Free Quasi Minimal Residuum method
+
+    Parameters
+    ----------
+
+""" + linear_solver_param_doc + """
+
+"""
+
+    name = "TFQMR"
+
+    def __init__(self, *args, pre2 : Preconditioner = None,
+                 matT = None,
+                 ep : float = 1., **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _SolveImpl(self, rhs : BaseVector, sol : BaseVector):
+        # following implementation from scipy
+        mat,pre,tol = self.mat, self.pre, self.tol
+        
+        r = rhs.CreateVector()
+        u = rhs.CreateVector()
+        v = rhs.CreateVector()
+        w = rhs.CreateVector()
+        uhat = rhs.CreateVector()
+        uNext = rhs.CreateVector()                
+        rstar = rhs.CreateVector()
+        d = rhs.CreateVector()
+        x = rhs.CreateVector()
+        z = rhs.CreateVector()
+        tmp = rhs.CreateVector()                                
+        d[:] = 0
+        
+        if Norm(rhs)==0:
+            sol.data = 0
+            return
+
+        x.data = sol
+        r.data = rhs - mat*sol
+        
+        u.data = r
+        w.data = r
+        rstar.data = r
+
+        v.data = pre@mat * r
+        uhat.data = v
+
+        theta = eta = 0
+
+        rho = InnerProduct(rstar, r)
+        rhoLast = rho
+        r0norm = sqrt(rho)
+
+        tau = r0norm
+        if r0norm == 0:
+            return
+
+        for iter in range(0,self.maxiter):
+            even = iter%2 == 0
+            if (even):
+                vtrstar = InnerProduct(rstar, v)
+                if vtrstar==0:
+                    return
+
+                alpha = rho/vtrstar
+                uNext.data = u-alpha*v
+                
+            w -= alpha*uhat
+            d *= theta**2/alpha*eta
+            d += u
+            theta = Norm(w)/tau
+            c = sqrt(1/(1+theta**2))
+            tau *= theta*c
+
+            eta = c**2 * alpha
+            z.data = pre*d
+            x += eta*z
+
+            # callback ...
+
+            if self.CheckResidual(tau):
+                sol.data = x
+                return
+            # if tau < tol:
+            #    return
+
+            if not even:
+                rho = InnerProduct(rstar, w)
+                beta = rho/rhoLast
+                u *= beta
+                u += w
+                v *= beta**2
+                v += beta*uhat
+                # uhat.data = pre@mat * u
+                tmp.data = mat*u
+                uhat.data = pre*tmp
+                v += uhat
+            else:
+                # uhat.data = pre@mat * uNext
+                tmp.data = mat*uNext
+                uhat.data = pre*tmp
+                u.data = uNext
+                rhoLast = rho
+            
+
+def TFQMR(mat, rhs, pre=None, sol=None, maxsteps = 100, printrates = True, initialize = True, tol = 1e-7):
+    """Quasi Minimal Residuum method
+
+
+    Parameters
+    ----------
+
+    mat : Matrix
+      The left hand side of the equation to solve
+
+    rhs : Vector
+      The right hand side of the equation.
+
+    fdofs : BitArray
+      BitArray of free degrees of freedoms.
+
+    pre : Preconditioner
+      preconditioner if provided
+
+    sol : Vector
+      Start vector for QMR method, if initialize is set False. Gets overwritten by the solution vector. If sol = None then a new vector is created.
+
+    maxsteps : int
+      Number of maximal steps for QMR. If the maximal number is reached before the tolerance is reached QMR stops.
+
+    printrates : bool
+      If set to True then the error of the iterations is displayed.
+
+    initialize : bool
+      If set to True then the initial guess for the QMR method is set to zero. Otherwise the values of the vector sol, if provided, is used.
+
+    tol : double
+      Tolerance of the residuum. QMR stops if tolerance is reached.
+
+
+    Returns
+    -------
+    (vector)
+      Solution vector of the QMR method.
+
+    """
+    # backwards compatibility, but freedofs are not needed then.
+    return TFQMRSolver(mat=mat, pre=pre,
+                       maxiter=maxsteps,
+                       printrates=printrates, 
+                       tol=tol).Solve(rhs=rhs, sol=sol, initialize=initialize)
+
+
+
+
 
 
 
@@ -803,7 +972,7 @@ restart : int = None
             h[:] = 0
             for i in range(k+1):
                 h[i] = innerproduct(Q[i],q)
-                q.data += (-1)* h[i] * Q[i]
+                q -= h[i] * Q[i]
             h[k+1] = norm(q)
             if abs(h[k+1]) < 1e-12:
                 return h, None

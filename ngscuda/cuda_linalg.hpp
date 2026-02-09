@@ -101,8 +101,13 @@ namespace ngla
 
     bool disjoint_rows, disjoint_cols;
     size_t numblocks;
+    bool output_onto = false;
+    bool output_matrix = false;
+    bool output_matrix_trans = false;
+
   public:
     DevConstantElementByElementMatrix (const T_ConstEBEMatrix & mat);
+    void Mult (const BaseVector & x, BaseVector & y) const override;    
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
@@ -118,9 +123,12 @@ namespace ngla
     int blocks, dimy, dimx;
     Matrix<bool> nonzero;
     Array<Dev<int>> indices, indices_trans;
+    DevTable<int> sparse, sparseT;
  public:
     DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
+    void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTrans (const BaseVector & x, BaseVector & y) const override;    
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
     int VHeight() const override { return dimy*blocks; }
     int VWidth() const override { return dimx*blocks; }
@@ -153,6 +161,8 @@ namespace ngla
       : bits(make_shared<DevBitArray>(*proj.Mask())), 
         keep_values(proj.KeepValues()) { ; }
 
+    virtual xbool IsSymmetric() const { return true; }
+    
     void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
 

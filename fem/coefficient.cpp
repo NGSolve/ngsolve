@@ -16,9 +16,11 @@
 // #include <fem.hpp>
 #include <coefficient.hpp>
 #include <coefficient_impl.hpp>
+#include "code_generation.hpp"
 #include "symbolicintegrator.hpp"
 #include <../ngstd/evalfunc.hpp>
 #include <algorithm>
+#include <sstream>
 #ifdef NGS_PYTHON
 #include <core/python_ngcore.hpp> // for shallow archive
 #endif // NGS_PYTHON
@@ -35,6 +37,21 @@ namespace ngfem
   CoefficientFunction :: ~CoefficientFunction ()
   { ; }
 
+
+  void CoefficientFunction :: CalcEquivalenceKey()
+  {
+    stringstream ss;
+    cout << "Warning: using default CalcEquivalenceKey for " << Demangle(typeid(*this).name()) << endl;
+    ss << (void*)this;
+    equivalence_key = ss.str();
+  }
+
+  const string & CoefficientFunction :: EquivalenceKey ()
+  {
+    if(equivalence_key.empty())
+      CalcEquivalenceKey();
+    return equivalence_key; 
+  }
 
   void CoefficientFunction :: GenerateCode(Code &code, FlatArray<int> inputs, int index) const
   {
@@ -412,6 +429,11 @@ namespace ngfem
   string ConstantCoefficientFunction :: GetDescription () const 
   {
     return ToString(val);
+  }
+
+  void ConstantCoefficientFunction :: CalcEquivalenceKey()
+  {
+      equivalence_key = HexLiteral(val);
   }
 
   
@@ -1613,6 +1635,24 @@ public:
     func(*this);
   }
 
+  void CalcEquivalenceKey () override
+  {
+    std::stringstream ss;
+    if(Dimension() == 1)
+    {
+      equivalence_key = HexLiteral(0);
+    }
+    else 
+    {
+      auto dims = Dimensions();
+      ss << "zeros(" << dims[0];
+      for (auto i : dims.Range(1, dims.Size()))
+        ss << "," << dims[i];
+      ss << ")";
+      equivalence_key = ss.str();
+    }
+  }
+
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
     // code.Declare (code.res_type, index, this->Dimensions());
@@ -1717,6 +1757,11 @@ public:
   virtual string GetDescription() const override
   {
     return "scale "+ToString(scal);
+  }
+
+  void CalcEquivalenceKey () override
+  {
+    equivalence_key = "(" + HexLiteral(scal) + "*" + c1->EquivalenceKey() + ")";
   }
 
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -2063,6 +2108,11 @@ public:
       case 2: return "scalar-matrix multiply";    
       default: return "scalar-tensor multiply";
       }
+  }
+
+  void CalcEquivalenceKey () override
+  {
+    equivalence_key = "(" + c1->EquivalenceKey() + "*" + c2->EquivalenceKey() + ")";
   }
 
   shared_ptr<CoefficientFunction>
@@ -2480,6 +2530,14 @@ public:
   virtual string GetDescription () const override
   { return "innerproduct, fix size = "+ToString(DIM); }
 
+  void CalcEquivalenceKey() override
+  {
+    string s1 = c1->EquivalenceKey();
+    string s2 = c2->EquivalenceKey();
+    if(s1 > s2)
+      swap(s1,s2);
+    this->equivalence_key = "innerproduct("+s1 + "," + s2 + ")";
+  }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -2696,6 +2754,11 @@ public:
   virtual string GetDescription () const override
   { return "innerproduct, same vectors, fix size = "+ToString(DIM); }
 
+  void CalcEquivalenceKey() override
+  {
+    string s1 = c1->EquivalenceKey();
+    this->equivalence_key = "innerproduct(" + s1 + "," + s1 + ")";
+  }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -4346,6 +4409,10 @@ public:
   virtual string GetDescription () const override
   { return "ComponentCoefficientFunction " + ToString(comp); }
 
+  void CalcEquivalenceKey() override
+  {
+    equivalence_key = "(" + c1->EquivalenceKey() + "[" + ToString(comp) + "])";
+  }
   
   virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
   {
@@ -4594,6 +4661,22 @@ public:
           }
         mapping.Append (inputindex);
       }
+  }
+
+  void CalcEquivalenceKey() override
+  {
+    stringstream ss;
+    ss << "(" << c1->EquivalenceKey() << "[";
+    ss << "first=" << first << ",";
+    ss << "num=";
+    for (auto n : num)
+      ss << n << ":";
+    ss << ",";
+    ss << "dist=";
+    for (auto d : dist)
+      ss << d << ":";
+    ss << "])";
+    equivalence_key = ss.str();
   }
 
   void DoArchive(Archive& ar) override
@@ -6584,13 +6667,31 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     CompiledCoefficientFunction (shared_ptr<CoefficientFunction> acf)
       : CompiledCoefficientFunctionInterface(acf->Dimension(), acf->IsComplex()), cf(acf) // , compiled_function(nullptr), compiled_function_simd(nullptr)
     {
+      struct CFEntry {
+        CoefficientFunction * cf;
+        int index;
+      };
+
+      std::map<string, CFEntry> handled_functions;
+      auto getKey = [&] (CoefficientFunction & stepcf) {
+        if(code_uses_equivalence_keys)
+          return stepcf.EquivalenceKey();
+        return ToString( (size_t) &stepcf );
+      };
+
+      auto getIndex = [&] (CoefficientFunction & stepcf) {
+        return handled_functions[getKey(stepcf)].index;
+      };
+
+
       SetDimensions (cf->Dimensions());
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
          {
-           if (!steps.Contains(&stepcf))
+           if (handled_functions.count(getKey(stepcf))==0)
              {
-               steps.Append (&stepcf);
+               int index = steps.Append (&stepcf);
+               handled_functions[getKey(stepcf)] = CFEntry { &stepcf, index };
                // timers.Append (new Timer(string("CompiledCF")+typeid(stepcf).name()));
                dim.Append (stepcf.Dimension());
                is_complex.Append (stepcf.IsComplex());
@@ -6610,13 +6711,13 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
       cf -> TraverseTree
         ([&] (CoefficientFunction & stepcf)
          {
-           int mypos = steps.Pos (&stepcf);
+           int mypos = getIndex(stepcf);
            if (!inputs[mypos].Size())
              {
                Array<shared_ptr<CoefficientFunction>> in = stepcf.InputCoefficientFunctions();
                max_inputsize = max2(in.Size(), max_inputsize);
                for (auto incf : in)
-                 inputs.Add (mypos, steps.Pos(incf.get()));
+                 inputs.Add (mypos, getIndex(*incf.get()));
              }
          });
       cout << IM(3) << "inputs = " << endl << inputs << endl;
@@ -7768,6 +7869,7 @@ static RegisterClassForArchive<cl_BinaryOpCF<GenericMinus>, CoefficientFunction>
 static RegisterClassForArchive<cl_BinaryOpCF<GenericMult>, CoefficientFunction> regcfmult;
 static RegisterClassForArchive<cl_BinaryOpCF<GenericDiv>, CoefficientFunction> regcfdiv;
 static RegisterClassForArchive<cl_UnaryOpCF<GenericIdentity>, CoefficientFunction> regcfid;
+static RegisterClassForArchive<cl_UnaryOpCF<GenericConj>, CoefficientFunction> regcfconj;
 static RegisterClassForArchive<IfPosCoefficientFunction, CoefficientFunction> regfifpos;
 static RegisterClassForArchive<RealCF, CoefficientFunction> regrealcf;
 static RegisterClassForArchive<ImagCF, CoefficientFunction> regimagcf;

@@ -18,21 +18,26 @@ namespace ngfem
   using namespace ngbla;
   
   NGS_DLL_HEADER extern bool code_uses_tensors;
+  NGS_DLL_HEADER extern bool code_uses_equivalence_keys;
 
   template <typename T>
-  inline string ToLiteral(const T & val)
+  inline string HexLiteral(const T & val)
   {
       stringstream ss;
 #if (defined __cpp_hex_float) && (__cpp_hex_float <= __cplusplus)
       ss << std::hexfloat;
       ss << val;
-      ss << " /* (" << std::setprecision(16) << std::scientific;
-      ss << val << ") */";
 #else
       ss << std::setprecision(16) << std::scientific;
       ss << val;
 #endif
       return ss.str();
+  }
+
+  template <typename T>
+  inline string ToLiteral(const T & val)
+  {
+      return HexLiteral(val) + " /* " + ToString(val) + " */";
   }
 
   template<>
@@ -57,7 +62,7 @@ namespace ngfem
 
     string pointer;
 
-    NGS_DLL_HEADER string AddPointer(const void *p );
+    NGS_DLL_HEADER string AddPointer(const void *p, string name = "", string type = "void *", string qualifiers = "");
 
     void AddLinkFlag(string flag);
 
@@ -287,7 +292,7 @@ namespace ngfem
   }
 
   std::filesystem::path CreateTempDir();
-  unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files = false );
+  unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files = false, optional<string> compiler = nullopt, optional<string> linker = nullopt);
   namespace detail {
       string GenerateL2ElementCode(int order);
   }

@@ -8,7 +8,7 @@ export EMSCRIPTEN_SYSROOT=$(em-config CACHE)/sysroot
 export EMSCRIPTEN_INCLUDE=$EMSCRIPTEN_SYSROOT/include
 export EMSCRIPTEN_BIN=$EMSCRIPTEN_SYSROOT/bin
 export EMSCRIPTEN_LIB=$EMSCRIPTEN_SYSROOT/lib/wasm32-emscripten/pic
-export SIDE_MODULE_LDFLAGS="-O2 -g0 -sWASM_BIGINT -s SIDE_MODULE=1"
+export SIDE_MODULE_LDFLAGS="-O2 -g0 -sSIDE_MODULE=1 -fwasm-exceptions -sSUPPORT_LONGJMP=0"
 export TARGETINSTALLDIR=/root/xbuildenv/pyodide-root/cpython/installs/python-${PYTHON_VERSION}/
 export CMAKE_TOOLCHAIN_FILE=/root/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake
 
@@ -18,15 +18,20 @@ echo 'set(CMAKE_STRIP "${EMSCRIPTEN_ROOT_PATH}/emstrip${EMCC_SUFFIX}" CACHE FILE
 export CCACHE_DIR=/ccache
 ccache -s
 
+cd /root/ngsolve/external_dependencies/netgen/external_dependencies/pybind11
+patch -p1 < /root/pybind11.patch
+cd -
+
 emcmake cmake /root/ngsolve \
       -DCMAKE_CROSSCOMPILING=ON \
-      -DCMAKE_CXX_FLAGS="-sNO_DISABLE_EXCEPTION_CATCHING -I$TARGETINSTALLDIR/include/python3.13" \
+      -DCMAKE_C_FLAGS="-g0 -O2 -I$TARGETINSTALLDIR/include/python${PYTHON_MAJOR}.${PYTHON_MINOR} -sSUPPORT_LONGJMP=0" \
+      -DCMAKE_CXX_FLAGS="-g0 -O2 -I$TARGETINSTALLDIR/include/python${PYTHON_MAJOR}.${PYTHON_MINOR} -sSUPPORT_LONGJMP=0" \
       -DCMAKE_MODULE_LINKER_FLAGS="$SIDE_MODULE_LDFLAGS" \
       -DCMAKE_SHARED_LINKER_FLAGS="$SIDE_MODULE_LDFLAGS" \
       -DUSE_SUPERBUILD=ON \
       -DUSE_CCACHE=ON \
-      -DNGLIB_LIBRARY_TYPE=STATIC \
-      -DNGCORE_LIBRARY_TYPE=OBJECT \
+      -DNGLIB_LIBRARY_TYPE=SHARED \
+      -DNGCORE_LIBRARY_TYPE=SHARED \
       -DMAX_SYS_DIM=1 \
       -DCMAKE_BUILD_TYPE=Release \
       -DUSE_FASTCOMPILE=1 \
@@ -44,10 +49,10 @@ emcmake cmake /root/ngsolve \
       -DUSE_PARDISO:BOOL=OFF \
       -DUSE_PYTHON:BOOL=ON \
       -DPython3_ROOT_DIR=$TARGETINSTALLDIR \
-      -DPython3_INCLUDE_DIR=$TARGETINSTALLDIR/include/python3.13 \
+      -DPython3_INCLUDE_DIR=$TARGETINSTALLDIR/include/python${PYTHON_MAJOR}.${PYTHON_MINOR} \
       -DPython3_INCLUDE_DIRS=$TARGETINSTALLDIR/include \
       -DNG_INSTALL_DIR_PYTHON=python \
-      -DNG_INSTALL_DIR_LIB=python/netgen \
+      -DNG_INSTALL_DIR_LIB=python \
       -DUSE_STLGEOM:UNINITIALIZED=ON \
       -DUSE_UMFPACK:BOOL=OFF \
       -DNetgen_DIR=/opt/netgen/lib/cmake/netgen \
@@ -62,6 +67,9 @@ emcmake cmake /root/ngsolve \
       -DBUILD_OCC=OFF \
       -DBUILD_ZLIB=ON \
 
+emmake make -j9 install 2>&1 || true
+
 # cd netgen
-emmake make -j9 install
-      # -DPython3_LIBRARY=$TARGETINSTALLDIR/lib/libpython3.11.a \
+# set -o pipefail
+# export VERBOSE=1
+# emmake make -j9 install 2>&1 | tee /root/build_ngs.log

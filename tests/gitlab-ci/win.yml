@@ -1,4 +1,3 @@
-
 ############################################
 # Windows
 ############################################
@@ -8,41 +7,50 @@
     - windows
     - x64
   before_script:
-    - set NG_USE_NATIVE_ARCH=OFF
-    - call tests\gitlab-ci\win\set_vars.bat
+    - |
+        $env:NG_USE_NATIVE_ARCH = "OFF"
+        ./tests/gitlab-ci/win/set_vars.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 win_build:
   <<: *win
   stage: build
   script:
-    - call tests\gitlab-ci\win\build.bat
-    - IF %errorlevel% NEQ 0 exit /b %errorlevel%
-    - cd %CI_PROJECT_DIR%
-    - call tests\gitlab-ci\win\upload.bat
-    - IF %errorlevel% NEQ 0 exit /b %errorlevel%
-    - cd %CI_PROJECT_DIR%
-    - call tests\gitlab-ci\win\test.bat
-    - IF %errorlevel% NEQ 0 exit /b %errorlevel%
+    - |
+        Set-Location $env:CI_PROJECT_DIR
+        ./tests/gitlab-ci/win/build.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Set-Location $env:CI_PROJECT_DIR
+        ./tests/gitlab-ci/win/upload.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Set-Location $env:CI_PROJECT_DIR
+        ./tests/gitlab-ci/win/test.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 .template_win_avx: &win_avx
   tags:
     - windows
     - x64
   before_script:
-    - set NG_USE_NATIVE_ARCH=ON
-    - call tests\gitlab-ci\win\set_vars.bat
+    - |
+        $env:NG_USE_NATIVE_ARCH = "ON"
+        ./tests/gitlab-ci/win/set_vars.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
   only:
     - schedules
     - tags
+
 
 win_avx_build:
   <<: *win_avx
   stage: build
   script:
-    - call tests\gitlab-ci\win\build.bat
-    - IF %errorlevel% NEQ 0 exit /b %errorlevel%
-    - cd %CI_PROJECT_DIR%
-    - call tests\gitlab-ci\win\test.bat
+    - |
+        ./tests/gitlab-ci/win/build.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Set-Location $env:CI_PROJECT_DIR
+        ./tests/gitlab-ci/win/test.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 deploy_win:
   stage: deploy
