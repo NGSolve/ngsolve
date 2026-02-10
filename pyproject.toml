@@ -1,0 +1,14 @@
+[build-system]
+requires = [
+    "setuptools",
+    "wheel",
+    "scikit-build",
+    "cmake",
+    "pybind11-stubgen==2.5",
+    "netgen-mesher",
+    "mkl",
+    "intel-cmplr-lib-rt",
+    "requests",
+    "packaging",
+]
+build-backend = "setuptools.build_meta"
