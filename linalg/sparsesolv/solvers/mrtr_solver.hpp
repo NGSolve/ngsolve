@@ -104,7 +104,12 @@ protected:
                 // First iteration: simplified formulas
                 // zeta_0 = (w, r) / (v, w)
                 if (std::abs(v_w) < 1e-30) {
-                    return this->build_result(false, iter, this->compute_norm(r.data(), n));
+                    // Numerical breakdown - check if already converged
+                    double norm_r = this->compute_norm(r.data(), n);
+                    if (this->check_convergence(norm_r, iter)) {
+                        return this->build_result(true, iter + 1, norm_r);
+                    }
+                    return this->build_result(false, iter, norm_r);
                 }
                 zeta = w_r / v_w;
                 zeta_old = zeta;
@@ -115,8 +120,14 @@ protected:
 
                 // Denominator for zeta and eta
                 Scalar denom = nu * v_w - w_y * w_y;
-                if (std::abs(denom) < 1e-30) {
-                    return this->build_result(false, iter, this->compute_norm(r.data(), n));
+                if (std::abs(denom) < 1e-60) {
+                    // Numerical breakdown - check if already converged
+                    double norm_r = this->compute_norm(r.data(), n);
+                    if (this->check_convergence(norm_r, iter)) {
+                        return this->build_result(true, iter + 1, norm_r);
+                    }
+                    // Regularize denominator (like SGS-MRTR) to allow continuation
+                    denom = (std::real(denom) >= 0 ? Scalar(1e-60) : Scalar(-1e-60));
                 }
 
                 Scalar inv_denom = Scalar(1) / denom;

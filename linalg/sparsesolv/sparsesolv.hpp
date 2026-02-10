@@ -99,8 +99,9 @@ inline SolverResult solve_iccg(
     index_t size,
     const SolverConfig& config = SolverConfig()
 ) {
-    // Create IC preconditioner
+    // Create IC preconditioner with full config (for auto-shift, diagonal scaling, etc.)
     ICPreconditioner<Scalar> precond(config.shift_parameter);
+    precond.set_config(config);
     precond.setup(A);
 
     // Create CG solver
@@ -138,8 +139,9 @@ inline SolverResult solve_icmrtr(
     index_t size,
     const SolverConfig& config = SolverConfig()
 ) {
-    // Create IC preconditioner
+    // Create IC preconditioner with full config (for auto-shift, diagonal scaling, etc.)
     ICPreconditioner<Scalar> precond(config.shift_parameter);
+    precond.set_config(config);
     precond.setup(A);
 
     // Create MRTR solver

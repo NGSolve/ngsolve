@@ -59,8 +59,31 @@ struct SolverConfig {
     /// (Previously called "accera" or acceleration factor)
     double shift_parameter = 1.05;
 
-    /// Enable diagonal scaling before solving
+    /// Enable diagonal scaling (1/sqrt(A[i,i])) before IC factorization
     bool diagonal_scaling = false;
+
+    //--------------------------------------------------
+    // Auto-shift parameters for IC decomposition
+    //--------------------------------------------------
+
+    /// Enable automatic shift adjustment when IC factorization encounters
+    /// small or negative diagonal entries
+    bool auto_shift = false;
+
+    /// Increment for automatic shift adjustment (default: 0.01)
+    double shift_increment = 0.01;
+
+    /// Maximum allowed shift value during auto-adjustment (default: 5.0)
+    double max_shift_value = 5.0;
+
+    /// Threshold below which diagonal is considered too small (triggers shift increase)
+    double min_diagonal_threshold = 1e-6;
+
+    /// Replacement value for zero or negative diagonals (default: 1e-10)
+    double zero_diagonal_replacement = 1e-10;
+
+    /// Maximum number of shift adjustment trials (default: 100)
+    int max_shift_trials = 100;
 
     //--------------------------------------------------
     // Divergence detection
@@ -135,6 +158,11 @@ struct SolverConfig {
         divergence_check = check;
         divergence_threshold = threshold;
         divergence_count = count;
+        return *this;
+    }
+
+    SolverConfig& with_auto_shift(bool enable = true) {
+        auto_shift = enable;
         return *this;
     }
 };

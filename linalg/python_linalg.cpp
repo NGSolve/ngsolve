@@ -2329,6 +2329,14 @@ SparseSolvResult
         &SparseSolvSolver<double>::GetPrintRates,
         &SparseSolvSolver<double>::SetPrintRates,
         "Print convergence information after solve")
+    .def_property("auto_shift",
+        &SparseSolvSolver<double>::GetAutoShift,
+        &SparseSolvSolver<double>::SetAutoShift,
+        "Enable automatic shift adjustment for IC decomposition (for semi-definite matrices)")
+    .def_property("diagonal_scaling",
+        &SparseSolvSolver<double>::GetDiagonalScaling,
+        &SparseSolvSolver<double>::SetDiagonalScaling,
+        "Enable diagonal scaling (1/sqrt(A[i,i])) for IC preconditioner")
     .def_property_readonly("last_result",
         &SparseSolvSolver<double>::GetLastResult,
         "Result from the last Solve() or Mult() call");

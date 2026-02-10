@@ -832,6 +832,10 @@ public:
     void SetSaveResidualHistory(bool save) { config_.save_residual_history = save; }
     bool GetPrintRates() const { return printrates_; }
     void SetPrintRates(bool print) { printrates_ = print; }
+    bool GetAutoShift() const { return config_.auto_shift; }
+    void SetAutoShift(bool enable) { config_.auto_shift = enable; }
+    bool GetDiagonalScaling() const { return config_.diagonal_scaling; }
+    void SetDiagonalScaling(bool enable) { config_.diagonal_scaling = enable; }
     const SparseSolvResult& GetLastResult() const { return last_result_; }
 
 private:

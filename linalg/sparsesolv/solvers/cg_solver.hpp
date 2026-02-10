@@ -84,7 +84,12 @@ protected:
 
             // Avoid division by zero
             if (std::abs(pAp) < 1e-30) {
-                return this->build_result(false, iter, this->compute_norm(r.data(), n));
+                // Numerical breakdown - check if already converged
+                double norm_r = this->compute_norm(r.data(), n);
+                if (this->check_convergence(norm_r, iter)) {
+                    return this->build_result(true, iter + 1, norm_r);
+                }
+                return this->build_result(false, iter, norm_r);
             }
 
             Scalar alpha = rz_old / pAp;
