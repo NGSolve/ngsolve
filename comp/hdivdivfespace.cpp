@@ -9,6 +9,8 @@
 #include "hdivdivfespace.hpp"
 #include "../fem/hdivdivfe.hpp"
 
+#include "../fem/hdivdiv_equations.hpp"
+
 #include "../fem/diffop.hpp"
 #include "../fem/diffop_impl.hpp"
 #include "../fem/bdbequations.hpp"
@@ -17,6 +19,8 @@
 namespace ngcomp
 {
 
+  
+  /*
   template <int D>
   class DiffOpHDivDivDual : public DiffOp<DiffOpHDivDivDual<D> >
   {
@@ -181,7 +185,8 @@ namespace ngcomp
       return -2*TraceCF(dir->Operator("Grad"))*proxy + 2*SymmetricCF(dir->Operator("Grad") * proxy);
     }
   };
-
+  */
+  
 
 #ifdef NONE
   template<int D>
@@ -297,7 +302,12 @@ namespace ngcomp
     */
   };
 
-  
+
+
+
+
+  /*
+    // gone to header 
   template<int D>
   class DiffOpDivHDivDiv: public DiffOp<DiffOpDivHDivDiv<D> >
   {
@@ -407,7 +417,9 @@ namespace ngcomp
 
     }
   };
+  */
 
+  
   template<int D>
   class DiffOpIdHDivDiv_old : public DiffOp<DiffOpIdHDivDiv_old<D> >
   { 
@@ -731,6 +743,8 @@ namespace ngcomp
       "  Create discontinuous HDivDiv space";
     docu.Arg("plus") = "bool = False\n"
       "  Add additional internal element bubble";
+    docu.Arg("orderinner") = "int = order\n"
+      "  Modify order of internal basis functions";
     return docu;
   }
 

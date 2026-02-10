@@ -1339,7 +1339,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
         evaluator = block_evaluator->BaseDiffOp();
       }
     auto trial = make_shared<ProxyFunction>(nullptr, // dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
-                                            false, false, evaluator,
+                                            false, IsComplex(), evaluator,
                                             nullptr, nullptr, nullptr, nullptr, nullptr);
     auto test  = make_shared<ProxyFunction>(nullptr, // dynamic_pointer_cast<FESpace>(const_cast<FESpace*>(this)->shared_from_this()),
                                             true, false, evaluator,
@@ -1671,7 +1671,43 @@ lot of new non-zero entries in the matrix!\n" << endl;
                             );
           }
       }
-    
+
+    Array<int> vertex_map;
+    Array<int> edge_map;
+    Array<int> facet_map;
+    Array<int> patchentry;
+    int nentries = ma->GetNV();
+    if(GetClassName().substr(0,8) == "Periodic")
+      {
+        nentries = 0;
+        vertex_map.SetSize(ma->GetNV());
+        patchentry.SetSize(ma->GetNV());
+        edge_map.SetSize(ma->GetNEdges());
+        facet_map.SetSize(ma->GetNFaces());
+        for (auto i : Range(ma->GetNV()))
+          vertex_map[i] = i;
+        for (auto i : Range(ma->GetNFaces()))
+          facet_map[i] = i;
+        for (auto i : Range(ma->GetNEdges()))
+          edge_map[i] = i;
+        for (auto idnr : Range(ma->GetNPeriodicIdentifications()))
+          {
+            for(auto & per_verts : ma->GetPeriodicNodes(NT_VERTEX, idnr))
+              vertex_map[per_verts[1]] = per_verts[0];
+            for(auto & per_edges : ma->GetPeriodicNodes(NT_EDGE, idnr))
+              edge_map[per_edges[1]] = per_edges[0];
+            for(auto & per_faces : ma->GetPeriodicNodes(NT_FACE, idnr))
+              facet_map[per_faces[1]] = per_faces[0];
+          }
+        for(auto i : Range(ma->GetNP()))
+          {
+            int v = vertex_map[i];
+            if (v == i)
+              patchentry[i] = nentries++;
+            else
+              patchentry[i] = patchentry[v];
+          }
+      }
     
     if (blocktypes.Size())
       {
@@ -1686,6 +1722,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               {
                 for (size_t i : Range(ma->GetNV()))        
                   {
+                    if(vertex_map.Size() && vertex_map[i] != i) continue; // skip periodic minion vertices
                     GetDofNrs (NodeId(NT_VERTEX, i), dofs);
                     for (auto d : dofs)
                       if (IsRegularDof(d))
@@ -1699,6 +1736,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               {
                 for (size_t i : Range(ma->GetNEdges()))        
                   {
+                    if(edge_map.Size() && edge_map[i] != i) continue; // skip periodic minion edges
                     GetDofNrs (NodeId(NT_EDGE, i), dofs);
                     for (auto d : dofs)
                       if (IsRegularDof(d))
@@ -1712,6 +1750,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
               {
                 for (size_t i : Range(ma->GetNFaces()))        
                   {
+                    if(facet_map.Size() && facet_map[i] != i) continue; // skip periodic faces
                     GetDofNrs (NodeId(NT_FACE, i), dofs);
                     for (auto d : dofs)
                       if (IsRegularDof(d))
@@ -1767,28 +1806,31 @@ lot of new non-zero entries in the matrix!\n" << endl;
                   
                 for (size_t i : Range(ma->GetNV()))
                   {
+                    if(vertex_map.Size() && vertex_map[i] != i) continue; // skip periodic minion vertices
                     GetDofNrs (NodeId(NT_VERTEX, i), dofs);
                     for (auto d : dofs)
                       if (IsRegularDof(d))              
-                        creator.Add (base+i, d);
+                        creator.Add (base + (patchentry.Size() ? patchentry[i] : i), d);
                   }
                 for (size_t i : Range(ma->GetNEdges()))        
                   {
+                    if(edge_map.Size() && edge_map[i] != i) continue; // skip periodic minion edges
                     Ng_Node<1> edge = ma->GetNode<1> (i);
                     GetDofNrs (NodeId(NT_EDGE, i), dofs);
                     for (auto d : dofs)
                       if (IsRegularDof(d))
                         for (int k = 0; k < 2; k++)
-                          creator.Add (base+edge.vertices[k], d);
+                          creator.Add (base + (patchentry.Size() ? patchentry[edge.vertices[k]] : edge.vertices[k]), d);
                   }
                 for (size_t i : Range(ma->GetNFaces()))        
                   {
+                    if(facet_map.Size() && facet_map[i] != i) continue; // skip periodic faces
                     auto vnums = ma->GetFacePNums(i);
                     GetDofNrs (NodeId(NT_FACE, i), dofs);
                     for (auto d : dofs)
                       if (IsRegularDof(d))
                         for (auto v : vnums)
-                          creator.Add (base+v, d);
+                          creator.Add (base + (patchentry.Size() ? patchentry[v] : v), d);
                   }
                 // 3D only
                 for (size_t i : Range(ma->GetNElements(3)))
@@ -1798,9 +1840,10 @@ lot of new non-zero entries in the matrix!\n" << endl;
                     for (auto d : dofs)
                       if (IsRegularDof(d))
                         for (auto v : vnums)
-                          creator.Add (base+v, d);
+                          creator.Add (base + (patchentry.Size() ? patchentry[v] : v), d);
                   }
-                base += ma->GetNV();
+                base += nentries;
+                // base += ma->GetNV();
 
                 if (filter)
                   creator.SetFilter (freedofs.get());                  
@@ -2404,7 +2447,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
   {
     shared_ptr<FESpace> fes = dynamic_pointer_cast<FESpace> (const_cast<FESpace*>(this)->shared_from_this());
 
-    auto proxy = make_shared<ProxyFunction>  (fes, testfunction, fes->IsComplex(),
+    auto proxy = make_shared<ProxyFunction>  (fes, testfunction, testfunction ? false : fes->IsComplex(),
                                               fes->GetEvaluator(),
                                               fes->GetFluxEvaluator(),
                                               fes->GetEvaluator(BND),

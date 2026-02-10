@@ -589,12 +589,20 @@ namespace ngbla
 
 
 
+  template <typename TS, typename TDIST>
+  auto Real(VectorView<Complex, TS, TDIST> vec) {
+    auto dist2 = vec.Dist() + vec.Dist();
+    return VectorView<double, TS, decltype(dist2)>(vec.Size(), dist2, (double*)vec.Data());
+  }
+
+  template <typename TS, typename TDIST>
+  auto Imag(VectorView<Complex, TS, TDIST> vec) {
+    auto dist2 = vec.Dist() + vec.Dist();
+    return VectorView<double, TS, decltype(dist2)>(vec.Size(), dist2, ((double*)vec.Data())+1);
+  }
 
 
 
-
-
-  
 
   /**
      A Vector class with memory allocation/deallocation

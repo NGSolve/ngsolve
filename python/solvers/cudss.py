@@ -23,11 +23,12 @@ class CudssSolver(ngla.SparseFactorizationInterface):
         csr = sp.csr_matrix(self.GetInnerMatrix().CSR())
 
         options = make_directsolver_options()
-        self.extract_symmetric = (csr != csr.T).nnz == 0
+        self.extract_symmetric = self.is_symmetric.is_true or (csr != csr.T).nnz == 0
         if self.extract_symmetric:
-            csr = sp.triu(csr, format="csr")
+            if not self.is_symmetric_storage:
+                csr = sp.tril(csr, format="csr")
             options.sparse_system_type = nvs.DirectSolverMatrixType.SYMMETRIC
-            options.sparse_system_view = nvs.DirectSolverMatrixViewType.UPPER
+            options.sparse_system_view = nvs.DirectSolverMatrixViewType.LOWER
 
         tmp = np.empty(csr.shape[1], dtype=csr.dtype)
         self.solver = nvs.DirectSolver(csr, tmp, options=options)
@@ -38,10 +39,8 @@ class CudssSolver(ngla.SparseFactorizationInterface):
     def Factor(self):
         if not self._is_first_factor_call:
             mat = self.GetInnerMatrix()
-            if self.extract_symmetric:
-                csr = sp.csr_matrix(mat.CSR())
-                csr = sp.triu(csr, format="csr")
-                values = csr.data
+            if self.extract_symmetric and not self.is_symmetric_storage:
+                values = sp.tril(sp.csr_matrix(mat.CSR()), format="csr").data
             else:
                 values = mat.AsVector().FV().NumPy()
             stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)

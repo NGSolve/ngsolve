@@ -1011,6 +1011,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                            { return self.Width(); }, "Width of the matrix" )
     .def_property_readonly("is_complex", [] ( BaseMatrix & self)
                            { return self.IsComplex(); }, "is the matrix complex-valued ?" )
+    .def_property_readonly("is_symmetric", &BaseMatrix::IsSymmetric)
     .def_property_readonly("nze", [] ( BaseMatrix & self)
                            { return self.NZE(); }, "number of non-zero elements")
     .def_property_readonly("local_mat", [](shared_ptr<BaseMatrix> & mat) { return mat; })
@@ -1563,6 +1564,7 @@ inverse : string
       .def("Update", &SparseFactorizationInterface::Update)
       .def("Analyze", &SparseFactorizationInterface::Analyze)
       .def("Factor", &SparseFactorizationInterface::Factor)
+      .def_property_readonly("is_symmetric_storage", &SparseFactorizationInterface::IsSymmetricStorage)
       ;
 
   m.def("RegisterInverseType", [](const string &name, py::object creator) {
