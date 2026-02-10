@@ -907,6 +907,7 @@ namespace ngcomp
         ma->IterateElements
           (vb, lh, [&] (auto el, LocalHeap & llh)
            {
+             if (!fesx->DefinedOn (el) || !fesy->DefinedOn (el)) { classnr[el.Nr()] = -1; return; }
              classnr[el.Nr()] = 
                SwitchET<ET_SEGM, ET_TRIG,ET_TET>
                (el.GetType(),
@@ -916,7 +917,8 @@ namespace ngcomp
         TableCreator<size_t> creator;
         for ( ; !creator.Done(); creator++)
           for (auto i : Range(classnr))
-            creator.Add (classnr[i], i);
+            if(classnr[i] >= 0)
+                creator.Add (classnr[i], i);
         Table<size_t> table = creator.MoveTable();
         
     
@@ -6208,6 +6210,7 @@ namespace ngcomp
           auto myinds = elclass_inds.Range(myrange);
         
           ElementId ei(VOL, myinds[0]);
+          if (!GetTrialSpace()->DefinedOn (ei) || !GetTestSpace()->DefinedOn(ei)) return;
           auto & felx = GetTrialSpace()->GetFE (ei, lh);
           auto & fely = GetTestSpace()->GetFE (ei, lh);
           auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
