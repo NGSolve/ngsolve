@@ -2127,6 +2127,211 @@ shift : float
         &SparseSolvILUPreconditioner<double>::GetShift,
         &SparseSolvILUPreconditioner<double>::SetShift,
         "Shift parameter for ILU decomposition");
+
+  // ==========================================================================
+  // SparseSolv Solver Result
+  // ==========================================================================
+
+  py::class_<SparseSolvResult>(m, "SparseSolvResult",
+    R"raw_string(
+Result of a SparseSolv iterative solve.
+
+Attributes:
+
+converged : bool
+  Whether the solver converged within tolerance.
+
+iterations : int
+  Number of iterations performed.
+
+final_residual : float
+  Final relative residual. If save_best_result was enabled and the solver
+  did not converge, this is the best residual achieved during iteration.
+
+residual_history : list[float]
+  Residual at each iteration (only if save_residual_history=True).
+
+)raw_string")
+    .def_readonly("converged", &SparseSolvResult::converged,
+        "Whether the solver converged within tolerance")
+    .def_readonly("iterations", &SparseSolvResult::iterations,
+        "Number of iterations performed")
+    .def_readonly("final_residual", &SparseSolvResult::final_residual,
+        "Final relative residual (or best residual if save_best_result enabled)")
+    .def_readonly("residual_history", &SparseSolvResult::residual_history,
+        "Residual at each iteration (if save_residual_history enabled)")
+    .def("__repr__", [](const SparseSolvResult& r) {
+      return string("SparseSolvResult(converged=") +
+             (r.converged ? "True" : "False") +
+             ", iterations=" + std::to_string(r.iterations) +
+             ", residual=" + std::to_string(r.final_residual) + ")";
+    });
+
+  // ==========================================================================
+  // SparseSolv Iterative Solver
+  // ==========================================================================
+
+  py::class_<SparseSolvSolver<double>,
+             shared_ptr<SparseSolvSolver<double>>,
+             BaseMatrix>(m, "SparseSolvSolver",
+    R"raw_string(
+Iterative solver using the SparseSolv library by JP-MARs.
+
+Supports multiple solver methods for symmetric positive definite systems:
+- ICCG: Conjugate Gradient + Incomplete Cholesky preconditioner
+- ICMRTR: MRTR (Modified Residual Tri-diagonal Reduction) + IC preconditioner
+- SGSMRTR: MRTR with built-in Symmetric Gauss-Seidel (split formula)
+- CG: Conjugate Gradient without preconditioner
+- MRTR: MRTR without preconditioner
+
+Key features:
+- save_best_result (default: True): During iteration, tracks the best
+  solution vector (lowest residual). If the solver doesn't converge, the
+  best solution found is returned instead of the last iterate.
+- save_residual_history: Records residual at every iteration for analysis.
+- FreeDofs support for Dirichlet boundary conditions.
+
+Can be used as an inverse operator (BaseMatrix) or with Solve() method.
+
+Example usage as inverse operator:
+
+.. code-block:: python
+
+    from ngsolve import *
+
+    fes = H1(mesh, order=2, dirichlet="left|right|top|bottom")
+    u, v = fes.TnT()
+    a = BilinearForm(fes)
+    a += grad(u)*grad(v)*dx
+    a.Assemble()
+    f = LinearForm(fes)
+    f += 1*v*dx
+    f.Assemble()
+
+    gfu = GridFunction(fes)
+    solver = SparseSolvSolver(a.mat, method="ICCG",
+                              freedofs=fes.FreeDofs(), tol=1e-10)
+    gfu.vec.data = solver * f.vec
+
+Example usage with Solve() for detailed results:
+
+.. code-block:: python
+
+    solver = SparseSolvSolver(a.mat, method="ICCG",
+                              freedofs=fes.FreeDofs(), tol=1e-10,
+                              save_residual_history=True)
+    result = solver.Solve(f.vec, gfu.vec)
+    print(f"Converged: {result.converged}")
+    print(f"Iterations: {result.iterations}")
+    print(f"Final residual: {result.final_residual}")
+
+Parameters:
+
+mat : ngsolve.la.SparseMatrix
+  The sparse system matrix (must be SPD for CG/MRTR methods).
+
+method : str
+  Solver method. One of: "ICCG", "ICMRTR", "SGSMRTR", "CG", "MRTR".
+
+freedofs : ngsolve.BitArray, optional
+  BitArray indicating free DOFs. Constrained DOFs are treated as identity.
+
+tol : float
+  Relative convergence tolerance (default: 1e-10).
+
+maxiter : int
+  Maximum number of iterations (default: 1000).
+
+shift : float
+  Shift parameter for IC preconditioner (default: 1.05).
+  Only used with ICCG and ICMRTR methods.
+
+save_best_result : bool
+  Track best solution during iteration (default: True).
+
+save_residual_history : bool
+  Record residual at each iteration (default: False).
+
+printrates : bool
+  Print convergence information after solve (default: False).
+
+)raw_string")
+    .def(py::init([](py::object mat, const string& method, py::object freedofs,
+                     double tol, int maxiter, double shift,
+                     bool save_best_result, bool save_residual_history,
+                     bool printrates) {
+      auto sp_mat = py::cast<shared_ptr<SparseMatrix<double>>>(mat);
+      shared_ptr<BitArray> sp_freedofs = nullptr;
+      if (!freedofs.is_none()) {
+        sp_freedofs = py::cast<shared_ptr<BitArray>>(freedofs);
+      }
+      return make_shared<SparseSolvSolver<double>>(
+          sp_mat, method, sp_freedofs, tol, maxiter, shift,
+          save_best_result, save_residual_history, printrates);
+    }),
+        py::arg("mat"),
+        py::arg("method") = "ICCG",
+        py::arg("freedofs") = py::none(),
+        py::arg("tol") = 1e-10,
+        py::arg("maxiter") = 1000,
+        py::arg("shift") = 1.05,
+        py::arg("save_best_result") = true,
+        py::arg("save_residual_history") = false,
+        py::arg("printrates") = false,
+        "Create SparseSolv iterative solver")
+    .def("Solve", [](SparseSolvSolver<double>& self,
+                     const BaseVector& rhs, BaseVector& sol) {
+      return self.Solve(rhs, sol);
+    }, py::arg("rhs"), py::arg("sol"),
+        R"raw_string(
+Solve the linear system Ax = b with initial guess.
+
+Parameters:
+
+rhs : ngsolve.BaseVector
+  Right-hand side vector b.
+
+sol : ngsolve.BaseVector
+  Solution vector x. Used as initial guess on input, contains
+  solution on output. For constrained DOFs (not in freedofs),
+  values are preserved.
+
+Returns:
+
+SparseSolvResult
+  Result object with convergence info, iteration count, and residual.
+)raw_string")
+    .def_property("method",
+        &SparseSolvSolver<double>::GetMethod,
+        &SparseSolvSolver<double>::SetMethod,
+        "Solver method: ICCG, ICMRTR, SGSMRTR, CG, MRTR")
+    .def_property("tol",
+        &SparseSolvSolver<double>::GetTolerance,
+        &SparseSolvSolver<double>::SetTolerance,
+        "Relative convergence tolerance")
+    .def_property("maxiter",
+        &SparseSolvSolver<double>::GetMaxIterations,
+        &SparseSolvSolver<double>::SetMaxIterations,
+        "Maximum number of iterations")
+    .def_property("shift",
+        &SparseSolvSolver<double>::GetShift,
+        &SparseSolvSolver<double>::SetShift,
+        "Shift parameter for IC preconditioner")
+    .def_property("save_best_result",
+        &SparseSolvSolver<double>::GetSaveBestResult,
+        &SparseSolvSolver<double>::SetSaveBestResult,
+        "Track best solution during iteration")
+    .def_property("save_residual_history",
+        &SparseSolvSolver<double>::GetSaveResidualHistory,
+        &SparseSolvSolver<double>::SetSaveResidualHistory,
+        "Record residual at each iteration")
+    .def_property("printrates",
+        &SparseSolvSolver<double>::GetPrintRates,
+        &SparseSolvSolver<double>::SetPrintRates,
+        "Print convergence information after solve")
+    .def_property_readonly("last_result",
+        &SparseSolvSolver<double>::GetLastResult,
+        "Result from the last Solve() or Mult() call");
 }
 
 
