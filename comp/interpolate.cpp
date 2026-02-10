@@ -842,7 +842,7 @@ namespace ngcomp
                                         int abonus_intorder,
                                         VorB avb)
     : ProxyFunction( /* aspace */
-                    FindProxySpace(afunc), atestfunction, false,
+                    FindProxySpace(afunc), atestfunction, afunc->IsComplex(),
                     make_shared<InterpolateDiffOp> (afunc, aspace, diffop, abonus_intorder,atestfunction, avb), nullptr, nullptr,
                     nullptr, nullptr, nullptr),
       func(afunc), space(aspace), testfunction(atestfunction),

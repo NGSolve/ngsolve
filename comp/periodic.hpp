@@ -52,6 +52,8 @@ namespace ngcomp
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
 
+    void SelectDofs(const string & name, BitArray & dofs) const override;
+
     virtual SymbolTable<shared_ptr<DifferentialOperator>> GetAdditionalEvaluators () const override
     { return space->GetAdditionalEvaluators (); }
 

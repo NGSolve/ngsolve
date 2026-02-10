@@ -547,6 +547,13 @@ namespace ngfem
                 BareSliceMatrix<SIMD<double>> bmat) const override;
 
     NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationPoint & mip,
+	   BareSliceVector<double> x, 
+	   FlatVector<double> flux,
+	   LocalHeap & lh) const override;
+    
+    NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & bfel,
            const SIMD_BaseMappedIntegrationRule & bmir,
            BareSliceVector<double> x,

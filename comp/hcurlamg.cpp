@@ -967,7 +967,8 @@ namespace ngcomp
       {
         residuum = f - (*mat) * u;
         auto op = gradient*node_h1*trans_gradient;
-        u += *op * residuum;
+        auto size = op->Height();
+        u.Range(size) += *op * residuum.Range(size);
       }
     
     {
@@ -975,14 +976,16 @@ namespace ngcomp
       residuum = f - (*mat) * u;
 
       auto op = prolongation * coarse_precond * restriction;
-      u += *op * residuum;      
+      auto size = op->Height();
+      u.Range(size) += *op * residuum.Range(size);
     }
 
     if (gradient)
       {
         residuum = f - (*mat) * u;
         auto op = gradient*node_h1*trans_gradient;
-        u += *op * residuum;
+        auto size = op->Height();
+        u.Range(size) += *op * residuum.Range(size);
       }
     
     smoother->SmoothBack(u, f, param.smoothing_steps);    
@@ -1107,7 +1110,7 @@ namespace ngcomp
         cout << IM(0) << "maxlevel = " << param.max_level << endl;                
       }
     
-    auto num_edges = matrix->Height();
+    auto num_edges = fes->GetMeshAccess()->GetNEdges();
     auto num_faces = face_weights_ht.Used();
 
     Array<double> edge_weights(num_edges);

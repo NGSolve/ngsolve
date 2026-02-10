@@ -5,11 +5,24 @@
 #include "diffopwithfactor.hpp"
 #include "kernels.hpp"
 #include "../fem/integratorcf.hpp"
+#include <type_traits>
+#include <variant>
 
 namespace ngsbem
 {
   using namespace ngcomp;
   class BasePotentialCF;
+
+  template <typename T>
+  struct IsStdVariant : std::false_type { };
+  template <typename... Ts>
+  struct IsStdVariant<std::variant<Ts...>> : std::true_type { };
+
+  // BaseKernel::GetDifferentiatedKernel returns void; a real overload returns a kernel object.
+  template <class K>
+  struct HasDiffKernelOverload
+    : std::integral_constant<bool,
+        !std::is_void<decltype(std::declval<const K&>().GetDifferentiatedKernel(std::declval<const string&>()))>::value> {};
 
   class IntOp_Parameters
   {
@@ -146,7 +159,6 @@ namespace ngsbem
 
 
 
-
   class BasePotentialCF : public CoefficientFunctionNoDerivative
   {
   protected:
@@ -154,7 +166,6 @@ namespace ngsbem
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
     IntOp_Parameters io_params;
-       
   public:
     BasePotentialCF (shared_ptr<GridFunction> _gf,
                      optional<Region> _definedon,    
@@ -163,11 +174,10 @@ namespace ngsbem
         gf(_gf), definedon(_definedon), evaluator(_evaluator) { } 
 
     virtual  ~BasePotentialCF() = default;
-    
+
     virtual void BuildLocalExpansion(const Region & reg) = 0;
   };
 
-  
 
   template  <typename KERNEL>
   class PotentialCF : public BasePotentialCF
@@ -187,7 +197,31 @@ namespace ngsbem
                  KERNEL _kernel, int _intorder, bool anearfield);
 
 
-
+    // virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
+    // {
+    //   auto diffkernel = kernel.GetDifferentiatedKernel(name);
+    //   return make_shared<PotentialCF<decltype(diffkernel)>> (this->gf, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
+    // }
+    virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
+    {
+      if constexpr (HasDiffKernelOverload<KERNEL>::value)
+      {
+        auto diffkernel = kernel.GetDifferentiatedKernel(name);
+        if constexpr (IsStdVariant<decltype(diffkernel)>::value)
+          {
+            return std::visit([&](auto const & dk) -> shared_ptr<CoefficientFunction>
+            {
+              using DK = std::decay_t<decltype(dk)>;
+              return make_shared<PotentialCF<DK>>(this->gf, this->definedon, this->evaluator, dk, intorder, nearfield);
+            }, diffkernel);
+          }
+        else
+          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
+      }
+      else
+        throw Exception("Kernel does not support differentiated kernel '"+name+"'");
+    }
+    
     void BuildLocalExpansion(const Region & reg) override;
     
     using CoefficientFunctionNoDerivative::Evaluate;
@@ -271,6 +305,7 @@ namespace ngsbem
                                                               // shared_ptr<CoefficientFunction> test_factor,
                                                               DifferentialSymbol dx) = 0;
     virtual shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) = 0;
+    virtual shared_ptr<BasePotentialOperator> MakeDiffBasePotential(string name) = 0;
 
     virtual void Print (ostream & ost) const = 0;
   };
@@ -292,7 +327,7 @@ namespace ngsbem
                        optional<Region> _definedon,    
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel, int _intorder)
-      : BasePotentialOperator (_proxy, /* _factor, */ _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
+      : BasePotentialOperator (_proxy, /* _factor, */ _definedon, _evaluator, _intorder), kernel(_kernel) { ; } 
 
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
                        // shared_ptr<CoefficientFunction> _factor,                       
@@ -336,6 +371,26 @@ namespace ngsbem
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
     {
       return make_shared<PotentialCF<KERNEL>>(gf, definedon, evaluator, kernel, 2+intorder, true);
+    }
+
+    shared_ptr<BasePotentialOperator> MakeDiffBasePotential(string name) override
+    {
+      if constexpr (HasDiffKernelOverload<KERNEL>::value)
+      {
+        auto diffkernel = kernel.GetDifferentiatedKernel(name);
+        if constexpr (IsStdVariant<decltype(diffkernel)>::value)
+        {
+          return std::visit([&](auto const & dk) -> shared_ptr<BasePotentialOperator>
+          {
+            using DK = std::decay_t<decltype(dk)>;
+            return std::make_shared<PotentialOperator<DK>>(this->proxy, this->definedon, this->evaluator, dk, this->io_params, this->intorder);
+          }, diffkernel);
+        }
+        else
+          return make_shared<PotentialOperator<decltype(diffkernel)>>(this->proxy, this->definedon, this->evaluator, diffkernel, this->io_params, this->intorder);
+      }
+      else
+        throw Exception("Kernel does not support differentiated kernel '"+name+"'");
     }
 
     virtual void Print (ostream & ost) const override
@@ -464,4 +519,3 @@ namespace ngsbem
 
 
 #endif
-
