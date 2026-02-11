@@ -2261,6 +2261,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
+         if (!DefinedOn (el) || !l2space->DefinedOn (el)) { classnr[el.Nr()] = -1; return; }
          classnr[el.Nr()] = 
            SwitchET<ET_TRIG,ET_QUAD,ET_TET,ET_HEX>
            (el.GetType(),
@@ -2275,7 +2276,8 @@ lot of new non-zero entries in the matrix!\n" << endl;
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
       for (auto i : Range(classnr))
-        creator.Add (classnr[i], i);
+        if(classnr[i] >= 0)
+          creator.Add (classnr[i], i);
     Table<size_t> table = creator.MoveTable();
 
     shared_ptr<BaseMatrix> sum;
