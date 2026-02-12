@@ -27,7 +27,7 @@ pip install scipy
 pip install mcp
 ```
 
-## Tools (19 total)
+## Tools (24 total)
 
 ### Mesh Generation (4)
 - `ngsolve_mesh_create_box` - Create box mesh
@@ -55,6 +55,13 @@ pip install mcp
 - `ngsolve_list_objects` - List all objects in server state
 - `ngsolve_get_object_info` - Get detailed information about an object
 - `ngsolve_clear_state` - Clear all objects from server state (reset)
+
+### Eddy Current Analysis (T-Omega Method) (5)
+- `ngsolve_compute_genus` - Compute genus (number of holes) of multiply-connected domain
+- `ngsolve_compute_loop_fields` - Compute loop fields for domains with holes
+- `ngsolve_t_omega_setup` - Set up T-Omega FE spaces (HCurl + H1)
+- `ngsolve_t_omega_solve_coupled` - Solve T-Omega system with loop current coupling
+- `ngsolve_loop_current_analysis` - Analyze loop currents (resistance, inductance)
 
 ## Usage
 
