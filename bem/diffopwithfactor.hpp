@@ -114,6 +114,24 @@ namespace ngsbem
           flux.Row(i).Range(mir.Size()) += pw_mult(factorx.Row(i*dims[1]+j), tmpflux.Row(j));
     }
 
+    void Apply (const FiniteElement & fel,
+                const SIMD_BaseMappedIntegrationRule & mir,
+                BareSliceVector<Complex> x, 
+                BareSliceMatrix<SIMD<Complex>> flux) const override
+    {
+      auto dims = factor->Dimensions();
+
+      Matrix<SIMD<Complex>> tmpflux(dims[1], mir.Size());
+      Matrix<SIMD<Complex>> factorx(dims[0]*dims[1], mir.Size());
+      
+      diffop -> Apply (fel, mir, x, tmpflux);
+      factor -> Evaluate (mir, factorx);
+      flux.Rows(0, dims[0]).Cols(0, mir.Size()) = SIMD<Complex>(0.0);
+      for (int i = 0; i < dims[0]; i++)
+        for (int j = 0; j < dims[1]; j++)
+          flux.Row(i).Range(mir.Size()) += pw_mult(factorx.Row(i*dims[1]+j), tmpflux.Row(j));
+    }
+
     
   };
 

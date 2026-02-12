@@ -478,7 +478,11 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
     if (igl->dx.vb != BND) throw Exception("need boundary integral");
-    auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+
+    
+    // auto proxy = dynamic_pointer_cast<ProxyFunction>(igl->cf);
+    // auto fes = proxy->GetFESpace();
+    auto proxy = GetProxyWithFactor(igl->cf, true);
     auto fes = proxy->GetFESpace();
 
     /*
