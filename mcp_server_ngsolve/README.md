@@ -114,8 +114,24 @@ This server requires access to `mcp_shared` module for workspace communication.
 **Or via PYTHONPATH**:
 Set `PYTHONPATH` to include `S:\Radia\01_Github\mcp_shared`
 
+## Development Policy
+
+### Branch Management
+- **Feature branches**: Create feature branches for new functionality or bug fixes
+- **Pull Request workflow**: All changes should go through PR review before merging to master
+- **Branch cleanup**: Feature branches should be deleted after PR is approved and merged
+- **Naming convention**: Use descriptive names like `feature/mcp-tools-enhancement` or `fix/kelvin-mesh-bug`
+
+### Contribution Guidelines
+1. Create a feature branch from master
+2. Make your changes and commit with descriptive messages
+3. Push to your fork and create a Pull Request
+4. After PR approval and merge, delete the feature branch
+5. Keep master branch clean and stable
+
 ## See Also
 
+- [Radia MCP Server](https://github.com/ksugahar/Radia) - Companion server for Radia
+- [NGSolve Official](https://github.com/NGSolve/ngsolve) - Upstream NGSolve repository
+- [Kelvin Transformation Examples](../../../NGSolve/2025_12_14_Kelvin変換/)
 - [Dual Server Deployment](../docs/DUAL_SERVER_DEPLOYMENT.md)
-- [MCP Server Architecture](../docs/MCP_SERVER_ARCHITECTURE.md)
-- [Radia MCP Server](../mcp_server_radia/README.md)
