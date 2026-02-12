@@ -33,6 +33,7 @@ from .tools import (
     kelvin_transform_tools,
     diagnostic_tools,
     eddy_current_tools,
+    two_scalar_tools,
 )
 
 # Configure logging
@@ -79,6 +80,9 @@ class NGSolveMCPServer:
             # Eddy current analysis tools
             tools.extend(eddy_current_tools.get_tools())
 
+            # Two-scalar potential method tools
+            tools.extend(two_scalar_tools.get_tools())
+
             logger.info(f"Listing {len(tools)} available tools")
             return tools
 
@@ -99,6 +103,8 @@ class NGSolveMCPServer:
                     result = await diagnostic_tools.execute(name, arguments, self.ngsolve_state)
                 elif name.startswith("ngsolve_compute_") or name.startswith("ngsolve_t_omega_") or name.startswith("ngsolve_loop_"):
                     result = await eddy_current_tools.execute(name, arguments, self.ngsolve_state)
+                elif name.startswith("ngsolve_two_scalar_") or name.startswith("ngsolve_h_to_"):
+                    result = await two_scalar_tools.execute(name, arguments, self.ngsolve_state)
                 else:
                     raise ValueError(f"Unknown tool: {name}")
 
