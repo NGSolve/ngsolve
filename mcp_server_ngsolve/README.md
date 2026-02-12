@@ -27,7 +27,7 @@ pip install scipy
 pip install mcp
 ```
 
-## Tools (29 total)
+## Tools (31 total)
 
 ### Mesh Generation (4)
 - `ngsolve_mesh_create_box` - Create box mesh
@@ -63,12 +63,14 @@ pip install mcp
 - `ngsolve_t_omega_solve_coupled` - Solve T-Omega system with loop current coupling
 - `ngsolve_loop_current_analysis` - Analyze loop currents (resistance, inductance)
 
-### Magnetostatic Analysis (2-Scalar Method) (5)
+### Magnetostatic Analysis (2-Scalar Method) (7)
 - `ngsolve_two_scalar_setup` - Set up Reduced-Total scalar potential FE spaces
 - `ngsolve_compute_h0_coil` - Compute H₀ source field from current-carrying coil
 - `ngsolve_compute_h0_pm` - Compute H₀ source field from permanent magnet
 - `ngsolve_two_scalar_solve` - Solve magnetostatic problem with 2-scalar method
 - `ngsolve_h_to_omega` - Convert H field to Omega scalar potential on boundary
+- `ngsolve_compute_theta_field` - Compute Theta (Θ) field for coil jump (MMF = N×I)
+- `ngsolve_two_scalar_solve_with_jump` - Solve with coil current jump using Theta field
 
 ## Usage
 
@@ -262,6 +264,58 @@ Where L = characteristic length of inner geometry, R = Kelvin radius.
 - Start with coarse mesh (maxh=0.020)
 - Refine near boundaries and material interfaces
 - Use adaptive refinement for critical regions
+
+### 2-Scalar Method with Coil Jump
+
+**When to use coil jump handling:**
+- Current-carrying coils (electromagnets, motors)
+- Situations where scalar potential Ω must be multi-valued
+- When Ampère's law ∮H·dl = N×I needs explicit representation
+
+**Theta (Θ) field setup:**
+
+```python
+# Step 1: Define cut surface (where Ω jumps)
+# Cut surface must intersect the current loop completely
+cut_minus = "coil_cut_minus"  # Θ = 0 side
+cut_plus = "coil_cut_plus"    # Θ = N×I side
+
+# Step 2: Compute Theta field
+NI = 1000  # 100 turns × 10 A = 1000 A·turns (MMF)
+ngsolve_compute_theta_field(
+    mesh_name="mesh",
+    coil_domain="coil",
+    cut_surface_minus=cut_minus,
+    cut_surface_plus=cut_plus,
+    magnetomotive_force=NI
+)
+
+# Step 3: Solve with jump
+ngsolve_two_scalar_solve_with_jump(
+    fespace_name="two_scalar_space",
+    theta_field_name="theta_field",
+    coil_domain="coil",
+    air_domain="air"
+)
+```
+
+**Cut surface placement:**
+- Choose a surface that crosses the coil current path once
+- Typically: planar surface perpendicular to coil axis
+- Must be consistent with mesh boundaries
+- Example for z-axis coil: use x=0 plane with y≥0
+
+**Verification:**
+```python
+# Check Ampère's law: ∮H·dl = N×I
+# Integrate H around a closed path enclosing the coil
+# Result should equal magnetomotive force
+```
+
+**Common pitfalls:**
+- **Double counting**: Don't include coil current in both H₀ and Θ
+- **Cut surface**: Must be a complete surface, not just edges
+- **Sign convention**: Θ jump direction follows right-hand rule with current
 
 ## Troubleshooting
 
