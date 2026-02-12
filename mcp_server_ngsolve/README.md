@@ -192,6 +192,138 @@ Step 2 - NGSolve MCP Server:
 Result: Complete unbounded domain simulation using Radia+NGSolve
 ```
 
+## Validation Examples
+
+### Rotating Magnet Eddy Current Analysis (Time Domain)
+
+Complete validation examples for **transient eddy current analysis** using Radia-NGSolve coupling are available in the Radia repository at [`examples/NGSolve_Integration/rotating_magnets/`](https://github.com/ksugahar/Radia/tree/master/examples/NGSolve_Integration/rotating_magnets).
+
+**Physical Model:**
+- Rotating 1mm³ permanent magnet (Br = 0.2 T) moving over 0.5mm copper plate (σ = 5.8×10⁷ S/m)
+- 180 timesteps with 4°/step rotation (total 720°, 2 full rotations)
+- Time-dependent analysis: Backward Euler method for time discretization
+
+**Two Time-Domain Formulation Comparison:**
+
+#### 1. A-Φ Method (Vector-Scalar Potential) - Not yet in MCP
+
+**File:** [`comparison_A_Phi_method.py`](https://github.com/ksugahar/Radia/blob/master/examples/NGSolve_Integration/rotating_magnets/comparison_A_Phi_method.py)
+
+**Formulation:**
+```
+Vector potential: A_total = A_ext + A_r
+Electric potential: Φ
+Governing equations:
+  (1) ∇×(1/μ ∇×A_r) + σ(∂A_r/∂t + ∇Φ) = -σ∂A_ext/∂t  (Ampère + Faraday)
+  (2) ∇·[σ(∂A_r/∂t + ∇Φ)] = -∇·[σ∂A_ext/∂t]          (Current continuity)
+
+Field reconstruction:
+  B = curl(A_total) = curl(A_ext + A_r)
+  E = -∂A_total/∂t - grad(Φ)
+  J = σE (eddy current density)
+```
+
+**Implementation features:**
+- Radia provides A_ext via `'a'` field type
+- HCurl(nograds=True) for A_r + H1 for Φ (mixed formulation)
+- Tree-cotree gauge automatically applied via `nograds=True`
+- Direct computation of Joule loss: P = ∫ J·J/σ dV
+
+**Current MCP status:** ❌ **Not implemented** - Candidate for future v1.4.0 release
+
+#### 2. T-Ω Method (Current-Magnetic Scalar Potential) - Available in MCP v1.2.0+
+
+**File:** [`comparison_T_Omega_method.py`](https://github.com/ksugahar/Radia/blob/master/examples/NGSolve_Integration/rotating_magnets/comparison_T_Omega_method.py)
+
+**Formulation:**
+```
+Current potential: T (J = curl(T))
+Magnetic scalar potential: Ω (H = H_ext - grad(Ω))
+Governing equations:
+  (conductor) ∇×(ν∇×T) + σ∂T/∂t = -σ∇(∂Ω/∂t)
+  (all domain) ∇·μ(H_ext - ∇Ω) = 0
+
+Field reconstruction:
+  J = curl(T) (eddy current density, conductor only)
+  H = H_ext - grad(Ω)
+  B = μH
+```
+
+**Implementation features:**
+- Radia provides H_ext via `'h'` field type
+- HCurl(nograds=True) for T (conductor only) + H1 for Ω (global)
+- T defined only in conductor using `definedon` → DOF reduction
+- Loop fields handled for multiply-connected conductors
+
+**Current MCP status:** ✅ **Implemented in v1.2.0** - Use these tools:
+```python
+# 1. Topology analysis
+ngsolve_compute_genus(mesh_name="mesh")
+
+# 2. Loop fields (if genus > 0)
+ngsolve_compute_loop_fields(mesh_name="mesh", domain="conductor", order=2)
+
+# 3. T-Omega setup
+ngsolve_t_omega_setup(mesh_name="mesh", conductor_domain="conductor", order=2)
+
+# 4. Solve T-Omega system
+ngsolve_t_omega_solve_coupled(
+    fespace_name="t_omega_space",
+    sigma=5.8e7,
+    mu=1.257e-6,
+    conductor_domain="conductor"
+)
+```
+
+**Validation Results:**
+
+| Aspect | Result | Notes |
+|--------|--------|-------|
+| Maxwell relation | curl(A_ext) ≈ B_ext/μ₀ | Relative error < 0.1% |
+| Eddy current pattern | Both methods agree qualitatively | Peak under moving magnet |
+| Magnetic energy | Consistent between methods | W_mag = (1/2μ) ∫ B·B dV |
+| Joule loss | A-Φ: Direct calculation | P = ∫ J·J/σ dV |
+| Time evolution | 180 steps successfully | Backward Euler stable |
+
+**Key Insights for MCP Implementation:**
+
+1. **External field handling:**
+   - A-Φ: Requires `A_ext` from Radia → Use `radia_ngsolve_create_field(field_type='a')`
+   - T-Ω: Requires `H_ext` from Radia → Use `radia_ngsolve_create_field(field_type='h')`
+
+2. **Time discretization:**
+   - Both use Backward Euler: (u^(n+1) - u^n)/Δt for stability
+   - Requires storing previous timestep solution
+   - Implicit scheme ensures unconditional stability
+
+3. **Gauge fixing:**
+   - Both methods use `nograds=True` for automatic tree-cotree gauge
+   - Essential for uniqueness of curl-based potentials
+
+4. **DOF efficiency:**
+   - A-Φ: A_r defined in all domains (higher DOF)
+   - T-Ω: T defined only in conductor (lower DOF, more efficient)
+
+**Future MCP Enhancement (A-Φ Method):**
+
+To fully support the A-Φ validation example, the following tools would be needed:
+
+```python
+# Proposed for v1.4.0
+ngsolve_a_phi_setup(mesh_name, conductor_domain, order=2)
+ngsolve_a_phi_solve_transient(
+    fespace_name,
+    a_ext_field,  # From Radia
+    sigma,
+    mu,
+    dt,
+    num_steps
+)
+ngsolve_compute_eddy_current_a_phi(solution_name)
+```
+
+For detailed documentation of the validation setup, formulations, and results, see the [README.md](https://github.com/ksugahar/Radia/blob/master/examples/NGSolve_Integration/rotating_magnets/README.md) in the validation directory.
+
 ## Best Practices
 
 ### Units and Coordinate Systems
