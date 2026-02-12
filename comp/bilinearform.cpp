@@ -5276,9 +5276,13 @@ namespace ngcomp
                        int facet2 = fnums1[facnr1];
 
                        ma->GetFacetElements(facet,elnums);
-                       for(auto i : Range(elnums))
-                         if(!fespace->DefinedOn(ElementId(VOL, elnums[i])))
-                           elnums.RemoveElement(i);
+                       if(elnums.Size() == 2)
+                         {
+                           // check if other is definedon -> if not remove it so that surface element is used
+                           int other = elnums[0] + elnums[1] - el1;
+                            if(!fespace->DefinedOn(ElementId(VOL, other)))
+                              elnums = { el1 };
+                         }
                        if (elnums.Size()<2) {
                          auto comm = ma->GetCommunicator();
 			 if( (comm.Size()>1) && (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()),
