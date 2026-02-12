@@ -201,6 +201,97 @@ def get_tools() -> List[Tool]:
                 "required": ["mesh_name", "h_field_name", "boundary_name"]
             }
         ),
+        Tool(
+            name="ngsolve_compute_theta_field",
+            description="Compute Theta (Θ) scalar potential field for coil jump in 2-scalar method. Theta represents magnetomotive force (MMF) = N×I.",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "mesh_name": {
+                        "type": "string",
+                        "description": "Name of the mesh object"
+                    },
+                    "coil_domain": {
+                        "type": "string",
+                        "description": "Coil domain name where current flows"
+                    },
+                    "cut_surface_minus": {
+                        "type": "string",
+                        "description": "Cut surface boundary name (Θ=0 side)"
+                    },
+                    "cut_surface_plus": {
+                        "type": "string",
+                        "description": "Cut surface boundary name (Θ=NI side)"
+                    },
+                    "magnetomotive_force": {
+                        "type": "number",
+                        "description": "N×I (turns × current) in Ampere-turns"
+                    },
+                    "order": {
+                        "type": "integer",
+                        "description": "FE order (default: 2)",
+                        "default": 2
+                    },
+                    "tolerance": {
+                        "type": "number",
+                        "description": "Solver tolerance",
+                        "default": 1e-10
+                    }
+                },
+                "required": ["mesh_name", "coil_domain", "cut_surface_minus", "cut_surface_plus", "magnetomotive_force"]
+            }
+        ),
+        Tool(
+            name="ngsolve_two_scalar_solve_with_jump",
+            description="Solve magnetostatic problem with coil current jump using 2-scalar method + Theta field",
+            inputSchema={
+                "type": "object",
+                "properties": {
+                    "fespace_name": {
+                        "type": "string",
+                        "description": "Name of the 2-scalar FE space"
+                    },
+                    "theta_field_name": {
+                        "type": "string",
+                        "description": "Name of the Theta field (from ngsolve_compute_theta_field)"
+                    },
+                    "h0_field_name": {
+                        "type": "string",
+                        "description": "Name of the H₀ source field (optional)",
+                        "default": None
+                    },
+                    "mu_coil": {
+                        "type": "number",
+                        "description": "Permeability in coil region (H/m)",
+                        "default": 1.2566370614e-6
+                    },
+                    "mu_air": {
+                        "type": "number",
+                        "description": "Permeability in air region (H/m)",
+                        "default": 1.2566370614e-6
+                    },
+                    "coil_domain": {
+                        "type": "string",
+                        "description": "Coil domain name"
+                    },
+                    "air_domain": {
+                        "type": "string",
+                        "description": "Air domain name"
+                    },
+                    "tolerance": {
+                        "type": "number",
+                        "description": "Solver tolerance",
+                        "default": 1e-10
+                    },
+                    "max_iterations": {
+                        "type": "integer",
+                        "description": "Maximum iterations",
+                        "default": 1000
+                    }
+                },
+                "required": ["fespace_name", "theta_field_name", "coil_domain", "air_domain"]
+            }
+        ),
     ]
 
 
@@ -223,6 +314,10 @@ async def execute(name: str, arguments: Dict[str, Any], state: Dict[str, Any]) -
             return await _two_scalar_solve(arguments, state)
         elif name == "ngsolve_h_to_omega":
             return await _h_to_omega(arguments, state)
+        elif name == "ngsolve_compute_theta_field":
+            return await _compute_theta_field(arguments, state)
+        elif name == "ngsolve_two_scalar_solve_with_jump":
+            return await _two_scalar_solve_with_jump(arguments, state)
         else:
             return {"error": f"Unknown two-scalar tool: {name}"}
     except Exception as e:
@@ -532,6 +627,219 @@ async def _h_to_omega(args: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, 
             "ndof": fesOmega.ndof,
             "omega_norm": float(norm),
             "message": f"H field converted to Omega on boundary '{boundary_name}'"
+        }
+
+    except Exception as e:
+        return {
+            "error": str(e),
+            "traceback": __import__('traceback').format_exc()
+        }
+
+
+async def _compute_theta_field(args: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Compute Theta scalar potential field for coil jump.
+
+    Theta represents the magnetomotive force (MMF) jump across the coil:
+    [Ω]⁺₋ = Θ = N×I (turns × current)
+
+    Solves Laplace equation ∇²Θ = 0 in coil domain with boundary conditions:
+    - Θ = 0 on cut_surface_minus
+    - Θ = NI on cut_surface_plus
+    """
+    mesh_name = args["mesh_name"]
+    coil_domain = args["coil_domain"]
+    cut_minus = args["cut_surface_minus"]
+    cut_plus = args["cut_surface_plus"]
+    NI = args["magnetomotive_force"]
+    order = args.get("order", 2)
+    tol = args.get("tolerance", 1e-10)
+
+    if mesh_name not in state:
+        return {"error": f"Mesh '{mesh_name}' not found"}
+
+    mesh = state[mesh_name]
+
+    try:
+        # H1 space on coil domain
+        fesTheta = H1(mesh, order=order, definedon=coil_domain)
+        theta, psi = fesTheta.TnT()
+
+        # Laplace equation for harmonic Theta field
+        a = BilinearForm(fesTheta)
+        a += grad(theta) * grad(psi) * dx(coil_domain)
+
+        # Grid function for Theta
+        gfTheta = GridFunction(fesTheta)
+
+        # Set boundary conditions on cut surfaces
+        gfTheta.Set(0, BND, mesh.Boundaries(cut_minus))
+        gfTheta.Set(NI, BND, mesh.Boundaries(cut_plus))
+
+        # Right-hand side with Dirichlet BC incorporated
+        f = LinearForm(fesTheta)
+        f += -grad(gfTheta) * grad(psi) * dx(coil_domain)
+
+        with TaskManager():
+            a.Assemble()
+            f.Assemble()
+
+        # Remove Dirichlet boundary components
+        fcut = np.array(f.vec.FV())[fesTheta.FreeDofs()]
+        np.array(f.vec.FV(), copy=False)[fesTheta.FreeDofs()] = fcut
+
+        # Solve for interior DOFs
+        inv = CGSolver(a.mat, fesTheta.FreeDofs(), maxsteps=1000, tol=tol)
+        gfTheta.vec.data += inv * f.vec
+
+        # Store in state
+        theta_name = f"{mesh_name}_theta_field"
+        state[theta_name] = gfTheta
+
+        # Compute gradient magnitude for verification
+        grad_theta = grad(gfTheta)
+        grad_norm = sqrt(Integrate(grad_theta * grad_theta * dx(coil_domain), mesh))
+
+        return {
+            "success": True,
+            "theta_field_name": theta_name,
+            "coil_domain": coil_domain,
+            "magnetomotive_force_NI": NI,
+            "ndof": fesTheta.ndof,
+            "grad_theta_norm": float(grad_norm),
+            "message": f"Theta field computed with MMF={NI} A·turns, ||∇Θ||={grad_norm:.6e}"
+        }
+
+    except Exception as e:
+        return {
+            "error": str(e),
+            "traceback": __import__('traceback').format_exc()
+        }
+
+
+async def _two_scalar_solve_with_jump(args: Dict[str, Any], state: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Solve magnetostatic problem with coil current jump using 2-scalar method.
+
+    Incorporates Theta field to handle the Ω jump across coil:
+    - True Ωᵣ = Ω_continuous + Θ
+    - Solves for Ω_continuous and Ωₜ
+    - Reconstructs H = H₀ - ∇(Ω_continuous + Θ) in coil
+    - H = -∇Ωₜ in air
+    """
+    fespace_name = args["fespace_name"]
+    theta_field_name = args["theta_field_name"]
+    h0_field_name = args.get("h0_field_name", None)
+    mu_coil = args.get("mu_coil", 1.2566370614e-6)
+    mu_air = args.get("mu_air", 1.2566370614e-6)
+    coil_domain = args["coil_domain"]
+    air_domain = args["air_domain"]
+    tol = args.get("tolerance", 1e-10)
+    max_iter = args.get("max_iterations", 1000)
+
+    if fespace_name not in state:
+        return {"error": f"FE space '{fespace_name}' not found"}
+    if theta_field_name not in state:
+        return {"error": f"Theta field '{theta_field_name}' not found"}
+
+    fespace = state[fespace_name]
+    gfTheta = state[theta_field_name]
+    mesh = gfTheta.space.mesh
+
+    # Get H₀ if provided
+    H0 = None
+    if h0_field_name and h0_field_name in state:
+        H0 = state[h0_field_name]
+
+    try:
+        (Omega_r, Omega_t), (psi_r, psi_t) = fespace.TnT()
+
+        # Bilinear form
+        a = BilinearForm(fespace)
+        # Coil region: ∇·μ(H₀ - ∇Ωᵣ - ∇Θ) = 0
+        # Since Θ is known, this becomes: ∇·μ(H₀ - ∇Ωᵣ) = ∇·μ(∇Θ)
+        a += mu_coil * grad(Omega_r) * grad(psi_r) * dx(coil_domain)
+
+        # Air region: ∇·μ(-∇Ωₜ) = 0
+        a += mu_air * grad(Omega_t) * grad(psi_t) * dx(air_domain)
+
+        # Linear form
+        f = LinearForm(fespace)
+
+        # Source term from H₀ (if exists)
+        if H0 is not None:
+            f += mu_coil * H0 * grad(psi_r) * dx(coil_domain)
+
+        # Source term from Theta gradient
+        # ∇·μ(∇Θ) in weak form: -∫ μ∇Θ·∇ψ dx
+        f += -mu_coil * grad(gfTheta) * grad(psi_r) * dx(coil_domain)
+
+        with TaskManager():
+            a.Assemble()
+            f.Assemble()
+
+        # Solve
+        gf = GridFunction(fespace)
+        inv = CGSolver(a.mat, fespace.FreeDofs(), maxsteps=max_iter, tol=tol)
+        gf.vec.data = inv * f.vec
+
+        # Extract components
+        gf_Omega_r_cont, gf_Omega_t = gf.components
+
+        # Reconstruct full Ωᵣ = Ω_continuous + Θ
+        # Create GridFunction on coil domain
+        fesR_full = H1(mesh, order=gfTheta.space.globalorder, definedon=coil_domain)
+        gf_Omega_r_full = GridFunction(fesR_full)
+        gf_Omega_r_full.Set(gf_Omega_r_cont + gfTheta, VOL, definedon=coil_domain)
+
+        # Reconstruct H and B fields
+        if H0 is not None:
+            H_coil = H0 - grad(gf_Omega_r_full)
+        else:
+            H_coil = -grad(gf_Omega_r_full)
+
+        H_air = -grad(gf_Omega_t)
+
+        B_coil = mu_coil * H_coil
+        B_air = mu_air * H_air
+
+        # Store results
+        solution_name = f"{fespace_name}_solution"
+        state[solution_name] = gf
+        state[f"{solution_name}_Omega_r_full"] = gf_Omega_r_full
+        state[f"{solution_name}_Omega_t"] = gf_Omega_t
+        state[f"{solution_name}_H_coil"] = H_coil
+        state[f"{solution_name}_H_air"] = H_air
+        state[f"{solution_name}_B_coil"] = B_coil
+        state[f"{solution_name}_B_air"] = B_air
+
+        # Compute norms for verification
+        B_coil_norm = sqrt(Integrate(B_coil * B_coil * dx(coil_domain), mesh))
+        B_air_norm = sqrt(Integrate(B_air * B_air * dx(air_domain), mesh))
+
+        # Compute energy
+        energy_coil = 0.5 / mu_coil * Integrate(B_coil * B_coil * dx(coil_domain), mesh)
+        energy_air = 0.5 / mu_air * Integrate(B_air * B_air * dx(air_domain), mesh)
+        total_energy = energy_coil + energy_air
+
+        return {
+            "success": True,
+            "solution_name": solution_name,
+            "ndof": fespace.ndof,
+            "B_coil_norm": float(B_coil_norm),
+            "B_air_norm": float(B_air_norm),
+            "magnetic_energy_coil": float(energy_coil),
+            "magnetic_energy_air": float(energy_air),
+            "total_magnetic_energy": float(total_energy),
+            "stored_fields": {
+                "Omega_r_full": f"{solution_name}_Omega_r_full",
+                "Omega_t": f"{solution_name}_Omega_t",
+                "H_coil": f"{solution_name}_H_coil",
+                "H_air": f"{solution_name}_H_air",
+                "B_coil": f"{solution_name}_B_coil",
+                "B_air": f"{solution_name}_B_air"
+            },
+            "message": f"2-scalar with coil jump solved: ||B_coil||={B_coil_norm:.6e}, ||B_air||={B_air_norm:.6e}, Energy={total_energy:.6e} J"
         }
 
     except Exception as e:

@@ -752,6 +752,249 @@ result = TwoScalarPotentialSolve(mesh, mu0, mu0, H0_coil)
 4. **Boundary conditions**: 外部境界は十分遠方に配置
 5. **Non-linear materials**: Newton反復で透磁率を更新
 
+### コイルによるΩジャンプ（Θジャンプ）
+
+コイル電流が流れる領域を横切ると、磁気スカラーポテンシャルΩは不連続（ジャンプ）になります。これは**Θジャンプ**と呼ばれ、電流源による本質的な特性です。
+
+#### 理論的背景
+
+**Ampère's Law:**
+```
+∇×H = J
+```
+
+磁気スカラーポテンシャルを用いると H = -∇Ω ですが、コイル電流 J が存在する場合：
+```
+∇×(-∇Ω) = -∇×∇Ω = J  (矛盾！)
+```
+
+この矛盾は、Ωが多価関数であることで解決されます。コイル領域の切断面を横切るたびに：
+```
+[Ω]⁺₋ = Θ
+```
+
+ここで、Θは**コイルの巻数と電流に比例する量**：
+```
+Θ = N × I  (円筒コイルの場合)
+```
+
+より一般的には：
+```
+Θ = ∫ₛ (J·n) dS  (切断面を通る全電流)
+```
+
+#### 物理的意味
+
+- **Θ = 起磁力 (Magnetomotive Force, MMF)**
+- コイルを一周すると Ω は Θ だけ増加（または減少）
+- 多価性により単純な ∇Ω では表現できない回転成分を表現
+
+#### 2スカラー法での実装
+
+**基本アイデア:**
+- Coil内部では Ωᵣ（reduced potential）を使用し、ジャンプを許容
+- 切断面（cut surface）を定義し、その面でΩが不連続であることを許可
+
+**Method 1: 不連続FE空間（推奨）**
+
+```python
+from ngsolve import *
+
+# Coil領域での不連続FE空間
+fesR_disc = H1(mesh, order=2, definedon="coil",
+               discontinuous_at="cut_surface")
+
+# Air領域での連続FE空間
+fesT = H1(mesh, order=2, definedon="air", dirichlet="outer")
+
+fespace = fesR_disc * fesT
+
+(Omega_r, Omega_t), (psi_r, psi_t) = fespace.TnT()
+
+# ジャンプ項を追加
+a = BilinearForm(fespace)
+a += mu * grad(Omega_r) * grad(psi_r) * dx("coil")
+a += mu * grad(Omega_t) * grad(psi_t) * dx("air")
+
+# 切断面でのジャンプ条件: [Ω] = Θ
+# Lagrange multiplier法で実装
+```
+
+**Method 2: Theta fieldを用いた処理（実用的）**
+
+Θを既知の場数として与え、Ω = Ω_continuous + Θ と分解：
+
+```python
+from ngsolve import *
+import numpy as np
+
+def ComputeThetaField(mesh, coil_domain, cut_surface, NI, **kwargs):
+    """
+    コイル領域でのΘ field計算
+
+    Parameters:
+    -----------
+    mesh : NGSolve mesh
+    coil_domain : str
+        コイル領域名
+    cut_surface : str
+        切断面境界名
+    NI : float
+        巻数×電流 (起磁力)
+    """
+    order = kwargs.get("order", 2)
+
+    # H1空間（coil領域のみ）
+    fesTheta = H1(mesh, order=order, definedon=coil_domain)
+    theta, psi = fesTheta.TnT()
+
+    # Laplace方程式（調和関数）
+    a = BilinearForm(fesTheta)
+    a += grad(theta) * grad(psi) * dx(coil_domain)
+
+    # 切断面でのジャンプを境界条件として
+    # 片側を0、反対側をNIに設定
+    gfTheta = GridFunction(fesTheta)
+
+    # Cut surfaceの片側でΘ=0、反対側でΘ=NI
+    # Dirichlet境界条件
+    gfTheta.Set(0, BND, mesh.Boundaries("cut_minus"))
+    gfTheta.Set(NI, BND, mesh.Boundaries("cut_plus"))
+
+    # 内部を解く
+    f = LinearForm(fesTheta)
+    f += -grad(gfTheta) * grad(psi) * dx(coil_domain)
+
+    with TaskManager():
+        a.Assemble()
+        f.Assemble()
+
+    # Solve with fixed boundary
+    inv = CGSolver(a.mat, fesTheta.FreeDofs())
+    gfTheta.vec.data += inv * f.vec
+
+    return gfTheta
+
+# 2スカラー法でΘを組み込む
+def TwoScalarWithCoilJump(mesh, mu_coil, mu_air, H0, NI, **kwargs):
+    """
+    コイルジャンプを考慮した2スカラー法
+    """
+    # Θ field計算
+    gfTheta = ComputeThetaField(mesh, "coil", "cut_surface", NI)
+
+    # FE space setup
+    fesR = H1(mesh, order=2, definedon="coil")
+    fesT = H1(mesh, order=2, definedon="air", dirichlet="outer")
+    fespace = fesR * fesT
+
+    (Omega_r, Omega_t), (psi_r, psi_t) = fespace.TnT()
+
+    # Bilinear form
+    a = BilinearForm(fespace)
+    a += mu_coil * grad(Omega_r) * grad(psi_r) * dx("coil")
+    a += mu_air * grad(Omega_t) * grad(psi_t) * dx("air")
+
+    # Linear form（Θの影響を含む）
+    f = LinearForm(fespace)
+    # H₀による項
+    f += mu_coil * H0 * grad(psi_r) * dx("coil")
+    # Θによる修正項（切断面での処理）
+    f += -mu_coil * grad(gfTheta) * grad(psi_r) * dx("coil")
+
+    with TaskManager():
+        a.Assemble()
+        f.Assemble()
+
+    gf = GridFunction(fespace)
+    inv = CGSolver(a.mat, fespace.FreeDofs())
+    gf.vec.data = inv * f.vec
+
+    gf_Omega_r, gf_Omega_t = gf.components
+
+    # 真のΩᵣは Ω_continuous + Θ
+    gf_Omega_r_full = gf_Omega_r + gfTheta
+
+    # H field
+    H_coil = H0 - grad(gf_Omega_r_full)
+    H_air = -grad(gf_Omega_t)
+
+    return {
+        "Omega_r": gf_Omega_r_full,
+        "Omega_t": gf_Omega_t,
+        "Theta": gfTheta,
+        "H_coil": H_coil,
+        "H_air": H_air,
+        "B_coil": mu_coil * H_coil,
+        "B_air": mu_air * H_air
+    }
+```
+
+#### 切断面（Cut Surface）の選び方
+
+コイルの電流ループを「切断」する面を定義する必要があります：
+
+**円筒コイル（軸対称）:**
+```python
+# 例：z軸まわりのコイル
+# 切断面をθ=0平面に配置
+cut_surface = "coil_cut"  # y≥0, x=0 の面
+```
+
+**任意形状コイル:**
+```python
+# コイル電流ループを完全に横切る面
+# トポロジー的に「輪」を切る面
+cut_surface = mesh.Boundaries("coil_cut_surface")
+```
+
+#### 実装上の注意
+
+1. **切断面の一意性**: 切断面の選び方は任意だが、一度定めたら一貫させる
+2. **Θの符号**: 電流の向きに応じて正負が決まる（右手の法則）
+3. **メッシュとの整合**: 切断面はメッシュの面と一致させる必要がある
+4. **H₀との関係**: H₀（Biot-Savart）には既にコイル電流の効果が含まれているため、Θと二重計上しないよう注意
+
+#### 検証方法
+
+**Ampèreの法則チェック:**
+```python
+# コイルを囲む閉路でH·dlを積分
+# = N×I になるべき
+contour = "loop_around_coil"
+Hdl = Integrate(H * tangent * ds(contour), mesh)
+print(f"Line integral H·dl = {Hdl}, Expected NI = {NI}")
+assert abs(Hdl - NI) < 1e-6
+```
+
+#### 応用例
+
+**電磁石設計:**
+```python
+# 鉄心入りコイル
+NI = 1000  # 100turns × 10A
+gfTheta = ComputeThetaField(mesh, "coil+iron", "cut", NI)
+
+# 2スカラー法で磁場計算
+result = TwoScalarWithCoilJump(
+    mesh, mu_iron, mu0, H0=0, NI=NI
+)
+
+# 鉄心内の磁束密度
+B_iron = result["B_coil"]
+```
+
+**モーター解析:**
+```python
+# 複数コイル（多極）
+for pole_id in range(n_poles):
+    theta_i = ComputeThetaField(
+        mesh, f"coil_{pole_id}", f"cut_{pole_id}",
+        NI * cos(pole_id * 2*pi/n_poles)
+    )
+    # 各極の寄与を重ね合わせ
+```
+
 ## 参考文献
 
 - EMPY_Analysis Repository: `S:\NGSolve\EMPY\EMPY_Analysis`
