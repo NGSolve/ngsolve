@@ -8,10 +8,12 @@ from . import (
     mesh_tools,
     radia_coupling_tools,
     kelvin_transform_tools,
+    diagnostic_tools,
 )
 
 __all__ = [
     "mesh_tools",
     "radia_coupling_tools",
     "kelvin_transform_tools",
+    "diagnostic_tools",
 ]

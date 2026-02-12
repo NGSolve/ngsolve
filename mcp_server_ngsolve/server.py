@@ -31,6 +31,7 @@ from .tools import (
     mesh_tools,
     radia_coupling_tools,
     kelvin_transform_tools,
+    diagnostic_tools,
 )
 
 # Configure logging
@@ -71,6 +72,9 @@ class NGSolveMCPServer:
             # Kelvin transformation tools
             tools.extend(kelvin_transform_tools.get_tools())
 
+            # Diagnostic tools
+            tools.extend(diagnostic_tools.get_tools())
+
             logger.info(f"Listing {len(tools)} available tools")
             return tools
 
@@ -87,6 +91,8 @@ class NGSolveMCPServer:
                     result = await radia_coupling_tools.execute(name, arguments, self.ngsolve_state)
                 elif name.startswith("kelvin_"):
                     result = await kelvin_transform_tools.execute(name, arguments, self.ngsolve_state)
+                elif name.startswith("ngsolve_server_") or name.startswith("ngsolve_list_") or name.startswith("ngsolve_get_") or name.startswith("ngsolve_clear_"):
+                    result = await diagnostic_tools.execute(name, arguments, self.ngsolve_state)
                 else:
                     raise ValueError(f"Unknown tool: {name}")
 
