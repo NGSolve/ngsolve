@@ -101,10 +101,12 @@ class NGSolveMCPServer:
                     result = await kelvin_transform_tools.execute(name, arguments, self.ngsolve_state)
                 elif name.startswith("ngsolve_server_") or name.startswith("ngsolve_list_") or name.startswith("ngsolve_get_") or name.startswith("ngsolve_clear_"):
                     result = await diagnostic_tools.execute(name, arguments, self.ngsolve_state)
+                # Two-scalar tools (check before generic ngsolve_compute_)
+                elif name.startswith("ngsolve_two_scalar_") or name.startswith("ngsolve_h_to_") or name.startswith("ngsolve_compute_h0_") or name == "ngsolve_compute_theta_field":
+                    result = await two_scalar_tools.execute(name, arguments, self.ngsolve_state)
+                # Eddy current tools (generic ngsolve_compute_ after two-scalar specific ones)
                 elif name.startswith("ngsolve_compute_") or name.startswith("ngsolve_t_omega_") or name.startswith("ngsolve_loop_"):
                     result = await eddy_current_tools.execute(name, arguments, self.ngsolve_state)
-                elif name.startswith("ngsolve_two_scalar_") or name.startswith("ngsolve_h_to_"):
-                    result = await two_scalar_tools.execute(name, arguments, self.ngsolve_state)
                 else:
                     raise ValueError(f"Unknown tool: {name}")
 
