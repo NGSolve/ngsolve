@@ -32,6 +32,7 @@ from .tools import (
     radia_coupling_tools,
     kelvin_transform_tools,
     diagnostic_tools,
+    eddy_current_tools,
 )
 
 # Configure logging
@@ -75,6 +76,9 @@ class NGSolveMCPServer:
             # Diagnostic tools
             tools.extend(diagnostic_tools.get_tools())
 
+            # Eddy current analysis tools
+            tools.extend(eddy_current_tools.get_tools())
+
             logger.info(f"Listing {len(tools)} available tools")
             return tools
 
@@ -93,6 +97,8 @@ class NGSolveMCPServer:
                     result = await kelvin_transform_tools.execute(name, arguments, self.ngsolve_state)
                 elif name.startswith("ngsolve_server_") or name.startswith("ngsolve_list_") or name.startswith("ngsolve_get_") or name.startswith("ngsolve_clear_"):
                     result = await diagnostic_tools.execute(name, arguments, self.ngsolve_state)
+                elif name.startswith("ngsolve_compute_") or name.startswith("ngsolve_t_omega_") or name.startswith("ngsolve_loop_"):
+                    result = await eddy_current_tools.execute(name, arguments, self.ngsolve_state)
                 else:
                     raise ValueError(f"Unknown tool: {name}")
 
