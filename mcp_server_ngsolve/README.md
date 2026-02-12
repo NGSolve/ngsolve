@@ -117,17 +117,26 @@ Set `PYTHONPATH` to include `S:\Radia\01_Github\mcp_shared`
 ## Development Policy
 
 ### Branch Management
-- **Feature branches**: Create feature branches for new functionality or bug fixes
-- **Pull Request workflow**: All changes should go through PR review before merging to master
-- **Branch cleanup**: Feature branches should be deleted after PR is approved and merged
-- **Naming convention**: Use descriptive names like `feature/mcp-tools-enhancement` or `fix/kelvin-mesh-bug`
+- **Feature branches**: Create feature branches for Pull Request purposes
+  - Feature branches are temporary and should be deleted after PR approval and merge
+  - Naming convention: `feature/mcp-tools-enhancement`, `fix/kelvin-mesh-bug`
+- **Master branch**: Always kept in sync with the latest version
+  - Research lab internal policy: master branch is continuously updated with latest stable code
+  - Direct commits to master are allowed for internal development
+  - Master branch always reflects the current working state
 
-### Contribution Guidelines
+### Pull Request Workflow (for upstream contributions)
 1. Create a feature branch from master
 2. Make your changes and commit with descriptive messages
 3. Push to your fork and create a Pull Request
 4. After PR approval and merge, delete the feature branch
 5. Keep master branch clean and stable
+
+### Internal Development (Research Lab)
+- Master branch is the primary development branch
+- Always keep master in sync with the latest version
+- Feature branches are used only for PR submissions to upstream
+- Internal changes can be committed directly to master
 
 ## See Also
 
