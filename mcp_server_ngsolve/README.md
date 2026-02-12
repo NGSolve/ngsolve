@@ -27,7 +27,7 @@ pip install scipy
 pip install mcp
 ```
 
-## Tools (24 total)
+## Tools (29 total)
 
 ### Mesh Generation (4)
 - `ngsolve_mesh_create_box` - Create box mesh
@@ -62,6 +62,13 @@ pip install mcp
 - `ngsolve_t_omega_setup` - Set up T-Omega FE spaces (HCurl + H1)
 - `ngsolve_t_omega_solve_coupled` - Solve T-Omega system with loop current coupling
 - `ngsolve_loop_current_analysis` - Analyze loop currents (resistance, inductance)
+
+### Magnetostatic Analysis (2-Scalar Method) (5)
+- `ngsolve_two_scalar_setup` - Set up Reduced-Total scalar potential FE spaces
+- `ngsolve_compute_h0_coil` - Compute H₀ source field from current-carrying coil
+- `ngsolve_compute_h0_pm` - Compute H₀ source field from permanent magnet
+- `ngsolve_two_scalar_solve` - Solve magnetostatic problem with 2-scalar method
+- `ngsolve_h_to_omega` - Convert H field to Omega scalar potential on boundary
 
 ## Usage
 

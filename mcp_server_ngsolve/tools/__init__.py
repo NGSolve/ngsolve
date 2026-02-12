@@ -10,6 +10,7 @@ from . import (
     kelvin_transform_tools,
     diagnostic_tools,
     eddy_current_tools,
+    two_scalar_tools,
 )
 
 __all__ = [
@@ -18,4 +19,5 @@ __all__ = [
     "kelvin_transform_tools",
     "diagnostic_tools",
     "eddy_current_tools",
+    "two_scalar_tools",
 ]
