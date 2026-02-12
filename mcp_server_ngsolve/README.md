@@ -249,6 +249,210 @@ Where L = characteristic length of inner geometry, R = Kelvin radius.
 - Refine near boundaries and material interfaces
 - Use adaptive refinement for critical regions
 
+## Troubleshooting
+
+### Kelvin Transformation Issues
+
+**Problem: Large errors at Kelvin boundary (r = R)**
+
+**原因 (Causes):**
+- Kelvin radius R too small (R < 2× inner domain radius)
+- Insufficient mesh resolution at boundary (maxh > R/20)
+- Permeability discontinuity not properly handled
+
+**解決策 (Solutions):**
+```python
+# 1. Increase Kelvin radius
+kelvin_create_mesh_with_transform(
+    inner_radius=0.10,
+    kelvin_radius=0.25,  # Was 0.15 → increase to 2.5× inner
+    outer_radius=0.40
+)
+
+# 2. Refine mesh at boundary
+kelvin_create_mesh_with_transform(
+    inner_radius=0.10,
+    kelvin_radius=0.25,
+    outer_radius=0.40,
+    maxh=0.012  # Was 0.020 → refine to < R/20
+)
+
+# 3. Check permeability values
+kelvin_omega_reduced_omega_solve(
+    permeability_inner=μᵣ,
+    permeability_outer=1.0,  # Must be 1.0 for air in outer domain
+    ...
+)
+```
+
+**Problem: Solution diverges or solver fails to converge**
+
+**原因 (Causes):**
+- Inner/outer domain overlap (inner_radius ≥ kelvin_radius)
+- Improper boundary conditions at r = R
+- Iterative solver without preconditioner
+
+**解決策 (Solutions):**
+```python
+# 1. Check domain sizes
+assert inner_radius < kelvin_radius < outer_radius
+# Example: 0.10 < 0.25 < 0.40 ✓
+
+# 2. Use direct solver for debugging
+kelvin_omega_reduced_omega_solve(
+    solver="direct",  # Not "iterative"
+    ...
+)
+
+# 3. If using iterative, check tolerance
+kelvin_omega_reduced_omega_solve(
+    solver="iterative",
+    tolerance=1e-8,  # Default may be too loose
+    ...
+)
+```
+
+**Problem: Field values incorrect far from magnet (r → R)**
+
+**原因 (Causes):**
+- Transformation not properly applied
+- Outer domain radius too small (outer_radius < 1.5× kelvin_radius)
+- Field type mismatch (evaluating wrong field)
+
+**解決策 (Solutions):**
+```python
+# 1. Verify transformation parameters
+# Rule: outer_radius ≥ 1.5× kelvin_radius for smooth decay
+kelvin_create_mesh_with_transform(
+    kelvin_radius=0.25,
+    outer_radius=0.40,  # = 1.6× kelvin_radius ✓
+    ...
+)
+
+# 2. Check field type
+# Use H-field (not B-field) in outer domain for better accuracy
+kelvin_omega_reduced_omega_solve(
+    field_type="h",  # Recommended for Kelvin transform
+    ...
+)
+```
+
+### Radia-NGSolve Coupling Issues
+
+**Problem: Field interpolation errors at mesh boundaries**
+
+**原因 (Causes):**
+- Coordinate system mismatch between Radia and NGSolve
+- Units inconsistency (Radia in mm, NGSolve in m)
+- Mesh extends into Radia magnet geometry
+
+**解決策 (Solutions):**
+```python
+# 1. Always use meters in Radia
+import radia as rad
+rad.FldUnits('m')  # CRITICAL before creating geometry
+
+# 2. Verify coordinate alignment
+# Radia magnet center should match NGSolve mesh reference point
+
+# 3. Keep mesh away from magnet surfaces
+# Rule: mesh boundaries > 0.01m from Radia object surfaces
+```
+
+**Problem: NGSolve cannot import Radia object**
+
+**原因 (Causes):**
+- Workspace session not found
+- mcp_shared module not accessible
+- Session expired or cleared
+
+**解決策 (Solutions):**
+```python
+# 1. List available sessions
+ngsolve_workspace_list_radia_objects()
+
+# 2. Check symbolic link
+# Verify: S:\NGSolve\01_GitHub\ngsolve_ksugahar\mcp_shared
+#      → S:\Radia\01_Github\mcp_shared
+
+# 3. Re-export from Radia
+# In Radia MCP:
+radia_workspace_export_object(
+    object_name="magnet",
+    export_geometry=True,
+    export_fields=True
+)
+```
+
+### Performance Issues
+
+**Problem: Solver too slow for large problems**
+
+**解決策 (Solutions):**
+```python
+# 1. Use iterative solver for large problems (> 50k DOFs)
+kelvin_omega_reduced_omega_solve(
+    solver="iterative",  # Not "direct"
+    tolerance=1e-8
+)
+
+# 2. Enable Radia H-matrix for field evaluation
+# In Radia MCP:
+radia_ngsolve_enable_hmatrix(enable=True, precision=1e-6)
+
+# 3. Reduce mesh resolution in outer domain
+# Inner: maxh = 0.010
+# Outer: maxh = 0.020  # Can be coarser
+```
+
+**Problem: Memory exhausted during solve**
+
+**解決策 (Solutions):**
+```python
+# 1. Reduce mesh resolution
+kelvin_create_mesh_with_transform(
+    maxh=0.020,  # Was 0.010 → reduce by 2×
+    ...
+)
+
+# 2. Use iterative solver (lower memory)
+kelvin_omega_reduced_omega_solve(
+    solver="iterative",
+    ...
+)
+
+# 3. Reduce outer domain extent if possible
+# Smaller outer_radius → fewer elements
+```
+
+### Verification and Validation
+
+**ケルビン変換の正しさを確認する手順 (Steps to verify Kelvin transformation):**
+
+```python
+# 1. Use analytical comparison for sphere geometry
+kelvin_compare_analytical(
+    solution_name="H_solution",
+    geometry_type="sphere",
+    radius=0.10
+)
+# Expected error: < 5%
+
+# 2. Check field continuity at Kelvin boundary
+# Sample H-field at r = R from both sides
+# |H(R-ε) - H(R+ε)| should be small
+
+# 3. Verify far-field decay
+# H(r) should decay as 1/r³ for dipole field
+# Check at multiple radii: 1.1R, 1.3R, 1.5R
+
+# 4. Energy conservation
+kelvin_compute_perturbation_energy(
+    solution_name="H_solution"
+)
+# Total energy should match analytical value within 10%
+```
+
 ## Shared Workspace
 
 This server requires access to `mcp_shared` module for workspace communication.
