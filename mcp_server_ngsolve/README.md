@@ -27,7 +27,7 @@ pip install scipy
 pip install mcp
 ```
 
-## Tools (15 total)
+## Tools (19 total)
 
 ### Mesh Generation (4)
 - `ngsolve_mesh_create_box` - Create box mesh
@@ -49,6 +49,12 @@ pip install mcp
 - `kelvin_compare_analytical` - Compare with analytical solution (sphere)
 - `kelvin_adaptive_mesh_refinement` - Adaptive mesh refinement (planned)
 - `kelvin_check_availability` - Check NGSolve availability
+
+### Diagnostic & Debugging (4)
+- `ngsolve_server_info` - Get server version and status
+- `ngsolve_list_objects` - List all objects in server state
+- `ngsolve_get_object_info` - Get detailed information about an object
+- `ngsolve_clear_state` - Clear all objects from server state (reset)
 
 ## Usage
 
