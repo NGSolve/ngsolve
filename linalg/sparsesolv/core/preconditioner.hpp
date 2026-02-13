@@ -7,6 +7,7 @@
 #define SPARSESOLV_CORE_PRECONDITIONER_HPP
 
 #include "types.hpp"
+#include "constants.hpp"
 #include "sparse_matrix_view.hpp"
 #include <string>
 #include <memory>
@@ -125,7 +126,7 @@ public:
         for (index_t i = 0; i < n; ++i) {
             Scalar d = A.diagonal(i);
             // Avoid division by zero
-            inv_diag_[i] = (std::abs(d) > 1e-15) ? Scalar(1) / d : Scalar(1);
+            inv_diag_[i] = (std::abs(d) > constants::MIN_DIAGONAL_TOLERANCE) ? Scalar(1) / d : Scalar(1);
         }
         this->is_setup_ = true;
     }

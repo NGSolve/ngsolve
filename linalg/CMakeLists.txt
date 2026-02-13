@@ -50,6 +50,7 @@ install( FILES
         elementbyelement.hpp arnoldi.hpp paralleldofs.hpp
         sparsefactorization_interface.hpp
         sparsesolv_precond.hpp
+        sparsesolv_python_export.hpp
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )

@@ -63,7 +63,166 @@ SCAL* GetVectorData(BaseVector& vec) {
 }
 
 // ============================================================================
-// IC Preconditioner with FreeDofs support
+// Preconditioner Base Class
+// ============================================================================
+
+/**
+ * @brief Base class for SparseSolv preconditioners in NGSolve
+ *
+ * Provides common functionality for all SparseSolv preconditioner wrappers:
+ * - NGSolve SparseMatrix to SparseSolv SparseMatrixView conversion
+ * - FreeDofs handling (constrained DOFs become identity rows/columns)
+ * - Mult/MultAdd with FreeDofs zero-out
+ * - VHeight/VWidth/CreateRowVector/CreateColVector
+ *
+ * Derived classes only need to implement:
+ * - Constructor (create the specific sparsesolv preconditioner)
+ * - Update() (call prepare_matrix_view() + precond setup)
+ * - apply_precond() (delegate to the specific preconditioner)
+ *
+ * @tparam SCAL Scalar type (double or Complex)
+ */
+template<typename SCAL>
+class SparseSolvPrecondBase : public BaseMatrix {
+protected:
+    shared_ptr<SparseMatrix<SCAL>> mat_;
+    shared_ptr<BitArray> freedofs_;
+    sparsesolv::index_t height_;
+    sparsesolv::index_t width_;
+
+    // CSR conversion buffers
+    std::vector<sparsesolv::index_t> row_ptr_;
+    std::vector<sparsesolv::index_t> col_idx_;
+    std::vector<SCAL> modified_values_;
+
+    SparseSolvPrecondBase(shared_ptr<SparseMatrix<SCAL>> mat,
+                          shared_ptr<BitArray> freedofs)
+        : mat_(mat)
+        , freedofs_(freedofs ? make_shared<BitArray>(*freedofs) : nullptr)
+        , height_(static_cast<sparsesolv::index_t>(mat->Height()))
+        , width_(static_cast<sparsesolv::index_t>(mat->Width()))
+    {}
+
+    /**
+     * @brief Convert NGSolve SparseMatrix to SparseSolv SparseMatrixView
+     *
+     * Handles FreeDofs: constrained DOFs get identity rows/columns
+     * (diagonal = 1, off-diagonals = 0).
+     */
+    sparsesolv::SparseMatrixView<SCAL> prepare_matrix_view() {
+        const auto& firsti = mat_->GetFirstArray();
+        const auto& colnr = mat_->GetColIndices();
+        const auto& values = mat_->GetValues();
+
+        const size_t nrows = firsti.Size();
+        const size_t nnz = colnr.Size();
+
+        // Convert row pointers
+        row_ptr_.resize(nrows);
+        #pragma omp parallel for schedule(static)
+        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
+            row_ptr_[i] = static_cast<sparsesolv::index_t>(firsti[i]);
+        }
+
+        // Convert column indices
+        col_idx_.resize(nnz);
+        #pragma omp parallel for schedule(static)
+        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nnz); ++i) {
+            col_idx_[i] = static_cast<sparsesolv::index_t>(colnr[i]);
+        }
+
+        if (freedofs_) {
+            modified_values_.resize(values.Size());
+
+            #pragma omp parallel for schedule(static)
+            for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(values.Size()); ++i) {
+                modified_values_[i] = values[i];
+            }
+
+            #pragma omp parallel for schedule(dynamic, 64)
+            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+                for (sparsesolv::index_t k = row_ptr_[i]; k < row_ptr_[i + 1]; ++k) {
+                    sparsesolv::index_t j = col_idx_[k];
+                    if (!freedofs_->Test(i)) {
+                        modified_values_[k] = (j == i) ? SCAL(1) : SCAL(0);
+                    } else if (!freedofs_->Test(j)) {
+                        modified_values_[k] = SCAL(0);
+                    }
+                }
+            }
+
+            return sparsesolv::SparseMatrixView<SCAL>(
+                height_, width_,
+                row_ptr_.data(), col_idx_.data(), modified_values_.data()
+            );
+        } else {
+            return sparsesolv::SparseMatrixView<SCAL>(
+                height_, width_,
+                row_ptr_.data(), col_idx_.data(), values.Data()
+            );
+        }
+    }
+
+    /**
+     * @brief Apply the underlying SparseSolv preconditioner
+     *
+     * Derived classes implement this to delegate to their specific preconditioner.
+     */
+    virtual void apply_precond(const SCAL* x, SCAL* y) const = 0;
+
+public:
+    void Mult(const BaseVector& x, BaseVector& y) const override {
+        const SCAL* x_data = GetVectorData<SCAL>(x);
+        SCAL* y_data = GetVectorData<SCAL>(y);
+
+        apply_precond(x_data, y_data);
+
+        if (freedofs_) {
+            #pragma omp parallel for schedule(static)
+            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+                if (!freedofs_->Test(i)) {
+                    y_data[i] = SCAL(0);
+                }
+            }
+        }
+    }
+
+    void MultAdd(double s, const BaseVector& x, BaseVector& y) const override {
+        const SCAL* x_data = GetVectorData<SCAL>(x);
+        SCAL* y_data = GetVectorData<SCAL>(y);
+
+        std::vector<SCAL> temp(height_);
+        apply_precond(x_data, temp.data());
+
+        if (freedofs_) {
+            #pragma omp parallel for schedule(static)
+            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+                if (freedofs_->Test(i)) {
+                    y_data[i] += s * temp[i];
+                }
+            }
+        } else {
+            #pragma omp parallel for schedule(static)
+            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+                y_data[i] += s * temp[i];
+            }
+        }
+    }
+
+    int VHeight() const override { return static_cast<int>(height_); }
+    int VWidth() const override { return static_cast<int>(width_); }
+
+    AutoVector CreateRowVector() const override {
+        return mat_->CreateRowVector();
+    }
+
+    AutoVector CreateColVector() const override {
+        return mat_->CreateColVector();
+    }
+};
+
+// ============================================================================
+// IC Preconditioner
 // ============================================================================
 
 /**
@@ -75,153 +234,19 @@ SCAL* GetVectorData(BaseVector& vec) {
  * @tparam SCAL Scalar type (double or Complex)
  */
 template<typename SCAL = double>
-class SparseSolvICPreconditioner : public BaseMatrix {
+class SparseSolvICPreconditioner : public SparseSolvPrecondBase<SCAL> {
 public:
-    /**
-     * @brief Construct IC preconditioner from NGSolve sparse matrix
-     * @param mat The sparse matrix to precondition
-     * @param freedofs BitArray indicating free DOFs (nullptr = all DOFs are free)
-     * @param shift Shift parameter for IC decomposition (default: 1.05)
-     */
     SparseSolvICPreconditioner(shared_ptr<SparseMatrix<SCAL>> mat,
                                 shared_ptr<BitArray> freedofs = nullptr,
                                 double shift = 1.05)
-        : mat_(mat)
-        , freedofs_(freedofs ? make_shared<BitArray>(*freedofs) : nullptr)
+        : SparseSolvPrecondBase<SCAL>(mat, freedofs)
         , shift_(shift)
-        , height_(static_cast<sparsesolv::index_t>(mat->Height()))
-        , width_(static_cast<sparsesolv::index_t>(mat->Width()))
         , precond_(std::make_shared<sparsesolv::ICPreconditioner<SCAL>>(shift))
     {}
 
-    /**
-     * @brief Update the preconditioner (recompute factorization)
-     */
     void Update() {
-        const auto& firsti = mat_->GetFirstArray();
-        const auto& colnr = mat_->GetColIndices();
-        const auto& values = mat_->GetValues();
-
-        const size_t nrows = firsti.Size();
-        const size_t nnz = colnr.Size();
-
-        // Convert row pointers (OpenMP parallel)
-        row_ptr_.resize(nrows);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
-            row_ptr_[i] = static_cast<sparsesolv::index_t>(firsti[i]);
-        }
-
-        // Convert column indices (OpenMP parallel)
-        col_idx_.resize(nnz);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nnz); ++i) {
-            col_idx_[i] = static_cast<sparsesolv::index_t>(colnr[i]);
-        }
-
-        // Create modified values array if freedofs is specified
-        // For constrained DOFs, set diagonal to 1 and off-diagonals to 0
-        // Also zero out column entries pointing to constrained DOFs (for symmetry)
-        if (freedofs_) {
-            modified_values_.resize(values.Size());
-
-            // Copy values (OpenMP parallel)
-            #pragma omp parallel for schedule(static)
-            for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(values.Size()); ++i) {
-                modified_values_[i] = values[i];
-            }
-
-            // Modify matrix entries for constrained DOFs (OpenMP parallel by row)
-            #pragma omp parallel for schedule(dynamic, 64)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                for (sparsesolv::index_t k = row_ptr_[i]; k < row_ptr_[i + 1]; ++k) {
-                    sparsesolv::index_t j = col_idx_[k];
-                    if (!freedofs_->Test(i)) {
-                        // Constrained row: set to identity row
-                        if (j == i) {
-                            modified_values_[k] = SCAL(1);  // Diagonal = 1
-                        } else {
-                            modified_values_[k] = SCAL(0);  // Off-diagonal = 0
-                        }
-                    } else if (!freedofs_->Test(j)) {
-                        // Free row but column points to constrained DOF: zero it
-                        modified_values_[k] = SCAL(0);
-                    }
-                }
-            }
-
-            sparsesolv::SparseMatrixView<SCAL> view(
-                height_, width_,
-                row_ptr_.data(),
-                col_idx_.data(),
-                modified_values_.data()
-            );
-            precond_->setup(view);
-        } else {
-            sparsesolv::SparseMatrixView<SCAL> view(
-                height_, width_,
-                row_ptr_.data(),
-                col_idx_.data(),
-                values.Data()
-            );
-            precond_->setup(view);
-        }
-    }
-
-    /**
-     * @brief Apply preconditioner: y = M^{-1} * x
-     */
-    void Mult(const BaseVector& x, BaseVector& y) const override {
-        const SCAL* x_data = GetVectorData<SCAL>(x);
-        SCAL* y_data = GetVectorData<SCAL>(y);
-
-        if (freedofs_) {
-            // Apply preconditioner
-            precond_->apply(x_data, y_data, height_);
-
-            // Zero out constrained DOFs (OpenMP parallel)
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                if (!freedofs_->Test(i)) {
-                    y_data[i] = SCAL(0);
-                }
-            }
-        } else {
-            precond_->apply(x_data, y_data, height_);
-        }
-    }
-
-    void MultAdd(double s, const BaseVector& x, BaseVector& y) const override {
-        const SCAL* x_data = GetVectorData<SCAL>(x);
-        SCAL* y_data = GetVectorData<SCAL>(y);
-
-        std::vector<SCAL> temp(height_);
-        precond_->apply(x_data, temp.data(), height_);
-
-        if (freedofs_) {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                if (freedofs_->Test(i)) {
-                    y_data[i] += s * temp[i];
-                }
-            }
-        } else {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                y_data[i] += s * temp[i];
-            }
-        }
-    }
-
-    int VHeight() const override { return static_cast<int>(height_); }
-    int VWidth() const override { return static_cast<int>(width_); }
-
-    AutoVector CreateRowVector() const override {
-        return mat_->CreateRowVector();
-    }
-
-    AutoVector CreateColVector() const override {
-        return mat_->CreateColVector();
+        auto view = this->prepare_matrix_view();
+        precond_->setup(view);
     }
 
     double GetShift() const { return shift_; }
@@ -231,21 +256,18 @@ public:
         precond_->set_shift_parameter(shift);
     }
 
-private:
-    shared_ptr<SparseMatrix<SCAL>> mat_;
-    shared_ptr<BitArray> freedofs_;
-    double shift_;
-    sparsesolv::index_t height_;
-    sparsesolv::index_t width_;
-    shared_ptr<sparsesolv::ICPreconditioner<SCAL>> precond_;
+protected:
+    void apply_precond(const SCAL* x, SCAL* y) const override {
+        precond_->apply(x, y, this->height_);
+    }
 
-    std::vector<sparsesolv::index_t> row_ptr_;
-    std::vector<sparsesolv::index_t> col_idx_;
-    std::vector<SCAL> modified_values_;
+private:
+    double shift_;
+    shared_ptr<sparsesolv::ICPreconditioner<SCAL>> precond_;
 };
 
 // ============================================================================
-// SGS Preconditioner with FreeDofs support
+// SGS Preconditioner
 // ============================================================================
 
 /**
@@ -256,165 +278,30 @@ private:
  * @tparam SCAL Scalar type (double or Complex)
  */
 template<typename SCAL = double>
-class SparseSolvSGSPreconditioner : public BaseMatrix {
+class SparseSolvSGSPreconditioner : public SparseSolvPrecondBase<SCAL> {
 public:
-    /**
-     * @brief Construct SGS preconditioner from NGSolve sparse matrix
-     * @param mat The sparse matrix to precondition
-     * @param freedofs BitArray indicating free DOFs (nullptr = all DOFs are free)
-     */
     SparseSolvSGSPreconditioner(shared_ptr<SparseMatrix<SCAL>> mat,
                                  shared_ptr<BitArray> freedofs = nullptr)
-        : mat_(mat)
-        , freedofs_(freedofs ? make_shared<BitArray>(*freedofs) : nullptr)
-        , height_(static_cast<sparsesolv::index_t>(mat->Height()))
-        , width_(static_cast<sparsesolv::index_t>(mat->Width()))
+        : SparseSolvPrecondBase<SCAL>(mat, freedofs)
         , precond_(std::make_shared<sparsesolv::SGSPreconditioner<SCAL>>())
     {}
 
-    /**
-     * @brief Update the preconditioner
-     */
     void Update() {
-        const auto& firsti = mat_->GetFirstArray();
-        const auto& colnr = mat_->GetColIndices();
-        const auto& values = mat_->GetValues();
-
-        const size_t nrows = firsti.Size();
-        const size_t nnz = colnr.Size();
-
-        // Convert row pointers (OpenMP parallel)
-        row_ptr_.resize(nrows);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
-            row_ptr_[i] = static_cast<sparsesolv::index_t>(firsti[i]);
-        }
-
-        // Convert column indices (OpenMP parallel)
-        col_idx_.resize(nnz);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nnz); ++i) {
-            col_idx_[i] = static_cast<sparsesolv::index_t>(colnr[i]);
-        }
-
-        // Create modified values array if freedofs is specified
-        // For constrained DOFs, set diagonal to 1 and off-diagonals to 0
-        // Also zero out column entries pointing to constrained DOFs (for symmetry)
-        if (freedofs_) {
-            modified_values_.resize(values.Size());
-
-            // Copy values (OpenMP parallel)
-            #pragma omp parallel for schedule(static)
-            for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(values.Size()); ++i) {
-                modified_values_[i] = values[i];
-            }
-
-            // Modify matrix entries for constrained DOFs (OpenMP parallel by row)
-            #pragma omp parallel for schedule(dynamic, 64)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                for (sparsesolv::index_t k = row_ptr_[i]; k < row_ptr_[i + 1]; ++k) {
-                    sparsesolv::index_t j = col_idx_[k];
-                    if (!freedofs_->Test(i)) {
-                        // Constrained row: set to identity row
-                        if (j == i) {
-                            modified_values_[k] = SCAL(1);  // Diagonal = 1
-                        } else {
-                            modified_values_[k] = SCAL(0);  // Off-diagonal = 0
-                        }
-                    } else if (!freedofs_->Test(j)) {
-                        // Free row but column points to constrained DOF: zero it
-                        modified_values_[k] = SCAL(0);
-                    }
-                }
-            }
-
-            sparsesolv::SparseMatrixView<SCAL> view(
-                height_, width_,
-                row_ptr_.data(),
-                col_idx_.data(),
-                modified_values_.data()
-            );
-            precond_->setup(view);
-        } else {
-            sparsesolv::SparseMatrixView<SCAL> view(
-                height_, width_,
-                row_ptr_.data(),
-                col_idx_.data(),
-                values.Data()
-            );
-            precond_->setup(view);
-        }
+        auto view = this->prepare_matrix_view();
+        precond_->setup(view);
     }
 
-    /**
-     * @brief Apply preconditioner: y = M^{-1} * x
-     */
-    void Mult(const BaseVector& x, BaseVector& y) const override {
-        const SCAL* x_data = GetVectorData<SCAL>(x);
-        SCAL* y_data = GetVectorData<SCAL>(y);
-
-        if (freedofs_) {
-            precond_->apply(x_data, y_data, height_);
-
-            // Zero out constrained DOFs (OpenMP parallel)
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                if (!freedofs_->Test(i)) {
-                    y_data[i] = SCAL(0);
-                }
-            }
-        } else {
-            precond_->apply(x_data, y_data, height_);
-        }
-    }
-
-    void MultAdd(double s, const BaseVector& x, BaseVector& y) const override {
-        const SCAL* x_data = GetVectorData<SCAL>(x);
-        SCAL* y_data = GetVectorData<SCAL>(y);
-
-        std::vector<SCAL> temp(height_);
-        precond_->apply(x_data, temp.data(), height_);
-
-        if (freedofs_) {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                if (freedofs_->Test(i)) {
-                    y_data[i] += s * temp[i];
-                }
-            }
-        } else {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                y_data[i] += s * temp[i];
-            }
-        }
-    }
-
-    int VHeight() const override { return static_cast<int>(height_); }
-    int VWidth() const override { return static_cast<int>(width_); }
-
-    AutoVector CreateRowVector() const override {
-        return mat_->CreateRowVector();
-    }
-
-    AutoVector CreateColVector() const override {
-        return mat_->CreateColVector();
+protected:
+    void apply_precond(const SCAL* x, SCAL* y) const override {
+        precond_->apply(x, y, this->height_);
     }
 
 private:
-    shared_ptr<SparseMatrix<SCAL>> mat_;
-    shared_ptr<BitArray> freedofs_;
-    sparsesolv::index_t height_;
-    sparsesolv::index_t width_;
     shared_ptr<sparsesolv::SGSPreconditioner<SCAL>> precond_;
-
-    std::vector<sparsesolv::index_t> row_ptr_;
-    std::vector<sparsesolv::index_t> col_idx_;
-    std::vector<SCAL> modified_values_;
 };
 
 // ============================================================================
-// ILU Preconditioner with FreeDofs support
+// ILU Preconditioner
 // ============================================================================
 
 /**
@@ -427,153 +314,19 @@ private:
  * @tparam SCAL Scalar type (double or Complex)
  */
 template<typename SCAL = double>
-class SparseSolvILUPreconditioner : public BaseMatrix {
+class SparseSolvILUPreconditioner : public SparseSolvPrecondBase<SCAL> {
 public:
-    /**
-     * @brief Construct ILU preconditioner from NGSolve sparse matrix
-     * @param mat The sparse matrix to precondition
-     * @param freedofs BitArray indicating free DOFs (nullptr = all DOFs are free)
-     * @param shift Shift parameter for ILU decomposition (default: 1.05)
-     */
     SparseSolvILUPreconditioner(shared_ptr<SparseMatrix<SCAL>> mat,
                                 shared_ptr<BitArray> freedofs = nullptr,
                                 double shift = 1.05)
-        : mat_(mat)
-        , freedofs_(freedofs ? make_shared<BitArray>(*freedofs) : nullptr)
+        : SparseSolvPrecondBase<SCAL>(mat, freedofs)
         , shift_(shift)
-        , height_(static_cast<sparsesolv::index_t>(mat->Height()))
-        , width_(static_cast<sparsesolv::index_t>(mat->Width()))
         , precond_(std::make_shared<sparsesolv::ILUPreconditioner<SCAL>>(shift))
     {}
 
-    /**
-     * @brief Update the preconditioner (recompute factorization)
-     */
     void Update() {
-        const auto& firsti = mat_->GetFirstArray();
-        const auto& colnr = mat_->GetColIndices();
-        const auto& values = mat_->GetValues();
-
-        const size_t nrows = firsti.Size();
-        const size_t nnz = colnr.Size();
-
-        // Convert row pointers (OpenMP parallel)
-        row_ptr_.resize(nrows);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
-            row_ptr_[i] = static_cast<sparsesolv::index_t>(firsti[i]);
-        }
-
-        // Convert column indices (OpenMP parallel)
-        col_idx_.resize(nnz);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nnz); ++i) {
-            col_idx_[i] = static_cast<sparsesolv::index_t>(colnr[i]);
-        }
-
-        // Create modified values array if freedofs is specified
-        // For constrained DOFs, set diagonal to 1 and off-diagonals to 0
-        // Also zero out column entries pointing to constrained DOFs
-        if (freedofs_) {
-            modified_values_.resize(values.Size());
-
-            // Copy values (OpenMP parallel)
-            #pragma omp parallel for schedule(static)
-            for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(values.Size()); ++i) {
-                modified_values_[i] = values[i];
-            }
-
-            // Modify matrix entries for constrained DOFs (OpenMP parallel by row)
-            #pragma omp parallel for schedule(dynamic, 64)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                for (sparsesolv::index_t k = row_ptr_[i]; k < row_ptr_[i + 1]; ++k) {
-                    sparsesolv::index_t j = col_idx_[k];
-                    if (!freedofs_->Test(i)) {
-                        // Constrained row: set to identity row
-                        if (j == i) {
-                            modified_values_[k] = SCAL(1);  // Diagonal = 1
-                        } else {
-                            modified_values_[k] = SCAL(0);  // Off-diagonal = 0
-                        }
-                    } else if (!freedofs_->Test(j)) {
-                        // Free row but column points to constrained DOF: zero it
-                        modified_values_[k] = SCAL(0);
-                    }
-                }
-            }
-
-            sparsesolv::SparseMatrixView<SCAL> view(
-                height_, width_,
-                row_ptr_.data(),
-                col_idx_.data(),
-                modified_values_.data()
-            );
-            precond_->setup(view);
-        } else {
-            sparsesolv::SparseMatrixView<SCAL> view(
-                height_, width_,
-                row_ptr_.data(),
-                col_idx_.data(),
-                values.Data()
-            );
-            precond_->setup(view);
-        }
-    }
-
-    /**
-     * @brief Apply preconditioner: y = M^{-1} * x
-     */
-    void Mult(const BaseVector& x, BaseVector& y) const override {
-        const SCAL* x_data = GetVectorData<SCAL>(x);
-        SCAL* y_data = GetVectorData<SCAL>(y);
-
-        if (freedofs_) {
-            // Apply preconditioner
-            precond_->apply(x_data, y_data, height_);
-
-            // Zero out constrained DOFs (OpenMP parallel)
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                if (!freedofs_->Test(i)) {
-                    y_data[i] = SCAL(0);
-                }
-            }
-        } else {
-            precond_->apply(x_data, y_data, height_);
-        }
-    }
-
-    void MultAdd(double s, const BaseVector& x, BaseVector& y) const override {
-        const SCAL* x_data = GetVectorData<SCAL>(x);
-        SCAL* y_data = GetVectorData<SCAL>(y);
-
-        std::vector<SCAL> temp(height_);
-        precond_->apply(x_data, temp.data(), height_);
-
-        if (freedofs_) {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                if (freedofs_->Test(i)) {
-                    y_data[i] += s * temp[i];
-                }
-            }
-        } else {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
-                y_data[i] += s * temp[i];
-            }
-        }
-    }
-
-    int VHeight() const override { return static_cast<int>(height_); }
-    int VWidth() const override { return static_cast<int>(width_); }
-
-    AutoVector CreateRowVector() const override {
-        return mat_->CreateRowVector();
-    }
-
-    AutoVector CreateColVector() const override {
-        return mat_->CreateColVector();
+        auto view = this->prepare_matrix_view();
+        precond_->setup(view);
     }
 
     double GetShift() const { return shift_; }
@@ -583,17 +336,14 @@ public:
         precond_->set_shift_parameter(shift);
     }
 
-private:
-    shared_ptr<SparseMatrix<SCAL>> mat_;
-    shared_ptr<BitArray> freedofs_;
-    double shift_;
-    sparsesolv::index_t height_;
-    sparsesolv::index_t width_;
-    shared_ptr<sparsesolv::ILUPreconditioner<SCAL>> precond_;
+protected:
+    void apply_precond(const SCAL* x, SCAL* y) const override {
+        precond_->apply(x, y, this->height_);
+    }
 
-    std::vector<sparsesolv::index_t> row_ptr_;
-    std::vector<sparsesolv::index_t> col_idx_;
-    std::vector<SCAL> modified_values_;
+private:
+    double shift_;
+    shared_ptr<sparsesolv::ILUPreconditioner<SCAL>> precond_;
 };
 
 // Type aliases for convenience
@@ -836,6 +586,21 @@ public:
     void SetAutoShift(bool enable) { config_.auto_shift = enable; }
     bool GetDiagonalScaling() const { return config_.diagonal_scaling; }
     void SetDiagonalScaling(bool enable) { config_.diagonal_scaling = enable; }
+
+    // Divergence detection
+    bool GetDivergenceCheck() const {
+        return config_.divergence_check == sparsesolv::DivergenceCheck::StagnationCount;
+    }
+    void SetDivergenceCheck(bool enable) {
+        config_.divergence_check = enable
+            ? sparsesolv::DivergenceCheck::StagnationCount
+            : sparsesolv::DivergenceCheck::None;
+    }
+    double GetDivergenceThreshold() const { return config_.divergence_threshold; }
+    void SetDivergenceThreshold(double threshold) { config_.divergence_threshold = threshold; }
+    int GetDivergenceCount() const { return config_.divergence_count; }
+    void SetDivergenceCount(int count) { config_.divergence_count = count; }
+
     const SparseSolvResult& GetLastResult() const { return last_result_; }
 
 private:

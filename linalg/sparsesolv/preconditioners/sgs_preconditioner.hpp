@@ -7,6 +7,7 @@
 #define SPARSESOLV_PRECONDITIONERS_SGS_PRECONDITIONER_HPP
 
 #include "../core/preconditioner.hpp"
+#include "../core/constants.hpp"
 #include <algorithm>
 #include <cmath>
 
@@ -90,12 +91,16 @@ public:
         #pragma omp parallel for schedule(static)
         for (index_t i = 0; i < n; ++i) {
             Scalar d = A.diagonal(i);
-            if (std::abs(d) > 1e-15) {
+            if (std::abs(d) > constants::MIN_DIAGONAL_TOLERANCE) {
                 inv_diag_[i] = Scalar(1) / d;
             } else {
                 inv_diag_[i] = Scalar(1);
             }
         }
+
+        // Pre-allocate work vectors for apply()
+        temp_.resize(size_);
+        scaled_.resize(size_);
 
         this->is_setup_ = true;
     }
@@ -116,25 +121,21 @@ public:
             throw std::runtime_error("SGSPreconditioner::apply called before setup");
         }
 
-        // Allocate temporary vectors for this call (thread-safe)
-        std::vector<Scalar> temp(size_);
-        std::vector<Scalar> scaled(size_);
-
         // Step 1: Forward Gauss-Seidel sweep (sequential - data dependency)
         // Solve (D + L) * temp = x  =>  temp = (D + L)^{-1} * x
-        forward_sweep(x, temp.data());
+        forward_sweep(x, temp_.data());
 
         // Step 2: Diagonal scaling (OpenMP parallel - no data dependency)
         // scaled = D * temp
         #pragma omp parallel for schedule(static)
         for (index_t i = 0; i < size_; ++i) {
             // inv_diag_[i] = 1/D[i,i], so D[i,i] = 1/inv_diag_[i]
-            scaled[i] = temp[i] / inv_diag_[i];
+            scaled_[i] = temp_[i] / inv_diag_[i];
         }
 
         // Step 3: Backward Gauss-Seidel sweep (sequential - data dependency)
         // Solve (D + U) * y = scaled  =>  y = (D + U)^{-1} * D * (D + L)^{-1} * x
-        backward_sweep(scaled.data(), y);
+        backward_sweep(scaled_.data(), y);
     }
 
     std::string name() const override { return "SGS"; }
@@ -148,6 +149,10 @@ private:
     std::vector<Scalar> values_;
 
     std::vector<Scalar> inv_diag_;
+
+    // Mutable work vectors (allocated once in setup, reused in apply)
+    mutable std::vector<Scalar> temp_;
+    mutable std::vector<Scalar> scaled_;
 
     /**
      * @brief Forward Gauss-Seidel sweep: solve (D + L) * y = x

@@ -7,6 +7,7 @@
 #define SPARSESOLV_SOLVERS_MRTR_SOLVER_HPP
 
 #include "iterative_solver.hpp"
+#include "../core/constants.hpp"
 
 namespace sparsesolv {
 
@@ -103,7 +104,7 @@ protected:
             if (iter == 0) {
                 // First iteration: simplified formulas
                 // zeta_0 = (w, r) / (v, w)
-                if (std::abs(v_w) < 1e-30) {
+                if (std::abs(v_w) < constants::BREAKDOWN_THRESHOLD) {
                     // Numerical breakdown - check if already converged
                     double norm_r = this->compute_norm(r.data(), n);
                     if (this->check_convergence(norm_r, iter)) {
@@ -120,14 +121,14 @@ protected:
 
                 // Denominator for zeta and eta
                 Scalar denom = nu * v_w - w_y * w_y;
-                if (std::abs(denom) < 1e-60) {
+                if (std::abs(denom) < constants::DENOMINATOR_BREAKDOWN) {
                     // Numerical breakdown - check if already converged
                     double norm_r = this->compute_norm(r.data(), n);
                     if (this->check_convergence(norm_r, iter)) {
                         return this->build_result(true, iter + 1, norm_r);
                     }
                     // Regularize denominator (like SGS-MRTR) to allow continuation
-                    denom = (std::real(denom) >= 0 ? Scalar(1e-60) : Scalar(-1e-60));
+                    denom = (std::real(denom) >= 0 ? Scalar(constants::DENOMINATOR_BREAKDOWN) : Scalar(-constants::DENOMINATOR_BREAKDOWN));
                 }
 
                 Scalar inv_denom = Scalar(1) / denom;

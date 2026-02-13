@@ -49,6 +49,7 @@
 
 // Core components
 #include "core/types.hpp"
+#include "core/constants.hpp"
 #include "core/solver_config.hpp"
 #include "core/sparse_matrix_view.hpp"
 #include "core/preconditioner.hpp"
