@@ -97,11 +97,10 @@ protected:
 
             // x = x + alpha * p
             // r = r - alpha * Ap
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i) {
+            parallel_for(n, [&](index_t i) {
                 x[i] += alpha * p[i];
                 r[i] -= alpha * Ap[i];
-            }
+            });
 
             // Compute residual norm
             double norm_r = this->compute_norm(r.data(), n);
@@ -125,10 +124,9 @@ protected:
             rz_old = rz_new;
 
             // p = z + beta * p
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i) {
+            parallel_for(n, [&](index_t i) {
                 p[i] = z[i] + beta * p[i];
-            }
+            });
         }
 
         // Max iterations reached

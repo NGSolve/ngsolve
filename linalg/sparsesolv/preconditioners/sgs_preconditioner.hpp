@@ -8,12 +8,9 @@
 
 #include "../core/preconditioner.hpp"
 #include "../core/constants.hpp"
+#include "../core/level_schedule.hpp"
 #include <algorithm>
 #include <cmath>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace sparsesolv {
 
@@ -70,33 +67,34 @@ public:
         col_idx_.resize(nnz);
         values_.resize(nnz);
 
-        // Copy row pointers (OpenMP parallel)
+        // Copy row pointers
         const index_t* src_rp = A.row_ptr();
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i <= n; ++i) {
+        parallel_for(n + 1, [&](index_t i) {
             row_ptr_[i] = src_rp[i];
-        }
+        });
 
-        // Copy column indices and values (OpenMP parallel)
+        // Copy column indices and values
         const index_t* src_ci = A.col_idx();
         const Scalar* src_v = A.values();
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i < nnz; ++i) {
+        parallel_for(nnz, [&](index_t i) {
             col_idx_[i] = src_ci[i];
             values_[i] = src_v[i];
-        }
+        });
 
-        // Extract and invert diagonal (OpenMP parallel)
+        // Extract and invert diagonal
         inv_diag_.resize(n);
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i < n; ++i) {
+        parallel_for(n, [&](index_t i) {
             Scalar d = A.diagonal(i);
             if (std::abs(d) > constants::MIN_DIAGONAL_TOLERANCE) {
                 inv_diag_[i] = Scalar(1) / d;
             } else {
                 inv_diag_[i] = Scalar(1);
             }
-        }
+        });
+
+        // Build level schedules for parallel triangular solves
+        fwd_schedule_.build_from_lower(row_ptr_.data(), col_idx_.data(), n);
+        bwd_schedule_.build_from_upper(row_ptr_.data(), col_idx_.data(), n);
 
         // Pre-allocate work vectors for apply()
         temp_.resize(size_);
@@ -125,13 +123,12 @@ public:
         // Solve (D + L) * temp = x  =>  temp = (D + L)^{-1} * x
         forward_sweep(x, temp_.data());
 
-        // Step 2: Diagonal scaling (OpenMP parallel - no data dependency)
+        // Step 2: Diagonal scaling (no data dependency)
         // scaled = D * temp
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i < size_; ++i) {
+        parallel_for(size_, [&](index_t i) {
             // inv_diag_[i] = 1/D[i,i], so D[i,i] = 1/inv_diag_[i]
             scaled_[i] = temp_[i] / inv_diag_[i];
-        }
+        });
 
         // Step 3: Backward Gauss-Seidel sweep (sequential - data dependency)
         // Solve (D + U) * y = scaled  =>  y = (D + U)^{-1} * D * (D + L)^{-1} * x
@@ -150,6 +147,10 @@ private:
 
     std::vector<Scalar> inv_diag_;
 
+    // Level schedules for parallel triangular solves
+    LevelSchedule fwd_schedule_;     // For forward sweep
+    LevelSchedule bwd_schedule_;     // For backward sweep
+
     // Mutable work vectors (allocated once in setup, reused in apply)
     mutable std::vector<Scalar> temp_;
     mutable std::vector<Scalar> scaled_;
@@ -157,46 +158,52 @@ private:
     /**
      * @brief Forward Gauss-Seidel sweep: solve (D + L) * y = x
      *
-     * For i = 0, 1, ..., n-1:
-     *   y[i] = (x[i] - sum_{j<i} A[i,j] * y[j]) / A[i,i]
+     * Uses level scheduling for parallelism.
      */
     void forward_sweep(const Scalar* x, Scalar* y) const {
         const index_t* rp = row_ptr_.data();
         const index_t* ci = col_idx_.data();
         const Scalar* v = values_.data();
 
-        for (index_t i = 0; i < size_; ++i) {
-            Scalar sum = x[i];
-            for (index_t k = rp[i]; k < rp[i + 1]; ++k) {
-                index_t j = ci[k];
-                if (j < i) {
-                    sum -= v[k] * y[j];
+        for (const auto& level : fwd_schedule_.levels) {
+            const index_t level_size = static_cast<index_t>(level.size());
+            parallel_for(level_size, [&](index_t idx) {
+                const index_t i = level[idx];
+                Scalar sum = x[i];
+                for (index_t k = rp[i]; k < rp[i + 1]; ++k) {
+                    index_t j = ci[k];
+                    if (j < i) {
+                        sum -= v[k] * y[j];
+                    }
                 }
-            }
-            y[i] = sum * inv_diag_[i];
+                y[i] = sum * inv_diag_[i];
+            });
         }
     }
 
     /**
      * @brief Backward Gauss-Seidel sweep: solve (D + U) * y = x
      *
-     * For i = n-1, n-2, ..., 0:
-     *   y[i] = (x[i] - sum_{j>i} A[i,j] * y[j]) / A[i,i]
+     * Uses level scheduling for parallelism.
      */
     void backward_sweep(const Scalar* x, Scalar* y) const {
         const index_t* rp = row_ptr_.data();
         const index_t* ci = col_idx_.data();
         const Scalar* v = values_.data();
 
-        for (index_t i = size_; i-- > 0;) {
-            Scalar sum = x[i];
-            for (index_t k = rp[i]; k < rp[i + 1]; ++k) {
-                index_t j = ci[k];
-                if (j > i) {
-                    sum -= v[k] * y[j];
+        for (const auto& level : bwd_schedule_.levels) {
+            const index_t level_size = static_cast<index_t>(level.size());
+            parallel_for(level_size, [&](index_t idx) {
+                const index_t i = level[idx];
+                Scalar sum = x[i];
+                for (index_t k = rp[i]; k < rp[i + 1]; ++k) {
+                    index_t j = ci[k];
+                    if (j > i) {
+                        sum -= v[k] * y[j];
+                    }
                 }
-            }
-            y[i] = sum * inv_diag_[i];
+                y[i] = sum * inv_diag_[i];
+            });
         }
     }
 };

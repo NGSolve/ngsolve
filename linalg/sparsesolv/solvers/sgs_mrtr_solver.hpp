@@ -17,6 +17,7 @@
 
 #include "iterative_solver.hpp"
 #include "../core/constants.hpp"
+#include "../core/level_schedule.hpp"
 #include <vector>
 #include <cmath>
 #include <algorithm>
@@ -79,8 +80,7 @@ protected:
         x_orig_ = this->x_;
 
         // Extract diagonal scaling: D[i] = 1/sqrt(|A[i,i]|)
-        #pragma omp parallel for
-        for (index_t i = 0; i < n; ++i) {
+        parallel_for(n, [&](index_t i) {
             Scalar aii = this->A_->diagonal(i);
             if (std::abs(aii) > constants::MIN_DIAGONAL_TOLERANCE) {
                 D_[i] = Scalar(1) / std::sqrt(std::abs(aii));
@@ -89,26 +89,26 @@ protected:
                 D_[i] = Scalar(1);
                 inv_D_[i] = Scalar(1);
             }
-        }
+        });
 
         // Scaled RHS: b2 = D * b
-        #pragma omp parallel for
-        for (index_t i = 0; i < n; ++i)
+        parallel_for(n, [&](index_t i) {
             b2_[i] = D_[i] * this->b_[i];
+        });
 
         // Scaled initial guess: x2 = inv_D * x
-        #pragma omp parallel for
-        for (index_t i = 0; i < n; ++i)
+        parallel_for(n, [&](index_t i) {
             x2_[i] = inv_D_[i] * x_orig_[i];
+        });
 
         // Build L (lower tri of DAD) and L^T
         build_L_and_Lt();
 
         // Compute initial residual in scaled space: r = D*(b - A*x)
         this->A_->multiply(x_orig_, temp_.data());
-        #pragma omp parallel for
-        for (index_t i = 0; i < n; ++i)
+        parallel_for(n, [&](index_t i) {
             this->r_[i] = D_[i] * (this->b_[i] - temp_[i]);
+        });
 
         // Normalizer: ||L * b2||
         multiply_L(b2_.data(), temp_.data());
@@ -136,9 +136,9 @@ protected:
         forward_solve(this->r_.data(), rd_.data());
 
         // y_0 = -rd
-        #pragma omp parallel for
-        for (index_t i = 0; i < n; ++i)
+        parallel_for(n, [&](index_t i) {
             y_[i] = -rd_[i];
+        });
 
         // Initialize p to zero
         std::fill(this->p_.begin(), this->p_.end(), Scalar(0));
@@ -165,13 +165,13 @@ protected:
             backward_solve(rd_.data(), u_.data());
 
             // ARd = u + L^{-1} * (rd - u)
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i)
+            parallel_for(n, [&](index_t i) {
                 temp_[i] = rd_[i] - u_[i];
+            });
             forward_solve(temp_.data(), Ard_.data());
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i)
+            parallel_for(n, [&](index_t i) {
                 Ard_[i] += u_[i];
+            });
 
             // Compute inner products
             Scalar Ar_r = this->dot_product(Ard_.data(), rd_.data(), n);
@@ -200,25 +200,25 @@ protected:
 
             // p = u + (eta * zeta_old / zeta) * p
             Scalar coeff = eta * zeta_old / zeta;
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i)
+            parallel_for(n, [&](index_t i) {
                 this->p_[i] = u_[i] + coeff * this->p_[i];
+            });
             zeta_old = zeta;
 
             // x2 = x2 + zeta * p (x_ points to x2_)
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i)
+            parallel_for(n, [&](index_t i) {
                 this->x_[i] += zeta * this->p_[i];
+            });
 
             // y = eta * y + zeta * ARd
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i)
+            parallel_for(n, [&](index_t i) {
                 y_[i] = eta * y_[i] + zeta * Ard_[i];
+            });
 
             // rd = rd - y
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i)
+            parallel_for(n, [&](index_t i) {
                 rd_[i] -= y_[i];
+            });
 
             // Convergence check (base class handles history, best-result, divergence)
             norm_r = this->compute_norm(rd_.data(), n);
@@ -266,6 +266,10 @@ private:
     std::vector<index_t> Lt_col_idx_;
     std::vector<Scalar> Lt_values_;
 
+    // Level schedules for parallel triangular solves
+    LevelSchedule fwd_schedule_;     // For forward solve (L)
+    LevelSchedule bwd_schedule_;     // For backward solve (L^T)
+
     /**
      * @brief Convert scaled solution x2_ back to original space x
      *
@@ -274,9 +278,9 @@ private:
      * After that, we convert x2_ → x_orig_ via x = D * x2.
      */
     void convert_x2_to_x() {
-        #pragma omp parallel for
-        for (index_t i = 0; i < this->size_; ++i)
+        parallel_for(this->size_, [&](index_t i) {
             x_orig_[i] = D_[i] * x2_[i];
+        });
     }
 
     /**
@@ -324,31 +328,47 @@ private:
                 counter[j]++;
             }
         }
+
+        // Build level schedules for parallel triangular solves
+        fwd_schedule_.build_from_lower(L_row_ptr_.data(), L_col_idx_.data(), n);
+        bwd_schedule_.build_from_upper(Lt_row_ptr_.data(), Lt_col_idx_.data(), n);
     }
 
     /**
      * @brief Forward solve: L * y = rhs  →  y = L^{-1} * rhs
+     *
+     * Uses level scheduling for parallelism.
      */
     void forward_solve(const Scalar* rhs, Scalar* y) const {
-        for (index_t i = 0; i < this->size_; ++i) {
-            Scalar s = rhs[i];
-            const index_t row_end = L_row_ptr_[i + 1] - 1; // Exclude diagonal
-            for (index_t k = L_row_ptr_[i]; k < row_end; ++k)
-                s -= L_values_[k] * y[L_col_idx_[k]];
-            y[i] = s / L_values_[row_end]; // Divide by diagonal
+        for (const auto& level : fwd_schedule_.levels) {
+            const index_t level_size = static_cast<index_t>(level.size());
+            parallel_for(level_size, [&](index_t idx) {
+                const index_t i = level[idx];
+                Scalar s = rhs[i];
+                const index_t row_end = L_row_ptr_[i + 1] - 1; // Exclude diagonal
+                for (index_t k = L_row_ptr_[i]; k < row_end; ++k)
+                    s -= L_values_[k] * y[L_col_idx_[k]];
+                y[i] = s / L_values_[row_end]; // Divide by diagonal
+            });
         }
     }
 
     /**
      * @brief Backward solve: L^T * y = rhs  →  y = L^{-T} * rhs
+     *
+     * Uses level scheduling for parallelism.
      */
     void backward_solve(const Scalar* rhs, Scalar* y) const {
-        for (index_t i = this->size_; i-- > 0;) {
-            Scalar s = rhs[i];
-            const index_t row_end = Lt_row_ptr_[i + 1];
-            for (index_t k = Lt_row_ptr_[i] + 1; k < row_end; ++k)
-                s -= Lt_values_[k] * y[Lt_col_idx_[k]];
-            y[i] = s / Lt_values_[Lt_row_ptr_[i]]; // Divide by diagonal
+        for (const auto& level : bwd_schedule_.levels) {
+            const index_t level_size = static_cast<index_t>(level.size());
+            parallel_for(level_size, [&](index_t idx) {
+                const index_t i = level[idx];
+                Scalar s = rhs[i];
+                const index_t row_end = Lt_row_ptr_[i + 1];
+                for (index_t k = Lt_row_ptr_[i] + 1; k < row_end; ++k)
+                    s -= Lt_values_[k] * y[Lt_col_idx_[k]];
+                y[i] = s / Lt_values_[Lt_row_ptr_[i]]; // Divide by diagonal
+            });
         }
     }
 
@@ -356,13 +376,12 @@ private:
      * @brief Matrix-vector multiplication: y = L * x
      */
     void multiply_L(const Scalar* x, Scalar* y) const {
-        #pragma omp parallel for
-        for (index_t i = 0; i < this->size_; ++i) {
+        parallel_for(this->size_, [&](index_t i) {
             Scalar s = Scalar(0);
             for (index_t k = L_row_ptr_[i]; k < L_row_ptr_[i + 1]; ++k)
                 s += L_values_[k] * x[L_col_idx_[k]];
             y[i] = s;
-        }
+        });
     }
 };
 

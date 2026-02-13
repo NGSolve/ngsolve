@@ -145,29 +145,25 @@ protected:
 
             // p_k = u + (eta * zeta_old / zeta) * p
             Scalar coeff = eta * zeta_old / zeta;
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i) {
+            parallel_for(n, [&](index_t i) {
                 p[i] = u_[i] + coeff * p[i];
-            }
+            });
             zeta_old = zeta;
 
             // x_{k+1} = x_k + zeta * p
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i) {
+            parallel_for(n, [&](index_t i) {
                 x[i] += zeta * p[i];
-            }
+            });
 
             // y_{k+1} = eta * y + zeta * v
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i) {
+            parallel_for(n, [&](index_t i) {
                 y_[i] = eta * y_[i] + zeta * v_[i];
-            }
+            });
 
             // r_{k+1} = r_k - y_{k+1}
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i) {
+            parallel_for(n, [&](index_t i) {
                 r[i] -= y_[i];
-            }
+            });
 
             // Compute residual norm
             double norm_r = this->compute_norm(r.data(), n);
@@ -183,16 +179,14 @@ protected:
             }
 
             // z_{k+1} = eta * z + zeta * w
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i) {
+            parallel_for(n, [&](index_t i) {
                 z[i] = eta * z[i] + zeta * w_[i];
-            }
+            });
 
             // u_{k+1} = u_k - z_{k+1}
-            #pragma omp parallel for
-            for (index_t i = 0; i < n; ++i) {
+            parallel_for(n, [&](index_t i) {
                 u_[i] -= z[i];
-            }
+            });
         }
 
         // Max iterations reached

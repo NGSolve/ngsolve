@@ -8,15 +8,12 @@
 
 #include "../core/preconditioner.hpp"
 #include "../core/solver_config.hpp"
+#include "../core/level_schedule.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <iostream>
 #include <unordered_map>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace sparsesolv {
 
@@ -78,6 +75,11 @@ public:
         // Compute ILU factorization
         compute_ilu_factorization();
 
+        // Build level schedules for parallel triangular solves
+        // L and U share the same CSR; the schedule builders filter by j < i / j > i
+        fwd_schedule_.build_from_lower(row_ptr_.data(), col_idx_.data(), n);
+        bwd_schedule_.build_from_upper(row_ptr_.data(), col_idx_.data(), n);
+
         this->is_setup_ = true;
     }
 
@@ -127,6 +129,10 @@ private:
     std::vector<Scalar> values_;    // Modified to contain L\U factors
     std::vector<index_t> diag_ptr_; // Pointer to diagonal element in each row
 
+    // Level schedules for parallel triangular solves
+    LevelSchedule fwd_schedule_;     // For forward substitution (L)
+    LevelSchedule bwd_schedule_;     // For backward substitution (U)
+
     /**
      * @brief Copy matrix data for in-place factorization
      */
@@ -139,18 +145,16 @@ private:
         values_.resize(nnz);
         diag_ptr_.resize(n);
 
-        // Copy row pointers (OpenMP parallel)
+        // Copy row pointers
         const index_t* src_rp = A.row_ptr();
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i <= n; ++i) {
+        parallel_for(n + 1, [&](index_t i) {
             row_ptr_[i] = src_rp[i];
-        }
+        });
 
-        // Copy column indices and values, find diagonal positions (OpenMP parallel)
+        // Copy column indices and values, find diagonal positions
         const index_t* src_ci = A.col_idx();
         const Scalar* src_v = A.values();
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i < n; ++i) {
+        parallel_for(n, [&](index_t i) {
             index_t diag_pos = row_ptr_[i]; // Default to start of row
             for (index_t k = row_ptr_[i]; k < row_ptr_[i + 1]; ++k) {
                 col_idx_[k] = src_ci[k];
@@ -160,7 +164,7 @@ private:
                 }
             }
             diag_ptr_[i] = diag_pos;
-        }
+        });
     }
 
     /**
@@ -175,10 +179,9 @@ private:
         const index_t n = size_;
 
         // Apply shift to diagonal
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i < n; ++i) {
+        parallel_for(n, [&](index_t i) {
             values_[diag_ptr_[i]] *= static_cast<Scalar>(shift_parameter_);
-        }
+        });
 
         // Create a hash map for fast column lookup (per-row)
         // This is sequential due to data dependencies in ILU factorization
@@ -223,39 +226,49 @@ private:
 
     /**
      * @brief Forward substitution: solve L * z = x
-     * L has unit diagonal (implicit)
+     * L has unit diagonal (implicit).
+     * Uses level scheduling for parallelism.
      */
     void forward_substitution(const Scalar* x, Scalar* z) const {
-        for (index_t i = 0; i < size_; ++i) {
-            Scalar s = x[i];
-            const index_t row_start = row_ptr_[i];
-            const index_t diag_pos = diag_ptr_[i];
+        for (const auto& level : fwd_schedule_.levels) {
+            const index_t level_size = static_cast<index_t>(level.size());
+            parallel_for(level_size, [&](index_t idx) {
+                const index_t i = level[idx];
+                Scalar s = x[i];
+                const index_t row_start = row_ptr_[i];
+                const index_t diag_pos = diag_ptr_[i];
 
-            // Sum over L(i,j) * z[j] for j < i
-            for (index_t k = row_start; k < diag_pos; ++k) {
-                s -= values_[k] * z[col_idx_[k]];
-            }
+                // Sum over L(i,j) * z[j] for j < i
+                for (index_t k = row_start; k < diag_pos; ++k) {
+                    s -= values_[k] * z[col_idx_[k]];
+                }
 
-            z[i] = s;  // L has unit diagonal
+                z[i] = s;  // L has unit diagonal
+            });
         }
     }
 
     /**
      * @brief Backward substitution: solve U * y = z
+     * Uses level scheduling for parallelism.
      */
     void backward_substitution(const Scalar* z, Scalar* y) const {
-        for (index_t i = size_; i-- > 0;) {
-            Scalar s = z[i];
-            const index_t diag_pos = diag_ptr_[i];
-            const index_t row_end = row_ptr_[i + 1];
+        for (const auto& level : bwd_schedule_.levels) {
+            const index_t level_size = static_cast<index_t>(level.size());
+            parallel_for(level_size, [&](index_t idx) {
+                const index_t i = level[idx];
+                Scalar s = z[i];
+                const index_t diag_pos = diag_ptr_[i];
+                const index_t row_end = row_ptr_[i + 1];
 
-            // Sum over U(i,j) * y[j] for j > i
-            for (index_t k = diag_pos + 1; k < row_end; ++k) {
-                s -= values_[k] * y[col_idx_[k]];
-            }
+                // Sum over U(i,j) * y[j] for j > i
+                for (index_t k = diag_pos + 1; k < row_end; ++k) {
+                    s -= values_[k] * y[col_idx_[k]];
+                }
 
-            // Divide by diagonal
-            y[i] = s / values_[diag_pos];
+                // Divide by diagonal
+                y[i] = s / values_[diag_pos];
+            });
         }
     }
 };

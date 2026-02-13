@@ -17,10 +17,8 @@ add_library(ngla ${NGS_LIB_TYPE}
 target_include_directories(ngla PRIVATE ${UMFPACK_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 
-# Enable OpenMP for SparseSolv parallel loops
-if(MSVC)
-  target_compile_options(ngla PRIVATE /openmp)
-endif()
+# SparseSolv: use NGSolve TaskManager instead of OpenMP
+target_compile_definitions(ngla PRIVATE SPARSESOLV_USE_NGSOLVE_TASKMANAGER)
 
 if(UMFPACK_STATIC)
     # work-around for private linking of interface libraries

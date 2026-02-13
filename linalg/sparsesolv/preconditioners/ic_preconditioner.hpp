@@ -8,14 +8,11 @@
 
 #include "../core/preconditioner.hpp"
 #include "../core/solver_config.hpp"
+#include "../core/level_schedule.hpp"
 #include <algorithm>
 #include <cmath>
 #include <limits>
 #include <iostream>
-
-#ifdef _OPENMP
-#include <omp.h>
-#endif
 
 namespace sparsesolv {
 
@@ -108,6 +105,10 @@ public:
         // Compute transpose L^T
         compute_transpose();
 
+        // Build level schedules for parallel triangular solves
+        fwd_schedule_.build_from_lower(L_.row_ptr.data(), L_.col_idx.data(), n);
+        bwd_schedule_.build_from_upper(Lt_.row_ptr.data(), Lt_.col_idx.data(), n);
+
         this->is_setup_ = true;
     }
 
@@ -192,6 +193,10 @@ private:
     // Diagonal scaling
     std::vector<double> scaling_;    // scaling[i] = 1/sqrt(A[i,i])
 
+    // Level schedules for parallel triangular solves
+    LevelSchedule fwd_schedule_;     // For forward substitution (L)
+    LevelSchedule bwd_schedule_;     // For backward substitution (L^T)
+
     /**
      * @brief Extract lower triangular part from matrix A
      */
@@ -200,10 +205,9 @@ private:
         L_.rows = L_.cols = n;
         L_.row_ptr.resize(n + 1);
 
-        // First pass: count non-zeros per row in lower triangle (OpenMP parallel)
+        // First pass: count non-zeros per row in lower triangle
         std::vector<index_t> counts(n);
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i < n; ++i) {
+        parallel_for(n, [&](index_t i) {
             auto [start, end] = A.row_range(i);
             index_t count = 0;
             for (index_t k = start; k < end; ++k) {
@@ -212,7 +216,7 @@ private:
                 }
             }
             counts[i] = count;
-        }
+        });
 
         // Prefix sum for row pointers (sequential)
         L_.row_ptr[0] = 0;
@@ -220,12 +224,11 @@ private:
             L_.row_ptr[i + 1] = L_.row_ptr[i] + counts[i];
         }
 
-        // Second pass: copy values (OpenMP parallel)
+        // Second pass: copy values
         L_.col_idx.resize(L_.row_ptr[n]);
         L_.values.resize(L_.row_ptr[n]);
 
-        #pragma omp parallel for schedule(static)
-        for (index_t i = 0; i < n; ++i) {
+        parallel_for(n, [&](index_t i) {
             auto [start, end] = A.row_range(i);
             index_t pos = L_.row_ptr[i];
             for (index_t k = start; k < end; ++k) {
@@ -236,7 +239,7 @@ private:
                     ++pos;
                 }
             }
-        }
+        });
     }
 
     /**
@@ -407,10 +410,7 @@ private:
         Lt_.values.resize(nnz);
 
         // Count entries per column of L (= per row of L^T)
-        // Using atomic increments for thread safety
-        #pragma omp parallel for schedule(static)
         for (index_t k = 0; k < nnz; ++k) {
-            #pragma omp atomic
             Lt_.row_ptr[L_.col_idx[k] + 1]++;
         }
 
@@ -434,37 +434,50 @@ private:
 
     /**
      * @brief Forward substitution: solve L * y = x
+     *
+     * Uses level scheduling for parallelism: rows at the same dependency
+     * level are independent and processed via parallel_for.
      */
     void forward_substitution(const Scalar* x, Scalar* y) const {
-        for (index_t i = 0; i < size_; ++i) {
-            Scalar s = x[i];
-            const index_t row_start = L_.row_ptr[i];
-            const index_t row_end = L_.row_ptr[i + 1] - 1; // Exclude diagonal
+        for (const auto& level : fwd_schedule_.levels) {
+            const index_t level_size = static_cast<index_t>(level.size());
+            parallel_for(level_size, [&](index_t idx) {
+                const index_t i = level[idx];
+                Scalar s = x[i];
+                const index_t row_start = L_.row_ptr[i];
+                const index_t row_end = L_.row_ptr[i + 1] - 1; // Exclude diagonal
 
-            for (index_t k = row_start; k < row_end; ++k) {
-                s -= L_.values[k] * y[L_.col_idx[k]];
-            }
+                for (index_t k = row_start; k < row_end; ++k) {
+                    s -= L_.values[k] * y[L_.col_idx[k]];
+                }
 
-            // Divide by diagonal element
-            y[i] = s / L_.values[row_end];
+                // Divide by diagonal element
+                y[i] = s / L_.values[row_end];
+            });
         }
     }
 
     /**
      * @brief Backward substitution: solve L^T * y = D^{-1} * x
+     *
+     * Uses level scheduling for parallelism.
      */
     void backward_substitution(const Scalar* x, Scalar* y) const {
-        for (index_t i = size_; i-- > 0;) {
-            Scalar s = Scalar(0);
-            const index_t row_start = Lt_.row_ptr[i] + 1; // Skip diagonal
-            const index_t row_end = Lt_.row_ptr[i + 1];
+        for (const auto& level : bwd_schedule_.levels) {
+            const index_t level_size = static_cast<index_t>(level.size());
+            parallel_for(level_size, [&](index_t idx) {
+                const index_t i = level[idx];
+                Scalar s = Scalar(0);
+                const index_t row_start = Lt_.row_ptr[i] + 1; // Skip diagonal
+                const index_t row_end = Lt_.row_ptr[i + 1];
 
-            for (index_t k = row_start; k < row_end; ++k) {
-                s -= Lt_.values[k] * y[Lt_.col_idx[k]];
-            }
+                for (index_t k = row_start; k < row_end; ++k) {
+                    s -= Lt_.values[k] * y[Lt_.col_idx[k]];
+                }
 
-            // Apply D^{-1} and add contribution from x
-            y[i] = s * inv_diag_[i] + x[i];
+                // Apply D^{-1} and add contribution from x
+                y[i] = s * inv_diag_[i] + x[i];
+            });
         }
     }
 };

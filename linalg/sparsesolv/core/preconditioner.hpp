@@ -8,6 +8,7 @@
 
 #include "types.hpp"
 #include "constants.hpp"
+#include "parallel.hpp"
 #include "sparse_matrix_view.hpp"
 #include <string>
 #include <memory>
@@ -132,10 +133,9 @@ public:
     }
 
     void apply(const Scalar* x, Scalar* y, index_t size) const override {
-        #pragma omp parallel for
-        for (index_t i = 0; i < size; ++i) {
+        parallel_for(size, [&](index_t i) {
             y[i] = inv_diag_[i] * x[i];
-        }
+        });
     }
 
     std::string name() const override { return "Jacobi"; }

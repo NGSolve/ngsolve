@@ -10,6 +10,7 @@
 #include "../core/solver_config.hpp"
 #include "../core/sparse_matrix_view.hpp"
 #include "../core/preconditioner.hpp"
+#include "../core/parallel.hpp"
 #include <cmath>
 #include <algorithm>
 #include <stdexcept>
@@ -136,10 +137,9 @@ protected:
 
         // Compute initial residual: r = b - A*x
         A_->multiply(x_, r_.data());
-        #pragma omp parallel for
-        for (index_t i = 0; i < size_; ++i) {
+        parallel_for(size_, [&](index_t i) {
             r_[i] = b_[i] - r_[i];
-        }
+        });
 
         // Compute norm of b for normalization
         norm_b_ = compute_norm(b_, size_);
@@ -261,35 +261,31 @@ protected:
      * @brief Compute Euclidean norm of a vector
      */
     static double compute_norm(const Scalar* v, index_t size) {
-        double sum = 0.0;
-        #pragma omp parallel for reduction(+:sum)
-        for (index_t i = 0; i < size; ++i) {
-            sum += std::norm(v[i]); // std::norm for complex gives |z|^2
-        }
+        double sum = parallel_reduce_sum<double>(size, [v](index_t i) {
+            return std::norm(v[i]); // std::norm for complex gives |z|^2
+        });
         return std::sqrt(sum);
     }
 
     /**
      * @brief Compute dot product of two vectors
      *
-     * For real types: standard dot product
+     * For real types: standard dot product with parallel reduction
      * For complex types: conjugate of first argument (Hermitian inner product)
+     *   Parallel when using TaskManager, serial with OpenMP (MSVC limitation)
      */
     static Scalar dot_product(const Scalar* a, const Scalar* b, index_t size) {
-        Scalar sum = Scalar(0);
         if constexpr (std::is_same_v<Scalar, complex_t>) {
-            // Complex: MSVC OpenMP doesn't support reduction on complex types
-            for (index_t i = 0; i < size; ++i) {
-                sum += std::conj(a[i]) * b[i];
-            }
+            // Complex: use parallel_reduce_sum (TaskManager supports complex,
+            // OpenMP/serial fallback is handled inside parallel_reduce_sum)
+            return parallel_reduce_sum<Scalar>(size, [a, b](index_t i) {
+                return std::conj(a[i]) * b[i];
+            });
         } else {
-            // Real: standard dot product with OpenMP reduction
-            #pragma omp parallel for reduction(+:sum)
-            for (index_t i = 0; i < size; ++i) {
-                sum += a[i] * b[i];
-            }
+            return parallel_reduce_sum<Scalar>(size, [a, b](index_t i) {
+                return a[i] * b[i];
+            });
         }
-        return sum;
     }
 
     // Configuration

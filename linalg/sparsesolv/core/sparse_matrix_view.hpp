@@ -7,6 +7,7 @@
 #define SPARSESOLV_CORE_SPARSE_MATRIX_VIEW_HPP
 
 #include "types.hpp"
+#include "parallel.hpp"
 #include <cassert>
 #include <stdexcept>
 
@@ -138,14 +139,13 @@ public:
      * @param y Output vector (size: rows)
      */
     void multiply(const Scalar* x, Scalar* y) const {
-        #pragma omp parallel for
-        for (index_t i = 0; i < rows_; ++i) {
+        parallel_for(rows_, [&](index_t i) {
             Scalar sum = Scalar(0);
             for (index_t k = row_ptr_[i]; k < row_ptr_[i + 1]; ++k) {
                 sum += values_[k] * x[col_idx_[k]];
             }
             y[i] = sum;
-        }
+        });
     }
 
     /**

@@ -36,10 +36,6 @@
 #include <basematrix.hpp>
 #include <sparsematrix.hpp>
 
-#ifdef _OPENMP
-#include <omp.h>
-#endif
-
 // SparseSolv headers
 #include "sparsesolv/sparsesolv.hpp"
 
@@ -119,28 +115,24 @@ protected:
 
         // Convert row pointers
         row_ptr_.resize(nrows);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
+        sparsesolv::parallel_for(static_cast<sparsesolv::index_t>(nrows), [&](sparsesolv::index_t i) {
             row_ptr_[i] = static_cast<sparsesolv::index_t>(firsti[i]);
-        }
+        });
 
         // Convert column indices
         col_idx_.resize(nnz);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nnz); ++i) {
+        sparsesolv::parallel_for(static_cast<sparsesolv::index_t>(nnz), [&](sparsesolv::index_t i) {
             col_idx_[i] = static_cast<sparsesolv::index_t>(colnr[i]);
-        }
+        });
 
         if (freedofs_) {
             modified_values_.resize(values.Size());
 
-            #pragma omp parallel for schedule(static)
-            for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(values.Size()); ++i) {
+            sparsesolv::parallel_for(static_cast<sparsesolv::index_t>(values.Size()), [&](sparsesolv::index_t i) {
                 modified_values_[i] = values[i];
-            }
+            });
 
-            #pragma omp parallel for schedule(dynamic, 64)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+            sparsesolv::parallel_for(height_, [&](sparsesolv::index_t i) {
                 for (sparsesolv::index_t k = row_ptr_[i]; k < row_ptr_[i + 1]; ++k) {
                     sparsesolv::index_t j = col_idx_[k];
                     if (!freedofs_->Test(i)) {
@@ -149,7 +141,7 @@ protected:
                         modified_values_[k] = SCAL(0);
                     }
                 }
-            }
+            });
 
             return sparsesolv::SparseMatrixView<SCAL>(
                 height_, width_,
@@ -178,12 +170,11 @@ public:
         apply_precond(x_data, y_data);
 
         if (freedofs_) {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+            sparsesolv::parallel_for(height_, [&](sparsesolv::index_t i) {
                 if (!freedofs_->Test(i)) {
                     y_data[i] = SCAL(0);
                 }
-            }
+            });
         }
     }
 
@@ -195,17 +186,15 @@ public:
         apply_precond(x_data, temp.data());
 
         if (freedofs_) {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+            sparsesolv::parallel_for(height_, [&](sparsesolv::index_t i) {
                 if (freedofs_->Test(i)) {
                     y_data[i] += s * temp[i];
                 }
-            }
+            });
         } else {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+            sparsesolv::parallel_for(height_, [&](sparsesolv::index_t i) {
                 y_data[i] += s * temp[i];
-            }
+            });
         }
     }
 
@@ -482,8 +471,7 @@ public:
         if (freedofs_) {
             b_mod.resize(height_);
             x_mod.resize(height_);
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+            sparsesolv::parallel_for(height_, [&](sparsesolv::index_t i) {
                 if (freedofs_->Test(i)) {
                     b_mod[i] = b[i];
                     x_mod[i] = x[i];
@@ -491,7 +479,7 @@ public:
                     b_mod[i] = SCAL(0);
                     x_mod[i] = SCAL(0);
                 }
-            }
+            });
             b_ptr = b_mod.data();
             x_ptr = x_mod.data();
         }
@@ -527,12 +515,11 @@ public:
 
         // Copy solution back (only free DOFs)
         if (freedofs_) {
-            #pragma omp parallel for schedule(static)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+            sparsesolv::parallel_for(height_, [&](sparsesolv::index_t i) {
                 if (freedofs_->Test(i)) {
                     x[i] = x_ptr[i];
                 }
-            }
+            });
         }
 
         // Print convergence info if requested
@@ -620,28 +607,24 @@ private:
 
         // Convert row pointers
         row_ptr_.resize(nrows);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nrows); ++i) {
+        sparsesolv::parallel_for(static_cast<sparsesolv::index_t>(nrows), [&](sparsesolv::index_t i) {
             row_ptr_[i] = static_cast<sparsesolv::index_t>(firsti[i]);
-        }
+        });
 
         // Convert column indices
         col_idx_.resize(nnz);
-        #pragma omp parallel for schedule(static)
-        for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(nnz); ++i) {
+        sparsesolv::parallel_for(static_cast<sparsesolv::index_t>(nnz), [&](sparsesolv::index_t i) {
             col_idx_[i] = static_cast<sparsesolv::index_t>(colnr[i]);
-        }
+        });
 
         if (freedofs_) {
             modified_values_.resize(values.Size());
 
-            #pragma omp parallel for schedule(static)
-            for (ptrdiff_t i = 0; i < static_cast<ptrdiff_t>(values.Size()); ++i) {
+            sparsesolv::parallel_for(static_cast<sparsesolv::index_t>(values.Size()), [&](sparsesolv::index_t i) {
                 modified_values_[i] = values[i];
-            }
+            });
 
-            #pragma omp parallel for schedule(dynamic, 64)
-            for (sparsesolv::index_t i = 0; i < height_; ++i) {
+            sparsesolv::parallel_for(height_, [&](sparsesolv::index_t i) {
                 for (sparsesolv::index_t k = row_ptr_[i]; k < row_ptr_[i + 1]; ++k) {
                     sparsesolv::index_t j = col_idx_[k];
                     if (!freedofs_->Test(i)) {
@@ -650,7 +633,7 @@ private:
                         modified_values_[k] = SCAL(0);
                     }
                 }
-            }
+            });
 
             return sparsesolv::SparseMatrixView<SCAL>(
                 height_, width_,
