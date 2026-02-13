@@ -79,6 +79,7 @@ protected:
         x_orig_ = this->x_;
 
         // Extract diagonal scaling: D[i] = 1/sqrt(|A[i,i]|)
+        #pragma omp parallel for
         for (index_t i = 0; i < n; ++i) {
             Scalar aii = this->A_->diagonal(i);
             if (std::abs(aii) > constants::MIN_DIAGONAL_TOLERANCE) {
@@ -91,10 +92,12 @@ protected:
         }
 
         // Scaled RHS: b2 = D * b
+        #pragma omp parallel for
         for (index_t i = 0; i < n; ++i)
             b2_[i] = D_[i] * this->b_[i];
 
         // Scaled initial guess: x2 = inv_D * x
+        #pragma omp parallel for
         for (index_t i = 0; i < n; ++i)
             x2_[i] = inv_D_[i] * x_orig_[i];
 
@@ -103,6 +106,7 @@ protected:
 
         // Compute initial residual in scaled space: r = D*(b - A*x)
         this->A_->multiply(x_orig_, temp_.data());
+        #pragma omp parallel for
         for (index_t i = 0; i < n; ++i)
             this->r_[i] = D_[i] * (this->b_[i] - temp_[i]);
 
@@ -132,6 +136,7 @@ protected:
         forward_solve(this->r_.data(), rd_.data());
 
         // y_0 = -rd
+        #pragma omp parallel for
         for (index_t i = 0; i < n; ++i)
             y_[i] = -rd_[i];
 
@@ -160,9 +165,11 @@ protected:
             backward_solve(rd_.data(), u_.data());
 
             // ARd = u + L^{-1} * (rd - u)
+            #pragma omp parallel for
             for (index_t i = 0; i < n; ++i)
                 temp_[i] = rd_[i] - u_[i];
             forward_solve(temp_.data(), Ard_.data());
+            #pragma omp parallel for
             for (index_t i = 0; i < n; ++i)
                 Ard_[i] += u_[i];
 
@@ -193,19 +200,23 @@ protected:
 
             // p = u + (eta * zeta_old / zeta) * p
             Scalar coeff = eta * zeta_old / zeta;
+            #pragma omp parallel for
             for (index_t i = 0; i < n; ++i)
                 this->p_[i] = u_[i] + coeff * this->p_[i];
             zeta_old = zeta;
 
             // x2 = x2 + zeta * p (x_ points to x2_)
+            #pragma omp parallel for
             for (index_t i = 0; i < n; ++i)
                 this->x_[i] += zeta * this->p_[i];
 
             // y = eta * y + zeta * ARd
+            #pragma omp parallel for
             for (index_t i = 0; i < n; ++i)
                 y_[i] = eta * y_[i] + zeta * Ard_[i];
 
             // rd = rd - y
+            #pragma omp parallel for
             for (index_t i = 0; i < n; ++i)
                 rd_[i] -= y_[i];
 
@@ -263,6 +274,7 @@ private:
      * After that, we convert x2_ → x_orig_ via x = D * x2.
      */
     void convert_x2_to_x() {
+        #pragma omp parallel for
         for (index_t i = 0; i < this->size_; ++i)
             x_orig_[i] = D_[i] * x2_[i];
     }
@@ -344,6 +356,7 @@ private:
      * @brief Matrix-vector multiplication: y = L * x
      */
     void multiply_L(const Scalar* x, Scalar* y) const {
+        #pragma omp parallel for
         for (index_t i = 0; i < this->size_; ++i) {
             Scalar s = Scalar(0);
             for (index_t k = L_row_ptr_[i]; k < L_row_ptr_[i + 1]; ++k)

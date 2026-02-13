@@ -136,6 +136,7 @@ protected:
 
         // Compute initial residual: r = b - A*x
         A_->multiply(x_, r_.data());
+        #pragma omp parallel for
         for (index_t i = 0; i < size_; ++i) {
             r_[i] = b_[i] - r_[i];
         }
@@ -261,6 +262,7 @@ protected:
      */
     static double compute_norm(const Scalar* v, index_t size) {
         double sum = 0.0;
+        #pragma omp parallel for reduction(+:sum)
         for (index_t i = 0; i < size; ++i) {
             sum += std::norm(v[i]); // std::norm for complex gives |z|^2
         }
@@ -276,12 +278,13 @@ protected:
     static Scalar dot_product(const Scalar* a, const Scalar* b, index_t size) {
         Scalar sum = Scalar(0);
         if constexpr (std::is_same_v<Scalar, complex_t>) {
-            // Complex: use conjugate for Hermitian inner product
+            // Complex: MSVC OpenMP doesn't support reduction on complex types
             for (index_t i = 0; i < size; ++i) {
                 sum += std::conj(a[i]) * b[i];
             }
         } else {
-            // Real: standard dot product
+            // Real: standard dot product with OpenMP reduction
+            #pragma omp parallel for reduction(+:sum)
             for (index_t i = 0; i < size; ++i) {
                 sum += a[i] * b[i];
             }

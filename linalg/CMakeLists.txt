@@ -17,6 +17,11 @@ add_library(ngla ${NGS_LIB_TYPE}
 target_include_directories(ngla PRIVATE ${UMFPACK_INCLUDE_DIR} ${NETGEN_PYTHON_INCLUDE_DIRS})
 target_compile_definitions(ngla PRIVATE ${NGSOLVE_COMPILE_DEFINITIONS_PRIVATE})
 
+# Enable OpenMP for SparseSolv parallel loops
+if(MSVC)
+  target_compile_options(ngla PRIVATE /openmp)
+endif()
+
 if(UMFPACK_STATIC)
     # work-around for private linking of interface libraries
     # see https://gitlab.kitware.com/cmake/cmake/-/issues/15415
