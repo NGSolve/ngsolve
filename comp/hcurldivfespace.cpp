@@ -877,6 +877,22 @@ namespace ngcomp
   {
     Ngs_Element ngel = ma->GetElement(ei);       
 
+    if(!DefinedOn(ngel))
+      {
+        switch(ma->GetElType(ei))
+          {
+          case ET_POINT: return *new (alloc) DummyFE<ET_POINT>;
+          case ET_SEGM:  return *new (alloc) DummyFE<ET_SEGM>;
+          case ET_TRIG:  return *new (alloc) DummyFE<ET_TRIG>;
+          case ET_QUAD:  return *new (alloc) DummyFE<ET_QUAD>;
+          case ET_TET:  return *new (alloc) DummyFE<ET_TET>;
+          case ET_PRISM:  return *new (alloc) DummyFE<ET_PRISM>;
+          case ET_PYRAMID:  return *new (alloc) DummyFE<ET_PYRAMID>;
+          case ET_HEX:  return *new (alloc) DummyFE<ET_HEX>;
+          case ET_HEXAMID:  return *new (alloc) DummyFE<ET_HEXAMID>;
+          }
+      }
+
     if (!ei.IsVolume())
     {
       if(!discontinuous)

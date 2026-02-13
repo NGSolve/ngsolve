@@ -310,22 +310,22 @@ public:
     : ProxyUserData (ntrial, 0, lh) { ; } 
   
   void AssignMemory (const ProxyFunction * proxy, size_t h, size_t w, LocalHeap & lh,
-      xbool complex=maybe)
+                     bool complex = false)
   {
     for (size_t i = 0; i < remember_first.Size(); i++)
       {
         if (remember_first[i] == nullptr)
           {
             remember_first[i] = proxy;
-            if (!complex.IsTrue())
-              {
-                new (&remember_second[i]) FlatMatrix<> (h, w, lh);
-                new (&remember_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
-              }
-            if (!complex.IsFalse())
+            if(complex)
               {
                 new (&remember_csecond[i]) FlatMatrix<Complex> (h, w, lh);
                 new (&remember_acsecond[i]) FlatMatrix<SIMD<Complex>> (w, (h+SIMD<Complex>::Size()-1)/SIMD<Complex>::Size(), lh);
+              }
+            else
+              {
+                new (&remember_second[i]) FlatMatrix<> (h, w, lh);
+                new (&remember_asecond[i]) FlatMatrix<SIMD<double>> (w, (h+SIMD<double>::Size()-1)/SIMD<double>::Size(), lh);
               }
             return;
           }
@@ -395,7 +395,7 @@ public:
           {
             remember_cf_first[i] = cf;
             new (&remember_cf_asecond[i]) FlatMatrix<SIMD<double>> (mat);
-            remember_cf_computed[i] = true;            
+            remember_cf_computed[i] = true;
             return;
           }
       }
