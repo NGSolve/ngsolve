@@ -342,6 +342,13 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("__mul__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<CoefficientFunction> test_proxy) {
       return BasePotentialOperatorAndTest (pot, test_proxy); //  { pot, dynamic_pointer_cast<ProxyFunction>(test_proxy) };
     })
+    .def("__rmul__", [](shared_ptr<BasePotentialOperator> pot, double fac) {
+      return SumOfPotentialOperators(Scalar(fac), pot); 
+    })
+    .def("__rmul__", [](shared_ptr<BasePotentialOperator> pot, Complex fac) {
+      return SumOfPotentialOperators(Scalar(fac), pot); 
+    })
+    
     .def("__call__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<GridFunction> gf) {
       return pot->MakePotentialCF(gf);
     })
@@ -354,6 +361,17 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return pottest.MakeIntegralOperator(dx); 
     })
     ;
+
+
+  py::class_<SumOfPotentialOperators> (m, "SumOfPotentialOperators")
+    .def(py::self+py::self)
+    .def("__call__", [](SumOfPotentialOperators sumpot, shared_ptr<GridFunction> gf,
+                        const Region & region)
+    {
+      return sumpot.MakePotentialCF(gf, region);
+    })
+    ;
+  
   
   m.def("LaplaceSL", [&](shared_ptr<SumOfIntegrals> potential, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");

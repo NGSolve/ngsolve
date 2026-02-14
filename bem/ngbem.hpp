@@ -401,7 +401,53 @@ namespace ngsbem
     }
   };  
 
+  class Scalar : public std::variant<double, Complex>
+  {
+  public:
+    using std::variant<double, Complex>::variant; 
+  };
+  
+  class SumOfPotentialOperators
+  {
+    Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> summands;
+  public:
+    SumOfPotentialOperators (Scalar fac, shared_ptr<BasePotentialOperator> op)
+    { summands += tuple(fac, op); }
+    SumOfPotentialOperators (Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> asummands)
+      : summands(asummands) { }
+    auto & Summands() const { return summands; }
+    
+    shared_ptr<CoefficientFunction> MakePotentialCF(shared_ptr<GridFunction> gf, const Region & region)
+    {
+      shared_ptr<CoefficientFunction> sum;
+      for (auto [scal, potop] : summands)
+        {
+          auto cf = potop -> MakePotentialCF(gf);
+          cf -> BuildLocalExpansion(region);
+          auto scalecf = (std::holds_alternative<double>(scal)) ? 
+            (std::get<double>(scal) * cf) : (std::get<Complex>(scal) * cf);
+             
+          if (sum)
+            sum = sum + scalecf;
+          else
+            sum = scalecf;
+        }
+      return sum;
+    }
 
+    
+  };
+
+  inline SumOfPotentialOperators operator+ (const SumOfPotentialOperators & sum1,
+                                            const SumOfPotentialOperators & sum2)
+    
+  {
+    Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> res{sum1.Summands()};
+    res += sum2.Summands();
+    return res;
+  }
+
+  
 
   inline Array < tuple <shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction>  >>
   CreateProxyLinearization (shared_ptr<CoefficientFunction> cf, bool trial)

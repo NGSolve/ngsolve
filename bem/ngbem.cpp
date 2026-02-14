@@ -1097,10 +1097,11 @@ namespace ngsbem
   void PotentialCF<KERNEL> :: T_Evaluate(const BaseMappedIntegrationRule & bmir,
                                          BareSliceMatrix<T> result) const
   {
-    
     if constexpr (std::is_same<typename KERNEL::value_type,T>())
       if (local_expansion)
         {
+          static Timer t("ngbem evaluate potential, local expansion (bmir)"); RegionTimer reg(t);
+        
           auto & mir = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);        
           for (int j = 0; j < mir.Size(); j++)
             kernel.EvaluateMP (*local_expansion, Vec<3>(mir[j].GetPoint()), Vec<3>(mir[j].GetNV()), make_BareSliceVector(result.Row(j)));
@@ -1118,7 +1119,7 @@ namespace ngsbem
     
     try
       {
-        static Timer t("ngbem evaluate potential (ip)"); RegionTimer reg(t);
+        static Timer t("ngbem evaluate potential (bmir)"); RegionTimer reg(t);
         LocalHeapMem<100000> lh("Potential::Eval");
         auto space = this->gf->GetFESpace();
         auto mesh = space->GetMeshAccess();
@@ -1181,7 +1182,7 @@ namespace ngsbem
   void PotentialCF<KERNEL> :: T_Evaluate(const SIMD_BaseMappedIntegrationRule & ir,
                                          BareSliceMatrix<SIMD<T>> result) const
   {
-    static Timer t("ngbem evaluate potential (ir-simd)"); RegionTimer reg(t);
+    static Timer t("ngbem evaluate potential (ir-simd), throwing"); RegionTimer reg(t);
     throw ExceptionNOSIMD ("PotentialCF::Evaluate (SIMD) not available");
     
     result.AddSize(Dimension(), ir.Size()) = SIMD<T>(0.0);
