@@ -446,7 +446,7 @@ namespace ngsbem
   {
     Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> res{sum1.Summands()};
     res += sum2.Summands();
-    return res;
+    return SumOfPotentialOperators(std::move(res));
   }
 
   
