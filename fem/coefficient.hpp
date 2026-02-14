@@ -1863,6 +1863,15 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (Complex v1, shared_ptr<CoefficientFunction> c2);
 
+  INLINE
+  shared_ptr<CoefficientFunction> operator* (std::variant<double, Complex> v1, shared_ptr<CoefficientFunction> c2)
+  {
+    if (std::holds_alternative<double>(v1))
+      return std::get<double>(v1) * c2;
+    else
+      return std::get<Complex>(v1) * c2;      
+  }
+
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1);
 

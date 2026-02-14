@@ -424,9 +424,11 @@ namespace ngsbem
         {
           auto cf = potop -> MakePotentialCF(gf);
           cf -> BuildLocalExpansion(region);
+          /*
           auto scalecf = (std::holds_alternative<double>(scal)) ? 
             (std::get<double>(scal) * cf) : (std::get<Complex>(scal) * cf);
-             
+          */
+          auto scalecf = scal*cf;
           if (sum)
             sum = sum + scalecf;
           else
