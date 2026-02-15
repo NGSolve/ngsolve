@@ -7464,7 +7464,7 @@ class RealImagCF : public CoefficientFunctionNoDerivative
     RealImagCF(shared_ptr<CoefficientFunction> _cf)
       : CoefficientFunctionNoDerivative(2*_cf->Dimension(),false), cf(_cf)
     {
-      if(cf->IsComplex())
+      if(!cf->IsComplex())
         throw Exception("RealImagCF only defined for complex CF");
       Array<int> dims { cf->Dimensions() };
       dims.Append(2);
