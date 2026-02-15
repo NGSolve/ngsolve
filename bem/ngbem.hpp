@@ -404,7 +404,14 @@ namespace ngsbem
   class Scalar : public std::variant<double, Complex>
   {
   public:
-    using std::variant<double, Complex>::variant; 
+    using std::variant<double, Complex>::variant;
+    Scalar operator- () {
+      if (std::holds_alternative<double>(*this))
+        return -std::get<double>(*this);
+      else
+        return -std::get<Complex>(*this);
+          
+    }
   };
   
   class SumOfPotentialOperators
@@ -424,10 +431,6 @@ namespace ngsbem
         {
           auto cf = potop -> MakePotentialCF(gf);
           cf -> BuildLocalExpansion(region);
-          /*
-          auto scalecf = (std::holds_alternative<double>(scal)) ? 
-            (std::get<double>(scal) * cf) : (std::get<Complex>(scal) * cf);
-          */
           auto scalecf = scal*cf;
           if (sum)
             sum = sum + scalecf;
@@ -449,6 +452,25 @@ namespace ngsbem
     return SumOfPotentialOperators(std::move(res));
   }
 
+  inline SumOfPotentialOperators operator- (const SumOfPotentialOperators & sum)
+  {
+    /*
+    Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> res{sum.Summands()};
+    for (auto [scal&,potop] : res)
+      scal = -scal;
+    */
+    Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> res;
+    for (auto [scal,potop] : sum.Summands())
+      res += tuple(-scal, potop);
+    return SumOfPotentialOperators(std::move(res));
+  }
+
+  inline SumOfPotentialOperators operator- (const SumOfPotentialOperators & sum1,
+                                            const SumOfPotentialOperators & sum2)
+  {
+    return sum1 + (-sum2);
+  }
+  
   
 
   inline Array < tuple <shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction>  >>

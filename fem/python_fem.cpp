@@ -1052,6 +1052,7 @@ cf : ngsolve.CoefficientFunction
           })
     .def_property_readonly ("real", [](shared_ptr<CF> coef) { return Real(coef); }, "real part of CF")
     .def_property_readonly ("imag", [](shared_ptr<CF> coef) { return Imag(coef); }, "imaginary part of CF")
+    .def_property_readonly ("realimag", [](shared_ptr<CF> coef) { return RealImag(coef); }, "real+imag part of CF as vector")
 
     .def ("Freeze", [] (shared_ptr<CF> coef)
           { return Freeze(coef); },

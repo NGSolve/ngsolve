@@ -7454,6 +7454,104 @@ class RealCF : public CoefficientFunctionNoDerivative
     }
   };
 
+
+
+class RealImagCF : public CoefficientFunctionNoDerivative
+  {
+    shared_ptr<CoefficientFunction> cf;
+  public:
+    RealImagCF() = default;
+    RealImagCF(shared_ptr<CoefficientFunction> _cf)
+      : CoefficientFunctionNoDerivative(2*_cf->Dimension(),false), cf(_cf)
+    {
+      if(cf->IsComplex())
+        throw Exception("RealImagCF only defined for complex CF");
+      Array<int> dims { cf->Dimensions() };
+      dims.Append(2);
+      SetDimensions( dims );
+    }
+
+    void DoArchive(Archive& ar) override
+    {
+      CoefficientFunctionNoDerivative::DoArchive(ar);
+      ar.Shallow(cf);
+    }
+
+    virtual string GetDescription() const override
+    {
+      return "RealImagCF";
+    }
+
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree (func);
+      func(*this);
+    }
+
+    void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+    {
+      for (int i = 0; i < Dimension(); i++)
+        {
+          code.body += Var(index,2*i,Dimensions()).Assign( string(Var(inputs[0],i,cf->Dimensions())) + ".real()");
+          code.body += Var(index,2*i+1,Dimensions()).Assign( string(Var(inputs[0],i,cf->Dimensions())) + ".imag()");
+        }
+    }
+    
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    { return Array<shared_ptr<CoefficientFunction>>({ cf }); }
+    
+    using CoefficientFunctionNoDerivative::Evaluate;
+
+    virtual double Evaluate(const BaseMappedIntegrationPoint& ip) const override
+    {
+      throw Exception("double eval doesn't make sense for RealImagCF");
+    }
+    
+    virtual void Evaluate(const BaseMappedIntegrationPoint& ip, FlatVector<> vec) const override
+    {
+      if(cf->IsComplex()) // for now: musst be complex anyway
+        {
+          /*
+          VectorMem<10,Complex> complex_vec(vec.Size());
+          cf->Evaluate(ip,complex_vec);
+          vec = Real(complex_vec);
+          */
+          FlatVector<Complex> complex_vec(vec.Size()/2, (Complex*)(void*)vec.Data());
+          cf->Evaluate(ip, complex_vec);
+        }
+      else
+        throw Exception("realimag only defined for complex input");
+        // cf->Evaluate(ip,vec);
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<double> values) const override
+    {
+      BareSliceMatrix<Complex,RowMajor> cvalues(values.Height(), values.Width(), values.Dist()/2, (Complex*)(void*)values.Data());
+      cf -> Evaluate (ir, cvalues);
+    }
+
+    /*
+    virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
+                           BareSliceMatrix<SIMD<double>> values) const override
+    {
+      // can use memory, but needs shuffling
+      
+      if (!cf_is_complex)
+        {
+          cf->Evaluate(ir, values);
+          return;
+        }
+
+      STACK_ARRAY(SIMD<Complex>, mem, ir.Size()*Dimension());
+      FlatMatrix<SIMD<Complex>> cvalues(Dimension(), ir.Size(), &mem[0]);
+      cf->Evaluate (ir, cvalues);
+      values.AddSize(Dimension(), ir.Size()) = Real(cvalues);
+    }
+    */
+  };
+
+
+
   shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf)
   {
     return make_shared<RealCF>(cf);
@@ -7461,6 +7559,10 @@ class RealCF : public CoefficientFunctionNoDerivative
   shared_ptr<CoefficientFunction> Imag(shared_ptr<CoefficientFunction> cf)
   {
     return make_shared<ImagCF>(cf);
+  }
+  shared_ptr<CoefficientFunction> RealImag(shared_ptr<CoefficientFunction> cf)
+  {
+    return make_shared<RealImagCF>(cf);
   }
 
   shared_ptr<CompiledCoefficientFunctionInterface> Compile (shared_ptr<CoefficientFunction> c, bool realcompile, int maxderiv, bool wait, bool keep_files)

@@ -2649,7 +2649,7 @@ namespace ngcomp
             // if (has_element_wise)
             if (elementwise_skeleton_parts.Size())
               {
-                int cnt = 0;
+                // int cnt = 0;
                 int ne = ma->GetNE(VOL);
                 ParallelForRange
                   (IntRange(ne), [&] ( IntRange r )

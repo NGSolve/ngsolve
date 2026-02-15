@@ -1968,6 +1968,8 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> Real(shared_ptr<CoefficientFunction> cf);
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Imag(shared_ptr<CoefficientFunction> cf);
+  NGS_DLL_HEADER
+  shared_ptr<CoefficientFunction> RealImag(shared_ptr<CoefficientFunction> cf);
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> Freeze (shared_ptr<CoefficientFunction> cf);
