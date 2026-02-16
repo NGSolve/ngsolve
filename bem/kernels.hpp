@@ -77,11 +77,11 @@ namespace ngsbem
 
   /** HelmholtzDLkernel is the kernel for the double layer potential of
       the Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,.$ */
-  template <int DIM, typename T_Kappa=double> class HelmholtzDLKernel;
+  template <int DIM, int COMPS=1,typename T_Kappa=double> class HelmholtzDLKernel;
 
   /** CombinedFieldKernel is a kernel for the combined field integral equation
       is considered for the Helmholtz equation. */
-  template <int DIM, typename T_Kappa = double> class CombinedFieldKernel;
+  template <int DIM, int COMPS=1,typename T_Kappa = double> class CombinedFieldKernel;
 
   template <int D> class MaxwellSLKernel;
 
@@ -476,14 +476,17 @@ namespace ngsbem
       $$ \frac{\partial }{ \partial n_y} G(x-y) = \frac{1}{4\,\pi} \, \frac{e^{i\,\kappa\,|x-y|}}{|x-y|^3} \, 
           \langle n(y), x-y\rangle \cdot \left( 1 - i\,\kappa\, | x-y| \right), 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<typename T_Kappa>
-  class HelmholtzDLKernel<3,T_Kappa> : public BaseKernel
+  template<int COMPS, typename T_Kappa>
+  class HelmholtzDLKernel<3,COMPS,T_Kappa> : public BaseKernel
   {
     T_Kappa kappa;
   public:
     typedef Complex value_type;
+    using mp_type = typename std::conditional<COMPS == 1,
+                                              Complex,
+                                              Vec<COMPS, Complex>>::type;
     static string Name() { return "HelmholtzDL"; }
-    static auto Shape() { return IVec<2>(1,1); }
+    static auto Shape() { return IVec<2>(COMPS,COMPS); }
     
     HelmholtzDLKernel (T_Kappa _kappa) : kappa(_kappa) { }
 
@@ -504,32 +507,48 @@ namespace ngsbem
 
     auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Complex,T_Kappa>> (c, r, kappa, fmm_params);
+      return make_shared<SingularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
     }
 
     auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Complex,T_Kappa>> (c, r, kappa, fmm_params);
+      return make_shared<RegularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
     }
 
-    void AddSource (SingularMLExpansion<Complex,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      mp.AddDipole(pnt, -nv, val(0));
+      // mp.AddDipole(pnt, -nv, val(0));
+      if constexpr (COMPS == 1)
+        mp.AddDipole(pnt, -nv, val(0));
+      else
+        mp.AddDipole(pnt, -nv, val);
     }
 
-    void AddSourceTrans(SingularMLExpansion<Complex,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    void AddSourceTrans(SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      mp.AddCharge(pnt, val(0));
+      // mp.AddCharge(pnt, val(0));
+      if constexpr (COMPS == 1)
+        mp.AddCharge (pnt, val(0));
+      else
+        mp.AddCharge (pnt, val);
     }
 
-    void EvaluateMP (RegularMLExpansion<Complex,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      val(0) = mp.Evaluate (pnt);
+      // val(0) = mp.Evaluate (pnt);
+      if constexpr (COMPS == 1)
+        val(0) = mp.Evaluate (pnt);
+      else
+        val = mp.Evaluate (pnt);
     }
 
-    void EvaluateMPTrans(RegularMLExpansion<Complex,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    void EvaluateMPTrans(RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
+      // val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
+      if constexpr (COMPS == 1)
+        val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
+      else
+        val = mp.EvaluateDirectionalDerivative(pnt, nv);
     }
   };
 
@@ -596,14 +615,17 @@ namespace ngsbem
       $$ G(x-y) = \frac{1}{4\,\pi} \, \frac{e^{i\,\kappa\,|x-y|}}{|x-y|^3} \, 
           \left( \langle n_y, x-y\rangle (1- i\,\kappa\, | x-y|) - i\,\kappa\,|x-y|^2 \right), 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<typename T_Kappa>
-  class CombinedFieldKernel<3, T_Kappa> : public BaseKernel
+  template<int COMPS, typename T_Kappa>
+  class CombinedFieldKernel<3,COMPS,T_Kappa> : public BaseKernel
   {
     T_Kappa kappa;
   public:
     typedef Complex value_type;
+    using mp_type = typename std::conditional<COMPS == 1,
+                                                  Complex,
+                                                  Vec<COMPS, Complex>>::type;
     static string Name() { return "Helmholtz Combined Field"; }
-    static auto Shape() { return IVec<2>(1,1); }
+    static auto Shape() { return IVec<2>(COMPS,COMPS); }
     
     CombinedFieldKernel (T_Kappa _kappa) : kappa(_kappa) { }
 
@@ -624,26 +646,32 @@ namespace ngsbem
 
     auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<SingularMLExpansion<Complex,T_Kappa>> (c, r, kappa, fmm_params);
+      return make_shared<SingularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
     }
 
     auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
-      return make_shared<RegularMLExpansion<Complex,T_Kappa>> (c, r, kappa, fmm_params);
+      return make_shared<RegularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
     }
 
-    void AddSource (SingularMLExpansion<Complex,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
       // mp.AddCharge(pnt, Complex(0, -kappa)*val(0));
       // mp.AddDipole(pnt, -nv, val(0));
 
       // mp.AddChargeDipole (pnt, Complex(0, -kappa)*val(0), -nv, val(0));
-      mp.AddChargeDipole (pnt, -kappa * Complex(0, 1)*val(0), -nv, val(0));
+      if constexpr (COMPS == 1)
+        mp.AddChargeDipole (pnt, -kappa * Complex(0, 1)*val(0), -nv, val(0));
+      else
+        mp.AddChargeDipole (pnt, -kappa * Complex(0, 1)*val(0), -nv, val);
     }
 
-    void EvaluateMP (RegularMLExpansion<Complex,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
+    void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      val(0) = mp.Evaluate (pnt);
+      if constexpr (COMPS == 1)
+        val(0) = mp.Evaluate (pnt);
+      else
+        val = mp.Evaluate (pnt);
     }
   };
 

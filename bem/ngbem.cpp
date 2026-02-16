@@ -1199,13 +1199,17 @@ namespace ngsbem
   template class PotentialCF<LameSLKernel<3>>;
   template class PotentialCF<HelmholtzSLKernel<3>>;
   template class PotentialCF<HelmholtzSLKernel<3,3>>;
-  template class PotentialCF<HelmholtzDLKernel<3>>;
   template class PotentialCF<HelmholtzSLKernel<3,1,Complex>>;
   template class PotentialCF<HelmholtzSLKernel<3,3,Complex>>;
-  template class PotentialCF<HelmholtzDLKernel<3,Complex>>;
+  template class PotentialCF<HelmholtzDLKernel<3>>;
+  template class PotentialCF<HelmholtzDLKernel<3,3>>;
+  template class PotentialCF<HelmholtzDLKernel<3,1,Complex>>;
+  template class PotentialCF<HelmholtzDLKernel<3,3,Complex>>;
   template class PotentialCF<HelmholtzHSKernel<3>>;
   template class PotentialCF<CombinedFieldKernel<3>>;  
-  template class PotentialCF<CombinedFieldKernel<3, Complex>>;  
+  template class PotentialCF<CombinedFieldKernel<3,3>>;  
+  template class PotentialCF<CombinedFieldKernel<3,1,Complex>>;  
+  template class PotentialCF<CombinedFieldKernel<3,3,Complex>>;  
   template class PotentialCF<MaxwellSLKernel<3>>;
   template class PotentialCF<MaxwellDLKernel<3>>;
   template class PotentialCF<MaxwellDLKernel<3,Complex>>;
@@ -1227,14 +1231,18 @@ namespace ngsbem
   
   template class GenericIntegralOperator<HelmholtzSLKernel<3>>;
   template class GenericIntegralOperator<HelmholtzSLKernel<3,3>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3>>;
   template class GenericIntegralOperator<HelmholtzSLKernel<3,1,Complex>>;
   template class GenericIntegralOperator<HelmholtzSLKernel<3,3,Complex>>;
-  template class GenericIntegralOperator<HelmholtzDLKernel<3,Complex>>;
+  template class GenericIntegralOperator<HelmholtzDLKernel<3>>;
+  template class GenericIntegralOperator<HelmholtzDLKernel<3,3>>;
+  template class GenericIntegralOperator<HelmholtzDLKernel<3,1,Complex>>;
+  template class GenericIntegralOperator<HelmholtzDLKernel<3,3,Complex>>;
   template class GenericIntegralOperator<HelmholtzHSKernel<3>>;
   
   template class GenericIntegralOperator<CombinedFieldKernel<3>>;
-  template class GenericIntegralOperator<CombinedFieldKernel<3,Complex>>;
+  template class GenericIntegralOperator<CombinedFieldKernel<3,3>>;
+  template class GenericIntegralOperator<CombinedFieldKernel<3,1,Complex>>;
+  template class GenericIntegralOperator<CombinedFieldKernel<3,3,Complex>>;
 
   template class GenericIntegralOperator<MaxwellSLKernel<3>>;
   template class GenericIntegralOperator<MaxwellDLKernel<3>>;    
