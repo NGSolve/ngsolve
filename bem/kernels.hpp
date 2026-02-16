@@ -488,7 +488,10 @@ namespace ngsbem
     static string Name() { return "HelmholtzDL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
     
-    HelmholtzDLKernel (T_Kappa _kappa) : kappa(_kappa) { }
+    HelmholtzDLKernel (T_Kappa _kappa) : kappa(_kappa) {
+      for (size_t i = 0; i < COMPS; i++)
+        terms += {1.0, 0, i, i};
+    }
 
     template <typename T>    
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -503,7 +506,7 @@ namespace ngsbem
       return Vec<1,decltype(kern)> (kern);
     }
     T_Kappa GetKappa() const { return kappa; }
-    Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
+    Array<KernelTerm> terms;
 
     auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
@@ -627,7 +630,10 @@ namespace ngsbem
     static string Name() { return "Helmholtz Combined Field"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
     
-    CombinedFieldKernel (T_Kappa _kappa) : kappa(_kappa) { }
+    CombinedFieldKernel (T_Kappa _kappa) : kappa(_kappa) {
+      for (size_t i = 0; i < COMPS; i++)
+        terms += {1.0, 0, i, i};
+    }
 
     template <typename T>    
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -642,7 +648,7 @@ namespace ngsbem
       return Vec<1,decltype(kern)> (kern);
     }
     T_Kappa GetKappa() const { return kappa; }
-    Array<KernelTerm> terms = { KernelTerm{1.0, 0, 0, 0}, };    
+    Array<KernelTerm> terms;
 
     auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
     {
