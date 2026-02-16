@@ -406,11 +406,15 @@ namespace ngsbem
   public:
     using std::variant<double, Complex>::variant;
     Scalar operator- () {
+      return std::visit([](auto val) {
+        return Scalar(-val);
+      }, *this);
+      /*
       if (std::holds_alternative<double>(*this))
         return -std::get<double>(*this);
       else
         return -std::get<Complex>(*this);
-          
+      */
     }
   };
   
