@@ -128,10 +128,17 @@
       diag_mass = Vector<double>(cfei.GetNDof());
       cfei.GetDiagMassMatrix(diag_mass);
       auto ma = fes->GetMeshAccess();
-      elscale.SetSize (ma->GetNE());
+
+      Array<size_t> elindex(ma->GetNE());
+      elindex = size_t(-1);
+      size_t count = 0;
+      for (const auto & el : fes->Elements(VOL))
+        if(fes->DefinedOn(el))
+          elindex[el.Nr()] = count++;
+      elscale.SetSize (count);
       
       IterateElements (*fes, VOL, alh,
-                       [/*&arho, */&adef, &ma, this] (FESpace::Element el, LocalHeap & lh)
+                       [/*&arho, */&adef, &ma, this, &elindex] (FESpace::Element el, LocalHeap & lh)
                      {
                        auto & fel = el.GetFE();          
                        const ElementTransformation & trafo = el.GetTrafo();
@@ -145,7 +152,7 @@
                          rho -> Evaluate(mir[0], FlatVector<> (DIM*DIM, &rhoi(0,0)));
                        if (adef && !adef->Mask()[ma->GetElIndex(el)])
                          ijac = 0;
-                       elscale[el.Nr()] = ijac * Trans(F) * rhoi * F;   // Piola
+                       elscale[elindex[el.Nr()]] = ijac * Trans(F) * rhoi * F;   // Piola
                      });
     }
     
