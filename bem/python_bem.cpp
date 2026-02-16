@@ -563,7 +563,12 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
     if (proxy->Dimension() == 1)
       return std::visit( [&] (auto val) -> shared_ptr<BasePotentialOperator> {
-        return make_shared<PotentialOperator<CombinedFieldKernel<3,decltype(val)>>>
+        return make_shared<PotentialOperator<CombinedFieldKernel<3,1,decltype(val)>>>
+            (proxy, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
+        }, kappa);
+    if (proxy->Dimension() == 3)
+      return std::visit( [&] (auto val) -> shared_ptr<BasePotentialOperator> {
+        return make_shared<PotentialOperator<CombinedFieldKernel<3,3,decltype(val)>>>
             (proxy, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
         }, kappa); 
     throw Exception("only dim=1 HelmholtzCF is supported");
