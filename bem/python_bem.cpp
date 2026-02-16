@@ -442,7 +442,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     throw Exception("only dim=1 and dim=3 LaplaceDL are supported");
   });
 
-  // m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, double kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
   m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
@@ -490,7 +489,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       throw Exception("only dim=1 and dim=3 HelmholtzSL are supported");
   });
 
-  // m.def("HelmholtzDL", [](shared_ptr<SumOfIntegrals> potential, double kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
   m.def("HelmholtzDL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
@@ -538,8 +536,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
 
-  // m.def("HelmholtzCF", [](shared_ptr<SumOfIntegrals> potential, double kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
-  // m.def("HelmholtzCF", [](shared_ptr<SumOfIntegrals> potential, Complex kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
   m.def("HelmholtzCF", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
@@ -566,12 +562,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
 
     if (proxy->Dimension() == 1)
-        // return make_shared<PotentialOperator<CombinedFieldKernel<3,Complex>>> (proxy, definedon, proxy->Evaluator(),
-        //                                                                      CombinedFieldKernel<3,Complex>(kappa), ioparams,
-        //                                                                      fesorder+igl->dx.bonus_intorder);
-      // return MakePotentialFromVariantKappa<CombinedFieldKernel<3,double>, CombinedFieldKernel<3,Complex>>(
-      //   proxy, definedon, proxy->Evaluator(), ioparams,
-      //   fesorder+igl->dx.bonus_intorder, kappa);
       return std::visit( [&] (auto val) -> shared_ptr<BasePotentialOperator> {
         return make_shared<PotentialOperator<CombinedFieldKernel<3,decltype(val)>>>
             (proxy, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
@@ -596,9 +586,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
     if (proxy->Dimension() == 3)
     {
-      // return MakePotentialFromVariantKappa<MaxwellDLKernel<3,double>, MaxwellDLKernel<3,Complex>>(
-      //   proxy, definedon, proxy->Evaluator(), ioparams,
-      //   fesorder+igl->dx.bonus_intorder, kappa);
       return std::visit( [&] (auto val) -> shared_ptr<BasePotentialOperator> {
         return make_shared<PotentialOperator<MaxwellDLKernel<3,decltype(val)>>>
             (proxy, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
