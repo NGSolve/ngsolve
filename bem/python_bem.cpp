@@ -477,16 +477,12 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       // return make_shared<PotentialOperator<HelmholtzSLKernel<3,3>>> (proxy, definedon, proxy->Evaluator(),
       //                                                                 HelmholtzSLKernel<3,3>(kappa), ioparams, fesorder+igl->dx.bonus_intorder);
 
-      // cout << "val = ";
-      // std::visit([&](auto val) { cout << val << endl; }, kappa);
-
       return std::visit
         ( [&] (auto val) -> shared_ptr<BasePotentialOperator> {
-          // typedef decltype(val) type;
-          // return make_shared<PotentialOperator<HelmholtzSLKernel<3,3,type>>>(proxy, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
-          return make_shared<PotentialOperator<HelmholtzSLKernel<3,3,decltype(val)>>>(proxy, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
+          return make_shared<PotentialOperator<HelmholtzSLKernel<3,3,decltype(val)>>>
+            (proxy, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
         }, kappa);
-
+      
       /*
       return MakePotentialFromVariantKappa<HelmholtzSLKernel<3,3,double>, HelmholtzSLKernel<3,3,Complex>>(
         proxy, definedon, proxy->Evaluator(), ioparams,
