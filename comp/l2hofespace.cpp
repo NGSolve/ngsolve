@@ -1040,7 +1040,7 @@ global system.
 	    order_inner[i] = order_inner[i] + IVec<3> (et_bonus_order[ma->GetElType(ei)]);
 	    order_inner[i] = Max(order_inner[i], IVec<3>(0));
 	    if (!DefinedOn (ei))
-	      order_inner[i] = 0;
+	      order_inner[i] = all_dofs_together ? -1 : 0;
 	  }
 	if(print)
 	  *testout << " order_inner (l2ho) " << order_inner << endl;
@@ -1085,6 +1085,7 @@ global system.
       {
 	first_element_dof[i] = ndof;
 	IVec<3> pi = order_inner[i];
+        if (pi[0] < 0) continue;
 	switch (ma->GetElType(ElementId(VOL,i)))
 	  {
 	  case ET_SEGM:
