@@ -3159,7 +3159,7 @@ namespace ngfem
     PrecomputeCacheCF(cache_cfs, mir, lh);
 
     for (ProxyFunction * proxy : trial_proxies)
-      ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh);
+      ud.AssignMemory (proxy, ir.GetNIP(), proxy->Dimension(), lh, proxy->IsComplex());
 
     for (ProxyFunction * proxy : trial_proxies)
       proxy->Evaluator()->Apply(fel_trial, mir, elx, ud.GetMemoryC(proxy), lh);
