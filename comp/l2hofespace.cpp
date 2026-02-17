@@ -1555,15 +1555,21 @@ global system.
         Vector<double> diag_mass(fe.GetNDof());
         dynamic_cast<const BaseScalarFiniteElement&>(fe).GetDiagMassMatrix(diag_mass);
         auto ma = GetMeshAccess();
-        Vector<double> elscale(ma->GetNE());
+        Array<size_t> elindex(ma->GetNE());
+        elindex = size_t(-1);
+        size_t count = 0;
+        for (const auto & el : Elements(VOL))
+          if(DefinedOn(el))
+            elindex[el.Nr()] = count++;
+        Vector<double> elscale(count);
         
         IterateElements
           (*this, VOL, lh,
-           [&rho, &defon, &ma, &elscale] (FESpace::Element el, LocalHeap & lh)
+           [&rho, &defon, &ma, &elscale, &elindex] (FESpace::Element el, LocalHeap & lh)
            {
              if ( (defon && !defon->Mask()[ma->GetElIndex(el)]) || el.is_curved)
                {
-                 elscale[el.Nr()] = 0;
+                 elscale[elindex[el.Nr()]] = 0;
                  return;
                }
 
@@ -1575,7 +1581,7 @@ global system.
              double jac = mir[0].GetMeasure();
              if (rho)
                jac *= rho->Evaluate(mir[0]);
-             elscale[el.Nr()] = jac;
+             elscale[elindex[el.Nr()]] = jac;
            });
 
         VVector<> diag(elscale.Size()*diag_mass.Size());
@@ -4927,10 +4933,17 @@ One can evaluate the vector-valued function, and one can take the gradient.
         Vector<> diag_mass(fe.GetNDof());
         dynamic_cast<const BaseScalarFiniteElement&>(fe).GetDiagMassMatrix(diag_mass);
         auto ma = GetMeshAccess();
-        Vector<Mat<DIM,DIM>> elscale(ma->GetNE());
+        Array<size_t> elindex(ma->GetNE());
+        elindex = size_t(-1);
+        size_t count = 0;
+        for (const auto & el : Elements(VOL))
+          if(DefinedOn(el))
+            elindex[el.Nr()] = count++;
+        Vector<Mat<DIM,DIM>> elscale(count);
+
         IterateElements
           (*this, VOL, lh,
-           [this, inverse, &ma, &elscale, &defon,&rho] (FESpace::Element el, LocalHeap & lh)
+           [this, inverse, &ma, &elscale, &defon,&rho, &elindex] (FESpace::Element el, LocalHeap & lh)
            {
              auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());                       
              const ElementTransformation & trafo = el.GetTrafo();
@@ -4962,7 +4975,7 @@ One can evaluate the vector-valued function, and one can take the gradient.
                    transrho = ::ngbla::Inv(transrho);
                }
              
-             elscale[el.Nr()] = transrho;
+             elscale[elindex[el.Nr()]] = transrho;
            });
         
         if (inverse)
