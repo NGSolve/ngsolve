@@ -179,6 +179,8 @@ namespace ngcomp
     std::map<ELEMENT_TYPE, IntegrationRule> GetIntegrationRules(int bonus_intorder=2) const;
 
     void GetDofNrs(ElementId ei, Array<int> &dnums) const override;
+    void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
+    
     FiniteElement &GetFE(ElementId ei, Allocator &alloc) const override;
   };
 

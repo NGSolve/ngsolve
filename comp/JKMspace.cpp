@@ -111,6 +111,25 @@ namespace ngcomp
                         first_element_dof[ei.Nr()+1]);
   }
 
+  void JKM_FESpace::GetDofNrs (NodeId ni, Array<DofId> & dnums) const
+  {
+    dnums.SetSize0();
+    switch (ni.GetType())
+      {
+      case NT_EDGE: case NT_FACET:
+        dnums = IntRange(first_edge_dof[ni.GetNr()], first_edge_dof[ni.GetNr()+1]);
+        break;
+      case NT_FACE: case NT_ELEMENT:
+        dnums = IntRange(first_element_dof[ni.GetNr()],
+                         first_element_dof[ni.GetNr()+1]);
+        break;
+      default:
+        dnums.SetSize0();        
+      }
+   }
+
+  
+
   FiniteElement &JKM_FESpace::GetFE(ElementId ei, Allocator &alloc) const
   {
     Ngs_Element ngel = ma->GetElement(ei);
