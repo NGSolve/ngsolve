@@ -2660,12 +2660,20 @@ namespace ngcomp
                      for (int el1 : r)
                        {
                          ElementId ei1(VOL, el1);
+                         if(!fespace->DefinedOn(ei1)) continue;
                          fnums1 = ma->GetElFacets(ei1);
                          for (int facnr1 : Range(fnums1))
                            {
                              HeapReset hr(lh);
                              
                              ma->GetFacetElements(fnums1[facnr1],elnums);
+                             if(elnums.Size() == 2)
+                               {
+                                 // check if other is definedon -> if not remvoe it so surface element is used
+                                 int other = elnums[0] + elnums[1] - el1;
+                                 if (!fespace->DefinedOn (ElementId(VOL, other)))
+                                   elnums = { el1 };
+                               }
 
                              int facet2 = fnums1[facnr1];
                              // timerDG1.Stop();
