@@ -41,8 +41,8 @@ RUN apt-get update && apt-get -y install \
         libxkbcommon0 \
         libxrandr2 \
         zip
+RUN pip3 install --upgrade --break-system-packages mpi4py
 RUN pip3 install --upgrade --break-system-packages \
-        mpi4py \
         petsc4py \
         pytest \
         markupsafe \
