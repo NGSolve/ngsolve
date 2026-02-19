@@ -1677,7 +1677,14 @@ lot of new non-zero entries in the matrix!\n" << endl;
     Array<int> facet_map;
     Array<int> patchentry;
     int nentries = ma->GetNV();
-    if(GetClassName().substr(0,8) == "Periodic")
+    bool has_periodic = false;
+    for (auto fulltype : blocktypes)
+       if(fulltype.find("periodic") != std::string::npos)
+         {
+           has_periodic = true;
+           break;
+         }
+    if(has_periodic)
       {
         nentries = 0;
         vertex_map.SetSize(ma->GetNV());
@@ -1699,14 +1706,12 @@ lot of new non-zero entries in the matrix!\n" << endl;
             for(auto & per_faces : ma->GetPeriodicNodes(NT_FACE, idnr))
               facet_map[per_faces[1]] = per_faces[0];
           }
-        for(auto i : Range(ma->GetNP()))
-          {
-            int v = vertex_map[i];
-            if (v == i)
-              patchentry[i] = nentries++;
-            else
-              patchentry[i] = patchentry[v];
-          }
+        for(auto i : Range(ma->GetNV()))
+          if (int v = vertex_map[i]; v == i)
+            patchentry[i] = nentries++;
+        for(auto i : Range(ma->GetNV()))
+          if (int v = vertex_map[i]; v != i)
+            patchentry[i] = patchentry[v];
       }
     
     if (blocktypes.Size())
@@ -1796,6 +1801,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
             if (filtered_blocktypes.count("vertexpatch"))
               {
                 optional<string> filter = filtered_blocktypes[string("vertexpatch")];
+                bool periodic = filter.has_value() && filter.value().find("periodic") != string::npos;
+                if(periodic)
+                  filter = filter.value().substr(0, filter.value().find("periodic")-1);
                 if (filter)
                   {
                     SelectDofs (*filter, filtermask);
@@ -1810,7 +1818,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                     GetDofNrs (NodeId(NT_VERTEX, i), dofs);
                     for (auto d : dofs)
                       if (IsRegularDof(d))              
-                        creator.Add (base + (patchentry.Size() ? patchentry[i] : i), d);
+                        creator.Add (base + (periodic ? patchentry[i] : i), d);
                   }
                 for (size_t i : Range(ma->GetNEdges()))        
                   {
@@ -1820,7 +1828,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                     for (auto d : dofs)
                       if (IsRegularDof(d))
                         for (int k = 0; k < 2; k++)
-                          creator.Add (base + (patchentry.Size() ? patchentry[edge.vertices[k]] : edge.vertices[k]), d);
+                          creator.Add (base + (periodic ? patchentry[edge.vertices[k]] : edge.vertices[k]), d);
                   }
                 for (size_t i : Range(ma->GetNFaces()))        
                   {
@@ -1830,7 +1838,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
                     for (auto d : dofs)
                       if (IsRegularDof(d))
                         for (auto v : vnums)
-                          creator.Add (base + (patchentry.Size() ? patchentry[v] : v), d);
+                          creator.Add (base + (periodic ? patchentry[v] : v), d);
                   }
                 // 3D only
                 for (size_t i : Range(ma->GetNElements(3)))
@@ -1840,10 +1848,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
                     for (auto d : dofs)
                       if (IsRegularDof(d))
                         for (auto v : vnums)
-                          creator.Add (base + (patchentry.Size() ? patchentry[v] : v), d);
+                          creator.Add (base + (periodic ? patchentry[v] : v), d);
                   }
-                base += nentries;
-                // base += ma->GetNV();
+                base += periodic ? nentries : ma->GetNV();
 
                 if (filter)
                   creator.SetFilter (freedofs.get());                  
