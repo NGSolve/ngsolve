@@ -54,8 +54,7 @@ def test_missing_file():
 
 def test_mixed_elements(tmp_path):
     """Test conversion of mesh with multiple element types."""
-    from netgen.occ import Box, Cylinder, Glue, OCCGeometry
-    from netgen.occ import Pnt, Ax
+    from netgen.occ import Box, OCCGeometry, Pnt
 
     box = Box(Pnt(0, 0, 0), Pnt(1, 1, 1))
     geo = OCCGeometry(box)
