@@ -1,62 +1,28 @@
-############################################
-# Windows
-############################################
-
 .template_win: &win
   tags:
     - windows
     - x64
-  before_script:
+  stage: build
+  script:
     - |
-        $env:NG_USE_NATIVE_ARCH = "OFF"
         ./tests/gitlab-ci/win/set_vars.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Set-Location $env:CI_PROJECT_DIR
+        ./tests/gitlab-ci/win/build.ps1
+        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+        Set-Location $env:CI_PROJECT_DIR
+        ./tests/gitlab-ci/win/test.ps1
         if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 win_build:
   <<: *win
-  stage: build
-  script:
-    - |
-        Set-Location $env:CI_PROJECT_DIR
-        ./tests/gitlab-ci/win/build.ps1
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        Set-Location $env:CI_PROJECT_DIR
-        ./tests/gitlab-ci/win/upload.ps1
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        Set-Location $env:CI_PROJECT_DIR
-        ./tests/gitlab-ci/win/test.ps1
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-.template_win_avx: &win_avx
-  tags:
-    - windows
-    - x64
   before_script:
-    - |
-        $env:NG_USE_NATIVE_ARCH = "ON"
-        ./tests/gitlab-ci/win/set_vars.ps1
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+    - $env:NG_USE_NATIVE_ARCH = "OFF"
+
+win_avx_build:
+  <<: *win
   only:
     - schedules
     - tags
-
-
-win_avx_build:
-  <<: *win_avx
-  stage: build
-  script:
-    - |
-        ./tests/gitlab-ci/win/build.ps1
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-        Set-Location $env:CI_PROJECT_DIR
-        ./tests/gitlab-ci/win/test.ps1
-        if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-
-deploy_win:
-  stage: deploy
-  tags:
-    - deploy
-  script:
-    - source tests/gitlab-ci/deploy/win.sh
-  when: manual
-  needs: ["win_build"]
+  before_script:
+    - $env:NG_USE_NATIVE_ARCH = "ON"

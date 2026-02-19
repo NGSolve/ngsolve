@@ -1,3 +1,6 @@
+#!/bin/bash
+set -e
+
 git submodule update --init --recursive
 rm -rf $BUILD_DIR
 mkdir -p $BUILD_DIR
@@ -22,3 +25,7 @@ cmake $SRC_DIR \
       -DUSE_OCC=ON
 
 make -j5 install
+
+cd $BUILD_DIR/ngsolve
+pip3 install scipy
+ctest . --output-on-failure

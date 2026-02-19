@@ -1,9 +1,10 @@
-sed -e "s/{UBUNTU_VERSION}/$UBUNTU_VERSION/" tests/gitlab-ci/ubuntu/docker_template >> docker_file
+sed -e "s/{UBUNTU_VERSION}/$UBUNTU_VERSION/" tests/gitlab-ci/ubuntu/docker_template > docker_file
 docker build -t ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} -f docker_file .
+trap 'docker rmi -f ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} || true' EXIT
 
-export DOCKER_NAME=ngsolve_${CI_PIPELINE_ID}_${IMAGE_NAME}
+mkdir -p logs
 docker run \
-      --name ${DOCKER_NAME} \
+      --rm \
       -e MKLROOT=/opt/intel/mkl \
       -e CI=$CI \
       -e CI_BUILD_REF=$CI_BUILD_REF \
@@ -17,10 +18,13 @@ docker run \
       -e LD_LIBRARY_PATH=/opt/intel/mkl/lib/intel64 \
       -e RUN_SLOW_TESTS="$RUN_SLOW_TESTS" \
       -e SHOW_LOGS="$SHOW_LOGS" \
+      -e NETGENDIR=/opt/netgen/bin \
+      -e NGS_NUM_THREADS=6 \
+      -e PYTHONPATH=/opt/netgen/lib/python3/dist-packages \
+      -e NG_BACKTRACE=1 \
+      -e RUN_TESTS_AFTER_BUILD="${RUN_TESTS_AFTER_BUILD:-1}" \
       -v /opt/intel:/opt/intel \
-      -v /mnt/ccache:/ccache ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} \
-      bash /root/src/ngsolve/tests/gitlab-ci/ubuntu/build_in_docker.sh
-
-docker wait ${DOCKER_NAME}
-docker cp ${DOCKER_NAME}:/logs/ .
-docker commit ${DOCKER_NAME} ngsolve_${CI_PIPELINE_ID}_installed:${IMAGE_NAME}
+      -v /mnt/ccache:/ccache \
+      -v "$PWD/logs:/logs" \
+      ngsolve_${CI_PIPELINE_ID}:${IMAGE_NAME} \
+      bash -c '/root/src/ngsolve/tests/gitlab-ci/ubuntu/build_in_docker.sh && if [ "$RUN_TESTS_AFTER_BUILD" = "1" ]; then cd /root/build/ngsolve && make test_ngsolve ARGS="--output-on-failure"; fi'

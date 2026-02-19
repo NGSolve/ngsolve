@@ -9,29 +9,13 @@ mac_build:
   <<: *mac
   stage: build
   script:
-    - source $CI_PROJECT_DIR/tests/gitlab-ci/mac/build.sh
-
-mac_test:
-  <<: *mac
-  stage: test
-  script:
-    - source tests/gitlab-ci/mac/test.sh
-  needs: ["mac_build"]
+    - source tests/gitlab-ci/mac/build.sh
 
 mac_cleanup:
   <<: *mac
   stage: cleanup
   script:
-    - source tests/gitlab-ci/mac/cleanup.sh
+    - rm -rf $ROOT_DIR
   when: always
   allow_failure: true
-  needs: ["mac_test"]
-
-deploy_mac:
-  stage: deploy
-  tags:
-    - deploy
-  script:
-    - source tests/gitlab-ci/deploy/mac.sh
-  when: manual
   needs: ["mac_build"]
