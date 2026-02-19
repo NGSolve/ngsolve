@@ -50,7 +50,8 @@ namespace ngla
     auto fvx = x.FV<double>();
     auto fvy = y.FV<double>();
     for (size_t i = 0; i < ind.Size(); i++)
-      fvy(i) = fvx(ind[i]);
+      if(ind[i] != size_t(-1))
+        fvy(i) = fvx(ind[i]);
   }
   
   void PermutationMatrix :: MultTrans (const BaseVector & x, BaseVector & y) const
@@ -59,7 +60,8 @@ namespace ngla
     auto fvy = y.FV<double>();
     y = 0;
     for (size_t i = 0; i < ind.Size(); i++)
-      fvy(ind[i]) += fvx(i);
+      if(ind[i] != size_t(-1))
+        fvy(ind[i]) += fvx(i);
   }
 
   void PermutationMatrix :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -67,7 +69,8 @@ namespace ngla
     auto fvx = x.FV<double>();
     auto fvy = y.FV<double>();
     for (size_t i = 0; i < ind.Size(); i++)
-      fvy(i) += s * fvx(ind[i]);
+      if(ind[i] != size_t(-1))
+        fvy(i) += s * fvx(ind[i]);
   }
   
   void PermutationMatrix :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
@@ -75,7 +78,8 @@ namespace ngla
     auto fvx = x.FV<double>();
     auto fvy = y.FV<double>();
     for (size_t i = 0; i < ind.Size(); i++)
-      fvy(ind[i]) += s * fvx(i);
+      if(ind[i] != size_t(-1))
+        fvy(ind[i]) += s * fvx(i);
   }
 
 

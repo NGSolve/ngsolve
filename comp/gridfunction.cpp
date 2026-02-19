@@ -1578,7 +1578,10 @@ namespace ngcomp
       {
         if (ud->HasMemory(this) && ud->Computed(this))
           {
-            hvalues.AddSize(ir.Size(), Dimension()) = ud->GetMemoryC(this);
+            if(IsComplex())
+              hvalues.AddSize(ir.Size(), Dimension()) = ud->GetMemoryC(this);
+            else
+              hvalues.AddSize(ir.Size(), Dimension()) = ud->GetMemory(this);
             return;
           }
       }
@@ -1638,7 +1641,10 @@ namespace ngcomp
       {
         if (ud->HasMemory(this))
           {
-            ud->GetMemoryC(this) = values;
+            if(IsComplex())
+              ud->GetMemoryC(this) = values;
+            else
+              ud->GetMemory(this) = Real(values);
             ud->SetComputed(this);
           }
       }
@@ -1759,7 +1765,10 @@ namespace ngcomp
       {
         if (ud->HasMemory(this) && ud->Computed(this))
           {
-            bvalues.AddSize(Dimension(), ir.Size()) = ud->GetAMemoryC(this);
+            if(IsComplex())
+              bvalues.AddSize(Dimension(), ir.Size()) = ud->GetAMemoryC(this);
+            else
+              bvalues.AddSize(Dimension(), ir.Size()) = ud->GetAMemory(this);
             return;
           }
       }
@@ -1822,7 +1831,10 @@ namespace ngcomp
       {
         if (ud->HasMemory(this))
           {
-            ud->GetAMemoryC(this) = bvalues;
+            if(IsComplex())
+              ud->GetAMemoryC(this) = bvalues;
+            else
+              ud->GetAMemory(this) = Real(bvalues);
             ud->SetComputed(this);
           }
       }

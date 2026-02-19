@@ -1006,7 +1006,8 @@ namespace ngfem
             
             ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
             for (CoefficientFunction * cf : gridfunction_cfs)
-              ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+              ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh,
+                               cf->IsComplex());
             
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
             PrecomputeCacheCF(cache_cfs, mir, lh);
@@ -1062,7 +1063,8 @@ namespace ngfem
             ProxyUserData ud(0, gridfunction_cfs.Size(), lh);
             const_cast<ElementTransformation&>(trafo).userdata = &ud;
             for (CoefficientFunction * cf : gridfunction_cfs)
-              ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+              ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh,
+                               cf->IsComplex());
             
             PrecomputeCacheCF(cache_cfs, mir, lh);
             
@@ -1123,7 +1125,8 @@ namespace ngfem
         PrecomputeCacheCF(cache_cfs, mir, lh);
 
         for (CoefficientFunction * cf : gridfunction_cfs)
-          ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+          ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh,
+                           cf->IsComplex());
         
         elvec = 0;
         for (auto j : Range(proxies))
@@ -2486,7 +2489,8 @@ namespace ngfem
               proxy->Evaluator()->Apply(fel_trial, mir, elveclin, ud.GetAMemory(proxy));
             }
           for (CoefficientFunction * cf : gridfunction_cfs)
-            ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+            ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh,
+                             cf->IsComplex());
     
           // AFlatMatrix<> val(1, mir.IR().GetNIP(), lh);
           FlatMatrix<AutoDiff<1,SIMD<double>>> val(1, mir.Size(), lh);
@@ -2723,7 +2727,7 @@ namespace ngfem
                   proxy->Evaluator()->Apply(fel_trial, mir, elveclin, ud.GetAMemory(proxy));
                 }
               for (CoefficientFunction * cf : gridfunction_cfs)
-                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh,cf->IsComplex());
 
               FlatMatrix<AutoDiff<1,SIMD<double>>> val(1, mir.Size(), lh);
               
@@ -2945,7 +2949,8 @@ namespace ngfem
           for (ProxyFunction * proxy : trial_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh, proxy->IsComplex());
           for (CoefficientFunction * cf : gridfunction_cfs)
-            ud.AssignMemory (cf, simd_ir.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+            ud.AssignMemory (cf, simd_ir.GetNIP(), cf->Dimension(), lh,
+                             cf->IsComplex());
           
           for (ProxyFunction * proxy : trial_proxies)
             proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemory(proxy)); 
@@ -3088,7 +3093,8 @@ namespace ngfem
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh, proxy->IsComplex());
             for (CoefficientFunction * cf : gridfunction_cfs)
-              ud.AssignMemory (cf, simd_ir.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+              ud.AssignMemory (cf, simd_ir.GetNIP(), cf->Dimension(), lh,
+                               cf->IsComplex());
 
             for (ProxyFunction * proxy : trial_proxies)
               proxy->Evaluator()->Apply(fel_trial, simd_mir, elx, ud.GetAMemoryC(proxy));
@@ -3236,7 +3242,8 @@ namespace ngfem
               for (ProxyFunction * proxy : trial_proxies)
                 ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh, proxy->IsComplex());
               for (CoefficientFunction * cf : gridfunction_cfs)
-                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh,
+                                 cf->IsComplex());
           
               for (ProxyFunction * proxy : trial_proxies)
               {
@@ -3383,7 +3390,8 @@ namespace ngfem
           for (ProxyFunction * proxy : test_proxies)
             ud.AssignMemory (proxy, simd_ir.GetNIP(), proxy->Dimension(), lh, false);
           for (CoefficientFunction * cf : gridfunction_cfs)
-            ud.AssignMemory (cf, simd_ir.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+            ud.AssignMemory (cf, simd_ir.GetNIP(), cf->Dimension(), lh,
+                             cf->IsComplex());
           
           for (ProxyFunction * proxy : test_proxies)
             proxy->Evaluator()->Apply(fel_test, simd_mir, elx, ud.GetAMemory(proxy)); 
@@ -3524,7 +3532,8 @@ namespace ngfem
               for (ProxyFunction * proxy : test_proxies)
                 ud.AssignMemory (proxy, ir_facet.GetNIP(), proxy->Dimension(), lh, false);
               for (CoefficientFunction * cf : gridfunction_cfs)
-                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+                ud.AssignMemory (cf, ir_facet.GetNIP(), cf->Dimension(), lh,
+                                 cf->IsComplex());
           
               for (ProxyFunction * proxy : test_proxies)
                 proxy->Evaluator()->Apply(fel_test, mir, elx, ud.GetAMemory(proxy)); 
@@ -4390,7 +4399,8 @@ namespace ngfem
             for (ProxyFunction * proxy : trial_proxies)
               ud.AssignMemory (proxy, simd_ir_facet.GetNIP(), proxy->Dimension(), lh, proxy->IsComplex());
             for (CoefficientFunction * cf : gridfunction_cfs)
-              ud.AssignMemory (cf, simd_ir_facet.GetNIP(), cf->Dimension(), lh, cf->IsComplex());
+              ud.AssignMemory (cf, simd_ir_facet.GetNIP(), cf->Dimension(), lh,
+                               cf->IsComplex());
             // tstart.Stop();
             // tapply.Start();
 

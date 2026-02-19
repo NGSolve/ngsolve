@@ -589,6 +589,7 @@ void HDivHighOrderSurfaceFESpace :: Average (BaseVector & vec) const
     if(!DefinedOn(ngel)) return *new (lh) HDivDummyFE<ET>();
     HDivHighOrderFE<ET>* hofe = new (lh)HDivHighOrderFE<ET>();
     hofe->SetOrderInner(order_inner[ei.Nr()][0]);
+    hofe->SetHODivFree (ho_div_free);
     hofe->SetVertexNumbers(ngel.Vertices());
     hofe->SetRT(RT);
 

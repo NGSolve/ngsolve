@@ -907,6 +907,7 @@ namespace ngcomp
         ma->IterateElements
           (vb, lh, [&] (auto el, LocalHeap & llh)
            {
+             if (!fesx->DefinedOn (el) || !fesy->DefinedOn (el)) { classnr[el.Nr()] = -1; return; }
              classnr[el.Nr()] = 
                SwitchET<ET_SEGM, ET_TRIG,ET_TET>
                (el.GetType(),
@@ -916,7 +917,8 @@ namespace ngcomp
         TableCreator<size_t> creator;
         for ( ; !creator.Done(); creator++)
           for (auto i : Range(classnr))
-            creator.Add (classnr[i], i);
+            if(classnr[i] >= 0)
+                creator.Add (classnr[i], i);
         Table<size_t> table = creator.MoveTable();
         
     
@@ -5263,6 +5265,7 @@ namespace ngcomp
                    Array<int> elnums(2, lh), elnums_per(2, lh), fnums1(6, lh), fnums2(6, lh),
                      vnums1(8, lh), vnums2(8, lh);
                    // RegionTimer reg1(timerDG1);
+                   if(!fespace->DefinedOn(ei1)) return;
                    
                    fnums1 = ma->GetElFacets(ei1);
                    
@@ -5273,6 +5276,13 @@ namespace ngcomp
                        int facet2 = fnums1[facnr1];
 
                        ma->GetFacetElements(facet,elnums);
+                       if(elnums.Size() == 2)
+                         {
+                           // check if other is definedon -> if not remove it so that surface element is used
+                           int other = elnums[0] + elnums[1] - el1;
+                            if(!fespace->DefinedOn(ElementId(VOL, other)))
+                              elnums = { el1 };
+                         }
                        if (elnums.Size()<2) {
                          auto comm = ma->GetCommunicator();
 			 if( (comm.Size()>1) && (ma->GetDistantProcs (NodeId(StdNodeType(NT_FACET, ma->GetDimension()),
@@ -5315,6 +5325,7 @@ namespace ngcomp
                            for (auto & bfi : elementwise_skeleton_parts)
                              {
                                if (!bfi->DefinedOnElement (el1) ) continue;
+                               if (!bfi->DefinedOn(ma->GetElIndex(ei1))) continue;
                                FlatVector<SCAL> elx(dnums.Size()*fespace->GetDimension(), lh),
                                  ely(dnums.Size()*fespace->GetDimension(), lh);
                                x.GetIndirect(dnums, elx);
@@ -6208,6 +6219,7 @@ namespace ngcomp
           auto myinds = elclass_inds.Range(myrange);
         
           ElementId ei(VOL, myinds[0]);
+          if (!GetTrialSpace()->DefinedOn (ei) || !GetTestSpace()->DefinedOn(ei)) return;
           auto & felx = GetTrialSpace()->GetFE (ei, lh);
           auto & fely = GetTestSpace()->GetFE (ei, lh);
           auto & trafo = GetTrialSpace()->GetMeshAccess()->GetTrafo(ei, lh);
