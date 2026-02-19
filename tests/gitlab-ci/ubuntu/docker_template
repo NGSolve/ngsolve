@@ -40,8 +40,18 @@ RUN apt-get update && apt-get -y install \
         libxfixes3 \
         libxkbcommon0 \
         libxrandr2 \
+        wget \
         zip
-RUN pip3 install --upgrade --break-system-packages mpi4py
+RUN pip3 install --break-system-packages mpi4py cython pip setuptools wheel
+
+RUN wget -qO- https://files.pythonhosted.org/packages/fb/ab/678bb037c2345ff2eab86479b89bc0103c1f8ee52cf92c923de6bccbd1ae/petsc-3.24.4.tar.gz | tar xz
+RUN sed -i "s/self.dry_run/False/" petsc-3.24.4/setup.py
+RUN pip3 install --break-system-packages ./petsc-3.24.4
+
+RUN wget -qO- https://pypi.io/packages/source/p/petsc4py/petsc4py-3.24.4.tar.gz | tar xz
+RUN sed -i "s/dry_run=/#False/" petsc4py-3.24.4/conf/confpetsc.py
+RUN pip3 install --break-system-packages --no-build-isolation ./petsc4py-3.24.4
+
 RUN pip3 install --upgrade --break-system-packages \
         petsc4py \
         pytest \

@@ -27,7 +27,6 @@ fi
 
 if [ "$IMAGE_NAME" == "mpi" ] || [ "$IMAGE_NAME" == "avx" ]
 then
-  export PYTHONPATH=/usr/lib/petscdir/petsc3.15/x86_64-linux-gnu-real/lib/python3/dist-packages
   export CMAKE_ARGS="$CMAKE_ARGS -DUSE_MPI=ON -DMKL_STATIC=ON -DMKL_SDL=OFF -DUSE_HYPRE=OFF -DUSE_MUMPS=OFF -DMKL_MULTI_THREADED=OFF -DUSE_GUI=OFF -DBUILD_STUB_FILES=OFF"
 fi
 
@@ -42,7 +41,8 @@ mkdir -p build/ngsolve
 cd build/ngsolve
 
 mkdir -p /logs/
-pip3 freeze > /logs/pip_freeze.log
+# pip3 freeze > /logs/pip_freeze.log
+# chmod 666 /logs/*
 
 cmake ../../src/ngsolve \
   -DCMAKE_CXX_FLAGS="$CMAKE_CXX_FLAGS" \
