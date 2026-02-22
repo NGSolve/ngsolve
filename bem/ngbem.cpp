@@ -418,9 +418,116 @@ namespace ngsbem
     else
       return nearfield_correction;
   }
+
+
+
   
 
+  template <typename KERNEL>
+  shared_ptr<BaseMatrix>
+  GenericIntegralOperator<KERNEL> :: GetNearFieldMatrix() const
+  {
+    LocalHeap lh(100*1000*1000);
+    auto trial_mesh = trial_space->GetMeshAccess();
+    auto test_mesh = test_space->GetMeshAccess();
 
+    
+    Array<tuple<size_t, size_t>> pairs;
+
+    Array<size_t> other;
+    for (ElementId ei : trial_mesh->Elements(BND))
+      if (trial_space->DefinedOn(ei))      
+        if (!trial_definedon || (*trial_definedon).Mask().Test(trial_mesh->GetElIndex(ei)))     
+        {
+          other.SetSize0();
+          for (auto v : trial_mesh->GetElement(ei).Vertices())
+            for (auto ej : trial_mesh->GetVertexElements(v,BND))
+              if (test_space->DefinedOn(ElementId(BND,ej)))                    
+                if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(ElementId(BND,ej))))
+                  {
+                    if (!other.Contains(ej))
+                      {
+                        other.Append (ej );
+                        pairs.Append ( { ei.Nr(), ej });
+                      }
+                  }
+        }
+
+    TableCreator<int> trial_elements_creator(pairs.Size()), test_elements_creator(pairs.Size());
+
+    for ( ; !trial_elements_creator.Done(); trial_elements_creator++, test_elements_creator++)
+      {
+        Array<DofId> dnums;
+        for (auto i : Range(pairs))
+          {
+            auto [ei_trial, ei_test] = pairs[i];
+            trial_space->GetDofNrs( { BND, ei_trial }, dnums);
+            trial_elements_creator.Add (i, dnums);
+
+            test_space->GetDofNrs( { BND, ei_test }, dnums);
+            test_elements_creator.Add (i, dnums);
+          }
+      }
+    
+    Table<int> trial_elements = trial_elements_creator.MoveTable();
+    Table<int> test_elements = test_elements_creator.MoveTable();
+
+    auto nearfield =
+      make_shared<SparseMatrix<value_type>> (test_space->GetNDof(), trial_space->GetNDof(),
+                                             test_elements, trial_elements, false);
+
+    nearfield->SetZero();
+
+    TableCreator<int> create_nbels(trial_mesh->GetNE(BND));
+    for ( ; !create_nbels.Done(); create_nbels++)    
+      for (auto i : Range(pairs))
+        create_nbels.Add (get<0>(pairs[i]), get<1>(pairs[i]));
+    Table<int> nbels = create_nbels.MoveTable();
+
+    trial_mesh->IterateElements
+      (BND, lh, [&](auto ei_trial, LocalHeap & lh)
+      {
+        for (auto nrtest : nbels[ei_trial.Nr()])
+          {
+            HeapReset hr(lh);            
+            ElementId ei_test(BND, nrtest);
+            
+            auto & trial_trafo = trial_mesh -> GetTrafo(ei_trial, lh);
+            auto & test_trafo = test_mesh -> GetTrafo(ei_test, lh);
+            auto & trial_fel = trial_space->GetFE(ei_trial, lh);
+            auto & test_fel = test_space->GetFE(ei_test, lh);
+            
+            Array<DofId> trial_dnums(trial_fel.GetNDof(), lh);
+            Array<DofId> test_dnums(test_fel.GetNDof(), lh);
+            
+            trial_space->GetDofNrs (ei_trial, trial_dnums);        
+            test_space->GetDofNrs (ei_test, test_dnums);
+            
+            FlatMatrix<value_type> elmat(test_dnums.Size(), trial_dnums.Size(), lh);
+            CalcElementMatrix (elmat, ei_trial, ei_test, lh);
+
+            /*
+            MappedIntegrationRule<2,3> trial_mir(ir, trial_trafo, lh);
+            MappedIntegrationRule<2,3> test_mir(ir, test_trafo, lh);
+            
+            FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir.Size(), lh);
+            FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir.Size(), lh);
+
+            IntRange test_range = test_evaluator->UsedDofs(test_fel);  
+            IntRange trial_range = trial_evaluator->UsedDofs(trial_fel);  
+            
+            test_evaluator -> CalcMatrix(test_fel, test_mir, Trans(shapesi), lh);
+            trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
+            */
+            
+            nearfield -> AddElementMatrix (test_dnums, trial_dnums, elmat, true);
+          }
+      });
+    
+    return nearfield;
+  }
+
+  
   template <typename KERNEL>
   void GenericIntegralOperator<KERNEL> ::
   CalcElementMatrix(FlatMatrix<value_type> matrix,

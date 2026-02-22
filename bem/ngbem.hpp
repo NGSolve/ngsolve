@@ -107,6 +107,8 @@ namespace ngsbem
 
     virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
                                                      optional<int> io, bool nearfield_experimental) const = 0;
+
+    virtual shared_ptr<BaseMatrix> GetNearFieldMatrix() const = 0;
   };
 
 
@@ -152,6 +154,8 @@ namespace ngsbem
 
     
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
+
+    virtual shared_ptr<BaseMatrix> GetNearFieldMatrix() const override;    
     
     virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
                                                          optional<int> io, bool nearfield_experimental) const override;

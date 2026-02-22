@@ -176,6 +176,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   py::class_<IntegralOperator,shared_ptr<IntegralOperator>> (m, "IntegralOperator")
     .def_property_readonly("mat", &IntegralOperator::GetMatrix)
+    .def("NearFieldMatrix", &IntegralOperator::GetNearFieldMatrix)
     .def("GetPotential", &IntegralOperator::GetPotential,
          py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
     ;
