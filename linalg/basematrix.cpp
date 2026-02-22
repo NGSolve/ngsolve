@@ -513,9 +513,20 @@ namespace ngla
 
   shared_ptr<BaseSparseMatrix> SumMatrix :: CreateSparseMatrix() const 
   {
-    auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (spbma->CreateSparseMatrix());
-    auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (spbmb->CreateSparseMatrix());
-    return MatAdd (a, *spa, b, *spb);
+    auto spa = spbma->CreateSparseMatrix();
+    auto spb = spbmb->CreateSparseMatrix();
+    
+    auto spad = dynamic_pointer_cast<SparseMatrixTM<double>> (spa);
+    auto spbd = dynamic_pointer_cast<SparseMatrixTM<double>> (spb);
+    if (spad && spbd)
+      return MatAdd (a, *spad, b, *spbd);
+
+    auto spac = dynamic_pointer_cast<SparseMatrixTM<Complex>> (spa);
+    auto spbc = dynamic_pointer_cast<SparseMatrixTM<Complex>> (spb);
+    if (spac && spbc)
+      return MatAdd (Complex(a), *spac, Complex(b), *spbc);
+      // return MatAdd (a, *spad, b, *spbd);
+    throw Exception("can't add complex + double sparse matrix");
   }
   
     

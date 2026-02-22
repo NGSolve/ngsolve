@@ -1462,9 +1462,10 @@ namespace ngla
   }
 
 
-  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
-  MatAdd (double sa, const SparseMatrixTM<double> & mata,
-          double sb, const SparseMatrixTM<double> & matb)
+  template <typename T>
+  shared_ptr<SparseMatrixTM<T>>
+  T_MatAdd (T sa, const SparseMatrixTM<T> & mata,
+          T sb, const SparseMatrixTM<T> & matb)
   {
     if (mata.Shape() != matb.Shape())
       throw Exception("MatAdd, A.shape = "
@@ -1495,7 +1496,7 @@ namespace ngla
        TasksPerThread(10));
 
 
-    auto sum = make_shared<SparseMatrix<double>>(cnt, matb.Width());
+    auto sum = make_shared<SparseMatrix<T>>(cnt, matb.Width());
     sum->AsVector() = 0.0;
     
     // fill col-indices
@@ -1539,6 +1540,23 @@ namespace ngla
     });
     return sum;
   }
+
+
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
+  MatAdd (double sa, const SparseMatrixTM<double> & mata,
+          double sb, const SparseMatrixTM<double> & matb)
+  {
+    return T_MatAdd(sa, mata, sb, matb);
+  }
+
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<Complex>>
+  MatAdd (Complex sa, const SparseMatrixTM<Complex> & mata,
+          Complex sb, const SparseMatrixTM<Complex> & matb)
+  {
+    return T_MatAdd(sa, mata, sb, matb);
+  }
+
+  
 
   
   template <typename TM_Res, typename TM1, typename TM2>
