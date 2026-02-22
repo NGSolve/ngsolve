@@ -159,6 +159,7 @@ namespace ngcomp
       flagsL2.SetFlag ("order", fes->GetOrder());
       flagsL2.SetFlag ("piola2", true);
       flagsL2.SetFlag ("hoprolongation", true);
+      if (fes->IsComplex()) flagsL2.SetFlag ("complex", true);      
       fesL2 = CreateFESpace("VectorL2", fes->GetMeshAccess(), flagsL2);
     }
 

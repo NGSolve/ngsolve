@@ -202,7 +202,9 @@ namespace ngcomp
     virtual void ApplyM (CoefficientFunction * rho, BaseVector & vec, Region * definedon,
                          LocalHeap & lh) const override;
     virtual shared_ptr<Table<int>> CreateSmoothingBlocks (const Flags & precflags) const override;
-    /// 
+    ///
+    
+    virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const override;
     virtual void GetInnerDofNrs (int elnr, Array<DofId> & dnums) const override;
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override;
     virtual void GetEdgeDofNrs (int ednr, Array<DofId> & dnums) const override;

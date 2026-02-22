@@ -2949,6 +2949,17 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     return make_shared<Table<int>> (table);
   }
 
+  void L2SurfaceHighOrderFESpace :: GetDofNrs (NodeId ni, Array<DofId> & dnums) const
+  {
+    dnums.SetSize0();
+    if (CoDimension(ni.GetType(), ma->GetDimension()) == 1)
+      {
+        ArrayMem<int,1> elnums;
+        ma->GetFacetSurfaceElements (ni.GetNr(), elnums);
+        if (elnums.Size()==1)
+          GetDofNrs(ElementId(BND, elnums[0]), dnums);
+      }
+  }
 
   void  L2SurfaceHighOrderFESpace :: GetVertexDofNrs (int vnr, Array<int> & dnums) const
   { dnums.SetSize0(); return; }
