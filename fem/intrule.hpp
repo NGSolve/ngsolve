@@ -319,6 +319,7 @@ namespace ngfem
     ngcomp::MeshAccess* mesh;
     VorB vb;
     int nr;
+    int facetnr = -1;
   };
 
 
@@ -1696,6 +1697,7 @@ namespace ngcore
       for (int j = 0; j < 3; j++)
         x[j] = [&ip,j] (int i) { return ip[i](j); };
       weight = [&ip] (int i) { return ip[i].Weight(); };
+      facetnr = ip[0].FacetNr();
     }
 
     template <int DIM>
