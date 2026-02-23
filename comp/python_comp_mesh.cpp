@@ -957,10 +957,27 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
 
                                return MoveToNumpyArray(points);
                              })
-    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, std::variant<VorB, Region> vb_or_reg)
+    .def("MapToAllElements", [](MeshAccess* self, std::map<ngfem::ELEMENT_TYPE, IntegrationRule> rules, std::variant<VorB, Region> vb_or_reg,
+        bool element_boundary)
          -> py::array_t<MeshPoint>
                              {
                                Array<MeshPoint> points;
+                               if(element_boundary)
+                                 {
+                                   Region reg = get_if<Region>(&vb_or_reg) ? *get_if<Region>(&vb_or_reg) : Region(self->shared_from_this(), *get_if<VorB>(&vb_or_reg));
+                                   for(auto el : self->Elements(reg.VB()))
+                                    {
+                                      if (reg.Mask().Test(el.GetIndex()))
+                                        {
+                                          for(int fnr : Range(el.Facets()))
+                                            {
+                                              for(const auto& p : rules[self->GetFacetType(el.Facets()[fnr])] )
+                                                points.Append({p(0), p(1), p(2), self, reg.VB(), int(el.Nr()), int(fnr)});
+                                            }
+                                        }
+                                    }
+                                   return MoveToNumpyArray(points);
+                               }
 
                                if (auto vb = get_if<VorB>(&vb_or_reg); vb)
                                {
@@ -1010,7 +1027,7 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                                        points.Append({p(0), p(1), p(2), self, reg->VB(), int(el.Nr())});
                                }
                                return MoveToNumpyArray(points);
-                             })
+                             }, py::arg("rules"), py::arg("vb_or_reg"), py::arg("element_boundary")=false)
     ;
     PyDefVectorized(mesh_access, "__call__",
       [](MeshAccess* ma, double x, double y, double z, VorB vb, double tol)

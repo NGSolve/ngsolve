@@ -1453,10 +1453,12 @@ allow_fail : bool
                                      
                                      auto first = i;
                                      ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
+                                     ir.Last().SetFacetNr(mp.facetnr);
                                      i++;
-                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp)
+                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr)
                                        {
                                          ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                                         ir.Last().SetFacetNr(pts(i).facetnr);
                                          i++;
                                        }
                                      SIMD_IntegrationRule simd_ir(ir, lh);
@@ -1483,10 +1485,12 @@ allow_fail : bool
                                      
                                      auto first = i;
                                      ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
+                                     ir.Last().SetFacetNr(mp.facetnr);
                                      i++;
-                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp)
+                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr)
                                        {
                                          ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
+                                         ir.Last().SetFacetNr(pts(i).facetnr);
                                          i++;
                                        }
                                      auto& mir = trafo(ir, lh);
@@ -1505,7 +1509,9 @@ allow_fail : bool
                              LocalHeapMem<1000> lh("CF evaluate");
                              auto& mp = pts(i);
                              auto& trafo = mp.mesh->GetTrafo(ElementId(mp.vb, mp.nr), lh);
-                             auto& mip = trafo(IntegrationPoint(mp.x,mp.y,mp.z),lh);
+                             auto ip = IntegrationPoint(mp.x,mp.y,mp.z);
+                             ip.SetFacetNr(mp.facetnr);
+                             auto& mip = trafo(ip,lh);
                              FlatVector<Complex> fv(self->Dimension(), &vals[i*self->Dimension()]);
                              self->Evaluate(mip, fv);
                            });
@@ -2088,6 +2094,7 @@ weights : list
     .def_property_readonly("mesh", [](MeshPoint& p) { return p.mesh; })
     .def_property_readonly("vb", [](MeshPoint& p) { return p.vb; })
     .def_property_readonly("nr", [](MeshPoint& p) { return p.nr; })
+    .def_property_readonly("facetnr", [](MeshPoint& p) { return p.facetnr; })
     ;
 
   if (have_numpy)
@@ -2098,7 +2105,8 @@ weights : list
         getNumpyFieldDescriptor<double>( "z", offsetof(MeshPoint, z) ),
         getNumpyFieldDescriptor<uintptr_t>( "meshptr", offsetof(MeshPoint, mesh) ),
         getNumpyFieldDescriptor<uint8_t>( "VorB", offsetof(MeshPoint, vb) ),
-        getNumpyFieldDescriptor<int>( "nr", offsetof(MeshPoint, nr) )
+        getNumpyFieldDescriptor<int>( "nr", offsetof(MeshPoint, nr) ),
+        getNumpyFieldDescriptor<int>( "facetnr", offsetof(MeshPoint, facetnr) )
     });
   }
 
