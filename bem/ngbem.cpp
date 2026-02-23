@@ -492,8 +492,8 @@ namespace ngsbem
             HeapReset hr(lh);            
             ElementId ei_test(BND, nrtest);
             
-            auto & trial_trafo = trial_mesh -> GetTrafo(ei_trial, lh);
-            auto & test_trafo = test_mesh -> GetTrafo(ei_test, lh);
+            // auto & trial_trafo = trial_mesh -> GetTrafo(ei_trial, lh);
+            // auto & test_trafo = test_mesh -> GetTrafo(ei_test, lh);
             auto & trial_fel = trial_space->GetFE(ei_trial, lh);
             auto & test_fel = test_space->GetFE(ei_test, lh);
             
