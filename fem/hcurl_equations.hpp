@@ -766,10 +766,13 @@ public:
   static void CalcTransformationMatrix (const MIP & mip,
                                         MAT & mat, LocalHeap & lh)
   {
+    /*
       mat = 0.0;
       auto scaled_nv = (1.0/mip.GetJacobiDet()) * mip.GetNV();
       for (int i = 0; i < DIM_DMAT; i++)
           mat(i,0) = scaled_nv(i);
+    */
+    mat.Col(0) = (1.0/mip.GetJacobiDet()) * mip.GetNV();
   }
 
   template <typename AFEL, typename MIP, typename MAT>
