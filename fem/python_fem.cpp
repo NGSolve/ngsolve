@@ -1411,7 +1411,9 @@ allow_fail : bool
                  if(p.nr == -1)
                    throw Exception("Meshpoint not in mesh!");
                  auto & trafo = p.mesh->GetTrafo(ElementId(p.vb, p.nr), lh);
-                 auto & mip = trafo(IntegrationPoint(p.x,p.y,p.z),lh);
+                 auto ip = IntegrationPoint(p.x, p.y, p.z);
+                 ip.SetFacetNr(p.facetnr, p.eb);
+                 auto & mip = trafo(ip,lh);
                  if (testout)
                    {
                      testout->precision(16);
@@ -1453,12 +1455,12 @@ allow_fail : bool
                                      
                                      auto first = i;
                                      ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
-                                     ir.Last().SetFacetNr(mp.facetnr);
+                                     ir.Last().SetFacetNr(mp.facetnr, mp.eb);
                                      i++;
-                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr)
+                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr && pts(i).eb == mp.eb)
                                        {
                                          ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
-                                         ir.Last().SetFacetNr(pts(i).facetnr);
+                                         ir.Last().SetFacetNr(pts(i).facetnr, pts(i).eb);
                                          i++;
                                        }
                                      SIMD_IntegrationRule simd_ir(ir, lh);
@@ -1485,12 +1487,12 @@ allow_fail : bool
                                      
                                      auto first = i;
                                      ir.Append (IntegrationPoint(mp.x, mp.y, mp.z));
-                                     ir.Last().SetFacetNr(mp.facetnr);
+                                     ir.Last().SetFacetNr(mp.facetnr, mp.eb);
                                      i++;
-                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr)
+                                     while (i < r.end() && ElementId(pts(i).vb, pts(i).nr) == ei && i < first+maxp && pts(i).facetnr == mp.facetnr && pts(i).eb == mp.eb)
                                        {
                                          ir.Append(IntegrationPoint(pts(i).x, pts(i).y, pts(i).z));
-                                         ir.Last().SetFacetNr(pts(i).facetnr);
+                                         ir.Last().SetFacetNr(pts(i).facetnr, pts(i).eb);
                                          i++;
                                        }
                                      auto& mir = trafo(ir, lh);
@@ -1510,7 +1512,7 @@ allow_fail : bool
                              auto& mp = pts(i);
                              auto& trafo = mp.mesh->GetTrafo(ElementId(mp.vb, mp.nr), lh);
                              auto ip = IntegrationPoint(mp.x,mp.y,mp.z);
-                             ip.SetFacetNr(mp.facetnr);
+                             ip.SetFacetNr(mp.facetnr, mp.eb);
                              auto& mip = trafo(ip,lh);
                              FlatVector<Complex> fv(self->Dimension(), &vals[i*self->Dimension()]);
                              self->Evaluate(mip, fv);
@@ -2095,6 +2097,7 @@ weights : list
     .def_property_readonly("vb", [](MeshPoint& p) { return p.vb; })
     .def_property_readonly("nr", [](MeshPoint& p) { return p.nr; })
     .def_property_readonly("facetnr", [](MeshPoint& p) { return p.facetnr; })
+    .def_property_readonly("eb", [](MeshPoint& p) { return p.eb; })
     ;
 
   if (have_numpy)
@@ -2106,7 +2109,8 @@ weights : list
         getNumpyFieldDescriptor<uintptr_t>( "meshptr", offsetof(MeshPoint, mesh) ),
         getNumpyFieldDescriptor<uint8_t>( "VorB", offsetof(MeshPoint, vb) ),
         getNumpyFieldDescriptor<int>( "nr", offsetof(MeshPoint, nr) ),
-        getNumpyFieldDescriptor<int>( "facetnr", offsetof(MeshPoint, facetnr) )
+        getNumpyFieldDescriptor<int>( "facetnr", offsetof(MeshPoint, facetnr) ),
+        getNumpyFieldDescriptor<uint8_t>( "eb", offsetof(MeshPoint, eb) )
     });
   }
 

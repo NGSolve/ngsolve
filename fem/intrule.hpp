@@ -320,6 +320,7 @@ namespace ngfem
     VorB vb;
     int nr;
     int facetnr = -1;
+    VorB eb = VOL;
   };
 
 
