@@ -64,9 +64,10 @@ namespace ngstd
 
     //we should create text and ci WITHOUT padding on the leftmost elements
     const auto origsize = t.Size() - order;
-    Array<double> text(origsize+1);
+    Array<double> text(origsize+order+1);
     text.Range(0, origsize) = t.Range(order,t.Size());
-    text[text.Size()-1] = text[text.Size()-2];
+    for (int j = origsize; j < text.Size(); j++)
+      text[j] = t[t.Size()-1];
 
     Array<double> ci(origsize+1);
     ci = 0;
@@ -77,7 +78,7 @@ namespace ngstd
         ci[j-order] = sum;
       }
 
-    for (int j = t.Size()-order; j < t.Size()-1; j++)
+    for (int j = t.Size()-order; j < t.Size(); j++)
       {
         sum += c[t.Size()-order] * (t[t.Size()-1] - t[j]) / order;
         ci[j-order] = sum;
