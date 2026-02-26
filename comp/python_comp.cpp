@@ -4384,7 +4384,8 @@ deformation : ngsolve.comp.GridFunction
    py::class_<BaseVTKOutput, shared_ptr<BaseVTKOutput>>(m, "VTKOutput")
     .def(py::init([] (shared_ptr<MeshAccess> ma, py::list coefs_list,
                       py::list names_list, string filename, int subdivision, 
-                      int only_element, string floatsize, bool legacy, int order)
+                      int only_element, string floatsize, bool legacy, int order,
+                      bool same_type_subdivision)
          -> shared_ptr<BaseVTKOutput>
          {
            Array<shared_ptr<CoefficientFunction> > coefs
@@ -4393,9 +4394,9 @@ deformation : ngsolve.comp.GridFunction
              = makeCArray<string> (names_list);
            shared_ptr<BaseVTKOutput> ret;
            if (ma->GetDimension() == 2)
-             ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy, order);
+             ret = make_shared<VTKOutput<2>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy, order, same_type_subdivision);
            else
-             ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy, order);
+             ret = make_shared<VTKOutput<3>> (ma, coefs, names, filename, subdivision, only_element, floatsize, legacy, order, same_type_subdivision);
            return ret;
          }),
          py::arg("ma"),
@@ -4407,6 +4408,7 @@ deformation : ngsolve.comp.GridFunction
          py::arg("floatsize") = "double",
          py::arg("legacy") = false,
          py::arg("order") = 1,
+         py::arg("same_type_subdivision") = false,
          docu_string(R"raw_string(
 VTK output class. Allows to put mesh and field information of several CoefficientFunctions into a VTK file.
 (Can be used by independent visualization software, e.g. ParaView).
@@ -4446,6 +4448,14 @@ legacy : bool (default: False)
 
 order : int (default: 1)
   allowed values: 1,2
+
+same_type_subdivision : bool (default: False)
+  When True, each element is subdivided into sub-cells of the same type only.
+  For triangles: interior lattice cells are split into two triangles instead of
+  one quad, yielding r² triangles per triangle element.
+  For prisms: interior cells are split into two prisms instead of one hex.
+  Default (False) uses quads/hexes for interior cells, which produces fewer cells
+  and is geometrically equivalent, but results in mixed cell-type output.
             .)raw_string")
          )
      .def("Do", [](shared_ptr<BaseVTKOutput> self, double time, VorB vb)

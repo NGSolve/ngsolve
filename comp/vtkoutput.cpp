@@ -23,7 +23,8 @@ namespace ngcomp
                   (int)flags.GetNumFlag("only_element", -1),
                   flags.GetStringFlag("floatsize", "double"),
                   flags.GetDefineFlag("legacy"),
-                  (int)flags.GetNumFlag("order", 1))
+                  (int)flags.GetNumFlag("order", 1),
+                  flags.GetDefineFlag("same_type_subdivision"))
   {
     ;
   }
@@ -33,9 +34,9 @@ namespace ngcomp
                           const Array<shared_ptr<CoefficientFunction>> &a_coefs,
                           const Array<string> &a_field_names,
                           string a_filename, int a_subdivision, int a_only_element, 
-                          string a_floatsize, bool a_legacy, int a_order)
+                          string a_floatsize, bool a_legacy, int a_order, bool a_same_type_subdivision)
       : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
-        filename(a_filename), subdivision(a_subdivision), order(a_order), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy)
+        filename(a_filename), subdivision(a_subdivision), order(a_order), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy), same_type_subdivision(a_same_type_subdivision)
   {
     r = 1 << (subdivision + order -1);
     h = 1.0/r;
@@ -158,7 +159,18 @@ namespace ngcomp
       for (int j = 0; i + j < r; j+=order)
       {
         if(i+j+order<r)
-          ref_elems.Append({ET_QUAD, order, m, i, j, 0});
+        {
+          if(same_type_subdivision)
+          {
+            // upward triangle: (i,j), (i+order,j), (i,j+order)
+            ref_elems.Append({ET_TRIG, order, m, i, j, 0});
+            // downward triangle: (i+order,j+order), (i,j+order), (i+order,j)
+            ref_elems.Append({ET_TRIG, order, m, i+order, j+order, 0, {-1,0,0}, {0,-1,0}});
+          }
+          else
+            // vi/vj swapped relative to default so winding matches the boundary triangles
+            ref_elems.Append({ET_QUAD, order, m, i, j, 0, {0,1,0}, {1,0,0}});
+        }
         else
           ref_elems.Append({ET_TRIG, order, m, i, j, 0});
       }
@@ -251,7 +263,18 @@ namespace ngcomp
         for (int j = 0; i + j < r; j+=order)
         {
           if (i + j + order < r)
-            ref_elems.Append({ET_HEX, order, m, i, j, k});
+          {
+            if(same_type_subdivision)
+            {
+              // upward prism: triangular face (i,j),(i+order,j),(i,j+order) × k-layer
+              ref_elems.Append({ET_PRISM, order, m, i, j, k});
+              // downward prism: triangular face (i+order,j+order),(i,j+order),(i+order,j) × k-layer
+              ref_elems.Append({ET_PRISM, order, m, i+order, j+order, k, {-1,0,0}, {0,-1,0}});
+            }
+            else
+              // vi/vj swapped so triangular faces match boundary prism winding
+              ref_elems.Append({ET_HEX, order, m, i, j, k, {0,1,0}, {1,0,0}});
+          }
           else
             ref_elems.Append({ET_PRISM, order, m, i, j, k});
         }
