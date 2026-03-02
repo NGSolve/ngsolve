@@ -318,6 +318,8 @@ namespace ngcomp
       typedef typename TVX::TSCAL TSCAL;
       if constexpr (std::is_same<TSCAL,double>())
                      bfel.EvaluateMappedIncShape (mip, x, y);
+      else
+        throw Exception("DiffOpIncHCurlCurl::Apply implemented only for double");
     }
 
 
@@ -379,6 +381,8 @@ namespace ngcomp
       typedef typename TVX::TSCAL TSCAL;
       if constexpr (std::is_same<TSCAL,double>())
                      bfel.EvaluateMappedIncShape (mip, x, y);
+      else
+        throw Exception("DiffOpIncHCurlCurl::Apply implemented only for double");
     }
 
     static void GenerateMatrixSIMDIR (const FiniteElement & bfel,
@@ -653,9 +657,7 @@ namespace ngcomp
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                   MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
+      throw Exception("DiffOpGradientHCurlCurl not available for fel = "+string(typeid(fel).name())+", sip = "+string(typeid(sip).name())+", mat = "+string(typeid(mat).name()));
     }
     
     template <typename AFEL, typename MIP, typename MAT,
@@ -707,9 +709,7 @@ namespace ngcomp
     static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                 MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
+      throw Exception("DiffOpChristoffelHCurlCurl not available for fel = "+string(typeid(fel).name())+", sip = "+string(typeid(sip).name())+", mat = "+string(typeid(mat).name()));
     }
     
     template <typename AFEL, typename MIP, typename MAT,
@@ -785,7 +785,7 @@ namespace ngcomp
           for (size_t k=0; k<D; k++)
             {
               //Gamma_ijk = 0.5*( d_i C_jk + d_j C_ik - d_k C_ij )
-              mat.Row(k*D*D+j*D+i).Range(bmir.Size()) = 0.5*(bmat.Row(i*D*D+(D*k+j))+bmat.Row(j*D*D+(D*i+k))-bmat.Row(k*D*D+(D*i+j)));
+              mat.Row(i*D*D+j*D+k).Range(bmir.Size()) = 0.5*(bmat.Row(i*D*D+(D*k+j))+bmat.Row(j*D*D+(D*i+k))-bmat.Row(k*D*D+(D*i+j)));
             }
     }
     
@@ -842,9 +842,7 @@ namespace ngcomp
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                   MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
+      throw Exception("DiffOpChristoffel2HCurlCurl not available for fel = "+string(typeid(fel).name())+", sip = "+string(typeid(sip).name())+", mat = "+string(typeid(mat).name()));
     }
     
     template <typename AFEL, typename MIP, typename MAT,
@@ -973,9 +971,7 @@ namespace ngcomp
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                   MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
+      throw Exception("DiffOpRiemannHCurlCurl not available for fel = "+string(typeid(fel).name())+", sip = "+string(typeid(sip).name())+", mat = "+string(typeid(mat).name()));
     }
     
     template <typename AFEL, typename MIP, typename MAT,
@@ -1163,9 +1159,7 @@ namespace ngcomp
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                   MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
+      throw Exception("DiffOpRicciHCurlCurl not available for fel = "+string(typeid(fel).name())+", sip = "+string(typeid(sip).name())+", mat = "+string(typeid(mat).name()));
     }
     
     template <typename AFEL, typename MIP, typename MAT,
@@ -1308,9 +1302,7 @@ namespace ngcomp
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                   MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
+      throw Exception("DiffOpScalarHCurlCurl not available for fel = "+string(typeid(fel).name())+", sip = "+string(typeid(sip).name())+", mat = "+string(typeid(mat).name()));
     }
     
     template <typename AFEL, typename MIP, typename MAT,
@@ -1409,9 +1401,7 @@ namespace ngcomp
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                   MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
+      throw Exception("DiffOpEinsteinHCurlCurl not available for fel = "+string(typeid(fel).name())+", sip = "+string(typeid(sip).name())+", mat = "+string(typeid(mat).name()));
     }
     
     template <typename AFEL, typename MIP, typename MAT,
@@ -1548,9 +1538,7 @@ namespace ngcomp
       static void GenerateMatrix (const AFEL & fel, const SIP & sip,
                                   MAT && mat, LocalHeap & lh)
     {
-      cout << "nicht gut" << endl;
-      cout << "type(fel) = " << typeid(fel).name() << ", sip = " << typeid(sip).name()
-           << ", mat = " << typeid(mat).name() << endl;
+      throw Exception("DiffOpCurvatureHCurlCurl not available for fel = "+string(typeid(fel).name())+", sip = "+string(typeid(sip).name())+", mat = "+string(typeid(mat).name()));
     }
     
     template <typename AFEL, typename MIP, typename MAT,
@@ -2139,20 +2127,21 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
     if (!ei.IsVolume())
     {
       if(!discontinuous || (issurfacespace && ei.VB() == BND && DefinedOn(ngel)))
-      {
-        auto feseg = new (alloc) HCurlCurlFE<ET_SEGM> (order);
-        auto fetr  = new (alloc) HCurlCurlFE<ET_TRIG> (order);
-        auto fequ  = new (alloc) HCurlCurlFE<ET_QUAD> (order);
+      { 
         switch(ma->GetElType(ei))
           {
           case ET_SEGM:
+          {
+            auto feseg = new (alloc) HCurlCurlFE<ET_SEGM> (order);
             feseg->SetVertexNumbers (ngel.Vertices());
             feseg->SetOrderInner(order_edge[ei.Nr()][0]);
             feseg->ComputeNDof();
             return *feseg;
+          }
             
           case ET_TRIG:
             {
+              auto fetr  = new (alloc) HCurlCurlFE<ET_TRIG> (order);
               fetr->SetVertexNumbers (ngel.Vertices());
               int ii = 0;
               for(auto e : ngel.Edges())
@@ -2164,10 +2153,11 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
             
           case ET_QUAD:
             {
+              auto fequ  = new (alloc) HCurlCurlFE<ET_QUAD> (order);
               fequ->SetVertexNumbers (ngel.Vertices());
               int ii = 0;
               for(auto e : ngel.Edges())
-                fetr->SetOrderEdge(ii++,order_edge[e][0]);
+                fequ->SetOrderEdge(ii++,order_edge[e][0]);
               fequ->SetOrderInner(order_facet[ei.Nr()]);
               fequ->ComputeNDof();
               return *fequ;
