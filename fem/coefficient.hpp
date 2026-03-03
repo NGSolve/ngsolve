@@ -1848,9 +1848,22 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator+ (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
-  
+
+  INLINE shared_ptr<CoefficientFunction> operator+ (double d, shared_ptr<CoefficientFunction> c2)
+  {
+    return make_shared<ConstantCoefficientFunction>(d)+c2;
+  }
+
+
+
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator- (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);
+
+  INLINE shared_ptr<CoefficientFunction> operator- (double d, shared_ptr<CoefficientFunction> c2)
+  {
+    return make_shared<ConstantCoefficientFunction>(d)-c2;
+  }
+
 
   NGS_DLL_HEADER
   shared_ptr<CoefficientFunction> operator* (shared_ptr<CoefficientFunction> c1, shared_ptr<CoefficientFunction> c2);

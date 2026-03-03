@@ -66,6 +66,24 @@ namespace ngfem
     void DoArchive(Archive& ar) {}
   };
 
+  struct GenericASinh {
+    template <typename T> T operator() (T x) const { return asinh(x); }
+    template <typename T> T Diff (T x) const { return 1.0 / sqrt(1.+x*x); }
+    template <typename T>
+    AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception("no asinh for ADD"); }    
+    static string Name() { return "asinh"; }
+    void DoArchive(Archive& ar) {}
+  };
+  
+  struct GenericACosh {
+    template <typename T> T operator() (T x) const { return acosh(x); }
+    template <typename T> T Diff (T x) const { return 1.0 / sqrt(1.-x*x); }
+    template <typename T>    
+    AutoDiffDiff<1,T> operator() (AutoDiffDiff<1,T> x) const { throw Exception("no acosh for ADD"); }        
+    static string Name() { return "acosh"; }
+    void DoArchive(Archive& ar) {}
+  };
+
   
 
   struct GenericExp {
@@ -146,6 +164,12 @@ struct GenericCeil {
   
   using std::cosh;
   NGS_DLL_HEADER shared_ptr<CoefficientFunction> cosh(shared_ptr<CoefficientFunction> x);
+
+  using std::sinh;    
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction> asinh(shared_ptr<CoefficientFunction> x);
+  
+  using std::cosh;
+  NGS_DLL_HEADER shared_ptr<CoefficientFunction> acosh(shared_ptr<CoefficientFunction> x);
 
   using std::exp;
   NGS_DLL_HEADER shared_ptr<CoefficientFunction> exp(shared_ptr<CoefficientFunction> x);

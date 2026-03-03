@@ -256,6 +256,14 @@ namespace ngcore
   { return SIMDComplexWrapper (x, [](Complex c) { return sinh(c); }); }
   
   template <int N>
+  inline SIMD<Complex, N> acosh (SIMD<Complex, N> x)
+  { return SIMDComplexWrapper (x, [](Complex c) { return acosh(c); }); }
+  
+  template <int N>
+  inline SIMD<Complex, N> asinh (SIMD<Complex, N> x)
+  { return SIMDComplexWrapper (x, [](Complex c) { return asinh(c); }); }
+  
+  template <int N>
   inline SIMD<Complex, N> exp (SIMD<Complex, N> x)
   { return SIMDComplexWrapper (x, [](Complex c) { return exp(c); }); }
 

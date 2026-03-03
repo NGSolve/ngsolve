@@ -25,8 +25,10 @@ namespace ngfem
     ExportStdMathFunction_<GenericSin>(m, "sin", "Sine of argument in radians");
     ExportStdMathFunction_<GenericCos>(m, "cos", "Cosine of argument in radians");
     ExportStdMathFunction_<GenericTan>(m, "tan", "Tangent of argument in radians");
-    ExportStdMathFunction_<GenericSinh>(m, "sinh", "Hyperbolic sine of argument in radians");
-    ExportStdMathFunction_<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument in radians");
+    ExportStdMathFunction_<GenericSinh>(m, "sinh", "Hyperbolic sine of argument");
+    ExportStdMathFunction_<GenericCosh>(m, "cosh", "Hyperbolic cosine of argument");
+    ExportStdMathFunction_<GenericASinh>(m, "asinh", "Inverse hyperbolic sine of argument");
+    ExportStdMathFunction_<GenericACosh>(m, "acosh", "Inverse hyperbolic cosine of argument");
     ExportStdMathFunction_<GenericExp>(m, "exp", "Exponential function");
     ExportStdMathFunction_<GenericLog>(m, "log", "Logarithm function");
     ExportStdMathFunction_<GenericATan>(m, "atan", "Inverse tangent in radians");
@@ -314,6 +316,14 @@ namespace ngfem
   shared_ptr<CoefficientFunction> cosh(shared_ptr<CoefficientFunction> x)
   {
     return MakeStdMathFunction<GenericCosh>(x);
+  }
+  shared_ptr<CoefficientFunction> asinh(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericASinh>(x);
+  }
+  shared_ptr<CoefficientFunction> acosh(shared_ptr<CoefficientFunction> x)
+  {
+    return MakeStdMathFunction<GenericACosh>(x);
   }
   
   shared_ptr<CoefficientFunction> exp(shared_ptr<CoefficientFunction> x)

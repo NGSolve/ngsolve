@@ -967,6 +967,7 @@ namespace ngfem
          BareSliceVector<double> x, 
          BareSliceMatrix<SIMD<double>> flux) const
   {
+    cout << "VectorDifferentialOperator, Apply" << endl;
     auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();    

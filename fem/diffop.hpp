@@ -909,9 +909,14 @@ namespace ngfem
            BareSliceVector<double> x, 
            BareSliceMatrix<SIMD<double>> flux) const override
     {
-      const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      cout << "in Apply, typeid(bfel) = " << typeid(bfel).name() << endl;
+      // const CompoundFiniteElement & fel = static_cast<const CompoundFiniteElement&> (bfel);
+      const CompoundFiniteElement & fel = dynamic_cast<const CompoundFiniteElement&> (bfel);
+      cout << "cast worked" << endl;
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->Apply (fel[comp], bmir, x.Range(r), flux);
+      cout << "func complete" << endl;
+      
     }
 
     virtual void
