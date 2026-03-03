@@ -2401,6 +2401,9 @@ namespace ngfem
     const SIMD_IntegrationRule & GetIRX() const { return *irx; }
     const SIMD_IntegrationRule & GetIRY() const { return *iry; }
     const SIMD_IntegrationRule & GetIRZ() const { return *irz; }
+    const SIMD_IntegrationRule* GetIRXPtr() const { return irx; }
+    const SIMD_IntegrationRule* GetIRYPtr() const { return iry; }
+    const SIMD_IntegrationRule* GetIRZPtr() const { return irz; }
     void SetIRX(const SIMD_IntegrationRule * ir) { irx = ir; }
     void SetIRY(const SIMD_IntegrationRule * ir) { iry = ir; }
     void SetIRZ(const SIMD_IntegrationRule * ir) { irz = ir; }
@@ -2443,9 +2446,9 @@ namespace ngfem
                                     const ElementTransformation & aeltrans)
       : ir(air.Size(),&air[0]), eltrans(aeltrans)
     {
-      ir.SetIRX(&air.GetIRX());
-      ir.SetIRY(&air.GetIRY());
-      ir.SetIRZ(&air.GetIRZ());
+      ir.SetIRX(air.GetIRXPtr());
+      ir.SetIRY(air.GetIRYPtr());
+      ir.SetIRZ(air.GetIRZPtr());
       ir.SetNIP(air.GetNIP());
     }
     ~SIMD_BaseMappedIntegrationRule ()

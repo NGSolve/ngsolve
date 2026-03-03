@@ -88,12 +88,10 @@ struct MapInnerDofs {
 
     auto vals_ori = m->GetValues();
 
-    auto &cluster_array = *cluster;
-    auto &inner_bitarray = *inner;
-    auto is_used = [this, &inner_bitarray, &cluster_array](int i, int j) {
+    auto is_used = [this](int i, int j) {
       if (inner)
-        return inner_bitarray[i] && inner_bitarray[j];
-      return cluster_array[i] == cluster_array[j];
+        return (*inner)[i] && (*inner)[j];
+      return (*cluster)[i] == (*cluster)[j];
     };
 
     for (auto i : project)
