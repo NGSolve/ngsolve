@@ -915,7 +915,7 @@ namespace ngfem
       // cout << "cast worked" << endl;
       IntRange r = BlockDim() * fel.GetRange(comp);
       diffop->Apply (fel[comp], bmir, x.Range(r), flux);
-      cout << "func complete" << endl;
+      // cout << "func complete" << endl;
       
     }
 
