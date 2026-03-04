@@ -17,6 +17,8 @@
 #include "HYPRE.h"
 #include "HYPRE_parcsr_ls.h"
 
+#include "paralleldofs.hpp"
+
 
 namespace ngcomp
 {
