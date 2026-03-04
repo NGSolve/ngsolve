@@ -220,9 +220,7 @@ timer4 = ngs.Timer("func")
 timer3multnumpy = ngs.Timer("timer3 mul numpy")
 timer3multngs = ngs.Timer("timer3 mul ngs")
 
-def GetNodalP1Data(encode, mesh, cf, cf2=None):
-    if cf2 is not None:
-        cf = ngs.CF((cf,cf2))
+def GetNodalP1Data(encode, mesh, cf):
     timerp1.Start()
     fes = ngs.NodalFESpace(mesh, order=1)**cf.dim
     gfu = ngs.GridFunction(fes)
@@ -300,20 +298,13 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         d['deformation'] = deformation
         deformation = None
 
-    func0 = None
-    func2 = None
+    cf = None
+    
     if func and func.is_complex:
         d['is_complex'] = True
-        func1 = func[0].real
-        func2 = ngs.CoefficientFunction( (func[0].imag, 0.0) )
-        d['funcdim'] = 2
-    elif func and func.dim>1:
-        func1 = func[0]
-        func2 = ngs.CoefficientFunction( tuple(func[i] if i<func.dim else 0.0 for i in range(1,3)) ) # max 3-dimensional functions
-        d['funcdim'] = func.dim
+        cf = func.realimag
     elif func:
-        func1 = func
-        d['funcdim'] = 1
+        cf = func
     else:
         # no function at all -> we are just drawing a mesh, eval mesh element index instead
         mats = mesh.GetMaterials()
@@ -322,7 +313,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         nmats = len(mesh.GetMaterials())
         nbnds = len(mesh.GetBoundaries())
         n = max(nmats, nbnds, len(bbnds))
-        func1 = ngs.CoefficientFunction(list(range(n)))
+        cf = ngs.CoefficientFunction(list(range(n)))
         n_regions = [0, 0, nmats, nbnds]
         d['mesh_regions_2d'] = n_regions[mesh.dim]
         d['mesh_regions_3d'] = nmats if mesh.dim==3 else 0
@@ -331,28 +322,34 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         d['funcdim'] = 0
         fds = mesh.ngmesh.FaceDescriptors()
         d["colors"] = [fd.color + (fd.transparency,) for fd in fds]
+        
+    if cf.dim > 3:
+        cf = cf[:3]
+        
+    if cf.dim > 1:
+        cf = ngs.CF((cf, *([0.0] * (3 - cf.dim))))
 
-        func0 = func1
-
-    if func0 is None:
-        func0 = ngs.CoefficientFunction( 0.0 )
-
+    if func:
+        d['funcdim'] = cf.dim
+        
+    xyz = ngs.CF((ngs.x, ngs.y, ngs.z))
+    
+    if deformation is not None:
+        xyz += deformation
+        
+    cf = ngs.CF((xyz, cf))
+    cf_wire = ngs.CF((xyz, 0.0))
+    cf_surf = cf if draw_surf else cf_wire
+    
     d['show_wireframe'] = order2d>0
     d['show_mesh'] = order2d>0
 
     if order==1 and nodal_p1:
-        d.update(GetNodalP1Data(encode, mesh, func1, func2))
+        d.update(GetNodalP1Data(encode, mesh, cf))
         if '_override_data' in settings:
             d.update(settings['_override_data'])
         timer.Stop()
         return d
-
-    func1 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func1 ) )
-    func0 = ngs.CoefficientFunction( (ngs.x, ngs.y, ngs.z, func0 ) )
-
-    if deformation is not None:
-        func1 += ngs.CoefficientFunction((deformation, 0.0))
-        func0 += ngs.CoefficientFunction((deformation, 0.0))
 
     if order2d>0:
         og = order2d
@@ -383,23 +380,21 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
 
         vb = [ngs.VOL, ngs.BND][mesh.dim-2]
         reg = regions[vb]
-        cf = func1 if draw_surf else func0
         timer2map.Start()
         pts = mesh.MapToAllElements({ngs.ET.TRIG: ir_trig, ngs.ET.QUAD: ir_quad}, reg)
         timer2map.Stop()
-        pmat = cf(pts)
-
+        pmat = cf_surf(pts)
+        
         pmima = updatePMinMax(pmat)
 
         timermult.Start()
-        pmat = pmat.reshape(-1, og+1, 4)
-        if False:
-            BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
-        else:
-            BezierPnts = np.zeros( (og+1, pmat.shape[0], 4) )
-            for i in range(4):
-                ngsmat = ngs.Matrix(pmat[:,:,i].transpose()) 
-                BezierPnts[:,:,i] = iBvals * ngsmat
+        pmat = pmat.reshape(-1, og+1, cf.dim)
+        pmat1 = pmat[:, :, :4]
+        
+        BezierPnts = np.zeros( (og+1, pmat1.shape[0], 4) )
+        for i in range(4):
+            ngsmat = ngs.Matrix(pmat[:,:,i].transpose()) 
+            BezierPnts[:,:,i] = iBvals * ngsmat
         timermult.Stop()
         
         timer2list.Start()        
@@ -407,11 +402,10 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
             Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
         timer2list.Stop()        
 
-        if func2 and draw_surf:
-            pmat = func2(pts)
-            pmat = pmat.reshape(-1, og+1, 2)
+        if cf_surf.dim > 4:
+            pmat2 = pmat[:, :, 4:].reshape(-1, og+1, 2)
             timermult.Start()
-            BezierPnts = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
+            BezierPnts = np.tensordot(iBvals.NumPy(), pmat2, axes=(1,1))
             timermult.Stop()
             timer2list.Start()        
             for i in range(og+1):
@@ -425,7 +419,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         vb = [ngs.VOL, ngs.BND, ngs.BBND][mesh.dim-1]
         reg = regions[vb]
         pts = mesh.MapToAllElements(ir_seg, reg)
-        pmat = func0(pts)
+        pmat = cf_wire(pts)
         pmima = updatePMinMax(pmat)
         pmat = pmat.reshape(-1, og+1, 4)
         edge_data = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
@@ -469,46 +463,39 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         else:
             pts = mesh.MapToAllElements(get_intrules(2, order), reg)
 
-        pmat = ngs.CoefficientFunction( func1 if draw_surf else func0 ) (pts)
+        pmat = ngs.CoefficientFunction( cf_surf ) (pts)
 
         
         n_points_per_trig = len(get_intrules(2, order2d)[ngs.ET.TRIG])
 
         timer3minmax.Start()
         pmima = updatePMinMax(pmat, pmima)
-        funcmin,funcmax = getMinMax(pmat[:,3])
+        funcmin,funcmax = getMinMax(pmat[:,3:].flatten())
         timer3minmax.Stop()
 
         pmin, pmax = [ngs.Vector(p) for p in zip(*pmima)]
         mesh_center = 0.5*(pmin+pmax)
         mesh_radius = float(np.linalg.norm(pmax-pmin)/2)
         
-        pmat = pmat.reshape(-1, n_points_per_trig, 4)
+        pmat = pmat.reshape(-1, n_points_per_trig, cf_surf.dim)
+        pmat1 = pmat[:, :, :4]
+        pmat2 = pmat[:, :, 4:] if cf_surf.dim > 4 else None
 
-        if False:
-            timer3multnumpy.Start()
-            BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
-            timer3multnumpy.Stop()
-        else:
-            timer3multngs.Start()
-            BezierPnts = np.zeros( (n_points_per_trig, pmat.shape[0], 4) )
-            for i in range(4):
-                ngsmat = ngs.Matrix(pmat[:,:,i].transpose())
-                BezierPnts[:,:,i] = iBvals_trig * ngsmat
-            timer3multngs.Stop()
+        timer3multngs.Start()
+        BezierPnts = np.zeros( (n_points_per_trig, pmat1.shape[0], 4) )
+        for i in range(4):
+            ngsmat = ngs.Matrix(pmat1[:,:,i].transpose())
+            BezierPnts[:,:,i] = iBvals_trig * ngsmat
+        timer3multngs.Stop()
 
         timer3list.Start()        
         for i in range(ndtrig):
             Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
         timer3list.Stop()        
 
-        if func2 and draw_surf:
-            pmat = ngs.CoefficientFunction( func2 ) (pts)   
-
-            pmat = pmat.reshape(-1, n_points_per_trig, 2)
-
-            funcmin, funcmax = getMinMax(pmat.flatten(), funcmin, funcmax)
-            BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat, axes=(1,1))
+        if pmat2 is not None:
+            pmat2 = pmat2.reshape(-1, n_points_per_trig, 2)
+            BezierPnts = np.tensordot(iBvals_trig.NumPy(), pmat2, axes=(1,1))
             if og==1:
                 for i in range(ndtrig):
                     Bezier_points.append(encode(BezierPnts[i], dtype=np.float32))
@@ -528,13 +515,6 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
     timer4.Start()
 
     if d['draw_vol']:
-        p0 = []
-        p1 = []
-        p2 = []
-        p3 = []
-        values = []
-        tets = []
-
         intrules = get_intrules(3, order3d)
 
         if intpoints is not None:
@@ -542,23 +522,23 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         else:
             pts = mesh.MapToAllElements(get_intrules(3, order3d), regions[ngs.VOL])
             
-        pmat = func1(pts)
+        npts = len(intrules[ngs.ET.TET])
+        pmat = cf(pts).reshape(-1, npts, cf.dim)
+        pmat1 = pmat[:, :, :4]
+        pmat2 = pmat[:, :, 4:] if cf.dim > 4 else None
 
         np_per_tet = len(intrules[ngs.ET.TET])
 
-        ne = mesh.GetNE(ngs.VOL)
-        pmat = pmat.reshape(-1, np_per_tet, 4)
-        
-        funcmin, funcmax = getMinMax(pmat[:,:,3].flatten(), funcmin, funcmax)
+        pmat1 = pmat1.reshape(-1, np_per_tet, 4)
+        funcmin, funcmax = getMinMax(pmat[:,:,3:].flatten(), funcmin, funcmax)
         points3d = []
         for i in range(np_per_tet):
-            points3d.append(encode(pmat[:,i,:], dtype=np.float32))
+            points3d.append(encode(pmat1[:,i,:], dtype=np.float32))
 
-        if func2:
-            pmat = func2(pts).reshape(-1, np_per_tet//2, 4)
-            funcmin, funcmax = getMinMax(pmat.flatten(), funcmin, funcmax)
+        if pmat2 is not None:
+            pmat2 = pmat2.reshape(-1, np_per_tet//2, 4)
             for i in range(np_per_tet//2):
-                points3d.append(encode(pmat[:,i,:], dtype=np.float32))
+                points3d.append(encode(pmat2[:,i,:], dtype=np.float32))
         d['points3d'] = points3d
     if func:
         d['funcmin'] = funcmin
