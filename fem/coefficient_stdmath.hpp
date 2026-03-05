@@ -165,10 +165,10 @@ struct GenericCeil {
   using std::cosh;
   NGS_DLL_HEADER shared_ptr<CoefficientFunction> cosh(shared_ptr<CoefficientFunction> x);
 
-  using std::sinh;    
+  using std::asinh;    
   NGS_DLL_HEADER shared_ptr<CoefficientFunction> asinh(shared_ptr<CoefficientFunction> x);
   
-  using std::cosh;
+  using std::acosh;
   NGS_DLL_HEADER shared_ptr<CoefficientFunction> acosh(shared_ptr<CoefficientFunction> x);
 
   using std::exp;
