@@ -324,7 +324,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         d["colors"] = [fd.color + (fd.transparency,) for fd in fds]
         
     if cf.dim > 3:
-        cf = cf[:3]
+        print("Warning in Webgui.Draw: function has more than 3 components, drawing Norm(cf) instead")
+        cf = ngs.Norm(cf)
         
     if cf.dim > 1:
         cf = ngs.CF((cf, *([0.0] * (3 - cf.dim))))
