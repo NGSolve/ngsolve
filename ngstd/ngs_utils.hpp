@@ -28,6 +28,7 @@ namespace ngstd
   // using IC = integral_constant<int,N>;
 
 }
+
 namespace std
 {
   template <int I1, int I2>
@@ -37,15 +38,25 @@ namespace std
   {
     return integral_constant<int,I1+I2>();
   }
+}
 
-
+namespace ngstd
+{
+  template <typename T>
+  struct my_is_integral : std::is_integral<T> {};
+  
+  template <int N>
+  struct my_is_integral<ngstd::IC<N>> : std::true_type {};
+    
+  /*
   // may be used as an index e.g. for FlatVector
+  // cannot specialize std::is_integral for custome type in C++26
   template <int N>
   struct is_integral<ngstd::IC<N>>
   {
     enum { value = 1 };
   };
-
+  */
 
 
   

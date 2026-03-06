@@ -20,9 +20,11 @@ namespace ngla
 #ifdef PARALLEL
   
   template <typename TM> AutoVector MasterInverse<TM> :: CreateRowVector () const
-  { return make_unique<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  // { return make_unique<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  { return make_unique<ParallelVVector<double>> (paralleldofs); }
   template <typename TM> AutoVector MasterInverse<TM> :: CreateColVector () const
-  { return make_unique<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  // { return make_unique<ParallelVVector<double>> (paralleldofs->GetNDofLocal(), paralleldofs); }
+  { return make_unique<ParallelVVector<double>> (paralleldofs); }
   
   template <typename TM>
   MasterInverse<TM> :: MasterInverse (const SparseMatrixTM<TM> & mat, 
@@ -874,13 +876,16 @@ namespace ngla
     if (u_paralleldofs==nullptr) {
       return make_unique<VVector<double>>(VHeight());
     }
+    /*
     return make_unique<ParallelVVector<double>> (u_paralleldofs->GetNDofLocal(),
 						 u_paralleldofs);
+    */
+    return make_unique<ParallelVVector<double>> (u_paralleldofs);
   }
   
   AutoVector FETI_Jump_Matrix :: CreateColVector () const
   {
-    return make_unique<ParallelVVector<double>> (jump_paralleldofs->GetNDofLocal(),
+    return make_unique<ParallelVVector<double>> (// jump_paralleldofs->GetNDofLocal(),
 						 jump_paralleldofs);
   }
   

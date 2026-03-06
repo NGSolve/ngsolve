@@ -79,13 +79,20 @@ namespace ngs_cuda
   };
 }
 
+/*
 namespace std {
   template <typename T>  
   struct is_integral<ngs_cuda::Dev<T>> {
     static constexpr bool value = is_integral<T>::value;
   };
 }
+*/
 
+namespace ngstd
+{
+  template <int N>
+  struct my_is_integral<ngs_cude::Dev<T>> : my_is_integral<T>{};
+}
 
 
 namespace ngcore 
