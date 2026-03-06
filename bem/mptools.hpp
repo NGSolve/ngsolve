@@ -1897,7 +1897,7 @@ namespace ngsbem
         else
           sum = mp.EvalDirectionalDerivative(p-center, d);
 
-        static Timer t("mptool direct evaluate deriv"); RegionTimer r(t);
+        // static Timer t("mptool direct evaluate deriv"); RegionTimer r(t);
         for (auto sn : singnodes)
           sum += sn->EvaluateMPDeriv(p, d);
 

@@ -97,6 +97,24 @@ namespace ngsbem
 
 
     void Apply (const FiniteElement & fel,
+                const BaseMappedIntegrationPoint & mip,
+                BareSliceVector<Complex> x, 
+                FlatVector<Complex> flux,
+                LocalHeap & lh) const override
+    {
+      auto dims = factor->Dimensions();
+
+      HeapReset hr(lh);
+      FlatVector<Complex> tmpflux(dims[1], lh);
+      FlatVector<Complex> factorx(dims[0]*dims[1], lh);
+      
+      diffop -> Apply (fel, mip, x, tmpflux, lh);
+      factor -> Evaluate (mip, factorx);
+      flux = factorx.AsMatrix(dims[0], dims[1]) * tmpflux;
+    }
+
+    
+    void Apply (const FiniteElement & fel,
                 const SIMD_BaseMappedIntegrationRule & mir,
                 BareSliceVector<double> x, 
                 BareSliceMatrix<SIMD<double>> flux) const override

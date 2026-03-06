@@ -1207,7 +1207,7 @@ namespace ngsbem
     if constexpr (std::is_same<typename KERNEL::value_type,T>())
       if (local_expansion)
         {
-          static Timer t("ngbem evaluate potential, local expansion (bmir)"); RegionTimer reg(t);
+          // static Timer t("ngbem evaluate potential, local expansion (bmir)"); RegionTimer reg(t);
         
           auto & mir = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);        
           for (int j = 0; j < mir.Size(); j++)
