@@ -4282,24 +4282,24 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               massfcR += ip.Weight() * mshapef * Trans(mshapec);
             }
 
-          Matrix<> vertid = {{1, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0, 0, 0 }};
-          Matrix<> vertl = {{0.5, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0, 0, 0 }};
-          Matrix<> vertr = {{1, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0.5, 0, 0 }};
-
-          FE_ElementTransformation<3,3> trafoid(ET_TET, vertid);
-          FE_ElementTransformation<3,3> trafol(ET_TET, vertl);
-          FE_ElementTransformation<3,3> trafor(ET_TET, vertr);
-
-          VectorFiniteElement vecfc(felc, dim);
-          VectorFiniteElement vecfL(felfL, dim);
-          VectorFiniteElement vecfR(felfR, dim);
-
-          if (piola)
-            for (IntegrationPoint ip : ir)
+        Matrix<> vertid = {{1, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0, 0, 0 }};
+        Matrix<> vertl = {{0.5, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0, 0, 0 }};
+        Matrix<> vertr = {{1, 0, 0}, {0, 1, 0}, { 0, 0, 1}, {0.5, 0, 0 }};
+        
+        FE_ElementTransformation<3,3> trafoid(ET_TET, vertid);
+        FE_ElementTransformation<3,3> trafol(ET_TET, vertl);
+        FE_ElementTransformation<3,3> trafor(ET_TET, vertr);
+        
+        VectorFiniteElement vecfc(felc, dim);
+        VectorFiniteElement vecfL(felfL, dim);
+        VectorFiniteElement vecfR(felfR, dim);
+        
+        if (piola)
+          for (IntegrationPoint ip : ir)
             {
               IntegrationPoint ipcL(0.5*ip(0), ip(1), ip(2));
               IntegrationPoint ipcR(0.5*(1+ip(0)-ip(1)-ip(2)), ip(1), ip(2));              
-
+              
               MappedIntegrationPoint<3,3> mipfl(ip, trafol);
               MappedIntegrationPoint<3,3> mipcl(ipcL, trafoid);
               MappedIntegrationPoint<3,3> mipfr(ip, trafor);
@@ -4318,12 +4318,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
               massfcR += ip.Weight() * mshapef * Trans(mshapec);
             }
 
-          CalcInverse (massfL);
-          prolsL[classnr].SetSize(dim*ndof, dim*ndof);
-          prolsL[classnr] = massfL * massfcL;
-          CalcInverse (massfR);
-          prolsR[classnr].SetSize(dim*ndof, dim*ndof);
-          prolsR[classnr] = massfR * massfcR;
+        CalcInverse (massfL);
+        prolsL[classnr].SetSize(dim*ndof, dim*ndof);
+        prolsL[classnr] = massfL * massfcL;
+        CalcInverse (massfR);
+        prolsR[classnr].SetSize(dim*ndof, dim*ndof);
+        prolsR[classnr] = massfR * massfcR;
       }
     }
 

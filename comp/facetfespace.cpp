@@ -1305,7 +1305,8 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 			      if(j + k == 0 && !all_dofs_together) dnums.Append (fanums[i]);
 			      else if(j + k == order) dnums.Append (innerdof++);
 			      else dnums.Append (facetdof++);
-			    } else
+			    }
+                      else
 			for(int j = 0; j <= order; j++)
 			  for(int k = 0; k <= order; k++)
 			    {
