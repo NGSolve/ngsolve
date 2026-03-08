@@ -1319,6 +1319,34 @@ namespace ngbla
       using BASE::Width;      
     };
 
+    template <typename LT, typename LTH, typename LTW>
+    class Layout<LT,LTH,LTW,unused_dist> : public LayoutHW<LT,LTH,LTW>
+    {
+      typedef LayoutHW<LT,LTH,LTW> BASE;
+    public:
+      Layout() = default;
+      Layout(const Layout&) = default;      
+      Layout(Layout&&) = default;
+
+      Layout& operator= (const Layout&) = default;
+      Layout& operator= (Layout&&) = default;
+      ~Layout() = default;
+      
+      INLINE Layout (LT * adata, LTH ah, LTW aw, unused_dist adist)
+        : BASE(adata,ah,aw) { }
+      INLINE Layout (LT * adata, LTH ah, LTW aw)
+        : BASE(adata,ah,aw) { }
+      INLINE Layout (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Dist() const { return unused_dist(); }
+      using BASE::Data;
+      using BASE::Height;      
+      using BASE::Width;      
+    };
+
+
+
     /*
     template <typename LT, typename LTS, int IDIST>
     class Layout<LT, LTS, IC<IDIST>> : public Layout2<LT,LTS>
@@ -1435,13 +1463,13 @@ namespace ngbla
     INLINE MatrixView (size_t s, T * adata)
     {
       if constexpr (is_IC<TW>() && is_IC<TDIST>())
-        layout = Layout(adata, s, TW(), TDIST());
+        layout = Layout<T,TH,TW,TDIST>(adata, s, TW(), TDIST());
       else if constexpr (is_IC<TH>() && is_IC<TDIST>())
-        layout = Layout(adata, TH(), s, TDIST());
+        layout = Layout<T,TH,TW,TDIST>(adata, TH(), s, TDIST());
       else if constexpr (is_IC<TH>() && is_IC<TW>())
-        layout = Layout(adata, TH(), TW(), s);        
+        layout = Layout<T,TH,TW,TDIST>(adata, TH(), TW(), s);        
       else if constexpr (is_same<TDIST,unused_dist>())
-        layout = Layout(adata,TH(s),TW(s),TDIST(s));
+        layout = Layout<T,TH,TW,TDIST>(adata,TH(s),TW(s),TDIST(s));
     }
     
     
@@ -1468,13 +1496,13 @@ namespace ngbla
     INLINE MatrixView (size_t s, LocalHeap & lh)
     {
       if constexpr (is_IC<TW>() && is_IC<TDIST>())
-        layout = Layout(lh.Alloc<T>(s*TW()), s, TW(), TDIST());        
+        layout = Layout<T,TH,TW,TDIST>(lh.Alloc<T>(s*TW()), s, TW(), TDIST());        
       else if constexpr (is_IC<TH>() && is_IC<TDIST>())
-        layout = Layout(lh.Alloc<T>(s*TH()), TH(), s, TDIST());                
+        layout = Layout<T,TH,TW,TDIST>(lh.Alloc<T>(s*TH()), TH(), s, TDIST());                
       else if constexpr (is_IC<TH>() && is_IC<TW>())
-        layout = Layout(lh.Alloc<T>(TH()*TW()), TH(), TW(), s);
+        layout = Layout<T,TH,TW,TDIST>(lh.Alloc<T>(TH()*TW()), TH(), TW(), s);
       else if constexpr (is_same<TDIST,unused_dist>())
-        layout = Layout(lh.Alloc<T>(s*s), TH(s), TW(s), TDIST(s));
+        layout = Layout<T,TH,TW,TDIST>(lh.Alloc<T>(s*s), TH(s), TW(s), TDIST(s));
       // else
       // static_assert(false, "illegal 1-size ctor of MatrixView");
     }
