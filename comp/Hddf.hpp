@@ -17,7 +17,7 @@ namespace ngcomp
     int order;
     int dofs_per_face;  // for uniform order
     int dofs_per_edge;
-    bool bubble = true;
+    // bool bubble = true;
     bool JKM = false;
 
     int first_facet_dof;
