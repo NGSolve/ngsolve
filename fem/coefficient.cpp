@@ -226,38 +226,37 @@ namespace ngfem
     auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
     if (cache.find(thisptr) != cache.end())
       return cache[thisptr];
-        
+    
     /*
     if (var->Dimensions().Size() == 0)
       return this->Diff(var, make_shared<ConstantCoefficientFunction>(1));
     else
-    */
       {
-        Array<int> resultdims;
-        resultdims += this->Dimensions();
-        resultdims += var->Dimensions();
-        
-        if (this == var) // diff by me
-          return IdentityCF(Dimensions());
-
-        if (this->InputCoefficientFunctions().Size()==0)
-          return ZeroCF(resultdims);          
-        
-        cout << IM(5) << "DiffJacobi for CoefficientFunction, type = " << typeid(*this).name() << endl;
-
-        int dim = var->Dimension();
-        Array<shared_ptr<CoefficientFunction>> ddi(dim); 
-        for (int i = 0; i < dim; i++)
-          {
-            auto vec = UnitVectorCF(dim,i)->Reshape(var->Dimensions());
-            ddi[i] = this->Diff(var, vec);
-          }
-        auto dvec = MakeVectorialCoefficientFunction (std::move(ddi));
-        auto dvec1 = dvec->Reshape(var->Dimension(), this->Dimension()) -> Transpose();
-        auto res = dvec1 -> Reshape(resultdims);
-        cache[thisptr] = res;
-        return res;
+    */
+    Array<int> resultdims;
+    resultdims += this->Dimensions();
+    resultdims += var->Dimensions();
+    
+    if (this == var) // diff by me
+      return IdentityCF(Dimensions());
+    
+    if (this->InputCoefficientFunctions().Size()==0)
+      return ZeroCF(resultdims);          
+    
+    cout << IM(5) << "DiffJacobi for CoefficientFunction, type = " << typeid(*this).name() << endl;
+    
+    int dim = var->Dimension();
+    Array<shared_ptr<CoefficientFunction>> ddi(dim); 
+    for (int i = 0; i < dim; i++)
+      {
+        auto vec = UnitVectorCF(dim,i)->Reshape(var->Dimensions());
+        ddi[i] = this->Diff(var, vec);
       }
+    auto dvec = MakeVectorialCoefficientFunction (std::move(ddi));
+    auto dvec1 = dvec->Reshape(var->Dimension(), this->Dimension()) -> Transpose();
+    auto res = dvec1 -> Reshape(resultdims);
+    cache[thisptr] = res;
+    return res;
   }
 
   shared_ptr<CoefficientFunction> CoefficientFunction ::
