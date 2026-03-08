@@ -1081,7 +1081,7 @@ namespace ngbla
   NGS_DLL_HEADER
   void LapackEigenValuesSymmetric (ngbla::FlatMatrix<double> a,
                                    ngbla::FlatVector<double> lami,
-                                   ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0));
+                                   ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0,nullptr));
   /*
   {
     char jobz, uplo = 'U'; 
@@ -1215,7 +1215,7 @@ namespace ngbla
 
   inline void LapackEigenValuesSymmetric (ngbla::FlatMatrix<ngbla::Complex> a,
                                           ngbla::FlatVector<ngbla::Complex> lami, 
-                                          ngbla::FlatMatrix<ngbla::Complex> eveci = ngbla::FlatMatrix<ngbla::Complex> (0,0) )
+                                          ngbla::FlatMatrix<ngbla::Complex> eveci = ngbla::FlatMatrix<ngbla::Complex> (0,0,nullptr) )
   {
     //   std::cerr << "complex evp not implemented" << std::endl;
     LapackEigenValues ( a, lami, eveci );
@@ -1370,7 +1370,7 @@ namespace ngbla
   inline void LapackEigenValuesSymmetric (ngbla::FlatMatrix<double> a,
                                           ngbla::FlatMatrix<double> b,
                                           ngbla::FlatVector<double> lami,
-                                          ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0))
+                                          ngbla::FlatMatrix<double> evecs = ngbla::FlatMatrix<double>(0,0,nullptr))
   {
     char jobz = 'N' , uplo = 'U'; 
     integer n = a.Height();

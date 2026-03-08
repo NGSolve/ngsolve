@@ -511,7 +511,7 @@ namespace ngbla
     Matrix () : FlatMatrix<T,ORD> (0, 0, nullptr) { ; }
 
     /// allocate matrix of size ah * ah
-    Matrix (size_t ah) : FlatMatrix<T,ORD> (ah, new T[ah*ah]) { ; }
+    Matrix (size_t ah) : FlatMatrix<T,ORD> (ah, ah, new T[ah*ah]) { ; }
     
     /// allocate matrix of size ah * aw
     Matrix (size_t ah, size_t aw) : FlatMatrix<T,ORD> (ah, aw, new T[ah*aw]) { ; }
@@ -525,8 +525,10 @@ namespace ngbla
     
     /// move matrix
     INLINE Matrix (Matrix && m2)
-      : FlatMatrix<T,ORD> (m2.h, m2.w, m2.data)
-    { m2.data = nullptr; m2.w = 0; m2.h = 0; } 
+      : FlatMatrix<T,ORD> (0, 0, nullptr)
+    {
+      ngcore::Swap(this->layout, m2.layout);
+    } 
 
     /// allocate and compute 
     template<typename TB>
@@ -560,7 +562,7 @@ namespace ngbla
 
 
     /// delete memory
-    ~Matrix() { delete [] this->data; }
+    ~Matrix() { delete [] this->layout.Data(); }
 
     template <typename ARCHIVE>
     void DoArchive (ARCHIVE & ar)
@@ -574,11 +576,14 @@ namespace ngbla
     /// sets new size of matrix
     void SetSize(size_t ah, size_t aw)
     {
-      if (this->h == ah && this->w == aw) return;
-      delete [] this->data;
+      if (this->Height() == ah && this->Width() == aw) return;
+      Matrix tmp(ah, aw);
+      (*this) = std::move(tmp);
+      /*
       this->h = ah;
       this->w = aw;
       this->data = new T[this->h * this->w];
+      */
     }
 
     /// sets new size of matrix
@@ -629,9 +634,10 @@ namespace ngbla
 
     Matrix & operator= (Matrix && m2) 
     {
-      this->h = m2.h;      
-      this->w = m2.w;
-      ngcore::Swap (this->data, m2.data);
+      // this->h = m2.h;      
+      // this->w = m2.w;
+      // ngcore::Swap (this->data, m2.data);
+      ngcore::Swap(this->layout, m2.layout);
       return *this;
     }
 
@@ -753,7 +759,7 @@ namespace ngbla
     INLINE static constexpr auto Height ()  { return IC<H>(); }
     /// the width
     INLINE static constexpr auto Width ()  { return IC<W>(); }
-
+    INLINE static constexpr auto Dist ()  { return IC<W>(); }
     ///
     INLINE FlatVec<W,T> Row (size_t i) 
     {
@@ -976,7 +982,7 @@ namespace ngbla
     INLINE MatrixFixWidth (int ah) : FlatMatrixFixWidth<W,T> (ah, new T[ah*W]) { ; }
 
     /// delete memory
-    INLINE ~MatrixFixWidth() { delete [] this->data; }
+    INLINE ~MatrixFixWidth() { delete [] this->layout.Data(); }
 
     /// sets new size of matrix
     INLINE void SetSize(int ah)
@@ -1088,7 +1094,8 @@ namespace ngbla
   class MatrixView : public MatExpr<MatrixView<T,ORD,TH,TW,TDIST>>
   {
   protected:
-    typedef MatExpr<MatrixView<T,ORD,TH,TW,TDIST>> BASE;        
+    typedef MatExpr<MatrixView<T,ORD,TH,TW,TDIST>> BASE;
+    /*
     /// the height
     NO_UNIQUE_ADDRESS TH h;
     /// the width
@@ -1097,6 +1104,253 @@ namespace ngbla
     NO_UNIQUE_ADDRESS TDIST dist;
     /// the data
     T * __restrict data;
+    */
+
+
+
+
+    // the data ...
+    template <typename LT>
+    class Layout1
+    {
+      LT * data;
+    public:
+      Layout1() = default;
+      Layout1(const Layout1&) = default;      
+      Layout1(Layout1&&) = default;
+
+      Layout1& operator= (const Layout1&) = default;
+      Layout1& operator= (Layout1&&) = default;
+      
+      ~Layout1() = default;
+      
+      INLINE Layout1 (LT * adata) : data(adata) { } 
+      INLINE auto Data() const { return data; }
+      INLINE void IncPtr (size_t inc) { data += inc; }  // should be only for bare      
+    };
+
+
+    
+    // add the height:  variable, constant, undefined_size
+    template <typename LT, typename LTH>
+    class LayoutH : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
+      LTH height;
+    public:
+      LayoutH() = default;
+      LayoutH(const LayoutH&) = default;      
+      LayoutH(LayoutH&&) = default;
+
+      LayoutH& operator= (const LayoutH&) = default;
+      LayoutH& operator= (LayoutH&&) = default;      
+      ~LayoutH() = default;
+      
+      INLINE LayoutH (LT * adata, LTH aheight)
+        : BASE(adata), height(aheight) { }
+      INLINE LayoutH (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Height() const { return height; }
+      using BASE::Data;
+    };
+
+    template <typename LT, int H>
+    class LayoutH<LT,IC<H>> : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
+    public:
+      LayoutH() = default;
+      LayoutH(const LayoutH&) = default;      
+      LayoutH(LayoutH&&) = default;
+
+      LayoutH& operator= (const LayoutH&) = default;
+      LayoutH& operator= (LayoutH&&) = default;      
+      ~LayoutH() = default;
+      
+      INLINE LayoutH (LT * adata, IC<H> asize)
+        : BASE(adata) { }
+      INLINE LayoutH (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Height() const { return IC<H>(); }
+      using BASE::Data;
+    };
+
+
+#if !defined(NETGEN_ENABLE_CHECK_RANGE)
+    
+    template <typename LT>
+    class LayoutH<LT,undefined_size> : public Layout1<LT>
+    {
+      typedef Layout1<LT> BASE;
+    public:
+      LayoutH() = default;
+      LayoutH(const LayoutH&) = default;      
+      LayoutH(LayoutH&&) = default;
+
+      LayoutH& operator= (const LayoutH&) = default;
+      LayoutH& operator= (LayoutH&&) = default;      
+      ~LayoutH() = default;
+      
+      INLINE LayoutH (LT * adata, undefined_size asize)
+        : BASE(adata) { }
+      INLINE LayoutH (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Height() const { return undefined_size(); }
+      using BASE::Data;
+    };
+
+#endif
+
+
+
+
+
+
+    
+    // add the width:  variable, constant, undefined_size
+    template <typename LT, typename LTH, typename LTW>
+    class LayoutHW : public LayoutH<LT,LTH>
+    {
+      typedef LayoutH<LT,LTH> BASE;
+      LTW width;
+    public:
+      LayoutHW() = default;
+      LayoutHW(const LayoutHW&) = default;      
+      LayoutHW(LayoutHW&&) = default;
+
+      LayoutHW& operator= (const LayoutHW&) = default;
+      LayoutHW& operator= (LayoutHW&&) = default;      
+      ~LayoutHW() = default;
+      
+      INLINE LayoutHW (LT * adata, LTH aheight, LTW awidth)
+        : BASE(adata,aheight), width(awidth) { }
+      INLINE LayoutHW (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Width() const { return width; }
+      using BASE::Height;      
+      using BASE::Data;
+    };
+
+    template <typename LT, typename LTH, int W>
+    class LayoutHW<LT,LTH,IC<W>> : public LayoutH<LT,LTH>
+    {
+      typedef LayoutH<LT,LTH> BASE;
+    public:
+      LayoutHW() = default;
+      LayoutHW(const LayoutHW&) = default;      
+      LayoutHW(LayoutHW&&) = default;
+
+      LayoutHW& operator= (const LayoutHW&) = default;
+      LayoutHW& operator= (LayoutHW&&) = default;      
+      ~LayoutHW() = default;
+      
+      INLINE LayoutHW (LT * adata, LTH h, IC<W> width)
+        : BASE(adata,h) { }
+      INLINE LayoutHW (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Width() const { return IC<W>(); }
+      using BASE::Height;
+      using BASE::Data;
+    };
+
+
+#if !defined(NETGEN_ENABLE_CHECK_RANGE)
+    
+    template <typename LT, typename LTH>
+    class LayoutHW<LT,LTH,undefined_size> : public LayoutH<LT,LTH>
+    {
+      typedef LayoutH<LT,LTH> BASE;
+    public:
+      LayoutHW() = default;
+      LayoutHW(const LayoutHW&) = default;      
+      LayoutHW(LayoutHW&&) = default;
+
+      LayoutHW& operator= (const LayoutHW&) = default;
+      LayoutHW& operator= (LayoutHW&&) = default;      
+      ~LayoutHW() = default;
+      
+      INLINE LayoutHW (LT * adata, LTH ah, undefined_size width)
+        : BASE(adata,ah) { }
+      INLINE LayoutHW (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Width() const { return undefined_size(); }
+      using BASE::Data;
+    };
+
+#endif
+
+
+
+    
+
+    
+    // add the distance:  variable, constant
+    
+    template <typename LT, typename LTH, typename LTW, typename LTDIST>
+    class Layout : public LayoutHW<LT,LTH,LTW>
+    {
+      typedef LayoutHW<LT,LTH,LTW> BASE;
+      LTDIST dist;
+    public:
+      Layout() = default;
+      Layout(const Layout&) = default;      
+      Layout(Layout&&) = default;
+
+      Layout& operator= (const Layout&) = default;
+      Layout& operator= (Layout&&) = default;
+      ~Layout() = default;
+      
+      INLINE Layout (LT * adata, LTH ah, LTW aw, LTDIST adist)
+        : BASE(adata,ah,aw), dist{adist} { }
+      INLINE Layout (LT * adata, LTH ah, LTW aw)
+        : BASE(adata,ah,aw) { }
+      INLINE Layout (LT * adata)
+        : BASE(adata) { }
+      
+      INLINE auto Dist() const { return dist; }
+      using BASE::Data;
+      using BASE::Height;      
+      using BASE::Width;      
+    };
+
+    /*
+    template <typename LT, typename LTS, int IDIST>
+    class Layout<LT, LTS, IC<IDIST>> : public Layout2<LT,LTS>
+    {
+      typedef Layout2<LT,LTS> BASE;      
+    public:
+      Layout() = default;
+      Layout(const Layout&) = default;      
+      Layout(Layout&&) = default;
+
+      Layout& operator= (const Layout&) = default;
+      Layout& operator= (Layout&&) = default;
+      ~Layout() = default;
+      
+      INLINE Layout (LT * adata, LTS asize, IC<IDIST> adist)
+        : BASE(adata,asize) { }
+      INLINE Layout (LT * adata, LTS asize)
+        : BASE(adata,asize) { }
+      INLINE Layout (LT * adata)
+        : BASE(adata) { }
+
+      INLINE auto Dist() const { return IC<IDIST>(); }
+      using BASE::Data;
+      using BASE::Size;      
+    };
+    */
+    
+    Layout<T,TH,TW,TDIST> layout;
+
+
+    
+    
   public:
 
     /// element type
@@ -1115,7 +1369,8 @@ namespace ngbla
               enable_if_t<is_constructible<TW,TW2>::value, int> =0,
               enable_if_t<is_constructible<TDIST,TDIST2>::value, int> =0>
     INLINE MatrixView (const MatrixView<T2, ORD, TH2, TW2, TDIST2> & m2)
-      : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { } 
+    // : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { }
+      : layout(m2.Data(), TH(m2.Height()), TW(m2.Width()), TDIST(m2.Dist())) {}
 
     template <typename T2, typename TH2, typename TW2, typename TDIST2,
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
@@ -1123,38 +1378,44 @@ namespace ngbla
               enable_if_t<is_constructible<TW,TW2>::value, int> =0,
               enable_if_t<is_same<unused_dist,TDIST2>::value, int> =0>
     INLINE MatrixView (const MatrixView<T2, ORD, TH2, TW2, TDIST2> & m2)
-      : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { } 
+    // : h{TH(m2.Height())}, w{TW(m2.Width())}, dist{TDIST(m2.Dist())}, data{m2.Data()} { }
+      : layout(m2.Data(), TH(m2.Height()), TW(m2.Width()), TDIST(m2.Dist())) {}
 
     
     /// set height, width, dist, and mem
     INLINE MatrixView (TH ah, TW aw, TDIST adist, T * adata) 
-      : h(ah), w(aw), dist(adist), data(adata) { ; }
-
+      // : h(ah), w(aw), dist(adist), data(adata) { ; }
+      : layout(adata, ah, aw, adist) {}
+    
     /// set height, width, dist, and mem
     INLINE MatrixView (TH ah, TW aw, T * adata) 
-      : h(ah), w(aw), data(adata)
+    // : h(ah), w(aw), data(adata)
+      : layout(adata, ah, aw)     
     {
       static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView needs dist");
     }
 
     INLINE MatrixView (size_t ah, size_t aw, LocalHeap & lh) 
-      : h(ah), w(aw), data (lh.Alloc<T>(ah*aw))
+    //: h(ah), w(aw), data (lh.Alloc<T>(ah*aw))
+      : layout(lh.Alloc<T>(ah*aw), ah, aw)         
     {
       static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView(lh) needs dist");            
     }
 
     template<typename TB>
-    INLINE MatrixView (const LocalHeapExpr<TB> & m2) 
+    INLINE MatrixView (const LocalHeapExpr<TB> & m2)
+      : MatrixView(m2.A().Height(), m2.A().Width(), m2.GetLocalHeap())
     {
       static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView(lh-expr) needs dist");      
-      h = m2.A().Height();
-      w = m2.A().Width();
-      LocalHeap & lh = m2.GetLocalHeap();
-      data = lh.Alloc<T> (h*w);
+      // h = m2.A().Height();
+      // w = m2.A().Width();
+      // LocalHeap & lh = m2.GetLocalHeap();
+      // data = lh.Alloc<T> (h*w);
       this->operator= (m2.A());
     }
     
-    
+
+    /*
     INLINE MatrixView (size_t s, T * adata) 
       : data(adata)
     {
@@ -1169,7 +1430,25 @@ namespace ngbla
       // else
       // static_assert(false, "illegal 1-size ctor of MatrixView");
     }
+    */
+
+    INLINE MatrixView (size_t s, T * adata)
+    {
+      if constexpr (is_IC<TW>() && is_IC<TDIST>())
+        layout = Layout(adata, s, TW(), TDIST());
+      else if constexpr (is_IC<TH>() && is_IC<TDIST>())
+        layout = Layout(adata, TH(), s, TDIST());
+      else if constexpr (is_IC<TH>() && is_IC<TW>())
+        layout = Layout(adata, TH(), TW(), s);        
+      else if constexpr (is_same<TDIST,unused_dist>())
+        layout = Layout(adata,TH(s),TW(s),TDIST(s));
+    }
     
+    
+
+    /*
+      
+      // TODO    
     INLINE MatrixView (size_t s, LocalHeap & lh)
     {
       if constexpr (is_IC<TW>() && is_IC<TDIST>())
@@ -1185,8 +1464,25 @@ namespace ngbla
       // else
       // static_assert(false, "illegal 1-size ctor of MatrixView");
     }
+    */
+    INLINE MatrixView (size_t s, LocalHeap & lh)
+    {
+      if constexpr (is_IC<TW>() && is_IC<TDIST>())
+        layout = Layout(lh.Alloc<T>(s*TW()), s, TW(), TDIST());        
+      else if constexpr (is_IC<TH>() && is_IC<TDIST>())
+        layout = Layout(lh.Alloc<T>(s*TH()), TH(), s, TDIST());                
+      else if constexpr (is_IC<TH>() && is_IC<TW>())
+        layout = Layout(lh.Alloc<T>(TH()*TW()), TH(), TW(), s);
+      else if constexpr (is_same<TDIST,unused_dist>())
+        layout = Layout(lh.Alloc<T>(s*s), TH(s), TW(s), TDIST(s));
+      // else
+      // static_assert(false, "illegal 1-size ctor of MatrixView");
+    }
 
 
+
+    
+    
     template <typename T2>
     static auto ICOrVal (size_t val)
     {
@@ -1210,10 +1506,11 @@ namespace ngbla
       : h(mat.Height()), w(mat.Width()), dist(mat.Dist()), data(mat.Data())
     { ; }
     */
-
+    
     template<int H, int W>
     INLINE MatrixView (const Mat<H,W,T> & mat)
-      : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(const_cast<T*>(mat.Data()))
+    // : h(mat.Height()), w(mat.Width()), dist(mat.Width()), data(const_cast<T*>(mat.Data()))
+      : layout(const_cast<T*>(mat.Data()), TH(mat.Height()), TW(mat.Width()), mat.Dist())
     {
       static_assert(ORD==RowMajor);
     }
@@ -1247,20 +1544,20 @@ namespace ngbla
       if (InnerSize() == 0) return *this;
       for (size_t i = 0; i < OuterSize(); i++)
         for (size_t j = 0; j < InnerSize(); j++)
-          data[i*Dist()+j] = s;
+          Data()[i*Dist()+j] = s;
       return *this;
     }
 
     INLINE auto View() const { return *this; }
     INLINE auto ViewRW() { return *this; }
-    INLINE auto Shape() const { return tuple(h,w); }
+    INLINE auto Shape() const { return tuple(Height(),Width()); }
 
     INLINE TELEM * Addr(size_t i, size_t j) const
     {
       if constexpr (ORD==RowMajor)      
-        return data+i*Dist()+j;
+        return layout.Data()+i*Dist()+j;
       else
-        return data+j*Dist()+i;
+        return layout.Data()+j*Dist()+i;
     }
 
     
@@ -1276,7 +1573,7 @@ namespace ngbla
     INLINE TELEM & operator() (size_t i) const
     {
       NETGEN_CHECK_RANGE(i, 0, Height()*Dist());
-      return data[i]; 
+      return layout.Data()[i]; 
     }
 
     INLINE auto RowDist() const
@@ -1296,8 +1593,8 @@ namespace ngbla
     }
 
     
-    INLINE auto Height () const { return h; }
-    INLINE auto Width () const { return w; }
+    INLINE auto Height () const { return layout.Height(); }
+    INLINE auto Width () const { return layout.Width(); }
     INLINE auto Dist () const
     {
       if constexpr (std::is_same<TDIST, unused_dist>())
@@ -1308,10 +1605,10 @@ namespace ngbla
             return Height();
         }
       else
-        return dist;
+        return layout.Dist();
     }
     
-    INLINE T* Data() const { return data; }
+    INLINE T* Data() const { return layout.Data(); }
     INLINE auto InnerSize () const
     {
       if constexpr (ORD==RowMajor)
@@ -1335,7 +1632,7 @@ namespace ngbla
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);
-      return MatrixView<T,ORD,size_t,size_t,size_t> (h, w, dist, data);
+      return MatrixView<T,ORD,size_t,size_t,size_t> (h, w, layout.Dist(), layout.Data());
     }
 
     INLINE auto SplitRows (size_t split) const
@@ -1361,9 +1658,9 @@ namespace ngbla
     INLINE auto Cols (size_t first, size_t next) const
     {
       if constexpr (ORD==RowMajor)      
-        return MatrixView<T,ORD,TH,size_t,size_t>  (h, next-first, Dist(), Addr(0,first));
+        return MatrixView<T,ORD,TH,size_t,size_t>  (Height(), next-first, Dist(), Addr(0,first));
       else
-        return MatrixView<T,ORD,TH,size_t,TDIST>  (h, next-first, Dist(), Addr(0,first));
+        return MatrixView<T,ORD,TH,size_t,TDIST>  (Height(), next-first, Dist(), Addr(0,first));
     }
 
     INLINE auto Cols (size_t next) const
@@ -1375,9 +1672,9 @@ namespace ngbla
     INLINE auto Rows (size_t first, size_t next) const
     {
       if constexpr (ORD==RowMajor)
-        return MatrixView<T,ORD,size_t,TW,TDIST> (next-first, w, Dist(), Addr(first, 0));
+        return MatrixView<T,ORD,size_t,TW,TDIST> (next-first, Width(), Dist(), Addr(first, 0));
       else
-        return MatrixView<T,ORD,size_t,TW,size_t> (next-first, w, Dist(), Addr(first, 0));
+        return MatrixView<T,ORD,size_t,TW,size_t> (next-first, Width(), Dist(), Addr(first, 0));
     }
 
     INLINE auto Rows (IntRange range) const
@@ -1394,9 +1691,9 @@ namespace ngbla
     INLINE auto Rows() const
     {
       if constexpr (ORD==RowMajor)
-        return MatrixView<T,ORD,IC<R>,TW,TDIST> (IC<R>(), w, Dist(), Addr(0,0));
+        return MatrixView<T,ORD,IC<R>,TW,TDIST> (IC<R>(), Width(), Dist(), Addr(0,0));
       else
-        return MatrixView<T,ORD,IC<R>,TW,size_t> (IC<R>(), w, Dist(), Addr(0,0));
+        return MatrixView<T,ORD,IC<R>,TW,size_t> (IC<R>(), Width(), Dist(), Addr(0,0));
     }
     
     INLINE auto Cols (IntRange range) const
@@ -1416,7 +1713,7 @@ namespace ngbla
     auto AsVector() const
     {
       // static_assert( Dist() == InnerSize() );      
-      return FlatVector<T> (h*w, data);
+      return FlatVector<T> (Height()*Width(), Data());
     }
 
     auto Bare() const
@@ -1426,9 +1723,10 @@ namespace ngbla
 
     INLINE auto RemoveConst() const
     { return MatrixView<typename remove_const<T>::type,ORD,TH,TW,TDIST>
-        (h,w,dist, const_cast<typename remove_const<T>::type*> (data)); }
+        (Height(),Width(),Dist(), const_cast<typename remove_const<T>::type*> (Data())); }
     
-    void IncPtr (size_t inc) { data += inc; }  // should be only for bare
+    // void IncPtr (size_t inc) { data += inc; }  // should be only for bare
+    void IncPtr (size_t inc) { layout.IncPtr(inc); }   // should be only for bare    
 
 
     const auto RowSlice(size_t first, size_t adist) const
@@ -1436,16 +1734,16 @@ namespace ngbla
       static_assert (ORD==RowMajor);
       // NETGEN_CHECK_RANGE(first, 0, Height());  // too restrictive
       NETGEN_CHECK_RANGE(first, 0, adist);  
-      return BareSliceMatrix<T,ORD> (Height()/adist, Width(), Dist()*adist, data+first*Dist());
+      return BareSliceMatrix<T,ORD> (Height()/adist, Width(), Dist()*adist, Data()+first*Dist());
     }
     
     
     INLINE SliceVector<T> Diag () const
     {
       if (ORD == RowMajor)
-        return SliceVector<T> (h, Dist()+1, data);
+        return SliceVector<T> (Height(), Dist()+1, Data());
       else
-        return SliceVector<T> (w, Dist()+1, data);
+        return SliceVector<T> (Width(), Dist()+1, Data());
     }
 
     INLINE SliceVector<T> Diag (int offset) const
@@ -1454,9 +1752,9 @@ namespace ngbla
       int dp = std::max(offset, 0);
       int dm = std::min(offset, 0);
       if (ORD == RowMajor)      
-        return SliceVector<T> (min(w-dp, h+dm), Dist()+1, data+dp-dm*Dist());      
+        return SliceVector<T> (min(Width()-dp, Height()+dm), Dist()+1, Data()+dp-dm*Dist());      
       else
-        return SliceVector<T> (min(w-dp, h+dm), Dist()+1, data-dm+dp*Dist());
+        return SliceVector<T> (min(Width()-dp, Height()+dm), Dist()+1, Data()-dm+dp*Dist());
     }
 
     // [[deprecated("Use placenement ctor: new(ptr) Matrix(n, lh); instead!")]]
@@ -1479,26 +1777,34 @@ namespace ngbla
 
     auto Assign (const MatrixView & m) 
     {
+      // layout = Layout<T,TH,TW,TDIST>(m.Data(), m.Height(), m.Width(), m.Dist());
+      layout = m.layout;
+      
+      /*
       data = m.data;
       h = m.h;
       w = m.w;
       dist = m.dist;
+      */
       return *this;
     }
     
     auto Swap (MatrixView & m) 
     {
+      ngcore::Swap (layout, m.layout);
+      /*
       ngcore::Swap (data, m.data);
       ngcore::Swap (h, m.h);
       ngcore::Swap (w, m.w);
       ngcore::Swap (dist, m.dist);
+      */
       return *this;
     }
         
     auto Reshape(size_t h2, size_t w2)
     {
       static_assert(std::is_same<TDIST, unused_dist>(), "MatrixView::Reshape needs unused-dist");            
-      return FlatMatrix<T,ORD>{h2,w2,data};
+      return FlatMatrix<T,ORD>{h2,w2,Data()};
     }
     
     
