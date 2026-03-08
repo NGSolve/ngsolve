@@ -1148,8 +1148,8 @@ namespace ngbla
       
       INLINE LayoutH (LT * adata, LTH aheight)
         : BASE(adata), height(aheight) { }
-      INLINE LayoutH (LT * adata)
-        : BASE(adata) { }
+      // INLINE LayoutH (LT * adata)
+      // : BASE(adata) { }
       
       INLINE auto Height() const { return height; }
       using BASE::Data;
@@ -1170,8 +1170,8 @@ namespace ngbla
       
       INLINE LayoutH (LT * adata, IC<H> asize)
         : BASE(adata) { }
-      INLINE LayoutH (LT * adata)
-        : BASE(adata) { }
+      // INLINE LayoutH (LT * adata)
+      // : BASE(adata) { }
       
       INLINE auto Height() const { return IC<H>(); }
       using BASE::Data;
@@ -1195,8 +1195,8 @@ namespace ngbla
       
       INLINE LayoutH (LT * adata, undefined_size asize)
         : BASE(adata) { }
-      INLINE LayoutH (LT * adata)
-        : BASE(adata) { }
+      // INLINE LayoutH (LT * adata)
+      // : BASE(adata) { }
       
       INLINE auto Height() const { return undefined_size(); }
       using BASE::Data;
@@ -1227,8 +1227,8 @@ namespace ngbla
       
       INLINE LayoutHW (LT * adata, LTH aheight, LTW awidth)
         : BASE(adata,aheight), width(awidth) { }
-      INLINE LayoutHW (LT * adata)
-        : BASE(adata) { }
+      // INLINE LayoutHW (LT * adata)
+      // : BASE(adata) { }
       
       INLINE auto Width() const { return width; }
       using BASE::Height;      
@@ -1250,8 +1250,8 @@ namespace ngbla
       
       INLINE LayoutHW (LT * adata, LTH h, IC<W> width)
         : BASE(adata,h) { }
-      INLINE LayoutHW (LT * adata)
-        : BASE(adata) { }
+      // INLINE LayoutHW (LT * adata)
+      // : BASE(adata) { }
       
       INLINE auto Width() const { return IC<W>(); }
       using BASE::Height;
@@ -1276,8 +1276,8 @@ namespace ngbla
       
       INLINE LayoutHW (LT * adata, LTH ah, undefined_size width)
         : BASE(adata,ah) { }
-      INLINE LayoutHW (LT * adata)
-        : BASE(adata) { }
+      // INLINE LayoutHW (LT * adata)
+      // : BASE(adata) { }
       
       INLINE auto Width() const { return undefined_size(); }
       using BASE::Data;
@@ -1308,10 +1308,10 @@ namespace ngbla
       
       INLINE Layout (LT * adata, LTH ah, LTW aw, LTDIST adist)
         : BASE(adata,ah,aw), dist{adist} { }
-      INLINE Layout (LT * adata, LTH ah, LTW aw)
-        : BASE(adata,ah,aw) { }
-      INLINE Layout (LT * adata)
-        : BASE(adata) { }
+      // INLINE Layout (LT * adata, LTH ah, LTW aw)
+      // : BASE(adata,ah,aw) { }
+      // INLINE Layout (LT * adata)
+      // : BASE(adata) { }
       
       INLINE auto Dist() const { return dist; }
       using BASE::Data;
@@ -1336,8 +1336,8 @@ namespace ngbla
         : BASE(adata,ah,aw) { }
       INLINE Layout (LT * adata, LTH ah, LTW aw)
         : BASE(adata,ah,aw) { }
-      INLINE Layout (LT * adata)
-        : BASE(adata) { }
+      // INLINE Layout (LT * adata)
+      // : BASE(adata) { }
       
       INLINE auto Dist() const { return unused_dist(); }
       using BASE::Data;
