@@ -512,6 +512,8 @@ namespace ngfem
             case ET_TET: 
                 ndof = p*(p+1)*(p-1)/6 + p*(p-1)/2 + p-1;
               break;
+            case ET_PYRAMID:
+              throw Exception("HDiv-pyramids not implemented");
             case ET_PRISM:
               if (order_inner[0]>0 )
                 ndof = (p+1)*(p+2)*(pz+1)/2 - 1;
@@ -539,7 +541,7 @@ namespace ngfem
               else
                 ndof +=  p[0]*p[1] + p[0] + p[1];
             }
-
+          
         // cout << "ndof, bound = " << ndof << endl;
           switch (ET)
             {   
@@ -554,6 +556,9 @@ namespace ngfem
 	      if(RT && p >= 1)
 		ndof += (p+1)*(p+2)/2;
               break;
+
+            case ET_PYRAMID:
+              throw Exception("HDiv-pyramids not implemented");
 
             case ET_PRISM:
               // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
@@ -704,6 +709,9 @@ namespace ngfem
 	      if(RT && p >= 1)
 		nc += (p+1)*(p+2)/2;
               break;
+              
+            case ET_PYRAMID:
+              throw Exception("HDiv-pyramids not implemented");
 
             case ET_PRISM:
               // SZ: ATTENTION PRISM up to now only using for order_inner[0] !!  
