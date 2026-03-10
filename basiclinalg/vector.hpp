@@ -8,7 +8,7 @@
 /**************************************************************************/
 
 #include "expr.hpp"
-#include "core/archive.hpp"
+// #include "core/archive.hpp"
 #include <core/hashtable.hpp>   // for SparseVector
 
 namespace ngbla
@@ -1040,7 +1040,9 @@ namespace ngbla
     INLINE /* const */ FlatVector<T> Range(size_t first, size_t next) 
     { return FlatVector<T> (next-first, data+first); }
 
-    void DoArchive(Archive & ar)
+    
+    template<typename ARCHIVE>
+    void DoArchive(ARCHIVE & ar)
     {
       for (size_t i = 0; i < S; i++)
         ar & data[i];
