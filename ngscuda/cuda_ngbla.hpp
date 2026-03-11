@@ -159,17 +159,13 @@ namespace ngbla
   template <typename T>  
   class Matrix<Dev<T>> : public FlatMatrix<Dev<T>>
   { 
-    using FlatMatrix<Dev<T>>::h;
-    using FlatMatrix<Dev<T>>::w;
-    using FlatMatrix<Dev<T>>::data;
-
   public:
+    using FlatMatrix<Dev<T>>::Height;
+    using FlatMatrix<Dev<T>>::Width;
+    using FlatMatrix<Dev<T>>::Data;
+
     Matrix (Matrix&) = delete;
-    Matrix (Matrix&&m2)
-      : FlatMatrix<Dev<T>>(m2.Height(), m2.Width(), m2.Data())
-    {
-      m2.data = nullptr;
-    }
+    Matrix (Matrix&&) = default;
          
     Matrix (size_t h_, size_t w_)
       : FlatMatrix<Dev<T>>(h_, w_, Dev<T>::Malloc(h_*w_)) { ; }
@@ -183,22 +179,22 @@ namespace ngbla
     
     ~Matrix()
     {
-      Dev<T>::Free(data);
+      Dev<T>::Free(Data());
     }
          
     void D2H (FlatMatrix<T> mat) const
     {
-      cudaMemcpy (mat.Data(), data, sizeof(T)*h*w, cudaMemcpyDeviceToHost);
+      cudaMemcpy (mat.Data(), Data(), sizeof(T)*Height()*Width(), cudaMemcpyDeviceToHost);
     }
 
     void H2D (FlatMatrix<T> mat)
     {
-      cudaMemcpy (data, mat.Data(), sizeof(T)*h*w, cudaMemcpyHostToDevice);
+      cudaMemcpy (Data(), mat.Data(), sizeof(T)*Height()*Width(), cudaMemcpyHostToDevice);
     }
 
     Matrix<T> D2H() const
     {
-      Matrix<T> mh(h, w);
+      Matrix<T> mh(Height(), Width());
       D2H (mh);
       return mh;
     }

@@ -90,8 +90,8 @@ namespace std {
 
 namespace ngstd
 {
-  template <int N>
-  struct my_is_integral<ngs_cude::Dev<T>> : my_is_integral<T>{};
+  template <typename T>
+  struct my_is_integral<ngs_cuda::Dev<T>> : my_is_integral<T>{};
 }
 
 
