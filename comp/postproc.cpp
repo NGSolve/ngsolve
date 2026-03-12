@@ -1785,7 +1785,46 @@ namespace ngfem
           }
         return sum;
       }
-    throw Exception ("only vol and bnd integrals are supported");
+    if (dx.element_vb == BBND)
+    {
+      ma.IterateElements(this->dx.vb, glh, [&](Ngs_Element el, LocalHeap &lh)
+                         {
+             if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
+             auto & trafo1 = ma.GetTrafo (el, lh);
+             auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
+
+             if (defon.Size() && !defon.Test(el.GetIndex()))
+               return;
+
+             TSCAL hsum = 0.0;
+             int order = 5 + this->dx.bonus_intorder;
+
+             auto eltype = trafo.GetElementType();
+             Facet2ElementTrafo transform(eltype, dx.element_vb);
+             int nfacet = transform.GetNFacets();
+
+             for (int k = 0; k < nfacet; k++)
+               {
+                 HeapReset hr(lh);
+                 ngfem::ELEMENT_TYPE etfacet = transform.FacetType(k);
+                 IntegrationRule ir_facet(etfacet, order);
+                 IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
+                 BaseMappedIntegrationRule & mir = trafo(ir_facet_vol, lh);
+                 mir.ComputeNormalsAndMeasure (eltype, k);
+
+                 FlatMatrix<TSCAL> values(ir_facet.Size(), 1, lh);
+                 cf -> Evaluate (mir, values);
+                 for (int i = 0; i < values.Height(); i++)
+                   hsum += mir[i].GetWeight() * values(i,0);
+               }
+
+             if (element_wise.Size())
+               element_wise(el.Nr()) += hsum;
+             AtomicAdd(sum, hsum); });
+      return sum;
+    }
+
+    throw Exception("only vol, bnd and bbnd integrals are supported");
   }
   
   double Integral::Integrate (const ngcomp::MeshAccess & ma,
