@@ -327,12 +327,12 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         print("Warning in Webgui.Draw: function has more than 3 components, drawing Norm(cf) instead")
         cf = ngs.Norm(cf)
         
-    if cf.dim > 1:
-        cf = ngs.CF((cf, *([0.0] * (3 - cf.dim))))
-
     if func:
         d['funcdim'] = cf.dim
         
+    if cf.dim > 1:
+        cf = ngs.CF((cf, *([0.0] * (3 - cf.dim))))
+
     xyz = ngs.CF((ngs.x, ngs.y, ngs.z))
     
     if deformation is not None:
