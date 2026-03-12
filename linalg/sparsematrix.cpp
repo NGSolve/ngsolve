@@ -450,6 +450,9 @@ namespace ngla
     static Timer timer_prefix("MatrixGraph - prefix");    
     RegionTimer reg (timer);
 
+    if(symmetric)
+      SetSymmetric(symmetric);
+
     bool includediag = (&rowelements == &colelements);
      
     int ndof = asize;
