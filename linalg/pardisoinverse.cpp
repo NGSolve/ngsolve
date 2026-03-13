@@ -163,7 +163,8 @@ namespace ngla
 
     print = bool (pardiso_msg); // false;
 
-    symmetric = asymmetric;
+    // symmetric = asymmetric;
+    symmetric = a->IsSymmetric().IsTrue();
     compressed = false;
 
     (*testout) << "Pardiso, symmetric = " << symmetric << endl;
@@ -191,6 +192,8 @@ namespace ngla
 
     *testout << "matrix.InverseTpye = " <<  a->GetInverseType() << endl;
     spd = ( a->GetInverseType() == PARDISOSPD ) ? 1 : 0;
+    if(a->IsSPD())
+      spd = 1;
 
     integer maxfct = 1, mnum = 1, phase = 12, nrhs = 1, msglevel = print, error = 0;
     integer * params = const_cast <integer*> (&hparams[0]);

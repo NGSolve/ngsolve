@@ -32,6 +32,7 @@ namespace ngla
     shared_ptr<ParallelDofs> paralleldofs;
     mutable char safety_check = 0;
     bool is_complex = false;
+    xbool symmetric = maybe;
     
   protected:
     /// 
@@ -62,7 +63,8 @@ namespace ngla
 
     virtual tuple<size_t, size_t> Shape() const { return { Height(), Width() }; }
 
-    virtual xbool IsSymmetric() const { return maybe; }
+    virtual xbool IsSymmetric() const { return symmetric; }
+    void SetSymmetric(xbool asymmetric) { symmetric = asymmetric; }
 
     /// is matrix complex ?
     virtual bool IsComplex() const { return is_complex; }
