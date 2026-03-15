@@ -3378,11 +3378,11 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   class DiffOpGradVectorL2Piola : public DiffOp<DiffOpGradVectorL2Piola<DIM_SPC>>
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC };
-    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC;
+    static constexpr int DIM_DMAT = DIM_SPC*DIM_SPC;
+    static constexpr int DIFFORDER = 1;
 
     static string Name() { return "grad"; }
 

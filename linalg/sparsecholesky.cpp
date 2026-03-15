@@ -1473,7 +1473,7 @@ namespace ngla
         {
           // RegionTracer reg2(TaskManager::GetThreadId(), tdep2, block.Size());
           // for (size_t j = 0; j < mi; j++)
-          ParallelFor (mi, [=,&locks] (size_t j)
+          ParallelFor (mi, [=,&locks,this] (size_t j)
             {
               auto other_row = hrowindex2[firsti_ri+j];
               locks[other_row].lock();
@@ -1509,7 +1509,7 @@ namespace ngla
           size_t j_ri = hfirstinrow_ri[i1] + last_same-i1-1;
 
           auto hdiag = diag.Addr(0);
-          ParallelFor (num_other, [=,&locks] (size_t j)
+          ParallelFor (num_other, [=,&locks,this] (size_t j)
             {
               auto target_row = rowindex2[j_ri+j];
               locks[target_row].lock();
