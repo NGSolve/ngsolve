@@ -35,11 +35,11 @@ namespace ngfem
   class DiffOpGradient : public DiffOp<DiffOpGradient<D, FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 1;
 
     typedef DiffOpGradientBoundary<D> DIFFOP_TRACE;
     
@@ -205,11 +205,11 @@ namespace ngfem
   class DiffOpGradientBoundary : public DiffOp<DiffOpGradientBoundary<D, FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D-1;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 1;
 
     static string Name() { return "gradboundary"; }
     
@@ -283,11 +283,11 @@ namespace ngfem
   class DiffOpGradientBBoundary : public DiffOp<DiffOpGradientBBoundary<D, FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-2 };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D-2;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 1;
 
     static string Name() { return "gradbboundary"; }
     static constexpr bool SUPPORT_PML = true;
@@ -319,11 +319,11 @@ namespace ngfem
     public DiffOp<DiffOpGradientRotSym<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 1;
 
     ///
     template <typename FEL, typename MIP, typename MAT>
@@ -357,11 +357,11 @@ namespace ngfem
   class DiffOpId : public DiffOp<DiffOpId<D, FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 0;
     static IVec<0> GetDimensions() { return IVec<0>(); };
     
     static bool SupportsVB (VorB checkvb) { return true; }
@@ -2317,11 +2317,11 @@ namespace ngfem
   class DiffOpGradBoundaryVectorH1 : public DiffOp<DiffOpGradBoundaryVectorH1<DIM_SPC> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-1 };
-    enum { DIM_DMAT = DIM_SPC*DIM_SPC };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC-1;
+    static constexpr int DIM_DMAT = DIM_SPC*DIM_SPC;
+    static constexpr int DIFFORDER = 1;
 
     static IVec<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
     static constexpr bool SUPPORT_PML = true;
@@ -2438,11 +2438,11 @@ namespace ngfem
   class DiffOpDivVectorH1 : public DiffOp<DiffOpDivVectorH1<DIM_SPC> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 1;
 
     typedef DiffOpDivBoundaryVectorH1<DIM_SPC> DIFFOP_TRACE;
     static constexpr bool SUPPORT_PML = true;
@@ -2522,11 +2522,11 @@ namespace ngfem
   class DiffOpDivBoundaryVectorH1 : public DiffOp<DiffOpDivBoundaryVectorH1<DIM_SPC> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-1 };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC-1;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 1;
 
     static constexpr bool SUPPORT_PML = true;
     static string Name() { return "divbnd"; }

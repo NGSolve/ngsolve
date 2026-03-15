@@ -1033,10 +1033,10 @@ namespace ngfem
   class T_DifferentialOperator : public DifferentialOperator
   {
   protected:
-    enum { DIM_SPACE   = DIFFOP::DIM_SPACE };
-    enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
-    enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
-    enum { DIM         = DIFFOP::DIM };
+    static constexpr int DIM_SPACE   = DIFFOP::DIM_SPACE;
+    static constexpr int DIM_ELEMENT = DIFFOP::DIM_ELEMENT;
+    static constexpr int DIM_DMAT    = DIFFOP::DIM_DMAT;
+    static constexpr int DIM         = DIFFOP::DIM;
     
   public:
     T_DifferentialOperator()

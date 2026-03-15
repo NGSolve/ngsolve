@@ -13,12 +13,12 @@ namespace ngfem
   {
   public:
     typedef DiffOp<DiffOpHDivDivDual<D>> BASE;
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D*D;
+  static constexpr int DIFFORDER = 0;
+  static constexpr int DIM_STRESS = D*D;
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
     
@@ -68,12 +68,12 @@ namespace ngfem
   class DiffOpVecIdHDivDiv: public DiffOp<DiffOpVecIdHDivDiv<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*(D+1)/2 };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*(D+1)/2 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D*(D+1)/2;
+  static constexpr int DIFFORDER = 0;
+  static constexpr int DIM_STRESS = D*(D+1)/2;
 
     static Array<int> GetDimensions() { return Array<int> ({D*(D+1)/2,1}); }
 
@@ -106,12 +106,12 @@ namespace ngfem
   class DiffOpIdHDivDiv: public DiffOp<DiffOpIdHDivDiv<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D*D;
+  static constexpr int DIFFORDER = 0;
+  static constexpr int DIM_STRESS = D*D;
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
 
@@ -179,9 +179,9 @@ namespace ngfem
   class DiffOpDivHDivDiv: public DiffOp<DiffOpDivHDivDiv<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
     enum { DIM_STRESS = (D*(D+1))/2 };

@@ -800,12 +800,12 @@ static Matrix<> trans_trig;
     FE_Trig3Pot h1trig3;
     FE_TSegmL2<ZORDER> segm;
   public:
-    enum { NDOF = 12 * (ZORDER+1) + 10 * ZORDER };
-    enum { NEDGEDOF = 12 + 3 * (ZORDER-1) };
-    enum { NQUADFACEDOF = 3 * (5*ZORDER-3) };
-    enum { NTRIGFACEDOF = 6 };
-    enum { MAXORDER = (3 > ZORDER) ? 3 : ZORDER };
-    enum { NINNERDOF = 3 * (ZORDER-1) + ZORDER };
+    static constexpr int NDOF = 12 * (ZORDER+1) + 10 * ZORDER;
+    static constexpr int NEDGEDOF = 12 + 3 * (ZORDER-1);
+    static constexpr int NQUADFACEDOF = 3 * (5*ZORDER-3);
+    static constexpr int NTRIGFACEDOF = 6;
+    static constexpr int MAXORDER = (3 > ZORDER) ? 3 : ZORDER;
+    static constexpr int NINNERDOF = 3 * (ZORDER-1) + ZORDER;
 
     ///
     FE_TNedelecPrism3();
@@ -868,12 +868,12 @@ static Matrix<> trans_trig;
     //  enum { NDOF = 12 * (ZORDER+1) + 10 * ZORDER };
     //  enum { NEDGEDOF = 12 + 3 * (ZORDER-1) };
     // 12 z + 12 + 10 z - 12 - 3z + 3 = 19 z + 3
-    enum { NDOF = 19 * ZORDER + 3 };
-    enum { NQUADFACEDOF = 3 * (5*ZORDER-3) };
-    enum { NTRIGFACEDOF = 6 };
-    enum { MAXORDER = (3 > ZORDER) ? 3 : ZORDER };
+    static constexpr int NDOF = 19 * ZORDER + 3;
+    static constexpr int NQUADFACEDOF = 3 * (5*ZORDER-3);
+    static constexpr int NTRIGFACEDOF = 6;
+    static constexpr int MAXORDER = (3 > ZORDER) ? 3 : ZORDER;
     // enum { NINNERDOF = 3 * (ZORDER-1) + ZORDER };
-    enum { NINNERDOF = 3 * (ZORDER-1) + 1 };
+    static constexpr int NINNERDOF = 3 * (ZORDER-1) + 1;
 
     ///
     FE_TNedelecPrism3NoGrad();
@@ -973,8 +973,8 @@ static Matrix<> trans_trig;
   class FE_NedelecPyramid2 : public HCurlFiniteElement<3>
   {
   public:
-    enum { NDOF = 20 };
-    enum { NEDGEDOF = 8 };
+    static constexpr int NDOF = 20;
+    static constexpr int NEDGEDOF = 8;
 
   private:
     ///
@@ -1039,10 +1039,10 @@ static Matrix<> trans_trig;
   class FE_NedelecPyramid3 : public HCurlFiniteElement<3>
   {
   public:
-    enum { NDOF = 57 };
-    enum { NEDGEDOF = 16 };
-    enum { NFACEDOF = 24 };
-    enum { NINNERDOF = 9 };
+    static constexpr int NDOF = 57;
+    static constexpr int NEDGEDOF = 16;
+    static constexpr int NFACEDOF = 24;
+    static constexpr int NINNERDOF = 9;
   private:
     ///
     // static Array<IPData> ipdata;

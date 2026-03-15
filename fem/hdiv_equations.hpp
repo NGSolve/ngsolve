@@ -30,11 +30,11 @@ template <int D, typename FEL = HDivFiniteElement<D> >
 class DiffOpIdHDiv : public DiffOp<DiffOpIdHDiv<D, FEL> >
 {
 public:
-  enum { DIM = 1 };
-  enum { DIM_SPACE = D };
-  enum { DIM_ELEMENT = D };
-  enum { DIM_DMAT = D };
-  enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D;
+  static constexpr int DIFFORDER = 0;
 
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
@@ -169,11 +169,11 @@ template <int D, typename FEL = HDivFiniteElement<D-1> >
 class DiffOpIdHDivSurface : public DiffOp<DiffOpIdHDivSurface<D, FEL> >
 {
 public:
-  enum { DIM = 1 };
-  enum { DIM_SPACE = D };
-  enum { DIM_ELEMENT = D-1 };
-  enum { DIM_DMAT = D };
-  enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D-1;
+  static constexpr int DIM_DMAT = D;
+  static constexpr int DIFFORDER = 0;
   
   static const FEL & Cast(const FiniteElement & fel)
   {
@@ -272,11 +272,11 @@ template <int D, typename FEL = HDivFiniteElement<D> >
 class DiffOpDivHDiv : public DiffOp<DiffOpDivHDiv<D, FEL> >
 {
 public:
-  enum { DIM = 1 };
-  enum { DIM_SPACE = D };
-  enum { DIM_ELEMENT = D };
-  enum { DIM_DMAT = 1 };
-  enum { DIFFORDER = 1 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 1;
 
   static string Name() { return "div"; }
 
@@ -365,11 +365,11 @@ template <int D, typename FEL = HDivNormalFiniteElement<D-1> >
 class DiffOpIdHDivBoundary : public DiffOp<DiffOpIdHDivBoundary<D, FEL> >
 {
 public:
-  enum { DIM = 1 };
-  enum { DIM_SPACE = D };
-  enum { DIM_ELEMENT = D-1 };
-  enum { DIM_DMAT = 1 };
-  enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D-1;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 0;
 
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
@@ -403,7 +403,7 @@ template <int D, typename FEL = HDivNormalFiniteElement<D-1> >
 class DiffOpIdVecHDivBoundary : public DiffOp<DiffOpIdVecHDivBoundary<D,FEL> >
 {
 public:
-  enum { DIM = 1 };
+  static constexpr int DIM = 1;
   enum { DIM_SPACE = D };
   enum { DIM_ELEMENT = D-1 };
   enum { DIM_DMAT = D };

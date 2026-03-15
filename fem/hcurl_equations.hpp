@@ -38,11 +38,11 @@ namespace ngfem
   class DiffOpIdEdge : public DiffOp<DiffOpIdEdge<D, FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 0;
 
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
@@ -220,11 +220,11 @@ namespace ngfem
     : public DiffOp<DiffOpCurlEdge<2, FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = 2 };
-    enum { DIM_ELEMENT = 2 };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = 2;
+    static constexpr int DIM_ELEMENT = 2;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 1;
 
     static string Name() { return "curl"; }
 
@@ -285,11 +285,11 @@ namespace ngfem
   template <typename FEL> class DiffOpCurlEdge<3,FEL> : public DiffOp<DiffOpCurlEdge<3,FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = 3 };
-    enum { DIM_ELEMENT = 3 };
-    enum { DIM_DMAT = 3 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = 3;
+    static constexpr int DIM_ELEMENT = 3;
+    static constexpr int DIM_DMAT = 3;
+    static constexpr int DIFFORDER = 1;
 
     static string Name() { return "curl"; }
 
@@ -415,11 +415,11 @@ namespace ngfem
   class DiffOpTangentialComponentEdge : public DiffOp<DiffOpTangentialComponentEdge<D> >
   {
   public:
-    enum { DIM = D };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = D;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 0;
     static constexpr bool SUPPORT_PML = true;
 
     template <typename FEL, typename MIP, typename MAT>
@@ -439,11 +439,11 @@ namespace ngfem
   class DiffOpIdBBoundaryEdge : public DiffOp<DiffOpIdBBoundaryEdge<D,FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-2 };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D-2;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 0;
     static constexpr bool SUPPORT_PML = true;
 
     template <typename FEL1, typename MIP, typename MAT>
@@ -519,11 +519,11 @@ namespace ngfem
   class DiffOpIdBoundaryEdge : public DiffOp<DiffOpIdBoundaryEdge<D,FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D-1;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 0;
 
     static constexpr bool SUPPORT_PML = true;
     template <typename FEL1, typename MIP, typename MAT>
@@ -656,11 +656,11 @@ namespace ngfem
   class DiffOpCurlBoundaryEdge : public DiffOp<DiffOpCurlBoundaryEdge<FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = 3 };
-    enum { DIM_ELEMENT = 2 };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = 3;
+    static constexpr int DIM_ELEMENT = 2;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 1;
 
     static string Name() { return "curl"; }
 
@@ -741,11 +741,11 @@ template <typename FEL = HCurlFiniteElement<2> >
 class DiffOpCurlBoundaryEdgeVec : public DiffOp<DiffOpCurlBoundaryEdgeVec<FEL> >
 {
 public:
-  enum { DIM = 1 };
-  enum { DIM_SPACE = 3 };
-  enum { DIM_ELEMENT = 2 };
-  enum { DIM_DMAT = 3 };
-  enum { DIFFORDER = 1 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = 3;
+  static constexpr int DIM_ELEMENT = 2;
+  static constexpr int DIM_DMAT = 3;
+  static constexpr int DIFFORDER = 1;
 
   static string Name() { return "curl"; }
   
@@ -1318,11 +1318,11 @@ public:
   class DiffOpGradientBoundaryHCurl : public DiffOp<DiffOpGradientBoundaryHCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D-1;
+    static constexpr int DIM_DMAT = D*D;
+    static constexpr int DIFFORDER = 1;
 
     static string Name() { return "gradboundary"; }
 

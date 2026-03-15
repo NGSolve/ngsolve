@@ -157,8 +157,7 @@ namespace ngfem
     using typename BASE::T_SHAPES;
     typedef L2HighOrderFEFO_Shapes<ET,ORDER,ORIENTATION> SHAPES;
 
-
-    enum { DIM = ET_trait<ET>::DIM };
+    static constexpr int DIM = ET_trait<ET>::DIM;
 
     using ScalarFiniteElement<DIM>::ndof;
     using ScalarFiniteElement<DIM>::order;
@@ -313,7 +312,7 @@ namespace ngfem
 
   public:
 
-    enum { NDOF = (ORDER+1) };
+    static constexpr int NDOF = (ORDER+1);
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
@@ -339,7 +338,7 @@ namespace ngfem
     using L2HighOrderFEFO<ET_TRIG, ORDER>::vnums; 
 
   public:
-    enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
+    static constexpr int NDOF = (ORDER+1)*(ORDER+2)/2;
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (const TIP<2,Tx> & ip, TFA & shape) const
@@ -378,7 +377,7 @@ namespace ngfem
     using L2HighOrderFEFO<ET_TRIG, ORDER, FixedOrientation<V1,V2,V3>>::DIM;     
     
   public:
-    enum { NDOF = (ORDER+1)*(ORDER+2)/2 };
+    static constexpr int NDOF = (ORDER+1)*(ORDER+2)/2;
 
     template<typename Tx, typename TFA>  
       INLINE void T_CalcShape (const TIP<DIM,Tx> & ip, TFA & shape) const
@@ -413,7 +412,7 @@ namespace ngfem
     using L2HighOrderFEFO<ET_TET, ORDER, FixedOrientation<V1,V2,V3,V4>>::vnums; 
 
   public:
-    enum { NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6 };
+    static constexpr int NDOF = (ORDER+1)*(ORDER+2)*(ORDER+3)/6;
 
     template<typename Tx, typename TFA>  
     INLINE void T_CalcShape (const TIP<3,Tx> & ip, TFA & shape) const

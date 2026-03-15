@@ -175,9 +175,9 @@ namespace ngfem
     public VertexOrientedFE<ET>
   {
   protected:
-    enum { DIM = ET_trait<ET>::DIM };
-    enum { DIM_STRESS = (DIM*(DIM+1))/2 };
-    
+    static constexpr int DIM = ET_trait<ET>::DIM;
+    static constexpr int DIM_STRESS = (DIM*(DIM+1))/2;
+
     using VertexOrientedFE<ET>::vnums;
     using HDivDivFiniteElement<ET_trait<ET>::DIM>::ndof;
     using HDivDivFiniteElement<ET_trait<ET>::DIM>::order;
@@ -2702,8 +2702,8 @@ namespace ngfem
     public VertexOrientedFE<ET>
   {
   protected:
-    enum { DIM = ET_trait<ET>::DIM };
-    enum { DIM_STRESS = ((DIM+2)*(DIM+1))/2 };
+  static constexpr int DIM = ET_trait<ET>::DIM;
+  static constexpr int DIM_STRESS = ((DIM+2)*(DIM+1))/2;
     
     using VertexOrientedFE<ET>::vnums;
     using HDivDivSurfaceFiniteElement<ET_trait<ET>::DIM>::ndof;
