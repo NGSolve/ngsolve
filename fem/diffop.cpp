@@ -1128,20 +1128,35 @@ namespace ngfem
     auto mat = bmat.AddSize(dimi*sqr(vdim)*bfel.GetNDof(), mir.Size());
     mat = 0.0;
 
+    /*
+      // OLD
     STACK_ARRAY(SIMD<double>, mem, dimi*ndi*mir.Size());
     FlatMatrix<SIMD<double>> smat(dimi*ndi, mir.Size(), &mem[0]);
 
     diffop->CalcMatrix (fel, mir, smat);
     FlatTensor<4,SIMD<double>> tens(sqr(vdim), ndi*dimi, sqr(vdim), mir.Size(), bmat.Data());
 
-    /*
-    for (int i = 0, ii = 0; i < vdim; i++)
-      for (int j = 0; j < vdim; j++, ii++)
-        tens(ii,STAR,vdim*i+j,STAR) = smat;
-    */
+    // for (int i = 0, ii = 0; i < vdim; i++)
+    // for (int j = 0; j < vdim; j++, ii++)
+    // tens(ii,STAR,vdim*i+j,STAR) = smat;
     for (int ii = 0; ii < sqr(vdim); ii++)
       tens(ii,STAR,ii,STAR) = smat;
-//      cout << "mat, SIMD bmat tensor = " << tens << endl;
+    
+    // cout << "mat, SIMD bmat tensor = " << tens << endl;
+    */
+
+
+    STACK_ARRAY(SIMD<double>, mem, dimi*ndi*mir.Size());
+    FlatMatrix<SIMD<double>> smat(dimi*ndi, mir.Size(), &mem[0]);
+    FlatTensor<3,SIMD<double>> stens(ndi, dimi, mir.Size(), &mem[0]);    
+
+    diffop->CalcMatrix (fel, mir, smat);
+    FlatTensor<5,SIMD<double>> tens(sqr(vdim), ndi, sqr(vdim), dimi, mir.Size(), bmat.Data());
+
+    for (int ii = 0; ii < sqr(vdim); ii++)
+      for (int k = 0; k < ndi; k++)
+        for (int i = 0; i < dimi; i++)
+          tens(ii,k,ii,i,STAR) = stens(k,i,STAR);
   }
 
   
