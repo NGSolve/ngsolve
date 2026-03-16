@@ -78,7 +78,7 @@ namespace ngbla
   
   // template <typename T = double, ORDERING ORD = RowMajor> class FlatMatrix;
   template <typename T = double, ORDERING ORD = RowMajor> class Matrix;
-
+  template <typename T> class DoubleSliceMatrix;
   
   template <int H, int W, typename T> class Mat;
   template <int H, typename T> class DiagMat;

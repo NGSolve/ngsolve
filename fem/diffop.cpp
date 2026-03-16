@@ -1144,9 +1144,9 @@ namespace ngfem
     FlatMatrix<double,ColMajor> mat(dimi, ndi, lh);
     diffop->CalcMatrix (fel, mip, mat, lh);
 
-    for (int j = 0; j < sqr(vdim); j++)
-      flux.Range(j*dimi, (j+1)*dimi) = mat * x.Range(j*ndi, (j+1)*ndi);
-    // flux.AsMatrix(sqr(vdim), dimi) = mat * Trans(x.AsMatrix(sqr(vdim), ndi));
+    // for (int j = 0; j < sqr(vdim); j++)
+    // flux.Range(j*dimi, (j+1)*dimi) = mat * x.Range(j*ndi, (j+1)*ndi);
+    Trans(flux.AsMatrix(sqr(vdim), dimi)) = mat * Trans(x.AsMatrix(sqr(vdim), ndi));
   }
   
   
@@ -1159,21 +1159,25 @@ namespace ngfem
     auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();
-    
+
+    for (int k = 0; k < sqr(vdim); k++)
+      diffop->Apply(fel, mir, x.Range(k*ndi, (k+1)*ndi), flux.Rows(dimi*k,dimi*(k+1)));
+
+    /*
     STACK_ARRAY(SIMD<double>, mem, dimi*sqr(vdim)*mir.Size());
     FlatMatrix<SIMD<double>> hflux(dimi*sqr(vdim), mir.Size(), &mem[0]);
 
     for (int k = 0; k < sqr(vdim); k++)
       diffop->Apply(fel, mir, x.Range(k*ndi, (k+1)*ndi), hflux.Rows(dimi*k,dimi*(k+1)));
 
-    /*
-    for (int i = 0, ii = 0; i < vdim; i++)
-      for (int j = 0; j < vdim; j++, ii++)
-        flux.Row(i*vdim+j).Range(0, mir.Size()) = hflux.Row(ii);
-    */
+
+    // for (int i = 0, ii = 0; i < vdim; i++)
+    //   for (int j = 0; j < vdim; j++, ii++)
+    //    flux.Row(i*vdim+j).Range(0, mir.Size()) = hflux.Row(ii);
+
     for (int i = 0; i < sqr(vdim)*dimi; i++)
       flux.Row(i).Range(0, mir.Size()) = hflux.Row(i);
-    // cout << "mat, apply, x = " << x.Range(bfel.GetNDof()) << ", y = " << flux.AddSize(vdim*vdim, mir.Size()) << endl;
+    */
   }
 
 
@@ -1187,26 +1191,24 @@ namespace ngfem
     auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();
+
+    for (int k = 0; k < sqr(vdim); k++)
+      diffop->AddTrans(fel, mir, flux.Rows(dimi*k,dimi*(k+1)), y.Range(k*ndi, (k+1)*ndi));
+
     
+    /*
     STACK_ARRAY(SIMD<double>, mem, dimi*sqr(vdim)*mir.Size());
     FlatMatrix<SIMD<double>> hflux(dimi*sqr(vdim), mir.Size(), &mem[0]);
 
     hflux = SIMD<double> (0.0);
 
-    /*
-    for (int i = 0, ii = 0; i < vdim; i++)
-      for (int j = 0; j < vdim; j++, ii++)
-        hflux.Row(ii) += flux.Row(i*vdim+j).Range(0, mir.Size());
-    */
     for (int i = 0; i < sqr(vdim)*dimi; i++)
       hflux.Row(i) += flux.Row(i).Range(0, mir.Size());
 
-    /*
-    for (int k = 0; k < hflux.Height(); k++)
-        diffop->AddTrans(fel, mir, hflux.Rows(k,k+1), y.Range(k*ndi, (k+1)*ndi));
-    */
     for (int k = 0; k < sqr(vdim); k++)
       diffop->AddTrans(fel, mir, hflux.Rows(dimi*k,dimi*(k+1)), y.Range(k*ndi, (k+1)*ndi));
+    */
+
     
     // cout << "mat, addtrans, y = " << y.Range(bfel.GetNDof()) << ", flux = " << flux.AddSize(vdim*vdim, mir.Size()) << endl;
   }
