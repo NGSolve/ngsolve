@@ -47,28 +47,18 @@ template <int DIM, typename T = double, int DIMLIN = DIM> class FlatTensor;
 
 template <int DIM, typename T, int LINDIM>
 INLINE auto LargerTensor (FlatTensor<DIM,T,LINDIM> tensor, size_t as, size_t ad)
-// -> FlatTensor<DIM+1,T,LINDIM> 
 {
   return FlatTensor<DIM+1,T,LINDIM> (as, ad, tensor);
 }
 
-/*
-template <typename T, int LINDIM>
-INLINE auto LargerTensor (FlatTensor<0,T,LINDIM> tensor, int as, int ad)
-  -> SliceVector<T> 
-{
-  return SliceVector<T> (as, ad, tensor.Data());
-}
-*/
 template <typename T>
 INLINE auto LargerTensor (FlatTensor<0,T,0> tensor, size_t as, size_t ad)
-// -> SliceVector<T> 
 {
   return SliceVector<T> (as, ad, tensor.Data());
 }
+  
 template <typename T, int LINDIM>
 INLINE auto LargerTensor (FlatTensor<0,T,LINDIM> tensor, size_t as, size_t ad)
-// -> FlatVector<T> 
 {
   return FlatVector<T> (as, tensor.Data());
 }
@@ -106,13 +96,18 @@ INLINE auto LargerTensor (DoubleSliceMatrix<T> mat, int as, int ad)
 
 template <typename T>
 INLINE auto LargerTensor (SliceMatrix<T> mat, int as, int ad)
-  -> FlatTensor<3,T,0> 
+  -> FlatTensor<3,T,1> 
 {
+  FlatTensor<0,T,0> t0(mat.Data());  
+  FlatTensor<1,T,1> t1(mat.Width(), t0);
+  FlatTensor<2,T,1> t2 (mat.Height(), mat.Dist(), t1);
+  /*
   FlatTensor<2,T,1> tens (mat.Height(), mat.Dist(),
                           FlatTensor<1,T,1> (mat.Width(),1,
                                              FlatTensor<0,T,1> (mat.Data())));
+  */
   
-  return LargerTensor (tens , as, ad);
+  return LargerTensor (t2 , as, ad);
 }
 
 
@@ -176,7 +171,8 @@ class FlatTensor
 
 
 public: 
-  FlatTensor () : size(0), dist(0) { ; }
+  // FlatTensor () : size(0), dist(0) { }
+  FlatTensor (const FlatTensor&) = default;
   
   template <typename ... ARG>
   FlatTensor (size_t s, ARG ... args) : size(s), sub(args...) 
@@ -185,11 +181,17 @@ public:
   }
 
   template <typename ... ARG>
+  FlatTensor (std::tuple<size_t,size_t> tup, ARG ... args) : size(get<0>(tup)), dist(get<1>(tup)), sub(args...) 
+  {
+    ;
+  }
+
+  
+  template <typename ... ARG>
   FlatTensor (LocalHeap & lh, ARG ... args)
     : FlatTensor (args...)
   {
     size_t totsize = this->GetTotalSize();
-    // TODO: why this call instead of lh.Alloc<T> as in FlatMatrix?
     this->Data() = new(lh) T[totsize];
   }
   
@@ -200,12 +202,11 @@ public:
     this->Data() = data;
   }
 
-  
-  FlatTensor (size_t as, size_t ad, FlatTensor<DIM-1,T> asub) 
+  FlatTensor (size_t as, size_t ad, FlatTensor<DIM-1,T,DIMLIN> asub) 
     : size(as), dist(ad), sub(asub) { ; }
 
   template <int DIMLIN2> 
-  FlatTensor (FlatTensor<DIM,T,DIMLIN2> t2)
+  FlatTensor (const FlatTensor<DIM,T,DIMLIN2> & t2)
     : size(t2.GetSize()), dist(t2.GetDist()), sub(t2.GetSubTensor())
   {
     static_assert(DIMLIN <= DIMLIN2, "illegal tensor copy");
@@ -240,25 +241,40 @@ public:
   }
 
   
-  FlatTensor operator= (double d)
+  FlatTensor & operator= (double d)
   {
     for (size_t i = 0; i < size; i++)
       GetSubTensor(i) = d;
     return *this;
   }
 
+  FlatTensor & operator= (const FlatTensor & t2)
+  {
+    for (size_t i = 0; i < size; i++)
+      GetSubTensor(i) = t2.GetSubTensor(i);
+    return *this;
+  }
+
+  
+  template <int DIMLIN2>
+  FlatTensor & operator= (const FlatTensor<DIM,T,DIMLIN2> & t2)
+  {
+    for (size_t i = 0; i < size; i++)
+      GetSubTensor(i) = t2.GetSubTensor(i);
+    return *this;
+  }
+
+
+
+  
   size_t GetSize () const { return size; }
   size_t GetDist () const { return dist; }
   size_t GetTotalSize () const { return size*sub.GetTotalSize(); }
 
   auto Shape() const { return std::tuple_cat(std::tuple<size_t>(size), sub.Shape()); }
   
-  auto GetSubTensor() const -> decltype(sub)
-  { return sub; } 
-  FlatTensor<DIM-1,T> GetSubTensor (size_t i) const 
-  {
-    return OffsetTensor (sub, i*dist);
-  }
+  auto GetSubTensor() const { return sub; } 
+  auto GetSubTensor (size_t i) const { return OffsetTensor (sub, i*dist); }
 
   T *& Data () { return sub.Data(); }
   T * Data () const { return sub.Data(); }
@@ -308,6 +324,8 @@ class FlatTensor<0,T,LINDIM>
   T * data;
 public: 
   FlatTensor () { ; }
+  FlatTensor (const FlatTensor&) = default;
+  
   FlatTensor (T * adata) : data(adata) { ; }
   template <int DIMLIN2>
   FlatTensor (FlatTensor<0,T,DIMLIN2> t2)
@@ -324,9 +342,10 @@ public:
   // T & operator() () { return *data; }
   operator T  () const { return *data; }
   operator T& () { return *data; }
-  T & operator= (double d) { *data = d; return *data; }
-  T & operator-= (double d) { *data -= d; return *data; }
-  T & operator+= (double d) { *data += d; return *data; }
+  FlatTensor & operator= (double d) { *data = d; return *this; }
+  FlatTensor & operator= (const FlatTensor & t2) { *data = *t2.data; return *this; }
+  FlatTensor & operator-= (double d) { *data -= d; return *data; }
+  FlatTensor & operator+= (double d) { *data += d; return *data; }
 
   template<typename ... ARG>
   INLINE void SetSize (ARG ... args) throw () { }
@@ -386,8 +405,8 @@ public:
 
 
 
-template <int DIM, typename T>
-INLINE ostream & operator<< (ostream & ost, const FlatTensor<DIM,T> & tensor)
+  template <int DIM, typename T, int DIMLIN>
+  INLINE ostream & operator<< (ostream & ost, const FlatTensor<DIM,T,DIMLIN> & tensor)
 {
   ost << "tensor, dim = " << tensor.GetSize() 
       << ", dist = " << tensor.GetDist()
@@ -404,16 +423,16 @@ INLINE ostream & operator<< (ostream & ost, const FlatTensor<DIM,T> & tensor)
   return ost;
 }
 
-template <typename T>
-INLINE ostream & operator<< (ostream & ost, const FlatTensor<2,T> & tensor)
+  template <typename T, int DIMLIN>
+  INLINE ostream & operator<< (ostream & ost, const FlatTensor<2,T,DIMLIN> & tensor)
 {
   for (size_t i = 0; i < tensor.GetSize(); i++)
     ost << tensor.GetSubTensor(i);
   return ost;
 }
 
-template <typename T>
-INLINE ostream & operator<< (ostream & ost, const FlatTensor<1,T> & tensor)
+  template <typename T, int DIMLIN>
+  INLINE ostream & operator<< (ostream & ost, const FlatTensor<1,T,DIMLIN> & tensor)
 {
   for (size_t i = 0; i < tensor.GetSize(); i++)
     ost << * (tensor.Data()+i*tensor.GetDist()) << " ";

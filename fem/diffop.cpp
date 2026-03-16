@@ -1080,20 +1080,10 @@ namespace ngfem
     : DifferentialOperator(sqr(avdim)*adiffop->Dim(), adiffop->BlockDim(),
                            adiffop->VB(), adiffop->DiffOrder()),
         diffop(adiffop), vdim(avdim)
-    {
-      /*
-      if (adiffop->Dimensions().Size() == 0)
-        // dimensions = Array<int> ( { avdim, avdim });
-        SetDimensions ( { avdim, avdim } );
-      else
-        throw Exception("no matrix-valued of vector-valued possible");
-      */
-      SetDimensions( Array<int> (Array<int> { vdim, vdim} + diffop->Dimensions()) );
-      // cout << "dimensions of matrix-valued: " << Dimensions() << endl;
-    }
-
-
-
+  {
+    SetDimensions( Array<int> (Array<int> { vdim, vdim} + diffop->Dimensions()) );
+  }
+  
 
   MatrixDifferentialOperator :: ~MatrixDifferentialOperator ()  { ; }
 
@@ -1124,39 +1114,18 @@ namespace ngfem
     auto & fel = static_cast<const VectorFiniteElement&> (bfel)[0];
     size_t ndi = fel.GetNDof();
     size_t dimi = diffop->Dim();
-    
-    auto mat = bmat.AddSize(dimi*sqr(vdim)*bfel.GetNDof(), mir.Size());
-    mat = 0.0;
 
-    /*
-      // OLD
-    STACK_ARRAY(SIMD<double>, mem, dimi*ndi*mir.Size());
-    FlatMatrix<SIMD<double>> smat(dimi*ndi, mir.Size(), &mem[0]);
-
-    diffop->CalcMatrix (fel, mir, smat);
-    FlatTensor<4,SIMD<double>> tens(sqr(vdim), ndi*dimi, sqr(vdim), mir.Size(), bmat.Data());
-
-    // for (int i = 0, ii = 0; i < vdim; i++)
-    // for (int j = 0; j < vdim; j++, ii++)
-    // tens(ii,STAR,vdim*i+j,STAR) = smat;
-    for (int ii = 0; ii < sqr(vdim); ii++)
-      tens(ii,STAR,ii,STAR) = smat;
-    
-    // cout << "mat, SIMD bmat tensor = " << tens << endl;
-    */
-
+    bmat.Rows(Dim()*bfel.GetNDof()).Cols(mir.Size()) = 0.0;
 
     STACK_ARRAY(SIMD<double>, mem, dimi*ndi*mir.Size());
     FlatMatrix<SIMD<double>> smat(dimi*ndi, mir.Size(), &mem[0]);
     FlatTensor<3,SIMD<double>> stens(ndi, dimi, mir.Size(), &mem[0]);    
 
     diffop->CalcMatrix (fel, mir, smat);
-    FlatTensor<5,SIMD<double>> tens(sqr(vdim), ndi, sqr(vdim), dimi, mir.Size(), bmat.Data());
+    FlatTensor<5,SIMD<double>,1> tens(sqr(vdim), ndi, sqr(vdim), tuple(dimi,bmat.Dist()), mir.Size(), bmat.Data());
 
     for (int ii = 0; ii < sqr(vdim); ii++)
-      for (int k = 0; k < ndi; k++)
-        for (int i = 0; i < dimi; i++)
-          tens(ii,k,ii,i,STAR) = stens(k,i,STAR);
+      tens(ii,STAR,ii,STAR,STAR) = stens;
   }
 
   
@@ -1177,6 +1146,7 @@ namespace ngfem
 
     for (int j = 0; j < sqr(vdim); j++)
       flux.Range(j*dimi, (j+1)*dimi) = mat * x.Range(j*ndi, (j+1)*ndi);
+    // flux.AsMatrix(sqr(vdim), dimi) = mat * Trans(x.AsMatrix(sqr(vdim), ndi));
   }
   
   
