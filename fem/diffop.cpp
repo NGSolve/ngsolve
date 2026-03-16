@@ -895,6 +895,20 @@ namespace ngfem
     mat = 0.0;
 
     diffop->CalcMatrix (feli, mir, mat.Rows(dimi*ndi));
+
+    FlatTensor<3,SIMD<double>,1> tens1(ndi, tuple(dimi,bmat.Dist()), mir.Size(), bmat.Data());    
+    FlatTensor<5,SIMD<double>,1> tens(dim, ndi, dim, tuple(dimi,bmat.Dist()), mir.Size(), bmat.Data());
+
+    for (int i = 1; i < dim; i++)
+      tens(i,STAR,i,STAR,STAR) = tens1;
+    if (dim > 1)
+      for (int j = feli.GetNDof()-1; j >= 1; j--)
+        {
+          tens(0,j,0,STAR,STAR) = tens1(j,STAR,STAR);
+          tens1(j,STAR,STAR) = 0.0;
+        }
+    
+    /*
     for (int i = 1; i < dim; i++)
       {
         auto mati = mat.Rows(dim*dimi*fel.GetRange(i));
@@ -906,7 +920,7 @@ namespace ngfem
       mat.Rows(j*dim*dimi, j*dim*dimi+dimi) = mat.Rows(j*dimi, (j+1)*dimi);
     for (int j = feli.GetNDof()-1; j >= 0; j--)
       mat.Rows(j*dim*dimi+dimi, (j+1)*dim*dimi) = 0.0;
-
+    */
     //    throw ExceptionNOSIMD("VectorDifferentialOperator::CalcMatrix not yet tested for SIMD support");
   }
   
