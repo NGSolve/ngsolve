@@ -950,7 +950,7 @@ namespace ngsbem
         
         const ElementTransformation &trafo = tmesh->GetTrafo(el, lh);
         IntegrationRule ir(trafo.GetElementType(), intorder);
-        MappedIntegrationRule<2,3> miry(ir, trafo, lh);
+        auto & miry = trafo(ir, lh);
 
         for (int k = 0; k < miry.Size(); k++)
           {
@@ -978,7 +978,7 @@ namespace ngsbem
         
         const ElementTransformation &trafo = tmesh->GetTrafo(el, lh);
         IntegrationRule ir(trafo.GetElementType(), intorder);
-        MappedIntegrationRule<2,3> miry(ir, trafo, lh);
+        auto & miry = trafo(ir, lh);
 
 
         Vec<3> elmax(-1e99, -1e99, -1e99);
@@ -1147,7 +1147,6 @@ namespace ngsbem
 
     Vector<SIMD<T>> simd_result(Dimension());
     simd_result = SIMD<T>(0.0);
-    auto & mip23 = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip);
     if constexpr (std::is_same<typename KERNEL::value_type,T>())
       for (size_t i = 0; i < mesh->GetNSE(); i++)
         {
@@ -1181,7 +1180,9 @@ namespace ngsbem
               for (int iy = 0; iy < miry.Size(); iy++)
                 {
                   Vec<3,SIMD<double>> x = mip.GetPoint();
-                  Vec<3,SIMD<double>> nx = mip23.GetNV();
+                  Vec<3,SIMD<double>> nx{0.0};
+                  if constexpr (KERNEL::needs_target_normal)
+                    nx = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV();
                   
                   Vec<3,SIMD<double>> y = miry[iy].GetPoint();
                   Vec<3,SIMD<double>> ny = miry[iy].GetNV();
@@ -1208,10 +1209,18 @@ namespace ngsbem
       if (local_expansion)
         {
           // static Timer t("ngbem evaluate potential, local expansion (bmir)"); RegionTimer reg(t);
-        
-          auto & mir = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);        
-          for (int j = 0; j < mir.Size(); j++)
-            kernel.EvaluateMP (*local_expansion, Vec<3>(mir[j].GetPoint()), Vec<3>(mir[j].GetNV()), make_BareSliceVector(result.Row(j)));
+
+          const MappedIntegrationRule<2,3> * mir23 = nullptr;
+          if constexpr (KERNEL::needs_target_normal)
+            mir23 = &dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);
+
+          for (int j = 0; j < bmir.Size(); j++)
+            {
+              Vec<3> nx = 0.0;
+              if constexpr (KERNEL::needs_target_normal)
+                nx = (*mir23)[j].GetNV();
+              kernel.EvaluateMP (*local_expansion, Vec<3>(bmir[j].GetPoint()), nx, make_BareSliceVector(result.Row(j)));
+            }
           return;
         }
     
@@ -1230,10 +1239,11 @@ namespace ngsbem
         LocalHeapMem<100000> lh("Potential::Eval");
         auto space = this->gf->GetFESpace();
         auto mesh = space->GetMeshAccess();
-
-        auto & mirx = dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);
+        const MappedIntegrationRule<2,3> * mirx23 = nullptr;
+        if constexpr (KERNEL::needs_target_normal)
+          mirx23 = &dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);
         
-        Matrix<SIMD<T>> simd_result(Dimension(), mirx.Size());
+        Matrix<SIMD<T>> simd_result(Dimension(), bmir.Size());
         simd_result = SIMD<T>(0.0);
         if constexpr (std::is_same<typename KERNEL::value_type,T>())
           for (size_t i = 0; i < mesh->GetNSE(); i++)
@@ -1256,13 +1266,15 @@ namespace ngsbem
               FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
               
               evaluator->Apply (fel, miry, elvec, vals);
-              for (int ix = 0; ix < mirx.Size(); ix++)
+              for (int ix = 0; ix < bmir.Size(); ix++)
                 for (int iy = 0; iy < miry.Size(); iy++)
                   {
-                    Vec<3,SIMD<double>> x = mirx[ix].GetPoint();
+                    Vec<3,SIMD<double>> x = bmir[ix].GetPoint();
                     Vec<3,SIMD<double>> y = miry[iy].GetPoint();
                     
-                    Vec<3,SIMD<double>> nx = mirx[ix].GetNV();
+                    Vec<3,SIMD<double>> nx{0.0};
+                    if constexpr (KERNEL::needs_target_normal)
+                      nx = (*mirx23)[ix].GetNV();
                     Vec<3,SIMD<double>> ny = miry[iy].GetNV();
                     
                     for (auto term : kernel.terms)
@@ -1273,7 +1285,7 @@ namespace ngsbem
                   }
             }
         for (int i = 0; i < Dimension(); i++)
-          for (int j = 0; j < mirx.Size(); j++)
+          for (int j = 0; j < bmir.Size(); j++)
             result(j, i) = HSum(simd_result(i,j));
       }
     catch (ExceptionNOSIMD & e)

@@ -23,6 +23,9 @@ namespace ngsbem
   class BaseKernel
   {
   public:
+    static constexpr bool needs_target_normal = true;
+    static constexpr bool needs_source_normal = true;
+
     shared_ptr<SingularMLExpansion<Complex>> CreateMultipoleExpansion (Vec<3> c, double r) const
     {
       throw Exception("Create Multipole Expansion not implemented");
@@ -241,6 +244,9 @@ namespace ngsbem
   class LaplaceSLKernel<3, COMPS> : public BaseKernel
   {
   public:
+    static constexpr bool needs_target_normal = false;
+    static constexpr bool needs_source_normal = false;
+
     LaplaceSLKernel<3,COMPS>()
     {
       for (size_t i = 0; i < COMPS; i++)
@@ -306,6 +312,8 @@ namespace ngsbem
   class LaplaceDLKernel<3, COMPS> : public BaseKernel
   {
   public:
+    static constexpr bool needs_target_normal = false;
+
     LaplaceDLKernel<3,COMPS>()
     {
       for (size_t i = 0; i < COMPS; i++)
@@ -382,6 +390,9 @@ namespace ngsbem
   {
     T_Kappa kappa;
   public:
+    static constexpr bool needs_target_normal = false;
+    static constexpr bool needs_source_normal = false;
+
     typedef Complex value_type;
     using mp_type = typename std::conditional<COMPS == 1,
                                               Complex,
@@ -481,6 +492,8 @@ namespace ngsbem
   {
     T_Kappa kappa;
   public:
+    static constexpr bool needs_target_normal = false;
+
     typedef Complex value_type;
     using mp_type = typename std::conditional<COMPS == 1,
                                               Complex,
@@ -584,7 +597,7 @@ namespace ngsbem
         KernelTerm{1.0, 0, 0, 0},
         KernelTerm{1.0, 0, 1, 1},
         KernelTerm{1.0, 0, 2, 2},
-	KernelTerm{1.0, 1, 3, 3},
+    	KernelTerm{1.0, 1, 3, 3},
       };
 
     auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
@@ -623,6 +636,8 @@ namespace ngsbem
   {
     T_Kappa kappa;
   public:
+    static constexpr bool needs_target_normal = false;
+
     typedef Complex value_type;
     using mp_type = typename std::conditional<COMPS == 1,
                                                   Complex,
@@ -689,6 +704,9 @@ namespace ngsbem
     double kappa;
   public:
     typedef Complex value_type;
+
+    static constexpr bool needs_target_normal = false;
+    static constexpr bool needs_source_normal = false;
     static string Name() { return "MaxwellSL"; }
     static auto Shape() { return IVec<2>(4,4); }
     
@@ -747,6 +765,8 @@ namespace ngsbem
   {
     T_Kappa kappa;
   public:
+    static constexpr bool needs_target_normal = false;
+
     typedef Complex value_type;
     static string Name() { return "MaxwellDL"; }
     static auto Shape() { return IVec<2>(3,3); }
@@ -829,7 +849,8 @@ namespace ngsbem
     double alpha;
   public:
     typedef double value_type;
-    
+    static constexpr bool needs_target_normal = false;
+    static constexpr bool needs_source_normal = false;
     static string Name() { return "LameSL"; }
     static auto Shape() { return IVec<2>(3,3); }
     
