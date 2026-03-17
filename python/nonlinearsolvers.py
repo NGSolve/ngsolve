@@ -95,10 +95,17 @@ class NewtonSolver:
             if self.lin_solver_cls is not None and self.inv is None:
                 self.inv = self.lin_solver_cls(mat=self.a.mat, **(self.lin_solver_args or {}))
             else:
-                self.inv.Update()
+                try:
+                  self.inv.Update()
+                except Exception:
+                    self.inv = self.lin_solver_cls(mat=self.a.mat, **(self.lin_solver_args or {}))
         else:
             if self.inv is not None and (self.inverse == "sparsecholesky" or isinstance(self.inv, SparseFactorizationInterface)):
-                self.inv.Update()
+                try:
+                    self.inv.Update()
+                except Exception:
+                    self.inv = self.a.mat.Inverse(self.freedofs,
+                                                  inverse=self.inverse)
             else:
                 self.inv = self.a.mat.Inverse(self.freedofs,
                                               inverse=self.inverse)
