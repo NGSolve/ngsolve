@@ -766,6 +766,7 @@ namespace ngsbem
     T_Kappa kappa;
   public:
     static constexpr bool needs_target_normal = false;
+    static constexpr bool needs_source_normal = false;
 
     typedef Complex value_type;
     static string Name() { return "MaxwellDL"; }
