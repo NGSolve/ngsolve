@@ -410,9 +410,7 @@ namespace ngsbem
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
-      // auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm);
       auto kern = exp(kappa*Complex(0,1)*norm) / (4 * M_PI * norm);
-      // return kern;
       return Vec<1,decltype(kern)> (kern);
     }
     T_Kappa GetKappa() const { return kappa; }
@@ -511,11 +509,8 @@ namespace ngsbem
     {
       T norm = L2Norm(x-y);
       T nxy = InnerProduct(ny, (x-y));
-      // auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm*norm*norm)
-      //   * nxy * (Complex(1,0)*T(1.) - Complex(0,kappa)*norm);
       auto kern = exp(kappa*Complex(0,1)*norm) / (4 * M_PI * norm*norm*norm)
         * nxy * (Complex(1,0)*T(1.) - kappa*Complex(0,1)*norm);
-      // return kern;
       return Vec<1,decltype(kern)> (kern);
     }
     T_Kappa GetKappa() const { return kappa; }
@@ -533,7 +528,6 @@ namespace ngsbem
 
     void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      // mp.AddDipole(pnt, -nv, val(0));
       if constexpr (COMPS == 1)
         mp.AddDipole(pnt, -nv, val(0));
       else
@@ -542,7 +536,6 @@ namespace ngsbem
 
     void AddSourceTrans(SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      // mp.AddCharge(pnt, val(0));
       if constexpr (COMPS == 1)
         mp.AddCharge (pnt, val(0));
       else
@@ -551,7 +544,6 @@ namespace ngsbem
 
     void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      // val(0) = mp.Evaluate (pnt);
       if constexpr (COMPS == 1)
         val(0) = mp.Evaluate (pnt);
       else
@@ -560,7 +552,6 @@ namespace ngsbem
 
     void EvaluateMPTrans(RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      // val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
       if constexpr (COMPS == 1)
         val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
       else
@@ -655,11 +646,8 @@ namespace ngsbem
     {
       T norm = L2Norm(x-y);
       T nxy = InnerProduct(ny, (x-y));
-      // auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm*norm*norm)
-      //   * ( nxy * (Complex(1,0)*T(1.) - Complex(0,kappa)*norm)  - Complex(0,kappa)*norm*norm);
       auto kern = exp(kappa*Complex(0,1)*norm) / (4 * M_PI * norm*norm*norm)
         * ( nxy * (Complex(1,0)*T(1.) - kappa*Complex(0,1)*norm)  - kappa*Complex(0,1)*norm*norm);
-      // return kern;
       return Vec<1,decltype(kern)> (kern);
     }
     T_Kappa GetKappa() const { return kappa; }
@@ -677,10 +665,6 @@ namespace ngsbem
 
     void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
     {
-      // mp.AddCharge(pnt, Complex(0, -kappa)*val(0));
-      // mp.AddDipole(pnt, -nv, val(0));
-
-      // mp.AddChargeDipole (pnt, Complex(0, -kappa)*val(0), -nv, val(0));
       if constexpr (COMPS == 1)
         mp.AddChargeDipole (pnt, -kappa * Complex(0, 1)*val(0), -nv, val(0));
       else
@@ -778,8 +762,6 @@ namespace ngsbem
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
-      // auto kern = exp(Complex(0,kappa)*norm) / (4 * M_PI * norm*norm*norm)
-      //   * (Complex(0,kappa)*norm - Complex(1,0)*T(1.)) * (x-y);
       auto kern = exp(kappa*Complex(0,1)*norm) / (4 * M_PI * norm*norm*norm)
         * (kappa*Complex(0,1)*norm - Complex(1,0)*T(1.)) * (x-y);
       return kern;

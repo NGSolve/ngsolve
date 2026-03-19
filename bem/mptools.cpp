@@ -925,7 +925,6 @@ namespace ngsbem
   {
     if (sh.Order() < 0) return entry_type{0.0};
     SphericalExpansion<RADIAL, entry_type,T_Kappa> tmp(Order(), kappa, RTyp());
-    // this->SH().DirectionalDiffAdd(kappa*d, tmp.SH(), Scale());
     this->SH().DirectionalDiffAdd(abs(kappa)*d, tmp.SH(), Scale());
     return tmp.Eval(x);
   }
@@ -948,7 +947,6 @@ namespace ngsbem
 
     for (int i = 0; i <= sh.Order(); i++)
       {
-        // entry_type radc = Complex(0,kappa*radial(i)) * c;
         entry_type radc = kappa*radial(i) * Complex(0,1) * c;
         for (auto j : IntRange(sqr(i), sqr(i+1)))
           sh.Coefs()(j) += Conj(sh_shapes(j)) * radc;
@@ -971,7 +969,6 @@ namespace ngsbem
 
     SphericalExpansion<Singular, entry_type, T_Kappa> tmp(Order(), kappa, RTyp());
     tmp.AddCharge(x, c);
-    // tmp.SH().DirectionalDiffAdd (kappa*d,  this->SH(), Scale());
     tmp.SH().DirectionalDiffAdd (abs(kappa)*d,  this->SH(), Scale());
   }
 
