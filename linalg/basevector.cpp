@@ -181,6 +181,17 @@ namespace ngla
     return *this;
   }
 
+  BaseVector & BaseVector :: Add (BaseScalar & scal, const BaseVector & v)
+  {
+    if (scal.IsComplex())
+      Add (scal.GetC(), v);
+    else
+      Add (scal.GetD(), v);
+    return *this;
+  }
+   
+  
+  
 
   double BaseVector :: InnerProductD (const BaseVector & v2) const
   {
@@ -193,6 +204,15 @@ namespace ngla
     return dynamic_cast<const S_BaseVector<Complex>&> (*this) . 
       InnerProduct (v2, conjugate);
   }
+
+  void BaseVector :: InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate) const
+  {
+    if (IsComplex() || v2.IsComplex())
+      scal.Set (InnerProductC(v2, conjugate));
+    else
+      scal.Set (InnerProductD(v2));
+  }
+  
 
   /*
   AutoVector BaseVector ::Range (size_t begin, size_t end) const
@@ -625,6 +645,11 @@ namespace ngla
   
 
   std::map<type_index, function<shared_ptr<BaseVector>(const BaseVector&,bool)>> BaseVector::devveccreator;
+
+  shared_ptr<BaseScalar> BaseVector :: CreateScalar() const
+  {
+    return make_shared<BaseScalar> ();
+  }
   
   shared_ptr<BaseVector> BaseVector :: CreateDeviceVector(bool unified) const
   {

@@ -265,6 +265,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
 	  },
           py::arg("pardofs"), py::arg("status"));
      
+
+
+    py::class_<BaseScalar, shared_ptr<BaseScalar>> (m, "Scalar")
+      .def("__str__", [](BaseScalar &self) { return ToString(self); } )
+      ;
     
   py::class_<BaseVector, shared_ptr<BaseVector>>(m, "BaseVector",
                                                  py::dynamic_attr(), // add dynamic attributes
@@ -369,6 +374,11 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            return vecs;
          }, py::arg("num"),
          "creates a num new vector of same type, contents is undefined")
+
+    .def("CreateScalar", [] (BaseVector & self)
+         {
+           return self.CreateScalar(); 
+         })
     
     .def("Copy", [] (BaseVector & self)
          {
@@ -593,6 +603,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
     .def("__neg__", [] (shared_ptr<BaseVector> a) { return (-1.0)*a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, double scal) { return scal*a; })
     .def("__rmul__", [] (shared_ptr<BaseVector> a, Complex scal) { return scal*a; })
+    .def("__rmul__", [] (shared_ptr<BaseVector> a, shared_ptr<BaseScalar> scal) { return scal*a; })    
     
     .def("InnerProduct", [](BaseVector & self, BaseVector & other, bool conjugate)
                                           {
@@ -607,6 +618,13 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
                                               return py::cast (InnerProduct (self, other));
                                           }, py::arg("other"), py::arg("conjugate")=py::cast(true), "Computes (complex) InnerProduct"         
          )
+    .def("InnerProduct", [](BaseVector & self, BaseVector & other, BaseScalar & scal, bool conjugate)
+                                          {
+                                            self.InnerProduct(other, scal, conjugate);
+                                          }, py::arg("other"), py::arg("scal"), py::arg("conjugate")=py::cast(true), "Computes (complex) InnerProduct"
+      )
+
+
     .def("Norm",  [](BaseVector & self) { return self.L2Norm(); }, "Calculate Norm")
     .def("Range", [](BaseVector & self, int from, int to) -> shared_ptr<BaseVector>
                                    {

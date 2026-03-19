@@ -410,16 +410,6 @@ namespace ngsbem
     }
   };  
 
-  class Scalar : public std::variant<double, Complex>
-  {
-  public:
-    using std::variant<double, Complex>::variant;
-    Scalar operator- () {
-      return std::visit([](auto val) {
-        return Scalar(-val);
-      }, *this);
-    }
-  };
   
   class SumOfPotentialOperators
   {

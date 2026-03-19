@@ -9,7 +9,8 @@
 
 #include <bla.hpp>
 #include <core/mpi_wrapper.hpp>
-// #include "paralleldofs.hpp"
+#include "basescalar.hpp"
+
 
 namespace ngla
 {
@@ -251,6 +252,7 @@ namespace ngla
 
     virtual double InnerProductD (const BaseVector & v2) const;
     virtual Complex InnerProductC (const BaseVector & v2, bool conjuagte = false) const;
+    virtual void InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate = false) const;    
     
     virtual double L2Norm () const;
     virtual bool IsComplex() const { return false; }
@@ -266,6 +268,7 @@ namespace ngla
 
     virtual BaseVector & Add (double scal, const BaseVector & v);
     virtual BaseVector & Add (Complex scal, const BaseVector & v);
+    virtual BaseVector & Add (BaseScalar & scal, const BaseVector & v);    
 
     virtual ostream & Print (ostream & ost) const;
     virtual void Save(ostream & ost) const;
@@ -279,7 +282,8 @@ namespace ngla
     // virtual shared_ptr<BaseVector> CreateVector () const = 0;
     virtual AutoVector CreateVector () const = 0;
     virtual unique_ptr<MultiVector> CreateMultiVector (size_t cnt) const;
-
+    virtual shared_ptr<BaseScalar> CreateScalar() const;
+    
     virtual void SetRandom ();
 
     inline AutoVector Range (size_t begin, size_t end) const;
@@ -642,7 +646,8 @@ namespace ngla
     
     virtual int EntrySizeScal() const throw () override
     { return EntrySize() * sizeof(double)/sizeof(SCAL); }
-    
+
+    using BaseVector::InnerProduct;
     virtual SCAL InnerProduct (const BaseVector & v2, bool conjugate = false) const;
 
     virtual double InnerProductD (const BaseVector & v2) const override;
@@ -1088,6 +1093,10 @@ namespace ngla
     virtual void AddTo (double s, BaseVector & v2) const = 0;
     virtual void AssignTo (Complex s, BaseVector & v2) const = 0;
     virtual void AddTo (Complex s, BaseVector & v2) const = 0;
+    virtual void AddTo (shared_ptr<BaseScalar> s, BaseVector & v2)
+    {
+      throw Exception("AddTo BaseScalar not overloaded");
+    }
   };
 
 
@@ -1107,6 +1116,8 @@ namespace ngla
     { v2.Set (s, *a); }
     void AddTo (Complex s, BaseVector & v2) const override
     { v2.Add (s, *a); }
+    virtual void AddTo (shared_ptr<BaseScalar> s, BaseVector & v2) override
+    { v2.Add (*s, *a); }
   };
 
   class DynamicSumExpression : public DynamicBaseExpression
@@ -1205,6 +1216,41 @@ namespace ngla
   };
 
 
+  class DynamicBaseScalVecExpression : public DynamicBaseExpression
+  {
+    shared_ptr<BaseScalar> scal;
+    shared_ptr<DynamicBaseExpression> a;
+
+    AutoVector CreateVector() const override
+    { return a->CreateVector(); }    
+    
+    void AssignTo (double s, BaseVector & v2) const override
+    {
+      throw Exception("DynamicBaseScalVec AssignTo not available");
+      // a->AssignTo(s*scale, v2);
+    }
+    void AddTo (double s, BaseVector & v2) const override
+    {
+      if (s != 1.)
+        throw Exception("DynamicBaseScalVec AddTo needs s=1");
+      
+      a->AddTo(scal, v2);
+    }
+    void AssignTo (Complex s, BaseVector & v2) const override
+    {
+      throw Exception("DynamicBaseScalVec AssignTo complex not available");      
+      // a->AssignTo(s*scale, v2);
+    }
+    void AddTo (Complex s, BaseVector & v2) const override
+    {
+      throw Exception("DynamicBaseScalVec AddTo complex not available");            
+      // a->AddTo(s*scale, v2);
+    }
+  public:
+    DynamicBaseScalVecExpression (shared_ptr<BaseScalar> ascal, shared_ptr<DynamicBaseExpression> aa)
+      : scal(ascal), a(aa) { ; } 
+  };
+
 
   
   class DynamicVectorExpression 
@@ -1259,7 +1305,10 @@ namespace ngla
   }
 
 
-
+  inline auto operator* (shared_ptr<BaseScalar> scal, DynamicVectorExpression v)
+  {
+    return DynamicVectorExpression(make_shared<DynamicBaseScalVecExpression>(scal, v.Ptr()));    
+  }
 
 
   

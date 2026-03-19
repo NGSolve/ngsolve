@@ -38,7 +38,7 @@ if(USE_MUMPS)
 endif()
 
 install( FILES
-        basematrix.hpp basevector.hpp blockjacobi.hpp cg.hpp multivector.hpp
+        basematrix.hpp basevector.hpp basescalar.hpp blockjacobi.hpp cg.hpp multivector.hpp
         chebyshev.hpp commutingAMG.hpp eigen.hpp jacobi.hpp la.hpp order.hpp   
         pardisoinverse.hpp sparsecholesky.hpp sparsematrix.hpp
         sparsematrix_impl.hpp sparsematrix_dyn.hpp diagonalmatrix.hpp

@@ -1448,7 +1448,7 @@ namespace ngbla
       : data(adata)
     {
       if constexpr (is_IC<TW>() && is_IC<TDIST>())
-        h = s;
+      h = s;
       else if constexpr (is_IC<TH>() && is_IC<TDIST>())
         w = s;
       else if constexpr (is_IC<TH>() && is_IC<TW>())
