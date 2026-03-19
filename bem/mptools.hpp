@@ -1000,7 +1000,7 @@ namespace ngsbem
                   // Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
                   //   (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
                   Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-                    mp.Kappa()*(Complex(0, 1)/rho - 1.0/sqr(rho));
+                    (mp.Kappa()*Complex(0, 1)/rho - 1.0/sqr(rho));
                   sum += dGdrho * InnerProduct(drhodp, d) * c;
                 }
           }
@@ -1034,7 +1034,7 @@ namespace ngsbem
               //   kernelc * SIMD<Complex,FMM_SW>(-1.0, rhokappa);
               auto kernel = 
                 invrho*invrho * InnerProduct(p-x, d) * 
-                kernelc * (SIMD<Complex,FMM_SW>(1.0,0) + rhokappa * SIMD<Complex,FMM_SW>(0, 1));
+                kernelc * (SIMD<Complex,FMM_SW>(-1.0,0) + rhokappa * SIMD<Complex,FMM_SW>(0, 1));
               
               vsum += kernel * c2;
             }
@@ -1121,7 +1121,7 @@ namespace ngsbem
             // Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
             // (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
             Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-            mp.Kappa()*(Complex(0,1)/rho - 1.0/sqr(rho));
+            (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
             sum += dGdrho * InnerProduct(drhodp, d) * c;
           }
         return sum;
