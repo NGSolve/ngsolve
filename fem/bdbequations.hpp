@@ -1991,9 +1991,31 @@ namespace ngfem
         }
     }
 
+    static void ApplySIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                             BareSliceVector<Complex> x, BareSliceMatrix<SIMD<Complex>> y)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.Evaluate (mir.IR(), x.Range(fel.GetRange(i)), y.Row(i));
+        }
+    }
+
     using DiffOp<DiffOpIdVectorH1<DIM_SPC, VB>>::AddTransSIMDIR;
     static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
                                 BareSliceMatrix<SIMD<double>> y, BareSliceVector<double> x)
+    {
+      auto & fel = static_cast<const VectorFiniteElement&> (bfel);
+      for (int i = 0; i < DIM_SPC; i++)
+        {
+          auto & feli = static_cast<const BaseScalarFiniteElement&> (fel[i]);
+          feli.AddTrans (mir.IR(), y.Row(i), x.Range(fel.GetRange(i)));
+        }
+    }
+
+    static void AddTransSIMDIR (const FiniteElement & bfel, const SIMD_BaseMappedIntegrationRule & mir,
+                                BareSliceMatrix<SIMD<Complex>> y, BareSliceVector<Complex> x)
     {
       auto & fel = static_cast<const VectorFiniteElement&> (bfel);
       for (int i = 0; i < DIM_SPC; i++)

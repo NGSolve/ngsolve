@@ -849,7 +849,7 @@ namespace ngsbem
   shared_ptr<BasePotentialCF> GenericIntegralOperator<KERNEL> ::
   GetPotential(shared_ptr<GridFunction> gf, optional<int> io, bool nearfield_experimental) const
   {
-    return  make_shared<PotentialCF<KERNEL>> (gf, trial_definedon, trial_evaluator,
+    return  make_shared<PotentialCF<KERNEL>> (gf, BND, trial_definedon, trial_evaluator,
                                               kernel, io.value_or(intorder), nearfield_experimental);
   }
 
@@ -857,10 +857,11 @@ namespace ngsbem
   template <typename KERNEL>
   PotentialCF<KERNEL> ::
   PotentialCF (shared_ptr<GridFunction> _gf,
+               VorB _source_vb,
                optional<Region> _definedon,                   
                shared_ptr<DifferentialOperator> _evaluator,
                KERNEL _kernel, int _intorder, bool _nearfield)
-    : BasePotentialCF(_gf, _definedon, _evaluator, std::is_same<typename KERNEL::value_type,Complex>()),
+    : BasePotentialCF(_gf, _source_vb, _definedon, _evaluator, std::is_same<typename KERNEL::value_type,Complex>()),
       kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
   {
     IVec<2> shape = kernel.Shape();
@@ -883,16 +884,17 @@ namespace ngsbem
     Vec<3> smax(-1e99, -1e99, -1e99);
     Vec<3> smin(1e99, 1e99, 1e99);
     
-    for (size_t i = 0; i < mesh->GetNSE(); i++)
+    for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
       {
         HeapReset hr(lh);
-        ElementId ei(BND, i);
+        ElementId ei(source_vb, i);
         if (!space->DefinedOn(ei)) continue;
+        if (definedon && !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
 
         // const FiniteElement &fel = space->GetFE(ei, lh);
         const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
         IntegrationRule ir(trafo.GetElementType(), intorder);
-        MappedIntegrationRule<2,3> miry(ir, trafo, lh);
+        auto & miry = trafo(ir, lh);
 
         for (int k = 0; k < miry.Size(); k++)
           for (int j = 0; j < 3; j++)
@@ -909,12 +911,13 @@ namespace ngsbem
     auto singmp = kernel.CreateMultipoleExpansion(cs, rs, io_params);
     
     typedef typename KERNEL::value_type T;
-    for (size_t i = 0; i < mesh->GetNSE(); i++)
+    for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
       {
         HeapReset hr(lh);
-        ElementId ei(BND, i);
+        ElementId ei(source_vb, i);
 
         if (!space->DefinedOn(ei)) continue;
+        if (definedon && !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
           
         const FiniteElement &fel = space->GetFE(ei, lh);
         const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
@@ -925,7 +928,7 @@ namespace ngsbem
         gf->GetElementVector(dnums, elvec);
         
         IntegrationRule ir(fel.ElementType(), intorder);
-        MappedIntegrationRule<2,3> miry(ir, trafo, lh);
+        auto & miry = trafo(ir, lh);
         FlatMatrix<T> vals(miry.Size(), evaluator->Dim(), lh);
         
         evaluator->Apply (fel, miry, elvec, vals, lh);
@@ -934,7 +937,14 @@ namespace ngsbem
         for (int j = 0; j < miry.Size(); j++)
           {
             vals.Row(j) *= miry[j].GetWeight();
-            kernel.AddSource (*singmp, miry[j].GetPoint(), miry[j].GetNV(), make_BareSliceVector(vals.Row(j)));
+            Vec<3> ny = 0.0;
+            if constexpr (KERNEL::needs_source_normal)
+              {
+                if (source_vb != BND)
+                  throw Exception("kernel requires boundary source normals");
+                ny = static_cast<const MappedIntegrationPoint<2,3>&>(miry[j]).GetNV();
+              }
+            kernel.AddSource (*singmp, miry[j].GetPoint(), ny, make_BareSliceVector(vals.Row(j)));
           }
       }
 
@@ -1148,10 +1158,10 @@ namespace ngsbem
     Vector<SIMD<T>> simd_result(Dimension());
     simd_result = SIMD<T>(0.0);
     if constexpr (std::is_same<typename KERNEL::value_type,T>())
-      for (size_t i = 0; i < mesh->GetNSE(); i++)
+      for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
         {
           HeapReset hr(lh);
-          ElementId ei(BND, i);
+          ElementId ei(source_vb, i);
           if (!space->DefinedOn(ei)) continue;
           if (definedon &&  !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
             
@@ -1173,7 +1183,7 @@ namespace ngsbem
             {
               HeapReset hr(lh);
               auto simd_ir_range = simd_ir.Range(k, min(simd_ir.Size(), size_t(k+bs)));
-              SIMD_MappedIntegrationRule<2,3> miry(simd_ir_range, trafo, lh);
+              auto & miry = trafo(simd_ir_range, lh);
               FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
               
               evaluator->Apply (fel, miry, elvec, vals);
@@ -1185,7 +1195,13 @@ namespace ngsbem
                     nx = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV();
                   
                   Vec<3,SIMD<double>> y = miry[iy].GetPoint();
-                  Vec<3,SIMD<double>> ny = miry[iy].GetNV();
+                  Vec<3,SIMD<double>> ny{0.0};
+                  if constexpr (KERNEL::needs_source_normal)
+                    {
+                      if (source_vb != BND)
+                        throw Exception("kernel requires boundary source normals");
+                      ny = static_cast<const SIMD<MappedIntegrationPoint<2,3>>&>(miry[iy]).GetNV();
+                    }
 
                   auto eval = kernel.Evaluate(x, y, nx, ny);
                   for (auto term : kernel.terms)
@@ -1246,11 +1262,12 @@ namespace ngsbem
         Matrix<SIMD<T>> simd_result(Dimension(), bmir.Size());
         simd_result = SIMD<T>(0.0);
         if constexpr (std::is_same<typename KERNEL::value_type,T>())
-          for (size_t i = 0; i < mesh->GetNSE(); i++)
+          for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
             {
               HeapReset hr(lh);
-              ElementId ei(BND, i);
+              ElementId ei(source_vb, i);
               if (!space->DefinedOn(ei)) continue;
+              if (definedon && !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
               
               const FiniteElement &fel = space->GetFE(ei, lh);
               const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
@@ -1262,7 +1279,7 @@ namespace ngsbem
               
               IntegrationRule ir(fel.ElementType(), intorder);
               SIMD_IntegrationRule simd_ir(ir);
-              SIMD_MappedIntegrationRule<2,3> miry(simd_ir, trafo, lh);
+              auto & miry = trafo(simd_ir, lh);
               FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
               
               evaluator->Apply (fel, miry, elvec, vals);
@@ -1275,7 +1292,13 @@ namespace ngsbem
                     Vec<3,SIMD<double>> nx{0.0};
                     if constexpr (KERNEL::needs_target_normal)
                       nx = (*mirx23)[ix].GetNV();
-                    Vec<3,SIMD<double>> ny = miry[iy].GetNV();
+                    Vec<3,SIMD<double>> ny{0.0};
+                    if constexpr (KERNEL::needs_source_normal)
+                      {
+                        if (source_vb != BND)
+                          throw Exception("kernel requires boundary source normals");
+                        ny = static_cast<const SIMD<MappedIntegrationPoint<2,3>>&>(miry[iy]).GetNV();
+                      }
                     
                     for (auto term : kernel.terms)
                       {

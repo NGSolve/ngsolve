@@ -167,15 +167,17 @@ namespace ngsbem
   {
   protected:
     shared_ptr<GridFunction> gf;
+    VorB source_vb = BND;
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
     IntOp_Parameters io_params;
   public:
     BasePotentialCF (shared_ptr<GridFunction> _gf,
+                     VorB _source_vb,
                      optional<Region> _definedon,    
                      shared_ptr<DifferentialOperator> _evaluator, bool is_complex)
       : CoefficientFunctionNoDerivative (_evaluator->Dim(), is_complex), 
-        gf(_gf), definedon(_definedon), evaluator(_evaluator) { } 
+        gf(_gf), source_vb(_source_vb), definedon(_definedon), evaluator(_evaluator) { }
 
     virtual  ~BasePotentialCF() = default;
 
@@ -196,6 +198,7 @@ namespace ngsbem
     
   public:
     PotentialCF (shared_ptr<GridFunction> _gf,
+                 VorB _source_vb,
                  optional<Region> _definedon,    
                  shared_ptr<DifferentialOperator> _evaluator,
                  KERNEL _kernel, int _intorder, bool anearfield);
@@ -216,11 +219,11 @@ namespace ngsbem
             return std::visit([&](auto const & dk) -> shared_ptr<CoefficientFunction>
             {
               using DK = std::decay_t<decltype(dk)>;
-              return make_shared<PotentialCF<DK>>(this->gf, this->definedon, this->evaluator, dk, intorder, nearfield);
+              return make_shared<PotentialCF<DK>>(this->gf, this->source_vb, this->definedon, this->evaluator, dk, intorder, nearfield);
             }, diffkernel);
           }
         else
-          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
+          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->source_vb, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
       }
       else
         throw Exception("Kernel does not support differentiated kernel '"+name+"'");
@@ -282,6 +285,7 @@ namespace ngsbem
   public:
     shared_ptr<ProxyFunction> proxy;
     // shared_ptr<CoefficientFunction> factor;
+    VorB source_vb = BND;
     optional<Region> definedon;
     shared_ptr<DifferentialOperator> evaluator;
     IntOp_Parameters io_params;
@@ -289,17 +293,19 @@ namespace ngsbem
     
   public:
     BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, // shared_ptr<CoefficientFunction> _factor,
+                           VorB _source_vb,
                            optional<Region> _definedon,    
                            shared_ptr<DifferentialOperator> _evaluator,
                            int _intorder)
-      : proxy(_proxy), /* factor(_factor), */ definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; }
+      : proxy(_proxy), /* factor(_factor), */ source_vb(_source_vb), definedon(_definedon), evaluator(_evaluator), intorder(_intorder) { ; }
 
     BasePotentialOperator (shared_ptr<ProxyFunction> _proxy, // shared_ptr<CoefficientFunction> _factor,
+                           VorB _source_vb,
                            optional<Region> _definedon,    
                            shared_ptr<DifferentialOperator> _evaluator,
                            IntOp_Parameters _io_params, 
                            int _intorder)
-      : proxy(_proxy), definedon(_definedon), evaluator(_evaluator), io_params(_io_params), intorder(_intorder) { ; } 
+      : proxy(_proxy), source_vb(_source_vb), definedon(_definedon), evaluator(_evaluator), io_params(_io_params), intorder(_intorder) { ; }
 
 
 
@@ -328,19 +334,21 @@ namespace ngsbem
   public:
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
                        // shared_ptr<CoefficientFunction> _factor,                       
+                       VorB _source_vb,
                        optional<Region> _definedon,    
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel, int _intorder)
-      : BasePotentialOperator (_proxy, /* _factor, */ _definedon, _evaluator, _intorder), kernel(_kernel) { ; } 
+      : BasePotentialOperator (_proxy, /* _factor, */ _source_vb, _definedon, _evaluator, _intorder), kernel(_kernel) { ; }
 
     PotentialOperator (shared_ptr<ProxyFunction> _proxy,
                        // shared_ptr<CoefficientFunction> _factor,                       
+                       VorB _source_vb,
                        optional<Region> _definedon,    
                        shared_ptr<DifferentialOperator> _evaluator,
                        KERNEL _kernel,
                        IntOp_Parameters _io_params, 
                        int _intorder)
-      : BasePotentialOperator (_proxy, _definedon, _evaluator, _io_params, _intorder), kernel(_kernel) { ; }
+      : BasePotentialOperator (_proxy, _source_vb, _definedon, _evaluator, _io_params, _intorder), kernel(_kernel) { ; }
 
     shared_ptr<IntegralOperator> MakeIntegralOperator(shared_ptr<ProxyFunction> test_proxy,
                                                       // shared_ptr<CoefficientFunction> test_factor,
@@ -374,7 +382,7 @@ namespace ngsbem
     
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
     {
-      return make_shared<PotentialCF<KERNEL>>(gf, definedon, evaluator, kernel, 2+intorder, true);
+      return make_shared<PotentialCF<KERNEL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, true);
     }
 
     shared_ptr<BasePotentialOperator> MakeDiffBasePotential(string name) override
@@ -387,11 +395,11 @@ namespace ngsbem
           return std::visit([&](auto const & dk) -> shared_ptr<BasePotentialOperator>
           {
             using DK = std::decay_t<decltype(dk)>;
-            return std::make_shared<PotentialOperator<DK>>(this->proxy, this->definedon, this->evaluator, dk, this->io_params, this->intorder);
+            return std::make_shared<PotentialOperator<DK>>(this->proxy, this->source_vb, this->definedon, this->evaluator, dk, this->io_params, this->intorder);
           }, diffkernel);
         }
         else
-          return make_shared<PotentialOperator<decltype(diffkernel)>>(this->proxy, this->definedon, this->evaluator, diffkernel, this->io_params, this->intorder);
+          return make_shared<PotentialOperator<decltype(diffkernel)>>(this->proxy, this->source_vb, this->definedon, this->evaluator, diffkernel, this->io_params, this->intorder);
       }
       else
         throw Exception("Kernel does not support differentiated kernel '"+name+"'");
@@ -482,7 +490,7 @@ namespace ngsbem
   
 
   inline Array < tuple <shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction>  >>
-  CreateProxyLinearization (shared_ptr<CoefficientFunction> cf, bool trial)
+  CreateProxyLinearization (shared_ptr<CoefficientFunction> cf, bool trial, VorB vb)
   {
     Array<tuple<shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction>>>  proxylin;
     Array<ProxyFunction*> proxies;
@@ -496,8 +504,8 @@ namespace ngsbem
       });
     
     for (auto proxy : proxies)
-      if (!proxy->Evaluator()->SupportsVB(BND))
-        throw Exception ("Testfunction does not support BND-forms, maybe a Trace() operator is missing");
+      if (!proxy->Evaluator()->SupportsVB(vb))
+        throw Exception ("Proxy does not support requested integration domain");
 
     for (auto proxy : proxies)
       {
@@ -536,12 +544,12 @@ namespace ngsbem
   }
   
   inline tuple < shared_ptr<ProxyFunction>, shared_ptr<CoefficientFunction> >
-  GetProxyAndFactor (shared_ptr<CoefficientFunction> cf, bool trial)
+  GetProxyAndFactor (shared_ptr<CoefficientFunction> cf, bool trial, VorB vb = BND)
   {
     if (auto proxy = dynamic_pointer_cast<ProxyFunction>(cf))
       return { proxy, nullptr };
     
-    auto proxylin = CreateProxyLinearization (cf, trial);
+    auto proxylin = CreateProxyLinearization (cf, trial, vb);
     if (proxylin.Size() != 1)
       throw Exception(string("need exactly one")+(trial?"trial":"test") + "-proxy");
 
@@ -559,9 +567,9 @@ namespace ngsbem
   }
 
   inline shared_ptr<ProxyFunction>
-  GetProxyWithFactor (shared_ptr<CoefficientFunction> cf, bool trial)
+  GetProxyWithFactor (shared_ptr<CoefficientFunction> cf, bool trial, VorB vb = BND)
   {
-    return std::get<0> (GetProxyAndFactor(cf, trial));
+    return std::get<0> (GetProxyAndFactor(cf, trial, vb));
   }
 
   class BasePotentialOperatorAndTest
