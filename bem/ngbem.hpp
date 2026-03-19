@@ -68,10 +68,7 @@ namespace ngsbem
     optional<Region> test_definedon;
 
     shared_ptr<DifferentialOperator> trial_evaluator;
-    // shared_ptr<CoefficientFunction> trial_factor;
-    
     shared_ptr<DifferentialOperator> test_evaluator;
-    // shared_ptr<CoefficientFunction> test_factor;
     
     
     // integration order
@@ -421,12 +418,6 @@ namespace ngsbem
       return std::visit([](auto val) {
         return Scalar(-val);
       }, *this);
-      /*
-      if (std::holds_alternative<double>(*this))
-        return -std::get<double>(*this);
-      else
-        return -std::get<Complex>(*this);
-      */
     }
   };
   
@@ -470,11 +461,6 @@ namespace ngsbem
 
   inline SumOfPotentialOperators operator- (const SumOfPotentialOperators & sum)
   {
-    /*
-    Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> res{sum.Summands()};
-    for (auto [scal&,potop] : res)
-      scal = -scal;
-    */
     Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> res;
     for (auto [scal,potop] : sum.Summands())
       res += tuple(-scal, potop);
@@ -576,24 +562,18 @@ namespace ngsbem
   {
     shared_ptr<BasePotentialOperator> pot;
     shared_ptr<ProxyFunction> test_proxy_with_factor;    
-    /*
-    shared_ptr<ProxyFunction> test_proxy;
-    shared_ptr<CoefficientFunction> test_factor;
-    */
   public:
 
     BasePotentialOperatorAndTest (shared_ptr<BasePotentialOperator> _pot,
                                   shared_ptr<CoefficientFunction> _test_proxy)
       : pot(_pot)
     {
-      // tie(test_proxy,test_factor) = GetProxyAndFactor(_test_proxy, false);
       test_proxy_with_factor = GetProxyWithFactor(_test_proxy, false);      
     }
 
     
     shared_ptr<IntegralOperator> MakeIntegralOperator (DifferentialSymbol dx)
     {
-      // return pot->MakeIntegralOperator(test_proxy, test_factor, dx);
       return pot->MakeIntegralOperator(test_proxy_with_factor, dx);
     }
   };
