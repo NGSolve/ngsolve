@@ -325,7 +325,6 @@ namespace ngsbem
       }
     
     for (int i = 0; i <= n; i++)
-      // values(i) = Complex (j(i), y(i));
       values(i) = Complex (j(i)) + Complex(y(i)) * Complex(0,1);
   }
 
@@ -353,7 +352,6 @@ namespace ngsbem
     template <typename T_Kappa>
     static double Scale (T_Kappa kappa, double rtyp)
     {
-      // return min(1.0, rtyp*kappa);
       return min(1.0, 0.5*rtyp*abs(kappa));
     }
   };
@@ -380,7 +378,6 @@ namespace ngsbem
     template <typename T_Kappa>
     static double Scale (T_Kappa kappa, double rtyp)
     {
-      // return 1.0/ min(1.0, 0.25*rtyp*kappa);
       return 1.0/ min(1.0, 0.5*rtyp*abs(kappa));
     }
     
@@ -759,7 +756,6 @@ namespace ngsbem
 
         // if (r*mp.Kappa() < 1e-8) return;
         if (level > 20) return;
-        // if (charges.Size() < fmm_params.maxdirect && r*mp.Kappa() < 5)
         if (charges.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < 5)
           return;
         
@@ -929,7 +925,6 @@ namespace ngsbem
               for (auto [x,c] : simd_charges)
                 {
                   auto rho = L2Norm(p-x);
-                  // auto kernel = (1/(4*M_PI))*SIMD<Complex,FMM_SW> (1,rho*mp.Kappa()) / rho;
                   auto kernel = (1/(4*M_PI))*(SIMD<Complex,FMM_SW> (1,0) + rho*mp.Kappa() * SIMD<Complex,FMM_SW> (0,1)) / rho;
                   kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
                   vsum += kernel * c;
@@ -938,8 +933,6 @@ namespace ngsbem
               for (auto [x,c] : simd_charges)
                 {
                   auto rho = L2Norm(p-x);
-                  // auto [si,co] = sincos(rho*mp.Kappa());
-                  // auto kernel = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) / rho;
                   auto kappa = mp.Kappa();
                   auto phase = Real(kappa) * rho;
                   auto decay = exp(-Imag(kappa)*rho);
@@ -957,13 +950,11 @@ namespace ngsbem
               {
                 for (auto [x,c] : charges)
                   if (double rho = L2Norm(p-x); rho > 0)
-                    // sum += (1/(4*M_PI))*Complex(1,rho*mp.Kappa()) / rho * c;
                     sum += (1/(4*M_PI))*(Complex(1,0) + rho*mp.Kappa()*Complex(0,1)) / rho * c;
               }
             else
               for (auto [x,c] : charges)
                 if (double rho = L2Norm(p-x); rho > 0)
-                  // sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
                   sum += (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) / rho * c;
           }
 
@@ -976,9 +967,6 @@ namespace ngsbem
               {
                 auto rho = L2Norm(p-x);
                 auto drhodp = (1.0/rho) * (p-x);
-                // auto [si,co] = sincos(rho*mp.Kappa());
-                // auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co,si) * 
-                //   (-1.0/(rho*rho) + SIMD<Complex,FMM_SW>(0, mp.Kappa())/rho);
                 auto kappa = mp.Kappa();
                 auto phase = Real(kappa) * rho;
                 auto decay = exp(-Imag(kappa)*rho);
@@ -997,8 +985,6 @@ namespace ngsbem
               if (double rho = L2Norm(p-x); rho > 0)
                 {
                   Vec<3> drhodp = 1.0/rho * (p-x);
-                  // Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
-                  //   (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
                   Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
                     (mp.Kappa()*Complex(0, 1)/rho - 1.0/sqr(rho));
                   sum += dGdrho * InnerProduct(drhodp, d) * c;
@@ -1018,20 +1004,13 @@ namespace ngsbem
               auto rho = L2Norm(p-x);
               auto rhokappa = rho*mp.Kappa();
               auto invrho = If(rho>0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
-              // auto [si,co] = sincos(rhokappa);
-              // auto kernelc = (1/(4*M_PI))*invrho*SIMD<Complex,FMM_SW>(co,si);
               auto kappa = mp.Kappa();
               auto phase = Real(kappa) * rho;
               auto decay = exp(-Imag(kappa)*rho);
               auto [si,co] = sincos(phase);
               auto kernelc = (1/(4*M_PI))*invrho*SIMD<Complex,FMM_SW>(co*decay,si*decay);
 
-              
               vsum += kernelc * c;   
-              
-              // auto kernel =
-              //   invrho*invrho * InnerProduct(p-x, d) *
-              //   kernelc * SIMD<Complex,FMM_SW>(-1.0, rhokappa);
               auto kernel = 
                 invrho*invrho * InnerProduct(p-x, d) * 
                 kernelc * (SIMD<Complex,FMM_SW>(-1.0,0) + rhokappa * SIMD<Complex,FMM_SW>(0, 1));
@@ -1048,12 +1027,9 @@ namespace ngsbem
           for (auto [x,c,d,c2] : chargedipoles)
             if (double rho = L2Norm(p-x); rho > 0)
               {
-                // sum += (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) / rho * c;
                 sum += (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) / rho * c;
                 
                 Vec<3> drhodp = 1.0/rho * (p-x);
-                // Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
-                //   (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
                 Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa() * Complex(0,rho)) *
                   mp.Kappa()*(Complex(0, 1)/rho - 1.0/sqr(rho));
                 
@@ -1078,10 +1054,8 @@ namespace ngsbem
                 if (double rho = L2Norm(p-x); rho > 0)
                   {
                     Vec<3> drhodp = 1.0/rho * (p-x);
-                    // Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
-                    //   (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
                     Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-                      mp.Kappa()*(Complex(0,1)/rho - 1.0/sqr(rho));
+                      (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
 
                     if constexpr (std::is_same<entry_type, Vec<3,Complex>>())
                       sum += j*dGdrho * Cross(drhodp, tau_num);
@@ -1118,10 +1092,8 @@ namespace ngsbem
           if (double rho = L2Norm(p-x); rho > 0)
           {
             Vec<3> drhodp = 1.0/rho * (p-x);
-            // Complex dGdrho = (1/(4*M_PI))*exp(Complex(0,rho*mp.Kappa())) *
-            // (Complex(0, mp.Kappa())/rho - 1.0/sqr(rho));
             Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-            (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
+                (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
             sum += dGdrho * InnerProduct(drhodp, d) * c;
           }
         return sum;
@@ -1259,9 +1231,6 @@ namespace ngsbem
 
       entry_type EvaluateMPDeriv(Vec<3> p, Vec<3> d) const
       {
-        // cout << "EvaluateMPDeriv Singular, p = " << p << ", d = " << d << ", r = " << r << ", center = " << center <<  endl;
-        // cout << "Norm: " << L2Norm(p-center) << " > " << 3*r << endl;
-        // cout << "charges.Size() = " << charges.Size() << ", dipoles.Size() = " << dipoles.Size() << endl;
         if (charges.Size() || dipoles.Size() || chargedipoles.Size() || !childs[0])
           return EvaluateDeriv(p, d);
 
@@ -1280,7 +1249,6 @@ namespace ngsbem
           ost << "c = " << center << ", r = " << r << ", level = " << level << endl;
         else
           ost << "c = " << center << ", r = " << r << ", level = " << level << ", childnr = " << childnr << endl;
-        // for (int i = 0; i < loc_pnts.Size(); i++)
         for (auto [x,c] : charges)
           ost << "xi = " << x << ", ci = " << c << endl;
         for (auto [x,d,c] : dipoles)
@@ -1652,9 +1620,7 @@ namespace ngsbem
       // static Timer ttobatch("mptools - copy to batch 2");
       // static Timer tfrombatch("mptools - copy from batch 2");      
       
-      // *testout << "Processing vectorized batch of size " << batch.Size() << ", with N = " << N << ", vec_length = " << vec_length << ", len = " << len << ", theta = " << theta << endl;
       SphericalExpansion<Singular, Vec<N,Complex>, T_Kappa> vec_source(batch[0]->mpS->Order(), batch[0]->mpS->Kappa(), batch[0]->mpS->RTyp());
-      // SphericalExpansion<Singular, elem_type> tmp_source{*batch[0]->mpS};
       SphericalExpansion<Regular, elem_type, T_Kappa> tmp_target{*batch[0]->mpR};
       SphericalExpansion<Regular, Vec<N,Complex>, T_Kappa> vec_target(batch[0]->mpR->Order(), batch[0]->mpR->Kappa(), batch[0]->mpR->RTyp());
 
@@ -1727,8 +1693,6 @@ namespace ngsbem
 
       void Allocate()
       {
-        // mp = SphericalExpansion<Regular,elem_type>(MPOrder(r*mp.Kappa()), mp.Kappa(), r);
-        // mp = SphericalExpansion<Regular,elem_type, T_Kappa>(params.minorder+2*r*mp.Kappa(), mp.Kappa(), r);
         mp = SphericalExpansion<Regular,elem_type,T_Kappa>(params.minorder+2*r*abs(mp.Kappa()), mp.Kappa(), r);
       }
       
@@ -1964,7 +1928,6 @@ namespace ngsbem
 
         // if (r*mp.Kappa() < 1e-8) return;
         if (level > 20) return;        
-        // if (targets.Size() < params.maxdirect && r*mp.Kappa() < 5)
         if (targets.Size() < params.maxdirect && r*abs(mp.Kappa()) < 5)
           return;
 
@@ -2005,7 +1968,6 @@ namespace ngsbem
         vol_targets.Append (tuple(x,tr));
 
         if (level > 20) return;
-        // if (vol_targets.Size() < params.maxdirect && (r*mp.Kappa() < 5))
         if (vol_targets.Size() < params.maxdirect && (r*abs(mp.Kappa()) < 5))
           return;
 
