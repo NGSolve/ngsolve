@@ -1,10 +1,13 @@
-#include <solve.hpp>        // everything from ngsolve
-#include <cmath>
+#include "../comp/meshaccess.hpp"
+#include "../comp/gridfunction.hpp"
 
 #include "intrules_SauterSchwab.hpp"
 #include "ngbem.hpp"
-// #include "hmat.hpp"
 #include "fmmoperator.hpp"
+#include "../linalg/elementbyelement.hpp"
+#include "../linalg/diagonalmatrix.hpp"
+
+
 
 
 namespace ngsbem

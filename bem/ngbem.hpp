@@ -1,16 +1,20 @@
 #ifndef NGBEM_hpp
 #define NGBEM_hpp
 
+#include "../fem/integratorcf.hpp"
+#include "../linalg/basematrix.hpp"
+#include "../comp/fespace.hpp"
+
+
 #include "bem_diffops.hpp"
 #include "diffopwithfactor.hpp"
 #include "kernels.hpp"
-#include "../fem/integratorcf.hpp"
-#include <type_traits>
-#include <variant>
+
 
 namespace ngsbem
 {
   using namespace ngcomp;
+  using namespace ngla;
   class BasePotentialCF;
 
   template <typename T>

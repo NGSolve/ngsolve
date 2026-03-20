@@ -2,9 +2,12 @@
 #define FILE_FMMOPERATOR
 #include <mptools.hpp>
 #include <bla.hpp>
+#include "../linalg/basematrix.hpp"
+#include "../linalg/vvector.hpp"
 
 namespace ngsbem
 {
+  using namespace ngla;
   
   inline std::tuple<Vec<3>, double> GetCenterAndRadius(const Array<Vec<3>>& xpts)
   {

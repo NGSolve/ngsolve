@@ -2,6 +2,7 @@
 #define DIFFOPWITHFACTOR_HPP
 
 
+#include "../fem/coefficient.hpp"
 
 namespace ngsbem
 {
