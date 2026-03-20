@@ -53,8 +53,10 @@ namespace ngfem
 
     IVec<4> fav = ET_T::GetFaceSort (fanr, vnums);
 
-    Tx adxi = lami[fav[0]]-lami[fav[2]];
-    Tx adeta = lami[fav[1]]-lami[fav[2]];
+    // Tx adxi = lami[fav[0]]-lami[fav[2]];
+    // Tx adeta = lami[fav[1]]-lami[fav[2]];
+    Tx adxi = lami[fav[0]];
+    Tx adeta = lami[fav[1]];
     size_t ii = first_facet_dof[fanr];
     DubinerBasis::Eval(facet_order[fanr][0], lami[fav[1]].Value(), lami[fav[0]].Value(),
                        SBLambda([shape,&ii,adxi,adeta] (size_t nr, auto val)
@@ -72,7 +74,6 @@ namespace ngfem
                    BareSliceMatrix<SIMD<double>> shapes) const
   {
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
-    cout << "calc mapped shape, DIM  = " << DIM << ", ndof = " << this->GetNDof() << ", mir.size = " << mir.Size() << endl;
     shapes.AddSize(DIM*this->GetNDof(), mir.Size()) = 0.0;
     for (size_t i = 0; i < mir.Size(); i++)
       {
@@ -125,13 +126,6 @@ namespace ngfem
         T_CalcShape (&adp(0), mir[i].IP().FacetNr(),
                      SBLambda ([vali,coefs] (size_t j, auto s)
                                {
-                                 /*
-                                 auto shape = s.Value();
-                                 SIMD<double> sum = 0.0;
-                                 for (int k = 0; k < DIM; k++)
-                                   sum += shape(k) * values(k,i);
-                                 coefs(j) += HSum(sum);
-                                 */
                                  coefs(j) += HSum(InnerProduct(s.Value(), vali));
                                }));
       }
@@ -255,8 +249,11 @@ namespace ngfem
     
     IVec<3> fav = GetFaceSort(0, vnums);
     
-    AutoDiff<2> adxi  = lami[fav[0]]-lami[fav[2]];
-    AutoDiff<2> adeta = lami[fav[1]]-lami[fav[2]];
+    // AutoDiff<2> adxi  = lami[fav[0]]-lami[fav[2]];
+    // AutoDiff<2> adeta = lami[fav[1]]-lami[fav[2]];
+
+    AutoDiff<2> adxi  = lami[fav[0]];
+    AutoDiff<2> adeta = lami[fav[1]];
 
     DubinerBasis::Eval(order_inner[0], lami[fav[1]].Value(), lami[fav[0]].Value(),
                        SBLambda([&] (size_t nr, Tx val)
@@ -521,8 +518,12 @@ namespace ngfem
 
     IVec<4> fav = ET_T::GetFaceSort (fanr, vnums);
 
-    AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
-    AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
+    // AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
+    // AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
+    AutoDiff<3> adxi = lami[fav[0]];
+    AutoDiff<3> adeta = lami[fav[1]];
+
+    
     //double xi = lami[fav[0]].Value();
     //double eta = lami[fav[1]].Value();
 
@@ -656,7 +657,7 @@ namespace ngfem
     tau = mip.GetJacobian() * tauhat;
     tau /= mip.GetMeasure();
 
-    DubinerBasis::Eval(order, xi, eta,
+    DubinerBasis::Eval(order, eta, xi, 
 		       SBLambda([&] (size_t nr, auto val)
 				{
 				  shape[ii++] = tau * Vec<2,T>(val, 0);
@@ -687,8 +688,10 @@ namespace ngfem
 
 	IVec<4> fav = ET_trait<ET_PRISM>::GetFaceSort (fanr, vnums);
 
-	AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
-	AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
+	// AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
+	// AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];
+	AutoDiff<3> adxi = lami[fav[0]];
+	AutoDiff<3> adeta = lami[fav[1]];
 	double xi = lami[fav[0]].Value();
 	double eta = lami[fav[1]].Value();
 	
@@ -699,6 +702,14 @@ namespace ngfem
 	DubinerJacobiPolynomials<1,0> (p, 2*eta-1, polsy);
 	
 	int ii = first_facet_dof[fanr];
+        DubinerBasis::Eval(facet_order[fanr][0], lami[fav[1]].Value(), lami[fav[0]].Value(),
+                           SBLambda([shape,&ii,adxi,adeta] (size_t nr, auto val)
+                           {
+                             shape.Row(ii) = uDv(AutoDiff<3>(val), adxi).Value(); ii++;
+                             shape.Row(ii) = uDv(AutoDiff<3>(val), adeta).Value(); ii++;
+                           }));
+        
+        /*
 	for (int i = 0; i <= facet_order[fanr][0]; i++)
 	  for (int j = 0; j <= facet_order[fanr][0]-i; j++)
 	    {
@@ -712,6 +723,7 @@ namespace ngfem
 	      shape(ii,2) = val * adeta.DValue(2);
 	      ii++;
 	    }
+        */
       }
     else
       // quad faces

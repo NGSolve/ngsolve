@@ -11,6 +11,7 @@
 // #include <fem.hpp>
 #include "hcurlfe.hpp"
 #include "recursive_pol.hpp"
+#include "coefficient.hpp"
 #include <cassert>
 
 namespace ngfem 
@@ -33,6 +34,7 @@ namespace ngfem
     using HCurlFiniteElement<ET_trait<ET>::DIM>::order;
  
   public:
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::GetNDof;    
     using VertexOrientedFE<ET>::SetVertexNumber;
     using VertexOrientedFE<ET>::SetVertexNumbers;
 
@@ -85,6 +87,7 @@ namespace ngfem
     
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::GetNDof;        
     
     TangentialFacetVolumeFE () { highest_order_dc=false; }
     
@@ -138,6 +141,44 @@ namespace ngfem
       throw Exception("TangentialFacetVolumeFiniteElement<D>::CalcShape in global coordinates disabled");
     }
 
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const override
+    {
+      HeapReset hr(lh);
+
+      Facet2ElementTrafo f2el (ElementType(), BND);
+      for (int locfnr : Range(f2el.GetNFacets()))
+        {
+          SIMD_IntegrationRule irfacet(f2el.FacetType(locfnr), 2 * order);
+          auto & irvol = f2el(locfnr, irfacet, lh);
+          auto & mir = trafo(irvol, lh);
+
+          FlatMatrix<SIMD<double>> mfluxi(DIM, mir.IR().Size(), lh);
+          func.Evaluate (mir, mfluxi);
+
+          FlatMatrix<SIMD<double>> shapes(DIM*this->GetNDof(), mir.Size(), lh);
+          FlatMatrix<SIMD<double>> dualshapes(DIM*GetNDof(), mir.Size(), lh);
+
+          auto shapesRS = shapes.Reshape(GetNDof(), DIM*mir.Size());
+          auto dualshapesRS = dualshapes.Reshape(GetNDof(), DIM*mir.Size());
+          
+          CalcMappedShape (mir, shapes);
+          CalcDualShape (mir, dualshapes);
+          for (size_t j : Range(mir))
+            dualshapes.Col(j) *= mir[j].IP().Weight();
+
+          for (int j = first_facet_dof[locfnr]; j < first_facet_dof[locfnr+1]; j++)
+            {
+              double dj = HSum(InnerProduct(shapesRS.Row(j), dualshapesRS.Row(j)));
+              double fj = HSum(InnerProduct(mfluxi.AsVector(), dualshapesRS.Row(j)));
+              coefs(j) = fj/dj;
+            }
+        }
+    }
+    
+
+    
     using HCurlFiniteElement<ET_trait<ET>::DIM>::CalcMappedShape;
     virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
 				  BareSliceMatrix<SIMD<double>> shapes) const override;
