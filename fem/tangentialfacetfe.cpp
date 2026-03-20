@@ -154,6 +154,41 @@ namespace ngfem
                             shape.Row(i) = val.Value();
                           }));
   }
+
+  template <ELEMENT_TYPE ET>
+  void TangentialFacetFacetFE<ET>::
+  CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir, 
+                   BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
+    for (size_t i = 0; i < mir.Size(); i++)
+      {
+        T_CalcShape (GetTIP(mir[i]), 
+                     SBLambda ([&] (size_t j, auto s)
+                     {
+                       auto shape = s.Value();
+                       for (size_t k = 0; k < DIM+1; k++)
+                         shapes(j*(DIM+1)+k, i) = shape(k);
+                     }));
+      }
+  }
+
+
+  template <ELEMENT_TYPE ET>
+  void TangentialFacetFacetFE<ET> :: CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shapes) const
+  {
+    constexpr int DIMSPACE = DIM+1;
+    auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
+    for (size_t i = 0; i < mir.Size(); i++)
+      this->CalcDualShape2 (mir[i], 
+                            SBLambda ([&] (size_t j, auto val)
+                            {
+                              for (size_t k = 0; k < DIMSPACE; k++)
+                                shapes(j*DIMSPACE+k, i) = val(k);
+                            }));
+  }
+
+  
   
   template<> template <typename Tx, typename TFA>
   void TangentialFacetFacetFE<ET_SEGM>::T_CalcShape(TIP<DIM,Tx> tip,
@@ -183,6 +218,13 @@ namespace ngfem
                                  }));
   }
 
+  template<> template <typename MIP, typename TFA>
+  void TangentialFacetFacetFE<ET_SEGM>::CalcDualShape2 (const MIP & mip,
+                                                        TFA & shape) const
+  {
+    throw Exception("TangentialFacetFacetFE<ET_SEGM>::CalcDualShape2 not implemented");
+  }
+  
   template<>
   void TangentialFacetFacetFE<ET_SEGM>::ComputeNDof()
   {
@@ -252,8 +294,8 @@ namespace ngfem
     // AutoDiff<2> adxi  = lami[fav[0]]-lami[fav[2]];
     // AutoDiff<2> adeta = lami[fav[1]]-lami[fav[2]];
 
-    AutoDiff<2> adxi  = lami[fav[0]];
-    AutoDiff<2> adeta = lami[fav[1]];
+    Tx adxi  = lami[fav[0]];
+    Tx adeta = lami[fav[1]];
 
     DubinerBasis::Eval(order_inner[0], lami[fav[1]].Value(), lami[fav[0]].Value(),
                        SBLambda([&] (size_t nr, Tx val)
@@ -262,6 +304,43 @@ namespace ngfem
                                   shape[ii] = uDv(Tx(val), adeta); ii++;
                                 }));
   }
+
+  template<> template <typename MIP, typename TFA>
+  void TangentialFacetFacetFE<ET_TRIG>::CalcDualShape2 (const MIP & mip,
+                                                        TFA & shape) const
+  {
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
+    auto & ip = mip.IP();
+    T x = ip(0), y = ip(1);
+
+    T lam[3] = { x, y, 1-x-y };
+    Vec<2> pnts[3] = { { 1, 0  }, { 0, 1 } , { 0, 0 } };
+
+    IVec<4> fav = GetVertexOrientedFace(0);
+    Vec<2> adxi = pnts[fav[0]] - pnts[fav[2]];
+    Vec<2> adeta = pnts[fav[1]] - pnts[fav[2]];
+    T xi = lam[fav[0]];
+    T eta = lam[fav[1]];
+    
+
+    Mat<2,2,T> tauhat; 
+    tauhat.Col(0) = adxi;
+    tauhat.Col(1) = adeta;
+    Mat<3,2,T> tau;
+    tau = mip.GetJacobian() * tauhat;
+    tau /= mip.GetMeasure();
+
+    int ii = 0;
+    DubinerBasis::Eval(order, eta, xi, 
+		       SBLambda([&] (size_t nr, auto val)
+				{
+				  shape[ii++] = tau * Vec<2,T>(val, 0);
+				  shape[ii++] = tau * Vec<2,T>(0, val);
+				}));
+    
+  }
+
+  
 
   template<>
   void TangentialFacetFacetFE<ET_TRIG>::ComputeNDof()
@@ -318,6 +397,15 @@ namespace ngfem
 	}
   }
 
+  template<> template <typename MIP, typename TFA>
+  void TangentialFacetFacetFE<ET_QUAD>::CalcDualShape2 (const MIP & mip,
+                                                        TFA & shape) const
+  {
+    throw Exception("TangentialFacetFacetFE<ET_QUAD>::CalcDualShape2 not implemented");
+  }
+
+
+  
   template<>
   void TangentialFacetFacetFE<ET_QUAD>::ComputeNDof()
   {
@@ -1096,6 +1184,7 @@ namespace ngfem
   
   template class TangentialFacetFacetFE<ET_SEGM>;
   template class TangentialFacetFacetFE<ET_TRIG>;
+  template class TangentialFacetFacetFE<ET_QUAD>;  
   
   // template class TangentialFacetVolumeFE<ET_SEGM>;
   template class TangentialFacetVolumeFE<ET_TRIG>;

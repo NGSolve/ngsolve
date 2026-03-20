@@ -7,12 +7,9 @@
 /* Date:   2008                                                      */
 /*********************************************************************/
 
-
-// #include <fem.hpp>
 #include "hcurlfe.hpp"
 #include "recursive_pol.hpp"
 #include "coefficient.hpp"
-#include <cassert>
 
 namespace ngfem 
 {
@@ -68,8 +65,48 @@ namespace ngfem
     virtual void CalcShape(const IntegrationPoint & ip,
                            BareSliceMatrix<> shape) const override;
 
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::CalcMappedShape;
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir, 
+				  BareSliceMatrix<SIMD<double>> shapes) const override;
+
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override;
+    
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const;
+
+    template<typename MIP, typename TFA>  
+    void CalcDualShape2 (const MIP & mip, TFA & shape) const;
+
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const override
+    {
+      HeapReset hr(lh);
+
+      SIMD_IntegrationRule ir(ET, 2 * order);
+      auto & mir = trafo(ir, lh);
+
+      FlatMatrix<SIMD<double>> mfluxi(DIM+1, mir.IR().Size(), lh);
+      func.Evaluate (mir, mfluxi);
+
+      FlatMatrix<SIMD<double>> shapes((DIM+1)*this->GetNDof(), mir.Size(), lh);
+      FlatMatrix<SIMD<double>> dualshapes((DIM+1)*GetNDof(), mir.Size(), lh);
+      
+      auto shapesRS = shapes.Reshape(GetNDof(), (DIM+1)*mir.Size());
+      auto dualshapesRS = dualshapes.Reshape(GetNDof(), (DIM+1)*mir.Size());
+          
+      this->CalcMappedShape (mir, shapes);
+      this->CalcDualShape (mir, dualshapes);
+      for (size_t j : Range(mir))
+        dualshapes.Col(j) *= mir[j].IP().Weight();
+
+      for (int j = 0; j < GetNDof(); j++)
+        {
+          double dj = HSum(InnerProduct(shapesRS.Row(j), dualshapesRS.Row(j)));
+          double fj = HSum(InnerProduct(mfluxi.AsVector(), dualshapesRS.Row(j)));
+          coefs(j) = fj/dj;
+        }
+    }
   };
 
 

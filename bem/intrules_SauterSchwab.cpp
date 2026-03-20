@@ -1,11 +1,15 @@
-#include <solve.hpp>        // everything from ngsolve
-#include <cmath>
+// #include <solve.hpp>        // everything from ngsolve
+// #include <cmath>
 
-#include "ngbem.hpp"
+#include "../fem/intrule.hpp"
+#include "intrules_SauterSchwab.hpp"
 
 
 namespace ngsbem
 {
+  using namespace ngfem;
+
+  
   using Intrule_t = tuple<Array<Vec<2>>, Array<Vec<2>>, Array<double>>;
 
   // x, y in triangle [(0,0), (1,0), (0,1)]

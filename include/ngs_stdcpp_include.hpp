@@ -42,6 +42,7 @@
 #include <ctime>
 #include <limits>
 #include <cstring>
+#include <cassert>
 
 #include <new>
 #include <exception>
