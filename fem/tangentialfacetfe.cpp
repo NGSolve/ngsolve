@@ -55,7 +55,6 @@ namespace ngfem
 
     Tx adxi = lami[fav[0]]-lami[fav[2]];
     Tx adeta = lami[fav[1]]-lami[fav[2]];
-
     size_t ii = first_facet_dof[fanr];
     DubinerBasis::Eval(facet_order[fanr][0], lami[fav[1]].Value(), lami[fav[0]].Value(),
                        SBLambda([shape,&ii,adxi,adeta] (size_t nr, auto val)
@@ -73,6 +72,7 @@ namespace ngfem
                    BareSliceMatrix<SIMD<double>> shapes) const
   {
     auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+    cout << "calc mapped shape, DIM  = " << DIM << ", ndof = " << this->GetNDof() << ", mir.size = " << mir.Size() << endl;
     shapes.AddSize(DIM*this->GetNDof(), mir.Size()) = 0.0;
     for (size_t i = 0; i < mir.Size(); i++)
       {
@@ -246,11 +246,15 @@ namespace ngfem
     int ii = 0;
 
     Tx lami[3] = { x, y, 1-x-y };
+    /*
     int fav[3] = { 0, 1, 2};
     if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 
     if(vnums[fav[1]] > vnums[fav[2]]) swap(fav[1],fav[2]);
     if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
-
+    */
+    
+    IVec<3> fav = GetFaceSort(0, vnums);
+    
     AutoDiff<2> adxi  = lami[fav[0]]-lami[fav[2]];
     AutoDiff<2> adeta = lami[fav[1]]-lami[fav[2]];
 
@@ -554,8 +558,9 @@ namespace ngfem
     DubinerBasis::Eval(facet_order[fanr][0], lami[fav[1]].Value(), lami[fav[0]].Value(),
                        SBLambda([&] (size_t nr, double val)
                                 {
-                                  // shape[ii] = uDv(Tx(val), adxi); ii++;
-                                  // shape[ii] = uDv(Tx(val), adeta); ii++;
+                                  shape.Row(ii) = uDv(AutoDiff<3>(val), adxi).Value(); ii++;
+                                  shape.Row(ii) = uDv(AutoDiff<3>(val), adeta).Value(); ii++;
+                                  /*
                                   shape(ii,0) = val * adxi.DValue(0);
                                   shape(ii,1) = val * adxi.DValue(1);
                                   shape(ii,2) = val * adxi.DValue(2);
@@ -564,6 +569,7 @@ namespace ngfem
                                   shape(ii,1) = val * adeta.DValue(1);
                                   shape(ii,2) = val * adeta.DValue(2);
                                   ii++;
+                                  */
                                 }));
     // cout << "new: " << shape.Rows(first_facet_dof[fanr], first_facet_dof[fanr+1]);      
   }
