@@ -16,8 +16,6 @@
 namespace ngfem
 {
 
-
-
   /** 
       HCurlHighOrderFE of shape ET.
       The template specialization provides the shape functions.

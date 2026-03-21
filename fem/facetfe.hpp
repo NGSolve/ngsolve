@@ -31,9 +31,7 @@ namespace ngfem
 		  const FacetVolumeFiniteElement<D> & afe,
 		  int andof, int aorder)
       : ScalarFiniteElement<D> (andof, aorder), fnr(afnr), fe(afe) 
-    { 
-      ; // cout << "created facetfefacet" << endl;
-    }
+    { } 
 
     HD virtual ELEMENT_TYPE ElementType() const override { return fe.ElementType(); }
 
@@ -78,7 +76,6 @@ namespace ngfem
   class FacetVolumeFiniteElement : public FiniteElement
   {
   protected:
-    // int vnums[8];
     int facet_order[6]; 
     int first_facet_dof[7];
 
@@ -86,23 +83,6 @@ namespace ngfem
     using FiniteElement::order;
 
   public:
-
-    /*
-    void SetVertexNumbers (FlatArray<int> & avnums)
-    {
-      for (int i = 0; i < avnums.Size(); i++)
-	vnums[i] = avnums[i];
-    }
-    */
-
-    /*
-    template <typename T>
-    void SetVertexNumbers (const BaseArrayObject<T> & avnums)
-    {
-      for (int i = 0; i < avnums.Size(); i++)
-	vnums[i] = avnums[i];
-    }
-    */
     
     void SetOrder (int ao)  
     {

@@ -1,6 +1,7 @@
 
 #include <catch.hpp>
-#include <fem.hpp>
+#include <h1hofe.hpp>
+#include <l2hofe.hpp>
 
 using namespace ngfem;
 

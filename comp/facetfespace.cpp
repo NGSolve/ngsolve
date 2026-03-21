@@ -1080,87 +1080,8 @@ for the two neighbouring elements. This allows a simple implementation of the Le
                            + ElementTopology::GetElementName(ma->GetElType(ei)));
         } 
             
-          /*
-        FacetVolumeFiniteElement<1> * fe1d = NULL;
-        FacetVolumeFiniteElement<2> * fe2d = NULL;
-        FacetVolumeFiniteElement<3> * fe3d = NULL;;
-
-        switch (ma->GetElType(ei))
-          {
-          case ET_POINT:   break;
-          case ET_SEGM:    fe1d = new (lh) FacetFE<ET_SEGM> (); break;
-          case ET_TRIG:    fe2d = new (lh) FacetFE<ET_TRIG> (); break;
-          case ET_QUAD:    fe2d = new (lh) FacetFE<ET_QUAD> (); break;
-          case ET_TET:     fe3d = new (lh) FacetFE<ET_TET> (); break;
-          case ET_PYRAMID: fe3d = new (lh) FacetFE<ET_PYRAMID> (); break;
-          case ET_PRISM:   fe3d = new (lh) FacetFE<ET_PRISM> (); break;
-          case ET_HEX:     fe3d = new (lh) FacetFE<ET_HEX> (); break;
-          }
-
-        if (!fe2d && !fe3d && !fe1d)
-          {
-            stringstream str;
-            str << "FacetFESpace " << GetClassName() 
-                << ", undefined eltype " 
-                << ElementTopology::GetElementName(ma->GetElType(ei))
-                << ", order = " << order << endl;
-            throw Exception (str.str());
-          }
-
-        // ArrayMem<int, 12> vnums;
-        ArrayMem<int, 6> fanums, order_fa;
-    
-        // ma->GetElVertices(ei, vnums);
-        ma->GetElFacets (ei, fanums);
-
-        auto vnums = ma->GetElVertices(ei);
-        
-        order_fa.SetSize(fanums.Size());
-        for (int j = 0; j < fanums.Size(); j++)
-          order_fa[j] = order_facet[fanums[j]][0]; //SZ not yet anisotropric
-    
-
-        if (ma->GetDimension() == 1)
-          {
-            fe1d -> SetVertexNumbers (vnums);
-            fe1d -> SetOrder (order_fa);
-            fe1d -> ComputeNDof();
-            return *fe1d;
-          }
-        else if (ma->GetDimension() == 2)
-          {
-            fe2d -> SetVertexNumbers (vnums);
-            fe2d -> SetOrder (order_fa);
-            fe2d -> ComputeNDof();
-            return *fe2d;
-          }
-        else
-          {
-            fe3d -> SetVertexNumbers (vnums);
-            fe3d -> SetOrder (order_fa);
-            fe3d -> ComputeNDof();
-            return *fe3d;
-          }
-        }
-          */
       case BND:
         {
-          /*
-        DGFiniteElement<1> * fe1d = 0;
-        DGFiniteElement<2> * fe2d = 0;
-
-        switch (ma->GetElType(ei))
-          {
-          case ET_SEGM: fe1d = new (lh) L2HighOrderFE<ET_SEGM> (); break;
-          case ET_TRIG: fe2d = new (lh) L2HighOrderFE<ET_TRIG> (); break;
-          case ET_QUAD: fe2d = new (lh) L2HighOrderFE<ET_QUAD> (); break;
-          default:
-            throw Exception (string("FacetFESpace::GetSFE: unsupported element ")+
-                             ElementTopology::GetElementName(ma->GetElType(ei)));
-          }
-          */
-        // ArrayMem<int,4> ednums;
-    
         auto vnums = ma->GetElVertices(ei);
         switch (ma->GetElType(ei))
           {

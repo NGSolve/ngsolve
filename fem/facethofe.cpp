@@ -6,14 +6,9 @@
 
 #define FILE_FACETHOFE_CPP
 
- 
-// #include <fem.hpp>
 #include "facethofe.hpp"
 #include <tscalarfe_impl.hpp>
 #include <facethofe.hpp>
-
-
-
 
 
 
@@ -38,10 +33,8 @@ namespace ngfem
 
   
   template <> template<typename Tx, typename TFA>  
-  // void FacetFE<ET_TRIG> :: T_CalcShapeFNr (int fnr, Tx x[2], TFA & shape) const
   void FacetFE<ET_TRIG> :: T_CalcShapeFNr (int fnr, TIP<2,Tx> ip, TFA && shape) const
   {
-    // Tx lam[3] = { x[0], x[1], 1-x[0]-x[1] };
     Tx lam[3] = { ip.x, ip.y, 1-ip.x-ip.y };
     
     IVec<2> e = GetVertexOrientedEdge (fnr);
@@ -59,11 +52,8 @@ namespace ngfem
   // --------------------------------------------------------
 
   template<> template<typename Tx, typename TFA>  
-  //
-  //void FacetFE<ET_QUAD> :: T_CalcShapeFNr (int fnr, Tx hx[2], TFA & shape) const
   void FacetFE<ET_QUAD> :: T_CalcShapeFNr (int fnr, TIP<2,Tx> ip, TFA && shape) const
     {
-      // Tx x = hx[0], y = hx[1];
       Tx x = ip.x, y = ip.y;
       Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
       
@@ -101,10 +91,8 @@ namespace ngfem
   // --------------------------------------------------------
   
   template <> template<typename Tx, typename TFA>  
-  // void FacetFE<ET_HEX> :: T_CalcShapeFNr (int fnr, Tx hx[3], TFA & shape) const
   void FacetFE<ET_HEX> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA && shape) const
   {
-    // Tx x = hx[0], y = hx[1], z = hx[2];
     Tx x = ip.x, y = ip.y, z = ip.z;
     Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
 		 (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z}; 
@@ -131,10 +119,8 @@ namespace ngfem
   
 
   template <> template<typename Tx, typename TFA>  
-  // void FacetFE<ET_PRISM> :: T_CalcShapeFNr (int fnr, Tx hx[3], TFA & shape) const
   void FacetFE<ET_PRISM> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA && shape) const
   {
-    // Tx x = hx[0], y = hx[1], z = hx[2];
     Tx x = ip.x, y = ip.y, z = ip.z;
     Tx lam[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
@@ -167,10 +153,8 @@ namespace ngfem
   
 
   template <> template<typename Tx, typename TFA>  
-  // void FacetFE<ET_PYRAMID> :: T_CalcShapeFNr (int fnr, Tx hx[3], TFA & shape) const
   void FacetFE<ET_PYRAMID> :: T_CalcShapeFNr (int fnr, TIP<3,Tx> ip, TFA && shape) const
   {
-    // Tx x = hx[0], y = hx[1], z = hx[2];
     Tx x = ip.x, y = ip.y, z = ip.z;
       
     // if (z == 1.) z -= 1e-10;
@@ -219,7 +203,6 @@ namespace ngfem
     for (int i = 0; i < hir.Size(); i++)
       {
         SIMD<double> val = values(i);
-        // static_cast<const FacetFE<ET>*>(this)->T_CalcShapeFNr
         T_CalcShapeFNr (fnr, GetTIP<DIM>(hir[i]),
                         SBLambda([&](int j, SIMD<double> shape) { coefs(j) += HSum(val*shape); }));
       }
@@ -233,7 +216,6 @@ namespace ngfem
     for (int i = 0; i < hir.Size(); i++)
       {
         SIMD<double> sum = 0;
-        // static_cast<const FacetFE<ET>*>(this)->
         T_CalcShapeFNr(fnr, GetTIP<DIM>(hir[i]),
                        SBLambda([&](int j, SIMD<double> shape) { sum += coefs(j)*shape; }));
         values(i) = sum;
@@ -252,7 +234,6 @@ namespace ngfem
                                          BareSliceMatrix<SIMD<double>> shape) const 
   {
     for (size_t i = 0; i < ir.Size(); i++)
-      // static_cast<const FacetFE<ET>*>(this)->
       T_CalcShapeFNr(fnr, GetTIP<DIM>(ir[i]), shape.Col(i));        
   }
   
@@ -260,10 +241,9 @@ namespace ngfem
   void FacetFE<ET>::CalcFacetDShapeVolIP(int fnr, const IntegrationPoint & ip,
                                          BareSliceMatrix<> dshape) const
   {
-    // static_cast<const FacetFE<ET>*>(this)->
-      T_CalcShapeFNr (fnr, GetTIPGrad<DIM> (ip),
-                      SBLambda ([dshape] (int i, auto shape)
-                      { dshape.Row(i) = GetGradient(shape); }));
+    T_CalcShapeFNr (fnr, GetTIPGrad<DIM> (ip),
+                    SBLambda ([dshape] (int i, auto shape)
+                    { dshape.Row(i) = GetGradient(shape); }));
   }
 
 

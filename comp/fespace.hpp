@@ -725,16 +725,6 @@ ANY                  1 1 1 1 | 15
     std::list<std::tuple<std::string,double>> Timing () const;
 
 
-
-
-      /*
-    [[deprecated("Use GetFE with element-id instead of elnr!")]]    
-    virtual const FiniteElement & GetFE (int elnr, LocalHeap & lh) const final;
-    [[deprecated("Use GetFE(ElementId(BND,elnr)) instead!")]]    
-    virtual const FiniteElement & GetSFE (int elnr, LocalHeap & lh) const final;
-    [[deprecated("Use GetFE(ElementId(BBND,elnr)) instead!")]]        
-    virtual const FiniteElement & GetCD2FE (int cd2elnr, LocalHeap & lh) const final;
-*/
     /// get dof-nrs of the element
     [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
     void GetDofNrs (int elnr, Array<DofId> & dnums) const
@@ -878,7 +868,6 @@ ANY                  1 1 1 1 | 15
   class NGS_DLL_HEADER NodalFESpace : public FESpace
   {
     ///
-    // Array<int> ndlevel;
     bool hb_defined;
     Array<bool> used_vertex;
     Array<bool> used_edge;
@@ -903,10 +892,6 @@ ANY                  1 1 1 1 | 15
     virtual void DoArchive (Archive & archive) override;
 
     virtual FiniteElement & GetFE(ElementId ei, Allocator & lh) const override;
-    ///
-    // virtual size_t GetNDof () const throw() override;
-    ///
-    // virtual size_t GetNDofLevel (int level) const override;
     ///
     // using FESpace::GetDofNrs;
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
@@ -943,8 +928,6 @@ ANY                  1 1 1 1 | 15
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    // virtual size_t GetNDof () const throw() override;
-    ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   };
 
@@ -967,8 +950,6 @@ ANY                  1 1 1 1 | 15
     void Update() override;
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
-    ///
-    // virtual size_t GetNDof () const throw() override;
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
   };
@@ -1004,14 +985,7 @@ ANY                  1 1 1 1 | 15
 
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
     ///
-    // virtual size_t GetNDof () const throw() override { return ndlevel.Last(); }
-  
-    ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
-
-    ///
-    // virtual size_t GetNDofLevel (int level) const override;
-
 
     virtual void GetVertexDofNrs (int vnr, Array<DofId> & dnums) const override
     { dnums.SetSize (0); }
@@ -1030,8 +1004,6 @@ ANY                  1 1 1 1 | 15
   /// Non-continous fe space on boundary
   class NGS_DLL_HEADER SurfaceElementFESpace : public FESpace
   {
-    ///
-    // Array<int> ndlevel;
     int n_el_dofs;
   public:
     ///
@@ -1047,19 +1019,11 @@ ANY                  1 1 1 1 | 15
 
     ///
     void Update() override;
-
-    ///
-    // virtual size_t GetNDof () const throw() { return ndlevel.Last(); }
-
     ///
     virtual FiniteElement & GetFE (ElementId ei, Allocator & lh) const override;
 
     ///
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const override;
-
-    ///
-    // virtual size_t GetNDofLevel (int level) const;
-
   };
 
 

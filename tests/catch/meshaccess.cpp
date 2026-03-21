@@ -1,6 +1,6 @@
 
 #include "catch.hpp"
-#include <comp.hpp>
+#include <meshaccess.hpp>
 
 using namespace ngcomp;
 
