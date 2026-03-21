@@ -5,6 +5,8 @@
   authors: Edoardo Bonetti, Joachim Schoeberl
 */
 
+#include "fespace.hpp"
+
 namespace ngcomp
 {
 

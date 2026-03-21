@@ -1,9 +1,8 @@
-
-
-#include <comp.hpp>
-
 #include "Hddf.hpp"
 #include "JKMspace.hpp"
+#include "../fem/hcurl_equations.hpp"
+#include <diffop_impl.hpp>
+
 
 using namespace ngcomp;
 
