@@ -13,6 +13,7 @@
 
 #include <thread>
 #include <meshing/visual_interface.hpp>
+#include "../linalg/pardisoinverse.hpp"
 
 using namespace std;
 using namespace ngsolve;

@@ -16,7 +16,6 @@
 #include <ngstd.hpp>
 #include <nginterface.h>
 
-#include "../linalg/pardisoinverse.hpp"
 #include "../comp/fespace.hpp"
 #include "../comp/preconditioner.hpp"
 #include "../comp/gridfunction.hpp"
