@@ -369,6 +369,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def(py::self+py::self)
     .def(py::self-py::self)
     .def(-py::self)
+    .def("__call__", [](SumOfPotentialOperators sumpot, shared_ptr<GridFunction> gf)
+    {
+      return sumpot.MakePotentialCF(gf);
+    })
     .def("__call__", [](SumOfPotentialOperators sumpot, shared_ptr<GridFunction> gf,
                         const Region & region)
     {
