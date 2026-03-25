@@ -180,6 +180,26 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("NearFieldMatrix", &IntegralOperator::GetNearFieldMatrix)
     .def("GetPotential", &IntegralOperator::GetPotential,
          py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
+    .def("__add__", [](shared_ptr<IntegralOperator> a, shared_ptr<IntegralOperator> b)
+    {
+      return AddIntegralOperators(a, b);
+    })
+    .def("__sub__", [](shared_ptr<IntegralOperator> a, shared_ptr<IntegralOperator> b)
+    {
+      return AddIntegralOperators(a, ScaleIntegralOperator(b, -1.0));
+    })
+    .def("__rmul__", [](shared_ptr<IntegralOperator> a, double fac)
+    {
+      return ScaleIntegralOperator(a, fac);
+    })
+    .def("__rmul__", [](shared_ptr<IntegralOperator> a, Complex fac)
+    {
+      return ScaleIntegralOperator(a, fac);
+    })
+    .def("__neg__", [](shared_ptr<IntegralOperator> a)
+    {
+      return ScaleIntegralOperator(a, -1.0);
+    })
     ;
   
   m.def("SingleLayerPotentialOperator", [](shared_ptr<FESpace> space, int intorder) -> shared_ptr<IntegralOperator>

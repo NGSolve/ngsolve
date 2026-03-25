@@ -157,6 +157,29 @@ namespace ngsbem
     }
   };
 
+  template <typename TSCAL>
+  inline shared_ptr<IntegralOperator>
+  ScaleIntegralOperator(shared_ptr<IntegralOperator> op, TSCAL fac)
+  {
+    return make_shared<SumIntegralOperator>(op->GetTrialSpace(), op->GetTestSpace(),
+                                            op->GetTrialDefinedOn(), op->GetTestDefinedOn(),
+                                            op->GetTrialEvaluator(), op->GetTestEvaluator(),
+                                            op->GetIntOrder(), op->GetIOParams(),
+                                            make_shared<VScaleMatrix<TSCAL>>(op->GetMatrix(), fac),
+                                            make_shared<VScaleMatrix<TSCAL>>(op->GetNearFieldMatrix(), fac));
+  }
+
+  inline shared_ptr<IntegralOperator>
+  AddIntegralOperators(shared_ptr<IntegralOperator> opa, shared_ptr<IntegralOperator> opb)
+  {
+    return make_shared<SumIntegralOperator>(opa->GetTrialSpace(), opa->GetTestSpace(),
+                                            opa->GetTrialDefinedOn(), opa->GetTestDefinedOn(),
+                                            opa->GetTrialEvaluator(), opa->GetTestEvaluator(),
+                                            opa->GetIntOrder(), opa->GetIOParams(),
+                                            opa->GetMatrix() + opb->GetMatrix(),
+                                            opa->GetNearFieldMatrix() + opb->GetNearFieldMatrix());
+  }
+
 
   
   /** The GenericIntegralOperator is a templated #IntegralOperator, the template type is 
