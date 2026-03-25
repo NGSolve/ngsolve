@@ -103,6 +103,14 @@ namespace ngsbem
     virtual ~IntegralOperator() = default;
 
     shared_ptr<BaseMatrix> GetMatrix() const { return matrix; }
+    shared_ptr<FESpace> GetTrialSpace() const { return trial_space; }
+    shared_ptr<FESpace> GetTestSpace() const { return test_space; }
+    optional<Region> GetTrialDefinedOn() const { return trial_definedon; }
+    optional<Region> GetTestDefinedOn() const { return test_definedon; }
+    shared_ptr<DifferentialOperator> GetTrialEvaluator() const { return trial_evaluator; }
+    shared_ptr<DifferentialOperator> GetTestEvaluator() const { return test_evaluator; }
+    int GetIntOrder() const { return intorder; }
+    IntOp_Parameters GetIOParams() const { return io_params; }
 
     virtual shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const = 0;
 
@@ -111,6 +119,66 @@ namespace ngsbem
 
     virtual shared_ptr<BaseMatrix> GetNearFieldMatrix() const = 0;
   };
+
+  class SumIntegralOperator : public IntegralOperator
+  {
+    shared_ptr<BaseMatrix> nearfield_matrix;
+  public:
+    SumIntegralOperator(shared_ptr<FESpace> _trial_space, shared_ptr<FESpace> _test_space,
+                        optional<Region> _definedon_trial, optional<Region> _definedon_test,
+                        shared_ptr<DifferentialOperator> _trial_evaluator,
+                        shared_ptr<DifferentialOperator> _test_evaluator,
+                        int _intorder, const IntOp_Parameters & _io_params,
+                        shared_ptr<BaseMatrix> amat,
+                        shared_ptr<BaseMatrix> anearfield_matrix)
+      : IntegralOperator(_trial_space, _test_space,
+                         _definedon_trial, _definedon_test,
+                         _trial_evaluator, _test_evaluator,
+                         _intorder, _io_params)
+    {
+      matrix = std::move(amat);
+      nearfield_matrix = std::move(anearfield_matrix);
+    }
+
+    shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override
+    {
+      return matrix;
+    }
+
+    shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
+                                             optional<int> io, bool nearfield_experimental) const override
+    {
+      throw Exception("GetPotential not implemented for SumIntegralOperator");
+    }
+
+    shared_ptr<BaseMatrix> GetNearFieldMatrix() const override
+    {
+      return nearfield_matrix;
+    }
+  };
+
+  template <typename TSCAL>
+  inline shared_ptr<IntegralOperator>
+  ScaleIntegralOperator(shared_ptr<IntegralOperator> op, TSCAL fac)
+  {
+    return make_shared<SumIntegralOperator>(op->GetTrialSpace(), op->GetTestSpace(),
+                                            op->GetTrialDefinedOn(), op->GetTestDefinedOn(),
+                                            op->GetTrialEvaluator(), op->GetTestEvaluator(),
+                                            op->GetIntOrder(), op->GetIOParams(),
+                                            make_shared<VScaleMatrix<TSCAL>>(op->GetMatrix(), fac),
+                                            make_shared<VScaleMatrix<TSCAL>>(op->GetNearFieldMatrix(), fac));
+  }
+
+  inline shared_ptr<IntegralOperator>
+  AddIntegralOperators(shared_ptr<IntegralOperator> opa, shared_ptr<IntegralOperator> opb)
+  {
+    return make_shared<SumIntegralOperator>(opa->GetTrialSpace(), opa->GetTestSpace(),
+                                            opa->GetTrialDefinedOn(), opa->GetTestDefinedOn(),
+                                            opa->GetTrialEvaluator(), opa->GetTestEvaluator(),
+                                            opa->GetIntOrder(), opa->GetIOParams(),
+                                            opa->GetMatrix() + opb->GetMatrix(),
+                                            opa->GetNearFieldMatrix() + opb->GetNearFieldMatrix());
+  }
 
 
   
@@ -653,6 +721,53 @@ namespace ngsbem
     shared_ptr<IntegralOperator> MakeIntegralOperator (DifferentialSymbol dx)
     {
       return pot->MakeIntegralOperator(test_proxy_with_factor, dx);
+    }
+  };
+
+  class SumOfPotentialOperatorsAndTest
+  {
+    Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> pots;
+    shared_ptr<ProxyFunction> test_proxy_with_factor;
+
+    static shared_ptr<BaseMatrix> ScaleMatrix(shared_ptr<BaseMatrix> mat, const Scalar & scal)
+    {
+      if (std::holds_alternative<Complex>(scal))
+        return make_shared<VScaleMatrix<Complex>>(mat, std::get<Complex>(scal));
+      return make_shared<VScaleMatrix<double>>(mat, std::get<double>(scal));
+    }
+  public:
+    SumOfPotentialOperatorsAndTest (const Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> & _pots,
+                                    shared_ptr<CoefficientFunction> _test_proxy)
+      : pots(_pots)
+    {
+      test_proxy_with_factor = GetProxyWithFactor(_test_proxy, false);
+    }
+
+    shared_ptr<IntegralOperator> MakeIntegralOperator (DifferentialSymbol dx)
+    {
+      shared_ptr<IntegralOperator> firstop;
+      shared_ptr<BaseMatrix> sum;
+      shared_ptr<BaseMatrix> nearfield_sum;
+      for (auto [scal, pot] : pots)
+        {
+          auto op = pot->MakeIntegralOperator(test_proxy_with_factor, dx);
+          firstop = firstop ? firstop : op;
+          auto scaled = ScaleMatrix(op->GetMatrix(), scal);
+          auto scaled_nearfield = ScaleMatrix(op->GetNearFieldMatrix(), scal);
+          if (sum)
+            sum = sum + scaled;
+          else
+            sum = scaled;
+          if (nearfield_sum)
+            nearfield_sum = nearfield_sum + scaled_nearfield;
+          else
+            nearfield_sum = scaled_nearfield;
+        }
+      return make_shared<SumIntegralOperator>(firstop->GetTrialSpace(), firstop->GetTestSpace(),
+                                             firstop->GetTrialDefinedOn(), firstop->GetTestDefinedOn(),
+                                             firstop->GetTrialEvaluator(), firstop->GetTestEvaluator(),
+                                             firstop->GetIntOrder(), firstop->GetIOParams(),
+                                             sum, nearfield_sum);
     }
   };
 
