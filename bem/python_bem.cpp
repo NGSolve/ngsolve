@@ -364,11 +364,22 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     })
     ;
 
+  py::class_<SumOfPotentialOperatorsAndTest> (m, "SumOfPotentialOperatorsAndTest")
+    .def("__mul__", [](SumOfPotentialOperatorsAndTest pottest, DifferentialSymbol dx)
+    {
+      return pottest.MakeIntegralOperator(dx);
+    })
+    ;
+
 
   py::class_<SumOfPotentialOperators> (m, "SumOfPotentialOperators")
     .def(py::self+py::self)
     .def(py::self-py::self)
     .def(-py::self)
+    .def("__mul__", [](SumOfPotentialOperators sumpot, shared_ptr<CoefficientFunction> test_proxy)
+    {
+      return SumOfPotentialOperatorsAndTest(sumpot.Summands(), test_proxy);
+    })
     .def("__call__", [](SumOfPotentialOperators sumpot, shared_ptr<GridFunction> gf)
     {
       return sumpot.MakePotentialCF(gf);
