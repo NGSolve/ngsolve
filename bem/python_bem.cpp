@@ -180,6 +180,19 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("NearFieldMatrix", &IntegralOperator::GetNearFieldMatrix)
     .def("GetPotential", &IntegralOperator::GetPotential,
          py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
+    .def("CalcSubMatrix", [](shared_ptr<IntegralOperator> iop, std::vector<int> rowids, std::vector<int> colids) {
+      Array<int> rowidsa(rowids.size());
+      for (int i : Range(rowidsa)) rowidsa[i] = rowids[i];
+      Array<int> colidsa(colids.size());
+      for (int i : Range(colidsa)) colidsa[i] = colids[i];
+      
+      LocalHeapMem<1000000> lh("CalcSubMatrix lh"); // TODO: form LocalHeapProvider in python_comp.cpp
+      auto mat = iop->CalcSubMatrix(rowidsa, colidsa, lh);
+      py::gil_scoped_acquire acqu;      
+      return std::visit([&](auto & mat) {
+        return py::cast(mat);
+      }, mat);
+    }, py::call_guard<py::gil_scoped_release>())
     .def("__add__", [](shared_ptr<IntegralOperator> a, shared_ptr<IntegralOperator> b)
     {
       return AddIntegralOperators(a, b);

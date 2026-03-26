@@ -430,6 +430,14 @@ namespace ngsbem
   shared_ptr<BaseMatrix>
   GenericIntegralOperator<KERNEL> :: GetNearFieldMatrix() const
   {
+    if (nearfield_matrix) return nearfield_matrix;
+
+    static std::mutex lock;
+    lock_guard<mutex> guard(lock);
+    
+    if (nearfield_matrix) return nearfield_matrix;    
+
+    
     LocalHeap lh(100*1000*1000);
     auto trial_mesh = trial_space->GetMeshAccess();
     auto test_mesh = test_space->GetMeshAccess();
@@ -475,9 +483,10 @@ namespace ngsbem
     Table<int> trial_elements = trial_elements_creator.MoveTable();
     Table<int> test_elements = test_elements_creator.MoveTable();
 
-    auto nearfield =
+    nearfield_matrix =
       make_shared<SparseMatrix<value_type>> (test_space->GetNDof(), trial_space->GetNDof(),
                                              test_elements, trial_elements, false);
+    auto nearfield = nearfield_matrix;
 
     nearfield->SetZero();
 
@@ -837,8 +846,30 @@ namespace ngsbem
 
 
 
+  template <typename KERNEL>
+  std::variant<Matrix<double>, Matrix<Complex>> GenericIntegralOperator<KERNEL> ::
+  CalcSubMatrix (FlatArray<int> rowids, FlatArray<int> colids, LocalHeap &lh) const
+  {
+    GetNearFieldMatrix(); // first call will computed it
+    
+    Matrix<value_type> mat(rowids.Size(), colids.Size());
+    mat = value_type(0.0);
+    
+    for (int i = 0; i < mat.Height(); i++)
+      for (int j = 0; j < mat.Width(); j++)
+        if (auto pos = nearfield_matrix->GetPositionTest(rowids[i], colids[j]); pos != -1)
+          mat(i,j) = nearfield_matrix->GetValues()[pos];
 
-
+    Array<ElementId> rowels, colels; // TODO
+    for (ElementId rowel : rowels)
+      for (ElementId colel : colels)
+        {
+          FlatMatrix<value_type> elmat(5,5,lh); // TODO
+          CalcElementMatrix(elmat, rowel, colel, lh);
+        }
+    
+    return mat;
+  }
 
 
   // ********************************* Potential ********************************************** 
