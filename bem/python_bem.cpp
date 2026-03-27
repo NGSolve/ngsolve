@@ -181,9 +181,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("GetPotential", &IntegralOperator::GetPotential,
          py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
     .def("CalcSubMatrix", [](shared_ptr<IntegralOperator> iop, std::vector<int> rowids, std::vector<int> colids) {
-      Array<int> rowidsa(rowids.size());
+      Array<DofId> rowidsa(rowids.size());
       for (int i : Range(rowidsa)) rowidsa[i] = rowids[i];
-      Array<int> colidsa(colids.size());
+      Array<DofId> colidsa(colids.size());
       for (int i : Range(colidsa)) colidsa[i] = colids[i];
       
       LocalHeapMem<1000000> lh("CalcSubMatrix lh"); // TODO: form LocalHeapProvider in python_comp.cpp
@@ -685,7 +685,50 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
 
-  
+  m.def("GetDofCoordinates", [](shared_ptr<FESpace> fes)
+  {
+    auto ma = fes->GetMeshAccess();
+    Matrix pnts(fes->GetNDof(), 3);
+    
+    pnts.Col(0) = 1;
+    pnts.Col(1) = 2;
+    pnts.Col(2) = 3;
+
+    Array<DofId> dofs;
+    for (auto node : ma->Nodes(NT_VERTEX))
+      {
+        fes->GetDofNrs(node, dofs);
+        Vec<3> p = ma->GetPoint<3>(node.GetNr());
+        for (auto d : dofs)
+          pnts.Row(d) = p;
+      }
+
+    for (auto node : ma->Nodes(NT_FACE))
+      {
+        fes->GetDofNrs(node, dofs);
+        auto vertices = ma->GetFacePNums(node.GetNr());
+        Vec<3> p(0,0,0);
+        for (auto v : vertices)
+          p += ma->GetPoint<3>(v);
+        p /= vertices.Size();
+        for (auto d : dofs)
+          pnts.Row(d) = p;
+      }
+
+    for (auto node : ma->Nodes(NT_EDGE))
+      {
+        fes->GetDofNrs(node, dofs);
+        auto vertices = ma->GetEdgePNums(node.GetNr());
+        Vec<3> p(0,0,0);
+        for (auto v : vertices)
+          p += ma->GetPoint<3>(v);
+        p /= vertices.Size();
+        for (auto d : dofs)
+          pnts.Row(d) = p;
+      }
+    
+    return pnts;
+  });
 }
 
 #endif // NGS_PYTHON

@@ -118,7 +118,8 @@ namespace ngfem
     typedef size_t int_type;
     VorB vb;
     int_type nr;
-  public:    
+  public:
+    ElementId () = default;
     ElementId (VorB avb, int_type anr) : vb(avb), nr(anr) { ; }
     ElementId (int_type anr) : vb(VOL), nr(anr) { ; }
     int_type Nr() const { return nr; }

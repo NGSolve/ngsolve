@@ -75,6 +75,8 @@ namespace ngsbem
     shared_ptr<DifferentialOperator> trial_evaluator;
     shared_ptr<DifferentialOperator> test_evaluator;
     
+    mutable unique_ptr<Table<tuple<ElementId,int>,DofId>> trial_dof2el;
+    mutable unique_ptr<Table<tuple<ElementId,int>,DofId>> test_dof2el;
     
     // integration order
     int intorder;
@@ -120,7 +122,7 @@ namespace ngsbem
 
     virtual shared_ptr<BaseMatrix> GetNearFieldMatrix() const = 0;
 
-    virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<int> rowids, FlatArray<int> colids, LocalHeap &lh) const = 0;
+    virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const = 0;
   };
 
   class SumIntegralOperator : public IntegralOperator
@@ -159,7 +161,7 @@ namespace ngsbem
       return nearfield_matrix;
     }
 
-    virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<int> rowids, FlatArray<int> colids, LocalHeap &lh) const override
+    virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const override
     {
       throw Exception("SumIntegralOperator::CalcSubMatrix not implemented");
     }
@@ -233,7 +235,7 @@ namespace ngsbem
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
 
     virtual shared_ptr<BaseMatrix> GetNearFieldMatrix() const override;    
-    virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<int> rowids, FlatArray<int> colids, LocalHeap &lh) const override;
+    virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const override;
     
     virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
                                                          optional<int> io, bool nearfield_experimental) const override;

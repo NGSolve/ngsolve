@@ -82,12 +82,12 @@ namespace ngfem
 ///////////////////////////////////////////////////////////////////////////////////////
   class TPElementTransformation : public ElementTransformation 
   {
-    ElementId ei;
+    // ElementId ei;
     ArrayMem<ElementTransformation*, 2> trafos;
     
   public:
   INLINE TPElementTransformation ( ElementId aei ) : 
-    ElementTransformation (ET_POINT, VOL, aei.Nr(), 0), ei(aei)
+    ElementTransformation (ET_POINT, VOL, aei.Nr(), 0) // , ei(aei)
     {
         //trafos.SetSize(nmeshes);
     }

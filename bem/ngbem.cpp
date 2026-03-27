@@ -848,24 +848,108 @@ namespace ngsbem
 
   template <typename KERNEL>
   std::variant<Matrix<double>, Matrix<Complex>> GenericIntegralOperator<KERNEL> ::
-  CalcSubMatrix (FlatArray<int> rowids, FlatArray<int> colids, LocalHeap &lh) const
+  CalcSubMatrix (FlatArray<DofId> target_ids, FlatArray<DofId> source_ids, LocalHeap &lh) const
   {
     GetNearFieldMatrix(); // first call will computed it
     
-    Matrix<value_type> mat(rowids.Size(), colids.Size());
+    Matrix<value_type> mat(target_ids.Size(), source_ids.Size());
     mat = value_type(0.0);
     
     for (int i = 0; i < mat.Height(); i++)
       for (int j = 0; j < mat.Width(); j++)
-        if (auto pos = nearfield_matrix->GetPositionTest(rowids[i], colids[j]); pos != -1)
+        if (auto pos = nearfield_matrix->GetPositionTest(target_ids[i], source_ids[j]); pos != -1)
           mat(i,j) = nearfield_matrix->GetValues()[pos];
 
-    Array<ElementId> rowels, colels; // TODO
-    for (ElementId rowel : rowels)
-      for (ElementId colel : colels)
+
+    auto CreateDof2El = [&] (const FESpace & fes)
+    {
+      TableCreator<tuple<ElementId,int>,DofId> creator;
+      Array<DofId> dofs;
+      for ( ; !creator.Done(); creator++)
+        for (auto ei : fes.Elements(BND))
+          {
+            fes.GetDofNrs(ei, dofs);
+            for (auto [nr,d] : Enumerate(dofs))
+              creator.Add (d, { ei, nr });
+          }
+      return make_unique<Table<tuple<ElementId,int>,DofId>> (creator.MoveTable());
+    };
+    
+    static std::mutex lock;      
+    if (!trial_dof2el)
+      {
+        lock_guard<mutex> guard(lock);
+        if (!trial_dof2el)
+          {
+            trial_dof2el = CreateDof2El(*trial_space);
+            test_dof2el = CreateDof2El(*test_space);            
+          }
+      }
+    
+    Array<tuple<ElementId,int,int>> target_map;
+    Array<tuple<ElementId,int,int>> source_map;
+    Array<ElementId> target_els, source_els; // unique ElementIds  
+    
+    for (auto i : Range(target_ids))
+      for (auto [elid,nr] : (*test_dof2el)[target_ids[i]])
+        target_map.Append( { elid, i, nr} );
+
+    for (auto [elid,i,nr] : target_map)
+      if (!target_els.Contains(elid))
+        target_els.Append(elid);
+
+    TableCreator<tuple<int,int>> creator_target(target_els.Size());
+    for ( ; !creator_target.Done(); creator_target++)
+      for (auto [elid,i,nr] : target_map)
+        creator_target.Add (target_els.Pos(elid), tuple<int,int>{ i,nr });
+
+    auto target_el2dof = creator_target.MoveTable();
+
+
+    for (auto i : Range(source_ids))
+      for (auto [elid,nr] : (*test_dof2el)[source_ids[i]])
+        source_map.Append( { elid, i, nr} );
+
+    for (auto [elid,i,nr] : source_map)
+      if (!source_els.Contains(elid))
+        source_els.Append(elid);
+
+    TableCreator<tuple<int,int>> creator_source(source_els.Size());
+    for ( ; !creator_source.Done(); creator_source++)
+      for (auto [elid,i,nr] : source_map)
+        creator_source.Add (source_els.Pos(elid), tuple<int,int>{ i,nr });
+
+    auto source_el2dof = creator_source.MoveTable();
+
+    auto source_ma = trial_space->GetMeshAccess();
+    auto target_ma = test_space->GetMeshAccess();
+    
+    for (auto [selnr, source_el] : Enumerate(source_els))
+      for (auto [telnr, target_el] : Enumerate(target_els))
         {
-          FlatMatrix<value_type> elmat(5,5,lh); // TODO
-          CalcElementMatrix(elmat, rowel, colel, lh);
+          HeapReset hr(lh);
+          const FiniteElement & sfel = trial_space->GetFE(source_el, lh);
+          const FiniteElement & tfel = test_space->GetFE(target_el, lh);
+
+          bool common_verts = false;
+          
+          if (source_ma == target_ma)
+            {
+              auto sverts = source_ma->GetElement(source_el).Vertices();
+              auto tverts = target_ma->GetElement(target_el).Vertices();
+              
+              for (auto sv : sverts)
+                for (auto tv : tverts)
+                  if (sv==tv) common_verts = true;
+            }
+          if (common_verts) continue; 
+              
+          FlatMatrix<value_type> elmat(tfel.GetNDof(), sfel.GetNDof(),lh); 
+          CalcElementMatrix(elmat, source_el, target_el, lh);
+
+          for (auto [tdofind,tnr] : target_el2dof[telnr])
+            for (auto [sdofind,snr] : source_el2dof[selnr])
+              mat(tdofind, sdofind) += elmat(tnr, snr);
         }
     
     return mat;
