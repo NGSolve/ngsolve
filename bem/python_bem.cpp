@@ -625,7 +625,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("MaxwellDL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
-    if (igl->dx.vb != BND) throw Exception("need boundary integral");
+    // if (igl->dx.vb != BND) throw Exception("need boundary integral");
 
     auto proxy = GetProxyWithFactor(igl->cf, true);
     auto fes = proxy->GetFESpace();
