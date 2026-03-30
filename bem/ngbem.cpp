@@ -85,11 +85,7 @@ namespace ngsbem
   : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test,
                      _trial_evaluator, _test_evaluator, _intorder, _io_params),
     kernel(_kernel)
-  {
-    LocalHeap lh(100000000);
-
-    matrix = this->CreateMatrixFMM(lh);
-  }
+  { ; }
 
   
 
@@ -416,6 +412,8 @@ namespace ngsbem
 
     
     tassemble.Stop();
+    nearfield_matrix = nearfield_correction;
+
     if (io_params.UseFMM())
       return TransposeOperator(evaly) * fmmop * evalx + nearfield_correction;
     else
@@ -428,17 +426,8 @@ namespace ngsbem
 
   template <typename KERNEL>
   shared_ptr<BaseMatrix>
-  GenericIntegralOperator<KERNEL> :: GetNearFieldMatrix() const
+  GenericIntegralOperator<KERNEL> :: CreateNearFieldMatrix(LocalHeap & lh) const
   {
-    if (nearfield_matrix) return nearfield_matrix;
-
-    static std::mutex lock;
-    lock_guard<mutex> guard(lock);
-    
-    if (nearfield_matrix) return nearfield_matrix;    
-
-    
-    LocalHeap lh(100*1000*1000);
     auto trial_mesh = trial_space->GetMeshAccess();
     auto test_mesh = test_space->GetMeshAccess();
 
@@ -483,10 +472,9 @@ namespace ngsbem
     Table<int> trial_elements = trial_elements_creator.MoveTable();
     Table<int> test_elements = test_elements_creator.MoveTable();
 
-    nearfield_matrix =
+    auto nearfield =
       make_shared<SparseMatrix<value_type>> (test_space->GetNDof(), trial_space->GetNDof(),
                                              test_elements, trial_elements, false);
-    auto nearfield = nearfield_matrix;
 
     nearfield->SetZero();
 
@@ -850,15 +838,17 @@ namespace ngsbem
   std::variant<Matrix<double>, Matrix<Complex>> GenericIntegralOperator<KERNEL> ::
   CalcSubMatrix (FlatArray<DofId> target_ids, FlatArray<DofId> source_ids, LocalHeap &lh) const
   {
-    GetNearFieldMatrix(); // first call will computed it
+    auto nearfield = dynamic_pointer_cast<SparseMatrix<value_type>>(GetNearFieldMatrix());
+    if (!nearfield)
+      throw Exception("GenericIntegralOperator::CalcSubMatrix expects sparse nearfield matrix");
     
     Matrix<value_type> mat(target_ids.Size(), source_ids.Size());
     mat = value_type(0.0);
     
     for (int i = 0; i < mat.Height(); i++)
       for (int j = 0; j < mat.Width(); j++)
-        if (auto pos = nearfield_matrix->GetPositionTest(target_ids[i], source_ids[j]); pos != -1)
-          mat(i,j) = nearfield_matrix->GetValues()[pos];
+        if (auto pos = nearfield->GetPositionTest(target_ids[i], source_ids[j]); pos != -1)
+          mat(i,j) = nearfield->GetValues()[pos];
 
 
     auto CreateDof2El = [&] (const FESpace & fes)
