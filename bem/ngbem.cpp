@@ -412,8 +412,6 @@ namespace ngsbem
 
     
     tassemble.Stop();
-    nearfield_matrix = nearfield_correction;
-
     if (io_params.UseFMM())
       return TransposeOperator(evaly) * fmmop * evalx + nearfield_correction;
     else
