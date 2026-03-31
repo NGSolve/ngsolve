@@ -181,5 +181,66 @@ namespace ngsbem
     return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
   }
 
+  Intrule_t CommonEdgeQuadIntegrationRule (int order)
+  {
+    Array<Vec<2>> ipx, ipy;
+    Array<double> weights;
+
+    auto [common_edge_x, common_edge_y, common_edge_weight] = CommonEdgeIntegrationRule(order);
+    // [(0,0),(1,0),(0,1)]  times [(0,0),(0,1),(1,0)]
+    for (auto i : Range(common_edge_x))
+      {
+        ipx.Append (common_edge_x[i]);
+        ipy.Append (common_edge_y[i]);
+        weights.Append (common_edge_weight[i]);
+      }
+
+
+    
+    // 3 more for common vertex
+    auto [common_vertex_x, common_vertex_y, common_vertex_weight] = CommonVertexIntegrationRule(order);
+
+    {
+      // [(1,0),(1,1),(0,1)] times [(1,0),(0,1),(0,0)]
+      auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,-1); };
+      auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,-1) + x(1) * Vec<2>(-1,0); };    
+      
+      for (auto i : Range(common_vertex_x))
+        {
+          ipx.Append (transx(common_vertex_x[i]));
+          ipy.Append (transy(common_vertex_y[i]));
+          weights.Append (common_vertex_weight[i]);
+        }
+    }
+
+    {
+      // [(1,0),(0,1),(0,0)] times [(1,0),(1,1),(0,1)] 
+      auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,-1) + x(1) * Vec<2>(-1,0); };    
+      auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,-1); };
+      
+      for (auto i : Range(common_vertex_x))
+        {
+          ipx.Append (transx(common_vertex_x[i]));
+          ipy.Append (transy(common_vertex_y[i]));
+          weights.Append (common_vertex_weight[i]);
+        }
+    }
+
+    {
+      // [(1,0),(1,1),(0,1)] times [(1,0),(1,1),(0,1)]
+      auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,-1); };
+      auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,-1); };
+      
+      for (auto i : Range(common_vertex_x))
+        {
+          ipx.Append (transx(common_vertex_x[i]));
+          ipy.Append (transy(common_vertex_y[i]));
+          weights.Append (common_vertex_weight[i]);
+        }
+    }
+    
+    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
+    
+  }
   
 }

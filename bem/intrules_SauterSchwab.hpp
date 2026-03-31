@@ -24,6 +24,12 @@ namespace ngsbem
 
   // x, y in quad (0,1) \times (0,1)
   tuple<Array<Vec<2>>, Array<Vec<2>>, Array<double>> IdenticPanelQuadIntegrationRule (int order);
+
+
+  // x, y in quad (0,1) \times (0,1)
+  // x in [(0,0),(1,0)] and y in [(0,0),(1,0)] are common edges
+  tuple<Array<Vec<2>>, Array<Vec<2>>, Array<double>> CommonEdgeQuadIntegrationRule (int order);
+
   
 }
 

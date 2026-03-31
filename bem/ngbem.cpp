@@ -52,6 +52,7 @@ namespace ngsbem
     tie(identic_panel_quad_x, identic_panel_quad_y, identic_panel_quad_weight) = IdenticPanelQuadIntegrationRule(intorder);    
     tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
     tie(common_edge_x, common_edge_y, common_edge_weight) = CommonEdgeIntegrationRule(intorder);
+    tie(common_edge_quad_x, common_edge_quad_y, common_edge_quad_weight) = CommonEdgeQuadIntegrationRule(intorder);    
   }
 
 
@@ -629,9 +630,13 @@ namespace ngsbem
         n_common_vertices++;
 
     // treat quad-quad and quad-trig as disjoint
-    if (verti.Size()==4 || vertj.Size()==4)
-      if (n_common_vertices <= 2)
+    if ((verti.Size()==4) || (vertj.Size()==4))
+      if (n_common_vertices == 1)
         n_common_vertices = 0;
+    if ((verti.Size()==4) != (vertj.Size()==4))
+      if (n_common_vertices == 2)
+        n_common_vertices = 0;
+
     
     
     switch (n_common_vertices)
@@ -665,7 +670,7 @@ namespace ngsbem
           break;
         }
 
-      case 3: //identical panel
+      case 3: //identical panel trig
         {
           constexpr int BS = 128;
           for (int k = 0; k < identic_panel_weight.Size(); k+=BS)
@@ -698,23 +703,29 @@ namespace ngsbem
         {
           // RegionTimer reg(t_common_edge);    
           
-          const EDGE * edges = ElementTopology::GetEdges (ET_TRIG); // 0 1 | 1 2 | 2 0 
+          // const EDGE * edgesx = ElementTopology::GetEdges (feli.ElementType()); // 0 1 | 1 2 | 2 0
+          // const EDGE * edgesy = ElementTopology::GetEdges (felj.ElementType()); // 0 1 | 1 2 | 2 0
+          FlatArray edgesx(ElementTopology::GetNEdges(feli.ElementType()),  ElementTopology::GetEdges (feli.ElementType()));    // 0 1 | 1 2 | 2 0
+          FlatArray edgesy(ElementTopology::GetNEdges(felj.ElementType()),  ElementTopology::GetEdges (felj.ElementType()));    // 0 1 | 1 2 | 2 0
+                                 
           int cex, cey;
-          for (int cx = 0; cx < 3; cx++)
-            for (int cy = 0; cy < 3; cy++)
+          for (int cx = 0; cx < edgesx.Size(); cx++)
+            for (int cy = 0; cy < edgesy.Size(); cy++)
               {
-                IVec<2> ex (verti[edges[cx][0]], verti[edges[cx][1]]); 
-                IVec<2> ey (vertj[edges[cy][0]], vertj[edges[cy][1]]); 
+                IVec<2> ex (verti[edgesx[cx][0]], verti[edgesx[cx][1]]); 
+                IVec<2> ey (vertj[edgesy[cy][0]], vertj[edgesy[cy][1]]); 
                 if (ex.Sort() == ey.Sort()) 
                   {
-                    cex = cx;  // -> "common" edge number triangle i
-                    cey = cy;  // -> "common" edge number triangle j
+                    cex = cx;  // -> "common" edge number element i
+                    cey = cy;  // -> "common" edge number element j
                     break;
                   }
               }
-          int vpermx[3] = { edges[cex][0], edges[cex][1], -1 }; // common edge gets first
+
+          /*
+          int vpermx[3] = { edgesx[cex][0], edgesx[cex][1], -1 }; // common edge gets first
           vpermx[2] = 3-vpermx[0]-vpermx[1]; 
-          int vpermy[3] = { edges[cey][1], edges[cey][0], -1 }; // common edge gets first
+          int vpermy[3] = { edgesy[cey][1], edgesy[cey][0], -1 }; // common edge gets first
           vpermy[2] = 3-vpermy[0]-vpermy[1];
           
           constexpr int BS = 128;
@@ -748,6 +759,95 @@ namespace ngsbem
               
               Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
             }
+          */
+
+
+          if (edgesx.Size()==3 && edgesy.Size()==3)
+            {
+              Vec<2> trigverts[3] = { { 1,0 }, { 0, 1}, { 0, 0 } };
+              Vec<2> p0x = trigverts[edgesx[cex][0]];
+              Mat<2,2> Tx;
+              Tx.Col(0) = trigverts[edgesx[cex][1]] - p0x;
+              Tx.Col(1) = trigverts[3-edgesx[cex][0]-edgesx[cex][1]] - p0x;
+              
+              Vec<2> p0y = trigverts[edgesy[cey][1]];
+              Mat<2,2> Ty;
+              Ty.Col(0) = trigverts[edgesy[cey][0]] - p0y;
+              Ty.Col(1) = trigverts[3-edgesy[cey][0]-edgesy[cey][1]] - p0y;
+              
+              constexpr int BS = 128;
+              for (int k = 0; k < common_edge_weight.Size(); k+=BS)
+                {
+                  int num = std::min(size_t(BS), common_edge_weight.Size()-k);
+                  
+                  HeapReset hr(lh);
+                  
+                  IntegrationRule irx(num, lh);
+                  IntegrationRule iry(num, lh);
+                  
+                  for (int k2 = 0; k2 < num; k2++)
+                    {
+                      Vec<2> px = p0x + Tx * common_edge_x[k+k2];
+                      Vec<2> py = p0y + Ty * common_edge_y[k+k2];
+                      
+                      irx[k2] = IntegrationPoint(px(0), px(1), 0, common_edge_weight[k+k2]);
+                      iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
+                    }
+                  
+                  Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
+                }
+            }
+
+          else if (edgesx.Size()==4 && edgesy.Size()==4)
+            {
+              Vec<2> quadverts[4] = { { 0,0 }, { 1, 0}, { 1, 1 }, { 0,1}  };
+              Vec<2> gradverts[4] = { { -1,-1 }, { 1, -1}, { 1, 1 }, { -1,1}  };
+
+              Vec<2> p0x = quadverts[edgesx[cex][0]];
+              Vec<2> tangx = quadverts[edgesx[cex][1]]-quadverts[edgesx[cex][1]];
+              Vec<2> normx = -0.5*(gradverts[edgesx[cex][1]]+gradverts[edgesx[cex][1]]);
+              Mat<2,2> Tx;
+              Tx.Col(0) = tangx;
+              Tx.Col(1) = normx;
+              
+              Vec<2> p0y = quadverts[edgesy[cey][1]];
+              Vec<2> tangy = quadverts[edgesy[cey][0]]-quadverts[edgesy[cey][1]];
+              Vec<2> normy = -0.5*(gradverts[edgesy[cey][1]]+gradverts[edgesy[cey][1]]);
+              Mat<2,2> Ty;
+              Ty.Col(0) = tangy;
+              Ty.Col(1) = normy;
+              
+
+              
+              constexpr int BS = 128;
+              for (int k = 0; k < common_edge_quad_weight.Size(); k+=BS)
+                {
+                  int num = std::min(size_t(BS), common_edge_quad_weight.Size()-k);
+                  
+                  HeapReset hr(lh);
+                  
+                  IntegrationRule irx(num, lh);
+                  IntegrationRule iry(num, lh);
+                  
+                  for (int k2 = 0; k2 < num; k2++)
+                    {
+                      Vec<2> px = p0x + Tx * common_edge_quad_x[k+k2];
+                      Vec<2> py = p0y + Ty * common_edge_quad_y[k+k2];
+                      
+                      irx[k2] = IntegrationPoint(px(0), px(1), 0, common_edge_quad_weight[k+k2]);
+                      iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
+                    }
+                  
+                  Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
+                }
+            }
+
+          else
+            {
+              throw Exception("quad-trig edges not ready");
+            }
+          
+          
           
           break;
         }
