@@ -709,19 +709,22 @@ namespace ngsbem
           FlatArray edgesy(ElementTopology::GetNEdges(felj.ElementType()),  ElementTopology::GetEdges (felj.ElementType()));    // 0 1 | 1 2 | 2 0
                                  
           int cex, cey;
+          bool same_orientation;
           for (int cx = 0; cx < edgesx.Size(); cx++)
             for (int cy = 0; cy < edgesy.Size(); cy++)
               {
                 IVec<2> ex (verti[edgesx[cx][0]], verti[edgesx[cx][1]]); 
                 IVec<2> ey (vertj[edgesy[cy][0]], vertj[edgesy[cy][1]]); 
+                bool same = ex==ey;
                 if (ex.Sort() == ey.Sort()) 
                   {
                     cex = cx;  // -> "common" edge number element i
                     cey = cy;  // -> "common" edge number element j
+                    same_orientation = same;
                     break;
                   }
               }
-
+          
           /*
           int vpermx[3] = { edgesx[cex][0], edgesx[cex][1], -1 }; // common edge gets first
           vpermx[2] = 3-vpermx[0]-vpermx[1]; 
@@ -769,11 +772,29 @@ namespace ngsbem
               Mat<2,2> Tx;
               Tx.Col(0) = trigverts[edgesx[cex][1]] - p0x;
               Tx.Col(1) = trigverts[3-edgesx[cex][0]-edgesx[cex][1]] - p0x;
-              
+
+              /*
               Vec<2> p0y = trigverts[edgesy[cey][1]];
               Mat<2,2> Ty;
               Ty.Col(0) = trigverts[edgesy[cey][0]] - p0y;
               Ty.Col(1) = trigverts[3-edgesy[cey][0]-edgesy[cey][1]] - p0y;
+              */
+
+              Vec<2> p0y;
+              Mat<2,2> Ty;
+              if (same_orientation)
+                {
+                  p0y = trigverts[edgesy[cey][0]];
+                  Ty.Col(0) = trigverts[edgesy[cey][1]] - p0y;
+                  Ty.Col(1) = trigverts[3-edgesy[cey][0]-edgesy[cey][1]] - p0y;
+                }
+              else
+                {
+                  p0y = trigverts[edgesy[cey][1]];
+                  Ty.Col(0) = trigverts[edgesy[cey][0]] - p0y;
+                  Ty.Col(1) = trigverts[3-edgesy[cey][0]-edgesy[cey][1]] - p0y;
+                }
+
               
               constexpr int BS = 128;
               for (int k = 0; k < common_edge_weight.Size(); k+=BS)
@@ -804,19 +825,24 @@ namespace ngsbem
               Vec<2> gradverts[4] = { { -1,-1 }, { 1, -1}, { 1, 1 }, { -1,1}  };
 
               Vec<2> p0x = quadverts[edgesx[cex][0]];
-              Vec<2> tangx = quadverts[edgesx[cex][1]]-quadverts[edgesx[cex][1]];
-              Vec<2> normx = -0.5*(gradverts[edgesx[cex][1]]+gradverts[edgesx[cex][1]]);
               Mat<2,2> Tx;
-              Tx.Col(0) = tangx;
-              Tx.Col(1) = normx;
-              
-              Vec<2> p0y = quadverts[edgesy[cey][1]];
-              Vec<2> tangy = quadverts[edgesy[cey][0]]-quadverts[edgesy[cey][1]];
-              Vec<2> normy = -0.5*(gradverts[edgesy[cey][1]]+gradverts[edgesy[cey][1]]);
+              Tx.Col(0) = quadverts[edgesx[cex][1]]-p0x;
+              Tx.Col(1) = -0.5*(gradverts[edgesx[cex][0]]+gradverts[edgesx[cex][1]]);
+
+              Vec<2> p0y;
               Mat<2,2> Ty;
-              Ty.Col(0) = tangy;
-              Ty.Col(1) = normy;
-              
+              if (same_orientation)
+                {
+                  p0y = quadverts[edgesy[cey][0]];
+                  Ty.Col(0) = quadverts[edgesy[cey][1]]-p0y;
+                  Ty.Col(1) = -0.5*(gradverts[edgesy[cey][0]]+gradverts[edgesy[cey][1]]);
+                }
+              else
+                {
+                  p0y = quadverts[edgesy[cey][1]];
+                  Ty.Col(0) = quadverts[edgesy[cey][0]]-p0y;
+                  Ty.Col(1) = -0.5*(gradverts[edgesy[cey][0]]+gradverts[edgesy[cey][1]]);
+                }
 
               
               constexpr int BS = 128;
