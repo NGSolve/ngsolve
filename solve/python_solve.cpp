@@ -791,8 +791,9 @@ void ExportVisFunctions(py::module &m) {
                                   for(auto i : Range(ElementTopology::GetNFacets(el.GetType())))
                                     {
                                       auto eltype = ma->GetFacetType(fnrs[i]);
-                                      auto& vals_real = values_real[T_ET{eltype, curved}];
-                                      auto& vals_imag = values_imag[T_ET{eltype, curved}];
+                                      typedef std::pair<ngfem::ELEMENT_TYPE,bool> T_ET;  // not defined for msvc in C++20 ?
+                                      auto& vals_real = values_real[/* T_ET */ {eltype, curved}];
+                                      auto& vals_imag = values_imag[/* T_ET */ {eltype, curved}];
                                       auto& ir_facet = transform(i, irs[eltype], mlh);
                                       auto nip = ir_facet.GetNIP();
                                       for(auto j : Range(nip))
@@ -875,7 +876,7 @@ void ExportVisFunctions(py::module &m) {
               }
               ma->IterateElements(vb, lh,[&](auto el, LocalHeap& mlh) {
                   auto et = el.GetType();
-                  element_counter[T_ET{et,el.is_curved}]++;
+                  element_counter[/* T_ET */ {et,el.is_curved}]++;
               });
 
               bool use_simd = true;
@@ -889,8 +890,8 @@ void ExportVisFunctions(py::module &m) {
                   auto et = el.GetType();
                   auto & ir = irs[et];
                   auto & simd_ir = simd_irs[et];
-                  auto &vals_real = values_real[T_ET{et,curved}];
-                  auto &vals_imag = values_imag[T_ET{et,curved}];
+                  auto &vals_real = values_real[{et,curved}];
+                  auto &vals_imag = values_imag[{et,curved}];
                   int nip = irs[et].GetNIP();
                   int values_per_element = nip*ncomps;
                   size_t first = vals_real.Size();
@@ -951,7 +952,7 @@ void ExportVisFunctions(py::module &m) {
             res["imag"] = res_imag;
             task_manager = tm;
             return res;
-        },py::call_guard<py::gil_scoped_release>());
+    },py::call_guard<py::gil_scoped_release>());
 
     m.def("_SetLocale", []()
           {

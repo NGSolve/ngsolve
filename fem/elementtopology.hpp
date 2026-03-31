@@ -24,7 +24,7 @@ namespace ngfem
      Geometry of element.
      Possible are ET_POINT, ET_SEGM, ET_TRIG, ET_QUAD, ET_TET, ET_PYRAMID, ET_PRISM, ET_HEX
   */
-  enum NGS_DLL_HEADER ELEMENT_TYPE 
+  enum NGS_DLL_HEADER ELEMENT_TYPE : std::uint8_t
     { ET_POINT = 0, ET_SEGM = 1,
 	ET_TRIG = 10, ET_QUAD = 11, 
 	ET_TET = 20, ET_PYRAMID = 21, ET_PRISM = 22, ET_HEXAMID = 23, ET_HEX = 24 };
@@ -729,37 +729,37 @@ namespace ngfem
   template <> class DIM_trait<0>
   {
   public:
-    enum { MAX_VERTEX = 1 };
-    enum { MAX_EDGE = 0 };
-    enum { MAX_FACE = 0 };
-    enum { MAX_CELL = 0 };
+    static constexpr int MAX_VERTEX = 1;
+    static constexpr int MAX_EDGE = 0;
+    static constexpr int MAX_FACE = 0;
+    static constexpr int MAX_CELL = 0;
   };
 
   template <> class DIM_trait<1>
   {
   public:
-    enum { MAX_VERTEX = 2 };
-    enum { MAX_EDGE = 1 };
-    enum { MAX_FACE = 0 };
-    enum { MAX_CELL = 0 };
+    static constexpr int MAX_VERTEX = 2;
+    static constexpr int MAX_EDGE = 1;
+    static constexpr int MAX_FACE = 0;
+    static constexpr int MAX_CELL = 0;
   };
 
   template <> class DIM_trait<2>
   {
   public:
-    enum { MAX_VERTEX = 4 };
-    enum { MAX_EDGE = 4 };
-    enum { MAX_FACE = 1 };
-    enum { MAX_CELL = 0 };
+    static constexpr int MAX_VERTEX = 4;
+    static constexpr int MAX_EDGE = 4;
+    static constexpr int MAX_FACE = 1;
+    static constexpr int MAX_CELL = 0;
   };
 
   template <> class DIM_trait<3>
   {
   public:
-    enum { MAX_VERTEX = 8 };
-    enum { MAX_EDGE = 12 };
-    enum { MAX_FACE = 6 };
-    enum { MAX_CELL = 1 };
+    static constexpr int MAX_VERTEX = 8;
+    static constexpr int MAX_EDGE = 12;
+    static constexpr int MAX_FACE = 6;
+    static constexpr int MAX_CELL = 1;
   };
 
 
@@ -771,12 +771,12 @@ namespace ngfem
   template<> class ET_trait<ET_POINT>
   {
   public:
-    enum { DIM = 0 };
-    enum { N_VERTEX = 1 };
-    enum { N_EDGE = 0 };
-    enum { N_FACE = 0 };
-    enum { N_CELL = 0 };
-    enum { N_FACET = 0 };
+    static constexpr int DIM = 0;
+    static constexpr int N_VERTEX = 1;
+    static constexpr int N_EDGE = 0;
+    static constexpr int N_FACE = 0;
+    static constexpr int N_CELL = 0;
+    static constexpr int N_FACET = 0;
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_POINT; }
     constexpr operator ELEMENT_TYPE() const { return ET_POINT; }
@@ -842,12 +842,12 @@ namespace ngfem
   template<> class ET_trait<ET_SEGM>
   {
   public:
-    enum { DIM = 1 };
-    enum { N_VERTEX = 2 };
-    enum { N_EDGE = 1 };
-    enum { N_FACE = 0 };
-    enum { N_CELL = 0 };
-    enum { N_FACET = 2 };
+    static constexpr int DIM = 1;
+    static constexpr int N_VERTEX = 2;
+    static constexpr int N_EDGE = 1;
+    static constexpr int N_FACE = 0;
+    static constexpr int N_CELL = 0;
+    static constexpr int N_FACET = 2;
     
     static constexpr ELEMENT_TYPE ElementType() { return ET_SEGM; }
     constexpr operator ELEMENT_TYPE() const { return ET_SEGM; }
@@ -903,12 +903,12 @@ namespace ngfem
   template<> class ET_trait<ET_TRIG>
   {
   public:
-    enum { DIM = 2 };
-    enum { N_VERTEX = 3 };
-    enum { N_EDGE = 3 };
-    enum { N_FACE = 1 };
-    enum { N_CELL = 0 };
-    enum { N_FACET = 3 };
+    static constexpr int DIM = 2;
+    static constexpr int N_VERTEX = 3;
+    static constexpr int N_EDGE = 3;
+    static constexpr int N_FACE = 1;
+    static constexpr int N_CELL = 0;
+    static constexpr int N_FACET = 3;
     
     static constexpr ELEMENT_TYPE ElementType() { return ET_TRIG; }
     constexpr operator ELEMENT_TYPE() const { return ET_TRIG; }
@@ -999,12 +999,12 @@ namespace ngfem
   template<> class ET_trait<ET_QUAD>
   {
   public:
-    enum { DIM = 2 };
-    enum { N_VERTEX = 4 };
-    enum { N_EDGE = 4 };
-    enum { N_FACE = 1 };
-    enum { N_CELL = 0 };
-    enum { N_FACET = 4 };
+    static constexpr int DIM = 2;
+    static constexpr int N_VERTEX = 4;
+    static constexpr int N_EDGE = 4;
+    static constexpr int N_FACE = 1;
+    static constexpr int N_CELL = 0;
+    static constexpr int N_FACET = 4;
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_QUAD; }
     constexpr operator ELEMENT_TYPE() const { return ET_QUAD; }
@@ -1145,12 +1145,12 @@ namespace ngfem
   template<> class ET_trait<ET_TET>
   {
   public:
-    enum { DIM = 3 };
-    enum { N_VERTEX = 4 };
-    enum { N_EDGE = 6 };
-    enum { N_FACE = 4 };
-    enum { N_CELL = 1 };
-    enum { N_FACET = 4 };
+    static constexpr int DIM = 3;
+    static constexpr int N_VERTEX = 4;
+    static constexpr int N_EDGE = 6;
+    static constexpr int N_FACE = 4;
+    static constexpr int N_CELL = 1;
+    static constexpr int N_FACET = 4;
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_TET; }
     constexpr operator ELEMENT_TYPE() const { return ET_TET; }
@@ -1244,12 +1244,12 @@ namespace ngfem
   template<> class ET_trait<ET_PRISM>
   {
   public:
-    enum { DIM = 3 };
-    enum { N_VERTEX = 6 };
-    enum { N_EDGE = 9 };
-    enum { N_FACE = 5 };
-    enum { N_CELL = 1 };
-    enum { N_FACET = 5 };
+    static constexpr int DIM = 3;
+    static constexpr int N_VERTEX = 6;
+    static constexpr int N_EDGE = 9;
+    static constexpr int N_FACE = 5;
+    static constexpr int N_CELL = 1;
+    static constexpr int N_FACET = 5;
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_PRISM; }
     constexpr operator ELEMENT_TYPE() const { return ET_PRISM; }
@@ -1353,12 +1353,12 @@ namespace ngfem
   template<> class ET_trait<ET_PYRAMID>
   {
   public:
-    enum { DIM = 3 };
-    enum { N_VERTEX = 5 };
-    enum { N_EDGE = 8 };
-    enum { N_FACE = 5 };
-    enum { N_CELL = 1 };
-    enum { N_FACET = 5 };
+    static constexpr int DIM = 3;
+    static constexpr int N_VERTEX = 5;
+    static constexpr int N_EDGE = 8;
+    static constexpr int N_FACE = 5;
+    static constexpr int N_CELL = 1;
+    static constexpr int N_FACET = 5;
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_PYRAMID; }
     constexpr operator ELEMENT_TYPE() const { return ET_PYRAMID; }
@@ -1459,12 +1459,12 @@ namespace ngfem
   template<> class ET_trait<ET_HEXAMID>
   {
   public:
-    enum { DIM = 3 };
-    enum { N_VERTEX = 7 };
-    enum { N_EDGE = 11 };
-    enum { N_FACE = 6 };
-    enum { N_CELL = 1 };
-    enum { N_FACET = 6 };
+    static constexpr int DIM = 3;
+    static constexpr int N_VERTEX = 7;
+    static constexpr int N_EDGE = 11;
+    static constexpr int N_FACE = 6;
+    static constexpr int N_CELL = 1;
+    static constexpr int N_FACET = 6;
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_HEXAMID; }
     constexpr operator ELEMENT_TYPE() const { return ET_HEXAMID; }
@@ -1578,12 +1578,12 @@ namespace ngfem
   template<> class ET_trait<ET_HEX>
   {
   public:
-    enum { DIM = 3 };
-    enum { N_VERTEX = 8 };
-    enum { N_EDGE = 12 };
-    enum { N_FACE = 6 };
-    enum { N_CELL = 1 };
-    enum { N_FACET = 6 };
+    static constexpr int DIM = 3;
+    static constexpr int N_VERTEX = 8;
+    static constexpr int N_EDGE = 12;
+    static constexpr int N_FACE = 6;
+    static constexpr int N_CELL = 1;
+    static constexpr int N_FACET = 6;
 
     static constexpr ELEMENT_TYPE ElementType() { return ET_HEX; }
     constexpr operator ELEMENT_TYPE() const { return ET_HEX; }

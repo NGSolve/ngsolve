@@ -34,6 +34,7 @@ namespace ngfem
     using HCurlFiniteElement<ET_trait<ET>::DIM>::GetNDof;    
     using VertexOrientedFE<ET>::SetVertexNumber;
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
 
     TangentialFacetFacetFE (int aorder)
     {
@@ -124,6 +125,8 @@ namespace ngfem
     
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::GetNDof;        
     
     TangentialFacetVolumeFE () { highest_order_dc=false; }
@@ -235,8 +238,8 @@ namespace ngfem
     
     virtual void CalcShape (const IntegrationPoint & ip, int facet, BareSliceMatrix<> shape) const;
 
-    virtual int GetNExtraShapes( int facet) const {return 0;}
-    virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const {xshape = 0.0;}
+    virtual int GetNExtraShapes( int facet) const; //  {return 0;}
+    virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const; //  {xshape = 0.0;}
 
     using HCurlFiniteElement<ET_trait<ET>::DIM>::ndof;
     using HCurlFiniteElement<ET_trait<ET>::DIM>::CalcDualShape;

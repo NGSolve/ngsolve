@@ -9,14 +9,14 @@ mkdir -p $SRC_DIR
 cp -a . $SRC_DIR/
 cd $BUILD_DIR
 
-pip3 install --upgrade pybind11-stubgen
+pip3 install --upgrade pybind11-stubgen netgen-occt netgen-occt-devel
 
 cmake $SRC_DIR \
       -DCMAKE_INSTALL_PREFIX=$CMAKE_INSTALL_PREFIX \
       -DCMAKE_BUILD_TYPE=Release \
       -DUSE_NATIVE_ARCH=OFF \
       -DUSE_CCACHE=ON \
-      -DUSE_CGNS=ON \
+      -DUSE_CGNS=OFF \
       -DUSE_UMFPACK=ON \
       -DENABLE_UNIT_TESTS=ON \
       -DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 \
@@ -28,4 +28,6 @@ make -j5 install
 
 cd $BUILD_DIR/ngsolve
 pip3 install scipy
+
+export DYLD_LIBRARY_PATH=$PY_DIR/../lib:$DYLD_LIBRARY_PATH
 ctest . --output-on-failure

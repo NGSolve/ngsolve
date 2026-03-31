@@ -111,7 +111,7 @@ namespace ngcomp
            });
       Array<int> dnums;
       int base = ma->GetNE() + ma->GetNSE() + ma->GetNCD2E();
-      for(auto i : Range(bfa->GetSpecialElements()))
+      for(auto i : bfa->GetSpecialElements().Range())
         {
           auto& el = bfa->GetSpecialElements()[i];
           dnums.SetSize0();
@@ -159,7 +159,7 @@ namespace ngcomp
            });
 
       base = ma->GetNE() + ma->GetNSE() + ma->GetNCD2E();
-      for(auto i : Range(bfa->GetSpecialElements()))
+      for(auto i : Range(bfa->GetSpecialElements().Range()))
         {
           auto& el = bfa->GetSpecialElements()[i];
           int lifcnt = 0;

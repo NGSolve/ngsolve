@@ -110,7 +110,7 @@ namespace ngsbem
     // Component-wise gradient: output is a flattened (3 x COMPS) matrix
     // [d/dx u0, d/dy u0, d/dz u0, d/dx u1, ...].
     Array<KernelTerm> terms;
-    DiffLaplaceSLKernel<3,COMPS>()
+    DiffLaplaceSLKernel()
     {
       for (size_t c = 0; c < COMPS; c++)
         for (size_t i = 0; i < 3; i++)
@@ -247,7 +247,7 @@ namespace ngsbem
     static constexpr bool needs_target_normal = false;
     static constexpr bool needs_source_normal = false;
 
-    LaplaceSLKernel<3,COMPS>()
+    LaplaceSLKernel()
     {
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};
@@ -314,7 +314,7 @@ namespace ngsbem
   public:
     static constexpr bool needs_target_normal = false;
 
-    LaplaceDLKernel<3,COMPS>()
+    LaplaceDLKernel()
     {
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};

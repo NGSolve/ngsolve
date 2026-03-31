@@ -15,6 +15,19 @@
 namespace ngfem
 {
 
+  template <ELEMENT_TYPE ET> 
+  int TangentialFacetVolumeFE<ET>::
+  GetNExtraShapes( int facet) const { return 0; }
+
+  
+  template <ELEMENT_TYPE ET> 
+  void TangentialFacetVolumeFE<ET>::
+  CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const
+  {
+    xshape = 0.0;
+  }
+
+  
   template <ELEMENT_TYPE ET> template<typename Tx, typename TFA>  
   void TangentialFacetVolumeFE<ET>::
   T_CalcShape (Tx hx[DIM], int fnr, TFA & shape) const
@@ -289,7 +302,7 @@ namespace ngfem
     if(vnums[fav[0]] > vnums[fav[1]]) swap(fav[0],fav[1]); 	
     */
     
-    IVec<3> fav = GetFaceSort(0, vnums);
+    IVec<3> fav = this->GetFaceSort(0, vnums);
     
     // AutoDiff<2> adxi  = lami[fav[0]]-lami[fav[2]];
     // AutoDiff<2> adeta = lami[fav[1]]-lami[fav[2]];
@@ -300,8 +313,8 @@ namespace ngfem
     DubinerBasis::Eval(order_inner[0], lami[fav[1]].Value(), lami[fav[0]].Value(),
                        SBLambda([&] (size_t nr, Tx val)
                                 {
-                                  shape[ii] = uDv(Tx(val), adxi); ii++;
-                                  shape[ii] = uDv(Tx(val), adeta); ii++;
+                                  shape[ii] = uDv(val, adxi); ii++;
+                                  shape[ii] = uDv(val, adeta); ii++;
                                 }));
   }
 
@@ -316,7 +329,7 @@ namespace ngfem
     T lam[3] = { x, y, 1-x-y };
     Vec<2> pnts[3] = { { 1, 0  }, { 0, 1 } , { 0, 0 } };
 
-    IVec<4> fav = GetVertexOrientedFace(0);
+    IVec<4> fav = this->GetVertexOrientedFace(0);
     Vec<2> adxi = pnts[fav[0]] - pnts[fav[2]];
     Vec<2> adeta = pnts[fav[1]] - pnts[fav[2]];
     T xi = lam[fav[0]];
@@ -1132,7 +1145,7 @@ namespace ngfem
          shapes.AddSize(ndof*DIMSPACE, mir.Size()) = 0.0;
          for (size_t i = 0; i < mir.Size(); i++)
            this->CalcDualShape2 (mir[i], mir[i].IP().FacetNr(),
-                                 SBLambda ([shapes,i,DIMSPACE] (size_t j, auto val)
+                                 SBLambda ([shapes,i,DIMSPACE=DIMSPACE] (size_t j, auto val)
                                            {
                                              for (size_t k = 0; k < DIMSPACE; k++)
                                                shapes(j*DIMSPACE+k, i) = val(k);

@@ -3,7 +3,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(EMSCRIPTEN)
   add_custom_command(OUTPUT kernel_generator
-    COMMAND g++ -std=c++17 ${CMAKE_CURRENT_SOURCE_DIR}/generate_mat_kernels.cpp -o ${CMAKE_CURRENT_BINARY_DIR}/kernel_generator
+    COMMAND g++ -std=c++20 ${CMAKE_CURRENT_SOURCE_DIR}/generate_mat_kernels.cpp -o ${CMAKE_CURRENT_BINARY_DIR}/kernel_generator
     )
   set(kernel_command ${CMAKE_CURRENT_BINARY_DIR}/kernel_generator)
 else(EMSCRIPTEN)

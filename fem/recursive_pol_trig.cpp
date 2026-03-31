@@ -28,8 +28,9 @@ namespace ngfem
       {
 	// cout << "calculate TrigExtOpt coefficeints " << endl;
 	int i = 0;
-	for (double n=6; n< SIZE; n++)
+	for (int n_=6; n_< SIZE; n_++)
          {
+           double n = n_;
            double help1 = n*(n+1)*(-7+2*n);
 	   double help2 = -5+2*n;
 

@@ -1,7 +1,7 @@
 .template_mac: &mac
   tags:
+    - m1
     - mac
-    - x64
   before_script:
     - source tests/gitlab-ci/mac/set_vars.sh
 

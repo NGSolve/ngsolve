@@ -60,7 +60,7 @@ else()
   endif()
 endif()
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 if(EMSCRIPTEN)
     set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 endif()
@@ -208,16 +208,16 @@ elseif(WIN32)
 
     if(CMAKE_CXX_COMPILER_ID STREQUAL "Intel")
         # Intel Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP $<$<COMPILE_LANGUAGE:CXX>:/Qstd=c++17> /Qopt-report-file:report.log)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /Od /MP $<$<COMPILE_LANGUAGE:CXX>:/Qstd=c++20> /Qopt-report-file:report.log)
     else()
         # MS Visual Compiler
-        list(APPEND NGSOLVE_COMPILE_OPTIONS /std:c++17 /bigobj /wd4068)
+        list(APPEND NGSOLVE_COMPILE_OPTIONS /std:c++20 /bigobj /wd4068)
     endif()
 
 else(WIN32)
     set(NGS_LIB_TYPE SHARED)
     set(NGSOLVE_LIB_TYPE SHARED)
-    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++17>)
+    list(APPEND NGSOLVE_COMPILE_OPTIONS $<$<COMPILE_LANGUAGE:CXX>:-std=c++20>)
 endif(EMSCRIPTEN)
 if(APPLE)
     list(APPEND NGSOLVE_COMPILE_DEFINITIONS MSG_NOSIGNAL=0)

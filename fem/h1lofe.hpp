@@ -80,11 +80,13 @@ namespace ngfem
         BASE::Interpolate (trafo, func, coefs, lh);
     }
 
-    FlatArray<IntegrationPoint> GetNodalPoints() const
+    
+    FlatArray<IntegrationPoint> GetNodalPoints() const;
+    /*
     {
       return { 0, nullptr };
     }
-    
+    */
     
     void CalcDualShape2 (const BaseMappedIntegrationPoint & mip, SliceVector<> shape) const
     {
@@ -1022,6 +1024,13 @@ namespace ngfem
 
 #ifdef FILE_H1LOFE_CPP
 
+  template <ELEMENT_TYPE ET, int ORDER>
+  FlatArray<IntegrationPoint> ScalarFE<ET,ORDER> :: GetNodalPoints() const
+  {
+    return { 0, nullptr };
+  }
+  
+  
   template<>
   FlatArray<IntegrationPoint> ScalarFE<ET_TRIG,1> :: GetNodalPoints() const
   {
@@ -1209,6 +1218,7 @@ namespace ngfem
 
   H1LOFE_EXTERN template class ScalarFE<ET_SEGM,0>;
   H1LOFE_EXTERN template class ScalarFE<ET_SEGM,1>;
+  H1LOFE_EXTERN template class ScalarFE<ET_SEGM,2>;  
 
   H1LOFE_EXTERN template class ScalarFE<ET_TRIG,0>;
   H1LOFE_EXTERN template class ScalarFE<ET_TRIG,1>;

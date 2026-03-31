@@ -232,20 +232,14 @@ namespace ngstd
               // NgProfiler::AddThreadFlops(timer_bspline_ev, TaskManager::GetThreadId(), 1);
               // RegionTimer reg_ev (timer_bspline_ev);
 
-              //this is a workaround attempt of a MSVC non-conformance with the standard
-              // auto *dummyhc = &hc;
               Iterate<orderval.value-1> ([&] (auto Pm1) {
-                constexpr int p = Pm1.value + 1;
-                for (int jhc = orderval.value - 1; jhc >= p; jhc--)
+                static constexpr int p = Pm1.value + 1;
+                static constexpr int order = orderval.value;
+                const auto &off = offset; // MSVC workaround
+                for (int jhc = order - 1; jhc >= p; jhc--)
                   {
-
-                    SIMD<double> tj([&](int i) -> double { return t[jhc + offset[i]]; });
-                    SIMD<double> tjopd([&](int i) -> double { return t[jhc + offset[i]+orderval.value-p]; });                    
-                    /*
-                    (*dummyhc)[jhc] = ((x-tj) * (*dummyhc)[jhc] +
-                                       (tjopd-x) * (*dummyhc)[jhc-1])
-                      / (tjopd-tj);
-                    */
+                    SIMD<double> tj([=,this](int i) -> double { return this->t[jhc + off[i]]; });
+                    SIMD<double> tjopd([=,this](int i) -> double { return this->t[jhc + off[i]+order-p]; });
                     hc[jhc] = ((x-tj) * hc[jhc] +
                                (tjopd-x) * hc[jhc-1])
                       / (tjopd-tj);

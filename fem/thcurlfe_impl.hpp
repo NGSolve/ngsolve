@@ -78,7 +78,7 @@ namespace ngfem
          constexpr int DIMSPACE = DIM+CODIM.value;
          auto & mip = static_cast<const SIMD<MappedIntegrationPoint<DIM,DIM+CODIM.value>>&> (bmip);
          this->T_CalcShape (GetTIP(mip),
-                            SBLambda ([shape, DIMSPACE](size_t i, auto s) 
+                            SBLambda ([shape,DIMSPACE=DIMSPACE](size_t i, auto s) 
                                       {
                                         shape.Col(0).Range(i*DIMSPACE, (i+1)*DIMSPACE) = s.Value();
                                       }));
@@ -93,14 +93,14 @@ namespace ngfem
     Switch<4-DIM>
       (bmir.DimSpace()-DIM,[this,&bmir,shapes](auto CODIM)
        {
-         constexpr int DIMSPACE = DIM+CODIM.value;
+         static constexpr int DIMSPACE = DIM+CODIM.value;
          auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIMSPACE>&> (bmir);
          for (size_t i = 0; i < mir.Size(); i++)
            {
              auto shapei = shapes.Col(i);
              this->T_CalcShape
                (GetTIP(mir[i]),
-                SBLambda ([shapei,DIMSPACE] (size_t j, auto s)
+                SBLambda ([shapei] (size_t j, auto s)
                           {
                             shapei.Range(j*DIMSPACE, (j+1)*DIMSPACE) = s.Value();
                           }));
@@ -151,7 +151,7 @@ namespace ngfem
            {
              auto shapei = shapes.Col(i);
              this->T_CalcShape (GetTIP(mir[i]),
-                                SBLambda ([shapei,DIM_CURL] (size_t j, auto s)
+                                SBLambda ([shapei,DIM_CURL=DIM_CURL] (size_t j, auto s)
                                           {
                                             shapei.Range(j*DIM_CURL, (j+1)*DIM_CURL) = s.CurlValue();
                                           }));

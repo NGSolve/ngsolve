@@ -90,8 +90,8 @@ namespace ngfem
   {
 
   public:
-    enum { DIM = D };
-    enum { DIM_CURL = DIM_CURL_(D) };
+    static constexpr int DIM = D;
+    static constexpr int DIM_CURL = DIM_CURL_(D);
 
 
   public:

@@ -661,7 +661,7 @@ namespace ngfem
            shapes.AddSize(ndof*sqr(DIMSPACE), mir.Size()) = 0.0;
            for (size_t i = 0; i < mir.Size(); i++)
              {
-               Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE] (size_t j, auto val)
+               Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE=DIMSPACE] (size_t j, auto val)
                                                           {
                                                             shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val.AsVector();
                                                           }));

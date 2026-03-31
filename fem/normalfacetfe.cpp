@@ -49,11 +49,16 @@ namespace ngfem
   
 
 
-
   template <ELEMENT_TYPE ET> 
   class NormalFacetVolumeFE_Shape : public NormalFacetVolumeFE<ET>
   {
-    using NormalFacetVolumeFE<ET>::order;
+    using Base = NormalFacetVolumeFE<ET>;
+    using Base::order;
+    using Base::first_facet_dof;
+    using Base::facet_order;
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;
+    using VertexOrientedFE<ET>::vnums;
 
     static constexpr int DIM = ngfem::Dim(ET);
 
@@ -222,7 +227,7 @@ namespace ngfem
 	  lam_f += lami[faces[i][j]];
 
 
-        IVec<4> f = GetFaceSort (i, vnums);	  
+        IVec<4> f = ET_trait<ET_HEX>::GetFaceSort (i, vnums);	  
         Tx xi  = sigma[f[0]]-sigma[f[1]];
         Tx eta = sigma[f[0]]-sigma[f[3]];
 
@@ -421,6 +426,14 @@ namespace ngfem
   }
 #endif
 
+  template <ELEMENT_TYPE ET> 
+  int  NormalFacetVolumeFE<ET> ::
+  GetNExtraShapes( int facet) const {return 0;}
+  
+  template <ELEMENT_TYPE ET>   
+  void NormalFacetVolumeFE<ET> ::
+  CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const {xshape = 0.0;}
+  
   
   /* **************************** Facet Segm ********************************* */
 
@@ -531,7 +544,7 @@ namespace ngfem
     int p = order;
     int ii = 0;
     
-    IVec<4> f = GetFaceSort (0, vnums);	  
+    IVec<4> f = ET_trait<ET_QUAD>::GetFaceSort (0, vnums);	  
     Tx xi  = sigma[f[0]]-sigma[f[1]];
     Tx eta = sigma[f[0]]-sigma[f[3]];
     lam_f = Cross(xi,eta);
@@ -733,7 +746,7 @@ namespace ngfem
     AutoDiff<3> x(ip(0), 0), y(ip(1),1), z(ip(2),2);
     AutoDiff<3> lami[4] = { x, y, z, 1-x-y-z };
 
-    IVec<4> fav = ET_T::GetFaceSort (fanr, vnums);
+    IVec<4> fav = ET_trait<ET_TET>::GetFaceSort (fanr, vnums);
 
     AutoDiff<3> adxi = lami[fav[0]]-lami[fav[2]];
     AutoDiff<3> adeta = lami[fav[1]]-lami[fav[2]];

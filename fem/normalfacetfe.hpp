@@ -34,6 +34,8 @@ namespace ngfem
   public:
     using VertexOrientedFE<ET>::SetVertexNumber;
     using VertexOrientedFE<ET>::SetVertexNumbers;
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;
 
     NormalFacetFacetFE (int aorder) : HDivNormalFiniteElement<ET_trait<ET>::DIM>(aorder+1,aorder)
     {
@@ -85,6 +87,7 @@ namespace ngfem
     bool highest_order_dc;
     using HDivFiniteElement<ET_trait<ET>::DIM>::order;
     using VertexOrientedFE<ET>::vnums;
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
     enum { DIM = ET_trait<ET>::DIM };
     typedef T_HDivFiniteElement<NormalFacetVolumeFE_Shape<ET>, ET> TBASE;
     
@@ -165,8 +168,8 @@ namespace ngfem
     using TBASE::CalcDualShape;
     virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override;
 
-    virtual int GetNExtraShapes( int facet) const {return 0;}
-    virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const {xshape = 0.0;}
+    virtual int GetNExtraShapes( int facet) const; //  {return 0;}
+    virtual void CalcExtraShape (const IntegrationPoint & ip, int facet, FlatMatrixFixWidth<ET_T::DIM> xshape) const; //  {xshape = 0.0;}
 
     virtual void GetFacetDofNrs(int afnr, Array<int>& fdnums) const
     {

@@ -275,13 +275,13 @@ namespace ngfem
       Switch<4-DIM>
         (bmir.DimSpace()-DIM,[this, &bmir, shapes](auto CODIM)
          {
-           constexpr int DIMSPACE = DIM+CODIM.value;
+           static constexpr int DIMSPACE = DIM+CODIM.value;
            auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+CODIM.value>&> (bmir);
 
            shapes.AddSize(ndof*sqr(DIMSPACE), mir.Size()) = 0.0;
            for (size_t i = 0; i < mir.Size(); i++)
              {
-               Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i,DIMSPACE] (size_t j, auto val)
+               Cast() -> CalcDualShape2 (mir[i], SBLambda([shapes,i] (size_t j, auto val)
                                                           {
                                                             shapes.Rows(j*sqr(DIMSPACE), (j+1)*sqr(DIMSPACE)).Col(i).Range(0,sqr(DIMSPACE)) = val.AsVector();
                                                           }));

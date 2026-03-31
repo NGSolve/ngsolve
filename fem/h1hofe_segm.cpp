@@ -14,6 +14,11 @@
 
 namespace ngfem
 {
+  template <>
+  bool H1HighOrderFE_Shape<ET_SEGM> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
+  { return false; }
+
+  
   template class H1HighOrderFE<ET_SEGM>;
   template class T_ScalarFiniteElement<H1HighOrderFE_Shape<ET_SEGM>, ET_SEGM>;
 }

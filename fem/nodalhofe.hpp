@@ -29,6 +29,9 @@ namespace ngfem
     using ET_trait<ET>::PolDimension;
     using ET_trait<ET>::PolBubbleDimension;
 
+    using VertexOrientedFE<ET>::GetVertexOrientedFace;
+    using VertexOrientedFE<ET>::GetVertexOrientedEdge;
+
     
   public:
     using VertexOrientedFE<ET>::SetVertexNumbers;    

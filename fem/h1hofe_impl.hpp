@@ -21,10 +21,13 @@ namespace ngfem
     using H1HighOrderFE<ET>::order_edge;
     using H1HighOrderFE<ET>::order_face;
     using H1HighOrderFE<ET>::order_cell;
+    using H1HighOrderFE<ET>::nodalp2;    
 
     using H1HighOrderFE<ET>::N_VERTEX;
     using H1HighOrderFE<ET>::N_EDGE;
     using H1HighOrderFE<ET>::N_FACE;
+    using H1HighOrderFE<ET>::GetVertexOrientedFace;
+    using H1HighOrderFE<ET>::GetVertexOrientedEdge;
 
     static constexpr int DIM = ngfem::Dim(ET);
 
@@ -56,7 +59,7 @@ namespace ngfem
     }
     */
     
-    bool GetDiagDualityMassInverse2 (FlatVector<> diag) const { return false; }
+    bool GetDiagDualityMassInverse2 (FlatVector<> diag) const; //  { return false; }
   };
 
 
@@ -354,8 +357,28 @@ namespace ngfem
                     }));
       }
   }
+
+#ifdef FILE_H1HOFE_CPP
+  /*
+  template <ELEMENT_TYPE ET>
+  bool H1HighOrderFE_Shape<ET> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const
+  {
+    return false;
+  }
+  */
+
+  template <>
+  bool H1HighOrderFE_Shape<ET_POINT> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
+  { return false; }
+
+  template <>
+  bool H1HighOrderFE_Shape<ET_HEXAMID> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
+  { return false; }
+
+#endif
   
-#ifdef FILE_H1HOFE_TRIG_CPP
+  
+  /*
   template <>
   bool H1HighOrderFE_Shape<ET_TRIG> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
   {
@@ -371,10 +394,9 @@ namespace ngfem
     // cout << "trig duality diag = " << diag << endl;
     return true;
   }
-#endif
+
 
   
-#ifdef FILE_H1HOFE_CPP
   
   template <>
   bool H1HighOrderFE_Shape<ET_QUAD> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
@@ -409,8 +431,6 @@ namespace ngfem
       DubinerBasis3DOrthoBub::CalcNormInv(p-4, diag+ii);
     return true;
   }
-
-
   
   template <>
   bool H1HighOrderFE_Shape<ET_HEX> :: GetDiagDualityMassInverse2 (FlatVector<> diag) const 
@@ -435,7 +455,9 @@ namespace ngfem
     
     return true;
   }
-#endif
+*/
+
+  
 
 #ifdef NONE
   template<>
