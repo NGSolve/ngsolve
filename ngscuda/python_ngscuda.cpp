@@ -237,8 +237,31 @@ PYBIND11_MODULE(ngscuda, m) {
     .def("EndCapture", &CudaGraph::EndCapture)
     .def("Launch", &CudaGraph::Launch)
     ;
-  
-  
+  // DevCGSolver — preconditioned CG with CUDA graph capture of iteration body
+  m.def("DevCGSolver",
+  [](shared_ptr<BaseMatrix> mat,
+     shared_ptr<BaseMatrix> pre,
+     shared_ptr<BaseMatrix> adev_raw,
+     shared_ptr<BaseMatrix> cdev_raw,
+     double precision,
+     int    maxsteps,
+     bool   printrates)
+  {
+    auto solver = make_shared<DevCGSolver>(
+        mat, pre, adev_raw, cdev_raw);
+    solver->SetPrecision(precision);
+    solver->SetMaxSteps(maxsteps);
+    solver->SetPrintRates(printrates);
+    return shared_ptr<KrylovSpaceSolver>(solver);
+  },
+  py::arg("mat"),
+  py::arg("pre"),
+  py::arg("adev_raw")   = nullptr,
+  py::arg("cdev_raw")   = nullptr,
+  py::arg("precision")  = 1e-12,
+  py::arg("maxsteps")   = 400,
+  py::arg("printrates") = false,
+  "Preconditioned CG solver with CUDA graph capture of iteration body (convergence check via DtoH remains outside graph).");
   m.def("TestCudaNGBla", &TestCudaNGBla);
   // ExportDemo(m);
 }

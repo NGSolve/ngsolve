@@ -40,12 +40,19 @@ namespace ngla
     virtual AutoVector Range (T_Range<size_t> range) const override;
 
     virtual BaseVector & Scale (double scal) override;
+    virtual BaseVector & Scale (BaseScalar & scal) override;
     virtual BaseVector & SetScalar (double scal) override;
     virtual BaseVector & Set (double scal, const BaseVector & v) override;
     virtual BaseVector & Add (double scal, const BaseVector & v) override;
 
+    using BaseVector::InnerProduct;
     virtual double InnerProductD (const BaseVector & v2) const override;
     virtual double L2Norm () const override;
+
+    // BaseScalar overrides for GPU-resident scalars:
+    virtual void InnerProduct (const BaseVector & v2, BaseScalar & scal, bool conjugate = false) const override;
+    virtual BaseVector & Add (BaseScalar & scal, const BaseVector & v) override;
+    virtual shared_ptr<BaseScalar> CreateScalar() const override;
 
     void UpdateHost () const;
     void UpdateDevice () const;
@@ -98,6 +105,35 @@ namespace ngla
   };
 
 
+
+  // -------------------------------------------------------
+  // UnifiedScalar: GPU-resident scalar for graph capture
+  // Fixed GPU address allows CUDA graph capture.
+  // -------------------------------------------------------
+  class UnifiedScalar : public BaseScalar
+  {
+    mutable double host_val = 0.0;
+    double* dev_val = nullptr;
+
+  public:
+    UnifiedScalar();
+    virtual ~UnifiedScalar();
+
+    void Set(double d) override;
+    double GetD() const override;
+    double* DevPtr() const { return dev_val; }
+
+    template<typename Expr>
+    UnifiedScalar& operator=(const Expr& expr)
+    {
+      double* d = dev_val;
+      auto kernel = [d, expr] __device__ (size_t) {
+          *d = expr.Evaluate();
+      };
+      DeviceParallelFor(1, kernel);
+      return *this;
+    }
+  };
 
 }
 #endif

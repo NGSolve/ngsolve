@@ -404,4 +404,125 @@ namespace ngla
       dev_data = nullptr;
   }
 
+  // -------------------------------------------------------
+  // UnifiedScalar implementation
+  // -------------------------------------------------------
+  UnifiedScalar :: UnifiedScalar()
+  {
+//    static bool announced = false;
+//    if (!announced) {
+//        announced = true;
+//        cerr << "[UnifiedScalar] built " << __DATE__ << " " << __TIME__ << endl;
+//    }
+    cudaMalloc(&dev_val, sizeof(double));
+    cudaMemset(dev_val, 0, sizeof(double));
+  }
+
+  UnifiedScalar :: ~UnifiedScalar()
+  {
+    if (dev_val) cudaFree(dev_val);
+  }
+
+  void UnifiedScalar :: Set(double d)
+  {
+    host_val = d;
+    cudaMemcpy(dev_val, &d, sizeof(double), cudaMemcpyHostToDevice);
+  }
+
+  double UnifiedScalar :: GetD() const
+  {
+    cudaMemcpy(&host_val, dev_val, sizeof(double), cudaMemcpyDeviceToHost);
+    return host_val;
+  }
+
+  // -------------------------------------------------------
+  // UnifiedVector overrides for BaseScalar
+  // -------------------------------------------------------
+
+  BaseVector& UnifiedVector::Scale(BaseScalar& scal)
+  {
+    if (auto uscal = dynamic_cast<UnifiedScalar*>(&scal))
+      {
+        double* d_scal = uscal->DevPtr();
+        DeviceParallelFor
+          (this->size, [me=this->FVDev(), d_scal] DEVICE_LAMBDA (size_t tid)
+          {
+            me(tid) *= (*d_scal);
+          });
+      }
+    else
+      Scale(scal.GetD());  // CPU fallback
+    return *this;
+  }
+
+  shared_ptr<BaseScalar> UnifiedVector :: CreateScalar() const
+  {
+    return make_shared<UnifiedScalar>();
+  }
+
+  void UnifiedVector :: InnerProduct(const BaseVector& v2,
+                                      BaseScalar& scal,
+                                      bool conjugate) const
+  {
+    if (auto uscal = dynamic_cast<UnifiedScalar*>(&scal))
+      {
+        // check if we are inside graph capture:
+        cudaStreamCaptureStatus capture_status;
+        cudaStreamGetCaptureInfo(ngs_cuda_stream, &capture_status, nullptr);
+        bool capturing = (capture_status == cudaStreamCaptureStatusActive);
+
+        // only call UpdateDevice when NOT capturing
+        // (during capture/replay the data is already on GPU)
+        if (!capturing) {
+            UpdateDevice();
+        }
+
+        auto uv2 = dynamic_cast<const UnifiedVector*>(&v2);
+        if (!uv2) throw Exception("InnerProduct(BaseScalar): v2 must be UnifiedVector");
+        if (!capturing) {
+            uv2->UpdateDevice();
+        }
+
+        cublasSetStream(Get_CuBlas_Handle(), ngs_cuda_stream);
+        cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
+        cublasDdot(Get_CuBlas_Handle(),
+                   size,
+                   (double*)dev_data, 1,
+                   (double*)uv2->dev_data, 1,
+                   uscal->DevPtr());
+        // only restore pointer mode when NOT capturing
+        // during capture/replay, caller manages pointer mode
+        if (!capturing) {
+            cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
+        }
+      }
+    else
+      {
+        // fallback — CPU path
+        BaseVector::InnerProduct(v2, scal, conjugate);
+      }
+  }
+
+  BaseVector& UnifiedVector :: Add(BaseScalar& scal, const BaseVector& v)
+  {
+    if (auto uscal = dynamic_cast<UnifiedScalar*>(&scal))
+      {
+        // read scalar from GPU address — graph capturable
+        UnifiedVectorWrapper uv(v);
+        double* d_scal = uscal->DevPtr();
+        DeviceParallelFor
+          (this->size, [me=this->FVDev(), other=uv.FVDevRO(), d_scal] DEVICE_LAMBDA (size_t tid)
+          {
+            me(tid) += (*d_scal) * other(tid);
+          });
+      }
+    else
+      {
+        // fallback — CPU path via GetD()
+        BaseVector::Add(scal, v);
+      }
+    return *this;
+  }
+
+
 }

@@ -181,6 +181,15 @@ namespace ngla
     return *this;
   }
 
+  BaseVector & BaseVector :: Scale (BaseScalar & scal)
+  {
+    if (scal.IsComplex())
+      Scale (scal.GetC());
+    else
+      Scale (scal.GetD());
+    return *this;
+  }
+
   BaseVector & BaseVector :: Add (BaseScalar & scal, const BaseVector & v)
   {
     if (scal.IsComplex())
