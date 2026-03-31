@@ -95,13 +95,21 @@ namespace ngsbem
     Array<Vec<2>> common_vertex_x, common_vertex_y;
     Array<double> common_vertex_weight;
 
+    Array<Vec<2>> common_vertex_quad_x, common_vertex_quad_y;
+    Array<double> common_vertex_quad_weight;
+
     Array<Vec<2>> common_edge_x, common_edge_y;
     Array<double> common_edge_weight;
     
     Array<Vec<2>> common_edge_quad_x, common_edge_quad_y;
     Array<double> common_edge_quad_weight;
     
+    Array<Vec<2>> common_edge_quadtrig_x, common_edge_quadtrig_y;
+    Array<double> common_edge_quadtrig_weight;
+    
 
+
+    
     mutable shared_ptr<BaseMatrix> matrix;
     mutable shared_ptr<BaseMatrix> nearfield_matrix;
 
