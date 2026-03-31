@@ -88,6 +88,10 @@ namespace ngsbem
     // Sauter-Schwab integration rules:
     Array<Vec<2>> identic_panel_x, identic_panel_y;
     Array<double> identic_panel_weight;
+
+    Array<Vec<2>> identic_panel_quad_x, identic_panel_quad_y;
+    Array<double> identic_panel_quad_weight;
+
     
     Array<Vec<2>> common_vertex_x, common_vertex_y;
     Array<double> common_vertex_weight;

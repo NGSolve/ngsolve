@@ -49,6 +49,7 @@ namespace ngsbem
     */
     
     tie(identic_panel_x, identic_panel_y, identic_panel_weight) = IdenticPanelIntegrationRule(intorder);
+    tie(identic_panel_quad_x, identic_panel_quad_y, identic_panel_quad_weight) = IdenticPanelQuadIntegrationRule(intorder);    
     tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
     tie(common_edge_x, common_edge_y, common_edge_weight) = CommonEdgeIntegrationRule(intorder);
   }
@@ -146,7 +147,7 @@ namespace ngsbem
         (BND, lh, [&] (auto el, LocalHeap & llh)
         {
           if (el.GetType() == ET_QUAD)
-            classnr[el.Nr()] = -1;
+            classnr[el.Nr()] = 8 /* max trig calsses */  +  ET_trait<ET_QUAD>::GetClassNr(el.Vertices());
           else
             classnr[el.Nr()] = 
               SwitchET<ET_SEGM, ET_TRIG, ET_TET>
@@ -541,7 +542,6 @@ namespace ngsbem
     // static Timer t1("ngbem - elementmatrix, part1  " + KERNEL::Name());
 
     // t1.Start();
-    IntegrationRule irtrig(ET_TRIG, intorder);
     matrix = 0.; 
     // t1.Stop();
 
@@ -627,13 +627,46 @@ namespace ngsbem
     for (auto vi : verti)
       if (vertj.Contains(vi))
         n_common_vertices++;
+
+    // treat quad-quad and quad-trig as disjoint
+    if (verti.Size()==4 || vertj.Size()==4)
+      if (n_common_vertices <= 2)
+        n_common_vertices = 0;
+    
     
     switch (n_common_vertices)
       {
+      case 4: //identical panel quad
+        {
+          constexpr int BS = 128;
+          for (int k = 0; k < identic_panel_quad_weight.Size(); k+=BS)
+            {
+              int num = std::min(size_t(BS), identic_panel_quad_weight.Size()-k);
+              
+              HeapReset hr(lh);
+              
+              IntegrationRule irx(num, lh);
+              IntegrationRule iry(num, lh);
+              
+              for (int k2 = 0; k2 < num; k2++)
+                {
+                  Vec<2> xk = identic_panel_quad_x[k+k2];
+                  Vec<2> yk = identic_panel_quad_y[k+k2];
+                  
+                  irx[k2] = IntegrationPoint(xk(0), xk(1), 0,
+                                             identic_panel_quad_weight[k+k2]);
+                  iry[k2] = IntegrationPoint(yk(0), yk(1), 0, 0);
+                }
+              
+              Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
+            }
+          
+          
+          break;
+        }
+
       case 3: //identical panel
         {
-          // RegionTimer reg(t_identic);    
-          
           constexpr int BS = 128;
           for (int k = 0; k < identic_panel_weight.Size(); k+=BS)
             {
@@ -657,9 +690,10 @@ namespace ngsbem
               Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
             }
           
-          
           break;
         }
+
+        
       case 2: //common edge
         {
           // RegionTimer reg(t_common_edge);    
@@ -723,8 +757,8 @@ namespace ngsbem
           // RegionTimer reg(t_common_vertex);    
           
           int cvx=-1, cvy=-1;
-          for (int cx = 0; cx < 3; cx++)
-            for (int cy = 0; cy < 3; cy++)
+          for (int cx = 0; cx < verti.Size(); cx++)
+            for (int cy = 0; cy < vertj.Size(); cy++)
               {
                 if (verti[cx] == vertj[cy])
                   {
@@ -734,10 +768,9 @@ namespace ngsbem
                   }
               }
 
+          /*
           int vpermx[3] = { cvx, (cvx+1)%3, (cvx+2)%3 };
-          vpermx[2] = 3-vpermx[0]-vpermx[1];
           int vpermy[3] = { cvy, (cvy+1)%3, (cvy+2)%3 };
-          vpermy[2] = 3-vpermy[0]-vpermy[1];
           
           // vectorized version:
           constexpr int BS = 128;
@@ -754,10 +787,9 @@ namespace ngsbem
                 {
                   Vec<2> xk = common_vertex_x[k+k2];
                   Vec<2> yk = common_vertex_y[k+k2];
-                  
+
                   Vec<3> lamx (1-xk(0)-xk(1), xk(0), xk(1) );
                   Vec<3> lamy (1-yk(0)-yk(1), yk(0), yk(1) );
-                  
                   Vec<3> plamx, plamy;
                   for (int i = 0; i < 3; i++)
                     {
@@ -771,20 +803,56 @@ namespace ngsbem
               
               Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
             }
+          */
+
+          Vec<2> trigverts[3] = { { 1,0 }, { 0, 1}, { 0, 0 } };
+          Vec<2> p0x = trigverts[cvx];
+          Mat<2,2> Tx;
+          Tx.Col(0) = trigverts[(cvx+1)%3] - p0x;
+          Tx.Col(1) = trigverts[(cvx+2)%3] - p0x;
           
+          Vec<2> p0y = trigverts[cvy];
+          Mat<2,2> Ty;
+          Ty.Col(0) = trigverts[(cvy+1)%3] - p0y;
+          Ty.Col(1) = trigverts[(cvy+2)%3] - p0y;
+
+          constexpr int BS = 128;
+          for (int k = 0; k < common_vertex_weight.Size(); k+=BS)
+            {
+              int num = std::min(size_t(BS), common_vertex_weight.Size()-k);
+              
+              HeapReset hr(lh);
+              
+              IntegrationRule irx(num, lh);
+              IntegrationRule iry(num, lh);
+              
+              for (int k2 = 0; k2 < num; k2++)
+                {
+                  Vec<2> px = p0x + Tx * common_vertex_x[k+k2];
+                  Vec<2> py = p0y + Ty * common_vertex_y[k+k2];
+                  
+                  irx[k2] = IntegrationPoint(px(0), px(1), 0, common_vertex_weight[k+k2]);
+                  iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
+                }
+              
+              Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
+            }
           break;
         }
         
       case 0: //disjoint panels
         {
           // RegionTimer r(t_disjoint);    
-          
           // shapes+geom out of loop, matrix multiplication
-          MappedIntegrationRule<2,3> mirx(irtrig, trafoi, lh);
-          MappedIntegrationRule<2,3> miry(irtrig, trafoj, lh);
+          // IntegrationRule irtrig(ET_TRIG, intorder);
+          IntegrationRule iri(feli.ElementType(), intorder);
+          IntegrationRule irj(felj.ElementType(), intorder);
           
-          FlatMatrix<> shapesi(feli.GetNDof(), test_evaluator->Dim()*irtrig.Size(), lh);
-          FlatMatrix<> shapesj(felj.GetNDof(), trial_evaluator->Dim()*irtrig.Size(), lh);
+          MappedIntegrationRule<2,3> mirx(iri, trafoi, lh);
+          MappedIntegrationRule<2,3> miry(irj, trafoj, lh);
+          
+          FlatMatrix<> shapesi(feli.GetNDof(), test_evaluator->Dim()*iri.Size(), lh);
+          FlatMatrix<> shapesj(felj.GetNDof(), trial_evaluator->Dim()*irj.Size(), lh);
           shapesi = 0.0;
           shapesj = 0.0;
           test_evaluator -> CalcMatrix(feli, mirx, Trans(shapesi), lh);
@@ -793,10 +861,10 @@ namespace ngsbem
           for (auto term : kernel.terms)
             {
               HeapReset hr(lh);
-              FlatMatrix<value_type> kernel_ixiy(irtrig.Size(), irtrig.Size(), lh);
-              for (int ix = 0; ix < irtrig.Size(); ix++)
+              FlatMatrix<value_type> kernel_ixiy(iri.Size(), irj.Size(), lh);
+              for (int ix = 0; ix < iri.Size(); ix++)
                 {
-                  for (int iy = 0; iy < irtrig.Size(); iy++)
+                  for (int iy = 0; iy < irj.Size(); iy++)
                     {
                       Vec<3> x = mirx[ix].GetPoint();
                       Vec<3> y = miry[iy].GetPoint();
@@ -811,15 +879,15 @@ namespace ngsbem
                 }
               
               
-              FlatMatrix<value_type> kernel_shapesj(irtrig.Size(), felj.GetNDof(), lh);
-              FlatMatrix<> shapesi1(feli.GetNDof(), irtrig.Size(), lh);
-              FlatMatrix<> shapesj1(felj.GetNDof(), irtrig.Size(), lh);
+              FlatMatrix<value_type> kernel_shapesj(iri.Size(), felj.GetNDof(), lh);
+              FlatMatrix<> shapesi1(feli.GetNDof(), iri.Size(), lh);
+              FlatMatrix<> shapesj1(felj.GetNDof(), irj.Size(), lh);
               
-              for (int j = 0; j < irtrig.Size(); j++)
-                {
-                  shapesi1.Col(j) = shapesi.Col(test_evaluator->Dim()*j+term.test_comp);
-                        shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
-                }
+              for (int j = 0; j < iri.Size(); j++)
+                shapesi1.Col(j) = shapesi.Col(test_evaluator->Dim()*j+term.test_comp);
+              for (int j = 0; j < irj.Size(); j++)
+                shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
+
               kernel_shapesj = kernel_ixiy * Trans(shapesj1);
               matrix += shapesi1 * kernel_shapesj;
             }

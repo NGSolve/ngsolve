@@ -139,4 +139,47 @@ namespace ngsbem
   }
   
 
+
+  Intrule_t IdenticPanelQuadIntegrationRule (int order)
+  {
+    Array<Vec<2>> ipx, ipy;
+    Array<double> weights;
+    
+    auto [identic_panel_x, identic_panel_y, identic_panel_weight] = IdenticPanelIntegrationRule(order);
+
+    for (auto i : Range(identic_panel_x))
+      {
+        ipx.Append (identic_panel_x[i]);
+        ipy.Append (identic_panel_y[i]);
+        weights.Append (identic_panel_weight[i]);
+      }
+    Vec<2> p1{1,1};
+    for (auto i : Range(identic_panel_x))
+      {
+        ipx.Append (p1-identic_panel_x[i]);
+        ipy.Append (p1-identic_panel_y[i]);
+        weights.Append (identic_panel_weight[i]);
+      }
+
+
+    auto [common_edge_x, common_edge_y, common_edge_weight] = CommonEdgeIntegrationRule(order);
+
+    auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,1) + x(1) * Vec<2>(-1,0); };
+    auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,1) + x(1) * Vec<2>(0,1); };    
+
+    for (auto i : Range(common_edge_x))
+      {
+        ipx.Append (transx(common_edge_x[i]));
+        ipy.Append (transy(common_edge_y[i]));
+        weights.Append (common_edge_weight[i]);
+
+        ipx.Append (transy(common_edge_x[i]));
+        ipy.Append (transx(common_edge_y[i]));
+        weights.Append (common_edge_weight[i]);
+      }
+    
+    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
+  }
+
+  
 }
