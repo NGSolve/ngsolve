@@ -2144,6 +2144,49 @@ namespace ngcomp
   }
 
 
+
+
+  int MeshAccess :: FindCD2ElementOfPoint (FlatVector<double> point,
+                                           IntegrationPoint & ip, 
+                                           bool build_searchtree,
+                                           int index) const
+  {
+    ArrayMem<int,1> dummy(1);
+    dummy[0] = index;
+    return FindCD2ElementOfPoint(point,ip,build_searchtree,&dummy);
+  }
+  
+  int MeshAccess :: FindCD2ElementOfPoint (FlatVector<double> point,
+                                           IntegrationPoint & ip,
+                                           bool build_searchtree,
+                                           const Array<int> * const indices) const
+  {
+    int elnr = -1;
+
+    if(indices != NULL && indices->Size()>0)
+      {
+        if (dim==3)
+          elnr = mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree,
+                                             &(*indices)[0],indices->Size());
+        else
+          throw Exception("FindCD2ElementOfPoint only available for mesh-dim=3");
+      }
+    else
+      {
+        if (dim==3)
+          elnr = mesh.FindElementOfPoint<1> (&point(0), &ip(0), build_searchtree, NULL, 0);
+        else
+          throw Exception("FindCD2ElementOfPoint only available for mesh-dim=3");
+      }
+
+    return elnr;
+  }
+
+
+
+
+
+  
   void NGSolveTaskManager (function<void(int,int)> func)
   {
     // cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;

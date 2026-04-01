@@ -1036,8 +1036,10 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
             ElementId ei(VOL,-1);
             if (vb == VOL)
               ei = ma->FindElementOfPoint(Vec<3>(x, y, z), ip, true, nullptr, tol);
-            else
+            else if (vb == BND)
               ei = ElementId(BND, ma->FindSurfaceElementOfPoint(Vec<3>(x, y, z), ip, true));
+            else
+              ei = ElementId(BBND, ma->FindCD2ElementOfPoint(Vec<3>(x, y, z), ip, true));              
             return MeshPoint { ip(0), ip(1), ip(2), ma, ei.VB(), int(ei.Nr()) };
           },
          py::arg("x") = 0.0, py::arg("y") = 0.0, py::arg("z") = 0.0,

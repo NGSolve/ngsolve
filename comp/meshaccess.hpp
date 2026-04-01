@@ -1043,6 +1043,14 @@ namespace ngcomp
 				   IntegrationPoint & ip, 
 				   bool build_searchtree,
 				   int index) const;
+    int FindCD2ElementOfPoint (FlatVector<double> point,
+                               IntegrationPoint & ip, 
+                               bool build_searchtree,
+                               const Array<int> * const indices = NULL) const;
+    int FindCD2ElementOfPoint (FlatVector<double> point,
+                               IntegrationPoint & ip, 
+                               bool build_searchtree,
+                               int index) const;
 
     /// is element straight or curved ?
     [[deprecated("Use GetElement(id).is_curved instead!")]]        
