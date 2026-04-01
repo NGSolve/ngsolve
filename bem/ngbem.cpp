@@ -637,7 +637,7 @@ namespace ngsbem
               iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
             }
           
-          Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
+          Integrate4D (irx, iry, feli, felj, trafoi, trafoj, elmat, lh);
         }
     };
 
