@@ -53,6 +53,7 @@ namespace ngsbem
     
     tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
     tie(common_vertex_quad_x, common_vertex_quad_y, common_vertex_quad_weight) = CommonVertexQuadIntegrationRule(intorder);
+    tie(common_vertex_quadtrig_x, common_vertex_quadtrig_y, common_vertex_quadtrig_weight) = CommonVertexQuadTrigIntegrationRule(intorder);    
     
     tie(common_edge_x, common_edge_y, common_edge_weight) = CommonEdgeIntegrationRule(intorder);
     tie(common_edge_quad_x, common_edge_quad_y, common_edge_quad_weight) = CommonEdgeQuadIntegrationRule(intorder);    
@@ -667,11 +668,12 @@ namespace ngsbem
       if (vertj.Contains(vi))
         n_common_vertices++;
 
+    /*
     // treat quad-quad and quad-trig as disjoint
     if ((verti.Size()==4) != (vertj.Size()==4))
       if (n_common_vertices == 1)
         n_common_vertices = 0;
-
+    */
     
     
     switch (n_common_vertices)
@@ -983,59 +985,23 @@ namespace ngsbem
             {
               Integrate4DMapped (common_vertex_x, common_vertex_y, common_vertex_weight,
                                  p0x, Tx, p0y, Ty, feli, felj, trafoi, trafoj, matrix, lh);
-
-              /*
-              constexpr int BS = 128;
-              for (int k = 0; k < common_vertex_weight.Size(); k+=BS)
-                {
-                  int num = std::min(size_t(BS), common_vertex_weight.Size()-k);
-              
-                  HeapReset hr(lh);
-                  
-                  IntegrationRule irx(num, lh);
-                  IntegrationRule iry(num, lh);
-                  
-                  for (int k2 = 0; k2 < num; k2++)
-                    {
-                      Vec<2> px = p0x + Tx * common_vertex_x[k+k2];
-                      Vec<2> py = p0y + Ty * common_vertex_y[k+k2];
-                      
-                      irx[k2] = IntegrationPoint(px(0), px(1), 0, common_vertex_weight[k+k2]);
-                      iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
-                    }
-                  
-                  Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
-                }
-              */
+            }
+          else if (verti.Size() == 4 && vertj.Size() == 3)
+            {
+              Integrate4DMapped (common_vertex_quadtrig_x, common_vertex_quadtrig_y, common_vertex_quadtrig_weight,
+                                 p0x, Tx, p0y, Ty, feli, felj, trafoi, trafoj, matrix, lh);
+            }
+          else if (verti.Size() == 3 && vertj.Size() == 4)
+            {
+              Integrate4DMapped (common_vertex_quadtrig_y, common_vertex_quadtrig_x, common_vertex_quadtrig_weight,
+                                 p0x, Tx, p0y, Ty, feli, felj, trafoi, trafoj, matrix, lh);
             }
           else if (verti.Size() == 4 && vertj.Size() == 4)
             {
               Integrate4DMapped (common_vertex_quad_x, common_vertex_quad_y, common_vertex_quad_weight,
                                  p0x, Tx, p0y, Ty, feli, felj, trafoi, trafoj, matrix, lh);
-              /*
-              constexpr int BS = 128;
-              for (int k = 0; k < common_vertex_quad_weight.Size(); k+=BS)
-                {
-                  int num = std::min(size_t(BS), common_vertex_quad_weight.Size()-k);
-              
-                  HeapReset hr(lh);
-                  
-                  IntegrationRule irx(num, lh);
-                  IntegrationRule iry(num, lh);
-                  
-                  for (int k2 = 0; k2 < num; k2++)
-                    {
-                      Vec<2> px = p0x + Tx * common_vertex_quad_x[k+k2];
-                      Vec<2> py = p0y + Ty * common_vertex_quad_y[k+k2];
-                      
-                      irx[k2] = IntegrationPoint(px(0), px(1), 0, common_vertex_quad_weight[k+k2]);
-                      iry[k2] = IntegrationPoint(py(0), py(1), 0, 0);
-                    }
-                  
-                  Integrate4D (irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
-                }
-              */
             }
+
           
           break;
         }

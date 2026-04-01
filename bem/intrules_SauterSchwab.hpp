@@ -29,6 +29,9 @@ namespace ngsbem
   // x=(0,0) and y=(0,0) var common vertices
   tuple<Array<Vec<2>>, Array<Vec<2>>, Array<double>> CommonVertexQuadIntegrationRule (int order);
 
+  // x in quad (0,1) \times (0,1), y in triangle [(0,0), (1,0), (0,1)]
+  // x=(0,0) and y=(0,0) var common vertices
+  tuple<Array<Vec<2>>, Array<Vec<2>>, Array<double>> CommonVertexQuadTrigIntegrationRule (int order);
   
 
   // x, y in quad (0,1) \times (0,1)

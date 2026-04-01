@@ -98,6 +98,9 @@ namespace ngsbem
     Array<Vec<2>> common_vertex_quad_x, common_vertex_quad_y;
     Array<double> common_vertex_quad_weight;
 
+    Array<Vec<2>> common_vertex_quadtrig_x, common_vertex_quadtrig_y;
+    Array<double> common_vertex_quadtrig_weight;
+
     Array<Vec<2>> common_edge_x, common_edge_y;
     Array<double> common_edge_weight;
     

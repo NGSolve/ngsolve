@@ -248,6 +248,45 @@ namespace ngsbem
 
   }
 
+
+  Intrule_t CommonVertexQuadTrigIntegrationRule (int order)
+  {
+    Array<Vec<2>> ipx, ipy;
+    Array<double> weights;
+
+    
+    // 2 for common vertex
+    auto [common_vertex_x, common_vertex_y, common_vertex_weight] = CommonVertexIntegrationRule(order);
+
+    {
+      auto transx = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,0) + x(1) * Vec<2>(1,1); };
+      
+      for (auto i : Range(common_vertex_x))
+        {
+          ipx.Append (transx(common_vertex_x[i]));
+          ipy.Append (common_vertex_y[i]);
+          weights.Append (common_vertex_weight[i]);
+        }
+    }
+
+
+    {
+      auto transx = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,1) + x(1) * Vec<2>(0,1); };    
+      
+      for (auto i : Range(common_vertex_x))
+        {
+          ipx.Append (transx(common_vertex_x[i]));
+          ipy.Append (common_vertex_y[i]);
+          weights.Append (common_vertex_weight[i]);
+        }
+    }
+    
+    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
+
+  }
+
+
+  
   
   Intrule_t CommonEdgeQuadIntegrationRule (int order)
   {
