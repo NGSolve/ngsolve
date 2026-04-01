@@ -102,7 +102,9 @@ namespace ngsbem
   {
     static Timer tall("ngbem fmm setup"); RegionTimer r(tall);
     Array<Vec<3>> xpts, ypts, xnv, ynv;
-    IntegrationRule ir(ET_TRIG, intorder);
+    // IntegrationRule ir(ET_TRIG, intorder);
+    IntegrationRule ir_trig(ET_TRIG, intorder);
+    IntegrationRule ir_quad(ET_QUAD, intorder);
     auto trial_mesh = trial_space->GetMeshAccess();
     auto test_mesh = test_space->GetMeshAccess();
 
@@ -110,14 +112,16 @@ namespace ngsbem
     Array<int> compress_test_els(test_mesh->GetNE(BND));
     compress_trial_els = -1;
     compress_test_els = -1;
-    
+
     int cnt = 0;
     for (auto el : trial_mesh->Elements(BND))
       if (trial_space->DefinedOn(el))
-        if (!trial_definedon || (*trial_definedon).Mask().Test(trial_mesh->GetElIndex(el)))      
+        if (!trial_definedon || (*trial_definedon).Mask().Test(trial_mesh->GetElIndex(el)))
           {
             HeapReset hr(lh);
             auto & trafo = trial_mesh->GetTrafo(el, lh);
+            // auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));
+            auto & ir = (trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
             auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));
             for (auto & mip : mir)
               {
@@ -126,19 +130,21 @@ namespace ngsbem
               }
             compress_trial_els[el.Nr()] = cnt++;
           }
-    
+
     cnt = 0;
     for (auto el : test_mesh->Elements(BND))
-      if (test_space->DefinedOn(el))      
-        if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(el)))            
+      if (test_space->DefinedOn(el))
+        if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(el)))
           {
             HeapReset hr(lh);
             auto & trafo = test_mesh->GetTrafo(el, lh);
-            auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));        
+            // auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));
+            auto & ir = (trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
+            auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));
             for (auto & mip : mir)
               {
                 ypts.Append(mip.GetPoint());
-                ynv.Append(mip.GetNV());        
+                ynv.Append(mip.GetNV());
               }
             compress_test_els[el.Nr()] = cnt++;
           }
@@ -155,38 +161,52 @@ namespace ngsbem
           if (el.GetType() == ET_QUAD)
             classnr[el.Nr()] = 8 /* max trig calsses */  +  ET_trait<ET_QUAD>::GetClassNr(el.Vertices());
           else
-            classnr[el.Nr()] = 
+            classnr[el.Nr()] =
               SwitchET<ET_SEGM, ET_TRIG, ET_TET>
               (el.GetType(),
                [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
         });
-      
+
       TableCreator<size_t> creator;
       for ( ; !creator.Done(); creator++)
         for (auto i : Range(classnr))
           if (compress_els[i] != -1)
             creator.Add (classnr[i], i);
       Table<size_t> table = creator.MoveTable();
-      
+
+      // count integration points per compressed element
+      int ncomp = 0;
+      for (auto nr : compress_els) if (nr!=-1) ncomp++;
+      Array<int> first_ip_nr(ncomp);
+      int total_npts = 0;
+      for (auto el : mesh->Elements(BND))
+        if (compress_els[el.Nr()] != -1)
+          {
+            auto & ir = (el.GetType() == ET_QUAD) ? ir_quad : ir_trig;
+            first_ip_nr[compress_els[el.Nr()]] = total_npts;
+            total_npts += ir.Size();
+          }
+
       shared_ptr<BaseMatrix> evalx;
-      
+
       for (auto elclass_inds : table)
         {
           if (elclass_inds.Size() == 0) continue;
           ElementId ei(BND, elclass_inds[0]);
           auto & felx = fes.GetFE (ei, lh);
-          
+          auto & ir = (mesh->GetElType(ei) == ET_QUAD) ? ir_quad : ir_trig;
+
           int dim = evaluator.DimRef();
           Matrix<double,ColMajor> bmat_(dim*ir.Size(), felx.GetNDof());
           bmat_ = 0.0;
 
           // IntRange r1 = evaluator.UsedDofs(felx);   // TODO
-          
+
           for (int i : Range(ir.Size()))
             evaluator.CalcMatrix(felx, ir[i], bmat_.Rows(dim*i, dim*(i+1)), lh);
-          
+
           Matrix bmat = bmat_;
-          
+
           Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
           Table<DofId> xdofsout(elclass_inds.Size(), bmat.Height());
 
@@ -196,43 +216,48 @@ namespace ngsbem
               ElementId ei(BND, elclass_inds[i]);
               fes.GetDofNrs(ei, dnumsx);
               xdofsin[i] = dnumsx;
-              
+
+              // for (int j = 0; j < dim*ir.Size(); j++)
+              //   xdofsout[i][j] = compress_els[elclass_inds[i]]*(dim*ir.Size())+j;
               for (int j = 0; j < dim*ir.Size(); j++)
-                xdofsout[i][j] = compress_els[elclass_inds[i]]*(dim*ir.Size())+j;
+                xdofsout[i][j] = first_ip_nr[compress_els[elclass_inds[i]]]*dim+j;
             }
 
           auto part_evalx = make_shared<ConstantElementByElementMatrix<typename KERNEL::value_type>>
-            (mesh->GetNE(BND)*ir.Size()*dim, fes.GetNDof(),
+            // (mesh->GetNE(BND)*ir.Size()*dim, fes.GetNDof(),
+            (total_npts*dim, fes.GetNDof(),
              bmat, std::move(xdofsout), std::move(xdofsin));
-          
+
           if (evalx)
             evalx = evalx + part_evalx;
           else
             evalx = part_evalx;
         }
 
-      int cnt = 0;
-      for (auto nr : compress_els) if (nr!=-1) cnt++;
-
-      Tensor<3, typename KERNEL::value_type> weights(cnt*ir.Size(),
+      // Tensor<3, typename KERNEL::value_type> weights(cnt*ir.Size(),
+      //                                                evaluator.Dim(), evaluator.DimRef());
+      Tensor<3, typename KERNEL::value_type> weights(total_npts,
                                                      evaluator.Dim(), evaluator.DimRef());
-      Matrix<double> transformation(evaluator.Dim(), evaluator.DimRef()); 
-      
+      Matrix<double> transformation(evaluator.Dim(), evaluator.DimRef());
+
       for (auto el : mesh->Elements(BND))
         if (compress_els[el.Nr()] != -1)
           {
             HeapReset hr(lh);
             auto & trafo = mesh->GetTrafo(el, lh);
+            // auto & mir = trafo(ir, lh);
+            auto & ir = (trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
             auto & mir = trafo(ir, lh);
             for (auto j : Range(mir.Size()))
               {
                 evaluator.CalcTransformationMatrix(mir[j], transformation, lh);
-                weights(compress_els[el.Nr()]*mir.Size()+j,STAR,STAR) =
+                // weights(compress_els[el.Nr()]*mir.Size()+j,STAR,STAR) =
+                weights(first_ip_nr[compress_els[el.Nr()]]+j,STAR,STAR) =
                   mir[j].GetWeight()*transformation;
               }
           }
       auto diagmat = make_shared<BlockDiagonalMatrix<typename KERNEL::value_type>>(std::move(weights));
-      
+
       return diagmat*evalx;
     };
 
@@ -361,52 +386,67 @@ namespace ngsbem
             // tasscorr.Start();        
             
             // subtract terms from fmm:
-            
-            MappedIntegrationRule<2,3> trial_mir(ir, trial_trafo, lh);
-            MappedIntegrationRule<2,3> test_mir(ir, test_trafo, lh);
-            
-            FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir.Size(), lh);
-            FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir.Size(), lh);
-            // shapesi = 0.;
-            // shapesj = 0.;
+            // MappedIntegrationRule<2,3> trial_mir(ir, trial_trafo, lh);
+            // MappedIntegrationRule<2,3> test_mir(ir, test_trafo, lh);
+            auto & ir_trial = (trial_trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
+            auto & ir_test = (test_trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
 
-            IntRange test_range = test_evaluator->UsedDofs(test_fel);  
-            IntRange trial_range = trial_evaluator->UsedDofs(trial_fel);  
-            
+            MappedIntegrationRule<2,3> trial_mir(ir_trial, trial_trafo, lh);
+            MappedIntegrationRule<2,3> test_mir(ir_test, test_trafo, lh);
+
+            // FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir.Size(), lh);
+            // FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir.Size(), lh);
+            FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir_test.Size(), lh);
+            FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir_trial.Size(), lh);
+
+            IntRange test_range = test_evaluator->UsedDofs(test_fel);
+            IntRange trial_range = trial_evaluator->UsedDofs(trial_fel);
+
             test_evaluator -> CalcMatrix(test_fel, test_mir, Trans(shapesi), lh);
             trial_evaluator-> CalcMatrix(trial_fel, trial_mir, Trans(shapesj), lh);
-            
+
             for (auto term : kernel.terms)
               {
                 HeapReset hr(lh);
-                FlatMatrix<value_type> kernel_ixiy(ir.Size(), ir.Size(), lh);
-                for (int ix = 0; ix < ir.Size(); ix++)
+                // FlatMatrix<value_type> kernel_ixiy(ir.Size(), ir.Size(), lh);
+                // for (int ix = 0; ix < ir.Size(); ix++)
+                //   for (int iy = 0; iy < ir.Size(); iy++)
+                FlatMatrix<value_type> kernel_ixiy(ir_test.Size(), ir_trial.Size(), lh);
+                for (int ix = 0; ix < ir_test.Size(); ix++)
                   {
-                    for (int iy = 0; iy < ir.Size(); iy++)
+                    for (int iy = 0; iy < ir_trial.Size(); iy++)
                       {
                         Vec<3> x = test_mir[ix].GetPoint();
                         Vec<3> y = trial_mir[iy].GetPoint();
-                        
+
                         Vec<3> nx = test_mir[ix].GetNV();
                         Vec<3> ny = trial_mir[iy].GetNV();
                         value_type kernel_ = 0.0;
                         if (L2Norm2(x-y) > 0)
                           kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
-                        
+
                         double fac = test_mir[ix].GetWeight()*trial_mir[iy].GetWeight();
                         kernel_ixiy(ix, iy) = term.fac*fac*kernel_;
                       }
                   }
-                
-                FlatMatrix<value_type> kernel_shapesj(ir.Size(), trial_fel.GetNDof(), lh);
-                FlatMatrix<> shapesi1(test_fel.GetNDof(), ir.Size(), lh);
-                FlatMatrix<> shapesj1(trial_fel.GetNDof(), ir.Size(), lh);
-                
-                for (int j = 0; j < ir.Size(); j++)
-                  {
-                    shapesi1.Col(j) = shapesi.Col(test_evaluator->Dim()*j+term.test_comp);
-                    shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
-                  }
+
+                // FlatMatrix<value_type> kernel_shapesj(ir.Size(), trial_fel.GetNDof(), lh);
+                // FlatMatrix<> shapesi1(test_fel.GetNDof(), ir.Size(), lh);
+                // FlatMatrix<> shapesj1(trial_fel.GetNDof(), ir.Size(), lh);
+                FlatMatrix<value_type> kernel_shapesj(ir_test.Size(), trial_fel.GetNDof(), lh);
+                FlatMatrix<> shapesi1(test_fel.GetNDof(), ir_test.Size(), lh);
+                FlatMatrix<> shapesj1(trial_fel.GetNDof(), ir_trial.Size(), lh);
+
+                // for (int j = 0; j < ir.Size(); j++)
+                //   {
+                //     shapesi1.Col(j) = shapesi.Col(test_evaluator->Dim()*j+term.test_comp);
+                //     shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
+                //   }
+                for (int j = 0; j < ir_test.Size(); j++)
+                  shapesi1.Col(j) = shapesi.Col(test_evaluator->Dim()*j+term.test_comp);
+                for (int j = 0; j < ir_trial.Size(); j++)
+                  shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
+
                 kernel_shapesj = kernel_ixiy * Trans(shapesj1);
 
                 if (io_params.UseFMM())
