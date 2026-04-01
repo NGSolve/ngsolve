@@ -621,7 +621,7 @@ namespace ngfem
       }
 
 
-    const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
+    const FACE * faces = ElementTopology::GetFaces (ET_PRISM).Data(); 
 
     // trig face shapes
     for (int i = 0; i < 2; i++)
@@ -885,7 +885,7 @@ namespace ngfem
       }
     
     //Faces 
-    const FACE * faces = ElementTopology::GetFaces (ET_HEX);
+    const FACE * faces = ElementTopology::GetFaces (ET_HEX).Data();
     for (int i = 0; i<6; i++)
       {
 	IVec<2> p = order_face[i];
@@ -1263,7 +1263,7 @@ namespace ngfem
 	  }
       }
 
-    const FACE * faces = ElementTopology::GetFaces (ET_PYRAMID); 
+    const FACE * faces = ElementTopology::GetFaces (ET_PYRAMID).Data(); 
 
     // trig face dofs
     for (int i = 0; i < 4; i++)

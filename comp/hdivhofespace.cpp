@@ -518,7 +518,7 @@ namespace ngcomp
 
 	    if(dim==2)
 	      {
-		const EDGE * edges = ElementTopology::GetEdges (eltype);
+		auto edges = ElementTopology::GetEdges (eltype);
 		for(int j=0; j<elfacets.Size(); j++)
 		  for(int k=0;k<2;k++)
 		    if(points[edges[j][0]][k] != points[edges[j][1]][k])
@@ -531,7 +531,7 @@ namespace ngcomp
 	      {
 		// Array<int> vnums (el.Vertices());
 		auto vnums = el.Vertices();
-		const FACE * faces = ElementTopology::GetFaces (eltype);
+		const FACE * faces = ElementTopology::GetFaces (eltype).Data();
 
 		for(int j = 0; j < elfacets.Size(); j++)
 		  {

@@ -385,8 +385,8 @@ namespace ngcomp
             IVec<3,TORDER> el_orders = ma->GetElOrders(i);
             
             ELEMENT_TYPE eltype=ma->GetElType(ei); 
-            const FACE * faces = ElementTopology::GetFaces (eltype);
-            const EDGE * edges = ElementTopology::GetEdges (eltype);
+            const FACE * faces = ElementTopology::GetFaces (eltype).Data();
+            const EDGE * edges = ElementTopology::GetEdges (eltype).Data();
             const POINT3D * points = ElementTopology :: GetVertices (eltype);
             auto vnums = ma->GetElVertices (ei);
             

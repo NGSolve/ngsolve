@@ -208,7 +208,7 @@ namespace ngfem
     Tx sigma[8]={(1-x)+(1-y)+(1-z),x+(1-y)+(1-z),x+y+(1-z),(1-x)+y+(1-z),
                    (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
 
-    const FACE * faces = ElementTopology::GetFaces (ET_HEX);
+    const FACE * faces = ElementTopology::GetFaces (ET_HEX).Data();
     for (int i = 0; i < 6; i++)
       {
         if (ip.facetnr != i)
@@ -595,7 +595,7 @@ namespace ngfem
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * edges = ElementTopology :: GetEdges (ET_TRIG);
+    const EDGE * edges = ElementTopology :: GetEdges (ET_TRIG).Data();
 
     int fav[2] = { edges[fanr][0], edges[fanr][1] };
     int j1 = 0, j2 = 1;
@@ -622,7 +622,7 @@ namespace ngfem
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * edges = ElementTopology :: GetEdges (ET_TRIG);
+    const EDGE * edges = ElementTopology :: GetEdges (ET_TRIG).Data();
 
     int  fav[2] = {edges[fanr][0], edges[fanr][1] };
     int j1 = 0; 
@@ -667,7 +667,7 @@ namespace ngfem
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * faces = ElementTopology :: GetEdges (ET_QUAD);
+    const EDGE * faces = ElementTopology :: GetEdges (ET_QUAD).Data();
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 
@@ -701,7 +701,7 @@ namespace ngfem
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * faces = ElementTopology :: GetEdges (ET_QUAD);
+    const EDGE * faces = ElementTopology :: GetEdges (ET_QUAD).Data();
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 

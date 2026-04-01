@@ -406,7 +406,7 @@ template <typename MIP, typename TFA>
     size_t ii = 4; 
     if (!only_ho_div)
     {
-      const FACE * faces = ElementTopology::GetFaces (ET_TET);
+      const FACE * faces = ElementTopology::GetFaces (ET_TET).Data();
       for (size_t i = 0; i < 4; i++)
         {
           int p = order_facet[i][0];
@@ -653,7 +653,7 @@ template <typename MIP, typename TFA>
     Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
     Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
        
-    const FACE * faces = ElementTopology::GetFaces (ET_PRISM); 
+    const FACE * faces = ElementTopology::GetFaces (ET_PRISM).Data(); 
 
     ArrayMem<Tx,20> adpolxy1(order+4),adpolxy2(order+4); 
     ArrayMem<Tx,20> adpolz(order+4);   
@@ -860,7 +860,7 @@ template <typename MIP, typename TFA>
     int ii = 6;
 
     //Faces
-    const FACE * faces = ElementTopology::GetFaces (ET_HEX);
+    const FACE * faces = ElementTopology::GetFaces (ET_HEX).Data();
     for (int i = 0; i < 6; i++)
       {
 	IVec<2> p = order_facet[i];

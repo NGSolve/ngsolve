@@ -484,7 +484,7 @@ namespace ngfem
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * edges = ElementTopology :: GetEdges (ET_TRIG);
+    auto edges = ElementTopology :: GetEdges (ET_TRIG);
 
     int  fav[2] = {edges[fanr][0], edges[fanr][1] };
     int j1 = 0; 
@@ -531,7 +531,7 @@ namespace ngfem
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * faces = ElementTopology :: GetEdges (ET_QUAD);
+    auto faces = ElementTopology :: GetEdges (ET_QUAD);
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 
@@ -565,7 +565,7 @@ namespace ngfem
 
     AutoDiff<2> x(ip(0), 0), y(ip(1),1);
 
-    const EDGE * faces = ElementTopology :: GetEdges (ET_QUAD);
+    auto faces = ElementTopology :: GetEdges (ET_QUAD);
 
     int  fav[2] = {faces[fanr][0], faces[fanr][1] };
     int j1 = 0; 

@@ -651,8 +651,8 @@ into the wirebasket.
 	      int i = el.Nr();
           
 	      ELEMENT_TYPE eltype = el.GetType(); 
-	      const FACE * faces = ElementTopology::GetFaces (eltype);
-	      const EDGE * edges = ElementTopology::GetEdges (eltype);
+	      auto faces = ElementTopology::GetFaces (eltype);
+	      auto edges = ElementTopology::GetEdges (eltype);
 	      const POINT3D * points = ElementTopology :: GetVertices (eltype);
 
 	      auto vnums = el.Vertices();

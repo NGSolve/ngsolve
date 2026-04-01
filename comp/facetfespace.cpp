@@ -803,7 +803,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 		  {
 		    IVec<3> el_orders = ma->GetElOrders(i); 
 
-		    const EDGE * edges = ElementTopology::GetEdges (eltype);
+		    auto edges = ElementTopology::GetEdges (eltype);
 		    for(int j=0; j<fanums.Size(); j++)
 		      for(int k=0;k<2;k++)
 			if(points[edges[j][0]][k] != points[edges[j][1]][k])
@@ -826,7 +826,7 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 
 		    // ma->GetElVertices (i, vnums);
 		    auto vnums = ma->GetElVertices(ei);
-		    const FACE * faces = ElementTopology::GetFaces (eltype);
+		    const FACE * faces = ElementTopology::GetFaces (eltype).Data();
 		    for(int j=0;j<elfaces.Size();j++)
 		      {
 			if(faces[j][3]==-1) // trig  

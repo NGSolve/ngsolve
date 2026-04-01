@@ -780,8 +780,11 @@ namespace ngsbem
         {
           // RegionTimer reg(t_common_edge);    
 
-          FlatArray<const EDGE> edgesx(ElementTopology::GetNEdges(feli.ElementType()),  ElementTopology::GetEdges (feli.ElementType()));    // 0 1 | 1 2 | 2 0
-          FlatArray<const EDGE> edgesy(ElementTopology::GetNEdges(felj.ElementType()),  ElementTopology::GetEdges (felj.ElementType()));    // 0 1 | 1 2 | 2 0
+          //FlatArray<const EDGE> edgesx(ElementTopology::GetNEdges(feli.ElementType()),  ElementTopology::GetEdges (feli.ElementType()));    // 0 1 | 1 2 | 2 0
+          // FlatArray<const EDGE> edgesy(ElementTopology::GetNEdges(felj.ElementType()),  ElementTopology::GetEdges (felj.ElementType()));    // 0 1 | 1 2 | 2 0
+
+          auto edgesx = ElementTopology::GetEdges(feli.ElementType());
+          auto edgesy = ElementTopology::GetEdges(felj.ElementType());
                                  
           int cex, cey;
           bool same_orientation;

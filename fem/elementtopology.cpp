@@ -502,7 +502,7 @@ namespace ngfem
   
   int ElementTopology :: GetEdgeNr (ELEMENT_TYPE et, int v1, int v2)
   {
-    const EDGE * edges = GetEdges (et);
+    const EDGE * edges = GetEdges (et).Data();
     int nedges = GetNEdges (et);
 
     for (int i = 0; i < nedges; i++)
@@ -520,7 +520,7 @@ namespace ngfem
 
   int ElementTopology :: GetFaceNr (ELEMENT_TYPE et, int v1, int v2, int v3)
   {
-    const FACE * faces = GetFaces (et);
+    const FACE * faces = GetFaces (et).Data();
     int nfaces = GetNFaces (et);
 
     for (int i = 0; i < nfaces; i++)

@@ -1573,7 +1573,7 @@ namespace ngfem
       int ii = 0;
       
 
-      const FACE * faces = ElementTopology::GetFaces(ET_PRISM);
+      const FACE * faces = ElementTopology::GetFaces(ET_PRISM).Data();
 
       ArrayMem<Tx,20> leg_u(order+2), leg_v(order+3);
       ArrayMem<Tx,20> leg_w(order+2);
@@ -2006,7 +2006,7 @@ namespace ngfem
                    (1-x)+(1-y)+z,x+(1-y)+z,x+y+z,(1-x)+y+z};
       int ii = 0;
       
-      const FACE * faces = ElementTopology::GetFaces(ET_HEX);
+      const FACE * faces = ElementTopology::GetFaces(ET_HEX).Data();
 
       ArrayMem<Tx,20> leg_u(order+2), leg_v(order+2), leg_w(order+2);
       

@@ -1171,7 +1171,7 @@ namespace ngfem
       int maxorder_facet =
         max2(order_facet[0],max2(order_facet[1],order_facet[2]));
 
-       const FACE * faces = ElementTopology::GetFaces(ET_TET);
+      const FACE * faces = ElementTopology::GetFaces(ET_TET).Data();
        
        ArrayMem<AutoDiff<3,T>,20> ha((maxorder_facet+1)*(maxorder_facet+2)/2.0); 
        
@@ -1439,7 +1439,7 @@ namespace ngfem
       
       int ii = 0;
             
-      const FACE * faces = ElementTopology::GetFaces(ET_HEX);
+      const FACE * faces = ElementTopology::GetFaces(ET_HEX).Data();
              
       ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+2), leg_w(order+2);
 

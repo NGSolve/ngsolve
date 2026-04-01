@@ -51,7 +51,7 @@ namespace ngcomp
       for (int i = 0; i < 3; i++)
         shape[i] = 2*lam[i]*(lam[i]-0.5) + 1.0/9 * bub;
 
-      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG).Data();
       for (int i = 0; i < 3; i++)
         shape[i+3] = 4 * lam[edges[i][0]] * lam[edges[i][1]] - 4.0/9*bub;
       
@@ -77,7 +77,7 @@ namespace ngcomp
       for (int i = 0; i < 4; i++)
         shape[i] = 2*lam[i]*(lam[i]-0.5)+1./8*bub + 1.0/9*(sumbubf-bubf[i]);
 
-      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET).Data();
       for (int i = 0; i < 6; i++)
         shape[i+4] = 4 * lam[edges[i][0]] * lam[edges[i][1]] - 1.0/4 * bub
           - 4.0/9 * (sumbubf-bubf[edges[i][0]]-bubf[edges[i][1]]);

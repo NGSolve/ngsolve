@@ -933,8 +933,8 @@ namespace ngfem
         vb(_vb)
     {
       // points = ElementTopology::GetVertices (eltype);
-      edges = ElementTopology::GetEdges (eltype);
-      faces = ElementTopology::GetFaces (eltype);
+      edges = ElementTopology::GetEdges (eltype).Data();
+      faces = ElementTopology::GetFaces (eltype).Data();
     }
   
     // Facet2ElementTrafo(ELEMENT_TYPE aeltype, const FlatArray<int> & vnums)
@@ -945,8 +945,8 @@ namespace ngfem
 	points(99,(Vec<3>*)ElementTopology::GetVertices (aeltype))
     {
       // points = ElementTopology::GetVertices (eltype);
-      edges = ElementTopology::GetEdges (eltype);
-      faces = ElementTopology::GetFaces (eltype);
+      edges = ElementTopology::GetEdges (eltype).Data();
+      faces = ElementTopology::GetFaces (eltype).Data();
 
       if (eltype == ET_TRIG)
 	{
@@ -1254,8 +1254,8 @@ namespace ngfem
       points(99,(Vec<3>*)ElementTopology::GetVertices (aeltype))
     {
       // points = ElementTopology::GetVertices (eltype);
-      edges = ElementTopology::GetEdges (eltype);
-      faces = ElementTopology::GetFaces (eltype);
+      edges = ElementTopology::GetEdges (eltype).Data();
+      faces = ElementTopology::GetFaces (eltype).Data();
     }
     
     Facet2SurfaceElementTrafo(ELEMENT_TYPE aeltype, FlatArray<int> & vnums)
@@ -1263,8 +1263,8 @@ namespace ngfem
         points(99,(Vec<3>*)ElementTopology::GetVertices (aeltype))
     {
       // points = ElementTopology::GetVertices (eltype);
-      edges = ElementTopology::GetEdges (eltype);
-      faces = ElementTopology::GetFaces (eltype);
+      edges = ElementTopology::GetEdges (eltype).Data();
+      faces = ElementTopology::GetFaces (eltype).Data();
 
       if (eltype == ET_SEGM)
 	{

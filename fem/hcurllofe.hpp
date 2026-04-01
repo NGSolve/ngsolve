@@ -134,7 +134,7 @@ namespace ngfem
       Tx lami[4] = {(1-x)*(1-y),x*(1-y),x*y,(1-x)*y};  
       Tx sigma[4] = {(1-x)+(1-y),x+(1-y),x+y,(1-x)+y};  
       
-      const EDGE * edges = ElementTopology::GetEdges (ET_QUAD);
+      const EDGE * edges = ElementTopology::GetEdges (ET_QUAD).Data();
       for (int i = 0; i < 4; i++)
         {
           int es = edges[i][0], ee = edges[i][1];
@@ -244,7 +244,7 @@ namespace ngfem
       Tx x = ip.x, y = ip.y;
       Tx lami[3] = { x, y, 1-x-y };
       
-      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG).Data();
       for (int i = 0; i < 3; i++)
         shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
     }
@@ -262,7 +262,7 @@ namespace ngfem
       Tx x = ip.x, y = ip.y;
       Tx lami[3] = { x, y, 1-x-y };
       
-      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG).Data();
       for (int i = 0; i < 3; i++)
         {
           shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
@@ -283,7 +283,7 @@ namespace ngfem
       Tx x = ip.x, y = ip.y;
       Tx lami[3] = { x, y, 1-x-y };
       
-      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+      const EDGE * edges = ElementTopology::GetEdges (ET_TRIG).Data();
       for (int i = 0; i < 3; i++)
         {
           Tx lam1 = lami[edges[i][0]];
@@ -294,7 +294,7 @@ namespace ngfem
           shape[i+6] = Du (lam1*lam2*(lam1-lam2));
         }
 
-      const FACE * faces = ElementTopology::GetFaces (ET_TRIG); 
+      const FACE * faces = ElementTopology::GetFaces (ET_TRIG).Data(); 
       for (int k = 0; k < 3; k++)
         {
           int k1 = (k+1)%3, k2 = (k+2)%3;
@@ -417,7 +417,7 @@ namespace ngfem
       // Tx lami[4] = { x, y, z, 1-x-y-z };
       Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };      
 
-      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET).Data();
       for (int i = 0; i < 6; i++)
         shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
     }
@@ -436,7 +436,7 @@ namespace ngfem
       // Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
       Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
       
-      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET).Data();
       for (int i = 0; i < 6; i++)
         {
           shape[i] = uDv_minus_vDu (lami[edges[i][0]], lami[edges[i][1]]);
@@ -455,7 +455,7 @@ namespace ngfem
       // Tx lami[4] = { x[0], x[1], x[2], 1-x[0]-x[1]-x[2] };      
       Tx lami[4] = { ip.x, ip.y, ip.z, 1-ip.x-ip.y-ip.z };
       
-      const EDGE * edges = ElementTopology::GetEdges (ET_TET);
+      const EDGE * edges = ElementTopology::GetEdges (ET_TET).Data();
       for (int i = 0; i < 6; i++)
         {
           Tx lam1 = lami[edges[i][0]];
@@ -465,7 +465,7 @@ namespace ngfem
           shape[i+12] = Du (lam1*lam2*(lam1-lam2));
         }
 
-      const FACE * faces = ElementTopology::GetFaces (ET_TET); 
+      const FACE * faces = ElementTopology::GetFaces (ET_TET).Data(); 
       for (int i = 0; i < 4; i++)
         for (int k = 0; k < 3; k++)
           {
@@ -663,7 +663,7 @@ namespace ngfem
       Tx lami[6] = { x, y, 1-x-y, x, y, 1-x-y };
       Tx muz[6]  = { 1-z, 1-z, 1-z, z, z, z };
        
-      const EDGE * edges = ElementTopology::GetEdges (ET_PRISM);
+      const EDGE * edges = ElementTopology::GetEdges (ET_PRISM).Data();
   
       // horizontal edge shapes
       for (int i = 0; i < 6; i++)

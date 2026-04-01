@@ -311,7 +311,7 @@ namespace ngcomp
 	    
 		if(var_order)
 		  {
-		    const EDGE * edges = ElementTopology::GetEdges (eltype);
+		    auto edges = ElementTopology::GetEdges (eltype);
 		    for(int j=0; j<fanums.Size(); j++)
 		      for(int k=0;k<2;k++)
 			if(points[edges[j][0]][k] != points[edges[j][1]][k])
@@ -329,7 +329,7 @@ namespace ngcomp
 		if(var_order) 
 		  {
 		    auto vnums = ma->GetElVertices (ei);
-		    const FACE * faces = ElementTopology::GetFaces (eltype);
+		    const FACE * faces = ElementTopology::GetFaces (eltype).Data();
 		    for(int j=0;j<elfaces.Size();j++)
 		      {
 			if(faces[j][3]==-1) // trig  

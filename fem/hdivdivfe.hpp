@@ -1296,7 +1296,7 @@ namespace ngfem
       int maxorder_facet =
         max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
 
-      const EDGE * edges = ElementTopology::GetEdges(ET_TRIG);
+      const EDGE * edges = ElementTopology::GetEdges(ET_TRIG).Data();
 
       ArrayMem<Tx,20> ha(maxorder_facet+1);
       ArrayMem<Tx,20> u(order_inner[0]+2), v(order_inner[0]+2);
@@ -1472,7 +1472,7 @@ namespace ngfem
       
       int ii = 0;
 
-      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
+      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD).Data();
 
       ArrayMem<Tx,20> u(order+2), v(order+2);
       
@@ -1616,7 +1616,7 @@ namespace ngfem
       
       int ii = 0;
 
-      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD);
+      const EDGE * edges = ElementTopology::GetEdges(ET_QUAD).Data();
 
       ArrayMem<Tx,20> u(order+2), v(order+2);
       
@@ -2042,7 +2042,7 @@ namespace ngfem
       int maxorder_facet =
         max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
 
-      const FACE * faces = ElementTopology::GetFaces(ET_PRISM);
+      const FACE * faces = ElementTopology::GetFaces(ET_PRISM).Data();
 
       ArrayMem<AutoDiffDiff<2>,20> ha(maxorder_facet+2);
       ArrayMem<AutoDiffDiff<2>,20> u(order+2), v(order+3);
@@ -2213,7 +2213,7 @@ namespace ngfem
       // int maxorder_facet =
       // max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
 
-      const FACE * faces = ElementTopology::GetFaces(ET_PRISM);
+      const FACE * faces = ElementTopology::GetFaces(ET_PRISM).Data();
 
       ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
       ArrayMem<AutoDiff<3,T>,20> leg_w(order+2);
@@ -2578,7 +2578,7 @@ namespace ngfem
       // int maxorder_facet =
       //     max2(order_facet[0][0],max2(order_facet[1][0],order_facet[2][0]));
 
-      const FACE * faces = ElementTopology::GetFaces(ET_HEX);
+      const FACE * faces = ElementTopology::GetFaces(ET_HEX).Data();
 
       ArrayMem<AutoDiff<3,T>,20> leg_u(order+2), leg_v(order+3);
       ArrayMem<AutoDiff<3,T>,20> leg_w(order+2);

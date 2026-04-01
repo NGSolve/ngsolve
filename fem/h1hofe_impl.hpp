@@ -1036,7 +1036,7 @@ namespace ngfem
 
 
     ArrayMem<Tx,20> polx(order+1), poly(order+1), polz(order+1);
-    const FACE * faces = ElementTopology::GetFaces (ET_PYRAMID);
+    const FACE * faces = ElementTopology::GetFaces (ET_PYRAMID).Data();
 
     // trig face dofs
     for (int i = 0; i < 4; i++)
