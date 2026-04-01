@@ -63,11 +63,11 @@ namespace ngfem
 
     // edge basis functions:
 
-    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+    auto edges = ElementTopology::GetEdges (ET_TRIG);
     // table provides connection of edges and vertices
     // i-th edge is between vertex edges[i][0] and edges[i][1]
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < edges.Size(); i++)
       shape(3+i) = 4 * lam[edges[i][0]] * lam[edges[i][1]];
   }
 
@@ -95,9 +95,9 @@ namespace ngfem
 
 
     // edge basis functions:
-    const EDGE * edges = ElementTopology::GetEdges (ET_TRIG);
+    auto edges = ElementTopology::GetEdges (ET_TRIG);
 
-    for (int i = 0; i < 3; i++)
+    for (int i = 0; i < edges.Size(); i++)
       {
         AutoDiff<2> shape = 4 * lam[edges[i][0]] * lam[edges[i][1]];
         dshape(3+i,0) = shape.DValue(0);    // x-derivative
