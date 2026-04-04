@@ -180,19 +180,19 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("NearFieldMatrix", &IntegralOperator::GetNearFieldMatrix)
     .def("GetPotential", &IntegralOperator::GetPotential,
          py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
-    .def("CalcSubMatrix", [](shared_ptr<IntegralOperator> iop, std::vector<int> rowids, std::vector<int> colids) {
-      Array<DofId> rowidsa(rowids.size());
-      for (int i : Range(rowidsa)) rowidsa[i] = rowids[i];
-      Array<DofId> colidsa(colids.size());
-      for (int i : Range(colidsa)) colidsa[i] = colids[i];
-      
+
+    .def("CalcSubMatrix", [](shared_ptr<IntegralOperator> iop,
+                             py::array_t<DofId> rowids, py::array_t<DofId> colids) {
+
+      FlatArray<DofId> rowidsa(rowids.size(), rowids.mutable_data());
+      FlatArray<DofId> colidsa(colids.size(), colids.mutable_data());      
+
+      py::gil_scoped_release rel;
       LocalHeapMem<1000000> lh("CalcSubMatrix lh"); // TODO: form LocalHeapProvider in python_comp.cpp
-      auto mat = iop->CalcSubMatrix(rowidsa, colidsa, lh);
-      py::gil_scoped_acquire acqu;      
-      return std::visit([&](auto & mat) {
-        return py::cast(mat);
-      }, mat);
-    }, py::call_guard<py::gil_scoped_release>())
+      // iop->CalcSubMatrix(rowidsa, colidsa, lh);  // call it twice, for timing
+      return iop->CalcSubMatrix(rowidsa, colidsa, lh);
+    }, py::arg("rowids"), py::arg("colids"))
+    
     .def("__add__", [](shared_ptr<IntegralOperator> a, shared_ptr<IntegralOperator> b)
     {
       return AddIntegralOperators(a, b);
