@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-$vcvarsCmd = '"C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"'
+$vcvarsCmd = '"C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"'
 
 cmd /c "$vcvarsCmd && set" |
     ForEach-Object {
@@ -22,9 +22,9 @@ $env:NETGENDIR          = Join-Path $env:CMAKE_INSTALL_PREFIX "bin"
 
 $env:PATH = @(
     $env:NETGENDIR
-    "C:\python312"
-    "C:\python312\bin"
-    "C:\python312\Scripts"
+    "C:\python314"
+    "C:\python314\bin"
+    "C:\python314\Scripts"
     "C:\tools"
     $env:PATH
 ) -join ";"

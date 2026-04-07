@@ -7,130 +7,79 @@
 /* Date:   Apr. 2009                                                 */
 /*********************************************************************/
 
-
-// #include "tscalarfe_impl.hpp"
-// #include "l2hofe_impl.hpp"
-
-
-
-
-
-
-
-template <int O, int IX, int IY>
-class Cl_IterateTrig
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC f)
-  {
-    Cl_IterateTrig<O,IX,IY-1>::Do(f);
-    f(IX,IY);
-  }
-};
-
-template <int O, int IX>
-class Cl_IterateTrig<O,IX,0>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC f)  
-  {
-    Cl_IterateTrig<O,IX-1,O-IX+1>::Do(f);    
-    f(IX,0); 
-  }
-};
-
-template <int O>
-class Cl_IterateTrig<O,0,0>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC f)  
-  {
-    f(0,0); 
-  }
-};
-
-
-
-
-
-
-
-
-
-template <int O, int IX, int IY>
-class Cl_IterateTrig3b
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC && f)
-  {
-    Cl_IterateTrig3b<O,IX,IY-1>::Do(f);
-    f(IX,IY);
-  }
-};
-template <int O, int IX>
-class Cl_IterateTrig3b<O,IX,0>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC && f)
-  {
-    f(IX,0);
-  }
-};
-
-
-template <int O, int IX>
-class Cl_IterateTrig3
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC && f)
-  {
-    Cl_IterateTrig3<O,IX-1>::Do(f);
-    Cl_IterateTrig3b<O,IX,O-IX>::Do (f);
-  }
-};
-template <int O>
-class Cl_IterateTrig3<O,0>
-{
-public:
-  template <typename FUNC>
-  static INLINE void Do (FUNC && f)
-  {
-    Cl_IterateTrig3b<O,0,O>::Do (f);
-  }
-};
-
-
-
-
-
-
-
-
-
-
-
-
-template <int NUM, typename FUNC>
-INLINE void IterateTrig (FUNC && f)
-{
-  // Cl_IterateTrig<NUM,NUM,0>::Do(f);
-  Cl_IterateTrig3<NUM,NUM>::Do(f);
-}
-
-
-
-
-
-
+#include <array>
+#include <tuple>
 
 namespace ngfem
 {
+
+namespace detail
+{
+    template <int N> using IC = std::integral_constant<int,N>;
+
+    static constexpr int CalcTrigNDof(int order) { return (order+1)*(order+2)/2; }
+    static constexpr int CalcTetNDof(int order) { return (order+1)*(order+2)*(order+3)/6; }
+
+
+    template <int ORDER>
+    static constexpr auto MakeTrigIndices()
+    {
+      std::array<std::tuple<int,int>, CalcTrigNDof(ORDER)> indices{};
+      std::size_t n = 0;
+
+      for (int ix = 0; ix <= ORDER; ++ix)
+        for (int iy = 0; iy <= ORDER - ix; ++iy)
+            indices[n++] = {ix, iy};
+
+      return indices;
+    }
+
+    template <int ORDER, typename FUNC>
+    static void IterateTrig (FUNC f)
+    {
+      constexpr auto indices = MakeTrigIndices<ORDER>();
+      constexpr int NDOF = CalcTrigNDof(ORDER);
+
+      Iterate<NDOF>([indices, f](auto i)
+      {
+        constexpr std::tuple<int,int> i2 = get<i>(indices);
+        auto ix = IC<std::get<0>(i2)>();
+        auto iy = IC<std::get<1>(i2)>();
+        f(i, ix, iy);
+      });
+    }
+
+    template <int ORDER>
+    static constexpr auto MakeTetIndices()
+    {
+      using T = std::tuple<int,int,int>;
+      std::array<T, CalcTetNDof(ORDER)> indices{};
+      std::size_t n = 0;
+
+      for (int ix = 0; ix <= ORDER; ++ix)
+        for (int iy = 0; iy <= ORDER - ix; ++iy)
+          for (int iz = 0; iz <= ORDER - ix - iy; ++iz)
+            indices[n++] = {ix, iy, iz};
+
+      return indices;
+    }
+
+    template <int ORDER, typename FUNC>
+    static void IterateTet (FUNC f)
+    {
+      constexpr auto indices = MakeTetIndices<ORDER>();
+      constexpr int NDOF = CalcTetNDof(ORDER);
+
+      Iterate<NDOF>([indices, f](auto i)
+      {
+        constexpr std::tuple<int,int,int> i3 = std::get<i>(indices);
+        auto ix = IC<std::get<0>(i3)>();
+        auto iy = IC<std::get<1>(i3)>();
+        auto iz = IC<std::get<2>(i3)>();
+        f(i, ix, iy, iz);
+      });
+    }
+}
 
 
 
@@ -242,52 +191,25 @@ namespace ngfem
 
     HD NGS_DLL_HEADER virtual void GetDiagMassMatrix (FlatVector<> mass) const
     {
-      if (ET == ET_SEGM)
+      if constexpr(ET == ET_SEGM)
 	{
 	  Iterate<ORDER+1> ([&] (int i) { mass[i] = 1.0 / (2*i+1); });
 	}
-      else if (ET == ET_TRIG)
+      else if constexpr(ET == ET_TRIG)
 	{
-          int ii = 0;
-
-          IterateTrig<ORDER> ([&] (int ix, int iy) LAMBDA_INLINE
-            {
-              mass[ii] = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
-              ii++;
-            });
-
-          /*
-	  for (int ix = 0, ii = 0; ix <= ORDER; ix++)
-	    for (int iy = 0; iy <= ORDER - ix; iy++, ii++)
-	      mass(ii) = 1.0 / ((2 * iy + 1) * (2 * ix + 2 * iy + 2));
-          */
+        detail::IterateTrig<ORDER> ([&] (auto i, auto ix, auto iy) LAMBDA_INLINE {
+            constexpr double value = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2));
+            mass[i] = value;
+        });
 	}
-      else if (ET == ET_TET)
+    else if constexpr(ET == ET_TET)
+    {
+        detail::IterateTet<ORDER>([&](auto i, auto ix, auto iy, auto iz)
         {
-          /*
-          int order = ORDER;
-          for (int ix = 0, ii = 0; ix <= order; ix++)
-            for (int iy = 0; iy <= order - ix; iy++)
-              for (int iz = 0; iz <= order - ix-iy; iz++, ii++)
-                mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
-          */
-          int ii = 0;
-          Iterate<ORDER+1>
-            ([mass, &ii] (auto ix)
-             {
-               Iterate<ORDER+1-ix.value>
-                 ([mass, ix, &ii] (auto iy)
-                  {
-                    Iterate<ORDER+1-ix.value-iy.value>
-                      ([mass, ix, iy, &ii] (auto iz)
-                       {
-                         mass(ii) = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
-                         ii++;
-                       });
-                  });
-             });
-          
-        }
+            constexpr double value = 1.0 / ((2 * ix + 1) * (2 * ix + 2 * iy + 2) * (2 * ix + 2 * iy + 2 * iz + 3));
+            mass[i] = value;
+        });
+    }
 #ifndef __CUDA_ARCH__
       else
 	{
