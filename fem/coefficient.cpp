@@ -7979,5 +7979,6 @@ static RegisterClassForArchive<OtherCoefficientFunction, CoefficientFunction> re
 static RegisterClassForArchive<LoggingCoefficientFunction, CoefficientFunction> regloggingcf;
 static RegisterClassForArchive<CacheCoefficientFunction, CoefficientFunction> regcachingcf;
 static RegisterClassForArchive<SubTensorCoefficientFunction, CoefficientFunction> regsubtensorcf;
+static RegisterClassForArchive<CrossProductCoefficientFunction, CoefficientFunction> regcrossprod;
 }
 
