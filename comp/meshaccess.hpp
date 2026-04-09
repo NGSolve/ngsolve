@@ -383,40 +383,12 @@ namespace ngcomp
         }
     }
 
-    /// the geometry type of the element
-    [[deprecated("Use GetElType with ElementId(VOL, elnr) instead!")]]            
-    ELEMENT_TYPE GetElType (int elnr) const
-      { return GetElement(ElementId(VOL,elnr)).GetType(); }
-
-    /// the geometry type of the boundary element
-    [[deprecated("Use GetElType with ElementId(BND, elnr) instead!")]]                
-    ELEMENT_TYPE GetSElType (int elnr) const
-      { return GetElement(ElementId(BND,elnr)).GetType(); }
-
     /// the geometry type of the element    
     ELEMENT_TYPE GetElType (ElementId ei) const
-    { return GetElement(ei).GetType(); }
-
-
-    /// the sub-domain index of the element
-    [[deprecated("Use GetElIndex with ElementId(VOL, elnr) instead!")]]                    
-    int GetElIndex (int elnr) const
-    { 
-      return GetElement(ElementId(VOL,elnr)).GetIndex();
-    }
-
-    /// the boundary-condition index of the boundary element
-    [[deprecated("Use GetElIndex with ElementId(BND, elnr) instead!")]]                        
-    int GetSElIndex (int elnr) const
-    { 
-      return GetElement(ElementId(BND,elnr)).GetIndex();
-    }
-
-    [[deprecated("Use GetElIndex with ElementId(BBND, elnr) instead!")]]                            
-    int GetCD2ElIndex(int elnr) const
     {
-      return GetElement(ElementId(BBND,elnr)).GetIndex();
+      return GetElement(ei).GetType();
     }
+
 
     int GetElIndex (ElementId ei) const
     {
@@ -444,37 +416,13 @@ namespace ngcomp
       return ArrayObject (GetNRegions(vb),
                           [this,vb] (size_t i) { return this->GetMaterial(vb, i); });
     }
-
     
-    /// the material of the element
-    [[deprecated("Use GetMaterial with ElementId(VOL, elnr) instead!")]]        
-    string_view GetElMaterial (int elnr) const
-    { return GetMaterial(ElementId(VOL, elnr)); }
-      // { return Ng_GetElementMaterial (elnr+1); }
 
     /// the material of the sub-domain
     [[deprecated("Use GetMaterial(VOL, region_nr) instead!")]]                
     string_view GetDomainMaterial (int domnr) const
       { return GetMaterial(VOL, domnr); }
       // { return Ng_GetDomainMaterial (domnr+1); }
-      
-
-    /// the boundary condition name of surface element
-    [[deprecated("Use GetMaterial with ElementId(BND, elnr) instead!")]]            
-    string_view GetSElBCName (int selnr) const
-    { return GetMaterial(ElementId(BND, selnr)); }      
-      // { return Ng_GetSurfaceElementBCName (selnr+1); }
-
-    /// the boundary condition name of boundary condition number
-    [[deprecated("Use GetMaterial(BND, region_nr) instead!")]]            
-    string_view GetBCNumBCName (int bcnr) const
-      { return GetMaterial(BND, bcnr); }      
-    // { return Ng_GetBCNumBCName (bcnr); }
-
-    [[deprecated("Use GetMaterial(BBND, region_nr) instead!")]]                
-    string_view GetCD2NumCD2Name (int cd2nr) const
-      { return GetMaterial(BBND, cd2nr); }      
-    // { return Ng_GetCD2NumCD2Name (cd2nr); }
 
 
     /// not sure who needs that
@@ -509,34 +457,12 @@ namespace ngcomp
     size_t GetNNodes (NODE_TYPE nt) const { return nnodes[nt]; }  
 
 
-    /// the topology of a domain - element
-    /// experimental, not recommended for use yet
-    // void GetTopologicElement (int elnr, TopologicElement & topel) const;
-
-
     /**
        returns topology of a Netgen - element.  This is the new
        (2008), unified concept. The function returns a direct access
        to the Netgen mesh structure instead of copying point numbers
        etc. The nasty 1-0 conversion is done on the fly.
      */
-    [[deprecated("Use GetElement (ElementId ei) instead!")]]        
-    INLINE Ngs_Element GetElement (int elnr, bool boundary = 0) const
-    {
-      switch (dim-boundary)
-	{
-        case 0:	return Ngs_Element (mesh.GetElement<0> (elnr), 
-                                    ElementId(boundary ? BND : VOL, elnr));
-	case 1:	return Ngs_Element (mesh.GetElement<1> (elnr), 
-                                    ElementId(boundary ? BND : VOL, elnr));
-	case 2: return Ngs_Element (mesh.GetElement<2> (elnr), 
-                                    ElementId(boundary ? BND : VOL, elnr));
-	case 3:
-        default: return Ngs_Element (mesh.GetElement<3> (elnr), 
-                                     ElementId(boundary ? BND : VOL, elnr));
-	}
-    }
-    
     INLINE Ngs_Element GetElement (ElementId ei) const
     {
       int hdim = dim - int(ei.VB());
@@ -563,36 +489,6 @@ namespace ngcomp
       return GetElement (ei);
     }
 
-
-    /**
-       returns topology of a Netgen - element.  This is the new
-       (2008), unified concept. The function returns a direct access
-       to the Netgen mesh structure instead of copying point numbers
-       etc. The nasty 1-0 conversion is done on the fly.
-     */
-    [[deprecated("Use GetElement (ElementId (BND,nr)) instead!")]]            
-    Ngs_Element GetSElement (int elnr) const
-    {
-      switch (dim)
-	{
-	case 1:	return Ngs_Element (mesh.GetElement<0> (elnr), ElementId(BND,elnr));
-	case 2: return Ngs_Element (mesh.GetElement<1> (elnr), ElementId(BND,elnr));
-	case 3: 
-        default: return Ngs_Element (mesh.GetElement<2> (elnr), ElementId(BND,elnr));
-	}
-    }
-    
-    [[deprecated("Use GetElement (ElementId (BBND,nr)) instead!")]]            
-    Ngs_Element GetCD2Element(int elnr) const
-    {
-      switch(dim)
-	{
-	case 1: throw Exception("No CoDim 2 Element for dimension 1");
-	case 2: return Ngs_Element(mesh.GetElement<0>(elnr),ElementId(BBND,elnr));
-	case 3:
-	default: return Ngs_Element(mesh.GetElement<1>(elnr),ElementId(BBND,elnr));
-	}
-    }
 
     /**
        returns element of compile-time fixed dimension
@@ -668,39 +564,13 @@ namespace ngcomp
 
     /// returns the points of an element.
     /// vertices and possibly edge-midpoints
-    [[deprecated("Use GetElPNums(ElementId) instead!")]]                        
-    void GetElPNums (int elnr, Array<int> & pnums) const
-    { pnums = ArrayObject (GetElement(ElementId(VOL,elnr)).points); }
-
-    /// returns the points of a boundary element.
-    /// vertex and possibly edge-midpoints
-    [[deprecated("Use GetElPNums(ElementId) instead!")]]                        
-    void GetSElPNums (int selnr, Array<int> & pnums) const
-    { pnums = ArrayObject (GetElement(ElementId(BND,selnr)).points); }
-
-    [[deprecated("Use GetElPNums(ElementId) instead!")]]                    
-    void GetElPNums (ElementId ei, Array<int> & pnums) const
-    { pnums = ArrayObject (GetElement(ei).points); }
-
     auto GetElPNums (ElementId ei) const
     { return ArrayObject(GetElement(ei).points); }
     
     /// returns the vertices of an element
-    [[deprecated("Use GetElVertices(ElementId) instead!")]]                
-    void GetElVertices (int elnr, Array<int> & vnums) const
-    { vnums = GetElement(ElementId(VOL,elnr)).Vertices(); }
-    ///
-    [[deprecated("Use GetElVertices(ElementId) -> vnums instead!")]]                
-    void GetElVertices (ElementId ei, Array<int> & vnums) const
-    { vnums = GetElement(ei).Vertices(); }
-
     auto GetElVertices (ElementId ei) const
     { return GetElement(ei).Vertices(); }
 
-    /// returns the vertices of a boundary element
-    [[deprecated("Use vnums = GetElVertices(ElementId) instead!")]]
-    void GetSElVertices (int selnr, Array<int> & vnums) const
-    { vnums = GetElement(ElementId(BND,selnr)).Vertices(); }
 
     [[deprecated("Use enums = GetElEdges(ElementId) instead! ")]]    
     void GetElEdges (ElementId ei, Array<int> & ednums) const
@@ -708,19 +578,10 @@ namespace ngcomp
 
     auto GetElEdges (ElementId ei) const { return GetElement(ei).Edges(); }
 
-    /// returns the edges of an element
-    [[deprecated("Use GetElEdges(ElementId) instead!")]]            
-    void GetElEdges (int elnr, Array<int> & ednums) const
-    { ednums = GetElement(ElementId(VOL,elnr)).Edges(); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
     // [[deprecated("Use GetElEdges(ElementId) instead!")]]                
     void GetElEdges (int elnr, Array<int> & ednums, Array<int> & orient) const;
-
-    /// returns the edges of a boundary element
-    [[deprecated("Use GetElEdges(ElementId) instead!")]]                    
-    void GetSElEdges (int selnr, Array<int> & ednums) const
-    { ednums = ArrayObject (GetElement(ElementId(BND,selnr)).edges); }
 
     // returns edge numbers and edge orientation of an element. (old style function)
     // [[deprecated("Use GetElEdges(ElementId) instead, orient is deprecated!")]]
@@ -760,25 +621,8 @@ namespace ngcomp
       return ArrayObject (mesh.GetNode<2> (fnr).vertices);
     }
     /// returns vertex numbers of edge
-    [[deprecated("Use GetEdgePNums(enr) instead!")]]                            
-    void GetEdgePNums (int enr, int & pn1, int & pn2) const
-    {
-      auto edge = mesh.GetNode<1>(enr);
-      pn1 = edge.vertices[0];
-      pn2 = edge.vertices[1];
-    }
+
     /// returns vertex numbers of edge
-    [[deprecated("Use GetEdgePNums(enr) instead!")]]                                
-    void GetEdgePNums (int enr, Array<int> & pnums) const;
-    /// returns vertex numbers of edge
-    /*
-    auto GetEdgePNums (size_t enr) const -> decltype(ArrayObject(IVec<2>()))
-    {
-      int v2[2];
-      Ng_GetEdge_Vertices (enr+1, v2);
-      return ArrayObject (IVec<2> (v2[0]-1, v2[1]-1));
-    }
-    */
     auto GetEdgePNums (size_t enr) const
     {
       auto vts = mesh.GetNode<1>(enr).vertices;
@@ -830,17 +674,6 @@ namespace ngcomp
     
     /// facets of an element
     auto GetElFacets (ElementId ei) const { return GetElement(ei).Facets(); }
-
-    [[deprecated("Use fanums = GetElFacets(ElementId) instead!")]]            
-    void GetElFacets (ElementId ei, Array<int> & fnums) const
-      { fnums = GetElFacets(ei); }
-    [[deprecated("Use GetElFacets(ElementId) instead!")]]        
-    void GetElFacets (int elnr, Array<int> & fnums) const
-      { fnums = GetElFacets(ElementId(VOL, elnr)); }      
-    /// facet of a surface element
-    [[deprecated("Use GetElFacets(ElementId) instead!")]]            
-    void GetSElFacets (int selnr, Array<int> & fnums) const
-      { fnums = GetElFacets(ElementId(BND, selnr)); }
 
     /// vertices of a facet
     void GetFacetPNums (int fnr, Array<int> & pnums) const;
@@ -977,12 +810,6 @@ namespace ngcomp
     /// returns the transformation from the reference element to physical element.
     /// Given a point in the reference element, the ElementTransformation can 
     /// compute the mapped point as well as the Jacobian
-    [[deprecated("Use GetTrafo with ElementId(vb, elnr) instead!")]]    
-      ngfem::ElementTransformation & GetTrafo (int elnr, VorB vb, Allocator & lh) const
-      {
-        return GetTrafo(ElementId(vb, elnr),lh);
-      }
-    
     ngfem::ElementTransformation & GetTrafo (ElementId ei, Allocator & lh) const
     {
       auto ptr = trafo_jumptable[ei.VB()];

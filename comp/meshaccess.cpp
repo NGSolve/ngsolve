@@ -1515,7 +1515,7 @@ namespace ngcomp
       }
   }
 
-  
+  /*
   void MeshAccess :: GetEdgePNums (int enr, Array<int> & pnums) const
   {
     pnums.SetSize(2);
@@ -1523,7 +1523,7 @@ namespace ngcomp
     pnums[0] = edge.vertices[0];
     pnums[1] = edge.vertices[1];
   }
-
+  */
   
   void MeshAccess :: GetFacetPNums (int fnr, Array<int> & pnums) const
   {

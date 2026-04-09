@@ -725,25 +725,12 @@ ANY                  1 1 1 1 | 15
     std::list<std::tuple<std::string,double>> Timing () const;
 
 
-    /// get dof-nrs of the element
-    [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
-    void GetDofNrs (int elnr, Array<DofId> & dnums) const
-      { GetDofNrs(ElementId(VOL,elnr),dnums); }
-
     [[deprecated("Use GetDofNrs with element-id instead of elnr!")]]
     void GetDofNrs (int elnr, Array<DofId> & dnums, COUPLING_TYPE ctype) const;
 
     /// get dofs on nr'th node of type nt.
     [[deprecated("Use GetDofNrs with NodeId instead of nt/nr")]]    
     virtual void GetNodeDofNrs (NODE_TYPE nt, int nr, Array<int> & dnums) const final;
-    /// get number of low-order dofs for node of type nt
-    // virtual int GetNLowOrderNodeDofs ( NODE_TYPE nt ) const;
-    // { return lodofs_per_node[nt]; }
-
-    /// returns dofs of sourface element
-    [[deprecated("Use GetDofNrs(ElementId(BND,elnr)) instead!")]]
-    void GetSDofNrs (int selnr, Array<DofId> & dnums) const
-      { GetDofNrs(ElementId(BND,selnr),dnums); }
 
     /// is the FESpace defined for this sub-domain nr ?
     [[deprecated("Use Definedon(VorB,int) instead")]]
