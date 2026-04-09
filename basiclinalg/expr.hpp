@@ -94,7 +94,8 @@ namespace ngbla
     return is_scalar_type<T>::value;
   }
 
-
+  template <typename T>
+  concept ScalarType = is_scalar_type<T>::value;
 
 
   
@@ -968,12 +969,18 @@ namespace ngbla
 
   // template <typename TS, typename TA,
   // typename enable_if<IsScalar<TS>(),int>::type = 0>
+  /*
   template <typename TS, typename TA> requires(IsScalar<TS>())  
   INLINE auto operator* (TS s, const Expr<TA> & a)
   {
     return ScaleExpr (a.View(), s);
   }
-
+  */
+  template <ScalarType TS, typename TA> 
+  INLINE auto operator* (TS s, const Expr<TA> & a)
+  {
+    return ScaleExpr (a.View(), s);
+  }
 
 
   /* ************************* MultExpr ************************* */
@@ -1479,9 +1486,11 @@ namespace ngbla
   // template <typename TA, typename TB,
   //          typename enable_if<IsScalar<TA>(),int>::type = 0,
   //          typename enable_if<IsScalar<TB>(),int>::type = 0>
-  template <typename TA, typename TB> requires(IsScalar<TA>() && IsScalar<TB>())
-  INLINE auto InnerProduct (TA a, TB b) { return a*b; } 
+  // template <typename TA, typename TB> requires(IsScalar<TA>() && IsScalar<TB>())
+  // INLINE auto InnerProduct (TA a, TB b) { return a*b; } 
 
+  template <ScalarType TA, ScalarType TB> 
+  INLINE auto InnerProduct (TA a, TB b) { return a*b; } 
 
 
   
