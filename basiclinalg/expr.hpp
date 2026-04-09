@@ -103,13 +103,15 @@ namespace ngbla
   */
 
   
-  template <typename TM, enable_if_t<!IsScalar<TM>(),bool> = true> 
+  // template <typename TM, enable_if_t<!IsScalar<TM>(),bool> = true>
+  template <typename TM> requires(!IsScalar<TM>())
   inline auto Access (const TM & mat, int i, int j)
   {
     return mat(i,j);
   }
 
-  template <typename TM, enable_if_t<IsScalar<TM>(),bool> = true>  
+  // template <typename TM, enable_if_t<IsScalar<TM>(),bool> = true>
+  template <typename TM> requires(IsScalar<TM>())  
   inline auto Access (const TM & mat, int i, int j)
   {
     return mat;
@@ -964,8 +966,9 @@ namespace ngbla
   };
 
 
-  template <typename TS, typename TA,
-            typename enable_if<IsScalar<TS>(),int>::type = 0>
+  // template <typename TS, typename TA,
+  // typename enable_if<IsScalar<TS>(),int>::type = 0>
+  template <typename TS, typename TA> requires(IsScalar<TS>())  
   INLINE auto operator* (TS s, const Expr<TA> & a)
   {
     return ScaleExpr (a.View(), s);
@@ -1086,8 +1089,9 @@ namespace ngbla
 
   /* ************************** Trans *************************** */
 
-  template <typename TA,
-            typename enable_if<IsScalar<TA>(),int>::type = 0>
+  // template <typename TA,
+  // typename enable_if<IsScalar<TA>(),int>::type = 0>
+  template <typename TA> requires(IsScalar<TA>())
   INLINE auto Trans (TA a) { return a; } 
   
 
@@ -1472,9 +1476,10 @@ namespace ngbla
 
   /* ************************* InnerProduct ********************** */
 
-  template <typename TA, typename TB,
-            typename enable_if<IsScalar<TA>(),int>::type = 0,
-            typename enable_if<IsScalar<TB>(),int>::type = 0>
+  // template <typename TA, typename TB,
+  //          typename enable_if<IsScalar<TA>(),int>::type = 0,
+  //          typename enable_if<IsScalar<TB>(),int>::type = 0>
+  template <typename TA, typename TB> requires(IsScalar<TA>() && IsScalar<TB>())
   INLINE auto InnerProduct (TA a, TB b) { return a*b; } 
 
 
@@ -1646,8 +1651,9 @@ namespace ngbla
 
 
   
-  template <typename TA,
-            enable_if_t<IsScalar<TA>(),bool> = true>
+  // template <typename TA,
+  // enable_if_t<IsScalar<TA>(),bool> = true>
+  template <typename TA> requires(IsScalar<TA>())
   INLINE auto Inv (TA val) { return 1.0/val; } 
   
 

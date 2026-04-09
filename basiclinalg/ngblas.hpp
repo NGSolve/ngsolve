@@ -9,16 +9,6 @@
 #define REGCALL
 #endif
 
-/*
-namespace ngcore
-{
-  template <int S>
-  INLINE auto Range (IC<S> s)
-  {
-    return IntRange(0,s);
-  }
-}
-*/
 
 
 namespace ngbla
@@ -139,7 +129,6 @@ namespace ngbla
   }
 
 
-  // typedef void (*pmult_mattransvec)(BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmult_matvec dispatch_mattransvec[13];
   inline void MultMatTransVec (BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
@@ -147,7 +136,6 @@ namespace ngbla
     (*dispatch_mattransvec[dsx])  (a, x, y);    
   }
 
-  // typedef void (*pmultadd_mattransvec)(double s, BareSliceMatrix<>, FlatVector<>, FlatVector<>);
   extern NGS_DLL_HEADER pmultadd_matvec dispatch_addmattransvec[13];
   inline void MultAddMatTransVec (double s, BareSliceMatrix<> a, FlatVector<> x, FlatVector<> y)
   {
@@ -206,11 +194,6 @@ namespace ngbla
   inline void MinusMultAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
-    /*
-    size_t wa = a.Width();
-    if (wa >= std::size(dispatch_minusmultAB))
-      wa = std::size(dispatch_minusmultAB)-1;
-    */
     size_t wa = std::min(a.Width(), std::size(dispatch_minusmultAB)-1);    
     (*dispatch_minusmultAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
@@ -219,9 +202,6 @@ namespace ngbla
   inline void AddAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
-    // size_t wa = a.Width();
-    // if (wa >= std::size(dispatch_addAB))
-    // wa = std::size(dispatch_addAB)-1;
     size_t wa = std::min(a.Width(), std::size(dispatch_addAB)-1);    
     (*dispatch_addAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
@@ -230,9 +210,6 @@ namespace ngbla
   inline void SubAB (SliceMatrix<> a, SliceMatrix<> b, SliceMatrix<> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
-    // size_t wa = a.Width();
-    // if (wa >= std::size(dispatch_subAB))
-    // wa = std::size(dispatch_subAB)-1;
     size_t wa = std::min(a.Width(), std::size(dispatch_subAB)-1);        
     (*dispatch_subAB[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
@@ -257,11 +234,6 @@ namespace ngbla
   inline void MatMat_AtB (SliceMatrix<double> a, SliceMatrix<double> b, BareSliceMatrix<double> c)
   {
     if (a.Height() == 0 || b.Width() == 0) return;
-    /*
-    size_t wa = a.Width();
-    if (wa >= std::size(dispatch_atb<ADD,POS>::ptrs))
-      wa = std::size(dispatch_atb<ADD,POS>::ptrs)-1;
-    */
     size_t wa = std::min(a.Width(), std::size(dispatch_atb<ADD,POS>::ptrs)-1);            
     (*dispatch_atb<ADD,POS>::ptrs[wa])  (a.Height(), a.Width(), b.Width(), a, b, c);
   }
@@ -974,118 +946,6 @@ namespace ngbla
   };
   
   
-
-#ifdef OLDMatVec
-  
-  template <typename OP, typename T, typename TA, typename TB>
-  class assign_trait<OP, T, MultExpr<TA,TB>,
-                     enable_if_t<IsConvertibleToSliceMatrix<TA,double>() &&
-                                 is_convertible<TB,FlatVector<double>>::value &&
-                                 is_convertible<T,FlatVector<double>>::value, int>>
-  {
-  public:
-    static inline  T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod)
-    {
-      auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
-      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
-      
-      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
-      constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
-      NgGEMV<ADD,POS> (make_SliceMatrix(prod.View().A()),
-                       make_FlatVector(prod.View().B().Range(0,w)),
-                       make_FlatVector(self.Spec().Range(0,h)));
-      return self.Spec();
-    }
-  };
-
-  
-  template <typename OP, typename T, typename TA, typename TB>
-  class assign_trait<OP, T, MultExpr<TA,TB>,
-                     enable_if_t<IsConvertibleToSliceMatrix<TA,Complex>() &&
-                                 IsConvertibleToFlatVector<TB>() &&
-                                 IsConvertibleToFlatVector<T>(), int>>
-  {
-  public:    
-    static inline  T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod)
-    {
-      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
-      constexpr double POS = (std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value) ? 1 : -1;
-      NgGEMV<ADD> (POS, BareSliceMatrix(prod.View().A()),
-                   make_FlatVector(prod.View().B()),
-                   make_FlatVector(self.Spec()));
-      return self.Spec();
-    }
-  };
-
-  template <typename OP, typename T, typename TA, typename TB, typename TC>
-  class assign_trait<OP, T, MultExpr<ScaleExpr<TA,TC>,TB>, 
-                     enable_if_t<IsConvertibleToSliceMatrix<TA,Complex>() && 
-                                 IsConvertibleToFlatVector<TB>() &&
-                                 IsConvertibleToFlatVector<T>(), int>>
-  {
-  public:    
-    static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<ScaleExpr<TA,TC>, TB>> & prod)
-    {
-      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
-      constexpr double POS = (std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value) ? 1 : -1;      
-      NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
-                   make_FlatVector(prod.View().B()),
-                   make_FlatVector(self.Spec()));
-      return self.Spec();
-    }
-  };
-  
-  template <typename OP, typename T, typename TA, typename TB>
-  class assign_trait<OP, T, MultExpr<TA,TB>,
-                     enable_if_t< ( (is_same_v<typename T::TELEM,double> ==true)||(is_same_v<typename T::TELEM,Complex> ==true) )&& 
-                                  IsConvertibleToBareSliceVector<T>() &&
-                                  IsConvertibleToBareSliceVector<TB>() &&
-                                  (!IsConvertibleToFlatVector<TB>()||!IsConvertibleToFlatVector<T>()) && 
-                                  IsConvertibleToBareSliceMatrix<TA>(),int>>
-  {
-  public:
-    static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA,TB>> & prod)
-    {
-      auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
-      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
-      
-      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
-      constexpr double POS = (std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value) ? 1 : -1;
-      NgGEMV<ADD> (POS, BareSliceMatrix(prod.View().A()),
-                   make_BareSliceVector(prod.View().B()).Range(0, w).RemoveConst(),
-                   make_BareSliceVector(self.Spec()).Range(0, h));
-      return self.Spec();
-    }
-  };
-  
-  
-
-  template <typename OP, typename T, typename TA, typename TB, typename TC>
-  class assign_trait<OP, T, MultExpr<ScaleExpr<TA,TC>,TB>,
-                     enable_if_t< ( (is_same_v<typename T::TELEM,double> ==true)||(is_same_v<typename T::TELEM,Complex> ==true) )&& 
-                                  IsConvertibleToBareSliceVector<T>() &&
-                                  IsConvertibleToBareSliceVector<TB>() &&
-                                  (!IsConvertibleToFlatVector<TB>()||!IsConvertibleToFlatVector<T>()) && 
-                                  IsConvertibleToBareSliceMatrix<TA>(),int>>
-  {
-  public:
-    static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<ScaleExpr<TA,TC>, TB>> & prod)
-    {
-      auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
-      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
-      
-      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
-      constexpr double POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value ? 1 : -1;
-      NgGEMV<ADD> (POS*prod.View().A().S(), BareSliceMatrix(prod.View().A().A()),
-                   make_BareSliceVector(prod.View().B()).Range(0, w),
-                   make_BareSliceVector(self.Spec()).Range(0, h));
-      return self.Spec();
-    }
-  };
-
-#endif
-  
-
 
   
   template <typename OP, typename T, typename TA, typename TB>

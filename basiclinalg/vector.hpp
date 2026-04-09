@@ -317,11 +317,17 @@ namespace ngbla
     VectorView () = default;
     VectorView (const VectorView&) = default;
     VectorView (VectorView&&) = default;
-    
+
+    /*
     template <typename T2, typename TS2, typename TDIST2,
               enable_if_t<is_convertible<T2*,T*>::value, int> =0,
               enable_if_t<is_constructible<TS,TS2>::value, int> =0,
               enable_if_t<is_constructible<TDIST,TDIST2>::value, int> =0>
+    */
+    template <typename T2, typename TS2, typename TDIST2>
+    requires (std::is_convertible_v<T2*, T*> &&
+      std::is_constructible_v<TS, TS2> &&
+      std::is_constructible_v<TDIST, TDIST2>)
     INLINE VectorView (const VectorView<T2,TS2,TDIST2> & v2)
       : layout(v2.Data(), TS(v2.Size()), TDIST(v2.Dist())) { }
     // : data{v2.Data()}, size{TS(v2.Size())}, dist{TDIST(v2.Dist())} { }
@@ -946,8 +952,9 @@ namespace ngbla
       data[I] = v;
     }
 
-    template <class... T2,
-              enable_if_t<S==1+sizeof...(T2),bool> = true>
+    // template <class... T2,
+    // enable_if_t<S==1+sizeof...(T2),bool> = true>
+    template <class... T2> requires(S==1+sizeof...(T2))
     Vec(const TELEM &v, T2... rest) {
       Set<0>(v, rest...);
     }
@@ -1118,9 +1125,13 @@ namespace ngbla
   constexpr auto ConstVectorSize() { return ConstVecSize<T>::VSIZE; }
       
   /// cross product of 3-vectors
+  /*
   template <typename TA, typename TB,
             std::enable_if_t<ConstVecSize<TA>::VSIZE == 3, bool> = true,
             std::enable_if_t<ConstVecSize<TB>::VSIZE == 3, bool> = true>
+  */
+  template <typename TA, typename TB>
+  requires((ConstVecSize<TA>::VSIZE == 3) && (ConstVecSize<TB>::VSIZE == 3))
   INLINE auto Cross (const TA & a, const TB & b)
   {
     typedef decltype (a(0)*b(0)) T;
