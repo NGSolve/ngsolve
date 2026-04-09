@@ -74,19 +74,26 @@ namespace ngfem
   (SymDMat<3> (coeff00, coeff10, coeff11, coeff20, coeff21, coeff22))
   { ; }
   
-
+#endif
+  
 
 
   namespace maxwellint {
-    
+
+    /*
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<2> > initcce2 ("curlcurledge", 2, 1);
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<3> > initcce3 ("curlcurledge", 3, 1);
+    */
 
+    /*
     static RegisterBilinearFormIntegrator<MassEdgeIntegrator<2> > initmasse2 ("massedge", 2, 1);
     static RegisterBilinearFormIntegrator<MassEdgeIntegrator<3> > initmasse3 ("massedge", 3, 1);
 
     static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2> > initrobin2 ("robinedge", 2, 1);
     static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3> > initrobin3 ("robinedge", 3, 1);
+    */
+    
+    /*
     static RegisterBilinearFormIntegrator<CurlCurlBoundaryEdgeIntegrator> initccb ("curlcurlboundaryedge", 3, 1);
 
     static RegisterBilinearFormIntegrator<CurlCurlEdgeOrthoIntegrator<3>> initorthocc("orthocurlcurledge", 3, 3);
@@ -109,8 +116,10 @@ namespace ngfem
     static RegisterLinearFormIntegrator<TangentialSourceEdgeIntegrator<2> > initts2 ("tangentialsourceedge", 2, 1);
     static RegisterLinearFormIntegrator<TangentialSourceEdgeIntegrator<3> > initts3 ("tangentialsourceedge", 3, 1);
     static RegisterLinearFormIntegrator<CurlBoundaryEdgeIntegrator<> > initcbe3 ("curlboundaryedge", 3, 1);
+    */
 
 
+    /*
     class Init
     { 
     public: 
@@ -124,8 +133,7 @@ namespace ngfem
     }
 
     Init init;
-
+    */
   }
-#endif
 }
 

@@ -460,7 +460,7 @@ namespace ngcomp
     // Array<CoefficientFunction*> coeffs(1);
     // coeffs[0] = &one;
     // evaluator = GetIntegrators().CreateBFI("massvectorfacet", 2, coeffs);
-    integrator[BND] = GetIntegrators().CreateBFI("robinvectorfacet", ma->GetDimension(), &one); 
+    // integrator[BND] = GetIntegrators().CreateBFI("robinvectorfacet", ma->GetDimension(), &one); 
 
     highest_order_dc = flags.GetDefineFlag("highest_order_dc");
     if (highest_order_dc) {
