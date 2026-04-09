@@ -1207,10 +1207,11 @@ namespace ngfem
   template class TangentialFacetVolumeFE<ET_PYRAMID>;
   template class TangentialFacetVolumeFE<ET_HEX>;
 
-  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3 /* , TangentialFacetFacetFiniteElement<2> */ >  > initrvf3 ("robinvectorfacet", 3, 1);
-  static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2 /* , TangentialFacetFacetFiniteElement<1> */ >  > initrvf2 ("robinvectorfacet", 2, 1);
-  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<3 /*, TangentialFacetFacetFiniteElement<2> */ >  > initnvf3 ("neumannvectorfacet", 3, 1);
-  static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2 /*, TangentialFacetFacetFiniteElement<1> */ >  > initnvf2 ("neumannvectorfacet", 2, 1);
+
+  // static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<3 /* , TangentialFacetFacetFiniteElement<2> */ >  > initrvf3 ("robinvectorfacet", 3, 1);
+  // static RegisterBilinearFormIntegrator<RobinEdgeIntegrator<2 /* , TangentialFacetFacetFiniteElement<1> */ >  > initrvf2 ("robinvectorfacet", 2, 1);
+  // static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<3 /*, TangentialFacetFacetFiniteElement<2> */ >  > initnvf3 ("neumannvectorfacet", 3, 1);
+  // static RegisterLinearFormIntegrator<NeumannEdgeIntegrator<2 /*, TangentialFacetFacetFiniteElement<1> */ >  > initnvf2 ("neumannvectorfacet", 2, 1);
 }
 
 

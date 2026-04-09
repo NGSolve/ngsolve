@@ -19,13 +19,14 @@ add_library(ngfem ${NGS_LIB_TYPE}
         intrule.cpp finiteelement.cpp elementtransformation.cpp
         scalarfe.cpp hdivfe.cpp recursive_pol.cpp
         hybridDG.cpp diffop.cpp l2hofefo.cpp h1hofefo.cpp
-        facethofe.cpp DGIntegrators.cpp pml.cpp
+        facethofe.cpp pml.cpp
         h1hofe_segm.cpp h1hofe_trig.cpp h1hofe_quad.cpp h1hofe_tet.cpp h1hofe_prism.cpp h1hofe_pyramid.cpp h1hofe_hex.cpp
         hdivdivfe.cpp hcurlcurlfe.cpp symbolicintegrator.cpp tpdiffop.cpp
         newtonCF.cpp tensorproductintegrator.cpp code_generation.cpp
         voxelcoefficientfunction.cpp
         tensorcoefficient.cpp tensorcoefficient.hpp)
-
+        # DGIntegrators.cpp
+        
 target_link_libraries(ngfem PUBLIC ngbla ngstd PRIVATE "$<BUILD_INTERFACE:netgen_python>")
 target_link_libraries(ngfem ${LAPACK_CMAKE_LINK_INTERFACE} "$<BUILD_INTERFACE:ngs_lapack>")
 install( TARGETS ngfem ${ngs_install_dir} )

@@ -710,9 +710,9 @@ namespace ngfem
 
 
 
-  template class PML_CurlCurlEdgeIntegrator<2>;
+  // template class PML_CurlCurlEdgeIntegrator<2>;
 
-
+  /*
   namespace pml_cpp
   {
     static RegisterBilinearFormIntegrator<PML_LaplaceIntegrator<2> > initpmllap2 ("PML_laplace", 2, 1);
@@ -731,5 +731,6 @@ namespace ngfem
     static RegisterBilinearFormIntegrator<PML_DivDivHDivIntegrator<2>> initpmlddhd ("PML_divdivhdiv", 2, 1);
     static RegisterBilinearFormIntegrator<PML_MassHDivIntegrator<2>> initpmlmhd ("PML_masshdiv", 2, 1);
   }
+  */
 }
 

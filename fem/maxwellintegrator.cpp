@@ -15,13 +15,14 @@
 #include "hcurl_equations.hpp"
 #include "diffop_impl.hpp"
 
-int link_maxwellintegrator;
+// int link_maxwellintegrator;
 
   
 namespace ngfem
 {
  
- 
+ #ifdef OLDREGISTER
+
   ///
   template <int D, typename FEL = HCurlFiniteElement<D> >
   class MassEdgeAnisotropicIntegrator 
@@ -76,7 +77,6 @@ namespace ngfem
 
 
 
-
   namespace maxwellint {
     
     static RegisterBilinearFormIntegrator<CurlCurlEdgeIntegrator<2> > initcce2 ("curlcurledge", 2, 1);
@@ -126,5 +126,6 @@ namespace ngfem
     Init init;
 
   }
+#endif
 }
 
