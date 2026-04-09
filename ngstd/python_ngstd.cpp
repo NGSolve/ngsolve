@@ -166,7 +166,7 @@ void NGS_DLL_HEADER  ExportNgstd(py::module & m) {
         }, py::arg("unpickler"));
 
   py::class_<MemoryView>(m, "_MemoryView")
-    .def(py::pickle([](MemoryView& mv)
+    .def(py::pickle([](MemoryView& mv) -> py::tuple
                     {
                       if(have_numpy)
                           return py::make_tuple(true,

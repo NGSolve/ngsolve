@@ -883,7 +883,7 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          py::arg("vnum"),
          "Return parent vertex numbers on refined mesh")
     
-    .def("GetParentFaces", [](MeshAccess & ma, int fnum)
+    .def("GetParentFaces", [](MeshAccess & ma, int fnum) -> py::tuple
          {
            auto [info,nrs] = ma.GetParentFaces (fnum);
            if (nrs[1] == -1)

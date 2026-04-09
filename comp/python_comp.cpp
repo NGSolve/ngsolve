@@ -2049,7 +2049,7 @@ active_dofs : BitArray or None
                      " Automatically update on FE space update"
                      );
                 })
-    .def(py::pickle([] (const GridFunction& gf)
+    .def(py::pickle([] (const GridFunction& gf) -> py::tuple
                     {
                       if (ngcore::parallel_pickling && gf.GetFESpace()->GetMeshAccess()->GetCommunicator().Size() > 1)
                         {
