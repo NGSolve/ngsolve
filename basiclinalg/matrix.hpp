@@ -43,6 +43,12 @@ namespace ngbla
   }
 
 
+  template <typename T>
+  concept SliceMatrixLike = IsConvertibleToSliceMatrix<T>();
+
+  template <typename T>
+  concept BareSliceMatrixLike = IsConvertibleToBareSliceMatrix<T>();
+
   
   
   template <int H, int W, typename T> class Mat;

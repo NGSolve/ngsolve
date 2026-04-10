@@ -488,7 +488,7 @@ namespace ngbla
   template <class TA, class TB> class MultExpr;
   template <class TA> class MinusExpr;
   template <class TA> class TransExpr;
-  template <class TA, class TS> class ScaleExpr;
+  template <class TA, ScalarType TS> class ScaleExpr;
 
 
   
@@ -936,7 +936,7 @@ namespace ngbla
   /**
      Scalar times Matrix-expr
   */
-  template <class TA, class TS> 
+  template <class TA, ScalarType TS> 
   class ScaleExpr : public Expr<ScaleExpr<TA,TS> >
   {
     TA a;
@@ -1020,7 +1020,8 @@ namespace ngbla
     template <typename ...J>
     INLINE auto operator() (size_t i, J... j) const
     { 
-      size_t wa = a.Width();
+      // size_t wa = a.Width();
+      auto wa = CombinedSize(a.Width(), get<0>(b.Shape()));   
 
       if (wa >= 1)
 	{

@@ -879,8 +879,7 @@ namespace ngbla
   };
   
 
-
-
+#ifdef pre_concept
   // matrix-vector
   // x OP= M*y
   template <typename OP, typename T, typename TS, typename TD, typename TA, typename TB, typename TBS, typename TBD>
@@ -915,11 +914,45 @@ namespace ngbla
       return self.Spec();
     }
   };
+#endif
+
+
+  // matrix-vector
+  // x OP= M*y
+  template <typename OP, typename T, typename TS, typename TD, BareSliceMatrixLike TA, typename TB, typename TBS, typename TBD>
+  class assign_trait<OP, VectorView<T,TS,TD>, MultExpr<TA,VectorView<TB,TBS,TBD>>>
+  {
+    typedef VectorView<T,TS,TD> TVec;
+    typedef VectorView<TB,TBS,TBD> TVecB;
+  public:
+    static inline auto & Assign (MatExpr<TVec> & self, const Expr<MultExpr<TA,VectorView<TB,TBS,TBD>>> & prod)
+    {
+      auto h = CombinedSize(get<0>(self.Spec().Shape()), get<0>(prod.View().A().Shape()));
+      auto w = CombinedSize(get<0>(prod.View().B().Shape()), get<1>(prod.View().A().Shape()));
+      
+      constexpr bool ADD = OP::IsAdd();
+      constexpr bool POS = OP::IsPos();
+      
+      if constexpr (TVec::IsLinear() && TVecB::IsLinear())
+        NgGEMV<ADD,POS> (make_BareSliceMatrix(prod.View().A()).RemoveConst(),
+                         FlatVector<const TB>(prod.View().B().Range(0,w)),
+                         FlatVector<T>(self.Spec().Range(0,h)));
+      else
+        NgGEMV<ADD,POS> (make_BareSliceMatrix(prod.View().A()),
+                         SliceVector<TB>(prod.View().B().Range(0,w)),
+                         SliceVector<T>(self.Spec().Range(0,h)));
+
+      return self.Spec();
+    }
+  };
+
+
+  
   
   // x OP= (s*M)*y
-  template <typename OP, typename T, typename TS, typename TD, typename TA, typename TB, typename TBS, typename TBD, typename TC>
-  class assign_trait<OP, VectorView<T,TS,TD>, MultExpr<ScaleExpr<TA,TC>,VectorView<TB,TBS,TBD>>,
-                     enable_if_t<IsConvertibleToBareSliceMatrix<TA>(), int>>
+  template <typename OP, typename T, typename TS, typename TD, BareSliceMatrixLike TA, typename TB, typename TBS, typename TBD, typename TC>
+  class assign_trait<OP, VectorView<T,TS,TD>, MultExpr<ScaleExpr<TA,TC>,VectorView<TB,TBS,TBD>>>
+  // enable_if_t<IsConvertibleToBareSliceMatrix<TA>(), int>>
     
   {
     typedef VectorView<T,TS,TD> TVec;
@@ -946,8 +979,7 @@ namespace ngbla
   };
   
   
-
-  
+  /*
   template <typename OP, typename T, typename TA, typename TB>
   class assign_trait<OP, T, MultExpr<TA, TB>,
                      enable_if_t<IsConvertibleToSliceMatrix<TA>() &&
@@ -970,7 +1002,30 @@ namespace ngbla
       return self.Spec();
     }
   };
+  */
 
+  template <typename OP, typename T, SliceMatrixLike TA, SliceMatrixLike TB>
+  requires (IsConvertibleToSliceMatrix<T,double>())
+  class assign_trait<OP, T, MultExpr<TA, TB>> 
+  {
+  public:
+    static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod) 
+    {
+      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
+      constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
+
+      size_t n = CombinedSize(prod.View().A().Height(), self.Spec().Height());
+      size_t m = CombinedSize(prod.View().B().Width(), self.Spec().Width());
+      size_t k = CombinedSize(prod.View().A().Width(), prod.View().B().Height());
+      
+      NgGEMM<ADD,POS> (make_BareSliceMatrix(prod.View().A()).AddSize(n,k).RemoveConst(),
+                       make_BareSliceMatrix(prod.View().B()).AddSize(k,m).RemoveConst(),
+                       make_BareSliceMatrix(self.Spec()).AddSize(n,m));
+      return self.Spec();
+    }
+  };
+
+  
   
   template <typename OP, typename T, typename TA, typename TB>
   class assign_trait<OP, T, MultExpr<MinusExpr<TA>, TB>,
