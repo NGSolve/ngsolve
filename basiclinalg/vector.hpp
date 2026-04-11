@@ -39,6 +39,8 @@ namespace ngbla
     return FlatVector<TELEM> (v);
   }
   
+  template <typename T, typename TELEM=typename std::remove_reference_t<T>::TELEM>
+  concept FlatVectorLike = std::is_constructible_v<FlatVector<TELEM>, T>;
 
   
   template <typename T = double>
@@ -54,6 +56,8 @@ namespace ngbla
     return SliceVector<TELEM> (v);
   }
   
+  template <typename T, typename TELEM=typename std::remove_reference_t<T>::TELEM>
+  concept SliceVectorLike = std::is_constructible_v<SliceVector<TELEM>, T>;
   
 
 
@@ -955,10 +959,14 @@ namespace ngbla
     // template <class... T2,
     // enable_if_t<S==1+sizeof...(T2),bool> = true>
     template <class... T2> requires(S==1+sizeof...(T2))
-    Vec(const TELEM &v, T2... rest) {
+    Vec(const TELEM &v, T2... rest)
+      : data(v, rest...) { }
+    /*
+    {
       Set<0>(v, rest...);
     }
-  
+    */
+    
     /// copy vector
     INLINE Vec & operator= (const Vec & v)
     {
@@ -981,7 +989,7 @@ namespace ngbla
     INLINE Vec & operator= (const Expr<TB> & v)
     {
       for (size_t i = 0; i < S; i++)
-	data[i] = v.Spec()(i);
+	data[i] = v(i);
       return *this;
     }
 
@@ -1272,7 +1280,7 @@ namespace ngbla
     typedef T TSCAL;
   };
 
-
+  /*
   template <int S, typename T>
   INLINE auto operator* (double a, const Vec<S,T> & vec)
   {
@@ -1310,17 +1318,38 @@ namespace ngbla
       res(i) = a * vec(i);
     return res;
   }
-  
+  */
+
   template <int S, typename T>
-  INLINE auto operator+ (const Vec<S,T> & a, const Vec<S,T> & b) 
+  INLINE auto operator* (ScalarType auto a, const Vec<S,T> & vec)
   {
-    // typedef decltype(RemoveConst(a(0))) TRES;
-    typedef typename std::remove_const<T>::type TRES;        
-    Vec<S,TRES> res;
+    // typedef typename std::remove_const<decltype(a*std::declval<T>())>::type TRES;
+    using ResultType = std::remove_cvref_t<decltype(a*std::declval<T>())>;
+    Vec<S, ResultType> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+  
+
+  template <int S, typename T, typename U>
+  INLINE auto operator+ (const Vec<S,T> & a, const Vec<S,U> & b) 
+  {
+    using ResultType = std::remove_cvref_t<decltype(std::declval<T>()+std::declval<U>())>;    
+    Vec<S,ResultType> res;
     for (int i = 0; i < S; i++)
       res(i) = a(i)+b(i);
     return res;
   }
+  /*
+  template <size_t S, typename T, typename U>
+  INLINE constexpr auto operator+(const Vec<S, T>& a, const Vec<S, U>& b)
+  {
+    return [&]<size_t... Is>(std::index_sequence<Is...>) {
+      return Vec{ (a.data[Is] + b.data[Is])... };
+    }(std::make_index_sequence<S>{});
+  }
+  */
 
   template <int S, typename T>
   INLINE auto operator- (const Vec<S,T> & a, const Vec<S,T> & b) 
@@ -1333,7 +1362,7 @@ namespace ngbla
     return res;
   }
 
-  
+  /*
   template <int S, typename T>
   INLINE auto operator* (double a, FlatVec<S,T> vec) 
   // -> Vec<S, decltype(RemoveConst(a*vec(0)))>
@@ -1358,7 +1387,20 @@ namespace ngbla
       res(i) = a * vec(i);
     return res;
   }
-
+  */
+  /*
+  template <int S, typename T>
+  INLINE auto operator* (ScalarType auto a, FlatVec<S,T> vec) 
+  {
+    typedef typename std::remove_const<decltype(a*std::declval<T>())>::type TRES;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+  */
+  
+  /*
   template <int S, int D, typename T>
   INLINE auto operator* (double a, FlatSliceVec<S,D,T> vec) 
   // -> Vec<S, decltype(RemoveConst(a*vec(0)))>
@@ -1383,6 +1425,21 @@ namespace ngbla
       res(i) = a * vec(i);
     return res;
   }
+  */
+
+  template <int S, int D, typename T>
+  INLINE auto operator* (ScalarType auto a, FlatSliceVec<S,D,T> vec) 
+  {
+    // typedef typename std::remove_const<decltype(a*std::declval<T>())>::type TRES;
+    using TRES = std::remove_const<decltype(a*std::declval<T>())>::type;
+    Vec<S, TRES> res;
+    for (int i = 0; i < S; i++)
+      res(i) = a * vec(i);
+    return res;
+  }
+
+
+  
 
 
   template <int S, typename T>
