@@ -77,6 +77,7 @@ Available options timings are:
   }
 
 
+  
   list<tuple<string,double>> Timing (int what, size_t n, size_t m, size_t k,
                                      bool lapack, bool doubleprec, size_t maxits)
   {
