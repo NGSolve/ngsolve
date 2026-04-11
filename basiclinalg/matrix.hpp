@@ -292,7 +292,7 @@ namespace ngbla
 
     auto Bare() const
     {
-      return BareSliceMatrix(*this);
+      return make_BareSliceMatrix(*this);
     }
     
     /*
@@ -1752,7 +1752,7 @@ namespace ngbla
 
     auto Bare() const
     {
-      return BareSliceMatrix(*this);
+      return make_BareSliceMatrix(*this);
     }
 
     INLINE auto RemoveConst() const
@@ -1852,7 +1852,7 @@ namespace ngbla
 
 
   
-#ifdef NOTNEEDED
+  
   template <typename T, ORDERING ORDER>
   SliceMatrix<T,ORDER> make_SliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
 
@@ -1875,27 +1875,12 @@ namespace ngbla
   
   template <typename T, ORDERING ORDER, typename TH, typename TW, typename TDIST>
   BareSliceMatrix<T,ORDER> make_BareSliceMatrix (MatrixView<T,ORDER,TH,TW,TDIST> mat) { return mat; }
-#endif
+
+
+
 
   
-  
-  // deduction guides
-  // to SliceMatrix
-  template <typename T, ORDERING ORD>
-  MatrixView(FlatMatrix<T, ORD>) -> MatrixView<T, ORD,size_t,size_t,size_t>;
 
-  // to BarseSliceMatrix
-  template <typename T, ORDERING ORD, typename TH, typename TW, typename TD>
-  MatrixView(MatrixView<T, ORD,TH,TW,TD>) -> MatrixView<T, ORD,undefined_size,undefined_size,TD>;
-  
-  template <typename T, ORDERING ORD>
-  MatrixView(MatrixView<T, ORD,size_t,size_t,unused_dist>) -> MatrixView<T, ORD,undefined_size,undefined_size,size_t>;
-  
-  template <int H, int W, typename T>
-  MatrixView(const Mat<H,W,T>&) -> MatrixView<T, RowMajor,undefined_size,undefined_size,IC<W>>;
-
-  template <int H, typename T, int DIST>
-  MatrixView(FlatMatrixFixHeight<H,T,DIST>) -> MatrixView<T, ColMajor,undefined_size,undefined_size,size_t>;
 
 
   template <typename T = double>
