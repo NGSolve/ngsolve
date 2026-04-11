@@ -976,8 +976,15 @@ namespace ngbla
     return ScaleExpr (a.View(), s);
   }
   */
+  /*
   template <ScalarType TS, typename TA> 
   INLINE auto operator* (TS s, const Expr<TA> & a)
+  {
+    return ScaleExpr (a.View(), s);
+  }
+  */
+  template <typename TA> 
+  INLINE auto operator* (ScalarType auto s, const Expr<TA> & a)
   {
     return ScaleExpr (a.View(), s);
   }
@@ -1490,9 +1497,11 @@ namespace ngbla
   // template <typename TA, typename TB> requires(IsScalar<TA>() && IsScalar<TB>())
   // INLINE auto InnerProduct (TA a, TB b) { return a*b; } 
 
+  /*
   template <ScalarType TA, ScalarType TB> 
   INLINE auto InnerProduct (TA a, TB b) { return a*b; } 
-
+  */
+  INLINE auto InnerProduct (ScalarType auto a, ScalarType auto b) { return a*b; } 
 
   
   /**

@@ -816,8 +816,9 @@ namespace ngbla
   
   // x = y
   template <typename OP, typename T, typename ...Args, typename TB, typename ...BArgs>
-  class assign_trait<OP, VectorView<T,Args...>, VectorView<TB, BArgs...>, 
-                     enable_if_t<std::is_same_v<OP,typename MatExpr<VectorView<T,Args...>>::As> == true, int>>
+  requires (OP::IsPos() && !OP::IsAdd())
+  class assign_trait<OP, VectorView<T,Args...>, VectorView<TB, BArgs...>>
+  // enable_if_t<std::is_same_v<OP,typename MatExpr<VectorView<T,Args...>>::As> == true, int>>
   {
     typedef VectorView<T,Args...> TVec;
     typedef VectorView<TB, BArgs...> TVecB;
@@ -850,8 +851,9 @@ namespace ngbla
 
   // x += s*y
   template <typename OP, typename T, typename TS, typename TD, typename TB, typename TBS, typename TBD, typename TSCAL>
-  class assign_trait<OP, VectorView<T,TS,TD>, ScaleExpr<VectorView<TB,TBS,TBD>,TSCAL>,
-                     enable_if_t<OP::IsAdd(), int>>
+  requires (OP::IsAdd())
+  class assign_trait<OP, VectorView<T,TS,TD>, ScaleExpr<VectorView<TB,TBS,TBD>,TSCAL>>
+  // enable_if_t<OP::IsAdd(), int>>
   {
     typedef VectorView<T,TS,TD> TVec;
     typedef VectorView<TB,TBS,TBD> TVecB;
@@ -1011,16 +1013,19 @@ namespace ngbla
   public:
     static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<TA, TB>> & prod) 
     {
-      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
-      constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
+      // constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
+      // constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
+      // constexpr bool ADD = OP::IsAdd();
+      // constexpr bool POS = OP::IsPos();
 
       size_t n = CombinedSize(prod.View().A().Height(), self.Spec().Height());
       size_t m = CombinedSize(prod.View().B().Width(), self.Spec().Width());
       size_t k = CombinedSize(prod.View().A().Width(), prod.View().B().Height());
       
-      NgGEMM<ADD,POS> (make_BareSliceMatrix(prod.View().A()).AddSize(n,k).RemoveConst(),
-                       make_BareSliceMatrix(prod.View().B()).AddSize(k,m).RemoveConst(),
-                       make_BareSliceMatrix(self.Spec()).AddSize(n,m));
+      NgGEMM<OP::IsAdd(),OP::IsPos()> (make_BareSliceMatrix(prod.View().A()).AddSize(n,k).RemoveConst(),
+                                       make_BareSliceMatrix(prod.View().B()).AddSize(k,m).RemoveConst(),
+                                       make_BareSliceMatrix(self.Spec()).AddSize(n,m));
+
       return self.Spec();
     }
   };
@@ -1036,12 +1041,15 @@ namespace ngbla
   public:
     static inline T & Assign (MatExpr<T> & self, const Expr<MultExpr<MinusExpr<TA>, TB>> & prod) 
     {
-      constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
-      constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
+      // constexpr bool ADD = std::is_same<OP,typename MatExpr<T>::AsAdd>::value || std::is_same<OP,typename MatExpr<T>::AsSub>::value;
+      // constexpr bool POS = std::is_same<OP,typename MatExpr<T>::As>::value || std::is_same<OP,typename MatExpr<T>::AsAdd>::value;
+      // constexpr bool ADD = OP::IsAdd();
+      // constexpr bool POS = OP::IsPos();
       
-      NgGEMM<ADD,!POS> (make_SliceMatrix(prod.View().A().A()),
-                        make_SliceMatrix(prod.View().B()),
-                        make_SliceMatrix(self.Spec()));
+      NgGEMM<OP::IsAdd(),!OP::IsPos()> (make_SliceMatrix(prod.View().A().A()),
+                                        make_SliceMatrix(prod.View().B()),
+                                        make_SliceMatrix(self.Spec()));
+
       return self.Spec();
     }
   };
