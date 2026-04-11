@@ -34,12 +34,12 @@ namespace ngbla
     return is_constructible_v<FlatVector<TELEM>,T>;
   }
 
-  /*
   template <typename T, typename TELEM=typename T::TELEM>
   auto make_FlatVector (const T & v) {
     return FlatVector<TELEM> (v);
   }
-  */
+  
+
   
   template <typename T = double>
   using SliceVector = VectorView<T,size_t,size_t>;
@@ -49,12 +49,11 @@ namespace ngbla
     return is_constructible_v<SliceVector<TELEM>,T>;    
   }
 
-  /*
   template <typename T, typename TELEM=typename T::TELEM>
   auto make_SliceVector (const T & v) {
     return SliceVector<TELEM> (v);
   }
-  */
+  
   
 
 
@@ -593,14 +592,10 @@ namespace ngbla
     
   };
     
-  
-  // deduciton guides (WIP)
-  // template <typename T, ORDERING ORD>
-  // MatrixView(FlatMatrix<T, ORD>) -> MatrixView<T, ORD,size_t,size_t,size_t>;
-  // template <typename T, ORDERING ORD>
-  // VectorView(FlatMatrix<T, ORD>) -> MatrixView<T, ORD,size_t,size_t,size_t>;
 
-  
+
+
+
   template <typename TS, typename TDIST>
   auto Real(VectorView<Complex, TS, TDIST> vec) {
     auto dist2 = vec.Dist() + vec.Dist();
