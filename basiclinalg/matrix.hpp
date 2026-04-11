@@ -43,11 +43,31 @@ namespace ngbla
   }
 
 
-  template <typename T>
-  concept SliceMatrixLike = IsConvertibleToSliceMatrix<T>();
+  // template <typename T>
+  // concept SliceMatrixLike = IsConvertibleToSliceMatrix<T>();
 
+  template <typename T, typename TELEM=typename std::remove_reference_t<T>::TELEM>
+  concept SliceMatrixLike =
+    (std::is_constructible_v<SliceMatrix<TELEM, RowMajor>, T> ||
+     std::is_constructible_v<SliceMatrix<TELEM, ColMajor>, T>);
+
+
+  
+  // template <typename T>
+  // concept BareSliceMatrixLike = IsConvertibleToBareSliceMatrix<T>();
+
+  /*
   template <typename T>
-  concept BareSliceMatrixLike = IsConvertibleToBareSliceMatrix<T>();
+  concept BareSliceMatrixLike =
+    requires { typename std::remove_reference_t<T>::TELEM; } &&
+    (std::is_constructible_v<BareSliceMatrix<typename std::remove_reference_t<T>::TELEM, RowMajor>, T> ||
+     std::is_constructible_v<BareSliceMatrix<typename std::remove_reference_t<T>::TELEM, ColMajor>, T>);
+  */
+
+  template <typename T, typename TELEM=typename std::remove_reference_t<T>::TELEM>
+  concept BareSliceMatrixLike =
+    (std::is_constructible_v<BareSliceMatrix<TELEM, RowMajor>, T> ||
+     std::is_constructible_v<BareSliceMatrix<TELEM, ColMajor>, T>);
 
   
   
@@ -1662,7 +1682,7 @@ namespace ngbla
     using BASE::Rows;
     using BASE::Cols;
 
-    MatrixView<T,ORD> AddSize (size_t h, size_t w) const
+    auto AddSize (size_t h, size_t w) const
     {
       NETGEN_CHECK_RANGE(h, Height(), Height()+1);
       NETGEN_CHECK_RANGE(w, Width(), Width()+1);

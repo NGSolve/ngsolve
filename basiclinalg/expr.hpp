@@ -352,6 +352,10 @@ namespace ngbla
     /// cast to specific type
     INLINE const T & Spec() const { return static_cast<const T&> (*this); }
 
+    template <typename ...I>
+    INLINE auto operator() (I... i) const { return static_cast<const T&>(*this)(i...); }
+
+    
     INLINE auto View() const { return static_cast<const T&> (*this).View(); }
     INLINE decltype(auto) ViewRW() { return static_cast<T&>(*this).ViewRW(); }
     INLINE auto Shape() const { return Spec().T::Shape(); }
@@ -360,7 +364,7 @@ namespace ngbla
     INLINE auto Height() const { return Spec().T::Height(); }
     INLINE auto Width() const { return Spec().T::Width(); }
     
-
+    
     void Dump (ostream & ost) const { Spec().T::Dump(ost); }
 
 
