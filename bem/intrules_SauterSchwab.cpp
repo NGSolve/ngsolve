@@ -142,42 +142,55 @@ namespace ngsbem
 
   Intrule_t IdenticPanelQuadIntegrationRule (int order)
   {
+    IntegrationRule irsegm(ET_SEGM, order);
+    IntegrationRule irhex (ET_HEX, order);
+
     Array<Vec<2>> ipx, ipy;
     Array<double> weights;
-    
-    auto [identic_panel_x, identic_panel_y, identic_panel_weight] = IdenticPanelIntegrationRule(order);
 
-    for (auto i : Range(identic_panel_x))
-      {
-        ipx.Append (identic_panel_x[i]);
-        ipy.Append (identic_panel_y[i]);
-        weights.Append (identic_panel_weight[i]);
-      }
-    Vec<2> p1{1,1};
-    for (auto i : Range(identic_panel_x))
-      {
-        ipx.Append (p1-identic_panel_x[i]);
-        ipy.Append (p1-identic_panel_y[i]);
-        weights.Append (identic_panel_weight[i]);
-      }
+    for (auto ipeta : irhex)
+      for (auto ipxi : irsegm)
+        {
+          double e1 = ipeta(0);
+          double e2 = ipeta(1);
+          double e3 = ipeta(2);
+          double xi = ipxi(0);
+
+          double a = (1-xi) * e3;
+          double b = (1-xi*e1) * e2;
+          double c = xi + a;
+          double d = xi*e1 + b;
+          double w = xi * (1-xi) * (1-xi*e1) * ipeta.Weight() * ipxi.Weight();
+
+          ipx.Append (Vec<2>(a, b));
+          ipy.Append (Vec<2>(c, d));
+
+          ipx.Append (Vec<2>(b, a));
+          ipy.Append (Vec<2>(d, c));
+
+          ipx.Append (Vec<2>(a, d));
+          ipy.Append (Vec<2>(c, b));
+
+          ipx.Append (Vec<2>(b, c));
+          ipy.Append (Vec<2>(d, a));
+
+          ipx.Append (Vec<2>(c, b));
+          ipy.Append (Vec<2>(a, d));
+
+          ipx.Append (Vec<2>(d, a));
+          ipy.Append (Vec<2>(b, c));
+
+          ipx.Append (Vec<2>(c, d));
+          ipy.Append (Vec<2>(a, b));
+
+          ipx.Append (Vec<2>(d, c));
+          ipy.Append (Vec<2>(b, a));
 
 
-    auto [common_edge_x, common_edge_y, common_edge_weight] = CommonEdgeIntegrationRule(order);
+          for (int j = 0; j < 8; j++)
+            weights.Append (w);
+        }
 
-    auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,1) + x(1) * Vec<2>(-1,0); };
-    auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,1) + x(1) * Vec<2>(0,1); };    
-
-    for (auto i : Range(common_edge_x))
-      {
-        ipx.Append (transx(common_edge_x[i]));
-        ipy.Append (transy(common_edge_y[i]));
-        weights.Append (common_edge_weight[i]);
-
-        ipx.Append (transy(common_edge_x[i]));
-        ipy.Append (transx(common_edge_y[i]));
-        weights.Append (common_edge_weight[i]);
-      }
-    
     return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
   }
 
@@ -186,64 +199,37 @@ namespace ngsbem
   
   Intrule_t CommonVertexQuadIntegrationRule (int order)
   {
+    IntegrationRule irsegm(ET_SEGM, order);
+    IntegrationRule irhex (ET_HEX, order);
+
     Array<Vec<2>> ipx, ipy;
     Array<double> weights;
 
-    
-    // 4 more for common vertex
-    auto [common_vertex_x, common_vertex_y, common_vertex_weight] = CommonVertexIntegrationRule(order);
-
-    {
-      auto transx = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,0) + x(1) * Vec<2>(1,1); };
-      auto transy = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,0) + x(1) * Vec<2>(1,1); };    
-      
-      for (auto i : Range(common_vertex_x))
+    for (auto ipeta : irhex)
+      for (auto ipxi : irsegm)
         {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (transy(common_vertex_y[i]));
-          weights.Append (common_vertex_weight[i]);
+          double e1 = ipeta(0);
+          double e2 = ipeta(1);
+          double e3 = ipeta(2);
+          double xi = ipxi(0);
+          double w = xi*xi*xi * ipeta.Weight() * ipxi.Weight();
+
+          ipx.Append (Vec<2>(xi, xi*e1));
+          ipy.Append (Vec<2>(xi*e2, xi*e3));
+
+          ipx.Append (Vec<2>(xi*e1, xi));
+          ipy.Append (Vec<2>(xi*e2, xi*e3));
+
+          ipx.Append (Vec<2>(xi*e1, xi*e2));
+          ipy.Append (Vec<2>(xi, xi*e3));
+
+          ipx.Append (Vec<2>(xi*e1, xi*e2));
+          ipy.Append (Vec<2>(xi*e3, xi));
+
+          for (int j = 0; j < 4; j++)
+            weights.Append (w);
         }
-    }
 
-
-    {
-      auto transx = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,0) + x(1) * Vec<2>(1,1); };
-      auto transy = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,1) + x(1) * Vec<2>(0,1); };    
-      
-      for (auto i : Range(common_vertex_x))
-        {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (transy(common_vertex_y[i]));
-          weights.Append (common_vertex_weight[i]);
-        }
-    }
-
-
-    {
-      auto transx = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,1) + x(1) * Vec<2>(0,1); };    
-      auto transy = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,0) + x(1) * Vec<2>(1,1); };
-      
-      for (auto i : Range(common_vertex_x))
-        {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (transy(common_vertex_y[i]));
-          weights.Append (common_vertex_weight[i]);
-        }
-    }
-
-
-    {
-      auto transx = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,1) + x(1) * Vec<2>(0,1); };    
-      auto transy = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,1) + x(1) * Vec<2>(0,1); };    
-      
-      for (auto i : Range(common_vertex_x))
-        {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (transy(common_vertex_y[i]));
-          weights.Append (common_vertex_weight[i]);
-        }
-    }
-    
     return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
 
   }
@@ -251,36 +237,33 @@ namespace ngsbem
 
   Intrule_t CommonVertexQuadTrigIntegrationRule (int order)
   {
+    IntegrationRule irsegm(ET_SEGM, order);
+    IntegrationRule irhex (ET_HEX, order);
+
     Array<Vec<2>> ipx, ipy;
     Array<double> weights;
 
-    
-    // 2 for common vertex
-    auto [common_vertex_x, common_vertex_y, common_vertex_weight] = CommonVertexIntegrationRule(order);
-
-    {
-      auto transx = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,0) + x(1) * Vec<2>(1,1); };
-      
-      for (auto i : Range(common_vertex_x))
+    for (auto ipeta : irhex)
+      for (auto ipxi : irsegm)
         {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (common_vertex_y[i]);
-          weights.Append (common_vertex_weight[i]);
-        }
-    }
+          double e1 = ipeta(0);
+          double e2 = ipeta(1);
+          double e3 = ipeta(2);
+          double xi = ipxi(0);
 
+          ipx.Append (Vec<2>(xi, xi*e1));
+          ipy.Append (Vec<2>(xi*e2*(1-e3), xi*e2*e3));
+          weights.Append (xi*xi*xi*e2 * ipeta.Weight() * ipxi.Weight());
 
-    {
-      auto transx = [] (Vec<2> x) { return Vec<2>(0,0) + x(0)*Vec<2>(1,1) + x(1) * Vec<2>(0,1); };    
-      
-      for (auto i : Range(common_vertex_x))
-        {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (common_vertex_y[i]);
-          weights.Append (common_vertex_weight[i]);
+          ipx.Append (Vec<2>(xi*e1, xi));
+          ipy.Append (Vec<2>(xi*e2*(1-e3), xi*e2*e3));
+          weights.Append (xi*xi*xi*e2 * ipeta.Weight() * ipxi.Weight());
+
+          ipx.Append (Vec<2>(xi*e1, xi*e2));
+          ipy.Append (Vec<2>(xi*(1-e3), xi*e3));
+          weights.Append (xi*xi*xi * ipeta.Weight() * ipxi.Weight());
         }
-    }
-    
+
     return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
 
   }
@@ -290,62 +273,47 @@ namespace ngsbem
   
   Intrule_t CommonEdgeQuadIntegrationRule (int order)
   {
+    IntegrationRule irsegm(ET_SEGM, order);
+    IntegrationRule irhex (ET_HEX, order);
+
     Array<Vec<2>> ipx, ipy;
     Array<double> weights;
 
-    auto [common_edge_x, common_edge_y, common_edge_weight] = CommonEdgeIntegrationRule(order);
-    // [(0,0),(1,0),(0,1)]  times [(0,0),(1,0),(0,1)]
-    for (auto i : Range(common_edge_x))
-      {
-        ipx.Append (common_edge_x[i]);
-        ipy.Append (common_edge_y[i]);
-        weights.Append (common_edge_weight[i]);
-      }
-
-
-    
-    // 3 more for common vertex
-    auto [common_vertex_x, common_vertex_y, common_vertex_weight] = CommonVertexIntegrationRule(order);
-
-    {
-      // [(1,0),(1,1),(0,1)] times [(1,0),(0,1),(0,0)]
-      auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,1); };
-      auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,1) + x(1) * Vec<2>(-1,0); };    
-      
-      for (auto i : Range(common_vertex_x))
+    for (auto ipeta : irhex)
+      for (auto ipxi : irsegm)
         {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (transy(common_vertex_y[i]));
-          weights.Append (common_vertex_weight[i]);
-        }
-    }
+          double e1 = ipeta(0);
+          double e2 = ipeta(1);
+          double e3 = ipeta(2);
+          double xi = ipxi(0);
+          double w1 = xi*xi*(1-xi) * ipeta.Weight() * ipxi.Weight();
+          double w2 = xi*xi*(1-xi*e1) * ipeta.Weight() * ipxi.Weight();
 
-    {
-      // [(1,0),(0,1),(0,0)] times [(1,0),(1,1),(0,1)] 
-      auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,1) + x(1) * Vec<2>(-1,0); };    
-      auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,1); };
-      
-      for (auto i : Range(common_vertex_x))
-        {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (transy(common_vertex_y[i]));
-          weights.Append (common_vertex_weight[i]);
-        }
-    }
+          ipx.Append (Vec<2>(xi + (1-xi)*e3, xi*e2));
+          ipy.Append (Vec<2>((1-xi)*e3, xi*e1));
+          weights.Append (w1);
 
-    {
-      // [(1,0),(1,1),(0,1)] times [(1,0),(1,1),(0,1)]
-      auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,1); };
-      auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,1); };
-      
-      for (auto i : Range(common_vertex_x))
-        {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (transy(common_vertex_y[i]));
-          weights.Append (common_vertex_weight[i]);
+          ipx.Append (Vec<2>((1-xi)*e3, xi*e2));
+          ipy.Append (Vec<2>(xi + (1-xi)*e3, xi*e1));
+          weights.Append (w1);
+
+          ipx.Append (Vec<2>(xi*e1 + (1-xi*e1)*e3, xi*e2));
+          ipy.Append (Vec<2>((1-xi*e1)*e3, xi));
+          weights.Append (w2);
+
+          ipx.Append (Vec<2>(xi*e1 + (1-xi*e1)*e3, xi));
+          ipy.Append (Vec<2>((1-xi*e1)*e3, xi*e2));
+          weights.Append (w2);
+
+          ipx.Append (Vec<2>((1-xi*e1)*e3, xi*e2));
+          ipy.Append (Vec<2>(xi*e1 + (1-xi*e1)*e3, xi));
+          weights.Append (w2);
+
+          ipx.Append (Vec<2>((1-xi*e1)*e3, xi));
+          ipy.Append (Vec<2>(xi*e1 + (1-xi*e1)*e3, xi*e2));
+          weights.Append (w2);
         }
-    }
-    
+
     return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
     
   }
@@ -354,34 +322,47 @@ namespace ngsbem
 
   Intrule_t CommonEdgeQuadTrigIntegrationRule (int order)
   {
+    IntegrationRule irsegm(ET_SEGM, order);
+    IntegrationRule irhex (ET_HEX, order);
+
     Array<Vec<2>> ipx, ipy;
     Array<double> weights;
 
-    auto [common_edge_x, common_edge_y, common_edge_weight] = CommonEdgeIntegrationRule(order);
-    // [(0,0),(1,0),(0,1)]  times [(0,0),(1,0),(0,1)]
-    for (auto i : Range(common_edge_x))
-      {
-        ipx.Append (common_edge_x[i]);
-        ipy.Append (common_edge_y[i]);
-        weights.Append (common_edge_weight[i]);
-      }
-
-    // 3 more for common vertex
-    auto [common_vertex_x, common_vertex_y, common_vertex_weight] = CommonVertexIntegrationRule(order);
-
-    {
-      // [(1,0),(1,1),(0,1)] times [(1,0),(0,1),(0,0)]
-      auto transx = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(0,1) + x(1) * Vec<2>(-1,1); };
-      auto transy = [] (Vec<2> x) { return Vec<2>(1,0) + x(0)*Vec<2>(-1,1) + x(1) * Vec<2>(-1,0); };    
-      
-      for (auto i : Range(common_vertex_x))
+    for (auto ipeta : irhex)
+      for (auto ipxi : irsegm)
         {
-          ipx.Append (transx(common_vertex_x[i]));
-          ipy.Append (transy(common_vertex_y[i]));
-          weights.Append (common_vertex_weight[i]);
+          double e1 = ipeta(0);
+          double e2 = ipeta(1);
+          double e3 = ipeta(2);
+          double xi = ipxi(0);
+          double w1 = xi*xi*(1-xi) * ipeta.Weight() * ipxi.Weight();
+          double w2 = xi*xi*e1*(1-xi*e1) * ipeta.Weight() * ipxi.Weight();
+
+          ipx.Append (Vec<2>(xi*(1-e3)+e3, xi*e2));
+          ipy.Append (Vec<2>((1-xi)*e3, xi*(1-e1)));
+          weights.Append (w1);
+
+          ipx.Append (Vec<2>((1-xi)*e3, xi*e2));
+          ipy.Append (Vec<2>(e3 + xi*(1-e1-e3), xi*e1));
+          weights.Append (w1);
+
+          ipx.Append (Vec<2>(e3 + xi*(1-e1-e3), xi*e2));
+          ipy.Append (Vec<2>((1-xi)*e3, xi));
+          weights.Append (w1);
+
+          ipx.Append (Vec<2>(xi*e1*(1-e3)+e3, xi));
+          ipy.Append (Vec<2>((1-xi*e1)*e3, xi*e1*(1-e2)));
+          weights.Append (w2);
+
+          ipx.Append (Vec<2>((1-xi*e1)*e3, xi));
+          ipy.Append (Vec<2>(e3 + xi*e1*(1-e2-e3), xi*e1*e2));
+          weights.Append (w2);
+
+          ipx.Append (Vec<2>(e3 + xi*e1*(1-e2-e3), xi));
+          ipy.Append (Vec<2>((1-xi*e1)*e3, xi*e1));
+          weights.Append (w2);
         }
-    }
-    
+
     return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
     
   }
