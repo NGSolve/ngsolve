@@ -35,7 +35,13 @@ namespace ngbla
   }
 
   template <typename T, typename TELEM=typename T::TELEM>
+  [[deprecated ("use AsFlatVector instead") ]]  
   auto make_FlatVector (const T & v) {
+    return FlatVector<TELEM> (v);
+  }
+
+  template <typename T, typename TELEM=typename T::TELEM>
+  auto AsFlatVector (const T & v) {
     return FlatVector<TELEM> (v);
   }
   
@@ -52,7 +58,13 @@ namespace ngbla
   }
 
   template <typename T, typename TELEM=typename T::TELEM>
+  [[deprecated ("use AsSliceVector instead") ]]
   auto make_SliceVector (const T & v) {
+    return SliceVector<TELEM> (v);
+  }
+  
+  template <typename T, typename TELEM=typename T::TELEM>
+  auto AsSliceVector (const T & v) {
     return SliceVector<TELEM> (v);
   }
   

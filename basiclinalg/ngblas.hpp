@@ -381,7 +381,7 @@ namespace ngbla
   template <bool ADD, bool POS>
   INLINE void NgGEMM (const SliceMatrixLike auto& a, const SliceMatrixLike auto& b, const SliceMatrixLike auto& c)
   {
-    NgGEMM<ADD,POS> (make_SliceMatrix(a), make_SliceMatrix(b), make_SliceMatrix(c));
+    NgGEMM<ADD,POS> (AsSliceMatrix(a), AsSliceMatrix(b), AsSliceMatrix(c));
   }
   
   template <bool ADD, bool POS, ORDERING orda, ORDERING ordb>
@@ -571,14 +571,14 @@ namespace ngbla
       {
         FlatMatrix<double> mx(x.Size(), sizeof(TX)/sizeof(double), (double*)(void*)x.Addr(0));
         FlatMatrix<double> my(y.Size(), sizeof(TX)/sizeof(double), (double*)(void*)y.Addr(0));
-        NgGEMM<ADD,POS> (a.AddSize(y.Size(), x.Size()),make_SliceMatrix(mx), make_SliceMatrix(my));
+        NgGEMM<ADD,POS> (a.AddSize(y.Size(), x.Size()),AsSliceMatrix(mx), AsSliceMatrix(my));
         return;
       }
     if constexpr (std::is_same<TM,Complex>() && std::is_same<TX,TY>() && IsVec<Complex,TX>)
       {
         FlatMatrix<Complex> mx(x.Size(), sizeof(TX)/sizeof(Complex), &const_cast<Complex&>(*(x.Data()->Data())));
         FlatMatrix<Complex> my(y.Size(), sizeof(TX)/sizeof(Complex), y.Data()->Data());
-        NgGEMM<ADD,POS> (a.AddSize(y.Size(), x.Size()),make_SliceMatrix(mx), make_SliceMatrix(my));
+        NgGEMM<ADD,POS> (a.AddSize(y.Size(), x.Size()),AsSliceMatrix(mx), AsSliceMatrix(my));
         return;
       }
 
@@ -726,7 +726,7 @@ namespace ngbla
         constexpr int VS = sizeof(TX)/sizeof(double);
         SliceMatrix<double> mx(x.Size(), VS, x.Dist()*VS, (double*)(void*)x.Addr(0));
         SliceMatrix<double> my(y.Size(), VS, y.Dist()*VS, (double*)(void*)y.Addr(0));
-        NgGEMM<ADD,POS> (a.AddSize(y.Size(), x.Size()),make_SliceMatrix(mx), make_SliceMatrix(my));
+        NgGEMM<ADD,POS> (a.AddSize(y.Size(), x.Size()),AsSliceMatrix(mx), AsSliceMatrix(my));
         return;
       }
     else if constexpr (std::is_same<TM,Complex>() && std::is_same<TX,TY>() && IsVec<Complex,TX>)
@@ -734,7 +734,7 @@ namespace ngbla
         constexpr int VS = sizeof(TX)/sizeof(Complex);
         SliceMatrix<Complex> mx(x.Size(), VS, x.Dist()*VS, &const_cast<Complex&>(*(x.Data()->Data())));
         SliceMatrix<Complex> my(y.Size(), VS, y.Dist()*VS, y.Data()->Data());
-        NgGEMM<ADD,POS> (a.AddSize(y.Size(), x.Size()),make_SliceMatrix(mx), make_SliceMatrix(my));
+        NgGEMM<ADD,POS> (a.AddSize(y.Size(), x.Size()),AsSliceMatrix(mx), AsSliceMatrix(my));
         return;
       }
     else
@@ -935,13 +935,13 @@ namespace ngbla
       constexpr bool POS = OP::IsPos();
       
       if constexpr (TVec::IsLinear() && TVecB::IsLinear())
-        NgGEMV<ADD,POS> (make_BareSliceMatrix(prod.View().A()).RemoveConst(),
+        NgGEMV<ADD,POS> (AsBareSliceMatrix(prod.View().A()).RemoveConst(),
                          FlatVector<const TB>(prod.View().B().Range(0,w)),
-                         make_FlatVector(self.Spec().Range(0,h)));
+                         AsFlatVector(self.Spec().Range(0,h)));
       else
-        NgGEMV<ADD,POS> (make_BareSliceMatrix(prod.View().A()),
-                         make_SliceVector(prod.View().B().Range(0,w)),
-                         make_SliceVector(self.Spec().Range(0,h)));
+        NgGEMV<ADD,POS> (AsBareSliceMatrix(prod.View().A()),
+                         AsSliceVector(prod.View().B().Range(0,w)),
+                         AsSliceVector(self.Spec().Range(0,h)));
 
       return self.Spec();
     }
@@ -968,11 +968,11 @@ namespace ngbla
       double POS = OP::IsPos() ? 1.0 : -1.0;
       
       if constexpr (TVec::IsLinear() && TVecB::IsLinear())
-        NgGEMV<ADD> (POS*prod.View().A().S(), make_BareSliceMatrix(prod.View().A().A()).RemoveConst(),
+        NgGEMV<ADD> (POS*prod.View().A().S(), AsBareSliceMatrix(prod.View().A().A()).RemoveConst(),
                      FlatVector<const TB>(prod.View().B().Range(0,w)),
                      FlatVector<T>(self.Spec().Range(0,h)));
       else
-        NgGEMV<ADD> (POS*prod.View().A().S(), make_BareSliceMatrix(prod.View().A().A()),
+        NgGEMV<ADD> (POS*prod.View().A().S(), AsBareSliceMatrix(prod.View().A().A()),
                      SliceVector<TB>(prod.View().B().Range(0,w)),
                      SliceVector<T>(self.Spec().Range(0,h)));
       return self.Spec();
@@ -1093,7 +1093,7 @@ namespace ngbla
         return;
       }
 
-    NgGEMMBare<ADD,POS>(ah, aw, bw, make_BareSliceMatrix(a), make_BareSliceMatrix(b), make_BareSliceMatrix(c));
+    NgGEMMBare<ADD,POS>(ah, aw, bw, AsBareSliceMatrix(a), AsBareSliceMatrix(b), AsBareSliceMatrix(c));
   }
   
   template <bool ADD, bool POS, ORDERING OA, ORDERING OB>
@@ -1112,9 +1112,9 @@ namespace ngbla
       size_t m = CombinedSize(prod.Width(), self.Width());
       size_t k = CombinedSize(prod.View().A().Width(), prod.View().B().Height());
       
-      NgGEMM<OP::IsAdd(),OP::IsPos()> (make_BareSliceMatrix(prod.View().A()).AddSize(n,k).RemoveConst(),
-                                       make_BareSliceMatrix(prod.View().B()).AddSize(k,m).RemoveConst(),
-                                       make_BareSliceMatrix(self.Spec()).AddSize(n,m));
+      NgGEMM<OP::IsAdd(),OP::IsPos()> (AsBareSliceMatrix(prod.View().A()).AddSize(n,k).RemoveConst(),
+                                       AsBareSliceMatrix(prod.View().B()).AddSize(k,m).RemoveConst(),
+                                       AsBareSliceMatrix(self.Spec()).AddSize(n,m));
       return self.Spec();
     }
   };

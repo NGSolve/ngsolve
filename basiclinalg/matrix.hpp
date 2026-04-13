@@ -312,7 +312,7 @@ namespace ngbla
 
     auto Bare() const
     {
-      return make_BareSliceMatrix(*this);
+      return AsBareSliceMatrix(*this);
     }
     
     /*
@@ -1772,7 +1772,7 @@ namespace ngbla
 
     auto Bare() const
     {
-      return make_BareSliceMatrix(*this);
+      return AsBareSliceMatrix(*this);
     }
 
     INLINE auto RemoveConst() const
@@ -1872,31 +1872,51 @@ namespace ngbla
 
 
   
-  
   template <typename T, ORDERING ORDER>
+  [[deprecated ("use AsSliceMatrix")]]  
   SliceMatrix<T,ORDER> make_SliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
 
   template <int H, int W, typename T>
+  [[deprecated ("use AsSliceMatrix")]]    
   SliceMatrix<T,RowMajor> make_SliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
 
-  /*
-  template <typename T, ORDERING ORDER, typename TH, typename TW, typename TD>
-  SliceMatrix<T,ORDER> make_SliceMatrix (MatrixView<T,ORDER,TH,TW,TD> mat) { return mat; }
-  */
   template <typename T, ORDERING ORDER, typename ...Args>
+  [[deprecated ("use AsSliceMatrix")]]      
   SliceMatrix<T,ORDER> make_SliceMatrix (MatrixView<T, ORDER, Args...> mat) { return mat; }
 
   
   template <typename T, ORDERING ORDER>
+  [[deprecated ("use AsBareSliceMatrix")]]      
   BareSliceMatrix<T,ORDER> make_BareSliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
   
   template <int H, int W, typename T>
+  [[deprecated ("use AsBareSliceMatrix")]]        
   BareSliceMatrix<T,RowMajor> make_BareSliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
   
   template <typename T, ORDERING ORDER, typename TH, typename TW, typename TDIST>
+  [[deprecated ("use AsBareSliceMatrix")]]        
   BareSliceMatrix<T,ORDER> make_BareSliceMatrix (MatrixView<T,ORDER,TH,TW,TDIST> mat) { return mat; }
 
+  
+  
+  template <typename T, ORDERING ORDER>
+  SliceMatrix<T,ORDER> AsSliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
 
+  template <int H, int W, typename T>
+  SliceMatrix<T,RowMajor> AsSliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
+
+  template <typename T, ORDERING ORDER, typename ...Args>
+  SliceMatrix<T,ORDER> AsSliceMatrix (MatrixView<T, ORDER, Args...> mat) { return mat; }
+
+  
+  template <typename T, ORDERING ORDER>
+  BareSliceMatrix<T,ORDER> AsBareSliceMatrix (FlatMatrix<T,ORDER> mat) { return mat; }
+  
+  template <int H, int W, typename T>
+  BareSliceMatrix<T,RowMajor> AsBareSliceMatrix (const Mat<H,W,T> &mat) { return const_cast<Mat<H,W,T>&>(mat); }
+  
+  template <typename T, ORDERING ORDER, typename TH, typename TW, typename TDIST>
+  BareSliceMatrix<T,ORDER> AsBareSliceMatrix (MatrixView<T,ORDER,TH,TW,TDIST> mat) { return mat; }
 
 
   
