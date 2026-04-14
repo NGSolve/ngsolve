@@ -23,45 +23,320 @@ namespace ngsbem
   class BaseKernel
   {
   public:
-    static constexpr bool needs_target_normal = true;
-    static constexpr bool needs_source_normal = true;
-
-    shared_ptr<SingularMLExpansion<Complex>> CreateMultipoleExpansion (Vec<3> c, double r) const
-    {
-      throw Exception("Create Multipole Expansion not implemented");
-    }
-
-    shared_ptr<RegularMLExpansion<Complex>> CreateLocalExpansion (Vec<3> c, double r) const
-    {
-      throw Exception("Create Local Expansion not implemented");      
-    }    
-
-    template <typename TV, typename T_Kappa>
-    void AddSource (SingularMLExpansion<Complex, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
-    {
-      throw Exception("Addsource not implemented");            
-    }
-
-    template <typename entry, typename TV, typename T_Kappa>
-    void AddSourceTrans(SingularMLExpansion<entry, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
-    {
-      throw Exception("AddSourceTrans not implemented");
-    }
-
-    template <typename TV, typename T_Kappa>
-    void EvaluateMP (RegularMLExpansion<Complex, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
-    {
-      throw Exception("Evaluate not implemented");            
-    }
-
-    template <typename entry, typename TV, typename T_Kappa>
-    void EvaluateMPTrans(RegularMLExpansion<entry, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, const TV & val) const
-    {
-      throw Exception("EvaluateMPTrans not implemented");
-    }
-
     void GetDifferentiatedKernel(const string &name) const {
       throw Exception("GetDifferentiatedKernel not overloaded");
+    }
+  };
+
+  // *********** FMM Source/Target Interface **********************
+
+  template <typename mp_type, typename value_type, typename T_Kappa = double>
+  class FMMInterface
+  {
+  public:
+    T_Kappa kappa;
+
+    FMMInterface (T_Kappa _kappa = 1e-16) : kappa(_kappa) {}
+
+    virtual shared_ptr<SingularMLExpansion<mp_type, T_Kappa>> CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
+    {
+      return make_shared<SingularMLExpansion<mp_type, T_Kappa>> (c, r, kappa, fmm_params);
+    }
+
+    virtual shared_ptr<RegularMLExpansion<mp_type, T_Kappa>> CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
+    {
+      return make_shared<RegularMLExpansion<mp_type, T_Kappa>> (c, r, kappa, fmm_params);
+    }
+
+    virtual void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const
+    {
+      throw Exception("AddSource not implemented for this FMM type");
+    }
+
+    virtual void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const
+    {
+      throw Exception("EvaluateMP not implemented for this FMM type");
+    }
+
+    virtual ~FMMInterface() = default;
+  };
+
+  template <int COMPS, typename value_type, typename T_Kappa = double>
+  class Charges : public FMMInterface<typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type, value_type, T_Kappa>
+  {
+  public:
+    using mp_type = typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type;
+    using Base = FMMInterface<mp_type, value_type, T_Kappa>;
+    static constexpr bool needs_normal = false;
+    Charges (T_Kappa kappa = 1e-16) : Base(kappa) {}
+
+    void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    {
+      if constexpr (COMPS == 1)
+        mp.AddCharge (pnt, val(0));
+      else
+        mp.AddCharge (pnt, val);
+    }
+
+    void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    {
+      if constexpr (COMPS == 1)
+        {
+          if constexpr (std::is_same_v<value_type, double>)
+            val(0) = Real(mp.Evaluate (pnt));
+          else
+            val(0) = mp.Evaluate (pnt);
+        }
+      else
+        {
+          if constexpr (std::is_same_v<value_type, double>)
+            val = Real(mp.Evaluate (pnt));
+          else
+            val = mp.Evaluate (pnt);
+        }
+    }
+  };
+
+  template <int COMPS, typename value_type, typename T_Kappa = double>
+  class Dipoles : public FMMInterface<typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type, value_type, T_Kappa>
+  {
+  public:
+    using mp_type = typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type;
+    using Base = FMMInterface<mp_type, value_type, T_Kappa>;
+    static constexpr bool needs_normal = true;
+    Dipoles (T_Kappa kappa = 1e-16) : Base(kappa) {}
+
+    void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    {
+      if constexpr (COMPS == 1)
+        mp.AddDipole (pnt, -nv, val(0));
+      else
+        mp.AddDipole (pnt, -nv, val);
+    }
+
+    void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    {
+      if constexpr (COMPS == 1)
+        {
+          if constexpr (std::is_same_v<value_type, double>)
+            val(0) = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
+          else
+            val(0) = mp.EvaluateDirectionalDerivative (pnt, nv);
+        }
+      else
+        {
+          if constexpr (std::is_same_v<value_type, double>)
+            val = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
+          else
+            val = mp.EvaluateDirectionalDerivative (pnt, nv);
+        }
+    }
+  };
+
+  // Evaluates gradient: 3 directional derivatives along unit vectors
+  template <int COMPS, typename value_type, typename T_Kappa = double>
+  class GradientEval : public FMMInterface<typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type, value_type, T_Kappa>
+  {
+  public:
+    using mp_type = typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type;
+    using Base = FMMInterface<mp_type, value_type, T_Kappa>;
+    static constexpr bool needs_normal = false;
+    GradientEval (T_Kappa kappa = 1e-16) : Base(kappa) {}
+
+    void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    {
+      for (int i = 0; i < 3; i++)
+        {
+          Vec<3> ei = 0;
+          ei(i) = 1;
+          auto deri = mp.EvaluateDirectionalDerivative (pnt, ei);
+          if constexpr (COMPS == 1)
+            {
+              if constexpr (std::is_same_v<value_type, double>)
+                val(i) = Real(deri);
+              else
+                val(i) = deri;
+            }
+          else
+            for (int c = 0; c < COMPS; c++)
+              {
+                if constexpr (std::is_same_v<value_type, double>)
+                  val(3*c+i) = Real(deri(c));
+                else
+                  val(3*c+i) = deri(c);
+              }
+        }
+    }
+  };
+
+  // Direct evaluation: val = mp.Evaluate(pnt)
+  template <typename mp_type, typename value_type, typename T_Kappa = double>
+  class DirectEval : public FMMInterface<mp_type, value_type, T_Kappa>
+  {
+    using Base = FMMInterface<mp_type, value_type, T_Kappa>;
+  public:
+    static constexpr bool needs_normal = false;
+    DirectEval (T_Kappa kappa = 1e-16) : Base(kappa) {}
+
+    void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
+    {
+      if constexpr (std::is_same_v<mp_type, Complex>)
+        val(0) = mp.Evaluate (pnt);
+      else
+        val = mp.Evaluate (pnt);
+    }
+  };
+
+  // Combined charge + dipole source (CombinedField)
+  template <int COMPS, typename T_Kappa = double>
+  class ChargeDipoles : public FMMInterface<typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type, Complex, T_Kappa>
+  {
+  public:
+    using mp_type = typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type;
+    using Base = FMMInterface<mp_type, Complex, T_Kappa>;
+    static constexpr bool needs_normal = true;
+    ChargeDipoles (T_Kappa kappa) : Base(kappa) {}
+
+    void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    {
+      if constexpr (COMPS == 1)
+        mp.AddChargeDipole (pnt, -this->kappa * Complex(0, 1)*val(0), -nv, val(0));
+      else
+        mp.AddChargeDipole (pnt, -this->kappa * Complex(0, 1)*val(0), -nv, val);
+    }
+  };
+
+  // HelmholtzHS source: packs charges + kappa²-scaled normal dipoles
+  class HelmholtzHSSource : public FMMInterface<Vec<6,Complex>, Complex>
+  {
+    double kappa;
+    using Base = FMMInterface<Vec<6,Complex>, Complex>;
+  public:
+    static constexpr bool needs_normal = true;
+    HelmholtzHSSource (double _kappa) : Base(_kappa), kappa(_kappa) {}
+
+    void AddSource (SingularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    {
+      Vec<6,Complex> charge;
+      charge.Range(0,3) = val.Range(0,3);
+      charge.Range(3,6) = -kappa * kappa * val(3) * nv;
+      mp.AddCharge(pnt, charge);
+    }
+  };
+
+  // HelmholtzHS target: unpacks eval + dot product with normal
+  class HelmholtzHSTarget : public FMMInterface<Vec<6,Complex>, Complex>
+  {
+    using Base = FMMInterface<Vec<6,Complex>, Complex>;
+  public:
+    static constexpr bool needs_normal = true;
+    HelmholtzHSTarget (double kappa) : Base(kappa) {}
+
+    void EvaluateMP (RegularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    {
+      Vec<6,Complex> eval = mp.Evaluate (pnt);
+      val.Range(0,3) = eval.Range(0,3);
+      val(3) = InnerProduct(eval.Range(3,6), nv);
+    }
+  };
+
+  // MaxwellSL source: kappa-scaled 4-component charges
+  class MaxwellSLSource : public FMMInterface<Vec<4,Complex>, Complex>
+  {
+    double kappa;
+    using Base = FMMInterface<Vec<4,Complex>, Complex>;
+  public:
+    static constexpr bool needs_normal = false;
+    MaxwellSLSource (double _kappa) : Base(_kappa), kappa(_kappa) {}
+
+    void AddSource (SingularMLExpansion<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    {
+      Vec<4,Complex> charge;
+      charge.Range(0,3) = kappa * val.Range(0, 3);
+      charge(3) = -1.0/kappa * val(3);
+      mp.AddCharge(pnt, charge);
+    }
+  };
+
+  // MaxwellDL source/target: cross-product dipoles + direct eval (self-symmetric)
+  template <typename T_Kappa = double>
+  class MaxwellCurlDipoles : public FMMInterface<Vec<3,Complex>, Complex, T_Kappa>
+  {
+    using Base = FMMInterface<Vec<3,Complex>, Complex, T_Kappa>;
+  public:
+    static constexpr bool needs_normal = false;
+    MaxwellCurlDipoles (T_Kappa kappa) : Base(kappa) {}
+
+    void AddSource (SingularMLExpansion<Vec<3,Complex>,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    {
+      Vec<3,Complex> n_cross_m = val.Range(0, 3);
+      for (int k = 0; k < 3; k++)
+        {
+          Vec<3> ek{0.0}; ek(k) = 1;
+          Vec<3> n_cross_m_real = Real(n_cross_m);
+          Vec<3> n_cross_m_imag = Imag(n_cross_m);
+          mp.AddDipole(pnt, Cross(n_cross_m_real, ek), ek);
+          mp.AddDipole(pnt, Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
+        }
+    }
+
+    void EvaluateMP (RegularMLExpansion<Vec<3,Complex>,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
+    {
+      val = mp.Evaluate (pnt);
+    }
+  };
+
+  // Lame source: charges + Jacobi matrix dipoles
+  class LameSource : public FMMInterface<Vec<6,Complex>, double>
+  {
+    using Base = FMMInterface<Vec<6,Complex>, double>;
+  public:
+    static constexpr bool needs_normal = false;
+    LameSource () : Base(1e-16) {}
+
+    void AddSource (SingularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const override
+    {
+      Vec<6> charge = 0.0;
+      charge.Range(0,3) = val;
+      mp.AddCharge(pnt, charge);
+
+      Mat<3,3> jacobi = OuterProduct(pnt, val) + InnerProduct(pnt, val) * Id<3>();
+
+      for (int k = 0; k < 3; k++)
+        {
+          Vec<6> dipole_charge = 0.0;
+          dipole_charge.Range(3,6) = jacobi.Col(k);
+          auto ek = UnitVec<3>(k);
+          mp.AddDipole(pnt, -ek, dipole_charge);
+        }
+    }
+  };
+
+  // Lame target: multi-step eval with coefficients
+  class LameTarget : public FMMInterface<Vec<6,Complex>, double>
+  {
+    double nu, alpha;
+    using Base = FMMInterface<Vec<6,Complex>, double>;
+  public:
+    static constexpr bool needs_normal = false;
+    LameTarget (double _nu, double _alpha) : Base(1e-16), nu(_nu), alpha(_alpha) {}
+
+    void EvaluateMP (RegularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const override
+    {
+      Vec<6> mpval = Real(mp.Evaluate (pnt));
+      val.Range(0,3) = 0;
+      val += (3-4*nu)*alpha * mpval.Range(0,3);
+
+      val -= alpha/2 * mpval.Range(3,6);
+
+      Mat<3,3> jacobi = 0.0;
+      for (int k = 0; k < 3; k++)
+        {
+          auto ek = UnitVec<3>(k);
+          jacobi.Col(k) = Real(mp.EvaluateDirectionalDerivative(pnt, ek).Range(0,3));
+        }
+
+      val -= alpha/2 * ( Trans(jacobi) * pnt + Trace(jacobi) * pnt);
     }
   };
 
@@ -107,8 +382,12 @@ namespace ngsbem
   class DiffLaplaceSLKernel<3, COMPS> : public BaseKernel
   {
   public:
-    // Component-wise gradient: output is a flattened (3 x COMPS) matrix
-    // [d/dx u0, d/dy u0, d/dz u0, d/dx u1, ...].
+    using source_type = Charges<COMPS, double>;
+    using target_type = GradientEval<COMPS, double>;
+
+    source_type source;
+    target_type target;
+
     Array<KernelTerm> terms;
     DiffLaplaceSLKernel()
     {
@@ -117,9 +396,7 @@ namespace ngsbem
           terms += KernelTerm{1.0, i, c, 3*c+i};
     };
     typedef double value_type;
-    using mp_type = typename std::conditional<COMPS == 1,
-                                              Complex,
-                                              Vec<COMPS, Complex>>::type;
+    using mp_type = typename source_type::mp_type;
 
     static string Name() { return "DiffLaplaceSL"; }
     static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
@@ -132,39 +409,6 @@ namespace ngsbem
       auto kern = 1.0 *  (4 * M_PI * norm*norm*norm) * xy;
       return kern;
     }
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddCharge (pnt, val(0));
-      else
-        mp.AddCharge (pnt, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      for (int i = 0; i < 3; i++)
-      {
-        Vec<3> ei = 0;
-        ei(i) = 1;
-        auto deri = mp.EvaluateDirectionalDerivative (pnt, ei);
-        if constexpr (COMPS == 1)
-          val(i) = Real(deri);
-        else
-          for (int c = 0; c < COMPS; c++)
-            val(3*c+i) = Real(deri(c));
-      }
-    }
   };
 
 
@@ -175,19 +419,21 @@ namespace ngsbem
   {
       T_Kappa kappa;
   public:
-    // Component-wise gradient: output is a flattened (3 x COMPS) matrix
-    // [d/dx u0, d/dy u0, d/dz u0, d/dx u1, ...].
+    using source_type = Charges<COMPS, Complex, T_Kappa>;
+    using target_type = GradientEval<COMPS, Complex, T_Kappa>;
+
+    source_type source;
+    target_type target;
+
     Array<KernelTerm> terms;
-    DiffHelmholtzSLKernel(T_Kappa _kappa) : kappa(_kappa)
+    DiffHelmholtzSLKernel(T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa)
     {
       for (size_t c = 0; c < COMPS; c++)
         for (size_t i = 0; i < 3; i++)
           terms += KernelTerm{1.0, i, c, 3*c+i};
     };
     typedef Complex value_type;
-    using mp_type = typename std::conditional<COMPS == 1,
-                                              Complex,
-                                              Vec<COMPS, Complex>>::type;
+    using mp_type = typename source_type::mp_type;
 
     static string Name() { return "DiffHelmholtzSL"; }
     static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
@@ -201,39 +447,6 @@ namespace ngsbem
         * (kappa*Complex(0,1)*norm - Complex(1,0)*T(1.)) * xy;
       return kern;
     }
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddCharge (pnt, val(0));
-      else
-        mp.AddCharge (pnt, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      for (int i = 0; i < 3; i++)
-      {
-        Vec<3> ei = 0;
-        ei(i) = 1;
-        auto deri = mp.EvaluateDirectionalDerivative (pnt, ei);
-        if constexpr (COMPS == 1)
-          val(i) = deri;
-        else
-          for (int c = 0; c < COMPS; c++)
-            val(3*c+i) = deri(c);
-      }
-    }
   };
 
   // *********** STANDARD KERNELS **********************
@@ -244,8 +457,11 @@ namespace ngsbem
   class LaplaceSLKernel<3, COMPS> : public BaseKernel
   {
   public:
-    static constexpr bool needs_target_normal = false;
-    static constexpr bool needs_source_normal = false;
+    using source_type = Charges<COMPS, double>;
+    using target_type = Charges<COMPS, double>;
+
+    source_type source;
+    target_type target;
 
     LaplaceSLKernel()
     {
@@ -253,48 +469,19 @@ namespace ngsbem
         terms += {1.0, 0, i, i};
     };
     typedef double value_type;
-    using mp_type = typename std::conditional<COMPS == 1,
-                                              Complex,
-                                              Vec<COMPS, Complex>>::type;
+    using mp_type = typename source_type::mp_type;
 
     static string Name() { return "LaplaceSL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
-    
-    template <typename T>        
+
+    template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
-      // return 1.0 / (4 * M_PI * norm);   
       return Vec<1,T> (1.0 / (4 * M_PI * norm));
     }
-    
+
     Array<KernelTerm> terms;
-    
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddCharge (pnt, val(0));
-      else
-        mp.AddCharge (pnt, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      if constexpr (COMPS == 1)
-        val(0) = Real(mp.Evaluate (pnt));
-      else
-        val = Real(mp.Evaluate (pnt));
-    }
 
     auto GetDifferentiatedKernel(const string &name) const {
       if (name == "grad")
@@ -312,7 +499,11 @@ namespace ngsbem
   class LaplaceDLKernel<3, COMPS> : public BaseKernel
   {
   public:
-    static constexpr bool needs_target_normal = false;
+    using source_type = Dipoles<COMPS, double>;
+    using target_type = Charges<COMPS, double>;
+
+    source_type source;
+    target_type target;
 
     LaplaceDLKernel()
     {
@@ -320,64 +511,20 @@ namespace ngsbem
         terms += {1.0, 0, i, i};
     };
     typedef double value_type;
-    using mp_type = typename std::conditional<COMPS == 1,
-                                                  Complex,
-                                                  Vec<COMPS, Complex>>::type;
+    using mp_type = typename source_type::mp_type;
+
     static string Name() { return "LaplaceDL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
-    
+
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
       T nxy = InnerProduct(ny, (x-y));
-      // return nxy / (4 * M_PI * norm*norm*norm);
       return Vec<1,T> (nxy / (4 * M_PI * norm*norm*norm));
     }
 
     Array<KernelTerm> terms;
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<mp_type>> (c, r, 1e-16, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddDipole(pnt, -nv, val(0));
-      else
-        mp.AddDipole(pnt, -nv, val);
-    }
-
-    void AddSourceTrans(SingularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddCharge (pnt, val(0));
-      else
-        mp.AddCharge (pnt, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      if constexpr (COMPS == 1)
-        val(0) = Real(mp.Evaluate (pnt));
-      else
-        val = Real(mp.Evaluate (pnt));
-    }
-
-    void EvaluateMPTrans(RegularMLExpansion<mp_type> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      if constexpr (COMPS == 1)
-        val(0) = Real(mp.EvaluateDirectionalDerivative(pnt, nv));
-      else
-        val = Real(mp.EvaluateDirectionalDerivative(pnt, nv));
-    }
   };
 
 
@@ -390,18 +537,20 @@ namespace ngsbem
   {
     T_Kappa kappa;
   public:
-    static constexpr bool needs_target_normal = false;
-    static constexpr bool needs_source_normal = false;
+    using source_type = Charges<COMPS, Complex, T_Kappa>;
+    using target_type = Charges<COMPS, Complex, T_Kappa>;
+
+    source_type source;
+    target_type target;
 
     typedef Complex value_type;
-    using mp_type = typename std::conditional<COMPS == 1,
-                                              Complex,
-                                              Vec<COMPS, Complex>>::type;
+    using mp_type = typename source_type::mp_type;
+
     static string Name() { return "HelmholtzSL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
-    
+
     /** Construction of the kernel specifies the wavenumber $\kappa$. */
-    HelmholtzSLKernel (T_Kappa _kappa) : kappa(_kappa) {
+    HelmholtzSLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) {
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};
     }
@@ -415,48 +564,6 @@ namespace ngsbem
     }
     T_Kappa GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddCharge (pnt, val(0));
-      else
-        mp.AddCharge (pnt, val);
-    }
-
-    void AddSourceTrans(SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddCharge (pnt, val(0));
-      else
-        mp.AddCharge (pnt, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        val(0) = mp.Evaluate (pnt);
-      else
-        val = mp.Evaluate (pnt);
-    }
-
-    void EvaluateMPTrans(RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        val(0) = mp.Evaluate(pnt);
-      else
-        val = mp.Evaluate(pnt);
-    }
 
     auto GetDifferentiatedKernel(const string &name) const {
       if constexpr (COMPS == 3)
@@ -490,21 +597,24 @@ namespace ngsbem
   {
     T_Kappa kappa;
   public:
-    static constexpr bool needs_target_normal = false;
+    using source_type = Dipoles<COMPS, Complex, T_Kappa>;
+    using target_type = Charges<COMPS, Complex, T_Kappa>;
+
+    source_type source;
+    target_type target;
 
     typedef Complex value_type;
-    using mp_type = typename std::conditional<COMPS == 1,
-                                              Complex,
-                                              Vec<COMPS, Complex>>::type;
+    using mp_type = typename source_type::mp_type;
+
     static string Name() { return "HelmholtzDL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
-    
-    HelmholtzDLKernel (T_Kappa _kappa) : kappa(_kappa) {
+
+    HelmholtzDLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) {
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};
     }
 
-    template <typename T>    
+    template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
@@ -515,48 +625,6 @@ namespace ngsbem
     }
     T_Kappa GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddDipole(pnt, -nv, val(0));
-      else
-        mp.AddDipole(pnt, -nv, val);
-    }
-
-    void AddSourceTrans(SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddCharge (pnt, val(0));
-      else
-        mp.AddCharge (pnt, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        val(0) = mp.Evaluate (pnt);
-      else
-        val = mp.Evaluate (pnt);
-    }
-
-    void EvaluateMPTrans(RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        val(0) = mp.EvaluateDirectionalDerivative(pnt, nv);
-      else
-        val = mp.EvaluateDirectionalDerivative(pnt, nv);
-    }
   };
 
 
@@ -567,12 +635,18 @@ namespace ngsbem
   {
     double kappa;
   public:
+    using source_type = HelmholtzHSSource;
+    using target_type = HelmholtzHSTarget;
+
+    source_type source;
+    target_type target;
+
     typedef Complex value_type;
     static string Name() { return "HelmholtzHS"; }
     static auto Shape() { return IVec<2>(4,4); }
-    
-    HelmholtzHSKernel (double _kappa) : kappa(_kappa) { }
-    template <typename T>        
+
+    HelmholtzHSKernel (double _kappa) : kappa(_kappa), source(_kappa), target(_kappa) { }
+    template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
@@ -590,31 +664,6 @@ namespace ngsbem
         KernelTerm{1.0, 0, 2, 2},
     	KernelTerm{1.0, 1, 3, 3},
       };
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<Vec<6,Complex>>> (c, r, kappa, fmm_params);
-    }
- 
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<Vec<6,Complex>>> (c, r, kappa, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      Vec<6,Complex> charge;
-      charge.Range(0,3) = val.Range(0,3);
-      charge.Range(3,6) = -kappa * kappa * val(3) * nv;
-      mp.AddCharge(pnt, charge);
-    }
-
-    void EvaluateMP (RegularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      Vec<6,Complex> eval = mp.Evaluate (pnt);
-      val.Range(0,3) = eval.Range(0,3);
-      val(3) = InnerProduct(eval.Range(3,6), nv);
-    }
   };
 
 
@@ -627,21 +676,24 @@ namespace ngsbem
   {
     T_Kappa kappa;
   public:
-    static constexpr bool needs_target_normal = false;
+    using source_type = ChargeDipoles<COMPS, T_Kappa>;
+    using target_type = DirectEval<typename source_type::mp_type, Complex, T_Kappa>;
+
+    source_type source;
+    target_type target;
 
     typedef Complex value_type;
-    using mp_type = typename std::conditional<COMPS == 1,
-                                                  Complex,
-                                                  Vec<COMPS, Complex>>::type;
+    using mp_type = typename source_type::mp_type;
+
     static string Name() { return "Helmholtz Combined Field"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
-    
-    CombinedFieldKernel (T_Kappa _kappa) : kappa(_kappa) {
+
+    CombinedFieldKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) {
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};
     }
 
-    template <typename T>    
+    template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
@@ -652,32 +704,6 @@ namespace ngsbem
     }
     T_Kappa GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<mp_type,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        mp.AddChargeDipole (pnt, -kappa * Complex(0, 1)*val(0), -nv, val(0));
-      else
-        mp.AddChargeDipole (pnt, -kappa * Complex(0, 1)*val(0), -nv, val);
-    }
-
-    void EvaluateMP (RegularMLExpansion<mp_type,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      if constexpr (COMPS == 1)
-        val(0) = mp.Evaluate (pnt);
-      else
-        val = mp.Evaluate (pnt);
-    }
   };
 
 
@@ -687,23 +713,26 @@ namespace ngsbem
   {
     double kappa;
   public:
-    typedef Complex value_type;
+    using source_type = MaxwellSLSource;
+    using target_type = DirectEval<Vec<4,Complex>, Complex>;
 
-    static constexpr bool needs_target_normal = false;
-    static constexpr bool needs_source_normal = false;
+    source_type source;
+    target_type target;
+
+    typedef Complex value_type;
     static string Name() { return "MaxwellSL"; }
     static auto Shape() { return IVec<2>(4,4); }
-    
+
     MaxwellSLKernel (const MaxwellSLKernel&) = default;
     MaxwellSLKernel (MaxwellSLKernel&&) = default;
-    MaxwellSLKernel (double _kappa) : kappa(_kappa)
+    MaxwellSLKernel (double _kappa) : kappa(_kappa), source(_kappa), target(_kappa)
     {
       for (size_t i = 0; i < 3; i++)
         terms += KernelTerm { kappa, 0, i, i };
-      terms += KernelTerm { -1.0/kappa, 0, 3, 3 };      
+      terms += KernelTerm { -1.0/kappa, 0, 3, 3 };
     }
-    
-    template <typename T>    
+
+    template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
@@ -712,29 +741,6 @@ namespace ngsbem
     }
     double GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<Vec<4,Complex>>> (c, r, kappa, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<Vec<4,Complex>>> (c, r, kappa, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      Vec<4,Complex> charge;
-      charge.Range(0,3) = kappa * val.Range(0, 3);
-      charge(3) = -1.0/kappa * val(3);
-      mp.AddCharge(pnt, charge);
-    }
-
-    void EvaluateMP (RegularMLExpansion<Vec<4,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      val = mp.Evaluate (pnt);
-    }
   };
 
 
@@ -749,16 +755,19 @@ namespace ngsbem
   {
     T_Kappa kappa;
   public:
-    static constexpr bool needs_target_normal = false;
-    static constexpr bool needs_source_normal = false;
+    using source_type = MaxwellCurlDipoles<T_Kappa>;
+    using target_type = MaxwellCurlDipoles<T_Kappa>;
+
+    source_type source;
+    target_type target;
 
     typedef Complex value_type;
     static string Name() { return "MaxwellDL"; }
     static auto Shape() { return IVec<2>(3,3); }
-    
-    MaxwellDLKernel (T_Kappa _kappa) : kappa(_kappa) { }
-    
-    template <typename T>    
+
+    MaxwellDLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) { }
+
+    template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
@@ -775,53 +784,7 @@ namespace ngsbem
         KernelTerm{-1.0, 1, 0, 2},
         KernelTerm{ 1.0, 2, 0, 1},
         KernelTerm{-1.0, 2, 1, 0},
-      };    
-
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<Vec<3,Complex>,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<Vec<3,Complex>,T_Kappa>> (c, r, kappa, fmm_params);
-    }
-
-    void AddSource (SingularMLExpansion<Vec<3,Complex>,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      Vec<3,Complex> n_cross_m = val.Range(0, 3);
-      for (int k = 0; k < 3; k++)
-      {
-        Vec<3> ek{0.0}; ek(k) = 1;
-        Vec<3> n_cross_m_real = Real(n_cross_m);
-        Vec<3> n_cross_m_imag = Imag(n_cross_m);
-        mp.AddDipole(pnt, Cross(n_cross_m_real, ek), ek);
-        mp.AddDipole(pnt, Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
-      }
-    }
-
-    void AddSourceTrans(SingularMLExpansion<Vec<3,Complex>,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      Vec<3,Complex> n_cross_m = val.Range(0, 3);
-      for (int k = 0; k < 3; k++)
-      {
-        Vec<3> ek{0.0}; ek(k) = 1;
-        Vec<3> n_cross_m_real = Real(n_cross_m);
-        Vec<3> n_cross_m_imag = Imag(n_cross_m);
-        mp.AddDipole(pnt, Cross(n_cross_m_real, ek), ek);
-        mp.AddDipole(pnt, Cross(n_cross_m_imag, ek), Complex(0,1)*ek);
-      }
-    }
-
-    void EvaluateMP (RegularMLExpansion<Vec<3,Complex>,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      val = mp.Evaluate (pnt);
-    }
-
-    void EvaluateMPTrans(RegularMLExpansion<Vec<3,Complex>,T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const
-    {
-      val = mp.Evaluate (pnt);
-    }
+      };
   };
 
 
@@ -831,15 +794,19 @@ namespace ngsbem
     double E, nu;
     double alpha;
   public:
+    using source_type = LameSource;
+    using target_type = LameTarget;
+
+    source_type source;
+    target_type target;
+
     typedef double value_type;
-    static constexpr bool needs_target_normal = false;
-    static constexpr bool needs_source_normal = false;
     static string Name() { return "LameSL"; }
     static auto Shape() { return IVec<2>(3,3); }
-    
+
     LameSLKernel (const LameSLKernel&) = default;
     LameSLKernel (LameSLKernel&&) = default;
-    LameSLKernel (double _E, double _nu) : E(_E), nu(_nu)
+    LameSLKernel (double _E, double _nu) : E(_E), nu(_nu), target(_nu, (1+_nu)/((1-_nu)*2*_E))
     {
       alpha = (1+nu)/((1-nu)*2*E);
 
@@ -862,11 +829,11 @@ namespace ngsbem
 
     Array<KernelTerm> terms;
 
-    template <typename T>    
+    template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
-      auto lapkern = alpha / (4 * M_PI * norm);  // lapkern times factor
+      auto lapkern = alpha / (4 * M_PI * norm);
 
       return Vec<7,T> { lapkern,
                         (x(0)-y(0))*(x(0)-y(0))/sqr(norm) * lapkern,
@@ -876,55 +843,6 @@ namespace ngsbem
                         (x(1)-y(1))*(x(2)-y(2))/sqr(norm) * lapkern,
                         (x(2)-y(2))*(x(2)-y(2))/sqr(norm) * lapkern
       };
-    }
-
-    
-    auto CreateMultipoleExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<SingularMLExpansion<Vec<6,Complex>>> (c, r, 1e-16, fmm_params);
-    }
-
-    auto CreateLocalExpansion (Vec<3> c, double r, FMM_Parameters fmm_params) const
-    {
-      return make_shared<RegularMLExpansion<Vec<6,Complex>>> (c, r, 1e-16, fmm_params);
-    }
-
-    
-    void AddSource (SingularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      Vec<6> charge = 0.0;
-      charge.Range(0,3) = val;
-      mp.AddCharge(pnt, charge);   // Row 1+2
-
-      Mat<3,3> jacobi = OuterProduct(pnt, val) + InnerProduct(pnt, val) * Id<3>();
-
-      for (int k = 0; k < 3; k++)
-        {
-          Vec<6> dipole_charge = 0.0; 
-          dipole_charge.Range(3,6) = jacobi.Col(k);
-          
-          auto ek = UnitVec<3>(k);          
-          mp.AddDipole(pnt, -ek, dipole_charge);          
-        }
-    }
-
-    void EvaluateMP (RegularMLExpansion<Vec<6,Complex>> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<double> val) const
-    {
-      Vec<6> mpval = Real(mp.Evaluate (pnt));
-      val.Range(0,3) = 0;
-      val += (3-4*nu)*alpha * mpval.Range(0,3);  // Row 1
-      
-      val -= alpha/2 * mpval.Range(3,6);        // Row 3
-
-      // Row 2
-      Mat<3,3> jacobi = 0.0; 
-      for (int k = 0; k < 3; k++)    
-        {
-          auto ek = UnitVec<3>(k);
-          jacobi.Col(k) = Real(mp.EvaluateDirectionalDerivative(pnt, ek).Range(0,3));
-        }
-
-      val -= alpha/2 * ( Trans(jacobi) * pnt + Trace(jacobi) * pnt);
     }
   };
 

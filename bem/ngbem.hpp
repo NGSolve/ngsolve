@@ -516,7 +516,7 @@ namespace ngsbem
     int intorder;
     bool nearfield;
 
-    using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::CreateLocalExpansion),KERNEL,Vec<3>,double,FMM_Parameters>;
+    using LOCAL_EXPANSION = typename std::invoke_result_t<decltype(&KERNEL::target_type::CreateLocalExpansion),typename KERNEL::target_type,Vec<3>,double,FMM_Parameters>;
 
     LOCAL_EXPANSION local_expansion;
     
