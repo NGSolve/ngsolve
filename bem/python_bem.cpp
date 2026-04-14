@@ -387,6 +387,11 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("__call__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<GridFunction> gf) {
       return pot->MakePotentialCF(gf);
     })
+    .def("__call__", [](shared_ptr<BasePotentialOperator> pot, shared_ptr<GridFunction> gf, const Region & region) {
+      auto cf = pot->MakePotentialCF(gf);
+      cf->BuildLocalExpansion(region);
+      return cf;
+    })
     .def("__str__", [](BasePotentialOperator & self) { return ToString(self); })
     ;
   
