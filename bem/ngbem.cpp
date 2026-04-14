@@ -1291,7 +1291,7 @@ namespace ngsbem
     double rs = MaxNorm(smax-smin);
 
     // cout << "cs = " << cs << ", rs = " << rs << endl;
-    auto singmp = kernel.CreateMultipoleExpansion(cs, rs, io_params);
+    auto singmp = kernel.source.CreateMultipoleExpansion(cs, rs, io_params);
     
     typedef typename KERNEL::value_type T;
     for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
@@ -1321,13 +1321,13 @@ namespace ngsbem
           {
             vals.Row(j) *= miry[j].GetWeight();
             Vec<3> ny = 0.0;
-            if constexpr (KERNEL::needs_source_normal)
+            if constexpr (KERNEL::source_type::needs_normal)
               {
                 if (source_vb != BND)
                   throw Exception("kernel requires boundary source normals");
                 ny = static_cast<const MappedIntegrationPoint<2,3>&>(miry[j]).GetNV();
               }
-            kernel.AddSource (*singmp, miry[j].GetPoint(), ny, make_BareSliceVector(vals.Row(j)));
+            kernel.source.AddSource (*singmp, miry[j].GetPoint(), ny, make_BareSliceVector(vals.Row(j)));
           }
       }
 
@@ -1363,7 +1363,7 @@ namespace ngsbem
     double l2 = ceil (log2 (rt/rs));
     rt = exp2 (l2) * rs;
     
-    local_expansion = kernel.CreateLocalExpansion(ct, rt, io_params);
+    local_expansion = kernel.target.CreateLocalExpansion(ct, rt, io_params);
 
     for (auto el : reg.GetElements())
       {      
@@ -1574,12 +1574,12 @@ namespace ngsbem
                 {
                   Vec<3,SIMD<double>> x = mip.GetPoint();
                   Vec<3,SIMD<double>> nx{0.0};
-                  if constexpr (KERNEL::needs_target_normal)
+                  if constexpr (KERNEL::target_type::needs_normal)
                     nx = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV();
                   
                   Vec<3,SIMD<double>> y = miry[iy].GetPoint();
                   Vec<3,SIMD<double>> ny{0.0};
-                  if constexpr (KERNEL::needs_source_normal)
+                  if constexpr (KERNEL::source_type::needs_normal)
                     {
                       if (source_vb != BND)
                         throw Exception("kernel requires boundary source normals");
@@ -1610,15 +1610,15 @@ namespace ngsbem
           // static Timer t("ngbem evaluate potential, local expansion (bmir)"); RegionTimer reg(t);
 
           const MappedIntegrationRule<2,3> * mir23 = nullptr;
-          if constexpr (KERNEL::needs_target_normal)
+          if constexpr (KERNEL::target_type::needs_normal)
             mir23 = &dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);
 
           for (int j = 0; j < bmir.Size(); j++)
             {
               Vec<3> nx = 0.0;
-              if constexpr (KERNEL::needs_target_normal)
+              if constexpr (KERNEL::target_type::needs_normal)
                 nx = (*mir23)[j].GetNV();
-              kernel.EvaluateMP (*local_expansion, Vec<3>(bmir[j].GetPoint()), nx, make_BareSliceVector(result.Row(j)));
+              kernel.target.EvaluateMP (*local_expansion, Vec<3>(bmir[j].GetPoint()), nx, make_BareSliceVector(result.Row(j)));
             }
           return;
         }
@@ -1639,7 +1639,7 @@ namespace ngsbem
         auto space = this->gf->GetFESpace();
         auto mesh = space->GetMeshAccess();
         const MappedIntegrationRule<2,3> * mirx23 = nullptr;
-        if constexpr (KERNEL::needs_target_normal)
+        if constexpr (KERNEL::target_type::needs_normal)
           mirx23 = &dynamic_cast<const MappedIntegrationRule<2,3>&>(bmir);
         
         Matrix<SIMD<T>> simd_result(Dimension(), bmir.Size());
@@ -1673,10 +1673,10 @@ namespace ngsbem
                     Vec<3,SIMD<double>> y = miry[iy].GetPoint();
                     
                     Vec<3,SIMD<double>> nx{0.0};
-                    if constexpr (KERNEL::needs_target_normal)
+                    if constexpr (KERNEL::target_type::needs_normal)
                       nx = (*mirx23)[ix].GetNV();
                     Vec<3,SIMD<double>> ny{0.0};
-                    if constexpr (KERNEL::needs_source_normal)
+                    if constexpr (KERNEL::source_type::needs_normal)
                       {
                         if (source_vb != BND)
                           throw Exception("kernel requires boundary source normals");

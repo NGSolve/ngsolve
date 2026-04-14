@@ -125,24 +125,24 @@ namespace ngsbem
       auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[0]);      
       
       maty = 0;
-      auto singmp = kernel.CreateMultipoleExpansion (cx, rx, fmm_params);
+      auto singmp = kernel.source.CreateMultipoleExpansion (cx, rx, fmm_params);
       ParallelFor (xpts.Size(), [&](int i){
-        kernel.AddSource(*singmp, xpts[i], xnv[i], matx.Row(i));
+        kernel.source.AddSource(*singmp, xpts[i], xnv[i], matx.Row(i));
       });
       singmp->CalcMP();
       static Timer taddlocal("ngbem fmm add local");
       taddlocal.Start();
-      auto regmp = kernel.CreateLocalExpansion (cy, ry, fmm_params);
+      auto regmp = kernel.target.CreateLocalExpansion (cy, ry, fmm_params);
       ParallelFor (ypts.Size(), [&](int i){
         regmp->AddTarget(ypts[i]);
       });
       taddlocal.Stop();
       regmp->CalcMP(singmp);
 
-      static Timer teval("ngbem fmm apply "+KERNEL::Name() + " eval"); 
+      static Timer teval("ngbem fmm apply "+KERNEL::Name() + " eval");
       teval.Start();
       ParallelFor (ypts.Size(), [&](int i) {
-        kernel.EvaluateMP(*regmp, ypts[i], ynv[i], maty.Row(i)); 
+        kernel.target.EvaluateMP(*regmp, ypts[i], ynv[i], maty.Row(i));
       });
       teval.Stop();
     }
@@ -156,18 +156,18 @@ namespace ngsbem
         auto maty = y.FV<typename KERNEL::value_type>().AsMatrix(ypts.Size(), shape[1]);
 
         maty = 0;
-        auto singmp = kernel.CreateMultipoleExpansion (cy, ry, fmm_params);
+        auto singmp = kernel.target.CreateMultipoleExpansion (cy, ry, fmm_params);
         ParallelFor (ypts.Size(), [&](int i){
-          kernel.AddSourceTrans(*singmp, ypts[i], ynv[i], matx.Row(i));
+          kernel.target.AddSource(*singmp, ypts[i], ynv[i], matx.Row(i));
         });
         singmp->CalcMP();
-        auto regmp = kernel.CreateLocalExpansion (cx, rx, fmm_params);
+        auto regmp = kernel.source.CreateLocalExpansion (cx, rx, fmm_params);
         ParallelFor (xpts.Size(), [&](int i){
           regmp->AddTarget(xpts[i]);
         });
         regmp->CalcMP(singmp);
         ParallelFor (xpts.Size(), [&](int i) {
-          kernel.EvaluateMPTrans(*regmp, xpts[i], xnv[i], maty.Row(i));
+          kernel.source.EvaluateMP(*regmp, xpts[i], xnv[i], maty.Row(i));
         });
     }
 
