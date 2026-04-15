@@ -1090,6 +1090,10 @@ namespace ngsbem
   template<>  
   Array<size_t> SingularMLExpansion<Complex>::nodes_on_level(100);
   template<>
+  Array<size_t> RegularMLExpansion<Vec<1,Complex>>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<1,Complex>>::nodes_on_level(100);
+  template<>
   Array<size_t> RegularMLExpansion<Vec<3,Complex>>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLExpansion<Vec<3,Complex>>::nodes_on_level(100);
@@ -1106,6 +1110,10 @@ namespace ngsbem
   Array<size_t> RegularMLExpansion<Complex,Complex>::nodes_on_level(100);
   template<>
   Array<size_t> SingularMLExpansion<Complex,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> RegularMLExpansion<Vec<1,Complex>,Complex>::nodes_on_level(100);
+  template<>
+  Array<size_t> SingularMLExpansion<Vec<1,Complex>,Complex>::nodes_on_level(100);
   template<>
   Array<size_t> RegularMLExpansion<Vec<3,Complex>,Complex>::nodes_on_level(100);
   template<>
