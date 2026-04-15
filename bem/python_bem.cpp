@@ -174,7 +174,54 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   // ************************** Potential and integral operators *******************************************
 
 
+  /*
 
+  using CalcFn = void(*)(void*, int, int);
+
+  
+  // m.def("CalcSubMatrixTest", [](void * iop, int n, int m) { });
+  // py::class_<std::function<void(void*, int, int)>>(m, "MyFuncType");
+
+  
+  m.def("CalcSubMatrixTest", [] () -> CalcFn {
+    return &MyCalc;
+  });
+  
+  m.def("HMatrixBuilder", [](py::object func)
+  {
+    cout << "got object" << endl;
+
+    std::function<void(void*, int, int)> cppfunc;
+
+    // cppfunc = func.cast<std::function<void(void*, int, int)>>();
+    // auto cppfunc = py::cast<function<void(void*,int,int)>>(func);
+    cppfunc = py::cast<CalcFn>(func);
+  });
+
+  m.def("Test2", [](std::function<void(void*,int,int)>)
+  {
+    cout << "got function" << endl;
+  });
+
+  */
+  
+
+  // NGSolve-side:
+  py::class_<std::function<void(int, int)>>(m, "CalcSubMatrixType", py::module_local());
+  // m.def("CalcSubMatrixDummy", [](){ return std::function([](void * iop, int n, int m) { cout << "hi" << n + m << endl;}); });
+  
+  // HTool-side:
+  // py::class_<std::function<void(void*, int, int)>>(m, "CalcSubMatrixType", py::module_local());
+  m.def("HMatrixBuilder", [](std::function<void(int,int)> f)
+  {
+    py::gil_scoped_release rel;    
+    cout << "got function" << endl;
+    f(1, 2);
+  });
+  
+
+
+  
   py::class_<IntegralOperator,shared_ptr<IntegralOperator>> (m, "IntegralOperator")
     .def_property_readonly("mat", &IntegralOperator::GetMatrix)
     .def("NearFieldMatrix", &IntegralOperator::GetNearFieldMatrix)
@@ -192,6 +239,18 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       // iop->CalcSubMatrix(rowidsa, colidsa, lh);  // call it twice, for timing
       return iop->CalcSubMatrix(rowidsa, colidsa, lh);
     }, py::arg("rowids"), py::arg("colids"))
+
+
+    .def("CalcSubMatrixTest", [](IntegralOperator& a)
+    {
+      return std::function([&](int n, int m)
+      {
+        // a.TestMethod(iop, n, m);
+        cout << "&a = " << &a << endl;
+        cout << "typeid = " << typeid(a).name() << endl;
+        cout << "n+m = " << n+m << endl;
+      });
+    })
     
     .def("__add__", [](shared_ptr<IntegralOperator> a, shared_ptr<IntegralOperator> b)
     {
