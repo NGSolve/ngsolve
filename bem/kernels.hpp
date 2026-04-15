@@ -62,83 +62,57 @@ namespace ngsbem
   };
 
   template <int COMPS, typename value_type, typename T_Kappa = double>
-  class Charges : public FMMInterface<typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type, value_type, T_Kappa>
+  class Charges : public FMMInterface<Vec<COMPS, Complex>, value_type, T_Kappa>
   {
   public:
-    using mp_type = typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type;
+    using mp_type = Vec<COMPS, Complex>;
     using Base = FMMInterface<mp_type, value_type, T_Kappa>;
     static constexpr bool needs_normal = false;
     Charges (T_Kappa kappa = 1e-16) : Base(kappa) {}
 
     void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
-      if constexpr (COMPS == 1)
-        mp.AddCharge (pnt, val(0));
-      else
-        mp.AddCharge (pnt, val);
+      mp.AddCharge (pnt, val);
     }
 
     void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
-      if constexpr (COMPS == 1)
-        {
-          if constexpr (std::is_same_v<value_type, double>)
-            val(0) = Real(mp.Evaluate (pnt));
-          else
-            val(0) = mp.Evaluate (pnt);
-        }
+      if constexpr (std::is_same_v<value_type, double>)
+        val = Real(mp.Evaluate (pnt));
       else
-        {
-          if constexpr (std::is_same_v<value_type, double>)
-            val = Real(mp.Evaluate (pnt));
-          else
-            val = mp.Evaluate (pnt);
-        }
+        val = mp.Evaluate (pnt);
     }
   };
 
   template <int COMPS, typename value_type, typename T_Kappa = double>
-  class Dipoles : public FMMInterface<typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type, value_type, T_Kappa>
+  class Dipoles : public FMMInterface<Vec<COMPS, Complex>, value_type, T_Kappa>
   {
   public:
-    using mp_type = typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type;
+    using mp_type = Vec<COMPS, Complex>;
     using Base = FMMInterface<mp_type, value_type, T_Kappa>;
     static constexpr bool needs_normal = true;
     Dipoles (T_Kappa kappa = 1e-16) : Base(kappa) {}
 
     void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
-      if constexpr (COMPS == 1)
-        mp.AddDipole (pnt, -nv, val(0));
-      else
-        mp.AddDipole (pnt, -nv, val);
+      mp.AddDipole (pnt, -nv, val);
     }
 
     void EvaluateMP (RegularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<value_type> val) const override
     {
-      if constexpr (COMPS == 1)
-        {
-          if constexpr (std::is_same_v<value_type, double>)
-            val(0) = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
-          else
-            val(0) = mp.EvaluateDirectionalDerivative (pnt, nv);
-        }
+      if constexpr (std::is_same_v<value_type, double>)
+        val = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
       else
-        {
-          if constexpr (std::is_same_v<value_type, double>)
-            val = Real(mp.EvaluateDirectionalDerivative (pnt, nv));
-          else
-            val = mp.EvaluateDirectionalDerivative (pnt, nv);
-        }
+        val = mp.EvaluateDirectionalDerivative (pnt, nv);
     }
   };
 
   // Evaluates gradient: 3 directional derivatives along unit vectors
   template <int COMPS, typename value_type, typename T_Kappa = double>
-  class GradientEval : public FMMInterface<typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type, value_type, T_Kappa>
+  class GradientEval : public FMMInterface<Vec<COMPS, Complex>, value_type, T_Kappa>
   {
   public:
-    using mp_type = typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type;
+    using mp_type = Vec<COMPS, Complex>;
     using Base = FMMInterface<mp_type, value_type, T_Kappa>;
     static constexpr bool needs_normal = false;
     GradientEval (T_Kappa kappa = 1e-16) : Base(kappa) {}
@@ -150,21 +124,13 @@ namespace ngsbem
           Vec<3> ei = 0;
           ei(i) = 1;
           auto deri = mp.EvaluateDirectionalDerivative (pnt, ei);
-          if constexpr (COMPS == 1)
-            {
-              if constexpr (std::is_same_v<value_type, double>)
-                val(i) = Real(deri);
-              else
-                val(i) = deri;
-            }
-          else
-            for (int c = 0; c < COMPS; c++)
-              {
-                if constexpr (std::is_same_v<value_type, double>)
-                  val(3*c+i) = Real(deri(c));
-                else
-                  val(3*c+i) = deri(c);
-              }
+          for (int c = 0; c < COMPS; c++)
+          {
+            if constexpr (std::is_same_v<value_type, double>)
+              val(3*c+i) = Real(deri(c));
+            else
+              val(3*c+i) = deri(c);
+          }
         }
     }
   };
@@ -189,20 +155,17 @@ namespace ngsbem
 
   // Combined charge + dipole source (CombinedField)
   template <int COMPS, typename T_Kappa = double>
-  class ChargeDipoles : public FMMInterface<typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type, Complex, T_Kappa>
+  class ChargeDipoles : public FMMInterface<Vec<COMPS, Complex>, Complex, T_Kappa>
   {
   public:
-    using mp_type = typename std::conditional<COMPS == 1, Complex, Vec<COMPS, Complex>>::type;
+    using mp_type = Vec<COMPS, Complex>;
     using Base = FMMInterface<mp_type, Complex, T_Kappa>;
     static constexpr bool needs_normal = true;
     ChargeDipoles (T_Kappa kappa) : Base(kappa) {}
 
     void AddSource (SingularMLExpansion<mp_type, T_Kappa> & mp, Vec<3> pnt, Vec<3> nv, BareSliceVector<Complex> val) const override
     {
-      if constexpr (COMPS == 1)
-        mp.AddChargeDipole (pnt, -this->kappa * Complex(0, 1)*val(0), -nv, val(0));
-      else
-        mp.AddChargeDipole (pnt, -this->kappa * Complex(0, 1)*val(0), -nv, val);
+      mp.AddChargeDipole (pnt, -this->kappa * Complex(0, 1)*val, -nv, val);
     }
   };
 
