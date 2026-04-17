@@ -120,7 +120,7 @@ namespace ngla
       static Timer t("DevBlockJacobi::MultAdd");
       CudaRegionTimer rt(t);
 
-      BlockJacobiKernel<<<512,dim3(16,16)>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
+      BlockJacobiKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
     }
     
   }
@@ -134,7 +134,7 @@ namespace ngla
       static Timer t("DevBlockJacobi::MultAddTrans");
       CudaRegionTimer rt(t);
 
-      BlockJacobiTransKernel<<<512,dim3(16,16)>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
+      BlockJacobiTransKernel<<<512,dim3(16,16),0,ngs_cuda_stream>>> (s, ctrstructs, ux.FVDevRO(), uy.FVDev());
     }
     
   }

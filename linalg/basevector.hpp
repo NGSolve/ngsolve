@@ -259,6 +259,7 @@ namespace ngla
 
     virtual BaseVector & Scale (double scal);
     virtual BaseVector & Scale (Complex scal);
+    virtual BaseVector & Scale (BaseScalar & scal);
 
     virtual BaseVector & SetScalar (double scal);
     virtual BaseVector & SetScalar (Complex scal);

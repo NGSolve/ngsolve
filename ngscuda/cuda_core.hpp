@@ -75,42 +75,87 @@ namespace ngs_cuda
 
   class CudaGraph
   {
-    cudaGraph_t graph;
-    cudaGraphExec_t instance;    
+    cudaGraph_t graph = nullptr;
+    cudaGraphExec_t instance = nullptr;
     cudaStream_t stream;
     cudaStream_t prev_stream;
-    
+    bool capture_ok = false;
+
   public:
+    static inline std::function<void(cudaStream_t)> stream_change_callback = nullptr;
+
     CudaGraph()
     {
-      cudaStreamCreate(&stream);
+      auto err = cudaStreamCreateWithFlags(&stream, cudaStreamNonBlocking);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(std::string("[CudaGraph] cudaStreamCreate FAILED: ")
+                               + cudaGetErrorString(err));
     }
 
     ~CudaGraph()
     {
-      // TODO: delete graph, instance, stream
+      if (instance) cudaGraphExecDestroy(instance);
+      if (graph)    cudaGraphDestroy(graph);
+      cudaStreamDestroy(stream);
     }
 
-    
     void BeginCapture()
     {
-      cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
+      capture_ok = false;
+      std::cerr << "[CudaGraph] BeginCapture called" << std::endl;
       prev_stream = ngs_cuda_stream;
       ngs_cuda_stream = stream;
+      if (stream_change_callback) {
+        stream_change_callback(ngs_cuda_stream);
+      }
+      auto err = cudaStreamBeginCapture(stream, cudaStreamCaptureModeGlobal);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(std::string("[CudaGraph] cudaStreamBeginCapture FAILED: ")
+                               + cudaGetErrorString(err));
     }
 
     void EndCapture()
     {
-      cudaStreamEndCapture(stream, &graph);
-      cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
+      auto err = cudaStreamEndCapture(stream, &graph);
+      if (err != cudaSuccess) {
+        ngs_cuda_stream = prev_stream;
+        throw ngstd::Exception(std::string("[CudaGraph] cudaStreamEndCapture FAILED: ")
+                               + cudaGetErrorString(err));
+      }
+
+      size_t numnodes = 0;
+      cudaGraphGetNodes(graph, nullptr, &numnodes);
+      std::cerr << "[CudaGraph] captured nodes: " << numnodes << std::endl;
+      if (numnodes == 0)
+        std::cerr << "[CudaGraph] WARNING: 0 nodes — ops may not be on capture stream!" << std::endl;
+
+      err = cudaGraphInstantiate(&instance, graph, NULL, NULL, 0);
+      if (err != cudaSuccess) {
+        ngs_cuda_stream = prev_stream;
+        throw ngstd::Exception(std::string("[CudaGraph] cudaGraphInstantiate FAILED: ")
+                               + cudaGetErrorString(err));
+      }
+
+      capture_ok = true;
       ngs_cuda_stream = prev_stream;
+      if (stream_change_callback) {
+        stream_change_callback(ngs_cuda_stream);
+      }
     }
 
     void Launch()
     {
-      cudaGraphLaunch(instance, ngs_cuda_stream);
-      // cudaStreamSynchronize(ngs_cuda_stream);
+      if (!capture_ok || !instance) {
+        std::cerr << "[CudaGraph] Launch skipped — capture did not succeed" << std::endl;
+        return;
+      }
+      auto err = cudaGraphLaunch(instance, ngs_cuda_stream);
+      if (err != cudaSuccess)
+        std::cerr << "[CudaGraph] cudaGraphLaunch FAILED: "
+                  << cudaGetErrorString(err) << std::endl;
     }
+
+    bool IsValid() const { return capture_ok && instance != nullptr; }
   };
   
 

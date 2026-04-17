@@ -16,6 +16,7 @@
 namespace ngla
 {
   cublasHandle_t Get_CuBlas_Handle ();
+  cusparseHandle_t Get_CuSparse_Handle ();
 }
 
   
@@ -55,6 +56,8 @@ namespace ngla
     int * dev_col;
     double * dev_val;
     int height, width, nze;
+    size_t spmv_bufferSize = 0;
+    void*  spmv_buffer = nullptr;
   public:
     DevSparseMatrix () { }
     DevSparseMatrix (const SparseMatrix<double> & mat);
@@ -104,6 +107,10 @@ namespace ngla
     bool output_onto = false;
     bool output_matrix = false;
     bool output_matrix_trans = false;
+
+    // persistent buffers for graph capture (avoids dynamic alloc in Mult)
+    mutable double* dev_hx_buf = nullptr;
+    mutable double* dev_hy_buf = nullptr;
 
   public:
     DevConstantElementByElementMatrix (const T_ConstEBEMatrix & mat);
@@ -177,8 +184,120 @@ namespace ngla
     { throw Exception("CreateColVector not implemented for DevProjector!"); }
 
   };
-  
 
+
+
+  // -------------------------------------------------------
+  // Scalar expression templates for GPU-resident arithmetic
+  // Usage: *alpha = Div(Scal(*rz), Scal(*pq));
+  // operator= fires ONE DeviceParallelFor(1,...) kernel
+  // All nodes read from fixed device addresses → capturable
+  // -------------------------------------------------------
+
+  // Leaf node — wraps a UnifiedScalar device pointer
+  struct ScalarExpr {
+    double* ptr;
+    __device__ inline double Evaluate() const { return *ptr; }
+  };
+
+  // Leaf node — compile-time constant
+  struct ConstExpr {
+    double val;
+    __device__ inline double Evaluate() const { return val; }
+  };
+
+  // Binary nodes
+  template<typename L, typename R>
+  struct SumExpr {
+    L left; R right;
+    __device__ inline double Evaluate() const {
+      return left.Evaluate() + right.Evaluate();
+    }
+  };
+
+  template<typename L, typename R>
+  struct DiffExpr {
+    L left; R right;
+    __device__ inline double Evaluate() const {
+      return left.Evaluate() - right.Evaluate();
+    }
+  };
+
+  template<typename L, typename R>
+  struct ProdExpr {
+    L left; R right;
+    __device__ inline double Evaluate() const {
+      return left.Evaluate() * right.Evaluate();
+    }
+  };
+
+  template<typename L, typename R>
+  struct DivExpr {
+    L left; R right;
+    __device__ inline double Evaluate() const {
+      return left.Evaluate() / right.Evaluate();
+    }
+  };
+
+  // Unary nodes
+  template<typename T>
+  struct NegExpr {
+    T val;
+    __device__ inline double Evaluate() const { return -val.Evaluate(); }
+  };
+
+  template<typename T>
+  struct SqrtExpr {
+    T val;
+    __device__ inline double Evaluate() const { return sqrt(val.Evaluate()); }
+  };
+
+  // Builder functions
+  inline ScalarExpr Scal(const UnifiedScalar& s) { return ScalarExpr{s.DevPtr()}; }
+  inline ConstExpr  Const(double v)               { return ConstExpr{v}; }
+
+  template<typename L, typename R>
+  auto Sum (L l, R r) { return SumExpr <L,R>{l,r}; }
+
+  template<typename L, typename R>
+  auto Diff(L l, R r) { return DiffExpr<L,R>{l,r}; }
+
+  template<typename L, typename R>
+  auto Prod(L l, R r) { return ProdExpr<L,R>{l,r}; }
+
+  template<typename L, typename R>
+  auto Div (L l, R r) { return DivExpr <L,R>{l,r}; }
+
+  template<typename T>
+  auto Neg (T t)      { return NegExpr<T>{t}; }
+
+  template<typename T>
+  auto Sqrt(T t)      { return SqrtExpr<T>{t}; }
+
+  // DevCGSolver — preconditioned CG with GPU-resident scalars (UnifiedScalar)
+  // Supports CUDA graph capture of CG iteration body (convergence check via DtoH remains outside graph).
+  class DevCGSolver : public KrylovSpaceSolver
+  {
+    shared_ptr<BaseMatrix> a_dev;  // DevSparseMatrix for graph capture
+    shared_ptr<BaseMatrix> c_dev;  // DevBlockJacobiMatrix for graph capture
+
+  public:
+    DevCGSolver() : KrylovSpaceSolver() { }
+
+    DevCGSolver(shared_ptr<BaseMatrix> mat,
+                shared_ptr<BaseMatrix> pre)
+      : KrylovSpaceSolver(mat, pre) { }
+
+    DevCGSolver(shared_ptr<BaseMatrix> mat,
+                shared_ptr<BaseMatrix> pre,
+                shared_ptr<BaseMatrix> adev_raw,
+                shared_ptr<BaseMatrix> cdev_raw)
+      : KrylovSpaceSolver(mat, pre),
+        a_dev(adev_raw), c_dev(cdev_raw) { }
+
+    void Mult(const BaseVector& rhs,
+              BaseVector& sol) const override;
+  };
 }
 
 
