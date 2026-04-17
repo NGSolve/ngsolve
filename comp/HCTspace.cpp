@@ -217,8 +217,14 @@ namespace ngcomp
   {
     order = int(flags.GetNumFlag("order", 3));
 
+
+    if (ma->GetDimension() != 2)
+      throw Exception("HCT only supported in 2d");
+    
     evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpId<2>>>();
     flux_evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpGradient<2>>>();
+
+    additional_evaluators.Set ("hesse", make_shared<T_DifferentialOperator<DiffOpHesse<2>>> ());
   } 
 
   DocInfo HCT_FESpace::GetDocu()
