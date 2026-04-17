@@ -471,20 +471,22 @@ namespace ngbla
   template <typename TA>
   class LocalHeapExpr : public Expr<LocalHeapExpr<TA> >
   {
-    const TA & a;
+    TA a;
     LocalHeap * lh;
   public:
-    INLINE LocalHeapExpr (const TA & aa, LocalHeap & alh) : a(aa), lh(&alh) { ; }
+    INLINE LocalHeapExpr (TA aa, LocalHeap & alh) : a(aa), lh(&alh) { ; }
     INLINE const TA & A() const { return a; }
     INLINE auto Height() const { return a.Height(); }
     INLINE auto Width() const { return a.Width(); }
+    INLINE auto View() const { return *this; }
+
     INLINE LocalHeap & GetLocalHeap() const { return *lh; }
   };
   
   template <typename TA>
   INLINE LocalHeapExpr<TA> operator| (const Expr<TA> & a, LocalHeap & lh)
   {
-    return LocalHeapExpr<TA> (a.Spec(), lh);
+    return LocalHeapExpr(a.View(), lh);
   }
 
 
