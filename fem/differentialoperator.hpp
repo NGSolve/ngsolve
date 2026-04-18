@@ -266,7 +266,7 @@ namespace ngfem
 
     NGS_DLL_HEADER virtual list<tuple<string,double>> Timing (const FiniteElement & fel, const BaseMappedIntegrationRule & mir) const;
 
-    NGS_DLL_HEADER virtual void CheckElement (const FiniteElement& fel) const = 0;
+    NGS_DLL_HEADER virtual void CheckElement (const FiniteElement& fel) const { } 
   };
 
   
