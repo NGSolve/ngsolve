@@ -197,9 +197,10 @@ namespace ngfem
     using FiniteElementType = FiniteElement; // comment out this line when implementation is complete
     static void CheckElement(const FiniteElement& fel)
     {
-      if (!dynamic_cast<const typename DOP::FiniteElementType*>(&fel))
-        throw Exception(string("expected ") + typeid(typename DOP::FiniteElementType).name() + " got " +
-                        typeid(fel).name());
+      if constexpr (!std::is_same_v<std::remove_cvref_t<decltype(fel)>, typename DOP::FiniteElementType>)
+        if (!dynamic_cast<const typename DOP::FiniteElementType*>(&fel))
+          throw Exception(string("expected ") + typeid(typename DOP::FiniteElementType).name() + " got " +
+                          typeid(fel).name());
     };
 
   };
