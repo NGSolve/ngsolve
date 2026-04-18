@@ -32,7 +32,7 @@ class DMatOp
 public:
   // typedef double TSCAL;
   /// is coefficient tensor symmetric ?
-  enum { SYMMETRIC = 1 };
+  static constexpr int SYMMETRIC = 1;
 
   template <typename SCAL>
   static Mat<DIM_DMAT,DIM_DMAT,SCAL> GetMatrixType(SCAL s) { return SCAL(0); }
@@ -148,7 +148,7 @@ public:
   protected:
     DMATOP dmatop;
     DifferentialOperator * diffop = NULL;
-    enum { DIM_DMAT    = DMATOP::DIM_DMAT };
+    static constexpr int DIM_DMAT    = DMATOP::DIM_DMAT;
     
   public:
   
@@ -623,10 +623,10 @@ protected:
 
 public:
 
-  enum { DIM_SPACE   = DIFFOP::DIM_SPACE };
-  enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
-  enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
-  enum { DIM         = DIFFOP::DIM };
+  static constexpr int DIM_SPACE   = DIFFOP::DIM_SPACE;
+  static constexpr int DIM_ELEMENT = DIFFOP::DIM_ELEMENT;
+  static constexpr int DIM_DMAT    = DIFFOP::DIM_DMAT;
+  static constexpr int DIM         = DIFFOP::DIM;
 
   using BASE::Name;
   using BASE::integration_order;
@@ -827,14 +827,14 @@ public:
 	int ndof = fel.GetNDof();
 	elmat = 0;
 
-        enum { BLOCK = 4 * (6 / DIM_DMAT + 1) };
+  static constexpr int BLOCK = 4 * (6 / DIM_DMAT + 1);
 	
         HeapReset hr1(lh);
 
 #ifdef __MIC__
-	enum { ROUNDUP = (DIM_DMAT*BLOCK+7) & (-8) };
+  static constexpr int ROUNDUP = (DIM_DMAT*BLOCK+7) & (-8);
 #else
-	enum { ROUNDUP = (DIM_DMAT*BLOCK+3) & (-4) };
+  static constexpr int ROUNDUP = (DIM_DMAT*BLOCK+3) & (-4);
 #endif
 
         FlatMatrixFixHeight<DIM_DMAT*BLOCK, double, ROUNDUP> bbmat (ndof * DIM, lh);
@@ -1116,10 +1116,10 @@ template <class DIFFOP, class DMATOP, class FEL = FiniteElement>
 class T_NonlinearBDBIntegrator : public T_BDBIntegrator<DIFFOP, DMATOP, FEL>
 {
 protected:
-  enum { DIM_SPACE   = DIFFOP::DIM_SPACE };
-  enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
-  enum { DIM_DMAT    = DIFFOP::DIM_DMAT };
-  enum { DIM         = DIFFOP::DIM };
+  static constexpr int DIM_SPACE   = DIFFOP::DIM_SPACE;
+  static constexpr int DIM_ELEMENT = DIFFOP::DIM_ELEMENT;
+  static constexpr int DIM_DMAT    = DIFFOP::DIM_DMAT;
+  static constexpr int DIM         = DIFFOP::DIM;
 
   using T_BDBIntegrator<DIFFOP,DMATOP,FEL>::GetIntegrationRule;
   using T_BDBIntegrator<DIFFOP,DMATOP,FEL>::diffop;
@@ -1436,10 +1436,10 @@ protected:
   // DifferentialOperator * diffop = new T_DifferentialOperator<DIFFOP>;
   unique_ptr<DifferentialOperator> diffop = make_unique<T_DifferentialOperator<DIFFOP>>();  
 public:
-  enum { DIM_SPACE = DIFFOP::DIM_SPACE };
-  enum { DIM_ELEMENT = DIFFOP::DIM_ELEMENT };
-  enum { DIM_DMAT = DIFFOP::DIM_DMAT };
-  enum { DIM = DIFFOP::DIM };
+  static constexpr int DIM_SPACE = DIFFOP::DIM_SPACE;
+  static constexpr int DIM_ELEMENT = DIFFOP::DIM_ELEMENT;
+  static constexpr int DIM_DMAT = DIFFOP::DIM_DMAT;
+  static constexpr int DIM = DIFFOP::DIM;
   // typedef typename DVecOp::TSCAL TSCAL;
 
   ///
@@ -1607,7 +1607,7 @@ public:
       }
     else
       {
-	enum { HDIM = (DIM_SPACE > 1) ? DIM_SPACE-1 : 1 };
+  static constexpr int HDIM = (DIM_SPACE > 1) ? DIM_SPACE-1 : 1;
 	
 	const MappedIntegrationPoint< HDIM, DIM_SPACE > & d_s_mip
 	  (static_cast<const MappedIntegrationPoint< HDIM, DIM_SPACE > &>(s_mip));

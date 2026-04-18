@@ -20,11 +20,11 @@ namespace ngcomp
   class NumberDiffOp : public DiffOp<NumberDiffOp>
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = 0 };
-    enum { DIM_ELEMENT = 0 };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = 0;
+  static constexpr int DIM_ELEMENT = 0;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 0;
     
     static IVec<0> GetDimensions() { return {}; };
     static bool SupportsVB (VorB checkvb) { return true; }

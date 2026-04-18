@@ -78,11 +78,11 @@ namespace ngcomp
   class DiffOpNormal : public DiffOp<DiffOpNormal<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D;
+  static constexpr int DIFFORDER = 0;
 
     static string Name() { return "normal"; }
     
@@ -2191,11 +2191,11 @@ global system.
   class DiffOpSurfaceGradient : public DiffOp<DiffOpSurfaceGradient<D, FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D-1;
+  static constexpr int DIM_DMAT = D;
+  static constexpr int DIFFORDER = 1;
 
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
@@ -2980,11 +2980,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   class DiffOpIdVectorL2Piola2 : public DiffOp<DiffOpIdVectorL2Piola2<DIM_SPC,VB> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-VB };
-    enum { DIM_DMAT = DIM_SPC };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC-VB;
+    static constexpr int DIM_DMAT = DIM_SPC;
+    static constexpr int DIFFORDER = 0;
+    using FiniteElementType = VectorFiniteElement;
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -3034,11 +3035,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   class DiffOpIdVectorL2Piola : public DiffOp<DiffOpIdVectorL2Piola<DIM_SPC,VB> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-VB };
-    enum { DIM_DMAT = DIM_SPC };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC-VB;
+    static constexpr int DIM_DMAT = DIM_SPC;
+    static constexpr int DIFFORDER = 0;
+    using FiniteElementType = VectorFiniteElement;
 
 
     static int DimRef() { return DIM_ELEMENT; } 
@@ -3262,11 +3264,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   class DiffOpDivVectorL2Piola : public DiffOp<DiffOpDivVectorL2Piola<DIM_SPC>>
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 1;
+    using FiniteElementType = VectorFiniteElement;
 
     static string Name() { return "div"; }
 
@@ -3385,6 +3388,7 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
     static constexpr int DIM_ELEMENT = DIM_SPC;
     static constexpr int DIM_DMAT = DIM_SPC*DIM_SPC;
     static constexpr int DIFFORDER = 1;
+    using FiniteElementType = VectorFiniteElement;
 
     static string Name() { return "grad"; }
 
@@ -3645,11 +3649,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   class DiffOpIdVectorL2Covariant : public DiffOp<DiffOpIdVectorL2Covariant<DIM_SPC> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = DIM_SPC };
-    enum { DIM_ELEMENT = DIM_SPC-VB };
-    enum { DIM_DMAT = DIM_SPC };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = DIM_SPC;
+    static constexpr int DIM_ELEMENT = DIM_SPC-VB;
+    static constexpr int DIM_DMAT = DIM_SPC;
+    static constexpr int DIFFORDER = 0;
+    using FiniteElementType = VectorFiniteElement;
 
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
@@ -3760,11 +3765,12 @@ WIRE_BASKET via the flag 'lowest_order_wb=True'.
   class DiffOpCurlVectorL2Covariant : public DiffOp<DiffOpCurlVectorL2Covariant>
   {
   public:
-    enum { DIM = 3 };
-    enum { DIM_SPACE = 3 };
-    enum { DIM_ELEMENT = 3 };
-    enum { DIM_DMAT = 3 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 3;
+    static constexpr int DIM_SPACE = 3;
+    static constexpr int DIM_ELEMENT = 3;
+    static constexpr int DIM_DMAT = 3;
+    static constexpr int DIFFORDER = 1;
+    using FiniteElementType = VectorFiniteElement;
 
     static string Name() { return "curl"; }
 

@@ -15,11 +15,11 @@ namespace ngcomp
   class DiffOpIdFacet : public DiffOp<DiffOpIdFacet<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 0;
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     
     static IVec<0> GetDimensions() { return IVec<0>(); };
@@ -150,11 +150,11 @@ namespace ngcomp
   class DiffOpIdFacetDual : public DiffOp<DiffOpIdFacetDual<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 0;
     static IVec<0> GetDimensions() { return IVec<0>(); };
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     typedef DiffOpIdDual<D-1,D> DIFFOP_TRACE;

@@ -43,7 +43,7 @@ namespace ngfem
   class NGS_DLL_HEADER HDivFiniteElement : public BaseHDivFiniteElement
   {
   public:
-    enum { DIM = D };
+    static constexpr int DIM = D;
 
   public:
     using BaseHDivFiniteElement::BaseHDivFiniteElement;
@@ -150,7 +150,7 @@ namespace ngfem
   class NGS_DLL_HEADER HDivNormalFiniteElement : public FiniteElement
   {
   public:
-    enum { DIM = D };
+    static constexpr int DIM = D;
 
   public:
     ///

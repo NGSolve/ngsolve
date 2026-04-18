@@ -836,11 +836,12 @@ public:
   {
   public:
     typedef DiffOp<DiffOpHCurlDual<D>> BASE;
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D;
+  static constexpr int DIFFORDER = 0;
+  using FiniteElementType = HCurlFiniteElement<D>;
 
     typedef DiffOpHCurlDualBoundary<D> DIFFOP_TRACE;
 
@@ -893,11 +894,12 @@ public:
   {
   public:
     typedef DiffOp<DiffOpHCurlDualBoundary<D>> BASE;
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D-1;
+  static constexpr int DIM_DMAT = D;
+  static constexpr int DIFFORDER = 0;
+  using FiniteElementType = HCurlFiniteElement<D-1>;
 
     typedef void DIFFOP_TRACE;
 

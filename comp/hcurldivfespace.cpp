@@ -19,12 +19,12 @@ namespace ngcomp
   {
   public:
     typedef DiffOp<DiffOpHCurlDivDual<D>> BASE;
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D*D;
+  static constexpr int DIFFORDER = 0;
+  static constexpr int DIM_STRESS = D*D;
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
     
@@ -76,11 +76,11 @@ namespace ngcomp
   class DiffOpGradientHCurlDiv : public DiffOp<DiffOpGradientHCurlDiv<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D*D };
-    enum { DIFFORDER = 1 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D*D*D;
+  static constexpr int DIFFORDER = 1;
     static Array<int> GetDimensions() { return Array<int> ( { D*D, D } ); };
 
     static string Name() { return "grad"; }
@@ -131,11 +131,11 @@ namespace ngcomp
   class DiffOpIdBoundaryHCurlDiv: public DiffOp<DiffOpIdBoundaryHCurlDiv<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D+1 };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = (D+1)*(D+1) };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D+1;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = (D+1)*(D+1);
+  static constexpr int DIFFORDER = 0;
 
     static Array<int> GetDimensions() { return Array<int> ({D+1,D+1}); }
 
@@ -180,12 +180,12 @@ namespace ngcomp
   class DiffOpIdHCurlDiv : public DiffOp<DiffOpIdHCurlDiv<D> >
   { 
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D*D;
+  static constexpr int DIFFORDER = 0;
+  static constexpr int DIM_STRESS = D*D;
 
     static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     
@@ -227,12 +227,12 @@ namespace ngcomp
   class DiffOpIdHCurlDiv_old : public DiffOp<DiffOpIdHCurlDiv_old<D> >
   { 
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D*D;
+  static constexpr int DIFFORDER = 0;
+  static constexpr int DIM_STRESS = D*D;
     
     static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     
@@ -295,12 +295,12 @@ namespace ngcomp
   {
     
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = D*D};
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 1;
+    static constexpr int DIM_STRESS = D*D;
     
     static string Name() { return "div"; }
 
@@ -353,12 +353,12 @@ namespace ngcomp
   {
     
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = D*D};
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 1;
+    static constexpr int DIM_STRESS = D*D;
     
     static string Name() { return "curl"; }
 
@@ -407,11 +407,11 @@ namespace ngcomp
   {
     
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = 3 };
-    enum { DIM_ELEMENT = 3 };
-    enum { DIM_DMAT = 9 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = 3;
+    static constexpr int DIM_ELEMENT = 3;
+    static constexpr int DIM_DMAT = 9;
+    static constexpr int DIFFORDER = 1;
     
     static string Name() { return "curl"; }
     static IVec<2> GetDimensions() { return { 3,3 }; }

@@ -22,11 +22,11 @@ namespace ngcomp
   class DiffOpTangentialComponentHCurl: public DiffOp<DiffOpTangentialComponentHCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = D;
+  static constexpr int DIFFORDER = 0;
 
     static Array<int> GetDimensions() { return Array<int> ({D}); }
 

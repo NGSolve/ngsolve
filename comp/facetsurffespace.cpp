@@ -16,11 +16,11 @@ namespace ngcomp
   class DiffOpIdFacet_ : public DiffOp<DiffOpIdFacet_<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 0;
     static IVec<0> GetDimensions() { return IVec<0>(); };
 
     static bool SupportsVB (VorB checkvb) { return true; }
@@ -69,11 +69,11 @@ namespace ngcomp
   class DiffOpIdFacetSurface : public DiffOp<DiffOpIdFacetSurface<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D-1;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 0;
     static IVec<0> GetDimensions() { return IVec<0>(); };
 
     template <typename FEL, typename MIP, typename MAT>
@@ -162,11 +162,11 @@ namespace ngcomp
   class DiffOpIdFacetSurfaceBoundary : public DiffOp<DiffOpIdFacetSurfaceBoundary<D, FEL> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-2 };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D-2;
+  static constexpr int DIM_DMAT = 1;
+  static constexpr int DIFFORDER = 0;
 
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
@@ -198,11 +198,11 @@ namespace ngcomp
   class DiffOpGradFacetSurface : public DiffOp<DiffOpGradFacetSurface<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
+  static constexpr int DIM = 1;
+  static constexpr int DIM_SPACE = D;
+  static constexpr int DIM_ELEMENT = D-1;
+  static constexpr int DIM_DMAT = D;
+  static constexpr int DIFFORDER = 1;
 
     static string Name() { return "grad"; }
 

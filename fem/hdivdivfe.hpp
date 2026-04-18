@@ -1433,8 +1433,8 @@ namespace ngfem
   public:
     using T_HDivDivFE<ET_QUAD> :: T_HDivDivFE;
 
-    enum {incsg = -1};
-    enum {incsugv = -1};
+  static constexpr int incsg = -1;
+  static constexpr int incsugv = -1;
 
     virtual void ComputeNDof()
     {
@@ -1988,14 +1988,14 @@ namespace ngfem
     // order k+1 for certain components, for inner and boundary shapes
     // analysis from TDNNS paper for case xx1=0, zz1=xx2=zz2=1 for inner and boundary shapes
     // however, works also when boundary order is not increased.. check
-    enum { incrorder_xx1 = 0};
-    enum { incrorder_zz1 = 1};
-    enum { incrorder_xx2 = 1};
-    enum { incrorder_zz2 = 1};
-    enum { incrorder_xx1_bd = 0};
-    enum { incrorder_zz1_bd = 0};
-    enum { incrorder_xx2_bd = 0};
-    enum { incrorder_zz2_bd = 0};
+  static constexpr int incrorder_xx1 = 0;
+  static constexpr int incrorder_zz1 = 1;
+  static constexpr int incrorder_xx2 = 1;
+  static constexpr int incrorder_zz2 = 1;
+  static constexpr int incrorder_xx1_bd = 0;
+  static constexpr int incrorder_zz1_bd = 0;
+  static constexpr int incrorder_xx2_bd = 0;
+  static constexpr int incrorder_zz2_bd = 0;
     using T_HDivDivFE<ET_PRISM> :: T_HDivDivFE;
 
     virtual void ComputeNDof()

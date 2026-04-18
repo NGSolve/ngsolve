@@ -35,11 +35,11 @@ namespace ngfem
   class DiffOpStrain<2, FEL> : public DiffOp<DiffOpStrain<2, FEL> >
   {
   public:
-    enum { DIM = 2 };
-    enum { DIM_SPACE = 2 };
-    enum { DIM_ELEMENT = 2 };
-    enum { DIM_DMAT = 3 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 2;
+    static constexpr int DIM_SPACE = 2;
+    static constexpr int DIM_ELEMENT = 2;
+    static constexpr int DIM_DMAT = 3;
+    static constexpr int DIFFORDER = 1;
     using FiniteElementType = FEL;
 
     template <typename AFEL, typename MIP, typename MAT>
@@ -76,11 +76,11 @@ namespace ngfem
   class DiffOpStrain<3, FEL> : public DiffOp<DiffOpStrain<3, FEL> >
   {
   public:
-    enum { DIM = 3 };
-    enum { DIM_SPACE = 3 };
-    enum { DIM_ELEMENT = 3 };
-    enum { DIM_DMAT = 6 };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 3;
+    static constexpr int DIM_SPACE = 3;
+    static constexpr int DIM_ELEMENT = 3;
+    static constexpr int DIM_DMAT = 6;
+    static constexpr int DIFFORDER = 1;
     using FiniteElementType = FEL;
     
     template <typename AFEL, typename MIP, typename MAT>
@@ -208,7 +208,7 @@ namespace ngfem
     shared_ptr<CoefficientFunction> coefe;
     shared_ptr<CoefficientFunction> coefnu;
   public:
-    enum { DIM_DMAT = (DIM * (DIM+1)) / 2 };  
+  static constexpr int DIM_DMAT = (DIM * (DIM+1)) / 2;  
 
     ElasticityDMat (shared_ptr<CoefficientFunction> acoefe,
 		    shared_ptr<CoefficientFunction> acoefnu) 

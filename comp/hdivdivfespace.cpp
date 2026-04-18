@@ -87,6 +87,7 @@ namespace ngcomp
   static constexpr int DIM_DMAT = D*(D+1)/2;
   static constexpr int DIFFORDER = 0;
   static constexpr int DIM_STRESS = D*(D+1)/2;
+  using FiniteElementType = HDivDivFiniteElement<D>;
 
     static Array<int> GetDimensions() { return Array<int> ({D*(D+1)/2,1}); }
 
@@ -125,6 +126,7 @@ namespace ngcomp
   static constexpr int DIM_DMAT = D*D;
   static constexpr int DIFFORDER = 0;
   static constexpr int DIM_STRESS = D*D;
+  using FiniteElementType = HDivDivFiniteElement<D>;
 
     static Array<int> GetDimensions() { return Array<int> ({D,D}); }
 
@@ -242,6 +244,7 @@ namespace ngcomp
   static constexpr int DIM_DMAT = D*D;
   static constexpr int DIFFORDER = 0;
   static constexpr int DIM_STRESS = D*D;
+  using FiniteElementType = HDivDivFiniteElement<D>;
 
     static Array<int> GetDimensions() { return Array<int> ({D}); }
 
@@ -312,12 +315,12 @@ namespace ngcomp
   class DiffOpDivHDivDiv: public DiffOp<DiffOpDivHDivDiv<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = (D*(D+1))/2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 1;
+    static constexpr int DIM_STRESS = (D*(D+1))/2;
 
     static string Name() { return "div"; }
 
@@ -385,11 +388,11 @@ namespace ngcomp
   class DiffOpIdBoundaryHDivDiv: public DiffOp<DiffOpIdBoundaryHDivDiv<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D+1 };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = (D+1)*(D+1) };
-    enum { DIFFORDER = 0 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D+1;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = (D+1)*(D+1);
+    static constexpr int DIFFORDER = 0;
 
     static Array<int> GetDimensions() { return Array<int> ({D+1,D+1}); }
 
@@ -424,12 +427,12 @@ namespace ngcomp
   class DiffOpIdHDivDiv_old : public DiffOp<DiffOpIdHDivDiv_old<D> >
   { 
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*(D+1)/2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D*D;
+    static constexpr int DIFFORDER = 0;
+    static constexpr int DIM_STRESS = D*(D+1)/2;
 
     static Array<int> GetDimensions() { return Array<int> ( { D,D } ); }
     
@@ -485,12 +488,12 @@ namespace ngcomp
   class DiffOpVecIdHDivDiv_old : public DiffOp<DiffOpVecIdHDivDiv_old<D> >
   { 
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT =  D*(D+1)/2 };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*(D+1)/2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT =  D*(D+1)/2;
+    static constexpr int DIFFORDER = 0;
+    static constexpr int DIM_STRESS = D*(D+1)/2;
 
     static Array<int> GetDimensions() { return Array<int> ( {  D*(D+1)/2, 1 } ); }
     
@@ -563,12 +566,12 @@ namespace ngcomp
   {
     
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D };
-    enum { DIFFORDER = 1 };
-    enum { DIM_STRESS = (D*(D+1))/2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D;
+    static constexpr int DIFFORDER = 1;
+    static constexpr int DIM_STRESS = (D*(D+1))/2;
     
     static string Name() { return "div"; }
 
