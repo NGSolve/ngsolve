@@ -862,6 +862,11 @@ namespace ngfem
 
   VectorDifferentialOperator :: ~VectorDifferentialOperator ()  { ; }
 
+  void VectorDifferentialOperator :: CheckElement (const FiniteElement& bfel) const
+    {
+      auto & fel = dynamic_cast<const VectorFiniteElement&> (bfel)[0];
+      diffop->CheckElement(fel);
+    }
 
   void VectorDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,
@@ -1101,6 +1106,11 @@ namespace ngfem
 
   MatrixDifferentialOperator :: ~MatrixDifferentialOperator ()  { ; }
 
+  void MatrixDifferentialOperator :: CheckElement (const FiniteElement& bfel) const
+    {
+      auto & fel = dynamic_cast<const VectorFiniteElement&> (bfel)[0];
+      diffop->CheckElement(fel);
+    }
 
   void MatrixDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,
@@ -1254,6 +1264,12 @@ namespace ngfem
 
 
   SymMatrixDifferentialOperator :: ~SymMatrixDifferentialOperator ()  { ; }
+
+  void SymMatrixDifferentialOperator :: CheckElement (const FiniteElement& bfel) const
+    {
+      auto & fel = static_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();          
+      diffop->CheckElement(fel);
+    }
   
 
   void SymMatrixDifferentialOperator ::
@@ -1567,6 +1583,11 @@ namespace ngfem
 
   SymDevMatrixDifferentialOperator :: ~SymDevMatrixDifferentialOperator ()  { ; }
   
+  void SymDevMatrixDifferentialOperator :: CheckElement (const FiniteElement& bfel) const
+    {
+      auto & fel = dynamic_cast<const SymMatrixFiniteElement&> (bfel).ScalFE();          
+      diffop->CheckElement(fel);
+    }
 
   void SymDevMatrixDifferentialOperator ::
   CalcMatrix (const FiniteElement & bfel,

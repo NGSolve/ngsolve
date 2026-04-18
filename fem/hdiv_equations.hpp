@@ -35,7 +35,8 @@ public:
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = D;
   static constexpr int DIFFORDER = 0;
-
+  using FiniteElementType = FEL;
+  
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
 
@@ -174,6 +175,7 @@ public:
   static constexpr int DIM_ELEMENT = D-1;
   static constexpr int DIM_DMAT = D;
   static constexpr int DIFFORDER = 0;
+  using FiniteElementType = FEL;
   
   static const FEL & Cast(const FiniteElement & fel)
   {
@@ -277,7 +279,7 @@ public:
   static constexpr int DIM_ELEMENT = D;
   static constexpr int DIM_DMAT = 1;
   static constexpr int DIFFORDER = 1;
-
+  using FiniteElementType = FEL;
   static string Name() { return "div"; }
 
   static const FEL & Cast (const FiniteElement & fel) 
@@ -370,7 +372,8 @@ public:
   static constexpr int DIM_ELEMENT = D-1;
   static constexpr int DIM_DMAT = 1;
   static constexpr int DIFFORDER = 0;
-
+  using FiniteElementType = FEL;
+  
   template <typename AFEL, typename MIP, typename MAT>
   static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 			      MAT && mat, LocalHeap & lh)
@@ -408,7 +411,8 @@ public:
   enum { DIM_ELEMENT = D-1 };
   enum { DIM_DMAT = D };
   enum { DIFFORDER = 0 };
-
+  using FiniteElementType = FEL;
+  
   static const FEL & Cast (const FiniteElement & fel) 
   { return static_cast<const FEL&> (fel); }
 
@@ -471,6 +475,7 @@ public:
   enum { DIM_ELEMENT = D };
   enum { DIM_DMAT = D };
   enum { DIFFORDER = 0 };
+  using FiniteElementType = HDivFiniteElement<D>;
   
   static auto & Cast (const FiniteElement & fel) 
   { return static_cast<const HDivFiniteElement<D>&> (fel); }

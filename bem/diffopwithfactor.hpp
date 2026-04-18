@@ -28,6 +28,8 @@ namespace ngsbem
 
     auto BaseDiffOp() const { return diffop; }
 
+    void CheckElement (const FiniteElement& fel) const override { }
+    
     void CalcMatrix (const FiniteElement & fel,
                      const BaseMappedIntegrationPoint & mip,
                      BareSliceMatrix<double,ColMajor> mat, 

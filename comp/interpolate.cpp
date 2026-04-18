@@ -474,6 +474,9 @@ namespace ngcomp
 	}
     }
 
+
+    void CheckElement (const FiniteElement& fel) const override { } 
+    
     void
     CalcMatrix (const FiniteElement & inner_fel,
 		const BaseMappedIntegrationRule & mir,

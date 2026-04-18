@@ -40,6 +40,7 @@ namespace ngfem
     enum { DIM_ELEMENT = 2 };
     enum { DIM_DMAT = 3 };
     enum { DIFFORDER = 1 };
+    using FiniteElementType = FEL;
 
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
@@ -80,7 +81,8 @@ namespace ngfem
     enum { DIM_ELEMENT = 3 };
     enum { DIM_DMAT = 6 };
     enum { DIFFORDER = 1 };
-
+    using FiniteElementType = FEL;
+    
     template <typename AFEL, typename MIP, typename MAT>
     static void GenerateMatrix (const AFEL & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)

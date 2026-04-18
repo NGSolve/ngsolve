@@ -20,8 +20,10 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    using FiniteElementType = FacetVolumeFiniteElement<D>;
+    
     static IVec<0> GetDimensions() { return IVec<0>(); };
-
+    
     static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
     
     typedef DiffOpIdBoundary<D> DIFFOP_TRACE;
@@ -154,7 +156,7 @@ namespace ngcomp
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
     static IVec<0> GetDimensions() { return IVec<0>(); };
-
+    using FiniteElementType = FacetVolumeFiniteElement<D>;
     typedef DiffOpIdDual<D-1,D> DIFFOP_TRACE;
     
     template <typename FEL, typename MIP, typename MAT>
@@ -301,7 +303,7 @@ namespace ngcomp
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = D };
     enum { DIFFORDER = 1 };
-
+    using FiniteElementType = FacetVolumeFiniteElement<D>;
     static string Name() { return "grad"; }
 
     template <typename FEL, typename MIP, typename MAT>
@@ -1355,7 +1357,8 @@ for the two neighbouring elements. This allows a simple implementation of the Le
     enum { DIM_ELEMENT = D };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-
+    using FiniteElementType = CompoundFiniteElement;
+    
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & bfel, const MIP & mip,
                                 MAT && mat, LocalHeap & lh)

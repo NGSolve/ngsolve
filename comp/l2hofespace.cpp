@@ -2260,6 +2260,8 @@ global system.
 
     shared_ptr<DifferentialOperator> GetTrace() const override
     { return trace; }
+
+    virtual void CheckElement (const FiniteElement& fel) const override { } // ?????
   };
 
   L2SurfaceHighOrderFESpace ::

@@ -48,7 +48,7 @@ namespace ngcomp
           dim(CalcDim(abasis)), vecdim(CalcVecDim(abasis)) { ; }
 
       virtual bool SupportsVB (VorB checkvb) const override { return true; }
-
+      void CheckElement (const FiniteElement& fel) const override { }
       void CalcMatrix (const FiniteElement & bfel,
                        const BaseMappedIntegrationPoint & mip,
                        BareSliceMatrix<double,ColMajor> mat,

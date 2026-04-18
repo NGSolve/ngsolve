@@ -1738,6 +1738,7 @@ namespace ngfem
 
     virtual shared_ptr<DifferentialOperator> GetTrace() const override { return nullptr; }
 
+    virtual void CheckElement (const FiniteElement& fel) const override { } 
     
     virtual void
     CalcMatrix (const FiniteElement & fel,

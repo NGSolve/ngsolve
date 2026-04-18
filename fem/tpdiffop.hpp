@@ -31,7 +31,10 @@ namespace ngfem
     {
       return evaluators[num];
     }
-      using DifferentialOperator::Apply;
+
+    void CheckElement (const FiniteElement&) const override { }
+    
+    using DifferentialOperator::Apply;
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
         const BaseMappedIntegrationRule & mir,

@@ -43,7 +43,8 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 0;
-
+    using FiniteElementType = FEL;
+    
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
     
@@ -225,7 +226,8 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = 2;
     static constexpr int DIM_DMAT = 1;
     static constexpr int DIFFORDER = 1;
-
+    using FiniteElementType = FEL;
+    
     static string Name() { return "curl"; }
 
     static constexpr bool SUPPORT_PML = true;
@@ -290,7 +292,8 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = 3;
     static constexpr int DIM_DMAT = 3;
     static constexpr int DIFFORDER = 1;
-
+    using FiniteElementType = FEL;
+    
     static string Name() { return "curl"; }
 
     static constexpr bool SUPPORT_PML = true;
@@ -445,7 +448,8 @@ namespace ngfem
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 0;
     static constexpr bool SUPPORT_PML = true;
-
+    using FiniteElementType = FEL;
+    
     template <typename FEL1, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
@@ -524,7 +528,8 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D-1;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 0;
-
+    using FiniteElementType = FEL;
+    
     static constexpr bool SUPPORT_PML = true;
     template <typename FEL1, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL1 & fel, const MIP & mip,
@@ -662,7 +667,8 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = 2;
     static constexpr int DIM_DMAT = 1;
     static constexpr int DIFFORDER = 1;
-
+    using FiniteElementType = FEL;
+    
     static string Name() { return "curl"; }
 
     static const FEL & Cast(const FiniteElement & fel)

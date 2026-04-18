@@ -20,7 +20,7 @@ namespace ngcomp
     public:
       VolDiffOp ()
         : DifferentialOperator(1, 1, VOL, 0) { ; }
-
+      void CheckElement (const FiniteElement& fel) const override { }
       void CalcMatrix (const FiniteElement & bfel,
                        const BaseMappedIntegrationPoint & mip,
                        BareSliceMatrix<double,ColMajor> mat,
@@ -34,6 +34,7 @@ namespace ngcomp
       ParameterGradDiffOp ()
         : DifferentialOperator(VOLFE::GetDim(), 1, VOL, 0) { ; }
 
+      void CheckElement (const FiniteElement& fel) const override { }
       void CalcMatrix (const FiniteElement & bfel,
                        const BaseMappedIntegrationPoint & mip,
                        BareSliceMatrix<double,ColMajor> mat,
@@ -46,7 +47,7 @@ namespace ngcomp
     public:
       InterfaceDiffOp ()
         : DifferentialOperator(1, 1, BND, 0) { ; }
-
+      void CheckElement (const FiniteElement& fel) const override { }
       void CalcMatrix (const FiniteElement & fel,
                        const BaseMappedIntegrationPoint & mip,
                        BareSliceMatrix<double,ColMajor> mat,

@@ -40,7 +40,8 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 1;
-
+    using FiniteElementType = FEL;
+    
     typedef DiffOpGradientBoundary<D> DIFFOP_TRACE;
     
     static string Name() { return "grad"; }
@@ -210,7 +211,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D-1;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 1;
-
+    using FiniteElementType = FEL;
     static string Name() { return "gradboundary"; }
     
     static const FEL & Cast (const FiniteElement & fel) 
@@ -324,7 +325,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = D;
     static constexpr int DIFFORDER = 1;
-
+    using FiniteElementType = BaseScalarFiniteElement;
     ///
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
@@ -362,6 +363,8 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = D;
     static constexpr int DIM_DMAT = 1;
     static constexpr int DIFFORDER = 0;
+
+    using FiniteElementType = FEL;
     static IVec<0> GetDimensions() { return IVec<0>(); };
     
     static bool SupportsVB (VorB checkvb) { return true; }
@@ -371,6 +374,9 @@ namespace ngfem
     
     static const FEL & Cast (const FiniteElement & fel) 
     { return static_cast<const FEL&> (fel); }
+
+    // static void CheckElement(const FiniteElement& fel)
+    // { [[maybe_unused]] auto& asfel = dynamic_cast<const FEL&>(fel); }
     
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
@@ -595,6 +601,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
+    using FiniteElementType = FEL;
 
     static string Name() { return "IdBoundary"; }
     static constexpr bool SUPPORT_PML = true;
@@ -725,7 +732,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = SYSDIM };
     enum { DIFFORDER = 0 };
-
+    using FiniteElementType = BaseScalarFiniteElement;
+    
     template <typename FEL, typename MIP, typename MAT>
     static void GenerateMatrix (const FEL & fel, const MIP & mip,
 				MAT & mat, LocalHeap & lh)
@@ -752,6 +760,7 @@ namespace ngfem
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 2 };
 
+    using FiniteElementType = ScalarFiniteElement<D>;
     typedef DiffOpHesseBoundary<D> DIFFOP_TRACE;
 
     
@@ -784,7 +793,7 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = D*D };
     enum { DIFFORDER = 2 };
-
+    using FiniteElementType = FEL;
     typedef void DIFFOP_TRACE;
 
     static string Name() { return "hesseboundary"; }
@@ -975,7 +984,7 @@ namespace ngfem
     enum { DIM_ELEMENT = 0 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 2 };
-
+    using FiniteElementType = FEL;
     typedef void DIFFOP_TRACE;
 
     static string Name() { return "hesseboundary"; }    
@@ -1603,7 +1612,8 @@ namespace ngfem
     enum { DIM_ELEMENT = D-1 };
     enum { DIM_DMAT = 1 };
     enum { DIFFORDER = 0 };
-
+    using FiniteElementType = FEL;
+    
     template <typename MIP, typename MAT>
     static void GenerateMatrix (const FiniteElement & fel, const MIP & mip,
 				MAT && mat, LocalHeap & lh)
@@ -1922,7 +1932,8 @@ namespace ngfem
     enum { DIM_ELEMENT = DIM_SPC-VB };
     enum { DIM_DMAT = DIM_SPC };
     enum { DIFFORDER = 0 };
-
+    using FiniteElementType = VectorFiniteElement;
+    
     static string Name() { return "Id"; }
     static constexpr bool SUPPORT_PML = true;
     static bool SupportsVB (VorB checkvb) { return true; }
@@ -2216,7 +2227,7 @@ namespace ngfem
     enum { DIM_ELEMENT = DIM_SPC };
     enum { DIM_DMAT = DIM_SPC*DIM_SPC };
     enum { DIFFORDER = 1 };
-
+    using FiniteElementType = VectorFiniteElement;
     typedef DiffOpGradBoundaryVectorH1<DIM_SPC> DIFFOP_TRACE;
 
     static string Name() { return "grad"; }
@@ -2344,7 +2355,7 @@ namespace ngfem
     static constexpr int DIM_ELEMENT = DIM_SPC-1;
     static constexpr int DIM_DMAT = DIM_SPC*DIM_SPC;
     static constexpr int DIFFORDER = 1;
-
+    using FiniteElementType = VectorFiniteElement;
     static IVec<2> GetDimensions() { return { DIM_SPC, DIM_SPC }; }
     static constexpr bool SUPPORT_PML = true;
     static string Name() { return "gradbnd"; }
