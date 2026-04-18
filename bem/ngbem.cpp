@@ -786,8 +786,8 @@ namespace ngsbem
           auto edgesx = ElementTopology::GetEdges(feli.ElementType());
           auto edgesy = ElementTopology::GetEdges(felj.ElementType());
                                  
-          int cex, cey;
-          bool same_orientation;
+          int cex=0, cey=0;
+          bool same_orientation=false;
           for (int cx = 0; cx < edgesx.Size(); cx++)
             for (int cy = 0; cy < edgesy.Size(); cy++)
               {

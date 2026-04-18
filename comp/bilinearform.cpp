@@ -254,7 +254,7 @@ namespace ngcomp
                                   evaluator -> CheckElement(el.GetFE()); 
                                 });
               }
-            catch (Exception e)
+            catch (Exception & e)
               {
                 e.Append ("\ntrial proxy does not match space");
                 throw e;
