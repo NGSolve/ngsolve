@@ -225,41 +225,42 @@ namespace ngcomp
     // check if diffops match space:
     if (auto symbfi = dynamic_pointer_cast<SymbolicBilinearFormIntegrator>(bfi))
       {
-        for (auto proxy : symbfi->TrialProxies())
-          {
-            auto space = GetTrialSpace();
-            auto proxyspace = proxy->GetFESpace();
+        for (auto kind : { TRIAL, TEST })
+          for (auto proxy : symbfi->Proxies(kind))
+            {
+              auto space = GetSpace(kind);
+              auto proxyspace = proxy->GetFESpace();
 
-            if (space == proxyspace) break;
-
-            if (proxyspace)
-              proxyspace = proxyspace->LowOrderFESpacePtr();
-            if (space == proxyspace) break;            
-
-            static bool firstmsg = true;
-            if (firstmsg)
-              {
-                cerr << "proxy not matching space, checking if it is working anyway" << endl;
-                firstmsg = false;
-              }
-
-            auto evaluator = proxy->Evaluator();
-            
-            try
-              {
-                LocalHeap lh(1000*1000);
-                IterateElements(*GetTrialSpace(), symbfi->VB(), lh,
-                                [&](FESpace::Element el, LocalHeap& lh)
-                                {
-                                  evaluator -> CheckElement(el.GetFE()); 
-                                });
-              }
-            catch (Exception & e)
-              {
-                e.Append ("\ntrial proxy does not match space");
-                throw e;
-              }
-          }
+              if (space == proxyspace) break;
+              
+              if (proxyspace)
+                proxyspace = proxyspace->LowOrderFESpacePtr();
+              if (space == proxyspace) break;            
+              
+              static bool firstmsg = true;
+              if (firstmsg)
+                {
+                  cerr << "proxy not matching space, checking if it is working anyway" << endl;
+                  firstmsg = false;
+                }
+              
+              auto evaluator = proxy->Evaluator();
+              
+              try
+                {
+                  LocalHeap lh(1000*1000);
+                  IterateElements(*GetTrialSpace(), symbfi->VB(), lh,
+                                  [&](FESpace::Element el, LocalHeap& lh)
+                                  {
+                                    evaluator -> CheckElement(el.GetFE()); 
+                                  });
+                }
+              catch (Exception & e)
+                {
+                  e.Append ("\nproxy does not match space");
+                  throw e;
+                }
+            }
       }
 
     
