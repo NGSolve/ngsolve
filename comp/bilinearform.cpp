@@ -583,6 +583,16 @@ namespace ngcomp
                    {
                      auto eid = ElementId(vb,i);
                      if (!fespace->DefinedOn (vb, ma->GetElIndex(eid))) continue;
+
+                     // create entries only where integrators are defined:
+                     bool has_integrator=false;
+                     for (auto & bfip : VB_parts[vb])
+                       if (bfip->DefinedOn (ma->GetElIndex(eid)) &&
+                           bfip->DefinedOnElement(i))
+                         has_integrator=true;
+
+                     if (facetwise_skeleton_parts[BND].Size()) has_integrator=true;  // on the save side, to be optimized
+                     if (!has_integrator) continue;
                      
                      if (condensation_allowed && eliminate_internal)
                        fespace->GetDofNrs (eid, dnums, EXTERNAL_DOF);
