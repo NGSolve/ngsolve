@@ -134,15 +134,19 @@ namespace ngcomp
 
     bool IsDeformed() const { return deformed; }
 
-    void ApplyAdd(const FiniteElement& m_fel,
-                  const FiniteElement& s_fel,
+    void ApplyAdd(const FiniteElement& m_trial_fel,
+                  const FiniteElement& s_trial_fel,
+                  const FiniteElement& m_test_fel,
+                  const FiniteElement& s_test_fel,
                   const BaseMappedIntegrationRule& m_mir,
                   FlatVector<double> elx,
                   FlatVector<double> ely,
                   LocalHeap& lh);
 
-    void CalcLinearizedAdd(const FiniteElement& m_fel,
-                           const FiniteElement& s_fel,
+    void CalcLinearizedAdd(const FiniteElement& m_trial_fel,
+                           const FiniteElement& s_trial_fel,
+                           const FiniteElement& m_test_fel,
+                           const FiniteElement& s_test_fel,
                            const BaseMappedIntegrationRule& m_mir,
                            FlatVector<double> elx,
                            FlatMatrix<double> elmat,
@@ -159,7 +163,8 @@ namespace ngcomp
     Array<shared_ptr<ContactEnergy>> energies, undeformed_energies, deformed_energies;
     Array<shared_ptr<ContactIntegrator>> integrators, undeformed_integrators, deformed_integrators;
     shared_ptr<FESpace> fes_displacement;
-    shared_ptr<FESpace> fes;
+    shared_ptr<FESpace> trial_fes;
+    shared_ptr<FESpace> test_fes;
 
     // For visualization only
     bool draw_pairs = false;
@@ -189,7 +194,8 @@ namespace ngcomp
     const auto& GetEnergies(bool def) const { return def ? deformed_energies : undeformed_energies; }    
     const auto& GetIntegrators() const { return integrators; }
     const auto& GetIntegrators(bool def) const { return def ? deformed_integrators : undeformed_integrators; }    
-    shared_ptr<FESpace> GetFESpace() const { return fes; }
+    shared_ptr<FESpace> GetTrialFESpace() const { return trial_fes; }
+    shared_ptr<FESpace> GetTestFESpace() const { return test_fes; }
     tuple<FlatArray<Vec<3>>, FlatArray<Vec<3>>> GetDrawingPairs() { return {primary_points, secondary_points}; }
     auto GetCArgs() {
       return std::make_tuple(master, other, draw_pairs, volume, element_boundary);
@@ -204,7 +210,8 @@ namespace ngcomp
     ElementId primary_ei, secondary_ei;
     IntegrationRule primary_ir, secondary_ir;
     shared_ptr<ContactBoundary> cb;
-    FESpace* fes;
+    FESpace* trial_fes;
+    FESpace* test_fes;    
     GridFunction* deformation;
   public:
     MPContactElement(ElementId primary_ei, ElementId secondary_ei,
@@ -213,6 +220,7 @@ namespace ngcomp
                      GridFunction* deformation);
 
     void GetDofNrs(Array<DofId>& dnums) const override;
+    void GetDofNrs2(Array<DofId>& dnums) const override;
 
     double Energy(FlatVector<double> elx,
                   LocalHeap& lh) const override;
