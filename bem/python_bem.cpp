@@ -173,55 +173,6 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   // ************************** Potential and integral operators *******************************************
 
-
-  /*
-
-  using CalcFn = void(*)(void*, int, int);
-
-  
-  // m.def("CalcSubMatrixTest", [](void * iop, int n, int m) { });
-  // py::class_<std::function<void(void*, int, int)>>(m, "MyFuncType");
-
-  
-  m.def("CalcSubMatrixTest", [] () -> CalcFn {
-    return &MyCalc;
-  });
-  
-  m.def("HMatrixBuilder", [](py::object func)
-  {
-    cout << "got object" << endl;
-
-    std::function<void(void*, int, int)> cppfunc;
-
-    // cppfunc = func.cast<std::function<void(void*, int, int)>>();
-    // auto cppfunc = py::cast<function<void(void*,int,int)>>(func);
-    cppfunc = py::cast<CalcFn>(func);
-  });
-
-  m.def("Test2", [](std::function<void(void*,int,int)>)
-  {
-    cout << "got function" << endl;
-  });
-
-  */
-  
-
-  // NGSolve-side:
-  py::class_<std::function<void(int, int)>>(m, "CalcSubMatrixType", py::module_local());
-  // m.def("CalcSubMatrixDummy", [](){ return std::function([](void * iop, int n, int m) { cout << "hi" << n + m << endl;}); });
-  
-  // HTool-side:
-  // py::class_<std::function<void(void*, int, int)>>(m, "CalcSubMatrixType", py::module_local());
-  m.def("HMatrixBuilder", [](std::function<void(int,int)> f)
-  {
-    py::gil_scoped_release rel;    
-    cout << "got function" << endl;
-    f(1, 2);
-  });
-  
-
-
-  
   py::class_<IntegralOperator,shared_ptr<IntegralOperator>> (m, "IntegralOperator")
     .def_property_readonly("mat", &IntegralOperator::GetMatrix)
     .def("NearFieldMatrix", &IntegralOperator::GetNearFieldMatrix)
@@ -240,15 +191,69 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return iop->CalcSubMatrix(rowidsa, colidsa, lh);
     }, py::arg("rowids"), py::arg("colids"))
 
-
-    .def("CalcSubMatrixTest", [](IntegralOperator& a)
+    .def("CalcSubMatrixTestCapsule", [](std::shared_ptr<IntegralOperator> iop)
     {
-      return std::function([&](int n, int m)
+      using backend_callback_t = void(*)(int, int,
+                                         const int*, const int*,
+                                         double*, void*);
+
+      struct Backend {
+        backend_callback_t callback;
+        void* ctx;
+      };
+
+      struct Context {
+        std::shared_ptr<IntegralOperator> iop;
+      };
+
+      Context* ctx = new Context{iop};
+
+      auto callback = [](int n, int m,
+                         const int* rowid,
+                         const int* colid,
+                         double* data,
+                         void* vctx)
       {
-        // a.TestMethod(iop, n, m);
-        cout << "&a = " << &a << endl;
-        cout << "typeid = " << typeid(a).name() << endl;
-        cout << "n+m = " << n+m << endl;
+        Context* ctx = static_cast<Context*>(vctx);
+        auto& iop = *ctx->iop;
+
+        LocalHeapMem<1000000> lh("CalcSubMatrix lh");
+
+        FlatArray<DofId> rowidsa(n, const_cast<int*>(rowid));
+        FlatArray<DofId> colidsa(m, const_cast<int*>(colid));
+
+        auto mat = iop.CalcSubMatrix(rowidsa, colidsa, lh);
+
+        if(std::holds_alternative<Matrix<double>>(mat))
+          {
+            auto& matd = std::get<Matrix<double>>(mat);
+            for (int i = 0; i < n; i++)
+              for (int j = 0; j < m; j++)
+                data[i + j*n] = matd(i, j);
+          }
+        else
+          {
+            auto& matc = std::get<Matrix<Complex>>(mat);
+            for (int i = 0; i < n; i++)
+              for (int j = 0; j < m; j++)
+                {
+                  data[2*(i + j*n)] = matc(i, j).real();
+                  data[2*(i + j*n)+1] = matc(i, j).imag();
+                }
+          }
+      };
+
+      Backend* backend = new Backend{
+        callback,
+        ctx,
+      };
+
+      return py::capsule(backend, "backend", [](void* p)
+      {
+        auto* backend = static_cast<Backend*>(p);
+        if (backend->ctx)
+          delete static_cast<Context*>(backend->ctx);
+        delete backend;
       });
     })
     
