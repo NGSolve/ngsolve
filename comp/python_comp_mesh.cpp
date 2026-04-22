@@ -843,6 +843,16 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          py::arg("mark_surface_elements")=false, py::arg("onlyonce")=false,
 	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
+    // Uniform refinement
+    .def("RefineUniform", [](MeshAccess &ma)
+    {
+      auto ngmesh = ma.GetNetgenMesh();
+      ngmesh->GetGeometry()->GetRefinement().Refine(*ngmesh);
+      ngmesh->UpdateTopology();
+      ma.updateSignal.Emit();
+    }, "Uniform mesh-refinement (splitting trigs into 4, and tets into 8)")
+    
+    
     .def("RefineHP",
          [](MeshAccess & ma, int levels, double factor)
           {
