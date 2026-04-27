@@ -94,7 +94,7 @@ elif 'linux' in sys.platform:
         '-DCMAKE_CUDA_ARCHITECTURES=all',
         '-DBUILD_STUB_FILES=ON',
     ]
-    install_requires.append('mkl')
+    install_requires.append('mkl<2026')
     packages = []
 elif 'win' in sys.platform:
     _cmake_args += [
@@ -105,7 +105,7 @@ elif 'win' in sys.platform:
         f'-DNGSOLVE_INSTALL_DIR_TCL:PATH=Scripts',
         '-DBUILD_STUB_FILES=OFF',
     ]
-    install_requires.append('mkl')
+    install_requires.append('mkl<2026')
 
 if 'PYDIR' in os.environ:
     _cmake_args += [f'-DCMAKE_PREFIX_PATH={os.environ["PYDIR"]}']
