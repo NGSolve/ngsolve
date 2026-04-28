@@ -28,7 +28,7 @@ namespace ngla
     ///
     int maxsteps;
     ///
-    int steps;
+    mutable int steps;
     ///
     int initialize;
     ///

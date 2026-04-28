@@ -14,6 +14,8 @@
 namespace ngla
 {
   cublasHandle_t Get_CuBlas_Handle ();
+  void SetCuBlasStream(cudaStream_t stream);
+  void EnsureCuBlasWorkspace();
 }
 
 

@@ -67,4 +67,9 @@ extern void DevProjectorProject (size_t size, double * a, const unsigned char * 
 
 }
 
+// Convergence check for cudaGraphCondTypeWhile
+extern void ConvergenceCheck(double* rz, double tol,
+    cudaGraphConditionalHandle handle,
+    int* iter_count, int maxsteps);
+
 #endif
