@@ -24,9 +24,32 @@ namespace ngla
       {
         first_call = false;
         cublasCreate_v2 (&handle);
+
       }
     return handle;
   }
+
+  // Workspace pointer — only allocated when graphs are used
+  static void* cublas_workspace = nullptr;
+  static const size_t cublas_workspace_size = 32 * 1024 * 1024; // 32 MiB (H100)
+
+  // Call before graph capture to ensure workspace is allocated
+  void EnsureCuBlasWorkspace()
+  {
+    if (!cublas_workspace)
+      cudaMalloc(&cublas_workspace, cublas_workspace_size);
+    cublasSetWorkspace(Get_CuBlas_Handle(), cublas_workspace, cublas_workspace_size);
+  }
+
+  // Wrapper: set stream AND re-apply workspace if already allocated
+  // (cublasSetStream resets workspace to default pool)
+  void SetCuBlasStream(cudaStream_t stream)
+  {
+    cublasSetStream(Get_CuBlas_Handle(), stream);
+    if (cublas_workspace)
+      cublasSetWorkspace(Get_CuBlas_Handle(), cublas_workspace, cublas_workspace_size);
+  }
+
   cusparseHandle_t Get_CuSparse_Handle ()
   {
     static Timer tsparsehandle("CUDA create cusparse handle");
@@ -55,7 +78,6 @@ namespace ngla
     std::cerr << "[InitCuLinalg] cusparseSetStream bound to ngs_cuda_stream" << std::endl;
 
     ngs_cuda::CudaGraph::stream_change_callback = [](cudaStream_t s) {
-      std::cerr << "[CudaGraph] cusparseSetStream called with new stream" << std::endl;
       cusparseSetStream(Get_CuSparse_Handle(), s);
     };
 
@@ -356,7 +378,6 @@ namespace ngla
 
     cudaMalloc(&dev_hx_buf, numblocks * devmat.Width()  * sizeof(double));
     cudaMalloc(&dev_hy_buf, numblocks * devmat.Height() * sizeof(double));
-    std::cerr << "[DevConstantEBE] pre-allocated hx/hy buffers" << std::endl;
   }
 
 

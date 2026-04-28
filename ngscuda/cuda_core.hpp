@@ -6,8 +6,12 @@
 #include <core/array.hpp>
 #include <core/exception.hpp>
 
+namespace ngla { void EnsureCuBlasWorkspace(); }
+
 namespace ngs_cuda
 {
+  // Forward declaration for CudaWhileGraph
+  void ConvergenceCheck(double* rz, double tol, cudaGraphConditionalHandle handle, int* iter_count, int maxsteps);
 
 
   // from CUDA C++ Programming Guide:
@@ -102,7 +106,7 @@ namespace ngs_cuda
     void BeginCapture()
     {
       capture_ok = false;
-      std::cerr << "[CudaGraph] BeginCapture called" << std::endl;
+      ngla::EnsureCuBlasWorkspace();
       prev_stream = ngs_cuda_stream;
       ngs_cuda_stream = stream;
       if (stream_change_callback) {
@@ -146,7 +150,6 @@ namespace ngs_cuda
     void Launch()
     {
       if (!capture_ok || !instance) {
-        std::cerr << "[CudaGraph] Launch skipped — capture did not succeed" << std::endl;
         return;
       }
       auto err = cudaGraphLaunch(instance, ngs_cuda_stream);
@@ -156,10 +159,124 @@ namespace ngs_cuda
     }
 
     bool IsValid() const { return capture_ok && instance != nullptr; }
+    cudaGraph_t GetGraph() const { return graph; }
   };
   
 
 
+
+
+
+  class CudaWhileGraph
+  {
+    cudaGraph_t outer_graph = nullptr;
+    cudaGraph_t body_graph  = nullptr;
+    cudaGraphExec_t instance = nullptr;
+    cudaStream_t capture_stream;
+    cudaGraphConditionalHandle handle;
+    bool capture_ok = false;
+
+  public:
+
+    CudaWhileGraph()
+    {
+      auto err = cudaStreamCreate(&capture_stream);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(std::string("[CudaWhileGraph] cudaStreamCreate FAILED: ")
+                               + cudaGetErrorString(err));
+    }
+
+    ~CudaWhileGraph()
+    {
+      if (instance)    cudaGraphExecDestroy(instance);
+      if (outer_graph) cudaGraphDestroy(outer_graph);
+      cudaStreamDestroy(capture_stream);
+    }
+
+    // Build WHILE graph using an existing captured graph as the iteration body
+    void Build(cudaGraph_t iteration_graph, double* rz_dev_ptr, double tol, int* iter_count, int maxsteps)
+    {
+      capture_ok = false;
+      ngla::EnsureCuBlasWorkspace();
+
+      // 1. Create outer graph
+      cudaGraphCreate(&outer_graph, 0);
+
+      // 2. Create conditional handle with default=1 (do-while)
+      cudaGraphConditionalHandleCreate(&handle, outer_graph, 1,
+                                       cudaGraphCondAssignDefault);
+
+      // 3. Add WHILE node
+      cudaGraphNode_t while_node;
+      cudaGraphNodeParams cParams = {};
+      cParams.type               = cudaGraphNodeTypeConditional;
+      cParams.conditional.handle = handle;
+      cParams.conditional.type   = cudaGraphCondTypeWhile;
+      cParams.conditional.size   = 1;
+      cudaGraphAddNode(&while_node, outer_graph, nullptr, 0, &cParams);
+      body_graph = cParams.conditional.phGraph_out[0];
+
+      // 4. Add iteration body as child graph node in body
+      //    Child graphs ARE allowed in conditional bodies
+      cudaGraphNode_t child_node;
+      auto err = cudaGraphAddChildGraphNode(&child_node, body_graph,
+                                            nullptr, 0, iteration_graph);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(
+          std::string("[CudaWhileGraph] cudaGraphAddChildGraphNode FAILED: ")
+          + cudaGetErrorString(err));
+
+      // 5. Capture convergence kernel into body AFTER child node
+      //    Custom kernel only - allowed in conditional bodies
+      err = cudaStreamBeginCaptureToGraph(capture_stream, body_graph,
+                                          &child_node, nullptr, 1,
+                                          cudaStreamCaptureModeGlobal);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(
+          std::string("[CudaWhileGraph] cudaStreamBeginCaptureToGraph FAILED: ")
+          + cudaGetErrorString(err));
+
+      // Redirect ngs_cuda_stream so ConvergenceCheck goes to capture_stream
+      cudaStream_t saved_stream = ngs_cuda_stream;
+      ngs_cuda_stream = capture_stream;
+      ConvergenceCheck(rz_dev_ptr, tol, handle, iter_count, maxsteps);
+      ngs_cuda_stream = saved_stream;
+
+      err = cudaStreamEndCapture(capture_stream, nullptr);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(
+          std::string("[CudaWhileGraph] cudaStreamEndCapture FAILED: ")
+          + cudaGetErrorString(err));
+
+      // 6. Debug: count body nodes
+      size_t body_nodes = 0;
+      cudaGraphGetNodes(body_graph, nullptr, &body_nodes);
+      std::cerr << "[CudaWhileGraph] body graph nodes: " << body_nodes << std::endl;
+
+      // 7. Instantiate outer graph
+      err = cudaGraphInstantiate(&instance, outer_graph, NULL, NULL, 0);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(
+          std::string("[CudaWhileGraph] cudaGraphInstantiate FAILED: ")
+          + cudaGetErrorString(err));
+
+      capture_ok = true;
+      std::cerr << "[CudaWhileGraph] Build successful" << std::endl;
+    }
+
+    void Launch()
+    {
+      if (!capture_ok || !instance) {
+        return;
+      }
+      auto err = cudaGraphLaunch(instance, ngs_cuda_stream);
+      if (err != cudaSuccess)
+        std::cerr << "[CudaWhileGraph] cudaGraphLaunch FAILED: "
+                  << cudaGetErrorString(err) << std::endl;
+    }
+
+    bool IsValid() const { return capture_ok && instance != nullptr; }
+  };
 
 
   template <typename T>

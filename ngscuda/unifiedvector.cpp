@@ -225,7 +225,7 @@ namespace ngla
         uv2->UpdateDevice();
         
         double res;
-        cublasSetStream(ngla::Get_CuBlas_Handle(), ngs_cuda_stream);        
+        ngla::SetCuBlasStream(ngs_cuda_stream);        
         cublasDdot (Get_CuBlas_Handle(), 
                     size, (double*)dev_data, 1, (double*)uv2->dev_data, 1, &res);
         return res;
@@ -240,7 +240,7 @@ namespace ngla
   {
     UpdateDevice();
     double res;
-    cublasSetStream(ngla::Get_CuBlas_Handle(), ngs_cuda_stream);    
+    ngla::SetCuBlasStream(ngs_cuda_stream);    
     cublasDnrm2(Get_CuBlas_Handle(), size, (double*)dev_data, 1, &res);
     return res;
   }
@@ -409,11 +409,6 @@ namespace ngla
   // -------------------------------------------------------
   UnifiedScalar :: UnifiedScalar()
   {
-//    static bool announced = false;
-//    if (!announced) {
-//        announced = true;
-//        cerr << "[UnifiedScalar] built " << __DATE__ << " " << __TIME__ << endl;
-//    }
     cudaMalloc(&dev_val, sizeof(double));
     cudaMemset(dev_val, 0, sizeof(double));
   }
@@ -483,7 +478,7 @@ namespace ngla
             uv2->UpdateDevice();
         }
 
-        cublasSetStream(Get_CuBlas_Handle(), ngs_cuda_stream);
+        SetCuBlasStream(ngs_cuda_stream);
         cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
         cublasDdot(Get_CuBlas_Handle(),
                    size,
