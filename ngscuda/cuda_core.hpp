@@ -213,7 +213,7 @@ namespace ngs_cuda
       cParams.conditional.handle = handle;
       cParams.conditional.type   = cudaGraphCondTypeWhile;
       cParams.conditional.size   = 1;
-      cudaGraphAddNode(&while_node, outer_graph, nullptr, 0, &cParams);
+      cudaGraphAddNode(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
       body_graph = cParams.conditional.phGraph_out[0];
 
       // 4. Add iteration body as child graph node in body
