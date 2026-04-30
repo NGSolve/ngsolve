@@ -382,7 +382,7 @@ void DevProjectorProject (size_t size, double * a, const unsigned char * bits,
 __global__ void ConvergenceCheckKernel(double* rz, double tol,
     cudaGraphConditionalHandle handle, int* iter_count, int maxsteps)
 {
-    int iter = atomicAdd(iter_count, 1) + 1;
+    int iter = ::atomicAdd(iter_count, 1) + 1;
     int converged  = (sqrt(abs(*rz)) <= tol);
     int max_reached = (iter >= maxsteps);
     cudaGraphSetConditional(handle,
