@@ -16,6 +16,9 @@ from . import config
 
 import netgen
 
+if config.is_python_package and not "darwin" in sys.platform:
+    import ngsolve_openblas
+
 if config.is_python_package and sys.platform.startswith('win'):
     netgen_dir = os.path.dirname(netgen.__file__)
     os.add_dll_directory(netgen_dir)
