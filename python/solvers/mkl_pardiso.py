@@ -155,8 +155,6 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
     @TimeFunction
     def Analyze(self):
-        from ctypes import c_int
-
         if hasattr(self, "_pt"):
             self._release()
 
@@ -169,7 +167,6 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
             self._matrixtype[0] = 6 if is_symmetric else 13
         else:
             if self.is_spd:
-                print("USING SPD PARDISO")
                 self._matrixtype[0] = 2
             else:
                 self._matrixtype[0] = -2 if is_symmetric else 11
@@ -192,7 +189,7 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
     @TimeFunction
     def Factor(self):
         if not self._is_first_factor_call:
-            data, indices, indptr = self.get_csr()
+            data = self.get_csr()[0]
             self._data_np[:] = data
             self._call_pardiso(22)
         self._is_first_factor_call = False
