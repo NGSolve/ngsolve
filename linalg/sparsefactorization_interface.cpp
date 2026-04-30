@@ -79,7 +79,6 @@ shared_ptr<BaseSparseMatrix> ExtractTri(shared_ptr<const BaseSparseMatrix> mat, 
 
             rowi.Append(irow);
             coli.Append(icol);
-            cout << "add entry " << irow << ", " << icol << endl;
             if(p_complex)
                 vals_complex.Append(p_complex->GetValues()[i]);
             else
