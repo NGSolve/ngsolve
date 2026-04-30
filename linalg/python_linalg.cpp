@@ -1583,6 +1583,7 @@ inverse : string
       .def("Analyze", &SparseFactorizationInterface::Analyze)
       .def("Factor", &SparseFactorizationInterface::Factor)
       .def_property_readonly("is_symmetric_storage", &SparseFactorizationInterface::IsSymmetricStorage)
+      .def_property_readonly("is_symmetric", &SparseFactorizationInterface::IsSymmetric)
       ;
 
   m.def("RegisterInverseType", [](const string &name, py::object creator) {
@@ -1597,6 +1598,9 @@ inverse : string
           return sf;
         });
   });
+
+  m.def("IsMatrixSymmetric", IsMatrixSymmetric, py::arg("mat"), py::arg("tol")=0.0, "Check if sparse matrix is symmetric with given tolerance");
+  m.def("ExtractTri", ExtractTri, py::arg("mat"), py::arg("lower")=true, "Extract lower or upper triangular part of matrix");
 
   py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d")
     .def(NGSPickle<SparseCholesky<double>>())

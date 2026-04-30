@@ -112,6 +112,9 @@ struct MapInnerDofs {
   }
 };
 
+bool IsMatrixSymmetric(shared_ptr<const BaseSparseMatrix> mat, double tol = 0);
+shared_ptr<BaseSparseMatrix> ExtractTri(shared_ptr<const BaseSparseMatrix> mat, bool lower=true);
+
 class SparseFactorizationInterface : public SparseFactorization {
 protected:
   shared_ptr<const BaseSparseMatrix> inner_mat;
@@ -155,7 +158,7 @@ public:
   virtual void Solve(const BaseVector &rhs, BaseVector &solution) const = 0;
 
   bool IsSymmetricStorage() const { return is_symmetric_storage; }
-  xbool IsSymmetric() const override { return is_symmetric_storage; }
+  xbool IsSymmetric() const override { return is_symmetric; }
 };
 
 } // namespace ngla
