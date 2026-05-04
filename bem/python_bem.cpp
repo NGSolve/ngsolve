@@ -34,6 +34,29 @@ namespace
                                                          KernelComplex(std::get<Complex>(kappa)),
                                                          ioparams, intorder);
   }
+
+  static constexpr const char * bem_operator_kwargs_doc = R"raw_string(
+Keyword arguments:
+  use_fmm : bool, default True
+    Enable FMM acceleration.
+  fmm_maxdirect : int, default 100
+    Maximum number of direct source or target contributions in an FMM leaf.
+  fmm_minorder : int, default 20
+    Base spherical expansion order.
+  fmm_order_factor : float, default 2.0
+    Frequency-dependent order factor: order = fmm_minorder + fmm_order_factor*abs(kappa)*r.
+  fmm_separation : float, default 2.0
+    Box-box admissibility factor for M2L translations: a source/target box pair
+    is treated as far if dist(centers) > fmm_separation*(r_source+r_target).
+    Raise for more accurate translations at the cost of more near-field work.
+  fmm_eval_separation : float, default 3.0
+    Same as fmm_separation but for single-point evaluation;
+  fmm_split_kr : float, default 5.0
+    A leaf with abs(kappa)*r >= fmm_split_kr keeps subdividing even when it
+    holds fewer than fmm_maxdirect points.
+  fmm_maxlevel : int, default 20
+    Maximum FMM tree level.
+)raw_string";
 }
 
 
@@ -525,7 +548,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         ;
       }
     throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
-  });
+  }, py::arg("potential"), docu_string(bem_operator_kwargs_doc));
 
 
 
@@ -558,7 +581,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
                                                                 LaplaceDLKernel<3,3>{}, ioparams, fesorder+igl->dx.bonus_intorder);
     throw Exception("only dim=1 and dim=3 LaplaceDL are supported");
-  });
+  }, py::arg("potential"), docu_string(bem_operator_kwargs_doc));
 
   m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
@@ -604,7 +627,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     }
     else
       throw Exception("only dim=1 and dim=3 HelmholtzSL are supported");
-  });
+  }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
 
   m.def("HelmholtzDL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
@@ -649,7 +672,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     }
     else
       throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
-  });
+  }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
 
 
 
@@ -689,7 +712,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
             (proxy, igl->dx.vb, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
         }, kappa); 
     throw Exception("only dim=1 HelmholtzCF is supported");
-  });
+  }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
 
   m.def("MaxwellDL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
@@ -715,7 +738,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     }
     else
       throw Exception("only dim=3 MaxwellDL are supported");
-  });
+  }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
 
 
   m.def("LameSL", [](shared_ptr<SumOfIntegrals> potential, double E, double nu, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
@@ -750,7 +773,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                                                               LameSLKernel<3>{E,nu}, ioparams, fesorder /* tmpfes->GetOrder()*/ +igl->dx.bonus_intorder);
 
     throw Exception("only dim=3 LameSL is supported");
-    }, py::arg("term"), py::arg("E"), py::arg("nu"));
+    }, py::arg("term"), py::arg("E"), py::arg("nu"), docu_string(bem_operator_kwargs_doc));
 
 
 

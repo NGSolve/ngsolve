@@ -62,7 +62,12 @@ namespace ngsbem
   {
   public:
     int maxdirect = 100;
-    int minorder = 20;    // order = minorder + 2 kappa r 
+    int minorder = 20;
+    double order_factor = 2.0;    // order = minorder + order_factor kappa r
+    double separation = 2.0;
+    double eval_separation = 3.0;
+    double split_kr = 5.0;
+    int maxlevel = 20;
   };
 
 
@@ -682,8 +687,9 @@ namespace ngsbem
       
       Node (Vec<3> acenter, double ar, int alevel, T_Kappa akappa, const FMM_Parameters & afmm_params)
       // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar), fmm_params(afmm_params)
-        // : center(acenter), r(ar), level(alevel), mp(afmm_params.minorder+2*ar*akappa, akappa, ar), fmm_params(afmm_params)
-        : center(acenter), r(ar), level(alevel), mp(afmm_params.minorder+2*ar*abs(akappa), akappa, ar), fmm_params(afmm_params)
+        : center(acenter), r(ar), level(alevel),
+          mp(afmm_params.minorder+afmm_params.order_factor*ar*abs(akappa), akappa, ar),
+          fmm_params(afmm_params)
       {
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
@@ -755,8 +761,8 @@ namespace ngsbem
         charges.Append( tuple{x,c} );
 
         // if (r*mp.Kappa() < 1e-8) return;
-        if (level > 20) return;
-        if (charges.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < 5)
+        if (level > fmm_params.maxlevel) return;
+        if (charges.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
           return;
         
         SendSourcesToChilds();
@@ -785,7 +791,7 @@ namespace ngsbem
         
         dipoles.Append (tuple{x,d,c});
         
-        if (level > 20) return;
+        if (level > fmm_params.maxlevel) return;
         if (dipoles.Size() < fmm_params.maxdirect)
           return;
 
@@ -1217,7 +1223,7 @@ namespace ngsbem
         if (charges.Size() || dipoles.Size() || chargedipoles.Size())
           return Evaluate(p);
         
-        if (L2Norm(p-center) > 3*r)
+        if (L2Norm(p-center) > fmm_params.eval_separation*r)
           return mp.Eval(p-center);
         
         if (!childs[0]) //  || level==1)
@@ -1234,7 +1240,7 @@ namespace ngsbem
         if (charges.Size() || dipoles.Size() || chargedipoles.Size() || !childs[0])
           return EvaluateDeriv(p, d);
 
-        if (L2Norm(p-center) > 3*r)
+        if (L2Norm(p-center) > fmm_params.eval_separation*r)
           return mp.EvalDirectionalDerivative(p-center, d);
 
         entry_type sum{0.0};
@@ -1693,7 +1699,8 @@ namespace ngsbem
 
       void Allocate()
       {
-        mp = SphericalExpansion<Regular,elem_type,T_Kappa>(params.minorder+2*r*abs(mp.Kappa()), mp.Kappa(), r);
+        mp = SphericalExpansion<Regular,elem_type,T_Kappa>
+          (params.minorder+params.order_factor*r*abs(mp.Kappa()), mp.Kappa(), r);
       }
       
       
@@ -1720,7 +1727,7 @@ namespace ngsbem
         if (mp.SH().Order() < 0) return;
         if (singnode.mp.SH().Order() < 0) return;
         // if (L2Norm(singnode.mp.SH().Coefs()) == 0) return;
-        if (level > 20)
+        if (level > params.maxlevel)
           {
             singnodes.Append(&singnode);            
             return;
@@ -1731,7 +1738,7 @@ namespace ngsbem
         Vec<3> dist = center-singnode.center;
 
         // if (L2Norm(dist)*mp.Kappa() > (mp.Order()+singnode.mp.Order()))
-        if (L2Norm(dist) > 2*(r + singnode.r))
+        if (L2Norm(dist) > params.separation*(r + singnode.r))
           {
             if (singnode.mp.Order() > 2 * mp.Order() &&
                 singnode.childs[0] &&
@@ -1927,8 +1934,8 @@ namespace ngsbem
         targets.Append( x );
 
         // if (r*mp.Kappa() < 1e-8) return;
-        if (level > 20) return;        
-        if (targets.Size() < params.maxdirect && r*abs(mp.Kappa()) < 5)
+        if (level > params.maxlevel) return;        
+        if (targets.Size() < params.maxdirect && r*abs(mp.Kappa()) < params.split_kr)
           return;
 
         CreateChilds();
@@ -1967,8 +1974,8 @@ namespace ngsbem
         
         vol_targets.Append (tuple(x,tr));
 
-        if (level > 20) return;
-        if (vol_targets.Size() < params.maxdirect && (r*abs(mp.Kappa()) < 5))
+        if (level > params.maxlevel) return;
+        if (vol_targets.Size() < params.maxdirect && (r*abs(mp.Kappa()) < params.split_kr))
           return;
 
         CreateChilds();
