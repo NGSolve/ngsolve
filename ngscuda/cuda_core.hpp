@@ -158,6 +158,26 @@ namespace ngs_cuda
                   << cudaGetErrorString(err) << std::endl;
     }
 
+    // End capture without instantiating — use when embedding as child graph
+    void EndCaptureOnly()
+    {
+      auto err = cudaStreamEndCapture(stream, &graph);
+      if (err != cudaSuccess) {
+        ngs_cuda_stream = prev_stream;
+        throw ngstd::Exception(std::string("[CudaGraph] cudaStreamEndCapture FAILED: ")
+                               + cudaGetErrorString(err));
+      }
+      size_t numnodes = 0;
+      cudaGraphGetNodes(graph, nullptr, &numnodes);
+      std::cerr << "[CudaGraph] captured nodes: " << numnodes << std::endl;
+      if (numnodes == 0)
+        std::cerr << "[CudaGraph] WARNING: 0 nodes" << std::endl;
+      capture_ok = true;
+      ngs_cuda_stream = prev_stream;
+      if (stream_change_callback)
+        stream_change_callback(ngs_cuda_stream);
+    }
+
     bool IsValid() const { return capture_ok && instance != nullptr; }
     cudaGraph_t GetGraph() const { return graph; }
   };
@@ -213,7 +233,11 @@ namespace ngs_cuda
       cParams.conditional.handle = handle;
       cParams.conditional.type   = cudaGraphCondTypeWhile;
       cParams.conditional.size   = 1;
+#if CUDA_VERSION > 12090
       cudaGraphAddNode(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
+#else
+      cudaGraphAddNode(&while_node, outer_graph, nullptr, 0, &cParams);
+#endif
       body_graph = cParams.conditional.phGraph_out[0];
 
       // 4. Add iteration body as child graph node in body
@@ -274,9 +298,67 @@ namespace ngs_cuda
         std::cerr << "[CudaWhileGraph] cudaGraphLaunch FAILED: "
                   << cudaGetErrorString(err) << std::endl;
     }
-
     bool IsValid() const { return capture_ok && instance != nullptr; }
+    cudaGraph_t GetGraph() const { return outer_graph; }
   };
+
+  // Fork-join graph: g_pre -> {branches[0] || branches[1] || ...} -> g_post
+  // Diamond is the special case with 2 branches
+  class CudaForkJoinGraph
+  {
+    cudaGraph_t forkjoin_graph = nullptr;
+    bool capture_ok = false;
+
+  public:
+
+    ~CudaForkJoinGraph()
+    {
+      if (forkjoin_graph) cudaGraphDestroy(forkjoin_graph);
+    }
+
+    void Build(cudaGraph_t g_pre,
+               ngcore::FlatArray<cudaGraph_t> branches,
+               cudaGraph_t g_post)
+    {
+      capture_ok = false;
+      cudaGraphCreate(&forkjoin_graph, 0);
+
+      // pre: no dependencies
+      cudaGraphNode_t n_pre;
+      auto err = cudaGraphAddChildGraphNode(&n_pre, forkjoin_graph, nullptr, 0, g_pre);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(std::string("[CudaForkJoinGraph] add n_pre FAILED: ") + cudaGetErrorString(err));
+
+      // parallel branches: each depends only on n_pre
+      ngcore::Array<cudaGraphNode_t> branch_nodes(branches.Size());
+      for (int i = 0; i < branches.Size(); i++) {
+        err = cudaGraphAddChildGraphNode(&branch_nodes[i], forkjoin_graph, &n_pre, 1, branches[i]);
+        if (err != cudaSuccess)
+          throw ngstd::Exception(std::string("[CudaForkJoinGraph] add branch ") + std::to_string(i) + " FAILED: " + cudaGetErrorString(err));
+      }
+
+      // post: depends on all branches
+      cudaGraphNode_t n_post;
+      err = cudaGraphAddChildGraphNode(&n_post, forkjoin_graph,
+                                       branch_nodes.Data(), branch_nodes.Size(), g_post);
+      if (err != cudaSuccess)
+        throw ngstd::Exception(std::string("[CudaForkJoinGraph] add n_post FAILED: ") + cudaGetErrorString(err));
+
+      size_t n_nodes = 0;
+      cudaGraphGetNodes(forkjoin_graph, nullptr, &n_nodes);
+      std::cerr << "[CudaForkJoinGraph] branches=" << branches.Size()
+                << " nodes=" << n_nodes << std::endl;
+
+      capture_ok = true;
+      std::cerr << "[CudaForkJoinGraph] Build successful" << std::endl;
+    }
+
+    bool IsValid() const { return capture_ok && forkjoin_graph != nullptr; }
+    cudaGraph_t GetGraph() const { return forkjoin_graph; }
+  };
+
+  // diamond = fork-join with 2 branches
+  using CudaDiamondGraph = CudaForkJoinGraph;
 
 
   template <typename T>
