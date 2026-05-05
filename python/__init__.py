@@ -150,3 +150,4 @@ def _jupyter_nbextension_paths():
 atexit.register(solve.__Cleanup)
 
 import ngsolve.solvers.mkl_pardiso as _mkl_pardiso
+import ngsolve.solvers.cudss

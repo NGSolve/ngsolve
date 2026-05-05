@@ -1,21 +1,21 @@
-try:
-    import nvmath.sparse.advanced as nvs
-    from nvmath.internal import utils
-    from nvmath.internal.tensor_ifc_numpy import NumpyTensor
-except ImportError:
-    raise ImportError("CUDSS solver requires nvmath-python module.")
-
 import ngsolve.la as ngla
-import scipy.sparse as sp
-import numpy as np
 
+import numpy as np
 from ngsolve import TimeFunction
 
 class CudssSolver(ngla.SparseFactorizationInterface):
-    solver: nvs.DirectSolver = None
+    solver = None
 
     @TimeFunction
     def Analyze(self):
+        try:
+            import nvmath.sparse.advanced as nvs
+        except ImportError:
+            raise ImportError("CUDSS solver requires nvmath-python module.")
+        try:
+            import scipy.sparse as sp
+        except ImportError:
+            raise ImportError("CUDSS solver requires scipy.")
         if hasattr(self, "solver") and self.solver is not None:
             self.solver.free()
             del self.solver
@@ -38,6 +38,9 @@ class CudssSolver(ngla.SparseFactorizationInterface):
     @TimeFunction
     def Factor(self):
         if not self._is_first_factor_call:
+            from nvmath.internal.tensor_ifc_numpy import NumpyTensor
+            from nvmath.internal import utils
+            import scipy.sparse as sp
             mat = self.GetInnerMatrix()
             if self.extract_symmetric and not self.is_symmetric_storage:
                 values = sp.tril(sp.csr_matrix(mat.CSR()), format="csr").data
@@ -51,6 +54,8 @@ class CudssSolver(ngla.SparseFactorizationInterface):
 
     @TimeFunction
     def Solve(self, b, sol):
+        from nvmath.internal import utils
+        from nvmath.internal.tensor_ifc_numpy import NumpyTensor
         stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)
         self.solver.b.copy_(NumpyTensor(b.FV().NumPy()), stream_holder)
         sol.FV().NumPy()[:] = self.solver.solve()
@@ -97,6 +102,7 @@ def _from_dist_files():
 
 def make_directsolver_options():
     # Helpful on Windows (Python 3.8+): ensure DLL deps can be found
+    import nvmath.sparse.advanced as nvs
     if os.name == "nt":
         for var in ("CUDA_PATH", "CUDSS_PATH", "CONDA_PREFIX"):
             base = os.environ.get(var)
