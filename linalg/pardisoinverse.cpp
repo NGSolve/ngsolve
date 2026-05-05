@@ -191,7 +191,7 @@ namespace ngla
     height = a->Height() * entrysize;
 
     *testout << "matrix.InverseTpye = " <<  a->GetInverseType() << endl;
-    spd = ( a->GetInverseType() == PARDISOSPD ) ? 1 : 0;
+    spd = ( a->GetInverseType() == "pardisospd" ) ? 1 : 0;
     if(a->IsSPD())
       spd = 1;
 

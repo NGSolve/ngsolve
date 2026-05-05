@@ -19,6 +19,19 @@
 namespace ngla
 {
 
+#ifdef USE_PARDISO
+  string BaseMatrix::default_inversetype = "pardiso";
+#else
+#ifdef USE_MUMPS
+  string BaseMatrix::default_inversetype = "mumps";
+#else
+#ifdef USE_UMFPACK
+  string BaseMatrix::default_inversetype = "umfpack";
+#else
+  string BaseSparseMatrix::default_inversetype = "sparsecholesky";
+#endif
+#endif
+#endif
   int UsedBits (size_t nr)
   {
     int cnt = 0;
@@ -1319,32 +1332,7 @@ namespace ngla
 
 
   BaseSparseMatrix :: ~BaseSparseMatrix () { }
-  
-
-  INVERSETYPE BaseSparseMatrix ::
-  SetInverseType (string ainversetype) const
-  {
-    INVERSETYPE old_invtype = inversetype;
-
-    invcreator = nullptr;
-    if (invcreators.Used(ainversetype)) invcreator = invcreators[ainversetype];
-    else if (ainversetype == "pardiso" )      SetInverseType ( PARDISO );
-    else if (ainversetype == "pardisospd")    SetInverseType ( PARDISOSPD );
-    else if (ainversetype == "superlu")       SetInverseType ( SUPERLU );
-    else if (ainversetype == "superlu_dist")  SetInverseType ( SUPERLU_DIST );
-    else if (ainversetype == "mumps")         SetInverseType ( MUMPS );
-    else if (ainversetype == "masterinverse") SetInverseType ( MASTERINVERSE );
-    else if (ainversetype == "sparsecholesky") SetInverseType ( SPARSECHOLESKY );
-    else if (ainversetype == "umfpack")       SetInverseType ( UMFPACK );
-    else
-      {
-        throw Exception (ToString("undefined inverse ")+ainversetype+
-                         "\nallowed is: 'sparsecholesky', 'pardiso', 'pardisospd', 'mumps', 'masterinverse', 'umfpack'");
-      }
-    return old_invtype;
-  }
 }
-
 
 #include "sparsematrix_impl.hpp"
 
@@ -2338,59 +2326,20 @@ namespace ngla
 template <class TM, class TV_ROW, class TV_COL>
 shared_ptr<BaseMatrix> InverseSparseMatrixTM (shared_ptr<const SparseMatrix<TM,TV_ROW,TV_COL>> A, shared_ptr<BitArray> const &subset, shared_ptr<const Array<int>>  const &clusters)
 {
-  switch(A->GetInverseType())
-  {
-    case(SUPERLU_DIST):
-    {
-    	throw Exception ("SparseMatrix::InverseMatrix:  SuperLU_DIST_Inverse not available");
-      return nullptr;
-      break;
-    }
-    case (SUPERLU):
-    {
+  auto invtype = A->GetInverseType();
   #ifdef USE_SUPERLU
-      return new SuperLUInverse<TM,TV_ROW,TV_COL> (*A, subset, clusters);
-  #else
-      throw Exception ("SparseMatrix::InverseMatrix:  SuperLUInverse not available");
-      return nullptr;
+      if(invtype == "superlu") return new SuperLUInverse<TM,TV_ROW,TV_COL> (*A, subset, clusters);
   #endif
-      break;
-    }
-    case(PARDISO):
-    case(PARDISOSPD):
-    {
-      if(is_pardiso_available)
-        return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>>(A, subset, clusters);
-      else
-      {
-        throw Exception ("SparseMatrix::InverseMatrix:  PardisoInverse not available");
-        return nullptr;
-      }
-      break;
-    }
-    case(UMFPACK):
-    {
-#ifdef USE_UMFPACK
-	  return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>>(A, subset, clusters);
-#else
-	  throw Exception ("SparseMatrix::InverseMatrix:  UmfpackInverse not available");
-#endif
-      break;
-    }
-    case(MUMPS):
-    {
-#ifdef USE_MUMPS
-	  return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*A, subset, clusters);
-#else
-	  throw Exception ("SparseMatrix::InverseMatrix: MumpsInverse not available");
-#endif
-      break;
-    }
-    default:
-    {
-    	return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>>(A, subset, clusters);
-    }
-  }
+  #ifdef USE_UMFPACK
+	  if(invtype == "umfpack") return make_shared<UmfpackInverse<TM,TV_ROW,TV_COL>>(A, subset, clusters);
+  #endif
+  #ifdef USE_MUMPS
+      if(invtype == "mumps") return make_shared<MumpsInverse<TM,TV_ROW,TV_COL>> (*A, subset, clusters);
+  #endif
+  if(is_pardiso_available && (invtype == "pardiso" || invtype == "pardisospd"))
+      return make_shared<PardisoInverse<TM,TV_ROW,TV_COL>> (A, subset, clusters);
+  if(invtype == "sparsecholesky") return make_shared<SparseCholesky<TM,TV_ROW,TV_COL>>(A, subset, clusters);
+  throw Exception ("SparseMatrix::InverseMatrix:  no inverse available for type " + invtype);
 }
 
 
@@ -2400,6 +2349,10 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
 {
   if (baseA->invcreator)
     return baseA->invcreator(const_pointer_cast<BaseSparseMatrix>(baseA), subset, clusters);
+
+  auto index = BaseMatrix::invcreators.CheckIndex(baseA->GetInverseType());
+  if(index != -1)
+    return BaseMatrix::invcreators[index](const_pointer_cast<BaseSparseMatrix>(baseA), subset, clusters);
   
   auto [dynH, dynW] = baseA->EntrySizes();
 

@@ -268,8 +268,7 @@ namespace ngla
       }
     else 
       {
-        // const_cast<BaseSparseMatrix&> (mat).SetInverseType ( SPARSECHOLESKY );
-	mat.SetInverseType (SPARSECHOLESKY);
+	mat.SetInverseType ("sparsecholesky");
         inv = mat.InverseMatrix();
       }
   }
@@ -1122,7 +1121,7 @@ namespace ngla
     else 
       {
 	cout << "cal inverse, size = " << mat.Height() << endl;
-        const_cast<BaseSparseMatrix&> (mat).SetInverseType ( SPARSECHOLESKY );
+        const_cast<BaseSparseMatrix&> (mat).SetInverseType ( "sparsecholesky" );
 	inv = mat.InverseMatrix();
       }
   }
