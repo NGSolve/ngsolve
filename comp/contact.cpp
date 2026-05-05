@@ -20,7 +20,10 @@ namespace ngcomp
     if(ma.GetDimension() ==3)
       return ma.GetNetgenMesh()->GetFaceDescriptor(el.GetIndex()+1).DomainIn();
     else
-      return ma.GetNetgenMesh()->LineSegments()[el.Nr()].domin;
+    {
+      auto& seg = ma.GetNetgenMesh()->LineSegments()[el.Nr()];
+      return ma.GetNetgenMesh()->GetEdgeDescriptor(seg.GetIndex()).DomainIn();
+    }
   }
 
   // Quadratic approximation of distance to pmaster
