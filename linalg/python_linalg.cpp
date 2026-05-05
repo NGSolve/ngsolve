@@ -1013,6 +1013,7 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         new (instance) BaseMatrixTrampoline(); }
         )
     */
+    .def_static("GetDefaultInverseType", &BaseMatrix::GetDefaultInverseType)
     .def_static("SetDefaultInverseType", &BaseMatrix::SetDefaultInverseType, py::arg("type"))
     .def(py::init<> ())
     .def(py::init<>([] (shared_ptr<BaseVector> vec)

@@ -151,3 +151,7 @@ atexit.register(solve.__Cleanup)
 
 import ngsolve.solvers.mkl_pardiso as _mkl_pardiso
 import ngsolve.solvers.cudss
+
+if inverse_type := os.environ.get("NGS_INVERSE_TYPE", None):
+    BaseMatrix.SetDefaultInverseType(inverse_type)
+del inverse_type

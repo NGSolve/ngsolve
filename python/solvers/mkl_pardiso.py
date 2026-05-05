@@ -21,22 +21,25 @@ def _find_mkl():
     if _mkl_free_buffers is not None and _pardiso is not None:
         return
 
-    libname = ctypes.util.find_library("mkl_rt")
-    if libname is None:
-        try:
-            importlib.metadata.version("mkl")
-        except importlib.metadata.PackageNotFoundError:
-            return
+    mkl_from_pip = False
+    libname = None
+    try:
+        importlib.metadata.version("mkl")
+    except importlib.metadata.PackageNotFoundError:
+        return
 
-        # iterate over all files in the mkl package
-        dist = importlib.metadata.distribution("mkl")
-        for file in dist.files:
-            filename = str(dist.locate_file(file))
-            if "mkl_rt" in filename:
-                libname = filename
-                break
-            if libname is not None:
-                break
+    # iterate over all files in the mkl package
+    dist = importlib.metadata.distribution("mkl")
+    for file in dist.files or []:
+        filename = str(dist.locate_file(file))
+        if "mkl_rt" in filename:
+            libname = filename
+            mkl_from_pip = True
+            break
+    if libname is None:
+        libname = ctypes.util.find_library("mkl_rt")
+    if libname is None:
+        return
     try:
         mkl_rt = ctypes.CDLL(libname)
     except OSError:
@@ -54,6 +57,9 @@ def _find_mkl():
         _pardiso.restype = None
     except AttributeError:
         _pardiso = None
+
+    if _pardiso is not None and _mkl_free_buffers is not None and mkl_from_pip:
+        ngla.BaseMatrix.SetDefaultInverseType("pardiso")
 
 
 class MKLPardiso(ngla.SparseFactorizationInterface):

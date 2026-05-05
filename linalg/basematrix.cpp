@@ -30,8 +30,6 @@ namespace ngla
 
   void BaseMatrix :: SetDefaultInverseType (string name)
   {
-    if(!invcreators.Used(name))
-      throw Exception(string("BaseMatrix::SetDefaultInverseType, unknown inverse type ")+name);
     default_inversetype = name;
   }
   
