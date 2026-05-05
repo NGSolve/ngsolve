@@ -487,13 +487,7 @@ direction : int
             if (mesh->GetDimension() == 3)
               dom_in = mesh->GetNetgenMesh()->GetFaceDescriptor(i+1).DomainIn();
             else if (mesh->GetDimension() == 2)
-              {
-                for(const auto& seg : mesh->GetNetgenMesh()->LineSegments())
-                  if (seg.edgenr == i + 1) {
-                    dom_in = seg.domin;
-                    break;
-                  }
-              }
+              dom_in = mesh->GetNetgenMesh()->GetEdgeDescriptor(i+1).DomainIn();
             else
               throw Exception("Mesh dimension not supported");
             if (dom_in == 0 || !region.Mask().Test(dom_in - 1))
