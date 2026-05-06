@@ -253,6 +253,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
       }
 
+    if(flags.AnyFlagDefined("definedonbound"))
+        throw Exception("definedonbound with Region is not supported, use definedon= {VOL: mats, BND: bnds}");
+
     // additional boundaries
     if(flags.NumListFlagDefined("definedonbound")|| flags.NumFlagDefined("definedonbound") )
       {
