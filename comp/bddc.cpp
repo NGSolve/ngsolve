@@ -629,6 +629,8 @@ namespace ngcomp
       "  preconditioner for wirebasket system, available: 'direct', 'h1amg'";
     docu.Arg("coarseflags") = "{}\n"
       "  flags for coarse preconditioner";
+    docu.Arg("inverse") = "sparsecholesky\n"
+      "  inverse type for the wirebasket system, available: 'sparsecholesky', 'pardiso', 'hypre'";
     
     return docu;    
   }
