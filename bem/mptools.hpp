@@ -71,8 +71,25 @@ namespace ngsbem
   };
 
 
-  
-  
+  struct FMMTreeStats
+  {
+    int max_level = 0;                           // Deepest tree level reached by any node.
+    size_t num_nodes = 0;                        // Total number of nodes in the tree, including internal nodes.
+    size_t num_leaves = 0;                       // Number of leaf nodes, including empty leaves.
+    size_t active_leaves = 0;                    // Number of leaves containing at least one source or target item.
+    Array<size_t> nodes_per_level;               // Histogram of node counts by tree level.
+    size_t leaf_size_min = std::numeric_limits<size_t>::max(); // Minimum number of source or target items in a leaf.
+    size_t leaf_size_max = 0;                    // Maximum number of source or target items in a leaf.
+    double leaf_size_sum = 0;                    // Sum of leaf sizes, used to compute the mean leaf size.
+    int order_min = std::numeric_limits<int>::max(); // Minimum allocated spherical expansion order.
+    int order_max = -1;                          // Maximum allocated spherical expansion order.
+    double order_sum = 0;                        // Sum of allocated orders, used to compute the mean order.
+    size_t num_allocated_multipoles = 0;         // Number of nodes whose multipole/local expansion is allocated.
+    size_t total_coefficients = 0;               // Total number of stored spherical harmonic coefficients.
+    size_t multipole_bytes = 0;                  // Memory used by stored spherical harmonic coefficients.
+  };
+
+
   inline std::tuple<double, double, double> SphericalCoordinates(Vec<3> dist){
     double len, theta, phi;
     len = L2Norm(dist);
@@ -1361,14 +1378,48 @@ namespace ngsbem
     {
       return root.NumCoefficients();
     }
-    
+
+    void CollectStatistics(FMMTreeStats & stats) const
+    {
+      const_cast<Node&>(root).TraverseTree([&](Node & node) {
+        stats.num_nodes++;
+        stats.max_level = max(stats.max_level, node.level);
+        while (stats.nodes_per_level.Size() <= size_t(node.level))
+          stats.nodes_per_level.Append(0);
+        stats.nodes_per_level[node.level]++;
+
+        if (!node.childs[0])
+          {
+            stats.num_leaves++;
+            size_t leaf_size = node.charges.Size() + node.dipoles.Size()
+                             + node.chargedipoles.Size() + node.currents.Size();
+            if (leaf_size > 0) stats.active_leaves++;
+            stats.leaf_size_min = min(stats.leaf_size_min, leaf_size);
+            stats.leaf_size_max = max(stats.leaf_size_max, leaf_size);
+            stats.leaf_size_sum += leaf_size;
+          }
+
+        int order = node.mp.SH().Order();
+        if (order >= 0)
+          {
+            stats.num_allocated_multipoles++;
+            stats.order_min = min(stats.order_min, order);
+            stats.order_max = max(stats.order_max, order);
+            stats.order_sum += order;
+            size_t coefs = node.mp.SH().Coefs().Size();
+            stats.total_coefficients += coefs;
+            stats.multipole_bytes += coefs * sizeof(entry_type);
+          }
+      });
+    }
+
     void CalcMP()
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
       static Timer ts2mp("mptool compute singular MLMP - source2mp");
       static Timer tS2S("mptool compute singular MLMP - S->S");
       static Timer trec("mptool comput singular recording");
-      static Timer tsort("mptool comput singular sort");      
+      static Timer tsort("mptool comput singular sort");
 
       /*
       int maxlevel = 0;
@@ -2104,7 +2155,7 @@ namespace ngsbem
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
       static Timer tremove("removeempty");
       static Timer trec("mptool regular MLMP - recording");
-      static Timer tsort("mptool regular MLMP - sort");       
+      static Timer tsort("mptool regular MLMP - sort");
       
       singmp = asingmp;
 
@@ -2252,6 +2303,68 @@ namespace ngsbem
     size_t NumCoefficients() const
     {
       return root.NumCoefficients();
+    }
+
+    void CollectStatistics(FMMTreeStats & stats) const
+    {
+      const_cast<Node&>(root).TraverseTree([&](Node & node) {
+        stats.num_nodes++;
+        stats.max_level = max(stats.max_level, node.level);
+        while (stats.nodes_per_level.Size() <= size_t(node.level))
+          stats.nodes_per_level.Append(0);
+        stats.nodes_per_level[node.level]++;
+
+        if (!node.childs[0])
+          {
+            stats.num_leaves++;
+            size_t leaf_size = node.targets.Size() + node.vol_targets.Size();
+            if (leaf_size > 0) stats.active_leaves++;
+            stats.leaf_size_min = min(stats.leaf_size_min, leaf_size);
+            stats.leaf_size_max = max(stats.leaf_size_max, leaf_size);
+            stats.leaf_size_sum += leaf_size;
+          }
+
+        int order = node.mp.SH().Order();
+        if (order >= 0)
+          {
+            stats.num_allocated_multipoles++;
+            stats.order_min = min(stats.order_min, order);
+            stats.order_max = max(stats.order_max, order);
+            stats.order_sum += order;
+            size_t coefs = node.mp.SH().Coefs().Size();
+            stats.total_coefficients += coefs;
+            stats.multipole_bytes += coefs * sizeof(elem_type);
+          }
+      });
+    }
+
+    // Run the S2R planning walk to populate target-tree multipoles and count translations / direct-evaluation work
+    struct M2LCounts
+    {
+      size_t num_s2r = 0;                        // Number of recorded source-to-regular box translations.
+      size_t num_direct_evaluations = 0;         // Estimated quadrature-point interactions handled by direct fallback.
+    };
+
+    M2LCounts CollectM2LStatistics
+      (shared_ptr<SingularMLExpansion<elem_type, T_Kappa>> singmp_in)
+    {
+      singmp = singmp_in;
+      singmp_in->root.CalcTotalSources();
+      root.CalcTotalTargets();
+      root.AllocateMemory();
+      Array<RecordingRS> recording;
+      root.AddSingularNode(singmp_in->root, false, &recording);
+
+      M2LCounts counts;
+      counts.num_s2r = recording.Size();
+
+      root.TraverseTree([&](Node & node) {
+        if (node.childs[0]) return;
+        size_t target_count = node.targets.Size() + node.vol_targets.Size();
+        for (auto * sn : node.singnodes)
+          counts.num_direct_evaluations += target_count * size_t(sn->total_sources);
+      });
+      return counts;
     }
 
     elem_type Evaluate (Vec<3> p) const

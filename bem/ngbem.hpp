@@ -11,6 +11,7 @@
 #include "bem_diffops.hpp"
 #include "diffopwithfactor.hpp"
 #include "kernels.hpp"
+#include "fmmoperator.hpp"
 
 
 namespace ngsbem
@@ -189,6 +190,11 @@ namespace ngsbem
     }
 
     virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const = 0;
+
+    virtual FMMOperatorInfo GetFMMInfo() const
+    {
+      throw Exception("GetFMMInfo not implemented for this IntegralOperator");
+    }
   };
 
   template <typename TSCAL>
@@ -311,6 +317,13 @@ namespace ngsbem
         throw Exception("SumIntegralOperator needs at least one summand");
       return std::move(*sum);
     }
+
+    FMMOperatorInfo GetFMMInfo() const override
+    {
+      if (summands.Size() != 1)
+        throw Exception("GetFMMInfo for SumIntegralOperator with multiple summands is not implemented");
+      return summands[0]->GetFMMInfo();
+    }
   };
 
   template <typename TSCAL>
@@ -347,6 +360,8 @@ namespace ngsbem
     {
       return ScaleDenseMatrixVariant(op->CalcSubMatrix(rowids, colids, lh), fac);
     }
+
+    FMMOperatorInfo GetFMMInfo() const override { return op->GetFMMInfo(); }
   };
 
   template <typename TSCAL>
@@ -382,6 +397,21 @@ namespace ngsbem
     KERNEL kernel;
     typedef typename KERNEL::value_type value_type;
     typedef IntegralOperator BASE;
+
+    static size_t CountSparseCorrectionNZE(const BaseMatrix * mat)
+    {
+      if (!mat) return 0;
+      if (auto sparse = dynamic_cast<const BaseSparseMatrix*>(mat))
+        return sparse->NZE();
+      if (auto sum = dynamic_cast<const SumMatrix*>(mat))
+        {
+          size_t nze = 0;
+          nze += CountSparseCorrectionNZE(sum->SPtrA().get());
+          nze += CountSparseCorrectionNZE(sum->SPtrB().get());
+          return nze;
+        }
+      return 0;
+    }
     
   public:
     /*
@@ -415,9 +445,24 @@ namespace ngsbem
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
     shared_ptr<BaseMatrix> CreateNearFieldMatrix(LocalHeap & lh) const override;
     virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const override;
-    
+
     virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
                                                          optional<int> io, bool nearfield_experimental) const override;
+
+    FMMOperatorInfo GetFMMInfo() const override
+    {
+      auto mat = this->GetMatrix();
+      auto fmm = FindFMMOperator<value_type>(mat.get());
+      if (!fmm)
+        throw Exception("GetFMMInfo: no FMM operator found inside matrix");
+      auto info = fmm->GetFMMInfo();
+      info.source_dofs = trial_space->GetNDof();
+      info.target_dofs = test_space->GetNDof();
+      info.nearfield_nze = CountSparseCorrectionNZE(mat.get());
+      double total_dof_pairs = double(info.source_dofs) * double(info.target_dofs);
+      info.nearfield_fraction = (total_dof_pairs > 0) ? double(info.nearfield_nze) / total_dof_pairs : 0.0;
+      return info;
+    }
   };
 
 
