@@ -27,6 +27,11 @@ namespace ngla
   {
     invcreators.Set (name, creator);
   }
+
+  void BaseMatrix :: SetDefaultInverseType (string name)
+  {
+    default_inversetype = name;
+  }
   
   BaseMatrix :: BaseMatrix()
     : paralleldofs (NULL)
@@ -249,6 +254,12 @@ namespace ngla
   
 
 
+  string BaseMatrix :: SetInverseType ( string ainversetype ) const
+  {
+    auto old_invtype = GetInverseType();
+    inversetype = ainversetype;
+    return old_invtype;
+  }
 
   shared_ptr<BaseMatrix> BaseMatrix :: InverseMatrix (shared_ptr<BitArray> subset) const 
   {
@@ -262,24 +273,6 @@ namespace ngla
     return NULL;
   }
   
-  INVERSETYPE BaseMatrix :: SetInverseType ( INVERSETYPE ainversetype ) const
-  {
-    cerr << "BaseMatrix::SetInverseType not available" << endl;
-    return SPARSECHOLESKY;
-  }
-  
-  INVERSETYPE BaseMatrix :: SetInverseType ( string ainversetype ) const
-  {
-    cerr << "BaseMatrix::SetInverseType not available" << endl;
-    return SPARSECHOLESKY;
-  }
-  
-  INVERSETYPE BaseMatrix :: GetInverseType () const
-  {
-    cerr << "BaseMatrix::GetInverseType not available" << endl;
-    return SPARSECHOLESKY;
-  }
-
   void BaseMatrix :: DoArchive (Archive & ar)
   {
     ;
@@ -389,22 +382,6 @@ namespace ngla
   }
 
 
-
-  string GetInverseName (INVERSETYPE type)
-  {
-    switch (type)
-      {
-      case PARDISO:         return "pardiso";
-      case PARDISOSPD:      return "pardisospd";
-      case SPARSECHOLESKY:  return "sparsecholesky";
-      case SUPERLU:         return "superlu";
-      case SUPERLU_DIST:    return "superlu_dist";
-      case MUMPS:           return "mumps";
-      case MASTERINVERSE:   return "masterinverse";
-      case UMFPACK:         return "umfpack";
-      }
-    return "";
-  }
 
   std::map<type_index, function<shared_ptr<BaseMatrix>(const BaseMatrix&)>> BaseMatrix::devmatcreator;
 

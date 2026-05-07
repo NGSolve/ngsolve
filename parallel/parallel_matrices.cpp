@@ -162,7 +162,7 @@ namespace ngla
 	comm.Send (global_nums, 0, NG_MPI_TAG_SOLVE);
 
 #ifdef USE_MUMPS
-	if (mat.GetInverseType() == MUMPS)
+	if (mat.GetInverseType() == "mumps")
 	  {
 	    SparseMatrixSymmetric<TM> dummy_matrix (1,1);
 	    inv = make_shared<MumpsInverse<TM>> (dummy_matrix, nullptr, nullptr, true);
@@ -395,9 +395,25 @@ namespace ngla
   template class MasterInverse<Mat<8,8,Complex> >;
 #endif
 
-
-
-
+auto _dummy_init = [] () {
+  BaseMatrix::RegisterInverseCreator( "masterinverse", [](
+      shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> freedofs, shared_ptr<const Array<int>> cluster)
+      {
+        auto parmat = dynamic_pointer_cast<ParallelMatrix> (mat);
+        if(!parmat)
+        {
+            auto sparse_mat = dynamic_pointer_cast<const BaseSparseMatrix> (mat);
+            if(!sparse_mat)
+                throw Exception("masterinverse creator only works for parallel matrices or sparse matrices");
+            // use default inverse creator for non-parallel matrices on the master node
+            sparse_mat->SetInverseType(BaseMatrix::GetDefaultInverseType());
+            return CreateSparseMatrixInverse(sparse_mat, freedofs, cluster);
+        }
+        if(cluster) return parmat->InverseMatrix(cluster);
+        return parmat->InverseMatrix(freedofs);
+      });
+  return 0;
+}();
 
   
 #endif
@@ -415,9 +431,9 @@ namespace ngla
       mat->SetParallelDofs (arpardofs);
     if (auto spmat = dynamic_pointer_cast<BaseSparseMatrix>(mat)) {
 #ifdef USE_MUMPS
-      spmat->SetInverseType(MUMPS);
+      spmat->SetInverseType("mumps");
 #else
-      spmat->SetInverseType(MASTERINVERSE);
+      spmat->SetInverseType("masterinverse");
 #endif
     }
   }
@@ -683,7 +699,7 @@ namespace ngla
 
 #ifdef USE_MUMPS
     bool symmetric = dynamic_cast<const SparseMatrixSymmetric<TM>*> (mat.get()) != NULL;
-    if (mat->GetInverseType() == MUMPS)
+    if (mat->GetInverseType() == "mumps")
       return make_shared<ParallelMumpsInverse<TM>> (*dmat, subset, nullptr, paralleldofs, symmetric);
     else 
 #endif
@@ -701,21 +717,12 @@ namespace ngla
     throw Exception ("ParallelMatrix::Inverse(cluster) not available");
   }
 
-  INVERSETYPE ParallelMatrix::SetInverseType (INVERSETYPE ainversetype) const
+  string ParallelMatrix::SetInverseType (string ainversetype) const
   {
     return mat->SetInverseType (ainversetype);
   }
 
-  INVERSETYPE ParallelMatrix::SetInverseType (string ainversetype) const
-  {
-    invcreator = nullptr;
-    if (invcreators.Used(ainversetype))
-      invcreator = invcreators[ainversetype];
-    
-    return mat->SetInverseType (ainversetype);
-  }
-  
-  INVERSETYPE ParallelMatrix::GetInverseType () const
+  string ParallelMatrix::GetInverseType () const
   {
     return mat->GetInverseType ();
   }

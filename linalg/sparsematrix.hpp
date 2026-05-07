@@ -57,19 +57,6 @@ namespace ngla
 
 
   
-#ifdef USE_PARDISO
-  const INVERSETYPE default_inversetype = PARDISO;
-#else
-#ifdef USE_MUMPS
-  const INVERSETYPE default_inversetype = MUMPS;
-#else
-#ifdef USE_UMFPACK
-  const INVERSETYPE default_inversetype = UMFPACK;
-#else
-  const INVERSETYPE default_inversetype = SPARSECHOLESKY;
-#endif
-#endif
-#endif
 
 
   /** 
@@ -191,7 +178,6 @@ namespace ngla
   {
   protected:
     /// sparse direct solver
-    mutable INVERSETYPE inversetype = default_inversetype;   
     Flags inverseflags;
     bool spd = false;
     
@@ -286,18 +272,6 @@ namespace ngla
       throw Exception ("BaseSparseMatrix::Reorder");
     }
     
-    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override
-    {
-
-      INVERSETYPE old_invtype = inversetype;
-      inversetype = ainversetype; 
-      return old_invtype;
-    }
-
-    virtual INVERSETYPE SetInverseType ( string ainversetype ) const override;
-
-    virtual INVERSETYPE  GetInverseType () const override
-    { return inversetype; }
     virtual void SetInverseFlags (const Flags & flags) override
     { inverseflags = flags; }
     virtual const Flags & GetInverseFlags () const { return inverseflags; } 

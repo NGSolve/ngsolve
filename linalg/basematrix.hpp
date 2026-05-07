@@ -17,10 +17,6 @@ namespace ngla
 {
   class ParallelDofs;
   
-  // sets the solver which is used for InverseMatrix
-  enum INVERSETYPE { PARDISO, PARDISOSPD, SPARSECHOLESKY, SUPERLU, SUPERLU_DIST, MUMPS, MASTERINVERSE, UMFPACK };
-  extern string GetInverseName (INVERSETYPE type);
-
   class BaseSparseMatrix;
   
   /**
@@ -29,8 +25,10 @@ namespace ngla
   class NGS_DLL_HEADER BaseMatrix : public enable_shared_from_this_virtual<BaseMatrix>
   {
   protected:
+    static string default_inversetype;
     shared_ptr<ParallelDofs> paralleldofs;
     mutable char safety_check = 0;
+    mutable string inversetype = default_inversetype;
     bool is_complex = false;
     xbool symmetric = maybe;
     
@@ -154,9 +152,8 @@ namespace ngla
     
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<BitArray> subset = nullptr) const;
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const;
-    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const;
-    virtual INVERSETYPE SetInverseType ( string ainversetype ) const;
-    virtual INVERSETYPE  GetInverseType () const;
+    virtual string GetInverseType () const { return inversetype; }
+    virtual string SetInverseType ( string ainversetype ) const;
 
     typedef  std::function<shared_ptr<BaseMatrix>(shared_ptr<BaseMatrix>,
                                                   shared_ptr<BitArray>,
@@ -166,6 +163,8 @@ namespace ngla
 
     static SymbolTable<T_INVCREATOR> invcreators;
     static void RegisterInverseCreator(string name, T_INVCREATOR creator);
+    static void SetDefaultInverseType(string definvtype);
+    static string GetDefaultInverseType() { return default_inversetype; }
     
     virtual void SetInverseFlags (const Flags & flags) { ; }
     virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const

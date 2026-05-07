@@ -121,9 +121,8 @@ namespace ngla
     shared_ptr<BaseMatrix> InverseMatrixTM (shared_ptr<BitArray> subset = 0) const;
 
     virtual shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override;
-    virtual INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override;
-    virtual INVERSETYPE SetInverseType ( string ainversetype ) const override;
-    virtual INVERSETYPE GetInverseType () const override;
+    virtual string SetInverseType ( string ainversetype ) const override;
+    virtual string GetInverseType () const override;
 
     virtual shared_ptr<BaseMatrix> DeleteZeroElements(double tol) const override
     {
