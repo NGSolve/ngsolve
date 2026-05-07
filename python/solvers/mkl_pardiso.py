@@ -149,16 +149,18 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
             data = [np.array(v.NumPy()) for v in mat.CSR()]
         else:
             data = [v.NumPy() for v in mat.CSR()]
-
         data[2] = np.asarray(data[2], dtype=np.int32)
-        return data
+        return data, mat
 
     @TimeFunction
     def Analyze(self):
         if hasattr(self, "_pt"):
             self._release()
 
-        self._data_np, indices, indptr = self.get_csr()
+        data, self._csr_mat = self.get_csr()
+        self._data_np = np.array(data[0])  # writable copy for pardiso
+        self._indices_np = data[1]  # view kept alive by self._csr_mat
+        self._indptr_np = data[2]  # already a copy (dtype conversion)
 
         is_symmetric = self.is_symmetric.is_true
         self._params[12] = 0 if is_symmetric else 1  # slicing + matching
@@ -174,8 +176,8 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
         self._n[0] = n = self.GetInnerMatrix().height
 
         self._data = self._as_ctypes(self._data_np)
-        self._indices = self._as_ctypes(indices)
-        self._indptr = self._as_ctypes(indptr)
+        self._indices = self._as_ctypes(self._indices_np)
+        self._indptr = self._as_ctypes(self._indptr_np)
 
         dtype = np.complex128 if self.is_complex else np.float64
         self._b_np = np.zeros(n, dtype=dtype)
@@ -189,8 +191,8 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
     @TimeFunction
     def Factor(self):
         if not self._is_first_factor_call:
-            data = self.get_csr()[0]
-            self._data_np[:] = data
+            data, _ = self.get_csr()
+            self._data_np[:] = data[0]
             self._call_pardiso(22)
         self._is_first_factor_call = False
 
