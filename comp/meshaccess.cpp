@@ -2190,10 +2190,10 @@ namespace ngcomp
   void NGSolveTaskManager (function<void(int,int)> func)
   {
     // cout << "call ngsolve taskmanager from netgen, tm = " << task_manager << endl;
-    if (!task_manager)
+    if (!GetTaskManager())
       func(0,1);
     else
-      task_manager->CreateJob
+      TaskManager::CreateJob
         ([&](TaskInfo & info)
          {
            func(info.task_nr, info.ntasks);
@@ -2751,13 +2751,15 @@ namespace ngcomp
     cnt = 0;
     thd_cnt = 0;
     // cleanup_func = [this] () {  this->SumUpLocal(); };
-    TaskManager::SetCleanupFunction(cleanup_func);
+    auto * tm = GetTaskManager();
+    if(tm) tm->SetCleanupFunction(cleanup_func);
   }
 
   ProgressOutput :: ~ProgressOutput ()
   {
     Done();
-    TaskManager::SetCleanupFunction();
+    auto * tm = GetTaskManager();
+    if(tm) tm->SetCleanupFunction();
   }  
 
   atomic<size_t> ProgressOutput :: cnt;

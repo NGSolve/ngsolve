@@ -623,7 +623,7 @@ namespace ngla
 
     cout << IM(4) << "start order" << endl;
 
-    if (task_manager) task_manager -> StopWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
 
     for (int j = 0; j < n; j++)
       {
@@ -690,7 +690,7 @@ namespace ngla
       }
     // PrintCliques();
     // NgProfiler::Print (cout);
-    if (task_manager) task_manager -> StartWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
   }
 
 

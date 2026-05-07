@@ -331,11 +331,11 @@ namespace ngcomp
                           LocalHeap & clh, 
                           const TFUNC & func) const
     {
-      if (task_manager)
+      if (GetTaskManager())
         {
           SharedLoop sl(GetNE(vb));
 
-          task_manager -> CreateJob
+          TaskManager :: CreateJob
             ( [&] (const TaskInfo & ti) 
               {
                 LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
@@ -362,11 +362,11 @@ namespace ngcomp
     template <typename TFUNC>
     void IterateElements (VorB vb,const TFUNC & func) const
     {
-      if (task_manager)
+      if (GetTaskManager())
         {
           SharedLoop sl(GetNE(vb));
 
-          task_manager -> CreateJob
+          TaskManager :: CreateJob
             ( [&] (const TaskInfo & ti)
               {
                 for (size_t mynr : sl)

@@ -732,7 +732,7 @@ namespace ngla
           auto col = block_coloring[c];
           SharedLoop2 sl(col.Range());
           
-          task_manager -> CreateJob
+          TaskManager :: CreateJob
               ( [&] (const TaskInfo & ti) 
                 {
                   VectorMem<100,TVX> hxmax(maxbs);
@@ -769,7 +769,7 @@ namespace ngla
         for (int c : Range(block_coloring))
           loops[c].Reset (block_coloring[c].Range());
 
-        task_manager -> CreateJob
+        TaskManager :: CreateJob
           ( [&] (const TaskInfo & ti) 
             {
               VectorMem<100,TVX> hxmax(maxbs);
@@ -1142,7 +1142,7 @@ namespace ngla
       mat->AddRowTransToVector (j, -fx(j), fy);
 
     
-    if (task_manager)
+    if (GetTaskManager())
       
       for (int k = 1; k <= steps; k++)
         for (size_t c = 0; c < block_coloring.Size(); c++)
@@ -1171,7 +1171,7 @@ namespace ngla
     FlatVector<TVX> fy = y.FV<TVX> ();
 
 
-    if (task_manager)
+    if (GetTaskManager())
       
       for (size_t c = 0; c < block_coloring.Size(); c++)
         ParallelFor (color_balance[c], [&] (int bi)
@@ -1242,7 +1242,7 @@ namespace ngla
     FlatVector<TVX> fy = y.FV<TVX> ();
 
 
-    if (task_manager)
+    if (GetTaskManager())
       
       for (int c = block_coloring.Size()-1; c >= 0; c--)
         ParallelFor (color_balance[c], [&] (int bi)

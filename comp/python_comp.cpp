@@ -4249,7 +4249,7 @@ deformation : ngsolve.comp.GridFunction
             for (FlatArray<int> els_of_col : element_coloring1)
             {
               SharedLoop sl(els_of_col.Range());
-              task_manager -> CreateJob
+              TaskManager :: CreateJob
               ( [&] (const TaskInfo & ti) 
               {
                 LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);

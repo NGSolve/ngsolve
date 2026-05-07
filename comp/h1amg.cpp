@@ -54,6 +54,7 @@ namespace ngcomp
       if (cnt_dep[j] == 0) ready.Append(j);
 
 
+    auto * task_manager = GetTaskManager();
     if (!task_manager)
       // if (true)
       {

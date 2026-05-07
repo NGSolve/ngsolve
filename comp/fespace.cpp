@@ -2119,7 +2119,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     static mutex copyex_mutex;
     const Table<int> & element_coloring = fes.ElementColoring(vb);
     
-    if (task_manager)
+    if (auto *task_manager = GetTaskManager(); task_manager)
       {
         for (FlatArray<int> els_of_col : element_coloring)
           {
