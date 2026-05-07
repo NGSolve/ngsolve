@@ -22,6 +22,11 @@ namespace ngsbem
 
     fmm_maxdirect = int(flags.GetNumFlag("fmm_maxdirect", fmm_maxdirect));
     fmm_minorder = int(flags.GetNumFlag("fmm_minorder", fmm_minorder));
+    fmm_order_factor = flags.GetNumFlag("fmm_order_factor", fmm_order_factor);
+    fmm_separation = flags.GetNumFlag("fmm_separation", fmm_separation);
+    fmm_eval_separation = flags.GetNumFlag("fmm_eval_separation", fmm_eval_separation);
+    fmm_split_kr = flags.GetNumFlag("fmm_split_kr", fmm_split_kr);
+    fmm_maxlevel = int(flags.GetNumFlag("fmm_maxlevel", fmm_maxlevel));
   }
   
   

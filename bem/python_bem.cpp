@@ -34,6 +34,103 @@ namespace
                                                          KernelComplex(std::get<Complex>(kappa)),
                                                          ioparams, intorder);
   }
+
+  inline py::dict FMMInfoToDict (const FMMOperatorInfo & info)
+  {
+    double abs_kappa = std::visit([](auto k) { return std::abs(k); }, info.kappa);
+    bool has_wavelength = abs_kappa > 1e-14;
+    double wavelength = has_wavelength ? 2.0 * M_PI / abs_kappa : 0.0;
+    auto maybe = [] (bool condition, auto value) -> py::object {
+      return condition ? py::cast(value) : py::none();
+    };
+    auto mean_or_none = [] (double sum, size_t count) -> py::object {
+      return count > 0 ? py::cast(sum / double(count)) : py::none();
+    };
+
+    auto tree_to_dict = [&](const FMMTreeStats & s, double bbox_radius) {
+      py::dict d;
+      d["depth"] = s.max_level;
+      d["num_nodes"] = s.num_nodes;
+      d["num_leaves"] = s.num_leaves;
+      d["active_leaves"] = s.active_leaves;
+      d["active_leaves_fraction"] = (s.num_leaves > 0) ? double(s.active_leaves) / double(s.num_leaves) : 0.0;
+      d["bbox_radius"] = bbox_radius;
+      d["diameter_in_wavelengths"] = maybe(has_wavelength, 2.0 * bbox_radius / wavelength);
+      py::list npl;
+      for (auto n : s.nodes_per_level) npl.append(n);
+      d["nodes_per_level"] = npl;
+      d["leaf_size_min"] = maybe(s.num_leaves > 0, s.leaf_size_min);
+      d["leaf_size_max"] = maybe(s.num_leaves > 0, s.leaf_size_max);
+      d["leaf_size_mean"] = mean_or_none(s.leaf_size_sum, s.num_leaves);
+      d["order_min"] = maybe(s.num_allocated_multipoles > 0, s.order_min);
+      d["order_max"] = maybe(s.num_allocated_multipoles > 0, s.order_max);
+      d["order_mean"] = mean_or_none(s.order_sum, s.num_allocated_multipoles);
+      d["num_allocated_multipoles"] = s.num_allocated_multipoles;
+      d["total_coefficients"] = s.total_coefficients;
+      d["multipole_mb"] = s.multipole_bytes / 1.0e6;
+      return d;
+    };
+
+    auto params_to_dict = [](const FMM_Parameters & p) {
+      py::dict d;
+      d["fmm_maxdirect"] = p.maxdirect;
+      d["fmm_minorder"] = p.minorder;
+      d["fmm_order_factor"] = p.order_factor;
+      d["fmm_separation"] = p.separation;
+      d["fmm_eval_separation"] = p.eval_separation;
+      d["fmm_split_kr"] = p.split_kr;
+      d["fmm_maxlevel"] = p.maxlevel;
+      return d;
+    };
+
+    py::dict d;
+    d["kernel_name"] = info.kernel_name;
+    d["source_size"] = info.source_size;
+    d["target_size"] = info.target_size;
+    d["source_dofs"] = info.source_dofs;
+    d["target_dofs"] = info.target_dofs;
+    if (std::holds_alternative<Complex>(info.kappa))
+      d["kappa"] = std::get<Complex>(info.kappa);
+    else
+      d["kappa"] = std::get<double>(info.kappa);
+    d["wavelength"] = maybe(has_wavelength, wavelength);
+    d["total_num_nodes"] = info.total_num_nodes;
+    d["total_num_leaves"] = info.total_num_leaves;
+    d["total_multipole_coefficients"] = info.total_multipole_coefficients;
+    d["multipole_memory_mb"] = info.total_memory_bytes / 1.0e6;
+    d["num_s2r"] = info.num_s2r;
+    d["num_direct_evaluations"] = info.num_direct_evaluations;
+    d["direct_fallback_fraction"] = info.direct_fallback_fraction;
+    d["nearfield_nze"] = info.nearfield_nze;
+    d["nearfield_fraction"] = info.nearfield_fraction;
+    d["source"] = tree_to_dict(info.source_tree, info.source_bbox_radius);
+    d["target"] = tree_to_dict(info.target_tree, info.target_bbox_radius);
+    d["parameters"] = params_to_dict(info.parameters);
+    return d;
+  }
+
+  static constexpr const char * bem_operator_kwargs_doc = R"raw_string(
+Keyword arguments:
+  use_fmm : bool, default True
+    Enable FMM acceleration.
+  fmm_maxdirect : int, default 100
+    Maximum number of direct source or target contributions in an FMM leaf.
+  fmm_minorder : int, default 20
+    Base spherical expansion order.
+  fmm_order_factor : float, default 2.0
+    Frequency-dependent order factor: order = fmm_minorder + fmm_order_factor*abs(kappa)*r.
+  fmm_separation : float, default 2.0
+    Box-box admissibility factor for M2L translations: a source/target box pair
+    is treated as far if dist(centers) > fmm_separation*(r_source+r_target).
+    Raise for more accurate translations at the cost of more near-field work.
+  fmm_eval_separation : float, default 3.0
+    Same as fmm_separation but for single-point evaluation;
+  fmm_split_kr : float, default 5.0
+    A leaf with abs(kappa)*r >= fmm_split_kr keeps subdividing even when it
+    holds fewer than fmm_maxdirect points.
+  fmm_maxlevel : int, default 20
+    Maximum FMM tree level.
+)raw_string";
 }
 
 
@@ -179,6 +276,10 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     .def("GetPotential", &IntegralOperator::GetPotential,
          py::arg("gf"), py::arg("intorder")=nullopt, py::arg("nearfield_experimental")=false)
 
+    .def("GetFMMInfo", [](shared_ptr<IntegralOperator> iop) {
+      return FMMInfoToDict(iop->GetFMMInfo());
+    })
+
     .def("CalcSubMatrix", [](shared_ptr<IntegralOperator> iop,
                              py::array_t<DofId> rowids, py::array_t<DofId> colids) {
 
@@ -278,7 +379,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return ScaleIntegralOperator(a, -1.0);
     })
     ;
-  
+
   m.def("SingleLayerPotentialOperator", [](shared_ptr<FESpace> space, int intorder) -> shared_ptr<IntegralOperator>
   {
     return make_unique<GenericIntegralOperator<LaplaceSLKernel<3>>>(space, space, nullopt, nullopt,
@@ -492,8 +593,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return sumpot.MakePotentialCF(gf, region);
     })
     ;
-  
-  
+
   m.def("LaplaceSL", [&](shared_ptr<SumOfIntegrals> potential, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
     auto igl = potential->icfs[0];
@@ -525,7 +625,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         ;
       }
     throw Exception("only dim=1 and dim=3 LaplaceSL are supported");
-  });
+  }, py::arg("potential"), docu_string(bem_operator_kwargs_doc));
 
 
 
@@ -558,7 +658,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
                                                                 LaplaceDLKernel<3,3>{}, ioparams, fesorder+igl->dx.bonus_intorder);
     throw Exception("only dim=1 and dim=3 LaplaceDL are supported");
-  });
+  }, py::arg("potential"), docu_string(bem_operator_kwargs_doc));
 
   m.def("HelmholtzSL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
@@ -604,7 +704,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     }
     else
       throw Exception("only dim=1 and dim=3 HelmholtzSL are supported");
-  });
+  }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
 
   m.def("HelmholtzDL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
@@ -649,7 +749,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     }
     else
       throw Exception("only dim=1 and dim=3 HelmholtzDL are supported");
-  });
+  }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
 
 
 
@@ -689,7 +789,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
             (proxy, igl->dx.vb, definedon, proxy->Evaluator(), val, ioparams, fesorder+igl->dx.bonus_intorder);
         }, kappa); 
     throw Exception("only dim=1 HelmholtzCF is supported");
-  });
+  }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
 
   m.def("MaxwellDL", [](shared_ptr<SumOfIntegrals> potential, std::variant<double, Complex> kappa, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
     if (potential->icfs.Size()!=1) throw Exception("need one integral");
@@ -715,7 +815,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     }
     else
       throw Exception("only dim=3 MaxwellDL are supported");
-  });
+  }, py::arg("potential"), py::arg("kappa"), docu_string(bem_operator_kwargs_doc));
 
 
   m.def("LameSL", [](shared_ptr<SumOfIntegrals> potential, double E, double nu, py::kwargs kwargs) -> shared_ptr<BasePotentialOperator> {
@@ -750,7 +850,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                                                               LameSLKernel<3>{E,nu}, ioparams, fesorder /* tmpfes->GetOrder()*/ +igl->dx.bonus_intorder);
 
     throw Exception("only dim=3 LameSL is supported");
-    }, py::arg("term"), py::arg("E"), py::arg("nu"));
+    }, py::arg("term"), py::arg("E"), py::arg("nu"), docu_string(bem_operator_kwargs_doc));
 
 
 
