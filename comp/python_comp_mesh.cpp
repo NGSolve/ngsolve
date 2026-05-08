@@ -974,15 +974,20 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                                Array<MeshPoint> points;
                                if(element_boundary != VOL)
                                  {
-                                   Region reg = get_if<Region>(&vb_or_reg) ? *get_if<Region>(&vb_or_reg) : Region(self->shared_from_this(), *get_if<VorB>(&vb_or_reg));
+                                   Region reg = get_if<Region>(&vb_or_reg) ? *get_if<Region>(&vb_or_reg) : Region(self->shared_from_this(), *get_if<VorB>(&vb_or_reg), true);
                                    for(auto el : self->Elements(reg.VB()))
                                     {
                                       if (reg.Mask().Test(el.GetIndex()))
                                         {
+                                          Facet2ElementTrafo trafo(el.GetType(), el.Vertices());
                                           for(int fnr : Range(el.Facets()))
                                             {
                                               for(const auto& p : rules[self->GetFacetType(el.Facets()[fnr])] )
-                                                points.Append({p(0), p(1), p(2), self, reg.VB(), int(el.Nr()), int(fnr), element_boundary});
+                                                {
+                                                  IntegrationPoint ipfac(p(0), p(1), p(2));
+                                                  auto ipvol = trafo(fnr, ipfac);
+                                                  points.Append({ipvol(0), ipvol(1), ipvol(2), self, reg.VB(), int(el.Nr()), int(fnr), element_boundary});
+                                                }
                                             }
                                         }
                                     }
