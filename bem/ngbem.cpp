@@ -1177,7 +1177,7 @@ namespace ngsbem
 
 
     for (auto i : Range(source_ids))
-      for (auto [elid,nr] : (*test_dof2el)[source_ids[i]])
+      for (auto [elid,nr] : (*trial_dof2el)[source_ids[i]])
         source_map.Append( { elid, i, nr} );
 
     for (auto [elid,i,nr] : source_map)
