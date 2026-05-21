@@ -420,9 +420,16 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HypersingularOperator", [](shared_ptr<FESpace> space, optional<Region> definedon,
                                     int intorder) -> shared_ptr<IntegralOperator>
   {
+    if (space->IsComplex())
+      return make_unique<GenericIntegralOperator<LaplaceSLKernel<3,3,Complex>>>
+        (space, space, definedon, definedon,
+         make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(),
+         make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(),
+         LaplaceSLKernel<3,3,Complex>(), intorder);
+
     return make_unique<GenericIntegralOperator<LaplaceSLKernel<3,3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(),
-                                                                    make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(), 
+                                                                    make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(),
                                                                     LaplaceSLKernel<3,3>(), intorder);
     
   }, py::arg("space"), py::arg("definedon")=nullopt,
@@ -614,10 +621,20 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     switch (proxy->Dimension())
       {
       case 1:
+        if (fes->IsComplex())
+          return make_shared<PotentialOperator<LaplaceSLKernel<3,1,Complex>>>
+            (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
+             LaplaceSLKernel<3,1,Complex>{}, ioparams,
+             fesorder+igl->dx.bonus_intorder);
         return make_shared<PotentialOperator<LaplaceSLKernel<3>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
                                                                    LaplaceSLKernel<3>{}, ioparams, 
                                                                    fesorder+igl->dx.bonus_intorder);
       case 3:
+        if (fes->IsComplex())
+          return make_shared<PotentialOperator<LaplaceSLKernel<3,3,Complex>>>
+            (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
+             LaplaceSLKernel<3,3,Complex>{}, ioparams,
+             fesorder+igl->dx.bonus_intorder);
         return make_shared<PotentialOperator<LaplaceSLKernel<3,3>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
                                                                      LaplaceSLKernel<3,3>{}, ioparams,
                                                                      fesorder+igl->dx.bonus_intorder);
@@ -652,11 +669,21 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
     if (igl->dx.definedon)
       definedon = Region(fes->GetMeshAccess(), igl->dx.vb, get<1> (*(igl->dx.definedon)));
     if (proxy->Dimension() == 1)
-      return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
-                                                                LaplaceDLKernel<3>{}, ioparams, fesorder+igl->dx.bonus_intorder);
+      {
+        if (fes->IsComplex())
+          return make_shared<PotentialOperator<LaplaceDLKernel<3,1,Complex>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
+                                                                              LaplaceDLKernel<3,1,Complex>{}, ioparams, fesorder+igl->dx.bonus_intorder);
+        return make_shared<PotentialOperator<LaplaceDLKernel<3>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
+                                                                  LaplaceDLKernel<3>{}, ioparams, fesorder+igl->dx.bonus_intorder);
+      }
     if (proxy->Dimension() == 3)
-      return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
-                                                                LaplaceDLKernel<3,3>{}, ioparams, fesorder+igl->dx.bonus_intorder);
+      {
+        if (fes->IsComplex())
+          return make_shared<PotentialOperator<LaplaceDLKernel<3,3,Complex>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
+                                                                              LaplaceDLKernel<3,3,Complex>{}, ioparams, fesorder+igl->dx.bonus_intorder);
+        return make_shared<PotentialOperator<LaplaceDLKernel<3,3>>> (proxy, igl->dx.vb, definedon, proxy->Evaluator(),
+                                                                    LaplaceDLKernel<3,3>{}, ioparams, fesorder+igl->dx.bonus_intorder);
+      }
     throw Exception("only dim=1 and dim=3 LaplaceDL are supported");
   }, py::arg("potential"), docu_string(bem_operator_kwargs_doc));
 

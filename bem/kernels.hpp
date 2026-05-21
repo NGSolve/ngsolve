@@ -306,11 +306,11 @@ namespace ngsbem
   // *********** STANDARD KERNELS DEFINITIONS **********************
   /** LaplaceSLkernel is the kernel for the single layer potential of
       the Laplace equation $ \Delta u = 0 \,.$  */
-  template <int DIM, int COMPS=1> class LaplaceSLKernel;
+  template <int DIM, int COMPS=1, typename T_VAL=double> class LaplaceSLKernel;
 
   /** LaplaceDLkernel is the kernel for the double layer potential of
       the Laplace equation $ \Delta u = 0 \,.$  */
-  template <int DIM, int COMPS=1> class LaplaceDLKernel;
+  template <int DIM, int COMPS=1, typename T_VAL=double> class LaplaceDLKernel;
 
   /** HelmholtzSLkernel is the kernel for the double layer potential of the
       Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,. $ */
@@ -340,13 +340,13 @@ namespace ngsbem
   // *********** DIFF KERNELS **********************
   
 
-  template <int DIM, int COMPS=1> class DiffLaplaceSLKernel;
-  template<int COMPS>
-  class DiffLaplaceSLKernel<3, COMPS> : public BaseKernel
+  template <int DIM, int COMPS=1, typename T_VAL=double> class DiffLaplaceSLKernel;
+  template<int COMPS, typename T_VAL>
+  class DiffLaplaceSLKernel<3, COMPS, T_VAL> : public BaseKernel
   {
   public:
-    using source_type = Charges<COMPS, double>;
-    using target_type = GradientEval<COMPS, double>;
+    using source_type = Charges<COMPS, T_VAL>;
+    using target_type = GradientEval<COMPS, T_VAL>;
 
     source_type source;
     target_type target;
@@ -358,7 +358,7 @@ namespace ngsbem
         for (size_t i = 0; i < 3; i++)
           terms += KernelTerm{1.0, i, c, 3*c+i};
     };
-    typedef double value_type;
+    typedef T_VAL value_type;
     using mp_type = typename source_type::mp_type;
 
     static string Name() { return "DiffLaplaceSL"; }
@@ -416,12 +416,12 @@ namespace ngsbem
 
   /** LaplaceSLkernel in 3D reads 
       $$ G(x-y) = \frac{1}{4\,\pi \, | x-y| }, \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<int COMPS>
-  class LaplaceSLKernel<3, COMPS> : public BaseKernel
+  template<int COMPS, typename T_VAL>
+  class LaplaceSLKernel<3, COMPS, T_VAL> : public BaseKernel
   {
   public:
-    using source_type = Charges<COMPS, double>;
-    using target_type = Charges<COMPS, double>;
+    using source_type = Charges<COMPS, T_VAL>;
+    using target_type = Charges<COMPS, T_VAL>;
 
     source_type source;
     target_type target;
@@ -431,7 +431,7 @@ namespace ngsbem
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};
     };
-    typedef double value_type;
+    typedef T_VAL value_type;
     using mp_type = typename source_type::mp_type;
 
     static string Name() { return "LaplaceSL"; }
@@ -448,7 +448,7 @@ namespace ngsbem
 
     auto GetDifferentiatedKernel(const string &name) const {
       if (name == "grad")
-        return DiffLaplaceSLKernel<3,COMPS>();
+        return DiffLaplaceSLKernel<3,COMPS,T_VAL>();
       else
         throw Exception("don't know how to apply diffop "+name);
     }
@@ -458,12 +458,12 @@ namespace ngsbem
       $$ \frac{\partial }{ \partial n_y} G(x-y) = \frac{1}{4\,\pi} \, 
           \frac{ \langle n(y), x-y\rangle }{ | x-y|^3 }, 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<int COMPS>
-  class LaplaceDLKernel<3, COMPS> : public BaseKernel
+  template<int COMPS, typename T_VAL>
+  class LaplaceDLKernel<3, COMPS, T_VAL> : public BaseKernel
   {
   public:
-    using source_type = Dipoles<COMPS, double>;
-    using target_type = Charges<COMPS, double>;
+    using source_type = Dipoles<COMPS, T_VAL>;
+    using target_type = Charges<COMPS, T_VAL>;
 
     source_type source;
     target_type target;
@@ -473,7 +473,7 @@ namespace ngsbem
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};
     };
-    typedef double value_type;
+    typedef T_VAL value_type;
     using mp_type = typename source_type::mp_type;
 
     static string Name() { return "LaplaceDL"; }
