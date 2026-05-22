@@ -2,6 +2,8 @@
 #include <regex>
 #include <variant>
 
+#include <pybind11/warnings.h>
+
 #include "../ngstd/python_ngstd.hpp"
 #include "python_comp.hpp"
 
@@ -15,6 +17,12 @@ using namespace ngsbem;
 
 namespace
 {
+  void WarnDeprecated(const string & oldname, const string & replacement)
+  {
+    string message = oldname + " is deprecated; use " + replacement + " instead.";
+    py::warnings::warn(message.c_str(), PyExc_FutureWarning, 1);
+  }
+
   template <class KernelReal, class KernelComplex>
   shared_ptr<BasePotentialOperator>
   MakePotentialFromVariantKappa(shared_ptr<ProxyFunction> proxy,
@@ -382,6 +390,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
   m.def("SingleLayerPotentialOperator", [](shared_ptr<FESpace> space, int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("SingleLayerPotentialOperator", "LaplaceSL");
     return make_unique<GenericIntegralOperator<LaplaceSLKernel<3>>>(space, space, nullopt, nullopt,
                                                                     space->GetEvaluator(BND), space->GetEvaluator(BND),
                                                                     LaplaceSLKernel<3>(), intorder);
@@ -392,6 +401,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                                            optional<Region> trial_definedon, optional<Region> test_definedon,
                                            int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("SingleLayerPotentialOperator", "LaplaceSL");
     return make_unique<GenericIntegralOperator<LaplaceSLKernel<3>>>(trial_space, test_space,
                                                                     trial_definedon, test_definedon,
                                                                     trial_space -> GetEvaluator(BND),
@@ -407,6 +417,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                                            optional<Region> trial_definedon, optional<Region> test_definedon,
                                            int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("DoubleLayerPotentialOperator", "LaplaceDL");
     return make_unique<GenericIntegralOperator<LaplaceDLKernel<3>>>(trial_space, test_space,
                                                                     trial_definedon, test_definedon,
                                                                     trial_space -> GetEvaluator(BND),
@@ -420,6 +431,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HypersingularOperator", [](shared_ptr<FESpace> space, optional<Region> definedon,
                                     int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("HypersingularOperator", "LaplaceSL");
     return make_unique<GenericIntegralOperator<LaplaceSLKernel<3,3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(),
                                                                     make_shared<T_DifferentialOperator<DiffOpBoundaryRot>>(), 
@@ -433,6 +445,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HelmholtzSingleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,
                                                     int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("HelmholtzSingleLayerPotentialOperator", "HelmholtzSL");
     return make_unique<GenericIntegralOperator<HelmholtzSLKernel<3>>>(trial_space, test_space, nullopt, nullopt,
                                                                       trial_space -> GetEvaluator(BND),
                                                                       test_space -> GetEvaluator(BND),
@@ -445,6 +458,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("HelmholtzDoubleLayerPotentialOperator", [](shared_ptr<FESpace> trial_space, shared_ptr<FESpace> test_space, double kappa,
                                                     int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("HelmholtzDoubleLayerPotentialOperator", "HelmholtzDL");
     return make_unique<GenericIntegralOperator<HelmholtzDLKernel<3>>>(trial_space, test_space, nullopt, nullopt,
                                                                       trial_space -> GetEvaluator(BND),
                                                                       test_space -> GetEvaluator(BND),
@@ -458,6 +472,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                                              double kappa,
                                              int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("HelmholtzCombinedFieldOperator", "HelmholtzCF");
     return make_unique<GenericIntegralOperator<CombinedFieldKernel<3>>>(trial_space, test_space, trial_definedon, test_definedon,
                                                                         trial_space -> GetEvaluator(BND),
                                                                         test_space -> GetEvaluator(BND),
@@ -481,6 +496,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("MaxwellSingleLayerPotentialOperator", [](shared_ptr<FESpace> space, double kappa, optional<Region> definedon,
                                                   int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("MaxwellSingleLayerPotentialOperator", "HelmholtzSL");
     return make_unique<GenericIntegralOperator<MaxwellSLKernel<3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpMaxwellNew>>(),
                                                                     make_shared<T_DifferentialOperator<DiffOpMaxwellNew>>(), 
@@ -493,6 +509,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
   m.def("MaxwellSingleLayerPotentialOperatorCurl", [](shared_ptr<FESpace> space, double kappa, optional<Region> definedon,
                                                       int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("MaxwellSingleLayerPotentialOperatorCurl", "HelmholtzSL");
     return make_unique<GenericIntegralOperator<MaxwellSLKernel<3>>>(space, space, definedon, definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpMaxwell>>(),
                                                                     make_shared<T_DifferentialOperator<DiffOpMaxwell>>(), 
@@ -509,6 +526,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                                                   optional<Region> trial_definedon, optional<Region> test_definedon,
                                                   int intorder) -> shared_ptr<IntegralOperator>
   {
+    WarnDeprecated("MaxwellDoubleLayerPotentialOperator", "MaxwellDL");
     return make_unique<GenericIntegralOperator<MaxwellDLKernel<3>>>(trial_space, test_space,
                                                                     trial_definedon, test_definedon,
                                                                     make_shared<T_DifferentialOperator<DiffOpRotatedTrace>>(),
