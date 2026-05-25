@@ -1540,13 +1540,12 @@ namespace ngbla
   public:
     OuterProductExpr (TA aa, TB ab) : a(aa), b(ab) { ; }
 
-    // INLINE auto operator() (size_t i) const { return a[i] * b(i); }  
     INLINE auto operator() (size_t i, size_t j) const { return a[i] * b[j]; }
 
     INLINE auto View() const { return *this; }
     INLINE auto Shape() const
     {
-      return tuple<size_t,size_t> (a.Size(), b.Width());
+      return tuple<size_t,size_t> (a.Size(), b.Size());
     }
     
     INLINE const auto A() const { return a; }

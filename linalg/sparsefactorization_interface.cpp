@@ -25,7 +25,7 @@ bool IsMatrixSymmetric(shared_ptr<const BaseSparseMatrix> mat, double tol)
     };
 
     auto is_complex = p_complex != nullptr;
-    size_t nze = mat->NZE();
+    // size_t nze = mat->NZE();
 
     auto first = mat->GetFirstArray();
     auto cols = mat->GetColIndices();
