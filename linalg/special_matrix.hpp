@@ -220,6 +220,7 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
+    virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     IntRange GetRange() const { return range; }
 
     /*

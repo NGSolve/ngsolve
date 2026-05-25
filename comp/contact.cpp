@@ -1365,7 +1365,7 @@ namespace ngcomp
                                                 LocalHeap& lh) const
   {
     HeapReset hr(lh);
-    FlatVector<> elx(elmat.Height(), lh);
+    FlatVector<> elx(elmat.Width(), lh);
     elx = 0;
     CalcLinearizedElementMatrix (elx, elmat, lh);
   }

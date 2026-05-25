@@ -45,20 +45,20 @@ def ProjectOnMultiDimGF(cf,mesh,order,sampling=16):
     return gf_toshow
 
 def ProjectPairOnMultiDimGF(lset,cf,mesh,order,sampling=16):
-    fes = L2(mesh=mesh,order=order,dim=4)
+    fes = L2(mesh=mesh,order=order,dim=3)
     gf_toshow = GridFunction(fes,multidim=0)
     gf = GridFunction(fes)
     for i in range(sampling+1):
-        gf.Set(CoefficientFunction((fix_tref(lset,i/sampling),fix_tref(cf,i/sampling),0,0)))
+        gf.Set(CoefficientFunction((fix_tref(lset,i/sampling),fix_tref(cf,i/sampling),0)))
         gf_toshow.AddMultiDimComponent(gf.vec)
     return gf_toshow
 
 def MultiDimPairToGF(lset,gf,mesh,sampling=16):
-    fes = L2(mesh=mesh,order=gf.space.globalorder,dim=4)
+    fes = L2(mesh=mesh,order=gf.space.globalorder,dim=3)
     gf_toshow = GridFunction(fes,multidim=0)
     gf_ = GridFunction(fes)
     for i in range(sampling+1):
-        gf_.Set(CoefficientFunction((lset.MDComponent(i),gf.MDComponent(i),0,0)))
+        gf_.Set(CoefficientFunction((lset.MDComponent(i),gf.MDComponent(i),0)))
         gf_toshow.AddMultiDimComponent(gf_.vec)
     return gf_toshow
 
