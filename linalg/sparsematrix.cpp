@@ -28,7 +28,7 @@ namespace ngla
 #ifdef USE_UMFPACK
   string BaseMatrix::default_inversetype = "umfpack";
 #else
-  string BaseSparseMatrix::default_inversetype = "sparsecholesky";
+  string BaseMatrix::default_inversetype = "sparsecholesky";
 #endif
 #endif
 #endif
