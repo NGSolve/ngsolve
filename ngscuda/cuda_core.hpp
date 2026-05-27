@@ -234,9 +234,9 @@ namespace ngs_cuda
       cParams.conditional.type   = cudaGraphCondTypeWhile;
       cParams.conditional.size   = 1;
       #if CUDART_VERSION >= 12030
-        cudaGraphAddNode(&while_node, outer_graph, nullptr, 0, &cParams);
-      #else
         cudaGraphAddNode(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
+      #else
+        cudaGraphAddNode(&while_node, outer_graph, nullptr, 0, &cParams);
       #endif
       body_graph = cParams.conditional.phGraph_out[0];
 
@@ -244,9 +244,9 @@ namespace ngs_cuda
       //    Child graphs ARE allowed in conditional bodies
       cudaGraphNode_t child_node;
       #if CUDART_VERSION >= 12030
-        auto err = cudaGraphAddNode(&child_node, body_graph, nullptr, 0, iteration_graph);
+        auto err = cudaGraphAddChildGraphNode(&child_node, body_graph, nullptr, 0, iteration_graph);
       #else
-        auto err = cudaGraphAddNode(&child_node, body_graph, nullptr, nullptr, 0, iteration_graph);
+        auto err = cudaGraphAddChildGraphNode(&child_node, body_graph, nullptr, nullptr, 0, iteration_graph);
       #endif
       if (err != cudaSuccess)
         throw ngstd::Exception(
