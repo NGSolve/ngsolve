@@ -213,10 +213,10 @@ namespace ngs_cuda
       cParams.conditional.handle = handle;
       cParams.conditional.type   = cudaGraphCondTypeWhile;
       cParams.conditional.size   = 1;
-      #if CUDART_VERSION >= 12030
-        cudaGraphAddNode(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
+      #if CUDART_VERSION < 13000
+        cudaGraphAddNode_v2(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
       #else
-        cudaGraphAddNode(&while_node, outer_graph, nullptr, 0, &cParams);
+        cudaGraphAddNode(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
       #endif
       body_graph = cParams.conditional.phGraph_out[0];
 
