@@ -213,14 +213,21 @@ namespace ngs_cuda
       cParams.conditional.handle = handle;
       cParams.conditional.type   = cudaGraphCondTypeWhile;
       cParams.conditional.size   = 1;
-      cudaGraphAddNode(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
+      #if CUDART_VERSION >= 12030
+        cudaGraphAddNode(&while_node, outer_graph, nullptr, 0, &cParams);
+      #else
+        cudaGraphAddNode(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
+      #endif
       body_graph = cParams.conditional.phGraph_out[0];
 
       // 4. Add iteration body as child graph node in body
       //    Child graphs ARE allowed in conditional bodies
       cudaGraphNode_t child_node;
-      auto err = cudaGraphAddChildGraphNode(&child_node, body_graph,
-                                            nullptr, 0, iteration_graph);
+      #if CUDART_VERSION >= 12030
+        auto err = cudaGraphAddNode(&child_node, body_graph, nullptr, 0, iteration_graph);
+      #else
+        auto err = cudaGraphAddNode(&child_node, body_graph, nullptr, nullptr, 0, iteration_graph);
+      #endif
       if (err != cudaSuccess)
         throw ngstd::Exception(
           std::string("[CudaWhileGraph] cudaGraphAddChildGraphNode FAILED: ")
