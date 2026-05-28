@@ -28,8 +28,8 @@ namespace ngbla
   void FlatBandCholeskyFactors<T> :: 
   Factor (const FlatSymBandMatrix<T> & a )
   {
-    static int timer = NgProfiler::CreateTimer ("Band Cholesky");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("Band Cholesky");
+    RegionTimer reg (timer);
 
     T x;
     ArrayMem<T, 100> help(n);

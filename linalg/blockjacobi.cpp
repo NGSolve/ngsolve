@@ -381,31 +381,29 @@ namespace ngla
     ParallelJob
       ([&] (const TaskInfo & ti)
        {
-         NgProfiler::StartThreadTimer (tpar, TaskManager::GetThreadId());         
+         RegionTimer rtpar(tpar);
          for (int i : sl1)
        {
-         NgProfiler::StartThreadTimer (tprep, TaskManager::GetThreadId());
+        tprep.Start();
 
         auto blocki = (*blocktable)[i];
         QuickSort (blocki);
 	if (!blocki.Size()) 
 	  {
-            NgProfiler::StopThreadTimer (tprep, TaskManager::GetThreadId());                             
+            tprep.Stop();
 	    invdiag[i] = 0;
 	    // return;
             continue;
 	  }
 	
         FlatMatrix<TM> & blockmat = invdiag[i];
-        NgProfiler::StopThreadTimer (tprep, TaskManager::GetThreadId());                 
-        NgProfiler::StartThreadTimer (tget, TaskManager::GetThreadId());
+        tprep.Stop();
+        RegionTimer rtget(tget);
 	for (size_t j = 0; j < blocki.Size(); j++)
 	  for (size_t k = 0; k < blocki.Size(); k++)
 	    blockmat(j,k) = (*mat)(blocki[j], blocki[k]);
-        NgProfiler::StopThreadTimer (tget, TaskManager::GetThreadId());                         
         // }, TasksPerThread(10));
        }
-         NgProfiler::StopThreadTimer (tpar, TaskManager::GetThreadId());                  
        } );
 
 
@@ -493,14 +491,12 @@ namespace ngla
     ParallelJob
       ([&] (const TaskInfo & ti)
        {
-         NgProfiler::StartThreadTimer (tpar, TaskManager::GetThreadId());         
+         RegionTimer rtpar(tpar);
          for (auto i : sl2) {
-	     NgProfiler::StartThreadTimer (tinv, TaskManager::GetThreadId());
+	     RegionTimer rtinv(tinv);
 	     FlatMatrix<TM> & blockmat = invdiag[i];
 	     CalcInverse (blockmat);
-	     NgProfiler::StopThreadTimer (tinv, TaskManager::GetThreadId());        
 	   }
-         NgProfiler::StopThreadTimer (tpar, TaskManager::GetThreadId());                  
        } );
 
     cout << IM(3) << "\rBuilding block " << blocktable->Size() << "/" << blocktable->Size() << flush;

@@ -378,8 +378,8 @@ namespace ngcomp
     static void GenerateMatrix (const FEL & bfel, const SIP & sip,
                                 MAT && mat, LocalHeap & lh)
     {
-      static int timer = NgProfiler::CreateTimer ("old div");
-      NgProfiler::RegionTimer reg (timer);
+      static Timer timer("old div");
+      RegionTimer reg (timer);
 
       const HCurlDivFiniteElement<D> & fel = 
         dynamic_cast<const HCurlDivFiniteElement<D>&> (bfel);

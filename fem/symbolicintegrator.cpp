@@ -5366,7 +5366,7 @@ namespace ngfem
 
                 {
                   RegionTimer reg(tdmat);
-                  NgProfiler::AddThreadFlops (tdmat, TaskManager::GetThreadId(), 1);
+                  reg.AddFlops (1);
                   if (nonzeros(trial_cum[k1]+k, trial_cum[l1]+l))
                     {
                       cf -> Evaluate (mir, ddval);

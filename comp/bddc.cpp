@@ -305,8 +305,7 @@ namespace ngcomp
       if (sizei)
 	{      
           RegionTimer regcompute (timer3);
-          NgProfiler::AddThreadFlops (timer3, TaskManager::GetThreadId(),
-                                      sizei*sizei*sizei + 2*sizei*sizei*sizew);
+          regcompute.AddFlops (sizei*sizei*sizei + 2*sizei*sizei*sizew);
 
           CalcInverse (d);  // , INVERSE_LIB::INV_NGBLA);
           
