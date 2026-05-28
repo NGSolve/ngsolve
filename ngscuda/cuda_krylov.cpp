@@ -77,61 +77,6 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
 
     if (!getenv("NO_CUDA_GRAPH")) {
         double tol = GetPrecision() * r0norm;
-        // diamond + WHILE graph 
-        if (getenv("USE_DIAMOND_GRAPH")) {
-            try {
-                CudaGraph g_pre, g_x, g_r, g_post;
-
-                g_pre.BeginCapture();
-                    cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
-                    ga->Mult(*p, *q);
-                    (*p).InnerProduct(*q, *pq);
-                    ualpha     = Div(Scal(urz), Scal(upq));
-                    uneg_alpha = Neg(Scal(ualpha));
-                g_pre.EndCaptureOnly();
-
-                g_x.BeginCapture();
-                    (*x).Add(*alpha, *p);
-                g_x.EndCaptureOnly();
-
-                g_r.BeginCapture();
-                    (*r).Add(*neg_alpha, *q);
-                g_r.EndCaptureOnly();
-
-                g_post.BeginCapture();
-                    gc->Mult(*r, *z);
-                    (*r).InnerProduct(*z, *rz_new);
-                    ubeta = Div(Scal(urz_new), Scal(urz));
-                    urz   = Scal(urz_new);
-                    (*p).Scale(*beta);
-                    (*p).Add(1.0, *z);
-                g_post.EndCaptureOnly();
-
-                SyncNGSStream();
-                cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
-
-                // Build diamond from 4 sub-graphs
-                ngs_cuda::CudaDiamondGraph g_diamond;
-                cudaGraph_t branches[] = {g_x.GetGraph(), g_r.GetGraph()};
-                g_diamond.Build(g_pre.GetGraph(),
-                                ngcore::FlatArray<cudaGraph_t>(2, branches),
-                                g_post.GetGraph());
-
-                // Pass diamond as iteration body to WHILE graph
-                if (!iter_count_dev) cudaMalloc(&iter_count_dev, sizeof(int));
-                cudaMemset(iter_count_dev, 0, sizeof(int));
-                g_while.Build(g_diamond.GetGraph(), urz.DevPtr(), tol, iter_count_dev, maxsteps);
-                SyncNGSStream();
-                use_while_graph = g_while.IsValid();
-            } catch (ngstd::Exception& e) {
-                std::cerr << "[DevCGSolver] Diamond capture failed: "
-                          << e.What() << std::endl;
-                std::cerr << "[DevCGSolver] falling back to WHILE graph" << std::endl;
-            } catch (...) {
-                std::cerr << "[DevCGSolver] Diamond capture failed (unknown exception)" << std::endl;
-            }
-        }
-
 
         if (!use_while_graph)
         try {
