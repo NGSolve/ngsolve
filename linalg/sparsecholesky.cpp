@@ -78,11 +78,12 @@ namespace ngla
         for (int i : sl)
           queue.enqueue (ptoken, ready[i]);
 
+        auto *tm = GetTaskManager();
         while (1)
            {
              if (cnt_final >= num_final) break;
 
-             while (TaskManager::ProcessTask()); // do the nested tasks
+             while (tm->ProcessTask()); // do the nested tasks
              
              int nr;
              if(!queue.try_dequeue_from_producer(ptoken, nr)) 

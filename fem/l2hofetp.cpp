@@ -36,7 +36,7 @@ namespace ngfem
         size_t nipx = irx.GetNIP();
         size_t nipy = iry.GetNIP();
 
-        NgProfiler::StartThreadTimer (tcopy, TaskManager::GetThreadId());
+        tcopy.Start();
         bool needs_copy = bcoefs.Dist() != 1;
         STACK_ARRAY(double, mem_coefs, needs_copy ? (order+1)*(order+1) : 0);
         if (needs_copy)
@@ -45,7 +45,7 @@ namespace ngfem
             coefs = bcoefs;
           }
         FlatMatrix<> mat_coefs(order+1, order+1, needs_copy ? mem_coefs : &bcoefs(0));
-        NgProfiler::StopThreadTimer (tcopy, TaskManager::GetThreadId());                        
+        tcopy.Stop();                        
           
         if (nipx == 1)
           {
@@ -69,7 +69,7 @@ namespace ngfem
             FlatVector<> tmp(order+1, mem_tmp);
 
             RegionTimer regmult(tmult);
-            NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), (order+1)*(order+1+nipy));
+            regmult.AddFlops ((order+1)*(order+1+nipy));
               
             if (flip)
               tmp = mat_coefs * shapex;
@@ -82,14 +82,13 @@ namespace ngfem
             static Timer t("quad evaluate y");
             static Timer tmult("quad mult y");
             static Timer tleg("quad mult legendre");
-            // RegionTimer reg(t);
-            NgProfiler::StartThreadTimer (t, TaskManager::GetThreadId());
+            RegionTimer reg(t);
               
-            NgProfiler::StartThreadTimer (tleg, TaskManager::GetThreadId());
+            tleg.Start();
             STACK_ARRAY(double, mem_shapey, order+1);
             FlatVector<> shapey(order+1, mem_shapey);
             LegendrePolynomial (order, fy*(2*iry[0](0)[0]-1), shapey);
-            NgProfiler::StopThreadTimer (tleg, TaskManager::GetThreadId());
+            tleg.Stop();
 
 
             FlatVector<> vec_values(nipx, (double*)&values(0));
@@ -98,7 +97,7 @@ namespace ngfem
             FlatVector<> tmp(order+1, mem_tmp);
 
             RegionTimer regmult(tmult);
-            NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), (order+1)*(order+1+nipx));
+            regmult.AddFlops ((order+1)*(order+1+nipx));
               
             if (flip)
               tmp = Trans(mat_coefs) * shapey;
@@ -113,7 +112,6 @@ namespace ngfem
                                              { sum += tmp(nr)*val; }));
                 values(i) = sum;
               }
-            NgProfiler::StopThreadTimer (t, TaskManager::GetThreadId());              
           }
         else
           {
@@ -138,7 +136,7 @@ namespace ngfem
             if (nipx <= nipy)
               {
                 RegionTimer regmult(tmult);
-                NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), nipx*(order+1)*((order+1)+nipy));
+                regmult.AddFlops (nipx*(order+1)*((order+1)+nipy));
                   
                 STACK_ARRAY(double, mem_tmp, (order+1)*nipx);
                 FlatMatrix<> tmp(order+1, nipx, mem_tmp);
@@ -155,7 +153,7 @@ namespace ngfem
                 FlatMatrix<> tmp(order+1, nipy, mem_tmp);
 
                 RegionTimer regmult(tmult);
-                NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), nipy*(order+1)*((order+1)+nipx));
+                regmult.AddFlops (nipy*(order+1)*((order+1)+nipx));
                   
                 if (flip)
                   tmp = Trans(mat_coefs) * shapey;
@@ -225,7 +223,7 @@ namespace ngfem
             FlatVector<> tmp(order+1, mem_tmp);
 
             RegionTimer regmult(tmult);
-            NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), (order+1)*(order+1+nipy));
+            regmult.AddFlops ((order+1)*(order+1+nipy));
 
             tmp = shapey * vec_values;
             if (!flip)
@@ -255,7 +253,7 @@ namespace ngfem
             FlatVector<> tmp(order+1, mem_tmp);
 
             RegionTimer regmult(tmult);
-            NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), (order+1)*(order+1+nipx));
+            regmult.AddFlops ((order+1)*(order+1+nipx));
 
             tmp = shapex * vec_values;
             if (flip)
@@ -286,7 +284,7 @@ namespace ngfem
             if (nipx <= nipy)
               {
                 RegionTimer regmult(tmult);
-                NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), nipx*(order+1)*((order+1)+nipy));
+                regmult.AddFlops (nipx*(order+1)*((order+1)+nipy));
                   
                 STACK_ARRAY(double, mem_tmp, (order+1)*nipx);
                 FlatMatrix<> tmp(order+1, nipx, mem_tmp);
@@ -303,7 +301,7 @@ namespace ngfem
                 FlatMatrix<> tmp(order+1, nipy, mem_tmp);
 
                 RegionTimer regmult(tmult);
-                NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(), nipy*(order+1)*((order+1)+nipx));
+                regmult.AddFlops  (nipy*(order+1)*((order+1)+nipx));
 
                 /*
                 if (flip)
@@ -389,7 +387,7 @@ namespace ngfem
         for (size_t i = 0; i < irz.Size(); i++)
           LegendrePolynomial (order, (2*irz[i](0)-1), simd_shapez.Col(i));
 
-        NgProfiler::StartThreadTimer (ttrans, TaskManager::GetThreadId());
+        ttrans.Start();
         STACK_ARRAY(double, memtshapez, nipz*(order+1));
         FlatMatrix<> tshapez(nipz, order+1, memtshapez);
         STACK_ARRAY(double, memtshapey, nipy*(order+1));
@@ -400,11 +398,10 @@ namespace ngfem
         tshapez = Trans(shapez);
         tshapey = Trans(shapey);
         tshapex = Trans(shapex);
-        NgProfiler::StopThreadTimer (ttrans, TaskManager::GetThreadId());        
+        ttrans.Stop();        
 
-        NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(),
-                                    nipx*nipy*nipz*(order+1) + nipy*nipz*sqr(order+1) + nipz*ndof);
-        NgProfiler::StartThreadTimer (tmult, TaskManager::GetThreadId());                
+        tmult.AddFlops(nipx*nipy*nipz*(order+1) + nipy*nipz*sqr(order+1) + nipz*ndof);
+        tmult.Start();                
         
         STACK_ARRAY(double, mem1, nipz*sqr(order+1));
         FlatMatrix<> temp1(nipz, sqr(order+1), mem1);
@@ -423,7 +420,7 @@ namespace ngfem
         // temp3 = Trans(shapex)*Trans(temp2reshape);
         temp3 = tshapex*Trans(temp2reshape);
 
-        NgProfiler::StopThreadTimer (tmult, TaskManager::GetThreadId());
+        tmult.Stop();
         
         FlatVector<> vals(nip, (double*)&values(0));
         FlatVector<> vectemp3(nip, &temp3(0,0));
@@ -500,9 +497,8 @@ namespace ngfem
         tshapey = Trans(shapey);
         tshapex = Trans(shapex);
 
-        NgProfiler::AddThreadFlops (tmult, TaskManager::GetThreadId(),
-                                    nipx*nipy*nipz*(order+1) + nipy*nipz*sqr(order+1) + nipz*ndof);
-        NgProfiler::StartThreadTimer (tmult, TaskManager::GetThreadId());                
+        tmult.Start();                
+        tmult.AddFlops(nipx*nipy*nipz*(order+1) + nipy*nipz*sqr(order+1) + nipz*ndof);
 
         Timer<> * t = &txyz;
         if (nipx == 1) t = &tx;
@@ -527,7 +523,7 @@ namespace ngfem
         temp1reshape = Trans(temp2)*tshapey;
 
         temp0 = Trans(temp1)*tshapez;
-        NgProfiler::StopThreadTimer (tmult, TaskManager::GetThreadId());
+        tmult.Stop();
 
         FlatVector<> vec_coefs(sqr(order+1)*(order+1), &temp0(0));
         bcoefs.Range(0,ndof) += vec_coefs;

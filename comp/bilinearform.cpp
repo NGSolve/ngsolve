@@ -2576,8 +2576,7 @@ namespace ngcomp
 
                                      {
                                        RegionTimer reg (statcondtimer_mult);
-                                       NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
-                                                                   d.Height()*d.Width()*c.Width());
+                                       reg.AddFlops (d.Height()*d.Width()*c.Width());
                                        
                                        he = -d * Trans(c);
                                      }
@@ -2593,8 +2592,7 @@ namespace ngcomp
                                      innersolve_ptr->AddElementMatrix(el.Nr(),idnums,idnums,d);
                                      {
                                        RegionTimer reg (statcondtimer_mult);
-                                       NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
-                                                                   b.Height()*b.Width()*he.Width());
+                                       reg.AddFlops (b.Height()*b.Width()*he.Width());
                                        a += b * he;
                                      }
                                      

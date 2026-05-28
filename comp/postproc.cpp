@@ -66,8 +66,8 @@ namespace ngcomp
 			shared_ptr<BilinearFormIntegrator> bli,
 			bool applyd, const BitArray & domains, LocalHeap & clh)
   {
-    static int timer = NgProfiler::CreateTimer ("CalcFluxProject");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("CalcFluxProject");
+    RegionTimer reg (timer);
     
     auto fes = u.GetFESpace();
     auto fesflux = flux.GetFESpace();
@@ -945,8 +945,8 @@ namespace ngcomp
 		  FlatVector<double> & err,
 		  const BitArray & domains, LocalHeap & lh)
   {
-    static int timer = NgProfiler::CreateTimer ("CalcError");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("CalcError");
+    RegionTimer reg (timer);
 
     shared_ptr<MeshAccess> ma = u.GetFESpace()->GetMeshAccess();
 

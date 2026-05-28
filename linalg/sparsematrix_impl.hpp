@@ -152,7 +152,7 @@ namespace ngla
   {
     static Timer timer_addelmat_nonsym("SparseMatrix::AddElementMatrix", NoTracing);
     RegionTimer reg (timer_addelmat_nonsym);
-    NgProfiler::AddThreadFlops (timer_addelmat_nonsym, TaskManager::GetThreadId(), dnums1.Size()*dnums2.Size());
+    reg.AddFlops (dnums1.Size()*dnums2.Size());
     
     ArrayMem<int, 50> map(dnums2.Size());
     for (int i = 0; i < map.Size(); i++) map[i] = i;
@@ -832,7 +832,7 @@ namespace ngla
     // static Timer timer ("SparseMatrixSymmetric::AddElementMatrix", NoTracing);
     // RegionTimer reg (timer);
     RegionTimer reg (timer_addelmat);
-    NgProfiler::AddThreadFlops (timer_addelmat, TaskManager::GetThreadId(), dnums.Size()*(dnums.Size()+1)/2);    
+    reg.AddFlops (dnums.Size()*(dnums.Size()+1)/2);    
 
     // ArrayMem<int, 50> map(dnums.Size());
     STACK_ARRAY(int, hmap, dnums.Size());
