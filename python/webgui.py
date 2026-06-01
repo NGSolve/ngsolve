@@ -339,7 +339,8 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         xyz += deformation
         
     cf = ngs.CF((xyz, cf))
-    cf_wire = ngs.CF((xyz, 0.0))
+    cf_wire = ngs.CF((xyz, *[0.0]*(cf.dim-3)) )
+    cf_edge = ngs.CF((xyz, 0.0))
     cf_surf = cf if draw_surf else cf_wire
     
     d['show_wireframe'] = order2d>0
@@ -420,7 +421,7 @@ def BuildRenderData(mesh, func, order=2, draw_surf=True, draw_vol=True, intpoint
         vb = [ngs.VOL, ngs.BND, ngs.BBND][mesh.dim-1]
         reg = regions[vb]
         pts = mesh.MapToAllElements(ir_seg, reg)
-        pmat = cf_wire(pts)
+        pmat = cf_edge(pts)
         pmima = updatePMinMax(pmat)
         pmat = pmat.reshape(-1, og+1, 4)
         edge_data = np.tensordot(iBvals.NumPy(), pmat, axes=(1,1))
