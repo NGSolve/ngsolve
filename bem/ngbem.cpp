@@ -1238,7 +1238,7 @@ namespace ngsbem
   GetPotential(shared_ptr<GridFunction> gf, optional<int> io, bool nearfield_experimental) const
   {
     return  make_shared<PotentialCF<KERNEL>> (gf, BND, trial_definedon, trial_evaluator,
-                                              kernel, io.value_or(intorder), nearfield_experimental);
+                                              kernel, io.value_or(intorder), nearfield_experimental, io_params);
   }
 
 
@@ -1248,10 +1248,12 @@ namespace ngsbem
                VorB _source_vb,
                optional<Region> _definedon,                   
                shared_ptr<DifferentialOperator> _evaluator,
-               KERNEL _kernel, int _intorder, bool _nearfield)
+               KERNEL _kernel, int _intorder, bool _nearfield,
+               IntOp_Parameters _io_params)
     : BasePotentialCF(_gf, _source_vb, _definedon, _evaluator, std::is_same<typename KERNEL::value_type,Complex>()),
       kernel(_kernel), intorder(_intorder), nearfield(_nearfield)
   {
+    io_params = _io_params;
     IVec<2> shape = kernel.Shape();
     if (shape[0] > 1)
       this->SetDimensions( Array<int>( { shape[0] } ));
@@ -1533,6 +1535,120 @@ namespace ngsbem
   }
 
 
+  bool IsPotentialNearfieldSourceElement(Vec<3> x, const ElementTransformation & trafo)
+  {
+    if (trafo.GetElementType() != ET_TRIG)
+      return false;
+
+    IntegrationPoint ip(1.0/3, 1.0/3);
+    MappedIntegrationPoint<2,3> mip(ip, trafo);
+    double elsize = L2Norm(mip.GetJacobian());
+    double dist = L2Norm(x-mip.GetPoint());
+    return dist < elsize;
+  }
+
+
+  template <typename KERNEL> template <typename T>
+  void PotentialCF<KERNEL> ::
+  AddSourceElementContribution(const BaseMappedIntegrationPoint & mip,
+                               ElementId ei,
+                               const IntegrationRule & ir,
+                               FlatVector<T> result,
+                               T scale,
+                               LocalHeap & lh) const
+  {
+    auto space = this->gf->GetFESpace();
+    auto mesh = space->GetMeshAccess();
+
+    const FiniteElement &fel = space->GetFE(ei, lh);
+    const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
+
+    Array<DofId> dnums(fel.GetNDof(), lh);
+    space->GetDofNrs(ei, dnums);
+    FlatVector<T> elvec(fel.GetNDof(), lh);
+    gf->GetElementVector(dnums, elvec);
+
+    SIMD_IntegrationRule simd_ir(ir);
+    Vector<SIMD<T>> simd_result(Dimension());
+    simd_result = SIMD<T>(0.0);
+
+    static constexpr int bs = 64;
+    for (int k = 0; k < simd_ir.Size(); k += bs)
+      {
+        HeapReset hr(lh);
+        auto simd_ir_range = simd_ir.Range(k, min(simd_ir.Size(), size_t(k+bs)));
+        auto & miry = trafo(simd_ir_range, lh);
+        FlatMatrix<SIMD<T>> vals(evaluator->Dim(), miry.Size(), lh);
+
+        evaluator->Apply(fel, miry, elvec, vals);
+        for (int iy = 0; iy < miry.Size(); iy++)
+          {
+            Vec<3,SIMD<double>> x = mip.GetPoint();
+            Vec<3,SIMD<double>> nx{0.0};
+            if constexpr (KERNEL::target_type::needs_normal)
+              nx = dynamic_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV();
+
+            Vec<3,SIMD<double>> y = miry[iy].GetPoint();
+            Vec<3,SIMD<double>> ny{0.0};
+            if constexpr (KERNEL::source_type::needs_normal)
+              {
+                if (source_vb != BND)
+                  throw Exception("kernel requires boundary source normals");
+                ny = static_cast<const SIMD<MappedIntegrationPoint<2,3>>&>(miry[iy]).GetNV();
+              }
+
+            auto eval = kernel.Evaluate(x, y, nx, ny);
+            for (auto term : kernel.terms)
+              {
+                auto kernel_ = term.fac * eval(term.kernel_comp);
+                simd_result(term.test_comp) += miry[iy].GetWeight() * kernel_ * vals(term.trial_comp, iy);
+              }
+          }
+      }
+
+    for (int i = 0; i < Dimension(); i++)
+      result(i) += scale * HSum(simd_result(i));
+  }
+
+
+  template <typename KERNEL> template <typename T>
+  void PotentialCF<KERNEL> ::
+  AddLocalExpansionNearfieldCorrection(const BaseMappedIntegrationRule & bmir,
+                                       BareSliceMatrix<T> result) const
+  {
+    LocalHeap lh(10*1000*1000, "Potential::LocalExpansionNearfieldCorrection");
+    auto space = this->gf->GetFESpace();
+    auto mesh = space->GetMeshAccess();
+
+    // TODO: find a better way to identify nearfield source elements.
+    // The current path scans all source elements for every target point.
+    for (int ix = 0; ix < bmir.Size(); ix++)
+      {
+        const auto & mip = bmir[ix];
+        FlatVector<T> row = result.Row(ix).Range(0, Dimension());
+        Vec<3> x = mip.GetPoint();
+
+        for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
+          {
+            HeapReset hr(lh);
+            ElementId ei(source_vb, i);
+            if (!space->DefinedOn(ei)) continue;
+            if (definedon && !(*definedon).Mask().Test(mesh->GetElIndex(ei))) continue;
+
+            const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
+            if (!IsPotentialNearfieldSourceElement(x, trafo))
+              continue;
+
+            IntegrationRule standard_ir(trafo.GetElementType(), intorder);
+            IntegrationRule near_ir = GetIntegrationRule(x, trafo, intorder, true);
+
+            AddSourceElementContribution(mip, ei, standard_ir, row, T(-1.0), lh);
+            AddSourceElementContribution(mip, ei, near_ir, row, T(1.0), lh);
+          }
+      }
+  }
+
+
   
   template <typename KERNEL> template <typename T>
   void PotentialCF<KERNEL> :: T_Evaluate(const BaseMappedIntegrationPoint & mip,
@@ -1625,6 +1741,7 @@ namespace ngsbem
                 nx = (*mir23)[j].GetNV();
               kernel.target.EvaluateMP (*local_expansion, Vec<3>(bmir[j].GetPoint()), nx, make_BareSliceVector(result.Row(j)));
             }
+          AddLocalExpansionNearfieldCorrection(bmir, result);
           return;
         }
     
