@@ -590,7 +590,8 @@ namespace ngsbem
                  VorB _source_vb,
                  optional<Region> _definedon,    
                  shared_ptr<DifferentialOperator> _evaluator,
-                 KERNEL _kernel, int _intorder, bool anearfield);
+                 KERNEL _kernel, int _intorder, bool anearfield,
+                 IntOp_Parameters _io_params = IntOp_Parameters());
 
 
     // virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
@@ -608,11 +609,11 @@ namespace ngsbem
             return std::visit([&](auto const & dk) -> shared_ptr<CoefficientFunction>
             {
               using DK = std::decay_t<decltype(dk)>;
-              return make_shared<PotentialCF<DK>>(this->gf, this->source_vb, this->definedon, this->evaluator, dk, intorder, nearfield);
+              return make_shared<PotentialCF<DK>>(this->gf, this->source_vb, this->definedon, this->evaluator, dk, intorder, nearfield, io_params);
             }, diffkernel);
           }
         else
-          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->source_vb, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
+          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->source_vb, this->definedon, this->evaluator, diffkernel, intorder, nearfield, io_params);
       }
       else
         throw Exception("Kernel does not support differentiated kernel '"+name+"'");
@@ -647,6 +648,16 @@ namespace ngsbem
     { T_Evaluate(ir, result); }
     
   private:
+    template <typename T>
+    void AddSourceElementContribution(const BaseMappedIntegrationPoint & mip,
+                                      ElementId ei,
+                                      const IntegrationRule & ir,
+                                      FlatVector<T> result,
+                                      T scale,
+                                      LocalHeap & lh) const;
+    template <typename T>
+    void AddLocalExpansionNearfieldCorrection(const BaseMappedIntegrationRule & bmir,
+                                              BareSliceMatrix<T> result) const;
     template <typename T>
     void T_Evaluate(const BaseMappedIntegrationPoint & ip,
                     FlatVector<T> result) const;
@@ -771,7 +782,7 @@ namespace ngsbem
     
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
     {
-      return make_shared<PotentialCF<KERNEL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, true);
+      return make_shared<PotentialCF<KERNEL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, true, io_params);
     }
 
     shared_ptr<BasePotentialOperator> MakeDiffBasePotential(string name) override
