@@ -542,7 +542,7 @@ class TFQMRSolver(LinearSolver):
         d[:] = 0
         
         if Norm(rhs)==0:
-            sol.data = 0
+            sol[:] = 0
             return
 
         x.data = sol
