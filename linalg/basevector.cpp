@@ -1010,7 +1010,9 @@ namespace ngla
   template <typename TSCAL>
   AutoVector S_BaseVectorPtr<TSCAL> :: Range (T_Range<size_t> range) const
   {
-    return make_unique<S_BaseVectorPtr<TSCAL>> (range.Size(), es, pdata+range.First()*es);
+    auto rangevec = make_unique<S_BaseVectorPtr<TSCAL>> (range.Size(), es, pdata+range.First()*es);
+    rangevec -> SetParent(const_cast<S_BaseVectorPtr<TSCAL>*>(this)->shared_from_this());
+    return rangevec;
   }
 
 
