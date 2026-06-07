@@ -650,7 +650,14 @@ namespace ngcomp
     nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
     auto one = make_shared<ConstantCoefficientFunction>(1);
-    if (ma->GetDimension() == 2)
+    if (ma->GetDimension() == 1)
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<1>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+        integrator[BND] = make_shared<RobinIntegrator<1>> (one);
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacet<1>>>());
+      }
+    else if (ma->GetDimension() == 2)
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
@@ -789,14 +796,17 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 	    if (!DefinedOn(ei)) continue;
 	    ELEMENT_TYPE eltype=ma->GetElType(ei); 
 	    const POINT3D * points = ElementTopology :: GetVertices (eltype);	
-	
-	    if (ma->GetDimension() == 2)
+
+
+	    if (ma->GetDimension() == 1)
 	      {
-		/*
-		  ma->GetElEdges (ei, fanums);
-		  for (int j=0;j<fanums.Size();j++) 
-		  fine_facet[fanums[j]] = 1; 
-		*/
+		auto fanums = ma->GetElVertices(ei);
+		for (auto f : fanums)
+		  fine_facet[f] = true;
+              }
+            
+	    else if (ma->GetDimension() == 2)
+	      {
 		auto fanums = ma->GetElEdges(ei);
 		for (auto f : fanums)
 		  fine_facet[f] = true;
@@ -817,8 +827,6 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 	      }
 	    else
 	      {
-		// Array<int> elfaces,vnums;
-		// ma->GetElFaces(ei,elfaces);
 		auto elfaces = ma->GetElFaces(ei); 
 		for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    
