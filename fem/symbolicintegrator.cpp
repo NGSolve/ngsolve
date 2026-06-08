@@ -77,6 +77,23 @@ namespace ngfem
 
   shared_ptr<ProxyFunction> ProxyFunction :: Deriv() const
   {
+    int num_dt = 0;
+    shared_ptr<const ProxyFunction> hproxy = dynamic_pointer_cast<const ProxyFunction> (this->shared_from_this());
+    while (hproxy->anti_dt)
+      {
+        num_dt++;
+        hproxy = hproxy->anti_dt;
+      };
+    if (num_dt)
+      {
+        auto op = dynamic_pointer_cast<ProxyFunction> (hproxy->Deriv());
+        for (int i = 0; i < num_dt; i++)
+          op = op->Dt();
+        return op;
+      }
+
+
+    
     if (auto sp = deriv_proxy.lock())
       return sp;
     
@@ -163,6 +180,23 @@ namespace ngfem
 
   shared_ptr<ProxyFunction> ProxyFunction :: GetAdditionalProxy (string name) const
   {
+    int num_dt = 0;
+    shared_ptr<const ProxyFunction> hproxy = dynamic_pointer_cast<const ProxyFunction> (this->shared_from_this());
+    while (hproxy->anti_dt)
+      {
+        num_dt++;
+        hproxy = hproxy->anti_dt;
+      };
+    if (num_dt)
+      {
+        auto op = dynamic_pointer_cast<ProxyFunction> (hproxy->GetAdditionalProxy(name));
+        for (int i = 0; i < num_dt; i++)
+          op = op->Dt();
+        return op;
+      }
+
+
+    
     if (additional_proxies.Used(name))
       if (auto sp = additional_proxies[name].lock())
         return sp;
@@ -816,6 +850,24 @@ namespace ngfem
   shared_ptr<CoefficientFunction> ProxyFunction :: 
   Operator (shared_ptr<DifferentialOperator> diffop) const
   {
+    // keep time-derivatives:
+    int num_dt = 0;
+    shared_ptr<const ProxyFunction> hproxy = dynamic_pointer_cast<const ProxyFunction> (this->shared_from_this());
+    while (hproxy->anti_dt)
+      {
+        num_dt++;
+        hproxy = hproxy->anti_dt;
+      };
+    if (num_dt)
+      {
+        auto op = dynamic_pointer_cast<ProxyFunction> (hproxy->Operator(diffop));
+        for (int i = 0; i < num_dt; i++)
+          op = op->Dt();
+        return op;
+      }
+
+
+    
     // whatever component is the diffop, take the component we are
     
     // first strip components
