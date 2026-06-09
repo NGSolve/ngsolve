@@ -10,7 +10,7 @@
 
 // #include <comp.hpp>
 #include "hcurlhdivfes.hpp"
-#include <multigrid.hpp>
+#include <prolongation.hpp>
 
 #include <../fem/hcurllofe.hpp>
 #include <../fem/thcurlfe_impl.hpp>

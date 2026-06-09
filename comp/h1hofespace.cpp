@@ -10,7 +10,7 @@
 
 // #include <comp.hpp>
 #include <h1hofespace.hpp>
-#include <multigrid.hpp> 
+#include <prolongation.hpp> 
 #include "../fem/h1hofe.hpp"
 #include "../fem/h1hofefo.hpp"
 #include <../fem/hdivhofe.hpp>

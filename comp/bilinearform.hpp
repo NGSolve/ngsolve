@@ -12,7 +12,7 @@
 #include <specialelement.hpp>
 #include <sparsematrix.hpp>
 #include <elementbyelement.hpp>
-
+#include "specialelementgroup.hpp"
 
 namespace ngcomp
 {
@@ -97,6 +97,8 @@ namespace ngcomp
     
     size_t specialelements_timestamp = 0;
 
+    Array<shared_ptr<SpecialElementGroup>> se_groups;
+    
     
     /*
     Array<BilinearFormIntegrator*> independent_parts;
@@ -154,6 +156,14 @@ namespace ngcomp
     {
       return AddIntegrator(bfi);
     }
+
+    virtual BilinearForm & Add (shared_ptr<SpecialElementGroup> seg)
+    {
+      se_groups += seg;
+      return *this;
+    }
+
+
 
     /*
     void AddIndependentIntegrator (BilinearFormIntegrator * bfi,

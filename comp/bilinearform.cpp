@@ -533,7 +533,11 @@ namespace ngcomp
 
 
     int maxind = neV + neB + neBB + specialelements.Size();
+    for (auto seg : se_groups)
+      maxind += seg -> GetDofNrs ( [&] (int i, FlatArray<DofId> dnums) { } );
+    
     if (fespace->UsesDGCoupling()) maxind += nf;
+    
 
     TableCreator<int> creator(maxind);
     for ( ; !creator.Done(); creator++)
@@ -634,6 +638,20 @@ namespace ngcomp
               }
           }
 
+        size_t base = neV+neB+neBB+specialelements.Size();
+        for (auto seg : se_groups)
+          base += seg -> GetDofNrs ( [&] (int i, FlatArray<DofId> dnums) {
+            QuickSort (dnums);
+            int last = -1;
+            for (int d : dnums)
+              {
+                if (d!=last && IsRegularDof(d))
+                  creator.Add (base+i, d);
+                last = d;
+              }
+          });
+        
+
         if (fespace->UsesDGCoupling())
         {
           //add dofs of neighbour elements as well
@@ -673,7 +691,7 @@ namespace ngcomp
               QuickSort (dnums_dg);
               for (int j = 0; j < dnums_dg.Size(); j++)
                 if (IsRegularDof(dnums_dg[j]) && (j==0 || (dnums_dg[j] != dnums_dg[j-1]) ))
-                  creator.Add (neV+neB+neBB+nspe+i, dnums_dg[j]);
+                  creator.Add (base+i, dnums_dg[j]);
             }
         }
 
@@ -3179,6 +3197,13 @@ namespace ngcomp
                                               << specialelements.Size() << "/" << specialelements.Size() << endl;
             tspecial.Stop();
 
+
+            for (auto seg : se_groups)
+              seg -> Assemble([&](FlatArray<DofId> dnumsr, FlatArray<DofId> dnumsc, FlatMatrix<SCAL> elmat, ElementId ei, LocalHeap &lh)
+              {
+                AddElementMatrix(dnumsr, dnumsc, elmat, ei, true, lh);
+              }, clh);
+            
             
             
             // add eps to avoid empty lines

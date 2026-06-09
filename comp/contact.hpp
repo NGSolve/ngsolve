@@ -1,9 +1,9 @@
 #ifndef NGSOLVE_CONTACT_HPP
 #define NGSOLVE_CONTACT_HPP
 
-// #include <comp.hpp>
 #include "gridfunction.hpp"
 #include "bilinearform.hpp"
+
 
 namespace ngcomp
 {
@@ -202,6 +202,23 @@ namespace ngcomp
     }
     void DoArchive(Archive& ar);
   };
+
+  
+  class ContactSEG : public SpecialElementGroup
+  {
+    shared_ptr<CoefficientFunction> deformation;
+    Array<shared_ptr<ContactIntegrator>> integrators;
+    Region primary, secondary;
+
+  public:
+    ContactSEG(Region _primary, Region _secondary, bool _volume=false, bool element_boundary=false);
+    ~ContactSEG() { }
+    void AddIntegrator(shared_ptr<CoefficientFunction> form);
+    int GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs) override;
+    void Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh) override;    
+    void Update();
+  };
+  
 
   template<int DIM>
   class MPContactElement : public SpecialElement

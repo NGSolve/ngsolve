@@ -11,7 +11,7 @@
 #include <diffop_impl.hpp>
 
 // #include <../fem/hcurlhdiv_dshape.hpp> 
-#include <multigrid.hpp>
+#include <prolongation.hpp>
 #include <special_matrix.hpp>   // for embedding
 
 // extern template class ngla::VFlatVector<double>;

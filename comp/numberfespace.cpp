@@ -2,7 +2,7 @@
 #include "numberfespace.hpp"
 #include <diffop_impl.hpp>
 #include <paralleldofs.hpp>
-#include <multigrid.hpp>
+#include <prolongation.hpp>
 
 namespace ngcomp
 {

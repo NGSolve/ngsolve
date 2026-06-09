@@ -1224,6 +1224,36 @@ namespace ngcomp
       }
   }
 
+  
+  ContactSEG :: ContactSEG(Region _primary, Region _secondary, bool _volume, bool element_boundary)
+    : primary(_primary), secondary(_secondary)
+  {
+  }
+
+  void ContactSEG :: AddIntegrator(shared_ptr<CoefficientFunction> form)
+  {
+    integrators.Append(make_shared<ContactIntegrator>(form, true));
+  }
+  
+  void ContactSEG :: Update()
+  {
+  }
+
+  int ContactSEG :: GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs)
+  {
+    cout << "get dof nrs called" << endl;
+    return 0;
+  }
+
+  void ContactSEG :: Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh)
+  {
+    cout << "Assemble contact integrator" << endl;
+    ;
+  }
+
+
+
+  
   void ContactBoundary :: DoArchive(Archive& ar)
   {
     ar & primary_points & secondary_points;

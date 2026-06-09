@@ -2802,6 +2802,8 @@ integrator : ngsolve.fem.BFI
              }
            return self;
          })
+
+    .def("__iadd__", [](BF & self, shared_ptr<SpecialElementGroup> seg) -> BilinearForm& { self.Add(seg); return self; })
          
     .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on")
 
@@ -4691,6 +4693,25 @@ If `maxdist` == 0. then 2*meshsize is used.
      })
      ;
 
+   py::class_<SpecialElementGroup, shared_ptr<SpecialElementGroup>> (m, "SpecialElementGroup");
+
+   py::class_<ContactSEG, shared_ptr<ContactSEG>, SpecialElementGroup> (m, "ContactSEG")
+     .def(py::init([](Region primary, Region secondary) {
+       return make_shared<ContactSEG>(primary, secondary);
+     }))
+     .def("AddIntegrator", [](shared_ptr<ContactSEG> cseg, shared_ptr<CoefficientFunction> coef) {
+       cseg -> AddIntegrator(coef);
+       return cseg;
+     })
+     ;
+          
+   
+   
+
+   
+
+
+   
   m.def("ToArchive", [](shared_ptr<netgen::Mesh> mesh, bool binary){
         return py::bytes(webgui::ToArchive(mesh, binary));
   });

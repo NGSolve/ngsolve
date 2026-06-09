@@ -10,7 +10,7 @@
 #include "../fem/hcurllofe.hpp"
 #include <../fem/hcurl_equations.hpp>
 #include <../fem/diffop_impl.hpp>
-#include <multigrid.hpp>
+#include <prolongation.hpp>
 
 
 namespace ngcomp

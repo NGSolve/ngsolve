@@ -23,7 +23,7 @@
 #include <../fem/hdivhofefo.hpp>  
 #include <../fem/hcurlhdiv_dshape.hpp> 
 #include <../fem/diffop_impl.hpp>
-#include <multigrid.hpp> 
+#include <prolongation.hpp> 
 #include <fesconvert.hpp>
 
 namespace ngcomp

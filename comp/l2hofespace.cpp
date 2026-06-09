@@ -10,12 +10,13 @@
 
 // #include <comp.hpp>
 #include "l2hofespace.hpp"
-#include <multigrid.hpp>
+#include <prolongation.hpp>
 
 #include <l2hofetp.hpp>
 #include <bdbequations.hpp>
 #include <diffop_impl.hpp>
 #include <diagonalmatrix.hpp>
+#include <elementbyelement.hpp>
 
 using namespace ngmg;
 
