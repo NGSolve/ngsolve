@@ -38,7 +38,7 @@ install( FILES
         fespace.hpp gridfunction.hpp h1hofespace.hpp hcurlhdivfes.hpp	   
         hcurlhofespace.hpp hdivfes.hpp hdivhofespace.hpp hdivhosurfacefespace.hpp
         l2hofespace.hpp hdivdivsurfacespace.hpp HCTspace.hpp JKMspace.hpp tpfes.hpp
-        linearform.hpp meshaccess.hpp ngsobject.hpp	   
+        linearform.hpp meshaccess.hpp ngsobject.hpp specialelementgroup.hpp	   
         postproc.hpp preconditioner.hpp tangentialfacetfespace.hpp Hddf.hpp
         normalfacetfespace.hpp normalfacetsurfacefespace.hpp hypre_precond.hpp h1amg.hpp
         irspace.hpp h1lumping.hpp vtkoutput.hpp pmltrafo.hpp periodic.hpp
