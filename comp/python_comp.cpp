@@ -4696,7 +4696,7 @@ If `maxdist` == 0. then 2*meshsize is used.
 
    py::class_<SpecialElementGroup, shared_ptr<SpecialElementGroup>> (m, "SpecialElementGroup");
 
-   py::class_<ContactSEG, shared_ptr<ContactSEG>, SpecialElementGroup> (m, "ContactSEG")
+   py::class_<ContactSEG, shared_ptr<ContactSEG>, SpecialElementGroup> (m, "ContactIntegrator")
      .def(py::init([](Region primary, Region secondary) {
        return make_shared<ContactSEG>(primary, secondary);
      }))
