@@ -2538,6 +2538,8 @@ namespace ngcomp
   shared_ptr<CoefficientFunction>
   MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf)
   {
+    if(!avol_cf)
+      throw Exception("Null pointer given to MakeBoundaryFromVolumeCoefficientFunction");
     return make_shared<BoundaryFromVolumeCoefficientFunction> (avol_cf);
   }
 
