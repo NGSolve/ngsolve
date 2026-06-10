@@ -134,6 +134,11 @@ namespace ngcomp
 
     bool IsDeformed() const { return deformed; }
 
+    // TODO: distinguish between trial and test spaces
+    shared_ptr<FESpace> GetTrialSpace() const { return fes; } 
+    shared_ptr<FESpace> GetTestSpace() const { return fes; }
+
+    
     void ApplyAdd(const FiniteElement& m_trial_fel,
                   const FiniteElement& s_trial_fel,
                   const FiniteElement& m_test_fel,
@@ -196,6 +201,9 @@ namespace ngcomp
     const auto& GetIntegrators(bool def) const { return def ? deformed_integrators : undeformed_integrators; }    
     shared_ptr<FESpace> GetTrialFESpace() const { return trial_fes; }
     shared_ptr<FESpace> GetTestFESpace() const { return test_fes; }
+    void SetTrialFESpace(shared_ptr<FESpace> trial ) { trial_fes=trial; }
+    void SetTestFESpace(shared_ptr<FESpace> test) { test_fes=test; }
+
     tuple<FlatArray<Vec<3>>, FlatArray<Vec<3>>> GetDrawingPairs() { return {primary_points, secondary_points}; }
     auto GetCArgs() {
       return std::make_tuple(master, other, draw_pairs, volume, element_boundary);
@@ -206,10 +214,13 @@ namespace ngcomp
   
   class ContactSEG : public SpecialElementGroup
   {
+    shared_ptr<ContactBoundary> cb;
     shared_ptr<CoefficientFunction> deformation;
     Array<shared_ptr<ContactIntegrator>> integrators;
     Region primary, secondary;
-
+    shared_ptr<FESpace> trial_fes, test_fes; // come from integrator
+    Array<unique_ptr<SpecialElement>> elements;
+    int intorder = 8;
   public:
     ContactSEG(Region _primary, Region _secondary, bool _volume=false, bool element_boundary=false);
     ~ContactSEG() { }
