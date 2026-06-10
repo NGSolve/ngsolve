@@ -214,9 +214,11 @@ namespace ngcomp
     ContactSEG(Region _primary, Region _secondary, bool _volume=false, bool element_boundary=false);
     ~ContactSEG() { }
     void AddIntegrator(shared_ptr<CoefficientFunction> form);
-    int GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs) override;
+
+    void Update() override;
+    int GetNElements() override;
+    void GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs) override;
     void Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh) override;    
-    void Update();
   };
   
 

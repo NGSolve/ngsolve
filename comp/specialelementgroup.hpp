@@ -13,8 +13,10 @@ namespace ngcomp
   public:
     virtual ~SpecialElementGroup() { }
 
+    virtual void Update() { } 
 
-    virtual int GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs) = 0;
+    virtual int GetNElements() = 0;
+    virtual void GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs) = 0;
     
     virtual void Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh) = 0;
     

@@ -679,7 +679,11 @@ ANY                  1 1 1 1 | 15
     auto GetTrialFunction() const { return GetProxyFunction(false); }
     auto GetTestFunction() const { return GetProxyFunction(true); }
     
-
+    
+    virtual void Interpolate (const CoefficientFunction & cf, BaseVector & vec,
+                              const Region * reg, LocalHeap & lh);
+    
+    
     virtual shared_ptr<BaseMatrix> GetMassOperator (shared_ptr<CoefficientFunction> rho,
                                                     shared_ptr<Region> defon,
                                                     LocalHeap & lh) const;

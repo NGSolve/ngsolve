@@ -1234,15 +1234,20 @@ namespace ngcomp
   {
     integrators.Append(make_shared<ContactIntegrator>(form, true));
   }
+
+  int ContactSEG :: GetNElements()
+  {
+    return 0;
+  }
+
   
   void ContactSEG :: Update()
   {
   }
 
-  int ContactSEG :: GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs)
+  void ContactSEG :: GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs)
   {
     cout << "get dof nrs called" << endl;
-    return 0;
   }
 
   void ContactSEG :: Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh)

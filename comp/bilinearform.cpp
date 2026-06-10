@@ -524,7 +524,7 @@ namespace ngcomp
     size_t neB = ma->GetNE(BND);
     size_t neBB = ma->GetNE(BBND);
     // const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
-    size_t nspe = specialelements.Size();
+    // size_t nspe = specialelements.Size();
 
     Array<DofId> dnums;
     Array<int> fnums; //facets of one element
@@ -533,8 +533,12 @@ namespace ngcomp
 
 
     int maxind = neV + neB + neBB + specialelements.Size();
+    
     for (auto seg : se_groups)
-      maxind += seg -> GetDofNrs ( [&] (int i, FlatArray<DofId> dnums) { } );
+      {
+        seg -> Update();
+        maxind += seg -> GetNElements();
+      }
     
     if (fespace->UsesDGCoupling()) maxind += nf;
     
@@ -640,16 +644,19 @@ namespace ngcomp
 
         size_t base = neV+neB+neBB+specialelements.Size();
         for (auto seg : se_groups)
-          base += seg -> GetDofNrs ( [&] (int i, FlatArray<DofId> dnums) {
-            QuickSort (dnums);
-            int last = -1;
-            for (int d : dnums)
-              {
-                if (d!=last && IsRegularDof(d))
-                  creator.Add (base+i, d);
-                last = d;
-              }
-          });
+          {
+            seg -> GetDofNrs ( [&] (int i, FlatArray<DofId> dnums) {
+              QuickSort (dnums);
+              int last = -1;
+              for (int d : dnums)
+                {
+                  if (d!=last && IsRegularDof(d))
+                    creator.Add (base+i, d);
+                  last = d;
+                }
+            });
+            base += seg->GetNElements();
+          }
         
 
         if (fespace->UsesDGCoupling())

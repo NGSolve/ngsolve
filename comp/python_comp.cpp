@@ -2225,7 +2225,8 @@ bonus_intorder : int
              reg = &py::extract<Region&>(definedon)();
            
            py::gil_scoped_release release;
-           self->Interpolate (*cf, reg, mdcomp, lhp.GetLH());
+           // self->Interpolate (*cf, reg, mdcomp, lhp.GetLH());
+           self->GetFESpace()->Interpolate(*cf, self->GetVector(mdcomp), reg, lhp.GetLH());
          },
          py::arg("coefficient"),
          py::arg("definedon")=DummyArgument(),
