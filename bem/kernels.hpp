@@ -369,7 +369,7 @@ namespace ngsbem
     {
       T norm = L2Norm(x-y);
       auto xy = x-y;
-      auto kern = 1.0 *  (4 * M_PI * norm*norm*norm) * xy;
+      auto kern = -1.0 / (4 * M_PI * norm*norm*norm) * xy;
       return kern;
     }
   };
