@@ -656,6 +656,11 @@ namespace ngsbem
                                       T scale,
                                       LocalHeap & lh) const;
     template <typename T>
+    void AddTangentCorrection(const BaseMappedIntegrationPoint & mip,
+                              ElementId ei,
+                              FlatVector<T> result,
+                              LocalHeap & lh) const;
+    template <typename T>
     void AddLocalExpansionNearfieldCorrection(const BaseMappedIntegrationRule & bmir,
                                               BareSliceMatrix<T> result) const;
     template <typename T>

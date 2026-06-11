@@ -4,6 +4,7 @@
 #include "intrules_SauterSchwab.hpp"
 #include "ngbem.hpp"
 #include "fmmoperator.hpp"
+#include "analytic_integrals.hpp"
 #include "../linalg/elementbyelement.hpp"
 #include "../linalg/diagonalmatrix.hpp"
 
@@ -1458,6 +1459,41 @@ namespace ngsbem
   }
 
   
+  IntegrationPoint ProjectPointToTriangleReference(Vec<3> x, const ElementTransformation & trafo)
+  {
+    IntegrationPoint ip(1./3, 1./3);
+    for (int j = 0; j < 5; j++) // SQP steps
+      {
+        MappedIntegrationPoint<2,3> mip(ip, trafo);
+        // dist = || x - (mip+Jac*(uv-ip) + 1/2*Hesse(uv-ip, uv-ip)) ||
+        Mat<3,2> jac = mip.GetJacobian();
+        Vec<2> ipvec { ip(0), ip(1) };
+        auto Hesse = mip.CalcHesse();
+        Vec<3,Vec<2>> Hesseip
+          {
+            Hesse[0]*ipvec,
+            Hesse[1]*ipvec,
+            Hesse[2]*ipvec
+          };
+        Vec<3> Hesseipip
+          {
+            InnerProduct(Hesseip(0), ipvec),
+            InnerProduct(Hesseip(1), ipvec),
+            InnerProduct(Hesseip(2), ipvec)
+          };
+        Mat<3,2> jacphip = jac;
+        jacphip.Row(0) -= Hesseip(0);
+        jacphip.Row(1) -= Hesseip(1);
+        jacphip.Row(2) -= Hesseip(2);
+        Mat<2,2> a = Trans(jac)*jac;
+        Vec<2> b = -Trans(jacphip) * (x-mip.GetPoint()+jac*ipvec + 0.5*Hesseipip);
+        Vec<2> uv = MinimizeOnTrig(a, b, 0);
+        ip = IntegrationPoint(uv(0), uv(1));
+      }
+    return ip;
+  }
+
+
   IntegrationRule GetIntegrationRule(Vec<3> x, const ElementTransformation & trafo, int intorder, bool nearfield)
   {
     if (!nearfield || trafo.GetElementType() != ET_TRIG)
@@ -1472,38 +1508,8 @@ namespace ngsbem
     if (dist < elsize)
       {
         // use SQP to find projection of x onto (curved) triangle
-        
-        IntegrationPoint ip(1./3, 1./3);
-        for (int j = 0; j < 5; j++) // SQP steps
-          {
-            MappedIntegrationPoint<2,3>  mip(ip, trafo);
-            // dist = || x - (mip+Jac*(uv-ip) + 1/2*Hesse(uv-ip, uv-ip)) ||
-            Mat<3,2> jac = mip.GetJacobian();
-            Vec<2> ipvec { ip(0), ip(1) };
-            auto Hesse = mip.CalcHesse();
-            Vec<3,Vec<2>> Hesseip
-              {
-                Hesse[0]*ipvec,
-                Hesse[1]*ipvec,
-                Hesse[2]*ipvec
-              };
-            Vec<3> Hesseipip
-              {
-                InnerProduct(Hesseip(0), ipvec),
-                InnerProduct(Hesseip(1), ipvec),
-                InnerProduct(Hesseip(2), ipvec)
-              };
-            Mat<3,2> jacphip = jac;
-            jacphip.Row(0) -= Hesseip(0);
-            jacphip.Row(1) -= Hesseip(1);
-            jacphip.Row(2) -= Hesseip(2);
-            Mat<2,2> a = Trans(jac)*jac;
-            Vec<2> b = -Trans(jacphip) * (x-mip.GetPoint()+jac*ipvec + 0.5*Hesseipip);
-            Vec<2> uv = MinimizeOnTrig(a, b, 0);
-            ip = IntegrationPoint(uv(0), uv(1));
-          }
+        IntegrationPoint ip = ProjectPointToTriangleReference(x, trafo);
 
-        
         // generate Duffy integration rules on split triangles
         IntegrationRule irsegm(ET_SEGM, intorder);
         IntegrationRule irtrig(trafo.GetElementType(), intorder);            
@@ -1613,6 +1619,110 @@ namespace ngsbem
 
   template <typename KERNEL> template <typename T>
   void PotentialCF<KERNEL> ::
+  AddTangentCorrection(const BaseMappedIntegrationPoint & mip,
+                       ElementId ei,
+                       FlatVector<T> result,
+                       LocalHeap & lh) const
+  {
+    constexpr auto formula = KERNEL::analytic_triangle_formula;
+    if constexpr (formula == AnalyticTriangleFormula::none)
+      throw Exception("no analytic triangle formula available for "+KERNEL::Name());
+
+    auto space = this->gf->GetFESpace();
+    auto mesh = space->GetMeshAccess();
+
+    const FiniteElement &fel = space->GetFE(ei, lh);
+    const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
+    if (trafo.GetElementType() != ET_TRIG)
+      return;
+
+    Array<DofId> dnums(fel.GetNDof(), lh);
+    space->GetDofNrs(ei, dnums);
+    FlatVector<T> elvec(fel.GetNDof(), lh);
+    gf->GetElementVector(dnums, elvec);
+
+    Vec<3> x = mip.GetPoint();
+    IntegrationPoint ip0 = ProjectPointToTriangleReference(x, trafo);
+    MappedIntegrationPoint<2,3> mip0(ip0, trafo);
+    Vec<2> xi0 { ip0(0), ip0(1) };
+    Vec<3> p0 = mip0.GetPoint();
+    Mat<3,2> jac = mip0.GetJacobian();
+
+    Vec<2> corners[] = { Vec<2>(0,0), Vec<2>(1,0), Vec<2>(0,1) };
+    Vec<3> v[3];
+    for (int i = 0; i < 3; i++)
+      v[i] = p0 + jac * (corners[i]-xi0);
+
+    double scalar_correction = 0.0;
+    Vec<3> grad_correction { 0.0, 0.0, 0.0 };
+    double measure0 = mip0.GetMeasure();
+    IntegrationRule ir(ET_TRIG, intorder);
+    Vec<3> nx{0.0};
+    Vec<3> ny = mip0.GetNV();
+
+    if constexpr (formula == AnalyticTriangleFormula::laplace_sl)
+      {
+        double flat_numeric = 0.0;
+        double analytic = LaplaceSL_Triangle(v[0], v[1], v[2], x);
+        LaplaceSLKernel<3> singularity;
+        for (auto ip : ir)
+          {
+            Vec<2> xi { ip(0), ip(1) };
+            Vec<3> y = p0 + jac * (xi-xi0);
+            double r = L2Norm(x-y);
+            if (r > 0)
+              flat_numeric += ip.Weight() * measure0 *
+                singularity.Evaluate(x, y, nx, ny)(0);
+          }
+        scalar_correction = analytic - flat_numeric;
+      }
+    else if constexpr (formula == AnalyticTriangleFormula::laplace_dl)
+      {
+        double flat_numeric = 0.0;
+        double analytic = LaplaceDL_Triangle(v[0], v[1], v[2], x, ny);
+        LaplaceDLKernel<3> singularity;
+        for (auto ip : ir)
+          {
+            Vec<2> xi { ip(0), ip(1) };
+            Vec<3> y = p0 + jac * (xi-xi0);
+            double r = L2Norm(x-y);
+            if (r > 0)
+              flat_numeric += ip.Weight() * measure0 *
+                singularity.Evaluate(x, y, nx, ny)(0);
+          }
+        scalar_correction = analytic - flat_numeric;
+      }
+    else if constexpr (formula == AnalyticTriangleFormula::laplace_grad_sl)
+      {
+        Vec<3> flat_numeric { 0.0, 0.0, 0.0 };
+        Vec<3> analytic = LaplaceGradSL_Triangle(v[0], v[1], v[2], x);
+        DiffLaplaceSLKernel<3> singularity;
+        for (auto ip : ir)
+          {
+            Vec<2> xi { ip(0), ip(1) };
+            Vec<3> y = p0 + jac * (xi-xi0);
+            double r = L2Norm(x-y);
+            if (r > 0)
+              flat_numeric += ip.Weight() * measure0 *
+                singularity.Evaluate(x, y, nx, ny);
+          }
+        grad_correction = analytic - flat_numeric;
+      }
+
+    FlatVector<T> vals(evaluator->Dim(), lh);
+    evaluator->Apply(fel, mip0, elvec, vals, lh);
+    for (auto term : kernel.terms)
+      {
+        double correction =
+          formula == AnalyticTriangleFormula::laplace_grad_sl ?
+          grad_correction(term.kernel_comp) : scalar_correction;
+        result(term.test_comp) += term.fac * correction * vals(term.trial_comp);
+      }
+  }
+
+
+  template <typename KERNEL> template <typename T>
+  void PotentialCF<KERNEL> ::
   AddLocalExpansionNearfieldCorrection(const BaseMappedIntegrationRule & bmir,
                                        BareSliceMatrix<T> result) const
   {
@@ -1639,6 +1749,12 @@ namespace ngsbem
             if (!IsPotentialNearfieldSourceElement(x, trafo))
               continue;
 
+            if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
+              {
+                AddTangentCorrection(mip, ei, row, lh);
+                continue;
+              }
+
             IntegrationRule standard_ir(trafo.GetElementType(), intorder);
             IntegrationRule near_ir = GetIntegrationRule(x, trafo, intorder, true);
 
@@ -1661,6 +1777,8 @@ namespace ngsbem
 
     Vector<SIMD<T>> simd_result(Dimension());
     simd_result = SIMD<T>(0.0);
+    Vector<T> correction_result(Dimension());
+    correction_result = T(0.0);
     if constexpr (std::is_same<typename KERNEL::value_type,T>())
       for (size_t i = 0; i < mesh->GetNE(source_vb); i++)
         {
@@ -1677,8 +1795,17 @@ namespace ngsbem
           FlatVector<T> elvec(fel.GetNDof(), lh);
           gf->GetElementVector(dnums, elvec);
           
+          bool use_tangent_correction = false;
+          if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
+            use_tangent_correction =
+              nearfield &&
+              IsPotentialNearfieldSourceElement(mip.GetPoint(), trafo);
+
           // IntegrationRule ir(fel.ElementType(), intorder);
-          IntegrationRule ir = GetIntegrationRule(mip.GetPoint(), trafo, intorder, nearfield);
+          IntegrationRule ir =
+            use_tangent_correction ?
+            IntegrationRule(trafo.GetElementType(), intorder) :
+            GetIntegrationRule(mip.GetPoint(), trafo, intorder, nearfield);
           
           SIMD_IntegrationRule simd_ir(ir);
 
@@ -1715,9 +1842,12 @@ namespace ngsbem
                     }
                 }
             }
+          if constexpr (KERNEL::analytic_triangle_formula != AnalyticTriangleFormula::none)
+            if (use_tangent_correction)
+              AddTangentCorrection(mip, ei, correction_result, lh);
         }
     for (int i = 0; i < Dimension(); i++)
-      result(i) = HSum(simd_result(i));
+      result(i) = HSum(simd_result(i)) + correction_result(i);
   }
 
 
@@ -1805,9 +1935,10 @@ namespace ngsbem
                         ny = static_cast<const SIMD<MappedIntegrationPoint<2,3>>&>(miry[iy]).GetNV();
                       }
                     
+                    auto eval = kernel.Evaluate(x, y, nx, ny);
                     for (auto term : kernel.terms)
                       {
-                        auto kernel_ = term.fac * kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
+                        auto kernel_ = term.fac * eval(term.kernel_comp);
                         simd_result(term.test_comp, ix) += miry[iy].GetWeight()*kernel_ * vals(term.trial_comp,iy);
                       }
                   }
