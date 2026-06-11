@@ -28,7 +28,7 @@ Installation
 
 To work through the i-tutorials, you first have to install
 
-- Netgen/NGSolve, see http://www.ngsolve.org/downloads 
+- Netgen/NGSolve, see https://ngsolve.org/installation.html 
 - Jupyter from http://www.jupyter.org. You can use the pip package manager: "pip3 install jupyter" 
 - download and unpack the i-tutorials from `here <../i-tutorials.zip>`__.
 
@@ -171,7 +171,8 @@ Whetting the Appetite
    unit-5a.3-petsc/petsc.ipynb 
    unit-5a.3-petsc/PETSc_interface.ipynb
 
-More on PETSc coupling is available by Stefano Zampini and Umberto Zerbinati at https://ngspetsc.readthedocs.io/en/latest/ngsPETSc.html 
+More on PETSc coupling is available by Stefano Zampini and Umberto Zerbinati at
+https://ngspetsc.readthedocs.io/en/latest/
 
    
 CUDA Device support:
