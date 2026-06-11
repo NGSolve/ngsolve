@@ -4707,9 +4707,11 @@ If `maxdist` == 0. then 2*meshsize is used.
 
    py::class_<ContactIntegrator2, shared_ptr<ContactIntegrator2>, SpecialElementGroup> (m, "ContactIntegrator")
      .def(py::init([](std::variant<Region,string> primary, std::variant<Region,string> secondary,
-                      shared_ptr<GridFunction> deformation) {
-       return make_shared<ContactIntegrator2>(primary, secondary, deformation);
-     }), py::arg("me"), py::arg("other"), py::arg("deformation")=nullptr)
+                      shared_ptr<GridFunction> deformation, std::optional<int> intorder) {
+       auto ci = make_shared<ContactIntegrator2>(primary, secondary, deformation);
+       if (intorder.has_value()) ci->SetIntOrder (*intorder);
+       return ci;
+     }), py::arg("me"), py::arg("other"), py::arg("deformation")=nullptr, py::arg("intorder")=nullopt)
      .def("Add", [](shared_ptr<ContactIntegrator2> ci, shared_ptr<CoefficientFunction> coef) {
        ci -> AddIntegrator(coef);
        return ci;

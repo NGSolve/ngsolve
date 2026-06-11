@@ -220,13 +220,14 @@ namespace ngcomp
     Array<shared_ptr<ContactIntegrator>> integrators;
     shared_ptr<FESpace> trial_fes, test_fes; // come from integrator
     Array<unique_ptr<SpecialElement>> elements;
-    int intorder = 8;
+    int intorder = 10;
   public:
     ContactIntegrator2(std::variant<Region,string> _primary,
                        std::variant<Region,string> _secondary,
                        shared_ptr<GridFunction> _deformation,
                        bool _volume=false, bool element_boundary=false);
     ~ContactIntegrator2() { }
+    void SetIntOrder (int io) { intorder = io; }
     void AddIntegrator(shared_ptr<CoefficientFunction> form);
 
     void Update() override;

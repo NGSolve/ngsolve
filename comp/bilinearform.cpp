@@ -3278,8 +3278,8 @@ namespace ngcomp
                   
                     if (first_time)
                       {
-                        cerr << "used dof inconsistency" << endl;
-                        cerr << "(silence this warning by setting BilinearForm(...check_unused=False) )" << endl;
+                        cerr << IM(1) << "used dof inconsistency" << endl;
+                        cerr << IM(1) << "(silence this warning by setting BilinearForm(...check_unused=False) )" << endl;
                       }
                     first_time = false;
                   }
