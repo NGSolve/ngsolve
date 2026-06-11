@@ -276,6 +276,27 @@ namespace ngsbem
   {
     return 1/(4*M_PI) * (k1(x,y,z) - y * k0(x,y,z));
   }
+
+  double dHdx (double x, double y, double z)
+  {
+    double den = x*x+z*z;
+    if (den == 0) return 0;
+    double r = sqrt(x*x+y*y+z*z);
+    return -1/(4*M_PI) * z * (r-y) / den;
+  }
+
+  double dHdy (double x, double y, double z)
+  {
+    return 1/(4*M_PI) * (k0(x,y,z) - y * km1(x,y,z));
+  }
+
+  double dHdz (double x, double y, double z)
+  {
+    double den = x*x+z*z;
+    double r = sqrt(x*x+y*y+z*z);
+    double tangential = (den == 0) ? 0 : x * (r-y) / den;
+    return 1/(4*M_PI) * (tangential - log_r_plus_x(x,y,z));
+  }
   
     
   double HDL (double x, double y, double z)
@@ -286,9 +307,15 @@ namespace ngsbem
   
   double LaplaceSL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
   {
-    Vec<3> vi[3] = { v0, v1, v2 };
     Vec<3> n = Cross(v1-v0, v2-v0);
+    if (InnerProduct(x-v0, n) < 0)
+      {
+        Swap(v1, v2);
+        n *= -1;
+      }
     n /= L2Norm(n);
+
+    Vec<3> vi[3] = { v0, v1, v2 };
 
     double h = InnerProduct(x-v0, n);
     // Vec<3> xhat = x - h*n;
@@ -325,6 +352,49 @@ namespace ngsbem
 
 
 
+  Vec<3> LaplaceGradSL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
+  {
+    Vec<3> n = Cross(v1-v0, v2-v0);
+    if (InnerProduct(x-v0, n) < 0)
+      {
+        Swap(v1, v2);
+        n *= -1;
+      }
+    n /= L2Norm(n);
+
+    Vec<3> vi[3] = { v0, v1, v2 };
+
+    auto IntEdge = [=] (Vec<3> ve0, Vec<3> ve1, Vec<3> nu)
+    {
+      Vec<3> ex = ve1 - ve0; ex /= L2Norm(ex);
+      Vec<3> ey = n;
+      Vec<3> ez = nu;
+      double xp = InnerProduct(x-ve0, ex);
+      double yp = InnerProduct(x-ve0, ey);
+      double zp = InnerProduct(x-ve0, ez);
+
+      auto HGrad = [=] (double s)
+      {
+        return -dHdx(s, yp, zp) * ex
+          + dHdy(s, yp, zp) * ey
+          + dHdz(s, yp, zp) * ez;
+      };
+
+      double l = L2Norm(ve0-ve1);
+      return HGrad(l-xp) - HGrad(-xp);
+    };
+
+    Vec<3> sum { 0.0, 0.0, 0.0 };
+    for (int i = 0; i < 3; i++)
+      {
+        auto ve0 = vi[i];
+        auto ve1 = vi[(i+1)%3];
+        Vec<3> tau = ve1-ve0;
+        tau /= L2Norm(tau);
+        sum += IntEdge (ve0, ve1, Cross(tau, n));
+      };
+    return sum;
+  }
   
 
 #ifdef EXPERIMENTAL
@@ -397,13 +467,10 @@ namespace ngsbem
 
 
 
-
-
-  double LaplaceDL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
+  double LaplaceDL_TriangleOriented (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x,
+                                     Vec<3> n)
   {
     Vec<3> vi[3] = { v0, v1, v2 };
-    Vec<3> n = Cross(v1-v0, v2-v0);
-    n /= L2Norm(n);
 
     // double h = InnerProduct(x-v0, n);
     // Vec<3> xhat = x - h*n;
@@ -433,6 +500,20 @@ namespace ngsbem
         sum += intedge;
       };
     return sum;
+  }
+
+
+  double LaplaceDL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x,
+                             Vec<3> source_normal)
+  {
+    Vec<3> n = Cross(v1-v0, v2-v0);
+    if (InnerProduct(n, source_normal) > 0)
+      {
+        Swap(v1, v2);
+        n *= -1;
+      }
+    n /= L2Norm(n);
+    return LaplaceDL_TriangleOriented(v0, v1, v2, x, n);
   }
 
   
@@ -511,7 +592,3 @@ namespace ngsbem
 #endif
 
 }
-
-
-
-

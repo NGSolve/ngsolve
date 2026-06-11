@@ -18,11 +18,22 @@ namespace ngsbem
     size_t trial_comp;
     size_t test_comp;
   };
+
+  enum class AnalyticTriangleFormula
+  {
+    none,
+    laplace_sl,
+    laplace_dl,
+    laplace_grad_sl
+  };
   
 
   class BaseKernel
   {
   public:
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::none;
+
     void GetDifferentiatedKernel(const string &name) const {
       throw Exception("GetDifferentiatedKernel not overloaded");
     }
@@ -363,6 +374,8 @@ namespace ngsbem
 
     static string Name() { return "DiffLaplaceSL"; }
     static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_grad_sl;
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -400,6 +413,8 @@ namespace ngsbem
 
     static string Name() { return "DiffHelmholtzSL"; }
     static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_grad_sl;
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -436,6 +451,8 @@ namespace ngsbem
 
     static string Name() { return "LaplaceSL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_sl;
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -478,6 +495,8 @@ namespace ngsbem
 
     static string Name() { return "LaplaceDL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_dl;
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -511,6 +530,8 @@ namespace ngsbem
 
     static string Name() { return "HelmholtzSL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_sl;
 
     /** Construction of the kernel specifies the wavenumber $\kappa$. */
     HelmholtzSLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) {
@@ -571,6 +592,8 @@ namespace ngsbem
 
     static string Name() { return "HelmholtzDL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_dl;
 
     HelmholtzDLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) {
       for (size_t i = 0; i < COMPS; i++)
@@ -727,6 +750,8 @@ namespace ngsbem
     typedef Complex value_type;
     static string Name() { return "MaxwellDL"; }
     static auto Shape() { return IVec<2>(3,3); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_grad_sl;
 
     MaxwellDLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) { }
 
