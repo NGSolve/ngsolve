@@ -241,14 +241,27 @@ namespace ngsbem
   double k0 (double x, double y, double z)
   {
     if (z == 0) return 0;
-    return sign(z) * atan (x / abs(z));
+    return sign(z) * atan2 (x, abs(z));
+  }
+
+  double log_r_plus_x (double x, double y, double z)
+  {
+    double r = sqrt(x*x+y*y+z*z);
+    if (x < 0)
+      {
+        // log(r+x) = log(y*y+z*z) - log(r-x), avoids cancellation.
+        double rho2 = y*y+z*z;
+        if (rho2 == 0) return 0;
+        return log(rho2) - log(r-x);
+      }
+    return log(r+x);
   }
 
   double k1 (double x, double y, double z)
   {
     double r = sqrt(x*x+y*y+z*z);
     if (z == 0) return 0;
-    return y*sign(z) * atan (x*y / (abs(z)*r)) + z * log(r+x);
+    return y*sign(z) * atan2 (x*y, abs(z)*r) + z * log_r_plus_x(x, y, z);
   }
 
   double km1 (double x, double y, double z)
@@ -256,7 +269,7 @@ namespace ngsbem
     if (z == 0) return 0;    
     double r = sqrt(x*x+y*y+z*z);
     if (y == 0) return sign(z) * x / (abs(z)*r);
-    return sgn(z)/y * atan (y*x / (abs(z)*r));
+    return sgn(z)/y * atan2 (y*x, abs(z)*r);
   }
 
   double H (double x, double y, double z)
