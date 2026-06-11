@@ -1240,6 +1240,9 @@ namespace ngcomp
       int matindex = ir.GetTransformation().GetElementIndex();
       if (reg.Mask().Test(matindex))
         cf -> Evaluate (ir, values);
+      else
+        // values.AddSize(Dimension(), ir.Size()) = T(std::numeric_limits<double>::quiet_NaN());
+        values.AddSize(Dimension(), ir.Size()) = T(0.0/0.0);
     }
     
     template <typename MIR, typename T, ORDERING ORD>
