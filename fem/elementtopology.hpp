@@ -155,6 +155,17 @@ namespace ngfem
     size_t Nr() const { return nr; } 
   };
 
+
+  class RegionId
+  {
+    VorB vb;
+    int nr;
+  public:
+    RegionId (VorB avb, int anr) : vb(avb), nr(anr) { }
+    VorB VB() const { return vb; }
+    int Nr() const { return nr; }
+  };
+  
   
   /// Topology and coordinate information of master element:
   class NGS_DLL_HEADER ElementTopology

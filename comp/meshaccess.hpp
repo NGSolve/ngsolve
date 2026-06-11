@@ -412,6 +412,9 @@ namespace ngcomp
         }
     }
 
+    string_view GetMaterial(RegionId ri) const { return GetMaterial(ri.VB(), ri.Nr()); }
+
+    
     auto GetMaterials (VorB vb) const
     {
       return ArrayObject (GetNRegions(vb),
@@ -1034,6 +1037,12 @@ namespace ngcomp
     const BitArray & Mask() const { return *mask; }
     BitArray& Mask() { return *mask; }
     operator const BitArray & () const { return *mask; }
+    bool Contains(RegionId ri) const
+    {
+      if (ri.VB() != vb) return false;
+      if (ri.Nr() > mask->Size()) return false;
+      return (*mask)[ri.Nr()];
+    }
     shared_ptr<BitArray> MaskPtr() { return mask; }
     const shared_ptr<MeshAccess> & Mesh() const { return mesh; }
     void DoArchive(Archive& ar)
@@ -1106,14 +1115,21 @@ namespace ngcomp
     
     virtual bool DefinedOn (const ElementTransformation & trafo) override
     {
+      if (reg.Contains(trafo.GetRegionId()))
+        return cf->DefinedOn(trafo);
+      return false;
+      /*
       if(reg.VB() != trafo.VB())
         return false;
       int matindex = trafo.GetElementIndex();
       if (reg.Mask().Test(matindex))
         return cf->DefinedOn(trafo);
       return false;
+      */
     }
 
+
+    
     /*
       // TODO
     virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
@@ -1235,10 +1251,18 @@ namespace ngcomp
     template <typename MIR, typename T, ORDERING ORD>
     void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
+      /*
       if(ir[0].GetTransformation().VB() != reg.VB())
         throw Exception("Try to evaluate domainwise function defined on " + ToString(reg.VB()) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
       int matindex = ir.GetTransformation().GetElementIndex();
       if (reg.Mask().Test(matindex))
+        cf -> Evaluate (ir, values);
+      else
+        // values.AddSize(Dimension(), ir.Size()) = T(std::numeric_limits<double>::quiet_NaN());
+        values.AddSize(Dimension(), ir.Size()) = T(0.0/0.0);
+      */
+
+      if (reg.Contains(ir.GetTransformation().GetRegionId()))
         cf -> Evaluate (ir, values);
       else
         // values.AddSize(Dimension(), ir.Size()) = T(std::numeric_limits<double>::quiet_NaN());
