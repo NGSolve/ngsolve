@@ -103,7 +103,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'NGS-Py'
+project = 'Netgen/NGSolve'
 copyright = '2017, Netgen/NGSolve team'
 author = 'Netgen/NGSolve team'
 
