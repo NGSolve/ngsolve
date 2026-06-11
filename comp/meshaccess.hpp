@@ -1265,8 +1265,9 @@ namespace ngcomp
       if (reg.Contains(ir.GetTransformation().GetRegionId()))
         cf -> Evaluate (ir, values);
       else
-        // values.AddSize(Dimension(), ir.Size()) = T(std::numeric_limits<double>::quiet_NaN());
-        values.AddSize(Dimension(), ir.Size()) = T(0.0/0.0);
+        values.AddSize(Dimension(), ir.Size()) = T(std::numeric_limits<double>::quiet_NaN());
+        // values.AddSize(Dimension(), ir.Size()) = T(0.0/0.0);
+        // values.AddSize(Dimension(), ir.Size()) = T(NAN);
     }
     
     template <typename MIR, typename T, ORDERING ORD>
