@@ -491,6 +491,15 @@ when building the system matrices.
               op = make_shared<DualProxyFunction> (*op);
             return op;
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
+    .def("Dual",
+         [] (const spProxy self)
+          {
+            auto op = self->GetAdditionalProxy("dual");
+            if (!op)
+              throw Exception(string("Operator 'dual'  does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+            op = make_shared<DualProxyFunction> (*op);
+            return op;
+	  }, "Use dual shapes")
     .def("Operators",
          [] (const spProxy self)
          {
@@ -4696,13 +4705,14 @@ If `maxdist` == 0. then 2*meshsize is used.
 
    py::class_<SpecialElementGroup, shared_ptr<SpecialElementGroup>> (m, "SpecialElementGroup");
 
-   py::class_<ContactSEG, shared_ptr<ContactSEG>, SpecialElementGroup> (m, "ContactIntegrator")
-     .def(py::init([](Region primary, Region secondary) {
-       return make_shared<ContactSEG>(primary, secondary);
-     }), py::arg("me"), py::arg("other"))
-     .def("AddIntegrator", [](shared_ptr<ContactSEG> cseg, shared_ptr<CoefficientFunction> coef) {
-       cseg -> AddIntegrator(coef);
-       return cseg;
+   py::class_<ContactIntegrator2, shared_ptr<ContactIntegrator2>, SpecialElementGroup> (m, "ContactIntegrator")
+     .def(py::init([](std::variant<Region,string> primary, std::variant<Region,string> secondary,
+                      shared_ptr<GridFunction> deformation) {
+       return make_shared<ContactIntegrator2>(primary, secondary, deformation);
+     }), py::arg("me"), py::arg("other"), py::arg("deformation")=nullptr)
+     .def("Add", [](shared_ptr<ContactIntegrator2> ci, shared_ptr<CoefficientFunction> coef) {
+       ci -> AddIntegrator(coef);
+       return ci;
      })
      ;
           

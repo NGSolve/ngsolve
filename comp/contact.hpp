@@ -212,18 +212,21 @@ namespace ngcomp
   };
 
   
-  class ContactSEG : public SpecialElementGroup
+  class ContactIntegrator2 : public SpecialElementGroup
   {
     shared_ptr<ContactBoundary> cb;
-    shared_ptr<CoefficientFunction> deformation;
+    std::variant<Region,string> primary, secondary;
+    shared_ptr<GridFunction> deformation;
     Array<shared_ptr<ContactIntegrator>> integrators;
-    Region primary, secondary;
     shared_ptr<FESpace> trial_fes, test_fes; // come from integrator
     Array<unique_ptr<SpecialElement>> elements;
     int intorder = 8;
   public:
-    ContactSEG(Region _primary, Region _secondary, bool _volume=false, bool element_boundary=false);
-    ~ContactSEG() { }
+    ContactIntegrator2(std::variant<Region,string> _primary,
+                       std::variant<Region,string> _secondary,
+                       shared_ptr<GridFunction> _deformation,
+                       bool _volume=false, bool element_boundary=false);
+    ~ContactIntegrator2() { }
     void AddIntegrator(shared_ptr<CoefficientFunction> form);
 
     void Update() override;

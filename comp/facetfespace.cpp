@@ -43,13 +43,14 @@ namespace ngcomp
       else
         {
           // if (mip.BaseMappedIntegrationPoint::ElementVB() == BND)
-          if (mip.IP().VB() == BND) 
+          // if (mip.IP().VB() == BND)
+          if (mip.DimElement() == D-1)
             {
-              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
+              auto& fel = static_cast<const BaseScalarFiniteElement&> (bfel);
               fel.CalcShape (mip.IP(), mat.Row(0));
             }
           else
-            throw Exception("cannot evaluate facet-fe inside element");
+            throw Exception("cannot evaluate facet-fe inside element HERE");
         }
     }
 
@@ -150,12 +151,15 @@ namespace ngcomp
   class DiffOpIdFacetDual : public DiffOp<DiffOpIdFacetDual<D> >
   {
   public:
-  static constexpr int DIM = 1;
-  static constexpr int DIM_SPACE = D;
-  static constexpr int DIM_ELEMENT = D;
-  static constexpr int DIM_DMAT = 1;
-  static constexpr int DIFFORDER = 0;
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 0;
+    
     static IVec<0> GetDimensions() { return IVec<0>(); };
+    static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
+    
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     typedef DiffOpIdDual<D-1,D> DIFFOP_TRACE;
     
@@ -175,7 +179,8 @@ namespace ngcomp
       else
         {
           // if (mip.BaseMappedIntegrationPoint::ElementVB() == BND)
-          if (mip.IP().VB() == BND) 
+          // if (mip.IP().VB() == BND)
+          if (mip.DimElement() == D-1)          
             {
               const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
               fel.CalcShape (mip.IP(), mat.Row(0));

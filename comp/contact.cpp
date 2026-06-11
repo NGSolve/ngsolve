@@ -923,6 +923,8 @@ namespace ngcomp
 #endif // NETGEN_USE_GUI
 
     auto mesh = master.Mesh();
+    if (!mesh) return;
+    
     if(mesh->GetDimension() == 2)
       {
         gap = make_shared<T_GapFunction<2>>(mesh, master, other);
@@ -1226,12 +1228,18 @@ namespace ngcomp
 
   // ****************************** Contact Special Element Group **********************************
   
-  ContactSEG :: ContactSEG(Region _primary, Region _secondary, bool _volume, bool element_boundary)
-    : cb(make_shared<ContactBoundary>(_primary, _secondary)), primary(_primary), secondary(_secondary)
+  ContactIntegrator2 :: ContactIntegrator2(std::variant<Region,string> _primary,
+                                           std::variant<Region,string> _secondary,
+                                           shared_ptr<GridFunction> _deformation,
+                                           bool _volume, bool element_boundary)
+  // : cb(make_shared<ContactBoundary>(_primary, _secondary)), primary(_primary), secondary(_secondary)
+    : cb{make_shared<ContactBoundary>(Region(), Region())},
+      primary(_primary), secondary(_secondary),
+      deformation(_deformation)
   {
   }
 
-  void ContactSEG :: AddIntegrator(shared_ptr<CoefficientFunction> form)
+  void ContactIntegrator2 :: AddIntegrator(shared_ptr<CoefficientFunction> form)
   {
     cb -> AddIntegrator (form);
     integrators.Append(make_shared<ContactIntegrator>(form, true));
@@ -1242,18 +1250,18 @@ namespace ngcomp
     cb->SetTestFESpace(test_fes);
   }
 
-  int ContactSEG :: GetNElements()
+  int ContactIntegrator2 :: GetNElements()
   {
-    cout << "ContactSEG: have " << elements.Size() << " elements" << endl;
+    // cout << "ContactIntegrator: have " << elements.Size() << " elements" << endl;
     return elements.Size();
   }
 
   
-  void ContactSEG :: Update()
+  void ContactIntegrator2 :: Update()
   {
     // copied from ContactBoundary update
 
-    cout << "ContactSEG Update called" << endl;
+    // cout << "ContactIntegrator Update called" << endl;
 
     /*
       // TODO
@@ -1274,10 +1282,22 @@ namespace ngcomp
     
     auto mesh = trial_fes->GetMeshAccess();
 
+    Region primary_reg;
+    if (auto p = get_if<Region>(&primary))
+      primary_reg = *p;
+    else
+      primary_reg = Region (mesh, BND, get<string>(primary));
+
+    Region secondary_reg;
+    if (auto p = get_if<Region>(&secondary))
+      secondary_reg = *p;
+    else
+      secondary_reg = Region (mesh, BND, get<string>(secondary));
+    
     bool element_boundary = false;  // TODO
     bool volume = false;    // TODO
     
-    LocalHeap lh(1000000, "ContactSEG-Update", true);
+    LocalHeap lh(1000000, "ContactIntegrator-Update", true);
     
     Iterate<2>
       ([&](auto i)
@@ -1286,13 +1306,17 @@ namespace ngcomp
         if(mesh->GetDimension() == DIM)
           {
             elements.SetSize0();
-            auto tgap = make_shared<T_GapFunction<DIM>>(mesh, primary, secondary);
-            tgap -> Update (nullptr, 10 /* intorder */ , 5 /* h */, true  /* bothsides */ );
-            static mutex add_mutex;
-            auto& mask = primary.Mask();
+            auto tgap = make_shared<T_GapFunction<DIM>>(mesh, primary_reg, secondary_reg);
+            tgap -> Update (deformation,
+                            10, // intorder
+                            5,  //  h
+                            true  /* bothsides */ );
             
+            static mutex add_mutex;
+            auto& mask = primary_reg.Mask();
+
             mesh->IterateElements
-              (primary.VB(), lh,
+              (primary_reg.VB(), lh,
                [&] (Ngs_Element el, LocalHeap& lh)
                {
                  constexpr auto DIM = i.value+2; // Declare DIM again (MSVC bug)
@@ -1446,7 +1470,7 @@ namespace ngcomp
       }); // iterate dimension
   }
 
-  void ContactSEG :: GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs)
+  void ContactIntegrator2 :: GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs)
   {
     Array<DofId> dnums;
     for (int i = 0; i < elements.Size(); i++)
@@ -1456,7 +1480,7 @@ namespace ngcomp
       }
   }
 
-  void ContactSEG :: Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh)
+  void ContactIntegrator2 :: Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh)
   {
     Array<DofId> dnums;
     for (auto& el : elements)
