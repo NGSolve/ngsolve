@@ -422,6 +422,9 @@ nr : int
     .def(py::self * py::self)
     .def(py::self * string())
     .def(~py::self)
+    .def("__ror__", [] (const Region& c2, shared_ptr<CoefficientFunction> c1) -> shared_ptr<CoefficientFunction> {
+      return make_shared<RestrictedCoefficientFunction> (c1, c2); 
+    })
     ;
   PyDefVectorized(cls_region, "__call__",
                   [](Region* reg, double x, double y, double z)
@@ -449,6 +452,12 @@ nr : int
 
   py::implicitly_convertible <Region, BitArray> ();
 
+
+  //////////////////////////////////////////////////////////////////////////////////////////
+
+  py::class_<RestrictedCoefficientFunction, shared_ptr<RestrictedCoefficientFunction>, CoefficientFunction> (m, "RestrictedCF")
+    .def(py::init<shared_ptr<CoefficientFunction>,Region>())
+    ;
 
   //////////////////////////////////////////////////////////////////////////////////////////
   

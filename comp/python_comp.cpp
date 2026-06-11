@@ -2168,13 +2168,23 @@ parallel : bool
          [](shared_ptr<GF> self, spCF cf,
             VorB vb, py::object definedon, bool dualdiffop, bool use_simd, int mdcomp, optional<shared_ptr<BitArray>> definedonelements, int bonus_intorder)
          {
-           shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
-            Region * reg = nullptr;
-            if (py::extract<Region&> (definedon).check())
-              reg = &py::extract<Region&>(definedon)();
-            
-            py::gil_scoped_release release;
+           shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());
+           
+           const Region * reg = nullptr;
+           if (py::extract<Region&> (definedon).check())
+             reg = &py::extract<Region&>(definedon)();
+           
+           py::gil_scoped_release release;
 
+           shared_ptr<CoefficientFunction>  keepcf;
+           if (auto restcf = dynamic_pointer_cast<RestrictedCoefficientFunction>(cf))
+             {
+               keepcf = cf;
+               reg = & (restcf -> GetRegion());
+               cf = restcf->GetCF();
+             }
+
+           
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
