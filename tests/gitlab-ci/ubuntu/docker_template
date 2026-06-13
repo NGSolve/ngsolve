@@ -70,8 +70,7 @@ RUN pip3 install --upgrade --break-system-packages \
         sphinx \
         sphinx-rtd-theme \
         tensorflow \
-        webgui_jupyter_widgets \
-        widgetsnbextension
+        anywidget
 RUN python3 -m playwright install
 RUN python3 -m playwright install-deps firefox
 RUN pip3 install --break-system-packages PyYAML cffi ply

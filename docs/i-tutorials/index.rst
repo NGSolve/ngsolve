@@ -32,15 +32,11 @@ To work through the i-tutorials, you first have to install
 - Jupyter from http://www.jupyter.org. You can use the pip package manager: "pip3 install jupyter" 
 - download and unpack the i-tutorials from `here <../i-tutorials.zip>`__.
 
-To use the webgui visualization within jupyter you need
+To use the webgui visualization within jupyter you need anywidget
 
 .. code-block:: bash
 
-    pip3 install webgui_jupyter_widgets
-    jupyter nbextension install --user --py widgetsnbextension
-    jupyter nbextension enable --user --py widgetsnbextension
-    jupyter nbextension install --user --py webgui_jupyter_widgets
-    jupyter nbextension enable --user --py webgui_jupyter_widgets
+    pip3 install anywidget
 
   
 Some of the tutorials require packages from scipy and matplotlib, so it
