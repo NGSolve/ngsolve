@@ -4,6 +4,7 @@
 #include <multigrid.hpp>
 #include "preconditioner.hpp"
 #include "tpfes.hpp"
+#include "hidden.hpp"
 
 #include <parallelngs.hpp>
 #include <diagonalmatrix.hpp>
@@ -114,7 +115,18 @@ namespace ngcomp
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
     SetTiming (flags.GetDefineFlag ("timing"));
     SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal") || flags.GetDefineFlag("condense"));
-    SetEliminateHidden (flags.GetDefineFlag ("eliminate_hidden"));
+
+    
+    bool has_private_space = false;
+    fespace->TraverseTree([&has_private_space](const FESpace& fes) {
+      if (dynamic_cast<const HiddenFESpace*>(&fes))
+        has_private_space = true;
+    });
+    SetEliminateHidden(has_private_space);
+    if (!flags.GetDefineFlagX("eliminate_hidden").IsMaybe())
+      SetEliminateHidden (flags.GetDefineFlag ("eliminate_hidden"));
+
+    
     SetKeepInternal (eliminate_internal &&
                      !flags.GetDefineFlagX ("keep_internal").IsFalse() &&
                      !flags.GetDefineFlag ("nokeep_internal"));

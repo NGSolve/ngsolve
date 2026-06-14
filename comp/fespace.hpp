@@ -841,6 +841,12 @@ ANY                  1 1 1 1 | 15
     {
       return integrator[vb];
     }
+
+    virtual void TraverseTree (const function<void(const FESpace&)> & func) const 
+    {
+      func(*this);
+    }
+    
   };
 
 
@@ -1131,6 +1137,14 @@ ANY                  1 1 1 1 | 15
 
     void SetDoSubspaceUpdate(bool _do_subspace_update)
     { do_subspace_update = _do_subspace_update; }
+
+    void TraverseTree (const function<void(const FESpace&)> & func) const override
+    {
+      for (auto space : spaces)
+        space->TraverseTree(func);
+      func(*this);
+    }
+    
   };
 
 
