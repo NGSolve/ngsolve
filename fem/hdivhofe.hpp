@@ -82,6 +82,49 @@ namespace ngfem
                                       
     }
 
+
+    using HDivNormalFiniteElement<DIM>::CalcMappedShape;
+    void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & bmir,
+                          BareSliceMatrix<SIMD<double>> shapes) const override
+
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto shapei = shapes.Col(i);
+          auto &mip = mir[i];
+          auto scaled_nv = (1.0/mip.GetJacobiDet())*mip.GetNV();
+
+          static_cast<const FEL*> (this) -> T_CalcShape (GetTIP<DIM>(mip.IP()), SBLambda([shapei, scaled_nv](int j, auto val)
+          {
+            shapei.Range(j*(DIM+1), (j+1)*(DIM+1)) = val*scaled_nv;
+          }));
+        }
+    }
+
+    void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir,
+                        BareSliceMatrix<SIMD<double>> shapes) const override
+      
+    {
+      auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM+1>&> (bmir);
+      for (size_t i = 0; i < mir.Size(); i++)
+        {
+          auto shapei = shapes.Col(i);
+          auto &mip = mir[i];
+          auto scaled_nv = (1.0/mip.GetJacobiDet())*mip.GetNV();
+          auto len2 = L2Norm2(scaled_nv);
+          scaled_nv /= len2;
+
+          static_cast<const FEL*> (this) -> T_CalcShape (GetTIP<DIM>(mip.IP()), SBLambda([shapei, scaled_nv](int j, auto val)
+          {
+            shapei.Range(j*(DIM+1), (j+1)*(DIM+1)) = val*scaled_nv;
+          }));
+        }
+    }
+
+    
+    
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & bmir,
                            BareSliceVector<> coefs,
                            BareSliceMatrix<SIMD<double>> values) const override
