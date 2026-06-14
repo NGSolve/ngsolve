@@ -179,8 +179,8 @@ namespace ngfem
       throw Exception(string("CalcMappedShape not implemented for H(div) normal element ")+typeid(*this).name());
     }
 
-    virtual void NGS_DLL_HEADER CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir,
-                                                 BareSliceMatrix<SIMD<double>> shapes) const
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir,
+                                  BareSliceMatrix<SIMD<double>> shapes) const
     {
       throw Exception(string("CalcMappedShape(simdmir) not overloaded for H(div) normal element ")+typeid(*this).name());
     }
