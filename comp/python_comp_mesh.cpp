@@ -87,13 +87,19 @@ void ExportNgcompMesh (py::module &m)
   ExportPml(pml);
 
 
+  
   py::enum_<VorB>(m, "VorB", "Enum specifying the codimension. VOL is volume, BND is boundary and BBND is codimension 2 (edges in 3D, points in 2D)")
     .value("VOL", VOL)
     .value("BND", BND)
     .value("BBND", BBND)
     .value("BBBND", BBBND)
     .export_values()
+    .def("__call__", [](VorB vb, string name) { return VBnName{vb, name}; })
     ;
+
+  py::class_<VBnName> (m, "VBnName")
+    ;
+
   
   py::class_<ElementId> (m, "ElementId", 
                          docu_string(R"raw_string(
@@ -422,9 +428,9 @@ nr : int
     .def(py::self * py::self)
     .def(py::self * string())
     .def(~py::self)
-    .def("__ror__", [] (const Region& c2, shared_ptr<CoefficientFunction> c1) -> shared_ptr<CoefficientFunction> {
-      return make_shared<RestrictedCoefficientFunction> (c1, c2); 
-    })
+    // .def("__ror__", [] (const Region& c2, shared_ptr<CoefficientFunction> c1) -> shared_ptr<CoefficientFunction> {
+    // return make_shared<RestrictedCoefficientFunction> (c1, c2); 
+    // })
     ;
   PyDefVectorized(cls_region, "__call__",
                   [](Region* reg, double x, double y, double z)
@@ -453,11 +459,13 @@ nr : int
   py::implicitly_convertible <Region, BitArray> ();
 
 
+/*
   //////////////////////////////////////////////////////////////////////////////////////////
 
   py::class_<RestrictedCoefficientFunction, shared_ptr<RestrictedCoefficientFunction>, CoefficientFunction> (m, "RestrictedCF")
     .def(py::init<shared_ptr<CoefficientFunction>,Region>())
     ;
+*/
 
   //////////////////////////////////////////////////////////////////////////////////////////
   

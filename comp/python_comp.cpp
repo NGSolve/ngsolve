@@ -76,6 +76,16 @@ namespace ngcomp
                             shared_ptr<FESpace> target_fes,
                             std::function<tuple<Matrix<>,Array<int>,Array<int>>(ElementId)> creator,
                             LocalHeap & lh);
+
+
+  class DirichletCondition
+  {
+  public:
+    shared_ptr<ProxyFunction> proxy;
+    Region reg;
+    shared_ptr<CoefficientFunction> values;
+  };
+  
 }
 
 namespace ngfem
@@ -521,7 +531,24 @@ when building the system matrices.
     .def("ReplaceFunction", [](shared_ptr<ProxyFunction> proxy, shared_ptr<GridFunction> gf) {
       return make_shared<GridFunctionCoefficientFunction>(gf, proxy); },
       "replace proxyfunction by GridFunction, apply the same operator")
+
+    .def("__setitem__", [](shared_ptr<ProxyFunction> self, string name, spCF cf) {
+      Region reg(self->GetFESpace()->GetMeshAccess(), BND, name);
+      return DirichletCondition(self, reg, cf);
+    }, py::arg("name"),py::arg("cf"))
     ;
+
+
+  py::class_<DirichletCondition> (m, "DirichletCondition")
+    .def_property_readonly("proxy", [](DirichletCondition & cond) { return cond.proxy; });
+  ;
+  /*
+    shared_ptr<ProxyFunction> proxy;
+    Region reg;
+    shared_ptr<CoefficientFunction> values;
+  };
+  */
+  
 
   m.def("SetHeapSize",
         [](size_t heapsize)
@@ -2176,6 +2203,7 @@ parallel : bool
            
            py::gil_scoped_release release;
 
+           /*
            shared_ptr<CoefficientFunction>  keepcf;
            if (auto restcf = dynamic_pointer_cast<RestrictedCoefficientFunction>(cf))
              {
@@ -2183,7 +2211,7 @@ parallel : bool
                reg = & (restcf -> GetRegion());
                cf = restcf->GetCF();
              }
-
+           */
            
             if(tpspace)
             {
@@ -2250,6 +2278,13 @@ bonus_intorder : int
          py::arg("coefficient"),
          py::arg("definedon")=DummyArgument(),
          py::arg("mdcomp")=0)
+
+    
+    .def("__setitem__", [](shared_ptr<GF> self, VBnName namevb, spCF cf) {
+      Region reg(self->GetFESpace()->GetMeshAccess(), namevb.vb, namevb.name);
+      self->GetFESpace()->Interpolate(*cf, self->GetVector(), &reg, lhp.GetLH());
+    }, py::arg("namevb"),py::arg("cf"))
+
     
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
 

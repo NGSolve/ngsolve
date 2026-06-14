@@ -1092,7 +1092,8 @@ namespace ngcomp
     }
   };
 
-  
+
+#ifdef NOTSOGOOD
   class RestrictedCoefficientFunction : public T_CoefficientFunction<RestrictedCoefficientFunction>
   {
     typedef T_CoefficientFunction<RestrictedCoefficientFunction> BASE;    
@@ -1316,7 +1317,8 @@ namespace ngcomp
     }
     
   };
-
+#endif
+  
   
   shared_ptr<CoefficientFunction>
   MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf);

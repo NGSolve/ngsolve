@@ -113,6 +113,14 @@ namespace ngfem
     return ost;
   }
 
+  class VBnName
+  {
+  public:
+    VorB vb;
+    string name;
+  };
+
+
   class ElementId
   {
     typedef size_t int_type;

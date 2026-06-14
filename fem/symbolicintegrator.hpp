@@ -259,7 +259,6 @@ public:
     shared_ptr<SumOfIntegrals> operator() (shared_ptr<CoefficientFunction> u) const;
   };
 
-
   
 class ProxyUserData
 {
