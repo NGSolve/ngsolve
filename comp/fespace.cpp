@@ -1617,6 +1617,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
             freedofs->Clear(i);
       }
 
+    if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
+      {
+        Region reg = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
+        BitArray dofs = GetDofs(reg);
+        dofs.Invert();
+        freedofs = make_shared<BitArray>(*freedofs);
+        freedofs->And(dofs);
+      }
+
     FilteredTableCreator creator(freedofs.get());
 
     /*

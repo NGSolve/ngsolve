@@ -178,7 +178,7 @@ class VariationalEquationSolver:
         
         if self.pre:   # and if it is a creator 
             self.pre = self.pre(self.bf)
-            # self.pre.SetAdditionalDirichletConstraints(self.dreg)  
+            self.pre.SetAdditionalDirichletConstraints(self.dreg)  
         
         
     def Solve(self):

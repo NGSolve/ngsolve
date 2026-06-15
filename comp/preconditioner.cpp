@@ -594,6 +594,9 @@ namespace ngcomp
 
       if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {
+          if (additional_dirichlet_constraints.Mask().Size())
+            flags.SetFlag ("additional_dirichlet_constraints", std::any(additional_dirichlet_constraints));
+          
           auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
           shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();          
           auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (mat);

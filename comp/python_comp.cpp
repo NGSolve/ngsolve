@@ -3354,6 +3354,9 @@ integrator : ngsolve.fem.LFI
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
     .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>(), "Update preconditioner")
+    .def ("SetAdditionalDirichletConstraints", [](Preconditioner & pre, Region reg) { pre.SetAdditionalDirichletConstraints(reg); })
+    .def("__str__", [](Preconditioner &self) { return ToString<Preconditioner>(self); } )
+    
     .def_property_readonly("mat", [](Preconditioner &self)
                    {
                      return self.GetMatrixPtr();
