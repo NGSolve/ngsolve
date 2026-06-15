@@ -166,20 +166,28 @@ def _create_lin_appl(self, gfu: GridFunction) -> LinearApplication:
 BilinearForm.__mul__ = _create_lin_appl
 
 
-def SolveVE (equation, dirichlet=None, **kwargs):
-     bf = BilinearForm(equation.igls)
-     fes = bf.space
-     mesh = fes.mesh
-     dreg = mesh.Region(dirichlet.vbn)
-     
-     gf = GridFunction(fes)
-     gf[dirichlet.vbn] = dirichlet.val
-     bf.AssembleLinearization(gf.vec)
-     rhs = bf.Apply(gf.vec)
-     freedofs = fes.FreeDofs()&(~fes.GetDofs(dreg))
-     gf.vec.data -= bf.mat.Inverse(freedofs)*rhs
-     return gf
+class VariationalEquationSolver:
+    def __init__(self, equation, dirichlet=None, **kwargs):
+        self.bf = BilinearForm(equation.igls)
+        self.dirichlet = dirichlet
+        self.fes = self.bf.space
+        self.mesh = self.fes.mesh
+        self.dreg = self.mesh.Region(dirichlet.vbn)
+        
+    def Solve(self):
+        gf = GridFunction(self.fes)
+        gf[self.dirichlet.vbn] = self.dirichlet.val
+        self.bf.AssembleLinearization(gf.vec)
+        rhs = self.bf.Apply(gf.vec)
+        freedofs = self.fes.FreeDofs()&(~self.fes.GetDofs(self.dreg))
+        gf.vec.data -= self.bf.mat.Inverse(freedofs)*rhs
+        return gf
+        
 
+def SolveVE (equation, dirichlet=None, **kwargs):
+     return VariationalEquationSolver(equation,dirichlet,**kwargs).Solve()
+
+ 
 VariationalEquation.Solve = SolveVE
 
 
