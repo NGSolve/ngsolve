@@ -692,6 +692,14 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("pattern") = ".*",
 	 "Return boundary mesh-region matching the given regex pattern")
 
+    .def("Region",
+	 [](const shared_ptr<MeshAccess> & ma, VBnName vbn) {
+            return Region(ma, vbn.vb, vbn.name);
+	  },
+         py::arg("vbn"),
+	 "Return mesh-region from VB+name object")
+
+    
     .def("GetMaterials",
 	 [](const MeshAccess & ma)
          {

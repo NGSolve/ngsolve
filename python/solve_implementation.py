@@ -166,17 +166,18 @@ def _create_lin_appl(self, gfu: GridFunction) -> LinearApplication:
 BilinearForm.__mul__ = _create_lin_appl
 
 
-
-
 def SolveVE (equation, dirichlet=None, **kwargs):
      bf = BilinearForm(equation.igls)
      fes = bf.space
      mesh = fes.mesh
+     dreg = mesh.Region(dirichlet.vbn)
+     
      gf = GridFunction(fes)
      gf[dirichlet.vbn] = dirichlet.val
      bf.AssembleLinearization(gf.vec)
      rhs = bf.Apply(gf.vec)
-     gf.vec.data -= bf.mat.Inverse(fes.FreeDofs())*rhs
+     freedofs = fes.FreeDofs()&(~fes.GetDofs(dreg))
+     gf.vec.data -= bf.mat.Inverse(freedofs)*rhs
      return gf
 
 VariationalEquation.Solve = SolveVE
