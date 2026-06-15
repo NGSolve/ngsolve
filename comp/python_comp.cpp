@@ -78,12 +78,20 @@ namespace ngcomp
                             LocalHeap & lh);
 
 
-  class DirichletCondition
+  class DirichletBoundary
   {
   public:
     shared_ptr<ProxyFunction> proxy;
-    Region reg;
-    shared_ptr<CoefficientFunction> values;
+    VBnName vbn;
+  };
+
+  class DirichletCondition
+  
+  {
+  public:
+    shared_ptr<ProxyFunction> proxy;
+    VBnName vbn;
+    shared_ptr<CoefficientFunction> val;
   };
   
 }
@@ -532,22 +540,37 @@ when building the system matrices.
       return make_shared<GridFunctionCoefficientFunction>(gf, proxy); },
       "replace proxyfunction by GridFunction, apply the same operator")
 
+    /*
     .def("__setitem__", [](shared_ptr<ProxyFunction> self, string name, spCF cf) {
       Region reg(self->GetFESpace()->GetMeshAccess(), BND, name);
       return DirichletCondition(self, reg, cf);
-    }, py::arg("name"),py::arg("cf"))
+    }), py::arg("name"),py::arg("cf"))
+    */
+    .def("__getitem__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
+    {
+      return DirichletBoundary { self, vbn };
+    })
+    /*
+    .def("__or__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
+    {
+      return DirichletBoundary { self, vbn };
+    })
+    */
     ;
 
-
-  py::class_<DirichletCondition> (m, "DirichletCondition")
-    .def_property_readonly("proxy", [](DirichletCondition & cond) { return cond.proxy; });
-  ;
-  /*
-    shared_ptr<ProxyFunction> proxy;
-    Region reg;
-    shared_ptr<CoefficientFunction> values;
-  };
-  */
+  py::class_<DirichletBoundary> (m, "DirichletBoundary")
+    .def("__eq__", [](DirichletBoundary dir, shared_ptr<CoefficientFunction> cf) {
+      return DirichletCondition { dir.proxy, dir.vbn, cf };
+    })
+    ;
+    
+  py::class_<DirichletCondition> (m, "DirichletBC")
+    .def_property_readonly("proxy", [](DirichletCondition & cond) { return cond.proxy; })
+    .def_property_readonly("vbn", [](DirichletCondition & cond) { return cond.vbn; })
+    .def_property_readonly("vb", [](DirichletCondition & cond) { return cond.vbn.vb; })
+    .def_property_readonly("name", [](DirichletCondition & cond) { return cond.vbn.name; })    
+    .def_property_readonly("val", [](DirichletCondition & cond) { return cond.val; })    
+    ;
   
 
   m.def("SetHeapSize",
