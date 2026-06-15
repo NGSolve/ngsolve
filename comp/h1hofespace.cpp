@@ -797,10 +797,17 @@ into the wirebasket.
     UpdateCouplingDofArray ();
 
     if (low_order_space)
-      low_order_embedding =
-        make_shared<Embedding> (GetNDof(),
-                                IntRange(low_order_space->GetNDof()),
-                                IsComplex());
+      {
+        low_order_embedding =
+          make_shared<Embedding> (GetNDof(),
+                                  IntRange(low_order_space->GetNDof()),
+                                  IsComplex());
+        low_order_restriction =
+          make_shared<EmbeddingTranspose> (GetNDof(),
+                                           IntRange(low_order_space->GetNDof()),
+                                           IsComplex());
+      }
+          
     // timer3.Stop();
 
     /*

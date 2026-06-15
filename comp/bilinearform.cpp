@@ -4025,9 +4025,19 @@ namespace ngcomp
     // static Timer timerVB[] = { timervol, timerbound, timerbbound };
 
     static mutex addelmatboundary1_mutex;
-
+    
     lin.Cumulate();
 
+    auto low_order_restriction = GetTrialSpace()->LowOrderRestriction();
+    if (low_order_bilinear_form && low_order_restriction)
+      {
+        auto coarsevec = low_order_restriction->CreateColVector();
+        coarsevec = *low_order_restriction*lin;
+        low_order_bilinear_form -> AssembleLinearization(coarsevec, clh, reallocate);
+      }
+
+
+    
     if (nonassemble) {
       shared_ptr<BaseMatrix> app =
         make_shared<LinearizedBilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), &lin, clh);

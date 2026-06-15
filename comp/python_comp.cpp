@@ -3359,18 +3359,18 @@ integrator : ngsolve.fem.LFI
                      return self.GetMatrixPtr();
                    }, "matrix of the preconditioner")
     ;
-
+  
   {
     auto creator = py::cpp_function
       ([](py::object cls, py::kwargs kwargs)
-       {
-         return py::cpp_function
-           ([cls, kwargs](py::object bf)
+      {
+        return py::cpp_function
+          ([cls, kwargs](py::object bf)
             { return cls(*py::make_tuple(bf), **kwargs); },
             py::arg("bf"),
             "Create and register the deferred preconditioner with a BilinearForm.");
-       },
-       "Deferred preconditioner; call the result with a BilinearForm to create it.");
+      },
+        "Deferred preconditioner; call the result with a BilinearForm to create it.");
     prec_class.attr("Creator") =
       py::reinterpret_borrow<py::object>(PyClassMethod_New(creator.ptr()));
   }
