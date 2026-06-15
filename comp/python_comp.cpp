@@ -85,7 +85,7 @@ namespace ngcomp
     VBnName vbn;
   };
 
-  class DirichletCondition
+  class DirichletBC
   
   {
   public:
@@ -93,6 +93,15 @@ namespace ngcomp
     VBnName vbn;
     shared_ptr<CoefficientFunction> val;
   };
+
+
+  // sum of integrals = 0
+  class VariationalEquation
+  {
+  public:
+    SumOfIntegrals igls;
+  };
+
   
 }
 
@@ -560,18 +569,22 @@ when building the system matrices.
 
   py::class_<DirichletBoundary> (m, "DirichletBoundary")
     .def("__eq__", [](DirichletBoundary dir, shared_ptr<CoefficientFunction> cf) {
-      return DirichletCondition { dir.proxy, dir.vbn, cf };
+      return DirichletBC { dir.proxy, dir.vbn, cf };
     })
     ;
     
-  py::class_<DirichletCondition> (m, "DirichletBC")
-    .def_property_readonly("proxy", [](DirichletCondition & cond) { return cond.proxy; })
-    .def_property_readonly("vbn", [](DirichletCondition & cond) { return cond.vbn; })
-    .def_property_readonly("vb", [](DirichletCondition & cond) { return cond.vbn.vb; })
-    .def_property_readonly("name", [](DirichletCondition & cond) { return cond.vbn.name; })    
-    .def_property_readonly("val", [](DirichletCondition & cond) { return cond.val; })    
+  py::class_<DirichletBC> (m, "DirichletBC")
+    .def_property_readonly("proxy", [](DirichletBC & cond) { return cond.proxy; })
+    .def_property_readonly("vbn", [](DirichletBC & cond) { return cond.vbn; })
+    .def_property_readonly("vb", [](DirichletBC & cond) { return cond.vbn.vb; })
+    .def_property_readonly("name", [](DirichletBC & cond) { return cond.vbn.name; })    
+    .def_property_readonly("val", [](DirichletBC & cond) { return cond.val; })    
     ;
-  
+
+
+  py::class_<VariationalEquation> (m, "VariationalEquation")
+    .def_property_readonly("igls", [](VariationalEquation eq) { return eq.igls; })
+    ;
 
   m.def("SetHeapSize",
         [](size_t heapsize)
@@ -2642,6 +2655,12 @@ diffop : ngsolve.fem.DifferentialOperator
         if (i != 0) throw Exception("can only add integer 0 to SumOfIntegrals (for Python sum(list))");
         return igls; })
     .def("SetDefinedOnElements", &SumOfIntegrals::SetDefinedOnElements)
+    .def("__eq__", [](const SumOfIntegrals &igls, double x) {
+      return VariationalEquation { igls };
+    })
+    .def("__eq__", [](const SumOfIntegrals &igls1, const SumOfIntegrals &igls2) {
+      return VariationalEquation { igls1-igls2 };
+    })
     ;
 
   py::class_<Variation> (m, "Variation")

@@ -8,6 +8,9 @@ from ngsolve import (
     BND,
     Preconditioner,
 )
+
+from ngsolve.comp import VariationalEquation
+
 from .nonlinearsolvers import NewtonSolver
 from .krylovspace import GMResSolver, LinearSolver
 
@@ -163,6 +166,23 @@ def _create_lin_appl(self, gfu: GridFunction) -> LinearApplication:
 BilinearForm.__mul__ = _create_lin_appl
 
 
+
+
+def SolveVE (equation, dirichlet=None, **kwargs):
+     bf = BilinearForm(equation.igls)
+     fes = bf.space
+     mesh = fes.mesh
+     gf = GridFunction(fes)
+     gf[dirichlet.vbn] = dirichlet.val
+     bf.AssembleLinearization(gf.vec)
+     rhs = bf.Apply(gf.vec)
+     gf.vec.data -= bf.mat.Inverse(fes.FreeDofs())*rhs
+     return gf
+
+VariationalEquation.Solve = SolveVE
+
+
+
 @functools.wraps(Application.Solve)
 def Solve(eq: Equation, *args, **kwargs):
-    eq.Solve(*args, **kwargs)
+    return eq.Solve(*args, **kwargs)
