@@ -10,6 +10,7 @@ from ngsolve import (
 )
 
 from ngsolve.comp import VariationalEquation
+from ngsolve.solvers import CGSolver
 
 from .nonlinearsolvers import NewtonSolver
 from .krylovspace import GMResSolver, LinearSolver
@@ -173,6 +174,13 @@ class VariationalEquationSolver:
         self.fes = self.bf.space
         self.mesh = self.fes.mesh
         self.dreg = self.mesh.Region(dirichlet.vbn)
+        self.pre = kwargs.get('pre', None)  # a creator ?
+        
+        if self.pre:   # and if it is a creator 
+            self.pre = self.pre(self.bf)
+            # self.pre.SetAdditionalDirichletConstraints(self.dreg)  
+            # self.bf.Assemble()  # crashes without, why  ???
+        
         
     def Solve(self):
         gf = GridFunction(self.fes)
@@ -180,7 +188,12 @@ class VariationalEquationSolver:
         self.bf.AssembleLinearization(gf.vec)
         rhs = self.bf.Apply(gf.vec)
         freedofs = self.fes.FreeDofs()&(~self.fes.GetDofs(self.dreg))
-        gf.vec.data -= self.bf.mat.Inverse(freedofs)*rhs
+
+        if self.pre:
+            inv = CGSolver(self.bf.mat, self.pre.mat, printrates=True)
+        else:
+            inv = self.bf.mat.Inverse(freedofs)
+        gf.vec.data -= inv*rhs
         return gf
         
 
