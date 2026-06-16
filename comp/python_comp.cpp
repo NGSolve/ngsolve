@@ -555,10 +555,12 @@ when building the system matrices.
       return DirichletCondition(self, reg, cf);
     }), py::arg("name"),py::arg("cf"))
     */
+    /*
     .def("__getitem__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
     {
       return DirichletBoundary { self, vbn };
     })
+    */
     /*
     .def("__or__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
     {
