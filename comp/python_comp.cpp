@@ -4448,7 +4448,12 @@ legacy : bool (default: False)
   defines if legacy-VTK output shall be used 
 
 order : int (default: 1)
-  allowed values: 1,2
+  Polynomial order of the output cells. Orders 1 and 2 use VTK's linear and
+  quadratic cell types. Orders >= 3 use VTK's arbitrary-order Lagrange cell
+  types (VTK_LAGRANGE_*), which require ParaView >= 5.5 / VTK >= 8.1. A single
+  high-order cell then reproduces the (curved) geometry and the field to degree
+  `order`; raise ParaView's "Nonlinear Subdivision Level" to render the
+  curvature. Note that the number of nodes per cell grows as O(order^dim).
 
 same_type_subdivision : bool (default: False)
   When True, each element is subdivided into sub-cells of the same type only.
