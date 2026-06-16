@@ -170,26 +170,25 @@ BilinearForm.__mul__ = _create_lin_appl
 class VariationalEquationSolver:
     def __init__(self, equation, *args, **kwargs):
         self.bf = BilinearForm(equation.igls)
-        self.dirichlet = []
-        
-        for arg in args:
-            if isinstance(arg, DirichletBC):
-                self.dirichlet.append (arg)
-                
+
+        self.dirichlet = [a for a in args if isinstance(a, DirichletBC)]
         self.fes = self.bf.space
         self.mesh = self.fes.mesh
         
-        # self.dreg = self.mesh.Region(dirichlet.vbn)
-        if len(self.dirichlet) > 0:
-            self.dreg = self.mesh.Region(self.dirichlet[0].vbn)
-            for d in self.dirichlet:
-                self.dreg += self.mesh.Region(d.vbn)
-            
-        self.pre = kwargs.get('pre', None)  # a creator ?
-        
+        # if len(self.dirichlet) > 0:
+        #    self.dreg = self.mesh.Region(self.dirichlet[0].vbn)
+        #    for d in self.dirichlet:
+        #        self.dreg += self.mesh.Region(d.vbn)
+
+        if self.dirichlet:
+            self.dreg = sum((self.mesh.Region(d.vbn) for d in self.dirichlet),
+                            self.mesh.Region(self.dirichlet[0].vbn))
+
+                
+        self.pre = kwargs.get('pre')   # a creator ?
         if self.pre:   # and if it is a creator 
             self.pre = self.pre(self.bf)
-            if len(self.dirichlet) > 0:            
+            if self.dirichlet:
                 self.pre.SetAdditionalDirichletConstraints(self.dreg)
                     
         
@@ -200,14 +199,15 @@ class VariationalEquationSolver:
             gf[d.vbn] = d.val
         self.bf.AssembleLinearization(gf.vec)
         rhs = self.bf.Apply(gf.vec)
-        freedofs = self.fes.FreeDofs()
-        if len(self.dirichlet) > 0:
-            freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
 
         if self.pre:
             inv = CGSolver(self.bf.mat, self.pre.mat, printrates=True)
         else:
+            freedofs = self.fes.FreeDofs()
+            if self.dirichlet:
+                freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
             inv = self.bf.mat.Inverse(freedofs)
+            
         gf.vec.data -= inv*rhs
         return gf
         
