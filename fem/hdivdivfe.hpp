@@ -1414,12 +1414,20 @@ namespace ngfem
           auto p = order_inner[0]-1;
           if( p >= 0 )
             {
+              auto inv = mip.GetJacobianInverse();
+              auto mapped = [&](const Mat<2, 2, T> & S, T val)
+                {
+                  Mat<2, 2, T> mat = Trans(inv) * S * inv;
+                  mat *= mip.GetMeasure() * val;
+                  return mat;
+                };
+
               DubinerBasis::Eval (p, lam[0], lam[1],
                                   SBLambda([&] (size_t nr, T val)
                                            {
-                                             shape[ii++] = val*mip.GetMeasure()*mip.GetJacobian()*Mat<2,2>({{1,0},{0,0}})*Trans(mip.GetJacobian());
-                                             shape[ii++] = val*mip.GetMeasure()*mip.GetJacobian()*Mat<2,2>({{0,0},{0,1}})*Trans(mip.GetJacobian());
-                                             shape[ii++] = val*mip.GetMeasure()*mip.GetJacobian()*Mat<2,2>({{0,1},{1,0}})*Trans(mip.GetJacobian());
+                                             shape[ii++] = mapped(Mat<2, 2>({{1,0},{0,0}}), val);
+                                             shape[ii++] = mapped(Mat<2, 2>({{0,0},{0,1}}), val);
+                                             shape[ii++] = mapped(Mat<2, 2>({{0,1},{1,0}}), val);
                                            }));
             }
         }
@@ -2581,9 +2589,10 @@ namespace ngfem
           Mat<3, 3, T> S_T2 = Mat<3, 3>({ {0, -1, 0}, {-1, 0, 1}, {0, 1, 0} });
 
           auto p = order_inner[0];
+          auto inv = mip.GetJacobianInverse();
           auto mapped = [&](const Mat<3, 3, T> & S, T val)
             {
-              Mat<3, 3, T> mat = mip.GetJacobian() * S * Trans(mip.GetJacobian());
+              Mat<3, 3, T> mat = Trans(inv) * S * inv;
               mat *= mip.GetMeasure() * val;
               return mat;
             };
