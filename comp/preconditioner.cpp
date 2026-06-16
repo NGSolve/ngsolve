@@ -594,7 +594,7 @@ namespace ngcomp
 
       if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {
-          if (additional_dirichlet_constraints.Mask().Size())
+          if (additional_dirichlet_constraints.HasMesh())
             flags.SetFlag ("additional_dirichlet_constraints", std::any(additional_dirichlet_constraints));
           
           auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);

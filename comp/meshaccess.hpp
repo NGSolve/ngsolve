@@ -1084,7 +1084,7 @@ namespace ngcomp
     // Get adjacent regions of codim other_vb
     Region GetNeighbours(VorB other_vb);
     Region GetBoundaries() { return GetNeighbours(VorB(int(vb)+1)); }
-
+    bool HasMesh() { return mesh != nullptr; }
     auto GetElements() const
     {
       return mesh->Elements(vb)

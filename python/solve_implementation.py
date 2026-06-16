@@ -9,7 +9,7 @@ from ngsolve import (
     Preconditioner,
 )
 
-from ngsolve.comp import VariationalEquation
+from ngsolve.comp import VariationalEquation, DirichletBC
 from ngsolve.solvers import CGSolver
 
 from .nonlinearsolvers import NewtonSolver
@@ -168,25 +168,41 @@ BilinearForm.__mul__ = _create_lin_appl
 
 
 class VariationalEquationSolver:
-    def __init__(self, equation, dirichlet=None, **kwargs):
+    def __init__(self, equation, *args, **kwargs):
         self.bf = BilinearForm(equation.igls)
-        self.dirichlet = dirichlet
+        self.dirichlet = []
+        
+        for arg in args:
+            if isinstance(arg, DirichletBC):
+                self.dirichlet.append (arg)
+                
         self.fes = self.bf.space
         self.mesh = self.fes.mesh
-        self.dreg = self.mesh.Region(dirichlet.vbn)
+        
+        # self.dreg = self.mesh.Region(dirichlet.vbn)
+        if len(self.dirichlet) > 0:
+            self.dreg = self.mesh.Region(self.dirichlet[0].vbn)
+            for d in self.dirichlet:
+                self.dreg += self.mesh.Region(d.vbn)
+            
         self.pre = kwargs.get('pre', None)  # a creator ?
         
         if self.pre:   # and if it is a creator 
             self.pre = self.pre(self.bf)
-            self.pre.SetAdditionalDirichletConstraints(self.dreg)  
+            if len(self.dirichlet) > 0:            
+                self.pre.SetAdditionalDirichletConstraints(self.dreg)
+                    
         
         
     def Solve(self):
         gf = GridFunction(self.fes)
-        gf[self.dirichlet.vbn] = self.dirichlet.val
+        for d in self.dirichlet:
+            gf[d.vbn] = d.val
         self.bf.AssembleLinearization(gf.vec)
         rhs = self.bf.Apply(gf.vec)
-        freedofs = self.fes.FreeDofs()&(~self.fes.GetDofs(self.dreg))
+        freedofs = self.fes.FreeDofs()
+        if len(self.dirichlet) > 0:
+            freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
 
         if self.pre:
             inv = CGSolver(self.bf.mat, self.pre.mat, printrates=True)
@@ -196,8 +212,8 @@ class VariationalEquationSolver:
         return gf
         
 
-def SolveVE (equation, dirichlet=None, **kwargs):
-     return VariationalEquationSolver(equation,dirichlet,**kwargs).Solve()
+def SolveVE (equation, *args, **kwargs):
+     return VariationalEquationSolver(equation,*args,**kwargs).Solve()
 
  
 VariationalEquation.Solve = SolveVE
