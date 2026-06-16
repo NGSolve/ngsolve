@@ -9,7 +9,7 @@ from ngsolve import (
     Preconditioner,
 )
 
-from ngsolve.comp import VariationalEquation, DirichletBC
+from ngsolve.comp import VariationalEquation, DirichletBC, PreconditionerCreator
 from ngsolve.solvers import CGSolver
 
 from .nonlinearsolvers import NewtonSolver
@@ -168,29 +168,28 @@ BilinearForm.__mul__ = _create_lin_appl
 
 
 class VariationalEquationSolver:
-    def __init__(self, equation, *args, **kwargs):
+    def __init__(self, equation, *args : DirichletBC | Preconditioner, **kwargs):
         self.bf = BilinearForm(equation.igls)
 
         self.dirichlet = [a for a in args if isinstance(a, DirichletBC)]
         self.fes = self.bf.space
         self.mesh = self.fes.mesh
-        
-        # if len(self.dirichlet) > 0:
-        #    self.dreg = self.mesh.Region(self.dirichlet[0].vbn)
-        #    for d in self.dirichlet:
-        #        self.dreg += self.mesh.Region(d.vbn)
 
         if self.dirichlet:
             self.dreg = sum((self.mesh.Region(d.vbn) for d in self.dirichlet),
                             self.mesh.Region(self.dirichlet[0].vbn))
 
-                
-        self.pre = kwargs.get('pre')   # a creator ?
-        if self.pre:   # and if it is a creator 
-            self.pre = self.pre(self.bf)
+        for a in args:
+            if isinstance(a, PreconditionerCreator):
+                self.pre = a(self.bf)
+                if self.dirichlet:
+                    self.pre.SetAdditionalDirichletConstraints(self.dreg)
+                        
+        if pre := kwargs.get('pre'):
+            self.pre = pre(self.bf)
             if self.dirichlet:
                 self.pre.SetAdditionalDirichletConstraints(self.dreg)
-                    
+                   
         
         
     def Solve(self):
@@ -198,9 +197,8 @@ class VariationalEquationSolver:
         for d in self.dirichlet:
             gf[d.vbn] = d.val
         self.bf.AssembleLinearization(gf.vec)
-        rhs = self.bf.Apply(gf.vec)
 
-        if self.pre:
+        if hasattr(self, 'pre'):
             inv = CGSolver(self.bf.mat, self.pre.mat, printrates=True)
         else:
             freedofs = self.fes.FreeDofs()
@@ -208,7 +206,7 @@ class VariationalEquationSolver:
                 freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
             inv = self.bf.mat.Inverse(freedofs)
             
-        gf.vec.data -= inv*rhs
+        gf.vec.data -= inv * self.bf.Apply(gf.vec)
         return gf
         
 

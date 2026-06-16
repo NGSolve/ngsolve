@@ -3512,10 +3512,32 @@ integrator : ngsolve.fem.LFI
             "Create and register the deferred preconditioner with a BilinearForm.");
       },
         "Deferred preconditioner; call the result with a BilinearForm to create it.");
-    prec_class.attr("Creator") =
+    prec_class.attr("Creator1") =
       py::reinterpret_borrow<py::object>(PyClassMethod_New(creator.ptr()));
   }
 
+  
+  {
+    struct CreatorClass {
+      py::object cls;
+      py::kwargs kwargs;
+    };
+
+    py::class_<CreatorClass> (m, "PreconditionerCreator")
+      .def("__call__", [](CreatorClass & c, py::object bf) {
+        return c.cls(*py::make_tuple(bf), **c.kwargs);
+      });
+    
+    auto creator = py::cpp_function ([](py::object cls, py::kwargs kwargs) {
+      return CreatorClass { cls, kwargs };
+    },
+      "Deferred preconditioner; call the result with a BilinearForm to create it.");
+    
+    prec_class.attr("Creator") =
+      py::reinterpret_borrow<py::object>(PyClassMethod_New(creator.ptr()));
+    
+  }
+  
 
   
   auto pre_local = py::class_<LocalPreconditioner, shared_ptr<LocalPreconditioner>, Preconditioner>

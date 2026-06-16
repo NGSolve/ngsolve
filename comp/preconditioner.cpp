@@ -46,6 +46,20 @@ namespace ngcomp
       bfp->UnsetPreconditioner(this);
   }
 
+  shared_ptr<BitArray> Preconditioner :: GetFreeDofs (bool external) const
+  {
+    auto freedofs = bf.lock()->GetFESpace()->GetFreeDofs(external);
+    if (additional_dirichlet_constraints)
+      {
+        BitArray dofs = bf.lock()->GetFESpace()->GetDofs(*additional_dirichlet_constraints);
+        dofs.Invert();
+        dofs.And(*freedofs);
+        freedofs = make_shared<BitArray>(std::move(dofs));
+      }
+    return freedofs;
+  }
+
+  
   void Preconditioner :: Test () const
   {
     cout << IM(1) << "Compute eigenvalues" << endl;
@@ -594,8 +608,8 @@ namespace ngcomp
 
       if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {
-          if (additional_dirichlet_constraints.HasMesh())
-            flags.SetFlag ("additional_dirichlet_constraints", std::any(additional_dirichlet_constraints));
+          if (additional_dirichlet_constraints)
+            flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
           
           auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
           shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();          
@@ -668,7 +682,8 @@ namespace ngcomp
 #endif
 
           auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (mat);
-          auto inner = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
+          // auto inner = bfa->GetFESpace()->GetFreeDofs(bfa->UsesEliminateInternal());
+          auto inner = this->GetFreeDofs(bfa->UsesEliminateInternal());
           if (GaussSeidel)
             jacobi = make_shared<SymmetricGaussSeidelPrecond>(spmat, inner);
           else

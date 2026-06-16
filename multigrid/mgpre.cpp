@@ -122,7 +122,7 @@ namespace ngmg
 	    */
 
             bool condense = biform->UsesEliminateInternal();
-	    shared_ptr<BitArray> freedofs = biform->GetFESpace()->GetFreeDofs(condense);
+            shared_ptr<BitArray> freedofs = biform->GetFESpace()->GetFreeDofs(condense);
             *testout << "freedofs for coarse, condense = " << int(condense) << endl
                      << *freedofs << endl;
 	    if (!freedofs)
