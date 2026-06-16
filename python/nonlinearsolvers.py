@@ -100,7 +100,9 @@ class NewtonSolver:
                 except Exception:
                     self.inv = self.lin_solver_cls(mat=self.a.mat, **(self.lin_solver_args or {}))
         else:
-            if self.inv is not None and (self.inverse == "sparsecholesky" or isinstance(self.inv, SparseFactorizationInterface)):
+            mat_changed = not hasattr(self, '_mat') or self._mat is not self.a.mat
+            self._mat = self.a.mat
+            if not mat_changed and (self.inverse == "sparsecholesky" or isinstance(self.inv, SparseFactorizationInterface)):
                 try:
                     self.inv.Update()
                 except Exception:

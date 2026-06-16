@@ -13,6 +13,7 @@ variables:
   GIT_SUBMODULE_STRATEGY: recursive
   UBUNTU_VERSION_LATEST: "25.10"
   UBUNTU_VERSION_LTS: "24.04"
+  OPENBLAS_VERSION_PIP: "0.3.33"
 
 include:
   - tests/gitlab-ci/win.yml

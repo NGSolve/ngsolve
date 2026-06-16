@@ -54,6 +54,7 @@ namespace ngcomp
       if (cnt_dep[j] == 0) ready.Append(j);
 
 
+    auto * task_manager = GetTaskManager();
     if (!task_manager)
       // if (true)
       {
@@ -445,7 +446,7 @@ namespace ngcomp
 
       if ( (num_coarse_vertices < param.max_coarse) || (num_coarse_vertices == num_vertices) )
 	{
-	  coarsemat->SetInverseType(SPARSECHOLESKY);
+	  coarsemat->SetInverseType("sparsecholesky");
 	  coarse_precond = coarsemat->InverseMatrix(coarse_freedofs);
 	}
       else

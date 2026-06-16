@@ -11,6 +11,7 @@
 #include "bem_diffops.hpp"
 #include "diffopwithfactor.hpp"
 #include "kernels.hpp"
+#include "fmmoperator.hpp"
 
 
 namespace ngsbem
@@ -35,6 +36,11 @@ namespace ngsbem
     bool use_fmm = true;
     int fmm_maxdirect = 100;
     int fmm_minorder = 20;
+    double fmm_order_factor = 2.0;
+    double fmm_separation = 2.0;
+    double fmm_eval_separation = 3.0;
+    double fmm_split_kr = 5.0;
+    int fmm_maxlevel = 20;
   public:
     IntOp_Parameters () = default;
     IntOp_Parameters (const Flags & flags);
@@ -42,12 +48,22 @@ namespace ngsbem
     bool UseFMM() const { return use_fmm; }
     int FMMMaxDirect() const { return fmm_maxdirect; }
     int FMMMinOrder() const { return fmm_minorder; }
+    double FMMOrderFactor() const { return fmm_order_factor; }
+    double FMMSeparation() const { return fmm_separation; }
+    double FMMEvalSeparation() const { return fmm_eval_separation; }
+    double FMMSplitKR() const { return fmm_split_kr; }
+    int FMMMaxLevel() const { return fmm_maxlevel; }
 
     operator FMM_Parameters() const
     {
       FMM_Parameters fmm_params;
       fmm_params.maxdirect = fmm_maxdirect;
-      fmm_params.minorder = fmm_minorder;      
+      fmm_params.minorder = fmm_minorder;
+      fmm_params.order_factor = fmm_order_factor;
+      fmm_params.separation = fmm_separation;
+      fmm_params.eval_separation = fmm_eval_separation;
+      fmm_params.split_kr = fmm_split_kr;
+      fmm_params.maxlevel = fmm_maxlevel;
       return fmm_params;
     }
       
@@ -57,7 +73,12 @@ namespace ngsbem
   {
     ost << "use_fmm = " << ioflags.UseFMM() << endl;
     ost << "fmm_maxdirect = " << ioflags.FMMMaxDirect() << endl;
-    ost << "fmm_minorder = " << ioflags.FMMMinOrder() << endl;    
+    ost << "fmm_minorder = " << ioflags.FMMMinOrder() << endl;
+    ost << "fmm_order_factor = " << ioflags.FMMOrderFactor() << endl;
+    ost << "fmm_separation = " << ioflags.FMMSeparation() << endl;
+    ost << "fmm_eval_separation = " << ioflags.FMMEvalSeparation() << endl;
+    ost << "fmm_split_kr = " << ioflags.FMMSplitKR() << endl;
+    ost << "fmm_maxlevel = " << ioflags.FMMMaxLevel() << endl;
     return ost;
   }
 
@@ -169,6 +190,11 @@ namespace ngsbem
     }
 
     virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const = 0;
+
+    virtual FMMOperatorInfo GetFMMInfo() const
+    {
+      throw Exception("GetFMMInfo not implemented for this IntegralOperator");
+    }
   };
 
   template <typename TSCAL>
@@ -291,6 +317,13 @@ namespace ngsbem
         throw Exception("SumIntegralOperator needs at least one summand");
       return std::move(*sum);
     }
+
+    FMMOperatorInfo GetFMMInfo() const override
+    {
+      if (summands.Size() != 1)
+        throw Exception("GetFMMInfo for SumIntegralOperator with multiple summands is not implemented");
+      return summands[0]->GetFMMInfo();
+    }
   };
 
   template <typename TSCAL>
@@ -327,6 +360,8 @@ namespace ngsbem
     {
       return ScaleDenseMatrixVariant(op->CalcSubMatrix(rowids, colids, lh), fac);
     }
+
+    FMMOperatorInfo GetFMMInfo() const override { return op->GetFMMInfo(); }
   };
 
   template <typename TSCAL>
@@ -362,6 +397,21 @@ namespace ngsbem
     KERNEL kernel;
     typedef typename KERNEL::value_type value_type;
     typedef IntegralOperator BASE;
+
+    static size_t CountSparseCorrectionNZE(const BaseMatrix * mat)
+    {
+      if (!mat) return 0;
+      if (auto sparse = dynamic_cast<const BaseSparseMatrix*>(mat))
+        return sparse->NZE();
+      if (auto sum = dynamic_cast<const SumMatrix*>(mat))
+        {
+          size_t nze = 0;
+          nze += CountSparseCorrectionNZE(sum->SPtrA().get());
+          nze += CountSparseCorrectionNZE(sum->SPtrB().get());
+          return nze;
+        }
+      return 0;
+    }
     
   public:
     /*
@@ -395,9 +445,24 @@ namespace ngsbem
     shared_ptr<BaseMatrix> CreateMatrixFMM(LocalHeap & lh) const override;
     shared_ptr<BaseMatrix> CreateNearFieldMatrix(LocalHeap & lh) const override;
     virtual std::variant<Matrix<double>, Matrix<Complex>> CalcSubMatrix (FlatArray<DofId> rowids, FlatArray<DofId> colids, LocalHeap &lh) const override;
-    
+
     virtual shared_ptr<BasePotentialCF> GetPotential(shared_ptr<GridFunction> gf,
                                                          optional<int> io, bool nearfield_experimental) const override;
+
+    FMMOperatorInfo GetFMMInfo() const override
+    {
+      auto mat = this->GetMatrix();
+      auto fmm = FindFMMOperator<value_type>(mat.get());
+      if (!fmm)
+        throw Exception("GetFMMInfo: no FMM operator found inside matrix");
+      auto info = fmm->GetFMMInfo();
+      info.source_dofs = trial_space->GetNDof();
+      info.target_dofs = test_space->GetNDof();
+      info.nearfield_nze = CountSparseCorrectionNZE(mat.get());
+      double total_dof_pairs = double(info.source_dofs) * double(info.target_dofs);
+      info.nearfield_fraction = (total_dof_pairs > 0) ? double(info.nearfield_nze) / total_dof_pairs : 0.0;
+      return info;
+    }
   };
 
 
@@ -525,7 +590,8 @@ namespace ngsbem
                  VorB _source_vb,
                  optional<Region> _definedon,    
                  shared_ptr<DifferentialOperator> _evaluator,
-                 KERNEL _kernel, int _intorder, bool anearfield);
+                 KERNEL _kernel, int _intorder, bool anearfield,
+                 IntOp_Parameters _io_params = IntOp_Parameters());
 
 
     // virtual shared_ptr<CoefficientFunction> Operator (const string & name) const override
@@ -543,11 +609,11 @@ namespace ngsbem
             return std::visit([&](auto const & dk) -> shared_ptr<CoefficientFunction>
             {
               using DK = std::decay_t<decltype(dk)>;
-              return make_shared<PotentialCF<DK>>(this->gf, this->source_vb, this->definedon, this->evaluator, dk, intorder, nearfield);
+              return make_shared<PotentialCF<DK>>(this->gf, this->source_vb, this->definedon, this->evaluator, dk, intorder, nearfield, io_params);
             }, diffkernel);
           }
         else
-          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->source_vb, this->definedon, this->evaluator, diffkernel, intorder, nearfield);
+          return make_shared<PotentialCF<decltype(diffkernel)>>(this->gf, this->source_vb, this->definedon, this->evaluator, diffkernel, intorder, nearfield, io_params);
       }
       else
         throw Exception("Kernel does not support differentiated kernel '"+name+"'");
@@ -582,6 +648,21 @@ namespace ngsbem
     { T_Evaluate(ir, result); }
     
   private:
+    template <typename T>
+    void AddSourceElementContribution(const BaseMappedIntegrationPoint & mip,
+                                      ElementId ei,
+                                      const IntegrationRule & ir,
+                                      FlatVector<T> result,
+                                      T scale,
+                                      LocalHeap & lh) const;
+    template <typename T>
+    void AddTangentCorrection(const BaseMappedIntegrationPoint & mip,
+                              ElementId ei,
+                              FlatVector<T> result,
+                              LocalHeap & lh) const;
+    template <typename T>
+    void AddLocalExpansionNearfieldCorrection(const BaseMappedIntegrationRule & bmir,
+                                              BareSliceMatrix<T> result) const;
     template <typename T>
     void T_Evaluate(const BaseMappedIntegrationPoint & ip,
                     FlatVector<T> result) const;
@@ -706,7 +787,7 @@ namespace ngsbem
     
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
     {
-      return make_shared<PotentialCF<KERNEL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, true);
+      return make_shared<PotentialCF<KERNEL>>(gf, source_vb, definedon, evaluator, kernel, 2+intorder, true, io_params);
     }
 
     shared_ptr<BasePotentialOperator> MakeDiffBasePotential(string name) override

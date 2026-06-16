@@ -487,13 +487,7 @@ direction : int
             if (mesh->GetDimension() == 3)
               dom_in = mesh->GetNetgenMesh()->GetFaceDescriptor(i+1).DomainIn();
             else if (mesh->GetDimension() == 2)
-              {
-                for(const auto& seg : mesh->GetNetgenMesh()->LineSegments())
-                  if (seg.edgenr == i + 1) {
-                    dom_in = seg.domin;
-                    break;
-                  }
-              }
+              dom_in = mesh->GetNetgenMesh()->GetEdgeDescriptor(i+1).DomainIn();
             else
               throw Exception("Mesh dimension not supported");
             if (dom_in == 0 || !region.Mask().Test(dom_in - 1))
@@ -923,8 +917,8 @@ val : can be one of the following:
     .def("__or__", [] (shared_ptr<CF> c1, const ngcomp::Region& c2)
           {
             return py::module::import("ngsolve").attr("solve_implementation").attr("Dirichlet")(c1,c2);
+            //return py::module::import("ngsolve").attr("comp").attr("RestrictedCF")(c1,c2);
           }, py::arg("cf"))
-
     .def ("InnerProduct", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
            { 
              return InnerProduct (c1, c2);

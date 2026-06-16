@@ -10,12 +10,13 @@
 
 // #include <comp.hpp>
 #include "l2hofespace.hpp"
-#include <multigrid.hpp>
+#include <prolongation.hpp>
 
 #include <l2hofetp.hpp>
 #include <bdbequations.hpp>
 #include <diffop_impl.hpp>
 #include <diagonalmatrix.hpp>
+#include <elementbyelement.hpp>
 
 using namespace ngmg;
 
@@ -1809,16 +1810,16 @@ global system.
                      [&rho, &vec, fv, def, this] (FESpace::Element el, LocalHeap & lh)
                      {
                        auto tid = TaskManager::GetThreadId();
-                       NgProfiler::StartThreadTimer(tall, tid);
-                       NgProfiler::StartThreadTimer(tel, tid);
+                       RegionTimer rtall(tall);
+                       tel.Start(tid);
 
                        auto & fel = static_cast<const BaseScalarFiniteElement&>(el.GetFE());
-                       NgProfiler::StopThreadTimer(tel, tid);
-                       NgProfiler::AddThreadFlops(tel, tid, 1);
-                       NgProfiler::StartThreadTimer(ttrafo, tid);
+                       tel.Stop(tid);
+                       tel.AddFlops(1);
+                       ttrafo.Start(tid);
                        const ElementTransformation & trafo = el.GetTrafo();
-                       NgProfiler::StopThreadTimer(ttrafo, tid);
-                       NgProfiler::StartThreadTimer(tdofs, tid);
+                       ttrafo.Stop(tid);
+                       tdofs.Start(tid);
 
                        Array<int> dnums(fel.GetNDof(), lh);
                        auto dofrange = GetElementDofs(el.Nr());
@@ -1847,12 +1848,12 @@ global system.
                        else
                          elx = fv.Range(dofrange);
 
-                       NgProfiler::StopThreadTimer(tdofs, tid);
-                       NgProfiler::StartThreadTimer(tgetx, tid);
+                       tdofs.Stop(tid);
+                       tgetx.Start(tid);
 
 		       auto melx = elx.AsMatrix(fel.GetNDof(),dimension);
 
-                       NgProfiler::StopThreadTimer(tgetx, tid);
+                       tgetx.Stop(tid);
 
                        // NgProfiler::StartThreadTimer(tsetup, tid);
                        // NgProfiler::StartTimer (tsetup);
@@ -1868,7 +1869,7 @@ global system.
                        // NgProfiler::StopTimer (tsetup);
                        // tsetup.Stop();
 
-                       NgProfiler::StartThreadTimer(tcalc, tid);
+                       tcalc.Start(tid);
                        if (!curved)
                          {
                            // tcalc1.Start();
@@ -1919,17 +1920,14 @@ global system.
                            // for (int i = 0; i < melx.Height(); i++)
                            // melx.Row(i) /= diag_mass(i);
                          }
-                       NgProfiler::StopThreadTimer(tcalc, tid);
+                       tcalc.Stop(tid);
 
-                       NgProfiler::StartThreadTimer(tsety, tid);
+                       RegionTimer rtsety(tsety);
 
                        if (!lindofs)
                          vec.SetIndirect(dnums, elx);
                        else
                          fv.Range(dofrange) = elx;
-
-                       NgProfiler::StopThreadTimer(tsety, tid);
-                       NgProfiler::StopThreadTimer(tall, tid);
                      });
   }
 

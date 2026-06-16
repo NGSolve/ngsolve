@@ -113,7 +113,7 @@ namespace ngcomp
     // if ( (dima != 1) || (dimb != 1) )
       // { throw Exception("multidim space convert TODO!!"); }
 
-    int nthreads = (task_manager == nullptr) ? 1 : task_manager->GetNumThreads();
+    int nthreads = TaskManager::GetNumThreads();
     Array<int> tmdsa(nthreads), tmdsb(nthreads);
     tmdsa = 0; tmdsb = 0;
     TableCreator<int> crnrs(ma->GetNE(vb)), ccnrs(ma->GetNE(vb));
@@ -122,7 +122,7 @@ namespace ngcomp
 	(ma->GetNE(vb), [&](IntRange r)
 	 {
 	   Array<DofId> dnums_a(100), dnums_b(100);
-	   int tid = (task_manager == nullptr) ? 0 : task_manager->GetThreadId();
+	   int tid = TaskManager::GetThreadId();
 	   int& maxdsa = tmdsa[tid], maxdsb = tmdsb[tid];
 	   for (auto i : r) {
 	     ElementId eid(vb, i);

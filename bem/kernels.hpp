@@ -18,11 +18,22 @@ namespace ngsbem
     size_t trial_comp;
     size_t test_comp;
   };
+
+  enum class AnalyticTriangleFormula
+  {
+    none,
+    laplace_sl,
+    laplace_dl,
+    laplace_grad_sl
+  };
   
 
   class BaseKernel
   {
   public:
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::none;
+
     void GetDifferentiatedKernel(const string &name) const {
       throw Exception("GetDifferentiatedKernel not overloaded");
     }
@@ -306,11 +317,11 @@ namespace ngsbem
   // *********** STANDARD KERNELS DEFINITIONS **********************
   /** LaplaceSLkernel is the kernel for the single layer potential of
       the Laplace equation $ \Delta u = 0 \,.$  */
-  template <int DIM, int COMPS=1> class LaplaceSLKernel;
+  template <int DIM, int COMPS=1, typename T_VAL=double> class LaplaceSLKernel;
 
   /** LaplaceDLkernel is the kernel for the double layer potential of
       the Laplace equation $ \Delta u = 0 \,.$  */
-  template <int DIM, int COMPS=1> class LaplaceDLKernel;
+  template <int DIM, int COMPS=1, typename T_VAL=double> class LaplaceDLKernel;
 
   /** HelmholtzSLkernel is the kernel for the double layer potential of the
       Helmholtz equation $ -\Delta u - \kappa^2 u = 0, \; \kappa>0\,. $ */
@@ -340,13 +351,13 @@ namespace ngsbem
   // *********** DIFF KERNELS **********************
   
 
-  template <int DIM, int COMPS=1> class DiffLaplaceSLKernel;
-  template<int COMPS>
-  class DiffLaplaceSLKernel<3, COMPS> : public BaseKernel
+  template <int DIM, int COMPS=1, typename T_VAL=double> class DiffLaplaceSLKernel;
+  template<int COMPS, typename T_VAL>
+  class DiffLaplaceSLKernel<3, COMPS, T_VAL> : public BaseKernel
   {
   public:
-    using source_type = Charges<COMPS, double>;
-    using target_type = GradientEval<COMPS, double>;
+    using source_type = Charges<COMPS, T_VAL>;
+    using target_type = GradientEval<COMPS, T_VAL>;
 
     source_type source;
     target_type target;
@@ -358,18 +369,20 @@ namespace ngsbem
         for (size_t i = 0; i < 3; i++)
           terms += KernelTerm{1.0, i, c, 3*c+i};
     };
-    typedef double value_type;
+    typedef T_VAL value_type;
     using mp_type = typename source_type::mp_type;
 
     static string Name() { return "DiffLaplaceSL"; }
     static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_grad_sl;
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
     {
       T norm = L2Norm(x-y);
       auto xy = x-y;
-      auto kern = 1.0 *  (4 * M_PI * norm*norm*norm) * xy;
+      auto kern = -1.0 / (4 * M_PI * norm*norm*norm) * xy;
       return kern;
     }
   };
@@ -400,6 +413,8 @@ namespace ngsbem
 
     static string Name() { return "DiffHelmholtzSL"; }
     static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_grad_sl;
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -416,12 +431,12 @@ namespace ngsbem
 
   /** LaplaceSLkernel in 3D reads 
       $$ G(x-y) = \frac{1}{4\,\pi \, | x-y| }, \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<int COMPS>
-  class LaplaceSLKernel<3, COMPS> : public BaseKernel
+  template<int COMPS, typename T_VAL>
+  class LaplaceSLKernel<3, COMPS, T_VAL> : public BaseKernel
   {
   public:
-    using source_type = Charges<COMPS, double>;
-    using target_type = Charges<COMPS, double>;
+    using source_type = Charges<COMPS, T_VAL>;
+    using target_type = Charges<COMPS, T_VAL>;
 
     source_type source;
     target_type target;
@@ -431,11 +446,13 @@ namespace ngsbem
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};
     };
-    typedef double value_type;
+    typedef T_VAL value_type;
     using mp_type = typename source_type::mp_type;
 
     static string Name() { return "LaplaceSL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_sl;
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -448,7 +465,7 @@ namespace ngsbem
 
     auto GetDifferentiatedKernel(const string &name) const {
       if (name == "grad")
-        return DiffLaplaceSLKernel<3,COMPS>();
+        return DiffLaplaceSLKernel<3,COMPS,T_VAL>();
       else
         throw Exception("don't know how to apply diffop "+name);
     }
@@ -458,12 +475,12 @@ namespace ngsbem
       $$ \frac{\partial }{ \partial n_y} G(x-y) = \frac{1}{4\,\pi} \, 
           \frac{ \langle n(y), x-y\rangle }{ | x-y|^3 }, 
           \quad x, y \in \mathbb R^3, \; x\not=y\,. $$ */
-  template<int COMPS>
-  class LaplaceDLKernel<3, COMPS> : public BaseKernel
+  template<int COMPS, typename T_VAL>
+  class LaplaceDLKernel<3, COMPS, T_VAL> : public BaseKernel
   {
   public:
-    using source_type = Dipoles<COMPS, double>;
-    using target_type = Charges<COMPS, double>;
+    using source_type = Dipoles<COMPS, T_VAL>;
+    using target_type = Charges<COMPS, T_VAL>;
 
     source_type source;
     target_type target;
@@ -473,11 +490,13 @@ namespace ngsbem
       for (size_t i = 0; i < COMPS; i++)
         terms += {1.0, 0, i, i};
     };
-    typedef double value_type;
+    typedef T_VAL value_type;
     using mp_type = typename source_type::mp_type;
 
     static string Name() { return "LaplaceDL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_dl;
 
     template <typename T>
     auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
@@ -511,6 +530,8 @@ namespace ngsbem
 
     static string Name() { return "HelmholtzSL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_sl;
 
     /** Construction of the kernel specifies the wavenumber $\kappa$. */
     HelmholtzSLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) {
@@ -571,6 +592,8 @@ namespace ngsbem
 
     static string Name() { return "HelmholtzDL"; }
     static auto Shape() { return IVec<2>(COMPS,COMPS); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_dl;
 
     HelmholtzDLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) {
       for (size_t i = 0; i < COMPS; i++)
@@ -727,6 +750,8 @@ namespace ngsbem
     typedef Complex value_type;
     static string Name() { return "MaxwellDL"; }
     static auto Shape() { return IVec<2>(3,3); }
+    static constexpr AnalyticTriangleFormula analytic_triangle_formula =
+      AnalyticTriangleFormula::laplace_grad_sl;
 
     MaxwellDLKernel (T_Kappa _kappa) : kappa(_kappa), source(_kappa), target(_kappa) { }
 

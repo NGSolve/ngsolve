@@ -34,6 +34,8 @@ class HyprePreconditioner : public Preconditioner
 
   Array<int> global_nums;
   int ilower, iupper;
+  int ndof;
+  bool parallel;
   shared_ptr<BitArray> freedofs;
   shared_ptr<ParallelDofs> pardofs;
 
@@ -49,8 +51,8 @@ public:
   virtual void FinalizeLevel (const ngla::BaseMatrix * mat = NULL) override;
   virtual void Update() override;
   virtual void Mult (const BaseVector & f, BaseVector & u) const override;
-  virtual int VHeight() const override { return pardofs->GetNDofLocal();}
-  virtual int VWidth() const override { return pardofs->GetNDofLocal();}
+  virtual int VHeight() const override { return ndof; }
+  virtual int VWidth() const override { return ndof; }
   virtual const BaseMatrix & GetAMatrix() const override { return bfa->GetMatrix(); }
   virtual const BaseMatrix & GetMatrix() const override { return *this; }
 

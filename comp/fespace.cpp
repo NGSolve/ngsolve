@@ -253,6 +253,9 @@ lot of new non-zero entries in the matrix!\n" << endl;
 	  }
       }
 
+    if(flags.AnyFlagDefined("definedonbound"))
+        throw Exception("definedonbound with Region is not supported, use definedon= {VOL: mats, BND: bnds}");
+
     // additional boundaries
     if(flags.NumListFlagDefined("definedonbound")|| flags.NumFlagDefined("definedonbound") )
       {
@@ -391,7 +394,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       "  Enable discontinuous space for DG methods, this flag is needed for DG methods,\n"
       "  since the dofs have a different coupling then and this changes the sparsity\n"
       "  pattern of matrices.";
-    docu.Arg("autoupdate") = "bool = False\n"
+    docu.Arg("autoupdate") = "bool = True\n"
       "  Automatically update on a change to the mesh.";
     docu.Arg("low_order_space") = "bool = True\n"
       "  Generate a lowest order space together with the high-order space,\n"
@@ -1614,6 +1617,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
             freedofs->Clear(i);
       }
 
+    if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
+      {
+        Region reg = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
+        BitArray dofs = GetDofs(reg);
+        dofs.Invert();
+        freedofs = make_shared<BitArray>(*freedofs);
+        freedofs->And(dofs);
+      }
+
     FilteredTableCreator creator(freedofs.get());
 
     /*
@@ -2116,7 +2128,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
     static mutex copyex_mutex;
     const Table<int> & element_coloring = fes.ElementColoring(vb);
     
-    if (task_manager)
+    if (auto *task_manager = GetTaskManager(); task_manager)
       {
         for (FlatArray<int> els_of_col : element_coloring)
           {
@@ -2205,6 +2217,88 @@ lot of new non-zero entries in the matrix!\n" << endl;
   }
 
 
+  void FESpace :: Interpolate (const CoefficientFunction & cf, BaseVector & vec1,
+                               const Region * reg, LocalHeap & clh)
+  {
+    static Timer t("FESpace::Interpolate"); RegionTimer r(t);
+
+    shared_ptr<MeshAccess> ma = GetMeshAccess(); 
+    int dim   = GetDimension();
+
+    Array<int> cnti(GetNDof());
+    cnti = 0;
+
+
+    auto tempvec = vec1.CreateVector();
+    
+    if (reg)
+      {
+        auto regdofs = make_shared<BitArray> (GetDofs(*reg));
+        Projector proj(regdofs, false);
+        tempvec = proj * vec1;
+      }
+    else
+      tempvec = 0.0;
+
+   
+    auto vb = reg ? reg->VB() : VOL;
+    IterateElements 
+      (*this, vb, clh, 
+       [&] (FESpace::Element el, LocalHeap & lh)
+       {
+         if (reg)
+           if (!reg->Mask().Test(el.GetIndex())) return;
+         
+         if (!DefinedOn(el)) return;
+
+         const FiniteElement & fel = GetFE (el, lh);
+         int ndof = fel.GetNDof();
+         int fesdim = GetDimension();
+
+         const ElementTransformation & eltrans = ma->GetTrafo (el, lh); 
+         FlatVector<> elvec(ndof*fesdim, lh), elvec1(ndof*fesdim, lh);
+         
+         fel.Interpolate (eltrans, cf, elvec.AsMatrix(ndof, fesdim), lh);
+         
+         TransformVec (el, elvec, TRANSFORM_SOL_INVERSE);
+
+         tempvec.GetIndirect (el.GetDofs(), elvec1);
+         elvec1 += elvec;
+         tempvec.SetIndirect (el.GetDofs(), elvec1);
+         
+         for (auto d : el.GetDofs())
+           if (IsRegularDof(d)) cnti[d]++;
+       });
+
+#ifdef PARALLEL
+    if (GetParallelDofs())
+      {
+        GetParallelDofs()->AllReduceDofData (cnti, NG_MPI_SUM);
+        tempvec.SetParallelStatus(DISTRIBUTED);
+        tempvec.Cumulate();
+      }
+#endif
+
+    ParallelForRange
+      (cnti.Size(), [&] (IntRange r)
+       {
+         VectorMem<10> fluxi(dim);
+         ArrayMem<int,1> dnums(1);
+         for (auto i : r)
+           if (cnti[i])
+             {
+               dnums[0] = i;
+               tempvec.GetIndirect (dnums, fluxi);               
+               fluxi /= double (cnti[i]);
+               tempvec.SetIndirect (dnums, fluxi);                              
+             }
+       });
+
+    vec1 = tempvec;
+  }
+  
+
+  
   shared_ptr<BaseMatrix> FESpace ::
   GetMassOperator (shared_ptr<CoefficientFunction> rho,
                    shared_ptr<Region> defon,

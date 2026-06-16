@@ -10,6 +10,7 @@
 
 #include <nginterface_v2.hpp>
 #include <elementtopology.hpp>
+#include <coefficient.hpp>
 
 namespace ngfem
 {
@@ -331,11 +332,11 @@ namespace ngcomp
                           LocalHeap & clh, 
                           const TFUNC & func) const
     {
-      if (task_manager)
+      if (GetTaskManager())
         {
           SharedLoop sl(GetNE(vb));
 
-          task_manager -> CreateJob
+          TaskManager :: CreateJob
             ( [&] (const TaskInfo & ti) 
               {
                 LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
@@ -362,11 +363,11 @@ namespace ngcomp
     template <typename TFUNC>
     void IterateElements (VorB vb,const TFUNC & func) const
     {
-      if (task_manager)
+      if (GetTaskManager())
         {
           SharedLoop sl(GetNE(vb));
 
-          task_manager -> CreateJob
+          TaskManager :: CreateJob
             ( [&] (const TaskInfo & ti)
               {
                 for (size_t mynr : sl)
@@ -411,6 +412,9 @@ namespace ngcomp
         }
     }
 
+    string_view GetMaterial(RegionId ri) const { return GetMaterial(ri.VB(), ri.Nr()); }
+
+    
     auto GetMaterials (VorB vb) const
     {
       return ArrayObject (GetNRegions(vb),
@@ -1033,6 +1037,12 @@ namespace ngcomp
     const BitArray & Mask() const { return *mask; }
     BitArray& Mask() { return *mask; }
     operator const BitArray & () const { return *mask; }
+    bool Contains(RegionId ri) const
+    {
+      if (ri.VB() != vb) return false;
+      if (ri.Nr() > mask->Size()) return false;
+      return (*mask)[ri.Nr()];
+    }
     shared_ptr<BitArray> MaskPtr() { return mask; }
     const shared_ptr<MeshAccess> & Mesh() const { return mesh; }
     void DoArchive(Archive& ar)
@@ -1074,7 +1084,7 @@ namespace ngcomp
     // Get adjacent regions of codim other_vb
     Region GetNeighbours(VorB other_vb);
     Region GetBoundaries() { return GetNeighbours(VorB(int(vb)+1)); }
-
+    bool HasMesh() { return mesh != nullptr; }
     auto GetElements() const
     {
       return mesh->Elements(vb)
@@ -1083,6 +1093,233 @@ namespace ngcomp
   };
 
 
+#ifdef NOTSOGOOD
+  class RestrictedCoefficientFunction : public T_CoefficientFunction<RestrictedCoefficientFunction>
+  {
+    typedef T_CoefficientFunction<RestrictedCoefficientFunction> BASE;    
+    shared_ptr<CoefficientFunction> cf;
+    Region reg;
+    using BASE::Evaluate;
+  public:
+    RestrictedCoefficientFunction (shared_ptr<CoefficientFunction> acf,
+                                   Region areg)
+      : BASE(acf->Dimension(), acf->IsComplex()), cf(acf), reg(areg)
+    {
+      SetDimensions(cf->Dimensions());
+      elementwise_constant = cf->ElementwiseConstant();
+    }
+
+    auto GetCArgs() const { return tuple  { cf, reg }; }
+
+    const Region& GetRegion() const { return reg; }
+    shared_ptr<CoefficientFunction> GetCF() const { return cf; }
+    
+    virtual bool DefinedOn (const ElementTransformation & trafo) override
+    {
+      if (reg.Contains(trafo.GetRegionId()))
+        return cf->DefinedOn(trafo);
+      return false;
+      /*
+      if(reg.VB() != trafo.VB())
+        return false;
+      int matindex = trafo.GetElementIndex();
+      if (reg.Mask().Test(matindex))
+        return cf->DefinedOn(trafo);
+      return false;
+      */
+    }
+
+
+    
+    /*
+      // TODO
+    virtual void GenerateCode(Code &code, FlatArray<int> inputs, int index) const override
+    {
+      code.body += "// DomainWiseCoefficientFunction:\n";
+      string type = "decltype(0.0";
+    for(int in : inputs)
+      type += "+decltype("+Var(in,0,Dimensions()).S()+")()";
+    type += ")";
+    for (int i = 0; i < Dimension(); i++)
+      code.body += Var(index,i,this->Dimensions()).Declare(type);
+    code.body += "switch(domain_index) {\n";
+    for(int domain : Range(inputs))
+    {
+        code.body += "case " + ToLiteral(domain) + ": \n";
+        for (int i = 0; i < Dimension(); i++)
+          code.body += "  "+Var(index, i, Dimensions()).Assign(Var(inputs[domain], i, Dimensions()), false);          
+        code.body += "  break;\n";
+    }
+    code.body += "default: \n";
+    for (int i = 0; i < Dimension(); i++)
+      code.body += "  "+Var(index, i, Dimensions()).Assign(string("0.0"), false);      
+    code.body += "  break;\n";
+    code.body += "}\n";
+  }
+    */
+
+    virtual void TraverseTree (const function<void(CoefficientFunction&)> & func) override
+    {
+      cf->TraverseTree (func);
+      func(*this);
+    }
+
+    /*
+      // TODO
+    shared_ptr<CoefficientFunction> Transform
+    (CoefficientFunction::T_Transform& transformation) const override
+    {
+      auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
+      if(transformation.cache.count(thisptr))
+        return transformation.cache[thisptr];
+      if(transformation.replace.count(thisptr))
+        return transformation.replace[thisptr];
+      Array<shared_ptr<CoefficientFunction>> cfs;
+      for(const auto& c : ci)
+        cfs.Append(c->Transform(transformation));
+      auto newcf =
+        make_shared<DomainWiseCoefficientFunction>(std::move(cfs));
+      transformation.cache[thisptr] = newcf;
+      return newcf;
+    }
+    */
+
+
+    virtual Array<shared_ptr<CoefficientFunction>> InputCoefficientFunctions() const override
+    {
+      Array<shared_ptr<CoefficientFunction>> cfa;
+      cfa.Append (cf);
+      return Array<shared_ptr<CoefficientFunction>>(cfa);
+    } 
+
+    /*
+    shared_ptr<CoefficientFunction> Operator (const string & name) const override
+    {
+      Array<shared_ptr<CoefficientFunction>> cfop;
+      
+      for (auto & cf : ci)
+        if (cf)
+          cfop.Append (cf->Operator(name));
+        else
+          cfop.Append (nullptr);
+      return MakeDomainWiseCoefficientFunction(std::move (cfop), vb);
+    }
+    */
+    
+  
+    shared_ptr<CoefficientFunction> Diff (const CoefficientFunction * var,
+                                          shared_ptr<CoefficientFunction> dir) const override
+    {
+      if (this == var) return dir;
+      return make_shared<RestrictedCoefficientFunction> (cf->Diff(var,dir), reg);
+    }
+
+    /*
+      // TODO
+    shared_ptr<CoefficientFunction> DiffJacobi (const CoefficientFunction * var, typename BASE::T_DJC & cache) const override
+    */
+
+    
+    virtual double Evaluate (const BaseMappedIntegrationPoint & ip) const override
+    {
+      if(ip.GetTransformation().VB() != reg.VB())
+        throw Exception("Try to evaluate RestrictedCF defined on " + ToString(reg.VB()) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
+      Vec<1> res;
+      Evaluate (ip, res);
+      return res(0);
+    }
+
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                          FlatVector<> result) const override
+    {
+      if(ip.GetTransformation().VB() != reg.VB())
+        throw Exception("Try to evaluate RestritedCF defined on " + ToString(reg.VB()) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
+      result = 0;
+      int matindex = ip.GetTransformation().GetElementIndex();
+      if (reg.Mask().Test(matindex))
+        cf -> Evaluate (ip, result);
+    }
+
+    virtual void Evaluate (const BaseMappedIntegrationRule & ir, BareSliceMatrix<Complex> values) const override
+    {
+      if(ir[0].GetTransformation().VB() != reg.VB())
+        throw Exception("Try to evaluate domainwise function defined on " + ToString(reg.VB()) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
+      int matindex = ir.GetTransformation().GetElementIndex();
+      if (reg.Mask().Test(matindex))
+        cf -> Evaluate (ir, values);
+    }
+    
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir, BareSliceMatrix<T,ORD> values) const
+    {
+      /*
+      if(ir[0].GetTransformation().VB() != reg.VB())
+        throw Exception("Try to evaluate domainwise function defined on " + ToString(reg.VB()) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
+      int matindex = ir.GetTransformation().GetElementIndex();
+      if (reg.Mask().Test(matindex))
+        cf -> Evaluate (ir, values);
+      else
+        // values.AddSize(Dimension(), ir.Size()) = T(std::numeric_limits<double>::quiet_NaN());
+        values.AddSize(Dimension(), ir.Size()) = T(0.0/0.0);
+      */
+
+      if (reg.Contains(ir.GetTransformation().GetRegionId()))
+        cf -> Evaluate (ir, values);
+      else
+        values.AddSize(Dimension(), ir.Size()) = T(std::numeric_limits<double>::quiet_NaN());
+        // values.AddSize(Dimension(), ir.Size()) = T(0.0/0.0);
+        // values.AddSize(Dimension(), ir.Size()) = T(NAN);
+    }
+    
+    template <typename MIR, typename T, ORDERING ORD>
+    void T_Evaluate (const MIR & ir,
+                     FlatArray<BareSliceMatrix<T,ORD>> input,                       
+                     BareSliceMatrix<T,ORD> values) const
+    {
+      if(ir[0].GetTransformation().VB() != reg.VB())
+        throw Exception("Try to evaluate domainwise function defined on " + ToString(reg.VB()) + " on " + ToString(ir[0].GetTransformation().VB()) + "\n");
+      int matindex = ir.GetTransformation().GetElementIndex();
+      if (reg.Mask().Test(matindex))        
+        values.AddSize(Dimension(), ir.Size()) = input[matindex];
+    }  
+    
+    virtual void Evaluate(const BaseMappedIntegrationPoint & ip,
+                          FlatVector<Complex> result) const override
+    {
+      if(ip.GetTransformation().VB() != reg.VB())
+        throw Exception("Try to evaluate domainwise function defined on " + ToString(reg.VB()) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
+      result = 0;
+      int matindex = ip.GetTransformation().GetElementIndex();
+      if (reg.Mask().Test(matindex))                
+        cf -> Evaluate (ip, result);
+    }
+    
+    virtual Complex EvaluateComplex (const BaseMappedIntegrationPoint & ip) const override
+    {
+      if(ip.GetTransformation().VB() != reg.VB())
+        throw Exception("Try to evaluate domainwise function defined on " + ToString(reg.VB()) + " on " + ToString(ip.GetTransformation().VB()) + "\n");
+      Vec<1,Complex> res;
+      Evaluate (ip, res);
+      return res(0);
+    }
+
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override 
+    {
+      return cf -> NonZeroPattern (ud, values);
+    }
+    
+    virtual void NonZeroPattern (const class ProxyUserData & ud,
+                                 FlatArray<FlatVector<AutoDiffDiff<1,NonZero>>> input,
+                                 FlatVector<AutoDiffDiff<1,NonZero>> values) const override 
+    {
+      return cf -> NonZeroPattern (ud, input, values);
+    }
+    
+  };
+#endif
+  
+  
   shared_ptr<CoefficientFunction>
   MakeBoundaryFromVolumeCoefficientFunction  (shared_ptr<CoefficientFunction> avol_cf);
 

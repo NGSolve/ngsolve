@@ -77,7 +77,7 @@ namespace ngla
 #ifdef USE_PARDISO
   bool is_pardiso_available = true;
 #else
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && !defined(NGS_PYTHON)
   static SharedLibrary libmkl;
   static bool LoadMKL()
   {
@@ -98,9 +98,9 @@ namespace ngla
       }
   };
   bool is_pardiso_available = LoadMKL();
-#else // __EMSCRIPTEN__
+#else // !__EMSCRIPTEN__ && !NGS_PYTHON
   bool is_pardiso_available = false;
-#endif // __EMSCRIPTEN__
+#endif // !__EMSCRIPTEN__ && !NGS_PYTHON
 #endif
 
   int pardiso_msg = 0;
@@ -191,7 +191,7 @@ namespace ngla
     height = a->Height() * entrysize;
 
     *testout << "matrix.InverseTpye = " <<  a->GetInverseType() << endl;
-    spd = ( a->GetInverseType() == PARDISOSPD ) ? 1 : 0;
+    spd = ( a->GetInverseType() == "pardisospd" ) ? 1 : 0;
     if(a->IsSPD())
       spd = 1;
 
@@ -255,7 +255,7 @@ namespace ngla
     // time1 = clock();
     cout << IM(3) << "call pardiso ..." << flush;
 
-    if (task_manager) task_manager -> StopWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
 
 #ifdef USE_MKL
     mkl_set_num_threads(mkl_max_threads);
@@ -271,7 +271,7 @@ namespace ngla
     mkl_set_num_threads(1);
 #endif // USE_MKL
     
-    if (task_manager) task_manager -> StartWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
 
     cout << IM(3) << " done" << endl;
 
@@ -505,8 +505,7 @@ namespace ngla
 
     integer * params = const_cast <integer*> (&hparams[0]);
 
-    if(task_manager)
-      task_manager->SuspendWorkers(1000);
+    if (auto *tm = GetTaskManager(); tm) tm -> SuspendWorkers(1000);
 
 #ifdef USE_MKL
     mkl_set_num_threads(mkl_max_threads);
@@ -547,8 +546,7 @@ namespace ngla
     mkl_set_num_threads(1);
 #endif // USE_MKL
 
-    if(task_manager)
-      task_manager->ResumeWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> ResumeWorkers();
 
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
@@ -597,8 +595,7 @@ namespace ngla
 
     integer * params = const_cast <integer*> (&hparams[0]);
 
-    if(task_manager)
-      task_manager->SuspendWorkers(1000);
+    if (auto *tm = GetTaskManager(); tm) tm -> SuspendWorkers(1000);
 
 #ifdef USE_MKL
     mkl_set_num_threads(mkl_max_threads);
@@ -616,8 +613,7 @@ namespace ngla
       mkl_set_num_threads(1);
 #endif // USE_MKL
 
-    if(task_manager)
-      task_manager->ResumeWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> ResumeWorkers();
 
     if ( error != 0 )
       cout << "Apply Inverse: PARDISO returned error " << error << "!" << endl;
@@ -653,7 +649,7 @@ namespace ngla
     integer * params = const_cast <integer*> (&hparams[0]);
 
     //    cout << "call pardiso (clean up) ..." << endl;
-    if (task_manager) task_manager -> StopWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
     F77_FUNC(pardiso) ( pt, &maxfct, &mnum, &matrixtype, &phase, &compressed_height, NULL,
 			rowstart.Data(), indices.Data(), NULL, &nrhs, params, &msglevel,
 			NULL, NULL, &error );
@@ -662,7 +658,7 @@ namespace ngla
 #endif // MKL_PARDISO
     GetMemoryTracer().Free(memory_allocated_in_pardiso_lib);
     memory_allocated_in_pardiso_lib = 0;
-    if (task_manager) task_manager -> StartWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
     if (error != 0)
       cout << "Clean Up: PARDISO returned error " << error << "!" << endl;
   }

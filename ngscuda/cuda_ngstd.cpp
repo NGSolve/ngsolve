@@ -80,6 +80,18 @@ namespace ngs_cuda
       }
 
     int dev_id = 0;
+
+    const char* env_p = std::getenv("NGS_CUDA_DEVICE_INDEX");
+    if (env_p != nullptr)
+    {
+      dev_id = std::atoi(env_p);
+      cudaError_t err = cudaSetDevice(dev_id);
+      if (err != cudaSuccess) {
+          fprintf(stderr, "cudaSetDevice() failed: %s\n", cudaGetErrorString(err));
+          return;
+      }
+    }
+
     cudaGetDevice(&dev_id);
     if(verbose >= 1)
       cout << "Using device " << dev_id << endl;

@@ -1013,6 +1013,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         new (instance) BaseMatrixTrampoline(); }
         )
     */
+    .def_static("GetDefaultInverseType", &BaseMatrix::GetDefaultInverseType)
+    .def_static("SetDefaultInverseType", &BaseMatrix::SetDefaultInverseType, py::arg("type"))
     .def(py::init<> ())
     .def(py::init<>([] (shared_ptr<BaseVector> vec)
                     { return make_shared<BaseMatrixFromVector> (vec); }))
@@ -1087,11 +1089,8 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
         m.AsVector()+=m2.AsVector();
       }, py::arg("mat"), py::call_guard<py::gil_scoped_release>())
 
-    .def("GetInverseType", [](BM & m)
-                                            {
-                                              return GetInverseName( m.GetInverseType());
-                                            })
-
+    .def("GetInverseType", &BM::GetInverseType)
+    .def("SetInverseType", &BM::SetInverseType)
     .def("Inverse", [](BM &m, shared_ptr<BitArray> freedofs,
                        std::variant<std::monostate,string,py::object> inverse, const Flags & flags)
     {
@@ -1583,6 +1582,7 @@ inverse : string
       .def("Analyze", &SparseFactorizationInterface::Analyze)
       .def("Factor", &SparseFactorizationInterface::Factor)
       .def_property_readonly("is_symmetric_storage", &SparseFactorizationInterface::IsSymmetricStorage)
+      .def_property_readonly("is_symmetric", &SparseFactorizationInterface::IsSymmetric)
       ;
 
   m.def("RegisterInverseType", [](const string &name, py::object creator) {
@@ -1597,6 +1597,9 @@ inverse : string
           return sf;
         });
   });
+
+  m.def("IsMatrixSymmetric", IsMatrixSymmetric, py::arg("mat"), py::arg("tol")=0.0, "Check if sparse matrix is symmetric with given tolerance");
+  m.def("ExtractTri", ExtractTri, py::arg("mat"), py::arg("lower")=true, "Extract lower or upper triangular part of matrix");
 
   py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d")
     .def(NGSPickle<SparseCholesky<double>>())
@@ -1950,17 +1953,20 @@ shift : object
                                            mat.DoArchive(*arch); return arch; });
 
   m.def("GetAvailableSolvers", []() {
-    py::list solvers;
+    py::set solvers;
     if(is_pardiso_available)
-      solvers.append(GetInverseName(PARDISO));
+      solvers.add("pardiso");
 #ifdef USE_MUMPS
-    solvers.append(GetInverseName(MUMPS));
+    solvers.add("mumps");
 #endif // USE_MUMPS
 #ifdef USE_UMFPACK
-    solvers.append(GetInverseName(UMFPACK));
+    solvers.add("umfpack");
 #endif // USE_UMFPACK
-    solvers.append(GetInverseName(SPARSECHOLESKY));
-    return solvers;
+    solvers.add("sparsecholesky");
+    for(auto i : Range(BaseMatrix::invcreators.Size())){
+        solvers.add(BaseMatrix::invcreators.GetName(i));
+    }
+    return py::list(solvers);
   });
 }
 

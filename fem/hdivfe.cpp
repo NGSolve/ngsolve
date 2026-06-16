@@ -611,8 +611,44 @@ namespace ngfem
 
 
 
+  template <int D>
+  void HDivNormalFiniteElement<D> ::
+  Interpolate (const ElementTransformation & trafo, 
+               const class CoefficientFunction & func, SliceMatrix<> coefs,
+               LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    
+    SIMD_IntegrationRule ir(ElementType(), 2 * order);
+    auto & mir = trafo(ir, lh);
+    
+    FlatMatrix<SIMD<double>> mfluxi(DIM+1, mir.IR().Size(), lh);
+    func.Evaluate (mir, mfluxi);
+    
+    FlatMatrix<SIMD<double>> shapes((DIM+1)*this->GetNDof(), mir.Size(), lh);
+    FlatMatrix<SIMD<double>> dualshapes((DIM+1)*GetNDof(), mir.Size(), lh);
+    
+    auto shapesRS = shapes.Reshape(GetNDof(), (DIM+1)*mir.Size());
+    auto dualshapesRS = dualshapes.Reshape(GetNDof(), (DIM+1)*mir.Size());
+    
+    this->CalcMappedShape (mir, shapes);
+    this->CalcDualShape (mir, dualshapes);
+    for (size_t j : Range(mir))
+        dualshapes.Col(j) *= mir[j].IP().Weight();
+    
+    for (int j = 0; j < GetNDof(); j++)
+      {
+        double dj = HSum(InnerProduct(shapesRS.Row(j), dualshapesRS.Row(j)));
+        double fj = HSum(InnerProduct(mfluxi.AsVector(), dualshapesRS.Row(j)));
+        coefs(j) = fj/dj;
+      }
+  }
 
 
+  template class HDivNormalFiniteElement<0>;
+  template class HDivNormalFiniteElement<1>;
+  template class HDivNormalFiniteElement<2>;
+  template class HDivNormalFiniteElement<3>;
 
 
 

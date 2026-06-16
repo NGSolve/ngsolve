@@ -179,6 +179,18 @@ namespace ngfem
       throw Exception(string("CalcMappedShape not implemented for H(div) normal element ")+typeid(*this).name());
     }
 
+    virtual void CalcMappedShape (const SIMD_BaseMappedIntegrationRule & mir,
+                                  BareSliceMatrix<SIMD<double>> shapes) const
+    {
+      throw Exception(string("CalcMappedShape(simdmir) not overloaded for H(div) normal element ")+typeid(*this).name());
+    }
+    
+    virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const
+    {
+      throw Exception(string("CalcDualShape(simdmir) not overloaded for H(div) normal element ")+typeid(*this).name());      
+    }
+    
+
     virtual void Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
                            BareSliceVector<> coefs,
                            BareSliceMatrix<SIMD<double>> values) const
@@ -194,6 +206,9 @@ namespace ngfem
       throw ExceptionNOSIMD ("HDivNormalFE::AddTrans (simd) not overloaded");
     }
     
+    virtual void Interpolate (const ElementTransformation & trafo, 
+                              const class CoefficientFunction & func, SliceMatrix<> coefs,
+                              LocalHeap & lh) const override;    
   };
 
 

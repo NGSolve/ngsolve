@@ -10,7 +10,7 @@
 
 #include "hdivfes.hpp"
 #include "hdivhofespace.hpp"
-#include <multigrid.hpp>
+#include <prolongation.hpp>
 
 #include "../fem/hdiv_equations.hpp"
 #include "../fem/hdivhofe.hpp"

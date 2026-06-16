@@ -16,6 +16,9 @@ from . import config
 
 import netgen
 
+if config.is_python_package and not "darwin" in sys.platform:
+    import ngsolve_openblas
+
 if config.is_python_package and sys.platform.startswith('win'):
     netgen_dir = os.path.dirname(netgen.__file__)
     os.add_dll_directory(netgen_dir)
@@ -65,7 +68,7 @@ from .comp import VOL, BND, BBND, BBBND, COUPLING_TYPE, ElementId, \
     CompressCompound, PlateauFESpace, BoundaryFromVolumeCF, Interpolate, Variation, \
     Integrate, Region, SymbolicLFI, SymbolicBFI, \
     SymbolicEnergy, Mesh, NodeId, ConvertOperator, ORDER_POLICY, VTKOutput, SetHeapSize, \
-    SetTestoutFile, ngsglobals, pml, ContactBoundary, PatchwiseSolve, \
+    SetTestoutFile, ngsglobals, pml, ContactBoundary, ContactIntegrator, PatchwiseSolve, \
     HCurlAMG, APhiHCurlAMG
 from .solve import Draw, \
     SetVisualization
@@ -146,3 +149,9 @@ def _jupyter_nbextension_paths():
 
 atexit.register(solve.__Cleanup)
 
+import ngsolve.solvers.mkl_pardiso as _mkl_pardiso
+import ngsolve.solvers.cudss
+
+if inverse_type := os.environ.get("NGS_INVERSE_TYPE", None):
+    BaseMatrix.SetDefaultInverseType(inverse_type)
+del inverse_type

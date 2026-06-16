@@ -179,8 +179,8 @@ namespace ngla
   void JacobiPrecondSymmetric<TM,TV> ::
   GSSmooth (BaseVector & x, const BaseVector & b, int steps) const 
   {
-    static int timer = NgProfiler::CreateTimer ("JacobiPrecondSymmetric::GSSmooth");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("JacobiPrecondSymmetric::GSSmooth");
+    RegionTimer reg (timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
     const FlatVector<TVX> fb = b.FV<TVX> ();
@@ -252,8 +252,8 @@ namespace ngla
   void JacobiPrecondSymmetric<TM,TV> ::
   GSSmoothBack (BaseVector & x, const BaseVector & b, int steps) const 
   {
-    static int timer = NgProfiler::CreateTimer ("JacobiPrecondSymmetric::GSSmoothBack");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("JacobiPrecondSymmetric::GSSmoothBack");
+    RegionTimer reg (timer);
 
     FlatVector<TVX> fx = x.FV<TVX> ();
     // dynamic_cast<T_BaseVector<TVX> &> (x).FV();

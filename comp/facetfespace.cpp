@@ -2,7 +2,7 @@
 // #include <fem.hpp>
 #include "facetfespace.hpp"
 #include <bdbequations.hpp>
-#include <multigrid.hpp>
+#include <prolongation.hpp>
 #include "../fem/l2hofe.hpp"
 #include "../fem/diffop_impl.hpp"
 #include "../fem/facethofe.hpp"
@@ -43,13 +43,14 @@ namespace ngcomp
       else
         {
           // if (mip.BaseMappedIntegrationPoint::ElementVB() == BND)
-          if (mip.IP().VB() == BND) 
+          // if (mip.IP().VB() == BND)
+          if (mip.DimElement() == D-1)
             {
-              const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
+              auto& fel = static_cast<const BaseScalarFiniteElement&> (bfel);
               fel.CalcShape (mip.IP(), mat.Row(0));
             }
           else
-            throw Exception("cannot evaluate facet-fe inside element");
+            throw Exception("cannot evaluate facet-fe inside element HERE");
         }
     }
 
@@ -150,12 +151,15 @@ namespace ngcomp
   class DiffOpIdFacetDual : public DiffOp<DiffOpIdFacetDual<D> >
   {
   public:
-  static constexpr int DIM = 1;
-  static constexpr int DIM_SPACE = D;
-  static constexpr int DIM_ELEMENT = D;
-  static constexpr int DIM_DMAT = 1;
-  static constexpr int DIFFORDER = 0;
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 0;
+    
     static IVec<0> GetDimensions() { return IVec<0>(); };
+    static bool SupportsVB (VorB checkvb) { return (checkvb==VOL) || (checkvb==BND); }
+    
     using FiniteElementType = FacetVolumeFiniteElement<D>;
     typedef DiffOpIdDual<D-1,D> DIFFOP_TRACE;
     
@@ -175,7 +179,8 @@ namespace ngcomp
       else
         {
           // if (mip.BaseMappedIntegrationPoint::ElementVB() == BND)
-          if (mip.IP().VB() == BND) 
+          // if (mip.IP().VB() == BND)
+          if (mip.DimElement() == D-1)          
             {
               const BaseScalarFiniteElement & fel = static_cast<const BaseScalarFiniteElement&> (bfel);
               fel.CalcShape (mip.IP(), mat.Row(0));
@@ -650,7 +655,14 @@ namespace ngcomp
     nowirebasket = flags.GetDefineFlag ("nowirebasket");
     
     auto one = make_shared<ConstantCoefficientFunction>(1);
-    if (ma->GetDimension() == 2)
+    if (ma->GetDimension() == 1)
+      {
+        evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<1>>>();
+        evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<1>>>();
+        integrator[BND] = make_shared<RobinIntegrator<1>> (one);
+        additional_evaluators.Set ("dual", make_shared<T_DifferentialOperator<DiffOpIdFacet<1>>>());
+      }
+    else if (ma->GetDimension() == 2)
       {
         evaluator[VOL] = make_shared<T_DifferentialOperator<DiffOpIdFacet<2>>>();
         evaluator[BND] = make_shared<T_DifferentialOperator<DiffOpIdBoundary<2>>>();
@@ -789,14 +801,17 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 	    if (!DefinedOn(ei)) continue;
 	    ELEMENT_TYPE eltype=ma->GetElType(ei); 
 	    const POINT3D * points = ElementTopology :: GetVertices (eltype);	
-	
-	    if (ma->GetDimension() == 2)
+
+
+	    if (ma->GetDimension() == 1)
 	      {
-		/*
-		  ma->GetElEdges (ei, fanums);
-		  for (int j=0;j<fanums.Size();j++) 
-		  fine_facet[fanums[j]] = 1; 
-		*/
+		auto fanums = ma->GetElVertices(ei);
+		for (auto f : fanums)
+		  fine_facet[f] = true;
+              }
+            
+	    else if (ma->GetDimension() == 2)
+	      {
 		auto fanums = ma->GetElEdges(ei);
 		for (auto f : fanums)
 		  fine_facet[f] = true;
@@ -817,8 +832,6 @@ for the two neighbouring elements. This allows a simple implementation of the Le
 	      }
 	    else
 	      {
-		// Array<int> elfaces,vnums;
-		// ma->GetElFaces(ei,elfaces);
 		auto elfaces = ma->GetElFaces(ei); 
 		for (int j=0;j<elfaces.Size();j++) fine_facet[elfaces[j]] = 1; 
 	    

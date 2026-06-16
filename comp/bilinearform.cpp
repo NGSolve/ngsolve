@@ -4,6 +4,7 @@
 #include <multigrid.hpp>
 #include "preconditioner.hpp"
 #include "tpfes.hpp"
+#include "hidden.hpp"
 
 #include <parallelngs.hpp>
 #include <diagonalmatrix.hpp>
@@ -114,7 +115,18 @@ namespace ngcomp
     SetElmatEigenValues (flags.GetDefineFlag ("elmatev")); 
     SetTiming (flags.GetDefineFlag ("timing"));
     SetEliminateInternal (flags.GetDefineFlag ("eliminate_internal") || flags.GetDefineFlag("condense"));
-    SetEliminateHidden (flags.GetDefineFlag ("eliminate_hidden"));
+
+    
+    bool has_private_space = false;
+    fespace->TraverseTree([&has_private_space](const FESpace& fes) {
+      if (dynamic_cast<const HiddenFESpace*>(&fes))
+        has_private_space = true;
+    });
+    SetEliminateHidden(has_private_space);
+    if (!flags.GetDefineFlagX("eliminate_hidden").IsMaybe())
+      SetEliminateHidden (flags.GetDefineFlag ("eliminate_hidden"));
+
+    
     SetKeepInternal (eliminate_internal &&
                      !flags.GetDefineFlagX ("keep_internal").IsFalse() &&
                      !flags.GetDefineFlag ("nokeep_internal"));
@@ -524,7 +536,7 @@ namespace ngcomp
     size_t neB = ma->GetNE(BND);
     size_t neBB = ma->GetNE(BBND);
     // const Array<SpecialElement*> & specialelements = fespace->GetSpecialElements();
-    size_t nspe = specialelements.Size();
+    // size_t nspe = specialelements.Size();
 
     Array<DofId> dnums;
     Array<int> fnums; //facets of one element
@@ -533,7 +545,15 @@ namespace ngcomp
 
 
     int maxind = neV + neB + neBB + specialelements.Size();
+    
+    for (auto seg : se_groups)
+      {
+        seg -> Update();
+        maxind += seg -> GetNElements();
+      }
+    
     if (fespace->UsesDGCoupling()) maxind += nf;
+    
 
     TableCreator<int> creator(maxind);
     for ( ; !creator.Done(); creator++)
@@ -634,6 +654,23 @@ namespace ngcomp
               }
           }
 
+        size_t base = neV+neB+neBB+specialelements.Size();
+        for (auto seg : se_groups)
+          {
+            seg -> GetDofNrs ( [&] (int i, FlatArray<DofId> dnums) {
+              QuickSort (dnums);
+              int last = -1;
+              for (int d : dnums)
+                {
+                  if (d!=last && IsRegularDof(d))
+                    creator.Add (base+i, d);
+                  last = d;
+                }
+            });
+            base += seg->GetNElements();
+          }
+        
+
         if (fespace->UsesDGCoupling())
         {
           //add dofs of neighbour elements as well
@@ -673,7 +710,7 @@ namespace ngcomp
               QuickSort (dnums_dg);
               for (int j = 0; j < dnums_dg.Size(); j++)
                 if (IsRegularDof(dnums_dg[j]) && (j==0 || (dnums_dg[j] != dnums_dg[j-1]) ))
-                  creator.Add (neV+neB+neBB+nspe+i, dnums_dg[j]);
+                  creator.Add (base+i, dnums_dg[j]);
             }
         }
 
@@ -2576,8 +2613,7 @@ namespace ngcomp
 
                                      {
                                        RegionTimer reg (statcondtimer_mult);
-                                       NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
-                                                                   d.Height()*d.Width()*c.Width());
+                                       reg.AddFlops (d.Height()*d.Width()*c.Width());
                                        
                                        he = -d * Trans(c);
                                      }
@@ -2593,8 +2629,7 @@ namespace ngcomp
                                      innersolve_ptr->AddElementMatrix(el.Nr(),idnums,idnums,d);
                                      {
                                        RegionTimer reg (statcondtimer_mult);
-                                       NgProfiler::AddThreadFlops (statcondtimer_mult, TaskManager::GetThreadId(),
-                                                                   b.Height()*b.Width()*he.Width());
+                                       reg.AddFlops (b.Height()*b.Width()*he.Width());
                                        a += b * he;
                                      }
                                      
@@ -3181,6 +3216,13 @@ namespace ngcomp
                                               << specialelements.Size() << "/" << specialelements.Size() << endl;
             tspecial.Stop();
 
+
+            for (auto seg : se_groups)
+              seg -> Assemble([&](FlatArray<DofId> dnumsr, FlatArray<DofId> dnumsc, FlatMatrix<SCAL> elmat, ElementId ei, LocalHeap &lh)
+              {
+                AddElementMatrix(dnumsr, dnumsc, elmat, ei, true, lh);
+              }, clh);
+            
             
             
             // add eps to avoid empty lines
@@ -3248,8 +3290,8 @@ namespace ngcomp
                   
                     if (first_time)
                       {
-                        cerr << "used dof inconsistency" << endl;
-                        cerr << "(silence this warning by setting BilinearForm(...check_unused=False) )" << endl;
+                        cerr << IM(1) << "used dof inconsistency" << endl;
+                        cerr << IM(1) << "(silence this warning by setting BilinearForm(...check_unused=False) )" << endl;
                       }
                     first_time = false;
                   }
@@ -3983,9 +4025,19 @@ namespace ngcomp
     // static Timer timerVB[] = { timervol, timerbound, timerbbound };
 
     static mutex addelmatboundary1_mutex;
-
+    
     lin.Cumulate();
 
+    auto low_order_restriction = GetTrialSpace()->LowOrderRestriction();
+    if (low_order_bilinear_form && low_order_restriction)
+      {
+        auto coarsevec = low_order_restriction->CreateColVector();
+        coarsevec = *low_order_restriction*lin;
+        low_order_bilinear_form -> AssembleLinearization(coarsevec, clh, reallocate);
+      }
+
+
+    
     if (nonassemble) {
       shared_ptr<BaseMatrix> app =
         make_shared<LinearizedBilinearFormApplication> (dynamic_pointer_cast<BilinearForm>(this->shared_from_this()), &lin, clh);

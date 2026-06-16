@@ -11,28 +11,14 @@ Using the Python package manager pip you can install Jupyter via
 .. code:: bash
 
    # Mac/Linux
-   pip3 install jupyter
+   pip3 install jupyter anywidget
 
 On Windows you need to use pip instead of pip3. Due to a bug in ipykernel on Windows you need upgrade it to at least ipykernel version 5.3.2. (see https://github.com/ipython/ipykernel/issues/358 ):
 
 .. code:: bash
 
    # Windows
-   pip install --upgrade jupyter
-   pip install --upgrade ipykernel
-
-To install the WebGUI Jupyter notebook extension, run
-
-.. code:: bash
-
-    pip3 install webgui_jupyter_widgets
-
-If you have jupyter >= 7.0.0, you are done. For older versions you need to install and enable the notebook extension:
-
-.. code:: bash
-
-    jupyter nbextension install --user --py webgui_jupyter_widgets
-    jupyter nbextension enable --user --py webgui_jupyter_widgets
+   pip install --upgrade jupyter ipykernel anywidget
 
 Now, download the first NGSolve Jupyter notebook :download:`poisson.ipynb</../py_tutorials/poisson.ipynb>`, and start
 

@@ -1742,7 +1742,7 @@ namespace ngfem
           SetSize(nip);
 
           static Timer t ("IntegrationruleTP - compute pts", NoTracing);
-          NgProfiler::RegionTimer reg(t);
+          RegionTimer reg(t);
 
           for (int i1 = 0, ii = 0; i1 < irx->GetNIP(); i1++)
             for (int i2 = 0; i2 < iry->GetNIP(); i2++)

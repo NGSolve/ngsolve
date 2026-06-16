@@ -1,9 +1,9 @@
 #ifndef NGSOLVE_CONTACT_HPP
 #define NGSOLVE_CONTACT_HPP
 
-// #include <comp.hpp>
 #include "gridfunction.hpp"
 #include "bilinearform.hpp"
+
 
 namespace ngcomp
 {
@@ -134,6 +134,11 @@ namespace ngcomp
 
     bool IsDeformed() const { return deformed; }
 
+    // TODO: distinguish between trial and test spaces
+    shared_ptr<FESpace> GetTrialSpace() const { return fes; } 
+    shared_ptr<FESpace> GetTestSpace() const { return fes; }
+
+    
     void ApplyAdd(const FiniteElement& m_trial_fel,
                   const FiniteElement& s_trial_fel,
                   const FiniteElement& m_test_fel,
@@ -196,12 +201,41 @@ namespace ngcomp
     const auto& GetIntegrators(bool def) const { return def ? deformed_integrators : undeformed_integrators; }    
     shared_ptr<FESpace> GetTrialFESpace() const { return trial_fes; }
     shared_ptr<FESpace> GetTestFESpace() const { return test_fes; }
+    void SetTrialFESpace(shared_ptr<FESpace> trial ) { trial_fes=trial; }
+    void SetTestFESpace(shared_ptr<FESpace> test) { test_fes=test; }
+
     tuple<FlatArray<Vec<3>>, FlatArray<Vec<3>>> GetDrawingPairs() { return {primary_points, secondary_points}; }
     auto GetCArgs() {
       return std::make_tuple(master, other, draw_pairs, volume, element_boundary);
     }
     void DoArchive(Archive& ar);
   };
+
+  
+  class ContactIntegrator2 : public SpecialElementGroup
+  {
+    shared_ptr<ContactBoundary> cb;
+    std::variant<Region,string> primary, secondary;
+    shared_ptr<GridFunction> deformation;
+    Array<shared_ptr<ContactIntegrator>> integrators;
+    shared_ptr<FESpace> trial_fes, test_fes; // come from integrator
+    Array<unique_ptr<SpecialElement>> elements;
+    int intorder = 10;
+  public:
+    ContactIntegrator2(std::variant<Region,string> _primary,
+                       std::variant<Region,string> _secondary,
+                       shared_ptr<GridFunction> _deformation,
+                       bool _volume=false, bool element_boundary=false);
+    ~ContactIntegrator2() { }
+    void SetIntOrder (int io) { intorder = io; }
+    void AddIntegrator(shared_ptr<CoefficientFunction> form);
+
+    void Update() override;
+    int GetNElements() override;
+    void GetDofNrs(std::function<void(int,FlatArray<DofId>)> eldofs) override;
+    void Assemble(std::function<void(FlatArray<DofId>,FlatArray<DofId>,FlatMatrix<double>,ElementId,LocalHeap&)> addelmat, LocalHeap& lh) override;    
+  };
+  
 
   template<int DIM>
   class MPContactElement : public SpecialElement

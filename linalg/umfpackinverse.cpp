@@ -121,7 +121,7 @@ namespace ngla
 
     cout << IM(3) << "call umfpack ..." << flush;
 
-    if (task_manager) task_manager -> StopWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
 
     int status;
     double Control[UMFPACK_CONTROL], Info[UMFPACK_INFO];
@@ -160,12 +160,12 @@ namespace ngla
           }
         catch(Exception & e)
           {
-            if (task_manager) task_manager -> StartWorkers();
+            if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
             throw;
           }
       }
 
-    if (task_manager) task_manager -> StartWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
 
     cout << IM(3) << " done" << endl;
 
@@ -604,7 +604,7 @@ namespace ngla
     else
       GetUmfpackMatrix (*castmatrix, SubsetAll());
     
-    if (task_manager) task_manager -> StopWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StopWorkers();
 
     int status;
     double *data = reinterpret_cast<double *>(values.Data());
@@ -629,11 +629,11 @@ namespace ngla
       }
     catch(Exception & e)
       {
-        if (task_manager) task_manager -> StartWorkers();
+        if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
         throw;
       }
 
-    if (task_manager) task_manager -> StartWorkers();
+    if (auto *tm = GetTaskManager(); tm) tm -> StartWorkers();
 
     cout << IM(3) << " done" << endl;
   }

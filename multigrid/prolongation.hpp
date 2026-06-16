@@ -7,11 +7,18 @@
 /* Date:   20. Apr. 2000                                             */
 /*********************************************************************/
 
+
+#include <fespace.hpp>
+#include <sparsematrix.hpp>
+
 namespace ngcomp { class NedelecFESpace; }
 namespace ngla { class SparseFactorization; } 
 namespace ngmg
 {
+  using namespace ngcomp;
+  using namespace ngla;
 
+  
   /** 
       Grid Transfer operators
   */

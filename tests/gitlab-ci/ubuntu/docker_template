@@ -70,10 +70,7 @@ RUN pip3 install --upgrade --break-system-packages \
         sphinx \
         sphinx-rtd-theme \
         tensorflow \
-        webgui_jupyter_widgets \
-        widgetsnbextension
-RUN python3 -m playwright install
-RUN python3 -m playwright install-deps firefox
+        anywidget
 RUN pip3 install --break-system-packages PyYAML cffi ply
 RUN pip3 install --break-system-packages --no-deps git+https://github.com/PySpice-org/PySpice.git
 RUN ln -s /usr/lib/x86_64-linux-gnu/libngspice.so.0  /usr/lib/x86_64-linux-gnu/libngspice.so

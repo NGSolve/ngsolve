@@ -376,5 +376,24 @@ void DevProjectorProject (size_t size, double * a, const unsigned char * bits,
 }
 
 
+
+// Sets cudaGraphCondTypeWhile condition: 1 = continue, 0 = stop
+// Also increments iter_count and stops when iter_count >= maxsteps
+__global__ void ConvergenceCheckKernel(double* rz, double tol,
+    cudaGraphConditionalHandle handle, int* iter_count, int maxsteps)
+{
+    int iter = ::atomicAdd(iter_count, 1) + 1;
+    int converged  = (sqrt(abs(*rz)) <= tol);
+    int max_reached = (iter >= maxsteps);
+    cudaGraphSetConditional(handle,
+        (converged || max_reached) ? 0 : 1);
 }
 
+void ConvergenceCheck(double* rz, double tol,
+    cudaGraphConditionalHandle handle, int* iter_count, int maxsteps)
+{
+    ConvergenceCheckKernel<<<1, 1, 0, ngs_cuda_stream>>>(
+        rz, tol, handle, iter_count, maxsteps);
+}
+
+}

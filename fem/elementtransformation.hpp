@@ -73,6 +73,9 @@ namespace ngfem
     ElementId GetElementId () const { return ElementId(VB(), elnr); }
     /// return element index
     int GetElementIndex () const { return elindex; }
+    ///
+    RegionId GetRegionId() const { return RegionId(VB(), elindex); }
+    
     /// return element geometry type 
     ELEMENT_TYPE GetElementType () const { return eltype; }
     /// calculates the Jacobi matrix

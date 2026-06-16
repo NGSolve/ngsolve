@@ -22,7 +22,19 @@ def _patched_parse_manifests(self):
         return [self._parse_manifest(path) for path in paths][0]
     except IndexError:
         return []
-   
+
+def get_openblas_requirements():
+    if 'darwin' in sys.platform:
+        return []
+
+    if 'linux' in sys.platform or 'win' in sys.platform:
+        import importlib.metadata
+        import ngsolve_openblas
+        version = importlib.metadata.version('ngsolve-openblas')
+        return [f"ngsolve-openblas=={version}"]
+
+    return []
+
 # we are using the ngsolve superbuild (to download and build some dependencies)
 # patch the parse_manifests function to point to the actual ngsolve cmake project within the superbuild
 skbuild.cmaker.CMaker._parse_manifests = _patched_parse_manifests
@@ -62,18 +74,24 @@ else:
 
 install_requires = [
         f'{netgen_name} == {netgen_version}',
-    ]
-
-use_umfpack = 'ON' if 'darwin' in sys.platform else 'OFF'
+    ] + get_openblas_requirements()
 
 _cmake_args = [
     f'-DNETGEN_DIR={netgen_dir}',
     '-DUSE_SUPERBUILD:BOOL=ON',
     '-DCMAKE_BUILD_TYPE=Release',
     '-DBUILD_FOR_CONDA=ON',
-    f'-DUSE_UMFPACK={use_umfpack}',
+    '-DUSE_UMFPACK=ON',
+    '-DBUILD_UMFPACK=ON',
     f'-DNGSOLVE_VERSION_PYTHON={version}',
 ]
+
+if get_openblas_requirements():
+    import ngsolve_openblas
+    libs = ";".join(ngsolve_openblas.get_libraries())
+    libs = libs.replace('\\', '/')
+    _cmake_args += [f'-DLAPACK_LIBRARIES={libs}']
+
 
 if 'NETGEN_CCACHE' in os.environ:
   _cmake_args += ['-DUSE_CCACHE=ON']
@@ -86,26 +104,16 @@ if 'darwin' in sys.platform:
     ]
 elif 'linux' in sys.platform:
     _cmake_args += [
-        '-DUSE_MKL:BOOL=ON',
-        f'-DMKL_ROOT:PATH={root_dir}',
-        f'-DMKL_LIBRARY:PATH={root_dir}/lib/libmkl_rt.so.2',
-        f'-DMKL_INCLUDE_DIR:PATH={root_dir}/include',
-        '-DUSE_CUDA=ON',
+        '-DUSE_CUDA=OFF',
         '-DCMAKE_CUDA_ARCHITECTURES=all',
         '-DBUILD_STUB_FILES=ON',
     ]
-    install_requires.append('mkl')
     packages = []
 elif 'win' in sys.platform:
     _cmake_args += [
-        '-DUSE_MKL:BOOL=ON',
-        f'-DMKL_ROOT:PATH={root_dir}',
-        f'-DMKL_LIBRARY:PATH={root_dir}/Library/lib/mkl_rt.lib',
-        f'-DMKL_INCLUDE_DIR:PATH={root_dir}/Library/include',
         f'-DNGSOLVE_INSTALL_DIR_TCL:PATH=Scripts',
         '-DBUILD_STUB_FILES=OFF',
     ]
-    install_requires.append('mkl')
 
 if 'PYDIR' in os.environ:
     _cmake_args += [f'-DCMAKE_PREFIX_PATH={os.environ["PYDIR"]}']

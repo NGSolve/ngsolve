@@ -125,9 +125,6 @@ else(NETGEN_DIR)
     set (SUPERBUILD_METIS 1)
   endif (USE_MPI AND NOT METIS_DIR AND USE_MUMPS)
 
-  if (USE_HYPRE AND NOT USE_MPI)
-      message(FATAL_ERROR "Hypre needs MPI to be enabled (-DUSE_MPI=ON)!")
-  endif (USE_HYPRE AND NOT USE_MPI)
 
   # propagate netgen-specific settings to Netgen subproject
   set_vars( NETGEN_CMAKE_ARGS

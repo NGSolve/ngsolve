@@ -179,9 +179,10 @@ namespace ngcomp
     const Flags& GetFlags() const { return flags; }
     Flags& GetFlags() { return flags; }
 
+    [[deprecated("Use fespace.Interpolate instead!")]]
     virtual void Interpolate (const CoefficientFunction & cf,
                               const Region * reg, int mdcomp, LocalHeap & lh);
-
+    
     ///
     virtual void PrintReport (ostream & ost) const override;
     ///

@@ -299,7 +299,7 @@ namespace ngcomp
     finesmoothingsteps = int (flags.GetNumFlag ("finesmoothingsteps", 1));
 
     tlp = 0;
-    inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
+    inversetype = flags.GetStringFlag("inverse", default_inversetype);
     GetMemoryTracer().Track(*mgp, "MultiGridPreconditioner");
   }
 
@@ -310,7 +310,7 @@ namespace ngcomp
     
     shared_ptr<BilinearForm> lo_bfa = bfa->GetLowOrderBilinearForm();
 
-    INVERSETYPE invtype, loinvtype = default_inversetype;
+    string invtype, loinvtype = default_inversetype;
     invtype = dynamic_cast<const BaseSparseMatrix & > (bfa->GetMatrix()).SetInverseType (inversetype);
     if (lo_bfa)
       loinvtype = dynamic_cast<const BaseSparseMatrix & > (lo_bfa->GetMatrix()) .SetInverseType (inversetype);
@@ -453,7 +453,7 @@ namespace ngcomp
       : Preconditioner(abfa,aflags,aname), bfa(abfa)
     {
       // bfa -> SetPreconditioner (this);
-      inversetype = flags.GetStringFlag("inverse", GetInverseName (default_inversetype));
+      inversetype = flags.GetStringFlag("inverse", default_inversetype);
     }
 
     ///
@@ -594,6 +594,9 @@ namespace ngcomp
 
       if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {
+          if (additional_dirichlet_constraints.HasMesh())
+            flags.SetFlag ("additional_dirichlet_constraints", std::any(additional_dirichlet_constraints));
+          
           auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
           shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();          
           auto spmat = dynamic_pointer_cast<BaseSparseMatrix> (mat);

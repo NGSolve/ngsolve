@@ -268,6 +268,20 @@ namespace ngla
     auto ry = y.Range(range);    
     mat->MultTransAdd(s, x, ry);
   }
+  shared_ptr<BaseSparseMatrix> EmbeddedTransposeMatrix :: CreateSparseMatrix() const
+  {
+    auto mat_sparse = mat->CreateSparseMatrix();
+    auto rest = EmbeddingTranspose(width, range, IsComplex());
+    auto rest_sparse = rest.CreateSparseMatrix();
+    auto mat_sp = dynamic_pointer_cast<SparseMatrixTM<double>>(mat_sparse);
+    if(!mat_sp)
+      throw Exception("EmbeddedTransposeMatrix::CreateSparseMatrix: cannot create sparse matrix for mat in embedding transpose");
+    auto rest_sp = dynamic_pointer_cast<SparseMatrixTM<double>>(rest_sparse);
+    if(!rest_sp)
+      throw Exception("EmbeddedTransposeMatrix::CreateSparseMatrix: cannot create sparse matrix for rest in embedding transpose");
+    return MatMult(*mat_sp, *rest_sp);
+  }
+
 
 
 

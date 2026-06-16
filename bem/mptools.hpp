@@ -62,12 +62,34 @@ namespace ngsbem
   {
   public:
     int maxdirect = 100;
-    int minorder = 20;    // order = minorder + 2 kappa r 
+    int minorder = 20;
+    double order_factor = 2.0;    // order = minorder + order_factor kappa r
+    double separation = 2.0;
+    double eval_separation = 3.0;
+    double split_kr = 5.0;
+    int maxlevel = 20;
   };
 
 
-  
-  
+  struct FMMTreeStats
+  {
+    int max_level = 0;                           // Deepest tree level reached by any node.
+    size_t num_nodes = 0;                        // Total number of nodes in the tree, including internal nodes.
+    size_t num_leaves = 0;                       // Number of leaf nodes, including empty leaves.
+    size_t active_leaves = 0;                    // Number of leaves containing at least one source or target item.
+    Array<size_t> nodes_per_level;               // Histogram of node counts by tree level.
+    size_t leaf_size_min = std::numeric_limits<size_t>::max(); // Minimum number of source or target items in a leaf.
+    size_t leaf_size_max = 0;                    // Maximum number of source or target items in a leaf.
+    double leaf_size_sum = 0;                    // Sum of leaf sizes, used to compute the mean leaf size.
+    int order_min = std::numeric_limits<int>::max(); // Minimum allocated spherical expansion order.
+    int order_max = -1;                          // Maximum allocated spherical expansion order.
+    double order_sum = 0;                        // Sum of allocated orders, used to compute the mean order.
+    size_t num_allocated_multipoles = 0;         // Number of nodes whose multipole/local expansion is allocated.
+    size_t total_coefficients = 0;               // Total number of stored spherical harmonic coefficients.
+    size_t multipole_bytes = 0;                  // Memory used by stored spherical harmonic coefficients.
+  };
+
+
   inline std::tuple<double, double, double> SphericalCoordinates(Vec<3> dist){
     double len, theta, phi;
     len = L2Norm(dist);
@@ -682,8 +704,9 @@ namespace ngsbem
       
       Node (Vec<3> acenter, double ar, int alevel, T_Kappa akappa, const FMM_Parameters & afmm_params)
       // : center(acenter), r(ar), level(alevel), mp(MPOrder(ar*akappa), akappa, ar), fmm_params(afmm_params)
-        // : center(acenter), r(ar), level(alevel), mp(afmm_params.minorder+2*ar*akappa, akappa, ar), fmm_params(afmm_params)
-        : center(acenter), r(ar), level(alevel), mp(afmm_params.minorder+2*ar*abs(akappa), akappa, ar), fmm_params(afmm_params)
+        : center(acenter), r(ar), level(alevel),
+          mp(afmm_params.minorder+afmm_params.order_factor*ar*abs(akappa), akappa, ar),
+          fmm_params(afmm_params)
       {
         if (level < nodes_on_level.Size())
           nodes_on_level[level]++;
@@ -755,8 +778,8 @@ namespace ngsbem
         charges.Append( tuple{x,c} );
 
         // if (r*mp.Kappa() < 1e-8) return;
-        if (level > 20) return;
-        if (charges.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < 5)
+        if (level > fmm_params.maxlevel) return;
+        if (charges.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
           return;
         
         SendSourcesToChilds();
@@ -785,7 +808,7 @@ namespace ngsbem
         
         dipoles.Append (tuple{x,d,c});
         
-        if (level > 20) return;
+        if (level > fmm_params.maxlevel) return;
         if (dipoles.Size() < fmm_params.maxdirect)
           return;
 
@@ -1217,7 +1240,7 @@ namespace ngsbem
         if (charges.Size() || dipoles.Size() || chargedipoles.Size())
           return Evaluate(p);
         
-        if (L2Norm(p-center) > 3*r)
+        if (L2Norm(p-center) > fmm_params.eval_separation*r)
           return mp.Eval(p-center);
         
         if (!childs[0]) //  || level==1)
@@ -1234,7 +1257,7 @@ namespace ngsbem
         if (charges.Size() || dipoles.Size() || chargedipoles.Size() || !childs[0])
           return EvaluateDeriv(p, d);
 
-        if (L2Norm(p-center) > 3*r)
+        if (L2Norm(p-center) > fmm_params.eval_separation*r)
           return mp.EvalDirectionalDerivative(p-center, d);
 
         entry_type sum{0.0};
@@ -1355,14 +1378,48 @@ namespace ngsbem
     {
       return root.NumCoefficients();
     }
-    
+
+    void CollectStatistics(FMMTreeStats & stats) const
+    {
+      const_cast<Node&>(root).TraverseTree([&](Node & node) {
+        stats.num_nodes++;
+        stats.max_level = max(stats.max_level, node.level);
+        while (stats.nodes_per_level.Size() <= size_t(node.level))
+          stats.nodes_per_level.Append(0);
+        stats.nodes_per_level[node.level]++;
+
+        if (!node.childs[0])
+          {
+            stats.num_leaves++;
+            size_t leaf_size = node.charges.Size() + node.dipoles.Size()
+                             + node.chargedipoles.Size() + node.currents.Size();
+            if (leaf_size > 0) stats.active_leaves++;
+            stats.leaf_size_min = min(stats.leaf_size_min, leaf_size);
+            stats.leaf_size_max = max(stats.leaf_size_max, leaf_size);
+            stats.leaf_size_sum += leaf_size;
+          }
+
+        int order = node.mp.SH().Order();
+        if (order >= 0)
+          {
+            stats.num_allocated_multipoles++;
+            stats.order_min = min(stats.order_min, order);
+            stats.order_max = max(stats.order_max, order);
+            stats.order_sum += order;
+            size_t coefs = node.mp.SH().Coefs().Size();
+            stats.total_coefficients += coefs;
+            stats.multipole_bytes += coefs * sizeof(entry_type);
+          }
+      });
+    }
+
     void CalcMP()
     {
       static Timer t("mptool compute singular MLMP"); RegionTimer rg(t);
       static Timer ts2mp("mptool compute singular MLMP - source2mp");
       static Timer tS2S("mptool compute singular MLMP - S->S");
       static Timer trec("mptool comput singular recording");
-      static Timer tsort("mptool comput singular sort");      
+      static Timer tsort("mptool comput singular sort");
 
       /*
       int maxlevel = 0;
@@ -1693,7 +1750,8 @@ namespace ngsbem
 
       void Allocate()
       {
-        mp = SphericalExpansion<Regular,elem_type,T_Kappa>(params.minorder+2*r*abs(mp.Kappa()), mp.Kappa(), r);
+        mp = SphericalExpansion<Regular,elem_type,T_Kappa>
+          (params.minorder+params.order_factor*r*abs(mp.Kappa()), mp.Kappa(), r);
       }
       
       
@@ -1720,7 +1778,7 @@ namespace ngsbem
         if (mp.SH().Order() < 0) return;
         if (singnode.mp.SH().Order() < 0) return;
         // if (L2Norm(singnode.mp.SH().Coefs()) == 0) return;
-        if (level > 20)
+        if (level > params.maxlevel)
           {
             singnodes.Append(&singnode);            
             return;
@@ -1731,7 +1789,7 @@ namespace ngsbem
         Vec<3> dist = center-singnode.center;
 
         // if (L2Norm(dist)*mp.Kappa() > (mp.Order()+singnode.mp.Order()))
-        if (L2Norm(dist) > 2*(r + singnode.r))
+        if (L2Norm(dist) > params.separation*(r + singnode.r))
           {
             if (singnode.mp.Order() > 2 * mp.Order() &&
                 singnode.childs[0] &&
@@ -1927,8 +1985,8 @@ namespace ngsbem
         targets.Append( x );
 
         // if (r*mp.Kappa() < 1e-8) return;
-        if (level > 20) return;        
-        if (targets.Size() < params.maxdirect && r*abs(mp.Kappa()) < 5)
+        if (level > params.maxlevel) return;        
+        if (targets.Size() < params.maxdirect && r*abs(mp.Kappa()) < params.split_kr)
           return;
 
         CreateChilds();
@@ -1967,8 +2025,8 @@ namespace ngsbem
         
         vol_targets.Append (tuple(x,tr));
 
-        if (level > 20) return;
-        if (vol_targets.Size() < params.maxdirect && (r*abs(mp.Kappa()) < 5))
+        if (level > params.maxlevel) return;
+        if (vol_targets.Size() < params.maxdirect && (r*abs(mp.Kappa()) < params.split_kr))
           return;
 
         CreateChilds();
@@ -2097,7 +2155,7 @@ namespace ngsbem
       static Timer t("mptool regular MLMP"); RegionTimer rg(t);
       static Timer tremove("removeempty");
       static Timer trec("mptool regular MLMP - recording");
-      static Timer tsort("mptool regular MLMP - sort");       
+      static Timer tsort("mptool regular MLMP - sort");
       
       singmp = asingmp;
 
@@ -2245,6 +2303,68 @@ namespace ngsbem
     size_t NumCoefficients() const
     {
       return root.NumCoefficients();
+    }
+
+    void CollectStatistics(FMMTreeStats & stats) const
+    {
+      const_cast<Node&>(root).TraverseTree([&](Node & node) {
+        stats.num_nodes++;
+        stats.max_level = max(stats.max_level, node.level);
+        while (stats.nodes_per_level.Size() <= size_t(node.level))
+          stats.nodes_per_level.Append(0);
+        stats.nodes_per_level[node.level]++;
+
+        if (!node.childs[0])
+          {
+            stats.num_leaves++;
+            size_t leaf_size = node.targets.Size() + node.vol_targets.Size();
+            if (leaf_size > 0) stats.active_leaves++;
+            stats.leaf_size_min = min(stats.leaf_size_min, leaf_size);
+            stats.leaf_size_max = max(stats.leaf_size_max, leaf_size);
+            stats.leaf_size_sum += leaf_size;
+          }
+
+        int order = node.mp.SH().Order();
+        if (order >= 0)
+          {
+            stats.num_allocated_multipoles++;
+            stats.order_min = min(stats.order_min, order);
+            stats.order_max = max(stats.order_max, order);
+            stats.order_sum += order;
+            size_t coefs = node.mp.SH().Coefs().Size();
+            stats.total_coefficients += coefs;
+            stats.multipole_bytes += coefs * sizeof(elem_type);
+          }
+      });
+    }
+
+    // Run the S2R planning walk to populate target-tree multipoles and count translations / direct-evaluation work
+    struct M2LCounts
+    {
+      size_t num_s2r = 0;                        // Number of recorded source-to-regular box translations.
+      size_t num_direct_evaluations = 0;         // Estimated quadrature-point interactions handled by direct fallback.
+    };
+
+    M2LCounts CollectM2LStatistics
+      (shared_ptr<SingularMLExpansion<elem_type, T_Kappa>> singmp_in)
+    {
+      singmp = singmp_in;
+      singmp_in->root.CalcTotalSources();
+      root.CalcTotalTargets();
+      root.AllocateMemory();
+      Array<RecordingRS> recording;
+      root.AddSingularNode(singmp_in->root, false, &recording);
+
+      M2LCounts counts;
+      counts.num_s2r = recording.Size();
+
+      root.TraverseTree([&](Node & node) {
+        if (node.childs[0]) return;
+        size_t target_count = node.targets.Size() + node.vol_targets.Size();
+        for (auto * sn : node.singnodes)
+          counts.num_direct_evaluations += target_count * size_t(sn->total_sources);
+      });
+      return counts;
     }
 
     elem_type Evaluate (Vec<3> p) const

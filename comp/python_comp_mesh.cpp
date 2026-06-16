@@ -87,13 +87,19 @@ void ExportNgcompMesh (py::module &m)
   ExportPml(pml);
 
 
+  
   py::enum_<VorB>(m, "VorB", "Enum specifying the codimension. VOL is volume, BND is boundary and BBND is codimension 2 (edges in 3D, points in 2D)")
     .value("VOL", VOL)
     .value("BND", BND)
     .value("BBND", BBND)
     .value("BBBND", BBBND)
     .export_values()
+    .def("__call__", [](VorB vb, string name) { return VBnName{vb, name}; })
     ;
+
+  py::class_<VBnName> (m, "VBnName")
+    ;
+
   
   py::class_<ElementId> (m, "ElementId", 
                          docu_string(R"raw_string(
@@ -422,6 +428,9 @@ nr : int
     .def(py::self * py::self)
     .def(py::self * string())
     .def(~py::self)
+    // .def("__ror__", [] (const Region& c2, shared_ptr<CoefficientFunction> c1) -> shared_ptr<CoefficientFunction> {
+    // return make_shared<RestrictedCoefficientFunction> (c1, c2); 
+    // })
     ;
   PyDefVectorized(cls_region, "__call__",
                   [](Region* reg, double x, double y, double z)
@@ -449,6 +458,14 @@ nr : int
 
   py::implicitly_convertible <Region, BitArray> ();
 
+
+/*
+  //////////////////////////////////////////////////////////////////////////////////////////
+
+  py::class_<RestrictedCoefficientFunction, shared_ptr<RestrictedCoefficientFunction>, CoefficientFunction> (m, "RestrictedCF")
+    .def(py::init<shared_ptr<CoefficientFunction>,Region>())
+    ;
+*/
 
   //////////////////////////////////////////////////////////////////////////////////////////
   
@@ -675,6 +692,14 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("pattern") = ".*",
 	 "Return boundary mesh-region matching the given regex pattern")
 
+    .def("Region",
+	 [](const shared_ptr<MeshAccess> & ma, VBnName vbn) {
+            return Region(ma, vbn.vb, vbn.name);
+	  },
+         py::arg("vbn"),
+	 "Return mesh-region from VB+name object")
+
+    
     .def("GetMaterials",
 	 [](const MeshAccess & ma)
          {
@@ -843,6 +868,16 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
          py::arg("mark_surface_elements")=false, py::arg("onlyonce")=false,
 	 "Local mesh refinement based on marked elements, uses element-bisection algorithm")
 
+    // Uniform refinement
+    .def("RefineUniform", [](MeshAccess &ma)
+    {
+      auto ngmesh = ma.GetNetgenMesh();
+      ngmesh->GetGeometry()->GetRefinement().Refine(*ngmesh);
+      ngmesh->UpdateTopology();
+      ma.updateSignal.Emit();
+    }, "Uniform mesh-refinement (splitting trigs into 4, and tets into 8)")
+    
+    
     .def("RefineHP",
          [](MeshAccess & ma, int levels, double factor)
           {
@@ -964,15 +999,20 @@ will create a CF being 1e6 on the top boundary and 0. elsewhere.
                                Array<MeshPoint> points;
                                if(element_boundary != VOL)
                                  {
-                                   Region reg = get_if<Region>(&vb_or_reg) ? *get_if<Region>(&vb_or_reg) : Region(self->shared_from_this(), *get_if<VorB>(&vb_or_reg));
+                                   Region reg = get_if<Region>(&vb_or_reg) ? *get_if<Region>(&vb_or_reg) : Region(self->shared_from_this(), *get_if<VorB>(&vb_or_reg), true);
                                    for(auto el : self->Elements(reg.VB()))
                                     {
                                       if (reg.Mask().Test(el.GetIndex()))
                                         {
+                                          Facet2ElementTrafo trafo(el.GetType(), el.Vertices());
                                           for(int fnr : Range(el.Facets()))
                                             {
                                               for(const auto& p : rules[self->GetFacetType(el.Facets()[fnr])] )
-                                                points.Append({p(0), p(1), p(2), self, reg.VB(), int(el.Nr()), int(fnr), element_boundary});
+                                                {
+                                                  IntegrationPoint ipfac(p(0), p(1), p(2));
+                                                  auto ipvol = trafo(fnr, ipfac);
+                                                  points.Append({ipvol(0), ipvol(1), ipvol(2), self, reg.VB(), int(el.Nr()), int(fnr), element_boundary});
+                                                }
                                             }
                                         }
                                     }

@@ -2524,7 +2524,90 @@ namespace ngfem
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
-      throw Exception ("Hdivdivfe not implementend for element type");
+      auto & ip = mip.IP();
+      typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;
+      T x = ip(0), y = ip(1), z = ip(2);
+      T lam[4] = { x, y, z, 1 - x - y - z };
+      Vec<3, T> pnts[4] = { {1, 0, 0}, {0, 1, 0}, {0, 0, 1}, {0, 0, 0} };
+      int facetnr = ip.FacetNr();
+
+      int ii = 0;
+
+      if (ip.VB() == BND)
+        { // facet shapes
+          for (int i = 0; i < 4; i++)
+            {
+              int p = order_facet[i][0];
+
+              if (i == facetnr)
+                {
+                  IVec<4> fav = ET_trait<ET_TET>::GetFaceSort(i, vnums);
+                  Vec<3, T> adxi = pnts[fav[0]] - pnts[fav[2]];
+                  Vec<3, T> adeta = pnts[fav[1]] - pnts[fav[2]];
+                  T xi = lam[fav[0]];
+                  T eta = lam[fav[1]];
+
+                  Vec<3, T> nvref = Cross(adxi, adeta);
+                  auto nv = Trans(mip.GetJacobianInverse()) * nvref;
+                  auto nn = DyadProd(nv, nv);
+
+                  DubinerBasis::Eval(p, xi, eta, SBLambda([&](size_t nr, T val)
+                                                          {
+                                                            Mat<3, 3, T> mat = nn;
+                                                            mat *= mip.GetMeasure() * val;
+                                                            shape[nr+ii] = mat;
+                                                          }));
+                }
+              ii += (p + 1) * (p + 2) / 2;
+            }
+        }
+      else
+        {
+          for (int i = 0; i < 4; i++)
+            {
+              int p = order_facet[i][0];
+              ii += (p + 1) * (p + 2) / 2;
+            }
+        }
+
+      if (ip.VB() == VOL)
+        {
+          // Use basis from Astrid's PhD thesis'
+          Mat<3, 3, T> S_F1 = lam[0] * Mat<3, 3>({ {-2, 1, 0}, {1, 0, 0}, {0, 0, 0} });
+          Mat<3, 3, T> S_F2 = lam[1] * Mat<3, 3>({ {0, 1, -1}, {1, -2, 1}, {-1, 1, 0} });
+          Mat<3, 3, T> S_F3 = lam[2] * Mat<3, 3>({ {0, 0, 0}, {0, 0, -1}, {0, -1, 2} });
+          Mat<3, 3, T> S_F4 = lam[3] * Mat<3, 3>({ {0, 0, 1}, {0, 0, 0}, {1, 0, 0} });
+          Mat<3, 3, T> S_T1 = Mat<3, 3>({ {0, 0, -1}, {0, 0, 1}, {-1, 1, 0} });
+          Mat<3, 3, T> S_T2 = Mat<3, 3>({ {0, -1, 0}, {-1, 0, 1}, {0, 1, 0} });
+
+          auto p = order_inner[0];
+          auto mapped = [&](const Mat<3, 3, T> & S, T val)
+            {
+              Mat<3, 3, T> mat = mip.GetJacobian() * S * Trans(mip.GetJacobian());
+              mat *= mip.GetMeasure() * val;
+              return mat;
+            };
+
+          DubinerBasis3D::Eval(p, lam[0], lam[1], lam[2],
+                               SBLambda([&](size_t nr, T val)
+                                        {
+                                          shape[ii++] = mapped(S_T1, val);
+                                          shape[ii++] = mapped(S_T2, val);
+                                        }));
+
+          int p_facet_bubbles = p - 1 + (plus ? 1 : 0);
+          if (p_facet_bubbles >= 0)
+            {
+              DubinerBasis3D::Eval(p_facet_bubbles, lam[0], lam[1], lam[2],
+                                   SBLambda([&](size_t nr, T val)
+                                            {
+                                              shape[ii++] = mapped(S_F1, val);
+                                              shape[ii++] = mapped(S_F2, val);
+                                              shape[ii++] = mapped(S_F3, val);
+                                              shape[ii++] = mapped(S_F4, val);
+                                            }));
+            }
+        }
     }
 
   };

@@ -23,7 +23,7 @@ for pyversion in 314 313 312 311 310
 do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
-    $PYDIR/pip install -U pytest-check numpy wheel scikit-build mkl==2023.* mkl-devel==2023.*
+    $PYDIR/pip install -U pytest-check numpy wheel scikit-build "ngsolve-openblas==$OPENBLAS_VERSION_PIP"
 
     # wait until netgen pip package is available
     cd external_dependencies/netgen
@@ -33,7 +33,6 @@ do
     $PYDIR/python3 ./external_dependencies/netgen/tests/utils.py --check-pip --package ngsolve || continue
     $PYDIR/pip install netgen-mesher==$NETGEN_VERSION
 
-    sed -i 's/set(DLL_EXT ".so")/set(DLL_EXT ".so.2")/' /opt/python/cp${pyversion}-cp${pyversion}/lib/cmake/mkl/MKLConfig.cmake
     rm -rf _skbuild
     $PYDIR/pip wheel --no-build-isolation --no-clean . || cat /builds/ngsolve/ngsolve/_skbuild/*/cmake-build/dependencies/Stamp/ngsolve/ngsolve-build.log
     rename linux_ manylinux_2_28_ ngsolve*.whl

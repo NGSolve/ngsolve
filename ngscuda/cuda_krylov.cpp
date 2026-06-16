@@ -47,7 +47,7 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
     // ── initialise ──────────────────────────────────────────
     *x = 0.0;
     *r = rhs;
-    gc->Mult(*r, *z);   // z = M^{-1} r
+    gc->Mult(*r, *z);
     *p = *z;
     (*r).InnerProduct(*z, *rz);
     SyncNGSStream();
@@ -67,26 +67,70 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
     dynamic_cast<UnifiedVector&>(*x).UpdateDevice();
     SyncNGSStream();
 
-    // ── CUDA graph capture of CG iteration body (excl. convergence check) ──
-    CudaGraph g_cg;
+    bool use_while_graph = false;
     bool use_graph = false;
+    ngs_cuda::CudaWhileGraph g_while;
+    CudaGraph g_cg_for_while;
+    CudaGraph g_cg;
+    int* iter_count_dev = nullptr;
+
     if (!getenv("NO_CUDA_GRAPH")) {
-        g_cg.BeginCapture();
-            ga->Mult(*p, *q);                          // q = A*p
-            (*p).InnerProduct(*q, *pq);                // pq = <p,q>
-            ualpha     = Div(Scal(urz), Scal(upq));    // alpha = rz/pq
-            uneg_alpha = Neg(Scal(ualpha));             // neg_alpha = -alpha
-            (*x).Add(*alpha,     *p);                  // x += alpha*p
-            (*r).Add(*neg_alpha, *q);                  // r -= alpha*q
-            gc->Mult(*r, *z);                          // z = M^{-1}*r
-            (*r).InnerProduct(*z, *rz_new);            // rz_new = <r,z>
-            ubeta = Div(Scal(urz_new), Scal(urz));     // beta = rz_new/rz
-            urz   = Scal(urz_new);                     // rz = rz_new
-            (*p).Scale(*beta);                         // p *= beta
-            (*p).Add(1.0, *z);                         // p += z
-        g_cg.EndCapture();
-        SyncNGSStream();
-        use_graph = g_cg.IsValid();
+        double tol = GetPrecision() * r0norm;
+
+        // ── try cudaGraphCondTypeWhile capture ──
+        try {
+            // First capture iteration body into regular graph (cuSPARSE works here)
+            g_cg_for_while.BeginCapture();
+                cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
+                ga->Mult(*p, *q);
+                (*p).InnerProduct(*q, *pq);
+                ualpha     = Div(Scal(urz), Scal(upq));
+                uneg_alpha = Neg(Scal(ualpha));
+                (*x).Add(*alpha,     *p);
+                (*r).Add(*neg_alpha, *q);
+                gc->Mult(*r, *z);
+                (*r).InnerProduct(*z, *rz_new);
+                ubeta = Div(Scal(urz_new), Scal(urz));
+                urz   = Scal(urz_new);
+                (*p).Scale(*beta);
+                (*p).Add(1.0, *z);
+            g_cg_for_while.EndCapture();
+            SyncNGSStream();
+            cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
+            // Allocate GPU-side iteration counter
+            if (!iter_count_dev) cudaMalloc(&iter_count_dev, sizeof(int));
+            cudaMemset(iter_count_dev, 0, sizeof(int));
+            // Then build WHILE graph using captured graph as child node
+            g_while.Build(g_cg_for_while.GetGraph(), urz.DevPtr(), tol, iter_count_dev, maxsteps);
+            SyncNGSStream();
+            use_while_graph = g_while.IsValid();
+        } catch (ngstd::Exception& e) {
+            std::cerr << "[DevCGSolver] CudaWhileGraph capture failed: "
+                      << e.What() << std::endl;
+            std::cerr << "[DevCGSolver] falling back to iteration graph" << std::endl;
+        } catch (...) {
+            std::cerr << "[DevCGSolver] CudaWhileGraph capture failed (unknown exception)" << std::endl;
+        }
+
+        // ── fall back to per-iteration graph ──
+        if (!use_while_graph) {
+            g_cg.BeginCapture();
+                ga->Mult(*p, *q);
+                (*p).InnerProduct(*q, *pq);
+                ualpha     = Div(Scal(urz), Scal(upq));
+                uneg_alpha = Neg(Scal(ualpha));
+                (*x).Add(*alpha,     *p);
+                (*r).Add(*neg_alpha, *q);
+                gc->Mult(*r, *z);
+                (*r).InnerProduct(*z, *rz_new);
+                ubeta = Div(Scal(urz_new), Scal(urz));
+                urz   = Scal(urz_new);
+                (*p).Scale(*beta);
+                (*p).Add(1.0, *z);
+            g_cg.EndCapture();
+            SyncNGSStream();
+            use_graph = g_cg.IsValid();
+        }
     }
 
     // re-initialise after warm-up
@@ -99,45 +143,61 @@ void DevCGSolver::Mult(const BaseVector& rhs, BaseVector& sol) const
 
     // ── main loop ────────────────────────────────────────────
     int step = 0;
-    for (int iter = 0; iter < maxsteps; iter++)
-    {
-        if (use_graph) {
-            cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
-            g_cg.Launch();
-            SyncNGSStream();
-            cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
-        } else {
-            ga->Mult(*p, *q);
-            (*p).InnerProduct(*q, *pq);
-            ualpha     = Div(Scal(urz),    Scal(upq));
-            uneg_alpha = Neg(Scal(ualpha));
-            (*x).Add(*alpha,     *p);
-            (*r).Add(*neg_alpha, *q);
-            gc->Mult(*r, *z);
-            (*r).InnerProduct(*z, *rz_new);
-            ubeta = Div(Scal(urz_new), Scal(urz));
-            urz   = Scal(urz_new);
-            (*p).Scale(*beta);
-            (*p).Add(1.0, *z);
-            SyncNGSStream();
-        }
 
-        step++;
-        double res = sqrt(std::abs(rz->GetD()));
+    if (use_while_graph) {
+        // entire CG solve on GPU — single graph launch
+        cudaMemset(iter_count_dev, 0, sizeof(int));
+        g_while.Launch();
+        SyncNGSStream();
+        cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
+        // read back iteration count for GetSteps()
+        cudaMemcpy(&step, iter_count_dev, sizeof(int), cudaMemcpyDeviceToHost);
+        cudaFree(iter_count_dev);
+        steps = step;
+        sol = *x;
+        return;
+    } else {
+        for (int iter = 0; iter < maxsteps; iter++)
+        {
+            if (use_graph) {
+                cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_DEVICE);
+                g_cg.Launch();
+                SyncNGSStream();
+                cublasSetPointerMode(Get_CuBlas_Handle(), CUBLAS_POINTER_MODE_HOST);
+            } else {
+                ga->Mult(*p, *q);
+                (*p).InnerProduct(*q, *pq);
+                ualpha     = Div(Scal(urz),    Scal(upq));
+                uneg_alpha = Neg(Scal(ualpha));
+                (*x).Add(*alpha,     *p);
+                (*r).Add(*neg_alpha, *q);
+                gc->Mult(*r, *z);
+                (*r).InnerProduct(*z, *rz_new);
+                ubeta = Div(Scal(urz_new), Scal(urz));
+                urz   = Scal(urz_new);
+                (*p).Scale(*beta);
+                (*p).Add(1.0, *z);
+                SyncNGSStream();
+            }
 
-        if (printrates)
-            cout << "CG iter " << step << "  res = " << res << endl;
+            step++;
+            double res = sqrt(std::abs(rz->GetD()));
 
-        if (res <= GetPrecision() * r0norm || step >= GetMaxSteps()) {
-            sol = *x;
             if (printrates)
-                cout << "CG " << (res <= GetPrecision()*r0norm ? "converged" : "max iters")
-                     << " after " << step << " iters"
-                     << "  res/r0 = " << res/r0norm << endl;
-            return;
+                cout << "CG iter " << step << "  res = " << res << endl;
+
+            if (res <= GetPrecision() * r0norm || step >= GetMaxSteps()) {
+                sol = *x;
+                if (printrates)
+                    cout << "CG " << (res <= GetPrecision()*r0norm ? "converged" : "max iters")
+                         << " after " << step << " iters"
+                         << "  res/r0 = " << res/r0norm << endl;
+                return;
+            }
         }
     }
 
+    steps = step;
     sol = *x;
 }
 

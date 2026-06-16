@@ -253,12 +253,12 @@ namespace ngla
       maxs = max2 (maxs, coldnums[i].Size());
 
 
-    if (task_manager)
+    if (GetTaskManager())
       {
         FlatVector<> vx = x.FV<double> (); 
         FlatVector<> vy = y.FV<double> (); 
         
-        task_manager -> CreateJob 
+        TaskManager :: CreateJob 
           ( [&] (const TaskInfo & ti)
             {
               ArrayMem<double, 100> mem1(max_row_size);
@@ -424,12 +424,12 @@ namespace ngla
       }
     else
       {
-        if (task_manager)
+        if (GetTaskManager())
           {
             FlatVector<> vx = x.FV<double> (); 
             FlatVector<> vy = y.FV<double> (); 
 
-            task_manager -> CreateJob 
+            TaskManager :: CreateJob 
               ( [&] (const TaskInfo & ti)
                 {
                   ArrayMem<double, 100> mem1(max_row_size);

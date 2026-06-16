@@ -48,9 +48,6 @@ if (NETGEN_USE_PYTHON)
       -d "${SPHINX_CACHE_DIR}"
       "${CMAKE_CURRENT_SOURCE_DIR}"
       "${SPHINX_OUTPUT_DIR}/html"
-      COMMAND
-      # copy webgui.js to html/_static/
-      ${NETGEN_PYTHON_EXECUTABLE} -m webgui_jupyter_widgets.js "${CMAKE_CURRENT_BINARY_DIR}/html/_static"
       COMMENT "Building HTML documentation with Sphinx"
       )
 

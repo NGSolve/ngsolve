@@ -28,19 +28,15 @@ Installation
 
 To work through the i-tutorials, you first have to install
 
-- Netgen/NGSolve, see http://www.ngsolve.org/downloads 
+- Netgen/NGSolve, see https://ngsolve.org/installation.html 
 - Jupyter from http://www.jupyter.org. You can use the pip package manager: "pip3 install jupyter" 
 - download and unpack the i-tutorials from `here <../i-tutorials.zip>`__.
 
-To use the webgui visualization within jupyter you need
+To use the webgui visualization within jupyter you need anywidget
 
 .. code-block:: bash
 
-    pip3 install webgui_jupyter_widgets
-    jupyter nbextension install --user --py widgetsnbextension
-    jupyter nbextension enable --user --py widgetsnbextension
-    jupyter nbextension install --user --py webgui_jupyter_widgets
-    jupyter nbextension enable --user --py webgui_jupyter_widgets
+    pip3 install anywidget
 
   
 Some of the tutorials require packages from scipy and matplotlib, so it
@@ -171,7 +167,8 @@ Whetting the Appetite
    unit-5a.3-petsc/petsc.ipynb 
    unit-5a.3-petsc/PETSc_interface.ipynb
 
-More on PETSc coupling is available by Stefano Zampini and Umberto Zerbinati at https://ngspetsc.readthedocs.io/en/latest/ngsPETSc.html 
+More on PETSc coupling is available by Stefano Zampini and Umberto Zerbinati at
+https://ngspetsc.readthedocs.io/en/latest/
 
    
 CUDA Device support:

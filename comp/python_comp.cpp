@@ -76,6 +76,33 @@ namespace ngcomp
                             shared_ptr<FESpace> target_fes,
                             std::function<tuple<Matrix<>,Array<int>,Array<int>>(ElementId)> creator,
                             LocalHeap & lh);
+
+
+  class DirichletBoundary
+  {
+  public:
+    shared_ptr<ProxyFunction> proxy;
+    VBnName vbn;
+  };
+
+  class DirichletBC
+  
+  {
+  public:
+    shared_ptr<ProxyFunction> proxy;
+    VBnName vbn;
+    shared_ptr<CoefficientFunction> val;
+  };
+
+
+  // sum of integrals = 0
+  class VariationalEquation
+  {
+  public:
+    SumOfIntegrals igls;
+  };
+
+  
 }
 
 namespace ngfem
@@ -491,6 +518,15 @@ when building the system matrices.
               op = make_shared<DualProxyFunction> (*op);
             return op;
 	  }, py::arg("name"), "Use an additional operator of the finite element space")
+    .def("Dual",
+         [] (const spProxy self)
+          {
+            auto op = self->GetAdditionalProxy("dual");
+            if (!op)
+              throw Exception(string("Operator 'dual'  does not exist for ") + self->GetFESpace()->GetClassName() + string("!"));
+            op = make_shared<DualProxyFunction> (*op);
+            return op;
+	  }, "Use dual shapes")
     .def("Operators",
          [] (const spProxy self)
          {
@@ -512,6 +548,180 @@ when building the system matrices.
     .def("ReplaceFunction", [](shared_ptr<ProxyFunction> proxy, shared_ptr<GridFunction> gf) {
       return make_shared<GridFunctionCoefficientFunction>(gf, proxy); },
       "replace proxyfunction by GridFunction, apply the same operator")
+
+    /*
+    .def("__setitem__", [](shared_ptr<ProxyFunction> self, string name, spCF cf) {
+      Region reg(self->GetFESpace()->GetMeshAccess(), BND, name);
+      return DirichletCondition(self, reg, cf);
+    }), py::arg("name"),py::arg("cf"))
+    */
+
+
+
+    /*
+      Copied from base class. Difficult to maintain, but is there a better way to
+      avoid shadowing of methods, like the C++ using ?
+     */
+    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, int comp)
+                                         {
+                                           if (comp < 0 || comp >= self->Dimension())
+                                             throw py::index_error();
+                                           return MakeComponentCoefficientFunction (self, comp);
+                                         },
+         py::arg("comp"),
+         "returns component comp of vectorial CF")
+    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, py::slice inds)
+         {
+           FlatArray<int> dims = self->Dimensions();
+           if (dims.Size() != 1)
+             throw py::index_error();
+
+           size_t start, step, n;
+           InitSlice( inds, dims[0], start, step, n );
+           int first = start;
+           Array<int> num = { int(n) };
+           Array<int> dist = { int(step) };
+           /*
+             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
+             throw py::index_error();
+           */
+           return MakeSubTensorCoefficientFunction (self, first, std::move(num), std::move(dist));
+         }, py::arg("components"))
+
+    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, py::tuple comps)
+         {
+           FlatArray<int> dims = self->Dimensions();
+
+           // process ellipses
+           size_t ellipse_count = 0;
+           size_t ellipse_pos = 0;
+           for (auto i : Range(comps.size()))
+             if (py::extract<py::ellipsis>(comps[i]).check())
+               {
+                 ellipse_count++;
+                 ellipse_pos = i;
+               }
+
+           if (ellipse_count > 1)
+              throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
+           else if (ellipse_count == 1)
+             {
+               py::list new_comps{};
+               for (auto i : Range(comps.size()))
+                 {
+                   if (i == ellipse_pos)
+                       for (auto j : Range(dims.Size() - comps.size() + 1))
+                           new_comps.append(py::slice(0, dims[ellipse_pos + j], 1));
+                   else
+                       new_comps.append(comps[i]);
+                 }
+               comps = py::tuple(new_comps);
+             }
+//           cout << "comps: " << comps << endl;
+
+           if (comps.size() != dims.Size())
+             throw Exception("Too few indices or slices. Maybe use an ellipse '...'");
+
+           // detect full contractions beforehand
+           Array<shared_ptr<CoefficientFunction>> vecs;
+           vecs.SetAllocSize(comps.size());
+           for (auto i : Range(comps.size()))
+               if (!py::extract<int>(comps[i]).check() && // prevent conversion from int to Constant CF
+                   py::extract<shared_ptr<CoefficientFunction>>(comps[i]).check())
+                 {
+                   shared_ptr<CoefficientFunction> vec = comps[i].cast<shared_ptr<CoefficientFunction>>();
+                   if (vec->Dimensions().Size() != 1 ||
+                       vec->Dimensions()[0] != self->Dimensions()[i])
+                       throw py::index_error();
+                   vecs.Append(vec);
+                 }
+           if (vecs.Size() == dims.Size())
+               return MakeVectorContractionCoefficientFunction (self, std::move(vecs));
+
+           int numslice = 0;
+           int first = 0;
+           Array<int> num;
+           Array<int> dist;
+           int numcontracted = 0;
+           for (auto i : Range(comps.size()))
+             {
+               if (py::extract<int>(comps[i]).check())
+                 {
+                   int c = comps[i].cast<int>();
+                   if (c < 0 || c >= dims[i])
+                       throw py::index_error();
+                   for (auto j : Range(dist.Size()))
+                       dist[j] *= dims[i];
+
+                   first *= dims[i];
+                   first += c;
+                 }
+               else if (py::extract<shared_ptr<CoefficientFunction>>(comps[i]).check())
+                 {
+                   shared_ptr<CoefficientFunction> vec =
+                           comps[i].cast<shared_ptr<CoefficientFunction>>();
+                   if (vec->Dimensions().Size() != 1 ||
+                       vec->Dimensions()[0] != self->Dimensions()[i - numcontracted])
+                       throw py::index_error();
+
+                   self = MakeSingleContractionCoefficientFunction(self, vec, i - numcontracted);
+                   numcontracted++;
+                 }
+               else if (py::extract<py::slice>(comps[i]).check())
+                 {
+                   py::slice slice = comps[i].cast<py::slice>();
+                   numslice++;
+                   size_t start, step, n;
+                   InitSlice(slice, dims[i], start, step, n);
+                   num.Append(int(n));
+                   for (auto j : Range(dist.Size()))
+                       dist[j] *= dims[i];
+                   dist.Append(int(step));
+
+                   first *= dims[i];
+                   first += start;
+                 }
+               else
+                 throw Exception("Invalid object. Only integers, slices and (single) ellipses are allowed");
+             }
+
+           if (numslice == 0)
+             return MakeComponentCoefficientFunction(self, first);
+           else
+             return MakeSubTensorCoefficientFunction(self, first, std::move(num), std::move(dist));
+         })
+
+    .def("__getitem__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
+    {
+      return DirichletBoundary { self, vbn };
+    })
+
+    
+    /*
+    .def("__or__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
+    {
+      return DirichletBoundary { self, vbn };
+    })
+    */
+    ;
+
+  py::class_<DirichletBoundary> (m, "DirichletBoundary")
+    .def("__eq__", [](DirichletBoundary dir, shared_ptr<CoefficientFunction> cf) {
+      return DirichletBC { dir.proxy, dir.vbn, cf };
+    })
+    ;
+    
+  py::class_<DirichletBC> (m, "DirichletBC")
+    .def_property_readonly("proxy", [](DirichletBC & cond) { return cond.proxy; })
+    .def_property_readonly("vbn", [](DirichletBC & cond) { return cond.vbn; })
+    .def_property_readonly("vb", [](DirichletBC & cond) { return cond.vbn.vb; })
+    .def_property_readonly("name", [](DirichletBC & cond) { return cond.vbn.name; })    
+    .def_property_readonly("val", [](DirichletBC & cond) { return cond.val; })    
+    ;
+
+
+  py::class_<VariationalEquation> (m, "VariationalEquation")
+    .def_property_readonly("igls", [](VariationalEquation eq) { return eq.igls; })
     ;
 
   m.def("SetHeapSize",
@@ -2159,13 +2369,24 @@ parallel : bool
          [](shared_ptr<GF> self, spCF cf,
             VorB vb, py::object definedon, bool dualdiffop, bool use_simd, int mdcomp, optional<shared_ptr<BitArray>> definedonelements, int bonus_intorder)
          {
-           shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());          
-            Region * reg = nullptr;
-            if (py::extract<Region&> (definedon).check())
-              reg = &py::extract<Region&>(definedon)();
-            
-            py::gil_scoped_release release;
+           shared_ptr<TPHighOrderFESpace> tpspace = dynamic_pointer_cast<TPHighOrderFESpace>(self->GetFESpace());
+           
+           const Region * reg = nullptr;
+           if (py::extract<Region&> (definedon).check())
+             reg = &py::extract<Region&>(definedon)();
+           
+           py::gil_scoped_release release;
 
+           /*
+           shared_ptr<CoefficientFunction>  keepcf;
+           if (auto restcf = dynamic_pointer_cast<RestrictedCoefficientFunction>(cf))
+             {
+               keepcf = cf;
+               reg = & (restcf -> GetRegion());
+               cf = restcf->GetCF();
+             }
+           */
+           
             if(tpspace)
             {
               Transfer2TPMesh(cf.get(),self.get(),glh);
@@ -2225,11 +2446,19 @@ bonus_intorder : int
              reg = &py::extract<Region&>(definedon)();
            
            py::gil_scoped_release release;
-           self->Interpolate (*cf, reg, mdcomp, lhp.GetLH());
+           // self->Interpolate (*cf, reg, mdcomp, lhp.GetLH());
+           self->GetFESpace()->Interpolate(*cf, self->GetVector(mdcomp), reg, lhp.GetLH());
          },
          py::arg("coefficient"),
          py::arg("definedon")=DummyArgument(),
          py::arg("mdcomp")=0)
+
+    
+    .def("__setitem__", [](shared_ptr<GF> self, VBnName namevb, spCF cf) {
+      Region reg(self->GetFESpace()->GetMeshAccess(), namevb.vb, namevb.name);
+      self->GetFESpace()->Interpolate(*cf, self->GetVector(), &reg, lhp.GetLH());
+    }, py::arg("namevb"),py::arg("cf"))
+
     
     .def_property_readonly("name", &GridFunction::GetName, "Name of the Gridfunction")
 
@@ -2564,6 +2793,12 @@ diffop : ngsolve.fem.DifferentialOperator
         if (i != 0) throw Exception("can only add integer 0 to SumOfIntegrals (for Python sum(list))");
         return igls; })
     .def("SetDefinedOnElements", &SumOfIntegrals::SetDefinedOnElements)
+    .def("__eq__", [](const SumOfIntegrals &igls, double x) {
+      return VariationalEquation { igls };
+    })
+    .def("__eq__", [](const SumOfIntegrals &igls1, const SumOfIntegrals &igls2) {
+      return VariationalEquation { igls1-igls2 };
+    })
     ;
 
   py::class_<Variation> (m, "Variation")
@@ -2802,6 +3037,8 @@ integrator : ngsolve.fem.BFI
              }
            return self;
          })
+
+    .def("__iadd__", [](BF & self, shared_ptr<SpecialElementGroup> seg) -> BilinearForm& { self.Add(seg); return self; })
          
     .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on")
 
@@ -3255,12 +3492,32 @@ integrator : ngsolve.fem.LFI
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
     .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>(), "Update preconditioner")
+    .def ("SetAdditionalDirichletConstraints", [](Preconditioner & pre, Region reg) { pre.SetAdditionalDirichletConstraints(reg); })
+    .def("__str__", [](Preconditioner &self) { return ToString<Preconditioner>(self); } )
+    
     .def_property_readonly("mat", [](Preconditioner &self)
                    {
                      return self.GetMatrixPtr();
                    }, "matrix of the preconditioner")
     ;
+  
+  {
+    auto creator = py::cpp_function
+      ([](py::object cls, py::kwargs kwargs)
+      {
+        return py::cpp_function
+          ([cls, kwargs](py::object bf)
+            { return cls(*py::make_tuple(bf), **kwargs); },
+            py::arg("bf"),
+            "Create and register the deferred preconditioner with a BilinearForm.");
+      },
+        "Deferred preconditioner; call the result with a BilinearForm to create it.");
+    prec_class.attr("Creator") =
+      py::reinterpret_borrow<py::object>(PyClassMethod_New(creator.ptr()));
+  }
 
+
+  
   auto pre_local = py::class_<LocalPreconditioner, shared_ptr<LocalPreconditioner>, Preconditioner>
     (m,"LocalPreconditioner", LocalPreconditioner::GetDocu().GetPythonDocString().c_str());
   
@@ -4249,7 +4506,7 @@ deformation : ngsolve.comp.GridFunction
             for (FlatArray<int> els_of_col : element_coloring1)
             {
               SharedLoop sl(els_of_col.Range());
-              task_manager -> CreateJob
+              TaskManager :: CreateJob
               ( [&] (const TaskInfo & ti) 
               {
                 LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
@@ -4696,6 +4953,28 @@ If `maxdist` == 0. then 2*meshsize is used.
      })
      ;
 
+   py::class_<SpecialElementGroup, shared_ptr<SpecialElementGroup>> (m, "SpecialElementGroup");
+
+   py::class_<ContactIntegrator2, shared_ptr<ContactIntegrator2>, SpecialElementGroup> (m, "ContactIntegrator")
+     .def(py::init([](std::variant<Region,string> primary, std::variant<Region,string> secondary,
+                      shared_ptr<GridFunction> deformation, std::optional<int> intorder) {
+       auto ci = make_shared<ContactIntegrator2>(primary, secondary, deformation);
+       if (intorder.has_value()) ci->SetIntOrder (*intorder);
+       return ci;
+     }), py::arg("me"), py::arg("other"), py::arg("deformation")=nullptr, py::arg("intorder")=nullopt)
+     .def("Add", [](shared_ptr<ContactIntegrator2> ci, shared_ptr<CoefficientFunction> coef) {
+       ci -> AddIntegrator(coef);
+       return ci;
+     })
+     ;
+          
+   
+   
+
+   
+
+
+   
   m.def("ToArchive", [](shared_ptr<netgen::Mesh> mesh, bool binary){
         return py::bytes(webgui::ToArchive(mesh, binary));
   });

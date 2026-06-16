@@ -367,12 +367,12 @@ namespace ngcomp
     shared_ptr<FESpace> space_y = festp.Space(0);
     auto & nels = festp.GetNels();
     const Table<int> & element_coloring0 = space_x->ElementColoring(vb);
-    if (task_manager)
+    if (GetTaskManager())
     {
       for (FlatArray<int> els_of_col : element_coloring0)
       {
         SharedLoop2 sl(els_of_col.Range());
-        task_manager -> CreateJob
+        TaskManager :: CreateJob
         ( [&] (const TaskInfo & ti) 
         {
           LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);
@@ -413,7 +413,7 @@ namespace ngcomp
     for (FlatArray<int> els_of_col : element_coloring0)
     {
       SharedLoop2 sl(els_of_col.Range());
-      task_manager -> CreateJob
+      TaskManager :: CreateJob
       ( [&] (const TaskInfo & ti) 
       {
         LocalHeap lh = clh.Split(ti.thread_nr, ti.nthreads);

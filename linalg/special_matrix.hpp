@@ -220,6 +220,7 @@ namespace ngla
     virtual void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
     shared_ptr<BaseMatrix> GetMatrix() const { return mat; }
+    virtual shared_ptr<BaseSparseMatrix> CreateSparseMatrix() const override;
     IntRange GetRange() const { return range; }
 
     /*
@@ -443,12 +444,6 @@ namespace ngla
     shared_ptr<BaseMatrix> InverseMatrix (shared_ptr<const Array<int>> clusters) const override
     { return mat->InverseMatrix(clusters); }
     
-    INVERSETYPE SetInverseType ( INVERSETYPE ainversetype ) const override
-    { return mat->SetInverseType(ainversetype); }
-    INVERSETYPE SetInverseType ( string ainversetype ) const override
-    { return mat->SetInverseType(ainversetype); }
-    INVERSETYPE  GetInverseType () const override
-    { return mat->GetInverseType(); }
     void DoArchive (Archive & ar) override
     { mat->DoArchive(ar); }
   };

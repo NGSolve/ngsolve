@@ -466,7 +466,7 @@ namespace ngcomp
             }
           case HCurlAMG_Parameters::potential_direct:
             {
-              h1mat->SetInverseType(SPARSECHOLESKY);
+              h1mat->SetInverseType("sparsecholesky");
               node_h1 = h1mat->InverseMatrix(h1_freedofs);
               break;
             }
@@ -498,7 +498,7 @@ namespace ngcomp
       {
         if (param.verbose >= 2)
           cout << IM(0) << "coarse direct inverse, size = " << coarsemat->Height() << endl;
-        coarsemat->SetInverseType(SPARSECHOLESKY);
+        coarsemat->SetInverseType("sparsecholesky");
         return coarsemat->InverseMatrix(cinfo.freedofs);
       }
     else
@@ -1350,7 +1350,7 @@ namespace ngcomp
       {
         for(auto i : Range(chcurlsize, csize))
           cinfo.freedofs->Clear(i);
-        coarsemat->SetInverseType(SPARSECHOLESKY);
+        coarsemat->SetInverseType("sparsecholesky");
         coarsepre = coarsemat->InverseMatrix(cinfo.freedofs);
       }
     else

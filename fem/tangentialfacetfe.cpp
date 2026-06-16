@@ -235,7 +235,20 @@ namespace ngfem
   void TangentialFacetFacetFE<ET_SEGM>::CalcDualShape2 (const MIP & mip,
                                                         TFA & shape) const
   {
-    throw Exception("TangentialFacetFacetFE<ET_SEGM>::CalcDualShape2 not implemented");
+    typedef typename std::remove_const<typename std::remove_reference<decltype(mip.IP()(0))>::type>::type T;        
+    auto & ip = mip.IP();
+    T x = ip(0);
+    if ( vnums[0] > vnums[1]) x = 1-x;
+    auto xi = 2*x-1;
+
+    Vec<2,T> tau = mip.GetJacobian().Col(0);
+    tau /= mip.GetMeasure();
+
+    LegendrePolynomial(order, xi, 
+		       SBLambda([&] (size_t i, auto val)
+                       {
+                         shape[i] = val*tau;
+                       }));
   }
   
   template<>

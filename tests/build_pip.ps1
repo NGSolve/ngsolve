@@ -30,9 +30,10 @@ if ($LASTEXITCODE -ne 0) {
 & $py\python.exe -m venv --clear ..\venv_ngs
 ..\venv_ngs\scripts\Activate.ps1
 $env:PATH += ";$env:CI_PROJECT_DIR\venv_ngs\bin"
+$env:PATH += ";C:\tools"
 python --version
 
-pip3 install scikit-build wheel numpy twine mkl-devel==2022.* mkl==2022.*
+pip3 install scikit-build wheel numpy twine "ngsolve-openblas==$env:OPENBLAS_VERSION_PIP"
 pip3 install netgen-mesher==$netgen_version
 python setup.py bdist_wheel -G"Visual Studio 17 2022"
 python -m twine upload dist\*.whl

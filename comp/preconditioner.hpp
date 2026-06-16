@@ -25,6 +25,7 @@ namespace ngcomp
     weak_ptr<BilinearForm> bf;
     bool is_registered = false;
   protected:
+    Region additional_dirichlet_constraints;
     bool test;
     bool timing;
     bool print;
@@ -71,7 +72,9 @@ namespace ngcomp
     }
     
     virtual bool IsComplex() const override { return GetMatrix().IsComplex(); }
-        
+
+    void SetAdditionalDirichletConstraints (Region areg) { additional_dirichlet_constraints = areg; }
+    
     ///
     virtual void Mult (const BaseVector & x, BaseVector & y) const override
     {
@@ -149,6 +152,11 @@ namespace ngcomp
     using NGS_Object::GetMemoryTracer;
   };
 
+  inline ostream & operator<< (ostream & ost, const Preconditioner & obj)
+  {
+    obj.PrintReport (ost);
+    return ost;
+  }
 
 
   ///

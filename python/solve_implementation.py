@@ -8,6 +8,10 @@ from ngsolve import (
     BND,
     Preconditioner,
 )
+
+from ngsolve.comp import VariationalEquation, DirichletBC
+from ngsolve.solvers import CGSolver
+
 from .nonlinearsolvers import NewtonSolver
 from .krylovspace import GMResSolver, LinearSolver
 
@@ -163,6 +167,59 @@ def _create_lin_appl(self, gfu: GridFunction) -> LinearApplication:
 BilinearForm.__mul__ = _create_lin_appl
 
 
+class VariationalEquationSolver:
+    def __init__(self, equation, *args, **kwargs):
+        self.bf = BilinearForm(equation.igls)
+
+        self.dirichlet = [a for a in args if isinstance(a, DirichletBC)]
+        self.fes = self.bf.space
+        self.mesh = self.fes.mesh
+        
+        # if len(self.dirichlet) > 0:
+        #    self.dreg = self.mesh.Region(self.dirichlet[0].vbn)
+        #    for d in self.dirichlet:
+        #        self.dreg += self.mesh.Region(d.vbn)
+
+        if self.dirichlet:
+            self.dreg = sum((self.mesh.Region(d.vbn) for d in self.dirichlet),
+                            self.mesh.Region(self.dirichlet[0].vbn))
+
+                
+        self.pre = kwargs.get('pre')   # a creator ?
+        if self.pre:   # and if it is a creator 
+            self.pre = self.pre(self.bf)
+            if self.dirichlet:
+                self.pre.SetAdditionalDirichletConstraints(self.dreg)
+                    
+        
+        
+    def Solve(self):
+        gf = GridFunction(self.fes)
+        for d in self.dirichlet:
+            gf[d.vbn] = d.val
+        self.bf.AssembleLinearization(gf.vec)
+        rhs = self.bf.Apply(gf.vec)
+
+        if self.pre:
+            inv = CGSolver(self.bf.mat, self.pre.mat, printrates=True)
+        else:
+            freedofs = self.fes.FreeDofs()
+            if self.dirichlet:
+                freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
+            inv = self.bf.mat.Inverse(freedofs)
+            
+        gf.vec.data -= inv*rhs
+        return gf
+        
+
+def SolveVE (equation, *args, **kwargs):
+     return VariationalEquationSolver(equation,*args,**kwargs).Solve()
+
+ 
+VariationalEquation.Solve = SolveVE
+
+
+
 @functools.wraps(Application.Solve)
 def Solve(eq: Equation, *args, **kwargs):
-    eq.Solve(*args, **kwargs)
+    return eq.Solve(*args, **kwargs)
