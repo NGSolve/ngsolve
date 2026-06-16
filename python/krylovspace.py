@@ -47,6 +47,16 @@ plotrates : bool = False
   matplotlib plot of errors (residuals)
 """
 
+
+class LinearSolverCreator:
+    def __init__(self, cls, **kwargs):
+        self.cls = cls
+        self.kwargs = kwargs
+    def __call__(self, mat,pre):
+        return self.cls(mat,pre,**self.kwargs)
+
+
+
 class LinearSolver(BaseMatrix):
     """Base class for linear solvers.
 """ + linear_solver_param_doc
@@ -207,6 +217,13 @@ class LinearSolver(BaseMatrix):
             
         return is_converged
 
+    
+    @classmethod
+    def Creator(cls, **kwargs):
+        return LinearSolverCreator(cls, **kwargs)
+
+    
+    
 class CGSolver(LinearSolver):
     """Preconditioned conjugate gradient method
 

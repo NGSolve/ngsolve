@@ -11,6 +11,7 @@ from ngsolve import (
 
 from ngsolve.comp import VariationalEquation, DirichletBC, PreconditionerCreator
 from ngsolve.solvers import CGSolver
+from ngsolve.krylovspace import LinearSolverCreator
 
 from .nonlinearsolvers import NewtonSolver
 from .krylovspace import GMResSolver, LinearSolver
@@ -184,6 +185,10 @@ class VariationalEquationSolver:
                 self.pre = a(self.bf)
                 if self.dirichlet:
                     self.pre.SetAdditionalDirichletConstraints(self.dreg)
+                    
+            if isinstance(a, LinearSolverCreator):
+                self.linear_solver_creator = a
+
                         
         if pre := kwargs.get('pre'):
             self.pre = pre(self.bf)
@@ -198,8 +203,10 @@ class VariationalEquationSolver:
             gf[d.vbn] = d.val
         self.bf.AssembleLinearization(gf.vec)
 
-        if hasattr(self, 'pre'):
-            inv = CGSolver(self.bf.mat, self.pre.mat, printrates=True)
+        # if hasattr(self, 'pre'):
+        if hasattr(self, 'linear_solver_creator'):        
+            # inv = CGSolver(self.bf.mat, self.pre.mat, printrates=True)
+            inv = self.linear_solver_creator(self.bf.mat, self.pre.mat)
         else:
             freedofs = self.fes.FreeDofs()
             if self.dirichlet:
