@@ -3500,7 +3500,8 @@ integrator : ngsolve.fem.LFI
                      return self.GetMatrixPtr();
                    }, "matrix of the preconditioner")
     ;
-  
+
+  /*
   {
     auto creator = py::cpp_function
       ([](py::object cls, py::kwargs kwargs)
@@ -3515,7 +3516,7 @@ integrator : ngsolve.fem.LFI
     prec_class.attr("Creator1") =
       py::reinterpret_borrow<py::object>(PyClassMethod_New(creator.ptr()));
   }
-
+  */
   
   {
     struct CreatorClass {
@@ -3524,8 +3525,10 @@ integrator : ngsolve.fem.LFI
     };
 
     py::class_<CreatorClass> (m, "PreconditionerCreator")
-      .def("__call__", [](CreatorClass & c, py::object bf) {
-        return c.cls(*py::make_tuple(bf), **c.kwargs);
+      .def("__call__", [](CreatorClass & c, py::object bf, py::kwargs kw2) {
+        // cout << "PreconditionerCreator, kw2 = " << endl;
+        // py::print (kw2);
+        return c.cls(*py::make_tuple(bf), **c.kwargs, **kw2);
       });
     
     auto creator = py::cpp_function ([](py::object cls, py::kwargs kwargs) {

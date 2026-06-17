@@ -47,7 +47,8 @@ namespace ngcomp
 		    const string aname = "precond");
     ///
     virtual ~Preconditioner ();
-  
+
+    static DocInfo GetDocu ();    
     ///
     virtual bool LaterUpdate (void) { return laterupdate; }
     ///
@@ -73,7 +74,7 @@ namespace ngcomp
     
     virtual bool IsComplex() const override { return GetMatrix().IsComplex(); }
 
-    void SetAdditionalDirichletConstraints (Region areg) { additional_dirichlet_constraints = areg; }
+    virtual void SetAdditionalDirichletConstraints (Region areg) { additional_dirichlet_constraints = areg; }
     // freedofs from FESpace, filtered with additional constraints. Always new BitArray
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
     
@@ -507,6 +508,8 @@ namespace ngcomp
     {
       Update();
     }
+
+    void SetAdditionalDirichletConstraints (Region areg) override;
 
     ///
     virtual void Update () override;

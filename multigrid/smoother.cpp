@@ -27,6 +27,10 @@ namespace ngmg
   Smoother :: Smoother(const Flags & aflags)
     : flags(aflags)
   {
+    
+    if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
+      additional_dirichlet_constraints = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
+    
     SetMultiplicative();
     SetUpdateAll (0);
   }
@@ -721,6 +725,9 @@ namespace ngmg
     while(smoothing_blocks.Size() < level)
       smoothing_blocks.Append(nullptr);
 
+    if (additional_dirichlet_constraints)
+      flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
+    
     if (!smoothing_blocks.Last())
       smoothing_blocks.Last() = biform.GetFESpace()->CreateSmoothingBlocks(flags);
 

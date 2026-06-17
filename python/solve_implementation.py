@@ -182,18 +182,24 @@ class VariationalEquationSolver:
 
         for a in args:
             if isinstance(a, PreconditionerCreator):
-                self.pre = a(self.bf)
+                # self.pre = a(self.bf)                
+                # if self.dirichlet:
+                #    self.pre.SetAdditionalDirichletConstraints(self.dreg)
+                # better to get everything from the beginning:
                 if self.dirichlet:
-                    self.pre.SetAdditionalDirichletConstraints(self.dreg)
-                    
+                    self.pre = a(self.bf, additional_dirichlet_constraints=self.dreg)
+                else:
+                    self.pre = a(self.bf)
+
             if isinstance(a, LinearSolverCreator):
                 self.linear_solver_creator = a
 
                         
         if pre := kwargs.get('pre'):
-            self.pre = pre(self.bf)
             if self.dirichlet:
-                self.pre.SetAdditionalDirichletConstraints(self.dreg)
+                self.pre = pre(self.bf, additional_dirichlet_constraints=self.dreg)                
+            else:
+                self.pre = pre(self.bf)
                    
         
         

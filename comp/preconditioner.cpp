@@ -36,6 +36,12 @@ namespace ngcomp
         is_registered = true;
       }
 
+    // cout << "pre base, flags = " << aflags << endl;
+    if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
+      {
+        // cout << "Set Additonal Dirichelt, in base Preconditioner base" << endl;
+        additional_dirichlet_constraints = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
+      }
   }
   
 
@@ -44,6 +50,14 @@ namespace ngcomp
   {
     if (auto bfp = bf.lock(); is_registered && bfp)
       bfp->UnsetPreconditioner(this);
+  }
+
+  DocInfo Preconditioner :: GetDocu ()
+  {
+    DocInfo docu;
+    docu.short_docu = "Base class preconditioner.";
+    docu.Arg("additional_dirichlet_constraints") = "optional<Region> = False";
+    return docu;
   }
 
   shared_ptr<BitArray> Preconditioner :: GetFreeDofs (bool external) const
@@ -275,6 +289,8 @@ namespace ngcomp
     if (!sm)
       throw Exception ("smoother could not be allocated"); 
 
+    sm -> SetAdditionalDirichletConstraints(additional_dirichlet_constraints);
+    
     auto prol = lo_fes->GetProlongation();
 
     mgp = make_shared<MultigridPreconditioner> (lo_bfa, sm, prol);
@@ -317,7 +333,14 @@ namespace ngcomp
     GetMemoryTracer().Track(*mgp, "MultiGridPreconditioner");
   }
 
+  void MGPreconditioner :: SetAdditionalDirichletConstraints (Region areg)
+  {
+    additional_dirichlet_constraints = areg;
+    // if (sm)
+    // sm -> SetAdditionalDirichletConstraints(areg);
+  }
 
+  
   void MGPreconditioner :: Update ()
   {
     static Timer t("MGPreconditioner::Update"); RegionTimer reg(t);
@@ -341,6 +364,7 @@ namespace ngcomp
       {
         static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
         auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
+        fine_smoother -> SetAdditionalDirichletConstraints(additional_dirichlet_constraints);
         GetMemoryTracer().Track(*fine_smoother, "FineSmoother");
         tlp = make_shared<TwoLevelMatrix> (&bfa->GetMatrix(),
                                            &*mgp,
@@ -457,7 +481,7 @@ namespace ngcomp
 
   DocInfo DirectPreconditioner :: GetDocu ()
   {
-    DocInfo docu; //  = FESpace::GetDocu();
+    DocInfo docu = Preconditioner::GetDocu();
     docu.short_docu = "A direct solver as preconditioner.";
     docu.long_docu =
       R"raw_string(Computes a sparse facgtorization at update, forward/backward solve in apply
@@ -558,7 +582,7 @@ namespace ngcomp
 
   DocInfo LocalPreconditioner :: GetDocu ()
   {
-    DocInfo docu; //  = FESpace::GetDocu();
+    DocInfo docu = Preconditioner::GetDocu();    
     docu.short_docu = "A local preconditioner.";
     docu.long_docu =
       R"raw_string(additive or multiplicative point or block preconditioner

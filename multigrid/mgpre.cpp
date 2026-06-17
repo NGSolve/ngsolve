@@ -123,8 +123,16 @@ namespace ngmg
 
             bool condense = biform->UsesEliminateInternal();
             shared_ptr<BitArray> freedofs = biform->GetFESpace()->GetFreeDofs(condense);
-            *testout << "freedofs for coarse, condense = " << int(condense) << endl
-                     << *freedofs << endl;
+            auto additional_dirichlet_constraints = smoother -> GetAdditionalDirichletConstraints();
+            if (additional_dirichlet_constraints)
+              {
+                BitArray dofs = biform->GetFESpace()->GetDofs(*additional_dirichlet_constraints);
+                dofs.Invert();
+                dofs.And(*freedofs);
+                freedofs = make_shared<BitArray>(std::move(dofs));
+              }
+            
+
 	    if (!freedofs)
 	      coarsegridpre =
 		dynamic_cast<const BaseSparseMatrix&> (biform->GetMatrix(0)) .InverseMatrix();
