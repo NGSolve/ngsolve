@@ -557,143 +557,19 @@ when building the system matrices.
       return DirichletCondition(self, reg, cf);
     }), py::arg("name"),py::arg("cf"))
     */
-
-
-
-    /*
-      Copied from base class. Difficult to maintain, but is there a better way to
-      avoid shadowing of methods, like the C++ using ?
-     */
-    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, int comp)
-                                         {
-                                           if (comp < 0 || comp >= self->Dimension())
-                                             throw py::index_error();
-                                           return MakeComponentCoefficientFunction (self, comp);
-                                         },
-         py::arg("comp"),
-         "returns component comp of vectorial CF")
-    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, py::slice inds)
-         {
-           FlatArray<int> dims = self->Dimensions();
-           if (dims.Size() != 1)
-             throw py::index_error();
-
-           size_t start, step, n;
-           InitSlice( inds, dims[0], start, step, n );
-           int first = start;
-           Array<int> num = { int(n) };
-           Array<int> dist = { int(step) };
-           /*
-             if (c1 < 0 || c2 < 0 || c1 >= dims[0] || c2 >= dims[1])
-             throw py::index_error();
-           */
-           return MakeSubTensorCoefficientFunction (self, first, std::move(num), std::move(dist));
-         }, py::arg("components"))
-
-    .def("__getitem__",  [](shared_ptr<CoefficientFunction> self, py::tuple comps)
-         {
-           FlatArray<int> dims = self->Dimensions();
-
-           // process ellipses
-           size_t ellipse_count = 0;
-           size_t ellipse_pos = 0;
-           for (auto i : Range(comps.size()))
-             if (py::extract<py::ellipsis>(comps[i]).check())
-               {
-                 ellipse_count++;
-                 ellipse_pos = i;
-               }
-
-           if (ellipse_count > 1)
-              throw Exception(ToString(ellipse_count) + " ellipses detected, but only one is allowed.");
-           else if (ellipse_count == 1)
-             {
-               py::list new_comps{};
-               for (auto i : Range(comps.size()))
-                 {
-                   if (i == ellipse_pos)
-                       for (auto j : Range(dims.Size() - comps.size() + 1))
-                           new_comps.append(py::slice(0, dims[ellipse_pos + j], 1));
-                   else
-                       new_comps.append(comps[i]);
-                 }
-               comps = py::tuple(new_comps);
-             }
-//           cout << "comps: " << comps << endl;
-
-           if (comps.size() != dims.Size())
-             throw Exception("Too few indices or slices. Maybe use an ellipse '...'");
-
-           // detect full contractions beforehand
-           Array<shared_ptr<CoefficientFunction>> vecs;
-           vecs.SetAllocSize(comps.size());
-           for (auto i : Range(comps.size()))
-               if (!py::extract<int>(comps[i]).check() && // prevent conversion from int to Constant CF
-                   py::extract<shared_ptr<CoefficientFunction>>(comps[i]).check())
-                 {
-                   shared_ptr<CoefficientFunction> vec = comps[i].cast<shared_ptr<CoefficientFunction>>();
-                   if (vec->Dimensions().Size() != 1 ||
-                       vec->Dimensions()[0] != self->Dimensions()[i])
-                       throw py::index_error();
-                   vecs.Append(vec);
-                 }
-           if (vecs.Size() == dims.Size())
-               return MakeVectorContractionCoefficientFunction (self, std::move(vecs));
-
-           int numslice = 0;
-           int first = 0;
-           Array<int> num;
-           Array<int> dist;
-           int numcontracted = 0;
-           for (auto i : Range(comps.size()))
-             {
-               if (py::extract<int>(comps[i]).check())
-                 {
-                   int c = comps[i].cast<int>();
-                   if (c < 0 || c >= dims[i])
-                       throw py::index_error();
-                   for (auto j : Range(dist.Size()))
-                       dist[j] *= dims[i];
-
-                   first *= dims[i];
-                   first += c;
-                 }
-               else if (py::extract<shared_ptr<CoefficientFunction>>(comps[i]).check())
-                 {
-                   shared_ptr<CoefficientFunction> vec =
-                           comps[i].cast<shared_ptr<CoefficientFunction>>();
-                   if (vec->Dimensions().Size() != 1 ||
-                       vec->Dimensions()[0] != self->Dimensions()[i - numcontracted])
-                       throw py::index_error();
-
-                   self = MakeSingleContractionCoefficientFunction(self, vec, i - numcontracted);
-                   numcontracted++;
-                 }
-               else if (py::extract<py::slice>(comps[i]).check())
-                 {
-                   py::slice slice = comps[i].cast<py::slice>();
-                   numslice++;
-                   size_t start, step, n;
-                   InitSlice(slice, dims[i], start, step, n);
-                   num.Append(int(n));
-                   for (auto j : Range(dist.Size()))
-                       dist[j] *= dims[i];
-                   dist.Append(int(step));
-
-                   first *= dims[i];
-                   first += start;
-                 }
-               else
-                 throw Exception("Invalid object. Only integers, slices and (single) ellipses are allowed");
-             }
-
-           if (numslice == 0)
-             return MakeComponentCoefficientFunction(self, first);
-           else
-             return MakeSubTensorCoefficientFunction(self, first, std::move(num), std::move(dist));
-         })
-
-    .def("__getitem__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
+    .def("__getitem__", [](spProxy self, int comp) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, comp);
+    }, py::arg("comp"), "returns component comp of vectorial CF")
+    .def("__getitem__", [](spProxy self, py::slice inds) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, inds);
+    }, py::arg("components"))
+    .def("__getitem__", [](spProxy self, py::tuple comps) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, comps);
+    })
+    .def("__getitem__", [](spProxy self, VBnName vbn)
     {
       return DirichletBoundary { self, vbn };
     })
