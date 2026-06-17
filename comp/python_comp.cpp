@@ -3553,7 +3553,22 @@ integrator : ngsolve.fem.LFI
       return py::dict( py::cast (LocalPreconditioner::GetDocu().arguments) );
     });
   
+  auto pre_direct = py::class_<DirectPreconditioner, shared_ptr<DirectPreconditioner>, Preconditioner>
+    (m,"DirectPreconditioner", DirectPreconditioner::GetDocu().GetPythonDocString().c_str());
+  
+  pre_direct
+    .def(py::init([pre_direct](shared_ptr<BilinearForm> bf, py::kwargs kwargs)
+    {
+      auto flags = CreateFlagsFromKwArgs(kwargs, pre_direct);
+      return make_shared<DirectPreconditioner>(bf, flags, "local");
+    }), py::arg("bf"))
+    .def_static("__flags_doc__", []() {
+      return py::dict( py::cast (DirectPreconditioner::GetDocu().arguments) );
+    });
+  
 
+
+  
   auto pre_bddc = py::class_<BASE_BDDCPreconditioner, shared_ptr<BASE_BDDCPreconditioner>, Preconditioner>
     (m,"BDDCPreconditioner", BASE_BDDCPreconditioner::GetDocu().GetPythonDocString().c_str());
   pre_bddc

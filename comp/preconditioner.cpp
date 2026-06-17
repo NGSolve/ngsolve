@@ -455,93 +455,67 @@ namespace ngcomp
   // ****************************** DirectPreconditioner **************************
 
 
-  class NGS_DLL_HEADER DirectPreconditioner : public Preconditioner
+  DocInfo DirectPreconditioner :: GetDocu ()
   {
-    shared_ptr<BilinearForm> bfa;
-    shared_ptr<BaseMatrix> inverse;
-    string inversetype;
+    DocInfo docu; //  = FESpace::GetDocu();
+    docu.short_docu = "A direct solver as preconditioner.";
+    docu.long_docu =
+      R"raw_string(Computes a sparse facgtorization at update, forward/backward solve in apply
+)raw_string";      
 
-  public:
-    DirectPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
-			  const string aname = "directprecond")
-      : Preconditioner(abfa,aflags,aname), bfa(abfa)
-    {
-      // bfa -> SetPreconditioner (this);
-      inversetype = flags.GetStringFlag("inverse", default_inversetype);
-    }
+    docu.Arg("inverse") = "string = "+default_inversetype+"\n"
+      "  use block Jacobi/Gauss-Seidel";
+    
+    /*
+    docu.Arg("block") = "bool = false\n"
+      "  use block Jacobi/Gauss-Seidel";
+    docu.Arg("GS") = "bool = false\n"
+      "  use Gauss-Seidel instead of Jacobi";
+    docu.Arg("blocktype") = "string = undefined\n"
+      "  uses block Jacobi with blocks defined by space";
+    */
+    return docu;    
+  }
 
-    ///
-    virtual ~DirectPreconditioner()
-    {
-      ; //delete inverse;
-    }
+
+  
+  void DirectPreconditioner :: Update ()
+  {
+    // delete inverse;
+    if (GetTimeStamp() == bfa->GetTimeStamp()) return;
+    timestamp = bfa->GetTimeStamp();
     
-    virtual void FinalizeLevel (const BaseMatrix * mat) 
-    {
-      Update();
-    }
+    cout << IM(3) << "Update Direct Solver Preconditioner" << flush;
     
-    ///
-    virtual void Update ()
-    {
-      // delete inverse;
-      if (GetTimeStamp() == bfa->GetTimeStamp()) return;
-      timestamp = bfa->GetTimeStamp();
-      
-      cout << IM(3) << "Update Direct Solver Preconditioner" << flush;
-      
-      try
-	{                                          
-          auto have_sparse_fact = dynamic_pointer_cast<SparseFactorization> (inverse);
-          if (have_sparse_fact && have_sparse_fact -> SupportsUpdate())
-            {
-              if (have_sparse_fact->GetAMatrix() == bfa->GetMatrixPtr())
-                {
-                  // cout << "have the same matrix, can update factorization" << endl;
-                  have_sparse_fact->Update();
+    try
+      {                                          
+        auto have_sparse_fact = dynamic_pointer_cast<SparseFactorization> (inverse);
+        if (have_sparse_fact && have_sparse_fact -> SupportsUpdate())
+          {
+            if (have_sparse_fact->GetAMatrix() == bfa->GetMatrixPtr())
+              {
+                // cout << "have the same matrix, can update factorization" << endl;
+                have_sparse_fact->Update();
                   return;
-                }
-            }
-          
-	  bfa->GetMatrix().SetInverseType (inversetype);
-	  shared_ptr<BitArray> freedofs = 
-	    bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());
-	  inverse = bfa->GetMatrix().InverseMatrix(freedofs);
-	}
-      catch (exception & e)
-	{
-	  throw Exception (string("caught exception in DirectPreconditioner: \n") +
+              }
+          }
+        
+        bfa->GetMatrix().SetInverseType (inversetype);
+        /*
+        shared_ptr<BitArray> freedofs = 
+          bfa->GetFESpace()->GetFreeDofs (bfa->UsesEliminateInternal());
+        */
+        shared_ptr<BitArray> freedofs = this->GetFreeDofs (bfa->UsesEliminateInternal());
+        inverse = bfa->GetMatrix().InverseMatrix(freedofs);
+      }
+    catch (exception & e)
+      {
+        throw Exception (string("caught exception in DirectPreconditioner: \n") +
                            e.what() + 
-                           "\nneeds a sparse matrix (or has memory problems)");
-	}
-      GetMemoryTracer().Track(*inverse, "Inverse");
-    }
-
-    virtual void CleanUpLevel ()
-    {
-      // delete inverse;
-      inverse = nullptr;
-    }
-
-    virtual const BaseMatrix & GetMatrix() const
-    {
-      if (!inverse)
-        ThrowPreconditionerNotReady();        
-      return *inverse;
-    }
-
-    virtual const BaseMatrix & GetAMatrix() const
-    {
-      return bfa->GetMatrix(); 
-    }
-
-    virtual const char * ClassName() const
-    {
-      return "Direct Preconditioner"; 
-    }
-  };
-
-
+                         "\nneeds a sparse matrix (or has memory problems)");
+      }
+    GetMemoryTracer().Track(*inverse, "Inverse");
+  }
 
 
 

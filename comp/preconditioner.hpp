@@ -238,6 +238,63 @@ namespace ngcomp
   };
 
 
+  class NGS_DLL_HEADER DirectPreconditioner : public Preconditioner
+  {
+    shared_ptr<BilinearForm> bfa;
+    shared_ptr<BaseMatrix> inverse;
+    string inversetype;
+
+  public:
+    DirectPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
+			  const string aname = "directprecond")
+      : Preconditioner(abfa,aflags,aname), bfa(abfa)
+    {
+      // bfa -> SetPreconditioner (this);
+      inversetype = flags.GetStringFlag("inverse", default_inversetype);
+    }
+
+    ///
+    virtual ~DirectPreconditioner()
+    {
+      ; //delete inverse;
+    }
+
+    static DocInfo GetDocu ();    
+    
+    virtual void FinalizeLevel (const BaseMatrix * mat) 
+    {
+      Update();
+    }
+    
+    ///
+    virtual void Update ();
+
+    virtual void CleanUpLevel ()
+    {
+      // delete inverse;
+      inverse = nullptr;
+    }
+
+    virtual const BaseMatrix & GetMatrix() const
+    {
+      if (!inverse)
+        ThrowPreconditionerNotReady();        
+      return *inverse;
+    }
+
+    virtual const BaseMatrix & GetAMatrix() const
+    {
+      return bfa->GetMatrix(); 
+    }
+
+    virtual const char * ClassName() const
+    {
+      return "Direct Preconditioner"; 
+    }
+  };
+
+
+  ////////////////////////
 
   class NGS_DLL_HEADER BASE_BDDCPreconditioner : public Preconditioner
   {
