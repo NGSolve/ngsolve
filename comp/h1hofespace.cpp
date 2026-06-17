@@ -1509,7 +1509,18 @@ into the wirebasket.
     cout << IM(4) << " blocktype " << smoothing_type << endl;
     // cout << " Use H1-Block Smoother:  "; 
 
-    FilteredTableCreator creator(GetFreeDofs().get());
+    auto freedofs = GetFreeDofs();
+    if (precflags.AnyFlagDefined("additional_dirichlet_constraints"))
+      {
+        Region reg = std::any_cast<Region>(precflags.GetAnyFlag("additional_dirichlet_constraints"));
+        BitArray dofs = GetDofs(reg);
+        dofs.Invert();
+        dofs.And(*freedofs);
+        freedofs = make_shared<BitArray>(std::move(dofs));
+      }
+    
+    
+    FilteredTableCreator creator(freedofs.get());
     for ( ; !creator.Done(); creator++)
       {
 	switch (smoothing_type)

@@ -363,6 +363,8 @@ namespace ngcomp
     if (bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
       {
         static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
+        if (additional_dirichlet_constraints)
+          flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
         auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
         fine_smoother -> SetAdditionalDirichletConstraints(additional_dirichlet_constraints);
         GetMemoryTracer().Track(*fine_smoother, "FineSmoother");

@@ -344,11 +344,6 @@ namespace ngmg
     auto cw = cpre->CreateColVector();
     auto res = CreateColVector();
 
-    /*
-    cout << "type = " << typeid(cres).name() << endl;
-    cout << "type = " << typeid(cw).name() << endl;
-    cout << "type = " << typeid(res).name() << endl;
-    */
     u = 0;
 
       {
@@ -379,10 +374,6 @@ namespace ngmg
 
         smoother->PostSmooth (level, u, f, smoothingsteps);
       }
-
-      // delete res;
-      // delete cw;
-      // delete cres;
   }
 
   ostream & TwoLevelMatrix :: Print (ostream & s) const
