@@ -183,11 +183,13 @@ static GlobalDummyVariables globvar;
 
 
 void ExportNgcompMesh (py::module &m);
+void ExportReadAnsys (py::module &m);
 
 void NGS_DLL_HEADER ExportNgcomp(py::module &m)
 {
 
   ExportNgcompMesh(m);
+  ExportReadAnsys(m);
   //////////////////////////////////////////////////////////////////////////////////////////
 
   static size_t global_heapsize =
