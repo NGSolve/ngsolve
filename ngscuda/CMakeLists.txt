@@ -50,10 +50,10 @@ endif()
 
 if(NETGEN_USE_PYTHON)
     find_package(Python3 COMPONENTS Interpreter Development)
-    Python3_add_library(ngscuda python_ngscuda.cpp)
-    target_link_libraries(ngscuda PUBLIC ${lib_name})
-    set_target_properties(ngscuda PROPERTIES INSTALL_RPATH "${NETGEN_RPATH_TOKEN}/../${NETGEN_PYTHON_RPATH}")
-    install(TARGETS ngscuda DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
+    Python3_add_library(_ngscuda python_ngscuda.cpp)
+    target_link_libraries(_ngscuda PUBLIC ${lib_name})
+    set_target_properties(_ngscuda PROPERTIES INSTALL_RPATH "${NETGEN_RPATH_TOKEN}/../${NETGEN_PYTHON_RPATH}")
+    install(TARGETS _ngscuda DESTINATION ${NGSOLVE_INSTALL_DIR_PYTHON}/ngsolve COMPONENT ngsolve)
 endif(NETGEN_USE_PYTHON)
 
 set( ngs_nvcc_header "${ngscxx_header}

@@ -1,48 +1,46 @@
 #! /bin/bash
 set -e
 ulimit -n 1024000 # lower open file limit, seems to affect performance
-alias ulimit=echo
-yum -y update
-yum -y install ninja-build fontconfig-devel tk-devel tcl-devel libXmu-devel mesa-libGLU-devel
 
-curl https://dl.fedoraproject.org/pub/epel/8/Everything/x86_64/Packages/c/ccache-3.7.7-1.el8.x86_64.rpm -o ccache.rpm
-dnf -y install ccache.rpm
+# This script runs *inside* the manylinux build image (see pip_linux in
+# tests/gitlab-ci/pip.yml)
 
-cd external_dependencies/netgen
-git remote update
-bash tests/build_pip.sh
-cd ../..
-
-rm -rf wheelhouse
-mkdir wheelhouse
 export NETGEN_VERSION=`/opt/python/cp312-cp312/bin/python external_dependencies/netgen/tests/utils.py --get-version --dir=./external_dependencies/netgen`
-export NETGEN_CCACHE=1
 echo "Netgen version: $NETGEN_VERSION"
+
+rm -rf wheelhouse dist
+mkdir -p wheelhouse
+export NETGEN_ARCH=avx2
+
+export CCACHE_BASEDIR=$(pwd)
+export CCACHE_NOHASHDIR=1
+export CCACHE_DIR=${CCACHE_DIR:-$HOME/.ccache}
 
 for pyversion in 314 313 312 311 310
 do
     export PYDIR="/opt/python/cp${pyversion}-cp${pyversion}/bin"
     echo $PYDIR
-    $PYDIR/pip install -U pytest-check numpy wheel scikit-build "ngsolve-openblas==$OPENBLAS_VERSION_PIP"
+    $PYDIR/pip install -U pip requests packaging
+    # skip this version if it is already published on PyPI
+    $PYDIR/python3 ./tests/utils.py --check-pip --package ngsolve || continue
 
-    # wait until netgen pip package is available
-    cd external_dependencies/netgen
-    $PYDIR/python3 ./tests/utils.py --wait-pip
-    cd ../..
+    $PYDIR/pip install -U build twine ninja cmake "scikit-build-core>=0.10" pybind11-stubgen
+    $PYDIR/pip install -U netgen-occt==7.8.1 netgen-occt-devel==7.8.1 netgen-mesher==$NETGEN_VERSION "ngsolve-openblas==$OPENBLAS_VERSION_PIP"
 
-    $PYDIR/python3 ./external_dependencies/netgen/tests/utils.py --check-pip --package ngsolve || continue
-    $PYDIR/pip install netgen-mesher==$NETGEN_VERSION
+    # Point CMake at the Python prefix for Tcl/Tk discovery and pin the python root
+    PYPREFIX=$($PYDIR/python3 -c 'import sys; print(sys.prefix)')
+    export CMAKE_ARGS="-DCMAKE_PREFIX_PATH=${PYPREFIX} -DPython3_ROOT_DIR=${PYPREFIX}"
 
-    rm -rf _skbuild
-    $PYDIR/pip wheel --no-build-isolation --no-clean . || cat /builds/ngsolve/ngsolve/_skbuild/*/cmake-build/dependencies/Stamp/ngsolve/ngsolve-build.log
-    rename linux_ manylinux_2_28_ ngsolve*.whl
-    mv ngsolve*.whl wheelhouse/ || true
-    $PYDIR/pip uninstall -y netgen-mesher
-    $PYDIR/pip install -U twine
+    rm -rf dist
+    $PYDIR/python3 -m build --wheel --no-isolation --outdir dist .
+
+    ccache -s
+
+    # relabel linux_x86_64 -> manylinux (see comment above)
+    rename linux_ manylinux_2_28_ dist/ngsolve*-cp${pyversion}-*.whl
+    mv dist/ngsolve*-cp${pyversion}-*.whl wheelhouse/
+
+    $PYDIR/pip install wheelhouse/ngsolve*-cp${pyversion}-*manylinux*.whl
+    $PYDIR/python3 -c 'import ngsolve; print(ngsolve.__version__)'
     $PYDIR/twine upload --skip-existing wheelhouse/ngsolve*-cp${pyversion}*manylinux*.whl
-
-    #$PYDIR/pip install --extra-index-url https://test.pypi.org/simple/ wheelhouse/ngsolve-avx2-*-cp${pyversion}-*.whl
-    #$PYDIR/python3 -c 'import ngsolve'
-    #cd ../tests/pytest
-    #$PYDIR/python3 -m pytest
 done

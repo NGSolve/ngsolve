@@ -1,0 +1,87 @@
+[build-system]
+requires = [
+    "scikit-build-core>=0.10",
+    "pybind11-stubgen>=2.5",
+    "netgen-occt-devel==7.8.1",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "ngsolve"
+# dependencies is dynamic: netgen-mesher must be pinned to the *exact* version
+# ngsolve was built/linked against (ABI compatibility), which is only known at
+# build time -- see tests/ngsolve_metadata.py.
+dynamic = ["version", "dependencies"]
+description = "NGSolve finite element library"
+authors = [{ name = "The NGSolve team" }]
+license = "LGPL-2.1-only"
+requires-python = ">=3.10"
+
+[project.optional-dependencies]
+test = ["pytest", "scipy", "numpy"]
+
+[tool.scikit-build]
+cmake.version = ">=3.16"
+build-dir = "build/{wheel_tag}"
+experimental = true # required to use the local version-metadata provider (tests/ngsolve_metadata.py)
+
+[tool.scikit-build.metadata.version]
+provider = "ngsolve_metadata"
+provider-path = "tests"
+
+[tool.scikit-build.metadata.dependencies]
+provider = "ngsolve_metadata"
+provider-path = "tests"
+
+[tool.scikit-build.cmake.define]
+CMAKE_BUILD_TYPE = "Release"
+USE_SUPERBUILD = "ON"
+USE_CCACHE = "ON"
+USE_NATIVE_ARCH = "OFF"
+BUILD_FOR_CONDA = "ON"
+USE_OCC = "ON"
+USE_UMFPACK = "ON"
+BUILD_UMFPACK = "ON"
+BUILD_STUB_FILES = "ON"
+
+# ---- Linux
+[[tool.scikit-build.overrides]]
+if.platform-system = "linux"
+inherit.cmake.define = "append"
+cmake.define.USE_CUDA = "ON"
+cmake.define.CMAKE_CUDA_ARCHITECTURES = "all"
+
+# ---- macOS
+[[tool.scikit-build.overrides]]
+if.platform-system = "darwin"
+inherit.cmake.define = "append"
+cmake.define.BUILD_STUB_FILES = "ON"
+
+# ---- Windows
+[[tool.scikit-build.overrides]]
+if.platform-system = "win32"
+inherit.cmake.define = "append"
+# stub generation is disabled on Windows (matches the old setup.py)
+cmake.define.BUILD_STUB_FILES = "OFF"
+
+[tool.cibuildwheel]
+build = "cp310-* cp311-* cp312-* cp313-* cp314-*"
+skip = "*-musllinux_* *_i686 *-win32"
+# Build without isolation so CMake's FindPython sees the real Python headers and
+# the tcl/tk headers in sys.prefix.
+build-frontend = { name = "pip", args = ["--no-build-isolation"] }
+build-verbosity = 1
+test-command = "python -c \"import ngsolve; print(ngsolve.__version__)\""
+
+[tool.cibuildwheel.environment]
+NETGEN_ARCH = "avx2"
+
+[tool.cibuildwheel.macos]
+archs = ["universal2"]
+# avx2 is not running on rosetta, so skip x86_64 tests on the m1 build machine
+test-skip = "*_universal2:x86_64"
+environment = { NETGEN_ARCH = "avx2", MACOSX_DEPLOYMENT_TARGET = "10.15", CMAKE_OSX_ARCHITECTURES = "arm64;x86_64" }
+# NETGEN_VERSION is exported by tests/build_pip_mac.sh before cibuildwheel runs.
+before-build = "pip install -U \"scikit-build-core>=0.10\" pybind11-stubgen netgen-occt==7.8.1 netgen-occt-devel==7.8.1 netgen-mesher==${NETGEN_VERSION} ninja cmake"
+# set DYLD_LIBRARY_PATH to find OCC libraries, ignore libs provided by other packages
+repair-wheel-command = "LIBDIR=\"$(python3 -c 'import sys, os; print(os.path.join(sys.prefix, \"lib\"))')\"; DYLD_LIBRARY_PATH=\"$LIBDIR\" delocate-wheel --ignore-missing-dependencies --require-archs {delocate_archs} --exclude libTK --exclude libngcore --exclude libnglib --exclude libnetgen -w {dest_dir} {wheel}"

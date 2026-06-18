@@ -14,6 +14,7 @@ USE_MKL              = _cmake_to_bool("@USE_MKL@")
 USE_MUMPS            = _cmake_to_bool("@USE_MUMPS@")
 USE_PARDISO          = _cmake_to_bool("@USE_PARDISO@")
 USE_UMFPACK          = _cmake_to_bool("@USE_UMFPACK@")
+USE_CUDA             = _cmake_to_bool("@USE_CUDA@")
 
 NETGEN_DIR = "@NETGEN_DIR@"
 

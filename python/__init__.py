@@ -16,8 +16,23 @@ from . import config
 
 import netgen
 
-if config.is_python_package and not "darwin" in sys.platform:
-    import ngsolve_openblas
+if not "darwin" in sys.platform and config.is_python_package:
+    # Load openblas from the ngsolve_openblas python package, if available
+    try:
+        import ngsolve_openblas
+    except ImportError:
+        ngsolve_openblas = None
+    if ngsolve_openblas is not None:
+        if sys.platform.startswith('win'):
+            for _lib in ngsolve_openblas.get_libraries():
+                os.add_dll_directory(os.path.dirname(_lib))
+        else:
+            import ctypes
+            for _lib in ngsolve_openblas.get_libraries():
+                try:
+                    ctypes.CDLL(_lib, mode=ctypes.RTLD_GLOBAL)
+                except OSError:
+                    pass
 
 if config.is_python_package and sys.platform.startswith('win'):
     netgen_dir = os.path.dirname(netgen.__file__)

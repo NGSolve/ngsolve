@@ -40,6 +40,28 @@ endif()
 
 set(NGSOLVE_VERSION_LONG ${NGSOLVE_VERSION_SHORT}-${NGSOLVE_VERSION_TWEAK}-${NGSOLVE_VERSION_HASH})
 
+if(NOT NGSOLVE_VERSION_PYTHON)
+    # Derive a PEP 440 compliant python package version from git, matching
+    # tests/utils.py:get_version() (used for the wheel metadata version).
+    if(NGSOLVE_VERSION_TWEAK)
+        # commits after the last tag -> post release
+        set(NGSOLVE_VERSION_PYTHON "${NGSOLVE_VERSION_SHORT}.post${NGSOLVE_VERSION_TWEAK}")
+        set(_ngs_dev_build TRUE)
+        if(DEFINED ENV{NG_NO_DEV_PIP_VERSION})
+            set(_ngs_dev_build FALSE)
+        endif()
+        if("$ENV{CI_COMMIT_REF_NAME}" STREQUAL "release")
+            set(_ngs_dev_build FALSE)
+        endif()
+        if(_ngs_dev_build)
+            set(NGSOLVE_VERSION_PYTHON "${NGSOLVE_VERSION_PYTHON}.dev0")
+        endif()
+    else()
+        # current commit is tagged -> clean release version
+        set(NGSOLVE_VERSION_PYTHON "${NGSOLVE_VERSION_SHORT}")
+    endif()
+endif()
+
 set(version_file ${BDIR}/ngsolve_version.hpp)
 set(new_version_file_string "#define NGSOLVE_VERSION \"${NGSOLVE_VERSION}\"\n")
 if(EXISTS ${version_file})

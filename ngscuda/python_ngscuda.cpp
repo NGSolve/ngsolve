@@ -16,7 +16,7 @@ namespace ngla {
   
 }
 
-PYBIND11_MODULE(ngscuda, m) {
+PYBIND11_MODULE(_ngscuda, m) {
 
   InitCUDA(1);
   InitCuLinalg();

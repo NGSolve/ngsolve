@@ -66,6 +66,24 @@ endforeach()
 
 set(NETGEN_DIR CACHE PATH "Path where Netgen is already installed. Setting this variable will skip the Netgen build and override the setting of CMAKE_INSTALL_PREFIX")
 
+if(SKBUILD AND NOT NETGEN_DIR AND NOT DEFINED ENV{NETGEN_DIR})
+  # We are building the pip wheel, so look for netgen via Python3
+  find_package(Python3 COMPONENTS Interpreter QUIET)
+  if(Python3_Interpreter_FOUND)
+    execute_process(
+      COMMAND ${Python3_EXECUTABLE} -c "import netgen.config as c; print(c.get_cmake_dir())"
+      OUTPUT_VARIABLE _ngs_netgen_cmake_dir
+      OUTPUT_STRIP_TRAILING_WHITESPACE
+      RESULT_VARIABLE _ngs_netgen_query_result
+      ERROR_QUIET
+    )
+    if(_ngs_netgen_query_result EQUAL 0 AND _ngs_netgen_cmake_dir AND EXISTS "${_ngs_netgen_cmake_dir}")
+      set(NETGEN_DIR "${_ngs_netgen_cmake_dir}")
+      message(STATUS "Using Netgen from netgen-mesher package: ${NETGEN_DIR}")
+    endif()
+  endif()
+endif()
+
 macro(set_flags_vars OUTPUT_VAR )
   foreach(varname ${ARGN})
     set_vars(${OUTPUT_VAR} ${varname} ${varname}_RELEASE ${varname}_MINSIZEREL ${varname}_RELWITHDEBINFO ${varname}_DEBUG)
@@ -211,6 +229,24 @@ if(USE_MKL)
 endif(USE_MKL)
 
 if (USE_LAPACK)
+    # Try to use ngsolve_openblas python package if available
+    if(NOT LAPACK_LIBRARIES AND NOT USE_MKL AND (WIN32 OR (UNIX AND NOT APPLE)))
+      find_package(Python3 COMPONENTS Interpreter QUIET)
+      if(Python3_Interpreter_FOUND)
+        execute_process(
+          COMMAND ${Python3_EXECUTABLE} -c "import ngsolve_openblas as o; print(';'.join(o.get_libraries()))"
+          OUTPUT_VARIABLE _ngs_openblas_libs
+          OUTPUT_STRIP_TRAILING_WHITESPACE
+          RESULT_VARIABLE _ngs_openblas_query_result
+          ERROR_QUIET
+        )
+        if(_ngs_openblas_query_result EQUAL 0 AND _ngs_openblas_libs)
+          string(REPLACE "\\" "/" _ngs_openblas_libs "${_ngs_openblas_libs}")
+          set(LAPACK_LIBRARIES "${_ngs_openblas_libs}")
+          message(STATUS "Using BLAS/LAPACK from ngsolve-openblas: ${LAPACK_LIBRARIES}")
+        endif()
+      endif()
+    endif()
     if(NOT LAPACK_LIBRARIES)
       if(WIN32)
         ExternalProject_Add(win_download_lapack
@@ -242,6 +278,9 @@ if(USE_UMFPACK)
     set(UMFPACK_DIR ${CMAKE_CURRENT_BINARY_DIR}/umfpack/install CACHE PATH "Temporary directory to build UMFPACK")
     set(UMFPACK_STATIC ON)
     string(REPLACE ";" "|" LAPACK_LIBRARIES_LIST "${LAPACK_LIBRARIES}")
+    if(MSVC)
+      set(SUITESPARSE_CMAKE_ARGS "-DCMAKE_C_FLAGS=${CMAKE_C_FLAGS} /wd4244 /wd4068")
+    endif()
     ExternalProject_Add(
       suitesparse
       DEPENDS ${LAPACK_PROJECTS}
@@ -258,6 +297,7 @@ if(USE_UMFPACK)
           -DSUITESPARSE_CUSTOM_LAPACK_LIB=${LAPACK_LIBRARIES_LIST}
           -DSUITESPARSE_INSTALL_PREFIX=${UMFPACK_DIR}
           -DSUITESPARSE_USE_CUSTOM_BLAS_LAPACK_LIBS=ON
+          ${SUITESPARSE_CMAKE_ARGS}
          ${SUBPROJECT_CMAKE_ARGS}
       UPDATE_COMMAND ""
       )
@@ -310,6 +350,8 @@ set_vars( NGSOLVE_CMAKE_ARGS
   BUILD_STUB_FILES
   PREFER_SYSTEM_PYBIND11
   MKL_DIR
+  SKBUILD
+  SKBUILD_SCRIPTS_DIR
   )
 
 set_flags_vars(NGSOLVE_CMAKE_ARGS CMAKE_CXX_FLAGS CMAKE_SHARED_LINKER_FLAGS CMAKE_LINKER_FLAGS)

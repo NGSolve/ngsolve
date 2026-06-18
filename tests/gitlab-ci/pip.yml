@@ -5,9 +5,9 @@ pip_linux:
     - pip
     - linux
     - docker
+  when: manual
   script:
     - ./tests/build_pip.sh
-  when: manual
 
 pip_macos:
   stage: build
@@ -15,26 +15,18 @@ pip_macos:
     - pip
     - macosx
     - m1
-  script:
-    - ./tests/build_pip_mac.sh 3.14
-    - ./tests/build_pip_mac.sh 3.13
-    - ./tests/build_pip_mac.sh 3.12
-    - ./tests/build_pip_mac.sh 3.11
-    - ./tests/build_pip_mac.sh 3.10
   when: manual
+  script:
+    - ./tests/build_pip_mac.sh
 
 pip_windows:
   stage: build
   tags:
     - pip
     - windows
-  script:
-    - .\tests\build_pip.ps1 C:\Python314
-    - .\tests\build_pip.ps1 C:\Python313
-    - .\tests\build_pip.ps1 C:\Python312
-    - .\tests\build_pip.ps1 C:\Python311
-    - .\tests\build_pip.ps1 C:\Python310
   when: manual
+  script:
+    - .\tests\build_pip.ps1
 
 pip_pyodide:
   stage: build
