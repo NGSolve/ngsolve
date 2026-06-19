@@ -4855,6 +4855,8 @@ operations of it are used!
           py::arg("gf") = nullptr, py::arg("bf") = nullptr,
           py::arg("intorder") = 4, py::arg("maxdist") = 0.,
           py::arg("both_sides")=false,
+          py::arg("keep_pairs")=false,
+          py::arg("other")=nullptr,
           R"delimiter(
 Update searchtree for gap function.
 If bf is given add specialelements corresponding to
@@ -4862,6 +4864,10 @@ integrationrules of order 'intorder' on each master
 element to BilinearForm bf.
 `maxdist` is the maximum distance where this function is accurate.
 If `maxdist` == 0. then 2*meshsize is used.
+If `keep_pairs` is True the found contact pairs are kept so that another
+ContactBoundary can reuse them.
+If `other` is given the contact pairs are taken from that ContactBoundary
+(which must have been updated with `keep_pairs=True`) instead of searching again.
 )delimiter")
      .def_property_readonly("gap", &ContactBoundary::Gap)
      .def_property_readonly("normal", &ContactBoundary::Normal)
