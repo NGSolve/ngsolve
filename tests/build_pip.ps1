@@ -58,7 +58,7 @@ foreach ($pydir in $pythons) {
 
     New-Item -ItemType Directory -Force -Path wheelhouse | Out-Null
     Get-ChildItem dist\*.whl | ForEach-Object {
-        Invoke-Step { & $python -m delvewheel repair --ignore-existing --namespace-pkg netgen;netgen.libs;netgen.include --exclude "nglib.dll" --exclude "ngcore.dll" --exclude "TK*.dll" --exclude "libopenblas*.dll" --exclude "openblas*.dll" -w wheelhouse $_.FullName }
+        Invoke-Step { & $python -m delvewheel repair --ignore-existing --namespace-pkg "netgen;netgen.libs;netgen.include" --exclude "nglib.dll" --exclude "ngcore.dll" --exclude "TK*.dll" --exclude "libopenblas*.dll" --exclude "openblas*.dll" -w wheelhouse $_.FullName }
     }
 
     Invoke-Step { & $python -m pip install -U twine requests-toolbelt urllib3 }
