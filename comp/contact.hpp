@@ -13,6 +13,12 @@ namespace ngcomp
     ElementId primary_el, secondary_el;
     IntegrationPoint primary_ip, secondary_ip;
   };
+  
+  struct ContactRule
+  {
+    ElementId primary_ei, secondary_ei;
+    IntegrationRule primary_ir, secondary_ir;
+  };
 
   class GapFunction : public CoefficientFunctionNoDerivative
   {
@@ -176,6 +182,12 @@ namespace ngcomp
     Array<Vec<3>> primary_points;
     Array<Vec<3>> secondary_points;
     bool volume, element_boundary;
+
+    bool has_contact_rules = false;
+    Array<ContactRule> contact_rules;
+
+    void AddSpecialElements(shared_ptr<BilinearForm> bf, ContactRule rule, bool keeppairs);
+    
   public:
     void Draw();
     ContactBoundary(Region _master, Region _other, bool draw_pairs = false, bool _volume=false, bool element_boundary=false);
@@ -191,7 +203,7 @@ namespace ngcomp
     // nullptr, update SpecialElements of bf
     void Update(shared_ptr<GridFunction> gf,
                 shared_ptr<BilinearForm> bf,
-                int intorder, double h, bool both_sides);
+                int intorder, double h, bool both_sides, bool keep_pairs = false, shared_ptr<ContactBoundary> other_cb = nullptr);
 
     shared_ptr<CoefficientFunction> Gap() const { return gap; }
     shared_ptr<CoefficientFunction> Normal() const { return normal; }

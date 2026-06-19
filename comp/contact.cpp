@@ -15,6 +15,14 @@
 
 namespace ngcomp
 {
+  static IntegrationRule CopyIR(const IntegrationRule& ir)
+  {
+    IntegrationRule res;
+    for (const auto& ip : ir)
+      res.AddIntegrationPoint(ip);
+    return res;
+  }
+
   inline int GetDomIn(const MeshAccess& ma, const Ngs_Element& el)
   {
     if(ma.GetDimension() ==3)
@@ -985,7 +993,7 @@ namespace ngcomp
   void ContactBoundary::
   Update(shared_ptr<GridFunction> displacement_,
          shared_ptr<BilinearForm> bf,
-         int intorder, double h, bool both_sides)
+         int intorder, double h, bool both_sides, bool keep_pairs, shared_ptr<ContactBoundary> other_cb)
   {
     if(!displacement_ && !bf)
       throw Exception("Either displacement or BilinearForm needed in ContactBoundary update!");
@@ -1038,6 +1046,8 @@ namespace ngcomp
         static Timer t1("Build contact pairs");
         RegionTimer regt1(t1);
         LocalHeap lh(1000000, "ContactBoundary-Update", true);
+        contact_rules.SetSize(0);
+        has_contact_rules = keep_pairs;
         Iterate<2>
           ([&](auto i)
            {
@@ -1053,6 +1063,18 @@ namespace ngcomp
                      auto cont_el = dynamic_cast<MPContactElement<DIM>*>(specialels[index].get());
                      if(cont_el && cont_el->GetContactBoundary().get() == this)
                        bf->DeleteSpecialElement(index);
+                   }
+
+                 if(other_cb)
+                   {
+                     if(!other_cb->has_contact_rules)
+                       throw Exception("ContactBoundary passed to Update has no contact pairs (call its Update with keep_pairs=True first)");
+                     for(const auto& rule : other_cb->contact_rules)
+                       bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
+                                             (rule.primary_ei, rule.secondary_ei,
+                                              CopyIR(rule.primary_ir), CopyIR(rule.secondary_ir),
+                                              shared_from_this(), displacement.get()));
+                     return;
                    }
 
                  auto tgap = static_pointer_cast<T_GapFunction<DIM>>(gap);
@@ -1163,12 +1185,17 @@ namespace ngcomp
                           // they are not matching ??? 
                           */
 
+                          auto this_ei = trafo.GetElementId();
+                          auto other_ei = ElementId(BND, other_nr[index[first]]);
+                          
                           
                           if (!volume)
                             {
                               lock_guard<mutex> guard(add_mutex);
+                              if(keep_pairs)
+                                AddSpecialElements(bf, ContactRule{this_ei, other_ei, CopyIR(primary_ir), CopyIR(secondary_ir)}, keep_pairs);
                               bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
-                                                    (el, ElementId(BND, other_nr[index[first]]),
+                                                    (el, other_ei,
                                                      std::move(primary_ir), std::move(secondary_ir),
                                                      shared_from_this(), displacement.get()));
                             }
@@ -1212,6 +1239,8 @@ namespace ngcomp
                               */
                               
                               lock_guard<mutex> guard(add_mutex);
+                              if(keep_pairs)
+                                AddSpecialElements(bf, ContactRule{vei, ElementId(BND, other_nr[index[first]]), CopyIR(volir), CopyIR(secondary_ir)}, keep_pairs);
                               bf->AddSpecialElement(make_unique<MPContactElement<DIM>>
                                                     (vei, ElementId(BND, other_nr[index[first]]),
                                                      std::move(volir), std::move(secondary_ir),
@@ -1223,6 +1252,15 @@ namespace ngcomp
                     });
                }
            });
+      }
+  }
+
+  void ContactBoundary :: AddSpecialElements(shared_ptr<BilinearForm> bf, ContactRule rule, bool keep_pairs)
+  {
+      if(keep_pairs) {
+          static mutex add_mutex;
+          lock_guard<mutex> guard(add_mutex);
+          contact_rules.Append(std::move(rule));
       }
   }
 

@@ -2488,6 +2488,7 @@ namespace ngcomp
       // RegionTimer reg(t); // , TaskManager::GetThreadId());
       
       LocalHeapMem<100000> lh("lhbfv");
+      constexpr size_t BLOCK_SIZE = 64;
       const ElementTransformation & trafo = ir.GetTransformation();
       auto ei = trafo.GetElementId();
       if (ei.IsVolume())
@@ -2514,11 +2515,19 @@ namespace ngcomp
               Facet2ElementTrafo f2el(vol_trafo.GetElementType(), ma.GetElVertices(vei));
               Array<int> surfvnums { ma.GetElVertices(ei) };
               Facet2SurfaceElementTrafo f2sel(trafo.GetElementType(), surfvnums);
-              auto & ir_ref = f2sel.Inverse(ir.IR(), lh);
-              auto & ir_vol = f2el(locfacnr, ir_ref, lh);
-              auto & mir_vol = vol_trafo(ir_vol, lh);
-              mir_vol.ComputeNormalsAndMeasure (vol_trafo.GetElementType(), locfacnr);
-              vol_cf -> Evaluate (mir_vol, values);
+
+              auto np = ir.Size();
+
+              for(size_t first = 0; first < np; first += BLOCK_SIZE)
+                {
+                  HeapReset hr(lh);
+                  auto next = min(first + BLOCK_SIZE, np);
+                  auto & ir_ref = f2sel.Inverse(ir.IR().Range(first, next), lh);
+                  auto & ir_vol = f2el(locfacnr, ir_ref, lh);
+                  auto & mir_vol = vol_trafo(ir_vol, lh);
+                  mir_vol.ComputeNormalsAndMeasure (vol_trafo.GetElementType(), locfacnr);
+                  vol_cf -> Evaluate (mir_vol, values.Cols(first, next));
+                }
               return;
             }
         }
