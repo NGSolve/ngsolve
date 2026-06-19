@@ -79,6 +79,12 @@ set(NGSOLVE_INSTALL_DIR_INCLUDE ${NETGEN_INSTALL_DIR_INCLUDE})
 set(NGSOLVE_INSTALL_DIR_RES     ${NETGEN_INSTALL_DIR_RES})
 string(REPLACE "netgen" "ngsolve" NGSOLVE_INSTALL_DIR_CMAKE ${NETGEN_INSTALL_DIR_CMAKE})
 
+if(SKBUILD_SCRIPTS_DIR)
+  set(NGSOLVE_INSTALL_DIR_SCRIPTS ${SKBUILD_SCRIPTS_DIR})
+else()
+  set(NGSOLVE_INSTALL_DIR_SCRIPTS ${NGSOLVE_INSTALL_DIR_BIN})
+endif()
+
 #######################################################################
 
 set(NGSOLVE_COMPILE_INCLUDE_DIRS "")
@@ -525,8 +531,8 @@ if(WIN32)
                   )
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat
                   CONTENT "${ngscxx_set_script_dir}\n ${ngsld_header}\nlink /DLL %* ${ngsld_flags}\n")
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx.bat DESTINATION ${NGSOLVE_INSTALL_DIR_SCRIPTS} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld.bat DESTINATION ${NGSOLVE_INSTALL_DIR_SCRIPTS} COMPONENT ngsolve_devel )
 else(WIN32)
     set(NGSCXX_COMMAND ngscxx)
     set(ngscxx_compile_command "$NGSCXX ${ngscxx_flags} ${ngscxx_includes} $*")
@@ -542,8 +548,8 @@ fi")
                   CONDITION $<COMPILE_LANGUAGE:CXX>
                   )
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/ngsld CONTENT "${ngsld_header}\n$NGSCXX ${ngsld_flags} $*\n")
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngscxx DESTINATION ${NGSOLVE_INSTALL_DIR_SCRIPTS} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngsld DESTINATION ${NGSOLVE_INSTALL_DIR_SCRIPTS} COMPONENT ngsolve_devel )
 endif(WIN32)
 
 if (NETGEN_USE_MPI)
@@ -558,7 +564,7 @@ if (NETGEN_USE_MPI)
 "#! ${BASH}
 LD_PRELOAD=$LD_PRELOAD:${ngspy_preload_libs} ${NETGEN_PYTHON_EXECUTABLE} $*
 ")
-    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${NGSOLVE_INSTALL_DIR_BIN} COMPONENT ngsolve_devel )
+    install (PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/ngspy DESTINATION ${NGSOLVE_INSTALL_DIR_SCRIPTS} COMPONENT ngsolve_devel )
 endif (NETGEN_USE_MPI)
 
 
