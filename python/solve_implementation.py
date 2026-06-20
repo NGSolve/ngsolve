@@ -7,9 +7,11 @@ from ngsolve import (
     Region,
     BND,
     Preconditioner,
+    TaskManager
 )
 
 from ngsolve.comp import VariationalEquation, DirichletBC, PreconditionerCreator
+from ngsolve.la import SparseFactorizationCreator
 from ngsolve.solvers import CGSolver
 from ngsolve.krylovspace import LinearSolverCreator
 
@@ -182,45 +184,41 @@ class VariationalEquationSolver:
 
         for a in args:
             if isinstance(a, PreconditionerCreator):
-                # self.pre = a(self.bf)                
-                # if self.dirichlet:
-                #    self.pre.SetAdditionalDirichletConstraints(self.dreg)
-                # better to get everything from the beginning:
                 if self.dirichlet:
                     self.pre = a(self.bf, additional_dirichlet_constraints=self.dreg)
                 else:
                     self.pre = a(self.bf)
 
-            if isinstance(a, LinearSolverCreator):
-                self.linear_solver_creator = a
+            if isinstance(a, SparseFactorizationCreator):
+                self.sparse_factorization_creator = a
 
-                        
+                
         if pre := kwargs.get('pre'):
-            if self.dirichlet:
-                self.pre = pre(self.bf, additional_dirichlet_constraints=self.dreg)                
-            else:
-                self.pre = pre(self.bf)
+            raise Exception("just give Preconditioner without named arg 'pre'")
                    
         
         
     def Solve(self):
-        gf = GridFunction(self.fes)
-        for d in self.dirichlet:
-            gf[d.vbn] = d.val
-        self.bf.AssembleLinearization(gf.vec)
+        with TaskManager():
+            gf = GridFunction(self.fes)
+            for d in self.dirichlet:
+                gf[d.vbn] = d.val
+            self.bf.AssembleLinearization(gf.vec)
 
-        # if hasattr(self, 'pre'):
-        if hasattr(self, 'linear_solver_creator'):        
-            # inv = CGSolver(self.bf.mat, self.pre.mat, printrates=True)
-            inv = self.linear_solver_creator(self.bf.mat, self.pre.mat)
-        else:
-            freedofs = self.fes.FreeDofs()
-            if self.dirichlet:
-                freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
-            inv = self.bf.mat.Inverse(freedofs)
+            if hasattr(self, 'linear_solver_creator'):        
+                inv = self.linear_solver_creator(self.bf.mat, self.pre.mat)
+            else:
+                freedofs = self.fes.FreeDofs()
+                if self.dirichlet:
+                    freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
+                
+                if hasattr(self, 'sparse_factorization_creator'):
+                    inv = self.sparse_factorization_creator(self.bf.mat, freedofs)
+                else:
+                    inv = self.bf.mat.Inverse(freedofs)
             
-        gf.vec.data -= inv * self.bf.Apply(gf.vec)
-        return gf
+            gf.vec.data -= inv * self.bf.Apply(gf.vec)
+            return gf
         
 
 def SolveVE (equation, *args, **kwargs):

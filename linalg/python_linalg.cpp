@@ -1528,13 +1528,36 @@ inverse : string
     (m, "SymmetricGaussSeidelPreconditioner");
   
   py::class_<SparseFactorization, shared_ptr<SparseFactorization>, BaseMatrix>
-    (m, "SparseFactorization")
+    sparse_fact_cls(m, "SparseFactorization");
+  sparse_fact_cls
     .def("Smooth", [] (SparseFactorization & self, BaseVector & u, BaseVector & y)
          {
            self.Smooth (u, y /* this is not needed */, y);
          }, py::call_guard<py::gil_scoped_release>(),
          "perform smoothing step (needs non-symmetric storage so symmetric sparse matrix)")
     ;
+
+  {
+    struct CreatorClass {
+      py::object cls;
+      py::kwargs kwargs;
+    };
+    
+    py::class_<CreatorClass> (m, "SparseFactorizationCreator")
+      .def("__call__", [](CreatorClass & c, shared_ptr<BaseMatrix> mat, shared_ptr<BitArray> freedofs) {
+        return c.cls.attr("Create")(mat, freedofs);
+      });
+    
+    auto creator = py::cpp_function ([](py::object cls, py::kwargs kwargs) {
+      return CreatorClass { cls, kwargs };
+    });
+
+    
+    sparse_fact_cls.attr("Creator") =
+      py::reinterpret_borrow<py::object>(PyClassMethod_New(creator.ptr()));
+  }
+
+  
 
   class SparseFactorizationInterfaceTrampoline
       : public SparseFactorizationInterface,
@@ -1601,12 +1624,20 @@ inverse : string
   m.def("IsMatrixSymmetric", IsMatrixSymmetric, py::arg("mat"), py::arg("tol")=0.0, "Check if sparse matrix is symmetric with given tolerance");
   m.def("ExtractTri", ExtractTri, py::arg("mat"), py::arg("lower")=true, "Extract lower or upper triangular part of matrix");
 
+  
+  py::class_<BaseSparseCholesky, shared_ptr<BaseSparseCholesky>, SparseFactorization> (m, "SparseCholesky")
+    .def_static("Create", [](shared_ptr<BaseSparseMatrix> mat, shared_ptr<BitArray> freedofs) {
+      return BaseSparseCholesky::Create(mat, freedofs);
+    });
+
+  
   py::class_<SparseCholesky<double>, shared_ptr<SparseCholesky<double>>, SparseFactorization> (m, "SparseCholesky_d")
-    .def(NGSPickle<SparseCholesky<double>>())
-    ;
+    .def(NGSPickle<SparseCholesky<double>>());
+
   py::class_<SparseCholesky<Complex>, shared_ptr<SparseCholesky<Complex>>, SparseFactorization> (m, "SparseCholesky_c")
-    .def(NGSPickle<SparseCholesky<Complex>>())
-    ;
+    .def(NGSPickle<SparseCholesky<Complex>>());
+
+  
   
   py::class_<Projector, shared_ptr<Projector>, BaseMatrix> (m, "Projector")
     .def(py::init<shared_ptr<BitArray>,bool>(),

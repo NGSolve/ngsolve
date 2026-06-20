@@ -5,3 +5,6 @@ from ngsolve.nonlinearsolvers import Newton, NewtonMinimization
 from ngsolve.bvp import BVP
 from ngsolve.directsolvers import SuperLU
 
+from ngsolve.la import SparseCholesky
+
+
