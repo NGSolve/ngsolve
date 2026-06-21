@@ -94,10 +94,11 @@ void ExportNgcompMesh (py::module &m)
     .value("BBND", BBND)
     .value("BBBND", BBBND)
     .export_values()
-    .def("__call__", [](VorB vb, string name) { return VBnName{vb, name}; })
+    .def("__call__", [](VorB vb, string name) { return RegionDescriptor{vb, name}; })
     ;
 
-  py::class_<VBnName> (m, "VBnName")
+  py::class_<RegionDescriptor> (m, "RegionDescriptor")
+    .def(~py::self)
     ;
 
   
@@ -692,12 +693,12 @@ mesh (netgen.Mesh): a mesh generated from Netgen
          py::arg("pattern") = ".*",
 	 "Return boundary mesh-region matching the given regex pattern")
 
-    .def("Region",
-	 [](const shared_ptr<MeshAccess> & ma, VBnName vbn) {
+    .def("__getitem__",
+	 [](const shared_ptr<MeshAccess> & ma, RegionDescriptor vbn) {
             return Region(ma, vbn.vb, vbn.name);
 	  },
          py::arg("vbn"),
-	 "Return mesh-region from VB+name object")
+	 "Return mesh-region from RegionDescriptor object")
 
     
     .def("GetMaterials",

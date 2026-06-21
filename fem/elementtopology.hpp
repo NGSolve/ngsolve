@@ -113,13 +113,14 @@ namespace ngfem
     return ost;
   }
 
-  class VBnName
+  class RegionDescriptor
   {
   public:
     VorB vb;
     string name;
+    RegionDescriptor operator~ () const { return { vb, "^(?!^" + name + "$).*$" }; }
   };
-
+  
 
   class ElementId
   {

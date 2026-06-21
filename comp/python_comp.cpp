@@ -82,7 +82,7 @@ namespace ngcomp
   {
   public:
     shared_ptr<ProxyFunction> proxy;
-    VBnName vbn;
+    RegionDescriptor vbn;
   };
 
   class DirichletBC
@@ -90,7 +90,7 @@ namespace ngcomp
   {
   public:
     shared_ptr<ProxyFunction> proxy;
-    VBnName vbn;
+    RegionDescriptor vbn;
     shared_ptr<CoefficientFunction> val;
   };
 
@@ -569,7 +569,7 @@ when building the system matrices.
     {
       return py::type::of<CoefficientFunction>().attr("__getitem__")(self, comps);
     })
-    .def("__getitem__", [](spProxy self, VBnName vbn)
+    .def("__getitem__", [](spProxy self, RegionDescriptor vbn)
     {
       return DirichletBoundary { self, vbn };
     })
@@ -2332,7 +2332,7 @@ bonus_intorder : int
          py::arg("mdcomp")=0)
 
     
-    .def("__setitem__", [](shared_ptr<GF> self, VBnName namevb, spCF cf) {
+    .def("__setitem__", [](shared_ptr<GF> self, RegionDescriptor namevb, spCF cf) {
       Region reg(self->GetFESpace()->GetMeshAccess(), namevb.vb, namevb.name);
       self->GetFESpace()->Interpolate(*cf, self->GetVector(), &reg, lhp.GetLH());
     }, py::arg("namevb"),py::arg("cf"))

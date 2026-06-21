@@ -179,8 +179,8 @@ class VariationalEquationSolver:
         self.mesh = self.fes.mesh
 
         if self.dirichlet:
-            self.dreg = sum((self.mesh.Region(d.vbn) for d in self.dirichlet),
-                            self.mesh.Region(self.dirichlet[0].vbn))
+            self.dreg = sum((self.mesh[d.vbn] for d in self.dirichlet),
+                            self.mesh[self.dirichlet[0].vbn])
 
         for a in args:
             if isinstance(a, PreconditionerCreator):
