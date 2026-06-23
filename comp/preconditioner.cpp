@@ -32,7 +32,8 @@ namespace ngcomp
     on_proc = int ( flags.GetNumFlag("only_on", -1));
     if (!flags.GetDefineFlag ("not_register_for_auto_update"))
       {
-        bfa->SetPreconditioner(this);
+        if (bfa)
+          bfa->SetPreconditioner(this);
         is_registered = true;
       }
 
@@ -60,6 +61,15 @@ namespace ngcomp
     return docu;
   }
 
+  shared_ptr<Preconditioner> Preconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    throw Exception(string("Preconditioner::Create not overloaded for ") + typeid(*this).name());
+  }
+
+  bool Preconditioner :: IsCreator() const
+  {
+    return GetBilinearForm() == nullptr;
+  }
   shared_ptr<BitArray> Preconditioner :: GetFreeDofs (bool external) const
   {
     auto freedofs = bf.lock()->GetFESpace()->GetFreeDofs(external);
@@ -566,8 +576,8 @@ namespace ngcomp
     string smoother = flags.GetStringFlag("smoother","");
     if ( smoother == "block" )
       block = true;
-    if (bfa->UsesEliminateInternal())
-      flags.SetFlag("condense");
+    if (bfa && bfa->UsesEliminateInternal())
+        flags.SetFlag("condense");
 
     // coarse-grid preconditioner only used in parallel!!
     ct = "NO_COARSE";
@@ -599,7 +609,13 @@ namespace ngcomp
     return docu;    
   }
   
-
+  shared_ptr<Preconditioner> LocalPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    Flags allflags{flags};
+    // allflags += cflags;
+    allflags.Update (cflags); // needs checking
+    return make_shared<LocalPreconditioner> (bfa, allflags);
+  }
   
   void LocalPreconditioner :: FinalizeLevel (const BaseMatrix * mat)
   {

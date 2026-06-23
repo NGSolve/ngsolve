@@ -189,6 +189,14 @@ class VariationalEquationSolver:
                 else:
                     self.pre = a(self.bf)
 
+            if isinstance(a, Preconditioner):
+                if a.IsCreator():
+                    if self.dirichlet:
+                        self.pre = a.Create(self.bf, additional_dirichlet_constraints=self.dreg)
+                    else:
+                        self.pre = a.Create(self.bf)
+
+                    
             if isinstance(a, SparseFactorizationCreator):
                 self.sparse_factorization_creator = a
 

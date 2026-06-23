@@ -3370,6 +3370,11 @@ integrator : ngsolve.fem.LFI
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
     .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>(), "Update preconditioner")
+    .def ("Create", [prec_class](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) { 
+      auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);      
+      return pre.Create(bf, flags);
+    })
+    .def ("IsCreator", [](Preconditioner &pre) { return pre.IsCreator(); })
     .def ("SetAdditionalDirichletConstraints", [](Preconditioner & pre, Region reg) { pre.SetAdditionalDirichletConstraints(reg); })
     .def("__str__", [](Preconditioner &self) { return ToString<Preconditioner>(self); } )
     
@@ -3429,7 +3434,7 @@ integrator : ngsolve.fem.LFI
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_local);
       return make_shared<LocalPreconditioner>(bf, flags, "local");
-    }), py::arg("bf"))
+    }), py::arg("bf")=nullptr)
     .def_static("__flags_doc__", []() {
       return py::dict( py::cast (LocalPreconditioner::GetDocu().arguments) );
     });
@@ -3456,11 +3461,11 @@ integrator : ngsolve.fem.LFI
     .def(py::init([pre_bddc](shared_ptr<BilinearForm> bf, py::kwargs kwargs)->shared_ptr<BASE_BDDCPreconditioner>
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_bddc);
-      if (bf->GetFESpace()->IsComplex())
+      if (bf && bf->GetFESpace()->IsComplex())
         return make_shared<BDDCPreconditioner<Complex>> (bf, flags, "bddc");
       else
         return make_shared<BDDCPreconditioner<double>> (bf, flags, "bddc");
-    }), py::arg("bf"))
+    }), py::arg("bf")=nullptr)
     .def_static("__flags_doc__", []()
     {
       py::dict flags_doc;

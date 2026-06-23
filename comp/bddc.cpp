@@ -638,6 +638,19 @@ namespace ngcomp
     return docu;    
   }
   
+  shared_ptr<Preconditioner> BASE_BDDCPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    Flags allflags{flags};
+    // allflags += cflags;
+    allflags.Update (cflags); // needs checking
+
+    if (auto bfa_d = dynamic_pointer_cast<T_BilinearForm<double>> (bfa))
+      return make_shared<BDDCPreconditioner<double>> (bfa, allflags);
+    if (auto bfa_c = dynamic_pointer_cast<T_BilinearForm<Complex>> (bfa))
+      return make_shared<BDDCPreconditioner<Complex>> (bfa, allflags);
+    return nullptr;
+  }
+  
 
   
   template <class SCAL, class TV>
@@ -656,7 +669,8 @@ namespace ngcomp
     block = flags.GetDefineFlag("block");
     hypre = flags.GetDefineFlag("usehypre");
     // pre = NULL;
-    fes = bfa->GetFESpace();
+    if (bfa)
+      fes = bfa->GetFESpace();
   }
   
   template <class SCAL, class TV>

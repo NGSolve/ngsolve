@@ -50,6 +50,10 @@ namespace ngcomp
 
     static DocInfo GetDocu ();    
     ///
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const;
+    virtual bool IsCreator() const;
+    
+    ///
     virtual bool LaterUpdate (void) { return laterupdate; }
     ///
     virtual void Update ()  override = 0;
@@ -196,7 +200,7 @@ namespace ngcomp
     ///
 
     static DocInfo GetDocu ();
-    
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;  
     ///
     virtual bool IsComplex() const override { return jacobi->IsComplex(); }
     
@@ -205,6 +209,7 @@ namespace ngcomp
 
     virtual void Update () override
     {
+      if (!bfa) return;
       if (GetTimeStamp() < bfa->GetTimeStamp())
         FinalizeLevel (&bfa->GetMatrix());
       if (test) Test();
@@ -302,7 +307,8 @@ namespace ngcomp
   public:
     BASE_BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
                              const string aname = "bddcprecond");
-    static DocInfo GetDocu ();    
+    static DocInfo GetDocu ();
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;
   };
 
   
