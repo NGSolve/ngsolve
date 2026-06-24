@@ -266,34 +266,35 @@ namespace ngcomp
     }
 
     static DocInfo GetDocu ();    
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;  
     
-    virtual void FinalizeLevel (const BaseMatrix * mat) 
+    virtual void FinalizeLevel (const BaseMatrix * mat) override
     {
       Update();
     }
     
     ///
-    virtual void Update ();
+    virtual void Update () override;
 
-    virtual void CleanUpLevel ()
+    virtual void CleanUpLevel () override
     {
       // delete inverse;
       inverse = nullptr;
     }
 
-    virtual const BaseMatrix & GetMatrix() const
+    virtual const BaseMatrix & GetMatrix() const override
     {
       if (!inverse)
         ThrowPreconditionerNotReady();        
       return *inverse;
     }
 
-    virtual const BaseMatrix & GetAMatrix() const
+    virtual const BaseMatrix & GetAMatrix() const override
     {
       return bfa->GetMatrix(); 
     }
 
-    virtual const char * ClassName() const
+    virtual const char * ClassName() const override
     {
       return "Direct Preconditioner"; 
     }

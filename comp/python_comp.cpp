@@ -3447,7 +3447,7 @@ integrator : ngsolve.fem.LFI
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_direct);
       return make_shared<DirectPreconditioner>(bf, flags, "local");
-    }), py::arg("bf"))
+    }), py::arg("bf")=nullptr)
     .def_static("__flags_doc__", []() {
       return py::dict( py::cast (DirectPreconditioner::GetDocu().arguments) );
     });

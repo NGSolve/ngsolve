@@ -513,6 +513,12 @@ namespace ngcomp
     return docu;    
   }
 
+  shared_ptr<Preconditioner> DirectPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    Flags allflags{flags};
+    allflags.Update (cflags); 
+    return make_shared<DirectPreconditioner> (bfa, allflags);
+  }
 
   
   void DirectPreconditioner :: Update ()
@@ -613,8 +619,7 @@ namespace ngcomp
   shared_ptr<Preconditioner> LocalPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
   {
     Flags allflags{flags};
-    // allflags += cflags;
-    allflags.Update (cflags); // needs checking
+    allflags.Update (cflags); 
     return make_shared<LocalPreconditioner> (bfa, allflags);
   }
   
