@@ -298,6 +298,27 @@ namespace ngla
     void Mult(const BaseVector& rhs,
               BaseVector& sol) const override;
   };
+
+  // DevTFQMRSolver — preconditioned TFQMR for non-symmetric systems
+  // Per-iteration CUDA graph capture: two graphs (even/odd), alternated each step.
+  class DevTFQMRSolver : public KrylovSpaceSolver
+  {
+    shared_ptr<BaseMatrix> a_dev;
+    shared_ptr<BaseMatrix> c_dev;
+
+  public:
+    DevTFQMRSolver() : KrylovSpaceSolver() { }
+
+    DevTFQMRSolver(shared_ptr<BaseMatrix> mat,
+                   shared_ptr<BaseMatrix> pre,
+                   shared_ptr<BaseMatrix> adev_raw,
+                   shared_ptr<BaseMatrix> cdev_raw)
+      : KrylovSpaceSolver(mat, pre),
+        a_dev(adev_raw), c_dev(cdev_raw) { }
+
+    void Mult(const BaseVector& rhs,
+              BaseVector& sol) const override;
+  };
 }
 
 
