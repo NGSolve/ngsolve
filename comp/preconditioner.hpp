@@ -508,7 +508,10 @@ namespace ngcomp
 		      const string aname = "mgprecond");
     ///
     virtual ~MGPreconditioner() { ; }
+    
+    static DocInfo GetDocu ();
 
+    
     void FreeSmootherMem(void);
 
     virtual void FinalizeLevel (const BaseMatrix * mat) override
@@ -516,6 +519,8 @@ namespace ngcomp
       Update();
     }
 
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;  
+    
     void SetAdditionalDirichletConstraints (Region areg) override;
 
     ///

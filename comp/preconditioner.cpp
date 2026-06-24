@@ -240,7 +240,8 @@ namespace ngcomp
     mgfile = flags.GetStringFlag ("mgfile","mgtest.out"); 
     mgnumber = int(flags.GetNumFlag("mgnumber",1)); 
     
-
+    if (!abfa) return;
+    
     shared_ptr<MeshAccess> ma = abfa->GetMeshAccess();
     bfa = abfa;
     // bfa -> SetPreconditioner (this);
@@ -343,6 +344,69 @@ namespace ngcomp
     GetMemoryTracer().Track(*mgp, "MultiGridPreconditioner");
   }
 
+
+  DocInfo MGPreconditioner :: GetDocu ()
+  {
+    DocInfo docu = Preconditioner::GetDocu();
+    docu.short_docu = "A multigrid preconditioner.";
+    docu.long_docu =
+      R"raw_string(TODO
+)raw_string";      
+
+
+    docu.Arg("updateall") = "bool = False\n"
+      "  Update all smoothing levels when calling Update";      
+
+    docu.Arg("smoother") = "string = 'point'\n"
+      "  Smoother between multigrid levels, available options are:\n"
+      "    'point': Gauss-Seidel-Smoother\n"
+      "    'line':  Anisotropic smoother\n"
+      "    'block': Block smoother";
+
+    docu.Arg("coarsetype") = "string = direct\n"
+      "  How to solve coarse problem.";
+    
+
+    docu.Arg("cycle") = "int = 1\n"
+      "  multigrid cycle (0 only smoothing, 1..V-cycle, 2..W-cycle.";
+    docu.Arg("smoothingsteps") = "int = 1\n"
+      "  number of (pre and post-)smoothing steps";
+    docu.Arg("coarsesmoothingsteps") = "int = 1\n"
+      "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
+
+    docu.Arg("updatealways") = "bool = False\n";
+    docu.Arg("blocktype") = "str = vertexpatch\n"
+      "  Blocktype used in compound FESpace for smoothing\n"
+      "  blocks. Options: vertexpatch, edgepatch";
+    
+    
+    /*
+    mg_flags["updateall"] = "bool = False\n"
+      "  Update all smoothing levels when calling Update";
+    mg_flags["smoother"] = "string = 'point'\n"
+      "  Smoother between multigrid levels, available options are:\n"
+      "    'point': Gauss-Seidel-Smoother\n"
+      "    'line':  Anisotropic smoother\n"
+      "    'block': Block smoother";
+    
+    mg_flags["coarsetype"] = "string = direct\n"
+      "  How to solve coarse problem.";
+    mg_flags["cycle"] = "int = 1\n"
+      "  multigrid cycle (0 only smoothing, 1..V-cycle, 2..W-cycle.";
+    mg_flags["smoothingsteps"] = "int = 1\n"
+      "  number of (pre and post-)smoothing steps";
+    mg_flags["coarsesmoothingsteps"] = "int = 1\n"
+      "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
+    
+    mg_flags["updatealways"] = "bool = False\n";
+    mg_flags["blocktype"] = "str = vertexpatch\n"
+      "  Blocktype used in compound FESpace for smoothing\n"
+      "  blocks. Options: vertexpatch, edgepatch";
+    */
+    return docu;    
+  }
+
+  
   void MGPreconditioner :: SetAdditionalDirichletConstraints (Region areg)
   {
     additional_dirichlet_constraints = areg;
@@ -350,6 +414,14 @@ namespace ngcomp
     // sm -> SetAdditionalDirichletConstraints(areg);
   }
 
+  shared_ptr<Preconditioner> MGPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    Flags allflags{flags};
+    allflags.Update (cflags); 
+    return make_shared<MGPreconditioner> (bfa, allflags);
+  }
+
+  
   
   void MGPreconditioner :: Update ()
   {

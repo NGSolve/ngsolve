@@ -3490,33 +3490,16 @@ integrator : ngsolve.fem.LFI
                     auto mgpre = make_shared<MGPreconditioner>(bfa,flags, name);
                     if(lo_precond.has_value())
                       mgpre->SetCoarsePreconditioner(lo_precond.value());
-                    if (bfa->GetNLevels() > 0)
+                    if (bfa && bfa->GetNLevels() > 0)
                       mgpre->Update();
                     return mgpre;
-                  }), py::arg("bf"), "name"_a = "multigrid", "lo_preconditioner"_a = nullopt)
+                  }), py::arg("bf")=nullptr, "name"_a = "multigrid", "lo_preconditioner"_a = nullopt)
     .def_static("__flags_doc__", [prec_class] ()
                 {
-                  auto mg_flags = py::cast<py::dict>(prec_class.attr("__flags_doc__")());
-                  mg_flags["updateall"] = "bool = False\n"
-                    "  Update all smoothing levels when calling Update";
-                  mg_flags["smoother"] = "string = 'point'\n"
-                    "  Smoother between multigrid levels, available options are:\n"
-                    "    'point': Gauss-Seidel-Smoother\n"
-                    "    'line':  Anisotropic smoother\n"
-                    "    'block': Block smoother";
-                  mg_flags["coarsetype"] = "string = direct\n"
-                    "  How to solve coarse problem.";
-                  mg_flags["cycle"] = "int = 1\n"
-                    "  multigrid cycle (0 only smoothing, 1..V-cycle, 2..W-cycle.";
-                  mg_flags["smoothingsteps"] = "int = 1\n"
-                    "  number of (pre and post-)smoothing steps";
-                  mg_flags["coarsesmoothingsteps"] = "int = 1\n"
-                    "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
-                  mg_flags["updatealways"] = "bool = False\n";
-                  mg_flags["blocktype"] = "str = vertexpatch\n"
-                    "  Blocktype used in compound FESpace for smoothing\n"
-                    "  blocks. Options: vertexpatch, edgepatch";
-                  return mg_flags;
+                  py::dict flags_doc;
+                  for (auto & flagdoc : MGPreconditioner::GetDocu().arguments)
+                    flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+                  return flags_doc;
                 })
 
     // not working because shared_ptr<Array<int>> cannot be pybind arg type?
