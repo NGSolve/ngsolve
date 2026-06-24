@@ -174,6 +174,7 @@ namespace ngcomp
 
     void ResetArrays();
 
+    void FillReferenceSegm(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems);
     void FillReferenceTrig(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems);
     void FillReferenceQuad(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems);
     void FillReferenceTet(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems);
