@@ -3370,8 +3370,10 @@ integrator : ngsolve.fem.LFI
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
     .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>(), "Update preconditioner")
-    .def ("Create", [prec_class](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) { 
-      auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);      
+    // .def ("Create", [prec_class](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) { 
+    // auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);      
+    .def ("Create", [](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) { 
+      auto flags = CreateFlagsFromKwArgs(kwargs, py::cast(pre));      
       return pre.Create(bf, flags);
     })
     .def ("IsCreator", [](Preconditioner &pre) { return pre.IsCreator(); })

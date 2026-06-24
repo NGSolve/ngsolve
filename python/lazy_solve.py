@@ -9,7 +9,7 @@ from ngsolve.krylovspace import LinearSolverCreator
 
 
 class VariationalEquationSolver:
-    def __init__(self, equation, *args : DirichletBC | Preconditioner, verbose, **kwargs):
+    def __init__(self, equation, *args : DirichletBC | Preconditioner, verbose=0, **kwargs):
         self.bf = BilinearForm(equation.igls)
 
         self.dirichlet = [a for a in args if isinstance(a, DirichletBC)]
