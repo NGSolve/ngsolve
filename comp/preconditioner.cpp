@@ -606,6 +606,7 @@ namespace ngcomp
       "  use Gauss-Seidel instead of Jacobi";
     docu.Arg("blocktype") = "string = undefined\n"
       "  uses block Jacobi with blocks defined by space";
+    
     return docu;    
   }
   
