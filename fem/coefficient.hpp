@@ -1638,8 +1638,8 @@ public:
     // STACK_ARRAY(T, hmem, np*mydim);
     // FlatMatrix<T,ORD> temp(mydim, np, &hmem[0]);
 
-    HeapReset hr(tl_heap);
-    FlatMatrix<T,ORD> temp(mydim, np, tl_heap);
+    HeapReset hr(TLHeap());
+    FlatMatrix<T,ORD> temp(mydim, np, TLHeap());
     
     c1->Evaluate (ir, values);
     c2->Evaluate (ir, temp);
