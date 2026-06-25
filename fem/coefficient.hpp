@@ -1634,8 +1634,13 @@ public:
   {
     size_t np = ir.Size();
     size_t mydim = Dimension();
-    STACK_ARRAY(T, hmem, np*mydim);
-    FlatMatrix<T,ORD> temp(mydim, np, &hmem[0]);
+
+    // STACK_ARRAY(T, hmem, np*mydim);
+    // FlatMatrix<T,ORD> temp(mydim, np, &hmem[0]);
+
+    HeapReset hr(tl_heap);
+    FlatMatrix<T,ORD> temp(mydim, np, tl_heap);
+    
     c1->Evaluate (ir, values);
     c2->Evaluate (ir, temp);
     for (size_t i = 0; i < mydim; i++)
