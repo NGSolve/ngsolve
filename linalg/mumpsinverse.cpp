@@ -355,8 +355,8 @@ namespace ngla
   {
     int id = comm.Rank();
 
-    static int timer = NgProfiler::CreateTimer ("Mumps mult inverse");
-    NgProfiler::RegionTimer reg (timer);
+    static Timer timer("Mumps mult inverse");
+    RegionTimer reg (timer);
 
 
     if (id == 0)
