@@ -611,6 +611,9 @@ when building the system matrices.
               glh = LocalHeap (heapsize, "python-comp lh", true);
               lhp.Clear();
             }
+
+          ngcore::SetTLHeapSize(heapsize);
+          
         }, py::arg("size"), docu_string(R"raw_string(
 Set a new heapsize.
 
