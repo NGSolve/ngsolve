@@ -2370,9 +2370,15 @@ public:
     __assume (w > 0);
 
     size_t dim = dim1; // Dimension();
-    STACK_ARRAY(T, hmem, 2*dim*w);
-    FlatMatrix<T,ORD> temp1(dim, w, &hmem[0]);
-    FlatMatrix<T,ORD> temp2(dim, w, &hmem[dim*w]);
+
+    // STACK_ARRAY(T, hmem, 2*dim*w);
+    // FlatMatrix<T,ORD> temp1(dim, w, &hmem[0]);
+    // FlatMatrix<T,ORD> temp2(dim, w, &hmem[dim*w]);
+
+    auto &lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp1(dim, w, lh);
+    FlatMatrix<T,ORD> temp2(dim, w, lh);
     
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
@@ -2590,9 +2596,14 @@ public:
     size_t w = ir.Size();
     __assume (w > 0);
     
-    STACK_ARRAY(T, hmem, 2*DIM*w);
-    FlatMatrix<T,ORD> temp1(DIM, w, &hmem[0]);
-    FlatMatrix<T,ORD> temp2(DIM, w, &hmem[DIM*w]);
+    // STACK_ARRAY(T, hmem, 2*DIM*w);
+    // FlatMatrix<T,ORD> temp1(DIM, w, &hmem[0]);
+    // FlatMatrix<T,ORD> temp2(DIM, w, &hmem[DIM*w]);
+
+    auto &lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp1(DIM, w, lh);
+    FlatMatrix<T,ORD> temp2(DIM, w, lh);
     
     c1->Evaluate (ir, temp1);
     c2->Evaluate (ir, temp2);
@@ -2809,8 +2820,12 @@ public:
     size_t w = ir.Size();
     __assume (w > 0);
     
-    STACK_ARRAY(T, hmem, DIM*w);
-    FlatMatrix<T,ORD> temp1(DIM, w, &hmem[0]);
+    // STACK_ARRAY(T, hmem, DIM*w);
+    // FlatMatrix<T,ORD> temp1(DIM, w, &hmem[0]);
+
+    auto &lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<T,ORD> temp1(DIM, w, lh);
     
     c1->Evaluate (ir, temp1);
 
