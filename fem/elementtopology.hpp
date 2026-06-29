@@ -120,6 +120,13 @@ namespace ngfem
     string name;
     RegionDescriptor operator~ () const { return { vb, "^(?!^" + name + "$).*$" }; }
   };
+
+  inline ostream & operator<< (ostream & ost, const RegionDescriptor& rd)
+  {
+    ost << rd.vb << "(" << rd.name << ")";
+    return ost;
+  }
+
   
 
   class ElementId

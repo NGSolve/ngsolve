@@ -646,6 +646,13 @@ namespace ngcomp
   {
     // bfa -> SetPreconditioner (this);
 
+
+    if (flags.AnyFlagDefined("additional_dirbc"))
+      {
+        cout << "have adddir" << endl;
+        // auto add_dir = flags.GetAnyFlag("additional_dirbc");
+      }
+    
     GaussSeidel = flags.GetDefineFlag("GS");
     block = flags.GetDefineFlag ("block");
     locprectest = flags.GetDefineFlag ("mgtest");

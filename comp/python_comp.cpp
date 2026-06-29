@@ -2353,6 +2353,17 @@ bonus_intorder : int
                    },
                   "list of gridfunctions for compound gridfunction")
 
+    .def("ComponentFromProxy", [](shared_ptr<GridFunction> gf, shared_ptr<ProxyFunction> proxy)
+    {
+      auto diffop = proxy->Evaluator();
+      while (auto cdiffop  = dynamic_pointer_cast<CompoundDifferentialOperator>(diffop))
+        {
+          gf = gf->GetComponent(cdiffop->Component());
+          diffop = cdiffop->BaseDiffOp();
+        }
+      return gf;
+    })
+    
     .def_property_readonly("vec",
                            [](shared_ptr<GF> self)
                            { return self->GetVectorPtr(); },
@@ -4910,6 +4921,14 @@ If `maxdist` == 0. then 2*meshsize is used.
   });
 
   /////////////////////////////////////////////////////////////////////////////////////
+
+
+  static RegisterClassForArchive<DirichletBC> regdirbc;
+  
 }
+
+
+
+
 
 #endif // NGS_PYTHON

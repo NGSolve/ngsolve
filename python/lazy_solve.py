@@ -58,7 +58,8 @@ class VariationalEquationSolver:
         with TaskManager():
             gf = GridFunction(self.fes)
             for d in self.dirichlet:
-                gf[d.vbn] = d.val
+                # gf[d.vbn] = d.val
+                gf.ComponentFromProxy(d.proxy)[d.vbn] = d.val
             self.bf.AssembleLinearization(gf.vec)
 
             if hasattr(self, 'linear_solver_creator'):        
