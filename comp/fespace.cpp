@@ -1627,15 +1627,15 @@ lot of new non-zero entries in the matrix!\n" << endl;
       }
     if (flags.AnyFlagDefined("additional_dirichlet_boundaries"))
       {
-        cout << "got additional_dirichlet_boundaries" << endl;
+        // cout << "got additional_dirichlet_boundaries" << endl;
         auto dirbcs = std::any_cast<Array<DirichletBoundary>>(flags.GetAnyFlag("additional_dirichlet_boundaries"));
         freedofs = make_shared<BitArray>(*freedofs);
         for (auto dbc : dirbcs)
           {
-            cout << "dirichlet bc: " << dbc.vbn << endl;
+            // cout << "dirichlet bc: " << dbc.vbn << endl;
             Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
             BitArray dofs = GetDofs(reg, dbc.proxy->Evaluator().get());
-            cout << "subspace dofs = " << dofs << endl;
+            // cout << "subspace dofs = " << dofs << endl;
             dofs.Invert();
             freedofs->And(dofs);
           }

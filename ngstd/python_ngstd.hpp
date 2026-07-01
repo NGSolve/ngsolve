@@ -11,8 +11,6 @@
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #endif
 
-#define PYBIND11_DETAILED_ERROR_MESSAGES
-
 #include <pybind11/pybind11.h>
 #include <pybind11/iostream.h>
 #include <pybind11/eval.h>

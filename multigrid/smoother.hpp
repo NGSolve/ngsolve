@@ -23,7 +23,8 @@ namespace ngmg
     int updateall;
     /// 
     Flags flags;
-    std::optional<Region> additional_dirichlet_constraints;    
+    // std::optional<Region> additional_dirichlet_constraints;
+    Array<DirichletBoundary> additional_dirichlet_boundaries;    
   public: 
     /// Constructor
     Smoother();
@@ -32,8 +33,13 @@ namespace ngmg
     /// Destructor
     virtual ~Smoother();
 
+    /*
     void SetAdditionalDirichletConstraints (std::optional<Region> areg) { additional_dirichlet_constraints = areg; }
     auto GetAdditionalDirichletConstraints () { return additional_dirichlet_constraints; }
+    */
+    void SetAdditionalDirichletBoundaries (const Array<DirichletBoundary> & db)
+    { additional_dirichlet_boundaries = db; }
+    auto& GetAdditionalDirichletBoundaries () { return additional_dirichlet_boundaries; }
     
     /// Update smoother (fine level or all levels)
     virtual void Update (bool force_update = 0) = 0;

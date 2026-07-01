@@ -558,7 +558,10 @@ when building the system matrices.
       return DirichletBoundary { self, vbn };
     })
 
-    
+    .def("GetDofs", [](spProxy self, const Region& reg)
+    {
+      return self->GetFESpace()->GetDofs(reg, self->Evaluator().get());
+    })
     /*
     .def("__or__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
     {
@@ -574,6 +577,7 @@ when building the system matrices.
     ;
     
   py::class_<DirichletBC> (m, "DirichletBC")
+    .def_property_readonly("dirbnd", [](DirichletBC & cond) { return cond.dirbnd; })
     .def_property_readonly("proxy", [](DirichletBC & cond) { return cond.dirbnd.proxy; })
     .def_property_readonly("vbn", [](DirichletBC & cond) { return cond.dirbnd.vbn; })
     .def_property_readonly("vb", [](DirichletBC & cond) { return cond.dirbnd.vbn.vb; })
@@ -2337,7 +2341,21 @@ bonus_intorder : int
                    },
                   "list of gridfunctions for compound gridfunction")
 
-    .def("ComponentFromProxy", [](shared_ptr<GridFunction> gf, shared_ptr<ProxyFunction> proxy)
+
+    .def("__getitem__", [](shared_ptr<GF> self, int comp) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, comp);
+    }, py::arg("comp"), "returns component comp of vectorial CF")
+    .def("__getitem__", [](shared_ptr<GF> self, py::slice inds) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, inds);
+    }, py::arg("components"))
+    .def("__getitem__", [](shared_ptr<GF> self, py::tuple comps) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, comps);
+    })
+    
+    .def("__getitem__", [](shared_ptr<GridFunction> gf, shared_ptr<ProxyFunction> proxy)
     {
       auto diffop = proxy->Evaluator();
       while (auto cdiffop  = dynamic_pointer_cast<CompoundDifferentialOperator>(diffop))
@@ -3375,7 +3393,7 @@ integrator : ngsolve.fem.LFI
       return pre.Create(bf, flags);
     })
     .def ("IsCreator", [](Preconditioner &pre) { return pre.IsCreator(); })
-    .def ("SetAdditionalDirichletConstraints", [](Preconditioner & pre, Region reg) { pre.SetAdditionalDirichletConstraints(reg); })
+    // .def ("SetAdditionalDirichletConstraints", [](Preconditioner & pre, Region reg) { pre.SetAdditionalDirichletConstraints(reg); })
     .def("__str__", [](Preconditioner &self) { return ToString<Preconditioner>(self); } )
     
     .def_property_readonly("mat", [](Preconditioner &self)

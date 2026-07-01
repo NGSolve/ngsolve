@@ -622,7 +622,7 @@ namespace ngcomp
 
   DocInfo BASE_BDDCPreconditioner :: GetDocu ()
   {
-    DocInfo docu; //  = FESpace::GetDocu();
+    DocInfo docu = Preconditioner::GetDocu();
     docu.short_docu = "element-level BDDC preconditioner.";
     docu.long_docu =
       R"raw_string(TODO
@@ -678,6 +678,7 @@ namespace ngcomp
   InitLevel (shared_ptr<BitArray> _freedofs) 
     {
       freedofs = _freedofs;
+      /*
       if (additional_dirichlet_constraints)
         {
           BitArray dofs = bfa->GetFESpace()->GetDofs(*additional_dirichlet_constraints);
@@ -685,7 +686,7 @@ namespace ngcomp
           dofs.And(*freedofs);
           freedofs = make_shared<BitArray>(std::move(dofs));
         }
-
+      */
       if (additional_dirichlet_boundaries.Size())
         {
           freedofs = make_shared<BitArray>(*freedofs);

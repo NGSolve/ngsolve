@@ -25,7 +25,7 @@ namespace ngcomp
     weak_ptr<BilinearForm> bf;
     bool is_registered = false;
   protected:
-    std::optional<Region> additional_dirichlet_constraints;
+    // std::optional<Region> additional_dirichlet_constraints;
     Array<DirichletBoundary> additional_dirichlet_boundaries;
     bool test;
     bool timing;
@@ -79,7 +79,7 @@ namespace ngcomp
     
     virtual bool IsComplex() const override { return GetMatrix().IsComplex(); }
 
-    virtual void SetAdditionalDirichletConstraints (Region areg) { additional_dirichlet_constraints = areg; }
+    // virtual void SetAdditionalDirichletConstraints (Region areg) { additional_dirichlet_constraints = areg; }
     // freedofs from FESpace, filtered with additional constraints. Always new BitArray
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
     
@@ -522,7 +522,7 @@ namespace ngcomp
 
     virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;  
     
-    void SetAdditionalDirichletConstraints (Region areg) override;
+    // void SetAdditionalDirichletConstraints (Region areg) override;
 
     ///
     virtual void Update () override;

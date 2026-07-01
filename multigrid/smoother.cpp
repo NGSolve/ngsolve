@@ -28,8 +28,14 @@ namespace ngmg
     : flags(aflags)
   {
     
-    if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
-      additional_dirichlet_constraints = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
+    // if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
+    // additional_dirichlet_constraints = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
+
+    // using Type = std::vector<std::any>;
+    // using Type = ngcore::Array<std::any>;
+    
+    // if (flags.AnyFlagDefined("additional_dirichlet_boundaries"))
+    // additional_dirichlet_boundaries = std::any_cast<Type>(flags.GetAnyFlag("additional_dirbc"));
     
     SetMultiplicative();
     SetUpdateAll (0);
@@ -725,8 +731,12 @@ namespace ngmg
     while(smoothing_blocks.Size() < level)
       smoothing_blocks.Append(nullptr);
 
+    /*
     if (additional_dirichlet_constraints)
       flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
+    */
+    if (additional_dirichlet_boundaries.Size())
+      flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
     
     if (!smoothing_blocks.Last())
       smoothing_blocks.Last() = biform.GetFESpace()->CreateSmoothingBlocks(flags);

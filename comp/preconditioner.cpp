@@ -37,27 +37,26 @@ namespace ngcomp
         is_registered = true;
       }
 
+    /*
     // cout << "pre base, flags = " << aflags << endl;
     if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
       {
         // cout << "Set Additonal Dirichelt, in base Preconditioner base" << endl;
         additional_dirichlet_constraints = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
       }
-
+    */
     
     if (flags.AnyFlagDefined("additional_dirbc"))
       {
         auto add_dir_any = flags.GetAnyFlag("additional_dirbc");
 
-        using Type = std::vector<std::any>;
+        using Type = std::vector<std::any>; 
         // using Type = ngcore::Array<std::any>;
-
         /*
         cout << "have type   = " << add_dir_any.type().name() << endl;
         cout << "expect type = " << typeid(Type).name() << endl;
         cout << "same? " << (add_dir_any.type() == typeid(Type)) << endl;
         */
-        
         auto any_vector = std::any_cast<Type>(add_dir_any);
         for (auto dbc : any_vector)
           {
@@ -65,12 +64,12 @@ namespace ngcomp
 
             if (auto * bc = std::any_cast<DirichletBC>(&dbc))
               {
-                cout << "got a DirichletBC" << endl;
+                // cout << "got a DirichletBC" << endl;
                 additional_dirichlet_boundaries.Append (bc->dirbnd);
               }
             if (auto * bc = std::any_cast<DirichletBoundary>(&dbc))
               {
-                cout << "got a DirichletBoundary" << endl;
+                // cout << "got a DirichletBoundary" << endl;
                 additional_dirichlet_boundaries.Append (*bc);
               }
           }
@@ -91,8 +90,8 @@ namespace ngcomp
   {
     DocInfo docu;
     docu.short_docu = "Base class preconditioner.";
-    docu.Arg("additional_dirichlet_constraints") = "optional<Region> = False";
-    docu.Arg("additional_dirbc") = "optional<[DirichletBC> = []";    
+    // docu.Arg("additional_dirichlet_constraints") = "optional<Region> = False";
+    docu.Arg("additional_dirbc") = "list : DirichletBoundary = []";
     return docu;
   }
 
@@ -108,6 +107,7 @@ namespace ngcomp
   shared_ptr<BitArray> Preconditioner :: GetFreeDofs (bool external) const
   {
     auto freedofs = bf.lock()->GetFESpace()->GetFreeDofs(external);
+    /*
     if (additional_dirichlet_constraints)
       {
         BitArray dofs = bf.lock()->GetFESpace()->GetDofs(*additional_dirichlet_constraints);
@@ -115,7 +115,7 @@ namespace ngcomp
         dofs.And(*freedofs);
         freedofs = make_shared<BitArray>(std::move(dofs));
       }
-
+    */
     if (additional_dirichlet_boundaries.Size())
       {
         freedofs = make_shared<BitArray>(*freedofs);
@@ -347,7 +347,7 @@ namespace ngcomp
     if (!sm)
       throw Exception ("smoother could not be allocated"); 
 
-    sm -> SetAdditionalDirichletConstraints(additional_dirichlet_constraints);
+    sm -> SetAdditionalDirichletBoundaries(additional_dirichlet_boundaries);
     
     auto prol = lo_fes->GetProlongation();
 
@@ -453,13 +453,15 @@ namespace ngcomp
     return docu;    
   }
 
-  
-  void MGPreconditioner :: SetAdditionalDirichletConstraints (Region areg)
+  /*
+  void MGPreconditioner :: SetAdditionalDirichletConstraints (const Array<DirichletBoundary> & dbc)
   {
-    additional_dirichlet_constraints = areg;
+    // additional_dirichlet_constraints = areg;
+    additional_dirichlet_boundaries = areg;
     // if (sm)
     // sm -> SetAdditionalDirichletConstraints(areg);
   }
+  */
 
   shared_ptr<Preconditioner> MGPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
   {
@@ -492,10 +494,10 @@ namespace ngcomp
     if (bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
       {
         static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
-        if (additional_dirichlet_constraints)
-          flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
+        if (additional_dirichlet_boundaries.Size())
+          flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
         auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
-        fine_smoother -> SetAdditionalDirichletConstraints(additional_dirichlet_constraints);
+        fine_smoother -> SetAdditionalDirichletBoundaries(additional_dirichlet_boundaries);
         GetMemoryTracer().Track(*fine_smoother, "FineSmoother");
         tlp = make_shared<TwoLevelMatrix> (&bfa->GetMatrix(),
                                            &*mgp,
@@ -750,9 +752,8 @@ namespace ngcomp
 
       if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {
-          if (additional_dirichlet_constraints)
-            flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
-          flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
+          if (additional_dirichlet_boundaries.Size())          
+            flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
           
           auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
           shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();          
