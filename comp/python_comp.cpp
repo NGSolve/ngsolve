@@ -78,22 +78,6 @@ namespace ngcomp
                             LocalHeap & lh);
 
 
-  class DirichletBoundary
-  {
-  public:
-    shared_ptr<ProxyFunction> proxy;
-    RegionDescriptor vbn;
-  };
-
-  class DirichletBC
-  
-  {
-  public:
-    shared_ptr<ProxyFunction> proxy;
-    RegionDescriptor vbn;
-    shared_ptr<CoefficientFunction> val;
-  };
-
 
   // sum of integrals = 0
   class VariationalEquation
@@ -585,15 +569,15 @@ when building the system matrices.
 
   py::class_<DirichletBoundary> (m, "DirichletBoundary")
     .def("__eq__", [](DirichletBoundary dir, shared_ptr<CoefficientFunction> cf) {
-      return DirichletBC { dir.proxy, dir.vbn, cf };
+      return DirichletBC { DirichletBoundary { dir.proxy, dir.vbn }, cf };
     })
     ;
     
   py::class_<DirichletBC> (m, "DirichletBC")
-    .def_property_readonly("proxy", [](DirichletBC & cond) { return cond.proxy; })
-    .def_property_readonly("vbn", [](DirichletBC & cond) { return cond.vbn; })
-    .def_property_readonly("vb", [](DirichletBC & cond) { return cond.vbn.vb; })
-    .def_property_readonly("name", [](DirichletBC & cond) { return cond.vbn.name; })    
+    .def_property_readonly("proxy", [](DirichletBC & cond) { return cond.dirbnd.proxy; })
+    .def_property_readonly("vbn", [](DirichletBC & cond) { return cond.dirbnd.vbn; })
+    .def_property_readonly("vb", [](DirichletBC & cond) { return cond.dirbnd.vbn.vb; })
+    .def_property_readonly("name", [](DirichletBC & cond) { return cond.dirbnd.vbn.name; })    
     .def_property_readonly("val", [](DirichletBC & cond) { return cond.val; })    
     ;
 
@@ -1106,10 +1090,10 @@ ni : ngsolve.comp.NodeId
 
 )raw_string"))
 
-    .def ("GetDofs", [](shared_ptr<FESpace> self, Region reg)
+    .def ("GetDofs", [](shared_ptr<FESpace> self, Region reg, DifferentialOperator * diffop)
           {
-            return self->GetDofs(reg);
-          }, py::arg("region"), docu_string(R"raw_string(
+            return self->GetDofs(reg, diffop);
+          }, py::arg("region"), py::arg("diffop")=nullptr, docu_string(R"raw_string(
 Returns all degrees of freedom in given region.
 
 Parameters:
@@ -3386,8 +3370,8 @@ integrator : ngsolve.fem.LFI
     .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>(), "Update preconditioner")
     // .def ("Create", [prec_class](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) { 
     // auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);      
-    .def ("Create", [](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) { 
-      auto flags = CreateFlagsFromKwArgs(kwargs, py::cast(pre));      
+    .def ("Create", [](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) {
+      auto flags = CreateFlagsFromKwArgs(kwargs, py::cast(&pre));
       return pre.Create(bf, flags);
     })
     .def ("IsCreator", [](Preconditioner &pre) { return pre.IsCreator(); })

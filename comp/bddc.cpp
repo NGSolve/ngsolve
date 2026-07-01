@@ -685,7 +685,19 @@ namespace ngcomp
           dofs.And(*freedofs);
           freedofs = make_shared<BitArray>(std::move(dofs));
         }
-      
+
+      if (additional_dirichlet_boundaries.Size())
+        {
+          freedofs = make_shared<BitArray>(*freedofs);
+          for (auto dbc : additional_dirichlet_boundaries)
+            {
+              Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
+              BitArray dofs = bfa->GetFESpace()->GetDofs(reg, dbc.proxy->Evaluator().get());
+              dofs.Invert();
+              freedofs->And(dofs);
+            }
+        }
+
       pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, freedofs, flags, inversetype, coarsetype, block, hypre);
       pre -> SetHypre (hypre);
       GetMemoryTracer().Track(*pre, "pre");

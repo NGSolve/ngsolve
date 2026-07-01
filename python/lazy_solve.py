@@ -23,19 +23,13 @@ class VariationalEquationSolver:
         for a in args:
             if (verbose>=5): print ("got argument of type", type(a))
 
-            # PreconditionerCreator only a temporary approach
-            if isinstance(a, PreconditionerCreator):
-                if self.dirichlet:
-                    self.pre = a(self.bf, additional_dirichlet_constraints=self.dreg)
-                else:
-                    self.pre = a(self.bf)
-
             if isinstance(a, Preconditioner):
                 if a.IsCreator():
                     if verbose>=2: print ("PreconditionerCreator: ", type(a))
                     if self.dirichlet:
                         if verbose>=2: print ("Dirichlet: ", self.dreg.Mask())
-                        self.pre = a.Create(self.bf, additional_dirichlet_constraints=self.dreg)
+                        # self.pre = a.Create(self.bf, additional_dirichlet_constraints=self.dreg, additional_dirbc=self.dirichlet)
+                        self.pre = a.Create(self.bf, additional_dirbc=self.dirichlet)
                     else:
                         self.pre = a.Create(self.bf)
                 else:
@@ -58,7 +52,6 @@ class VariationalEquationSolver:
         with TaskManager():
             gf = GridFunction(self.fes)
             for d in self.dirichlet:
-                # gf[d.vbn] = d.val
                 gf.ComponentFromProxy(d.proxy)[d.vbn] = d.val
             self.bf.AssembleLinearization(gf.vec)
 
@@ -66,8 +59,11 @@ class VariationalEquationSolver:
                 inv = self.linear_solver_creator(self.bf.mat, self.pre)
             else:
                 freedofs = self.fes.FreeDofs()
-                if self.dirichlet:
-                    freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
+                #if self.dirichlet:
+                #    freedofs = freedofs&(~self.fes.GetDofs(self.dreg))
+                for dbc in self.dirichlet:
+                    reg = self.mesh[dbc.vbn]
+                    freedofs =  freedofs&(~self.fes.GetDofs(reg, dbc.proxy.__diffop__()))
                 
                 if hasattr(self, 'sparse_factorization_creator'):
                     inv = self.sparse_factorization_creator(self.bf.mat, freedofs)

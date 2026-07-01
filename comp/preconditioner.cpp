@@ -43,6 +43,40 @@ namespace ngcomp
         // cout << "Set Additonal Dirichelt, in base Preconditioner base" << endl;
         additional_dirichlet_constraints = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
       }
+
+    
+    if (flags.AnyFlagDefined("additional_dirbc"))
+      {
+        auto add_dir_any = flags.GetAnyFlag("additional_dirbc");
+
+        using Type = std::vector<std::any>;
+        // using Type = ngcore::Array<std::any>;
+
+        /*
+        cout << "have type   = " << add_dir_any.type().name() << endl;
+        cout << "expect type = " << typeid(Type).name() << endl;
+        cout << "same? " << (add_dir_any.type() == typeid(Type)) << endl;
+        */
+        
+        auto any_vector = std::any_cast<Type>(add_dir_any);
+        for (auto dbc : any_vector)
+          {
+            // cout << "entry type" << dbc.type().name() << endl;
+
+            if (auto * bc = std::any_cast<DirichletBC>(&dbc))
+              {
+                cout << "got a DirichletBC" << endl;
+                additional_dirichlet_boundaries.Append (bc->dirbnd);
+              }
+            if (auto * bc = std::any_cast<DirichletBoundary>(&dbc))
+              {
+                cout << "got a DirichletBoundary" << endl;
+                additional_dirichlet_boundaries.Append (*bc);
+              }
+          }
+      }
+
+    
   }
   
 
@@ -58,6 +92,7 @@ namespace ngcomp
     DocInfo docu;
     docu.short_docu = "Base class preconditioner.";
     docu.Arg("additional_dirichlet_constraints") = "optional<Region> = False";
+    docu.Arg("additional_dirbc") = "optional<[DirichletBC> = []";    
     return docu;
   }
 
@@ -79,6 +114,18 @@ namespace ngcomp
         dofs.Invert();
         dofs.And(*freedofs);
         freedofs = make_shared<BitArray>(std::move(dofs));
+      }
+
+    if (additional_dirichlet_boundaries.Size())
+      {
+        freedofs = make_shared<BitArray>(*freedofs);
+        for (auto dbc : additional_dirichlet_boundaries)
+          {
+            Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
+            BitArray dofs = bf.lock()->GetFESpace()->GetDofs(reg, dbc.proxy->Evaluator().get());
+            dofs.Invert();
+            freedofs->And(dofs);
+          }
       }
     return freedofs;
   }
@@ -646,12 +693,6 @@ namespace ngcomp
   {
     // bfa -> SetPreconditioner (this);
 
-
-    if (flags.AnyFlagDefined("additional_dirbc"))
-      {
-        cout << "have adddir" << endl;
-        // auto add_dir = flags.GetAnyFlag("additional_dirbc");
-      }
     
     GaussSeidel = flags.GetDefineFlag("GS");
     block = flags.GetDefineFlag ("block");
@@ -711,6 +752,7 @@ namespace ngcomp
         {
           if (additional_dirichlet_constraints)
             flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
+          flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
           
           auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
           shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();          

@@ -26,6 +26,7 @@ namespace ngcomp
     bool is_registered = false;
   protected:
     std::optional<Region> additional_dirichlet_constraints;
+    Array<DirichletBoundary> additional_dirichlet_boundaries;
     bool test;
     bool timing;
     bool print;

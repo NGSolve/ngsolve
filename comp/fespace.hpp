@@ -447,7 +447,9 @@ ANY                  1 1 1 1 | 15
     virtual void GetDofNrs (ElementId ei, Array<DofId> & dnums) const = 0;
     
     virtual void GetDofNrs (NodeId ni, Array<DofId> & dnums) const;
-    BitArray GetDofs (const Region & reg) const;
+    BitArray GetDofs (const Region & reg, const DifferentialOperator * diffop = nullptr) const;
+    virtual IntRange GetRange (const DifferentialOperator & diffop) const;
+    
     Table<int> CreateDofTable (VorB vorb) const;
     virtual void SelectDofs (const string & name, BitArray & dofs) const;
                   
@@ -1089,6 +1091,13 @@ ANY                  1 1 1 1 | 15
       
       return DofRange(IntRange(cummulative_nd[spacenr], cummulative_nd[spacenr+1]),
                       spaces[spacenr]->GetParallelDofs());
+    }
+
+    IntRange GetRange (const DifferentialOperator & diffop) const override
+    {
+      auto & cdop = dynamic_cast<const CompoundDifferentialOperator&>(diffop);
+      auto subrange = (*this)[cdop.Component()]->GetRange(*cdop.BaseDiffOp());
+      return subrange+cummulative_nd[cdop.Component()];
     }
 
     shared_ptr<BaseMatrix> EmbeddingOperator (int spacenr) const;
