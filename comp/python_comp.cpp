@@ -842,6 +842,14 @@ kwargs : kwargs
                           }
                         catch(const py::cast_error&)
                           {}
+                        try
+                          {
+                            auto rd = py::cast<RegionDescriptor>(definedon);
+                            flags->SetFlag("definedon", Region(ma, rd.vb, rd.name));
+                          }
+                        catch(const py::cast_error&)
+                          {}
+                        
                         // py::extract<Region> definedon_reg(definedon);
                         // if (definedon_reg.check() && definedon_reg().IsVolume())
                         //   {

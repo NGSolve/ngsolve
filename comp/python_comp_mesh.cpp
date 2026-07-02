@@ -99,6 +99,7 @@ void ExportNgcompMesh (py::module &m)
 
   py::class_<RegionDescriptor> (m, "RegionDescriptor")
     .def(~py::self)
+    .def(py::self+py::self)    
     .def("__repr__", &ToString<RegionDescriptor>)
     .def_property_readonly("vb", [](RegionDescriptor&rd) { return rd.vb; })
     .def_property_readonly("name", [](RegionDescriptor&rd) { return rd.name; })

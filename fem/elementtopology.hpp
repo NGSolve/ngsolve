@@ -119,6 +119,10 @@ namespace ngfem
     VorB vb;
     string name;
     RegionDescriptor operator~ () const { return { vb, "^(?!^" + name + "$).*$" }; }
+    RegionDescriptor operator+ (const RegionDescriptor & rd2) const {
+      if (vb != rd2.vb) throw Exception("Try to combine two region descriptors of differnet dimensions");
+      return { vb, "(?:"+name+")|(?:"+rd2.name+")" };
+    }    
   };
 
   inline ostream & operator<< (ostream & ost, const RegionDescriptor& rd)
