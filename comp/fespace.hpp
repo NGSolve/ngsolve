@@ -1095,9 +1095,13 @@ ANY                  1 1 1 1 | 15
 
     IntRange GetRange (const DifferentialOperator & diffop) const override
     {
-      auto & cdop = dynamic_cast<const CompoundDifferentialOperator&>(diffop);
-      auto subrange = (*this)[cdop.Component()]->GetRange(*cdop.BaseDiffOp());
-      return subrange+cummulative_nd[cdop.Component()];
+      if (auto cdop = dynamic_cast<const CompoundDifferentialOperator*>(&diffop))
+        {
+          auto subrange = (*this)[cdop->Component()]->GetRange(*cdop->BaseDiffOp());
+          return subrange+cummulative_nd[cdop->Component()];
+        }
+      else
+        return FESpace::GetRange(diffop);
     }
 
     shared_ptr<BaseMatrix> EmbeddingOperator (int spacenr) const;

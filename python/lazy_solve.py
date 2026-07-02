@@ -44,6 +44,7 @@ class VariationalEquationSolver:
             gf = GridFunction(self.fes)
             for d in self.dirichlet:
                 gf[d.proxy][d.vbn] = d.val
+
             self.bf.AssembleLinearization(gf.vec)
 
             if hasattr(self, 'linear_solver_creator'):        

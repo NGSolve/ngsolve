@@ -57,26 +57,17 @@ namespace ngcomp
         cout << "expect type = " << typeid(Type).name() << endl;
         cout << "same? " << (add_dir_any.type() == typeid(Type)) << endl;
         */
-        auto any_vector = std::any_cast<Type>(add_dir_any);
-        for (auto dbc : any_vector)
-          {
-            // cout << "entry type" << dbc.type().name() << endl;
 
-            if (auto * bc = std::any_cast<DirichletBC>(&dbc))
-              {
-                // cout << "got a DirichletBC" << endl;
+        if (auto any_vector = std::any_cast<Type>(&add_dir_any))
+          for (auto dbc : *any_vector)
+            {
+              if (auto * bc = std::any_cast<DirichletBC>(&dbc))
                 additional_dirichlet_boundaries.Append (bc->dirbnd);
-              }
-            if (auto * bc = std::any_cast<DirichletBoundary>(&dbc))
-              {
-                // cout << "got a DirichletBoundary" << endl;
+              if (auto * bc = std::any_cast<DirichletBoundary>(&dbc))
                 additional_dirichlet_boundaries.Append (*bc);
-              }
+            }
           }
       }
-
-    
-  }
   
 
   
