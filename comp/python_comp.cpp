@@ -2942,7 +2942,9 @@ integrator : ngsolve.fem.BFI
 
     .def("__iadd__", [](BF & self, shared_ptr<SpecialElementGroup> seg) -> BilinearForm& { self.Add(seg); return self; })
          
-    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on")
+    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on (always returns trialspace)")
+    .def_property_readonly("trialspace", [](BF& self) { return self.GetTrialSpace(); }, "trial-space of the bilinear-form")
+    .def_property_readonly("testspace", [](BF& self) { return self.GetTestSpace(); }, "test-space of the bilinear-form")
 
     .def_property_readonly("integrators", [](BF & self)
                            { return MakePyTuple (self.Integrators()); }, "integrators of the bilinear form")
