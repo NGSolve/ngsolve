@@ -65,7 +65,12 @@ fi
 
 list(JOIN nvcc_flags " " nvcc_flags)
 foreach( opt ${NGSOLVE_COMPILE_OPTIONS} ${ngcore_compile_options} "-fPIC")
-    set(nvcc_flags "${nvcc_flags} -Xcompiler ${opt}")
+message(STATUS "NVCC option: ${opt}")
+    if(opt MATCHES "-std=")
+        set(nvcc_flags "${nvcc_flags} ${opt}")
+    else()
+        set(nvcc_flags "${nvcc_flags} -Xcompiler ${opt}")
+    endif()
 endforeach()
 set(ngs_nvcc_command "$NVCC ${ngscxx_define_flags} -arch=native ${nvcc_flags} ${ngscxx_includes} $*\n")
 
