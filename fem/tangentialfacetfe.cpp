@@ -201,6 +201,18 @@ namespace ngfem
                             }));
   }
 
+  template <ELEMENT_TYPE ET>
+  void TangentialFacetFacetFE<ET> :: CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const
+  {
+    constexpr int DIMSPACE = DIM+1;
+    shape.AddSize(ndof, bmip.DimSpace()) = 0.0;
+    auto & mip = static_cast<const MappedIntegrationPoint<DIM,DIMSPACE>&> (bmip);
+    this->CalcDualShape2 (mip, 
+                            SBLambda ([&] (size_t i, auto val)
+                            {
+                                shape.Row(i) = val;
+                            }));
+  }
   
   
   template<> template <typename Tx, typename TFA>

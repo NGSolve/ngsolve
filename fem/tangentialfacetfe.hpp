@@ -32,6 +32,7 @@ namespace ngfem
  
   public:
     using HCurlFiniteElement<ET_trait<ET>::DIM>::GetNDof;    
+    using HCurlFiniteElement<ET_trait<ET>::DIM>::ndof;    
     using VertexOrientedFE<ET>::SetVertexNumber;
     using VertexOrientedFE<ET>::SetVertexNumbers;
     using VertexOrientedFE<ET>::GetVertexOrientedEdge;
@@ -71,6 +72,7 @@ namespace ngfem
 				  BareSliceMatrix<SIMD<double>> shapes) const override;
 
     virtual void CalcDualShape (const SIMD_BaseMappedIntegrationRule & bmir, BareSliceMatrix<SIMD<double>> shape) const override;
+    virtual void CalcDualShape (const BaseMappedIntegrationPoint & bmip, BareSliceMatrix<> shape) const override;
     
     template<typename Tx, typename TFA>  
     void T_CalcShape (TIP<DIM,Tx> tip, TFA & shape) const;
