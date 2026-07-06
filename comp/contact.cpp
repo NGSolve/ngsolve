@@ -803,7 +803,7 @@ namespace ngcomp
   {
     static Timer t("ContactIntegrator::CalcLinearizedAdd");
     // static Timer teval("ContactIntegrator::CalcLinearizedAdd-Evaluate");
-    RegionTimer rt(t);
+    // RegionTimer rt(t);
     HeapReset hr(lh);
     ProxyUserData ud(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
     ProxyUserData ud2(trial_proxies.Size(), cf_gridfunctions.Size(), lh);
