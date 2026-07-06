@@ -321,9 +321,9 @@ namespace ngla
       invdiag(ablocktable->Size())
   {
     static Timer t("BlockJacobiPrecond ctor"); RegionTimer reg(t);
-    static Timer tinv("BlockJacobiPrecond ctor inv");
-    static Timer tget("BlockJacobiPrecond ctor get");
-    static Timer tprep("BlockJacobiPrecond ctor prep");
+    static Timer<TNoTracing> tinv("BlockJacobiPrecond ctor inv");
+    static Timer<TNoTracing> tget("BlockJacobiPrecond ctor get");
+    static Timer<TNoTracing> tprep("BlockJacobiPrecond ctor prep");
     static Timer tpar("BlockJacobiPrecond ctor par");
     cout << IM(3) << "BlockJacobi Preconditioner, constructor called, #blocks = " << blocktable->Size() << endl;
 
