@@ -265,8 +265,10 @@ namespace ngla
   void SparseMatrix<TM,TV_ROW,TV_COL> ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
-    static Timer t("SparseMatrix::MultAdd"); RegionTimer reg(t);
-    t.AddFlops (this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(double)));
+    static Timer t("SparseMatrix::MultAdd");
+    const auto nze = this->NZE()*sizeof(TV_ROW)*sizeof(TV_COL)/sqr(sizeof(double));
+    RegionTimer reg(t, nze);
+    t.AddFlops (nze);
 
     ParallelForRange
       (balance, [&] (IntRange myrange)
@@ -346,7 +348,7 @@ namespace ngla
   MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer ("SparseMatrix::MultTransAdd");
-    RegionTimer reg (timer);
+    RegionTimer reg (timer, this->NZE());
 
     FlatVector<TVY> fx = x.FV<TVY>();
     FlatVector<TVX> fy = y.FV<TVX>();
@@ -380,7 +382,7 @@ namespace ngla
   MultAdd (Complex s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer("SparseMatrix::MultAdd Complex");
-    RegionTimer reg (timer);
+    RegionTimer reg (timer, this->NZE());
 
     FlatVector<TVX> fx = x.FV<TVX> (); //  (x.Size(), x.Memory());
     FlatVector<TVY> fy = y.FV<TVY> (); // (y.Size(), y.Memory());
@@ -969,7 +971,7 @@ namespace ngla
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer("SparseMatrixSymmetric::MultAdd");
-    RegionTimer reg (timer);
+    RegionTimer reg (timer, 2*this->nze);
     timer.AddFlops (2*this->nze);
 
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW>();
@@ -1028,7 +1030,7 @@ namespace ngla
 	    const Array<int> * cluster) const
   {
     static Timer timer("SparseMatrixSymmetric::MultAdd2");
-    RegionTimer reg (timer);
+    RegionTimer reg (timer, this->NZE());
     timer.AddFlops (this->NZE());
    
     const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
