@@ -138,6 +138,12 @@ namespace ngfem
                 coefs[a*(n+1)+i][0] = CalcA (i, a, 0);
                 coefs[a*(n+1)+i][1] = CalcB (i, a, 0);
                 coefs[a*(n+1)+i][2] = CalcC (i, a, 0);
+                /*
+                auto [ca,cb,cc] = CalcABC(i,a,0);
+                coefs[a*(n+1)+i][0] = ca;
+                coefs[a*(n+1)+i][1] = cb;
+                coefs[a*(n+1)+i][2] = cc;
+                */
               }
             // ALWAYS_INLINE S P1(S x) const { return 0.5 * (2*(al+1)+(al+be+2)*(x-1)); }
             double alpha = a;
@@ -161,9 +167,8 @@ namespace ngfem
     {
       LegendrePolynomial::Calc(1000);
       IntLegNoBubble::Calc(1000);
-      JacobiPolynomialAlpha::Calc(100,100); 
-      IntegratedJacobiPolynomialAlpha::Calc(100,100);
-
+      JacobiPolynomialAlpha::Calc(100,200); 
+      IntegratedJacobiPolynomialAlpha::Calc(127,255);
       NormalizedLegendreFunctions::Calc(100);
     }
   };

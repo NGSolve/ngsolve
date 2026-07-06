@@ -38,7 +38,11 @@ namespace ngcomp
       : ma(ama), coefs(a_coefs), fieldnames(a_field_names),
         filename(a_filename), subdivision(a_subdivision), order(a_order), only_element(a_only_element), floatsize(a_floatsize), legacy(a_legacy), same_type_subdivision(a_same_type_subdivision)
   {
-    r = 1 << (subdivision + order -1);
+    // lattice resolution: (1<<subdivision) sub-elements per direction, each split
+    // into `order` steps so that a high-order cell spans an integer block of the
+    // lattice (order divides r). For order 1/2 this equals the historical
+    // 1 << (subdivision + order - 1), keeping that output byte-identical.
+    r = (1 << subdivision) * order;
     h = 1.0/r;
     if ((floatsize != "double") && (floatsize != "float") && (floatsize != "single"))
       cout << IM(1) << "VTKOutput: floatsize is not int {\"double\",\"single\",\"float\"}. Using \"float|single\".";
@@ -89,13 +93,205 @@ namespace ngcomp
         case ET_PRISM: return VTK_BIQUADRATIC_QUADRATIC_WEDGE; // 18 nodes
         // case ET_PRISM: return VTK_QUADRATIC_WEDGE; // 18 nodes (not supported by paraview tessellation)
         case ET_PYRAMID: return VTK_PYRAMID; //VTK_TRIQUADRATIC_PYRAMID; // 19 nodes
-        case ET_HEXAMID: throw Exception("hexamid not handled in vtk output");          
+        case ET_HEXAMID: throw Exception("hexamid not handled in vtk output");
       }
     }
-    
+    if(order>=3)
+    {
+      // arbitrary order Lagrange cells (require ParaView >= 5.5 / VTK >= 8.1)
+      switch(et) {
+        case ET_POINT: throw Exception("Have no higher order points");
+        case ET_SEGM: return VTK_LAGRANGE_CURVE;
+        case ET_TRIG: return VTK_LAGRANGE_TRIANGLE;
+        case ET_QUAD: return VTK_LAGRANGE_QUADRILATERAL;
+        case ET_TET: return VTK_LAGRANGE_TETRAHEDRON;
+        case ET_HEX: return VTK_LAGRANGE_HEXAHEDRON;
+        case ET_PRISM: return VTK_LAGRANGE_WEDGE;
+        // pyramids are never emitted as a single cell (FillReferencePyramid
+        // approximates them with hexes/tets), so no VTK_LAGRANGE_PYRAMID here.
+        case ET_PYRAMID: throw Exception("higher order pyramid not handled in vtk output");
+        case ET_HEXAMID: throw Exception("hexamid not handled in vtk output");
+      }
+    }
+
     throw Exception("Invalid element order: " + ToString(order));
   }
  
+  namespace {
+
+    // ------------------------------------------------------------------
+    // VTK arbitrary-order Lagrange node orderings (cell types 68..73).
+    //
+    // Each generator appends the cell's lattice node indices to `pi` in the exact
+    // order VTK/ParaView expects, looking up points through f(i0,j0,k0) (offsets
+    // along the cell's reference directions vi/vj/vk). The orderings here were
+    // verified node-for-node against VTK 9 for orders up to 8; the verification
+    // scaffolding lives in tasks/gen_proto.py and tasks/wedge_test.py.
+    // ------------------------------------------------------------------
+
+    typedef std::function<int(int,int,int)> VTKLatticeFn;
+    typedef std::array<int,3> B3;
+    typedef std::array<int,4> B4;
+    typedef std::array<int,2> P2;
+
+    // Barycentric (b0,b1,b2) node order for a VTK Lagrange triangle of degree o
+    // (corners, then the three edges CCW, then the interior triangle recursively).
+    void LagrangeTriBary(int o, Array<B3> &bary)
+    {
+      int mn = 0, cur = o;
+      while (cur > 0)
+      {
+        int mx = mn + cur;
+        for (int i = 0; i < 3; i++) { B3 b{mn,mn,mn}; b[(i+2)%3] = mx; bary.Append(b); }
+        if (cur > 1)
+          for (int e = 0; e < 3; e++)
+            for (int off = 0; off < cur-1; off++)
+            {
+              B3 b{0,0,0};
+              b[(e+1)%3] = mn; b[e] = (mn+1)+off; b[(e+2)%3] = (mx-1)-off;
+              bary.Append(b);
+            }
+        mn++; cur -= 3;
+      }
+      if (cur == 0) bary.Append(B3{mn,mn,mn});
+    }
+
+    // Barycentric (b0,b1,b2,b3) node order for a VTK Lagrange tetrahedron of degree o
+    // (corners, six edges, four faces via the triangle ordering, interior tet recursively).
+    void LagrangeTetBary(int o, Array<B4> &bary)
+    {
+      if (o < 0) return;
+      if (o == 0) { bary.Append(B4{0,0,0,0}); return; }
+      static const int cmap[4] = {3,0,1,2};
+      for (int i = 0; i < 4; i++) { B4 b{0,0,0,0}; b[cmap[i]] = o; bary.Append(b); }
+      if (o >= 2)
+      {
+        static const int E[6][2] = {{3,0},{0,1},{1,3},{3,2},{0,2},{1,2}};
+        for (int e = 0; e < 6; e++)
+          for (int t = 1; t < o; t++) { B4 c{0,0,0,0}; c[E[e][0]] = o-t; c[E[e][1]] = t; bary.Append(c); }
+      }
+      if (o >= 3)
+      {
+        // for each face: {excluded coord, the 3 active coords in VTK orientation}
+        static const int faces[4][4] = {{1,0,2,3},{3,2,0,1},{0,2,1,3},{2,1,0,3}};
+        Array<B3> tri; LagrangeTriBary(o, tri);
+        for (int fc = 0; fc < 4; fc++)
+          for (auto &t : tri)
+            if (t[0] >= 1 && t[1] >= 1 && t[2] >= 1)   // interior of the face triangle
+            {
+              B4 c{0,0,0,0};
+              c[faces[fc][1]] = t[0]; c[faces[fc][2]] = t[1]; c[faces[fc][3]] = t[2];
+              c[faces[fc][0]] = 0;
+              bary.Append(c);
+            }
+      }
+      if (o >= 4)
+      {
+        Array<B4> inner; LagrangeTetBary(o-4, inner);
+        for (auto &b : inner) bary.Append(B4{b[0]+1,b[1]+1,b[2]+1,b[3]+1});
+      }
+    }
+
+    void GenLagrangeCurve(int o, const VTKLatticeFn &f, Array<int> &pi)
+    {
+      pi.Append(f(0,0,0)); pi.Append(f(o,0,0));
+      for (int t = 1; t < o; t++) pi.Append(f(t,0,0));
+    }
+
+    void GenLagrangeTriangle(int o, const VTKLatticeFn &f, Array<int> &pi)
+    {
+      Array<B3> bary; LagrangeTriBary(o, bary);
+      for (auto &b : bary) pi.Append(f(b[1], b[2], 0));      // (b0,b1,b2) -> lattice (b1,b2)
+    }
+
+    void GenLagrangeTet(int o, const VTKLatticeFn &f, Array<int> &pi)
+    {
+      Array<B4> bary; LagrangeTetBary(o, bary);
+      for (auto &b : bary) pi.Append(f(b[3], b[2], b[1]));   // (b0,b1,b2,b3) -> lattice (b3,b2,b1)
+    }
+
+    void GenLagrangeQuad(int o, const VTKLatticeFn &f, Array<int> &pi)
+    {
+      auto e = [&](int i, int j) { pi.Append(f(j,i,0)); };   // param (i,j) -> lattice (j,i)
+      e(0,0); e(o,0); e(o,o); e(0,o);                        // corners
+      for (int i = 1; i < o; i++) e(i,0);                    // edge j=0
+      for (int j = 1; j < o; j++) e(o,j);                    // edge i=o
+      for (int i = 1; i < o; i++) e(i,o);                    // edge j=o
+      for (int j = 1; j < o; j++) e(0,j);                    // edge i=0
+      for (int j = 1; j < o; j++)
+        for (int i = 1; i < o; i++) e(i,j);                  // interior (i fastest)
+    }
+
+    void GenLagrangeHex(int o, const VTKLatticeFn &f, Array<int> &pi)
+    {
+      auto e = [&](int i, int j, int k) { pi.Append(f(k,j,i)); };  // param (i,j,k) -> lattice (k,j,i)
+      // 8 corners
+      e(0,0,0); e(o,0,0); e(o,o,0); e(0,o,0); e(0,0,o); e(o,0,o); e(o,o,o); e(0,o,o);
+      // 12 edges
+      for (int i = 1; i < o; i++) e(i,0,0);
+      for (int j = 1; j < o; j++) e(o,j,0);
+      for (int i = 1; i < o; i++) e(i,o,0);
+      for (int j = 1; j < o; j++) e(0,j,0);
+      for (int i = 1; i < o; i++) e(i,0,o);
+      for (int j = 1; j < o; j++) e(o,j,o);
+      for (int i = 1; i < o; i++) e(i,o,o);
+      for (int j = 1; j < o; j++) e(0,j,o);
+      for (int k = 1; k < o; k++) e(0,0,k);
+      for (int k = 1; k < o; k++) e(o,0,k);
+      for (int k = 1; k < o; k++) e(o,o,k);
+      for (int k = 1; k < o; k++) e(0,o,k);
+      // 6 faces (interior nodes)
+      for (int iface : {0, o})
+        for (int k = 1; k < o; k++)
+          for (int j = 1; j < o; j++) e(iface,j,k);          // i-normal: j fastest, then k
+      for (int jface : {0, o})
+        for (int k = 1; k < o; k++)
+          for (int i = 1; i < o; i++) e(i,jface,k);          // j-normal: i fastest, then k
+      for (int kface : {0, o})
+        for (int j = 1; j < o; j++)
+          for (int i = 1; i < o; i++) e(i,j,kface);          // k-normal: i fastest, then j
+      // body interior (i fastest, then j, then k)
+      for (int k = 1; k < o; k++)
+        for (int j = 1; j < o; j++)
+          for (int i = 1; i < o; i++) e(i,j,k);
+    }
+
+    void GenLagrangeWedge(int o, const VTKLatticeFn &f, Array<int> &pi)
+    {
+      auto e = [&](int i, int j, int k) { pi.Append(f(i,j,k)); };  // param (i,j,k) -> lattice (i,j,k)
+      // triangle edge interior nodes in (i,j), wedge convention: 3 edges of (o-1) nodes
+      Array<P2> te;
+      for (int t = 1; t < o; t++) te.Append(P2{t,0});       // edge j=0
+      for (int t = 1; t < o; t++) te.Append(P2{o-t,t});     // edge i+j=o
+      for (int t = 1; t < o; t++) te.Append(P2{0,o-t});     // edge i=0
+      // triangle interior nodes in (i,j), lexicographic (j outer, i inner)
+      Array<P2> ti;
+      for (int j = 1; j < o; j++)
+        for (int i = 1; i < o-j; i++) ti.Append(P2{i,j});
+      // 6 corners (bottom triangle, then top triangle)
+      e(0,0,0); e(o,0,0); e(0,o,0); e(0,0,o); e(o,0,o); e(0,o,o);
+      // bottom & top triangle edges
+      for (auto &t : te) e(t[0],t[1],0);
+      for (auto &t : te) e(t[0],t[1],o);
+      // 3 vertical edges
+      for (int k = 1; k < o; k++) e(0,0,k);
+      for (int k = 1; k < o; k++) e(o,0,k);
+      for (int k = 1; k < o; k++) e(0,o,k);
+      // bottom & top triangle face interiors
+      for (auto &t : ti) e(t[0],t[1],0);
+      for (auto &t : ti) e(t[0],t[1],o);
+      // 3 quad faces (one per triangle edge): edge node fastest, then axial k
+      int per = o-1;
+      for (int g = 0; g < 3; g++)
+        for (int k = 1; k < o; k++)
+          for (int s = 0; s < per; s++) { auto &t = te[g*per+s]; e(t[0],t[1],k); }
+      // interior: triangle interior x axial
+      for (int k = 1; k < o; k++)
+        for (auto &t : ti) e(t[0],t[1],k);
+    }
+
+  } // anonymous namespace
+
   VTKCell :: VTKCell(ELEMENT_TYPE et, int order, const std::map<tuple<int,int,int>, int> &m,
       int i, int j, int k, Vec<3,int> vi, Vec<3,int> vj, Vec<3,int> vk)
   {
@@ -107,6 +303,7 @@ namespace ngcomp
     };
 
     switch(type) {
+      case VTK_LINE: pi = {f(0,0,0), f(1,0,0)}; break;
       case VTK_TRIANGLE: pi = {f(0,0,0), f(1,0,0), f(0,1,0)}; break;
       case VTK_QUAD: pi = {f(0,0,0), f(0,1,0), f(1,1,0), f(1,0,0)}; break;
       case VTK_TETRA: pi = {f(0,0,0), f(0,0,1), f(0,1,0), f(1,0,0)}; break;
@@ -114,6 +311,7 @@ namespace ngcomp
       case VTK_HEXAHEDRON: pi = {f(0,0,0), f(0,0,1), f(0,1,1), f(0,1,0), f(1,0,0), f(1,0,1), f(1,1,1), f(1,1,0)}; break;
       case VTK_PYRAMID: pi = {f(0,0,0), f(0,1,0), f(1,1,0), f(1,0,0), f(0,0,1)}; break;
 
+      case VTK_QUADRATIC_EDGE: pi = {f(0,0,0), f(2,0,0), f(1,0,0)}; break;
       case VTK_QUADRATIC_TRIANGLE: pi = {f(0,0,0), f(2,0,0), f(0,2,0),
                                          f(1,0,0), f(1,1,0), f(0,1,0)}; break;
       case VTK_BIQUADRATIC_QUAD: pi = {f(0,0,0), f(0,2,0), f(2,2,0), f(2,0,0),
@@ -138,8 +336,32 @@ namespace ngcomp
                                        f(1,0,0), f(1,1,0), f(0,1,0), f(1,0,2), f(1,1,2), f(0,1,2),
                                        f(0,0,1), f(2,0,1), f(0,2,1)}; break;
 
+      // arbitrary order Lagrange cells (order >= 3)
+      case VTK_LAGRANGE_CURVE:         GenLagrangeCurve(order, f, pi); break;
+      case VTK_LAGRANGE_TRIANGLE:      GenLagrangeTriangle(order, f, pi); break;
+      case VTK_LAGRANGE_QUADRILATERAL: GenLagrangeQuad(order, f, pi); break;
+      case VTK_LAGRANGE_TETRAHEDRON:   GenLagrangeTet(order, f, pi); break;
+      case VTK_LAGRANGE_HEXAHEDRON:    GenLagrangeHex(order, f, pi); break;
+      case VTK_LAGRANGE_WEDGE:         GenLagrangeWedge(order, f, pi); break;
+
       default: throw Exception("VTK type not implemented: "+ToString(type));
     }
+  }
+
+  /// Fill principal lattice (points and connections on subdivided reference segment) in 1D
+  template <int D>
+  void VTKOutput<D>::FillReferenceSegm(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems)
+  {
+    std::map<tuple<int,int,int>, int> m;
+
+    for (int i = 0; i <= r; ++i)
+    {
+      m[{i,0,0}] = ref_coords.Size();
+      ref_coords.Append(IntegrationPoint(i * h));
+    }
+
+    for (int i = 0; i < r; i += order)
+      ref_elems.Append({ET_SEGM, order, m, i, 0, 0});
   }
 
   /// Fill principil lattices (points and connections on subdivided reference simplex) in 2D
@@ -284,6 +506,33 @@ namespace ngcomp
   void VTKOutput<D>::FillReferencePyramid(Array<IntegrationPoint> &ref_coords, Array<VTKCell> &ref_elems)
   {
     std::map<tuple<int,int,int>, int> m;
+
+    if (order >= 3)
+    {
+      // VTK has no robust arbitrary-order Lagrange pyramid, and the collapsing
+      // apex lattice is degenerate for a single high-order cell. Approximate the
+      // pyramid by a linear (order-1 cell) subdivision on the collapsing lattice
+      // at the full resolution r: a stack of hex frustums plus two apex tets.
+      for (int k = 0; k + 1 <= r; k++)
+        for (int i = 0; i <= r; ++i)
+          for (int j = 0; j <= r; ++j)
+          {
+            m[{i,j,k}] = ref_coords.Size();
+            double h1 = (1.0-h*k)*h;
+            ref_coords.Append(IntegrationPoint(j * h1, i * h1, k * h));
+          }
+      m[{0,0,r}] = ref_coords.Size();
+      ref_coords.Append(IntegrationPoint(0, 0, 1.0));
+
+      for (int k = 0; k + 1 < r; k++)
+        for (int i = 0; i < r; i++)
+          for (int j = 0; j < r; j++)
+            ref_elems.Append({ET_HEX, 1, m, i, j, k});
+      // top layer (square at k=r-1) up to the apex, split into two tets
+      ref_elems.Append({ET_TET, 1, m, 0, 0, r-1, {r,r,0}, {0,r,0}});
+      ref_elems.Append({ET_TET, 1, m, 0, 0, r-1, {r,0,0}, {r,r,0}});
+      return;
+    }
 
     for (int k = 0; k + order <= r; k++)
       for (int i = 0; i <= r; ++i)
@@ -695,6 +944,7 @@ namespace ngcomp
     else
       FillReferenceData2D(ref_vertices,ref_tets);
     */
+    FillReferenceSegm(ref_vertices[ET_SEGM], ref_elems[ET_SEGM]);
     FillReferenceTet(ref_vertices[ET_TET], ref_elems[ET_TET]);
     FillReferencePrism(ref_vertices[ET_PRISM], ref_elems[ET_PRISM]);
     FillReferencePyramid(ref_vertices[ET_PYRAMID], ref_elems[ET_PYRAMID]);
@@ -707,7 +957,13 @@ namespace ngcomp
     {
       *fileout << "<?xml version=\"1.0\"?>" << endl;
 
-      *fileout << "<VTKFile type=\"UnstructuredGrid\" version=\"1.0\" byte_order=\"LittleEndian\">" << endl;
+      // VTK changed the higher-order Lagrange hexahedron/wedge node ordering at
+      // file-format version 2.1: readers treat version < 2.1 files with the legacy
+      // ordering and remap them on read. We emit the current ordering, so for
+      // arbitrary-order Lagrange cells (order >= 3) we must declare version 2.1.
+      // For order 1/2 we keep version 1.0 so that output stays byte-identical.
+      const char *fileversion = (order >= 3) ? "2.1" : "1.0";
+      *fileout << "<VTKFile type=\"UnstructuredGrid\" version=\"" << fileversion << "\" byte_order=\"LittleEndian\">" << endl;
       *fileout << "<UnstructuredGrid>" << endl;
     }
     else

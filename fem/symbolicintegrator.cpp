@@ -4149,8 +4149,8 @@ namespace ngfem
             {
               int rest = min2(size_t(BS), mir1.Size()-i);
               HeapReset hr(lh);
-              FlatMatrix<TSCAL,ColMajor> bbmat1(rest*proxy1->Dimension(), loc_elmat.Height(), lh);
-              FlatMatrix<TSCAL,ColMajor> bbmat2(rest*proxy2->Dimension(), loc_elmat.Height(), lh);
+              FlatMatrix<SCAL_SHAPES,ColMajor> bbmat1(rest*proxy1->Dimension(), loc_elmat.Height(), lh);
+              FlatMatrix<SCAL_SHAPES,ColMajor> bbmat2(rest*proxy2->Dimension(), loc_elmat.Height(), lh);
               FlatMatrix<TSCAL,ColMajor> bdbmat1(rest*proxy2->Dimension(), loc_elmat.Width(), lh);
 
               {

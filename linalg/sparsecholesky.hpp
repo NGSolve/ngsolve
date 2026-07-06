@@ -54,7 +54,15 @@ namespace ngla
 
 
 
-
+  class NGS_DLL_HEADER BaseSparseCholesky : public SparseFactorization
+  {
+  public:
+    using SparseFactorization::SparseFactorization;
+    static shared_ptr<BaseSparseCholesky> Create (shared_ptr<BaseSparseMatrix> a,
+                                                  shared_ptr<BitArray> freedofs = nullptr,
+                                                  shared_ptr<const Array<int>> cluster = nullptr,
+                                                  bool allow_refactor = 0);
+  };
 
 
 
@@ -70,7 +78,7 @@ namespace ngla
   template<class TM>
 	   // class TV_ROW = typename mat_traits<TM>::TV_ROW, 
 	   // class TV_COL = typename mat_traits<TM>::TV_COL>
-  class NGS_DLL_HEADER SparseCholeskyTM : public SparseFactorization
+  class NGS_DLL_HEADER SparseCholeskyTM : public BaseSparseCholesky 
   {
   protected:
     // height of the matrix

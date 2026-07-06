@@ -303,7 +303,7 @@ namespace ngcomp
     Mode mode = M_NONE;
 
     // current block context
-    netgen::ELEMENT_TYPE cur_eltype = netgen::TET;
+    // netgen::ELEMENT_TYPE cur_eltype = netgen::TET;
     string cur_eltype_token;
     string cur_elem_elset;
     string cur_set_name;

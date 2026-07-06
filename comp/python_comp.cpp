@@ -78,22 +78,6 @@ namespace ngcomp
                             LocalHeap & lh);
 
 
-  class DirichletBoundary
-  {
-  public:
-    shared_ptr<ProxyFunction> proxy;
-    VBnName vbn;
-  };
-
-  class DirichletBC
-  
-  {
-  public:
-    shared_ptr<ProxyFunction> proxy;
-    VBnName vbn;
-    shared_ptr<CoefficientFunction> val;
-  };
-
 
   // sum of integrals = 0
   class VariationalEquation
@@ -569,12 +553,15 @@ when building the system matrices.
     {
       return py::type::of<CoefficientFunction>().attr("__getitem__")(self, comps);
     })
-    .def("__getitem__", [](spProxy self, VBnName vbn)
+    .def("__getitem__", [](spProxy self, RegionDescriptor vbn)
     {
       return DirichletBoundary { self, vbn };
     })
 
-    
+    .def("GetDofs", [](spProxy self, const Region& reg)
+    {
+      return self->GetFESpace()->GetDofs(reg, self->Evaluator().get());
+    })
     /*
     .def("__or__", [](shared_ptr<ProxyFunction> self, VBnName vbn)
     {
@@ -585,15 +572,16 @@ when building the system matrices.
 
   py::class_<DirichletBoundary> (m, "DirichletBoundary")
     .def("__eq__", [](DirichletBoundary dir, shared_ptr<CoefficientFunction> cf) {
-      return DirichletBC { dir.proxy, dir.vbn, cf };
+      return DirichletBC { DirichletBoundary { dir.proxy, dir.vbn }, cf };
     })
     ;
     
   py::class_<DirichletBC> (m, "DirichletBC")
-    .def_property_readonly("proxy", [](DirichletBC & cond) { return cond.proxy; })
-    .def_property_readonly("vbn", [](DirichletBC & cond) { return cond.vbn; })
-    .def_property_readonly("vb", [](DirichletBC & cond) { return cond.vbn.vb; })
-    .def_property_readonly("name", [](DirichletBC & cond) { return cond.vbn.name; })    
+    .def_property_readonly("dirbnd", [](DirichletBC & cond) { return cond.dirbnd; })
+    .def_property_readonly("proxy", [](DirichletBC & cond) { return cond.dirbnd.proxy; })
+    .def_property_readonly("vbn", [](DirichletBC & cond) { return cond.dirbnd.vbn; })
+    .def_property_readonly("vb", [](DirichletBC & cond) { return cond.dirbnd.vbn.vb; })
+    .def_property_readonly("name", [](DirichletBC & cond) { return cond.dirbnd.vbn.name; })    
     .def_property_readonly("val", [](DirichletBC & cond) { return cond.val; })    
     ;
 
@@ -611,6 +599,9 @@ when building the system matrices.
               glh = LocalHeap (heapsize, "python-comp lh", true);
               lhp.Clear();
             }
+
+          ngcore::SetTLHeapSize(heapsize);
+          
         }, py::arg("size"), docu_string(R"raw_string(
 Set a new heapsize.
 
@@ -851,6 +842,14 @@ kwargs : kwargs
                           }
                         catch(const py::cast_error&)
                           {}
+                        try
+                          {
+                            auto rd = py::cast<RegionDescriptor>(definedon);
+                            flags->SetFlag("definedon", Region(ma, rd.vb, rd.name));
+                          }
+                        catch(const py::cast_error&)
+                          {}
+                        
                         // py::extract<Region> definedon_reg(definedon);
                         // if (definedon_reg.check() && definedon_reg().IsVolume())
                         //   {
@@ -1103,10 +1102,10 @@ ni : ngsolve.comp.NodeId
 
 )raw_string"))
 
-    .def ("GetDofs", [](shared_ptr<FESpace> self, Region reg)
+    .def ("GetDofs", [](shared_ptr<FESpace> self, Region reg, DifferentialOperator * diffop)
           {
-            return self->GetDofs(reg);
-          }, py::arg("region"), docu_string(R"raw_string(
+            return self->GetDofs(reg, diffop);
+          }, py::arg("region"), py::arg("diffop")=nullptr, docu_string(R"raw_string(
 Returns all degrees of freedom in given region.
 
 Parameters:
@@ -2332,7 +2331,7 @@ bonus_intorder : int
          py::arg("mdcomp")=0)
 
     
-    .def("__setitem__", [](shared_ptr<GF> self, VBnName namevb, spCF cf) {
+    .def("__setitem__", [](shared_ptr<GF> self, RegionDescriptor namevb, spCF cf) {
       Region reg(self->GetFESpace()->GetMeshAccess(), namevb.vb, namevb.name);
       self->GetFESpace()->Interpolate(*cf, self->GetVector(), &reg, lhp.GetLH());
     }, py::arg("namevb"),py::arg("cf"))
@@ -2350,6 +2349,31 @@ bonus_intorder : int
                    },
                   "list of gridfunctions for compound gridfunction")
 
+
+    .def("__getitem__", [](shared_ptr<GF> self, int comp) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, comp);
+    }, py::arg("comp"), "returns component comp of vectorial CF")
+    .def("__getitem__", [](shared_ptr<GF> self, py::slice inds) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, inds);
+    }, py::arg("components"))
+    .def("__getitem__", [](shared_ptr<GF> self, py::tuple comps) -> py::object
+    {
+      return py::type::of<CoefficientFunction>().attr("__getitem__")(self, comps);
+    })
+    
+    .def("__getitem__", [](shared_ptr<GridFunction> gf, shared_ptr<ProxyFunction> proxy)
+    {
+      auto diffop = proxy->Evaluator();
+      while (auto cdiffop  = dynamic_pointer_cast<CompoundDifferentialOperator>(diffop))
+        {
+          gf = gf->GetComponent(cdiffop->Component());
+          diffop = cdiffop->BaseDiffOp();
+        }
+      return gf;
+    })
+    
     .def_property_readonly("vec",
                            [](shared_ptr<GF> self)
                            { return self->GetVectorPtr(); },
@@ -2918,7 +2942,9 @@ integrator : ngsolve.fem.BFI
 
     .def("__iadd__", [](BF & self, shared_ptr<SpecialElementGroup> seg) -> BilinearForm& { self.Add(seg); return self; })
          
-    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on")
+    .def_property_readonly("space", [](BF& self) { return self.GetFESpace(); }, "fespace on which the bilinear form is defined on (always returns trialspace)")
+    .def_property_readonly("trialspace", [](BF& self) { return self.GetTrialSpace(); }, "trial-space of the bilinear-form")
+    .def_property_readonly("testspace", [](BF& self) { return self.GetTestSpace(); }, "test-space of the bilinear-form")
 
     .def_property_readonly("integrators", [](BF & self)
                            { return MakePyTuple (self.Integrators()); }, "integrators of the bilinear form")
@@ -3370,7 +3396,14 @@ integrator : ngsolve.fem.LFI
                 })
     .def ("Test", [](Preconditioner &pre) { pre.Test();}, py::call_guard<py::gil_scoped_release>())
     .def ("Update", [](Preconditioner &pre) { pre.Update();}, py::call_guard<py::gil_scoped_release>(), "Update preconditioner")
-    .def ("SetAdditionalDirichletConstraints", [](Preconditioner & pre, Region reg) { pre.SetAdditionalDirichletConstraints(reg); })
+    // .def ("Create", [prec_class](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) { 
+    // auto flags = CreateFlagsFromKwArgs(kwargs, prec_class);      
+    .def ("Create", [](Preconditioner &pre, shared_ptr<BilinearForm> bf, py::kwargs kwargs) {
+      auto flags = CreateFlagsFromKwArgs(kwargs, py::cast(&pre));
+      return pre.Create(bf, flags);
+    })
+    .def ("IsCreator", [](Preconditioner &pre) { return pre.IsCreator(); })
+    // .def ("SetAdditionalDirichletConstraints", [](Preconditioner & pre, Region reg) { pre.SetAdditionalDirichletConstraints(reg); })
     .def("__str__", [](Preconditioner &self) { return ToString<Preconditioner>(self); } )
     
     .def_property_readonly("mat", [](Preconditioner &self)
@@ -3429,7 +3462,7 @@ integrator : ngsolve.fem.LFI
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_local);
       return make_shared<LocalPreconditioner>(bf, flags, "local");
-    }), py::arg("bf"))
+    }), py::arg("bf")=nullptr)
     .def_static("__flags_doc__", []() {
       return py::dict( py::cast (LocalPreconditioner::GetDocu().arguments) );
     });
@@ -3442,7 +3475,7 @@ integrator : ngsolve.fem.LFI
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_direct);
       return make_shared<DirectPreconditioner>(bf, flags, "local");
-    }), py::arg("bf"))
+    }), py::arg("bf")=nullptr)
     .def_static("__flags_doc__", []() {
       return py::dict( py::cast (DirectPreconditioner::GetDocu().arguments) );
     });
@@ -3456,11 +3489,11 @@ integrator : ngsolve.fem.LFI
     .def(py::init([pre_bddc](shared_ptr<BilinearForm> bf, py::kwargs kwargs)->shared_ptr<BASE_BDDCPreconditioner>
     {
       auto flags = CreateFlagsFromKwArgs(kwargs, pre_bddc);
-      if (bf->GetFESpace()->IsComplex())
+      if (bf && bf->GetFESpace()->IsComplex())
         return make_shared<BDDCPreconditioner<Complex>> (bf, flags, "bddc");
       else
         return make_shared<BDDCPreconditioner<double>> (bf, flags, "bddc");
-    }), py::arg("bf"))
+    }), py::arg("bf")=nullptr)
     .def_static("__flags_doc__", []()
     {
       py::dict flags_doc;
@@ -3483,33 +3516,16 @@ integrator : ngsolve.fem.LFI
                     auto mgpre = make_shared<MGPreconditioner>(bfa,flags, name);
                     if(lo_precond.has_value())
                       mgpre->SetCoarsePreconditioner(lo_precond.value());
-                    if (bfa->GetNLevels() > 0)
+                    if (bfa && bfa->GetNLevels() > 0)
                       mgpre->Update();
                     return mgpre;
-                  }), py::arg("bf"), "name"_a = "multigrid", "lo_preconditioner"_a = nullopt)
+                  }), py::arg("bf")=nullptr, "name"_a = "multigrid", "lo_preconditioner"_a = nullopt)
     .def_static("__flags_doc__", [prec_class] ()
                 {
-                  auto mg_flags = py::cast<py::dict>(prec_class.attr("__flags_doc__")());
-                  mg_flags["updateall"] = "bool = False\n"
-                    "  Update all smoothing levels when calling Update";
-                  mg_flags["smoother"] = "string = 'point'\n"
-                    "  Smoother between multigrid levels, available options are:\n"
-                    "    'point': Gauss-Seidel-Smoother\n"
-                    "    'line':  Anisotropic smoother\n"
-                    "    'block': Block smoother";
-                  mg_flags["coarsetype"] = "string = direct\n"
-                    "  How to solve coarse problem.";
-                  mg_flags["cycle"] = "int = 1\n"
-                    "  multigrid cycle (0 only smoothing, 1..V-cycle, 2..W-cycle.";
-                  mg_flags["smoothingsteps"] = "int = 1\n"
-                    "  number of (pre and post-)smoothing steps";
-                  mg_flags["coarsesmoothingsteps"] = "int = 1\n"
-                    "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
-                  mg_flags["updatealways"] = "bool = False\n";
-                  mg_flags["blocktype"] = "str = vertexpatch\n"
-                    "  Blocktype used in compound FESpace for smoothing\n"
-                    "  blocks. Options: vertexpatch, edgepatch";
-                  return mg_flags;
+                  py::dict flags_doc;
+                  for (auto & flagdoc : MGPreconditioner::GetDocu().arguments)
+                    flags_doc[get<0> (flagdoc).c_str()] = get<1> (flagdoc);
+                  return flags_doc;
                 })
 
     // not working because shared_ptr<Array<int>> cannot be pybind arg type?
@@ -4623,7 +4639,12 @@ legacy : bool (default: False)
   defines if legacy-VTK output shall be used 
 
 order : int (default: 1)
-  allowed values: 1,2
+  Polynomial order of the output cells. Orders 1 and 2 use VTK's linear and
+  quadratic cell types. Orders >= 3 use VTK's arbitrary-order Lagrange cell
+  types (VTK_LAGRANGE_*), which require ParaView >= 5.5 / VTK >= 8.1. A single
+  high-order cell then reproduces the (curved) geometry and the field to degree
+  `order`; raise ParaView's "Nonlinear Subdivision Level" to render the
+  curvature. Note that the number of nodes per cell grows as O(order^dim).
 
 same_type_subdivision : bool (default: False)
   When True, each element is subdivided into sub-cells of the same type only.
@@ -4918,6 +4939,14 @@ If `other` is given the contact pairs are taken from that ContactBoundary
   });
 
   /////////////////////////////////////////////////////////////////////////////////////
+
+
+  static RegisterClassForArchive<DirichletBC> regdirbc;
+  
 }
+
+
+
+
 
 #endif // NGS_PYTHON

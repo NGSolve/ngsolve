@@ -32,17 +32,42 @@ namespace ngcomp
     on_proc = int ( flags.GetNumFlag("only_on", -1));
     if (!flags.GetDefineFlag ("not_register_for_auto_update"))
       {
-        bfa->SetPreconditioner(this);
+        if (bfa)
+          bfa->SetPreconditioner(this);
         is_registered = true;
       }
 
+    /*
     // cout << "pre base, flags = " << aflags << endl;
     if (flags.AnyFlagDefined("additional_dirichlet_constraints"))
       {
         // cout << "Set Additonal Dirichelt, in base Preconditioner base" << endl;
         additional_dirichlet_constraints = std::any_cast<Region>(flags.GetAnyFlag("additional_dirichlet_constraints"));
       }
-  }
+    */
+    
+    if (flags.AnyFlagDefined("additional_dirbc"))
+      {
+        auto add_dir_any = flags.GetAnyFlag("additional_dirbc");
+
+        using Type = std::vector<std::any>; 
+        // using Type = ngcore::Array<std::any>;
+        /*
+        cout << "have type   = " << add_dir_any.type().name() << endl;
+        cout << "expect type = " << typeid(Type).name() << endl;
+        cout << "same? " << (add_dir_any.type() == typeid(Type)) << endl;
+        */
+
+        if (auto any_vector = std::any_cast<Type>(&add_dir_any))
+          for (auto dbc : *any_vector)
+            {
+              if (auto * bc = std::any_cast<DirichletBC>(&dbc))
+                additional_dirichlet_boundaries.Append (bc->dirbnd);
+              if (auto * bc = std::any_cast<DirichletBoundary>(&dbc))
+                additional_dirichlet_boundaries.Append (*bc);
+            }
+          }
+      }
   
 
   
@@ -56,19 +81,42 @@ namespace ngcomp
   {
     DocInfo docu;
     docu.short_docu = "Base class preconditioner.";
-    docu.Arg("additional_dirichlet_constraints") = "optional<Region> = False";
+    // docu.Arg("additional_dirichlet_constraints") = "optional<Region> = False";
+    docu.Arg("additional_dirbc") = "list : DirichletBoundary = []";
     return docu;
   }
 
+  shared_ptr<Preconditioner> Preconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    throw Exception(string("Preconditioner::Create not overloaded for ") + typeid(*this).name());
+  }
+
+  bool Preconditioner :: IsCreator() const
+  {
+    return GetBilinearForm() == nullptr;
+  }
   shared_ptr<BitArray> Preconditioner :: GetFreeDofs (bool external) const
   {
     auto freedofs = bf.lock()->GetFESpace()->GetFreeDofs(external);
+    /*
     if (additional_dirichlet_constraints)
       {
         BitArray dofs = bf.lock()->GetFESpace()->GetDofs(*additional_dirichlet_constraints);
         dofs.Invert();
         dofs.And(*freedofs);
         freedofs = make_shared<BitArray>(std::move(dofs));
+      }
+    */
+    if (additional_dirichlet_boundaries.Size())
+      {
+        freedofs = make_shared<BitArray>(*freedofs);
+        for (auto dbc : additional_dirichlet_boundaries)
+          {
+            Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
+            BitArray dofs = bf.lock()->GetFESpace()->GetDofs(reg, dbc.proxy->Evaluator().get());
+            dofs.Invert();
+            freedofs->And(dofs);
+          }
       }
     return freedofs;
   }
@@ -230,7 +278,8 @@ namespace ngcomp
     mgfile = flags.GetStringFlag ("mgfile","mgtest.out"); 
     mgnumber = int(flags.GetNumFlag("mgnumber",1)); 
     
-
+    if (!abfa) return;
+    
     shared_ptr<MeshAccess> ma = abfa->GetMeshAccess();
     bfa = abfa;
     // bfa -> SetPreconditioner (this);
@@ -289,7 +338,7 @@ namespace ngcomp
     if (!sm)
       throw Exception ("smoother could not be allocated"); 
 
-    sm -> SetAdditionalDirichletConstraints(additional_dirichlet_constraints);
+    sm -> SetAdditionalDirichletBoundaries(additional_dirichlet_boundaries);
     
     auto prol = lo_fes->GetProlongation();
 
@@ -333,13 +382,86 @@ namespace ngcomp
     GetMemoryTracer().Track(*mgp, "MultiGridPreconditioner");
   }
 
-  void MGPreconditioner :: SetAdditionalDirichletConstraints (Region areg)
+
+  DocInfo MGPreconditioner :: GetDocu ()
   {
-    additional_dirichlet_constraints = areg;
+    DocInfo docu = Preconditioner::GetDocu();
+    docu.short_docu = "A multigrid preconditioner.";
+    docu.long_docu =
+      R"raw_string(TODO
+)raw_string";      
+
+
+    docu.Arg("updateall") = "bool = False\n"
+      "  Update all smoothing levels when calling Update";      
+
+    docu.Arg("smoother") = "string = 'point'\n"
+      "  Smoother between multigrid levels, available options are:\n"
+      "    'point': Gauss-Seidel-Smoother\n"
+      "    'line':  Anisotropic smoother\n"
+      "    'block': Block smoother";
+
+    docu.Arg("coarsetype") = "string = direct\n"
+      "  How to solve coarse problem.";
+    
+
+    docu.Arg("cycle") = "int = 1\n"
+      "  multigrid cycle (0 only smoothing, 1..V-cycle, 2..W-cycle.";
+    docu.Arg("smoothingsteps") = "int = 1\n"
+      "  number of (pre and post-)smoothing steps";
+    docu.Arg("coarsesmoothingsteps") = "int = 1\n"
+      "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
+
+    docu.Arg("updatealways") = "bool = False\n";
+    docu.Arg("blocktype") = "str = vertexpatch\n"
+      "  Blocktype used in compound FESpace for smoothing\n"
+      "  blocks. Options: vertexpatch, edgepatch";
+    
+    
+    /*
+    mg_flags["updateall"] = "bool = False\n"
+      "  Update all smoothing levels when calling Update";
+    mg_flags["smoother"] = "string = 'point'\n"
+      "  Smoother between multigrid levels, available options are:\n"
+      "    'point': Gauss-Seidel-Smoother\n"
+      "    'line':  Anisotropic smoother\n"
+      "    'block': Block smoother";
+    
+    mg_flags["coarsetype"] = "string = direct\n"
+      "  How to solve coarse problem.";
+    mg_flags["cycle"] = "int = 1\n"
+      "  multigrid cycle (0 only smoothing, 1..V-cycle, 2..W-cycle.";
+    mg_flags["smoothingsteps"] = "int = 1\n"
+      "  number of (pre and post-)smoothing steps";
+    mg_flags["coarsesmoothingsteps"] = "int = 1\n"
+      "  If coarsetype is smoothing, then how many smoothingsteps will be done.";
+    
+    mg_flags["updatealways"] = "bool = False\n";
+    mg_flags["blocktype"] = "str = vertexpatch\n"
+      "  Blocktype used in compound FESpace for smoothing\n"
+      "  blocks. Options: vertexpatch, edgepatch";
+    */
+    return docu;    
+  }
+
+  /*
+  void MGPreconditioner :: SetAdditionalDirichletConstraints (const Array<DirichletBoundary> & dbc)
+  {
+    // additional_dirichlet_constraints = areg;
+    additional_dirichlet_boundaries = areg;
     // if (sm)
     // sm -> SetAdditionalDirichletConstraints(areg);
   }
+  */
 
+  shared_ptr<Preconditioner> MGPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    Flags allflags{flags};
+    allflags.Update (cflags); 
+    return make_shared<MGPreconditioner> (bfa, allflags);
+  }
+
+  
   
   void MGPreconditioner :: Update ()
   {
@@ -363,10 +485,10 @@ namespace ngcomp
     if (bfa->GetLowOrderBilinearForm()) //  || ntasks > 1) not supported anymore
       {
         static Timer t("MGPreconditioner::Update - fine precond"); RegionTimer reg(t);
-        if (additional_dirichlet_constraints)
-          flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
+        if (additional_dirichlet_boundaries.Size())
+          flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
         auto fine_smoother = make_shared<BlockSmoother> (*bfa->GetMeshAccess(), *bfa, flags);
-        fine_smoother -> SetAdditionalDirichletConstraints(additional_dirichlet_constraints);
+        fine_smoother -> SetAdditionalDirichletBoundaries(additional_dirichlet_boundaries);
         GetMemoryTracer().Track(*fine_smoother, "FineSmoother");
         tlp = make_shared<TwoLevelMatrix> (&bfa->GetMatrix(),
                                            &*mgp,
@@ -503,6 +625,12 @@ namespace ngcomp
     return docu;    
   }
 
+  shared_ptr<Preconditioner> DirectPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    Flags allflags{flags};
+    allflags.Update (cflags); 
+    return make_shared<DirectPreconditioner> (bfa, allflags);
+  }
 
   
   void DirectPreconditioner :: Update ()
@@ -558,6 +686,7 @@ namespace ngcomp
   {
     // bfa -> SetPreconditioner (this);
 
+    
     GaussSeidel = flags.GetDefineFlag("GS");
     block = flags.GetDefineFlag ("block");
     locprectest = flags.GetDefineFlag ("mgtest");
@@ -566,8 +695,8 @@ namespace ngcomp
     string smoother = flags.GetStringFlag("smoother","");
     if ( smoother == "block" )
       block = true;
-    if (bfa->UsesEliminateInternal())
-      flags.SetFlag("condense");
+    if (bfa && bfa->UsesEliminateInternal())
+        flags.SetFlag("condense");
 
     // coarse-grid preconditioner only used in parallel!!
     ct = "NO_COARSE";
@@ -596,10 +725,16 @@ namespace ngcomp
       "  use Gauss-Seidel instead of Jacobi";
     docu.Arg("blocktype") = "string = undefined\n"
       "  uses block Jacobi with blocks defined by space";
+    
     return docu;    
   }
   
-
+  shared_ptr<Preconditioner> LocalPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    Flags allflags{flags};
+    allflags.Update (cflags); 
+    return make_shared<LocalPreconditioner> (bfa, allflags);
+  }
   
   void LocalPreconditioner :: FinalizeLevel (const BaseMatrix * mat)
   {
@@ -608,8 +743,8 @@ namespace ngcomp
 
       if (flags.StringFlagDefined("blocktype") || flags.StringListFlagDefined("blocktype"))
         {
-          if (additional_dirichlet_constraints)
-            flags.SetFlag ("additional_dirichlet_constraints", std::any(*additional_dirichlet_constraints));
+          if (additional_dirichlet_boundaries.Size())          
+            flags.SetFlag ("additional_dirichlet_boundaries", std::any(additional_dirichlet_boundaries));
           
           auto blocks = bfa->GetFESpace()->CreateSmoothingBlocks(flags);
           shared_ptr<BaseMatrix> mat = bfa->GetMatrixPtr();          

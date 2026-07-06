@@ -1723,7 +1723,7 @@ namespace ngfem
     static int maxnp;
     */
     static constexpr size_t maxnp = 128;
-    static constexpr size_t maxalpha = 128;
+    static constexpr size_t maxalpha = 2*128;
     static Vec<4> coefs[maxnp*maxalpha];
     size_t n2;
     Vec<4> * coefsal;
@@ -1918,6 +1918,17 @@ class IntegratedJacobiPolynomialAlpha : public RecursivePolynomialNonStatic<Inte
     static double CalcC (int n, double al, double be)
     { return - 2*(n-1)*(n+al-2)*(2*n+al) / ( (2*n+2) * (n+al) * (2*n+al-2) ); }
 
+    static auto CalcABC (int n, double al, double be) 
+    {
+      double dn = n;
+      double inum = 1.0 / ( (2*dn+2) * (dn+al) * (2*dn+al-2) );
+      return tuple {
+        (2.0*n+al-1)*(2*n+al-2)*(2*n+al) *inum,
+        (2.0*n+al-1)*al * (al-2) * inum,
+        - 2*(n-1)*(n+al-2)*(2*n+al) * inum
+      };
+    }
+    
     INLINE double D (int i) const { return 1; }
   };
 

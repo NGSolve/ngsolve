@@ -622,7 +622,7 @@ namespace ngcomp
 
   DocInfo BASE_BDDCPreconditioner :: GetDocu ()
   {
-    DocInfo docu; //  = FESpace::GetDocu();
+    DocInfo docu = Preconditioner::GetDocu();
     docu.short_docu = "element-level BDDC preconditioner.";
     docu.long_docu =
       R"raw_string(TODO
@@ -636,6 +636,19 @@ namespace ngcomp
       "  inverse type for the wirebasket system, available: 'sparsecholesky', 'pardiso', 'hypre'";
     
     return docu;    
+  }
+  
+  shared_ptr<Preconditioner> BASE_BDDCPreconditioner :: Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const
+  {
+    Flags allflags{flags};
+    // allflags += cflags;
+    allflags.Update (cflags); // needs checking
+
+    if (auto bfa_d = dynamic_pointer_cast<T_BilinearForm<double>> (bfa))
+      return make_shared<BDDCPreconditioner<double>> (bfa, allflags);
+    if (auto bfa_c = dynamic_pointer_cast<T_BilinearForm<Complex>> (bfa))
+      return make_shared<BDDCPreconditioner<Complex>> (bfa, allflags);
+    return nullptr;
   }
   
 
@@ -656,7 +669,8 @@ namespace ngcomp
     block = flags.GetDefineFlag("block");
     hypre = flags.GetDefineFlag("usehypre");
     // pre = NULL;
-    fes = bfa->GetFESpace();
+    if (bfa)
+      fes = bfa->GetFESpace();
   }
   
   template <class SCAL, class TV>
@@ -664,6 +678,7 @@ namespace ngcomp
   InitLevel (shared_ptr<BitArray> _freedofs) 
     {
       freedofs = _freedofs;
+      /*
       if (additional_dirichlet_constraints)
         {
           BitArray dofs = bfa->GetFESpace()->GetDofs(*additional_dirichlet_constraints);
@@ -671,7 +686,19 @@ namespace ngcomp
           dofs.And(*freedofs);
           freedofs = make_shared<BitArray>(std::move(dofs));
         }
-      
+      */
+      if (additional_dirichlet_boundaries.Size())
+        {
+          freedofs = make_shared<BitArray>(*freedofs);
+          for (auto dbc : additional_dirichlet_boundaries)
+            {
+              Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
+              BitArray dofs = bfa->GetFESpace()->GetDofs(reg, dbc.proxy->Evaluator().get());
+              dofs.Invert();
+              freedofs->And(dofs);
+            }
+        }
+
       pre = make_shared<BDDCMatrix<SCAL,TV>>(bfa, freedofs, flags, inversetype, coarsetype, block, hypre);
       pre -> SetHypre (hypre);
       GetMemoryTracer().Track(*pre, "pre");

@@ -206,6 +206,32 @@ namespace ngs_cuda
       cudaGraphConditionalHandleCreate(&handle, outer_graph, 1,
                                        cudaGraphCondAssignDefault);
 
+      // // 3. Add WHILE node
+      // cudaGraphNode_t while_node;
+      // cudaGraphNodeParams cParams = {};
+      // cParams.type               = cudaGraphNodeTypeConditional;
+      // cParams.conditional.handle = handle;
+      // cParams.conditional.type   = cudaGraphCondTypeWhile;
+      // cParams.conditional.size   = 1;
+
+      
+      // // 6-arg pDependencyData variant exists only in CUDA 12.3–12.8; 12.9+ reverts to 5-arg
+      // #if CUDART_VERSION >= 12030 && CUDART_VERSION < 12090
+      //   cudaGraphAddNode(&while_node, outer_graph, nullptr, nullptr, 0, &cParams);
+      // #else
+      //   cudaGraphAddNode(&while_node, outer_graph, nullptr, 0, &cParams);
+      // #endif
+      // body_graph = cParams.conditional.phGraph_out[0];
+
+      // // 4. Add iteration body as child graph node in body
+      // //    Child graphs ARE allowed in conditional bodies
+      // cudaGraphNode_t child_node;
+      // auto err = cudaGraphAddChildGraphNode(&child_node, body_graph, nullptr, 0, iteration_graph);
+      // if (err != cudaSuccess)
+      //   throw ngstd::Exception(
+      //     std::string("[CudaWhileGraph] cudaGraphAddChildGraphNode FAILED: ")
+      //     + cudaGetErrorString(err));
+
       // 3. Add WHILE node
       cudaGraphNode_t while_node;
       cudaGraphNodeParams cParams = {};
@@ -232,6 +258,7 @@ namespace ngs_cuda
         throw ngstd::Exception(
           std::string("[CudaWhileGraph] cudaGraphAddChildGraphNode FAILED: ")
           + cudaGetErrorString(err));
+
 
       // 5. Capture convergence kernel into body AFTER child node
       //    Custom kernel only - allowed in conditional bodies
@@ -281,10 +308,8 @@ namespace ngs_cuda
         std::cerr << "[CudaWhileGraph] cudaGraphLaunch FAILED: "
                   << cudaGetErrorString(err) << std::endl;
     }
-
     bool IsValid() const { return capture_ok && instance != nullptr; }
   };
-
 
   template <typename T>
   class Dev 

@@ -377,6 +377,92 @@ void DevProjectorProject (size_t size, double * a, const unsigned char * bits,
 
 
 
+//TFQMR scalar batch kernels
+__global__ void TFQMREvenBatch1Kernel(double* rho, double* vtrstar,
+                                       double* theta, double* eta,
+                                       double* alpha, double* neg_alpha, double* coeff)
+{
+    double a   = *rho / *vtrstar;
+    *alpha     = a;
+    *neg_alpha = -a;
+    *coeff     = (*theta) * (*theta) * (*eta) / a;
+}
+
+void TFQMREvenBatch1(double* rho, double* vtrstar, double* theta, double* eta,
+                     double* alpha, double* neg_alpha, double* coeff)
+{
+    TFQMREvenBatch1Kernel<<<1,1,0,ngs_cuda_stream>>>(rho, vtrstar, theta, eta,
+                                                      alpha, neg_alpha, coeff);
+}
+
+__global__ void TFQMREvenTauBatchKernel(double* wnorm_sq, double* tau_in, double* alpha_in,
+                                         double* rho, double* theta, double* c,
+                                         double* tau_out, double* tau_sq, double* eta, double* rho_last)
+{
+    double th  = sqrt(abs(*wnorm_sq)) / *tau_in;
+    double cs  = 1.0 / sqrt(1.0 + th * th);
+    double t   = *tau_in * th * cs;
+    *theta     = th;
+    *c         = cs;
+    *tau_out   = t;
+    *tau_sq    = t * t;
+    *eta       = cs * cs * (*alpha_in);
+    *rho_last  = *rho;
+}
+
+void TFQMREvenTauBatch(double* wnorm_sq, double* tau_in, double* alpha_in, double* rho,
+                        double* theta, double* c, double* tau_out, double* tau_sq,
+                        double* eta, double* rho_last)
+{
+    TFQMREvenTauBatchKernel<<<1,1,0,ngs_cuda_stream>>>(wnorm_sq, tau_in, alpha_in, rho,
+                                                         theta, c, tau_out, tau_sq, eta, rho_last);
+}
+
+__global__ void TFQMROddCoeffKernel(double* theta, double* eta, double* alpha, double* coeff)
+{
+    *coeff = (*theta) * (*theta) * (*eta) / (*alpha);
+}
+
+void TFQMROddCoeff(double* theta, double* eta, double* alpha, double* coeff)
+{
+    TFQMROddCoeffKernel<<<1,1,0,ngs_cuda_stream>>>(theta, eta, alpha, coeff);
+}
+
+__global__ void TFQMROddTauBatchKernel(double* wnorm_sq, double* tau_in, double* alpha_in,
+                                        double* theta, double* c,
+                                        double* tau_out, double* tau_sq, double* eta)
+{
+    double th  = sqrt(abs(*wnorm_sq)) / *tau_in;
+    double cs  = 1.0 / sqrt(1.0 + th * th);
+    double t   = *tau_in * th * cs;
+    *theta     = th;
+    *c         = cs;
+    *tau_out   = t;
+    *tau_sq    = t * t;
+    *eta       = cs * cs * (*alpha_in);
+}
+
+void TFQMROddTauBatch(double* wnorm_sq, double* tau_in, double* alpha_in,
+                       double* theta, double* c, double* tau_out, double* tau_sq, double* eta)
+{
+    TFQMROddTauBatchKernel<<<1,1,0,ngs_cuda_stream>>>(wnorm_sq, tau_in, alpha_in,
+                                                        theta, c, tau_out, tau_sq, eta);
+}
+
+__global__ void TFQMROddBetaKernel(double* rho, double* rho_last, double* beta, double* beta_sq)
+{
+    double b   = *rho / *rho_last;
+    *beta      = b;
+    *beta_sq   = b * b;
+    *rho_last  = *rho;
+}
+
+void TFQMROddBeta(double* rho, double* rho_last, double* beta, double* beta_sq)
+{
+    TFQMROddBetaKernel<<<1,1,0,ngs_cuda_stream>>>(rho, rho_last, beta, beta_sq);
+}
+
+
 // Sets cudaGraphCondTypeWhile condition: 1 = continue, 0 = stop
 // Also increments iter_count and stops when iter_count >= maxsteps
 __global__ void ConvergenceCheckKernel(double* rz, double tol,

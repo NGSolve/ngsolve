@@ -1625,6 +1625,21 @@ lot of new non-zero entries in the matrix!\n" << endl;
         freedofs = make_shared<BitArray>(*freedofs);
         freedofs->And(dofs);
       }
+    if (flags.AnyFlagDefined("additional_dirichlet_boundaries"))
+      {
+        // cout << "got additional_dirichlet_boundaries" << endl;
+        auto dirbcs = std::any_cast<Array<DirichletBoundary>>(flags.GetAnyFlag("additional_dirichlet_boundaries"));
+        freedofs = make_shared<BitArray>(*freedofs);
+        for (auto dbc : dirbcs)
+          {
+            // cout << "dirichlet bc: " << dbc.vbn << endl;
+            Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
+            BitArray dofs = GetDofs(reg, dbc.proxy->Evaluator().get());
+            // cout << "subspace dofs = " << dofs << endl;
+            dofs.Invert();
+            freedofs->And(dofs);
+          }
+      }
 
     FilteredTableCreator creator(freedofs.get());
 
@@ -2530,7 +2545,7 @@ lot of new non-zero entries in the matrix!\n" << endl;
       paralleldofs -> GetNDofGlobal() : GetNDof(); 
   }
 
-  BitArray FESpace :: GetDofs (const Region & reg) const
+  BitArray FESpace :: GetDofs (const Region & reg, const DifferentialOperator * diffop) const
   {
     BitArray ba(GetNDof());
     ba.Clear();
@@ -2539,10 +2554,22 @@ lot of new non-zero entries in the matrix!\n" << endl;
         for (auto d : el.GetDofs())
           if (IsRegularDof(d))
             ba.SetBit(d);
+
+    if (diffop)
+      {
+        IntRange r = GetRange(*diffop);
+        for (size_t i = 0; i < r.First(); i++)
+          ba.Clear(i);
+        for (size_t i = r.Next(); i < ba.Size(); i++)
+          ba.Clear(i);
+      }
     return ba;
   }
 
-
+  IntRange FESpace :: GetRange (const DifferentialOperator & diffop) const
+  {
+    return IntRange(0, GetNDof());
+  }
 
   ProxyNode FESpace ::
   MakeProxyFunction (bool testfunction,

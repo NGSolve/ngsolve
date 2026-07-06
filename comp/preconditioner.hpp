@@ -25,7 +25,8 @@ namespace ngcomp
     weak_ptr<BilinearForm> bf;
     bool is_registered = false;
   protected:
-    std::optional<Region> additional_dirichlet_constraints;
+    // std::optional<Region> additional_dirichlet_constraints;
+    Array<DirichletBoundary> additional_dirichlet_boundaries;
     bool test;
     bool timing;
     bool print;
@@ -49,6 +50,10 @@ namespace ngcomp
     virtual ~Preconditioner ();
 
     static DocInfo GetDocu ();    
+    ///
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const;
+    virtual bool IsCreator() const;
+    
     ///
     virtual bool LaterUpdate (void) { return laterupdate; }
     ///
@@ -74,7 +79,7 @@ namespace ngcomp
     
     virtual bool IsComplex() const override { return GetMatrix().IsComplex(); }
 
-    virtual void SetAdditionalDirichletConstraints (Region areg) { additional_dirichlet_constraints = areg; }
+    // virtual void SetAdditionalDirichletConstraints (Region areg) { additional_dirichlet_constraints = areg; }
     // freedofs from FESpace, filtered with additional constraints. Always new BitArray
     virtual shared_ptr<BitArray> GetFreeDofs (bool external = false) const;
     
@@ -196,7 +201,7 @@ namespace ngcomp
     ///
 
     static DocInfo GetDocu ();
-    
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;  
     ///
     virtual bool IsComplex() const override { return jacobi->IsComplex(); }
     
@@ -205,6 +210,7 @@ namespace ngcomp
 
     virtual void Update () override
     {
+      if (!bfa) return;
       if (GetTimeStamp() < bfa->GetTimeStamp())
         FinalizeLevel (&bfa->GetMatrix());
       if (test) Test();
@@ -261,34 +267,35 @@ namespace ngcomp
     }
 
     static DocInfo GetDocu ();    
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;  
     
-    virtual void FinalizeLevel (const BaseMatrix * mat) 
+    virtual void FinalizeLevel (const BaseMatrix * mat) override
     {
       Update();
     }
     
     ///
-    virtual void Update ();
+    virtual void Update () override;
 
-    virtual void CleanUpLevel ()
+    virtual void CleanUpLevel () override
     {
       // delete inverse;
       inverse = nullptr;
     }
 
-    virtual const BaseMatrix & GetMatrix() const
+    virtual const BaseMatrix & GetMatrix() const override
     {
       if (!inverse)
         ThrowPreconditionerNotReady();        
       return *inverse;
     }
 
-    virtual const BaseMatrix & GetAMatrix() const
+    virtual const BaseMatrix & GetAMatrix() const override
     {
       return bfa->GetMatrix(); 
     }
 
-    virtual const char * ClassName() const
+    virtual const char * ClassName() const override
     {
       return "Direct Preconditioner"; 
     }
@@ -302,7 +309,8 @@ namespace ngcomp
   public:
     BASE_BDDCPreconditioner (shared_ptr<BilinearForm> abfa, const Flags & aflags,
                              const string aname = "bddcprecond");
-    static DocInfo GetDocu ();    
+    static DocInfo GetDocu ();
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;
   };
 
   
@@ -501,7 +509,10 @@ namespace ngcomp
 		      const string aname = "mgprecond");
     ///
     virtual ~MGPreconditioner() { ; }
+    
+    static DocInfo GetDocu ();
 
+    
     void FreeSmootherMem(void);
 
     virtual void FinalizeLevel (const BaseMatrix * mat) override
@@ -509,7 +520,9 @@ namespace ngcomp
       Update();
     }
 
-    void SetAdditionalDirichletConstraints (Region areg) override;
+    virtual shared_ptr<Preconditioner> Create (shared_ptr<BilinearForm> bfa, const Flags & cflags) const override;  
+    
+    // void SetAdditionalDirichletConstraints (Region areg) override;
 
     ///
     virtual void Update () override;

@@ -93,7 +93,8 @@ then
   then
     make docs
   else
-    make docs > /logs/build_docs.log 2>&1
+      make docs > /logs/build_docs.log 2>&1 || { chmod 666 /logs/build_docs.log; false; }
+      chmod 666 /logs/build_docs.log
   fi
   find ~/src/ngsolve/docs/i-tutorials -name '*.ipynb' -print0 | xargs -0 nbstripout
   cp -r ~/src/ngsolve/docs/i-tutorials docs/html/jupyter-files

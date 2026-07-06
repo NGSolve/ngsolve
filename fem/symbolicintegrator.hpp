@@ -931,6 +931,24 @@ public:
 
 
 
+
+
+  class DirichletBoundary
+  {
+  public:
+    shared_ptr<ProxyFunction> proxy;
+    RegionDescriptor vbn;
+  };
+
+  class DirichletBC 
+  {
+  public:
+    DirichletBoundary dirbnd;
+    shared_ptr<CoefficientFunction> val;
+  };
+
+  
+
 }
 
 

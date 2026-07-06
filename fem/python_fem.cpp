@@ -881,6 +881,11 @@ val : can be one of the following:
              return c1*c2;
            }, py::arg("cf") )
 
+    .def ("__rmul__", [] (shared_ptr<CF> c1, shared_ptr<CF> c2)
+           {
+             return c1*c2;
+           }, py::arg("cf") )
+    
     .def ("__pow__", [] (shared_ptr<CF> c1, int p)
            {
              shared_ptr<CF> one = make_shared<ConstantCoefficientFunction>(1.0);

@@ -59,3 +59,86 @@ def get_cmake_dir():
             NGSOLVE_INSTALL_DIR_PYTHON
             )
     return p.normpath(p.join(d_python,py_to_cmake))
+
+
+def _resolve_install_dir(install_dir, python_dir, anchor_file):
+    import os.path as p
+    d_python = p.dirname(p.dirname(p.dirname(anchor_file)))
+    return p.normpath(p.join(d_python, p.relpath(install_dir, python_dir)))
+
+
+def get_include_dir():
+    "Absolute path of the installed NGSolve headers."
+    return _resolve_install_dir(
+        NGSOLVE_INSTALL_DIR_INCLUDE, NGSOLVE_INSTALL_DIR_PYTHON, __file__)
+
+
+def get_library_dir():
+    "Absolute path of the installed NGSolve libraries."
+    return _resolve_install_dir(
+        NGSOLVE_INSTALL_DIR_LIB, NGSOLVE_INSTALL_DIR_PYTHON, __file__)
+
+
+def get_netgen_include_dir():
+    "Absolute path of the installed Netgen headers."
+    import netgen.config as ngc
+    return _resolve_install_dir(
+        ngc.NG_INSTALL_DIR_INCLUDE, ngc.NG_INSTALL_DIR_PYTHON, ngc.__file__)
+
+
+def get_netgen_library_dir():
+    "Absolute path of the installed Netgen libraries."
+    import netgen.config as ngc
+    return _resolve_install_dir(
+        ngc.NG_INSTALL_DIR_LIB, ngc.NG_INSTALL_DIR_PYTHON, ngc.__file__)
+
+
+def get_include_dirs():
+    "All include directories needed to compile against NGSolve (NGSolve and Netgen)."
+    import os.path as p
+    netgen_inc = get_netgen_include_dir()
+    dirs = [get_include_dir(), netgen_inc, p.join(netgen_inc, "include")]
+    unique = []
+    for d in dirs:
+        if d not in unique:
+            unique.append(d)
+    return unique
+
+
+def get_library_dirs():
+    "All library directories needed to link against NGSolve (NGSolve and Netgen)."
+    dirs = [get_library_dir(), get_netgen_library_dir()]
+    unique = []
+    for d in dirs:
+        if d not in unique:
+            unique.append(d)
+    return unique
+
+
+def get_compile_include_args():
+    "Compiler include flags (NGSolve + Netgen headers), formatted for the current platform."
+    import sys
+    if sys.platform == "win32":
+        q = chr(34)
+        return " ".join("/I" + q + d + q for d in get_include_dirs())
+    return " ".join("-I" + d for d in get_include_dirs())
+
+
+def get_link_lib_args():
+    "Linker flags to link a shared library against NGSolve and Netgen, for the current platform."
+    import sys
+    dirs = get_library_dirs()
+    if sys.platform == "win32":
+        q = chr(34)
+        args = ["/LIBPATH:" + q + d + q for d in dirs]
+        args += ["nglib.lib", "ngcore.lib", "libngsolve.lib"]
+        return " ".join(args)
+    if sys.platform == "darwin":
+        args = ["-L" + d for d in dirs]
+        args.append("-undefined dynamic_lookup")
+        return " ".join(args)
+    args = []
+    for d in dirs:
+        args.append("-L" + d)
+        args.append("-Wl,-rpath," + d)
+    return " ".join(args)

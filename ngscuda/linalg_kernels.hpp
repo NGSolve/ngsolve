@@ -49,6 +49,22 @@ extern void ConstEBEKernelCopyOut (int numblocks, int bs, int * col_dnums, doubl
 
 extern void ConstEBEKernelCopyInIdx (int numblocks, int * idx, int bs, int * row_dnums, double * dev_ux, double * dev_hx);
 extern void ConstEBEKernelCopyOutIdx (int numblocks, int * idx, int bs, int * col_dnums, double * dev_hy, double * dev_uy);
+
+// TFQMR scalar batch kernels — one kernel launch per scalar-update group between vector operarions
+// Even step, after InnerProduct(r,v): compute alpha, neg_alpha, coeff
+extern void TFQMREvenBatch1(double* rho, double* vtrstar, double* theta, double* eta,
+                             double* alpha, double* neg_alpha, double* coeff);
+// Even step, after InnerProduct(w,w): compute theta, c, tau, tau_sq, eta; copy rho->rho_last
+extern void TFQMREvenTauBatch(double* wnorm_sq, double* tau_in, double* alpha_in, double* rho,
+                               double* theta, double* c, double* tau_out, double* tau_sq,
+                               double* eta, double* rho_last);
+// Odd step, before d update: compute coeff from current theta, eta, alpha
+extern void TFQMROddCoeff(double* theta, double* eta, double* alpha, double* coeff);
+// Odd step, after InnerProduct(w,w): compute theta, c, tau, tau_sq, eta
+extern void TFQMROddTauBatch(double* wnorm_sq, double* tau_in, double* alpha_in,
+                              double* theta, double* c, double* tau_out, double* tau_sq, double* eta);
+// Odd step, after InnerProduct(w,r): compute beta, beta_sq; update rho_last
+extern void TFQMROddBeta(double* rho, double* rho_last, double* beta, double* beta_sq);
     
     /*
   extern void DevBlockDiagonalMatrixSoAMultAddVecs (double s, int size, double * a, double * b, double * res);

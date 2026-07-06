@@ -123,6 +123,8 @@ namespace ngmg
 
             bool condense = biform->UsesEliminateInternal();
             shared_ptr<BitArray> freedofs = biform->GetFESpace()->GetFreeDofs(condense);
+
+            /*
             auto additional_dirichlet_constraints = smoother -> GetAdditionalDirichletConstraints();
             if (additional_dirichlet_constraints)
               {
@@ -131,6 +133,21 @@ namespace ngmg
                 dofs.And(*freedofs);
                 freedofs = make_shared<BitArray>(std::move(dofs));
               }
+            */
+            auto& additional_dirichlet_boundaries = smoother -> GetAdditionalDirichletBoundaries();            
+            if (additional_dirichlet_boundaries.Size())
+              {
+                freedofs = make_shared<BitArray>(*freedofs);
+                for (auto dbc : additional_dirichlet_boundaries)
+                  {
+                    Region reg(ma, dbc.vbn.vb, dbc.vbn.name);
+                    BitArray dofs = biform->GetFESpace()->GetDofs(reg, dbc.proxy->Evaluator().get());
+                    dofs.Invert();
+                    freedofs->And(dofs);
+                  }
+              }
+
+            
             
 
 	    if (!freedofs)
