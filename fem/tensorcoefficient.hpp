@@ -380,7 +380,9 @@ namespace ngfem {
               return;
             }
 
-            ArrayMem<T, 1000> mem(max_mem * ir.Size());
+            auto & lh = TLHeap();
+            HeapReset hr(lh);
+            FlatVector<T> mem(max_mem * ir.Size(), lh);
             T *mem_pos = mem.Data();
             Array<FlatMatrix<T, ORD>> tmp_arrays(cfs.Size());
             for (size_t i: Range(cfs)) {
