@@ -388,6 +388,12 @@ namespace ngla
     cudaMalloc(&dev_hy_buf, numblocks * devmat.Height() * sizeof(double));
   }
 
+  DevConstantElementByElementMatrix :: ~DevConstantElementByElementMatrix ()
+  {
+    cudaFree(dev_hx_buf);
+    cudaFree(dev_hy_buf);
+  }
+
 
   void DevConstantElementByElementMatrix ::
   Mult (const BaseVector & x, BaseVector & y) const
@@ -648,6 +654,11 @@ namespace ngla
     indices = nonzeroinds;
     indices_trans = nonzeroinds_trans;
 }
+
+  DevBlockDiagonalMatrixSoA :: ~DevBlockDiagonalMatrixSoA ()
+  {
+    cudaFree(dev_data);
+  }
 
   void DevBlockDiagonalMatrixSoA :: Mult (const BaseVector & x, BaseVector & y) const
   {
