@@ -5,6 +5,8 @@ from ngsolve import TimeFunction
 
 class CudssSolver(ngla.SparseFactorizationInterface):
     solver = None
+    dtype = np.float64
+    spd = False
 
     @TimeFunction
     def Analyze(self):
@@ -20,14 +22,25 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             self.solver.free()
             del self.solver
 
-        csr = sp.csr_matrix(self.GetInnerMatrix().CSR())
+        inner = self.GetInnerMatrix()
+        csr = sp.csr_matrix(inner.CSR())
+        csr = csr.astype(self.dtype, copy=False)
 
         options = make_directsolver_options()
-        self.extract_symmetric = self.is_symmetric.is_true or (csr != csr.T).nnz == 0
+        use_spd = self.spd or getattr(self, "is_spd", False)
+        if use_spd or self.is_symmetric.is_true:
+            self.extract_symmetric = True
+        else:
+            self.extract_symmetric = (csr != csr.T).nnz == 0
         if self.extract_symmetric:
             if not self.is_symmetric_storage:
                 csr = sp.tril(csr, format="csr")
-            options.sparse_system_type = nvs.DirectSolverMatrixType.SYMMETRIC
+            if use_spd:
+                options.sparse_system_type = (nvs.DirectSolverMatrixType.HPD
+                                              if np.iscomplexobj(csr.data)
+                                              else nvs.DirectSolverMatrixType.SPD)
+            else:
+                options.sparse_system_type = nvs.DirectSolverMatrixType.SYMMETRIC
             options.sparse_system_view = nvs.DirectSolverMatrixViewType.LOWER
 
         tmp = np.empty(csr.shape[1], dtype=csr.dtype)
@@ -46,6 +59,7 @@ class CudssSolver(ngla.SparseFactorizationInterface):
                 values = sp.tril(sp.csr_matrix(mat.CSR()), format="csr").data
             else:
                 values = mat.AsVector().FV().NumPy()
+            values = values.astype(self.dtype, copy=False)
             stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)
             values_tensor = NumpyTensor(values)
             self.solver.a.values.copy_(values_tensor, stream_holder)
@@ -57,8 +71,9 @@ class CudssSolver(ngla.SparseFactorizationInterface):
         from nvmath.internal import utils
         from nvmath.internal.tensor_ifc_numpy import NumpyTensor
         stream_holder = utils.get_or_create_stream(self.solver.device_id, None, self.solver.rhs_package)
-        self.solver.b.copy_(NumpyTensor(b.FV().NumPy()), stream_holder)
-        sol.FV().NumPy()[:] = self.solver.solve()
+        self.solver.b.copy_(NumpyTensor(b.FV().NumPy().astype(self.dtype, copy=False)), stream_holder)
+        result = self.solver.solve()
+        sol.FV().NumPy()[:] = result
 
     def __del__(self):
         if self.solver is not None:
@@ -66,7 +81,23 @@ class CudssSolver(ngla.SparseFactorizationInterface):
             del self.solver
 
 
+class CudssSolverFloat32(CudssSolver):
+    dtype = np.float32
+
+
+class CudssSolverSPD(CudssSolver):
+    spd = True
+
+
+class CudssSolverFloat32SPD(CudssSolver):
+    dtype = np.float32
+    spd = True
+
+
 ngla.RegisterInverseType("cudss", CudssSolver)
+ngla.RegisterInverseType("cudss_float32", CudssSolverFloat32)
+ngla.RegisterInverseType("cudss_spd", CudssSolverSPD)
+ngla.RegisterInverseType("cudss_float32_spd", CudssSolverFloat32SPD)
 
 
 # find cudss multithreading lib from installed distribution
