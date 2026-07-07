@@ -892,14 +892,16 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
 
 
-  m.def("GetDofCoordinates", [](shared_ptr<FESpace> fes)
+  auto get_dof_clustering_data = [](shared_ptr<FESpace> fes)
   {
     auto ma = fes->GetMeshAccess();
     Matrix pnts(fes->GetNDof(), 3);
+    Vector<> radii(fes->GetNDof());
     
     pnts.Col(0) = 1;
     pnts.Col(1) = 2;
     pnts.Col(2) = 3;
+    radii = 0;
 
     Array<DofId> dofs;
     for (auto node : ma->Nodes(NT_VERTEX))
@@ -933,9 +935,41 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         for (auto d : dofs)
           pnts.Row(d) = p;
       }
+
+    for (auto i : Range(ma->GetNE(BND)))
+      {
+        ElementId ei(BND, i);
+        if (!fes->DefinedOn(ei)) continue;
+
+        fes->GetDofNrs(ei, dofs);
+        auto vertices = ma->GetElVertices(ei);
+
+        Vec<3> center(0,0,0);
+        for (auto v : vertices)
+          center += ma->GetPoint<3>(v);
+        center /= vertices.Size();
+
+        double radius = 0;
+        for (auto v : vertices)
+          radius = max(radius, L2Norm(ma->GetPoint<3>(v)-center));
+
+        for (auto d : dofs)
+          radii(d) = max(radii(d), radius);
+      }
     
-    return pnts;
-  });
+    return make_tuple(std::move(pnts), std::move(radii));
+  };
+
+  m.def("GetDofClusteringData", get_dof_clustering_data, py::arg("fes"),
+        "Return dof coordinates and support radii for geometric clustering.");
+
+  m.def("GetDofCoordinates", [get_dof_clustering_data](shared_ptr<FESpace> fes)
+  {
+    WarnDeprecated("GetDofCoordinates", "GetDofClusteringData");
+    auto data = get_dof_clustering_data(fes);
+    return std::move(std::get<0>(data));
+  }, py::arg("fes"),
+        "Return dof coordinates.");
 }
 
 #endif // NGS_PYTHON
