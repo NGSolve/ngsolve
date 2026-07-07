@@ -16,6 +16,8 @@ struct MapInnerDofs {
   Array<int> project;
   Array<int> embed;
   size_t size = 0;
+  Array<size_t> value_map;
+  bool have_value_map = false;
 
   MapInnerDofs() {}
 
@@ -24,6 +26,7 @@ struct MapInnerDofs {
   {
     inner = ainner;
     cluster = acluster;
+    have_value_map = false;
     if (!inner && !cluster) {
       size = 0;
       return;
@@ -81,12 +84,21 @@ struct MapInnerDofs {
 
   template <typename T>
   shared_ptr<SparseMatrixTM<T>>
-  ProjectMatrix(shared_ptr<const SparseMatrixTM<T>> m) {
+  ProjectMatrix(shared_ptr<const SparseMatrixTM<T>> m,
+                shared_ptr<SparseMatrixTM<T>> cached = nullptr) {
+    auto vals_ori = m->GetValues();
+
+    if (cached && have_value_map && cached->GetValues().Size() == value_map.Size()) {
+      auto dst = cached->GetValues();
+      for (size_t k : Range(value_map))
+        dst[k] = vals_ori[value_map[k]];
+      cached->SetSPD(m->IsSPD());
+      return cached;
+    }
+
     Array<int> rowi, coli;
     Array<T> vals;
     // auto &dofs = *inner;
-
-    auto vals_ori = m->GetValues();
 
     auto is_used = [this](int i, int j) {
       if (inner)
@@ -105,10 +117,20 @@ struct MapInnerDofs {
     auto res = SparseMatrixTM<T>::CreateFromCOO(rowi, coli, vals,
                                                 project.Size(), project.Size());
     res->SetSPD(m->IsSPD());
-    
+
+    shared_ptr<SparseMatrixTM<T>> result;
     if(dynamic_cast<const SparseMatrixSymmetric<T>*>(m.get()))
-        return make_shared<SparseMatrixSymmetric<T>>(*res);
-    return res;
+        result = make_shared<SparseMatrixSymmetric<T>>(*res);
+    else
+        result = res;
+
+    value_map.SetSize(result->GetValues().Size());
+    for (size_t r : Range(size))
+      for (auto c : result->GetRowIndices(r))
+        value_map[result->GetPosition(r, c)] = m->GetPosition(project[r], project[c]);
+    have_value_map = true;
+
+    return result;
   }
 };
 
@@ -159,6 +181,7 @@ public:
 
   bool IsSymmetricStorage() const { return is_symmetric_storage; }
   xbool IsSymmetric() const override { return is_symmetric; }
+  bool IsSPD() const { return inner_mat && inner_mat->IsSPD(); }
 };
 
 } // namespace ngla

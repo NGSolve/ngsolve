@@ -1606,6 +1606,7 @@ inverse : string
       .def("Factor", &SparseFactorizationInterface::Factor)
       .def_property_readonly("is_symmetric_storage", &SparseFactorizationInterface::IsSymmetricStorage)
       .def_property_readonly("is_symmetric", &SparseFactorizationInterface::IsSymmetric)
+      .def_property_readonly("is_spd", &SparseFactorizationInterface::IsSPD)
       ;
 
   m.def("RegisterInverseType", [](const string &name, py::object creator) {
