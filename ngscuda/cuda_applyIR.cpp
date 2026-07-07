@@ -20,8 +20,9 @@ namespace ngla
                                  BareVector<Dev<double>> output, size_t dist_output, cudaStream_t stream);
     lib_function compiled_function = nullptr;
 
-    unique_ptr<Matrix<Dev<double>>> dev_points, dev_normals;
-    
+    unique_ptr<Matrix<Dev<double>>> dev_points, dev_normals, dev_coefs;
+    unique_ptr<Array<Dev<int>>> dev_elidx;
+
   public:
     DevApplyIntegrationPoints (const ApplyIntegrationPoints & aipmat)
     {
@@ -35,7 +36,9 @@ namespace ngla
       // generate cuda code, similar as for host (with C-Function + Kernel):
 
       auto & trialproxies = aipmat.GetTrialProxies();
-      
+      auto & input_coefs = aipmat.GetInputCoefs();
+      auto & input_coef_offset = aipmat.GetInputCoefOffset();
+
       Array<int> proxyoffset;
       int starti = 0;
       for (auto proxy : trialproxies)
@@ -57,15 +60,32 @@ namespace ngla
           // cout << code.header << endl;
           
           for (auto step : Range(compiledcf->Steps()))
-            if (auto proxycf = dynamic_cast<ProxyFunction*> (compiledcf->Steps()[step]))
-              if (auto pos = trialproxies.Pos(proxycf); pos != trialproxies.ILLEGAL_POSITION)
+            {
+              auto stepcf = compiledcf->Steps()[step];
+
+              bool uses_values =
+                code.body.find("values_" + ToString(step) + "(") != string::npos;
+
+              if (auto proxycf = dynamic_cast<ProxyFunction*> (stepcf))
                 {
-                  s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
-                    " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
-                  s << "bool constexpr has_values_" << step << " = true;\n" << endl;
-                  for (int i = 0; i < proxycf->Dimension(); i++)
-                    s << Var("comp", step,i,proxycf->Dimensions()).Declare("double", 0.0);
+                  auto pos = trialproxies.Pos(proxycf);
+                  if (pos != trialproxies.ILLEGAL_POSITION)
+                    {
+                      s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
+                        " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
+                      s << "bool constexpr has_values_" << step << " = true;\n" << endl;
+                      for (int i = 0; i < proxycf->Dimension(); i++)
+                        s << Var("comp", step,i,proxycf->Dimensions()).Declare("double", 0.0);
+                    }
                 }
+              else if (uses_values)
+                {
+                  auto pos = input_coefs.Pos(stepcf);
+                  int off = (pos != input_coefs.ILLEGAL_POSITION) ? input_coef_offset[pos] : 0;
+                  s << "auto values_" << step << " = [](size_t i, int comp)\n"
+                    " { return coef_input[i + (comp+" << off << ")*dist_coef]; };\n" << endl;
+                }
+            }
 
           s << "[[maybe_unused]] auto points = [](size_t i, int comp)\n"
             " { return pnts[i+comp*dist_pnts]; };\n";
@@ -76,7 +96,11 @@ namespace ngla
           s << "int tid = blockIdx.x*blockDim.x+threadIdx.x;\n"
             << "for (int i = tid; i < nip; i += blockDim.x*gridDim.x) {\n";
           // s << "for (size_t i = 0; i < nip; i++) {\n";
-          
+
+          // domain-wise coefficient functions switch on 'domain_index'
+          if (code.body.find("domain_index") != string::npos)
+            s << "[[maybe_unused]] int domain_index = elidx[i];\n";
+
           s << code.body << endl;
           
           // missing: last step nr
@@ -117,6 +141,17 @@ namespace ngla
         dev_normals = make_unique<Matrix<Dev<double>>>(normals);
       allcode.AddPointer(dev_normals ?  dev_normals->Data() : nullptr, "nvs", "double *", "__device__");
       allcode.AddPointer((void*)normals.Dist(), "dist_normals", "uint", "__device__");
+
+      auto coef_values = aipmat.GetCoefValues();
+      if(allcode.body.find("coef_input") != string::npos)
+        dev_coefs = make_unique<Matrix<Dev<double>>>(coef_values);
+      allcode.AddPointer(dev_coefs ?  dev_coefs->Data() : nullptr, "coef_input", "double *", "__device__");
+      allcode.AddPointer((void*)coef_values.Dist(), "dist_coef", "uint", "__device__");
+
+      auto element_index = aipmat.GetElementIndex();
+      if(allcode.body.find("elidx") != string::npos)
+        dev_elidx = make_unique<Array<Dev<int>>>(element_index);
+      allcode.AddPointer(dev_elidx ?  dev_elidx->Data() : nullptr, "elidx", "int *", "__device__");
 
       s_top << "__global__ void ApplyIPFunctionKernel (size_t nip, double * input, size_t dist_input,\n"
         "                      double * output, size_t dist_output) {\n";
