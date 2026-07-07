@@ -149,6 +149,14 @@ namespace ngla
     using EmbeddedMatrix::EmbeddedMatrix;
     AutoVector CreateColVector() const override { return make_unique<UnifiedVector>(Height()); }      
   };
+
+  class DevEmbedding : public Embedding
+  {
+  public:
+    using Embedding::Embedding;
+    AutoVector CreateColVector() const override { return make_unique<UnifiedVector>(Height()); }
+    AutoVector CreateRowVector() const override { return make_unique<UnifiedVector>(Width()); }
+  };
   
   class DevEmbeddedTransposeMatrix : public EmbeddedTransposeMatrix
   {
