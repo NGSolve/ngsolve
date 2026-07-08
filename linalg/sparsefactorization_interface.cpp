@@ -129,8 +129,11 @@ void SparseFactorizationInterface::Update() {
       is_symmetric = true;
     }
 
-    if (map_inner_dofs)
-      p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat);
+    if (map_inner_dofs) {
+      auto cached = dynamic_pointer_cast<SparseMatrixTM<Complex>>(
+          const_pointer_cast<BaseSparseMatrix>(inner_mat));
+      p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat, cached);
+    }
 
     inner_mat = p_sparse_mat;
     p_mat = dynamic_pointer_cast<const MatrixGraph>(p_sparse_mat);
@@ -149,8 +152,11 @@ void SparseFactorizationInterface::Update() {
       is_symmetric = true;
     }
 
-    if (map_inner_dofs)
-      p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat);
+    if (map_inner_dofs) {
+      auto cached = dynamic_pointer_cast<SparseMatrixTM<double>>(
+          const_pointer_cast<BaseSparseMatrix>(inner_mat));
+      p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat, cached);
+    }
 
     inner_mat = p_sparse_mat;
 
