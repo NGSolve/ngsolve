@@ -210,6 +210,34 @@ class MKLPardiso(ngla.SparseFactorizationInterface):
 
         sol.FV().NumPy()[:] = self._x_np
 
+    def _solve_flag(self, b, sol, flag):
+        # iparm[11]: 0 -> A x = b, 1 -> A^H x = b, 2 -> A^T x = b
+        self._b_np[:] = b.FV().NumPy()
+        prev = self._params[11]
+        self._params[11] = flag
+        try:
+            self._call_pardiso(33)
+        finally:
+            self._params[11] = prev
+        sol.FV().NumPy()[:] = self._x_np
+
+    @TimeFunction
+    def SolveTrans(self, b, sol):
+        if self.is_symmetric.is_true:
+            return self.Solve(b, sol)
+        self._solve_flag(b, sol, 2)
+
+    @TimeFunction
+    def SolveConjTrans(self, b, sol):
+        if not self.is_complex:
+            return self.SolveTrans(b, sol)
+        if self.is_symmetric.is_true:
+            self._b_np[:] = np.conj(b.FV().NumPy())
+            self._call_pardiso(33)
+            sol.FV().NumPy()[:] = np.conj(self._x_np)
+            return
+        self._solve_flag(b, sol, 1)
+
     def _release(self):
         if hasattr(self, "_pt"):
             try:

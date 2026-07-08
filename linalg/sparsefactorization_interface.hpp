@@ -151,11 +151,19 @@ public:
   void MultAdd(double s, const BaseVector &x, BaseVector &y) const override;
   void MultAdd(Complex s, const BaseVector &x, BaseVector &y) const override;
 
+  void MultTransAdd(double s, const BaseVector &x, BaseVector &y) const override;
+  void MultTransAdd(Complex s, const BaseVector &x, BaseVector &y) const override;
+  void MultConjTransAdd(Complex s, const BaseVector &x,
+                        BaseVector &y) const override;
+
   virtual void Update() override;
 
   virtual void Analyze() {}
   virtual void Factor() {}
   virtual void Solve(const BaseVector &rhs, BaseVector &solution) const = 0;
+  virtual void SolveTrans(const BaseVector &rhs, BaseVector &solution) const;
+  virtual void SolveConjTrans(const BaseVector &rhs,
+                              BaseVector &solution) const;
 
   bool IsSymmetricStorage() const { return is_symmetric_storage; }
   xbool IsSymmetric() const override { return is_symmetric; }
