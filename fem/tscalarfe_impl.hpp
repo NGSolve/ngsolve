@@ -374,6 +374,7 @@ namespace ngfem
             BareSliceMatrix<SIMD<double>> values,
             SliceMatrix<> coefs) const
   {
+    if (coefs.Height() == 0) return;
     FlatArray<SIMD<IntegrationPoint>> hir = ir;    
     size_t j = 0;
     for ( ; j+4 <= coefs.Width(); j+=4)
