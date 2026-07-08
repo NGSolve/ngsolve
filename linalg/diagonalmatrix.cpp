@@ -507,9 +507,15 @@ namespace ngla
 
     // check for blockdiag non-zero pattern:
     nonzero.SetSize(dimy, dimx);
-    for (int i = 0; i < dimy; i++)
-      for (int j = 0; j < dimx; j++)
-        nonzero(i,j) = L2Norm(blockdiag(i,j,STAR)) > 0;
+    ParallelFor (size_t(dimy)*dimx, [&] (size_t k)
+       {
+         size_t i = k / dimx, j = k % dimx;
+         auto vals = blockdiag(i,j,STAR);
+         bool nz = false;
+         for (size_t l = 0; l < size_t(blocks); l++)
+           if (vals(l) != 0.0) { nz = true; break; }
+         nonzero(i,j) = nz;
+       });
 
     TableCreator<int> creator(dimy);
     for ( ; !creator.Done(); creator++)

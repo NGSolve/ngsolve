@@ -1578,19 +1578,23 @@ namespace ngcomp
                 Tensor<3> diagy(dimy, dimyref, nip);
                 Matrix<> points(ma->GetDimension(), nip);
                 Matrix<> normals(ma->GetDimension(), nip);
-                
-                for (auto i : Range(elclass_inds))
-                  {
-                    HeapReset hr(lh);
+
+                ParallelForRange
+                  (elclass_inds.Size(), [&] (IntRange myrange)
+                   {
+                    LocalHeap llh(1000000, "assemble-BDB-D");
+                    for (auto i : myrange)
+                     {
+                    HeapReset hr(llh);
                     ElementId ei(VOL, elclass_inds[i]);
-                    auto & trafo = ma->GetTrafo(ei, lh);
-                    auto & mir = trafo(ir, lh);
+                    auto & trafo = ma->GetTrafo(ei, llh);
+                    auto & mir = trafo(ir, llh);
                     if (bfi->ElementVB() != VOL)
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
-                    
-                    FlatMatrix<> transx(dimx, dimxref, lh);
-                    FlatMatrix<> transy(dimy, dimyref, lh);
-                    
+
+                    FlatMatrix<> transx(dimx, dimxref, llh);
+                    FlatMatrix<> transy(dimy, dimyref, llh);
+
                     transx = 0.0;
                     transy = 0.0;
                     for (int j = 0; j < ir.Size(); j++)
@@ -1601,7 +1605,7 @@ namespace ngcomp
                             auto diffop = proxy->Evaluator();
                             int nexti = starti+diffop->Dim();
                             int nextiref = startiref+diffop->DimRef();
-                            diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(startiref,nextiref), lh);
+                            diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(startiref,nextiref), llh);
                             starti = nexti;
                             startiref = nextiref;
                           }
@@ -1610,8 +1614,8 @@ namespace ngcomp
                           {
                             auto diffop = proxy->Evaluator();
                             int nexti = starti+diffop->Dim();
-                            int nextiref = startiref+diffop->DimRef();                        
-                            diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(startiref,nextiref), lh);
+                            int nextiref = startiref+diffop->DimRef();
+                            diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(startiref,nextiref), llh);
                             starti = nexti;
                             startiref = nextiref;
                           }
@@ -1632,8 +1636,8 @@ namespace ngcomp
                         points.Col(i+j*nel) = mir.GetPoints().Row(j);   // untested
                         normals.Col(i+j*nel) = mir.GetNormals().Row(j); // untested
                       }
-                  }
-                
+                     }
+                   });
                 shared_ptr<CoefficientFunction> coef = bfi -> GetCoefficientFunction();
                 Array<shared_ptr<CoefficientFunction>> diffcfs;
                 for (auto proxy : testproxies)
@@ -1650,12 +1654,16 @@ namespace ngcomp
                   {
                     Matrix<double> coef_values(ipop->GetDimCoef(), nip);
                     coef_values = 0.0;
-                    for (auto i : Range(elclass_inds))
-                      {
-                        HeapReset hr(lh);
+                    ParallelForRange
+                      (elclass_inds.Size(), [&] (IntRange myrange)
+                       {
+                        LocalHeap llh(1000000, "assemble-BDB-coef");
+                        for (auto i : myrange)
+                         {
+                        HeapReset hr(llh);
                         ElementId ei(VOL, elclass_inds[i]);
-                        auto & trafo = ma->GetTrafo(ei, lh);
-                        auto & mir = trafo(ir, lh);
+                        auto & trafo = ma->GetTrafo(ei, llh);
+                        auto & mir = trafo(ir, llh);
                         if (bfi->ElementVB() != VOL)
                           mir.ComputeNormalsAndMeasure (fel.ElementType());
 
@@ -1663,14 +1671,15 @@ namespace ngcomp
                         for (auto icf : input_coefs)
                           {
                             int d = icf->Dimension();
-                            FlatMatrix<double> vals(ir.Size(), d, lh);
+                            FlatMatrix<double> vals(ir.Size(), d, llh);
                             icf->Evaluate (mir, vals);
                             for (int j = 0; j < ir.Size(); j++)
                               for (int c = 0; c < d; c++)
                                 coef_values(off+c, i+j*nel) = vals(j,c);
                             off += d;
                           }
-                      }
+                         }
+                       });
                     ipop->SetCoefValues (std::move(coef_values));
                   }
 
