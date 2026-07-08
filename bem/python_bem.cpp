@@ -1,5 +1,6 @@
 #ifdef NGS_PYTHON
 #include <regex>
+#include <unordered_map>
 #include <variant>
 
 #include <pybind11/warnings.h>
@@ -300,7 +301,8 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
       return iop->CalcSubMatrix(rowidsa, colidsa, lh);
     }, py::arg("rowids"), py::arg("colids"))
 
-    .def("CalcSubMatrixCapsule", [](std::shared_ptr<IntegralOperator> iop)
+    .def("CalcSubMatrixCapsule", [](std::shared_ptr<IntegralOperator> iop,
+                                    std::shared_ptr<BaseMatrix> add_matrix)
     {
       using backend_callback_t = void(*)(int, int,
                                          const int*, const int*,
@@ -313,9 +315,26 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
 
       struct Context {
         std::shared_ptr<IntegralOperator> iop;
+        std::shared_ptr<SparseMatrix<double>> add_matrix_real;
+        std::shared_ptr<SparseMatrix<Complex>> add_matrix_complex;
       };
 
-      Context* ctx = new Context{iop};
+      std::shared_ptr<SparseMatrix<double>> add_matrix_real;
+      std::shared_ptr<SparseMatrix<Complex>> add_matrix_complex;
+      if (add_matrix)
+        {
+          if (add_matrix->VHeight() != iop->GetTestSpace()->GetNDof() ||
+              add_matrix->VWidth() != iop->GetTrialSpace()->GetNDof())
+            throw Exception("CalcSubMatrixCapsule: add_matrix has incompatible dimensions");
+
+          auto sparse_matrix = add_matrix->CreateSparseMatrix();
+          add_matrix_real = dynamic_pointer_cast<SparseMatrix<double>>(sparse_matrix);
+          add_matrix_complex = dynamic_pointer_cast<SparseMatrix<Complex>>(sparse_matrix);
+          if (!add_matrix_real && !add_matrix_complex)
+            throw Exception("CalcSubMatrixCapsule: add_matrix must be a scalar sparse matrix");
+        }
+
+      Context* ctx = new Context{iop, add_matrix_real, add_matrix_complex};
 
       auto callback = [](int n, int m,
                          const int* rowid,
@@ -332,8 +351,9 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
         FlatArray<DofId> colidsa(m, const_cast<int*>(colid));
 
         auto mat = iop.CalcSubMatrix(rowidsa, colidsa, lh);
+        bool complex_output = std::holds_alternative<Matrix<Complex>>(mat);
 
-        if(std::holds_alternative<Matrix<double>>(mat))
+        if (!complex_output)
           {
             auto& matd = std::get<Matrix<double>>(mat);
             for (int i = 0; i < n; i++)
@@ -350,6 +370,43 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
                   data[2*(i + j*n)+1] = matc(i, j).imag();
                 }
           }
+
+        if (!ctx->add_matrix_real && !ctx->add_matrix_complex) return;
+        if (ctx->add_matrix_complex && !complex_output)
+          throw Exception("CalcSubMatrixCapsule: complex add_matrix requires a complex integral operator");
+
+        std::unordered_map<int, int> col_to_local;
+        col_to_local.reserve(m);
+        for (int j = 0; j < m; j++)
+          col_to_local[colid[j]] = j;
+
+        auto add_sparse_block = [&] (auto add_matrix, auto add_entry)
+        {
+          for (int i = 0; i < n; i++)
+            {
+              auto row_values = add_matrix->GetRowValues(rowid[i]);
+              auto row_indices = add_matrix->GetRowIndices(rowid[i]);
+              for (int k = 0; k < row_indices.Size(); k++)
+                if (auto it = col_to_local.find(row_indices[k]); it != col_to_local.end())
+                  add_entry(i, it->second, row_values[k]);
+            }
+        };
+
+        if (ctx->add_matrix_real)
+          add_sparse_block(ctx->add_matrix_real, [&] (int i, int j, double val)
+          {
+            if (complex_output)
+              data[2*(i + j*n)] += val;
+            else
+              data[i + j*n] += val;
+          });
+
+        if (ctx->add_matrix_complex)
+          add_sparse_block(ctx->add_matrix_complex, [&] (int i, int j, Complex val)
+          {
+            data[2*(i + j*n)] += val.real();
+            data[2*(i + j*n)+1] += val.imag();
+          });
       };
 
       Backend* backend = new Backend{
@@ -364,7 +421,7 @@ void NGS_DLL_HEADER ExportNgsbem(py::module &m)
           delete static_cast<Context*>(backend->ctx);
         delete backend;
       });
-    })
+    }, py::arg("add_matrix") = shared_ptr<BaseMatrix>())
     
     .def("__add__", [](shared_ptr<IntegralOperator> a, shared_ptr<IntegralOperator> b)
     {
