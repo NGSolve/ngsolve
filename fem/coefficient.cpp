@@ -3921,9 +3921,9 @@ cl_BinaryOpCF<GenericMult>::Operator(const string & name) const
 {
   if (c1->Dimension() != 1 || c2->Dimension() != 1)
     throw Exception ("can only differentiate scalar multiplication");
-  if (name != "grad")
-    throw Exception ("can only from 'grad' operator of product");
-  return c1->Operator(name) * c2  + c1 * c2->Operator(name);
+  if (name != "grad" && name != "Grad" && name != "Gradboundary")
+    throw Exception ("can only form first-order gradient operator of product");
+  return c2 * c1->Operator(name) + c1 * c2->Operator(name);
 }
 
 
