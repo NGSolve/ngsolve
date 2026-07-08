@@ -1581,10 +1581,26 @@ inverse : string
     virtual void Solve(const BaseVector &rhs,
                        BaseVector &solution) const override {
       pybind11::gil_scoped_acquire gil;
-      if( const auto overload = pybind11::get_overload(this, "Solve"); overload) 
+      if( const auto overload = pybind11::get_overload(this, "Solve"); overload)
         overload(rhs.shared_from_this(), solution.shared_from_this());
       else
         throw Exception("Solve not overloaded in Python");
+    }
+    virtual void SolveTrans(const BaseVector &rhs,
+                            BaseVector &solution) const override {
+      pybind11::gil_scoped_acquire gil;
+      if( const auto overload = pybind11::get_overload(this, "SolveTrans"); overload)
+        overload(rhs.shared_from_this(), solution.shared_from_this());
+      else
+        SparseFactorizationInterface::SolveTrans(rhs, solution);
+    }
+    virtual void SolveConjTrans(const BaseVector &rhs,
+                                BaseVector &solution) const override {
+      pybind11::gil_scoped_acquire gil;
+      if( const auto overload = pybind11::get_overload(this, "SolveConjTrans"); overload)
+        overload(rhs.shared_from_this(), solution.shared_from_this());
+      else
+        SparseFactorizationInterface::SolveConjTrans(rhs, solution);
     }
 
     virtual ~SparseFactorizationInterfaceTrampoline() {}
