@@ -1539,7 +1539,7 @@ namespace ngcomp
                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
                     
                     FlatTensor<3> proxyvalues(lh, ir.Size(), dimx, dimy);
-                    FlatMatrix val(1, ir.Size(), lh);
+                    FlatMatrix<> val(1, ir.Size(), lh);
 
                     int k1 = 0;
                     for (auto proxy1 : trialproxies)
