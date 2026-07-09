@@ -1466,7 +1466,7 @@ namespace ngcomp
             Matrix bmatx = bmatx_;
             Matrix bmaty = bmaty_;
 
-            if (!linear)  // transpose intpnt <--> comp
+            // if (!linear)  // transpose intpnt <--> comp
               {
                 for (int i : Range(ir.Size()))
                   for (int j : Range(dimxref))
@@ -1498,36 +1498,15 @@ namespace ngcomp
             
             auto xa = xdofsout.AsArray();
             auto ya = ydofsout.AsArray();
+
+            for (size_t i = 0; i < nel; i++)
+              for (size_t k = 0; k < dimxref*ir.Size(); k++)
+                xdofsout[i][k] = i+k*nel;
             
-            if (linear)
-              {
-                for (size_t i = 0; i < xa.Size(); i++)
-                  xa[i] = i;
-                for (size_t i = 0; i < ya.Size(); i++)
-                  ya[i] = i;
-              }
-            else
-              {
-                /*
-                for (size_t i = 0; i < nip; i++)
-                  for (size_t j = 0; j < dimxref; j++)
-                    xa[i*dimxref+j] = j*nip+i;
-                */
+            for (size_t i = 0; i < nel; i++)
+              for (size_t k = 0; k < dimyref*ir.Size(); k++)
+                ydofsout[i][k] = i+k*nel;
 
-                for (size_t i = 0; i < nel; i++)
-                  for (size_t k = 0; k < dimxref*ir.Size(); k++)
-                    xdofsout[i][k] = i+k*nel;
-                
-                /*
-                for (size_t i = 0; i < nip; i++)
-                  for (size_t j = 0; j < dimyref; j++)
-                    ya[i*dimyref+j] = j*nip+i;
-                */
-
-                for (size_t i = 0; i < nel; i++)
-                  for (size_t k = 0; k < dimyref*ir.Size(); k++)
-                    ydofsout[i][k] = i+k*nel;
-              }
             
             auto bx = make_shared<ConstantElementByElementMatrix<>>
               (nip*dimxref, fesx->GetNDof(),
@@ -1542,7 +1521,7 @@ namespace ngcomp
             
             if (linear)
               {
-                Tensor<3> diag(elclass_inds.Size()*ir.Size(), dimyref, dimxref);
+                Tensor<3> diag(dimyref, dimxref, elclass_inds.Size()*ir.Size());
                 for (auto i : Range(elclass_inds))
                   {
                     HeapReset hr(lh);
@@ -1553,7 +1532,38 @@ namespace ngcomp
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
                     FlatMatrix<> transx(dimx, dimxref, lh);
                     FlatMatrix<> transy(dimy, dimyref, lh);
-                    Matrix prod(dimxref, dimyref);
+                    FlatMatrix prod(dimxref, dimyref, lh);
+
+                    shared_ptr<CoefficientFunction> cf = bfi -> GetCoefficientFunction();
+                    ProxyUserData ud(trialproxies.Size(), 0 /* input_coefs.Size()*/ , lh);
+                    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+                    
+                    FlatTensor<3> proxyvalues(lh, ir.Size(), dimx, dimy);
+                    FlatMatrix val(1, ir.Size(), lh);
+
+                    int k1 = 0;
+                    for (auto proxy1 : trialproxies)
+                      {
+                        int l1 = 0;
+                        int l1nr = 0;
+                        for (auto proxy2 : testproxies)
+                          {
+                            for (int k = 0; k < proxy1->Dimension(); k++)
+                              for (int l = 0; l < proxy2->Dimension(); l++)
+                                {
+                                  ud.trialfunction = proxy1;
+                                  ud.trial_comp = k;
+                                  ud.testfunction = proxy2;
+                                  ud.test_comp = l;
+                                  
+                                  cf -> Evaluate (mir, val);
+                                  proxyvalues(STAR,k1+k,l1+l) = val.Col(0);
+                                }
+                            l1 += proxy2->Dimension();
+                          }
+                        k1 += proxy1->Dimension();
+                      }
+
                     
                     for (int j = 0; j < ir.Size(); j++)
                       {
@@ -1562,14 +1572,14 @@ namespace ngcomp
                         
                         diffopx->CalcTransformationMatrix(mir[j], transx, lh);
                         diffopy->CalcTransformationMatrix(mir[j], transy, lh);
-                        
-                        prod = Trans(transy) * transx;
+
+                        prod = Trans(transy) * proxyvalues(j,STAR,STAR) * transx;
                         prod *= mir[j].GetWeight();
-                        diag(i*ir.Size()+j,STAR,STAR) = prod;
+                        diag(STAR,STAR,i+j*nel) = prod;
                       }
                   }
                 
-                auto diagmat = make_shared<BlockDiagonalMatrix<double>> (std::move(diag));
+                auto diagmat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
                 mat = TransposeOperator(by) * diagmat * bx;
               }
             else // linear
