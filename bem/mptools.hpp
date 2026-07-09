@@ -1607,6 +1607,23 @@ namespace ngsbem
       }
     };
 
+    struct RecordingRR
+    {
+      const SphericalExpansion<Regular,elem_type,T_Kappa> * mp_source;
+      SphericalExpansion<Regular,elem_type,T_Kappa> * mp_target;
+      Vec<3> dist;
+      double len, theta, phi;
+    public:
+      RecordingRR() = default;
+      RecordingRR (const SphericalExpansion<Regular,elem_type,T_Kappa> * amp_source,
+                   SphericalExpansion<Regular,elem_type,T_Kappa> * amp_target,
+                   Vec<3> adist)
+        : mp_source(amp_source), mp_target(amp_target), dist(adist)
+      {
+        std::tie(len, theta, phi) = SphericalCoordinates(dist);
+      }
+    };
+
     static void ProcessBatchRS(FlatArray<RecordingRS*> batch, double len, double theta) {
       // static Timer t("ProcessBatchRS"); RegionTimer reg(t, batch.Size());
       constexpr int vec_length = VecLength<elem_type>;
@@ -1721,6 +1738,85 @@ namespace ngsbem
       }
       // tfrombatch.Stop();
 
+    }
+
+    static void ProcessBatchRR(FlatArray<RecordingRR*> batch, double len, double theta) {
+      constexpr int vec_length = VecLength<elem_type>;
+      int batch_size = batch.Size();
+      int N = batch_size * vec_length;
+
+      if (N <= 1 || batch_size <= 1) {
+        for (auto* rec : batch)
+          rec->mp_source->TransformAdd(*rec->mp_target, rec->dist);
+      }
+      else if (N <= 3) {
+        ProcessVectorizedBatchRR<3, vec_length>(batch, len, theta);
+      }
+      else if (N <= 4) {
+        ProcessVectorizedBatchRR<4, vec_length>(batch, len, theta);
+      }
+      else if (N <= 6) {
+        ProcessVectorizedBatchRR<6, vec_length>(batch, len, theta);
+      }
+      else if (N <= 12) {
+        ProcessVectorizedBatchRR<12, vec_length>(batch, len, theta);
+      }
+      else if (N <= 24) {
+        ProcessVectorizedBatchRR<24, vec_length>(batch, len, theta);
+      }
+      else if (N <= 48) {
+        ProcessVectorizedBatchRR<48, vec_length>(batch, len, theta);
+      }
+      else if (N <= 96) {
+        ProcessVectorizedBatchRR<96, vec_length>(batch, len, theta);
+      }
+      else if (N <= 192) {
+        ProcessVectorizedBatchRR<192, vec_length>(batch, len, theta);
+      }
+      else {
+        size_t chunksize = 192/vec_length;
+        size_t num = (batch.Size()+chunksize-1) / chunksize;
+        ParallelFor (num, [&](int i)
+        {
+          ProcessBatchRR(batch.Range(i*chunksize, min((i+1)*chunksize, batch.Size())), len, theta);
+        }, num);
+      }
+    }
+
+    template<int N, int vec_length>
+    static void ProcessVectorizedBatchRR(FlatArray<RecordingRR*> batch, double len, double theta) {
+      SphericalExpansion<Regular, Vec<N,Complex>, T_Kappa> vec_source(batch[0]->mp_source->Order(), batch[0]->mp_source->Kappa(), batch[0]->mp_source->RTyp());
+      SphericalExpansion<Regular, elem_type, T_Kappa> tmp_target{*batch[0]->mp_target};
+      SphericalExpansion<Regular, Vec<N,Complex>, T_Kappa> vec_target(batch[0]->mp_target->Order(), batch[0]->mp_target->Kappa(), batch[0]->mp_target->RTyp());
+
+      for (int i = 0; i < batch.Size(); i++)
+      {
+        auto source_i = VecVector2Matrix (batch[i]->mp_source->SH().Coefs());
+        auto source_mati = VecVector2Matrix (vec_source.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+        batch[i]->mp_source->SH().RotateZ(batch[i]->phi,
+            [source_i, source_mati] (size_t ii, Complex factor)
+            {
+                source_mati.Row(ii) = factor * source_i.Row(ii);
+            });
+      }
+
+      vec_source.SH().RotateY(theta);
+      vec_source.ShiftZ(-len, vec_target);
+      vec_target.SH().RotateY(-theta);
+
+      for (int i = 0; i < batch.Size(); i++) {
+        auto source_mati = VecVector2Matrix (vec_target.SH().Coefs()).Cols(i*vec_length, (i+1)*vec_length);
+        auto targeti = VecVector2Matrix(batch[i]->mp_target->SH().Coefs());
+
+        tmp_target.SH().RotateZ(-batch[i]->phi,
+                                [source_mati, targeti] (size_t ii, Complex factor)
+                                          {
+                                            auto target_row = targeti.Row(ii);
+                                            auto source_row = source_mati.Row(ii);
+                                            for (size_t j = 0; j < target_row.Size(); j++)
+                                              target_row(j) += factor * source_row(j);
+                                          });
+      }
     }
 
     
@@ -1854,33 +1950,42 @@ namespace ngsbem
           }
       }
 
-      void LocalizeExpansion(bool allow_refine)
+      bool RecordLocalizeLevel(int target_level, bool allow_refine,
+                               Array<RecordingRR> & recording,
+                               Array<Node*> & nodes_to_clear)
       {
-        if (allow_refine)
-          if (mp.Order() > 30 && !childs[0])
-            CreateChilds(allow_refine);
-
-        if (childs[0])
+        if (level != target_level)
           {
-            if (total_targets < 1000)
-              {
-                for (int nr = 0; nr < 8; nr++)
-                  {
-                    if (L2Norm(mp.SH().Coefs()) > 0)
-                      mp.TransformAdd (childs[nr]->mp, childs[nr]->center-center);
-                    childs[nr]->LocalizeExpansion(allow_refine);
-                  }
-              }
-            else
-              ParallelFor(8, [&] (int nr)
-              {
-                if (L2Norm(mp.SH().Coefs()) > 0)
-                  mp.TransformAdd (childs[nr]->mp, childs[nr]->center-center);
-                childs[nr]->LocalizeExpansion(allow_refine);
-              });
-            mp = SphericalExpansion<Regular,elem_type,T_Kappa>(-1, mp.Kappa(), 1.);
-            //mp.SH().Coefs()=0.0;
+            bool found = false;
+            if (childs[0])
+              for (auto & child : childs)
+                found |= child->RecordLocalizeLevel(target_level, allow_refine,
+                                                    recording, nodes_to_clear);
+            return found;
           }
+
+        if (allow_refine && mp.Order() > 30 && !childs[0])
+          CreateChilds(allow_refine);
+
+        if (!childs[0])
+          return true;
+
+        bool nonzero = false;
+        if (mp.Order() >= 0)
+          nonzero = L2Norm(mp.SH().Coefs()) > 0;
+
+        if (nonzero)
+          for (int nr = 0; nr < 8; nr++)
+            if (childs[nr]->mp.Order() >= 0)
+              recording += RecordingRR(&mp, &childs[nr]->mp, childs[nr]->center-center);
+
+        nodes_to_clear.Append(this);
+        return true;
+      }
+
+      void ClearLocalExpansion()
+      {
+        mp = SphericalExpansion<Regular,elem_type,T_Kappa>(-1, mp.Kappa(), 1.);
       }
       
       elem_type Evaluate (Vec<3> p) const
@@ -2099,6 +2204,62 @@ namespace ngsbem
 
     };
 
+    void ProcessLocalizeRecording(Array<RecordingRR> & recording)
+    {
+      if (recording.Size() == 0)
+        return;
+
+      QuickSort(recording, [] (auto & a, auto & b)
+      {
+        return a.theta < b.theta;
+      });
+
+      double len = recording[0].len;
+      double current_theta = -1e100;
+      Array<RecordingRR*> current_batch;
+      Array<Array<RecordingRR*>> batch_group;
+      Array<double> group_thetas;
+      for (auto & record : recording)
+        {
+          bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
+          if (theta_changed && current_batch.Size() > 0) {
+            batch_group.Append(current_batch);
+            group_thetas.Append(current_theta);
+            current_batch.SetSize(0);
+          }
+
+          current_theta = record.theta;
+          current_batch.Append(&record);
+        }
+
+      if (current_batch.Size() > 0) {
+        batch_group.Append(current_batch);
+        group_thetas.Append(current_theta);
+      }
+
+      ParallelFor(batch_group.Size(), [&](int i) {
+        ProcessBatchRR(batch_group[i], len, group_thetas[i]);
+      }, TasksPerThread(4));
+    }
+
+    void LocalizeExpansionBatched(bool allow_refine)
+    {
+      for (int target_level = 0; ; target_level++)
+        {
+          Array<RecordingRR> recording;
+          Array<Node*> nodes_to_clear;
+          bool level_exists = root.RecordLocalizeLevel(target_level, allow_refine,
+                                                       recording, nodes_to_clear);
+          if (!level_exists)
+            break;
+
+          ProcessLocalizeRecording(recording);
+
+          for (auto node : nodes_to_clear)
+            node->ClearLocalExpansion();
+        }
+    }
+
     FMM_Parameters fmm_params;
     Node root;
     shared_ptr<SingularMLExpansion<elem_type,T_Kappa>> singmp;
@@ -2131,7 +2292,7 @@ namespace ngsbem
       
       {
         static Timer t("mptool expand regular MLMP"); RegionTimer rg(t);                  
-        root.LocalizeExpansion(true);
+        LocalizeExpansionBatched(true);
         // cout << "norm after local expansion: " << root.Norm() << endl;        
       }
     }
@@ -2254,7 +2415,7 @@ namespace ngsbem
       // PrintStatistics(cout);
       
       static Timer tloc("mptool regular localize expansion"); RegionTimer rloc(tloc);
-      root.LocalizeExpansion(!onlytargets);
+      LocalizeExpansionBatched(!onlytargets);
 
 
       // cout << "R-R conversion done" << endl;
