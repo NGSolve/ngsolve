@@ -633,9 +633,12 @@ namespace ngsbem
         ProcessVectorizedBatchSS<192, vec_length>(batch, len, theta);
       }
       else {
-        // Split large batches
-        ProcessBatchSS(batch.Range(0, 192 / vec_length), len, theta);
-        ProcessBatchSS(batch.Range(192 / vec_length, batch_size), len, theta);
+        size_t chunksize = 192/vec_length;
+        size_t num = (batch.Size()+chunksize-1) / chunksize;
+        ParallelFor (num, [&](int i)
+        {
+          ProcessBatchSS(batch.Range(i*chunksize, min((i+1)*chunksize, batch.Size())), len, theta);
+        }, num);
       }
     }
 
