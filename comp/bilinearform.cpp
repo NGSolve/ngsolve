@@ -1539,7 +1539,7 @@ namespace ngcomp
                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
                     
                     FlatTensor<3> proxyvalues(lh, ir.Size(), dimx, dimy);
-                    FlatMatrix<> val(1, ir.Size(), lh);
+                    FlatMatrix<> val(ir.Size(), 1, lh);
 
                     int k1 = 0;
                     for (auto proxy1 : trialproxies)
@@ -1753,13 +1753,13 @@ namespace ngcomp
 
   void BilinearForm :: ReAssemble (LocalHeap & lh, bool reallocate)
   {
-    if (nonlinear_matrix_free_bdb)
+    if (nonlinear_matrix_free_bdb || matrix_free_bdb)
       {
-        AssembleBDB (lh, false);
+        AssembleBDB (lh, !nonlinear_matrix_free_bdb);
         return;
       }
 
-    if (nonassemble || matrix_free_bdb)
+    if (nonassemble)
       {
         Assemble(lh);
         return;
