@@ -693,6 +693,8 @@ namespace ngla
                                   Table<int> acol_dnums, Table<int> arow_dnums)
   : h(ah), w(aw), matrix(amatrix), col_dnums(std::move(acol_dnums)), row_dnums(std::move(arow_dnums))
   {
+    static Timer t("ConstantEBE ctor"); RegionTimer r(t);
+    
     is_complex = std::is_same<SCAL, Complex>();
     
     // checking zero entries:

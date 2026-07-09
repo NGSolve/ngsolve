@@ -129,8 +129,11 @@ void SparseFactorizationInterface::Update() {
       is_symmetric = true;
     }
 
-    if (map_inner_dofs)
-      p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat);
+    if (map_inner_dofs) {
+      auto cached = dynamic_pointer_cast<SparseMatrixTM<Complex>>(
+          const_pointer_cast<BaseSparseMatrix>(inner_mat));
+      p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat, cached);
+    }
 
     inner_mat = p_sparse_mat;
     p_mat = dynamic_pointer_cast<const MatrixGraph>(p_sparse_mat);
@@ -149,8 +152,11 @@ void SparseFactorizationInterface::Update() {
       is_symmetric = true;
     }
 
-    if (map_inner_dofs)
-      p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat);
+    if (map_inner_dofs) {
+      auto cached = dynamic_pointer_cast<SparseMatrixTM<double>>(
+          const_pointer_cast<BaseSparseMatrix>(inner_mat));
+      p_sparse_mat = map_inner_dofs.ProjectMatrix(p_sparse_mat, cached);
+    }
 
     inner_mat = p_sparse_mat;
 
@@ -207,6 +213,89 @@ void SparseFactorizationInterface::MultAdd(Complex s, const BaseVector &x,
     map_inner_dofs.EmbedAdd(y.FV<Complex>(), inner_solution->FV<Complex>(), s);
   else
     y.FV<Complex>() += s * inner_solution->FV<Complex>();
+}
+
+void SparseFactorizationInterface::MultTransAdd(double s, const BaseVector &x,
+                                                BaseVector &y) const {
+  if (is_complex)
+    return MultTransAdd(Complex(s), x, y);
+
+  if (is_symmetric.IsTrue())
+    return MultAdd(s, x, y);
+
+  if (map_inner_dofs)
+    map_inner_dofs.Project(inner_rhs->FV<double>(), x.FV<double>());
+  else
+    inner_rhs->FV<double>() = x.FV<double>();
+
+  SolveTrans(*inner_rhs, *inner_solution);
+
+  if (map_inner_dofs)
+    map_inner_dofs.EmbedAdd(y.FV<double>(), inner_solution->FV<double>(), s);
+  else
+    y.FV<double>() += s * inner_solution->FV<double>();
+}
+
+void SparseFactorizationInterface::MultTransAdd(Complex s, const BaseVector &x,
+                                                BaseVector &y) const {
+  if (is_symmetric.IsTrue())
+    return MultAdd(s, x, y);
+
+  if (map_inner_dofs)
+    map_inner_dofs.Project(inner_rhs->FV<Complex>(), x.FV<Complex>());
+  else
+    inner_rhs->FV<Complex>() = x.FV<Complex>();
+
+  SolveTrans(*inner_rhs, *inner_solution);
+
+  if (map_inner_dofs)
+    map_inner_dofs.EmbedAdd(y.FV<Complex>(), inner_solution->FV<Complex>(), s);
+  else
+    y.FV<Complex>() += s * inner_solution->FV<Complex>();
+}
+
+void SparseFactorizationInterface::MultConjTransAdd(Complex s,
+                                                    const BaseVector &x,
+                                                    BaseVector &y) const {
+  if (!is_complex)
+    return MultTransAdd(s.real(), x, y);
+
+  if (map_inner_dofs)
+    map_inner_dofs.Project(inner_rhs->FV<Complex>(), x.FV<Complex>());
+  else
+    inner_rhs->FV<Complex>() = x.FV<Complex>();
+
+  SolveConjTrans(*inner_rhs, *inner_solution);
+
+  if (map_inner_dofs)
+    map_inner_dofs.EmbedAdd(y.FV<Complex>(), inner_solution->FV<Complex>(), s);
+  else
+    y.FV<Complex>() += s * inner_solution->FV<Complex>();
+}
+
+void SparseFactorizationInterface::SolveTrans(const BaseVector &rhs,
+                                              BaseVector &solution) const {
+  if (is_symmetric.IsTrue()) {
+    Solve(rhs, solution);
+    return;
+  }
+  throw Exception(
+      string("SparseFactorizationInterface: transposed solve (SolveTrans) not "
+             "implemented for (maybe) non-symmetric direct solver, type=") +
+      typeid(*this).name());
+}
+
+void SparseFactorizationInterface::SolveConjTrans(const BaseVector &rhs,
+                                                  BaseVector &solution) const {
+  if (!is_complex) {
+    SolveTrans(rhs, solution);
+    return;
+  }
+
+  auto tmp = rhs.CreateVector();
+  tmp.FV<Complex>() = Conj(rhs.FV<Complex>());
+  SolveTrans(*tmp, solution);
+  solution.FV<Complex>() = Conj(solution.FV<Complex>());
 }
 
 } // namespace ngla

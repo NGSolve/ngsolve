@@ -1381,7 +1381,8 @@ namespace ngcomp
   void GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<> result) const
   {
-    LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval 2");
+    auto & lh2 = TLHeap();
+    HeapReset hr(lh2);
     static Timer timer ("GFCoeffFunc::Eval-scal", NoTracing, NoTiming);
     RegionTimer reg (timer);
 
@@ -1438,7 +1439,8 @@ namespace ngcomp
   void GridFunctionCoefficientFunction :: 
   Evaluate (const BaseMappedIntegrationPoint & ip, FlatVector<Complex> result) const
   {
-    LocalHeapMem<100000> lh2 ("GridFunctionCoefficientFunction, Eval complex");
+    auto & lh2 = TLHeap();
+    HeapReset hr(lh2);
     // static Timer timer ("GFCoeffFunc::Eval-scal", NoTracing, NoTiming);
     // RegionTimer reg (timer);
 
@@ -1513,8 +1515,8 @@ namespace ngcomp
       }
 
     
-    
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3a");
+    auto & lh2 = TLHeap();
+    HeapReset hr(lh2);
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
     // RegionTimer reg (timer);
     const ElementTransformation & trafo = ir.GetTransformation();
@@ -1535,6 +1537,7 @@ namespace ngcomp
         values = 0.0; 
         return;
       }
+
 
     const FiniteElement & fel = fes->GetFE (ei, lh2);
     int dim = fes->GetDimension();
@@ -1586,7 +1589,8 @@ namespace ngcomp
           }
       }
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3b");
+    auto & lh2 = TLHeap();
+    HeapReset hr(lh2);
     // static Timer timer ("GFCoeffFunc::Eval-vec", NoTracing);
     // RegionTimer reg (timer);
 
@@ -1673,7 +1677,8 @@ namespace ngcomp
     
 
     
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3c");
+    auto & lh2 = TLHeap();
+    HeapReset hr(lh2);
     // static Timer timer ("GFCoeffFunc::Eval-vec", NoTracing);
     // RegionTimer reg (timer);
     auto values = bvalues.AddSize(Dimension(), ir.Size());
@@ -1750,7 +1755,8 @@ namespace ngcomp
   Evaluate (const SIMD_BaseMappedIntegrationRule & ir,
             BareSliceMatrix<SIMD<Complex>> bvalues) const
   {
-    LocalHeapMem<100000> lh2("GridFunctionCoefficientFunction - Evaluate 3d");
+    auto & lh2 = TLHeap();
+    HeapReset hr(lh2);
 
     auto values = bvalues.AddSize(Dimension(), ir.Size());
 
@@ -3318,5 +3324,4 @@ namespace ngcomp
   RegisterClassForArchive<S_GridFunction<double>, GridFunction> gf_double;
   RegisterClassForArchive<S_GridFunction<Complex>, GridFunction> gf_complex;
 }
-
 

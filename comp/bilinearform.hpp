@@ -931,10 +931,17 @@ namespace ngcomp
   {
     Array<shared_ptr<CoefficientFunction>> coefs;
     Array<ProxyFunction*> trialproxies;
-    
+    Array<CoefficientFunction*> input_coefs;
+    Array<int> input_coef_offset;
+    int dim_coef = 0;
+    Matrix<double> coef_values;
+    bool needs_element_index = false;
+    Array<int> element_index;
+
     typedef void (*lib_function)(size_t nip, double * input, size_t dist_input,
                                  double * output, size_t dist_output,
-                                 size_t dist, double * points, double * normals);
+                                 size_t dist, double * points, double * normals,
+                                 double * coef_input, int * elidx);
 
     unique_ptr<SharedLibrary> library;
     lib_function compiled_function = nullptr;
@@ -966,7 +973,17 @@ namespace ngcomp
 
     FlatMatrix<double> GetPoints() const { return points; }
     FlatMatrix<double> GetNormals() const { return normals; }
-  };  
+
+    const Array<CoefficientFunction*> & GetInputCoefs() const { return input_coefs; }
+    const Array<int> & GetInputCoefOffset() const { return input_coef_offset; }
+    int GetDimCoef() const { return dim_coef; }
+    void SetCoefValues (Matrix<double> acoef_values) { coef_values = std::move(acoef_values); }
+    FlatMatrix<double> GetCoefValues() const { return coef_values; }
+
+    bool NeedsElementIndex() const { return needs_element_index; }
+    void SetElementIndex (Array<int> aelement_index) { element_index = std::move(aelement_index); }
+    FlatArray<int> GetElementIndex() const { return element_index; }
+  };
   
 
   

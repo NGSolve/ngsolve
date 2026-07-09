@@ -410,17 +410,19 @@ def MakeStructured3DMesh(hexes=True, nx=10, ny=None, nz=None, secondorder=False,
                         netmesh.Add(Element3D(1, elpids))
 
     def AddSurfEls(p1, dxi, nxi, deta, neta, facenr):
-        def add_seg(i, j, os):
+        def add_seg(i, j, os, eidx):
             base = p1 + i*dxi + j*deta
             pnum = [base, base+os]
             elpids = [pids[p] for p in pnum]
-            netmesh.Add(Element1D(elpids, index=facenr))
+            netmesh.Add(Element1D(elpids, index=eidx))
         for i in range(nxi):
+            eidx = netmesh.Add(EdgeDescriptor())
             for j in [0,neta]:
-                add_seg(i,j,dxi)
+                add_seg(i,j,dxi, eidx)
         for i in [0,nxi]:
+            eidx = netmesh.Add(EdgeDescriptor())     
             for j in range(neta):
-                add_seg(i,j,deta)
+                add_seg(i,j,deta, eidx)
         for i in range(nxi):
             for j in range(neta):
                 base = p1 + i*dxi+j*deta
@@ -705,6 +707,8 @@ def MakeStructuredSurfaceMesh(quads=True, nx=10, ny=10, mapping = None, secondor
                 mesh.Add(Element2D(1,elpids1)) 
                 mesh.Add(Element2D(1,elpids2))                          
 
+    for i in range(4):
+        mesh.Add(EdgeDescriptor())
     for i in range(nx):
         mesh.Add(Element1D([pids[i], pids[i+1]], index=1))
     for i in range(ny):

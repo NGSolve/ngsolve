@@ -1114,9 +1114,13 @@ namespace ngcomp
     stringstream s;
     s <<
       "#include <cstddef>\n"
+      "#include <cmath>\n"
+      "using std::sqrt;\n"
+      "static inline double L2Norm2 (double v) { return v*v; }\n"
       "extern \"C\" void ApplyIPFunction (size_t nip, double * input, size_t dist_input,\n"
       "                      double * output, size_t dist_output,\n"
-      "                      size_t dist, double * pnts, double * nvs) {\n";
+      "                      size_t dist, double * pnts, double * nvs,\n"
+      "                      double * coef_input, int * elidx) {\n";
 
     int base_output = 0;
     for (auto cf : coefs)
@@ -1128,16 +1132,45 @@ namespace ngcomp
         // cout << code.header << endl;
         
         for (auto step : Range(compiledcf->Steps()))
-          if (auto proxycf = dynamic_cast<ProxyFunction*> (compiledcf->Steps()[step]))
-            if (auto pos = trialproxies.Pos(proxycf); pos != trialproxies.ILLEGAL_POSITION)
+          {
+            auto stepcf = compiledcf->Steps()[step];
+
+            bool uses_values =
+              code.body.find("values_" + ToString(step) + "(") != string::npos;
+
+            if (auto proxycf = dynamic_cast<ProxyFunction*> (stepcf))
               {
-                s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
-                  " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
-                s << "bool constexpr has_values_" << step << " = true;\n" << endl;
-                // Declare dummy com_ variables to avoid compile errors (won't be used since has_values = true)
-                for(auto i : Range(proxycf->Dimension()))
-                  s << Var("comp", step,i, proxycf->Dimensions()).Declare("double", 0.0);
+                auto pos = trialproxies.Pos(proxycf);
+                if (pos != trialproxies.ILLEGAL_POSITION)
+                  {
+                    s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
+                      " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
+                    s << "bool constexpr has_values_" << step << " = true;\n" << endl;
+                    // Declare dummy com_ variables to avoid compile errors (won't be used since has_values = true)
+                    for(auto i : Range(proxycf->Dimension()))
+                      s << Var("comp", step,i, proxycf->Dimensions()).Declare("double", 0.0);
+                  }
               }
+            else if (uses_values)
+              {
+                // a coefficient function (e.g. a GridFunction) that has to be
+                // evaluated at the integration points.
+                auto pos = input_coefs.Pos(stepcf);
+                int off;
+                if (pos == input_coefs.ILLEGAL_POSITION)
+                  {
+                    off = dim_coef;
+                    input_coefs.Append (stepcf);
+                    input_coef_offset.Append (off);
+                    dim_coef += stepcf->Dimension();
+                  }
+                else
+                  off = input_coef_offset[pos];
+
+                s << "auto values_" << step << " = [dist,coef_input](size_t i, int comp)\n"
+                  " { return coef_input[i + (comp+" << off << ")*dist]; };\n" << endl;
+              }
+          }
 
         s << "[[maybe_unused]] auto points = [dist,pnts](size_t i, int comp)\n"
           " { return pnts[i+comp*dist]; };\n";
@@ -1145,6 +1178,11 @@ namespace ngcomp
           " { return nvs[i+comp*dist]; };\n";
         
         s << "for (size_t i = 0; i < nip; i++) {\n";
+        if (code.body.find("domain_index") != string::npos)
+          {
+            needs_element_index = true;
+            s << "[[maybe_unused]] int domain_index = elidx[i];\n";
+          }
         s << code.body << endl;
         
           // missing: last step nr
@@ -1162,24 +1200,7 @@ namespace ngcomp
 
     try
       {
-        auto dir = CreateTempDir();
-        auto prefix = dir.append("newcode");
-        auto src_file = filesystem::path(prefix).concat(".cpp");
-        auto obj_file = filesystem::path(prefix).concat(".o");
-        auto lib_file = filesystem::path(prefix).concat(".so");
-        auto src_filename = src_file.string();
-        auto obj_filename = obj_file.string();
-        auto lib_filename = lib_file.string();
-
-        ofstream codefile(src_file);
-        codefile << s.str();
-        codefile.close();
-
-        int err = system( ("ngscxx -c "+src_filename+" -o "+obj_filename).c_str() );
-        if (err) throw Exception ("problem calling compiler");
-        err = system( ("ngsld -shared "+obj_filename+" -lngstd -lngbla -lngfem -lngla -lngcomp -lngcore -o "+lib_filename).c_str() );
-        if (err) throw Exception ("problem calling linker");
-        library = make_unique<SharedLibrary>(lib_file, dir);
+        library = CompileCode ( { s.str() }, {} );
         compiled_function = library->GetSymbol<lib_function> ("ApplyIPFunction");
       }
     catch (const Exception & e)
@@ -1204,19 +1225,37 @@ namespace ngcomp
     static Timer ttransx("ApplyIntegrationPoints transx");
     static Timer ttransy("ApplyIntegrationPoints transy");
 
+    if (dim_coef > 0 && coef_values.Height() != size_t(dim_coef))
+      throw Exception ("ApplyIntegrationPoints::Mult - coefficient values not set "
+                       "(SetCoefValues has to be called for integrands with non-proxy "
+                       "coefficient functions)");
+    if (needs_element_index && element_index.Size() != nip)
+      throw Exception ("ApplyIntegrationPoints::Mult - element indices not set "
+                       "(SetElementIndex has to be called for integrands with "
+                       "domain-wise coefficient functions)");
+
     if (compiled_function)
       {
         FlatMatrix<double> mx = x.FV<double>().AsMatrix(dimx, nip);
         FlatMatrix<double> my = y.FV<double>().AsMatrix(dimy, nip);
-        ParallelForRange(nip, [this,mx, my, pts=FlatMatrix<>(points), nvs=FlatMatrix<>(normals)] (IntRange r)
+        ParallelForRange(nip, [this,mx, my, pts=FlatMatrix<>(points), nvs=FlatMatrix<>(normals),
+                               cvals=FlatMatrix<>(coef_values)] (IntRange r)
                          {
                            this->compiled_function(r.Size(),
                                                    mx.Cols(r).Data(), mx.Dist(),
                                                    my.Cols(r).Data(), my.Dist(),
-                                                   nip, pts.Cols(r).Data(), nvs.Cols(r).Data());
+                                                   nip, pts.Cols(r).Data(), nvs.Cols(r).Data(),
+                                                   cvals.Height() ? cvals.Cols(r).Data() : nullptr,
+                                                   element_index.Size() ? element_index.Data()+r.First() : nullptr);
                          });
         return;
       }
+
+    if (needs_element_index)
+      throw Exception ("ApplyIntegrationPoints::Mult - integrand contains a "
+                       "domain-wise coefficient function, which is only supported "
+                       "by the compiled (JIT) path; the JIT compilation apparently "
+                       "failed.");
 
     try
       {
@@ -1245,7 +1284,7 @@ namespace ngcomp
              
              // tmir.Stop();
              
-             ProxyUserData ud(trialproxies.Size(), 0, lh);
+             ProxyUserData ud(trialproxies.Size(), input_coefs.Size(), lh);
              ScalarFE<ET_TRIG,1> dummyfe2d;
              ScalarFE<ET_TET,1> dummyfe3d;
              if (points.Height()==2)
@@ -1273,8 +1312,20 @@ namespace ngcomp
                  
                  starti = nexti;
                }
-             
-             
+
+             for (auto ci : Range(input_coefs))
+               {
+                 auto icf = input_coefs[ci];
+                 int off = input_coef_offset[ci];
+                 int d = icf->Dimension();
+                 ud.AssignMemory (icf, r2.Size(), d, lh, false);
+                 SliceMatrix<double> (d, r2.Size(), SIMD<double>::Size()*simdmir.Size(),
+                                      (double*)(ud.GetAMemory (icf)).Data()) =
+                   coef_values.Rows(off, off+d).Cols(r2);
+                 ud.SetComputed (icf, true);
+               }
+
+
              // teval.Start();
              FlatMatrix<SIMD<double>> simdres(dimy, simdmir.Size(), lh);
              starti = 0;
@@ -1311,8 +1362,18 @@ namespace ngcomp
     auto fesy = GetTestSpace();
     auto ma = GetMeshAccess();
 
+    
+    static Timer tclass("assmble classify");
+    static Timer tgroup("assmble-group");    
+    static Timer tgroup2("assmble-group 2");
+    static Timer tgroupD("assmble-group D");
+    static Timer tgroupT("assmble-group T");
+    static Timer tgroupTi("assmble-group Ti");
+    static Timer tgroupTi2("assmble-group Ti2");        
+    
 
     Array<short> classnr(ma->GetNE(VOL));
+    tclass.Start();
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
@@ -1321,6 +1382,7 @@ namespace ngcomp
            (el.GetType(),
             [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
        });
+    tclass.Stop();
         
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
@@ -1355,17 +1417,20 @@ namespace ngcomp
         for (auto elclass_inds : table)
           {
             if (elclass_inds.Size() == 0) continue;
-        
+            
+            RegionTimer rgroup(tgroup);
+            
             ElementId ei(VOL,elclass_inds[0]);
             auto & felx = GetTrialSpace()->GetFE (ei, lh);
             auto & fely = GetTestSpace()->GetFE (ei, lh);
         
             MixedFiniteElement fel(felx, fely);
+            int bonus_intorder = bfi->GetBonusIntegrationOrder();
             // const IntegrationRule & ir = bfi->GetIntegrationRule(felx.ElementType(), felx.Order()+fely.Order());
             IntegrationRule ir;
             if (bfi->ElementVB() == VOL)
               {
-                const IntegrationRule & volir = bfi->GetIntegrationRule(felx.ElementType(), felx.Order()+fely.Order());
+                const IntegrationRule & volir = bfi->GetIntegrationRule(felx.ElementType(), felx.Order()+fely.Order()+bonus_intorder);
                 for (auto ip : volir)
                   ir += ip;
               }
@@ -1380,7 +1445,7 @@ namespace ngcomp
                   {
                     HeapReset hr(lh);
                     ngfem::ELEMENT_TYPE etfacet = transform.FacetType (k);
-                    IntegrationRule ir_facet(etfacet, felx.Order()+fely.Order() /* +bonus_intorder */);
+                    IntegrationRule ir_facet(etfacet, felx.Order()+fely.Order()+bonus_intorder);
                     IntegrationRule & ir_facet_vol = transform(k, ir_facet, lh);
                     for (auto ip : ir_facet_vol)
                       ir += ip;
@@ -1414,7 +1479,7 @@ namespace ngcomp
             Matrix bmatx = bmatx_;
             Matrix bmaty = bmaty_;
 
-            if (!linear)  // transpose intpnt <--> comp
+            // if (!linear)  // transpose intpnt <--> comp
               {
                 for (int i : Range(ir.Size()))
                   for (int j : Range(dimxref))
@@ -1424,13 +1489,32 @@ namespace ngcomp
                     bmaty.Row(j*ir.Size()+i) = bmaty_.Row(i*dimyref+j);
               }
             
-            
+
+              static Timer tebe("setup ebe mats");
+              static Timer tfillidx("fill idx");
+
             Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
             Table<DofId> xdofsout(elclass_inds.Size(), bmatx.Height());
 
             Table<DofId> ydofsin(elclass_inds.Size(), fely.GetNDof());
             Table<DofId> ydofsout(elclass_inds.Size(), bmaty.Height());
 
+            tebe.Start();            
+
+            ParallelForRange (elclass_inds.Range(), [&] (IntRange r)
+            {
+              Array<DofId> dnumsx, dnumsy;
+              for (auto i : r)
+                {
+                  ElementId ei(VOL, elclass_inds[i]);
+                  fesx->GetDofNrs(ei, dnumsx);
+                  fesy->GetDofNrs(ei, dnumsy);
+                  xdofsin[i] = dnumsx;
+                  ydofsin[i] = dnumsy;
+                }
+            });
+
+            /*
             Array<DofId> dnumsx, dnumsy;
             for (auto i : Range(elclass_inds))
               {
@@ -1440,42 +1524,23 @@ namespace ngcomp
                 xdofsin[i] = dnumsx;
                 ydofsin[i] = dnumsy;
               }
+            */
+            
+            tebe.Stop();
 
+            
             int nel = elclass_inds.Size();
             size_t nip = ir.Size()*nel;
             
-            auto xa = xdofsout.AsArray();
-            auto ya = ydofsout.AsArray();
+            tfillidx.Start();
+            for (size_t i = 0; i < nel; i++)
+              for (size_t k = 0; k < dimxref*ir.Size(); k++)
+                xdofsout[i][k] = i+k*nel;
             
-            if (linear)
-              {
-                for (size_t i = 0; i < xa.Size(); i++)
-                  xa[i] = i;
-                for (size_t i = 0; i < ya.Size(); i++)
-                  ya[i] = i;
-              }
-            else
-              {
-                /*
-                for (size_t i = 0; i < nip; i++)
-                  for (size_t j = 0; j < dimxref; j++)
-                    xa[i*dimxref+j] = j*nip+i;
-                */
-
-                for (size_t i = 0; i < nel; i++)
-                  for (size_t k = 0; k < dimxref*ir.Size(); k++)
-                    xdofsout[i][k] = i+k*nel;
-                
-                /*
-                for (size_t i = 0; i < nip; i++)
-                  for (size_t j = 0; j < dimyref; j++)
-                    ya[i*dimyref+j] = j*nip+i;
-                */
-
-                for (size_t i = 0; i < nel; i++)
-                  for (size_t k = 0; k < dimyref*ir.Size(); k++)
-                    ydofsout[i][k] = i+k*nel;
-              }
+            for (size_t i = 0; i < nel; i++)
+              for (size_t k = 0; k < dimyref*ir.Size(); k++)
+                ydofsout[i][k] = i+k*nel;
+            tfillidx.Stop();
             
             auto bx = make_shared<ConstantElementByElementMatrix<>>
               (nip*dimxref, fesx->GetNDof(),
@@ -1485,13 +1550,18 @@ namespace ngcomp
               (nip*dimyref, fesy->GetNDof(),
                bmaty, std::move(ydofsout), std::move(ydofsin));
 
-
             shared_ptr<BaseMatrix> mat;
             
             if (linear)
               {
-                Tensor<3> diag(elclass_inds.Size()*ir.Size(), dimyref, dimxref);
-                for (auto i : Range(elclass_inds))
+                // RegionTimer rgroup2(tgroup2);
+                
+                Tensor<3> diag(dimyref, dimxref, elclass_inds.Size()*ir.Size());
+                
+                // for (auto i : Range(elclass_inds))
+                ParallelForRange (Range(elclass_inds), [&] (IntRange r)  {
+                  auto &lh = TLHeap();
+                  for (auto i : r)
                   {
                     HeapReset hr(lh);
                     ElementId ei(VOL, elclass_inds[i]);
@@ -1501,23 +1571,95 @@ namespace ngcomp
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
                     FlatMatrix<> transx(dimx, dimxref, lh);
                     FlatMatrix<> transy(dimy, dimyref, lh);
-                    Matrix prod(dimxref, dimyref);
+                    FlatMatrix<> prod(dimyref, dimxref, lh);
+
+                    shared_ptr<CoefficientFunction> cf = bfi -> GetCoefficientFunction();
+                    ProxyUserData ud(trialproxies.Size(), bfi->GridFunctionCoefficients().Size(), lh);
+                    for (CoefficientFunction * cf : bfi->GridFunctionCoefficients())
+                      ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh,
+                                       cf->IsComplex());
+                    
+                    const_cast<ElementTransformation&>(trafo).userdata = &ud;
+                    
+                    FlatTensor<3> proxyvalues(lh, ir.Size(), dimy, dimx);
+                    FlatMatrix<> val(ir.Size(), 1, lh);
+
+                    {
+                      // RegionTimer r(tgroupD);
+                    int k1 = 0;
+                    for (auto proxy1 : trialproxies)
+                      {
+                        int l1 = 0;
+                        for (auto proxy2 : testproxies)
+                          {
+                            for (int k = 0; k < proxy1->Dimension(); k++)
+                              for (int l = 0; l < proxy2->Dimension(); l++)
+                                {
+                                  ud.trialfunction = proxy1;
+                                  ud.trial_comp = k;
+                                  ud.testfunction = proxy2;
+                                  ud.test_comp = l;
+                                  
+                                  cf -> Evaluate (mir, val);
+                                  proxyvalues(STAR,l1+l,k1+k) = val.Col(0);
+                                }
+                            l1 += proxy2->Dimension();
+                          }
+                        k1 += proxy1->Dimension();
+                      }
+                    }
+
+                    // RegionTimer rT(tgroupT);
+                    FlatMatrix prod1(dimy, transx.Width(), lh);
                     
                     for (int j = 0; j < ir.Size(); j++)
                       {
+                        /*
                         auto diffopx = trialproxies[0]->Evaluator();
                         auto diffopy = testproxies[0]->Evaluator();
-                        
                         diffopx->CalcTransformationMatrix(mir[j], transx, lh);
                         diffopy->CalcTransformationMatrix(mir[j], transy, lh);
+                        */
+                        transx = 0.0;
+                        transy = 0.0;
+
+                        int starti = 0, startiref = 0;
+                        {
+                          // RegionTimer rT(tgroupTi);                        
+                        for (auto proxy : trialproxies)
+                          {
+                            auto &diffop = proxy->Evaluator();
+                            int nexti = starti+diffop->Dim();
+                            int nextiref = startiref+diffop->DimRef();
+                            diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(startiref,nextiref), lh);
+                            starti = nexti;
+                            startiref = nextiref;
+                          }
+                        }
+
+                        starti = 0; startiref = 0;
+                        {
+                          // RegionTimer rT(tgroupTi2);                        
+                        for (auto proxy : testproxies)
+                          {
+                            auto &diffop = proxy->Evaluator();
+                            int nexti = starti+diffop->Dim();
+                            int nextiref = startiref+diffop->DimRef();
+                            diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(startiref,nextiref), lh);
+                            starti = nexti;
+                            startiref = nextiref;
+                          }
+                        }
+                        // prod = Trans(transy) * proxyvalues(j,STAR,STAR) * transx;
+                        prod1 = proxyvalues(j,STAR,STAR) * transx;
+                        prod = Trans(transy)*prod1;
                         
-                        prod = Trans(transy) * transx;
                         prod *= mir[j].GetWeight();
-                        diag(i*ir.Size()+j,STAR,STAR) = prod;
+                        diag(STAR,STAR,i+j*nel) = prod;
                       }
                   }
-                
-                auto diagmat = make_shared<BlockDiagonalMatrix<double>> (std::move(diag));
+                });
+                auto diagmat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
                 mat = TransposeOperator(by) * diagmat * bx;
               }
             else // linear
@@ -1526,19 +1668,24 @@ namespace ngcomp
                 Tensor<3> diagy(dimy, dimyref, nip);
                 Matrix<> points(ma->GetDimension(), nip);
                 Matrix<> normals(ma->GetDimension(), nip);
-                
-                for (auto i : Range(elclass_inds))
-                  {
-                    HeapReset hr(lh);
+
+                ParallelForRange
+                  (elclass_inds.Size(), [&] (IntRange myrange)
+                   {
+                     // LocalHeap llh(1000000, "assemble-BDB-D");
+                     auto &llh = TLHeap();
+                    for (auto i : myrange)
+                     {
+                    HeapReset hr(llh);
                     ElementId ei(VOL, elclass_inds[i]);
-                    auto & trafo = ma->GetTrafo(ei, lh);
-                    auto & mir = trafo(ir, lh);
+                    auto & trafo = ma->GetTrafo(ei, llh);
+                    auto & mir = trafo(ir, llh);
                     if (bfi->ElementVB() != VOL)
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
-                    
-                    FlatMatrix<> transx(dimx, dimxref, lh);
-                    FlatMatrix<> transy(dimy, dimyref, lh);
-                    
+
+                    FlatMatrix<> transx(dimx, dimxref, llh);
+                    FlatMatrix<> transy(dimy, dimyref, llh);
+
                     transx = 0.0;
                     transy = 0.0;
                     for (int j = 0; j < ir.Size(); j++)
@@ -1549,7 +1696,7 @@ namespace ngcomp
                             auto diffop = proxy->Evaluator();
                             int nexti = starti+diffop->Dim();
                             int nextiref = startiref+diffop->DimRef();
-                            diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(startiref,nextiref), lh);
+                            diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(startiref,nextiref), llh);
                             starti = nexti;
                             startiref = nextiref;
                           }
@@ -1558,8 +1705,8 @@ namespace ngcomp
                           {
                             auto diffop = proxy->Evaluator();
                             int nexti = starti+diffop->Dim();
-                            int nextiref = startiref+diffop->DimRef();                        
-                            diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(startiref,nextiref), lh);
+                            int nextiref = startiref+diffop->DimRef();
+                            diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(startiref,nextiref), llh);
                             starti = nexti;
                             startiref = nextiref;
                           }
@@ -1580,8 +1727,8 @@ namespace ngcomp
                         points.Col(i+j*nel) = mir.GetPoints().Row(j);   // untested
                         normals.Col(i+j*nel) = mir.GetNormals().Row(j); // untested
                       }
-                  }
-                
+                     }
+                   });
                 shared_ptr<CoefficientFunction> coef = bfi -> GetCoefficientFunction();
                 Array<shared_ptr<CoefficientFunction>> diffcfs;
                 for (auto proxy : testproxies)
@@ -1590,10 +1737,56 @@ namespace ngcomp
                     diffcfs += coef -> DiffJacobi(proxy, cache);                  
                   }
 
-                shared_ptr<BaseMatrix> ipop;
-                ipop = make_shared<ApplyIntegrationPoints> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
-                                                            dimx, dimy, nip);
-                
+                auto ipop = make_shared<ApplyIntegrationPoints> (std::move(diffcfs), trialproxies, std::move(points), std::move(normals),
+                                                                 dimx, dimy, nip);
+
+                auto & input_coefs = ipop->GetInputCoefs();
+                if (input_coefs.Size())
+                  {
+                    Matrix<double> coef_values(ipop->GetDimCoef(), nip);
+                    coef_values = 0.0;
+                    ParallelForRange
+                      (elclass_inds.Size(), [&] (IntRange myrange)
+                       {
+                         // LocalHeap llh(1000000, "assemble-BDB-coef");
+                        auto &llh = TLHeap();                        
+                        for (auto i : myrange)
+                         {
+                        HeapReset hr(llh);
+                        ElementId ei(VOL, elclass_inds[i]);
+                        auto & trafo = ma->GetTrafo(ei, llh);
+                        auto & mir = trafo(ir, llh);
+                        if (bfi->ElementVB() != VOL)
+                          mir.ComputeNormalsAndMeasure (fel.ElementType());
+
+                        int off = 0;
+                        for (auto icf : input_coefs)
+                          {
+                            int d = icf->Dimension();
+                            FlatMatrix<double> vals(ir.Size(), d, llh);
+                            icf->Evaluate (mir, vals);
+                            for (int j = 0; j < ir.Size(); j++)
+                              for (int c = 0; c < d; c++)
+                                coef_values(off+c, i+j*nel) = vals(j,c);
+                            off += d;
+                          }
+                         }
+                       });
+                    ipop->SetCoefValues (std::move(coef_values));
+                  }
+
+                if (ipop->NeedsElementIndex())
+                  {
+                    Array<int> elidx(nip);
+                    for (auto i : Range(elclass_inds))
+                      {
+                        int di = ma->GetElIndex (ElementId(VOL, elclass_inds[i]));
+                        for (int j = 0; j < ir.Size(); j++)
+                          elidx[i+j*nel] = di;
+                      }
+                    ipop->SetElementIndex (std::move(elidx));
+                  }
+
                 auto diagmatx = make_shared<BlockDiagonalMatrixSoA> (std::move(diagx));
                 auto diagmaty = make_shared<BlockDiagonalMatrixSoA> (std::move(diagy));
                 
@@ -1616,7 +1809,13 @@ namespace ngcomp
 
   void BilinearForm :: ReAssemble (LocalHeap & lh, bool reallocate)
   {
-    if (nonassemble || matrix_free_bdb)
+    if (nonlinear_matrix_free_bdb || matrix_free_bdb)
+      {
+        AssembleBDB (lh, !nonlinear_matrix_free_bdb);
+        return;
+      }
+
+    if (nonassemble)
       {
         Assemble(lh);
         return;

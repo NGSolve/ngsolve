@@ -1584,8 +1584,12 @@ public:
   {
     size_t dim = Dimension();
     size_t np = ir.Size();
-    STACK_ARRAY(double, hmem, np*dim);
-    FlatMatrix<> temp(np, dim, hmem);
+    // STACK_ARRAY(double, hmem, np*dim);
+    // FlatMatrix<> temp(np, dim, hmem);
+
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<> temp(np, dim, lh);
 
     c1->Evaluate (ir, result);
     c2->Evaluate (ir, temp);
@@ -1604,16 +1608,24 @@ public:
     size_t dim = Dimension();    
     if (!is_complex)
       {
-        STACK_ARRAY(double, hmem, ir.Size()*dim);
-        FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
+        // STACK_ARRAY(double, hmem, ir.Size()*dim);
+        // FlatMatrix<> temp(ir.Size(), dim, &hmem[0]);
+
+        auto & lh = TLHeap();
+        HeapReset hr(lh);
+        FlatMatrix<> temp(ir.Size(), dim, lh);
         Evaluate (ir, temp);
         result.AddSize(ir.Size(), dim) = temp;
         return;
       }
 
         
-    STACK_ARRAY(double, hmem, 2*ir.Size()*dim);
-    FlatMatrix<Complex> temp(ir.Size(), dim, reinterpret_cast<Complex*> (&hmem[0]));
+    // STACK_ARRAY(double, hmem, 2*ir.Size()*dim);
+    // FlatMatrix<Complex> temp(ir.Size(), dim, reinterpret_cast<Complex*> (&hmem[0]));
+
+    auto & lh = TLHeap();
+    HeapReset hr(lh);
+    FlatMatrix<Complex> temp(ir.Size(), dim, lh);
 
     c1->Evaluate (ir, result);
     c2->Evaluate (ir, temp);

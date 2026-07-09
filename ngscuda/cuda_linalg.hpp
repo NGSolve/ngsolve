@@ -114,7 +114,8 @@ namespace ngla
 
   public:
     DevConstantElementByElementMatrix (const T_ConstEBEMatrix & mat);
-    void Mult (const BaseVector & x, BaseVector & y) const override;    
+    ~DevConstantElementByElementMatrix ();
+    void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override;
 
@@ -133,6 +134,7 @@ namespace ngla
     DevTable<int> sparse, sparseT;
  public:
     DevBlockDiagonalMatrixSoA (const BlockDiagonalMatrixSoA & mat);
+    ~DevBlockDiagonalMatrixSoA ();
     void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
     void MultTrans (const BaseVector & x, BaseVector & y) const override;    
@@ -148,6 +150,14 @@ namespace ngla
   public:
     using EmbeddedMatrix::EmbeddedMatrix;
     AutoVector CreateColVector() const override { return make_unique<UnifiedVector>(Height()); }      
+  };
+
+  class DevEmbedding : public Embedding
+  {
+  public:
+    using Embedding::Embedding;
+    AutoVector CreateColVector() const override { return make_unique<UnifiedVector>(Height()); }
+    AutoVector CreateRowVector() const override { return make_unique<UnifiedVector>(Width()); }
   };
   
   class DevEmbeddedTransposeMatrix : public EmbeddedTransposeMatrix

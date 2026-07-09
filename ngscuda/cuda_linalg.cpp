@@ -145,6 +145,14 @@ namespace ngla
                                                                                     mat.GetMatrix()->CreateDeviceMatrix());
                                             });
     
+    BaseMatrix::RegisterDeviceMatrixCreator(typeid(Embedding),
+                                            [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                            {
+                                              auto & mat = dynamic_cast<const Embedding&>(bmat);
+                                              return make_shared<DevEmbedding>(mat.Height(), mat.GetRange(),
+                                                                               mat.IsComplex());
+                                            });
+
     BaseMatrix::RegisterDeviceMatrixCreator(typeid(EmbeddedTransposeMatrix),
                                             [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                             {
@@ -378,6 +386,12 @@ namespace ngla
 
     cudaMalloc(&dev_hx_buf, numblocks * devmat.Width()  * sizeof(double));
     cudaMalloc(&dev_hy_buf, numblocks * devmat.Height() * sizeof(double));
+  }
+
+  DevConstantElementByElementMatrix :: ~DevConstantElementByElementMatrix ()
+  {
+    cudaFree(dev_hx_buf);
+    cudaFree(dev_hy_buf);
   }
 
 
@@ -640,6 +654,11 @@ namespace ngla
     indices = nonzeroinds;
     indices_trans = nonzeroinds_trans;
 }
+
+  DevBlockDiagonalMatrixSoA :: ~DevBlockDiagonalMatrixSoA ()
+  {
+    cudaFree(dev_data);
+  }
 
   void DevBlockDiagonalMatrixSoA :: Mult (const BaseVector & x, BaseVector & y) const
   {

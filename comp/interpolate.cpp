@@ -183,7 +183,8 @@ namespace ngcomp
     void T_Evaluate_impl (const MIR & ir, BareSliceMatrix<T,ORD> values) const
     {
       // #ifdef FIRSTDRAFT
-      LocalHeapMem<2000000> lh("interpolate");
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
 
       // static Timer t("interpolate");
       // RegionTracer reg(TaskManager::GetThreadId(), t);    
@@ -555,6 +556,86 @@ namespace ngcomp
     }
 
 
+    void
+    CalcMatrix (const FiniteElement & inner_fel,
+		const SIMD_BaseMappedIntegrationRule & mir,
+		BareSliceMatrix<SIMD<double>> mat) const override
+    {
+      static Timer t1("interpolateDiffOp, CalcMat SIMD");
+      static Timer tm2("interpolateDiffOp, CalcMat SIMD m2");
+      static Timer t23("interpolateDiffOp, SIMD mult 23");
+      static Timer t23t("interpolateDiffOp, SIMD mult 23t");
+      RegionTracer reg(TaskManager::GetThreadId(), t1);
+
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+
+      const ElementTransformation & trafo = mir.GetTransformation();
+      ElementId ei = trafo.GetElementId();
+      auto & interpol_fel = fes->GetFE(ei, lh);
+
+      FlatMatrix<double> elmat(interpol_fel.GetNDof(), lh);
+      elmat = 0.0;
+      bool symmetric_so_far = false;
+
+      size_t nshape = inner_fel.GetNDof();
+      FlatMatrix<> m2m3(elmat.Height(), nshape, lh);
+
+      try
+        {
+          RegionTracer reg(TaskManager::GetThreadId(), tm2);
+          for (auto & sbfi : single_bli)
+            sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+
+          CalcInverse(elmat);
+
+          MixedFiniteElement mfe = (testfunction)
+            ? MixedFiniteElement (interpol_fel, inner_fel)
+            : MixedFiniteElement (inner_fel, interpol_fel);
+
+          if (testfunction)
+            {
+              FlatMatrix<> m3T(nshape, interpol_fel.GetNDof(), lh);
+              m3T = 0.0;
+              for (auto & sbfi : m3_bli)
+                sbfi->CalcElementMatrixAdd (mfe, trafo, m3T, symmetric_so_far, lh);
+              RegionTracer reg(TaskManager::GetThreadId(), t23t);
+              m2m3 = elmat * Trans(m3T);
+            }
+          else
+            {
+              FlatMatrix<> m3(interpol_fel.GetNDof(), nshape, lh);
+              m3 = 0.0;
+              for (auto & sbfi : m3_bli)
+                sbfi->CalcElementMatrixAdd (mfe, trafo, m3, symmetric_so_far, lh);
+              RegionTracer reg(TaskManager::GetThreadId(), t23);
+              m2m3 = elmat * m3;
+            }
+        }
+      catch (const ExceptionNOSIMD& e)
+        {
+          cout << IM(6) << e.What() << endl
+               << "switching to scalar evaluation" << endl;
+          for (auto & sbfi : single_bli)
+            sbfi->SetSimdEvaluate(false);
+          for (auto & sbfi : m3_bli)
+            sbfi->SetSimdEvaluate(false);
+          CalcMatrix (inner_fel, mir, mat);
+          return;
+        }
+
+      FlatVector<> coeffs(interpol_fel.GetNDof(), lh);
+      FlatMatrix<SIMD<double>> flux(Dim(), mir.Size(), lh);
+      for (size_t i = 0; i < nshape; i++)
+        {
+          coeffs = m2m3.Col(i);
+          diffop->Apply(interpol_fel, mir, coeffs, flux);
+          for (int d = 0; d < Dim(); d++)
+            mat.Row(i*Dim()+d).Range(0, mir.Size()) = flux.Row(d);
+        }
+    }
+
+
     
     
     void CalcLinearizedMatrix (const FiniteElement & inner_fel,
@@ -699,6 +780,66 @@ namespace ngcomp
 
       rhsi = elmat * rhs;
       diffop->Apply(interpol_fel, mir, rhsi, flux, lh);
+    }
+
+
+    void Apply (const FiniteElement & inner_fel,
+                const SIMD_BaseMappedIntegrationRule & mir,
+                BareSliceVector<double> x,
+                BareSliceMatrix<SIMD<double>> flux) const override
+    {
+      auto & lh = TLHeap();
+      HeapReset hr(lh);
+
+      const ElementTransformation & trafo = mir.GetTransformation();
+      ElementId ei = trafo.GetElementId();
+      auto & interpol_fel = fes->GetFE(ei, lh);
+
+      FlatMatrix<double> elmat(interpol_fel.GetNDof(), lh);
+      elmat = 0.0;
+      bool symmetric_so_far = false;
+
+      try
+        {
+          for (auto & sbfi : single_bli)
+            sbfi->CalcElementMatrixAdd (interpol_fel, trafo, elmat, symmetric_so_far, lh);
+        }
+      catch (const ExceptionNOSIMD& e)
+        {
+          cout << IM(6) << e.What() << endl
+               << "switching to scalar evaluation" << endl;
+          for (auto & sbfi : single_bli)
+            sbfi->SetSimdEvaluate(false);
+          for (auto & sbfi : m3_bli)
+            sbfi->SetSimdEvaluate(false);
+          Apply (inner_fel, mir, x, flux);
+          return;
+        }
+
+      CalcInverse(elmat);
+
+      auto save_ud = trafo.PushUserData();
+
+      MixedFiniteElement mfe = (testfunction)
+        ? MixedFiniteElement (interpol_fel, inner_fel)
+        : MixedFiniteElement (inner_fel, interpol_fel);
+
+      if (testfunction)
+        throw Exception("ApplyInterpolation only makes sense for trialfunctions");
+
+      FlatVector<> rhs(interpol_fel.GetNDof(), lh);
+      FlatVector<> rhsi(interpol_fel.GetNDof(), lh);
+      rhs = 0;
+      FlatVector<> fvx(inner_fel.GetNDof(), lh);
+      fvx = x;
+      for (auto & sbfi : m3_bli)
+        {
+          sbfi->ApplyElementMatrix (mfe, trafo, fvx, rhsi, nullptr, lh);
+          rhs += rhsi;
+        }
+
+      rhsi = elmat * rhs;
+      diffop->Apply(interpol_fel, mir, rhsi, flux);
     }
 
 
