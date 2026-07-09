@@ -1515,7 +1515,6 @@ namespace ngcomp
       }
 
     
-    
     auto & lh2 = TLHeap();
     HeapReset hr(lh2);
     // static Timer timer ("GFCoeffFunc::Eval-vec", 2);
@@ -1538,6 +1537,7 @@ namespace ngcomp
         values = 0.0; 
         return;
       }
+
 
     const FiniteElement & fel = fes->GetFE (ei, lh2);
     int dim = fes->GetDimension();

@@ -1362,6 +1362,13 @@ namespace ngcomp
     auto fesy = GetTestSpace();
     auto ma = GetMeshAccess();
 
+    static Timer tgroup("assmble-group");
+    static Timer tgroup2("assmble-group 2");
+    static Timer tgroupD("assmble-group D");
+    static Timer tgroupT("assmble-group T");
+    static Timer tgroupTi("assmble-group Ti");
+    static Timer tgroupTi2("assmble-group Ti2");        
+    
 
     Array<short> classnr(ma->GetNE(VOL));
     ma->IterateElements
@@ -1406,7 +1413,9 @@ namespace ngcomp
         for (auto elclass_inds : table)
           {
             if (elclass_inds.Size() == 0) continue;
-        
+            
+            RegionTimer rgroup(tgroup);
+            
             ElementId ei(VOL,elclass_inds[0]);
             auto & felx = GetTrialSpace()->GetFE (ei, lh);
             auto & fely = GetTestSpace()->GetFE (ei, lh);
@@ -1521,8 +1530,14 @@ namespace ngcomp
             
             if (linear)
               {
+                // RegionTimer rgroup2(tgroup2);
+                
                 Tensor<3> diag(dimyref, dimxref, elclass_inds.Size()*ir.Size());
-                for (auto i : Range(elclass_inds))
+                
+                // for (auto i : Range(elclass_inds))
+                ParallelForRange (Range(elclass_inds), [&] (IntRange r)  {
+                  auto &lh = TLHeap();
+                  for (auto i : r)
                   {
                     HeapReset hr(lh);
                     ElementId ei(VOL, elclass_inds[i]);
@@ -1532,15 +1547,21 @@ namespace ngcomp
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
                     FlatMatrix<> transx(dimx, dimxref, lh);
                     FlatMatrix<> transy(dimy, dimyref, lh);
-                    FlatMatrix<> prod(dimxref, dimyref, lh);
+                    FlatMatrix<> prod(dimyref, dimxref, lh);
 
                     shared_ptr<CoefficientFunction> cf = bfi -> GetCoefficientFunction();
-                    ProxyUserData ud(trialproxies.Size(), 0 /* input_coefs.Size()*/ , lh);
+                    ProxyUserData ud(trialproxies.Size(), bfi->GridFunctionCoefficients().Size(), lh);
+                    for (CoefficientFunction * cf : bfi->GridFunctionCoefficients())
+                      ud.AssignMemory (cf, ir.GetNIP(), cf->Dimension(), lh,
+                                       cf->IsComplex());
+                    
                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
                     
                     FlatTensor<3> proxyvalues(lh, ir.Size(), dimy, dimx);
                     FlatMatrix<> val(ir.Size(), 1, lh);
 
+                    {
+                      // RegionTimer r(tgroupD);
                     int k1 = 0;
                     for (auto proxy1 : trialproxies)
                       {
@@ -1563,7 +1584,10 @@ namespace ngcomp
                           }
                         k1 += proxy1->Dimension();
                       }
+                    }
 
+                    // RegionTimer rT(tgroupT);
+                    FlatMatrix prod1(dimy, transx.Width(), lh);
                     
                     for (int j = 0; j < ir.Size(); j++)
                       {
@@ -1575,34 +1599,43 @@ namespace ngcomp
                         */
                         transx = 0.0;
                         transy = 0.0;
-                        
+
                         int starti = 0, startiref = 0;
+                        {
+                          // RegionTimer rT(tgroupTi);                        
                         for (auto proxy : trialproxies)
                           {
-                            auto diffop = proxy->Evaluator();
+                            auto &diffop = proxy->Evaluator();
                             int nexti = starti+diffop->Dim();
                             int nextiref = startiref+diffop->DimRef();
                             diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(startiref,nextiref), lh);
                             starti = nexti;
                             startiref = nextiref;
                           }
+                        }
+
                         starti = 0; startiref = 0;
+                        {
+                          // RegionTimer rT(tgroupTi2);                        
                         for (auto proxy : testproxies)
                           {
-                            auto diffop = proxy->Evaluator();
+                            auto &diffop = proxy->Evaluator();
                             int nexti = starti+diffop->Dim();
                             int nextiref = startiref+diffop->DimRef();
                             diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(startiref,nextiref), lh);
                             starti = nexti;
                             startiref = nextiref;
                           }
+                        }
+                        // prod = Trans(transy) * proxyvalues(j,STAR,STAR) * transx;
+                        prod1 = proxyvalues(j,STAR,STAR) * transx;
+                        prod = Trans(transy)*prod1;
                         
-                        prod = Trans(transy) * proxyvalues(j,STAR,STAR) * transx;
                         prod *= mir[j].GetWeight();
                         diag(STAR,STAR,i+j*nel) = prod;
                       }
                   }
-                
+                });
                 auto diagmat = make_shared<BlockDiagonalMatrixSoA> (std::move(diag));
                 mat = TransposeOperator(by) * diagmat * bx;
               }
