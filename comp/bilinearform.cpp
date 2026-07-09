@@ -1582,7 +1582,8 @@ namespace ngcomp
                 ParallelForRange
                   (elclass_inds.Size(), [&] (IntRange myrange)
                    {
-                    LocalHeap llh(1000000, "assemble-BDB-D");
+                     // LocalHeap llh(1000000, "assemble-BDB-D");
+                     auto &llh = TLHeap();
                     for (auto i : myrange)
                      {
                     HeapReset hr(llh);
@@ -1657,7 +1658,8 @@ namespace ngcomp
                     ParallelForRange
                       (elclass_inds.Size(), [&] (IntRange myrange)
                        {
-                        LocalHeap llh(1000000, "assemble-BDB-coef");
+                         // LocalHeap llh(1000000, "assemble-BDB-coef");
+                        auto &llh = TLHeap();                        
                         for (auto i : myrange)
                          {
                         HeapReset hr(llh);
