@@ -1567,12 +1567,36 @@ namespace ngcomp
                     
                     for (int j = 0; j < ir.Size(); j++)
                       {
+                        /*
                         auto diffopx = trialproxies[0]->Evaluator();
                         auto diffopy = testproxies[0]->Evaluator();
-                        
                         diffopx->CalcTransformationMatrix(mir[j], transx, lh);
                         diffopy->CalcTransformationMatrix(mir[j], transy, lh);
-
+                        */
+                        transx = 0.0;
+                        transy = 0.0;
+                        
+                        int starti = 0, startiref = 0;
+                        for (auto proxy : trialproxies)
+                          {
+                            auto diffop = proxy->Evaluator();
+                            int nexti = starti+diffop->Dim();
+                            int nextiref = startiref+diffop->DimRef();
+                            diffop->CalcTransformationMatrix(mir[j], transx.Rows(starti,nexti).Cols(startiref,nextiref), lh);
+                            starti = nexti;
+                            startiref = nextiref;
+                          }
+                        starti = 0; startiref = 0;
+                        for (auto proxy : testproxies)
+                          {
+                            auto diffop = proxy->Evaluator();
+                            int nexti = starti+diffop->Dim();
+                            int nextiref = startiref+diffop->DimRef();
+                            diffop->CalcTransformationMatrix(mir[j], transy.Rows(starti,nexti).Cols(startiref,nextiref), lh);
+                            starti = nexti;
+                            startiref = nextiref;
+                          }
+                        
                         prod = Trans(transy) * proxyvalues(j,STAR,STAR) * transx;
                         prod *= mir[j].GetWeight();
                         diag(STAR,STAR,i+j*nel) = prod;
