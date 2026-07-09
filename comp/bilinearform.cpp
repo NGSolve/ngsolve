@@ -1362,7 +1362,9 @@ namespace ngcomp
     auto fesy = GetTestSpace();
     auto ma = GetMeshAccess();
 
-    static Timer tgroup("assmble-group");
+    
+    static Timer tclass("assmble classify");
+    static Timer tgroup("assmble-group");    
     static Timer tgroup2("assmble-group 2");
     static Timer tgroupD("assmble-group D");
     static Timer tgroupT("assmble-group T");
@@ -1370,6 +1372,7 @@ namespace ngcomp
     static Timer tgroupTi2("assmble-group Ti2");        
     
 
+    tclass.Start();
     Array<short> classnr(ma->GetNE(VOL));
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
@@ -1379,6 +1382,7 @@ namespace ngcomp
            (el.GetType(),
             [el] (auto et) { return ET_trait<et.ElementType()>::GetClassNr(el.Vertices()); });
        });
+    tclass.Stop();
         
     TableCreator<size_t> creator;
     for ( ; !creator.Done(); creator++)
@@ -1485,12 +1489,31 @@ namespace ngcomp
                     bmaty.Row(j*ir.Size()+i) = bmaty_.Row(i*dimyref+j);
               }
             
-            
+
+              static Timer tebe("setup ebe mats");
+
             Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
             Table<DofId> xdofsout(elclass_inds.Size(), bmatx.Height());
 
             Table<DofId> ydofsin(elclass_inds.Size(), fely.GetNDof());
             Table<DofId> ydofsout(elclass_inds.Size(), bmaty.Height());
+
+            tebe.Start();            
+            /*
+              why not ? 
+            ParallelForRange (elclass_inds.Range(), [&] (IntRange r)
+            {
+              Array<DofId> dnumsx, dnumsy;
+              for (auto i : Range(r))
+                {
+                  ElementId ei(VOL, elclass_inds[i]);
+                  fesx->GetDofNrs(ei, dnumsx);
+                  fesy->GetDofNrs(ei, dnumsy);
+                  xdofsin[i] = dnumsx;
+                  ydofsin[i] = dnumsy;
+                }
+            });
+            */
 
             Array<DofId> dnumsx, dnumsy;
             for (auto i : Range(elclass_inds))
@@ -1502,11 +1525,14 @@ namespace ngcomp
                 ydofsin[i] = dnumsy;
               }
 
+            tebe.Stop();
+
+            
             int nel = elclass_inds.Size();
             size_t nip = ir.Size()*nel;
             
-            auto xa = xdofsout.AsArray();
-            auto ya = ydofsout.AsArray();
+            // auto xa = xdofsout.AsArray();
+            // auto ya = ydofsout.AsArray();
 
             for (size_t i = 0; i < nel; i++)
               for (size_t k = 0; k < dimxref*ir.Size(); k++)
@@ -1524,7 +1550,6 @@ namespace ngcomp
             auto by = make_shared<ConstantElementByElementMatrix<>>
               (nip*dimyref, fesy->GetNDof(),
                bmaty, std::move(ydofsout), std::move(ydofsin));
-
 
             shared_ptr<BaseMatrix> mat;
             
@@ -1566,7 +1591,6 @@ namespace ngcomp
                     for (auto proxy1 : trialproxies)
                       {
                         int l1 = 0;
-                        int l1nr = 0;
                         for (auto proxy2 : testproxies)
                           {
                             for (int k = 0; k < proxy1->Dimension(); k++)
