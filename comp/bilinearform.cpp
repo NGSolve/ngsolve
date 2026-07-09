@@ -1538,7 +1538,7 @@ namespace ngcomp
                     ProxyUserData ud(trialproxies.Size(), 0 /* input_coefs.Size()*/ , lh);
                     const_cast<ElementTransformation&>(trafo).userdata = &ud;
                     
-                    FlatTensor<3> proxyvalues(lh, ir.Size(), dimx, dimy);
+                    FlatTensor<3> proxyvalues(lh, ir.Size(), dimy, dimx);
                     FlatMatrix<> val(ir.Size(), 1, lh);
 
                     int k1 = 0;
@@ -1557,7 +1557,7 @@ namespace ngcomp
                                   ud.test_comp = l;
                                   
                                   cf -> Evaluate (mir, val);
-                                  proxyvalues(STAR,k1+k,l1+l) = val.Col(0);
+                                  proxyvalues(STAR,l1+l,k1+k) = val.Col(0);
                                 }
                             l1 += proxy2->Dimension();
                           }
