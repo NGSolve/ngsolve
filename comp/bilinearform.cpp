@@ -1532,7 +1532,7 @@ namespace ngcomp
                       mir.ComputeNormalsAndMeasure (fel.ElementType());
                     FlatMatrix<> transx(dimx, dimxref, lh);
                     FlatMatrix<> transy(dimy, dimyref, lh);
-                    FlatMatrix prod(dimxref, dimyref, lh);
+                    FlatMatrix<> prod(dimxref, dimyref, lh);
 
                     shared_ptr<CoefficientFunction> cf = bfi -> GetCoefficientFunction();
                     ProxyUserData ud(trialproxies.Size(), 0 /* input_coefs.Size()*/ , lh);
