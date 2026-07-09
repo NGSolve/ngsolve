@@ -1372,8 +1372,8 @@ namespace ngcomp
     static Timer tgroupTi2("assmble-group Ti2");        
     
 
-    tclass.Start();
     Array<short> classnr(ma->GetNE(VOL));
+    tclass.Start();
     ma->IterateElements
       (VOL, lh, [&] (auto el, LocalHeap & llh)
        {
@@ -1491,6 +1491,7 @@ namespace ngcomp
             
 
               static Timer tebe("setup ebe mats");
+              static Timer tfillidx("fill idx");
 
             Table<DofId> xdofsin(elclass_inds.Size(), felx.GetNDof());
             Table<DofId> xdofsout(elclass_inds.Size(), bmatx.Height());
@@ -1499,12 +1500,11 @@ namespace ngcomp
             Table<DofId> ydofsout(elclass_inds.Size(), bmaty.Height());
 
             tebe.Start();            
-            /*
-              why not ? 
+
             ParallelForRange (elclass_inds.Range(), [&] (IntRange r)
             {
               Array<DofId> dnumsx, dnumsy;
-              for (auto i : Range(r))
+              for (auto i : r)
                 {
                   ElementId ei(VOL, elclass_inds[i]);
                   fesx->GetDofNrs(ei, dnumsx);
@@ -1513,8 +1513,8 @@ namespace ngcomp
                   ydofsin[i] = dnumsy;
                 }
             });
-            */
 
+            /*
             Array<DofId> dnumsx, dnumsy;
             for (auto i : Range(elclass_inds))
               {
@@ -1524,16 +1524,15 @@ namespace ngcomp
                 xdofsin[i] = dnumsx;
                 ydofsin[i] = dnumsy;
               }
-
+            */
+            
             tebe.Stop();
 
             
             int nel = elclass_inds.Size();
             size_t nip = ir.Size()*nel;
             
-            // auto xa = xdofsout.AsArray();
-            // auto ya = ydofsout.AsArray();
-
+            tfillidx.Start();
             for (size_t i = 0; i < nel; i++)
               for (size_t k = 0; k < dimxref*ir.Size(); k++)
                 xdofsout[i][k] = i+k*nel;
@@ -1541,7 +1540,7 @@ namespace ngcomp
             for (size_t i = 0; i < nel; i++)
               for (size_t k = 0; k < dimyref*ir.Size(); k++)
                 ydofsout[i][k] = i+k*nel;
-
+            tfillidx.Stop();
             
             auto bx = make_shared<ConstantElementByElementMatrix<>>
               (nip*dimxref, fesx->GetNDof(),
