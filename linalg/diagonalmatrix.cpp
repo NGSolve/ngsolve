@@ -553,6 +553,10 @@ namespace ngla
       + ToString (dimx) + ", nze = " + ToString(nze) + ", blocks = " + ToString(blocks) + ")";
     info.height = Height();
     info.width = Width();
+
+    info.loads = dimx*blocks;
+    info.stores = dimy*blocks;
+    info.flops = sparse.AsArray().Size()*blocks;
     return info;
   }
     
@@ -572,8 +576,8 @@ namespace ngla
   {
     static Timer t("BlockDiagonalMatrixSoA::Mult"); RegionTimer r(t);
 
-    auto mx = x.FV<double>().AsMatrix(dimy, blocks);
-    auto my = y.FV<double>().AsMatrix(dimx, blocks);
+    auto mx = x.FV<double>().AsMatrix(dimx, blocks);
+    auto my = y.FV<double>().AsMatrix(dimy, blocks);
 
     int nthreads = max (blocks/1024, TasksPerThread(2));
     ParallelForRange
