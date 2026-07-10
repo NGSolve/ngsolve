@@ -1610,7 +1610,7 @@ namespace ngcomp
                     }
 
                     // RegionTimer rT(tgroupT);
-                    FlatMatrix prod1(dimy, transx.Width(), lh);
+                    FlatMatrix<> prod1(dimy, transx.Width(), lh);
                     
                     for (int j = 0; j < ir.Size(); j++)
                       {
