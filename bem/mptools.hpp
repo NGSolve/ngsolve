@@ -912,6 +912,19 @@ namespace ngsbem
       }
 
 
+      static SIMD<Complex,FMM_SW> PhaseFactor(T_Kappa kappa, SIMD<double,FMM_SW> rho)
+      {
+        auto [si,co] = sincos(Real(kappa)*rho);
+        if constexpr (std::is_same_v<T_Kappa,double>)
+          return SIMD<Complex,FMM_SW>(co,si);
+        else
+          {
+            auto decay = exp(-Imag(kappa)*rho);
+            return SIMD<Complex,FMM_SW>(co*decay,si*decay);
+          }
+      }
+
+
       
       
       entry_type Evaluate(Vec<3> p) const
@@ -956,17 +969,16 @@ namespace ngsbem
                   vsum += kernel * c;
                 }
             else
-              for (auto [x,c] : simd_charges)
-                {
-                  auto rho = L2Norm(p-x);
-                  auto kappa = mp.Kappa();
-                  auto phase = Real(kappa) * rho;
-                  auto decay = exp(-Imag(kappa)*rho);
-                  auto [si,co] = sincos(phase);
-                  auto kernel = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co*decay,si*decay) / rho;
-                  kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
-                  vsum += kernel * c;
-                }
+              {
+                auto kappa = mp.Kappa();
+                for (auto [x,c] : simd_charges)
+                  {
+                    auto rho = L2Norm(p-x);
+                    auto invrho = If(rho > 0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                    auto phase_factor = PhaseFactor(kappa, rho);
+                    vsum += (1/(4*M_PI))*invrho*phase_factor * c;
+                  }
+              }
             
             sum += HSum(vsum);
           }
@@ -989,20 +1001,32 @@ namespace ngsbem
             // static Timer t("mptool singmp, evaluate, simd dipoles"); RegionTimer r(t);
             
             simd_entry_type vsum{0.0};
-            for (auto [x,d,c] : simd_dipoles)
-              {
-                auto rho = L2Norm(p-x);
-                auto drhodp = (1.0/rho) * (p-x);
-                auto kappa = mp.Kappa();
-                auto phase = Real(kappa) * rho;
-                auto decay = exp(-Imag(kappa)*rho);
-                auto [si,co] = sincos(phase);
-                auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co*decay,si*decay) * 
-                  (-1.0/(rho*rho) + mp.Kappa() * SIMD<Complex,FMM_SW>(0, 1)/rho);
-                auto kernel = dGdrho * InnerProduct(drhodp, d);
-                kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
-                vsum += kernel * c;
-              }
+            auto kappa = mp.Kappa();
+            if (abs(kappa) < 1e-12)
+              for (auto [x,d,c] : simd_dipoles)
+                {
+                  auto rho = L2Norm(p-x);
+                  auto drhodp = (1.0/rho) * (p-x);
+                  auto phase = Real(kappa) * rho;
+                  auto decay = exp(-Imag(kappa)*rho);
+                  auto [si,co] = sincos(phase);
+                  auto dGdrho = (1/(4*M_PI))*SIMD<Complex,FMM_SW>(co*decay,si*decay) *
+                    (-1.0/(rho*rho) + kappa * SIMD<Complex,FMM_SW>(0, 1)/rho);
+                  auto kernel = dGdrho * InnerProduct(drhodp, d);
+                  kernel = If(rho > 0.0, kernel, SIMD<Complex,FMM_SW>(0.0));
+                  vsum += kernel * c;
+                }
+            else
+              for (auto [x,d,c] : simd_dipoles)
+                {
+                  auto delta = p-x;
+                  auto rho = L2Norm(delta);
+                  auto invrho = If(rho > 0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                  auto phase_factor = PhaseFactor(kappa, rho);
+                  auto dGdrho = (1/(4*M_PI))*phase_factor *
+                    (-invrho*invrho + kappa * SIMD<Complex,FMM_SW>(0, 1)*invrho);
+                  vsum += dGdrho * invrho * InnerProduct(delta, d) * c;
+                }
             sum += HSum(vsum);
           }
         else
@@ -1025,24 +1049,42 @@ namespace ngsbem
           // t.AddFlops (simd_chargedipoles.Size()*FMM_SW);
           
           simd_entry_type vsum{0.0};
-          for (auto [x,c,d,c2] : simd_chargedipoles)
-            {
-              auto rho = L2Norm(p-x);
-              auto rhokappa = rho*mp.Kappa();
-              auto invrho = If(rho>0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
-              auto kappa = mp.Kappa();
-              auto phase = Real(kappa) * rho;
-              auto decay = exp(-Imag(kappa)*rho);
-              auto [si,co] = sincos(phase);
-              auto kernelc = (1/(4*M_PI))*invrho*SIMD<Complex,FMM_SW>(co*decay,si*decay);
+          auto kappa = mp.Kappa();
+          if (abs(kappa) < 1e-12)
+            for (auto [x,c,d,c2] : simd_chargedipoles)
+              {
+                auto rho = L2Norm(p-x);
+                auto rhokappa = rho*kappa;
+                auto invrho = If(rho>0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                auto phase = Real(kappa) * rho;
+                auto decay = exp(-Imag(kappa)*rho);
+                auto [si,co] = sincos(phase);
+                auto kernelc = (1/(4*M_PI))*invrho*SIMD<Complex,FMM_SW>(co*decay,si*decay);
 
-              vsum += kernelc * c;   
-              auto kernel = 
-                invrho*invrho * InnerProduct(p-x, d) * 
-                kernelc * (SIMD<Complex,FMM_SW>(-1.0,0) + rhokappa * SIMD<Complex,FMM_SW>(0, 1));
-              
-              vsum += kernel * c2;
-            }
+                vsum += kernelc * c;
+                auto kernel =
+                  invrho*invrho * InnerProduct(p-x, d) *
+                  kernelc * (SIMD<Complex,FMM_SW>(-1.0,0) + rhokappa * SIMD<Complex,FMM_SW>(0, 1));
+
+                vsum += kernel * c2;
+              }
+          else
+            for (auto [x,c,d,c2] : simd_chargedipoles)
+              {
+                auto delta = p-x;
+                auto rho = L2Norm(delta);
+                auto rhokappa = rho*kappa;
+                auto invrho = If(rho>0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                auto phase_factor = PhaseFactor(kappa, rho);
+                auto kernelc = (1/(4*M_PI))*invrho*phase_factor;
+
+                vsum += kernelc * c;
+                auto kernel =
+                  invrho*invrho * InnerProduct(delta, d) *
+                  kernelc * (SIMD<Complex,FMM_SW>(-1.0,0) + rhokappa * SIMD<Complex,FMM_SW>(0, 1));
+
+                vsum += kernel * c2;
+              }
           sum += HSum(vsum);
         }
       else
@@ -1114,13 +1156,44 @@ namespace ngsbem
         if (chargedipoles.Size())
             throw Exception("EvaluateDeriv not implemented for dipoles in SingularMLExpansion");
 
-        for (auto [x,c] : charges)
-          if (double rho = L2Norm(p-x); rho > 0)
+        if (abs(mp.Kappa()) < 1e-12)
           {
-            Vec<3> drhodp = 1.0/rho * (p-x);
-            Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
-                (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
-            sum += dGdrho * InnerProduct(drhodp, d) * c;
+            for (auto [x,c] : charges)
+              if (double rho = L2Norm(p-x); rho > 0)
+                {
+                  Vec<3> drhodp = 1.0/rho * (p-x);
+                  Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
+                    (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
+                  sum += dGdrho * InnerProduct(drhodp, d) * c;
+                }
+          }
+        else if (simd_charges.Size())
+          {
+            simd_entry_type vsum{0.0};
+            auto kappa = mp.Kappa();
+            for (auto [x,c] : simd_charges)
+              {
+                auto delta = p-x;
+                auto rho = L2Norm(delta);
+                auto invrho = If(rho > 0.0, 1.0/rho, SIMD<double,FMM_SW>(0.0));
+                auto phase_factor = PhaseFactor(kappa, rho);
+                auto radial = (1/(4*M_PI))*phase_factor *
+                  (kappa*SIMD<Complex,FMM_SW>(0,1)*invrho*invrho
+                   + SIMD<Complex,FMM_SW>(-invrho*invrho*invrho, 0.0));
+                vsum += radial * InnerProduct(delta, d) * c;
+              }
+            sum += HSum(vsum);
+          }
+        else
+          {
+            for (auto [x,c] : charges)
+              if (double rho = L2Norm(p-x); rho > 0)
+                {
+                  Vec<3> drhodp = 1.0/rho * (p-x);
+                  Complex dGdrho = (1/(4*M_PI))*exp(mp.Kappa()*Complex(0,rho)) *
+                    (mp.Kappa()*Complex(0,1)/rho - 1.0/sqr(rho));
+                  sum += dGdrho * InnerProduct(drhodp, d) * c;
+                }
           }
         return sum;
       }
