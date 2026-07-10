@@ -980,6 +980,11 @@ namespace ngla
       + ToString (matrix.Width()) + ")";
     info.height = Height();
     info.width = Width();
+
+    info.flops = row_dnums.Size() * matrix.Height()*matrix.Width();
+    info.loads = sizeof(SCAL)*row_dnums.Size() * (2*matrix.Width()+matrix.Height());
+    info.stores = sizeof(SCAL)*row_dnums.Size() * (matrix.Width()+2*matrix.Height());
+    
     return info;
   }
 

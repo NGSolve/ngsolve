@@ -573,7 +573,23 @@ namespace ngla
       }
   }
 
+  tuple<size_t,size_t,size_t> BaseMatrix :: GetStats (bool total) const
+  {
+    auto info = GetOperatorInfo();
+    size_t loads = info.loads;
+    size_t stores = info.stores;
+    size_t flops = info.flops;
 
+    if (total)
+      for (auto c : info.childs)
+        {
+          auto [cl, cs, cf] = c->GetStats(total);
+          loads += cl;
+          stores += cs;
+          flops += cf;
+        }
+    return { loads, stores, flops };
+  }
   
 
   xbool BaseMatrix :: SameShape (BaseMatrix & other) const

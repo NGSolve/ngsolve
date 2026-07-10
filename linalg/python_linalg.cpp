@@ -1043,6 +1043,10 @@ void NGS_DLL_HEADER ExportNgla(py::module &m) {
            self.PrintOperatorInfo(str);
            return str.str();
          })
+
+    .def("__stats__", [](BaseMatrix &self, bool total) {
+      return self.GetStats(total);
+    }, py::arg("total")=true, "return loads[bytes] / stores[bytes] / flops")
     
     .def("CreateMatrix", [] ( BaseMatrix & self)
          { return self.CreateMatrix(); }, "Create matrix of same dimension and same sparsestructure" )
