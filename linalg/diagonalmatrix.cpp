@@ -554,8 +554,8 @@ namespace ngla
     info.height = Height();
     info.width = Width();
 
-    info.loads = dimx*blocks;
-    info.stores = dimy*blocks;
+    info.loads = sizeof(double)*dimx*blocks;
+    info.stores = sizeof(double)*dimy*blocks;
     info.flops = sparse.AsArray().Size()*blocks;
     return info;
   }
