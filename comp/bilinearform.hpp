@@ -995,36 +995,42 @@ namespace ngcomp
   
   class MatrixFreeBTDTB : public BaseMatrix
   {
+    size_t height, width;
     Array<size_t> elnums;
     Table<DofId> dofx;
     Table<DofId> dofy;
     Tensor<3> Bx;  // locdofs, dim, nip
     Tensor<3> By;  // locdofs, dim, nip
-    IntegrationRule ir; // ref-element ir
     Vector<> weights;  // ref-element intweights
     Array<shared_ptr<DifferentialOperator>> diffopsx, diffopsy;  // computing T
-    Tensor<4> D; // element, nip, dimy, dimx
-    Tensor<4> Jacobi; // element, nip, dimr, dims
-
+    Tensor<4> D; // element, dimy, dimx, nip
+    Tensor<4> Jacobi; // element, dimr, dims, nip
+    
     // element geometry stored as VectorH1 ? 
   public:
-    MatrixFreeBTDTB (Array<size_t> _elnums,
+    MatrixFreeBTDTB (size_t h, size_t w,
+                     Array<size_t> _elnums,
                      Table<DofId> _dofx, Table<DofId> _dofy,
                      Tensor<3> _Bx,  // locdofs, dim, nip
                      Tensor<3> _By,  // locdofs, dim, nip
-                     IntegrationRule _ir,
+                     // IntegrationRule _ir,
                      Vector<> _weights,  // ref-element intweights
                      Array<shared_ptr<DifferentialOperator>> diffopsx,
                      Array<shared_ptr<DifferentialOperator>> diffopsy,
                      Tensor<4> _D, // element, nip, dimy, dimx;
                      Tensor<4> _Jacobi)
-      : elnums(std::move(_elnums)), dofx(std::move(_dofx)), dofy(std::move(_dofy)),
-        Bx(std::move(_Bx)), By(std::move(_By)),
-        ir(std::move(_ir)), weights(std::move(_weights)),
-        diffopsx(std::move(diffopsx)), diffopsy(std::move(diffopsy)),
-        D(std::move(_D)), Jacobi(std::move(_Jacobi))
-    { ; }
+    : height(h), width(w), elnums(std::move(_elnums)), dofx(std::move(_dofx)), dofy(std::move(_dofy)),
+      Bx(std::move(_Bx)), By(std::move(_By)),
+      weights(std::move(_weights)),
+      diffopsx(std::move(diffopsx)), diffopsy(std::move(diffopsy)),
+      D(std::move(_D)), Jacobi(std::move(_Jacobi))
+    { }
+    
 
+    AutoVector CreateColVector() const override;
+    AutoVector CreateRowVector() const override;
+
+    
     virtual void Mult (const BaseVector & x, BaseVector & y) const override;
   };
   
