@@ -1570,7 +1570,7 @@ namespace ngcomp
             
             for (int i : Range(ir.Size()))
               {
-                int starti = i*dimxref;
+                int starti = 0;
                 for (auto proxy : trialproxies)
                   {
                     auto diffopx = proxy->Evaluator();
@@ -1581,7 +1581,7 @@ namespace ngcomp
                     starti = nexti;
                   }
                 
-                starti = i*dimyref;
+                starti = 0;
                 for (auto proxy : testproxies)
                   {
                     auto diffopy = proxy->Evaluator();
@@ -1593,8 +1593,8 @@ namespace ngcomp
                   }
               }
 
-            // cout << "bmatx = " << bmatx << endl;
-            // cout << "bmaty = " << bmaty << endl;
+            cout << "bmatx = " << bmatx << endl;
+            cout << "bmaty = " << bmaty << endl;
 
             Table<DofId> dofx(elclass_inds.Size(), felx.GetNDof());
             Table<DofId> dofy(elclass_inds.Size(), fely.GetNDof());
@@ -1688,7 +1688,8 @@ namespace ngcomp
                 for (auto proxy : testproxies)
                   diffopsy.Append (proxy->Evaluator());
 
-                // cout << "diag = " << endl << diag << endl;
+                cout << "diag = " << endl << diag << endl;
+                cout << "jac = " << Jacobi << endl;
                 
                 mat = make_shared<MatrixFreeBTDTB> (fesy->GetNDof(), fesx->GetNDof(),
                                                     Array<size_t>(elclass_inds), std::move(dofx), std::move(dofy),
