@@ -1352,8 +1352,90 @@ namespace ngcomp
       }
   }
 
+
+
+
+  void MatrixFreeBTDTB :: Mult (const BaseVector & x, BaseVector & y) const
+  {
+    LocalHeap lh(1000*1000);
+    auto [locdofsx, dimxref, nip] = Bx.Shape();
+    auto [locdofsy, dimyref, nip_] = By.Shape();
+    auto [numels,nipD,dimy,dimx] = D.Shape();
+    
+    auto fx = x.FV<double>();
+    auto fy = y.FV<double>();
+
+    Vector<> elvecx(locdofsx);
+    Vector<> elvecy(locdofsy);
+    
+    Vector<> pointvalsrefx(dimxref);
+    Vector<> pointvalsrefy(dimyref);
+    Vector<> pointvalsx(dimx);
+    Vector<> pointvalsy(dimy);
+    
+    Matrix<> tmatx(dimx,dimxref);
+    Matrix<> tmaty(dimy,dimyref);
+
+    static IntegrationPoint dummyip;
+    static FE_ElementTransformation<2,2> dummytrafo(ET_TRIG);
+    auto CreateMIP = [](SliceMatrix<> jac, LocalHeap &lh) -> const BaseMappedIntegrationPoint&
+    {
+      if (jac.Height()==2 && jac.Width()==2)
+        return *new (lh) MappedIntegrationPoint<2,2> (dummyip, dummytrafo, Vec<2>(0,0), Mat<2,2>(jac));
+      throw Exception("CreateMIP not implemented for that dim");
+    };
+    
+    for (size_t i : Range(elnums))
+      {
+        HeapReset hr(lh);
+        
+        ElementId ei(VOL, elnums[i]);
+        // auto & trafo = ma->GetTrafo(ei, lh);
+        
+        elvecx = fx(dofx[i]);
+
+        for (size_t j : Range(nip))
+          {
+            // auto & mip = trafo(ir[j], lh);
+            const auto &mip = CreateMIP (Jacobi(i, 0, STAR, STAR), lh);
+            
+            pointvalsrefx = Trans(Bx(STAR,STAR,j)) * elvecx;
+
+            pointvalsx = 0;
+            for (auto &dopx : diffopsx)
+              {
+                dopx->CalcTransformationMatrix(mip, tmatx, lh);
+                pointvalsx += tmatx * pointvalsrefx;
+              }
+            
+            if (nipD==1)
+              pointvalsy = ir[j].Weight() * D(i, 0, STAR, STAR) * pointvalsy;
+            else
+              pointvalsy = ir[j].Weight() * D(i, j, STAR, STAR) * pointvalsy;
+
+            pointvalsrefy = 0;
+            for (auto &dopy : diffopsy)
+              {
+                dopy->CalcTransformationMatrix(mip, tmaty, lh);
+                pointvalsrefy += Trans(tmaty) * pointvalsy;
+              }
+
+            elvecy += By(STAR,STAR,j) * pointvalsrefy;
+          }
+        fy(dofy[i]) += elvecy;
+      }
+  }
+
+
   
-  
+  // #define BDB_VER2
+#ifdef BDB_VER2
+  void BilinearForm :: AssembleBDB (LocalHeap & lh, bool linear)
+  {
+    
+  };
+
+#else    
   void BilinearForm :: AssembleBDB (LocalHeap & lh, bool linear)
   {
     static Timer t("assemble-BDB"); RegionTimer reg(t);
@@ -1803,7 +1885,7 @@ namespace ngcomp
     mats.SetSize (ma->GetNLevels());
     mats.Last() = sum;
   }
-
+#endif
 
   
 
