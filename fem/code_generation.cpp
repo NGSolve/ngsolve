@@ -128,11 +128,37 @@ namespace ngfem
 
 
 
-  
-    unique_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files, optional<string> compiler, optional<string> linker)
+
+    shared_ptr<SharedLibrary> CompileCode(const std::vector<std::variant<filesystem::path, string>> &codes, const std::vector<string> &link_flags, bool keep_files, optional<string> compiler, optional<string> linker)
     {
       static ngstd::Timer tcompile("CompiledCF::Compile");
       static ngstd::Timer tlink("CompiledCF::Link");
+      static std::map<string, shared_ptr<SharedLibrary>> library_cache;
+      static std::mutex cache_mutex;
+
+      std::lock_guard<std::mutex> guard(cache_mutex);
+
+      // check if code is already in compiler cache
+      stringstream cache_key_stream;
+      if(compiler) cache_key_stream << "# COMPILER: " << *compiler << endl;
+      if(linker) cache_key_stream << "# LINKER: " << *linker << endl;
+      for(auto & path_or_code : codes)
+      {
+        if(std::holds_alternative<filesystem::path>(path_or_code))
+        {
+            ifstream codefile(std::get<filesystem::path>(path_or_code));
+            cache_key_stream << codefile.rdbuf() << endl;
+        }
+        else
+            cache_key_stream << std::get<string>(path_or_code) << endl;
+      }
+
+      auto cache_key = cache_key_stream.str();
+
+      auto it = library_cache.find(cache_key);
+      if (it != library_cache.end())
+          return it->second;
+
       string object_files;
 
       filesystem::path cwd = filesystem::absolute(".");
@@ -201,14 +227,18 @@ namespace ngfem
       int err = system((chdir_cmd + slink).c_str());
       if (err) throw Exception ("problem calling linker, command: " + slink);
       tlink.Stop();
+
       cout << IM(3) << "done" << endl;
+      shared_ptr<SharedLibrary> lib;
       if(keep_files)
       {
           cout << IM(2) << "keeping generated files at " << lib_dir.string() << endl;
-          return make_unique<SharedLibrary>(lib_file);
+          lib = make_shared<SharedLibrary>(lib_file);
       }
       else
-          return make_unique<SharedLibrary>(lib_file, lib_dir);
+          lib = make_shared<SharedLibrary>(lib_file, lib_dir);
+      library_cache[cache_key] = lib;
+      return lib;
     }
 
     namespace detail {

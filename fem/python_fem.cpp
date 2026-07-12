@@ -2859,7 +2859,6 @@ add_header (default = True): wrap the code snippet with the template
            auto library = CompileCode( {code}, {""} );
            auto func = library->GetSymbol<init_function_type>(init_function_name);
            func(result);
-           library.release(); // TODO: bind lifetime of "library" to python object "result"
            return result;
        },
        py::arg("code"),
@@ -2876,7 +2875,6 @@ add_header (default = True): wrap the code snippet with the template
            auto library = CompileCode( {file}, {""} );
            auto func = library->GetSymbol<init_function_type>(init_function_name);
            func(result);
-           library.release(); // TODO: bind lifetime of "library" to python object "result"
            return result;
        },
        py::arg("file"),

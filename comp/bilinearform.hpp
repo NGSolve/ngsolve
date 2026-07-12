@@ -943,7 +943,7 @@ namespace ngcomp
                                  size_t dist, double * points, double * normals,
                                  double * coef_input, int * elidx);
 
-    unique_ptr<SharedLibrary> library;
+    shared_ptr<SharedLibrary> library;
     lib_function compiled_function = nullptr;
     
     size_t dimx, dimy;
