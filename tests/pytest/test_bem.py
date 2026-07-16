@@ -108,10 +108,8 @@ def _maxwell_sl(u, v, kappa, **kwargs):
     ) * div(v.Trace()) * ds
 
 
-def _fmm_direct_operators(operator_name, mesh):
-    kappa = 1.5
-    fmm_kwargs = {"use_fmm": True}
-    higher_order_fmm_kwargs = {"use_fmm": True, "fmm_minorder": 30}
+def _fmm_direct_operators(operator_name, mesh, kappa=1.5, order=20):
+    fmm_kwargs = {"use_fmm": True, "fmm_minorder": order}
 
     if operator_name in (
         "LaplaceSL",
@@ -129,7 +127,7 @@ def _fmm_direct_operators(operator_name, mesh):
             )
         if operator_name == "LaplaceDL":
             return (
-                LaplaceDL(u * ds, **higher_order_fmm_kwargs) * v * ds,
+                LaplaceDL(u * ds, **fmm_kwargs) * v * ds,
                 LaplaceDL(u * ds, use_fmm=False) * v * ds,
             )
         if operator_name == "HelmholtzSL":
@@ -139,11 +137,11 @@ def _fmm_direct_operators(operator_name, mesh):
             )
         if operator_name == "HelmholtzDL":
             return (
-                HelmholtzDL(u * ds, kappa, **higher_order_fmm_kwargs) * v * ds,
+                HelmholtzDL(u * ds, kappa, **fmm_kwargs) * v * ds,
                 HelmholtzDL(u * ds, kappa, use_fmm=False) * v * ds,
             )
         return (
-            HelmholtzCF(u * ds, kappa, **higher_order_fmm_kwargs) * v * ds,
+            HelmholtzCF(u * ds, kappa, **fmm_kwargs) * v * ds,
             HelmholtzCF(u * ds, kappa, use_fmm=False) * v * ds,
         )
 
@@ -170,7 +168,7 @@ def _fmm_direct_operators(operator_name, mesh):
         v = hdiv.TestFunction()
         return (
             MaxwellDL(
-                u.Operator("rotated_trace") * ds, kappa, **higher_order_fmm_kwargs
+                u.Operator("rotated_trace") * ds, kappa, **fmm_kwargs
             ) * v.Trace() * ds,
             MaxwellDL(
                 u.Operator("rotated_trace") * ds, kappa, use_fmm=False
@@ -179,24 +177,39 @@ def _fmm_direct_operators(operator_name, mesh):
 
     raise ValueError(operator_name)
 
+_fmm_operator_cases = [
+    ("LaplaceSL", 1.5),
+    ("LaplaceDL", 1.5),
+    ("HelmholtzSL", 1.5),
+    ("HelmholtzSL", 7.5 + 10j),
+    ("HelmholtzDL", 1.5),
+    ("HelmholtzDL", 7.5 + 10j),
+    ("HelmholtzCF", 1.5),
+    ("HelmholtzCF", 1.0 + 5.0j),
+    ("LameSL", 1.5),
+    ("MaxwellSL", 1.5),
+    ("MaxwellDL", 1.5),
+]
 
-@pytest.mark.parametrize("geometry", ["sphere", "box", "quad_sphere"])
-@pytest.mark.parametrize(
-    "operator_name",
-    [
-        "LaplaceSL",
-        "LaplaceDL",
-        "HelmholtzSL",
-        "HelmholtzDL",
-        "HelmholtzCF",
-        "LameSL",
-        "MaxwellSL",
-        "MaxwellDL",
-    ],
-)
-def test_fmm_and_direct_matrix_action(operator_name, geometry):
+_fmm_matrix_action_cases = [
+    (operator_name, kappa, 30, geometry)
+    for operator_name, kappa in _fmm_operator_cases
+    for geometry in ["sphere", "box", "quad_sphere"]
+] + [
+    (operator_name, kappa, order, "sphere")
+    for operator_name, kappa in [
+        ("HelmholtzSL", 7.5 + 10j),
+        ("HelmholtzDL", 7.5 + 10j),
+        ("HelmholtzCF", 1.0 + 5.0j),
+    ]
+    for order in [50, 100]
+]
+
+
+@pytest.mark.parametrize("operator_name, kappa, order, geometry", _fmm_matrix_action_cases)
+def test_fmm_and_direct_matrix_action(operator_name, geometry, kappa, order):
     mesh = _fmm_test_mesh(geometry)
-    op_fmm, op_direct = _fmm_direct_operators(operator_name, mesh)
+    op_fmm, op_direct = _fmm_direct_operators(operator_name, mesh, kappa, order)
 
     with TaskManager():
         mat_fmm = op_fmm.mat

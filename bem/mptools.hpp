@@ -311,43 +311,49 @@ namespace ngsbem
   template <typename T, typename T_Kappa>
   void SphericalHankel1 (int n, T_Kappa rho, double scale, T && values)
   {
-    // Complex imag(0,1);
-    /*
-    if (n >= 0)
-      values(0) = exp(imag*rho) / (imag*rho);
-    if (n >= 1)
-      values(1) = -imag*values(0)*(1.0-1.0/(imag*rho));
-    
-    for (int i = 2; i <= n; i++)
-      values(i) = (2*i-1)/rho * values(i-1) - values(i-2);
-    */
-    
     if (abs(rho) < 1e-100)
-      {
-        values = Complex(0);
-        return;
-      }
-    Vector<T_Kappa> j(n+1), y(n+1), jp(n+1), yp(n+1);
-    
-    // the bessel-evaluation with scale
-    besseljs3d (n, rho, 1/scale,  j, jp);
+    {
+      values = Complex(0);
+      return;
+    }
 
-    // Bessel y directly with the recurrence formula for (y, yp):
-    T_Kappa x = rho;
-    T_Kappa xinv = T_Kappa{1}/x;
-    y(0) = -xinv * cos(x);
-    yp(0) = j(0)-xinv*y(0);
+    Complex imag(0,1);
+    Complex irho = imag * Complex(rho);
+    values(0) = exp(irho) / irho;
+    if (n >= 1)
+      values(1) = scale * values(0) * (1.0/rho-imag);
 
-    T_Kappa sl = 0;
-    for (int l = 1; l <= n; l++)
-      {
-        y(l) = scale * (sl*y(l-1) - yp(l-1));
-        sl += xinv;
-        yp(l) = scale * y(l-1) - (sl+xinv)*y(l);
-      }
-    
-    for (int i = 0; i <= n; i++)
-      values(i) = Complex (j(i)) + Complex(y(i)) * Complex(0,1);
+    double scale2 = scale*scale;
+    T_Kappa zinv = scale/rho;
+    for (int i = 1; i < n; i++)
+      values(i+1) = double(2*i+1)*zinv*values(i) - scale2*values(i-1);
+
+    // if (abs(rho) < 1e-100)
+    //   {
+    //     values = Complex(0);
+    //     return;
+    //   }
+    // Vector<T_Kappa> j(n+1), y(n+1), jp(n+1), yp(n+1);
+
+    // // the bessel-evaluation with scale
+    // besseljs3d (n, rho, 1/scale,  j, jp);
+
+    // // Bessel y directly with the recurrence formula for (y, yp):
+    // T_Kappa x = rho;
+    // T_Kappa xinv = T_Kappa{1}/x;
+    // y(0) = -xinv * cos(x);
+    // yp(0) = j(0)-xinv*y(0);
+
+    // T_Kappa sl = 0;
+    // for (int l = 1; l <= n; l++)
+    //   {
+    //     y(l) = scale * (sl*y(l-1) - yp(l-1));
+    //     sl += xinv;
+    //     yp(l) = scale * y(l-1) - (sl+xinv)*y(l);
+    //   }
+
+    // for (int i = 0; i <= n; i++)
+    //   values(i) = Complex (j(i)) + Complex(y(i)) * Complex(0,1);
   }
 
 
