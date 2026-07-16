@@ -925,8 +925,8 @@ namespace ngsbem
   {
     if (sh.Order() < 0) return entry_type{0.0};
     SphericalExpansion<RADIAL, entry_type,T_Kappa> tmp(Order(), kappa, RTyp());
-    this->SH().DirectionalDiffAdd(abs(kappa)*d, tmp.SH(), Scale());
-    return tmp.Eval(x);
+    this->SH().DirectionalDiffAdd(d, tmp.SH(), Scale());
+    return kappa * tmp.Eval(x);
   }
 
 
@@ -968,8 +968,8 @@ namespace ngsbem
       throw Exception("AddDipole assumes singular MP");
 
     SphericalExpansion<Singular, entry_type, T_Kappa> tmp(Order(), kappa, RTyp());
-    tmp.AddCharge(x, c);
-    tmp.SH().DirectionalDiffAdd (abs(kappa)*d,  this->SH(), Scale());
+    tmp.AddCharge(x, kappa*c);
+    tmp.SH().DirectionalDiffAdd (d, this->SH(), Scale());
   }
 
 
