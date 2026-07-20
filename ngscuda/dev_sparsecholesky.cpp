@@ -105,7 +105,7 @@ namespace ngla
       )
   {
     __shared__ int myjobs[16]; // max blockDim.y;   
-    DeviceBlockRegionTracer brt(gridDim.x*blockDim.y, gridDim.x*threadIdx.y + blockIdx.x, threadIdx.x);
+    DeviceBlockRegionTracer brt(gridDim, blockDim, blockIdx, threadIdx);
     
     while (true)
        {
@@ -118,9 +118,12 @@ namespace ngla
               break;
 
           volatile int * n_deps = (int*)&incomingdep[myjob];
+          {
+              DeviceRegionTracer rt(brt, 4);
           if (threadIdx.x == 0)
             while(*n_deps);
           __syncwarp();
+          }
 
           // do the work for myjob....
           
@@ -135,7 +138,7 @@ namespace ngla
          
           if ((task.type == MicroTask::L_BLOCK) || (task.type == MicroTask::LB_BLOCK))
             {
-              DeviceRegionTracer rt(brt, 0, task.blocknr);
+              DeviceRegionTracer rt(brt, 0);
                for (int i = blocks[blocknr]; i < blocks[blocknr+1]-1; i++)
                   {
                     size_t size = range.end()-i-1;
@@ -156,7 +159,7 @@ namespace ngla
             {
               if (extdofs.Size() != 0)
                   {
-                    DeviceRegionTracer rt(brt, 1, task.blocknr);
+                    DeviceRegionTracer rt(brt, 1);
                     auto myr = Range(extdofs).Split (task.bblock, task.nbblocks);
                     auto my_extdofs = extdofs.Range(myr);
                     
@@ -176,9 +179,13 @@ namespace ngla
             }
                       
           // myjob is done
+          {
+          DeviceRegionTracer rt(brt, 2);
           __syncwarp();
          __threadfence();
+         }
          
+         DeviceRegionTracer rt(brt, 3);
           if (threadIdx.x == 0)
               for (int d : dependency[myjob])
                  atomicAdd((int*)&incomingdep[d], -1);
@@ -379,6 +386,7 @@ namespace ngla
     static Timer tR("DevSparseChol, Reorder");
     static Timer tRA("DevSparseChol, Reorder Add");
     static Timer tD("DevSparseChol, Diag");
+    static auto timer_names = {"L", "B", "Sync", "Decrement dependency counter", "wait for work"};
     
     RegionTimer rt(t);
     
@@ -406,12 +414,12 @@ namespace ngla
     H2D(incomingdep_trans, host_incomingdep_trans);    
 
 
-    CudaRegionTimer rtL(tL);
+    CudaRegionTimer rtL(tL, &timer_names);
     Dev<int> * pcnt = Dev<int>::Malloc(2);
     pcnt->H2D(0);
     (pcnt+1)->H2D(0);
 
-    DeviceSparseCholeskySolveLKernel<<<512,dim3(32,8)>>>
+    DeviceSparseCholeskySolveLKernel<<<512,dim3(32,1)>>>
       (
        micro_dependency, incomingdep, hx, *(int*)pcnt,
        microtasks, blocks, rowindex2, firstinrow_ri, firstinrow, lfact
