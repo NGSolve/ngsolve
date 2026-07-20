@@ -324,10 +324,11 @@ namespace ngcore
 
 namespace ngbla
 {
+  /*
   template <typename T> struct is_scalar_type;
   template <int N>
   struct is_scalar_type<ngcore::SIMD<double,N>> { static constexpr bool value = true; };
-
+  */
   template <typename T> struct is_scalar_type;
   template <int N>
   struct is_scalar_type<ngcore::SIMD<ngcore::Complex,N>> { static constexpr bool value = true; };

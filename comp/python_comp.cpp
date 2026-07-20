@@ -2707,7 +2707,15 @@ diffop : ngsolve.fem.DifferentialOperator
     .def(py::init<shared_ptr<SumOfIntegrals>>())
     .def ("Compile", &Variation::Compile, py::arg("realcompile")=false, py::arg("wait")=false, py::arg("keep_files")=false)
     ;
-  
+
+  py::class_<MatFreeOptions> (m, "MFOpts")
+    .def(py::init<bool,bool,bool,bool,bool,int,int,bool,optional<string>>(),
+         py::arg("fused")=true, py::arg("gencode")=false, py::arg("atomic")=true,
+         py::arg("only_loadstore")=false, py::arg("only_loadstoreB")=false,
+         py::arg("BS_els")=4, py::arg("BS_ipts")=4, py::arg("timers")=false,
+         py::arg("write_kernel")="")
+    .def("__str__", &ToString<MatFreeOptions>)
+    ;
   
   typedef BilinearForm BF;
   auto bf_class = py::class_<BF, shared_ptr<BilinearForm>, NGS_Object>(m, "BilinearForm",
@@ -2828,6 +2836,8 @@ space : ngsolve.FESpace
                      "  store BDB factors seperately",
                      py::arg("nonlinear_matrix_free_bdb") = "bool = False\n"
                      "  store BDB factors seperately for nonlinear operators",
+                     py::arg("mf") = "MFOpts = undefined\n"
+                     "  options for matrix-free operators",
                      py::arg("check_unused") = "bool = True\n"
 		     "  If set prints warnings if not UNUSED_DOFS are not used.",
                      py::arg("delete_zero_elements") = "double = unset\n"

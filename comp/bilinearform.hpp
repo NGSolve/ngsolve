@@ -19,6 +19,44 @@ namespace ngcomp
   class LinearForm;
   class Preconditioner;
 
+
+
+  class MatFreeOptions
+  {
+  public:
+    bool fused = true;            // fused BTDTB into one kernel/operator
+    bool generate_code = false;   // generate code
+    bool atomic = true;           // use atomic for adding output vector
+    bool only_loadstore = false;  // for timing elvec load stores
+    bool only_loadstoreB = false; // for timing elvec load stores and mult with B and Bt
+    int BS_els = 4;         
+    int BS_ipts = 4;        
+    bool timers = false;
+
+    // additional options for GPU kernels:
+    optional<string> write_GPU_kernel;   // if set, dump the generated GPU kernel to this file
+
+    MatFreeOptions() = default;
+    MatFreeOptions(bool afused, bool agencode, bool aatomic,
+                   bool aonly_loadstore, bool aonly_loadstoreB,
+                   int aBS_els, int aBS_ipts, bool atimers,
+                   optional<string> awrite_GPU_kernel)
+      : fused(afused), generate_code(agencode), atomic(aatomic),
+        only_loadstore(aonly_loadstore), only_loadstoreB(aonly_loadstoreB),
+        BS_els(aBS_els), BS_ipts(aBS_ipts), timers(atimers),
+        write_GPU_kernel(std::move(awrite_GPU_kernel)) { }
+  };
+
+  inline ostream & operator<< (ostream &ost, const MatFreeOptions& opts) {
+    ost << "fused   = " << opts.fused << endl
+        << "gencode = " << opts.generate_code << endl
+        << "atomic  = " << opts.atomic << endl
+        << "onlye_ls = " << opts.only_loadstore << endl
+        << "onlye_lsB = " << opts.only_loadstoreB << endl;
+    return ost;
+  }
+    
+  
   
   /** 
       A bilinear-form.
@@ -45,6 +83,8 @@ namespace ngcomp
     bool matrix_free_bdb = false;
     /// stores geom-free B factors, and D factors in integration points, and compiled CF
     bool nonlinear_matrix_free_bdb = false;
+    /// options for matrix-free operator applications
+    std::optional<MatFreeOptions> matfree_opts;
     /// store matrices on mesh hierarchy
     bool multilevel;
     /// galerkin projection of coarse grid matrices
@@ -446,6 +486,7 @@ namespace ngcomp
     virtual void DoAssemble (LocalHeap & lh) = 0;
     void AssembleGF (LocalHeap & lh);
     void AssembleBDB (LocalHeap & lh, bool linear);
+    void AssembleBDBFused (LocalHeap & lh, bool linear);    
 
     /// allocates (sparse) matrix data-structure
     virtual void AllocateMatrix () = 0;
@@ -995,6 +1036,7 @@ namespace ngcomp
   
   class MatrixFreeBTDTB : public BaseMatrix
   {
+  public:
     size_t height, width;
     Array<size_t> elnums;
     Table<DofId> dofx;
@@ -1005,9 +1047,19 @@ namespace ngcomp
     Array<shared_ptr<DifferentialOperator>> diffopsx, diffopsy;  // computing T
     Tensor<4> D; // element, dimy, dimx, nip
     Tensor<4> Jacobi; // element, dimr, dims, nip
+    MatFreeOptions opts;
+    Array<IntRange> ranges_x, ranges_xref, ranges_y, ranges_yref;
+    
+    static constexpr int SW = 4*SIMD<double>::Size();    
+    shared_ptr<SharedLibrary> library;
+    
+    typedef void (*lib_function)(double s, FlatVector<> fx, FlatVector<> fy,
+                                 FlatTable<int>, FlatTable<int>, FlatTensor<4> Jacobi,
+                                 FlatVector<double>, size_t numels);
+    
+    lib_function compiled_function = nullptr;
     
     // element geometry stored as VectorH1 ? 
-  public:
     MatrixFreeBTDTB (size_t h, size_t w,
                      Array<size_t> _elnums,
                      Table<DofId> _dofx, Table<DofId> _dofy,
@@ -1018,20 +1070,14 @@ namespace ngcomp
                      Array<shared_ptr<DifferentialOperator>> diffopsx,
                      Array<shared_ptr<DifferentialOperator>> diffopsy,
                      Tensor<4> _D, // element, nip, dimy, dimx;
-                     Tensor<4> _Jacobi)
-    : height(h), width(w), elnums(std::move(_elnums)), dofx(std::move(_dofx)), dofy(std::move(_dofy)),
-      Bx(std::move(_Bx)), By(std::move(_By)),
-      weights(std::move(_weights)),
-      diffopsx(std::move(diffopsx)), diffopsy(std::move(diffopsy)),
-      D(std::move(_D)), Jacobi(std::move(_Jacobi))
-    { }
-    
+                     Tensor<4> _Jacobi,
+                     MatFreeOptions _opts);
 
     AutoVector CreateColVector() const override;
     AutoVector CreateRowVector() const override;
 
     
-    virtual void Mult (const BaseVector & x, BaseVector & y) const override;
+    virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
   };
   
 }

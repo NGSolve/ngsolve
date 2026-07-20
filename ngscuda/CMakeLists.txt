@@ -21,7 +21,7 @@ add_library(${lib_name} SHARED
     cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp
     cuda_ngstd.cpp cuda_ngbla.hpp cuda_applyIR.cpp
     linalg_kernels.cu dev_sparsecholesky.cpp dev_blockjacobi.cpp cuda_profiler.cu
-    cuda_krylov.cpp
+    cuda_krylov.cpp cuda_matrix_free_btdtb.cpp
 )
 
 set_source_files_properties(cuda_linalg.cpp unifiedvector.cpp cuda_tasks.cpp dev_sparsecholesky.cpp dev_blockjacobi.cpp cuda_krylov.cpp PROPERTIES LANGUAGE CUDA)

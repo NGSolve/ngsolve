@@ -99,7 +99,14 @@ namespace ngfem
     {
       mat = Trans(static_cast<const MappedIntegrationPoint<D,D>&>(mip).GetJacobianInverse());
     }
-    
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans) 
+    {
+      if (!trans)
+        return outvar + " = 1/J * (Cof(F) * " + invar + ");\n";
+      else
+        return outvar + " = 1/J * (Trans(Cof(F)) * " + invar + ");\n";        
+    }
     
     static void GenerateMatrixIR (const FiniteElement & fel, 
                                   const MappedIntegrationRule<D,D> & mir,
@@ -399,6 +406,12 @@ namespace ngfem
                                           MAT & mat, LocalHeap & lh)
     {
       mat(0,0) = 1;
+    }
+
+
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      return outvar + " = " + invar + ";\n";
     }
     
     

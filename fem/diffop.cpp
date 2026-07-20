@@ -318,6 +318,13 @@ namespace ngfem
   {
     throw Exception (string("DiffOp::CalcTransformationMatrix not overloaded, type = ") + typeid(*this).name() );    
   }
+
+  string DifferentialOperator ::
+  GenerateTransformationCode (string invar, string outvar, bool trans) const
+  {
+    throw Exception (string("DiffOp::GetTransofmrationCode not overloaded, type = ") + typeid(*this).name() );    
+  }
+
   
   shared_ptr<CoefficientFunction>
   DifferentialOperator :: DiffShape (shared_ptr<CoefficientFunction> proxy,
