@@ -1459,9 +1459,35 @@ namespace ngsbem
   }
 
 
-  IntegrationPoint ProjectPointToTriangleReference(Vec<3> x, const ElementTransformation & trafo)
+  Vec<2> MinimizeOnQuad (Mat<2,2> a, Vec<2> b, double c)
   {
-    IntegrationPoint ip(1./3, 1./3);
+    if (a(0,0) > 0 && Det(a) > 0)
+      {
+        Vec<2> sol = -Inv(a)*b;
+        if (sol(0) > 0 && sol(0) < 1 && sol(1) > 0 && sol(1) < 1)
+          return sol;
+      }
+
+    auto [y0,val0] = MinimizeOnSegm(a(1,1), b(1), c);
+    auto [y1,val1] = MinimizeOnSegm(a(1,1), a(0,1)+b(1), 0.5*a(0,0)+b(0)+c);
+    auto [x0,val2] = MinimizeOnSegm(a(0,0), b(0), c);
+    auto [x1,val3] = MinimizeOnSegm(a(0,0), a(0,1)+b(0), 0.5*a(1,1)+b(1)+c);
+
+    if (val0 <= val1 && val0 <= val2 && val0 <= val3)
+      return { 0, y0 };
+    if (val1 <= val2 && val1 <= val3)
+      return { 1, y1 };
+    if (val2 <= val3)
+      return { x0, 0 };
+    return { x1, 1 };
+  }
+
+
+  IntegrationPoint ProjectPointToReference(Vec<3> x, const ElementTransformation & trafo)
+  {
+    auto et = trafo.GetElementType();
+    IntegrationPoint ip = et == ET_TRIG ?
+      IntegrationPoint(1./3, 1./3) : IntegrationPoint(1./2, 1./2);
     for (int j = 0; j < 5; j++) // SQP steps
       {
         MappedIntegrationPoint<2,3> mip(ip, trafo);
@@ -1487,7 +1513,7 @@ namespace ngsbem
         jacphip.Row(2) -= Hesseip(2);
         Mat<2,2> a = Trans(jac)*jac;
         Vec<2> b = -Trans(jacphip) * (x-mip.GetPoint()+jac*ipvec + 0.5*Hesseipip);
-        Vec<2> uv = MinimizeOnTrig(a, b, 0);
+        Vec<2> uv = et == ET_TRIG ? MinimizeOnTrig(a, b, 0) : MinimizeOnQuad(a, b, 0);
         ip = IntegrationPoint(uv(0), uv(1));
       }
     return ip;
@@ -1508,7 +1534,7 @@ namespace ngsbem
     if (dist < elsize)
       {
         // use SQP to find projection of x onto (curved) triangle
-        IntegrationPoint ip = ProjectPointToTriangleReference(x, trafo);
+        IntegrationPoint ip = ProjectPointToReference(x, trafo);
 
         // generate Duffy integration rules on split triangles
         IntegrationRule irsegm(ET_SEGM, intorder);
@@ -1543,10 +1569,12 @@ namespace ngsbem
 
   bool IsPotentialNearfieldSourceElement(Vec<3> x, const ElementTransformation & trafo)
   {
-    if (trafo.GetElementType() != ET_TRIG)
+    auto et = trafo.GetElementType();
+    if (et != ET_TRIG && et != ET_QUAD)
       return false;
 
-    IntegrationPoint ip(1.0/3, 1.0/3);
+    IntegrationPoint ip = et == ET_TRIG ?
+      IntegrationPoint(1./3, 1./3) : IntegrationPoint(1./2, 1./2);
     MappedIntegrationPoint<2,3> mip(ip, trafo);
     double elsize = L2Norm(mip.GetJacobian());
     double dist = L2Norm(x-mip.GetPoint());
@@ -1633,7 +1661,8 @@ namespace ngsbem
 
     const FiniteElement &fel = space->GetFE(ei, lh);
     const ElementTransformation &trafo = mesh->GetTrafo(ei, lh);
-    if (trafo.GetElementType() != ET_TRIG)
+    auto et = trafo.GetElementType();
+    if (et != ET_TRIG && et != ET_QUAD)
       return;
 
     Array<DofId> dnums(fel.GetNDof(), lh);
@@ -1642,28 +1671,34 @@ namespace ngsbem
     gf->GetElementVector(dnums, elvec);
 
     Vec<3> x = mip.GetPoint();
-    IntegrationPoint ip0 = ProjectPointToTriangleReference(x, trafo);
+    IntegrationPoint ip0 = ProjectPointToReference(x, trafo);
     MappedIntegrationPoint<2,3> mip0(ip0, trafo);
     Vec<2> xi0 { ip0(0), ip0(1) };
     Vec<3> p0 = mip0.GetPoint();
     Mat<3,2> jac = mip0.GetJacobian();
 
-    Vec<2> corners[] = { Vec<2>(0,0), Vec<2>(1,0), Vec<2>(0,1) };
-    Vec<3> v[3];
-    for (int i = 0; i < 3; i++)
+    Vec<2> corners[] = {
+      Vec<2>(0,0), Vec<2>(1,0), Vec<2>(1,1), Vec<2>(0,1)
+    };
+    int ncorners = et == ET_TRIG ? 3 : 4;
+    if (et == ET_TRIG)
+      corners[2] = Vec<2>(0,1);
+    Vec<3> v[4];
+    for (int i = 0; i < ncorners; i++)
       v[i] = p0 + jac * (corners[i]-xi0);
+    FlatArray<Vec<3>> polygon(ncorners, v);
 
     double scalar_correction = 0.0;
     Vec<3> grad_correction { 0.0, 0.0, 0.0 };
     double measure0 = mip0.GetMeasure();
-    IntegrationRule ir(ET_TRIG, intorder);
+    IntegrationRule ir(et, intorder);
     Vec<3> nx{0.0};
     Vec<3> ny = mip0.GetNV();
 
     if constexpr (formula == AnalyticTriangleFormula::laplace_sl)
       {
         double flat_numeric = 0.0;
-        double analytic = LaplaceSL_Triangle(v[0], v[1], v[2], x);
+        double analytic = LaplaceSL_Polygon(polygon, x);
         LaplaceSLKernel<3> singularity;
         for (auto ip : ir)
           {
@@ -1679,7 +1714,7 @@ namespace ngsbem
     else if constexpr (formula == AnalyticTriangleFormula::laplace_dl)
       {
         double flat_numeric = 0.0;
-        double analytic = LaplaceDL_Triangle(v[0], v[1], v[2], x, ny);
+        double analytic = LaplaceDL_Polygon(polygon, x, ny);
         LaplaceDLKernel<3> singularity;
         for (auto ip : ir)
           {
@@ -1695,7 +1730,7 @@ namespace ngsbem
     else if constexpr (formula == AnalyticTriangleFormula::laplace_grad_sl)
       {
         Vec<3> flat_numeric { 0.0, 0.0, 0.0 };
-        Vec<3> analytic = LaplaceGradSL_Triangle(v[0], v[1], v[2], x);
+        Vec<3> analytic = LaplaceGradSL_Polygon(polygon, x);
         DiffLaplaceSLKernel<3> singularity;
         for (auto ip : ir)
           {
@@ -1754,6 +1789,10 @@ namespace ngsbem
                 AddTangentCorrection(mip, ei, row, lh);
                 continue;
               }
+
+            // Duffy if kernel has no analytic formula (only for trigs)
+            if (trafo.GetElementType() != ET_TRIG)
+              continue;
 
             IntegrationRule standard_ir(trafo.GetElementType(), intorder);
             IntegrationRule near_ir = GetIntegrationRule(x, trafo, intorder, true);
