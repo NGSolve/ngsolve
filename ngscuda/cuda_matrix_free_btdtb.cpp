@@ -327,11 +327,11 @@ struct GenRegionTracer { __device__ GenRegionTracer (GenBlockTracer &, int) {}; 
 
       cout << IM(9) << allcode.top << allcode.body << endl;
 
-      if (!mat.opts.write_kernel.empty())
+      if (mat.opts.write_GPU_kernel)
         {
-          ofstream out(mat.opts.write_kernel);
+          ofstream out(*mat.opts.write_GPU_kernel);
           out << allcode.top << allcode.body << allcode.pointer;
-          cout << IM(3) << "wrote generated GPU kernel to " << mat.opts.write_kernel << endl;
+          cout << IM(3) << "wrote generated GPU kernel to " << *mat.opts.write_GPU_kernel << endl;
         }
 
       // CUDA - compilation:
