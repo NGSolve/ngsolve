@@ -2,7 +2,7 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR})
 
 add_library( ngsbem ${NGS_LIB_TYPE}
         ${ngsbem_object_libs}
-        mptools.cpp potentialtools.cpp python_bem.cpp ngbem.cpp
+        mptools.cpp potentialtools.cpp python_bem.cpp ngbem.cpp potentialcf.cpp
         intrules_SauterSchwab.cpp analytic_integrals.cpp
         )
 
@@ -19,5 +19,4 @@ install( FILES
         DESTINATION ${NGSOLVE_INSTALL_DIR_INCLUDE}
         COMPONENT ngsolve_devel
        )
-
 
