@@ -160,6 +160,7 @@ namespace ngbla
   }
 
   template class FlatBandCholeskyFactors<double>;
+  template class FlatBandCholeskyFactors<float>;
   template class FlatBandCholeskyFactors<Complex>;
 #if MAX_SYS_DIM >= 1
   template class FlatBandCholeskyFactors<Mat<1,1,double> >;

@@ -111,7 +111,7 @@ namespace ngbla
 
 
 
-
+ 
 
 
 
@@ -170,6 +170,14 @@ namespace ngbla
   }
 #endif
 
+  /*
+  extern NGS_DLL_HEADER
+  void CalcInverse (FlatMatrix<float> inv, INVERSE_LIB il)
+  {
+    T_CalcInverse (inv);    
+  }
+  */
+  template void CalcInverse (FlatMatrix<float> inv, INVERSE_LIB il);  
 
 
   template <class T2>
@@ -226,7 +234,6 @@ namespace ngbla
 
 
   
-
 #ifndef LAPACK
   template void CalcInverse (FlatMatrix<Complex> inv, INVERSE_LIB il);
 #endif

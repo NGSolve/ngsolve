@@ -50,6 +50,11 @@ namespace ngbla
     m = 1 / m;
   }
 
+  inline void CalcInverse (float & m)
+  {
+    m = 1 / m;
+  }
+
   inline void CalcInverse (Complex & m)
   {
     m = 1.0 / m;
@@ -68,6 +73,12 @@ namespace ngbla
     inv = 1 / m;
   }
 
+  INLINE void CalcInverse (const float & m, float & inv)
+  {
+    inv = 1 / m;
+  }
+
+  
   INLINE void CalcInverse (const Complex & m, Complex & inv)
   {
     inv = 1.0 / m;

@@ -125,6 +125,7 @@ namespace ngbla
     
   template<> struct is_scalar_type<int> { static constexpr bool value = true; };  
   template<> struct is_scalar_type<double> { static constexpr bool value = true; };
+  template<> struct is_scalar_type<float> { static constexpr bool value = true; };
   template<> struct is_scalar_type<Complex> { static constexpr bool value = true; };
   
 
@@ -196,6 +197,20 @@ namespace ngbla
   };
 
 
+  template <class T>
+  class scal_traits
+  {
+  public:
+    typedef T TSCAL64;
+  };
+
+  template <>
+  class scal_traits<float>
+  {
+  public:
+    typedef double TSCAL64;
+  };
+  
 
   /// Height of matrix
   template <class TM> 
@@ -212,8 +227,10 @@ namespace ngbla
   }
 
   template <> inline constexpr auto Height<double> (const double&) { return 1; }
+  template <> inline constexpr auto Height<float> (const float&) { return 1; }  
   template <> inline constexpr auto Height<Complex> (const Complex&) { return 1; }
   template <> inline constexpr auto Width<double> (const double&) { return 1; }
+  template <> inline constexpr auto Width<float> (const float&) { return 1; }
   template <> inline constexpr auto Width<Complex> (const Complex&) { return 1; }
 
   /*
@@ -229,14 +246,17 @@ namespace ngbla
   inline constexpr auto Width () { return TM::Width(); }
 
   template <> inline constexpr auto Height<double> () { return 1; }
+  template <> inline constexpr auto Height<float> () { return 1; }  
   template <> inline constexpr auto Height<Complex> () { return 1; }
   template <> inline constexpr auto Width<double> () { return 1; }
+  template <> inline constexpr auto Width<float> () { return 1; }
   template <> inline constexpr auto Width<Complex> () { return 1; }
 
   
   template <class TM> 
   inline constexpr bool IsComplex () { return IsComplex<typename mat_traits<TM>::TSCAL>(); }
   template <> inline constexpr bool IsComplex<double> () { return false; }
+  template <> inline constexpr bool IsComplex<float> () { return false; }
   template <> inline constexpr bool IsComplex<Complex> () { return true; }  
 
   
