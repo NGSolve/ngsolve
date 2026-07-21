@@ -6660,7 +6660,7 @@ class CompiledCoefficientFunction : public CompiledCoefficientFunctionInterface 
     int totdim;
     Array<bool> is_complex;
     // Array<Timer*> timers;
-    unique_ptr<SharedLibrary> library;
+    shared_ptr<SharedLibrary> library;
     lib_function compiled_function = nullptr;
     lib_function_simd compiled_function_simd = nullptr;
     lib_function_deriv compiled_function_deriv = nullptr;

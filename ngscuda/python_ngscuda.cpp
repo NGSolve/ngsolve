@@ -11,6 +11,7 @@ using namespace ngs_cuda;
 
 namespace ngla {
   extern void InitApplyIntegrationPoints ();
+  extern void InitBTDTB ();
   void TestCudaNGBla();
   extern bool synckernels;
   
@@ -21,6 +22,7 @@ PYBIND11_MODULE(_ngscuda, m) {
   InitCUDA(1);
   InitCuLinalg();
   InitApplyIntegrationPoints();
+  InitBTDTB();
 
   m.def("InitCuLinalg", &InitCuLinalg, "Initializing cublas and cusparse.");
   

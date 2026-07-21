@@ -186,6 +186,11 @@ namespace ngfem
       Exception::Throw("DIFFOP::CalcTransformationMatrix should not be here, diffop = ", typeid(DOP).name());      
     }
 
+    static string GenerateTransformationCode (string invar, string outvar, bool trans)
+    {
+      return string("GenerateTransformationCode not implemented: ")+typeid(DOP).name();
+    }
+    
     static shared_ptr<CoefficientFunction>
     DiffShape (shared_ptr<CoefficientFunction> proxy,
                shared_ptr<CoefficientFunction> dir,
@@ -1212,6 +1217,7 @@ namespace ngfem
               BareSliceMatrix<SIMD<Complex>> flux,
               BareSliceVector<Complex> x) const override;
 
+#endif
 
     /// calculates matrix on reference element
 
@@ -1228,9 +1234,11 @@ namespace ngfem
                               SliceMatrix<double> trans,
                               LocalHeap & lh) const override;
 
+
+    virtual 
+    string GenerateTransformationCode (string invar, string outvar, bool trans) const override;
     
 
-#endif
     shared_ptr<CoefficientFunction> DiffShape (shared_ptr<CoefficientFunction> proxy,
                                                shared_ptr<CoefficientFunction> dir,
                                                bool Eulerian) const override

@@ -189,6 +189,8 @@ namespace ngla
     public:
       string name = "undef";
       size_t height = 0, width = 0;
+      size_t loads = 0, stores = 0;  // loads/stores in bytes
+      size_t flops = 0;             // real-valued add/mult/fma operations
       Array<const BaseMatrix*> childs;
       OperatorInfo() = default;
       OperatorInfo(string aname, size_t ah, size_t aw)
@@ -197,7 +199,8 @@ namespace ngla
     
     virtual BaseMatrix::OperatorInfo GetOperatorInfo () const;
     void PrintOperatorInfo (ostream & ost, int level = 0) const;
-
+    tuple<size_t,size_t,size_t> GetStats (bool total = true) const;
+                                          
     // base class checks for sizes, derived BlockMatrix and ParallelMatrix check more 
     virtual xbool SameShape (BaseMatrix & other) const;
     // *this * other

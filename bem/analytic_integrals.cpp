@@ -95,19 +95,17 @@ namespace ngsbem
   {
     return 1/(4*M_PI) * (y * km1(x,y,z) - sgn(y) * k0(x,y,z));
   }
-  
-  
-  double LaplaceSL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
-  {
-    Vec<3> n = Cross(v1-v0, v2-v0);
-    if (InnerProduct(x-v0, n) < 0)
-      {
-        Swap(v1, v2);
-        n *= -1;
-      }
-    n /= L2Norm(n);
 
-    Vec<3> vi[3] = { v0, v1, v2 };
+  double LaplaceSL_Polygon (FlatArray<Vec<3>> vertices, Vec<3> x)
+  {
+    Vec<3> n = Cross(vertices[1]-vertices[0], vertices[2]-vertices[0]);
+    bool reverse = InnerProduct(x-vertices[0], n) < 0;
+    if (reverse) n *= -1;
+    n /= L2Norm(n);
+    auto Vertex = [&] (size_t i) -> const Vec<3> &
+    {
+      return vertices[reverse && i ? vertices.Size()-i : i];
+    };
 
     auto IntEdge = [=] (Vec<3> ve0, Vec<3> ve1, Vec<3> nu)
     {
@@ -124,10 +122,10 @@ namespace ngsbem
     };
 
     double sum = 0;
-    for (int i = 0; i < 3; i++)
+    for (size_t i = 0; i < vertices.Size(); i++)
       {
-        auto ve0 = vi[i];
-        auto ve1 = vi[(i+1)%3];
+        auto ve0 = Vertex(i);
+        auto ve1 = Vertex((i+1)%vertices.Size());
         Vec<3> tau = ve1-ve0;
         tau /= L2Norm(tau);
         double intedge = IntEdge (ve0, ve1, Cross(n, tau));
@@ -137,17 +135,16 @@ namespace ngsbem
   }
 
 
-  Vec<3> LaplaceGradSL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x)
+  Vec<3> LaplaceGradSL_Polygon (FlatArray<Vec<3>> vertices, Vec<3> x)
   {
-    Vec<3> n = Cross(v1-v0, v2-v0);
-    if (InnerProduct(x-v0, n) < 0)
-      {
-        Swap(v1, v2);
-        n *= -1;
-      }
+    Vec<3> n = Cross(vertices[1]-vertices[0], vertices[2]-vertices[0]);
+    bool reverse = InnerProduct(x-vertices[0], n) < 0;
+    if (reverse) n *= -1;
     n /= L2Norm(n);
-
-    Vec<3> vi[3] = { v0, v1, v2 };
+    auto Vertex = [&] (size_t i) -> const Vec<3> &
+    {
+      return vertices[reverse && i ? vertices.Size()-i : i];
+    };
 
     auto IntEdge = [=] (Vec<3> ve0, Vec<3> ve1, Vec<3> nu)
     {
@@ -170,10 +167,10 @@ namespace ngsbem
     };
 
     Vec<3> sum { 0.0, 0.0, 0.0 };
-    for (int i = 0; i < 3; i++)
+    for (size_t i = 0; i < vertices.Size(); i++)
       {
-        auto ve0 = vi[i];
-        auto ve1 = vi[(i+1)%3];
+        auto ve0 = Vertex(i);
+        auto ve1 = Vertex((i+1)%vertices.Size());
         Vec<3> tau = ve1-ve0;
         tau /= L2Norm(tau);
         sum += IntEdge (ve0, ve1, Cross(tau, n));
@@ -182,13 +179,13 @@ namespace ngsbem
   }
 
 
-  double LaplaceDL_TriangleOriented (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x,
-                                     Vec<3> n)
+  double LaplaceDL_PolygonOriented (FlatArray<Vec<3>> vertices, Vec<3> x,
+                                    Vec<3> n, bool reverse)
   {
-    Vec<3> vi[3] = { v0, v1, v2 };
-
-    // double h = InnerProduct(x-v0, n);
-    // Vec<3> xhat = x - h*n;
+    auto Vertex = [&] (size_t i) -> const Vec<3> &
+    {
+      return vertices[reverse && i ? vertices.Size()-i : i];
+    };
 
     auto IntEdge = [=] (Vec<3> ve0, Vec<3> ve1, Vec<3> nu)
     {
@@ -205,10 +202,10 @@ namespace ngsbem
     };
 
     double sum = 0;
-    for (int i = 0; i < 3; i++)
+    for (size_t i = 0; i < vertices.Size(); i++)
       {
-        auto ve0 = vi[i];
-        auto ve1 = vi[(i+1)%3];
+        auto ve0 = Vertex(i);
+        auto ve1 = Vertex((i+1)%vertices.Size());
         Vec<3> tau = ve1-ve0;
         tau /= L2Norm(tau);
         double intedge = IntEdge (ve0, ve1, Cross(n, tau));
@@ -218,17 +215,13 @@ namespace ngsbem
   }
 
 
-  double LaplaceDL_Triangle (Vec<3> v0, Vec<3> v1, Vec<3> v2, Vec<3> x,
-                             Vec<3> source_normal)
+  double LaplaceDL_Polygon (FlatArray<Vec<3>> vertices, Vec<3> x,
+                            Vec<3> source_normal)
   {
-    Vec<3> n = Cross(v1-v0, v2-v0);
-    if (InnerProduct(n, source_normal) > 0)
-      {
-        Swap(v1, v2);
-        n *= -1;
-      }
+    Vec<3> n = Cross(vertices[1]-vertices[0], vertices[2]-vertices[0]);
+    bool reverse = InnerProduct(n, source_normal) > 0;
+    if (reverse) n *= -1;
     n /= L2Norm(n);
-    return LaplaceDL_TriangleOriented(v0, v1, v2, x, n);
+    return LaplaceDL_PolygonOriented(vertices, x, n, reverse);
   }
-
 }

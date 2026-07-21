@@ -1,4 +1,9 @@
-#include <bla.hpp>
+#ifndef FILE_TENSOR
+#define FILE_TENSOR
+
+
+
+#include <matrix.hpp>
 
 
 
@@ -539,3 +544,6 @@ extern void ThrowTensorIndexError(size_t ind);
 
 
 }
+
+
+#endif

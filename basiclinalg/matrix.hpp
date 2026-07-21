@@ -1989,22 +1989,22 @@ namespace ngbla
     size_t DistCol () const { return distc; }
     T * Data () const { return data; }
 
-    const DoubleSliceMatrix Rows (size_t first, size_t next) const
+    DoubleSliceMatrix Rows (size_t first, size_t next) const
     {
       return DoubleSliceMatrix (next-first, w, distr, distc, data+first*distr);
     }
 
-    const DoubleSliceMatrix<T> Cols (size_t first, size_t next) const
+    DoubleSliceMatrix<T> Cols (size_t first, size_t next) const
     {
       return DoubleSliceMatrix<T> (h, next-first, distr, distc, data+first*distc);
     }
 
-    const DoubleSliceMatrix Rows (IntRange range) const
+    DoubleSliceMatrix Rows (IntRange range) const
     {
       return Rows(range.First(), range.Next());
     }
 
-    const DoubleSliceMatrix<T> Cols (IntRange range) const
+     DoubleSliceMatrix<T> Cols (IntRange range) const
     {
       return Cols(range.First(), range.Next());
     }
