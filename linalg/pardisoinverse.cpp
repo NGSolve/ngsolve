@@ -706,8 +706,10 @@ namespace ngla
 
 
   template class PardisoInverseTM<double>;
+  template class PardisoInverseTM<float>;  
   template class PardisoInverseTM<Complex>;
   template class PardisoInverse<double>;
+  template class PardisoInverse<float>;
   template class PardisoInverse<Complex>;
   template class PardisoInverse<double,Complex,Complex>;
 #if MAX_SYS_DIM >= 1

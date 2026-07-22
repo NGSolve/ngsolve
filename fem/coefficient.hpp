@@ -1895,7 +1895,7 @@ INLINE shared_ptr<CoefficientFunction> BinaryOpCF(shared_ptr<CoefficientFunction
   shared_ptr<CoefficientFunction> operator* (Complex v1, shared_ptr<CoefficientFunction> c2);
 
   INLINE
-  shared_ptr<CoefficientFunction> operator* (std::variant<double, Complex> v1, shared_ptr<CoefficientFunction> c2)
+  shared_ptr<CoefficientFunction> operator* (std::variant<double,float, Complex> v1, shared_ptr<CoefficientFunction> c2)
   {
     return std::visit ([&](auto val) {
       return val * c2; 

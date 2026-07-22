@@ -116,6 +116,11 @@ namespace ngcomp
 				   LocalHeap & lh) { ; }
 
     virtual void AddElementMatrix (FlatArray<int> dnums,
+				   FlatMatrix<float> elmat,
+				   ElementId ei, 
+				   LocalHeap & lh) { ; }
+    
+    virtual void AddElementMatrix (FlatArray<int> dnums,
 				   FlatMatrix<Complex> elmat,
 				   ElementId ei, 
 				   LocalHeap & lh) { ; }

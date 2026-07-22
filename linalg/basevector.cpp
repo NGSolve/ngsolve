@@ -120,17 +120,37 @@ namespace ngla
       throw Exception (string ("BaseVector::Set: size of me = ") + ToString(Size()) + " != size of other = " + ToString(v.Size()));
 
 
+    if (Memory() == v.Memory() && scal == 1.0) return *this;
+    t.AddFlops (Size());
+    
+    std::visit([&](auto vme, auto vyou) {
+      
+      auto me  = FV<decltype(vme)>();
+      auto you = v.FV<decltype(vyou)>();
+     
+      if constexpr (requires { me(0) = scal * you(0); })
+        {
+          ParallelFor(me.Range(),
+                      [me, you, scal](size_t i) { me(i) = scal * you(i); });
+        }
+      else 
+        throw Exception("BaseVector::Set - illegal combination");
+    }, GetScalarType(), v.GetScalarType());
+
+    
+    /*
     auto me = FVDouble();
     auto you = v.FVDouble();
 
     if (me.Addr(0) == you.Addr(0) && scal==1.0) return *this;
-    
     t.AddFlops (me.Size());
 
     ParallelFor ( me.Range(),
                   [me,you,scal] (size_t i) { me(i) = scal * you(i); });
+    */
     
     return *this;
+    
   }
 
   BaseVector & BaseVector :: Set (Complex scal, const BaseVector & v)
@@ -373,7 +393,15 @@ namespace ngla
   {
     return InnerProduct(v2);
   }
+  template<> double S_BaseVector<float> :: InnerProductD (const BaseVector & v2) const
+  {
+    return InnerProduct(v2);
+  }
   template<> Complex S_BaseVector<double> :: InnerProductC (const BaseVector & v2, bool conjugate) const
+  {
+    throw Exception ("InnerProductC for real vector");
+  }
+  template<> Complex S_BaseVector<float> :: InnerProductC (const BaseVector & v2, bool conjugate) const
   {
     throw Exception ("InnerProductC for real vector");
   }
@@ -434,6 +462,33 @@ namespace ngla
             sv(i) = -1.0;
       }
   }
+
+  template<>
+  void S_BaseVector<double> :: GetIndirect (FlatArray<int> ind, 
+                                            FlatVector<float> v) const 
+  {
+    if (EntrySize() == 1)
+      {
+        FlatVector<double> lsv(Size(), FVDouble().Addr(0));
+        for (auto i : ind.Range())
+          {
+            int index = ind[i];
+            v(i) = IsRegularIndex(index) ? lsv(index) : 0;
+          }
+      }
+    else
+      {
+        FlatSysVector<double> lsv(Size(), EntrySize(), FVDouble().Addr(0));
+        FlatSysVector<float> sv(ind.Size(), EntrySize(), v.Addr(0));
+        
+        for (size_t i = 0; i < ind.Size(); i++)
+          if (IsRegularIndex(ind[i]))
+            sv(i) = lsv(ind[i]);
+          else
+            sv(i) = -1.0;
+      }
+  }
+
   
   template<>
   void S_BaseVector<double> :: GetIndirect (FlatArray<int> ind, 
@@ -465,6 +520,84 @@ namespace ngla
 	}
     */
   }
+
+
+
+
+
+  template<>
+  void S_BaseVector<float> :: GetIndirect (FlatArray<int> ind, 
+                                           FlatVector<double> v) const 
+  {
+    if (EntrySize() == 1) 
+      {
+        FlatVector<float> lsv(Size(), (float*)FVDouble().Addr(0));
+        for (auto i : ind.Range())
+          {
+            int index = ind[i];
+            v(i) = IsRegularIndex(index) ? lsv(index) : 0;
+          }
+      }
+    else
+      {
+        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+        FlatSysVector<double> sv(ind.Size(), EntrySize(), v.Addr(0));
+        
+        for (size_t i = 0; i < ind.Size(); i++)
+          if (IsRegularIndex(ind[i]))
+            sv(i) = lsv(ind[i]);
+          else
+            sv(i) = -1.0;
+      }
+  }
+
+  template<>
+  void S_BaseVector<float> :: GetIndirect (FlatArray<int> ind, 
+                                           FlatVector<float> v) const 
+  {
+    if (EntrySize() == 1)
+      {
+        FlatVector<float> lsv(Size(), (float*)FVDouble().Addr(0));
+        for (auto i : ind.Range())
+          {
+            int index = ind[i];
+            v(i) = IsRegularIndex(index) ? lsv(index) : 0;
+          }
+      }
+    else
+      {
+        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+        FlatSysVector<float> sv(ind.Size(), EntrySize(), v.Addr(0));
+        
+        for (size_t i = 0; i < ind.Size(); i++)
+          if (IsRegularIndex(ind[i]))
+            sv(i) = lsv(ind[i]);
+          else
+            sv(i) = -1.0;
+      }
+  }
+
+  
+  template<>
+  void S_BaseVector<float> :: GetIndirect (FlatArray<int> ind, 
+                                           FlatVector<Complex> v) const 
+  { 
+    FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+    FlatSysVector<Complex> sv(ind.Size(), EntrySize(), v.Addr(0));
+
+    for (size_t i = 0; i < ind.Size(); i++)
+      if (IsRegularIndex(ind[i]))
+	sv(i) = lsv(ind[i]);
+      else
+	sv(i) = -1.0;
+  }
+
+
+
+
+  
+
+  
   
 
   template<>
@@ -472,6 +605,13 @@ namespace ngla
                                              FlatVector<double> v) const 
   { 
     throw Exception ("BaseVector<Complex>::GetIndirect<double> called");
+  }
+  
+  template<>
+  void S_BaseVector<Complex> :: GetIndirect (FlatArray<int> ind, 
+                                             FlatVector<float> v) const 
+  { 
+    throw Exception ("BaseVector<Complex>::GetIndirect<float> called");
   }
   
   template<>
@@ -526,6 +666,34 @@ namespace ngla
   }
 
   void BaseVector :: SetIndirect (FlatArray<int> ind, 
+				  FlatVector<float> v) 
+  { 
+    FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+    FlatSysVector<float> sv(ind.Size(), EntrySize(), v.Addr(0));
+
+    for (size_t i = 0; i < ind.Size(); i++)
+      if (IsRegularIndex(ind[i]))
+	lsv(ind[i]) = sv(i);
+
+    /*
+      FlatVector<double> fv = FVDouble();
+      int es = EntrySize();
+      int ii = 0;
+      for (int i = 0; i < ind.Size(); i++)
+      if (ind[i] != -1)
+      {
+      int base = es * ind[i];
+      for (int j = 0; j < es; j++)
+      fv[base++] = v[ii++];
+      }
+      else
+      ii += es;
+    */
+  }
+
+
+  
+  void BaseVector :: SetIndirect (FlatArray<int> ind, 
 				  FlatVector<Complex> v) 
   { 
     FlatVector<Complex> fv = FVComplex();
@@ -579,7 +747,7 @@ namespace ngla
 
   void BaseVector :: AddIndirect (FlatArray<int> ind, 
 				  FlatVector<double> v, bool use_atomic) 
-  {
+  {    
     if (EntrySize() == 1)
       {
         FlatVector<double> lsv(Size(), FVDouble().Addr(0));
@@ -609,6 +777,40 @@ namespace ngla
       }
   }
 
+  // assume we have a float-vector
+  void BaseVector :: AddIndirect (FlatArray<int> ind, 
+				  FlatVector<float> v, bool use_atomic) 
+  {
+    if (EntrySize() == 1)
+      {
+        FlatVector<float> lsv(Size(), (float*)FVDouble().Addr(0));
+
+        if (!use_atomic)
+          {
+            for (size_t i = 0; i < ind.Size(); i++)
+              if (IsRegularIndex(ind[i]))
+                lsv(ind[i]) += v(i);
+          }
+        else
+          {
+            for (size_t i = 0; i < ind.Size(); i++)
+              if (IsRegularIndex(ind[i]))
+                AtomicAdd (lsv(ind[i]), v(i));
+            // lsv(ind[i]) += v(i);
+          }
+      }
+    else
+      {
+        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+        FlatSysVector<float> sv(ind.Size(), EntrySize(), v.Addr(0));
+        
+        for (size_t i = 0; i < ind.Size(); i++)
+          if (IsRegularIndex(ind[i]))
+            lsv(ind[i]) += sv(i);
+      }
+  }
+
+  
   void BaseVector :: AddIndirect (FlatArray<int> ind, 
 				  FlatVector<Complex> v, bool use_atomic)
   { 
@@ -830,6 +1032,9 @@ namespace ngla
   { throw Exception("BlockVector::FVComplex is not useful"); }
   void BlockVector :: GetIndirect (FlatArray<int> ind, 
                                    FlatVector<double> v) const
+  { throw Exception("BlockVector::GetIndirect is not useful"); }      
+  void BlockVector :: GetIndirect (FlatArray<int> ind, 
+                                   FlatVector<float> v) const
   { throw Exception("BlockVector::GetIndirect is not useful"); }      
   void BlockVector :: GetIndirect (FlatArray<int> ind, 
                                    FlatVector<Complex> v) const 
@@ -1286,13 +1491,17 @@ namespace ngla
 
   
   template class S_BaseVector<double>;
+  template class S_BaseVector<float>;  
   template class S_BaseVector<Complex>;
   
   template class VFlatVector<double>;
+  template class VFlatVector<float>;
   
   template class S_BaseVectorPtr<double>;
+  template class S_BaseVectorPtr<float>;  
   template class S_BaseVectorPtr<Complex>;
 
   template class VVector<double>;
+  template class VVector<float>;
   template class VVector<Complex>;
 }

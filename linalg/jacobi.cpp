@@ -70,7 +70,7 @@ namespace ngla
   ///
   template <class TM, class TV_ROW, class TV_COL>
   void JacobiPrecond<TM,TV_ROW,TV_COL> ::
-  MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  MultAdd (double s, const BaseVector & x, BaseVector & y) const 
   {
     static Timer t("JacobiPrecond::MultAdd");
     RegionTimer reg(t);
@@ -109,6 +109,52 @@ namespace ngla
   }
 
 
+  template <class TM, class TV_ROW, class TV_COL>
+  void JacobiPrecond<TM,TV_ROW,TV_COL> ::
+  MultAdd (Complex s, const BaseVector & x, BaseVector & y) const 
+  {
+    if constexpr (ngbla::IsComplex<TV_ROW>())
+      {
+        static Timer t("JacobiPrecond::MultAdd");
+        RegionTimer reg(t);
+        
+        x.Cumulate();
+        y.Cumulate();
+        
+        const FlatVector<TV_ROW> fx = x.FV<TV_ROW> ();
+        FlatVector<TV_ROW> fy = y.FV<TV_ROW> ();
+
+        if (!inner)
+          /*
+            for (int i = 0; i < height; i++)
+            fy(i) += s * (invdiag[i] * fx(i));
+          */
+          ParallelForRange (height,
+                            [fx, fy, s, this] (IntRange r)
+                            {
+                              for (auto i : r)
+                                fy(i) += s * (this->invdiag[i] * fx(i));
+                            });
+        else
+          /*
+            for (int i = 0; i < height; i++)
+            if (inner->Test(i))
+            fy(i) += s * (invdiag[i] * fx(i));
+          */
+          ParallelForRange (height,
+                            [fx, fy, s, this] (IntRange r)
+                            {
+                              for (auto i : r)
+                                if (this->inner->Test(i))
+                                  fy(i) += s * (this->invdiag[i] * fx(i));
+                            });
+        
+      }
+    else
+      throw Exception("MultAdd complex called for real JacobiPrecond");
+  }
+
+  
   ///
   template <class TM, class TV_ROW, class TV_COL>
   void JacobiPrecond<TM,TV_ROW,TV_COL> ::
@@ -325,6 +371,7 @@ namespace ngla
 
 
   template class JacobiPrecond<double>;
+  template class JacobiPrecond<float>;  
   template class JacobiPrecond<Complex>;
   template class JacobiPrecond<double, Complex, Complex>;
 #if MAX_SYS_DIM >= 1
@@ -363,6 +410,7 @@ namespace ngla
 
  
   template class JacobiPrecondSymmetric<double>;
+  template class JacobiPrecondSymmetric<float>;
   template class JacobiPrecondSymmetric<Complex>;
   template class JacobiPrecondSymmetric<double,Complex>;
 #if MAX_SYS_DIM >= 1

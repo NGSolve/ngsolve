@@ -134,6 +134,22 @@ namespace ngfem
         flux = mat * x;
       }
   }
+
+  void DifferentialOperator ::
+  Apply (const FiniteElement & fel,
+         const BaseMappedIntegrationPoint & mip,
+         BareSliceVector<float> x, 
+         FlatVector<float> flux,
+         LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatVector<double> dx(fel.GetNDof(), lh);
+    FlatVector<double> dflux(flux.Size(), lh);
+    dx = x;
+    Apply (fel, mip, dx, dflux, lh);
+    flux = dflux;
+  }
+
   
   void DifferentialOperator ::
   Apply (const FiniteElement & fel,

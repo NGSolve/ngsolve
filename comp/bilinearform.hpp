@@ -173,6 +173,9 @@ namespace ngcomp
     optional<double> delete_zero_elements;
     
     mutable std::map<size_t, Matrix<>> precomputed;
+
+    bool fp32 = false;
+    
   public:
     /// generate a bilinear-form
     BilinearForm (shared_ptr<FESpace> afespace,

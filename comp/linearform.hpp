@@ -122,11 +122,20 @@ namespace ngcomp
     virtual void AddElementVector (FlatArray<int> dnums,
                                    FlatVector<double> elvec,
 				   int cachecomp = -1);
+
+    [[deprecated]]    
     virtual void SetElementVector (FlatArray<int> dnums,
 				   FlatVector<double> elvec);
+    [[deprecated]]
     virtual void GetElementVector (FlatArray<int> dnums,
 				   FlatVector<double> elvec) const;
-
+    virtual void AddElementVector (FlatArray<int> dnums,
+                                   FlatVector<float> elvec,
+				   int cachecomp = -1);
+    virtual void SetElementVector (FlatArray<int> dnums,
+				   FlatVector<float> elvec);
+    virtual void GetElementVector (FlatArray<int> dnums,
+				   FlatVector<float> elvec) const;
     virtual void AddElementVector (FlatArray<int> dnums,
 				   FlatVector<Complex> elvec,
 				   int cachecomp = -1);
