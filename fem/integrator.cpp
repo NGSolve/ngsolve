@@ -175,6 +175,19 @@ namespace ngfem
   void BilinearFormIntegrator ::
   CalcElementMatrix (const FiniteElement & fel,
 		     const ElementTransformation & eltrans, 
+		     FlatMatrix<float> elmat,
+		     LocalHeap & lh) const
+  {
+    FlatMatrix<double> dmat (elmat.Height(), elmat.Width(), lh);
+    CalcElementMatrix (fel, eltrans, dmat, lh);
+    elmat = dmat;
+  }
+
+  
+
+  void BilinearFormIntegrator ::
+  CalcElementMatrix (const FiniteElement & fel,
+		     const ElementTransformation & eltrans, 
 		     FlatMatrix<Complex> elmat,
 		     LocalHeap & lh) const
   {
@@ -193,6 +206,21 @@ namespace ngfem
   {
     HeapReset hr(lh);
     FlatMatrix<double> helmat(elmat.Height(), elmat.Width(), lh);
+    CalcElementMatrix(fel, eltrans, helmat, lh);
+    elmat += helmat;
+    if (!IsSymmetric().IsTrue()) symmetric_so_far = false;
+  }
+
+  
+  void BilinearFormIntegrator ::
+  CalcElementMatrixAdd (const FiniteElement & fel,
+                        const ElementTransformation & eltrans, 
+                        FlatMatrix<float> elmat,
+                        bool & symmetric_so_far,
+                        LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatMatrix<float> helmat(elmat.Height(), elmat.Width(), lh);
     CalcElementMatrix(fel, eltrans, helmat, lh);
     elmat += helmat;
     if (!IsSymmetric().IsTrue()) symmetric_so_far = false;
@@ -250,6 +278,17 @@ namespace ngfem
   void BilinearFormIntegrator ::
   CalcLinearizedElementMatrix (const FiniteElement & fel, 
 			       const ElementTransformation & eltrans, 
+			       FlatVector<float> elveclin,
+			       FlatMatrix<float> elmat,
+			       LocalHeap & lh) const
+  {
+    CalcElementMatrix (fel, eltrans, elmat, lh);
+  }
+
+  
+  void BilinearFormIntegrator ::
+  CalcLinearizedElementMatrix (const FiniteElement & fel, 
+			       const ElementTransformation & eltrans, 
 			       FlatVector<Complex> elveclin,
 			       FlatMatrix<Complex> elmat,
 			       LocalHeap & lh) const
@@ -283,6 +322,23 @@ namespace ngfem
   }
 
   void BilinearFormIntegrator ::
+  ApplyElementMatrix (const FiniteElement & fel, 
+		      const ElementTransformation & eltrans, 
+                      FlatVector<float> elx, 
+		      FlatVector<float> ely,
+		      void * precomputed,
+		      LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatVector<double> delx(elx.Size(), lh);
+    FlatVector<double> dely(ely.Size(), lh);
+    delx = elx;
+    ApplyElementMatrix (fel, eltrans, delx, dely, precomputed, lh);
+    ely = dely;
+  }
+  
+
+  void BilinearFormIntegrator ::
   ApplyElementMatrixTrans (const FiniteElement & fel, 
                            const ElementTransformation & eltrans, 
                            FlatVector<double> elx, 
@@ -305,6 +361,23 @@ namespace ngfem
     ely = Trans(mat) * elx;
   }
 
+  void BilinearFormIntegrator ::
+  ApplyElementMatrixTrans (const FiniteElement & fel, 
+                           const ElementTransformation & eltrans, 
+                           FlatVector<float> elx, 
+                           FlatVector<float> ely,
+                           void * precomputed,
+                           LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatVector<double> delx(elx.Size(), lh);
+    FlatVector<double> dely(ely.Size(), lh);
+    delx = elx;
+    ApplyElementMatrixTrans (fel, eltrans, delx, dely, precomputed, lh);
+    ely = dely;
+  }
+
+  
   
   void BilinearFormIntegrator ::
   ApplyElementMatrix (const FiniteElement & fel, 
@@ -370,6 +443,19 @@ namespace ngfem
     ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
   }
 
+  
+  void BilinearFormIntegrator ::
+  ApplyLinearizedElementMatrix (const FiniteElement & fel, 
+				const ElementTransformation & eltrans, 
+                                FlatVector<float> ellin,
+                                FlatVector<float> elx, 
+				FlatVector<float> ely,
+				LocalHeap & lh) const
+  {
+    ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
+  }
+
+  
   void BilinearFormIntegrator :: 
   ApplyLinearizedElementMatrix (const FiniteElement & fel, 
 				const ElementTransformation & eltrans, 
@@ -393,6 +479,18 @@ namespace ngfem
     return 0.5 * InnerProduct (elx, ely);
   }
 
+  double BilinearFormIntegrator ::
+  Energy (const FiniteElement & fel, 
+	  const ElementTransformation & eltrans, 
+          FlatVector<float> elx, 
+	  LocalHeap & lh) const
+  {
+    FlatVector<float> ely (elx.Size(), lh);
+    ApplyElementMatrix (fel, eltrans, elx, ely, 0, lh);
+    return 0.5 * InnerProduct (elx, ely);
+  }
+
+  
   
   double BilinearFormIntegrator :: 
   Energy (const FiniteElement & fel, 
@@ -725,6 +823,21 @@ namespace ngfem
       const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
       const FiniteElement & volumefel2, int LocalFacetNr2,
       const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
+      FlatVector<float> elx, FlatVector<float> ely,
+      LocalHeap & lh) const
+  {
+    FlatMatrix<float> mat(ely.Size(), elx.Size(), lh);
+    CalcFacetMatrix (volumefel1, LocalFacetNr1, eltrans1, ElVertices1,
+                     volumefel2, LocalFacetNr2, eltrans2, ElVertices2, mat, lh);
+    ely = mat * elx;
+  }
+
+  
+  void FacetBilinearFormIntegrator ::ApplyFacetMatrix(
+      const FiniteElement & volumefel1, int LocalFacetNr1,
+      const ElementTransformation & eltrans1, FlatArray<int> & ElVertices1,
+      const FiniteElement & volumefel2, int LocalFacetNr2,
+      const ElementTransformation & eltrans2, FlatArray<int> & ElVertices2,
       FlatVector<Complex> elx, FlatVector<Complex> ely,
       LocalHeap & lh) const
   {
@@ -741,6 +854,17 @@ namespace ngfem
       FlatVector<double> elx, FlatVector<double> ely, LocalHeap &lh) const
   {
     FlatMatrix<double> mat(ely.Size(), elx.Size(), lh);
+    CalcFacetMatrix (volumefel, LocalFacetNr, eltrans, ElVertices, seltrans, SElVertices, mat, lh);
+    ely = mat * elx;
+  }
+
+  void FacetBilinearFormIntegrator ::ApplyFacetMatrix(
+      const FiniteElement &volumefel, int LocalFacetNr,
+      const ElementTransformation &eltrans, FlatArray<int> &ElVertices,
+      const ElementTransformation &seltrans, FlatArray<int> &SElVertices,
+      FlatVector<float> elx, FlatVector<float> ely, LocalHeap &lh) const
+  {
+    FlatMatrix<float> mat(ely.Size(), elx.Size(), lh);
     CalcFacetMatrix (volumefel, LocalFacetNr, eltrans, ElVertices, seltrans, SElVertices, mat, lh);
     ely = mat * elx;
   }
@@ -2048,7 +2172,20 @@ namespace ngfem
   { 
     cerr << "LinearFormIntegrator::CalcElementVector: base class called" << endl;
   }
+
+  void LinearFormIntegrator ::
+  CalcElementVector (const FiniteElement & fel,
+                     const ElementTransformation & eltrans, 
+                     FlatVector<float> elvec,
+                     LocalHeap & lh) const
+  {
+    HeapReset hr(lh);
+    FlatVector<double> dvec(elvec.Size(), lh);
+    CalcElementVector (fel, eltrans, dvec, lh);
+    elvec = dvec;
+  }
   
+
 
   void LinearFormIntegrator ::
   CalcElementVector (const FiniteElement & fel,

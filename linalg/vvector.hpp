@@ -29,7 +29,7 @@ namespace ngla
       es = aes;
       pdata = static_cast<TSCAL*> (adata);
       ownmem = false;
-      this->entrysize = es * sizeof(TSCAL) / sizeof(double);
+      this->entrysize = es * sizeof(TSCAL) / sizeof(typename scal_traits<TSCAL>::TSCAL_REAL);
     }
 
     S_BaseVectorPtr (size_t as, int aes)
@@ -39,7 +39,8 @@ namespace ngla
       pdata = new TSCAL[as*aes];
       ownmem = true;
       GetMemoryTracer().Alloc(sizeof(TSCAL) * as * aes);
-      this->entrysize = es * sizeof(TSCAL) / sizeof(double);
+      // this->entrysize = es * sizeof(TSCAL) / sizeof(double);
+      this->entrysize = es * sizeof(TSCAL) / sizeof(typename scal_traits<TSCAL>::TSCAL_REAL);
     }
 
     void SetSize (size_t as)

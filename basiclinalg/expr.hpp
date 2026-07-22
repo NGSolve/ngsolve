@@ -202,16 +202,25 @@ namespace ngbla
   {
   public:
     typedef T TSCAL64;
+    typedef T TSCAL_REAL;    
   };
 
-  template <>
-  class scal_traits<float>
+
+  template <> class scal_traits<float>
   {
   public:
     typedef double TSCAL64;
+    typedef float TSCAL_REAL;    
   };
   
+  template <> class scal_traits<Complex>
+  {
+  public:
+    typedef Complex TSCAL64;
+    typedef double TSCAL_REAL;    
+  };
 
+  
   /// Height of matrix
   template <class TM> 
   inline auto Height (const TM & m)

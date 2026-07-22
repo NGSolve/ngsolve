@@ -30,6 +30,8 @@ namespace ngla
 
     virtual bool IsComplex() const override
     { return orig->IsComplex(); } 
+
+    virtual Scalar GetScalarType() const override { return orig->GetScalarType(); }
     
     FlatVector<double> FVDouble () const override
     { return orig->GetLocalVector()->Range(range).FVDouble(); }
@@ -51,6 +53,11 @@ namespace ngla
     
     void GetIndirect (FlatArray<int> ind, 
                       FlatVector<double> v) const override
+    {
+      local_vec -> GetIndirect (ind, v);
+    }
+    void GetIndirect (FlatArray<int> ind, 
+                      FlatVector<float> v) const override
     {
       local_vec -> GetIndirect (ind, v);
     }
@@ -645,6 +652,7 @@ namespace ngla
 
   
   template class S_ParallelBaseVectorPtr<double>;
+  template class S_ParallelBaseVectorPtr<float>;
   template class S_ParallelBaseVectorPtr<Complex>;
 }
 

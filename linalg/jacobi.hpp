@@ -86,9 +86,11 @@ namespace ngla
     FlatArray<TM> GetInverse() const { return invdiag; }
     
     ///
-    void MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override;
-
-    void MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const override
+    void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (double s, const BaseVector & x, BaseVector & y) const override
+    { MultAdd (s, x, y); }
+    void MultAdd (Complex s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (Complex s, const BaseVector & x, BaseVector & y) const override
     { MultAdd (s, x, y); }
     ///
     AutoVector CreateRowVector() const override { return mat->CreateColVector(); }

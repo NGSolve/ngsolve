@@ -593,7 +593,7 @@ namespace ngla
   
   template <class TM, class TV_ROW, class TV_COL>
   void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const 
   {
     static Timer timer("BlockJacobi::MultAdd");
     RegionTimer reg (timer);
@@ -636,7 +636,7 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   void BlockJacobiPrecond<TM, TV_ROW, TV_COL> ::
-  MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const 
   {
     static Timer timer("BlockJacobi::MultTransAdd");
     RegionTimer reg (timer);
@@ -1078,7 +1078,7 @@ namespace ngla
 
   template <class TM, class TV>
   void BlockJacobiPrecondSymmetric<TM,TV> :: 
-  MultAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const 
   {
     static Timer timer("BlockJacobiSymmetric::MultAdd");
     RegionTimer reg (timer);
@@ -1113,7 +1113,7 @@ namespace ngla
 
   template <class TM, class TV>
   void BlockJacobiPrecondSymmetric<TM,TV> :: 
-  MultTransAdd (TSCAL s, const BaseVector & x, BaseVector & y) const 
+  MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const 
   {
     MultAdd (s, x, y);
   }
@@ -1321,10 +1321,12 @@ namespace ngla
 
   // compiled separately, for testing only
   template class BlockJacobiPrecond<double>;
+  template class BlockJacobiPrecond<float>;
   template class BlockJacobiPrecond<Complex>;
   template class BlockJacobiPrecond<double, Complex, Complex>;
 
   template class BlockJacobiPrecondSymmetric<double>;
+  template class BlockJacobiPrecondSymmetric<float>;
   template class BlockJacobiPrecondSymmetric<Complex>;
   template class BlockJacobiPrecondSymmetric<double, Complex>;
 
