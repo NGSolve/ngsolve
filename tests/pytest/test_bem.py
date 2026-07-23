@@ -64,6 +64,35 @@ def _sphere_mesh(maxh=0.25):
     return Mesh(OCCGeometry(sphere).GenerateMesh(maxh=maxh)).Curve(1)
 
 
+@pytest.mark.parametrize("operator_name", ["LaplaceSL", "HelmholtzSL"])
+def test_volume_sl_direct_and_fmm_match(operator_name):
+    mesh = Mesh(unit_cube.GenerateMesh(maxh=2))
+    is_helmholtz = operator_name == "HelmholtzSL"
+    fes = L2(mesh, order=0, complex=is_helmholtz)
+    u, v = fes.TnT()
+    dxi = dx(bonus_intorder=2)
+
+    if is_helmholtz:
+        direct = HelmholtzSL(u * dxi, 1.2 + 0.3j, use_fmm=False) * v * dxi
+        fast = HelmholtzSL(u * dxi, 1.2 + 0.3j, use_fmm=True) * v * dxi
+    else:
+        direct = LaplaceSL(u * dxi, use_fmm=False) * v * dxi
+        fast = LaplaceSL(u * dxi, use_fmm=True) * v * dxi
+
+    mat_direct = np.asarray(direct.mat.ToDense())
+    mat_fast = np.asarray(fast.mat.ToDense())
+
+    assert np.all(np.isfinite(mat_direct))
+    np.testing.assert_allclose(mat_fast, mat_direct, rtol=1e-8, atol=1e-11)
+
+    if is_helmholtz:
+        ids = np.asarray([0, 3, 7], dtype=np.int32)
+        submatrix = np.asarray(direct.CalcSubMatrix(ids, ids))
+        np.testing.assert_allclose(
+            submatrix, mat_direct[np.ix_(ids, ids)], rtol=1e-10, atol=1e-12
+        )
+
+
 def _fmm_test_mesh(geometry):
     if geometry == "sphere":
         return _sphere_mesh(maxh=0.25)
