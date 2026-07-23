@@ -34,6 +34,8 @@ namespace ngsbem
 
     shared_ptr<DifferentialOperator> trial_evaluator;
     shared_ptr<DifferentialOperator> test_evaluator;
+    VorB trial_vb;
+    VorB test_vb;
     
     mutable unique_ptr<Table<tuple<ElementId,int>,DofId>> trial_dof2el;
     mutable unique_ptr<Table<tuple<ElementId,int>,DofId>> test_dof2el;
@@ -68,8 +70,19 @@ namespace ngsbem
     
     Array<Vec<2>> common_edge_quadtrig_x, common_edge_quadtrig_y;
     Array<double> common_edge_quadtrig_weight;
-    
 
+    // Cools integration rules for tetrahedron pairs:
+    Array<Vec<3>> identic_tet_x, identic_tet_y;
+    Array<double> identic_tet_weight;
+
+    Array<Vec<3>> common_face_tet_x, common_face_tet_y;
+    Array<double> common_face_tet_weight;
+
+    Array<Vec<3>> common_edge_tet_x, common_edge_tet_y;
+    Array<double> common_edge_tet_weight;
+
+    Array<Vec<3>> common_vertex_tet_x, common_vertex_tet_y;
+    Array<double> common_vertex_tet_weight;
 
     
     mutable shared_ptr<BaseMatrix> matrix;
@@ -81,7 +94,8 @@ namespace ngsbem
                       optional<Region> _definedon_trial, optional<Region> _definedon_test,
                       shared_ptr<DifferentialOperator> _trial_evaluator, //  shared_ptr<CoefficientFunction> _trial_factor,
                       shared_ptr<DifferentialOperator> _test_evaluator, // shared_ptr<CoefficientFunction> _test_factor,
-                      int _intorder, const IntOp_Parameters & _io_params);
+                      int _intorder, const IntOp_Parameters & _io_params,
+                      VorB _trial_vb = BND, VorB _test_vb = BND);
     
     virtual ~IntegralOperator() = default;
 
@@ -104,6 +118,8 @@ namespace ngsbem
     optional<Region> GetTestDefinedOn() const { return test_definedon; }
     shared_ptr<DifferentialOperator> GetTrialEvaluator() const { return trial_evaluator; }
     shared_ptr<DifferentialOperator> GetTestEvaluator() const { return test_evaluator; }
+    VorB GetTrialVB() const { return trial_vb; }
+    VorB GetTestVB() const { return test_vb; }
     int GetIntOrder() const { return intorder; }
     IntOp_Parameters GetIOParams() const { return io_params; }
 
@@ -200,7 +216,9 @@ namespace ngsbem
                          GetReferenceOperator(asummands)->GetTrialEvaluator(),
                          GetReferenceOperator(asummands)->GetTestEvaluator(),
                          GetReferenceOperator(asummands)->GetIntOrder(),
-                         GetReferenceOperator(asummands)->GetIOParams()),
+                         GetReferenceOperator(asummands)->GetIOParams(),
+                         GetReferenceOperator(asummands)->GetTrialVB(),
+                         GetReferenceOperator(asummands)->GetTestVB()),
         summands(std::move(asummands))
     { ; }
 
@@ -274,7 +292,8 @@ namespace ngsbem
       : IntegralOperator(_op->GetTrialSpace(), _op->GetTestSpace(),
                          _op->GetTrialDefinedOn(), _op->GetTestDefinedOn(),
                          _op->GetTrialEvaluator(), _op->GetTestEvaluator(),
-                         _op->GetIntOrder(), _op->GetIOParams()),
+                         _op->GetIntOrder(), _op->GetIOParams(),
+                         _op->GetTrialVB(), _op->GetTestVB()),
         op(std::move(_op)), fac(_fac)
     { ; }
 
@@ -366,7 +385,8 @@ namespace ngsbem
                             shared_ptr<DifferentialOperator> _trial_evaluator, 
                             shared_ptr<DifferentialOperator> _test_evaluator, 
                             KERNEL _kernel,
-                            int _intorder, const IntOp_Parameters & _io_params = IntOp_Parameters());
+                            int _intorder, const IntOp_Parameters & _io_params = IntOp_Parameters(),
+                            VorB _trial_vb = BND, VorB _test_vb = BND);
     /*
       : GenericIntegralOperator (_trial_space, _test_space, _definedon_trial, _definedon_test,
                                  _trial_evaluator, nullptr, _test_evaluator, nullptr,
@@ -503,7 +523,7 @@ namespace ngsbem
                                                            test_proxy->Evaluator(), // nullptr, // test_factor, 
                                                            kernel,
                                                            2 + intorder + tmpfes->GetOrder()+dx.bonus_intorder,
-                                                           io_params);
+                                                           io_params, source_vb, dx.vb);
     }
     
     shared_ptr<BasePotentialCF> MakePotentialCF(shared_ptr<GridFunction> gf) override
@@ -679,37 +699,38 @@ namespace ngsbem
   class BasePotentialOperatorAndTest
   {
     shared_ptr<BasePotentialOperator> pot;
-    shared_ptr<ProxyFunction> test_proxy_with_factor;    
+    shared_ptr<CoefficientFunction> test_cf;
   public:
 
     BasePotentialOperatorAndTest (shared_ptr<BasePotentialOperator> _pot,
                                   shared_ptr<CoefficientFunction> _test_proxy)
       : pot(_pot)
     {
-      test_proxy_with_factor = GetProxyWithFactor(_test_proxy, false);      
+      test_cf = std::move(_test_proxy);
     }
 
     
     shared_ptr<IntegralOperator> MakeIntegralOperator (DifferentialSymbol dx)
     {
-      return pot->MakeIntegralOperator(test_proxy_with_factor, dx);
+      return pot->MakeIntegralOperator(GetProxyWithFactor(test_cf, false, dx.vb), dx);
     }
   };
 
   class SumOfPotentialOperatorsAndTest
   {
     Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> pots;
-    shared_ptr<ProxyFunction> test_proxy_with_factor;
+    shared_ptr<CoefficientFunction> test_cf;
   public:
     SumOfPotentialOperatorsAndTest (const Array<tuple<Scalar, shared_ptr<BasePotentialOperator>>> & _pots,
                                     shared_ptr<CoefficientFunction> _test_proxy)
       : pots(_pots)
     {
-      test_proxy_with_factor = GetProxyWithFactor(_test_proxy, false);
+      test_cf = std::move(_test_proxy);
     }
 
     shared_ptr<IntegralOperator> MakeIntegralOperator (DifferentialSymbol dx)
     {
+      auto test_proxy_with_factor = GetProxyWithFactor(test_cf, false, dx.vb);
       Array<shared_ptr<IntegralOperator>> ops;
       for (auto [scal, pot] : pots)
         {
