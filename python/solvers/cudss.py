@@ -24,6 +24,8 @@ class CudssSolver(ngla.SparseFactorizationInterface):
 
         inner = self.GetInnerMatrix()
         csr = sp.csr_matrix(inner.CSR())
+        if np.iscomplexobj(csr.data):
+            self.dtype = np.complex64 if self.dtype == np.float32 else np.complex128
         csr = csr.astype(self.dtype, copy=False)
 
         options = make_directsolver_options()
