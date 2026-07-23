@@ -10,10 +10,8 @@ namespace ngsbem
   using namespace ngfem;
 
   
-  using Intrule_t = tuple<Array<Vec<2>>, Array<Vec<2>>, Array<double>>;
-
   // x, y in triangle [(0,0), (1,0), (0,1)]
-  Intrule_t IdenticPanelIntegrationRule (int order)
+  PairIntegrationRule<2> IdenticPanelIntegrationRule (int order)
   {
     IntegrationRule irsegm(ET_SEGM, order);
     IntegrationRule irhex (ET_HEX, order);    
@@ -51,14 +49,14 @@ namespace ngsbem
       }
 
 
-    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};
+    return PairIntegrationRule<2> { std::move(ipx), std::move(ipy), std::move(weights )};
 
   }
 
 
   // x, y in triangle [(0,0), (1,0), (0,1)]
   // x=(0,0) and y=(0,0) are common vertices
-  Intrule_t CommonVertexIntegrationRule (int order)
+  PairIntegrationRule<2> CommonVertexIntegrationRule (int order)
   {
     IntegrationRule irsegm(ET_SEGM, order);
     IntegrationRule irhex (ET_HEX, order);    
@@ -90,14 +88,14 @@ namespace ngsbem
       }
 
 
-    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};
+    return PairIntegrationRule<2> { std::move(ipx), std::move(ipy), std::move(weights )};
 
   }
 
 
   // x, y in triangle [(0,0), (1,0), (0,1)]
   // x in [(0,0),(1,0)] and y in [(0,0),(1,0)] are common edges
-  Intrule_t CommonEdgeIntegrationRule (int order)
+  PairIntegrationRule<2> CommonEdgeIntegrationRule (int order)
   {
     IntegrationRule irsegm(ET_SEGM, order);
     IntegrationRule irhex (ET_HEX, order);    
@@ -134,13 +132,13 @@ namespace ngsbem
       }
 
 
-    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};
+    return PairIntegrationRule<2> { std::move(ipx), std::move(ipy), std::move(weights )};
 
   }
   
 
 
-  Intrule_t IdenticPanelQuadIntegrationRule (int order)
+  PairIntegrationRule<2> IdenticPanelQuadIntegrationRule (int order)
   {
     IntegrationRule irsegm(ET_SEGM, order);
     IntegrationRule irhex (ET_HEX, order);
@@ -191,13 +189,13 @@ namespace ngsbem
             weights.Append (w);
         }
 
-    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
+    return PairIntegrationRule<2> { std::move(ipx), std::move(ipy), std::move(weights )};
   }
 
 
 
   
-  Intrule_t CommonVertexQuadIntegrationRule (int order)
+  PairIntegrationRule<2> CommonVertexQuadIntegrationRule (int order)
   {
     IntegrationRule irsegm(ET_SEGM, order);
     IntegrationRule irhex (ET_HEX, order);
@@ -230,12 +228,12 @@ namespace ngsbem
             weights.Append (w);
         }
 
-    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
+    return PairIntegrationRule<2> { std::move(ipx), std::move(ipy), std::move(weights )};
 
   }
 
 
-  Intrule_t CommonVertexQuadTrigIntegrationRule (int order)
+  PairIntegrationRule<2> CommonVertexQuadTrigIntegrationRule (int order)
   {
     IntegrationRule irsegm(ET_SEGM, order);
     IntegrationRule irhex (ET_HEX, order);
@@ -264,14 +262,14 @@ namespace ngsbem
           weights.Append (xi*xi*xi * ipeta.Weight() * ipxi.Weight());
         }
 
-    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
+    return PairIntegrationRule<2> { std::move(ipx), std::move(ipy), std::move(weights )};
 
   }
 
 
   
   
-  Intrule_t CommonEdgeQuadIntegrationRule (int order)
+  PairIntegrationRule<2> CommonEdgeQuadIntegrationRule (int order)
   {
     IntegrationRule irsegm(ET_SEGM, order);
     IntegrationRule irhex (ET_HEX, order);
@@ -314,13 +312,13 @@ namespace ngsbem
           weights.Append (w2);
         }
 
-    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
+    return PairIntegrationRule<2> { std::move(ipx), std::move(ipy), std::move(weights )};
     
   }
 
 
 
-  Intrule_t CommonEdgeQuadTrigIntegrationRule (int order)
+  PairIntegrationRule<2> CommonEdgeQuadTrigIntegrationRule (int order)
   {
     IntegrationRule irsegm(ET_SEGM, order);
     IntegrationRule irhex (ET_HEX, order);
@@ -363,8 +361,342 @@ namespace ngsbem
           weights.Append (w2);
         }
 
-    return Intrule_t { std::move(ipx), std::move(ipy), std::move(weights )};    
+    return PairIntegrationRule<2> { std::move(ipx), std::move(ipy), std::move(weights )};
     
+  }
+
+
+  // The tetrahedron-pair transformations are adapted from
+  // SauterSchwab3D.jl. Copyright (c) 2021 Cedric Muenger.
+  //
+  // Permission is hereby granted, free of charge, to any person obtaining a
+  // copy of this software and associated documentation files (the "Software"),
+  // to deal in the Software without restriction, including without limitation
+  // the rights to use, copy, modify, merge, publish, distribute, sublicense,
+  // and/or sell copies of the Software, and to permit persons to whom the
+  // Software is furnished to do so, subject to the following conditions:
+  //
+  // The above copyright notice and this permission notice shall be included in
+  // all copies or substantial portions of the Software.
+  //
+  // Six dimensional rules from Muenger and Cools,
+  // "Efficient Numerical Evaluation of Singular Integrals in Volume Integral
+  // Equations", IEEE JMMCT 7 (2022), 168-175.
+  template <int DX, int DY = DX>
+  class PairIntegrationRuleBuilder
+  {
+    Array<Vec<DX>> ipx;
+    Array<Vec<DY>> ipy;
+    Array<double> weights;
+
+  public:
+    void Add (Vec<DX> x, Vec<DY> y, double weight)
+    {
+      ipx.Append(x);
+      ipy.Append(y);
+      weights.Append(weight);
+    }
+
+    void AddSymmetric (Vec<DX> x, Vec<DY> y, double weight)
+      requires (DX == DY)
+    {
+      Add(x, y, weight);
+      Add(y, x, weight);
+    }
+
+    PairIntegrationRule<DX, DY> MoveRule()
+    {
+      return { std::move(ipx), std::move(ipy), std::move(weights) };
+    }
+  };
+
+
+  static Vec<3> SwapTetrahedronVertices23 (Vec<3> p)
+  {
+    return Vec<3>(p[0], p[1], 1-p[0]-p[1]-p[2]);
+  }
+
+
+  PairIntegrationRule<3> IdenticTetrahedronIntegrationRule (int order)
+  {
+    IntegrationRule ir(ET_SEGM, order);
+    PairIntegrationRuleBuilder<3> rule;
+
+    for (auto ipx1 : ir)
+      for (auto ipx2 : ir)
+        for (auto ipx3 : ir)
+          for (auto ipy1 : ir)
+            for (auto ipy2 : ir)
+              for (auto ipy3 : ir)
+                {
+                  double x1 = ipx1(0), x2 = ipx2(0), x3 = ipx3(0);
+                  double y1 = ipy1(0), y2 = ipy2(0), y3 = ipy3(0);
+                  double qw = ipx1.Weight()*ipx2.Weight()*ipx3.Weight()
+                    * ipy1.Weight()*ipy2.Weight()*ipy3.Weight();
+
+                  double xi1 = x1;
+                  double xi2 = x1*x2;
+                  double xi3 = x1*x2*x3;
+                  double eta1 = xi3*y1;
+                  double eta2 = eta1*y2;
+                  double eta3 = eta1*y3;
+                  double det = x1*x1*x1*x1*x1 * x2*x2*x2*x2
+                    * x3*x3*x3 * y1*y1;
+
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2, xi3-eta1+eta2),
+                    Vec<3>(1-(xi1-eta3), xi1-xi2+eta1-eta3, xi3-eta1),
+                    qw*det);
+
+                  eta3 = eta2*y3;
+                  det *= y2;
+
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2, xi3),
+                    Vec<3>(1-(xi1-eta2+eta3), xi1-xi2+eta3, xi3-eta1),
+                    qw*det);
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2, xi3-eta1),
+                    Vec<3>(1-(xi1-eta3), xi1-xi2+eta2-eta3, xi3-eta2),
+                    qw*det);
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2+eta2-eta3, xi3-eta2+eta3),
+                    Vec<3>(1-(xi1-eta2), xi1-xi2, xi3-eta1),
+                    qw*det);
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2+eta1-eta2, xi3-eta1+eta3),
+                    Vec<3>(1-(xi1-eta1), xi1-xi2, xi3-eta1),
+                    qw*det);
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2+eta3, xi3-eta1),
+                    Vec<3>(1-(xi1-eta2), xi1-xi2, xi3-eta2),
+                    qw*det);
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2+eta1-eta3, xi3-eta1+eta3),
+                    Vec<3>(1-(xi1-eta2+eta3), xi1-xi2, xi3-eta1),
+                    qw*det);
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2+eta1, xi3-eta1),
+                    Vec<3>(1-(xi1-eta3), xi1-xi2, xi3-eta1+eta2-eta3),
+                    qw*det);
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1-xi2+eta2, xi3-eta1),
+                    Vec<3>(1-(xi1-eta2+eta3), xi1-xi2, xi3-eta2+eta3),
+                    qw*det);
+                }
+
+    return rule.MoveRule();
+  }
+
+
+  PairIntegrationRule<3> CommonFaceTetrahedronIntegrationRule (int order)
+  {
+    IntegrationRule ir(ET_SEGM, order);
+    PairIntegrationRuleBuilder<3> rule;
+
+    for (auto ipx1 : ir)
+      for (auto ipx2 : ir)
+        for (auto ipx3 : ir)
+          for (auto ipy1 : ir)
+            for (auto ipy2 : ir)
+              for (auto ipy3 : ir)
+                {
+                  double x1 = ipx1(0), x2 = ipx2(0), x3 = ipx3(0);
+                  double y1 = ipy1(0), y2 = ipy2(0), y3 = ipy3(0);
+                  double qw = ipx1.Weight()*ipx2.Weight()*ipx3.Weight()
+                    * ipy1.Weight()*ipy2.Weight()*ipy3.Weight();
+
+                  double xi1 = x1;
+                  double xi2 = x1*x2;
+                  double xi3 = x1*x2*x3;
+                  double eta1 = xi3*y1;
+                  double eta2 = eta1*y2;
+                  double eta3 = xi3*y3;
+                  double base = x1*x1*x1*x1*x1 * x2*x2*x2*x2 * x3*x3*x3;
+                  double det = base*y1;
+
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2, xi3-eta3),
+                    Vec<3>(1-(xi1-xi3+eta1), xi1-xi2+eta2, eta1-eta2),
+                    qw*det);
+
+                  eta3 = eta1*y3;
+                  det = base*y1*y1;
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2+xi3-eta1, eta1-eta2),
+                    Vec<3>(1-(xi1-xi3+eta3), xi1-xi2, eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-(xi1-xi3+eta1), xi1-xi2, eta1-eta3),
+                    Vec<3>(1-xi1, xi1-xi2+xi3-eta2, eta2),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta2), xi1-xi2+eta1-eta2, xi3-eta1),
+                    Vec<3>(1-xi1, xi1-xi2, eta3),
+                    qw*det);
+
+                  eta3 = eta2*y3;
+                  det = base*y1*y1*y2;
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2, xi3),
+                    Vec<3>(1-(xi1-eta1+eta2), xi1-xi2+xi3-eta1, eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2+xi3-eta1, eta1),
+                    Vec<3>(1-(xi1-xi3+eta2), xi1-xi2, eta2-eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-(xi1-xi3+eta1), xi1-xi2, eta1),
+                    Vec<3>(1-xi1, xi1-xi2+xi3-eta2, eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta1), xi1-xi2, xi3-eta1),
+                    Vec<3>(1-xi1, xi1-xi2+eta1-eta2, eta2-eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta2), xi1-xi2, eta1-eta2),
+                    Vec<3>(1-xi1, xi1-xi2+eta2-eta3, xi3-eta2+eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta2), xi1-xi2, xi3-eta2),
+                    Vec<3>(1-xi1, xi1-xi2+eta3, eta1-eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2+eta1, xi3-eta1),
+                    Vec<3>(1-(xi1-eta3), xi1-xi2, eta2-eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2+eta2, eta1-eta2),
+                    Vec<3>(1-(xi1-eta3), xi1-xi2, xi3-eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2+eta2, xi3-eta2),
+                    Vec<3>(1-(xi1-eta2+eta3), xi1-xi2, eta1-eta2+eta3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta2+eta3), xi1-xi2+eta3, eta1-eta2),
+                    Vec<3>(1-xi1, xi1-xi2, xi3),
+                    qw*det);
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta3), xi1-xi2+eta2-eta3, xi3-eta2),
+                    Vec<3>(1-xi1, xi1-xi2, eta1),
+                    qw*det);
+                }
+
+    auto result = rule.MoveRule();
+    for (auto & p : get<0>(result))
+      p = SwapTetrahedronVertices23(p);
+    for (auto & p : get<1>(result))
+      p = SwapTetrahedronVertices23(p);
+    return result;
+  }
+
+
+  PairIntegrationRule<3> CommonEdgeTetrahedronIntegrationRule (int order)
+  {
+    IntegrationRule ir(ET_SEGM, order);
+    PairIntegrationRuleBuilder<3> rule;
+
+    for (auto ipx1 : ir)
+      for (auto ipx2 : ir)
+        for (auto ipx3 : ir)
+          for (auto ipy1 : ir)
+            for (auto ipy2 : ir)
+              for (auto ipy3 : ir)
+                {
+                  double x1 = ipx1(0), x2 = ipx2(0), x3 = ipx3(0);
+                  double y1 = ipy1(0), y2 = ipy2(0), y3 = ipy3(0);
+                  double qw = ipx1.Weight()*ipx2.Weight()*ipx3.Weight()
+                    * ipy1.Weight()*ipy2.Weight()*ipy3.Weight();
+                  double xi1 = x1;
+                  double xi2 = x1*x2;
+                  double xi3 = xi2*x3;
+                  double eta1, eta2, eta3, det;
+
+                  eta1 = xi3*y1;
+                  eta2 = xi2*y2;
+                  eta3 = eta2*y3;
+                  det = x1*x1*x1*x1*x1 * x2*x2*x2*x2 * x3*y2;
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2+eta1, xi3-eta1),
+                    Vec<3>(1-(xi1+eta2-xi2), xi1-xi2, eta2-eta3),
+                    qw*det);
+
+                  eta1 = xi3*y1;
+                  eta2 = eta1*y2;
+                  eta3 = xi2*y3;
+                  det = x1*x1*x1*x1*x1 * x2*x2*x2*x2 * x3*x3*y1;
+                  rule.Add(
+                    Vec<3>(1-xi1, xi1-xi2, xi2-eta3),
+                    Vec<3>(1-(xi1-xi2+xi3), xi1-xi2+xi3-eta1, eta2),
+                    qw*det);
+
+                  eta1 = xi3*y1;
+                  eta2 = eta1*y2;
+                  eta3 = eta2*y3;
+                  det = x1*x1*x1*x1*x1 * x2*x2*x2*x2
+                    * x3*x3*x3 * y1*y1*y2;
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta1), xi1-xi2, xi3-eta1),
+                    Vec<3>(1-xi1, xi1-eta2, eta3),
+                    qw*det);
+
+                  eta1 = xi2*y1;
+                  eta2 = eta1*y2;
+                  eta3 = eta2*y3;
+                  det = x1*x1*x1*x1*x1 * x2*x2*x2*x2 * y1*y1*y2;
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta3), xi1-eta1, eta2-eta3),
+                    Vec<3>(1-xi1, xi1-xi2, xi3),
+                    qw*det);
+
+                  eta1 = xi3*y1;
+                  eta2 = xi3*y2;
+                  eta3 = (xi2-eta1)*y3;
+                  det = x1*x1*x1*x1 * x2*x2*x2 * x3*x3 * (xi2-eta1);
+                  rule.Add(
+                    Vec<3>(1-(xi1-eta1), xi1-xi2, eta3),
+                    Vec<3>(1-xi1, xi1-xi3, eta2),
+                    qw*det);
+                }
+
+    return rule.MoveRule();
+  }
+
+
+  PairIntegrationRule<3> CommonVertexTetrahedronIntegrationRule (int order)
+  {
+    IntegrationRule ir(ET_SEGM, order);
+    PairIntegrationRuleBuilder<3> rule;
+
+    for (auto ipeta1 : ir)
+      for (auto ipeta2 : ir)
+        for (auto ipeta3 : ir)
+          for (auto ipeta4 : ir)
+            for (auto ipxi1 : ir)
+              for (auto ipxi2 : ir)
+                {
+                  double eta1 = ipeta1(0), eta2 = ipeta2(0);
+                  double eta3 = ipeta3(0), eta4 = ipeta4(0);
+                  double xi1 = ipxi1(0), xi2 = ipxi2(0);
+                  double qw = ipeta1.Weight()*ipeta2.Weight()
+                    * ipeta3.Weight()*ipeta4.Weight()
+                    * ipxi1.Weight()*ipxi2.Weight();
+
+                  double xi1eta1 = xi1*eta1;
+                  double xi1eta1eta2 = xi1eta1*eta2;
+                  double xi1xi2 = xi1*xi2;
+                  double xi1xi2eta3 = xi1xi2*eta3;
+                  double xi1xi2eta3eta4 = xi1xi2eta3*eta4;
+                  double det = xi1*xi1*xi1*xi1*xi1 * eta1 * xi2*xi2 * eta3;
+
+                  rule.AddSymmetric(
+                    Vec<3>(1-xi1, xi1eta1-xi1eta1eta2, xi1eta1eta2),
+                    Vec<3>(1-xi1xi2, xi1xi2eta3-xi1xi2eta3eta4, xi1xi2eta3eta4),
+                    qw*det);
+                }
+
+    return rule.MoveRule();
   }
 
 
