@@ -160,6 +160,13 @@ namespace ngfem
     NGS_DLL_HEADER virtual void
     Apply (const FiniteElement & fel,
 	   const BaseMappedIntegrationPoint & mip,
+	   BareSliceVector<float> x, 
+	   FlatVector<float> flux,
+	   LocalHeap & lh) const;
+
+    NGS_DLL_HEADER virtual void
+    Apply (const FiniteElement & fel,
+	   const BaseMappedIntegrationPoint & mip,
 	   BareSliceVector<Complex> x, 
 	   FlatVector<Complex> flux,
 	   LocalHeap & lh) const;

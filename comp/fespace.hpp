@@ -610,6 +610,12 @@ ANY                  1 1 1 1 | 15
         VTransformMR (ei, mat, type);
     }
     void TransformMat (ElementId ei, 
+                       SliceMatrix<float> mat, TRANSFORM_TYPE type) const
+    {
+      if (needs_transform_vec)      
+        throw Exception("TransformMat fp32 not supported");
+    }
+    void TransformMat (ElementId ei, 
 		       SliceMatrix<Complex> mat, TRANSFORM_TYPE type) const
     {
       if (needs_transform_vec)      
@@ -620,6 +626,12 @@ ANY                  1 1 1 1 | 15
     {
       if (needs_transform_vec)
         VTransformVR (ei, vec, type);
+    }
+    void TransformVec (ElementId ei, 
+		       SliceVector<float> vec, TRANSFORM_TYPE type) const
+    {
+      if (needs_transform_vec)
+        throw Exception("TransformVec fp32 not supported");
     }
     void TransformVec (ElementId ei, 
 		       SliceVector<Complex> vec, TRANSFORM_TYPE type) const

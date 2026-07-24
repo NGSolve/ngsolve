@@ -642,10 +642,12 @@ namespace ngla
 
 
   template class S_UmfpackInverse<double>;
+  template class S_UmfpackInverse<float>;
   template class S_UmfpackInverse<Complex>;
 
 
   template class S_UmfpackInverse_SVec<double,double>;
+  template class S_UmfpackInverse_SVec<float,float>;
   template class S_UmfpackInverse_SVec<double,Complex>;
   template class S_UmfpackInverse_SVec<Complex,Complex>;
 

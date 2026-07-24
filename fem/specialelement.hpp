@@ -47,6 +47,11 @@ namespace ngfem
     {
       return 0;
     }
+    virtual double Energy (FlatVector<float> elx,
+			   LocalHeap & lh) const
+    {
+      return 0;
+    }
     virtual double Energy (FlatVector<Complex> elx,
 			   LocalHeap & lh) const 
     {
@@ -65,6 +70,9 @@ namespace ngfem
     virtual void Apply (FlatVector<double> elx, FlatVector<double> ely, 
 			LocalHeap & lh) const;
 
+    virtual void Apply (FlatVector<float> elx, FlatVector<float> ely, 
+			LocalHeap & lh) const;
+    
     virtual void Apply (FlatVector<Complex> elx,
 			FlatVector<Complex> ely,
 			LocalHeap & lh) const
@@ -74,6 +82,9 @@ namespace ngfem
 
 
     virtual void CalcElementMatrix(FlatMatrix<double> elmat,
+			   LocalHeap& lh) const;
+
+    virtual void CalcElementMatrix(FlatMatrix<float> elmat,
 			   LocalHeap& lh) const;
 
     virtual void CalcElementMatrix(FlatMatrix<Complex> elmat,
@@ -107,6 +118,12 @@ namespace ngfem
     
     virtual void CalcLinearizedElementMatrix(FlatVector<double> elx,
                                              FlatMatrix<double> elmat,
+                                             LocalHeap& lh) const
+    {
+      CalcElementMatrix(elmat, lh);
+    }
+    virtual void CalcLinearizedElementMatrix(FlatVector<float> elx,
+                                             FlatMatrix<float> elmat,
                                              LocalHeap& lh) const
     {
       CalcElementMatrix(elmat, lh);

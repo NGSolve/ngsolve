@@ -195,7 +195,7 @@ namespace ngla
       FactorNew (*castmatrix);
     }
     ///
-    void FactorNew (const SparseMatrix<TM> & a);
+    void FactorNew (const SparseMatrixTM<TM> & a);
 
     /**
        A = L+D+L^T
@@ -288,7 +288,7 @@ namespace ngla
     typedef TV_COL TV;
     typedef TV_ROW TVX;
     typedef typename mat_traits<TV_ROW>::TSCAL TSCAL_VEC;
-
+    typedef typename scal_traits<TSCAL_VEC>::TSCAL64 TSCAL64;
     
     SparseCholesky (shared_ptr<const SparseMatrixTM<TM>> a,
 		    shared_ptr<BitArray> ainner = nullptr,
@@ -302,8 +302,8 @@ namespace ngla
     
     void Mult (const BaseVector & x, BaseVector & y) const override;
 
-    void MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const override;
-    void MultTransAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const override
+    void MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override;
+    void MultTransAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const override
     {
       MultAdd (s, x, y);
     }

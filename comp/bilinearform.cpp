@@ -152,6 +152,8 @@ namespace ngcomp
     SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());
     if (flags.NumFlagDefined("delete_zero_elements"))
       delete_zero_elements = flags.GetNumFlag("delete_zero_elements", 0.0);
+
+    fp32 = flags.GetDefineFlag("fp32");
   }
 
 
@@ -209,7 +211,8 @@ namespace ngcomp
     
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");
-    SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());    
+    SetCheckUnused (!flags.GetDefineFlagX("check_unused").IsFalse());
+    fp32 = flags.GetDefineFlag("fp32");    
   }
 
 
@@ -6385,7 +6388,7 @@ namespace ngcomp
 
 
 
-
+  template class S_BilinearForm<float>;
   template class S_BilinearForm<double>;
   template class S_BilinearForm<Complex>;
 
@@ -7400,9 +7403,33 @@ namespace ngcomp
                 return make_shared<T_BilinearFormDynBlocks<double>> (space, name, flags);
               }
             else
-              CreateSymMatObject3 (bf, T_BilinearForm,
-                                   space->GetDimension(), space->IsComplex(),
-                                   space, name, flags);
+              {
+                if (space->IsComplex())
+                  {
+                    CreateSymMatObject3S (bf, T_BilinearForm,
+                                          space->GetDimension(), Complex,
+                                          space, name, flags);
+                  }
+                else
+                  {
+                    if (flags.GetDefineFlag("fp32"))
+                      {
+                        bf = new T_BilinearForm<float>(space, name, flags);
+                      }
+                    else
+                      {
+                        CreateSymMatObject3S (bf, T_BilinearForm,
+                                              space->GetDimension(), double,
+                                              space, name, flags);
+                      }
+                  }
+                
+                /*
+                CreateSymMatObject3 (bf, T_BilinearForm,
+                                     space->GetDimension(), space->IsComplex(),
+                                     space, name, flags);
+                */
+              }
           }
       }
 

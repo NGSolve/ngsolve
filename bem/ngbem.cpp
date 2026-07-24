@@ -35,11 +35,13 @@ namespace ngsbem
                    optional<Region> _trial_definedon, optional<Region> _test_definedon,
                    shared_ptr<DifferentialOperator> _trial_evaluator, // shared_ptr<CoefficientFunction> _trial_factor,
                    shared_ptr<DifferentialOperator> _test_evaluator, // shared_ptr<CoefficientFunction> _test_factor,
-                   int _intorder, const IntOp_Parameters & _io_params)
+                   int _intorder, const IntOp_Parameters & _io_params,
+                   VorB _trial_vb, VorB _test_vb)
     : trial_space(_trial_space), test_space(_test_space),
       trial_definedon(_trial_definedon), test_definedon(_test_definedon),
       trial_evaluator(_trial_evaluator), // trial_factor(_trial_factor),
       test_evaluator(_test_evaluator), // test_factor(_test_factor),
+      trial_vb(_trial_vb), test_vb(_test_vb),
       intorder(_intorder), io_params(_io_params)
   {
     if (!test_space)
@@ -52,17 +54,6 @@ namespace ngsbem
     if (test_factor)
       test_evaluator = make_shared<DifferentialOperatorWithFactor>(test_evaluator, test_factor);
     */
-
-    tie(identic_panel_x, identic_panel_y, identic_panel_weight) = IdenticPanelIntegrationRule(intorder);
-    tie(identic_panel_quad_x, identic_panel_quad_y, identic_panel_quad_weight) = IdenticPanelQuadIntegrationRule(intorder);
-
-    tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
-    tie(common_vertex_quad_x, common_vertex_quad_y, common_vertex_quad_weight) = CommonVertexQuadIntegrationRule(intorder);
-    tie(common_vertex_quadtrig_x, common_vertex_quadtrig_y, common_vertex_quadtrig_weight) = CommonVertexQuadTrigIntegrationRule(intorder);
-
-    tie(common_edge_x, common_edge_y, common_edge_weight) = CommonEdgeIntegrationRule(intorder);
-    tie(common_edge_quad_x, common_edge_quad_y, common_edge_quad_weight) = CommonEdgeQuadIntegrationRule(intorder);
-    tie(common_edge_quadtrig_x, common_edge_quadtrig_y, common_edge_quadtrig_weight) = CommonEdgeQuadTrigIntegrationRule(intorder);
   }
 
 
@@ -93,11 +84,34 @@ namespace ngsbem
                           shared_ptr<DifferentialOperator> _trial_evaluator,
                           shared_ptr<DifferentialOperator> _test_evaluator,
                           KERNEL _kernel,
-                          int _intorder, const IntOp_Parameters & _io_params)
+                          int _intorder, const IntOp_Parameters & _io_params,
+                          VorB _trial_vb, VorB _test_vb)
   : IntegralOperator(_trial_space, _test_space, _definedon_trial, _definedon_test,
-                     _trial_evaluator, _test_evaluator, _intorder, _io_params),
+                     _trial_evaluator, _test_evaluator, _intorder, _io_params,
+                     _trial_vb, _test_vb),
     kernel(_kernel)
-  { ; }
+  {
+    if (trial_vb == BND && test_vb == BND)
+      {
+        tie(identic_panel_x, identic_panel_y, identic_panel_weight) = IdenticPanelIntegrationRule(intorder);
+        tie(identic_panel_quad_x, identic_panel_quad_y, identic_panel_quad_weight) = IdenticPanelQuadIntegrationRule(intorder);
+
+        tie(common_vertex_x, common_vertex_y, common_vertex_weight) = CommonVertexIntegrationRule(intorder);
+        tie(common_vertex_quad_x, common_vertex_quad_y, common_vertex_quad_weight) = CommonVertexQuadIntegrationRule(intorder);
+        tie(common_vertex_quadtrig_x, common_vertex_quadtrig_y, common_vertex_quadtrig_weight) = CommonVertexQuadTrigIntegrationRule(intorder);
+
+        tie(common_edge_x, common_edge_y, common_edge_weight) = CommonEdgeIntegrationRule(intorder);
+        tie(common_edge_quad_x, common_edge_quad_y, common_edge_quad_weight) = CommonEdgeQuadIntegrationRule(intorder);
+        tie(common_edge_quadtrig_x, common_edge_quadtrig_y, common_edge_quadtrig_weight) = CommonEdgeQuadTrigIntegrationRule(intorder);
+      }
+    else if (trial_vb == VOL && test_vb == VOL)
+      {
+        tie(identic_tet_x, identic_tet_y, identic_tet_weight) = IdenticTetrahedronIntegrationRule(intorder);
+        tie(common_face_tet_x, common_face_tet_y, common_face_tet_weight) = CommonFaceTetrahedronIntegrationRule(intorder);
+        tie(common_edge_tet_x, common_edge_tet_y, common_edge_tet_weight) = CommonEdgeTetrahedronIntegrationRule(intorder);
+        tie(common_vertex_tet_x, common_vertex_tet_y, common_vertex_tet_weight) = CommonVertexTetrahedronIntegrationRule(intorder);
+      }
+  }
 
 
 
@@ -106,62 +120,80 @@ namespace ngsbem
   CreateMatrixFMM(LocalHeap & lh) const
   {
     static Timer tall("ngbem fmm setup"); RegionTimer r(tall);
+    if (trial_vb != test_vb)
+      throw Exception("BEM assembly for mixed source and test domains is not implemented");
+    if (trial_vb != BND && trial_vb != VOL)
+      throw Exception("BEM assembly supports boundary and volume domains only");
+
     Array<Vec<3>> xpts, ypts, xnv, ynv;
-    // IntegrationRule ir(ET_TRIG, intorder);
     IntegrationRule ir_trig(ET_TRIG, intorder);
     IntegrationRule ir_quad(ET_QUAD, intorder);
+    IntegrationRule ir_tet(ET_TET, intorder);
+    auto get_ir = [&] (ELEMENT_TYPE et) -> const IntegrationRule &
+    {
+      if (et == ET_TRIG) return ir_trig;
+      if (et == ET_QUAD) return ir_quad;
+      if (et == ET_TET) return ir_tet;
+      throw Exception("BEM volume assembly currently supports tetrahedra only");
+    };
+
     auto trial_mesh = trial_space->GetMeshAccess();
     auto test_mesh = test_space->GetMeshAccess();
 
-    Array<int> compress_trial_els(trial_mesh->GetNE(BND));
-    Array<int> compress_test_els(test_mesh->GetNE(BND));
+    Array<int> compress_trial_els(trial_mesh->GetNE(trial_vb));
+    Array<int> compress_test_els(test_mesh->GetNE(test_vb));
     compress_trial_els = -1;
     compress_test_els = -1;
 
     int cnt = 0;
-    for (auto el : trial_mesh->Elements(BND))
+    for (auto el : trial_mesh->Elements(trial_vb))
       if (trial_space->DefinedOn(el))
         if (!trial_definedon || (*trial_definedon).Mask().Test(trial_mesh->GetElIndex(el)))
           {
             HeapReset hr(lh);
             auto & trafo = trial_mesh->GetTrafo(el, lh);
-            // auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));
-            auto & ir = (trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
-            auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));
+            auto & ir = get_ir(trafo.GetElementType());
+            auto & mir = trafo(ir, lh);
             for (auto & mip : mir)
               {
                 xpts.Append(mip.GetPoint());
-                xnv.Append(mip.GetNV());
+                if (trial_vb == BND)
+                  xnv.Append(static_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV());
+                else
+                  xnv.Append(Vec<3>(0.0));
               }
             compress_trial_els[el.Nr()] = cnt++;
           }
 
     cnt = 0;
-    for (auto el : test_mesh->Elements(BND))
+    for (auto el : test_mesh->Elements(test_vb))
       if (test_space->DefinedOn(el))
         if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(el)))
           {
             HeapReset hr(lh);
             auto & trafo = test_mesh->GetTrafo(el, lh);
-            // auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));
-            auto & ir = (trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
-            auto & mir = static_cast<MappedIntegrationRule<2,3>&>(trafo(ir, lh));
+            auto & ir = get_ir(trafo.GetElementType());
+            auto & mir = trafo(ir, lh);
             for (auto & mip : mir)
               {
                 ypts.Append(mip.GetPoint());
-                ynv.Append(mip.GetNV());
+                if (test_vb == BND)
+                  ynv.Append(static_cast<const MappedIntegrationPoint<2,3>&>(mip).GetNV());
+                else
+                  ynv.Append(Vec<3>(0.0));
               }
             compress_test_els[el.Nr()] = cnt++;
           }
 
     auto create_eval = [&](const FESpace & fes,
                            const Array<int> & compress_els,
-                           const DifferentialOperator & evaluator)
+                           const DifferentialOperator & evaluator,
+                           VorB vb)
     {
       auto mesh = fes.GetMeshAccess();
-      Array<short> classnr(mesh->GetNE(BND));
+      Array<short> classnr(mesh->GetNE(vb));
       mesh->IterateElements
-        (BND, lh, [&] (auto el, LocalHeap & llh)
+        (vb, lh, [&] (auto el, LocalHeap & llh)
         {
           if (el.GetType() == ET_QUAD)
             classnr[el.Nr()] = 8 /* max trig calsses */  +  ET_trait<ET_QUAD>::GetClassNr(el.Vertices());
@@ -184,10 +216,10 @@ namespace ngsbem
       for (auto nr : compress_els) if (nr!=-1) ncomp++;
       Array<int> first_ip_nr(ncomp);
       int total_npts = 0;
-      for (auto el : mesh->Elements(BND))
+      for (auto el : mesh->Elements(vb))
         if (compress_els[el.Nr()] != -1)
           {
-            auto & ir = (el.GetType() == ET_QUAD) ? ir_quad : ir_trig;
+            auto & ir = get_ir(el.GetType());
             first_ip_nr[compress_els[el.Nr()]] = total_npts;
             total_npts += ir.Size();
           }
@@ -197,9 +229,9 @@ namespace ngsbem
       for (auto elclass_inds : table)
         {
           if (elclass_inds.Size() == 0) continue;
-          ElementId ei(BND, elclass_inds[0]);
+          ElementId ei(vb, elclass_inds[0]);
           auto & felx = fes.GetFE (ei, lh);
-          auto & ir = (mesh->GetElType(ei) == ET_QUAD) ? ir_quad : ir_trig;
+          auto & ir = get_ir(mesh->GetElType(ei));
 
           int dim = evaluator.DimRef();
           Matrix<double,ColMajor> bmat_(dim*ir.Size(), felx.GetNDof());
@@ -218,7 +250,7 @@ namespace ngsbem
           Array<DofId> dnumsx, dnumsy;
           for (auto i : Range(elclass_inds))
             {
-              ElementId ei(BND, elclass_inds[i]);
+              ElementId ei(vb, elclass_inds[i]);
               fes.GetDofNrs(ei, dnumsx);
               xdofsin[i] = dnumsx;
 
@@ -245,13 +277,13 @@ namespace ngsbem
                                                      evaluator.Dim(), evaluator.DimRef());
       Matrix<double> transformation(evaluator.Dim(), evaluator.DimRef());
 
-      for (auto el : mesh->Elements(BND))
+      for (auto el : mesh->Elements(vb))
         if (compress_els[el.Nr()] != -1)
           {
             HeapReset hr(lh);
             auto & trafo = mesh->GetTrafo(el, lh);
             // auto & mir = trafo(ir, lh);
-            auto & ir = (trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
+            auto & ir = get_ir(trafo.GetElementType());
             auto & mir = trafo(ir, lh);
             for (auto j : Range(mir.Size()))
               {
@@ -266,8 +298,8 @@ namespace ngsbem
       return diagmat*evalx;
     };
 
-    auto evalx = create_eval(*trial_space, compress_trial_els, *trial_evaluator);
-    auto evaly = create_eval(*test_space, compress_test_els, *test_evaluator);
+    auto evalx = create_eval(*trial_space, compress_trial_els, *trial_evaluator, trial_vb);
+    auto evaly = create_eval(*test_space, compress_test_els, *test_evaluator, test_vb);
     auto fmmop = make_shared<FMM_Operator<KERNEL>> (kernel, std::move(xpts), std::move(ypts),
                                                     std::move(xnv), std::move(ynv), io_params);
 
@@ -288,15 +320,15 @@ namespace ngsbem
     Array<tuple<size_t, size_t>> pairs;
 
     Array<size_t> other;
-    for (ElementId ei : trial_mesh->Elements(BND))
+    for (ElementId ei : trial_mesh->Elements(trial_vb))
       if (trial_space->DefinedOn(ei))
         if (!trial_definedon || (*trial_definedon).Mask().Test(trial_mesh->GetElIndex(ei)))
         {
           other.SetSize0();
           for (auto v : trial_mesh->GetElement(ei).Vertices())
-            for (auto ej : trial_mesh->GetVertexElements(v,BND))
-              if (test_space->DefinedOn(ElementId(BND,ej)))
-                if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(ElementId(BND,ej))))
+            for (auto ej : trial_mesh->GetVertexElements(v,trial_vb))
+              if (test_space->DefinedOn(ElementId(test_vb,ej)))
+                if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(ElementId(test_vb,ej))))
                   {
                     if (!other.Contains(ej))
                       {
@@ -310,11 +342,11 @@ namespace ngsbem
     if (!io_params.UseFMM())
       {
         pairs.SetSize0();
-        for (ElementId ei : trial_mesh->Elements(BND))
+        for (ElementId ei : trial_mesh->Elements(trial_vb))
           if (trial_space->DefinedOn(ei))
             if (!trial_definedon || (*trial_definedon).Mask().Test(trial_mesh->GetElIndex(ei)))
               {
-                for (ElementId ej : test_mesh->Elements(BND))
+                for (ElementId ej : test_mesh->Elements(test_vb))
                   if (test_space->DefinedOn(ej))
                     if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(ej)))
                       pairs.Append ( { ei.Nr(), ej.Nr() });
@@ -339,10 +371,10 @@ namespace ngsbem
         for (auto i : Range(pairs))
           {
             auto [ei_trial, ei_test] = pairs[i];
-            trial_space->GetDofNrs( { BND, ei_trial }, dnums);
+            trial_space->GetDofNrs( { trial_vb, ei_trial }, dnums);
             trial_elements_creator.Add (i, dnums);
 
-            test_space->GetDofNrs( { BND, ei_test }, dnums);
+            test_space->GetDofNrs( { test_vb, ei_test }, dnums);
             test_elements_creator.Add (i, dnums);
           }
       }
@@ -359,19 +391,19 @@ namespace ngsbem
 
 
 
-    TableCreator<int> create_nbels(trial_mesh->GetNE(BND));
+    TableCreator<int> create_nbels(trial_mesh->GetNE(trial_vb));
     for ( ; !create_nbels.Done(); create_nbels++)
       for (auto i : Range(pairs))
         create_nbels.Add (get<0>(pairs[i]), get<1>(pairs[i]));
     Table<int> nbels = create_nbels.MoveTable();
 
     trial_mesh->IterateElements
-      (BND, lh, [&](auto ei_trial, LocalHeap & lh)
+      (trial_vb, lh, [&](auto ei_trial, LocalHeap & lh)
       {
         for (auto nrtest : nbels[ei_trial.Nr()])
           {
             HeapReset hr(lh);
-            ElementId ei_test(BND, nrtest);
+            ElementId ei_test(test_vb, nrtest);
 
             auto & trial_trafo = trial_mesh -> GetTrafo(ei_trial, lh);
             auto & test_trafo = test_mesh -> GetTrafo(ei_test, lh);
@@ -390,14 +422,12 @@ namespace ngsbem
             // tassSS.Stop();
             // tasscorr.Start();
 
-            // subtract terms from fmm:
-            // MappedIntegrationRule<2,3> trial_mir(ir, trial_trafo, lh);
-            // MappedIntegrationRule<2,3> test_mir(ir, test_trafo, lh);
-            auto & ir_trial = (trial_trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
-            auto & ir_test = (test_trafo.GetElementType() == ET_QUAD) ? ir_quad : ir_trig;
+            // subtract the regular quadrature already represented by the FMM
+            auto & ir_trial = get_ir(trial_trafo.GetElementType());
+            auto & ir_test = get_ir(test_trafo.GetElementType());
 
-            MappedIntegrationRule<2,3> trial_mir(ir_trial, trial_trafo, lh);
-            MappedIntegrationRule<2,3> test_mir(ir_test, test_trafo, lh);
+            auto & trial_mir = trial_trafo(ir_trial, lh);
+            auto & test_mir = test_trafo(ir_test, lh);
 
             // FlatMatrix<> shapesi(test_fel.GetNDof(), test_evaluator->Dim()*ir.Size(), lh);
             // FlatMatrix<> shapesj(trial_fel.GetNDof(), trial_evaluator->Dim()*ir.Size(), lh);
@@ -424,8 +454,12 @@ namespace ngsbem
                         Vec<3> x = test_mir[ix].GetPoint();
                         Vec<3> y = trial_mir[iy].GetPoint();
 
-                        Vec<3> nx = test_mir[ix].GetNV();
-                        Vec<3> ny = trial_mir[iy].GetNV();
+                        Vec<3> nx(0.0), ny(0.0);
+                        if (test_vb == BND)
+                          {
+                            nx = static_cast<const MappedIntegrationPoint<2,3>&>(test_mir[ix]).GetNV();
+                            ny = static_cast<const MappedIntegrationPoint<2,3>&>(trial_mir[iy]).GetNV();
+                          }
                         value_type kernel_ = 0.0;
                         if (L2Norm2(x-y) > 0)
                           kernel_ = kernel.Evaluate(x, y, nx, ny)(term.kernel_comp);
@@ -478,6 +512,9 @@ namespace ngsbem
   shared_ptr<BaseMatrix>
   GenericIntegralOperator<KERNEL> :: CreateNearFieldMatrix(LocalHeap & lh) const
   {
+    if (trial_vb != test_vb)
+      throw Exception("BEM assembly for mixed source and test domains is not implemented");
+
     auto trial_mesh = trial_space->GetMeshAccess();
     auto test_mesh = test_space->GetMeshAccess();
 
@@ -485,15 +522,15 @@ namespace ngsbem
     Array<tuple<size_t, size_t>> pairs;
 
     Array<size_t> other;
-    for (ElementId ei : trial_mesh->Elements(BND))
+    for (ElementId ei : trial_mesh->Elements(trial_vb))
       if (trial_space->DefinedOn(ei))
         if (!trial_definedon || (*trial_definedon).Mask().Test(trial_mesh->GetElIndex(ei)))
         {
           other.SetSize0();
           for (auto v : trial_mesh->GetElement(ei).Vertices())
-            for (auto ej : trial_mesh->GetVertexElements(v,BND))
-              if (test_space->DefinedOn(ElementId(BND,ej)))
-                if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(ElementId(BND,ej))))
+            for (auto ej : trial_mesh->GetVertexElements(v,trial_vb))
+              if (test_space->DefinedOn(ElementId(test_vb,ej)))
+                if (!test_definedon || (*test_definedon).Mask().Test(test_mesh->GetElIndex(ElementId(test_vb,ej))))
                   {
                     if (!other.Contains(ej))
                       {
@@ -511,10 +548,10 @@ namespace ngsbem
         for (auto i : Range(pairs))
           {
             auto [ei_trial, ei_test] = pairs[i];
-            trial_space->GetDofNrs( { BND, ei_trial }, dnums);
+            trial_space->GetDofNrs( { trial_vb, ei_trial }, dnums);
             trial_elements_creator.Add (i, dnums);
 
-            test_space->GetDofNrs( { BND, ei_test }, dnums);
+            test_space->GetDofNrs( { test_vb, ei_test }, dnums);
             test_elements_creator.Add (i, dnums);
           }
       }
@@ -528,19 +565,19 @@ namespace ngsbem
 
     nearfield->SetZero();
 
-    TableCreator<int> create_nbels(trial_mesh->GetNE(BND));
+    TableCreator<int> create_nbels(trial_mesh->GetNE(trial_vb));
     for ( ; !create_nbels.Done(); create_nbels++)
       for (auto i : Range(pairs))
         create_nbels.Add (get<0>(pairs[i]), get<1>(pairs[i]));
     Table<int> nbels = create_nbels.MoveTable();
 
     trial_mesh->IterateElements
-      (BND, lh, [&](auto ei_trial, LocalHeap & lh)
+      (trial_vb, lh, [&](auto ei_trial, LocalHeap & lh)
       {
         for (auto nrtest : nbels[ei_trial.Nr()])
           {
             HeapReset hr(lh);
-            ElementId ei_test(BND, nrtest);
+            ElementId ei_test(test_vb, nrtest);
 
             // auto & trial_trafo = trial_mesh -> GetTrafo(ei_trial, lh);
             // auto & test_trafo = test_mesh -> GetTrafo(ei_test, lh);
@@ -599,6 +636,179 @@ namespace ngsbem
     Vec<3> x,y,nx,ny;
     typedef decltype(kernel.Evaluate (x,y,nx,ny)) KERNEL_COMPS_T;
 
+    if ((trial_vb == VOL) != (test_vb == VOL))
+      throw Exception("mixed boundary-volume element matrices are not implemented");
+
+    if (trial_vb == VOL)
+      {
+        auto verti = mesh2->GetElement(ei_test).Vertices();
+        auto vertj = mesh->GetElement(ei_trial).Vertices();
+
+        FiniteElement & feli = test_space->GetFE(ei_test, lh);
+        FiniteElement & felj = trial_space->GetFE(ei_trial, lh);
+        ElementTransformation & trafoi = mesh2->GetTrafo(ei_test, lh);
+        ElementTransformation & trafoj = mesh->GetTrafo(ei_trial, lh);
+
+        auto Integrate6D = [&] (const IntegrationRule & irx,
+                                const IntegrationRule & iry,
+                                const FiniteElement & feli,
+                                const FiniteElement & felj,
+                                const ElementTransformation & trafoi,
+                                const ElementTransformation & trafoj,
+                                FlatMatrix<value_type> elmat,
+                                LocalHeap & lh)
+        {
+          HeapReset hr(lh);
+          SIMD_IntegrationRule simd_irx(irx);
+          SIMD_IntegrationRule simd_iry(iry);
+
+          SIMD_MappedIntegrationRule<3,3> mirx(simd_irx, trafoi, lh);
+          SIMD_MappedIntegrationRule<3,3> miry(simd_iry, trafoj, lh);
+
+          FlatMatrix<SIMD<double>> mshapesi(feli.GetNDof()*test_evaluator->Dim(), mirx.Size(), lh);
+          FlatMatrix<SIMD<value_type>> mshapesi_kern(feli.GetNDof(), mirx.Size(), lh);
+          FlatMatrix<SIMD<double>> mshapesj(felj.GetNDof()*trial_evaluator->Dim(), miry.Size(), lh);
+
+          IntRange test_range = test_evaluator->UsedDofs(feli);
+          IntRange trial_range = trial_evaluator->UsedDofs(felj);
+          test_evaluator->CalcMatrix(feli, mirx, mshapesi);
+          trial_evaluator->CalcMatrix(felj, miry, mshapesj);
+
+          FlatVector<Vec<KERNEL_COMPS_T::SIZE, SIMD<value_type>>> kernel_values(mirx.Size(), lh);
+          Vec<3,SIMD<double>> zero(0.0);
+          for (int k2 = 0; k2 < mirx.Size(); k2++)
+            kernel_values(k2) = mirx[k2].GetMeasure()*miry[k2].GetMeasure()
+              * simd_irx[k2].Weight()
+              * kernel.Evaluate(mirx[k2].Point(), miry[k2].Point(), zero, zero);
+
+          for (auto term : kernel.terms)
+            {
+              auto mshapesi_comp = mshapesi.RowSlice(term.test_comp, test_evaluator->Dim());
+              for (int k2 = 0; k2 < mirx.Size(); k2++)
+                mshapesi_kern.Col(k2) = term.fac*kernel_values(k2)(term.kernel_comp)
+                  * mshapesi_comp.Col(k2);
+
+              AddABt(mshapesi_kern.Rows(test_range),
+                     mshapesj.RowSlice(term.trial_comp, trial_evaluator->Dim()).AddSize(felj.GetNDof(), miry.Size()).Rows(trial_range),
+                     elmat.Rows(test_range).Cols(trial_range));
+            }
+        };
+
+        if (feli.ElementType() != ET_TET || felj.ElementType() != ET_TET)
+          throw Exception("singular volume BEM assembly currently supports tetrahedra only");
+
+        Array<IVec<2>> common;
+        for (int i = 0; i < verti.Size(); i++)
+          for (int j = 0; j < vertj.Size(); j++)
+            if (verti[i] == vertj[j])
+              common.Append(IVec<2>(i,j));
+
+        if (common.Size() == 0)
+          {
+            IntegrationRule iri(ET_TET, intorder);
+            IntegrationRule irj(ET_TET, intorder);
+            MappedIntegrationRule<3,3> mirx(iri, trafoi, lh);
+            MappedIntegrationRule<3,3> miry(irj, trafoj, lh);
+
+            FlatMatrix<> shapesi(feli.GetNDof(), test_evaluator->Dim()*iri.Size(), lh);
+            FlatMatrix<> shapesj(felj.GetNDof(), trial_evaluator->Dim()*irj.Size(), lh);
+            shapesi = 0.0;
+            shapesj = 0.0;
+            test_evaluator->CalcMatrix(feli, mirx, Trans(shapesi), lh);
+            trial_evaluator->CalcMatrix(felj, miry, Trans(shapesj), lh);
+
+            Vec<3> zero(0.0);
+            for (auto term : kernel.terms)
+              {
+                HeapReset hr(lh);
+                FlatMatrix<value_type> kernel_ixiy(iri.Size(), irj.Size(), lh);
+                for (int ix = 0; ix < iri.Size(); ix++)
+                  for (int iy = 0; iy < irj.Size(); iy++)
+                    kernel_ixiy(ix,iy) = term.fac * mirx[ix].GetWeight() * miry[iy].GetWeight()
+                      * kernel.Evaluate(mirx[ix].GetPoint(), miry[iy].GetPoint(), zero, zero)(term.kernel_comp);
+
+                FlatMatrix<value_type> kernel_shapesj(iri.Size(), felj.GetNDof(), lh);
+                FlatMatrix<> shapesi1(feli.GetNDof(), iri.Size(), lh);
+                FlatMatrix<> shapesj1(felj.GetNDof(), irj.Size(), lh);
+                for (int j = 0; j < iri.Size(); j++)
+                  shapesi1.Col(j) = shapesi.Col(test_evaluator->Dim()*j+term.test_comp);
+                for (int j = 0; j < irj.Size(); j++)
+                  shapesj1.Col(j) = shapesj.Col(trial_evaluator->Dim()*j+term.trial_comp);
+
+                kernel_shapesj = kernel_ixiy * Trans(shapesj1);
+                matrix += shapesi1 * kernel_shapesj;
+              }
+            return;
+          }
+
+        const Array<Vec<3>> * quad_x = nullptr;
+        const Array<Vec<3>> * quad_y = nullptr;
+        const Array<double> * quad_weight = nullptr;
+        Array<int> permi, permj;
+
+        switch (common.Size())
+          {
+          case 4:
+            quad_x = &identic_tet_x;
+            quad_y = &identic_tet_y;
+            quad_weight = &identic_tet_weight;
+            break;
+          case 3:
+            quad_x = &common_face_tet_x;
+            quad_y = &common_face_tet_y;
+            quad_weight = &common_face_tet_weight;
+            break;
+          case 2:
+            quad_x = &common_edge_tet_x;
+            quad_y = &common_edge_tet_y;
+            quad_weight = &common_edge_tet_weight;
+            break;
+          case 1:
+            quad_x = &common_vertex_tet_x;
+            quad_y = &common_vertex_tet_y;
+            quad_weight = &common_vertex_tet_weight;
+            break;
+          default:
+            throw Exception("invalid tetrahedron-pair topology");
+          }
+
+        for (auto pair : common)
+          {
+            permi.Append(pair[0]);
+            permj.Append(pair[1]);
+          }
+        for (int nr = 0; nr < 4; nr++)
+          {
+            if (!permi.Contains(nr)) permi.Append(nr);
+            if (!permj.Contains(nr)) permj.Append(nr);
+          }
+
+        auto PermutePoint = [] (Vec<3> p, const Array<int> & perm)
+        {
+          Vec<4> lambda(p[0], p[1], p[2], 1-p[0]-p[1]-p[2]);
+          Vec<4> mapped;
+          for (int i = 0; i < 4; i++)
+            mapped[perm[i]] = lambda[i];
+          return Vec<3>(mapped[0], mapped[1], mapped[2]);
+        };
+
+        constexpr int BS = 128;
+        for (int k = 0; k < quad_weight->Size(); k += BS)
+          {
+            int num = std::min(size_t(BS), quad_weight->Size()-k);
+            HeapReset hr(lh);
+            IntegrationRule irx(num, lh), iry(num, lh);
+            for (int k2 = 0; k2 < num; k2++)
+              {
+                Vec<3> px = PermutePoint((*quad_x)[k+k2], permi);
+                Vec<3> py = PermutePoint((*quad_y)[k+k2], permj);
+                irx[k2] = IntegrationPoint(px[0], px[1], px[2], (*quad_weight)[k+k2]);
+                iry[k2] = IntegrationPoint(py[0], py[1], py[2], 0.0);
+              }
+            Integrate6D(irx, iry, feli, felj, trafoi, trafoj, matrix, lh);
+          }
+        return;
+      }
 
     // common code for same panel, common edge, common vertex
     auto Integrate4D = [&] (const IntegrationRule & irx,
@@ -1131,12 +1341,12 @@ namespace ngsbem
           mat(i,j) = nearfield->GetValues()[pos];
 
 
-    auto CreateDof2El = [&] (const FESpace & fes)
+    auto CreateDof2El = [&] (const FESpace & fes, VorB vb)
     {
       TableCreator<tuple<ElementId,int>,DofId> creator;
       Array<DofId> dofs;
       for ( ; !creator.Done(); creator++)
-        for (auto ei : fes.Elements(BND))
+        for (auto ei : fes.Elements(vb))
           {
             fes.GetDofNrs(ei, dofs);
             for (auto [nr,d] : Enumerate(dofs))
@@ -1151,8 +1361,8 @@ namespace ngsbem
         lock_guard<mutex> guard(lock);
         if (!trial_dof2el)
           {
-            trial_dof2el = CreateDof2El(*trial_space);
-            test_dof2el = CreateDof2El(*test_space);
+            trial_dof2el = CreateDof2El(*trial_space, trial_vb);
+            test_dof2el = CreateDof2El(*test_space, test_vb);
           }
       }
 
@@ -1237,7 +1447,7 @@ namespace ngsbem
   shared_ptr<BasePotentialCF> GenericIntegralOperator<KERNEL> ::
   GetPotential(shared_ptr<GridFunction> gf, optional<int> io, bool nearfield_experimental) const
   {
-    return  make_shared<PotentialCF<KERNEL>> (gf, BND, trial_definedon, trial_evaluator,
+    return  make_shared<PotentialCF<KERNEL>> (gf, trial_vb, trial_definedon, trial_evaluator,
                                               kernel, io.value_or(intorder), nearfield_experimental, io_params);
   }
 

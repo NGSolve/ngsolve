@@ -685,6 +685,7 @@ namespace ngla
 
   
   template class ElementByElementMatrix<double>;
+  template class ElementByElementMatrix<float>;  
   template class ElementByElementMatrix<Complex>;
 
   template <typename SCAL>
@@ -989,7 +990,7 @@ namespace ngla
   }
 
   template <typename SCAL>  
-  void ConstantElementByElementMatrix<SCAL> :: MultAdd (SCAL s, const BaseVector & x, BaseVector & y) const
+  void ConstantElementByElementMatrix<SCAL> :: MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ConstantEBE mult add");
     static Timer tcol("ConstantEBE mult coloring");
@@ -1100,7 +1101,7 @@ namespace ngla
   }
 
   template <typename SCAL>    
-  void ConstantElementByElementMatrix<SCAL> :: MultTransAdd (SCAL s, const BaseVector & x, BaseVector & y) const
+  void ConstantElementByElementMatrix<SCAL> :: MultTransAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer t("ConstantEBE mult trans add");
     static Timer tcol("ConstantEBE mult trans coloring");
@@ -1211,6 +1212,7 @@ namespace ngla
   
   
   template class ConstantElementByElementMatrix<double>;
+  template class ConstantElementByElementMatrix<float>;
   template class ConstantElementByElementMatrix<Complex>;
 
   

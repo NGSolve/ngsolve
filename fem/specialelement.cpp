@@ -24,12 +24,25 @@ namespace ngfem
       }
     (*testout) << "ely = " << ely << endl;
   }
+
+  void SpecialElement :: 
+  Apply (FlatVector<float> elx, FlatVector<float> ely,
+	 LocalHeap & lh) const
+  {
+    throw Exception("SpecialElement::Apply<float> not implemented");        
+  }
   
   void SpecialElement ::
   CalcElementMatrix(FlatMatrix<double> elmat,
                     LocalHeap & lh) const
   {
     throw Exception ("SpecialElement::CalcMat not implemented");        
+  }
+  void SpecialElement ::
+  CalcElementMatrix(FlatMatrix<float> elmat,
+                    LocalHeap & lh) const
+  {
+    throw Exception ("SpecialElement::CalcMat<float> not implemented");        
   }
   void SpecialElement ::
   CalcElementVector(FlatVector<double> elvec,

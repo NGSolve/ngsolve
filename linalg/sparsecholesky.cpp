@@ -139,7 +139,7 @@ namespace ngla
                     shared_ptr<const Array<int>> acluster,
                     bool allow_refactor)
     : BaseSparseCholesky (a, ainner, acluster)
-  { 
+  {
     static Timer t("SparseCholesky - total");
     static Timer ta("SparseCholesky - allocate");
     RegionTimer reg(t);
@@ -171,7 +171,6 @@ namespace ngla
       cerr << "complex hermitian sparse inverse is WIP" << endl;
 
     int printstat = 0;
-    
     if (printstat)
       cout << IM(4) << "Minimal degree ordering: N = " << n << endl;
 
@@ -565,7 +564,7 @@ namespace ngla
 
   template <class TM>
   void SparseCholeskyTM<TM> :: 
-  FactorNew (const SparseMatrix<TM> & a)
+  FactorNew (const SparseMatrixTM<TM> & a)
   {
     static Timer tf("SparseCholesky - fill factor");
     tf.Start();
@@ -575,14 +574,12 @@ namespace ngla
 	return;
       }
     lfact = TM(0.0);
-
     if (!inner && !cluster)
       ParallelFor 
         (Range(height), [&](auto i)
          {
            auto rowind = a.GetRowIndices(i);
            auto rowvals = a.GetRowValues(i);
-           
            for (auto j : Range(rowind.Size()))
              if (rowind[j] <= i)
                SetOrig (i, rowind[j], rowvals[j]);
@@ -1577,7 +1574,7 @@ namespace ngla
   Mult (const BaseVector & x, BaseVector & y) const
   {
     y = 0.0;
-    MultAdd (TSCAL_VEC(1.0), x, y);
+    MultAdd (TSCAL64(1.0), x, y);
     return;
   }
   
@@ -2010,14 +2007,13 @@ namespace ngla
 
   template <class TM, class TV_ROW, class TV_COL>
   void SparseCholesky<TM, TV_ROW, TV_COL> :: 
-  MultAdd (TSCAL_VEC s, const BaseVector & x, BaseVector & y) const
+  MultAdd (TSCAL64 s, const BaseVector & x, BaseVector & y) const
   {
     static Timer timer("SparseCholesky<d,d,d>::MultAdd");
     RegionTimer reg (timer);
     timer.AddFlops (2.0*lfact.Size());
 
     // int n = Height();
-    
     const FlatVector<TVX> fx = x.FV<TVX> ();
     FlatVector<TVX> fy = y.FV<TVX> ();
 
@@ -2313,10 +2309,12 @@ namespace ngla
 
 
   template class SparseCholesky<double>;
+  template class SparseCholesky<float>;  
   template class SparseCholesky<Complex>;
   template class SparseCholesky<double, Complex, Complex>;
 
   template class SparseCholeskyTM<double>;
+  template class SparseCholeskyTM<float>;  
   template class SparseCholeskyTM<Complex>;
 
 #if MAX_SYS_DIM >= 1

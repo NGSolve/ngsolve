@@ -138,6 +138,7 @@ namespace ngbla
   }
 
   template class FlatCholeskyFactors<double>;
+  template class FlatCholeskyFactors<float>;
   template class FlatCholeskyFactors<Complex>;
 #if MAX_SYS_DIM >= 1
   template class FlatCholeskyFactors<Mat<1,1,double> >;

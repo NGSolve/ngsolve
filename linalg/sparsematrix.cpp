@@ -2371,6 +2371,11 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
           inv = InverseSparseMatrixTM<double>(A, subset, clusters);
         }
         else
+        if ( auto A = dynamic_pointer_cast<const SparseMatrix<float>>(baseA) )
+        {
+          inv = InverseSparseMatrixTM<float>(A, subset, clusters);
+        }
+        else
         {
           inv = InverseSparseMatrixTM<Complex>(dynamic_pointer_cast<const SparseMatrix<Complex>>(baseA), subset, clusters);
         }
@@ -2407,11 +2412,14 @@ shared_ptr<BaseMatrix> CreateSparseMatrixInverse(shared_ptr<const BaseSparseMatr
 
 
   template class SparseMatrixTM<double>;
+  template class SparseMatrixTM<float>;
   template class SparseMatrixTM<Complex>;
   template class SparseMatrix<double>;
+  template class SparseMatrix<float>;
   template class SparseMatrix<Complex>;
   template class SparseMatrix<double, Complex, Complex>;
   template class SparseMatrixSymmetric<double>;
+  template class SparseMatrixSymmetric<float>;
   template class SparseMatrixSymmetric<Complex>;
   template class SparseMatrixSymmetric<double, Complex>;
 

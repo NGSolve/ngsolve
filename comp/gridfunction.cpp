@@ -1195,6 +1195,8 @@ namespace ngcomp
     shared_ptr<GridFunction> gf;
     if (space->IsComplex())
       gf = make_shared<S_GridFunction<Complex>> (space, name, flags);
+    else if (flags.GetDefineFlag("fp32"))
+      gf = make_shared<S_GridFunction<float>> (space, name, flags);
     else
       gf = make_shared<S_GridFunction<double>> (space, name, flags);
     

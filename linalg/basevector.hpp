@@ -111,7 +111,7 @@ namespace ngla
   protected:
     /// size of vector
     size_t size;
-    /// number of doubles per entry
+    /// number of reals per entry
     int entrysize = 1;
     ///
     BaseVector () { ; }
@@ -228,6 +228,7 @@ namespace ngla
     int EntrySize() const throw () { return entrysize; }
     // one entry has the size of that many scalars (double or complex)
     virtual int EntrySizeScal() const throw () = 0;
+    virtual Scalar GetScalarType() const = 0;
     virtual void * Memory () const = 0;
     virtual FlatVector<double> FVDouble () const = 0;
     virtual FlatVector<Complex> FVComplex () const = 0;
@@ -295,13 +296,14 @@ namespace ngla
       // { return Range(T_Range<size_t>(range)); }
 
     static bool IsRegularIndex (int index) { return index >= 0; }
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<double> v) const = 0;
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<Complex> v) const = 0;
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<double> v) const = 0;
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<float> v) const = 0;    
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const = 0;
     void SetIndirect (FlatArray<int> ind, FlatVector<double> v);
+    void SetIndirect (FlatArray<int> ind, FlatVector<float> v);    
     void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v);
     void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false);
+    void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false);    
     void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false);
 
     virtual shared_ptr<BaseVector> GetLocalVector () const 
@@ -548,13 +550,16 @@ namespace ngla
     }
 
 
-    void GetIndirect (FlatArray<int> ind, 
-                      FlatVector<double> v) const
+    void GetIndirect (FlatArray<int> ind, FlatVector<double> v) const
     {
       vec -> GetIndirect (ind, v);
     }
-    void GetIndirect (FlatArray<int> ind, 
-                      FlatVector<Complex> v) const
+    void GetIndirect (FlatArray<int> ind, FlatVector<float> v) const
+    {
+      vec -> GetIndirect (ind, v);
+    }
+    
+    void GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const
     {
       vec -> GetIndirect (ind, v);
     }
@@ -563,6 +568,12 @@ namespace ngla
     {
       vec->SetIndirect (ind,v);
     }
+
+    void SetIndirect (FlatArray<int> ind, FlatVector<float> v)
+    {
+      vec->SetIndirect (ind,v);
+    }
+
     void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v)
     {
       vec->SetIndirect (ind,v);      
@@ -572,6 +583,12 @@ namespace ngla
     {
       vec->AddIndirect (ind, v, use_atomic);
     }
+    
+    void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false)
+    {
+      vec->AddIndirect (ind, v, use_atomic);
+    }
+
     void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false)
     {
       vec->AddIndirect (ind, v, use_atomic);
@@ -608,6 +625,13 @@ namespace ngla
     return FVDouble();
   }
 
+  template <>
+  inline FlatVector<float> BaseVector::FV<float> () const
+  {
+    return FlatVector<float>(Size(), (float*)Memory());
+  }
+
+  
   template <>
   inline FlatVector<Complex> BaseVector::FV<Complex> () const
   {
@@ -664,9 +688,12 @@ namespace ngla
                                (SCAL*)Memory());
     }
 
-
+    virtual Scalar GetScalarType() const override { return Scalar(SCAL(0)); }
+    
     virtual void GetIndirect (FlatArray<int> ind, 
                               FlatVector<double> v) const override;
+    virtual void GetIndirect (FlatArray<int> ind, 
+                              FlatVector<float> v) const override;
     virtual void GetIndirect (FlatArray<int> ind, 
                               FlatVector<Complex> v) const override;
 
@@ -701,13 +728,13 @@ namespace ngla
     virtual int EntrySizeScal() const throw () override { return vecs[0]->EntrySizeScal(); }
     shared_ptr<BaseVector> & operator[] (size_t i) const { return vecs[i]; }
 
+    virtual Scalar GetScalarType() const override { return vecs[0]->GetScalarType(); }
     void * Memory () const override;
     FlatVector<double> FVDouble () const override;
     FlatVector<Complex> FVComplex () const override;
-    void GetIndirect (FlatArray<int> ind,
-                      FlatVector<double> v) const override;
-    void GetIndirect (FlatArray<int> ind,
-                      FlatVector<Complex> v) const override;
+    void GetIndirect (FlatArray<int> ind, FlatVector<double> v) const override;
+    void GetIndirect (FlatArray<int> ind, FlatVector<float> v) const override;    
+    void GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const override;
 
     bool IsComplex() const override;
 
