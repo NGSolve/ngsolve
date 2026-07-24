@@ -2128,12 +2128,14 @@ active_dofs : BitArray or None
                   return py::dict
                     (
                      py::arg("multidim") = "\n"
-                     " Multidimensional GridFunction",
+                     "  Multidimensional GridFunction",
                      py::arg("nested") = "bool = False\n"
-		             " Generates prolongation matrices for each mesh level and prolongates\n"
-		             " the solution onto the finer grid after a refinement.",
+		     "  Generates prolongation matrices for each mesh level and prolongates\n"
+		     "  the solution onto the finer grid after a refinement.",
                      py::arg("autoupdate") = "\n"
-                     " Automatically update on FE space update"
+                     "  Automatically update on FE space update.",
+                     py::arg("fp32") = "bool = False\n"
+                     "  create vector in fp32."
                      );
                 })
     .def(py::pickle([] (const GridFunction& gf) -> py::tuple
@@ -2818,6 +2820,8 @@ space : ngsolve.FESpace
                      "  BilinearForm will not allocate memory for assembling.\n"
                      "  optimization feature for (nonlinear) problems where the\n"
                      "  form is only applied but never assembled.",
+                     py::arg("fp32") = "bool = False\n"
+                     "  Compute stiffness matrix in single precision.\n",
                      py::arg("project") = "bool = False\n"
                      "  When calling bf.Assemble, all saved coarse matrices from\n"
                      "  mesh refinements are updated as well using a Galerkin projection\n"
@@ -3209,7 +3213,9 @@ flags : dict
                      "  This file must be set by ngsolve.SetTestoutFile. Use\n"
                      "  ngsolve.SetNumThreads(1) for serial output.",
                      py::arg("printelvec") = "bool\n"
-                     "  print element vectors to testout file"
+                     "  print element vectors to testout file",
+                     py::arg("fp32") = "bool = False\n"
+                     "  Compute vector in single precision\n"                     
                      );
                 })
     .def("__str__",  [](LF & self ) { return ToString<LinearForm>(self); } )

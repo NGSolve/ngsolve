@@ -1452,6 +1452,7 @@ inverse : string
 
   
   ExportSparseMatrix<double>(m);
+  ExportSparseMatrix<float>(m);
   ExportSparseMatrix<Complex>(m);
 #if MAX_SYS_DIM >= 2  
   ExportSparseMatrix<Mat<2,2,double>>(m);

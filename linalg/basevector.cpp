@@ -586,7 +586,7 @@ namespace ngla
   {
     if (EntrySize() == 1) 
       {
-        FlatVector<float> lsv(Size(), (float*)FVDouble().Addr(0));
+        FlatVector<float> lsv = FV<float>();
         for (auto i : ind.Range())
           {
             int index = ind[i];
@@ -838,7 +838,7 @@ namespace ngla
   {
     if (EntrySize() == 1)
       {
-        FlatVector<float> lsv(Size(), (float*)FVDouble().Addr(0));
+        FlatVector<float> lsv = FV<float>();
 
         if (!use_atomic)
           {
