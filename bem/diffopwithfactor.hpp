@@ -60,7 +60,7 @@ namespace ngsbem
 
       auto dims = factor -> Dimensions();
 
-      mat.Rows(fel.GetNDof()*dims[1]).Cols(mir.Size()) = SIMD<double>(0.0);
+      mat.Rows(fel.GetNDof()*dims[0]).Cols(mir.Size()) = SIMD<double>(0.0);
       
       for (size_t i = 0; i < mir.Size(); i++)
         for (size_t j = 0; j < dims[0]; j++)
