@@ -43,24 +43,30 @@ namespace ngla
     static Timer t("BaseVector::L2Norm");
     RegionTimer reg(t);
 
+    /*
     auto me = FVDouble();
     t.AddFlops (me.Size());
 
-    /*
-    atomic<double> sum(0.0);
-    ParallelForRange ( me.Range(),
-                       [&] (IntRange r) 
-                       {
-                         double mysum = ngbla::L2Norm2 (me.Range(r));
-                         sum += mysum;
-                       });
-    */
     double parts[16];
     ParallelJob ([me,&parts] (TaskInfo ti)
                  {
                    auto r = ngstd::Range(me).Split (ti.task_nr, ti.ntasks);
                    parts[ti.task_nr] = ngbla::L2Norm2 (me.Range(r));
                  }, 16);
+    */
+
+    double parts[16];
+    std::visit([&](auto vme) {
+      auto me = FV<decltype(vme)>();
+      t.AddFlops (me.Size());
+      
+      ParallelJob ([me,&parts] (TaskInfo ti)
+      {
+        auto r = ngstd::Range(me).Split (ti.task_nr, ti.ntasks);
+        parts[ti.task_nr] = ngbla::L2Norm2 (me.Range(r));
+      }, 16);
+    }, GetScalarType());
+      
     double sum = 0;
     for (double part : parts) sum += part;
     return sqrt(double(sum));
@@ -70,6 +76,11 @@ namespace ngla
   {
     if (scal == 1) return *this;
 
+    static Timer t("BaseVector::Scale");
+    RegionTimer reg(t);
+    t.AddFlops (Size());
+    
+    /*
     auto me = FVDouble();
 
     static Timer t("BaseVector::Scale");
@@ -78,7 +89,17 @@ namespace ngla
 
     ParallelFor ( me.Range(),
                   [me,scal] (size_t i) { me(i) *= scal; });
+    */
 
+    std::visit([&](auto vme) {
+      auto me = FV<decltype(vme)>();
+      t.AddFlops (me.Size());
+      
+      ParallelFor(me.Range(),
+                  [me, scal](size_t i) { me(i) *= scal; });
+    }, GetScalarType());
+
+    
     return *this;
   }
 
@@ -93,7 +114,10 @@ namespace ngla
   {
     static Timer t("BaseVector::SetScalar");
     RegionTimer reg(t);
-    
+    t.AddFlops (Size());
+
+
+    /*
     auto fv = FVDouble();
     t.AddFlops (fv.Size());
 
@@ -101,7 +125,15 @@ namespace ngla
                   [fv,scal] (size_t i) { fv(i) = scal; },
                   TasksPerThread(1), TotalCosts(fv.Size())
                   );
-    
+    */
+
+    std::visit([&](auto vme) {
+      auto me = FV<decltype(vme)>();
+      
+      ParallelFor(me.Range(),
+                  [me, scal](size_t i) { me(i) = scal; });
+    }, GetScalarType());
+
     return *this; 
   }
 
@@ -172,7 +204,15 @@ namespace ngla
   {
     static Timer t("BaseVector::Add");
     RegionTimer reg(t);
+
+    if (Size() != v.Size())
+      throw Exception (string ("BaseVector::Add: size of me = ") +
+                       ToString(Size()) + " != size of other = " + ToString(v.Size()));
     
+    t.AddFlops (Size());
+
+    
+    /*
     auto me = FVDouble();
     auto you = v.FVDouble();
 
@@ -184,6 +224,21 @@ namespace ngla
 
     ParallelFor (me.Range(),
                  [me,you,scal] (size_t i) { me(i) += scal * you(i); });
+    */
+    std::visit([&](auto vme, auto vyou) {
+      
+      auto me  = FV<decltype(vme)>();
+      auto you = v.FV<decltype(vyou)>();
+     
+      if constexpr (requires { me(0) = scal * you(0); })
+        {
+          ParallelFor(me.Range(),
+                      [me, you, scal](size_t i) { me(i) += scal * you(i); });
+        }
+      else 
+        throw Exception("BaseVector::Add - illegal combination");
+    }, GetScalarType(), v.GetScalarType());
+    
     
     return *this;
   }
@@ -962,6 +1017,7 @@ namespace ngla
   template <class SCAL>
   FlatVector<double> S_BaseVector<SCAL> :: FVDouble () const 
   {
+    if constexpr (std::is_same<SCAL,float>()) throw Exception("FVDouble called for fp32 vector");
     return FlatVector<double> (size * entrysize, (double*)Memory());
   }
 
