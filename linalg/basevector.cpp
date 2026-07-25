@@ -1550,8 +1550,8 @@ namespace ngla
   template class S_BaseVector<float>;  
   template class S_BaseVector<Complex>;
   
-  template class VFlatVector<double>;
-  template class VFlatVector<float>;
+  // template class VFlatVector<double>;
+  // template class VFlatVector<float>;
   
   template class S_BaseVectorPtr<double>;
   template class S_BaseVectorPtr<float>;  
