@@ -67,6 +67,27 @@ namespace ngla
       local_vec -> GetIndirect (ind, v);
     }
 
+    void SetIndirect (FlatArray<int> ind, FlatVector<double> v) override {
+      local_vec -> SetIndirect (ind, v);
+    }
+    void SetIndirect (FlatArray<int> ind, FlatVector<float> v) override  {
+      local_vec -> SetIndirect (ind, v);
+    }
+    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v) override {
+      local_vec -> SetIndirect (ind, v);
+    }
+
+    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false) override {
+      local_vec -> AddIndirect (ind, v, use_atomic);
+    }
+    void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false) override {
+      local_vec -> AddIndirect (ind, v, use_atomic);
+    }
+    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false) override {
+      local_vec -> AddIndirect (ind, v, use_atomic);
+    }
+
+    
     void Cumulate () const override
     {
       orig->Cumulate();

@@ -305,6 +305,7 @@ namespace ngla
 
 
   template class DiagonalMatrix<double>;
+  template class DiagonalMatrix<float>;
   template class DiagonalMatrix<Complex>;
 
 
@@ -492,6 +493,7 @@ namespace ngla
   
 
   template class BlockDiagonalMatrix<double>;
+// template class BlockDiagonalMatrix<float>;
   template class BlockDiagonalMatrix<Complex>;
 
 

@@ -7010,6 +7010,31 @@ namespace ngcomp
       }
   }      
 
+  template <> void T_BilinearFormDiagonal<float>::
+  AddElementMatrix (FlatArray<int> dnums1,
+                    FlatArray<int> dnums2,
+                    BareSliceMatrix<float> elmat,
+                    ElementId id, bool addatomic,
+                    LocalHeap & lh) 
+  {
+    // if (addatomic) throw Exception ("atomic add for DiagonalMatrix not implemented");
+
+    if (!addatomic)
+      {
+        
+        for (int i = 0; i < dnums1.Size(); i++)
+          if (IsRegularDof(dnums1[i]))
+            (*mymatrix)(dnums1[i]) += elmat(i, i);
+      }
+    else
+      {
+        
+        for (int i = 0; i < dnums1.Size(); i++)
+          if (IsRegularDof(dnums1[i]))
+            AtomicAdd ( (*mymatrix)(dnums1[i]), elmat(i, i));
+      }
+  }      
+
 
 
   ///
@@ -7067,6 +7092,18 @@ namespace ngcomp
         (*mymatrix)(dnums1[i]) += diag(i);
   }
 
+  template <> void T_BilinearFormDiagonal<float>::
+    AddDiagElementMatrix (FlatArray<int> dnums1,
+                          FlatVector<float> diag,
+                          bool inner_element, int elnr,
+                          LocalHeap & lh) 
+  {
+    for (int i = 0; i < dnums1.Size(); i++)
+      if (IsRegularDof(dnums1[i]))
+        (*mymatrix)(dnums1[i]) += diag(i);
+  }
+
+  
   ///
   template <> void T_BilinearFormDiagonal<Complex>::
     AddDiagElementMatrix (FlatArray<int> dnums1,
@@ -7332,9 +7369,15 @@ namespace ngcomp
         bf = CreateSymMatObject<T_BilinearFormDiagonal, BilinearForm> //, const FESpace, const string, const Flags>
           (space->GetDimension(), space->IsComplex(), *space, name, flags);
 	*/
-        CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
-                             space->GetDimension(), space->IsComplex(),   
-                             space, name, flags);
+
+        if (flags.GetDefineFlag("fp32"))
+          {
+            bf = new T_BilinearFormDiagonal<float>(space, name, flags);
+          }
+        else
+          CreateSymMatObject3 (bf, T_BilinearFormDiagonal, 
+                               space->GetDimension(), space->IsComplex(),   
+                               space, name, flags);
       }
     else
       {

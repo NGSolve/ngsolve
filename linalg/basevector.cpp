@@ -470,8 +470,70 @@ namespace ngla
     return InnerProduct(v2, conjugate);
   }
 
+  template <typename TSCAL> template <typename TS2>
+  void S_BaseVector<TSCAL> :: T_SetIndirect (FlatArray<int> ind, FlatVector<TS2> v)
+  {
+    auto fv = FVScal();
+
+    int entrysize = EntrySize() * sizeof(typename scal_traits<TSCAL>::TSCAL_REAL)/sizeof(TSCAL);
+    if constexpr (requires { fv(0) = v(0); })
+      {
+        if (entrysize == 1)
+          for (auto i : ind.Range())
+            {
+              int index = ind[i];
+              fv(index) = IsRegularIndex(index) ? v(i) : 0;
+            }
+        else
+          {
+            FlatSysVector<TS2> lsv(ind.Size(), entrysize, v.Addr(0));
+            FlatSysVector<TSCAL> sv(Size(), entrysize, fv.Addr(0));
+            
+            for (size_t i = 0; i < ind.Size(); i++)
+              if (IsRegularIndex(ind[i]))
+                sv(ind[i]) = lsv(i);
+          }
+      }
+    else
+      throw Exception ("cannot SetIndirect for types ...");
+
+  }
 
 
+  template <typename TSCAL> template <typename TS2>
+  void S_BaseVector<TSCAL> :: T_AddIndirect (FlatArray<int> ind, FlatVector<TS2> v, bool use_atomic)
+  {
+    auto fv = FVScal();
+
+    int entrysize = EntrySize() * sizeof(typename scal_traits<TSCAL>::TSCAL_REAL)/sizeof(TSCAL);
+    if constexpr (requires { fv(0) = v(0); })
+      {
+        if (entrysize == 1)
+          for (auto i : ind.Range())
+            {
+              int index = ind[i];
+              fv(index) = IsRegularIndex(index) ? v(i) : 0;
+            }
+        else
+          {
+            FlatSysVector<TS2> lsv(ind.Size(), entrysize, v.Addr(0));
+            FlatSysVector<TSCAL> sv(Size(), entrysize, fv.Addr(0));
+            
+            for (size_t i = 0; i < ind.Size(); i++)
+              if (IsRegularIndex(ind[i]))
+                sv(ind[i]) = lsv(i);
+          }
+      }
+    else
+      throw Exception ("cannot SetIndirect for types ...");
+
+  }
+
+
+
+
+
+  
 
   template<>
   void S_BaseVector<double> :: GetIndirect (FlatArray<int> ind, 
@@ -612,7 +674,8 @@ namespace ngla
   {
     if (EntrySize() == 1)
       {
-        FlatVector<float> lsv(Size(), (float*)FVDouble().Addr(0));
+        // FlatVector<float> lsv(Size(), (float*)FVDouble().Addr(0));
+        FlatVector<float> lsv(Size(), (float*)Memory());
         for (auto i : ind.Range())
           {
             int index = ind[i];
@@ -621,7 +684,7 @@ namespace ngla
       }
     else
       {
-        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+        FlatSysVector<float> lsv(Size(), EntrySize(), (float*)Memory());
         FlatSysVector<float> sv(ind.Size(), EntrySize(), v.Addr(0));
         
         for (size_t i = 0; i < ind.Size(); i++)
@@ -722,8 +785,8 @@ namespace ngla
 
   void BaseVector :: SetIndirect (FlatArray<int> ind, 
 				  FlatVector<float> v) 
-  { 
-    FlatSysVector<float> lsv(Size(), EntrySize(), (float*)FVDouble().Addr(0));
+  {
+    FlatSysVector<float> lsv(Size(), EntrySize(), FV<float>().Addr(0));
     FlatSysVector<float> sv(ind.Size(), EntrySize(), v.Addr(0));
 
     for (size_t i = 0; i < ind.Size(); i++)

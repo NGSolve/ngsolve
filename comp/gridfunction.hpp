@@ -312,6 +312,7 @@ namespace ngcomp
 				   FlatVector<Complex> elvec) 
     { vec[comp] -> SetIndirect (dnums, elvec); }
 
+    virtual Scalar GetScalarType() const = 0;
 
     // multidim component, if -1 then all components are loaded/saved
     virtual void Load (istream & ist, int mdcomp = -1) = 0;
@@ -338,11 +339,12 @@ namespace ngcomp
 		    const Flags & flags = Flags());
       
     // parallel Load/Save by Martin Huber and Lothar Nannen 
-    virtual void Load (istream & ist, int mdcomp);
-    virtual void Save (ostream & ost, int mdcomp) const;
+    virtual void Load (istream & ist, int mdcomp) override;
+    virtual void Save (ostream & ost, int mdcomp) const override;
 
-    virtual void Update ();
-
+    virtual void Update () override;
+    virtual Scalar GetScalarType() const override { return Scalar(SCAL(0)); }
+    
   private:
     template <int N, NODE_TYPE NT> void LoadNodeType (istream & ist, int mdcomp);
     template <int N, NODE_TYPE NT> void SaveNodeType (ostream & ost, int mdcomp) const;
@@ -403,6 +405,7 @@ namespace ngcomp
     void Save(ostream& ost, int mdcomp) const override { throw Exception("Save not implemented for ComponentGF"); }
     shared_ptr<GridFunction> GetParent() const { return gf_parent; }
     int GetComponent() const { return comp; }
+    virtual Scalar GetScalarType() const override { return gf_parent->GetScalarType(); }
   };
   
 

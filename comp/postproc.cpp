@@ -397,6 +397,8 @@ namespace ngcomp
                   optional<shared_ptr<BitArray>> definedonelements = nullopt,
                   int bonus_intorder = 0)
   {
+    typedef typename scal_traits<SCAL>::TSCAL64 SCAL64;
+    
     static Timer sv("timer setvalues"); RegionTimer r(sv);
 
     auto fes = u.GetFESpace();
@@ -499,8 +501,8 @@ namespace ngcomp
              // Array<int> dnums(fel.GetNDof(), lh);
              // fes.GetDofNrs (ei, dnums);
 
-             FlatVector<SCAL> elflux(fel.GetNDof() * dim, lh);
-             FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
+             FlatVector<SCAL64> elflux(fel.GetNDof() * dim, lh);
+             FlatVector<SCAL64> elfluxi(fel.GetNDof() * dim, lh);
              
 	     if (use_simd)
                {
@@ -521,7 +523,7 @@ namespace ngcomp
 			     auto & irvol = f2el(locfnr, irfacet, lh);
 			     auto & mir = eltrans(irvol, lh);
 
-			     FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, mir.IR().Size(), lh);
+			     FlatMatrix<SIMD<SCAL64>> mfluxi(dimflux, mir.IR().Size(), lh);
 			     coef->Evaluate (mir, mfluxi);
 			     for (size_t j : Range(mir))
 			       mfluxi.Col(j) *= mir[j].GetWeight(); 
@@ -538,7 +540,7 @@ namespace ngcomp
                      if (!result)
                        {
                          /** Calc Element Matrix **/
-                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+                         FlatMatrix<SCAL64> elmat(fel.GetNDof(), lh); elmat = 0.0;
                          bool symmetric_so_far = true;
                          for (auto sbfi : single_bli)
                            { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
@@ -608,11 +610,11 @@ namespace ngcomp
                      // mir.ComputeNormalsAndMeasure(fel.ElementType(), locfnr);
                      // do_ir(mir);
                      
-                     FlatMatrix<SCAL> mfluxi(mir.IR().GetNIP(), dimflux, lh);
+                     FlatMatrix<SCAL64> mfluxi(mir.IR().GetNIP(), dimflux, lh);
                      coef->Evaluate (mir, mfluxi);
                      for (int j : Range(mir))
                        mfluxi.Row(j) *= mir[j].GetWeight();
-                     FlatVector<SCAL> elfluxadd(fel.GetNDof() * dim, lh); elfluxadd = 0;
+                     FlatVector<SCAL64> elfluxadd(fel.GetNDof() * dim, lh); elfluxadd = 0;
                      
                      dual_evaluator -> ApplyTrans (fel, mir, mfluxi, elfluxadd, lh);
                      elflux += elfluxadd;
@@ -625,7 +627,7 @@ namespace ngcomp
              if (!result)
                {
                  /** Calc Element Matrix **/
-                 FlatMatrix<SCAL> elmat(fel.GetNDof(), lh); elmat = 0.0;
+                 FlatMatrix<SCAL64> elmat(fel.GetNDof(), lh); elmat = 0.0;
                  bool symmetric_so_far = true;
                  for (auto sbfi : single_bli)
                    { sbfi->CalcElementMatrixAdd (fel, eltrans, elmat, symmetric_so_far, lh); }
@@ -722,16 +724,16 @@ namespace ngcomp
              // Array<int> dnums(fel.GetNDof(), lh);
              // fes.GetDofNrs (ei, dnums);
              
-             FlatVector<SCAL> elflux(fel.GetNDof() * dim, lh);
-             FlatVector<SCAL> elfluxi(fel.GetNDof() * dim, lh);
-             FlatVector<SCAL> fluxi(dimflux, lh);
+             FlatVector<SCAL64> elflux(fel.GetNDof() * dim, lh);
+             FlatVector<SCAL64> elfluxi(fel.GetNDof() * dim, lh);
+             FlatVector<SCAL64> fluxi(dimflux, lh);
              
              if (use_simd)
                {
                  try
                    {
                      SIMD_IntegrationRule ir(fel.ElementType(), 2*fel.Order() + bonus_intorder);
-                     FlatMatrix<SIMD<SCAL>> mfluxi(dimflux, ir.Size(), lh);
+                     FlatMatrix<SIMD<SCAL64>> mfluxi(dimflux, ir.Size(), lh);
                      
                      auto & mir = eltrans(ir, lh);
 
@@ -752,16 +754,16 @@ namespace ngcomp
                      
                      if (dim > 1) //  && typeid(*bli)==typeid(BlockBilinearFormIntegrator))
                        {
-                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                         FlatMatrix<SCAL64> elmat(fel.GetNDof(), lh);
                          single_bli->CalcElementMatrix (fel, eltrans, elmat, lh);                      
-                         FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                         FlatCholeskyFactors<SCAL64> invelmat(elmat, lh);
                          
                          for (int j = 0; j < dim; j++)
                            invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
                        }
                      else
                        {
-                         FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                         FlatMatrix<SCAL64> elmat(fel.GetNDof(), lh);
                          bli->CalcElementMatrix (fel, eltrans, elmat, lh);
                          
                          // Transform solution inverse instead
@@ -773,9 +775,9 @@ namespace ngcomp
                              // FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
                              // invelmat.Mult (elflux, elfluxi);
                              
-                             CalcLDL<SCAL,ColMajor> (Trans(elmat));
+                             CalcLDL<SCAL64,ColMajor> (Trans(elmat));
                              elfluxi = elflux;
-                             SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
+                             SolveLDL<SCAL64,ColMajor> (Trans(elmat), elfluxi);
                            }
                          else
                            {
@@ -787,9 +789,8 @@ namespace ngcomp
                              elfluxi = elmat * elflux;
                            }
                        }
-                     
+
                      fes->TransformVec (ei, elfluxi, TRANSFORM_SOL_INVERSE);
-                     
                      u.GetElementVector (mdcomp, ei.GetDofs(), elflux);
                      elfluxi += elflux;
                      u.SetElementVector (mdcomp, ei.GetDofs(), elfluxi);
@@ -807,7 +808,7 @@ namespace ngcomp
                }
              
              IntegrationRule ir(fel.ElementType(), 2*fel.Order() + bonus_intorder);
-             FlatMatrix<SCAL> mfluxi(ir.GetNIP(), dimflux, lh);
+             FlatMatrix<SCAL64> mfluxi(ir.GetNIP(), dimflux, lh);
              
              BaseMappedIntegrationRule & mir = eltrans(ir, lh);
              ProxyUserData ud;
@@ -826,19 +827,19 @@ namespace ngcomp
              
              if (dim > 1)
                {
-                 FlatMatrix<SCAL> elmat(fel.GetNDof(), lh);
+                 FlatMatrix<SCAL64> elmat(fel.GetNDof(), lh);
                  // const BlockBilinearFormIntegrator & bbli = 
                  // dynamic_cast<const BlockBilinearFormIntegrator&> (*bli.get());
                  // bbli . Block() . CalcElementMatrix (fel, eltrans, elmat, lh);
                  single_bli->CalcElementMatrix (fel, eltrans, elmat, lh);
-                 FlatCholeskyFactors<SCAL> invelmat(elmat, lh);
+                 FlatCholeskyFactors<SCAL64> invelmat(elmat, lh);
                  
                  for (int j = 0; j < dim; j++)
                    invelmat.Mult (elflux.Slice (j,dim), elfluxi.Slice (j,dim));
                }
              else
                {
-                 FlatMatrix<SCAL> elmat(fel.GetNDof()*dim, lh);
+                 FlatMatrix<SCAL64> elmat(fel.GetNDof()*dim, lh);
                  bli->CalcElementMatrix (fel, eltrans, elmat, lh);
                  
                  // Transform solution inverse instead
@@ -847,9 +848,9 @@ namespace ngcomp
                  // if (fel.GetNDof() < 50)
                  if (true)
                    {
-                     CalcLDL<SCAL,ColMajor> (Trans(elmat));
+                     CalcLDL<SCAL64,ColMajor> (Trans(elmat));
                      elfluxi = elflux;
-                     SolveLDL<SCAL,ColMajor> (Trans(elmat), elfluxi);
+                     SolveLDL<SCAL64,ColMajor> (Trans(elmat), elfluxi);
                    }
                  else
                    {
@@ -914,10 +915,17 @@ namespace ngcomp
                                  optional<shared_ptr<BitArray>> definedonelements,
                                  int bonus_intorder)
   {
+    /*
     if (u.GetFESpace()->IsComplex())
       SetValues<Complex> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
     else
       SetValues<double> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
+    */
+
+    std::visit([&](auto vme) {
+      SetValues<decltype(vme)> (coef, u, vb, nullptr, diffop, clh, dualdiffop, use_simd, mdcomp, definedonelements, bonus_intorder);
+    }, u.GetScalarType());
+    
   }
 
   NGS_DLL_HEADER void SetValues (shared_ptr<CoefficientFunction> coef,
