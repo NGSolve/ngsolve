@@ -1362,6 +1362,14 @@ namespace ngcomp
                           
             ma->GetFacetElements(i,elnums);
 
+            {
+              bool alldef = true;
+              for (auto enr : elnums)
+                if (!fespace->DefinedOn(ElementId(VOL, enr)))
+                  alldef = false;
+              if (!alldef) continue;
+            }
+
             el1 = elnums[0];
 
             int fac2 = i;
@@ -2556,7 +2564,11 @@ namespace ngcomp
                           int fac = fnums[0];
                           ma->GetFacetElements(fac,elnums);
                           int el = elnums[0];
+                          for (auto enr : elnums)
+                            if (fespace->DefinedOn(ElementId(VOL, enr)))
+                              { el = enr; break; }
                           ElementId ei(VOL, el);
+                          if (!fespace->DefinedOn(ei)) continue;
                           fnums = ma->GetElFacets(ei);
                           const FiniteElement & fel = fespace->GetFE (ei, lh);
                           int facnr = 0;
@@ -2920,7 +2932,14 @@ namespace ngcomp
                           
                         ma->GetFacetElements(i,elnums);
 
-                        //if (i == asdf)
+                        {
+                          bool alldef = true;
+                          for (auto enr : elnums)
+                            if (!fespace->DefinedOn(ElementId(VOL, enr)) ||
+                                !fespace2->DefinedOn(ElementId(VOL, enr)))
+                              alldef = false;
+                          if (!alldef) continue;
+                        }
 
                         el1 = elnums[0];
 
@@ -3167,7 +3186,12 @@ namespace ngcomp
                           int fac = fnums[0];
                           ma->GetFacetElements(fac,elnums);
                           int el = elnums[0];
+                          for (auto enr : elnums)
+                            if (fespace->DefinedOn(ElementId(VOL, enr)) &&
+                                fespace2->DefinedOn(ElementId(VOL, enr)))
+                              { el = enr; break; }
                           ElementId ei(VOL, el);
+                          if (!fespace->DefinedOn(ei) || !fespace2->DefinedOn(ei)) continue;
                           fnums = ma->GetElFacets(ei);
                           //const FiniteElement & fel = fespace->GetFE (ei, lh);
 
