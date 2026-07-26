@@ -708,11 +708,10 @@ namespace ngla
 
     template <typename T>
       void T_AddIndirect (FlatArray<int> ind, FlatVector<T> v, bool use_atomic);
-    
+
     void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }
     void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }
     void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }    
-
   };
 
 

@@ -508,20 +508,42 @@ namespace ngla
     int entrysize = EntrySize() * sizeof(typename scal_traits<TSCAL>::TSCAL_REAL)/sizeof(TSCAL);
     if constexpr (requires { fv(0) = v(0); })
       {
-        if (entrysize == 1)
-          for (auto i : ind.Range())
-            {
-              int index = ind[i];
-              fv(index) = IsRegularIndex(index) ? v(i) : 0;
-            }
+        if (!use_atomic)
+          {
+            if (entrysize == 1)
+              {
+                for (auto i : ind.Range())
+                  if (IsRegularIndex(ind[i]))
+                    fv(ind[i]) += v(i);
+              }
+            else
+              {
+                FlatSysVector<TS2> lsv(ind.Size(), entrysize, v.Addr(0));
+                FlatSysVector<TSCAL> sv(Size(), entrysize, fv.Addr(0));
+                
+                for (size_t i = 0; i < ind.Size(); i++)
+                  if (IsRegularIndex(ind[i]))
+                    sv(ind[i]) += lsv(i);
+              }
+          }
         else
           {
-            FlatSysVector<TS2> lsv(ind.Size(), entrysize, v.Addr(0));
-            FlatSysVector<TSCAL> sv(Size(), entrysize, fv.Addr(0));
-            
-            for (size_t i = 0; i < ind.Size(); i++)
-              if (IsRegularIndex(ind[i]))
-                sv(ind[i]) = lsv(i);
+            if (entrysize == 1)
+              {
+                for (auto i : ind.Range())
+                  if (IsRegularIndex(ind[i]))
+                    AtomicAdd (fv(ind[i]), v(i));
+              }
+            else
+              {
+                FlatSysVector<TS2> lsv(ind.Size(), entrysize, v.Addr(0));
+                FlatSysVector<TSCAL> sv(Size(), entrysize, fv.Addr(0));
+                
+                for (size_t i = 0; i < ind.Size(); i++)
+                  if (IsRegularIndex(ind[i]))
+                    for (int j = 0; j < entrysize; j++)
+                      AtomicAdd (sv(ind[i])(j), lsv(i)(j));
+              }
           }
       }
     else
@@ -861,8 +883,11 @@ namespace ngla
     fv[base++] += v[i](j);
     }
     }
-  */  
+  */
 
+
+  
+  /*
   void BaseVector :: AddIndirect (FlatArray<int> ind, 
 				  FlatVector<double> v, bool use_atomic) 
   {    
@@ -965,7 +990,7 @@ namespace ngla
             ii += es;
       }
   }
-
+  */
 
   void BaseVector :: Cumulate () const { ; }
   void BaseVector :: Distribute() const { ; }
