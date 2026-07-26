@@ -470,6 +470,7 @@ namespace ngla
     return InnerProduct(v2, conjugate);
   }
 
+
   template <typename TSCAL> template <typename TS2>
   void S_BaseVector<TSCAL> :: T_SetIndirect (FlatArray<int> ind, FlatVector<TS2> v)
   {
@@ -499,6 +500,14 @@ namespace ngla
 
   }
 
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: SetIndirect (FlatArray<int> ind, FlatVector<double> v) { T_SetIndirect (ind, v); }
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: SetIndirect (FlatArray<int> ind, FlatVector<float> v) { T_SetIndirect (ind, v); }
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: SetIndirect (FlatArray<int> ind, FlatVector<Complex> v) { T_SetIndirect (ind, v); }    
+
+  
 
   template <typename TSCAL> template <typename TS2>
   void S_BaseVector<TSCAL> :: T_AddIndirect (FlatArray<int> ind, FlatVector<TS2> v, bool use_atomic)
@@ -551,7 +560,12 @@ namespace ngla
 
   }
 
-
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic) { T_AddIndirect (ind, v, use_atomic); }
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic) { T_AddIndirect (ind, v, use_atomic); }
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic) { T_AddIndirect (ind, v, use_atomic); }    
 
 
 

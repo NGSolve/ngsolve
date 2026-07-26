@@ -197,6 +197,20 @@ namespace ngbla
   };
 
 
+  class Scalar : public std::variant<double,float,Complex>
+  {
+  public:
+    using std::variant<double,float,Complex>::variant;
+    Scalar operator- () {
+      return std::visit([](auto val) {
+        return Scalar(-val);
+      }, *this);
+    }
+  };
+
+
+
+  
   template <class T>
   class scal_traits
   {

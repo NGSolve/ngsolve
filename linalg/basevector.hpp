@@ -700,18 +700,18 @@ namespace ngla
                               FlatVector<Complex> v) const override;
 
     template <typename T>
-      void T_SetIndirect (FlatArray<int> ind, FlatVector<T> v);
+      inline void T_SetIndirect (FlatArray<int> ind, FlatVector<T> v);
     
-    void SetIndirect (FlatArray<int> ind, FlatVector<double> v) override { T_SetIndirect (ind, v); }
-    void SetIndirect (FlatArray<int> ind, FlatVector<float> v) override { T_SetIndirect (ind, v); }
-    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v) override { T_SetIndirect (ind, v); }    
+    void SetIndirect (FlatArray<int> ind, FlatVector<double> v) override;
+    void SetIndirect (FlatArray<int> ind, FlatVector<float> v) override;
+    void SetIndirect (FlatArray<int> ind, FlatVector<Complex> v) override;
 
     template <typename T>
-      void T_AddIndirect (FlatArray<int> ind, FlatVector<T> v, bool use_atomic);
+      inline void T_AddIndirect (FlatArray<int> ind, FlatVector<T> v, bool use_atomic);
 
-    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }
-    void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }
-    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false) override { T_AddIndirect (ind, v, use_atomic); }    
+    void AddIndirect (FlatArray<int> ind, FlatVector<double> v, bool use_atomic = false) override;
+    void AddIndirect (FlatArray<int> ind, FlatVector<float> v, bool use_atomic = false) override;
+    void AddIndirect (FlatArray<int> ind, FlatVector<Complex> v, bool use_atomic = false) override;
   };
 
 
