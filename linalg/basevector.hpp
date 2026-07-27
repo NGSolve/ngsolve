@@ -691,13 +691,13 @@ namespace ngla
     }
 
     virtual Scalar GetScalarType() const override { return Scalar(SCAL(0)); }
+
+    template <typename T>
+      inline void T_GetIndirect (FlatArray<int> ind, FlatVector<T> v) const;
     
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<double> v) const override;
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<float> v) const override;
-    virtual void GetIndirect (FlatArray<int> ind, 
-                              FlatVector<Complex> v) const override;
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<double> v) const override;
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<float> v) const override;
+    virtual void GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const override;
 
     template <typename T>
       inline void T_SetIndirect (FlatArray<int> ind, FlatVector<T> v);

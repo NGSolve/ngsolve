@@ -472,6 +472,50 @@ namespace ngla
 
 
   template <typename TSCAL> template <typename TS2>
+  void S_BaseVector<TSCAL> :: T_GetIndirect (FlatArray<int> ind, FlatVector<TS2> v) const
+  {
+    auto fv = FVScal();
+
+    int entrysize = EntrySize() * sizeof(typename scal_traits<TSCAL>::TSCAL_REAL)/sizeof(TSCAL);
+    if constexpr (requires { v(0) = fv(0); })
+      {
+        if (entrysize == 1)
+          for (auto i : ind.Range())
+            {
+              int index = ind[i];
+              v(i) = IsRegularIndex(index) ? fv(index) : 0;
+            }
+        else
+          {
+            FlatSysVector<TS2> lsv(ind.Size(), entrysize, v.Addr(0));
+            FlatSysVector<TSCAL> sv(Size(), entrysize, fv.Addr(0));
+            
+            for (size_t i = 0; i < ind.Size(); i++)
+              if (IsRegularIndex(ind[i]))
+                lsv(i) = sv(ind[i]);
+              else
+                lsv(i) = 0.0;
+          }
+      }
+    else
+      throw Exception ("cannot GetIndirect for types ...");
+
+  }
+
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: GetIndirect (FlatArray<int> ind, FlatVector<double> v) const { T_GetIndirect (ind, v); }
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: GetIndirect (FlatArray<int> ind, FlatVector<float> v) const { T_GetIndirect (ind, v); }
+  template <typename TSCAL>   
+  void S_BaseVector<TSCAL> :: GetIndirect (FlatArray<int> ind, FlatVector<Complex> v) const { T_GetIndirect (ind, v); }    
+
+  
+
+
+
+  
+
+  template <typename TSCAL> template <typename TS2>
   void S_BaseVector<TSCAL> :: T_SetIndirect (FlatArray<int> ind, FlatVector<TS2> v)
   {
     auto fv = FVScal();
@@ -483,7 +527,7 @@ namespace ngla
           for (auto i : ind.Range())
             {
               int index = ind[i];
-              fv(index) = IsRegularIndex(index) ? v(i) : 0;
+              if (IsRegularIndex(index)) fv(index) =  v(i);
             }
         else
           {
@@ -570,7 +614,7 @@ namespace ngla
 
 
   
-
+#ifdef OLD
   template<>
   void S_BaseVector<double> :: GetIndirect (FlatArray<int> ind, 
                                             FlatVector<double> v) const 
@@ -788,6 +832,7 @@ namespace ngla
 	    v[ii++] = 0;
 	}
   }
+#endif
   
 
 
