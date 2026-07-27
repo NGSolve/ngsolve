@@ -65,7 +65,12 @@ namespace ngla
         return vals;
       };
       dev_bx = make_unique<Matrix<Dev<double>>> (compress(mat.Bx, nzxk, nzxc));
-      dev_by = make_unique<Matrix<Dev<double>>> (compress(mat.By, nzyk, nzyc));
+      // fold quadrature weights into By, saves the per-lane weights[j] lookup in the kernel
+      Matrix<> byvals = compress(mat.By, nzyk, nzyc);
+      for (auto i : Range(byvals.Height()))
+        for (size_t j = 0; j < nip; j++)
+          byvals(i,j) *= mat.weights(j);
+      dev_by = make_unique<Matrix<Dev<double>>> (byvals);
 
       Array<int> flatdofx(nel*locdofsx), flatdofy(nel*locdofsy);
       for (auto i : Range(nel))
@@ -111,11 +116,8 @@ namespace ngla
       for (auto i : Range(nzxk))
         sbx << "          px[" << nzxc[i] << "] += bxvals[" << i*nip << "+j]*s_vecx[" << nzxk[i] << "];\n";
 
-      // all 32 lanes join every butterfly, lanes with j >= NIP contribute zero;
-      // after the xor-reduction every lane holds the sum, lane k%32 writes it
       stringstream sby;
-      sby << "          GenRegionTracer rt(brt, 5);\n";
-      sby << "          double v_reduced = 0.0;\n";
+      sby << "          DeviceRegionTracer rt(brt, 5);\n";
       for (size_t k = 0; k < locdofsy; k++)
         {
           stringstream terms;
@@ -129,9 +131,9 @@ namespace ngla
           if (!first)
           {
             sby << "          v_reduced = (j < NIP) ? " << terms.str() << " : 0.0;\n";
-            sby << "          for (int off = 16; off; off >>= 1)\n";
-            sby << "            v_reduced += __shfl_xor_sync(0xffffffff, v_reduced, off);\n";
-            sby << "          if (threadIdx.x == " << k%32 << ") s_vecy[" << k << "] += v_reduced;\n";
+            sby << "          for (int off = BS_IPTS/2; off; off >>= 1)\n";
+            sby << "            v_reduced += __shfl_xor_sync(submask, v_reduced, off);\n";
+            sby << "          if (j < NIP) s_vecy[" << k << "] += v_reduced;\n";
           }
         }
 
@@ -139,6 +141,10 @@ namespace ngla
 
       const bool only_loadstore = mat.opts.only_loadstore;
       const bool use_atomic     = mat.opts.atomic;
+      size_t epb                = std::max(1, mat.opts.BS_els);
+      
+      if (epb * mat.opts.BS_ipts != 32)
+          epb = 32 / mat.opts.BS_ipts;
 
       stringstream computeblock;
       if (!only_loadstore)
@@ -146,13 +152,14 @@ namespace ngla
           "      Mat<SDIM,SDIM> F;\n"
           "      double J;\n"
           "      {\n"
-          "      GenRegionTracer rt(brt, 2);\n"
+          "      DeviceRegionTracer rt(brt, 2);\n"
           "      for (int i = 0; i < SDIM*SDIM; i++)\n"
           "        F(i/SDIM,i%SDIM) = jacs[(size_t(el)*SDIM*SDIM+i)*NIPJ];\n"
           "      J = " << detexpr << ";\n"
           "      }\n"
           "      {\n"
-          "      GenRegionTracer rt(brt, 3);\n"
+          "      DeviceRegionTracer rt(brt, 3);\n"
+          "      double v_reduced;\n"
           "      for (int j0 = 0; j0 < NIP; j0 += blockDim.x)\n"
           "        {\n"
           "          int j = j0 + threadIdx.x;\n"
@@ -170,7 +177,7 @@ namespace ngla
           "              double sum = 0.0;\n"
           "              for (int c = 0; c < DIMX; c++)\n"
           "                sum += Del[(r*DIMX+c)*NIPD + " << (nipD==1 ? "0" : "j") << "]*hx[c];\n"
-          "              hy[r] = weights[j]*sum;\n"
+          "              hy[r] = sum;\n"
           "            }\n"
           << genapply(mat.diffopsy, "py", "hy", true) <<
           "            }\n"
@@ -186,24 +193,29 @@ namespace ngla
       body <<
         "__global__ void MatrixFreeBTDTBKernel (double s, double * input, double * output)\n"
         "{\n"
-        "  GenBlockTracer brt;\n"
-        "  __shared__ double s_vecx[LOCDOFSX];\n"
-        "  __shared__ double s_vecy[LOCDOFSY];\n"
-        "  for (int el = blockIdx.x; el < NEL; el += gridDim.x)\n"
+        "  DeviceBlockRegionTracer brt(gridDim, blockDim, blockIdx, threadIdx);\n"
+        "  __shared__ double s_vecx_all[BS_ELS*LOCDOFSX];\n"
+        "  __shared__ double s_vecy_all[BS_ELS*LOCDOFSY];\n"
+        "  const int ey = threadIdx.y;\n"
+        "  double * s_vecx = s_vecx_all + ey*LOCDOFSX;\n"
+        "  double * s_vecy = s_vecy_all + ey*LOCDOFSY;\n"
+        "  // sync only the BS_IPTS threads working on this element\n"
+        "  const unsigned submask = unsigned((1ull << BS_IPTS) - 1) << (BS_IPTS*ey);\n"
+        "  for (int el = blockIdx.x*BS_ELS + ey; el < NEL; el += gridDim.x*BS_ELS)\n"
         "    {\n"
-        "      __syncthreads();\n"
+        "      __syncwarp(submask);\n"
         "      {\n"
-        "      GenRegionTracer rt(brt, 1);\n"
+        "      DeviceRegionTracer rt(brt, 1);\n"
         "      for (int i = threadIdx.x; i < LOCDOFSX; i += blockDim.x)\n"
         "        s_vecx[i] = input[dofx[size_t(el)*LOCDOFSX+i]];\n"
         "      for (int i = threadIdx.x; i < LOCDOFSY; i += blockDim.x)\n"
         "        s_vecy[i] = 0.0;\n"
         "      }\n"
-        "      __syncthreads();\n"
+        "      __syncwarp(submask);\n"
         << computeblock.str() <<
-        "      __syncthreads();\n"
+        "      __syncwarp(submask);\n"
         "      {\n"
-        "      GenRegionTracer rt(brt, 4);\n"
+        "      DeviceRegionTracer rt(brt, 4);\n"
         "      for (int i = threadIdx.x; i < LOCDOFSY; i += blockDim.x)\n"
         << scatter <<
         "      }\n"
@@ -211,9 +223,35 @@ namespace ngla
         "}\n"
         "extern \"C\" void MatrixFreeBTDTBFunction (double s, BareVector<Dev<double>> input,\n"
         "                      BareVector<Dev<double>> output, cudaStream_t stream) {\n"
-        "  MatrixFreeBTDTBKernel<<<NBLOCKS,32,0,stream>>> (s, (double*)input.Data(), (double*)output.Data()); }\n";
+        "  MatrixFreeBTDTBKernel<<<NBLOCKS,dim3(BS_IPTS,BS_ELS),0,stream>>> (s, (double*)input.Data(), (double*)output.Data()); }\n";
 
       allcode.body = body.str();
+
+
+      stringstream s_top;
+
+      if(CudaRegionTimer::IsTimingEnabled())
+          s_top << "#define NGS_CUDA_DEVICE_TIMERS\n";
+
+      s_top <<
+        "#include <bla.hpp>\n"
+        "#include <cuda_core.hpp>\n"
+        "#include <cuda_linalg.hpp>\n"
+        "#include <cuda_profiler.hpp>\n"
+        "#include <cstddef>\n"
+        "using namespace ngbla;\n"
+        "using namespace ngs_cuda;\n";
+
+      const size_t nblocks = std::min((nel+epb-1)/epb, size_t(4096));
+      s_top << "static constexpr int NBLOCKS = " << nblocks
+            << ", NEL = " << nel << ", NIP = " << nip << ", NIPD = " << nipD
+            << ", LOCDOFSX = " << locdofsx << ", LOCDOFSY = " << locdofsy
+            << ", DIMX = " << dimx << ", DIMY = " << dimy
+            << ", DIMXREF = " << dimxref << ", DIMYREF = " << dimyref
+            << ", SDIM = " << dims << ", NIPJ = " << nipJ
+            << ", BS_ELS = " << epb << ", BS_IPTS = " << mat.opts.BS_ipts
+            << ";\n";
+      allcode.top += s_top.str();
 
       allcode.AddPointer(dev_bx->Data(), "bxvals", "double *", "__device__");
       allcode.AddPointer(dev_by->Data(), "byvals", "double *", "__device__");
@@ -221,109 +259,12 @@ namespace ngla
       allcode.AddPointer(dev_dofy->Data(), "dofy", "int *", "__device__");
       allcode.AddPointer(dev_d->Data(), "dvals", "double *", "__device__");
       allcode.AddPointer(dev_jac->Data(), "jacs", "double *", "__device__");
-      #ifdef NGS_CUDA_DEVICE_TIMERS
-      allcode.AddPointer(ngs_cuda::GetDevTraceDataPtr(), "tr_trace", "void *", "__device__");
-      allcode.AddPointer(ngs_cuda::GetDevTraceBlockDataPtr(), "tr_block", "void *", "__device__");
-      allcode.AddPointer(ngs_cuda::GetDevTraceStatePtr(), "tr_state", "void *", "__device__");
-      #endif // NGS_CUDA_DEVICE_TIMERS
+      allcode.pointer += "struct DevTimerData;\nstruct DevTraceData;\nstruct DevTraceBlockData;\nstruct DevTraceState;\n";
+      allcode.AddPointer(ngs_cuda::GetDevTimerDataPtr(), "d_timer_data", "DevTimerData *", "__device__");
+      allcode.AddPointer(ngs_cuda::GetDevTraceDataPtr(), "d_trace_data", "DevTraceData *", "__device__");
+      allcode.AddPointer(ngs_cuda::GetDevTraceBlockDataPtr(), "d_block_data", "DevTraceBlockData *", "__device__");
+      allcode.AddPointer(ngs_cuda::GetDevTraceStatePtr(), "d_trace_state", "DevTraceState *", "__device__");
 
-      stringstream s_top;
-      s_top <<
-        "#include <bla.hpp>\n"
-        "#include <cuda_core.hpp>\n"
-        "#include <cuda_linalg.hpp>\n"
-        "#include <cuda_profiler.hpp>\n"
-        "#include <cstddef>\n"
-        "using namespace ngbla;\n";
-
-      // device timers: same tracing as DeviceBlockRegionTracer/DeviceRegionTracer,
-      // but writing through raw pointers into the buffers of the main cuda module
-      s_top << R"RAW(
-#ifdef NGS_CUDA_DEVICE_TIMERS
-struct GenBlockTracer
-{
-  int blockNr, threadNr;
-  unsigned trace_pos, trace_end;
-  __device__ GenBlockTracer ()
-    : blockNr(blockIdx.x), threadNr(threadIdx.x), trace_pos(0), trace_end(0)
-  {
-    if (threadNr == 0)
-      {
-        auto & bd = ((ngs_cuda::DevTraceBlockData*)tr_block)[blockNr];
-        bd.start = clock64();
-        bd.start_global = ngs_cuda::GetGlobalTimer();
-        bd.start_smid = ngs_cuda::GetSMID();
-        if (blockNr == 0)
-          ((ngs_cuda::DevTraceState*)tr_state)->nblocks = gridDim.x;
-      }
-    __syncwarp();
-  }
-  __device__ unsigned Alloc ()
-  {
-    using namespace ngs_cuda;
-    if (trace_pos == trace_end)
-      {
-        trace_pos = TRACE_CHUNK_SIZE * atomicAdd(&((DevTraceState*)tr_state)->chunk_counter, 1u);
-        trace_end = trace_pos + TRACE_CHUNK_SIZE;
-      }
-    if (trace_pos >= N_MAX_TRACER_OBJECTS)
-      {
-        trace_pos = N_MAX_TRACER_OBJECTS;
-        trace_end = N_MAX_TRACER_OBJECTS + 1;
-        return N_MAX_TRACER_OBJECTS;
-      }
-    return trace_pos++;
-  }
-  __device__ ~GenBlockTracer ()
-  {
-    if (threadNr == 0)
-      {
-        auto & bd = ((ngs_cuda::DevTraceBlockData*)tr_block)[blockNr];
-        bd.stop = clock64();
-        bd.stop_global = ngs_cuda::GetGlobalTimer();
-        bd.stop_smid = ngs_cuda::GetSMID();
-      }
-  }
-};
-struct GenRegionTracer
-{
-  bool active;
-  unsigned id;
-  __device__ GenRegionTracer (GenBlockTracer & tr, int timer_nr)
-    : active(tr.threadNr == 0), id(active ? tr.Alloc() : ngs_cuda::N_MAX_TRACER_OBJECTS)
-  {
-    if (active)
-      {
-        auto & td = ((ngs_cuda::DevTraceData*)tr_trace)[id];
-        td.blockNr = tr.blockNr;
-        td.timer_nr = timer_nr;
-        td.start = clock64();
-      }
-  }
-  __device__ ~GenRegionTracer ()
-  {
-    if (active)
-      ((ngs_cuda::DevTraceData*)tr_trace)[id].stop = clock64();
-  }
-};
-#else // NGS_CUDA_DEVICE_TIMERS
-struct GenBlockTracer { __device__ GenBlockTracer () {} };
-struct GenRegionTracer { __device__ GenRegionTracer (GenBlockTracer &, int) {}; };
-#endif // NGS_CUDA_DEVICE_TIMERS
-)RAW";
-      s_top << "static constexpr int NBLOCKS = " << std::min(nel, size_t(4096))
-            << ", NEL = " << nel << ", NIP = " << nip << ", NIPD = " << nipD
-            << ", LOCDOFSX = " << locdofsx << ", LOCDOFSY = " << locdofsy
-            << ", DIMX = " << dimx << ", DIMY = " << dimy
-            << ", DIMXREF = " << dimxref << ", DIMYREF = " << dimyref
-            << ", SDIM = " << dims << ", NIPJ = " << nipJ << ";\n";
-      s_top.precision(17);
-      s_top << "__constant__ double weights[NIP] = {";
-      for (size_t j = 0; j < nip; j++)
-        s_top << (j ? "," : "") << mat.weights(j);
-      s_top << "};\n";
-
-      allcode.top += s_top.str();
 
       cout << IM(9) << allcode.top << allcode.body << endl;
 

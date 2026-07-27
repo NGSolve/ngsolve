@@ -4,60 +4,77 @@
 
 using namespace std;
 
+__device__ ngs_cuda::DevTimerData *d_timer_data; // [N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS];
+__device__ ngs_cuda::DevTraceData *d_trace_data; // [N_MAX_TRACER_OBJECTS+1];
+__device__ ngs_cuda::DevTraceBlockData *d_block_data; // [N_MAX_BLOCKS];
+__device__ ngs_cuda::DevTraceState *d_trace_state;
+
 namespace ngs_cuda
 {
 
   int gpu_clock = 0;
 
-#ifdef NGS_CUDA_DEVICE_TIMERS
   constexpr bool SKIP_BLOCKS_WITH_NO_TRACES = true;
 
-  __device__ DevTimerData d_timer_data[N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS];
-  __device__ DevTraceData d_trace_data[N_MAX_TRACER_OBJECTS+1];
-  __device__ DevTraceBlockData d_block_data[N_MAX_BLOCKS];
-  __device__ DevTraceState d_trace_state;
+  static DevTimerData *u_timer_data = nullptr;
+  static DevTraceData *u_trace_data = nullptr;
+  static DevTraceBlockData *u_block_data = nullptr;
+  static DevTraceState *u_trace_state = nullptr;
 
+  static bool is_profiler_initialized = false;
 
-  Array<DevTimerData> timer_data{N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS};
-  Array<DevTraceData> trace_data{N_MAX_TRACER_OBJECTS+1};
-  Array<DevTraceBlockData> block_data{N_MAX_BLOCKS};
-
-  void * GetDevTraceDataPtr()
+  static void InitializeCudaProfilerData()
   {
-    void * p = nullptr;
-    cudaGetSymbolAddress(&p, d_trace_data);
-    return p;
-  }
-  void * GetDevTraceBlockDataPtr()
-  {
-    void * p = nullptr;
-    cudaGetSymbolAddress(&p, d_block_data);
-    return p;
-  }
-  void * GetDevTraceStatePtr()
-  {
-    void * p = nullptr;
-    cudaGetSymbolAddress(&p, d_trace_state);
-    return p;
-  }
-#endif // NGS_CUDA_DEVICE_TIMERS
+    if(!is_profiler_initialized)
+    {
+        cudaMallocManaged(&u_timer_data, sizeof(DevTimerData) * N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS);
+        cudaMemcpyToSymbol (d_timer_data, &u_timer_data, sizeof(DevTimerData*));
 
+        cudaMallocManaged(&u_trace_data, sizeof(DevTraceData) * (N_MAX_TRACER_OBJECTS+1));
+        cudaMemcpyToSymbol (d_trace_data, &u_trace_data, sizeof(DevTraceData*));
+
+        cudaMallocManaged(&u_block_data, sizeof(DevTraceBlockData) * N_MAX_BLOCKS);
+        cudaMemcpyToSymbol (d_block_data, &u_block_data, sizeof(DevTraceBlockData*));
+
+        cudaMallocManaged(&u_trace_state, sizeof(DevTraceState));
+        *u_trace_state = DevTraceState{0, 0, true};   // zero counters, enable tracing
+        cudaMemcpyToSymbol (d_trace_state, &u_trace_state, sizeof(DevTraceState*));
+
+        is_profiler_initialized = true;
+    }
+  }
+
+  void * GetDevTimerDataPtr() { return u_timer_data; }
+  void * GetDevTraceDataPtr() { return u_trace_data; }
+  void * GetDevTraceBlockDataPtr() { return u_block_data; }
+  void * GetDevTraceStatePtr() { return u_trace_state; }
 
   bool CudaRegionTimer :: is_cuda_timer_enabled = false;
 
+  CudaRegionTimer :: CudaRegionTimer (ngcore::Timer<> & atimer, std::initializer_list<const char*> * atimer_names)
+    : timer(atimer), timer_names(atimer_names)
+  {
+    timer.Start();
+    if(is_cuda_timer_enabled)
+    {
+      InitializeCudaProfilerData();
+      detail::StartGPUTimer(timer);
+      cudaStreamAddCallback(0, detail::CallbackKernelStart, &t_kernel_start, 0);
+    }
+  }
+
   void CudaRegionTimer :: ProcessTracingData(const std::initializer_list<const char *> * timer_names)
   {
-#ifdef NGS_CUDA_DEVICE_TIMERS
+      if(!is_profiler_initialized)
+        return;
+
       static ngcore::Timer<> t_overhead("CUDA Tracing overhead");
       static ngcore::Timer<> t_memcopy("memcopy");
       static ngcore::Timer<> t_cleanup("cleanup");
       cudaDeviceSynchronize();
       t_overhead.Start();
       detail::StartGPUTimer(t_overhead);
-      t_memcopy.Start();
-      DevTraceState state;
-      cudaMemcpyFromSymbol (&state, d_trace_state, sizeof(state));
-      t_memcopy.Stop();
+      DevTraceState & state = *u_trace_state;
       auto nblocks = state.nblocks;
       size_t n_trace_entries = std::min(size_t(state.chunk_counter) * TRACE_CHUNK_SIZE,
                                         size_t(N_MAX_TRACER_OBJECTS));
@@ -65,17 +82,9 @@ namespace ngs_cuda
         cerr << "CUDA tracing: trace buffer capacity exceeded, some events were dropped" << endl;
       if(nblocks>0)
       {
-      t_memcopy.Start();
-        if(n_trace_entries > 0)
-          cudaMemcpyFromSymbol(trace_data.Data(), d_trace_data, sizeof(DevTraceData)*n_trace_entries);
-      t_memcopy.Stop();
-      t_memcopy.Start();
-        cudaMemcpyFromSymbol(timer_data.Data(), d_timer_data, sizeof(DevTimerData)*timer_data.Size());
-      t_memcopy.Stop();
-      t_memcopy.Start();
-        cudaMemcpyFromSymbol(block_data.Data(), d_block_data, sizeof(DevTraceBlockData)*nblocks);
-      t_memcopy.Stop();
-        cudaDeviceSynchronize();
+        FlatArray<DevTimerData> timer_data(N_MAX_BLOCKS * N_MAX_DEVICE_TIMERS, u_timer_data);
+        FlatArray<DevTraceData> trace_data(N_MAX_TRACER_OBJECTS+1, u_trace_data);
+        FlatArray<DevTraceBlockData> block_data(N_MAX_BLOCKS, u_block_data);
 
         auto blocks = block_data.Range(0ul, nblocks);
         auto traces = trace_data.Range(0ul, n_trace_entries);
@@ -108,8 +117,11 @@ namespace ngs_cuda
         };
         for(auto b : blocks)
         {
-          AddAnchor(b.start_smid, b.start, b.start_global);
-          AddAnchor(b.stop_smid,  b.stop,  b.stop_global);
+          // a valid %globaltimer reading is never 0; skip anchors from block
+          // endpoints that were not recorded, so they cannot pull
+          // global_start_time to 0 or corrupt an SM's calibration slope
+          if(b.start_global != 0) AddAnchor(b.start_smid, b.start, b.start_global);
+          if(b.stop_global  != 0) AddAnchor(b.stop_smid,  b.stop,  b.stop_global);
         }
 
         // map a clock64 value on the given SM to absolute %globaltimer nanoseconds
@@ -229,25 +241,20 @@ namespace ngs_cuda
           }
         }
 
-        // cleanup for next run (only the actually used entries need zeroing)
+        // cleanup for next run (only the actually used entries need zeroing);
+        // the buffers are managed, so zero them directly on the host
         t_cleanup.Start();
-        timer_data = DevTimerData{{0}};
-        cudaMemcpyToSymbol (d_timer_data, timer_data.Data(), sizeof(DevTimerData)*timer_data.Size());
+        cudaMemset(u_timer_data, 0, sizeof(DevTimerData)*timer_data.Size());
         if(n_trace_entries > 0)
-        {
-          memset(trace_data.Data(), 0, sizeof(DevTraceData)*n_trace_entries);
-          cudaMemcpyToSymbol (d_trace_data, trace_data.Data(), sizeof(DevTraceData)*n_trace_entries);
-        }
-        block_data = DevTraceBlockData{0,0,0,0,0,0};
-        cudaMemcpyToSymbol (d_block_data, block_data.Data(), sizeof(DevTraceBlockData)*nblocks);
-        DevTraceState zero_state{0, 0};
-        cudaMemcpyToSymbol (d_trace_state, &zero_state, sizeof(zero_state));
+          cudaMemset(u_trace_data, 0, sizeof(DevTraceData)*n_trace_entries);
+        cudaMemset(u_block_data, 0, sizeof(DevTraceBlockData)*nblocks);
         t_cleanup.Stop();
       }
-      
-      detail::StartGPUTimer(t_overhead);
+
+      detail::StopGPUTimer(t_overhead);
+      state.chunk_counter = 0;
+      state.nblocks = 0;
       t_overhead.Stop();
-#endif // NGS_CUDA_DEVICE_TIMERS
   }
 
   __global__ void SmallKernel (long long *clock)

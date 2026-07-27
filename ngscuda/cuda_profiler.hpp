@@ -13,7 +13,6 @@ namespace ngs_cuda
 // #define NGS_CUDA_DEVICE_TIMERS
 
 #ifdef __CUDACC__
-#ifdef NGS_CUDA_DEVICE_TIMERS
   constexpr int N_MAX_DEVICE_TIMERS = 16;
   struct DevTraceData {
     unsigned long long start;   // clock64 at region start (0 = entry unused)
@@ -41,7 +40,7 @@ namespace ngs_cuda
   };
 
   constexpr unsigned N_MAX_TRACER_OBJECTS = 4*1024*1024;
-  constexpr int N_MAX_BLOCKS = 65*1024;
+  constexpr unsigned N_MAX_BLOCKS = 65*1024;
 
   // each thread block reserves trace entries in chunks of this size from one
   // global atomic counter; entry N_MAX_TRACER_OBJECTS of d_trace_data serves
@@ -51,12 +50,17 @@ namespace ngs_cuda
   struct DevTraceState {
     unsigned chunk_counter;   // next free chunk of d_trace_data
     unsigned nblocks;         // total number of blocks, written by block 0
+    bool enabled;             // enable tracing, written by host
   };
 
-  extern __device__ DevTimerData d_timer_data[];
-  extern __device__ DevTraceData d_trace_data[];
-  extern __device__ DevTraceBlockData d_block_data[];
-  extern __device__ DevTraceState d_trace_state;
+}
+  extern "C" __device__ ngs_cuda::DevTimerData *d_timer_data;
+  extern "C" __device__ ngs_cuda::DevTraceData *d_trace_data;
+  extern "C" __device__ ngs_cuda::DevTraceBlockData *d_block_data;
+  extern "C" __device__ ngs_cuda::DevTraceState *d_trace_state;
+
+namespace ngs_cuda
+{
   extern Array<DevTimerData> timer_data;
   extern Array<DevTraceData> trace_data;
   extern Array<DevTraceBlockData> block_data;
@@ -77,6 +81,7 @@ namespace ngs_cuda
     return ret;
   }
 
+#ifdef NGS_CUDA_DEVICE_TIMERS
   struct DeviceBlockRegionTracer {
     int blockNr, threadNr;
     unsigned trace_pos, trace_end;   // this block's current chunk of trace entries
@@ -85,6 +90,16 @@ namespace ngs_cuda
       : blockNr(blockIdx.x+gridDim.x*blockIdx.y), threadNr(threadIdx.x+blockDim.x*threadIdx.y),
         trace_pos(0), trace_end(0)   // empty chunk -> first AllocTraceEntry reserves one
     {
+      threadNr = -1;
+
+      if(!d_trace_state->enabled)
+        return;
+
+      blockNr = blockIdx.x+gridDim.x*blockIdx.y;
+      threadNr = threadIdx.x+blockDim.x*threadIdx.y;
+      trace_pos = 0;
+      trace_end = 0;
+
       if(threadNr == 0)
       {
         // read both clocks back-to-back so the pair marks the same instant
@@ -92,20 +107,20 @@ namespace ngs_cuda
         d_block_data[blockNr].start_global = GetGlobalTimer();
         d_block_data[blockNr].start_smid = GetSMID();
         if(blockNr == 0)
-          d_trace_state.nblocks = gridDim.x*gridDim.y;
+          d_trace_state->nblocks = gridDim.x*gridDim.y;
       }
+
       __syncwarp();
     }
 
-    // reserve the next trace entry in this block's current chunk, grabbing a
-    // new chunk from the global counter when it is used up; only called from
-    // the tracing thread (threadNr == 0), so no synchronization on the local
-    // counters is needed
     __device__ unsigned AllocTraceEntry()
     {
+      if(GetSMID() != 0)
+          return N_MAX_TRACER_OBJECTS;   // only thread 0 of each block traces
+
       if(trace_pos == trace_end)
       {
-        trace_pos = TRACE_CHUNK_SIZE * atomicAdd(&d_trace_state.chunk_counter, 1);
+        trace_pos = TRACE_CHUNK_SIZE * atomicAdd(&d_trace_state->chunk_counter, 1);
         trace_end = trace_pos + TRACE_CHUNK_SIZE;
       }
       if(trace_pos >= N_MAX_TRACER_OBJECTS)
@@ -131,17 +146,22 @@ namespace ngs_cuda
   struct DeviceRegionTimer
   {
     int timer_nr, id;
+    DeviceBlockRegionTracer & brt;
 
-    __device__ DeviceRegionTimer( int timer_nr_, int id_=-1)
-      : timer_nr(timer_nr_), id(id_ == -1 ? blockIdx.x : id_)
+    __device__ DeviceRegionTimer( DeviceBlockRegionTracer & brt_, int timer_nr_, int id_=-1)
+      : brt(brt_)
     {
-      if(threadIdx.x ==0)
-        atomicAdd(&d_timer_data[id].time[timer_nr], -clock64());
+      if(brt.threadNr != 0)
+          return;
+
+      timer_nr = timer_nr_;
+      id = (id_ == -1 ? brt.blockNr : id_);
+      atomicAdd(&d_timer_data[id].time[timer_nr], -clock64());
     }
 
     __device__ ~DeviceRegionTimer()
     {
-      if(threadIdx.x ==0)
+      if(brt.threadNr == 0)
         atomicAdd(&d_timer_data[id].time[timer_nr], clock64());
     }
 
@@ -149,26 +169,26 @@ namespace ngs_cuda
 
   struct DeviceRegionTracer
   {
-    bool active;
     unsigned id;
-    DevTraceData::UserData & data;
+    DeviceBlockRegionTracer & brt;
 
-    __device__ DeviceRegionTracer( DeviceBlockRegionTracer & tr, int timer_nr )
-      : active(tr.threadNr == 0),
-        id(active ? tr.AllocTraceEntry() : N_MAX_TRACER_OBJECTS),
-        data(d_trace_data[id].data)
+    __device__ DeviceRegionTracer( DeviceBlockRegionTracer & brt_, int timer_nr )
+        : brt(brt_)
     {
-      if(active)
-      {
-        d_trace_data[id].blockNr = tr.blockNr;
-        d_trace_data[id].timer_nr = timer_nr;
-        d_trace_data[id].start = clock64();   // written last: marks the entry as used
-      }
+      if(brt.threadNr != 0)
+          return;
+
+      id = brt.AllocTraceEntry();
+      if(id == N_MAX_TRACER_OBJECTS)
+        return;
+      d_trace_data[id].blockNr = brt.blockNr;
+      d_trace_data[id].timer_nr = timer_nr;
+      d_trace_data[id].start = clock64();   // written last: marks the entry as used
     }
 
     __device__ ~DeviceRegionTracer()
     {
-      if(active)
+      if(brt.threadNr == 0 && id < N_MAX_TRACER_OBJECTS)
         d_trace_data[id].stop = clock64();
     }
 
@@ -241,14 +261,8 @@ namespace ngs_cuda
     const std::initializer_list<const char *> * timer_names;
 
   public:
-    CudaRegionTimer (ngcore::Timer<> & atimer, std::initializer_list<const char*> * atimer_names = nullptr) : timer(atimer), timer_names(atimer_names) {
-      timer.Start();
-      if(is_cuda_timer_enabled)
-        detail::StartGPUTimer(timer);
-#ifdef NGS_CUDA_DEVICE_TIMERS
-      cudaStreamAddCallback(0, detail::CallbackKernelStart, &t_kernel_start, 0);
-#endif // NGS_CUDA_DEVICE_TIMERS
-    }
+    static bool IsTimingEnabled() { return is_cuda_timer_enabled; }
+    CudaRegionTimer (ngcore::Timer<> & atimer, std::initializer_list<const char*> * atimer_names = nullptr);
     ~CudaRegionTimer ()
     {
       if(!is_already_stopped)
@@ -262,10 +276,10 @@ namespace ngs_cuda
 
     void Stop() {
       if(is_cuda_timer_enabled)
+      {
         detail::StopGPUTimer(timer);
-#ifdef NGS_CUDA_DEVICE_TIMERS
-      ProcessTracingData(timer_names);
-#endif // NGS_CUDA_DEVICE_TIMERS
+        ProcessTracingData(timer_names);
+      }
       timer.Stop();
       is_already_stopped = true;
     }
@@ -285,13 +299,12 @@ namespace ngs_cuda
 
   void TimeProfiler();
 
-#ifdef NGS_CUDA_DEVICE_TIMERS
   // device addresses of the tracing buffers, for jit-compiled kernels
   // (separate cuda modules cannot link against the __device__ symbols)
   void * GetDevTraceDataPtr();
+  void * GetDevTimerDataPtr();
   void * GetDevTraceBlockDataPtr();
   void * GetDevTraceStatePtr();
-#endif
 }
 
 #endif // NGS_CUDA_PROFILER_HPP
