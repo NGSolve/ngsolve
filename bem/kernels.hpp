@@ -427,6 +427,53 @@ namespace ngsbem
     }
   };
 
+  /* The gradient of Helmholtz double layer kernel in 3D reads
+      $$ \nabla_x \frac{\partial G_\kappa(x-y)}{\partial n_y}
+      = \frac{e^{i\kappa r}}{4\pi r^5} \left[ (1-i\kappa r)r^2 n(y) + \langle n(y),x-y\rangle \left(\kappa^2r^2-3(1-i\kappa r)\right)(x-y) \right],
+      \qquad r=|x-y|,\quad x\neq y. $$
+  */
+  template <int DIM, int COMPS=1, typename T_Kappa=double> class DiffHelmholtzDLKernel;
+  template<int COMPS, typename T_Kappa>
+  class DiffHelmholtzDLKernel<3, COMPS, T_Kappa> : public BaseKernel
+  {
+    T_Kappa kappa;
+  public:
+    using source_type = Dipoles<COMPS, Complex, T_Kappa>;
+    using target_type = GradientEval<COMPS, Complex, T_Kappa>;
+
+    source_type source;
+    target_type target;
+
+    Array<KernelTerm> terms;
+    DiffHelmholtzDLKernel(T_Kappa _kappa)
+      : kappa(_kappa), source(_kappa), target(_kappa)
+    {
+      for (size_t c = 0; c < COMPS; c++)
+        for (size_t i = 0; i < 3; i++)
+          terms += KernelTerm{1.0, i, c, 3*c+i};
+    }
+    typedef Complex value_type;
+    using mp_type = typename source_type::mp_type;
+
+    static string Name() { return "DiffHelmholtzDL"; }
+    static auto Shape() { return IVec<2>(3*COMPS,COMPS); }
+
+    template <typename T>
+    auto Evaluate (Vec<3,T> x, Vec<3,T> y, Vec<3,T> nx, Vec<3,T> ny) const
+    {
+      T norm = L2Norm(x-y);
+      auto xy = x-y;
+      T nxy = InnerProduct(ny, xy);
+      auto expikr = exp(kappa*Complex(0,1)*norm);
+      auto one_minus_ikr = Complex(1,0)*T(1.) - kappa*Complex(0,1)*norm;
+      auto first_factor = expikr * one_minus_ikr / (4 * M_PI * norm*norm*norm);
+      auto second_factor = expikr *
+        (Complex(1,0)*kappa*kappa*T(1.)*norm*norm - 3.0*one_minus_ikr) /
+        (4 * M_PI * norm*norm*norm*norm*norm);
+      return first_factor*ny + nxy*second_factor*xy;
+    }
+  };
+
   // *********** STANDARD KERNELS **********************
 
   /** LaplaceSLkernel in 3D reads 
@@ -611,6 +658,12 @@ namespace ngsbem
     }
     T_Kappa GetKappa() const { return kappa; }
     Array<KernelTerm> terms;
+
+    auto GetDifferentiatedKernel(const string &name) const {
+      if (name == "grad")
+        return DiffHelmholtzDLKernel<3,COMPS,T_Kappa>(kappa);
+      throw Exception("don't know how to apply diffop "+name);
+    }
   };
 
 
