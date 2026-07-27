@@ -178,7 +178,7 @@ namespace ngla
       : bits(make_shared<DevBitArray>(*proj.Mask())), 
         keep_values(proj.KeepValues()) { ; }
 
-    virtual xbool IsSymmetric() const { return true; }
+    virtual xbool IsSymmetric() const override { return true; }
     
     void Mult (const BaseVector & x, BaseVector & y) const override;
     void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;
