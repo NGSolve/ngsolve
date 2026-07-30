@@ -575,15 +575,26 @@ namespace ngcomp
             
             if  (!opts.only_loadstoreB)
               {
-                s << "Vec<3,SIMD<double,BS_ELS>> hv;\n";
+                s << "Vec<"<<dimx<<",SIMD<double,BS_ELS>> hvx;\n";
+                s << "Vec<"<<dimy<<",SIMD<double,BS_ELS>> hvy;\n";                
                 for (size_t j2 = 0; j2 < opts.BS_ipts; j2++)
                   {
                     for (size_t i = 0; i < diffopsx.Size(); i++)
-                      s << diffopsx[i]->GenerateTransformationCode ("pointvalsrefx.Col("+ToString(j2)+").Range(0,3)", "hv", false);
-                    s << "hv *= weights(base+"<<j2<<") * J;\n";
+                      {
+                        IntRange rref = ranges_xref[i];
+                        IntRange r = ranges_x[i];
+                        s << diffopsx[i]->GenerateTransformationCode
+                          ("pointvalsrefx.Col("+ToString(j2)+").Range("+ToString(rref.First())+","+ToString(rref.Next())+")", "hvx", false);
+                      }
+                    s << "hvy = weights(base+"<<j2<<") * J * hvx;\n";
                     for (size_t i = 0; i < diffopsy.Size(); i++)
-                      s << diffopsy[i]->GenerateTransformationCode ("hv", "pointvalsrefy.Col("+ToString(j2)+").Range(0,3)", true);
-                    // s << "pointvalsrefy = pointvalsrefx; \n";
+                      {
+                        IntRange rref = ranges_yref[i];
+                        IntRange r = ranges_y[i];
+                        s << diffopsy[i]->GenerateTransformationCode
+                          ("hvy",
+                           "pointvalsrefy.Col("+ToString(j2)+").Range("+ToString(rref.First())+","+ToString(rref.Next())+")", true);
+                      }
                   }
               }
             else
