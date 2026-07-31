@@ -593,8 +593,9 @@ class TFQMRSolver(LinearSolver):
             return
 
         x.data = sol
-        r.data = rhs - mat*sol
-        
+        tmp.data = rhs - mat*sol
+        r.data = pre*tmp
+
         u.data = r
         w.data = r
         rstar.data = r
@@ -630,12 +631,11 @@ class TFQMRSolver(LinearSolver):
             tau *= theta*c
 
             eta = c**2 * alpha
-            z.data = pre*d
-            x += eta*z
+            x += eta*d
 
             # callback ...
 
-            if self.CheckResidual(tau):
+            if self.CheckResidual(tau*sqrt(iter+1)):
                 sol.data = x
                 return
             # if tau < tol:
