@@ -584,8 +584,7 @@ class TFQMRSolver(LinearSolver):
         rstar = rhs.CreateVector()
         d = rhs.CreateVector()
         x = rhs.CreateVector()
-        z = rhs.CreateVector()
-        tmp = rhs.CreateVector()                                
+        tmp = rhs.CreateVector()
         d[:] = 0
         
         if Norm(rhs)==0:
@@ -600,14 +599,15 @@ class TFQMRSolver(LinearSolver):
         w.data = r
         rstar.data = r
 
-        v.data = pre@mat * r
+        tmp.data = mat*r
+        v.data = pre*tmp
         uhat.data = v
 
         theta = eta = 0
 
-        rho = InnerProduct(rstar, r)
+        rho = InnerProduct(r, rstar)
         rhoLast = rho
-        r0norm = sqrt(rho)
+        r0norm = sqrt(rho.real)
 
         tau = r0norm
         if r0norm == 0:
@@ -616,8 +616,9 @@ class TFQMRSolver(LinearSolver):
         for iter in range(0,self.maxiter):
             even = iter%2 == 0
             if (even):
-                vtrstar = InnerProduct(rstar, v)
+                vtrstar = InnerProduct(v, rstar)
                 if vtrstar==0:
+                    sol.data = x
                     return
 
                 alpha = rho/vtrstar
@@ -642,7 +643,7 @@ class TFQMRSolver(LinearSolver):
             #    return
 
             if not even:
-                rho = InnerProduct(rstar, w)
+                rho = InnerProduct(w, rstar)
                 beta = rho/rhoLast
                 u *= beta
                 u += w
