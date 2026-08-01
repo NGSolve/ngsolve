@@ -2661,7 +2661,7 @@ diffop : ngsolve.fem.DifferentialOperator
   py::class_<SumOfIntegrals, shared_ptr<SumOfIntegrals>>(m, "SumOfIntegrals")
     .def(py::self + py::self)
     .def(py::self - py::self)
-    .def(float() * py::self)
+    .def(double() * py::self)
     .def(Complex() * py::self)    
     .def_property("linearization",
                   [](const SumOfIntegrals& ints)
