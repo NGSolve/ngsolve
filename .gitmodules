@@ -2,3 +2,6 @@
 	path = external_dependencies/netgen
 	url = https://github.com/NGSolve/netgen.git
 	ignore = dirty
+[submodule "ngsmetal/metal-cpp"]
+	path = ngsmetal/metal-cpp
+	url = https://github.com/apple/metal-cpp.git
