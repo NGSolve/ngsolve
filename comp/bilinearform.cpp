@@ -7591,7 +7591,9 @@ namespace ngcomp
       {
         if ( space->IsComplex() )
           return make_shared<T_BilinearForm<Complex>> (space, space2, name, flags);
-        else 
+        else if (flags.GetDefineFlag("fp32"))
+          return make_shared<T_BilinearForm<float>> (space, space2, name, flags);
+        else
           return make_shared<T_BilinearForm<double>> (space, space2, name, flags);
       }
     // throw Exception ("cannot craeate mixes-space without nonassemble - flag");
