@@ -543,11 +543,23 @@ namespace ngla
 
   
   
-  shared_ptr<BaseSparseMatrix> ProductMatrix :: CreateSparseMatrix() const 
+  shared_ptr<BaseSparseMatrix> ProductMatrix :: CreateSparseMatrix() const
   {
-    auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (spbma->CreateSparseMatrix());
-    auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (spbmb->CreateSparseMatrix());
-    return MatMult (*spa, *spb);
+    auto sa = spbma->CreateSparseMatrix();
+    auto sb = spbmb->CreateSparseMatrix();
+
+    if (auto spa = dynamic_pointer_cast<SparseMatrixTM<double>> (sa))
+      if (auto spb = dynamic_pointer_cast<SparseMatrixTM<double>> (sb))
+        return MatMult (*spa, *spb);
+
+    if (auto spa = dynamic_pointer_cast<SparseMatrixTM<float>> (sa))
+      if (auto spb = dynamic_pointer_cast<SparseMatrixTM<float>> (sb))
+        return MatMult (*spa, *spb);
+
+    throw Exception ("ProductMatrix::CreateSparseMatrix: factors must both be "
+                     "real sparse matrices of the same precision, got "
+                     + string(sa ? typeid(*sa).name() : "null") + " and "
+                     + string(sb ? typeid(*sb).name() : "null"));
   }
   
 

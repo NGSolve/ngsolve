@@ -1896,6 +1896,11 @@ namespace ngla
   {
     return MatMult<double, double, double>(mata, matb, sort_output);
   }
+  shared_ptr<SparseMatrixTM<float>> MatMult (const SparseMatrixTM<float> & mata,
+                                             const SparseMatrixTM<float> & matb, bool sort_output)
+  {
+    return MatMult<float, float, float>(mata, matb, sort_output);
+  }
   shared_ptr<SparseMatrixTM<std::complex<double>>> MatMult (const SparseMatrixTM<std::complex<double>> & mata,
                                                             const SparseMatrixTM<std::complex<double>> & matb,
                                                             bool sort_output)
