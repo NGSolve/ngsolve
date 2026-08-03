@@ -1568,20 +1568,26 @@ namespace ngfem
         user_ir[type] = val.get();
         user_simd_ir[type] = make_unique<SIMD_IntegrationRule>(*user_ir[type]);
       }
-    
+
+    auto skip_element = [&] (Ngs_Element el)
+      {
+        if (dx.definedonelements && !dx.definedonelements->Test(el.Nr())) return true;
+        if (defon.Size() && !defon.Test(el.GetIndex())) return true;
+        return false;
+      };
+
+    if (dx.skeleton && dx.vb == VOL)
+      throw Exception("Integrate does not support dx(skeleton=True) (integration over interior facets)");
+
     if (dx.element_vb == VOL)
       {
         ma.IterateElements
           (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
            {
-             if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
-             // if(!mask.Test(el.GetIndex())) return;
+             if (skip_element(el)) return;
              auto & trafo1 = ma.GetTrafo (el, lh);
              auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
 
-             if (defon.Size() && !defon.Test(el.GetIndex()))
-               return;
-             
              TSCAL hsum = 0.0;
              
              bool this_simd = use_simd;
@@ -1647,8 +1653,7 @@ namespace ngfem
           ma.IterateElements
             (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
              {
-               if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
-               // if(!mask.Test(el.GetIndex())) return;
+               if (skip_element(el)) return;
                auto & trafo1 = ma.GetTrafo (el, lh);
                auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
                
@@ -1715,7 +1720,7 @@ namespace ngfem
             ma.IterateElements
             (this->dx.vb, glh, [&] (Ngs_Element el, LocalHeap & lh)
              {
-               if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
+               if (skip_element(el)) return;
                auto & htrafo1 = ma.GetTrafo (el, lh);
                auto & trafo1 = htrafo1.AddDeformation(this->dx.deformation.get(), lh);
                auto eltype = trafo1.GetElementType();
@@ -1797,12 +1802,9 @@ namespace ngfem
     {
       ma.IterateElements(this->dx.vb, glh, [&](Ngs_Element el, LocalHeap &lh)
                          {
-             if (this->dx.definedonelements && !this->dx.definedonelements->Test(el.Nr())) return;
+             if (skip_element(el)) return;
              auto & trafo1 = ma.GetTrafo (el, lh);
              auto & trafo = trafo1.AddDeformation(this->dx.deformation.get(), lh);
-
-             if (defon.Size() && !defon.Test(el.GetIndex()))
-               return;
 
              TSCAL hsum = 0.0;
              int order = 5 + this->dx.bonus_intorder;
