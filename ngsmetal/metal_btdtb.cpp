@@ -161,7 +161,7 @@ namespace ngsmetal
            int dofnr = i % locdofsx;
            int locelnr = i / locdofsx;
            int elnr = baseelem + locelnr;
-           elvecx[locelnr][dofnr] = (elnr < ne && dofnr < locdofsx) ? x[dofx[elnr*locdofsx+dofnr]] : 0;
+           elvecx[locelnr][dofnr] = (elnr < ne) ? x[dofx[elnr*locdofsx+dofnr]] : 0;
         }
 
       // zero elvecy
