@@ -366,23 +366,10 @@ namespace ngsmetal
     
   }
 
-  //  export MTL_CAPTURE_ENABLED=1      
   void MetalBTDTBMatrix ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
     static Timer tfull("MetalBTDTBMNatrix::MultAll"); RegionTimer rfull(tfull);
-
-    /*
-      auto captureManager = MTL::CaptureManager::sharedCaptureManager();
-      auto captureDescriptor = MTL::CaptureDescriptor::alloc()->init();
-      captureDescriptor->setDestination(MTL::CaptureDestinationGPUTraceDocument);
-      captureDescriptor->setCaptureObject(GetCommandQueue());
-    
-      NS::String* path = NS::String::string("test.gputrace", NS::UTF8StringEncoding);
-      captureDescriptor->setOutputURL(NS::URL::fileURLWithPath(path));
-      NS::Error* pError = nullptr;
-      if (captureManager->startCapture(captureDescriptor, &pError)) {
-    */
         
     static Timer t("MultBTDTB-GPU");
       
@@ -435,15 +422,6 @@ namespace ngsmetal
         // cout << "Applyt BTDTB time = " << t.GetTime() << endl;
       }
     // cout << "debug = " << debugvec.Range(0, 128);
-
-      /*
-      captureManager->stopCapture();
-      }
-      if (pError) 
-      {
-      std::cerr << "Metal Error: " << pError->localizedDescription()->utf8String() << std::endl;
-      }
-      */
   }
 
 }
