@@ -852,6 +852,8 @@ namespace ngla
   
   NGS_DLL_HEADER shared_ptr<SparseMatrixTM<double>>
   MatMult (const SparseMatrixTM<double> & mata, const SparseMatrixTM<double> & matb, bool sort_output = true);
+  NGS_DLL_HEADER shared_ptr<SparseMatrixTM<float>>
+  MatMult (const SparseMatrixTM<float> & mata, const SparseMatrixTM<float> & matb, bool sort_output = true);
   NGS_DLL_HEADER shared_ptr<SparseMatrixTM<Complex>>
   MatMult (const SparseMatrixTM<Complex> & mata, const SparseMatrixTM<Complex> & matb, bool sort_output = true);
 
