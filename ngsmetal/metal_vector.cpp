@@ -105,6 +105,9 @@ namespace ngsmetal
 
   BaseVector & MetalVector :: Scale (double scal)
   {
+    if (scal == 1.0)
+      return *this;
+    
     MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
 
@@ -130,7 +133,7 @@ namespace ngsmetal
     MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
 
-    encoder->setComputePipelineState(scale_pipelineState);
+    encoder->setComputePipelineState(set_pipelineState);
     encoder->setBuffer(buffer, 0, 0);
     float fscal = scal;
     encoder->setBytes(&fscal, sizeof(float), 1);
