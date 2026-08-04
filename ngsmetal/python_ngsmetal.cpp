@@ -39,6 +39,12 @@ PYBIND11_MODULE(libngsmetal, m)
     .def(py::init<const BaseMatrix&>(), py::arg("mat"))
     ;
 
+  BaseMatrix::RegisterDeviceMatrixCreator(typeid(MatrixFreeBTDTB),
+                                          [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
+                                          {
+                                            // auto &mat  = dynamic_cast<const MatrixFreeBTDTB&>(bmat);
+                                            return make_shared<MetalBTDTBMatrix>(bmat);
+                                          });
   
   
 }

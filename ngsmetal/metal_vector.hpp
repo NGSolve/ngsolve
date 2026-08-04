@@ -20,7 +20,7 @@ namespace ngsmetal
     MTL::Buffer* GetBuffer() const { return buffer; }
 
     virtual BaseVector & Scale (double scal) override;
-
+    virtual BaseVector & SetScalar (double scal) override;
     virtual BaseVector & Add (double scal, const BaseVector & v2) override;
     
 

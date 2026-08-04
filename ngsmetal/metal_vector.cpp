@@ -10,6 +10,7 @@ namespace ngsmetal
 
   MTL::ComputePipelineState* saxpy_pipelineState = nullptr;
   MTL::ComputePipelineState* scale_pipelineState = nullptr;
+  MTL::ComputePipelineState* set_pipelineState = nullptr;
 
 
 
@@ -34,6 +35,12 @@ namespace ngsmetal
                           uint id                [[thread_position_in_grid]]) {
             x[id] *= a;
         }
+
+        kernel void set(device float* x       [[buffer(0)]],
+                          constant float& a     [[buffer(1)]],
+                          uint id                [[thread_position_in_grid]]) {
+            x[id] = a;
+        }
     )";
 
 
@@ -57,6 +64,11 @@ namespace ngsmetal
       NS::String* funcName = NS::String::string("scale", NS::UTF8StringEncoding);
       auto scaleFunc = library->newFunction(funcName);
       scale_pipelineState = GetDevice()->newComputePipelineState(scaleFunc, &error);      
+    }
+    {
+      NS::String* funcName = NS::String::string("set", NS::UTF8StringEncoding);
+      auto func = library->newFunction(funcName);
+      set_pipelineState = GetDevice()->newComputePipelineState(func, &error);      
     }
     return 0;
   }();
@@ -113,11 +125,31 @@ namespace ngsmetal
     return *this;
   }
 
+  BaseVector & MetalVector :: SetScalar (double scal)
+  {
+    MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
+    MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
+
+    encoder->setComputePipelineState(scale_pipelineState);
+    encoder->setBuffer(buffer, 0, 0);
+    float fscal = scal;
+    encoder->setBytes(&fscal, sizeof(float), 1);
+
+    MTL::Size gridSize = MTL::Size(size, 1, 1);
+    NS::UInteger maxThreads = set_pipelineState->maxTotalThreadsPerThreadgroup();
+    NS::UInteger threadsGroupDim = (size < maxThreads) ? size : maxThreads;
+    MTL::Size threadgroupSize = MTL::Size(threadsGroupDim, 1, 1);
+      
+    encoder->dispatchThreads(gridSize, threadgroupSize);
+    encoder->endEncoding();
+
+    CommitAsync(commandBuffer);    
+    return *this;
+  }
+
   BaseVector & MetalVector :: Add (double scal, const BaseVector & v2)
   {
     const MetalVector &mv2 = dynamic_cast<const MetalVector&>(v2);
-      
-    NS::Error* error = nullptr;      
       
     MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();

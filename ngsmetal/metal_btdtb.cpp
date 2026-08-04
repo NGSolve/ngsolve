@@ -140,14 +140,26 @@ namespace ngsmetal
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
       threadgroup float pointvalsref[MAXDIMREF*$BS_IPTS][$BS_ELS];
 
+
+      // zero elvecx (overhead would be enough
+      for (int i = threadIdx; i < $BS_ELS*locdofsx_roundup; i+= blockDim)
+        {
+          int c = i%locdofsx_roundup;
+          int r = i/locdofsx_roundup;
+          elvecx[r][c] = 0;
+        }
+
+      threadgroup_barrier(mem_flags::mem_threadgroup);
+
       for (int baseelem = blockIdx*$BS_ELS; baseelem < $NE; baseelem += gridDim*$BS_ELS) { 
 
+      threadgroup_barrier(mem_flags::mem_threadgroup);
 
       // load element vectors
-      for (int i = threadIdx; i < $BS_ELS*locdofsx_roundup; i += blockDim)
+      for (int i = threadIdx; i < $BS_ELS*locdofsx; i += blockDim)
         {
-           int dofnr = i / $BS_ELS;
-           int locelnr = i % $BS_ELS;
+           int dofnr = i % locdofsx;
+           int locelnr = i / locdofsx;
            int elnr = baseelem + locelnr;
            elvecx[locelnr][dofnr] = (elnr < ne && dofnr < locdofsx) ? x[dofx[elnr*locdofsx+dofnr]] : 0;
         }
@@ -274,14 +286,13 @@ namespace ngsmetal
       threadgroup_barrier(mem_flags::mem_threadgroup);
 
       // store vector
-      for (int i = threadIdx; i < $BS_ELS*locdofsy_roundup; i += blockDim)
+      for (int i = threadIdx; i < $BS_ELS*locdofsy; i += blockDim)
         {
-           int dofnr = i / $BS_ELS;
-           int locelnr = i % $BS_ELS;
+           int dofnr = i % locdofsy;
+           int locelnr = i / locdofsy;
 
            int elnr = baseelem + locelnr;
-
-           if (elnr < ne && dofnr < locdofsy)
+           if (elnr < ne)
 #if ($ATOMIC==1)
              atomic_fetch_add_explicit(&y[dofy[elnr*locdofsy+dofnr]], elvecy[locelnr][dofnr], memory_order_relaxed);
 #else
@@ -365,20 +376,21 @@ namespace ngsmetal
       auto captureManager = MTL::CaptureManager::sharedCaptureManager();
       auto captureDescriptor = MTL::CaptureDescriptor::alloc()->init();
       captureDescriptor->setDestination(MTL::CaptureDestinationGPUTraceDocument);
-      captureDescriptor->setCaptureObject(commandQueue);
+      captureDescriptor->setCaptureObject(GetCommandQueue());
     
       NS::String* path = NS::String::string("test.gputrace", NS::UTF8StringEncoding);
       captureDescriptor->setOutputURL(NS::URL::fileURLWithPath(path));
       NS::Error* pError = nullptr;
       if (captureManager->startCapture(captureDescriptor, &pError)) {
     */
+        
     static Timer t("MultBTDTB-GPU");
       
     const MetalVector & mvx = dynamic_cast<const MetalVector&>(x);
-    const MetalVector & mvy = dynamic_cast<const MetalVector&>(y);
+    MetalVector & mvy = dynamic_cast<MetalVector&>(y);
 
 
-    for (int runs = 0; runs < 1; runs++)
+    // for (int runs = 0; runs < 10; runs++)
       {
       
       
@@ -401,32 +413,37 @@ namespace ngsmetal
         // encoder->dispatchThreads(MTL::Size(ne/BS_els+1,1,1), MTL::Size(32, BS_els, 1));
         // encoder->dispatchThreadgroups(MTL::Size(ne/BS_els+1,1,1), MTL::Size(16*32, 1, 1));
         //       for (int runs = 0; runs < 10; runs++)
-        encoder->dispatchThreadgroups(MTL::Size(100,1,1), MTL::Size(8*32, 1, 1));
+        encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(16*32, 1, 1));
         encoder->endEncoding();
 
 
       
-        t.Start();
-        commandBuffer->commit();
-        commandBuffer->waitUntilCompleted();
-        t.Stop();
+        // t.Start();
+        
+        // commandBuffer->commit();
+        // commandBuffer->waitUntilCompleted();
+        mvy.CommitAsync(commandBuffer);
+        // t.Stop();
 
+        /*
         CFTimeInterval gpuStartTime = commandBuffer->GPUStartTime();
         CFTimeInterval gpuEndTime = commandBuffer->GPUEndTime();
         double gpuDurationMS = (gpuEndTime - gpuStartTime) * 1000.0;
         cout << "gpu times measure: " << gpuDurationMS << endl;
+        */
         
         // cout << "Applyt BTDTB time = " << t.GetTime() << endl;
       }
     // cout << "debug = " << debugvec.Range(0, 128);
-    /*
+
+      /*
       captureManager->stopCapture();
       }
       if (pError) 
       {
       std::cerr << "Metal Error: " << pError->localizedDescription()->utf8String() << std::endl;
       }
-    */
+      */
   }
 
 }
