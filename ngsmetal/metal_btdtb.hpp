@@ -37,10 +37,10 @@ namespace ngsmetal
     
     
     AutoVector CreateRowVector() const override {
-      return make_unique<MetalVector>(w);
+      return make_unique<MetalVector>(w, false);
     }
     AutoVector CreateColVector() const override {
-      return make_unique<MetalVector>(h);
+      return make_unique<MetalVector>(h, false);
     }
 
     virtual void MultAdd (double s, const BaseVector & x, BaseVector & y) const override;

@@ -10,6 +10,7 @@ namespace ngsmetal
 
   MTL::ComputePipelineState* saxpy_pipelineState = nullptr;
   MTL::ComputePipelineState* scale_pipelineState = nullptr;
+  MTL::ComputePipelineState* setscalar_pipelineState = nullptr;
   MTL::ComputePipelineState* set_pipelineState = nullptr;
 
 
@@ -30,13 +31,20 @@ namespace ngsmetal
             y[id] = a * x[id] + y[id];
         }
 
+        kernel void set(device const float* x [[buffer(0)]],
+                        device float* y       [[buffer(1)]],
+                        constant float& a     [[buffer(2)]],
+                        uint id               [[thread_position_in_grid]]) {
+            y[id] = a * x[id];
+        }
+
         kernel void scale(device float* x       [[buffer(0)]],
                           constant float& a     [[buffer(1)]],
                           uint id                [[thread_position_in_grid]]) {
             x[id] *= a;
         }
 
-        kernel void set(device float* x       [[buffer(0)]],
+        kernel void setscalar(device float* x       [[buffer(0)]],
                           constant float& a     [[buffer(1)]],
                           uint id                [[thread_position_in_grid]]) {
             x[id] = a;
@@ -70,23 +78,44 @@ namespace ngsmetal
       auto func = library->newFunction(funcName);
       set_pipelineState = GetDevice()->newComputePipelineState(func, &error);      
     }
+    {
+      NS::String* funcName = NS::String::string("setscalar", NS::UTF8StringEncoding);
+      auto func = library->newFunction(funcName);
+      setscalar_pipelineState = GetDevice()->newComputePipelineState(func, &error);      
+    }
     return 0;
   }();
 
 
   
-  MetalVector :: MetalVector (size_t s)
+  MetalVector :: MetalVector (size_t s, bool ashared)
+    : shared(ashared)
   {
     this -> size = s;
-    buffer = GetDevice()->newBuffer(s*sizeof(float), MTL::ResourceStorageModeShared);
+    if (shared)
+      buffer = GetDevice()->newBuffer(s*sizeof(float), MTL::ResourceStorageModeShared);
+    else
+      buffer = GetDevice()->newBuffer(s*sizeof(float), MTL::ResourceStorageModePrivate);
   }
 
 
-  MetalVector :: MetalVector (const BaseVector& v)
+  MetalVector :: MetalVector (const BaseVector& v, bool ashared)
+    : shared(ashared)    
   {
     this -> size = v.Size();
-    buffer = GetDevice()->newBuffer(this->size*sizeof(float), MTL::ResourceStorageModeShared);
+    if (shared)    
+      buffer = GetDevice()->newBuffer(this->size*sizeof(float), MTL::ResourceStorageModeShared);
+    else
+      buffer = GetDevice()->newBuffer(this->size*sizeof(float), MTL::ResourceStorageModePrivate);
 
+
+    if (!shared)
+      {
+        auto tmp = make_shared<MetalVector>(v, true);
+        this -> Set (1, *tmp);
+        return;
+      }
+    
     std::visit([&](auto vme) {
       
       FlatVector<float> me(this->size, (float*)buffer->contents());
@@ -133,13 +162,13 @@ namespace ngsmetal
     MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
 
-    encoder->setComputePipelineState(set_pipelineState);
+    encoder->setComputePipelineState(setscalar_pipelineState);
     encoder->setBuffer(buffer, 0, 0);
     float fscal = scal;
     encoder->setBytes(&fscal, sizeof(float), 1);
 
     MTL::Size gridSize = MTL::Size(size, 1, 1);
-    NS::UInteger maxThreads = set_pipelineState->maxTotalThreadsPerThreadgroup();
+    NS::UInteger maxThreads = setscalar_pipelineState->maxTotalThreadsPerThreadgroup();
     NS::UInteger threadsGroupDim = (size < maxThreads) ? size : maxThreads;
     MTL::Size threadgroupSize = MTL::Size(threadsGroupDim, 1, 1);
       
@@ -152,6 +181,14 @@ namespace ngsmetal
 
   BaseVector & MetalVector :: Add (double scal, const BaseVector & v2)
   {
+    auto mvp = dynamic_cast<const MetalVector*> (&v2);
+    if (!mvp)
+      {
+        auto tmp = make_shared<MetalVector>(v2, true);
+        Add (scal, *tmp);
+        return *this;
+      }
+    
     const MetalVector &mv2 = dynamic_cast<const MetalVector&>(v2);
       
     MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
@@ -176,6 +213,40 @@ namespace ngsmetal
   }
     
 
+  BaseVector & MetalVector :: Set (double scal, const BaseVector & v2)
+  {
+    auto mvp = dynamic_cast<const MetalVector*> (&v2);
+    if (!mvp)
+      {
+        auto tmp = make_shared<MetalVector>(v2, true);
+        Set (scal, *tmp);
+        return *this;
+      }
+
+    
+    const MetalVector &mv2 = dynamic_cast<const MetalVector&>(v2);
+      
+    MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
+    MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
+
+    encoder->setComputePipelineState(set_pipelineState);
+    encoder->setBuffer(mv2.buffer, 0, 0);
+    encoder->setBuffer(buffer, 0, 1);      
+    float fscal = scal;
+    encoder->setBytes(&fscal, sizeof(float), 2);
+
+    MTL::Size gridSize = MTL::Size(size, 1, 1);
+    NS::UInteger maxThreads = saxpy_pipelineState->maxTotalThreadsPerThreadgroup();
+    NS::UInteger threadsGroupDim = (size < maxThreads) ? size : maxThreads;
+    MTL::Size threadgroupSize = MTL::Size(threadsGroupDim, 1, 1);
+      
+    encoder->dispatchThreads(gridSize, threadgroupSize);
+    encoder->endEncoding();
+
+    CommitAsync(commandBuffer);
+    return *this;
+  }
+    
   
 
   

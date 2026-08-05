@@ -117,12 +117,12 @@ Xcode.
   BaseVector::RegisterDeviceVectorCreator(typeid(S_BaseVectorPtr<double>),
                                           [] (const BaseVector & vec, bool unified) -> shared_ptr<BaseVector>
                                           {
-                                            return make_shared<MetalVector>(vec);
+                                            return make_shared<MetalVector>(vec, unified);
                                           });
   BaseVector::RegisterDeviceVectorCreator(typeid(VVector<double>),
                                           [] (const BaseVector & vec, bool unified) -> shared_ptr<BaseVector>
                                           {
-                                            return make_shared<MetalVector>(vec);
+                                            return make_shared<MetalVector>(vec, unified);
                                           });
   
   

@@ -11,16 +11,18 @@ namespace ngsmetal
   
   class MetalVector : public S_BaseVector<float>
   {
+    bool shared;
     MTL::Buffer* buffer;
     mutable MTL::CommandBuffer* lastCommandBuffer = nullptr; // Track the latest GPU job
     
   public:
-    MetalVector (size_t s);
-    MetalVector (const BaseVector& v);    
+    MetalVector (size_t s, bool shared=true);
+    MetalVector (const BaseVector& v, bool shared=true);    
     MTL::Buffer* GetBuffer() const { return buffer; }
 
     virtual BaseVector & Scale (double scal) override;
     virtual BaseVector & SetScalar (double scal) override;
+    virtual BaseVector & Set (double scal, const BaseVector & v) override;
     virtual BaseVector & Add (double scal, const BaseVector & v2) override;
     
 
@@ -28,18 +30,20 @@ namespace ngsmetal
     virtual void * Memory () const override
     {
       WaitUntilCompleted(); // Block CPU until GPU operations are done
+      if (!shared) throw Exception("Buffer of private MetalVector is not host accessible");
       return buffer->contents();
     }
     
     virtual AutoVector CreateVector () const override
     {
-      return make_unique<MetalVector>(Size());
+      return make_unique<MetalVector>(Size(), false);
     }
 
     virtual ostream& Print (ostream &ost) const override
     {
       WaitUntilCompleted(); // Block CPU until GPU operations are done      
       ost << "MetalVector, size = " << size << endl;
+      if (!shared) throw Exception("Buffer of private MetalVector is not host accessible");      
       float * values = (float*)buffer->contents();      
       for (size_t i = 0; i < size; i++)
         ost << values[i] << "\n";
