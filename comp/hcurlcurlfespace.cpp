@@ -8,7 +8,6 @@
 // #include <comp.hpp>
 #include "hcurlcurlfespace.hpp"
 #include "../fem/hcurlcurlfe.hpp"
-#include "hcurlcurlfespace.hpp"
 #include "../fem/hcurlhdiv_dshape.hpp"
 #include <diffop_impl.hpp>
 
@@ -175,7 +174,7 @@ namespace ngcomp
                                       const SIMD_BaseMappedIntegrationRule & mir,
                                       BareSliceMatrix<SIMD<double>> mat)
     {
-      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).CalcMappedShape (mir, mat);      
+      dynamic_cast<const HCurlCurlFiniteElement<D>&> (bfel).CalcMappedShape (mir, mat);
     }
 
     using DiffOp<DiffOpIdHCurlCurl<D> >::ApplySIMDIR;    
@@ -413,11 +412,11 @@ namespace ngcomp
   /*class DiffOpCurlHCurlCurlBoundary : public DiffOp<DiffOpCurlHCurlCurlBoundary>
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D-1 };
-    enum { DIM_DMAT = D-1 };//??????
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D-1;
+    static constexpr int DIM_DMAT = D-1;//??????
+    static constexpr int DIFFORDER = 1;
 
     static Array<int> GetDimensions() { return Array<int> ({3,3}); }
     
@@ -607,12 +606,12 @@ namespace ngcomp
   class DiffOpEdgeTTComponentHCurlCurl: public DiffOp<DiffOpEdgeTTComponentHCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 0 };
-    enum { DIM_STRESS = D*D };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 0;
+    static constexpr int DIM_STRESS = D*D;
 
     
     template <typename FEL,typename SIP,typename MAT>
@@ -643,11 +642,11 @@ namespace ngcomp
   class DiffOpGradientHCurlCurl : public DiffOp<DiffOpGradientHCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D*D };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D*D*D;
+    static constexpr int DIFFORDER = 1;
     static Array<int> GetDimensions() { return Array<int> ( { D, D*D } ); };
     
     static constexpr double eps() { return 1e-4; } 
@@ -696,11 +695,11 @@ namespace ngcomp
   class DiffOpChristoffelHCurlCurl : public DiffOp<DiffOpChristoffelHCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D*D };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D*D*D;
+    static constexpr int DIFFORDER = 1;
     static Array<int> GetDimensions() { return Array<int> ( { D,D,D } ); };
     static constexpr double eps() { return 1e-4; } 
     ///
@@ -798,7 +797,7 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      size_t size = bmir.Size()*SIMD<double>::Size()*D*D*D;
+      size_t size = bmir.Size()*D*D*D;
       STACK_ARRAY(SIMD<double>, mem, size);
       FlatMatrix<SIMD<double>> hdv(D*D*D, bmir.Size(), mem);
       
@@ -829,11 +828,11 @@ namespace ngcomp
   class DiffOpChristoffel2HCurlCurl : public DiffOp<DiffOpChristoffel2HCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D*D };
-    enum { DIFFORDER = 1 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D*D*D;
+    static constexpr int DIFFORDER = 1;
     static Array<int> GetDimensions() { return Array<int> ( { D,D,D } ); };
     
     ///
@@ -910,13 +909,13 @@ namespace ngcomp
       
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
        
-      size_t size = bmir.Size()*SIMD<double>::Size()*D*D*D;
+      size_t size = bmir.Size()*D*D*D;
       STACK_ARRAY(SIMD<double>, mem, size);
       FlatMatrix<SIMD<double>> hchristoffel1(D*D*D, bmir.Size(), &mem[0]);
           
       DiffOpChristoffelHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, hchristoffel1);
 
-      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size());
       FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
       bfel.Evaluate (bmir, x, G);
 
@@ -956,11 +955,11 @@ namespace ngcomp
   class DiffOpRiemannHCurlCurl : public DiffOp<DiffOpRiemannHCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D*D*D };
-    enum { DIFFORDER = 2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D*D*D*D;
+    static constexpr int DIFFORDER = 2;
     static Array<int> GetDimensions() { return Array<int> ( { D,D,D,D } ); };
     static constexpr double eps() { return 1e-4; } 
 
@@ -1069,7 +1068,7 @@ namespace ngcomp
     static void ApplySIMDIR (const FiniteElement & fel, const SIMD_BaseMappedIntegrationRule & bmir,
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
-      size_t size = bmir.Size()*SIMD<double>::Size()*D*(D-1)/2*D*(D-1)/2;
+      size_t size = bmir.Size()*D*(D-1)/2*D*(D-1)/2;
       STACK_ARRAY(SIMD<double>, mem, size);
       FlatMatrix<SIMD<double>> Q(D*(D-1)/2*D*(D-1)/2, bmir.Size(), mem);
       DiffOpCurvatureHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Q);
@@ -1144,11 +1143,11 @@ namespace ngcomp
   class DiffOpRicciHCurlCurl : public DiffOp<DiffOpRicciHCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D*D;
+    static constexpr int DIFFORDER = 2;
     static Array<int> GetDimensions() { return Array<int> ( { D,D } ); };
     static constexpr double eps() { return 1e-4; } 
 
@@ -1186,7 +1185,7 @@ namespace ngcomp
       else
         {
           Mat<D*(D-1)/2,D*(D-1)/2,TSCAL> Qmat;
-          FlatVector<TSCAL> Q(D*D,Qmat.Data());
+          auto Q = Qmat.AsVector();
           DiffOpCurvatureHCurlCurl<D>::Apply(fel, mip, x, Q, lh);
           Mat<D,D> g;
           
@@ -1243,12 +1242,12 @@ namespace ngcomp
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
 
 
-      size_t size = bmir.Size()*SIMD<double>::Size()*D*(D-1)/2*D*(D-1)/2;
+      size_t size = bmir.Size()*D*(D-1)/2*D*(D-1)/2;
       STACK_ARRAY(SIMD<double>, mem, size);
       FlatMatrix<SIMD<double>> Q(D*(D-1)/2*D*(D-1)/2, bmir.Size(), mem);
       DiffOpCurvatureHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Q);
       
-      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size());
       FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
       bfel.Evaluate (bmir, x, G);
       
@@ -1287,11 +1286,11 @@ namespace ngcomp
   class DiffOpScalarHCurlCurl : public DiffOp<DiffOpScalarHCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = 1 };
-    enum { DIFFORDER = 2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = 1;
+    static constexpr int DIFFORDER = 2;
     static constexpr double eps() { return 1e-4; } 
     static Array<int> GetDimensions() { return Array<int> (0); };
 
@@ -1328,7 +1327,7 @@ namespace ngcomp
       else
         {
           Mat<D*(D-1)/2,D*(D-1)/2,TSCAL> Qmat;
-          FlatVector<TSCAL> Q(D*D,Qmat.Data());
+          auto Q = Qmat.AsVector();
           DiffOpCurvatureHCurlCurl<D>::Apply(fel, mip, x, Q, lh);
 
           Mat<D,D> g;
@@ -1352,12 +1351,12 @@ namespace ngcomp
     {
       const HCurlCurlFiniteElement<D> & bfel = dynamic_cast<const HCurlCurlFiniteElement<D>&> (fel);
 
-      size_t size = bmir.Size()*SIMD<double>::Size()*D*(D-1)/2*D*(D-1)/2;
+      size_t size = bmir.Size()*D*(D-1)/2*D*(D-1)/2;
       STACK_ARRAY(SIMD<double>, mem, size);
       FlatMatrix<SIMD<double>> Q(D*(D-1)/2*D*(D-1)/2, bmir.Size(), mem);
       DiffOpCurvatureHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Q);
       
-      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size());
       FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
       bfel.Evaluate (bmir, x, G);
       
@@ -1386,11 +1385,11 @@ namespace ngcomp
   class DiffOpEinsteinHCurlCurl : public DiffOp<DiffOpEinsteinHCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = D*D };
-    enum { DIFFORDER = 2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = D*D;
+    static constexpr int DIFFORDER = 2;
     static constexpr double eps() { return 1e-4; } 
     static Array<int> GetDimensions() { return Array<int> ( { D,D } ); };
     
@@ -1471,12 +1470,12 @@ namespace ngcomp
       }
       else if constexpr (D==3)
       {
-        size_t size = bmir.Size()*SIMD<double>::Size()*3*3;
+        size_t size = bmir.Size()*3*3;
         STACK_ARRAY(SIMD<double>, mem, size);
         FlatMatrix<SIMD<double>> Q(3*3, bmir.Size(), mem);
         DiffOpCurvatureHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Q);
         
-        STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+        STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size());
         FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
         bfel.Evaluate (bmir, x, G);
 
@@ -1494,15 +1493,15 @@ namespace ngcomp
       }
       else
       {
-        size_t size = bmir.Size()*SIMD<double>::Size()*D*D;
+        size_t size = bmir.Size()*D*D;
         STACK_ARRAY(SIMD<double>, mem, size);
-        STACK_ARRAY(SIMD<double>, mem2, bmir.Size()*SIMD<double>::Size());
+        STACK_ARRAY(SIMD<double>, mem2, bmir.Size());
         FlatMatrix<SIMD<double>> Ricci(D*D, bmir.Size(), &mem[0]);
         FlatMatrix<SIMD<double>> scalar(1, bmir.Size(), &mem2[0]);
         DiffOpRicciHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, Ricci);
         DiffOpScalarHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, scalar);
         
-        STACK_ARRAY(SIMD<double>, mem3, D*D*bmir.Size()*SIMD<double>::Size());
+        STACK_ARRAY(SIMD<double>, mem3, D*D*bmir.Size());
         FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem3[0]);
         bfel.Evaluate (bmir, x, G);
         
@@ -1520,11 +1519,11 @@ namespace ngcomp
   class DiffOpCurvatureHCurlCurl : public DiffOp<DiffOpCurvatureHCurlCurl<D> >
   {
   public:
-    enum { DIM = 1 };
-    enum { DIM_SPACE = D };
-    enum { DIM_ELEMENT = D };
-    enum { DIM_DMAT = (D*(D-1)/2)*(D*(D-1)/2) };
-    enum { DIFFORDER = 2 };
+    static constexpr int DIM = 1;
+    static constexpr int DIM_SPACE = D;
+    static constexpr int DIM_ELEMENT = D;
+    static constexpr int DIM_DMAT = (D*(D-1)/2)*(D*(D-1)/2);
+    static constexpr int DIFFORDER = 2;
     static Array<int> GetDimensions() 
     { 
       if constexpr (D == 2)
@@ -1650,14 +1649,14 @@ namespace ngcomp
                              BareSliceVector<double> x, BareSliceMatrix<SIMD<double>> y)
     {
       const HCurlCurlFiniteElement<D> & bfel = static_cast<const HCurlCurlFiniteElement<D>&> (fel);
-      size_t size = bmir.Size()*SIMD<double>::Size()*D*D*D;
+      size_t size = bmir.Size()*D*D*D;
       STACK_ARRAY(SIMD<double>, mem, 2*size);
       FlatMatrix<SIMD<double>> hchristoffel1(D*D*D, bmir.Size(), &mem[0]);
       FlatMatrix<SIMD<double>> hchristoffel2(D*D*D, bmir.Size(), &mem[size]);
 
       DiffOpChristoffelHCurlCurl<D>::ApplySIMDIR(fel, bmir, x, hchristoffel1);
      
-      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size()*SIMD<double>::Size());
+      STACK_ARRAY(SIMD<double>, mem2, D*D*bmir.Size());
       FlatMatrix<SIMD<double>> G(D*D, bmir.Size(), &mem2[0]);
       bfel.Evaluate (bmir, x, G);
       
@@ -2078,7 +2077,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
 	  {
 	    Array<int> elnr;
 	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
-	    if (elnr[0] < order_inner.Size())
+	    if (elnr.Size() > 0 && elnr[0] < order_inner.Size())
 		order_inner[elnr[0]] = order;
 	  }
         else if (ni.GetNr() < order_inner.Size())
@@ -2108,7 +2107,7 @@ Einstein: Einstein tensor Ein_ij(g) = Ric_ij(g)-0.5*S(g) g_ij
 	  {
 	    Array<int> elnr;
 	    ma->GetFacetSurfaceElements(ni.GetNr(),elnr);
-	    if (elnr[0] < order_inner.Size())
+	    if (elnr.Size() > 0 && elnr[0] < order_inner.Size())
 	      return order_inner[elnr[0]][0];
 	  }
         else if (ni.GetNr() < order_inner.Size())

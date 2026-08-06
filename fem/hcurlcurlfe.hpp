@@ -763,6 +763,10 @@ namespace ngfem
                            BareSliceMatrix<SIMD<double>> values) const override
     {
       auto & mir = static_cast<const SIMD_MappedIntegrationRule<DIM,DIM>&> (bmir);
+      if constexpr (!((ET == ET_TET && DIM == 3) ||
+                      ((ET == ET_TRIG || ET == ET_QUAD) && DIM == 2)))
+        throw Exception("HCurlCurl::EvaluateIncShape implemented only for TRIG, QUAD and TET");
+
       for (size_t i = 0; i < bmir.Size(); i++)
         {
           double *pcoefs = &coefs(0);
@@ -910,7 +914,7 @@ namespace ngfem
                for (size_t k = 0; k < sqr(DIMSPACE); k++)
                  value(k) = values(k, i);
                
-               Cast()-> CalcDualShape2 (mir[i], SBLambda([value, coefs] (size_t j, auto val)
+               Cast()-> CalcDualShape2 (mir[i], SBLambda([&value, coefs] (size_t j, auto val)
                                                          {
                                                            coefs(j) += HSum(InnerProduct(val,value));
                                                          }));
@@ -1016,7 +1020,7 @@ namespace ngfem
              double *pcoefs = &coefs(0);
              const size_t dist = coefs.Dist();
              Cast()->T_CalcShape (GetTIP(mir[i]),
-                                SBLambda ([vali,&pcoefs,dist] (size_t j, auto s)
+                                SBLambda ([&vali,&pcoefs,dist] (size_t j, auto s)
                                           {
                                             *pcoefs += HSum(InnerProduct(s.Value(), vali));
                                              pcoefs += dist;
@@ -1086,14 +1090,15 @@ namespace ngfem
       IVec<2> e = ET_trait<ET_SEGM>::GetEdgeSort (0, vnums);
       T xi = lam[e[0]]-lam[e[1]];
 
-      auto tv = mip.GetJacobian()*Vec<1,T>(1);
+      auto F = mip.GetJacobian();
+      auto invJ = 1 / mip.GetMeasure();
+      auto tv = F*Vec<1,T>(1);
       auto tt = DyadProd(tv,tv);
 
-      LegendrePolynomial::Eval(order_inner[0], xi, SBLambda([shape,mip,tt,&ii] (size_t nr, T val)
+      LegendrePolynomial::Eval(order_inner[0], xi, SBLambda([&shape, invJ, &tt, &ii] (size_t nr, T val)
                             {
-                              shape[ii++] = 1/mip.GetMeasure()*val*tt;
+                              shape[ii++] = invJ*val*tt;
                             }));
-
     }
   };
 
@@ -1193,6 +1198,13 @@ namespace ngfem
 
       int ii = 0;
 
+      auto F = mip.GetJacobian();
+      auto Ft = Trans(F);
+      constexpr int DIMSPACE = mat_traits<decltype(F)>::HEIGHT;
+      auto invJ = 1 / mip.GetMeasure();
+      const Mat<2, 2, T> E11({{1, 0}, {0, 0}});
+      const Mat<2, 2, T> E22({{0, 0}, {0, 1}});
+      const Mat<2, 2, T> E12({{0, 1}, {1, 0}});
 
       if (ip.VB() == BND)
         { // facet shapes
@@ -1208,14 +1220,14 @@ namespace ngfem
                   Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
                   
                   
-                  auto tv = mip.GetJacobian()*tauref;
+                  auto tv = F*tauref;
 
                   auto tt = DyadProd(tv,tv);
                   LegendrePolynomial::Eval
                     (p, xi,
-                     SBLambda([&] (size_t nr, T val)
+                     SBLambda([&shape, invJ, &tt, &ii] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                shape[nr+ii] = invJ*val*tt;
                               }));
                 }
               ii += (p+1);
@@ -1233,12 +1245,16 @@ namespace ngfem
             {
               IVec<4> f =  ET_trait<ET_TRIG>::GetFaceSort(0, vnums);
 
+              Mat<DIMSPACE,DIMSPACE,T> FE11Ft = F*E11*Ft;
+              Mat<DIMSPACE,DIMSPACE,T> FE22Ft = F*E22*Ft;
+              Mat<DIMSPACE,DIMSPACE,T> FE12Ft = F*E12*Ft;
+
               DubinerBasis::Eval (p, lam[f[0]], lam[f[1]],
-                                   SBLambda([&] (size_t nr, T val)
+                                   SBLambda([&shape, invJ, &FE11Ft, &FE22Ft, &FE12Ft, &ii] (size_t nr, T val)
                                             {
-                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>({{1,0},{0,0}})*Trans(mip.GetJacobian());
-                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>({{0,0},{0,1}})*Trans(mip.GetJacobian());
-                                              shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<2,2>({{0,1},{1,0}})*Trans(mip.GetJacobian());
+                                              shape[ii++] = invJ*val*FE11Ft;
+                                              shape[ii++] = invJ*val*FE22Ft;
+                                              shape[ii++] = invJ*val*FE12Ft;
                                             }));
             }
         }
@@ -1295,7 +1311,7 @@ namespace ngfem
           //IntLegNoBubble::
             LegendrePolynomial::
             EvalMult (order_facet[i][0], 
-                      xi, 0.25*lam_e, SBLambda ([&](int i, auto val)
+                      xi, 0.25*lam_e, SBLambda ([&shape, &ii, symdyadic](int i, auto val)
                                            {
                                              shape[ii++] = val*symdyadic;
                                            }));
@@ -1392,6 +1408,13 @@ namespace ngfem
       
       ArrayMem<T,20> v(order+2), u(order+2);
 
+      auto F = mip.GetJacobian();
+      auto Ft = Trans(F);
+      constexpr int DIMSPACE = mat_traits<decltype(F)>::HEIGHT;
+      auto invJ = 1 / mip.GetMeasure();
+      const Mat<2, 2, T> E11({{1, 0}, {0, 0}});
+      const Mat<2, 2, T> E22({{0, 0}, {0, 1}});
+      const Mat<2, 2, T> E12({{0, 1}, {1, 0}});
       
       if (mip.IP().VB() == BND)
         { // facet shapes
@@ -1408,14 +1431,14 @@ namespace ngfem
                   Vec<2,T> tauref = pnts[e[0]] - pnts[e[1]];
                   
                   
-                  auto tv = mip.GetJacobian()*tauref;
+                  auto tv = F*tauref;
 
                   auto tt = DyadProd(tv,tv);
                   LegendrePolynomial::Eval
                     (p, xi,
-                     SBLambda([&] (size_t nr, T val)
+                     SBLambda([&shape, invJ, &tt, &ii] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                shape[nr+ii] = invJ*val*tt;
                                 }));
                   /*IVec<2> e = ET_trait<ET_QUAD>::GetEdgeSort (i, vnums);
                   AutoDiff<2,T> xi  = sigma[e[1]]-sigma[e[0]];
@@ -1459,11 +1482,14 @@ namespace ngfem
           T xi = lx[1]-lx[0];
           LegendrePolynomial (p, eta, v);
           LegendrePolynomial (p, xi, u);
+          Mat<DIMSPACE,DIMSPACE,T> FE11Ft = F*E11*Ft;
+          Mat<DIMSPACE,DIMSPACE,T> FE22Ft = F*E22*Ft;
+          Mat<DIMSPACE,DIMSPACE,T> FE12Ft = F*E12*Ft;
           
           for (int i = 0; i <= p; i++)
             for (int j = 0; j <= p; j++)
               {
-                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{0,1},{1,0}}))*Trans(mip.GetJacobian());
+                shape[ii++] = invJ*u[i]*v[j]*FE12Ft;
               }
           
           
@@ -1471,7 +1497,7 @@ namespace ngfem
           for (int i = 0; i < p; i++)
             for (int j = 0; j <= p; j++)
               {
-                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{0,0},{0,1}}))*Trans(mip.GetJacobian());
+                shape[ii++] = invJ*u[i]*v[j]*FE22Ft;
               }
           
           //symdyad = ly[2]*ly[1]*SymDyadProd(Vec<2,T>(1,0),Vec<2,T>(1,0)); //y*(1-y)*(1,0,  0,0) * P(x) * P(y)
@@ -1479,7 +1505,7 @@ namespace ngfem
           for (int j = 0; j < p; j++)
             for (int i = 0; i <= p; i++)
               {
-                shape[ii++] = 1/mip.GetMeasure()*u[i]*v[j]*mip.GetJacobian()*Mat<2,2>(Matrix<>({{1,0},{0,0}}))*Trans(mip.GetJacobian());
+                shape[ii++] = invJ*u[i]*v[j]*FE11Ft;
               }
       
           //IVec<4> f = ET_trait<ET_QUAD>::GetFaceSort(0, vnums);
@@ -1518,7 +1544,6 @@ namespace ngfem
         }
     }
   };
-
 
   template <> class HCurlCurlFE<ET_PRISM> : public T_HCurlCurlFE<ET_PRISM> 
   {
@@ -1562,7 +1587,6 @@ namespace ngfem
       order = 1+max2(order, p);
     }
     
-
     template <typename Tx, typename TFA> 
     void T_CalcShape (TIP<3,Tx> ip, TFA & shape) const
     {
@@ -1592,8 +1616,6 @@ namespace ngfem
                             }));
         }
 
-
-
       //vertical edge shapes
       for (int i = 6; i < 9; i++)
         {
@@ -1606,8 +1628,6 @@ namespace ngfem
             shape[ii++] = leg_v[j]*symdyadic;
         }
       
-
-
       //horizontal face shaps
       for(int fa = 0; fa < 2; fa++)
         {
@@ -1629,7 +1649,6 @@ namespace ngfem
                                           }));
             }
         }
-
 
       //vertical face shaps
       for(int fa = 2; fa < 5; fa++)
@@ -1653,7 +1672,7 @@ namespace ngfem
           LegendrePolynomial (of, xi, leg_u);
 
           auto W = uDv_minus_vDu(lx[ftrig],lx[fmax]);
-          Tx W_AD;
+          Tx W_AD(0.0);
           W_AD.DValue(0) = W.Value()(0);
           W_AD.DValue(1) = W.Value()(1);
           W_AD.DValue(2) = W.Value()(2);
@@ -1662,7 +1681,6 @@ namespace ngfem
             for (int k = 0; k <= of; k++)
               shape[ii++] = leg_v[j]*leg_u[k]*symdyadic;
 
-          
           auto symdyad = 0.25*lx[ftrig]*lx[fmax]*MakeReggeAD(eta,eta);  //^= x*(1-x)*(0,0, 0,1) * P(x) * P(y)
           for (int i = 0; i < of; i++)
             for (int j = 0; j <= of; j++)
@@ -1701,7 +1719,6 @@ namespace ngfem
                                             shape[ii++] = leg_w[j]*val*symdyadic3;
                                           }
                                       }));
-          
 
           // H1(T) x [0,1]
           auto symdyadic = ls*le*lt*MakeReggeAD(eta,eta);
@@ -1714,13 +1731,12 @@ namespace ngfem
                                           }
                                       }));
 
-
           // Nedelec_1 x [0,1]
           DubinerBasis::EvalMult(p-2, lx[f[0]], lx[f[1]],lx[f[0]]*lx[f[1]]*lx[f[2]], 
-                                 SBLambda([&](int nr, auto val)
+                                 SBLambda([&shape, &ii, p, &leg_w, eta](int nr, auto val)
                                           {
                                             auto tmp = Du(val);
-                                            Tx tmp_AD;
+                                            Tx tmp_AD(0.0);
                                             tmp_AD.DValue(0) = tmp.Value()(0);
                                             tmp_AD.DValue(1) = tmp.Value()(1);
                                             tmp_AD.DValue(2) = tmp.Value()(2);
@@ -1754,20 +1770,15 @@ namespace ngfem
                                                   for(int j=0; j <= p; j++)
                                                     shape[ii++] = leg_w[j]*symdyadic;
                                                 }));
-          
         }
-
     }
-
 
     template <typename MIP, typename TFA>
     void CalcDualShape2 (const MIP & mip, TFA & shape) const
     {
       throw Exception ("Hcurlcurlfe calcdualshape2 not implementend for element type ET_PRISM");
     }
-
   };
-
 
   
   template <> class HCurlCurlFE<ET_TET> : public T_HCurlCurlFE<ET_TET> 
@@ -1881,6 +1892,19 @@ namespace ngfem
 
       int ii = 0;
 
+      auto F = mip.GetJacobian();
+      auto Ft = Trans(F);
+      auto invJ = 1 / mip.GetMeasure();
+      const Mat<2, 2, T> E11_2({{1, 0}, {0, 0}});
+      const Mat<2, 2, T> E22_2({{0, 0}, {0, 1}});
+      const Mat<2, 2, T> E12_2({{0, 1}, {1, 0}});
+      const Mat<3, 3, T> E11_3({{1, 0, 0}, {0, 0, 0}, {0, 0, 0}});
+      const Mat<3, 3, T> E22_3({{0, 0, 0}, {0, 1, 0}, {0, 0, 0}});
+      const Mat<3, 3, T> E33_3({{0, 0, 0}, {0, 0, 0}, {0, 0, 1}});
+      const Mat<3, 3, T> E23_3({{0, 0, 0}, {0, 0, 1}, {0, 1, 0}});
+      const Mat<3, 3, T> E13_3({{0, 0, 1}, {0, 0, 0}, {1, 0, 0}});
+      const Mat<3, 3, T> E12_3({{0, 1, 0}, {1, 0, 0}, {0, 0, 0}});
+
       if (ip.VB() == BBND)
         { // facet shapes
           for (int i = 0; i < 6; i++)
@@ -1893,13 +1917,13 @@ namespace ngfem
                   
                   T xi = lam[e[1]]-lam[e[0]];
                   Vec<3,T> tauref = pnts[e[1]] - pnts[e[0]];
-                  Vec<3,T> tau = mip.GetJacobian()*tauref;
+                  Vec<3,T> tau = F*tauref;
                   Mat<3,3,T> tt = DyadProd(tau,tau);
                   LegendrePolynomial::Eval
                     (p, xi,
-                     SBLambda([&] (size_t nr, T val)
+                     SBLambda([&shape, invJ, &tt, &ii] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                shape[nr+ii] = invJ*val*tt;
                               }));
                 }
               ii += (p+1);
@@ -1923,20 +1947,26 @@ namespace ngfem
                   T xi = lam[fav[0]];
                   T eta = lam[fav[1]];
                   
-                  Matrix<T> F(3,2);
-                  F.Col(0) = adxi;
-                  F.Col(1) = adeta;
+                  Matrix<T> Fface(3,2);
+                  Fface.Col(0) = adxi;
+                  Fface.Col(1) = adeta;
 		 
                   Matrix<T> Ftmp(2,2);
-                  Ftmp = Trans(F)*F;
+                  Ftmp = Trans(Fface)*Fface;
                   auto det = sqrt(Ftmp(0,0)*Ftmp(1,1)-Ftmp(1,0)*Ftmp(0,1));
+                  auto invDetJ = invJ/det;
+                  auto Fface_mapped = F*Fface;
+                  auto Fface_mapped_T = Trans(Fface_mapped);
+                  Mat<3,3,T> A11 = Fface_mapped*E11_2*Fface_mapped_T;
+                  Mat<3,3,T> A22 = Fface_mapped*E22_2*Fface_mapped_T;
+                  Mat<3,3,T> A12 = Fface_mapped*E12_2*Fface_mapped_T;
                                               
                   DubinerBasis::Eval (p, xi, eta,
-                                       SBLambda([&] (size_t nr, T val)
+                                       SBLambda([&shape, invDetJ, &A11, &A22, &A12, &ii] (size_t nr, T val)
                                                 {
-                                                  shape[ii++] = 1/(det*mip.GetMeasure())*val*Mat<3,3,T>(mip.GetJacobian()*F*Matrix<>({{1,0},{0,0}})*Trans(mip.GetJacobian()*F));
-                                                  shape[ii++] = 1/(det*mip.GetMeasure())*val*Mat<3,3,T>(mip.GetJacobian()*F*Matrix<>({{0,0},{0,1}})*Trans(mip.GetJacobian()*F));
-                                                  shape[ii++] = 1/(det*mip.GetMeasure())*val*Mat<3,3,T>(mip.GetJacobian()*F*Matrix<>({{0,1},{1,0}})*Trans(mip.GetJacobian()*F));
+                                                  shape[ii++] = invDetJ*val*A11;
+                                                  shape[ii++] = invDetJ*val*A22;
+                                                  shape[ii++] = invDetJ*val*A12;
                                                 }));
                 }
               else
@@ -1951,16 +1981,21 @@ namespace ngfem
       
       if (ip.VB() == VOL && order_inner[0] >= 2)
         {
-          DubinerBasis3D::Eval (order_inner[0]-2, lam[0], lam[1], lam[2], SBLambda([&](size_t j, T val)
+          Mat<3,3,T> FE11Ft = F*E11_3*Ft;
+          Mat<3,3,T> FE22Ft = F*E22_3*Ft;
+          Mat<3,3,T> FE33Ft = F*E33_3*Ft;
+          Mat<3,3,T> FE23Ft = F*E23_3*Ft;
+          Mat<3,3,T> FE13Ft = F*E13_3*Ft;
+          Mat<3,3,T> FE12Ft = F*E12_3*Ft;
+          DubinerBasis3D::Eval (order_inner[0]-2, lam[0], lam[1], lam[2], SBLambda([&shape, invJ, &FE11Ft, &FE22Ft, &FE33Ft, &FE23Ft, &FE13Ft, &FE12Ft, &ii](size_t j, T val)
                                {
-                                 shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<3,3>(Matrix<>({{1,0,0},{0,0,0},{0,0,0}}))*Trans(mip.GetJacobian());
-                                 shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<3,3>(Matrix<>({{0,0,0},{0,1,0},{0,0,0}}))*Trans(mip.GetJacobian());
-                                 shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<3,3>(Matrix<>({{0,0,0},{0,0,0},{0,0,1}}))*Trans(mip.GetJacobian());
-                                 shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<3,3>(Matrix<>({{0,0,0},{0,0,1},{0,1,0}}))*Trans(mip.GetJacobian());
-                                 shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<3,3>(Matrix<>({{0,0,1},{0,0,0},{1,0,0}}))*Trans(mip.GetJacobian());
-                                 shape[ii++] = 1/mip.GetMeasure()*val*mip.GetJacobian()*Mat<3,3>(Matrix<>({{0,1,0},{1,0,0},{0,0,0}}))*Trans(mip.GetJacobian());
+                                 shape[ii++] = invJ*val*FE11Ft;
+                                 shape[ii++] = invJ*val*FE22Ft;
+                                 shape[ii++] = invJ*val*FE33Ft;
+                                 shape[ii++] = invJ*val*FE23Ft;
+                                 shape[ii++] = invJ*val*FE13Ft;
+                                 shape[ii++] = invJ*val*FE12Ft;
                                }));
-          
         }
     }
   };
@@ -2021,7 +2056,7 @@ namespace ngfem
           
           //IntLegNoBubble::
           LegendrePolynomial::
-            EvalMult (p, xi, 0.25*lam_e, SBLambda ([&](int i, auto val)
+            EvalMult (p, xi, 0.25*lam_e, SBLambda ([&shape, &ii, symdyadic](int i, auto val)
                                               {
                                                 shape[ii++] = val*symdyadic;
                                               }));
@@ -2057,7 +2092,6 @@ namespace ngfem
           for (int k = 0; k < p; k++)
             for (int j = 0; j <= p; j++)
               shape[ii++] = leg_u[j]*leg_v[k]*symdyadic;
-          
         }
 
       int p = order_inner[0];
@@ -2126,6 +2160,8 @@ namespace ngfem
       int ii = 0;
       
       ArrayMem<T,20> v(order+2), u(order+2), w(order+2);
+      auto F = mip.GetJacobian();
+      auto invJ = 1 / mip.GetMeasure();
 
       if (mip.IP().VB() == BBND)
         { // edge shapes
@@ -2140,15 +2176,13 @@ namespace ngfem
                   T xi  = sigma[e[1]]-sigma[e[0]];
                   Vec<3,T> tauref = pnts[e[0]] - pnts[e[1]];
                   
-                  
-                  auto tv = mip.GetJacobian()*tauref;
-
+                  auto tv = F*tauref;
                   auto tt = DyadProd(tv,tv);
                   LegendrePolynomial::Eval
                     (p, xi,
-                     SBLambda([&] (size_t nr, T val)
+                     SBLambda([&shape, invJ, &tt, &ii] (size_t nr, T val)
                               {
-                                shape[nr+ii] = 1/mip.GetMeasure()*val*tt;
+                                shape[nr+ii] = invJ*val*tt;
                                 }));
                  
                 }
@@ -2174,8 +2208,8 @@ namespace ngfem
                   T xi  = sigma[f[0]] - sigma[f[1]]; 
                   T eta = sigma[f[0]] - sigma[f[3]];
                   //Vec<6, T> symdyadic = SymDyadProd(GetGradient(etaa),GetGradient(xia));
-                  auto tv1 = mip.GetJacobian()*tauref1;
-                  auto tv2 = mip.GetJacobian()*tauref2;
+                  auto tv1 = F*tauref1;
+                  auto tv2 = F*tauref2;
                   auto symdyadic = SymDyadProd(tv1,tv2);
                   
                   LegendrePolynomial (p, eta, u);
@@ -2226,9 +2260,7 @@ namespace ngfem
             throw Exception ("Hcurlcurlfe calcdualshape2 not implementend for element type ET_HEX for high-order");
         }
     }
-
   };
-
 
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_SEGM>;
   HCURLCURLFE_EXTERN template class T_HCurlCurlFE<ET_TRIG>;
