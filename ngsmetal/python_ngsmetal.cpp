@@ -87,8 +87,6 @@ namespace
 
 PYBIND11_MODULE(libngsmetal, m)
 {
-  cout << "Loading ngs-metal library" << endl;
-
   py::class_<MetalCaptureContext> (m, "MetalCaptureManager", R"doc(
 Capture Metal commands submitted inside a Python ``with`` block.
 
@@ -110,7 +108,12 @@ Xcode.
 
   py::class_<MetalVector, BaseVector, shared_ptr<MetalVector>> (m, "MetalVector")
     .def(py::init<size_t>(), py::arg("size"))
-    .def(py::init<const BaseVector&>(), py::arg("size"))    
+    .def(py::init<const BaseVector&>(), py::arg("size"))
+    .def("D2H", [](MetalVector& mv) {
+      auto tmp = make_shared<MetalVector>(mv.Size(), true);
+      tmp -> Set(1.0, mv);
+      return tmp;
+    });
     ;
 
 

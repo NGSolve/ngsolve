@@ -13,6 +13,7 @@ namespace ngsmetal
   MTL::ComputePipelineState* setscalar_pipelineState = nullptr;
   MTL::ComputePipelineState* set_pipelineState = nullptr;
 
+  MTL::ComputePipelineState* setscalar4_pipelineState = nullptr;
 
 
   auto lam = []()
@@ -49,7 +50,14 @@ namespace ngsmetal
                           uint id                [[thread_position_in_grid]]) {
             x[id] = a;
         }
-    )";
+
+        kernel void setscalar4(device float4* x       [[buffer(0)]],
+                          constant float& a     [[buffer(1)]],
+                          uint id                [[thread_position_in_grid]]) {
+            x[id] = float4(a);
+        }
+
+)";
 
 
     
@@ -83,6 +91,11 @@ namespace ngsmetal
       auto func = library->newFunction(funcName);
       setscalar_pipelineState = GetDevice()->newComputePipelineState(func, &error);      
     }
+    {
+      NS::String* funcName = NS::String::string("setscalar4", NS::UTF8StringEncoding);
+      auto func = library->newFunction(funcName);
+      setscalar4_pipelineState = GetDevice()->newComputePipelineState(func, &error);      
+    }
     return 0;
   }();
 
@@ -92,10 +105,11 @@ namespace ngsmetal
     : shared(ashared)
   {
     this -> size = s;
+    size_t s4 = (s+3) & ~(size_t)3;
     if (shared)
-      buffer = GetDevice()->newBuffer(s*sizeof(float), MTL::ResourceStorageModeShared);
+      buffer = GetDevice()->newBuffer(s4*sizeof(float), MTL::ResourceStorageModeShared);
     else
-      buffer = GetDevice()->newBuffer(s*sizeof(float), MTL::ResourceStorageModePrivate);
+      buffer = GetDevice()->newBuffer(s4*sizeof(float), MTL::ResourceStorageModePrivate);
   }
 
 
@@ -103,10 +117,11 @@ namespace ngsmetal
     : shared(ashared)    
   {
     this -> size = v.Size();
+    size_t s4 = (this->size+3) & ~(size_t)3;    
     if (shared)    
-      buffer = GetDevice()->newBuffer(this->size*sizeof(float), MTL::ResourceStorageModeShared);
+      buffer = GetDevice()->newBuffer(s4*sizeof(float), MTL::ResourceStorageModeShared);
     else
-      buffer = GetDevice()->newBuffer(this->size*sizeof(float), MTL::ResourceStorageModePrivate);
+      buffer = GetDevice()->newBuffer(s4*sizeof(float), MTL::ResourceStorageModePrivate);
 
 
     if (!shared)
@@ -127,7 +142,10 @@ namespace ngsmetal
         }
       else 
         throw Exception("MetalVector::MetalVector - illegal vector type");
-      
+
+      size_t s4 = (this->size+3) & ~(size_t)3;    
+      FlatVector<float> pad(s4-this->size, (float*)buffer->contents()+this->size);
+      pad = 0.0;
     }, v.GetScalarType());
   }
   
@@ -162,14 +180,15 @@ namespace ngsmetal
     MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
     MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
 
-    encoder->setComputePipelineState(setscalar_pipelineState);
+    encoder->setComputePipelineState(setscalar4_pipelineState);
     encoder->setBuffer(buffer, 0, 0);
     float fscal = scal;
     encoder->setBytes(&fscal, sizeof(float), 1);
 
-    MTL::Size gridSize = MTL::Size(size, 1, 1);
+    int size4 = (size+3)/4;
+    MTL::Size gridSize = MTL::Size(size4, 1, 1);
     NS::UInteger maxThreads = setscalar_pipelineState->maxTotalThreadsPerThreadgroup();
-    NS::UInteger threadsGroupDim = (size < maxThreads) ? size : maxThreads;
+    NS::UInteger threadsGroupDim = (size4 < maxThreads) ? size4 : maxThreads;
     MTL::Size threadgroupSize = MTL::Size(threadsGroupDim, 1, 1);
       
     encoder->dispatchThreads(gridSize, threadgroupSize);

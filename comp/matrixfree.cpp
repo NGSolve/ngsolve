@@ -347,7 +347,9 @@ namespace ngcomp
 
 
   MatrixFreeBTDTB ::
-  MatrixFreeBTDTB (size_t h, size_t w,
+  MatrixFreeBTDTB (shared_ptr<CoefficientFunction> cf,
+                   const Array<ProxyFunction*>& test_proxies,
+                   size_t h, size_t w,
                    Array<size_t> _elnums,
                    Table<DofId> _dofx, Table<DofId> _dofy,
                    Tensor<3> _Bx,  // locdofs, dim, nip
@@ -388,6 +390,16 @@ namespace ngcomp
         startiref = nextiref;
       }
 
+    for (auto tp : test_proxies)
+      {
+        CoefficientFunction::T_DJC cache;
+        auto diffcf = cf -> DiffJacobi (tp, cache);
+        auto compiledcf = Compile (diffcf, false);
+        Code code = compiledcf->GenerateProgram(0, false);
+        physics += code;
+      }
+
+    
     
     if (opts.generate_code)
       {
@@ -1295,7 +1307,9 @@ namespace ngcomp
                 // cout << "diag = " << endl << diag << endl;
                 // cout << "jac = " << Jacobi << endl;
                 
-                mat = make_shared<MatrixFreeBTDTB> (fesy->GetNDof(), fesx->GetNDof(),
+                mat = make_shared<MatrixFreeBTDTB> (bfi -> GetCoefficientFunction(),
+                                                    testproxies,
+                                                    fesy->GetNDof(), fesx->GetNDof(),
                                                     Array<size_t>(elclass_inds), std::move(dofx), std::move(dofy),
                                                     std::move(bmatx), std::move(bmaty),
                                                     std::move(weights),

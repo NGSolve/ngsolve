@@ -246,6 +246,9 @@ namespace ngsmetal
                for (int j = 0; j < $DIMYREF; j++)
                   yvals(j) = (elnr<ne && 8*baseiptile+locipnr < nip) ? xvals(j) * weights[8*baseiptile+locipnr] * JacobiDets[elnr] : 0;
 
+              $PHYSICS
+              yvals = weights[8*baseiptile+locipnr] * JacobiDets[elnr] * yvals;
+
               $TRANSFORMY;          
 
                for (int j = 0; j < $DIMYREF; j++)
@@ -305,6 +308,43 @@ namespace ngsmetal
 
 )";
 
+
+
+
+
+    string phys = "{ // THE PHYSICS (WIP)\n";
+    phys += "int i = 0;\n";     // used in generated code, not needed here
+    
+    // for each test proxy we have one equation
+    for (int k : Range(pmat->physics))
+      {
+        auto& code = pmat->physics[k];
+        phys += "{  // equation " + ToString(k) +"\n";
+        
+        // TODO: get all trial proxies and the right indices
+        phys += "auto values_0 = [&](int ip, int nr) { return xvals(nr); };\n";
+        phys += "constexpr bool has_values_0 = true; \n";
+        phys += "float comp_0_0, comp_0_1, comp_0_2;\n";
+    
+        phys += code.body;
+
+        // TODO: copy result to y-values
+        phys += "yvals(0) = var_0_0;\n";
+        phys += "yvals(1) = var_0_1;\n";
+        phys += "yvals(2) = var_0_2;\n";
+        phys += "}\n";
+      }
+      
+    phys += "} // END PHYSICS \n";
+
+    phys = Substitute(phys, "double", "float");
+    code = Substitute(code, "$PHYSICS", phys);
+
+    
+
+
+
+    
     
     code = Substitute(code, "$NE", ToString(ne)+" /*ne*/ ");
     code = Substitute(code, "$NIP", ToString(nip)+" /*nip*/ ");
@@ -341,7 +381,7 @@ namespace ngsmetal
                       diffopy -> GenerateTransformationCode("yvals", "yrefvals", true));
     
     
-
+    
     cout << "code = " << endl << code << endl;
     
     NS::Error* error = nullptr;

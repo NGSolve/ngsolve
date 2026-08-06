@@ -1052,7 +1052,7 @@ namespace ngcomp
     Tensor<4> Jacobi; // element, dimr, dims, nip
     MatFreeOptions opts;
     Array<IntRange> ranges_x, ranges_xref, ranges_y, ranges_yref;
-    
+    Array<Code> physics;    // code for d_form / d_test
     static constexpr int SW = 4*SIMD<double>::Size();    
     shared_ptr<SharedLibrary> library;
     
@@ -1063,7 +1063,9 @@ namespace ngcomp
     lib_function compiled_function = nullptr;
     
     // element geometry stored as VectorH1 ? 
-    MatrixFreeBTDTB (size_t h, size_t w,
+    MatrixFreeBTDTB (shared_ptr<CoefficientFunction> form,
+                     const Array<ProxyFunction*>& test_proxies,
+                     size_t h, size_t w,
                      Array<size_t> _elnums,
                      Table<DofId> _dofx, Table<DofId> _dofy,
                      Tensor<3> _Bx,  // locdofs, dim, nip
