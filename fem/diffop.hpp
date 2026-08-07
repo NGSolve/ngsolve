@@ -1049,6 +1049,13 @@ namespace ngfem
     {
       diffop->CalcTransformationMatrix(mip, trans, lh);
     }
+
+    NGS_DLL_HEADER virtual 
+    string GenerateTransformationCode (string invar, string outvar, bool trans) const override
+    {
+      return diffop->GenerateTransformationCode (invar, outvar, trans);
+    }
+    
   
   
     virtual shared_ptr<CoefficientFunction>

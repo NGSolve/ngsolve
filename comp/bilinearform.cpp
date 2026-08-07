@@ -208,6 +208,16 @@ namespace ngcomp
     geom_free = flags.GetDefineFlag("geom_free");
     matrix_free_bdb = flags.GetDefineFlag("matrix_free_bdb");
     nonlinear_matrix_free_bdb = flags.GetDefineFlag("nonlinear_matrix_free_bdb");
+
+    if (flags.AnyFlagDefined ("mf"))
+      {
+        if (auto matfree_flags = std::any_cast<MatFreeOptions>(&flags.GetAnyFlag("mf")))
+          {
+            // cout << "got matfree_flags: " << *matfree_flags << endl;
+            matfree_opts = *matfree_flags;
+          }
+      }
+
     
     precompute = flags.GetDefineFlag ("precompute");
     checksum = flags.GetDefineFlag ("checksum");

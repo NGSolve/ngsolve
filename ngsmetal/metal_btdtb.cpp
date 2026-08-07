@@ -61,6 +61,7 @@ namespace ngsmetal
         for (int k = 0; k < RoundUp8(locdofsx); k++)
           dbmatx(j,i,k) = (i < nip && k < locdofsx) ? pmat->Bx(k,j,i) : 0;
 
+    
     buffer_bmaty = GetDevice()->newBuffer(dimyref*RoundUp8(nip)*dimyref*RoundUp8(locdofsy)*sizeof(float), MTL::ResourceStorageModeShared);
     FlatTensor<3,float> dbmaty(dimyref,RoundUp8(nip),RoundUp8(locdofsy), (float*)buffer_bmaty->contents());
     for (int j = 0; j < dimyref; j++)
@@ -241,7 +242,8 @@ namespace ngsmetal
                for (int j = 0; j < $DIMXREF; j++)
                   xrefvals(j) = pointvalsref[locipnr+j*bs_ipts][locelnr];
 
-              $TRANSFORMX;   // xrefvals -> xvals
+              // xrefvals -> xvals
+              $TRANSFORMX;   
 
                for (int j = 0; j < $DIMYREF; j++)
                   yvals(j) = (elnr<ne && 8*baseiptile+locipnr < nip) ? xvals(j) * weights[8*baseiptile+locipnr] * JacobiDets[elnr] : 0;
@@ -249,6 +251,7 @@ namespace ngsmetal
               $PHYSICS
               yvals = weights[8*baseiptile+locipnr] * JacobiDets[elnr] * yvals;
 
+              // yvals -> yrefvals
               $TRANSFORMY;          
 
                for (int j = 0; j < $DIMYREF; j++)
@@ -316,22 +319,56 @@ namespace ngsmetal
     phys += "int i = 0;\n";     // used in generated code, not needed here
     
     // for each test proxy we have one equation
-    for (int k : Range(pmat->physics))
+    for (int k : Range(pmat -> test_proxies))
       {
-        auto& code = pmat->physics[k];
+        CoefficientFunction::T_DJC cache;
+        auto diffcf = pmat->cf -> DiffJacobi (pmat->test_proxies[k], cache);
+        auto compiledcf = Compile (diffcf, false);
+        Code code = compiledcf->GenerateProgram(0, false);
+
+        
+        // auto& code = pmat->physics[k];
         phys += "{  // equation " + ToString(k) +"\n";
         
         // TODO: get all trial proxies and the right indices
-        phys += "auto values_0 = [&](int ip, int nr) { return xvals(nr); };\n";
-        phys += "constexpr bool has_values_0 = true; \n";
-        phys += "float comp_0_0, comp_0_1, comp_0_2;\n";
+
+        for (auto step : Range(compiledcf->Steps()))
+          {
+            auto stepcf = compiledcf->Steps()[step];
+            
+            if (auto proxycf = dynamic_cast<ProxyFunction*> (stepcf))
+              {
+                auto pos = pmat->trial_proxies.Pos(proxycf);
+                if (pos != pmat->trial_proxies.ILLEGAL_POSITION)
+                  {
+                    phys += "auto values_"+ToString(step)+" = [&](int ip, int nr) { return xvals("+ToString(pmat->ranges_x[pos].First())+"+nr); };\n";
+                    // s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
+                    // " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
+                    phys += "bool constexpr has_values_" + ToString(step) + " = true;\n";
+                    // s << "bool constexpr has_values_" << step << " = true;\n" << endl;
+                    
+                    // Declare dummy com_ variables to avoid compile errors (won't be used since has_values = true)
+                    for(auto i : Range(proxycf->Dimension()))
+                      phys += Var("comp", step,i, proxycf->Dimensions()).Declare("double", 0.0);
+                      // s << Var("comp", step,i, proxycf->Dimensions()).Declare("double", 0.0);
+                  }
+              }
+          }
+    
+        
+        // phys += "auto values_0 = [&](int ip, int nr) { return xvals(nr); };\n";
+        // phys += "constexpr bool has_values_0 = true; \n";
+        // phys += "float comp_0_0, comp_0_1, comp_0_2;\n";
     
         phys += code.body;
 
-        // TODO: copy result to y-values
-        phys += "yvals(0) = var_0_0;\n";
-        phys += "yvals(1) = var_0_1;\n";
-        phys += "yvals(2) = var_0_2;\n";
+        int steps = compiledcf->Steps().Size();
+        IntRange rangey = pmat -> ranges_y[k];
+        if (rangey.Size()==1)
+          phys += "yvals("+ToString(rangey[0])+") = var_"+ToString(steps-1)+";\n";          
+        else
+          for (int l : Range(rangey))
+            phys += "yvals("+ToString(rangey[l])+") = var_"+ToString(steps-1)+"_"+ToString(l)+";\n";
         phys += "}\n";
       }
       
@@ -371,15 +408,36 @@ namespace ngsmetal
     code = Substitute(code, "$ONLY_LOADSTORE", ToString(pmat->opts.only_loadstore));    
     code = Substitute(code, "$ATOMIC", ToString(pmat->opts.atomic));    
 
+    string transxcode;
+    for (int i = 0 ; i < pmat->diffopsx.Size(); i++)
+      {
+        IntRange rangexref = pmat->ranges_xref[i];
+        IntRange rangex = pmat->ranges_x[i];
+        transxcode += "{\n";
+        transxcode += "Vec<" + ToString(rangex.Size()) + ",float> res;\n";
+        transxcode += pmat->diffopsx[i] -> GenerateTransformationCode("xrefvals.Range<"+ToString(rangexref.First())+","+ToString(rangexref.Next())+">()",
+                                                                      "res", false);
+        transxcode += "xvals.SetRange<" + ToString(rangex.First()) +"," + ToString(rangex.Next()) + ">(res);\n";
+        transxcode += "}\n";
+      }
+    code = Substitute(code, "$TRANSFORMX", transxcode);    
 
-    auto diffopx = pmat->diffopsx[0];   // only the first, for now
-    code = Substitute(code, "$TRANSFORMX", 
-                      diffopx -> GenerateTransformationCode("xrefvals", "xvals", false));
 
-    auto diffopy = pmat->diffopsx[0];   // only the first, for now
-    code = Substitute(code, "$TRANSFORMY", 
-                      diffopy -> GenerateTransformationCode("yvals", "yrefvals", true));
-    
+
+    string transycode;
+    for (int i = 0 ; i < pmat->diffopsy.Size(); i++)
+      {
+        IntRange rangeyref = pmat->ranges_yref[i];
+        IntRange rangey = pmat->ranges_y[i];
+        transycode += "{\n";
+        transycode += "Vec<" + ToString(rangeyref.Size()) + ",float> res;\n";
+        transycode += pmat->diffopsy[i] -> GenerateTransformationCode("yvals.Range<"+ToString(rangey.First())+","+ToString(rangey.Next())+">()",
+                                                                      "res", true);
+        transycode += "yrefvals.SetRange<" + ToString(rangeyref.First()) +"," + ToString(rangeyref.Next()) + ">(res);\n";
+        transycode += "}\n";
+      }
+    code = Substitute(code, "$TRANSFORMY", transycode);    
+
     
     
     cout << "code = " << endl << code << endl;

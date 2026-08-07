@@ -347,8 +347,9 @@ namespace ngcomp
 
 
   MatrixFreeBTDTB ::
-  MatrixFreeBTDTB (shared_ptr<CoefficientFunction> cf,
-                   const Array<ProxyFunction*>& test_proxies,
+  MatrixFreeBTDTB (shared_ptr<CoefficientFunction> acf,
+                   const Array<ProxyFunction*>& atrial_proxies,
+                   const Array<ProxyFunction*>& atest_proxies,
                    size_t h, size_t w,
                    Array<size_t> _elnums,
                    Table<DofId> _dofx, Table<DofId> _dofy,
@@ -361,7 +362,8 @@ namespace ngcomp
                    Tensor<4> _D, // element, nip, dimy, dimx;
                    Tensor<4> _Jacobi,
                    MatFreeOptions _opts)
-  : height(h), width(w), elnums(std::move(_elnums)), dofx(std::move(_dofx)), dofy(std::move(_dofy)),
+  : height(h), width(w), cf(acf), trial_proxies(atrial_proxies), test_proxies(atest_proxies), 
+    elnums(std::move(_elnums)), dofx(std::move(_dofx)), dofy(std::move(_dofy)),
     Bx(std::move(_Bx)), By(std::move(_By)),
     weights(std::move(_weights)),
     diffopsx(std::move(_diffopsx)), diffopsy(std::move(_diffopsy)),
@@ -1308,7 +1310,7 @@ namespace ngcomp
                 // cout << "jac = " << Jacobi << endl;
                 
                 mat = make_shared<MatrixFreeBTDTB> (bfi -> GetCoefficientFunction(),
-                                                    testproxies,
+                                                    trialproxies, testproxies,
                                                     fesy->GetNDof(), fesx->GetNDof(),
                                                     Array<size_t>(elclass_inds), std::move(dofx), std::move(dofy),
                                                     std::move(bmatx), std::move(bmaty),

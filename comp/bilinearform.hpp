@@ -1041,6 +1041,10 @@ namespace ngcomp
   {
   public:
     size_t height, width;
+    shared_ptr<CoefficientFunction> cf;   // the form
+    const Array<ProxyFunction*>& trial_proxies;
+    const Array<ProxyFunction*>& test_proxies;
+
     Array<size_t> elnums;
     Table<DofId> dofx;
     Table<DofId> dofy;
@@ -1055,6 +1059,7 @@ namespace ngcomp
     Array<Code> physics;    // code for d_form / d_test
     static constexpr int SW = 4*SIMD<double>::Size();    
     shared_ptr<SharedLibrary> library;
+
     
     typedef void (*lib_function)(double s, FlatVector<> fx, FlatVector<> fy,
                                  FlatTable<int>, FlatTable<int>, FlatTensor<4> Jacobi,
@@ -1063,8 +1068,9 @@ namespace ngcomp
     lib_function compiled_function = nullptr;
     
     // element geometry stored as VectorH1 ? 
-    MatrixFreeBTDTB (shared_ptr<CoefficientFunction> form,
-                     const Array<ProxyFunction*>& test_proxies,
+    MatrixFreeBTDTB (shared_ptr<CoefficientFunction> aform,
+                     const Array<ProxyFunction*>& atrial_proxies,
+                     const Array<ProxyFunction*>& atest_proxies,
                      size_t h, size_t w,
                      Array<size_t> _elnums,
                      Table<DofId> _dofx, Table<DofId> _dofy,

@@ -28,6 +28,21 @@ namespace tinybla {
       for (int i = 0; i < S; i++) r(i) = data[i] - b(i);
       return r;
     }
+
+
+    template <int FIRST, int NEXT>
+    constexpr Vec<NEXT - FIRST, T> Range() const {
+    Vec<NEXT - FIRST, T> r;
+    for (int i = 0; i < NEXT - FIRST; ++i)
+      r(i) = data[FIRST + i];
+    return r;
+    }
+
+    template <int FIRST, int NEXT>
+    constexpr void SetRange(const Vec<NEXT - FIRST, T> sub) {
+    for (int i = 0; i < NEXT - FIRST; ++i)
+      data[FIRST + i] = sub(i);
+  }
   };
 
   template <int S, typename T>
