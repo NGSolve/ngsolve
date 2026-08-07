@@ -101,7 +101,7 @@ namespace ngfem
       this->CalcMappedShape (mir, shapes);
       this->CalcDualShape (mir, dualshapes);
       for (size_t j : Range(mir))
-        dualshapes.Col(j) *= mir[j].IP().Weight();
+        dualshapes.Col(j) *= mir[j].GetWeight();
 
       for (int j = 0; j < GetNDof(); j++)
         {
@@ -208,7 +208,7 @@ namespace ngfem
           CalcMappedShape (mir, shapes);
           CalcDualShape (mir, dualshapes);
           for (size_t j : Range(mir))
-            dualshapes.Col(j) *= mir[j].IP().Weight();
+            dualshapes.Col(j) *= mir[j].GetWeight();
 
           for (int j = first_facet_dof[locfnr]; j < first_facet_dof[locfnr+1]; j++)
             {
