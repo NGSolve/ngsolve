@@ -58,10 +58,23 @@ namespace tinybla {
     T data[H][W];
   public:
     Mat() = default;
+    Mat(Vec<H*W,T> vec) {
+      for (int i = 0; i < H; i++)
+        for (int j = 0; j < W; j++)
+          data[i][j] = vec(i*W+j);
+    }
     constexpr int Height() const { return H; }
     constexpr int Width()  const { return W; }
     thread T & operator()(int i, int j) { return data[i][j]; }
     T   operator()(int i, int j) const  { return data[i][j]; }
+
+    operator Vec<H*W,T> () const {
+      Vec<H*W,T> r;
+      for (int i = 0; i < H; i++)
+        for (int j = 0; j < W; j++)
+          r(i*W+j) = data[i][j];
+      return r;
+    }
 
     Mat operator+(Mat b) const {
       Mat r;
@@ -178,8 +191,12 @@ namespace tinybla {
 
   template <int S, typename T>
   Mat<S,S,T> Inv(Mat<S,S,T> m) {
-    return Cof(m).Trans() * (T(1) / Det(m));
+    return Trans(Cof(m)) * (T(1) / Det(m));
   }
+
+
+  template <int H, int W, typename T>
+  auto ToMat(Vec<H*W,T> vec) { return Mat<H,W,T>(vec); }
 
 } // namespace tinybla
 

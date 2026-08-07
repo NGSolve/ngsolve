@@ -596,16 +596,12 @@ public:
 
     static string GenerateTransformationCode (string invar, string outvar, bool trans) 
     {
-      cerr << "fake implementation of GenreateTransformationCode for HDiv grad" << endl;
-      // return outvar+ "=" + invar +";\n";
-      return outvar+ "=" + invar +".Range<0,9>();\n";
-      /*
+      // return outvar+ "=" + invar +".Range<0,9>();\n";
       if (!trans)
-        return outvar + " = 1/J * (F * " + invar + ");\n";
+        return outvar+ "= 1/J*F * (ToMat<3,3>("+invar+".Range<0,9>()) * Inv(F));\n";
       else
-        return outvar + " = 1/J * (Trans(F) * " + invar + ");\n";
-      */
-  }
+        throw Exception("Transform back not implemented for Grad(HDiv)");
+    }
     
     
 #ifdef UNUSED    
