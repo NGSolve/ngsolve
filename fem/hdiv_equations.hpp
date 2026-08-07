@@ -86,7 +86,17 @@ public:
     auto & mip = static_cast<const MappedIntegrationPoint<D,D>&>(bmip);
     mat = 1./mip.GetJacobiDet() * mip.GetJacobian();
   }
-    
+
+
+  static string GenerateTransformationCode (string invar, string outvar, bool trans) 
+  {
+    if (!trans)
+      return outvar + " = 1/J * (F * " + invar + ");\n";
+    else
+      return outvar + " = 1/J * (Trans(F) * " + invar + ");\n";        
+  }
+
+  
   
   static void GenerateMatrixSIMDIR (const FiniteElement & fel,
                                     const SIMD_BaseMappedIntegrationRule & mir, BareSliceMatrix<SIMD<double>> mat)
@@ -584,7 +594,19 @@ public:
     typedef DiffOpGradientTraceHDiv<D> DIFFOP_TRACE;
     ///
 
-
+    static string GenerateTransformationCode (string invar, string outvar, bool trans) 
+    {
+      cerr << "fake implementation of GenreateTransformationCode for HDiv grad" << endl;
+      // return outvar+ "=" + invar +";\n";
+      return outvar+ "=" + invar +".Range<0,9>();\n";
+      /*
+      if (!trans)
+        return outvar + " = 1/J * (F * " + invar + ");\n";
+      else
+        return outvar + " = 1/J * (Trans(F) * " + invar + ");\n";
+      */
+  }
+    
     
 #ifdef UNUSED    
     template <typename AFEL, typename SIP, typename MAT,
