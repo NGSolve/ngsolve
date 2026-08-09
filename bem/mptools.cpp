@@ -403,8 +403,10 @@ namespace ngsbem
 
     target.SH().Coefs()=0.0;
 
-    LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 2*sizeof(entry_type)*(os+ot+3)+ 8*3*(os+ot+1) + 500));
+    LocalHeap lh(( 32*( (os+ot+1)*(os+ot+1) + (os+1 + ot+1) ) + 2*sizeof(entry_type)*(os+ot+3)+ 8*4*(os+ot+1) + 500));
 
+    constexpr bool is_ss = std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Singular>::value;
+    constexpr bool is_sr = std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Regular>::value;
     constexpr bool is_rr = std::is_same<RADIAL,Regular>::value && std::is_same<TARGET,Regular>::value;
     using trafo_type =
         std::conditional_t<
@@ -419,24 +421,21 @@ namespace ngsbem
 
     trafo = trafo_type(0.0);
 
-    FlatVector<double> scale_inv_bmn(os+ot+1, lh);
     FlatVector<double> scale_inv_amn(os+ot+1, lh);
+    FlatVector<double> amn(os+ot+1, lh);
+    FlatVector<double> tscale_inv_amn(os+ot+1, lh);
     FlatVector<double> powscale(os+ot+1, lh);
     
     // initial values
-    if constexpr (std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Regular>::value)
-    {
+    if constexpr (is_ss)
+      SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
+    if constexpr (is_sr)
       SphericalHankel1 (os+ot, kappa*abs(z), inv_tscale, trafo.Col(0));
-    }
     if constexpr (is_rr)
     {
       std::swap(scale, inv_tscale);
       std::swap(tscale, inv_scale);
       z = -z;
-      SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
-    }
-    if constexpr (std::is_same<RADIAL,Singular>::value && std::is_same<TARGET,Singular>::value)
-    {
       SphericalBessel (os+ot, kappa*abs(z), tscale, trafo.Col(0));
     }
 
@@ -460,7 +459,7 @@ namespace ngsbem
       for (int l = 1; l < os+ot; l++)
         trafo(l,1) = -scale_inv_amn(0) * (sh.CalcAmn(0,l)*tscale*trafo(l+1,0)
               -sh.CalcAmn(0,l-1)*inv_tscale*trafo(l-1,0));
-      trafo(0,1) = -scale*tscale*trafo(1,0);
+      trafo(0,1) = powscale(1)*trafo(1,0);
     }
 
     for (int n = 1; n < trafo.Width()-1; n++)
@@ -471,7 +470,7 @@ namespace ngsbem
               -sh.CalcAmn(0,n-1)*scale*trafo(l,n-1));
       trafo(0,n+1) = powscale(n+1)*trafo(n+1,0);
     }
-    
+
     // use symmetry of matrix (up to scaling)
     for (int n = 0; n < trafo.Width(); n++)
       for (int l = n+1; l < trafo.Width(); l++)
@@ -490,51 +489,103 @@ namespace ngsbem
     for (int m = 1; m <= min(os,ot); m++)
     {
       for (int l = m-1; l < os+ot-m; l++)
-        scale_inv_bmn(l) = scale/sh.CalcBmn(-m,l);
-        
+      {
+        amn(l) = sh.CalcAmn(m,l);
+        tscale_inv_amn(l) = tscale/amn(l);
+      }
+
       trafo.Swap (oldtrafo);
         
       // fill recursive formula (187)
+      double scale_inv_bmm = scale/sh.CalcBmn(-m,m);
       for (int l = m; l <= trafo.Height()-1-m; l++)
-        trafo(l,m) = scale_inv_bmn(m) * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)
+        trafo(l,m) = scale_inv_bmm * (sh.CalcBmn(-m, l)*inv_tscale*oldtrafo(l-1, m-1)
               -sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m-1));  
-      if (m < trafo.Width()-1)
+
+      if constexpr (is_sr)
       {
-      for (int l = m; l <= trafo.Height()-1-m; l++)
-        trafo(l,m+1) = scale_inv_bmn(m+1)* ( // sh.CalcBmn(m-1,m) * scale*trafo(l,m-1)
-              - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,m)
-              + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,m) );
+        // Outgoing Hankel translations are stable in the upward direction:
+        // two low-l walls with (182), then fill with (181).
+        for (int wall = 1; wall <= 2; wall++)
+        {
+          int wall_start_l = m+wall;
+          if (m+1 < trafo.Width())
+            trafo(wall_start_l,m+1) = scale/sh.CalcBmn(-m,m+1) *
+              (-sh.CalcBmn(m-1,wall_start_l+1)*tscale*oldtrafo(wall_start_l+1,m)
+               + sh.CalcBmn(-m,wall_start_l)*inv_tscale*oldtrafo(wall_start_l-1,m));
+
+          for (int n = m+1; n < trafo.Width()-1; n++)
+          {
+            int l = n+wall;
+            trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1) *
+              (sh.CalcBmn(m-1,n)*scale*trafo(l,n-1)
+               - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)
+               + sh.CalcBmn(-m,l)*inv_tscale*oldtrafo(l-1,n));
+            trafo(l+1,n) = 1.0/(tscale*amn(l)) *
+              (amn(l-1)*inv_tscale*trafo(l-1,n)
+               + amn(n-1)*scale*trafo(l,n-1)
+               - amn(n)*inv_scale*trafo(l,n+1));
+          }
+        }
+
+        for (int l = m; l < trafo.Height()-1; l++)
+          for (int n = m+1; n < min<int>(trafo.Height()-1-l,l-1); n++)
+            trafo(l+1,n) = 1.0/(tscale*amn(l)) *
+              (amn(l-1)*inv_tscale*trafo(l-1,n)
+               + amn(n-1)*scale*trafo(l,n-1)
+               - amn(n)*inv_scale*trafo(l,n+1));
       }
-      // fill recursive formula (182)
-      for (int n = m+1; n < trafo.Width()-1; n++)
+      else
       {
-        for (int l = n-1; l <= trafo.Height()-1-m; l++)
-          trafo(l,n+1) = scale_inv_bmn(n+1)* (sh.CalcBmn(m-1,n) * scale*trafo(l,n-1)
-                       - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)
-                       + sh.CalcBmn(-m,l)  * inv_tscale*oldtrafo(l-1,n) );
+        // Regular Bessel translations are stable in the downward direction:
+        // two high-l walls with (182), then fill with (181).
+        for (int wall = 1; wall <= 2; wall++)
+        {
+          int wall_start_l = os+ot-m-wall;
+          if (m < trafo.Width()-wall)
+            trafo(wall_start_l,m+1) = scale/sh.CalcBmn(-m,m+1) *
+              (-sh.CalcBmn(m-1,wall_start_l+1)*tscale*oldtrafo(wall_start_l+1,m)
+               + sh.CalcBmn(-m,wall_start_l)*inv_tscale*oldtrafo(wall_start_l-1,m));
+
+          for (int n = m+1; n < trafo.Width()-wall; n++)
+          {
+            int l = os+ot-n-wall;
+            trafo(l,n+1) = scale/sh.CalcBmn(-m,n+1) *
+              (sh.CalcBmn(m-1,n)*scale*trafo(l,n-1)
+               - sh.CalcBmn(m-1,l+1)*tscale*oldtrafo(l+1,n)
+               + sh.CalcBmn(-m,l)*inv_tscale*oldtrafo(l-1,n));
+            trafo(l-1,n) = tscale_inv_amn(l-1) *
+              (amn(l)*tscale*trafo(l+1,n)
+               - amn(n-1)*scale*trafo(l,n-1)
+               + amn(n)*inv_scale*trafo(l,n+1));
+          }
+        }
+
+        for (int l = os+ot-m; l >= m; l--)
+          for (int n = m+1; n < min<int>(os+ot-l,l); n++)
+            trafo(l-1,n) = tscale_inv_amn(l-1) *
+              (amn(l)*tscale*trafo(l+1,n)
+               - amn(n-1)*scale*trafo(l,n-1)
+               + amn(n)*inv_scale*trafo(l,n+1));
       }
-        
+
       for (int n = m; n < os; n++)
         for (int l = n+1; l <= os; l++)
           trafo(n,l) = powscale(l-n) * trafo(l,n);
 
-      for (int n = m; n <= os; n++)
-        hv1(n) = sh.Coef(n,m);
-      if constexpr (is_rr)
-        hv2.Range(m,ot+1) = Trans(trafo.Rows(m,os+1).Cols(m,ot+1)) * hv1.Range(m,os+1);
-      else
-        hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-      for (int n = m; n <= ot; n++)
-        target.SH().Coef(n,m) = hv2(n);
-        
-      for (int n = m; n <= os; n++)
-        hv1(n) = sh.Coef(n,-m);
-      if constexpr (is_rr)
-        hv2.Range(m,ot+1) = Trans(trafo.Rows(m,os+1).Cols(m,ot+1)) * hv1.Range(m,os+1);
-      else
-        hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
-      for (int n = m; n <= ot; n++)
-        target.SH().Coef(n,-m) = hv2(n);
+      for (int sm : {m, -m})
+      {
+        for (int n = m; n <= os; n++)
+          hv1(n) = sh.Coef(n,sm);
+
+        if constexpr (is_rr)
+          hv2.Range(m,ot+1) = Trans(trafo.Rows(m,os+1).Cols(m,ot+1)) * hv1.Range(m,os+1);
+        else
+          hv2.Range(m,ot+1) = trafo.Rows(m,ot+1).Cols(m,os+1) * hv1.Range(m,os+1);
+
+        for (int n = m; n <= ot; n++)
+          target.SH().Coef(n,sm) = hv2(n);
+      }
       }
   }
 
