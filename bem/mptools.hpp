@@ -1244,26 +1244,18 @@ namespace ngsbem
             }
       }
       
-      void CalcMP(Array<RecordingSS> * recording, Array<Node*> * nodes_to_process)
+      void CalcMP(Array<RecordingSS> & recording, Array<Node*> & nodes_to_process)
       {
         // mp.SH().Coefs() = 0.0;
         if (childs[0])
           {
-            if (total_sources < 1000 || recording)
-              for (auto & child : childs)
-                child->CalcMP(recording, nodes_to_process);
-            else
-              ParallelFor (8, [&] (int nr)
-                           {
-                             childs[nr] -> CalcMP(recording, nodes_to_process);
-                           });
+            for (auto & child : childs)
+              child->CalcMP(recording, nodes_to_process);
 
             
             for (auto & child : childs){
-              if (recording && child->mp.SH().Coefs().Size() > 0)
-                *recording += RecordingSS(&child->mp, &mp, center-child->center);
-              else
-                child->mp.TransformAdd(mp, center-child->center);
+              if (child->mp.SH().Coefs().Size() > 0)
+                recording += RecordingSS(&child->mp, &mp, center-child->center);
             }
           }
         else
@@ -1328,21 +1320,7 @@ namespace ngsbem
               }
 
             
-            if (nodes_to_process)
-                *nodes_to_process += this;
-            else {
-              for (auto [x,c] : charges)
-                mp.AddCharge (x-center,c);
-
-              for (auto [x,d,c] : dipoles)
-                mp.AddDipole (x-center, d, c);
-
-              for (auto [x,c,d,c2] : chargedipoles)
-                mp.AddChargeDipole (x-center, c, d, c2);
-              
-              for (auto [sp,ep,j,num] : currents)
-                mp.AddCurrent (sp-center, ep-center, j, num);
-            }
+            nodes_to_process += this;
           }
       }
       
@@ -1543,18 +1521,13 @@ namespace ngsbem
       
       root.CalcTotalSources();
 
-      if constexpr (false)
-        // direct evaluation of S->S
-        root.CalcMP(nullptr, nullptr);
-      else
-        {
-          
+      {
           Array<RecordingSS> recording;
           Array<Node*> nodes_to_process;
 
           {
             RegionTimer reg(trec);
-            root.CalcMP(&recording, &nodes_to_process);
+            root.CalcMP(recording, nodes_to_process);
           }
       
           {
@@ -1794,6 +1767,7 @@ namespace ngsbem
       }
 
     }
+
     static void ProcessBatchRR(FlatArray<RecordingRR*> batch, double len, double theta) {
       constexpr int vec_length = VecLength<elem_type>;
       if (batch.Size() <= 1)
@@ -1903,7 +1877,7 @@ namespace ngsbem
       }
       
       void AddSingularNode (const typename SingularMLExpansion<elem_type, T_Kappa>::Node & singnode, bool allow_refine,
-                            Array<RecordingSR> * recording)
+                            Array<RecordingSR> & recording)
       {
         if (mp.SH().Order() < 0) return;
         if (singnode.mp.SH().Order() < 0) return;
@@ -1931,10 +1905,7 @@ namespace ngsbem
               }
 
             // static Timer t("mptool transform Helmholtz-criterion"); RegionTimer r(t);
-            if (recording)
-              *recording += RecordingSR(&singnode.mp, &mp, dist);
-            else
-              singnode.mp.TransformAdd(mp, dist);
+            recording += RecordingSR(&singnode.mp, &mp, dist);
             return;
           }
 
@@ -1957,18 +1928,9 @@ namespace ngsbem
               }
             else
               {
-                if (total_targets < 1000 || recording)
-                  {
-                    for (auto & ch : childs)
-                      if (ch)
-                        ch -> AddSingularNode (singnode, allow_refine, recording);
-                  }
-                else
-                  ParallelFor (8, [&] (int nr)
-                               {
-                                 if (childs[nr])
-                                   childs[nr] -> AddSingularNode (singnode, allow_refine, recording);
-                               });
+                for (auto & ch : childs)
+                  if (ch)
+                    ch -> AddSingularNode (singnode, allow_refine, recording);
                 
                 if (targets.Size()+vol_targets.Size())
                   singnodes.Append(&singnode);
@@ -2305,27 +2267,7 @@ namespace ngsbem
       
       nodes_on_level = 0;
       nodes_on_level[0] = 1;
-      {
-        static Timer t("mptool compute regular MLMP"); RegionTimer rg(t);
-        root.AddSingularNode(singmp->root, true, nullptr);
-        // cout << "norm after S->R conversion: " << root.Norm() << endl;
-      }
-
-
-      /*
-      int maxlevel = 0;
-      for (auto [i,num] : Enumerate(nodes_on_level))
-        if (num > 0) maxlevel = i;
-
-      for (int i = 0; i <= maxlevel; i++)
-        cout << "reg " << i << ": " << nodes_on_level[i] << endl;
-      */
-      
-      {
-        static Timer t("mptool expand regular MLMP"); RegionTimer rg(t);                  
-        LocalizeExpansionBatched(true);
-        // cout << "norm after local expansion: " << root.Norm() << endl;        
-      }
+      CalcMP(asingmp, false);
     }
 
   RegularMLExpansion (Vec<3> center, double r, T_Kappa kappa, const FMM_Parameters & _params)
@@ -2375,16 +2317,11 @@ namespace ngsbem
       // PrintStatistics(cout);
 
 
-      if constexpr (false)
-        {
-          root.AddSingularNode(singmp->root, !onlytargets, nullptr);
-        }
-      else
-        {  // use recording
+      {
           Array<RecordingSR> recording;
           {
             RegionTimer rrec(trec);
-            root.AddSingularNode(singmp->root, !onlytargets, &recording);
+            root.AddSingularNode(singmp->root, !onlytargets, recording);
           }
           
           // cout << "recorded: " << recording.Size() << endl;
@@ -2548,7 +2485,7 @@ namespace ngsbem
       root.CalcTotalTargets();
       root.AllocateMemory();
       Array<RecordingSR> recording;
-      root.AddSingularNode(singmp_in->root, false, &recording);
+      root.AddSingularNode(singmp_in->root, false, recording);
 
       M2LCounts counts;
       counts.num_s2r = recording.Size();
