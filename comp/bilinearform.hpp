@@ -29,9 +29,11 @@ namespace ngcomp
     bool atomic = true;           // use atomic for adding output vector
     bool only_loadstore = false;  // for timing elvec load stores
     bool only_loadstoreB = false; // for timing elvec load stores and mult with B and Bt
-    int BS_els = 4;         
-    int BS_ipts = 4;        
+    int BS_els = 4;
+    int BS_ipts = 4;
     bool timers = false;
+    bool nonlinear = false;       // evaluate the form pointwise
+    bool fp32 = false;            // single precision
 
     // additional options for GPU kernels:
     optional<string> write_GPU_kernel;   // if set, dump the generated GPU kernel to this file
@@ -40,10 +42,12 @@ namespace ngcomp
     MatFreeOptions(bool afused, bool agencode, bool aatomic,
                    bool aonly_loadstore, bool aonly_loadstoreB,
                    int aBS_els, int aBS_ipts, bool atimers,
+                   bool anonlinear, bool afp32,
                    optional<string> awrite_GPU_kernel)
       : fused(afused), generate_code(agencode), atomic(aatomic),
         only_loadstore(aonly_loadstore), only_loadstoreB(aonly_loadstoreB),
         BS_els(aBS_els), BS_ipts(aBS_ipts), timers(atimers),
+        nonlinear(anonlinear), fp32(afp32),
         write_GPU_kernel(std::move(awrite_GPU_kernel)) { }
   };
 
@@ -52,7 +56,9 @@ namespace ngcomp
         << "gencode = " << opts.generate_code << endl
         << "atomic  = " << opts.atomic << endl
         << "onlye_ls = " << opts.only_loadstore << endl
-        << "onlye_lsB = " << opts.only_loadstoreB << endl;
+        << "onlye_lsB = " << opts.only_loadstoreB << endl
+        << "nonlinear = " << opts.nonlinear << endl
+        << "fp32 = " << opts.fp32 << endl;
     return ost;
   }
     

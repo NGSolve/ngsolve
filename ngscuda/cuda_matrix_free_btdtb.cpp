@@ -5,6 +5,8 @@
 #include "cuda_linalg.hpp"
 #include "cuda_profiler.hpp"
 
+#include "../ngsmetal/tinybla.hpp"
+
 using namespace ngcomp;
 
 namespace ngla
@@ -20,9 +22,9 @@ namespace ngla
                                  cudaStream_t stream);
     lib_function compiled_function = nullptr;
 
-    unique_ptr<Matrix<Dev<double>>> dev_bx, dev_by;
     unique_ptr<Array<Dev<int>>> dev_dofx, dev_dofy;
-    unique_ptr<Array<Dev<double>>> dev_d, dev_jac;
+    Array<unique_ptr<Array<Dev<double>>>> dev_data;
+    Array<unique_ptr<Array<Dev<float>>>> dev_data_f;
 
     // names for the device timer regions in the generated kernel
     static inline std::initializer_list<const char*> timer_names =
@@ -64,13 +66,30 @@ namespace ngla
             vals(i,j) = B(nzk[i], nzc[i], j);
         return vals;
       };
-      dev_bx = make_unique<Matrix<Dev<double>>> (compress(mat.Bx, nzxk, nzxc));
+      const bool fp32      = mat.opts.fp32;
+      const bool nonlinear = mat.opts.nonlinear;
+
+      auto upload = [&](FlatArray<double> vals) -> const void*
+      {
+        if (fp32)
+          {
+            Array<float> fvals(vals.Size());
+            for (auto i : Range(vals)) fvals[i] = float(vals[i]);
+            dev_data_f.Append (make_unique<Array<Dev<float>>> (fvals));
+            return dev_data_f.Last()->Data();
+          }
+        dev_data.Append (make_unique<Array<Dev<double>>> (vals));
+        return dev_data.Last()->Data();
+      };
+
+      Matrix<> bxvals = compress(mat.Bx, nzxk, nzxc);
+      const void * bxptr = upload(FlatArray<double>(bxvals.Height()*bxvals.Width(), bxvals.Data()));
       // fold quadrature weights into By, saves the per-lane weights[j] lookup in the kernel
       Matrix<> byvals = compress(mat.By, nzyk, nzyc);
       for (auto i : Range(byvals.Height()))
         for (size_t j = 0; j < nip; j++)
           byvals(i,j) *= mat.weights(j);
-      dev_by = make_unique<Matrix<Dev<double>>> (byvals);
+      const void * byptr = upload(FlatArray<double>(byvals.Height()*byvals.Width(), byvals.Data()));
 
       Array<int> flatdofx(nel*locdofsx), flatdofy(nel*locdofsy);
       for (auto i : Range(nel))
@@ -81,8 +100,10 @@ namespace ngla
       dev_dofx = make_unique<Array<Dev<int>>> (flatdofx);
       dev_dofy = make_unique<Array<Dev<int>>> (flatdofy);
 
-      dev_d = make_unique<Array<Dev<double>>> (FlatArray<double>(mat.D.GetTotalSize(), mat.D.Data()));
-      dev_jac = make_unique<Array<Dev<double>>> (FlatArray<double>(mat.Jacobi.GetTotalSize(), mat.Jacobi.Data()));
+      const void * dptr = nullptr;
+      if (!nonlinear)
+        dptr = upload(FlatArray<double>(mat.D.GetTotalSize(), mat.D.Data()));
+      const void * jacptr = upload(FlatArray<double>(mat.Jacobi.GetTotalSize(), mat.Jacobi.Data()));
 
       // generate cuda code:
 
@@ -93,11 +114,17 @@ namespace ngla
         int starti = 0, startiref = 0;
         for (auto & dop : diffops)
           {
-            string refexpr   = "FlatVec<"+ToString(dop->DimRef())+">("+refvar+"+"+ToString(startiref)+")";
-            string worldexpr = "FlatVec<"+ToString(dop->Dim())+">("+worldvar+"+"+ToString(starti)+")";
-            string invar  = trans ? worldexpr : refexpr;
-            string outvar = trans ? refexpr   : worldexpr;
-            s << "          " << dop->GenerateTransformationCode(invar, outvar, trans);
+            string refexpr   = refvar+"+"+ToString(startiref);
+            string worldexpr = worldvar+"+"+ToString(starti);
+            string inptr  = trans ? worldexpr : refexpr;
+            string outptr = trans ? refexpr   : worldexpr;
+            int indim  = trans ? dop->Dim()    : dop->DimRef();
+            int outdim = trans ? dop->DimRef() : dop->Dim();
+            s << "          {\n";
+            s << "          tinybla::Vec<" << outdim << ",SCAL> res;\n";
+            s << "          " << dop->GenerateTransformationCode("LoadVec<"+ToString(indim)+">("+inptr+")", "res", trans);
+            s << "          StoreVec(" << outptr << ", res);\n";
+            s << "          }\n";
             starti    += dop->Dim();
             startiref += dop->DimRef();
           }
@@ -137,6 +164,53 @@ namespace ngla
           }
         }
 
+      string physcode;
+      if (nonlinear)
+      {
+        stringstream phys;
+        phys << "          { // physics\n"
+                "          [[maybe_unused]] int i = 0;\n";
+        for (auto k : Range(mat.test_proxies))
+          {
+            CoefficientFunction::T_DJC cache;
+            auto diffcf = mat.cf -> DiffJacobi (mat.test_proxies[k], cache);
+            auto compiledcf = Compile (diffcf, false);
+            Code code = compiledcf->GenerateProgram(0, false);
+
+            phys << "          { // equation " << k << "\n";
+            for (auto step : Range(compiledcf->Steps()))
+              {
+                auto stepcf = compiledcf->Steps()[step];
+                if (auto proxycf = dynamic_cast<ProxyFunction*> (stepcf))
+                  {
+                    auto pos = mat.trial_proxies.Pos(proxycf);
+                    if (pos != mat.trial_proxies.ILLEGAL_POSITION)
+                      {
+                        phys << "auto values_" << step << " = [&](int ip, int nr) { return hx[" << mat.ranges_x[pos].First() << "+nr]; };\n";
+                        phys << "constexpr bool has_values_" << step << " = true;\n";
+                        for (auto l : Range(proxycf->Dimension()))
+                          phys << Var("comp", step, l, proxycf->Dimensions()).Declare("double", 0.0);
+                      }
+                  }
+              }
+            phys << code.body;
+
+            int steps = compiledcf->Steps().Size();
+            IntRange rangey = mat.ranges_y[k];
+            if (rangey.Size()==1)
+              phys << "hy[" << rangey[0] << "] = var_" << steps-1 << ";\n";
+            else
+              for (auto l : Range(rangey))
+                phys << "hy[" << rangey[l] << "] = var_" << steps-1 << "_" << l << ";\n";
+            phys << "          }\n";
+          }
+        phys << "          }\n";
+        physcode = phys.str();
+        if (fp32)
+          for (size_t p = physcode.find("double"); p != string::npos; p = physcode.find("double", p+5))
+            physcode.replace(p, 6, "float");
+      }
+
       Code allcode;
 
       const bool only_loadstore = mat.opts.only_loadstore;
@@ -146,11 +220,26 @@ namespace ngla
       if (epb * mat.opts.BS_ipts != 32)
           epb = 32 / mat.opts.BS_ipts;
 
+      stringstream dapply;
+      if (nonlinear)
+        dapply << physcode
+               << "          for (int r = 0; r < DIMY; r++) hy[r] *= fabs(J);\n";
+      else
+        dapply <<
+          "          const SCAL * Del = dvals + size_t(el)*DIMY*DIMX*NIPD;\n"
+          "          for (int r = 0; r < DIMY; r++)\n"
+          "            {\n"
+          "              SCAL sum = 0.0;\n"
+          "              for (int c = 0; c < DIMX; c++)\n"
+          "                sum += Del[(r*DIMX+c)*NIPD + " << (nipD==1 ? "0" : "j") << "]*hx[c];\n"
+          "              hy[r] = sum;\n"
+          "            }\n";
+
       stringstream computeblock;
       if (!only_loadstore)
         computeblock <<
-          "      Mat<SDIM,SDIM> F;\n"
-          "      double J;\n"
+          "      tinybla::Mat<SDIM,SDIM,SCAL> F;\n"
+          "      SCAL J;\n"
           "      {\n"
           "      DeviceRegionTracer rt(brt, 2);\n"
           "      for (int i = 0; i < SDIM*SDIM; i++)\n"
@@ -159,26 +248,19 @@ namespace ngla
           "      }\n"
           "      {\n"
           "      DeviceRegionTracer rt(brt, 3);\n"
-          "      double v_reduced;\n"
+          "      SCAL v_reduced;\n"
           "      for (int j0 = 0; j0 < NIP; j0 += blockDim.x)\n"
           "        {\n"
           "          int j = j0 + threadIdx.x;\n"
-          "          double py[DIMYREF] = {};\n"
+          "          SCAL py[DIMYREF] = {};\n"
           "          if (j < NIP)\n"
           "            {\n"
-          "          double px[DIMXREF] = {};\n"
+          "          SCAL px[DIMXREF] = {};\n"
           << sbx.str() <<
-          "          double hx[DIMX];\n"
+          "          SCAL hx[DIMX];\n"
           << genapply(mat.diffopsx, "px", "hx", false) <<
-          "          const double * Del = dvals + size_t(el)*DIMY*DIMX*NIPD;\n"
-          "          double hy[DIMY];\n"
-          "          for (int r = 0; r < DIMY; r++)\n"
-          "            {\n"
-          "              double sum = 0.0;\n"
-          "              for (int c = 0; c < DIMX; c++)\n"
-          "                sum += Del[(r*DIMX+c)*NIPD + " << (nipD==1 ? "0" : "j") << "]*hx[c];\n"
-          "              hy[r] = sum;\n"
-          "            }\n"
+          "          SCAL hy[DIMY];\n"
+          << dapply.str()
           << genapply(mat.diffopsy, "py", "hy", true) <<
           "            }\n"
           << sby.str() <<
@@ -194,11 +276,11 @@ namespace ngla
         "__global__ void MatrixFreeBTDTBKernel (double s, double * input, double * output)\n"
         "{\n"
         "  DeviceBlockRegionTracer brt(gridDim, blockDim, blockIdx, threadIdx);\n"
-        "  __shared__ double s_vecx_all[BS_ELS*LOCDOFSX];\n"
-        "  __shared__ double s_vecy_all[BS_ELS*LOCDOFSY];\n"
+        "  __shared__ SCAL s_vecx_all[BS_ELS*LOCDOFSX];\n"
+        "  __shared__ SCAL s_vecy_all[BS_ELS*LOCDOFSY];\n"
         "  const int ey = threadIdx.y;\n"
-        "  double * s_vecx = s_vecx_all + ey*LOCDOFSX;\n"
-        "  double * s_vecy = s_vecy_all + ey*LOCDOFSY;\n"
+        "  SCAL * s_vecx = s_vecx_all + ey*LOCDOFSX;\n"
+        "  SCAL * s_vecy = s_vecy_all + ey*LOCDOFSY;\n"
         "  // sync only the BS_IPTS threads working on this element\n"
         "  const unsigned submask = unsigned((1ull << BS_IPTS) - 1) << (BS_IPTS*ey);\n"
         "  for (int el = blockIdx.x*BS_ELS + ey; el < NEL; el += gridDim.x*BS_ELS)\n"
@@ -207,7 +289,7 @@ namespace ngla
         "      {\n"
         "      DeviceRegionTracer rt(brt, 1);\n"
         "      for (int i = threadIdx.x; i < LOCDOFSX; i += blockDim.x)\n"
-        "        s_vecx[i] = input[dofx[size_t(el)*LOCDOFSX+i]];\n"
+        "        s_vecx[i] = SCAL(input[dofx[size_t(el)*LOCDOFSX+i]]);\n"
         "      for (int i = threadIdx.x; i < LOCDOFSY; i += blockDim.x)\n"
         "        s_vecy[i] = 0.0;\n"
         "      }\n"
@@ -242,9 +324,18 @@ namespace ngla
         "using namespace ngbla;\n"
         "using namespace ngs_cuda;\n";
 
+      s_top << code_tinybla <<
+        "using tinybla::ToMat;\n"
+        "template <int S, typename T> __host__ __device__ tinybla::Vec<S,T> LoadVec (const T * p)\n"
+        "{ tinybla::Vec<S,T> r; for (int i = 0; i < S; i++) r(i) = p[i]; return r; }\n"
+        "template <int S, typename T> __host__ __device__ void StoreVec (T * p, tinybla::Vec<S,T> v)\n"
+        "{ for (int i = 0; i < S; i++) p[i] = v(i); }\n"
+        "typedef " << (fp32 ? "float" : "double") << " SCAL;\n";
+
       const size_t nblocks = std::min((nel+epb-1)/epb, size_t(4096));
       s_top << "static constexpr int NBLOCKS = " << nblocks
-            << ", NEL = " << nel << ", NIP = " << nip << ", NIPD = " << nipD
+            << ", NEL = " << nel << ", NIP = " << nip
+            << (nonlinear ? string() : ", NIPD = "+ToString(nipD))
             << ", LOCDOFSX = " << locdofsx << ", LOCDOFSY = " << locdofsy
             << ", DIMX = " << dimx << ", DIMY = " << dimy
             << ", DIMXREF = " << dimxref << ", DIMYREF = " << dimyref
@@ -253,12 +344,14 @@ namespace ngla
             << ";\n";
       allcode.top += s_top.str();
 
-      allcode.AddPointer(dev_bx->Data(), "bxvals", "double *", "__device__");
-      allcode.AddPointer(dev_by->Data(), "byvals", "double *", "__device__");
+      const string scalptr = fp32 ? "float *" : "double *";
+      allcode.AddPointer(bxptr, "bxvals", scalptr, "__device__");
+      allcode.AddPointer(byptr, "byvals", scalptr, "__device__");
       allcode.AddPointer(dev_dofx->Data(), "dofx", "int *", "__device__");
       allcode.AddPointer(dev_dofy->Data(), "dofy", "int *", "__device__");
-      allcode.AddPointer(dev_d->Data(), "dvals", "double *", "__device__");
-      allcode.AddPointer(dev_jac->Data(), "jacs", "double *", "__device__");
+      if (dptr)
+        allcode.AddPointer(dptr, "dvals", scalptr, "__device__");
+      allcode.AddPointer(jacptr, "jacs", scalptr, "__device__");
       allcode.pointer += "struct DevTimerData;\nstruct DevTraceData;\nstruct DevTraceBlockData;\nstruct DevTraceState;\n";
       allcode.AddPointer(ngs_cuda::GetDevTimerDataPtr(), "d_timer_data", "DevTimerData *", "__device__");
       allcode.AddPointer(ngs_cuda::GetDevTraceDataPtr(), "d_trace_data", "DevTraceData *", "__device__");
@@ -299,6 +392,8 @@ namespace ngla
       uy = 0.0;
       ngs_cuda::CudaRegionTimer cutimer(timer, &timer_names);
       compiled_function(1.0, ux.FVDevRO(), uy.FVDev(), ngs_cuda_stream);
+      if (auto err = cudaGetLastError(); err != cudaSuccess)
+        throw Exception(string("MatrixFreeBTDTB kernel launch failed: ")+cudaGetErrorString(err));
       if (synckernels) cudaDeviceSynchronize();
     }
 
@@ -310,6 +405,8 @@ namespace ngla
 
       ngs_cuda::CudaRegionTimer cutimer(timer, &timer_names);
       compiled_function(s, ux.FVDevRO(), uy.FVDev(), ngs_cuda_stream);
+      if (auto err = cudaGetLastError(); err != cudaSuccess)
+        throw Exception(string("MatrixFreeBTDTB kernel launch failed: ")+cudaGetErrorString(err));
       if (synckernels) cudaDeviceSynchronize();
     }
 
