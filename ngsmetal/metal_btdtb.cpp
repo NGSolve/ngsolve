@@ -245,9 +245,6 @@ namespace ngsmetal
               // xrefvals -> xvals
               $TRANSFORMX;   
 
-               for (int j = 0; j < $DIMYREF; j++)
-                  yvals(j) = (elnr<ne && 8*baseiptile+locipnr < nip) ? xvals(j) * weights[8*baseiptile+locipnr] * JacobiDets[elnr] : 0;
-
               $PHYSICS
               yvals = weights[8*baseiptile+locipnr] * JacobiDets[elnr] * yvals;
 

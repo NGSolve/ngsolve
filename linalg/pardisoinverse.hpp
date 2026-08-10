@@ -138,16 +138,16 @@ namespace ngla
 
     virtual ~PardisoInverseTM ();
     ///
-    int VHeight() const { return height/entrysize; }
+    int VHeight() const override { return height/entrysize; }
     ///
-    int VWidth() const { return height/entrysize; }
+    int VWidth() const override { return height/entrysize; }
 
     bool SupportsUpdate() const override { return true; }
     void Update() override;
     ///
-    virtual ostream & Print (ostream & ost) const;
+    virtual ostream & Print (ostream & ost) const override;
 
-    virtual Array<MemoryUsage> GetMemoryUsage () const
+    virtual Array<MemoryUsage> GetMemoryUsage () const override
     {
       return { MemoryUsage ("Pardiso", nze*sizeof(TM), 1) };
     }

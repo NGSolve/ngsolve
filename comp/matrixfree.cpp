@@ -596,7 +596,7 @@ namespace ngcomp
                     for (size_t i = 0; i < diffopsx.Size(); i++)
                       {
                         IntRange rref = ranges_xref[i];
-                        IntRange r = ranges_x[i];
+                        // IntRange r = ranges_x[i];
                         s << diffopsx[i]->GenerateTransformationCode
                           ("pointvalsrefx.Col("+ToString(j2)+").Range("+ToString(rref.First())+","+ToString(rref.Next())+")", "hvx", false);
                       }
@@ -604,7 +604,7 @@ namespace ngcomp
                     for (size_t i = 0; i < diffopsy.Size(); i++)
                       {
                         IntRange rref = ranges_yref[i];
-                        IntRange r = ranges_y[i];
+                        // IntRange r = ranges_y[i];
                         s << diffopsy[i]->GenerateTransformationCode
                           ("hvy",
                            "pointvalsrefy.Col("+ToString(j2)+").Range("+ToString(rref.First())+","+ToString(rref.Next())+")", true);
