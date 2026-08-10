@@ -400,31 +400,38 @@ namespace ngsbem
     RotateYImpl(*this, alpha, parallel, 2*sizeof(entry_type)*(order+3), apply);
   }
 
+  template <typename T>
+  inline auto ReversedRows (SliceMatrix<T> m)
+  {
+    return SliceMatrix<T>(m.Height(), m.Width(), -m.Dist(), m.Addr(m.Height()-1, 0));
+  }
 
+  template <typename T>
+  inline auto ReversedRows (FlatMatrix<T> m)
+  {
+    return SliceMatrix<T>(m.Height(), m.Width(), -m.Dist(), m.Addr(m.Height()-1, 0));
+  }
 
+  inline auto AsDouble (SliceMatrix<Complex> m)
+  {
+    return SliceMatrix<double> (m.Height(), 2*m.Width(), 2*m.Dist(), (double*)(void*)m.Addr(0,0));
+  }
+  
   void SphericalHarmonics<Vector<Complex>> :: RotateY (double alpha, bool parallel)
   {
     auto apply = [this] (int n, FlatMatrix<double,RowMajor> trafo, LocalHeap & lh)
       {
         auto cn = CoefsN(n);
-        FlatMatrix<Complex,RowMajor> old(cn.Height(), cn.Width(), lh);
-        old = cn;
+        FlatMatrix<Complex,RowMajor> old = cn | lh;
 
-        FlatMatrix<double,RowMajor> fulltrafo(2*n+1, 2*n+1, lh);
-        for (int row = 0; row < 2*n+1; row++)
+        AsDouble(cn) = Trans(trafo) * AsDouble(old.Rows(n, 2*n+1));
+        AsDouble(ReversedRows(cn)) += Trans(trafo.Rows(1,n+1)) * AsDouble(ReversedRows(old.Rows(0,n)));
+
+        for (int m = 1; m <= n; m+=2)
           {
-            for (int m = 0; m <= n; m++)
-              fulltrafo(row,n+m) = trafo(m,row);
-            for (int m = 1; m <= n; m++)
-              fulltrafo(row,n-m) = trafo(m,2*n-row);
-
-            if (abs(row-n) % 2 == 1)
-              fulltrafo.Row(row) *= -1;
+            cn.Row(n+m) *= -1;
+            cn.Row(n-m) *= -1;
           }
-
-        FlatMatrix<double,RowMajor> old_real (old.Height(), 2*old.Width(), (double*)old.Data());
-        FlatMatrix<double,RowMajor> cn_real (cn.Height(), 2*cn.Width(), (double*)cn.Data());
-        cn_real = fulltrafo * old_real;
       };
 
     RotateYImpl(*this, alpha, parallel,
