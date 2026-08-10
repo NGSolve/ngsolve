@@ -2711,11 +2711,11 @@ diffop : ngsolve.fem.DifferentialOperator
     ;
 
   py::class_<MatFreeOptions> (m, "MFOpts")
-    .def(py::init<bool,bool,bool,bool,bool,int,int,bool,optional<string>>(),
+    .def(py::init<bool,bool,bool,bool,bool,int,int,bool,bool,bool,optional<string>>(),
          py::arg("fused")=true, py::arg("gencode")=false, py::arg("atomic")=true,
          py::arg("only_loadstore")=false, py::arg("only_loadstoreB")=false,
          py::arg("BS_els")=4, py::arg("BS_ipts")=4, py::arg("timers")=false,
-         py::arg("write_kernel")="")
+         py::arg("nonlinear")=false, py::arg("fp32")=false, py::arg("write_kernel")="")
     .def("__str__", &ToString<MatFreeOptions>)
     ;
   
