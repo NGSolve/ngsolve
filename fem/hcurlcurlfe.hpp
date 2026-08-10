@@ -1202,9 +1202,9 @@ namespace ngfem
       auto Ft = Trans(F);
       constexpr int DIMSPACE = mat_traits<decltype(F)>::HEIGHT;
       auto invJ = 1 / mip.GetMeasure();
-      const Mat<2, 2, T> E11({{1, 0}, {0, 0}});
-      const Mat<2, 2, T> E22({{0, 0}, {0, 1}});
-      const Mat<2, 2, T> E12({{0, 1}, {1, 0}});
+      const Mat<2, 2, T> E11({{T(1), T(0)}, {T(0), T(0)}});
+      const Mat<2, 2, T> E22({{T(0), T(0)}, {T(0), T(1)}});
+      const Mat<2, 2, T> E12({{T(0), T(1)}, {T(1), T(0)}});
 
       if (ip.VB() == BND)
         { // facet shapes
@@ -1412,9 +1412,9 @@ namespace ngfem
       auto Ft = Trans(F);
       constexpr int DIMSPACE = mat_traits<decltype(F)>::HEIGHT;
       auto invJ = 1 / mip.GetMeasure();
-      const Mat<2, 2, T> E11({{1, 0}, {0, 0}});
-      const Mat<2, 2, T> E22({{0, 0}, {0, 1}});
-      const Mat<2, 2, T> E12({{0, 1}, {1, 0}});
+      const Mat<2, 2, T> E11({{T(1), T(0)}, {T(0), T(0)}});
+      const Mat<2, 2, T> E22({{T(0), T(0)}, {T(0), T(1)}});
+      const Mat<2, 2, T> E12({{T(0), T(1)}, {T(1), T(0)}});
       
       if (mip.IP().VB() == BND)
         { // facet shapes
@@ -1895,15 +1895,15 @@ namespace ngfem
       auto F = mip.GetJacobian();
       auto Ft = Trans(F);
       auto invJ = 1 / mip.GetMeasure();
-      const Mat<2, 2, T> E11_2({{1, 0}, {0, 0}});
-      const Mat<2, 2, T> E22_2({{0, 0}, {0, 1}});
-      const Mat<2, 2, T> E12_2({{0, 1}, {1, 0}});
-      const Mat<3, 3, T> E11_3({{1, 0, 0}, {0, 0, 0}, {0, 0, 0}});
-      const Mat<3, 3, T> E22_3({{0, 0, 0}, {0, 1, 0}, {0, 0, 0}});
-      const Mat<3, 3, T> E33_3({{0, 0, 0}, {0, 0, 0}, {0, 0, 1}});
-      const Mat<3, 3, T> E23_3({{0, 0, 0}, {0, 0, 1}, {0, 1, 0}});
-      const Mat<3, 3, T> E13_3({{0, 0, 1}, {0, 0, 0}, {1, 0, 0}});
-      const Mat<3, 3, T> E12_3({{0, 1, 0}, {1, 0, 0}, {0, 0, 0}});
+      const Mat<2, 2, T> E11_2({{T(1), T(0)}, {T(0), T(0)}});
+      const Mat<2, 2, T> E22_2({{T(0), T(0)}, {T(0), T(1)}});
+      const Mat<2, 2, T> E12_2({{T(0), T(1)}, {T(1), T(0)}});
+      const Mat<3, 3, T> E11_3({{T(1), T(0), T(0)}, {T(0), T(0), T(0)}, {T(0), T(0), T(0)}});
+      const Mat<3, 3, T> E22_3({{T(0), T(0), T(0)}, {T(0), T(1), T(0)}, {T(0), T(0), T(0)}});
+      const Mat<3, 3, T> E33_3({{T(0), T(0), T(0)}, {T(0), T(0), T(0)}, {T(0), T(0), T(1)}});
+      const Mat<3, 3, T> E23_3({{T(0), T(0), T(0)}, {T(0), T(0), T(1)}, {T(0), T(1), T(0)}});
+      const Mat<3, 3, T> E13_3({{T(0), T(0), T(1)}, {T(0), T(0), T(0)}, {T(1), T(0), T(0)}});
+      const Mat<3, 3, T> E12_3({{T(0), T(1), T(0)}, {T(1), T(0), T(0)}, {T(0), T(0), T(0)}});
 
       if (ip.VB() == BBND)
         { // facet shapes
