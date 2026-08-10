@@ -1698,15 +1698,15 @@ namespace ngsbem
     static Array<size_t> nodes_on_level;
 
     
-    struct RecordingRS
+    struct RecordingSR
     {
       const SphericalExpansion<Singular,elem_type,T_Kappa> * mpS;
       SphericalExpansion<Regular,elem_type,T_Kappa> * mpR;
       Vec<3> dist;
       double len, theta, phi;
     public:
-      RecordingRS() = default;
-      RecordingRS (const SphericalExpansion<Singular,elem_type,T_Kappa> * ampS,
+      RecordingSR() = default;
+      RecordingSR (const SphericalExpansion<Singular,elem_type,T_Kappa> * ampS,
                    SphericalExpansion<Regular,elem_type,T_Kappa> * ampR,
                    Vec<3> adist)
         : mpS(ampS), mpR(ampR), dist(adist)
@@ -1732,27 +1732,27 @@ namespace ngsbem
       }
     };
 
-    static void ProcessBatchRS(FlatArray<RecordingRS*> batch, double len, double theta) {
-      // static Timer t("ProcessBatchRS"); RegionTimer reg(t, batch.Size());
+    static void ProcessBatchSR(FlatArray<RecordingSR*> batch, double len, double theta) {
+      // static Timer t("ProcessBatchSR"); RegionTimer reg(t, batch.Size());
       constexpr int vec_length = VecLength<elem_type>;
       if (batch.Size() <= 1)
         for (auto* rec : batch)
           rec->mpS->TransformAdd(*rec->mpR, rec->dist);
       else if (batch.Size()*vec_length <= FMM_DYNAMIC_BATCH_LANES)
-        ProcessDynamicBatchRS(batch, len, theta);
+        ProcessDynamicBatchSR(batch, len, theta);
       else
         {
           size_t chunksize = max(size_t(1), size_t(FMM_DYNAMIC_BATCH_LANES/vec_length));
           size_t num = (batch.Size()+chunksize-1) / chunksize;
           ParallelFor (num, [&](int i)
           {
-            ProcessBatchRS(batch.Range(i*chunksize, min((i+1)*chunksize, batch.Size())), len, theta);
+            ProcessBatchSR(batch.Range(i*chunksize, min((i+1)*chunksize, batch.Size())), len, theta);
           }, num);
         }
     }
 
 
-    static void ProcessDynamicBatchRS(FlatArray<RecordingRS*> batch, double len, double theta) {
+    static void ProcessDynamicBatchSR(FlatArray<RecordingSR*> batch, double len, double theta) {
 
       constexpr int vec_length = VecLength<elem_type>;
       size_t dim = batch.Size()*vec_length;
@@ -1903,7 +1903,7 @@ namespace ngsbem
       }
       
       void AddSingularNode (const typename SingularMLExpansion<elem_type, T_Kappa>::Node & singnode, bool allow_refine,
-                            Array<RecordingRS> * recording)
+                            Array<RecordingSR> * recording)
       {
         if (mp.SH().Order() < 0) return;
         if (singnode.mp.SH().Order() < 0) return;
@@ -1932,7 +1932,7 @@ namespace ngsbem
 
             // static Timer t("mptool transform Helmholtz-criterion"); RegionTimer r(t);
             if (recording)
-              *recording += RecordingRS(&singnode.mp, &mp, dist);
+              *recording += RecordingSR(&singnode.mp, &mp, dist);
             else
               singnode.mp.TransformAdd(mp, dist);
             return;
@@ -2381,7 +2381,7 @@ namespace ngsbem
         }
       else
         {  // use recording
-          Array<RecordingRS> recording;
+          Array<RecordingSR> recording;
           {
             RegionTimer rrec(trec);
             root.AddSingularNode(singmp->root, !onlytargets, &recording);
@@ -2400,8 +2400,8 @@ namespace ngsbem
           
           double current_len = -1e100;
           double current_theta = -1e100;
-          Array<RecordingRS*> current_batch;
-          Array<Array<RecordingRS*>> batch_group;
+          Array<RecordingSR*> current_batch;
+          Array<Array<RecordingSR*>> batch_group;
           Array<double> group_lengths;
           Array<double> group_thetas;
           for (auto & record : recording)
@@ -2428,7 +2428,7 @@ namespace ngsbem
           }
           
           ParallelFor(batch_group.Size(), [&](int i) {
-            ProcessBatchRS(batch_group[i], group_lengths[i], group_thetas[i]);
+            ProcessBatchSR(batch_group[i], group_lengths[i], group_thetas[i]);
           }, TasksPerThread(10));
         }
           
@@ -2547,7 +2547,7 @@ namespace ngsbem
       singmp_in->root.CalcTotalSources();
       root.CalcTotalTargets();
       root.AllocateMemory();
-      Array<RecordingRS> recording;
+      Array<RecordingSR> recording;
       root.AddSingularNode(singmp_in->root, false, &recording);
 
       M2LCounts counts;
