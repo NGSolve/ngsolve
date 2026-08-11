@@ -167,7 +167,7 @@ namespace ngsbem
       teval.Start();
       ParallelFor (ypts.Size(), [&](int i) {
         kernel.target.EvaluateMP(*regmp, ypts[i], ynv[i], maty.Row(i));
-      });
+      }, TasksPerThread(10));
       teval.Stop();
     }
 
@@ -192,7 +192,7 @@ namespace ngsbem
         regmp->CalcMP(singmp);
         ParallelFor (xpts.Size(), [&](int i) {
           kernel.source.EvaluateMP(*regmp, xpts[i], xnv[i], maty.Row(i));
-        });
+        }, TasksPerThread(10));
     }
 
     BaseMatrix::OperatorInfo GetOperatorInfo () const override

@@ -1543,7 +1543,7 @@ namespace ngsbem
                 node->mp.AddChargeDipole(x-node->center, c, d, c2);
               for (auto [sp,ep,j,num]: node->currents)
                 node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
-            }, TasksPerThread(4));
+            }, TasksPerThread(10));
           }
           
           {
@@ -1677,6 +1677,7 @@ namespace ngsbem
       SphericalExpansion<Regular,elem_type,T_Kappa> * mpR;
       Vec<3> dist;
       double len, theta, phi;
+      bool flipz;
     public:
       RecordingSR() = default;
       RecordingSR (const SphericalExpansion<Singular,elem_type,T_Kappa> * ampS,
@@ -1685,6 +1686,18 @@ namespace ngsbem
         : mpS(ampS), mpR(ampR), dist(adist)
       {
         std::tie(len, theta, phi) = SphericalCoordinates(dist);
+        flipz = theta > M_PI/2;
+        if (flipz) theta = M_PI-theta;
+      }
+
+      auto ExpansionShape() const
+      {
+        return std::make_tuple(mpS->Order(), mpR->Order(), mpS->RTyp(), mpR->RTyp());
+      }
+
+      bool HasSameExpansionShape (const RecordingSR & other) const
+      {
+        return ExpansionShape() == other.ExpansionShape();
       }
     };
 
@@ -1694,6 +1707,7 @@ namespace ngsbem
       SphericalExpansion<Regular,elem_type,T_Kappa> * mp_target;
       Vec<3> dist;
       double len, theta, phi;
+      bool flipz;
     public:
       RecordingRR() = default;
       RecordingRR (const SphericalExpansion<Regular,elem_type,T_Kappa> * amp_source,
@@ -1702,6 +1716,8 @@ namespace ngsbem
         : mp_source(amp_source), mp_target(amp_target), dist(adist)
       {
         std::tie(len, theta, phi) = SphericalCoordinates(dist);
+        flipz = theta > M_PI/2;
+        if (flipz) theta = M_PI-theta;
       }
     };
 
@@ -1739,7 +1755,7 @@ namespace ngsbem
       {
         auto source_i = VecVector2Matrix (batch[i]->mpS->SH().Coefs());
         auto source_mati = vec_source.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
-        batch[i]->mpS->SH().RotateZ(batch[i]->phi,
+        batch[i]->mpS->SH().RotateZFlip(batch[i]->phi, batch[i]->flipz,
             [source_i, source_mati] (size_t ii, Complex factor)
             {
                 source_mati.Row(ii) = factor * source_i.Row(ii);
@@ -1756,7 +1772,7 @@ namespace ngsbem
         auto source_mati = vec_target.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
         auto targeti = VecVector2Matrix(batch[i]->mpR->SH().Coefs());
         
-        tmp_target.SH().RotateZ(-batch[i]->phi,
+        tmp_target.SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
                                 [source_mati, targeti] (size_t ii, Complex factor)
                                           {
                                             // source_i.Row(ii) = factor * source_mati.Row(ii);
@@ -1798,7 +1814,7 @@ namespace ngsbem
       {
         auto source_i = VecVector2Matrix (batch[i]->mp_source->SH().Coefs());
         auto source_mati = vec_source.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
-        batch[i]->mp_source->SH().RotateZ(batch[i]->phi,
+        batch[i]->mp_source->SH().RotateZFlip(batch[i]->phi, batch[i]->flipz,
             [source_i, source_mati] (size_t ii, Complex factor)
             {
                 source_mati.Row(ii) = factor * source_i.Row(ii);
@@ -1813,7 +1829,7 @@ namespace ngsbem
         auto source_mati = vec_target.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
         auto targeti = VecVector2Matrix(batch[i]->mp_target->SH().Coefs());
 
-        tmp_target.SH().RotateZ(-batch[i]->phi,
+        tmp_target.SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
                                 [source_mati, targeti] (size_t ii, Complex factor)
                                           {
                                             auto target_row = targeti.Row(ii);
@@ -1912,7 +1928,16 @@ namespace ngsbem
 
         if ( singnode.childs[0]==nullptr )
           {
-            singnodes.Append(&singnode);
+            if (childs[0])
+              {
+                for (auto & ch : childs)
+                  if (ch)
+                    ch -> AddSingularNode (singnode, allow_refine, recording);
+                if (targets.Size()+vol_targets.Size())
+                  singnodes.Append(&singnode);
+              }
+            else
+              singnodes.Append(&singnode);
             return;
           }
         
@@ -2329,6 +2354,8 @@ namespace ngsbem
             RegionTimer reg(tsort);
             QuickSort (recording, [] (auto & a, auto & b)
             {
+              if (a.ExpansionShape() < b.ExpansionShape()) return true;
+              if (b.ExpansionShape() < a.ExpansionShape()) return false;
               if (a.len < (1-1e-8) * b.len) return true;
               if (a.len > (1+1e-8) * b.len) return false;
               return a.theta < b.theta;
@@ -2341,12 +2368,13 @@ namespace ngsbem
           Array<Array<RecordingSR*>> batch_group;
           Array<double> group_lengths;
           Array<double> group_thetas;
+          RecordingSR * previous_record = nullptr;
           for (auto & record : recording)
             {
               bool len_changed = fabs(record.len - current_len) > 1e-8;
               bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
-              if ((len_changed || theta_changed) && current_batch.Size() > 0) {
-                // ProcessBatch(current_batch, current_len, current_theta);
+              bool shape_changed = previous_record && !record.HasSameExpansionShape(*previous_record);
+              if ((len_changed || theta_changed || shape_changed) && current_batch.Size() > 0) {
                 batch_group.Append(current_batch);
                 group_lengths.Append(current_len);
                 group_thetas.Append(current_theta);
@@ -2356,6 +2384,7 @@ namespace ngsbem
               current_len = record.len;
               current_theta = record.theta;
               current_batch.Append(&record);
+              previous_record = &record;
             }
           if (current_batch.Size() > 0) {
             // ProcessBatch(current_batch, current_len, current_theta);
