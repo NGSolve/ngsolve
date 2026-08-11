@@ -436,8 +436,9 @@ namespace ngsmetal
     code = Substitute(code, "$TRANSFORMY", transycode);    
 
     
-    
-    cout << "code = " << endl << code << endl;
+    ofstream codefile("metalcode.cpp");
+    codefile << code;
+    codefile.close();
     
     NS::Error* error = nullptr;
     NS::String* mslCode = NS::String::string(code.c_str(), NS::UTF8StringEncoding);

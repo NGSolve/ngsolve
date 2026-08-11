@@ -99,13 +99,13 @@ Xcode.
     .def("__enter__", &MetalCaptureContext::Enter,
          py::return_value_policy::reference_internal)
     .def("__exit__", [] (MetalCaptureContext & self,
-                          py::object, py::object, py::object)
+                         py::object, py::object, py::object)
          {
            self.Stop();
            return false;
          })
     ;
-
+  
   py::class_<MetalVector, BaseVector, shared_ptr<MetalVector>> (m, "MetalVector")
     .def(py::init<size_t>(), py::arg("size"))
     .def(py::init<const BaseVector&>(), py::arg("size"))
@@ -113,7 +113,8 @@ Xcode.
       auto tmp = make_shared<MetalVector>(mv.Size(), true);
       tmp -> Set(1.0, mv);
       return tmp;
-    });
+    })
+    .def("WaitUntilCompleted", &MetalVector::WaitUntilCompleted)
     ;
 
 

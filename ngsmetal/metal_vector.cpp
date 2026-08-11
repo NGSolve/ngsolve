@@ -18,9 +18,6 @@ namespace ngsmetal
 
   auto lam = []()
   {
-    
-    cout << "init vec kernels" << endl;
-    
     const char* shaderSource = R"(
         #include <metal_stdlib>
         using namespace metal;
