@@ -23,6 +23,10 @@ namespace ngsmetal
     return 8 * ( (i+7) / 8 );
   }
 
+  int RoundDown8 (int i)
+  {
+    return 8 * ( i / 8 );
+  }
   
   MetalBTDTBMatrix :: MetalBTDTBMatrix (const BaseMatrix& bmat)
   {
@@ -54,23 +58,35 @@ namespace ngsmetal
     FlatArray<int> ddofy(hdofy.Size(), (int*)buffer_dofy->contents());
     ddofy = hdofy;
 
-    buffer_bmatx = GetDevice()->newBuffer(dimxref*RoundUp8(nip)*RoundUp8(locdofsx)*sizeof(float), MTL::ResourceStorageModeShared);
+    // for the remainder, store the compressed tensor in the last rows of buffer_bmatx
+    buffer_bmatx = GetDevice()->newBuffer(dimxref*(8+RoundUp8(nip))*RoundUp8(locdofsx)*sizeof(float), MTL::ResourceStorageModeShared);
     FlatTensor<3,float> dbmatx(dimxref,RoundUp8(nip),RoundUp8(locdofsx), (float*)buffer_bmatx->contents());
     for (int j = 0; j < dimxref; j++)
       for (int i = 0; i < RoundUp8(nip); i++)
         for (int k = 0; k < RoundUp8(locdofsx); k++)
           dbmatx(j,i,k) = (i < nip && k < locdofsx) ? pmat->Bx(k,j,i) : 0;
 
+    int bmatx_rem_rows = dimxref*RoundUp8(nip);
+    FlatTensor<3,float> dbmatx_rem(dimxref,nip-RoundDown8(nip),RoundUp8(locdofsx), ((float*)buffer_bmatx->contents()) + dimxref*(RoundUp8(nip))*RoundUp8(locdofsx));
+    for (int j = 0; j < dimxref; j++)
+      for (int i = 0; i < nip-RoundDown8(nip); i++)
+        for (int k = 0; k < RoundUp8(locdofsx); k++)
+          dbmatx_rem(j,i,k) = (k < locdofsx) ? pmat->Bx(k,j,i+RoundDown8(nip)) : 0;
     
-    buffer_bmaty = GetDevice()->newBuffer(dimyref*RoundUp8(nip)*dimyref*RoundUp8(locdofsy)*sizeof(float), MTL::ResourceStorageModeShared);
+    buffer_bmaty = GetDevice()->newBuffer(dimyref*(8+RoundUp8(nip))*dimyref*RoundUp8(locdofsy)*sizeof(float), MTL::ResourceStorageModeShared);
     FlatTensor<3,float> dbmaty(dimyref,RoundUp8(nip),RoundUp8(locdofsy), (float*)buffer_bmaty->contents());
     for (int j = 0; j < dimyref; j++)
       for (int i = 0; i < RoundUp8(nip); i++)
         for (int k = 0; k < RoundUp8(locdofsy); k++)
           dbmaty(j,i,k) = (i<nip && k < locdofsy) ? pmat->By(k,j,i) : 0;
+
+    int bmaty_rem_rows = dimyref*RoundUp8(nip);    
+    FlatTensor<3,float> dbmaty_rem(dimyref,nip-RoundDown8(nip),RoundUp8(locdofsy), ((float*)buffer_bmaty->contents()) + dimyref*(RoundUp8(nip))*RoundUp8(locdofsy));
+    for (int j = 0; j < dimyref; j++)
+      for (int i = 0; i < nip-RoundDown8(nip); i++)
+        for (int k = 0; k < RoundUp8(locdofsy); k++)
+          dbmaty_rem(j,i,k) = (k < locdofsy) ? pmat->By(k,j,i+RoundDown8(nip)) : 0;
     
-    // cout << "dbmatx = " << endl << dbmatx << endl;
-    // cout << "dbmaty = " << endl << dbmaty << endl;
 
 
     buffer_weights = GetDevice()->newBuffer(RoundUp8(nip)*sizeof(float), MTL::ResourceStorageModeShared);
@@ -168,8 +184,8 @@ namespace ngsmetal
       // zero elvecy
       for (int i = threadIdx; i < $BS_ELS*locdofsy_roundup; i+= blockDim)
         {
-          int c = i/$BS_ELS;
-          int r = i%$BS_ELS;
+          int c = i%locdofsy_roundup;
+          int r = i/locdofsy_roundup;
           elvecy[r][c] = 0;
         }
 
@@ -283,10 +299,111 @@ namespace ngsmetal
           threadgroup_barrier(mem_flags::mem_threadgroup);
 
          } // end base_ip
+
+
+      // ip remainder
+     
+      constexpr int baseip = 8*$IP_TILES;
+      constexpr int numips = nip-baseip;
+      if constexpr (numips > 0) {
+
+      
+          // multiply with Bx
+          for (int blocknr = threadIdx/32; blocknr < (numips*$DIMXREF+7)/8 * $EL_TILES; blocknr += blockDim/32)
+            {
+              int eltile = blocknr % $EL_TILES;  // which els
+              int iptile = blocknr / $EL_TILES;  // which pts*comp tile
+
+              // int ip = 8*(baseiptile+iptile);
+              simdgroup_float8x8 ma, mb;
+              simdgroup_float8x8 pointvalsrefxi = make_filled_simdgroup_matrix<float, 8, 8>(0.0f);
+
+              for (int xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
+                {
+                  simdgroup_load(mb, &elvecx[0][0], locdofsx_roundup, ulong2(8*xdoftile, 8*eltile), true);
+                  simdgroup_load(ma, bmatx, locdofsx_roundup, ulong2(8*xdoftile, $BMATX_REM_ROWS+8*iptile)); 
+                  simdgroup_multiply_accumulate(pointvalsrefxi, ma, mb, pointvalsrefxi);
+                }
+
+              simdgroup_store(pointvalsrefxi, &pointvalsref[0][0], bs_els, ulong2(8*eltile, 8*iptile));
+            }
+
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+  
+          // work on integration points
+          for (int ip = threadIdx; ip < numips*bs_els; ip += blockDim)
+             {
+               int locelnr = ip % $BS_ELS;
+               int locipnr = ip / $BS_ELS;
+               int elnr = baseelem + locelnr;
+
+#if ($ONLY_LOADSTOREB==0)
+               Vec<$DIMXREF,float> xrefvals;
+               Vec<$DIMYREF,float> yrefvals;
+               Vec<$DIMX,float> xvals;
+               Vec<$DIMY,float> yvals;
+
+               Mat<$DIMR,$DIMS,float> F;
+               for (int i = 0; i < $DIMR; i++)
+                  for (int j = 0; j < $DIMS; j++)
+                     F(i,j) = Jacobi[elnr + ne8 * (j + $DIMS*i)];
+               float J = (elnr < ne) ?  JacobiDets[elnr] : 0;
+
+               for (int j = 0; j < $DIMXREF; j++)
+                  xrefvals(j) = pointvalsref[locipnr+j*numips][locelnr];
+
+              // xrefvals -> xvals
+              $TRANSFORMX;   
+
+              $PHYSICS
+              yvals = weights[baseip+locipnr] * JacobiDets[elnr] * yvals;
+
+              // yvals -> yrefvals
+              $TRANSFORMY;          
+
+               for (int j = 0; j < $DIMYREF; j++)
+                  pointvalsref[locipnr+j*numips][locelnr] = yrefvals(j);
+#endif
+            }
+
+
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+
+          // multiply with By.trans
+          for (int blocknr = threadIdx/32; blocknr < $EL_TILES * $DOFY_TILES; blocknr += blockDim/32)
+            {
+              int eltile = blocknr % $EL_TILES;  // which els
+              int ydoftile = blocknr / $EL_TILES;  // which dofs
+
+              simdgroup_float8x8 ma, mb;
+              simdgroup_float8x8 sum;
+              simdgroup_load(sum, &elvecy[0][0], locdofsy_roundup, ulong2(8*ydoftile, 8*eltile));
+
+              for (int ipcomp = 0; ipcomp < numips*$DIMYREF; ipcomp += 8)
+                {
+                   simdgroup_load(ma, &pointvalsref[0][0], bs_els, ulong2(8*eltile, ipcomp), true);
+                   simdgroup_load(mb, bmaty, locdofsy_roundup, ulong2(8*ydoftile, $BMATY_REM_ROWS+ipcomp), false);
+                   simdgroup_multiply_accumulate(sum, ma, mb, sum);
+                }
+
+              simdgroup_store(sum, &elvecy[0][0], locdofsy_roundup, ulong2(8*ydoftile, 8*eltile));
+           }
+
+          threadgroup_barrier(mem_flags::mem_threadgroup);
+
+      }  // if (numips_remainder > 0)
+
 #endif
 
-
       threadgroup_barrier(mem_flags::mem_threadgroup);
+
+
+
+
+
+
+
+
 
       // store vector
       for (int i = threadIdx; i < $BS_ELS*locdofsy; i += blockDim)
@@ -386,9 +503,12 @@ namespace ngsmetal
     code = Substitute(code, "$BS_ELS", ToString(pmat->opts.BS_els)+" /*BS_ELS*/ ");
     code = Substitute(code, "$BS_IPTS", ToString(pmat->opts.BS_ipts)+" /*BS_IPTS*/ ");
     code = Substitute(code, "$DIMR", ToString(3)+" /*dimr*/ ");  
-    code = Substitute(code, "$DIMS", ToString(3)+" /*sims*/ ");  
+    code = Substitute(code, "$DIMS", ToString(3)+" /*dims*/ ");
+
+    code = Substitute(code, "$BMATX_REM_ROWS", ToString(bmatx_rem_rows)+" /*bmatx_rem_rows*/ ");      
+    code = Substitute(code, "$BMATY_REM_ROWS", ToString(bmaty_rem_rows)+" /*bmaty_rem_rows*/ ");      
     
-    code = Substitute(code, "$IP_TILES", ToString(RoundUp8(nip)/8)+" /* IP_TILES */ ");
+    code = Substitute(code, "$IP_TILES", ToString(RoundDown8(nip)/8)+" /* IP_TILES */ ");
     code = Substitute(code, "$EL_TILES", ToString(RoundUp8(pmat->opts.BS_els)/8)+" /*EL_TILES*/ ");
     code = Substitute(code, "$DOFX_TILES", ToString(RoundUp8(locdofsx)/8) +" /* DOFX_TILES */ ");
     code = Substitute(code, "$DOFY_TILES", ToString(RoundUp8(locdofsy)/8) +" /* DOFY_TILES */ ");
@@ -457,9 +577,12 @@ namespace ngsmetal
     // NS::Error* error = nullptr;      
     pipelineState = GetDevice()->newComputePipelineState(ApplyBTDTB_Func, &error);
     if (error)
-      std::cerr << "Metal Error: " << error->localizedDescription()->utf8String() << std::endl;
-    
-    
+      {
+        std::cerr << "Metal Error: " << error->localizedDescription()->utf8String() << std::endl;
+        throw Exception (error->localizedDescription()->utf8String());
+      }
+    // NS::UInteger maxThreads = pipelineState->maxTotalThreadsPerThreadgroup();
+    // cout << "maxThreads = " << maxThreads << endl;
   }
 
   void MetalBTDTBMatrix ::
@@ -496,6 +619,8 @@ namespace ngsmetal
         // encoder->dispatchThreads(MTL::Size(ne/BS_els+1,1,1), MTL::Size(32, BS_els, 1));
         // encoder->dispatchThreadgroups(MTL::Size(ne/BS_els+1,1,1), MTL::Size(16*32, 1, 1));
         //       for (int runs = 0; runs < 10; runs++)
+        NS::UInteger maxThreads = pipelineState->maxTotalThreadsPerThreadgroup();
+        // cout << "maxThreads = " << maxThreads << endl;
         encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(16*32, 1, 1));
         encoder->endEncoding();
 
