@@ -1543,7 +1543,7 @@ namespace ngsbem
                 node->mp.AddChargeDipole(x-node->center, c, d, c2);
               for (auto [sp,ep,j,num]: node->currents)
                 node->mp.AddCurrent(sp-node->center, ep-node->center, j, num);
-            }, TasksPerThread(4));
+            }, TasksPerThread(10));
           }
           
           {
