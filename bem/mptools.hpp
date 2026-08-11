@@ -1689,6 +1689,16 @@ namespace ngsbem
         flipz = theta > M_PI/2;
         if (flipz) theta = M_PI-theta;
       }
+
+      auto ExpansionShape() const
+      {
+        return std::make_tuple(mpS->Order(), mpR->Order(), mpS->RTyp(), mpR->RTyp());
+      }
+
+      bool HasSameExpansionShape (const RecordingSR & other) const
+      {
+        return ExpansionShape() == other.ExpansionShape();
+      }
     };
 
     struct RecordingRR
@@ -1918,7 +1928,16 @@ namespace ngsbem
 
         if ( singnode.childs[0]==nullptr )
           {
-            singnodes.Append(&singnode);
+            if (childs[0])
+              {
+                for (auto & ch : childs)
+                  if (ch)
+                    ch -> AddSingularNode (singnode, allow_refine, recording);
+                if (targets.Size()+vol_targets.Size())
+                  singnodes.Append(&singnode);
+              }
+            else
+              singnodes.Append(&singnode);
             return;
           }
         
@@ -2335,6 +2354,8 @@ namespace ngsbem
             RegionTimer reg(tsort);
             QuickSort (recording, [] (auto & a, auto & b)
             {
+              if (a.ExpansionShape() < b.ExpansionShape()) return true;
+              if (b.ExpansionShape() < a.ExpansionShape()) return false;
               if (a.len < (1-1e-8) * b.len) return true;
               if (a.len > (1+1e-8) * b.len) return false;
               return a.theta < b.theta;
@@ -2347,12 +2368,13 @@ namespace ngsbem
           Array<Array<RecordingSR*>> batch_group;
           Array<double> group_lengths;
           Array<double> group_thetas;
+          RecordingSR * previous_record = nullptr;
           for (auto & record : recording)
             {
               bool len_changed = fabs(record.len - current_len) > 1e-8;
               bool theta_changed = fabs(record.theta - current_theta) > 1e-8;
-              if ((len_changed || theta_changed) && current_batch.Size() > 0) {
-                // ProcessBatch(current_batch, current_len, current_theta);
+              bool shape_changed = previous_record && !record.HasSameExpansionShape(*previous_record);
+              if ((len_changed || theta_changed || shape_changed) && current_batch.Size() > 0) {
                 batch_group.Append(current_batch);
                 group_lengths.Append(current_len);
                 group_thetas.Append(current_theta);
@@ -2362,6 +2384,7 @@ namespace ngsbem
               current_len = record.len;
               current_theta = record.theta;
               current_batch.Append(&record);
+              previous_record = &record;
             }
           if (current_batch.Size() > 0) {
             // ProcessBatch(current_batch, current_len, current_theta);
