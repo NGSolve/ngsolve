@@ -1677,6 +1677,7 @@ namespace ngsbem
       SphericalExpansion<Regular,elem_type,T_Kappa> * mpR;
       Vec<3> dist;
       double len, theta, phi;
+      bool flipz;
     public:
       RecordingSR() = default;
       RecordingSR (const SphericalExpansion<Singular,elem_type,T_Kappa> * ampS,
@@ -1685,6 +1686,8 @@ namespace ngsbem
         : mpS(ampS), mpR(ampR), dist(adist)
       {
         std::tie(len, theta, phi) = SphericalCoordinates(dist);
+        flipz = theta > M_PI/2;
+        if (flipz) theta = M_PI-theta;
       }
     };
 
@@ -1694,6 +1697,7 @@ namespace ngsbem
       SphericalExpansion<Regular,elem_type,T_Kappa> * mp_target;
       Vec<3> dist;
       double len, theta, phi;
+      bool flipz;
     public:
       RecordingRR() = default;
       RecordingRR (const SphericalExpansion<Regular,elem_type,T_Kappa> * amp_source,
@@ -1702,6 +1706,8 @@ namespace ngsbem
         : mp_source(amp_source), mp_target(amp_target), dist(adist)
       {
         std::tie(len, theta, phi) = SphericalCoordinates(dist);
+        flipz = theta > M_PI/2;
+        if (flipz) theta = M_PI-theta;
       }
     };
 
@@ -1739,7 +1745,7 @@ namespace ngsbem
       {
         auto source_i = VecVector2Matrix (batch[i]->mpS->SH().Coefs());
         auto source_mati = vec_source.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
-        batch[i]->mpS->SH().RotateZ(batch[i]->phi,
+        batch[i]->mpS->SH().RotateZFlip(batch[i]->phi, batch[i]->flipz,
             [source_i, source_mati] (size_t ii, Complex factor)
             {
                 source_mati.Row(ii) = factor * source_i.Row(ii);
@@ -1756,7 +1762,7 @@ namespace ngsbem
         auto source_mati = vec_target.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
         auto targeti = VecVector2Matrix(batch[i]->mpR->SH().Coefs());
         
-        tmp_target.SH().RotateZ(-batch[i]->phi,
+        tmp_target.SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
                                 [source_mati, targeti] (size_t ii, Complex factor)
                                           {
                                             // source_i.Row(ii) = factor * source_mati.Row(ii);
@@ -1798,7 +1804,7 @@ namespace ngsbem
       {
         auto source_i = VecVector2Matrix (batch[i]->mp_source->SH().Coefs());
         auto source_mati = vec_source.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
-        batch[i]->mp_source->SH().RotateZ(batch[i]->phi,
+        batch[i]->mp_source->SH().RotateZFlip(batch[i]->phi, batch[i]->flipz,
             [source_i, source_mati] (size_t ii, Complex factor)
             {
                 source_mati.Row(ii) = factor * source_i.Row(ii);
@@ -1813,7 +1819,7 @@ namespace ngsbem
         auto source_mati = vec_target.SH().Coefs().Cols(i*vec_length, (i+1)*vec_length);
         auto targeti = VecVector2Matrix(batch[i]->mp_target->SH().Coefs());
 
-        tmp_target.SH().RotateZ(-batch[i]->phi,
+        tmp_target.SH().RotateZFlip(-batch[i]->phi, batch[i]->flipz,
                                 [source_mati, targeti] (size_t ii, Complex factor)
                                           {
                                             auto target_row = targeti.Row(ii);
