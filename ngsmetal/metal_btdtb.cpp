@@ -39,7 +39,6 @@ namespace ngsmetal
       throw Exception("Expected MatrixFreeBTDTB matrix");
 
 
-
     auto [locdofsx, dimxref, nip] = pmat->Bx.Shape();
     auto [locdofsy, dimyref, nip_] = pmat->By.Shape();
     auto [numels,dimy,dimx,nipD] = pmat->D.Shape();
@@ -157,11 +156,12 @@ namespace ngsmetal
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
       threadgroup float pointvalsref[MAXDIMREF*$BS_IPTS][$BS_ELS];
 
-      BareMatrixShared<RowMajor> mat_elvecx(&elvecx[0][0], locdofsx_roundup);
-      BareMatrixShared<RowMajor> mat_elvecy(&elvecy[0][0], locdofsy_roundup);
-      BareMatrixShared<RowMajor> mat_pointvalsref(&pointvalsref[0][0], $BS_ELS);
-      BareMatrixDevice<RowMajor, const float> mat_bmatx(bmatx, locdofsx_roundup);
-      BareMatrixDevice<RowMajor, const float> mat_bmaty(bmaty, locdofsy_roundup);
+      auto mat_elvecx = MakeBareMatrix<RowMajor>(&elvecx[0][0], locdofsx_roundup);
+      auto mat_elvecy = MakeBareMatrix<RowMajor>(&elvecy[0][0], locdofsy_roundup);
+      auto mat_pointvalsref = MakeBareMatrix<RowMajor>(&pointvalsref[0][0], $BS_ELS);
+
+      auto mat_bmatx = MakeBareMatrix<RowMajor>(bmatx, locdofsx_roundup);
+      auto mat_bmaty = MakeBareMatrix<RowMajor>(bmaty, locdofsy_roundup);
 
       // zero elvecx (overhead would be enough
       for (int i = threadIdx; i < $BS_ELS*locdofsx_roundup; i+= blockDim)
@@ -220,7 +220,6 @@ namespace ngsmetal
 
               int ip = 8*(baseiptile+iptile);
 
-{
               WarpMatrix<8,8> pointvalsrefxi[$DIMXREF];
               for (int k = 0; k < $DIMXREF; k++)
                 pointvalsrefxi[k] = 0;
@@ -237,7 +236,6 @@ namespace ngsmetal
 
               for (int l = 0; l < $DIMXREF; l++)
                 pointvalsrefxi[l].Store(&pointvalsref[8*iptile+bs_ipts*l][8*eltile], bs_els, threadIdx);
-}
 
 
 #ifdef OLD
@@ -336,21 +334,19 @@ namespace ngsmetal
 
       
           // multiply with Bx
-          for (int blocknr = threadIdx/32; blocknr < (numips*$DIMXREF+7)/8 * $EL_TILES; blocknr += blockDim/32)
-            {
-              int eltile = blocknr % $EL_TILES;  // which els
-              int iptile = blocknr / $EL_TILES;  // which pts*comp tile
-
+        for (int blocknr = threadIdx/32; blocknr < (numips*$DIMXREF+7)/8 * $EL_TILES; blocknr += blockDim/32)
+           {
+             int eltile = blocknr % $EL_TILES;  // which els
+             int iptile = blocknr / $EL_TILES;  // which pts*comp tile
 
              WarpMatrix<8,8> pointvalsrefxi = 0;
              for (int xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
                 {
-                  BareMatrixShared<ColMajor> mb(&elvecx[8*eltile][8*xdoftile], locdofsx_roundup);
-                  BareMatrixDevice<RowMajor, const float> ma(bmatx+($BMATX_REM_ROWS+8*iptile)*locdofsx_roundup+8*xdoftile, locdofsx_roundup);
+                  auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
+                  auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 8*xdoftile);
                   pointvalsrefxi.AddMM<8>(ma, mb, threadIdx);
                 }
               pointvalsrefxi.Store(&pointvalsref[8*iptile][8*eltile], bs_els, threadIdx);
-
 
 #ifdef OLD
               // int ip = 8*(baseiptile+iptile);
@@ -441,12 +437,6 @@ namespace ngsmetal
 
 
 
-
-
-
-
-
-
       // store vector
       for (int i = threadIdx; i < $BS_ELS*locdofsy; i += blockDim)
         {
@@ -469,8 +459,6 @@ namespace ngsmetal
 
 
 
-
-
     string phys = "{ // THE PHYSICS (WIP)\n";
     phys += "int i = 0;\n";     // used in generated code, not needed here
     
@@ -482,12 +470,8 @@ namespace ngsmetal
         auto compiledcf = Compile (diffcf, false);
         Code code = compiledcf->GenerateProgram(0, false);
 
-        
-        // auto& code = pmat->physics[k];
         phys += "{  // equation " + ToString(k) +"\n";
         
-        // TODO: get all trial proxies and the right indices
-
         for (auto step : Range(compiledcf->Steps()))
           {
             auto stepcf = compiledcf->Steps()[step];
@@ -498,23 +482,14 @@ namespace ngsmetal
                 if (pos != pmat->trial_proxies.ILLEGAL_POSITION)
                   {
                     phys += "auto values_"+ToString(step)+" = [&](int ip, int nr) { return xvals("+ToString(pmat->ranges_x[pos].First())+"+nr); };\n";
-                    // s << "auto values_" << step << " = [dist_input,input](size_t i, int comp)\n"
-                    // " { return input[i + (comp+" << proxyoffset[pos] << ")*dist_input]; };\n";
                     phys += "bool constexpr has_values_" + ToString(step) + " = true;\n";
-                    // s << "bool constexpr has_values_" << step << " = true;\n" << endl;
                     
-                    // Declare dummy com_ variables to avoid compile errors (won't be used since has_values = true)
+                    // Declare dummy comp_ variables to avoid compile errors (won't be used since has_values = true)
                     for(auto i : Range(proxycf->Dimension()))
                       phys += Var("comp", step,i, proxycf->Dimensions()).Declare("double", 0.0);
-                      // s << Var("comp", step,i, proxycf->Dimensions()).Declare("double", 0.0);
                   }
               }
           }
-    
-        
-        // phys += "auto values_0 = [&](int ip, int nr) { return xvals(nr); };\n";
-        // phys += "constexpr bool has_values_0 = true; \n";
-        // phys += "float comp_0_0, comp_0_1, comp_0_2;\n";
     
         phys += code.body;
 
@@ -606,27 +581,22 @@ namespace ngsmetal
     NS::String* mslCode = NS::String::string(code.c_str(), NS::UTF8StringEncoding);
     MTL::Library* library = GetDevice()->newLibrary(mslCode, nullptr, &error);
 
-    if (!library) {
+    if (!library)
       throw Exception("Shader compile error: " 
                       +string(error->localizedDescription()->utf8String()));
-    }
 
-    {
-      NS::String* funcName = NS::String::string("apply_btdtb", NS::UTF8StringEncoding);
-      ApplyBTDTB_Func = library->newFunction(funcName);
-    }
+    NS::String* funcName = NS::String::string("apply_btdtb", NS::UTF8StringEncoding);
+    ApplyBTDTB_Func = library->newFunction(funcName);
 
-    // NS::Error* error = nullptr;      
     pipelineState = GetDevice()->newComputePipelineState(ApplyBTDTB_Func, &error);
     if (error)
       {
         std::cerr << "Metal Error: " << error->localizedDescription()->utf8String() << std::endl;
         throw Exception (error->localizedDescription()->utf8String());
       }
-    // NS::UInteger maxThreads = pipelineState->maxTotalThreadsPerThreadgroup();
-    // cout << "maxThreads = " << maxThreads << endl;
   }
 
+  
   void MetalBTDTBMatrix ::
   MultAdd (double s, const BaseVector & x, BaseVector & y) const
   {
@@ -638,52 +608,26 @@ namespace ngsmetal
     MetalVector & mvy = dynamic_cast<MetalVector&>(y);
 
 
-    // for (int runs = 0; runs < 10; runs++)
-      {
-      
-      
-        // 6. Encode and submit compute commands
-        MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
-        MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
+    MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
+    MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
+    
+    encoder->setComputePipelineState(pipelineState);
+    encoder->setBuffer(mvx.GetBuffer(), 0, 0);
+    encoder->setBuffer(mvy.GetBuffer(), 0, 1);
+    encoder->setBuffer(buffer_dofx, 0, 2);
+    encoder->setBuffer(buffer_dofy, 0, 3);
+    encoder->setBuffer(buffer_bmatx, 0, 4);
+    encoder->setBuffer(buffer_bmaty, 0, 5);
+    encoder->setBuffer(buffer_weights, 0, 6);
+    encoder->setBuffer(buffer_Jacobi, 0, 7);
+    encoder->setBuffer(buffer_JacobiDets, 0, 8);
+    encoder->setBuffer(debug, 0, 9);      
+    
+    encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(16*32, 1, 1));
+    encoder->endEncoding();
+    
 
-        encoder->setComputePipelineState(pipelineState);
-        encoder->setBuffer(mvx.GetBuffer(), 0, 0);
-        encoder->setBuffer(mvy.GetBuffer(), 0, 1);
-        encoder->setBuffer(buffer_dofx, 0, 2);
-        encoder->setBuffer(buffer_dofy, 0, 3);
-        encoder->setBuffer(buffer_bmatx, 0, 4);
-        encoder->setBuffer(buffer_bmaty, 0, 5);
-        encoder->setBuffer(buffer_weights, 0, 6);
-        encoder->setBuffer(buffer_Jacobi, 0, 7);
-        encoder->setBuffer(buffer_JacobiDets, 0, 8);
-        encoder->setBuffer(debug, 0, 9);      
-
-        // encoder->dispatchThreads(MTL::Size(ne/BS_els+1,1,1), MTL::Size(32, BS_els, 1));
-        // encoder->dispatchThreadgroups(MTL::Size(ne/BS_els+1,1,1), MTL::Size(16*32, 1, 1));
-        //       for (int runs = 0; runs < 10; runs++)
-
-        encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(16*32, 1, 1));
-        encoder->endEncoding();
-
-
-      
-        // t.Start();
-        
-        // commandBuffer->commit();
-        // commandBuffer->waitUntilCompleted();
-        mvy.CommitAsync(commandBuffer);
-        // t.Stop();
-
-        /*
-        CFTimeInterval gpuStartTime = commandBuffer->GPUStartTime();
-        CFTimeInterval gpuEndTime = commandBuffer->GPUEndTime();
-        double gpuDurationMS = (gpuEndTime - gpuStartTime) * 1000.0;
-        cout << "gpu times measure: " << gpuDurationMS << endl;
-        */
-        
-        // cout << "Applyt BTDTB time = " << t.GetTime() << endl;
-      }
-    // cout << "debug = " << debugvec.Range(0, 128);
+    mvy.CommitAsync(commandBuffer);
   }
-
+  
 }

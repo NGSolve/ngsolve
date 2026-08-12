@@ -222,23 +222,21 @@ namespace tinybla {
   enum ORDERING { ColMajor, RowMajor };
   constexpr ORDERING operator! (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
 
-  template <ORDERING ORD, typename T = float>
-  class BareMatrixShared
+
+  template <ORDERING ORD, typename Tp>
+  class BareMatrix
   {
-     threadgroup T * data;
+     Tp data;
      int ld;
   public:
-     BareMatrixShared (threadgroup T * _data, int _ld) : data(_data), ld(_ld) { }
-     T operator() (int r, int c) const
-     {
-        if constexpr (ORD==RowMajor) return data[r*ld+c];
-        else  return data[c*ld+r];
-     }
+     BareMatrix (Tp _data, int _ld) : data(_data), ld(_ld) { }
 
      int Offset (int r, int c) const {
        if constexpr (ORD==RowMajor) return r*ld+c;
        else return c*ld+r;
      }
+
+     auto operator() (int r, int c) const { return data[Offset(r,c)]; }
 
      template <int h, int w>
      auto GetTile(int r, int c) const {
@@ -249,47 +247,17 @@ namespace tinybla {
        return res;
      }
 
-     auto SubMatrix (int r, int c) const { return BareMatrixShared<ORD,T> { data+Offset(r,c), ld }; }
-     auto Transpose() const { return BareMatrixShared<!ORD, T> { data, ld }; }
+     auto SubMatrix (int r, int c) const { return BareMatrix<ORD,Tp> { data+Offset(r,c), ld }; }
+     auto Transpose() const { return BareMatrix<!ORD, Tp> { data, ld }; }
      int LD() const { return ld; }
-     threadgroup T* Data() const { return data; }
+     Tp Data() const { return data; }
      bool IsColMajor() const { return ORD==ColMajor; }
   };
 
-  template <ORDERING ORD, typename T = float>
-  class BareMatrixDevice
-  {
-     device T * data;
-     int ld;
-  public:
-     BareMatrixDevice (device T * _data, int _ld) : data(_data), ld(_ld) { }
-     T operator() (int r, int c) const
-     {
-        if constexpr (ORD==RowMajor) return data[r*ld+c];
-        else  return data[c*ld+r];
-     }
-
-     int Offset (int r, int c) const {
-       if constexpr (ORD==RowMajor) return r*ld+c;
-       else return c*ld+r;
-     }
-
-     template <int h, int w>
-     auto GetTile(int r, int c) const {
-       Mat<h,w,float> res;
-       for (int i = 0; i < h; i++)
-         for (int j = 0; j < w; j++)
-           res(i,j) = (*this)(r+i,c+j);
-       return res;
-     }
-
-     auto SubMatrix (int r, int c) const { return BareMatrixDevice<ORD,T> { data+Offset(r,c), ld }; }
-     auto Transpose() const { return BareMatrixShared<!ORD, T> { data, ld }; }
-     int LD() const { return ld; }
-     device T* Data() const { return data; }
-     bool IsColMajor() const { return ORD==ColMajor; }
-};
-
+  template <ORDERING ORD, typename Tp>
+  inline auto MakeBareMatrix (Tp data, int ld) {
+    return BareMatrix<ORD,Tp> (data, ld);
+  }
 
 
   template <int H, int W, typename T = float>
@@ -349,6 +317,7 @@ namespace tinybla {
     template <int K, typename M1, typename M2>
     void AddMM(M1 m1, M2 m2, int tid)
     {
+      static_assert(K==8);
       metal::simdgroup_float8x8 ma, mb;
       metal::simdgroup_load(ma, m1.Data(), m1.LD(), ulong2(0, 0), m1.IsColMajor());
       metal::simdgroup_load(mb, m2.Data(), m2.LD(), ulong2(0, 0), m2.IsColMajor());
