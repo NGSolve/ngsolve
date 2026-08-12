@@ -2045,6 +2045,28 @@ namespace ngla
 
 
 
+  template <typename TSCAL>
+  shared_ptr<BaseSparseMatrix>
+  ReuseCoarseMatrix (shared_ptr<SparseMatrixTM<TSCAL>> prod, shared_ptr<BaseSparseMatrix> acmat)
+  {
+    auto cmat = dynamic_pointer_cast<SparseMatrix<TSCAL>> (acmat);
+    if (!cmat) return prod;
+    if (cmat->Height() != prod->Height() || cmat->Width() != prod->Width()) return prod;
+    if (cmat->NZE() != prod->NZE()) return prod;
+
+    for (size_t i = 0; i < prod->Height(); i++)
+      {
+        auto pi = prod->GetRowIndices(i);
+        auto ci = cmat->GetRowIndices(i);
+        if (pi.Size() != ci.Size()) return prod;
+        for (size_t j = 0; j < pi.Size(); j++)
+          if (pi[j] != ci[j]) return prod;
+      }
+
+    cmat->AsVector() = prod->AsVector();
+    return cmat;
+  }
+
   template <> shared_ptr<BaseSparseMatrix>
   SparseMatrix<double> :: Restrict (const SparseMatrixTM<double> & prol,
                                     shared_ptr<BaseSparseMatrix> acmat ) const
@@ -2057,7 +2079,7 @@ namespace ngla
 
     auto prod1 = MatMult<double, double, double>(*this, prol, true);
     auto prod = MatMult<double, double, double>(*prolT, *prod1, true);
-    return prod;
+    return ReuseCoarseMatrix<double> (prod, acmat);
   }
 
   template <> shared_ptr<BaseSparseMatrix>
@@ -2072,7 +2094,7 @@ namespace ngla
     
     auto prod1 = MatMult<std::complex<double>, std::complex<double>, double>(*this, prol, true);
     auto prod = MatMult<std::complex<double>, double, std::complex<double>>(*prolT, *prod1, true);
-    return prod;
+    return ReuseCoarseMatrix<std::complex<double>> (prod, acmat);
   }
 
 

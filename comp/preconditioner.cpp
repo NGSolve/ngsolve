@@ -297,6 +297,9 @@ namespace ngcomp
 	lo_bfa = bfa->GetLowOrderBilinearForm();
 	lo_fes = fes->LowOrderFESpacePtr();
       }
+
+    if (flags.GetDefineFlag ("updateall"))
+      lo_bfa->SetGalerkin (true);
     /*
     else if (id == 0 && ntasks > 1 )  // not supported anymore
       {
