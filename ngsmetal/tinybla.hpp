@@ -22,7 +22,7 @@ namespace tinybla {
     TB_HD constexpr int Size() const { return S; }
     TB_HD thread T & operator()(int i) { return data[i]; }
     TB_HD T operator()(int i) const  { return data[i]; }
-
+    TB_HD void operator= (T val) { for (int i = 0; i < S; i++) data[i] = val; }
     TB_HD Vec operator+(Vec b) const {
       Vec r;
       for (int i = 0; i < S; i++) r(i) = data[i] + b(i);
@@ -34,6 +34,10 @@ namespace tinybla {
       return r;
     }
 
+    TB_HD Vec operator+=(Vec b) {
+      for (int i = 0; i < S; i++) data[i] += b(i);
+      return *this;
+    }
 
     template <int FIRST, int NEXT>
     TB_HD constexpr Vec<NEXT - FIRST, T> Range() const {
@@ -71,8 +75,12 @@ namespace tinybla {
     TB_HD constexpr int Height() const { return H; }
     TB_HD constexpr int Width()  const { return W; }
     TB_HD thread T & operator()(int i, int j) { return data[i][j]; }
-    TB_HD T   operator()(int i, int j) const  { return data[i][j]; }
-
+    TB_HD T operator()(int i, int j) const  { return data[i][j]; }
+    TB_HD void operator= (T val) {
+      for (int i = 0; i < H; i++)
+        for (int j = 0; j < W; j++)
+          data[i][j] = val;
+    }
     TB_HD operator Vec<H*W,T> () const {
       Vec<H*W,T> r;
       for (int i = 0; i < H; i++)
@@ -88,6 +96,14 @@ namespace tinybla {
           r(i,j) = data[i][j] + b(i,j);
       return r;
     }
+
+    TB_HD Mat operator+= (Mat b) {
+      for (int i = 0; i < H; i++)
+        for (int j = 0; j < W; j++)
+          data[i][j] += b(i,j);
+      return *this;
+    }
+
     TB_HD Mat operator-(Mat b) const {
       Mat r;
       for (int i = 0; i < H; i++)
@@ -202,6 +218,149 @@ namespace tinybla {
 
   template <int H, int W, typename T>
   TB_HD auto ToMat(Vec<H*W,T> vec) { return Mat<H,W,T>(vec); }
+
+  enum ORDERING { ColMajor, RowMajor };
+  constexpr ORDERING operator! (ORDERING o) { return (o==RowMajor) ? ColMajor : RowMajor; }
+
+  template <ORDERING ORD, typename T = float>
+  class BareMatrixShared
+  {
+     threadgroup T * data;
+     int ld;
+  public:
+     BareMatrixShared (threadgroup T * _data, int _ld) : data(_data), ld(_ld) { }
+     T operator() (int r, int c) const
+     {
+        if constexpr (ORD==RowMajor) return data[r*ld+c];
+        else  return data[c*ld+r];
+     }
+
+     int Offset (int r, int c) const {
+       if constexpr (ORD==RowMajor) return r*ld+c;
+       else return c*ld+r;
+     }
+
+     template <int h, int w>
+     auto GetTile(int r, int c) const {
+       Mat<h,w,float> res;
+       for (int i = 0; i < h; i++)
+         for (int j = 0; j < w; j++)
+           res(i,j) = (*this)(r+i,c+j);
+       return res;
+     }
+
+     auto SubMatrix (int r, int c) const { return BareMatrixShared<ORD,T> { data+Offset(r,c), ld }; }
+     auto Transpose() const { return BareMatrixShared<!ORD, T> { data, ld }; }
+     int LD() const { return ld; }
+     threadgroup T* Data() const { return data; }
+     bool IsColMajor() const { return ORD==ColMajor; }
+  };
+
+  template <ORDERING ORD, typename T = float>
+  class BareMatrixDevice
+  {
+     device T * data;
+     int ld;
+  public:
+     BareMatrixDevice (device T * _data, int _ld) : data(_data), ld(_ld) { }
+     T operator() (int r, int c) const
+     {
+        if constexpr (ORD==RowMajor) return data[r*ld+c];
+        else  return data[c*ld+r];
+     }
+
+     int Offset (int r, int c) const {
+       if constexpr (ORD==RowMajor) return r*ld+c;
+       else return c*ld+r;
+     }
+
+     template <int h, int w>
+     auto GetTile(int r, int c) const {
+       Mat<h,w,float> res;
+       for (int i = 0; i < h; i++)
+         for (int j = 0; j < w; j++)
+           res(i,j) = (*this)(r+i,c+j);
+       return res;
+     }
+
+     auto SubMatrix (int r, int c) const { return BareMatrixDevice<ORD,T> { data+Offset(r,c), ld }; }
+     auto Transpose() const { return BareMatrixShared<!ORD, T> { data, ld }; }
+     int LD() const { return ld; }
+     device T* Data() const { return data; }
+     bool IsColMajor() const { return ORD==ColMajor; }
+};
+
+
+
+  template <int H, int W, typename T = float>
+  class WarpMatrix
+  {
+    static_assert(H==8);
+    static_assert(W==8);
+    static constant constexpr int BW = 2;
+    static constant constexpr int BH = 1;
+    Mat<BH,BW,T> myvals; 
+  public:
+    WarpMatrix() { }
+    WarpMatrix(T val) { myvals = val; }
+    WarpMatrix(threadgroup T * data, int ld, int tid) {
+      int r = MyRow(tid);
+      int c = MyCol(tid);
+      for (int i = 0; i < BW; i++)
+         myvals(0,i) = data + r*ld + c + i;
+    }
+
+    void operator= (T val) { myvals = val; }
+
+    template <int K, typename M1, typename M2>
+    void AddMM(M1 m1, M2 m2, int tid)
+    {
+      int r = MyRow(tid);
+      int c = MyCol(tid);
+      for (int k = 0; k < K; k+=2)
+        myvals += m1.template GetTile<BH,2>(r,k) * m2.template GetTile<2,BW>(k,c);          
+    }
+
+    void Store(threadgroup T * data, int ld, int tid) {
+      int r = MyRow(tid);
+      int c = MyCol(tid);
+      for (int i = 0; i < BW; i++)
+         data[r*ld + c + i] = myvals(0,i);
+    }
+
+    int MyCol(int tid) const { return 2*(tid%4); }
+    int MyRow(int tid) const { return (tid/4)%8; }
+  };
+
+  template <>
+  class WarpMatrix<8,8,float>
+  {
+    typedef float T;
+    metal::simdgroup_float8x8 m;
+  public:
+    WarpMatrix() { }
+    WarpMatrix(T val) { m = metal::make_filled_simdgroup_matrix<float, 8, 8>(0.0f); }
+    WarpMatrix(threadgroup T * data, int ld, int tid) {
+      metal::simdgroup_load(m, data, ld, ulong2(0,0));
+    }
+
+    void operator= (T val) { m = metal::make_filled_simdgroup_matrix<float, 8, 8>(0.0f); }
+
+    template <int K, typename M1, typename M2>
+    void AddMM(M1 m1, M2 m2, int tid)
+    {
+      metal::simdgroup_float8x8 ma, mb;
+      metal::simdgroup_load(ma, m1.Data(), m1.LD(), ulong2(0, 0), m1.IsColMajor());
+      metal::simdgroup_load(mb, m2.Data(), m2.LD(), ulong2(0, 0), m2.IsColMajor());
+      metal::simdgroup_multiply_accumulate(m, ma, mb, m);
+    }
+
+    void Store(threadgroup T * data, int ld, int tid) {
+      metal::simdgroup_store(m, data, ld, ulong2(0,0));
+    }
+  };
+
+
 
 } // namespace tinybla
 

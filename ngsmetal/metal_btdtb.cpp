@@ -157,6 +157,11 @@ namespace ngsmetal
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
       threadgroup float pointvalsref[MAXDIMREF*$BS_IPTS][$BS_ELS];
 
+      BareMatrixShared<RowMajor> mat_elvecx(&elvecx[0][0], locdofsx_roundup);
+      BareMatrixShared<RowMajor> mat_elvecy(&elvecy[0][0], locdofsy_roundup);
+      BareMatrixShared<RowMajor> mat_pointvalsref(&pointvalsref[0][0], $BS_ELS);
+      BareMatrixDevice<RowMajor, const float> mat_bmatx(bmatx, locdofsx_roundup);
+      BareMatrixDevice<RowMajor, const float> mat_bmaty(bmaty, locdofsy_roundup);
 
       // zero elvecx (overhead would be enough
       for (int i = threadIdx; i < $BS_ELS*locdofsx_roundup; i+= blockDim)
@@ -215,6 +220,27 @@ namespace ngsmetal
 
               int ip = 8*(baseiptile+iptile);
 
+{
+              WarpMatrix<8,8> pointvalsrefxi[$DIMXREF];
+              for (int k = 0; k < $DIMXREF; k++)
+                pointvalsrefxi[k] = 0;
+
+              for (int xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
+                {
+                  auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
+                  for (int l = 0; l < $DIMXREF; l++)
+                     {
+                        auto ma = mat_bmatx.SubMatrix(ip+nip8*l, 8*xdoftile);
+                        pointvalsrefxi[l].AddMM<8>(ma, mb.Transpose(), threadIdx);
+                     }
+                }
+
+              for (int l = 0; l < $DIMXREF; l++)
+                pointvalsrefxi[l].Store(&pointvalsref[8*iptile+bs_ipts*l][8*eltile], bs_els, threadIdx);
+}
+
+
+#ifdef OLD
               simdgroup_float8x8 ma, mb;
               simdgroup_float8x8 pointvalsrefxi[$DIMXREF];
               for (int k = 0; k < $DIMXREF; k++)
@@ -232,6 +258,7 @@ namespace ngsmetal
 
               for (int l = 0; l < $DIMXREF; l++)
                 simdgroup_store(pointvalsrefxi[l], &pointvalsref[0][0], bs_els, ulong2(8*eltile, 8*iptile+bs_ipts*l));
+#endif
             }
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -314,6 +341,18 @@ namespace ngsmetal
               int eltile = blocknr % $EL_TILES;  // which els
               int iptile = blocknr / $EL_TILES;  // which pts*comp tile
 
+
+             WarpMatrix<8,8> pointvalsrefxi = 0;
+             for (int xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
+                {
+                  BareMatrixShared<ColMajor> mb(&elvecx[8*eltile][8*xdoftile], locdofsx_roundup);
+                  BareMatrixDevice<RowMajor, const float> ma(bmatx+($BMATX_REM_ROWS+8*iptile)*locdofsx_roundup+8*xdoftile, locdofsx_roundup);
+                  pointvalsrefxi.AddMM<8>(ma, mb, threadIdx);
+                }
+              pointvalsrefxi.Store(&pointvalsref[8*iptile][8*eltile], bs_els, threadIdx);
+
+
+#ifdef OLD
               // int ip = 8*(baseiptile+iptile);
               simdgroup_float8x8 ma, mb;
               simdgroup_float8x8 pointvalsrefxi = make_filled_simdgroup_matrix<float, 8, 8>(0.0f);
@@ -326,6 +365,9 @@ namespace ngsmetal
                 }
 
               simdgroup_store(pointvalsrefxi, &pointvalsref[0][0], bs_els, ulong2(8*eltile, 8*iptile));
+#endif
+
+
             }
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -619,8 +661,7 @@ namespace ngsmetal
         // encoder->dispatchThreads(MTL::Size(ne/BS_els+1,1,1), MTL::Size(32, BS_els, 1));
         // encoder->dispatchThreadgroups(MTL::Size(ne/BS_els+1,1,1), MTL::Size(16*32, 1, 1));
         //       for (int runs = 0; runs < 10; runs++)
-        NS::UInteger maxThreads = pipelineState->maxTotalThreadsPerThreadgroup();
-        // cout << "maxThreads = " << maxThreads << endl;
+
         encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(16*32, 1, 1));
         encoder->endEncoding();
 
