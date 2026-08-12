@@ -1293,6 +1293,7 @@ namespace ngla
     firsti.Range(starti, starti+size+1) = tmp_firsti;
     firsti.Range(starti+size+1, newheight+1) = tmp_firsti.Last();
     size = newheight;
+    CalcBalancing ();
   }
   
   void MatrixGraph :: EmbedWidth (size_t starti, size_t newwidth)

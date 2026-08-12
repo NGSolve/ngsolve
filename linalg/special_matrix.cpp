@@ -175,6 +175,8 @@ namespace ngla
   shared_ptr<BaseSparseMatrix> EmbeddedMatrix :: CreateSparseMatrix() const
   {
     auto mat1 = mat->CreateSparseMatrix();
+    if (mat1.get() == dynamic_cast<const BaseSparseMatrix*> (mat.get()))
+      mat1 = dynamic_pointer_cast<BaseSparseMatrix> (mat1->CreateMatrix());
     mat1 -> EmbedHeight(range.First(), Height());
     return mat1;
   }
@@ -270,16 +272,11 @@ namespace ngla
   }
   shared_ptr<BaseSparseMatrix> EmbeddedTransposeMatrix :: CreateSparseMatrix() const
   {
-    auto mat_sparse = mat->CreateSparseMatrix();
-    auto rest = EmbeddingTranspose(width, range, IsComplex());
-    auto rest_sparse = rest.CreateSparseMatrix();
-    auto mat_sp = dynamic_pointer_cast<SparseMatrixTM<double>>(mat_sparse);
-    if(!mat_sp)
-      throw Exception("EmbeddedTransposeMatrix::CreateSparseMatrix: cannot create sparse matrix for mat in embedding transpose");
-    auto rest_sp = dynamic_pointer_cast<SparseMatrixTM<double>>(rest_sparse);
-    if(!rest_sp)
-      throw Exception("EmbeddedTransposeMatrix::CreateSparseMatrix: cannot create sparse matrix for rest in embedding transpose");
-    return MatMult(*mat_sp, *rest_sp);
+    auto mat1 = mat->CreateSparseMatrix();
+    if (mat1.get() == dynamic_cast<const BaseSparseMatrix*> (mat.get()))
+      mat1 = dynamic_pointer_cast<BaseSparseMatrix> (mat1->CreateMatrix());
+    mat1 -> EmbedWidth(range.First(), width);
+    return mat1;
   }
 
 
