@@ -48,6 +48,7 @@ namespace ngla
     bool SmoothIsProjection () const { return smooth_is_projection; }
     
     auto GetAMatrix() const { return matrix.lock(); }
+    auto GetInner() const { return inner; }
     virtual bool SupportsUpdate() const { return false; } 
   };
 

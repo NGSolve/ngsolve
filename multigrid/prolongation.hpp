@@ -184,8 +184,7 @@ namespace ngmg
     virtual void Update (const FESpace & fes) override { ; }
 
     ///
-    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override
-    { return NULL; }
+    virtual shared_ptr<SparseMatrix< double >> CreateProlongationMatrix( int finelevel ) const override;
 
     ///
     virtual void ProlongateInline (int finelevel, BaseVector & v) const override;

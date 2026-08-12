@@ -60,7 +60,8 @@ public:
   ///
   virtual size_t GetNDofLevel (int level) const override;
 
-  /// 
+  int GetNLevels () const { return nelevel.Size(); }
+  ///
   virtual void GetDofRanges (ElementId ei, Array<IntRange> & dranges) const;
 
   ///
