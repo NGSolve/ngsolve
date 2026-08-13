@@ -10,6 +10,10 @@
 
 using namespace ngsmetal;
 
+namespace ngsmetal
+{
+  extern void Metal_MM_Benchmark (int n, int m, int k);
+}
 
 namespace
 {
@@ -139,9 +143,11 @@ Xcode.
   BaseMatrix::RegisterDeviceMatrixCreator(typeid(MatrixFreeBTDTB),
                                           [] (const BaseMatrix & bmat) -> shared_ptr<BaseMatrix>
                                           {
-                                            // auto &mat  = dynamic_cast<const MatrixFreeBTDTB&>(bmat);
                                             return make_shared<MetalBTDTBMatrix>(bmat);
                                           });
-  
-  
+
+  m.def("Metal_MM_Benchmark", [] (int n, int m, int k)
+  {
+    Metal_MM_Benchmark (n,m,k);
+  });
 }
