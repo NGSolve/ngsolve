@@ -633,6 +633,7 @@ namespace ngcomp
   {
     name="FacetFESpace(facet)";
     type = "facet";
+    needs_transform_vec = false;
     // defined flags
     DefineNumFlag("relorder");
     DefineDefineFlag("variableorder"); 
