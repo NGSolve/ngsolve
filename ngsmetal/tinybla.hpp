@@ -53,6 +53,8 @@ namespace tinybla {
     }
   };
 
+
+
   template <typename T>
   class HTVec<1,T> {
     T head;
@@ -77,7 +79,9 @@ namespace tinybla {
     template <typename TP>
     void Store(TP data) { data[0] = head; }
   };
-  
+
+
+
 
   template <int S, typename T>
   inline auto operator+ (HTVec<S,T> a, HTVec<S,T> b) -> HTVec<S,T> {
@@ -278,8 +282,8 @@ namespace tinybla {
       return { Outer(a.Tail(), b), a.Head()*b };
   }
 
-  template <int H, int W, typename T>
-  auto AddOuter (HTVec<H,T> a, HTVec<W,T> b, HTMat<H,W,T> m) -> HTMat<H,W,T>
+  template <int H, int W, typename TA, typename T>
+  auto AddOuter (HTVec<H,TA> a, HTVec<W,T> b, HTMat<H,W,T> m) -> HTMat<H,W,T>
   {
     if constexpr (H==1)
       // return a.Head()*b+m.Head();
