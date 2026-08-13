@@ -177,18 +177,18 @@ namespace tinybla {
   }
 
   // alpha * x + y
-  template <int S, typename T>
-  auto FMA (T alpha, HTVec<S,T> x, HTVec<S,T> y) -> HTVec<S,T>
+  template <int S, typename TA, typename T>
+  auto FMA (TA alpha, HTVec<S,T> x, HTVec<S,T> y) -> HTVec<S,T>
   {
     if constexpr (S==1)
-      return metal::fma(alpha, x.Head(), y.Head());
+      return fma(static_cast<T>(alpha), x.Head(), y.Head());
     else
-      return { FMA(alpha, x.Tail(), y.Tail()), fma(alpha, x.Head(), y.Head()) };
+      return { FMA(alpha, x.Tail(), y.Tail()), fma(static_cast<T>(alpha), x.Head(), y.Head()) };
   } 
 
 
-  template <int S, int W, typename T>
-  inline auto operator* (HTVec<S,T> a, HTMat<S,W,T> b) -> HTVec<W,T> {
+  template <int S, int W, typename TA, typename T>
+  inline auto operator* (HTVec<S,TA> a, HTMat<S,W,T> b) -> HTVec<W,T> {
     if constexpr (S==1)
       return a.Head()*b.Head();
     else
@@ -196,13 +196,30 @@ namespace tinybla {
       return FMA (a.Head(),b.Head(), a.Tail()*b.Tail());
   }
   
-  template <int H, int K, int W, typename T>
-  inline auto operator* (HTMat<H,K,T> a, HTMat<K,W,T> b) -> HTMat<H,W,T> {
+  template <int H, int K, int W, typename TA, typename T>
+  inline auto operator* (HTMat<H,K,TA> a, HTMat<K,W,T> b) -> HTMat<H,W,T> {
     if constexpr (H==1)
       return a.Head()*b;
     else
       return { a.Tail()*b, a.Head()*b };
   }
+
+
+
+
+
+
+
+  template <int H, int K, int W, typename TA, typename T>
+  inline auto FMA (HTMat<H,K,TA> a, HTMat<K,W,T> b, HTMat<H,W,T> c) -> HTMat<H,W,T> {
+    // return c + a*b;
+    if constexpr (K==1)
+      return AddOuter(LastCol(a), b.Head(), c);
+    else
+      return AddOuter(LastCol(a), b.Head(), FMA(RemoveCol(a), b.Tail(), c));
+  }
+
+  
 
 
   template <int S, typename T>
@@ -233,6 +250,44 @@ namespace tinybla {
       return AddCol (Trans(a.Tail()), a.Head() );
   }
 
+  template <int H, int W, typename T>
+  auto RemoveCol(HTMat<H,W,T> m) -> HTMat<H,W-1,T>
+  {
+    if constexpr (H==1)
+      return m.Head().Tail();
+    else
+      return { RemoveCol(m.Tail()), m.Head().Tail() };
+  }
+
+  template <int H, int W, typename T>
+  auto LastCol(HTMat<H,W,T> m) -> HTVec<H,T>
+  {
+    if constexpr (H==1)
+      return m.Head().Head();
+    else
+      return { LastCol(m.Tail()), m.Head().Head() };
+  }
+
+
+  template <int H, int W, typename T>
+  auto Outer (HTVec<H,T> a, HTVec<W,T> b) -> HTMat<H,W,T>
+  {
+    if constexpr (H==1)
+      return a.Head()*b;
+    else
+      return { Outer(a.Tail(), b), a.Head()*b };
+  }
+
+  template <int H, int W, typename T>
+  auto AddOuter (HTVec<H,T> a, HTVec<W,T> b, HTMat<H,W,T> m) -> HTMat<H,W,T>
+  {
+    if constexpr (H==1)
+      // return a.Head()*b+m.Head();
+      return FMA(a.Head(), b, m.Head());
+    else
+      // return { AddOuter(a.Tail(), b, m.Tail()), a.Head()*b+m.Head() };
+      return { AddOuter(a.Tail(), b, m.Tail()), FMA(a.Head(),b,m.Head()) };
+  }
 
 
 
@@ -457,6 +512,8 @@ namespace tinybla {
   {
      Tp data;
      int ld;
+     using ElementType = remove_addrspace_t<remove_cv_t<remove_reference_t<decltype(*data)>>>;
+
   public:
      BareMatrix (Tp _data, int _ld) : data(_data), ld(_ld) { }
 
@@ -470,9 +527,9 @@ namespace tinybla {
      template <int h, int w>
      auto GetTile(int r, int c) const {
       if constexpr (ORD==RowMajor)
-        return HTMat<h,w,float> (data+Offset(r,c), ld);
+        return HTMat<h,w,ElementType> (data+Offset(r,c), ld);
       else
-        return Trans(HTMat<w,h,float> (data+Offset(r,c), ld));
+        return Trans(HTMat<w,h,ElementType> (data+Offset(r,c), ld));
 
 /*
        Mat<h,w,float> res;
@@ -483,8 +540,8 @@ namespace tinybla {
 */
      }
 
-     template <int h, int w>
-     void SetTile(int r, int c, HTMat<h,w,float> tile) {
+     template <int h, int w, typename T2>
+     void SetTile(int r, int c, HTMat<h,w,T2> tile) {
       if constexpr (ORD==RowMajor)
         tile.Store(data+Offset(r,c), ld);
       else
@@ -516,7 +573,7 @@ namespace tinybla {
   {
     static_assert(H==8);
     static_assert(W==8);
-    static constant constexpr int BW = 2;
+    static constant constexpr int BW = sizeof(float2)/sizeof(T);
     static constant constexpr int BH = 1;
     HTMat<BH,BW,T> myvals; 
   public:
@@ -538,7 +595,8 @@ namespace tinybla {
     {
       unsigned r = MyRow(tid);
       unsigned c = MyCol(tid);
-      myvals += m1.template GetTile<BH,K>(r,0) * m2.template GetTile<K,BW>(0,c);
+      // myvals += m1.template GetTile<BH,K>(r,0) * m2.template GetTile<K,BW>(0,c);
+      myvals = FMA (m1.template GetTile<BH,K>(r,0), m2.template GetTile<K,BW>(0,c), myvals);
     }
 
     template <ORDERING ORD, typename Tp>
@@ -548,10 +606,9 @@ namespace tinybla {
       mat.template SetTile<BH,BW>(r,c, myvals);
     }
 
-    unsigned MyCol(unsigned tid) const { return 2*(tid%4); }
+    unsigned MyCol(unsigned tid) const { return BW*(tid%4); }
     unsigned MyRow(unsigned tid) const { return (tid/4)%8; }
   };
-
 
 /*
   template <>

@@ -158,10 +158,12 @@ namespace ngsmetal
 
       auto mat_elvecx = MakeBareMatrix<RowMajor>(&elvecx[0][0], locdofsx_roundup);
       auto mat_elvecy = MakeBareMatrix<RowMajor>(&elvecy[0][0], locdofsy_roundup);
+      // auto mat_elvecy2 = MakeBareMatrix<RowMajor>((threadgroup float2*)&elvecy[0][0], locdofsy_roundup/2);
       auto mat_pointvalsref = MakeBareMatrix<RowMajor>(&pointvalsref[0][0], $BS_ELS);
 
       auto mat_bmatx = MakeBareMatrix<RowMajor>(bmatx, locdofsx_roundup);
       auto mat_bmaty = MakeBareMatrix<RowMajor>(bmaty, locdofsy_roundup);
+      // auto mat_bmaty2 = MakeBareMatrix<RowMajor>( (device float2*) bmaty, locdofsy_roundup/2);
 
       // zero elvecx (overhead would be enough
       for (int i = threadIdx; i < $BS_ELS*locdofsx_roundup; i+= blockDim)
@@ -224,6 +226,8 @@ namespace ngsmetal
               for (int k = 0; k < $DIMXREF; k++)
                 pointvalsrefxi[k] = 0;
 
+
+
               for (int xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
                 {
                   auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
@@ -234,29 +238,16 @@ namespace ngsmetal
                      }
                 }
 
-              for (int l = 0; l < $DIMXREF; l++)
-                pointvalsrefxi[l].Store(mat_pointvalsref.SubMatrix(8*iptile+bs_ipts*l, 8*eltile), threadIdx);
-
-
-#ifdef OLD
-              simdgroup_float8x8 ma, mb;
-              simdgroup_float8x8 pointvalsrefxi[$DIMXREF];
-              for (int k = 0; k < $DIMXREF; k++)
-                pointvalsrefxi[k] = make_filled_simdgroup_matrix<float, 8, 8>(0.0f);
-
-              for (int xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
-                {
-                  simdgroup_load(mb, &elvecx[0][0], locdofsx_roundup, ulong2(8*xdoftile, 8*eltile), true);
+#ifdef XX
+                  auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
                   for (int l = 0; l < $DIMXREF; l++)
                      {
-                        simdgroup_load(ma, bmatx, locdofsx_roundup, ulong2(8*xdoftile, ip + nip8*l)); 
-                        simdgroup_multiply_accumulate(pointvalsrefxi[l], ma, mb, pointvalsrefxi[l]);
+                        auto ma = mat_bmatx.SubMatrix(ip+nip8*l, 0);
+                        pointvalsrefxi[l].AddMM<locdofsx>(ma, mb.Transpose(), threadIdx);
                      }
-                }
-
-              for (int l = 0; l < $DIMXREF; l++)
-                simdgroup_store(pointvalsrefxi[l], &pointvalsref[0][0], bs_els, ulong2(8*eltile, 8*iptile+bs_ipts*l));
 #endif
+              for (int l = 0; l < $DIMXREF; l++)
+                pointvalsrefxi[l].Store(mat_pointvalsref.SubMatrix(8*iptile+bs_ipts*l, 8*eltile), threadIdx);
             }
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -306,7 +297,8 @@ namespace ngsmetal
               int eltile = blocknr % $EL_TILES;  // which els
               int ydoftile = blocknr / $EL_TILES;  // which dofs
 
-              WarpMatrix<8,8> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+              WarpMatrix<8,8,float> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+
               for (int iptile = 0; iptile < myiptiles; iptile++)
                 for (int l = 0; l < $DIMYREF; l++)
                   {
@@ -314,23 +306,15 @@ namespace ngsmetal
                      auto mb = mat_bmaty.SubMatrix(8*(baseiptile+iptile+$IP_TILES*l), 8*ydoftile);
                      sum.AddMM<8>(ma.Transpose(), mb, threadIdx);
                   }
-              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
 
-#ifdef OLD
-              simdgroup_float8x8 ma, mb;
-              simdgroup_float8x8 sum;
-              simdgroup_load(sum, &elvecy[0][0], locdofsy_roundup, ulong2(8*ydoftile, 8*eltile));
-
-              for (int iptile = 0; iptile < myiptiles; iptile++)
-                for (int l = 0; l < $DIMYREF; l++)
-                  {
-                     simdgroup_load(ma, &pointvalsref[0][0], bs_els, ulong2(8*eltile, 8*iptile+bs_ipts*l), true);
-                     simdgroup_load(mb, bmaty, locdofsy_roundup, ulong2(8*ydoftile, 8*(baseiptile+iptile+$IP_TILES*l)), false);
-                     simdgroup_multiply_accumulate(sum, ma, mb, sum);
-                  }
-
-              simdgroup_store(sum, &elvecy[0][0], locdofsy_roundup, ulong2(8*ydoftile, 8*eltile));
+#ifdef XXX
+// different results???
+                     auto ma = mat_pointvalsref.SubMatrix(0, 8*eltile);
+                     auto mb = mat_bmaty.SubMatrix(8*baseiptile+0, 8*ydoftile);
+                     sum.AddMM<$DIMYREF*bs_ipts>(ma.Transpose(), mb, threadIdx);
 #endif
+
+              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
            }
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -352,30 +336,21 @@ namespace ngsmetal
              int iptile = blocknr / $EL_TILES;  // which pts*comp tile
 
              WarpMatrix<8,8> pointvalsrefxi = 0;
+
              for (int xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
                 {
                   auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
                   auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 8*xdoftile);
                   pointvalsrefxi.AddMM<8>(ma, mb.Transpose(), threadIdx);
                 }
-              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile,8*eltile), threadIdx);
 
-#ifdef OLD
-              // int ip = 8*(baseiptile+iptile);
-              simdgroup_float8x8 ma, mb;
-              simdgroup_float8x8 pointvalsrefxi = make_filled_simdgroup_matrix<float, 8, 8>(0.0f);
-
-              for (int xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
-                {
-                  simdgroup_load(mb, &elvecx[0][0], locdofsx_roundup, ulong2(8*xdoftile, 8*eltile), true);
-                  simdgroup_load(ma, bmatx, locdofsx_roundup, ulong2(8*xdoftile, $BMATX_REM_ROWS+8*iptile)); 
-                  simdgroup_multiply_accumulate(pointvalsrefxi, ma, mb, pointvalsrefxi);
-                }
-
-              simdgroup_store(pointvalsrefxi, &pointvalsref[0][0], bs_els, ulong2(8*eltile, 8*iptile));
+#ifdef XXX
+                  auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
+                  auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 0);
+                  pointvalsrefxi.AddMM<locdofsx>(ma, mb.Transpose(), threadIdx);
 #endif
 
-
+              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile,8*eltile), threadIdx);
             }
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -433,23 +408,15 @@ namespace ngsmetal
                    auto mb = mat_bmaty.SubMatrix($BMATY_REM_ROWS+ipcomp, 8*ydoftile);
                    sum.AddMM<8>(ma.Transpose(), mb, threadIdx);
                 }
+
+#ifdef XX
+              auto ma = mat_pointvalsref.SubMatrix(0, 8*eltile);
+              auto mb = mat_bmaty.SubMatrix($BMATY_REM_ROWS+0, 8*ydoftile);
+              sum.AddMM<numips*$DIMYREF>(ma.Transpose(), mb, threadIdx);
+#endif
+
               sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
 
-
-#ifdef OLD
-              simdgroup_float8x8 ma, mb;
-              simdgroup_float8x8 sum;
-              simdgroup_load(sum, &elvecy[0][0], locdofsy_roundup, ulong2(8*ydoftile, 8*eltile));
-
-              for (int ipcomp = 0; ipcomp < numips*$DIMYREF; ipcomp += 8)
-                {
-                   simdgroup_load(ma, &pointvalsref[0][0], bs_els, ulong2(8*eltile, ipcomp), true);
-                   simdgroup_load(mb, bmaty, locdofsy_roundup, ulong2(8*ydoftile, $BMATY_REM_ROWS+ipcomp), false);
-                   simdgroup_multiply_accumulate(sum, ma, mb, sum);
-                }
-
-              simdgroup_store(sum, &elvecy[0][0], locdofsy_roundup, ulong2(8*ydoftile, 8*eltile));
-#endif
            }
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -604,6 +571,8 @@ namespace ngsmetal
     
     NS::Error* error = nullptr;
     NS::String* mslCode = NS::String::string(code.c_str(), NS::UTF8StringEncoding);
+
+    
     MTL::Library* library = GetDevice()->newLibrary(mslCode, nullptr, &error);
 
     if (!library)
