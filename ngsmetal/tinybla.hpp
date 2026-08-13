@@ -1,5 +1,8 @@
 string code_tinybla = R"(
 
+#include <metal_stdlib>
+using namespace metal;
+
 #ifdef __CUDACC__
 #define TB_HD __host__ __device__
 #define thread
@@ -9,6 +12,232 @@ string code_tinybla = R"(
 
 
 namespace tinybla {
+
+
+
+
+
+
+  template <int S, typename T>
+  class HTVec {
+    HTVec<S-1,T> tail;
+    T head;
+
+  public:
+    HTVec () { }
+    HTVec (HTVec<S-1,T> _tail, T _head) : tail(_tail), head(_head) {}
+
+    auto Head() const { return head; } 
+    auto Tail() const { return tail; } 
+
+    void operator= (T val) {
+      tail = val;
+      head = val;
+    }
+
+    void operator+= (HTVec b) {
+      tail += b.Tail();
+      head += b.Head();
+    }
+
+    template <typename TP>
+    void Load(TP data) {
+      tail.Load(data);
+      head = data[S-1];
+    }
+    
+    template <typename TP>
+    void Store(TP data) {
+      tail.Store(data);
+      data[S-1] = head;
+    }
+  };
+
+  template <typename T>
+  class HTVec<1,T> {
+    T head;
+
+  public:
+    auto Head() const { return head; } 
+    
+    HTVec () { }
+    HTVec (T _head) : head(_head) {}
+
+    void operator= (T val) {
+      head = val;
+    }
+
+    void operator+= (HTVec b) {
+      head += b.Head();
+    }
+
+    template <typename TP>
+    void Load(TP data) { head = data[0]; }
+    
+    template <typename TP>
+    void Store(TP data) { data[0] = head; }
+  };
+  
+
+  template <int S, typename T>
+  inline auto operator+ (HTVec<S,T> a, HTVec<S,T> b) -> HTVec<S,T> {
+    if constexpr (S==1)
+      return a.Head()+b.Head();
+    else
+      return { a.Tail()+b.Tail(), a.Head()+b.Head() };
+  }
+
+  template <int S, typename T>
+  inline auto operator* (float a, HTVec<S,T> b) -> HTVec<S,T> {
+    if constexpr (S==1)
+      return a*b.Head();
+    else
+      return { a*b.Tail(), a*b.Head() };
+  }
+  
+  
+
+
+
+
+  template <int H, int W, typename T>
+  class HTMat {
+    HTMat<H-1,W,T> tail;
+    HTVec<W,T> head;
+
+  public:
+    HTMat () { }
+    HTMat (HTMat<H-1,W,T> _tail, HTVec<W,T> _head) : tail(_tail), head(_head) {}
+    template <typename TP>
+    HTMat (TP data, unsigned dist) { Load(data, dist); }
+
+    auto Head() const { return head; } 
+    auto Tail() const { return tail; } 
+
+    void operator= (T val) {
+      tail = val;
+      head = val;
+    }
+
+    template <typename TP>
+    void Load(TP data, unsigned dist) {
+      tail.Load(data,dist);
+      head.Load(data+(H-1)*dist);
+    }
+    
+    template <typename TP>
+    void Store(TP data, unsigned dist) {
+      tail.Store(data,dist);
+      head.Store(data+(H-1)*dist);
+    }
+
+    void operator+= (HTMat b) {
+      tail += b.Tail();
+      head += b.Head();
+    }
+  };
+
+  
+  template <int W, typename T>
+  class HTMat<1,W,T> {
+    HTVec<W,T> head;
+
+  public:
+    auto Head() const { return head; } 
+    
+    HTMat () { }
+    HTMat (HTVec<W,T> _head) : head(_head) {}
+    template <typename TP>
+    HTMat (TP data, unsigned dist) { Load(data, dist); }
+
+    void operator= (T val) {
+      head = val;
+    }
+
+
+    template <typename TP>
+    void Load(TP data, unsigned dist) { head.Load(data); }
+    
+    template <typename TP>
+    void Store(TP data, unsigned dist) { head.Store(data); }
+
+
+    void operator+= (HTMat b) {
+      head += b.Head();
+    }
+  };
+
+  
+  template <int H, int W, typename T>
+  auto operator+ (HTMat<H,W,T> a, HTMat<H,W,T> b) -> HTMat<H,W,T> {
+    if constexpr (H==1)
+      return a.Head()+b.Head();
+    else
+      return { a.Tail()+b.Tail(), a.Head()+b.Head() };
+  }
+
+  // alpha * x + y
+  template <int S, typename T>
+  auto FMA (T alpha, HTVec<S,T> x, HTVec<S,T> y) -> HTVec<S,T>
+  {
+    if constexpr (S==1)
+      return metal::fma(alpha, x.Head(), y.Head());
+    else
+      return { FMA(alpha, x.Tail(), y.Tail()), fma(alpha, x.Head(), y.Head()) };
+  } 
+
+
+  template <int S, int W, typename T>
+  inline auto operator* (HTVec<S,T> a, HTMat<S,W,T> b) -> HTVec<W,T> {
+    if constexpr (S==1)
+      return a.Head()*b.Head();
+    else
+      // return a.Tail()*b.Tail() + a.Head()*b.Head();
+      return FMA (a.Head(),b.Head(), a.Tail()*b.Tail());
+  }
+  
+  template <int H, int K, int W, typename T>
+  inline auto operator* (HTMat<H,K,T> a, HTMat<K,W,T> b) -> HTMat<H,W,T> {
+    if constexpr (H==1)
+      return a.Head()*b;
+    else
+      return { a.Tail()*b, a.Head()*b };
+  }
+
+
+  template <int S, typename T>
+  auto ColVec (HTVec<S,T> v) -> HTMat<S,1,T>
+  {
+    HTVec<1,T> last;
+    last = v.Head();
+    if constexpr (S==1)
+      return last;
+    else
+      return { ColVec(v.Tail()), last };
+  }
+
+  template <int H, int W, typename T>
+  auto AddCol(HTMat<H,W,T> m, HTVec<H,T> v) -> HTMat<H,W+1,T>
+  {
+    if constexpr (H==1)
+      return HTVec<W+1,T> (m.Head(), v.Head());
+    else
+      return { AddCol(m.Tail(), v.Tail()), HTVec<W+1,T> (m.Head(), v.Head()) };
+  }
+
+  template <int H, int W, typename T>
+  auto Trans (HTMat<H,W,T> a) -> HTMat<W,H,T> {
+    if constexpr (H==1)
+      return ColVec (a.Head()); 
+    else
+      return AddCol (Trans(a.Tail()), a.Head() );
+  }
+
+
+
+
+
+
 
   template <int S, typename T>
   class Vec {
@@ -240,12 +469,34 @@ namespace tinybla {
 
      template <int h, int w>
      auto GetTile(int r, int c) const {
+      if constexpr (ORD==RowMajor)
+        return HTMat<h,w,float> (data+Offset(r,c), ld);
+      else
+        return Trans(HTMat<w,h,float> (data+Offset(r,c), ld));
+
+/*
        Mat<h,w,float> res;
        for (int i = 0; i < h; i++)
          for (int j = 0; j < w; j++)
            res(i,j) = (*this)(r+i,c+j);
        return res;
+*/
      }
+
+     template <int h, int w>
+     void SetTile(int r, int c, HTMat<h,w,float> tile) {
+      if constexpr (ORD==RowMajor)
+        tile.Store(data+Offset(r,c), ld);
+      else
+        Trans(tile).Store(data+Offset(r,c), ld);
+
+/*
+       for (int i = 0; i < h; i++)
+         for (int j = 0; j < w; j++)
+           data[Offset(r+i,c+j)] = tile(i,j);
+*/
+     }
+
 
      auto SubMatrix (int r, int c) const { return BareMatrix<ORD,Tp> { data+Offset(r,c), ld }; }
      auto Transpose() const { return BareMatrix<!ORD, Tp> { data, ld }; }
@@ -267,39 +518,42 @@ namespace tinybla {
     static_assert(W==8);
     static constant constexpr int BW = 2;
     static constant constexpr int BH = 1;
-    Mat<BH,BW,T> myvals; 
+    HTMat<BH,BW,T> myvals; 
   public:
     WarpMatrix() { }
+
     WarpMatrix(T val) { myvals = val; }
-    WarpMatrix(threadgroup T * data, int ld, int tid) {
-      int r = MyRow(tid);
-      int c = MyCol(tid);
-      for (int i = 0; i < BW; i++)
-         myvals(0,i) = data + r*ld + c + i;
+
+    template <ORDERING ORD, typename Tp>
+    WarpMatrix(BareMatrix<ORD,Tp> mat, unsigned tid) {
+      unsigned r = MyRow(tid);
+      unsigned c = MyCol(tid);
+      myvals = mat.template GetTile<BH,BW>(r,c);
     }
 
     void operator= (T val) { myvals = val; }
 
-    template <int K, typename M1, typename M2>
-    void AddMM(M1 m1, M2 m2, int tid)
+    template <int K, ORDERING ORD1, typename Tp1, ORDERING ORD2, typename Tp2>
+    void AddMM(BareMatrix<ORD1,Tp1> m1, BareMatrix<ORD2,Tp2> m2, unsigned tid)
     {
-      int r = MyRow(tid);
-      int c = MyCol(tid);
-      for (int k = 0; k < K; k+=2)
-        myvals += m1.template GetTile<BH,2>(r,k) * m2.template GetTile<2,BW>(k,c);          
+      unsigned r = MyRow(tid);
+      unsigned c = MyCol(tid);
+      myvals += m1.template GetTile<BH,K>(r,0) * m2.template GetTile<K,BW>(0,c);
     }
 
-    void Store(threadgroup T * data, int ld, int tid) {
-      int r = MyRow(tid);
-      int c = MyCol(tid);
-      for (int i = 0; i < BW; i++)
-         data[r*ld + c + i] = myvals(0,i);
+    template <ORDERING ORD, typename Tp>
+    void Store(BareMatrix<ORD,Tp> mat, unsigned tid) {
+      unsigned r = MyRow(tid);
+      unsigned c = MyCol(tid);
+      mat.template SetTile<BH,BW>(r,c, myvals);
     }
 
-    int MyCol(int tid) const { return 2*(tid%4); }
-    int MyRow(int tid) const { return (tid/4)%8; }
+    unsigned MyCol(unsigned tid) const { return 2*(tid%4); }
+    unsigned MyRow(unsigned tid) const { return (tid/4)%8; }
   };
 
+
+/*
   template <>
   class WarpMatrix<8,8,float>
   {
@@ -310,6 +564,10 @@ namespace tinybla {
     WarpMatrix(T val) { m = metal::make_filled_simdgroup_matrix<float, 8, 8>(0.0f); }
     WarpMatrix(threadgroup T * data, int ld, int tid) {
       metal::simdgroup_load(m, data, ld, ulong2(0,0));
+    }
+    template <typename M>
+    WarpMatrix(M mat, int tid) {
+      metal::simdgroup_load(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
     }
 
     void operator= (T val) { m = metal::make_filled_simdgroup_matrix<float, 8, 8>(0.0f); }
@@ -327,9 +585,13 @@ namespace tinybla {
     void Store(threadgroup T * data, int ld, int tid) {
       metal::simdgroup_store(m, data, ld, ulong2(0,0));
     }
+
+    template <typename M>
+    void Store(M mat, int tid) {
+      metal::simdgroup_store(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
+    }
   };
-
-
+*/
 
 } // namespace tinybla
 
