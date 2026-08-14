@@ -12,7 +12,7 @@ using namespace ngsmetal;
 
 namespace ngsmetal
 {
-  extern void Metal_MM_Benchmark (int n, int m, int k);
+  extern double Metal_MM_Benchmark (int n, int m, int k, int lda, int ldb);
 }
 
 namespace
@@ -146,8 +146,8 @@ Xcode.
                                             return make_shared<MetalBTDTBMatrix>(bmat);
                                           });
 
-  m.def("Metal_MM_Benchmark", [] (int n, int m, int k)
+  m.def("Metal_MM_Benchmark", [] (int n, int m, int k, int lda, int ldb)
   {
-    Metal_MM_Benchmark (n,m,k);
-  });
+    return Metal_MM_Benchmark (n,m,k, lda, ldb);
+  }, py::arg("n"), py::arg("m"), py::arg("k"), py::arg("lda"), py::arg("ldb"));
 }

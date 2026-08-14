@@ -515,21 +515,21 @@ namespace tinybla {
   class BareMatrix
   {
      Tp data;
-     int ld;
+     unsigned ld;
      using ElementType = remove_addrspace_t<remove_cv_t<remove_reference_t<decltype(*data)>>>;
 
   public:
-     BareMatrix (Tp _data, int _ld) : data(_data), ld(_ld) { }
+     BareMatrix (Tp _data, unsigned _ld) : data(_data), ld(_ld) { }
 
-     int Offset (int r, int c) const {
+     int Offset (unsigned r, unsigned c) const {
        if constexpr (ORD==RowMajor) return r*ld+c;
        else return c*ld+r;
      }
 
-     auto operator() (int r, int c) const { return data[Offset(r,c)]; }
+     auto operator() (unsigned r, unsigned c) const { return data[Offset(r,c)]; }
 
      template <int h, int w>
-     auto GetTile(int r, int c) const {
+     auto GetTile(unsigned r, unsigned c) const {
       if constexpr (ORD==RowMajor)
         return HTMat<h,w,ElementType> (data+Offset(r,c), ld);
       else
@@ -575,10 +575,10 @@ namespace tinybla {
   template <int H, int W, typename T = float>
   class WarpMatrix
   {
-    static_assert(H==8);
-    static_assert(W==8);
-    static constant constexpr int BW = sizeof(float2)/sizeof(T);
-    static constant constexpr int BH = 1;
+    static_assert(H%8==0);
+    static_assert(W%4==0);
+    static constant constexpr int BW = W/4; // sizeof(float2)/sizeof(T);
+    static constant constexpr int BH = H/8;
     HTMat<BH,BW,T> myvals; 
   public:
     WarpMatrix() { }
@@ -600,7 +600,67 @@ namespace tinybla {
       unsigned r = MyRow(tid);
       unsigned c = MyCol(tid);
       // myvals += m1.template GetTile<BH,K>(r,0) * m2.template GetTile<K,BW>(0,c);
-      myvals = FMA (m1.template GetTile<BH,K>(r,0), m2.template GetTile<K,BW>(0,c), myvals);
+      // myvals = FMA (m1.template GetTile<BH,K>(r,0), m2.template GetTile<K,BW>(0,c), myvals);
+
+
+      constexpr int KTILE = 1;
+      for (unsigned k = 0; k < K; k+=KTILE)
+        myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
+
+
+
+/*
+// 6.8 TF
+      constexpr int KTILE = 1;
+      for (int k = 0; k < K; k+=KTILE)
+{
+        auto atile = m1.template GetTile<BH,KTILE>(r,k);
+        auto btile = m2.template GetTile<KTILE,BW>(k,c);
+        for (int r = 0; r < 10; r++)
+          myvals = FMA (atile, btile, myvals);
+}
+*/
+
+
+/*
+6 TF
+      constexpr int KTILE = 1;
+      for (int k = 0; k < K; k+=KTILE)
+{
+        auto atile = m1.template GetTile<BH,KTILE>(r,k);
+        for (int r = 0; r < 10; r++)
+          myvals = FMA (atile, m2.template GetTile<KTILE,BW>(k,c), myvals);
+}
+*/
+
+/*
+//  4-5 TF
+      constexpr int KTILE = 1;
+      for (int k = 0; k < K; k+=KTILE)
+{
+        auto btile = m2.template GetTile<KTILE,BW>(k,c);
+        for (int r = 0; r < 10; r++)
+          myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), btile, myvals);
+}
+*/
+
+
+
+/*
+      constexpr int KTILE = 1;
+      auto curr_A = m1.template GetTile<BH,KTILE>(r, 0);
+      auto curr_B = m2.template GetTile<KTILE,BW>(0, c);
+
+      for (int k = 0; k < K; k+=KTILE) {
+        auto next_A = m1.template GetTile<BH, KTILE>(r, k + 1);
+        auto next_B = m2.template GetTile<KTILE, BW>(k + 1, c);
+
+        myvals = FMA(curr_A, curr_B, myvals); 
+
+        curr_A = next_A;
+        curr_B = next_B;
+      } 
+*/      
     }
 
     template <ORDERING ORD, typename Tp>
@@ -611,7 +671,7 @@ namespace tinybla {
     }
 
     unsigned MyCol(unsigned tid) const { return BW*(tid%4); }
-    unsigned MyRow(unsigned tid) const { return (tid/4)%8; }
+    unsigned MyRow(unsigned tid) const { return BH*((tid/4)%8); }
   };
 
 /*
