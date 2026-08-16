@@ -61,7 +61,10 @@ namespace tinybla {
 
   public:
     auto Head() const { return head; } 
-    
+    void SetHead (T val) { head = val; }
+    template <typename TP>
+    void TailLoad(TP ptr) { }
+
     HTVec () { }
     HTVec (T _head) : head(_head) {}
 
@@ -294,6 +297,69 @@ namespace tinybla {
   }
 
 
+  // broadcast inside quad
+  template <int S, typename T>
+  auto QuadBroadcast (HTVec<S,T> m, unsigned lane) -> HTVec<S,T>
+  {
+    if constexpr (S==1)
+      return quad_broadcast(m.Head(), lane);
+    else
+      return { QuadBroadcast(m.Tail(), lane), quad_broadcast(m.Head(), lane) };
+  }
+
+  template <int H, int W, typename T>
+  auto QuadBroadcast (HTMat<H,W,T> m, unsigned lane) -> HTMat<H,W,T>
+  {
+    if constexpr (H==1)
+      return QuadBroadcast(m.Head(), lane);
+    else
+      return { QuadBroadcast(m.Tail(), lane), QuadBroadcast(m.Head(), lane) };
+  }
+
+
+  // broadcast across quad WARNING: dysnamic shuffle is SLOW
+  template <int S, typename T>
+  auto BroadcastQuad (HTVec<S,T> m, unsigned qlane, unsigned from) -> HTVec<S,T>
+  {
+    if constexpr (S==1)
+      return simd_shuffle(m.Head(), 4*from+qlane);
+    else
+      return { BroadcastQuad(m.Tail(), qlane, from), simd_shuffle(m.Head(), 4*from+qlane) };
+  }
+
+  template <int H, int W, typename T>
+  auto BroadcastQuad (HTMat<H,W,T> m, unsigned qlane, unsigned from) -> HTMat<H,W,T>
+  {
+    if constexpr (H==1)
+      return BroadcastQuad(m.Head(), qlane, from);
+    else
+      return { BroadcastQuad(m.Tail(), qlane, from), BroadcastQuad(m.Head(), qlane, from) };
+  }
+
+
+  // broadcast across quad WARNING: dysnamic shuffle is SLOW
+  template <ushort mask, int S, typename T>
+  auto ShuffleXor (HTVec<S,T> m) -> HTVec<S,T>
+  {
+    if constexpr (S==1)
+      return simd_shuffle_xor(m.Head(), mask);
+    else
+      return { ShuffleXor<mask>(m.Tail()), simd_shuffle_xor(m.Head(), mask) };
+  }
+
+  template <ushort mask, int H, int W, typename T>
+  auto ShuffleXor (HTMat<H,W,T> m) -> HTMat<H,W,T>
+  {
+    if constexpr (H==1)
+      return ShuffleXor<mask> (m.Head());
+    else
+      return { ShuffleXor<mask>(m.Tail()), ShuffleXor<mask>(m.Head()) };
+  }
+
+
+
+
+
 
 
 
@@ -521,14 +587,14 @@ namespace tinybla {
   public:
      BareMatrix (Tp _data, unsigned _ld) : data(_data), ld(_ld) { }
 
-     int Offset (unsigned r, unsigned c) const {
+     unsigned Offset (unsigned r, unsigned c) const {
        if constexpr (ORD==RowMajor) return r*ld+c;
        else return c*ld+r;
      }
 
      auto operator() (unsigned r, unsigned c) const { return data[Offset(r,c)]; }
 
-     template <int h, int w>
+     template <unsigned h, unsigned w>
      auto GetTile(unsigned r, unsigned c) const {
       if constexpr (ORD==RowMajor)
         return HTMat<h,w,ElementType> (data+Offset(r,c), ld);
@@ -545,7 +611,7 @@ namespace tinybla {
      }
 
      template <int h, int w, typename T2>
-     void SetTile(int r, int c, HTMat<h,w,T2> tile) {
+     void SetTile(unsigned r, unsigned c, HTMat<h,w,T2> tile) {
       if constexpr (ORD==RowMajor)
         tile.Store(data+Offset(r,c), ld);
       else
@@ -559,9 +625,9 @@ namespace tinybla {
      }
 
 
-     auto SubMatrix (int r, int c) const { return BareMatrix<ORD,Tp> { data+Offset(r,c), ld }; }
+     auto SubMatrix (unsigned r, unsigned c) const { return BareMatrix<ORD,Tp> { data+Offset(r,c), ld }; }
      auto Transpose() const { return BareMatrix<!ORD, Tp> { data, ld }; }
-     int LD() const { return ld; }
+     unsigned LD() const { return ld; }
      Tp Data() const { return data; }
      bool IsColMajor() const { return ORD==ColMajor; }
   };
@@ -572,13 +638,13 @@ namespace tinybla {
   }
 
 
-  template <int H, int W, typename T = float>
+  template <unsigned H, unsigned W, typename T = float>
   class WarpMatrix
   {
     static_assert(H%8==0);
     static_assert(W%4==0);
-    static constant constexpr int BW = W/4; // sizeof(float2)/sizeof(T);
-    static constant constexpr int BH = H/8;
+    static constant constexpr unsigned BW = W/4; // sizeof(float2)/sizeof(T);
+    static constant constexpr unsigned BH = H/8;
     HTMat<BH,BW,T> myvals; 
   public:
     WarpMatrix() { }
@@ -602,11 +668,124 @@ namespace tinybla {
       // myvals += m1.template GetTile<BH,K>(r,0) * m2.template GetTile<K,BW>(0,c);
       // myvals = FMA (m1.template GetTile<BH,K>(r,0), m2.template GetTile<K,BW>(0,c), myvals);
 
-
+/*
       constexpr int KTILE = 1;
       for (unsigned k = 0; k < K; k+=KTILE)
         myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
+*/
 
+
+      constexpr int KTILE = 1;
+      for (unsigned k = 0; k < K; k+=4)
+        {
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + tid%4);
+          for (unsigned k1 = 0; k1 < 4; k1++)
+            myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,c), myvals);
+        }
+
+
+/*
+      // lane info inside simdgroup
+      uint lane  = tid & 31;
+       uint qlane = lane & 3;         // 0..3 in quad
+      uint blane = (lane>>2) & 3;
+      constexpr int KTILE = 1;
+      for (unsigned k = 0; k < K; k+=4)
+        {
+
+          auto b0 = m2.template GetTile<1,BW> (k+blane, c);
+          auto b1 = ShuffleXor<4> (b0);
+          auto b2 = ShuffleXor<8> (b0);
+          auto b3 = ShuffleXor<8> (b1);
+
+          auto pick_b = [&](uint idx)  {
+            auto lo = (idx & 1) ? b1 : b0;
+            auto hi = (idx & 1) ? b3 : b2;
+            return (idx & 2) ? hi : lo;
+          };
+
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + qlane);
+
+#pragma unroll
+          for (int k1 = 0; k1 < 4; k1++)
+            myvals = FMA (QuadBroadcast(ATileQuad, k1), pick_b(blane^k1), myvals);
+        }
+*/
+
+
+
+
+
+
+
+
+
+
+/*
+     // WIP: use Xor/Select
+      constexpr int KTILE = 1;
+      unsigned qlane = tid%4;
+      unsigned qgroup = (tid/4)%8;
+
+      for (unsigned k = 0; k < K; k+=8)
+        {
+          auto BTileQuad = m2.template GetTile<KTILE,BW>(k+qgroup,c);
+
+          auto BShuff4 = ShuffleXor<4> (BTileQuad);
+          auto Bi = (qgroup&4) ? BTileQuad : BShuff4;
+
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + tid%4);
+          for (unsigned k1 = 0; k1 < 4; k1++)
+           {
+            myvals = FMA (QuadBroadcast(ATileQuad, k1), Bi, myvals);
+           }
+        }
+*/
+
+
+/*
+      unsigned qlane = tid%4;
+      unsigned qgroup = (tid/4)%8;
+
+      constexpr unsigned KTILE = 1;
+//          auto BTileQuad = m2.template GetTile<KTILE,BW>(qgroup,c);
+
+      for (unsigned k = 0; k < K; k+=8)
+        {
+          auto BTileQuad = m2.template GetTile<KTILE,BW>(k+qgroup,c);
+
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k+qlane);
+          // for (unsigned k1 = 0; k1 < 4; k1++)
+          // myvals = FMA (QuadBroadcast(ATileQuad, k1), BroadcastQuad(BTileQuad, qlane, k1), myvals);
+          myvals = FMA (QuadBroadcast(ATileQuad, 0), BroadcastQuad(BTileQuad, qlane, 0), myvals);
+          myvals = FMA (QuadBroadcast(ATileQuad, 1), BroadcastQuad(BTileQuad, qlane, 1), myvals);
+          myvals = FMA (QuadBroadcast(ATileQuad, 2), BroadcastQuad(BTileQuad, qlane, 2), myvals);
+          myvals = FMA (QuadBroadcast(ATileQuad, 3), BroadcastQuad(BTileQuad, qlane, 3), myvals);
+          auto ATileQuad2 = m1.template GetTile<BH,KTILE>(r,k+4+qlane);
+          // for (unsigned k1 = 0; k1 < 4; k1++)
+            // myvals = FMA (QuadBroadcast(ATileQuad2, k1), BroadcastQuad(BTileQuad, qlane, 4+k1), myvals);
+          myvals = FMA (QuadBroadcast(ATileQuad2, 0), BroadcastQuad(BTileQuad, qlane, 4), myvals);
+          myvals = FMA (QuadBroadcast(ATileQuad2, 1), BroadcastQuad(BTileQuad, qlane, 5), myvals);
+          myvals = FMA (QuadBroadcast(ATileQuad2, 2), BroadcastQuad(BTileQuad, qlane, 6), myvals);
+          myvals = FMA (QuadBroadcast(ATileQuad2, 3), BroadcastQuad(BTileQuad, qlane, 7), myvals);
+        }
+*/
+
+
+/*
+      // 7 TF float, float2, float4
+      constexpr int KTILE = 1;
+      for (unsigned k = 0; k < K; k+=4)
+        {
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + tid%4);
+          for (unsigned k1 = 0; k1 < 4; k1++)
+            {
+              auto myB = m2.template GetTile<KTILE,BW>(k+k1,c);
+              for (unsigned runs = 0; runs < 10; runs++)
+                myvals = FMA (QuadBroadcast(ATileQuad, k1), myB, myvals);
+            } 
+        }
+*/
 
 
 /*
@@ -620,6 +799,7 @@ namespace tinybla {
           myvals = FMA (atile, btile, myvals);
 }
 */
+
 
 
 /*
@@ -674,7 +854,7 @@ namespace tinybla {
     unsigned MyRow(unsigned tid) const { return BH*((tid/4)%8); }
   };
 
-/*
+#ifdef NONE
   template <>
   class WarpMatrix<8,8,float>
   {
@@ -712,8 +892,7 @@ namespace tinybla {
       metal::simdgroup_store(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
     }
   };
-*/
-
+#endif
 } // namespace tinybla
 
 
