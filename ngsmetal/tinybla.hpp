@@ -299,7 +299,7 @@ namespace tinybla {
 
   // broadcast inside quad
   template <int S, typename T>
-  auto QuadBroadcast (HTVec<S,T> m, unsigned lane) -> HTVec<S,T>
+  auto QuadBroadcast (HTVec<S,T> m, ushort lane) -> HTVec<S,T>
   {
     if constexpr (S==1)
       return quad_broadcast(m.Head(), lane);
@@ -308,7 +308,7 @@ namespace tinybla {
   }
 
   template <int H, int W, typename T>
-  auto QuadBroadcast (HTMat<H,W,T> m, unsigned lane) -> HTMat<H,W,T>
+  auto QuadBroadcast (HTMat<H,W,T> m, ushort lane) -> HTMat<H,W,T>
   {
     if constexpr (H==1)
       return QuadBroadcast(m.Head(), lane);
@@ -581,7 +581,7 @@ namespace tinybla {
   class BareMatrix
   {
      Tp data;
-     unsigned ld;
+     uint ld;
      using ElementType = remove_addrspace_t<remove_cv_t<remove_reference_t<decltype(*data)>>>;
 
   public:
@@ -593,6 +593,39 @@ namespace tinybla {
      }
 
      auto operator() (unsigned r, unsigned c) const { return data[Offset(r,c)]; }
+
+     template<int N>
+     BareMatrix ShiftCols() const {
+     if constexpr (ORD==RowMajor) return BareMatrix(data+N, ld);
+     else return BareMatrix(data+N*ld, ld);
+     }
+
+     template<int N>
+     BareMatrix ShiftRows() const {
+     if constexpr (ORD==RowMajor) return BareMatrix(data+N*ld, ld);
+     else return BareMatrix(data+N, ld);
+     }
+
+     template <typename itype> 
+     BareMatrix ShiftCols(itype n) const {
+     if constexpr (ORD==RowMajor) return BareMatrix(data+n, ld);
+     else return BareMatrix(data+n*ld, ld);
+     }
+
+     template <typename itype> 
+     BareMatrix ShiftRows(itype n) const {
+     if constexpr (ORD==RowMajor) return BareMatrix(data+n*ld, ld);
+     else return BareMatrix(data+n, ld);
+     }
+
+
+     template <unsigned h, unsigned w>
+     auto GetTile() const {
+      if constexpr (ORD==RowMajor)
+        return HTMat<h,w,ElementType> (data, ld);
+      else
+        return Trans(HTMat<w,h,ElementType> (data, ld));
+    }
 
      template <unsigned h, unsigned w>
      auto GetTile(unsigned r, unsigned c) const {
@@ -652,21 +685,20 @@ namespace tinybla {
     WarpMatrix(T val) { myvals = val; }
 
     template <ORDERING ORD, typename Tp>
-    WarpMatrix(BareMatrix<ORD,Tp> mat, unsigned tid) {
-      unsigned r = MyRow(tid);
-      unsigned c = MyCol(tid);
-      myvals = mat.template GetTile<BH,BW>(r,c);
+    WarpMatrix(BareMatrix<ORD,Tp> mat, uint tid) {
+      myvals = mat.template GetTile<BH,BW>(MyRow(tid),MyCol(tid));
     }
 
     void operator= (T val) { myvals = val; }
 
-    template <int K, ORDERING ORD1, typename Tp1, ORDERING ORD2, typename Tp2>
-    void AddMM(BareMatrix<ORD1,Tp1> m1, BareMatrix<ORD2,Tp2> m2, unsigned tid)
+    template <uint K, ORDERING ORD1, typename Tp1, ORDERING ORD2, typename Tp2>
+    void AddMM(BareMatrix<ORD1,Tp1> m1, BareMatrix<ORD2,Tp2> m2, uint tid)
     {
-      unsigned r = MyRow(tid);
-      unsigned c = MyCol(tid);
+      auto r = MyRow(tid);
+      auto c = MyCol(tid);
       // myvals += m1.template GetTile<BH,K>(r,0) * m2.template GetTile<K,BW>(0,c);
       // myvals = FMA (m1.template GetTile<BH,K>(r,0), m2.template GetTile<K,BW>(0,c), myvals);
+
 
 /*
       constexpr int KTILE = 1;
@@ -675,13 +707,73 @@ namespace tinybla {
 */
 
 
+
+      // best for btdtb
+      // static_assert (K%4==0, "K must be a multiple of 4");
       constexpr int KTILE = 1;
-      for (unsigned k = 0; k < K; k+=4)
+      unsigned k = 0;
+      for ( ; k+4 <= K; k+=4)
         {
-          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + tid%4);
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + tid&3);
           for (unsigned k1 = 0; k1 < 4; k1++)
             myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,c), myvals);
         }
+      for ( ;  k < K; k++)
+        myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
+
+
+/*
+      static_assert (K%4==0, "K must be a multiple of 4");
+      m1 = m1.ShiftRows(r).ShiftCols(tid&3);
+      m2 = m2.ShiftCols(c);
+      constexpr int KTILE = 1;
+      for (uint k=0 ; k+4 <= K; k+=4)
+        {
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(0,0);
+          m1 = m1.template ShiftCols<4>();
+          for (uint k1 = 0; k1 < 4; k1++) {
+            myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(0,0), myvals);
+            m2 = m2.template ShiftRows<1>();
+          }
+        }
+*/
+
+/*
+      static_assert (K%4==0, "K must be a multiple of 4");
+      // good MM, but not yet BTDTB     
+      // lane info inside simdgroup
+      ushort lane  = tid & 31;
+      ushort qlane = lane & 3;         // 0..3 in quad
+      ushort blane = (lane>>2) & 1;
+      constexpr ushort KTILE = 1;
+
+      m1 = m1.ShiftRows(r).ShiftCols(qlane);
+      m2 = m2.ShiftRows(blane).ShiftCols(c);
+
+      for (uint k = 0; k < K; k+=4)
+        {
+          auto ATileQuad = m1.template GetTile<BH,KTILE>();
+          m1 = m1.ShiftCols(4*KTILE);
+          for (ushort k1 = 0; k1 < 4; k1+=2) {
+            auto b0 = m2.template GetTile<1,BW> ();
+            m2 = m2.ShiftRows(2);
+            auto b1 = ShuffleXor<4> (b0);
+            auto lo = blane ? b1 : b0;
+            auto hi = blane ? b0 : b1;
+
+            myvals = FMA (QuadBroadcast(ATileQuad, k1), lo, myvals); 
+            myvals = FMA (QuadBroadcast(ATileQuad, k1+1), hi, myvals);
+
+          }
+        }
+*/
+
+
+
+
+
+
+
 
 
 /*
@@ -845,16 +937,14 @@ namespace tinybla {
 
     template <ORDERING ORD, typename Tp>
     void Store(BareMatrix<ORD,Tp> mat, unsigned tid) {
-      unsigned r = MyRow(tid);
-      unsigned c = MyCol(tid);
-      mat.template SetTile<BH,BW>(r,c, myvals);
+      mat.template SetTile<BH,BW>(MyRow(tid),MyCol(tid), myvals);
     }
 
-    unsigned MyCol(unsigned tid) const { return BW*(tid%4); }
-    unsigned MyRow(unsigned tid) const { return BH*((tid/4)%8); }
+    auto MyCol(uint tid) const { return BW*(tid&3); }
+    auto MyRow(uint tid) const { return BH*((tid>>2)&7); }
   };
 
-#ifdef NONE
+
   template <>
   class WarpMatrix<8,8,float>
   {
@@ -892,7 +982,7 @@ namespace tinybla {
       metal::simdgroup_store(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
     }
   };
-#endif
+
 } // namespace tinybla
 
 

@@ -53,7 +53,8 @@ namespace
         throw Exception("MetalCaptureManager: no Metal command queue is available");
 
       if (!capture_manager->supportsDestination(MTL::CaptureDestinationGPUTraceDocument))
-        throw Exception("MetalCaptureManager: GPU trace documents are not supported");
+        throw Exception("MetalCaptureManager: GPU trace documents are not supported\n"
+                        "Ensure MTL_CAPTURE_ENABLED=1 was set before importing ngsolve.ngsmetal");
 
       auto descriptor = MTL::CaptureDescriptor::alloc()->init();
       descriptor->setDestination(MTL::CaptureDestinationGPUTraceDocument);
@@ -150,7 +151,7 @@ Xcode.
 
   py::class_<Metal_MM_Benchmark> (m, "Metal_MM_Benchmark")
     .def(py::init<int,int,int,int,int>(), py::arg("n"), py::arg("m"), py::arg("k"), py::arg("lda"), py::arg("ldb"))
-    .def("Run", &Metal_MM_Benchmark::Run)
+    .def("Run", &Metal_MM_Benchmark::Run, py::arg("timing")=true)
     ;
                                   
   

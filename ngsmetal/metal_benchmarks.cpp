@@ -33,17 +33,16 @@ namespace ngsmetal
       using namespace metal;
       using namespace tinybla;
 
-
       kernel void metal_mm_benchmark(
       device const float*  A            [[buffer(0)]],
       device const float*  B            [[buffer(1)]],
       device float* C                   [[buffer(2)]],
       constant uint&  runs               [[buffer(3)]],
 
-      uint   blockIdx           [[threadgroup_position_in_grid]],
-      uint   threadIdx          [[thread_position_in_threadgroup]],
-      uint   blockDim           [[threads_per_threadgroup]],
-      uint   gridDim            [[threadgroups_per_grid]]
+      uint   blockIdx             [[threadgroup_position_in_grid]],
+      uint   threadIdx            [[thread_position_in_threadgroup]],
+      uint   blockDim             [[threads_per_threadgroup]],
+      uint   gridDim              [[threadgroups_per_grid]]
       )
 
       {
@@ -58,19 +57,20 @@ namespace ngsmetal
       alignas(16) threadgroup float sharedB[k][ldb];
 
 
-      for (int i = threadIdx; i < n*lda; i+=blockDim) {
+      for (uint i = threadIdx; i < n*lda; i+=blockDim) {
         int r = i/lda;
         int c = i%lda;
         sharedA[r][c] = c < k ? A[r*k+c] : 0;
       }
-      for (int i = threadIdx; i < k*ldb; i+=blockDim) {
+      for (uint i = threadIdx; i < k*ldb; i+=blockDim) {
         int r = i/ldb;
         int c = i%ldb;
         sharedB[r][c] = c < m ? B[r*m+c] : 0;
       }
 
       threadgroup_barrier(mem_flags::mem_threadgroup);
-/*
+
+
       WarpMatrix<n,m,float> sum = 0.0;
 
       auto ma = MakeBareMatrix<RowMajor> (&sharedA[0][0], lda);
@@ -81,18 +81,19 @@ namespace ngsmetal
         sum.AddMM<k> (ma, mb, threadIdx);
 
       sum.Store(mc, threadIdx);
-*/
 
+/*
       WarpMatrix<n,m/2,float2> sum = 0.0;
 
       auto ma = MakeBareMatrix<RowMajor> (&sharedA[0][0], lda);
       auto mb = MakeBareMatrix<RowMajor> ((threadgroup float2*)&sharedB[0][0], ldb/2);
       auto mc = MakeBareMatrix<RowMajor> ((device float2*)C, m/2);
 
-      for (unsigned i = 0; i < runs; i++)
+      for (uint i = 0; i < runs; i++)
         sum.AddMM<k> (ma, mb, threadIdx);
 
       sum.Store(mc, threadIdx);
+*/
 
 /*
       WarpMatrix<n,m/4,float4> sum = 0.0;
@@ -139,13 +140,24 @@ namespace ngsmetal
         std::cerr << "Metal Error: " << error->localizedDescription()->utf8String() << std::endl;
         throw Exception (error->localizedDescription()->utf8String());
       }
+    // NS::UInteger maxThreads = pipelineState->maxTotalThreadsPerThreadgroup();
+    // cout << "maxthds = " << maxThreads << endl;
+    // cout << "memlength = " << pipelineState -> staticThreadgroupMemoryLength() << endl;
+    blocks = 2000;
+    warps = 8;
+    buffer_A = GetDevice()->newBuffer(n*k*sizeof(float), MTL::ResourceStorageModeShared);
+    buffer_B = GetDevice()->newBuffer(k*m*sizeof(float), MTL::ResourceStorageModeShared);
+    buffer_C = GetDevice()->newBuffer(blocks*n*m*sizeof(float), MTL::ResourceStorageModeShared);
+
+    for (int i = 0; i < 5; i++)
+      Run(false);
   }
 
-  double Metal_MM_Benchmark :: Run() const
+  
+
+  double Metal_MM_Benchmark :: Run(bool timing) const
   {
     double durationMs;
-    int blocks = 1000;
-    int warps = 4;
     int runs = 1e6 / n / m / k + 1;
 
     Matrix<float> a(n,k), b(k,m), c(n,m);
@@ -159,57 +171,62 @@ namespace ngsmetal
 
     c =runs *  a*b;
 
-    MTL::Buffer* buffer_A = GetDevice()->newBuffer(n*k*sizeof(float), MTL::ResourceStorageModeShared);
+
+
     FlatMatrix<float> deva(n,k, (float*)buffer_A->contents());
     deva = a;
 
-    MTL::Buffer* buffer_B = GetDevice()->newBuffer(k*m*sizeof(float), MTL::ResourceStorageModeShared);
     FlatMatrix<float> devb(k,m, (float*)buffer_B->contents());
     devb = b;
 
-    MTL::Buffer* buffer_C = GetDevice()->newBuffer(blocks*n*m*sizeof(float), MTL::ResourceStorageModeShared);
     FlatMatrix<float> devc(n,m, (float*)buffer_C->contents());
-
-
-
+    
 
     
+    
+    
     // for (int j = 0; j < 100; j++)
-      {
-        
-        MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
-        MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
-        
-        encoder->setComputePipelineState(pipelineState);
-        encoder->setBuffer(buffer_A, 0, 0);
-        encoder->setBuffer(buffer_B, 0, 1);
-        encoder->setBuffer(buffer_C, 0, 2);
-        encoder->setBytes(&runs, sizeof(unsigned), 3);
-        
-        encoder->dispatchThreadgroups(MTL::Size(blocks,1,1), MTL::Size(warps*32, 1, 1));
-        
-        encoder->endEncoding();
-        
-        commandBuffer->commit();
-        
-        commandBuffer->waitUntilCompleted();
-        
-        double startTime = commandBuffer->GPUStartTime();
-        double endTime = commandBuffer->GPUEndTime();
-        durationMs = (endTime - startTime) * 1000.0;
+    {
       
+      MTL::CommandBuffer* commandBuffer = GetCommandQueue()->commandBuffer();
+      MTL::ComputeCommandEncoder* encoder = commandBuffer->computeCommandEncoder();
+      
+      encoder->setComputePipelineState(pipelineState);
+      encoder->setBuffer(buffer_A, 0, 0);
+      encoder->setBuffer(buffer_B, 0, 1);
+      encoder->setBuffer(buffer_C, 0, 2);
+      encoder->setBytes(&runs, sizeof(unsigned), 3);
+      
+      encoder->dispatchThreadgroups(MTL::Size(blocks,1,1), MTL::Size(warps*32, 1, 1));
+      
+      encoder->endEncoding();
+      
+      commandBuffer->commit();
+      
+      commandBuffer->waitUntilCompleted();
+      
+      if (timing)
+        {
+          double startTime = commandBuffer->GPUStartTime();
+          double endTime = commandBuffer->GPUEndTime();
+          durationMs = (endTime - startTime) * 1000.0;
+        }
       // cout << "time = " << durationMs << endl;
     }
-
-      
+    
+    
     // sleep(5);
     // cout << "c = " << endl << c << endl;
     // cout << "devc = " << endl << devc << endl;
     // cout << "err = " << endl << L2Norm(devc-c) / L2Norm(c) << endl;
     // std::cout << "Kernel GPU Runtime: " << durationMs << " ms\n";
-    double gflops = blocks*warps*2.0*runs*n*m*k / durationMs * 1000 * 1e-9;
-    cout << " GFlops = " << gflops << endl;
-    return gflops;
+    if (timing)
+      {
+        double gflops = blocks*warps*2.0*runs*n*m*k / durationMs * 1000 * 1e-9;
+        cout << " GFlops = " << gflops << endl;
+        return gflops;
+      }
+    return 0;
   }  
 
 
@@ -329,10 +346,8 @@ namespace ngsmetal
       // cout << "time = " << durationMs << endl;
       
     }
-    // sleep(5);
-    // cout << "c = " << endl << c << endl;
-    //    cout << "devc = " << endl << devc << endl;
-    // cout << "err = " << endl << L2Norm(devc-c) / L2Norm(c) << endl;
+
+
     std::cout << "Kernel GPU Runtime: " << durationMs << " ms\n";
     double gflops = 32.*blocks*warps*runs / durationMs * 1000 * 1e-9;
     cout << " GFlops = " << gflops << endl;
