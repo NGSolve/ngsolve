@@ -339,9 +339,9 @@ namespace ngsmetal
       commandBuffer->commit();
       commandBuffer->waitUntilCompleted();
 
-      // double startTime = commandBuffer->GPUStartTime();
-      // double endTime = commandBuffer->GPUEndTime();
-      // durationMs = (endTime - startTime) * 1000.0;
+      double startTime = commandBuffer->GPUStartTime();
+      double endTime = commandBuffer->GPUEndTime();
+      durationMs = (endTime - startTime) * 1000.0;
       
       // cout << "time = " << durationMs << endl;
       

@@ -714,7 +714,7 @@ namespace tinybla {
       unsigned k = 0;
       for ( ; k+4 <= K; k+=4)
         {
-          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + tid&3);
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
           for (unsigned k1 = 0; k1 < 4; k1++)
             myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,c), myvals);
         }
