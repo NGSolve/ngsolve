@@ -1146,6 +1146,52 @@ namespace tinybla {
 
 
 
+  template <unsigned W>
+  class WarpMatrixV2<4,W,float>
+  {
+    typedef float T;
+    static_assert(W%8==0);
+    static constant constexpr unsigned BW = W/8;
+    static constant constexpr unsigned BH = 1;
+    HTMat<BH,BW,float> myvals; 
+  public:
+    WarpMatrixV2() { }
+    WarpMatrixV2(float val) { myvals = val; }
+
+    template <typename Tp>
+    WarpMatrixV2(BareMatrix<RowMajor,Tp> mat, uint tid)
+      : myvals { mat.template GetTileSlice<BH,BW,8>(MyRow(tid), tid&7) } { }
+
+    void operator= (T val) { myvals = val; }
+
+    template <ORDERING ORD1, typename Tp1, typename Tp2>
+    void AddMM(uint K, BareMatrix<ORD1,Tp1> m1, BareMatrix<RowMajor,Tp2> m2, uint tid)
+    {
+      auto r = MyRow(tid);
+
+      // static_assert (K%4==0, "K must be a multiple of 4");
+      constexpr int KTILE = 1;
+      m2 = m2.ShiftCols((tid&7));
+      for (uint k=0;  k < K; k++)
+        {
+          auto ATile = m1.template GetTile<BH,KTILE>(r,k);
+          auto BTile = m2.template GetTileSlice<KTILE,BW,8> (0,0);
+          m2 = m2.template ShiftRows<1>();
+          myvals = FMA (ATile, BTile, myvals);
+        }
+
+    }
+
+    template <typename Tp>
+    void Store(BareMatrix<RowMajor,Tp> mat, unsigned tid) {
+      mat.template SetTileSlice<BH,BW,8> (MyRow(tid), tid&7, myvals);
+    }
+
+    // auto MyCol(uint tid) const { return BW*(tid&3); }
+    auto MyRow(uint tid) const { return BH*((tid>>3)&3); }
+  };
+
+
 
 
 
