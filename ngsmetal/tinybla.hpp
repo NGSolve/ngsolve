@@ -15,9 +15,6 @@ namespace tinybla {
 
 
 
-
-
-
   template <int S, typename T>
   class HTVec {
     HTVec<S-1,T> tail;
@@ -51,7 +48,22 @@ namespace tinybla {
       tail.Store(data);
       data[S-1] = head;
     }
-  };
+
+    template <int DIST, typename TP>
+    auto LoadSlice(TP ptr) {
+      tail.template LoadSlice<DIST>(ptr);
+      head = ptr[DIST*(S-1)];
+      return *this;
+    }
+
+    template <int DIST, typename TP>
+    void StoreSlice(TP ptr) {
+      tail.template StoreSlice<DIST>(ptr);
+      ptr[DIST*(S-1)] = head;
+    }
+
+
+};
 
 
 
@@ -78,11 +90,16 @@ namespace tinybla {
 
     template <typename TP>
     void Load(TP data) { head = data[0]; }
-    
-    template <typename TP>
-    void Store(TP data) { data[0] = head; }
-  };
 
+    template <typename TP>
+    void Store(TP ptr) { ptr[0] = head; }
+
+    template <int DIST, typename TP>
+    auto LoadSlice(TP ptr) { head = ptr[0]; return *this; }
+
+    template <int DIST, typename TP>
+    auto StoreSlice(TP ptr) { ptr[0] = head; }
+  };
 
 
 
@@ -138,6 +155,19 @@ namespace tinybla {
       head.Store(data+(H-1)*dist);
     }
 
+    template <int DIST, typename TP>
+    void LoadSlice(TP data, unsigned dist) {
+      tail.template LoadSlice<DIST>(data,dist);
+      head.template LoadSlice<DIST>(data+(H-1)*dist);
+    }
+
+    template <int DIST, typename TP>
+    void StoreSlice(TP data, unsigned dist) {
+      tail.template StoreSlice<DIST>(data,dist);
+      head.template StoreSlice<DIST>(data+(H-1)*dist);
+    }
+
+
     void operator+= (HTMat b) {
       tail += b.Tail();
       head += b.Head();
@@ -168,6 +198,16 @@ namespace tinybla {
     template <typename TP>
     void Store(TP data, unsigned dist) { head.Store(data); }
 
+    template <int DIST, typename TP>
+    void LoadSlice(TP data, unsigned dist) {
+      head.template LoadSlice<DIST>(data);
+    }
+
+    template <int DIST, typename TP>
+    void StoreSlice(TP data, unsigned dist) {
+      head.template StoreSlice<DIST>(data);
+    }
+
 
     void operator+= (HTMat b) {
       head += b.Head();
@@ -188,9 +228,9 @@ namespace tinybla {
   auto FMA (TA alpha, HTVec<S,T> x, HTVec<S,T> y) -> HTVec<S,T>
   {
     if constexpr (S==1)
-      return fma(static_cast<T>(alpha), x.Head(), y.Head());
+      return fma(alpha, x.Head(), y.Head());
     else
-      return { FMA(alpha, x.Tail(), y.Tail()), fma(static_cast<T>(alpha), x.Head(), y.Head()) };
+      return { FMA(alpha, x.Tail(), y.Tail()), fma(alpha, x.Head(), y.Head()) };
   } 
 
 
@@ -315,6 +355,25 @@ namespace tinybla {
     else
       return { QuadBroadcast(m.Tail(), lane), QuadBroadcast(m.Head(), lane) };
   }
+
+
+/*
+  // shorter air-code, but no performance difference
+  inline auto QuadBroadcast (HTMat<4,1,float> m, ushort lane) -> HTMat<4,1,float>
+  {
+    float4 f4 { m.Tail().Tail().Tail().Head().Head(),
+                m.Tail().Tail().Head().Head(),
+                m.Tail().Head().Head(),
+                m.Head().Head() };
+
+     auto res = quad_broadcast(f4, lane);
+     return HTMat<4,1,float>
+            (HTMat<3,1,float>
+             (HTMat<2,1,float>
+              (HTMat<1,1,float>(HTVec<1,float>(res.x)), HTVec<1,float>(res.y)), HTVec<1,float>(res.z)), HTVec<1,float>(res.w));
+  }
+*/
+
 
 
   // broadcast across quad WARNING: dysnamic shuffle is SLOW
@@ -593,6 +652,7 @@ namespace tinybla {
      }
 
      auto operator() (unsigned r, unsigned c) const { return data[Offset(r,c)]; }
+     auto Addr(unsigned r, unsigned c) const { return data + Offset(r,c); }
 
      template<int N>
      BareMatrix ShiftCols() const {
@@ -643,19 +703,41 @@ namespace tinybla {
 */
      }
 
+
+     template <unsigned H, unsigned W, unsigned DIST>
+     auto GetTileSlice(unsigned r, ushort qlane) const {
+       static_assert(ORD==RowMajor);
+       HTMat<H,W,ElementType> res;
+       res.template LoadSlice<DIST> (Addr(r, qlane), ld);
+       return res;
+     }
+
      template <int h, int w, typename T2>
      void SetTile(unsigned r, unsigned c, HTMat<h,w,T2> tile) {
       if constexpr (ORD==RowMajor)
         tile.Store(data+Offset(r,c), ld);
       else
         Trans(tile).Store(data+Offset(r,c), ld);
-
 /*
        for (int i = 0; i < h; i++)
          for (int j = 0; j < w; j++)
            data[Offset(r+i,c+j)] = tile(i,j);
 */
      }
+
+
+     template <unsigned H, unsigned W, unsigned DIST>
+     void SetTileSlice(unsigned r, ushort qlane, HTMat<H,W,ElementType> mat) {
+      static_assert(ORD==RowMajor);
+      /*
+       HTMat<H,W,ElementType> res;
+       res.template LoadSlice<DIST> (Addr(r, qlane), ld);
+       return res;
+*/
+       mat.template StoreSlice<DIST> (Addr(r, qlane), ld);
+     }
+
+
 
 
      auto SubMatrix (unsigned r, unsigned c) const { return BareMatrix<ORD,Tp> { data+Offset(r,c), ld }; }
@@ -669,6 +751,9 @@ namespace tinybla {
   inline auto MakeBareMatrix (Tp data, int ld) {
     return BareMatrix<ORD,Tp> (data, ld);
   }
+
+
+
 
 
   template <unsigned H, unsigned W, typename T = float>
@@ -706,20 +791,73 @@ namespace tinybla {
         myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
 */
 
-
-
       // best for btdtb
-      // static_assert (K%4==0, "K must be a multiple of 4");
       constexpr int KTILE = 1;
-      unsigned k = 0;
+      uint k = 0;
+      m2 = m2.ShiftCols(c);
       for ( ; k+4 <= K; k+=4)
         {
           auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
-          for (unsigned k1 = 0; k1 < 4; k1++)
-            myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,c), myvals);
+          for (uint k1 = 0; k1 < 4; k1++)
+             myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,0), myvals);
         }
-      for ( ;  k < K; k++)
-        myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
+      // remainder
+      if constexpr (K%4 != 0)
+        for ( ;  k < K; k++)
+          myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,0), myvals);
+
+
+/*
+      static_assert (K%4==0, "K must be a multiple of 4");
+      // BTile: load 4 contiguous elements into quad with HTVec.LoadSlice (needs adaption for C)
+      // 8x8x8:  2.0 -> 2.5 TF
+      constexpr int KTILE = 1;
+      uint k = 0;
+      m2 = m2.ShiftCols((tid&3));
+      for ( ; k+4 <= K; k+=4)
+        {
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
+          for (uint k1 = 0; k1 < 4; k1++)
+            {
+              auto BTile = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(0,0)));
+              m2 = m2.template ShiftRows<1>();
+              myvals = FMA (QuadBroadcast(ATileQuad, k1), BTile, myvals);
+           }
+        }
+*/
+
+/*
+      // BTile: load 4 contiguous elements into quad with HTVec.LoadSize (needs adaption for C)
+      // 8x8x8:  2.0 -> 2.5 TF
+      // with unrolling -> no difference
+      constexpr int KTILE = 1;
+      uint k = 0;
+      m2 = m2.ShiftCols((tid&3));
+      for ( ; k+4 <= K; k+=4)
+        {
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
+
+          auto BTile0 = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(0,0)));
+          auto BTile1 = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(1,0)));
+          auto BTile2 = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(2,0)));
+          auto BTile3 = HTMat<1,BW,float> (HTVec<BW,float>().template LoadSlice<4> (m2.Addr(3,0)));
+          auto ATile0 = QuadBroadcast(ATileQuad, 0);
+          auto ATile1 = QuadBroadcast(ATileQuad, 1);
+          auto ATile2 = QuadBroadcast(ATileQuad, 2);
+          auto ATile3 = QuadBroadcast(ATileQuad, 3);
+          myvals = FMA (ATile0, BTile0, myvals);
+          myvals = FMA (ATile1, BTile1, myvals);
+          myvals = FMA (ATile2, BTile2, myvals);
+          myvals = FMA (ATile3, BTile3, myvals);
+
+          m2 = m2.template ShiftRows<4>();
+        }
+*/
+
+
+
+
+
 
 
 /*
@@ -945,6 +1083,73 @@ namespace tinybla {
   };
 
 
+
+
+  // interleaved accumulator entries and B, B-mat must be RowMajor (by now)
+  template <unsigned H, unsigned W, typename T = float>
+  class WarpMatrixV2
+  {
+    static_assert(H%8==0);
+    static_assert(W%4==0);
+    static constant constexpr unsigned BW = W/4;
+    static constant constexpr unsigned BH = H/8;
+    HTMat<BH,BW,T> myvals; 
+  public:
+    WarpMatrixV2() { }
+    WarpMatrixV2(T val) { myvals = val; }
+
+    template <typename Tp>
+    WarpMatrixV2(BareMatrix<RowMajor,Tp> mat, uint tid)
+      : myvals { mat.template GetTileSlice<BH,BW,4>(MyRow(tid), tid&3) } { }
+
+    void operator= (T val) { myvals = val; }
+
+    template <ORDERING ORD1, typename Tp1, typename Tp2>
+    void AddMM(uint K, BareMatrix<ORD1,Tp1> m1, BareMatrix<RowMajor,Tp2> m2, uint tid)
+    {
+      auto r = MyRow(tid);
+
+      // static_assert (K%4==0, "K must be a multiple of 4");
+      constexpr int KTILE = 1;
+      uint k = 0;
+      m2 = m2.ShiftCols((tid&3));
+      for ( ; k+4 <= K; k+=4)
+        {
+          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
+          for (uint k1 = 0; k1 < 4; k1++)
+            {
+              // HTMat<1,BW,T> BTile;
+              // BTile.template LoadSlice<4> (m2.Addr(0,0), m2.LD());
+              auto BTile = m2.template GetTileSlice<KTILE,BW,4> (0,0);
+              m2 = m2.template ShiftRows<1>();
+              myvals = FMA (QuadBroadcast(ATileQuad, k1), BTile, myvals);
+            }
+        }
+      for ( ;  k < K; k++)
+        {
+          auto ATile = m1.template GetTile<BH,KTILE>(r,k);
+          auto BTile = m2.template GetTileSlice<KTILE,BW,4> (0,0);
+          m2 = m2.template ShiftRows<1>();
+          myvals = FMA (ATile, BTile, myvals);
+        }
+
+    }
+
+    template <typename Tp>
+    void Store(BareMatrix<RowMajor,Tp> mat, unsigned tid) {
+      mat.template SetTileSlice<BH,BW,4> (MyRow(tid), tid&3, myvals);
+    }
+
+    // auto MyCol(uint tid) const { return BW*(tid&3); }
+    auto MyRow(uint tid) const { return BH*((tid>>2)&7); }
+  };
+
+
+
+
+
+
+/*
   template <>
   class WarpMatrix<8,8,float>
   {
@@ -982,6 +1187,7 @@ namespace tinybla {
       metal::simdgroup_store(m, mat.Data(), mat.LD(), ulong2(0,0), mat.IsColMajor());
     }
   };
+*/
 
 } // namespace tinybla
 

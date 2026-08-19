@@ -117,8 +117,11 @@ namespace ngsmetal
 
       template <int N>
       constexpr int RoundUp (int i) { return N * ( (i+N-1) / N ); }
+      template <int N>
+      constexpr int RoundDown (int i) { return N * ( i / N ); }
 
-
+      template <typename T>
+      auto MyMin (T a, T b) { return (a < b) ? a : b; }
 
 
       kernel void apply_btdtb(
@@ -140,42 +143,41 @@ namespace ngsmetal
       uint   blockIdx           [[threadgroup_position_in_grid]],
       uint   threadIdx          [[thread_position_in_threadgroup]],
       uint   blockDim           [[threads_per_threadgroup]],
-      uint   gridDim         [[threadgroups_per_grid]]
+      uint   gridDim            [[threadgroups_per_grid]]
       )
       {
       constexpr uint ne = $NE;
       constexpr uint ne8 = 8 * ((ne+7)/8);
       constexpr uint nip = $NIP;
-      constexpr uint nip8 = $RUNIP;   // roundup
+      constexpr uint nip8 = RoundUp<8> (nip); 
       constexpr uint bs_els = $BS_ELS;
       constexpr uint bs_ipts = $BS_IPTS;
       constexpr uint locdofsx = $LOCDOFSX;
       constexpr uint locdofsy = $LOCDOFSY;
-      constexpr uint locdofsx_lanes = (locdofsx+7)/8;
-      constexpr uint locdofsy_lanes = (locdofsy+7)/8;
-      constexpr uint locdofsx_roundup = 8*locdofsx_lanes;
-      constexpr uint locdofsy_roundup = 8*locdofsy_lanes;
 
-      threadgroup float elvecx[$BS_ELS][locdofsx_roundup];
-      threadgroup float elvecy[$BS_ELS][locdofsy_roundup];
+      constexpr uint locdofsx_roundup = RoundUp<8> (locdofsx);
+      constexpr uint locdofsy_roundup = RoundUp<8> (locdofsy);
+
+      alignas(16) threadgroup float elvecx[$BS_ELS][locdofsx_roundup];
+      alignas(16) threadgroup float elvecy[$BS_ELS][locdofsy_roundup];
 
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
-      threadgroup float pointvalsref[MAXDIMREF*$BS_IPTS][$BS_ELS];
+      alignas(16) threadgroup float pointvalsref[MAXDIMREF*$BS_IPTS][$BS_ELS];
 
       auto mat_elvecx = MakeBareMatrix<RowMajor>(&elvecx[0][0], locdofsx_roundup);
       auto mat_elvecy = MakeBareMatrix<RowMajor>(&elvecy[0][0], locdofsy_roundup);
-      auto mat_elvecy2 = MakeBareMatrix<RowMajor>((threadgroup float2*)&elvecy[0][0], locdofsy_roundup/2);
+      // auto mat_elvecy2 = MakeBareMatrix<RowMajor>((threadgroup float2*)&elvecy[0][0], locdofsy_roundup/2);
       auto mat_pointvalsref = MakeBareMatrix<RowMajor>(&pointvalsref[0][0], $BS_ELS);
 
       auto mat_bmatx = MakeBareMatrix<RowMajor>(bmatx, locdofsx_roundup);
       auto mat_bmaty = MakeBareMatrix<RowMajor>(bmaty, locdofsy_roundup);
-      auto mat_bmaty2 = MakeBareMatrix<RowMajor>( (device float2*) bmaty, locdofsy_roundup/2);
+      // auto mat_bmaty2 = MakeBareMatrix<RowMajor>( (device float2*) bmaty, locdofsy_roundup/2);
 
       // zero elvecx (overhead would be enough
-      for (int i = threadIdx; i < $BS_ELS*locdofsx_roundup; i+= blockDim)
+      for (uint i = threadIdx; i < $BS_ELS*locdofsx_roundup; i+= blockDim)
         {
-          int c = i%locdofsx_roundup;
-          int r = i/locdofsx_roundup;
+          uint c = i%locdofsx_roundup;
+          uint r = i/locdofsx_roundup;
           elvecx[r][c] = 0;
         }
 
@@ -216,36 +218,77 @@ namespace ngsmetal
         }
 #else
 
-      for (uint baseiptile = 0; baseiptile < $IP_TILES; baseiptile += bs_ipts/8)
+//       for (uint baseiptile = 0; baseiptile < $IP_TILES; baseiptile += bs_ipts/8)
+      for (uint baseip = 0; baseip < RoundDown<8>($NIP); baseip += $BS_IPTS)
         {
-          uint myiptiles = ($IP_TILES-baseiptile < bs_ipts/8) ? $IP_TILES-baseiptile : bs_ipts/8;
+          uint baseiptile = baseip/8;
+
+          // uint myiptiles = ($IP_TILES-baseiptile < bs_ipts/8) ? $IP_TILES-baseiptile : bs_ipts/8;
+          // uint myiptiles = min(uint($IP_TILES-baseiptile), uint(bs_ipts/8));
+          // uint myiptiles = MyMin(uint($IP_TILES-baseiptile), uint(bs_ipts/8));
+
+          uint myips = MyMin(RoundDown<8>($NIP)-baseip, bs_ipts);
+          uint myiptiles = myips / 8;
+
 
           // multiply with Bx
-          for (uint blocknr = threadIdx/32; blocknr < myiptiles * $EL_TILES; blocknr += blockDim/32)
+
+#define SEQUENTIAL_COMPS
+#ifdef SEQUENTIAL_COMPS
+          for (uint warp = threadIdx/32; warp < myiptiles * $EL_TILES; warp += blockDim/32)
             {
-              uint eltile = blocknr % $EL_TILES;  // which els
-              uint iptile = blocknr / $EL_TILES;  // which pts
+              uint eltile = warp % $EL_TILES;  // which els
+              uint iptile = warp / $EL_TILES;  // which pts
 
               uint ip = 8*(baseiptile+iptile);
 
               WarpMatrix<8,8> pointvalsrefxi[$DIMXREF];
-              for (uint k = 0; k < $DIMXREF; k++)
-                pointvalsrefxi[k] = 0;
-
+              for (uint comp = 0; comp < $DIMXREF; comp++)
+                pointvalsrefxi[comp] = 0;
 
               for (uint xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
-                {
-                  auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
-                  for (uint l = 0; l < $DIMXREF; l++)
-                     {
-                        auto ma = mat_bmatx.SubMatrix(ip+nip8*l, 8*xdoftile);
-                        pointvalsrefxi[l].AddMM<8>(ma, mb.Transpose(), threadIdx);
-                     }
-                }
+                for (uint comp = 0; comp < $DIMXREF; comp++)
+                   {
+                      auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
+                      auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 8*xdoftile);
+                      pointvalsrefxi[comp].AddMM<8>(ma, mb.Transpose(), threadIdx);
+                   }
 
-              for (uint l = 0; l < $DIMXREF; l++)
-                pointvalsrefxi[l].Store(mat_pointvalsref.SubMatrix(8*iptile+bs_ipts*l, 8*eltile), threadIdx);
+              for (uint comp = 0; comp < $DIMXREF; comp++)
+                pointvalsrefxi[comp].Store(mat_pointvalsref.SubMatrix(8*iptile+bs_ipts*comp, 8*eltile), threadIdx);
             }
+#else
+          // should need less regs, and better parallel - but slower ???
+          for (uint blocknr = threadIdx/32; blocknr < $DIMXREF*myiptiles * $EL_TILES; blocknr += blockDim/32)
+            {
+              uint eltile = blocknr % $EL_TILES;  // which els
+              uint blocknr2 = blocknr / $EL_TILES;
+
+              uint iptile = blocknr2 / $DIMXREF;
+              uint comp = blocknr2 % $DIMXREF;
+
+              uint ip = 8*(baseiptile+iptile);
+
+              WarpMatrix<8,8> pointvalsrefxi;
+              pointvalsrefxi = 0;
+
+#ifdef NONE
+              for (uint xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
+                 { 
+                   auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
+                   auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 8*xdoftile);
+                   pointvalsrefxi.AddMM<8>(ma, mb.Transpose(), threadIdx);
+                 }
+#endif
+              auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
+              auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 0);
+              pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), threadIdx);
+
+              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile+bs_ipts*comp, 8*eltile), threadIdx);
+            }
+#endif
+
+
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
   
@@ -294,8 +337,9 @@ namespace ngsmetal
               int eltile = blocknr % $EL_TILES;  // which els
               int ydoftile = blocknr / $EL_TILES;  // which dofs
 
-              WarpMatrix<8,8,float> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+              WarpMatrixV2<8,8,float> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
 
+#ifdef XXX
               for (int iptile = 0; iptile < myiptiles; iptile++)
                 for (int l = 0; l < $DIMYREF; l++)
                   {
@@ -303,12 +347,14 @@ namespace ngsmetal
                      auto mb = mat_bmaty.SubMatrix(8*(baseiptile+iptile+$IP_TILES*l), 8*ydoftile);
                      sum.AddMM<8>(ma.Transpose(), mb, threadIdx);
                   }
-
-#ifdef YYYY_good_idea_but_WRONG
-                     auto ma = mat_pointvalsref.SubMatrix(0, 8*eltile);
-                     auto mb = mat_bmaty2.SubMatrix(8*baseiptile+0, 8*ydoftile/2);
-                     sum.AddMM<$DIMYREF*bs_ipts>(ma.Transpose(), mb, threadIdx);
 #endif
+
+              for (int l = 0; l < $DIMYREF; l++)
+                {
+                   auto ma = mat_pointvalsref.SubMatrix(bs_ipts*l, 8*eltile);
+                   auto mb = mat_bmaty.SubMatrix(8*baseiptile+8*$IP_TILES*l, 8*ydoftile);
+                   sum.AddMM (8*myiptiles, ma.Transpose(), mb, threadIdx);
+                }
 
               sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
            }
@@ -333,20 +379,19 @@ namespace ngsmetal
 
              WarpMatrix<8,8> pointvalsrefxi = 0;
 
-
+#ifdef XXX
              for (uint xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
                 {
                   auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
                   auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 8*xdoftile);
                   pointvalsrefxi.AddMM<8>(ma, mb.Transpose(), threadIdx);
                 }
+#endif
 
-#ifdef ZZZ
               // slower for convection -> now good!
               auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
               auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 0);
-              pointvalsrefxi.AddMM<locdofsx_roundup>(ma, mb.Transpose(), threadIdx);
-#endif
+              pointvalsrefxi.AddMM<RoundUp<4>(locdofsx)>(ma, mb.Transpose(), threadIdx);
               pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile,8*eltile), threadIdx);
             }
 
@@ -399,7 +444,7 @@ namespace ngsmetal
               uint eltile = blocknr % $EL_TILES;  // which els
               uint ydoftile = blocknr / $EL_TILES;  // which dofs
 
-
+#ifdef XX
               WarpMatrix<8,8,float> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
 
               for (uint ipcomp = 0; ipcomp < numips*$DIMYREF; ipcomp += 8)
@@ -410,17 +455,14 @@ namespace ngsmetal
                 }
 
               sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
-
-#ifdef ZZZ
-              WarpMatrix<8,4,float2> sum(mat_elvecy2.SubMatrix(8*eltile, 8*ydoftile/2), threadIdx);
-              auto ma = mat_pointvalsref.SubMatrix(0, 8*eltile);
-              auto mb = mat_bmaty2.SubMatrix($BMATY_REM_ROWS+0, 8*ydoftile/2);
-              // sum.AddMM<RoundUp<8>(numips*$DIMYREF)>(ma.Transpose(), mb, threadIdx);
-              sum.AddMM<numips*$DIMYREF>(ma.Transpose(), mb, threadIdx);
-              sum.Store(mat_elvecy2.SubMatrix(8*eltile, 8*ydoftile/2), threadIdx);
 #endif
 
-
+              WarpMatrixV2<8,8,float> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+              auto ma = mat_pointvalsref.SubMatrix(0, 8*eltile);
+              auto mb = mat_bmaty.SubMatrix($BMATY_REM_ROWS+0, 8*ydoftile);
+              // sum.AddMM (RoundUp<4>(numips*$DIMYREF), ma.Transpose(), mb, threadIdx);
+              sum.AddMM (numips*$DIMYREF, ma.Transpose(), mb, threadIdx);
+              sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
            }
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -434,12 +476,12 @@ namespace ngsmetal
 
 
       // store vector
-      for (int i = threadIdx; i < $BS_ELS*locdofsy; i += blockDim)
+      for (uint i = threadIdx; i < $BS_ELS*locdofsy; i += blockDim)
         {
-           int dofnr = i % locdofsy;
-           int locelnr = i / locdofsy;
+           uint dofnr = i % locdofsy;
+           uint locelnr = i / locdofsy;
 
-           int elnr = baseelem + locelnr;
+           uint elnr = baseelem + locelnr;
            if (elnr < ne)
 #if ($ATOMIC==1)
              atomic_fetch_add_explicit(&y[dofy[elnr*locdofsy+dofnr]], elvecy[locelnr][dofnr], memory_order_relaxed);
@@ -512,7 +554,6 @@ namespace ngsmetal
     
     code = Substitute(code, "$NE", ToString(ne)+" /*ne*/ ");
     code = Substitute(code, "$NIP", ToString(nip)+" /*nip*/ ");
-    code = Substitute(code, "$RUNIP", ToString(RoundUp8(nip)));
     code = Substitute(code, "$BS_ELS", ToString(pmat->opts.BS_els)+" /*BS_ELS*/ ");
     code = Substitute(code, "$BS_IPTS", ToString(pmat->opts.BS_ipts)+" /*BS_IPTS*/ ");
     code = Substitute(code, "$DIMR", ToString(3)+" /*dimr*/ ");  
@@ -539,7 +580,7 @@ namespace ngsmetal
     code = Substitute(code, "$ATOMIC", ToString(pmat->opts.atomic));    
 
     string transxcode;
-    for (int i = 0 ; i < pmat->diffopsx.Size(); i++)
+    for (uint i = 0 ; i < pmat->diffopsx.Size(); i++)
       {
         IntRange rangexref = pmat->ranges_xref[i];
         IntRange rangex = pmat->ranges_x[i];
@@ -555,7 +596,7 @@ namespace ngsmetal
 
 
     string transycode;
-    for (int i = 0 ; i < pmat->diffopsy.Size(); i++)
+    for (uint i = 0 ; i < pmat->diffopsy.Size(); i++)
       {
         IntRange rangeyref = pmat->ranges_yref[i];
         IntRange rangey = pmat->ranges_y[i];
@@ -587,6 +628,8 @@ namespace ngsmetal
     ApplyBTDTB_Func = library->newFunction(funcName);
 
     pipelineState = GetDevice()->newComputePipelineState(ApplyBTDTB_Func, &error);
+    NS::UInteger staticBytes = pipelineState->staticThreadgroupMemoryLength();
+    cout << "shared memory = " << staticBytes << endl;
     if (error)
       {
         std::cerr << "Metal Error: " << error->localizedDescription()->utf8String() << std::endl;
@@ -621,7 +664,7 @@ namespace ngsmetal
     encoder->setBuffer(buffer_JacobiDets, 0, 8);
     encoder->setBuffer(debug, 0, 9);      
     
-    encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(4*32, 1, 1));
+    encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(8*32, 1, 1));
     encoder->endEncoding();
     
 

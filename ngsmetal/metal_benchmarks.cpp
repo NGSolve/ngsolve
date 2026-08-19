@@ -70,7 +70,20 @@ namespace ngsmetal
 
       threadgroup_barrier(mem_flags::mem_threadgroup);
 
+      WarpMatrixV2<n,m,float> sum = 0.0;
 
+      auto ma = MakeBareMatrix<RowMajor> (&sharedA[0][0], lda);
+      auto mb = MakeBareMatrix<RowMajor> (&sharedB[0][0], ldb);
+      auto mc = MakeBareMatrix<RowMajor>(C + blockIdx * n * m, m);
+
+      for (unsigned i = 0; i < runs; i++)
+        sum.AddMM (k, ma, mb, threadIdx);
+
+      sum.Store(mc, threadIdx);
+
+
+
+/*
       WarpMatrix<n,m,float> sum = 0.0;
 
       auto ma = MakeBareMatrix<RowMajor> (&sharedA[0][0], lda);
@@ -81,6 +94,7 @@ namespace ngsmetal
         sum.AddMM<k> (ma, mb, threadIdx);
 
       sum.Store(mc, threadIdx);
+*/
 
 /*
       WarpMatrix<n,m/2,float2> sum = 0.0;
@@ -143,7 +157,7 @@ namespace ngsmetal
     // NS::UInteger maxThreads = pipelineState->maxTotalThreadsPerThreadgroup();
     // cout << "maxthds = " << maxThreads << endl;
     // cout << "memlength = " << pipelineState -> staticThreadgroupMemoryLength() << endl;
-    blocks = 2000;
+    blocks = 10000;
     warps = 8;
     buffer_A = GetDevice()->newBuffer(n*k*sizeof(float), MTL::ResourceStorageModeShared);
     buffer_B = GetDevice()->newBuffer(k*m*sizeof(float), MTL::ResourceStorageModeShared);
