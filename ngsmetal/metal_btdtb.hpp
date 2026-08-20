@@ -28,7 +28,7 @@ namespace ngsmetal
 
     MTL::ComputePipelineState* pipelineState;
  
-    int ne, BS_els;
+    int ne, BS_els, warps;
     
   public:
     MetalBTDTBMatrix (const BaseMatrix& mat);

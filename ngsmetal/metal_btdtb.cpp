@@ -146,6 +146,7 @@ namespace ngsmetal
       uint   gridDim            [[threadgroups_per_grid]]
       )
       {
+      int warpIdx = threadIdx/32;
       constexpr uint ne = $NE;
       constexpr uint ne8 = 8 * ((ne+7)/8);
       constexpr uint nip = $NIP;
@@ -222,20 +223,15 @@ namespace ngsmetal
       for (uint baseip = 0; baseip < RoundDown<8>($NIP); baseip += $BS_IPTS)
         {
           uint baseiptile = baseip/8;
-
-          // uint myiptiles = ($IP_TILES-baseiptile < bs_ipts/8) ? $IP_TILES-baseiptile : bs_ipts/8;
-          // uint myiptiles = min(uint($IP_TILES-baseiptile), uint(bs_ipts/8));
-          // uint myiptiles = MyMin(uint($IP_TILES-baseiptile), uint(bs_ipts/8));
-
+          // uint myips = min(RoundDown<8>($NIP)-baseip, bs_ipts);   // much worse ??
           uint myips = MyMin(RoundDown<8>($NIP)-baseip, bs_ipts);
           uint myiptiles = myips / 8;
 
 
           // multiply with Bx
-
 #define SEQUENTIAL_COMPS
 #ifdef SEQUENTIAL_COMPS
-          for (uint warp = threadIdx/32; warp < myiptiles * $EL_TILES; warp += blockDim/32)
+          for (uint warp = warpIdx; warp < myiptiles * $EL_TILES; warp += $WARPS)
             {
               uint eltile = warp % $EL_TILES;  // which els
               uint iptile = warp / $EL_TILES;  // which pts
@@ -259,7 +255,7 @@ namespace ngsmetal
             }
 #else
           // should need less regs, and better parallel - but slower ???
-          for (uint blocknr = threadIdx/32; blocknr < $DIMXREF*myiptiles * $EL_TILES; blocknr += blockDim/32)
+          for (uint blocknr = warpIdx; blocknr < $DIMXREF*myiptiles * $EL_TILES; blocknr += $WARPS)
             {
               uint eltile = blocknr % $EL_TILES;  // which els
               uint blocknr2 = blocknr / $EL_TILES;
@@ -269,17 +265,8 @@ namespace ngsmetal
 
               uint ip = 8*(baseiptile+iptile);
 
-              WarpMatrix<8,8> pointvalsrefxi;
-              pointvalsrefxi = 0;
+              WarpMatrix<8,8> pointvalsrefxi = 0;
 
-#ifdef NONE
-              for (uint xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
-                 { 
-                   auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
-                   auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 8*xdoftile);
-                   pointvalsrefxi.AddMM<8>(ma, mb.Transpose(), threadIdx);
-                 }
-#endif
               auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
               auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 0);
               pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), threadIdx);
@@ -332,7 +319,7 @@ namespace ngsmetal
           threadgroup_barrier(mem_flags::mem_threadgroup);
 
           // multiply with By.trans
-          for (int blocknr = threadIdx/32; blocknr < $EL_TILES * $DOFY_TILES; blocknr += blockDim/32)
+          for (int blocknr = warpIdx; blocknr < $EL_TILES * $DOFY_TILES; blocknr += $WARPS)
             {
               int eltile = blocknr % $EL_TILES;  // which els
               int ydoftile = blocknr / $EL_TILES;  // which dofs
@@ -372,7 +359,7 @@ namespace ngsmetal
 
       
           // multiply with Bx
-        for (uint blocknr = threadIdx/32; blocknr < (numips*$DIMXREF+7)/8 * $EL_TILES; blocknr += blockDim/32)
+        for (uint blocknr = warpIdx; blocknr < (numips*$DIMXREF+7)/8 * $EL_TILES; blocknr += $WARPS)
            {
              uint eltile = blocknr % $EL_TILES;  // which els
              uint iptile = blocknr / $EL_TILES;  // which pts*comp tile
@@ -548,7 +535,7 @@ namespace ngsmetal
 
     
 
-
+    warps = 8;
 
     
     
@@ -558,6 +545,7 @@ namespace ngsmetal
     code = Substitute(code, "$BS_IPTS", ToString(pmat->opts.BS_ipts)+" /*BS_IPTS*/ ");
     code = Substitute(code, "$DIMR", ToString(3)+" /*dimr*/ ");  
     code = Substitute(code, "$DIMS", ToString(3)+" /*dims*/ ");
+    code = Substitute(code, "$WARPS", ToString(warps)+" /*warps*/ ");
 
     code = Substitute(code, "$BMATX_REM_ROWS", ToString(bmatx_rem_rows)+" /*bmatx_rem_rows*/ ");      
     code = Substitute(code, "$BMATY_REM_ROWS", ToString(bmaty_rem_rows)+" /*bmaty_rem_rows*/ ");      
@@ -629,7 +617,7 @@ namespace ngsmetal
 
     pipelineState = GetDevice()->newComputePipelineState(ApplyBTDTB_Func, &error);
     NS::UInteger staticBytes = pipelineState->staticThreadgroupMemoryLength();
-    cout << "shared memory = " << staticBytes << endl;
+    // cout << "shared memory = " << staticBytes << endl;
     if (error)
       {
         std::cerr << "Metal Error: " << error->localizedDescription()->utf8String() << std::endl;
@@ -664,7 +652,7 @@ namespace ngsmetal
     encoder->setBuffer(buffer_JacobiDets, 0, 8);
     encoder->setBuffer(debug, 0, 9);      
     
-    encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(8*32, 1, 1));
+    encoder->dispatchThreadgroups(MTL::Size(200,1,1), MTL::Size(warps*32, 1, 1));
     encoder->endEncoding();
     
 
