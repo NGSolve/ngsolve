@@ -31,6 +31,7 @@ namespace ngcomp
     bool only_loadstoreB = false; // for timing elvec load stores and mult with B and Bt
     int BS_els = 4;
     int BS_ipts = 4;
+    int warps = 4;
     bool timers = false;
     bool nonlinear = false;       // evaluate the form pointwise
     bool fp32 = false;            // single precision
@@ -41,12 +42,12 @@ namespace ngcomp
     MatFreeOptions() = default;
     MatFreeOptions(bool afused, bool agencode, bool aatomic,
                    bool aonly_loadstore, bool aonly_loadstoreB,
-                   int aBS_els, int aBS_ipts, bool atimers,
+                   int aBS_els, int aBS_ipts, int awarps, bool atimers,
                    bool anonlinear, bool afp32,
                    optional<string> awrite_GPU_kernel)
       : fused(afused), generate_code(agencode), atomic(aatomic),
         only_loadstore(aonly_loadstore), only_loadstoreB(aonly_loadstoreB),
-        BS_els(aBS_els), BS_ipts(aBS_ipts), timers(atimers),
+        BS_els(aBS_els), BS_ipts(aBS_ipts), warps(awarps), timers(atimers),
         nonlinear(anonlinear), fp32(afp32),
         write_GPU_kernel(std::move(awrite_GPU_kernel)) { }
   };
