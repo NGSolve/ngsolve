@@ -18,15 +18,13 @@ namespace ngsmetal
   }
 
 
-  constexpr int RoundUp8 (int i)
-  {
-    return 8 * ( (i+7) / 8 );
-  }
-
-  constexpr int RoundDown8 (int i)
-  {
-    return 8 * ( i / 8 );
-  }
+  template <uint N>
+  constexpr uint RoundUp (uint i) { return N * ( (i+N-1) / N ); }
+  template <uint N>
+  constexpr uint RoundDown (uint i) { return N * ( i / N ); }
+  
+  constexpr uint RoundUp (uint i, uint N) { return N * ( (i+N-1) / N ); }
+  constexpr uint RoundDown (uint i, uint N) { return N * ( i / N ); }
   
   MetalBTDTBMatrix :: MetalBTDTBMatrix (const BaseMatrix& bmat)
   {
@@ -44,7 +42,9 @@ namespace ngsmetal
     auto [numels,dimy,dimx,nipD] = pmat->D.Shape();
     auto [numels2,dimr,dims,nipJ] = pmat->Jacobi.Shape();
 
+    // cout << "nip = " << nip << endl;
     BS_els = pmat->opts.BS_els;
+    BS_ipts = pmat->opts.BS_ipts;  
     ne = numels;
     
     FlatArray<int> hdofx = pmat->dofx.AsArray();
@@ -58,38 +58,42 @@ namespace ngsmetal
     ddofy = hdofy;
 
     // for the remainder, store the compressed tensor in the last rows of buffer_bmatx
-    buffer_bmatx = GetDevice()->newBuffer(dimxref*(8+RoundUp8(nip))*RoundUp8(locdofsx)*sizeof(float), MTL::ResourceStorageModeShared);
-    FlatTensor<3,float> dbmatx(dimxref,RoundUp8(nip),RoundUp8(locdofsx), (float*)buffer_bmatx->contents());
+    buffer_bmatx = GetDevice()->newBuffer(dimxref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsx)*sizeof(float), MTL::ResourceStorageModeShared);
+    FlatTensor<3,float> dbmatx(dimxref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsx), (float*)buffer_bmatx->contents());
     for (int j = 0; j < dimxref; j++)
-      for (int i = 0; i < RoundUp8(nip); i++)
-        for (int k = 0; k < RoundUp8(locdofsx); k++)
+      for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
+        for (int k = 0; k < RoundUp<8>(locdofsx); k++)
           dbmatx(j,i,k) = (i < nip && k < locdofsx) ? pmat->Bx(k,j,i) : 0;
 
-    int bmatx_rem_rows = dimxref*RoundUp8(nip);
-    FlatTensor<3,float> dbmatx_rem(dimxref,nip-RoundDown8(nip),RoundUp8(locdofsx), ((float*)buffer_bmatx->contents()) + dimxref*(RoundUp8(nip))*RoundUp8(locdofsx));
+    int bmatx_rem_rows = dimxref*RoundUp(nip,BS_ipts);
+    int nip_rem = nip - RoundDown(nip, BS_ipts);
+    FlatTensor<3,float> dbmatx_rem(dimxref,nip_rem,RoundUp<8>(locdofsx), ((float*)buffer_bmatx->contents()) + bmatx_rem_rows*RoundUp<8>(locdofsx));
+    dbmatx_rem = 0;
     for (int j = 0; j < dimxref; j++)
-      for (int i = 0; i < nip-RoundDown8(nip); i++)
-        for (int k = 0; k < RoundUp8(locdofsx); k++)
-          dbmatx_rem(j,i,k) = (k < locdofsx) ? pmat->Bx(k,j,i+RoundDown8(nip)) : 0;
+      for (int i = 0; i < nip_rem; i++)
+        for (int k = 0; k < RoundUp<8>(locdofsx); k++)
+          dbmatx_rem(j,i,k) = (k < locdofsx) ? pmat->Bx(k,j,i+RoundDown(nip,BS_ipts)) : 0;
+
     
-    buffer_bmaty = GetDevice()->newBuffer(dimyref*(8+RoundUp8(nip))*RoundUp8(locdofsy)*sizeof(float), MTL::ResourceStorageModeShared);
-    FlatTensor<3,float> dbmaty(dimyref,RoundUp8(nip),RoundUp8(locdofsy), (float*)buffer_bmaty->contents());
+    buffer_bmaty = GetDevice()->newBuffer(dimyref*(RoundUp(nip,BS_ipts)+BS_ipts)*RoundUp<8>(locdofsy)*sizeof(float), MTL::ResourceStorageModeShared);
+    FlatTensor<3,float> dbmaty(dimyref,RoundUp(nip,BS_ipts),RoundUp<8>(locdofsy), (float*)buffer_bmaty->contents());
     for (int j = 0; j < dimyref; j++)
-      for (int i = 0; i < RoundUp8(nip); i++)
-        for (int k = 0; k < RoundUp8(locdofsy); k++)
+      for (int i = 0; i < RoundUp(nip,BS_ipts); i++)
+        for (int k = 0; k < RoundUp<8>(locdofsy); k++)
           dbmaty(j,i,k) = (i<nip && k < locdofsy) ? pmat->By(k,j,i) : 0;
 
-    int bmaty_rem_rows = dimyref*RoundUp8(nip);    
-    FlatTensor<3,float> dbmaty_rem(dimyref,nip-RoundDown8(nip),RoundUp8(locdofsy), ((float*)buffer_bmaty->contents()) + dimyref*(RoundUp8(nip))*RoundUp8(locdofsy));
+    int bmaty_rem_rows = dimyref*RoundUp(nip,BS_ipts);    
+    FlatTensor<3,float> dbmaty_rem(dimyref,nip_rem,RoundUp<8>(locdofsy), ((float*)buffer_bmaty->contents()) + bmaty_rem_rows*RoundUp<8>(locdofsy));
+    dbmaty_rem = 0;
     for (int j = 0; j < dimyref; j++)
-      for (int i = 0; i < nip-RoundDown8(nip); i++)
-        for (int k = 0; k < RoundUp8(locdofsy); k++)
-          dbmaty_rem(j,i,k) = (k < locdofsy) ? pmat->By(k,j,i+RoundDown8(nip)) : 0;
+      for (int i = 0; i < nip_rem; i++)
+        for (int k = 0; k < RoundUp<8>(locdofsy); k++)
+          dbmaty_rem(j,i,k) = (k < locdofsy) ? pmat->By(k,j,i+RoundDown(nip,BS_ipts)) : 0;
     
 
 
-    buffer_weights = GetDevice()->newBuffer(RoundUp8(nip)*sizeof(float), MTL::ResourceStorageModeShared);
-    for (int i = 0; i < RoundUp8(nip); i++)
+    buffer_weights = GetDevice()->newBuffer(RoundUp<8>(nip)*sizeof(float), MTL::ResourceStorageModeShared);
+    for (int i = 0; i < RoundUp<8>(nip); i++)
       ((float*)buffer_weights->contents())[i] = i < nip ? pmat->weights[i] : 0;
     
     buffer_JacobiDets = GetDevice()->newBuffer(ne*sizeof(float), MTL::ResourceStorageModeShared);    
@@ -97,7 +101,7 @@ namespace ngsmetal
       ((float*)buffer_JacobiDets->contents())[i] = Det(pmat->Jacobi(i,STAR,STAR,0));
 
 
-    int ne8 = RoundUp8(ne);
+    int ne8 = RoundUp<8>(ne);
     buffer_Jacobi = GetDevice()->newBuffer(dimr*dims*ne8*sizeof(float), MTL::ResourceStorageModeShared);    
     for (int i = 0; i < ne; i++)
       for (int j = 0; j < dimr; j++)
@@ -115,10 +119,10 @@ namespace ngsmetal
       using namespace metal;
       using namespace tinybla;
 
-      template <int N>
-      constexpr int RoundUp (int i) { return N * ( (i+N-1) / N ); }
-      template <int N>
-      constexpr int RoundDown (int i) { return N * ( i / N ); }
+      template <uint N>
+      constexpr uint RoundUp (uint i) { return N * ( (i+N-1) / N ); }
+      template <uint N>
+      constexpr uint RoundDown (uint i) { return N * ( i / N ); }
 
       template <typename T>
       auto MyMin (T a, T b) { return (a < b) ? a : b; }
@@ -217,68 +221,39 @@ namespace ngsmetal
         }
 #else
 
-//       for (uint baseiptile = 0; baseiptile < $IP_TILES; baseiptile += bs_ipts/8)
-      for (uint baseip = 0; baseip < RoundDown<8>($NIP); baseip += $BS_IPTS)
+      for (uint baseip = 0; baseip+$BS_IPTS <= $NIP; baseip += $BS_IPTS)
         {
           uint baseiptile = baseip/8;
-          // uint myips = min(RoundDown<8>($NIP)-baseip, bs_ipts);   // much worse ??
-          uint myips = MyMin(RoundDown<8>($NIP)-baseip, bs_ipts);
-          uint myiptiles = myips / 8;
+          uint myiptiles = bs_ipts / 8;
 
+          constexpr uint TS_IPTS = 8;
+          constexpr uint TS_ELS = 8;
+          constexpr uint BSTS_IPTS = $BS_IPTS/TS_IPTS;
+          constexpr uint BSTS_ELS = $BS_ELS/TS_ELS;
 
-          // multiply with Bx
-#define SEQUENTIAL_COMPS
-#ifdef SEQUENTIAL_COMPS
-          for (uint warp = warpIdx; warp < myiptiles * $EL_TILES; warp += $WARPS)
+          for (uint warp = warpIdx; warp < BSTS_IPTS*BSTS_ELS; warp++)
             {
-              uint eltile = warp % $EL_TILES;  // which els
-              uint iptile = warp / $EL_TILES;  // which pts
+              uint eltile = warp %  BSTS_ELS;
+              uint iptile = warp /  BSTS_ELS;
 
-              uint ip = 8*(baseiptile+iptile);
-
-              WarpMatrix<8,8> pointvalsrefxi[$DIMXREF];
-              for (uint comp = 0; comp < $DIMXREF; comp++)
-                pointvalsrefxi[comp] = 0;
-
-              for (uint xdoftile = 0; xdoftile < $DOFX_TILES; xdoftile++)
-                for (uint comp = 0; comp < $DIMXREF; comp++)
-                   {
-                      auto mb = mat_elvecx.SubMatrix(8*eltile, 8*xdoftile);
-                      auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 8*xdoftile);
-                      pointvalsrefxi[comp].AddMM<8>(ma, mb.Transpose(), threadIdx);
-                   }
+              uint ip = baseip + iptile*TS_IPTS;
 
               for (uint comp = 0; comp < $DIMXREF; comp++)
-                pointvalsrefxi[comp].Store(mat_pointvalsref.SubMatrix(8*iptile+bs_ipts*comp, 8*eltile), threadIdx);
+                {
+                  WarpMatrix<TS_IPTS,TS_ELS> pointvalsrefxi = 0;
+                  auto mb = mat_elvecx.SubMatrix(TS_ELS*eltile, 0);
+                  auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 0);
+                  pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), threadIdx);
+                  pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(TS_IPTS*iptile+bs_ipts*comp, TS_ELS*eltile), threadIdx);
+                }
             }
-#else
-          // should need less regs, and better parallel - but slower ???
-          for (uint blocknr = warpIdx; blocknr < $DIMXREF*myiptiles * $EL_TILES; blocknr += $WARPS)
-            {
-              uint eltile = blocknr % $EL_TILES;  // which els
-              uint blocknr2 = blocknr / $EL_TILES;
-
-              uint iptile = blocknr2 / $DIMXREF;
-              uint comp = blocknr2 % $DIMXREF;
-
-              uint ip = 8*(baseiptile+iptile);
-
-              WarpMatrix<8,8> pointvalsrefxi = 0;
-
-              auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
-              auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 0);
-              pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), threadIdx);
-
-              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile+bs_ipts*comp, 8*eltile), threadIdx);
-            }
-#endif
-
+          
 
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
   
           // work on integration points
-          for (uint ip = threadIdx; ip < 8*myiptiles*bs_els ; ip += blockDim)
+          for (uint ip = threadIdx; ip < bs_ipts*bs_els ; ip += blockDim)
              {
                uint locelnr = ip % $BS_ELS;
                uint locipnr = ip / $BS_ELS;
@@ -296,20 +271,20 @@ namespace ngsmetal
                      F(i,j) = Jacobi[elnr + ne8 * (j + $DIMS*i)];
                float J = (elnr < ne) ?  JacobiDets[elnr] : 0;
 
-               for (int j = 0; j < $DIMXREF; j++)
-                  xrefvals(j) = pointvalsref[locipnr+j*bs_ipts][locelnr];
+               for (int comp = 0; comp < $DIMXREF; comp++)
+                  xrefvals(comp) = pointvalsref[locipnr+comp*bs_ipts][locelnr];
 
               // xrefvals -> xvals
               $TRANSFORMX;   
 
               $PHYSICS
-              yvals = weights[8*baseiptile+locipnr] * JacobiDets[elnr] * yvals;
+              yvals = weights[baseip+locipnr] * JacobiDets[elnr] * yvals;
 
               // yvals -> yrefvals
               $TRANSFORMY;          
 
-               for (int j = 0; j < $DIMYREF; j++)
-                  pointvalsref[locipnr+j*bs_ipts][locelnr] = yrefvals(j);
+               for (int comp = 0; comp < $DIMYREF; comp++)
+                  pointvalsref[locipnr+comp*bs_ipts][locelnr] = yrefvals(comp);
 #endif
             }
 
@@ -317,12 +292,12 @@ namespace ngsmetal
           threadgroup_barrier(mem_flags::mem_threadgroup);
 
           // multiply with By.trans
-          for (int blocknr = warpIdx; blocknr < $EL_TILES * $DOFY_TILES; blocknr += $WARPS)
+          for (int blocknr = warpIdx; blocknr < BSTS_ELS * $DOFY_TILES; blocknr += $WARPS)
             {
-              int eltile = blocknr % $EL_TILES;  // which els
-              int ydoftile = blocknr / $EL_TILES;  // which dofs
+              int eltile = blocknr % BSTS_ELS;  // which els
+              int ydoftile = blocknr / BSTS_ELS;  // which dofs
 
-              WarpMatrixV2<8,8,float> sum(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
+              WarpMatrixV2<TS_ELS,8,float> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), threadIdx);
 
 #ifdef XXX
               for (int iptile = 0; iptile < myiptiles; iptile++)
@@ -334,11 +309,11 @@ namespace ngsmetal
                   }
 #endif
 
-              for (int l = 0; l < $DIMYREF; l++)
+              for (int comp = 0; comp < $DIMYREF; comp++)
                 {
-                   auto ma = mat_pointvalsref.SubMatrix(bs_ipts*l, 8*eltile);
-                   auto mb = mat_bmaty.SubMatrix(8*baseiptile+8*$IP_TILES*l, 8*ydoftile);
-                   sum.AddMM (8*myiptiles, ma.Transpose(), mb, threadIdx);
+                   auto ma = mat_pointvalsref.SubMatrix(bs_ipts*comp, TS_ELS*eltile);
+                   auto mb = mat_bmaty.SubMatrix(baseip+RoundUp<$BS_IPTS>(nip)*comp, 8*ydoftile);
+                   sum.AddMM ($BS_IPTS, ma.Transpose(), mb, threadIdx);
                 }
 
               sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
@@ -351,13 +326,13 @@ namespace ngsmetal
 
       // ip remainder
      
-      constexpr uint baseip = 8*$IP_TILES;
+      constexpr uint baseip = RoundDown<bs_ipts>(nip); 
       constexpr uint numips = nip-baseip;
 
       if constexpr (numips > 0) {
 
           // multiply with Bx
-        for (uint blocknr = warpIdx; blocknr < (numips*$DIMXREF+7)/8 * $EL_TILES; blocknr += $WARPS)
+        for (uint blocknr = warpIdx; blocknr < RoundUp<8>(numips*$DIMXREF)/8 * $EL_TILES; blocknr += $WARPS)
            {
              uint eltile = blocknr % $EL_TILES;  // which els
              uint iptile = blocknr / $EL_TILES;  // which pts*comp tile
@@ -552,10 +527,10 @@ namespace ngsmetal
     code = Substitute(code, "$BMATX_REM_ROWS", ToString(bmatx_rem_rows)+" /*bmatx_rem_rows*/ ");      
     code = Substitute(code, "$BMATY_REM_ROWS", ToString(bmaty_rem_rows)+" /*bmaty_rem_rows*/ ");      
     
-    code = Substitute(code, "$IP_TILES", ToString(RoundDown8(nip)/8)+" /* IP_TILES */ ");
-    code = Substitute(code, "$EL_TILES", ToString(RoundUp8(pmat->opts.BS_els)/8)+" /*EL_TILES*/ ");
-    code = Substitute(code, "$DOFX_TILES", ToString(RoundUp8(locdofsx)/8) +" /* DOFX_TILES */ ");
-    code = Substitute(code, "$DOFY_TILES", ToString(RoundUp8(locdofsy)/8) +" /* DOFY_TILES */ ");
+    code = Substitute(code, "$IP_TILES", ToString(RoundDown<8>(nip)/8)+" /* IP_TILES */ ");
+    code = Substitute(code, "$EL_TILES", ToString(RoundUp<8>(pmat->opts.BS_els)/8)+" /*EL_TILES*/ ");
+    code = Substitute(code, "$DOFX_TILES", ToString(RoundUp<8>(locdofsx)/8) +" /* DOFX_TILES */ ");
+    code = Substitute(code, "$DOFY_TILES", ToString(RoundUp<8>(locdofsy)/8) +" /* DOFY_TILES */ ");
     
     code = Substitute(code, "$LOCDOFSX", ToString(locdofsx));    
     code = Substitute(code, "$LOCDOFSY", ToString(locdofsy));
