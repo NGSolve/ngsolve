@@ -143,6 +143,15 @@ namespace tinybla {
       head = val;
     }
 
+    template <uint r>
+    HTVec<W,T> GetRow() {
+    if constexpr (r == H-1)
+      return head;
+    else
+      return tail.template GetRow<r>();
+    }
+
+
     template <typename TP>
     void Load(TP data, unsigned dist) {
       tail.Load(data,dist);
@@ -189,6 +198,13 @@ namespace tinybla {
 
     void operator= (T val) {
       head = val;
+    }
+
+
+    template <uint r>
+    HTVec<W,T> GetRow() {
+      static_assert(r==0);
+      return head;
     }
 
 
@@ -752,6 +768,11 @@ namespace tinybla {
     return BareMatrix<ORD,Tp> (data, ld);
   }
 
+  template <ORDERING ORD, typename Tp, int W>
+  inline auto MakeBareMatrix (Tp data[][W]) {
+    return MakeBareMatrix<ORD> (&(data[0][0]), W);
+  }
+
 
 
 
@@ -776,6 +797,9 @@ namespace tinybla {
 
     void operator= (T val) { myvals = val; }
 
+    WarpMatrix (HTMat<BH,BW,T> amyvals) : myvals(amyvals) { } 
+    auto GetValues() const { return myvals; }
+
     template <uint K, ORDERING ORD1, typename Tp1, ORDERING ORD2, typename Tp2>
     void AddMM(BareMatrix<ORD1,Tp1> m1, BareMatrix<ORD2,Tp2> m2, uint tid)
     {
@@ -792,19 +816,53 @@ namespace tinybla {
 */
 
       // best for btdtb
-      constexpr int KTILE = 1;
-      uint k = 0;
-      m2 = m2.ShiftCols(c);
-      for ( ; k+4 <= K; k+=4)
-        {
-          auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
-          for (uint k1 = 0; k1 < 4; k1++)
-             myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,0), myvals);
-        }
-      // remainder
-      if constexpr (K%4 != 0)
-        for ( ;  k < K; k++)
-          myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,0), myvals);
+      if constexpr (ORD2==RowMajor) {
+      // if constexpr (true) {
+        constexpr int KTILE = 1;
+        uint k = 0;
+        for ( ; k+4 <= K; k+=4)
+          {
+            auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
+            for (uint k1 = 0; k1 < 4; k1++)
+               myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,c), myvals);
+          }
+        // remainder
+        if constexpr (K%4 != 0)
+          for ( ;  k < K; k++)
+            myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
+      } else {
+
+        constexpr int KTILE = 1;
+        uint k = 0;
+        // auto tmpmyvals = myvals;
+        for ( ; k+4 <= K; k+=4)
+          {
+            auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
+            auto BTileQuad = m2.template GetTile<4*KTILE,BW>(k, c);
+
+
+            myvals = FMA (QuadBroadcast(ATileQuad, 0), HTMat<1,BW,float> (BTileQuad.template GetRow<0>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,float> (BTileQuad.template GetRow<1>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,float> (BTileQuad.template GetRow<2>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,float> (BTileQuad.template GetRow<3>()), myvals);
+/*
+            tmpmyvals = FMA (QuadBroadcast(ATileQuad, 0), HTMat<1,BW,float> (BTileQuad.template GetRow<0>()), 
+                       FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,float> (BTileQuad.template GetRow<1>()), 
+                         FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,float> (BTileQuad.template GetRow<2>()), 
+                           FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,float> (BTileQuad.template GetRow<3>()), tmpmyvals))));
+*/
+            // for (uint k1 = 0; k1 < 4; k1++)
+            // myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,c), myvals);
+          }
+        // myvals = tmpmyvals;
+
+        // remainder
+        if constexpr (K%4 != 0)
+          for ( ;  k < K; k++)
+            myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
+
+      }
+
 
 
 /*
@@ -1073,16 +1131,68 @@ namespace tinybla {
 */      
     }
 
+
     template <ORDERING ORD, typename Tp>
     void Store(BareMatrix<ORD,Tp> mat, unsigned tid) {
       mat.template SetTile<BH,BW>(MyRow(tid),MyCol(tid), myvals);
     }
 
-    auto MyCol(uint tid) const { return BW*(tid&3); }
-    auto MyRow(uint tid) const { return BH*((tid>>2)&7); }
+    static auto MyCol(uint tid) { return BW*(tid&3); }
+    static auto MyRow(uint tid) { return BH*((tid>>2)&7); }
   };
 
 
+  template <uint K, uint H, uint W, ORDERING ORD1, typename Tp1, ORDERING ORD2, typename Tp2>
+  inline auto AddMM(WarpMatrix<H,W,float> m, BareMatrix<ORD1,Tp1> m1, BareMatrix<ORD2,Tp2> m2, uint tid)
+  {
+    static_assert(H%8==0);
+    static_assert(W%4==0);
+     constexpr unsigned BW = W/4; // sizeof(float2)/sizeof(T);
+     constexpr unsigned BH = H/8;
+
+
+     auto myvals = m.GetValues();
+     auto r = m.MyRow(tid);
+     auto c = m.MyCol(tid);
+
+     // tmp.template AddMM<K> (m1, m2, tid);
+
+      if constexpr (ORD2==RowMajor) {
+       constexpr int KTILE = 1;
+       uint k = 0;
+       for ( ; k+4 <= K; k+=4)
+          {
+            auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
+            for (uint k1 = 0; k1 < 4; k1++)
+               myvals = FMA (QuadBroadcast(ATileQuad, k1), m2.template GetTile<KTILE,BW>(k+k1,c), myvals);
+          }
+        // remainder
+        if constexpr (K%4 != 0)
+          for ( ;  k < K; k++)
+            myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
+      } else {
+
+        constexpr int KTILE = 1;
+        uint k = 0;
+        for ( ; k+4 <= K; k+=4)
+          {
+            auto ATileQuad = m1.template GetTile<BH,KTILE>(r,k + (tid&3));
+            auto BTileQuad = m2.template GetTile<4*KTILE,BW>(k, c);
+            myvals = FMA (QuadBroadcast(ATileQuad, 0), HTMat<1,BW,float> (BTileQuad.template GetRow<0>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 1), HTMat<1,BW,float> (BTileQuad.template GetRow<1>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 2), HTMat<1,BW,float> (BTileQuad.template GetRow<2>()), myvals);
+            myvals = FMA (QuadBroadcast(ATileQuad, 3), HTMat<1,BW,float> (BTileQuad.template GetRow<3>()), myvals);
+          }
+
+        // remainder
+        if constexpr (K%4 != 0)
+          for ( ;  k < K; k++)
+            myvals = FMA (m1.template GetTile<BH,KTILE>(r,k), m2.template GetTile<KTILE,BW>(k,c), myvals);
+      }
+
+
+     return WarpMatrix<H,W,float> (myvals);
+  }
 
 
   // interleaved accumulator entries and B, B-mat must be RowMajor (by now)
@@ -1193,8 +1303,6 @@ namespace tinybla {
 
 
 
-
-
 /*
   template <>
   class WarpMatrix<8,8,float>
@@ -1217,11 +1325,15 @@ namespace tinybla {
     template <int K, typename M1, typename M2>
     void AddMM(M1 m1, M2 m2, int tid)
     {
-      static_assert(K==8);
+      static_assert(K%8==0);
       metal::simdgroup_float8x8 ma, mb;
-      metal::simdgroup_load(ma, m1.Data(), m1.LD(), ulong2(0, 0), m1.IsColMajor());
-      metal::simdgroup_load(mb, m2.Data(), m2.LD(), ulong2(0, 0), m2.IsColMajor());
-      metal::simdgroup_multiply_accumulate(m, ma, mb, m);
+      for (uint i = 0; i < K; i+=8) {
+        metal::simdgroup_load(ma, m1.Data(), m1.LD(), ulong2(0, 0), m1.IsColMajor());
+        metal::simdgroup_load(mb, m2.Data(), m2.LD(), ulong2(0, 0), m2.IsColMajor());
+        metal::simdgroup_multiply_accumulate(m, ma, mb, m);
+        m1 = m1.ShiftCols(8);
+        m2 = m2.ShiftRows(8);
+      }
     }
 
     void Store(threadgroup T * data, int ld, int tid) {
@@ -1234,6 +1346,7 @@ namespace tinybla {
     }
   };
 */
+
 
 } // namespace tinybla
 

@@ -169,9 +169,9 @@ namespace ngsmetal
       constexpr int MAXDIMREF = ($DIMXREF>$DIMYREF) ? $DIMXREF : $DIMYREF;
       alignas(16) threadgroup float pointvalsref[MAXDIMREF*$BS_IPTS][$BS_ELS];
 
-      auto mat_elvecx = MakeBareMatrix<RowMajor>(&elvecx[0][0], locdofsx_roundup);
-      auto mat_elvecy = MakeBareMatrix<RowMajor>(&elvecy[0][0], locdofsy_roundup);
-      auto mat_pointvalsref = MakeBareMatrix<RowMajor>(&pointvalsref[0][0], $BS_ELS);
+      auto mat_elvecx = MakeBareMatrix<RowMajor>(elvecx); 
+      auto mat_elvecy = MakeBareMatrix<RowMajor>(elvecy);
+      auto mat_pointvalsref = MakeBareMatrix<RowMajor>(pointvalsref);
 
       auto mat_bmatx = MakeBareMatrix<RowMajor>(bmatx, locdofsx_roundup);
       auto mat_bmaty = MakeBareMatrix<RowMajor>(bmaty, locdofsy_roundup);
@@ -221,16 +221,19 @@ namespace ngsmetal
         }
 #else
 
+
       for (uint baseip = 0; baseip+$BS_IPTS <= $NIP; baseip += $BS_IPTS)
         {
-          uint baseiptile = baseip/8;
-          uint myiptiles = bs_ipts / 8;
+          // uint baseiptile = baseip/8;
+          // uint myiptiles = bs_ipts / 8;
 
           constexpr uint TS_IPTS = 8;
           constexpr uint TS_ELS = 8;
           constexpr uint BSTS_IPTS = $BS_IPTS/TS_IPTS;
           constexpr uint BSTS_ELS = $BS_ELS/TS_ELS;
-
+          static_assert($BS_IPTS % TS_IPTS==0);
+#define ALLCOMPSTOGETHER
+#ifdef ALLCOMPSTOGETHER
           for (uint warp = warpIdx; warp < BSTS_IPTS*BSTS_ELS; warp++)
             {
               uint eltile = warp %  BSTS_ELS;
@@ -243,11 +246,26 @@ namespace ngsmetal
                   WarpMatrix<TS_IPTS,TS_ELS> pointvalsrefxi = 0;
                   auto mb = mat_elvecx.SubMatrix(TS_ELS*eltile, 0);
                   auto ma = mat_bmatx.SubMatrix(ip+nip8*comp, 0);
-                  pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), threadIdx);
+                  // pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), threadIdx);
+                  pointvalsrefxi = AddMM<8*$DOFX_TILES> (pointvalsrefxi, ma, mb.Transpose(), threadIdx);
                   pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(TS_IPTS*iptile+bs_ipts*comp, TS_ELS*eltile), threadIdx);
                 }
             }
-          
+#else
+          // slower. TODO: ordering of bmatx
+          for (uint warp = warpIdx; warp < $DIMXREF*BSTS_IPTS*BSTS_ELS; warp++)
+            {
+              uint eltile = warp %  BSTS_ELS;
+              uint iptile = warp /  BSTS_ELS;
+
+              WarpMatrix<TS_IPTS,TS_ELS> pointvalsrefxi = 0;
+              auto mb = mat_elvecx.SubMatrix(TS_ELS*eltile, 0);
+              auto ma = mat_bmatx.SubMatrix(baseip*$DIMXREF + iptile*TS_IPTS, 0);
+              // pointvalsrefxi.AddMM<8*$DOFX_TILES>(ma, mb.Transpose(), threadIdx);
+              pointvalsrefxi = AddMM<8*$DOFX_TILES>(pointvalsrefxi, ma, mb.Transpose(), threadIdx);
+              pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(TS_IPTS*iptile, TS_ELS*eltile), threadIdx);
+            }
+#endif
 
 
           threadgroup_barrier(mem_flags::mem_threadgroup);
@@ -292,14 +310,14 @@ namespace ngsmetal
           threadgroup_barrier(mem_flags::mem_threadgroup);
 
           // multiply with By.trans
-          for (int blocknr = warpIdx; blocknr < BSTS_ELS * $DOFY_TILES; blocknr += $WARPS)
+          for (uint blocknr = warpIdx; blocknr < BSTS_ELS * $DOFY_TILES; blocknr += $WARPS)
             {
               int eltile = blocknr % BSTS_ELS;  // which els
               int ydoftile = blocknr / BSTS_ELS;  // which dofs
 
-              WarpMatrixV2<TS_ELS,8,float> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), threadIdx);
+              WarpMatrix<TS_ELS,8,float> sum(mat_elvecy.SubMatrix(TS_ELS*eltile, 8*ydoftile), threadIdx);
 
-#ifdef XXX
+#ifdef OLD
               for (int iptile = 0; iptile < myiptiles; iptile++)
                 for (int l = 0; l < $DIMYREF; l++)
                   {
@@ -313,7 +331,8 @@ namespace ngsmetal
                 {
                    auto ma = mat_pointvalsref.SubMatrix(bs_ipts*comp, TS_ELS*eltile);
                    auto mb = mat_bmaty.SubMatrix(baseip+RoundUp<$BS_IPTS>(nip)*comp, 8*ydoftile);
-                   sum.AddMM ($BS_IPTS, ma.Transpose(), mb, threadIdx);
+                   sum.AddMM<$BS_IPTS> (ma.Transpose(), mb, threadIdx);
+                   // sum = AddMM<$BS_IPTS> (sum, ma.Transpose(), mb, threadIdx);
                 }
 
               sum.Store(mat_elvecy.SubMatrix(8*eltile, 8*ydoftile), threadIdx);
@@ -322,6 +341,7 @@ namespace ngsmetal
           threadgroup_barrier(mem_flags::mem_threadgroup);
 
          } // end base_ip
+
 
 
       // ip remainder
@@ -351,8 +371,8 @@ namespace ngsmetal
               // slower for convection -> now good!
               auto mb = mat_elvecx.SubMatrix(8*eltile, 0);
               auto ma = mat_bmatx.SubMatrix($BMATX_REM_ROWS+8*iptile, 0);
-              pointvalsrefxi.AddMM<RoundUp<4>(locdofsx)>(ma, mb.Transpose(), threadIdx);
-
+              // pointvalsrefxi.AddMM<RoundUp<8>(locdofsx)>(ma, mb.Transpose(), threadIdx);
+              pointvalsrefxi = AddMM<RoundUp<8>(locdofsx)> (pointvalsrefxi, ma, mb.Transpose(), threadIdx);
               pointvalsrefxi.Store(mat_pointvalsref.SubMatrix(8*iptile,8*eltile), threadIdx);
             }
 
@@ -575,7 +595,7 @@ namespace ngsmetal
     code = Substitute(code, "$TRANSFORMY", transycode);    
 
     
-    ofstream codefile("metalcode.cpp");
+    ofstream codefile("applybtdtb.metal");
     codefile << code;
     codefile.close();
     
