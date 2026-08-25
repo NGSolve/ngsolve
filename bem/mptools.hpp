@@ -815,7 +815,6 @@ namespace ngsbem
 
         charges.Append( tuple{x,c} );
 
-        // if (r*mp.Kappa() < 1e-8) return;
         if (level > fmm_params.maxlevel) return;
         if (charges.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
           return;
@@ -847,7 +846,7 @@ namespace ngsbem
         dipoles.Append (tuple{x,d,c});
         
         if (level > fmm_params.maxlevel) return;
-        if (dipoles.Size() < fmm_params.maxdirect)
+        if (dipoles.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
           return;
 
         SendSourcesToChilds();
@@ -876,15 +875,11 @@ namespace ngsbem
         
         chargedipoles.Append (tuple{x,c,dir,c2});
 
-        if (chargedipoles.Size() < fmm_params.maxdirect || r < 1e-8)
+        if (level > fmm_params.maxlevel) return;
+        if (chargedipoles.Size() < fmm_params.maxdirect && r*abs(mp.Kappa()) < fmm_params.split_kr)
           return;
 
         SendSourcesToChilds();
-
-        /*
-        AddCharge (x, c);
-        AddDipole (x, dir, c2);
-        */
       }
 
       
@@ -921,29 +916,10 @@ namespace ngsbem
 
         currents.Append (tuple{sp,ep,j,num});
 
-        // if (currents.Size() < maxdirect || r < 1e-8)
-        if (currents.Size() < 4 || r < 1e-8)        
+        if (currents.Size() < 4 || r < 1e-8)
           return;
 
         SendSourcesToChilds();
-        /*
-        // if (currents.Size() < maxdirect || r < 1e-8)
-        if (currents.Size() < 4 || r < 1e-8)        
-          return;
-        
-        CreateChilds();
-
-        for (auto [x,c] : charges)
-          AddCharge (x,c);
-        for (auto [x,d,c] : dipoles)
-          AddDipole (x,d,c);
-        for (auto [sp,ep,j,num] : currents)
-          AddCurrent (sp,ep,j,num);
-
-        charges.SetSize0();
-        dipoles.SetSize0();
-        currents.SetSize0();
-        */
       }
 
 
