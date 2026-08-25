@@ -3944,7 +3944,7 @@ cl_BinaryOpCF<GenericMult>::Transform (CoefficientFunction::T_Transform & transf
     return transformation.cache[thisptr];
   if (transformation.replace.find(thisptr) != transformation.replace.end())
     return transformation.replace[thisptr];
-  auto newcf = c1->Transform(transformation)*c2->Transform(transformation);
+  auto newcf = CWMult (c1->Transform(transformation), c2->Transform(transformation));
   transformation.cache[thisptr] = newcf;
   return newcf;
 }
@@ -3970,6 +3970,9 @@ cl_BinaryOpCF<GenericMult>::DiffJacobi(const CoefficientFunction * var, T_DJC & 
   auto thisptr = const_pointer_cast<CoefficientFunction>(this->shared_from_this());
   if (cache.find(thisptr) != cache.end())
     return cache[thisptr];
+
+  if (Dimensions().Size() > 0)
+    return CoefficientFunction::DiffJacobi (var, cache);
 
   if (var == this) return make_shared<ConstantCoefficientFunction>(1);
   shared_ptr<CoefficientFunction> res;
